@@ -17,26 +17,26 @@ type reactNativeNewAppScreenColors = {
   "dark": string,
 };
 
-[@bs.module "react-native/Libraries/NewAppScreen"]
+[@bs.module "./NewAppScreen"]
 external colors: reactNativeNewAppScreenColors = "Colors";
 
-[@bs.module "react-native/Libraries/Core/Devtools/openURLInBrowser"]
+[@bs.module "./Devtools/openURLInBrowser"]
 external openURLInBrowser: string => unit = "default";
 
 module Header = {
-  [@react.component] [@bs.module "react-native/Libraries/NewAppScreen"]
+  [@react.component] [@bs.module "./NewAppScreen"]
   external make: _ => React.element = "Header";
 };
 module ReloadInstructions = {
-  [@react.component] [@bs.module "react-native/Libraries/NewAppScreen"]
+  [@react.component] [@bs.module "./NewAppScreen"]
   external make: _ => React.element = "ReloadInstructions";
 };
 module LearnMoreLinks = {
-  [@react.component] [@bs.module "react-native/Libraries/NewAppScreen"]
+  [@react.component] [@bs.module "./NewAppScreen"]
   external make: _ => React.element = "LearnMoreLinks";
 };
 module DebugInstructions = {
-  [@react.component] [@bs.module "react-native/Libraries/NewAppScreen"]
+  [@react.component] [@bs.module "./NewAppScreen"]
   external make: _ => React.element = "DebugInstructions";
 };
 
@@ -56,7 +56,12 @@ let styles =
       "sectionContainer":
         style(~marginTop=32.->dp, ~paddingHorizontal=24.->dp, ()),
       "sectionTitle":
-        style(~fontSize=24., ~fontWeight=`_600, ~color=colors##black, ()),
+        style(
+          ~fontSize=24.,
+          ~fontWeight=`_600,
+          ~color=colors##black,
+          ()
+        ),
       "sectionDescription":
         style(
           ~marginTop=8.->dp,
@@ -85,7 +90,8 @@ let app = () =>
     <StatusBar barStyle=`darkContent />
     <SafeAreaView>
       <ScrollView
-        contentInsetAdjustmentBehavior=`automatic style={styles##scrollView}>
+        contentInsetAdjustmentBehavior=`automatic style={styles##scrollView}
+        >
         {Global.hermesInternal->Belt.Option.isNone
            ? React.null
            : <View style=styles##engine>
