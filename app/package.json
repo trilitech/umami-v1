@@ -1,60 +1,14 @@
 {
-  "name": "ShowcaseWallet",
-  "version": "0.0.1",
-  "license": "MIT",
-  "private": true,
+  "name": "wallet",
+  "version": "0.1.0",
+  "description": "A Tezos wallet showcase",
+  "main": "main.js",
   "scripts": {
-    "start": "react-native start",
-    "ios": "react-native run-ios",
-    "android": "react-native run-android",
-    "macos": "react-native run-macos",
-    "windows": "react-native run-windows",
-    "web": "react-scripts start",
-    "re:clean": "bsb -clean-world",
-    "re:watch": "bsb -clean-world -make-world -w",
-    "re:build": "bsb -clean-world -make-world",
-    "test": "jest",
-    "start:macos": "node node_modules/react-native-macos/local-cli/cli.js start --use-react-native-macos"
+    "start": "electron ."
   },
-  "dependencies": {
-    "react": "^16.13.1",
-    "react-dom": "^16.13.1",
-    "react-native": "0.61.5",
-    "react-native-electron": "^0.14.0",
-    "react-native-macos": "^0.61.0-0",
-    "react-native-web": "^0.13.3",
-    "react-native-windows": "^0.61.0-0",
-    "reason-react": "^0.7.0",
-    "reason-react-native": "^0.61.0"
-  },
+  "author": "Nomadic Labs",
+  "license": "MIT",
   "devDependencies": {
-    "@babel/core": "^7.6.2",
-    "@babel/runtime": "^7.6.2",
-    "@react-native-community/eslint-config": "^0.0.5",
-    "babel-jest": "^24.9.0",
-    "bs-platform": "^7.0.0",
-    "eslint": "^6.5.1",
-    "jest": "^24.9.0",
-    "metro-react-native-babel-preset": "^0.56.0",
-    "react-scripts": "^3.4.1",
-    "react-test-renderer": "16.9.0"
-  },
-  "jest": {
-    "preset": "react-native",
-    "transformIgnorePatterns": [
-      "node_modules/(?!(jest-)?react-native|react-(native|universal|navigation)-(.*)|@react-native-community/(.*)|@react-navigation/(.*)|bs-platform)"
-    ]
-  },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
+    "electron": "^9.1.0"
   }
 }
