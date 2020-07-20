@@ -17,3 +17,7 @@
 1. [Macros for contract function calls: e.g. multi-sig]
 1. Voting
 1. Support TZIP approved standard
+1. Available on Mac OS, Linux and Windows
+
+
+
