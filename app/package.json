@@ -2,6 +2,7 @@
   "name": "wallet",
   "version": "0.1.0",
   "description": "A Tezos wallet showcase",
+  "private": true,
   "main": "main.js",
   "scripts": {
     "start": "electron .",
