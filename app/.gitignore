@@ -1,13 +1,6 @@
-# macOS
 .DS_Store
-.AppleDouble
-.LSOverride
-
-#directories
-bower_components
-node_modules
-dist
-
-#files
-*.tgz
-*.log
+.merlin
+.bsb.lock
+npm-debug.log
+/lib/bs/
+/node_modules/
