@@ -10,6 +10,11 @@ On the top of it, the following features have been added with realatively small 
 * Electron Bulder support
 * Reason support
 
+## Requirements
+
+* [node](https://nodejs.org)
+* [yarn](https://yarnpkg.com)
+
 ## Available Scripts in addition to the existing ones
 
 ### `npm run electron:dev`
