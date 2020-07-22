@@ -1,0 +1,23 @@
+{
+  "name": "wallet",
+  "version": "0.1.0",
+  "description": "A Tezos wallet showcase",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "bsb-build": "bsb -make-world",
+    "bsb-start": "bsb -make-world -w",
+    "bsb-clean": "bsb -clean-world"
+  },
+  "author": "Nomadic Labs",
+  "license": "MIT",
+  "devDependencies": {
+    "bs-platform": "^8.0.3",
+    "electron": "^9.1.0"
+  },
+  "dependencies": {
+    "react": "^16.13.1",
+    "react-dom": "^16.13.1"
+  }
+}
