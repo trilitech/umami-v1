@@ -17,7 +17,7 @@ let make = () => {
   let (state, dispatch) = React.useReducer(reducer, initialState);
 
   <main>
-    {React.string("Simple counter with reducer")}
+    {React.string("Counter")}
     <div>
       <button onClick={_ => dispatch(Decrement)}>
         {React.string("-")}
