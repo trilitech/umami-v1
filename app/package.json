@@ -1,23 +1,68 @@
 {
-  "name": "wallet",
+  "name": "tezos-client",
   "version": "0.1.0",
-  "description": "A Tezos wallet showcase",
-  "private": true,
-  "main": "main.js",
-  "scripts": {
-    "start": "electron .",
-    "bsb-build": "bsb -make-world",
-    "bsb-start": "bsb -make-world -w",
-    "bsb-clean": "bsb -clean-world"
-  },
   "author": "Nomadic Labs",
-  "license": "MIT",
-  "devDependencies": {
-    "bs-platform": "^8.0.3",
-    "electron": "^9.1.0"
-  },
+  "description": "React-TypeScript-Electron sample with Create React App and Electron Builder",
+  "homepage": ".",
+  "main": "build/electron/main.js",
+  "private": true,
   "dependencies": {
+    "electron-devtools-installer": "^3.1.0",
+    "electron-is-dev": "^1.2.0",
+    "electron-reload": "^1.5.0",
     "react": "^16.13.1",
-    "react-dom": "^16.13.1"
+    "react-dom": "^16.13.1",
+    "reason-react": "^0.9.1"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "bsb:start": "bsb -make-world -w",
+    "bsb:build": "bsb -make-world",
+    "bsb:clean": "bsb -clean-world",
+    "postinstall": "electron-builder install-app-deps",
+    "electron:dev": "concurrently -k \"yarn bsb:start\" \"cross-env BROWSER=none yarn start\" \"wait-on http://localhost:3000 && tsc -p electron -w\" \"wait-on http://localhost:3000 && tsc -p electron && electron .\"",
+    "electron:build": "yarn bsb:build && yarn build && tsc -p electron && electron-builder",
+    "eject": "react-scripts eject"
+  },
+  "build": {
+    "extends": null,
+    "files": [
+      "build/**/*"
+    ],
+    "directories": {
+      "buildResources": "assets"
+    }
+  },
+  "eslintConfig": {
+    "extends": "react-app"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@types/electron-devtools-installer": "^2.2.0",
+    "@types/jest": "26.0.4",
+    "@types/node": "14.0.23",
+    "@types/react": "16.9.43",
+    "@types/react-dom": "16.9.8",
+    "bs-platform": "^8.0.3",
+    "react-scripts": "3.4.1",
+    "typescript": "3.9.6",
+    "concurrently": "^5.2.0",
+    "cross-env": "^7.0.2",
+    "electron": "^9.1.0",
+    "electron-builder": "^22.7.0",
+    "wait-on": "^5.1.0"
   }
 }
