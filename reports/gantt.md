@@ -13,7 +13,9 @@ gantt
     section Basic Prototype
     Basic Prototype                         :active, 2020-07-13, 2020-08-31
     Proof of Concept for Indexer calls      :done, 2020-07-20, 2020-07-24
+    Draft build/make instructions           :done, 2020-07-20, 2020-08-31
     Draft Design Diagram                    :done, 2020-07-20, 2020-07-27
+    Build basic dev env                     :done, 2020-07-13, 2020-07-22
     Ascertain requirements                  :done, 2020-07-13, 2020-07-24
     section Demo Sprint
     Demo Sprint                             :active, 2020-07-27, 2020-07-31
