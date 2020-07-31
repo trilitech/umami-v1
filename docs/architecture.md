@@ -1,5 +1,7 @@
 # Architecture & Tech Stack
 
+## Front-End
+
 ```mermaid
 graph TD
   RNW[ReactNativeWeb] --> R[React] --> DOM --> E[Electron];
@@ -7,3 +9,6 @@ graph TD
   E --> MacOS;
   E --> Linux;
 ```
+## Back-End
+
+[TBD]
