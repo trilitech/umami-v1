@@ -7,24 +7,29 @@
   "main": "build/electron/main.js",
   "private": true,
   "dependencies": {
+    "@glennsl/bs-json": "^5.0.2",
+    "bs-fetch": "^0.6.2",
+    "child-reprocess": "^0.1.2",
     "electron-devtools-installer": "^3.1.0",
     "electron-is-dev": "^1.2.0",
     "electron-reload": "^1.5.0",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
-    "reason-react": "^0.9.1"
+    "react-native-web": "^0.13.4",
+    "reason-react": "^0.9.1",
+    "reason-react-native": "^0.62.2"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
+    "start": "react-app-rewired start",
+    "build": "react-app-rewired build",
+    "test": "react-app-rewired test",
     "bsb:start": "bsb -make-world -w",
     "bsb:build": "bsb -make-world",
     "bsb:clean": "bsb -clean-world",
     "postinstall": "electron-builder install-app-deps",
     "electron:dev": "concurrently -k \"yarn bsb:start\" \"cross-env BROWSER=none yarn start\" \"wait-on http://localhost:3000 && tsc -p electron -w\" \"wait-on http://localhost:3000 && tsc -p electron && electron .\"",
     "electron:build": "yarn bsb:build && yarn build && tsc -p electron && electron-builder",
-    "eject": "react-scripts eject"
+    "eject": "react-app-rewired eject"
   },
   "build": {
     "extends": null,
@@ -57,12 +62,13 @@
     "@types/react": "16.9.43",
     "@types/react-dom": "16.9.8",
     "bs-platform": "^8.0.3",
-    "react-scripts": "3.4.1",
-    "typescript": "3.9.6",
     "concurrently": "^5.2.0",
     "cross-env": "^7.0.2",
     "electron": "^9.1.0",
     "electron-builder": "^22.7.0",
+    "react-app-rewired": "^2.1.6",
+    "react-scripts": "3.4.1",
+    "typescript": "3.9.6",
     "wait-on": "^5.1.0"
   }
 }
