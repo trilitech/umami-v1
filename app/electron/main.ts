@@ -10,7 +10,8 @@ function createWindow() {
     width: 1300,
     height: 800,
     webPreferences: {
-      nodeIntegration: true
+      nodeIntegration: true,
+      webSecurity : false
     }
   })
   
@@ -37,6 +38,8 @@ function createWindow() {
     win.webContents.openDevTools();
   }
 }
+
+app.commandLine.appendSwitch('disable-features', 'OutOfBlinkCors');
 
 app.on('ready', createWindow);
 
