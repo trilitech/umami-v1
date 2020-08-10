@@ -11,7 +11,6 @@ gantt
     Sprint 1 Demo                           :done, 2020-07-27, 2020-07-31
     section Sprint 2 Simple Wallet
     Sprint 2 Simple Wallet                  :active, 2020-08-03, 2020-08-14
-    Tx History                              :done, 2020-08-03, 2020-08-05
     Send funds                              :done, 2020-08-03, 2020-08-07
     Generate keys for new wallet            :active, 2020-08-03, 2020-08-14
     Switch Netwoks                          :active, 2020-08-03, 2020-08-14
