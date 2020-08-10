@@ -6,9 +6,9 @@ gantt
     Team Hiring                             :active, 2020-06-11, 2020-09-30
     Hire ReasonML Developer                 :active, 2020-06-11, 2020-08-31
     section Basic Prototype
-    Basic Prototype                         :done, 2020-07-13, 2020-07-26
+    Basic Prototype                         :done, 2020-07-13, 2020-07-25
     section Sprint 1 Demo
-    Sprint 1 Demo                           :done, 2020-07-27, 2020-07-31
+    Sprint 1 Demo                           :done, 2020-07-26, 2020-07-31
     section Sprint 2 Simple Wallet
     Sprint 2 Simple Wallet                  :active, 2020-08-03, 2020-08-14
     Send funds                              :done, 2020-08-03, 2020-08-07
