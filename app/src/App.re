@@ -9,12 +9,25 @@ let styles =
         ~backgroundColor="#ffffff",
         ()
       ),
-      "input": style(
+      "head": style(
+        ~flex=1.,
+        ~justifyContent=`spaceBetween,
         ~flexDirection=`row,
         ~padding=8.->dp,
         ()
       ),
+      "network": style(
+        ~flex=1.,
+        ~justifyContent=`flexEnd,
+        ~flexDirection=`row,
+        ~padding=4.->dp,
+        ()
+      ),
       "section": style(
+        ~padding=8.->dp,
+        ()
+      ),
+      "history": style(
         ~padding=8.->dp,
         ()
       ),
@@ -44,9 +57,11 @@ let decodeTransaction = json =>
     fee: json |> field("fee", string)
   };
 
-let fetchTransactions = {_ => Js.Promise.(
+let fetchTransactions = (main) => Js.Promise.(
   Fetch.fetch(
-    "https://mezos.lamini.ca/mezos/carthagenet/history?ks=tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
+    main
+    ? "https://mezos.lamini.ca/mezos/mainnet/history?ks=tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"
+    : "https://mezos.lamini.ca/mezos/carthagenet/history?ks=tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
   )
   |> then_(Fetch.Response.json)
   |> then_(json => json |> Json.Decode.array(Json.Decode.array(decodeTransaction))
@@ -54,7 +69,7 @@ let fetchTransactions = {_ => Js.Promise.(
                         |> Array.concat
                         |> {x => {Array.sort((a, b) => a.time > b.time ? -1 : 1, x); x}}
                         |> resolve)
-)};
+);
 
 [@react.component]
 let make = () => {
@@ -64,22 +79,25 @@ let make = () => {
   let (transactions, setTransactions) = React.useState(() => [||]);
   let (name, setName) = React.useState(() => "bob");
   let (contracts, setContracts) = React.useState(() => "");
+  let (main, setMain) = React.useState(() => false)
   
-  React.useEffect0(() => {
-    let _ = ChildReprocess.spawn("tezos-client", [|"get", "balance", "for", "zebra"|], ())
+  let network = main ? "mainnet.json" : "testnet.json";
+
+  React.useEffect1(() => {
+    let _ = ChildReprocess.spawn("tezos-client", [|"-c", network, "get", "balance", "for", "zebra"|], ())
     ->child_stdout->Readable.on_data(buffer => setBalance(_ => Node_buffer.toString(buffer)));
     None;
-  });
+  }, [|main|]);
 
-  React.useEffect0(() => {
+  React.useEffect1(() => {
     let _ = ChildReprocess.spawn("tezos-client", [|"list", "known", "contracts"|], ())
     ->child_stdout->Readable.on_data(buffer => setContracts(_ => buffer->Node_buffer.toString));
     None;
-  });
+  }, [|main|]);
 
-  React.useEffect0(() => {
+  React.useEffect1(() => {
     let _ = Js.Promise.(
-      fetchTransactions()
+      fetchTransactions(main)
       |> then_(transactions =>
         transactions
         |> {transactions => setTransactions(_ => transactions)}
@@ -87,11 +105,16 @@ let make = () => {
       )
     );
     None;
-  });
+  }, [|main|]);
 
-  <View style=styles##main>
-    <View style=styles##section>
+  <SafeAreaView style=styles##main>
+    <View style=styles##head>
       <Text style=styles##row>{("Balance: " ++ balance)->React.string}</Text>
+      <View style=styles##network>
+        <Text>"testnet  "->React.string</Text>
+        <Switch onValueChange={value => setMain(_ => value)} value={main}/>
+        <Text>"  mainnet"->React.string</Text>
+      </View>
     </View>
     <View style=styles##section>
       <TextInput style=styles##row
@@ -103,14 +126,14 @@ let make = () => {
         value={destination}
       />
       <Button onPress={_ => {
-        let command = [|"transfer", Js.Float.toString(amount), "from", "zebra", "to", destination, "--burn-cap", "0.257"|];
+        let command = [|"-c", network, "transfer", Js.Float.toString(amount), "from", "zebra", "to", destination, "--burn-cap", "0.257"|];
         let stream = ChildReprocess.spawn("tezos-client", command, ())->child_stdout;
         let _ = stream->Readable.on_data(buffer => Js.log(buffer->Node_buffer.toString));
         let _ = stream->Readable.on_close(_ => {
-          let _ = ChildReprocess.spawn("tezos-client", [|"get", "balance", "for", "zebra"|], ())
+          let _ = ChildReprocess.spawn("tezos-client", [|"-c", network, "get", "balance", "for", "zebra"|], ())
           ->child_stdout
           ->Readable.on_data(buffer => setBalance(_ => Node_buffer.toString(buffer)));
-          let _ = fetchTransactions()
+          let _ = fetchTransactions(main)
           |> Js.Promise.then_(transactions => transactions |> {transactions => setTransactions(_ => transactions)} |> Js.Promise.resolve)
           |> Js.Promise.resolve;
         });
@@ -135,9 +158,9 @@ let make = () => {
       />
       <Text style=styles##row>{contracts->React.string}</Text>
     </View>
-    <View style=styles##section>
+    <View style=styles##history>
       <Button onPress={_ => {
-          let _ = fetchTransactions()
+          let _ = fetchTransactions(main)
           |> Js.Promise.then_(transactions => transactions |> {transactions => setTransactions(_ => transactions)} |> Js.Promise.resolve)
           |> Js.Promise.resolve;
         }}
@@ -157,5 +180,5 @@ let make = () => {
         }
       />
     </View>
-  </View>;
+  </SafeAreaView>;
 };
