@@ -30,7 +30,7 @@ type transaction = {
   time: Js.Date.t,
   sender: string,
   receiver: string,
-  amount: string,
+  amount: float,
   fee: string
 };
 
@@ -40,24 +40,30 @@ let decodeTransaction = json =>
     time: json |> field("timestamp", date),
     sender: json |> field("src", string),
     receiver: json |> field("dst", string),
-    amount: json |> field("amount", string),
+    amount: json |> field("amount", string) |> Js.Float.fromString |> {x => x /. 1000000.},
     fee: json |> field("fee", string)
   };
 
-let fetchTransactions = Js.Promise.(
+let fetchTransactions = {_ => Js.Promise.(
   Fetch.fetch(
     "https://mezos.lamini.ca/mezos/carthagenet/history?ks=tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
   )
   |> then_(Fetch.Response.json)
-  |> then_(json => json |> Json.Decode.array(Json.Decode.array(decodeTransaction)) |> Array.to_list |> Array.concat |> resolve)
-);
+  |> then_(json => json |> Json.Decode.array(Json.Decode.array(decodeTransaction))
+                        |> Array.to_list
+                        |> Array.concat
+                        |> {x => {Array.sort((a, b) => a.time > b.time ? -1 : 1, x); x}}
+                        |> resolve)
+)};
 
 [@react.component]
 let make = () => {
   let (balance, setBalance) = React.useState(() => "");
-  let (amount, setAmount) = React.useState(() => 0.0);
-  let (destination, setDestination) = React.useState(() => "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3");
+  let (amount, setAmount) = React.useState(() => 1.0);
+  let (destination, setDestination) = React.useState(() => "bob");
   let (transactions, setTransactions) = React.useState(() => [||]);
+  let (name, setName) = React.useState(() => "bob");
+  let (contracts, setContracts) = React.useState(() => "");
   
   React.useEffect0(() => {
     let _ = ChildReprocess.spawn("tezos-client", [|"get", "balance", "for", "zebra"|], ())
@@ -66,8 +72,14 @@ let make = () => {
   });
 
   React.useEffect0(() => {
+    let _ = ChildReprocess.spawn("tezos-client", [|"list", "known", "contracts"|], ())
+    ->child_stdout->Readable.on_data(buffer => setContracts(_ => buffer->Node_buffer.toString));
+    None;
+  });
+
+  React.useEffect0(() => {
     let _ = Js.Promise.(
-      fetchTransactions
+      fetchTransactions()
       |> then_(transactions =>
         transactions
         |> {transactions => setTransactions(_ => transactions)}
@@ -79,7 +91,7 @@ let make = () => {
 
   <View style=styles##main>
     <View style=styles##section>
-      <Text style=styles##row>{Js.String.concat(balance, "Balance: ") |> React.string}</Text>
+      <Text style=styles##row>{("Balance: " ++ balance)->React.string}</Text>
     </View>
     <View style=styles##section>
       <TextInput style=styles##row
@@ -91,24 +103,59 @@ let make = () => {
         value={destination}
       />
       <Button onPress={_ => {
-        let _ = ChildReprocess.spawn("tezos-client", [|"transfer", Js.Float.toString(amount), "from", "zebra", "to", destination|], ())
-        ->child_stdout->Readable.on_data(buffer => Js.log(Node_buffer.toString(buffer)));
+        let command = [|"transfer", Js.Float.toString(amount), "from", "zebra", "to", destination, "--burn-cap", "0.257"|];
+        let stream = ChildReprocess.spawn("tezos-client", command, ())->child_stdout;
+        let _ = stream->Readable.on_data(buffer => Js.log(buffer->Node_buffer.toString));
+        let _ = stream->Readable.on_close(_ => {
+          let _ = ChildReprocess.spawn("tezos-client", [|"get", "balance", "for", "zebra"|], ())
+          ->child_stdout
+          ->Readable.on_data(buffer => setBalance(_ => Node_buffer.toString(buffer)));
+          let _ = fetchTransactions()
+          |> Js.Promise.then_(transactions => transactions |> {transactions => setTransactions(_ => transactions)} |> Js.Promise.resolve)
+          |> Js.Promise.resolve;
+        });
       }}
       title="Send"
       />
     </View>
-    <FlatList style=styles##section
-      data=transactions
-      keyExtractor={(transaction, _) => transaction.id}
-      renderItem={transaction =>
-        <View style=styles##row>
-          <Text>{Js.String.concat(Js.Date.toLocaleString(transaction.item.time), "Date: ") |> React.string}</Text>
-          <Text>{Js.String.concat(transaction.item.sender, "Sender: ") |> React.string}</Text>
-          <Text>{Js.String.concat(transaction.item.receiver, "Receiver: ") |> React.string}</Text>
-          <Text>{Js.String.concat(transaction.item.amount, "Amount: ") |> React.string}</Text>
-          <Text>{Js.String.concat(transaction.item.fee, "Fee: ") |> React.string}</Text>
-        </View>
-      }
-    />
+    <View style=styles##section>
+      <TextInput style=styles##row
+        onChangeText={text => setName(_ => text)}
+        value={name}
+      />
+      <Button onPress={_ => {
+        let stream = ChildReprocess.spawn("tezos-client", [|"gen", "keys", name|], ())->child_stdout;
+        let _ = stream->Readable.on_data(buffer => Js.log(Node_buffer.toString(buffer)));
+        let _ = stream->Readable.on_close(_ => {
+          let _ = ChildReprocess.spawn("tezos-client", [|"list", "known", "contracts"|], ())
+          ->child_stdout->Readable.on_data(buffer => setContracts(_ => buffer->Node_buffer.toString));
+        });
+      }}
+      title="Create"
+      />
+      <Text style=styles##row>{contracts->React.string}</Text>
+    </View>
+    <View style=styles##section>
+      <Button onPress={_ => {
+          let _ = fetchTransactions()
+          |> Js.Promise.then_(transactions => transactions |> {transactions => setTransactions(_ => transactions)} |> Js.Promise.resolve)
+          |> Js.Promise.resolve;
+        }}
+        title="Refresh"
+      />
+      <FlatList
+        data=transactions
+        keyExtractor={(transaction, _) => transaction.id}
+        renderItem={transaction =>
+          <View style=styles##row>
+            <Text>{("Date: " ++ Js.Date.toLocaleString(transaction.item.time))->React.string}</Text>
+            <Text>{("Sender: " ++ transaction.item.sender)->React.string}</Text>
+            <Text>{("Receiver: " ++ transaction.item.receiver)->React.string}</Text>
+            <Text>{("Amount: " ++ Js.Float.toString(transaction.item.amount) ++ " " ++ {js|ꜩ|js})->React.string}</Text>
+            <Text>{("Fee: " ++ transaction.item.fee ++ " " ++ {js|μꜩ|js})->React.string}</Text>
+          </View>
+        }
+      />
+    </View>
   </View>;
 };
