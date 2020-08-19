@@ -1,0 +1,197 @@
+openapi: 3.0.0
+info:
+  version: 1.0.0
+  title: Simple Tezos Exlporer API
+  description: A simple Tezos explorer API
+
+servers:
+  - url: "https://virtserver.swaggerhub.com/nomadic-labs/zebra/1.0.0"
+
+paths:
+  /accounts/{address}/operations:
+    get:
+      summary: List all operations
+      tags:
+        - Accounts
+      parameters:
+        - name: address 
+          in: path
+          required: true
+          description: Any address starting with tz or KT
+          example: tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3
+          schema:
+            type: string
+        - name: type 
+          in: query
+          required: false
+          explode: false
+          description: Select operation according a comma separated list of types
+          example: transaction,origination
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [reveal, transaction, origination, delegation]
+        - name: from
+          in: query
+          required: false
+          description: Select operation starting from a given date (RFC 3339, ISO 8601)
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          required: false
+          description: Select operation until a given date (RFC 3339, ISO 8601)
+          schema:
+            type: string
+            format: date-time
+        - name: limit
+          in: query
+          required: false
+          description: Limit the number of operations returned
+          schema:
+            type: integer
+            format: int32
+        - name: lastID
+          in: query
+          required: false
+          description: Paginate using the last operation ID received
+          schema:
+            type: string
+
+      responses:
+        '200':
+          description: A paged array of operations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  oneOf:
+                    - $ref: "#/components/schemas/Reveal"
+                    - $ref: "#/components/schemas/Transaction"
+                    - $ref: "#/components/schemas/Origination"
+                    - $ref: "#/components/schemas/Delegation"
+                  discriminator:
+                    propertyName: type
+
+        default:
+          description: unexpected error
+
+components:
+  schemas:
+    Operation:
+      type: object
+      required:
+        - type
+        - id
+        - level
+        - timestamp
+        - block
+        - hash
+      properties:
+        type:
+          type: string
+        id:
+          type: string
+        level:
+          type: integer
+          format: int32
+        timestamp:
+          type: string
+          format: date-time
+        block:
+          type: string
+        hash:
+          type: string
+      discriminator:
+        propertyName: type
+        mapping:
+          reveal: '#/components/schemas/Reveal'
+          transaction: '#/components/schemas/Transaction'
+          origination: '#/components/schemas/Origination'
+          delegation: '#/components/schemas/Delegation'
+
+    Business:
+      allOf:
+        - $ref: "#/components/schemas/Operation"
+        - required:
+            - source
+            - fee
+            - counter
+            - gas_limit
+            - storage_limit
+        - type: object
+          properties:
+            source:
+              type: string
+            fee:
+              type: integer
+              format: int64
+            counter:
+              type: integer
+              format: int64
+            gas_limit:
+              type: integer
+              format: int64
+            storage_limit:
+              type: integer
+              format: int64
+
+    Reveal:
+      allOf:
+        - $ref: "#/components/schemas/Business"
+        - required:
+            - address
+        - type: object
+          properties:
+            type:
+              enum: [reveal]
+            address:
+              type: string
+
+    Transaction:
+      allOf:
+        - $ref: "#/components/schemas/Business"
+        - required:
+            - amount
+            - destination
+        - type: object
+          properties:
+            type:
+              enum: [transaction]
+            amount:
+              type: integer
+              format: int64
+            destination:
+              type: string
+            parameters:
+              type: string
+              nullable: true
+
+    Origination:
+      allOf:
+        - $ref: "#/components/schemas/Business"
+        - required:
+            - contract_address
+        - type: object
+          properties:
+            type:
+              enum: [origination]
+            delegate:
+              type: string
+              nullable: true
+            contract_address:
+              type: string
+
+    Delegation:
+      allOf:
+        - $ref: "#/components/schemas/Business"
+        - type: object
+          properties:
+            type:
+              enum: [delegation]
+            delegate:
+              type: string
+              nullable: true
