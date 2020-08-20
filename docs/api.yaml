@@ -119,9 +119,7 @@ components:
         - required:
             - source
             - fee
-            - counter
-            - gas_limit
-            - storage_limit
+            - index
         - type: object
           properties:
             source:
@@ -129,15 +127,9 @@ components:
             fee:
               type: integer
               format: int64
-            counter:
+            index:
               type: integer
-              format: int64
-            gas_limit:
-              type: integer
-              format: int64
-            storage_limit:
-              type: integer
-              format: int64
+              format: int32
 
     Reveal:
       allOf:
