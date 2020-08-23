@@ -16,8 +16,10 @@
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
     "react-native-web": "^0.13.4",
+    "reason-future": "^2.6.0",
     "reason-react": "^0.9.1",
-    "reason-react-native": "^0.62.2"
+    "reason-react-native": "^0.62.2",
+    "reason-react-update": "^2.0.0"
   },
   "scripts": {
     "start": "react-app-rewired start",

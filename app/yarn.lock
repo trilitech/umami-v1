@@ -9718,10 +9718,20 @@ realpath-native@^1.1.0:
   dependencies:
     util.promisify "^1.0.0"
 
+reason-future@^2.6.0:
+  version "2.6.0"
+  resolved "https://registry.yarnpkg.com/reason-future/-/reason-future-2.6.0.tgz#089a6ec59386d3f3eb3cebdc63515ac9499ee715"
+  integrity sha512-wrXTAIGQed+Simhqc9X5PEjvBPhmPmxYImawNrDFGEt9woF/NY04Ny2BpiQk18e72QZMnOLdfPqCOdeT5egTAg==
+
 reason-react-native@^0.62.2:
   version "0.62.2"
   resolved "https://registry.yarnpkg.com/reason-react-native/-/reason-react-native-0.62.2.tgz#c4ddf427deb0e217f6863c0509ff2e63230cb082"
   integrity sha512-Oa5WXw2N6E2GXE6e7Vuz4dfkqhnyp2TvdBawHApHBydmzI5Q7GNpgDEiciz3qn3aFCCeEgocbrUdtfN7IACNUg==
+
+reason-react-update@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/reason-react-update/-/reason-react-update-2.0.0.tgz#64aba8752d212582288996fe988b06087f854b98"
+  integrity sha512-0dHC8p0GKYH2TMCtw8f7tuJTOwJonuB2mg8R0RxjuK5yr9Ne/cIoZOKqjGiwGZkjU9pcT4xowS5OaaBuJJuj9Q==
 
 reason-react@^0.9.1:
   version "0.9.1"
