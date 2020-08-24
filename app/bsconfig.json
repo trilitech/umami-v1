@@ -21,7 +21,9 @@
     "@glennsl/bs-json",
     "reason-react",
     "reason-react-native",
-    "child-reprocess"
+    "child-reprocess",
+    "reason-react-update",
+    "reason-future"
   ],
   "refmt": 3
 }
