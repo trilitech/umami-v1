@@ -54,7 +54,7 @@ module Transactions = {
       })
     ->Future.tapOk(Js.log);
 
-  let post = (network, transaction: Injection.transaction) =>
+  let create = (network, transaction: Injection.transaction) =>
     Future.make(resolve =>
       ChildReprocess.spawn(
         "tezos-client",
@@ -78,24 +78,98 @@ module Transactions = {
     );
 };
 
+module MapString = Belt.Map.String;
+
+let parse = output =>
+  output
+  |> Js.String.split("\n")
+  |> Array.map(row => row |> Js.String.split(": "))
+  |> (pairs => pairs->Belt.Array.keep(pair => pair->Array.length == 2))
+  |> Array.map(pair => (pair[0], pair[1]))
+  |> MapString.fromArray;
+
 module Accounts = {
   let get = () =>
-    Future.make(resolve =>
-      ChildReprocess.spawn(
-        "tezos-client",
-        [|"list", "known", "contracts"|],
-        (),
-      )
-      ->child_stdout
-      ->Readable.on_data(buffer =>
-          buffer->Node_buffer.toString->Belt.Result.Ok->resolve
-        )
-    );
+    Future.make(resolve => {
+      let process =
+        ChildReprocess.spawn(
+          "tezos-client",
+          [|"list", "known", "contracts"|],
+          (),
+        );
+      let _ =
+        process
+        ->child_stdout
+        ->Readable.on_data(buffer =>
+            buffer->Node_buffer.toString->Belt.Result.Ok->resolve
+          );
+      ();
+    })
+    ->Future.mapOk(parse);
 
-  let post = name =>
-    Future.make(resolve =>
-      ChildReprocess.spawn("tezos-client", [|"gen", "keys", name|], ())
-      ->child_stdout
-      ->Readable.on_close(_ => resolve(Belt.Result.Ok()))
-    );
+  let create = name =>
+    Future.make(resolve => {
+      let process =
+        ChildReprocess.spawn("tezos-client", [|"gen", "keys", name|], ());
+      let _ =
+        process
+        ->child_stderr
+        ->Readable.on_data(buffer =>
+            buffer->Node_buffer.toString->Belt.Result.Error->resolve
+          );
+      let _ =
+        process
+        ->child_stdout
+        ->Readable.on_close(_ => resolve(Belt.Result.Ok()));
+      ();
+    });
+
+  let restore = (backupPhrase, name) =>
+    backupPhrase
+    ->BIP39.mnemonicToSeedSync
+    ->Crypto.edsk
+    ->FutureJs.fromPromise(Js.String.make)
+    ->Future.tapOk(Js.log)
+    ->Future.flatMapOk(edsk =>
+        Future.make(resolve => {
+          let process =
+            ChildReprocess.spawn(
+              "tezos-client",
+              [|"import", "secret", "key", name, "unencrypted:" ++ edsk|],
+              (),
+            );
+          let _ =
+            process
+            ->child_stderr
+            ->Readable.on_data(buffer =>
+                buffer->Node_buffer.toString->Belt.Result.Error->resolve
+              );
+          let _ =
+            process
+            ->child_stdout
+            ->Readable.on_close(_ => resolve(Belt.Result.Ok()));
+          ();
+        })
+      );
+
+  let delete = name =>
+    Future.make(resolve => {
+      let process =
+        ChildReprocess.spawn(
+          "tezos-client",
+          [|"forget", "address", name, "--force"|],
+          (),
+        );
+      let _ =
+        process
+        ->child_stderr
+        ->Readable.on_data(buffer =>
+            buffer->Node_buffer.toString->Belt.Result.Error->resolve
+          );
+      let _ =
+        process
+        ->child_stdout
+        ->Readable.on_close(_ => resolve(Belt.Result.Ok()));
+      ();
+    });
 };

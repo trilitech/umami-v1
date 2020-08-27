@@ -1,15 +1,15 @@
 open ReactNative;
 
-let style = Style.(style(~padding=4.->dp, ()));
+let style = Style.(style(~padding=4.->dp, ~margin=4.->dp, ~borderWidth=1.0, ()));
 
 [@react.component]
 let make = (~onSubmit) => {
   let (amount, setAmount) = React.useState(() => 1.0);
-  let (destination, setDestination) = React.useState(() => "bob");
+  let (source, setSource) = React.useState(() => "");
+  let (destination, setDestination) = React.useState(() => "");
 
-  <View>
+  <View style>
     <TextInput
-      style
       onChangeText={
         text =>
           text
@@ -20,10 +20,15 @@ let make = (~onSubmit) => {
       value={Js.Float.toString(amount)}
     />
     <TextInput
-      style
+      onChangeText={text => setSource(_ => text)}
+      placeholder="source"
+      value=source
+    />
+    <TextInput
       onChangeText={text => setDestination(_ => text)}
+      placeholder="destination"
       value=destination
     />
-    <Button onPress={_ => onSubmit(amount, destination)} title="Send" />
+    <Button onPress={_ => onSubmit(source, amount, destination)} title="Send" />
   </View>;
 };
