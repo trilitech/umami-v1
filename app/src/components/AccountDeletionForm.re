@@ -15,7 +15,7 @@ let make = () => {
       onPress={
         _ =>
           name
-          ->API.Accounts.create
+          ->API.Accounts.delete
           ->Future.flatMapOk(_ => API.Accounts.get())
           ->Future.get(result =>
               switch (result) {
@@ -24,7 +24,7 @@ let make = () => {
               }
             )
       }
-      title="Create"
+      title="Delete"
     />
   </View>;
 };

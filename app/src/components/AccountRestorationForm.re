@@ -7,15 +7,22 @@ let style =
 let make = () => {
   let (_, setAccounts) = React.useContext(Accounts.context);
 
-  let (name, setName) = React.useState(() => "");
+  let (backupPhrase, setBackupPhrase) =
+    React.useState(() =>
+      "zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra"
+    );
+  let (name, setName) = React.useState(() => "zebra");
 
   <View style>
-    <TextInput onChangeText={text => setName(_ => text)} placeholder="alias" value=name />
+    <TextInput
+      onChangeText={text => setBackupPhrase(_ => text)}
+      value=backupPhrase
+    />
+    <TextInput onChangeText={text => setName(_ => text)} value=name />
     <Button
       onPress={
         _ =>
-          name
-          ->API.Accounts.create
+          API.Accounts.restore(backupPhrase, name)
           ->Future.flatMapOk(_ => API.Accounts.get())
           ->Future.get(result =>
               switch (result) {
@@ -24,7 +31,7 @@ let make = () => {
               }
             )
       }
-      title="Create"
+      title="Restore"
     />
   </View>;
 };
