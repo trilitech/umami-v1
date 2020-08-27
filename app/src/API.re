@@ -7,11 +7,11 @@ let config = network =>
   };
 
 module URL = {
-  let transactions = (network: Network.name, account) =>
+  let operations = (network: Network.name, account) =>
     (
       switch (network) {
-      | Main => "https://mezos.lamini.ca/mezos/mainnet/history?ks="
-      | Test => "https://mezos.lamini.ca/mezos/carthagenet/history?ks="
+      | Main => "https://x.lamini.ca/mezos/carthagenet/operations?address="
+      | Test => "https://u.lamini.ca/mezos/carthagenet/operations?address="
       }
     )
     ++ account;
@@ -37,21 +37,13 @@ module Balance = {
 module Transactions = {
   let get = (network, account) =>
     network
-    ->URL.transactions(account)
+    ->URL.operations(account)
     ->Fetch.fetch
     ->FutureJs.fromPromise(Js.String.make)
     ->Future.flatMapOk(response =>
         response->Fetch.Response.json->FutureJs.fromPromise(Js.String.make)
       )
-    ->Future.mapOk(Json.Decode.(Operation.Decoder.transaction->array->array))
-    ->Future.mapOk(value => value[0])
-    ->Future.mapOk(transactions => {
-        Array.sort(
-          (a: Operation.transaction, b) => a.time < b.time ? 1 : (-1),
-          transactions,
-        );
-        transactions;
-      })
+    ->Future.mapOk(Json.Decode.array(Operation.decode))
     ->Future.tapOk(Js.log);
 
   let create = (network, transaction: Injection.transaction) =>
