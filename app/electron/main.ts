@@ -11,10 +11,10 @@ function createWindow() {
     height: 800,
     webPreferences: {
       nodeIntegration: true,
-      webSecurity : false
+      webSecurity: false
     }
   })
-  
+
   win.loadURL(isDev ? 'http://localhost:3000/index.html' : `file://${__dirname}/../index.html`);
 
   win.on('closed', () => win = null);
