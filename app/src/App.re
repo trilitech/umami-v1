@@ -84,7 +84,7 @@ let make = () => {
               <Text style=styles##section>
                 accounts->toString->React.string
               </Text>
-              <Transactions />
+              <Operations />
             </View>
           </Injection.Provider>
         </Accounts.Provider>

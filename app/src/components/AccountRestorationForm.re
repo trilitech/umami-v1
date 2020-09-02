@@ -7,18 +7,20 @@ let style =
 let make = () => {
   let (_, setAccounts) = React.useContext(Accounts.context);
 
-  let (backupPhrase, setBackupPhrase) =
-    React.useState(() =>
-      "zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra"
-    );
-  let (name, setName) = React.useState(() => "zebra");
+  let (backupPhrase, setBackupPhrase) = React.useState(() => "");
+  let (name, setName) = React.useState(() => "");
 
   <View style>
     <TextInput
       onChangeText={text => setBackupPhrase(_ => text)}
+      placeholder="24 words"
       value=backupPhrase
     />
-    <TextInput onChangeText={text => setName(_ => text)} value=name />
+    <TextInput
+      onChangeText={text => setName(_ => text)}
+      placeholder="alias"
+      value=name
+    />
     <Button
       onPress={
         _ =>
