@@ -10,7 +10,7 @@ module URL = {
   let operations = (network: Network.name, account) =>
     (
       switch (network) {
-      | Main => "https://x.lamini.ca/mezos/carthagenet/operations?address="
+      | Main => "https://x.lamini.ca/mezos/mainnet/operations?address="
       | Test => "https://u.lamini.ca/mezos/carthagenet/operations?address="
       }
     )
@@ -72,7 +72,7 @@ module Transactions = {
 
 module MapString = Belt.Map.String;
 
-let parse = output =>
+let parseAddresses = output =>
   output
   |> Js.String.split("\n")
   |> Array.map(row => row |> Js.String.split(": "))
@@ -97,7 +97,7 @@ module Accounts = {
           );
       ();
     })
-    ->Future.mapOk(parse);
+    ->Future.mapOk(parseAddresses);
 
   let create = name =>
     Future.make(resolve => {
@@ -117,10 +117,37 @@ module Accounts = {
     });
 
   let restore = (backupPhrase, name) =>
-    backupPhrase
-    ->BIP39.mnemonicToSeedSync
-    ->Crypto.edsk
-    ->FutureJs.fromPromise(Js.String.make)
+    Future.make(resolve => {
+      let process =
+        ChildReprocess.spawn(
+          "tezos-client",
+          [|
+            "generate",
+            "keys",
+            "from",
+            "mnemonic",
+            backupPhrase,
+          |],
+          (),
+        );
+      let _ =
+        process
+        ->child_stderr
+        ->Readable.on_data(buffer =>
+            buffer->Node_buffer.toString->Belt.Result.Error->resolve
+          );
+      let _ =
+        process
+        ->child_stdout
+        ->Readable.on_data(buffer =>
+            buffer->Node_buffer.toString
+            ->Belt.Result.Ok
+            ->resolve
+          );
+      ();
+    })
+    ->Future.tapOk(Js.log)
+    ->Future.mapOk(keys => (keys |> Js.String.split("\n"))[2])
     ->Future.tapOk(Js.log)
     ->Future.flatMapOk(edsk =>
         Future.make(resolve => {
