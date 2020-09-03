@@ -86,14 +86,6 @@ type t = {
   payload,
 };
 
-/*
- amount:
-       json
-       |> field("amount", string)
-       |> Js.Float.fromString
-       |> (x => x /. 1000000.),
- */
-
 let decode = json =>
   Json.Decode.{
     id: json |> field("id", string),
