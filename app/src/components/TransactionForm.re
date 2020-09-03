@@ -4,7 +4,7 @@ let style = Style.(style(~padding=4.->dp, ~margin=4.->dp, ~borderWidth=1.0, ()))
 
 [@react.component]
 let make = (~onSubmit) => {
-  let (amount, setAmount) = React.useState(() => 1.0);
+  let (amount, setAmount) = React.useState(() => 0.0);
   let (source, setSource) = React.useState(() => "");
   let (destination, setDestination) = React.useState(() => "");
 
@@ -17,7 +17,8 @@ let make = (~onSubmit) => {
           ->(x => Js.Float.isNaN(x) ? amount : x)
           ->(x => setAmount(_ => x))
       }
-      value={Js.Float.toString(amount)}
+      placeholder="amount"
+      value={amount == 0.0 ? "" : Js.Float.toString(amount)}
     />
     <TextInput
       onChangeText={text => setSource(_ => text)}
