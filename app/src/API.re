@@ -1,9 +1,9 @@
 open ChildReprocess.StdStream;
 
-let config = network =>
+let endpoint = network =>
   switch (network) {
-  | Network.Main => "mainnet.json"
-  | Network.Test => "testnet.json"
+  | Network.Main => "https://mainnet-tezos.giganode.io:443"
+  | Network.Test => "https://testnet-tezos.giganode.io:443"
   };
 
 module URL = {
@@ -23,7 +23,7 @@ module Balance = {
       let _ =
         ChildReprocess.spawn(
           "tezos-client",
-          [|"-c", network->config, "get", "balance", "for", account|],
+          [|"-c", network->endpoint, "get", "balance", "for", account|],
           (),
         )
         ->child_stdout
@@ -47,27 +47,38 @@ module Transactions = {
     ->Future.tapOk(Js.log);
 
   let create = (network, transaction: Injection.transaction) =>
-    Future.make(resolve =>
-      ChildReprocess.spawn(
-        "tezos-client",
-        [|
-          "-c",
-          network->config,
-          "transfer",
-          Js.Float.toString(transaction.amount),
-          "from",
-          transaction.source,
-          "to",
-          transaction.destination,
-          "--burn-cap",
-          "0.257",
-        |],
-        (),
-      )
-      ->child_stdout
-      ->Readable.on_data(buffer => buffer->Node_buffer.toString->Js.log)
-      ->Readable.on_close(_ => resolve(Belt.Result.Ok()))
-    );
+    Future.make(resolve => {
+      let process =
+        ChildReprocess.spawn(
+          "tezos-client",
+          [|
+            "-E",
+            network->endpoint,
+            "transfer",
+            Js.Float.toString(transaction.amount),
+            "from",
+            transaction.source,
+            "to",
+            transaction.destination,
+            "--burn-cap",
+            "0.257",
+          |],
+          (),
+        );
+      let _ =
+        process
+        ->child_stderr
+        ->Readable.on_data(buffer =>
+            buffer->Node_buffer.toString->Belt.Result.Error->resolve
+          );
+      let _ =
+        process
+        ->child_stdout
+        ->Readable.on_data(buffer => buffer->Node_buffer.toString->Js.log)
+        ->Readable.on_close(_ => resolve(Belt.Result.Ok()));
+      ();
+    })
+    ->Future.tapOk(Js.log);
 };
 
 module MapString = Belt.Map.String;
@@ -121,13 +132,7 @@ module Accounts = {
       let process =
         ChildReprocess.spawn(
           "tezos-client",
-          [|
-            "generate",
-            "keys",
-            "from",
-            "mnemonic",
-            backupPhrase,
-          |],
+          [|"generate", "keys", "from", "mnemonic", backupPhrase|],
           (),
         );
       let _ =
@@ -140,9 +145,7 @@ module Accounts = {
         process
         ->child_stdout
         ->Readable.on_data(buffer =>
-            buffer->Node_buffer.toString
-            ->Belt.Result.Ok
-            ->resolve
+            buffer->Node_buffer.toString->Belt.Result.Ok->resolve
           );
       ();
     })

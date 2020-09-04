@@ -22,14 +22,9 @@ let styles =
 let dummy: MapString.t(string) = MapString.empty;
 
 let toString = map =>
-  map
-  ->MapString.reduce("", (result, key, value) =>
-      result
-      ++ (result->String.length == 0 ? "" : "\n")
-      ++ key
-      ++ ": "
-      ++ value
-    );
+  map->MapString.reduce("", (result, key, value) =>
+    result ++ (result->String.length == 0 ? "" : "\n") ++ key ++ ": " ++ value
+  );
 
 [@react.component]
 let make = () => {
@@ -45,7 +40,12 @@ let make = () => {
       | Pending(transaction) =>
         network
         ->API.Transactions.create(transaction)
-        ->FutureEx.getOk(_ => setInjection(_ => Done))
+        ->Future.get(result =>
+            switch (result) {
+            | Ok(_) => setInjection(_ => Done)
+            | Error(value) => Dialog.error(value)
+            }
+          )
       | Done => ()
       };
       None;
@@ -71,18 +71,15 @@ let make = () => {
             <View style=styles##main>
               <View style=styles##header> <Balance /> <NetworkSwitch /> </View>
               <TransactionForm
-                onSubmit={
-                  (source, amount, destination) =>
-                    setInjection(_ =>
-                      Pending({source: source, amount, destination})
-                    )
+                onSubmit={(source, amount, destination) =>
+                  setInjection(_ => Pending({source, amount, destination}))
                 }
               />
               <AccountCreationForm />
               <AccountRestorationForm />
               <AccountDeletionForm />
               <Text style=styles##section>
-                accounts->toString->React.string
+                {accounts->toString->React.string}
               </Text>
               <Operations />
             </View>
