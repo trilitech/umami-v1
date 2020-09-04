@@ -23,7 +23,7 @@ module Balance = {
       let _ =
         ChildReprocess.spawn(
           "tezos-client",
-          [|"-c", network->endpoint, "get", "balance", "for", account|],
+          [|"-E", network->endpoint, "get", "balance", "for", account|],
           (),
         )
         ->child_stdout
