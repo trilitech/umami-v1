@@ -1,2 +1,0 @@
-{ "base_dir": "/Users/pikatos/.tezos-client", "node_addr": "mainnet-tezos.giganode.io",
-  "node_port": 443, "tls": true, "web_port": 8080, "confirmations": 0 }
