@@ -194,4 +194,27 @@ module Accounts = {
         ->Readable.on_close(_ => resolve(Belt.Result.Ok()));
       ();
     });
+
+  let delegate = (network, account, delegate) =>
+    Future.make(resolve => {
+      let process =
+        ChildReprocess.spawn(
+          "tezos-client",
+          [|"-E", network->endpoint, "set", "delegate", "for", account, "to", delegate|],
+          (),
+        );
+      let _ =
+        process
+        ->child_stderr
+        ->Readable.on_data(buffer =>
+            buffer->Node_buffer.toString->Belt.Result.Error->resolve
+          );
+      let _ =
+        process
+        ->child_stdout
+        ->Readable.on_data(buffer => buffer->Node_buffer.toString->Js.log)
+        ->Readable.on_close(_ => resolve(Belt.Result.Ok()));
+      ();
+    })
+    ->Future.tapOk(Js.log);
 };

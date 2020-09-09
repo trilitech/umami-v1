@@ -81,6 +81,7 @@ let make = () => {
               <Text style=styles##section>
                 {accounts->toString->React.string}
               </Text>
+              <DelegateForm />
               <Operations />
             </View>
           </Injection.Provider>
