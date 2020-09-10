@@ -17,21 +17,28 @@ module URL = {
     ++ account;
 };
 
+let call = command =>
+  Future.make(resolve => {
+    let process = ChildReprocess.spawn("tezos-client", command, ());
+    let _ =
+      process
+      ->child_stderr
+      ->Readable.on_data(buffer =>
+          buffer->Node_buffer.toString->Belt.Result.Error->resolve
+        );
+    let _ =
+      process
+      ->child_stdout
+      ->Readable.on_data(buffer =>
+          buffer->Node_buffer.toString->Belt.Result.Ok->resolve
+        );
+    ();
+  })
+  ->Future.tap(Js.log);
+
 module Balance = {
   let get = (network, account) =>
-    Future.make(resolve => {
-      let _ =
-        ChildReprocess.spawn(
-          "tezos-client",
-          [|"-E", network->endpoint, "get", "balance", "for", account|],
-          (),
-        )
-        ->child_stdout
-        ->Readable.on_data(buffer =>
-            buffer->Node_buffer.toString->Belt.Result.Ok->resolve
-          );
-      ();
-    });
+    call([|"-E", network->endpoint, "get", "balance", "for", account|]);
 };
 
 module Transactions = {
@@ -47,38 +54,18 @@ module Transactions = {
     ->Future.tapOk(Js.log);
 
   let create = (network, transaction: Injection.transaction) =>
-    Future.make(resolve => {
-      let process =
-        ChildReprocess.spawn(
-          "tezos-client",
-          [|
-            "-E",
-            network->endpoint,
-            "transfer",
-            Js.Float.toString(transaction.amount),
-            "from",
-            transaction.source,
-            "to",
-            transaction.destination,
-            "--burn-cap",
-            "0.257",
-          |],
-          (),
-        );
-      let _ =
-        process
-        ->child_stderr
-        ->Readable.on_data(buffer =>
-            buffer->Node_buffer.toString->Belt.Result.Error->resolve
-          );
-      let _ =
-        process
-        ->child_stdout
-        ->Readable.on_data(buffer => buffer->Node_buffer.toString->Js.log)
-        ->Readable.on_close(_ => resolve(Belt.Result.Ok()));
-      ();
-    })
-    ->Future.tapOk(Js.log);
+    call([|
+      "-E",
+      network->endpoint,
+      "transfer",
+      Js.Float.toString(transaction.amount),
+      "from",
+      transaction.source,
+      "to",
+      transaction.destination,
+      "--burn-cap",
+      "0.257",
+    |]);
 };
 
 module MapString = Belt.Map.String;
@@ -93,128 +80,30 @@ let parseAddresses = output =>
 
 module Accounts = {
   let get = () =>
-    Future.make(resolve => {
-      let process =
-        ChildReprocess.spawn(
-          "tezos-client",
-          [|"list", "known", "contracts"|],
-          (),
-        );
-      let _ =
-        process
-        ->child_stdout
-        ->Readable.on_data(buffer =>
-            buffer->Node_buffer.toString->Belt.Result.Ok->resolve
-          );
-      ();
-    })
-    ->Future.mapOk(parseAddresses);
+    call([|"list", "known", "contracts"|])->Future.mapOk(parseAddresses);
 
-  let create = name =>
-    Future.make(resolve => {
-      let process =
-        ChildReprocess.spawn("tezos-client", [|"gen", "keys", name|], ());
-      let _ =
-        process
-        ->child_stderr
-        ->Readable.on_data(buffer =>
-            buffer->Node_buffer.toString->Belt.Result.Error->resolve
-          );
-      let _ =
-        process
-        ->child_stdout
-        ->Readable.on_close(_ => resolve(Belt.Result.Ok()));
-      ();
-    });
+  let create = name => call([|"gen", "keys", name|]);
 
   let restore = (backupPhrase, name) =>
-    Future.make(resolve => {
-      let process =
-        ChildReprocess.spawn(
-          "tezos-client",
-          [|"generate", "keys", "from", "mnemonic", backupPhrase|],
-          (),
-        );
-      let _ =
-        process
-        ->child_stderr
-        ->Readable.on_data(buffer =>
-            buffer->Node_buffer.toString->Belt.Result.Error->resolve
-          );
-      let _ =
-        process
-        ->child_stdout
-        ->Readable.on_data(buffer =>
-            buffer->Node_buffer.toString->Belt.Result.Ok->resolve
-          );
-      ();
-    })
+    call([|"generate", "keys", "from", "mnemonic", backupPhrase|])
     ->Future.tapOk(Js.log)
     ->Future.mapOk(keys => (keys |> Js.String.split("\n"))[2])
     ->Future.tapOk(Js.log)
     ->Future.flatMapOk(edsk =>
-        Future.make(resolve => {
-          let process =
-            ChildReprocess.spawn(
-              "tezos-client",
-              [|"import", "secret", "key", name, "unencrypted:" ++ edsk|],
-              (),
-            );
-          let _ =
-            process
-            ->child_stderr
-            ->Readable.on_data(buffer =>
-                buffer->Node_buffer.toString->Belt.Result.Error->resolve
-              );
-          let _ =
-            process
-            ->child_stdout
-            ->Readable.on_close(_ => resolve(Belt.Result.Ok()));
-          ();
-        })
+        call([|"import", "secret", "key", name, "unencrypted:" ++ edsk|])
       );
 
-  let delete = name =>
-    Future.make(resolve => {
-      let process =
-        ChildReprocess.spawn(
-          "tezos-client",
-          [|"forget", "address", name, "--force"|],
-          (),
-        );
-      let _ =
-        process
-        ->child_stderr
-        ->Readable.on_data(buffer =>
-            buffer->Node_buffer.toString->Belt.Result.Error->resolve
-          );
-      let _ =
-        process
-        ->child_stdout
-        ->Readable.on_close(_ => resolve(Belt.Result.Ok()));
-      ();
-    });
+  let delete = name => call([|"forget", "address", name, "--force"|]);
 
   let delegate = (network, account, delegate) =>
-    Future.make(resolve => {
-      let process =
-        ChildReprocess.spawn(
-          "tezos-client",
-          [|"-E", network->endpoint, "set", "delegate", "for", account, "to", delegate|],
-          (),
-        );
-      let _ =
-        process
-        ->child_stderr
-        ->Readable.on_data(buffer =>
-            buffer->Node_buffer.toString->Belt.Result.Error->resolve
-          );
-      let _ =
-        process
-        ->child_stdout
-        ->Readable.on_data(buffer => buffer->Node_buffer.toString->Js.log)
-        ->Readable.on_close(_ => resolve(Belt.Result.Ok()));
-      ();
-    })
-    ->Future.tapOk(Js.log);
+    call([|
+      "-E",
+      network->endpoint,
+      "set",
+      "delegate",
+      "for",
+      account,
+      "to",
+      delegate,
+    |]);
 };
