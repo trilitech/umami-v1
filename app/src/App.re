@@ -30,16 +30,16 @@ let toString = map =>
 let make = () => {
   let (network, setNetwork) = React.useState(() => Network.Test);
   let (account, setAccount) =
-    React.useState(() => "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3");
+    React.useState(() => "tz1QHESqw4VduUUyGEY9gLh5STBDuTacpydB");
   let (injection, setInjection) = React.useState(() => Injection.Done);
   let (accounts, setAccounts) = React.useState(() => dummy);
 
   React.useEffect3(
     () => {
       switch (injection) {
-      | Pending(transaction) =>
+      | Pending(operation) =>
         network
-        ->API.Transactions.create(transaction)
+        ->API.Operations.create(operation)
         ->Future.get(result =>
             switch (result) {
             | Ok(_) => setInjection(_ => Done)
@@ -72,7 +72,22 @@ let make = () => {
               <View style=styles##header> <Balance /> <NetworkSwitch /> </View>
               <TransactionForm
                 onSubmit={(source, amount, destination) =>
-                  setInjection(_ => Pending({source, amount, destination}))
+                  setInjection(_ =>
+                    Pending(Transaction({source, amount, destination}))
+                  )
+                }
+              />
+              <DelegateForm
+                onSubmit={(source, delegate) =>
+                  API.Accounts.add("delegate", delegate)
+                  ->Future.tapOk(_ =>
+                      API.Accounts.get()->FutureEx.getOk(value => setAccounts(_ => value))
+                    )
+                  ->FutureEx.getOk(_ =>
+                      setInjection(_ =>
+                        Pending(Delegation({source, delegate: "delegate"}))
+                      )
+                    )
                 }
               />
               <AccountCreationForm />
@@ -81,7 +96,6 @@ let make = () => {
               <Text style=styles##section>
                 {accounts->toString->React.string}
               </Text>
-              <DelegateForm />
               <Operations />
             </View>
           </Injection.Provider>

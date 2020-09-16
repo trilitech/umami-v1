@@ -4,29 +4,42 @@ let style =
   Style.(style(~padding=4.->dp, ~margin=4.->dp, ~borderWidth=1.0, ()));
 
 [@react.component]
-let make = () => {
+let make = (~onSubmit) => {
   let (network, _) = React.useContext(Network.context);
   let (account, _) = React.useContext(Account.context);
 
-  let (selectedDelegate, setSelectedDelegate) = React.useState(() => "yo");
+  let (source, setSource) = React.useState(() => "");
+  let (selectedDelegateIndex, setSelectedDelegateIndex) =
+    React.useState(() => 0);
+  let (delegates, setDelegates) = React.useState(() => [|"foo", "bar"|]);
+
+  React.useEffect2(
+    () => {
+      API.Accounts.Delegates.get(network)
+      ->FutureEx.getOk(value => setDelegates(_ => value));
+      None;
+    },
+    (network, setDelegates),
+  );
+
   <View style>
+    <TextInput
+      onChangeText={text => setSource(_ => text)}
+      placeholder="source"
+      value=source
+    />
     <Picker
-      selectedValue=selectedDelegate
-      onValueChange={(value, _) => setSelectedDelegate(_ => value)}>
-      <Picker.Item label="yo" value="yo" />
-      <Picker.Item label="ga" value="ga" />
+      selectedValue=selectedDelegateIndex
+      onValueChange={(value, _) => setSelectedDelegateIndex(_ => value)}>
+      {React.array(
+         delegates
+         |> Array.mapi((index, delegate) =>
+              <Picker.Item label=delegate value=index />
+            ),
+       )}
     </Picker>
     <Button
-      onPress={_ =>
-        API.Accounts.delegate(network, account, selectedDelegate)
-        ->Future.flatMapOk(_ => API.Accounts.get())
-        ->Future.get(result =>
-            switch (result) {
-            | Ok(_) => ()
-            | Error(value) => Dialog.error(value)
-            }
-          )
-      }
+      onPress={_ => onSubmit(source, delegates[selectedDelegateIndex])}
       title="Delegate"
     />
   </View>;

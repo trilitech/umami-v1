@@ -15,6 +15,12 @@ module URL = {
       }
     )
     ++ account;
+
+  let delegates = (network: Network.name) =>
+    switch (network) {
+    | Main => "https://mainnet-tezos.giganode.io/chains/main/blocks/head/context/delegates\\?active=true"
+    | Test => "https://testnet-tezos.giganode.io/chains/main/blocks/head/context/delegates\\?active=true"
+    };
 };
 
 let call = command =>
@@ -31,17 +37,19 @@ let call = command =>
       ->child_stdout
       ->Readable.on_data(buffer =>
           buffer->Node_buffer.toString->Belt.Result.Ok->resolve
-        );
+        )
+      ->Readable.on_close(_ => resolve(Belt.Result.Ok("")));
     ();
   })
-  ->Future.tap(Js.log);
+  ->Future.tapOk(Js.log)
+  ->Future.tapError(Js.log);
 
 module Balance = {
   let get = (network, account) =>
     call([|"-E", network->endpoint, "get", "balance", "for", account|]);
 };
 
-module Transactions = {
+module Operations = {
   let get = (network, account) =>
     network
     ->URL.operations(account)
@@ -53,25 +61,39 @@ module Transactions = {
     ->Future.mapOk(Json.Decode.array(Operation.decode))
     ->Future.tapOk(Js.log);
 
-  let create = (network, transaction: Injection.transaction) =>
-    call([|
-      "-E",
-      network->endpoint,
-      "transfer",
-      Js.Float.toString(transaction.amount),
-      "from",
-      transaction.source,
-      "to",
-      transaction.destination,
-      "--burn-cap",
-      "0.257",
-    |]);
+  let create = (network, operation: Injection.operation) =>
+    switch (operation) {
+    | Transaction(transaction) =>
+      call([|
+        "-E",
+        network->endpoint,
+        "transfer",
+        Js.Float.toString(transaction.amount),
+        "from",
+        transaction.source,
+        "to",
+        transaction.destination,
+        "--burn-cap",
+        "0.257",
+      |])
+    | Delegation(delegation) =>
+      call([|
+        "-E",
+        network->endpoint,
+        "set",
+        "delegate",
+        "for",
+        delegation.source,
+        "to",
+        delegation.delegate,
+      |])
+    };
 };
 
 module MapString = Belt.Map.String;
 
-let parseAddresses = output =>
-  output
+let parseAddresses = content =>
+  content
   |> Js.String.split("\n")
   |> Array.map(row => row |> Js.String.split(": "))
   |> (pairs => pairs->Belt.Array.keep(pair => pair->Array.length == 2))
@@ -79,10 +101,13 @@ let parseAddresses = output =>
   |> MapString.fromArray;
 
 module Accounts = {
-  let get = () =>
+  let get = _ =>
     call([|"list", "known", "contracts"|])->Future.mapOk(parseAddresses);
 
   let create = name => call([|"gen", "keys", name|]);
+
+  let add = (name, address) =>
+    call([|"add", "address", name, address, "-f"|]);
 
   let restore = (backupPhrase, name) =>
     call([|"generate", "keys", "from", "mnemonic", backupPhrase|])
@@ -93,7 +118,7 @@ module Accounts = {
         call([|"import", "secret", "key", name, "unencrypted:" ++ edsk|])
       );
 
-  let delete = name => call([|"forget", "address", name, "--force"|]);
+  let delete = name => call([|"forget", "address", name, "-f"|]);
 
   let delegate = (network, account, delegate) =>
     call([|
@@ -106,4 +131,17 @@ module Accounts = {
       "to",
       delegate,
     |]);
+
+  module Delegates = {
+    let get = network =>
+      network
+      ->URL.delegates
+      ->Fetch.fetch
+      ->FutureJs.fromPromise(Js.String.make)
+      ->Future.flatMapOk(response =>
+          response->Fetch.Response.json->FutureJs.fromPromise(Js.String.make)
+        )
+      ->Future.mapOk(Json.Decode.(array(string)))
+      ->Future.tapOk(Js.log);
+  };
 };

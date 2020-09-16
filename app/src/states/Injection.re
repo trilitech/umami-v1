@@ -4,8 +4,17 @@ type transaction = {
   destination: string,
 };
 
+type delegation = {
+  source: string,
+  delegate: string,
+};
+
+type operation =
+  | Transaction(transaction)
+  | Delegation(delegation);
+
 type status =
-  | Pending(transaction)
+  | Pending(operation)
   | Done;
 
 let context = React.createContext((Done, (_: status) => ignore()));
