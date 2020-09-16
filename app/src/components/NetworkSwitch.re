@@ -14,12 +14,12 @@ let style =
 [@react.component]
 let make = () => {
   let (network, setNetwork) = React.useContext(Network.context);
-  <View style=style>
+  <View style>
     <Text> "testnet  "->React.string </Text>
     <Switch
       onValueChange={value => setNetwork(value ? Network.Main : Network.Test)}
       value={network == Main}
     />
     <Text> "  mainnet"->React.string </Text>
-  </View>
+  </View>;
 };

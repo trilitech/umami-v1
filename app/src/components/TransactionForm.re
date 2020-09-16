@@ -31,5 +31,5 @@ let make = (~onSubmit) => {
       value=destination
     />
     <Button onPress={_ => onSubmit(source, amount, destination)} title="Send" />
-  </View>;
+  </View>
 };

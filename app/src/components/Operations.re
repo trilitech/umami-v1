@@ -24,7 +24,7 @@ let make = () => {
       | Pending(_) => ()
       | Done =>
         network
-        ->API.Transactions.get(account)
+        ->API.Operations.get(account)
         ->FutureEx.getOk(value => setOperations(_ => value))
       };
       None;
@@ -32,79 +32,84 @@ let make = () => {
     (network, account, injection, setOperations),
   );
 
-  <FlatList
-    data=operations
-    keyExtractor={
-      (operation, index) => operation.id ++ ":" ++ index->string_of_int
-    }
-    renderItem={
-      operation =>
+  <View>
+    <Button
+      onPress={_ =>
+        network
+        ->API.Operations.get(account)
+        ->FutureEx.getOk(value => setOperations(_ => value))
+      }
+      title="Refresh"
+    />
+    <FlatList
+      data=operations
+      keyExtractor={(operation, index) =>
+        operation.id ++ ":" ++ index->string_of_int
+      }
+      renderItem={operation =>
         <View style>
           <Text>
-            ("Date: " ++ Js.Date.toLocaleString(operation.item.timestamp))
-            ->React.string
+            {("Date: " ++ Js.Date.toLocaleString(operation.item.timestamp))
+             ->React.string}
           </Text>
-          {
-            switch (operation.item.payload) {
-            | Business(payload) =>
-              <View>
-                {
-                  switch (payload.payload) {
-                  | Reveal(reveal) =>
-                    <Text>
-                      ("Reveal public key " ++ reveal.public_key)->React.string
-                    </Text>
-                  | Transaction(transaction) =>
+          {switch (operation.item.payload) {
+           | Business(payload) =>
+             <View>
+               {switch (payload.payload) {
+                | Reveal(reveal) =>
+                  <Text>
+                    {("Reveal public key " ++ reveal.public_key)->React.string}
+                  </Text>
+                | Transaction(transaction) =>
+                  <Text>
+                    (
+                      if (transaction.amount == "0") {
+                        "Call contract " ++ transaction.destination;
+                      } else if (payload.source == transaction.destination) {
+                        transaction->formated_amount ++ " to itself";
+                      } else if (payload.source == account) {
+                        "-"
+                        ++ transaction->formated_amount
+                        ++ " to "
+                        ++ transaction.destination;
+                      } else {
+                        "+"
+                        ++ transaction->formated_amount
+                        ++ " from "
+                        ++ payload.source;
+                      }
+                    )
+                    ->React.string
+                  </Text>
+                | Origination(origination) =>
+                  <Text>
+                    {("New contract " ++ origination.contract_address)
+                     ->React.string}
+                  </Text>
+                | Delegation(delegation) =>
+                  switch (delegation.delegate) {
+                  | Some(delegate) =>
                     <Text>
                       (
-                        if (transaction.amount == "0") {
-                          "Call contract " ++ transaction.destination;
-                        } else if (payload.source == transaction.destination) {
-                          transaction->formated_amount ++ " to itself";
-                        } else if (payload.source == account) {
-                          "-"
-                          ++ transaction->formated_amount
-                          ++ " to "
-                          ++ transaction.destination;
+                        if (payload.source == delegate) {
+                          "Register as new baker";
                         } else {
-                          "+"
-                          ++ transaction->formated_amount
-                          ++ " from "
-                          ++ payload.source;
+                          "Delegate to " ++ delegate;
                         }
                       )
                       ->React.string
                     </Text>
-                  | Origination(origination) =>
-                    <Text>
-                      ("New contract " ++ origination.contract_address)
-                      ->React.string
-                    </Text>
-                  | Delegation(delegation) =>
-                    switch (delegation.delegate) {
-                    | Some(delegate) =>
-                      <Text>
-                        (
-                          if (payload.source == delegate) {
-                            "Register as new baker";
-                          } else {
-                            "New delegator " ++ payload.source;
-                          }
-                        )
-                        ->React.string
-                      </Text>
-                    | None => <Text> "Cancel delegation"->React.string </Text>
-                    }
-                  | Unknown => <Text> "Unknown"->React.string </Text>
+                  | None => <Text> "Cancel delegation"->React.string </Text>
                   }
-                }
-                <Text>
-                  ("fee " ++ payload.fee ++ {js| μꜩ|js})->React.string
-                </Text>
-              </View>
-            }
-          }
+                | Unknown => <Text> "Unknown"->React.string </Text>
+                }}
+               <Text>
+                 {("fee " ++ payload.fee ++ {js| μꜩ|js})->React.string}
+               </Text>
+             </View>
+           }}
         </View>
-    }
-  />;
+      }
+    />
+  </View>;
 };
