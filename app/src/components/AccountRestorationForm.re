@@ -35,5 +35,5 @@ let make = () => {
       }
       title="Restore"
     />
-  </View>;
+  </View>
 };
