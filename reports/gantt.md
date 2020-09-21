@@ -23,5 +23,5 @@ gantt
     section Beta Version
     Beta Version                                      :active, 2020-10-01, 2020-10-30
     section Initial Release - v 1.0
-    Initial Release - v 1.0                           :active, 2020-11-02, 2021-01-31
+    Initial Release - v 1.0                           :active, 2020-11-02, 2021-01-01
 ```
