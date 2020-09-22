@@ -1,5 +1,5 @@
 {
-  "name": "tezos-client",
+  "name": "ref-wallet",
   "version": "0.1.0",
   "author": "Nomadic Labs",
   "description": "React-TypeScript-Electron sample with Create React App and Electron Builder",
