@@ -6,7 +6,6 @@ let style =
 [@react.component]
 let make = (~onSubmit) => {
   let (network, _) = React.useContext(Network.context);
-  let (account, _) = React.useContext(Account.context);
 
   let (source, setSource) = React.useState(() => "");
   let (selectedDelegateIndex, setSelectedDelegateIndex) =
