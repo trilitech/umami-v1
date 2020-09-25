@@ -3,14 +3,21 @@
   "reason": {
     "react-jsx": 3
   },
-  "sources": {
-    "dir": "src",
-    "subdirs": true
-  },
+  "sources": [
+    {
+      "dir": "src",
+      "subdirs": true
+    },
+    {
+      "dir": "__tests__",
+      "subdirs": true,
+      "type": "dev"
+    }
+  ],
   "bsc-flags": ["-bs-super-errors", "-bs-no-version-header"],
   "package-specs": [
     {
-      "module": "es6",
+      "module": "commonjs",
       "in-source": true
     }
   ],
@@ -23,7 +30,8 @@
     "reason-react-native",
     "child-reprocess",
     "reason-react-update",
-    "reason-future"
+    "reason-future",
+    "reason-test-framework"
   ],
   "refmt": 3
 }
