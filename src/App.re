@@ -26,6 +26,8 @@ let toString = map =>
     result ++ (result->String.length == 0 ? "" : "\n") ++ key ++ ": " ++ value
   );
 
+module Operations = API.Operations(API.TezosExplorer);
+
 [@react.component]
 let make = () => {
   let (network, setNetwork) = React.useState(() => Network.Test);
@@ -39,7 +41,7 @@ let make = () => {
       switch (injection) {
       | Pending(operation) =>
         network
-        ->API.Operations.create(operation)
+        ->Operations.create(operation)
         ->Future.get(result =>
             switch (result) {
             | Ok(_) => setInjection(_ => Done)
@@ -96,7 +98,7 @@ let make = () => {
               <Text style=styles##section>
                 {accounts->toString->React.string}
               </Text>
-              <Operations />
+              <OperationList />
             </View>
           </Injection.Provider>
         </Accounts.Provider>
