@@ -9,6 +9,8 @@ let formated_amount = (transaction: Operation.Business.Transaction.t) =>
   ->Js.Float.toString
   ++ {js| ꜩ|js};
 
+module Operations = API.Operations;
+
 [@react.component]
 let make = () => {
   let (network, _) = React.useContext(Network.context);
@@ -24,7 +26,7 @@ let make = () => {
       | Pending(_) => ()
       | Done =>
         network
-        ->API.Operations.get(account)
+        ->Operations.get(account)
         ->FutureEx.getOk(value => setOperations(_ => value))
       };
       None;
@@ -36,7 +38,7 @@ let make = () => {
     <Button
       onPress={_ =>
         network
-        ->API.Operations.get(account)
+        ->Operations.get(account)
         ->FutureEx.getOk(value => setOperations(_ => value))
       }
       title="Refresh"
@@ -113,3 +115,9 @@ let make = () => {
     />
   </View>;
 };
+
+
+
+
+
+
