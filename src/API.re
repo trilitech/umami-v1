@@ -44,21 +44,69 @@ let call = command =>
 //  ->Future.tapOk(Js.log)
 //  ->Future.tapError(Js.log);
 
-module Balance = {
-  let get = (network, account) =>
-    call([|"-E", network->endpoint, "get", "balance", "for", account|]);
+module type ClientAPI = {
+  let call: array(string) => Future.t(Belt.Result.t(string, string));
 };
 
-module Operations = {
-  let get = (network, account) =>
-    network
-    ->URL.operations(account)
+module TezosClient = {
+  let call = command =>
+    Future.make(resolve => {
+      let process = ChildReprocess.spawn("tezos-client", command, ());
+      let _ =
+        process
+        ->child_stderr
+        ->Readable.on_data(buffer =>
+            buffer->Node_buffer.toString->Belt.Result.Error->resolve
+          );
+      let _ =
+        process
+        ->child_stdout
+        ->Readable.on_data(buffer =>
+            buffer->Node_buffer.toString->Belt.Result.Ok->resolve
+          )
+        ->Readable.on_close(_ => resolve(Belt.Result.Ok("")));
+      ();
+    })
+    ->Future.tapOk(Js.log)
+    ->Future.tapError(Js.log);
+};
+
+module type FetchAPI = {
+  let fetch: string => Future.t(Belt.Result.t(Js.Json.t, string));
+};
+
+module TezosExplorer = {
+  let fetch = url =>
+    url
     ->Fetch.fetch
     ->FutureJs.fromPromise(Js.String.make)
     ->Future.flatMapOk(response =>
         response->Fetch.Response.json->FutureJs.fromPromise(Js.String.make)
-      )
-    ->Future.mapOk(Json.Decode.array(Operation.decode))
+      );
+};
+
+module Balance = (API: ClientAPI) => {
+  let get = (network, account) =>
+    API.call([|"-E", network->endpoint, "get", "balance", "for", account|]);
+};
+
+let map = (result: Belt.Result.t('a, string), transform: ('a) => 'b) =>  {
+  try (switch (result) {
+    | Ok(value) => Ok(transform(value))
+    | Error(error) => Error(error) 
+  }) {
+    | Json.ParseError(error) => Error(error)
+    | Json.Decode.DecodeError(error) => Error(error)
+    | _ => Error("Unknown error")
+  }
+};
+
+module Operations = (API: FetchAPI) => {
+  let get = (network, account) =>
+    network
+    ->URL.operations(account)
+    ->API.fetch
+    ->Future.map(result => result->map(Json.Decode.array(Operation.decode)))
     ->Future.tapOk(Js.log);
 
   let create = (network, operation: Injection.operation) =>
@@ -132,16 +180,12 @@ module Accounts = {
       delegate,
     |]);
 
-  module Delegates = {
+  module Delegates = (API: FetchAPI) => {
     let get = network =>
       network
       ->URL.delegates
-      ->Fetch.fetch
-      ->FutureJs.fromPromise(Js.String.make)
-      ->Future.flatMapOk(response =>
-          response->Fetch.Response.json->FutureJs.fromPromise(Js.String.make)
-        )
-      ->Future.mapOk(Json.Decode.(array(string)))
+      ->API.fetch
+      ->Future.map(result => result->map(Json.Decode.(array(string))))
       ->Future.tapOk(Js.log);
   };
 };

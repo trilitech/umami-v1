@@ -3,6 +3,8 @@ open ReactNative;
 let style =
   Style.(style(~padding=4.->dp, ~margin=4.->dp, ~borderWidth=1.0, ()));
 
+module Delegates = API.Accounts.Delegates(API.TezosExplorer)
+
 [@react.component]
 let make = (~onSubmit) => {
   let (network, _) = React.useContext(Network.context);
@@ -14,7 +16,7 @@ let make = (~onSubmit) => {
 
   React.useEffect2(
     () => {
-      API.Accounts.Delegates.get(network)
+      Delegates.get(network)
       ->FutureEx.getOk(value => setDelegates(_ => value));
       None;
     },

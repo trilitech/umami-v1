@@ -9,7 +9,7 @@ let formated_amount = (transaction: Operation.Business.Transaction.t) =>
   ->Js.Float.toString
   ++ {js| ꜩ|js};
 
-module Operations = API.Operations;
+module Operations = API.Operations(API.TezosExplorer);
 
 [@react.component]
 let make = () => {
@@ -115,9 +115,3 @@ let make = () => {
     />
   </View>;
 };
-
-
-
-
-
-

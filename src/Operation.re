@@ -10,14 +10,14 @@ module Business = {
     type t = {
       amount: string,
       destination: string,
-      parameters: option(string),
+      parameters: option(Js.Dict.t(string)),
     };
 
     let decode = json =>
       Json.Decode.{
         amount: json |> field("amount", string),
         destination: json |> field("destination", string),
-        parameters: json |> optional(field("parameters", string)),
+        parameters: json |> optional(field("parameters", dict(string))),
       };
   };
 
