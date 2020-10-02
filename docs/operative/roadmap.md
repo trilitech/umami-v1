@@ -8,7 +8,7 @@
  * Beta release: Jan 2021 (limited release--more features, some left in the backlog: TBD)
  * v1.0 release: Feb 2021 (public release--stable)
  * v1.x maintenance phase
- * v2.0 release: Jun 2021 (public release--no backlog)
+ * v2.0 release: May 2021 (public release--no backlog)
 
  **Note**:
 
