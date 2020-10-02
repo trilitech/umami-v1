@@ -22,4 +22,16 @@ graph TD
 
 ## Back-End
 
-[TBD]
+```mermaid
+graph TD
+  title Current
+  W[Wallet] --> TzCl[tezos-client];
+  W --> Ix[Tezos Indexer];
+```
+
+```mermaid
+graph TD
+  title Proposed
+  W[Wallet] --> SDK[Tezos SDK];
+  W --> Ix[Tezos Indexer];
+```
