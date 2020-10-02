@@ -64,10 +64,8 @@ The intended audience is the Tezos Foundation and its committees to discuss the 
 ```mermaid
 gantt
     title Roadmap for a Reference Wallet
-    dateFormat YYYY-MM
     Recruitment          :crit, a1, 2020-07-01, 90d
     Stop Cortez    :a2, 2020-07-01 , 30d
     ReasonML training :after a2, 60d
     Dev of basic wallet :a4, after a1, 90d
-#   Towards a reference wallet :a5, 2021-01-01, 180d
 ```
