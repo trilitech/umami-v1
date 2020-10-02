@@ -106,8 +106,7 @@ module Operations = (API: FetchAPI) => {
     network
     ->URL.operations(account)
     ->API.fetch
-    ->Future.map(result => result->map(Json.Decode.array(Operation.decode)))
-    ->Future.tapOk(Js.log);
+    ->Future.map(result => result->map(Json.Decode.array(Operation.decode)));
 
   let create = (network, operation: Injection.operation) =>
     switch (operation) {
@@ -185,7 +184,6 @@ module Accounts = {
       network
       ->URL.delegates
       ->API.fetch
-      ->Future.map(result => result->map(Json.Decode.(array(string))))
-      ->Future.tapOk(Js.log);
+      ->Future.map(result => result->map(Json.Decode.(array(string))));
   };
 };
