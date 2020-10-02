@@ -2,7 +2,7 @@
 
 > as of Oct 2020
 
-###Projected Milestones:
+## Projected Milestones:
 
  * Alpha version: Dec 2020 (internal only--usable with basic feature set)
  * Beta release: Jan 2021 (limited release--more features, some left in the backlog: TBD)
