@@ -1,6 +1,6 @@
 Ref-Wallet - Risk Matrix
 
-| ID | Status | Title | Description | Worst Case | Probability | Impact | Treatment | Follow-up | Resolution |
+| Status | Title | Description | Worst Case | Probability | Impact | Treatment | Follow-up | Resolution |
 |--|--|--|--|--|--|--|--|--|
 | Closed | ReasonML Resource Availability | ReasonML developers may be sparse | Insufficient resources--slow development | Med | High | Mitigation: targetted search for candidates | Review if project bogs down | Not so difficult to find after all |
 | Closed | UX Experience | NL does not have UX experience in-house | Insufficient resources--slow development | -- | High | Mitigation: Hire specialist | Review if performance is lacking | Found appropriate experienced member |
