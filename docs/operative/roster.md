@@ -11,5 +11,5 @@ Here's a list of contributors and their corresponding title/roles:
 | Transitioning | Alexandre Doussot | Developer | Node/Shell/Michelson | Tezos Client, libclient improvements 
 | Ext. Contributor | Philippe Wang | Developer | Indexer | Indexer improvements |
 | Ext. Contributor | Raphael Proust | Developer | Tezos SDK | Compiling Tezos Client to JS |
-| Onboarding (start 10/16) | Remy Besognet | Developer | Core Wallet & Tezos SDK | Tezos SDK improvements |
-| Onboarding (start 11/01) | Pierrick Couderc | Developer | Core Wallet & Tezos SDK | Core development and integration of related systems |
+| Onboarding (start 10/16) | Remy Besognet | Senior Developer | Core Wallet & Tezos SDK | Tezos SDK improvements |
+| Onboarding (start 11/01) | Pierrick Couderc | Senior Developer | Core Wallet & Tezos SDK | Core development and integration of related systems |
