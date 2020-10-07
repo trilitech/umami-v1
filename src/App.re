@@ -33,6 +33,7 @@ let make = () => {
   let (network, setNetwork) = React.useState(() => Network.Test);
   let (account, setAccount) =
     React.useState(() => "tz1QHESqw4VduUUyGEY9gLh5STBDuTacpydB");
+  let (balance, setBalance) = React.useState(() => "");
   let (injection, setInjection) = React.useState(() => Injection.Done);
   let (accounts, setAccounts) = React.useState(() => dummy);
 
@@ -48,7 +49,9 @@ let make = () => {
             | Error(value) => Dialog.error(value)
             }
           )
-      | Done => ()
+      | Done =>
+        Js.log("operation injected");
+        ();
       };
       None;
     },
@@ -66,42 +69,49 @@ let make = () => {
   <SafeAreaView>
     <Network.Provider value=(network, network => setNetwork(_ => network))>
       <Account.Provider value=(account, account => setAccount(_ => account))>
-        <Accounts.Provider
-          value=(accounts, accounts => setAccounts(_ => accounts))>
-          <Injection.Provider
-            value=(injection, injection => setInjection(_ => injection))>
-            <View style=styles##main>
-              <View style=styles##header> <Balance /> <NetworkSwitch /> </View>
-              <TransactionForm
-                onSubmit={(source, amount, destination) =>
-                  setInjection(_ =>
-                    Pending(Transaction({source, amount, destination}))
-                  )
-                }
-              />
-              <DelegateForm
-                onSubmit={(source, delegate) =>
-                  API.Accounts.add("delegate", delegate)
-                  ->Future.tapOk(_ =>
-                      API.Accounts.get()->FutureEx.getOk(value => setAccounts(_ => value))
+        <Balance.Provider
+          value=(balance, balance => setBalance(_ => balance))>
+          <Accounts.Provider
+            value=(accounts, accounts => setAccounts(_ => accounts))>
+            <Injection.Provider
+              value=(injection, injection => setInjection(_ => injection))>
+              <View style=styles##main>
+                <View style=styles##header>
+                  <BalanceOverview />
+                  <NetworkSwitch />
+                </View>
+                <TransactionForm
+                  onSubmit={(source, amount, destination) =>
+                    setInjection(_ =>
+                      Pending(Transaction({source, amount, destination}))
                     )
-                  ->FutureEx.getOk(_ =>
-                      setInjection(_ =>
-                        Pending(Delegation({source, delegate: "delegate"}))
+                  }
+                />
+                <DelegateForm
+                  onSubmit={(source, delegate) =>
+                    API.Accounts.add("delegate", delegate)
+                    ->Future.tapOk(_ =>
+                        API.Accounts.get()
+                        ->FutureEx.getOk(value => setAccounts(_ => value))
                       )
-                    )
-                }
-              />
-              <AccountCreationForm />
-              <AccountRestorationForm />
-              <AccountDeletionForm />
-              <Text style=styles##section>
-                {accounts->toString->React.string}
-              </Text>
-              <OperationList />
-            </View>
-          </Injection.Provider>
-        </Accounts.Provider>
+                    ->FutureEx.getOk(_ =>
+                        setInjection(_ =>
+                          Pending(Delegation({source, delegate: "delegate"}))
+                        )
+                      )
+                  }
+                />
+                <AccountCreationForm />
+                <AccountRestorationForm />
+                <AccountDeletionForm />
+                <Text style=styles##section>
+                  {accounts->toString->React.string}
+                </Text>
+                <OperationList />
+              </View>
+            </Injection.Provider>
+          </Accounts.Provider>
+        </Balance.Provider>
       </Account.Provider>
     </Network.Provider>
   </SafeAreaView>;

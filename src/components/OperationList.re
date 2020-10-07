@@ -9,12 +9,14 @@ let formated_amount = (transaction: Operation.Business.Transaction.t) =>
   ->Js.Float.toString
   ++ {js| ꜩ|js};
 
+module BalanceAPI = API.Balance(API.TezosClient);
 module Operations = API.Operations(API.TezosExplorer);
 
 [@react.component]
 let make = () => {
   let (network, _) = React.useContext(Network.context);
   let (account, _) = React.useContext(Account.context);
+  let (_, setBalance) = React.useContext(Balance.context);
   let (injection, _) = React.useContext(Injection.context);
 
   let (operations: array(Operation.t), setOperations) =
@@ -36,11 +38,14 @@ let make = () => {
 
   <View>
     <Button
-      onPress={_ =>
+      onPress={_ => {
+        network
+        ->BalanceAPI.get(account)
+        ->FutureEx.getOk(value => setBalance(value));
         network
         ->Operations.get(account)
-        ->FutureEx.getOk(value => setOperations(_ => value))
-      }
+        ->FutureEx.getOk(value => setOperations(_ => value));
+      }}
       title="Refresh"
     />
     <FlatList
