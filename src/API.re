@@ -41,8 +41,8 @@ let call = command =>
       ->Readable.on_close(_ => resolve(Belt.Result.Ok("")));
     ();
   })
-//  ->Future.tapOk(Js.log)
-//  ->Future.tapError(Js.log);
+  //->Future.tapOk(Js.log)
+  //->Future.tapError(Js.log);
 
 module type ClientAPI = {
   let call: array(string) => Future.t(Belt.Result.t(string, string));
