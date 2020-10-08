@@ -3,6 +3,7 @@
 Here is the list of features that have not yet been implemented:
 
 1. Delegation (UX integration incomplete)
+1. Bulk Transactions
 1. (Near-)Real-time transaction status feedback
 1. Multisig
 1. Voting
