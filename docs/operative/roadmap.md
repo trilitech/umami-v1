@@ -4,7 +4,7 @@
 
 ## Projected Milestones:
 
- * Alpha version: Dec 2020 (internal only--usable with basic feature set)
+ * Alpha version: Nov 2020 (internal only--usable with basic feature set)
  * Beta release: Jan 2021 (limited release--more features, some left in the backlog: TBD)
  * v1.0 release: Feb 2021 (public release--stable)
  * v1.x maintenance phase
@@ -39,12 +39,12 @@ gantt
     Sprint 5 - CI & Testing                           :done  , 2020-09-21, 2020-10-02
     section Sprint 6 - UX Integration
     Sprint 6 - UX Integration                         :active, 2020-10-05, 2020-10-16
-    section Sprint 7 - TBD
-    Sprint 7 - TBD                                    :active, 2020-10-19, 2020-10-30
-    section Sprint 8 - TBD
-    Sprint 8 - TBD                                    :active, 2020-11-03, 2020-11-15
-    section Sprint 9 - Alpha Version
-    Sprint 9 - Alpha Version                          :active, 2020-11-18, 2020-11-30
+    section Sprint 7 - Alpha Version
+    Sprint 7 - Alpha Version                          :active, 2020-10-19, 2020-10-30
+    section Sprint 8 - Refactoring
+    Sprint 8 - Refactoring                            :active, 2020-11-03, 2020-11-15
+    section Sprint 9 - TBD
+    Sprint 9 - TBD                                    :active, 2020-11-18, 2020-11-30
     section Beta Release
     Beta Release                                      :active, 2020-12-01, 2020-12-31
     section Release - v 1.0
