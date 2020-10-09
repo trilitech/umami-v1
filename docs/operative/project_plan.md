@@ -34,7 +34,7 @@ This is the **Project** Roadmap, which plans the progress of the development eff
 
 ```mermaid
 gantt
-    title Ref-Wallet
+    title Ref-Wallet Project Roadmap
     section Project Initiation
     Cortez export                                     :done  , 2020-07-01 , 30d
     Project Initiation                                :done  , 2020-06-01, 2020-07-13
