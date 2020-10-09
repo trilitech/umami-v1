@@ -15,7 +15,8 @@ The Tezos ecosystem lacks a comprehensive wallet that covers all features availa
  * [Architecture](/docs/operative/architecture.md)
  * [Roster](/docs/operative/roster.md)
  * [History](/docs/operative/history.md)
- * [Roadmap](/docs/operative/roadmap.md)
+ * [Project Roadmap](/docs/operative/project_plan.md)
+ * [Product Roadmap](/docs/operative/product_plan.md)
  * [Risk Register](/docs/operative/risks.md)
  * [Backlog](/docs/operative/backlog.md)
  
