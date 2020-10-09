@@ -1,6 +1,8 @@
-# Ref-Wallet - Roadmap
+# Ref-Wallet - Project Roadmap
 
 > as of Oct 2020
+
+This is the **Project** Roadmap, which plans the progress of the development efforts of the Ref-Wallet.
 
 ## Projected Milestones:
 
