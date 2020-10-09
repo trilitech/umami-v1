@@ -13,5 +13,6 @@ Here is the list of features that have not yet been implemented:
 1. Spending limits
 1. Deploy contracts
 1. Call contract functions
+1. Ledger support
 1. Remote signing (TZIP-10)
 1. NFTs
