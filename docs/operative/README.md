@@ -1,1 +1,1 @@
-If you're looking to get acquainted with this project and its details, see the [Charter](/docs/operative/charter.md)
+Start here: [Charter](/docs/operative/charter.md)
