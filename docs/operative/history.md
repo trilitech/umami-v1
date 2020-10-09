@@ -47,5 +47,7 @@ gantt
     Sprint 4 - Delegation                             :done  , 2020-08-31, 2020-09-18
     section Sprint 5 - CI & Testing
     Sprint 5 - CI & Testing                           :done  , 2020-09-21, 2020-10-02
+    section Sprint 6 - UX Integration
+    Sprint 6 - UX Integration                         :active  , 2020-10-05, 2020-10-16
 ```
 
