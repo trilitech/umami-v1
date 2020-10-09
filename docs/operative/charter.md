@@ -3,7 +3,7 @@
 ## Goals
 
  * To have a Wallet application that supports all core features of Nodes (that are relevant to wallets)
- * To serve as a model for other wallet developers
+ * To have a Wallet application that supports all parameters--even arcane ones--for operations
  * FUTURE: to serve as a staple for standard setting
 
 ## Business Need
