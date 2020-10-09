@@ -7,22 +7,10 @@ The **Product** roadmap plans the To-Market efforts to capture public attention 
 ## Projected Milestones:
 
  * Alpha version: Nov 2020 (internal only--usable with basic feature set)
-     * Accounts
-     * Aliases
-     * Transactions
-     * Operation History
  * Beta release: Jan 2021 (limited release--more features, some left in the backlog: TBD)
-     * Deploy Contracts
-     * Contract Calls
-     * Delegation
-     * Voting
-     * Multisig
  * v1.0 release: Feb 2021 (public release--stable)
  * v1.x maintenance phase
  * v2.0 release: May 2021 (public release--no backlog)
-     * Bulk Transactions
-     * FA1.2 Tokens
-     * NFT
 
 ## Strategy
 
