@@ -29,13 +29,6 @@ module AccountItem = {
             ~fontWeight=`bold,
             (),
           ),
-        "currency":
-          style(
-            ~color="rgba(255,255,255, 1)",
-            ~fontSize=14.,
-            ~fontWeight=`normal,
-            (),
-          ),
         "label":
           style(
             ~color="rgba(255,255,255, 0.6)",
@@ -54,29 +47,29 @@ module AccountItem = {
     );
 
   [@react.component]
-  let make = () => {
+  let make = (~account, ~balance) => {
     <View style=styles##container>
       <View style=styles##border />
       <View style=styles##inner>
         <Text style=styles##title> "Account 1"->React.string </Text>
         <Text style=styles##balance>
-          "375.033287"->React.string
-          <Text style=styles##currency> {js| ꜩ|js}->React.string </Text>
+          balance->React.string
         </Text>
         <Text style=styles##label> "Address"->React.string </Text>
-        <Text style=styles##address>
-          "tz1c5wM9826YcUNQ8a17"->React.string
-        </Text>
+        <Text style=styles##address> account->React.string </Text>
       </View>
     </View>;
   };
 };
 
-let styles = Style.(StyleSheet.create({}));
+let styles = Style.(StyleSheet.create({"container": style(~flex=1., ())}));
 
 [@react.component]
 let make = () => {
   let (href, onPress) = Routes.useHrefAndOnPress(Routes.Dev);
 
-  <View> <AccountItem /> </View>;
+  let (account, _) = React.useContext(Account.context);
+  let (balance, _) = React.useContext(Balance.context);
+
+  <View> <AccountItem account balance /> </View>;
 };
