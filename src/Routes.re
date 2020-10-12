@@ -23,7 +23,8 @@ let toHref =
 
 let useHrefAndOnPress = route => {
   let href = toHref(route);
-  let onPress = _event => {
+  let onPress = event => {
+    event->ReactNative.Event.PressEvent.preventDefault;
     push(href);
   };
   (href, onPress);

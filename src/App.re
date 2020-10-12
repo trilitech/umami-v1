@@ -1,6 +1,17 @@
 open Belt;
 open ReactNative;
 
+let styles =
+  Style.(
+    StyleSheet.create({
+      "layout":
+        style(~flex=1., ~flexDirection=`row, ~backgroundColor="#222222", ()),
+      "main": style(~flex=1., ()),
+      "scroll": style(~flex=1., ()),
+      "scrollContent": style(~paddingTop=40.->dp, ~paddingLeft=37.->dp, ~paddingRight=26.->dp, ()),
+    })
+  );
+
 let dummy: Map.String.t(string) = Map.String.empty;
 
 module AccountsAPI = API.Accounts(API.TezosClient);
@@ -54,14 +65,24 @@ let make = () => {
           value=(accounts, accounts => setAccounts(_ => accounts))>
           <Injection.Provider
             value=(injection, injection => setInjection(_ => injection))>
-            {switch (route) {
-             | Home => <HomeView />
-             | Dev => <DevView setInjection setAccounts accounts />
-             | NotFound =>
-               <View>
-                 <Text> "404 - Route Not Found :("->React.string </Text>
-               </View>
-             }}
+            <View style=styles##layout>
+              <NavBar />
+              <View style=styles##main>
+                <Header />
+                <ScrollView
+                  style=styles##scroll
+                  contentContainerStyle=styles##scrollContent>
+                  {switch (route) {
+                   | Home => <HomeView />
+                   | Dev => <DevView setInjection setAccounts accounts />
+                   | NotFound =>
+                     <View>
+                       <Text> "404 - Route Not Found :("->React.string </Text>
+                     </View>
+                   }}
+                </ScrollView>
+              </View>
+            </View>
           </Injection.Provider>
         </Accounts.Provider>
       </Balance.Provider>
