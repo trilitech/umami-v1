@@ -8,7 +8,13 @@ let styles =
         style(~flex=1., ~flexDirection=`row, ~backgroundColor="#222222", ()),
       "main": style(~flex=1., ()),
       "scroll": style(~flex=1., ()),
-      "scrollContent": style(~paddingTop=40.->dp, ~paddingLeft=37.->dp, ~paddingRight=26.->dp, ()),
+      "scrollContent":
+        style(
+          ~paddingTop=40.->dp,
+          ~paddingLeft=37.->dp,
+          ~paddingRight=26.->dp,
+          (),
+        ),
     })
   );
 
@@ -74,6 +80,7 @@ let make = () => {
                   contentContainerStyle=styles##scrollContent>
                   {switch (route) {
                    | Home => <HomeView />
+                   | Operations => <OperationsView />
                    | Dev => <DevView setInjection setAccounts accounts />
                    | NotFound =>
                      <View>
