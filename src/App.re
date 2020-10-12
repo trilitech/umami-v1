@@ -1,4 +1,5 @@
 open Belt;
+open ReactNative;
 
 let dummy: Map.String.t(string) = Map.String.empty;
 
@@ -7,6 +8,9 @@ module OperationsAPI = API.Operations(API.TezosClient, API.TezosExplorer);
 
 [@react.component]
 let make = () => {
+  let url = ReasonReactRouter.useUrl();
+  let route = Routes.match(url);
+
   let (network, setNetwork) = React.useState(() => Network.Test);
   let (account, setAccount) =
     React.useState(() => "tz1QHESqw4VduUUyGEY9gLh5STBDuTacpydB");
@@ -50,7 +54,14 @@ let make = () => {
           value=(accounts, accounts => setAccounts(_ => accounts))>
           <Injection.Provider
             value=(injection, injection => setInjection(_ => injection))>
-            <DevView setInjection setAccounts accounts />
+            {switch (route) {
+             | Home => <HomeView />
+             | Dev => <DevView setInjection setAccounts accounts />
+             | NotFound =>
+               <View>
+                 <Text> "404 - Route Not Found :("->React.string </Text>
+               </View>
+             }}
           </Injection.Provider>
         </Accounts.Provider>
       </Balance.Provider>
