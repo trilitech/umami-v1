@@ -2,6 +2,7 @@ open ReasonReactRouter;
 
 type t =
   | Home
+  | Send
   | Operations
   | Dev
   | NotFound;
@@ -12,6 +13,7 @@ let match = (url: url) =>
   switch (url.path) {
   | ["index.html"] // need to fix this in electron
   | [] => Home
+  | ["send"] => Send
   | ["operations"] => Operations
   | ["dev"] => Dev
   | _ => NotFound
@@ -20,6 +22,7 @@ let match = (url: url) =>
 let toHref =
   fun
   | Home => "/"
+  | Send => "/send"
   | Operations => "/operations"
   | Dev => "/dev"
   | NotFound => raise(RouteToNotFound);

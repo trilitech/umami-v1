@@ -80,6 +80,7 @@ let make = () => {
                   contentContainerStyle=styles##scrollContent>
                   {switch (route) {
                    | Home => <HomeView />
+                   | Send => <SendView />
                    | Operations => <OperationsView />
                    | Dev => <DevView setInjection setAccounts accounts />
                    | NotFound =>

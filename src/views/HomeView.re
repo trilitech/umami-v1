@@ -52,9 +52,7 @@ module AccountItem = {
       <View style=styles##border />
       <View style=styles##inner>
         <Text style=styles##title> "Account 1"->React.string </Text>
-        <Text style=styles##balance>
-          balance->React.string
-        </Text>
+        <Text style=styles##balance> balance->React.string </Text>
         <Text style=styles##label> "Address"->React.string </Text>
         <Text style=styles##address> account->React.string </Text>
       </View>
@@ -62,14 +60,49 @@ module AccountItem = {
   };
 };
 
+module SendButton = {
+  let styles =
+    Style.(
+      StyleSheet.create({
+        "button":
+          style(
+            ~position=`absolute,
+            ~right=0.->dp,
+            ~top=0.->dp,
+            ~alignItems=`center,
+            (),
+          ),
+        "iconContainer":
+          style(
+            ~width=40.->dp,
+            ~height=40.->dp,
+            ~borderRadius=20.,
+            ~backgroundColor="#FFF",
+            ~marginBottom=6.->dp,
+            (),
+          ),
+        "text": style(~color="#FFF", ~fontSize=12., ~fontWeight=`_500, ()),
+      })
+    );
+
+  [@react.component]
+  let make = () => {
+    let (href, onPress) = Routes.useHrefAndOnPress(Routes.Send);
+
+    <TouchableOpacity
+      style=styles##button accessibilityRole=`link href onPress>
+      <View style=styles##iconContainer />
+      <Text style=styles##text> "SEND"->React.string </Text>
+    </TouchableOpacity>;
+  };
+};
+
 let styles = Style.(StyleSheet.create({"container": style(~flex=1., ())}));
 
 [@react.component]
 let make = () => {
-  let (href, onPress) = Routes.useHrefAndOnPress(Routes.Dev);
-
   let (account, _) = React.useContext(Account.context);
   let (balance, _) = React.useContext(Balance.context);
 
-  <View> <AccountItem account balance /> </View>;
+  <View> <AccountItem account balance /> <SendButton /> </View>;
 };
