@@ -5,7 +5,7 @@ let styles =
   Style.(
     StyleSheet.create({
       "layout":
-        style(~flex=1., ~flexDirection=`row, ~backgroundColor="#222222", ()),
+        style(~flex=1., ~flexDirection=`row, ~backgroundColor="#000000", ()),
       "main": style(~flex=1., ()),
       "scroll": style(~flex=1., ()),
       "scrollContent":

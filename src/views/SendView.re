@@ -2,7 +2,7 @@ open ReactNative;
 
 module StateLenses = [%lenses
   type state = {
-    amount: string,
+    amount: float,
     sender: string,
     recipient: string,
   }
@@ -64,7 +64,7 @@ module FormGroupTextInput = {
     );
 
   [@react.component]
-  let make = (~label, ~value, ~handleChange) => {
+  let make = (~label, ~value, ~handleChange, ~keyboardType=?) => {
     <View style=styles##formGroup>
       <Text style=styles##label> label->React.string </Text>
       <TextInput
@@ -73,6 +73,10 @@ module FormGroupTextInput = {
         onChange={(event: TextInput.changeEvent) =>
           handleChange(event.nativeEvent.text)
         }
+        autoCapitalize=`none
+        autoCorrect=false
+        autoFocus=false
+        ?keyboardType
       />
     </View>;
   };
@@ -120,6 +124,15 @@ let styles =
           ~fontWeight=`_500,
           (),
         ),
+      "hash":
+        style(
+          ~marginBottom=10.->dp,
+          ~color="rgba(255,255,255,0.87)",
+          ~fontSize=16.,
+          ~fontWeight=`_300,
+          ~textDecorationLine=`underline,
+          (),
+        ),
       "formAction":
         style(
           ~flexDirection=`row,
@@ -130,9 +143,14 @@ let styles =
     })
   );
 
+module Operations = API.Operations(API.TezosExplorer);
+
 [@react.component]
 let make = () => {
   let (account, _) = React.useContext(Account.context);
+  let (network, _) = React.useContext(Network.context);
+
+  let (operationDone, setOperationDone) = React.useState(_ => false);
 
   let (_href, onPressCancel) = Routes.useHrefAndOnPress(Routes.Home);
 
@@ -140,16 +158,36 @@ let make = () => {
     SendForm.use(
       ~schema={
         SendForm.Validation.(
-          Schema(nonEmpty(Amount) + nonEmpty(Sender) + nonEmpty(Recipient))
+          Schema(
+            /*nonEmpty(Amount) +*/ nonEmpty(Sender) + nonEmpty(Recipient),
+          )
         );
       },
       ~onSubmit=
         ({state}) => {
-          Js.log2("onSubmit FORM", state);
+          let operation =
+            Injection.Transaction({
+              source: state.values.sender,
+              amount: state.values.amount,
+              destination: state.values.recipient,
+            });
+
+          network
+          ->Operations.create(operation)
+          ->Future.get(result =>
+              switch (result) {
+              | Ok(hash) => setOperationDone(_ => true)
+              | Error(value) => Dialog.error(value)
+              }
+            );
 
           None;
         },
-      ~initialState={amount: "", sender: account, recipient: ""},
+      ~initialState={
+        amount: 1.0,
+        sender: account,
+        recipient: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
+      },
       (),
     );
 
@@ -159,26 +197,50 @@ let make = () => {
 
   <View>
     <Modal>
-      <Text style=styles##title> "Send"->React.string </Text>
-      <FormGroupTextInput
-        label="Amount"
-        value={form.values.amount}
-        handleChange={form.handleChange(Amount)}
-      />
-      <FormGroupTextInput
-        label="Sender account"
-        value={form.values.sender}
-        handleChange={form.handleChange(Sender)}
-      />
-      <FormGroupTextInput
-        label="Recipient account"
-        value={form.values.recipient}
-        handleChange={form.handleChange(Recipient)}
-      />
-      <View style=styles##formAction>
-        <FormButton text="CANCEL" onPress=onPressCancel />
-        <FormButton text="OK" onPress=onSubmit />
-      </View>
+      {operationDone
+         ? <>
+             <Text style=styles##title>
+               "Operation injected in the node"->React.string
+             </Text>
+             <Text style=FormGroupTextInput.styles##label>
+               "Operation hash"->React.string
+             </Text>
+             <Text style=styles##hash>
+               "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+               ->React.string
+             </Text>
+             <View style=styles##formAction>
+               <FormButton text="OK" onPress=onPressCancel />
+             </View>
+           </>
+         : <>
+             <Text style=styles##title> "Send"->React.string </Text>
+             <FormGroupTextInput
+               label="Amount"
+               value={form.values.amount->Js.Float.toString}
+               handleChange={amountValue =>
+                 amountValue
+                 ->Js.Float.fromString
+                 ->(x => x->Js.Float.isNaN ? 0.0 : x)
+                 |> form.handleChange(Amount)
+               }
+               keyboardType=`numeric
+             />
+             <FormGroupTextInput
+               label="Sender account"
+               value={form.values.sender}
+               handleChange={form.handleChange(Sender)}
+             />
+             <FormGroupTextInput
+               label="Recipient account"
+               value={form.values.recipient}
+               handleChange={form.handleChange(Recipient)}
+             />
+             <View style=styles##formAction>
+               <FormButton text="CANCEL" onPress=onPressCancel />
+               <FormButton text="OK" onPress=onSubmit />
+             </View>
+           </>}
     </Modal>
   </View>;
 };

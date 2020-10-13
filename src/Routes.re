@@ -27,11 +27,14 @@ let toHref =
   | Dev => "/dev"
   | NotFound => raise(RouteToNotFound);
 
+/* This lets us push a Routes.t instead of a string to transition to a new  screen */
+let push = route => route |> toHref |> push;
+
 let useHrefAndOnPress = route => {
   let href = toHref(route);
   let onPress = event => {
     event->ReactNative.Event.PressEvent.preventDefault;
-    push(href);
+    ReasonReactRouter.push(href);
   };
   (href, onPress);
 };
