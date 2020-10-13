@@ -23,6 +23,7 @@
   ],
   "suffix": ".bs.js",
   "namespace": true,
+  "ppx-flags": ["lenses-ppx/ppx"],
   "bs-dependencies": [
     "bs-fetch",
     "@glennsl/bs-json",
@@ -31,7 +32,9 @@
     "child-reprocess",
     "reason-react-update",
     "reason-future",
-    "reason-test-framework"
+    "reason-test-framework",
+    "bs-reform",
+    "reschema"
   ],
   "refmt": 3
 }

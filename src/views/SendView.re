@@ -1,5 +1,14 @@
 open ReactNative;
 
+module StateLenses = [%lenses
+  type state = {
+    amount: string,
+    sender: string,
+    recipient: string,
+  }
+];
+module SendForm = ReForm.Make(StateLenses);
+
 module Modal = {
   let styles =
     Style.(
@@ -55,10 +64,16 @@ module FormGroupTextInput = {
     );
 
   [@react.component]
-  let make = (~label) => {
+  let make = (~label, ~value, ~handleChange) => {
     <View style=styles##formGroup>
       <Text style=styles##label> label->React.string </Text>
-      <TextInput style=styles##input />
+      <TextInput
+        style=styles##input
+        value
+        onChange={(event: TextInput.changeEvent) =>
+          handleChange(event.nativeEvent.text)
+        }
+      />
     </View>;
   };
 };
@@ -117,18 +132,49 @@ let styles =
 
 [@react.component]
 let make = () => {
+  let (account, _) = React.useContext(Account.context);
+
   let (_href, onPressCancel) = Routes.useHrefAndOnPress(Routes.Home);
 
+  let form: SendForm.api =
+    SendForm.use(
+      ~schema={
+        SendForm.Validation.(
+          Schema(nonEmpty(Amount) + nonEmpty(Sender) + nonEmpty(Recipient))
+        );
+      },
+      ~onSubmit=
+        ({state}) => {
+          Js.log2("onSubmit FORM", state);
+
+          None;
+        },
+      ~initialState={amount: "", sender: account, recipient: ""},
+      (),
+    );
+
   let onSubmit = _ => {
-    Js.log("onSubmit");
+    form.submit();
   };
 
   <View>
     <Modal>
       <Text style=styles##title> "Send"->React.string </Text>
-      <FormGroupTextInput label="Amount" />
-      <FormGroupTextInput label="Sender account" />
-      <FormGroupTextInput label="Recipient account" />
+      <FormGroupTextInput
+        label="Amount"
+        value={form.values.amount}
+        handleChange={form.handleChange(Amount)}
+      />
+      <FormGroupTextInput
+        label="Sender account"
+        value={form.values.sender}
+        handleChange={form.handleChange(Sender)}
+      />
+      <FormGroupTextInput
+        label="Recipient account"
+        value={form.values.recipient}
+        handleChange={form.handleChange(Recipient)}
+      />
       <View style=styles##formAction>
         <FormButton text="CANCEL" onPress=onPressCancel />
         <FormButton text="OK" onPress=onSubmit />
