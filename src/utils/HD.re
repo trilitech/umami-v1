@@ -27,7 +27,6 @@ module BIP39 = {
 
 let deriveSeed = (seed, derivationPath) => {
   let derivedPath = ED25519.derivePath(derivationPath, seed->toHex);
-  Js.log(derivedPath.key);
   derivedPath.key;
 };
 
@@ -44,7 +43,6 @@ let b58cencode = (data, prefix) => {
     );
   buffer->Buffer.setArray(prefix);
   buffer->BufferEx.setArrayAt(data, prefix->Js.Array2.length)
-  //Js.log(buffer);
   BS58Check.encode(nodeBufferfromBytes(buffer));
 };
 
