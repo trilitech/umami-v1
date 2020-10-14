@@ -7,14 +7,33 @@ let endpoint = network =>
   };
 
 module URL = {
-  let operations = (network: Network.name, account) =>
+  let operations =
+      (
+        network: Network.name,
+        account,
+        ~types: option(array(string))=?,
+        ~limit: option(int)=?,
+        (),
+      ) =>
     (
       switch (network) {
       | Main => "https://x.lamini.ca/mezos/mainnet/operations?address="
       | Test => "https://u.lamini.ca/mezos/carthagenet/operations?address="
       }
     )
-    ++ account;
+    ++ account
+    ++ (
+      switch (types) {
+      | Some(types) => "&types=" ++ types->Js.Array2.joinWith(",")
+      | None => ""
+      }
+    )
+    ++ (
+      switch (limit) {
+      | Some(limit) => "&limit=" ++ limit->Js.Int.toString
+      | None => ""
+      }
+    );
 
   let delegates = (network: Network.name) =>
     switch (network) {
@@ -23,28 +42,7 @@ module URL = {
     };
 };
 
-let call = command =>
-  Future.make(resolve => {
-    let process = ChildReprocess.spawn("tezos-client", command, ());
-    let _ =
-      process
-      ->child_stderr
-      ->Readable.on_data(buffer =>
-          buffer->Node_buffer.toString->Belt.Result.Error->resolve
-        );
-    let _ =
-      process
-      ->child_stdout
-      ->Readable.on_data(buffer =>
-          buffer->Node_buffer.toString->Belt.Result.Ok->resolve
-        )
-      ->Readable.on_close(_ => resolve(Belt.Result.Ok("")));
-    ();
-  })
-  //->Future.tapOk(Js.log)
-  //->Future.tapError(Js.log);
-
-module type ClientAPI = {
+module type CallerAPI = {
   let call: array(string) => Future.t(Belt.Result.t(string, string));
 };
 
@@ -52,31 +50,43 @@ module TezosClient = {
   let call = command =>
     Future.make(resolve => {
       let process = ChildReprocess.spawn("tezos-client", command, ());
+      let result: ref(option(Belt.Result.t(string, string))) = ref(None);
+      let _ = process->ChildReprocess.on_error(Js.log);
+      let _ = process->ChildReprocess.on_message(Js.log);
       let _ =
         process
         ->child_stderr
         ->Readable.on_data(buffer =>
-            buffer->Node_buffer.toString->Belt.Result.Error->resolve
+            result := Some(buffer->Node_buffer.toString->Error)
           );
       let _ =
         process
         ->child_stdout
         ->Readable.on_data(buffer =>
-            buffer->Node_buffer.toString->Belt.Result.Ok->resolve
+            switch (result^) {
+            | Some(_) => ()
+            | None => result := Some(buffer->Node_buffer.toString->Ok)
+            }
+          );
+      let _ =
+        process->ChildReprocess.on_exit((_, _) =>
+          resolve(
+            switch (result^) {
+            | Some(value) => value
+            | None => Ok("")
+            },
           )
-        ->Readable.on_close(_ => resolve(Belt.Result.Ok("")));
+        );
       ();
-    })
-    ->Future.tapOk(Js.log)
-    ->Future.tapError(Js.log);
+    });
 };
 
-module type FetchAPI = {
-  let fetch: string => Future.t(Belt.Result.t(Js.Json.t, string));
+module type GetterAPI = {
+  let get: string => Future.t(Belt.Result.t(Js.Json.t, string));
 };
 
 module TezosExplorer = {
-  let fetch = url =>
+  let get = url =>
     url
     ->Fetch.fetch
     ->FutureJs.fromPromise(Js.String.make)
@@ -85,33 +95,41 @@ module TezosExplorer = {
       );
 };
 
-module Balance = (API: ClientAPI) => {
+module Balance = (Caller: CallerAPI) => {
   let get = (network, account) =>
-    API.call([|"-E", network->endpoint, "get", "balance", "for", account|]);
+    Caller.call([|
+      "-E",
+      network->endpoint,
+      "get",
+      "balance",
+      "for",
+      account,
+    |]);
 };
 
-let map = (result: Belt.Result.t('a, string), transform: ('a) => 'b) =>  {
-  try (switch (result) {
+let map = (result: Belt.Result.t('a, string), transform: 'a => 'b) =>
+  try(
+    switch (result) {
     | Ok(value) => Ok(transform(value))
-    | Error(error) => Error(error) 
-  }) {
-    | Json.ParseError(error) => Error(error)
-    | Json.Decode.DecodeError(error) => Error(error)
-    | _ => Error("Unknown error")
-  }
-};
+    | Error(error) => Error(error)
+    }
+  ) {
+  | Json.ParseError(error) => Error(error)
+  | Json.Decode.DecodeError(error) => Error(error)
+  | _ => Error("Unknown error")
+  };
 
-module Operations = (API: FetchAPI) => {
-  let get = (network, account) =>
+module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
+  let get = (network, account, ~types: option(array(string))=?, ~limit: option(int)=?, ()) =>
     network
-    ->URL.operations(account)
-    ->API.fetch
+    ->URL.operations(account, ~types?, ~limit?, ())
+    ->Getter.get
     ->Future.map(result => result->map(Json.Decode.array(Operation.decode)));
 
   let create = (network, operation: Injection.operation) =>
     switch (operation) {
     | Transaction(transaction) =>
-      call([|
+      Caller.call([|
         "-E",
         network->endpoint,
         "transfer",
@@ -124,7 +142,7 @@ module Operations = (API: FetchAPI) => {
         "0.257",
       |])
     | Delegation(delegation) =>
-      call([|
+      Caller.call([|
         "-E",
         network->endpoint,
         "set",
@@ -147,28 +165,39 @@ let parseAddresses = content =>
   |> Array.map(pair => (pair[0], pair[1]))
   |> MapString.fromArray;
 
-module Accounts = {
+module Accounts = (Caller: CallerAPI) => {
   let get = _ =>
-    call([|"list", "known", "contracts"|])->Future.mapOk(parseAddresses);
+    Caller.call([|"list", "known", "contracts"|])
+    ->Future.mapOk(parseAddresses);
 
-  let create = name => call([|"gen", "keys", name|]);
+  let create = name => Caller.call([|"gen", "keys", name|]);
 
   let add = (name, address) =>
-    call([|"add", "address", name, address, "-f"|]);
+    Caller.call([|"add", "address", name, address, "-f"|]);
 
-  let restore = (backupPhrase, name) =>
-    call([|"generate", "keys", "from", "mnemonic", backupPhrase|])
-    ->Future.tapOk(Js.log)
-    ->Future.mapOk(keys => (keys |> Js.String.split("\n"))[2])
-    ->Future.tapOk(Js.log)
-    ->Future.flatMapOk(edsk =>
-        call([|"import", "secret", "key", name, "unencrypted:" ++ edsk|])
-      );
+  let import = (key, name) =>
+    Caller.call([|"import", "secret", "key", name, "unencrypted:" ++ key|]);
 
-  let delete = name => call([|"forget", "address", name, "-f"|]);
+  let restore = (backupPhrase, name, ~derivationPath=?, ()) => {
+    switch (derivationPath) {
+    | Some(derivationPath) =>
+      let seed = HD.BIP39.mnemonicToSeedSync(backupPhrase);
+      let edsk2 = HD.seedToPrivateKey(HD.deriveSeed(seed, derivationPath));
+      Js.log(edsk2);
+      import(edsk2, name);
+    | None =>
+      Caller.call([|"generate", "keys", "from", "mnemonic", backupPhrase|])
+      ->Future.tapOk(Js.log)
+      ->Future.mapOk(keys => (keys |> Js.String.split("\n"))[2])
+      ->Future.tapOk(Js.log)
+      ->Future.flatMapOk(edsk => import(edsk, name))
+    };
+  };
+
+  let delete = name => Caller.call([|"forget", "address", name, "-f"|]);
 
   let delegate = (network, account, delegate) =>
-    call([|
+    Caller.call([|
       "-E",
       network->endpoint,
       "set",
@@ -178,12 +207,57 @@ module Accounts = {
       "to",
       delegate,
     |]);
+};
 
-  module Delegates = (API: FetchAPI) => {
-    let get = network =>
-      network
-      ->URL.delegates
-      ->API.fetch
-      ->Future.map(result => result->map(Json.Decode.(array(string))));
+module Scanner = (Caller: CallerAPI, Getter: GetterAPI) => {
+  module AccountsAPI = Accounts(Caller);
+  module OperationsAPI = Operations(Caller, Getter);
+
+  let validate = (network, address) => {
+    network
+    ->OperationsAPI.get(address, ~limit=1, ())
+    ->Future.mapOk(operations => {operations->Js.Array2.length != 0});
   };
+
+  let rec scan = (network, backupPhrase, baseName, ~derivationSchema, ~index) => {
+    let seed = HD.BIP39.mnemonicToSeedSync(backupPhrase);
+    let suffix = index->Js.Int.toString;
+    let derivationPath = derivationSchema->Js.String2.replace("?", suffix);
+    let edsk2 = HD.seedToPrivateKey(HD.deriveSeed(seed, derivationPath));
+    Js.log(edsk2);
+    let name = baseName ++ suffix;
+    AccountsAPI.import(edsk2, name)
+    ->Future.flatMapOk(_ =>
+        AccountsAPI.get()
+        ->Future.flatMapOk(accounts =>
+            switch (accounts->Belt.Map.String.get(name)) {
+            | Some(address) =>
+              network
+              ->validate(address)
+              ->Future.flatMapOk(isValidated =>
+                  if (isValidated) {
+                    scan(
+                      network,
+                      backupPhrase,
+                      baseName,
+                      ~derivationSchema,
+                      ~index=index + 1,
+                    );
+                  } else {
+                    AccountsAPI.delete(name);
+                  }
+                )
+            | None => Future.make(resolve => resolve(Ok("")))
+            }
+          )
+      );
+  };
+};
+
+module Delegates = (Getter: GetterAPI) => {
+  let get = network =>
+    network
+    ->URL.delegates
+    ->Getter.get
+    ->Future.map(result => result->map(Json.Decode.(array(string))));
 };

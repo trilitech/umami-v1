@@ -3,7 +3,7 @@ open ReactNative;
 let style =
   Style.(style(~padding=4.->dp, ~margin=4.->dp, ~borderWidth=1.0, ()));
 
-module Delegates = API.Accounts.Delegates(API.TezosExplorer)
+module Delegates = API.Delegates(API.TezosExplorer);
 
 [@react.component]
 let make = (~onSubmit) => {
@@ -35,7 +35,7 @@ let make = (~onSubmit) => {
       {React.array(
          delegates
          |> Array.mapi((index, delegate) =>
-              <Picker.Item label=delegate value=index />
+              <Picker.Item label=delegate key=delegate value=index />
             ),
        )}
     </Picker>
