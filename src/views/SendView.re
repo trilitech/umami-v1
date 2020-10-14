@@ -2,7 +2,7 @@ open ReactNative;
 
 module StateLenses = [%lenses
   type state = {
-    amount: float,
+    amount: string,
     sender: string,
     recipient: string,
     fee: string,
@@ -53,6 +53,7 @@ module FormGroupTextInput = {
             ~fontWeight=`_400,
             (),
           ),
+        "labelError": style(~color="#f97977", ()),
         "labelSmall": style(~marginBottom=4.->dp, ~fontSize=16., ()),
         "input":
           style(
@@ -68,12 +69,15 @@ module FormGroupTextInput = {
             ~borderRadius=5.,
             (),
           ),
+        "inputError": style(~color="#f97977", ~borderColor="#f97977", ()),
         "inputSmall": style(~height=44.->dp, ()),
       })
     );
 
   [@react.component]
-  let make = (~label, ~value, ~handleChange, ~keyboardType=?, ~small=false) => {
+  let make =
+      (~label, ~value, ~handleChange, ~error, ~keyboardType=?, ~small=false) => {
+    let hasError = error->Belt.Option.isSome;
     <View
       style=Style.(
         arrayOption([|
@@ -85,6 +89,7 @@ module FormGroupTextInput = {
         style=Style.(
           arrayOption([|
             Some(styles##label),
+            hasError ? Some(styles##labelError) : None,
             small ? Some(styles##labelSmall) : None,
           |])
         )>
@@ -94,6 +99,7 @@ module FormGroupTextInput = {
         style=Style.(
           arrayOption([|
             Some(styles##input),
+            hasError ? Some(styles##inputError) : None,
             small ? Some(styles##inputSmall) : None,
           |])
         )
@@ -129,13 +135,30 @@ module FormButton = {
             ~fontWeight=`_600,
             (),
           ),
+        "textDisabled":
+          style(
+            ~color="rgba(255,255,255,0.38)",
+            ~fontSize=14.,
+            ~fontWeight=`_600,
+            (),
+          ),
       })
     );
 
   [@react.component]
-  let make = (~text, ~onPress) => {
-    <TouchableOpacity style=styles##button onPress>
-      <Text style=styles##text> text->React.string </Text>
+  let make = (~text, ~onPress, ~disabled=?) => {
+    <TouchableOpacity style=styles##button onPress ?disabled>
+      <Text
+        style=Style.(
+          arrayOption([|
+            Some(styles##text),
+            disabled->Belt.Option.flatMap(disabled =>
+              disabled ? Some(styles##textDisabled) : None
+            ),
+          |])
+        )>
+        text->React.string
+      </Text>
     </TouchableOpacity>;
   };
 };
@@ -176,6 +199,13 @@ let styles =
 
 module Operations = API.Operations(API.TezosExplorer);
 
+let isValidNumber = value => {
+  let fieldState: ReSchema.fieldState =
+    value->Js.Float.fromString->Js.Float.isNaN
+      ? Error("not a number") : Valid;
+  fieldState;
+};
+
 [@react.component]
 let make = () => {
   let (account, _) = React.useContext(Account.context);
@@ -187,10 +217,25 @@ let make = () => {
 
   let form: SendForm.api =
     SendForm.use(
+      ~validationStrategy=OnDemand,
       ~schema={
         SendForm.Validation.(
           Schema(
-            /*nonEmpty(Amount) +*/ nonEmpty(Sender) + nonEmpty(Recipient),
+            custom(values => isValidNumber(values.amount), Amount)
+            + nonEmpty(Sender)
+            + nonEmpty(Recipient)
+            + custom(values => isValidNumber(values.fee), Fee)
+            + custom(values => isValidNumber(values.counter), Counter)
+            + custom(values => isValidNumber(values.gasLimit), GasLimit)
+            + custom(
+                values => isValidNumber(values.storageLimit),
+                StorageLimit,
+              )
+            + custom(values => isValidNumber(values.burnCap), BurnCap)
+            + custom(
+                values => isValidNumber(values.confirmations),
+                Confirmations,
+              ),
           )
         );
       },
@@ -199,7 +244,7 @@ let make = () => {
           let operation =
             Injection.Transaction({
               source: state.values.sender,
-              amount: state.values.amount,
+              amount: state.values.amount->Js.Float.fromString,
               destination: state.values.recipient,
             });
 
@@ -215,7 +260,7 @@ let make = () => {
           None;
         },
       ~initialState={
-        amount: 1.0,
+        amount: "1.0",
         sender: account,
         recipient: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
         fee: "",
@@ -254,30 +299,29 @@ let make = () => {
              <Text style=styles##title> "Send"->React.string </Text>
              <FormGroupTextInput
                label="Amount"
-               value={form.values.amount->Js.Float.toString}
-               handleChange={amountValue =>
-                 amountValue
-                 ->Js.Float.fromString
-                 ->(x => x->Js.Float.isNaN ? 0.0 : x)
-                 |> form.handleChange(Amount)
-               }
+               value={form.values.amount}
+               handleChange={form.handleChange(Amount)}
+               error={form.getFieldError(Field(Amount))}
                keyboardType=`numeric
              />
              <FormGroupTextInput
                label="Sender account"
                value={form.values.sender}
                handleChange={form.handleChange(Sender)}
+               error={form.getFieldError(Field(Sender))}
              />
              <FormGroupTextInput
                label="Recipient account"
                value={form.values.recipient}
                handleChange={form.handleChange(Recipient)}
+               error={form.getFieldError(Field(Recipient))}
              />
              <View style=styles##formRowInputs>
                <FormGroupTextInput
                  label="Fee"
                  value={form.values.fee}
                  handleChange={form.handleChange(Fee)}
+                 error={form.getFieldError(Field(Fee))}
                  small=true
                />
                <View style=styles##formRowInputsSeparator />
@@ -285,6 +329,7 @@ let make = () => {
                  label="Counter"
                  value={form.values.counter}
                  handleChange={form.handleChange(Counter)}
+                 error={form.getFieldError(Field(Counter))}
                  small=true
                />
                <View style=styles##formRowInputsSeparator />
@@ -292,6 +337,7 @@ let make = () => {
                  label="Gas limit"
                  value={form.values.gasLimit}
                  handleChange={form.handleChange(GasLimit)}
+                 error={form.getFieldError(Field(GasLimit))}
                  small=true
                />
              </View>
@@ -300,6 +346,7 @@ let make = () => {
                  label="Storage limit"
                  value={form.values.storageLimit}
                  handleChange={form.handleChange(StorageLimit)}
+                 error={form.getFieldError(Field(StorageLimit))}
                  small=true
                />
                <View style=styles##formRowInputsSeparator />
@@ -307,6 +354,7 @@ let make = () => {
                  label="Burn cap"
                  value={form.values.burnCap}
                  handleChange={form.handleChange(BurnCap)}
+                 error={form.getFieldError(Field(BurnCap))}
                  small=true
                />
                <View style=styles##formRowInputsSeparator />
@@ -314,12 +362,17 @@ let make = () => {
                  label="Confirmations"
                  value={form.values.confirmations}
                  handleChange={form.handleChange(Confirmations)}
+                 error={form.getFieldError(Field(Confirmations))}
                  small=true
                />
              </View>
              <View style=styles##formAction>
                <FormButton text="CANCEL" onPress=onPressCancel />
-               <FormButton text="OK" onPress=onSubmit />
+               <FormButton
+                 text="OK"
+                 onPress=onSubmit
+                 disabled={form.formState == Errored}
+               />
              </View>
            </>}
     </Modal>
