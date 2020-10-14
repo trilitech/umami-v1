@@ -199,10 +199,17 @@ let styles =
 
 module OperationsAPI = API.Operations(API.TezosClient, API.TezosExplorer);
 
-let isValidNumber = value => {
+let isValidFloat = value => {
   let fieldState: ReSchema.fieldState =
-    value->Js.Float.fromString->Js.Float.isNaN
-      ? Error("not a number") : Valid;
+    value->Js.Float.fromString->Js.Float.isNaN ? Error("not a float") : Valid;
+  fieldState;
+};
+
+let isValidInt = value => {
+  let fieldState: ReSchema.fieldState =
+    value->Js.String2.length == 0
+    || value->int_of_string_opt->Belt.Option.isSome
+      ? Valid : Error("not an int");
   fieldState;
 };
 
@@ -217,23 +224,23 @@ let make = () => {
 
   let form: SendForm.api =
     SendForm.use(
-      ~validationStrategy=OnDemand,
       ~schema={
         SendForm.Validation.(
           Schema(
-            custom(values => isValidNumber(values.amount), Amount)
+            nonEmpty(Amount)
+            + custom(values => isValidFloat(values.amount), Amount)
             + nonEmpty(Sender)
             + nonEmpty(Recipient)
-            + custom(values => isValidNumber(values.fee), Fee)
-            + custom(values => isValidNumber(values.counter), Counter)
-            + custom(values => isValidNumber(values.gasLimit), GasLimit)
+            + custom(values => isValidFloat(values.fee), Fee)
+            + custom(values => isValidInt(values.counter), Counter)
+            + custom(values => isValidInt(values.gasLimit), GasLimit)
             + custom(
-                values => isValidNumber(values.storageLimit),
+                values => isValidInt(values.storageLimit),
                 StorageLimit,
               )
-            + custom(values => isValidNumber(values.burnCap), BurnCap)
+            + custom(values => isValidFloat(values.burnCap), BurnCap)
             + custom(
-                values => isValidNumber(values.confirmations),
+                values => isValidInt(values.confirmations),
                 Confirmations,
               ),
           )
@@ -246,12 +253,24 @@ let make = () => {
               source: state.values.sender,
               amount: state.values.amount->Js.Float.fromString,
               destination: state.values.recipient,
-              fee: None,
-              counter: None,
-              gasLimit: None,
-              storageLimit: None,
-              burnCap: None,
-              confirmations: None,
+              fee:
+                state.values.fee->Js.String2.length > 0
+                  ? Some(state.values.fee->Js.Float.fromString) : None,
+              counter:
+                state.values.counter->Js.String2.length > 0
+                  ? Some(state.values.counter->int_of_string) : None,
+              gasLimit:
+                state.values.gasLimit->Js.String2.length > 0
+                  ? Some(state.values.gasLimit->int_of_string) : None,
+              storageLimit:
+                state.values.storageLimit->Js.String2.length > 0
+                  ? Some(state.values.storageLimit->int_of_string) : None,
+              burnCap:
+                state.values.burnCap->Js.String2.length > 0
+                  ? Some(state.values.burnCap->Js.Float.fromString) : None,
+              confirmations:
+                state.values.confirmations->Js.String2.length > 0
+                  ? Some(state.values.confirmations->int_of_string) : None,
               forceLowFee: None,
             });
 
@@ -267,7 +286,7 @@ let make = () => {
           None;
         },
       ~initialState={
-        amount: "1.0",
+        amount: "",
         sender: account,
         recipient: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
         fee: "",
