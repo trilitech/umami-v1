@@ -38,17 +38,6 @@ let make = () => {
   let (injection, setInjection) = React.useState(() => Injection.Done);
   let (accounts, setAccounts) = React.useState(() => dummy);
 
-  React.useEffect0(() => {
-    Js.log("test");
-    let seed = HD.BIP39.mnemonicToSeedSync(
-      "zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra"
-    );
-    Js.log(seed);
-    let key = HD.seedToHDPrivateKey(seed, 1);
-    Js.log(key);
-    None;
-  });
-
   React.useEffect3(
     () => {
       switch (injection) {
