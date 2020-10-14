@@ -5,6 +5,12 @@ module StateLenses = [%lenses
     amount: float,
     sender: string,
     recipient: string,
+    fee: string,
+    counter: string,
+    gasLimit: string,
+    storageLimit: string,
+    burnCap: string,
+    confirmations: string,
   }
 ];
 module SendForm = ReForm.Make(StateLenses);
@@ -37,7 +43,8 @@ module FormGroupTextInput = {
   let styles =
     Style.(
       StyleSheet.create({
-        "formGroup": style(~marginVertical=10.->dp, ()),
+        "formGroup": style(~flex=1., ~marginVertical=10.->dp, ()),
+        "formGroupSmall": style(~marginVertical=7.->dp, ()),
         "label":
           style(
             ~marginBottom=6.->dp,
@@ -46,6 +53,7 @@ module FormGroupTextInput = {
             ~fontWeight=`_400,
             (),
           ),
+        "labelSmall": style(~marginBottom=4.->dp, ~fontSize=16., ()),
         "input":
           style(
             ~height=46.->dp,
@@ -60,15 +68,35 @@ module FormGroupTextInput = {
             ~borderRadius=5.,
             (),
           ),
+        "inputSmall": style(~height=44.->dp, ()),
       })
     );
 
   [@react.component]
-  let make = (~label, ~value, ~handleChange, ~keyboardType=?) => {
-    <View style=styles##formGroup>
-      <Text style=styles##label> label->React.string </Text>
+  let make = (~label, ~value, ~handleChange, ~keyboardType=?, ~small=false) => {
+    <View
+      style=Style.(
+        arrayOption([|
+          Some(styles##formGroup),
+          small ? Some(styles##formGroupSmall) : None,
+        |])
+      )>
+      <Text
+        style=Style.(
+          arrayOption([|
+            Some(styles##label),
+            small ? Some(styles##labelSmall) : None,
+          |])
+        )>
+        label->React.string
+      </Text>
       <TextInput
-        style=styles##input
+        style=Style.(
+          arrayOption([|
+            Some(styles##input),
+            small ? Some(styles##inputSmall) : None,
+          |])
+        )
         value
         onChange={(event: TextInput.changeEvent) =>
           handleChange(event.nativeEvent.text)
@@ -133,6 +161,9 @@ let styles =
           ~textDecorationLine=`underline,
           (),
         ),
+      "formRowInputs":
+        style(~flexDirection=`row, ~justifyContent=`center, ()),
+      "formRowInputsSeparator": style(~width=13.->dp, ()),
       "formAction":
         style(
           ~flexDirection=`row,
@@ -187,6 +218,12 @@ let make = () => {
         amount: 1.0,
         sender: account,
         recipient: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
+        fee: "",
+        counter: "",
+        gasLimit: "",
+        storageLimit: "",
+        burnCap: "",
+        confirmations: "",
       },
       (),
     );
@@ -236,6 +273,50 @@ let make = () => {
                value={form.values.recipient}
                handleChange={form.handleChange(Recipient)}
              />
+             <View style=styles##formRowInputs>
+               <FormGroupTextInput
+                 label="Fee"
+                 value={form.values.fee}
+                 handleChange={form.handleChange(Fee)}
+                 small=true
+               />
+               <View style=styles##formRowInputsSeparator />
+               <FormGroupTextInput
+                 label="Counter"
+                 value={form.values.counter}
+                 handleChange={form.handleChange(Counter)}
+                 small=true
+               />
+               <View style=styles##formRowInputsSeparator />
+               <FormGroupTextInput
+                 label="Gas limit"
+                 value={form.values.gasLimit}
+                 handleChange={form.handleChange(GasLimit)}
+                 small=true
+               />
+             </View>
+             <View style=styles##formRowInputs>
+               <FormGroupTextInput
+                 label="Storage limit"
+                 value={form.values.storageLimit}
+                 handleChange={form.handleChange(StorageLimit)}
+                 small=true
+               />
+               <View style=styles##formRowInputsSeparator />
+               <FormGroupTextInput
+                 label="Burn cap"
+                 value={form.values.burnCap}
+                 handleChange={form.handleChange(BurnCap)}
+                 small=true
+               />
+               <View style=styles##formRowInputsSeparator />
+               <FormGroupTextInput
+                 label="Confirmations"
+                 value={form.values.confirmations}
+                 handleChange={form.handleChange(Confirmations)}
+                 small=true
+               />
+             </View>
              <View style=styles##formAction>
                <FormButton text="CANCEL" onPress=onPressCancel />
                <FormButton text="OK" onPress=onSubmit />
