@@ -28,15 +28,18 @@ describe("API tests", ({testAsync}) => {
   });
 
   testAsync("runs empty operation list test", ({expect, callback}) => {
+    module Dummy = {
+      let call = _ => Future.value(Ok(""))
+    }
     module Stub = {
-      let fetch = _ => {
+      let get = _ => {
         let data = {|[]|};
         Future.value(Ok(data->Json.parseOrRaise));
       };
     };
     let expected: array(Operation.t) = [||];
-    module UnderTest = API.Operations(Stub);
-    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3")
+    module UnderTest = API.Operations(Dummy, Stub);
+    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(Belt.Result.Ok(expected));
         callback();
@@ -45,8 +48,11 @@ describe("API tests", ({testAsync}) => {
   });
 
   testAsync("runs valid operation list test", ({expect, callback}) => {
+    module Dummy = {
+      let call = _ => Future.value(Ok(""))
+    };
     module Stub = {
-      let fetch = _ => {
+      let get = _ => {
         let data = {|[
           {
             "type": "delegation",
@@ -125,8 +131,8 @@ describe("API tests", ({testAsync}) => {
           }),
       },
     |];
-    module UnderTest = API.Operations(Stub);
-    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3")
+    module UnderTest = API.Operations(Dummy, Stub);
+    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(Belt.Result.Ok(expected));
         callback();
@@ -135,8 +141,11 @@ describe("API tests", ({testAsync}) => {
   });
 
   testAsync("runs invalid operation list test", ({expect, callback}) => {
+    module Dummy = {
+      let call = _ => Future.value(Ok(""))
+    };
     module Stub = {
-      let fetch = _ => {
+      let get = _ => {
         let data = {|[
           {
             "type": "delegation",
@@ -156,8 +165,8 @@ describe("API tests", ({testAsync}) => {
         Future.value(Ok(data->Json.parseOrRaise));
       };
     };
-    module UnderTest = API.Operations(Stub);
-    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3")
+    module UnderTest = API.Operations(Dummy, Stub);
+    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(
           Belt.Result.Error("Expected field 'block'\n\tin array at index 0"),
@@ -168,8 +177,11 @@ describe("API tests", ({testAsync}) => {
   });
 
   testAsync("runs valid reveal test", ({expect, callback}) => {
+    module Dummy = {
+      let call = _ => Future.value(Ok(""))
+    };
     module Stub = {
-      let fetch = _ => {
+      let get = _ => {
         let data = {|[
           {
             "type": "reveal",
@@ -209,8 +221,8 @@ describe("API tests", ({testAsync}) => {
           }),
       },
     |];
-    module UnderTest = API.Operations(Stub);
-    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3")
+    module UnderTest = API.Operations(Dummy, Stub);
+    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(Belt.Result.Ok(expected));
         callback();
@@ -219,8 +231,11 @@ describe("API tests", ({testAsync}) => {
   });
 
   testAsync("runs invalid reveal test", ({expect, callback}) => {
+    module Dummy = {
+      let call = _ => Future.value(Ok(""))
+    };
     module Stub = {
-      let fetch = _ => {
+      let get = _ => {
         let data = {|[
           {
             "type": "reveal",
@@ -240,8 +255,8 @@ describe("API tests", ({testAsync}) => {
         Future.value(Ok(data->Json.parseOrRaise));
       };
     };
-    module UnderTest = API.Operations(Stub);
-    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3")
+    module UnderTest = API.Operations(Dummy, Stub);
+    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(
           Belt.Result.Error("Expected field 'public_key'\n\tin array at index 0"),
@@ -252,8 +267,11 @@ describe("API tests", ({testAsync}) => {
   });
 
   testAsync("runs valid transaction test", ({expect, callback}) => {
+    module Dummy = {
+      let call = _ => Future.value(Ok(""))
+    };
     module Stub = {
-      let fetch = _ => {
+      let get = _ => {
         let data = {|[
           {
             "type": "transaction",
@@ -300,8 +318,8 @@ describe("API tests", ({testAsync}) => {
           }),
       },
     |];
-    module UnderTest = API.Operations(Stub);
-    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3")
+    module UnderTest = API.Operations(Dummy, Stub);
+    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(Belt.Result.Ok(expected));
         callback();
@@ -310,8 +328,11 @@ describe("API tests", ({testAsync}) => {
   });
 
   testAsync("runs invalid transaction test", ({expect, callback}) => {
+    module Dummy = {
+      let call = _ => Future.value(Ok(""))
+    };
     module Stub = {
-      let fetch = _ => {
+      let get = _ => {
         let data = {|[
           {
             "type": "transaction",
@@ -336,8 +357,8 @@ describe("API tests", ({testAsync}) => {
         Future.value(Ok(data->Json.parseOrRaise));
       };
     };
-    module UnderTest = API.Operations(Stub);
-    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3")
+    module UnderTest = API.Operations(Dummy, Stub);
+    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(
           Belt.Result.Error("Expected field 'destination'\n\tin array at index 0"),
@@ -348,8 +369,11 @@ describe("API tests", ({testAsync}) => {
   });
 
   testAsync("runs valid origination test", ({expect, callback}) => {
+    module Dummy = {
+      let call = _ => Future.value(Ok(""))
+    };
     module Stub = {
-      let fetch = _ => {
+      let get = _ => {
         let data = {|[
           {
             "type": "origination",
@@ -390,8 +414,8 @@ describe("API tests", ({testAsync}) => {
           }),
       },
     |];
-    module UnderTest = API.Operations(Stub);
-    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3")
+    module UnderTest = API.Operations(Dummy, Stub);
+    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(Belt.Result.Ok(expected));
         callback();
@@ -400,8 +424,11 @@ describe("API tests", ({testAsync}) => {
   });
 
   testAsync("runs invalid origination test", ({expect, callback}) => {
+    module Dummy = {
+      let call = _ => Future.value(Ok(""))
+    };
     module Stub = {
-      let fetch = _ => {
+      let get = _ => {
         let data = {|[
           {
             "type": "origination",
@@ -421,8 +448,8 @@ describe("API tests", ({testAsync}) => {
         Future.value(Ok(data->Json.parseOrRaise));
       };
     };
-    module UnderTest = API.Operations(Stub);
-    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3")
+    module UnderTest = API.Operations(Dummy, Stub);
+    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(
           Belt.Result.Error("Expected field 'contract_address'\n\tin array at index 0"),
@@ -432,9 +459,12 @@ describe("API tests", ({testAsync}) => {
     ();
   });
 
-    testAsync("runs disabled delegation test", ({expect, callback}) => {
+  testAsync("runs disabled delegation test", ({expect, callback}) => {
+    module Dummy = {
+      let call = _ => Future.value(Ok(""))
+    };
     module Stub = {
-      let fetch = _ => {
+      let get = _ => {
         let data = {|[
           {
             "type": "delegation",
@@ -473,8 +503,8 @@ describe("API tests", ({testAsync}) => {
           }),
       },
     |];
-    module UnderTest = API.Operations(Stub);
-    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3")
+    module UnderTest = API.Operations(Dummy, Stub);
+    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(Belt.Result.Ok(expected));
         callback();
@@ -483,8 +513,11 @@ describe("API tests", ({testAsync}) => {
   });
 
   testAsync("runs valid delegation test", ({expect, callback}) => {
+    module Dummy = {
+      let call = _ => Future.value(Ok(""))
+    };
     module Stub = {
-      let fetch = _ => {
+      let get = _ => {
         let data = {|[
           {
             "type": "delegation",
@@ -524,8 +557,8 @@ describe("API tests", ({testAsync}) => {
           }),
       },
     |];
-    module UnderTest = API.Operations(Stub);
-    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3")
+    module UnderTest = API.Operations(Dummy, Stub);
+    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(Belt.Result.Ok(expected));
         callback();
@@ -534,8 +567,11 @@ describe("API tests", ({testAsync}) => {
   });
 
   testAsync("runs invalid delegation test", ({expect, callback}) => {
+    module Dummy = {
+      let call = _ => Future.value(Ok(""))
+    };
     module Stub = {
-      let fetch = _ => {
+      let get = _ => {
         let data = {|[
           {
             "id": "9323046000",
@@ -554,8 +590,8 @@ describe("API tests", ({testAsync}) => {
         Future.value(Ok(data->Json.parseOrRaise));
       };
     };
-    module UnderTest = API.Operations(Stub);
-    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3")
+    module UnderTest = API.Operations(Dummy, Stub);
+    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(
           Belt.Result.Error("Expected field 'type'\n\tin array at index 0"),
@@ -567,7 +603,7 @@ describe("API tests", ({testAsync}) => {
 
   testAsync("runs valid account.delegates test", ({expect, callback}) => {
     module Stub = {
-      let fetch = _ => {
+      let get = _ => {
         let data = {|[
           "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
           "tz1NF7b38uQ43N4nmTHvDKpr1Qo5LF9iYawk"
@@ -579,7 +615,7 @@ describe("API tests", ({testAsync}) => {
       "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
       "tz1NF7b38uQ43N4nmTHvDKpr1Qo5LF9iYawk",
     |];
-    module UnderTest = API.Accounts.Delegates(Stub);
+    module UnderTest = API.Delegates(Stub);
     UnderTest.get(Network.Test)
     ->Future.get(result => {
         expect.value(result).toEqual(Belt.Result.Ok(expected));
@@ -588,14 +624,14 @@ describe("API tests", ({testAsync}) => {
     ();
   });
 
-  testAsync("runs invalid account.delegates tests", ({expect, callback}) => {
+  testAsync("runs invalid account.delegates test", ({expect, callback}) => {
     module Stub = {
-      let fetch = _ => {
+      let get = _ => {
         let data = {|"tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"|};
         Future.value(Ok(data->Json.parseOrRaise));
       };
     };
-    module UnderTest = API.Accounts.Delegates(Stub);
+    module UnderTest = API.Delegates(Stub);
     UnderTest.get(Network.Test)
     ->Future.get(result => {
         expect.value(result).toEqual(

@@ -3,6 +3,8 @@ open ReactNative;
 let style =
   Style.(style(~padding=4.->dp, ~margin=4.->dp, ~borderWidth=1.0, ()));
 
+module AccountsAPI = API.Accounts(API.TezosClient)
+
 [@react.component]
 let make = () => {
   let (_, setAccounts) = React.useContext(Accounts.context);
@@ -15,8 +17,8 @@ let make = () => {
       onPress={
         _ =>
           name
-          ->API.Accounts.create
-          ->Future.flatMapOk(_ => API.Accounts.get())
+          ->AccountsAPI.create
+          ->Future.flatMapOk(_ => AccountsAPI.get())
           ->Future.get(result =>
               switch (result) {
               | Ok(value) => setAccounts(value)

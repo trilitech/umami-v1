@@ -26,7 +26,8 @@ let toString = map =>
     result ++ (result->String.length == 0 ? "" : "\n") ++ key ++ ": " ++ value
   );
 
-module Operations = API.Operations(API.TezosExplorer);
+module AccountsAPI = API.Accounts(API.TezosClient);
+module OperationsAPI = API.Operations(API.TezosClient, API.TezosExplorer);
 
 [@react.component]
 let make = () => {
@@ -42,7 +43,7 @@ let make = () => {
       switch (injection) {
       | Pending(operation) =>
         network
-        ->Operations.create(operation)
+        ->OperationsAPI.create(operation)
         ->Future.get(result =>
             switch (result) {
             | Ok(_) => setInjection(_ => Done)
@@ -60,7 +61,7 @@ let make = () => {
 
   React.useEffect1(
     () => {
-      API.Accounts.get()->FutureEx.getOk(value => setAccounts(_ => value));
+      AccountsAPI.get()->FutureEx.getOk(value => setAccounts(_ => value));
       None;
     },
     [|setAccounts|],
@@ -89,9 +90,9 @@ let make = () => {
                 />
                 <DelegateForm
                   onSubmit={(source, delegate) =>
-                    API.Accounts.add("delegate", delegate)
+                    AccountsAPI.add("delegate", delegate)
                     ->Future.tapOk(_ =>
-                        API.Accounts.get()
+                        AccountsAPI.get()
                         ->FutureEx.getOk(value => setAccounts(_ => value))
                       )
                     ->FutureEx.getOk(_ =>
@@ -103,6 +104,7 @@ let make = () => {
                 />
                 <AccountCreationForm />
                 <AccountRestorationForm />
+                <AccountHDRestorationForm />
                 <AccountDeletionForm />
                 <Text style=styles##section>
                   {accounts->toString->React.string}
