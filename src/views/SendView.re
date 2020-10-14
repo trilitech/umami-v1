@@ -197,7 +197,7 @@ let styles =
     })
   );
 
-module Operations = API.Operations(API.TezosExplorer);
+module OperationsAPI = API.Operations(API.TezosClient, API.TezosExplorer);
 
 let isValidNumber = value => {
   let fieldState: ReSchema.fieldState =
@@ -246,10 +246,17 @@ let make = () => {
               source: state.values.sender,
               amount: state.values.amount->Js.Float.fromString,
               destination: state.values.recipient,
+              fee: None,
+              counter: None,
+              gasLimit: None,
+              storageLimit: None,
+              burnCap: None,
+              confirmations: None,
+              forceLowFee: None,
             });
 
           network
-          ->Operations.create(operation)
+          ->OperationsAPI.create(operation)
           ->Future.get(result =>
               switch (result) {
               | Ok(hash) => setOperationDone(_ => true)

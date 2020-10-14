@@ -53,7 +53,7 @@ module OperationItem = {
 
 let styles = Style.(StyleSheet.create({"container": style(~flex=1., ())}));
 
-module Operations = API.Operations(API.TezosExplorer);
+module OperationsAPI = API.Operations(API.TezosClient, API.TezosExplorer);
 
 [@react.component]
 let make = () => {
@@ -69,7 +69,7 @@ let make = () => {
       | Pending(_) => ()
       | Done =>
         network
-        ->Operations.get(account)
+        ->OperationsAPI.get(account, ())
         ->FutureEx.getOk(value => setOperations(_ => value))
       };
       None;
