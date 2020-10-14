@@ -218,7 +218,7 @@ let make = () => {
   let (account, _) = React.useContext(Account.context);
   let (network, _) = React.useContext(Network.context);
 
-  let (operationDone, setOperationDone) = React.useState(_ => false);
+  let (operationDone, setOperationDone) = React.useState(_ => None);
 
   let (_href, onPressCancel) = Routes.useHrefAndOnPress(Routes.Home);
 
@@ -278,7 +278,7 @@ let make = () => {
           ->OperationsAPI.create(operation)
           ->Future.get(result =>
               switch (result) {
-              | Ok(hash) => setOperationDone(_ => true)
+              | Ok(hash) => setOperationDone(_ => Some(hash))
               | Error(value) => Dialog.error(value)
               }
             );
@@ -305,102 +305,102 @@ let make = () => {
 
   <View>
     <Modal>
-      {operationDone
-         ? <>
-             <Text style=styles##title>
-               "Operation injected in the node"->React.string
-             </Text>
-             <Text style=FormGroupTextInput.styles##label>
-               "Operation hash"->React.string
-             </Text>
-             <Text style=styles##hash>
-               "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-               ->React.string
-             </Text>
-             <View style=styles##formAction>
-               <FormButton text="OK" onPress=onPressCancel />
-             </View>
-           </>
-         : <>
-             <Text style=styles##title> "Send"->React.string </Text>
+      {switch (operationDone) {
+       | Some(hash) =>
+         <>
+           <Text style=styles##title>
+             "Operation injected in the node"->React.string
+           </Text>
+           <Text style=FormGroupTextInput.styles##label>
+             "Operation hash"->React.string
+           </Text>
+           <Text style=styles##hash> hash->React.string </Text>
+           <View style=styles##formAction>
+             <FormButton text="OK" onPress=onPressCancel />
+           </View>
+         </>
+       | None =>
+         <>
+           <Text style=styles##title> "Send"->React.string </Text>
+           <FormGroupTextInput
+             label="Amount"
+             value={form.values.amount}
+             handleChange={form.handleChange(Amount)}
+             error={form.getFieldError(Field(Amount))}
+             keyboardType=`numeric
+           />
+           <FormGroupTextInput
+             label="Sender account"
+             value={form.values.sender}
+             handleChange={form.handleChange(Sender)}
+             error={form.getFieldError(Field(Sender))}
+           />
+           <FormGroupTextInput
+             label="Recipient account"
+             value={form.values.recipient}
+             handleChange={form.handleChange(Recipient)}
+             error={form.getFieldError(Field(Recipient))}
+           />
+           <View style=styles##formRowInputs>
              <FormGroupTextInput
-               label="Amount"
-               value={form.values.amount}
-               handleChange={form.handleChange(Amount)}
-               error={form.getFieldError(Field(Amount))}
-               keyboardType=`numeric
+               label="Fee"
+               value={form.values.fee}
+               handleChange={form.handleChange(Fee)}
+               error={form.getFieldError(Field(Fee))}
+               small=true
              />
+             <View style=styles##formRowInputsSeparator />
              <FormGroupTextInput
-               label="Sender account"
-               value={form.values.sender}
-               handleChange={form.handleChange(Sender)}
-               error={form.getFieldError(Field(Sender))}
+               label="Counter"
+               value={form.values.counter}
+               handleChange={form.handleChange(Counter)}
+               error={form.getFieldError(Field(Counter))}
+               small=true
              />
+             <View style=styles##formRowInputsSeparator />
              <FormGroupTextInput
-               label="Recipient account"
-               value={form.values.recipient}
-               handleChange={form.handleChange(Recipient)}
-               error={form.getFieldError(Field(Recipient))}
+               label="Gas limit"
+               value={form.values.gasLimit}
+               handleChange={form.handleChange(GasLimit)}
+               error={form.getFieldError(Field(GasLimit))}
+               small=true
              />
-             <View style=styles##formRowInputs>
-               <FormGroupTextInput
-                 label="Fee"
-                 value={form.values.fee}
-                 handleChange={form.handleChange(Fee)}
-                 error={form.getFieldError(Field(Fee))}
-                 small=true
-               />
-               <View style=styles##formRowInputsSeparator />
-               <FormGroupTextInput
-                 label="Counter"
-                 value={form.values.counter}
-                 handleChange={form.handleChange(Counter)}
-                 error={form.getFieldError(Field(Counter))}
-                 small=true
-               />
-               <View style=styles##formRowInputsSeparator />
-               <FormGroupTextInput
-                 label="Gas limit"
-                 value={form.values.gasLimit}
-                 handleChange={form.handleChange(GasLimit)}
-                 error={form.getFieldError(Field(GasLimit))}
-                 small=true
-               />
-             </View>
-             <View style=styles##formRowInputs>
-               <FormGroupTextInput
-                 label="Storage limit"
-                 value={form.values.storageLimit}
-                 handleChange={form.handleChange(StorageLimit)}
-                 error={form.getFieldError(Field(StorageLimit))}
-                 small=true
-               />
-               <View style=styles##formRowInputsSeparator />
-               <FormGroupTextInput
-                 label="Burn cap"
-                 value={form.values.burnCap}
-                 handleChange={form.handleChange(BurnCap)}
-                 error={form.getFieldError(Field(BurnCap))}
-                 small=true
-               />
-               <View style=styles##formRowInputsSeparator />
-               <FormGroupTextInput
-                 label="Confirmations"
-                 value={form.values.confirmations}
-                 handleChange={form.handleChange(Confirmations)}
-                 error={form.getFieldError(Field(Confirmations))}
-                 small=true
-               />
-             </View>
-             <View style=styles##formAction>
-               <FormButton text="CANCEL" onPress=onPressCancel />
-               <FormButton
-                 text="OK"
-                 onPress=onSubmit
-                 disabled={form.formState == Errored}
-               />
-             </View>
-           </>}
+           </View>
+           <View style=styles##formRowInputs>
+             <FormGroupTextInput
+               label="Storage limit"
+               value={form.values.storageLimit}
+               handleChange={form.handleChange(StorageLimit)}
+               error={form.getFieldError(Field(StorageLimit))}
+               small=true
+             />
+             <View style=styles##formRowInputsSeparator />
+             <FormGroupTextInput
+               label="Burn cap"
+               value={form.values.burnCap}
+               handleChange={form.handleChange(BurnCap)}
+               error={form.getFieldError(Field(BurnCap))}
+               small=true
+             />
+             <View style=styles##formRowInputsSeparator />
+             <FormGroupTextInput
+               label="Confirmations"
+               value={form.values.confirmations}
+               handleChange={form.handleChange(Confirmations)}
+               error={form.getFieldError(Field(Confirmations))}
+               small=true
+             />
+           </View>
+           <View style=styles##formAction>
+             <FormButton text="CANCEL" onPress=onPressCancel />
+             <FormButton
+               text="OK"
+               onPress=onSubmit
+               disabled={form.formState == Errored}
+             />
+           </View>
+         </>
+       }}
     </Modal>
   </View>;
 };
