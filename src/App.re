@@ -84,7 +84,16 @@ let make = () => {
                 <TransactionForm
                   onSubmit={(source, amount, destination) =>
                     setInjection(_ =>
-                      Pending(Transaction({source, amount, destination}))
+                      Pending(
+                        Transaction(
+                          Injection.makeTransfer(
+                            ~source,
+                            ~amount,
+                            ~destination,
+                            (),
+                          ),
+                        ),
+                      )
                     )
                   }
                 />

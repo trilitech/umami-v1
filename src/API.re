@@ -51,8 +51,6 @@ module TezosClient = {
     Future.make(resolve => {
       let process = ChildReprocess.spawn("tezos-client", command, ());
       let result: ref(option(Belt.Result.t(string, string))) = ref(None);
-      let _ = process->ChildReprocess.on_error(Js.log);
-      let _ = process->ChildReprocess.on_message(Js.log);
       let _ =
         process
         ->child_stderr
@@ -64,7 +62,12 @@ module TezosClient = {
         ->child_stdout
         ->Readable.on_data(buffer =>
             switch (result^) {
-            | Some(_) => ()
+            | Some(Ok(text)) =>
+              result :=
+                Some(
+                  Ok(Js.String2.concat(text, buffer->Node_buffer.toString)),
+                )
+            | Some(Error(_)) => ()
             | None => result := Some(buffer->Node_buffer.toString->Ok)
             }
           );
@@ -120,39 +123,106 @@ let map = (result: Belt.Result.t('a, string), transform: 'a => 'b) =>
   };
 
 module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
-  let get = (network, account, ~types: option(array(string))=?, ~limit: option(int)=?, ()) =>
+  let get =
+      (
+        network,
+        account,
+        ~types: option(array(string))=?,
+        ~limit: option(int)=?,
+        (),
+      ) =>
     network
     ->URL.operations(account, ~types?, ~limit?, ())
     ->Getter.get
     ->Future.map(result => result->map(Json.Decode.array(Operation.decode)));
 
   let create = (network, operation: Injection.operation) =>
-    switch (operation) {
-    | Transaction(transaction) =>
-      Caller.call([|
-        "-E",
-        network->endpoint,
-        "transfer",
-        Js.Float.toString(transaction.amount),
-        "from",
-        transaction.source,
-        "to",
-        transaction.destination,
-        "--burn-cap",
-        "0.257",
-      |])
-    | Delegation(delegation) =>
-      Caller.call([|
-        "-E",
-        network->endpoint,
-        "set",
-        "delegate",
-        "for",
-        delegation.source,
-        "to",
-        delegation.delegate,
-      |])
-    };
+    (
+      switch (operation) {
+      | Transaction(transaction) =>
+        let arguments = [|
+          "-E",
+          network->endpoint,
+          "transfer",
+          Js.Float.toString(transaction.amount),
+          "from",
+          transaction.source,
+          "to",
+          transaction.destination,
+          "--burn-cap",
+          "0.257",
+        |];
+        let arguments =
+          switch (transaction.fee) {
+          | Some(fee) =>
+            Js.Array2.concat(arguments, [|"--fee", fee->Js.Float.toString|])
+          | None => arguments
+          };
+        let arguments =
+          switch (transaction.counter) {
+          | Some(counter) =>
+            Js.Array2.concat(arguments, [|"-C", counter->Js.Int.toString|])
+          | None => arguments
+          };
+        let arguments =
+          switch (transaction.gasLimit) {
+          | Some(gasLimit) =>
+            Js.Array2.concat(arguments, [|"-G", gasLimit->Js.Int.toString|])
+          | None => arguments
+          };
+        let arguments =
+          switch (transaction.storageLimit) {
+          | Some(storageLimit) =>
+            Js.Array2.concat(
+              arguments,
+              [|"-S", storageLimit->Js.Int.toString|],
+            )
+          | None => arguments
+          };
+        let arguments =
+          switch (transaction.burnCap) {
+          | Some(burnCap) =>
+            Js.Array2.concat(
+              arguments,
+              [|"--burn-cap", burnCap->Js.Float.toString|],
+            )
+          | None => arguments
+          };
+        let arguments =
+          switch (transaction.forceLowFee) {
+          | Some(true) => Js.Array2.concat(arguments, [|"--force-low-fee"|])
+          | Some(false)
+          | None => arguments
+          };
+        Caller.call(arguments);
+      | Delegation(delegation) =>
+        Caller.call([|
+          "-E",
+          network->endpoint,
+          "set",
+          "delegate",
+          "for",
+          delegation.source,
+          "to",
+          delegation.delegate,
+        |])
+      }
+    )
+    ->Future.tapOk(Js.log)
+    ->Future.mapOk(receipt => {
+        let result =
+          Js.Re.fromString("Operation hash is '([A-Za-z0-9]*)'")
+          ->Js.Re.exec_(receipt);
+        switch (result) {
+        | Some(result) =>
+          switch (Js.Re.captures(result)[1]->Js.Nullable.toOption) {
+          | Some(operationHash) => operationHash
+          | None => receipt
+          }
+        | None => receipt
+        };
+      })
+    ->Future.tapOk(Js.log);
 };
 
 module MapString = Belt.Map.String;
@@ -224,7 +294,7 @@ module Scanner = (Caller: CallerAPI, Getter: GetterAPI) => {
     let suffix = index->Js.Int.toString;
     let derivationPath = derivationSchema->Js.String2.replace("?", suffix);
     let edsk2 = HD.seedToPrivateKey(HD.deriveSeed(seed, derivationPath));
-    Js.log(edsk2);
+    Js.log(baseName ++ index->Js.Int.toString ++ " " ++ edsk2);
     let name = baseName ++ suffix;
     AccountsAPI.import(edsk2, name)
     ->Future.flatMapOk(_ =>
