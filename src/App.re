@@ -26,7 +26,8 @@ let toString = map =>
     result ++ (result->String.length == 0 ? "" : "\n") ++ key ++ ": " ++ value
   );
 
-module Operations = API.Operations(API.TezosExplorer);
+module AccountsAPI = API.Accounts(API.TezosClient);
+module OperationsAPI = API.Operations(API.TezosClient, API.TezosExplorer);
 
 [@react.component]
 let make = () => {
@@ -37,12 +38,23 @@ let make = () => {
   let (injection, setInjection) = React.useState(() => Injection.Done);
   let (accounts, setAccounts) = React.useState(() => dummy);
 
+  React.useEffect0(() => {
+    Js.log("test");
+    let seed = HD.BIP39.mnemonicToSeedSync(
+      "zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra"
+    );
+    Js.log(seed);
+    let key = HD.seedToHDPrivateKey(seed, 1);
+    Js.log(key);
+    None;
+  });
+
   React.useEffect3(
     () => {
       switch (injection) {
       | Pending(operation) =>
         network
-        ->Operations.create(operation)
+        ->OperationsAPI.create(operation)
         ->Future.get(result =>
             switch (result) {
             | Ok(_) => setInjection(_ => Done)
@@ -60,7 +72,7 @@ let make = () => {
 
   React.useEffect1(
     () => {
-      API.Accounts.get()->FutureEx.getOk(value => setAccounts(_ => value));
+      AccountsAPI.get()->FutureEx.getOk(value => setAccounts(_ => value));
       None;
     },
     [|setAccounts|],
@@ -89,9 +101,9 @@ let make = () => {
                 />
                 <DelegateForm
                   onSubmit={(source, delegate) =>
-                    API.Accounts.add("delegate", delegate)
+                    AccountsAPI.add("delegate", delegate)
                     ->Future.tapOk(_ =>
-                        API.Accounts.get()
+                        AccountsAPI.get()
                         ->FutureEx.getOk(value => setAccounts(_ => value))
                       )
                     ->FutureEx.getOk(_ =>
@@ -103,6 +115,7 @@ let make = () => {
                 />
                 <AccountCreationForm />
                 <AccountRestorationForm />
+                <AccountHDRestorationForm />
                 <AccountDeletionForm />
                 <Text style=styles##section>
                   {accounts->toString->React.string}

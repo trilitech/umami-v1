@@ -10,7 +10,7 @@ let formated_amount = (transaction: Operation.Business.Transaction.t) =>
   ++ {js| ꜩ|js};
 
 module BalanceAPI = API.Balance(API.TezosClient);
-module Operations = API.Operations(API.TezosExplorer);
+module OperationsAPI = API.Operations(API.TezosClient, API.TezosExplorer);
 
 [@react.component]
 let make = () => {
@@ -28,7 +28,7 @@ let make = () => {
       | Pending(_) => ()
       | Done =>
         network
-        ->Operations.get(account)
+        ->OperationsAPI.get(account, ())
         ->FutureEx.getOk(value => setOperations(_ => value))
       };
       None;
@@ -43,7 +43,7 @@ let make = () => {
         ->BalanceAPI.get(account)
         ->FutureEx.getOk(value => setBalance(value));
         network
-        ->Operations.get(account)
+        ->OperationsAPI.get(account, ())
         ->FutureEx.getOk(value => setOperations(_ => value));
       }}
       title="Refresh"
