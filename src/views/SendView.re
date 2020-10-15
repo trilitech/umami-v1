@@ -74,10 +74,15 @@ let styles =
           (),
         ),
       "chevronOpened": style(~transform=[|scaleX(~scaleX=1.65)|], ()),
+      "loadingView":
+        style(
+          ~height=400.->dp,
+          ~justifyContent=`center,
+          ~alignItems=`center,
+          (),
+        ),
     })
   );
-
-module OperationsAPI = API.Operations(API.TezosClient, API.TezosExplorer);
 
 let isValidFloat = value => {
   let fieldState: ReSchema.fieldState =
@@ -100,7 +105,8 @@ let make = () => {
 
   let (advancedOptionOpened, setAdvancedOptionOpened) =
     React.useState(_ => false);
-  let (operationDone, setOperationDone) = React.useState(_ => None);
+
+  let (operationRequest, sendOperation) = ApiRequest.useOperation(network);
 
   let (_href, onPressCancel) = Routes.useHrefAndOnPress(Routes.Home);
 
@@ -163,14 +169,7 @@ let make = () => {
                   ? Some(true) : None,
             });
 
-          network
-          ->OperationsAPI.create(operation)
-          ->Future.get(result =>
-              switch (result) {
-              | Ok(hash) => setOperationDone(_ => Some(hash))
-              | Error(value) => Dialog.error(value)
-              }
-            );
+          sendOperation(operation);
 
           None;
         },
@@ -195,8 +194,8 @@ let make = () => {
 
   <View>
     <ModalView>
-      {switch (operationDone) {
-       | Some(hash) =>
+      {switch (operationRequest) {
+       | Done(Ok(hash)) =>
          <>
            <Text style=styles##title>
              "Operation injected in the node"->React.string
@@ -209,7 +208,22 @@ let make = () => {
              <FormButton text="OK" onPress=onPressCancel />
            </View>
          </>
-       | None =>
+       | Done(Error(error)) =>
+         <>
+           <Text style=FormLabel.styles##label> error->React.string </Text>
+           <View style=styles##formAction>
+             <FormButton text="OK" onPress=onPressCancel />
+           </View>
+         </>
+       | Loading =>
+         <View style=styles##loadingView>
+           <ActivityIndicator
+             animating=true
+             size=ActivityIndicator_Size.large
+             color="#FFF"
+           />
+         </View>
+       | NotAsked =>
          <>
            <Text style=styles##title> "Send"->React.string </Text>
            <FormGroupTextInput
