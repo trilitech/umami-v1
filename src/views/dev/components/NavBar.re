@@ -45,6 +45,6 @@ let make = () => {
   <View style={styles##container}>
     <NavBarItem route=Home title="Home" />
     <NavBarItem route=Operations title="Operations" />
-    <NavBarItem route=Dev title="Dev" />
+    <NavBarItem route=Debug title="Debug" />
   </View>;
 };

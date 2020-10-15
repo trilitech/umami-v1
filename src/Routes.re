@@ -4,7 +4,7 @@ type t =
   | Home
   | Send
   | Operations
-  | Dev
+  | Debug
   | NotFound;
 
 exception RouteToNotFound;
@@ -15,7 +15,7 @@ let match = (url: url) =>
   | [] => Home
   | ["send"] => Send
   | ["operations"] => Operations
-  | ["dev"] => Dev
+  | ["debug"] => Debug
   | _ => NotFound
   };
 
@@ -24,7 +24,7 @@ let toHref =
   | Home => "/"
   | Send => "/send"
   | Operations => "/operations"
-  | Dev => "/dev"
+  | Debug => "/debug"
   | NotFound => raise(RouteToNotFound);
 
 /* This lets us push a Routes.t instead of a string to transition to a new  screen */

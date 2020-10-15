@@ -82,7 +82,7 @@ let make = () => {
                    | Home => <HomeView />
                    | Send => <SendView />
                    | Operations => <OperationsView />
-                   | Dev => <DevView setInjection setAccounts accounts />
+                   | Debug => <DebugView setInjection setAccounts accounts />
                    | NotFound =>
                      <View>
                        <Text> "404 - Route Not Found :("->React.string </Text>
