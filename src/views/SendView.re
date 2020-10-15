@@ -11,157 +11,10 @@ module StateLenses = [%lenses
     storageLimit: string,
     burnCap: string,
     confirmations: string,
+    forceLowFee: bool,
   }
 ];
 module SendForm = ReForm.Make(StateLenses);
-
-module Modal = {
-  let styles =
-    Style.(
-      StyleSheet.create({
-        "modal":
-          style(
-            ~width=642.->dp,
-            ~alignSelf=`center,
-            ~paddingTop=45.->dp,
-            ~paddingBottom=32.->dp,
-            ~paddingHorizontal=110.->dp,
-            ~backgroundColor="#121212",
-            ~borderRadius=4.,
-            (),
-          ),
-      })
-    );
-
-  [@react.component]
-  let make = (~children) => {
-    <View style=styles##modal> children </View>;
-  };
-};
-
-module FormGroupTextInput = {
-  let styles =
-    Style.(
-      StyleSheet.create({
-        "formGroup": style(~flex=1., ~marginVertical=10.->dp, ()),
-        "formGroupSmall": style(~marginVertical=7.->dp, ()),
-        "label":
-          style(
-            ~marginBottom=6.->dp,
-            ~color="rgba(255,255,255,0.8)",
-            ~fontSize=18.,
-            ~fontWeight=`_400,
-            (),
-          ),
-        "labelError": style(~color="#f97977", ()),
-        "labelSmall": style(~marginBottom=4.->dp, ~fontSize=16., ()),
-        "input":
-          style(
-            ~height=46.->dp,
-            ~paddingVertical=10.->dp,
-            ~paddingLeft=20.->dp,
-            ~paddingRight=12.->dp,
-            ~color="rgba(255,255,255,0.8)",
-            ~fontSize=16.,
-            ~fontWeight=`_400,
-            ~borderColor="rgba(255,255,255,0.6)",
-            ~borderWidth=1.,
-            ~borderRadius=5.,
-            (),
-          ),
-        "inputError": style(~color="#f97977", ~borderColor="#f97977", ()),
-        "inputSmall": style(~height=44.->dp, ()),
-      })
-    );
-
-  [@react.component]
-  let make =
-      (~label, ~value, ~handleChange, ~error, ~keyboardType=?, ~small=false) => {
-    let hasError = error->Belt.Option.isSome;
-    <View
-      style=Style.(
-        arrayOption([|
-          Some(styles##formGroup),
-          small ? Some(styles##formGroupSmall) : None,
-        |])
-      )>
-      <Text
-        style=Style.(
-          arrayOption([|
-            Some(styles##label),
-            hasError ? Some(styles##labelError) : None,
-            small ? Some(styles##labelSmall) : None,
-          |])
-        )>
-        label->React.string
-      </Text>
-      <TextInput
-        style=Style.(
-          arrayOption([|
-            Some(styles##input),
-            hasError ? Some(styles##inputError) : None,
-            small ? Some(styles##inputSmall) : None,
-          |])
-        )
-        value
-        onChange={(event: TextInput.changeEvent) =>
-          handleChange(event.nativeEvent.text)
-        }
-        autoCapitalize=`none
-        autoCorrect=false
-        autoFocus=false
-        ?keyboardType
-      />
-    </View>;
-  };
-};
-
-module FormButton = {
-  let styles =
-    Style.(
-      StyleSheet.create({
-        "button":
-          style(
-            ~width=160.->dp,
-            ~height=46.->dp,
-            ~alignItems=`center,
-            ~justifyContent=`center,
-            (),
-          ),
-        "text":
-          style(
-            ~color="rgba(255,255,255,0.87)",
-            ~fontSize=14.,
-            ~fontWeight=`_600,
-            (),
-          ),
-        "textDisabled":
-          style(
-            ~color="rgba(255,255,255,0.38)",
-            ~fontSize=14.,
-            ~fontWeight=`_600,
-            (),
-          ),
-      })
-    );
-
-  [@react.component]
-  let make = (~text, ~onPress, ~disabled=?) => {
-    <TouchableOpacity style=styles##button onPress ?disabled>
-      <Text
-        style=Style.(
-          arrayOption([|
-            Some(styles##text),
-            disabled->Belt.Option.flatMap(disabled =>
-              disabled ? Some(styles##textDisabled) : None
-            ),
-          |])
-        )>
-        text->React.string
-      </Text>
-    </TouchableOpacity>;
-  };
-};
 
 let styles =
   Style.(
@@ -187,6 +40,7 @@ let styles =
       "formRowInputs":
         style(~flexDirection=`row, ~justifyContent=`center, ()),
       "formRowInputsSeparator": style(~width=13.->dp, ()),
+      "formGroupSwitchSeparator": style(~height=11.->dp, ()),
       "formAction":
         style(
           ~flexDirection=`row,
@@ -271,7 +125,7 @@ let make = () => {
               confirmations:
                 state.values.confirmations->Js.String2.length > 0
                   ? Some(state.values.confirmations->int_of_string) : None,
-              forceLowFee: None,
+              forceLowFee: state.values.forceLowFee ? Some(true) : None,
             });
 
           network
@@ -295,6 +149,7 @@ let make = () => {
         storageLimit: "",
         burnCap: "",
         confirmations: "",
+        forceLowFee: false,
       },
       (),
     );
@@ -304,14 +159,14 @@ let make = () => {
   };
 
   <View>
-    <Modal>
+    <ModalView>
       {switch (operationDone) {
        | Some(hash) =>
          <>
            <Text style=styles##title>
              "Operation injected in the node"->React.string
            </Text>
-           <Text style=FormGroupTextInput.styles##label>
+           <Text style=FormLabel.styles##label>
              "Operation hash"->React.string
            </Text>
            <Text style=styles##hash> hash->React.string </Text>
@@ -391,6 +246,13 @@ let make = () => {
                small=true
              />
            </View>
+           <View style=styles##formGroupSwitchSeparator />
+           <FormGroupSwitch
+             label="Force low free"
+             value={form.values.forceLowFee}
+             handleChange={form.handleChange(ForceLowFee)}
+             error={form.getFieldError(Field(ForceLowFee))}
+           />
            <View style=styles##formAction>
              <FormButton text="CANCEL" onPress=onPressCancel />
              <FormButton
@@ -401,6 +263,6 @@ let make = () => {
            </View>
          </>
        }}
-    </Modal>
+    </ModalView>
   </View>;
 };
