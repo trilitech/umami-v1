@@ -72,7 +72,7 @@ let make = () => {
           <Injection.Provider
             value=(injection, injection => setInjection(_ => injection))>
             <View style=styles##layout>
-              <NavBar />
+              <NavBar route />
               <View style=styles##main>
                 <Header />
                 <ScrollView

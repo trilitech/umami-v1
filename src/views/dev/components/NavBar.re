@@ -7,22 +7,34 @@ module NavBarItem = {
       StyleSheet.create({
         "item":
           style(
-            ~height=64.->dp,
+            ~height=68.->dp,
             ~alignItems=`center,
             ~justifyContent=`center,
+            ~opacity=0.6,
             (),
           ),
-        "text": style(~color="white", ()),
+        "itemCurrent": style(~opacity=1., ()),
+        "icon": style(~marginBottom=6.->dp, ()),
+        "text": style(~color="white", ~fontSize=10., ~fontWeight=`_700, ()),
       })
     );
 
   [@react.component]
-  let make = (~route, ~title, ~icon=?) => {
+  let make = (~currentRoute, ~route, ~title, ~icon=?) => {
     let (href, onPress) = useHrefAndOnPress(route);
 
-    <TouchableOpacity style=styles##item accessibilityRole=`link href onPress>
+    <TouchableOpacity
+      style=Style.(
+        arrayOption([|
+          Some(styles##item),
+          currentRoute == route ? Some(styles##itemCurrent) : None,
+        |])
+      )
+      accessibilityRole=`link
+      href
+      onPress>
       {icon->Belt.Option.mapWithDefault(React.null, name =>
-         <Icon name size=24. color="#FFF" />
+         <Icon name size=24. color="#FFF" style=styles##icon />
        )}
       <Text style=styles##text> title->React.string </Text>
     </TouchableOpacity>;
@@ -36,7 +48,7 @@ let styles =
         style(
           ~flexDirection=`column,
           ~width=110.->dp,
-          ~paddingTop=60.->dp,
+          ~paddingTop=(60. +. 10.)->dp,
           ~backgroundColor="#121212",
           (),
         ),
@@ -44,10 +56,15 @@ let styles =
   );
 
 [@react.component]
-let make = () => {
+let make = (~route as currentRoute) => {
   <View style={styles##container}>
-    <NavBarItem route=Home title="Home" icon=`home />
-    <NavBarItem route=Operations title="Operations" icon=`history />
-    <NavBarItem route=Debug title="Debug" />
+    <NavBarItem currentRoute route=Home title="HOME" icon=`home />
+    <NavBarItem
+      currentRoute
+      route=Operations
+      title="OPERATIONS"
+      icon=`history
+    />
+    <NavBarItem currentRoute route=Debug title="DEBUG" />
   </View>;
 };
