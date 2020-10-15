@@ -48,6 +48,32 @@ let styles =
           ~marginTop=24.->dp,
           (),
         ),
+      "advancedOptionButton":
+        style(
+          ~flexDirection=`row,
+          ~justifyContent=`spaceBetween,
+          ~alignItems=`center,
+          ~paddingVertical=8.->dp,
+          ~marginVertical=10.->dp,
+          ~paddingRight=12.->dp,
+          (),
+        ),
+      "advancedOptionText":
+        style(
+          ~color="rgba(255,255,255,0.8)",
+          ~fontSize=18.,
+          ~fontWeight=`_400,
+          (),
+        ),
+      "chevron":
+        style(
+          ~color="rgba(255,255,255,0.6)",
+          ~fontSize=14.,
+          ~fontWeight=`_600,
+          ~transform=[|scaleY(~scaleY=1.65), rotate(~rotate=(-90.)->deg)|],
+          (),
+        ),
+      "chevronOpened": style(~transform=[|scaleX(~scaleX=1.65)|], ()),
     })
   );
 
@@ -72,6 +98,8 @@ let make = () => {
   let (account, _) = React.useContext(Account.context);
   let (network, _) = React.useContext(Network.context);
 
+  let (advancedOptionOpened, setAdvancedOptionOpened) =
+    React.useState(_ => false);
   let (operationDone, setOperationDone) = React.useState(_ => None);
 
   let (_href, onPressCancel) = Routes.useHrefAndOnPress(Routes.Home);
@@ -108,24 +136,31 @@ let make = () => {
               amount: state.values.amount->Js.Float.fromString,
               destination: state.values.recipient,
               fee:
-                state.values.fee->Js.String2.length > 0
+                advancedOptionOpened && state.values.fee->Js.String2.length > 0
                   ? Some(state.values.fee->Js.Float.fromString) : None,
               counter:
-                state.values.counter->Js.String2.length > 0
+                advancedOptionOpened
+                && state.values.counter->Js.String2.length > 0
                   ? Some(state.values.counter->int_of_string) : None,
               gasLimit:
-                state.values.gasLimit->Js.String2.length > 0
+                advancedOptionOpened
+                && state.values.gasLimit->Js.String2.length > 0
                   ? Some(state.values.gasLimit->int_of_string) : None,
               storageLimit:
-                state.values.storageLimit->Js.String2.length > 0
+                advancedOptionOpened
+                && state.values.storageLimit->Js.String2.length > 0
                   ? Some(state.values.storageLimit->int_of_string) : None,
               burnCap:
-                state.values.burnCap->Js.String2.length > 0
+                advancedOptionOpened
+                && state.values.burnCap->Js.String2.length > 0
                   ? Some(state.values.burnCap->Js.Float.fromString) : None,
               confirmations:
-                state.values.confirmations->Js.String2.length > 0
+                advancedOptionOpened
+                && state.values.confirmations->Js.String2.length > 0
                   ? Some(state.values.confirmations->int_of_string) : None,
-              forceLowFee: state.values.forceLowFee ? Some(true) : None,
+              forceLowFee:
+                advancedOptionOpened && state.values.forceLowFee
+                  ? Some(true) : None,
             });
 
           network
@@ -196,63 +231,83 @@ let make = () => {
              handleChange={form.handleChange(Recipient)}
              error={form.getFieldError(Field(Recipient))}
            />
-           <View style=styles##formRowInputs>
-             <FormGroupTextInput
-               label="Fee"
-               value={form.values.fee}
-               handleChange={form.handleChange(Fee)}
-               error={form.getFieldError(Field(Fee))}
-               small=true
-             />
-             <View style=styles##formRowInputsSeparator />
-             <FormGroupTextInput
-               label="Counter"
-               value={form.values.counter}
-               handleChange={form.handleChange(Counter)}
-               error={form.getFieldError(Field(Counter))}
-               small=true
-             />
-             <View style=styles##formRowInputsSeparator />
-             <FormGroupTextInput
-               label="Gas limit"
-               value={form.values.gasLimit}
-               handleChange={form.handleChange(GasLimit)}
-               error={form.getFieldError(Field(GasLimit))}
-               small=true
-             />
-           </View>
-           <View style=styles##formRowInputs>
-             <FormGroupTextInput
-               label="Storage limit"
-               value={form.values.storageLimit}
-               handleChange={form.handleChange(StorageLimit)}
-               error={form.getFieldError(Field(StorageLimit))}
-               small=true
-             />
-             <View style=styles##formRowInputsSeparator />
-             <FormGroupTextInput
-               label="Burn cap"
-               value={form.values.burnCap}
-               handleChange={form.handleChange(BurnCap)}
-               error={form.getFieldError(Field(BurnCap))}
-               small=true
-             />
-             <View style=styles##formRowInputsSeparator />
-             <FormGroupTextInput
-               label="Confirmations"
-               value={form.values.confirmations}
-               handleChange={form.handleChange(Confirmations)}
-               error={form.getFieldError(Field(Confirmations))}
-               small=true
-             />
-           </View>
-           <View style=styles##formGroupSwitchSeparator />
-           <FormGroupSwitch
-             label="Force low free"
-             value={form.values.forceLowFee}
-             handleChange={form.handleChange(ForceLowFee)}
-             error={form.getFieldError(Field(ForceLowFee))}
-           />
+           <TouchableOpacity
+             style=styles##advancedOptionButton
+             onPress={_ => setAdvancedOptionOpened(prev => !prev)}>
+             <Text style=styles##advancedOptionText>
+               "Advanced options"->React.string
+             </Text>
+             <Text
+               style=Style.(
+                 arrayOption([|
+                   Some(styles##chevron),
+                   advancedOptionOpened ? Some(styles##chevronOpened) : None,
+                 |])
+               )>
+               {js|∨|js}->React.string
+             </Text>
+           </TouchableOpacity>
+           {advancedOptionOpened
+              ? <>
+                  <View style=styles##formRowInputs>
+                    <FormGroupTextInput
+                      label="Fee"
+                      value={form.values.fee}
+                      handleChange={form.handleChange(Fee)}
+                      error={form.getFieldError(Field(Fee))}
+                      small=true
+                    />
+                    <View style=styles##formRowInputsSeparator />
+                    <FormGroupTextInput
+                      label="Counter"
+                      value={form.values.counter}
+                      handleChange={form.handleChange(Counter)}
+                      error={form.getFieldError(Field(Counter))}
+                      small=true
+                    />
+                    <View style=styles##formRowInputsSeparator />
+                    <FormGroupTextInput
+                      label="Gas limit"
+                      value={form.values.gasLimit}
+                      handleChange={form.handleChange(GasLimit)}
+                      error={form.getFieldError(Field(GasLimit))}
+                      small=true
+                    />
+                  </View>
+                  <View style=styles##formRowInputs>
+                    <FormGroupTextInput
+                      label="Storage limit"
+                      value={form.values.storageLimit}
+                      handleChange={form.handleChange(StorageLimit)}
+                      error={form.getFieldError(Field(StorageLimit))}
+                      small=true
+                    />
+                    <View style=styles##formRowInputsSeparator />
+                    <FormGroupTextInput
+                      label="Burn cap"
+                      value={form.values.burnCap}
+                      handleChange={form.handleChange(BurnCap)}
+                      error={form.getFieldError(Field(BurnCap))}
+                      small=true
+                    />
+                    <View style=styles##formRowInputsSeparator />
+                    <FormGroupTextInput
+                      label="Confirmations"
+                      value={form.values.confirmations}
+                      handleChange={form.handleChange(Confirmations)}
+                      error={form.getFieldError(Field(Confirmations))}
+                      small=true
+                    />
+                  </View>
+                  <View style=styles##formGroupSwitchSeparator />
+                  <FormGroupSwitch
+                    label="Force low free"
+                    value={form.values.forceLowFee}
+                    handleChange={form.handleChange(ForceLowFee)}
+                    error={form.getFieldError(Field(ForceLowFee))}
+                  />
+                </>
+              : React.null}
            <View style=styles##formAction>
              <FormButton text="CANCEL" onPress=onPressCancel />
              <FormButton
