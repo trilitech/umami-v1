@@ -90,6 +90,8 @@ module SendButton = {
           style(
             ~width=40.->dp,
             ~height=40.->dp,
+            ~justifyContent=`center,
+            ~alignItems=`center,
             ~borderRadius=20.,
             ~backgroundColor="#FFF",
             ~marginBottom=6.->dp,
@@ -105,7 +107,9 @@ module SendButton = {
 
     <TouchableOpacity
       style=styles##button accessibilityRole=`link href onPress>
-      <View style=styles##iconContainer />
+      <View style=styles##iconContainer>
+        <Icon name=`send size=24. color="#000" />
+      </View>
       <Text style=styles##text> "SEND"->React.string </Text>
     </TouchableOpacity>;
   };

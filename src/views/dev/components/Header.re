@@ -8,17 +8,28 @@ let styles =
           ~flexDirection=`row,
           ~height=60.->dp,
           ~alignItems=`center,
-          ~paddingHorizontal=22.->dp,
           ~backgroundColor="#121212",
           (),
         ),
-      "title": style(~fontWeight=`bold, ~color="#FFF", ()),
+      "title":
+        style(
+          ~marginHorizontal=16.->dp,
+          ~fontWeight=`bold,
+          ~color="#FFF",
+          (),
+        ),
     })
   );
 
 [@react.component]
 let make = () => {
   <View style=styles##container>
-    <Text style=styles##title> {js|Zebra\nwallet|js}->React.string </Text>
+    <SVGLogo
+      width={36.->Style.dp}
+      height={38.->Style.dp}
+      fill="#FFF"
+      stroke="#FFF"
+    />
+    <Text style=styles##title> {js|Zebra\nWallet|js}->React.string </Text>
   </View>;
 };

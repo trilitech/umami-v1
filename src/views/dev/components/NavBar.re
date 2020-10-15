@@ -17,10 +17,13 @@ module NavBarItem = {
     );
 
   [@react.component]
-  let make = (~route, ~title) => {
+  let make = (~route, ~title, ~icon=?) => {
     let (href, onPress) = useHrefAndOnPress(route);
 
     <TouchableOpacity style=styles##item accessibilityRole=`link href onPress>
+      {icon->Belt.Option.mapWithDefault(React.null, name =>
+         <Icon name size=24. color="#FFF" />
+       )}
       <Text style=styles##text> title->React.string </Text>
     </TouchableOpacity>;
   };
@@ -43,8 +46,8 @@ let styles =
 [@react.component]
 let make = () => {
   <View style={styles##container}>
-    <NavBarItem route=Home title="Home" />
-    <NavBarItem route=Operations title="Operations" />
+    <NavBarItem route=Home title="Home" icon=`home />
+    <NavBarItem route=Operations title="Operations" icon=`history />
     <NavBarItem route=Debug title="Debug" />
   </View>;
 };

@@ -34,7 +34,8 @@
     "reason-future",
     "reason-test-framework",
     "bs-reform",
-    "reschema"
+    "reschema",
+    "@reason-react-native/svg"
   ],
   "refmt": 3
 }
