@@ -9,7 +9,9 @@ type operationApiRequest = t(string);
 
 module OperationsAPI = API.Operations(API.TezosClient, API.TezosExplorer);
 
-let useOperation = network => {
+let useOperation = () => {
+  let (network, _) = React.useContext(Network.context);
+
   let (request, setRequest) = React.useState(_ => NotAsked);
 
   let sendRequest = operation => {
@@ -29,7 +31,9 @@ type balanceApiRequest = t(string);
 
 module BalanceAPI = API.Balance(API.TezosClient);
 
-let useBalance = (network, account) => {
+let useBalance = account => {
+  let (network, _) = React.useContext(Network.context);
+
   let (request, setRequest) = React.useState(_ => NotAsked);
 
   React.useEffect3(

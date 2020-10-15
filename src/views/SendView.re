@@ -101,12 +101,11 @@ let isValidInt = value => {
 [@react.component]
 let make = () => {
   let (account, _) = React.useContext(Account.context);
-  let (network, _) = React.useContext(Network.context);
 
   let (advancedOptionOpened, setAdvancedOptionOpened) =
     React.useState(_ => false);
 
-  let (operationRequest, sendOperation) = ApiRequest.useOperation(network);
+  let (operationRequest, sendOperation) = ApiRequest.useOperation();
 
   let (_href, onPressCancel) = Routes.useHrefAndOnPress(Routes.Home);
 

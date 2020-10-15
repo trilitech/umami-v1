@@ -48,8 +48,7 @@ module AccountItem = {
 
   [@react.component]
   let make = (~account) => {
-    let (network, _) = React.useContext(Network.context);
-    let balanceRequest = ApiRequest.useBalance(network, account);
+    let balanceRequest = ApiRequest.useBalance(account);
 
     <View style=styles##container>
       <View style=styles##border />
