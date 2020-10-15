@@ -47,12 +47,27 @@ module AccountItem = {
     );
 
   [@react.component]
-  let make = (~account, ~balance) => {
+  let make = (~account) => {
+    let (network, _) = React.useContext(Network.context);
+    let balanceRequest = ApiRequest.useBalance(network, account);
+
     <View style=styles##container>
       <View style=styles##border />
       <View style=styles##inner>
         <Text style=styles##title> "Account 1"->React.string </Text>
-        <Text style=styles##balance> balance->React.string </Text>
+        <Text style=styles##balance>
+          {switch (balanceRequest) {
+           | Done(Ok(balance)) => balance->React.string
+           | Done(Error(error)) => error->React.string
+           | NotAsked
+           | Loading =>
+             <ActivityIndicator
+               animating=true
+               size={ActivityIndicator_Size.exact(17.)}
+               color="#FFF"
+             />
+           }}
+        </Text>
         <Text style=styles##label> "Address"->React.string </Text>
         <Text style=styles##address> account->React.string </Text>
       </View>
@@ -102,7 +117,6 @@ let styles = Style.(StyleSheet.create({"container": style(~flex=1., ())}));
 [@react.component]
 let make = () => {
   let (account, _) = React.useContext(Account.context);
-  let (balance, _) = React.useContext(Balance.context);
 
-  <View> <AccountItem account balance /> <SendButton /> </View>;
+  <View> <AccountItem account /> <SendButton /> </View>;
 };
