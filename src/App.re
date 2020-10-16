@@ -1,36 +1,33 @@
+open Belt;
 open ReactNative;
-
-module MapString = Belt.Map.String;
 
 let styles =
   Style.(
     StyleSheet.create({
-      "main": style(~padding=8.->dp, ~backgroundColor="#ffffff", ()),
-      "header":
+      "layout":
+        style(~flex=1., ~flexDirection=`row, ~backgroundColor="#000000", ()),
+      "main": style(~flex=1., ()),
+      "scroll": style(~flex=1., ()),
+      "scrollContent":
         style(
-          ~flex=1.,
-          ~justifyContent=`spaceBetween,
-          ~flexDirection=`row,
-          ~margin=4.->dp,
-          ~borderWidth=1.0,
+          ~paddingTop=40.->dp,
+          ~paddingLeft=37.->dp,
+          ~paddingRight=26.->dp,
           (),
         ),
-      "section": style(~padding=4.->dp, ~margin=4.->dp, ~borderWidth=1.0, ()),
     })
   );
 
-let dummy: MapString.t(string) = MapString.empty;
-
-let toString = map =>
-  map->MapString.reduce("", (result, key, value) =>
-    result ++ (result->String.length == 0 ? "" : "\n") ++ key ++ ": " ++ value
-  );
+let dummy: Map.String.t(string) = Map.String.empty;
 
 module AccountsAPI = API.Accounts(API.TezosClient);
 module OperationsAPI = API.Operations(API.TezosClient, API.TezosExplorer);
 
 [@react.component]
 let make = () => {
+  let url = ReasonReactRouter.useUrl();
+  let route = Routes.match(url);
+
   let (network, setNetwork) = React.useState(() => Network.Test);
   let (account, setAccount) =
     React.useState(() => "tz1QHESqw4VduUUyGEY9gLh5STBDuTacpydB");
@@ -67,63 +64,36 @@ let make = () => {
     [|setAccounts|],
   );
 
-  <SafeAreaView>
-    <Network.Provider value=(network, network => setNetwork(_ => network))>
-      <Account.Provider value=(account, account => setAccount(_ => account))>
-        <Balance.Provider
-          value=(balance, balance => setBalance(_ => balance))>
-          <Accounts.Provider
-            value=(accounts, accounts => setAccounts(_ => accounts))>
-            <Injection.Provider
-              value=(injection, injection => setInjection(_ => injection))>
+  <Network.Provider value=(network, network => setNetwork(_ => network))>
+    <Account.Provider value=(account, account => setAccount(_ => account))>
+      <Balance.Provider value=(balance, balance => setBalance(_ => balance))>
+        <Accounts.Provider
+          value=(accounts, accounts => setAccounts(_ => accounts))>
+          <Injection.Provider
+            value=(injection, injection => setInjection(_ => injection))>
+            <View style=styles##layout>
+              <NavBar route />
               <View style=styles##main>
-                <View style=styles##header>
-                  <BalanceOverview />
-                  <NetworkSwitch />
-                </View>
-                <TransactionForm
-                  onSubmit={(source, amount, destination) =>
-                    setInjection(_ =>
-                      Pending(
-                        Transaction(
-                          Injection.makeTransfer(
-                            ~source,
-                            ~amount,
-                            ~destination,
-                            (),
-                          ),
-                        ),
-                      )
-                    )
-                  }
-                />
-                <DelegateForm
-                  onSubmit={(source, delegate) =>
-                    AccountsAPI.add("delegate", delegate)
-                    ->Future.tapOk(_ =>
-                        AccountsAPI.get()
-                        ->FutureEx.getOk(value => setAccounts(_ => value))
-                      )
-                    ->FutureEx.getOk(_ =>
-                        setInjection(_ =>
-                          Pending(Delegation({source, delegate: "delegate"}))
-                        )
-                      )
-                  }
-                />
-                <AccountCreationForm />
-                <AccountRestorationForm />
-                <AccountHDRestorationForm />
-                <AccountDeletionForm />
-                <Text style=styles##section>
-                  {accounts->toString->React.string}
-                </Text>
-                <OperationList />
+                <Header />
+                <ScrollView
+                  style=styles##scroll
+                  contentContainerStyle=styles##scrollContent>
+                  {switch (route) {
+                   | Home => <HomeView />
+                   | Send => <SendView />
+                   | Operations => <OperationsView />
+                   | Debug => <DebugView setInjection setAccounts accounts />
+                   | NotFound =>
+                     <View>
+                       <Text> "404 - Route Not Found :("->React.string </Text>
+                     </View>
+                   }}
+                </ScrollView>
               </View>
-            </Injection.Provider>
-          </Accounts.Provider>
-        </Balance.Provider>
-      </Account.Provider>
-    </Network.Provider>
-  </SafeAreaView>;
+            </View>
+          </Injection.Provider>
+        </Accounts.Provider>
+      </Balance.Provider>
+    </Account.Provider>
+  </Network.Provider>;
 };

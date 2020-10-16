@@ -8,8 +8,10 @@
   "private": true,
   "dependencies": {
     "@glennsl/bs-json": "^5.0.2",
+    "@reason-react-native/svg": "lin2jie2/svg#341b27f528c07209f333cc8e82217dab08e22aa8",
     "bip39": "^3.0.2",
     "bs-fetch": "^0.6.2",
+    "bs-reform": "10.0.2-alpha.0",
     "bs58check": "^2.1.2",
     "child-reprocess": "^0.1.2",
     "ed25519-hd-key": "^1.1.2",
@@ -18,11 +20,13 @@
     "electron-reload": "^1.5.0",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
+    "react-native-svg": "12.1.0",
     "react-native-web": "^0.13.4",
     "reason-future": "^2.6.0",
     "reason-react": "^0.9.1",
     "reason-react-native": "^0.62.2",
-    "reason-react-update": "^2.0.0"
+    "reason-react-update": "^2.0.0",
+    "reschema": "2.0.2-alpha.0"
   },
   "scripts": {
     "start": "react-app-rewired start",
@@ -34,7 +38,8 @@
     "postinstall": "electron-builder install-app-deps",
     "electron:dev": "concurrently -k \"yarn bsb:start\" \"cross-env BROWSER=none yarn start\" \"wait-on tcp:3000 && tsc -p electron -w\" \"wait-on tcp:3000 && tsc -p electron && electron .\"",
     "electron:build": "yarn bsb:build && yarn build && tsc -p electron && electron-builder",
-    "eject": "react-app-rewired eject"
+    "eject": "react-app-rewired eject",
+    "fromsvg": "react-from-svg src/svg/source src/svg/components --remove-stroke --remove-fill --with-native-for-reason"
   },
   "build": {
     "extends": null,
@@ -71,7 +76,9 @@
     "cross-env": "^7.0.2",
     "electron": "^9.1.0",
     "electron-builder": "^22.7.0",
+    "lenses-ppx": "6.1.0",
     "react-app-rewired": "^2.1.6",
+    "react-from-svg": "4.0.6",
     "react-scripts": "3.4.1",
     "reason-test-framework": "^0.3.2",
     "typescript": "3.9.6",
