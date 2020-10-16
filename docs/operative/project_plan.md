@@ -42,7 +42,7 @@ gantt
     Team Hiring                                       :done  , 2020-06-11, 2020-09-01
     Onboarding New Members                            :done  , 2020-10-16, 2020-11-01
     section Sprint 1 - PoC
-    Sprint 1 - PoC                                    :done  , 2020-07-27, 2020-07-31
+    Sprint 1 - PoC                                    :done  , 2020-07-19, 2020-07-31
     section Sprint 2 - Simple Wallet
     Sprint 2 - Simple Wallet                          :done  , 2020-08-03, 2020-08-14
     section Sprint 3 - Indexer Refactoring
