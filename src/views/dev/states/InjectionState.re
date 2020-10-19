@@ -1,8 +1,10 @@
-type name =
-  | Main
-  | Test;
+include Injection;
 
-let context = React.createContext((Test, (_: name) => ignore()));
+type status =
+  | Pending(operation)
+  | Done;
+
+let context = React.createContext((Done, (_: status) => ignore()));
 
 module Provider = {
   let make = React.Context.provider(context);

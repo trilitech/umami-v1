@@ -9,7 +9,7 @@ let endpoint = network =>
 module URL = {
   let operations =
       (
-        network: Network.name,
+        network: Network.t,
         account,
         ~types: option(array(string))=?,
         ~limit: option(int)=?,
@@ -35,7 +35,7 @@ module URL = {
       }
     );
 
-  let delegates = (network: Network.name) =>
+  let delegates = (network: Network.t) =>
     switch (network) {
     | Main => "https://mainnet-tezos.giganode.io/chains/main/blocks/head/context/delegates\\?active=true"
     | Test => "https://testnet-tezos.giganode.io/chains/main/blocks/head/context/delegates\\?active=true"

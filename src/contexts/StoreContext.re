@@ -1,5 +1,5 @@
 type state = {
-  network: Network.name,
+  network: Network.t,
   account: string,
 };
 

@@ -1,6 +1,5 @@
 open Belt;
 open ReactNative;
-open Injection;
 
 module AccountsAPI = API.Accounts(API.TezosClient);
 module OperationsAPI = API.Operations(API.TezosClient, API.TezosExplorer);
@@ -35,7 +34,7 @@ let make = () => {
   let (account, setAccount) =
     React.useState(() => "tz1QHESqw4VduUUyGEY9gLh5STBDuTacpydB");
   let (balance, setBalance) = React.useState(() => "");
-  let (injection, setInjection) = React.useState(() => Injection.Done);
+  let (injection, setInjection) = React.useState(() => InjectionState.Done);
   let (accounts, setAccounts) = React.useState(() => dummy);
 
   React.useEffect3(
@@ -69,12 +68,14 @@ let make = () => {
     [|setAccounts|],
   );
 
-  <Network.Provider value=(network, network => setNetwork(_ => network))>
-    <Account.Provider value=(account, account => setAccount(_ => account))>
-      <Balance.Provider value=(balance, balance => setBalance(_ => balance))>
-        <Accounts.Provider
+  <NetworkState.Provider value=(network, network => setNetwork(_ => network))>
+    <AccountState.Provider
+      value=(account, account => setAccount(_ => account))>
+      <BalanceState.Provider
+        value=(balance, balance => setBalance(_ => balance))>
+        <AccountsState.Provider
           value=(accounts, accounts => setAccounts(_ => accounts))>
-          <Injection.Provider
+          <InjectionState.Provider
             value=(injection, injection => setInjection(_ => injection))>
             <View style=styles##main>
               <View style=styles##header>
@@ -120,9 +121,9 @@ let make = () => {
               </Text>
               <OperationList />
             </View>
-          </Injection.Provider>
-        </Accounts.Provider>
-      </Balance.Provider>
-    </Account.Provider>
-  </Network.Provider>;
+          </InjectionState.Provider>
+        </AccountsState.Provider>
+      </BalanceState.Provider>
+    </AccountState.Provider>
+  </NetworkState.Provider>;
 };

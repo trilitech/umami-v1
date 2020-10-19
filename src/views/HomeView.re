@@ -119,7 +119,7 @@ let styles = Style.(StyleSheet.create({"container": style(~flex=1., ())}));
 
 [@react.component]
 let make = () => {
-  let (account, _) = React.useContext(Account.context);
+  let account = StoreContext.useAccount();
 
   <> <Page> <AccountItem account /> </Page> <SendButton /> </>;
 };

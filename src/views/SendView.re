@@ -100,7 +100,7 @@ let isValidInt = value => {
 
 [@react.component]
 let make = () => {
-  let (account, _) = React.useContext(Account.context);
+  let (account, _) = React.useContext(AccountState.context);
 
   let (advancedOptionOpened, setAdvancedOptionOpened) =
     React.useState(_ => false);

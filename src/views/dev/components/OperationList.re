@@ -14,10 +14,10 @@ module OperationsAPI = API.Operations(API.TezosClient, API.TezosExplorer);
 
 [@react.component]
 let make = () => {
-  let (network, _) = React.useContext(Network.context);
-  let (account, _) = React.useContext(Account.context);
-  let (_, setBalance) = React.useContext(Balance.context);
-  let (injection, _) = React.useContext(Injection.context);
+  let (network, _) = React.useContext(NetworkState.context);
+  let (account, _) = React.useContext(AccountState.context);
+  let (_, setBalance) = React.useContext(BalanceState.context);
+  let (injection, _) = React.useContext(InjectionState.context);
 
   let (operations: array(Operation.t), setOperations) =
     React.useState(() => [||]);

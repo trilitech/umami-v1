@@ -1,16 +1,16 @@
 open ReactNative;
 
-module BalanceAPI = API.Balance(API.TezosClient)
+module BalanceAPI = API.Balance(API.TezosClient);
 
 let style = Style.(style(~padding=4.->dp, ()));
 
 [@react.component]
 let make = () => {
-  let (network, _) = React.useContext(Network.context);
-  let (account, _) = React.useContext(Account.context);
-  let (injection, _) = React.useContext(Injection.context);
+  let (network, _) = React.useContext(NetworkState.context);
+  let (account, _) = React.useContext(AccountState.context);
+  let (injection, _) = React.useContext(InjectionState.context);
 
-  let (balance, setBalance) = React.useContext(Balance.context);
+  let (balance, setBalance) = React.useContext(BalanceState.context);
 
   React.useEffect5(
     () => {
@@ -26,5 +26,5 @@ let make = () => {
     (network, account, injection, balance, setBalance),
   );
 
-  <Text style> ("Balance: " ++ balance)->React.string </Text>;
+  <Text style> {("Balance: " ++ balance)->React.string} </Text>;
 };

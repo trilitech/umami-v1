@@ -8,10 +8,23 @@ type transaction = {
   storageLimit: option(int),
   burnCap: option(float),
   confirmations: option(int),
-  forceLowFee: option(bool)
+  forceLowFee: option(bool),
 };
 
-let makeTransfer = (~source, ~amount, ~destination, ~fee=?, ~counter=?, ~gasLimit=?, ~storageLimit=?, ~burnCap=?, ~confirmations=?, ~forceLowFee=?, ()) => {
+let makeTransfer =
+    (
+      ~source,
+      ~amount,
+      ~destination,
+      ~fee=?,
+      ~counter=?,
+      ~gasLimit=?,
+      ~storageLimit=?,
+      ~burnCap=?,
+      ~confirmations=?,
+      ~forceLowFee=?,
+      (),
+    ) => {
   {
     source,
     amount,
@@ -22,9 +35,9 @@ let makeTransfer = (~source, ~amount, ~destination, ~fee=?, ~counter=?, ~gasLimi
     storageLimit,
     burnCap,
     confirmations,
-    forceLowFee
-  }
-}
+    forceLowFee,
+  };
+};
 
 type delegation = {
   source: string,
@@ -34,18 +47,3 @@ type delegation = {
 type operation =
   | Transaction(transaction)
   | Delegation(delegation);
-
-type status =
-  | Pending(operation)
-  | Done;
-
-let context = React.createContext((Done, (_: status) => ignore()));
-
-module Provider = {
-  let make = React.Context.provider(context);
-
-  let makeProps = (~value, ~children, ()) => {
-    "value": value,
-    "children": children,
-  };
-};

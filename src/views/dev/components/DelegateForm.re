@@ -7,7 +7,7 @@ module Delegates = API.Delegates(API.TezosExplorer);
 
 [@react.component]
 let make = (~onSubmit) => {
-  let (network, _) = React.useContext(Network.context);
+  let (network, _) = React.useContext(NetworkState.context);
 
   let (source, setSource) = React.useState(() => "");
   let (selectedDelegateIndex, setSelectedDelegateIndex) =

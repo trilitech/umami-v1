@@ -8,8 +8,8 @@ module ScannerAPI = API.Scanner(API.TezosClient, API.TezosExplorer);
 
 [@react.component]
 let make = () => {
-  let (network, _) = React.useContext(Network.context);
-  let (_, setAccounts) = React.useContext(Accounts.context);
+  let (network, _) = React.useContext(NetworkState.context);
+  let (_, setAccounts) = React.useContext(AccountsState.context);
 
   let (backupPhrase, setBackupPhrase) = React.useState(() => "");
   let (derivationPath, setDerivationPath) =
@@ -36,7 +36,7 @@ let make = () => {
       onPress={_ => {
         let future =
           if (derivationPath->Js.String2.includes("?")) {
-            Js.log("scan")
+            Js.log("scan");
             network->ScannerAPI.scan(
               backupPhrase,
               name,
