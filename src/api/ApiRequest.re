@@ -12,7 +12,7 @@ module OperationsAPI = API.Operations(API.TezosClient, API.TezosExplorer);
 type createOperationApiRequest = t(string);
 
 let useCreateOperation = () => {
-  let (network, _) = React.useContext(Network.context);
+  let network = StoreContext.useNetwork();
 
   let (request, setRequest) = React.useState(_ => NotAsked);
 
@@ -32,8 +32,8 @@ let useCreateOperation = () => {
 type getOperationsApiRequest = t(array(Operation.t));
 
 let useGetOperations = () => {
-  let (network, _) = React.useContext(Network.context);
-  let (account, _) = React.useContext(Account.context);
+  let network = StoreContext.useNetwork();
+  let account = StoreContext.useAccount();
 
   let (request, setRequest) = React.useState(_ => NotAsked);
 
@@ -54,12 +54,12 @@ let useGetOperations = () => {
 
 /* BALANCE */
 
-type balanceApiRequest = t(string);
-
 module BalanceAPI = API.Balance(API.TezosClient);
 
+type balanceApiRequest = t(string);
+
 let useBalance = account => {
-  let (network, _) = React.useContext(Network.context);
+  let network = StoreContext.useNetwork();
 
   let (request, setRequest) = React.useState(_ => NotAsked);
 

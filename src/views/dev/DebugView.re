@@ -3,6 +3,7 @@ open ReactNative;
 open Injection;
 
 module AccountsAPI = API.Accounts(API.TezosClient);
+module OperationsAPI = API.Operations(API.TezosClient, API.TezosExplorer);
 
 let styles =
   Style.(
@@ -21,44 +22,107 @@ let styles =
     })
   );
 
+let dummy: Map.String.t(string) = Map.String.empty;
+
 let toString = map =>
   map->Map.String.reduce("", (result, key, value) =>
     result ++ (result->String.length == 0 ? "" : "\n") ++ key ++ ": " ++ value
   );
 
 [@react.component]
-let make = (~setInjection, ~setAccounts, ~accounts) => {
-  <View style=styles##main>
-    <View style=styles##header> <BalanceOverview /> <NetworkSwitch /> </View>
-    <TransactionForm
-      onSubmit={(source, amount, destination) =>
-        setInjection(_ =>
-          Pending(
-            Transaction(
-              Injection.makeTransfer(~source, ~amount, ~destination, ()),
-            ),
+let make = () => {
+  let (network, setNetwork) = React.useState(() => Network.Test);
+  let (account, setAccount) =
+    React.useState(() => "tz1QHESqw4VduUUyGEY9gLh5STBDuTacpydB");
+  let (balance, setBalance) = React.useState(() => "");
+  let (injection, setInjection) = React.useState(() => Injection.Done);
+  let (accounts, setAccounts) = React.useState(() => dummy);
+
+  React.useEffect3(
+    () => {
+      switch (injection) {
+      | Pending(operation) =>
+        network
+        ->OperationsAPI.create(operation)
+        ->Future.get(result =>
+            switch (result) {
+            | Ok(_) => setInjection(_ => Done)
+            | Error(value) => Dialog.error(value)
+            }
           )
-        )
-      }
-    />
-    <DelegateForm
-      onSubmit={(source, delegate) =>
-        AccountsAPI.add("delegate", delegate)
-        ->Future.tapOk(_ =>
-            AccountsAPI.get()->FutureEx.getOk(value => setAccounts(_ => value))
-          )
-        ->FutureEx.getOk(_ =>
-            setInjection(_ =>
-              Pending(Delegation({source, delegate: "delegate"}))
-            )
-          )
-      }
-    />
-    <AccountCreationForm />
-    <AccountRestorationForm />
-    <AccountHDRestorationForm />
-    <AccountDeletionForm />
-    <Text style=styles##section> {accounts->toString->React.string} </Text>
-    <OperationList />
-  </View>;
+      | Done =>
+        Js.log("operation injected");
+        ();
+      };
+      None;
+    },
+    (network, injection, setInjection),
+  );
+
+  React.useEffect1(
+    () => {
+      AccountsAPI.get()
+      ->Future.tapOk(value => setAccounts(_ => value))
+      ->ignore;
+      None;
+    },
+    [|setAccounts|],
+  );
+
+  <Network.Provider value=(network, network => setNetwork(_ => network))>
+    <Account.Provider value=(account, account => setAccount(_ => account))>
+      <Balance.Provider value=(balance, balance => setBalance(_ => balance))>
+        <Accounts.Provider
+          value=(accounts, accounts => setAccounts(_ => accounts))>
+          <Injection.Provider
+            value=(injection, injection => setInjection(_ => injection))>
+            <View style=styles##main>
+              <View style=styles##header>
+                <BalanceOverview />
+                <NetworkSwitch />
+              </View>
+              <TransactionForm
+                onSubmit={(source, amount, destination) =>
+                  setInjection(_ =>
+                    Pending(
+                      Transaction(
+                        Injection.makeTransfer(
+                          ~source,
+                          ~amount,
+                          ~destination,
+                          (),
+                        ),
+                      ),
+                    )
+                  )
+                }
+              />
+              <DelegateForm
+                onSubmit={(source, delegate) =>
+                  AccountsAPI.add("delegate", delegate)
+                  ->Future.tapOk(_ =>
+                      AccountsAPI.get()
+                      ->FutureEx.getOk(value => setAccounts(_ => value))
+                    )
+                  ->FutureEx.getOk(_ =>
+                      setInjection(_ =>
+                        Pending(Delegation({source, delegate: "delegate"}))
+                      )
+                    )
+                }
+              />
+              <AccountCreationForm />
+              <AccountRestorationForm />
+              <AccountHDRestorationForm />
+              <AccountDeletionForm />
+              <Text style=styles##section>
+                {accounts->toString->React.string}
+              </Text>
+              <OperationList />
+            </View>
+          </Injection.Provider>
+        </Accounts.Provider>
+      </Balance.Provider>
+    </Account.Provider>
+  </Network.Provider>;
 };
