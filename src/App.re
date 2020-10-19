@@ -7,14 +7,7 @@ let styles =
       "layout":
         style(~flex=1., ~flexDirection=`row, ~backgroundColor="#000000", ()),
       "main": style(~flex=1., ()),
-      "scroll": style(~flex=1., ()),
-      "scrollContent":
-        style(
-          ~paddingTop=40.->dp,
-          ~paddingLeft=37.->dp,
-          ~paddingRight=26.->dp,
-          (),
-        ),
+      "content": style(~flex=1., ()),
     })
   );
 
@@ -75,9 +68,7 @@ let make = () => {
               <NavBar route />
               <View style=styles##main>
                 <Header />
-                <ScrollView
-                  style=styles##scroll
-                  contentContainerStyle=styles##scrollContent>
+                <View style=styles##content>
                   {switch (route) {
                    | Home => <HomeView />
                    | Send => <SendView />
@@ -88,7 +79,7 @@ let make = () => {
                        <Text> "404 - Route Not Found :("->React.string </Text>
                      </View>
                    }}
-                </ScrollView>
+                </View>
               </View>
             </View>
           </Injection.Provider>

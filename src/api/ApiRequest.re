@@ -5,11 +5,13 @@ type t('value) =
 
 /* OPERATION */
 
-type operationApiRequest = t(string);
-
 module OperationsAPI = API.Operations(API.TezosClient, API.TezosExplorer);
 
-let useOperation = () => {
+/* Create */
+
+type createOperationApiRequest = t(string);
+
+let useCreateOperation = () => {
   let (network, _) = React.useContext(Network.context);
 
   let (request, setRequest) = React.useState(_ => NotAsked);
@@ -23,6 +25,31 @@ let useOperation = () => {
   };
 
   (request, sendRequest);
+};
+
+/* Get list */
+
+type getOperationsApiRequest = t(array(Operation.t));
+
+let useGetOperations = () => {
+  let (network, _) = React.useContext(Network.context);
+  let (account, _) = React.useContext(Account.context);
+
+  let (request, setRequest) = React.useState(_ => NotAsked);
+
+  React.useEffect3(
+    () => {
+      setRequest(_ => Loading);
+
+      network
+      ->OperationsAPI.get(account, ())
+      ->Future.get(result => setRequest(_ => Done(result)));
+      None;
+    },
+    (network, account, setRequest),
+  );
+
+  request;
 };
 
 /* BALANCE */

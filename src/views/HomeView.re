@@ -81,8 +81,8 @@ module SendButton = {
         "button":
           style(
             ~position=`absolute,
-            ~right=0.->dp,
-            ~top=0.->dp,
+            ~right=36.->dp,
+            ~top=40.->dp,
             ~alignItems=`center,
             (),
           ),
@@ -121,5 +121,5 @@ let styles = Style.(StyleSheet.create({"container": style(~flex=1., ())}));
 let make = () => {
   let (account, _) = React.useContext(Account.context);
 
-  <View> <AccountItem account /> <SendButton /> </View>;
+  <> <Page> <AccountItem account /> </Page> <SendButton /> </>;
 };

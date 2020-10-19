@@ -134,7 +134,7 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
     network
     ->URL.operations(account, ~types?, ~limit?, ())
     ->Getter.get
-    ->Future.map(result => result->map(Json.Decode.array(Operation.decode)));
+    ->Future.mapOk(Json.Decode.array(Operation.decode));
 
   let create = (network, operation: Injection.operation) =>
     (

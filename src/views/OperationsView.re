@@ -27,61 +27,64 @@ module OperationItem = {
       })
     );
 
+  let memo = component =>
+    React.memoCustomCompareProps(component, (prevPros, nextProps) =>
+      prevPros##operation == nextProps##operation
+    );
+
   [@react.component]
-  let make = (~operation: Operation.t) => {
-    <View style=styles##container>
-      <View style=styles##border />
-      <View style=styles##inner>
-        <View style=styles##cell>
-          <Text style=styles##text> operation.id->React.string </Text>
-        </View>
-        <View style=styles##cell>
-          <Text style=styles##text> operation.level->React.string </Text>
-        </View>
-        <View style=styles##cell>
-          <Text style=styles##text>
-            {operation.timestamp->Js.Date.toISOString->React.string}
-          </Text>
-        </View>
-        <View style=styles##cell>
-          <Text style=styles##text> operation.block->React.string </Text>
+  let make =
+    memo((~operation: Operation.t) => {
+      <View style=styles##container>
+        <View style=styles##border />
+        <View style=styles##inner>
+          <View style=styles##cell>
+            <Text style=styles##text> operation.id->React.string </Text>
+          </View>
+          <View style=styles##cell>
+            <Text style=styles##text> operation.level->React.string </Text>
+          </View>
+          <View style=styles##cell>
+            <Text style=styles##text>
+              {operation.timestamp->Js.Date.toISOString->React.string}
+            </Text>
+          </View>
+          <View style=styles##cell>
+            <Text style=styles##text> operation.block->React.string </Text>
+          </View>
         </View>
       </View>
-    </View>;
-  };
+    });
 };
 
 let styles = Style.(StyleSheet.create({"container": style(~flex=1., ())}));
 
-module OperationsAPI = API.Operations(API.TezosClient, API.TezosExplorer);
+let renderItem =
+    (renderItemProps: VirtualizedList.renderItemProps(Operation.t)) => {
+  let operation = renderItemProps.item;
+  <OperationItem operation />;
+};
+
+let keyExtractor = (operation: Operation.t, _i) => {
+  operation.id;
+};
 
 [@react.component]
 let make = () => {
-  let (network, _) = React.useContext(Network.context);
-  let (account, _) = React.useContext(Account.context);
-  let (injection, _) = React.useContext(Injection.context);
-  let (operations: array(Operation.t), setOperations) =
-    React.useState(() => [||]);
+  let operationsRequest = ApiRequest.useGetOperations();
 
-  React.useEffect4(
-    () => {
-      switch (injection) {
-      | Pending(_) => ()
-      | Done =>
-        network
-        ->OperationsAPI.get(account, ())
-        ->FutureEx.getOk(value => setOperations(_ => value))
-      };
-      None;
-    },
-    (network, account, injection, setOperations),
-  );
-
-  <View>
-    {operations
-     ->Belt.Array.map(operation =>
-         <OperationItem key={operation.id} operation />
-       )
-     ->React.array}
-  </View>;
+  switch (operationsRequest) {
+  | Done(Ok(operations)) =>
+    <FlatList
+      style=Page.styles##scroll
+      contentContainerStyle=Page.styles##scrollContent
+      data=operations
+      keyExtractor
+      renderItem
+      initialNumToRender=20
+    />
+  | Done(Error(error)) => error->React.string
+  | NotAsked
+  | Loading => <LoadingView />
+  };
 };
