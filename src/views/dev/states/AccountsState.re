@@ -1,6 +1,4 @@
-module MapString = Belt.Map.String;
-
-let context = React.createContext((MapString.empty: MapString.t(string), (_: MapString.t(string)) => ignore()));
+let context = React.createContext(([||]: array((string, string)), (_: array((string, string))) => ignore()));
 
 module Provider = {
   let make = React.Context.provider(context);

@@ -21,11 +21,11 @@ let styles =
     })
   );
 
-let dummy: Map.String.t(string) = Map.String.empty;
+let dummy: array((string, string)) = [||];
 
-let toString = map =>
-  map->Map.String.reduce("", (result, key, value) =>
-    result ++ (result->String.length == 0 ? "" : "\n") ++ key ++ ": " ++ value
+let toString = array =>
+  array->Array.reduce("", (result, (name, address)) =>
+    result ++ (result->String.length == 0 ? "" : "\n") ++ name ++ ": " ++ address
   );
 
 [@react.component]

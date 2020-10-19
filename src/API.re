@@ -227,15 +227,15 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
 
 module MapString = Belt.Map.String;
 
-let parseAddresses = content =>
-  content
-  |> Js.String.split("\n")
-  |> Array.map(row => row |> Js.String.split(": "))
-  |> (pairs => pairs->Belt.Array.keep(pair => pair->Array.length == 2))
-  |> Array.map(pair => (pair[0], pair[1]))
-  |> MapString.fromArray;
-
 module Accounts = (Caller: CallerAPI) => {
+
+  let parseAddresses = content =>
+    content
+    |> Js.String.split("\n")
+    |> Array.map(row => row |> Js.String.split(": "))
+    |> (pairs => pairs->Belt.Array.keep(pair => pair->Array.length == 2))
+    |> Array.map(pair => (pair[0], pair[1]));
+
   let get = _ =>
     Caller.call([|"list", "known", "contracts"|])
     ->Future.mapOk(parseAddresses);
@@ -299,6 +299,7 @@ module Scanner = (Caller: CallerAPI, Getter: GetterAPI) => {
     AccountsAPI.import(edsk2, name)
     ->Future.flatMapOk(_ =>
         AccountsAPI.get()
+        ->Future.mapOk(MapString.fromArray)
         ->Future.flatMapOk(accounts =>
             switch (accounts->Belt.Map.String.get(name)) {
             | Some(address) =>
