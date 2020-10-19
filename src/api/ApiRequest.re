@@ -31,22 +31,22 @@ let useCreateOperation = () => {
 
 type getOperationsApiRequest = t(array(Operation.t));
 
-let useGetOperations = () => {
+let useGetOperations = (~limit=?, ~types=?, ()) => {
   let network = StoreContext.useNetwork();
   let account = StoreContext.useAccount();
 
   let (request, setRequest) = React.useState(_ => NotAsked);
 
-  React.useEffect3(
+  React.useEffect5(
     () => {
       setRequest(_ => Loading);
 
       network
-      ->OperationsAPI.get(account, ())
+      ->OperationsAPI.get(account, ~limit?, ~types?, ())
       ->Future.get(result => setRequest(_ => Done(result)));
       None;
     },
-    (network, account, setRequest),
+    (network, account, limit, types, setRequest),
   );
 
   request;

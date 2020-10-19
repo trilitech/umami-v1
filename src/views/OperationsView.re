@@ -71,7 +71,7 @@ let keyExtractor = (operation: Operation.t, _i) => {
 
 [@react.component]
 let make = () => {
-  let operationsRequest = ApiRequest.useGetOperations();
+  let operationsRequest = ApiRequest.useGetOperations(~limit=100, ());
 
   switch (operationsRequest) {
   | Done(Ok(operations)) =>
