@@ -95,12 +95,13 @@ let isValidInt = value => {
 
 [@react.component]
 let make = () => {
-  let (account, _) = React.useContext(AccountState.context);
+  let account = StoreContext.useAccount();
 
   let (advancedOptionOpened, setAdvancedOptionOpened) =
     React.useState(_ => false);
 
-  let (operationRequest, sendOperation) = ApiRequest.useCreateOperation();
+  let (operationRequest, sendOperation) =
+    OperationApiRequest.useCreateOperation();
 
   let (_href, onPressCancel) = Routes.useHrefAndOnPress(Routes.Home);
 
@@ -169,7 +170,8 @@ let make = () => {
         },
       ~initialState={
         amount: "",
-        sender: account,
+        sender:
+          account->Belt.Option.mapWithDefault("", account => account.address),
         recipient: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
         fee: "",
         counter: "",

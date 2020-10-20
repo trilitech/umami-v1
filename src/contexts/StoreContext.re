@@ -1,11 +1,16 @@
 type state = {
   network: Network.t,
-  account: string,
+  selectedAccount: option(string),
+  accounts: Belt.Map.String.t(Account.t),
 };
 
 // Context and Provider
 
-let initialState = {network: Network.Test, account: ""};
+let initialState = {
+  network: Network.Test,
+  selectedAccount: None,
+  accounts: Belt.Map.String.empty,
+};
 
 let context = React.createContext(initialState);
 
@@ -23,10 +28,47 @@ module Provider = {
 [@react.component]
 let make = (~children) => {
   let (network, _setNetwork) = React.useState(() => Network.Test);
-  let (account, _setAccount) =
-    React.useState(() => "tz1QHESqw4VduUUyGEY9gLh5STBDuTacpydB");
+  let (selectedAccount, setSelectedAccount) = React.useState(() => None);
 
-  <Provider value={network, account}> children </Provider>;
+  let accountsRequest = AccountApiRequest.useGetAccounts();
+
+  React.useEffect3(
+    () => {
+      if (selectedAccount->Belt.Option.isNone) {
+        let firstAccount =
+          accountsRequest
+          ->ApiRequest.getDoneOk
+          ->Belt.Option.getWithDefault([||])
+          ->Belt.Array.get(0);
+
+        switch (firstAccount) {
+        | Some((_alias, address)) => setSelectedAccount(_ => Some(address))
+        | None => ()
+        };
+      };
+      None;
+    },
+    (accountsRequest, selectedAccount, setSelectedAccount),
+  );
+
+  let accounts =
+    React.useMemo1(
+      () => {
+        accountsRequest
+        ->ApiRequest.getDoneOk
+        ->Belt.Option.mapWithDefault(Belt.Map.String.empty, accounts =>
+            accounts
+            ->Belt.Array.map(((alias, address)) => {
+                let account: Account.t = {alias, address};
+                (address, account);
+              })
+            ->Belt.Map.String.fromArray
+          )
+      },
+      [|accountsRequest|],
+    );
+
+  <Provider value={network, selectedAccount, accounts}> children </Provider>;
 };
 
 // Hooks
@@ -40,5 +82,13 @@ let useNetwork = () => {
 
 let useAccount = () => {
   let store = useStoreContext();
-  store.account;
+  store.selectedAccount
+  ->Belt.Option.flatMap(selectedAccount =>
+      store.accounts->Belt.Map.String.get(selectedAccount)
+    );
+};
+
+let useAccounts = () => {
+  let store = useStoreContext();
+  store.accounts;
 };

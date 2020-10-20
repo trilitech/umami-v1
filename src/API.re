@@ -134,7 +134,7 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
     network
     ->URL.operations(account, ~types?, ~limit?, ())
     ->Getter.get
-    ->Future.map(result => result->map(Json.Decode.(array(Operation.decode))));
+    ->Future.mapOk(Json.Decode.array(Operation.decode));
 
   let create = (network, operation: Injection.operation) =>
     (
@@ -228,16 +228,21 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
 module MapString = Belt.Map.String;
 
 module Accounts = (Caller: CallerAPI) => {
-
   let parseAddresses = content =>
     content
-    |> Js.String.split("\n")
-    |> Array.map(row => row |> Js.String.split(": "))
-    |> (pairs => pairs->Belt.Array.keep(pair => pair->Array.length == 2))
-    |> Array.map(pair => (pair[0], pair[1]));
+    ->Js.String2.split("\n")
+    ->Belt.Array.map(row => row->Js.String2.split(": "))
+    ->(pairs => pairs->Belt.Array.keep(pair => pair->Belt.Array.length == 2))
+    ->Belt.Array.map(pair => (pair[0], pair[1]));
 
-  let get = _ =>
-    Caller.call([|"list", "known", "contracts"|])
+  let get = () =>
+    Caller.call([|
+      "-E",
+      Network.Test->endpoint,
+      "list",
+      "known",
+      "contracts",
+    |])
     ->Future.mapOk(parseAddresses);
 
   let create = name => Caller.call([|"gen", "keys", name|]);

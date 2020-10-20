@@ -27,13 +27,13 @@ module AccountItem = {
     );
 
   [@react.component]
-  let make = (~account) => {
-    let balanceRequest = ApiRequest.useBalance(account);
+  let make = (~account: Account.t) => {
+    let balanceRequest = BalanceApiRequest.useBalance(account.address);
 
     <View style=styles##container>
       <View style=styles##border />
       <View style=styles##inner>
-        <Text style=styles##title> "Account 1"->React.string </Text>
+        <Text style=styles##title> account.alias->React.string </Text>
         <Text style=styles##balance>
           {switch (balanceRequest) {
            | Done(Ok(balance)) => balance->React.string
@@ -48,7 +48,7 @@ module AccountItem = {
            }}
         </Text>
         <Text style=styles##label> "Address"->React.string </Text>
-        <Text style=styles##address> account->React.string </Text>
+        <Text style=styles##address> account.address->React.string </Text>
       </View>
     </View>;
   };
@@ -105,7 +105,17 @@ let styles = Style.(StyleSheet.create({"container": style(~flex=1., ())}));
 
 [@react.component]
 let make = () => {
-  let account = StoreContext.useAccount();
+  let accounts = StoreContext.useAccounts();
 
-  <> <Page> <AccountItem account /> </Page> <SendButton /> </>;
+  <>
+    <Page>
+      {accounts
+       ->Belt.Map.String.valuesToArray
+       ->Belt.Array.map(account =>
+           <AccountItem key={account.address} account />
+         )
+       ->React.array}
+    </Page>
+    <SendButton />
+  </>;
 };
