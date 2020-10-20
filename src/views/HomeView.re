@@ -4,7 +4,13 @@ module AccountItem = {
   let styles =
     Style.(
       StyleSheet.create({
-        "container": style(~height=84.->dp, ~flexDirection=`row, ()),
+        "container":
+          style(
+            ~height=84.->dp,
+            ~marginVertical=6.->dp,
+            ~flexDirection=`row,
+            (),
+          ),
         "inner": style(~justifyContent=`spaceBetween, ()),
         "border":
           style(
@@ -120,6 +126,57 @@ module SendButton = {
   };
 };
 
+module AddAccountButton = {
+  let styles =
+    Style.(
+      StyleSheet.create({
+        "button":
+          style(
+            ~alignSelf=`flexStart,
+            ~marginVertical=6.->dp,
+            ~paddingVertical=6.->dp,
+            (),
+          ),
+        "text":
+          style(
+            ~color="rgba(255,255,255, 0.6)",
+            ~fontSize=12.,
+            ~fontWeight=`_500,
+            (),
+          ),
+      })
+    );
+
+  [@react.component]
+  let make = () => {
+    let modal = React.useRef(Js.Nullable.null);
+
+    let (visibleModal, setVisibleModal) = React.useState(_ => false);
+    let openAction = () => setVisibleModal(_ => true);
+    let closeAction = () => setVisibleModal(_ => false);
+
+    let onPress = _e => {
+      openAction();
+    };
+
+    let onPressCancel = _e => {
+      modal.current
+      ->Js.Nullable.toOption
+      ->Belt.Option.map(ModalAction.closeModal)
+      ->ignore;
+    };
+
+    <>
+      <TouchableOpacity style=styles##button onPress>
+        <Text style=styles##text> "ADD ACCOUNT"->React.string </Text>
+      </TouchableOpacity>
+      <ModalAction ref=modal visible=visibleModal onRequestClose=closeAction>
+        <AccountCreateView onPressCancel />
+      </ModalAction>
+    </>;
+  };
+};
+
 let styles = Style.(StyleSheet.create({"container": style(~flex=1., ())}));
 
 [@react.component]
@@ -128,6 +185,7 @@ let make = () => {
 
   <>
     <Page>
+      <AddAccountButton />
       {accounts->Belt.Option.mapWithDefault(<LoadingView />, accounts => {
          accounts
          ->Belt.Map.String.valuesToArray

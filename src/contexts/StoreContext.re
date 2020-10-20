@@ -39,6 +39,7 @@ let make = (~children) => {
           accountsRequest
           ->ApiRequest.getDoneOk
           ->Belt.Option.getWithDefault([||])
+          ->Belt.Array.reverse
           ->Belt.Array.get(0);
 
         switch (firstAccount) {

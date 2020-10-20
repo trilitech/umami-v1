@@ -245,7 +245,8 @@ module Accounts = (Caller: CallerAPI) => {
     |])
     ->Future.mapOk(parseAddresses);
 
-  let create = name => Caller.call([|"gen", "keys", name|]);
+  let create = name =>
+    Caller.call([|"-E", Network.Test->endpoint, "gen", "keys", name|]);
 
   let add = (name, address) =>
     Caller.call([|"add", "address", name, address, "-f"|]);
