@@ -28,7 +28,6 @@ let make = () => {
         <View style=styles##content>
           {switch (route) {
            | Home => <HomeView />
-           | Send => <SendView />
            | Operations => <OperationsView />
            | Debug => <DebugView />
            | NotFound =>

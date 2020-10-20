@@ -89,15 +89,34 @@ module SendButton = {
 
   [@react.component]
   let make = () => {
-    let (href, onPress) = Routes.useHrefAndOnPress(Routes.Send);
+    let modal = React.useRef(Js.Nullable.null);
 
-    <TouchableOpacity
-      style=styles##button accessibilityRole=`link href onPress>
-      <View style=styles##iconContainer>
-        <Icon name=`send size=24. color=Colors.plainIconContent />
-      </View>
-      <Text style=styles##text> "SEND"->React.string </Text>
-    </TouchableOpacity>;
+    let (visibleModal, setVisibleModal) = React.useState(_ => false);
+    let openAction = () => setVisibleModal(_ => true);
+    let closeAction = () => setVisibleModal(_ => false);
+
+    let onPress = _e => {
+      openAction();
+    };
+
+    let onPressCancel = _e => {
+      modal.current
+      ->Js.Nullable.toOption
+      ->Belt.Option.map(ModalAction.closeModal)
+      ->ignore;
+    };
+
+    <>
+      <TouchableOpacity style=styles##button onPress>
+        <View style=styles##iconContainer>
+          <Icon name=`send size=24. color=Colors.plainIconContent />
+        </View>
+        <Text style=styles##text> "SEND"->React.string </Text>
+      </TouchableOpacity>
+      <ModalAction ref=modal visible=visibleModal onRequestClose=closeAction>
+        <SendView onPressCancel />
+      </ModalAction>
+    </>;
   };
 };
 
