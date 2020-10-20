@@ -1,7 +1,7 @@
 type state = {
   network: Network.t,
   selectedAccount: option(string),
-  accounts: Belt.Map.String.t(Account.t),
+  accounts: option(Belt.Map.String.t(Account.t)),
 };
 
 // Context and Provider
@@ -9,7 +9,7 @@ type state = {
 let initialState = {
   network: Network.Test,
   selectedAccount: None,
-  accounts: Belt.Map.String.empty,
+  accounts: None,
 };
 
 let context = React.createContext(initialState);
@@ -56,7 +56,7 @@ let make = (~children) => {
       () => {
         accountsRequest
         ->ApiRequest.getDoneOk
-        ->Belt.Option.mapWithDefault(Belt.Map.String.empty, accounts =>
+        ->Belt.Option.map(accounts =>
             accounts
             ->Belt.Array.map(((alias, address)) => {
                 let account: Account.t = {alias, address};
@@ -82,10 +82,12 @@ let useNetwork = () => {
 
 let useAccount = () => {
   let store = useStoreContext();
-  store.selectedAccount
-  ->Belt.Option.flatMap(selectedAccount =>
-      store.accounts->Belt.Map.String.get(selectedAccount)
-    );
+
+  switch (store.selectedAccount, store.accounts) {
+  | (Some(selectedAccount), Some(accounts)) =>
+    accounts->Belt.Map.String.get(selectedAccount)
+  | _ => None
+  };
 };
 
 let useAccounts = () => {

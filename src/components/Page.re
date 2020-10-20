@@ -6,6 +6,7 @@ let styles =
       "scroll": style(~flex=1., ()),
       "scrollContent":
         style(
+          ~flex=1.,
           ~paddingVertical=Theme.pagePaddingVertical->dp,
           ~paddingHorizontal=Theme.pagePaddingHorizontal->dp,
           (),

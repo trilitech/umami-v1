@@ -109,12 +109,14 @@ let make = () => {
 
   <>
     <Page>
-      {accounts
-       ->Belt.Map.String.valuesToArray
-       ->Belt.Array.map(account =>
-           <AccountItem key={account.address} account />
-         )
-       ->React.array}
+      {accounts->Belt.Option.mapWithDefault(<LoadingView />, accounts => {
+         accounts
+         ->Belt.Map.String.valuesToArray
+         ->Belt.Array.map(account =>
+             <AccountItem key={account.address} account />
+           )
+         ->React.array
+       })}
     </Page>
     <SendButton />
   </>;
