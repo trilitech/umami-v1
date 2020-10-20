@@ -36,7 +36,7 @@
     "bsb:build": "bsb -make-world",
     "bsb:clean": "bsb -clean-world",
     "postinstall": "electron-builder install-app-deps",
-    "electron:dev": "concurrently -k \"yarn bsb:start\" \"cross-env BROWSER=none yarn start\" \"wait-on tcp:3000 && tsc -p electron -w\" \"wait-on tcp:3000 && tsc -p electron && electron .\"",
+    "electron:dev": "concurrently -k \"yarn bsb:start\" \"cross-env BROWSER=none yarn start\" \"wait-on tcp:3000 && tsc -p electron -w\" \"wait-on tcp:3000 && tsc -p electron && electron --disable-gpu .\"",
     "electron:build": "yarn bsb:build && yarn build && tsc -p electron && electron-builder",
     "eject": "react-app-rewired eject",
     "fromsvg": "react-from-svg src/svg/source src/svg/components --remove-stroke --remove-fill --with-native-for-reason"
