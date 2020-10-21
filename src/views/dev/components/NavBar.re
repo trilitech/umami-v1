@@ -10,13 +10,9 @@ module NavBarItem = {
             ~height=68.->dp,
             ~alignItems=`center,
             ~justifyContent=`center,
-            ~opacity=0.6,
             (),
           ),
-        "itemCurrent": style(~opacity=1., ()),
         "icon": style(~marginBottom=6.->dp, ()),
-        "text":
-          style(~color=Colors.highText, ~fontSize=10., ~fontWeight=`_700, ()),
       })
     );
 
@@ -24,20 +20,23 @@ module NavBarItem = {
   let make = (~currentRoute, ~route, ~title, ~icon=?) => {
     let (href, onPress) = useHrefAndOnPress(route);
 
-    <TouchableOpacity
-      style=Style.(
-        arrayOption([|
-          Some(styles##item),
-          currentRoute == route ? Some(styles##itemCurrent) : None,
-        |])
-      )
-      accessibilityRole=`link
-      href
-      onPress>
+    let isCurrent = currentRoute == route;
+
+    <TouchableOpacity style=styles##item accessibilityRole=`link href onPress>
       {icon->Belt.Option.mapWithDefault(React.null, name =>
-         <Icon name size=24. color=Colors.highIcon style=styles##icon />
+         <Icon
+           name
+           size=24.
+           color={
+             isCurrent ? Theme.colorDarkHighEmphasis : Theme.colorDarkDisabled
+           }
+           style=styles##icon
+         />
        )}
-      <Text style=styles##text> title->React.string </Text>
+      <Typography.ButtonPrimary10
+        colorStyle={isCurrent ? `highEmphasis : `disabled}>
+        title->React.string
+      </Typography.ButtonPrimary10>
     </TouchableOpacity>;
   };
 };

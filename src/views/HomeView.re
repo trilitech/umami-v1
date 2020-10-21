@@ -83,13 +83,6 @@ module SendButton = {
             ~marginBottom=6.->dp,
             (),
           ),
-        "text":
-          style(
-            ~color=Colors.plainIconText,
-            ~fontSize=12.,
-            ~fontWeight=`_500,
-            (),
-          ),
       })
     );
 
@@ -117,7 +110,9 @@ module SendButton = {
         <View style=styles##iconContainer>
           <Icon name=`send size=24. color=Colors.plainIconContent />
         </View>
-        <Text style=styles##text> "SEND"->React.string </Text>
+        <Typography.ButtonPrimary12>
+          "SEND"->React.string
+        </Typography.ButtonPrimary12>
       </TouchableOpacity>
       <ModalAction ref=modal visible=visibleModal onRequestClose=closeAction>
         <SendView onPressCancel />
@@ -135,13 +130,6 @@ module AddAccountButton = {
             ~alignSelf=`flexStart,
             ~marginVertical=6.->dp,
             ~paddingVertical=6.->dp,
-            (),
-          ),
-        "text":
-          style(
-            ~color="rgba(255,255,255, 0.6)",
-            ~fontSize=12.,
-            ~fontWeight=`_500,
             (),
           ),
       })
@@ -168,7 +156,9 @@ module AddAccountButton = {
 
     <>
       <TouchableOpacity style=styles##button onPress>
-        <Text style=styles##text> "ADD ACCOUNT"->React.string </Text>
+        <Typography.ButtonSecondary>
+          "ADD ACCOUNT"->React.string
+        </Typography.ButtonSecondary>
       </TouchableOpacity>
       <ModalAction ref=modal visible=visibleModal onRequestClose=closeAction>
         <AccountCreateView onPressCancel />

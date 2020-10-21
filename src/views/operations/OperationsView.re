@@ -14,7 +14,7 @@ let styles =
       "selector":
         style(
           ~alignSelf=`flexStart,
-          ~minWidth=360.->dp,
+          ~minWidth=420.->dp,
           ~marginTop=0.->dp,
           ~marginBottom=30.->dp,
           ~zIndex=2,
@@ -30,13 +30,6 @@ let styles =
           ~borderColor="rgba(255,255,255,0.38)",
           ~borderBottomWidth=1.,
           ~zIndex=1,
-          (),
-        ),
-      "headerText":
-        style(
-          ~color="rgba(255,255,255, 0.8)",
-          ~fontSize=14.,
-          ~fontWeight=`_300,
           (),
         ),
       "list": style(~flex=1., ~zIndex=1, ()),
@@ -72,22 +65,26 @@ let make = () => {
       <AccountSelector style=styles##selector />
       <View style=styles##thead>
         <View style=OperationRowItem.styles##cellType>
-          <Text style=styles##headerText> "TYPE"->React.string </Text>
+          <Typography.Overline3> "TYPE"->React.string </Typography.Overline3>
         </View>
         <View style=OperationRowItem.styles##cellAmount>
-          <Text style=styles##headerText> "AMOUNT"->React.string </Text>
+          <Typography.Overline3> "AMOUNT"->React.string </Typography.Overline3>
         </View>
         <View style=OperationRowItem.styles##cellFee>
-          <Text style=styles##headerText> "FEE"->React.string </Text>
+          <Typography.Overline3> "FEE"->React.string </Typography.Overline3>
         </View>
         <View style=OperationRowItem.styles##cellAddress>
-          <Text style=styles##headerText> "SENDER"->React.string </Text>
+          <Typography.Overline3> "SENDER"->React.string </Typography.Overline3>
         </View>
         <View style=OperationRowItem.styles##cellAddress>
-          <Text style=styles##headerText> "RECIPIENT"->React.string </Text>
+          <Typography.Overline3>
+            "RECIPIENT"->React.string
+          </Typography.Overline3>
         </View>
         <View style=OperationRowItem.styles##cellDate>
-          <Text style=styles##headerText> "TIMESTAMP"->React.string </Text>
+          <Typography.Overline3>
+            "TIMESTAMP"->React.string
+          </Typography.Overline3>
         </View>
       </View>
     </View>

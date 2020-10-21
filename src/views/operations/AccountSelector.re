@@ -11,15 +11,16 @@ module AccountItem = {
             ~justifyContent=`spaceBetween,
             (),
           ),
-        "text": style(~color="#FFF", ()),
       })
     );
 
   [@react.component]
   let make = (~alias, ~address) => {
     <View style=styles##inner>
-      <Text style=styles##text> alias->React.string </Text>
-      <Text style=styles##text> address->React.string </Text>
+      <Typography.Subtitle2> alias->React.string </Typography.Subtitle2>
+      <Typography.Body1 colorStyle=`mediumEmphasis>
+        address->React.string
+      </Typography.Body1>
     </View>;
   };
 };
@@ -37,6 +38,7 @@ let styles =
           ~borderRadius=5.,
           (),
         ),
+      "spacer": style(~height=6.->dp, ()),
     })
   );
 
@@ -65,12 +67,16 @@ let make = (~style=?) => {
         {Selector.value: account.address, label: account.alias}
       );
 
-  <Selector
-    items
-    ?style
-    onValueChange={value => updateAccount(value)}
-    selectedValue=?{account->Belt.Option.map(account => account.address)}
-    renderButton
-    renderItem
-  />;
+  <>
+    <Typography.Overline1> "Account"->React.string </Typography.Overline1>
+    <View style=styles##spacer />
+    <Selector
+      items
+      ?style
+      onValueChange={value => updateAccount(value)}
+      selectedValue=?{account->Belt.Option.map(account => account.address)}
+      renderButton
+      renderItem
+    />
+  </>;
 };

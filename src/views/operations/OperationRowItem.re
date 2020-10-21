@@ -43,13 +43,6 @@ let styles =
           baseCellStyle,
           style(~flexBasis=220.->dp, ()),
         |]),
-      "text":
-        style(
-          ~color="rgba(255,255,255, 0.87)",
-          ~fontSize=16.,
-          ~fontWeight=`_400,
-          (),
-        ),
     })
   );
 
@@ -70,11 +63,13 @@ let make =
            | Reveal(_reveal) =>
              <>
                <View style=styles##cellType>
-                 <Text style=styles##text> "Reveal"->React.string </Text>
+                 <Typography.Body1> "Reveal"->React.string </Typography.Body1>
                </View>
                <View style=styles##cellAmount />
                <View style=styles##cellFee>
-                 <Text style=styles##text> business.fee->React.string </Text>
+                 <Typography.Body1>
+                   business.fee->React.string
+                 </Typography.Body1>
                </View>
                <View style=styles##cellAddress />
                <View style=styles##cellAddress />
@@ -82,31 +77,37 @@ let make =
            | Transaction(transaction) =>
              <>
                <View style=styles##cellType>
-                 <Text style=styles##text> "Transaction"->React.string </Text>
+                 <Typography.Body1>
+                   "Transaction"->React.string
+                 </Typography.Body1>
                </View>
                <View style=styles##cellAmount>
-                 <Text style=styles##text>
+                 <Typography.Body1>
                    transaction.amount->React.string
-                 </Text>
+                 </Typography.Body1>
                </View>
                <View style=styles##cellFee>
-                 <Text style=styles##text> business.fee->React.string </Text>
+                 <Typography.Body1>
+                   business.fee->React.string
+                 </Typography.Body1>
                </View>
                <View style=styles##cellAddress>
-                 <Text style=styles##text numberOfLines=1>
+                 <Typography.Body1 numberOfLines=1>
                    business.source->React.string
-                 </Text>
+                 </Typography.Body1>
                </View>
                <View style=styles##cellAddress>
-                 <Text style=styles##text numberOfLines=1>
+                 <Typography.Body1 numberOfLines=1>
                    transaction.destination->React.string
-                 </Text>
+                 </Typography.Body1>
                </View>
              </>
            | Origination(_origination) =>
              <>
                <View style=styles##cellType>
-                 <Text style=styles##text> "Origination"->React.string </Text>
+                 <Typography.Body1>
+                   "Origination"->React.string
+                 </Typography.Body1>
                </View>
                <View style=styles##cellAmount />
                <View style=styles##cellFee />
@@ -116,7 +117,9 @@ let make =
            | Delegation(_delegation) =>
              <>
                <View style=styles##cellType>
-                 <Text style=styles##text> "Delegation"->React.string </Text>
+                 <Typography.Body1>
+                   "Delegation"->React.string
+                 </Typography.Body1>
                </View>
                <View style=styles##cellAmount />
                <View style=styles##cellFee />
@@ -127,9 +130,9 @@ let make =
            }
          }}
         <View style=styles##cellDate>
-          <Text style=styles##text>
+          <Typography.Body1>
             {operation.timestamp->Js.Date.toISOString->React.string}
-          </Text>
+          </Typography.Body1>
         </View>
       </View>
     </View>
