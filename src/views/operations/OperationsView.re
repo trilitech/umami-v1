@@ -8,9 +8,18 @@ let styles =
         style(
           ~marginHorizontal=Theme.pagePaddingHorizontal->dp,
           ~marginTop=Theme.pagePaddingVertical->dp,
+          ~zIndex=2,
           (),
         ),
-      "selector": style(~marginTop=0.->dp, ~marginBottom=30.->dp, ()),
+      "selector":
+        style(
+          ~alignSelf=`flexStart,
+          ~minWidth=360.->dp,
+          ~marginTop=0.->dp,
+          ~marginBottom=30.->dp,
+          ~zIndex=2,
+          (),
+        ),
       "thead":
         style(
           ~flexDirection=`row,
@@ -20,6 +29,7 @@ let styles =
           ~paddingLeft=15.->dp,
           ~borderColor="rgba(255,255,255,0.38)",
           ~borderBottomWidth=1.,
+          ~zIndex=1,
           (),
         ),
       "headerText":
@@ -29,9 +39,10 @@ let styles =
           ~fontWeight=`_300,
           (),
         ),
-      "list": style(~flex=1., ()),
+      "list": style(~flex=1., ~zIndex=1, ()),
       "listContent":
         style(
+          ~flex=1.,
           ~paddingBottom=Theme.pagePaddingVertical->dp,
           ~paddingHorizontal=Theme.pagePaddingHorizontal->dp,
           (),
@@ -49,6 +60,8 @@ let keyExtractor = (operation: Operation.t, _i) => {
   operation.id;
 };
 
+let _ListEmptyComponent = () => <EmptyView text="No operations" />;
+
 [@react.component]
 let make = () => {
   let operationsRequest =
@@ -56,7 +69,7 @@ let make = () => {
 
   <View style=styles##container>
     <View style=styles##header>
-      <View style=styles##selector> <AccountSelector /> </View>
+      <AccountSelector style=styles##selector />
       <View style=styles##thead>
         <View style=OperationRowItem.styles##cellType>
           <Text style=styles##headerText> "TYPE"->React.string </Text>
@@ -87,6 +100,7 @@ let make = () => {
          initialNumToRender=20
          keyExtractor
          renderItem
+         _ListEmptyComponent
        />
      | Done(Error(error)) => error->React.string
      | NotAsked

@@ -2,6 +2,7 @@ type state = {
   network: Network.t,
   selectedAccount: option(string),
   accounts: option(Belt.Map.String.t(Account.t)),
+  updateAccount: string => unit,
 };
 
 // Context and Provider
@@ -10,6 +11,7 @@ let initialState = {
   network: Network.Test,
   selectedAccount: None,
   accounts: None,
+  updateAccount: _ => (),
 };
 
 let context = React.createContext(initialState);
@@ -29,6 +31,8 @@ module Provider = {
 let make = (~children) => {
   let (network, _setNetwork) = React.useState(() => Network.Test);
   let (selectedAccount, setSelectedAccount) = React.useState(() => None);
+
+  let updateAccount = newAccount => setSelectedAccount(_ => Some(newAccount));
 
   let accountsRequest = AccountApiRequest.useGetAccounts();
 
@@ -69,7 +73,9 @@ let make = (~children) => {
       [|accountsRequest|],
     );
 
-  <Provider value={network, selectedAccount, accounts}> children </Provider>;
+  <Provider value={network, selectedAccount, accounts, updateAccount}>
+    children
+  </Provider>;
 };
 
 // Hooks
@@ -89,6 +95,11 @@ let useAccount = () => {
     accounts->Belt.Map.String.get(selectedAccount)
   | _ => None
   };
+};
+
+let useUpdateAccount = () => {
+  let store = useStoreContext();
+  store.updateAccount;
 };
 
 let useAccounts = () => {
