@@ -14,7 +14,7 @@ let make = () => {
     <ActivityIndicator
       animating=true
       size=ActivityIndicator_Size.small
-      color="#FFF"
+      color=Colors.highIcon
     />
   </View>;
 };

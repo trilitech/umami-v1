@@ -23,7 +23,7 @@ let styles =
         style(
           ~marginBottom=20.->dp,
           ~textAlign=`center,
-          ~color="rgba(255,255,255,0.87)",
+          ~color=Colors.stdText,
           ~fontSize=22.,
           ~fontWeight=`_500,
           (),
@@ -31,7 +31,7 @@ let styles =
       "hash":
         style(
           ~marginBottom=10.->dp,
-          ~color="rgba(255,255,255,0.87)",
+          ~color=Colors.stdText,
           ~fontSize=16.,
           ~fontWeight=`_300,
           ~textDecorationLine=`underline,
@@ -59,15 +59,10 @@ let styles =
           (),
         ),
       "advancedOptionText":
-        style(
-          ~color="rgba(255,255,255,0.8)",
-          ~fontSize=18.,
-          ~fontWeight=`_400,
-          (),
-        ),
+        style(~color=Colors.stdText, ~fontSize=18., ~fontWeight=`_400, ()),
       "chevron":
         style(
-          ~color="rgba(255,255,255,0.6)",
+          ~color=Colors.stdText,
           ~fontSize=14.,
           ~fontWeight=`_600,
           ~transform=[|scaleY(~scaleY=1.65), rotate(~rotate=(-90.)->deg)|],
@@ -219,7 +214,7 @@ let make = () => {
            <ActivityIndicator
              animating=true
              size=ActivityIndicator_Size.large
-             color="#FFF"
+             color=Colors.highIcon
            />
          </View>
        | NotAsked =>

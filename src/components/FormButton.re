@@ -12,15 +12,10 @@ let styles =
           (),
         ),
       "text":
-        style(
-          ~color="rgba(255,255,255,0.87)",
-          ~fontSize=14.,
-          ~fontWeight=`_600,
-          (),
-        ),
+        style(~color=Colors.stdText, ~fontSize=14., ~fontWeight=`_600, ()),
       "textDisabled":
         style(
-          ~color="rgba(255,255,255,0.38)",
+          ~color=Colors.disabledText,
           ~fontSize=14.,
           ~fontWeight=`_600,
           (),

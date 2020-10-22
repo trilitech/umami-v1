@@ -10,7 +10,7 @@ let styles =
           ~paddingTop=45.->dp,
           ~paddingBottom=32.->dp,
           ~paddingHorizontal=110.->dp,
-          ~backgroundColor="#121212",
+          ~backgroundColor=Colors.structBackground,
           ~borderRadius=4.,
           (),
         ),

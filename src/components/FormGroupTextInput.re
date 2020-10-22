@@ -9,15 +9,15 @@ let styles =
           ~paddingVertical=10.->dp,
           ~paddingLeft=20.->dp,
           ~paddingRight=12.->dp,
-          ~color="rgba(255,255,255,0.8)",
+          ~color=Colors.stdText,
           ~fontSize=16.,
           ~fontWeight=`_400,
-          ~borderColor="rgba(255,255,255,0.6)",
+          ~borderColor=Colors.widgetBorder,
           ~borderWidth=1.,
           ~borderRadius=5.,
           (),
         ),
-      "inputError": style(~color="#f97977", ~borderColor="#f97977", ()),
+      "inputError": style(~color=Colors.error, ~borderColor=Colors.error, ()),
       "inputSmall": style(~height=44.->dp, ()),
     })
   );

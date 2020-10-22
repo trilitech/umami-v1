@@ -8,7 +8,7 @@ module AccountItem = {
         "inner": style(~justifyContent=`spaceBetween, ()),
         "border":
           style(
-            ~backgroundColor="#8D9093",
+            ~backgroundColor=Colors.border,
             ~width=4.->dp,
             ~marginRight=11.->dp,
             ~borderTopRightRadius=4.,
@@ -16,33 +16,13 @@ module AccountItem = {
             (),
           ),
         "title":
-          style(
-            ~color="rgba(255,255,255, 0.8)",
-            ~fontSize=14.,
-            ~fontWeight=`bold,
-            (),
-          ),
+          style(~color=Colors.stdText, ~fontSize=14., ~fontWeight=`bold, ()),
         "balance":
-          style(
-            ~color="rgba(255,255,255, 0.87)",
-            ~fontSize=14.,
-            ~fontWeight=`bold,
-            (),
-          ),
+          style(~color=Colors.stdText, ~fontSize=14., ~fontWeight=`bold, ()),
         "label":
-          style(
-            ~color="rgba(255,255,255, 0.6)",
-            ~fontSize=12.,
-            ~fontWeight=`_700,
-            (),
-          ),
+          style(~color=Colors.lowText, ~fontSize=12., ~fontWeight=`_700, ()),
         "address":
-          style(
-            ~color="rgba(255,255,255, 0.87)",
-            ~fontSize=14.,
-            ~fontWeight=`_400,
-            (),
-          ),
+          style(~color=Colors.stdText, ~fontSize=14., ~fontWeight=`_400, ()),
       })
     );
 
@@ -63,7 +43,7 @@ module AccountItem = {
              <ActivityIndicator
                animating=true
                size={ActivityIndicator_Size.exact(17.)}
-               color="#FFF"
+               color=Colors.highIcon
              />
            }}
         </Text>
@@ -93,11 +73,17 @@ module SendButton = {
             ~justifyContent=`center,
             ~alignItems=`center,
             ~borderRadius=20.,
-            ~backgroundColor="#FFF",
+            ~backgroundColor=Colors.plainIconBack,
             ~marginBottom=6.->dp,
             (),
           ),
-        "text": style(~color="#FFF", ~fontSize=12., ~fontWeight=`_500, ()),
+        "text":
+          style(
+            ~color=Colors.plainIconText,
+            ~fontSize=12.,
+            ~fontWeight=`_500,
+            (),
+          ),
       })
     );
 
@@ -108,7 +94,7 @@ module SendButton = {
     <TouchableOpacity
       style=styles##button accessibilityRole=`link href onPress>
       <View style=styles##iconContainer>
-        <Icon name=`send size=24. color="#000" />
+        <Icon name=`send size=24. color=Colors.plainIconContent />
       </View>
       <Text style=styles##text> "SEND"->React.string </Text>
     </TouchableOpacity>;
