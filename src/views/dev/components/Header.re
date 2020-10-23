@@ -8,14 +8,14 @@ let styles =
           ~flexDirection=`row,
           ~height=60.->dp,
           ~alignItems=`center,
-          ~backgroundColor="#121212",
+          ~backgroundColor=Colors.structBackground,
           (),
         ),
       "title":
         style(
           ~marginHorizontal=16.->dp,
           ~fontWeight=`bold,
-          ~color="#FFF",
+          ~color=Colors.highText,
           (),
         ),
     })
@@ -27,8 +27,8 @@ let make = () => {
     <SVGLogo
       width={36.->Style.dp}
       height={38.->Style.dp}
-      fill="#FFF"
-      stroke="#FFF"
+      fill=Colors.highIcon
+      stroke=Colors.highIcon
     />
     <Text style=styles##title> {js|Zebra\nWallet|js}->React.string </Text>
   </View>;

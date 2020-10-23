@@ -4,7 +4,12 @@ let styles =
   Style.(
     StyleSheet.create({
       "layout":
-        style(~flex=1., ~flexDirection=`row, ~backgroundColor="#000000", ()),
+        style(
+          ~flex=1.,
+          ~flexDirection=`row,
+          ~backgroundColor=Colors.contentBackground,
+          (),
+        ),
       "main": style(~flex=1., ()),
       "content": style(~flex=1., ()),
     })

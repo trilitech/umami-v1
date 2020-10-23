@@ -15,7 +15,8 @@ module NavBarItem = {
           ),
         "itemCurrent": style(~opacity=1., ()),
         "icon": style(~marginBottom=6.->dp, ()),
-        "text": style(~color="white", ~fontSize=10., ~fontWeight=`_700, ()),
+        "text":
+          style(~color=Colors.highText, ~fontSize=10., ~fontWeight=`_700, ()),
       })
     );
 
@@ -34,7 +35,7 @@ module NavBarItem = {
       href
       onPress>
       {icon->Belt.Option.mapWithDefault(React.null, name =>
-         <Icon name size=24. color="#FFF" style=styles##icon />
+         <Icon name size=24. color=Colors.highIcon style=styles##icon />
        )}
       <Text style=styles##text> title->React.string </Text>
     </TouchableOpacity>;
@@ -49,7 +50,7 @@ let styles =
           ~flexDirection=`column,
           ~width=110.->dp,
           ~paddingTop=(60. +. 10.)->dp,
-          ~backgroundColor="#121212",
+          ~backgroundColor=Colors.structBackground,
           (),
         ),
     })

@@ -9,7 +9,7 @@ module OperationItem = {
           style(~flex=1., ~flexDirection=`row, ~alignItems=`center, ()),
         "border":
           style(
-            ~backgroundColor="#8D9093",
+            ~backgroundColor=Colors.border,
             ~width=4.->dp,
             ~marginRight=11.->dp,
             ~borderTopRightRadius=4.,
@@ -18,12 +18,7 @@ module OperationItem = {
           ),
         "cell": style(~flexGrow=1., ()),
         "text":
-          style(
-            ~color="rgba(255,255,255, 0.87)",
-            ~fontSize=16.,
-            ~fontWeight=`_400,
-            (),
-          ),
+          style(~color=Colors.stdText, ~fontSize=16., ~fontWeight=`_400, ()),
       })
     );
 

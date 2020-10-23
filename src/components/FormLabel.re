@@ -6,12 +6,12 @@ let styles =
       "label":
         style(
           ~marginBottom=6.->dp,
-          ~color="rgba(255,255,255,0.8)",
+          ~color=Colors.stdText,
           ~fontSize=18.,
           ~fontWeight=`_400,
           (),
         ),
-      "labelError": style(~color="#f97977", ()),
+      "labelError": style(~color=Colors.error, ()),
       "labelSmall": style(~marginBottom=4.->dp, ~fontSize=16., ()),
     })
   );
