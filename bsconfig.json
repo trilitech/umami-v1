@@ -15,6 +15,9 @@
     }
   ],
   "bsc-flags": ["-bs-super-errors", "-bs-no-version-header"],
+  "warnings": {
+    "number": "-44-48-9",
+  },
   "package-specs": [
     {
       "module": "commonjs",
