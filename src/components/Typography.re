@@ -73,14 +73,14 @@ module Default =
 
 module H1 =
   Make({
-    let colorStyle = `mediumEmphasis;
+    let colorStyle = `highEmphasis;
     let fontWeightStyle = `black;
     let fontSize = 24.;
   });
 
 module H2 =
   Make({
-    let colorStyle = `mediumEmphasis;
+    let colorStyle = `highEmphasis;
     let fontWeightStyle = `black;
     let fontSize = 22.;
   });

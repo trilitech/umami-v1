@@ -171,9 +171,9 @@ let make = (~onPressCancel) => {
     {switch (operationRequest) {
      | Done(Ok(hash)) =>
        <>
-         <Typography.H1 style=styles##title>
+         <Typography.H2 style=styles##title>
            "Operation injected in the node"->React.string
-         </Typography.H1>
+         </Typography.H2>
          <Typography.Overline1>
            "Operation hash"->React.string
          </Typography.Overline1>
@@ -184,7 +184,9 @@ let make = (~onPressCancel) => {
        </>
      | Done(Error(error)) =>
        <>
-         <Typography.Body1> error->React.string </Typography.Body1>
+         <Typography.Body1 colorStyle=`error>
+           error->React.string
+         </Typography.Body1>
          <View style=styles##formAction>
            <FormButton text="OK" onPress=onPressCancel />
          </View>
@@ -199,9 +201,9 @@ let make = (~onPressCancel) => {
        </View>
      | NotAsked =>
        <>
-         <Typography.H1 style=styles##title>
+         <Typography.H2 style=styles##title>
            "Send"->React.string
-         </Typography.H1>
+         </Typography.H2>
          <FormGroupTextInput
            label="Amount"
            value={form.values.amount}
