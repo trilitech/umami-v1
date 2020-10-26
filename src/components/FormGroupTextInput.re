@@ -18,7 +18,12 @@ let styles =
           ~borderRadius=5.,
           (),
         ),
-      "inputError": style(~color=Colors.error, ~borderColor=Colors.error, ()),
+      "inputError":
+        style(
+          ~color=Theme.colorDarkError,
+          ~borderColor=Theme.colorDarkError,
+          (),
+        ),
       "inputSmall": style(~height=44.->dp, ()),
     })
   );

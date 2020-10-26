@@ -1,12 +1,13 @@
 open ReactNative;
 
-type colorStyle = [ | `highEmphasis | `mediumEmphasis | `disabled];
+type colorStyle = [ | `highEmphasis | `mediumEmphasis | `disabled | `error];
 
 let getColor = colorStyle =>
   switch (colorStyle) {
   | `highEmphasis => Theme.colorDarkHighEmphasis
   | `mediumEmphasis => Theme.colorDarkMediumEmphasis
   | `disabled => Theme.colorDarkDisabled
+  | `error => Theme.colorDarkError
   };
 
 type fontWeightStyle = [ | `black | `heavy | `medium | `book | `light];
