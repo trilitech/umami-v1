@@ -20,16 +20,22 @@ let getFontWeight = fontWeightStyle =>
   | `light => `_300
   };
 
-module Base = {
+module type TextDesignStyle = {
+  let colorStyle: colorStyle;
+  let fontWeightStyle: fontWeightStyle;
+  let fontSize: float;
+};
+
+module Make = (DefaultStyle: TextDesignStyle) => {
   let styles =
     Style.(StyleSheet.create({"text": style(~fontFamily="Avenir", ())}));
 
   [@react.component]
   let make =
       (
-        ~colorStyle,
-        ~fontSize,
-        ~fontWeightStyle,
+        ~colorStyle=DefaultStyle.colorStyle,
+        ~fontSize=DefaultStyle.fontSize,
+        ~fontWeightStyle=DefaultStyle.fontWeightStyle,
         ~numberOfLines=?,
         ~style as styleProp=?,
         ~children,
@@ -55,113 +61,80 @@ module Base = {
   };
 };
 
+module Default =
+  Make({
+    let colorStyle = `highEmphasis;
+    let fontWeightStyle = `book;
+    let fontSize = 14.;
+  });
+
 /* OVERLINE */
 
-module Overline1 = {
-  [@react.component]
-  let make = (~children, ~numberOfLines=?, ~style=?) => {
-    <Base
-      colorStyle=`mediumEmphasis
-      fontWeightStyle=`heavy
-      fontSize=18.
-      ?numberOfLines
-      ?style>
-      children
-    </Base>;
-  };
-};
+module Overline1 =
+  Make({
+    let colorStyle = `mediumEmphasis;
+    let fontWeightStyle = `heavy;
+    let fontSize = 18.;
+  });
 
-module Overline2 = {
-  [@react.component]
-  let make = (~children, ~numberOfLines=?, ~style=?) => {
-    <Base
-      colorStyle=`highEmphasis
-      fontWeightStyle=`light
-      fontSize=18.
-      ?numberOfLines
-      ?style>
-      children
-    </Base>;
-  };
-};
+module Overline2 =
+  Make({
+    let colorStyle = `highEmphasis;
+    let fontWeightStyle = `light;
+    let fontSize = 18.;
+  });
 
-module Overline3 = {
-  [@react.component]
-  let make =
-      (~children, ~numberOfLines=?, ~style=?, ~colorStyle=`mediumEmphasis) => {
-    <Base colorStyle fontWeightStyle=`light fontSize=14. ?numberOfLines ?style>
-      children
-    </Base>;
-  };
-};
+module Overline3 =
+  Make({
+    let colorStyle = `mediumEmphasis;
+    let fontWeightStyle = `light;
+    let fontSize = 14.;
+  });
 
 /* SUBTITLE */
 
-module Subtitle2 = {
-  [@react.component]
-  let make =
-      (~children, ~numberOfLines=?, ~style=?, ~colorStyle=`highEmphasis) => {
-    <Base colorStyle fontWeightStyle=`heavy fontSize=16. ?numberOfLines ?style>
-      children
-    </Base>;
-  };
-};
+module Subtitle2 =
+  Make({
+    let colorStyle = `highEmphasis;
+    let fontWeightStyle = `heavy;
+    let fontSize = 16.;
+  });
 
 /* BODY */
 
-module Body1 = {
-  [@react.component]
-  let make =
-      (~children, ~numberOfLines=?, ~style=?, ~colorStyle=`highEmphasis) => {
-    <Base
-      colorStyle fontWeightStyle=`medium fontSize=16. ?numberOfLines ?style>
-      children
-    </Base>;
-  };
-};
+module Body1 =
+  Make({
+    let colorStyle = `highEmphasis;
+    let fontWeightStyle = `medium;
+    let fontSize = 16.;
+  });
 
-module Body2 = {
-  [@react.component]
-  let make =
-      (~children, ~numberOfLines=?, ~style=?, ~colorStyle=`highEmphasis) => {
-    <Base colorStyle fontWeightStyle=`book fontSize=16. ?numberOfLines ?style>
-      children
-    </Base>;
-  };
-};
+module Body2 =
+  Make({
+    let colorStyle = `highEmphasis;
+    let fontWeightStyle = `book;
+    let fontSize = 16.;
+  });
 
 /* BUTTON */
 
-module ButtonPrimary12 = {
-  [@react.component]
-  let make =
-      (~children, ~numberOfLines=?, ~style=?, ~colorStyle=`highEmphasis) => {
-    <Base colorStyle fontWeightStyle=`heavy fontSize=12. ?numberOfLines ?style>
-      children
-    </Base>;
-  };
-};
+module ButtonPrimary12 =
+  Make({
+    let colorStyle = `highEmphasis;
+    let fontWeightStyle = `heavy;
+    let fontSize = 12.;
+  });
 
-module ButtonPrimary10 = {
-  [@react.component]
-  let make =
-      (~children, ~numberOfLines=?, ~style=?, ~colorStyle=`highEmphasis) => {
-    <Base colorStyle fontWeightStyle=`heavy fontSize=10. ?numberOfLines ?style>
-      children
-    </Base>;
-  };
-};
+module ButtonPrimary10 =
+  Make({
+    let colorStyle = `highEmphasis;
+    let fontWeightStyle = `heavy;
+    let fontSize = 10.;
+  });
 
-module ButtonSecondary = {
-  [@react.component]
-  let make = (~children, ~numberOfLines=?, ~style=?) => {
-    <Base
-      colorStyle=`mediumEmphasis
-      fontWeightStyle=`heavy
-      fontSize=12.
-      ?numberOfLines
-      ?style>
-      children
-    </Base>;
-  };
-};
+module ButtonSecondary =
+  Make({
+    let colorStyle = `mediumEmphasis;
+    let fontWeightStyle = `heavy;
+    let fontSize = 12.;
+  });

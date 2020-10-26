@@ -26,12 +26,12 @@ let make = () => {
       stroke=Colors.highIcon
     />
     <View style=styles##spacer />
-    <Typography.Base
+    <Typography.Default
       colorStyle=`highEmphasis
       fontSize=14.
       fontWeightStyle=`black
       style=styles##title>
       {js|Zebra\nWallet|js}->React.string
-    </Typography.Base>
+    </Typography.Default>
   </View>;
 };
