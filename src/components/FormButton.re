@@ -18,7 +18,11 @@ let styles =
 let make = (~text, ~onPress, ~disabled=?) => {
   <TouchableOpacity style=styles##button onPress ?disabled>
     <Typography.ButtonPrimary
-      colorStyle=?{disabled->Belt.Option.map(_ => `disabled)}>
+      colorStyle=?{
+        disabled->Belt.Option.flatMap(disabled =>
+          disabled ? Some(`disabled) : None
+        )
+      }>
       text->React.string
     </Typography.ButtonPrimary>
   </TouchableOpacity>;
