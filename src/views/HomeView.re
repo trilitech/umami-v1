@@ -21,14 +21,6 @@ module AccountItem = {
             ~borderBottomRightRadius=4.,
             (),
           ),
-        "title":
-          style(~color=Colors.stdText, ~fontSize=14., ~fontWeight=`bold, ()),
-        "balance":
-          style(~color=Colors.stdText, ~fontSize=14., ~fontWeight=`bold, ()),
-        "label":
-          style(~color=Colors.lowText, ~fontSize=12., ~fontWeight=`_700, ()),
-        "address":
-          style(~color=Colors.stdText, ~fontSize=14., ~fontWeight=`_400, ()),
       })
     );
 
@@ -39,8 +31,10 @@ module AccountItem = {
     <View style=styles##container>
       <View style=styles##border />
       <View style=styles##inner>
-        <Text style=styles##title> account.alias->React.string </Text>
-        <Text style=styles##balance>
+        <Typography.Subtitle1>
+          account.alias->React.string
+        </Typography.Subtitle1>
+        <Typography.Subtitle3>
           {switch (balanceRequest) {
            | Done(Ok(balance)) => balance->React.string
            | Done(Error(error)) => error->React.string
@@ -52,9 +46,9 @@ module AccountItem = {
                color=Colors.highIcon
              />
            }}
-        </Text>
-        <Text style=styles##label> "Address"->React.string </Text>
-        <Text style=styles##address> account.address->React.string </Text>
+        </Typography.Subtitle3>
+        <Typography.Subtitle4> "Address"->React.string </Typography.Subtitle4>
+        <Typography.Body3> account.address->React.string </Typography.Body3>
       </View>
     </View>;
   };
@@ -110,9 +104,9 @@ module SendButton = {
         <View style=styles##iconContainer>
           <Icon name=`send size=24. color=Colors.plainIconContent />
         </View>
-        <Typography.ButtonPrimary12>
+        <Typography.ButtonPrimary>
           "SEND"->React.string
-        </Typography.ButtonPrimary12>
+        </Typography.ButtonPrimary>
       </TouchableOpacity>
       <ModalAction ref=modal visible=visibleModal onRequestClose=closeAction>
         <SendView onPressCancel />

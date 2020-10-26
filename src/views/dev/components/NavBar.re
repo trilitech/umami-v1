@@ -33,10 +33,10 @@ module NavBarItem = {
            style=styles##icon
          />
        )}
-      <Typography.ButtonPrimary10
-        colorStyle={isCurrent ? `highEmphasis : `disabled}>
+      <Typography.ButtonPrimary
+        colorStyle={isCurrent ? `highEmphasis : `disabled} fontSize=10.>
         title->React.string
-      </Typography.ButtonPrimary10>
+      </Typography.ButtonPrimary>
     </TouchableOpacity>;
   };
 };

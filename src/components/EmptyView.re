@@ -5,13 +5,12 @@ let styles =
     StyleSheet.create({
       "container":
         style(~flex=1., ~alignItems=`center, ~justifyContent=`center, ()),
-      "text": style(~color="#FFF", ()),
     })
   );
 
 [@react.component]
 let make = (~text) => {
   <View style=styles##container>
-    <Text style=styles##text> text->React.string </Text>
+    <Typography.Body3> text->React.string </Typography.Body3>
   </View>;
 };

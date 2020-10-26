@@ -19,24 +19,7 @@ module SendForm = ReForm.Make(StateLenses);
 let styles =
   Style.(
     StyleSheet.create({
-      "title":
-        style(
-          ~marginBottom=20.->dp,
-          ~textAlign=`center,
-          ~color=Colors.stdText,
-          ~fontSize=22.,
-          ~fontWeight=`_500,
-          (),
-        ),
-      "hash":
-        style(
-          ~marginBottom=10.->dp,
-          ~color=Colors.stdText,
-          ~fontSize=16.,
-          ~fontWeight=`_300,
-          ~textDecorationLine=`underline,
-          (),
-        ),
+      "title": style(~marginBottom=20.->dp, ~textAlign=`center, ()),
       "formRowInputs":
         style(~flexDirection=`row, ~justifyContent=`center, ()),
       "formRowInputsSeparator": style(~width=13.->dp, ()),
@@ -58,11 +41,9 @@ let styles =
           ~paddingRight=12.->dp,
           (),
         ),
-      "advancedOptionText":
-        style(~color=Colors.stdText, ~fontSize=18., ~fontWeight=`_400, ()),
       "chevron":
         style(
-          ~color=Colors.stdText,
+          ~color=Theme.colorDarkMediumEmphasis,
           ~fontSize=14.,
           ~fontWeight=`_600,
           ~transform=[|scaleY(~scaleY=1.65), rotate(~rotate=(-90.)->deg)|],
@@ -190,20 +171,20 @@ let make = (~onPressCancel) => {
     {switch (operationRequest) {
      | Done(Ok(hash)) =>
        <>
-         <Text style=styles##title>
+         <Typography.H1 style=styles##title>
            "Operation injected in the node"->React.string
-         </Text>
-         <Text style=FormLabel.styles##label>
+         </Typography.H1>
+         <Typography.Overline1>
            "Operation hash"->React.string
-         </Text>
-         <Text style=styles##hash> hash->React.string </Text>
+         </Typography.Overline1>
+         <Typography.Body1> hash->React.string </Typography.Body1>
          <View style=styles##formAction>
            <FormButton text="OK" onPress=onPressCancel />
          </View>
        </>
      | Done(Error(error)) =>
        <>
-         <Text style=FormLabel.styles##label> error->React.string </Text>
+         <Typography.Body1> error->React.string </Typography.Body1>
          <View style=styles##formAction>
            <FormButton text="OK" onPress=onPressCancel />
          </View>
@@ -218,7 +199,9 @@ let make = (~onPressCancel) => {
        </View>
      | NotAsked =>
        <>
-         <Text style=styles##title> "Send"->React.string </Text>
+         <Typography.H1 style=styles##title>
+           "Send"->React.string
+         </Typography.H1>
          <FormGroupTextInput
            label="Amount"
            value={form.values.amount}
@@ -241,9 +224,9 @@ let make = (~onPressCancel) => {
          <TouchableOpacity
            style=styles##advancedOptionButton
            onPress={_ => setAdvancedOptionOpened(prev => !prev)}>
-           <Text style=styles##advancedOptionText>
+           <Typography.Overline1>
              "Advanced options"->React.string
-           </Text>
+           </Typography.Overline1>
            <Text
              style=Style.(
                arrayOption([|

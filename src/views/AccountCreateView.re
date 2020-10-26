@@ -6,15 +6,7 @@ module AccountCreateForm = ReForm.Make(StateLenses);
 let styles =
   Style.(
     StyleSheet.create({
-      "title":
-        style(
-          ~marginBottom=20.->dp,
-          ~textAlign=`center,
-          ~color="rgba(255,255,255,0.87)",
-          ~fontSize=22.,
-          ~fontWeight=`_500,
-          (),
-        ),
+      "title": style(~marginBottom=20.->dp, ~textAlign=`center, ()),
       "formAction":
         style(
           ~flexDirection=`row,
@@ -58,14 +50,18 @@ let make = (~onPressCancel) => {
     {switch (accountRequest) {
      | Done(Ok(_result)) =>
        <>
-         <Text style=styles##title> "Account created"->React.string </Text>
+         <Typography.H1 style=styles##title>
+           "Account created"->React.string
+         </Typography.H1>
          <View style=styles##formAction>
            <FormButton text="OK" onPress=onPressCancel />
          </View>
        </>
      | Done(Error(error)) =>
        <>
-         <Text style=FormLabel.styles##label> error->React.string </Text>
+         <Typography.H1 style=FormLabel.styles##label>
+           error->React.string
+         </Typography.H1>
          <View style=styles##formAction>
            <FormButton text="OK" onPress=onPressCancel />
          </View>
@@ -80,7 +76,9 @@ let make = (~onPressCancel) => {
        </View>
      | NotAsked =>
        <>
-         <Text style=styles##title> "Create new account"->React.string </Text>
+         <Typography.H1 style=styles##title>
+           "Create new account"->React.string
+         </Typography.H1>
          <FormGroupTextInput
            label="Name"
            value={form.values.name}

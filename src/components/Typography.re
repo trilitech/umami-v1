@@ -5,7 +5,7 @@ type colorStyle = [ | `highEmphasis | `mediumEmphasis | `disabled];
 let getColor = colorStyle =>
   switch (colorStyle) {
   | `highEmphasis => Theme.colorDarkHighEmphasis
-  | `mediumEmphasis => Theme.colorDarkMediummphasis
+  | `mediumEmphasis => Theme.colorDarkMediumEmphasis
   | `disabled => Theme.colorDarkDisabled
   };
 
@@ -68,13 +68,29 @@ module Default =
     let fontSize = 14.;
   });
 
+/* H */
+
+module H1 =
+  Make({
+    let colorStyle = `mediumEmphasis;
+    let fontWeightStyle = `black;
+    let fontSize = 24.;
+  });
+
+module H2 =
+  Make({
+    let colorStyle = `mediumEmphasis;
+    let fontWeightStyle = `black;
+    let fontSize = 22.;
+  });
+
 /* OVERLINE */
 
 module Overline1 =
   Make({
     let colorStyle = `mediumEmphasis;
     let fontWeightStyle = `heavy;
-    let fontSize = 18.;
+    let fontSize = 16.;
   });
 
 module Overline2 =
@@ -93,11 +109,32 @@ module Overline3 =
 
 /* SUBTITLE */
 
+module Subtitle1 =
+  Make({
+    let colorStyle = `highEmphasis;
+    let fontWeightStyle = `heavy;
+    let fontSize = 14.;
+  });
+
 module Subtitle2 =
   Make({
     let colorStyle = `highEmphasis;
     let fontWeightStyle = `heavy;
     let fontSize = 16.;
+  });
+
+module Subtitle3 =
+  Make({
+    let colorStyle = `highEmphasis;
+    let fontWeightStyle = `black;
+    let fontSize = 14.;
+  });
+
+module Subtitle4 =
+  Make({
+    let colorStyle = `mediumEmphasis;
+    let fontWeightStyle = `heavy;
+    let fontSize = 12.;
   });
 
 /* BODY */
@@ -116,20 +153,20 @@ module Body2 =
     let fontSize = 16.;
   });
 
-/* BUTTON */
-
-module ButtonPrimary12 =
+module Body3 =
   Make({
     let colorStyle = `highEmphasis;
-    let fontWeightStyle = `heavy;
-    let fontSize = 12.;
+    let fontWeightStyle = `medium;
+    let fontSize = 14.;
   });
 
-module ButtonPrimary10 =
+/* BUTTON */
+
+module ButtonPrimary =
   Make({
     let colorStyle = `highEmphasis;
     let fontWeightStyle = `heavy;
-    let fontSize = 10.;
+    let fontSize = 14.;
   });
 
 module ButtonSecondary =
