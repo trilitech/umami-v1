@@ -14,7 +14,7 @@ let styles =
 let make = (~label, ~value, ~handleChange, ~error) => {
   let hasError = error->Belt.Option.isSome;
   <FormGroup style=styles##formGroup small=false>
-    <FormLabel label hasError small=true />
+    <FormLabel label hasError />
     <SwitchNative
       value
       onValueChange=handleChange

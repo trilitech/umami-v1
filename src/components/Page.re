@@ -5,7 +5,12 @@ let styles =
     StyleSheet.create({
       "scroll": style(~flex=1., ()),
       "scrollContent":
-        style(~paddingVertical=40.->dp, ~paddingHorizontal=36.->dp, ()),
+        style(
+          ~flex=1.,
+          ~paddingVertical=Theme.pagePaddingVertical->dp,
+          ~paddingHorizontal=Theme.pagePaddingHorizontal->dp,
+          (),
+        ),
     })
   );
 

@@ -11,13 +11,8 @@ let styles =
           ~backgroundColor=Colors.structBackground,
           (),
         ),
-      "title":
-        style(
-          ~marginHorizontal=16.->dp,
-          ~fontWeight=`bold,
-          ~color=Colors.highText,
-          (),
-        ),
+      "spacer": style(~width=16.->dp, ()),
+      "title": style(~lineHeight=16., ()),
     })
   );
 
@@ -30,6 +25,13 @@ let make = () => {
       fill=Colors.highIcon
       stroke=Colors.highIcon
     />
-    <Text style=styles##title> {js|Zebra\nWallet|js}->React.string </Text>
+    <View style=styles##spacer />
+    <Typography.Default
+      colorStyle=`highEmphasis
+      fontSize=14.
+      fontWeightStyle=`black
+      style=styles##title>
+      {js|Zebra\nWallet|js}->React.string
+    </Typography.Default>
   </View>;
 };

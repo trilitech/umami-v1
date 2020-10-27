@@ -3,78 +3,26 @@ type t('value) =
   | Loading
   | Done(Belt.Result.t('value, string));
 
-/* OPERATION */
-
-module OperationsAPI = API.Operations(API.TezosClient, API.TezosExplorer);
-
-/* Create */
-
-type createOperationApiRequest = t(string);
-
-let useCreateOperation = () => {
-  let network = StoreContext.useNetwork();
-
-  let (request, setRequest) = React.useState(_ => NotAsked);
-
-  let sendRequest = operation => {
-    setRequest(_ => Loading);
-
-    network
-    ->OperationsAPI.create(operation)
-    ->Future.get(result => setRequest(_ => Done(result)));
+let getDone = request =>
+  switch (request) {
+  | Done(result) => Some(result)
+  | _ => None
   };
 
-  (request, sendRequest);
-};
+let getDoneOk = request =>
+  switch (request) {
+  | Done(Ok(value)) => Some(value)
+  | _ => None
+  };
 
-/* Get list */
+let map = (request, f) =>
+  switch (request) {
+  | Done(result) => f(result)
+  | _ => ()
+  };
 
-type getOperationsApiRequest = t(array(Operation.t));
-
-let useGetOperations = (~limit=?, ~types=?, ()) => {
-  let network = StoreContext.useNetwork();
-  let account = StoreContext.useAccount();
-
-  let (request, setRequest) = React.useState(_ => NotAsked);
-
-  React.useEffect5(
-    () => {
-      setRequest(_ => Loading);
-
-      network
-      ->OperationsAPI.get(account, ~limit?, ~types?, ())
-      ->Future.get(result => setRequest(_ => Done(result)));
-      None;
-    },
-    (network, account, limit, types, setRequest),
-  );
-
-  request;
-};
-
-/* BALANCE */
-
-module BalanceAPI = API.Balance(API.TezosClient);
-
-type balanceApiRequest = t(string);
-
-let useBalance = account => {
-  let network = StoreContext.useNetwork();
-
-  let (request, setRequest) = React.useState(_ => NotAsked);
-
-  React.useEffect3(
-    () => {
-      setRequest(_ => Loading);
-
-      network
-      ->BalanceAPI.get(account)
-      ->Future.get(result => setRequest(_ => Done(result)));
-
-      None;
-    },
-    (network, account, setRequest),
-  );
-
-  request;
-};
+let mapOk = (request, f) =>
+  switch (request) {
+  | Done(Ok(value)) => f(value)
+  | _ => ()
+  };

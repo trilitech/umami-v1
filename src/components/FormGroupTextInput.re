@@ -9,15 +9,21 @@ let styles =
           ~paddingVertical=10.->dp,
           ~paddingLeft=20.->dp,
           ~paddingRight=12.->dp,
-          ~color=Colors.stdText,
+          ~fontFamily="Avenir",
+          ~color=Theme.colorDarkHighEmphasis,
           ~fontSize=16.,
-          ~fontWeight=`_400,
-          ~borderColor=Colors.widgetBorder,
+          ~fontWeight=`normal,
+          ~borderColor=Theme.colorDarkMediumEmphasis,
           ~borderWidth=1.,
           ~borderRadius=5.,
           (),
         ),
-      "inputError": style(~color=Colors.error, ~borderColor=Colors.error, ()),
+      "inputError":
+        style(
+          ~color=Theme.colorDarkError,
+          ~borderColor=Theme.colorDarkError,
+          (),
+        ),
       "inputSmall": style(~height=44.->dp, ()),
     })
   );
@@ -27,7 +33,7 @@ let make =
     (~label, ~value, ~handleChange, ~error, ~keyboardType=?, ~small=false) => {
   let hasError = error->Belt.Option.isSome;
   <FormGroup small>
-    <FormLabel label hasError small />
+    <FormLabel label hasError />
     <TextInput
       style=Style.(
         arrayOption([|

@@ -1,31 +1,12 @@
 open ReactNative;
 
 let styles =
-  Style.(
-    StyleSheet.create({
-      "label":
-        style(
-          ~marginBottom=6.->dp,
-          ~color=Colors.stdText,
-          ~fontSize=18.,
-          ~fontWeight=`_400,
-          (),
-        ),
-      "labelError": style(~color=Colors.error, ()),
-      "labelSmall": style(~marginBottom=4.->dp, ~fontSize=16., ()),
-    })
-  );
+  Style.(StyleSheet.create({"label": style(~marginBottom=6.->dp, ())}));
 
 [@react.component]
-let make = (~label, ~hasError=false, ~small=false) => {
-  <Text
-    style=Style.(
-      arrayOption([|
-        Some(styles##label),
-        hasError ? Some(styles##labelError) : None,
-        small ? Some(styles##labelSmall) : None,
-      |])
-    )>
+let make = (~label, ~hasError=false) => {
+  <Typography.Overline1
+    colorStyle=?{hasError ? Some(`error) : None} style=styles##label>
     label->React.string
-  </Text>;
+  </Typography.Overline1>;
 };
