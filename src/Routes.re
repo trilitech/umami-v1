@@ -1,7 +1,7 @@
 open ReasonReactRouter;
 
 type t =
-  | Home
+  | Accounts
   | Operations
   | Debug
   | NotFound;
@@ -11,7 +11,7 @@ exception RouteToNotFound;
 let match = (url: url) =>
   switch (url.path) {
   | ["index.html"] // need to fix this in electron
-  | [] => Home
+  | [] => Accounts
   | ["operations"] => Operations
   | ["debug"] => Debug
   | _ => NotFound
@@ -19,7 +19,7 @@ let match = (url: url) =>
 
 let toHref =
   fun
-  | Home => "/"
+  | Accounts => "/"
   | Operations => "/operations"
   | Debug => "/debug"
   | NotFound => raise(RouteToNotFound);

@@ -1,6 +1,6 @@
 open ReactNative;
 
-type iconName = [ | `home | `history | `receive | `send];
+type iconName = [ | `home | `accounts | `history | `receive | `send];
 
 [@react.component]
 let make =
@@ -18,6 +18,7 @@ let make =
     <View ?style>
       {switch (name) {
        | `home => <SVGIconHome width height ?fill />
+       | `accounts => <SVGIconAccount width height ?fill />
        | `history => <SVGIconHistory width height ?fill />
        | `receive => <SVGIconReceive width height ?fill />
        | `send => <SVGIconSend width height ?fill />

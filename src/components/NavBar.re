@@ -58,7 +58,7 @@ let styles =
 [@react.component]
 let make = (~route as currentRoute) => {
   <View style={styles##container}>
-    <NavBarItem currentRoute route=Home title="HOME" icon=`home />
+    <NavBarItem currentRoute route=Accounts title="ACCOUNTS" icon=`accounts />
     <NavBarItem
       currentRoute
       route=Operations
