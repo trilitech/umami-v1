@@ -3,6 +3,7 @@ open ReactNative;
 
 module AccountsAPI = API.Accounts(API.TezosClient);
 module OperationsAPI = API.Operations(API.TezosClient, API.TezosExplorer);
+module AliasesAPI = API.Aliases(API.TezosClient);
 
 let styles =
   Style.(
@@ -60,6 +61,19 @@ let make = () => {
 
     None;
   });
+
+  React.useEffect0(() => {
+    AliasesAPI.get()->FutureEx.getOk(Js.log);
+    AliasesAPI.add("zebra", "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3")->FutureEx.getOk(Js.log);
+    AliasesAPI.add("zebra", "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3")->Future.get(Js.log);
+    AliasesAPI.getAliasForAddress("tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3")->FutureEx.getOk(Js.log);
+    AliasesAPI.getAddressForAlias("zebra")->FutureEx.getOk(Js.log);
+    AliasesAPI.getAddressForAlias("sdlfksfkl")->FutureEx.getOk(Js.log);
+    AliasesAPI.delete("zebra")->FutureEx.getOk(Js.log);
+    AliasesAPI.delete("zebra")->Future.get(Js.log);
+    None;
+  });
+
   React.useEffect3(
     () => {
       switch (injection) {

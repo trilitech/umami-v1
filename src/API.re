@@ -228,7 +228,6 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
 module MapString = Belt.Map.String;
 
 module Accounts = (Caller: CallerAPI) => {
-
   let parseAddresses = content =>
     content
     ->Js.String2.split("\n")
@@ -263,7 +262,7 @@ module Accounts = (Caller: CallerAPI) => {
       Js.log(edsk2);
       import(edsk2, name);
     | None =>
-      Caller.call([|"generate", "keys", "from", "mnemonic", backupPhrase|])
+      Caller.call([|"-E", Network.Test->endpoint, "generate", "keys", "from", "mnemonic", backupPhrase|])
       ->Future.tapOk(Js.log)
       ->Future.mapOk(keys => (keys |> Js.String.split("\n"))[2])
       ->Future.tapOk(Js.log)
@@ -271,7 +270,7 @@ module Accounts = (Caller: CallerAPI) => {
     };
   };
 
-  let delete = name => Caller.call([|"forget", "address", name, "-f"|]);
+  let delete = name => Caller.call([|"-E", Network.Test->endpoint, "forget", "address", name, "-f"|]);
 
   let delegate = (network, account, delegate) =>
     Caller.call([|
@@ -340,3 +339,46 @@ module Delegates = (Getter: GetterAPI) => {
     ->Future.map(result => result->map(Json.Decode.(array(string))));
 };
 
+module Aliases = (Caller: CallerAPI) => {
+  let parse = content =>
+    content
+    |> Js.String.split("\n")
+    |> Array.map(row => row |> Js.String.split(": "))
+    |> (pairs => pairs->Belt.Array.keep(pair => pair->Array.length == 2))
+    |> Array.map(pair => (pair[0], pair[1]));
+
+  let get = () =>
+    Caller.call([|
+      "-E",
+      Network.Test->endpoint,
+      "list",
+      "known",
+      "contracts",
+    |])
+    ->Future.mapOk(parse);
+
+  let getAliasForAddress = address =>
+    get()
+    ->Future.mapOk(addresses =>
+        addresses->Belt.Array.map(((a, b)) => (b, a))
+      )
+    ->Future.mapOk(Belt.Map.String.fromArray)
+    ->Future.mapOk(aliases => aliases->Belt.Map.String.get(address));
+
+  let getAddressForAlias = alias =>
+    get()
+    ->Future.mapOk(Belt.Map.String.fromArray)
+    ->Future.mapOk(addresses => addresses->Belt.Map.String.get(alias));
+
+  let add = (alias, address) =>
+    Caller.call([|
+      "-E",
+      Network.Test->endpoint,
+      "add",
+      "address",
+      alias,
+      address,
+    |]);
+
+  let delete = name => Caller.call([|"-E", Network.Test->endpoint, "forget", "address", name, "-f"|]);
+};
