@@ -25,8 +25,7 @@ let styles =
           ~flexDirection=`row,
           ~alignItems=`center,
           ~height=30.->dp,
-          ~marginBottom=4.->dp,
-          ~paddingLeft=15.->dp,
+          ~paddingLeft=22.->dp,
           ~borderColor="rgba(255,255,255,0.38)",
           ~borderBottomWidth=1.,
           ~zIndex=1,
@@ -36,6 +35,7 @@ let styles =
       "listContent":
         style(
           ~flex=1.,
+          ~paddingTop=4.->dp,
           ~paddingBottom=Theme.pagePaddingVertical->dp,
           ~paddingHorizontal=Theme.pagePaddingHorizontal->dp,
           (),
