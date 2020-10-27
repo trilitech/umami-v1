@@ -10,7 +10,6 @@ let styles =
         style(
           ~backgroundColor="#8D9093",
           ~width=2.->dp,
-          ~marginRight=20.->dp,
           ~borderTopRightRadius=2.,
           ~borderBottomRightRadius=2.,
           (),

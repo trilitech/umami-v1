@@ -4,6 +4,7 @@ let baseCellStyle = Style.(style(~flexShrink=0., ~marginRight=24.->dp, ()));
 let styles =
   Style.(
     StyleSheet.create({
+      "borderSpacer": style(~width=20.->dp, ()),
       "cellType":
         StyleSheet.flatten([|baseCellStyle, style(~flexBasis=90.->dp, ())|]),
       "cellAmount":
@@ -40,6 +41,7 @@ let make =
     <RowItem height=48.>
       {_ => {
          <>
+           <View style=styles##borderSpacer />
            {switch (operation.payload) {
             | Business(business) =>
               switch (business.payload) {

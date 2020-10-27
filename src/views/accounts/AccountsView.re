@@ -1,59 +1,5 @@
 open ReactNative;
 
-module AccountItem = {
-  let styles =
-    Style.(
-      StyleSheet.create({
-        "container":
-          style(
-            ~height=84.->dp,
-            ~marginVertical=6.->dp,
-            ~flexDirection=`row,
-            (),
-          ),
-        "inner": style(~justifyContent=`spaceBetween, ()),
-        "border":
-          style(
-            ~backgroundColor=Colors.border,
-            ~width=4.->dp,
-            ~marginRight=11.->dp,
-            ~borderTopRightRadius=4.,
-            ~borderBottomRightRadius=4.,
-            (),
-          ),
-      })
-    );
-
-  [@react.component]
-  let make = (~account: Account.t) => {
-    let balanceRequest = BalanceApiRequest.useBalance(account.address);
-
-    <View style=styles##container>
-      <View style=styles##border />
-      <View style=styles##inner>
-        <Typography.Subtitle1>
-          account.alias->React.string
-        </Typography.Subtitle1>
-        <Typography.Subtitle3>
-          {switch (balanceRequest) {
-           | Done(Ok(balance)) => balance->React.string
-           | Done(Error(error)) => error->React.string
-           | NotAsked
-           | Loading =>
-             <ActivityIndicator
-               animating=true
-               size={ActivityIndicator_Size.exact(17.)}
-               color=Colors.highIcon
-             />
-           }}
-        </Typography.Subtitle3>
-        <Typography.Subtitle4> "Address"->React.string </Typography.Subtitle4>
-        <Typography.Body3> account.address->React.string </Typography.Body3>
-      </View>
-    </View>;
-  };
-};
-
 module SendButton = {
   let styles =
     Style.(
@@ -174,7 +120,7 @@ let make = () => {
          accounts
          ->Belt.Map.String.valuesToArray
          ->Belt.Array.map(account =>
-             <AccountItem key={account.address} account />
+             <AccountRowItem key={account.address} account />
            )
          ->React.array
        })}
