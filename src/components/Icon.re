@@ -8,6 +8,7 @@ type iconName = [
   | `send
   | `qr
   | `copy
+  | `close
 ];
 
 [@react.component]
@@ -32,6 +33,7 @@ let make =
        | `send => <SVGIconSend width height ?fill />
        | `qr => <SVGIconQr width height ?fill />
        | `copy => <SVGIconCopy width height ?fill />
+       | `close => <SVGIconClose width height ?fill />
        }}
     </View>;
   });

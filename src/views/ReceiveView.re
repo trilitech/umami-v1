@@ -6,13 +6,17 @@ let styles =
       "title": style(~marginBottom=20.->dp, ~textAlign=`center, ()),
       "separatorSmall": style(~height=2.->dp, ()),
       "separatorBig": style(~height=5.->dp, ()),
-      "formAction":
+      "qrContainer":
         style(
-          ~flexDirection=`row,
+          ~marginTop=30.->dp,
+          ~marginBottom=8.->dp,
+          ~alignItems=`center,
           ~justifyContent=`center,
-          ~marginTop=24.->dp,
           (),
         ),
+      "qr": style(~backgroundColor="white", ~padding=10.->dp, ()),
+      "closeAction":
+        style(~position=`absolute, ~right=20.->dp, ~top=20.->dp, ()),
     })
   );
 
@@ -49,8 +53,15 @@ let make =
       <Typography.Subtitle4> "Address"->React.string </Typography.Subtitle4>
       <View style=styles##separatorSmall />
       <Typography.Body3> account.address->React.string </Typography.Body3>
-      <View style=styles##formAction>
-        <FormButton text="OK" onPress=onPressCancel />
+      <View style=styles##qrContainer>
+        <View style=styles##qr>
+          <QRCode value={account.address} size=200. />
+        </View>
+      </View>
+      <View style=styles##closeAction>
+        <TouchableOpacity onPress=onPressCancel>
+          <Icon name=`close size=36. color=Theme.colorDarkMediumEmphasis />
+        </TouchableOpacity>
       </View>
     </>
   </ModalView>;
