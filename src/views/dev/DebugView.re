@@ -3,6 +3,7 @@ open ReactNative;
 
 module AccountsAPI = API.Accounts(API.TezosClient);
 module OperationsAPI = API.Operations(API.TezosClient, API.TezosExplorer);
+module AliasesAPI = API.Aliases(API.TezosClient);
 
 let styles =
   Style.(
@@ -25,7 +26,11 @@ let dummy: array((string, string)) = [||];
 
 let toString = array =>
   array->Array.reduce("", (result, (name, address)) =>
-    result ++ (result->String.length == 0 ? "" : "\n") ++ name ++ ": " ++ address
+    result
+    ++ (result->String.length == 0 ? "" : "\n")
+    ++ name
+    ++ ": "
+    ++ address
   );
 
 [@react.component]
@@ -36,6 +41,38 @@ let make = () => {
   let (balance, setBalance) = React.useState(() => "");
   let (injection, setInjection) = React.useState(() => InjectionState.Done);
   let (accounts, setAccounts) = React.useState(() => dummy);
+
+  React.useEffect0(() => {
+    SecureStorage.Cipher.encrypt("yo", "ga")
+    ->FutureEx.getOk(SecureStorage.setEncryptedData("test"));
+
+    switch (SecureStorage.getEncryptedData("test")) {
+    | Some(data) =>
+      data
+      ->SecureStorage.Cipher.decrypt("sdf")
+      ->Future.tapError(Js.log)
+      ->FutureEx.getOk(Js.log)
+    | None => ()
+    };
+
+    SecureStorage.clear();
+
+    SecureStorage.getEncryptedData("test")->Js.log;
+
+    None;
+  });
+
+  React.useEffect0(() => {
+    AliasesAPI.get()->FutureEx.getOk(Js.log);
+    AliasesAPI.add("zebra", "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3")->FutureEx.getOk(Js.log);
+    AliasesAPI.add("zebra", "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3")->Future.get(Js.log);
+    AliasesAPI.getAliasForAddress("tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3")->FutureEx.getOk(Js.log);
+    AliasesAPI.getAddressForAlias("zebra")->FutureEx.getOk(Js.log);
+    AliasesAPI.getAddressForAlias("sdlfksfkl")->FutureEx.getOk(Js.log);
+    AliasesAPI.delete("zebra")->FutureEx.getOk(Js.log);
+    AliasesAPI.delete("zebra")->Future.get(Js.log);
+    None;
+  });
 
   React.useEffect3(
     () => {

@@ -167,6 +167,7 @@ describe("API tests", ({testAsync}) => {
     };
     module UnderTest = API.Operations(Dummy, Stub);
     UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    ->Future.tapError(Js.log)
     ->Future.get(result => {
         expect.value(result).toEqual(
           Belt.Result.Error("Expected field 'block'\n\tin array at index 0"),
