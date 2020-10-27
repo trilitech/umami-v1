@@ -228,6 +228,7 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
 module MapString = Belt.Map.String;
 
 module Accounts = (Caller: CallerAPI) => {
+
   let parseAddresses = content =>
     content
     ->Js.String2.split("\n")
