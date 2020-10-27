@@ -134,7 +134,9 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
     network
     ->URL.operations(account, ~types?, ~limit?, ())
     ->Getter.get
-    ->Future.map(result => result->map(Json.Decode.(array(Operation.decode))));
+    ->Future.map(result =>
+        result->map(Json.Decode.(array(Operation.decode)))
+      );
 
   let create = (network, operation: Injection.operation) =>
     (
@@ -228,12 +230,18 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
 module MapString = Belt.Map.String;
 
 module Accounts = (Caller: CallerAPI) => {
-  let parseAddresses = content =>
+  let parse = content =>
     content
     ->Js.String2.split("\n")
-    ->Belt.Array.map(row => row->Js.String2.split(": "))
-    ->(pairs => pairs->Belt.Array.keep(pair => pair->Belt.Array.length == 2))
-    ->Belt.Array.map(pair => (pair[0], pair[1]));
+    ->Belt.Array.map(row => row->Js.String2.split(" "))
+    ->(pairs => pairs->Belt.Array.keep(data => data->Belt.Array.length > 2))
+    ->Belt.Array.map(data =>
+        (
+          data[0]
+          ->Js.String2.substring(~from=0, ~to_=data[0]->Js.String2.length - 1),
+          data[1],
+        )
+      );
 
   let get = () =>
     Caller.call([|
@@ -241,9 +249,9 @@ module Accounts = (Caller: CallerAPI) => {
       Network.Test->endpoint,
       "list",
       "known",
-      "contracts",
+      "addresses",
     |])
-    ->Future.mapOk(parseAddresses);
+    ->Future.mapOk(parse);
 
   let create = name =>
     Caller.call([|"-E", Network.Test->endpoint, "gen", "keys", name|]);
@@ -262,7 +270,15 @@ module Accounts = (Caller: CallerAPI) => {
       Js.log(edsk2);
       import(edsk2, name);
     | None =>
-      Caller.call([|"-E", Network.Test->endpoint, "generate", "keys", "from", "mnemonic", backupPhrase|])
+      Caller.call([|
+        "-E",
+        Network.Test->endpoint,
+        "generate",
+        "keys",
+        "from",
+        "mnemonic",
+        backupPhrase,
+      |])
       ->Future.tapOk(Js.log)
       ->Future.mapOk(keys => (keys |> Js.String.split("\n"))[2])
       ->Future.tapOk(Js.log)
@@ -270,7 +286,15 @@ module Accounts = (Caller: CallerAPI) => {
     };
   };
 
-  let delete = name => Caller.call([|"-E", Network.Test->endpoint, "forget", "address", name, "-f"|]);
+  let delete = name =>
+    Caller.call([|
+      "-E",
+      Network.Test->endpoint,
+      "forget",
+      "address",
+      name,
+      "-f",
+    |]);
 
   let delegate = (network, account, delegate) =>
     Caller.call([|
@@ -380,5 +404,13 @@ module Aliases = (Caller: CallerAPI) => {
       address,
     |]);
 
-  let delete = name => Caller.call([|"-E", Network.Test->endpoint, "forget", "address", name, "-f"|]);
+  let delete = name =>
+    Caller.call([|
+      "-E",
+      Network.Test->endpoint,
+      "forget",
+      "address",
+      name,
+      "-f",
+    |]);
 };
