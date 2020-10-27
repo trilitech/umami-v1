@@ -68,10 +68,13 @@ module AddAccountButton = {
         "button":
           style(
             ~alignSelf=`flexStart,
-            ~marginVertical=6.->dp,
+            ~marginVertical=10.->dp,
+            ~flexDirection=`row,
+            ~alignItems=`center,
             ~paddingVertical=6.->dp,
             (),
           ),
+        "icon": style(~marginRight=4.->dp, ()),
       })
     );
 
@@ -96,6 +99,12 @@ module AddAccountButton = {
 
     <>
       <TouchableOpacity style=styles##button onPress>
+        <Icon
+          name=`add
+          size=15.5
+          color=Theme.colorDarkMediumEmphasis
+          style=styles##icon
+        />
         <Typography.ButtonSecondary>
           "ADD ACCOUNT"->React.string
         </Typography.ButtonSecondary>

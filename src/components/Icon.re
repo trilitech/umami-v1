@@ -10,6 +10,8 @@ type iconName = [
   | `qr
   | `copy
   | `close
+  | `add
+  | `chevronDown
 ];
 
 [@react.component]
@@ -36,6 +38,8 @@ let make =
        | `qr => <SVGIconQr width height ?fill />
        | `copy => <SVGIconCopy width height ?fill />
        | `close => <SVGIconClose width height ?fill />
+       | `add => <SVGIconAdd width height ?fill />
+       | `chevronDown => <SVGIconChevronDown width height ?fill />
        }}
     </View>;
   });
