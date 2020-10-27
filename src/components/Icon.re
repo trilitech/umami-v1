@@ -4,6 +4,7 @@ type iconName = [
   | `home
   | `accounts
   | `history
+  | `addressBook
   | `receive
   | `send
   | `qr
@@ -29,6 +30,7 @@ let make =
        | `home => <SVGIconHome width height ?fill />
        | `accounts => <SVGIconAccount width height ?fill />
        | `history => <SVGIconHistory width height ?fill />
+       | `addressBook => <SVGIconAddressBook width height ?fill />
        | `receive => <SVGIconReceive width height ?fill />
        | `send => <SVGIconSend width height ?fill />
        | `qr => <SVGIconQr width height ?fill />

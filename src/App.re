@@ -29,6 +29,7 @@ let make = () => {
           {switch (route) {
            | Accounts => <AccountsView />
            | Operations => <OperationsView />
+           | AddressBook => <AddressBookView />
            | Debug => <DebugView />
            | NotFound =>
              <View>
