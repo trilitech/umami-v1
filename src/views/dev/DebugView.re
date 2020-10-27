@@ -25,7 +25,11 @@ let dummy: array((string, string)) = [||];
 
 let toString = array =>
   array->Array.reduce("", (result, (name, address)) =>
-    result ++ (result->String.length == 0 ? "" : "\n") ++ name ++ ": " ++ address
+    result
+    ++ (result->String.length == 0 ? "" : "\n")
+    ++ name
+    ++ ": "
+    ++ address
   );
 
 [@react.component]
@@ -37,6 +41,25 @@ let make = () => {
   let (injection, setInjection) = React.useState(() => InjectionState.Done);
   let (accounts, setAccounts) = React.useState(() => dummy);
 
+  React.useEffect0(() => {
+    SecureStorage.Cipher.encrypt("yo", "ga")
+    ->FutureEx.getOk(SecureStorage.setEncryptedData("test"));
+
+    switch (SecureStorage.getEncryptedData("test")) {
+    | Some(data) =>
+      data
+      ->SecureStorage.Cipher.decrypt("sdf")
+      ->Future.tapError(Js.log)
+      ->FutureEx.getOk(Js.log)
+    | None => ()
+    };
+
+    SecureStorage.clear();
+
+    SecureStorage.getEncryptedData("test")->Js.log;
+
+    None;
+  });
   React.useEffect3(
     () => {
       switch (injection) {
