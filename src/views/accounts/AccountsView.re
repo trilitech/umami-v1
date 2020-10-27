@@ -68,7 +68,7 @@ module AddAccountButton = {
         "button":
           style(
             ~alignSelf=`flexStart,
-            ~marginVertical=10.->dp,
+            ~marginBottom=10.->dp,
             ~flexDirection=`row,
             ~alignItems=`center,
             ~paddingVertical=6.->dp,
