@@ -338,3 +338,4 @@ module Delegates = (Getter: GetterAPI) => {
     ->Getter.get
     ->Future.map(result => result->map(Json.Decode.(array(string))));
 };
+
