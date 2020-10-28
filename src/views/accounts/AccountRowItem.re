@@ -60,14 +60,7 @@ module ButtonQr = {
 let styles =
   Style.(
     StyleSheet.create({
-      "inner":
-        style(
-          ~width=355.->dp,
-          ~marginLeft=14.->dp,
-          ~alignSelf=`stretch,
-          ~justifyContent=`spaceBetween,
-          (),
-        ),
+      "inner": style(~width=355.->dp, ~marginLeft=14.->dp, ()),
       "actionButtons": style(~alignSelf=`flexEnd, ~flexDirection=`row, ()),
     })
   );
@@ -80,26 +73,7 @@ let make = (~account: Account.t) => {
     {({hovered}: Pressable.interactionState) => {
        <>
          <View style=styles##inner>
-           <Typography.Subtitle1>
-             account.alias->React.string
-           </Typography.Subtitle1>
-           <Typography.Subtitle3>
-             {switch (balanceRequest) {
-              | Done(Ok(balance)) => balance->React.string
-              | Done(Error(error)) => error->React.string
-              | NotAsked
-              | Loading =>
-                <ActivityIndicator
-                  animating=true
-                  size={ActivityIndicator_Size.exact(17.)}
-                  color=Colors.highIcon
-                />
-              }}
-           </Typography.Subtitle3>
-           <Typography.Subtitle4>
-             "Address"->React.string
-           </Typography.Subtitle4>
-           <Typography.Body3> account.address->React.string </Typography.Body3>
+           <AccountInfo account balanceRequest />
          </View>
          <View
            style=Style.(
