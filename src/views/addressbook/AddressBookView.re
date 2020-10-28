@@ -74,7 +74,7 @@ let make = () => {
            <AddressBookRowItem key={account.address} account />
          )
        ->React.array
-     | Done(Error(error)) => error->React.string
+     | Done(Error(error)) => <ErrorView error />
      | NotAsked
      | Loading => <LoadingView />
      }}
