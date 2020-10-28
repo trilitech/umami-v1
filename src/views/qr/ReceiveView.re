@@ -24,7 +24,7 @@ let styles =
 let make =
     (
       ~account: Account.t,
-      ~balanceRequest: BalanceApiRequest.balanceApiRequest,
+      ~balanceRequest: option(BalanceApiRequest.balanceApiRequest)=?,
       ~onPressCancel,
     ) => {
   <ModalView>
@@ -32,7 +32,7 @@ let make =
       <Typography.Headline2 style=styles##title>
         "QR code"->React.string
       </Typography.Headline2>
-      <AccountInfo account balanceRequest />
+      <AccountInfo account ?balanceRequest />
       <View style=styles##qrContainer>
         <View style=styles##qr>
           <QRCode value={account.address} size=200. />

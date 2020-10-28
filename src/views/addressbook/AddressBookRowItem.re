@@ -4,7 +4,6 @@ let baseCellStyle = Style.(style(~flexShrink=0., ~marginRight=24.->dp, ()));
 let styles =
   Style.(
     StyleSheet.create({
-      "borderSpacer": style(~width=24.->dp, ()),
       "cellAlias":
         StyleSheet.flatten([|
           baseCellStyle,
@@ -15,6 +14,9 @@ let styles =
           baseCellStyle,
           style(~flexBasis=360.->dp, ~flexGrow=1., ()),
         |]),
+      "inner":
+        style(~flexDirection=`row, ~width=600.->dp, ~marginLeft=22.->dp, ()),
+      "actionButtons": style(~flexDirection=`row, ()),
     })
   );
 
@@ -27,16 +29,29 @@ let memo = component =>
 let make =
   memo((~account: Account.t) => {
     <RowItem height=46.>
-      {_ => {
+      {({hovered}: Pressable.interactionState) => {
          <>
-           <View style=styles##borderSpacer />
-           <View style=styles##cellAlias>
-             <Typography.Body1> account.alias->React.string </Typography.Body1>
+           <View style=styles##inner>
+             <View style=styles##cellAlias>
+               <Typography.Body1>
+                 account.alias->React.string
+               </Typography.Body1>
+             </View>
+             <View style=styles##cellAddress>
+               <Typography.Body1>
+                 account.address->React.string
+               </Typography.Body1>
+             </View>
            </View>
-           <View style=styles##cellAddress>
-             <Typography.Body1>
-               account.address->React.string
-             </Typography.Body1>
+           <View
+             style=Style.(
+               array([|
+                 styles##actionButtons,
+                 style(~display=hovered ? `flex : `none, ()),
+               |])
+             )>
+             <IconButton icon=`copy />
+             <QrButton account />
            </View>
          </>;
        }}
