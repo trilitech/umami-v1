@@ -5,8 +5,7 @@ let styles =
   Style.(
     StyleSheet.create({
       "formGroup": style(~zIndex=10, ()),
-      "switchCmp": style(~height=10.->dp, ~width=20.->dp, ()),
-      "switchThumb": style(~transform=[|scale(~scale=0.65)|], ()),
+      "label": style(~marginBottom=6.->dp, ()),
     })
   );
 
@@ -46,7 +45,7 @@ let make = (~label, ~value, ~handleChange, ~error) => {
   );
 
   <FormGroup style=styles##formGroup>
-    <FormLabel label hasError />
+    <FormLabel label hasError style=styles##label />
     <Selector
       items
       onValueChange={value => handleChange(value)}

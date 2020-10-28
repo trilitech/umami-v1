@@ -9,17 +9,9 @@ let styles =
 
 [@react.component]
 let make =
-    (
-      ~children,
-      ~style as styleFromProp: option(ReactNative.Style.t)=?,
-    ) => {
+    (~children, ~style as styleFromProp: option(ReactNative.Style.t)=?) => {
   <View
-    style=Style.(
-      arrayOption([|
-        Some(styles##formGroup),
-        styleFromProp,
-      |])
-    )>
+    style=Style.(arrayOption([|Some(styles##formGroup), styleFromProp|]))>
     children
   </View>;
 };

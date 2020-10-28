@@ -9,8 +9,6 @@ module StateLenses = [%lenses
     counter: string,
     gasLimit: string,
     storageLimit: string,
-    burnCap: string,
-    confirmations: string,
     forceLowFee: bool,
   }
 ];
@@ -23,6 +21,14 @@ let styles =
       "formRowInputs":
         style(~flexDirection=`row, ~justifyContent=`center, ()),
       "formRowInputsSeparator": style(~width=13.->dp, ()),
+      "formRowInput":
+        style(
+          ~flexGrow=1.,
+          ~flexShrink=1.,
+          ~flexBasis=0.->dp,
+          ~marginVertical=5.->dp,
+          (),
+        ),
       "formGroupSwitchSeparator": style(~height=11.->dp, ()),
       "formAction":
         style(
@@ -96,15 +102,7 @@ let make = (~onPressCancel) => {
             + custom(values => isValidFloat(values.fee), Fee)
             + custom(values => isValidInt(values.counter), Counter)
             + custom(values => isValidInt(values.gasLimit), GasLimit)
-            + custom(
-                values => isValidInt(values.storageLimit),
-                StorageLimit,
-              )
-            + custom(values => isValidFloat(values.burnCap), BurnCap)
-            + custom(
-                values => isValidInt(values.confirmations),
-                Confirmations,
-              ),
+            + custom(values => isValidInt(values.storageLimit), StorageLimit),
           )
         );
       },
@@ -130,17 +128,11 @@ let make = (~onPressCancel) => {
                 advancedOptionOpened
                 && state.values.storageLimit->Js.String2.length > 0
                   ? Some(state.values.storageLimit->int_of_string) : None,
-              burnCap:
-                advancedOptionOpened
-                && state.values.burnCap->Js.String2.length > 0
-                  ? Some(state.values.burnCap->Js.Float.fromString) : None,
-              confirmations:
-                advancedOptionOpened
-                && state.values.confirmations->Js.String2.length > 0
-                  ? Some(state.values.confirmations->int_of_string) : None,
               forceLowFee:
                 advancedOptionOpened && state.values.forceLowFee
                   ? Some(true) : None,
+              burnCap: None,
+              confirmations: None,
             });
 
           sendOperation(operation);
@@ -156,8 +148,6 @@ let make = (~onPressCancel) => {
         counter: "",
         gasLimit: "",
         storageLimit: "",
-        burnCap: "",
-        confirmations: "",
         forceLowFee: false,
       },
       (),
@@ -248,13 +238,7 @@ let make = (~onPressCancel) => {
                       value={form.values.fee}
                       handleChange={form.handleChange(Fee)}
                       error={form.getFieldError(Field(Fee))}
-                    />
-                    <View style=styles##formRowInputsSeparator />
-                    <FormGroupTextInput
-                      label="Counter"
-                      value={form.values.counter}
-                      handleChange={form.handleChange(Counter)}
-                      error={form.getFieldError(Field(Counter))}
+                      style=styles##formRowInput
                     />
                     <View style=styles##formRowInputsSeparator />
                     <FormGroupTextInput
@@ -262,31 +246,31 @@ let make = (~onPressCancel) => {
                       value={form.values.gasLimit}
                       handleChange={form.handleChange(GasLimit)}
                       error={form.getFieldError(Field(GasLimit))}
+                      style=styles##formRowInput
                     />
-                  </View>
-                  <View style=styles##formRowInputs>
+                    <View style=styles##formRowInputsSeparator />
                     <FormGroupTextInput
                       label="Storage limit"
                       value={form.values.storageLimit}
                       handleChange={form.handleChange(StorageLimit)}
                       error={form.getFieldError(Field(StorageLimit))}
-                    />
-                    <View style=styles##formRowInputsSeparator />
-                    <FormGroupTextInput
-                      label="Burn cap"
-                      value={form.values.burnCap}
-                      handleChange={form.handleChange(BurnCap)}
-                      error={form.getFieldError(Field(BurnCap))}
-                    />
-                    <View style=styles##formRowInputsSeparator />
-                    <FormGroupTextInput
-                      label="Confirmations"
-                      value={form.values.confirmations}
-                      handleChange={form.handleChange(Confirmations)}
-                      error={form.getFieldError(Field(Confirmations))}
+                      style=styles##formRowInput
                     />
                   </View>
-                  <View style=styles##formGroupSwitchSeparator />
+                  <View style=styles##formRowInputs>
+                    <FormGroupTextInput
+                      label="Counter"
+                      value={form.values.counter}
+                      handleChange={form.handleChange(Counter)}
+                      error={form.getFieldError(Field(Counter))}
+                      style=styles##formRowInput
+                    />
+                    <View style=styles##formRowInputsSeparator />
+                    <View style=styles##formRowInput />
+                    <View style=styles##formRowInputsSeparator />
+                    <View style=styles##formRowInput />
+                  </View>
+                  //<View style=styles##formGroupSwitchSeparator />
                   <FormGroupSwitch
                     label="Force low free"
                     value={form.values.forceLowFee}

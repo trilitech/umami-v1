@@ -4,7 +4,12 @@ let styles =
   Style.(
     StyleSheet.create({
       "formGroup":
-        style(~flexDirection=`row, ~justifyContent=`spaceBetween, ()),
+        style(
+          ~flexDirection=`row,
+          ~justifyContent=`spaceBetween,
+          ~alignItems=`center,
+          (),
+        ),
       "switchCmp": style(~height=10.->dp, ~width=20.->dp, ()),
       "switchThumb": style(~transform=[|scale(~scale=0.65)|], ()),
     })
