@@ -27,8 +27,9 @@ let make = () => {
         <Header />
         <View style=styles##content>
           {switch (route) {
-           | Home => <HomeView />
+           | Accounts => <AccountsView />
            | Operations => <OperationsView />
+           | AddressBook => <AddressBookView />
            | Debug => <DebugView />
            | NotFound =>
              <View>

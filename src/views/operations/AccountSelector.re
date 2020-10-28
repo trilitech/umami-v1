@@ -28,14 +28,12 @@ module AccountItem = {
 let styles =
   Style.(
     StyleSheet.create({
-      "button":
+      "selectorContent":
         style(
           ~height=68.->dp,
           ~flexDirection=`row,
           ~alignItems=`center,
-          ~borderColor="rgba(255,255,255,0.6)",
-          ~borderWidth=1.,
-          ~borderRadius=5.,
+          ~flex=1.,
           (),
         ),
       "spacer": style(~height=6.->dp, ()),
@@ -43,7 +41,7 @@ let styles =
   );
 
 let renderButton = (selectedItem: option(Selector.item)) =>
-  <View style=styles##button>
+  <View style=styles##selectorContent>
     {selectedItem->Belt.Option.mapWithDefault(<LoadingView />, item =>
        <AccountItem alias={item.label} address={item.value} />
      )}

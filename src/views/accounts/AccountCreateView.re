@@ -50,9 +50,9 @@ let make = (~onPressCancel) => {
     {switch (accountRequest) {
      | Done(Ok(_result)) =>
        <>
-         <Typography.H2 style=styles##title>
+         <Typography.Headline2 style=styles##title>
            "Account created"->React.string
-         </Typography.H2>
+         </Typography.Headline2>
          <View style=styles##formAction>
            <FormButton text="OK" onPress=onPressCancel />
          </View>
@@ -76,9 +76,9 @@ let make = (~onPressCancel) => {
        </View>
      | NotAsked =>
        <>
-         <Typography.H2 style=styles##title>
+         <Typography.Headline2 style=styles##title>
            "Create new account"->React.string
-         </Typography.H2>
+         </Typography.Headline2>
          <FormGroupTextInput
            label="Name"
            value={form.values.name}

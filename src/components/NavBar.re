@@ -7,12 +7,14 @@ module NavBarItem = {
       StyleSheet.create({
         "item":
           style(
-            ~height=68.->dp,
+            ~minHeight=68.->dp,
+            ~paddingVertical=12.->dp,
             ~alignItems=`center,
             ~justifyContent=`center,
             (),
           ),
         "icon": style(~marginBottom=6.->dp, ()),
+        "text": style(~textAlign=`center, ()),
       })
     );
 
@@ -34,7 +36,9 @@ module NavBarItem = {
          />
        )}
       <Typography.ButtonPrimary
-        colorStyle={isCurrent ? `highEmphasis : `disabled} fontSize=10.>
+        style=styles##text
+        colorStyle={isCurrent ? `highEmphasis : `disabled}
+        fontSize=10.>
         title->React.string
       </Typography.ButtonPrimary>
     </TouchableOpacity>;
@@ -48,22 +52,30 @@ let styles =
         style(
           ~flexDirection=`column,
           ~width=110.->dp,
-          ~paddingTop=(60. +. 10.)->dp,
+          ~paddingTop=60.->dp,
           ~backgroundColor=Colors.structBackground,
           (),
         ),
+      "sendButton": style(~marginTop=20.->dp, ~marginBottom=18.->dp, ()),
     })
   );
 
 [@react.component]
 let make = (~route as currentRoute) => {
-  <View style={styles##container}>
-    <NavBarItem currentRoute route=Home title="HOME" icon=`home />
+  <View style=styles##container>
+    <View style=styles##sendButton> <SendButton /> </View>
+    <NavBarItem currentRoute route=Accounts title="ACCOUNTS" icon=`accounts />
     <NavBarItem
       currentRoute
       route=Operations
       title="OPERATIONS"
       icon=`history
+    />
+    <NavBarItem
+      currentRoute
+      route=AddressBook
+      title={js|ADDRESS\nBOOK|js}
+      icon=`addressBook
     />
     <NavBarItem currentRoute route=Debug title="DEBUG" />
   </View>;

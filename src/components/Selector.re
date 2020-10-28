@@ -16,20 +16,42 @@ module Item = {
             ~alignItems=`center,
             (),
           ),
+        "itemContainerHovered":
+          style(~backgroundColor=Theme.colorDarkSelected, ()),
       })
     );
 
   [@react.component]
   let make = (~item, ~onChange, ~renderItem) => {
-    <TouchableOpacity onPress={_e => onChange(item.value)}>
-      <View style=styles##itemContainer> {renderItem(item)} </View>
-    </TouchableOpacity>;
+    <Pressable onPress={_e => onChange(item.value)}>
+      {interactionState =>
+         <View
+           style=Style.(
+             arrayOption([|
+               Some(styles##itemContainer),
+               interactionState.hovered
+                 ? Some(styles##itemContainerHovered) : None,
+             |])
+           )>
+           {renderItem(item)}
+         </View>}
+    </Pressable>;
   };
 };
 
 let styles =
   Style.(
     StyleSheet.create({
+      "button":
+        style(
+          ~flexDirection=`row,
+          ~alignItems=`center,
+          ~borderColor="rgba(255,255,255,0.6)",
+          ~borderWidth=1.,
+          ~borderRadius=5.,
+          (),
+        ),
+      "icon": style(~marginRight=20.->dp, ()),
       "listContainer":
         style(
           ~position=`absolute,
@@ -68,7 +90,15 @@ let make =
 
   <View ?style>
     <TouchableOpacity onPress={_e => setIsOpen(prevIsOpen => !prevIsOpen)}>
-      {renderButton(selectedItem)}
+      <View style=styles##button>
+        {renderButton(selectedItem)}
+        <Icon
+          name=`chevronDown
+          size=24.
+          color=Theme.colorDarkMediumEmphasis
+          style=styles##icon
+        />
+      </View>
     </TouchableOpacity>
     {isOpen
        ? <View>
