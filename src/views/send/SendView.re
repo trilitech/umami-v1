@@ -1,35 +1,9 @@
 open ReactNative;
 
-module StateLenses = [%lenses
-  type state = {
-    amount: string,
-    sender: string,
-    recipient: string,
-    fee: string,
-    counter: string,
-    gasLimit: string,
-    storageLimit: string,
-    forceLowFee: bool,
-  }
-];
-module SendForm = ReForm.Make(StateLenses);
-
 let styles =
   Style.(
     StyleSheet.create({
       "title": style(~marginBottom=20.->dp, ~textAlign=`center, ()),
-      "formRowInputs":
-        style(~flexDirection=`row, ~justifyContent=`center, ()),
-      "formRowInputsSeparator": style(~width=13.->dp, ()),
-      "formRowInput":
-        style(
-          ~flexGrow=1.,
-          ~flexShrink=1.,
-          ~flexBasis=0.->dp,
-          ~marginVertical=5.->dp,
-          (),
-        ),
-      "formGroupSwitchSeparator": style(~height=11.->dp, ()),
       "formAction":
         style(
           ~flexDirection=`row,
@@ -231,54 +205,7 @@ let make = (~onPressCancel) => {
              </Text>
            </TouchableOpacity>
            {advancedOptionOpened
-              ? <>
-                  <View style=styles##formRowInputs>
-                    <FormGroupTextInput
-                      label="Fee"
-                      value={form.values.fee}
-                      handleChange={form.handleChange(Fee)}
-                      error={form.getFieldError(Field(Fee))}
-                      style=styles##formRowInput
-                    />
-                    <View style=styles##formRowInputsSeparator />
-                    <FormGroupTextInput
-                      label="Gas limit"
-                      value={form.values.gasLimit}
-                      handleChange={form.handleChange(GasLimit)}
-                      error={form.getFieldError(Field(GasLimit))}
-                      style=styles##formRowInput
-                    />
-                    <View style=styles##formRowInputsSeparator />
-                    <FormGroupTextInput
-                      label="Storage limit"
-                      value={form.values.storageLimit}
-                      handleChange={form.handleChange(StorageLimit)}
-                      error={form.getFieldError(Field(StorageLimit))}
-                      style=styles##formRowInput
-                    />
-                  </View>
-                  <View style=styles##formRowInputs>
-                    <FormGroupTextInput
-                      label="Counter"
-                      value={form.values.counter}
-                      handleChange={form.handleChange(Counter)}
-                      error={form.getFieldError(Field(Counter))}
-                      style=styles##formRowInput
-                    />
-                    <View style=styles##formRowInputsSeparator />
-                    <View style=styles##formRowInput />
-                    <View style=styles##formRowInputsSeparator />
-                    <View style=styles##formRowInput />
-                  </View>
-                  //<View style=styles##formGroupSwitchSeparator />
-                  <FormGroupSwitch
-                    label="Force low free"
-                    value={form.values.forceLowFee}
-                    handleChange={form.handleChange(ForceLowFee)}
-                    error={form.getFieldError(Field(ForceLowFee))}
-                  />
-                </>
-              : React.null}
+              ? <SendViewAdvancedOptions form /> : React.null}
          </View>
          <View style=styles##formAction>
            <FormButton text="CANCEL" onPress=onPressCancel />

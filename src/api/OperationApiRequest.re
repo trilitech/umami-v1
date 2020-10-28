@@ -22,6 +22,26 @@ let useCreateOperation = () => {
   (request, sendRequest);
 };
 
+/* Simulate */
+
+type simulateOperationApiRequest = t(string);
+
+let useSimulateOperation = () => {
+  let network = StoreContext.useNetwork();
+
+  let (request, setRequest) = React.useState(_ => NotAsked);
+
+  let sendRequest = operation => {
+    setRequest(_ => Loading);
+
+    network
+    ->OperationsAPI.simulate(operation)
+    ->Future.get(result => setRequest(_ => Done(result)));
+  };
+
+  (request, sendRequest);
+};
+
 /* Get list */
 
 type getOperationsApiRequest = t(array(Operation.t));
