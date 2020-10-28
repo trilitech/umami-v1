@@ -52,16 +52,18 @@ let styles =
         style(
           ~flexDirection=`column,
           ~width=110.->dp,
-          ~paddingTop=(60. +. 10.)->dp,
+          ~paddingTop=60.->dp,
           ~backgroundColor=Colors.structBackground,
           (),
         ),
+      "sendButton": style(~marginTop=20.->dp, ~marginBottom=18.->dp, ()),
     })
   );
 
 [@react.component]
 let make = (~route as currentRoute) => {
-  <View style={styles##container}>
+  <View style=styles##container>
+    <View style=styles##sendButton> <SendButton /> </View>
     <NavBarItem currentRoute route=Accounts title="ACCOUNTS" icon=`accounts />
     <NavBarItem
       currentRoute
