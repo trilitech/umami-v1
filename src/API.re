@@ -145,6 +145,8 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
       let arguments = [|
         "-E",
         network->endpoint,
+        "-w",
+        "none",
         "transfer",
         Js.Float.toString(transaction.amount),
         "from",
