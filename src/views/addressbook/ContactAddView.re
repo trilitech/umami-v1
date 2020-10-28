@@ -57,9 +57,9 @@ let make = (~onPressCancel) => {
     {switch (aliasRequest) {
      | Done(Ok(_result)) =>
        <>
-         <Typography.H2 style=styles##title>
+         <Typography.Headline2 style=styles##title>
            "Contact added"->React.string
-         </Typography.H2>
+         </Typography.Headline2>
          <View style=styles##formAction>
            <FormButton text="OK" onPress=onPressCancel />
          </View>
@@ -83,9 +83,9 @@ let make = (~onPressCancel) => {
        </View>
      | NotAsked =>
        <>
-         <Typography.H2 style=styles##title>
+         <Typography.Headline2 style=styles##title>
            "Add contact"->React.string
-         </Typography.H2>
+         </Typography.Headline2>
          <FormGroupTextInput
            label="Name"
            value={form.values.name}

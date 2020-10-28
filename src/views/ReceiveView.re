@@ -29,9 +29,9 @@ let make =
     ) => {
   <ModalView>
     <>
-      <Typography.H2 style=styles##title>
+      <Typography.Headline2 style=styles##title>
         "QR code"->React.string
-      </Typography.H2>
+      </Typography.Headline2>
       <AccountInfo account balanceRequest />
       <View style=styles##qrContainer>
         <View style=styles##qr>

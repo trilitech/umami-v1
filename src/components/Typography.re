@@ -27,16 +27,16 @@ module type TextDesignStyle = {
   let fontSize: float;
 };
 
-module Make = (DefaultStyle: TextDesignStyle) => {
+module Base = {
   let styles =
     Style.(StyleSheet.create({"text": style(~fontFamily="Avenir", ())}));
 
   [@react.component]
   let make =
       (
-        ~colorStyle=DefaultStyle.colorStyle,
-        ~fontSize=DefaultStyle.fontSize,
-        ~fontWeightStyle=DefaultStyle.fontWeightStyle,
+        ~colorStyle,
+        ~fontSize,
+        ~fontWeightStyle,
         ~numberOfLines=?,
         ~style as styleProp=?,
         ~children,
@@ -62,23 +62,33 @@ module Make = (DefaultStyle: TextDesignStyle) => {
   };
 };
 
-module Default =
-  Make({
-    let colorStyle = `highEmphasis;
-    let fontWeightStyle = `book;
-    let fontSize = 14.;
-  });
+module Make = (DefaultStyle: TextDesignStyle) => {
+  [@react.component]
+  let make =
+      (
+        ~colorStyle=DefaultStyle.colorStyle,
+        ~fontSize=DefaultStyle.fontSize,
+        ~fontWeightStyle=DefaultStyle.fontWeightStyle,
+        ~numberOfLines=?,
+        ~style=?,
+        ~children,
+      ) => {
+    <Base colorStyle fontSize fontWeightStyle ?numberOfLines ?style>
+      children
+    </Base>;
+  };
+};
 
 /* H */
 
-module H1 =
+module Headline1 =
   Make({
     let colorStyle = `highEmphasis;
     let fontWeightStyle = `black;
     let fontSize = 24.;
   });
 
-module H2 =
+module Headline2 =
   Make({
     let colorStyle = `highEmphasis;
     let fontWeightStyle = `black;
