@@ -58,6 +58,7 @@ let styles =
           ~top=0.->dp,
           ~left=0.->dp,
           ~right=0.->dp,
+          ~maxHeight=224.->dp,
           ~paddingVertical=8.->dp,
           ~backgroundColor="#2e2e2e",
           ~borderRadius=3.,
@@ -102,13 +103,13 @@ let make =
     </TouchableOpacity>
     {isOpen
        ? <View>
-           <View style=styles##listContainer>
+           <ScrollView style=styles##listContainer>
              {items
               ->Belt.Array.map(item =>
                   <Item key={item.value} item onChange renderItem />
                 )
               ->React.array}
-           </View>
+           </ScrollView>
          </View>
        : React.null}
   </View>;
