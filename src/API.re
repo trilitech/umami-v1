@@ -3,7 +3,8 @@ open ChildReprocess.StdStream;
 let endpoint = network =>
   switch (network) {
   | Network.Main => "https://mainnet-tezos.giganode.io:443"
-  | Network.Test => "https://testnet-tezos.giganode.io:443"
+  //| Network.Test => "https://testnet-tezos.giganode.io:443"
+  | Network.Test => "http://u.lamini.ca/tezos/carthagenet"
   };
 
 module URL = {
@@ -138,92 +139,140 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
         result->map(Json.Decode.(array(Operation.decode)))
       );
 
-  let create = (network, operation: Injection.operation) =>
-    (
-      switch (operation) {
-      | Transaction(transaction) =>
-        let arguments = [|
-          "-E",
-          network->endpoint,
-          "transfer",
-          Js.Float.toString(transaction.amount),
-          "from",
-          transaction.source,
-          "to",
-          transaction.destination,
-          "--burn-cap",
-          "0.257",
-        |];
-        let arguments =
-          switch (transaction.fee) {
-          | Some(fee) =>
-            Js.Array2.concat(arguments, [|"--fee", fee->Js.Float.toString|])
-          | None => arguments
-          };
-        let arguments =
-          switch (transaction.counter) {
-          | Some(counter) =>
-            Js.Array2.concat(arguments, [|"-C", counter->Js.Int.toString|])
-          | None => arguments
-          };
-        let arguments =
-          switch (transaction.gasLimit) {
-          | Some(gasLimit) =>
-            Js.Array2.concat(arguments, [|"-G", gasLimit->Js.Int.toString|])
-          | None => arguments
-          };
-        let arguments =
-          switch (transaction.storageLimit) {
-          | Some(storageLimit) =>
-            Js.Array2.concat(
-              arguments,
-              [|"-S", storageLimit->Js.Int.toString|],
-            )
-          | None => arguments
-          };
-        let arguments =
-          switch (transaction.burnCap) {
-          | Some(burnCap) =>
-            Js.Array2.concat(
-              arguments,
-              [|"--burn-cap", burnCap->Js.Float.toString|],
-            )
-          | None => arguments
-          };
-        let arguments =
-          switch (transaction.forceLowFee) {
-          | Some(true) => Js.Array2.concat(arguments, [|"--force-low-fee"|])
-          | Some(false)
-          | None => arguments
-          };
-        Caller.call(arguments);
-      | Delegation(delegation) =>
-        Caller.call([|
-          "-E",
-          network->endpoint,
-          "set",
-          "delegate",
-          "for",
-          delegation.source,
-          "to",
-          delegation.delegate,
-        |])
-      }
-    )
-    ->Future.tapOk(Js.log)
-    ->Future.mapOk(receipt => {
-        let result =
-          Js.Re.fromString("Operation hash is '([A-Za-z0-9]*)'")
-          ->Js.Re.exec_(receipt);
-        switch (result) {
-        | Some(result) =>
-          switch (Js.Re.captures(result)[1]->Js.Nullable.toOption) {
-          | Some(operationHash) => operationHash
-          | None => receipt
-          }
-        | None => receipt
+  let arguments = (network, operation: Injection.operation) =>
+    switch (operation) {
+    | Transaction(transaction) =>
+      let arguments = [|
+        "-E",
+        network->endpoint,
+        "transfer",
+        Js.Float.toString(transaction.amount),
+        "from",
+        transaction.source,
+        "to",
+        transaction.destination,
+        "--burn-cap",
+        "0.257",
+      |];
+      let arguments =
+        switch (transaction.fee) {
+        | Some(fee) =>
+          Js.Array2.concat(arguments, [|"--fee", fee->Js.Float.toString|])
+        | None => arguments
         };
-      })
+      let arguments =
+        switch (transaction.counter) {
+        | Some(counter) =>
+          Js.Array2.concat(arguments, [|"-C", counter->Js.Int.toString|])
+        | None => arguments
+        };
+      let arguments =
+        switch (transaction.gasLimit) {
+        | Some(gasLimit) =>
+          Js.Array2.concat(arguments, [|"-G", gasLimit->Js.Int.toString|])
+        | None => arguments
+        };
+      let arguments =
+        switch (transaction.storageLimit) {
+        | Some(storageLimit) =>
+          Js.Array2.concat(
+            arguments,
+            [|"-S", storageLimit->Js.Int.toString|],
+          )
+        | None => arguments
+        };
+      let arguments =
+        switch (transaction.burnCap) {
+        | Some(burnCap) =>
+          Js.Array2.concat(
+            arguments,
+            [|"--burn-cap", burnCap->Js.Float.toString|],
+          )
+        | None => arguments
+        };
+      switch (transaction.forceLowFee) {
+      | Some(true) => Js.Array2.concat(arguments, [|"--force-low-fee"|])
+      | Some(false)
+      | None => arguments
+      };
+    | Delegation(delegation) => [|
+        "-E",
+        network->endpoint,
+        "set",
+        "delegate",
+        "for",
+        delegation.source,
+        "to",
+        delegation.delegate,
+      |]
+    };
+
+  type dryRun = {
+    fee: float,
+    count: int,
+    gasLimit: int,
+    storageLimit: int,
+  };
+
+  let parse = (receipt, pattern) =>
+    Js.Re.fromString(pattern)
+    ->Js.Re.exec_(receipt)
+    ->Belt.Option.map(Js.Re.captures)
+    ->Belt.Option.flatMap(captures => captures[1]->Js.Nullable.toOption);
+
+  exception InvalidReceiptFormat;
+
+  let simulate = (network, operation: Injection.operation) =>
+    Caller.call(arguments(network, operation)->Js.Array2.concat([|"-D"|]))
+    ->Future.tapOk(Js.log)
+    ->Future.map(result =>
+        result->map(receipt => {
+          Js.log("#### #### #### #### #### #### #### ####");
+          let fee =
+            receipt
+            ->parse("[ ]*Fee to the baker: .([0-9]*\.[0-9]+|[0-9]+)")
+            ->Belt.Option.flatMap(float_of_string_opt);
+          Js.log(fee);
+          let count =
+            receipt
+            ->parse("[ ]*Expected counter: ([0-9]+)")
+            ->Belt.Option.flatMap(int_of_string_opt);
+          Js.log(count);
+          let gasLimit =
+            receipt
+            ->parse("[ ]*Gas limit: ([0-9]+)")
+            ->Belt.Option.flatMap(int_of_string_opt);
+          Js.log(gasLimit);
+          let storageLimit =
+            receipt
+            ->parse("[ ]*Storage limit: ([0-9]+)")
+            ->Belt.Option.flatMap(int_of_string_opt);
+          Js.log(storageLimit);
+          switch (fee, count, gasLimit, storageLimit) {
+          | (Some(fee), Some(count), Some(gasLimit), Some(storageLimit)) => {
+              fee,
+              count,
+              gasLimit,
+              storageLimit,
+            }
+          | _ => raise(InvalidReceiptFormat)
+          };
+        })
+      )
+    ->Future.tapOk(Js.log);
+
+  let create = (network, operation: Injection.operation) =>
+    Caller.call(arguments(network, operation))
+    ->Future.tapOk(Js.log)
+    ->Future.map(result =>
+        result->map(receipt => {
+          let result = receipt->parse("Operation hash is '([A-Za-z0-9]*)'");
+          switch (result) {
+          | Some(operationHash) => operationHash
+          | None => raise(InvalidReceiptFormat)
+          };
+        })
+      )
     ->Future.tapOk(Js.log);
 };
 
@@ -238,7 +287,10 @@ module Accounts = (Caller: CallerAPI) => {
     ->Belt.Array.map(data =>
         (
           data[0]
-          ->Js.String2.substring(~from=0, ~to_=data[0]->Js.String2.length - 1),
+          ->Js.String2.substring(
+              ~from=0,
+              ~to_=data[0]->Js.String2.length - 1,
+            ),
           data[1],
         )
       );
