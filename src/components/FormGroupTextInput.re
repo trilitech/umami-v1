@@ -24,22 +24,28 @@ let styles =
           ~borderColor=Theme.colorDarkError,
           (),
         ),
-      "inputSmall": style(~height=44.->dp, ()),
+      "label": style(~marginBottom=6.->dp, ()),
     })
   );
 
 [@react.component]
 let make =
-    (~label, ~value, ~handleChange, ~error, ~keyboardType=?, ~small=false) => {
+    (
+      ~label,
+      ~value,
+      ~handleChange,
+      ~error,
+      ~keyboardType=?,
+      ~style: option(ReactNative.Style.t)=?,
+    ) => {
   let hasError = error->Belt.Option.isSome;
-  <FormGroup small>
-    <FormLabel label hasError />
+  <FormGroup ?style>
+    <FormLabel label hasError style=styles##label />
     <TextInput
       style=Style.(
         arrayOption([|
           Some(styles##input),
           hasError ? Some(styles##inputError) : None,
-          small ? Some(styles##inputSmall) : None,
         |])
       )
       value

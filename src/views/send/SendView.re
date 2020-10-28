@@ -1,29 +1,9 @@
 open ReactNative;
 
-module StateLenses = [%lenses
-  type state = {
-    amount: string,
-    sender: string,
-    recipient: string,
-    fee: string,
-    counter: string,
-    gasLimit: string,
-    storageLimit: string,
-    burnCap: string,
-    confirmations: string,
-    forceLowFee: bool,
-  }
-];
-module SendForm = ReForm.Make(StateLenses);
-
 let styles =
   Style.(
     StyleSheet.create({
       "title": style(~marginBottom=20.->dp, ~textAlign=`center, ()),
-      "formRowInputs":
-        style(~flexDirection=`row, ~justifyContent=`center, ()),
-      "formRowInputsSeparator": style(~width=13.->dp, ()),
-      "formGroupSwitchSeparator": style(~height=11.->dp, ()),
       "formAction":
         style(
           ~flexDirection=`row,
@@ -41,15 +21,8 @@ let styles =
           ~paddingRight=12.->dp,
           (),
         ),
-      "chevron":
-        style(
-          ~color=Theme.colorDarkMediumEmphasis,
-          ~fontSize=14.,
-          ~fontWeight=`_600,
-          ~transform=[|scaleY(~scaleY=1.65), rotate(~rotate=(-90.)->deg)|],
-          (),
-        ),
-      "chevronOpened": style(~transform=[|scaleX(~scaleX=1.65)|], ()),
+      "switchCmp": style(~height=16.->dp, ~width=32.->dp, ()),
+      "switchThumb": style(~transform=[|scale(~scale=0.65)|], ()),
       "loadingView":
         style(
           ~height=400.->dp,
@@ -96,15 +69,7 @@ let make = (~onPressCancel) => {
             + custom(values => isValidFloat(values.fee), Fee)
             + custom(values => isValidInt(values.counter), Counter)
             + custom(values => isValidInt(values.gasLimit), GasLimit)
-            + custom(
-                values => isValidInt(values.storageLimit),
-                StorageLimit,
-              )
-            + custom(values => isValidFloat(values.burnCap), BurnCap)
-            + custom(
-                values => isValidInt(values.confirmations),
-                Confirmations,
-              ),
+            + custom(values => isValidInt(values.storageLimit), StorageLimit),
           )
         );
       },
@@ -130,17 +95,11 @@ let make = (~onPressCancel) => {
                 advancedOptionOpened
                 && state.values.storageLimit->Js.String2.length > 0
                   ? Some(state.values.storageLimit->int_of_string) : None,
-              burnCap:
-                advancedOptionOpened
-                && state.values.burnCap->Js.String2.length > 0
-                  ? Some(state.values.burnCap->Js.Float.fromString) : None,
-              confirmations:
-                advancedOptionOpened
-                && state.values.confirmations->Js.String2.length > 0
-                  ? Some(state.values.confirmations->int_of_string) : None,
               forceLowFee:
                 advancedOptionOpened && state.values.forceLowFee
                   ? Some(true) : None,
+              burnCap: None,
+              confirmations: None,
             });
 
           sendOperation(operation);
@@ -151,13 +110,11 @@ let make = (~onPressCancel) => {
         amount: "",
         sender:
           account->Belt.Option.mapWithDefault("", account => account.address),
-        recipient: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
+        recipient: "",
         fee: "",
         counter: "",
         gasLimit: "",
         storageLimit: "",
-        burnCap: "",
-        confirmations: "",
         forceLowFee: false,
       },
       (),
@@ -211,95 +168,42 @@ let make = (~onPressCancel) => {
            error={form.getFieldError(Field(Amount))}
            keyboardType=`numeric
          />
-         <FormGroupTextInput
+         <FormGroupAccountSelector
            label="Sender account"
            value={form.values.sender}
            handleChange={form.handleChange(Sender)}
            error={form.getFieldError(Field(Sender))}
          />
-         <FormGroupTextInput
+         <FormGroupContactSelector
            label="Recipient account"
            value={form.values.recipient}
            handleChange={form.handleChange(Recipient)}
            error={form.getFieldError(Field(Recipient))}
          />
-         <TouchableOpacity
-           style=styles##advancedOptionButton
-           onPress={_ => setAdvancedOptionOpened(prev => !prev)}>
-           <Typography.Overline1>
-             "Advanced options"->React.string
-           </Typography.Overline1>
-           <Text
-             style=Style.(
-               arrayOption([|
-                 Some(styles##chevron),
-                 advancedOptionOpened ? Some(styles##chevronOpened) : None,
-               |])
-             )>
-             {js|∨|js}->React.string
-           </Text>
-         </TouchableOpacity>
-         {advancedOptionOpened
-            ? <>
-                <View style=styles##formRowInputs>
-                  <FormGroupTextInput
-                    label="Fee"
-                    value={form.values.fee}
-                    handleChange={form.handleChange(Fee)}
-                    error={form.getFieldError(Field(Fee))}
-                    small=true
-                  />
-                  <View style=styles##formRowInputsSeparator />
-                  <FormGroupTextInput
-                    label="Counter"
-                    value={form.values.counter}
-                    handleChange={form.handleChange(Counter)}
-                    error={form.getFieldError(Field(Counter))}
-                    small=true
-                  />
-                  <View style=styles##formRowInputsSeparator />
-                  <FormGroupTextInput
-                    label="Gas limit"
-                    value={form.values.gasLimit}
-                    handleChange={form.handleChange(GasLimit)}
-                    error={form.getFieldError(Field(GasLimit))}
-                    small=true
-                  />
-                </View>
-                <View style=styles##formRowInputs>
-                  <FormGroupTextInput
-                    label="Storage limit"
-                    value={form.values.storageLimit}
-                    handleChange={form.handleChange(StorageLimit)}
-                    error={form.getFieldError(Field(StorageLimit))}
-                    small=true
-                  />
-                  <View style=styles##formRowInputsSeparator />
-                  <FormGroupTextInput
-                    label="Burn cap"
-                    value={form.values.burnCap}
-                    handleChange={form.handleChange(BurnCap)}
-                    error={form.getFieldError(Field(BurnCap))}
-                    small=true
-                  />
-                  <View style=styles##formRowInputsSeparator />
-                  <FormGroupTextInput
-                    label="Confirmations"
-                    value={form.values.confirmations}
-                    handleChange={form.handleChange(Confirmations)}
-                    error={form.getFieldError(Field(Confirmations))}
-                    small=true
-                  />
-                </View>
-                <View style=styles##formGroupSwitchSeparator />
-                <FormGroupSwitch
-                  label="Force low free"
-                  value={form.values.forceLowFee}
-                  handleChange={form.handleChange(ForceLowFee)}
-                  error={form.getFieldError(Field(ForceLowFee))}
-                />
-              </>
-            : React.null}
+         <View>
+           <TouchableOpacity
+             style=styles##advancedOptionButton
+             activeOpacity=1.
+             onPress={_ => setAdvancedOptionOpened(prev => !prev)}>
+             <Typography.Overline1>
+               "Advanced options"->React.string
+             </Typography.Overline1>
+             <SwitchNative
+               value=advancedOptionOpened
+               //onValueChange=handleChange
+               thumbColor="#000"
+               trackColor={Switch.trackColor(
+                 ~_true="#FFF",
+                 ~_false="rgba(255,255,255,0.5)",
+                 (),
+               )}
+               style=styles##switchCmp
+               thumbStyle=styles##switchThumb
+             />
+           </TouchableOpacity>
+           {advancedOptionOpened
+              ? <SendViewAdvancedOptions form /> : React.null}
+         </View>
          <View style=styles##formAction>
            <FormButton text="CANCEL" onPress=onPressCancel />
            <FormButton

@@ -26,3 +26,5 @@ let mapOk = (request, f) =>
   | Done(Ok(value)) => f(value)
   | _ => ()
   };
+
+let isLoading = request => request == Loading;
