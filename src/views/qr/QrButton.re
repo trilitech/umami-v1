@@ -1,5 +1,3 @@
-open ReactNative;
-
 [@react.component]
 let make =
     (

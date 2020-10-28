@@ -151,7 +151,7 @@ let make = (~onPressCancel) => {
         amount: "",
         sender:
           account->Belt.Option.mapWithDefault("", account => account.address),
-        recipient: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
+        recipient: "",
         fee: "",
         counter: "",
         gasLimit: "",
@@ -211,89 +211,91 @@ let make = (~onPressCancel) => {
            error={form.getFieldError(Field(Amount))}
            keyboardType=`numeric
          />
-         <FormGroupTextInput
+         <FormGroupAccountSelector
            label="Sender account"
            value={form.values.sender}
            handleChange={form.handleChange(Sender)}
            error={form.getFieldError(Field(Sender))}
          />
-         <FormGroupTextInput
+         <FormGroupContactSelector
            label="Recipient account"
            value={form.values.recipient}
            handleChange={form.handleChange(Recipient)}
            error={form.getFieldError(Field(Recipient))}
          />
-         <TouchableOpacity
-           style=styles##advancedOptionButton
-           onPress={_ => setAdvancedOptionOpened(prev => !prev)}>
-           <Typography.Overline1>
-             "Advanced options"->React.string
-           </Typography.Overline1>
-           <Text
-             style=Style.(
-               arrayOption([|
-                 Some(styles##chevron),
-                 advancedOptionOpened ? Some(styles##chevronOpened) : None,
-               |])
-             )>
-             {js|∨|js}->React.string
-           </Text>
-         </TouchableOpacity>
-         {advancedOptionOpened
-            ? <>
-                <View style=styles##formRowInputs>
-                  <FormGroupTextInput
-                    label="Fee"
-                    value={form.values.fee}
-                    handleChange={form.handleChange(Fee)}
-                    error={form.getFieldError(Field(Fee))}
+         <View>
+           <TouchableOpacity
+             style=styles##advancedOptionButton
+             onPress={_ => setAdvancedOptionOpened(prev => !prev)}>
+             <Typography.Overline1>
+               "Advanced options"->React.string
+             </Typography.Overline1>
+             <Text
+               style=Style.(
+                 arrayOption([|
+                   Some(styles##chevron),
+                   advancedOptionOpened ? Some(styles##chevronOpened) : None,
+                 |])
+               )>
+               {js|∨|js}->React.string
+             </Text>
+           </TouchableOpacity>
+           {advancedOptionOpened
+              ? <>
+                  <View style=styles##formRowInputs>
+                    <FormGroupTextInput
+                      label="Fee"
+                      value={form.values.fee}
+                      handleChange={form.handleChange(Fee)}
+                      error={form.getFieldError(Field(Fee))}
+                    />
+                    <View style=styles##formRowInputsSeparator />
+                    <FormGroupTextInput
+                      label="Counter"
+                      value={form.values.counter}
+                      handleChange={form.handleChange(Counter)}
+                      error={form.getFieldError(Field(Counter))}
+                    />
+                    <View style=styles##formRowInputsSeparator />
+                    <FormGroupTextInput
+                      label="Gas limit"
+                      value={form.values.gasLimit}
+                      handleChange={form.handleChange(GasLimit)}
+                      error={form.getFieldError(Field(GasLimit))}
+                    />
+                  </View>
+                  <View style=styles##formRowInputs>
+                    <FormGroupTextInput
+                      label="Storage limit"
+                      value={form.values.storageLimit}
+                      handleChange={form.handleChange(StorageLimit)}
+                      error={form.getFieldError(Field(StorageLimit))}
+                    />
+                    <View style=styles##formRowInputsSeparator />
+                    <FormGroupTextInput
+                      label="Burn cap"
+                      value={form.values.burnCap}
+                      handleChange={form.handleChange(BurnCap)}
+                      error={form.getFieldError(Field(BurnCap))}
+                    />
+                    <View style=styles##formRowInputsSeparator />
+                    <FormGroupTextInput
+                      label="Confirmations"
+                      value={form.values.confirmations}
+                      handleChange={form.handleChange(Confirmations)}
+                      error={form.getFieldError(Field(Confirmations))}
+                    />
+                  </View>
+                  <View style=styles##formGroupSwitchSeparator />
+                  <FormGroupSwitch
+                    label="Force low free"
+                    value={form.values.forceLowFee}
+                    handleChange={form.handleChange(ForceLowFee)}
+                    error={form.getFieldError(Field(ForceLowFee))}
                   />
-                  <View style=styles##formRowInputsSeparator />
-                  <FormGroupTextInput
-                    label="Counter"
-                    value={form.values.counter}
-                    handleChange={form.handleChange(Counter)}
-                    error={form.getFieldError(Field(Counter))}
-                  />
-                  <View style=styles##formRowInputsSeparator />
-                  <FormGroupTextInput
-                    label="Gas limit"
-                    value={form.values.gasLimit}
-                    handleChange={form.handleChange(GasLimit)}
-                    error={form.getFieldError(Field(GasLimit))}
-                  />
-                </View>
-                <View style=styles##formRowInputs>
-                  <FormGroupTextInput
-                    label="Storage limit"
-                    value={form.values.storageLimit}
-                    handleChange={form.handleChange(StorageLimit)}
-                    error={form.getFieldError(Field(StorageLimit))}
-                  />
-                  <View style=styles##formRowInputsSeparator />
-                  <FormGroupTextInput
-                    label="Burn cap"
-                    value={form.values.burnCap}
-                    handleChange={form.handleChange(BurnCap)}
-                    error={form.getFieldError(Field(BurnCap))}
-                  />
-                  <View style=styles##formRowInputsSeparator />
-                  <FormGroupTextInput
-                    label="Confirmations"
-                    value={form.values.confirmations}
-                    handleChange={form.handleChange(Confirmations)}
-                    error={form.getFieldError(Field(Confirmations))}
-                  />
-                </View>
-                <View style=styles##formGroupSwitchSeparator />
-                <FormGroupSwitch
-                  label="Force low free"
-                  value={form.values.forceLowFee}
-                  handleChange={form.handleChange(ForceLowFee)}
-                  error={form.getFieldError(Field(ForceLowFee))}
-                />
-              </>
-            : React.null}
+                </>
+              : React.null}
+         </View>
          <View style=styles##formAction>
            <FormButton text="CANCEL" onPress=onPressCancel />
            <FormButton
