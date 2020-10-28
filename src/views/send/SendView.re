@@ -247,7 +247,6 @@ let make = (~onPressCancel) => {
                     value={form.values.fee}
                     handleChange={form.handleChange(Fee)}
                     error={form.getFieldError(Field(Fee))}
-                    small=true
                   />
                   <View style=styles##formRowInputsSeparator />
                   <FormGroupTextInput
@@ -255,7 +254,6 @@ let make = (~onPressCancel) => {
                     value={form.values.counter}
                     handleChange={form.handleChange(Counter)}
                     error={form.getFieldError(Field(Counter))}
-                    small=true
                   />
                   <View style=styles##formRowInputsSeparator />
                   <FormGroupTextInput
@@ -263,7 +261,6 @@ let make = (~onPressCancel) => {
                     value={form.values.gasLimit}
                     handleChange={form.handleChange(GasLimit)}
                     error={form.getFieldError(Field(GasLimit))}
-                    small=true
                   />
                 </View>
                 <View style=styles##formRowInputs>
@@ -272,7 +269,6 @@ let make = (~onPressCancel) => {
                     value={form.values.storageLimit}
                     handleChange={form.handleChange(StorageLimit)}
                     error={form.getFieldError(Field(StorageLimit))}
-                    small=true
                   />
                   <View style=styles##formRowInputsSeparator />
                   <FormGroupTextInput
@@ -280,7 +276,6 @@ let make = (~onPressCancel) => {
                     value={form.values.burnCap}
                     handleChange={form.handleChange(BurnCap)}
                     error={form.getFieldError(Field(BurnCap))}
-                    small=true
                   />
                   <View style=styles##formRowInputsSeparator />
                   <FormGroupTextInput
@@ -288,7 +283,6 @@ let make = (~onPressCancel) => {
                     value={form.values.confirmations}
                     handleChange={form.handleChange(Confirmations)}
                     error={form.getFieldError(Field(Confirmations))}
-                    small=true
                   />
                 </View>
                 <View style=styles##formGroupSwitchSeparator />

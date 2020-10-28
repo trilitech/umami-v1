@@ -24,22 +24,19 @@ let styles =
           ~borderColor=Theme.colorDarkError,
           (),
         ),
-      "inputSmall": style(~height=44.->dp, ()),
     })
   );
 
 [@react.component]
-let make =
-    (~label, ~value, ~handleChange, ~error, ~keyboardType=?, ~small=false) => {
+let make = (~label, ~value, ~handleChange, ~error, ~keyboardType=?) => {
   let hasError = error->Belt.Option.isSome;
-  <FormGroup small>
+  <FormGroup>
     <FormLabel label hasError />
     <TextInput
       style=Style.(
         arrayOption([|
           Some(styles##input),
           hasError ? Some(styles##inputError) : None,
-          small ? Some(styles##inputSmall) : None,
         |])
       )
       value

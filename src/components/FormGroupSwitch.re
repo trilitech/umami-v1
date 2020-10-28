@@ -13,7 +13,7 @@ let styles =
 [@react.component]
 let make = (~label, ~value, ~handleChange, ~error) => {
   let hasError = error->Belt.Option.isSome;
-  <FormGroup style=styles##formGroup small=false>
+  <FormGroup style=styles##formGroup>
     <FormLabel label hasError />
     <SwitchNative
       value
