@@ -43,34 +43,38 @@ let make = () => {
   let (accounts, setAccounts) = React.useState(() => dummy);
 
   React.useEffect0(() => {
-    SecureStorage.Cipher.encrypt("yo", "ga")
-    ->FutureEx.getOk(SecureStorage.setEncryptedData("test"));
+    /*
+         SecureStorage.Cipher.encrypt("yo", "ga")
+         ->FutureEx.getOk(SecureStorage.setEncryptedData("test"));
 
-    switch (SecureStorage.getEncryptedData("test")) {
-    | Some(data) =>
-      data
-      ->SecureStorage.Cipher.decrypt("sdf")
-      ->Future.tapError(Js.log)
-      ->FutureEx.getOk(Js.log)
-    | None => ()
-    };
+         switch (SecureStorage.getEncryptedData("test")) {
+         | Some(data) =>
+           data
+           ->SecureStorage.Cipher.decrypt("sdf")
+           ->Future.tapError(Js.log)
+           ->FutureEx.getOk(Js.log)
+         | None => ()
+         };
 
-    SecureStorage.clear();
+         SecureStorage.clear();
 
-    SecureStorage.getEncryptedData("test")->Js.log;
-
-    None;
-  });
-
-  React.useEffect0(() => {
-    AliasesAPI.get()->FutureEx.getOk(Js.log);
-    AliasesAPI.add("zebra", "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3")->FutureEx.getOk(Js.log);
-    AliasesAPI.add("zebra", "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3")->Future.get(Js.log);
-    AliasesAPI.getAliasForAddress("tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3")->FutureEx.getOk(Js.log);
-    AliasesAPI.getAddressForAlias("zebra")->FutureEx.getOk(Js.log);
-    AliasesAPI.getAddressForAlias("sdlfksfkl")->FutureEx.getOk(Js.log);
-    AliasesAPI.delete("zebra")->FutureEx.getOk(Js.log);
-    AliasesAPI.delete("zebra")->Future.get(Js.log);
+         SecureStorage.getEncryptedData("test")->Js.log;
+     */
+    /*
+    Network.Test
+    ->OperationsAPI.simulate(
+        Transaction(
+          Injection.makeTransfer(
+            ~source="bob",
+            ~amount=1,
+            ~destination="zebra",
+            (),
+          ),
+        ),
+      )
+    ->Future.tapError(Js.log)
+    ->FutureEx.getOk(Js.log);
+    */
     None;
   });
 
