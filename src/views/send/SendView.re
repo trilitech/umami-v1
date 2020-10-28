@@ -21,15 +21,8 @@ let styles =
           ~paddingRight=12.->dp,
           (),
         ),
-      "chevron":
-        style(
-          ~color=Theme.colorDarkMediumEmphasis,
-          ~fontSize=14.,
-          ~fontWeight=`_600,
-          ~transform=[|scaleY(~scaleY=1.65), rotate(~rotate=(-90.)->deg)|],
-          (),
-        ),
-      "chevronOpened": style(~transform=[|scaleX(~scaleX=1.65)|], ()),
+      "switchCmp": style(~height=16.->dp, ~width=32.->dp, ()),
+      "switchThumb": style(~transform=[|scale(~scale=0.65)|], ()),
       "loadingView":
         style(
           ~height=400.->dp,
@@ -190,19 +183,23 @@ let make = (~onPressCancel) => {
          <View>
            <TouchableOpacity
              style=styles##advancedOptionButton
+             activeOpacity=1.
              onPress={_ => setAdvancedOptionOpened(prev => !prev)}>
              <Typography.Overline1>
                "Advanced options"->React.string
              </Typography.Overline1>
-             <Text
-               style=Style.(
-                 arrayOption([|
-                   Some(styles##chevron),
-                   advancedOptionOpened ? Some(styles##chevronOpened) : None,
-                 |])
-               )>
-               {js|∨|js}->React.string
-             </Text>
+             <SwitchNative
+               value=advancedOptionOpened
+               //onValueChange=handleChange
+               thumbColor="#000"
+               trackColor={Switch.trackColor(
+                 ~_true="#FFF",
+                 ~_false="rgba(255,255,255,0.5)",
+                 (),
+               )}
+               style=styles##switchCmp
+               thumbStyle=styles##switchThumb
+             />
            </TouchableOpacity>
            {advancedOptionOpened
               ? <SendViewAdvancedOptions form /> : React.null}

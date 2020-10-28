@@ -106,8 +106,8 @@ let make = (~form: SendForm.api) => {
       <View style=styles##formRowInputsSeparator />
       <View style=styles##formRowInput />
     </View>
-    <FormGroupSwitch
-      label="Force low free"
+    <FormGroupCheckbox
+      label="Force low fee"
       value={form.values.forceLowFee}
       handleChange={form.handleChange(ForceLowFee)}
       error={form.getFieldError(Field(ForceLowFee))}
