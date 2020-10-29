@@ -18,6 +18,7 @@ The **Product** roadmap plans the To-Market efforts to capture public attention 
      * Name
      * Logo/Icon
      * Theme
+     * Trademark
  * Website
      * Domain
      * Graphic design
