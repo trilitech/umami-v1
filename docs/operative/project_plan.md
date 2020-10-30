@@ -52,9 +52,9 @@ gantt
     section Sprint 5 - CI & Testing
     Sprint 5 - CI & Testing                           :done  , 2020-09-21, 2020-10-02
     section Sprint 6 - UX Integration
-    Sprint 6 - UX Integration                         :active, 2020-10-05, 2020-10-16
+    Sprint 6 - UX Integration                         :done  , 2020-10-05, 2020-10-16
     section Sprint 7 - Alpha Candidate
-    Sprint 7 - Alpha Candidate                        :active, 2020-10-19, 2020-10-30
+    Sprint 7 - Alpha Candidate                        :done  , 2020-10-19, 2020-10-30
     section Sprint 8 - Alpha Build
     Sprint 8 - Alpha Build                            :active, 2020-11-03, 2020-11-15
     section Sprint 9 - Refactoring
