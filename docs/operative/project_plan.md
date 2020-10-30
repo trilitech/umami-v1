@@ -53,12 +53,12 @@ gantt
     Sprint 5 - CI & Testing                           :done  , 2020-09-21, 2020-10-02
     section Sprint 6 - UX Integration
     Sprint 6 - UX Integration                         :active, 2020-10-05, 2020-10-16
-    section Sprint 7 - Alpha Version
-    Sprint 7 - Alpha Version                          :active, 2020-10-19, 2020-10-30
-    section Sprint 8 - Refactoring
-    Sprint 8 - Refactoring                            :active, 2020-11-03, 2020-11-15
-    section Sprint 9 - TBD
-    Sprint 9 - TBD                                    :active, 2020-11-18, 2020-11-30
+    section Sprint 7 - Alpha Candidate
+    Sprint 7 - Alpha Candidate                        :active, 2020-10-19, 2020-10-30
+    section Sprint 8 - Alpha Build
+    Sprint 8 - Alpha Build                            :active, 2020-11-03, 2020-11-15
+    section Sprint 9 - Refactoring
+    Sprint 9 - Refactoring                            :active, 2020-11-18, 2020-11-30
     section Beta Release
     Beta Release                                      :active, 2020-12-01, 2020-12-31
     section Release - v 1.0
