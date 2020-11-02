@@ -61,20 +61,20 @@ let make = () => {
          SecureStorage.getEncryptedData("test")->Js.log;
      */
     /*
-    Network.Test
-    ->OperationsAPI.simulate(
-        Transaction(
-          Injection.makeTransfer(
-            ~source="bob",
-            ~amount=1,
-            ~destination="zebra",
-            (),
-          ),
-        ),
-      )
-    ->Future.tapError(Js.log)
-    ->FutureEx.getOk(Js.log);
-    */
+     Network.Test
+     ->OperationsAPI.simulate(
+         Transaction(
+           Injection.makeTransfer(
+             ~source="bob",
+             ~amount=1,
+             ~destination="zebra",
+             (),
+           ),
+         ),
+       )
+     ->Future.tapError(Js.log)
+     ->FutureEx.getOk(Js.log);
+     */
     None;
   });
 

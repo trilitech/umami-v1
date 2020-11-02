@@ -229,7 +229,6 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
     ->Future.tapOk(Js.log)
     ->Future.map(result =>
         result->map(receipt => {
-          Js.log("#### #### #### #### #### #### #### ####");
           let fee =
             receipt
             ->parse("[ ]*Fee to the baker: .([0-9]*\.[0-9]+|[0-9]+)")
@@ -421,9 +420,14 @@ module Aliases = (Caller: CallerAPI) => {
   let parse = content =>
     content
     |> Js.String.split("\n")
-    |> Array.map(row => row |> Js.String.split(": "))
-    |> (pairs => pairs->Belt.Array.keep(pair => pair->Array.length == 2))
-    |> Array.map(pair => (pair[0], pair[1]));
+    |> Js.Array.map(row => row |> Js.String.split(": "))
+    |> (pairs => pairs->Js.Array2.filter(pair => pair->Array.length == 2))
+    |> Js.Array.map(pair => (pair[0], pair[1]))
+    |> Js.Array.sortInPlaceWith((a, b) => {
+      let (a, _) = a;
+      let (b, _) = b;
+      a->compare(b)
+    });
 
   let get = () =>
     Caller.call([|

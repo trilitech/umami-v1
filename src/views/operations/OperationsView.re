@@ -31,7 +31,7 @@ let _ListEmptyComponent = () => <EmptyView text="No operations" />;
 [@react.component]
 let make = () => {
   let operationsRequest =
-    OperationApiRequest.useGetOperations(~limit=100, ());
+    OperationApiRequest.useGetOperations(/*~limit=100, */());
 
   <View style=styles##container>
     <OperationsHeaderView />
