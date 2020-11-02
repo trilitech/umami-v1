@@ -41,3 +41,20 @@ let useCreateAccount = () => {
 
   (request, sendRequest);
 };
+
+/* Delete */
+
+type deleteAccountApiRequest = t(string);
+
+let useDeleteAccount = () => {
+  let (request, setRequest) = React.useState(_ => NotAsked);
+
+  let sendRequest = name => {
+    setRequest(_ => Loading);
+
+    AccountsAPI.delete(name)
+    ->Future.get(result => setRequest(_ => Done(result)));
+  };
+
+  (request, sendRequest);
+};

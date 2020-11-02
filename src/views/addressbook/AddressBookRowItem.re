@@ -1,5 +1,23 @@
 open ReactNative;
 
+module AliasDeleteButton = {
+  [@react.component]
+  let make = (~account: Account.t) => {
+    let (aliasRequest, deleteAlias) = AliasApiRequest.useDeleteAlias();
+
+    let onPressConfirmDelete = _e => {
+      deleteAlias(account.alias);
+    };
+
+    <DeleteButton
+      title="Delete contact?"
+      titleDone="Contact deleted"
+      onPressConfirmDelete
+      request=aliasRequest
+    />;
+  };
+};
+
 let baseCellStyle = Style.(style(~flexShrink=0., ~marginRight=24.->dp, ()));
 let styles =
   Style.(
@@ -52,6 +70,8 @@ let make =
              )>
              <IconButton icon=`copy />
              <QrButton account />
+             <IconButton icon=`edit />
+             <AliasDeleteButton account />
            </View>
          </>;
        }}

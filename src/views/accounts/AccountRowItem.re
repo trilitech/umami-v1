@@ -1,5 +1,24 @@
 open ReactNative;
 
+module AccountDeleteButton = {
+  [@react.component]
+  let make = (~account: Account.t) => {
+    let (accountRequest, deleteAccount) =
+      AccountApiRequest.useDeleteAccount();
+
+    let onPressConfirmDelete = _e => {
+      deleteAccount(account.alias);
+    };
+
+    <DeleteButton
+      title="Delete account?"
+      titleDone="Account deleted"
+      onPressConfirmDelete
+      request=accountRequest
+    />;
+  };
+};
+
 let styles =
   Style.(
     StyleSheet.create({
@@ -33,6 +52,8 @@ let make = (~account: Account.t) => {
            )>
            <IconButton icon=`copy />
            <QrButton account balanceRequest />
+           <IconButton icon=`edit />
+           <AccountDeleteButton account />
          </View>
        </>;
      }}
