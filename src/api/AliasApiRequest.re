@@ -27,7 +27,7 @@ let useGetAliases = () => {
 
 /* Create */
 
-type createAccountApiRequest = t(string);
+type createAliasApiRequest = t(string);
 
 let useCreateAlias = () => {
   let (request, setRequest) = React.useState(_ => NotAsked);
@@ -36,6 +36,23 @@ let useCreateAlias = () => {
     setRequest(_ => Loading);
 
     AliasesAPI.add(alias, address)
+    ->Future.get(result => setRequest(_ => Done(result)));
+  };
+
+  (request, sendRequest);
+};
+
+/* Delete */
+
+type deleteAliasApiRequest = t(string);
+
+let useDeleteAlias = () => {
+  let (request, setRequest) = React.useState(_ => NotAsked);
+
+  let sendRequest = name => {
+    setRequest(_ => Loading);
+
+    AliasesAPI.delete(name)
     ->Future.get(result => setRequest(_ => Done(result)));
   };
 

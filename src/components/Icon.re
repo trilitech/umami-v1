@@ -11,6 +11,8 @@ type iconName = [
   | `copy
   | `close
   | `add
+  | `edit
+  | `delete
   | `chevronDown
   | `checkboxUnselected
   | `checkboxSelected
@@ -41,6 +43,8 @@ let make =
        | `copy => <SVGIconCopy width height ?fill />
        | `close => <SVGIconClose width height ?fill />
        | `add => <SVGIconAdd width height ?fill />
+       | `edit => <SVGIconEdit width height ?fill />
+       | `delete => <SVGIconDelete width height ?fill />
        | `chevronDown => <SVGIconChevronDown width height ?fill />
        | `checkboxUnselected =>
          <SVGIconCheckboxUnselected width height ?fill />
