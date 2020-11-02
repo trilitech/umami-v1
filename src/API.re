@@ -279,6 +279,11 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
 
 module MapString = Belt.Map.String;
 
+module Mnemonic = {
+  [@bs.module "bip39"]
+  external generate: unit => string = "generateMnemonic";
+};
+
 module Accounts = (Caller: CallerAPI) => {
   let parse = content =>
     content
