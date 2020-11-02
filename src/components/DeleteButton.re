@@ -9,7 +9,7 @@ let make = (~title, ~titleDone, ~onPressConfirmDelete, ~request) => {
   };
 
   <>
-    <IconButton icon=`delete onPress />
+    <IconButton icon=Icons.Delete.build onPress />
     <DeleteConfirmModal
       title
       titleDone

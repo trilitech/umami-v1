@@ -38,8 +38,7 @@ module AddContactButton = {
 
     <>
       <TouchableOpacity style=styles##button onPress>
-        <Icon
-          name=`add
+        <Icons.Add
           size=15.5
           color=Theme.colorDarkMediumEmphasis
           style=styles##icon

@@ -55,21 +55,35 @@ module type SVG = {
     React.element;
 };
 
+type builder =
+  (~color: string=?, ~style: ReactNative.Style.t=?, ~size: float) =>
+  React.element;
+
 module Make = (Svg: SVG) => {
-  [@react.component]
-  let make =
-    React.memo(
-      (
-        ~size: float,
-        ~color: option(string)=?,
-        ~style: option(ReactNative.Style.t)=?,
-      ) => {
-      let width = size->Style.dp;
-      let height = width;
-      let fill = color;
-      /* let stroke = color; */
-      <View ?style> <Svg width height ?fill /> </View>;
-    });
+  module I = {
+    [@react.component]
+    let make =
+      React.memo(
+        (
+          ~size: float,
+          ~color: option(string)=?,
+          ~style: option(ReactNative.Style.t)=?,
+        ) => {
+        let width = size->Style.dp;
+        let height = width;
+        let fill = color;
+        /* let stroke = color; */
+        <View ?style> <Svg width height ?fill /> </View>;
+      });
+  };
+
+  let build: builder =
+    (~color=?, ~style=?, ~size) => {
+      let st = style;
+      <I style=?st ?color size />;
+    };
+
+  include I;
 };
 
 module Home = Make(SVGIconHome);
@@ -85,3 +99,5 @@ module Add = Make(SVGIconAdd);
 module ChevronDown = Make(SVGIconChevronDown);
 module CheckboxUnselected = Make(SVGIconCheckboxUnselected);
 module CheckboxSelected = Make(SVGIconCheckboxSelected);
+module Delete = Make(SVGIconDelete);
+module Edit = Make(SVGIconEdit);

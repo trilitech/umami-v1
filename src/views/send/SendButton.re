@@ -40,7 +40,7 @@ let make = () => {
   <>
     <TouchableOpacity style=styles##button onPress>
       <View style=styles##iconContainer>
-        <Icon name=`send size=24. color=Colors.plainIconContent />
+        <Icons.Send size=24. color=Colors.plainIconContent />
         <Typography.ButtonSecondary style=styles##textButton>
           "SEND"->React.string
         </Typography.ButtonSecondary>

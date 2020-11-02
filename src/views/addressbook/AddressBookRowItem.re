@@ -68,9 +68,9 @@ let make =
                  style(~display=hovered ? `flex : `none, ()),
                |])
              )>
-             <IconButton icon=`copy />
+             <IconButton icon=Icons.Copy.build />
              <QrButton account />
-             <IconButton icon=`edit />
+             <IconButton icon=Icons.Edit.build />
              <AliasDeleteButton account />
            </View>
          </>;

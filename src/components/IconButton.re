@@ -16,10 +16,10 @@ let styles =
   );
 
 [@react.component]
-let make = (~icon, ~onPress=?) => {
+let make = (~icon: Icons.builder, ~onPress=?) => {
   <TouchableOpacity ?onPress>
     <View style=styles##button>
-      <Icon name=icon size=16. color=Theme.colorDarkMediumEmphasis />
+      {icon(~style=?None, ~size=16., ~color=Theme.colorDarkMediumEmphasis)}
     </View>
   </TouchableOpacity>;
 };
