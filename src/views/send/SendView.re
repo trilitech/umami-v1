@@ -74,7 +74,7 @@ let make = (~onPressCancel) => {
   let (operationRequest, sendOperation) =
     OperationApiRequest.useCreateOperation();
 
-  let (modalPage, setModalPage) = React.useState(_ => SendStep);
+  let (modalStep, setModalStep) = React.useState(_ => SendStep);
 
   let buildTransaction = (state: SendForm.state, sender, recipient) =>
     Injection.{
@@ -121,7 +121,7 @@ let make = (~onPressCancel) => {
           switch (state.values.sender, state.values.recipient) {
           | (Some(sender), Some(recipient)) =>
             let op = buildTransaction(state, sender, recipient);
-            setModalPage(_ => PasswordStep({op, sender, recipient}));
+            setModalStep(_ => PasswordStep({op, sender, recipient}));
             None;
           | _ => None
           }
@@ -252,9 +252,9 @@ let make = (~onPressCancel) => {
         secureTextEntry=true
       />
       <View style=styles##formAction>
-        <FormButton text="CANCEL" onPress=onPressCancel />
+        <FormButton text="CANCEL" onPress={_ => setModalStep(_ => SendStep)} />
         <FormButton
-          text="OK"
+          text="SEND"
           onPress={operation->onSubmitAll}
           disabled={form.formState == Errored}
         />
@@ -263,7 +263,7 @@ let make = (~onPressCancel) => {
   };
 
   <ModalView>
-    {switch (modalPage, operationRequest) {
+    {switch (modalStep, operationRequest) {
      | (_, Done(Ok(hash))) =>
        <>
          <Typography.Headline2 style=styles##title>
