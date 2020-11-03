@@ -39,6 +39,12 @@ let isValidFloat = value => {
   fieldState;
 };
 
+let isSomeAccount = value => {
+  let fieldState: ReSchema.fieldState =
+    value->Belt.Option.isNone ? Error("account needed") : Valid;
+  fieldState;
+};
+
 let isValidInt = value => {
   let fieldState: ReSchema.fieldState =
     value->Js.String2.length == 0
@@ -71,8 +77,8 @@ let make = (~onPressCancel) => {
           Schema(
             nonEmpty(Amount)
             + custom(values => isValidFloat(values.amount), Amount)
-            + nonEmpty(Sender)
-            + nonEmpty(Recipient)
+            + custom(values => isSomeAccount(values.sender), Sender)
+            + custom(values => isSomeAccount(values.recipient), Sender)
             + custom(values => isValidFloat(values.fee), Fee)
             + custom(values => isValidInt(values.counter), Counter)
             + custom(values => isValidInt(values.gasLimit), GasLimit)
@@ -84,9 +90,17 @@ let make = (~onPressCancel) => {
         ({state}) => {
           let operation =
             Injection.Transaction({
-              source: state.values.sender,
+              source:
+                state.values.sender
+                ->Belt.Option.mapWithDefault("", sender =>
+                    sender.Account.address
+                  ),
               amount: state.values.amount->Js.Float.fromString,
-              destination: state.values.recipient,
+              destination:
+                state.values.recipient
+                ->Belt.Option.mapWithDefault("", recipient =>
+                    recipient.Account.address
+                  ),
               fee:
                 advancedOptionOpened && state.values.fee->Js.String2.length > 0
                   ? Some(state.values.fee->Js.Float.fromString) : None,
@@ -116,9 +130,8 @@ let make = (~onPressCancel) => {
         },
       ~initialState={
         amount: "",
-        sender:
-          account->Belt.Option.mapWithDefault("", account => account.address),
-        recipient: "",
+        sender: account,
+        recipient: None,
         fee: "",
         counter: "",
         gasLimit: "",
