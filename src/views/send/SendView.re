@@ -47,6 +47,10 @@ let isValidInt = value => {
   fieldState;
 };
 
+type step('a) =
+  | PasswordStep(TezosClient.Injection.operation)
+  | SendStep(TezosClient.OperationApiRequest.t(string));
+
 [@react.component]
 let make = (~onPressCancel) => {
   let account = StoreContext.useAccount();
@@ -54,8 +58,11 @@ let make = (~onPressCancel) => {
   let (advancedOptionOpened, setAdvancedOptionOpened) =
     React.useState(_ => false);
 
-  let (operationRequest, sendOperation) =
+  let (operationRequest, _sendOperation) =
     OperationApiRequest.useCreateOperation();
+
+  let (modalPage, setModalPage) =
+    React.useState(_ => SendStep(operationRequest));
 
   let form: SendForm.api =
     SendForm.use(
@@ -102,7 +109,8 @@ let make = (~onPressCancel) => {
               confirmations: None,
             });
 
-          sendOperation(operation);
+          /* sendOperation(operation); */
+          setModalPage(_ => PasswordStep(operation));
 
           None;
         },
@@ -124,9 +132,71 @@ let make = (~onPressCancel) => {
     form.submit();
   };
 
+  let sendFormView = () => {
+    <>
+      <Typography.Headline2 style=styles##title>
+        "Send"->React.string
+      </Typography.Headline2>
+      <FormGroupTextInput
+        label="Amount"
+        value={form.values.amount}
+        handleChange={form.handleChange(Amount)}
+        error={form.getFieldError(Field(Amount))}
+        keyboardType=`numeric
+      />
+      <FormGroupAccountSelector
+        label="Sender account"
+        value={form.values.sender}
+        handleChange={form.handleChange(Sender)}
+        error={form.getFieldError(Field(Sender))}
+      />
+      <FormGroupContactSelector
+        label="Recipient account"
+        value={form.values.recipient}
+        handleChange={form.handleChange(Recipient)}
+        error={form.getFieldError(Field(Recipient))}
+      />
+      <View>
+        <TouchableOpacity
+          style=styles##advancedOptionButton
+          activeOpacity=1.
+          onPress={_ => setAdvancedOptionOpened(prev => !prev)}>
+          <Typography.Overline1>
+            "Advanced options"->React.string
+          </Typography.Overline1>
+          <SwitchNative
+            value=advancedOptionOpened
+            //onValueChange=handleChange
+            thumbColor="#000"
+            trackColor={Switch.trackColor(
+              ~_true="#FFF",
+              ~_false="rgba(255,255,255,0.5)",
+              (),
+            )}
+            style=styles##switchCmp
+            thumbStyle=styles##switchThumb
+          />
+        </TouchableOpacity>
+        {advancedOptionOpened ? <SendViewAdvancedOptions form /> : React.null}
+      </View>
+      <View style=styles##formAction>
+        <FormButton text="CANCEL" onPress=onPressCancel />
+        <FormButton
+          text="OK"
+          onPress=onSubmit
+          disabled={form.formState == Errored}
+        />
+      </View>
+    </>;
+  };
+
+  let passwordFormView = () => {
+    <View />;
+  };
+
   <ModalView>
-    {switch (operationRequest) {
-     | Done(Ok(hash)) =>
+    {switch (modalPage) {
+     | SendStep(Done(Ok(hash))) =>
        <>
          <Typography.Headline2 style=styles##title>
            "Operation injected in the node"->React.string
@@ -139,7 +209,7 @@ let make = (~onPressCancel) => {
            <FormButton text="OK" onPress=onPressCancel />
          </View>
        </>
-     | Done(Error(error)) =>
+     | SendStep(Done(Error(error))) =>
        <>
          <Typography.Body1 colorStyle=`error>
            error->React.string
@@ -148,7 +218,7 @@ let make = (~onPressCancel) => {
            <FormButton text="OK" onPress=onPressCancel />
          </View>
        </>
-     | Loading =>
+     | SendStep(Loading) =>
        <View style=styles##loadingView>
          <ActivityIndicator
            animating=true
@@ -156,63 +226,8 @@ let make = (~onPressCancel) => {
            color=Colors.highIcon
          />
        </View>
-     | NotAsked =>
-       <>
-         <Typography.Headline2 style=styles##title>
-           "Send"->React.string
-         </Typography.Headline2>
-         <FormGroupTextInput
-           label="Amount"
-           value={form.values.amount}
-           handleChange={form.handleChange(Amount)}
-           error={form.getFieldError(Field(Amount))}
-           keyboardType=`numeric
-         />
-         <FormGroupAccountSelector
-           label="Sender account"
-           value={form.values.sender}
-           handleChange={form.handleChange(Sender)}
-           error={form.getFieldError(Field(Sender))}
-         />
-         <FormGroupContactSelector
-           label="Recipient account"
-           value={form.values.recipient}
-           handleChange={form.handleChange(Recipient)}
-           error={form.getFieldError(Field(Recipient))}
-         />
-         <View>
-           <TouchableOpacity
-             style=styles##advancedOptionButton
-             activeOpacity=1.
-             onPress={_ => setAdvancedOptionOpened(prev => !prev)}>
-             <Typography.Overline1>
-               "Advanced options"->React.string
-             </Typography.Overline1>
-             <SwitchNative
-               value=advancedOptionOpened
-               //onValueChange=handleChange
-               thumbColor="#000"
-               trackColor={Switch.trackColor(
-                 ~_true="#FFF",
-                 ~_false="rgba(255,255,255,0.5)",
-                 (),
-               )}
-               style=styles##switchCmp
-               thumbStyle=styles##switchThumb
-             />
-           </TouchableOpacity>
-           {advancedOptionOpened
-              ? <SendViewAdvancedOptions form /> : React.null}
-         </View>
-         <View style=styles##formAction>
-           <FormButton text="CANCEL" onPress=onPressCancel />
-           <FormButton
-             text="OK"
-             onPress=onSubmit
-             disabled={form.formState == Errored}
-           />
-         </View>
-       </>
+     | SendStep(NotAsked) => sendFormView()
+     | PasswordStep(_) => passwordFormView()
      }}
   </ModalView>;
 };
