@@ -53,8 +53,14 @@ let isValidInt = value => {
   fieldState;
 };
 
+type operationWithAccounts = {
+  op: TezosClient.Injection.operation,
+  sender: Account.t,
+  recipient: Account.t,
+};
+
 type step('a) =
-  | PasswordStep(TezosClient.Injection.operation)
+  | PasswordStep(operationWithAccounts)
   | SendStep(TezosClient.OperationApiRequest.t(string));
 
 [@react.component]
@@ -114,9 +120,8 @@ let make = (~onPressCancel) => {
         ({state}) => {
           switch (state.values.sender, state.values.recipient) {
           | (Some(sender), Some(recipient)) =>
-            let operation = buildTransaction(state, sender, recipient);
-            /* sendOperation(operation); */
-            setModalPage(_ => PasswordStep(operation));
+            let op = buildTransaction(state, sender, recipient);
+            setModalPage(_ => PasswordStep({op, sender, recipient}));
             None;
           | _ => None
           }
@@ -196,8 +201,21 @@ let make = (~onPressCancel) => {
     </>;
   };
 
-  let passwordFormView = () => {
-    <View />;
+  let passwordFormView = (~operation) => {
+    <>
+      <OperationSummaryView
+        operation={operation.op}
+        sender={operation.sender}
+        recipient={operation.recipient}
+      />
+      <FormGroupTextInput
+        label="Password"
+        value={form.values.amount}
+        handleChange={form.handleChange(Amount)}
+        error={form.getFieldError(Field(Amount))}
+        keyboardType=`numeric
+      />
+    </>;
   };
 
   <ModalView>
@@ -233,7 +251,7 @@ let make = (~onPressCancel) => {
          />
        </View>
      | SendStep(NotAsked) => sendFormView()
-     | PasswordStep(_) => passwordFormView()
+     | PasswordStep(operation) => passwordFormView(~operation)
      }}
   </ModalView>;
 };
