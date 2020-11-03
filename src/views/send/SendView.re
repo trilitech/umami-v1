@@ -23,6 +23,7 @@ let styles =
         ),
       "switchCmp": style(~height=16.->dp, ~width=32.->dp, ()),
       "switchThumb": style(~transform=[|scale(~scale=0.65)|], ()),
+      "operationSummary": style(~marginBottom=20.->dp, ()),
       "loadingView":
         style(
           ~height=400.->dp,
@@ -53,15 +54,15 @@ let isValidInt = value => {
   fieldState;
 };
 
-type operationWithAccounts = {
-  op: TezosClient.Injection.operation,
+type transaction = {
+  op: TezosClient.Injection.transaction,
   sender: Account.t,
   recipient: Account.t,
 };
 
-type step('a) =
-  | PasswordStep(operationWithAccounts)
-  | SendStep(TezosClient.OperationApiRequest.t(string));
+type step =
+  | SendStep
+  | PasswordStep(transaction);
 
 [@react.component]
 let make = (~onPressCancel) => {
@@ -70,14 +71,13 @@ let make = (~onPressCancel) => {
   let (advancedOptionOpened, setAdvancedOptionOpened) =
     React.useState(_ => false);
 
-  let (operationRequest, _sendOperation) =
+  let (operationRequest, sendOperation) =
     OperationApiRequest.useCreateOperation();
 
-  let (modalPage, setModalPage) =
-    React.useState(_ => SendStep(operationRequest));
+  let (modalPage, setModalPage) = React.useState(_ => SendStep);
 
   let buildTransaction = (state: SendForm.state, sender, recipient) =>
-    Injection.Transaction({
+    Injection.{
       source: sender.Account.address,
       amount: state.values.amount->Js.Float.fromString,
       destination: recipient.Account.address,
@@ -98,7 +98,7 @@ let make = (~onPressCancel) => {
         advancedOptionOpened && state.values.forceLowFee ? Some(true) : None,
       burnCap: None,
       confirmations: None,
-    });
+    };
 
   let form: SendForm.api =
     SendForm.use(
@@ -139,8 +139,25 @@ let make = (~onPressCancel) => {
       (),
     );
 
-  let onSubmit = _ => {
+  let passwordForm: SendForm.Password.api =
+    SendForm.Password.use(
+      ~schema={
+        SendForm.Password.Validation.(Schema(nonEmpty(Password)));
+      },
+      ~onSubmit=({state: _}) => {None},
+      ~initialState={password: ""},
+      (),
+    );
+
+  let onSubmitSendForm = _ => {
     form.submit();
+  };
+
+  let onSubmitAll = (operation, _) => {
+    // checking password
+    // getting stored data
+    passwordForm.submit();
+    sendOperation(Injection.Transaction(operation.op));
   };
 
   let sendFormView = () => {
@@ -194,7 +211,7 @@ let make = (~onPressCancel) => {
         <FormButton text="CANCEL" onPress=onPressCancel />
         <FormButton
           text="OK"
-          onPress=onSubmit
+          onPress=onSubmitSendForm
           disabled={form.formState == Errored}
         />
       </View>
@@ -203,24 +220,51 @@ let make = (~onPressCancel) => {
 
   let passwordFormView = (~operation) => {
     <>
+      <View style=styles##title>
+        <Typography.Headline2>
+          {Js.Float.toFixedWithPrecision(
+             operation.op.Injection.amount,
+             ~digits=1,
+           )
+           ->React.string}
+          " XTZ"->React.string
+        </Typography.Headline2>
+        {operation.op.Injection.fee
+         ->Belt.Option.mapWithDefault(React.null, fee =>
+             <Typography.Body1 colorStyle=`mediumEmphasis>
+               "+ Fee "->React.string
+               {fee->Js.Float.toString->React.string}
+               " XTZ"->React.string
+             </Typography.Body1>
+           )}
+      </View>
       <OperationSummaryView
-        operation={operation.op}
+        style=styles##operationSummary
         sender={operation.sender}
         recipient={operation.recipient}
       />
       <FormGroupTextInput
         label="Password"
-        value={form.values.amount}
-        handleChange={form.handleChange(Amount)}
-        error={form.getFieldError(Field(Amount))}
-        keyboardType=`numeric
+        value={passwordForm.values.password}
+        handleChange={passwordForm.handleChange(Password)}
+        error={passwordForm.getFieldError(Field(Password))}
+        textContentType=`password
+        secureTextEntry=true
       />
+      <View style=styles##formAction>
+        <FormButton text="CANCEL" onPress=onPressCancel />
+        <FormButton
+          text="OK"
+          onPress={operation->onSubmitAll}
+          disabled={form.formState == Errored}
+        />
+      </View>
     </>;
   };
 
   <ModalView>
-    {switch (modalPage) {
-     | SendStep(Done(Ok(hash))) =>
+    {switch (modalPage, operationRequest) {
+     | (_, Done(Ok(hash))) =>
        <>
          <Typography.Headline2 style=styles##title>
            "Operation injected in the node"->React.string
@@ -233,7 +277,7 @@ let make = (~onPressCancel) => {
            <FormButton text="OK" onPress=onPressCancel />
          </View>
        </>
-     | SendStep(Done(Error(error))) =>
+     | (_, Done(Error(error))) =>
        <>
          <Typography.Body1 colorStyle=`error>
            error->React.string
@@ -242,7 +286,7 @@ let make = (~onPressCancel) => {
            <FormButton text="OK" onPress=onPressCancel />
          </View>
        </>
-     | SendStep(Loading) =>
+     | (_, Loading) =>
        <View style=styles##loadingView>
          <ActivityIndicator
            animating=true
@@ -250,8 +294,8 @@ let make = (~onPressCancel) => {
            color=Colors.highIcon
          />
        </View>
-     | SendStep(NotAsked) => sendFormView()
-     | PasswordStep(operation) => passwordFormView(~operation)
+     | (SendStep, _) => sendFormView()
+     | (PasswordStep(operation), _) => passwordFormView(~operation)
      }}
   </ModalView>;
 };
