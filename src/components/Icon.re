@@ -14,6 +14,7 @@ type iconName = [
   | `chevronDown
   | `checkboxUnselected
   | `checkboxSelected
+  | `arrowDown
 ];
 
 [@react.component]
@@ -45,6 +46,7 @@ let make =
        | `checkboxUnselected =>
          <SVGIconCheckboxUnselected width height ?fill />
        | `checkboxSelected => <SVGIconCheckboxSelected width height ?fill />
+       | `arrowDown => <SVGIconArrowDown width height ?fill />
        }}
     </View>;
   });
