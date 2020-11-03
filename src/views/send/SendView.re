@@ -70,6 +70,30 @@ let make = (~onPressCancel) => {
   let (modalPage, setModalPage) =
     React.useState(_ => SendStep(operationRequest));
 
+  let buildTransaction = (state: SendForm.state, sender, recipient) =>
+    Injection.Transaction({
+      source: sender.Account.address,
+      amount: state.values.amount->Js.Float.fromString,
+      destination: recipient.Account.address,
+      fee:
+        advancedOptionOpened && state.values.fee->Js.String2.length > 0
+          ? Some(state.values.fee->Js.Float.fromString) : None,
+      counter:
+        advancedOptionOpened && state.values.counter->Js.String2.length > 0
+          ? Some(state.values.counter->int_of_string) : None,
+      gasLimit:
+        advancedOptionOpened && state.values.gasLimit->Js.String2.length > 0
+          ? Some(state.values.gasLimit->int_of_string) : None,
+      storageLimit:
+        advancedOptionOpened
+        && state.values.storageLimit->Js.String2.length > 0
+          ? Some(state.values.storageLimit->int_of_string) : None,
+      forceLowFee:
+        advancedOptionOpened && state.values.forceLowFee ? Some(true) : None,
+      burnCap: None,
+      confirmations: None,
+    });
+
   let form: SendForm.api =
     SendForm.use(
       ~schema={
@@ -88,45 +112,14 @@ let make = (~onPressCancel) => {
       },
       ~onSubmit=
         ({state}) => {
-          let operation =
-            Injection.Transaction({
-              source:
-                state.values.sender
-                ->Belt.Option.mapWithDefault("", sender =>
-                    sender.Account.address
-                  ),
-              amount: state.values.amount->Js.Float.fromString,
-              destination:
-                state.values.recipient
-                ->Belt.Option.mapWithDefault("", recipient =>
-                    recipient.Account.address
-                  ),
-              fee:
-                advancedOptionOpened && state.values.fee->Js.String2.length > 0
-                  ? Some(state.values.fee->Js.Float.fromString) : None,
-              counter:
-                advancedOptionOpened
-                && state.values.counter->Js.String2.length > 0
-                  ? Some(state.values.counter->int_of_string) : None,
-              gasLimit:
-                advancedOptionOpened
-                && state.values.gasLimit->Js.String2.length > 0
-                  ? Some(state.values.gasLimit->int_of_string) : None,
-              storageLimit:
-                advancedOptionOpened
-                && state.values.storageLimit->Js.String2.length > 0
-                  ? Some(state.values.storageLimit->int_of_string) : None,
-              forceLowFee:
-                advancedOptionOpened && state.values.forceLowFee
-                  ? Some(true) : None,
-              burnCap: None,
-              confirmations: None,
-            });
-
-          /* sendOperation(operation); */
-          setModalPage(_ => PasswordStep(operation));
-
-          None;
+          switch (state.values.sender, state.values.recipient) {
+          | (Some(sender), Some(recipient)) =>
+            let operation = buildTransaction(state, sender, recipient);
+            /* sendOperation(operation); */
+            setModalPage(_ => PasswordStep(operation));
+            None;
+          | _ => None
+          }
         },
       ~initialState={
         amount: "",
