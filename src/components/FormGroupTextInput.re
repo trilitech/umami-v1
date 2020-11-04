@@ -36,6 +36,8 @@ let make =
       ~handleChange,
       ~error,
       ~keyboardType=?,
+      ~textContentType=?,
+      ~secureTextEntry=?,
       ~style: option(ReactNative.Style.t)=?,
     ) => {
   let hasError = error->Belt.Option.isSome;
@@ -52,6 +54,8 @@ let make =
       onChange={(event: TextInput.changeEvent) =>
         handleChange(event.nativeEvent.text)
       }
+      ?textContentType
+      ?secureTextEntry
       autoCapitalize=`none
       autoCorrect=false
       autoFocus=false

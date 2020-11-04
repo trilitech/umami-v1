@@ -9,7 +9,7 @@ let styles =
   );
 
 [@react.component]
-let make = (~label, ~value, ~handleChange, ~error) => {
+let make = (~label, ~value: option(Account.t), ~handleChange, ~error) => {
   let accounts = StoreContext.useAccounts();
 
   let hasError = error->Belt.Option.isSome;
@@ -26,8 +26,16 @@ let make = (~label, ~value, ~handleChange, ~error) => {
     <FormLabel label hasError style=styles##label />
     <Selector
       items
-      onValueChange={value => handleChange(value)}
-      selectedValue=value
+      onValueChange={value =>
+        accounts
+        ->Belt.Option.flatMap(accounts =>
+            accounts->Belt.Map.String.get(value)
+          )
+        ->handleChange
+      }
+      selectedValue={
+        value->Belt.Option.mapWithDefault("", v => v.Account.address)
+      }
       renderButton=AccountSelector.renderButton
       renderItem=AccountSelector.renderItem
     />

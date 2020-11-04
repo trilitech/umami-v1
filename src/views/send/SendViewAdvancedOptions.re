@@ -28,14 +28,13 @@ let make = (~form: SendForm.api) => {
     OperationApiRequest.useSimulateOperation();
 
   React.useEffect0(() => {
-    if (form.values.sender != ""
-        && form.values.amount != ""
-        && form.values.recipient != "") {
+    switch (form.values.sender, form.values.recipient) {
+    | (Some(sender), Some(recipient)) when form.values.amount != "" =>
       let operation =
         Injection.Transaction({
-          source: form.values.sender,
+          source: sender.Account.address,
           amount: form.values.amount->Js.Float.fromString,
-          destination: form.values.recipient,
+          destination: recipient.Account.address,
           fee: None,
           counter: None,
           gasLimit: None,
@@ -46,9 +45,9 @@ let make = (~form: SendForm.api) => {
         });
 
       sendOperationSimulate(operation);
-    };
-
-    None;
+      None;
+    | _ => None
+    }
   });
 
   React.useEffect1(
