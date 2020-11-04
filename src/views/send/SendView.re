@@ -60,47 +60,36 @@ type transaction = {
   recipient: Account.t,
 };
 
+let buildTransaction =
+    (state: SendForm.state, sender, recipient, advancedOptionOpened) =>
+  Injection.{
+    source: sender.Account.address,
+    amount: state.values.amount->Js.Float.fromString,
+    destination: recipient.Account.address,
+    fee:
+      advancedOptionOpened && state.values.fee->Js.String2.length > 0
+        ? Some(state.values.fee->Js.Float.fromString) : None,
+    counter:
+      advancedOptionOpened && state.values.counter->Js.String2.length > 0
+        ? Some(state.values.counter->int_of_string) : None,
+    gasLimit:
+      advancedOptionOpened && state.values.gasLimit->Js.String2.length > 0
+        ? Some(state.values.gasLimit->int_of_string) : None,
+    storageLimit:
+      advancedOptionOpened && state.values.storageLimit->Js.String2.length > 0
+        ? Some(state.values.storageLimit->int_of_string) : None,
+    forceLowFee:
+      advancedOptionOpened && state.values.forceLowFee ? Some(true) : None,
+    burnCap: None,
+    confirmations: None,
+  };
+
 type step =
   | SendStep
   | PasswordStep(transaction);
 
-[@react.component]
-let make = (~onPressCancel) => {
-  let account = StoreContext.useAccount();
-
-  let (advancedOptionOpened, setAdvancedOptionOpened) =
-    React.useState(_ => false);
-
-  let (operationRequest, sendOperation) =
-    OperationApiRequest.useCreateOperation();
-
-  let (modalStep, setModalStep) = React.useState(_ => SendStep);
-
-  let buildTransaction = (state: SendForm.state, sender, recipient) =>
-    Injection.{
-      source: sender.Account.address,
-      amount: state.values.amount->Js.Float.fromString,
-      destination: recipient.Account.address,
-      fee:
-        advancedOptionOpened && state.values.fee->Js.String2.length > 0
-          ? Some(state.values.fee->Js.Float.fromString) : None,
-      counter:
-        advancedOptionOpened && state.values.counter->Js.String2.length > 0
-          ? Some(state.values.counter->int_of_string) : None,
-      gasLimit:
-        advancedOptionOpened && state.values.gasLimit->Js.String2.length > 0
-          ? Some(state.values.gasLimit->int_of_string) : None,
-      storageLimit:
-        advancedOptionOpened
-        && state.values.storageLimit->Js.String2.length > 0
-          ? Some(state.values.storageLimit->int_of_string) : None,
-      forceLowFee:
-        advancedOptionOpened && state.values.forceLowFee ? Some(true) : None,
-      burnCap: None,
-      confirmations: None,
-    };
-
-  let form: SendForm.api =
+module Form = {
+  let build = (initAccount, advancedOptionOpened, onSubmit) => {
     SendForm.use(
       ~schema={
         SendForm.Validation.(
@@ -120,15 +109,21 @@ let make = (~onPressCancel) => {
         ({state}) => {
           switch (state.values.sender, state.values.recipient) {
           | (Some(sender), Some(recipient)) =>
-            let op = buildTransaction(state, sender, recipient);
-            setModalStep(_ => PasswordStep({op, sender, recipient}));
+            let op =
+              buildTransaction(
+                state,
+                sender,
+                recipient,
+                advancedOptionOpened,
+              );
+            onSubmit({op, sender, recipient});
             None;
           | _ => None
           }
         },
       ~initialState={
         amount: "",
-        sender: account,
+        sender: initAccount,
         recipient: None,
         fee: "",
         counter: "",
@@ -138,129 +133,93 @@ let make = (~onPressCancel) => {
       },
       (),
     );
-
-  let passwordForm: SendForm.Password.api =
-    SendForm.Password.use(
-      ~schema={
-        SendForm.Password.Validation.(Schema(nonEmpty(Password)));
-      },
-      ~onSubmit=({state: _}) => {None},
-      ~initialState={password: ""},
-      (),
-    );
-
-  let onSubmitSendForm = _ => {
-    form.submit();
   };
 
-  let onSubmitAll = (operation, _) => {
-    // checking password
-    // getting stored data
-    passwordForm.submit();
-    sendOperation(Injection.Transaction(operation.op));
-  };
+  module View = {
+    open SendForm;
 
-  let sendFormView = () => {
-    <>
-      <Typography.Headline2 style=styles##title>
-        "Send"->React.string
-      </Typography.Headline2>
-      <FormGroupTextInput
-        label="Amount"
-        value={form.values.amount}
-        handleChange={form.handleChange(Amount)}
-        error={form.getFieldError(Field(Amount))}
-        keyboardType=`numeric
-      />
-      <FormGroupAccountSelector
-        label="Sender account"
-        value={form.values.sender}
-        handleChange={form.handleChange(Sender)}
-        error={form.getFieldError(Field(Sender))}
-      />
-      <FormGroupContactSelector
-        label="Recipient account"
-        value={form.values.recipient}
-        handleChange={form.handleChange(Recipient)}
-        error={form.getFieldError(Field(Recipient))}
-      />
-      <View>
-        <TouchableOpacity
-          style=styles##advancedOptionButton
-          activeOpacity=1.
-          onPress={_ => setAdvancedOptionOpened(prev => !prev)}>
-          <Typography.Overline1>
-            "Advanced options"->React.string
-          </Typography.Overline1>
-          <SwitchNative
-            value=advancedOptionOpened
-            //onValueChange=handleChange
-            thumbColor="#000"
-            trackColor={Switch.trackColor(
-              ~_true="#FFF",
-              ~_false="rgba(255,255,255,0.5)",
-              (),
-            )}
-            style=styles##switchCmp
-            thumbStyle=styles##switchThumb
-          />
-        </TouchableOpacity>
-        {advancedOptionOpened ? <SendViewAdvancedOptions form /> : React.null}
-      </View>
-      <View style=styles##formAction>
-        <FormButton text="CANCEL" onPress=onPressCancel />
-        <FormButton
-          text="OK"
-          onPress=onSubmitSendForm
-          disabled={form.formState == Errored}
-        />
-      </View>
-    </>;
-  };
+    [@react.component]
+    let make = (~onPressCancel, ~advancedOptionState, ~form) => {
+      let onSubmitSendForm = _ => {
+        form.submit();
+      };
+      let (advancedOptionOpened, setAdvancedOptionOpened) = advancedOptionState;
 
-  let passwordFormView = (~operation) => {
-    <>
-      <View style=styles##title>
-        <Typography.Headline2>
-          {Js.Float.toFixedWithPrecision(
-             operation.op.Injection.amount,
-             ~digits=1,
-           )
-           ->React.string}
-          " XTZ"->React.string
+      <>
+        <Typography.Headline2 style=styles##title>
+          "Send"->React.string
         </Typography.Headline2>
-        {operation.op.Injection.fee
-         ->Belt.Option.mapWithDefault(React.null, fee =>
-             <Typography.Body1 colorStyle=`mediumEmphasis>
-               "+ Fee "->React.string
-               {fee->Js.Float.toString->React.string}
-               " XTZ"->React.string
-             </Typography.Body1>
-           )}
-      </View>
-      <OperationSummaryView
-        style=styles##operationSummary
-        sender={operation.sender}
-        recipient={operation.recipient}
-      />
-      <FormGroupTextInput
-        label="Password"
-        value={passwordForm.values.password}
-        handleChange={passwordForm.handleChange(Password)}
-        error={passwordForm.getFieldError(Field(Password))}
-        textContentType=`password
-        secureTextEntry=true
-      />
-      <View style=styles##formAction>
-        <FormButton text="CANCEL" onPress={_ => setModalStep(_ => SendStep)} />
-        <FormButton
-          text="SEND"
-          onPress={operation->onSubmitAll}
-          disabled={form.formState == Errored}
+        <FormGroupTextInput
+          label="Amount"
+          value={form.values.amount}
+          handleChange={form.handleChange(Amount)}
+          error={form.getFieldError(Field(Amount))}
+          keyboardType=`numeric
         />
-      </View>
-    </>;
+        <FormGroupAccountSelector
+          label="Sender account"
+          value={form.values.sender}
+          handleChange={form.handleChange(Sender)}
+          error={form.getFieldError(Field(Sender))}
+        />
+        <FormGroupContactSelector
+          label="Recipient account"
+          value={form.values.recipient}
+          handleChange={form.handleChange(Recipient)}
+          error={form.getFieldError(Field(Recipient))}
+        />
+        <View>
+          <TouchableOpacity
+            style=styles##advancedOptionButton
+            activeOpacity=1.
+            onPress={_ => setAdvancedOptionOpened(prev => !prev)}>
+            <Typography.Overline1>
+              "Advanced options"->React.string
+            </Typography.Overline1>
+            <SwitchNative
+              value=advancedOptionOpened
+              //onValueChange=handleChange
+              thumbColor="#000"
+              trackColor={Switch.trackColor(
+                ~_true="#FFF",
+                ~_false="rgba(255,255,255,0.5)",
+                (),
+              )}
+              style=styles##switchCmp
+              thumbStyle=styles##switchThumb
+            />
+          </TouchableOpacity>
+          {advancedOptionOpened ? <SendViewAdvancedOptions form /> : React.null}
+        </View>
+        <View style=styles##formAction>
+          <FormButton text="CANCEL" onPress=onPressCancel />
+          <FormButton
+            text="OK"
+            onPress=onSubmitSendForm
+            disabled={form.formState == Errored}
+          />
+        </View>
+      </>;
+    };
   };
+};
+
+[@react.component]
+let make = (~onPressCancel) => {
+  let account = StoreContext.useAccount();
+
+  let (advancedOptionOpened, _) as advancedOptionState =
+    React.useState(_ => false);
+
+  let (operationRequest, sendOperation) =
+    OperationApiRequest.useCreateOperation();
+
+  let (modalStep, setModalStep) = React.useState(_ => SendStep);
+
+  let form =
+    Form.build(account, advancedOptionOpened, op =>
+      setModalStep(_ => PasswordStep(op))
+    );
 
   <ModalView>
     {switch (modalStep, operationRequest) {
@@ -294,8 +253,15 @@ let make = (~onPressCancel) => {
            color=Colors.highIcon
          />
        </View>
-     | (SendStep, _) => sendFormView()
-     | (PasswordStep(operation), _) => passwordFormView(~operation)
+     | (SendStep, _) => <Form.View onPressCancel advancedOptionState form />
+     | (PasswordStep(operation), _) =>
+       <SignOperationView
+         onPressCancel={_ => setModalStep(_ => SendStep)}
+         operation={operation.op}
+         sendOperation
+         sender={operation.sender}
+         recipient={operation.recipient}
+       />
      }}
   </ModalView>;
 };
