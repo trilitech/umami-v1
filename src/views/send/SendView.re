@@ -61,28 +61,23 @@ type transaction = {
 };
 
 let buildTransaction =
-    (state: SendForm.state, sender, recipient, advancedOptionOpened) =>
-  Injection.{
-    source: sender.Account.address,
-    amount: state.values.amount->Js.Float.fromString,
-    destination: recipient.Account.address,
-    fee:
-      advancedOptionOpened && state.values.fee->Js.String2.length > 0
-        ? Some(state.values.fee->Js.Float.fromString) : None,
-    counter:
-      advancedOptionOpened && state.values.counter->Js.String2.length > 0
-        ? Some(state.values.counter->int_of_string) : None,
-    gasLimit:
-      advancedOptionOpened && state.values.gasLimit->Js.String2.length > 0
-        ? Some(state.values.gasLimit->int_of_string) : None,
-    storageLimit:
-      advancedOptionOpened && state.values.storageLimit->Js.String2.length > 0
-        ? Some(state.values.storageLimit->int_of_string) : None,
-    forceLowFee:
+    (state: SendForm.state, sender, recipient, advancedOptionOpened) => {
+  let mapIfAdvanced = (v, map) =>
+    advancedOptionOpened && v->Js.String2.length > 0 ? Some(v->map) : None;
+
+  Injection.makeTransfer(
+    ~source=sender.Account.address,
+    ~amount=state.values.amount->Js.Float.fromString,
+    ~destination=recipient.Account.address,
+    ~fee=?state.values.fee->mapIfAdvanced(Js.Float.fromString),
+    ~counter=?state.values.counter->mapIfAdvanced(int_of_string),
+    ~gasLimit=?state.values.gasLimit->mapIfAdvanced(int_of_string),
+    ~storageLimit=?state.values.storageLimit->mapIfAdvanced(int_of_string),
+    ~forceLowFee=?
       advancedOptionOpened && state.values.forceLowFee ? Some(true) : None,
-    burnCap: None,
-    confirmations: None,
-  };
+    (),
+  );
+};
 
 type step =
   | SendStep
