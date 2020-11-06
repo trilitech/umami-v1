@@ -106,3 +106,10 @@ let useAccounts = () => {
   let store = useStoreContext();
   store.accounts;
 };
+
+let useAccountFromAddress = address => {
+  let accounts = useAccounts();
+  accounts->Belt.Option.flatMap(accounts =>
+    accounts->Belt.Map.String.get(address)
+  );
+};
