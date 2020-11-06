@@ -61,7 +61,7 @@ let buildTransaction = (state: SendForm.state, advancedOptionOpened) => {
   Injection.makeTransfer(
     ~source=state.values.sender,
     ~amount=state.values.amount->Js.Float.fromString,
-    ~destination=state.values.sender,
+    ~destination=state.values.recipient,
     ~fee=?state.values.fee->mapIfAdvanced(Js.Float.fromString),
     ~counter=?state.values.counter->mapIfAdvanced(int_of_string),
     ~gasLimit=?state.values.gasLimit->mapIfAdvanced(int_of_string),
