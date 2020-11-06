@@ -21,25 +21,27 @@ let make = () => {
   let route = Routes.match(url);
 
   <StoreContext>
-    <View style=styles##layout>
-      <NavBar route />
-      <View style=styles##main>
-        <Header />
-        <View style=styles##content>
-          {switch (route) {
-           | Accounts => <AccountsView />
-           | Operations => <OperationsView />
-           | AddressBook => <AddressBookView />
-           | Debug => <DebugView />
-           | NotFound =>
-             <View>
-               <Typography.Body1>
-                 "404 - Route Not Found :("->React.string
-               </Typography.Body1>
-             </View>
-           }}
+    <ErrorsContext>
+      <View style=styles##layout>
+        <NavBar route />
+        <View style=styles##main>
+          <Header />
+          <View style=styles##content>
+            {switch (route) {
+             | Accounts => <AccountsView />
+             | Operations => <OperationsView />
+             | AddressBook => <AddressBookView />
+             | Debug => <DebugView />
+             | NotFound =>
+               <View>
+                 <Typography.Body1>
+                   "404 - Route Not Found :("->React.string
+                 </Typography.Body1>
+               </View>
+             }}
+          </View>
         </View>
       </View>
-    </View>
+    </ErrorsContext>
   </StoreContext>;
 };

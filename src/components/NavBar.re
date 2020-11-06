@@ -84,5 +84,6 @@ let make = (~route as currentRoute) => {
       icon=Icons.AddressBook.build
     />
     <NavBarItem currentRoute route=Debug title="DEBUG" />
+    <ErrorsButton />
   </View>;
 };
