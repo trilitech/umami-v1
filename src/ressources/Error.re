@@ -12,19 +12,9 @@ type t = {
   msg: string,
 };
 
-let print_kind = ((), e) => {
+let print_kind = e => {
   switch (e) {
   | Operation => "Operation"
   | Connection => "Connection"
   };
-};
-
-let print = ({kind, msg, timestamp}) => {
-  Format.sprintf(
-    "%s - %a : %s",
-    Js.Date.(timestamp->fromFloat->toLocaleString),
-    print_kind,
-    kind,
-    msg,
-  );
 };

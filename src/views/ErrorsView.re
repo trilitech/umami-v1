@@ -6,9 +6,13 @@ let styles =
       "content": style(~marginTop=20.->dp, ()),
       "empty": style(~textAlign=`center, ()),
       "view": style(~minHeight=300.->dp, ()),
+      "reqelt": style(~flexShrink=0., ~marginRight=5.->dp, ()),
       "item":
         style(
+          ~flexDirection=`row,
+          ~alignItems=`center,
           ~backgroundColor=Theme.colorDarkError,
+          ~flexWrap=`nowrap,
           ~padding=20.->dp,
           ~paddingTop=10.->dp,
           ~paddingBottom=10.->dp,
@@ -24,9 +28,24 @@ module Item = {
   [@react.component]
   let make = (~error: Error.t) => {
     <View style=styles##item>
-      <Typography.Body1 ellipsizeMode=`tail numberOfLines=1>
-        {error->Error.print->React.string}
-      </Typography.Body1>
+      <Typography.Body3
+        style=styles##reqelt
+        fontSize=12.
+        fontWeightStyle=`light
+        numberOfLines=1>
+        "["->React.string
+        Js.Date.(error.timestamp->fromFloat->toLocaleString)->React.string
+        "]  -"->React.string
+      </Typography.Body3>
+      <Typography.Body2
+        style=styles##reqelt fontWeightStyle=`heavy numberOfLines=1>
+        {error.kind->Error.print_kind->React.string}
+        {"  :"}->React.string
+      </Typography.Body2>
+      <Typography.Body2
+        fontWeightStyle=`heavy ellipsizeMode=`tail numberOfLines=1>
+        error.msg->React.string
+      </Typography.Body2>
     </View>;
   };
 };
