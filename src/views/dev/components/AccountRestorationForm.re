@@ -25,7 +25,7 @@ let make = () => {
     />
     <Button
       onPress={_ =>
-        AccountsAPI.restore(backupPhrase, name, ())
+        AccountsAPI.addWithMnemonic(name, backupPhrase, ~password="blerot")
         ->Future.flatMapOk(_ => AccountsAPI.get())
         ->Future.get(result =>
             switch (result) {
