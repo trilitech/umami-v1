@@ -10,7 +10,7 @@ let styles =
   );
 
 [@react.component]
-let make = (~label, ~value: option(Account.t), ~handleChange, ~error) => {
+let make = (~label, ~value: string, ~handleChange, ~error) => {
   let aliasesRequest = AliasApiRequest.useGetAliases();
 
   let hasError = error->Option.isSome;
@@ -28,28 +28,25 @@ let make = (~label, ~value: option(Account.t), ~handleChange, ~error) => {
 
   React.useEffect2(
     () => {
-      if (value == None && items->Array.size > 0) {
-        let firstItem = accounts->Array.get(0);
-
-        if (firstItem != None) {
-          handleChange(firstItem);
+      if (value == "" && items->Array.size > 0) {
+        switch (items->Array.get(0)) {
+        | Some(i) => i.value->handleChange
+        | None => ()
         };
       };
       None;
     },
-    (value, items),
+    (value, accounts),
   );
 
-  let onValueChange = value => {
-    Array.getBy(accounts, acc => acc.address == value)->handleChange;
-  };
+  let onValueChange = value => value->handleChange;
 
   <FormGroup style=styles##formGroup>
     <FormLabel label hasError style=styles##label />
     <Selector
       items
       onValueChange
-      selectedValue=?{value->Belt.Option.map(account => account.address)}
+      selectedValue=value
       renderButton=AccountSelector.renderButton
       renderItem=AccountSelector.renderItem
     />

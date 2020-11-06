@@ -1,8 +1,8 @@
 module StateLenses = [%lenses
   type state = {
     amount: string,
-    sender: option(Account.t),
-    recipient: option(Account.t),
+    sender: string,
+    recipient: string,
     fee: string,
     counter: string,
     gasLimit: string,

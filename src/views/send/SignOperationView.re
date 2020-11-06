@@ -16,7 +16,7 @@ let styles =
   );
 
 [@react.component]
-let make = (~onPressCancel, ~operation, ~sendOperation, ~sender, ~recipient) => {
+let make = (~onPressCancel, ~operation, ~sendOperation) => {
   let form: SendForm.Password.api =
     SendForm.Password.use(
       ~schema={
@@ -42,7 +42,7 @@ let make = (~onPressCancel, ~operation, ~sendOperation, ~sender, ~recipient) => 
         " XTZ"->React.string
       </Typography.Headline2>
       {operation.Injection.fee
-       ->Belt.Option.mapWithDefault(React.null, fee =>
+       ->ReactUtils.mapOpt(fee =>
            <Typography.Body1 colorStyle=`mediumEmphasis>
              "+ Fee "->React.string
              {fee->Js.Float.toString->React.string}
@@ -50,7 +50,10 @@ let make = (~onPressCancel, ~operation, ~sendOperation, ~sender, ~recipient) => 
            </Typography.Body1>
          )}
     </View>
-    <OperationSummaryView style=styles##operationSummary sender recipient />
+    <OperationSummaryView
+      style=styles##operationSummary
+      transaction=operation
+    />
     <FormGroupTextInput
       label="Password"
       value={form.values.password}

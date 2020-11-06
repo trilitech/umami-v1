@@ -54,21 +54,14 @@ let isValidInt = value => {
   fieldState;
 };
 
-type transaction = {
-  op: TezosClient.Injection.transaction,
-  sender: Account.t,
-  recipient: Account.t,
-};
-
-let buildTransaction =
-    (state: SendForm.state, sender, recipient, advancedOptionOpened) => {
+let buildTransaction = (state: SendForm.state, advancedOptionOpened) => {
   let mapIfAdvanced = (v, map) =>
     advancedOptionOpened && v->Js.String2.length > 0 ? Some(v->map) : None;
 
   Injection.makeTransfer(
-    ~source=sender.Account.address,
+    ~source=state.values.sender,
     ~amount=state.values.amount->Js.Float.fromString,
-    ~destination=recipient.Account.address,
+    ~destination=state.values.sender,
     ~fee=?state.values.fee->mapIfAdvanced(Js.Float.fromString),
     ~counter=?state.values.counter->mapIfAdvanced(int_of_string),
     ~gasLimit=?state.values.gasLimit->mapIfAdvanced(int_of_string),
@@ -81,18 +74,19 @@ let buildTransaction =
 
 type step =
   | SendStep
-  | PasswordStep(transaction);
+  | PasswordStep(Injection.transaction);
 
 module Form = {
-  let build = (initAccount, advancedOptionOpened, onSubmit) => {
+  let build =
+      (initAccount: option(Account.t), advancedOptionOpened, onSubmit) => {
     SendForm.use(
       ~schema={
         SendForm.Validation.(
           Schema(
             nonEmpty(Amount)
+            + nonEmpty(Sender)
+            + nonEmpty(Recipient)
             + custom(values => isValidFloat(values.amount), Amount)
-            + custom(values => isSomeAccount(values.sender), Sender)
-            + custom(values => isSomeAccount(values.recipient), Sender)
             + custom(values => isValidFloat(values.fee), Fee)
             + custom(values => isValidInt(values.counter), Counter)
             + custom(values => isValidInt(values.gasLimit), GasLimit)
@@ -102,24 +96,15 @@ module Form = {
       },
       ~onSubmit=
         ({state}) => {
-          switch (state.values.sender, state.values.recipient) {
-          | (Some(sender), Some(recipient)) =>
-            let op =
-              buildTransaction(
-                state,
-                sender,
-                recipient,
-                advancedOptionOpened,
-              );
-            onSubmit({op, sender, recipient});
-            None;
-          | _ => None
-          }
+          let operation = buildTransaction(state, advancedOptionOpened);
+          onSubmit(operation);
+
+          None;
         },
       ~initialState={
         amount: "",
-        sender: initAccount,
-        recipient: None,
+        sender: initAccount->Belt.Option.mapWithDefault("", a => a.address),
+        recipient: "",
         fee: "",
         counter: "",
         gasLimit: "",
@@ -252,10 +237,8 @@ let make = (~onPressCancel) => {
      | (PasswordStep(operation), _) =>
        <SignOperationView
          onPressCancel={_ => setModalStep(_ => SendStep)}
-         operation={operation.op}
+         operation
          sendOperation
-         sender={operation.sender}
-         recipient={operation.recipient}
        />
      }}
   </ModalView>;
