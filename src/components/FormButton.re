@@ -15,8 +15,11 @@ let styles =
   );
 
 [@react.component]
-let make = (~text, ~onPress, ~disabled=?) => {
-  <TouchableOpacity style=styles##button onPress ?disabled>
+let make = (~text, ~onPress, ~disabled=?, ~style=?) => {
+  <TouchableOpacity
+    style={Style.arrayOption([|Some(styles##button), style|])}
+    onPress
+    ?disabled>
     <Typography.ButtonPrimary
       colorStyle=?{
         disabled->Belt.Option.flatMap(disabled =>

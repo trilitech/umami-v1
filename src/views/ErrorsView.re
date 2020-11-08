@@ -95,7 +95,7 @@ let make = () => {
   <ModalView>
     <View style=styles##view>
       <Typography.Headline2 style=ModalAction.styles##title>
-        "ERROR LOG"->React.string
+        "ERROR LOGS"->React.string
       </Typography.Headline2>
       <View style=styles##content>
         {switch (errors) {

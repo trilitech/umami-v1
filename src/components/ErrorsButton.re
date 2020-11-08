@@ -1,6 +1,10 @@
+open ReactNative;
+
 [@react.component]
-let make = () => {
+let make = (~style=?) => {
   let _errors = ErrorsContext.useErrors();
+  let setSeen = ErrorsContext.useSetSeen();
+  let seen = ErrorsContext.useSeen();
 
   let modal = React.useRef(Js.Nullable.null);
   let (visibleModal, setVisibleModal) = React.useState(_ => false);
@@ -9,10 +13,16 @@ let make = () => {
 
   let onPress = _ => {
     openAction();
+    true->setSeen;
   };
 
   <>
-    <FormButton text="ERRORS" onPress />
+    <TouchableOpacity ?style onPress>
+      <Typography.ButtonPrimary
+        fontSize=12. colorStyle={!seen ? `error : `disabled}>
+        "ERROR LOGS"->React.string
+      </Typography.ButtonPrimary>
+    </TouchableOpacity>
     <ModalAction ref=modal visible=visibleModal onRequestClose=closeAction>
       <ErrorsView />
     </ModalAction>

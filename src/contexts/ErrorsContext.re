@@ -2,9 +2,15 @@ type state = {
   errors: list(Error.t),
   addError: Error.t => unit,
   deleteError: int => unit,
+  seen: (bool, bool => unit),
 };
 
-let initialState = {errors: [], addError: _ => (), deleteError: _ => ()};
+let initialState = {
+  errors: [],
+  addError: _ => (),
+  deleteError: _ => (),
+  seen: (true, _ => ()),
+};
 
 let context = React.createContext(initialState);
 
@@ -19,13 +25,18 @@ module Provider = {
 
 [@react.component]
 let make = (~children) => {
+  let seen = {
+    let (s, set) = React.useState(() => initialState.seen->fst);
+    (s, seen => set(_ => seen));
+  };
+
   let (errors, addError, deleteError) = {
     let (errors, setErrors) =
       React.useState(() =>
         [
           Error.{
             kind: Operation,
-            msg: "this transaction was not permitted",
+            msg: "this transaction was not permitted because turtles",
             timestamp: Js.Date.now(),
           },
           Error.{
@@ -40,11 +51,15 @@ let make = (~children) => {
       setErrors(es => es->Belt.List.keepWithIndex((_, i') => i != i'));
     };
 
-    let add = e => setErrors(es => es->Belt.List.add(e));
+    let add = e => {
+      setErrors(es => es->Belt.List.add(e));
+      (snd(seen))(false);
+    };
+
     (errors, add, delete);
   };
 
-  <Provider value={errors, addError, deleteError}> children </Provider>;
+  <Provider value={errors, addError, deleteError, seen}> children </Provider>;
 };
 
 let useStoreContext = () => React.useContext(context);
@@ -52,6 +67,16 @@ let useStoreContext = () => React.useContext(context);
 let useAddError = () => {
   let store = useStoreContext();
   store.addError;
+};
+
+let useSeen = () => {
+  let store = useStoreContext();
+  store.seen->fst;
+};
+
+let useSetSeen = () => {
+  let store = useStoreContext();
+  store.seen->snd;
 };
 
 let useDeleteError = () => {
