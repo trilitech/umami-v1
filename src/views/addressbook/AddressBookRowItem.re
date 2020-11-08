@@ -46,7 +46,7 @@ let memo = component =>
 [@react.component]
 let make =
   memo((~account: Account.t) => {
-    <RowItem height=46.>
+    <RowItem.Bordered height=46.>
       {({hovered}: Pressable.interactionState) => {
          <>
            <View style=styles##inner>
@@ -75,5 +75,5 @@ let make =
            </View>
          </>;
        }}
-    </RowItem>
+    </RowItem.Bordered>
   });

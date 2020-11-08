@@ -37,7 +37,7 @@ let styles =
 let make = (~account: Account.t) => {
   let balanceRequest = BalanceApiRequest.useBalance(account.address);
 
-  <RowItem height=94.>
+  <RowItem.Bordered height=94.>
     {({hovered}: Pressable.interactionState) => {
        <>
          <View style=styles##inner>
@@ -57,5 +57,5 @@ let make = (~account: Account.t) => {
          </View>
        </>;
      }}
-  </RowItem>;
+  </RowItem.Bordered>;
 };

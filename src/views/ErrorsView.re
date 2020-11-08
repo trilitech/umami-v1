@@ -7,15 +7,20 @@ let styles =
       "empty": style(~textAlign=`center, ()),
       "view": style(~minHeight=300.->dp, ()),
       "reqelt": style(~flexShrink=0., ~marginRight=5.->dp, ()),
-      "item":
+      "itemContent":
         style(
           ~flexDirection=`row,
           ~alignItems=`center,
+          ~paddingHorizontal=20.->dp,
+          ~paddingVertical=10.->dp,
+          ~width=100.->pct,
+          (),
+        ),
+      "item":
+        style(
+          ~flexDirection=`row,
           ~backgroundColor=Theme.colorDarkError,
           ~flexWrap=`nowrap,
-          ~padding=20.->dp,
-          ~paddingTop=10.->dp,
-          ~paddingBottom=10.->dp,
           ~width=120.->pct,
           ~alignSelf=`center,
           ~marginTop=10.->dp,
@@ -27,26 +32,30 @@ let styles =
 module Item = {
   [@react.component]
   let make = (~error: Error.t) => {
-    <View style=styles##item>
-      <Typography.Body3
-        style=styles##reqelt
-        fontSize=12.
-        fontWeightStyle=`light
-        numberOfLines=1>
-        "["->React.string
-        Js.Date.(error.timestamp->fromFloat->toLocaleString)->React.string
-        "]  -"->React.string
-      </Typography.Body3>
-      <Typography.Body2
-        style=styles##reqelt fontWeightStyle=`heavy numberOfLines=1>
-        {error.kind->Error.print_kind->React.string}
-        {"  :"}->React.string
-      </Typography.Body2>
-      <Typography.Body2
-        fontWeightStyle=`heavy ellipsizeMode=`tail numberOfLines=1>
-        error.msg->React.string
-      </Typography.Body2>
-    </View>;
+    <RowItem height=46. style=styles##item>
+      {({hovered: _}: Pressable.interactionState) => {
+         <View style=styles##itemContent>
+           <Typography.Body3
+             style=styles##reqelt
+             fontSize=12.
+             fontWeightStyle=`light
+             numberOfLines=1>
+             "["->React.string
+             Js.Date.(error.timestamp->fromFloat->toLocaleString)->React.string
+             "]  -"->React.string
+           </Typography.Body3>
+           /* <Typography.Body2 */
+           /*   style=styles##reqelt fontWeightStyle=`heavy numberOfLines=1> */
+           /*   {error.kind->Error.print_kind->React.string} */
+           /*   {"  :"}->React.string */
+           /* </Typography.Body2> */
+           <Typography.Body2
+             fontWeightStyle=`heavy ellipsizeMode=`tail numberOfLines=1>
+             error.msg->React.string
+           </Typography.Body2>
+         </View>;
+       }}
+    </RowItem>;
   };
 };
 
@@ -57,7 +66,7 @@ let make = () => {
   <ModalView>
     <View style=styles##view>
       <Typography.Headline2 style=ModalAction.styles##title>
-        "ERRORS CONSOLE"->React.string
+        "ERROR LOG"->React.string
       </Typography.Headline2>
       <View style=styles##content>
         {switch (errors) {

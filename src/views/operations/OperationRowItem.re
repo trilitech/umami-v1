@@ -44,7 +44,7 @@ let toTez = mutez =>
 [@react.component]
 let make =
   memo((~operation: Operation.t) => {
-    <RowItem height=48.>
+    <RowItem.Bordered height=48.>
       {_ => {
          <>
            <View style=styles##borderSpacer />
@@ -61,7 +61,7 @@ let make =
                   <View style=styles##cellAmount />
                   <View style=styles##cellFee>
                     <Typography.Body1>
-                      business.fee->toTez->React.string
+                      {business.fee->toTez->React.string}
                     </Typography.Body1>
                   </View>
                   <View style=styles##cellAddress />
@@ -76,12 +76,12 @@ let make =
                   </View>
                   <View style=styles##cellAmount>
                     <Typography.Body1>
-                      transaction.amount->toTez->React.string
+                      {transaction.amount->toTez->React.string}
                     </Typography.Body1>
                   </View>
                   <View style=styles##cellFee>
                     <Typography.Body1>
-                      business.fee->toTez->React.string
+                      {business.fee->toTez->React.string}
                     </Typography.Body1>
                   </View>
                   <View style=styles##cellAddress>
@@ -129,5 +129,5 @@ let make =
            </View>
          </>;
        }}
-    </RowItem>
+    </RowItem.Bordered>
   });

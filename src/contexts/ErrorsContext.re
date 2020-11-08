@@ -19,7 +19,21 @@ module Provider = {
 [@react.component]
 let make = (~children) => {
   let (errors, addError) = {
-    let (errors, setErrors) = React.useState(() => []);
+    let (errors, setErrors) =
+      React.useState(() =>
+        [
+          Error.{
+            kind: Operation,
+            msg: "this transaction was not permitted",
+            timestamp: Js.Date.now(),
+          },
+          Error.{
+            kind: Connection,
+            msg: "broken connection of your wallet babe",
+            timestamp: Js.Date.now() +. 1.,
+          },
+        ]
+      );
     let add = e => setErrors(es => es->Belt.List.add(e));
     (errors, add);
   };
