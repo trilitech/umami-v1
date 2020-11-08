@@ -45,11 +45,11 @@ module ErrorDeleteButton = {
   let make = (~indice) => {
     let deleteError = ErrorsContext.useDeleteError();
 
-    let onPress = _e => {
+    let onPress = _ => {
       deleteError(indice);
     };
 
-    <IconButton icon=`close onPress />;
+    <IconButton icon=Icons.Close.build onPress />;
   };
 };
 
@@ -79,7 +79,7 @@ module Item = {
                  ReactUtils.displayOn(hovered),
                |])
              )>
-             <IconButton icon=`copy />
+             <ClipboardButton s={error.msg} />
              <ErrorDeleteButton indice />
            </View>
          </View>;

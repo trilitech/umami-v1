@@ -30,7 +30,7 @@ let make = (~children) => {
           },
           Error.{
             kind: Connection,
-            msg: "broken connection of your wallet babe",
+            msg: "broken connection of your wallet baby",
             timestamp: Js.Date.now() +. 1.,
           },
         ]

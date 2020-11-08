@@ -68,7 +68,7 @@ let make =
                  ReactUtils.displayOn(hovered),
                |])
              )>
-             <IconButton icon=Icons.Copy.build />
+             <ClipboardButton s={account.address} />
              <QrButton account />
              <IconButton icon=Icons.Edit.build />
              <AliasDeleteButton account />
