@@ -5,8 +5,9 @@ let styles =
     StyleSheet.create({
       "content": style(~marginTop=20.->dp, ()),
       "empty": style(~textAlign=`center, ()),
-      "view": style(~minHeight=300.->dp, ()),
+      "view": style(~minHeight=400.->dp, ()),
       "reqelt": style(~flexShrink=0., ~marginRight=5.->dp, ()),
+      "clear": style(~alignSelf=`flexEnd, ~padding=5.->dp, ()),
       "itemContent":
         style(
           ~display=`flex,
@@ -18,13 +19,7 @@ let styles =
           (),
         ),
       "actionButtons":
-        style(
-          ~flexDirection=`row,
-          ~flexShrink=0.,
-          ~flexGrow=1.,
-          ~justifyContent=`flexEnd,
-          (),
-        ),
+        style(~flexDirection=`row, ~flexShrink=0., ~marginLeft=auto, ()),
       "item":
         style(
           ~display=`flex,
@@ -88,6 +83,19 @@ module Item = {
   };
 };
 
+module ClearButton = {
+  [@react.component]
+  let make = () => {
+    let clearErrors = ErrorsContext.useClear();
+    <FormButton
+      style=styles##clear
+      fontSize=12.
+      text="CLEAR ALL"
+      onPress={_ => clearErrors()}
+    />;
+  };
+};
+
 [@react.component]
 let make = () => {
   let errors = ErrorsContext.useErrors();
@@ -98,6 +106,7 @@ let make = () => {
         "ERROR LOGS"->React.string
       </Typography.Headline2>
       <View style=styles##content>
+        {ReactUtils.onlyWhen(errors != [], <ClearButton />)}
         {switch (errors) {
          | [] =>
            <Typography.Body1 style=styles##empty>

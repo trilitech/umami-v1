@@ -1,14 +1,16 @@
 type state = {
   errors: list(Error.t),
-  addError: Error.t => unit,
-  deleteError: int => unit,
+  add: Error.t => unit,
+  delete: int => unit,
+  clear: unit => unit,
   seen: (bool, bool => unit),
 };
 
 let initialState = {
   errors: [],
-  addError: _ => (),
-  deleteError: _ => (),
+  add: _ => (),
+  delete: _ => (),
+  clear: () => (),
   seen: (true, _ => ()),
 };
 
@@ -30,7 +32,7 @@ let make = (~children) => {
     (s, seen => set(_ => seen));
   };
 
-  let (errors, addError, deleteError) = {
+  let (errors, add, delete, clear) = {
     let (errors, setErrors) =
       React.useState(() =>
         [
@@ -51,22 +53,24 @@ let make = (~children) => {
       setErrors(es => es->Belt.List.keepWithIndex((_, i') => i != i'));
     };
 
+    let clear = () => setErrors(_ => []);
+
     let add = e => {
       setErrors(es => es->Belt.List.add(e));
       (snd(seen))(false);
     };
 
-    (errors, add, delete);
+    (errors, add, delete, clear);
   };
 
-  <Provider value={errors, addError, deleteError, seen}> children </Provider>;
+  <Provider value={errors, add, clear, delete, seen}> children </Provider>;
 };
 
 let useStoreContext = () => React.useContext(context);
 
 let useAddError = () => {
   let store = useStoreContext();
-  store.addError;
+  store.add;
 };
 
 let useSeen = () => {
@@ -79,9 +83,14 @@ let useSetSeen = () => {
   store.seen->snd;
 };
 
+let useClear = () => {
+  let store = useStoreContext();
+  store.clear;
+};
+
 let useDeleteError = () => {
   let store = useStoreContext();
-  store.deleteError;
+  store.delete;
 };
 
 let useErrors = () => {

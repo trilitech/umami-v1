@@ -4,3 +4,5 @@ let mapOpt = (v, f) => {
 
 let displayOn = b =>
   ReactNative.Style.(style(~display=b ? `flex : `none, ()));
+
+let onlyWhen = (b, elt) => b ? elt : React.null;
