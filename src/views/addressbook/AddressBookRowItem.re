@@ -65,7 +65,7 @@ let make =
              style=Style.(
                array([|
                  styles##actionButtons,
-                 style(~display=hovered ? `flex : `none, ()),
+                 ReactUtils.displayOn(hovered),
                |])
              )>
              <IconButton icon=Icons.Copy.build />

@@ -9,31 +9,55 @@ let styles =
       "reqelt": style(~flexShrink=0., ~marginRight=5.->dp, ()),
       "itemContent":
         style(
+          ~display=`flex,
           ~flexDirection=`row,
           ~alignItems=`center,
-          ~paddingHorizontal=20.->dp,
+          ~paddingLeft=20.->dp,
           ~paddingVertical=10.->dp,
           ~width=100.->pct,
           (),
         ),
+      "actionButtons":
+        style(
+          ~flexDirection=`row,
+          ~flexShrink=0.,
+          ~flexGrow=1.,
+          ~justifyContent=`flexEnd,
+          (),
+        ),
       "item":
         style(
+          ~display=`flex,
           ~flexDirection=`row,
           ~backgroundColor=Theme.colorDarkError,
           ~flexWrap=`nowrap,
           ~width=120.->pct,
           ~alignSelf=`center,
+          ~justifyContent=`flexStart,
           ~marginTop=10.->dp,
           (),
         ),
     })
   );
 
+module ErrorDeleteButton = {
+  [@react.component]
+  let make = (~indice) => {
+    let deleteError = ErrorsContext.useDeleteError();
+
+    let onPress = _e => {
+      deleteError(indice);
+    };
+
+    <IconButton icon=`close onPress />;
+  };
+};
+
 module Item = {
   [@react.component]
-  let make = (~error: Error.t) => {
+  let make = (~indice, ~error: Error.t) => {
     <RowItem height=46. style=styles##item>
-      {({hovered: _}: Pressable.interactionState) => {
+      {({hovered}: Pressable.interactionState) => {
          <View style=styles##itemContent>
            <Typography.Body3
              style=styles##reqelt
@@ -44,15 +68,20 @@ module Item = {
              Js.Date.(error.timestamp->fromFloat->toLocaleString)->React.string
              "]  -"->React.string
            </Typography.Body3>
-           /* <Typography.Body2 */
-           /*   style=styles##reqelt fontWeightStyle=`heavy numberOfLines=1> */
-           /*   {error.kind->Error.print_kind->React.string} */
-           /*   {"  :"}->React.string */
-           /* </Typography.Body2> */
            <Typography.Body2
              fontWeightStyle=`heavy ellipsizeMode=`tail numberOfLines=1>
              error.msg->React.string
            </Typography.Body2>
+           <View
+             style=Style.(
+               array([|
+                 styles##actionButtons,
+                 ReactUtils.displayOn(hovered),
+               |])
+             )>
+             <IconButton icon=`copy />
+             <ErrorDeleteButton indice />
+           </View>
          </View>;
        }}
     </RowItem>;
@@ -77,8 +106,8 @@ let make = () => {
          | errors =>
            errors
            ->Belt.List.toArray
-           ->Belt.Array.map(error =>
-               <Item key={error.timestamp->Belt.Float.toString} error />
+           ->Belt.Array.mapWithIndex((i, error) =>
+               <Item key={i->string_of_int} indice=i error />
              )
            ->React.array
          }}
