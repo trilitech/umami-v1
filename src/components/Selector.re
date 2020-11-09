@@ -93,8 +93,7 @@ let make =
     <TouchableOpacity onPress={_e => setIsOpen(prevIsOpen => !prevIsOpen)}>
       <View style=styles##button>
         {renderButton(selectedItem)}
-        <Icon
-          name=`chevronDown
+        <Icons.ChevronDown
           size=24.
           color=Theme.colorDarkMediumEmphasis
           style=styles##icon

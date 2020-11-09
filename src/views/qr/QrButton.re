@@ -22,7 +22,7 @@ let make =
   };
 
   <>
-    <IconButton icon=`qr onPress />
+    <IconButton icon=Icons.Qr.build onPress />
     <ModalAction ref=modal visible=visibleModal onRequestClose=closeAction>
       <ReceiveView account ?balanceRequest onPressCancel />
     </ModalAction>

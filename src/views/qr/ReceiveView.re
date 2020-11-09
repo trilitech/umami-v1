@@ -40,7 +40,7 @@ let make =
       </View>
       <View style=styles##closeAction>
         <TouchableOpacity onPress=onPressCancel>
-          <Icon name=`close size=36. color=Theme.colorDarkMediumEmphasis />
+          <Icons.Close size=36. color=Theme.colorDarkMediumEmphasis />
         </TouchableOpacity>
       </View>
     </>

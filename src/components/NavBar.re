@@ -19,22 +19,23 @@ module NavBarItem = {
     );
 
   [@react.component]
-  let make = (~currentRoute, ~route, ~title, ~icon=?) => {
+  let make = (~currentRoute, ~route, ~title, ~icon: option(Icons.builder)=?) => {
     let (href, onPress) = useHrefAndOnPress(route);
 
     let isCurrent = currentRoute == route;
 
     <TouchableOpacity style=styles##item accessibilityRole=`link href onPress>
-      {icon->Belt.Option.mapWithDefault(React.null, name =>
-         <Icon
-           name
-           size=24.
-           color={
-             isCurrent ? Theme.colorDarkHighEmphasis : Theme.colorDarkDisabled
-           }
-           style=styles##icon
-         />
-       )}
+      {icon->Belt.Option.mapWithDefault(React.null, icon => {
+         icon(
+           ~style={
+             styles##icon;
+           },
+           ~size=24.,
+           ~color={
+             isCurrent ? Theme.colorDarkHighEmphasis : Theme.colorDarkDisabled;
+           },
+         )
+       })}
       <Typography.ButtonPrimary
         style=styles##text
         colorStyle={isCurrent ? `highEmphasis : `disabled}
@@ -64,18 +65,23 @@ let styles =
 let make = (~route as currentRoute) => {
   <View style=styles##container>
     <View style=styles##sendButton> <SendButton /> </View>
-    <NavBarItem currentRoute route=Accounts title="ACCOUNTS" icon=`accounts />
+    <NavBarItem
+      currentRoute
+      route=Accounts
+      title="ACCOUNTS"
+      icon=Icons.Account.build
+    />
     <NavBarItem
       currentRoute
       route=Operations
       title="OPERATIONS"
-      icon=`history
+      icon=Icons.History.build
     />
     <NavBarItem
       currentRoute
       route=AddressBook
       title={js|ADDRESS\nBOOK|js}
-      icon=`addressBook
+      icon=Icons.AddressBook.build
     />
     <NavBarItem currentRoute route=Debug title="DEBUG" />
   </View>;

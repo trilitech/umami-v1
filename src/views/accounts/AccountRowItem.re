@@ -50,9 +50,9 @@ let make = (~account: Account.t) => {
                style(~display=hovered ? `flex : `none, ()),
              |])
            )>
-           <IconButton icon=`copy />
+           <IconButton icon=Icons.Copy.build />
            <QrButton account balanceRequest />
-           <IconButton icon=`edit />
+           <IconButton icon=Icons.Edit.build />
            <AccountDeleteButton account />
          </View>
        </>;
