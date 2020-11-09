@@ -46,7 +46,7 @@ let make = (~onPressCancel) => {
     form.submit();
   };
 
-  <ModalView>
+  <ModalView.Form>
     {switch (accountRequest) {
      | Done(Ok(_result)) =>
        <>
@@ -95,5 +95,5 @@ let make = (~onPressCancel) => {
          </View>
        </>
      }}
-  </ModalView>;
+  </ModalView.Form>;
 };

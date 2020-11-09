@@ -6,8 +6,15 @@ let styles =
       "content": style(~marginTop=20.->dp, ()),
       "empty": style(~textAlign=`center, ()),
       "view": style(~minHeight=400.->dp, ()),
+      "modal":
+        style(
+          ~paddingTop=45.->dp,
+          ~paddingBottom=32.->dp,
+          ~paddingHorizontal=55.->dp,
+          (),
+        ),
       "reqelt": style(~flexShrink=0., ~marginRight=5.->dp, ()),
-      "clear": style(~alignSelf=`flexEnd, ~padding=5.->dp, ()),
+      "clear": style(~width=auto, ~alignSelf=`flexEnd, ~padding=5.->dp, ()),
       "itemContent":
         style(
           ~display=`flex,
@@ -26,7 +33,7 @@ let styles =
           ~flexDirection=`row,
           ~backgroundColor=Theme.colorDarkError,
           ~flexWrap=`nowrap,
-          ~width=120.->pct,
+          ~width=100.->pct,
           ~alignSelf=`center,
           ~justifyContent=`flexStart,
           ~marginTop=10.->dp,
@@ -100,10 +107,12 @@ module ClearButton = {
 let make = () => {
   let errors = ErrorsContext.useErrors();
 
-  <ModalView>
+  let () = Js.log(Electron.getAppPath());
+
+  <ModalView style=styles##modal>
     <View style=styles##view>
       <Typography.Headline2 style=ModalAction.styles##title>
-        "ERROR LOGS"->React.string
+        "Error logs"->React.string
       </Typography.Headline2>
       <View style=styles##content>
         {ReactUtils.onlyWhen(errors != [], <ClearButton />)}

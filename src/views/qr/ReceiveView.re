@@ -27,7 +27,7 @@ let make =
       ~balanceRequest: option(BalanceApiRequest.balanceApiRequest)=?,
       ~onPressCancel,
     ) => {
-  <ModalView>
+  <ModalView.Form>
     <>
       <Typography.Headline2 style=styles##title>
         "QR code"->React.string
@@ -44,5 +44,5 @@ let make =
         </TouchableOpacity>
       </View>
     </>
-  </ModalView>;
+  </ModalView.Form>;
 };
