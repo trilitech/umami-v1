@@ -1,16 +1,20 @@
 open ChildReprocess.StdStream;
 
-let endpoint = network =>
+let endpoint = ((network, config: ConfigFile.t)) =>
   switch (network) {
-  | Network.Main => "https://mainnet-tezos.giganode.io:443"
-  //| Network.Test => "https://testnet-tezos.giganode.io:443"
-  | Network.Test => "http://u.lamini.ca/tezos/carthagenet"
+  | Network.Main =>
+    config.endpointMain->Belt.Option.getWithDefault(ConfigFile.endpointMain)
+  | Network.Test =>
+    config.endpointTest->Belt.Option.getWithDefault(ConfigFile.endpointTest)
   };
 
 module URL = {
+  let operationsPath = "/operations";
+  let delegatePath = "/chains/main/blocks/head/context/delegates\\?active=true";
+
   let operations =
       (
-        network: Network.t,
+        (network, config): (Network.t, ConfigFile.t),
         account,
         ~types: option(array(string))=?,
         ~limit: option(int)=?,
@@ -18,10 +22,17 @@ module URL = {
       ) =>
     (
       switch (network) {
-      | Main => "https://x.lamini.ca/mezos/mainnet/operations?address="
-      | Test => "https://u.lamini.ca/mezos/carthagenet/operations?address="
+      | Main =>
+        config.explorerMain
+        ->Belt.Option.getWithDefault(ConfigFile.explorerMain)
+
+      | Test =>
+        config.explorerTest
+        ->Belt.Option.getWithDefault(ConfigFile.explorerTest)
       }
     )
+    ++ operationsPath
+    ++ "?address="
     ++ account
     ++ (
       switch (types) {
@@ -36,11 +47,19 @@ module URL = {
       }
     );
 
-  let delegates = (network: Network.t) =>
-    switch (network) {
-    | Main => "https://mainnet-tezos.giganode.io/chains/main/blocks/head/context/delegates\\?active=true"
-    | Test => "https://testnet-tezos.giganode.io/chains/main/blocks/head/context/delegates\\?active=true"
-    };
+  let delegates = ((network, config): (Network.t, ConfigFile.t)) => {
+    (
+      switch (network) {
+      | Main =>
+        config.endpointMain
+        ->Belt.Option.getWithDefault(ConfigFile.endpointMain)
+      | Test =>
+        config.endpointTest
+        ->Belt.Option.getWithDefault(ConfigFile.endpointTest)
+      }
+    )
+    ++ delegatePath;
+  };
 };
 
 module type CallerAPI = {
@@ -321,15 +340,24 @@ module Accounts = (Caller: CallerAPI) => {
     ->(rows => rows->Belt.Array.keep(data => data->Belt.Array.length > 2))
     ->Belt.Array.map(data => (data[0], data[1]));
 
-  let get = () =>
+  let get = (~config) =>
     Caller.call(
-      [|"-E", Network.Test->endpoint, "list", "known", "addresses"|],
+      [|
+        "-E",
+        (Network.Test, config)->endpoint,
+        "list",
+        "known",
+        "addresses",
+      |],
       (),
     )
     ->Future.mapOk(parse);
 
-  let create = name =>
-    Caller.call([|"-E", Network.Test->endpoint, "gen", "keys", name|], ());
+  let create = (~config, name) =>
+    Caller.call(
+      [|"-E", (Network.Test, config)->endpoint, "gen", "keys", name|],
+      (),
+    );
 
   let add = (name, address) =>
     Caller.call([|"add", "address", name, address, "-f"|], ());
@@ -340,11 +368,11 @@ module Accounts = (Caller: CallerAPI) => {
       (),
     );
 
-  let addWithMnemonic = (name, mnemonic, ~password) =>
+  let addWithMnemonic = (~config, name, mnemonic, ~password) =>
     Caller.call(
       [|
         "-E",
-        Network.Test->endpoint,
+        (Network.Test, config)->endpoint,
         "import",
         "keys",
         "from",
@@ -356,7 +384,7 @@ module Accounts = (Caller: CallerAPI) => {
       (),
     );
 
-  let restore = (backupPhrase, name, ~derivationPath=?, ()) => {
+  let restore = (~config, backupPhrase, name, ~derivationPath=?, ()) => {
     switch (derivationPath) {
     | Some(derivationPath) =>
       let seed = HD.BIP39.mnemonicToSeedSync(backupPhrase);
@@ -367,7 +395,7 @@ module Accounts = (Caller: CallerAPI) => {
       Caller.call(
         [|
           "-E",
-          Network.Test->endpoint,
+          (Network.Test, config)->endpoint,
           "generate",
           "keys",
           "from",
@@ -383,9 +411,16 @@ module Accounts = (Caller: CallerAPI) => {
     };
   };
 
-  let delete = name =>
+  let delete = (name, ~config) =>
     Caller.call(
-      [|"-E", Network.Test->endpoint, "forget", "address", name, "-f"|],
+      [|
+        "-E",
+        (Network.Test, config)->endpoint,
+        "forget",
+        "address",
+        name,
+        "-f",
+      |],
       (),
     );
 
@@ -424,7 +459,7 @@ module Scanner = (Caller: CallerAPI, Getter: GetterAPI) => {
     let name = baseName ++ suffix;
     AccountsAPI.import(edsk2, name)
     ->Future.flatMapOk(_ =>
-        AccountsAPI.get()
+        AccountsAPI.get(~config=network->snd)
         ->Future.mapOk(MapString.fromArray)
         ->Future.flatMapOk(accounts =>
             switch (accounts->Belt.Map.String.get(name)) {
@@ -441,7 +476,7 @@ module Scanner = (Caller: CallerAPI, Getter: GetterAPI) => {
                       ~index=index + 1,
                     );
                   } else {
-                    AccountsAPI.delete(name);
+                    AccountsAPI.delete(~config=network->snd, name);
                   }
                 )
             | None => Future.make(resolve => resolve(Ok("")))
@@ -472,35 +507,55 @@ module Aliases = (Caller: CallerAPI) => {
          a->compare(b);
        });
 
-  let get = () =>
+  let get = (~config) =>
     Caller.call(
-      [|"-E", Network.Test->endpoint, "list", "known", "contracts"|],
+      [|
+        "-E",
+        (Network.Test, config)->endpoint,
+        "list",
+        "known",
+        "contracts",
+      |],
       (),
     )
     ->Future.mapOk(parse);
 
-  let getAliasForAddress = address =>
-    get()
+  let getAliasForAddress = (~config, address) =>
+    get(~config)
     ->Future.mapOk(addresses =>
         addresses->Belt.Array.map(((a, b)) => (b, a))
       )
     ->Future.mapOk(Belt.Map.String.fromArray)
     ->Future.mapOk(aliases => aliases->Belt.Map.String.get(address));
 
-  let getAddressForAlias = alias =>
-    get()
+  let getAddressForAlias = (~config, alias) =>
+    get(~config)
     ->Future.mapOk(Belt.Map.String.fromArray)
     ->Future.mapOk(addresses => addresses->Belt.Map.String.get(alias));
 
-  let add = (alias, address) =>
+  let add = (~config, alias, address) =>
     Caller.call(
-      [|"-E", Network.Test->endpoint, "add", "address", alias, address|],
+      [|
+        "-E",
+        (Network.Test, config)->endpoint,
+        "add",
+        "address",
+        alias,
+        address,
+      |],
       (),
     );
 
-  let delete = name =>
+  let delete = (~config, name) =>
     Caller.call(
-      [|"-E", Network.Test->endpoint, "forget", "address", name, "-f"|],
+      [|
+        "-E",
+        (Network.Test, config)->endpoint,
+        "forget",
+        "address",
+        name,
+        "-f",
+      |],
       (),
     );
 };

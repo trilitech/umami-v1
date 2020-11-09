@@ -1,5 +1,9 @@
 open TestFramework;
 
+let config = ConfigFile.default;
+
+let network = (Network.Test, config);
+
 describe("API tests", ({testAsync}) => {
   testAsync("runs valid balance test", ({expect, callback}) => {
     module Stub = {
@@ -9,7 +13,7 @@ describe("API tests", ({testAsync}) => {
       };
     };
     module UnderTest = API.Balance(Stub);
-    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3")
+    UnderTest.get(network, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3")
     ->Future.get(result => {
         expect.value(result).toEqual(Belt.Result.Ok("stub"));
         callback();
@@ -25,7 +29,7 @@ describe("API tests", ({testAsync}) => {
       };
     };
     module UnderTest = API.Balance(Stub);
-    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3")
+    UnderTest.get(network, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3")
     ->Future.get(result => {
         expect.value(result).toEqual(Belt.Result.Error("stub"));
         callback();
@@ -48,7 +52,7 @@ describe("API tests", ({testAsync}) => {
     };
     let expected: array(Operation.t) = [||];
     module UnderTest = API.Operations(Dummy, Stub);
-    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.get(network, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(Belt.Result.Ok(expected));
         callback();
@@ -144,7 +148,7 @@ describe("API tests", ({testAsync}) => {
       },
     |];
     module UnderTest = API.Operations(Dummy, Stub);
-    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.get(network, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(Belt.Result.Ok(expected));
         callback();
@@ -181,7 +185,7 @@ describe("API tests", ({testAsync}) => {
       };
     };
     module UnderTest = API.Operations(Dummy, Stub);
-    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.get(network, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.tapError(Js.log)
     ->Future.get(result => {
         expect.value(result).toEqual(
@@ -241,7 +245,7 @@ describe("API tests", ({testAsync}) => {
       },
     |];
     module UnderTest = API.Operations(Dummy, Stub);
-    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.get(network, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(Belt.Result.Ok(expected));
         callback();
@@ -278,7 +282,7 @@ describe("API tests", ({testAsync}) => {
       };
     };
     module UnderTest = API.Operations(Dummy, Stub);
-    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.get(network, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(
           Belt.Result.Error(
@@ -346,7 +350,7 @@ describe("API tests", ({testAsync}) => {
       },
     |];
     module UnderTest = API.Operations(Dummy, Stub);
-    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.get(network, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(Belt.Result.Ok(expected));
         callback();
@@ -388,7 +392,7 @@ describe("API tests", ({testAsync}) => {
       };
     };
     module UnderTest = API.Operations(Dummy, Stub);
-    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.get(network, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(
           Belt.Result.Error(
@@ -450,7 +454,7 @@ describe("API tests", ({testAsync}) => {
       },
     |];
     module UnderTest = API.Operations(Dummy, Stub);
-    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.get(network, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(Belt.Result.Ok(expected));
         callback();
@@ -487,7 +491,7 @@ describe("API tests", ({testAsync}) => {
       };
     };
     module UnderTest = API.Operations(Dummy, Stub);
-    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.get(network, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(
           Belt.Result.Error(
@@ -544,7 +548,7 @@ describe("API tests", ({testAsync}) => {
       },
     |];
     module UnderTest = API.Operations(Dummy, Stub);
-    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.get(network, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(Belt.Result.Ok(expected));
         callback();
@@ -601,7 +605,7 @@ describe("API tests", ({testAsync}) => {
       },
     |];
     module UnderTest = API.Operations(Dummy, Stub);
-    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.get(network, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(Belt.Result.Ok(expected));
         callback();
@@ -637,7 +641,7 @@ describe("API tests", ({testAsync}) => {
       };
     };
     module UnderTest = API.Operations(Dummy, Stub);
-    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.get(network, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(
           Belt.Result.Error("Expected field 'type'\n\tin array at index 0"),
@@ -662,7 +666,7 @@ describe("API tests", ({testAsync}) => {
       "tz1NF7b38uQ43N4nmTHvDKpr1Qo5LF9iYawk",
     |];
     module UnderTest = API.Delegates(Stub);
-    UnderTest.get(Network.Test)
+    UnderTest.get(network)
     ->Future.get(result => {
         expect.value(result).toEqual(Belt.Result.Ok(expected));
         callback();
@@ -678,7 +682,7 @@ describe("API tests", ({testAsync}) => {
       };
     };
     module UnderTest = API.Delegates(Stub);
-    UnderTest.get(Network.Test)
+    UnderTest.get(network)
     ->Future.get(result => {
         expect.value(result).toEqual(
           Belt.Result.Error(

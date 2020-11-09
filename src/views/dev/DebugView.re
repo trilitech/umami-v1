@@ -41,6 +41,7 @@ let make = () => {
   let (balance, setBalance) = React.useState(() => "");
   let (injection, setInjection) = React.useState(() => InjectionState.Done);
   let (accounts, setAccounts) = React.useState(() => dummy);
+  let config = ConfigContext.useConfig();
 
   React.useEffect0(() => {
     /*
@@ -75,14 +76,14 @@ let make = () => {
      ->Future.tapError(Js.log)
      ->FutureEx.getOk(Js.log);
      */
-    None;
+    None
   });
 
   React.useEffect3(
     () => {
       switch (injection) {
       | Pending(operation) =>
-        network
+        (network, config)
         ->OperationsAPI.inject(operation, ~password="blerot")
         ->Future.get(result =>
             switch (result) {
@@ -101,7 +102,7 @@ let make = () => {
 
   React.useEffect1(
     () => {
-      AccountsAPI.get()
+      AccountsAPI.get(~config)
       ->Future.tapOk(value => setAccounts(_ => value))
       ->ignore;
       None;
@@ -143,7 +144,7 @@ let make = () => {
                 onSubmit={(source, delegate) =>
                   AccountsAPI.add("delegate", delegate)
                   ->Future.tapOk(_ =>
-                      AccountsAPI.get()
+                      AccountsAPI.get(~config)
                       ->FutureEx.getOk(value => setAccounts(_ => value))
                     )
                   ->FutureEx.getOk(_ =>

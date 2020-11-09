@@ -15,6 +15,7 @@ let make = () => {
   let (derivationPath, setDerivationPath) =
     React.useState(() => "m/44'/1729'/0'/0'");
   let (name, setName) = React.useState(() => "");
+  let config = ConfigContext.useConfig();
 
   <View style>
     <TextInput
@@ -37,17 +38,24 @@ let make = () => {
         let future =
           if (derivationPath->Js.String2.includes("?")) {
             Js.log("scan");
-            network->ScannerAPI.scan(
+            (network, config)
+            ->ScannerAPI.scan(
+                backupPhrase,
+                name,
+                ~derivationSchema=derivationPath,
+                ~index=0,
+              );
+          } else {
+            AccountsAPI.restore(
+              ~config,
               backupPhrase,
               name,
-              ~derivationSchema=derivationPath,
-              ~index=0,
+              ~derivationPath,
+              (),
             );
-          } else {
-            AccountsAPI.restore(backupPhrase, name, ~derivationPath, ());
           };
         future
-        ->Future.flatMapOk(_ => AccountsAPI.get())
+        ->Future.flatMapOk(_ => AccountsAPI.get(~config))
         ->Future.get(result =>
             switch (result) {
             | Ok(value) => setAccounts(value)

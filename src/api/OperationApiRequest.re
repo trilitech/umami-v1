@@ -8,6 +8,7 @@ type createOperationApiRequest = t(string);
 
 let useCreateOperation = () => {
   let network = StoreContext.useNetwork();
+  let config = ConfigContext.useConfig();
 
   let (request, setRequest) = React.useState(_ => NotAsked);
 
@@ -16,7 +17,7 @@ let useCreateOperation = () => {
   let sendRequest = operation => {
     setRequest(_ => Loading);
 
-    network
+    (network, config)
     ->OperationsAPI.create(operation)
     ->Future.get(result => {
         switch (result) {
@@ -37,13 +38,14 @@ type simulateOperationApiRequest = t(string);
 
 let useSimulateOperation = () => {
   let network = StoreContext.useNetwork();
+  let config = ConfigContext.useConfig();
 
   let (request, setRequest) = React.useState(_ => NotAsked);
 
   let sendRequest = operation => {
     setRequest(_ => Loading);
 
-    network
+    (network, config)
     ->OperationsAPI.simulate(operation)
     ->Future.get(result => {setRequest(_ => Done(result))});
   };
@@ -60,13 +62,14 @@ let useGetOperations = (~limit=?, ~types=?, ()) => {
   let account = StoreContext.useAccount();
 
   let (request, setRequest) = React.useState(_ => NotAsked);
+  let config = ConfigContext.useConfig();
 
   React.useEffect5(
     () => {
       switch (account) {
       | Some(account) =>
         setRequest(_ => Loading);
-        network
+        (network, config)
         ->OperationsAPI.get(account.address, ~limit?, ~types?, ())
         ->Future.get(result => setRequest(_ => Done(result)));
       | None => ()

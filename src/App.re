@@ -15,33 +15,44 @@ let styles =
     })
   );
 
-[@react.component]
-let make = () => {
-  let url = ReasonReactRouter.useUrl();
-  let route = Routes.match(url);
+module AppView = {
+  [@react.component]
+  let make = () => {
+    let url = ReasonReactRouter.useUrl();
+    let route = Routes.match(url);
+    let loadConfig = ConfigContext.useLoad();
 
-  <StoreContext>
-    <ErrorsContext>
-      <View style=styles##layout>
-        <NavBar route />
-        <View style=styles##main>
-          <Header />
-          <View style=styles##content>
-            {switch (route) {
-             | Accounts => <AccountsView />
-             | Operations => <OperationsView />
-             | AddressBook => <AddressBookView />
-             | Debug => <DebugView />
-             | NotFound =>
-               <View>
-                 <Typography.Body1>
-                   "404 - Route Not Found :("->React.string
-                 </Typography.Body1>
-               </View>
-             }}
-          </View>
+    React.useEffect0(() => {
+      loadConfig();
+      None;
+    });
+
+    <View style=styles##layout>
+      <NavBar route />
+      <View style=styles##main>
+        <Header />
+        <View style=styles##content>
+          {switch (route) {
+           | Accounts => <AccountsView />
+           | Operations => <OperationsView />
+           | AddressBook => <AddressBookView />
+           | Debug => <DebugView />
+           | NotFound =>
+             <View>
+               <Typography.Body1>
+                 "404 - Route Not Found :("->React.string
+               </Typography.Body1>
+             </View>
+           }}
         </View>
       </View>
-    </ErrorsContext>
-  </StoreContext>;
+    </View>;
+  };
+};
+
+[@react.component]
+let make = () => {
+  <ErrorsContext>
+    <StoreContext> <ConfigContext> <AppView /> </ConfigContext> </StoreContext>
+  </ErrorsContext>;
 };

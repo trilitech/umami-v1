@@ -10,12 +10,14 @@ type getAccountsApiRequest = t(array((string, string)));
 
 let useGetAccounts = () => {
   let (request, setRequest) = React.useState(_ => NotAsked);
+  let config = ConfigContext.useConfig();
 
   React.useEffect1(
     () => {
       setRequest(_ => Loading);
 
-      AccountsAPI.get()->Future.get(result => setRequest(_ => Done(result)));
+      AccountsAPI.get(~config)
+      ->Future.get(result => setRequest(_ => Done(result)));
 
       None;
     },
@@ -31,11 +33,12 @@ type createAccountApiRequest = t(string);
 
 let useCreateAccount = () => {
   let (request, setRequest) = React.useState(_ => NotAsked);
+  let config = ConfigContext.useConfig();
 
   let sendRequest = name => {
     setRequest(_ => Loading);
 
-    AccountsAPI.create(name)
+    AccountsAPI.create(~config, name)
     ->Future.get(result => setRequest(_ => Done(result)));
   };
 
@@ -48,11 +51,12 @@ type deleteAccountApiRequest = t(string);
 
 let useDeleteAccount = () => {
   let (request, setRequest) = React.useState(_ => NotAsked);
+  let config = ConfigContext.useConfig();
 
   let sendRequest = name => {
     setRequest(_ => Loading);
 
-    AccountsAPI.delete(name)
+    AccountsAPI.delete(~config, name)
     ->Future.get(result => setRequest(_ => Done(result)));
   };
 
