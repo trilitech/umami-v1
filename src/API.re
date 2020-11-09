@@ -287,6 +287,19 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
         })
       )
     ->Future.tapOk(Js.log);
+
+  let inject = (network, operation: Injection.operation, ~password) =>
+    Caller.call(arguments(network, operation), ~inputs=[|password|], ())
+    ->Future.tapOk(Js.log)
+    ->Future.map(result =>
+        result->map(receipt => {
+          let result = receipt->parse("Operation hash is '([A-Za-z0-9]*)'");
+          switch (result) {
+          | Some(operationHash) => operationHash
+          | None => raise(InvalidReceiptFormat)
+          };
+        })
+      );
 };
 
 module MapString = Belt.Map.String;
