@@ -13,73 +13,6 @@ module StateLenses = [%lenses
 
 module VerifyMnemonicForm = ReForm.Make(StateLenses);
 
-module InputMnemonicWord = {
-  let styles =
-    Style.(
-      StyleSheet.create({
-        "input":
-          style(
-            ~paddingHorizontal=10.->dp,
-            ~paddingLeft=(10. +. 17. +. 13.)->dp,
-            ~height=36.->dp,
-            ~borderColor=Theme.colorDarkMediumEmphasis,
-            ~borderWidth=1.,
-            ~borderRadius=4.,
-            ~fontFamily="Avenir",
-            ~color=Theme.colorDarkHighEmphasis,
-            ~fontSize=16.,
-            ~fontWeight=`normal,
-            (),
-          ),
-        "inputError":
-          style(
-            ~color=Theme.colorDarkError,
-            ~borderColor=Theme.colorDarkError,
-            (),
-          ),
-        "wordItemIndexContainer":
-          style(
-            ~position=`absolute,
-            ~left=10.->dp,
-            ~top=0.->dp,
-            ~bottom=0.->dp,
-            ~justifyContent=`center,
-            (),
-          ),
-        "wordItemIndex": style(~width=17.->dp, ~textAlign=`right, ()),
-      })
-    );
-
-  [@react.component]
-  let make = (~verifyIndex, ~value, ~handleChange, ~error) => {
-    let hasError = error->Belt.Option.isSome;
-    <View>
-      <View style=styles##wordItemIndexContainer>
-        <Typography.Subtitle1
-          colorStyle={hasError ? `error : `mediumEmphasis}
-          style=styles##wordItemIndex>
-          {(verifyIndex + 1)->string_of_int->React.string}
-        </Typography.Subtitle1>
-      </View>
-      <TextInput
-        style=Style.(
-          arrayOption([|
-            Some(styles##input),
-            hasError ? Some(styles##inputError) : None,
-          |])
-        )
-        value
-        onChange={(event: TextInput.changeEvent) =>
-          handleChange(event.nativeEvent.text)
-        }
-        autoCapitalize=`none
-        autoCorrect=false
-        autoFocus=false
-      />
-    </View>;
-  };
-};
-
 let styles =
   Style.(
     StyleSheet.create({
@@ -226,8 +159,8 @@ let make = (~mnemonic, ~onPressCancel, ~goNextStep) => {
   };
 
   <>
-    <View style=styles##wordsList>
-      <View style=styles##wordItem>
+    <View style=Style.(array([|styles##wordsList, style(~zIndex=2, ())|]))>
+      <View style=Style.(array([|styles##wordItem, style(~zIndex=6, ())|]))>
         <InputMnemonicWord
           verifyIndex={verifyMnemonicIndexes->Belt.Array.getExn(0)}
           value={form.values.word1}
@@ -236,7 +169,7 @@ let make = (~mnemonic, ~onPressCancel, ~goNextStep) => {
         />
       </View>
       <View style=styles##wordSpacer />
-      <View style=styles##wordItem>
+      <View style=Style.(array([|styles##wordItem, style(~zIndex=5, ())|]))>
         <InputMnemonicWord
           verifyIndex={verifyMnemonicIndexes->Belt.Array.getExn(1)}
           value={form.values.word2}
@@ -244,7 +177,7 @@ let make = (~mnemonic, ~onPressCancel, ~goNextStep) => {
           error={form.getFieldError(Field(Word2))}
         />
       </View>
-      <View style=styles##wordItem>
+      <View style=Style.(array([|styles##wordItem, style(~zIndex=4, ())|]))>
         <InputMnemonicWord
           verifyIndex={verifyMnemonicIndexes->Belt.Array.getExn(2)}
           value={form.values.word3}
@@ -253,7 +186,7 @@ let make = (~mnemonic, ~onPressCancel, ~goNextStep) => {
         />
       </View>
       <View style=styles##wordSpacer />
-      <View style=styles##wordItem>
+      <View style=Style.(array([|styles##wordItem, style(~zIndex=3, ())|]))>
         <InputMnemonicWord
           verifyIndex={verifyMnemonicIndexes->Belt.Array.getExn(3)}
           value={form.values.word4}
@@ -261,7 +194,7 @@ let make = (~mnemonic, ~onPressCancel, ~goNextStep) => {
           error={form.getFieldError(Field(Word4))}
         />
       </View>
-      <View style=styles##wordItem>
+      <View style=Style.(array([|styles##wordItem, style(~zIndex=2, ())|]))>
         <InputMnemonicWord
           verifyIndex={verifyMnemonicIndexes->Belt.Array.getExn(4)}
           value={form.values.word5}
@@ -270,7 +203,7 @@ let make = (~mnemonic, ~onPressCancel, ~goNextStep) => {
         />
       </View>
       <View style=styles##wordSpacer />
-      <View style=styles##wordItem>
+      <View style=Style.(array([|styles##wordItem, style(~zIndex=1, ())|]))>
         <InputMnemonicWord
           verifyIndex={verifyMnemonicIndexes->Belt.Array.getExn(5)}
           value={form.values.word6}
@@ -279,7 +212,7 @@ let make = (~mnemonic, ~onPressCancel, ~goNextStep) => {
         />
       </View>
     </View>
-    <View style=styles##formAction>
+    <View style=Style.(array([|styles##formAction, style(~zIndex=1, ())|]))>
       <FormButton text="CANCEL" onPress=onPressCancel />
       <FormButton
         text="CONTINUE"
