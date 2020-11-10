@@ -9,74 +9,47 @@ let endpoint = ((network, config: ConfigFile.t)) =>
     config.endpointTest->Belt.Option.getWithDefault(ConfigFile.endpointTest)
   };
 
+let explorer = ((network: Network.t, config: ConfigFile.t)) =>
+  switch (network) {
+  | Main =>
+    config.explorerMain->Belt.Option.getWithDefault(ConfigFile.explorerMain)
+
+  | Test =>
+    config.explorerTest->Belt.Option.getWithDefault(ConfigFile.explorerTest)
+  };
+
 module URL = {
-  let operationsPath = "/operations";
-  let delegatePath = "/chains/main/blocks/head/context/delegates\\?active=true";
+  let arg_opt = (v, n, f) => v->Belt.Option.map(a => (n, f(a)));
+
+  let build_args = l =>
+    l->Belt.List.map(((a, v)) => a ++ "=" ++ v)->Belt.List.toArray
+    |> Js.Array.joinWith("&");
+
+  let build_url = (network, path, args) => {
+    explorer(network) ++ path ++ (args == [] ? "" : "?" ++ args->build_args);
+  };
 
   let operations =
       (
-        (network, config): (Network.t, ConfigFile.t),
+        network,
         account,
         ~types: option(array(string))=?,
         ~limit: option(int)=?,
         (),
-      ) =>
-    (
-      switch (network) {
-      | Main =>
-        config.explorerMain
-        ->Belt.Option.getWithDefault(ConfigFile.explorerMain)
-
-      | Test =>
-        config.explorerTest
-        ->Belt.Option.getWithDefault(ConfigFile.explorerTest)
-      }
-    )
-    ++ operationsPath
-    ++ "?address="
-    ++ account
-    ++ (
-      switch (types) {
-      | Some(types) => "&types=" ++ types->Js.Array2.joinWith(",")
-      | None => ""
-      }
-    )
-    ++ (
-      switch (limit) {
-      | Some(limit) => "&limit=" ++ limit->Js.Int.toString
-      | None => ""
-      }
-    );
-
-  let delegates = ((network, config): (Network.t, ConfigFile.t)) => {
-    (
-      switch (network) {
-      | Main =>
-        config.endpointMain
-        ->Belt.Option.getWithDefault(ConfigFile.endpointMain)
-      | Test =>
-        config.endpointTest
-        ->Belt.Option.getWithDefault(ConfigFile.endpointTest)
-      }
-    )
-    ++ delegatePath;
+      ) => {
+    let operationsPath = "operations";
+    let args =
+      ("address", account)
+      @: types->arg_opt("types", t => t->Js.Array2.joinWith(","))
+      @?? limit->arg_opt("limit", lim => lim->Js.Int.toString);
+    let url = build_url(network, operationsPath, args);
+    url;
   };
 
-  let mempool = ((network: Network.t, config: ConfigFile.t), account) =>
-    (
-      switch (network) {
-      | Main =>
-        config.explorerMain
-        ->Belt.Option.getWithDefault(ConfigFile.explorerMain)
+  let mempool = (network, account) =>
+    build_url(network, Path.mempool_operations, [("pkh", account)]);
 
-      | Test =>
-        config.explorerTest
-        ->Belt.Option.getWithDefault(ConfigFile.explorerTest)
-      }
-    )
-    ++ "/mempool_operations"
-    ++ "?pkh="
-    ++ account;
+  let delegates = network => endpoint(network) ++ Path.delegates;
 };
 
 module type CallerAPI = {
