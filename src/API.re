@@ -81,7 +81,7 @@ module TezosClient = {
         | Some(inputs) =>
           process
           ->child_stdin
-          ->Writeable.write(inputs->Js.Array2.joinWith("\n") ++ "\n");
+          ->Writeable.write(inputs->Js.Array2.joinWith("\n") ++ "\0");
           process->child_stdin->end_;
         | None => ()
         };
@@ -297,7 +297,7 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
           switch (result) {
           | Some(operationHash) => operationHash
           | None => raise(InvalidReceiptFormat)
-          };
+          };  
         })
       );
 };
