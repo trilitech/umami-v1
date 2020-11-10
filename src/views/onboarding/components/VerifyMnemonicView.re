@@ -69,6 +69,7 @@ let make = (~mnemonic, ~onPressCancel, ~goNextStep) => {
 
   let form: VerifyMnemonicForm.api =
     VerifyMnemonicForm.use(
+      ~validationStrategy=OnChange,
       ~schema={
         VerifyMnemonicForm.Validation.(
           Schema(
@@ -214,11 +215,7 @@ let make = (~mnemonic, ~onPressCancel, ~goNextStep) => {
     </View>
     <View style=Style.(array([|styles##formAction, style(~zIndex=1, ())|]))>
       <FormButton text="CANCEL" onPress=onPressCancel />
-      <FormButton
-        text="CONTINUE"
-        onPress=onSubmit
-        disabled={form.formState == Errored}
-      />
+      <FormButton text="CONTINUE" onPress=onSubmit />
     </View>
   </>;
 };

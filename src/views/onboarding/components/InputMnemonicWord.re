@@ -104,7 +104,9 @@ let styles =
 let make = (~verifyIndex, ~value, ~handleChange, ~error) => {
   let hasError = error->Belt.Option.isSome;
   let wordlists =
-    Bip39.wordlistsEnglish->Belt.Array.slice(~offset=0, ~len=12);
+    Bip39.wordlistsEnglish
+    ->Belt.Array.keep(Js.String.startsWith(value))
+    ->Belt.Array.slice(~offset=0, ~len=12);
 
   let textInputRef = React.useRef(Js.Nullable.null);
   let scrollViewRef = React.useRef(Js.Nullable.null);
@@ -113,6 +115,8 @@ let make = (~verifyIndex, ~value, ~handleChange, ~error) => {
 
   let (selectedWordIndex, setSelectedWordIndex) = React.useState(_ => 0);
   let (hasFocus, setHasFocus) = React.useState(_ => false);
+
+  let displayError = hasError && !hasFocus;
 
   let onChangeItem = newValue => {
     handleChange(newValue);
@@ -183,7 +187,7 @@ let make = (~verifyIndex, ~value, ~handleChange, ~error) => {
   <View>
     <View style=styles##wordItemIndexContainer>
       <Typography.Subtitle1
-        colorStyle={hasError ? `error : `mediumEmphasis}
+        colorStyle={displayError ? `error : `mediumEmphasis}
         style=styles##wordItemIndex>
         {(verifyIndex + 1)->string_of_int->React.string}
       </Typography.Subtitle1>
@@ -193,7 +197,7 @@ let make = (~verifyIndex, ~value, ~handleChange, ~error) => {
       style=Style.(
         arrayOption([|
           Some(styles##input),
-          hasError ? Some(styles##inputError) : None,
+          displayError ? Some(styles##inputError) : None,
         |])
       )
       value
@@ -207,7 +211,7 @@ let make = (~verifyIndex, ~value, ~handleChange, ~error) => {
       autoCorrect=false
       autoFocus=false
     />
-    {hasFocus
+    {hasFocus && wordlists->Belt.Array.size > 0
        ? <View>
            <ScrollView
              ref={scrollViewRef->Ref.value}
