@@ -29,7 +29,7 @@ let styles =
 let make = () => {
   let modal = React.useRef(Js.Nullable.null);
 
-  let (visibleModal, setVisibleModal) = React.useState(_ => true /*false*/);
+  let (visibleModal, setVisibleModal) = React.useState(_ => false);
   let openAction = () => setVisibleModal(_ => true);
   let closeAction = () => setVisibleModal(_ => false);
 

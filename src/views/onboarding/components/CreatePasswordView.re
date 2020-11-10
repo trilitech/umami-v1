@@ -40,7 +40,7 @@ let isConfirmPassword = (values: StateLenses.state) => {
 };
 
 [@react.component]
-let make = (~onPressCancel, ~goNextStep) => {
+let make = (~mnemonic, ~onPressCancel, ~createAccountWithMnemonic) => {
   let form: CreatePasswordForm.api =
     CreatePasswordForm.use(
       ~schema={
@@ -51,8 +51,12 @@ let make = (~onPressCancel, ~goNextStep) => {
         );
       },
       ~onSubmit=
-        ({state: _}) => {
-          Js.log("onsubmit");
+        ({state}) => {
+          createAccountWithMnemonic(
+            "Tezos 1",
+            mnemonic->Js.Array2.joinWith(" "),
+            ~password=state.values.password,
+          );
 
           None;
         },

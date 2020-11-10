@@ -137,9 +137,7 @@ let make = (~mnemonic, ~onPressCancel, ~goNextStep) => {
         );
       },
       ~onSubmit=
-        ({state}) => {
-          Js.log(state);
-
+        ({state: _}) => {
           goNextStep();
 
           None;
