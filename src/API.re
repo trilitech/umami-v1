@@ -81,7 +81,7 @@ module TezosClient = {
         | Some(inputs) =>
           process
           ->child_stdin
-          ->Writeable.write(inputs->Js.Array2.joinWith("\n") ++ "\0");
+          ->Writeable.write(inputs->Js.Array2.joinWith("\n") ++ "\n\000");
           process->child_stdin->end_;
         | None => ()
         };
@@ -243,7 +243,7 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
         result->map(receipt => {
           let fee =
             receipt
-            ->parse("[ ]*Fee to the baker: .([0-9]*\.[0-9]+|[0-9]+)")
+            ->parse("[ ]*Fee to the baker: .([0-9]*\\.[0-9]+|[0-9]+)")
             ->Belt.Option.flatMap(float_of_string_opt);
           Js.log(fee);
           let count =
@@ -297,7 +297,7 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
           switch (result) {
           | Some(operationHash) => operationHash
           | None => raise(InvalidReceiptFormat)
-          };  
+          };
         })
       );
 };
@@ -312,18 +312,14 @@ module Accounts = (Caller: CallerAPI) => {
   let parse = content =>
     content
     ->Js.String2.split("\n")
-    ->Belt.Array.map(row => row->Js.String2.split(" "))
-    ->(pairs => pairs->Belt.Array.keep(data => data->Belt.Array.length > 2))
-    ->Belt.Array.map(data =>
-        (
-          data[0]
-          ->Js.String2.substring(
-              ~from=0,
-              ~to_=data[0]->Js.String2.length - 1,
-            ),
-          data[1],
-        )
-      );
+    ->Belt.Array.map(row => row->Js.String2.split(":"))
+    ->(rows => rows->Belt.Array.keep(data => data->Belt.Array.length >= 2))
+    ->Belt.Array.map(pair => {
+        [|pair[0]|]
+        ->Belt.Array.concat(pair[1]->Js.String2.trim->Js.String2.split(" ("))
+      })
+    ->(rows => rows->Belt.Array.keep(data => data->Belt.Array.length > 2))
+    ->Belt.Array.map(data => (data[0], data[1]));
 
   let get = () =>
     Caller.call(
@@ -346,7 +342,16 @@ module Accounts = (Caller: CallerAPI) => {
 
   let addWithMnemonic = (name, mnemonic, ~password) =>
     Caller.call(
-      [|"-E", Network.Test->endpoint, "import", "keys", "from", "mnemonic", name, "--encrypt"|],
+      [|
+        "-E",
+        Network.Test->endpoint,
+        "import",
+        "keys",
+        "from",
+        "mnemonic",
+        name,
+        "--encrypt",
+      |],
       ~inputs=[|mnemonic, "", password, password|],
       (),
     );
