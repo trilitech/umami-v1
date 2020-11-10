@@ -31,7 +31,7 @@ let styles =
 
 [@react.component]
 let make = (~onPressCancel) => {
-  let (formStep, setFormStep) = React.useState(_ => Step3);
+  let (formStep, setFormStep) = React.useState(_ => Step1);
 
   let (accountWithMnemonicRequest, createAccountWithMnemonic) =
     AccountApiRequest.useCreateAccountWithMnemonic();
