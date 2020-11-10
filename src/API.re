@@ -346,7 +346,7 @@ module Accounts = (Caller: CallerAPI) => {
 
   let addWithMnemonic = (name, mnemonic, ~password) =>
     Caller.call(
-      [|"import", "keys", "from", "mnemonic", name, "--encrypt"|],
+      [|"-E", Network.Test->endpoint, "import", "keys", "from", "mnemonic", name, "--encrypt"|],
       ~inputs=[|mnemonic, "", password, password|],
       (),
     );
