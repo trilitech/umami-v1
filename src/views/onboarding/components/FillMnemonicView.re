@@ -4,8 +4,6 @@ module StateLenses = [%lenses type state = {words: array(string)}];
 
 module VerifyMnemonicForm = ReForm.Make(StateLenses);
 
-let numInput = 6;
-
 let styles =
   Style.(
     StyleSheet.create({
@@ -29,37 +27,8 @@ let styles =
     })
   );
 
-let createUniquesRandomInts = (~count, ~min, ~max) => {
-  let randomNumbers = ref(Belt.Set.Int.empty);
-  while (randomNumbers.contents->Belt.Set.Int.size < count) {
-    randomNumbers :=
-      randomNumbers.contents->Belt.Set.Int.add(Js.Math.random_int(min, max));
-  };
-  randomNumbers.contents->Belt.Set.Int.toArray;
-};
-
-let isEqualMnemonicWord = (value, mnemonic, verifyMnemonicIndexes, index) => {
-  let word =
-    mnemonic->Belt.Array.getExn(
-      verifyMnemonicIndexes->Belt.Array.getExn(index),
-    );
-  let fieldState: ReSchema.fieldState =
-    value == word ? Valid : Error("not the right word");
-  fieldState;
-};
-
 [@react.component]
-let make = (~mnemonic, ~onPressCancel, ~goNextStep) => {
-  let verifyMnemonicIndexes =
-    React.useRef(
-      createUniquesRandomInts(
-        ~count=numInput,
-        ~min=0,
-        ~max=mnemonic->Belt.Array.size - 1,
-      ),
-    ).
-      current;
-
+let make = (~mnemonic, ~setMnemonic, ~onPressCancel, ~goNextStep) => {
   let form: VerifyMnemonicForm.api =
     VerifyMnemonicForm.use(
       ~validationStrategy=OnDemand,
@@ -92,11 +61,12 @@ let make = (~mnemonic, ~onPressCancel, ~goNextStep) => {
         );
       },
       ~onSubmit=
-        ({state: _}) => {
+        ({state}) => {
+          setMnemonic(_ => state.values.words);
           goNextStep();
           None;
         },
-      ~initialState={words: Belt.Array.make(numInput, "")},
+      ~initialState={words: mnemonic},
       (),
     );
 
@@ -120,9 +90,7 @@ let make = (~mnemonic, ~onPressCancel, ~goNextStep) => {
                  |])
                )>
                <InputMnemonicWord
-                 displayIndex={
-                   verifyMnemonicIndexes->Belt.Array.getExn(index)
-                 }
+                 displayIndex=index
                  value=word
                  handleChange={form.arrayUpdateByIndex(~field=Words, ~index)}
                  error={form.getNestedFieldError(Field(Words), index)}

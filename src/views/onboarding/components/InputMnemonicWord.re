@@ -101,7 +101,7 @@ let styles =
   );
 
 [@react.component]
-let make = (~verifyIndex, ~value, ~handleChange, ~error) => {
+let make = (~displayIndex, ~value, ~handleChange, ~error) => {
   let hasError = error->Belt.Option.isSome;
   let wordlists =
     Bip39.wordlistsEnglish
@@ -189,7 +189,7 @@ let make = (~verifyIndex, ~value, ~handleChange, ~error) => {
       <Typography.Subtitle1
         colorStyle={displayError ? `error : `mediumEmphasis}
         style=styles##wordItemIndex>
-        {(verifyIndex + 1)->string_of_int->React.string}
+        {(displayIndex + 1)->string_of_int->React.string}
       </Typography.Subtitle1>
     </View>
     <TextInput

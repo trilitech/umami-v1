@@ -70,6 +70,6 @@ let make = () => {
          )
        ->React.array
      })}
-    <View> <CreateAccountBigButton /> </View>
+    <View> <CreateAccountBigButton /> <ImportAccountBigButton /> </View>
   </Page>;
 };
