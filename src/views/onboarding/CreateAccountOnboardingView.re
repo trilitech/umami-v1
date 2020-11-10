@@ -85,7 +85,24 @@ let make = (~onPressCancel) => {
            goNextStep={_ => setFormStep(_ => Step3)}
          />
        </>
-     | Step3 => React.null
+     | Step3 =>
+       <>
+         <Typography.Overline3
+           colorStyle=`highEmphasis style=styles##stepPager>
+           "Step 3 of 3"->React.string
+         </Typography.Overline3>
+         <Typography.Overline2 style=styles##stepTitle>
+           "Set a password to secure your wallet"->React.string
+         </Typography.Overline2>
+         <Typography.Body3 colorStyle=`mediumEmphasis style=styles##stepBody>
+           {js|Please note that this password is not recorded anywhere and only applies to this machine.|js}
+           ->React.string
+         </Typography.Body3>
+         <CreatePasswordView
+           onPressCancel
+           goNextStep={_ => setFormStep(_ => Step3)}
+         />
+       </>
      }}
   </ModalView>;
 };
