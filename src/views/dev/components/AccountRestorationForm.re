@@ -11,6 +11,7 @@ let make = () => {
 
   let (backupPhrase, setBackupPhrase) = React.useState(() => "");
   let (name, setName) = React.useState(() => "");
+  let (password, setPassword) = React.useState(() => "");
 
   <View style>
     <TextInput
@@ -23,9 +24,15 @@ let make = () => {
       placeholder="alias"
       value=name
     />
+    <TextInput
+      onChangeText={text => setPassword(_ => text)}
+      placeholder="password"
+      secureTextEntry=true
+      value=password
+    />
     <Button
       onPress={_ =>
-        AccountsAPI.restore(backupPhrase, name, ())
+        AccountsAPI.addWithMnemonic(name, backupPhrase, ~password)
         ->Future.flatMapOk(_ => AccountsAPI.get())
         ->Future.get(result =>
             switch (result) {

@@ -44,11 +44,15 @@ module URL = {
 };
 
 module type CallerAPI = {
-  let call: array(string) => Future.t(Belt.Result.t(string, string));
+  let call:
+    (array(string), ~inputs: array(string)=?, unit) =>
+    Future.t(Belt.Result.t(string, string));
 };
 
 module TezosClient = {
-  let call = command =>
+  [@bs.send] external end_: Writeable.t => unit = "end";
+
+  let call = (command, ~inputs=?, ()) =>
     Future.make(resolve => {
       let process = ChildReprocess.spawn("tezos-client", command, ());
       let result: ref(option(Belt.Result.t(string, string))) = ref(None);
@@ -72,6 +76,15 @@ module TezosClient = {
             | None => result := Some(buffer->Node_buffer.toString->Ok)
             }
           );
+      let _ =
+        switch (inputs) {
+        | Some(inputs) =>
+          process
+          ->child_stdin
+          ->Writeable.write(inputs->Js.Array2.joinWith("\n") ++ "\n");
+          process->child_stdin->end_;
+        | None => ()
+        };
       let _ =
         process->ChildReprocess.on_exit((_, _) =>
           resolve(
@@ -101,14 +114,10 @@ module TezosExplorer = {
 
 module Balance = (Caller: CallerAPI) => {
   let get = (network, account) =>
-    Caller.call([|
-      "-E",
-      network->endpoint,
-      "get",
-      "balance",
-      "for",
-      account,
-    |]);
+    Caller.call(
+      [|"-E", network->endpoint, "get", "balance", "for", account|],
+      (),
+    );
 };
 
 let map = (result: Belt.Result.t('a, string), transform: 'a => 'b) =>
@@ -225,7 +234,10 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
   exception InvalidReceiptFormat;
 
   let simulate = (network, operation: Injection.operation) =>
-    Caller.call(arguments(network, operation)->Js.Array2.concat([|"-D"|]))
+    Caller.call(
+      arguments(network, operation)->Js.Array2.concat([|"-D"|]),
+      (),
+    )
     ->Future.tapOk(Js.log)
     ->Future.map(result =>
         result->map(receipt => {
@@ -263,7 +275,7 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
     ->Future.tapOk(Js.log);
 
   let create = (network, operation: Injection.operation) =>
-    Caller.call(arguments(network, operation))
+    Caller.call(arguments(network, operation), ())
     ->Future.tapOk(Js.log)
     ->Future.map(result =>
         result->map(receipt => {
@@ -275,13 +287,25 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
         })
       )
     ->Future.tapOk(Js.log);
+
+  let inject = (network, operation: Injection.operation, ~password) =>
+    Caller.call(arguments(network, operation), ~inputs=[|password|], ())
+    ->Future.tapOk(Js.log)
+    ->Future.map(result =>
+        result->map(receipt => {
+          let result = receipt->parse("Operation hash is '([A-Za-z0-9]*)'");
+          switch (result) {
+          | Some(operationHash) => operationHash
+          | None => raise(InvalidReceiptFormat)
+          };
+        })
+      );
 };
 
 module MapString = Belt.Map.String;
 
 module Mnemonic = {
-  [@bs.module "bip39"]
-  external generate: unit => string = "generateMnemonic";
+  [@bs.module "bip39"] external generate: unit => string = "generateMnemonic";
 };
 
 module Accounts = (Caller: CallerAPI) => {
@@ -302,23 +326,30 @@ module Accounts = (Caller: CallerAPI) => {
       );
 
   let get = () =>
-    Caller.call([|
-      "-E",
-      Network.Test->endpoint,
-      "list",
-      "known",
-      "addresses",
-    |])
+    Caller.call(
+      [|"-E", Network.Test->endpoint, "list", "known", "addresses"|],
+      (),
+    )
     ->Future.mapOk(parse);
 
   let create = name =>
-    Caller.call([|"-E", Network.Test->endpoint, "gen", "keys", name|]);
+    Caller.call([|"-E", Network.Test->endpoint, "gen", "keys", name|], ());
 
   let add = (name, address) =>
-    Caller.call([|"add", "address", name, address, "-f"|]);
+    Caller.call([|"add", "address", name, address, "-f"|], ());
 
   let import = (key, name) =>
-    Caller.call([|"import", "secret", "key", name, "unencrypted:" ++ key|]);
+    Caller.call(
+      [|"import", "secret", "key", name, "unencrypted:" ++ key|],
+      (),
+    );
+
+  let addWithMnemonic = (name, mnemonic, ~password) =>
+    Caller.call(
+      [|"import", "keys", "from", "mnemonic", name, "--encrypt"|],
+      ~inputs=[|mnemonic, "", password, password|],
+      (),
+    );
 
   let restore = (backupPhrase, name, ~derivationPath=?, ()) => {
     switch (derivationPath) {
@@ -328,15 +359,18 @@ module Accounts = (Caller: CallerAPI) => {
       Js.log(edsk2);
       import(edsk2, name);
     | None =>
-      Caller.call([|
-        "-E",
-        Network.Test->endpoint,
-        "generate",
-        "keys",
-        "from",
-        "mnemonic",
-        backupPhrase,
-      |])
+      Caller.call(
+        [|
+          "-E",
+          Network.Test->endpoint,
+          "generate",
+          "keys",
+          "from",
+          "mnemonic",
+          backupPhrase,
+        |],
+        (),
+      )
       ->Future.tapOk(Js.log)
       ->Future.mapOk(keys => (keys |> Js.String.split("\n"))[2])
       ->Future.tapOk(Js.log)
@@ -345,26 +379,25 @@ module Accounts = (Caller: CallerAPI) => {
   };
 
   let delete = name =>
-    Caller.call([|
-      "-E",
-      Network.Test->endpoint,
-      "forget",
-      "address",
-      name,
-      "-f",
-    |]);
+    Caller.call(
+      [|"-E", Network.Test->endpoint, "forget", "address", name, "-f"|],
+      (),
+    );
 
   let delegate = (network, account, delegate) =>
-    Caller.call([|
-      "-E",
-      network->endpoint,
-      "set",
-      "delegate",
-      "for",
-      account,
-      "to",
-      delegate,
-    |]);
+    Caller.call(
+      [|
+        "-E",
+        network->endpoint,
+        "set",
+        "delegate",
+        "for",
+        account,
+        "to",
+        delegate,
+      |],
+      (),
+    );
 };
 
 module Scanner = (Caller: CallerAPI, Getter: GetterAPI) => {
@@ -429,19 +462,16 @@ module Aliases = (Caller: CallerAPI) => {
     |> (pairs => pairs->Js.Array2.filter(pair => pair->Array.length == 2))
     |> Js.Array.map(pair => (pair[0], pair[1]))
     |> Js.Array.sortInPlaceWith((a, b) => {
-      let (a, _) = a;
-      let (b, _) = b;
-      a->compare(b)
-    });
+         let (a, _) = a;
+         let (b, _) = b;
+         a->compare(b);
+       });
 
   let get = () =>
-    Caller.call([|
-      "-E",
-      Network.Test->endpoint,
-      "list",
-      "known",
-      "contracts",
-    |])
+    Caller.call(
+      [|"-E", Network.Test->endpoint, "list", "known", "contracts"|],
+      (),
+    )
     ->Future.mapOk(parse);
 
   let getAliasForAddress = address =>
@@ -458,22 +488,14 @@ module Aliases = (Caller: CallerAPI) => {
     ->Future.mapOk(addresses => addresses->Belt.Map.String.get(alias));
 
   let add = (alias, address) =>
-    Caller.call([|
-      "-E",
-      Network.Test->endpoint,
-      "add",
-      "address",
-      alias,
-      address,
-    |]);
+    Caller.call(
+      [|"-E", Network.Test->endpoint, "add", "address", alias, address|],
+      (),
+    );
 
   let delete = name =>
-    Caller.call([|
-      "-E",
-      Network.Test->endpoint,
-      "forget",
-      "address",
-      name,
-      "-f",
-    |]);
+    Caller.call(
+      [|"-E", Network.Test->endpoint, "forget", "address", name, "-f"|],
+      (),
+    );
 };

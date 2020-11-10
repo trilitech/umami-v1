@@ -83,7 +83,7 @@ let make = () => {
       switch (injection) {
       | Pending(operation) =>
         network
-        ->OperationsAPI.create(operation)
+        ->OperationsAPI.inject(operation, ~password="blerot")
         ->Future.get(result =>
             switch (result) {
             | Ok(_) => setInjection(_ => Done)
