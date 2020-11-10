@@ -81,7 +81,7 @@ module Item = {
                  ReactUtils.displayOn(hovered),
                |])
              )>
-             <ClipboardButton s={error.msg} />
+             <ClipboardButton data={error.msg} />
              <ErrorDeleteButton indice />
            </View>
          </View>;
@@ -106,8 +106,6 @@ module ClearButton = {
 [@react.component]
 let make = () => {
   let errors = ErrorsContext.useErrors();
-
-  let () = Js.log(Electron.getAppPath());
 
   <ModalView style=styles##modal>
     <View style=styles##view>

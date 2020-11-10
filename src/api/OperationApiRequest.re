@@ -19,7 +19,6 @@ let useCreateOperation = () => {
     network
     ->OperationsAPI.create(operation)
     ->Future.get(result => {
-        Js.log(result);
         switch (result) {
         | Error(msg) =>
           addError(Error.{kind: Operation, msg, timestamp: Js.Date.now()})
