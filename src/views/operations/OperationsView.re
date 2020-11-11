@@ -28,10 +28,18 @@ let keyExtractor = (operation: Operation.t, _i) => {
 
 let _ListEmptyComponent = () => <EmptyView text="No operations" />;
 
+let sort = op =>
+  Operation.(
+    op->Belt.SortArray.stableSortInPlaceBy(
+      ({timestamp: t1}, {timestamp: t2}) =>
+      - Pervasives.compare(t1, t2)
+    )
+  );
+
 [@react.component]
 let make = () => {
   let operationsRequest =
-    OperationApiRequest.useGetOperations(/*~limit=100, */());
+    OperationApiRequest.useGetOperations() /*~limit=100, */;
 
   <View style=styles##container>
     <OperationsHeaderView />
@@ -40,7 +48,8 @@ let make = () => {
        <FlatList
          style=styles##list
          contentContainerStyle=styles##listContent
-         data=operations
+         data={operations->sort;
+               operations}
          initialNumToRender=20
          keyExtractor
          renderItem
