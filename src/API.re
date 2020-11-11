@@ -1,4 +1,5 @@
 open ChildReprocess.StdStream;
+open Common;
 
 let endpoint = ((network, config: ConfigFile.t)) =>
   switch (network) {
@@ -60,6 +61,22 @@ module URL = {
     )
     ++ delegatePath;
   };
+
+  let mempool = ((network: Network.t, config: ConfigFile.t), account) =>
+    (
+      switch (network) {
+      | Main =>
+        config.explorerMain
+        ->Belt.Option.getWithDefault(ConfigFile.explorerMain)
+
+      | Test =>
+        config.explorerTest
+        ->Belt.Option.getWithDefault(ConfigFile.explorerTest)
+      }
+    )
+    ++ "/mempool_operations"
+    ++ "?pkh="
+    ++ account;
 };
 
 module type CallerAPI = {
@@ -165,7 +182,35 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
     ->Getter.get
     ->Future.map(result =>
         result->map(Json.Decode.(array(Operation.decode)))
-      );
+      )
+    >>= (
+      operations =>
+        network
+        ->URL.mempool(account)
+        ->Getter.get
+        ->Future.map(result =>
+            result->map(x =>
+              (
+                operations,
+                x |> Json.Decode.(array(Operation.decodeFromMempool)),
+              )
+            )
+          )
+    )
+    >>= (
+      ((operations, mempool)) => {
+        module Comparator = Operation.Comparator;
+        let operations =
+          Belt.Set.fromArray(operations, ~id=(module Operation.Comparator));
+
+        let operations =
+          mempool
+          ->Belt.Array.reduce(operations, Belt.Set.add)
+          ->Belt.Set.toArray;
+
+        Future.value(Ok(operations));
+      }
+    );
 
   let arguments = (network, operation: Injection.operation) =>
     switch (operation) {
