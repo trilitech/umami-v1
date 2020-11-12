@@ -22,6 +22,9 @@ let styles =
     })
   );
 
+let xtzDecoration = (~style) =>
+  <Typography.Body1 style> "XTZ"->React.string </Typography.Body1>;
+
 [@react.component]
 let make = (~form: SendForm.api) => {
   let (operationSimulateRequest, sendOperationSimulate) =
@@ -75,6 +78,7 @@ let make = (~form: SendForm.api) => {
         handleChange={form.handleChange(Fee)}
         error={form.getFieldError(Field(Fee))}
         style=styles##formRowInput
+        decoration=xtzDecoration
       />
       <View style=styles##formRowInputsSeparator />
       <FormGroupTextInput

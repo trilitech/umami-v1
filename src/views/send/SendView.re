@@ -54,6 +54,9 @@ let isValidInt = value => {
   fieldState;
 };
 
+let xtzDecoration = (~style) =>
+  <Typography.Body1 style> "XTZ"->React.string </Typography.Body1>;
+
 let buildTransaction = (state: SendForm.state, advancedOptionOpened) => {
   let mapIfAdvanced = (v, map) =>
     advancedOptionOpened && v->Js.String2.length > 0 ? Some(v->map) : None;
@@ -134,6 +137,7 @@ module Form = {
           value={form.values.amount}
           handleChange={form.handleChange(Amount)}
           error={form.getFieldError(Field(Amount))}
+          decoration=xtzDecoration
           keyboardType=`numeric
         />
         <FormGroupAccountSelector
