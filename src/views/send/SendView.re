@@ -201,7 +201,7 @@ let make = (~onPressCancel) => {
       setModalStep(_ => PasswordStep(op))
     );
 
-  <ModalView>
+  <ModalView.Form>
     {switch (modalStep, operationRequest) {
      | (_, Done(Ok(hash))) =>
        <>
@@ -241,5 +241,5 @@ let make = (~onPressCancel) => {
          sendOperation
        />
      }}
-  </ModalView>;
+  </ModalView.Form>;
 };

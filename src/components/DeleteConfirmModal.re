@@ -42,7 +42,7 @@ let make =
 
   <>
     <ModalAction ref=modal visible onRequestClose=closeAction>
-      <ModalView>
+      <ModalView.Form>
         {switch (request) {
          | Done(Ok(_result)) =>
            <>
@@ -81,7 +81,7 @@ let make =
              </View>
            </>
          }}
-      </ModalView>
+      </ModalView.Form>
     </ModalAction>
   </>;
 };

@@ -46,7 +46,7 @@ let memo = component =>
 [@react.component]
 let make =
   memo((~account: Account.t) => {
-    <RowItem height=46.>
+    <RowItem.Bordered height=46.>
       {({hovered}: Pressable.interactionState) => {
          <>
            <View style=styles##inner>
@@ -65,15 +65,15 @@ let make =
              style=Style.(
                array([|
                  styles##actionButtons,
-                 style(~display=hovered ? `flex : `none, ()),
+                 ReactUtils.displayOn(hovered),
                |])
              )>
-             <IconButton icon=Icons.Copy.build />
+             <ClipboardButton data={account.address} />
              <QrButton account />
              <IconButton icon=Icons.Edit.build />
              <AliasDeleteButton account />
            </View>
          </>;
        }}
-    </RowItem>
+    </RowItem.Bordered>
   });

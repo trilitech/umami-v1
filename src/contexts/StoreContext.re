@@ -33,7 +33,6 @@ let make = (~children) => {
   let (selectedAccount, setSelectedAccount) = React.useState(() => None);
 
   let updateAccount = newAccount => setSelectedAccount(_ => Some(newAccount));
-
   let accountsRequest = AccountApiRequest.useGetAccounts();
 
   React.useEffect3(

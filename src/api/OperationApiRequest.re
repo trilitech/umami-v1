@@ -11,12 +11,21 @@ let useCreateOperation = () => {
 
   let (request, setRequest) = React.useState(_ => NotAsked);
 
+  let addError = ErrorsContext.useAddError();
+
   let sendRequest = operation => {
     setRequest(_ => Loading);
 
     network
     ->OperationsAPI.create(operation)
-    ->Future.get(result => setRequest(_ => Done(result)));
+    ->Future.get(result => {
+        switch (result) {
+        | Error(msg) =>
+          addError(Error.{kind: Operation, msg, timestamp: Js.Date.now()})
+        | _ => ()
+        };
+        setRequest(_ => Done(result));
+      });
   };
 
   (request, sendRequest);
@@ -36,7 +45,7 @@ let useSimulateOperation = () => {
 
     network
     ->OperationsAPI.simulate(operation)
-    ->Future.get(result => setRequest(_ => Done(result)));
+    ->Future.get(result => {setRequest(_ => Done(result))});
   };
 
   (request, sendRequest);

@@ -39,9 +39,11 @@ module Base = {
         ~fontWeightStyle,
         ~numberOfLines=?,
         ~style as styleProp=?,
+        ~ellipsizeMode=?,
         ~children,
       ) => {
     <Text
+      ?ellipsizeMode
       ?numberOfLines
       style=Style.(
         arrayOption([|
@@ -70,10 +72,12 @@ module Make = (DefaultStyle: TextDesignStyle) => {
         ~fontSize=DefaultStyle.fontSize,
         ~fontWeightStyle=DefaultStyle.fontWeightStyle,
         ~numberOfLines=?,
+        ~ellipsizeMode=?,
         ~style=?,
         ~children,
       ) => {
-    <Base colorStyle fontSize fontWeightStyle ?numberOfLines ?style>
+    <Base
+      colorStyle fontSize fontWeightStyle ?ellipsizeMode ?numberOfLines ?style>
       children
     </Base>;
   };

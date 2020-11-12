@@ -15,6 +15,7 @@ module NavBarItem = {
           ),
         "icon": style(~marginBottom=6.->dp, ()),
         "text": style(~textAlign=`center, ()),
+        "errorButton": style(~marginTop=auto, ()),
       })
     );
 
@@ -84,5 +85,10 @@ let make = (~route as currentRoute) => {
       icon=Icons.AddressBook.build
     />
     <NavBarItem currentRoute route=Debug title="DEBUG" />
+    <ErrorsButton
+      style=Style.(
+        array([|NavBarItem.styles##errorButton, NavBarItem.styles##item|])
+      )
+    />
   </View>;
 };

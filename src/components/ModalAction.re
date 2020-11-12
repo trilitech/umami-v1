@@ -11,6 +11,7 @@ let useAnimatedValue = value => {
 let styles =
   Style.(
     StyleSheet.create({
+      "title": style(~textAlign=`center, ()),
       "modal": style(~flex=1., ()),
       "modalOverlay":
         StyleSheet.flatten([|
