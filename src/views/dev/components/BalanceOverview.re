@@ -11,13 +11,14 @@ let make = () => {
   let (injection, _) = React.useContext(InjectionState.context);
 
   let (balance, setBalance) = React.useContext(BalanceState.context);
+  let config = ConfigContext.useConfig();
 
   React.useEffect5(
     () => {
       switch (injection) {
       | Pending(_) => ()
       | Done =>
-        network
+        (network, config)
         ->BalanceAPI.get(account)
         ->FutureEx.getOk(value => setBalance(value))
       };
