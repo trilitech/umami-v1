@@ -54,22 +54,44 @@ module AddAccountButton = {
   };
 };
 
-let styles = Style.(StyleSheet.create({"container": style(~flex=1., ())}));
+let styles =
+  Style.(
+    StyleSheet.create({
+      "container": style(~flex=1., ()),
+      "scrim":
+        StyleSheet.flatten([|
+          StyleSheet.absoluteFillObject,
+          style(
+            ~flexDirection=`row,
+            ~justifyContent=`spaceAround,
+            ~paddingVertical=78.->dp,
+            ~paddingHorizontal=100.->dp,
+            ~backgroundColor="rgba(92,92,92,0.32)",
+            (),
+          ),
+        |]),
+    })
+  );
 
 [@react.component]
 let make = () => {
   let accounts = StoreContext.useAccounts();
-
   <Page>
-    <AddAccountButton />
     {accounts->Belt.Option.mapWithDefault(<LoadingView />, accounts => {
-       accounts
-       ->Belt.Map.String.valuesToArray
-       ->Belt.Array.map(account =>
-           <AccountRowItem key={account.address} account />
-         )
-       ->React.array
+       accounts->Belt.Map.String.size > 0
+         ? <>
+             <AddAccountButton />
+             {accounts
+              ->Belt.Map.String.valuesToArray
+              ->Belt.Array.map(account =>
+                  <AccountRowItem key={account.address} account />
+                )
+              ->React.array}
+           </>
+         : <View style=styles##scrim>
+             <CreateAccountBigButton />
+             <ImportAccountBigButton />
+           </View>
      })}
-    <View> <CreateAccountBigButton /> <ImportAccountBigButton /> </View>
   </Page>;
 };

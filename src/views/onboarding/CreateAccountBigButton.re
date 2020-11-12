@@ -9,6 +9,8 @@ let styles =
           ~width=424.->dp,
           ~justifyContent=`center,
           ~alignItems=`center,
+          ~backgroundColor="#121212",
+          ~borderRadius=4.,
           (),
         ),
       "iconContainer":
