@@ -153,8 +153,8 @@ let make =
            <View style=styles##cellStatus>
              <Typography.Body1>
                {switch (operation.status) {
-                | Pending => "Pending"
-                | Received => "Received"
+                | Mempool => "in mempool"
+                | Chain => "in chain"
                 }}
                ->React.string
              </Typography.Body1>

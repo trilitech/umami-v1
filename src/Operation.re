@@ -88,8 +88,8 @@ type payload =
   | Business(Business.t);
 
 type status =
-  | Pending
-  | Received;
+  | Mempool
+  | Chain;
 
 type t = {
   id: string,
@@ -111,7 +111,7 @@ let decode = json => {
     block: json |> field("block", optional(string)),
     hash: json |> field("hash", string),
     payload: Business(Business.decode(json)),
-    status: Received,
+    status: Chain,
   };
 };
 
@@ -131,7 +131,7 @@ let decodeFromMempool = json => {
     block: json |> optional(field("block", string)),
     hash: json |> field("ophash", string),
     payload: Business(Business.decode(~typ, ~op_id, op)),
-    status: Pending,
+    status: Mempool,
   };
 };
 

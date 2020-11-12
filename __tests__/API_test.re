@@ -116,7 +116,7 @@ describe("API tests", ({testAsync}) => {
         timestamp: Js.Date.fromString("2020-09-07T15:13:52Z"),
         block: Some("BLmmAGRe4JkyT2aD2vWoFYS6NF4e49XoXvMfcCdvbUmjve8uRkh"),
         hash: "opZj2yByVxxEg4YRsZcERMqiy9VgnJkzDGQBPdFNycxxsFBZYus",
-        status: Received,
+        status: Chain,
         payload:
           Business({
             source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
@@ -134,7 +134,7 @@ describe("API tests", ({testAsync}) => {
         timestamp: Js.Date.fromString("2020-09-04T10:00:58Z"),
         block: Some("BLK27pNneaexvbE4QwgEqdsSA5NM8f8XMxbYu1ufbhWD7Dhh3eG"),
         hash: "opQTxvSXMGuZ2rkox6q7ZNQhdp9a1j1ELoVdnHcvrh5ShyocEFD",
-        status: Received,
+        status: Chain,
         payload:
           Business({
             source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
@@ -233,7 +233,7 @@ describe("API tests", ({testAsync}) => {
         level: "114452",
         timestamp: Js.Date.fromString("2020-01-15T11:34:47Z"),
         block: Some("BMKrQdWfmYtsGVPR7kp2HohJbWRFSB7tWZdRCARVLcNnZTQhJMR"),
-        status: Received,
+        status: Chain,
         hash: "oonh7WBBK92yqFi56KENtpJouPuoLSHB3srWymv8WL6orKfo5P1",
         payload:
           Business({
@@ -337,7 +337,7 @@ describe("API tests", ({testAsync}) => {
         level: "696545",
         timestamp: Js.Date.fromString("2020-09-04T10:00:58Z"),
         block: Some("BLK27pNneaexvbE4QwgEqdsSA5NM8f8XMxbYu1ufbhWD7Dhh3eG"),
-        status: Received,
+        status: Chain,
         hash: "opQTxvSXMGuZ2rkox6q7ZNQhdp9a1j1ELoVdnHcvrh5ShyocEFD",
         payload:
           Business({
@@ -443,7 +443,7 @@ describe("API tests", ({testAsync}) => {
         level: "573751",
         timestamp: Js.Date.fromString("2020-07-17T08:20:00Z"),
         block: Some("BLvjLexwMByGckFEqn6rAwFMwdN89vZ5L4YZ6UG43w2j2JX7tDG"),
-        status: Received,
+        status: Chain,
         hash: "oou9e5pWQWZ4GDoT7fiJMwdH85TytZASJMC1VV8GbaDLNsHwoXw",
         payload:
           Business({
@@ -542,7 +542,7 @@ describe("API tests", ({testAsync}) => {
         level: "704778",
         timestamp: Js.Date.fromString("2020-09-07T15:13:52Z"),
         block: Some("BLmmAGRe4JkyT2aD2vWoFYS6NF4e49XoXvMfcCdvbUmjve8uRkh"),
-        status: Received,
+        status: Chain,
         hash: "opZj2yByVxxEg4YRsZcERMqiy9VgnJkzDGQBPdFNycxxsFBZYus",
         payload:
           Business({
@@ -597,7 +597,7 @@ describe("API tests", ({testAsync}) => {
         level: "704778",
         timestamp: Js.Date.fromString("2020-09-07T15:13:52Z"),
         block: Some("BLmmAGRe4JkyT2aD2vWoFYS6NF4e49XoXvMfcCdvbUmjve8uRkh"),
-        status: Received,
+        status: Chain,
         hash: "opZj2yByVxxEg4YRsZcERMqiy9VgnJkzDGQBPdFNycxxsFBZYus",
         payload:
           Business({
