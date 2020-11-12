@@ -47,7 +47,7 @@ let make = () => {
   <>
     <TouchableOpacity style=styles##button onPress>
       <View style=styles##iconContainer>
-        <Icon name=`add size=36. color=Colors.plainIconContent />
+        <Icon name=`arrowDown size=36. color=Colors.plainIconContent />
       </View>
       <Typography.Subtitle2>
         "IMPORT EXISTING ACCOUNT"->React.string
