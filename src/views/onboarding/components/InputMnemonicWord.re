@@ -201,11 +201,15 @@ let make = (~displayIndex, ~value, ~handleChange, ~error) => {
         |])
       )
       value
-      onChange={(event: TextInput.changeEvent) =>
-        handleChange(event.nativeEvent.text)
-      }
+      onChange={(event: TextInput.changeEvent) => {
+        handleChange(event.nativeEvent.text);
+        setSelectedWordIndex(_ => 0);
+      }}
       onFocus={_ => setHasFocus(_ => true)}
-      onBlur={_ => setHasFocus(_ => false)}
+      onBlur={_ => {
+        setHasFocus(_ => false);
+        setSelectedWordIndex(_ => 0);
+      }}
       onKeyPress
       autoCapitalize=`none
       autoCorrect=false
