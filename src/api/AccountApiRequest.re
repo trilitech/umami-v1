@@ -69,11 +69,12 @@ type createAccountWithMnemonicApiRequest = t(string);
 
 let useCreateAccountWithMnemonic = () => {
   let (request, setRequest) = React.useState(_ => NotAsked);
+  let config = ConfigContext.useConfig();
 
   let sendRequest = (name, mnemonic, ~password) => {
     setRequest(_ => Loading);
 
-    AccountsAPI.addWithMnemonic(name, mnemonic, ~password)
+    AccountsAPI.addWithMnemonic(~config, name, mnemonic, ~password)
     ->Future.get(result => setRequest(_ => Done(result)));
   };
 
