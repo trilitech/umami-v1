@@ -64,6 +64,8 @@ let make =
   memo((~operation: Operation.t) => {
     let account = StoreContext.useAccount();
 
+    let accounts = StoreContext.useAccounts();
+
     <RowItem.Bordered height=48.>
       {_ => {
          <>
@@ -102,12 +104,17 @@ let make =
                   </View>
                   <View style=styles##cellAddress>
                     <Typography.Body1 numberOfLines=1>
-                      business.source->React.string
+                      {StoreContext.getAlias(accounts, business.source)
+                       ->React.string}
                     </Typography.Body1>
                   </View>
                   <View style=styles##cellAddress>
                     <Typography.Body1 numberOfLines=1>
-                      transaction.destination->React.string
+                      {StoreContext.getAlias(
+                         accounts,
+                         transaction.destination,
+                       )
+                       ->React.string}
                     </Typography.Body1>
                   </View>
                 </>

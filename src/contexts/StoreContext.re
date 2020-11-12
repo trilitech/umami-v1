@@ -112,3 +112,13 @@ let useAccountFromAddress = address => {
     accounts->Belt.Map.String.get(address)
   );
 };
+
+let getAlias = (accounts, address) => {
+  accounts
+  ->Belt.Option.flatMap(accounts =>
+      accounts
+      ->Belt.Map.String.get(address)
+      ->Belt.Option.map((acc: Account.t) => acc.alias)
+    )
+  ->Belt.Option.getWithDefault(address);
+};
