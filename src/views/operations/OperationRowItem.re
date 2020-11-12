@@ -147,7 +147,7 @@ let make =
             }}
            <View style=styles##cellDate>
              <Typography.Body1>
-               {operation.timestamp->Js.Date.toISOString->React.string}
+               {operation.timestamp->Js.Date.toLocaleString->React.string}
              </Typography.Body1>
            </View>
            <View style=styles##cellStatus>
