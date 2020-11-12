@@ -151,34 +151,15 @@ let map = (result: Belt.Result.t('a, string), transform: 'a => 'b) =>
   };
 
 module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
-  let get =
-      (
-        network,
-        account,
-        ~types: option(array(string))=?,
-        ~limit: option(int)=?,
-        (),
-      ) =>
+  let getFromMempool = (account, network, operations) =>
     network
-    ->URL.operations(account, ~types?, ~limit?, ())
+    ->URL.mempool(account)
     ->Getter.get
     ->Future.map(result =>
-        result->map(Json.Decode.(array(Operation.decode)))
+        result->map(x =>
+          (operations, x |> Json.Decode.(array(Operation.decodeFromMempool)))
+        )
       )
-    >>= (
-      operations =>
-        network
-        ->URL.mempool(account)
-        ->Getter.get
-        ->Future.map(result =>
-            result->map(x =>
-              (
-                operations,
-                x |> Json.Decode.(array(Operation.decodeFromMempool)),
-              )
-            )
-          )
-    )
     >>= (
       ((operations, mempool)) => {
         module Comparator = Operation.Comparator;
@@ -192,6 +173,28 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
 
         Future.value(Ok(operations));
       }
+    );
+
+  let get =
+      (
+        network,
+        account,
+        ~types: option(array(string))=?,
+        ~limit: option(int)=?,
+        ~mempool: bool=false,
+        (),
+      ) =>
+    network
+    ->URL.operations(account, ~types?, ~limit?, ())
+    ->Getter.get
+    ->Future.map(result =>
+        result->map(Json.Decode.(array(Operation.decode)))
+      )
+    >>= (
+      operations =>
+        mempool
+          ? getFromMempool(account, network, operations)
+          : Future.value(Ok(operations))
     );
 
   let arguments = (network, operation: Injection.operation) =>

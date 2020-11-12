@@ -65,7 +65,13 @@ let useGetOperations = (~limit=?, ~types=?, ()) => {
     | Some(account) =>
       setRequest(_ => Loading);
       (network, config)
-      ->OperationsAPI.get(account.address, ~limit?, ~types?, ())
+      ->OperationsAPI.get(
+          account.address,
+          ~limit?,
+          ~types?,
+          ~mempool=true,
+          (),
+        )
       ->Future.tapOk(res => setOperations(_ => res))
       ->Future.get(result => setRequest(_ => {Done(result)}));
     | None => ()
