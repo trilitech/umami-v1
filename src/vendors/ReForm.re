@@ -263,8 +263,16 @@ module Make = (Config: Config) => {
                 submit ? self.send(Submit) : ();
               | Errors(erroredFields) =>
                 let newFieldsState: array((field, fieldState)) =
-                  erroredFields->Belt.Array.map(((field, errorMsg)) =>
-                    (field, Error(errorMsg))
+                  erroredFields->Belt.Array.map(((field, fieldState)) =>
+                    switch (fieldState) {
+                    // seemes unnecessary, but it transform ReSchema.fieldState to ReForm.fieldState
+                    | Error(error) => (field, Error(error))
+                    | NestedErrors(nestedErrors) => (
+                        field,
+                        NestedErrors(nestedErrors),
+                      )
+                    | Valid => (field, Valid)
+                    }
                   );
                 self.send(SetFieldsState(newFieldsState));
                 submit
@@ -291,9 +299,11 @@ module Make = (Config: Config) => {
               values: Config.set(state.values, field, value),
             },
             self => {
-              switch (validationStrategy) {
-              | OnChange => self.send(ValidateField(Field(field)))
-              | OnDemand => ()
+              switch (validationStrategy, state.formState) {
+              | (OnChange, _)
+              | (OnDemand, Errored) =>
+                self.send(ValidateField(Field(field)))
+              | (OnDemand, _) => ()
               };
               None;
             },
@@ -307,9 +317,11 @@ module Make = (Config: Config) => {
               values: Config.set(state.values, field, updateFn(oldValue)),
             },
             self => {
-              switch (validationStrategy) {
-              | OnChange => self.send(ValidateField(Field(field)))
-              | OnDemand => ()
+              switch (validationStrategy, state.formState) {
+              | (OnChange, _)
+              | (OnDemand, Errored) =>
+                self.send(ValidateField(Field(field)))
+              | (OnDemand, _) => ()
               };
               None;
             },
@@ -351,18 +363,30 @@ module Make = (Config: Config) => {
               ),
           })
         | FieldArrayUpdateByIndex(field, value, index) =>
-          Update({
-            ...state,
-            values:
-              Config.set(
-                state.values,
-                field,
-                Config.get(state.values, field)
-                ->Belt.Array.mapWithIndex((i, currentValue) =>
-                    i == index ? value : currentValue
-                  ),
-              ),
-          })
+          UpdateWithSideEffects(
+            {
+              ...state,
+              formState: state.formState == Errored ? Errored : Dirty,
+              values:
+                Config.set(
+                  state.values,
+                  field,
+                  Config.get(state.values, field)
+                  ->Belt.Array.mapWithIndex((i, currentValue) =>
+                      i == index ? value : currentValue
+                    ),
+                ),
+            },
+            self => {
+              switch (validationStrategy, state.formState) {
+              | (OnChange, _)
+              | (OnDemand, Errored) =>
+                self.send(ValidateField(Field(field)))
+              | (OnDemand, _) => ()
+              };
+              None;
+            },
+          )
         | SetFormState(newState) => Update({...state, formState: newState})
         | ResetForm =>
           Update({
@@ -455,7 +479,11 @@ module Make = (Config: Config) => {
       |> (
         fun
         | NestedErrors(errors) => {
-            switch (errors->Belt.Array.get(index)) {
+            switch (
+              errors->Belt.Array.getBy(childFieldError =>
+                childFieldError.index == index
+              )
+            ) {
             | None => None
             | Some(error) => Some(error.error)
             };

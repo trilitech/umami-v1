@@ -18,7 +18,7 @@ type fieldState =
 
 type recordValidationState('a) =
   | Valid
-  | Errors(array(('a, string)));
+  | Errors(array(('a, fieldState)));
 
 module Make = (Lenses: Lenses) => {
   type field =
@@ -348,7 +348,8 @@ module Make = (Lenses: Lenses) => {
     let errors =
       validationList->Belt.Array.keepMap(((field, fieldState)) =>
         switch (fieldState) {
-        | Error(string) => Some((field, string))
+        | Error(_) => Some((field, fieldState))
+        | NestedErrors(_) => Some((field, fieldState))
         | _ => None
         }
       );
