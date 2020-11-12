@@ -22,6 +22,11 @@ let styles =
           baseCellStyle,
           style(~flexBasis=180.->dp, ~flexShrink=1., ~flexGrow=1., ()),
         |]),
+      "cellStatus":
+        StyleSheet.flatten([|
+          baseCellStyle,
+          style(~flexBasis=120.->dp, ()),
+        |]),
       "cellDate":
         StyleSheet.flatten([|
           baseCellStyle,
@@ -121,6 +126,15 @@ let make =
            <View style=styles##cellDate>
              <Typography.Body1>
                {operation.timestamp->Js.Date.toISOString->React.string}
+             </Typography.Body1>
+           </View>
+           <View style=styles##cellStatus>
+             <Typography.Body1>
+               {switch (operation.status) {
+                | Pending => "Pending"
+                | Received => "Received"
+                }}
+               ->React.string
              </Typography.Body1>
            </View>
          </>;

@@ -87,12 +87,17 @@ module Business = {
 type payload =
   | Business(Business.t);
 
+type status =
+  | Pending
+  | Received;
+
 type t = {
   id: string,
   level: string,
   timestamp: Js.Date.t,
   block: option(string),
   hash: string,
+  status,
   payload,
 };
 
@@ -106,12 +111,12 @@ let decode = json => {
     block: json |> field("block", optional(string)),
     hash: json |> field("hash", string),
     payload: Business(Business.decode(json)),
+    status: Received,
   };
 };
 
 let decodeFromMempool = json => {
   open Json.Decode;
-  Js.log(json);
   let typ = json |> field("operation_kind", string);
   let op_id = json |> field("id", int);
   let op = json |> field("operation", Js.Json.stringify) |> Json.parseOrRaise;
@@ -119,10 +124,14 @@ let decodeFromMempool = json => {
     id: op_id |> string_of_int,
     level: json |> field("last_seen_level", int) |> string_of_int,
     timestamp:
-      json |> field("last_seen_timestamp", float) |> Js.Date.fromFloat,
+      json
+      |> field("first_seen_timestamp", float)
+      |> ( *. )(1000.)
+      |> Js.Date.fromFloat,
     block: json |> optional(field("block", string)),
     hash: json |> field("ophash", string),
     payload: Business(Business.decode(~typ, ~op_id, op)),
+    status: Pending,
   };
 };
 
