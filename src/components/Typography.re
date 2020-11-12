@@ -84,7 +84,7 @@ module Make = (DefaultStyle: TextDesignStyle) => {
         ~children,
       ) => {
     <Base
-      colorStyle fontSize fontWeightStyle ?ellipsizeMode ?numberOfLines ?style>
+      colorStyle fontSize fontWeightStyle ?numberOfLines ?ellipsizeMode ?style>
       children
     </Base>;
   };

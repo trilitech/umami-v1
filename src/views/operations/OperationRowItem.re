@@ -129,6 +129,7 @@ let make =
                   <View style=styles##cellFee />
                   <View style=styles##cellAddress />
                   <View style=styles##cellAddress />
+                  <View />
                 </>
               | Delegation(_delegation) =>
                 <>

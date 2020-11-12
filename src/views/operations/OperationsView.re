@@ -38,13 +38,24 @@ let sort = op =>
 
 [@react.component]
 let make = () => {
-  let operationsRequest =
-    OperationApiRequest.useGetOperations() /*~limit=100, */;
+  let operations = StoreContext.useOperations();
+  let account = StoreContext.useAccount();
+  let network = StoreContext.useNetwork();
+
+  let (get, operationsRequest) = OperationApiRequest.useGetOperations();
+
+  React.useEffect2(
+    () => {
+      get(network, account);
+      None;
+    },
+    (network, account),
+  );
 
   <View style=styles##container>
     <OperationsHeaderView />
     {switch (operationsRequest) {
-     | Done(Ok(operations)) =>
+     | Done(Ok(_)) =>
        <FlatList
          style=styles##list
          contentContainerStyle=styles##listContent

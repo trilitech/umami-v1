@@ -14,3 +14,14 @@ module Infix = {
 };
 
 include Infix;
+
+module Lib = {
+  module Result = {
+    let iterOk = (r, f) => {
+      switch (r) {
+      | Ok(v) => f(v)
+      | Error(_) => ()
+      };
+    };
+  };
+};
