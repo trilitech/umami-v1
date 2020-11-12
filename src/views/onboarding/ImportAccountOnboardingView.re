@@ -37,7 +37,7 @@ let make = (~onPressCancel) => {
 
   let (mnemonic, setMnemonic) = React.useState(_ => Belt.Array.make(24, ""));
 
-  <ModalView>
+  <ModalView.Form>
     {switch (accountWithMnemonicRequest) {
      | Done(Ok(_result)) =>
        <>
@@ -113,5 +113,5 @@ let make = (~onPressCancel) => {
           }}
        </>
      }}
-  </ModalView>;
+  </ModalView.Form>;
 };

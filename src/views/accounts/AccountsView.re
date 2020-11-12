@@ -65,7 +65,7 @@ let styles =
             ~flexDirection=`row,
             ~justifyContent=`spaceAround,
             ~paddingVertical=78.->dp,
-            ~paddingHorizontal=100.->dp,
+            ~paddingHorizontal=58.->dp,
             ~backgroundColor="rgba(92,92,92,0.32)",
             (),
           ),

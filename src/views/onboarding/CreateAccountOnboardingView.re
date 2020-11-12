@@ -42,7 +42,7 @@ let make = (~onPressCancel) => {
   let mnemonic =
     React.useRef(Bip39.generate(256)->Js.String2.split(" ")).current;
 
-  <ModalView>
+  <ModalView.Form>
     {switch (accountWithMnemonicRequest) {
      | Done(Ok(_result)) =>
        <>
@@ -140,5 +140,5 @@ let make = (~onPressCancel) => {
           }}
        </>
      }}
-  </ModalView>;
+  </ModalView.Form>;
 };
