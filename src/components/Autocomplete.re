@@ -92,11 +92,11 @@ let styles =
 let make =
     (
       ~value,
-      ~handleChange,
+      ~handleChange: string => unit,
       ~error,
-      ~list: array('a),
-      ~renderItem: 'a => React.element,
-      ~keyExtractor: 'a => string,
+      ~list: array('item),
+      ~renderItem: 'item => React.element,
+      ~keyExtractor: 'item => string,
       ~renderLabel: option(bool => React.element)=?,
       ~style as styleFromProp=?,
       ~itemHeight=26.,
@@ -167,7 +167,7 @@ let make =
     | "Enter" =>
       list
       ->Belt.Array.get(selectedItemIndex)
-      ->Belt.Option.map(onChangeItem)
+      ->Belt.Option.map(item => onChangeItem(item->keyExtractor))
       ->ignore
     | _ => ()
     };
@@ -233,7 +233,7 @@ let make =
               ->Belt.Array.mapWithIndex((index, item) =>
                   <Item
                     key={item->keyExtractor}
-                    value=item
+                    value={item->keyExtractor}
                     index
                     isSelected={index == selectedItemIndex}
                     itemHeight
