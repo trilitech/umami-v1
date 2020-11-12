@@ -43,9 +43,7 @@ let isEqualMnemonicWord = (value, mnemonic, verifyMnemonicIndexes, index) => {
     mnemonic->Belt.Array.getExn(
       verifyMnemonicIndexes->Belt.Array.getExn(index),
     );
-  let fieldState: ReSchema.fieldState =
-    value == word ? Valid : Error("not the right word");
-  fieldState;
+  value == word;
 };
 
 [@react.component]
@@ -71,13 +69,17 @@ let make = (~mnemonic, ~onPressCancel, ~goNextStep) => {
                 let errors =
                   words
                   ->Belt.Array.mapWithIndex((index, word) => {
-                      Js.String.length(word) == 0
-                        ? Some({
+                      word->isEqualMnemonicWord(
+                        mnemonic,
+                        verifyMnemonicIndexes,
+                        index,
+                      )
+                        ? None
+                        : Some({
                             ReSchema.error: "Invalid word",
                             index,
                             name: "word",
                           })
-                        : None
                     })
                   ->Belt.Array.keepMap(e => e);
 
