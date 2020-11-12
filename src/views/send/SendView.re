@@ -176,7 +176,6 @@ module Form = {
           <FormButton
             text="OK"
             onPress=onSubmitSendForm
-            disabled={form.formState == Errored}
           />
         </View>
       </>;
