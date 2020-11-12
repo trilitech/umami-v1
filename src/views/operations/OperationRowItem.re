@@ -25,7 +25,7 @@ let styles =
       "cellStatus":
         StyleSheet.flatten([|
           baseCellStyle,
-          style(~flexBasis=120.->dp, ()),
+          style(~flexBasis=120.->dp, ~alignItems=`center, ()),
         |]),
       "cellDate":
         StyleSheet.flatten([|
@@ -40,9 +40,30 @@ let memo = component =>
     prevPros##operation == nextProps##operation
   );
 
+let amount = (account, transaction: Operation.Business.Transaction.t) => {
+  let colorStyle =
+    account->Belt.Option.map((account: Account.t) =>
+      account.address == transaction.destination ? `valid : `error
+    );
+
+  let op = colorStyle == Some(`valid) ? "+" : "-";
+
+  <View style=styles##cellAmount>
+    <Typography.Body1 ?colorStyle>
+      op->React.string
+      " "->React.string
+      {transaction.amount->BusinessUtils.formatMilliXTZ->React.string}
+      " "->React.string
+      BusinessUtils.xtz->React.string
+    </Typography.Body1>
+  </View>;
+};
+
 [@react.component]
 let make =
   memo((~operation: Operation.t) => {
+    let account = StoreContext.useAccount();
+
     <RowItem.Bordered height=48.>
       {_ => {
          <>
@@ -73,13 +94,7 @@ let make =
                       "Transaction"->React.string
                     </Typography.Body1>
                   </View>
-                  <View style=styles##cellAmount>
-                    <Typography.Body1>
-                      {transaction.amount
-                       ->BusinessUtils.formatMilliXTZ
-                       ->React.string}
-                    </Typography.Body1>
-                  </View>
+                  {amount(account, transaction)}
                   <View style=styles##cellFee>
                     <Typography.Body1>
                       {business.fee->BusinessUtils.formatMilliXTZ->React.string}
@@ -139,5 +154,5 @@ let make =
            </View>
          </>;
        }}
-    </RowItem.Bordered>
+    </RowItem.Bordered>;
   });

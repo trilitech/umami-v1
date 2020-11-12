@@ -18,6 +18,12 @@ let explorer = ((network: Network.t, config: ConfigFile.t)) =>
     config.explorerTest->Belt.Option.getWithDefault(ConfigFile.explorerTest)
   };
 
+module Path = {
+  let delegates = "chains/main/blocks/head/context/delegates\\?active=true";
+  let operations = "operations";
+  let mempool_operations = "mempool_operations";
+};
+
 module URL = {
   let arg_opt = (v, n, f) => v->Belt.Option.map(a => (n, f(a)));
 
@@ -26,7 +32,10 @@ module URL = {
     |> Js.Array.joinWith("&");
 
   let build_url = (network, path, args) => {
-    explorer(network) ++ path ++ (args == [] ? "" : "?" ++ args->build_args);
+    explorer(network)
+    ++ "/"
+    ++ path
+    ++ (args == [] ? "" : "?" ++ args->build_args);
   };
 
   let operations =
