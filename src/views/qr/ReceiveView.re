@@ -30,9 +30,9 @@ let make =
   <ModalView.Form>
     <>
       <Typography.Headline2 style=styles##title>
-        "QR code"->React.string
+        account.alias->React.string
       </Typography.Headline2>
-      <AccountInfo account ?balanceRequest />
+      <AccountInfo account showAlias=false ?balanceRequest />
       <View style=styles##qrContainer>
         <View style=styles##qr>
           <QRCode value={account.address} size=200. />

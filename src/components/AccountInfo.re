@@ -33,11 +33,13 @@ let make =
     (
       ~account: Account.t,
       ~balanceRequest: option(BalanceApiRequest.balanceApiRequest)=?,
+      ~showAlias=true,
     ) => {
   <View style=styles##container>
-    <Typography.Subtitle1 style=styles##alias>
-      account.alias->React.string
-    </Typography.Subtitle1>
+    {<Typography.Subtitle1 style=styles##alias>
+       account.alias->React.string
+     </Typography.Subtitle1>
+     |> ReactUtils.onlyWhen(showAlias)}
     {balanceRequest->Belt.Option.mapWithDefault(
        <View style=styles##balanceEmpty />,
        balance,
