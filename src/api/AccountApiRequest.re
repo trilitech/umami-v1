@@ -62,3 +62,20 @@ let useDeleteAccount = () => {
 
   (request, sendRequest);
 };
+
+/* CreateWithMnemonic */
+
+type createAccountWithMnemonicApiRequest = t(string);
+
+let useCreateAccountWithMnemonic = () => {
+  let (request, setRequest) = React.useState(_ => NotAsked);
+
+  let sendRequest = (name, mnemonic, ~password) => {
+    setRequest(_ => Loading);
+
+    AccountsAPI.addWithMnemonic(name, mnemonic, ~password)
+    ->Future.get(result => setRequest(_ => Done(result)));
+  };
+
+  (request, sendRequest);
+};
