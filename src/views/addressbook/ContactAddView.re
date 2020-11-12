@@ -100,11 +100,7 @@ let make = (~onPressCancel) => {
          />
          <View style=styles##formAction>
            <FormButton text="CANCEL" onPress=onPressCancel />
-           <FormButton
-             text="ADD"
-             onPress=onSubmit
-             disabled={form.formState == Errored}
-           />
+           <FormButton text="ADD" onPress=onSubmit />
          </View>
        </>
      }}

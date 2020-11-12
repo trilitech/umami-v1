@@ -67,7 +67,6 @@ let make = (~onPressCancel, ~operation, ~sendOperation) => {
       <FormButton
         text="SEND"
         onPress={operation->onSubmit}
-        disabled={form.formState == Errored}
       />
     </View>
   </>;
