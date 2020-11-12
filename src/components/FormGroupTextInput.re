@@ -48,6 +48,7 @@ let make =
       ~handleChange,
       ~error,
       ~keyboardType=?,
+      ~onBlur=?,
       ~textContentType=?,
       ~secureTextEntry=?,
       ~decoration: option((~style: Style.t) => React.element)=?,
@@ -68,6 +69,7 @@ let make =
         onChange={(event: TextInput.changeEvent) =>
           handleChange(event.nativeEvent.text)
         }
+        ?onBlur
         ?textContentType
         ?secureTextEntry
         autoCapitalize=`none
