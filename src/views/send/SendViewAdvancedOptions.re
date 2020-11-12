@@ -27,8 +27,9 @@ let xtzDecoration = (~style) =>
 
 [@react.component]
 let make = (~form: SendForm.api) => {
+  let network = StoreContext.useNetwork();
   let (operationSimulateRequest, sendOperationSimulate) =
-    OperationApiRequest.useSimulateOperation();
+    OperationApiRequest.useSimulateOperation(network);
 
   React.useEffect0(() => {
     if (form.values.sender != ""

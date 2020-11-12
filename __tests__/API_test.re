@@ -114,8 +114,9 @@ describe("API tests", ({testAsync}) => {
         id: "9323046000",
         level: "704778",
         timestamp: Js.Date.fromString("2020-09-07T15:13:52Z"),
-        block: "BLmmAGRe4JkyT2aD2vWoFYS6NF4e49XoXvMfcCdvbUmjve8uRkh",
+        block: Some("BLmmAGRe4JkyT2aD2vWoFYS6NF4e49XoXvMfcCdvbUmjve8uRkh"),
         hash: "opZj2yByVxxEg4YRsZcERMqiy9VgnJkzDGQBPdFNycxxsFBZYus",
+        status: Chain,
         payload:
           Business({
             source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
@@ -131,8 +132,9 @@ describe("API tests", ({testAsync}) => {
         id: "9216974000",
         level: "696545",
         timestamp: Js.Date.fromString("2020-09-04T10:00:58Z"),
-        block: "BLK27pNneaexvbE4QwgEqdsSA5NM8f8XMxbYu1ufbhWD7Dhh3eG",
+        block: Some("BLK27pNneaexvbE4QwgEqdsSA5NM8f8XMxbYu1ufbhWD7Dhh3eG"),
         hash: "opQTxvSXMGuZ2rkox6q7ZNQhdp9a1j1ELoVdnHcvrh5ShyocEFD",
+        status: Chain,
         payload:
           Business({
             source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
@@ -230,7 +232,8 @@ describe("API tests", ({testAsync}) => {
         id: "1226434000",
         level: "114452",
         timestamp: Js.Date.fromString("2020-01-15T11:34:47Z"),
-        block: "BMKrQdWfmYtsGVPR7kp2HohJbWRFSB7tWZdRCARVLcNnZTQhJMR",
+        block: Some("BMKrQdWfmYtsGVPR7kp2HohJbWRFSB7tWZdRCARVLcNnZTQhJMR"),
+        status: Chain,
         hash: "oonh7WBBK92yqFi56KENtpJouPuoLSHB3srWymv8WL6orKfo5P1",
         payload:
           Business({
@@ -333,7 +336,8 @@ describe("API tests", ({testAsync}) => {
         id: "9216974000",
         level: "696545",
         timestamp: Js.Date.fromString("2020-09-04T10:00:58Z"),
-        block: "BLK27pNneaexvbE4QwgEqdsSA5NM8f8XMxbYu1ufbhWD7Dhh3eG",
+        block: Some("BLK27pNneaexvbE4QwgEqdsSA5NM8f8XMxbYu1ufbhWD7Dhh3eG"),
+        status: Chain,
         hash: "opQTxvSXMGuZ2rkox6q7ZNQhdp9a1j1ELoVdnHcvrh5ShyocEFD",
         payload:
           Business({
@@ -438,7 +442,8 @@ describe("API tests", ({testAsync}) => {
         id: "7553106000",
         level: "573751",
         timestamp: Js.Date.fromString("2020-07-17T08:20:00Z"),
-        block: "BLvjLexwMByGckFEqn6rAwFMwdN89vZ5L4YZ6UG43w2j2JX7tDG",
+        block: Some("BLvjLexwMByGckFEqn6rAwFMwdN89vZ5L4YZ6UG43w2j2JX7tDG"),
+        status: Chain,
         hash: "oou9e5pWQWZ4GDoT7fiJMwdH85TytZASJMC1VV8GbaDLNsHwoXw",
         payload:
           Business({
@@ -536,7 +541,8 @@ describe("API tests", ({testAsync}) => {
         id: "9323046000",
         level: "704778",
         timestamp: Js.Date.fromString("2020-09-07T15:13:52Z"),
-        block: "BLmmAGRe4JkyT2aD2vWoFYS6NF4e49XoXvMfcCdvbUmjve8uRkh",
+        block: Some("BLmmAGRe4JkyT2aD2vWoFYS6NF4e49XoXvMfcCdvbUmjve8uRkh"),
+        status: Chain,
         hash: "opZj2yByVxxEg4YRsZcERMqiy9VgnJkzDGQBPdFNycxxsFBZYus",
         payload:
           Business({
@@ -590,7 +596,8 @@ describe("API tests", ({testAsync}) => {
         id: "9323046000",
         level: "704778",
         timestamp: Js.Date.fromString("2020-09-07T15:13:52Z"),
-        block: "BLmmAGRe4JkyT2aD2vWoFYS6NF4e49XoXvMfcCdvbUmjve8uRkh",
+        block: Some("BLmmAGRe4JkyT2aD2vWoFYS6NF4e49XoXvMfcCdvbUmjve8uRkh"),
+        status: Chain,
         hash: "opZj2yByVxxEg4YRsZcERMqiy9VgnJkzDGQBPdFNycxxsFBZYus",
         payload:
           Business({

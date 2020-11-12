@@ -60,6 +60,9 @@ let make = () => {
           "TIMESTAMP"->React.string
         </Typography.Overline3>
       </View>
+      <View style=OperationRowItem.styles##cellStatus>
+        <Typography.Overline3> "STATUS"->React.string </Typography.Overline3>
+      </View>
     </View>
   </View>;
 };

@@ -185,12 +185,21 @@ module Form = {
 [@react.component]
 let make = (~onPressCancel) => {
   let account = StoreContext.useAccount();
+  let network = StoreContext.useNetwork();
+  let (refreshOperations, _) = OperationApiRequest.useGetOperations();
 
   let (advancedOptionOpened, _) as advancedOptionState =
     React.useState(_ => false);
 
   let (operationRequest, sendOperation) =
-    OperationApiRequest.useCreateOperation();
+    OperationApiRequest.useCreateOperation(network);
+
+  let sendOperation = op =>
+    op
+    ->sendOperation
+    ->Future.get(res =>
+        res->Belt.Result.isOk ? refreshOperations(network, account) : ()
+      );
 
   let (modalStep, setModalStep) = React.useState(_ => SendStep);
 
@@ -198,6 +207,8 @@ let make = (~onPressCancel) => {
     Form.build(account, advancedOptionOpened, op =>
       setModalStep(_ => PasswordStep(op))
     );
+
+  React.useEffect0(() => {None});
 
   <ModalView.Form>
     {switch (modalStep, operationRequest) {

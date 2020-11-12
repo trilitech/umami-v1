@@ -1,13 +1,11 @@
 include ApiRequest;
-
 module OperationsAPI = API.Operations(API.TezosClient, API.TezosExplorer);
 
 /* Create */
 
 type createOperationApiRequest = t(string);
 
-let useCreateOperation = () => {
-  let network = StoreContext.useNetwork();
+let useCreateOperation = network => {
   let config = ConfigContext.useConfig();
 
   let (request, setRequest) = React.useState(_ => NotAsked);
@@ -19,7 +17,7 @@ let useCreateOperation = () => {
 
     (network, config)
     ->OperationsAPI.create(operation)
-    ->Future.get(result => {
+    ->Future.tap(result => {
         switch (result) {
         | Error(msg) =>
           addError(Error.{kind: Operation, msg, timestamp: Js.Date.now()})
@@ -36,8 +34,7 @@ let useCreateOperation = () => {
 
 type simulateOperationApiRequest = t(string);
 
-let useSimulateOperation = () => {
-  let network = StoreContext.useNetwork();
+let useSimulateOperation = network => {
   let config = ConfigContext.useConfig();
 
   let (request, setRequest) = React.useState(_ => NotAsked);
@@ -58,27 +55,29 @@ let useSimulateOperation = () => {
 type getOperationsApiRequest = t(array(Operation.t));
 
 let useGetOperations = (~limit=?, ~types=?, ()) => {
-  let network = StoreContext.useNetwork();
-  let account = StoreContext.useAccount();
+  let setOperations = StoreContext.useSetOperations();
 
   let (request, setRequest) = React.useState(_ => NotAsked);
   let config = ConfigContext.useConfig();
 
-  React.useEffect5(
-    () => {
-      switch (account) {
-      | Some(account) =>
-        setRequest(_ => Loading);
-        (network, config)
-        ->OperationsAPI.get(account.address, ~limit?, ~types?, ())
-        ->Future.get(result => setRequest(_ => Done(result)));
-      | None => ()
-      };
+  let get = (network, account: option(Account.t)) => {
+    switch (account) {
+    | Some(account) =>
+      setRequest(_ => Loading);
+      (network, config)
+      ->OperationsAPI.get(
+          account.address,
+          ~limit?,
+          ~types?,
+          ~mempool=true,
+          (),
+        )
+      ->Future.tapOk(res => setOperations(_ => res))
+      ->Future.get(result => setRequest(_ => {Done(result)}));
+    | None => ()
+    };
+    ();
+  };
 
-      None;
-    },
-    (network, account, limit, types, setRequest),
-  );
-
-  request;
+  (get, request);
 };

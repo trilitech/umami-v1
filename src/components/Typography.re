@@ -1,6 +1,12 @@
 open ReactNative;
 
-type colorStyle = [ | `highEmphasis | `mediumEmphasis | `disabled | `error];
+type colorStyle = [
+  | `highEmphasis
+  | `mediumEmphasis
+  | `disabled
+  | `error
+  | `valid
+];
 
 let getColor = colorStyle =>
   switch (colorStyle) {
@@ -8,6 +14,7 @@ let getColor = colorStyle =>
   | `mediumEmphasis => Theme.colorDarkMediumEmphasis
   | `disabled => Theme.colorDarkDisabled
   | `error => Theme.colorDarkError
+  | `valid => Theme.colorDarkValid
   };
 
 type fontWeightStyle = [ | `black | `heavy | `medium | `book | `light];
@@ -77,7 +84,7 @@ module Make = (DefaultStyle: TextDesignStyle) => {
         ~children,
       ) => {
     <Base
-      colorStyle fontSize fontWeightStyle ?ellipsizeMode ?numberOfLines ?style>
+      colorStyle fontSize fontWeightStyle ?numberOfLines ?ellipsizeMode ?style>
       children
     </Base>;
   };

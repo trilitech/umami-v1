@@ -3,6 +3,8 @@ type state = {
   selectedAccount: option(string),
   accounts: option(Belt.Map.String.t(Account.t)),
   updateAccount: string => unit,
+  operations: array(Operation.t),
+  setOperations: (array(Operation.t) => array(Operation.t)) => unit,
 };
 
 // Context and Provider
@@ -12,6 +14,8 @@ let initialState = {
   selectedAccount: None,
   accounts: None,
   updateAccount: _ => (),
+  operations: [||],
+  setOperations: _ => (),
 };
 
 let context = React.createContext(initialState);
@@ -72,7 +76,17 @@ let make = (~children) => {
       [|accountsRequest|],
     );
 
-  <Provider value={network, selectedAccount, accounts, updateAccount}>
+  let (operations, setOperations) = React.useState(() => [||]);
+
+  <Provider
+    value={
+      network,
+      selectedAccount,
+      accounts,
+      updateAccount,
+      operations,
+      setOperations,
+    }>
     children
   </Provider>;
 };
@@ -111,4 +125,24 @@ let useAccountFromAddress = address => {
   accounts->Belt.Option.flatMap(accounts =>
     accounts->Belt.Map.String.get(address)
   );
+};
+
+let getAlias = (accounts, address) => {
+  accounts
+  ->Belt.Option.flatMap(accounts =>
+      accounts
+      ->Belt.Map.String.get(address)
+      ->Belt.Option.map((acc: Account.t) => acc.alias)
+    )
+  ->Belt.Option.getWithDefault(address);
+};
+
+let useSetOperations = () => {
+  let store = useStoreContext();
+  store.setOperations;
+};
+
+let useOperations = () => {
+  let store = useStoreContext();
+  store.operations;
 };

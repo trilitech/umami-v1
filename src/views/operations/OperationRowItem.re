@@ -22,6 +22,11 @@ let styles =
           baseCellStyle,
           style(~flexBasis=180.->dp, ~flexShrink=1., ~flexGrow=1., ()),
         |]),
+      "cellStatus":
+        StyleSheet.flatten([|
+          baseCellStyle,
+          style(~flexBasis=120.->dp, ~alignItems=`center, ()),
+        |]),
       "cellDate":
         StyleSheet.flatten([|
           baseCellStyle,
@@ -35,9 +40,32 @@ let memo = component =>
     prevPros##operation == nextProps##operation
   );
 
+let amount = (account, transaction: Operation.Business.Transaction.t) => {
+  let colorStyle =
+    account->Belt.Option.map((account: Account.t) =>
+      account.address == transaction.destination ? `valid : `error
+    );
+
+  let op = colorStyle == Some(`valid) ? "+" : "-";
+
+  <View style=styles##cellAmount>
+    <Typography.Body1 ?colorStyle>
+      op->React.string
+      " "->React.string
+      {transaction.amount->BusinessUtils.formatMilliXTZ->React.string}
+      " "->React.string
+      BusinessUtils.xtz->React.string
+    </Typography.Body1>
+  </View>;
+};
+
 [@react.component]
 let make =
   memo((~operation: Operation.t) => {
+    let account = StoreContext.useAccount();
+
+    let accounts = StoreContext.useAccounts();
+
     <RowItem.Bordered height=48.>
       {_ => {
          <>
@@ -68,13 +96,7 @@ let make =
                       "Transaction"->React.string
                     </Typography.Body1>
                   </View>
-                  <View style=styles##cellAmount>
-                    <Typography.Body1>
-                      {transaction.amount
-                       ->BusinessUtils.formatMilliXTZ
-                       ->React.string}
-                    </Typography.Body1>
-                  </View>
+                  {amount(account, transaction)}
                   <View style=styles##cellFee>
                     <Typography.Body1>
                       {business.fee->BusinessUtils.formatMilliXTZ->React.string}
@@ -82,12 +104,17 @@ let make =
                   </View>
                   <View style=styles##cellAddress>
                     <Typography.Body1 numberOfLines=1>
-                      business.source->React.string
+                      {StoreContext.getAlias(accounts, business.source)
+                       ->React.string}
                     </Typography.Body1>
                   </View>
                   <View style=styles##cellAddress>
                     <Typography.Body1 numberOfLines=1>
-                      transaction.destination->React.string
+                      {StoreContext.getAlias(
+                         accounts,
+                         transaction.destination,
+                       )
+                       ->React.string}
                     </Typography.Body1>
                   </View>
                 </>
@@ -102,6 +129,7 @@ let make =
                   <View style=styles##cellFee />
                   <View style=styles##cellAddress />
                   <View style=styles##cellAddress />
+                  <View />
                 </>
               | Delegation(_delegation) =>
                 <>
@@ -120,10 +148,19 @@ let make =
             }}
            <View style=styles##cellDate>
              <Typography.Body1>
-               {operation.timestamp->Js.Date.toISOString->React.string}
+               {operation.timestamp->Js.Date.toLocaleString->React.string}
+             </Typography.Body1>
+           </View>
+           <View style=styles##cellStatus>
+             <Typography.Body1>
+               {switch (operation.status) {
+                | Mempool => "in mempool"
+                | Chain => "in chain"
+                }}
+               ->React.string
              </Typography.Body1>
            </View>
          </>;
        }}
-    </RowItem.Bordered>
+    </RowItem.Bordered>;
   });
