@@ -215,7 +215,7 @@ let make = (~displayIndex, ~value, ~handleChange, ~error) => {
       autoCorrect=false
       autoFocus=false
     />
-    {hasFocus && wordlists->Belt.Array.size > 0
+    {hasFocus && wordlists->Belt.Array.size > 0 && value->Js.String.length > 0
        ? <View>
            <ScrollView
              ref={scrollViewRef->Ref.value}
