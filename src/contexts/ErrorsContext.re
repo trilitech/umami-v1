@@ -33,21 +33,7 @@ let make = (~children) => {
   };
 
   let (errors, add, delete, clear) = {
-    let (errors, setErrors) =
-      React.useState(() =>
-        [
-          Error.{
-            kind: Operation,
-            msg: "this transaction was not permitted because turtles",
-            timestamp: Js.Date.now(),
-          },
-          Error.{
-            kind: Connection,
-            msg: "broken connection of your wallet baby",
-            timestamp: Js.Date.now() +. 1.,
-          },
-        ]
-      );
+    let (errors, setErrors) = React.useState(() => []);
 
     let delete = (i: int) => {
       setErrors(es => es->Belt.List.keepWithIndex((_, i') => i != i'));
