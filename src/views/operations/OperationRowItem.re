@@ -35,12 +35,6 @@ let memo = component =>
     prevPros##operation == nextProps##operation
   );
 
-let toTez = mutez =>
-  mutez
-  ->Belt.Float.fromString
-  ->Belt.Option.mapWithDefault(0.0, x => x /. 1000000.0)
-  ->Belt.Float.toString;
-
 [@react.component]
 let make =
   memo((~operation: Operation.t) => {
@@ -61,7 +55,7 @@ let make =
                   <View style=styles##cellAmount />
                   <View style=styles##cellFee>
                     <Typography.Body1>
-                      {business.fee->toTez->React.string}
+                      {business.fee->BusinessUtils.formatMilliXTZ->React.string}
                     </Typography.Body1>
                   </View>
                   <View style=styles##cellAddress />
@@ -76,12 +70,14 @@ let make =
                   </View>
                   <View style=styles##cellAmount>
                     <Typography.Body1>
-                      {transaction.amount->toTez->React.string}
+                      {transaction.amount
+                       ->BusinessUtils.formatMilliXTZ
+                       ->React.string}
                     </Typography.Body1>
                   </View>
                   <View style=styles##cellFee>
                     <Typography.Body1>
-                      {business.fee->toTez->React.string}
+                      {business.fee->BusinessUtils.formatMilliXTZ->React.string}
                     </Typography.Body1>
                   </View>
                   <View style=styles##cellAddress>

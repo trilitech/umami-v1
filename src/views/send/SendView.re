@@ -129,12 +129,11 @@ module Form = {
         <Typography.Headline2 style=styles##title>
           "Send"->React.string
         </Typography.Headline2>
-        <FormGroupTextInput
+        <FormGroupXTZInput
           label="Amount"
           value={form.values.amount}
           handleChange={form.handleChange(Amount)}
           error={form.getFieldError(Field(Amount))}
-          keyboardType=`numeric
         />
         <FormGroupAccountSelector
           label="Sender account"

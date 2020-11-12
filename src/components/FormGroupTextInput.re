@@ -25,6 +25,18 @@ let styles =
           (),
         ),
       "label": style(~marginBottom=6.->dp, ()),
+      "decoration":
+        style(
+          ~display=`flex,
+          ~alignItems=`center,
+          ~position=`absolute,
+          ~marginTop=auto,
+          ~marginBottom=auto,
+          ~top=0.->dp,
+          ~bottom=0.->dp,
+          ~right=10.->dp,
+          (),
+        ),
     })
   );
 
@@ -36,30 +48,36 @@ let make =
       ~handleChange,
       ~error,
       ~keyboardType=?,
+      ~onBlur=?,
       ~textContentType=?,
       ~secureTextEntry=?,
+      ~decoration: option((~style: Style.t) => React.element)=?,
       ~style: option(ReactNative.Style.t)=?,
     ) => {
   let hasError = error->Belt.Option.isSome;
   <FormGroup ?style>
     <FormLabel label hasError style=styles##label />
-    <TextInput
-      style=Style.(
-        arrayOption([|
-          Some(styles##input),
-          hasError ? Some(styles##inputError) : None,
-        |])
-      )
-      value
-      onChange={(event: TextInput.changeEvent) =>
-        handleChange(event.nativeEvent.text)
-      }
-      ?textContentType
-      ?secureTextEntry
-      autoCapitalize=`none
-      autoCorrect=false
-      autoFocus=false
-      ?keyboardType
-    />
+    <View>
+      <TextInput
+        style=Style.(
+          arrayOption([|
+            Some(styles##input),
+            hasError ? Some(styles##inputError) : None,
+          |])
+        )
+        value
+        onChange={(event: TextInput.changeEvent) =>
+          handleChange(event.nativeEvent.text)
+        }
+        ?onBlur
+        ?textContentType
+        ?secureTextEntry
+        autoCapitalize=`none
+        autoCorrect=false
+        autoFocus=false
+        ?keyboardType
+      />
+      {decoration->ReactUtils.mapOpt(deco => deco(~style=styles##decoration))}
+    </View>
   </FormGroup>;
 };

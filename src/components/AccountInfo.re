@@ -12,6 +12,22 @@ let styles =
     })
   );
 
+let balance = (request: BalanceApiRequest.balanceApiRequest) => {
+  <Typography.Subtitle3 style=styles##balance>
+    {switch (request) {
+     | Done(Ok(balance)) => balance->React.string
+     | Done(Error(error)) => error->React.string
+     | NotAsked
+     | Loading =>
+       <ActivityIndicator
+         animating=true
+         size={ActivityIndicator_Size.exact(19.)}
+         color=Colors.highIcon
+       />
+     }}
+  </Typography.Subtitle3>;
+};
+
 [@react.component]
 let make =
     (
@@ -23,20 +39,8 @@ let make =
       account.alias->React.string
     </Typography.Subtitle1>
     {balanceRequest->Belt.Option.mapWithDefault(
-       <View style=styles##balanceEmpty />, balanceRequest =>
-       <Typography.Subtitle3 style=styles##balance>
-         {switch (balanceRequest) {
-          | Done(Ok(balance)) => balance->React.string
-          | Done(Error(error)) => error->React.string
-          | NotAsked
-          | Loading =>
-            <ActivityIndicator
-              animating=true
-              size={ActivityIndicator_Size.exact(19.)}
-              color=Colors.highIcon
-            />
-          }}
-       </Typography.Subtitle3>
+       <View style=styles##balanceEmpty />,
+       balance,
      )}
     <Typography.Subtitle4 style=styles##addressLabel>
       "Address"->React.string

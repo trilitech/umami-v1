@@ -39,14 +39,15 @@ let make = (~onPressCancel, ~operation, ~sendOperation) => {
       <Typography.Headline2>
         {Js.Float.toFixedWithPrecision(operation.Injection.amount, ~digits=1)
          ->React.string}
-        " XTZ"->React.string
+        BusinessUtils.xtz->React.string
       </Typography.Headline2>
       {operation.Injection.fee
        ->ReactUtils.mapOpt(fee =>
            <Typography.Body1 colorStyle=`mediumEmphasis>
              "+ Fee "->React.string
              {fee->Js.Float.toString->React.string}
-             " XTZ"->React.string
+             " "->React.string
+             BusinessUtils.xtz->React.string
            </Typography.Body1>
          )}
     </View>
