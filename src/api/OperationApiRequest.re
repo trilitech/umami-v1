@@ -12,11 +12,11 @@ let useCreateOperation = network => {
 
   let addError = ErrorsContext.useAddError();
 
-  let sendRequest = operation => {
+  let sendRequest = (operation, ~password) => {
     setRequest(_ => Loading);
 
     (network, config)
-    ->OperationsAPI.create(operation)
+    ->OperationsAPI.inject(operation, ~password)
     ->Future.tap(result => {
         switch (result) {
         | Error(msg) =>

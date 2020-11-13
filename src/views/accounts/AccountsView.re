@@ -83,6 +83,7 @@ let make = () => {
              <AddAccountButton />
              {accounts
               ->Belt.Map.String.valuesToArray
+              ->Belt.SortArray.stableSortBy((a, b) => Pervasives.compare(a.alias, b.alias))
               ->Belt.Array.map(account =>
                   <AccountRowItem key={account.address} account />
                 )

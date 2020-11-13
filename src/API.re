@@ -285,10 +285,11 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
   let simulate = (network, operation: Injection.operation) =>
     Caller.call(
       arguments(network, operation)->Js.Array2.concat([|"-D"|]),
-      ~inputs=switch (LocalStorage.getItem("password")->Js.Nullable.toOption) {
+      ~inputs=
+        switch (LocalStorage.getItem("password")->Js.Nullable.toOption) {
         | Some(password) => [|password|]
         | None => [||]
-      },
+        },
       (),
     )
     ->Future.tapOk(Js.log)
@@ -417,7 +418,10 @@ module Accounts = (Caller: CallerAPI) => {
       ~inputs=[|mnemonic, "", password, password|],
       (),
     )
-    ->Future.tapOk(_ => LocalStorage.setItem("password", password));
+    ->Future.tapOk(_ => {
+        LocalStorage.setItem("mnemonic", mnemonic);
+        LocalStorage.setItem("password", password);
+      });
 
   let restore = (~config, backupPhrase, name, ~derivationPath=?, ()) => {
     switch (derivationPath) {
@@ -488,6 +492,7 @@ module Scanner = (Caller: CallerAPI, Getter: GetterAPI) => {
   let rec scan = (network, backupPhrase, baseName, ~derivationSchema, ~index) => {
     let seed = HD.BIP39.mnemonicToSeedSync(backupPhrase);
     let suffix = index->Js.Int.toString;
+    LocalStorage.setItem("index", suffix)
     let derivationPath = derivationSchema->Js.String2.replace("?", suffix);
     let edsk2 = HD.seedToPrivateKey(HD.deriveSeed(seed, derivationPath));
     Js.log(baseName ++ index->Js.Int.toString ++ " " ++ edsk2);
