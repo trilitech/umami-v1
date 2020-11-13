@@ -194,9 +194,8 @@ let make = (~onPressCancel) => {
   let (operationRequest, sendOperation) =
     OperationApiRequest.useCreateOperation(network);
 
-  let sendOperation = op =>
-    op
-    ->sendOperation
+  let sendOperation = (op, ~password) =>
+    sendOperation(op, ~password)
     ->Future.get(res =>
         res->Belt.Result.isOk ? refreshOperations(network, account) : ()
       );

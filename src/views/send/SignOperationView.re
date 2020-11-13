@@ -31,7 +31,7 @@ let make = (~onPressCancel, ~operation, ~sendOperation) => {
     // checking password
     // getting stored data
     form.submit();
-    sendOperation(Injection.Transaction(operation));
+    sendOperation(Injection.Transaction(operation), ~password=form.values.password);
   };
 
   <>

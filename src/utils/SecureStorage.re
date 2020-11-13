@@ -152,15 +152,8 @@ module Cipher = {
 
 type json = Js.Json.t;
 
-[@bs.val] [@bs.scope "localStorage"]
-external getItem: string => Js.Nullable.t(string) = "getItem";
-[@bs.val] [@bs.scope "localStorage"]
-external setItem: (string, string) => unit = "setItem";
-
-[@bs.val] [@bs.scope "localStorage"] external clear: unit => unit = "clear";
-
 let getEncryptedData = key =>
-  getItem(key)
+  LocalStorage.getItem(key)
   ->Js.Nullable.toOption
   ->Belt.Option.flatMap(Json.parse)
   ->Belt.Option.map(json =>
@@ -180,5 +173,5 @@ let setEncryptedData = (key, data) => {
     ])
   )
   ->Json.stringify
-  |> setItem(key);
+  |> LocalStorage.setItem(key);
 };

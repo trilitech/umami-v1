@@ -53,7 +53,7 @@ let make = (~mnemonic, ~onPressCancel, ~createAccountWithMnemonic) => {
       ~onSubmit=
         ({state}) => {
           createAccountWithMnemonic(
-            "Tezos 1",
+            "Account 1",
             mnemonic->Js.Array2.joinWith(" "),
             ~password=state.values.password,
           );
