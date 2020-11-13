@@ -4,6 +4,7 @@ For an intro to the Project:
  * Timeline: [Past](/docs/operative/history.md) / [Future](/docs/operative/project_plan.md)
 
 For internal details:
+ * Tech Stack: [Architecture](/docs/operative/architecture.md)
  * Features yet-to-be-implemented: [Backlog](/docs/operative/backlog.md)
  * Product Strategy: [Product Plan](/docs/operative/product_plan.md)
  * Risk Management: [Risks](/docs/operative/risks.md)
