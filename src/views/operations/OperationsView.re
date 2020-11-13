@@ -32,7 +32,7 @@ let sort = op =>
   Operation.(
     op->Belt.SortArray.stableSortInPlaceBy(
       ({timestamp: t1}, {timestamp: t2}) =>
-      - Pervasives.compare(t1, t2)
+      - Pervasives.compare(Js.Date.getTime(t1), Js.Date.getTime(t2))
     )
   );
 
