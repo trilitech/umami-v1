@@ -51,5 +51,7 @@ gantt
     Sprint 6 - UX Integration                         :done  , 2020-10-05, 2020-10-16
     section Sprint 7 - Alpha Candidate
     Sprint 7 - Alpha Candidate                        :done  , 2020-10-19, 2020-10-30
+    section Sprint 8 - Alpha
+    Sprint 8 - Alpha                                  :done  , 2020-11-02, 2020-11-13
 ```
 
