@@ -117,7 +117,6 @@ let decode = json => {
 
 let decodeFromMempool = json => {
   open Json.Decode;
-  Js.log(json);
   let typ = json |> field("operation_kind", string);
   let op_id = json |> field("id", int);
   let op = json |> field("operation", Js.Json.stringify) |> Json.parseOrRaise;

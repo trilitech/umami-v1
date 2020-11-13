@@ -31,7 +31,6 @@ let make = (~children) => {
         switch (conf) {
         | Ok(conf) =>
           let conf = ConfigFile.parse(conf);
-          Js.log(conf);
           setConfig(_ => conf);
         | Error(e) =>
           switch (ConfigFile.defaultToString()) {
