@@ -41,19 +41,19 @@ The **Product** roadmap plans the To-Market efforts to capture public attention 
 gantt
     title Ref-Wallet Product Roadmap
     section Alpha
-    Branding                                          :active, 2020-09-25, 2020-10-20
-    Simple website                                    :active, 2020-10-20, 2020-10-30
-    Social Media Profiles                             :active, 2020-10-20, 2020-10-30
-    Announce Project & Launch Blog                    :active, 2020-10-30, 2020-10-31
+    Approve Branding                                  :active, 2020-09-25, 2020-11-13
+    Simple website                                    :active, 2020-11-20, 2020-11-30
+    Social Media Profiles                             :active, 2020-11-20, 2020-11-30
+    Announce Project & Launch Blog                    :active, 2020-11-30, 2020-11-30
     section Beta
-    Draft Runbooks & Support Rules                    :active, 2020-11-03, 2020-11-30
-    Establish Support Structure                       :active, 2020-12-01, 2020-12-31
-    Upgrade website                                   :active, 2020-12-15, 2020-12-31
+    Draft Runbooks & Support Rules                    :active, 2020-12-03, 2020-12-30
+    Establish Support Structure                       :active, 2021-01-01, 2021-01-31
+    Upgrade website                                   :active, 2021-01-15, 2021-01-31
     section Release - v 1.0
-    Integrate Help Documentation                      :active, 2021-01-01, 2021-01-15
-    Draft User Manual                                 :active, 2021-01-16, 2021-02-01
+    Integrate Help Documentation                      :active, 2021-02-01, 2021-02-15
+    Draft User Manual                                 :active, 2021-02-16, 2021-03-01
     section Maintenance - v 1.x
-    Maintenance - v 1.x                               :active, 2021-02-01, 2021-05-01
+    Maintenance - v 1.x                               :active, 2021-03-01, 2021-06-01
     section Upgrade - v 2.0
-    Upgrade - v 2.0                                   :active, 2021-02-01, 2021-05-01
+    Upgrade - v 2.0                                   :active, 2021-03-01, 2021-06-01
 ```
