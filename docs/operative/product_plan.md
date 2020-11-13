@@ -42,6 +42,7 @@ gantt
     title Ref-Wallet Product Roadmap
     section Alpha
     Approve Branding                                  :active, 2020-09-25, 2020-11-13
+    Planning.                                         :active, 2020-11-13, 2020-11-20
     Simple website                                    :active, 2020-11-20, 2020-11-30
     Social Media Profiles                             :active, 2020-11-20, 2020-11-30
     Announce Project & Launch Blog                    :active, 2020-11-30, 2020-11-30
