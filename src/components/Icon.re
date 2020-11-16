@@ -1,6 +1,23 @@
 open ReactNative;
 
-type iconName = [ | `home | `history | `receive | `send];
+type iconName = [
+  | `home
+  | `accounts
+  | `history
+  | `addressBook
+  | `receive
+  | `send
+  | `qr
+  | `copy
+  | `close
+  | `add
+  | `edit
+  | `delete
+  | `chevronDown
+  | `checkboxUnselected
+  | `checkboxSelected
+  | `arrowDown
+];
 
 [@react.component]
 let make =
@@ -18,9 +35,22 @@ let make =
     <View ?style>
       {switch (name) {
        | `home => <SVGIconHome width height ?fill />
+       | `accounts => <SVGIconAccount width height ?fill />
        | `history => <SVGIconHistory width height ?fill />
+       | `addressBook => <SVGIconAddressBook width height ?fill />
        | `receive => <SVGIconReceive width height ?fill />
        | `send => <SVGIconSend width height ?fill />
+       | `qr => <SVGIconQr width height ?fill />
+       | `copy => <SVGIconCopy width height ?fill />
+       | `close => <SVGIconClose width height ?fill />
+       | `add => <SVGIconAdd width height ?fill />
+       | `edit => <SVGIconEdit width height ?fill />
+       | `delete => <SVGIconDelete width height ?fill />
+       | `chevronDown => <SVGIconChevronDown width height ?fill />
+       | `checkboxUnselected =>
+         <SVGIconCheckboxUnselected width height ?fill />
+       | `checkboxSelected => <SVGIconCheckboxSelected width height ?fill />
+       | `arrowDown => <SVGIconArrowDown width height ?fill />
        }}
     </View>;
   });

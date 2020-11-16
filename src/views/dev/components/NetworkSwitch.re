@@ -13,7 +13,7 @@ let style =
 
 [@react.component]
 let make = () => {
-  let (network, setNetwork) = React.useContext(Network.context);
+  let (network, setNetwork) = React.useContext(NetworkState.context);
   <View style>
     <Text> "testnet  "->React.string </Text>
     <Switch

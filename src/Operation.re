@@ -55,21 +55,31 @@ module Business = {
     payload,
   };
 
-  let decode = json => {
-    let x =
-      Json.Decode.{
-        source: json |> field("source", string),
-        fee: json |> field("fee", string),
-        op_id: json |> field("op_id", int),
-        payload:
-          switch (json |> field("type", string)) {
-          | "reveal" => Reveal(json->Reveal.decode)
-          | "transaction" => Transaction(json->Transaction.decode)
-          | "origination" => Origination(json->Origination.decode)
-          | "delegation" => Delegation(json->Delegation.decode)
-          | _ => Unknown
-          },
+  let decode = (~typ=?, ~op_id=?, json) => {
+    open Json.Decode;
+
+    let def = (v, f) =>
+      switch (v) {
+      | None => f()
+      | Some(v) => v
       };
+
+    let typ = typ->def(() => json |> field("type", string));
+    let op_id = op_id->def(() => json |> field("op_id", int));
+
+    let x = {
+      source: json |> field("source", string),
+      fee: json |> field("fee", string),
+      op_id,
+      payload:
+        switch (typ) {
+        | "reveal" => Reveal(json->Reveal.decode)
+        | "transaction" => Transaction(json->Transaction.decode)
+        | "origination" => Origination(json->Origination.decode)
+        | "delegation" => Delegation(json->Delegation.decode)
+        | _ => Unknown
+        },
+    };
     x;
   };
 };
@@ -77,21 +87,57 @@ module Business = {
 type payload =
   | Business(Business.t);
 
+type status =
+  | Mempool
+  | Chain;
+
 type t = {
   id: string,
   level: string,
   timestamp: Js.Date.t,
-  block: string,
+  block: option(string),
   hash: string,
+  status,
   payload,
 };
 
-let decode = json =>
+type operation = t;
+
+let decode = json => {
   Json.Decode.{
     id: json |> field("id", string),
     level: json |> field("level", string),
     timestamp: json |> field("timestamp", date),
-    block: json |> field("block", string),
+    block: json |> field("block", optional(string)),
     hash: json |> field("hash", string),
-    payload: Business(json->Business.decode),
+    payload: Business(Business.decode(json)),
+    status: Chain,
   };
+};
+
+let decodeFromMempool = json => {
+  open Json.Decode;
+  let typ = json |> field("operation_kind", string);
+  let op_id = json |> field("id", int);
+  let op = json |> field("operation", Js.Json.stringify) |> Json.parseOrRaise;
+  {
+    id: op_id |> string_of_int,
+    level: json |> field("last_seen_level", int) |> string_of_int,
+    timestamp:
+      json
+      |> field("first_seen_timestamp", float)
+      |> ( *. )(1000.)
+      |> Js.Date.fromFloat,
+    block: json |> optional(field("block", string)),
+    hash: json |> field("ophash", string),
+    payload: Business(Business.decode(~typ, ~op_id, op)),
+    status: Mempool,
+  };
+};
+
+module Comparator =
+  Belt.Id.MakeComparable({
+    type t = operation;
+    let cmp = ({hash: hash1}, {hash: hash2}) =>
+      Pervasives.compare(hash1, hash2);
+  });

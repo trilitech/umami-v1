@@ -7,16 +7,17 @@ module Delegates = API.Delegates(API.TezosExplorer);
 
 [@react.component]
 let make = (~onSubmit) => {
-  let (network, _) = React.useContext(Network.context);
+  let (network, _) = React.useContext(NetworkState.context);
 
   let (source, setSource) = React.useState(() => "");
   let (selectedDelegateIndex, setSelectedDelegateIndex) =
     React.useState(() => 0);
   let (delegates, setDelegates) = React.useState(() => [|"foo", "bar"|]);
+  let config = ConfigContext.useConfig();
 
   React.useEffect2(
     () => {
-      Delegates.get(network)
+      Delegates.get((network, config))
       ->FutureEx.getOk(value => setDelegates(_ => value));
       None;
     },

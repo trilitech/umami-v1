@@ -9,41 +9,75 @@ let styles =
           ~paddingVertical=10.->dp,
           ~paddingLeft=20.->dp,
           ~paddingRight=12.->dp,
-          ~color="rgba(255,255,255,0.8)",
+          ~fontFamily="Avenir",
+          ~color=Theme.colorDarkHighEmphasis,
           ~fontSize=16.,
-          ~fontWeight=`_400,
-          ~borderColor="rgba(255,255,255,0.6)",
+          ~fontWeight=`normal,
+          ~borderColor=Theme.colorDarkMediumEmphasis,
           ~borderWidth=1.,
           ~borderRadius=5.,
           (),
         ),
-      "inputError": style(~color="#f97977", ~borderColor="#f97977", ()),
-      "inputSmall": style(~height=44.->dp, ()),
+      "inputError":
+        style(
+          ~color=Theme.colorDarkError,
+          ~borderColor=Theme.colorDarkError,
+          (),
+        ),
+      "label": style(~marginBottom=6.->dp, ()),
+      "decoration":
+        style(
+          ~display=`flex,
+          ~alignItems=`center,
+          ~position=`absolute,
+          ~marginTop=auto,
+          ~marginBottom=auto,
+          ~top=0.->dp,
+          ~bottom=0.->dp,
+          ~right=10.->dp,
+          (),
+        ),
     })
   );
 
 [@react.component]
 let make =
-    (~label, ~value, ~handleChange, ~error, ~keyboardType=?, ~small=false) => {
+    (
+      ~label,
+      ~value,
+      ~handleChange,
+      ~error,
+      ~keyboardType=?,
+      ~onBlur=?,
+      ~textContentType=?,
+      ~secureTextEntry=?,
+      ~decoration: option((~style: Style.t) => React.element)=?,
+      ~style: option(ReactNative.Style.t)=?,
+    ) => {
   let hasError = error->Belt.Option.isSome;
-  <FormGroup small>
-    <FormLabel label hasError small />
-    <TextInput
-      style=Style.(
-        arrayOption([|
-          Some(styles##input),
-          hasError ? Some(styles##inputError) : None,
-          small ? Some(styles##inputSmall) : None,
-        |])
-      )
-      value
-      onChange={(event: TextInput.changeEvent) =>
-        handleChange(event.nativeEvent.text)
-      }
-      autoCapitalize=`none
-      autoCorrect=false
-      autoFocus=false
-      ?keyboardType
-    />
+  <FormGroup ?style>
+    <FormLabel label hasError style=styles##label />
+    <View>
+      <TextInput
+        style=Style.(
+          arrayOption([|
+            Some(styles##input),
+            hasError ? Some(styles##inputError) : None,
+          |])
+        )
+        value
+        onChange={(event: TextInput.changeEvent) =>
+          handleChange(event.nativeEvent.text)
+        }
+        ?onBlur
+        ?textContentType
+        ?secureTextEntry
+        autoCapitalize=`none
+        autoCorrect=false
+        autoFocus=false
+        ?keyboardType
+      />
+      {decoration->ReactUtils.mapOpt(deco => deco(~style=styles##decoration))}
+    </View>
   </FormGroup>;
 };

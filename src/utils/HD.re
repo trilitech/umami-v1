@@ -1,11 +1,5 @@
 module Buffer = Js.TypedArray2.Uint8Array;
 
-module BufferEx {
-  type t = Buffer.t;
-
-  [@bs.send] external setArrayAt: (t, t, int) => unit = "set";
-};
-
 [@bs.val] [@bs.scope "Buffer"] external nodeBufferfromBytes: Buffer.t => Node_buffer.t = "from";
 
 [@bs.send] external toHex: (Buffer.t, [@bs.as "hex"] _) => string = "toString";

@@ -7,10 +7,11 @@ module AccountsAPI = API.Accounts(API.TezosClient);
 
 [@react.component]
 let make = () => {
-  let (_, setAccounts) = React.useContext(Accounts.context);
-
+  let (_, setAccounts) = React.useContext(AccountsState.context);
+  let config = ConfigContext.useConfig();
   let (backupPhrase, setBackupPhrase) = React.useState(() => "");
   let (name, setName) = React.useState(() => "");
+  let (password, setPassword) = React.useState(() => "");
 
   <View style>
     <TextInput
@@ -23,10 +24,16 @@ let make = () => {
       placeholder="alias"
       value=name
     />
+    <TextInput
+      onChangeText={text => setPassword(_ => text)}
+      placeholder="password"
+      secureTextEntry=true
+      value=password
+    />
     <Button
       onPress={_ =>
-        AccountsAPI.restore(backupPhrase, name, ())
-        ->Future.flatMapOk(_ => AccountsAPI.get())
+        AccountsAPI.addWithMnemonic(~config, name, backupPhrase, ~password)
+        ->Future.flatMapOk(_ => AccountsAPI.get(~config))
         ->Future.get(result =>
             switch (result) {
             | Ok(value) => setAccounts(value)

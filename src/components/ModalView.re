@@ -7,17 +7,40 @@ let styles =
         style(
           ~width=642.->dp,
           ~alignSelf=`center,
-          ~paddingTop=45.->dp,
-          ~paddingBottom=32.->dp,
-          ~paddingHorizontal=110.->dp,
-          ~backgroundColor="#121212",
+          ~backgroundColor=Colors.structBackground,
           ~borderRadius=4.,
           (),
         ),
     })
   );
 
-[@react.component]
-let make = (~children) => {
-  <View style=styles##modal> children </View>;
+let formStyles =
+  Style.(
+    StyleSheet.create({
+      "modal":
+        style(
+          ~paddingTop=45.->dp,
+          ~paddingBottom=32.->dp,
+          ~paddingHorizontal=110.->dp,
+          (),
+        ),
+    })
+  );
+
+module Base = {
+  [@react.component]
+  let make = (~children, ~style=?) => {
+    <View style={Style.arrayOption([|style, Some(styles##modal)|])}>
+      children
+    </View>;
+  };
 };
+
+module Form = {
+  [@react.component]
+  let make = (~children) => {
+    <Base style=formStyles##modal> children </Base>;
+  };
+};
+
+include Base;

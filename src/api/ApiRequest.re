@@ -3,51 +3,28 @@ type t('value) =
   | Loading
   | Done(Belt.Result.t('value, string));
 
-/* OPERATION */
-
-type operationApiRequest = t(string);
-
-module OperationsAPI = API.Operations(API.TezosClient, API.TezosExplorer);
-
-let useOperation = () => {
-  let (network, _) = React.useContext(Network.context);
-
-  let (request, setRequest) = React.useState(_ => NotAsked);
-
-  let sendRequest = operation => {
-    setRequest(_ => Loading);
-
-    network
-    ->OperationsAPI.create(operation)
-    ->Future.get(result => setRequest(_ => Done(result)));
+let getDone = request =>
+  switch (request) {
+  | Done(result) => Some(result)
+  | _ => None
   };
 
-  (request, sendRequest);
-};
+let getDoneOk = request =>
+  switch (request) {
+  | Done(Ok(value)) => Some(value)
+  | _ => None
+  };
 
-/* BALANCE */
+let map = (request, f) =>
+  switch (request) {
+  | Done(result) => f(result)
+  | _ => ()
+  };
 
-type balanceApiRequest = t(string);
+let mapOk = (request, f) =>
+  switch (request) {
+  | Done(Ok(value)) => f(value)
+  | _ => ()
+  };
 
-module BalanceAPI = API.Balance(API.TezosClient);
-
-let useBalance = account => {
-  let (network, _) = React.useContext(Network.context);
-
-  let (request, setRequest) = React.useState(_ => NotAsked);
-
-  React.useEffect3(
-    () => {
-      setRequest(_ => Loading);
-
-      network
-      ->BalanceAPI.get(account)
-      ->Future.get(result => setRequest(_ => Done(result)));
-
-      None;
-    },
-    (network, account, setRequest),
-  );
-
-  request;
-};
+let isLoading = request => request == Loading;

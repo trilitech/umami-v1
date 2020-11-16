@@ -1,12 +1,19 @@
 open TestFramework;
 
+let config = ConfigFile.default;
+
+let network = (Network.Test, config);
+
 describe("API tests", ({testAsync}) => {
   testAsync("runs valid balance test", ({expect, callback}) => {
     module Stub = {
-      let call = _ => Future.value(Ok("stub"));
+      let call = (_, ~inputs=?, ()) => {
+        ignore(inputs);
+        Future.value(Ok("stub"));
+      };
     };
     module UnderTest = API.Balance(Stub);
-    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3")
+    UnderTest.get(network, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3")
     ->Future.get(result => {
         expect.value(result).toEqual(Belt.Result.Ok("stub"));
         callback();
@@ -16,10 +23,13 @@ describe("API tests", ({testAsync}) => {
 
   testAsync("runs invalid balance test", ({expect, callback}) => {
     module Stub = {
-      let call = _ => Future.value(Error("stub"));
+      let call = (_, ~inputs=?, ()) => {
+        ignore(inputs);
+        Future.value(Error("stub"));
+      };
     };
     module UnderTest = API.Balance(Stub);
-    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3")
+    UnderTest.get(network, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3")
     ->Future.get(result => {
         expect.value(result).toEqual(Belt.Result.Error("stub"));
         callback();
@@ -29,8 +39,11 @@ describe("API tests", ({testAsync}) => {
 
   testAsync("runs empty operation list test", ({expect, callback}) => {
     module Dummy = {
-      let call = _ => Future.value(Ok(""))
-    }
+      let call = (_, ~inputs=?, ()) => {
+        ignore(inputs);
+        Future.value(Ok(""));
+      };
+    };
     module Stub = {
       let get = _ => {
         let data = {|[]|};
@@ -39,7 +52,7 @@ describe("API tests", ({testAsync}) => {
     };
     let expected: array(Operation.t) = [||];
     module UnderTest = API.Operations(Dummy, Stub);
-    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.get(network, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(Belt.Result.Ok(expected));
         callback();
@@ -49,7 +62,10 @@ describe("API tests", ({testAsync}) => {
 
   testAsync("runs valid operation list test", ({expect, callback}) => {
     module Dummy = {
-      let call = _ => Future.value(Ok(""))
+      let call = (_, ~inputs=?, ()) => {
+        ignore(inputs);
+        Future.value(Ok(""));
+      };
     };
     module Stub = {
       let get = _ => {
@@ -98,8 +114,9 @@ describe("API tests", ({testAsync}) => {
         id: "9323046000",
         level: "704778",
         timestamp: Js.Date.fromString("2020-09-07T15:13:52Z"),
-        block: "BLmmAGRe4JkyT2aD2vWoFYS6NF4e49XoXvMfcCdvbUmjve8uRkh",
+        block: Some("BLmmAGRe4JkyT2aD2vWoFYS6NF4e49XoXvMfcCdvbUmjve8uRkh"),
         hash: "opZj2yByVxxEg4YRsZcERMqiy9VgnJkzDGQBPdFNycxxsFBZYus",
+        status: Chain,
         payload:
           Business({
             source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
@@ -115,8 +132,9 @@ describe("API tests", ({testAsync}) => {
         id: "9216974000",
         level: "696545",
         timestamp: Js.Date.fromString("2020-09-04T10:00:58Z"),
-        block: "BLK27pNneaexvbE4QwgEqdsSA5NM8f8XMxbYu1ufbhWD7Dhh3eG",
+        block: Some("BLK27pNneaexvbE4QwgEqdsSA5NM8f8XMxbYu1ufbhWD7Dhh3eG"),
         hash: "opQTxvSXMGuZ2rkox6q7ZNQhdp9a1j1ELoVdnHcvrh5ShyocEFD",
+        status: Chain,
         payload:
           Business({
             source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
@@ -132,7 +150,7 @@ describe("API tests", ({testAsync}) => {
       },
     |];
     module UnderTest = API.Operations(Dummy, Stub);
-    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.get(network, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(Belt.Result.Ok(expected));
         callback();
@@ -142,7 +160,10 @@ describe("API tests", ({testAsync}) => {
 
   testAsync("runs invalid operation list test", ({expect, callback}) => {
     module Dummy = {
-      let call = _ => Future.value(Ok(""))
+      let call = (_, ~inputs=?, ()) => {
+        ignore(inputs);
+        Future.value(Ok(""));
+      };
     };
     module Stub = {
       let get = _ => {
@@ -166,7 +187,8 @@ describe("API tests", ({testAsync}) => {
       };
     };
     module UnderTest = API.Operations(Dummy, Stub);
-    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.get(network, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    ->Future.tapError(Js.log)
     ->Future.get(result => {
         expect.value(result).toEqual(
           Belt.Result.Error("Expected field 'block'\n\tin array at index 0"),
@@ -178,7 +200,10 @@ describe("API tests", ({testAsync}) => {
 
   testAsync("runs valid reveal test", ({expect, callback}) => {
     module Dummy = {
-      let call = _ => Future.value(Ok(""))
+      let call = (_, ~inputs=?, ()) => {
+        ignore(inputs);
+        Future.value(Ok(""));
+      };
     };
     module Stub = {
       let get = _ => {
@@ -207,7 +232,8 @@ describe("API tests", ({testAsync}) => {
         id: "1226434000",
         level: "114452",
         timestamp: Js.Date.fromString("2020-01-15T11:34:47Z"),
-        block: "BMKrQdWfmYtsGVPR7kp2HohJbWRFSB7tWZdRCARVLcNnZTQhJMR",
+        block: Some("BMKrQdWfmYtsGVPR7kp2HohJbWRFSB7tWZdRCARVLcNnZTQhJMR"),
+        status: Chain,
         hash: "oonh7WBBK92yqFi56KENtpJouPuoLSHB3srWymv8WL6orKfo5P1",
         payload:
           Business({
@@ -222,7 +248,7 @@ describe("API tests", ({testAsync}) => {
       },
     |];
     module UnderTest = API.Operations(Dummy, Stub);
-    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.get(network, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(Belt.Result.Ok(expected));
         callback();
@@ -232,7 +258,10 @@ describe("API tests", ({testAsync}) => {
 
   testAsync("runs invalid reveal test", ({expect, callback}) => {
     module Dummy = {
-      let call = _ => Future.value(Ok(""))
+      let call = (_, ~inputs=?, ()) => {
+        ignore(inputs);
+        Future.value(Ok(""));
+      };
     };
     module Stub = {
       let get = _ => {
@@ -256,10 +285,12 @@ describe("API tests", ({testAsync}) => {
       };
     };
     module UnderTest = API.Operations(Dummy, Stub);
-    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.get(network, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(
-          Belt.Result.Error("Expected field 'public_key'\n\tin array at index 0"),
+          Belt.Result.Error(
+            "Expected field 'public_key'\n\tin array at index 0",
+          ),
         );
         callback();
       });
@@ -268,7 +299,10 @@ describe("API tests", ({testAsync}) => {
 
   testAsync("runs valid transaction test", ({expect, callback}) => {
     module Dummy = {
-      let call = _ => Future.value(Ok(""))
+      let call = (_, ~inputs=?, ()) => {
+        ignore(inputs);
+        Future.value(Ok(""));
+      };
     };
     module Stub = {
       let get = _ => {
@@ -302,7 +336,8 @@ describe("API tests", ({testAsync}) => {
         id: "9216974000",
         level: "696545",
         timestamp: Js.Date.fromString("2020-09-04T10:00:58Z"),
-        block: "BLK27pNneaexvbE4QwgEqdsSA5NM8f8XMxbYu1ufbhWD7Dhh3eG",
+        block: Some("BLK27pNneaexvbE4QwgEqdsSA5NM8f8XMxbYu1ufbhWD7Dhh3eG"),
+        status: Chain,
         hash: "opQTxvSXMGuZ2rkox6q7ZNQhdp9a1j1ELoVdnHcvrh5ShyocEFD",
         payload:
           Business({
@@ -319,7 +354,7 @@ describe("API tests", ({testAsync}) => {
       },
     |];
     module UnderTest = API.Operations(Dummy, Stub);
-    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.get(network, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(Belt.Result.Ok(expected));
         callback();
@@ -329,7 +364,10 @@ describe("API tests", ({testAsync}) => {
 
   testAsync("runs invalid transaction test", ({expect, callback}) => {
     module Dummy = {
-      let call = _ => Future.value(Ok(""))
+      let call = (_, ~inputs=?, ()) => {
+        ignore(inputs);
+        Future.value(Ok(""));
+      };
     };
     module Stub = {
       let get = _ => {
@@ -358,10 +396,12 @@ describe("API tests", ({testAsync}) => {
       };
     };
     module UnderTest = API.Operations(Dummy, Stub);
-    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.get(network, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(
-          Belt.Result.Error("Expected field 'destination'\n\tin array at index 0"),
+          Belt.Result.Error(
+            "Expected field 'destination'\n\tin array at index 0",
+          ),
         );
         callback();
       });
@@ -370,7 +410,10 @@ describe("API tests", ({testAsync}) => {
 
   testAsync("runs valid origination test", ({expect, callback}) => {
     module Dummy = {
-      let call = _ => Future.value(Ok(""))
+      let call = (_, ~inputs=?, ()) => {
+        ignore(inputs);
+        Future.value(Ok(""));
+      };
     };
     module Stub = {
       let get = _ => {
@@ -399,7 +442,8 @@ describe("API tests", ({testAsync}) => {
         id: "7553106000",
         level: "573751",
         timestamp: Js.Date.fromString("2020-07-17T08:20:00Z"),
-        block: "BLvjLexwMByGckFEqn6rAwFMwdN89vZ5L4YZ6UG43w2j2JX7tDG",
+        block: Some("BLvjLexwMByGckFEqn6rAwFMwdN89vZ5L4YZ6UG43w2j2JX7tDG"),
+        status: Chain,
         hash: "oou9e5pWQWZ4GDoT7fiJMwdH85TytZASJMC1VV8GbaDLNsHwoXw",
         payload:
           Business({
@@ -415,7 +459,7 @@ describe("API tests", ({testAsync}) => {
       },
     |];
     module UnderTest = API.Operations(Dummy, Stub);
-    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.get(network, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(Belt.Result.Ok(expected));
         callback();
@@ -425,7 +469,10 @@ describe("API tests", ({testAsync}) => {
 
   testAsync("runs invalid origination test", ({expect, callback}) => {
     module Dummy = {
-      let call = _ => Future.value(Ok(""))
+      let call = (_, ~inputs=?, ()) => {
+        ignore(inputs);
+        Future.value(Ok(""));
+      };
     };
     module Stub = {
       let get = _ => {
@@ -449,10 +496,12 @@ describe("API tests", ({testAsync}) => {
       };
     };
     module UnderTest = API.Operations(Dummy, Stub);
-    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.get(network, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(
-          Belt.Result.Error("Expected field 'contract_address'\n\tin array at index 0"),
+          Belt.Result.Error(
+            "Expected field 'contract_address'\n\tin array at index 0",
+          ),
         );
         callback();
       });
@@ -461,7 +510,10 @@ describe("API tests", ({testAsync}) => {
 
   testAsync("runs disabled delegation test", ({expect, callback}) => {
     module Dummy = {
-      let call = _ => Future.value(Ok(""))
+      let call = (_, ~inputs=?, ()) => {
+        ignore(inputs);
+        Future.value(Ok(""));
+      };
     };
     module Stub = {
       let get = _ => {
@@ -489,22 +541,20 @@ describe("API tests", ({testAsync}) => {
         id: "9323046000",
         level: "704778",
         timestamp: Js.Date.fromString("2020-09-07T15:13:52Z"),
-        block: "BLmmAGRe4JkyT2aD2vWoFYS6NF4e49XoXvMfcCdvbUmjve8uRkh",
+        block: Some("BLmmAGRe4JkyT2aD2vWoFYS6NF4e49XoXvMfcCdvbUmjve8uRkh"),
+        status: Chain,
         hash: "opZj2yByVxxEg4YRsZcERMqiy9VgnJkzDGQBPdFNycxxsFBZYus",
         payload:
           Business({
             source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
             fee: "1258",
             op_id: 0,
-            payload:
-              Delegation({
-                delegate: None,
-              }),
+            payload: Delegation({delegate: None}),
           }),
       },
     |];
     module UnderTest = API.Operations(Dummy, Stub);
-    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.get(network, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(Belt.Result.Ok(expected));
         callback();
@@ -514,7 +564,10 @@ describe("API tests", ({testAsync}) => {
 
   testAsync("runs valid delegation test", ({expect, callback}) => {
     module Dummy = {
-      let call = _ => Future.value(Ok(""))
+      let call = (_, ~inputs=?, ()) => {
+        ignore(inputs);
+        Future.value(Ok(""));
+      };
     };
     module Stub = {
       let get = _ => {
@@ -543,7 +596,8 @@ describe("API tests", ({testAsync}) => {
         id: "9323046000",
         level: "704778",
         timestamp: Js.Date.fromString("2020-09-07T15:13:52Z"),
-        block: "BLmmAGRe4JkyT2aD2vWoFYS6NF4e49XoXvMfcCdvbUmjve8uRkh",
+        block: Some("BLmmAGRe4JkyT2aD2vWoFYS6NF4e49XoXvMfcCdvbUmjve8uRkh"),
+        status: Chain,
         hash: "opZj2yByVxxEg4YRsZcERMqiy9VgnJkzDGQBPdFNycxxsFBZYus",
         payload:
           Business({
@@ -558,7 +612,7 @@ describe("API tests", ({testAsync}) => {
       },
     |];
     module UnderTest = API.Operations(Dummy, Stub);
-    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.get(network, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(Belt.Result.Ok(expected));
         callback();
@@ -568,7 +622,10 @@ describe("API tests", ({testAsync}) => {
 
   testAsync("runs invalid delegation test", ({expect, callback}) => {
     module Dummy = {
-      let call = _ => Future.value(Ok(""))
+      let call = (_, ~inputs=?, ()) => {
+        ignore(inputs);
+        Future.value(Ok(""));
+      };
     };
     module Stub = {
       let get = _ => {
@@ -591,7 +648,7 @@ describe("API tests", ({testAsync}) => {
       };
     };
     module UnderTest = API.Operations(Dummy, Stub);
-    UnderTest.get(Network.Test, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.get(network, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(
           Belt.Result.Error("Expected field 'type'\n\tin array at index 0"),
@@ -616,7 +673,7 @@ describe("API tests", ({testAsync}) => {
       "tz1NF7b38uQ43N4nmTHvDKpr1Qo5LF9iYawk",
     |];
     module UnderTest = API.Delegates(Stub);
-    UnderTest.get(Network.Test)
+    UnderTest.get(network)
     ->Future.get(result => {
         expect.value(result).toEqual(Belt.Result.Ok(expected));
         callback();
@@ -632,7 +689,7 @@ describe("API tests", ({testAsync}) => {
       };
     };
     module UnderTest = API.Delegates(Stub);
-    UnderTest.get(Network.Test)
+    UnderTest.get(network)
     ->Future.get(result => {
         expect.value(result).toEqual(
           Belt.Result.Error(
