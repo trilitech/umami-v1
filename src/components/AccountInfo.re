@@ -3,11 +3,10 @@ open ReactNative;
 let styles =
   Style.(
     StyleSheet.create({
-      "container": style(~height=82.->dp, ()),
+      "container": style(~height=62.->dp, ()),
       "alias": style(~height=19.->dp, ~marginBottom=2.->dp, ()),
-      "balance": style(~height=19.->dp, ~marginBottom=5.->dp, ()),
+      "balance": style(~height=19.->dp, ~marginBottom=2.->dp, ()),
       "balanceEmpty": style(~height=2.->dp, ()),
-      "addressLabel": style(~height=16.->dp, ~marginBottom=2.->dp, ()),
       "address": style(~height=19.->dp, ()),
     })
   );
@@ -15,7 +14,8 @@ let styles =
 let balance = (request: BalanceApiRequest.balanceApiRequest) => {
   <Typography.Subtitle3 style=styles##balance>
     {switch (request) {
-     | Done(Ok(balance)) => balance->React.string
+     | Done(Ok(balance)) =>
+       (balance->BusinessUtils.formatMilliXTZ ++ " XTZ")->React.string
      | Done(Error(error)) => error->React.string
      | NotAsked
      | Loading =>
@@ -44,9 +44,6 @@ let make =
        <View style=styles##balanceEmpty />,
        balance,
      )}
-    <Typography.Subtitle4 style=styles##addressLabel>
-      "Address"->React.string
-    </Typography.Subtitle4>
     <Typography.Body3 style=styles##address>
       account.address->React.string
     </Typography.Body3>

@@ -18,7 +18,7 @@ module AliasDeleteButton = {
   };
 };
 
-let baseCellStyle = Style.(style(~flexShrink=0., ~marginRight=24.->dp, ()));
+let baseCellStyle = Style.(style(~flexShrink=0., ~marginRight=18.->dp, ()));
 let styles =
   Style.(
     StyleSheet.create({
@@ -30,10 +30,10 @@ let styles =
       "cellAddress":
         StyleSheet.flatten([|
           baseCellStyle,
-          style(~flexBasis=360.->dp, ~flexGrow=1., ()),
+          style(~flexBasis=300.->dp, ~flexGrow=1., ()),
         |]),
       "inner":
-        style(~flexDirection=`row, ~width=600.->dp, ~marginLeft=22.->dp, ()),
+        style(~flexDirection=`row, ~width=520.->dp, ~marginLeft=22.->dp, ()),
       "actionButtons": style(~flexDirection=`row, ()),
     })
   );
@@ -47,33 +47,19 @@ let memo = component =>
 let make =
   memo((~account: Account.t) => {
     <RowItem.Bordered height=46.>
-      {({hovered}: Pressable.interactionState) => {
-         <>
-           <View style=styles##inner>
-             <View style=styles##cellAlias>
-               <Typography.Body1>
-                 account.alias->React.string
-               </Typography.Body1>
-             </View>
-             <View style=styles##cellAddress>
-               <Typography.Body1>
-                 account.address->React.string
-               </Typography.Body1>
-             </View>
-           </View>
-           <View
-             style=Style.(
-               array([|
-                 styles##actionButtons,
-                 ReactUtils.displayOn(hovered),
-               |])
-             )>
-             <ClipboardButton data={account.address} />
-             <QrButton account />
-             <IconButton icon=Icons.Edit.build />
-             <AliasDeleteButton account />
-           </View>
-         </>;
-       }}
+      <View style=styles##inner>
+        <View style=styles##cellAlias>
+          <Typography.Body1> account.alias->React.string </Typography.Body1>
+        </View>
+        <View style=styles##cellAddress>
+          <Typography.Body1> account.address->React.string </Typography.Body1>
+        </View>
+      </View>
+      <View style=styles##actionButtons>
+        <ClipboardButton data={account.address} />
+        <QrButton account />
+        <IconButton icon=Icons.Edit.build />
+        <AliasDeleteButton account />
+      </View>
     </RowItem.Bordered>
   });

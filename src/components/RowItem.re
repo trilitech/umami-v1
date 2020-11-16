@@ -22,28 +22,16 @@ let styles =
 module Base = {
   [@react.component]
   let make = (~height, ~style as stylearg=?, ~children) => {
-    <Pressable>
-      {interactionState =>
-         <View
-           style=Style.(
-             arrayOption([|
-               stylearg,
-               Some(styles##container),
-               Some(style(~height=height->dp, ())),
-             |])
-           )>
-           <View
-             style=Style.(
-               arrayOption([|
-                 Some(styles##innerContainer),
-                 interactionState.hovered
-                   ? Some(styles##containerHovered) : None,
-               |])
-             )>
-             {children(interactionState)}
-           </View>
-         </View>}
-    </Pressable>;
+    <View
+      style=Style.(
+        arrayOption([|
+          stylearg,
+          Some(styles##container),
+          Some(style(~height=height->dp, ())),
+        |])
+      )>
+      <View style=styles##innerContainer> children </View>
+    </View>;
   };
 };
 
@@ -51,19 +39,20 @@ module Bordered = {
   [@react.component]
   let make = (~height, ~style=?, ~children) => {
     <Base height ?style>
-      {interactionState =>
-         <>
-           {<View style=styles##border />}
-           <View style=styles##inner> {children(interactionState)} </View>
-         </>}
+      <View style=styles##border />
+      <View style=styles##inner> children </View>
     </Base>;
   };
 };
 
-[@react.component]
-let make = (~height, ~style=?, ~children) => {
-  <Base ?style height>
-    {interactionState =>
-       <> <View style=styles##inner> {children(interactionState)} </View> </>}
-  </Base>;
+module Pressable = {
+  [@react.component]
+  let make = (~height, ~style=?, ~children) => {
+    <Pressable>
+      {interactionState =>
+         <Base ?style height>
+           <View style=styles##inner> {children(interactionState)} </View>
+         </Base>}
+    </Pressable>;
+  };
 };
