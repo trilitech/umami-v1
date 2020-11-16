@@ -3,7 +3,7 @@
 Here is the list of features that have not yet been implemented:
 
 1. Delegation (UX integration incomplete)
-1. Support [RFC8905](https://tools.ietf.org/html/rfc8905)
+1. Support payto links: [RFC8905](https://tools.ietf.org/html/rfc8905)
 1. Direct Auth
 1. Bulk Transactions
 1. Live transaction status feedback
