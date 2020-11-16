@@ -2,7 +2,10 @@
 
 type kind =
   | Operation
-  | Connection;
+  | Connection
+  | Account
+  | Aliases
+  | Balance;
 
 type timestamp = float;
 
@@ -16,5 +19,8 @@ let print_kind = e => {
   switch (e) {
   | Operation => "Operation"
   | Connection => "Connection"
+  | Balance => "Balance"
+  | Aliases => "Aliases"
+  | Account => "Account"
   };
 };

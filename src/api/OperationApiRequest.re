@@ -3,81 +3,35 @@ module OperationsAPI = API.Operations(API.TezosClient, API.TezosExplorer);
 
 /* Create */
 
-type createOperationApiRequest = t(string);
+type injection = {
+  operation: Injection.operation,
+  password: string,
+};
 
 let useCreateOperation = network => {
-  let config = ConfigContext.useConfig();
-
-  let (request, setRequest) = React.useState(_ => NotAsked);
-
-  let addError = ErrorsContext.useAddError();
-
-  let sendRequest = (operation, ~password) => {
-    setRequest(_ => Loading);
-
-    (network, config)
-    ->OperationsAPI.inject(operation, ~password)
-    ->Future.tap(result => {
-        switch (result) {
-        | Error(msg) =>
-          addError(Error.{kind: Operation, msg, timestamp: Js.Date.now()})
-        | _ => ()
-        };
-        setRequest(_ => Done(result));
-      });
-  };
-
-  (request, sendRequest);
+  let set = (~config, {operation, password}) =>
+    (network, config)->OperationsAPI.inject(operation, ~password);
+  ApiRequest.useSetter(set, Error.Operation, ());
 };
 
 /* Simulate */
 
-type simulateOperationApiRequest = t(string);
-
 let useSimulateOperation = network => {
-  let config = ConfigContext.useConfig();
-
-  let (request, setRequest) = React.useState(_ => NotAsked);
-
-  let sendRequest = operation => {
-    setRequest(_ => Loading);
-
-    (network, config)
-    ->OperationsAPI.simulate(operation)
-    ->Future.get(result => {setRequest(_ => Done(result))});
-  };
-
-  (request, sendRequest);
+  let set = (~config, operation) =>
+    (network, config)->OperationsAPI.simulate(operation);
+  ApiRequest.useSetter(set, Error.Operation, ());
 };
 
 /* Get list */
 
-type getOperationsApiRequest = t(array(Operation.t));
-
 let useGetOperations = (~limit=?, ~types=?, ()) => {
   let setOperations = StoreContext.useSetOperations();
 
-  let (request, setRequest) = React.useState(_ => NotAsked);
-  let config = ConfigContext.useConfig();
-
-  let get = (network, account: option(Account.t)) => {
-    switch (account) {
-    | Some(account) =>
-      setRequest(_ => Loading);
-      (network, config)
-      ->OperationsAPI.get(
-          account.address,
-          ~limit?,
-          ~types?,
-          ~mempool=true,
-          (),
-        )
-      ->Future.tapOk(res => setOperations(_ => res))
-      ->Future.get(result => setRequest(_ => {Done(result)}));
-    | None => ()
-    };
-    ();
+  let get = (~config, (network, account: Account.t)) => {
+    (network, config)
+    ->OperationsAPI.get(account.address, ~limit?, ~types?, ~mempool=true, ())
+    ->Future.tapOk(res => setOperations(_ => res));
   };
 
-  (get, request);
+  ApiRequest.useGetter(get, Error.Operation);
 };

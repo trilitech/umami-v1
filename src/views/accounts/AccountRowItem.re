@@ -3,11 +3,10 @@ open ReactNative;
 module AccountDeleteButton = {
   [@react.component]
   let make = (~account: Account.t) => {
-    let (accountRequest, deleteAccount) =
-      AccountApiRequest.useDeleteAccount();
+    let (accountRequest, deleteAccount) = AccountApiRequest.useDelete();
 
     let onPressConfirmDelete = _e => {
-      deleteAccount(account.alias);
+      deleteAccount(account.alias)->ignore;
     };
 
     <DeleteButton
@@ -35,7 +34,7 @@ let styles =
 
 [@react.component]
 let make = (~account: Account.t) => {
-  let balanceRequest = BalanceApiRequest.useBalance(account.address);
+  let balanceRequest = BalanceApiRequest.useLoad(account.address);
 
   <RowItem.Bordered height=94.>
     {({hovered}: Pressable.interactionState) => {

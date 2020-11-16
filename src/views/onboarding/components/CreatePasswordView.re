@@ -52,11 +52,15 @@ let make = (~mnemonic, ~onPressCancel, ~createAccountWithMnemonic) => {
       },
       ~onSubmit=
         ({state}) => {
+          let mnemonics = mnemonic->Js.Array2.joinWith(" ");
           createAccountWithMnemonic(
-            "Account 1",
-            mnemonic->Js.Array2.joinWith(" "),
-            ~password=state.values.password,
-          );
+            AccountApiRequest.{
+              name: "Account 1",
+              mnemonics,
+              password: state.values.password,
+            },
+          )
+          ->ignore;
 
           None;
         },

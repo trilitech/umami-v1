@@ -33,7 +33,7 @@ let make = (~onPressCancel) => {
   let (formStep, setFormStep) = React.useState(_ => Step1);
 
   let (accountWithMnemonicRequest, createAccountWithMnemonic) =
-    AccountApiRequest.useCreateAccountWithMnemonic();
+    AccountApiRequest.useCreateWithMnemonics();
 
   let (mnemonic, setMnemonic) = React.useState(_ => Belt.Array.make(24, ""));
 
