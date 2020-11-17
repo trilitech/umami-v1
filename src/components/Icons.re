@@ -101,3 +101,4 @@ module CheckboxUnselected = Make(SVGIconCheckboxUnselected);
 module CheckboxSelected = Make(SVGIconCheckboxSelected);
 module Delete = Make(SVGIconDelete);
 module Edit = Make(SVGIconEdit);
+module ArrowDown = Make(SVGIconArrowDown);

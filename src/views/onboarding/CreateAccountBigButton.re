@@ -49,7 +49,7 @@ let make = () => {
   <>
     <TouchableOpacity style=styles##button onPress>
       <View style=styles##iconContainer>
-        <Icon name=`add size=36. color=Colors.plainIconContent />
+        <Icons.Add size=36. color=Colors.plainIconContent />
       </View>
       <Typography.Subtitle2>
         "CREATE NEW ACCOUNT"->React.string

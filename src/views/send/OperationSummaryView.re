@@ -36,7 +36,7 @@ let make = (~style=?, ~transaction: Injection.transaction) => {
   <View ?style>
     <AccountInfo address={transaction.source} title="Sender account" />
     <View style=styles##iconContainer>
-      <Icon name=`arrowDown size=50. color=Theme.colorDarkMediumEmphasis />
+      <Icons.ArrowDown size=50. color=Theme.colorDarkMediumEmphasis />
     </View>
     <AccountInfo address={transaction.destination} title="Recipient account" />
   </View>;
