@@ -15,16 +15,29 @@ let getDoneOk = request =>
   | _ => None
   };
 
+let getOkWithDefault = (request, def) =>
+  switch (request) {
+  | Done(Ok(value)) => value
+  | _ => def
+  };
+
 let map = (request, f) =>
   switch (request) {
   | Done(result) => f(result)
   | _ => ()
   };
 
-let mapOk = (request, f) =>
+let getOk = (request, f) =>
   switch (request) {
   | Done(Ok(value)) => f(value)
   | _ => ()
+  };
+
+let mapOrLoad = (req, f) =>
+  switch (req) {
+  | Done(res) => f(res)
+  | NotAsked
+  | Loading => <LoadingView />
   };
 
 let isLoading = request => request == Loading;
@@ -96,8 +109,8 @@ let useGetter = (get, kind) => {
   let (request, setRequest) = React.useState(_ => NotAsked);
   let config = ConfigContext.useConfig();
 
-  let get = input => {
-    setRequest(_ => Loading);
+  let get = (~loading=true, input) => {
+    loading ? setRequest(_ => Loading) : ();
     get(~config, input)
     ->handleError(addError, kind)
     ->Future.get(result => setRequest(_ => {Done(result)}));

@@ -59,8 +59,7 @@ let make = (~mnemonic, ~onPressCancel, ~createAccountWithMnemonic) => {
               mnemonics,
               password: state.values.password,
             },
-          )
-          ->ignore;
+          );
 
           None;
         },

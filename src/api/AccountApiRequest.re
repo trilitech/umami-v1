@@ -9,6 +9,12 @@ let useLoad = ApiRequest.useLoader(AccountsAPI.get, Error.Account);
 
 let useCreate = ApiRequest.useSetter(AccountsAPI.create, Error.Account);
 
+let useGet = () => {
+  let get = (~config, ()) => AccountsAPI.get(~config)->Future.tapOk(_ => ());
+
+  ApiRequest.useGetter(get, Error.Account);
+};
+
 let useDelete =
   ApiRequest.useSetter(
     (~config, name) => AccountsAPI.delete(name, ~config),

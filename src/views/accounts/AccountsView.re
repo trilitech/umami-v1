@@ -18,7 +18,7 @@ module AddAccountButton = {
     );
 
   [@react.component]
-  let make = () => {
+  let make = (~handleAdd) => {
     let modal = React.useRef(Js.Nullable.null);
 
     let (visibleModal, setVisibleModal) = React.useState(_ => false);
@@ -48,7 +48,7 @@ module AddAccountButton = {
         </Typography.ButtonSecondary>
       </TouchableOpacity>
       <ModalAction ref=modal visible=visibleModal onRequestClose=closeAction>
-        <AccountCreateView onPressCancel />
+        <AccountCreateView onPressCancel handleAdd />
       </ModalAction>
     </>;
   };
@@ -76,29 +76,39 @@ let styles =
 [@react.component]
 let make = () => {
   let accounts = StoreContext.useAccounts();
+  let refreshAccounts = StoreContext.useRefreshAccounts();
+  let accountsRequest = StoreContext.useAccountsRequest();
+  let handleAdd = () => refreshAccounts(~loading=false, ())->ignore;
+  let handleDelete = handleAdd;
+
   <Page>
-    {accounts->Belt.Option.mapWithDefault(<LoadingView />, accounts => {
-       accounts->Belt.Map.String.size > 0
-         ? <>
-             <AddAccountButton />
-             {accounts
-              ->Belt.Map.String.valuesToArray
-              ->Belt.SortArray.stableSortBy((a, b) =>
-                  Pervasives.compare(a.alias, b.alias)
-                )
-              ->Belt.Array.mapWithIndex((index, account) =>
-                  <AccountRowItem
-                    key={account.address}
-                    account
-                    zIndex={accounts->Belt.Map.String.size - index}
-                  />
-                )
-              ->React.array}
-           </>
-         : <View style=styles##scrim>
-             <CreateAccountBigButton />
-             <ImportAccountBigButton />
-           </View>
-     })}
+    {switch (accountsRequest) {
+     | Done(_)
+     | NotAsked when accounts->Belt.Map.String.size < 0 =>
+       <View style=styles##scrim>
+         <CreateAccountBigButton />
+         <ImportAccountBigButton />
+       </View>
+     | _ =>
+       accountsRequest->ApiRequest.mapOrLoad(_ => {
+         <>
+           <AddAccountButton handleAdd />
+           {accounts
+            ->Belt.Map.String.valuesToArray
+            ->Belt.SortArray.stableSortBy((a, b) =>
+                Pervasives.compare(a.alias, b.alias)
+              )
+            ->Belt.Array.mapWithIndex((index, account) =>
+                <AccountRowItem
+                  key={account.address}
+                  account
+                  handleDelete
+                  zIndex={accounts->Belt.Map.String.size - index}
+                />
+              )
+            ->React.array}
+         </>
+       })
+     }}
   </Page>;
 };

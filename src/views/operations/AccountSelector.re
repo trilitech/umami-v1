@@ -59,9 +59,10 @@ let make = (~style=?) => {
 
   let items =
     accounts
-    ->Belt.Option.getWithDefault(Belt.Map.String.empty)
     ->Belt.Map.String.valuesToArray
-    ->Belt.SortArray.stableSortBy((a, b) => Pervasives.compare(a.alias, b.alias))
+    ->Belt.SortArray.stableSortBy((a, b) =>
+        Pervasives.compare(a.alias, b.alias)
+      )
     ->Belt.Array.map(account =>
         {Selector.value: account.address, label: account.alias}
       );
