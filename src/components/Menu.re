@@ -74,10 +74,25 @@ let styles =
 
 [@react.component]
 let make = (~icon: Icons.builder, ~children) => {
+  let pressableRef = React.useRef(Js.Nullable.null);
+
   let (isOpen, setIsOpen) = React.useState(_ => false);
 
+  DocumentContext.useDocumentPress(
+    React.useCallback1(
+      pressEvent =>
+        if (pressableRef.current !==
+            pressEvent->Event.PressEvent.nativeEvent##target) {
+          setIsOpen(_ => false);
+        },
+      [|setIsOpen|],
+    ),
+  );
+
   <View>
-    <Pressable onPress={_ => setIsOpen(isOpen => !isOpen)}>
+    <Pressable
+      ref={pressableRef->Ref.value}
+      onPress={_ => setIsOpen(isOpen => !isOpen)}>
       {({hovered}) =>
          <View
            style=Style.(
@@ -86,7 +101,8 @@ let make = (~icon: Icons.builder, ~children) => {
                hovered ? Some(styles##buttonHovered) : None,
                isOpen ? Some(styles##buttonPressed) : None,
              |])
-           )>
+           )
+           pointerEvents=`none>
            {icon(
               ~style=?None,
               ~size=24.,
@@ -94,10 +110,7 @@ let make = (~icon: Icons.builder, ~children) => {
             )}
          </View>}
     </Pressable>
-    <View
-      style=Style.(style(~display=isOpen ? `flex : `none, ()))
-      onStartShouldSetResponderCapture={_ => true}
-      onResponderRelease={_ => setIsOpen(_ => false)}>
+    <View style={ReactUtils.displayOn(isOpen)}>
       <ScrollView style=styles##listContainer> children </ScrollView>
     </View>
   </View>;

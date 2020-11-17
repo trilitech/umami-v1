@@ -114,36 +114,44 @@ let make =
       |]
       visible
       onRequestClose=closeModal>
-      <View
-        style=Style.(
-          array([|styles##modal, style(~opacity=showContent ? 1. : 0., ())|])
-        )>
-        <TouchableWithoutFeedback onPress={_ => closeModal()}>
+      <DocumentContext>
+        <View
+          style=Style.(
+            array([|
+              styles##modal,
+              style(~opacity=showContent ? 1. : 0., ()),
+            |])
+          )>
+          <TouchableWithoutFeedback onPress={_ => closeModal()}>
+            <Animated.View
+              style=Style.(
+                array([|
+                  styles##modalOverlay,
+                  style(
+                    ~opacity=overlayOpacity->Animated.StyleProp.float,
+                    (),
+                  ),
+                |])
+              )
+            />
+          </TouchableWithoutFeedback>
           <Animated.View
             style=Style.(
               array([|
-                styles##modalOverlay,
-                style(~opacity=overlayOpacity->Animated.StyleProp.float, ()),
+                styles##modalView,
+                style(
+                  ~opacity=viewOpacity->Animated.StyleProp.float,
+                  ~transform=[|
+                    scale(~scale=viewScale->Animated.StyleProp.float),
+                  |],
+                  (),
+                ),
               |])
             )
-          />
-        </TouchableWithoutFeedback>
-        <Animated.View
-          style=Style.(
-            array([|
-              styles##modalView,
-              style(
-                ~opacity=viewOpacity->Animated.StyleProp.float,
-                ~transform=[|
-                  scale(~scale=viewScale->Animated.StyleProp.float),
-                |],
-                (),
-              ),
-            |])
-          )
-          pointerEvents=`boxNone>
-          children
-        </Animated.View>
-      </View>
+            pointerEvents=`boxNone>
+            children
+          </Animated.View>
+        </View>
+      </DocumentContext>
     </Modal>;
   });
