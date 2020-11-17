@@ -17,6 +17,7 @@ let useGetAccounts = () => {
     () => {
       setRequest(_ => Loading);
 
+
       AccountsAPI.get(~config)
       ->Future.tapOk(Js.log)
       ->Future.get(result => setRequest(_ => Done(result)));

@@ -20,17 +20,11 @@ module AppView = {
   let make = () => {
     let url = ReasonReactRouter.useUrl();
     let route = Routes.match(url);
-    let loadConfig = ConfigContext.useLoad();
 
-    React.useEffect0(() => {
-      loadConfig();
-      None;
-    });
+    let confLoaded = ConfigContext.useLoaded();
 
-    <View style=styles##layout>
-      <NavBar route />
-      <View style=styles##main>
-        <Header />
+    let bodyView = () => {
+      <StoreContext>
         <View style=styles##content>
           {switch (route) {
            | Accounts => <AccountsView />
@@ -45,6 +39,14 @@ module AppView = {
              </View>
            }}
         </View>
+      </StoreContext>;
+    };
+
+    <View style=styles##layout>
+      <NavBar route />
+      <View style=styles##main>
+        <Header />
+        {confLoaded ? bodyView() : <LoadingView />}
       </View>
     </View>;
   };
@@ -53,6 +55,6 @@ module AppView = {
 [@react.component]
 let make = () => {
   <ErrorsContext>
-    <StoreContext> <ConfigContext> <AppView /> </ConfigContext> </StoreContext>
+    <ConfigContext> <AppView /> </ConfigContext>
   </ErrorsContext>;
 };
