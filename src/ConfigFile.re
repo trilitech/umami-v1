@@ -8,9 +8,9 @@ type t = {
 [@bs.val] [@bs.scope "JSON"] external parse: string => t = "parse";
 
 let endpointMain = "https://mainnet-tezos.giganode.io";
-let endpointTest = "http://u.lamini.ca/tezos/carthagenet";
+let endpointTest = "https://delphinet-tezos.giganode.io";
 let explorerMain = "https://mezos.lamini.ca/mezos/mainnet7";
-let explorerTest = "https://mezos.lamini.ca/mezos/carthagenet-up/";
+let explorerTest = "https://mezos.lamini.ca/mezos/delphinet";
 
 let default = {
   endpointMain: Some(endpointMain),
