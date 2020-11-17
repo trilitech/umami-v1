@@ -10,8 +10,9 @@ module AccountDeleteButton = {
     };
 
     <DeleteButton
-      title="Delete account?"
-      titleDone="Account deleted"
+      buttonText="Delete account"
+      modalTitle="Delete account?"
+      modalTitleDone="Account deleted"
       onPressConfirmDelete
       request=accountRequest
     />;
@@ -26,6 +27,7 @@ let styles =
         style(
           ~alignSelf=`flexEnd,
           ~flexDirection=`row,
+          ~flex=1.,
           ~marginBottom=(-3.)->dp,
           (),
         ),
@@ -33,16 +35,20 @@ let styles =
   );
 
 [@react.component]
-let make = (~account: Account.t) => {
+let make = (~account: Account.t, ~zIndex) => {
   let balanceRequest = BalanceApiRequest.useLoad(account.address);
 
-  <RowItem.Bordered height=74.>
+  <RowItem.Bordered height=74. style={Style.style(~zIndex, ())}>
     <View style=styles##inner> <AccountInfo account balanceRequest /> </View>
     <View style=styles##actionButtons>
       <ClipboardButton data={account.address} />
       <QrButton account balanceRequest />
-      <IconButton icon=Icons.Edit.build />
-      <AccountDeleteButton account />
+    </View>
+    <View>
+      <Menu icon=Icons.More.build>
+        <Menu.Item text="Edit account" icon=Icons.Edit.build />
+        <AccountDeleteButton account />
+      </Menu>
     </View>
   </RowItem.Bordered>;
 };

@@ -10,8 +10,9 @@ module AliasDeleteButton = {
     };
 
     <DeleteButton
-      title="Delete contact?"
-      titleDone="Contact deleted"
+      buttonText="Delete contact"
+      modalTitle="Delete contact?"
+      modalTitleDone="Contact deleted"
       onPressConfirmDelete
       request=aliasRequest
     />;
@@ -34,7 +35,7 @@ let styles =
         |]),
       "inner":
         style(~flexDirection=`row, ~width=520.->dp, ~marginLeft=22.->dp, ()),
-      "actionButtons": style(~flexDirection=`row, ()),
+      "actionButtons": style(~flexDirection=`row, ~flex=1., ()),
     })
   );
 
@@ -45,8 +46,8 @@ let memo = component =>
 
 [@react.component]
 let make =
-  memo((~account: Account.t) => {
-    <RowItem.Bordered height=46.>
+  memo((~account: Account.t, ~zIndex) => {
+    <RowItem.Bordered height=46. style={Style.style(~zIndex, ())}>
       <View style=styles##inner>
         <View style=styles##cellAlias>
           <Typography.Body1> account.alias->React.string </Typography.Body1>
@@ -58,8 +59,12 @@ let make =
       <View style=styles##actionButtons>
         <ClipboardButton data={account.address} />
         <QrButton account />
-        <IconButton icon=Icons.Edit.build />
-        <AliasDeleteButton account />
+      </View>
+      <View>
+        <Menu icon=Icons.More.build>
+          <Menu.Item text="Edit contact" icon=Icons.Edit.build />
+          <AliasDeleteButton account />
+        </Menu>
       </View>
     </RowItem.Bordered>
   });

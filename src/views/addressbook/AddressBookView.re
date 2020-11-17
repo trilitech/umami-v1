@@ -69,8 +69,12 @@ let make = () => {
            let account: Account.t = {alias, address};
            account;
          })
-       ->Belt.Array.map(account =>
-           <AddressBookRowItem key={account.address} account />
+       ->Belt.Array.mapWithIndex((index, account) =>
+           <AddressBookRowItem
+             key={account.address}
+             account
+             zIndex={aliases->Belt.Array.size - index}
+           />
          )
        ->React.array
      | Done(Error(error)) => <ErrorView error />
