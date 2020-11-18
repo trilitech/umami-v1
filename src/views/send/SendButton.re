@@ -14,13 +14,14 @@ let styles =
           ~backgroundColor="#D8BC63",
           (),
         ),
-      "textButton": style(~marginTop=6.->dp, ~color="rgba(0,0,0,0.87)", ()),
+      "textButton": style(~marginTop=6.->dp, ()),
     })
   );
 
 [@react.component]
 let make = () => {
   let modal = React.useRef(Js.Nullable.null);
+  let account = StoreContext.useAccount();
 
   let (visibleModal, setVisibleModal) = React.useState(_ => false);
   let openAction = () => setVisibleModal(_ => true);
@@ -28,6 +29,14 @@ let make = () => {
 
   let onPress = _e => {
     openAction();
+  };
+  let onPress = account->Belt.Option.map(_ => onPress);
+
+  let (iconColor, colorStyle) = {
+    switch (account) {
+    | Some(_) => (Colors.plainIconContent, `mediumEmphasis)
+    | None => (Theme.colorLightDisabled, `lightDisabled)
+    };
   };
 
   let onPressCancel = _e => {
@@ -38,10 +47,10 @@ let make = () => {
   };
 
   <>
-    <TouchableOpacity style=styles##button onPress>
+    <TouchableOpacity style=styles##button ?onPress>
       <View style=styles##iconContainer>
-        <Icons.Send size=24. color=Colors.plainIconContent />
-        <Typography.ButtonSecondary style=styles##textButton>
+        <Icons.Send size=24. color=iconColor />
+        <Typography.ButtonSecondary colorStyle style=styles##textButton>
           "SEND"->React.string
         </Typography.ButtonSecondary>
       </View>

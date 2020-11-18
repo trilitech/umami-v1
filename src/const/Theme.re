@@ -7,3 +7,4 @@ let colorDarkDisabled = "rgba(255,255,255,0.38)";
 let colorDarkError = "#BB3838";
 let colorDarkValid = "#76E59B";
 let colorDarkSelected = "rgba(255,255,255,0.08)";
+let colorLightDisabled = "rgba(0,0,0,0.38)";
