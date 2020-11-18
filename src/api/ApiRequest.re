@@ -60,7 +60,7 @@ let useLoader1 = (get, kind, arg1) => {
   let (request, setRequest) = React.useState(_ => NotAsked);
   let config = ConfigContext.useConfig();
 
-  React.useEffect2(
+  React.useEffect4(
     () => {
       setRequest(_ => Loading);
 
@@ -70,7 +70,7 @@ let useLoader1 = (get, kind, arg1) => {
 
       None;
     },
-    (setRequest, arg1),
+    (config, arg1, setRequest, addError),
   );
 
   request;
