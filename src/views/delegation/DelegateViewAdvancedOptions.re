@@ -40,7 +40,7 @@ let make = (~form: DelegateForm.api) => {
           (),
         );
 
-      sendOperationSimulate(operation);
+      sendOperationSimulate(operation)->ignore;
     };
 
     None;
