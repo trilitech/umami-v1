@@ -1,3 +1,5 @@
+open Common;
+
 type state = {
   network: Network.t,
   selectedAccount: option(string),
@@ -52,30 +54,10 @@ let make = (~children) => {
     None;
   });
 
-  React.useEffect3(
-    () => {
-      if (selectedAccount->Belt.Option.isNone) {
-        let firstAccount =
-          accountsRequest
-          ->ApiRequest.getDoneOk
-          ->Belt.Option.getWithDefault([||])
-          ->Belt.Array.reverse
-          ->Belt.Array.get(0);
-
-        switch (firstAccount) {
-        | Some((_alias, address)) => setSelectedAccount(_ => Some(address))
-        | None => ()
-        };
-      };
-      None;
-    },
-    (accountsRequest, selectedAccount, setSelectedAccount),
-  );
-
   let refreshAccounts = (~loading=?, ()) =>
     getAccounts(~loading?, ())->ignore;
 
-  let accounts =
+  let accountsArray =
     React.useMemo1(
       () => {
         accountsRequest
@@ -84,10 +66,30 @@ let make = (~children) => {
             let account: Account.t = {alias, address};
             (address, account);
           })
-        ->Belt.Map.String.fromArray
+        ->Belt.Array.reverse
       },
       [|accountsRequest|],
     );
+
+  let accounts =
+    React.useMemo1(
+      () => {accountsArray->Belt.Map.String.fromArray},
+      [|accountsArray|],
+    );
+
+  React.useEffect2(
+    () => {
+      if (selectedAccount->Belt.Option.isNone) {
+        accountsArray
+        ->Belt.Array.get(0)
+        ->Lib.Option.iter(((address, _)) =>
+            setSelectedAccount(_ => Some(address))
+          );
+      };
+      None;
+    },
+    (accounts, selectedAccount),
+  );
 
   let (operations, setOperations) = React.useState(() => [||]);
   let (aliases, setAliases) = React.useState(() => [||]);
