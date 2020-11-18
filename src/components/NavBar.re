@@ -23,9 +23,15 @@ module NavBarItem = {
   let make = (~currentRoute, ~route, ~title, ~icon: option(Icons.builder)=?) => {
     let (href, onPress) = useHrefAndOnPress(route);
 
-    let isCurrent = currentRoute == route;
+    let account = StoreContext.useAccount();
+    let onPress = account->Belt.Option.map(_ => onPress);
+    let href = account->Belt.Option.map(_ => href);
+    let currentRoute = account->Belt.Option.map(_ => currentRoute);
 
-    <TouchableOpacity style=styles##item accessibilityRole=`link href onPress>
+    let isCurrent = currentRoute == Some(route);
+
+    <TouchableOpacity
+      style=styles##item accessibilityRole=`link ?href ?onPress>
       {icon->Belt.Option.mapWithDefault(React.null, icon => {
          icon(
            ~style={
