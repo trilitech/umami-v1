@@ -106,7 +106,7 @@ let useSetter = (set, kind, ()) => {
 
 let useGetter = (get, kind) => {
   let addError = ErrorsContext.useAddError();
-  let (request, setRequest) = React.useState(_ => NotAsked);
+  let (request, setRequest) = React.useState(_ => Loading);
   let config = ConfigContext.useConfig();
 
   let get = (~loading=true, input) => {

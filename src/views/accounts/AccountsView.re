@@ -84,7 +84,7 @@ let make = () => {
   <Page>
     {switch (accountsRequest) {
      | Done(_)
-     | NotAsked when accounts->Belt.Map.String.size < 0 =>
+     | NotAsked when accounts->Belt.Map.String.size <= 0 =>
        <View style=styles##scrim>
          <CreateAccountBigButton />
          <ImportAccountBigButton />
