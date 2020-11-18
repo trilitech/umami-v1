@@ -54,7 +54,7 @@ let make = () => {
           style=Style.(
             array([|styles##textButton, style(~color=textColor, ())|])
           )>
-          "SEND"->React.string
+          I18n.btn#send->React.string
         </Typography.ButtonSecondary>
       </View>
     </TouchableOpacity>

@@ -61,10 +61,10 @@ let make = (~onPressCancel, ~handleAdd) => {
      | Done(Ok(_result)) =>
        <>
          <Typography.Headline2 style=styles##title>
-           "Contact added"->React.string
+           I18n.t#contact_added->React.string
          </Typography.Headline2>
          <View style=styles##formAction>
-           <FormButton text="OK" onPress=onPressCancel />
+           <FormButton text=I18n.btn#ok onPress=onPressCancel />
          </View>
        </>
      | Done(Error(error)) =>
@@ -73,7 +73,7 @@ let make = (~onPressCancel, ~handleAdd) => {
            error->React.string
          </Typography.Body1>
          <View style=styles##formAction>
-           <FormButton text="OK" onPress=onPressCancel />
+           <FormButton text=I18n.btn#ok onPress=onPressCancel />
          </View>
        </>
      | Loading =>
@@ -87,23 +87,23 @@ let make = (~onPressCancel, ~handleAdd) => {
      | NotAsked =>
        <>
          <Typography.Headline2 style=styles##title>
-           "Add contact"->React.string
+           I18n.title#add_contact->React.string
          </Typography.Headline2>
          <FormGroupTextInput
-           label="Name"
+           label=I18n.label#add_contact_name
            value={form.values.name}
            handleChange={form.handleChange(Name)}
            error={form.getFieldError(Field(Name))}
          />
          <FormGroupTextInput
-           label="Address"
+           label=I18n.label#add_contact_address
            value={form.values.address}
            handleChange={form.handleChange(Address)}
            error={form.getFieldError(Field(Address))}
          />
          <View style=styles##formAction>
-           <FormButton text="CANCEL" onPress=onPressCancel />
-           <FormButton text="ADD" onPress=onSubmit />
+           <FormButton text=I18n.btn#cancel onPress=onPressCancel />
+           <FormButton text=I18n.btn#add onPress=onSubmit />
          </View>
        </>
      }}

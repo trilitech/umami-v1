@@ -44,7 +44,7 @@ module AddContactButton = {
           style=styles##icon
         />
         <Typography.ButtonSecondary>
-          "ADD CONTACT"->React.string
+          I18n.btn#add_contact->React.string
         </Typography.ButtonSecondary>
       </TouchableOpacity>
       <ModalAction ref=modal visible=visibleModal onRequestClose=closeAction>

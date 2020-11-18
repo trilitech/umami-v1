@@ -50,11 +50,11 @@ let amount = (account, transaction: Operation.Business.Transaction.t) => {
 
   <View style=styles##cellAmount>
     <Typography.Body1 ?colorStyle>
-      op->React.string
-      " "->React.string
-      {transaction.amount->BusinessUtils.formatMilliXTZ->React.string}
-      " "->React.string
-      BusinessUtils.xtz->React.string
+      {I18n.t#xtz_op_amount(
+         op,
+         transaction.amount->BusinessUtils.formatMilliXTZ,
+       )
+       ->React.string}
     </Typography.Body1>
   </View>;
 };
@@ -74,7 +74,9 @@ let make =
          | Reveal(_reveal) =>
            <>
              <View style=styles##cellType>
-               <Typography.Body1> "Reveal"->React.string </Typography.Body1>
+               <Typography.Body1>
+                 I18n.t#operation_reveal->React.string
+               </Typography.Body1>
              </View>
              <View style=styles##cellAmount />
              <View style=styles##cellFee>
@@ -89,7 +91,7 @@ let make =
            <>
              <View style=styles##cellType>
                <Typography.Body1>
-                 "Transaction"->React.string
+                 I18n.t#operation_transaction->React.string
                </Typography.Body1>
              </View>
              {amount(account, transaction)}
@@ -115,7 +117,7 @@ let make =
            <>
              <View style=styles##cellType>
                <Typography.Body1>
-                 "Origination"->React.string
+                 I18n.t#operation_origination->React.string
                </Typography.Body1>
              </View>
              <View style=styles##cellAmount />
@@ -128,7 +130,7 @@ let make =
            <>
              <View style=styles##cellType>
                <Typography.Body1>
-                 "Delegation"->React.string
+                 I18n.t#operation_delegation->React.string
                </Typography.Body1>
              </View>
              <View style=styles##cellAmount />
@@ -147,8 +149,8 @@ let make =
       <View style=styles##cellStatus>
         <Typography.Body1>
           {switch (operation.status) {
-           | Mempool => "in mempool"
-           | Chain => "in chain"
+           | Mempool => I18n.t#state_in_mempool
+           | Chain => I18n.t#state_in_mempool
            }}
           ->React.string
         </Typography.Body1>

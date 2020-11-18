@@ -36,18 +36,18 @@ let make = (~style=?, ~operation: Injection.operation) => {
   <View ?style>
     {switch (operation) {
      | Transaction({source}) =>
-       <AccountInfo address=source title="Sender account" />
+       <AccountInfo address=source title=I18n.title#sender_account />
      | Delegation({source}) =>
-       <AccountInfo address=source title="Account to delegate" />
+       <AccountInfo address=source title=I18n.title#delegated_account />
      }}
     <View style=styles##iconContainer>
       <Icons.ArrowDown size=50. color=Theme.colorDarkMediumEmphasis />
     </View>
     {switch (operation) {
      | Transaction({destination}) =>
-       <AccountInfo address=destination title="Recipient account" />
+       <AccountInfo address=destination title=I18n.title#recipient_account />
      | Delegation({delegate}) =>
-       <AccountInfo address=delegate title="Baker" />
+       <AccountInfo address=delegate title=I18n.title#baker_account />
      }}
   </View>;
 };

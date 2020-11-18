@@ -10,9 +10,9 @@ module AliasDeleteButton = {
     };
 
     <DeleteButton
-      buttonText="Delete contact"
-      modalTitle="Delete contact?"
-      modalTitleDone="Contact deleted"
+      buttonText=I18n.btn#delete_contact
+      modalTitle=I18n.title#delete_contact
+      modalTitleDone=I18n.title#delete_contact
       onPressConfirmDelete
       request=aliasRequest
     />;
@@ -62,7 +62,7 @@ let make =
       </View>
       <View>
         <Menu icon=Icons.More.build>
-          <Menu.Item text="Edit contact" icon=Icons.Edit.build />
+          <Menu.Item text=I18n.t#addressbook_menu_edit icon=Icons.Edit.build />
           <AliasDeleteButton account handleDelete />
         </Menu>
       </View>

@@ -52,7 +52,7 @@ let make = () => {
         <Icons.ArrowDown size=36. color=Colors.plainIconContent />
       </View>
       <Typography.Subtitle2>
-        "IMPORT EXISTING ACCOUNT"->React.string
+        I18n.btn#import_account->React.string
       </Typography.Subtitle2>
     </TouchableOpacity>
     <ModalAction ref=modal visible=visibleModal onRequestClose=closeAction>
