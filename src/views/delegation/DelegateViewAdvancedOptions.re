@@ -5,7 +5,7 @@ let styles =
     StyleSheet.create({
       "formRowInputs":
         style(~flexDirection=`row, ~justifyContent=`center, ()),
-      "formRowInputsSeparator": style(~width=13.->dp, ()),
+      "formRowInputsSeparator": style(~width=20.->dp, ()),
       "formRowInput":
         style(
           ~flexGrow=1.,
@@ -26,24 +26,21 @@ let xtzDecoration = (~style) =>
   <Typography.Body1 style> BusinessUtils.xtz->React.string </Typography.Body1>;
 
 [@react.component]
-let make = (~form: SendForm.api) => {
+let make = (~form: DelegateForm.api) => {
   let network = StoreContext.useNetwork();
   let (operationSimulateRequest, sendOperationSimulate) =
     OperationApiRequest.useSimulateOperation(network);
 
   React.useEffect0(() => {
-    if (form.values.sender != ""
-        && form.values.recipient != ""
-        && form.values.amount != "") {
+    if (form.values.sender != "" && form.values.baker != "") {
       let operation =
-        Injection.makeTransfer(
+        Injection.makeDelegate(
           ~source=form.values.sender,
-          ~amount=form.values.amount->Js.Float.fromString,
-          ~destination=form.values.sender,
+          ~delegate=form.values.baker,
           (),
         );
 
-      sendOperationSimulate(operation)->ignore;
+      sendOperationSimulate(operation);
     };
 
     None;
@@ -55,9 +52,8 @@ let make = (~form: SendForm.api) => {
       ->ApiRequest.getDoneOk
       ->Belt.Option.map(dryRun => {
           form.handleChange(Fee, dryRun.fee->Js.Float.toString);
-          form.handleChange(GasLimit, dryRun.gasLimit->string_of_int);
-          form.handleChange(StorageLimit, dryRun.storageLimit->string_of_int);
-          form.handleChange(Counter, dryRun.count->string_of_int);
+          /*form.handleChange(BurnCap, dryRun.burnCap->Js.Float.toString);*/
+          ();
         })
       ->ignore;
       None;
@@ -77,33 +73,13 @@ let make = (~form: SendForm.api) => {
       />
       <View style=styles##formRowInputsSeparator />
       <FormGroupTextInput
-        label="Gas limit"
-        value={form.values.gasLimit}
-        handleChange={form.handleChange(GasLimit)}
-        error={form.getFieldError(Field(GasLimit))}
+        label="Burn cap"
+        value={form.values.burnCap}
+        handleChange={form.handleChange(BurnCap)}
+        error={form.getFieldError(Field(BurnCap))}
         style=styles##formRowInput
+        decoration=FormGroupXTZInput.xtzDecoration
       />
-      <View style=styles##formRowInputsSeparator />
-      <FormGroupTextInput
-        label="Storage limit"
-        value={form.values.storageLimit}
-        handleChange={form.handleChange(StorageLimit)}
-        error={form.getFieldError(Field(StorageLimit))}
-        style=styles##formRowInput
-      />
-    </View>
-    <View style=styles##formRowInputs>
-      <FormGroupTextInput
-        label="Counter"
-        value={form.values.counter}
-        handleChange={form.handleChange(Counter)}
-        error={form.getFieldError(Field(Counter))}
-        style=styles##formRowInput
-      />
-      <View style=styles##formRowInputsSeparator />
-      <View style=styles##formRowInput />
-      <View style=styles##formRowInputsSeparator />
-      <View style=styles##formRowInput />
     </View>
     <FormGroupCheckbox
       label="Force low fee"

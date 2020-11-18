@@ -31,6 +31,7 @@ let styles =
           ~marginBottom=(-3.)->dp,
           (),
         ),
+      "actionDelegate": style(~marginRight=12.->dp, ()),
     })
   );
 
@@ -44,11 +45,10 @@ let make = (~account: Account.t, ~zIndex) => {
       <ClipboardButton data={account.address} />
       <QrButton account balanceRequest />
     </View>
-    <View>
-      <Menu icon=Icons.More.build>
-        <Menu.Item text="Edit account" icon=Icons.Edit.build />
-        <AccountDeleteButton account />
-      </Menu>
-    </View>
+    <View style=styles##actionDelegate> <DelegateButton /> </View>
+    <Menu icon=Icons.More.build>
+      <Menu.Item text="Edit account" icon=Icons.Edit.build />
+      <AccountDeleteButton account />
+    </Menu>
   </RowItem.Bordered>;
 };

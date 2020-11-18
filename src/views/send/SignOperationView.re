@@ -16,7 +16,7 @@ let styles =
   );
 
 [@react.component]
-let make = (~onPressCancel, ~operation, ~sendOperation) => {
+let make = (~onPressCancel, ~operation: Injection.operation, ~sendOperation) => {
   let form: SendForm.Password.api =
     SendForm.Password.use(
       ~schema={
@@ -31,30 +31,35 @@ let make = (~onPressCancel, ~operation, ~sendOperation) => {
     // checking password
     // getting stored data
     form.submit();
-    sendOperation(Injection.Transaction(operation), ~password=form.values.password);
+    sendOperation(operation, ~password=form.values.password);
   };
 
   <>
     <View style=styles##title>
       <Typography.Headline2>
-        {Js.Float.toFixedWithPrecision(operation.Injection.amount, ~digits=1)
-         ->React.string}
-        BusinessUtils.xtz->React.string
+        (
+          switch (operation) {
+          | Transaction({amount}) =>
+            Js.Float.toFixedWithPrecision(amount, ~digits=1)
+            ++ " "
+            ++ BusinessUtils.xtz
+          | Delegation(_) => "Delegate"
+          }
+        )
+        ->React.string
       </Typography.Headline2>
-      {operation.Injection.fee
-       ->ReactUtils.mapOpt(fee =>
+      {switch (operation) {
+       | Transaction({fee})
+       | Delegation({fee}) =>
+         fee->ReactUtils.mapOpt(fee =>
            <Typography.Body1 colorStyle=`mediumEmphasis>
-             "+ Fee "->React.string
-             {fee->Js.Float.toString->React.string}
-             " "->React.string
-             BusinessUtils.xtz->React.string
+             {("+ Fee " ++ fee->Js.Float.toString ++ " " ++ BusinessUtils.xtz)
+              ->React.string}
            </Typography.Body1>
-         )}
+         )
+       }}
     </View>
-    <OperationSummaryView
-      style=styles##operationSummary
-      transaction=operation
-    />
+    <OperationSummaryView style=styles##operationSummary operation />
     <FormGroupTextInput
       label="Password"
       value={form.values.password}
@@ -65,10 +70,7 @@ let make = (~onPressCancel, ~operation, ~sendOperation) => {
     />
     <View style=styles##formAction>
       <FormButton text="CANCEL" onPress=onPressCancel />
-      <FormButton
-        text="SEND"
-        onPress={operation->onSubmit}
-      />
+      <FormButton text="CONFIRM" onPress={operation->onSubmit} />
     </View>
   </>;
 };

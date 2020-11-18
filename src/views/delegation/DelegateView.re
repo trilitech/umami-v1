@@ -1,5 +1,4 @@
 open ReactNative;
-open Common;
 
 let styles =
   Style.(
@@ -35,18 +34,15 @@ let styles =
     })
   );
 
-let buildTransaction = (state: SendForm.state, advancedOptionOpened) => {
+let buildTransaction = (state: DelegateForm.state, advancedOptionOpened) => {
   let mapIfAdvanced = (v, map) =>
     advancedOptionOpened && v->Js.String2.length > 0 ? Some(v->map) : None;
 
-  Injection.makeTransfer(
+  Injection.makeDelegate(
     ~source=state.values.sender,
-    ~amount=state.values.amount->Js.Float.fromString,
-    ~destination=state.values.recipient,
+    ~delegate=state.values.baker,
     ~fee=?state.values.fee->mapIfAdvanced(Js.Float.fromString),
-    ~counter=?state.values.counter->mapIfAdvanced(int_of_string),
-    ~gasLimit=?state.values.gasLimit->mapIfAdvanced(int_of_string),
-    ~storageLimit=?state.values.storageLimit->mapIfAdvanced(int_of_string),
+    ~burnCap=?state.values.burnCap->mapIfAdvanced(Js.Float.fromString),
     ~forceLowFee=?
       advancedOptionOpened && state.values.forceLowFee ? Some(true) : None,
     (),
@@ -60,29 +56,16 @@ type step =
 module Form = {
   let build =
       (initAccount: option(Account.t), advancedOptionOpened, onSubmit) => {
-    SendForm.use(
+    DelegateForm.use(
       ~schema={
-        SendForm.Validation.(
+        DelegateForm.Validation.(
           Schema(
-            nonEmpty(Amount)
-            + nonEmpty(Sender)
-            + nonEmpty(Recipient)
-            + custom(
-                values => FormUtils.isValidFloat(values.amount),
-                Amount,
-              )
+            nonEmpty(Sender)
+            + nonEmpty(Baker)
             + custom(values => FormUtils.isValidFloat(values.fee), Fee)
             + custom(
-                values => FormUtils.isValidInt(values.counter),
-                Counter,
-              )
-            + custom(
-                values => FormUtils.isValidInt(values.gasLimit),
-                GasLimit,
-              )
-            + custom(
-                values => FormUtils.isValidInt(values.storageLimit),
-                StorageLimit,
+                values => FormUtils.isValidFloat(values.burnCap),
+                BurnCap,
               ),
           )
         );
@@ -95,13 +78,10 @@ module Form = {
           None;
         },
       ~initialState={
-        amount: "",
         sender: initAccount->Belt.Option.mapWithDefault("", a => a.address),
-        recipient: "",
+        baker: "",
         fee: "",
-        counter: "",
-        gasLimit: "",
-        storageLimit: "",
+        burnCap: "",
         forceLowFee: false,
       },
       (),
@@ -109,36 +89,30 @@ module Form = {
   };
 
   module View = {
-    open SendForm;
+    open DelegateForm;
 
     [@react.component]
     let make = (~onPressCancel, ~advancedOptionState, ~form) => {
-      let onSubmitSendForm = _ => {
+      let onSubmitDelegateForm = _ => {
         form.submit();
       };
       let (advancedOptionOpened, setAdvancedOptionOpened) = advancedOptionState;
 
       <>
         <Typography.Headline2 style=styles##title>
-          "Send"->React.string
+          "Delegate"->React.string
         </Typography.Headline2>
-        <FormGroupXTZInput
-          label="Amount"
-          value={form.values.amount}
-          handleChange={form.handleChange(Amount)}
-          error={form.getFieldError(Field(Amount))}
-        />
         <FormGroupAccountSelector
-          label="Sender account"
+          label="Account to delegate"
           value={form.values.sender}
           handleChange={form.handleChange(Sender)}
           error={form.getFieldError(Field(Sender))}
         />
-        <FormGroupContactSelector
-          label="Recipient account"
-          value={form.values.recipient}
-          handleChange={form.handleChange(Recipient)}
-          error={form.getFieldError(Field(Recipient))}
+        <FormGroupTextInput
+          label="Baker"
+          value={form.values.baker}
+          handleChange={form.handleChange(Baker)}
+          error={form.getFieldError(Field(Baker))}
         />
         <View>
           <TouchableOpacity
@@ -161,11 +135,12 @@ module Form = {
               thumbStyle=styles##switchThumb
             />
           </TouchableOpacity>
-          {advancedOptionOpened ? <SendViewAdvancedOptions form /> : React.null}
+          {advancedOptionOpened
+             ? <DelegateViewAdvancedOptions form /> : React.null}
         </View>
         <View style=styles##formAction>
           <FormButton text="CANCEL" onPress=onPressCancel />
-          <FormButton text="OK" onPress=onSubmitSendForm />
+          <FormButton text="OK" onPress=onSubmitDelegateForm />
         </View>
       </>;
     };
@@ -184,13 +159,11 @@ let make = (~onPressCancel) => {
   let (operationRequest, sendOperation) =
     OperationApiRequest.useCreateOperation(network);
 
-  let sendOperation = (operation, ~password) =>
-    account->Lib.Option.iter(account =>
-      sendOperation(OperationApiRequest.{operation, password})
-      ->Future.get(res =>
-          res->Belt.Result.isOk ? refreshOperations((network, account)) : ()
-        )
-    );
+  let sendOperation = (op, ~password) =>
+    sendOperation(op, ~password)
+    ->Future.get(res =>
+        res->Belt.Result.isOk ? refreshOperations(network, account) : ()
+      );
 
   let (modalStep, setModalStep) = React.useState(_ => SendStep);
 
@@ -206,7 +179,7 @@ let make = (~onPressCancel) => {
      | (_, Done(Ok(hash))) =>
        <>
          <Typography.Headline2 style=styles##title>
-           "Operation injected in the node"->React.string
+           "Delegation sent"->React.string
          </Typography.Headline2>
          <Typography.Overline1>
            "Operation hash"->React.string
