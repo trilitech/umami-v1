@@ -37,7 +37,7 @@ let make = (~children) => {
   let (selectedAccount, setSelectedAccount) = React.useState(() => None);
 
   let updateAccount = newAccount => setSelectedAccount(_ => Some(newAccount));
-  let accountsRequest = AccountApiRequest.useGetAccounts();
+  let accountsRequest = AccountApiRequest.useLoad();
 
   React.useEffect3(
     () => {
@@ -77,6 +77,7 @@ let make = (~children) => {
     );
 
   let (operations, setOperations) = React.useState(() => [||]);
+  let (_addresses, _setAddresses) = React.useState(() => [||]);
 
   <Provider
     value={

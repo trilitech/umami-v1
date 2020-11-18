@@ -34,7 +34,7 @@ let make = (~onPressCancel) => {
   let (formStep, setFormStep) = React.useState(_ => Step1);
 
   let (accountWithMnemonicRequest, createAccountWithMnemonic) =
-    AccountApiRequest.useCreateAccountWithMnemonic();
+    AccountApiRequest.useCreateWithMnemonics();
 
   // using a react ref prevent from genereting other mnemonic at other render
   // a useState can also be used, but because we don't need to set

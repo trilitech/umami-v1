@@ -49,7 +49,7 @@ let make = (~form: SendForm.api) => {
           confirmations: None,
         });
 
-      sendOperationSimulate(operation);
+      sendOperationSimulate(operation)->ignore;
     };
 
     None;

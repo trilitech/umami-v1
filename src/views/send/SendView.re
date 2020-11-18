@@ -1,4 +1,5 @@
 open ReactNative;
+open Common;
 
 let styles =
   Style.(
@@ -172,10 +173,7 @@ module Form = {
         </View>
         <View style=styles##formAction>
           <FormButton text="CANCEL" onPress=onPressCancel />
-          <FormButton
-            text="OK"
-            onPress=onSubmitSendForm
-          />
+          <FormButton text="OK" onPress=onSubmitSendForm />
         </View>
       </>;
     };
@@ -194,11 +192,13 @@ let make = (~onPressCancel) => {
   let (operationRequest, sendOperation) =
     OperationApiRequest.useCreateOperation(network);
 
-  let sendOperation = (op, ~password) =>
-    sendOperation(op, ~password)
-    ->Future.get(res =>
-        res->Belt.Result.isOk ? refreshOperations(network, account) : ()
-      );
+  let sendOperation = (operation, ~password) =>
+    account->Lib.Option.iter(account =>
+      sendOperation(OperationApiRequest.{operation, password})
+      ->Future.get(res =>
+          res->Belt.Result.isOk ? refreshOperations((network, account)) : ()
+        )
+    );
 
   let (modalStep, setModalStep) = React.useState(_ => SendStep);
 

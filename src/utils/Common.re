@@ -16,6 +16,15 @@ module Infix = {
 include Infix;
 
 module Lib = {
+  module Option = {
+    let iter = (o, f) => {
+      switch (o) {
+      | Some(v) => f(v)
+      | None => ()
+      };
+    };
+  };
+
   module Result = {
     let iterOk = (r, f) => {
       switch (r) {

@@ -1,4 +1,5 @@
 open ReactNative;
+open Common;
 
 let styles =
   Style.(
@@ -46,7 +47,7 @@ let make = () => {
 
   React.useEffect2(
     () => {
-      get(network, account);
+      account->Lib.Option.iter(account => get((network, account)));
       None;
     },
     (network, account),

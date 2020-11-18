@@ -19,14 +19,16 @@ let make = (~label, ~value: string, ~handleChange, ~error) => {
     accounts
     ->Belt.Option.getWithDefault(Belt.Map.String.empty)
     ->Belt.Map.String.valuesToArray
-    ->Belt.SortArray.stableSortBy((a, b) => Pervasives.compare(a.alias, b.alias))
+    ->Belt.SortArray.stableSortBy((a, b) =>
+        Pervasives.compare(a.alias, b.alias)
+      )
     ->Belt.Array.map(account =>
         {Selector.value: account.address, label: account.alias}
       );
 
   let (currentAccount, setCurrent) = React.useState(() => value);
 
-  let balanceRequest = BalanceApiRequest.useBalance(currentAccount);
+  let balanceRequest = BalanceApiRequest.useLoad(currentAccount);
 
   <FormGroup style=styles##formGroup>
     <FormLabel label hasError style=styles##label />
