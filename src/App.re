@@ -38,24 +38,6 @@ module AppView = {
                </Typography.Body1>
              </View>
            }}
-          <NavBar route />
-          <View style=styles##main>
-            <Header />
-            <View style=styles##content>
-              {switch (route) {
-               | Accounts => <AccountsView />
-               | Operations => <OperationsView />
-               | AddressBook => <AddressBookView />
-               | Debug => <DebugView />
-               | NotFound =>
-                 <View>
-                   <Typography.Body1>
-                     "404 - Route Not Found :("->React.string
-                   </Typography.Body1>
-                 </View>
-               }}
-            </View>
-          </View>
         </View>
       </StoreContext>;
     };
