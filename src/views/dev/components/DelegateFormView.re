@@ -12,12 +12,11 @@ let make = (~onSubmit) => {
   let (source, setSource) = React.useState(() => "");
   let (selectedDelegateIndex, setSelectedDelegateIndex) =
     React.useState(() => 0);
-  let (delegates, setDelegates) = React.useState(() => [|"foo", "bar"|]);
-  let config = ConfigContext.useConfig();
+  let (delegates, setDelegates) = React.useState(() => [||]);
 
   React.useEffect2(
     () => {
-      Delegates.get((network, config))
+      Delegates.get(network)
       ->FutureEx.getOk(value => setDelegates(_ => value));
       None;
     },
@@ -35,13 +34,13 @@ let make = (~onSubmit) => {
       onValueChange={(value, _) => setSelectedDelegateIndex(_ => value)}>
       {React.array(
          delegates
-         |> Array.mapi((index, delegate) =>
-              <Picker.Item label=delegate key=delegate value=index />
+         |> Array.mapi((index, delegate: API.Delegate.t) =>
+              <Picker.Item label=delegate.name key=delegate.name value=index />
             ),
        )}
     </Picker>
     <Button
-      onPress={_ => onSubmit(source, delegates[selectedDelegateIndex])}
+      onPress={_ => onSubmit(source, delegates[selectedDelegateIndex].address)}
       title="Delegate"
     />
   </View>;

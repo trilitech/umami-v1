@@ -662,18 +662,30 @@ describe("API tests", ({testAsync}) => {
     module Stub = {
       let get = _ => {
         let data = {|[
-          "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
-          "tz1NF7b38uQ43N4nmTHvDKpr1Qo5LF9iYawk"
+          {
+            "name": "foo",
+            "address": "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"
+          },
+          {
+            "name": "bar",
+            "address": "tz1NF7b38uQ43N4nmTHvDKpr1Qo5LF9iYawk"
+          }
         ]|};
         Future.value(Ok(data->Json.parseOrRaise));
       };
     };
     let expected = [|
-      "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
-      "tz1NF7b38uQ43N4nmTHvDKpr1Qo5LF9iYawk",
+      {
+        API.Delegate.name: "foo",
+        address: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
+      },
+      {
+        API.Delegate.name: "bar",
+        address: "tz1NF7b38uQ43N4nmTHvDKpr1Qo5LF9iYawk",
+      },
     |];
     module UnderTest = API.Delegates(Stub);
-    UnderTest.get(network)
+    UnderTest.get(Main)
     ->Future.get(result => {
         expect.value(result).toEqual(Belt.Result.Ok(expected));
         callback();
@@ -684,17 +696,24 @@ describe("API tests", ({testAsync}) => {
   testAsync("runs invalid account.delegates test", ({expect, callback}) => {
     module Stub = {
       let get = _ => {
-        let data = {|"tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"|};
+        let data = {|[
+          {
+            "name": "foo",
+            "address": "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"
+          },
+          {
+            "address": "tz1NF7b38uQ43N4nmTHvDKpr1Qo5LF9iYawk"
+          }
+        ]|};
         Future.value(Ok(data->Json.parseOrRaise));
       };
     };
     module UnderTest = API.Delegates(Stub);
-    UnderTest.get(network)
+    UnderTest.get(Main)
+    ->Future.tapError(Js.log)
     ->Future.get(result => {
         expect.value(result).toEqual(
-          Belt.Result.Error(
-            "Expected array, got \"tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3\"",
-          ),
+          Belt.Result.Error("Expected field 'name'\n\tin array at index 1"),
         );
         callback();
       });
