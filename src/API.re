@@ -139,14 +139,6 @@ module Balance = (Caller: CallerAPI) => {
     );
 };
 
-module Delegate = (Caller: CallerAPI) => {
-  let get = (network, account) =>
-    Caller.call(
-      [|"-E", network->endpoint, "get", "delegate", "for", account|],
-      (),
-    );
-};
-
 let map = (result: Belt.Result.t('a, string), transform: 'a => 'b) =>
   try(
     switch (result) {
@@ -158,6 +150,28 @@ let map = (result: Belt.Result.t('a, string), transform: 'a => 'b) =>
   | Json.Decode.DecodeError(error) => Error(error)
   | _ => Error("Unknown error")
   };
+
+module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
+  let getForAccount = (network, account) =>
+    Caller.call(
+      [|"-E", network->endpoint, "get", "delegate", "for", account|],
+      (),
+    );
+
+  let getBackers = (network: Network.t) =>
+    switch (network) {
+    | Main =>
+      "https://api.baking-bad.org/v2/bakers"
+      ->Getter.get
+      ->Future.map(result => result->map(Json.Decode.(array(decode))))
+    | Test =>
+      Future.value(
+        Ok([|
+          {name: "zebra", address: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"},
+        |]),
+      )
+    };
+};
 
 module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
   let getFromMempool = (account, network, operations) =>
@@ -533,22 +547,6 @@ module Scanner = (Caller: CallerAPI, Getter: GetterAPI) => {
           )
       );
   };
-};
-
-module Delegates = (Getter: GetterAPI) => {
-  let get = (network: Network.t) =>
-    switch (network) {
-    | Main =>
-      "https://api.baking-bad.org/v2/bakers"
-      ->Getter.get
-      ->Future.map(result => result->map(Json.Decode.(array(decode))))
-    | Test =>
-      Future.value(
-        Ok([|
-          {name: "zebra", address: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"},
-        |]),
-      )
-    };
 };
 
 module Aliases = (Caller: CallerAPI) => {

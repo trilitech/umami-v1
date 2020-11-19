@@ -659,6 +659,12 @@ describe("API tests", ({testAsync}) => {
   });
 
   testAsync("runs valid account.delegates test", ({expect, callback}) => {
+    module Dummy = {
+      let call = (_, ~inputs=?, ()) => {
+        ignore(inputs);
+        Future.value(Ok(""));
+      };
+    };
     module Stub = {
       let get = _ => {
         let data = {|[
@@ -684,8 +690,8 @@ describe("API tests", ({testAsync}) => {
         address: "tz1NF7b38uQ43N4nmTHvDKpr1Qo5LF9iYawk",
       },
     |];
-    module UnderTest = API.Delegates(Stub);
-    UnderTest.get(Main)
+    module UnderTest = API.Delegate(Dummy, Stub);
+    UnderTest.getBackers(Main)
     ->Future.get(result => {
         expect.value(result).toEqual(Belt.Result.Ok(expected));
         callback();
@@ -694,6 +700,12 @@ describe("API tests", ({testAsync}) => {
   });
 
   testAsync("runs invalid account.delegates test", ({expect, callback}) => {
+    module Dummy = {
+      let call = (_, ~inputs=?, ()) => {
+        ignore(inputs);
+        Future.value(Ok(""));
+      };
+    };
     module Stub = {
       let get = _ => {
         let data = {|[
@@ -708,8 +720,8 @@ describe("API tests", ({testAsync}) => {
         Future.value(Ok(data->Json.parseOrRaise));
       };
     };
-    module UnderTest = API.Delegates(Stub);
-    UnderTest.get(Main)
+    module UnderTest = API.Delegate(Dummy, Stub);
+    UnderTest.getBackers(Main)
     ->Future.tapError(Js.log)
     ->Future.get(result => {
         expect.value(result).toEqual(
