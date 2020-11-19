@@ -32,10 +32,10 @@ let make = () => {
   };
   let onPress = account->Belt.Option.map(_ => onPress);
 
-  let (iconColor, colorStyle) = {
+  let (iconColor, textColor) = {
     switch (account) {
-    | Some(_) => (Colors.plainIconContent, `mediumEmphasis)
-    | None => (Theme.colorLightDisabled, `lightDisabled)
+    | Some(_) => (Colors.plainIconContent, Theme.colorLightHighEmphasis)
+    | None => (Theme.colorLightDisabled, Theme.colorLightDisabled)
     };
   };
 
@@ -50,7 +50,10 @@ let make = () => {
     <TouchableOpacity style=styles##button ?onPress>
       <View style=styles##iconContainer>
         <Icons.Send size=24. color=iconColor />
-        <Typography.ButtonSecondary colorStyle style=styles##textButton>
+        <Typography.ButtonSecondary
+          style=Style.(
+            array([|styles##textButton, style(~color=textColor, ())|])
+          )>
           "SEND"->React.string
         </Typography.ButtonSecondary>
       </View>

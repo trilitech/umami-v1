@@ -24,22 +24,20 @@ module AppView = {
     let confLoaded = ConfigContext.useLoaded();
 
     let bodyView = () => {
-      <StoreContext>
-        <View style=styles##content>
-          {switch (route) {
-           | Accounts => <AccountsView />
-           | Operations => <OperationsView />
-           | AddressBook => <AddressBookView />
-           | Debug => <DebugView />
-           | NotFound =>
-             <View>
-               <Typography.Body1>
-                 "404 - Route Not Found :("->React.string
-               </Typography.Body1>
-             </View>
-           }}
-        </View>
-      </StoreContext>;
+      <View style=styles##content>
+        {switch (route) {
+         | Accounts => <AccountsView />
+         | Operations => <OperationsView />
+         | AddressBook => <AddressBookView />
+         | Debug => <DebugView />
+         | NotFound =>
+           <View>
+             <Typography.Body1>
+               "404 - Route Not Found :("->React.string
+             </Typography.Body1>
+           </View>
+         }}
+      </View>;
     };
 
     <DocumentContext>
@@ -57,6 +55,6 @@ module AppView = {
 [@react.component]
 let make = () => {
   <ErrorsContext>
-    <ConfigContext> <AppView /> </ConfigContext>
+    <ConfigContext> <StoreContext> <AppView /> </StoreContext> </ConfigContext>
   </ErrorsContext>;
 };

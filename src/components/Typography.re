@@ -4,7 +4,6 @@ type colorStyle = [
   | `highEmphasis
   | `mediumEmphasis
   | `disabled
-  | `lightDisabled
   | `error
   | `valid
 ];
@@ -14,7 +13,6 @@ let getColor = colorStyle =>
   | `highEmphasis => Theme.colorDarkHighEmphasis
   | `mediumEmphasis => Theme.colorDarkMediumEmphasis
   | `disabled => Theme.colorDarkDisabled
-  | `lightDisabled => Theme.colorLightDisabled
   | `error => Theme.colorDarkError
   | `valid => Theme.colorDarkValid
   };
