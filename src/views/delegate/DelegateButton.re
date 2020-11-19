@@ -13,12 +13,13 @@ let styles =
           ~backgroundColor="#D8BC63",
           (),
         ),
-      "textButton": style(~color="rgba(0,0,0,0.87)", ()),
+      "textButton": style(~color=Theme.colorLightHighEmphasis, ()),
+      "textButtonDisabled": style(~color=Theme.colorLightDisabled, ()),
     })
   );
 
 [@react.component]
-let make = () => {
+let make = (~account as defaultAccount=?, ~disabled=false) => {
   let modal = React.useRef(Js.Nullable.null);
 
   let (visibleModal, setVisibleModal) = React.useState(_ => false);
@@ -37,13 +38,14 @@ let make = () => {
   };
 
   <>
-    <TouchableOpacity style=styles##button onPress>
-      <Typography.ButtonSecondary style=styles##textButton>
+    <TouchableOpacity style=styles##button onPress disabled>
+      <Typography.ButtonSecondary
+        style={disabled ? styles##textButtonDisabled : styles##textButton}>
         "DELEGATE"->React.string
       </Typography.ButtonSecondary>
     </TouchableOpacity>
     <ModalAction ref=modal visible=visibleModal onRequestClose=closeAction>
-      <DelegateView onPressCancel />
+      <DelegateView onPressCancel defaultAccount />
     </ModalAction>
   </>;
 };

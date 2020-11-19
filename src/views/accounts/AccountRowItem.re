@@ -38,6 +38,7 @@ let styles =
 [@react.component]
 let make = (~account: Account.t, ~zIndex, ~handleDelete) => {
   let balanceRequest = BalanceApiRequest.useLoad(account.address);
+  let delegateRequest = DelegateApiRequest.useGetDelegate(account.address);
 
   <RowItem.Bordered height=74. style={Style.style(~zIndex, ())}>
     <View style=styles##inner> <AccountInfo account balanceRequest /> </View>
@@ -45,7 +46,13 @@ let make = (~account: Account.t, ~zIndex, ~handleDelete) => {
       <ClipboardButton data={account.address} />
       <QrButton account balanceRequest />
     </View>
-    <View style=styles##actionDelegate> <DelegateButton /> </View>
+    {switch (delegateRequest) {
+     | Done(Ok(delegate)) =>
+       <View style=styles##actionDelegate>
+         <DelegateButton account disabled={delegate->Belt.Option.isSome} />
+       </View>
+     | _ => React.null
+     }}
     <Menu icon=Icons.More.build>
       <Menu.Item text="Edit account" icon=Icons.Edit.build />
       <AccountDeleteButton account handleDelete />
