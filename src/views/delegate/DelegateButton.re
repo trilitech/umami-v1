@@ -19,7 +19,8 @@ let styles =
   );
 
 [@react.component]
-let make = (~account as defaultAccount=?, ~disabled=false) => {
+let make =
+    (~account as defaultAccount=?, ~disabled=false, ~style as styleFromProp=?) => {
   let modal = React.useRef(Js.Nullable.null);
 
   let (visibleModal, setVisibleModal) = React.useState(_ => false);
@@ -38,7 +39,10 @@ let make = (~account as defaultAccount=?, ~disabled=false) => {
   };
 
   <>
-    <TouchableOpacity style=styles##button onPress disabled>
+    <TouchableOpacity
+      style=Style.(arrayOption([|Some(styles##button), styleFromProp|]))
+      onPress
+      disabled>
       <Typography.ButtonSecondary
         style={disabled ? styles##textButtonDisabled : styles##textButton}>
         "DELEGATE"->React.string
