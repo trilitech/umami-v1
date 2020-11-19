@@ -152,11 +152,24 @@ let map = (result: Belt.Result.t('a, string), transform: 'a => 'b) =>
   };
 
 module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
+  let parse = content =>
+    if (content == "none\n") {
+      None;
+    } else {
+      let splittedContent = content->Js.String2.split(" ");
+      if (splittedContent->Belt.Array.length == 0) {
+        None;
+      } else {
+        Some(splittedContent[0]);
+      };
+    };
+
   let getForAccount = (network, account) =>
     Caller.call(
       [|"-E", network->endpoint, "get", "delegate", "for", account|],
       (),
-    );
+    )
+    ->Future.mapOk(parse);
 
   let getBackers = (network: Network.t) =>
     switch (network) {
