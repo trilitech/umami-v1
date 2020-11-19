@@ -34,7 +34,7 @@ let make = (~onSubmit) => {
       onValueChange={(value, _) => setSelectedDelegateIndex(_ => value)}>
       {React.array(
          delegates
-         |> Array.mapi((index, delegate: API.Delegate.t) =>
+         |> Array.mapi((index, delegate: Delegate.t) =>
               <Picker.Item label=delegate.name key=delegate.name value=index />
             ),
        )}
