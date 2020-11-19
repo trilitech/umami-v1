@@ -676,11 +676,11 @@ describe("API tests", ({testAsync}) => {
     };
     let expected = [|
       {
-        API.Delegate.name: "foo",
+        Delegate.name: "foo",
         address: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
       },
       {
-        API.Delegate.name: "bar",
+        Delegate.name: "bar",
         address: "tz1NF7b38uQ43N4nmTHvDKpr1Qo5LF9iYawk",
       },
     |];

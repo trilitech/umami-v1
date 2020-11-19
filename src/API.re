@@ -1,5 +1,6 @@
 open ChildReprocess.StdStream;
 open Common;
+open Delegate;
 
 let endpoint = ((network, config: ConfigFile.t)) =>
   switch (network) {
@@ -134,6 +135,14 @@ module Balance = (Caller: CallerAPI) => {
   let get = (network, account) =>
     Caller.call(
       [|"-E", network->endpoint, "get", "balance", "for", account|],
+      (),
+    );
+};
+
+module Delegate = (Caller: CallerAPI) => {
+  let get = (network, account) =>
+    Caller.call(
+      [|"-E", network->endpoint, "get", "delegate", "for", account|],
       (),
     );
 };
@@ -526,35 +535,17 @@ module Scanner = (Caller: CallerAPI, Getter: GetterAPI) => {
   };
 };
 
-module Delegate = {
-  type t = {
-    name: string,
-    address: string,
-  };
-
-  let decode = json =>
-    Json.Decode.{
-      name: json |> field("name", string),
-      address: json |> field("address", string),
-    };
-};
-
 module Delegates = (Getter: GetterAPI) => {
   let get = (network: Network.t) =>
     switch (network) {
     | Main =>
       "https://api.baking-bad.org/v2/bakers"
       ->Getter.get
-      ->Future.map(result =>
-          result->map(Json.Decode.(array(Delegate.decode)))
-        )
+      ->Future.map(result => result->map(Json.Decode.(array(decode))))
     | Test =>
       Future.value(
         Ok([|
-          {
-            Delegate.name: "zebra",
-            address: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
-          },
+          {name: "zebra", address: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"},
         |]),
       )
     };
