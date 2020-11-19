@@ -19,7 +19,7 @@ let explorer = ((network: Network.t, config: ConfigFile.t)) =>
   };
 
 module Path = {
-  let delegates = "chains/main/blocks/head/context/delegates\\?active=true";
+  let delegates = "/chains/main/blocks/head/context/delegates\\?active=true";
   let operations = "operations";
   let mempool_operations = "mempool_operations";
 };
@@ -492,7 +492,7 @@ module Scanner = (Caller: CallerAPI, Getter: GetterAPI) => {
   let rec scan = (network, backupPhrase, baseName, ~derivationSchema, ~index) => {
     let seed = HD.BIP39.mnemonicToSeedSync(backupPhrase);
     let suffix = index->Js.Int.toString;
-    LocalStorage.setItem("index", suffix)
+    LocalStorage.setItem("index", suffix);
     let derivationPath = derivationSchema->Js.String2.replace("?", suffix);
     let edsk2 = HD.seedToPrivateKey(HD.deriveSeed(seed, derivationPath));
     Js.log(baseName ++ index->Js.Int.toString ++ " " ++ edsk2);
@@ -526,12 +526,38 @@ module Scanner = (Caller: CallerAPI, Getter: GetterAPI) => {
   };
 };
 
+module Delegate = {
+  type t = {
+    name: string,
+    address: string,
+  };
+
+  let decode = json =>
+    Json.Decode.{
+      name: json |> field("name", string),
+      address: json |> field("address", string),
+    };
+};
+
 module Delegates = (Getter: GetterAPI) => {
-  let get = network =>
-    network
-    ->URL.delegates
-    ->Getter.get
-    ->Future.map(result => result->map(Json.Decode.(array(string))));
+  let get = (network: Network.t) =>
+    switch (network) {
+    | Main =>
+      "https://api.baking-bad.org/v2/bakers"
+      ->Getter.get
+      ->Future.map(result =>
+          result->map(Json.Decode.(array(Delegate.decode)))
+        )
+    | Test =>
+      Future.value(
+        Ok([|
+          {
+            Delegate.name: "zebra",
+            address: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
+          },
+        |]),
+      )
+    };
 };
 
 module Aliases = (Caller: CallerAPI) => {
