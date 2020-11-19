@@ -29,7 +29,7 @@ let make =
     let delegateRequest = DelegateApiRequest.useGetDelegate(account.address);
 
     switch (delegateRequest) {
-    | Done(Ok(delegate)) =>
+    | Done(Ok(Some(delegate))) =>
       <RowItem.Bordered height=48. style={Style.style(~zIndex, ())}>
         <View style=styles##borderSpacer />
         <View style=styles##cellAccount>
@@ -41,7 +41,7 @@ let make =
           <Typography.Body1> delegate->React.string </Typography.Body1>
         </View>
       </RowItem.Bordered>
-    | Done(Error(_))
+    | Done(_)
     | NotAsked
     | Loading => React.null
     };
