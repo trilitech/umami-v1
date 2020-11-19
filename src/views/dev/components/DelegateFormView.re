@@ -16,7 +16,7 @@ let make = (~onSubmit) => {
 
   React.useEffect2(
     () => {
-      API.getBackers(network)
+      API.getBakers(network)
       ->FutureEx.getOk(value => setDelegates(_ => value));
       None;
     },

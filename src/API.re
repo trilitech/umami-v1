@@ -171,7 +171,7 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
     )
     ->Future.mapOk(parse);
 
-  let getBackers = (network: Network.t) =>
+  let getBakers = (network: Network.t) =>
     switch (network) {
     | Main =>
       "https://api.baking-bad.org/v2/bakers"

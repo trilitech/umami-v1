@@ -691,7 +691,7 @@ describe("API tests", ({testAsync}) => {
       },
     |];
     module UnderTest = API.Delegate(Dummy, Stub);
-    UnderTest.getBackers(Main)
+    UnderTest.getBakers(Main)
     ->Future.get(result => {
         expect.value(result).toEqual(Belt.Result.Ok(expected));
         callback();
@@ -721,7 +721,7 @@ describe("API tests", ({testAsync}) => {
       };
     };
     module UnderTest = API.Delegate(Dummy, Stub);
-    UnderTest.getBackers(Main)
+    UnderTest.getBakers(Main)
     ->Future.tapError(Js.log)
     ->Future.get(result => {
         expect.value(result).toEqual(
