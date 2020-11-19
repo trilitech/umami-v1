@@ -4,6 +4,7 @@ type t =
   | Accounts
   | Operations
   | AddressBook
+  | Delegations
   | Debug
   | NotFound;
 
@@ -15,6 +16,7 @@ let match = (url: url) =>
   | [] => Accounts
   | ["operations"] => Operations
   | ["address-book"] => AddressBook
+  | ["delegations"] => Delegations
   | ["debug"] => Debug
   | _ => NotFound
   };
@@ -24,6 +26,7 @@ let toHref =
   | Accounts => "/"
   | Operations => "/operations"
   | AddressBook => "/address-book"
+  | Delegations => "/delegations"
   | Debug => "/debug"
   | NotFound => raise(RouteToNotFound);
 
