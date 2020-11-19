@@ -77,11 +77,23 @@ let make =
       ~renderButton,
       ~renderItem,
     ) => {
+  let touchableRef = React.useRef(Js.Nullable.null);
+
   let (isOpen, setIsOpen) = React.useState(_ => false);
+
+  DocumentContext.useDocumentPress(
+    React.useCallback1(
+      pressEvent =>
+        if (touchableRef.current !==
+            pressEvent->Event.PressEvent.nativeEvent##target) {
+          setIsOpen(_ => false);
+        },
+      [|setIsOpen|],
+    ),
+  );
 
   let onChange = newValue => {
     onValueChange(newValue);
-    setIsOpen(_ => false);
   };
 
   let selectedItem =
@@ -90,8 +102,10 @@ let make =
     );
 
   <View ?style>
-    <TouchableOpacity onPress={_e => setIsOpen(prevIsOpen => !prevIsOpen)}>
-      <View style=styles##button>
+    <TouchableOpacity
+      ref={touchableRef->Ref.value}
+      onPress={_e => setIsOpen(prevIsOpen => !prevIsOpen)}>
+      <View style=styles##button pointerEvents=`none>
         {renderButton(selectedItem)}
         <Icons.ChevronDown
           size=24.
@@ -100,16 +114,14 @@ let make =
         />
       </View>
     </TouchableOpacity>
-    {isOpen
-       ? <View>
-           <ScrollView style=styles##listContainer>
-             {items
-              ->Belt.Array.map(item =>
-                  <Item key={item.value} item onChange renderItem />
-                )
-              ->React.array}
-           </ScrollView>
-         </View>
-       : React.null}
+    <View style={ReactUtils.displayOn(isOpen)}>
+      <ScrollView style=styles##listContainer>
+        {items
+         ->Belt.Array.map(item =>
+             <Item key={item.value} item onChange renderItem />
+           )
+         ->React.array}
+      </ScrollView>
+    </View>
   </View>;
 };

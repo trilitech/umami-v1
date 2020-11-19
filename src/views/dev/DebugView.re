@@ -128,19 +128,17 @@ let make = () => {
                 onSubmit={(source, amount, destination) =>
                   setInjection(_ =>
                     Pending(
-                      Transaction(
-                        Injection.makeTransfer(
-                          ~source,
-                          ~amount,
-                          ~destination,
-                          (),
-                        ),
+                      Injection.makeTransfer(
+                        ~source,
+                        ~amount,
+                        ~destination,
+                        (),
                       ),
                     )
                   )
                 }
               />
-              <DelegateForm
+              <DelegateFormView
                 onSubmit={(source, delegate) =>
                   AccountsAPI.add("delegate", delegate)
                   ->Future.tapOk(_ =>
@@ -149,7 +147,13 @@ let make = () => {
                     )
                   ->FutureEx.getOk(_ =>
                       setInjection(_ =>
-                        Pending(Delegation({source, delegate: "delegate"}))
+                        Pending(
+                          Injection.makeDelegate(
+                            ~source,
+                            ~delegate="delegate",
+                            (),
+                          ),
+                        )
                       )
                     )
                 }

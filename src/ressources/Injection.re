@@ -11,6 +11,18 @@ type transaction = {
   forceLowFee: option(bool),
 };
 
+type delegation = {
+  source: string,
+  delegate: string,
+  fee: option(float),
+  burnCap: option(float),
+  forceLowFee: option(bool),
+};
+
+type operation =
+  | Transaction(transaction)
+  | Delegation(delegation);
+
 let makeTransfer =
     (
       ~source,
@@ -25,7 +37,7 @@ let makeTransfer =
       ~forceLowFee=?,
       (),
     ) => {
-  {
+  Transaction({
     source,
     amount,
     destination,
@@ -36,14 +48,10 @@ let makeTransfer =
     burnCap,
     confirmations,
     forceLowFee,
-  };
+  });
 };
 
-type delegation = {
-  source: string,
-  delegate: string,
+let makeDelegate =
+    (~source, ~delegate, ~fee=?, ~burnCap=?, ~forceLowFee=?, ()) => {
+  Delegation({source, delegate, fee, burnCap, forceLowFee});
 };
-
-type operation =
-  | Transaction(transaction)
-  | Delegation(delegation);

@@ -5,25 +5,15 @@ let styles =
     StyleSheet.create({
       "button":
         style(
-          ~height=203.->dp,
-          ~width=424.->dp,
+          ~height=36.->dp,
+          ~paddingHorizontal=16.->dp,
           ~justifyContent=`center,
           ~alignItems=`center,
-          ~backgroundColor="#121212",
           ~borderRadius=4.,
+          ~backgroundColor="#D8BC63",
           (),
         ),
-      "iconContainer":
-        style(
-          ~width=60.->dp,
-          ~height=60.->dp,
-          ~justifyContent=`center,
-          ~alignItems=`center,
-          ~marginBottom=28.->dp,
-          ~borderRadius=30.,
-          ~backgroundColor="#FFF",
-          (),
-        ),
+      "textButton": style(~color="rgba(0,0,0,0.87)", ()),
     })
   );
 
@@ -48,15 +38,12 @@ let make = () => {
 
   <>
     <TouchableOpacity style=styles##button onPress>
-      <View style=styles##iconContainer>
-        <Icons.Add size=36. color=Colors.plainIconContent />
-      </View>
-      <Typography.Subtitle2>
-        "CREATE NEW ACCOUNT"->React.string
-      </Typography.Subtitle2>
+      <Typography.ButtonSecondary style=styles##textButton>
+        "DELEGATE"->React.string
+      </Typography.ButtonSecondary>
     </TouchableOpacity>
     <ModalAction ref=modal visible=visibleModal onRequestClose=closeAction>
-      <CreateAccountOnboardingView onPressCancel />
+      <DelegateView onPressCancel />
     </ModalAction>
   </>;
 };

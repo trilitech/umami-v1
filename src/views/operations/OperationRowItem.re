@@ -67,100 +67,91 @@ let make =
     let accounts = StoreContext.useAccounts();
 
     <RowItem.Bordered height=48.>
-      {_ => {
-         <>
-           <View style=styles##borderSpacer />
-           {switch (operation.payload) {
-            | Business(business) =>
-              switch (business.payload) {
-              | Reveal(_reveal) =>
-                <>
-                  <View style=styles##cellType>
-                    <Typography.Body1>
-                      "Reveal"->React.string
-                    </Typography.Body1>
-                  </View>
-                  <View style=styles##cellAmount />
-                  <View style=styles##cellFee>
-                    <Typography.Body1>
-                      {business.fee->BusinessUtils.formatMilliXTZ->React.string}
-                    </Typography.Body1>
-                  </View>
-                  <View style=styles##cellAddress />
-                  <View style=styles##cellAddress />
-                </>
-              | Transaction(transaction) =>
-                <>
-                  <View style=styles##cellType>
-                    <Typography.Body1>
-                      "Transaction"->React.string
-                    </Typography.Body1>
-                  </View>
-                  {amount(account, transaction)}
-                  <View style=styles##cellFee>
-                    <Typography.Body1>
-                      {business.fee->BusinessUtils.formatMilliXTZ->React.string}
-                    </Typography.Body1>
-                  </View>
-                  <View style=styles##cellAddress>
-                    <Typography.Body1 numberOfLines=1>
-                      {StoreContext.getAlias(accounts, business.source)
-                       ->React.string}
-                    </Typography.Body1>
-                  </View>
-                  <View style=styles##cellAddress>
-                    <Typography.Body1 numberOfLines=1>
-                      {StoreContext.getAlias(
-                         accounts,
-                         transaction.destination,
-                       )
-                       ->React.string}
-                    </Typography.Body1>
-                  </View>
-                </>
-              | Origination(_origination) =>
-                <>
-                  <View style=styles##cellType>
-                    <Typography.Body1>
-                      "Origination"->React.string
-                    </Typography.Body1>
-                  </View>
-                  <View style=styles##cellAmount />
-                  <View style=styles##cellFee />
-                  <View style=styles##cellAddress />
-                  <View style=styles##cellAddress />
-                  <View />
-                </>
-              | Delegation(_delegation) =>
-                <>
-                  <View style=styles##cellType>
-                    <Typography.Body1>
-                      "Delegation"->React.string
-                    </Typography.Body1>
-                  </View>
-                  <View style=styles##cellAmount />
-                  <View style=styles##cellFee />
-                  <View style=styles##cellAddress />
-                  <View style=styles##cellAddress />
-                </>
-              | Unknown => React.null
-              }
-            }}
-           <View style=styles##cellDate>
-             <Typography.Body1>
-               {operation.timestamp->Js.Date.toLocaleString->React.string}
-             </Typography.Body1>
-           </View>
-           <View style=styles##cellStatus>
-             <Typography.Body1>
-               {switch (operation.status) {
-                | Mempool => "in mempool"
-                | Chain => "in chain"
-                }}
-               ->React.string
-             </Typography.Body1>
-           </View>
-         </>;
+      <View style=styles##borderSpacer />
+      {switch (operation.payload) {
+       | Business(business) =>
+         switch (business.payload) {
+         | Reveal(_reveal) =>
+           <>
+             <View style=styles##cellType>
+               <Typography.Body1> "Reveal"->React.string </Typography.Body1>
+             </View>
+             <View style=styles##cellAmount />
+             <View style=styles##cellFee>
+               <Typography.Body1>
+                 {business.fee->BusinessUtils.formatMilliXTZ->React.string}
+               </Typography.Body1>
+             </View>
+             <View style=styles##cellAddress />
+             <View style=styles##cellAddress />
+           </>
+         | Transaction(transaction) =>
+           <>
+             <View style=styles##cellType>
+               <Typography.Body1>
+                 "Transaction"->React.string
+               </Typography.Body1>
+             </View>
+             {amount(account, transaction)}
+             <View style=styles##cellFee>
+               <Typography.Body1>
+                 {business.fee->BusinessUtils.formatMilliXTZ->React.string}
+               </Typography.Body1>
+             </View>
+             <View style=styles##cellAddress>
+               <Typography.Body1 numberOfLines=1>
+                 {StoreContext.getAlias(accounts, business.source)
+                  ->React.string}
+               </Typography.Body1>
+             </View>
+             <View style=styles##cellAddress>
+               <Typography.Body1 numberOfLines=1>
+                 {StoreContext.getAlias(accounts, transaction.destination)
+                  ->React.string}
+               </Typography.Body1>
+             </View>
+           </>
+         | Origination(_origination) =>
+           <>
+             <View style=styles##cellType>
+               <Typography.Body1>
+                 "Origination"->React.string
+               </Typography.Body1>
+             </View>
+             <View style=styles##cellAmount />
+             <View style=styles##cellFee />
+             <View style=styles##cellAddress />
+             <View style=styles##cellAddress />
+             <View />
+           </>
+         | Delegation(_delegation) =>
+           <>
+             <View style=styles##cellType>
+               <Typography.Body1>
+                 "Delegation"->React.string
+               </Typography.Body1>
+             </View>
+             <View style=styles##cellAmount />
+             <View style=styles##cellFee />
+             <View style=styles##cellAddress />
+             <View style=styles##cellAddress />
+           </>
+         | Unknown => React.null
+         }
        }}
+      <View style=styles##cellDate>
+        <Typography.Body1>
+          {operation.timestamp->Js.Date.toLocaleString->React.string}
+        </Typography.Body1>
+      </View>
+      <View style=styles##cellStatus>
+        <Typography.Body1>
+          {switch (operation.status) {
+           | Mempool => "in mempool"
+           | Chain => "in chain"
+           }}
+          ->React.string
+        </Typography.Body1>
+      </View>
     </RowItem.Bordered>;
   });

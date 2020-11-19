@@ -22,28 +22,29 @@ let styles =
 module Base = {
   [@react.component]
   let make = (~height, ~style as stylearg=?, ~children) => {
-    <Pressable>
-      {interactionState =>
-         <View
-           style=Style.(
-             arrayOption([|
-               stylearg,
-               Some(styles##container),
-               Some(style(~height=height->dp, ())),
-             |])
-           )>
-           <View
-             style=Style.(
-               arrayOption([|
-                 Some(styles##innerContainer),
-                 interactionState.hovered
-                   ? Some(styles##containerHovered) : None,
-               |])
-             )>
-             {children(interactionState)}
-           </View>
-         </View>}
-    </Pressable>;
+    let (hovered, setHovered) = React.useState(_ => false);
+    <View
+      onMouseEnter={_ => setHovered(_ => true)}
+      onMouseLeave={_ => setHovered(_ => false)}
+      onResponderGrant={_ => setHovered(_ => false)}
+      onResponderRelease={_ => setHovered(_ => true)}
+      style=Style.(
+        arrayOption([|
+          stylearg,
+          Some(styles##container),
+          Some(style(~height=height->dp, ())),
+        |])
+      )>
+      <View
+        style=Style.(
+          arrayOption([|
+            Some(styles##innerContainer),
+            hovered ? Some(styles##containerHovered) : None,
+          |])
+        )>
+        {children(hovered)}
+      </View>
+    </View>;
   };
 };
 
@@ -51,19 +52,20 @@ module Bordered = {
   [@react.component]
   let make = (~height, ~style=?, ~children) => {
     <Base height ?style>
-      {interactionState =>
+      {_ =>
          <>
-           {<View style=styles##border />}
-           <View style=styles##inner> {children(interactionState)} </View>
+           <View style=styles##border />
+           <View style=styles##inner> children </View>
          </>}
     </Base>;
   };
 };
 
-[@react.component]
-let make = (~height, ~style=?, ~children) => {
-  <Base ?style height>
-    {interactionState =>
-       <> <View style=styles##inner> {children(interactionState)} </View> </>}
-  </Base>;
+module Hoverable = {
+  [@react.component]
+  let make = (~height, ~style=?, ~children) => {
+    <Base ?style height>
+      {hovered => <View style=styles##inner> {children(hovered)} </View>}
+    </Base>;
+  };
 };

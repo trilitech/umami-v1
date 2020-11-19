@@ -58,8 +58,8 @@ module ErrorDeleteButton = {
 module Item = {
   [@react.component]
   let make = (~indice, ~error: Error.t) => {
-    <RowItem height=46. style=styles##item>
-      {({hovered}: Pressable.interactionState) => {
+    <RowItem.Hoverable height=46. style=styles##item>
+      {hovered => {
          <View style=styles##itemContent>
            <Typography.Body3
              style=styles##reqelt
@@ -86,7 +86,7 @@ module Item = {
            </View>
          </View>;
        }}
-    </RowItem>;
+    </RowItem.Hoverable>;
   };
 };
 

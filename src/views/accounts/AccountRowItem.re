@@ -10,8 +10,9 @@ module AccountDeleteButton = {
     };
 
     <DeleteButton
-      title="Delete account?"
-      titleDone="Account deleted"
+      buttonText="Delete account"
+      modalTitle="Delete account?"
+      modalTitleDone="Account deleted"
       onPressConfirmDelete
       request=accountRequest
     />;
@@ -21,40 +22,33 @@ module AccountDeleteButton = {
 let styles =
   Style.(
     StyleSheet.create({
-      "inner": style(~width=355.->dp, ~marginLeft=14.->dp, ()),
+      "inner": style(~width=300.->dp, ~marginLeft=14.->dp, ()),
       "actionButtons":
         style(
           ~alignSelf=`flexEnd,
           ~flexDirection=`row,
+          ~flex=1.,
           ~marginBottom=(-3.)->dp,
           (),
         ),
+      "actionDelegate": style(~marginRight=12.->dp, ()),
     })
   );
 
 [@react.component]
-let make = (~account: Account.t) => {
+let make = (~account: Account.t, ~zIndex) => {
   let balanceRequest = BalanceApiRequest.useLoad(account.address);
 
-  <RowItem.Bordered height=94.>
-    {({hovered}: Pressable.interactionState) => {
-       <>
-         <View style=styles##inner>
-           <AccountInfo account balanceRequest />
-         </View>
-         <View
-           style=Style.(
-             array([|
-               styles##actionButtons,
-               style(~display=hovered ? `flex : `none, ()),
-             |])
-           )>
-           <ClipboardButton data={account.address} />
-           <QrButton account balanceRequest />
-           <IconButton icon=Icons.Edit.build />
-           <AccountDeleteButton account />
-         </View>
-       </>;
-     }}
+  <RowItem.Bordered height=74. style={Style.style(~zIndex, ())}>
+    <View style=styles##inner> <AccountInfo account balanceRequest /> </View>
+    <View style=styles##actionButtons>
+      <ClipboardButton data={account.address} />
+      <QrButton account balanceRequest />
+    </View>
+    <View style=styles##actionDelegate> <DelegateButton /> </View>
+    <Menu icon=Icons.More.build>
+      <Menu.Item text="Edit account" icon=Icons.Edit.build />
+      <AccountDeleteButton account />
+    </Menu>
   </RowItem.Bordered>;
 };
