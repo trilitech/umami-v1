@@ -26,7 +26,30 @@ let styles =
 
 [@react.component]
 let make = () => {
+  let accounts = StoreContext.useAccounts();
+
   <View style=styles##container>
-    <View style=styles##header> <DelegateButton /> </View>
+    {accounts->Belt.Option.mapWithDefault(<LoadingView />, accounts => {
+       <>
+         <View style=styles##header> <DelegateButton /> </View>
+         <View style=styles##list>
+           <View style=styles##listContent>
+             {accounts
+              ->Belt.Map.String.valuesToArray
+              ->Belt.SortArray.stableSortBy((a, b) =>
+                  Pervasives.compare(a.alias, b.alias)
+                )
+              ->Belt.Array.mapWithIndex((index, account) =>
+                  <DelegateRowItem
+                    key={account.address}
+                    account
+                    zIndex={accounts->Belt.Map.String.size - index}
+                  />
+                )
+              ->React.array}
+           </View>
+         </View>
+       </>
+     })}
   </View>;
 };

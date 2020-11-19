@@ -22,7 +22,7 @@ module AccountDeleteButton = {
 let styles =
   Style.(
     StyleSheet.create({
-      "inner": style(~width=300.->dp, ~marginLeft=14.->dp, ()),
+      "inner": style(~width=320.->dp, ~marginLeft=14.->dp, ()),
       "actionButtons":
         style(
           ~alignSelf=`flexEnd,
