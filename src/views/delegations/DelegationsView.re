@@ -46,6 +46,11 @@ let make = () => {
                  "ACCOUNT"->React.string
                </Typography.Overline3>
              </DelegateRowItem.CellAddress>
+             <DelegateRowItem.CellAmount>
+               <Typography.Overline3>
+                 "CURRENT BALANCE"->React.string
+               </Typography.Overline3>
+             </DelegateRowItem.CellAmount>
              <DelegateRowItem.CellAddress>
                <Typography.Overline3>
                  "BAKER"->React.string
