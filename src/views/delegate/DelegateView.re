@@ -93,7 +93,7 @@ module Form = {
     open DelegateForm;
 
     [@react.component]
-    let make = (~onPressCancel, ~advancedOptionState, ~form) => {
+    let make = (~onPressCancel, ~advancedOptionState, ~form, ~blockSender) => {
       let onSubmitDelegateForm = _ => {
         form.submit();
       };
@@ -108,6 +108,7 @@ module Form = {
           value={form.values.sender}
           handleChange={form.handleChange(Sender)}
           error={form.getFieldError(Field(Sender))}
+          disabled=blockSender
         />
         <FormGroupTextInput
           label="Baker"
@@ -205,7 +206,13 @@ let make = (~onPressCancel, ~defaultAccount=?) => {
            color=Colors.highIcon
          />
        </View>
-     | (SendStep, _) => <Form.View onPressCancel advancedOptionState form />
+     | (SendStep, _) =>
+       <Form.View
+         onPressCancel
+         advancedOptionState
+         form
+         blockSender={defaultAccount->Belt.Option.isSome}
+       />
      | (PasswordStep(operation), _) =>
        <SignOperationView
          onPressCancel={_ => setModalStep(_ => SendStep)}

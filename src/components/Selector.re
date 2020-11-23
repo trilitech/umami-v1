@@ -76,6 +76,7 @@ let make =
       ~onValueChange,
       ~renderButton,
       ~renderItem,
+      ~disabled=false,
     ) => {
   let touchableRef = React.useRef(Js.Nullable.null);
 
@@ -104,14 +105,17 @@ let make =
   <View ?style>
     <TouchableOpacity
       ref={touchableRef->Ref.value}
-      onPress={_e => setIsOpen(prevIsOpen => !prevIsOpen)}>
+      onPress={_e => setIsOpen(prevIsOpen => !prevIsOpen)}
+      disabled>
       <View style=styles##button pointerEvents=`none>
         {renderButton(selectedItem)}
-        <Icons.ChevronDown
-          size=24.
-          color=Theme.colorDarkMediumEmphasis
-          style=styles##icon
-        />
+        {disabled
+           ? React.null
+           : <Icons.ChevronDown
+               size=24.
+               color=Theme.colorDarkMediumEmphasis
+               style=styles##icon
+             />}
       </View>
     </TouchableOpacity>
     <View style={ReactUtils.displayOn(isOpen)}>

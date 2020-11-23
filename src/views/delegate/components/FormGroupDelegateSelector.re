@@ -10,7 +10,7 @@ let styles =
   );
 
 [@react.component]
-let make = (~label, ~value: string, ~handleChange, ~error) => {
+let make = (~label, ~value: string, ~handleChange, ~error, ~disabled) => {
   let accounts = StoreContext.useAccountsWithDelegates();
 
   let hasError = error->Belt.Option.isSome;
@@ -53,6 +53,7 @@ let make = (~label, ~value: string, ~handleChange, ~error) => {
         selectedValue=value
         renderButton=AccountSelector.renderButton
         renderItem=AccountSelector.renderItem
+        disabled
       />
     </View>
   </FormGroup>;
