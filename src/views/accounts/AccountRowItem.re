@@ -38,7 +38,7 @@ let styles =
 [@react.component]
 let make = (~account: Account.t, ~zIndex, ~handleDelete) => {
   let balanceRequest = BalanceApiRequest.useLoad(account.address);
-  let delegateRequest = DelegateApiRequest.useGetDelegate(account.address);
+  let delegateRequest = DelegateApiRequest.useGetDelegate(account);
 
   <RowItem.Bordered height=74. style={Style.style(~zIndex, ())}>
     <View style=styles##inner> <AccountInfo account balanceRequest /> </View>

@@ -103,7 +103,7 @@ module Form = {
         <Typography.Headline2 style=styles##title>
           "Delegate"->React.string
         </Typography.Headline2>
-        <FormGroupAccountSelector
+        <FormGroupDelegateSelector
           label="Account to delegate"
           value={form.values.sender}
           handleChange={form.handleChange(Sender)}
@@ -167,10 +167,7 @@ let make = (~onPressCancel, ~defaultAccount=?) => {
   let (modalStep, setModalStep) = React.useState(_ => SendStep);
 
   let form =
-    Form.build(
-      defaultAccount->Belt.Option.getWithDefault(account),
-      advancedOptionOpened,
-      op =>
+    Form.build(defaultAccount, advancedOptionOpened, op =>
       setModalStep(_ => PasswordStep(op))
     );
 

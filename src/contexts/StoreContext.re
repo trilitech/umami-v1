@@ -6,6 +6,9 @@ type state = {
   accounts: Belt.Map.String.t(Account.t),
   refreshAccounts: (~loading: bool=?, unit) => unit,
   accountsRequest: ApiRequest.t(array((string, string))),
+  delegates: Belt.Map.String.t(string),
+  setDelegates:
+    (Belt.Map.String.t(string) => Belt.Map.String.t(string)) => unit,
   updateAccount: string => unit,
   operations: array(Operation.t),
   setOperations: (array(Operation.t) => array(Operation.t)) => unit,
@@ -21,6 +24,8 @@ let initialState = {
   accounts: Belt.Map.String.empty,
   refreshAccounts: (~loading as _=?, ()) => (),
   accountsRequest: NotAsked,
+  delegates: Belt.Map.String.empty,
+  setDelegates: _ => (),
   updateAccount: _ => (),
   operations: [||],
   setOperations: _ => (),
@@ -70,7 +75,6 @@ let make = (~children) => {
       },
       [|accountsRequest|],
     );
-
   let accounts =
     React.useMemo1(
       () => {accountsArray->Belt.Map.String.fromArray},
@@ -91,6 +95,7 @@ let make = (~children) => {
     (accounts, selectedAccount),
   );
 
+  let (delegates, setDelegates) = React.useState(() => Belt.Map.String.empty);
   let (operations, setOperations) = React.useState(() => [||]);
   let (aliases, setAliases) = React.useState(() => [||]);
 
@@ -101,6 +106,8 @@ let make = (~children) => {
       accounts,
       refreshAccounts,
       accountsRequest,
+      delegates,
+      setDelegates,
       updateAccount,
       operations,
       setOperations,
@@ -153,6 +160,36 @@ let useAccountsRequest = () => {
 let useAccountFromAddress = address => {
   let accounts = useAccounts();
   accounts->Belt.Map.String.get(address);
+};
+
+let useDelegates = () => {
+  let store = useStoreContext();
+  store.delegates;
+};
+
+let useAccountDelegate = address => {
+  let delegates = useDelegates();
+  delegates->Belt.Map.String.get(address);
+};
+
+let useSetAccountDelegate = () => {
+  let store = useStoreContext();
+  (address, delegate) => {
+    delegate->Common.Lib.Option.iter(delegate =>
+      store.setDelegates(delegates =>
+        delegates->Belt.Map.String.set(address, delegate)
+      )
+    );
+  };
+};
+
+let useAccountsWithDelegates = () => {
+  let store = useStoreContext();
+  store.accounts
+  ->Belt.Map.String.map(account => {
+      let delegate = store.delegates->Belt.Map.String.get(account.address);
+      (account, delegate);
+    });
 };
 
 let getAlias = (accounts, address) => {

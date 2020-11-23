@@ -28,7 +28,7 @@ let memo = component =>
 let make =
   memo((~account: Account.t, ~zIndex) => {
     let balanceRequest = BalanceApiRequest.useLoad(account.address);
-    let delegateRequest = DelegateApiRequest.useGetDelegate(account.address);
+    let delegateRequest = DelegateApiRequest.useGetDelegate(account);
 
     switch (delegateRequest) {
     | Done(Ok(Some(delegate))) =>

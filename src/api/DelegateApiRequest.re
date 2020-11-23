@@ -6,10 +6,24 @@ module DelegateAPI = API.Delegate(API.TezosClient, API.TezosExplorer);
 let useGetDelegate = account => {
   let network = StoreContext.useNetwork();
 
-  ApiRequest.useLoader1(
-    (~config, network) =>
-      DelegateAPI.getForAccount((network, config), account),
-    Error.Delegate,
-    network,
+  let setAccountDelegate = StoreContext.useSetAccountDelegate();
+
+  let get = (~config, (network, account: Account.t)) => {
+    (network, config)
+    ->DelegateAPI.getForAccount(account.address)
+    ->Future.tapOk(res => setAccountDelegate(account.address, res));
+  };
+
+  let (getRequest, request) = ApiRequest.useGetter(get, Error.Delegate);
+
+  React.useEffect2(
+    () => {
+      getRequest((network, account));
+
+      None;
+    },
+    (network, account),
   );
+
+  request;
 };
