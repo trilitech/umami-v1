@@ -3,17 +3,7 @@ open ReactNative;
 let styles =
   Style.(
     StyleSheet.create({
-      "formRowInputs":
-        style(~flexDirection=`row, ~justifyContent=`center, ()),
-      "formRowInputsSeparator": style(~width=20.->dp, ()),
-      "formRowInput":
-        style(
-          ~flexGrow=1.,
-          ~flexShrink=1.,
-          ~flexBasis=0.->dp,
-          ~marginVertical=5.->dp,
-          (),
-        ),
+      "formRowInput": style(~marginVertical=5.->dp, ()),
       "loadingOverlay":
         StyleSheet.flatten([|
           StyleSheet.absoluteFillObject,
@@ -52,7 +42,6 @@ let make = (~form: DelegateForm.api) => {
       ->ApiRequest.getDoneOk
       ->Belt.Option.map(dryRun => {
           form.handleChange(Fee, dryRun.fee->Js.Float.toString);
-          /*form.handleChange(BurnCap, dryRun.burnCap->Js.Float.toString);*/
           ();
         })
       ->ignore;
@@ -62,25 +51,14 @@ let make = (~form: DelegateForm.api) => {
   );
 
   <View>
-    <View style=styles##formRowInputs>
-      <FormGroupTextInput
-        label="Fee"
-        value={form.values.fee}
-        handleChange={form.handleChange(Fee)}
-        error={form.getFieldError(Field(Fee))}
-        style=styles##formRowInput
-        decoration=FormGroupXTZInput.xtzDecoration
-      />
-      <View style=styles##formRowInputsSeparator />
-      <FormGroupTextInput
-        label="Burn cap"
-        value={form.values.burnCap}
-        handleChange={form.handleChange(BurnCap)}
-        error={form.getFieldError(Field(BurnCap))}
-        style=styles##formRowInput
-        decoration=FormGroupXTZInput.xtzDecoration
-      />
-    </View>
+    <FormGroupTextInput
+      label="Fee"
+      value={form.values.fee}
+      handleChange={form.handleChange(Fee)}
+      error={form.getFieldError(Field(Fee))}
+      style=styles##formRowInput
+      decoration=FormGroupXTZInput.xtzDecoration
+    />
     <FormGroupCheckbox
       label="Force low fee"
       value={form.values.forceLowFee}

@@ -43,7 +43,6 @@ let buildTransaction = (state: DelegateForm.state, advancedOptionOpened) => {
     ~source=state.values.sender,
     ~delegate=state.values.baker,
     ~fee=?state.values.fee->mapIfAdvanced(Js.Float.fromString),
-    ~burnCap=?state.values.burnCap->mapIfAdvanced(Js.Float.fromString),
     ~forceLowFee=?
       advancedOptionOpened && state.values.forceLowFee ? Some(true) : None,
     (),
@@ -63,11 +62,7 @@ module Form = {
           Schema(
             nonEmpty(Sender)
             + nonEmpty(Baker)
-            + custom(values => FormUtils.isValidFloat(values.fee), Fee)
-            + custom(
-                values => FormUtils.isValidFloat(values.burnCap),
-                BurnCap,
-              ),
+            + custom(values => FormUtils.isValidFloat(values.fee), Fee),
           )
         );
       },
@@ -82,7 +77,6 @@ module Form = {
         sender: initAccount->Belt.Option.mapWithDefault("", a => a.address),
         baker: "",
         fee: "",
-        burnCap: "",
         forceLowFee: false,
       },
       (),
