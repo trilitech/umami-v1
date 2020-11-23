@@ -18,7 +18,7 @@ module AddContactButton = {
     );
 
   [@react.component]
-  let make = () => {
+  let make = (~handleAdd) => {
     let modal = React.useRef(Js.Nullable.null);
 
     let (visibleModal, setVisibleModal) = React.useState(_ => false);
@@ -48,7 +48,7 @@ module AddContactButton = {
         </Typography.ButtonSecondary>
       </TouchableOpacity>
       <ModalAction ref=modal visible=visibleModal onRequestClose=closeAction>
-        <ContactAddView onPressCancel />
+        <ContactAddView onPressCancel handleAdd />
       </ModalAction>
     </>;
   };
@@ -58,12 +58,24 @@ let styles = Style.(StyleSheet.create({"container": style(~flex=1., ())}));
 
 [@react.component]
 let make = () => {
-  let aliasesRequest = AliasApiRequest.useLoad();
+  let (getAliases, aliasesRequest) = AliasApiRequest.useGet();
+  let aliases = StoreContext.useAliases();
+
+  React.useEffect0(() => {
+    getAliases()->ignore;
+    None;
+  });
+
+  let handleAdd = () => {
+    getAliases(~loading=false, ())->ignore;
+  };
+
+  let handleDelete = handleAdd;
 
   <Page>
-    <AddContactButton />
+    <AddContactButton handleAdd />
     {switch (aliasesRequest) {
-     | Done(Ok(aliases)) =>
+     | Done(Ok(_)) =>
        aliases
        ->Belt.Array.map(((alias, address)) => {
            let account: Account.t = {alias, address};
@@ -73,6 +85,7 @@ let make = () => {
            <AddressBookRowItem
              key={account.address}
              account
+             handleDelete
              zIndex={aliases->Belt.Array.size - index}
            />
          )

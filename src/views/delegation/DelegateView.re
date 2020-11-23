@@ -152,13 +152,13 @@ module Form = {
 let make = (~onPressCancel) => {
   let account = StoreContext.useAccount();
   let network = StoreContext.useNetwork();
-  let (refreshOperations, _) = OperationApiRequest.useGetOperations();
+  let (refreshOperations, _) = OperationApiRequest.useGet();
 
   let (advancedOptionOpened, _) as advancedOptionState =
     React.useState(_ => false);
 
   let (operationRequest, sendOperation) =
-    OperationApiRequest.useCreateOperation(network);
+    OperationApiRequest.useCreate(network);
 
   let sendOperation = (operation, ~password) =>
     account->Lib.Option.iter(account =>

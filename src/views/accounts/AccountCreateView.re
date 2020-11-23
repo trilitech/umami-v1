@@ -25,7 +25,7 @@ let styles =
   );
 
 [@react.component]
-let make = (~onPressCancel) => {
+let make = (~onPressCancel, ~handleAdd) => {
   let (accountRequest, createAccount) = AccountApiRequest.useCreate();
 
   let form: AccountCreateForm.api =
@@ -35,7 +35,9 @@ let make = (~onPressCancel) => {
       },
       ~onSubmit=
         ({state}) => {
-          createAccount(state.values.name)->ignore;
+          createAccount(state.values.name)
+          ->Future.tapOk(_ => handleAdd())
+          ->ignore;
           None;
         },
       ~initialState={name: ""},

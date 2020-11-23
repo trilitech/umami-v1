@@ -36,6 +36,11 @@ let make = (~onPressCancel) => {
   let (accountWithMnemonicRequest, createAccountWithMnemonic) =
     AccountApiRequest.useCreateWithMnemonics();
 
+  let refreshAccounts = StoreContext.useRefreshAccounts();
+  let handleAdd = () => refreshAccounts(~loading=false, ())->ignore;
+  let createAccountWithMnemonic = p =>
+    createAccountWithMnemonic(p)->Future.tapOk(_ => handleAdd())->ignore;
+
   // using a react ref prevent from genereting other mnemonic at other render
   // a useState can also be used, but because we don't need to set
   // other value later, it's unecessary to be used

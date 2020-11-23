@@ -43,7 +43,7 @@ let make = () => {
   let account = StoreContext.useAccount();
   let network = StoreContext.useNetwork();
 
-  let (get, operationsRequest) = OperationApiRequest.useGetOperations();
+  let (get, operationsRequest) = OperationApiRequest.useGet();
 
   React.useEffect2(
     () => {

@@ -35,6 +35,11 @@ let make = (~onPressCancel) => {
   let (accountWithMnemonicRequest, createAccountWithMnemonic) =
     AccountApiRequest.useCreateWithMnemonics();
 
+  let refreshAccounts = StoreContext.useRefreshAccounts();
+  let handleAdd = () => refreshAccounts(~loading=false, ())->ignore;
+  let createAccountWithMnemonic = p =>
+    createAccountWithMnemonic(p)->Future.tapOk(_ => handleAdd())->ignore;
+
   let (mnemonic, setMnemonic) = React.useState(_ => Belt.Array.make(24, ""));
 
   <ModalView.Form>

@@ -17,7 +17,6 @@ let make = (~label, ~value: string, ~handleChange, ~error) => {
 
   let items =
     accounts
-    ->Belt.Option.getWithDefault(Belt.Map.String.empty)
     ->Belt.Map.String.valuesToArray
     ->Belt.SortArray.stableSortBy((a, b) =>
         Pervasives.compare(a.alias, b.alias)
@@ -42,9 +41,7 @@ let make = (~label, ~value: string, ~handleChange, ~error) => {
         onValueChange={value => {
           setCurrent(_ => value);
           accounts
-          ->Belt.Option.flatMap(accounts =>
-              accounts->Belt.Map.String.get(value)
-            )
+          ->Belt.Map.String.get(value)
           ->Belt.Option.mapWithDefault("", a => a.address)
           ->handleChange;
         }}

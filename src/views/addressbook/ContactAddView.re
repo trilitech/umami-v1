@@ -30,7 +30,7 @@ let styles =
   );
 
 [@react.component]
-let make = (~onPressCancel) => {
+let make = (~onPressCancel, ~handleAdd) => {
   let (aliasRequest, createAlias) = AliasApiRequest.useCreate();
 
   let form: AccountCreateForm.api =
@@ -42,7 +42,9 @@ let make = (~onPressCancel) => {
       },
       ~onSubmit=
         ({state}) => {
-          createAlias((state.values.name, state.values.address))->ignore;
+          createAlias((state.values.name, state.values.address))
+          ->Future.tapOk(_ => handleAdd())
+          ->ignore;
 
           None;
         },
