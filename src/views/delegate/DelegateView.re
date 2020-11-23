@@ -104,7 +104,7 @@ module Form = {
           error={form.getFieldError(Field(Sender))}
           disabled=blockSender
         />
-        <FormGroupTextInput
+        <FormGroupBakerSelector
           label="Baker"
           value={form.values.baker}
           handleChange={form.handleChange(Baker)}

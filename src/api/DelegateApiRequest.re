@@ -27,3 +27,25 @@ let useGetDelegate = account => {
 
   request;
 };
+
+/* Get Bakers */
+
+let useGetBakers = () => {
+  let network = StoreContext.useNetwork();
+
+  let get = (~config as _c, network) => {
+    DelegateAPI.getBakers(network);
+  };
+
+  let (getRequest, request) = ApiRequest.useGetter(get, Error.Delegate);
+
+  React.useEffect1(
+    () => {
+      getRequest(network);
+      None;
+    },
+    [|network|],
+  );
+
+  request;
+};
