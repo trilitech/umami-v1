@@ -13,6 +13,12 @@ module CellAmount =
     ();
   });
 
+module CellAction =
+  Table.MakeCell({
+    let style = Style.(style(~flexBasis=68.->dp, ~alignItems=`flexEnd, ()));
+    ();
+  });
+
 let memo = component =>
   React.memoCustomCompareProps(component, (prevPros, nextProps) =>
     prevPros##account == nextProps##account
@@ -51,6 +57,16 @@ let make =
         <CellAddress>
           <Typography.Body1> delegate->React.string </Typography.Body1>
         </CellAddress>
+        <CellAction>
+          <Menu icon=Icons.More.build size=30.>
+            <Menu.Item text="Change baker" icon=Icons.Change.build />
+            <Menu.Item
+              text="End delegation"
+              colorStyle=`error
+              icon=Icons.Close.build
+            />
+          </Menu>
+        </CellAction>
       </Table.Row>
     | Done(_)
     | NotAsked

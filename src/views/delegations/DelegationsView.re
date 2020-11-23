@@ -56,6 +56,7 @@ let make = () => {
                  "BAKER"->React.string
                </Typography.Overline3>
              </DelegateRowItem.CellAddress>
+             <DelegateRowItem.CellAction />
            </Table.Head>
          </View>
          <View style=styles##list>

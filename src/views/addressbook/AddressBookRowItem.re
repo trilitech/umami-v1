@@ -61,7 +61,7 @@ let make =
         <QrButton account />
       </View>
       <View>
-        <Menu icon=Icons.More.build>
+        <Menu icon=Icons.More.build size=30.>
           <Menu.Item text=I18n.t#addressbook_menu_edit icon=Icons.Edit.build />
           <AliasDeleteButton account handleDelete />
         </Menu>

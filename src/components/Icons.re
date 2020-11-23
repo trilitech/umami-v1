@@ -104,3 +104,4 @@ module Edit = Make(SVGIconEdit);
 module ArrowDown = Make(SVGIconArrowDown);
 module More = Make(SVGIconMore);
 module Delegate = Make(SVGIconDelegate);
+module Change = Make(SVGIconChange);
