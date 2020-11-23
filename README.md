@@ -5,10 +5,14 @@ Tezos Client GUI
 
 * [node](https://nodejs.org)
 * [yarn](https://yarnpkg.com)
+* [tezos-client](https://gitlab.com/tezos/tezos) (branch alex@dry_run_no_pass)
+  It must be accessible from PATH where electron starts.
 
-* [tezos-client](https://gitlab.com/tezos/tezos)
-It must be accessible from PATH where electron starts.
-and at least version 8
+## Compile Tezos Client (branch alex@dry_run_no_pass)
+
+To compile Tezos you need rust.
+
+You can use the provided script get-and-compile-tezos.sh, it will get and compile the branch alex@dry_run_no_pass of Tezos.
 
 ## Development scripts
 
