@@ -19,17 +19,6 @@ let styles =
           ~zIndex=2,
           (),
         ),
-      "thead":
-        style(
-          ~flexDirection=`row,
-          ~alignItems=`center,
-          ~height=30.->dp,
-          ~paddingLeft=22.->dp,
-          ~borderColor="rgba(255,255,255,0.38)",
-          ~borderBottomWidth=1.,
-          ~zIndex=1,
-          (),
-        ),
       "list": style(~flex=1., ~zIndex=1, ()),
       "listContent":
         style(
@@ -51,18 +40,18 @@ let make = () => {
        <>
          <View style=styles##header>
            <DelegateButton style=styles##button />
-           <View style=styles##thead>
-             <View style=DelegateRowItem.styles##cellAccount>
+           <Table.Head>
+             <DelegateRowItem.CellAddress>
                <Typography.Overline3>
                  "ACCOUNT"->React.string
                </Typography.Overline3>
-             </View>
-             <View style=DelegateRowItem.styles##cellBaker>
+             </DelegateRowItem.CellAddress>
+             <DelegateRowItem.CellAddress>
                <Typography.Overline3>
                  "BAKER"->React.string
                </Typography.Overline3>
-             </View>
-           </View>
+             </DelegateRowItem.CellAddress>
+           </Table.Head>
          </View>
          <View style=styles##list>
            <View style=styles##listContent>

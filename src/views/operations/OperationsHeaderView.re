@@ -19,17 +19,6 @@ let styles =
           ~zIndex=2,
           (),
         ),
-      "thead":
-        style(
-          ~flexDirection=`row,
-          ~alignItems=`center,
-          ~height=30.->dp,
-          ~paddingLeft=22.->dp,
-          ~borderColor="rgba(255,255,255,0.38)",
-          ~borderBottomWidth=1.,
-          ~zIndex=1,
-          (),
-        ),
     })
   );
 
@@ -37,42 +26,42 @@ let styles =
 let make = () => {
   <View style=styles##header>
     <AccountSelector style=styles##selector />
-    <View style=styles##thead>
-      <View style=OperationRowItem.styles##cellType>
+    <Table.Head>
+      <OperationRowItem.CellType>
         <Typography.Overline3>
           I18n.t#operation_column_type->React.string
         </Typography.Overline3>
-      </View>
-      <View style=OperationRowItem.styles##cellAmount>
+      </OperationRowItem.CellType>
+      <OperationRowItem.CellAmount>
         <Typography.Overline3>
           I18n.t#operation_column_amount->React.string
         </Typography.Overline3>
-      </View>
-      <View style=OperationRowItem.styles##cellFee>
+      </OperationRowItem.CellAmount>
+      <OperationRowItem.CellFee>
         <Typography.Overline3>
           I18n.t#operation_column_fee->React.string
         </Typography.Overline3>
-      </View>
-      <View style=OperationRowItem.styles##cellAddress>
+      </OperationRowItem.CellFee>
+      <OperationRowItem.CellAddress>
         <Typography.Overline3>
           I18n.t#operation_column_sender->React.string
         </Typography.Overline3>
-      </View>
-      <View style=OperationRowItem.styles##cellAddress>
+      </OperationRowItem.CellAddress>
+      <OperationRowItem.CellAddress>
         <Typography.Overline3>
           I18n.t#operation_column_recipient->React.string
         </Typography.Overline3>
-      </View>
-      <View style=OperationRowItem.styles##cellDate>
+      </OperationRowItem.CellAddress>
+      <OperationRowItem.CellDate>
         <Typography.Overline3>
           I18n.t#operation_column_timestamp->React.string
         </Typography.Overline3>
-      </View>
-      <View style=OperationRowItem.styles##cellStatus>
+      </OperationRowItem.CellDate>
+      <OperationRowItem.CellStatus>
         <Typography.Overline3>
           I18n.t#operation_column_status->React.string
         </Typography.Overline3>
-      </View>
-    </View>
+      </OperationRowItem.CellStatus>
+    </Table.Head>
   </View>;
 };

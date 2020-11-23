@@ -1,39 +1,41 @@
 open ReactNative;
 
-let baseCellStyle = Style.(style(~flexShrink=0., ~marginRight=24.->dp, ()));
-let styles =
-  Style.(
-    StyleSheet.create({
-      "borderSpacer": style(~width=20.->dp, ()),
-      "cellType":
-        StyleSheet.flatten([|baseCellStyle, style(~flexBasis=90.->dp, ())|]),
-      "cellAmount":
-        StyleSheet.flatten([|
-          baseCellStyle,
-          style(~flexBasis=120.->dp, ()),
-        |]),
-      "cellFee":
-        StyleSheet.flatten([|
-          baseCellStyle,
-          style(~flexBasis=120.->dp, ()),
-        |]),
-      "cellAddress":
-        StyleSheet.flatten([|
-          baseCellStyle,
-          style(~flexBasis=180.->dp, ~flexShrink=1., ~flexGrow=1., ()),
-        |]),
-      "cellStatus":
-        StyleSheet.flatten([|
-          baseCellStyle,
-          style(~flexBasis=120.->dp, ~alignItems=`center, ()),
-        |]),
-      "cellDate":
-        StyleSheet.flatten([|
-          baseCellStyle,
-          style(~flexBasis=220.->dp, ()),
-        |]),
-    })
-  );
+module CellType =
+  Table.MakeCell({
+    let style = Style.(style(~flexBasis=90.->dp, ()));
+    ();
+  });
+
+module CellAmount =
+  Table.MakeCell({
+    let style = Style.(style(~flexBasis=120.->dp, ()));
+    ();
+  });
+
+module CellFee =
+  Table.MakeCell({
+    let style = Style.(style(~flexBasis=120.->dp, ()));
+    ();
+  });
+
+module CellAddress =
+  Table.MakeCell({
+    let style =
+      Style.(style(~flexBasis=180.->dp, ~flexShrink=1., ~flexGrow=1., ()));
+    ();
+  });
+
+module CellStatus =
+  Table.MakeCell({
+    let style = Style.(style(~flexBasis=120.->dp, ~alignItems=`center, ()));
+    ();
+  });
+
+module CellDate =
+  Table.MakeCell({
+    let style = Style.(style(~flexBasis=220.->dp, ()));
+    ();
+  });
 
 let memo = component =>
   React.memoCustomCompareProps(component, (prevPros, nextProps) =>
@@ -48,7 +50,7 @@ let amount = (account, transaction: Operation.Business.Transaction.t) => {
 
   let op = colorStyle == Some(`valid) ? "+" : "-";
 
-  <View style=styles##cellAmount>
+  <CellAmount>
     <Typography.Body1 ?colorStyle>
       {I18n.t#xtz_op_amount(
          op,
@@ -56,7 +58,7 @@ let amount = (account, transaction: Operation.Business.Transaction.t) => {
        )
        ->React.string}
     </Typography.Body1>
-  </View>;
+  </CellAmount>;
 };
 
 [@react.component]
@@ -66,87 +68,86 @@ let make =
 
     let accounts = StoreContext.useAccounts();
 
-    <RowItem.Bordered height=48.>
-      <View style=styles##borderSpacer />
+    <Table.Row>
       {switch (operation.payload) {
        | Business(business) =>
          switch (business.payload) {
          | Reveal(_reveal) =>
            <>
-             <View style=styles##cellType>
+             <CellType>
                <Typography.Body1>
                  I18n.t#operation_reveal->React.string
                </Typography.Body1>
-             </View>
-             <View style=styles##cellAmount />
-             <View style=styles##cellFee>
+             </CellType>
+             <CellAmount />
+             <CellFee>
                <Typography.Body1>
                  {business.fee->BusinessUtils.formatMilliXTZ->React.string}
                </Typography.Body1>
-             </View>
-             <View style=styles##cellAddress />
-             <View style=styles##cellAddress />
+             </CellFee>
+             <CellAddress />
+             <CellAddress />
            </>
          | Transaction(transaction) =>
            <>
-             <View style=styles##cellType>
+             <CellType>
                <Typography.Body1>
                  I18n.t#operation_transaction->React.string
                </Typography.Body1>
-             </View>
+             </CellType>
              {amount(account, transaction)}
-             <View style=styles##cellFee>
+             <CellFee>
                <Typography.Body1>
                  {business.fee->BusinessUtils.formatMilliXTZ->React.string}
                </Typography.Body1>
-             </View>
-             <View style=styles##cellAddress>
+             </CellFee>
+             <CellAddress>
                <Typography.Body1 numberOfLines=1>
                  {StoreContext.getAlias(accounts, business.source)
                   ->React.string}
                </Typography.Body1>
-             </View>
-             <View style=styles##cellAddress>
+             </CellAddress>
+             <CellAddress>
                <Typography.Body1 numberOfLines=1>
                  {StoreContext.getAlias(accounts, transaction.destination)
                   ->React.string}
                </Typography.Body1>
-             </View>
+             </CellAddress>
            </>
          | Origination(_origination) =>
            <>
-             <View style=styles##cellType>
+             <CellType>
                <Typography.Body1>
                  I18n.t#operation_origination->React.string
                </Typography.Body1>
-             </View>
-             <View style=styles##cellAmount />
-             <View style=styles##cellFee />
-             <View style=styles##cellAddress />
-             <View style=styles##cellAddress />
+             </CellType>
+             <CellAmount />
+             <CellFee />
+             <CellAddress />
+             <CellAddress />
              <View />
            </>
          | Delegation(_delegation) =>
            <>
-             <View style=styles##cellType>
+             <CellType>
                <Typography.Body1>
                  I18n.t#operation_delegation->React.string
                </Typography.Body1>
-             </View>
-             <View style=styles##cellAmount />
-             <View style=styles##cellFee />
-             <View style=styles##cellAddress />
-             <View style=styles##cellAddress />
+             </CellType>
+             <CellAmount />
+             <CellFee />
+             <CellAddress />
+             <CellAddress />
            </>
          | Unknown => React.null
          }
        }}
-      <View style=styles##cellDate>
+      <CellDate>
         <Typography.Body1>
           {operation.timestamp->Js.Date.toLocaleString->React.string}
         </Typography.Body1>
-      </View>
-      <View style=styles##cellStatus>
+      </CellDate>
+      <CellStatus>
         <Typography.Body1>
           {switch (operation.status) {
            | Mempool => I18n.t#state_in_mempool
@@ -154,6 +155,6 @@ let make =
            }}
           ->React.string
         </Typography.Body1>
-      </View>
-    </RowItem.Bordered>;
+      </CellStatus>
+    </Table.Row>;
   });
