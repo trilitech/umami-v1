@@ -15,7 +15,7 @@ let balance = (request: BalanceApiRequest.balanceApiRequest) => {
   <Typography.Subtitle3 style=styles##balance>
     {switch (request) {
      | Done(Ok(balance)) =>
-       (balance->BusinessUtils.formatMilliXTZ ++ " XTZ")->React.string
+       I18n.t#xtz_amount(balance->BusinessUtils.formatXTZ)->React.string
      | Done(Error(error)) => error->React.string
      | NotAsked
      | Loading =>

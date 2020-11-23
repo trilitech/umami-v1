@@ -40,10 +40,10 @@ let make = (~onPressCancel, ~operation: Injection.operation, ~sendOperation) => 
         (
           switch (operation) {
           | Transaction({amount}) =>
-            Js.Float.toFixedWithPrecision(amount, ~digits=1)
-            ++ " "
-            ++ BusinessUtils.xtz
-          | Delegation(_) => "Delegate"
+            I18n.t#xtz_amount(
+              Js.Float.toFixedWithPrecision(amount, ~digits=1),
+            )
+          | Delegation(_) => I18n.title#delegate
           }
         )
         ->React.string
@@ -53,7 +53,7 @@ let make = (~onPressCancel, ~operation: Injection.operation, ~sendOperation) => 
        | Delegation({fee}) =>
          fee->ReactUtils.mapOpt(fee =>
            <Typography.Body1 colorStyle=`mediumEmphasis>
-             {("+ Fee " ++ fee->Js.Float.toString ++ " " ++ BusinessUtils.xtz)
+             {I18n.t#operation_summary_fee(fee->Js.Float.toString)
               ->React.string}
            </Typography.Body1>
          )
@@ -61,7 +61,7 @@ let make = (~onPressCancel, ~operation: Injection.operation, ~sendOperation) => 
     </View>
     <OperationSummaryView style=styles##operationSummary operation />
     <FormGroupTextInput
-      label="Password"
+      label=I18n.label#password
       value={form.values.password}
       handleChange={form.handleChange(Password)}
       error={form.getFieldError(Field(Password))}
@@ -69,8 +69,8 @@ let make = (~onPressCancel, ~operation: Injection.operation, ~sendOperation) => 
       secureTextEntry=true
     />
     <View style=styles##formAction>
-      <FormButton text="CANCEL" onPress=onPressCancel />
-      <FormButton text="CONFIRM" onPress={operation->onSubmit} />
+      <FormButton text=I18n.btn#cancel onPress=onPressCancel />
+      <FormButton text=I18n.btn#confirm onPress={operation->onSubmit} />
     </View>
   </>;
 };

@@ -33,7 +33,7 @@ module AppView = {
          | NotFound =>
            <View>
              <Typography.Body1>
-               "404 - Route Not Found :("->React.string
+               I18n.t#error404->React.string
              </Typography.Body1>
            </View>
          }}

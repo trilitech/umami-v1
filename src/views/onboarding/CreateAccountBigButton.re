@@ -52,7 +52,7 @@ let make = () => {
         <Icons.Add size=36. color=Colors.plainIconContent />
       </View>
       <Typography.Subtitle2>
-        "CREATE NEW ACCOUNT"->React.string
+        I18n.btn#create_account_new->React.string
       </Typography.Subtitle2>
     </TouchableOpacity>
     <ModalAction ref=modal visible=visibleModal onRequestClose=closeAction>

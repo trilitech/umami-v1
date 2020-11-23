@@ -97,7 +97,7 @@ module ClearButton = {
     <FormButton
       style=styles##clear
       fontSize=12.
-      text="CLEAR ALL"
+      text=I18n.t#error_logs_clearall
       onPress={_ => clearErrors()}
     />;
   };
@@ -110,14 +110,14 @@ let make = () => {
   <ModalView style=styles##modal>
     <View style=styles##view>
       <Typography.Headline2 style=ModalAction.styles##title>
-        "Error logs"->React.string
+        I18n.title#error_logs->React.string
       </Typography.Headline2>
       <View style=styles##content>
         {ReactUtils.onlyWhen(errors != [], <ClearButton />)}
         {switch (errors) {
          | [] =>
            <Typography.Body1 style=styles##empty>
-             "No recent errors"->React.string
+             I18n.t#error_logs_no_recent->React.string
            </Typography.Body1>
          | errors =>
            errors

@@ -120,22 +120,22 @@ module Form = {
 
       <>
         <Typography.Headline2 style=styles##title>
-          "Send"->React.string
+          I18n.title#send->React.string
         </Typography.Headline2>
         <FormGroupXTZInput
-          label="Amount"
+          label=I18n.label#send_amount
           value={form.values.amount}
           handleChange={form.handleChange(Amount)}
           error={form.getFieldError(Field(Amount))}
         />
         <FormGroupAccountSelector
-          label="Sender account"
+          label=I18n.label#send_sender
           value={form.values.sender}
           handleChange={form.handleChange(Sender)}
           error={form.getFieldError(Field(Sender))}
         />
         <FormGroupContactSelector
-          label="Recipient account"
+          label=I18n.label#send_recipient
           value={form.values.recipient}
           handleChange={form.handleChange(Recipient)}
           error={form.getFieldError(Field(Recipient))}
@@ -146,7 +146,7 @@ module Form = {
             activeOpacity=1.
             onPress={_ => setAdvancedOptionOpened(prev => !prev)}>
             <Typography.Overline1>
-              "Advanced options"->React.string
+              I18n.btn#advanced_options->React.string
             </Typography.Overline1>
             <SwitchNative
               value=advancedOptionOpened
@@ -164,8 +164,8 @@ module Form = {
           {advancedOptionOpened ? <SendViewAdvancedOptions form /> : React.null}
         </View>
         <View style=styles##formAction>
-          <FormButton text="CANCEL" onPress=onPressCancel />
-          <FormButton text="OK" onPress=onSubmitSendForm />
+          <FormButton text=I18n.btn#cancel onPress=onPressCancel />
+          <FormButton text=I18n.btn#ok onPress=onSubmitSendForm />
         </View>
       </>;
     };
@@ -207,14 +207,14 @@ let make = (~onPressCancel) => {
      | (_, Done(Ok(hash))) =>
        <>
          <Typography.Headline2 style=styles##title>
-           "Operation injected in the node"->React.string
+           I18n.title#operation_injected->React.string
          </Typography.Headline2>
          <Typography.Overline1>
-           "Operation hash"->React.string
+           I18n.t#operation_hash->React.string
          </Typography.Overline1>
          <Typography.Body1> hash->React.string </Typography.Body1>
          <View style=styles##formAction>
-           <FormButton text="OK" onPress=onPressCancel />
+           <FormButton text=I18n.btn#ok onPress=onPressCancel />
          </View>
        </>
      | (_, Done(Error(error))) =>
@@ -223,7 +223,7 @@ let make = (~onPressCancel) => {
            error->React.string
          </Typography.Body1>
          <View style=styles##formAction>
-           <FormButton text="OK" onPress=onPressCancel />
+           <FormButton text=I18n.btn#ok onPress=onPressCancel />
          </View>
        </>
      | (_, Loading) =>

@@ -68,7 +68,7 @@ let make = (~style=?) => {
       );
 
   <>
-    <Typography.Overline1> "Account"->React.string </Typography.Overline1>
+    <Typography.Overline1> I18n.t#account->React.string </Typography.Overline1>
     <View style=styles##spacer />
     <Selector
       items

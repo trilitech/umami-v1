@@ -68,7 +68,7 @@ let make = (~form: SendForm.api) => {
   <View>
     <View style=styles##formRowInputs>
       <FormGroupTextInput
-        label="Fee"
+        label=I18n.label#fee
         value={form.values.fee}
         handleChange={form.handleChange(Fee)}
         error={form.getFieldError(Field(Fee))}
@@ -77,7 +77,7 @@ let make = (~form: SendForm.api) => {
       />
       <View style=styles##formRowInputsSeparator />
       <FormGroupTextInput
-        label="Gas limit"
+        label=I18n.label#gas_limit
         value={form.values.gasLimit}
         handleChange={form.handleChange(GasLimit)}
         error={form.getFieldError(Field(GasLimit))}
@@ -85,7 +85,7 @@ let make = (~form: SendForm.api) => {
       />
       <View style=styles##formRowInputsSeparator />
       <FormGroupTextInput
-        label="Storage limit"
+        label=I18n.label#storage_limit
         value={form.values.storageLimit}
         handleChange={form.handleChange(StorageLimit)}
         error={form.getFieldError(Field(StorageLimit))}
@@ -94,7 +94,7 @@ let make = (~form: SendForm.api) => {
     </View>
     <View style=styles##formRowInputs>
       <FormGroupTextInput
-        label="Counter"
+        label=I18n.label#counter
         value={form.values.counter}
         handleChange={form.handleChange(Counter)}
         error={form.getFieldError(Field(Counter))}
@@ -106,7 +106,7 @@ let make = (~form: SendForm.api) => {
       <View style=styles##formRowInput />
     </View>
     <FormGroupCheckbox
-      label="Force low fee"
+      label=I18n.label#force_low_fee
       value={form.values.forceLowFee}
       handleChange={form.handleChange(ForceLowFee)}
       error={form.getFieldError(Field(ForceLowFee))}

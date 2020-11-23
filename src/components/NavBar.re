@@ -75,19 +75,19 @@ let make = (~route as currentRoute) => {
     <NavBarItem
       currentRoute
       route=Accounts
-      title="ACCOUNTS"
+      title=I18n.t#navbar_accounts
       icon=Icons.Account.build
     />
     <NavBarItem
       currentRoute
       route=Operations
-      title="OPERATIONS"
+      title=I18n.t#navbar_operations
       icon=Icons.History.build
     />
     <NavBarItem
       currentRoute
       route=AddressBook
-      title={js|ADDRESS\nBOOK|js}
+      title=I18n.t#navbar_addressbook
       icon=Icons.AddressBook.build
     />
     <NavBarItem currentRoute route=Debug title="DEBUG" />

@@ -52,17 +52,17 @@ let make = (~onPressCancel) => {
      | Done(Ok(_result)) =>
        <>
          <Typography.Headline2 style=styles##title>
-           "Account created"->React.string
+           I18n.t#account_created->React.string
          </Typography.Headline2>
          <View style=styles##formAction>
-           <FormButton text="OK" onPress=onPressCancel />
+           <FormButton text=I18n.btn#ok onPress=onPressCancel />
          </View>
        </>
      | Done(Error(error)) =>
        <>
          <ErrorView error />
          <View style=styles##formAction>
-           <FormButton text="OK" onPress=onPressCancel />
+           <FormButton text=I18n.btn#ok onPress=onPressCancel />
          </View>
        </>
      | Loading =>
@@ -76,28 +76,27 @@ let make = (~onPressCancel) => {
      | NotAsked =>
        <>
          <Typography.Headline2 style=styles##title>
-           "Create new account"->React.string
+           I18n.title#account_create->React.string
          </Typography.Headline2>
          {switch (formStep) {
           | Step1 =>
             <>
               <Typography.Overline3
                 colorStyle=`highEmphasis style=styles##stepPager>
-                "Step 1 of 3"->React.string
+                {I18n.t#stepof(1, 3)->React.string}
               </Typography.Overline3>
               <Typography.Overline2 style=styles##stepTitle>
-                "Record your recovery phrase"->React.string
+                I18n.t#account_create_record_recovery->React.string
               </Typography.Overline2>
               <Typography.Body3
                 colorStyle=`mediumEmphasis style=styles##stepBody>
-                {js|Please record the following 24 words in sequence in order to restore it in the future. Ensure to back it up, keeping it securely offline.|js}
-                ->React.string
+                I18n.expl#account_create_record_recovery->React.string
               </Typography.Body3>
               <MnemonicListView mnemonic />
               <View style=styles##formAction>
-                <FormButton text="CANCEL" onPress=onPressCancel />
+                <FormButton text=I18n.btn#cancel onPress=onPressCancel />
                 <FormButton
-                  text={js|OK, I’VE RECORDED IT|js}
+                  text=I18n.btn#create_account_record_ok
                   onPress={_ => setFormStep(_ => Step2)}
                 />
               </View>
@@ -106,15 +105,14 @@ let make = (~onPressCancel) => {
             <>
               <Typography.Overline3
                 colorStyle=`highEmphasis style=styles##stepPager>
-                "Step 2 of 3"->React.string
+                {I18n.t#stepof(2, 3)->React.string}
               </Typography.Overline3>
               <Typography.Overline2 style=styles##stepTitle>
-                "Verify your recovery phrase"->React.string
+                I18n.title#account_create_verify_phrase->React.string
               </Typography.Overline2>
               <Typography.Body3
                 colorStyle=`mediumEmphasis style=styles##stepBody>
-                {js|We will now verify that you’ve properly recorded your recovery phrase. To demonstrate this, please type in the word that corresponds to each sequence number.|js}
-                ->React.string
+                I18n.expl#account_create_record_verify->React.string
               </Typography.Body3>
               <VerifyMnemonicView
                 mnemonic
@@ -126,15 +124,14 @@ let make = (~onPressCancel) => {
             <>
               <Typography.Overline3
                 colorStyle=`highEmphasis style=styles##stepPager>
-                "Step 3 of 3"->React.string
+                {I18n.t#stepof(3, 3)->React.string}
               </Typography.Overline3>
               <Typography.Overline2 style=styles##stepTitle>
-                "Set a password to secure your wallet"->React.string
+                I18n.title#account_create_password->React.string
               </Typography.Overline2>
               <Typography.Body3
                 colorStyle=`mediumEmphasis style=styles##stepBody>
-                {js|Please note that this password is not recorded anywhere and only applies to this machine.|js}
-                ->React.string
+                I18n.expl#account_create_password_not_recorded->React.string
               </Typography.Body3>
               <CreatePasswordView
                 mnemonic

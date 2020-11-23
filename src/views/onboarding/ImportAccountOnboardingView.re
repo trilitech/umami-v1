@@ -47,17 +47,17 @@ let make = (~onPressCancel) => {
      | Done(Ok(_result)) =>
        <>
          <Typography.Headline2 style=styles##title>
-           "Account imported"->React.string
+           I18n.t#account_imported->React.string
          </Typography.Headline2>
          <View style=styles##formAction>
-           <FormButton text="OK" onPress=onPressCancel />
+           <FormButton text=I18n.btn#ok onPress=onPressCancel />
          </View>
        </>
      | Done(Error(error)) =>
        <>
          <ErrorView error />
          <View style=styles##formAction>
-           <FormButton text="OK" onPress=onPressCancel />
+           <FormButton text=I18n.btn#ok onPress=onPressCancel />
          </View>
        </>
      | Loading =>
@@ -71,22 +71,21 @@ let make = (~onPressCancel) => {
      | NotAsked =>
        <>
          <Typography.Headline2 style=styles##title>
-           "Import account"->React.string
+           I18n.title#import_account->React.string
          </Typography.Headline2>
          {switch (formStep) {
           | Step1 =>
             <>
               <Typography.Overline3
                 colorStyle=`highEmphasis style=styles##stepPager>
-                "Step 1 of 2"->React.string
+                {I18n.t#stepof(1, 2)->React.string}
               </Typography.Overline3>
               <Typography.Overline2 style=styles##stepTitle>
-                "Enter your recovery phrase"->React.string
+                I18n.title#import_account_enter_phrase->React.string
               </Typography.Overline2>
               <Typography.Body3
                 colorStyle=`mediumEmphasis style=styles##stepBody>
-                {js|Please fill in the recovery phrase in sequence.|js}
-                ->React.string
+                I18n.expl#import_account_enter_phrase->React.string
               </Typography.Body3>
               <FillMnemonicView
                 mnemonic
@@ -99,15 +98,14 @@ let make = (~onPressCancel) => {
             <>
               <Typography.Overline3
                 colorStyle=`highEmphasis style=styles##stepPager>
-                "Step 2 of 2"->React.string
+                {I18n.t#stepof(2, 2)->React.string}
               </Typography.Overline3>
               <Typography.Overline2 style=styles##stepTitle>
-                "Set a password to secure your wallet"->React.string
+                I18n.title#account_create->React.string
               </Typography.Overline2>
               <Typography.Body3
                 colorStyle=`mediumEmphasis style=styles##stepBody>
-                {js|Please note that this password is not recorded anywhere and only applies to this machine.|js}
-                ->React.string
+                I18n.expl#account_create_password_not_recorded->React.string
               </Typography.Body3>
               <CreatePasswordView
                 mnemonic

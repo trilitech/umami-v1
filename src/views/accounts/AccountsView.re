@@ -44,7 +44,7 @@ module AddAccountButton = {
           style=styles##icon
         />
         <Typography.ButtonSecondary>
-          "ADD ACCOUNT"->React.string
+          I18n.t#navbar_add_account->React.string
         </Typography.ButtonSecondary>
       </TouchableOpacity>
       <ModalAction ref=modal visible=visibleModal onRequestClose=closeAction>

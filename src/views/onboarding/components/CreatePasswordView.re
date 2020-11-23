@@ -73,7 +73,7 @@ let make = (~mnemonic, ~onPressCancel, ~createAccountWithMnemonic) => {
 
   <>
     <FormGroupTextInput
-      label="Password"
+      label=I18n.label#password
       value={form.values.password}
       handleChange={form.handleChange(Password)}
       error={form.getFieldError(Field(Password))}
@@ -81,7 +81,7 @@ let make = (~mnemonic, ~onPressCancel, ~createAccountWithMnemonic) => {
       secureTextEntry=true
     />
     <FormGroupTextInput
-      label="Confirm password"
+      label=I18n.label#password
       value={form.values.confirmPassword}
       handleChange={form.handleChange(ConfirmPassword)}
       error={form.getFieldError(Field(ConfirmPassword))}
@@ -89,8 +89,8 @@ let make = (~mnemonic, ~onPressCancel, ~createAccountWithMnemonic) => {
       secureTextEntry=true
     />
     <View style=styles##formAction>
-      <FormButton text="CANCEL" onPress=onPressCancel />
-      <FormButton text="FINISH" onPress=onSubmit />
+      <FormButton text=I18n.btn#cancel onPress=onPressCancel />
+      <FormButton text=I18n.btn#finish onPress=onSubmit />
     </View>
   </>;
 };

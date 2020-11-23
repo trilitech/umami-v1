@@ -53,10 +53,10 @@ let make = (~onPressCancel, ~handleAdd) => {
      | Done(Ok(_result)) =>
        <>
          <Typography.Headline2 style=styles##title>
-           "Account created"->React.string
+           I18n.t#account_created->React.string
          </Typography.Headline2>
          <View style=styles##formAction>
-           <FormButton text="OK" onPress=onPressCancel />
+           <FormButton text=I18n.btn#ok onPress=onPressCancel />
          </View>
        </>
      | Done(Error(error)) =>
@@ -65,7 +65,7 @@ let make = (~onPressCancel, ~handleAdd) => {
            error->React.string
          </Typography.Body1>
          <View style=styles##formAction>
-           <FormButton text="OK" onPress=onPressCancel />
+           <FormButton text=I18n.btn#ok onPress=onPressCancel />
          </View>
        </>
      | Loading =>
@@ -79,17 +79,17 @@ let make = (~onPressCancel, ~handleAdd) => {
      | NotAsked =>
        <>
          <Typography.Headline2 style=styles##title>
-           "Create new account"->React.string
+           I18n.title#account_create->React.string
          </Typography.Headline2>
          <FormGroupTextInput
-           label="Name"
+           label=I18n.label#account_create_name
            value={form.values.name}
            handleChange={form.handleChange(Name)}
            error={form.getFieldError(Field(Name))}
          />
          <View style=styles##formAction>
-           <FormButton text="CANCEL" onPress=onPressCancel />
-           <FormButton text="CREATE" onPress=onSubmit />
+           <FormButton text=I18n.btn#cancel onPress=onPressCancel />
+           <FormButton text=I18n.btn#create onPress=onSubmit />
          </View>
        </>
      }}

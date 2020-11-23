@@ -39,29 +39,39 @@ let make = () => {
     <AccountSelector style=styles##selector />
     <View style=styles##thead>
       <View style=OperationRowItem.styles##cellType>
-        <Typography.Overline3> "TYPE"->React.string </Typography.Overline3>
+        <Typography.Overline3>
+          I18n.t#operation_column_type->React.string
+        </Typography.Overline3>
       </View>
       <View style=OperationRowItem.styles##cellAmount>
-        <Typography.Overline3> "AMOUNT"->React.string </Typography.Overline3>
+        <Typography.Overline3>
+          I18n.t#operation_column_amount->React.string
+        </Typography.Overline3>
       </View>
       <View style=OperationRowItem.styles##cellFee>
-        <Typography.Overline3> "FEE"->React.string </Typography.Overline3>
-      </View>
-      <View style=OperationRowItem.styles##cellAddress>
-        <Typography.Overline3> "SENDER"->React.string </Typography.Overline3>
+        <Typography.Overline3>
+          I18n.t#operation_column_fee->React.string
+        </Typography.Overline3>
       </View>
       <View style=OperationRowItem.styles##cellAddress>
         <Typography.Overline3>
-          "RECIPIENT"->React.string
+          I18n.t#operation_column_sender->React.string
+        </Typography.Overline3>
+      </View>
+      <View style=OperationRowItem.styles##cellAddress>
+        <Typography.Overline3>
+          I18n.t#operation_column_recipient->React.string
         </Typography.Overline3>
       </View>
       <View style=OperationRowItem.styles##cellDate>
         <Typography.Overline3>
-          "TIMESTAMP"->React.string
+          I18n.t#operation_column_timestamp->React.string
         </Typography.Overline3>
       </View>
       <View style=OperationRowItem.styles##cellStatus>
-        <Typography.Overline3> "STATUS"->React.string </Typography.Overline3>
+        <Typography.Overline3>
+          I18n.t#operation_column_status->React.string
+        </Typography.Overline3>
       </View>
     </View>
   </View>;
