@@ -54,11 +54,14 @@ let make = (~children) => {
       setErrors(es => es->Belt.List.add(e));
       setToastState(prev => {
         let firsts = prev->Belt.Option.mapWithDefault(0, snd) + 1;
-        let animCallback = _ => setToastState(_ => None);
+        let animCallback = _ => {
+          setToastState(_ => None);
+          fadeAnim->Animated.Value.setValue(1.);
+        };
         let timeoutCallback = () => {
           ReactUtils.startFade(fadeAnim, 0., 600., Some(animCallback));
         };
-        let timeoutid = Js.Global.setTimeout(timeoutCallback, 5000);
+        let timeoutid = Js.Global.setTimeout(timeoutCallback, 4500);
         (timeoutid, firsts)->Some;
       });
       (snd(seen))(false);

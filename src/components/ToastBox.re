@@ -6,9 +6,9 @@ let styles =
     StyleSheet.create({
       "container":
         style(
-          ~width=300.->dp,
+          ~width=500.->dp,
           ~position=`absolute,
-          ~bottom=40.->dp,
+          ~bottom=20.->dp,
           ~left=150.->dp,
           ~zIndex=2,
           (),
@@ -23,18 +23,7 @@ module Item = {
 
     React.useEffect1(
       () => {
-        open Animated;
-        open Value.Timing;
-        timing(
-          fadeAnim,
-          config(
-            ~toValue=fromRawValue(1.),
-            ~duration=800.,
-            ~useNativeDriver=true,
-            (),
-          ),
-        )
-        ->start();
+        ReactUtils.startFade(fadeAnim, 1., 800., None);
         None;
       },
       [|fadeAnim|],

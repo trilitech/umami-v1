@@ -29,11 +29,18 @@ let make = () => {
   let addLog = ErrorsContext.useAdd();
 
   let onPress = _e => {
+    /* addLog({ */
+    /*   origin: Logs.Operation, */
+    /*   kind: Logs.Error, */
+    /*   timestamp: Js.Date.now(), */
+    /*   msg: "Bad error about something", */
+    /* }); */
+
     addLog({
       origin: Logs.Operation,
-      kind: Logs.Error,
+      kind: Logs.Info,
       timestamp: Js.Date.now(),
-      msg: "Bad error about something",
+      msg: "Nice message about something",
     });
 
     openAction();

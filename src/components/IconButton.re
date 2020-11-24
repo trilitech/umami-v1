@@ -18,7 +18,7 @@ let styles =
   );
 
 [@react.component]
-let make = (~icon: Icons.builder, ~onPress=?) => {
+let make = (~icon: Icons.builder, ~hoveredStyle=?, ~onPress=?) => {
   <Pressable ?onPress>
     {({hovered}) =>
        <View
@@ -26,6 +26,7 @@ let make = (~icon: Icons.builder, ~onPress=?) => {
            arrayOption([|
              Some(styles##button),
              hovered ? Some(styles##buttonHovered) : None,
+             hovered ? hoveredStyle : None,
            |])
          )>
          {icon(~style=?None, ~size=16., ~color=Theme.colorDarkMediumEmphasis)}

@@ -15,11 +15,17 @@ let styles =
       "actionButtons":
         style(~flexDirection=`row, ~flexShrink=0., ~marginLeft=auto, ()),
       "reqelt": style(~flexShrink=0., ~marginRight=5.->dp, ()),
+      "itemError": style(~borderColor=Theme.colorDarkError, ()),
+      "itemInfo": style(~borderColor=Theme.colorDarkValid, ()),
+      "hovered": style(~backgroundColor=Theme.colorDarkHighEmphasis, ()),
+      "buttonHovered": style(~backgroundColor="rgba(0, 0, 0, 0.04)", ()),
       "item":
         style(
           ~display=`flex,
           ~flexDirection=`row,
-          ~backgroundColor=Theme.colorDarkError,
+          ~borderRadius=3.,
+          ~backgroundColor=Theme.colorBackgroundLight,
+          ~borderLeftWidth=5.,
           ~flexWrap=`nowrap,
           ~width=100.->pct,
           ~alignSelf=`center,
@@ -32,14 +38,19 @@ let styles =
 
 module DeleteButton = {
   [@react.component]
-  let make = (~indice, ~handleDelete) => {
+  let make = (~color=?, ~indice, ~handleDelete) => {
     let onPress = _ => {
       handleDelete(indice);
     };
-
-    <IconButton icon=Icons.Close.build onPress />;
+    let icon = (~color as colorin=?) => {
+      let color = [color, colorin]->Common.Lib.Option.firstSome;
+      Icons.Close.build(~color?);
+    };
+    <IconButton hoveredStyle=styles##buttonHovered icon onPress />;
   };
 };
+
+let colorStyle = `mediumEmphasisOpposite;
 
 [@react.component]
 let make =
@@ -50,13 +61,23 @@ let make =
       ~showTimestamp=true,
       ~handleDelete,
     ) => {
-  <RowItem.Hoverable height=46. style=styles##item>
-    {hovered => {
+  let kindStyle =
+    switch (log.kind) {
+    | Error => styles##itemError
+    | Info => styles##itemInfo
+    };
+
+  <RowItem.Hoverable
+    height=46.
+    style=Style.(array([|styles##item, kindStyle|]))
+    hoveredStyle=styles##hovered>
+    {_ => {
        <View
          style={Style.arrayOption([|Some(styles##itemContent), stylearg|])}>
          {<Typography.Body3
             style=styles##reqelt
             fontSize=12.
+            colorStyle
             fontWeightStyle=`light
             numberOfLines=1>
             "["->React.string
@@ -65,15 +86,23 @@ let make =
           </Typography.Body3>
           ->ReactUtils.onlyWhen(showTimestamp)}
          <Typography.Body2
-           fontWeightStyle=`heavy ellipsizeMode=`tail numberOfLines=1>
+           colorStyle
+           fontWeightStyle=`heavy
+           ellipsizeMode=`tail
+           numberOfLines=1>
            log.msg->React.string
          </Typography.Body2>
-         <View
-           style=Style.(
-             array([|styles##actionButtons, ReactUtils.displayOn(hovered)|])
-           )>
-           <ClipboardButton data={log.msg} />
-           <DeleteButton indice handleDelete />
+         <View style=styles##actionButtons>
+           <ClipboardButton
+             hoveredStyle=styles##buttonHovered
+             data={log.msg}
+             color=Theme.colorLightMediumEmphasis
+           />
+           <DeleteButton
+             color=Theme.colorLightMediumEmphasis
+             indice
+             handleDelete
+           />
          </View>
        </View>;
      }}

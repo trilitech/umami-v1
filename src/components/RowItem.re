@@ -21,7 +21,7 @@ let styles =
 
 module Base = {
   [@react.component]
-  let make = (~height, ~style as stylearg=?, ~children) => {
+  let make = (~height, ~style as stylearg=?, ~hoveredStyle=?, ~children) => {
     let (hovered, setHovered) = React.useState(_ => false);
     <View
       onMouseEnter={_ => setHovered(_ => true)}
@@ -31,6 +31,7 @@ module Base = {
       style=Style.(
         arrayOption([|
           stylearg,
+          hovered ? hoveredStyle : None,
           Some(styles##container),
           Some(style(~height=height->dp, ())),
         |])
@@ -63,8 +64,8 @@ module Bordered = {
 
 module Hoverable = {
   [@react.component]
-  let make = (~height, ~style=?, ~children) => {
-    <Base ?style height>
+  let make = (~height, ~style=?, ~hoveredStyle=?, ~children) => {
+    <Base ?style height ?hoveredStyle>
       {hovered => <View style=styles##inner> {children(hovered)} </View>}
     </Base>;
   };

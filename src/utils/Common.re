@@ -23,6 +23,14 @@ module Lib = {
       | None => ()
       };
     };
+
+    let rec firstSome = l => {
+      switch (l) {
+      | [] => None
+      | [Some(_) as h, ..._] => h
+      | [None, ...t] => firstSome(t)
+      };
+    };
   };
 
   module Result = {
