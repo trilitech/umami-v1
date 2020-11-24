@@ -1,3 +1,5 @@
+open ReactNative;
+open Common;
 type state = {
   errors: list(Error.t),
   add: Error.t => unit,
@@ -32,6 +34,10 @@ let make = (~children) => {
     (s, seen => set(_ => seen));
   };
 
+  let (toastState, setToastState) = React.useState(() => None);
+
+  let fadeAnim = React.useRef(Animated.Value.create(1.)).current;
+
   let (errors, add, delete, clear) = {
     let (errors, setErrors) = React.useState(() => []);
 
@@ -42,14 +48,36 @@ let make = (~children) => {
     let clear = () => setErrors(_ => []);
 
     let add = e => {
+      toastState
+      ->Belt.Option.map(fst)
+      ->Lib.Option.iter(Js.Global.clearTimeout);
       setErrors(es => es->Belt.List.add(e));
+      setToastState(prev => {
+        let firsts = prev->Belt.Option.mapWithDefault(0, snd) + 1;
+        let animCallback = _ => setToastState(_ => None);
+        let timeoutCallback = () => {
+          ReactUtils.startFade(fadeAnim, 0., 600., Some(animCallback));
+        };
+        let timeoutid = Js.Global.setTimeout(timeoutCallback, 5000);
+        (timeoutid, firsts)->Some;
+      });
       (snd(seen))(false);
     };
 
     (errors, add, delete, clear);
   };
 
-  <Provider value={errors, add, clear, delete, seen}> children </Provider>;
+  <Provider value={errors, add, clear, delete, seen}>
+    {toastState->ReactUtils.mapOpt(((_, firsts)) =>
+       <ToastBox
+         opacity={fadeAnim->Animated.StyleProp.float}
+         errors
+         handleDelete=delete
+         firsts
+       />
+     )}
+    children
+  </Provider>;
 };
 
 let useStoreContext = () => React.useContext(context);

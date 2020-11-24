@@ -26,8 +26,15 @@ let make = () => {
   let (visibleModal, setVisibleModal) = React.useState(_ => false);
   let openAction = () => setVisibleModal(_ => true);
   let closeAction = () => setVisibleModal(_ => false);
+  let addError = ErrorsContext.useAddError();
 
   let onPress = _e => {
+    addError({
+      kind: Error.Operation,
+      timestamp: Js.Date.now(),
+      msg: "Bad error about something",
+    });
+
     openAction();
   };
   let onPress = account->Belt.Option.map(_ => onPress);

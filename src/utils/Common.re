@@ -33,4 +33,13 @@ module Lib = {
       };
     };
   };
+
+  module List = {
+    let rec firsts = (l, n) => {
+      switch (l) {
+      | [] => l
+      | [h, ...t] => n == 0 ? [] : t->firsts(n - 1)->Belt.List.add(h)
+      };
+    };
+  };
 };
