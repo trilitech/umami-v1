@@ -20,11 +20,11 @@ let make = (~style=?) => {
     <TouchableOpacity ?style onPress>
       <Typography.ButtonPrimary
         fontSize=12. colorStyle={!seen ? `error : `disabled}>
-        I18n.btn#error_logs->React.string
+        I18n.btn#logs->React.string
       </Typography.ButtonPrimary>
     </TouchableOpacity>
     <ModalAction ref=modal visible=visibleModal onRequestClose=closeAction>
-      <ErrorsView />
+      <LogsView />
     </ModalAction>
   </>;
 };

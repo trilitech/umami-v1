@@ -24,7 +24,7 @@ module ClearButton = {
     <FormButton
       style=styles##clear
       fontSize=12.
-      text=I18n.t#error_logs_clearall
+      text=I18n.t#logs_clearall
       onPress={_ => clearErrors()}
     />;
   };
@@ -45,13 +45,13 @@ let make = () => {
         {switch (errors) {
          | [] =>
            <Typography.Body1 style=styles##empty>
-             I18n.t#error_logs_no_recent->React.string
+             I18n.t#logs_no_recent->React.string
            </Typography.Body1>
          | errors =>
            errors
            ->Belt.List.toArray
            ->Belt.Array.mapWithIndex((i, log) =>
-               <ErrorItem
+               <LogItem
                  key={i->string_of_int}
                  indice=i
                  log

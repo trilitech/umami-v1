@@ -97,7 +97,7 @@ let make = (~route as currentRoute) => {
       icon=Icons.Delegate.build
     />
     <NavBarItem currentRoute route=Debug title="DEBUG" />
-    <ErrorsButton
+    <LogsButton
       style=Style.(
         array([|NavBarItem.styles##errorButton, NavBarItem.styles##item|])
       )

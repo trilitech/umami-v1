@@ -42,7 +42,7 @@ module Item = {
 
     <Animated.View
       style=Style.(style(~opacity=fadeAnim->Animated.StyleProp.float, ()))>
-      <ErrorItem indice log handleDelete showTimestamp=false />
+      <LogItem indice log handleDelete showTimestamp=false />
     </Animated.View>;
   };
 };
