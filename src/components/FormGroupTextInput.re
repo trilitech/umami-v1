@@ -3,27 +3,6 @@ open ReactNative;
 let styles =
   Style.(
     StyleSheet.create({
-      "input":
-        style(
-          ~height=46.->dp,
-          ~paddingVertical=10.->dp,
-          ~paddingLeft=20.->dp,
-          ~paddingRight=12.->dp,
-          ~fontFamily="Avenir",
-          ~color=Theme.colorDarkHighEmphasis,
-          ~fontSize=16.,
-          ~fontWeight=`normal,
-          ~borderColor=Theme.colorDarkMediumEmphasis,
-          ~borderWidth=1.,
-          ~borderRadius=5.,
-          (),
-        ),
-      "inputError":
-        style(
-          ~color=Theme.colorDarkError,
-          ~borderColor=Theme.colorDarkError,
-          (),
-        ),
       "label": style(~marginBottom=6.->dp, ()),
       "decoration":
         style(
@@ -58,23 +37,13 @@ let make =
   <FormGroup ?style>
     <FormLabel label hasError style=styles##label />
     <View>
-      <TextInput
-        style=Style.(
-          arrayOption([|
-            Some(styles##input),
-            hasError ? Some(styles##inputError) : None,
-          |])
-        )
+      <ThemedTextInput
         value
-        onChange={(event: TextInput.changeEvent) =>
-          handleChange(event.nativeEvent.text)
-        }
+        onValueChange=handleChange
+        hasError
         ?onBlur
         ?textContentType
         ?secureTextEntry
-        autoCapitalize=`none
-        autoCorrect=false
-        autoFocus=false
         ?keyboardType
       />
       {decoration->ReactUtils.mapOpt(deco => deco(~style=styles##decoration))}

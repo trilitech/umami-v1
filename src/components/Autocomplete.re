@@ -56,25 +56,6 @@ module Item = {
 let styles =
   Style.(
     StyleSheet.create({
-      "input":
-        style(
-          ~paddingHorizontal=10.->dp,
-          ~height=46.->dp,
-          ~borderColor=Theme.colorDarkMediumEmphasis,
-          ~borderWidth=1.,
-          ~borderRadius=4.,
-          ~fontFamily="Avenir",
-          ~color=Theme.colorDarkHighEmphasis,
-          ~fontSize=16.,
-          ~fontWeight=`normal,
-          (),
-        ),
-      "inputError":
-        style(
-          ~color=Theme.colorDarkError,
-          ~borderColor=Theme.colorDarkError,
-          (),
-        ),
       "listContainer":
         style(
           ~position=`absolute,
@@ -182,18 +163,13 @@ let make =
     {renderLabel->Belt.Option.mapWithDefault(React.null, renderLabel =>
        renderLabel(displayError)
      )}
-    <TextInput
-      ref={textInputRef->Ref.value}
-      style=Style.(
-        arrayOption([|
-          Some(styles##input),
-          displayError ? Some(styles##inputError) : None,
-          styleFromProp,
-        |])
-      )
+    <ThemedTextInput
+      inputRef={textInputRef->Ref.value}
+      style=?styleFromProp
       value
-      onChange={(event: TextInput.changeEvent) => {
-        handleChange(event.nativeEvent.text);
+      hasError
+      onValueChange={newValue => {
+        handleChange(newValue);
         setSelectedItemIndex(_ => 0);
       }}
       onFocus={_ => setHasFocus(_ => true)}
@@ -202,9 +178,6 @@ let make =
         setSelectedItemIndex(_ => 0);
       }}
       onKeyPress
-      autoCapitalize=`none
-      autoCorrect=false
-      autoFocus=false
     />
     {hasFocus && list->Belt.Array.size > 0 && value->Js.String.length > 0
        ? <View>

@@ -30,27 +30,6 @@ let styles =
       "inputStyleButton": style(~flexDirection=`row, ~alignItems=`center, ()),
       "inputStyleText":
         style(~color="#D8BC63", ~lineHeight=16., ~marginLeft=7.->dp, ()),
-      "input":
-        style(
-          ~height=46.->dp,
-          ~paddingVertical=10.->dp,
-          ~paddingLeft=20.->dp,
-          ~paddingRight=12.->dp,
-          ~fontFamily="Avenir",
-          ~color=Theme.colorDarkHighEmphasis,
-          ~fontSize=16.,
-          ~fontWeight=`normal,
-          ~borderColor=Theme.colorDarkMediumEmphasis,
-          ~borderWidth=1.,
-          ~borderRadius=5.,
-          (),
-        ),
-      "inputError":
-        style(
-          ~color=Theme.colorDarkError,
-          ~borderColor=Theme.colorDarkError,
-          (),
-        ),
     })
   );
 
@@ -140,20 +119,10 @@ let make = (~label, ~value: string, ~handleChange, ~error) => {
            renderItem=AccountSelector.renderItem
          />
        | Text =>
-         <TextInput
-           style=Style.(
-             arrayOption([|
-               Some(styles##input),
-               hasError ? Some(styles##inputError) : None,
-             |])
-           )
+         <ThemedTextInput
            value
-           onChange={(event: TextInput.changeEvent) =>
-             handleChange(event.nativeEvent.text)
-           }
-           autoCapitalize=`none
-           autoCorrect=false
-           autoFocus=false
+           onValueChange=handleChange
+           hasError
            placeholder={js|Enter baker's tz1 address|js}
          />
        }}
