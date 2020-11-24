@@ -62,12 +62,23 @@ module Form = {
         onSubmit,
       ) => {
     DelegateForm.use(
+      ~validationStrategy=OnDemand,
       ~schema={
         DelegateForm.Validation.(
           Schema(
             nonEmpty(Sender)
             + nonEmpty(Baker)
-            + custom(values => FormUtils.isValidFloat(values.fee), Fee),
+            + custom(values => FormUtils.isValidFloat(values.fee), Fee)
+            + custom(
+                values =>
+                  switch (initDelegate) {
+                  | Some(initDelegate) =>
+                    initDelegate == values.baker
+                      ? Error("not the same baker") : Valid
+                  | None => Valid
+                  },
+                Baker,
+              ),
           )
         );
       },
