@@ -93,7 +93,7 @@ let make = (~route as currentRoute) => {
     <NavBarItem
       currentRoute
       route=Delegations
-      title="DELEGATIONS"
+      title=I18n.t#navbar_delegations
       icon=Icons.Delegate.build
     />
     <NavBarItem currentRoute route=Debug title="DEBUG" />

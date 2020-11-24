@@ -59,9 +59,12 @@ let make =
         </CellAddress>
         <CellAction>
           <Menu icon=Icons.More.build size=30.>
-            <Menu.Item text="Change baker" icon=Icons.Change.build />
             <Menu.Item
-              text="End delegation"
+              text=I18n.t#delegate_menu_edit
+              icon=Icons.Change.build
+            />
+            <Menu.Item
+              text=I18n.t#delegate_menu_delete
               colorStyle=`error
               icon=Icons.Close.build
             />

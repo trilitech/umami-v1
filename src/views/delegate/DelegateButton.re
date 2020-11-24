@@ -45,7 +45,7 @@ let make =
       disabled>
       <Typography.ButtonSecondary
         style={disabled ? styles##textButtonDisabled : styles##textButton}>
-        "DELEGATE"->React.string
+        I18n.btn#delegate->React.string
       </Typography.ButtonSecondary>
     </TouchableOpacity>
     <ModalAction ref=modal visible=visibleModal onRequestClose=closeAction>

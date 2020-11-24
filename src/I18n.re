@@ -16,7 +16,8 @@ let btn = {
   pub create_account_record_ok = {js|OK, I’VE RECORDED IT|js};
   pub add_contact = "ADD CONTACT";
   pub delete_contact = "Delete contact";
-  pub advanced_options = "Advanced options"
+  pub advanced_options = "Advanced options";
+  pub delegate = "DELEGATE"
 };
 
 let label = {
@@ -101,5 +102,11 @@ let t = {
   pub operation_summary_fee = p("+ Fee %a", () => this#xtz_amount);
   pub navbar_accounts = "ACCOUNTS";
   pub navbar_operations = "OPERATIONS";
-  pub navbar_addressbook = {j|ADDRESS\nBOOK|j}
+  pub navbar_addressbook = {j|ADDRESS\nBOOK|j};
+  pub navbar_delegations = "DELEGATIONS";
+  pub delegate_column_account = "ACCOUNT";
+  pub delegate_column_current_balance = "CURRENT BALANCE";
+  pub delegate_column_baker = "Baker";
+  pub delegate_menu_edit = "Change baker";
+  pub delegate_menu_delete = "End delegation"
 };
