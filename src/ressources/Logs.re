@@ -1,6 +1,6 @@
 // Global errors description
 
-type kind =
+type origin =
   | Operation
   | Connection
   | Account
@@ -8,10 +8,15 @@ type kind =
   | Balance
   | Delegate;
 
+type kind =
+  | Info
+  | Error;
+
 type timestamp = float;
 
 type t = {
   kind,
+  origin,
   timestamp,
   msg: string,
 };

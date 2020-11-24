@@ -26,11 +26,12 @@ let make = () => {
   let (visibleModal, setVisibleModal) = React.useState(_ => false);
   let openAction = () => setVisibleModal(_ => true);
   let closeAction = () => setVisibleModal(_ => false);
-  let addError = ErrorsContext.useAddError();
+  let addLog = ErrorsContext.useAdd();
 
   let onPress = _e => {
-    addError({
-      kind: Error.Operation,
+    addLog({
+      origin: Logs.Operation,
+      kind: Logs.Error,
       timestamp: Js.Date.now(),
       msg: "Bad error about something",
     });

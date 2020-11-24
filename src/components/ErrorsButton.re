@@ -2,7 +2,7 @@ open ReactNative;
 
 [@react.component]
 let make = (~style=?) => {
-  let _errors = ErrorsContext.useErrors();
+  let _errors = ErrorsContext.useLogs();
   let setSeen = ErrorsContext.useSetSeen();
   let seen = ErrorsContext.useSeen();
 

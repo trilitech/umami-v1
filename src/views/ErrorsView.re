@@ -32,8 +32,8 @@ module ClearButton = {
 
 [@react.component]
 let make = () => {
-  let errors = ErrorsContext.useErrors();
-  let deleteError = ErrorsContext.useDeleteError();
+  let errors = ErrorsContext.useLogs();
+  let deleteError = ErrorsContext.useDelete();
 
   <ModalView style=styles##modal>
     <View style=styles##view>
@@ -50,11 +50,11 @@ let make = () => {
          | errors =>
            errors
            ->Belt.List.toArray
-           ->Belt.Array.mapWithIndex((i, error) =>
+           ->Belt.Array.mapWithIndex((i, log) =>
                <ErrorItem
                  key={i->string_of_int}
                  indice=i
-                 error
+                 log
                  handleDelete=deleteError
                />
              )

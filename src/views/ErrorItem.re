@@ -30,7 +30,7 @@ let styles =
     })
   );
 
-module ErrorDeleteButton = {
+module DeleteButton = {
   [@react.component]
   let make = (~indice, ~handleDelete) => {
     let onPress = _ => {
@@ -46,7 +46,7 @@ let make =
     (
       ~style as stylearg=?,
       ~indice,
-      ~error: Error.t,
+      ~log: Logs.t,
       ~showTimestamp=true,
       ~handleDelete,
     ) => {
@@ -60,20 +60,20 @@ let make =
             fontWeightStyle=`light
             numberOfLines=1>
             "["->React.string
-            Js.Date.(error.timestamp->fromFloat->toLocaleString)->React.string
+            Js.Date.(log.timestamp->fromFloat->toLocaleString)->React.string
             "]  -"->React.string
           </Typography.Body3>
           ->ReactUtils.onlyWhen(showTimestamp)}
          <Typography.Body2
            fontWeightStyle=`heavy ellipsizeMode=`tail numberOfLines=1>
-           error.msg->React.string
+           log.msg->React.string
          </Typography.Body2>
          <View
            style=Style.(
              array([|styles##actionButtons, ReactUtils.displayOn(hovered)|])
            )>
-           <ClipboardButton data={error.msg} />
-           <ErrorDeleteButton indice handleDelete />
+           <ClipboardButton data={log.msg} />
+           <DeleteButton indice handleDelete />
          </View>
        </View>;
      }}

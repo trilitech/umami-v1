@@ -1,15 +1,15 @@
 open ReactNative;
 open Common;
 type state = {
-  errors: list(Error.t),
-  add: Error.t => unit,
+  logs: list(Logs.t),
+  add: Logs.t => unit,
   delete: int => unit,
   clear: unit => unit,
   seen: (bool, bool => unit),
 };
 
 let initialState = {
-  errors: [],
+  logs: [],
   add: _ => (),
   delete: _ => (),
   clear: () => (),
@@ -38,7 +38,7 @@ let make = (~children) => {
 
   let fadeAnim = React.useRef(Animated.Value.create(1.)).current;
 
-  let (errors, add, delete, clear) = {
+  let (logs, add, delete, clear) = {
     let (errors, setErrors) = React.useState(() => []);
 
     let delete = (i: int) => {
@@ -67,11 +67,11 @@ let make = (~children) => {
     (errors, add, delete, clear);
   };
 
-  <Provider value={errors, add, clear, delete, seen}>
+  <Provider value={logs, add, clear, delete, seen}>
     {toastState->ReactUtils.mapOpt(((_, firsts)) =>
        <ToastBox
          opacity={fadeAnim->Animated.StyleProp.float}
-         errors
+         logs
          handleDelete=delete
          firsts
        />
@@ -82,7 +82,7 @@ let make = (~children) => {
 
 let useStoreContext = () => React.useContext(context);
 
-let useAddError = () => {
+let useAdd = () => {
   let store = useStoreContext();
   store.add;
 };
@@ -102,12 +102,12 @@ let useClear = () => {
   store.clear;
 };
 
-let useDeleteError = () => {
+let useDelete = () => {
   let store = useStoreContext();
   store.delete;
 };
 
-let useErrors = () => {
+let useLogs = () => {
   let store = useStoreContext();
-  store.errors;
+  store.logs;
 };
