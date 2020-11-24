@@ -19,7 +19,7 @@ let make = (~label, ~value: string, ~handleChange, ~error, ~disabled) => {
     accounts
     ->Belt.Map.String.valuesToArray
     ->Belt.Array.keepMap(((account, delegate)) =>
-        delegate->Belt.Option.isNone
+        delegate->Belt.Option.isNone || disabled
           ? Some({Selector.value: account.address, label: account.alias})
           : None
       )

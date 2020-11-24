@@ -55,7 +55,12 @@ type step =
 
 module Form = {
   let build =
-      (initAccount: option(Account.t), advancedOptionOpened, onSubmit) => {
+      (
+        initAccount: option(Account.t),
+        initDelegate: option(string),
+        advancedOptionOpened,
+        onSubmit,
+      ) => {
     DelegateForm.use(
       ~schema={
         DelegateForm.Validation.(
@@ -75,7 +80,7 @@ module Form = {
         },
       ~initialState={
         sender: initAccount->Belt.Option.mapWithDefault("", a => a.address),
-        baker: "",
+        baker: initDelegate->Belt.Option.getWithDefault(""),
         fee: "",
         forceLowFee: false,
       },
@@ -87,7 +92,8 @@ module Form = {
     open DelegateForm;
 
     [@react.component]
-    let make = (~onPressCancel, ~advancedOptionState, ~form, ~blockSender) => {
+    let make =
+        (~onPressCancel, ~advancedOptionState, ~form, ~blockSender, ~hasBaker) => {
       let onSubmitDelegateForm = _ => {
         form.submit();
       };
@@ -95,7 +101,7 @@ module Form = {
 
       <>
         <Typography.Headline2 style=styles##title>
-          "Delegate"->React.string
+          {hasBaker ? "Change Baker" : "Delegate"}->React.string
         </Typography.Headline2>
         <FormGroupDelegateSelector
           label="Account to delegate"
@@ -136,7 +142,10 @@ module Form = {
         </View>
         <View style=styles##formAction>
           <FormButton text="CANCEL" onPress=onPressCancel />
-          <FormButton text="OK" onPress=onSubmitDelegateForm />
+          <FormButton
+            text={hasBaker ? "UPDATE" : "OK"}
+            onPress=onSubmitDelegateForm
+          />
         </View>
       </>;
     };
@@ -144,7 +153,7 @@ module Form = {
 };
 
 [@react.component]
-let make = (~onPressCancel, ~defaultAccount=?) => {
+let make = (~onPressCancel, ~defaultAccount=?, ~defaultDelegate=?) => {
   let account = StoreContext.useAccount();
   let network = StoreContext.useNetwork();
 
@@ -162,7 +171,7 @@ let make = (~onPressCancel, ~defaultAccount=?) => {
   let (modalStep, setModalStep) = React.useState(_ => SendStep);
 
   let form =
-    Form.build(defaultAccount, advancedOptionOpened, op =>
+    Form.build(defaultAccount, defaultDelegate, advancedOptionOpened, op =>
       setModalStep(_ => PasswordStep(op))
     );
 
@@ -206,6 +215,7 @@ let make = (~onPressCancel, ~defaultAccount=?) => {
          advancedOptionState
          form
          blockSender={defaultAccount->Belt.Option.isSome}
+         hasBaker={defaultDelegate->Belt.Option.isSome}
        />
      | (PasswordStep(operation), _) =>
        <SignOperationView

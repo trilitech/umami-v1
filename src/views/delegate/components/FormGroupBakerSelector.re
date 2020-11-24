@@ -3,7 +3,7 @@ open ReactNative;
 let styles =
   Style.(
     StyleSheet.create({
-      "formGroup": style(~zIndex=11, ()),
+      "formGroup": style(~zIndex=10, ()),
       "label": style(~marginBottom=6.->dp, ()),
       "selectorContent":
         style(
