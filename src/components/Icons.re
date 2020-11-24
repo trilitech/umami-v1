@@ -106,3 +106,5 @@ module More = Make(SVGIconMore);
 module Delegate = Make(SVGIconDelegate);
 module Change = Make(SVGIconChange);
 module List = Make(SVGIconList);
+module CheckOutline = Make(SVGIconCheckOutline);
+module CloseOutline = Make(SVGIconCloseOutline);

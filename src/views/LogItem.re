@@ -19,6 +19,7 @@ let styles =
       "itemInfo": style(~borderColor=Theme.colorDarkValid, ()),
       "hovered": style(~backgroundColor=Theme.colorDarkHighEmphasis, ()),
       "buttonHovered": style(~backgroundColor="rgba(0, 0, 0, 0.04)", ()),
+      "kindIcon": style(~marginRight=10.->dp, ()),
       "item":
         style(
           ~display=`flex,
@@ -67,6 +68,12 @@ let make =
     | Info => styles##itemInfo
     };
 
+  let icon =
+    switch (log.kind) {
+    | Error => <Icons.CloseOutline size=16. color=Theme.colorDarkError />
+    | Info => <Icons.CheckOutline size=16. color=Theme.colorDarkValid />
+    };
+
   <RowItem.Hoverable
     height=46.
     style=Style.(array([|styles##item, kindStyle|]))
@@ -74,6 +81,7 @@ let make =
     {_ => {
        <View
          style={Style.arrayOption([|Some(styles##itemContent), stylearg|])}>
+         <View style=styles##kindIcon> icon </View>
          {<Typography.Body3
             style=styles##reqelt
             fontSize=12.
