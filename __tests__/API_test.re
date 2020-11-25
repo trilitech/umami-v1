@@ -13,7 +13,7 @@ describe("API tests", ({testAsync}) => {
       };
     };
     module UnderTest = API.Balance(Stub);
-    UnderTest.get(network, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3")
+    UnderTest.get(network, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(Belt.Result.Ok("stub"));
         callback();
@@ -29,7 +29,7 @@ describe("API tests", ({testAsync}) => {
       };
     };
     module UnderTest = API.Balance(Stub);
-    UnderTest.get(network, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3")
+    UnderTest.get(network, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(Belt.Result.Error("stub"));
         callback();

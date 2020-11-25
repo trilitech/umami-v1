@@ -19,7 +19,7 @@ let make = () => {
       | Pending(_) => ()
       | Done =>
         (network, config)
-        ->BalanceAPI.get(account)
+        ->BalanceAPI.get(account, ())
         ->FutureEx.getOk(value => setBalance(value))
       };
       None;

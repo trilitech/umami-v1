@@ -41,7 +41,7 @@ let make = () => {
     <Button
       onPress={_ => {
         (network, config)
-        ->BalanceAPI.get(account)
+        ->BalanceAPI.get(account, ())
         ->FutureEx.getOk(value => setBalance(value));
         (network, config)
         ->OperationsAPI.get(account, ())
