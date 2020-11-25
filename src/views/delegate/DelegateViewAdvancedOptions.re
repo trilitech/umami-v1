@@ -52,7 +52,7 @@ let make = (~form: DelegateForm.api) => {
 
   <View>
     <FormGroupTextInput
-      label="Fee"
+      label=I18n.label#fee
       value={form.values.fee}
       handleChange={form.handleChange(Fee)}
       error={form.getFieldError(Field(Fee))}
@@ -60,7 +60,7 @@ let make = (~form: DelegateForm.api) => {
       decoration=FormGroupXTZInput.xtzDecoration
     />
     <FormGroupCheckbox
-      label="Force low fee"
+      label=I18n.label#force_low_fee
       value={form.values.forceLowFee}
       handleChange={form.handleChange(ForceLowFee)}
       error={form.getFieldError(Field(ForceLowFee))}
