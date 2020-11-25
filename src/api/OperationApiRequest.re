@@ -9,8 +9,18 @@ type injection = {
 };
 
 let useCreate = network => {
+  let addLog = ErrorsContext.useAdd();
   let set = (~config, {operation, password}) =>
-    (network, config)->OperationsAPI.inject(operation, ~password);
+    (network, config)
+    ->OperationsAPI.inject(operation, ~password)
+    ->ApiRequest.logOk(addLog, Logs.Operation, hash => {
+        I18n.title#operation_injected
+        ++ " - "
+        ++ I18n.t#operation_hash
+        ++ " : "
+        ++ hash
+      });
+
   ApiRequest.useSetter(set, Logs.Operation, ());
 };
 

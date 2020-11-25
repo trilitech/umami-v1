@@ -42,7 +42,7 @@ let label = {
 
 let title = {
   pub _this = this;
-  pub error_logs = "Error logs";
+  pub error_logs = "Logs";
   pub account_create = "Create new account";
   pub import_account = "Import account";
   pub add_contact = "Add contact";

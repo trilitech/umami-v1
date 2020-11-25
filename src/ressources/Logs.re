@@ -21,7 +21,7 @@ type t = {
   msg: string,
 };
 
-let print_kind = e => {
+let originToString = e => {
   switch (e) {
   | Operation => "Operation"
   | Connection => "Connection"

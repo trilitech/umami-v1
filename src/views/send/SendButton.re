@@ -26,25 +26,9 @@ let make = () => {
   let (visibleModal, setVisibleModal) = React.useState(_ => false);
   let openAction = () => setVisibleModal(_ => true);
   let closeAction = () => setVisibleModal(_ => false);
-  let addLog = ErrorsContext.useAdd();
 
-  let onPress = _e => {
-    /* addLog({ */
-    /*   origin: Logs.Operation, */
-    /*   kind: Logs.Error, */
-    /*   timestamp: Js.Date.now(), */
-    /*   msg: "Bad error about something", */
-    /* }); */
+  let onPress = _e => openAction();
 
-    addLog({
-      origin: Logs.Operation,
-      kind: Logs.Info,
-      timestamp: Js.Date.now(),
-      msg: "Nice message about something",
-    });
-
-    openAction();
-  };
   let onPress = account->Belt.Option.map(_ => onPress);
 
   let (iconColor, textColor) = {

@@ -42,10 +42,22 @@ let mapOrLoad = (req, f) =>
 
 let isLoading = request => request == Loading;
 
-let handleLog = (r, addLog, kind, origin) =>
+let logError = (r, addLog, origin) =>
   r->Future.tapError(msg =>
-    addLog(Logs.{kind, msg, origin, timestamp: Js.Date.now()})
+    addLog(Logs.{kind: Logs.Error, msg, origin, timestamp: Js.Date.now()})
   );
+
+let logOk = (r, addLog, origin, makeMsg) =>
+  r->Future.tapOk(r => {
+    addLog(
+      Logs.{
+        kind: Logs.Info,
+        msg: makeMsg(r),
+        origin,
+        timestamp: Js.Date.now(),
+      },
+    )
+  });
 
 let useLoader = (get, kind, ()) => {
   let (request, setRequest) = React.useState(_ => NotAsked);
@@ -57,7 +69,7 @@ let useLoader = (get, kind, ()) => {
       setRequest(_ => Loading);
 
       get(~config)
-      ->handleLog(addLog, Logs.Error, kind)
+      ->logError(addLog, kind)
       ->Future.get(result => setRequest(_ => Done(result)));
 
       None;
@@ -78,7 +90,7 @@ let useLoader1 = (get, kind, arg1) => {
       setRequest(_ => Loading);
 
       get(~config, arg1)
-      ->handleLog(addLog, Logs.Error, kind)
+      ->logError(addLog, kind)
       ->Future.get(result => setRequest(_ => Done(result)));
 
       None;
@@ -118,7 +130,7 @@ let useSetter = (set, kind, ()) => {
   let sendRequest = input => {
     setRequest(_ => Loading);
     set(~config, input)
-    ->handleLog(addLog, Logs.Error, kind)
+    ->logError(addLog, kind)
     ->Future.tap(result => {setRequest(_ => Done(result))});
   };
 
@@ -133,7 +145,7 @@ let useGetter = (get, kind) => {
   let get = (~loading=true, input) => {
     loading ? setRequest(_ => Loading) : ();
     get(~config, input)
-    ->handleLog(addLog, Logs.Error, kind)
+    ->logError(addLog, kind)
     ->Future.get(result => setRequest(_ => {Done(result)}));
   };
 
