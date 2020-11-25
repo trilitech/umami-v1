@@ -61,7 +61,7 @@ let logOk = (r, addLog, origin, makeMsg) =>
 
 let useLoader = (get, kind, ()) => {
   let (request, setRequest) = React.useState(_ => NotAsked);
-  let addLog = ErrorsContext.useAdd();
+  let addLog = LogsContext.useAdd();
   let config = ConfigContext.useConfig();
 
   React.useEffect1(
@@ -81,7 +81,7 @@ let useLoader = (get, kind, ()) => {
 };
 
 let useLoader1 = (get, kind, arg1) => {
-  let addLog = ErrorsContext.useAdd();
+  let addLog = LogsContext.useAdd();
   let (request, setRequest) = React.useState(_ => NotAsked);
   let config = ConfigContext.useConfig();
 
@@ -123,7 +123,7 @@ let useLoader2 = (get, kind, arg1, arg2) => {
 };
 
 let useSetter = (set, kind, ()) => {
-  let addLog = ErrorsContext.useAdd();
+  let addLog = LogsContext.useAdd();
   let (request, setRequest) = React.useState(_ => NotAsked);
   let config = ConfigContext.useConfig();
 
@@ -138,7 +138,7 @@ let useSetter = (set, kind, ()) => {
 };
 
 let useGetter = (get, kind) => {
-  let addLog = ErrorsContext.useAdd();
+  let addLog = LogsContext.useAdd();
   let (request, setRequest) = React.useState(_ => Loading);
   let config = ConfigContext.useConfig();
 

@@ -9,7 +9,7 @@ type injection = {
 };
 
 let useCreate = network => {
-  let addLog = ErrorsContext.useAdd();
+  let addLog = LogsContext.useAdd();
   let set = (~config, {operation, password}) =>
     (network, config)
     ->OperationsAPI.inject(operation, ~password)

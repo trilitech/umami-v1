@@ -2,9 +2,8 @@ open ReactNative;
 
 [@react.component]
 let make = (~style=?) => {
-  let _errors = ErrorsContext.useLogs();
-  let setSeen = ErrorsContext.useSetSeen();
-  let seen = ErrorsContext.useSeen();
+  let setSeen = LogsContext.useSetSeen();
+  let seen = LogsContext.useSeen();
 
   let modal = React.useRef(Js.Nullable.null);
   let (visibleModal, setVisibleModal) = React.useState(_ => false);

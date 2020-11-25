@@ -20,20 +20,20 @@ let styles =
 module ClearButton = {
   [@react.component]
   let make = () => {
-    let clearErrors = ErrorsContext.useClear();
+    let clearLogs = LogsContext.useClear();
     <FormButton
       style=styles##clear
       fontSize=12.
       text=I18n.t#logs_clearall
-      onPress={_ => clearErrors()}
+      onPress={_ => clearLogs()}
     />;
   };
 };
 
 [@react.component]
 let make = () => {
-  let errors = ErrorsContext.useLogs();
-  let deleteError = ErrorsContext.useDelete();
+  let errors = LogsContext.useLogs();
+  let deleteError = LogsContext.useDelete();
 
   <ModalView style=styles##modal>
     <View style=styles##view>
