@@ -49,7 +49,7 @@ let make =
       </Typography.ButtonSecondary>
     </TouchableOpacity>
     <ModalAction ref=modal visible=visibleModal onRequestClose=closeAction>
-      <DelegateView onPressCancel defaultAccount />
+      <DelegateView onPressCancel ?defaultAccount />
     </ModalAction>
   </>;
 };

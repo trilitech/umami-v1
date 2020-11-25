@@ -3,7 +3,6 @@ module StateLenses = [%lenses
     sender: string,
     baker: string,
     fee: string,
-    burnCap: string,
     forceLowFee: bool,
   }
 ];

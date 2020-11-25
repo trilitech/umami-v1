@@ -19,6 +19,43 @@ module CellAction =
     ();
   });
 
+module DelegateEditButton = {
+  [@react.component]
+  let make = (~account: Account.t, ~delegate: string) => {
+    let modal = React.useRef(Js.Nullable.null);
+
+    let (visibleModal, setVisibleModal) = React.useState(_ => false);
+    let openAction = () => setVisibleModal(_ => true);
+    let closeAction = () => setVisibleModal(_ => false);
+
+    let onPress = _ => {
+      openAction();
+    };
+
+    let onPressCancel = _e => {
+      modal.current
+      ->Js.Nullable.toOption
+      ->Belt.Option.map(ModalAction.closeModal)
+      ->ignore;
+    };
+
+    <>
+      <Menu.Item
+        text=I18n.t#delegate_menu_edit
+        icon=Icons.Change.build
+        onPress
+      />
+      <ModalAction ref=modal visible=visibleModal onRequestClose=closeAction>
+        <DelegateView
+          onPressCancel
+          defaultAccount=account
+          defaultDelegate=delegate
+        />
+      </ModalAction>
+    </>;
+  };
+};
+
 let memo = component =>
   React.memoCustomCompareProps(component, (prevPros, nextProps) =>
     prevPros##account == nextProps##account
@@ -28,7 +65,7 @@ let memo = component =>
 let make =
   memo((~account: Account.t, ~zIndex) => {
     let balanceRequest = BalanceApiRequest.useLoad(account.address);
-    let delegateRequest = DelegateApiRequest.useGetDelegate(account.address);
+    let delegateRequest = DelegateApiRequest.useGetDelegate(account);
 
     switch (delegateRequest) {
     | Done(Ok(Some(delegate))) =>
@@ -42,7 +79,8 @@ let make =
           <Typography.Body1>
             {switch (balanceRequest) {
              | Done(Ok(balance)) =>
-               (balance->BusinessUtils.formatXTZ ++ " XTZ")->React.string
+               I18n.t#xtz_amount(balance->BusinessUtils.formatXTZ)
+               ->React.string
              | Done(Error(error)) => error->React.string
              | NotAsked
              | Loading =>
@@ -59,10 +97,7 @@ let make =
         </CellAddress>
         <CellAction>
           <Menu icon=Icons.More.build size=30.>
-            <Menu.Item
-              text=I18n.t#delegate_menu_edit
-              icon=Icons.Change.build
-            />
+            <DelegateEditButton account delegate />
             <Menu.Item
               text=I18n.t#delegate_menu_delete
               colorStyle=`error

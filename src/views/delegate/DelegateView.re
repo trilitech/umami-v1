@@ -43,7 +43,6 @@ let buildTransaction = (state: DelegateForm.state, advancedOptionOpened) => {
     ~source=state.values.sender,
     ~delegate=state.values.baker,
     ~fee=?state.values.fee->mapIfAdvanced(Js.Float.fromString),
-    ~burnCap=?state.values.burnCap->mapIfAdvanced(Js.Float.fromString),
     ~forceLowFee=?
       advancedOptionOpened && state.values.forceLowFee ? Some(true) : None,
     (),
@@ -56,8 +55,14 @@ type step =
 
 module Form = {
   let build =
-      (initAccount: option(Account.t), advancedOptionOpened, onSubmit) => {
+      (
+        initAccount: option(Account.t),
+        initDelegate: option(string),
+        advancedOptionOpened,
+        onSubmit,
+      ) => {
     DelegateForm.use(
+      ~validationStrategy=OnDemand,
       ~schema={
         DelegateForm.Validation.(
           Schema(
@@ -65,8 +70,14 @@ module Form = {
             + nonEmpty(Baker)
             + custom(values => FormUtils.isValidFloat(values.fee), Fee)
             + custom(
-                values => FormUtils.isValidFloat(values.burnCap),
-                BurnCap,
+                values =>
+                  switch (initDelegate) {
+                  | Some(initDelegate) =>
+                    initDelegate == values.baker
+                      ? Error("not the same baker") : Valid
+                  | None => Valid
+                  },
+                Baker,
               ),
           )
         );
@@ -80,9 +91,8 @@ module Form = {
         },
       ~initialState={
         sender: initAccount->Belt.Option.mapWithDefault("", a => a.address),
-        baker: "",
+        baker: initDelegate->Belt.Option.getWithDefault(""),
         fee: "",
-        burnCap: "",
         forceLowFee: false,
       },
       (),
@@ -93,7 +103,8 @@ module Form = {
     open DelegateForm;
 
     [@react.component]
-    let make = (~onPressCancel, ~advancedOptionState, ~form) => {
+    let make =
+        (~onPressCancel, ~advancedOptionState, ~form, ~blockSender, ~hasBaker) => {
       let onSubmitDelegateForm = _ => {
         form.submit();
       };
@@ -101,16 +112,18 @@ module Form = {
 
       <>
         <Typography.Headline2 style=styles##title>
-          "Delegate"->React.string
+          {hasBaker ? I18n.title#delegate_update : I18n.title#delegate}
+          ->React.string
         </Typography.Headline2>
-        <FormGroupAccountSelector
-          label="Account to delegate"
+        <FormGroupDelegateSelector
+          label=I18n.label#account_delegate
           value={form.values.sender}
           handleChange={form.handleChange(Sender)}
           error={form.getFieldError(Field(Sender))}
+          disabled=blockSender
         />
-        <FormGroupTextInput
-          label="Baker"
+        <FormGroupBakerSelector
+          label=I18n.label#baker
           value={form.values.baker}
           handleChange={form.handleChange(Baker)}
           error={form.getFieldError(Field(Baker))}
@@ -121,7 +134,7 @@ module Form = {
             activeOpacity=1.
             onPress={_ => setAdvancedOptionOpened(prev => !prev)}>
             <Typography.Overline1>
-              "Advanced options"->React.string
+              I18n.btn#advanced_options->React.string
             </Typography.Overline1>
             <SwitchNative
               value=advancedOptionOpened
@@ -140,8 +153,11 @@ module Form = {
              ? <DelegateViewAdvancedOptions form /> : React.null}
         </View>
         <View style=styles##formAction>
-          <FormButton text="CANCEL" onPress=onPressCancel />
-          <FormButton text="OK" onPress=onSubmitDelegateForm />
+          <FormButton text=I18n.btn#cancel onPress=onPressCancel />
+          <FormButton
+            text={hasBaker ? I18n.btn#update : I18n.btn#ok}
+            onPress=onSubmitDelegateForm
+          />
         </View>
       </>;
     };
@@ -149,7 +165,7 @@ module Form = {
 };
 
 [@react.component]
-let make = (~onPressCancel, ~defaultAccount=?) => {
+let make = (~onPressCancel, ~defaultAccount=?, ~defaultDelegate=?) => {
   let account = StoreContext.useAccount();
   let network = StoreContext.useNetwork();
 
@@ -167,10 +183,7 @@ let make = (~onPressCancel, ~defaultAccount=?) => {
   let (modalStep, setModalStep) = React.useState(_ => SendStep);
 
   let form =
-    Form.build(
-      defaultAccount->Belt.Option.getWithDefault(account),
-      advancedOptionOpened,
-      op =>
+    Form.build(defaultAccount, defaultDelegate, advancedOptionOpened, op =>
       setModalStep(_ => PasswordStep(op))
     );
 
@@ -181,14 +194,14 @@ let make = (~onPressCancel, ~defaultAccount=?) => {
      | (_, Done(Ok(hash))) =>
        <>
          <Typography.Headline2 style=styles##title>
-           "Delegation sent"->React.string
+           I18n.title#delegation_sent->React.string
          </Typography.Headline2>
          <Typography.Overline1>
-           "Operation hash"->React.string
+           I18n.t#operation_hash->React.string
          </Typography.Overline1>
          <Typography.Body1> hash->React.string </Typography.Body1>
          <View style=styles##formAction>
-           <FormButton text="OK" onPress=onPressCancel />
+           <FormButton text=I18n.btn#ok onPress=onPressCancel />
          </View>
        </>
      | (_, Done(Error(error))) =>
@@ -197,7 +210,7 @@ let make = (~onPressCancel, ~defaultAccount=?) => {
            error->React.string
          </Typography.Body1>
          <View style=styles##formAction>
-           <FormButton text="OK" onPress=onPressCancel />
+           <FormButton text=I18n.btn#ok onPress=onPressCancel />
          </View>
        </>
      | (_, Loading) =>
@@ -208,7 +221,14 @@ let make = (~onPressCancel, ~defaultAccount=?) => {
            color=Colors.highIcon
          />
        </View>
-     | (SendStep, _) => <Form.View onPressCancel advancedOptionState form />
+     | (SendStep, _) =>
+       <Form.View
+         onPressCancel
+         advancedOptionState
+         form
+         blockSender={defaultAccount->Belt.Option.isSome}
+         hasBaker={defaultDelegate->Belt.Option.isSome}
+       />
      | (PasswordStep(operation), _) =>
        <SignOperationView
          onPressCancel={_ => setModalStep(_ => SendStep)}

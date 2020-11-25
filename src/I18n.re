@@ -10,6 +10,7 @@ let btn = {
   pub add = "ADD";
   pub send = "SEND";
   pub confirm = "CONFIRM";
+  pub update = "UPDATE";
   pub error_logs = "ERROR LOGS";
   pub import_account = "IMPORT EXISTING ACCOUNT";
   pub create_account_new = "CREATE NEW ACCOUNT";
@@ -34,7 +35,9 @@ let label = {
   pub storage_limit = "Storage limit";
   pub counter = "Counter";
   pub force_low_fee = "Force low fee";
-  pub confirm_password = "Confirm password"
+  pub confirm_password = "Confirm password";
+  pub account_delegate = "Account to delegate";
+  pub baker = "Baker"
 };
 
 let title = {
@@ -52,6 +55,8 @@ let title = {
   pub delegated_account = "Account to delegate";
   pub baker_account = "Baker";
   pub delegate = "Delegate";
+  pub delegate_update = "Change baker";
+  pub delegation_sent = "Delegation sent";
   pub delete_contact = "Delete contact?";
   pub deleted_contact = "Contact deleted";
   pub send = "Send"
