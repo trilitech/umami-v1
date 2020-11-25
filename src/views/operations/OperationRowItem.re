@@ -151,7 +151,7 @@ let make =
         <Typography.Body1>
           {switch (operation.status) {
            | Mempool => I18n.t#state_in_mempool
-           | Chain => I18n.t#state_in_mempool
+           | Chain => I18n.t#state_in_chain
            }}
           ->React.string
         </Typography.Body1>

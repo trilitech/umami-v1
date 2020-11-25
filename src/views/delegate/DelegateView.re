@@ -176,7 +176,7 @@ let make = (~onPressCancel, ~defaultAccount=?, ~defaultDelegate=?) => {
     OperationApiRequest.useCreate(network);
 
   let sendOperation = (operation, ~password) =>
-    account->Lib.Option.iter(account =>
+    account->Lib.Option.iter(_account =>
       sendOperation(OperationApiRequest.{operation, password})->ignore
     );
 
