@@ -5,7 +5,8 @@ type kind =
   | Connection
   | Account
   | Aliases
-  | Balance;
+  | Balance
+  | Delegate;
 
 type timestamp = float;
 
@@ -22,5 +23,6 @@ let print_kind = e => {
   | Balance => "Balance"
   | Aliases => "Aliases"
   | Account => "Account"
+  | Delegate => "Delegate"
   };
 };

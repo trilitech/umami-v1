@@ -29,6 +29,7 @@ module AppView = {
          | Accounts => <AccountsView />
          | Operations => <OperationsView />
          | AddressBook => <AddressBookView />
+         | Delegations => <DelegationsView />
          | Debug => <DebugView />
          | NotFound =>
            <View>

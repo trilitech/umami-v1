@@ -18,7 +18,8 @@ module Item = {
     );
 
   [@react.component]
-  let make = (~text, ~icon: Icons.builder, ~onPress=?) => {
+  let make =
+      (~text, ~icon: Icons.builder, ~colorStyle=`highEmphasis, ~onPress=?) => {
     <Pressable ?onPress>
       {({hovered}) =>
          <View
@@ -31,10 +32,9 @@ module Item = {
            {icon(
               ~style=?None,
               ~size=20.,
-              ~color=Theme.colorDarkMediumEmphasis,
+              ~color=Typography.getColor(colorStyle),
             )}
-           <Typography.ButtonSecondary
-             colorStyle=`highEmphasis style=styles##text>
+           <Typography.ButtonSecondary colorStyle style=styles##text>
              text->React.string
            </Typography.ButtonSecondary>
          </View>}
@@ -45,16 +45,7 @@ module Item = {
 let styles =
   Style.(
     StyleSheet.create({
-      "button":
-        style(
-          ~width=42.->dp,
-          ~height=42.->dp,
-          ~marginRight=4.->dp,
-          ~alignItems=`center,
-          ~justifyContent=`center,
-          ~borderRadius=21.,
-          (),
-        ),
+      "button": style(~alignItems=`center, ~justifyContent=`center, ()),
       "buttonHovered": style(~backgroundColor="rgba(255,255,255,0.04)", ()),
       "buttonPressed": style(~backgroundColor="rgba(255,255,255,0.1)", ()),
       "listContainer":
@@ -72,8 +63,10 @@ let styles =
     })
   );
 
+let iconSizeRatio = 4. /. 7.;
+
 [@react.component]
-let make = (~icon: Icons.builder, ~children) => {
+let make = (~icon: Icons.builder, ~children, ~size=42.) => {
   let pressableRef = React.useRef(Js.Nullable.null);
 
   let (isOpen, setIsOpen) = React.useState(_ => false);
@@ -89,7 +82,7 @@ let make = (~icon: Icons.builder, ~children) => {
     ),
   );
 
-  <View>
+  <View style=Style.(style(~width=size->dp, ~height=size->dp, ()))>
     <Pressable
       ref={pressableRef->Ref.value}
       onPress={_ => setIsOpen(isOpen => !isOpen)}>
@@ -98,6 +91,14 @@ let make = (~icon: Icons.builder, ~children) => {
            style=Style.(
              arrayOption([|
                Some(styles##button),
+               Some(
+                 style(
+                   ~width=size->dp,
+                   ~height=size->dp,
+                   ~borderRadius=size /. 2.,
+                   (),
+                 ),
+               ),
                hovered ? Some(styles##buttonHovered) : None,
                isOpen ? Some(styles##buttonPressed) : None,
              |])
@@ -105,7 +106,7 @@ let make = (~icon: Icons.builder, ~children) => {
            pointerEvents=`none>
            {icon(
               ~style=?None,
-              ~size=24.,
+              ~size=Js.Math.ceil_float(iconSizeRatio *. size),
               ~color=Theme.colorDarkMediumEmphasis,
             )}
          </View>}
