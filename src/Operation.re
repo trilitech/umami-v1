@@ -38,7 +38,14 @@ module Business = {
     type t = {delegate: option(string)};
 
     let decode = json =>
-      Json.Decode.{delegate: json |> optional(field("delegate", string))};
+      Json.Decode.{
+        delegate:
+          switch (json |> optional(field("delegate", string))) {
+          | Some(delegate) =>
+            delegate->Js.String2.length == 0 ? None : Some(delegate)
+          | None => None
+          },
+      };
   };
 
   type payload =
