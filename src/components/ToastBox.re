@@ -10,6 +10,8 @@ let styles =
           ~position=`absolute,
           ~bottom=20.->dp,
           ~left=150.->dp,
+          ~display=`flex,
+          ~flexDirection=`columnReverse,
           ~zIndex=2,
           (),
         ),
@@ -42,6 +44,7 @@ let make = (~opacity, ~logs, ~handleDelete, ~firsts) =>
     style=Style.([|styles##container, style(~opacity, ())|]->array)>
     {logs
      ->Lib.List.firsts(firsts)
+     ->Belt.List.reverse
      ->Belt.List.toArray
      ->Belt.Array.mapWithIndex((i, log) =>
          <Item key={i->string_of_int} indice=i log handleDelete />
