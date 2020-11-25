@@ -7,12 +7,13 @@ let useGetDelegate = (account: Account.t) => {
   let network = StoreContext.useNetwork();
   let setAccountDelegate = StoreContext.useSetAccountDelegate();
 
-  ApiRequest.useLoader1(
+  ApiRequest.useLoader2(
     (~config, network) =>
       DelegateAPI.getForAccount((network, config), account.address)
       ->Future.tapOk(res => setAccountDelegate(account.address, res)),
     Error.Delegate,
     network,
+    account.address,
   );
 };
 

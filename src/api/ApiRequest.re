@@ -89,6 +89,27 @@ let useLoader1 = (get, kind, arg1) => {
   request;
 };
 
+let useLoader2 = (get, kind, arg1, arg2) => {
+  let addError = ErrorsContext.useAddError();
+  let (request, setRequest) = React.useState(_ => NotAsked);
+  let config = ConfigContext.useConfig();
+
+  React.useEffect5(
+    () => {
+      setRequest(_ => Loading);
+
+      get(~config, arg1)
+      ->handleError(addError, kind)
+      ->Future.get(result => setRequest(_ => Done(result)));
+
+      None;
+    },
+    (config, arg1, arg2, setRequest, addError),
+  );
+
+  request;
+};
+
 let useSetter = (set, kind, ()) => {
   let addError = ErrorsContext.useAddError();
   let (request, setRequest) = React.useState(_ => NotAsked);
