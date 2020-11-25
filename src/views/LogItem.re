@@ -59,6 +59,7 @@ let make =
       ~style as stylearg=?,
       ~indice,
       ~log: Logs.t,
+      ~addLog,
       ~showTimestamp=true,
       ~handleDelete,
     ) => {
@@ -104,6 +105,8 @@ let make =
            <ClipboardButton
              hoveredStyle=styles##buttonHovered
              data={log.msg}
+             copied=I18n.log#log_content
+             addLog
              color=Theme.colorLightMediumEmphasis
            />
            <DeleteButton

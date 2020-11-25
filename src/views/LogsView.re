@@ -34,6 +34,7 @@ module ClearButton = {
 let make = () => {
   let errors = LogsContext.useLogs();
   let deleteError = LogsContext.useDelete();
+  let addLog = LogsContext.useAdd();
 
   <ModalView style=styles##modal>
     <View style=styles##view>
@@ -49,12 +50,14 @@ let make = () => {
            </Typography.Body1>
          | errors =>
            errors
+           ->Belt.List.keep(({Logs.kind}) => kind == Logs.Error)
            ->Belt.List.toArray
            ->Belt.Array.mapWithIndex((i, log) =>
                <LogItem
                  key={i->string_of_int}
                  indice=i
                  log
+                 addLog
                  handleDelete=deleteError
                />
              )

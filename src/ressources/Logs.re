@@ -5,8 +5,9 @@ type origin =
   | Connection
   | Account
   | Aliases
-  | Balance
-  | Delegate;
+  | Global
+  | Delegate
+  | Balance;
 
 type kind =
   | Info
@@ -21,8 +22,19 @@ type t = {
   msg: string,
 };
 
+let log = (~kind, ~origin=Global, msg) => {
+  kind,
+  timestamp: Js.Date.now(),
+  origin,
+  msg,
+};
+
+let info = log(~kind=Info);
+let error = log(~kind=Error);
+
 let originToString = e => {
   switch (e) {
+  | Global => "Global"
   | Operation => "Operation"
   | Connection => "Connection"
   | Balance => "Balance"

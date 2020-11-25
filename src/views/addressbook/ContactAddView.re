@@ -30,8 +30,9 @@ let styles =
   );
 
 [@react.component]
-let make = (~onPressCancel, ~handleAdd) => {
+let make = (~cancel, ~handleAdd) => {
   let (aliasRequest, createAlias) = AliasApiRequest.useCreate();
+  let addLog = LogsContext.useAdd();
 
   let form: AccountCreateForm.api =
     AccountCreateForm.use(
@@ -42,8 +43,10 @@ let make = (~onPressCancel, ~handleAdd) => {
       },
       ~onSubmit=
         ({state}) => {
+          cancel();
           createAlias((state.values.name, state.values.address))
           ->Future.tapOk(_ => handleAdd())
+          ->ApiRequest.logOk(addLog, Logs.Account, _ => I18n.t#account_created)
           ->ignore;
 
           None;
@@ -52,38 +55,16 @@ let make = (~onPressCancel, ~handleAdd) => {
       (),
     );
 
+  let onPressCancel = _ => cancel();
+
   let onSubmit = _ => {
     form.submit();
   };
 
   <ModalView.Form>
     {switch (aliasRequest) {
-     | Done(Ok(_result)) =>
-       <>
-         <Typography.Headline2 style=styles##title>
-           I18n.t#contact_added->React.string
-         </Typography.Headline2>
-         <View style=styles##formAction>
-           <FormButton text=I18n.btn#ok onPress=onPressCancel />
-         </View>
-       </>
-     | Done(Error(error)) =>
-       <>
-         <Typography.Body1 colorStyle=`error>
-           error->React.string
-         </Typography.Body1>
-         <View style=styles##formAction>
-           <FormButton text=I18n.btn#ok onPress=onPressCancel />
-         </View>
-       </>
-     | Loading =>
-       <View style=styles##loadingView>
-         <ActivityIndicator
-           animating=true
-           size=ActivityIndicator_Size.large
-           color="#FFF"
-         />
-       </View>
+     | Loading
+     | Done(_) => <> </>
      | NotAsked =>
        <>
          <Typography.Headline2 style=styles##title>

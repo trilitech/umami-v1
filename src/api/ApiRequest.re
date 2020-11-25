@@ -102,7 +102,7 @@ let useLoader1 = (get, kind, arg1) => {
 };
 
 let useLoader2 = (get, kind, arg1, arg2) => {
-  let addLog = ErrorsContext.useAdd();
+  let addLog = LogsContext.useAdd();
   let (request, setRequest) = React.useState(_ => NotAsked);
   let config = ConfigContext.useConfig();
 
@@ -111,7 +111,7 @@ let useLoader2 = (get, kind, arg1, arg2) => {
       setRequest(_ => Loading);
 
       get(~config, arg1, arg2)
-      ->handleLog(addLog, Logs.Error, kind)
+      ->logError(addLog, kind)
       ->Future.get(result => setRequest(_ => Done(result)));
 
       None;

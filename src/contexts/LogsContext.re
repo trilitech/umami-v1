@@ -39,19 +39,19 @@ let make = (~children) => {
   let fadeAnim = React.useRef(Animated.Value.create(1.)).current;
 
   let (logs, add, delete, clear) = {
-    let (errors, setErrors) = React.useState(() => []);
+    let (logs, setLogs) = React.useState(() => []);
 
     let delete = (i: int) => {
-      setErrors(es => es->Belt.List.keepWithIndex((_, i') => i != i'));
+      setLogs(es => es->Belt.List.keepWithIndex((_, i') => i != i'));
     };
 
-    let clear = () => setErrors(_ => []);
+    let clear = () => setLogs(_ => []);
 
-    let add = e => {
+    let add = l => {
       toastState
       ->Belt.Option.map(fst)
       ->Lib.Option.iter(Js.Global.clearTimeout);
-      setErrors(es => es->Belt.List.add(e));
+      setLogs(es => es->Belt.List.add(l));
       setToastState(prev => {
         let firsts = prev->Belt.Option.mapWithDefault(0, snd) + 1;
         let animCallback = _ => {
@@ -64,10 +64,10 @@ let make = (~children) => {
         let timeoutid = Js.Global.setTimeout(timeoutCallback, 4500);
         (timeoutid, firsts)->Some;
       });
-      (snd(seen))(false);
+      l.Logs.kind == Logs.Error ? (snd(seen))(false) : ();
     };
 
-    (errors, add, delete, clear);
+    (logs, add, delete, clear);
   };
 
   <Provider value={logs, add, clear, delete, seen}>
@@ -75,6 +75,7 @@ let make = (~children) => {
        <ToastBox
          opacity={fadeAnim->Animated.StyleProp.float}
          logs
+         addLog=add
          handleDelete=delete
          firsts
        />

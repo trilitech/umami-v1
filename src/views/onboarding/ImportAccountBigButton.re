@@ -39,7 +39,7 @@ let make = () => {
     openAction();
   };
 
-  let onPressCancel = _e => {
+  let cancel = () => {
     modal.current
     ->Js.Nullable.toOption
     ->Belt.Option.map(ModalAction.closeModal)
@@ -56,7 +56,7 @@ let make = () => {
       </Typography.Subtitle2>
     </TouchableOpacity>
     <ModalAction ref=modal visible=visibleModal onRequestClose=closeAction>
-      <ImportAccountOnboardingView onPressCancel />
+      <ImportAccountOnboardingView cancel />
     </ModalAction>
   </>;
 };

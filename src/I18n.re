@@ -21,6 +21,13 @@ let btn = {
   pub delegate = "DELEGATE"
 };
 
+let log = {
+  pub _this = this;
+  pub copied_to_clipboard = p("%s copied to clipboard");
+  pub log_content = "Log content";
+  pub address = "Address"
+};
+
 let label = {
   pub _this = this;
   pub account_create_name = "Name";
