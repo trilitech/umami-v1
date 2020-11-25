@@ -41,13 +41,13 @@ module Base = {
   [@react.component]
   let make =
       (
-        ~colorStyle,
-        ~fontSize,
-        ~fontWeightStyle,
-        ~numberOfLines=?,
-        ~style as styleProp=?,
-        ~ellipsizeMode=?,
-        ~children,
+        ~colorStyle: colorStyle,
+        ~fontSize: float,
+        ~fontWeightStyle: fontWeightStyle,
+        ~numberOfLines: option(int)=?,
+        ~style as styleProp: option(ReactNative.Style.t)=?,
+        ~ellipsizeMode: option([ | `clip | `head | `middle | `tail])=?,
+        ~children: React.element,
       ) => {
     <Text
       ?ellipsizeMode
@@ -72,8 +72,7 @@ module Base = {
 };
 
 module Make = (DefaultStyle: TextDesignStyle) => {
-  [@react.component]
-  let make =
+  let makeProps =
       (
         ~colorStyle=DefaultStyle.colorStyle,
         ~fontSize=DefaultStyle.fontSize,
@@ -82,12 +81,17 @@ module Make = (DefaultStyle: TextDesignStyle) => {
         ~ellipsizeMode=?,
         ~style=?,
         ~children,
-      ) => {
-    <Base
-      colorStyle fontSize fontWeightStyle ?numberOfLines ?ellipsizeMode ?style>
-      children
-    </Base>;
-  };
+      ) =>
+    Base.makeProps(
+      ~colorStyle,
+      ~fontSize,
+      ~fontWeightStyle,
+      ~numberOfLines?,
+      ~ellipsizeMode?,
+      ~style?,
+      ~children,
+    );
+  let make = Base.make;
 };
 
 /* H */

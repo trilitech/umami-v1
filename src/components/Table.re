@@ -47,7 +47,11 @@ module Cell = {
     );
 
   [@react.component]
-  let make = (~style as styleFromProp, ~children=?) => {
+  let make =
+      (
+        ~style as styleFromProp: ReactNative.Style.t,
+        ~children: option(React.element)=?,
+      ) => {
     <View style={Style.array([|styles##cell, styleFromProp|])} ?children />;
   };
 };
@@ -55,8 +59,6 @@ module Cell = {
 module type StyleForCell = {let style: Style.t;};
 
 module MakeCell = (CustomStyle: StyleForCell) => {
-  [@react.component]
-  let make = (~children=?) => {
-    <Cell style=CustomStyle.style ?children />;
-  };
+  let makeProps = Cell.makeProps(~style=CustomStyle.style);
+  let make = Cell.make;
 };
