@@ -1,9 +1,11 @@
 open Belt;
 open ReactNative;
 
+module BalanceAPI = API.Balance(API.TezosClient);
 module AccountsAPI = API.Accounts(API.TezosClient);
 module OperationsAPI = API.Operations(API.TezosClient, API.TezosExplorer);
 module AliasesAPI = API.Aliases(API.TezosClient);
+module DelegateAPI = API.Delegate(API.TezosClient, API.TezosExplorer);
 
 let styles =
   Style.(
@@ -76,7 +78,15 @@ let make = () => {
      ->Future.tapError(Js.log)
      ->FutureEx.getOk(Js.log);
      */
-    None
+    /*
+    (network, config)
+    ->DelegateAPI.getDelegationInfoForAccount(
+        "tz1RDrPJYrpdA7MbfUJSamGdcfceLXGpUdc7",
+      )
+    ->Future.tapError(Js.log)
+    ->FutureEx.getOk(Js.log);
+    */
+    None;
   });
 
   React.useEffect3(

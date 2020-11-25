@@ -44,14 +44,16 @@ module URL = {
         network,
         account,
         ~types: option(array(string))=?,
+        ~destination: option(string)=?,
         ~limit: option(int)=?,
         (),
       ) => {
-    let operationsPath = "operations";
+    let operationsPath = "accounts/" ++ account ++ "/operations";
     let args =
-      ("address", account)
-      @: types->arg_opt("types", t => t->Js.Array2.joinWith(","))
-      @?? limit->arg_opt("limit", lim => lim->Js.Int.toString);
+      types->arg_opt("types", t => t->Js.Array2.joinWith(","))
+      @? destination->arg_opt("destination", dst => dst)
+      @? limit->arg_opt("limit", lim => lim->Js.Int.toString)
+      @? [];
     let url = build_url(network, operationsPath, args);
     url;
   };
@@ -132,11 +134,22 @@ module TezosExplorer = {
 };
 
 module Balance = (Caller: CallerAPI) => {
-  let get = (network, account) =>
-    Caller.call(
-      [|"-E", network->endpoint, "get", "balance", "for", account|],
-      (),
-    );
+  let get = (network, account, ~block=?, ()) => {
+    let arguments = [|
+      "-E",
+      network->endpoint,
+      "get",
+      "balance",
+      "for",
+      account,
+    |];
+    let arguments =
+      switch (block) {
+      | Some(block) => Js.Array2.concat([|"-b", block|], arguments)
+      | None => arguments
+      };
+    Caller.call(arguments, ());
+  };
 };
 
 let map = (result: Belt.Result.t('a, string), transform: 'a => 'b) =>
@@ -150,41 +163,6 @@ let map = (result: Belt.Result.t('a, string), transform: 'a => 'b) =>
   | Json.Decode.DecodeError(error) => Error(error)
   | _ => Error("Unknown error")
   };
-
-module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
-  let parse = content =>
-    if (content == "none\n") {
-      None;
-    } else {
-      let splittedContent = content->Js.String2.split(" ");
-      if (splittedContent->Belt.Array.length == 0) {
-        None;
-      } else {
-        Some(splittedContent[0]);
-      };
-    };
-
-  let getForAccount = (network, account) =>
-    Caller.call(
-      [|"-E", network->endpoint, "get", "delegate", "for", account|],
-      (),
-    )
-    ->Future.mapOk(parse);
-
-  let getBakers = (network: Network.t) =>
-    switch (network) {
-    | Main =>
-      "https://api.baking-bad.org/v2/bakers"
-      ->Getter.get
-      ->Future.map(result => result->map(Json.Decode.(array(decode))))
-    | Test =>
-      Future.value(
-        Ok([|
-          {name: "zebra", address: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"},
-        |]),
-      )
-    };
-};
 
 module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
   let getFromMempool = (account, network, operations) =>
@@ -216,12 +194,13 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
         network,
         account,
         ~types: option(array(string))=?,
+        ~destination: option(string)=?,
         ~limit: option(int)=?,
         ~mempool: bool=false,
         (),
       ) =>
     network
-    ->URL.operations(account, ~types?, ~limit?, ())
+    ->URL.operations(account, ~types?, ~destination?, ~limit?, ())
     ->Getter.get
     ->Future.map(result =>
         result->map(Json.Decode.(array(Operation.decode)))
@@ -626,4 +605,106 @@ module Aliases = (Caller: CallerAPI) => {
       |],
       (),
     );
+};
+
+module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
+  let parse = content =>
+    if (content == "none\n") {
+      None;
+    } else {
+      let splittedContent = content->Js.String2.split(" ");
+      if (splittedContent->Belt.Array.length == 0) {
+        None;
+      } else {
+        Some(splittedContent[0]);
+      };
+    };
+
+  let getForAccount = (network, account) =>
+    Caller.call(
+      [|"-E", network->endpoint, "get", "delegate", "for", account|],
+      (),
+    )
+    ->Future.mapOk(parse);
+
+  let getBakers = (network: Network.t) =>
+    switch (network) {
+    | Main =>
+      "https://api.baking-bad.org/v2/bakers"
+      ->Getter.get
+      ->Future.map(result => result->map(Json.Decode.(array(decode))))
+    | Test =>
+      Future.value(
+        Ok([|
+          {name: "zebra", address: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"},
+        |]),
+      )
+    };
+
+  type delegationInfo = {
+    initialBalance: string,
+    delegate: string,
+    timestamp: Js.Date.t,
+    lastReward: option(string),
+  };
+
+  let getDelegationInfoForAccount = (network, account: string) => {
+    module OperationsAPI = Operations(Caller, Getter);
+    module BalanceAPI = Balance(Caller);
+    network
+    ->OperationsAPI.get(account, ~types=[|"delegation"|], ~limit=1, ())
+    ->Future.flatMapOk(operations =>
+        if (operations->Belt.Array.length == 0) {
+          Future.value(Error("No delegation found!"));
+        } else {
+          switch (operations[0].payload) {
+          | Business(payload) =>
+            switch (payload.payload) {
+            | Delegation(payload) =>
+              switch (payload.delegate) {
+              | Some(delegate) =>
+                network
+                ->BalanceAPI.get(account, ~block=operations[0].level, ())
+                ->Future.mapOk(balance =>
+                    {
+                      initialBalance: balance,
+                      delegate,
+                      timestamp: operations[0].timestamp,
+                      lastReward: None,
+                    }
+                  )
+                ->Future.flatMapOk(info =>
+                    network
+                    ->OperationsAPI.get(
+                        account,
+                        ~types=[|"transaction"|],
+                        ~destination=info.delegate,
+                        ~limit=1,
+                        (),
+                      )
+                    ->Future.mapOk(operations =>
+                        if (operations->Belt.Array.length == 0) {
+                          info;
+                        } else {
+                          switch (operations[0].payload) {
+                          | Business(payload) =>
+                            switch (payload.payload) {
+                            | Transaction(payload) => {
+                                ...info,
+                                lastReward: Some(payload.amount),
+                              }
+                            | _ => info
+                            }
+                          };
+                        }
+                      )
+                  )
+              | None => Future.value(Error("No delegate set!"))
+              }
+            | _ => Future.value(Error("Invalid operation type!"))
+            }
+          };
+        }
+      );
+  };
 };
