@@ -73,7 +73,7 @@ let useLoader1 = (get, kind, arg1) => {
   let (request, setRequest) = React.useState(_ => NotAsked);
   let config = ConfigContext.useConfig();
 
-  React.useEffect4(
+  React.useEffect3(
     () => {
       setRequest(_ => Loading);
 
@@ -83,7 +83,7 @@ let useLoader1 = (get, kind, arg1) => {
 
       None;
     },
-    (config, arg1, setRequest, addError),
+    (config, arg1, setRequest),
   );
 
   request;
@@ -94,17 +94,17 @@ let useLoader2 = (get, kind, arg1, arg2) => {
   let (request, setRequest) = React.useState(_ => NotAsked);
   let config = ConfigContext.useConfig();
 
-  React.useEffect5(
+  React.useEffect4(
     () => {
       setRequest(_ => Loading);
 
-      get(~config, arg1)
+      get(~config, arg1, arg2)
       ->handleError(addError, kind)
       ->Future.get(result => setRequest(_ => Done(result)));
 
       None;
     },
-    (config, arg1, arg2, setRequest, addError),
+    (config, arg1, arg2, setRequest),
   );
 
   request;
