@@ -78,14 +78,12 @@ let make = () => {
      ->Future.tapError(Js.log)
      ->FutureEx.getOk(Js.log);
      */
-    /*
     (network, config)
     ->DelegateAPI.getDelegationInfoForAccount(
-        "tz1RDrPJYrpdA7MbfUJSamGdcfceLXGpUdc7",
+        "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
       )
     ->Future.tapError(Js.log)
     ->FutureEx.getOk(Js.log);
-    */
     None;
   });
 
