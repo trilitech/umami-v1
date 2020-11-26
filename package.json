@@ -33,7 +33,7 @@
   "scripts": {
     "start": "EXTEND_ESLINT=true react-app-rewired start",
     "build": "react-app-rewired build",
-    "test": "yarn bsb:build && jest",
+    "test": "yarn bsb:build && jest --coverage",
     "bsb:start": "bsb -make-world -w",
     "bsb:build": "bsb -make-world",
     "bsb:clean": "bsb -clean-world",
@@ -94,6 +94,7 @@
     "electron": "^9.1.0",
     "electron-builder": "^22.7.0",
     "lenses-ppx": "6.1.0",
+    "make-coverage-badge": "^1.2.0",
     "react-app-rewired": "^2.1.6",
     "react-from-svg": "4.0.6",
     "react-scripts": "3.4.1",
