@@ -88,7 +88,7 @@ let make =
                  delegateInfo.initialBalance->BusinessUtils.formatXTZ,
                )
                ->React.string
-             | Done(Error(error)) => error->React.string
+             | Done(Error(_error)) => React.null
              | NotAsked
              | Loading =>
                <ActivityIndicator
@@ -105,7 +105,7 @@ let make =
              | Done(Ok(balance)) =>
                I18n.t#xtz_amount(balance->BusinessUtils.formatXTZ)
                ->React.string
-             | Done(Error(error)) => error->React.string
+             | Done(Error(_error)) => React.null
              | NotAsked
              | Loading =>
                <ActivityIndicator
@@ -129,7 +129,7 @@ let make =
                ->DateFns.differenceInDays(delegateInfo.timestamp)
                ->(days => DateFns.formatDuration({days: days}))
                ->React.string
-             | Done(Error(error)) => error->React.string
+             | Done(Error(_error)) => React.null
              | NotAsked
              | Loading =>
                <ActivityIndicator
@@ -152,8 +152,7 @@ let make =
              </Typography.Body1>
            | Done(Ok({lastReward: None})) =>
              <Typography.Body1> "---"->React.string </Typography.Body1>
-           | Done(Error(error)) =>
-             <Typography.Body1> error->React.string </Typography.Body1>
+           | Done(Error(_error)) => React.null
            | NotAsked
            | Loading =>
              <Typography.Body1>
