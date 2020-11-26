@@ -86,6 +86,8 @@ let make = () => {
     ->Future.tapError(Js.log)
     ->FutureEx.getOk(Js.log);
     */
+    (network, config)->DelegateAPI.getForAccount("tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3")
+    ->FutureEx.getOk(Js.log)
     None;
   });
 

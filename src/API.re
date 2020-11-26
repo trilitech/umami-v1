@@ -626,7 +626,18 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
       [|"-E", network->endpoint, "get", "delegate", "for", account|],
       (),
     )
-    ->Future.mapOk(parse);
+    ->Future.mapOk(parse)
+    ->Future.mapOk(result =>
+        switch (result) {
+        | Some(delegate) =>
+          if (account == delegate) {
+            None;
+          } else {
+            result;
+          }
+        | None => None
+        }
+      );
 
   let getBakers = (network: Network.t) =>
     switch (network) {
