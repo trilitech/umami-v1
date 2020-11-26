@@ -18,7 +18,8 @@ let btn = {
   pub add_contact = "ADD CONTACT";
   pub delete_contact = "Delete contact";
   pub advanced_options = "Advanced options";
-  pub delegate = "DELEGATE"
+  pub delegate = "DELEGATE";
+  pub delegated = "DELEGATED"
 };
 
 let label = {
@@ -56,7 +57,10 @@ let title = {
   pub baker_account = "Baker";
   pub delegate = "Delegate";
   pub delegate_update = "Change baker";
+  pub delegate_delete = "End delegation";
   pub delegation_sent = "Delegation sent";
+  pub baker_updated = "Baker updated";
+  pub delegation_deleted = "Delegation deleted";
   pub delete_contact = "Delete contact?";
   pub deleted_contact = "Contact deleted";
   pub send = "Send"

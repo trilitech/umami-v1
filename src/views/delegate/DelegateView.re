@@ -49,18 +49,24 @@ let buildTransaction = (state: DelegateForm.state, advancedOptionOpened) => {
   );
 };
 
+type action =
+  | Create(option(Account.t))
+  | Edit(Account.t, string)
+  | Delete(Account.t, string);
+
 type step =
   | SendStep
   | PasswordStep(Injection.operation);
 
 module Form = {
-  let build =
-      (
-        initAccount: option(Account.t),
-        initDelegate: option(string),
-        advancedOptionOpened,
-        onSubmit,
-      ) => {
+  let build = (action: action, advancedOptionOpened, onSubmit) => {
+    let (initAccount, initDelegate) =
+      switch (action) {
+      | Create(account) => (account, None)
+      | Edit(account, delegate)
+      | Delete(account, delegate) => (Some(account), Some(delegate))
+      };
+
     DelegateForm.use(
       ~validationStrategy=OnDemand,
       ~schema={
@@ -103,8 +109,7 @@ module Form = {
     open DelegateForm;
 
     [@react.component]
-    let make =
-        (~onPressCancel, ~advancedOptionState, ~form, ~blockSender, ~hasBaker) => {
+    let make = (~title, ~onPressCancel, ~advancedOptionState, ~form, ~action) => {
       let onSubmitDelegateForm = _ => {
         form.submit();
       };
@@ -112,15 +117,21 @@ module Form = {
 
       <>
         <Typography.Headline2 style=styles##title>
-          {hasBaker ? I18n.title#delegate_update : I18n.title#delegate}
-          ->React.string
+          title->React.string
         </Typography.Headline2>
         <FormGroupDelegateSelector
           label=I18n.label#account_delegate
           value={form.values.sender}
           handleChange={form.handleChange(Sender)}
           error={form.getFieldError(Field(Sender))}
-          disabled=blockSender
+          disabled={
+            switch (action) {
+            | Create(None) => false
+            | Create(Some(_))
+            | Edit(_)
+            | Delete(_) => true
+            }
+          }
         />
         <FormGroupBakerSelector
           label=I18n.label#baker
@@ -155,7 +166,13 @@ module Form = {
         <View style=styles##formAction>
           <FormButton text=I18n.btn#cancel onPress=onPressCancel />
           <FormButton
-            text={hasBaker ? I18n.btn#update : I18n.btn#ok}
+            text={
+              switch (action) {
+              | Create(_) => I18n.btn#ok
+              | Edit(_) => I18n.btn#update
+              | Delete(_) => I18n.btn#confirm
+              }
+            }
             onPress=onSubmitDelegateForm
           />
         </View>
@@ -165,7 +182,7 @@ module Form = {
 };
 
 [@react.component]
-let make = (~onPressCancel, ~defaultAccount=?, ~defaultDelegate=?) => {
+let make = (~onPressCancel, ~action) => {
   let account = StoreContext.useAccount();
   let network = StoreContext.useNetwork();
 
@@ -180,21 +197,41 @@ let make = (~onPressCancel, ~defaultAccount=?, ~defaultDelegate=?) => {
       sendOperation(OperationApiRequest.{operation, password})->ignore
     );
 
-  let (modalStep, setModalStep) = React.useState(_ => SendStep);
+  let (modalStep, setModalStep) =
+    React.useState(_ =>
+      switch (action) {
+      | Create(_)
+      | Edit(_) => SendStep
+      | Delete(account, _delegate) =>
+        PasswordStep(
+          Injection.makeDelegate(~source=account.address, ~delegate="", ()),
+        )
+      }
+    );
 
   let form =
-    Form.build(defaultAccount, defaultDelegate, advancedOptionOpened, op =>
+    Form.build(action, advancedOptionOpened, op =>
       setModalStep(_ => PasswordStep(op))
     );
 
-  React.useEffect0(() => {None});
+  let title =
+    switch (action) {
+    | Create(_) => I18n.title#delegate
+    | Edit(_) => I18n.title#delegate_update
+    | Delete(_) => I18n.title#delegate_delete
+    };
 
   <ModalView.Form>
     {switch (modalStep, operationRequest) {
      | (_, Done(Ok(hash))) =>
        <>
          <Typography.Headline2 style=styles##title>
-           I18n.title#delegation_sent->React.string
+           {switch (action) {
+            | Create(_) => I18n.title#delegation_sent
+            | Edit(_) => I18n.title#baker_updated
+            | Delete(_) => I18n.title#delegation_deleted
+            }}
+           ->React.string
          </Typography.Headline2>
          <Typography.Overline1>
            I18n.t#operation_hash->React.string
@@ -222,16 +259,17 @@ let make = (~onPressCancel, ~defaultAccount=?, ~defaultDelegate=?) => {
          />
        </View>
      | (SendStep, _) =>
-       <Form.View
-         onPressCancel
-         advancedOptionState
-         form
-         blockSender={defaultAccount->Belt.Option.isSome}
-         hasBaker={defaultDelegate->Belt.Option.isSome}
-       />
+       <Form.View title onPressCancel advancedOptionState form action />
      | (PasswordStep(operation), _) =>
        <SignOperationView
-         onPressCancel={_ => setModalStep(_ => SendStep)}
+         onPressCancel={event =>
+           switch (action) {
+           | Create(_)
+           | Edit(_) => setModalStep(_ => SendStep)
+           | Delete(_) => onPressCancel(event)
+           }
+         }
+         title
          operation
          sendOperation
        />

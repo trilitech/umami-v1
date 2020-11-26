@@ -16,7 +16,13 @@ let styles =
   );
 
 [@react.component]
-let make = (~onPressCancel, ~operation: Injection.operation, ~sendOperation) => {
+let make =
+    (
+      ~title=?,
+      ~onPressCancel,
+      ~operation: Injection.operation,
+      ~sendOperation,
+    ) => {
   let form: SendForm.Password.api =
     SendForm.Password.use(
       ~schema={
@@ -38,12 +44,13 @@ let make = (~onPressCancel, ~operation: Injection.operation, ~sendOperation) => 
     <View style=styles##title>
       <Typography.Headline2>
         (
-          switch (operation) {
-          | Transaction({amount}) =>
+          switch (title, operation) {
+          | (Some(title), _) => title
+          | (_, Transaction({amount})) =>
             I18n.t#xtz_amount(
               Js.Float.toFixedWithPrecision(amount, ~digits=1),
             )
-          | Delegation(_) => I18n.title#delegate
+          | (_, Delegation(_)) => I18n.title#delegate
           }
         )
         ->React.string
