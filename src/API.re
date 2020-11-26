@@ -664,42 +664,46 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
             | Delegation(payload) =>
               switch (payload.delegate) {
               | Some(delegate) =>
-                network
-                ->BalanceAPI.get(account, ~block=operations[0].level, ())
-                ->Future.mapOk(balance =>
-                    {
-                      initialBalance: balance,
-                      delegate,
-                      timestamp: operations[0].timestamp,
-                      lastReward: None,
-                    }
-                  )
-                ->Future.flatMapOk(info =>
-                    network
-                    ->OperationsAPI.get(
-                        account,
-                        ~types=[|"transaction"|],
-                        ~destination=info.delegate,
-                        ~limit=1,
-                        (),
-                      )
-                    ->Future.mapOk(operations =>
-                        if (operations->Belt.Array.length == 0) {
-                          info;
-                        } else {
-                          switch (operations[0].payload) {
-                          | Business(payload) =>
-                            switch (payload.payload) {
-                            | Transaction(payload) => {
-                                ...info,
-                                lastReward: Some(payload.amount),
+                if (account == delegate) {
+                  Future.value(Error("Bakers can't delegate!"));
+                } else {
+                  network
+                  ->BalanceAPI.get(account, ~block=operations[0].level, ())
+                  ->Future.mapOk(balance =>
+                      {
+                        initialBalance: balance,
+                        delegate,
+                        timestamp: operations[0].timestamp,
+                        lastReward: None,
+                      }
+                    )
+                  ->Future.flatMapOk(info =>
+                      network
+                      ->OperationsAPI.get(
+                          info.delegate,
+                          ~types=[|"transaction"|],
+                          ~destination=account,
+                          ~limit=1,
+                          (),
+                        )
+                      ->Future.mapOk(operations =>
+                          if (operations->Belt.Array.length == 0) {
+                            info;
+                          } else {
+                            switch (operations[0].payload) {
+                            | Business(payload) =>
+                              switch (payload.payload) {
+                              | Transaction(payload) => {
+                                  ...info,
+                                  lastReward: Some(payload.amount),
+                                }
+                              | _ => info
                               }
-                            | _ => info
-                            }
-                          };
-                        }
-                      )
-                  )
+                            };
+                          }
+                        )
+                    );
+                }
               | None => Future.value(Error("No delegate set!"))
               }
             | _ => Future.value(Error("Invalid operation type!"))
