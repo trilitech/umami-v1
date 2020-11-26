@@ -1,5 +1,6 @@
 open ReactNative;
 open Common;
+open Delegate;
 
 let styles =
   Style.(
@@ -48,11 +49,6 @@ let buildTransaction = (state: DelegateForm.state, advancedOptionOpened) => {
     (),
   );
 };
-
-type action =
-  | Create(option(Account.t))
-  | Edit(Account.t, string)
-  | Delete(Account.t, string);
 
 type step =
   | SendStep

@@ -168,12 +168,12 @@ let make =
         <CellAction>
           <Menu icon=Icons.More.build size=30.>
             <DelegateActionButton
-              action={DelegateView.Edit(account, delegate)}
+              action={Delegate.Edit(account, delegate)}
               text=I18n.t#delegate_menu_edit
               icon=Icons.Change.build
             />
             <DelegateActionButton
-              action={DelegateView.Delete(account, delegate)}
+              action={Delegate.Delete(account, delegate)}
               text=I18n.t#delegate_menu_delete
               colorStyle=`error
               icon=Icons.Close.build
