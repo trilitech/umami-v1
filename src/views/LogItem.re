@@ -75,8 +75,7 @@ let make =
     | Info => <Icons.CheckOutline size=16. color=Theme.colorDarkValid />
     };
 
-  <RowItem.Hoverable
-    height=46.
+  <Hoverable
     style=Style.(array([|styles##item, kindStyle|]))
     hoveredStyle=styles##hovered>
     {_ => {
@@ -117,5 +116,5 @@ let make =
          </View>
        </View>;
      }}
-  </RowItem.Hoverable>;
+  </Hoverable>;
 };
