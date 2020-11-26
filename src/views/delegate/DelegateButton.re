@@ -45,11 +45,11 @@ let make =
       disabled>
       <Typography.ButtonSecondary
         style={disabled ? styles##textButtonDisabled : styles##textButton}>
-        I18n.btn#delegate->React.string
+        (disabled ? I18n.btn#delegated : I18n.btn#delegate)->React.string
       </Typography.ButtonSecondary>
     </TouchableOpacity>
     <ModalAction ref=modal visible=visibleModal onRequestClose=closeAction>
-      <DelegateView onPressCancel ?defaultAccount />
+      <DelegateView onPressCancel action={Delegate.Create(defaultAccount)} />
     </ModalAction>
   </>;
 };

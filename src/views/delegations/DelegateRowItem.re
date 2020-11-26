@@ -31,9 +31,9 @@ module CellAction =
     ();
   });
 
-module DelegateEditButton = {
+module DelegateActionButton = {
   [@react.component]
-  let make = (~account: Account.t, ~delegate: string) => {
+  let make = (~action, ~text, ~icon, ~colorStyle=?) => {
     let modal = React.useRef(Js.Nullable.null);
 
     let (visibleModal, setVisibleModal) = React.useState(_ => false);
@@ -52,17 +52,9 @@ module DelegateEditButton = {
     };
 
     <>
-      <Menu.Item
-        text=I18n.t#delegate_menu_edit
-        icon=Icons.Change.build
-        onPress
-      />
+      <Menu.Item text icon onPress ?colorStyle />
       <ModalAction ref=modal visible=visibleModal onRequestClose=closeAction>
-        <DelegateView
-          onPressCancel
-          defaultAccount=account
-          defaultDelegate=delegate
-        />
+        <DelegateView onPressCancel action />
       </ModalAction>
     </>;
   };
@@ -175,8 +167,13 @@ let make =
         </CellReward>
         <CellAction>
           <Menu icon=Icons.More.build size=30.>
-            <DelegateEditButton account delegate />
-            <Menu.Item
+            <DelegateActionButton
+              action={Delegate.Edit(account, delegate)}
+              text=I18n.t#delegate_menu_edit
+              icon=Icons.Change.build
+            />
+            <DelegateActionButton
+              action={Delegate.Delete(account, delegate)}
               text=I18n.t#delegate_menu_delete
               colorStyle=`error
               icon=Icons.Close.build
