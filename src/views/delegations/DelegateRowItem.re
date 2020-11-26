@@ -149,22 +149,29 @@ let make =
           </Typography.Body1>
         </CellDuration>
         <CellReward>
-          <Typography.Body1>
-            {switch (delegateInfoRequest) {
-             | Done(Ok(delegateInfo)) =>
-               delegateInfo.lastReward
-               ->Belt.Option.getWithDefault("---")
-               ->React.string
-             | Done(Error(error)) => error->React.string
-             | NotAsked
-             | Loading =>
+          {switch (delegateInfoRequest) {
+           | Done(Ok({lastReward: Some(lastReward)})) =>
+             <Typography.Body1 colorStyle=`valid>
+               {I18n.t#xtz_op_amount(
+                  "+",
+                  lastReward->BusinessUtils.formatMilliXTZ,
+                )
+                ->React.string}
+             </Typography.Body1>
+           | Done(Ok({lastReward: None})) =>
+             <Typography.Body1> "---"->React.string </Typography.Body1>
+           | Done(Error(error)) =>
+             <Typography.Body1> error->React.string </Typography.Body1>
+           | NotAsked
+           | Loading =>
+             <Typography.Body1>
                <ActivityIndicator
                  animating=true
                  size={ActivityIndicator_Size.exact(19.)}
                  color=Colors.highIcon
                />
-             }}
-          </Typography.Body1>
+             </Typography.Body1>
+           }}
         </CellReward>
         <CellAction>
           <Menu icon=Icons.More.build size=30.>
