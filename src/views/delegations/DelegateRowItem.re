@@ -133,7 +133,10 @@ let make =
           <Typography.Body1 numberOfLines=1>
             {switch (delegateInfoRequest) {
              | Done(Ok(delegateInfo)) =>
-               delegateInfo.timestamp->Js.Date.toString->React.string
+               Js.Date.make()
+               ->DateFns.differenceInDays(delegateInfo.timestamp)
+               ->(days => DateFns.formatDuration({days: days}))
+               ->React.string
              | Done(Error(error)) => error->React.string
              | NotAsked
              | Loading =>
@@ -150,7 +153,7 @@ let make =
             {switch (delegateInfoRequest) {
              | Done(Ok(delegateInfo)) =>
                delegateInfo.lastReward
-               ->Belt.Option.getWithDefault("Just started")
+               ->Belt.Option.getWithDefault("---")
                ->React.string
              | Done(Error(error)) => error->React.string
              | NotAsked

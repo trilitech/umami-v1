@@ -144,7 +144,7 @@ let make =
        }}
       <CellDate>
         <Typography.Body1>
-          {operation.timestamp->Js.Date.toLocaleString->React.string}
+          {operation.timestamp->DateFns.format("P pp")->React.string}
         </Typography.Body1>
       </CellDate>
       <CellStatus>
