@@ -49,6 +49,11 @@ let make = () => {
                </DelegateRowItem.CellAddress>
                <DelegateRowItem.CellAmount>
                  <Typography.Overline3>
+                   I18n.t#delegate_column_initial_balance->React.string
+                 </Typography.Overline3>
+               </DelegateRowItem.CellAmount>
+               <DelegateRowItem.CellAmount>
+                 <Typography.Overline3>
                    I18n.t#delegate_column_current_balance->React.string
                  </Typography.Overline3>
                </DelegateRowItem.CellAmount>
@@ -57,6 +62,16 @@ let make = () => {
                    I18n.t#delegate_column_baker->React.string
                  </Typography.Overline3>
                </DelegateRowItem.CellAddress>
+               <DelegateRowItem.CellDuration>
+                 <Typography.Overline3>
+                   I18n.t#delegate_column_duration->React.string
+                 </Typography.Overline3>
+               </DelegateRowItem.CellDuration>
+               <DelegateRowItem.CellReward>
+                 <Typography.Overline3>
+                   I18n.t#delegate_column_last_reward->React.string
+                 </Typography.Overline3>
+               </DelegateRowItem.CellReward>
                <DelegateRowItem.CellAction />
              </Table.Head>
            </View>

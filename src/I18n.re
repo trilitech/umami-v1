@@ -110,8 +110,11 @@ let t = {
   pub navbar_addressbook = {j|ADDRESS\nBOOK|j};
   pub navbar_delegations = "DELEGATIONS";
   pub delegate_column_account = "ACCOUNT";
+  pub delegate_column_initial_balance = "INITIAL BALANCE";
   pub delegate_column_current_balance = "CURRENT BALANCE";
-  pub delegate_column_baker = "Baker";
+  pub delegate_column_duration = "DURATION";
+  pub delegate_column_last_reward = "LAST REWARD";
+  pub delegate_column_baker = "BAKER";
   pub delegate_menu_edit = "Change baker";
   pub delegate_menu_delete = "End delegation"
 };

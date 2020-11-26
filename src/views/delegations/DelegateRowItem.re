@@ -13,6 +13,18 @@ module CellAmount =
     ();
   });
 
+module CellDuration =
+  Table.MakeCell({
+    let style = Style.(style(~flexBasis=114.->dp, ()));
+    ();
+  });
+
+module CellReward =
+  Table.MakeCell({
+    let style = Style.(style(~flexBasis=160.->dp, ~flexGrow=1., ()));
+    ();
+  });
+
 module CellAction =
   Table.MakeCell({
     let style = Style.(style(~flexBasis=68.->dp, ~alignItems=`flexEnd, ()));
@@ -66,6 +78,7 @@ let make =
   memo((~account: Account.t, ~zIndex) => {
     let balanceRequest = BalanceApiRequest.useLoad(account.address);
     let delegateRequest = DelegateApiRequest.useGetDelegate(account);
+    let delegateInfoRequest = DelegateApiRequest.useGetDelegateInfo(account);
 
     switch (delegateRequest) {
     | Done(Ok(Some(delegate))) =>
@@ -75,6 +88,25 @@ let make =
             account.alias->React.string
           </Typography.Body1>
         </CellAddress>
+        <CellAmount>
+          <Typography.Body1>
+            {switch (delegateInfoRequest) {
+             | Done(Ok(delegateInfo)) =>
+               I18n.t#xtz_amount(
+                 delegateInfo.initialBalance->BusinessUtils.formatXTZ,
+               )
+               ->React.string
+             | Done(Error(error)) => error->React.string
+             | NotAsked
+             | Loading =>
+               <ActivityIndicator
+                 animating=true
+                 size={ActivityIndicator_Size.exact(19.)}
+                 color=Colors.highIcon
+               />
+             }}
+          </Typography.Body1>
+        </CellAmount>
         <CellAmount>
           <Typography.Body1>
             {switch (balanceRequest) {
@@ -93,8 +125,44 @@ let make =
           </Typography.Body1>
         </CellAmount>
         <CellAddress>
-          <Typography.Body1> delegate->React.string </Typography.Body1>
+          <Typography.Body1 numberOfLines=1>
+            delegate->React.string
+          </Typography.Body1>
         </CellAddress>
+        <CellDuration>
+          <Typography.Body1 numberOfLines=1>
+            {switch (delegateInfoRequest) {
+             | Done(Ok(delegateInfo)) =>
+               delegateInfo.timestamp->Js.Date.toString->React.string
+             | Done(Error(error)) => error->React.string
+             | NotAsked
+             | Loading =>
+               <ActivityIndicator
+                 animating=true
+                 size={ActivityIndicator_Size.exact(19.)}
+                 color=Colors.highIcon
+               />
+             }}
+          </Typography.Body1>
+        </CellDuration>
+        <CellReward>
+          <Typography.Body1>
+            {switch (delegateInfoRequest) {
+             | Done(Ok(delegateInfo)) =>
+               delegateInfo.lastReward
+               ->Belt.Option.getWithDefault("Just started")
+               ->React.string
+             | Done(Error(error)) => error->React.string
+             | NotAsked
+             | Loading =>
+               <ActivityIndicator
+                 animating=true
+                 size={ActivityIndicator_Size.exact(19.)}
+                 color=Colors.highIcon
+               />
+             }}
+          </Typography.Body1>
+        </CellReward>
         <CellAction>
           <Menu icon=Icons.More.build size=30.>
             <DelegateEditButton account delegate />
