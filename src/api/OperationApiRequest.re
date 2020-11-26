@@ -12,7 +12,7 @@ let useCreate = network => {
   let set = (~config, {operation, password}) =>
     (network, config)->OperationsAPI.inject(operation, ~password);
 
-  ApiRequest.useSetter(set, Logs.Operation, ());
+  ApiRequest.useSetter(~toast=false, set, Logs.Operation, ());
 };
 
 /* Simulate */

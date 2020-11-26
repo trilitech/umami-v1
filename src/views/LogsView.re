@@ -57,7 +57,7 @@ let make = () => {
                  key={i->string_of_int}
                  indice=i
                  log
-                 addLog
+                 addToast={addLog(true)}
                  handleDelete=deleteError
                />
              )

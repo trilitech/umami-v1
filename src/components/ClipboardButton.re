@@ -1,5 +1,5 @@
 [@react.component]
-let make = (~hoveredStyle=?, ~copied, ~addLog, ~color=?, ~data) => {
+let make = (~hoveredStyle=?, ~copied, ~addToast, ~color=?, ~data) => {
   <IconButton
     ?hoveredStyle
     icon={(~color as colorin=?) => {
@@ -8,7 +8,7 @@ let make = (~hoveredStyle=?, ~copied, ~addLog, ~color=?, ~data) => {
     }}
     onPress={_ => {
       Navigator.Clipboard.write(data);
-      addLog(Logs.info(I18n.log#copied_to_clipboard(copied)));
+      addToast(Logs.info(I18n.log#copied_to_clipboard(copied)));
     }}
   />;
 };

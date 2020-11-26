@@ -59,7 +59,7 @@ let make =
       ~style as stylearg=?,
       ~indice,
       ~log: Logs.t,
-      ~addLog,
+      ~addToast,
       ~showTimestamp=true,
       ~handleDelete,
     ) => {
@@ -105,7 +105,7 @@ let make =
              hoveredStyle=styles##buttonHovered
              data={log.msg}
              copied=I18n.log#log_content
-             addLog
+             addToast
              color=Theme.colorLightMediumEmphasis
            />
            <DeleteButton

@@ -20,7 +20,7 @@ let styles =
 
 module Item = {
   [@react.component]
-  let make = (~indice, ~handleDelete, ~log, ~addLog) => {
+  let make = (~indice, ~handleDelete, ~log, ~addToast) => {
     let fadeAnim = React.useRef(Animated.Value.create(0.)).current;
 
     React.useEffect1(
@@ -33,13 +33,13 @@ module Item = {
 
     <Animated.View
       style=Style.(style(~opacity=fadeAnim->Animated.StyleProp.float, ()))>
-      <LogItem indice log addLog handleDelete showTimestamp=false />
+      <LogItem indice log addToast handleDelete showTimestamp=false />
     </Animated.View>;
   };
 };
 
 [@react.component]
-let make = (~opacity, ~logs, ~addLog, ~handleDelete, ~firsts) =>
+let make = (~opacity, ~logs, ~addToast, ~handleDelete, ~firsts) =>
   <Animated.View
     style=Style.([|styles##container, style(~opacity, ())|]->array)>
     {logs
@@ -47,7 +47,7 @@ let make = (~opacity, ~logs, ~addLog, ~handleDelete, ~firsts) =>
      ->Belt.List.reverse
      ->Belt.List.toArray
      ->Belt.Array.mapWithIndex((i, log) =>
-         <Item key={i->string_of_int} indice=i log handleDelete addLog />
+         <Item key={i->string_of_int} indice=i log handleDelete addToast />
        )
      ->React.array}
   </Animated.View>;

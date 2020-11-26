@@ -61,7 +61,7 @@ let logOk = (r, addLog, origin, makeMsg) =>
 
 let useLoader = (get, kind, ()) => {
   let (request, setRequest) = React.useState(_ => NotAsked);
-  let addLog = LogsContext.useAdd();
+  let addToast = LogsContext.useToast();
   let config = ConfigContext.useConfig();
 
   React.useEffect1(
@@ -69,7 +69,7 @@ let useLoader = (get, kind, ()) => {
       setRequest(_ => Loading);
 
       get(~config)
-      ->logError(addLog, kind)
+      ->logError(addToast, kind)
       ->Future.get(result => setRequest(_ => Done(result)));
 
       None;
@@ -81,7 +81,7 @@ let useLoader = (get, kind, ()) => {
 };
 
 let useLoader1 = (get, kind, arg1) => {
-  let addLog = LogsContext.useAdd();
+  let addToast = LogsContext.useToast();
   let (request, setRequest) = React.useState(_ => NotAsked);
   let config = ConfigContext.useConfig();
 
@@ -90,7 +90,7 @@ let useLoader1 = (get, kind, arg1) => {
       setRequest(_ => Loading);
 
       get(~config, arg1)
-      ->logError(addLog, kind)
+      ->logError(addToast, kind)
       ->Future.get(result => setRequest(_ => Done(result)));
 
       None;
@@ -111,7 +111,7 @@ let useLoader2 = (get, kind, arg1, arg2) => {
       setRequest(_ => Loading);
 
       get(~config, arg1, arg2)
-      ->logError(addLog, kind)
+      ->logError(addLog(true), kind)
       ->Future.get(result => setRequest(_ => Done(result)));
 
       None;
@@ -122,7 +122,7 @@ let useLoader2 = (get, kind, arg1, arg2) => {
   request;
 };
 
-let useSetter = (set, kind, ()) => {
+let useSetter = (~toast=true, set, kind, ()) => {
   let addLog = LogsContext.useAdd();
   let (request, setRequest) = React.useState(_ => NotAsked);
   let config = ConfigContext.useConfig();
@@ -130,14 +130,14 @@ let useSetter = (set, kind, ()) => {
   let sendRequest = input => {
     setRequest(_ => Loading);
     set(~config, input)
-    ->logError(addLog, kind)
+    ->logError(addLog(toast), kind)
     ->Future.tap(result => {setRequest(_ => Done(result))});
   };
 
   (request, sendRequest);
 };
 
-let useGetter = (get, kind) => {
+let useGetter = (~toast=true, get, kind) => {
   let addLog = LogsContext.useAdd();
   let (request, setRequest) = React.useState(_ => Loading);
   let config = ConfigContext.useConfig();
@@ -145,7 +145,7 @@ let useGetter = (get, kind) => {
   let get = (~loading=true, input) => {
     loading ? setRequest(_ => Loading) : ();
     get(~config, input)
-    ->logError(addLog, kind)
+    ->logError(addLog(toast), kind)
     ->Future.get(result => setRequest(_ => {Done(result)}));
   };
 

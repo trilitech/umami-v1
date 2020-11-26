@@ -39,12 +39,16 @@ let styles =
 let make = (~account: Account.t, ~zIndex, ~handleDelete) => {
   let balanceRequest = BalanceApiRequest.useLoad(account.address);
   let delegateRequest = DelegateApiRequest.useGetDelegate(account);
-  let addLog = LogsContext.useAdd();
+  let addToast = LogsContext.useToast();
 
   <RowItem.Bordered height=74. style={Style.style(~zIndex, ())}>
     <View style=styles##inner> <AccountInfo account balanceRequest /> </View>
     <View style=styles##actionButtons>
-      <ClipboardButton copied=I18n.log#address addLog data={account.address} />
+      <ClipboardButton
+        copied=I18n.log#address
+        addToast
+        data={account.address}
+      />
       <QrButton account balanceRequest />
     </View>
     {switch (delegateRequest) {

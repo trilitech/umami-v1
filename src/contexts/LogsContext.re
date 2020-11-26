@@ -2,7 +2,7 @@ open ReactNative;
 open Common;
 type state = {
   logs: list(Logs.t),
-  add: Logs.t => unit,
+  add: (bool, Logs.t) => unit,
   delete: int => unit,
   clear: unit => unit,
   seen: (bool, bool => unit),
@@ -10,7 +10,7 @@ type state = {
 
 let initialState = {
   logs: [],
-  add: _ => (),
+  add: (_, _) => (),
   delete: _ => (),
   clear: () => (),
   seen: (true, _ => ()),
@@ -47,23 +47,27 @@ let make = (~children) => {
 
     let clear = () => setLogs(_ => []);
 
-    let add = l => {
-      toastState
-      ->Belt.Option.map(fst)
-      ->Lib.Option.iter(Js.Global.clearTimeout);
+    let add = (toast, l) => {
       setLogs(es => es->Belt.List.add(l));
-      setToastState(prev => {
-        let firsts = prev->Belt.Option.mapWithDefault(0, snd) + 1;
-        let animCallback = _ => {
-          setToastState(_ => None);
-          fadeAnim->Animated.Value.setValue(1.);
-        };
-        let timeoutCallback = () => {
-          ReactUtils.startFade(fadeAnim, 0., 600., Some(animCallback));
-        };
-        let timeoutid = Js.Global.setTimeout(timeoutCallback, 4500);
-        (timeoutid, firsts)->Some;
-      });
+
+      if (toast) {
+        toastState
+        ->Belt.Option.map(fst)
+        ->Lib.Option.iter(Js.Global.clearTimeout);
+        setToastState(prev => {
+          let firsts = prev->Belt.Option.mapWithDefault(0, snd) + 1;
+          let animCallback = _ => {
+            setToastState(_ => None);
+            fadeAnim->Animated.Value.setValue(1.);
+          };
+          let timeoutCallback = () => {
+            ReactUtils.startFade(fadeAnim, 0., 600., Some(animCallback));
+          };
+          let timeoutid = Js.Global.setTimeout(timeoutCallback, 4500);
+          (timeoutid, firsts)->Some;
+        });
+      };
+
       l.Logs.kind == Logs.Error ? (snd(seen))(false) : ();
     };
 
@@ -75,7 +79,7 @@ let make = (~children) => {
        <ToastBox
          opacity={fadeAnim->Animated.StyleProp.float}
          logs
-         addLog=add
+         addToast={add(false)}
          handleDelete=delete
          firsts
        />
@@ -89,6 +93,11 @@ let useStoreContext = () => React.useContext(context);
 let useAdd = () => {
   let store = useStoreContext();
   store.add;
+};
+
+let useToast = () => {
+  let store = useStoreContext();
+  store.add(true);
 };
 
 let useSeen = () => {

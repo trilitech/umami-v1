@@ -45,7 +45,9 @@ let make = (~cancel) => {
         handleAdd();
         cancel();
       })
-    ->ApiRequest.logOk(addLog, Logs.Account, _ => I18n.t#account_created)
+    ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
+        I18n.t#account_created
+      )
     ->ignore;
 
   let (mnemonic, setMnemonic) = React.useState(_ => Belt.Array.make(24, ""));

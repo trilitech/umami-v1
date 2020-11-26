@@ -46,7 +46,9 @@ let make = (~cancel) => {
         handleAdd();
         cancel();
       })
-    ->ApiRequest.logOk(addLog, Logs.Account, _ => I18n.t#account_created)
+    ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
+        I18n.t#account_created
+      )
     ->ignore;
 
   // using a react ref prevent from genereting other mnemonic at other render

@@ -39,7 +39,9 @@ let make = (~cancel, ~handleAdd) => {
           cancel();
           createAccount(state.values.name)
           ->Future.tapOk(_ => {handleAdd()})
-          ->ApiRequest.logOk(addLog, Logs.Account, _ => I18n.t#account_created)
+          ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
+              I18n.t#account_created
+            )
           ->ignore;
           None;
         },

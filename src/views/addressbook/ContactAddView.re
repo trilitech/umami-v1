@@ -32,7 +32,7 @@ let styles =
 [@react.component]
 let make = (~cancel, ~handleAdd) => {
   let (aliasRequest, createAlias) = AliasApiRequest.useCreate();
-  let addLog = LogsContext.useAdd();
+  let addToast = LogsContext.useToast();
 
   let form: AccountCreateForm.api =
     AccountCreateForm.use(
@@ -46,7 +46,9 @@ let make = (~cancel, ~handleAdd) => {
           cancel();
           createAlias((state.values.name, state.values.address))
           ->Future.tapOk(_ => handleAdd())
-          ->ApiRequest.logOk(addLog, Logs.Account, _ => I18n.t#account_created)
+          ->ApiRequest.logOk(addToast, Logs.Account, _ =>
+              I18n.t#account_created
+            )
           ->ignore;
 
           None;
