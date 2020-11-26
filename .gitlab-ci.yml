@@ -41,4 +41,4 @@ test:
   script:
     - yarn test
   after_script:
-    - bash <(curl -s https://codecov.io/bash) -t 92e11d71-21ff-4043-9b0a-4bcd058967f4
+    - bash <(curl -s https://codecov.io/bash) -f coverage/coverage-summary.json -t 92e11d71-21ff-4043-9b0a-4bcd058967f4
