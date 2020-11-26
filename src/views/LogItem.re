@@ -101,13 +101,14 @@ let make =
            log.msg->React.string
          </Typography.Body2>
          <View style=styles##actionButtons>
-           <ClipboardButton
-             hoveredStyle=styles##buttonHovered
-             data={log.msg}
-             copied=I18n.log#log_content
-             addToast
-             color=Theme.colorLightMediumEmphasis
-           />
+           {<ClipboardButton
+              hoveredStyle=styles##buttonHovered
+              data={log.msg}
+              copied=I18n.log#log_content
+              addToast
+              color=Theme.colorLightMediumEmphasis
+            />
+            ->ReactUtils.onlyWhen(log.kind == Error)}
            <DeleteButton
              color=Theme.colorLightMediumEmphasis
              indice
