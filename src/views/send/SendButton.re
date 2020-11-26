@@ -27,9 +27,8 @@ let make = () => {
   let openAction = () => setVisibleModal(_ => true);
   let closeAction = () => setVisibleModal(_ => false);
 
-  let onPress = _e => {
-    openAction();
-  };
+  let onPress = _e => openAction();
+
   let onPress = account->Belt.Option.map(_ => onPress);
 
   let (iconColor, textColor) = {

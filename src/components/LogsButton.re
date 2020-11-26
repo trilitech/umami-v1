@@ -2,9 +2,8 @@ open ReactNative;
 
 [@react.component]
 let make = (~style=?) => {
-  let _errors = ErrorsContext.useErrors();
-  let setSeen = ErrorsContext.useSetSeen();
-  let seen = ErrorsContext.useSeen();
+  let setSeen = LogsContext.useSetSeen();
+  let seen = LogsContext.useSeen();
 
   let modal = React.useRef(Js.Nullable.null);
   let (visibleModal, setVisibleModal) = React.useState(_ => false);
@@ -20,11 +19,11 @@ let make = (~style=?) => {
     <TouchableOpacity ?style onPress>
       <Typography.ButtonPrimary
         fontSize=12. colorStyle={!seen ? `error : `disabled}>
-        I18n.btn#error_logs->React.string
+        I18n.btn#logs->React.string
       </Typography.ButtonPrimary>
     </TouchableOpacity>
     <ModalAction ref=modal visible=visibleModal onRequestClose=closeAction>
-      <ErrorsView />
+      <LogsView />
     </ModalAction>
   </>;
 };

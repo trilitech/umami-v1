@@ -29,7 +29,7 @@ module AddAccountButton = {
       openAction();
     };
 
-    let onPressCancel = _e => {
+    let cancel = _e => {
       modal.current
       ->Js.Nullable.toOption
       ->Belt.Option.map(ModalAction.closeModal)
@@ -48,7 +48,7 @@ module AddAccountButton = {
         </Typography.ButtonSecondary>
       </TouchableOpacity>
       <ModalAction ref=modal visible=visibleModal onRequestClose=closeAction>
-        <AccountCreateView onPressCancel handleAdd />
+        <AccountCreateView cancel handleAdd />
       </ModalAction>
     </>;
   };

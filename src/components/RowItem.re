@@ -22,12 +22,7 @@ let styles =
 module Base = {
   [@react.component]
   let make = (~height, ~style as stylearg=?, ~children) => {
-    let (hovered, setHovered) = React.useState(_ => false);
-    <View
-      onMouseEnter={_ => setHovered(_ => true)}
-      onMouseLeave={_ => setHovered(_ => false)}
-      onResponderGrant={_ => setHovered(_ => false)}
-      onResponderRelease={_ => setHovered(_ => true)}
+    <Hoverable
       style=Style.(
         arrayOption([|
           stylearg,
@@ -35,16 +30,18 @@ module Base = {
           Some(style(~height=height->dp, ())),
         |])
       )>
-      <View
-        style=Style.(
-          arrayOption([|
-            Some(styles##innerContainer),
-            hovered ? Some(styles##containerHovered) : None,
-          |])
-        )>
-        {children(hovered)}
-      </View>
-    </View>;
+      {hovered => {
+         <View
+           style=Style.(
+             arrayOption([|
+               Some(styles##innerContainer),
+               hovered ? Some(styles##containerHovered) : None,
+             |])
+           )>
+           {children(hovered)}
+         </View>;
+       }}
+    </Hoverable>;
   };
 };
 
@@ -57,15 +54,6 @@ module Bordered = {
            <View style=styles##border />
            <View style=styles##inner> children </View>
          </>}
-    </Base>;
-  };
-};
-
-module Hoverable = {
-  [@react.component]
-  let make = (~height, ~style=?, ~children) => {
-    <Base ?style height>
-      {hovered => <View style=styles##inner> {children(hovered)} </View>}
     </Base>;
   };
 };

@@ -42,14 +42,26 @@ let mapOrLoad = (req, f) =>
 
 let isLoading = request => request == Loading;
 
-let handleError = (r, addError, kind) =>
+let logError = (r, addLog, origin) =>
   r->Future.tapError(msg =>
-    addError(Error.{kind, msg, timestamp: Js.Date.now()})
+    addLog(Logs.{kind: Logs.Error, msg, origin, timestamp: Js.Date.now()})
   );
+
+let logOk = (r, addLog, origin, makeMsg) =>
+  r->Future.tapOk(r => {
+    addLog(
+      Logs.{
+        kind: Logs.Info,
+        msg: makeMsg(r),
+        origin,
+        timestamp: Js.Date.now(),
+      },
+    )
+  });
 
 let useLoader = (get, kind, ()) => {
   let (request, setRequest) = React.useState(_ => NotAsked);
-  let addError = ErrorsContext.useAddError();
+  let addToast = LogsContext.useToast();
   let config = ConfigContext.useConfig();
 
   React.useEffect1(
@@ -57,7 +69,7 @@ let useLoader = (get, kind, ()) => {
       setRequest(_ => Loading);
 
       get(~config)
-      ->handleError(addError, kind)
+      ->logError(addToast, kind)
       ->Future.get(result => setRequest(_ => Done(result)));
 
       None;
@@ -69,7 +81,7 @@ let useLoader = (get, kind, ()) => {
 };
 
 let useLoader1 = (get, kind, arg1) => {
-  let addError = ErrorsContext.useAddError();
+  let addToast = LogsContext.useToast();
   let (request, setRequest) = React.useState(_ => NotAsked);
   let config = ConfigContext.useConfig();
 
@@ -78,7 +90,7 @@ let useLoader1 = (get, kind, arg1) => {
       setRequest(_ => Loading);
 
       get(~config, arg1)
-      ->handleError(addError, kind)
+      ->logError(addToast, kind)
       ->Future.get(result => setRequest(_ => Done(result)));
 
       None;
@@ -90,7 +102,7 @@ let useLoader1 = (get, kind, arg1) => {
 };
 
 let useLoader2 = (get, kind, arg1, arg2) => {
-  let addError = ErrorsContext.useAddError();
+  let addLog = LogsContext.useAdd();
   let (request, setRequest) = React.useState(_ => NotAsked);
   let config = ConfigContext.useConfig();
 
@@ -99,7 +111,7 @@ let useLoader2 = (get, kind, arg1, arg2) => {
       setRequest(_ => Loading);
 
       get(~config, arg1, arg2)
-      ->handleError(addError, kind)
+      ->logError(addLog(true), kind)
       ->Future.get(result => setRequest(_ => Done(result)));
 
       None;
@@ -110,30 +122,30 @@ let useLoader2 = (get, kind, arg1, arg2) => {
   request;
 };
 
-let useSetter = (set, kind, ()) => {
-  let addError = ErrorsContext.useAddError();
+let useSetter = (~toast=true, set, kind, ()) => {
+  let addLog = LogsContext.useAdd();
   let (request, setRequest) = React.useState(_ => NotAsked);
   let config = ConfigContext.useConfig();
 
   let sendRequest = input => {
     setRequest(_ => Loading);
     set(~config, input)
-    ->handleError(addError, kind)
+    ->logError(addLog(toast), kind)
     ->Future.tap(result => {setRequest(_ => Done(result))});
   };
 
   (request, sendRequest);
 };
 
-let useGetter = (get, kind) => {
-  let addError = ErrorsContext.useAddError();
+let useGetter = (~toast=true, get, kind) => {
+  let addLog = LogsContext.useAdd();
   let (request, setRequest) = React.useState(_ => Loading);
   let config = ConfigContext.useConfig();
 
   let get = (~loading=true, input) => {
     loading ? setRequest(_ => Loading) : ();
     get(~config, input)
-    ->handleError(addError, kind)
+    ->logError(addLog(toast), kind)
     ->Future.get(result => setRequest(_ => {Done(result)}));
   };
 

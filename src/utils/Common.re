@@ -23,6 +23,14 @@ module Lib = {
       | None => ()
       };
     };
+
+    let rec firstSome = l => {
+      switch (l) {
+      | [] => None
+      | [Some(_) as h, ..._] => h
+      | [None, ...t] => firstSome(t)
+      };
+    };
   };
 
   module Result = {
@@ -30,6 +38,15 @@ module Lib = {
       switch (r) {
       | Ok(v) => f(v)
       | Error(_) => ()
+      };
+    };
+  };
+
+  module List = {
+    let rec firsts = (l, n) => {
+      switch (l) {
+      | [] => l
+      | [h, ...t] => n == 0 ? [] : t->firsts(n - 1)->Belt.List.add(h)
       };
     };
   };

@@ -47,6 +47,8 @@ let memo = component =>
 [@react.component]
 let make =
   memo((~account: Account.t, ~zIndex, ~handleDelete: unit => unit) => {
+    let addToast = LogsContext.useToast();
+
     <RowItem.Bordered height=46. style={Style.style(~zIndex, ())}>
       <View style=styles##inner>
         <View style=styles##cellAlias>
@@ -57,7 +59,11 @@ let make =
         </View>
       </View>
       <View style=styles##actionButtons>
-        <ClipboardButton data={account.address} />
+        <ClipboardButton
+          copied=I18n.log#address
+          addToast
+          data={account.address}
+        />
         <QrButton account />
       </View>
       <View>
@@ -66,5 +72,5 @@ let make =
           <AliasDeleteButton account handleDelete />
         </Menu>
       </View>
-    </RowItem.Bordered>
+    </RowItem.Bordered>;
   });

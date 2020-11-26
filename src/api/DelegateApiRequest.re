@@ -11,7 +11,7 @@ let useGetDelegate = (account: Account.t) => {
     (~config, network, address) =>
       DelegateAPI.getForAccount((network, config), address)
       ->Future.tapOk(res => setAccountDelegate(address, res)),
-    Error.Delegate,
+    Logs.Delegate,
     network,
     account.address,
   );
@@ -25,7 +25,7 @@ let useGetDelegateInfo = (account: Account.t) => {
   ApiRequest.useLoader2(
     (~config, network, address) =>
       DelegateAPI.getDelegationInfoForAccount((network, config), address),
-    Error.Delegate,
+    Logs.Delegate,
     network,
     account.address,
   );
@@ -38,7 +38,7 @@ let useGetBakers = () => {
 
   ApiRequest.useLoader1(
     (~config as _c, network) => DelegateAPI.getBakers(network),
-    Error.Delegate,
+    Logs.Delegate,
     network,
   );
 };

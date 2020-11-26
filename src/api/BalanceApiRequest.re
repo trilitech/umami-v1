@@ -9,7 +9,7 @@ let useLoad = (address: string) => {
     (network, config)->BalanceAPI.get(address, ());
   };
 
-  let (getRequest, request) = ApiRequest.useGetter(get, Error.Balance);
+  let (getRequest, request) = ApiRequest.useGetter(get, Logs.Balance);
 
   React.useEffect2(
     () => {

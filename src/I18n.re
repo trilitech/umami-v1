@@ -11,7 +11,7 @@ let btn = {
   pub send = "SEND";
   pub confirm = "CONFIRM";
   pub update = "UPDATE";
-  pub error_logs = "ERROR LOGS";
+  pub logs = "LOGS";
   pub import_account = "IMPORT EXISTING ACCOUNT";
   pub create_account_new = "CREATE NEW ACCOUNT";
   pub create_account_record_ok = {js|OK, I’VE RECORDED IT|js};
@@ -19,6 +19,13 @@ let btn = {
   pub delete_contact = "Delete contact";
   pub advanced_options = "Advanced options";
   pub delegate = "DELEGATE"
+};
+
+let log = {
+  pub _this = this;
+  pub copied_to_clipboard = p("%s copied to clipboard");
+  pub log_content = "Log content";
+  pub address = "Address"
 };
 
 let label = {
@@ -42,7 +49,7 @@ let label = {
 
 let title = {
   pub _this = this;
-  pub error_logs = "Error logs";
+  pub error_logs = "Logs";
   pub account_create = "Create new account";
   pub import_account = "Import account";
   pub add_contact = "Add contact";
@@ -73,8 +80,8 @@ let expl = {
 let t = {
   pub error404 = "404 - Route Not Found :(";
   pub navbar_add_account = "ADD ACCOUNT";
-  pub error_logs_no_recent = "No recent errors";
-  pub error_logs_clearall = "CLEAR ALL";
+  pub logs_no_recent = "No recent messages";
+  pub logs_clearall = "CLEAR ALL";
   pub xtz = "XTZ";
   pub xtz_amount = a => p("%s %s", a, this#xtz);
   pub xtz_op_amount = op => p("%s %a", op, () => this#xtz_amount);

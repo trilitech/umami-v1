@@ -3,6 +3,7 @@ open ReactNative;
 type colorStyle = [
   | `highEmphasis
   | `mediumEmphasis
+  | `mediumEmphasisOpposite
   | `disabled
   | `error
   | `valid
@@ -12,6 +13,7 @@ let getColor = colorStyle =>
   switch (colorStyle) {
   | `highEmphasis => Theme.colorDarkHighEmphasis
   | `mediumEmphasis => Theme.colorDarkMediumEmphasis
+  | `mediumEmphasisOpposite => Theme.colorLightMediumEmphasis
   | `disabled => Theme.colorDarkDisabled
   | `error => Theme.colorDarkError
   | `valid => Theme.colorDarkValid

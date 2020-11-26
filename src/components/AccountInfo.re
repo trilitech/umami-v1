@@ -39,7 +39,7 @@ let make =
     {<Typography.Subtitle1 style=styles##alias>
        account.alias->React.string
      </Typography.Subtitle1>
-     |> ReactUtils.onlyWhen(showAlias)}
+     ->ReactUtils.onlyWhen(showAlias)}
     {balanceRequest->Belt.Option.mapWithDefault(
        <View style=styles##balanceEmpty />,
        balance,

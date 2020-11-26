@@ -1,7 +1,14 @@
 [@react.component]
-let make = (~data) => {
+let make = (~hoveredStyle=?, ~copied, ~addToast, ~color=?, ~data) => {
   <IconButton
-    icon=Icons.Copy.build
-    onPress={_ => {Navigator.Clipboard.write(data)}}
+    ?hoveredStyle
+    icon={(~color as colorin=?) => {
+      let color = [color, colorin]->Common.Lib.Option.firstSome;
+      Icons.Copy.build(~color?);
+    }}
+    onPress={_ => {
+      Navigator.Clipboard.write(data);
+      addToast(Logs.info(I18n.log#copied_to_clipboard(copied)));
+    }}
   />;
 };

@@ -29,37 +29,32 @@ let styles =
   );
 
 [@react.component]
-let make = (~onPressCancel) => {
+let make = (~cancel) => {
   let (formStep, setFormStep) = React.useState(_ => Step1);
 
   let (accountWithMnemonicRequest, createAccountWithMnemonic) =
     AccountApiRequest.useCreateWithMnemonics();
 
+  let addLog = LogsContext.useAdd();
+
   let refreshAccounts = StoreContext.useRefreshAccounts();
   let handleAdd = () => refreshAccounts(~loading=false, ())->ignore;
   let createAccountWithMnemonic = p =>
-    createAccountWithMnemonic(p)->Future.tapOk(_ => handleAdd())->ignore;
+    createAccountWithMnemonic(p)
+    ->Future.tapOk(_ => {
+        handleAdd();
+        cancel();
+      })
+    ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
+        I18n.t#account_created
+      )
+    ->ignore;
 
   let (mnemonic, setMnemonic) = React.useState(_ => Belt.Array.make(24, ""));
 
   <ModalView.Form>
     {switch (accountWithMnemonicRequest) {
-     | Done(Ok(_result)) =>
-       <>
-         <Typography.Headline2 style=styles##title>
-           I18n.t#account_imported->React.string
-         </Typography.Headline2>
-         <View style=styles##formAction>
-           <FormButton text=I18n.btn#ok onPress=onPressCancel />
-         </View>
-       </>
-     | Done(Error(error)) =>
-       <>
-         <ErrorView error />
-         <View style=styles##formAction>
-           <FormButton text=I18n.btn#ok onPress=onPressCancel />
-         </View>
-       </>
+     | Done(_) => <> </>
      | Loading =>
        <View style=styles##loadingView>
          <ActivityIndicator
@@ -90,7 +85,7 @@ let make = (~onPressCancel) => {
               <FillMnemonicView
                 mnemonic
                 setMnemonic
-                onPressCancel
+                onPressCancel={_ => cancel()}
                 goNextStep={_ => setFormStep(_ => Step2)}
               />
             </>
@@ -109,7 +104,7 @@ let make = (~onPressCancel) => {
               </Typography.Body3>
               <CreatePasswordView
                 mnemonic
-                onPressCancel
+                onPressCancel={_ => cancel()}
                 createAccountWithMnemonic
               />
             </>
