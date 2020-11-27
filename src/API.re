@@ -273,6 +273,8 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
     | Delegation(delegation) => [|
         "-E",
         network->endpoint,
+         "-w",
+        "none",
         "set",
         "delegate",
         "for",
@@ -667,7 +669,15 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
     ->OperationsAPI.get(account, ~types=[|"delegation"|], ~limit=1, ())
     ->Future.flatMapOk(operations =>
         if (operations->Belt.Array.length == 0) {
-          Future.value(Error("No delegation found!"));
+          //Future.value(Error("No delegation found!"));
+          Future.value(
+            Ok({
+              initialBalance: "",
+              delegate: "",
+              timestamp: Js.Date.make(),
+              lastReward: None,
+            }),
+          );
         } else {
           switch (operations[0].payload) {
           | Business(payload) =>
@@ -676,7 +686,15 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
               switch (payload.delegate) {
               | Some(delegate) =>
                 if (account == delegate) {
-                  Future.value(Error("Bakers can't delegate!"));
+                  //Future.value(Error("Bakers can't delegate!"));
+                  Future.value(
+                    Ok({
+                      initialBalance: "",
+                      delegate: "",
+                      timestamp: Js.Date.make(),
+                      lastReward: None,
+                    }),
+                  );
                 } else {
                   network
                   ->BalanceAPI.get(account, ~block=operations[0].level, ())
