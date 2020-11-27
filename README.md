@@ -1,3 +1,5 @@
+[![Codecov Coverage](https://img.shields.io/codecov/c/gitlab/nomadic-labs/ref-wallet/coverage.svg?style=flat-square)](https://codecov.io/gl/nomadic-labs/ref-wallet/)
+
 Tezos Client GUI
 ===========================================================================
 

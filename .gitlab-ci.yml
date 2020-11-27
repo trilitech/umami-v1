@@ -40,3 +40,5 @@ test:
   stage: test
   script:
     - yarn test
+  after_script:
+    - bash <(curl -s https://codecov.io/bash)

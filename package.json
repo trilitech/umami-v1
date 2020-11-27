@@ -33,7 +33,7 @@
   "scripts": {
     "start": "EXTEND_ESLINT=true react-app-rewired start",
     "build": "react-app-rewired build",
-    "test": "yarn bsb:build && jest",
+    "test": "yarn bsb:build && jest --coverage",
     "bsb:start": "bsb -make-world -w",
     "bsb:build": "bsb -make-world",
     "bsb:clean": "bsb -clean-world",
