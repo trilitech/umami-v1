@@ -6,11 +6,6 @@ coverage:
   precision: 2
   round: down
   range: "70...100"
-  status:
-    project: 
-      default:
-        target: auto  # this is default
-        if_not_found: success  # no commit found? still set a success
 
 parsers:
   gcov:

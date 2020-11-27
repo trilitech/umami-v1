@@ -10,8 +10,5 @@ module.exports = {
     ],
     "collectCoverageFrom": [
 	"src/*.js"
-    ],
-    "coverageReporters": [
-        "json-summary"
     ]
 }
