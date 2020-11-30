@@ -1,11 +1,16 @@
+open Belt;
 open Common;
+
+type reactState('state) = ('state, ('state => 'state) => unit);
+type apiRequestsState('requestResponse) =
+  reactState(Belt.Map.String.t(ApiRequest.t('requestResponse)));
 
 type state = {
   network: Network.t,
   selectedAccount: option(string),
-  accounts: Belt.Map.String.t(Account.t),
   refreshAccounts: (~loading: bool=?, unit) => unit,
   accountsRequest: ApiRequest.t(array((string, string))),
+  balanceRequestsState: apiRequestsState(string),
   delegates: Belt.Map.String.t(string),
   setDelegates:
     (Belt.Map.String.t(string) => Belt.Map.String.t(string)) => unit,
@@ -18,12 +23,14 @@ type state = {
 
 // Context and Provider
 
+let initialApiRequestsState = (Belt.Map.String.empty, _ => ());
+
 let initialState = {
   network: Network.Test,
   selectedAccount: None,
-  accounts: Belt.Map.String.empty,
   refreshAccounts: (~loading as _=?, ()) => (),
   accountsRequest: NotAsked,
+  balanceRequestsState: initialApiRequestsState,
   delegates: Belt.Map.String.empty,
   setDelegates: _ => (),
   updateAccount: _ => (),
@@ -54,6 +61,8 @@ let make = (~children) => {
   let updateAccount = newAccount => setSelectedAccount(_ => Some(newAccount));
   let (getAccounts, accountsRequest) = AccountApiRequest.useGet();
 
+  let balanceRequestsState = React.useState(() => Belt.Map.String.empty);
+
   React.useEffect0(() => {
     getAccounts()->ignore;
     None;
@@ -62,37 +71,20 @@ let make = (~children) => {
   let refreshAccounts = (~loading=?, ()) =>
     getAccounts(~loading?, ())->ignore;
 
-  let accountsArray =
-    React.useMemo1(
-      () => {
-        accountsRequest
-        ->ApiRequest.getOkWithDefault([||])
-        ->Belt.Array.map(((alias, address)) => {
-            let account: Account.t = {alias, address};
-            (address, account);
-          })
-        ->Belt.Array.reverse
-      },
-      [|accountsRequest|],
-    );
-  let accounts =
-    React.useMemo1(
-      () => {accountsArray->Belt.Map.String.fromArray},
-      [|accountsArray|],
-    );
-
   React.useEffect2(
     () => {
       if (selectedAccount->Belt.Option.isNone) {
-        accountsArray
+        accountsRequest
+        ->ApiRequest.getOkWithDefault([||])
+        ->Belt.Array.reverse
         ->Belt.Array.get(0)
-        ->Lib.Option.iter(((address, _)) =>
+        ->Lib.Option.iter(((_alias, address)) =>
             setSelectedAccount(_ => Some(address))
           );
       };
       None;
     },
-    (accounts, selectedAccount),
+    (accountsRequest, selectedAccount),
   );
 
   let (delegates, setDelegates) = React.useState(() => Belt.Map.String.empty);
@@ -103,9 +95,9 @@ let make = (~children) => {
     value={
       network,
       selectedAccount,
-      accounts,
       refreshAccounts,
       accountsRequest,
+      balanceRequestsState,
       delegates,
       setDelegates,
       updateAccount,
@@ -127,10 +119,31 @@ let useNetwork = () => {
   store.network;
 };
 
+// Account
+
+let useAccountsRequest = () => {
+  let store = useStoreContext();
+  store.accountsRequest;
+};
+
+let useAccounts = () => {
+  let accountsRequest = useAccountsRequest();
+
+  accountsRequest
+  ->ApiRequest.getOkWithDefault([||])
+  ->Belt.Array.map(((alias, address)) => {
+      let account: Account.t = {alias, address};
+      (address, account);
+    })
+  ->Belt.Array.reverse
+  ->Belt.Map.String.fromArray;
+};
+
 let useAccount = () => {
   let store = useStoreContext();
+  let accounts = useAccounts();
 
-  switch (store.selectedAccount, store.accounts) {
+  switch (store.selectedAccount, accounts) {
   | (Some(selectedAccount), accounts) =>
     accounts->Belt.Map.String.get(selectedAccount)
   | _ => None
@@ -142,25 +155,38 @@ let useUpdateAccount = () => {
   store.updateAccount;
 };
 
-let useAccounts = () => {
-  let store = useStoreContext();
-  store.accounts;
-};
-
 let useRefreshAccounts = () => {
   let store = useStoreContext();
   store.refreshAccounts;
-};
-
-let useAccountsRequest = () => {
-  let store = useStoreContext();
-  store.accountsRequest;
 };
 
 let useAccountFromAddress = address => {
   let accounts = useAccounts();
   accounts->Belt.Map.String.get(address);
 };
+
+// Balance
+
+let useBalanceRequestState = address => {
+  let store = useStoreContext();
+  let (balanceRequests, setBalanceRequests) = store.balanceRequestsState;
+
+  let balanceRequest =
+    balanceRequests
+    ->Map.String.get(address)
+    ->Option.getWithDefault(NotAsked);
+
+  let setBalanceRequest = newBalanceRequest =>
+    setBalanceRequests(balanceRequest =>
+      balanceRequest->Belt.Map.String.update(address, _ =>
+        Some(newBalanceRequest)
+      )
+    );
+
+  (balanceRequest, setBalanceRequest);
+};
+
+// Delegates
 
 let useDelegates = () => {
   let store = useStoreContext();
@@ -184,12 +210,13 @@ let useSetAccountDelegate = () => {
 };
 
 let useAccountsWithDelegates = () => {
+  let accounts = useAccounts();
   let store = useStoreContext();
-  store.accounts
-  ->Belt.Map.String.map(account => {
-      let delegate = store.delegates->Belt.Map.String.get(account.address);
-      (account, delegate);
-    });
+
+  accounts->Belt.Map.String.map(account => {
+    let delegate = store.delegates->Belt.Map.String.get(account.address);
+    (account, delegate);
+  });
 };
 
 let getAlias = (accounts, address) => {

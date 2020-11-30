@@ -5,21 +5,23 @@ type balanceApiRequest = ApiRequest.t(string);
 let useLoad = (address: string) => {
   let network = StoreContext.useNetwork();
 
+  let (request, setRequest) = StoreContext.useBalanceRequestState(address);
+
   let get = (~config, (network, address)) => {
     (network, config)->BalanceAPI.get(address, ());
   };
 
-  let (getRequest, request) = ApiRequest.useGetter(get, Logs.Balance);
+  let getRequest = ApiRequest.useStoreGetter(get, Logs.Balance, setRequest);
 
-  React.useEffect2(
+  React.useEffect3(
     () => {
-      if (address != "") {
+      if (address != "" && request == NotAsked) {
         getRequest((network, address));
       };
 
       None;
     },
-    (network, address),
+    (network, request, address),
   );
 
   request;

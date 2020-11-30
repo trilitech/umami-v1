@@ -151,3 +151,23 @@ let useGetter = (~toast=true, get, kind) => {
 
   (get, request);
 };
+
+let useStoreGetter = (~toast=true, get, kind, setRequest) => {
+  let addLog = LogsContext.useAdd();
+  let config = ConfigContext.useConfig();
+
+  let get = (~loading=true, input) => {
+    loading ? setRequest(Loading) : ();
+    get(~config, input)
+    ->logError(addLog(toast), kind)
+    ->Future.get(result =>
+        setRequest(
+          {
+            Done(result);
+          },
+        )
+      );
+  };
+
+  get;
+};
