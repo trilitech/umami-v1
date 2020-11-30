@@ -11,9 +11,7 @@ type state = {
   refreshAccounts: (~loading: bool=?, unit) => unit,
   accountsRequest: ApiRequest.t(array((string, string))),
   balanceRequestsState: apiRequestsState(string),
-  delegates: Belt.Map.String.t(string),
-  setDelegates:
-    (Belt.Map.String.t(string) => Belt.Map.String.t(string)) => unit,
+  delegateRequestsState: apiRequestsState(option(string)),
   updateAccount: string => unit,
   operations: array(Operation.t),
   setOperations: (array(Operation.t) => array(Operation.t)) => unit,
@@ -31,8 +29,7 @@ let initialState = {
   refreshAccounts: (~loading as _=?, ()) => (),
   accountsRequest: NotAsked,
   balanceRequestsState: initialApiRequestsState,
-  delegates: Belt.Map.String.empty,
-  setDelegates: _ => (),
+  delegateRequestsState: initialApiRequestsState,
   updateAccount: _ => (),
   operations: [||],
   setOperations: _ => (),
@@ -62,6 +59,7 @@ let make = (~children) => {
   let (getAccounts, accountsRequest) = AccountApiRequest.useGet();
 
   let balanceRequestsState = React.useState(() => Belt.Map.String.empty);
+  let delegateRequestsState = React.useState(() => Belt.Map.String.empty);
 
   React.useEffect0(() => {
     getAccounts()->ignore;
@@ -87,7 +85,6 @@ let make = (~children) => {
     (accountsRequest, selectedAccount),
   );
 
-  let (delegates, setDelegates) = React.useState(() => Belt.Map.String.empty);
   let (operations, setOperations) = React.useState(() => [||]);
   let (aliases, setAliases) = React.useState(() => [||]);
 
@@ -98,8 +95,7 @@ let make = (~children) => {
       refreshAccounts,
       accountsRequest,
       balanceRequestsState,
-      delegates,
-      setDelegates,
+      delegateRequestsState,
       updateAccount,
       operations,
       setOperations,
@@ -165,56 +161,61 @@ let useAccountFromAddress = address => {
   accounts->Belt.Map.String.get(address);
 };
 
-// Balance
+// Utils
 
-let useBalanceRequestState = address => {
+let useRequestsState = (getRequestsState, key) => {
   let store = useStoreContext();
-  let (balanceRequests, setBalanceRequests) = store.balanceRequestsState;
+  let (requests, setRequests) = store->getRequestsState;
 
-  let balanceRequest =
-    balanceRequests
-    ->Map.String.get(address)
-    ->Option.getWithDefault(NotAsked);
-
-  let setBalanceRequest = newBalanceRequest =>
-    setBalanceRequests(balanceRequest =>
-      balanceRequest->Belt.Map.String.update(address, _ =>
-        Some(newBalanceRequest)
-      )
+  let request =
+    React.useMemo1(
+      () =>
+        requests
+        ->Map.String.get(key)
+        ->Option.getWithDefault(ApiRequest.NotAsked),
+      [|requests|],
     );
 
-  (balanceRequest, setBalanceRequest);
+  let setRequest =
+    React.useCallback1(
+      newRequest =>
+        setRequests(request =>
+          request->Belt.Map.String.update(key, _ => Some(newRequest))
+        ),
+      [|setRequests|],
+    );
+
+  (request, setRequest);
 };
+
+// Balance
+
+let useBalanceRequestState =
+  useRequestsState(store => store.balanceRequestsState);
 
 // Delegates
 
+let useDelegateRequestState =
+  useRequestsState(store => store.delegateRequestsState);
+
 let useDelegates = () => {
   let store = useStoreContext();
-  store.delegates;
-};
+  let (delegateRequests, _) = store.delegateRequestsState;
 
-let useAccountDelegate = address => {
-  let delegates = useDelegates();
-  delegates->Belt.Map.String.get(address);
-};
-
-let useSetAccountDelegate = () => {
-  let store = useStoreContext();
-  (address, delegate) => {
-    delegate->Common.Lib.Option.iter(delegate =>
-      store.setDelegates(delegates =>
-        delegates->Belt.Map.String.set(address, delegate)
-      )
-    );
-  };
+  delegateRequests
+  ->Map.String.map(request =>
+      request->ApiRequest.getDoneOk->Option.flatMap(v => v)
+    )
+  ->Map.String.keep((_k, v) => v->Option.isSome)
+  ->Map.String.map(Option.getExn);
 };
 
 let useAccountsWithDelegates = () => {
   let accounts = useAccounts();
-  let store = useStoreContext();
+  let delegates = useDelegates();
 
   accounts->Belt.Map.String.map(account => {
-    let delegate = store.delegates->Belt.Map.String.get(account.address);
+    let delegate = delegates->Belt.Map.String.get(account.address);
     (account, delegate);
   });
 };

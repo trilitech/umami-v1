@@ -122,6 +122,26 @@ let useLoader2 = (get, kind, arg1, arg2) => {
   request;
 };
 
+let useStoreLoader2 = (get, kind, request, setRequest, arg1, arg2) => {
+  let addLog = LogsContext.useAdd();
+  let config = ConfigContext.useConfig();
+
+  React.useEffect5(
+    () => {
+      if (request == NotAsked) {
+        setRequest(Loading);
+
+        get(~config, arg1, arg2)
+        ->logError(addLog(true), kind)
+        ->Future.get(result => setRequest(Done(result)));
+      };
+
+      None;
+    },
+    (config, arg1, arg2, request, setRequest),
+  );
+};
+
 let useSetter = (~toast=true, set, kind, ()) => {
   let addLog = LogsContext.useAdd();
   let (request, setRequest) = React.useState(_ => NotAsked);
