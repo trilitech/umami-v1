@@ -13,11 +13,15 @@ let useCreate = () => {
   let resetOperations = StoreContext.useResetOperations();
 
   let set = (~config, {operation, password}) =>
-    (network, config)
-    ->OperationsAPI.inject(operation, ~password)
-    ->Future.tapOk(_ => resetOperations());
+    (network, config)->OperationsAPI.inject(operation, ~password);
 
-  ApiRequest.useSetter(~toast=false, set, Logs.Operation, ());
+  ApiRequest.useSetter(
+    ~toast=false,
+    set,
+    Logs.Operation,
+    ~sideEffect=_ => resetOperations(),
+    (),
+  );
 };
 
 /* Simulate */

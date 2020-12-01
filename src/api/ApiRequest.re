@@ -182,7 +182,7 @@ let useStoreLoader2 = (get, kind, request, setRequest, arg1, arg2) => {
   );
 };
 
-let useSetter = (~toast=true, set, kind, ()) => {
+let useSetter = (~toast=true, ~sideEffect=?, set, kind, ()) => {
   let addLog = LogsContext.useAdd();
   let (request, setRequest) = React.useState(_ => NotAsked);
   let config = ConfigContext.useConfig();
@@ -191,7 +191,8 @@ let useSetter = (~toast=true, set, kind, ()) => {
     setRequest(_ => Loading);
     set(~config, input)
     ->logError(addLog(toast), kind)
-    ->Future.tap(result => {setRequest(_ => Done(result))});
+    ->Future.tap(result => {setRequest(_ => Done(result))})
+    ->Future.tapOk(sideEffect->Belt.Option.getWithDefault(_ => ()));
   };
 
   (request, sendRequest);

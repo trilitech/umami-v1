@@ -50,7 +50,7 @@ let renderLabel = (label, hasError) => {
 
 [@react.component]
 let make = (~label, ~value: string, ~handleChange, ~error) => {
-  let aliasesRequest = AliasApiRequest.useLoad();
+  let aliasesRequest = StoreContext.useAliasesRequest();
 
   let accounts =
     aliasesRequest

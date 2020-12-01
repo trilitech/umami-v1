@@ -59,6 +59,8 @@ let make = (~children) => {
 
   let aliasesRequestState = React.useState(() => ApiRequest.NotAsked);
 
+  AliasApiRequest.useLoad(aliasesRequestState)->ignore;
+
   React.useEffect0(() => {
     getAccounts()->ignore;
     None;
@@ -231,14 +233,29 @@ let useAliasesRequestState = () => {
   store.aliasesRequestState;
 };
 
+let useAliasesRequest = () => {
+  let (aliasesRequest, _) = useAliasesRequestState();
+  aliasesRequest;
+};
+
 let useResetAliases = () => {
   let (_, setAliasesRequests) = useAliasesRequestState();
   () => setAliasesRequests(_ => NotAsked);
 };
 
-let getAlias = (accounts, address) => {
-  accounts
-  ->Map.String.get(address)
-  ->Option.map((acc: Account.t) => acc.alias)
-  ->Option.getWithDefault(address);
+let useAliases = () => {
+  let aliasesRequest = useAliasesRequest();
+  aliasesRequest
+  ->ApiRequest.getDoneOk
+  ->Option.getWithDefault(Map.String.empty);
+};
+
+let useCreateAlias = () => {
+  let resetAliases = useResetAliases();
+  AliasApiRequest.useCreate(~sideEffect=_ => resetAliases(), ());
+};
+
+let useDeleteAlias = () => {
+  let resetAliases = useResetAliases();
+  AliasApiRequest.useDelete(~sideEffect=_ => resetAliases(), ());
 };

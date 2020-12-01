@@ -68,6 +68,7 @@ let memo = component =>
 [@react.component]
 let make =
   memo((~account: Account.t, ~zIndex) => {
+    let aliases = StoreContext.useAliases();
     let balanceRequest = BalanceApiRequest.useLoad(account.address);
     let delegateRequest = DelegateApiRequest.useGetDelegate(account);
     let delegateInfoRequest = DelegateApiRequest.useGetDelegateInfo(account);
@@ -118,7 +119,7 @@ let make =
         </CellAmount>
         <CellAddress>
           <Typography.Body1 numberOfLines=1>
-            delegate->React.string
+            {delegate->AliasHelpers.getAliasFromAddress(aliases)->React.string}
           </Typography.Body1>
         </CellAddress>
         <CellDuration>
