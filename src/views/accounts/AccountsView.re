@@ -18,7 +18,7 @@ module AddAccountButton = {
     );
 
   [@react.component]
-  let make = (~handleAdd) => {
+  let make = () => {
     let modal = React.useRef(Js.Nullable.null);
 
     let (visibleModal, setVisibleModal) = React.useState(_ => false);
@@ -48,7 +48,7 @@ module AddAccountButton = {
         </Typography.ButtonSecondary>
       </TouchableOpacity>
       <ModalAction ref=modal visible=visibleModal onRequestClose=closeAction>
-        <AccountCreateView cancel handleAdd />
+        <AccountCreateView cancel />
       </ModalAction>
     </>;
   };
@@ -76,10 +76,7 @@ let styles =
 [@react.component]
 let make = () => {
   let accounts = StoreContext.useAccounts();
-  let refreshAccounts = StoreContext.useRefreshAccounts();
   let accountsRequest = StoreContext.useAccountsRequest();
-  let handleAdd = () => refreshAccounts(~loading=false, ())->ignore;
-  let handleDelete = handleAdd;
 
   <Page>
     {switch (accountsRequest) {
@@ -92,7 +89,7 @@ let make = () => {
      | _ =>
        accountsRequest->ApiRequest.mapOrLoad(_ => {
          <>
-           <AddAccountButton handleAdd />
+           <AddAccountButton />
            {accounts
             ->Belt.Map.String.valuesToArray
             ->Belt.SortArray.stableSortBy((a, b) =>
@@ -102,7 +99,6 @@ let make = () => {
                 <AccountRowItem
                   key={account.address}
                   account
-                  handleDelete
                   zIndex={accounts->Belt.Map.String.size - index}
                 />
               )

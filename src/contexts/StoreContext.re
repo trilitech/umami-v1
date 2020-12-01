@@ -8,8 +8,7 @@ type apiRequestsState('requestResponse) =
 type state = {
   network: Network.t,
   selectedAccountState: reactState(option(string)),
-  refreshAccounts: (~loading: bool=?, unit) => unit,
-  accountsRequest: ApiRequest.t(Map.String.t(Account.t)),
+  accountsRequestState: reactState(ApiRequest.t(Map.String.t(Account.t))),
   balanceRequestsState: apiRequestsState(string),
   delegateRequestsState: apiRequestsState(option(string)),
   operationsRequestsState: apiRequestsState(array(Operation.t)),
@@ -23,8 +22,7 @@ let initialApiRequestsState = (Map.String.empty, _ => ());
 let initialState = {
   network: Network.Test,
   selectedAccountState: (None, _ => ()),
-  refreshAccounts: (~loading as _=?, ()) => (),
-  accountsRequest: NotAsked,
+  accountsRequestState: (NotAsked, _ => ()),
   balanceRequestsState: initialApiRequestsState,
   delegateRequestsState: initialApiRequestsState,
   operationsRequestsState: initialApiRequestsState,
@@ -51,7 +49,8 @@ let make = (~children) => {
   let selectedAccountState = React.useState(() => None);
   let (selectedAccount, setSelectedAccount) = selectedAccountState;
 
-  let (getAccounts, accountsRequest) = AccountApiRequest.useGet();
+  let accountsRequestState = React.useState(() => ApiRequest.NotAsked);
+  let (accountsRequest, _setAccountsRequest) = accountsRequestState;
 
   let balanceRequestsState = React.useState(() => Map.String.empty);
   let delegateRequestsState = React.useState(() => Map.String.empty);
@@ -59,16 +58,10 @@ let make = (~children) => {
 
   let aliasesRequestState = React.useState(() => ApiRequest.NotAsked);
 
+  AccountApiRequest.useLoad(accountsRequestState)->ignore;
   AliasApiRequest.useLoad(aliasesRequestState)->ignore;
 
-  React.useEffect0(() => {
-    getAccounts()->ignore;
-    None;
-  });
-
-  let refreshAccounts = (~loading=?, ()) =>
-    getAccounts(~loading?, ())->ignore;
-
+  // Select a default account if no one selected
   React.useEffect2(
     () => {
       if (selectedAccount->Option.isNone) {
@@ -89,8 +82,7 @@ let make = (~children) => {
     value={
       network,
       selectedAccountState,
-      refreshAccounts,
-      accountsRequest,
+      accountsRequestState,
       balanceRequestsState,
       delegateRequestsState,
       operationsRequestsState,
@@ -111,14 +103,18 @@ let useNetwork = () => {
 
 // Account
 
-let useAccountsRequest = () => {
+let useAccountsRequestState = () => {
   let store = useStoreContext();
-  store.accountsRequest;
+  store.accountsRequestState;
+};
+
+let useAccountsRequest = () => {
+  let (accountsRequest, _) = useAccountsRequestState();
+  accountsRequest;
 };
 
 let useAccounts = () => {
   let accountsRequest = useAccountsRequest();
-
   accountsRequest->ApiRequest.getOkWithDefault(Map.String.empty);
 };
 
@@ -140,14 +136,32 @@ let useUpdateAccount = () => {
   newAccount => setSelectedAccount(_ => Some(newAccount));
 };
 
-let useRefreshAccounts = () => {
-  let store = useStoreContext();
-  store.refreshAccounts;
-};
-
 let useAccountFromAddress = address => {
   let accounts = useAccounts();
   accounts->Map.String.get(address);
+};
+
+let useResetAccounts = () => {
+  let (_, setAccountsRequest) = useAccountsRequestState();
+  () => setAccountsRequest(_ => NotAsked);
+};
+
+let useCreateAccount = () => {
+  let resetAccounts = useResetAccounts();
+  AccountApiRequest.useCreate(~sideEffect=_ => resetAccounts(), ());
+};
+
+let useCreateAccountWithMnemonics = () => {
+  let resetAccounts = useResetAccounts();
+  AccountApiRequest.useCreateWithMnemonics(
+    ~sideEffect=_ => resetAccounts(),
+    (),
+  );
+};
+
+let useDeleteAccount = () => {
+  let resetAccounts = useResetAccounts();
+  AccountApiRequest.useDelete(~sideEffect=_ => resetAccounts(), ());
 };
 
 // Utils
@@ -239,8 +253,8 @@ let useAliasesRequest = () => {
 };
 
 let useResetAliases = () => {
-  let (_, setAliasesRequests) = useAliasesRequestState();
-  () => setAliasesRequests(_ => NotAsked);
+  let (_, setAliasesRequest) = useAliasesRequestState();
+  () => setAliasesRequest(_ => NotAsked);
 };
 
 let useAliases = () => {

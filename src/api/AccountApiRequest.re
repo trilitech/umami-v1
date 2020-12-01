@@ -1,16 +1,11 @@
 /* ACCOUNT */
 
 module AccountsAPI = API.Accounts(API.TezosClient);
-module ScannerAPI = API.Scanner(API.TezosClient, API.TezosExplorer);
 
-/* Get list */
+/* Get */
 
-let useLoad = ApiRequest.useLoader(AccountsAPI.get, Logs.Account);
-
-let useCreate = ApiRequest.useSetter(AccountsAPI.create, Logs.Account);
-
-let useGet = () => {
-  let get = (~config, ()) =>
+let useLoad = ((request, setRequest)) => {
+  let get = (~config) =>
     AccountsAPI.get(~config)
     ->Future.mapOk(response => {
         response
@@ -22,14 +17,20 @@ let useGet = () => {
         ->Belt.Map.String.fromArray
       });
 
-  ApiRequest.useGetter(get, Logs.Account);
+  ApiRequest.useStoreLoader(get, Logs.Account, request, setRequest);
+
+  request;
 };
 
-let useDelete =
-  ApiRequest.useSetter(
-    (~config, name) => AccountsAPI.delete(name, ~config),
-    Logs.Account,
-  );
+/* Set */
+
+let useCreate = (~sideEffect=?, ()) => {
+  ApiRequest.useSetter(AccountsAPI.create, Logs.Account, ~sideEffect?, ());
+};
+
+let useDelete = (~sideEffect=?, ()) => {
+  ApiRequest.useSetter(AccountsAPI.delete, Logs.Account, ~sideEffect?, ());
+};
 
 type createInput = {
   name: string,
@@ -37,9 +38,12 @@ type createInput = {
   password: string,
 };
 
-let useCreateWithMnemonics =
+let useCreateWithMnemonics = (~sideEffect=?, ()) => {
   ApiRequest.useSetter(
     (~config, {name, mnemonics, password}) =>
       AccountsAPI.addWithMnemonic(~config, name, mnemonics, ~password),
     Logs.Account,
+    ~sideEffect?,
+    (),
   );
+};

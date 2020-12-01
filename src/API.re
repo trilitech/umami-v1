@@ -273,7 +273,7 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
     | Delegation(delegation) => [|
         "-E",
         network->endpoint,
-         "-w",
+        "-w",
         "none",
         "set",
         "delegate",
@@ -467,7 +467,7 @@ module Accounts = (Caller: CallerAPI) => {
     };
   };
 
-  let delete = (name, ~config) =>
+  let delete = (~config, name) =>
     Caller.call(
       [|
         "-E",
