@@ -7,7 +7,7 @@ let useGetDelegate = (account: Account.t) => {
   let network = StoreContext.useNetwork();
 
   let (request, setRequest) =
-    StoreContext.useDelegateRequestState(account.address);
+    StoreContext.useDelegateRequestState(Some(account.address));
 
   ApiRequest.useStoreLoader2(
     (~config, network, address) =>

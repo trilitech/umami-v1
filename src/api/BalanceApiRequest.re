@@ -5,7 +5,8 @@ type balanceApiRequest = ApiRequest.t(string);
 let useLoad = (address: string) => {
   let network = StoreContext.useNetwork();
 
-  let (request, setRequest) = StoreContext.useBalanceRequestState(address);
+  let (request, setRequest) =
+    StoreContext.useBalanceRequestState(Some(address));
 
   let get = (~config, (network, address)) => {
     (network, config)->BalanceAPI.get(address, ());

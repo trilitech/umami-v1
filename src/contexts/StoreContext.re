@@ -12,8 +12,7 @@ type state = {
   accountsRequest: ApiRequest.t(Map.String.t(Account.t)),
   balanceRequestsState: apiRequestsState(string),
   delegateRequestsState: apiRequestsState(option(string)),
-  operations: array(Operation.t),
-  setOperations: (array(Operation.t) => array(Operation.t)) => unit,
+  operationsRequestsState: apiRequestsState(array(Operation.t)),
   aliases: array((string, string)),
   setAliases: (array((string, string)) => array((string, string))) => unit,
 };
@@ -29,8 +28,7 @@ let initialState = {
   accountsRequest: NotAsked,
   balanceRequestsState: initialApiRequestsState,
   delegateRequestsState: initialApiRequestsState,
-  operations: [||],
-  setOperations: _ => (),
+  operationsRequestsState: initialApiRequestsState,
   aliases: [||],
   setAliases: _ => (),
 };
@@ -59,6 +57,7 @@ let make = (~children) => {
 
   let balanceRequestsState = React.useState(() => Map.String.empty);
   let delegateRequestsState = React.useState(() => Map.String.empty);
+  let operationsRequestsState = React.useState(() => Map.String.empty);
 
   React.useEffect0(() => {
     getAccounts()->ignore;
@@ -84,7 +83,6 @@ let make = (~children) => {
     (accountsRequest, selectedAccount),
   );
 
-  let (operations, setOperations) = React.useState(() => [||]);
   let (aliases, setAliases) = React.useState(() => [||]);
 
   <Provider
@@ -95,8 +93,7 @@ let make = (~children) => {
       accountsRequest,
       balanceRequestsState,
       delegateRequestsState,
-      operations,
-      setOperations,
+      operationsRequestsState,
       aliases,
       setAliases,
     }>
@@ -156,28 +153,32 @@ let useAccountFromAddress = address => {
 
 // Utils
 
-let useRequestsState = (getRequestsState, key) => {
+let useRequestsState = (getRequestsState, key: option(string)) => {
   let store = useStoreContext();
   let (requests, setRequests) = store->getRequestsState;
 
   let request =
-    React.useMemo1(
+    React.useMemo2(
       () =>
-        requests
-        ->Map.String.get(key)
-        ->Option.getWithDefault(ApiRequest.NotAsked),
-      [|requests|],
+        key->Belt.Option.mapWithDefault(ApiRequest.NotAsked, key =>
+          requests
+          ->Map.String.get(key)
+          ->Option.getWithDefault(ApiRequest.NotAsked)
+        ),
+      (key, requests),
     );
 
   let setRequest =
-    React.useCallback1(
+    React.useCallback2(
       newRequestSetter =>
-        setRequests(request =>
-          request->Map.String.update(key, oldRequest =>
-            Some(newRequestSetter(oldRequest))
+        key->Lib.Option.iter(key =>
+          setRequests(request =>
+            request->Map.String.update(key, oldRequest =>
+              Some(newRequestSetter(oldRequest))
+            )
           )
         ),
-      [|setRequests|],
+      (key, setRequests),
     );
 
   (request, setRequest);
@@ -192,6 +193,11 @@ let useBalanceRequestState =
 
 let useDelegateRequestState =
   useRequestsState(store => store.delegateRequestsState);
+
+// Operations
+
+let useOperationsRequestState =
+  useRequestsState(store => store.operationsRequestsState);
 
 let useDelegates = () => {
   let store = useStoreContext();
@@ -222,14 +228,10 @@ let getAlias = (accounts, address) => {
   ->Option.getWithDefault(address);
 };
 
-let useSetOperations = () => {
+let useResetOperations = () => {
   let store = useStoreContext();
-  store.setOperations;
-};
-
-let useOperations = () => {
-  let store = useStoreContext();
-  store.operations;
+  let (_, setOperationsRequests) = store.operationsRequestsState;
+  () => setOperationsRequests(_ => Map.String.empty);
 };
 
 let useSetAliases = () => {

@@ -8,9 +8,14 @@ type injection = {
   password: string,
 };
 
-let useCreate = network => {
+let useCreate = () => {
+  let network = StoreContext.useNetwork();
+  let resetOperations = StoreContext.useResetOperations();
+
   let set = (~config, {operation, password}) =>
-    (network, config)->OperationsAPI.inject(operation, ~password);
+    (network, config)
+    ->OperationsAPI.inject(operation, ~password)
+    ->Future.tapOk(_ => resetOperations());
 
   ApiRequest.useSetter(~toast=false, set, Logs.Operation, ());
 };
@@ -25,12 +30,31 @@ let useSimulate = network => {
 
 /* Get list */
 
-let useGet = (~limit=?, ~types=?, ()) => {
-  let setOperations = StoreContext.useSetOperations();
-  let get = (~config, (network, account: Account.t)) => {
+let useGet = (~limit=?, ~types=?, address: option(string), ()) => {
+  let network = StoreContext.useNetwork();
+
+  let (request, setRequest) =
+    StoreContext.useOperationsRequestState(address);
+
+  let get = (~config, (network, address)) => {
     (network, config)
-    ->OperationsAPI.get(account.address, ~limit?, ~types?, ~mempool=true, ())
-    ->Future.tapOk(res => setOperations(_ => res));
+    ->OperationsAPI.get(address, ~limit?, ~types?, ~mempool=true, ());
   };
-  ApiRequest.useGetter(get, Logs.Operation);
+
+  let getRequest = ApiRequest.useStoreGetter(get, Logs.Operation, setRequest);
+
+  React.useEffect3(
+    () => {
+      address->Common.Lib.Option.iter(address =>
+        if (address != "" && request == NotAsked) {
+          getRequest((network, address));
+        }
+      );
+
+      None;
+    },
+    (network, request, address),
+  );
+
+  request;
 };
