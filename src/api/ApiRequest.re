@@ -59,7 +59,7 @@ let logOk = (r, addLog, origin, makeMsg) =>
     )
   });
 
-let useStoreLoader = (~get, ~kind, ~request, ~setRequest) => {
+let useLoader = (~get, ~kind, ~requestState as (request, setRequest)) => {
   let addLog = LogsContext.useAdd();
   let config = ConfigContext.useConfig();
 
@@ -77,9 +77,11 @@ let useStoreLoader = (~get, ~kind, ~request, ~setRequest) => {
     },
     (config, request, setRequest),
   );
+
+  request;
 };
 
-let useStoreLoader1 = (~get, ~kind, ~request, ~setRequest, arg1) => {
+let useLoader1 = (~get, ~kind, ~requestState as (request, setRequest), arg1) => {
   let addLog = LogsContext.useAdd();
   let config = ConfigContext.useConfig();
 
@@ -97,9 +99,12 @@ let useStoreLoader1 = (~get, ~kind, ~request, ~setRequest, arg1) => {
     },
     (config, arg1, request, setRequest),
   );
+
+  request;
 };
 
-let useStoreLoader2 = (~get, ~kind, ~request, ~setRequest, arg1, arg2) => {
+let useLoader2 =
+    (~get, ~kind, ~requestState as (request, setRequest), arg1, arg2) => {
   let addLog = LogsContext.useAdd();
   let config = ConfigContext.useConfig();
 
@@ -117,9 +122,11 @@ let useStoreLoader2 = (~get, ~kind, ~request, ~setRequest, arg1, arg2) => {
     },
     (config, arg1, arg2, request, setRequest),
   );
+
+  request;
 };
 
-let useStoreSetter = (~toast=true, ~sideEffect=?, ~set, ~kind, ()) => {
+let useSetter = (~toast=true, ~sideEffect=?, ~set, ~kind, ()) => {
   let addLog = LogsContext.useAdd();
   let (request, setRequest) = React.useState(_ => NotAsked);
   let config = ConfigContext.useConfig();
@@ -135,7 +142,7 @@ let useStoreSetter = (~toast=true, ~sideEffect=?, ~set, ~kind, ()) => {
   (request, sendRequest);
 };
 
-let useStoreGetter = (~toast=true, ~get, ~kind, ~setRequest, ()) => {
+let useGetter = (~toast=true, ~get, ~kind, ~setRequest, ()) => {
   let addLog = LogsContext.useAdd();
   let config = ConfigContext.useConfig();
 

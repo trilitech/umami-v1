@@ -3,54 +3,38 @@ module DelegateAPI = API.Delegate(API.TezosClient, API.TezosExplorer);
 
 /* Get delegate */
 
-let useLoad =
-    (~network, ~requestState as (request, setRequest), ~address: string) => {
+let useLoad = (~network, ~requestState, ~address: string) => {
   let get = (~config, network, address) =>
     DelegateAPI.getForAccount((network, config), address);
 
-  ApiRequest.useStoreLoader2(
+  ApiRequest.useLoader2(
     ~get,
     ~kind=Logs.Delegate,
-    ~request,
-    ~setRequest,
+    ~requestState,
     network,
     address,
   );
-
-  request;
 };
 
 /* Get delegate info */
 
-let useLoadInfo =
-    (~network, ~requestState as (request, setRequest), ~address: string) => {
+let useLoadInfo = (~network, ~requestState, ~address: string) => {
   let get = (~config, network, address) =>
     DelegateAPI.getDelegationInfoForAccount((network, config), address);
 
-  ApiRequest.useStoreLoader2(
+  ApiRequest.useLoader2(
     ~get,
     ~kind=Logs.Delegate,
-    ~request,
-    ~setRequest,
+    ~requestState,
     network,
     address,
   );
-
-  request;
 };
 
 /* Get Bakers */
 
-let useLoadBakers = (~network, ~requestState as (request, setRequest)) => {
+let useLoadBakers = (~network, ~requestState) => {
   let get = (~config as _c, network) => DelegateAPI.getBakers(network);
 
-  ApiRequest.useStoreLoader1(
-    ~get,
-    ~kind=Logs.Delegate,
-    ~request,
-    ~setRequest,
-    network,
-  );
-
-  request;
+  ApiRequest.useLoader1(~get, ~kind=Logs.Delegate, ~requestState, network);
 };

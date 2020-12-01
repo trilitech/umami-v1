@@ -12,7 +12,7 @@ let useCreate = (~sideEffect=?, ~network) => {
   let set = (~config, {operation, password}) =>
     (network, config)->OperationsAPI.inject(operation, ~password);
 
-  ApiRequest.useStoreSetter(
+  ApiRequest.useSetter(
     ~toast=false,
     ~set,
     ~kind=Logs.Operation,
@@ -26,7 +26,7 @@ let useCreate = (~sideEffect=?, ~network) => {
 let useSimulate = (~network) => {
   let set = (~config, operation) =>
     (network, config)->OperationsAPI.simulate(operation);
-  ApiRequest.useStoreSetter(~set, ~kind=Logs.Operation, ());
+  ApiRequest.useSetter(~set, ~kind=Logs.Operation, ());
 };
 
 /* Get list */
@@ -46,7 +46,7 @@ let useLoad =
   };
 
   let getRequest =
-    ApiRequest.useStoreGetter(~get, ~kind=Logs.Operation, ~setRequest, ());
+    ApiRequest.useGetter(~get, ~kind=Logs.Operation, ~setRequest, ());
 
   React.useEffect3(
     () => {

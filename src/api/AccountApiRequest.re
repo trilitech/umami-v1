@@ -4,7 +4,7 @@ module AccountsAPI = API.Accounts(API.TezosClient);
 
 /* Get */
 
-let useLoad = ((request, setRequest)) => {
+let useLoad = requestState => {
   let get = (~config) =>
     AccountsAPI.get(~config)
     ->Future.mapOk(response => {
@@ -17,18 +17,16 @@ let useLoad = ((request, setRequest)) => {
         ->Belt.Map.String.fromArray
       });
 
-  ApiRequest.useStoreLoader(~get, ~kind=Logs.Account, ~request, ~setRequest);
-
-  request;
+  ApiRequest.useLoader(~get, ~kind=Logs.Account, ~requestState);
 };
 
 /* Set */
 
 let useCreate =
-  ApiRequest.useStoreSetter(~set=AccountsAPI.create, ~kind=Logs.Account);
+  ApiRequest.useSetter(~set=AccountsAPI.create, ~kind=Logs.Account);
 
 let useDelete =
-  ApiRequest.useStoreSetter(~set=AccountsAPI.delete, ~kind=Logs.Account);
+  ApiRequest.useSetter(~set=AccountsAPI.delete, ~kind=Logs.Account);
 
 type createInput = {
   name: string,
@@ -37,7 +35,7 @@ type createInput = {
 };
 
 let useCreateWithMnemonics =
-  ApiRequest.useStoreSetter(
+  ApiRequest.useSetter(
     ~set=
       (~config, {name, mnemonics, password}) =>
         AccountsAPI.addWithMnemonic(~config, name, mnemonics, ~password),

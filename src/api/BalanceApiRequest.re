@@ -9,7 +9,7 @@ let useLoad =
   };
 
   let getRequest =
-    ApiRequest.useStoreGetter(~get, ~kind=Logs.Balance, ~setRequest, ());
+    ApiRequest.useGetter(~get, ~kind=Logs.Balance, ~setRequest, ());
 
   React.useEffect3(
     () => {
