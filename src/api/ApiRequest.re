@@ -122,7 +122,7 @@ let useLoader2 = (get, kind, arg1, arg2) => {
   request;
 };
 
-let useStoreLoader = (get, kind, request, setRequest) => {
+let useStoreLoader = (~get, ~kind, ~request, ~setRequest) => {
   let addLog = LogsContext.useAdd();
   let config = ConfigContext.useConfig();
 
@@ -142,7 +142,7 @@ let useStoreLoader = (get, kind, request, setRequest) => {
   );
 };
 
-let useStoreLoader1 = (get, kind, request, setRequest, arg1) => {
+let useStoreLoader1 = (~get, ~kind, ~request, ~setRequest, arg1) => {
   let addLog = LogsContext.useAdd();
   let config = ConfigContext.useConfig();
 
@@ -162,7 +162,7 @@ let useStoreLoader1 = (get, kind, request, setRequest, arg1) => {
   );
 };
 
-let useStoreLoader2 = (get, kind, request, setRequest, arg1, arg2) => {
+let useStoreLoader2 = (~get, ~kind, ~request, ~setRequest, arg1, arg2) => {
   let addLog = LogsContext.useAdd();
   let config = ConfigContext.useConfig();
 
@@ -198,22 +198,23 @@ let useSetter = (~toast=true, ~sideEffect=?, set, kind, ()) => {
   (request, sendRequest);
 };
 
-let useGetter = (~toast=true, get, kind) => {
+let useStoreSetter = (~toast=true, ~sideEffect=?, ~set, ~kind, ()) => {
   let addLog = LogsContext.useAdd();
-  let (request, setRequest) = React.useState(_ => Loading);
+  let (request, setRequest) = React.useState(_ => NotAsked);
   let config = ConfigContext.useConfig();
 
-  let get = (~loading=true, input) => {
-    loading ? setRequest(_ => Loading) : ();
-    get(~config, input)
+  let sendRequest = input => {
+    setRequest(_ => Loading);
+    set(~config, input)
     ->logError(addLog(toast), kind)
-    ->Future.get(result => setRequest(_ => {Done(result)}));
+    ->Future.tap(result => {setRequest(_ => Done(result))})
+    ->Future.tapOk(sideEffect->Belt.Option.getWithDefault(_ => ()));
   };
 
-  (get, request);
+  (request, sendRequest);
 };
 
-let useStoreGetter = (~toast=true, get, kind, setRequest) => {
+let useStoreGetter = (~toast=true, ~get, ~kind, ~setRequest, ()) => {
   let addLog = LogsContext.useAdd();
   let config = ConfigContext.useConfig();
 

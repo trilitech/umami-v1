@@ -16,24 +16,22 @@ let useLoad = ((request, setRequest)) => {
         ->Belt.Map.String.fromArray
       });
 
-  ApiRequest.useStoreLoader(get, Logs.Aliases, request, setRequest);
+  ApiRequest.useStoreLoader(~get, ~kind=Logs.Aliases, ~request, ~setRequest);
 
   request;
 };
 
 /* Create */
 
-let useCreate = (~sideEffect=?, ()) => {
-  ApiRequest.useSetter(
-    (~config, (alias, address)) => AliasesAPI.add(~config, alias, address),
-    Logs.Aliases,
-    ~sideEffect?,
-    (),
+let useCreate =
+  ApiRequest.useStoreSetter(
+    ~set=
+      (~config, (alias, address)) =>
+        AliasesAPI.add(~config, alias, address),
+    ~kind=Logs.Aliases,
   );
-};
 
 /* Delete */
 
-let useDelete = (~sideEffect=?, ()) => {
-  ApiRequest.useSetter(AliasesAPI.delete, Logs.Aliases, ~sideEffect?, ());
-};
+let useDelete =
+  ApiRequest.useStoreSetter(~set=AliasesAPI.delete, ~kind=Logs.Aliases);

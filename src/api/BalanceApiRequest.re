@@ -12,14 +12,14 @@ let useLoad = (address: string) => {
     (network, config)->BalanceAPI.get(address, ());
   };
 
-  let getRequest = ApiRequest.useStoreGetter(get, Logs.Balance, setRequest);
+  let getRequest =
+    ApiRequest.useStoreGetter(~get, ~kind=Logs.Balance, ~setRequest, ());
 
   React.useEffect3(
     () => {
       if (address != "" && request == NotAsked) {
         getRequest((network, address));
       };
-
       None;
     },
     (network, request, address),

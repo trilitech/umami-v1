@@ -17,20 +17,18 @@ let useLoad = ((request, setRequest)) => {
         ->Belt.Map.String.fromArray
       });
 
-  ApiRequest.useStoreLoader(get, Logs.Account, request, setRequest);
+  ApiRequest.useStoreLoader(~get, ~kind=Logs.Account, ~request, ~setRequest);
 
   request;
 };
 
 /* Set */
 
-let useCreate = (~sideEffect=?, ()) => {
-  ApiRequest.useSetter(AccountsAPI.create, Logs.Account, ~sideEffect?, ());
-};
+let useCreate =
+  ApiRequest.useStoreSetter(~set=AccountsAPI.create, ~kind=Logs.Account);
 
-let useDelete = (~sideEffect=?, ()) => {
-  ApiRequest.useSetter(AccountsAPI.delete, Logs.Account, ~sideEffect?, ());
-};
+let useDelete =
+  ApiRequest.useStoreSetter(~set=AccountsAPI.delete, ~kind=Logs.Account);
 
 type createInput = {
   name: string,
@@ -38,12 +36,10 @@ type createInput = {
   password: string,
 };
 
-let useCreateWithMnemonics = (~sideEffect=?, ()) => {
-  ApiRequest.useSetter(
-    (~config, {name, mnemonics, password}) =>
-      AccountsAPI.addWithMnemonic(~config, name, mnemonics, ~password),
-    Logs.Account,
-    ~sideEffect?,
-    (),
+let useCreateWithMnemonics =
+  ApiRequest.useStoreSetter(
+    ~set=
+      (~config, {name, mnemonics, password}) =>
+        AccountsAPI.addWithMnemonic(~config, name, mnemonics, ~password),
+    ~kind=Logs.Account,
   );
-};

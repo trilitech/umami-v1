@@ -9,12 +9,14 @@ let useGetDelegate = (account: Account.t) => {
   let (request, setRequest) =
     StoreContext.useDelegateRequestState(Some(account.address));
 
+  let get = (~config, network, address) =>
+    DelegateAPI.getForAccount((network, config), address);
+
   ApiRequest.useStoreLoader2(
-    (~config, network, address) =>
-      DelegateAPI.getForAccount((network, config), address),
-    Logs.Delegate,
-    request,
-    setRequest,
+    ~get,
+    ~kind=Logs.Delegate,
+    ~request,
+    ~setRequest,
     network,
     account.address,
   );

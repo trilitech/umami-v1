@@ -45,7 +45,8 @@ let useGet = (~limit=?, ~types=?, address: option(string), ()) => {
     ->OperationsAPI.get(address, ~limit?, ~types?, ~mempool=true, ());
   };
 
-  let getRequest = ApiRequest.useStoreGetter(get, Logs.Operation, setRequest);
+  let getRequest =
+    ApiRequest.useStoreGetter(~get, ~kind=Logs.Operation, ~setRequest, ());
 
   React.useEffect3(
     () => {
