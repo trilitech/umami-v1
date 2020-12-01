@@ -10,7 +10,17 @@ let useLoad = ApiRequest.useLoader(AccountsAPI.get, Logs.Account);
 let useCreate = ApiRequest.useSetter(AccountsAPI.create, Logs.Account);
 
 let useGet = () => {
-  let get = (~config, ()) => AccountsAPI.get(~config)->Future.tapOk(_ => ());
+  let get = (~config, ()) =>
+    AccountsAPI.get(~config)
+    ->Future.mapOk(response => {
+        response
+        ->Belt.Array.map(((alias, address)) => {
+            let account: Account.t = {alias, address};
+            (address, account);
+          })
+        ->Belt.Array.reverse
+        ->Belt.Map.String.fromArray
+      });
 
   ApiRequest.useGetter(get, Logs.Account);
 };

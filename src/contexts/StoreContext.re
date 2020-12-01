@@ -3,13 +3,13 @@ open Common;
 
 type reactState('state) = ('state, ('state => 'state) => unit);
 type apiRequestsState('requestResponse) =
-  reactState(Belt.Map.String.t(ApiRequest.t('requestResponse)));
+  reactState(Map.String.t(ApiRequest.t('requestResponse)));
 
 type state = {
   network: Network.t,
   selectedAccountState: reactState(option(string)),
   refreshAccounts: (~loading: bool=?, unit) => unit,
-  accountsRequest: ApiRequest.t(array((string, string))),
+  accountsRequest: ApiRequest.t(Map.String.t(Account.t)),
   balanceRequestsState: apiRequestsState(string),
   delegateRequestsState: apiRequestsState(option(string)),
   operations: array(Operation.t),
@@ -20,7 +20,7 @@ type state = {
 
 // Context and Provider
 
-let initialApiRequestsState = (Belt.Map.String.empty, _ => ());
+let initialApiRequestsState = (Map.String.empty, _ => ());
 
 let initialState = {
   network: Network.Test,
@@ -57,8 +57,8 @@ let make = (~children) => {
 
   let (getAccounts, accountsRequest) = AccountApiRequest.useGet();
 
-  let balanceRequestsState = React.useState(() => Belt.Map.String.empty);
-  let delegateRequestsState = React.useState(() => Belt.Map.String.empty);
+  let balanceRequestsState = React.useState(() => Map.String.empty);
+  let delegateRequestsState = React.useState(() => Map.String.empty);
 
   React.useEffect0(() => {
     getAccounts()->ignore;
@@ -70,13 +70,13 @@ let make = (~children) => {
 
   React.useEffect2(
     () => {
-      if (selectedAccount->Belt.Option.isNone) {
+      if (selectedAccount->Option.isNone) {
         accountsRequest
-        ->ApiRequest.getOkWithDefault([||])
-        ->Belt.Array.reverse
-        ->Belt.Array.get(0)
-        ->Lib.Option.iter(((_alias, address)) =>
-            setSelectedAccount(_ => Some(address))
+        ->ApiRequest.getOkWithDefault(Map.String.empty)
+        ->Map.String.valuesToArray
+        ->Array.get(0)
+        ->Lib.Option.iter((account: Account.t) =>
+            setSelectedAccount(_ => Some(account.address))
           );
       };
       None;
@@ -123,14 +123,7 @@ let useAccountsRequest = () => {
 let useAccounts = () => {
   let accountsRequest = useAccountsRequest();
 
-  accountsRequest
-  ->ApiRequest.getOkWithDefault([||])
-  ->Belt.Array.map(((alias, address)) => {
-      let account: Account.t = {alias, address};
-      (address, account);
-    })
-  ->Belt.Array.reverse
-  ->Belt.Map.String.fromArray;
+  accountsRequest->ApiRequest.getOkWithDefault(Map.String.empty);
 };
 
 let useAccount = () => {
@@ -139,7 +132,7 @@ let useAccount = () => {
 
   switch (store.selectedAccountState, accounts) {
   | ((Some(selectedAccount), _), accounts) =>
-    accounts->Belt.Map.String.get(selectedAccount)
+    accounts->Map.String.get(selectedAccount)
   | _ => None
   };
 };
@@ -158,7 +151,7 @@ let useRefreshAccounts = () => {
 
 let useAccountFromAddress = address => {
   let accounts = useAccounts();
-  accounts->Belt.Map.String.get(address);
+  accounts->Map.String.get(address);
 };
 
 // Utils
@@ -180,7 +173,7 @@ let useRequestsState = (getRequestsState, key) => {
     React.useCallback1(
       newRequestSetter =>
         setRequests(request =>
-          request->Belt.Map.String.update(key, oldRequest =>
+          request->Map.String.update(key, oldRequest =>
             Some(newRequestSetter(oldRequest))
           )
         ),
@@ -216,17 +209,17 @@ let useAccountsWithDelegates = () => {
   let accounts = useAccounts();
   let delegates = useDelegates();
 
-  accounts->Belt.Map.String.map(account => {
-    let delegate = delegates->Belt.Map.String.get(account.address);
+  accounts->Map.String.map(account => {
+    let delegate = delegates->Map.String.get(account.address);
     (account, delegate);
   });
 };
 
 let getAlias = (accounts, address) => {
   accounts
-  ->Belt.Map.String.get(address)
-  ->Belt.Option.map((acc: Account.t) => acc.alias)
-  ->Belt.Option.getWithDefault(address);
+  ->Map.String.get(address)
+  ->Option.map((acc: Account.t) => acc.alias)
+  ->Option.getWithDefault(address);
 };
 
 let useSetOperations = () => {
