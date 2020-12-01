@@ -55,8 +55,7 @@ let make = (~label, ~value: string, ~handleChange, ~error) => {
   let accounts =
     aliasesRequest
     ->ApiRequest.getDoneOk
-    ->Option.getWithDefault([||])
-    ->Array.map(((alias, address)) => {Account.{alias, address}});
+    ->Option.mapWithDefault([||], Map.String.valuesToArray);
 
   let items =
     accounts->Belt.Array.keep(account =>

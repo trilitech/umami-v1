@@ -13,8 +13,7 @@ type state = {
   balanceRequestsState: apiRequestsState(string),
   delegateRequestsState: apiRequestsState(option(string)),
   operationsRequestsState: apiRequestsState(array(Operation.t)),
-  aliases: array((string, string)),
-  setAliases: (array((string, string)) => array((string, string))) => unit,
+  aliasesRequestState: reactState(ApiRequest.t(Map.String.t(Account.t))),
 };
 
 // Context and Provider
@@ -29,8 +28,7 @@ let initialState = {
   balanceRequestsState: initialApiRequestsState,
   delegateRequestsState: initialApiRequestsState,
   operationsRequestsState: initialApiRequestsState,
-  aliases: [||],
-  setAliases: _ => (),
+  aliasesRequestState: (NotAsked, _ => ()),
 };
 
 let context = React.createContext(initialState);
@@ -59,6 +57,8 @@ let make = (~children) => {
   let delegateRequestsState = React.useState(() => Map.String.empty);
   let operationsRequestsState = React.useState(() => Map.String.empty);
 
+  let aliasesRequestState = React.useState(() => ApiRequest.NotAsked);
+
   React.useEffect0(() => {
     getAccounts()->ignore;
     None;
@@ -83,8 +83,6 @@ let make = (~children) => {
     (accountsRequest, selectedAccount),
   );
 
-  let (aliases, setAliases) = React.useState(() => [||]);
-
   <Provider
     value={
       network,
@@ -94,8 +92,7 @@ let make = (~children) => {
       balanceRequestsState,
       delegateRequestsState,
       operationsRequestsState,
-      aliases,
-      setAliases,
+      aliasesRequestState,
     }>
     children
   </Provider>;
@@ -194,11 +191,6 @@ let useBalanceRequestState =
 let useDelegateRequestState =
   useRequestsState(store => store.delegateRequestsState);
 
-// Operations
-
-let useOperationsRequestState =
-  useRequestsState(store => store.operationsRequestsState);
-
 let useDelegates = () => {
   let store = useStoreContext();
   let (delegateRequests, _) = store.delegateRequestsState;
@@ -221,12 +213,10 @@ let useAccountsWithDelegates = () => {
   });
 };
 
-let getAlias = (accounts, address) => {
-  accounts
-  ->Map.String.get(address)
-  ->Option.map((acc: Account.t) => acc.alias)
-  ->Option.getWithDefault(address);
-};
+// Operations
+
+let useOperationsRequestState =
+  useRequestsState(store => store.operationsRequestsState);
 
 let useResetOperations = () => {
   let store = useStoreContext();
@@ -234,12 +224,21 @@ let useResetOperations = () => {
   () => setOperationsRequests(_ => Map.String.empty);
 };
 
-let useSetAliases = () => {
+// Alias
+
+let useAliasesRequestState = () => {
   let store = useStoreContext();
-  store.setAliases;
+  store.aliasesRequestState;
 };
 
-let useAliases = () => {
-  let store = useStoreContext();
-  store.aliases;
+let useResetAliases = () => {
+  let (_, setAliasesRequests) = useAliasesRequestState();
+  () => setAliasesRequests(_ => NotAsked);
+};
+
+let getAlias = (accounts, address) => {
+  accounts
+  ->Map.String.get(address)
+  ->Option.map((acc: Account.t) => acc.alias)
+  ->Option.getWithDefault(address);
 };

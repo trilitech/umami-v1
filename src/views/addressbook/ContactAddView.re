@@ -30,7 +30,7 @@ let styles =
   );
 
 [@react.component]
-let make = (~cancel, ~handleAdd) => {
+let make = (~cancel) => {
   let (aliasRequest, createAlias) = AliasApiRequest.useCreate();
   let addToast = LogsContext.useToast();
 
@@ -45,7 +45,6 @@ let make = (~cancel, ~handleAdd) => {
         ({state}) => {
           cancel();
           createAlias((state.values.name, state.values.address))
-          ->Future.tapOk(_ => handleAdd())
           ->ApiRequest.logOk(addToast, Logs.Account, _ =>
               I18n.t#account_created
             )
