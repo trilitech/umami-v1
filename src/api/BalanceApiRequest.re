@@ -2,12 +2,8 @@ module BalanceAPI = API.Balance(API.TezosClient);
 
 type balanceApiRequest = ApiRequest.t(string);
 
-let useLoad = (address: string) => {
-  let network = StoreContext.useNetwork();
-
-  let (request, setRequest) =
-    StoreContext.useBalanceRequestState(Some(address));
-
+let useLoad =
+    (~network, ~requestState as (request, setRequest), ~address: string) => {
   let get = (~config, (network, address)) => {
     (network, config)->BalanceAPI.get(address, ());
   };
@@ -17,7 +13,7 @@ let useLoad = (address: string) => {
 
   React.useEffect3(
     () => {
-      if (address != "" && request == NotAsked) {
+      if (address != "" && request == ApiRequest.NotAsked) {
         getRequest((network, address));
       };
       None;

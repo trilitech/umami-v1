@@ -27,7 +27,7 @@ let make = (~label, ~value: string, ~handleChange, ~error, ~disabled) => {
         Js.String.localeCompare(a.label, b.label)->int_of_float
       );
 
-  let balanceRequest = BalanceApiRequest.useLoad(value);
+  let balanceRequest = StoreContext.useLoadBalance(value);
 
   React.useEffect2(
     () => {

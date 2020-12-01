@@ -8,38 +8,38 @@ type injection = {
   password: string,
 };
 
-let useCreate = () => {
-  let network = StoreContext.useNetwork();
-  let resetOperations = StoreContext.useResetOperations();
-
+let useCreate = (~sideEffect=?, ~network) => {
   let set = (~config, {operation, password}) =>
     (network, config)->OperationsAPI.inject(operation, ~password);
 
-  ApiRequest.useSetter(
+  ApiRequest.useStoreSetter(
     ~toast=false,
-    set,
-    Logs.Operation,
-    ~sideEffect=_ => resetOperations(),
+    ~set,
+    ~kind=Logs.Operation,
+    ~sideEffect?,
     (),
   );
 };
 
 /* Simulate */
 
-let useSimulate = network => {
+let useSimulate = (~network) => {
   let set = (~config, operation) =>
     (network, config)->OperationsAPI.simulate(operation);
-  ApiRequest.useSetter(set, Logs.Operation, ());
+  ApiRequest.useStoreSetter(~set, ~kind=Logs.Operation, ());
 };
 
 /* Get list */
 
-let useGet = (~limit=?, ~types=?, address: option(string), ()) => {
-  let network = StoreContext.useNetwork();
-
-  let (request, setRequest) =
-    StoreContext.useOperationsRequestState(address);
-
+let useLoad =
+    (
+      ~network,
+      ~requestState as (request, setRequest),
+      ~limit=?,
+      ~types=?,
+      ~address: option(string),
+      (),
+    ) => {
   let get = (~config, (network, address)) => {
     (network, config)
     ->OperationsAPI.get(address, ~limit?, ~types?, ~mempool=true, ());

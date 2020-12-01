@@ -27,7 +27,7 @@ let make = (~label, ~value: string, ~handleChange, ~error) => {
 
   let (currentAccount, setCurrent) = React.useState(() => value);
 
-  let balanceRequest = BalanceApiRequest.useLoad(currentAccount);
+  let balanceRequest = StoreContext.useLoadBalance(currentAccount);
 
   <FormGroup style=styles##formGroup>
     <FormLabel label hasError style=styles##label />

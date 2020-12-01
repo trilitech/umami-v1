@@ -17,9 +17,8 @@ let xtzDecoration = (~style) =>
 
 [@react.component]
 let make = (~form: DelegateForm.api) => {
-  let network = StoreContext.useNetwork();
   let (operationSimulateRequest, sendOperationSimulate) =
-    OperationApiRequest.useSimulate(network);
+    StoreContext.useSimulateOperation();
 
   React.useEffect0(() => {
     if (form.values.sender != "" && form.values.baker != "") {

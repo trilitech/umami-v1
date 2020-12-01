@@ -37,8 +37,8 @@ let styles =
 
 [@react.component]
 let make = (~account: Account.t, ~zIndex) => {
-  let balanceRequest = BalanceApiRequest.useLoad(account.address);
-  let delegateRequest = DelegateApiRequest.useGetDelegate(account);
+  let balanceRequest = StoreContext.useLoadBalance(account.address);
+  let delegateRequest = StoreContext.useLoadDelegate(account.address);
   let addToast = LogsContext.useToast();
 
   <RowItem.Bordered height=74. style={Style.style(~zIndex, ())}>

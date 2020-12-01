@@ -69,8 +69,8 @@ let memo = component =>
 let make =
   memo((~account: Account.t, ~zIndex) => {
     let aliases = StoreContext.useAliases();
-    let balanceRequest = BalanceApiRequest.useLoad(account.address);
-    let delegateRequest = DelegateApiRequest.useGetDelegate(account);
+    let balanceRequest = StoreContext.useLoadBalance(account.address);
+    let delegateRequest = StoreContext.useLoadDelegate(account.address);
     let delegateInfoRequest = DelegateApiRequest.useGetDelegateInfo(account);
 
     switch (delegateRequest) {

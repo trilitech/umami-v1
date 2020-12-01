@@ -41,8 +41,8 @@ let make = () => {
   let account = StoreContext.useAccount();
 
   let operationsRequest =
-    OperationApiRequest.useGet(
-      account->Belt.Option.map(account => account.address),
+    StoreContext.useLoadOperations(
+      ~address=account->Belt.Option.map(account => account.address),
       (),
     );
 

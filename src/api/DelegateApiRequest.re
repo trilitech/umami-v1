@@ -3,12 +3,8 @@ module DelegateAPI = API.Delegate(API.TezosClient, API.TezosExplorer);
 
 /* Get delegate */
 
-let useGetDelegate = (account: Account.t) => {
-  let network = StoreContext.useNetwork();
-
-  let (request, setRequest) =
-    StoreContext.useDelegateRequestState(Some(account.address));
-
+let useLoad =
+    (~network, ~requestState as (request, setRequest), ~address: string) => {
   let get = (~config, network, address) =>
     DelegateAPI.getForAccount((network, config), address);
 
@@ -18,7 +14,7 @@ let useGetDelegate = (account: Account.t) => {
     ~request,
     ~setRequest,
     network,
-    account.address,
+    address,
   );
 
   request;
@@ -27,7 +23,7 @@ let useGetDelegate = (account: Account.t) => {
 /* Get delegate info */
 
 let useGetDelegateInfo = (account: Account.t) => {
-  let network = StoreContext.useNetwork();
+  let network = Network.Test; //StoreContext.useNetwork();
 
   ApiRequest.useLoader2(
     (~config, network, address) =>
@@ -41,7 +37,7 @@ let useGetDelegateInfo = (account: Account.t) => {
 /* Get Bakers */
 
 let useGetBakers = () => {
-  let network = StoreContext.useNetwork();
+  let network = Network.Test; //StoreContext.useNetwork();
 
   ApiRequest.useLoader1(
     (~config as _c, network) => DelegateAPI.getBakers(network),

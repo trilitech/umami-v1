@@ -202,10 +202,24 @@ let useRequestsState = (getRequestsState, key: option(string)) => {
 let useBalanceRequestState =
   useRequestsState(store => store.balanceRequestsState);
 
+let useLoadBalance = (address: string) => {
+  let network = useNetwork();
+  let requestState = useBalanceRequestState(Some(address));
+
+  BalanceApiRequest.useLoad(~network, ~requestState, ~address);
+};
+
 // Delegates
 
 let useDelegateRequestState =
   useRequestsState(store => store.delegateRequestsState);
+
+let useLoadDelegate = (address: string) => {
+  let network = useNetwork();
+  let requestState = useDelegateRequestState(Some(address));
+
+  DelegateApiRequest.useLoad(~network, ~requestState, ~address);
+};
 
 let useDelegates = () => {
   let store = useStoreContext();
@@ -234,10 +248,35 @@ let useAccountsWithDelegates = () => {
 let useOperationsRequestState =
   useRequestsState(store => store.operationsRequestsState);
 
+let useLoadOperations = (~limit=?, ~types=?, ~address: option(string), ()) => {
+  let network = useNetwork();
+  let requestState = useOperationsRequestState(address);
+
+  OperationApiRequest.useLoad(
+    ~network,
+    ~requestState,
+    ~limit?,
+    ~types?,
+    ~address,
+    (),
+  );
+};
+
 let useResetOperations = () => {
   let store = useStoreContext();
   let (_, setOperationsRequests) = store.operationsRequestsState;
   () => setOperationsRequests(_ => Map.String.empty);
+};
+
+let useCreateOperation = () => {
+  let network = useNetwork();
+  let resetOperations = useResetOperations();
+  OperationApiRequest.useCreate(~sideEffect=_ => resetOperations(), ~network);
+};
+
+let useSimulateOperation = () => {
+  let network = useNetwork();
+  OperationApiRequest.useSimulate(~network);
 };
 
 // Alias
