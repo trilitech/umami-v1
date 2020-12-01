@@ -7,12 +7,11 @@ type apiRequestsState('requestResponse) =
 
 type state = {
   network: Network.t,
-  selectedAccount: option(string),
+  selectedAccountState: reactState(option(string)),
   refreshAccounts: (~loading: bool=?, unit) => unit,
   accountsRequest: ApiRequest.t(array((string, string))),
   balanceRequestsState: apiRequestsState(string),
   delegateRequestsState: apiRequestsState(option(string)),
-  updateAccount: string => unit,
   operations: array(Operation.t),
   setOperations: (array(Operation.t) => array(Operation.t)) => unit,
   aliases: array((string, string)),
@@ -25,12 +24,11 @@ let initialApiRequestsState = (Belt.Map.String.empty, _ => ());
 
 let initialState = {
   network: Network.Test,
-  selectedAccount: None,
+  selectedAccountState: (None, _ => ()),
   refreshAccounts: (~loading as _=?, ()) => (),
   accountsRequest: NotAsked,
   balanceRequestsState: initialApiRequestsState,
   delegateRequestsState: initialApiRequestsState,
-  updateAccount: _ => (),
   operations: [||],
   setOperations: _ => (),
   aliases: [||],
@@ -53,9 +51,10 @@ module Provider = {
 [@react.component]
 let make = (~children) => {
   let (network, _setNetwork) = React.useState(() => Network.Test);
-  let (selectedAccount, setSelectedAccount) = React.useState(() => None);
 
-  let updateAccount = newAccount => setSelectedAccount(_ => Some(newAccount));
+  let selectedAccountState = React.useState(() => None);
+  let (selectedAccount, setSelectedAccount) = selectedAccountState;
+
   let (getAccounts, accountsRequest) = AccountApiRequest.useGet();
 
   let balanceRequestsState = React.useState(() => Belt.Map.String.empty);
@@ -91,12 +90,11 @@ let make = (~children) => {
   <Provider
     value={
       network,
-      selectedAccount,
+      selectedAccountState,
       refreshAccounts,
       accountsRequest,
       balanceRequestsState,
       delegateRequestsState,
-      updateAccount,
       operations,
       setOperations,
       aliases,
@@ -139,8 +137,8 @@ let useAccount = () => {
   let store = useStoreContext();
   let accounts = useAccounts();
 
-  switch (store.selectedAccount, accounts) {
-  | (Some(selectedAccount), accounts) =>
+  switch (store.selectedAccountState, accounts) {
+  | ((Some(selectedAccount), _), accounts) =>
     accounts->Belt.Map.String.get(selectedAccount)
   | _ => None
   };
@@ -148,7 +146,9 @@ let useAccount = () => {
 
 let useUpdateAccount = () => {
   let store = useStoreContext();
-  store.updateAccount;
+  let (_, setSelectedAccount) = store.selectedAccountState;
+
+  newAccount => setSelectedAccount(_ => Some(newAccount));
 };
 
 let useRefreshAccounts = () => {
@@ -178,9 +178,11 @@ let useRequestsState = (getRequestsState, key) => {
 
   let setRequest =
     React.useCallback1(
-      newRequest =>
+      newRequestSetter =>
         setRequests(request =>
-          request->Belt.Map.String.update(key, _ => Some(newRequest))
+          request->Belt.Map.String.update(key, oldRequest =>
+            Some(newRequestSetter(oldRequest))
+          )
         ),
       [|setRequests|],
     );

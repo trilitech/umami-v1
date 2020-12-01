@@ -129,11 +129,11 @@ let useStoreLoader2 = (get, kind, request, setRequest, arg1, arg2) => {
   React.useEffect5(
     () => {
       if (request == NotAsked) {
-        setRequest(Loading);
+        setRequest(_ => Loading);
 
         get(~config, arg1, arg2)
         ->logError(addLog(true), kind)
-        ->Future.get(result => setRequest(Done(result)));
+        ->Future.get(result => setRequest(_ => Done(result)));
       };
 
       None;
@@ -177,16 +177,10 @@ let useStoreGetter = (~toast=true, get, kind, setRequest) => {
   let config = ConfigContext.useConfig();
 
   let get = (~loading=true, input) => {
-    loading ? setRequest(Loading) : ();
+    loading ? setRequest(_ => Loading) : ();
     get(~config, input)
     ->logError(addLog(toast), kind)
-    ->Future.get(result =>
-        setRequest(
-          {
-            Done(result);
-          },
-        )
-      );
+    ->Future.get(result => setRequest(_ => Done(result)));
   };
 
   get;
