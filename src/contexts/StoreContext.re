@@ -11,8 +11,11 @@ type state = {
   accountsRequestState: reactState(ApiRequest.t(Map.String.t(Account.t))),
   balanceRequestsState: apiRequestsState(string),
   delegateRequestsState: apiRequestsState(option(string)),
+  delegateInfoRequestsState:
+    apiRequestsState(DelegateApiRequest.DelegateAPI.delegationInfo),
   operationsRequestsState: apiRequestsState(array(Operation.t)),
   aliasesRequestState: reactState(ApiRequest.t(Map.String.t(Account.t))),
+  bakersRequestState: reactState(ApiRequest.t(array(Delegate.t))),
 };
 
 // Context and Provider
@@ -25,8 +28,10 @@ let initialState = {
   accountsRequestState: (NotAsked, _ => ()),
   balanceRequestsState: initialApiRequestsState,
   delegateRequestsState: initialApiRequestsState,
+  delegateInfoRequestsState: initialApiRequestsState,
   operationsRequestsState: initialApiRequestsState,
   aliasesRequestState: (NotAsked, _ => ()),
+  bakersRequestState: (NotAsked, _ => ()),
 };
 
 let context = React.createContext(initialState);
@@ -54,9 +59,11 @@ let make = (~children) => {
 
   let balanceRequestsState = React.useState(() => Map.String.empty);
   let delegateRequestsState = React.useState(() => Map.String.empty);
+  let delegateInfoRequestsState = React.useState(() => Map.String.empty);
   let operationsRequestsState = React.useState(() => Map.String.empty);
 
   let aliasesRequestState = React.useState(() => ApiRequest.NotAsked);
+  let bakersRequestState = React.useState(() => ApiRequest.NotAsked);
 
   AccountApiRequest.useLoad(accountsRequestState)->ignore;
   AliasApiRequest.useLoad(aliasesRequestState)->ignore;
@@ -85,8 +92,10 @@ let make = (~children) => {
       accountsRequestState,
       balanceRequestsState,
       delegateRequestsState,
+      delegateInfoRequestsState,
       operationsRequestsState,
       aliasesRequestState,
+      bakersRequestState,
     }>
     children
   </Provider>;
@@ -241,6 +250,32 @@ let useAccountsWithDelegates = () => {
     let delegate = delegates->Map.String.get(account.address);
     (account, delegate);
   });
+};
+
+// Delegates info
+
+let useDelegateInfoRequestState =
+  useRequestsState(store => store.delegateInfoRequestsState);
+
+let useLoadDelegateInfo = (address: string) => {
+  let network = useNetwork();
+  let requestState = useDelegateInfoRequestState(Some(address));
+
+  DelegateApiRequest.useLoadInfo(~network, ~requestState, ~address);
+};
+
+// Bakers
+
+let useBakersRequestState = () => {
+  let store = useStoreContext();
+  store.bakersRequestState;
+};
+
+let useLoadBakers = () => {
+  let network = useNetwork();
+  let requestState = useBakersRequestState();
+
+  DelegateApiRequest.useLoadBakers(~network, ~requestState);
 };
 
 // Operations

@@ -90,7 +90,7 @@ let styles =
 
 [@react.component]
 let make = (~label, ~value: string, ~handleChange, ~error) => {
-  let bakersRequest = DelegateApiRequest.useGetBakers();
+  let bakersRequest = StoreContext.useLoadBakers();
 
   let hasError = error->Option.isSome;
 

@@ -22,26 +22,35 @@ let useLoad =
 
 /* Get delegate info */
 
-let useGetDelegateInfo = (account: Account.t) => {
-  let network = Network.Test; //StoreContext.useNetwork();
+let useLoadInfo =
+    (~network, ~requestState as (request, setRequest), ~address: string) => {
+  let get = (~config, network, address) =>
+    DelegateAPI.getDelegationInfoForAccount((network, config), address);
 
-  ApiRequest.useLoader2(
-    (~config, network, address) =>
-      DelegateAPI.getDelegationInfoForAccount((network, config), address),
-    Logs.Delegate,
+  ApiRequest.useStoreLoader2(
+    ~get,
+    ~kind=Logs.Delegate,
+    ~request,
+    ~setRequest,
     network,
-    account.address,
+    address,
   );
+
+  request;
 };
 
 /* Get Bakers */
 
-let useGetBakers = () => {
-  let network = Network.Test; //StoreContext.useNetwork();
+let useLoadBakers = (~network, ~requestState as (request, setRequest)) => {
+  let get = (~config as _c, network) => DelegateAPI.getBakers(network);
 
-  ApiRequest.useLoader1(
-    (~config as _c, network) => DelegateAPI.getBakers(network),
-    Logs.Delegate,
+  ApiRequest.useStoreLoader1(
+    ~get,
+    ~kind=Logs.Delegate,
+    ~request,
+    ~setRequest,
     network,
   );
+
+  request;
 };

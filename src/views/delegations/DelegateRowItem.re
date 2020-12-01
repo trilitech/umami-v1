@@ -71,7 +71,8 @@ let make =
     let aliases = StoreContext.useAliases();
     let balanceRequest = StoreContext.useLoadBalance(account.address);
     let delegateRequest = StoreContext.useLoadDelegate(account.address);
-    let delegateInfoRequest = DelegateApiRequest.useGetDelegateInfo(account);
+    let delegateInfoRequest =
+      StoreContext.useLoadDelegateInfo(account.address);
 
     switch (delegateRequest) {
     | Done(Ok(Some(delegate))) =>

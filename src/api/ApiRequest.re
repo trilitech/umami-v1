@@ -59,69 +59,6 @@ let logOk = (r, addLog, origin, makeMsg) =>
     )
   });
 
-let useLoader = (get, kind, ()) => {
-  let (request, setRequest) = React.useState(_ => NotAsked);
-  let addToast = LogsContext.useToast();
-  let config = ConfigContext.useConfig();
-
-  React.useEffect1(
-    () => {
-      setRequest(_ => Loading);
-
-      get(~config)
-      ->logError(addToast, kind)
-      ->Future.get(result => setRequest(_ => Done(result)));
-
-      None;
-    },
-    [|setRequest|],
-  );
-
-  request;
-};
-
-let useLoader1 = (get, kind, arg1) => {
-  let addToast = LogsContext.useToast();
-  let (request, setRequest) = React.useState(_ => NotAsked);
-  let config = ConfigContext.useConfig();
-
-  React.useEffect3(
-    () => {
-      setRequest(_ => Loading);
-
-      get(~config, arg1)
-      ->logError(addToast, kind)
-      ->Future.get(result => setRequest(_ => Done(result)));
-
-      None;
-    },
-    (config, arg1, setRequest),
-  );
-
-  request;
-};
-
-let useLoader2 = (get, kind, arg1, arg2) => {
-  let addLog = LogsContext.useAdd();
-  let (request, setRequest) = React.useState(_ => NotAsked);
-  let config = ConfigContext.useConfig();
-
-  React.useEffect4(
-    () => {
-      setRequest(_ => Loading);
-
-      get(~config, arg1, arg2)
-      ->logError(addLog(true), kind)
-      ->Future.get(result => setRequest(_ => Done(result)));
-
-      None;
-    },
-    (config, arg1, arg2, setRequest),
-  );
-
-  request;
-};
-
 let useStoreLoader = (~get, ~kind, ~request, ~setRequest) => {
   let addLog = LogsContext.useAdd();
   let config = ConfigContext.useConfig();
