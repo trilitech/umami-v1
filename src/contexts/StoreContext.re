@@ -105,74 +105,6 @@ let make = (~children) => {
 
 let useStoreContext = () => React.useContext(context);
 
-let useNetwork = () => {
-  let store = useStoreContext();
-  store.network;
-};
-
-// Account
-
-let useAccountsRequestState = () => {
-  let store = useStoreContext();
-  store.accountsRequestState;
-};
-
-let useAccountsRequest = () => {
-  let (accountsRequest, _) = useAccountsRequestState();
-  accountsRequest;
-};
-
-let useAccounts = () => {
-  let accountsRequest = useAccountsRequest();
-  accountsRequest->ApiRequest.getOkWithDefault(Map.String.empty);
-};
-
-let useAccount = () => {
-  let store = useStoreContext();
-  let accounts = useAccounts();
-
-  switch (store.selectedAccountState, accounts) {
-  | ((Some(selectedAccount), _), accounts) =>
-    accounts->Map.String.get(selectedAccount)
-  | _ => None
-  };
-};
-
-let useUpdateAccount = () => {
-  let store = useStoreContext();
-  let (_, setSelectedAccount) = store.selectedAccountState;
-
-  newAccount => setSelectedAccount(_ => Some(newAccount));
-};
-
-let useAccountFromAddress = address => {
-  let accounts = useAccounts();
-  accounts->Map.String.get(address);
-};
-
-let useResetAccounts = () => {
-  let (_, setAccountsRequest) = useAccountsRequestState();
-  () => setAccountsRequest(_ => NotAsked);
-};
-
-let useCreateAccount = () => {
-  let resetAccounts = useResetAccounts();
-  AccountApiRequest.useCreate(~sideEffect=_ => resetAccounts(), ());
-};
-
-let useCreateAccountWithMnemonics = () => {
-  let resetAccounts = useResetAccounts();
-  AccountApiRequest.useCreateWithMnemonics(
-    ~sideEffect=_ => resetAccounts(),
-    (),
-  );
-};
-
-let useDeleteAccount = () => {
-  let resetAccounts = useResetAccounts();
-  AccountApiRequest.useDelete(~sideEffect=_ => resetAccounts(), ());
-};
-
 // Utils
 
 let useRequestsState = (getRequestsState, key: option(string)) => {
@@ -206,6 +138,13 @@ let useRequestsState = (getRequestsState, key: option(string)) => {
   (request, setRequest);
 };
 
+// Network
+
+let useNetwork = () => {
+  let store = useStoreContext();
+  store.network;
+};
+
 // Balance
 
 let useBalanceRequestState =
@@ -216,6 +155,12 @@ let useLoadBalance = (address: string) => {
   let requestState = useBalanceRequestState(Some(address));
 
   BalanceApiRequest.useLoad(~network, ~requestState, ~address);
+};
+
+let useResetBalances = () => {
+  let store = useStoreContext();
+  let (_, setBalanceRequests) = store.balanceRequestsState;
+  () => setBalanceRequests(_ => Map.String.empty);
 };
 
 // Delegates
@@ -242,16 +187,6 @@ let useDelegates = () => {
   ->Map.String.map(Option.getExn);
 };
 
-let useAccountsWithDelegates = () => {
-  let accounts = useAccounts();
-  let delegates = useDelegates();
-
-  accounts->Map.String.map(account => {
-    let delegate = delegates->Map.String.get(account.address);
-    (account, delegate);
-  });
-};
-
 // Delegates info
 
 let useDelegateInfoRequestState =
@@ -264,18 +199,14 @@ let useLoadDelegateInfo = (address: string) => {
   DelegateApiRequest.useLoadInfo(~network, ~requestState, ~address);
 };
 
-// Bakers
-
-let useBakersRequestState = () => {
+let useResetDelegatesAndDelegatesInfo = () => {
   let store = useStoreContext();
-  store.bakersRequestState;
-};
-
-let useLoadBakers = () => {
-  let network = useNetwork();
-  let requestState = useBakersRequestState();
-
-  DelegateApiRequest.useLoadBakers(~network, ~requestState);
+  let (_, setDelegateRequests) = store.delegateRequestsState;
+  let (_, setDelegateInfoRequests) = store.delegateInfoRequestsState;
+  () => {
+    setDelegateRequests(_ => Map.String.empty);
+    setDelegateInfoRequests(_ => Map.String.empty);
+  };
 };
 
 // Operations
@@ -299,8 +230,14 @@ let useLoadOperations = (~limit=?, ~types=?, ~address: option(string), ()) => {
 
 let useResetOperations = () => {
   let store = useStoreContext();
+  let resetBalances = useResetBalances();
+  let resetDelegatesAndDelegatesInfo = useResetDelegatesAndDelegatesInfo();
   let (_, setOperationsRequests) = store.operationsRequestsState;
-  () => setOperationsRequests(_ => Map.String.empty);
+  () => {
+    setOperationsRequests(_ => Map.String.empty);
+    resetBalances();
+    resetDelegatesAndDelegatesInfo();
+  };
 };
 
 let useCreateOperation = () => {
@@ -312,6 +249,20 @@ let useCreateOperation = () => {
 let useSimulateOperation = () => {
   let network = useNetwork();
   OperationApiRequest.useSimulate(~network);
+};
+
+// Bakers
+
+let useBakersRequestState = () => {
+  let store = useStoreContext();
+  store.bakersRequestState;
+};
+
+let useLoadBakers = () => {
+  let network = useNetwork();
+  let requestState = useBakersRequestState();
+
+  DelegateApiRequest.useLoadBakers(~network, ~requestState);
 };
 
 // Alias
@@ -346,4 +297,83 @@ let useCreateAlias = () => {
 let useDeleteAlias = () => {
   let resetAliases = useResetAliases();
   AliasApiRequest.useDelete(~sideEffect=_ => resetAliases(), ());
+};
+
+// Account
+
+let useAccountsRequestState = () => {
+  let store = useStoreContext();
+  store.accountsRequestState;
+};
+
+let useAccountsRequest = () => {
+  let (accountsRequest, _) = useAccountsRequestState();
+  accountsRequest;
+};
+
+let useAccounts = () => {
+  let accountsRequest = useAccountsRequest();
+  accountsRequest->ApiRequest.getOkWithDefault(Map.String.empty);
+};
+
+let useAccountsWithDelegates = () => {
+  let accounts = useAccounts();
+  let delegates = useDelegates();
+
+  accounts->Map.String.map(account => {
+    let delegate = delegates->Map.String.get(account.address);
+    (account, delegate);
+  });
+};
+
+let useAccount = () => {
+  let store = useStoreContext();
+  let accounts = useAccounts();
+
+  switch (store.selectedAccountState, accounts) {
+  | ((Some(selectedAccount), _), accounts) =>
+    accounts->Map.String.get(selectedAccount)
+  | _ => None
+  };
+};
+
+let useUpdateAccount = () => {
+  let store = useStoreContext();
+  let (_, setSelectedAccount) = store.selectedAccountState;
+
+  newAccount => setSelectedAccount(_ => Some(newAccount));
+};
+
+let useAccountFromAddress = address => {
+  let accounts = useAccounts();
+  accounts->Map.String.get(address);
+};
+
+let useResetAccounts = () => {
+  let resetOperations = useResetOperations();
+  let resetAliases = useResetAliases();
+  let (_, setAccountsRequest) = useAccountsRequestState();
+  () => {
+    setAccountsRequest(_ => NotAsked);
+    resetOperations();
+    resetAliases();
+  };
+};
+
+let useCreateAccount = () => {
+  let resetAccounts = useResetAccounts();
+  AccountApiRequest.useCreate(~sideEffect=_ => resetAccounts(), ());
+};
+
+let useCreateAccountWithMnemonics = () => {
+  let resetAccounts = useResetAccounts();
+  AccountApiRequest.useCreateWithMnemonics(
+    ~sideEffect=_ => resetAccounts(),
+    (),
+  );
+};
+
+let useDeleteAccount = () => {
+  let resetAccounts = useResetAccounts();
+  AccountApiRequest.useDelete(~sideEffect=_ => resetAccounts(), ());
 };
