@@ -24,3 +24,15 @@ let startFade = (refval, endval, duration, endCallback) => {
     )
   );
 };
+
+let useIsMonted = () => {
+  let (isMounted, setIsMounted) = React.useState(_ => false);
+  React.useEffect1(
+    () => {
+      setIsMounted(_ => true);
+      None;
+    },
+    [|setIsMounted|],
+  );
+  isMounted;
+};

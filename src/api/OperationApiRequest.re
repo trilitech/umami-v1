@@ -48,17 +48,20 @@ let useLoad =
   let getRequest =
     ApiRequest.useGetter(~get, ~kind=Logs.Operation, ~setRequest, ());
 
-  React.useEffect3(
+  let isMounted = ReactUtils.useIsMonted();
+  React.useEffect4(
     () => {
-      address->Common.Lib.Option.iter(address =>
-        if (address != "" && request == NotAsked) {
-          getRequest((network, address));
-        }
-      );
+      address->Common.Lib.Option.iter(address => {
+        let (shouldReload, loading) =
+          ApiRequest.conditionToLoad(request, isMounted);
+        if (address != "" && shouldReload) {
+          getRequest(~loading, (network, address));
+        };
+      });
 
       None;
     },
-    (network, request, address),
+    (isMounted, network, request, address),
   );
 
   request;

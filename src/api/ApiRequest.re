@@ -40,7 +40,11 @@ let mapOrLoad = (req, f) =>
   | Loading => <LoadingView />
   };
 
+let isNotAsked = request => request == NotAsked;
+
 let isLoading = request => request == Loading;
+
+let isDone = request => request->getDone->Belt.Option.isSome;
 
 let logError = (r, addLog, origin) =>
   r->Future.tapError(msg =>
@@ -59,14 +63,24 @@ let logOk = (r, addLog, origin, makeMsg) =>
     )
   });
 
+let conditionToLoad = (request, isMounted) => {
+  let requestNotAskedAndMonted = request->isNotAsked && isMounted;
+  let requestDoneButReloadOnMont = request->isDone && !isMounted;
+  (requestNotAskedAndMonted || requestDoneButReloadOnMont, isMounted);
+};
+
 let useLoader = (~get, ~kind, ~requestState as (request, setRequest)) => {
   let addLog = LogsContext.useAdd();
   let config = ConfigContext.useConfig();
 
-  React.useEffect3(
+  let isMounted = ReactUtils.useIsMonted();
+  React.useEffect4(
     () => {
-      if (request == NotAsked) {
-        setRequest(_ => Loading);
+      let (shouldReload, loading) = conditionToLoad(request, isMounted);
+      if (shouldReload) {
+        if (loading) {
+          setRequest(_ => Loading);
+        };
 
         get(~config)
         ->logError(addLog(true), kind)
@@ -75,7 +89,7 @@ let useLoader = (~get, ~kind, ~requestState as (request, setRequest)) => {
 
       None;
     },
-    (config, request, setRequest),
+    (isMounted, config, request, setRequest),
   );
 
   request;
@@ -85,10 +99,14 @@ let useLoader1 = (~get, ~kind, ~requestState as (request, setRequest), arg1) => 
   let addLog = LogsContext.useAdd();
   let config = ConfigContext.useConfig();
 
-  React.useEffect4(
+  let isMounted = ReactUtils.useIsMonted();
+  React.useEffect5(
     () => {
-      if (request == NotAsked) {
-        setRequest(_ => Loading);
+      let (shouldReload, loading) = conditionToLoad(request, isMounted);
+      if (shouldReload) {
+        if (loading) {
+          setRequest(_ => Loading);
+        };
 
         get(~config, arg1)
         ->logError(addLog(true), kind)
@@ -97,7 +115,7 @@ let useLoader1 = (~get, ~kind, ~requestState as (request, setRequest), arg1) => 
 
       None;
     },
-    (config, arg1, request, setRequest),
+    (isMounted, config, arg1, request, setRequest),
   );
 
   request;
@@ -108,10 +126,14 @@ let useLoader2 =
   let addLog = LogsContext.useAdd();
   let config = ConfigContext.useConfig();
 
-  React.useEffect5(
+  let isMounted = ReactUtils.useIsMonted();
+  React.useEffect6(
     () => {
-      if (request == NotAsked) {
-        setRequest(_ => Loading);
+      let (shouldReload, loading) = conditionToLoad(request, isMounted);
+      if (shouldReload) {
+        if (loading) {
+          setRequest(_ => Loading);
+        };
 
         get(~config, arg1, arg2)
         ->logError(addLog(true), kind)
@@ -120,7 +142,7 @@ let useLoader2 =
 
       None;
     },
-    (config, arg1, arg2, request, setRequest),
+    (isMounted, config, arg1, arg2, request, setRequest),
   );
 
   request;
