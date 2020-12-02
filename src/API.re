@@ -107,7 +107,7 @@ module TezosClient = {
         | None => ()
         };
       let _ =
-        process->ChildReprocess.on_exit((_, _) =>
+        process->ChildReprocess.on_close((_, _) =>
           resolve(
             switch (result^) {
             | Some(value) => value
