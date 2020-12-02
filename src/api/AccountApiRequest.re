@@ -5,7 +5,7 @@ module AccountsAPI = API.Accounts(API.TezosClient);
 /* Get */
 
 let useLoad = requestState => {
-  let get = (~config) =>
+  let get = (~config, ()) =>
     AccountsAPI.get(~config)
     ->Future.mapOk(response => {
         response

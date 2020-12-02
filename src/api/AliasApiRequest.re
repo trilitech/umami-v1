@@ -5,7 +5,7 @@ module AliasesAPI = API.Aliases(API.TezosClient);
 /* Get list */
 
 let useLoad = requestState => {
-  let get = (~config) =>
+  let get = (~config, ()) =>
     AliasesAPI.get(~config)
     ->Future.mapOk(response => {
         response

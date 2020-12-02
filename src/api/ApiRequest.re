@@ -69,53 +69,53 @@ let conditionToLoad = (request, isMounted) => {
   (requestNotAskedAndMonted || requestDoneButReloadOnMont, isMounted);
 };
 
-let useLoader = (~get, ~kind, ~requestState as (request, setRequest)) => {
+let useGetter = (~toast=true, ~get, ~kind, ~setRequest, ()) => {
   let addLog = LogsContext.useAdd();
   let config = ConfigContext.useConfig();
 
+  let get = (~loading=true, input) => {
+    loading ? setRequest(_ => Loading) : ();
+    get(~config, input)
+    ->logError(addLog(toast), kind)
+    ->Future.get(result => setRequest(_ => Done(result)));
+  };
+
+  get;
+};
+
+let useLoader = (~get, ~kind, ~requestState as (request, setRequest)) => {
+  let getRequest = useGetter(~get, ~kind, ~setRequest, ());
+
   let isMounted = ReactUtils.useIsMonted();
-  React.useEffect4(
+  React.useEffect3(
     () => {
       let (shouldReload, loading) = conditionToLoad(request, isMounted);
       if (shouldReload) {
-        if (loading) {
-          setRequest(_ => Loading);
-        };
-
-        get(~config)
-        ->logError(addLog(true), kind)
-        ->Future.get(result => setRequest(_ => Done(result)));
+        getRequest(~loading, ());
       };
 
       None;
     },
-    (isMounted, config, request, setRequest),
+    (isMounted, request, setRequest),
   );
 
   request;
 };
 
 let useLoader1 = (~get, ~kind, ~requestState as (request, setRequest), arg1) => {
-  let addLog = LogsContext.useAdd();
-  let config = ConfigContext.useConfig();
+  let getRequest = useGetter(~get, ~kind, ~setRequest, ());
 
   let isMounted = ReactUtils.useIsMonted();
-  React.useEffect5(
+  React.useEffect4(
     () => {
       let (shouldReload, loading) = conditionToLoad(request, isMounted);
       if (shouldReload) {
-        if (loading) {
-          setRequest(_ => Loading);
-        };
-
-        get(~config, arg1)
-        ->logError(addLog(true), kind)
-        ->Future.get(result => setRequest(_ => Done(result)));
+        getRequest(~loading, arg1);
       };
 
       None;
     },
-    (isMounted, config, arg1, request, setRequest),
+    (isMounted, arg1, request, setRequest),
   );
 
   request;
@@ -123,26 +123,19 @@ let useLoader1 = (~get, ~kind, ~requestState as (request, setRequest), arg1) => 
 
 let useLoader2 =
     (~get, ~kind, ~requestState as (request, setRequest), arg1, arg2) => {
-  let addLog = LogsContext.useAdd();
-  let config = ConfigContext.useConfig();
+  let getRequest = useGetter(~get, ~kind, ~setRequest, ());
 
   let isMounted = ReactUtils.useIsMonted();
-  React.useEffect6(
+  React.useEffect5(
     () => {
       let (shouldReload, loading) = conditionToLoad(request, isMounted);
       if (shouldReload) {
-        if (loading) {
-          setRequest(_ => Loading);
-        };
-
-        get(~config, arg1, arg2)
-        ->logError(addLog(true), kind)
-        ->Future.get(result => setRequest(_ => Done(result)));
+        getRequest(~loading, (arg1, arg2));
       };
 
       None;
     },
-    (isMounted, config, arg1, arg2, request, setRequest),
+    (isMounted, arg1, arg2, request, setRequest),
   );
 
   request;
@@ -162,18 +155,4 @@ let useSetter = (~toast=true, ~sideEffect=?, ~set, ~kind, ()) => {
   };
 
   (request, sendRequest);
-};
-
-let useGetter = (~toast=true, ~get, ~kind, ~setRequest, ()) => {
-  let addLog = LogsContext.useAdd();
-  let config = ConfigContext.useConfig();
-
-  let get = (~loading=true, input) => {
-    loading ? setRequest(_ => Loading) : ();
-    get(~config, input)
-    ->logError(addLog(toast), kind)
-    ->Future.get(result => setRequest(_ => Done(result)));
-  };
-
-  get;
 };

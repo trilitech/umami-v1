@@ -4,7 +4,7 @@ module DelegateAPI = API.Delegate(API.TezosClient, API.TezosExplorer);
 /* Get delegate */
 
 let useLoad = (~network, ~requestState, ~address: string) => {
-  let get = (~config, network, address) =>
+  let get = (~config, (network, address)) =>
     DelegateAPI.getForAccount((network, config), address);
 
   ApiRequest.useLoader2(
@@ -19,7 +19,7 @@ let useLoad = (~network, ~requestState, ~address: string) => {
 /* Get delegate info */
 
 let useLoadInfo = (~network, ~requestState, ~address: string) => {
-  let get = (~config, network, address) =>
+  let get = (~config, (network, address)) =>
     DelegateAPI.getDelegationInfoForAccount((network, config), address);
 
   ApiRequest.useLoader2(
