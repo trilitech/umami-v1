@@ -40,6 +40,7 @@ let make = () => {
        ? <LoadingView />
        : <>
            <View style=styles##header>
+             <BalanceTotal />
              <DelegateButton style=styles##button />
              <Table.Head>
                <DelegateRowItem.CellAddress>

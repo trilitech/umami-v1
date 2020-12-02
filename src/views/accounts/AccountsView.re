@@ -89,6 +89,7 @@ let make = () => {
      | _ =>
        accountsRequest->ApiRequest.mapOrLoad(_ => {
          <>
+           <BalanceTotal />
            <AddAccountButton />
            {accounts
             ->Belt.Map.String.valuesToArray

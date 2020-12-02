@@ -25,6 +25,7 @@ let styles =
 [@react.component]
 let make = () => {
   <View style=styles##header>
+    <BalanceTotal />
     <AccountSelector style=styles##selector />
     <Table.Head>
       <OperationRowItem.CellType>
