@@ -1432,9 +1432,10 @@
   resolved "https://registry.yarnpkg.com/@nodelib/fs.stat/-/fs.stat-1.1.3.tgz#2b5a3ab3f918cca48a8c754c08168e3f03eba61b"
   integrity sha512-shAmDyaQC4H92APFoIaVDHCx5bStIocgvbwQyxPRrbUY20V1EYTbSDchWbuwlMG3V17cprZhA6+78JfB+3DTPw==
 
-"@reason-react-native/svg@lin2jie2/svg#341b27f528c07209f333cc8e82217dab08e22aa8":
-  version "12.1.4"
-  resolved "https://codeload.github.com/lin2jie2/svg/tar.gz/341b27f528c07209f333cc8e82217dab08e22aa8"
+"@reason-react-native/svg@12.1.5-0.63":
+  version "12.1.5-0.63"
+  resolved "https://registry.yarnpkg.com/@reason-react-native/svg/-/svg-12.1.5-0.63.tgz#4bb44f61669ace591f69d11a469c944a2a4b3287"
+  integrity sha512-5RMEXpeOIAYvijlCd/ceqRgzVoIblAOAvlIqJd1vt4Hy4rHZWJqs8ypLkrgAMVJuEaoVZ31RYSMyccti6l5XeQ==
 
 "@sindresorhus/is@^0.14.0":
   version "0.14.0"
@@ -2602,10 +2603,20 @@ bindings@^1.5.0:
   dependencies:
     file-uri-to-path "1.0.0"
 
-bip39@3.0.2, bip39@^3.0.2:
+bip39@3.0.2:
   version "3.0.2"
   resolved "https://registry.yarnpkg.com/bip39/-/bip39-3.0.2.tgz#2baf42ff3071fc9ddd5103de92e8f80d9257ee32"
   integrity sha512-J4E1r2N0tUylTKt07ibXvhpT2c5pyAFgvuA5q1H9uDy6dEGpjV8jmymh3MTYJDLCNbIVClSB9FbND49I6N24MQ==
+  dependencies:
+    "@types/node" "11.11.6"
+    create-hash "^1.1.0"
+    pbkdf2 "^3.0.9"
+    randombytes "^2.0.1"
+
+bip39@^3.0.3:
+  version "3.0.3"
+  resolved "https://registry.yarnpkg.com/bip39/-/bip39-3.0.3.tgz#4a8b79067d6ed2e74f9199ac994a2ab61b176760"
+  integrity sha512-P0dKrz4g0V0BjXfx7d9QNkJ/Txcz/k+hM9TnjqjUaXtuOfAvxXSw2rJw8DX0e3ZPwnK/IgDxoRqf0bvoVCqbMg==
   dependencies:
     "@types/node" "11.11.6"
     create-hash "^1.1.0"
@@ -2820,10 +2831,10 @@ bs-fetch@^0.6.2:
   resolved "https://registry.yarnpkg.com/bs-fetch/-/bs-fetch-0.6.2.tgz#37d982e9f79b9bc44c23e87ae78ccbee1f869adf"
   integrity sha512-VXEjp8kY3vHPckaoy3d96Bx0KYjJAPLNISBwfpwMN26K6DtuZYwI2HKhx7zeHBajz1bRArfx7O8OOLcdtujMvg==
 
-bs-platform@^8.0.3:
-  version "8.3.1"
-  resolved "https://registry.yarnpkg.com/bs-platform/-/bs-platform-8.3.1.tgz#49ac0d7b84bcec190a7361353557cae965f92c67"
-  integrity sha512-U7nKEGF1BfvODzcv1g2loeltE8YRCgX8mMlCojImsgI0HwfQKEq7ggO5dF1ae9ZfFxiLaI0069ZyoK5GLBO2OQ==
+bs-platform@^8.3.3:
+  version "8.3.3"
+  resolved "https://registry.yarnpkg.com/bs-platform/-/bs-platform-8.3.3.tgz#68e3796ad0607c55da0f45fe14c0ce0aaf69682c"
+  integrity sha512-ayS5wdvrOX6PxU2wX7O2rLllzsQDzmGq582NNDFwfM6b9HQu7ki242Pc46o2/CnGHHumKVarpX0IZzjC2Llgcg==
 
 bs-reform@10.0.2-alpha.0:
   version "10.0.2-alpha.0"
@@ -7394,10 +7405,10 @@ left-pad@^1.3.0:
   resolved "https://registry.yarnpkg.com/left-pad/-/left-pad-1.3.0.tgz#5b8a3a7765dfe001261dde915589e782f8c94d1e"
   integrity sha512-XI5MPzVNApjAyhQzphX8BkmKsKUxD4LdyK24iZeQGinBN9yTQT3bFlCBy/aVx2HrNcqQGsdot8ghrjyrvMCoEA==
 
-lenses-ppx@6.1.0:
-  version "6.1.0"
-  resolved "https://registry.yarnpkg.com/lenses-ppx/-/lenses-ppx-6.1.0.tgz#0f69f9ac0853c79daf1bd2ae2044368a0af3f069"
-  integrity sha512-iUMLECq3XvXuYE3rAuMxYDyOSgygXOtuYbS162NUB5A7AMGcFNFq3pk+635OBnFRPIpevaRbj0K63nAwnlozEA==
+lenses-ppx@6.1.2:
+  version "6.1.2"
+  resolved "https://registry.yarnpkg.com/lenses-ppx/-/lenses-ppx-6.1.2.tgz#dd32793e5d1cb7145481dc61326af1371b8e0306"
+  integrity sha512-XG9afGW3hgBRJDytIvVD4tGDHgpI+2SP0xEdqUkBr6zktCYXlsq7by5hf9yuGR9XfmC6t++eUFEq/Mx26pl4ug==
 
 leven@^3.1.0:
   version "3.1.0"
@@ -9823,10 +9834,10 @@ react-native-qrcode-svg@6.0.6:
   version "0.0.0"
   uid ""
 
-react-native-web@^0.14.2:
-  version "0.14.2"
-  resolved "https://registry.yarnpkg.com/react-native-web/-/react-native-web-0.14.2.tgz#18957b0c72f5200f2b97a0bd73b3657d5e2401bb"
-  integrity sha512-cjgqWhFLZoveJx8Upu6PH+1tq4ZbW6zvkQ8ChOWfQ8BdoYY0o4jhlBZJTgQVLNP6s7BkpMAb87er/T7Zhd8qJw==
+react-native-web@^0.14.8:
+  version "0.14.8"
+  resolved "https://registry.yarnpkg.com/react-native-web/-/react-native-web-0.14.8.tgz#1f3eba659216936be61b7bcfe4cb6c6f5e8ed056"
+  integrity sha512-MVKEqLMlUFlThp56/LbQM+cyLKyjY6+pk3MFZ/6VC/ZhTldmN86Otd4cxlopJYiEj0woG9klnz3+GmI47bKv0A==
   dependencies:
     array-find-index "^1.0.2"
     create-react-class "^15.6.2"
@@ -10040,10 +10051,10 @@ reason-react-compat@^0.4.0:
   resolved "https://registry.yarnpkg.com/reason-react-compat/-/reason-react-compat-0.4.0.tgz#9c6705f9bd67e7ff7219355f3a95fd67442b578d"
   integrity sha512-Bwwgb6AHusLiRhdd0aupFAuMYaG3gnwR6iHYYlj9gfLD6Uxp53dtJIhS2ZMTEpCSU1JE2X0k7x3rru1IRdx9FQ==
 
-reason-react-native@^0.62.2:
-  version "0.62.3"
-  resolved "https://registry.yarnpkg.com/reason-react-native/-/reason-react-native-0.62.3.tgz#a2653e735b5a006c7efcb20dcdf0e2ebe922cf8f"
-  integrity sha512-PA//0AZVVEB8iJKjYxOoFarXrMhhr7H++k9n7SmwVNy+XeUtwCiTIytqi29dCILtfNieHfT7+WTPpEzg2koOBg==
+reason-react-native@^0.63.2:
+  version "0.63.2"
+  resolved "https://registry.yarnpkg.com/reason-react-native/-/reason-react-native-0.63.2.tgz#01750295995f3e896a56e713990cb594d56eb22d"
+  integrity sha512-PXQa2CDY/QZbfvCjn3q3qVoFfzKcUg3Prdw3mEyXL4BoGnRfVMXA4jVCoyXPUQCXU05MErM2TE3eTZLjRhQ+7g==
 
 reason-react-update@2.0.0, reason-react-update@^2.0.0:
   version "2.0.0"
