@@ -2,11 +2,11 @@ open ReactNative;
 
 module AliasDeleteButton = {
   [@react.component]
-  let make = (~account: Account.t, ~handleDelete) => {
-    let (aliasRequest, deleteAlias) = AliasApiRequest.useDelete();
+  let make = (~account: Account.t) => {
+    let (aliasRequest, deleteAlias) = StoreContext.Aliases.useDelete();
 
     let onPressConfirmDelete = _e => {
-      deleteAlias(account.alias)->Future.tapOk(_ => handleDelete())->ignore;
+      deleteAlias(account.alias)->ignore;
     };
 
     <DeleteButton
@@ -46,7 +46,7 @@ let memo = component =>
 
 [@react.component]
 let make =
-  memo((~account: Account.t, ~zIndex, ~handleDelete: unit => unit) => {
+  memo((~account: Account.t, ~zIndex) => {
     let addToast = LogsContext.useToast();
 
     <RowItem.Bordered height=46. style={Style.style(~zIndex, ())}>
@@ -69,7 +69,7 @@ let make =
       <View>
         <Menu icon=Icons.More.build size=30.>
           <Menu.Item text=I18n.t#addressbook_menu_edit icon=Icons.Edit.build />
-          <AliasDeleteButton account handleDelete />
+          <AliasDeleteButton account />
         </Menu>
       </View>
     </RowItem.Bordered>;

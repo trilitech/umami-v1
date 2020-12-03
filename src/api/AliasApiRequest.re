@@ -4,23 +4,32 @@ module AliasesAPI = API.Aliases(API.TezosClient);
 
 /* Get list */
 
-let useLoad = ApiRequest.useLoader(AliasesAPI.get, Logs.Aliases);
+let useLoad = requestState => {
+  let get = (~config, ()) =>
+    AliasesAPI.get(~config)
+    ->Future.mapOk(response => {
+        response
+        ->Belt.Array.map(((alias, address)) => {
+            let account: Account.t = {alias, address};
+            (address, account);
+          })
+        ->Belt.Map.String.fromArray
+      });
+
+  ApiRequest.useLoader(~get, ~kind=Logs.Aliases, ~requestState);
+};
 
 /* Create */
 
 let useCreate =
   ApiRequest.useSetter(
-    (~config, (alias, address)) => AliasesAPI.add(~config, alias, address),
-    Logs.Aliases,
+    ~set=
+      (~config, (alias, address)) =>
+        AliasesAPI.add(~config, alias, address),
+    ~kind=Logs.Aliases,
   );
 
 /* Delete */
 
-let useDelete = ApiRequest.useSetter(AliasesAPI.delete, Logs.Aliases);
-
-let useGet = () => {
-  let setAliases = StoreContext.useSetAliases();
-  let get = (~config, ()) =>
-    AliasesAPI.get(~config)->Future.tapOk(res => setAliases(_ => res));
-  ApiRequest.useGetter(get, Logs.Operation);
-};
+let useDelete =
+  ApiRequest.useSetter(~set=AliasesAPI.delete, ~kind=Logs.Aliases);

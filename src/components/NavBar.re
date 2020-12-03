@@ -23,7 +23,7 @@ module NavBarItem = {
   let make = (~currentRoute, ~route, ~title, ~icon: option(Icons.builder)=?) => {
     let (href, onPress) = useHrefAndOnPress(route);
 
-    let account = StoreContext.useAccount();
+    let account = StoreContext.SelectedAccount.useGet();
     let onPress = account->Belt.Option.map(_ => onPress);
     let href = account->Belt.Option.map(_ => href);
     let currentRoute = account->Belt.Option.map(_ => currentRoute);

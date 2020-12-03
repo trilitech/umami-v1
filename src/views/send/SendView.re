@@ -1,5 +1,4 @@
 open ReactNative;
-open Common;
 
 let styles =
   Style.(
@@ -174,24 +173,15 @@ module Form = {
 
 [@react.component]
 let make = (~onPressCancel) => {
-  let account = StoreContext.useAccount();
-  let network = StoreContext.useNetwork();
-  let (refreshOperations, _) = OperationApiRequest.useGet();
+  let account = StoreContext.SelectedAccount.useGet();
 
   let (advancedOptionOpened, _) as advancedOptionState =
     React.useState(_ => false);
 
-  let (operationRequest, sendOperation) =
-    OperationApiRequest.useCreate(network);
+  let (operationRequest, sendOperation) = StoreContext.Operations.useCreate();
 
   let sendOperation = (operation, ~password) =>
-    account->Lib.Option.iter(account =>
-      sendOperation(OperationApiRequest.{operation, password})
-      ->Future.tapOk(_ =>
-          refreshOperations(~loading=false, (network, account))
-        )
-      ->ignore
-    );
+    sendOperation(OperationApiRequest.{operation, password})->ignore;
 
   let (modalStep, setModalStep) = React.useState(_ => SendStep);
 

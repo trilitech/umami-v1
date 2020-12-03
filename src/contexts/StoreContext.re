@@ -1,36 +1,37 @@
+open Belt;
 open Common;
+
+type reactState('state) = ('state, ('state => 'state) => unit);
+type apiRequestsState('requestResponse) =
+  reactState(Map.String.t(ApiRequest.t('requestResponse)));
 
 type state = {
   network: Network.t,
-  selectedAccount: option(string),
-  accounts: Belt.Map.String.t(Account.t),
-  refreshAccounts: (~loading: bool=?, unit) => unit,
-  accountsRequest: ApiRequest.t(array((string, string))),
-  delegates: Belt.Map.String.t(string),
-  setDelegates:
-    (Belt.Map.String.t(string) => Belt.Map.String.t(string)) => unit,
-  updateAccount: string => unit,
-  operations: array(Operation.t),
-  setOperations: (array(Operation.t) => array(Operation.t)) => unit,
-  aliases: array((string, string)),
-  setAliases: (array((string, string)) => array((string, string))) => unit,
+  selectedAccountState: reactState(option(string)),
+  accountsRequestState: reactState(ApiRequest.t(Map.String.t(Account.t))),
+  balanceRequestsState: apiRequestsState(string),
+  delegateRequestsState: apiRequestsState(option(string)),
+  delegateInfoRequestsState:
+    apiRequestsState(DelegateApiRequest.DelegateAPI.delegationInfo),
+  operationsRequestsState: apiRequestsState(array(Operation.t)),
+  aliasesRequestState: reactState(ApiRequest.t(Map.String.t(Account.t))),
+  bakersRequestState: reactState(ApiRequest.t(array(Delegate.t))),
 };
 
 // Context and Provider
 
+let initialApiRequestsState = (Map.String.empty, _ => ());
+
 let initialState = {
   network: Network.Test,
-  selectedAccount: None,
-  accounts: Belt.Map.String.empty,
-  refreshAccounts: (~loading as _=?, ()) => (),
-  accountsRequest: NotAsked,
-  delegates: Belt.Map.String.empty,
-  setDelegates: _ => (),
-  updateAccount: _ => (),
-  operations: [||],
-  setOperations: _ => (),
-  aliases: [||],
-  setAliases: _ => (),
+  selectedAccountState: (None, _ => ()),
+  accountsRequestState: (NotAsked, _ => ()),
+  balanceRequestsState: initialApiRequestsState,
+  delegateRequestsState: initialApiRequestsState,
+  delegateInfoRequestsState: initialApiRequestsState,
+  operationsRequestsState: initialApiRequestsState,
+  aliasesRequestState: (NotAsked, _ => ()),
+  bakersRequestState: (NotAsked, _ => ()),
 };
 
 let context = React.createContext(initialState);
@@ -49,70 +50,52 @@ module Provider = {
 [@react.component]
 let make = (~children) => {
   let (network, _setNetwork) = React.useState(() => Network.Test);
-  let (selectedAccount, setSelectedAccount) = React.useState(() => None);
 
-  let updateAccount = newAccount => setSelectedAccount(_ => Some(newAccount));
-  let (getAccounts, accountsRequest) = AccountApiRequest.useGet();
+  let selectedAccountState = React.useState(() => None);
+  let (selectedAccount, setSelectedAccount) = selectedAccountState;
 
-  React.useEffect0(() => {
-    getAccounts()->ignore;
-    None;
-  });
+  let accountsRequestState = React.useState(() => ApiRequest.NotAsked);
+  let (accountsRequest, _setAccountsRequest) = accountsRequestState;
 
-  let refreshAccounts = (~loading=?, ()) =>
-    getAccounts(~loading?, ())->ignore;
+  let balanceRequestsState = React.useState(() => Map.String.empty);
+  let delegateRequestsState = React.useState(() => Map.String.empty);
+  let delegateInfoRequestsState = React.useState(() => Map.String.empty);
+  let operationsRequestsState = React.useState(() => Map.String.empty);
 
-  let accountsArray =
-    React.useMemo1(
-      () => {
-        accountsRequest
-        ->ApiRequest.getOkWithDefault([||])
-        ->Belt.Array.map(((alias, address)) => {
-            let account: Account.t = {alias, address};
-            (address, account);
-          })
-        ->Belt.Array.reverse
-      },
-      [|accountsRequest|],
-    );
-  let accounts =
-    React.useMemo1(
-      () => {accountsArray->Belt.Map.String.fromArray},
-      [|accountsArray|],
-    );
+  let aliasesRequestState = React.useState(() => ApiRequest.NotAsked);
+  let bakersRequestState = React.useState(() => ApiRequest.NotAsked);
 
+  AccountApiRequest.useLoad(accountsRequestState)->ignore;
+  AliasApiRequest.useLoad(aliasesRequestState)->ignore;
+
+  // Select a default account if no one selected
   React.useEffect2(
     () => {
-      if (selectedAccount->Belt.Option.isNone) {
-        accountsArray
-        ->Belt.Array.get(0)
-        ->Lib.Option.iter(((address, _)) =>
-            setSelectedAccount(_ => Some(address))
+      if (selectedAccount->Option.isNone) {
+        accountsRequest
+        ->ApiRequest.getOkWithDefault(Map.String.empty)
+        ->Map.String.valuesToArray
+        ->Array.get(0)
+        ->Lib.Option.iter((account: Account.t) =>
+            setSelectedAccount(_ => Some(account.address))
           );
       };
       None;
     },
-    (accounts, selectedAccount),
+    (accountsRequest, selectedAccount),
   );
-
-  let (delegates, setDelegates) = React.useState(() => Belt.Map.String.empty);
-  let (operations, setOperations) = React.useState(() => [||]);
-  let (aliases, setAliases) = React.useState(() => [||]);
 
   <Provider
     value={
       network,
-      selectedAccount,
-      accounts,
-      refreshAccounts,
-      accountsRequest,
-      delegates,
-      setDelegates,
-      updateAccount,
-      operations,
-      setOperations,
-      aliases,
-      setAliases,
+      selectedAccountState,
+      accountsRequestState,
+      balanceRequestsState,
+      delegateRequestsState,
+      delegateInfoRequestsState,
+      operationsRequestsState,
+      aliasesRequestState,
+      bakersRequestState,
     }>
     children
   </Provider>;
@@ -122,99 +105,278 @@ let make = (~children) => {
 
 let useStoreContext = () => React.useContext(context);
 
-let useNetwork = () => {
+// Utils
+
+let useRequestsState = (getRequestsState, key: option(string)) => {
   let store = useStoreContext();
-  store.network;
+  let (requests, setRequests) = store->getRequestsState;
+
+  let request =
+    React.useMemo2(
+      () =>
+        key->Belt.Option.mapWithDefault(ApiRequest.NotAsked, key =>
+          requests
+          ->Map.String.get(key)
+          ->Option.getWithDefault(ApiRequest.NotAsked)
+        ),
+      (key, requests),
+    );
+
+  let setRequest =
+    React.useCallback2(
+      newRequestSetter =>
+        key->Lib.Option.iter(key =>
+          setRequests(request =>
+            request->Map.String.update(key, oldRequest =>
+              Some(newRequestSetter(oldRequest))
+            )
+          )
+        ),
+      (key, setRequests),
+    );
+
+  (request, setRequest);
 };
 
-let useAccount = () => {
-  let store = useStoreContext();
-
-  switch (store.selectedAccount, store.accounts) {
-  | (Some(selectedAccount), accounts) =>
-    accounts->Belt.Map.String.get(selectedAccount)
-  | _ => None
+module Network = {
+  let useGet = () => {
+    let store = useStoreContext();
+    store.network;
   };
 };
 
-let useUpdateAccount = () => {
-  let store = useStoreContext();
-  store.updateAccount;
+module Balance = {
+  let useRequestState = useRequestsState(store => store.balanceRequestsState);
+
+  let useLoad = (address: string) => {
+    let network = Network.useGet();
+    let requestState = useRequestState(Some(address));
+
+    BalanceApiRequest.useLoad(~network, ~requestState, ~address);
+  };
+
+  let useResetAll = () => {
+    let store = useStoreContext();
+    let (_, setBalanceRequests) = store.balanceRequestsState;
+    () => setBalanceRequests(_ => Map.String.empty);
+  };
 };
 
-let useAccounts = () => {
-  let store = useStoreContext();
-  store.accounts;
-};
+module Delegate = {
+  let useRequestState = useRequestsState(store => store.delegateRequestsState);
 
-let useRefreshAccounts = () => {
-  let store = useStoreContext();
-  store.refreshAccounts;
-};
+  let useLoad = (address: string) => {
+    let network = Network.useGet();
+    let requestState = useRequestState(Some(address));
 
-let useAccountsRequest = () => {
-  let store = useStoreContext();
-  store.accountsRequest;
-};
+    DelegateApiRequest.useLoad(~network, ~requestState, ~address);
+  };
 
-let useAccountFromAddress = address => {
-  let accounts = useAccounts();
-  accounts->Belt.Map.String.get(address);
-};
+  let useGetAll = () => {
+    let store = useStoreContext();
+    let (delegateRequests, _) = store.delegateRequestsState;
 
-let useDelegates = () => {
-  let store = useStoreContext();
-  store.delegates;
-};
-
-let useAccountDelegate = address => {
-  let delegates = useDelegates();
-  delegates->Belt.Map.String.get(address);
-};
-
-let useSetAccountDelegate = () => {
-  let store = useStoreContext();
-  (address, delegate) => {
-    delegate->Common.Lib.Option.iter(delegate =>
-      store.setDelegates(delegates =>
-        delegates->Belt.Map.String.set(address, delegate)
+    delegateRequests
+    ->Map.String.map(request =>
+        request->ApiRequest.getDoneOk->Option.flatMap(v => v)
       )
+    ->Map.String.keep((_k, v) => v->Option.isSome)
+    ->Map.String.map(Option.getExn);
+  };
+};
+
+module DelegateInfo = {
+  let useRequestState =
+    useRequestsState(store => store.delegateInfoRequestsState);
+
+  let useLoad = (address: string) => {
+    let network = Network.useGet();
+    let requestState = useRequestState(Some(address));
+
+    DelegateApiRequest.useLoadInfo(~network, ~requestState, ~address);
+  };
+
+  let useResetAll = () => {
+    let store = useStoreContext();
+    let (_, setDelegateRequests) = store.delegateRequestsState;
+    let (_, setDelegateInfoRequests) = store.delegateInfoRequestsState;
+    () => {
+      setDelegateRequests(_ => Map.String.empty);
+      setDelegateInfoRequests(_ => Map.String.empty);
+    };
+  };
+};
+
+module Operations = {
+  let useRequestState =
+    useRequestsState(store => store.operationsRequestsState);
+
+  let useLoad = (~limit=?, ~types=?, ~address: option(string), ()) => {
+    let network = Network.useGet();
+    let requestState = useRequestState(address);
+
+    OperationApiRequest.useLoad(
+      ~network,
+      ~requestState,
+      ~limit?,
+      ~types?,
+      ~address,
+      (),
     );
   };
+
+  let useResetAll = () => {
+    let store = useStoreContext();
+    let resetBalances = Balance.useResetAll();
+    let resetDelegatesAndDelegatesInfo = DelegateInfo.useResetAll();
+    let (_, setOperationsRequests) = store.operationsRequestsState;
+    () => {
+      setOperationsRequests(_ => Map.String.empty);
+      resetBalances();
+      resetDelegatesAndDelegatesInfo();
+    };
+  };
+
+  let useCreate = () => {
+    let network = Network.useGet();
+    let resetOperations = useResetAll();
+    OperationApiRequest.useCreate(
+      ~sideEffect=_ => resetOperations(),
+      ~network,
+    );
+  };
+
+  let useSimulate = () => {
+    let network = Network.useGet();
+    OperationApiRequest.useSimulate(~network);
+  };
 };
 
-let useAccountsWithDelegates = () => {
-  let store = useStoreContext();
-  store.accounts
-  ->Belt.Map.String.map(account => {
-      let delegate = store.delegates->Belt.Map.String.get(account.address);
+module Bakers = {
+  let useRequestState = () => {
+    let store = useStoreContext();
+    store.bakersRequestState;
+  };
+
+  let useLoad = () => {
+    let network = Network.useGet();
+    let requestState = useRequestState();
+
+    DelegateApiRequest.useLoadBakers(~network, ~requestState);
+  };
+};
+
+module Aliases = {
+  let useRequestState = () => {
+    let store = useStoreContext();
+    store.aliasesRequestState;
+  };
+
+  let useRequest = () => {
+    let (aliasesRequest, _) = useRequestState();
+    aliasesRequest;
+  };
+
+  let useResetAll = () => {
+    let (_, setAliasesRequest) = useRequestState();
+    () => setAliasesRequest(_ => NotAsked);
+  };
+
+  let useGetAll = () => {
+    let aliasesRequest = useRequest();
+    aliasesRequest
+    ->ApiRequest.getDoneOk
+    ->Option.getWithDefault(Map.String.empty);
+  };
+
+  let useCreate = () => {
+    let resetAliases = useResetAll();
+    AliasApiRequest.useCreate(~sideEffect=_ => resetAliases(), ());
+  };
+
+  let useDelete = () => {
+    let resetAliases = useResetAll();
+    AliasApiRequest.useDelete(~sideEffect=_ => resetAliases(), ());
+  };
+};
+
+module Accounts = {
+  let useRequestState = () => {
+    let store = useStoreContext();
+    store.accountsRequestState;
+  };
+
+  let useRequest = () => {
+    let (accountsRequest, _) = useRequestState();
+    accountsRequest;
+  };
+
+  let useGetAll = () => {
+    let accountsRequest = useRequest();
+    accountsRequest->ApiRequest.getOkWithDefault(Map.String.empty);
+  };
+
+  let useGetAllWithDelegates = () => {
+    let accounts = useGetAll();
+    let delegates = Delegate.useGetAll();
+
+    accounts->Map.String.map(account => {
+      let delegate = delegates->Map.String.get(account.address);
       (account, delegate);
     });
+  };
+
+  let useGetFromAddress = address => {
+    let accounts = useGetAll();
+    accounts->Map.String.get(address);
+  };
+
+  let useResetAll = () => {
+    let resetOperations = Operations.useResetAll();
+    let resetAliases = Aliases.useResetAll();
+    let (_, setAccountsRequest) = useRequestState();
+    () => {
+      setAccountsRequest(_ => NotAsked);
+      resetOperations();
+      resetAliases();
+    };
+  };
+
+  let useCreate = () => {
+    let resetAccounts = useResetAll();
+    AccountApiRequest.useCreate(~sideEffect=_ => resetAccounts(), ());
+  };
+
+  let useCreateWithMnemonics = () => {
+    let resetAccounts = useResetAll();
+    AccountApiRequest.useCreateWithMnemonics(
+      ~sideEffect=_ => resetAccounts(),
+      (),
+    );
+  };
+
+  let useDelete = () => {
+    let resetAccounts = useResetAll();
+    AccountApiRequest.useDelete(~sideEffect=_ => resetAccounts(), ());
+  };
 };
 
-let getAlias = (accounts, address) => {
-  accounts
-  ->Belt.Map.String.get(address)
-  ->Belt.Option.map((acc: Account.t) => acc.alias)
-  ->Belt.Option.getWithDefault(address);
-};
+module SelectedAccount = {
+  let useGet = () => {
+    let store = useStoreContext();
+    let accounts = Accounts.useGetAll();
 
-let useSetOperations = () => {
-  let store = useStoreContext();
-  store.setOperations;
-};
+    switch (store.selectedAccountState, accounts) {
+    | ((Some(selectedAccount), _), accounts) =>
+      accounts->Map.String.get(selectedAccount)
+    | _ => None
+    };
+  };
 
-let useOperations = () => {
-  let store = useStoreContext();
-  store.operations;
-};
+  let useSet = () => {
+    let store = useStoreContext();
+    let (_, setSelectedAccount) = store.selectedAccountState;
 
-let useSetAliases = () => {
-  let store = useStoreContext();
-  store.setAliases;
-};
-
-let useAliases = () => {
-  let store = useStoreContext();
-  store.aliases;
+    newAccount => setSelectedAccount(_ => Some(newAccount));
+  };
 };

@@ -2,11 +2,11 @@ open ReactNative;
 
 module AccountDeleteButton = {
   [@react.component]
-  let make = (~account: Account.t, ~handleDelete) => {
-    let (accountRequest, deleteAccount) = AccountApiRequest.useDelete();
+  let make = (~account: Account.t) => {
+    let (accountRequest, deleteAccount) = StoreContext.Accounts.useDelete();
 
     let onPressConfirmDelete = _e => {
-      deleteAccount(account.alias)->Future.tapOk(_ => handleDelete())->ignore;
+      deleteAccount(account.alias)->ignore;
     };
 
     <DeleteButton
@@ -36,9 +36,9 @@ let styles =
   );
 
 [@react.component]
-let make = (~account: Account.t, ~zIndex, ~handleDelete) => {
-  let balanceRequest = BalanceApiRequest.useLoad(account.address);
-  let delegateRequest = DelegateApiRequest.useGetDelegate(account);
+let make = (~account: Account.t, ~zIndex) => {
+  let balanceRequest = StoreContext.Balance.useLoad(account.address);
+  let delegateRequest = StoreContext.Delegate.useLoad(account.address);
   let addToast = LogsContext.useToast();
 
   <RowItem.Bordered height=74. style={Style.style(~zIndex, ())}>
@@ -60,7 +60,7 @@ let make = (~account: Account.t, ~zIndex, ~handleDelete) => {
      }}
     <Menu icon=Icons.More.build>
       <Menu.Item text="Edit account" icon=Icons.Edit.build />
-      <AccountDeleteButton account handleDelete />
+      <AccountDeleteButton account />
     </Menu>
   </RowItem.Bordered>;
 };

@@ -50,13 +50,12 @@ let renderLabel = (label, hasError) => {
 
 [@react.component]
 let make = (~label, ~value: string, ~handleChange, ~error) => {
-  let aliasesRequest = AliasApiRequest.useLoad();
+  let aliasesRequest = StoreContext.Aliases.useRequest();
 
   let accounts =
     aliasesRequest
     ->ApiRequest.getDoneOk
-    ->Option.getWithDefault([||])
-    ->Array.map(((alias, address)) => {Account.{alias, address}});
+    ->Option.mapWithDefault([||], Map.String.valuesToArray);
 
   let items =
     accounts->Belt.Array.keep(account =>

@@ -33,18 +33,13 @@ let make = (~cancel) => {
   let (formStep, setFormStep) = React.useState(_ => Step1);
 
   let (accountWithMnemonicRequest, createAccountWithMnemonic) =
-    AccountApiRequest.useCreateWithMnemonics();
+    StoreContext.Accounts.useCreateWithMnemonics();
 
   let addLog = LogsContext.useAdd();
 
-  let refreshAccounts = StoreContext.useRefreshAccounts();
-  let handleAdd = () => refreshAccounts(~loading=false, ())->ignore;
   let createAccountWithMnemonic = p =>
     createAccountWithMnemonic(p)
-    ->Future.tapOk(_ => {
-        handleAdd();
-        cancel();
-      })
+    ->Future.tapOk(_ => {cancel()})
     ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
         I18n.t#account_created
       )

@@ -8,29 +8,61 @@ type injection = {
   password: string,
 };
 
-let useCreate = network => {
+let useCreate = (~sideEffect=?, ~network) => {
   let set = (~config, {operation, password}) =>
     (network, config)->OperationsAPI.inject(operation, ~password);
 
-  ApiRequest.useSetter(~toast=false, set, Logs.Operation, ());
+  ApiRequest.useSetter(
+    ~toast=false,
+    ~set,
+    ~kind=Logs.Operation,
+    ~sideEffect?,
+    (),
+  );
 };
 
 /* Simulate */
 
-let useSimulate = network => {
+let useSimulate = (~network) => {
   let set = (~config, operation) =>
     (network, config)->OperationsAPI.simulate(operation);
-  ApiRequest.useSetter(set, Logs.Operation, ());
+  ApiRequest.useSetter(~set, ~kind=Logs.Operation, ());
 };
 
 /* Get list */
 
-let useGet = (~limit=?, ~types=?, ()) => {
-  let setOperations = StoreContext.useSetOperations();
-  let get = (~config, (network, account: Account.t)) => {
+let useLoad =
+    (
+      ~network,
+      ~requestState as (request, setRequest),
+      ~limit=?,
+      ~types=?,
+      ~address: option(string),
+      (),
+    ) => {
+  let get = (~config, (network, address)) => {
     (network, config)
-    ->OperationsAPI.get(account.address, ~limit?, ~types?, ~mempool=true, ())
-    ->Future.tapOk(res => setOperations(_ => res));
+    ->OperationsAPI.get(address, ~limit?, ~types?, ~mempool=true, ());
   };
-  ApiRequest.useGetter(get, Logs.Operation);
+
+  let getRequest =
+    ApiRequest.useGetter(~get, ~kind=Logs.Operation, ~setRequest, ());
+
+  let isMounted = ReactUtils.useIsMonted();
+  React.useEffect4(
+    () => {
+      address->Common.Lib.Option.iter(address => {
+        let (shouldReload, loading) =
+          ApiRequest.conditionToLoad(request, isMounted);
+        if (address != "" && shouldReload) {
+          getRequest(~loading, (network, address));
+        };
+      });
+
+      None;
+    },
+    (isMounted, network, request, address),
+  );
+
+  request;
 };

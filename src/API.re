@@ -107,7 +107,7 @@ module TezosClient = {
         | None => ()
         };
       let _ =
-        process->ChildReprocess.on_exit((_, _) =>
+        process->ChildReprocess.on_close((_, _) =>
           resolve(
             switch (result^) {
             | Some(value) => value
@@ -273,7 +273,7 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
     | Delegation(delegation) => [|
         "-E",
         network->endpoint,
-         "-w",
+        "-w",
         "none",
         "set",
         "delegate",
@@ -467,7 +467,7 @@ module Accounts = (Caller: CallerAPI) => {
     };
   };
 
-  let delete = (name, ~config) =>
+  let delete = (~config, name) =>
     Caller.call(
       [|
         "-E",

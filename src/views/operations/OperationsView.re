@@ -1,5 +1,4 @@
 open ReactNative;
-open Common;
 
 let styles =
   Style.(
@@ -39,24 +38,18 @@ let sort = op =>
 
 [@react.component]
 let make = () => {
-  let operations = StoreContext.useOperations();
-  let account = StoreContext.useAccount();
-  let network = StoreContext.useNetwork();
+  let account = StoreContext.SelectedAccount.useGet();
 
-  let (get, operationsRequest) = OperationApiRequest.useGet();
-
-  React.useEffect2(
-    () => {
-      account->Lib.Option.iter(account => get((network, account)));
-      None;
-    },
-    (network, account),
-  );
+  let operationsRequest =
+    StoreContext.Operations.useLoad(
+      ~address=account->Belt.Option.map(account => account.address),
+      (),
+    );
 
   <View style=styles##container>
     <OperationsHeaderView />
     {switch (operationsRequest) {
-     | Done(Ok(_)) =>
+     | Done(Ok(operations)) =>
        <FlatList
          style=styles##list
          contentContainerStyle=styles##listContent

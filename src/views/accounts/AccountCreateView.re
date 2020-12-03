@@ -25,8 +25,8 @@ let styles =
   );
 
 [@react.component]
-let make = (~cancel, ~handleAdd) => {
-  let (accountRequest, createAccount) = AccountApiRequest.useCreate();
+let make = (~cancel) => {
+  let (accountRequest, createAccount) = StoreContext.Accounts.useCreate();
   let addLog = LogsContext.useAdd();
 
   let form: AccountCreateForm.api =
@@ -38,7 +38,6 @@ let make = (~cancel, ~handleAdd) => {
         ({state}) => {
           cancel();
           createAccount(state.values.name)
-          ->Future.tapOk(_ => {handleAdd()})
           ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
               I18n.t#account_created
             )

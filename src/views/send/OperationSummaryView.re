@@ -13,7 +13,7 @@ module AccountInfo = {
   [@react.component]
   let make = (~address, ~title) => {
     let account: option(Account.t) =
-      StoreContext.useAccountFromAddress(address);
+      StoreContext.Accounts.useGetFromAddress(address);
 
     <>
       <Typography.Overline2 colorStyle=`mediumEmphasis style=styles##title>

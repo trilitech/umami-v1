@@ -40,7 +40,11 @@ let mapOrLoad = (req, f) =>
   | Loading => <LoadingView />
   };
 
+let isNotAsked = request => request == NotAsked;
+
 let isLoading = request => request == Loading;
+
+let isDone = request => request->getDone->Belt.Option.isSome;
 
 let logError = (r, addLog, origin) =>
   r->Future.tapError(msg =>
@@ -59,70 +63,85 @@ let logOk = (r, addLog, origin, makeMsg) =>
     )
   });
 
-let useLoader = (get, kind, ()) => {
-  let (request, setRequest) = React.useState(_ => NotAsked);
-  let addToast = LogsContext.useToast();
-  let config = ConfigContext.useConfig();
-
-  React.useEffect1(
-    () => {
-      setRequest(_ => Loading);
-
-      get(~config)
-      ->logError(addToast, kind)
-      ->Future.get(result => setRequest(_ => Done(result)));
-
-      None;
-    },
-    [|setRequest|],
-  );
-
-  request;
+let conditionToLoad = (request, isMounted) => {
+  let requestNotAskedAndMonted = request->isNotAsked && isMounted;
+  let requestDoneButReloadOnMont = request->isDone && !isMounted;
+  (requestNotAskedAndMonted || requestDoneButReloadOnMont, isMounted);
 };
 
-let useLoader1 = (get, kind, arg1) => {
-  let addToast = LogsContext.useToast();
-  let (request, setRequest) = React.useState(_ => NotAsked);
+let useGetter = (~toast=true, ~get, ~kind, ~setRequest, ()) => {
+  let addLog = LogsContext.useAdd();
   let config = ConfigContext.useConfig();
 
+  let get = (~loading=true, input) => {
+    loading ? setRequest(_ => Loading) : ();
+    get(~config, input)
+    ->logError(addLog(toast), kind)
+    ->Future.get(result => setRequest(_ => Done(result)));
+  };
+
+  get;
+};
+
+let useLoader = (~get, ~kind, ~requestState as (request, setRequest)) => {
+  let getRequest = useGetter(~get, ~kind, ~setRequest, ());
+
+  let isMounted = ReactUtils.useIsMonted();
   React.useEffect3(
     () => {
-      setRequest(_ => Loading);
-
-      get(~config, arg1)
-      ->logError(addToast, kind)
-      ->Future.get(result => setRequest(_ => Done(result)));
+      let (shouldReload, loading) = conditionToLoad(request, isMounted);
+      if (shouldReload) {
+        getRequest(~loading, ());
+      };
 
       None;
     },
-    (config, arg1, setRequest),
+    (isMounted, request, setRequest),
   );
 
   request;
 };
 
-let useLoader2 = (get, kind, arg1, arg2) => {
-  let addLog = LogsContext.useAdd();
-  let (request, setRequest) = React.useState(_ => NotAsked);
-  let config = ConfigContext.useConfig();
+let useLoader1 = (~get, ~kind, ~requestState as (request, setRequest), arg1) => {
+  let getRequest = useGetter(~get, ~kind, ~setRequest, ());
 
+  let isMounted = ReactUtils.useIsMonted();
   React.useEffect4(
     () => {
-      setRequest(_ => Loading);
-
-      get(~config, arg1, arg2)
-      ->logError(addLog(true), kind)
-      ->Future.get(result => setRequest(_ => Done(result)));
+      let (shouldReload, loading) = conditionToLoad(request, isMounted);
+      if (shouldReload) {
+        getRequest(~loading, arg1);
+      };
 
       None;
     },
-    (config, arg1, arg2, setRequest),
+    (isMounted, arg1, request, setRequest),
   );
 
   request;
 };
 
-let useSetter = (~toast=true, set, kind, ()) => {
+let useLoader2 =
+    (~get, ~kind, ~requestState as (request, setRequest), arg1, arg2) => {
+  let getRequest = useGetter(~get, ~kind, ~setRequest, ());
+
+  let isMounted = ReactUtils.useIsMonted();
+  React.useEffect5(
+    () => {
+      let (shouldReload, loading) = conditionToLoad(request, isMounted);
+      if (shouldReload) {
+        getRequest(~loading, (arg1, arg2));
+      };
+
+      None;
+    },
+    (isMounted, arg1, arg2, request, setRequest),
+  );
+
+  request;
+};
+
+let useSetter = (~toast=true, ~sideEffect=?, ~set, ~kind, ()) => {
   let addLog = LogsContext.useAdd();
   let (request, setRequest) = React.useState(_ => NotAsked);
   let config = ConfigContext.useConfig();
@@ -131,23 +150,9 @@ let useSetter = (~toast=true, set, kind, ()) => {
     setRequest(_ => Loading);
     set(~config, input)
     ->logError(addLog(toast), kind)
-    ->Future.tap(result => {setRequest(_ => Done(result))});
+    ->Future.tap(result => {setRequest(_ => Done(result))})
+    ->Future.tapOk(sideEffect->Belt.Option.getWithDefault(_ => ()));
   };
 
   (request, sendRequest);
-};
-
-let useGetter = (~toast=true, get, kind) => {
-  let addLog = LogsContext.useAdd();
-  let (request, setRequest) = React.useState(_ => Loading);
-  let config = ConfigContext.useConfig();
-
-  let get = (~loading=true, input) => {
-    loading ? setRequest(_ => Loading) : ();
-    get(~config, input)
-    ->logError(addLog(toast), kind)
-    ->Future.get(result => setRequest(_ => {Done(result)}));
-  };
-
-  (get, request);
 };
