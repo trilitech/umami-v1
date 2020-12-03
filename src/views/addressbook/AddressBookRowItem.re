@@ -3,7 +3,7 @@ open ReactNative;
 module AliasDeleteButton = {
   [@react.component]
   let make = (~account: Account.t) => {
-    let (aliasRequest, deleteAlias) = StoreContext.useDeleteAlias();
+    let (aliasRequest, deleteAlias) = StoreContext.Aliases.useDelete();
 
     let onPressConfirmDelete = _e => {
       deleteAlias(account.alias)->ignore;

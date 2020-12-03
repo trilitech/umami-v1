@@ -64,8 +64,8 @@ let amount = (account, transaction: Operation.Business.Transaction.t) => {
 [@react.component]
 let make =
   memo((~operation: Operation.t) => {
-    let account = StoreContext.useAccount();
-    let aliases = StoreContext.useAliases();
+    let account = StoreContext.SelectedAccount.useGet();
+    let aliases = StoreContext.Aliases.useGetAll();
 
     <Table.Row>
       {switch (operation.payload) {

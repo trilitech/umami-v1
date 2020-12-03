@@ -26,7 +26,7 @@ let styles =
 
 [@react.component]
 let make = (~cancel) => {
-  let (accountRequest, createAccount) = StoreContext.useCreateAccount();
+  let (accountRequest, createAccount) = StoreContext.Accounts.useCreate();
   let addLog = LogsContext.useAdd();
 
   let form: AccountCreateForm.api =

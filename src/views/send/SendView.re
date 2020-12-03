@@ -173,12 +173,12 @@ module Form = {
 
 [@react.component]
 let make = (~onPressCancel) => {
-  let account = StoreContext.useAccount();
+  let account = StoreContext.SelectedAccount.useGet();
 
   let (advancedOptionOpened, _) as advancedOptionState =
     React.useState(_ => false);
 
-  let (operationRequest, sendOperation) = StoreContext.useCreateOperation();
+  let (operationRequest, sendOperation) = StoreContext.Operations.useCreate();
 
   let sendOperation = (operation, ~password) =>
     sendOperation(OperationApiRequest.{operation, password})->ignore;

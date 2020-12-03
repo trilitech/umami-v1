@@ -38,10 +38,10 @@ let sort = op =>
 
 [@react.component]
 let make = () => {
-  let account = StoreContext.useAccount();
+  let account = StoreContext.SelectedAccount.useGet();
 
   let operationsRequest =
-    StoreContext.useLoadOperations(
+    StoreContext.Operations.useLoad(
       ~address=account->Belt.Option.map(account => account.address),
       (),
     );

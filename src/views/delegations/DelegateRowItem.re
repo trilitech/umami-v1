@@ -68,11 +68,11 @@ let memo = component =>
 [@react.component]
 let make =
   memo((~account: Account.t, ~zIndex) => {
-    let aliases = StoreContext.useAliases();
-    let balanceRequest = StoreContext.useLoadBalance(account.address);
-    let delegateRequest = StoreContext.useLoadDelegate(account.address);
+    let aliases = StoreContext.Aliases.useGetAll();
+    let balanceRequest = StoreContext.Balance.useLoad(account.address);
+    let delegateRequest = StoreContext.Delegate.useLoad(account.address);
     let delegateInfoRequest =
-      StoreContext.useLoadDelegateInfo(account.address);
+      StoreContext.DelegateInfo.useLoad(account.address);
 
     switch (delegateRequest) {
     | Done(Ok(Some(delegate))) =>

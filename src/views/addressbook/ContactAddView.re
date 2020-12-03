@@ -31,7 +31,7 @@ let styles =
 
 [@react.component]
 let make = (~cancel) => {
-  let (aliasRequest, createAlias) = StoreContext.useCreateAlias();
+  let (aliasRequest, createAlias) = StoreContext.Aliases.useCreate();
   let addToast = LogsContext.useToast();
 
   let form: AccountCreateForm.api =

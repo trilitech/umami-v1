@@ -34,7 +34,7 @@ let make = (~cancel) => {
   let (formStep, setFormStep) = React.useState(_ => Step1);
 
   let (accountWithMnemonicRequest, createAccountWithMnemonic) =
-    StoreContext.useCreateAccountWithMnemonics();
+    StoreContext.Accounts.useCreateWithMnemonics();
 
   let addLog = LogsContext.useAdd();
 

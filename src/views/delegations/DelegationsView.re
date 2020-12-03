@@ -33,7 +33,7 @@ let styles =
 
 [@react.component]
 let make = () => {
-  let accounts = StoreContext.useAccounts();
+  let accounts = StoreContext.Accounts.useGetAll();
 
   <View style=styles##container>
     {accounts->Belt.Map.String.size == 0

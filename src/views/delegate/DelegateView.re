@@ -181,7 +181,7 @@ let make = (~onPressCancel, ~action) => {
   let (advancedOptionOpened, _) as advancedOptionState =
     React.useState(_ => false);
 
-  let (operationRequest, sendOperation) = StoreContext.useCreateOperation();
+  let (operationRequest, sendOperation) = StoreContext.Operations.useCreate();
 
   let sendOperation = (operation, ~password) =>
     sendOperation(OperationApiRequest.{operation, password})->ignore;

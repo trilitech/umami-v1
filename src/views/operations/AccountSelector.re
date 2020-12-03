@@ -52,10 +52,10 @@ let renderItem = (item: Selector.item) =>
 
 [@react.component]
 let make = (~style=?) => {
-  let account = StoreContext.useAccount();
-  let accounts = StoreContext.useAccounts();
+  let account = StoreContext.SelectedAccount.useGet();
+  let accounts = StoreContext.Accounts.useGetAll();
 
-  let updateAccount = StoreContext.useUpdateAccount();
+  let updateAccount = StoreContext.SelectedAccount.useSet();
 
   let items =
     accounts

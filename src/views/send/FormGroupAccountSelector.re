@@ -11,7 +11,7 @@ let styles =
 
 [@react.component]
 let make = (~label, ~value: string, ~handleChange, ~error) => {
-  let accounts = StoreContext.useAccounts();
+  let accounts = StoreContext.Accounts.useGetAll();
 
   let hasError = error->Belt.Option.isSome;
 
@@ -27,7 +27,7 @@ let make = (~label, ~value: string, ~handleChange, ~error) => {
 
   let (currentAccount, setCurrent) = React.useState(() => value);
 
-  let balanceRequest = StoreContext.useLoadBalance(currentAccount);
+  let balanceRequest = StoreContext.Balance.useLoad(currentAccount);
 
   <FormGroup style=styles##formGroup>
     <FormLabel label hasError style=styles##label />

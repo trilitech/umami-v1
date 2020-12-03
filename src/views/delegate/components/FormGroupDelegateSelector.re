@@ -11,7 +11,7 @@ let styles =
 
 [@react.component]
 let make = (~label, ~value: string, ~handleChange, ~error, ~disabled) => {
-  let accounts = StoreContext.useAccountsWithDelegates();
+  let accounts = StoreContext.Accounts.useGetAllWithDelegates();
 
   let hasError = error->Belt.Option.isSome;
 
@@ -27,7 +27,7 @@ let make = (~label, ~value: string, ~handleChange, ~error, ~disabled) => {
         Js.String.localeCompare(a.label, b.label)->int_of_float
       );
 
-  let balanceRequest = StoreContext.useLoadBalance(value);
+  let balanceRequest = StoreContext.Balance.useLoad(value);
 
   React.useEffect2(
     () => {

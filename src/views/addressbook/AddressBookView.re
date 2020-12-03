@@ -58,7 +58,7 @@ let styles = Style.(StyleSheet.create({"container": style(~flex=1., ())}));
 
 [@react.component]
 let make = () => {
-  let aliasesRequest = StoreContext.useAliasesRequest();
+  let aliasesRequest = StoreContext.Aliases.useRequest();
 
   <Page>
     <AddContactButton />

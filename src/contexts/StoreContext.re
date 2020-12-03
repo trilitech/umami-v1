@@ -138,242 +138,245 @@ let useRequestsState = (getRequestsState, key: option(string)) => {
   (request, setRequest);
 };
 
-// Network
-
-let useNetwork = () => {
-  let store = useStoreContext();
-  store.network;
-};
-
-// Balance
-
-let useBalanceRequestState =
-  useRequestsState(store => store.balanceRequestsState);
-
-let useLoadBalance = (address: string) => {
-  let network = useNetwork();
-  let requestState = useBalanceRequestState(Some(address));
-
-  BalanceApiRequest.useLoad(~network, ~requestState, ~address);
-};
-
-let useResetBalances = () => {
-  let store = useStoreContext();
-  let (_, setBalanceRequests) = store.balanceRequestsState;
-  () => setBalanceRequests(_ => Map.String.empty);
-};
-
-// Delegates
-
-let useDelegateRequestState =
-  useRequestsState(store => store.delegateRequestsState);
-
-let useLoadDelegate = (address: string) => {
-  let network = useNetwork();
-  let requestState = useDelegateRequestState(Some(address));
-
-  DelegateApiRequest.useLoad(~network, ~requestState, ~address);
-};
-
-let useDelegates = () => {
-  let store = useStoreContext();
-  let (delegateRequests, _) = store.delegateRequestsState;
-
-  delegateRequests
-  ->Map.String.map(request =>
-      request->ApiRequest.getDoneOk->Option.flatMap(v => v)
-    )
-  ->Map.String.keep((_k, v) => v->Option.isSome)
-  ->Map.String.map(Option.getExn);
-};
-
-// Delegates info
-
-let useDelegateInfoRequestState =
-  useRequestsState(store => store.delegateInfoRequestsState);
-
-let useLoadDelegateInfo = (address: string) => {
-  let network = useNetwork();
-  let requestState = useDelegateInfoRequestState(Some(address));
-
-  DelegateApiRequest.useLoadInfo(~network, ~requestState, ~address);
-};
-
-let useResetDelegatesAndDelegatesInfo = () => {
-  let store = useStoreContext();
-  let (_, setDelegateRequests) = store.delegateRequestsState;
-  let (_, setDelegateInfoRequests) = store.delegateInfoRequestsState;
-  () => {
-    setDelegateRequests(_ => Map.String.empty);
-    setDelegateInfoRequests(_ => Map.String.empty);
+module Network = {
+  let useGet = () => {
+    let store = useStoreContext();
+    store.network;
   };
 };
 
-// Operations
+module Balance = {
+  let useRequestState = useRequestsState(store => store.balanceRequestsState);
 
-let useOperationsRequestState =
-  useRequestsState(store => store.operationsRequestsState);
+  let useLoad = (address: string) => {
+    let network = Network.useGet();
+    let requestState = useRequestState(Some(address));
 
-let useLoadOperations = (~limit=?, ~types=?, ~address: option(string), ()) => {
-  let network = useNetwork();
-  let requestState = useOperationsRequestState(address);
+    BalanceApiRequest.useLoad(~network, ~requestState, ~address);
+  };
 
-  OperationApiRequest.useLoad(
-    ~network,
-    ~requestState,
-    ~limit?,
-    ~types?,
-    ~address,
-    (),
-  );
-};
-
-let useResetOperations = () => {
-  let store = useStoreContext();
-  let resetBalances = useResetBalances();
-  let resetDelegatesAndDelegatesInfo = useResetDelegatesAndDelegatesInfo();
-  let (_, setOperationsRequests) = store.operationsRequestsState;
-  () => {
-    setOperationsRequests(_ => Map.String.empty);
-    resetBalances();
-    resetDelegatesAndDelegatesInfo();
+  let useResetAll = () => {
+    let store = useStoreContext();
+    let (_, setBalanceRequests) = store.balanceRequestsState;
+    () => setBalanceRequests(_ => Map.String.empty);
   };
 };
 
-let useCreateOperation = () => {
-  let network = useNetwork();
-  let resetOperations = useResetOperations();
-  OperationApiRequest.useCreate(~sideEffect=_ => resetOperations(), ~network);
-};
+module Delegate = {
+  let useRequestState = useRequestsState(store => store.delegateRequestsState);
 
-let useSimulateOperation = () => {
-  let network = useNetwork();
-  OperationApiRequest.useSimulate(~network);
-};
+  let useLoad = (address: string) => {
+    let network = Network.useGet();
+    let requestState = useRequestState(Some(address));
 
-// Bakers
+    DelegateApiRequest.useLoad(~network, ~requestState, ~address);
+  };
 
-let useBakersRequestState = () => {
-  let store = useStoreContext();
-  store.bakersRequestState;
-};
+  let useGetAll = () => {
+    let store = useStoreContext();
+    let (delegateRequests, _) = store.delegateRequestsState;
 
-let useLoadBakers = () => {
-  let network = useNetwork();
-  let requestState = useBakersRequestState();
-
-  DelegateApiRequest.useLoadBakers(~network, ~requestState);
-};
-
-// Alias
-
-let useAliasesRequestState = () => {
-  let store = useStoreContext();
-  store.aliasesRequestState;
-};
-
-let useAliasesRequest = () => {
-  let (aliasesRequest, _) = useAliasesRequestState();
-  aliasesRequest;
-};
-
-let useResetAliases = () => {
-  let (_, setAliasesRequest) = useAliasesRequestState();
-  () => setAliasesRequest(_ => NotAsked);
-};
-
-let useAliases = () => {
-  let aliasesRequest = useAliasesRequest();
-  aliasesRequest
-  ->ApiRequest.getDoneOk
-  ->Option.getWithDefault(Map.String.empty);
-};
-
-let useCreateAlias = () => {
-  let resetAliases = useResetAliases();
-  AliasApiRequest.useCreate(~sideEffect=_ => resetAliases(), ());
-};
-
-let useDeleteAlias = () => {
-  let resetAliases = useResetAliases();
-  AliasApiRequest.useDelete(~sideEffect=_ => resetAliases(), ());
-};
-
-// Account
-
-let useAccountsRequestState = () => {
-  let store = useStoreContext();
-  store.accountsRequestState;
-};
-
-let useAccountsRequest = () => {
-  let (accountsRequest, _) = useAccountsRequestState();
-  accountsRequest;
-};
-
-let useAccounts = () => {
-  let accountsRequest = useAccountsRequest();
-  accountsRequest->ApiRequest.getOkWithDefault(Map.String.empty);
-};
-
-let useAccountsWithDelegates = () => {
-  let accounts = useAccounts();
-  let delegates = useDelegates();
-
-  accounts->Map.String.map(account => {
-    let delegate = delegates->Map.String.get(account.address);
-    (account, delegate);
-  });
-};
-
-let useAccount = () => {
-  let store = useStoreContext();
-  let accounts = useAccounts();
-
-  switch (store.selectedAccountState, accounts) {
-  | ((Some(selectedAccount), _), accounts) =>
-    accounts->Map.String.get(selectedAccount)
-  | _ => None
+    delegateRequests
+    ->Map.String.map(request =>
+        request->ApiRequest.getDoneOk->Option.flatMap(v => v)
+      )
+    ->Map.String.keep((_k, v) => v->Option.isSome)
+    ->Map.String.map(Option.getExn);
   };
 };
 
-let useUpdateAccount = () => {
-  let store = useStoreContext();
-  let (_, setSelectedAccount) = store.selectedAccountState;
+module DelegateInfo = {
+  let useRequestState =
+    useRequestsState(store => store.delegateInfoRequestsState);
 
-  newAccount => setSelectedAccount(_ => Some(newAccount));
-};
+  let useLoad = (address: string) => {
+    let network = Network.useGet();
+    let requestState = useRequestState(Some(address));
 
-let useAccountFromAddress = address => {
-  let accounts = useAccounts();
-  accounts->Map.String.get(address);
-};
+    DelegateApiRequest.useLoadInfo(~network, ~requestState, ~address);
+  };
 
-let useResetAccounts = () => {
-  let resetOperations = useResetOperations();
-  let resetAliases = useResetAliases();
-  let (_, setAccountsRequest) = useAccountsRequestState();
-  () => {
-    setAccountsRequest(_ => NotAsked);
-    resetOperations();
-    resetAliases();
+  let useResetAll = () => {
+    let store = useStoreContext();
+    let (_, setDelegateRequests) = store.delegateRequestsState;
+    let (_, setDelegateInfoRequests) = store.delegateInfoRequestsState;
+    () => {
+      setDelegateRequests(_ => Map.String.empty);
+      setDelegateInfoRequests(_ => Map.String.empty);
+    };
   };
 };
 
-let useCreateAccount = () => {
-  let resetAccounts = useResetAccounts();
-  AccountApiRequest.useCreate(~sideEffect=_ => resetAccounts(), ());
+module Operations = {
+  let useRequestState =
+    useRequestsState(store => store.operationsRequestsState);
+
+  let useLoad = (~limit=?, ~types=?, ~address: option(string), ()) => {
+    let network = Network.useGet();
+    let requestState = useRequestState(address);
+
+    OperationApiRequest.useLoad(
+      ~network,
+      ~requestState,
+      ~limit?,
+      ~types?,
+      ~address,
+      (),
+    );
+  };
+
+  let useResetAll = () => {
+    let store = useStoreContext();
+    let resetBalances = Balance.useResetAll();
+    let resetDelegatesAndDelegatesInfo = DelegateInfo.useResetAll();
+    let (_, setOperationsRequests) = store.operationsRequestsState;
+    () => {
+      setOperationsRequests(_ => Map.String.empty);
+      resetBalances();
+      resetDelegatesAndDelegatesInfo();
+    };
+  };
+
+  let useCreate = () => {
+    let network = Network.useGet();
+    let resetOperations = useResetAll();
+    OperationApiRequest.useCreate(
+      ~sideEffect=_ => resetOperations(),
+      ~network,
+    );
+  };
+
+  let useSimulate = () => {
+    let network = Network.useGet();
+    OperationApiRequest.useSimulate(~network);
+  };
 };
 
-let useCreateAccountWithMnemonics = () => {
-  let resetAccounts = useResetAccounts();
-  AccountApiRequest.useCreateWithMnemonics(
-    ~sideEffect=_ => resetAccounts(),
-    (),
-  );
+module Bakers = {
+  let useRequestState = () => {
+    let store = useStoreContext();
+    store.bakersRequestState;
+  };
+
+  let useLoad = () => {
+    let network = Network.useGet();
+    let requestState = useRequestState();
+
+    DelegateApiRequest.useLoadBakers(~network, ~requestState);
+  };
 };
 
-let useDeleteAccount = () => {
-  let resetAccounts = useResetAccounts();
-  AccountApiRequest.useDelete(~sideEffect=_ => resetAccounts(), ());
+module Aliases = {
+  let useRequestState = () => {
+    let store = useStoreContext();
+    store.aliasesRequestState;
+  };
+
+  let useRequest = () => {
+    let (aliasesRequest, _) = useRequestState();
+    aliasesRequest;
+  };
+
+  let useResetAll = () => {
+    let (_, setAliasesRequest) = useRequestState();
+    () => setAliasesRequest(_ => NotAsked);
+  };
+
+  let useGetAll = () => {
+    let aliasesRequest = useRequest();
+    aliasesRequest
+    ->ApiRequest.getDoneOk
+    ->Option.getWithDefault(Map.String.empty);
+  };
+
+  let useCreate = () => {
+    let resetAliases = useResetAll();
+    AliasApiRequest.useCreate(~sideEffect=_ => resetAliases(), ());
+  };
+
+  let useDelete = () => {
+    let resetAliases = useResetAll();
+    AliasApiRequest.useDelete(~sideEffect=_ => resetAliases(), ());
+  };
+};
+
+module Accounts = {
+  let useRequestState = () => {
+    let store = useStoreContext();
+    store.accountsRequestState;
+  };
+
+  let useRequest = () => {
+    let (accountsRequest, _) = useRequestState();
+    accountsRequest;
+  };
+
+  let useGetAll = () => {
+    let accountsRequest = useRequest();
+    accountsRequest->ApiRequest.getOkWithDefault(Map.String.empty);
+  };
+
+  let useGetAllWithDelegates = () => {
+    let accounts = useGetAll();
+    let delegates = Delegate.useGetAll();
+
+    accounts->Map.String.map(account => {
+      let delegate = delegates->Map.String.get(account.address);
+      (account, delegate);
+    });
+  };
+
+  let useGetFromAddress = address => {
+    let accounts = useGetAll();
+    accounts->Map.String.get(address);
+  };
+
+  let useResetAll = () => {
+    let resetOperations = Operations.useResetAll();
+    let resetAliases = Aliases.useResetAll();
+    let (_, setAccountsRequest) = useRequestState();
+    () => {
+      setAccountsRequest(_ => NotAsked);
+      resetOperations();
+      resetAliases();
+    };
+  };
+
+  let useCreate = () => {
+    let resetAccounts = useResetAll();
+    AccountApiRequest.useCreate(~sideEffect=_ => resetAccounts(), ());
+  };
+
+  let useCreateWithMnemonics = () => {
+    let resetAccounts = useResetAll();
+    AccountApiRequest.useCreateWithMnemonics(
+      ~sideEffect=_ => resetAccounts(),
+      (),
+    );
+  };
+
+  let useDelete = () => {
+    let resetAccounts = useResetAll();
+    AccountApiRequest.useDelete(~sideEffect=_ => resetAccounts(), ());
+  };
+};
+
+module SelectedAccount = {
+  let useGet = () => {
+    let store = useStoreContext();
+    let accounts = Accounts.useGetAll();
+
+    switch (store.selectedAccountState, accounts) {
+    | ((Some(selectedAccount), _), accounts) =>
+      accounts->Map.String.get(selectedAccount)
+    | _ => None
+    };
+  };
+
+  let useSet = () => {
+    let store = useStoreContext();
+    let (_, setSelectedAccount) = store.selectedAccountState;
+
+    newAccount => setSelectedAccount(_ => Some(newAccount));
+  };
 };

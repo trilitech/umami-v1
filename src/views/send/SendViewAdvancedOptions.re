@@ -28,7 +28,7 @@ let xtzDecoration = (~style) =>
 [@react.component]
 let make = (~form: SendForm.api) => {
   let (operationSimulateRequest, sendOperationSimulate) =
-    StoreContext.useSimulateOperation();
+    StoreContext.Operations.useSimulate();
 
   React.useEffect0(() => {
     if (form.values.sender != ""

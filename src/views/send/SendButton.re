@@ -21,7 +21,7 @@ let styles =
 [@react.component]
 let make = () => {
   let modal = React.useRef(Js.Nullable.null);
-  let account = StoreContext.useAccount();
+  let account = StoreContext.SelectedAccount.useGet();
 
   let (visibleModal, setVisibleModal) = React.useState(_ => false);
   let openAction = () => setVisibleModal(_ => true);

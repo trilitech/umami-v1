@@ -75,8 +75,8 @@ let styles =
 
 [@react.component]
 let make = () => {
-  let accounts = StoreContext.useAccounts();
-  let accountsRequest = StoreContext.useAccountsRequest();
+  let accounts = StoreContext.Accounts.useGetAll();
+  let accountsRequest = StoreContext.Accounts.useRequest();
 
   <Page>
     {switch (accountsRequest) {
