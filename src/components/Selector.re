@@ -23,7 +23,7 @@ module Item = {
 
   [@react.component]
   let make = (~item, ~onChange, ~renderItem) => {
-    <Pressable onPress={_e => onChange(item.value)}>
+    <PressableCustom onPress={_e => onChange(item.value)}>
       {interactionState =>
          <View
            style=Style.(
@@ -35,7 +35,7 @@ module Item = {
            )>
            {renderItem(item)}
          </View>}
-    </Pressable>;
+    </PressableCustom>;
   };
 };
 

@@ -19,7 +19,7 @@ let styles =
 
 [@react.component]
 let make = (~icon: Icons.builder, ~hoveredStyle=?, ~onPress=?) => {
-  <Pressable ?onPress>
+  <PressableCustom ?onPress>
     {({hovered}) =>
        <View
          style=Style.(
@@ -31,5 +31,5 @@ let make = (~icon: Icons.builder, ~hoveredStyle=?, ~onPress=?) => {
          )>
          {icon(~style=?None, ~size=16., ~color=Theme.colorDarkMediumEmphasis)}
        </View>}
-  </Pressable>;
+  </PressableCustom>;
 };
