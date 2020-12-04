@@ -3,20 +3,14 @@ open ReactNative;
 let style =
   Style.(style(~padding=4.->dp, ~margin=4.->dp, ~borderWidth=1.0, ()));
 
-module TokensAPI = API.Tokens(API.TezosClient, API.TezosExplorer);
+module TokensAPI = API.Tokens(API.TezosClient);
 
 [@react.component]
 let make = () => {
   let config = ConfigContext.useConfig();
-  let (kt1, setKt1) = React.useState(() => "");
   let (account, setAccount) = React.useState(() => "");
 
   <View style>
-    <TextInput
-      onChangeText={text => setKt1(_ => text)}
-      placeholder="token KT1/alias"
-      value=kt1
-    />
     <TextInput
       onChangeText={text => setAccount(_ => text)}
       placeholder="account"
@@ -27,7 +21,7 @@ let make = () => {
         Tokens.makeGetBalance(
           account,
           "KT1BZ6cBooBYubKv4Z3kd7izefLXgwTrSfoG",
-          kt1,
+          "KT1BUdnCMfBKdVxCKyBvMUqwLqm27EDGWskB",
           (),
         )
         ->TokensAPI.callGetOperationOffline((Network.Test, config), _)

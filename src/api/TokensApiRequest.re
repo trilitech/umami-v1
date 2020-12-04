@@ -1,5 +1,5 @@
 include ApiRequest;
-module TokensAPI = API.Tokens(API.TezosClient, API.TezosExplorer);
+module TokensAPI = API.Tokens(API.TezosClient);
 
 type injection = {
   operation: Tokens.operation,

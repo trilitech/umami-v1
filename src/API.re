@@ -185,6 +185,48 @@ module InjectorRaw = (Caller: CallerAPI) => {
     ->Belt.Option.map(Js.Re.captures)
     ->Belt.Option.flatMap(captures => captures[1]->Js.Nullable.toOption);
 
+  let transaction_options_arguments =
+      (arguments, options: Injection.transaction_options) => {
+    let arguments =
+      switch (options.fee) {
+      | Some(fee) =>
+        Js.Array2.concat(arguments, [|"--fee", fee->Js.Float.toString|])
+      | None => arguments
+      };
+    let arguments =
+      switch (options.counter) {
+      | Some(counter) =>
+        Js.Array2.concat(arguments, [|"-C", counter->Js.Int.toString|])
+      | None => arguments
+      };
+    let arguments =
+      switch (options.gasLimit) {
+      | Some(gasLimit) =>
+        Js.Array2.concat(arguments, [|"-G", gasLimit->Js.Int.toString|])
+      | None => arguments
+      };
+    let arguments =
+      switch (options.storageLimit) {
+      | Some(storageLimit) =>
+        Js.Array2.concat(arguments, [|"-S", storageLimit->Js.Int.toString|])
+      | None => arguments
+      };
+    let arguments =
+      switch (options.burnCap) {
+      | Some(burnCap) =>
+        Js.Array2.concat(
+          arguments,
+          [|"--burn-cap", burnCap->Js.Float.toString|],
+        )
+      | None => arguments
+      };
+    switch (options.forceLowFee) {
+    | Some(true) => Js.Array2.concat(arguments, [|"--force-low-fee"|])
+    | Some(false)
+    | None => arguments
+    };
+  };
+
   exception InvalidReceiptFormat;
 
   let simulate = (network, make_arguments) =>
@@ -313,48 +355,6 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
           : Future.value(Ok(operations))
     );
 
-  let transaction_options_arguments =
-      (arguments, options: Injection.transaction_options) => {
-    let arguments =
-      switch (options.fee) {
-      | Some(fee) =>
-        Js.Array2.concat(arguments, [|"--fee", fee->Js.Float.toString|])
-      | None => arguments
-      };
-    let arguments =
-      switch (options.counter) {
-      | Some(counter) =>
-        Js.Array2.concat(arguments, [|"-C", counter->Js.Int.toString|])
-      | None => arguments
-      };
-    let arguments =
-      switch (options.gasLimit) {
-      | Some(gasLimit) =>
-        Js.Array2.concat(arguments, [|"-G", gasLimit->Js.Int.toString|])
-      | None => arguments
-      };
-    let arguments =
-      switch (options.storageLimit) {
-      | Some(storageLimit) =>
-        Js.Array2.concat(arguments, [|"-S", storageLimit->Js.Int.toString|])
-      | None => arguments
-      };
-    let arguments =
-      switch (options.burnCap) {
-      | Some(burnCap) =>
-        Js.Array2.concat(
-          arguments,
-          [|"--burn-cap", burnCap->Js.Float.toString|],
-        )
-      | None => arguments
-      };
-    switch (options.forceLowFee) {
-    | Some(true) => Js.Array2.concat(arguments, [|"--force-low-fee"|])
-    | Some(false)
-    | None => arguments
-    };
-  };
-
   let arguments = (network, operation: Injection.operation) =>
     switch (operation) {
     | Transaction(transaction) =>
@@ -372,7 +372,7 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
         "--burn-cap",
         "0.257",
       |];
-      transaction_options_arguments(arguments, transaction.options);
+      Injector.transaction_options_arguments(arguments, transaction.options);
     | Delegation(delegation) => [|
         "-E",
         network->endpoint,
@@ -788,9 +788,7 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
   };
 };
 
-module Tokens = (Caller: CallerAPI, Getter: GetterAPI) => {
-  /* TODO: refactor to put out transaction_options_arguments */
-  module Op = Operations(Caller, Getter);
+module Tokens = (Caller: CallerAPI) => {
   module Injector = InjectorRaw(Caller);
 
   let checkTokenContract = (network, addr) => {
@@ -809,15 +807,23 @@ module Tokens = (Caller: CallerAPI, Getter: GetterAPI) => {
         switch (res) {
         | Ok(_) => true
         | Error(_) => false
-        /* the error is not relevant, it explains why the contract in not compatible */
+        /* the error is not relevant, it explains why the contract is not compatible */
         }
       });
   };
 
+  let make_get_arguments = (arguments, callback, offline, options) =>
+    if (offline) {
+      Js.Array2.concat(arguments, [|"offline", "with", callback|]);
+    } else {
+      Js.Array2.concat(arguments, [|"callback", "on", callback|])
+      ->Injector.transaction_options_arguments(options);
+    };
+
   let make_arguments = (network, operation: Tokens.operation, ~offline) => {
     switch (operation.action) {
     | Transfer(transfer) =>
-      let arguments = [|
+      [|
         "-E",
         network->endpoint,
         "-w",
@@ -834,10 +840,10 @@ module Tokens = (Caller: CallerAPI, Getter: GetterAPI) => {
         transfer.destination,
         "--burn-cap",
         "0.01875",
-      |];
-      Op.transaction_options_arguments(arguments, operation.options);
+      |]
+      ->Injector.transaction_options_arguments(operation.options)
     | GetBalance(getBalance) =>
-      let arguments = [|
+      [|
         "-E",
         network->endpoint,
         "-w",
@@ -850,19 +856,8 @@ module Tokens = (Caller: CallerAPI, Getter: GetterAPI) => {
         "balance",
         "for",
         getBalance.address,
-      |];
-      if (offline) {
-        Js.Array2.concat(
-          arguments,
-          [|"offline", "with", getBalance.callback|],
-        );
-      } else {
-        Js.Array2.concat(
-          arguments,
-          [|"callback", "on", getBalance.callback|],
-        )
-        ->Op.transaction_options_arguments(operation.options);
-      };
+      |]
+      ->make_get_arguments(getBalance.callback, offline, operation.options)
     | _ => assert(false)
     };
   };
