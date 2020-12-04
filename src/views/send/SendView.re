@@ -204,7 +204,7 @@ let make = (~onPressCancel) => {
 
   <ModalView.Form>
     {switch (modalStep, operationRequest) {
-     | (_, Done(Ok(hash))) =>
+     | (_, Done(Ok((hash, _)))) =>
        <>
          <Typography.Headline2 style=styles##title>
            I18n.title#operation_injected->React.string

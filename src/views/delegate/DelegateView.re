@@ -219,7 +219,7 @@ let make = (~onPressCancel, ~action) => {
 
   <ModalView.Form>
     {switch (modalStep, operationRequest) {
-     | (_, Done(Ok(hash))) =>
+     | (_, Done(Ok((hash, _)))) =>
        <>
          <Typography.Headline2 style=styles##title>
            {switch (action) {

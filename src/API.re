@@ -107,7 +107,7 @@ module TezosClient = {
         | None => ()
         };
       let _ =
-        process->ChildReprocess.on_exit((_, _) =>
+        process->ChildReprocess.on_close((_, _) =>
           resolve(
             switch (result^) {
             | Some(value) => value
@@ -273,7 +273,7 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
     | Delegation(delegation) => [|
         "-E",
         network->endpoint,
-         "-w",
+        "-w",
         "none",
         "set",
         "delegate",
@@ -284,7 +284,7 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
       |]
     };
 
-  type dryRun = {
+  type simulationResults = {
     fee: float,
     count: int,
     gasLimit: int,
@@ -364,13 +364,34 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
     ->Future.tapOk(Js.log)
     ->Future.map(result =>
         result->map(receipt => {
-          let result = receipt->parse("Operation hash is '([A-Za-z0-9]*)'");
-          switch (result) {
-          | Some(operationHash) => operationHash
-          | None => raise(InvalidReceiptFormat)
+          let operationHash = receipt->parse("Operation hash is '([A-Za-z0-9]+)'");
+          let branch = receipt->parse("--branch ([A-Za-z0-9]+)");
+          switch (operationHash, branch) {
+          | (Some(operationHash), Some(branch)) => (operationHash, branch)
+          | (_, _) => raise(InvalidReceiptFormat)
           };
         })
       );
+
+  let waitForOperationConfirmations =
+      (network, hash, ~confirmations, ~branch) =>
+    Caller.call(
+      [|
+        "-E",
+        network->endpoint,
+        "wait",
+        "for",
+        hash,
+        "to",
+        "be",
+        "included",
+        "--confirmations",
+        confirmations->string_of_int,
+        "--branch",
+        branch
+      |],
+      (),
+    );
 };
 
 module MapString = Belt.Map.String;
