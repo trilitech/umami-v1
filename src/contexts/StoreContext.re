@@ -155,6 +155,28 @@ module Balance = {
     BalanceApiRequest.useLoad(~network, ~requestState, ~address);
   };
 
+  let useGetTotal = () => {
+    let store = useStoreContext();
+    let (balanceRequests, _) = store.balanceRequestsState;
+
+    balanceRequests->Map.String.size > 0
+    && balanceRequests->Map.String.every((_, balanceRequest) =>
+         balanceRequest->ApiRequest.isDone
+       )
+      ? Some(
+          balanceRequests
+          ->Map.String.reduce(0.0, (acc, _, balanceRequest) => {
+              acc
+              +. balanceRequest
+                 ->ApiRequest.getOkWithDefault("0.0")
+                 ->Belt.Float.fromString
+                 ->Belt.Option.getWithDefault(0.0)
+            })
+          ->Js.Float.toFixedWithPrecision(~digits=6),
+        )
+      : None;
+  };
+
   let useResetAll = () => {
     let store = useStoreContext();
     let (_, setBalanceRequests) = store.balanceRequestsState;
