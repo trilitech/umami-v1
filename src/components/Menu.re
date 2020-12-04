@@ -20,7 +20,7 @@ module Item = {
   [@react.component]
   let make =
       (~text, ~icon: Icons.builder, ~colorStyle=`highEmphasis, ~onPress=?) => {
-    <Pressable ?onPress>
+    <PressableCustom ?onPress>
       {({hovered}) =>
          <View
            style=Style.(
@@ -38,7 +38,7 @@ module Item = {
              text->React.string
            </Typography.ButtonSecondary>
          </View>}
-    </Pressable>;
+    </PressableCustom>;
   };
 };
 
@@ -83,7 +83,7 @@ let make = (~icon: Icons.builder, ~children, ~size=42.) => {
   );
 
   <View style=Style.(style(~width=size->dp, ~height=size->dp, ()))>
-    <Pressable
+    <PressableCustom
       ref={pressableRef->Ref.value}
       onPress={_ => setIsOpen(isOpen => !isOpen)}>
       {({hovered}) =>
@@ -110,7 +110,7 @@ let make = (~icon: Icons.builder, ~children, ~size=42.) => {
               ~color=Theme.colorDarkMediumEmphasis,
             )}
          </View>}
-    </Pressable>
+    </PressableCustom>
     <View style={ReactUtils.displayOn(isOpen)}>
       <ScrollView style=styles##listContainer> children </ScrollView>
     </View>
