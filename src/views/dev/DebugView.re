@@ -79,15 +79,21 @@ let make = () => {
      ->FutureEx.getOk(Js.log);
      */
     /*
+     (network, config)
+     ->DelegateAPI.getDelegationInfoForAccount(
+         "tz1RDrPJYrpdA7MbfUJSamGdcfceLXGpUdc7",
+       )
+     ->Future.tapError(Js.log)
+     ->FutureEx.getOk(Js.log);
+     */
     (network, config)
-    ->DelegateAPI.getDelegationInfoForAccount(
-        "tz1RDrPJYrpdA7MbfUJSamGdcfceLXGpUdc7",
+    ->OperationsAPI.waitForOperationConfirmations(
+        "oo38L1jPWGmf1RBg8zyq4BoUys9zhofWJN8e8eQPnB4D6NQctv5",
+        ~confirmations=0,
+        ~branch="BMNnzkSH6oHZpfroJPczV9DcASFRsHAQ3qGD7mzB9nQ6EmGGM7n"
       )
     ->Future.tapError(Js.log)
     ->FutureEx.getOk(Js.log);
-    */
-    (network, config)->DelegateAPI.getForAccount("tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3")
-    ->FutureEx.getOk(Js.log)
     None;
   });
 
