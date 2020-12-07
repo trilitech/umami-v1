@@ -288,6 +288,18 @@ module Bakers = {
   };
 };
 
+module Tokens = {
+  let useLoad = () => {
+    let network = Network.useGet();
+    let tokensRequestState = React.useState(() => ApiRequest.NotAsked);
+
+    TokensApiRequest.useLoadTokens(
+      ~network,
+      ~requestState=tokensRequestState,
+    );
+  };
+};
+
 module Aliases = {
   let useRequestState = () => {
     let store = useStoreContext();

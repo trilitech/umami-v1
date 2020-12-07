@@ -27,3 +27,18 @@ let useGetOperationOffline = network => {
 
   ApiRequest.useGetter(~get, ~kind=Logs.Tokens);
 };
+
+let useLoadTokens = (~network, ~requestState) => {
+  let get = (~config as _c, network) =>
+    TokensAPI.get(network)
+    ->Future.mapOk(response => {
+        response
+        ->Belt.Array.map(((alias, currency, address)) => {
+            let token: Token.t = {alias, currency, address};
+            (address, token);
+          })
+        ->Belt.Map.String.fromArray
+      });
+
+  ApiRequest.useLoader1(~get, ~kind=Logs.Tokens, ~requestState, network);
+};

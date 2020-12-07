@@ -1,5 +1,81 @@
 open ReactNative;
 
+module TokenSelector = {
+  let styles =
+    Style.(
+      StyleSheet.create({
+        "selector":
+          style(
+            ~zIndex=4,
+            ~alignSelf=`flexStart,
+            ~minWidth=460.->dp,
+            ~marginTop=0.->dp,
+            ~marginBottom=30.->dp,
+            (),
+          ),
+        "selectorContent":
+          style(
+            ~height=68.->dp,
+            ~flexDirection=`row,
+            ~alignItems=`center,
+            ~flex=1.,
+            (),
+          ),
+        "spacer": style(~height=6.->dp, ()),
+      })
+    );
+
+  let renderButton = (selectedItem: option(Selector.item)) =>
+    <View style=styles##selectorContent>
+      {selectedItem->Belt.Option.mapWithDefault(<LoadingView />, item =>
+         <AccountSelector.AccountItem
+           alias={item.label}
+           address={item.value}
+         />
+       )}
+    </View>;
+
+  let renderItem = (item: Selector.item) =>
+    <AccountSelector.AccountItem alias={item.label} address={item.value} />;
+
+  let xtzToken: Token.t = {
+    address: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    alias: "Tezos",
+    currency: "XTZ",
+  };
+
+  [@react.component]
+  let make = (~selectedToken, ~setSelectedToken) => {
+    let tokensRequest = StoreContext.Tokens.useLoad();
+
+    let items =
+      tokensRequest
+      ->ApiRequest.getDoneOk
+      ->Belt.Option.mapWithDefault([||], Belt.Map.String.valuesToArray)
+      ->(tokenItems => [|xtzToken|]->Belt.Array.concat(tokenItems))
+      ->Belt.Array.map(token =>
+          {Selector.value: token.address, label: token.alias}
+        );
+
+    let onValueChange = newValue => {
+      setSelectedToken(_ =>
+        newValue == xtzToken.address ? None : Some(newValue)
+      );
+    };
+
+    <Selector
+      style=styles##selector
+      items
+      renderButton
+      onValueChange
+      renderItem
+      selectedValue={
+        selectedToken->Belt.Option.getWithDefault(xtzToken.address)
+      }
+    />;
+  };
+};
+
 module AddAccountButton = {
   let styles =
     Style.(
@@ -78,6 +154,8 @@ let make = () => {
   let accounts = StoreContext.Accounts.useGetAll();
   let accountsRequest = StoreContext.Accounts.useRequest();
 
+  let (selectedToken, setSelectedToken) = React.useState(_ => None);
+
   <Page>
     {switch (accountsRequest) {
      | Done(_)
@@ -89,6 +167,7 @@ let make = () => {
      | _ =>
        accountsRequest->ApiRequest.mapOrLoad(_ => {
          <>
+           <TokenSelector selectedToken setSelectedToken />
            <BalanceTotal />
            <AddAccountButton />
            {accounts
