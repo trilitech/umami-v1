@@ -179,6 +179,7 @@ let make = () => {
                 <AccountRowItem
                   key={account.address}
                   account
+                  tokenAddress=?selectedToken
                   zIndex={accounts->Belt.Map.String.size - index}
                 />
               )

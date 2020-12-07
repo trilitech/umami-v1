@@ -36,13 +36,28 @@ let styles =
   );
 
 [@react.component]
-let make = (~account: Account.t, ~zIndex) => {
+let make = (~account: Account.t, ~tokenAddress=?, ~zIndex) => {
   let balanceRequest = StoreContext.Balance.useLoad(account.address);
   let delegateRequest = StoreContext.Delegate.useLoad(account.address);
   let addToast = LogsContext.useToast();
 
+  Js.log(tokenAddress);
+
+  let balanceTokenRequest =
+    StoreContext.Tokens.useLoadBalance(account.address, tokenAddress);
+
+  Js.log(balanceTokenRequest);
+
   <RowItem.Bordered height=74. style={Style.style(~zIndex, ())}>
-    <View style=styles##inner> <AccountInfo account balanceRequest /> </View>
+    <View style=styles##inner>
+      <AccountInfo
+        account
+        balanceRequest={
+          tokenAddress->Belt.Option.isSome
+            ? balanceTokenRequest : balanceRequest
+        }
+      />
+    </View>
     <View style=styles##actionButtons>
       <ClipboardButton
         copied=I18n.log#address

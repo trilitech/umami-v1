@@ -21,11 +21,34 @@ let useSimulate = network => {
 
 let useCheckTokenContract = TokensAPI.checkTokenContract;
 
-let useGetOperationOffline = network => {
-  let get = (~config, operation) =>
+let useGetOperationOffline =
+    (
+      ~network,
+      ~requestState as (request, setRequest),
+      ~operation: option(Tokens.operation),
+    ) => {
+  let get = (~config, (network, operation)) =>
     (network, config)->TokensAPI.callGetOperationOffline(operation);
 
-  ApiRequest.useGetter(~get, ~kind=Logs.Tokens);
+  let getRequest =
+    ApiRequest.useGetter(~get, ~kind=Logs.Tokens, ~setRequest, ());
+
+  let isMounted = ReactUtils.useIsMonted();
+  React.useEffect4(
+    () => {
+      let (shouldReload, loading) =
+        ApiRequest.conditionToLoad(request, isMounted);
+      operation->Common.Lib.Option.iter(operation =>
+        if (shouldReload) {
+          getRequest(~loading, (network, operation));
+        }
+      );
+      None;
+    },
+    (isMounted, request, network, operation),
+  );
+
+  request;
 };
 
 let useLoadTokens = (~network, ~requestState) => {

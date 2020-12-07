@@ -298,6 +298,31 @@ module Tokens = {
       ~requestState=tokensRequestState,
     );
   };
+
+  let useLoadBalance = (address: string, tokenAddress: option(string)) => {
+    let network = Network.useGet();
+    let balanceRequestState = React.useState(() => ApiRequest.NotAsked);
+
+    let operation =
+      React.useMemo2(
+        () =>
+          tokenAddress->Belt.Option.map(tokenAddress =>
+            Tokens.makeGetBalance(
+              address,
+              "KT1BZ6cBooBYubKv4Z3kd7izefLXgwTrSfoG",
+              tokenAddress,
+              (),
+            )
+          ),
+        (address, tokenAddress),
+      );
+
+    TokensApiRequest.useGetOperationOffline(
+      ~network,
+      ~requestState=balanceRequestState,
+      ~operation,
+    );
+  };
 };
 
 module Aliases = {
