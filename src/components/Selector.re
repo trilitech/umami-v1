@@ -11,7 +11,7 @@ module Item = {
       StyleSheet.create({
         "itemContainer":
           style(
-            ~height=58.->dp,
+            ~paddingVertical=5.->dp,
             ~flexDirection=`row,
             ~alignItems=`center,
             (),
@@ -74,6 +74,7 @@ let make =
       ~items: array(item),
       ~selectedValue=?,
       ~onValueChange,
+      ~noneItem: option(item)=?,
       ~renderButton,
       ~renderItem,
       ~disabled=false,
@@ -108,7 +109,9 @@ let make =
       onPress={_e => setIsOpen(prevIsOpen => !prevIsOpen)}
       disabled>
       <View style=styles##button pointerEvents=`none>
-        {renderButton(selectedItem)}
+        {renderButton(
+           selectedItem->Belt.Option.isSome ? selectedItem : noneItem,
+         )}
         {disabled
            ? React.null
            : <Icons.ChevronDown
@@ -120,6 +123,9 @@ let make =
     </TouchableOpacity>
     <View style={ReactUtils.displayOn(isOpen)}>
       <ScrollView style=styles##listContainer>
+        {noneItem->Belt.Option.mapWithDefault(React.null, item =>
+           <Item key={item.value} item onChange renderItem />
+         )}
         {items
          ->Belt.Array.map(item =>
              <Item key={item.value} item onChange renderItem />

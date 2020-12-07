@@ -8,14 +8,14 @@ module TokenSelector = {
           style(
             ~zIndex=4,
             ~alignSelf=`flexStart,
-            ~minWidth=460.->dp,
+            ~minWidth=320.->dp,
             ~marginTop=0.->dp,
             ~marginBottom=30.->dp,
             (),
           ),
         "selectorContent":
           style(
-            ~height=68.->dp,
+            ~height=42.->dp,
             ~flexDirection=`row,
             ~alignItems=`center,
             ~flex=1.,
@@ -25,23 +25,40 @@ module TokenSelector = {
       })
     );
 
+  module TokenItem = {
+    let styles =
+      Style.(
+        StyleSheet.create({
+          "inner":
+            style(
+              ~height=22.->dp,
+              ~marginHorizontal=20.->dp,
+              ~justifyContent=`spaceBetween,
+              (),
+            ),
+        })
+      );
+
+    [@react.component]
+    let make = (~alias) => {
+      <View style=styles##inner>
+        <Typography.Subtitle2> alias->React.string </Typography.Subtitle2>
+      </View>;
+    };
+  };
+
   let renderButton = (selectedItem: option(Selector.item)) =>
     <View style=styles##selectorContent>
       {selectedItem->Belt.Option.mapWithDefault(<LoadingView />, item =>
-         <AccountSelector.AccountItem
-           alias={item.label}
-           address={item.value}
-         />
+         <TokenItem alias={item.label} />
        )}
     </View>;
 
-  let renderItem = (item: Selector.item) =>
-    <AccountSelector.AccountItem alias={item.label} address={item.value} />;
+  let renderItem = (item: Selector.item) => <TokenItem alias={item.label} />;
 
-  let xtzToken: Token.t = {
-    address: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-    alias: "Tezos",
-    currency: "XTZ",
+  let xtzItem: Selector.item = {
+    value: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    label: "Tezos",
   };
 
   [@react.component]
@@ -52,14 +69,13 @@ module TokenSelector = {
       tokensRequest
       ->ApiRequest.getDoneOk
       ->Belt.Option.mapWithDefault([||], Belt.Map.String.valuesToArray)
-      ->(tokenItems => [|xtzToken|]->Belt.Array.concat(tokenItems))
       ->Belt.Array.map(token =>
           {Selector.value: token.address, label: token.alias}
         );
 
     let onValueChange = newValue => {
       setSelectedToken(_ =>
-        newValue == xtzToken.address ? None : Some(newValue)
+        newValue == xtzItem.value ? None : Some(newValue)
       );
     };
 
@@ -69,9 +85,8 @@ module TokenSelector = {
       renderButton
       onValueChange
       renderItem
-      selectedValue={
-        selectedToken->Belt.Option.getWithDefault(xtzToken.address)
-      }
+      selectedValue=?selectedToken
+      noneItem=xtzItem
     />;
   };
 };
