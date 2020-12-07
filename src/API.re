@@ -812,6 +812,16 @@ module Tokens = (Caller: CallerAPI) => {
       });
   };
 
+  let get = network => {
+    switch (network) {
+    | Network.Test =>
+      Future.value([|
+        ("Klondike", "KLD", "KT1BUdnCMfBKdVxCKyBvMUqwLqm27EDGWskB"),
+      |])
+    | Network.Main => Future.value([||])
+    };
+  };
+
   let make_get_arguments = (arguments, callback, offline, options) =>
     if (offline) {
       Js.Array2.concat(arguments, [|"offline", "with", callback|]);
