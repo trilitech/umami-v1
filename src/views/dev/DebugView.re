@@ -183,6 +183,9 @@ let make = () => {
               <Text style=styles##section>
                 {accounts->toString->React.string}
               </Text>
+              <TokensCheckForm />
+              <TokensGetBalanceForm />
+              <TokensTransferForm />
               <OperationList />
             </View>
           </InjectionState.Provider>

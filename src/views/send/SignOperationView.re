@@ -56,7 +56,7 @@ let make =
         ->React.string
       </Typography.Headline2>
       {switch (operation) {
-       | Transaction({fee})
+       | Transaction({options: {fee}})
        | Delegation({fee}) =>
          fee->ReactUtils.mapOpt(fee =>
            <Typography.Body1 colorStyle=`mediumEmphasis>
