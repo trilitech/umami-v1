@@ -162,14 +162,23 @@ module Balance = {
   let useGetTotal = () => {
     let store = useStoreContext();
     let (balanceRequests, _) = store.balanceRequestsState;
+    let (accountsRequest, _) = store.accountsRequestState;
+    let accounts =
+      accountsRequest->ApiRequest.getOkWithDefault(Map.String.empty);
 
-    balanceRequests->Map.String.size > 0
-    && balanceRequests->Map.String.every((_, balanceRequest) =>
-         balanceRequest->ApiRequest.isDone
-       )
+    let accountsBalanceRequests =
+      accounts
+      ->Map.String.valuesToArray
+      ->Array.keepMap(account => {
+          balanceRequests->Map.String.get(account.address)
+        })
+      ->Array.keep(balanceRequest => balanceRequest->ApiRequest.isDone);
+
+    // check if balance requests for each accounts are done
+    accountsBalanceRequests->Array.size == accounts->Map.String.size
       ? Some(
-          balanceRequests
-          ->Map.String.reduce(0.0, (acc, _, balanceRequest) => {
+          accountsBalanceRequests
+          ->Array.reduce(0.0, (acc, balanceRequest) => {
               acc
               +. balanceRequest
                  ->ApiRequest.getOkWithDefault("0.0")
