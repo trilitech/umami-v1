@@ -21,7 +21,7 @@ let useSimulate = network => {
 
 let useCheckTokenContract = TokensAPI.checkTokenContract;
 
-let useGetOperationOffline =
+let useLoadOperationOffline =
     (
       ~network,
       ~requestState as (request, setRequest),

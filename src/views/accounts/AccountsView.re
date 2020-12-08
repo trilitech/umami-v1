@@ -185,7 +185,7 @@ let make = () => {
        accountsRequest->ApiRequest.mapOrLoad(_ => {
          <>
            <TokenSelector selectedToken setSelectedToken />
-           <BalanceTotal />
+           <BalanceTotal ?token />
            <AddAccountButton />
            {accounts
             ->Belt.Map.String.valuesToArray

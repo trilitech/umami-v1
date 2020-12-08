@@ -17,6 +17,7 @@ type state = {
   aliasesRequestState: reactState(ApiRequest.t(Map.String.t(Account.t))),
   bakersRequestState: reactState(ApiRequest.t(array(Delegate.t))),
   tokensRequestState: reactState(ApiRequest.t(Map.String.t(Token.t))),
+  balanceTokenRequestsState: apiRequestsState(string),
 };
 
 // Context and Provider
@@ -34,6 +35,7 @@ let initialState = {
   aliasesRequestState: (NotAsked, _ => ()),
   bakersRequestState: (NotAsked, _ => ()),
   tokensRequestState: (NotAsked, _ => ()),
+  balanceTokenRequestsState: initialApiRequestsState,
 };
 
 let context = React.createContext(initialState);
@@ -63,6 +65,7 @@ let make = (~children) => {
   let delegateRequestsState = React.useState(() => Map.String.empty);
   let delegateInfoRequestsState = React.useState(() => Map.String.empty);
   let operationsRequestsState = React.useState(() => Map.String.empty);
+  let balanceTokenRequestsState = React.useState(() => Map.String.empty);
 
   let aliasesRequestState = React.useState(() => ApiRequest.NotAsked);
   let bakersRequestState = React.useState(() => ApiRequest.NotAsked);
@@ -100,6 +103,7 @@ let make = (~children) => {
       aliasesRequestState,
       bakersRequestState,
       tokensRequestState,
+      balanceTokenRequestsState,
     }>
     children
   </Provider>;
@@ -172,7 +176,7 @@ module Balance = {
       ->Array.keepMap(account => {
           balanceRequests->Map.String.get(account.address)
         })
-      ->Array.keep(balanceRequest => balanceRequest->ApiRequest.isDone);
+      ->Array.keep(ApiRequest.isDone);
 
     // check if balance requests for each accounts are done
     accountsBalanceRequests->Array.size == accounts->Map.String.size
@@ -194,6 +198,78 @@ module Balance = {
     let store = useStoreContext();
     let (_, setBalanceRequests) = store.balanceRequestsState;
     () => setBalanceRequests(_ => Map.String.empty);
+  };
+};
+
+module BalanceToken = {
+  let getRequestKey = (address: string, tokenAddress: option(string)) =>
+    tokenAddress->Option.map(tokenAddress => address ++ tokenAddress);
+
+  let useRequestState =
+    useRequestsState(store => store.balanceTokenRequestsState);
+
+  let useLoad = (address: string, tokenAddress: option(string)) => {
+    let network = Network.useGet();
+    let requestState = useRequestState(address->getRequestKey(tokenAddress));
+
+    let operation =
+      React.useMemo2(
+        () =>
+          tokenAddress->Belt.Option.map(tokenAddress =>
+            Tokens.makeGetBalance(
+              address,
+              "KT1BZ6cBooBYubKv4Z3kd7izefLXgwTrSfoG",
+              tokenAddress,
+              (),
+            )
+          ),
+        (address, tokenAddress),
+      );
+
+    TokensApiRequest.useLoadOperationOffline(
+      ~network,
+      ~requestState,
+      ~operation,
+    );
+  };
+
+  let useGetTotal = (tokenAddress: option(string)) => {
+    let store = useStoreContext();
+    let (balanceRequests, _) = store.balanceTokenRequestsState;
+    let (accountsRequest, _) = store.accountsRequestState;
+    let accounts =
+      accountsRequest->ApiRequest.getOkWithDefault(Map.String.empty);
+
+    let accountsBalanceRequests =
+      accounts
+      ->Map.String.valuesToArray
+      ->Array.keepMap(account => {
+          account.address
+          ->getRequestKey(tokenAddress)
+          ->Option.flatMap(balanceRequests->Map.String.get)
+        })
+      ->Array.keep(ApiRequest.isDone);
+
+    // check if balance requests for each accounts are done
+    accountsBalanceRequests->Array.size == accounts->Map.String.size
+      ? Some(
+          accountsBalanceRequests
+          ->Array.reduce(0.0, (acc, balanceRequest) => {
+              acc
+              +. balanceRequest
+                 ->ApiRequest.getOkWithDefault("0.0")
+                 ->Belt.Float.fromString
+                 ->Belt.Option.getWithDefault(0.0)
+            })
+          ->Js.Float.toFixedWithPrecision(~digits=6),
+        )
+      : None;
+  };
+
+  let useResetAll = () => {
+    let store = useStoreContext();
+    let (_, setBalanceTokenRequests) = store.balanceTokenRequestsState;
+    () => setBalanceTokenRequests(_ => Map.String.empty);
   };
 };
 
@@ -263,11 +339,13 @@ module Operations = {
   let useResetAll = () => {
     let store = useStoreContext();
     let resetBalances = Balance.useResetAll();
+    let resetBalanceTokens = BalanceToken.useResetAll();
     let resetDelegatesAndDelegatesInfo = DelegateInfo.useResetAll();
     let (_, setOperationsRequests) = store.operationsRequestsState;
     () => {
       setOperationsRequests(_ => Map.String.empty);
       resetBalances();
+      resetBalanceTokens();
       resetDelegatesAndDelegatesInfo();
     };
   };
@@ -331,31 +409,6 @@ module Tokens = {
     | (Some(tokenAddress), tokens) => tokens->Map.String.get(tokenAddress)
     | _ => None
     };
-  };
-
-  let useLoadBalance = (address: string, tokenAddress: option(string)) => {
-    let network = Network.useGet();
-    let balanceRequestState = React.useState(() => ApiRequest.NotAsked);
-
-    let operation =
-      React.useMemo2(
-        () =>
-          tokenAddress->Belt.Option.map(tokenAddress =>
-            Tokens.makeGetBalance(
-              address,
-              "KT1BZ6cBooBYubKv4Z3kd7izefLXgwTrSfoG",
-              tokenAddress,
-              (),
-            )
-          ),
-        (address, tokenAddress),
-      );
-
-    TokensApiRequest.useGetOperationOffline(
-      ~network,
-      ~requestState=balanceRequestState,
-      ~operation,
-    );
   };
 };
 

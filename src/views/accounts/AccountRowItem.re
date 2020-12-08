@@ -39,7 +39,7 @@ let styles =
 let make = (~account: Account.t, ~token: option(Token.t)=?, ~zIndex) => {
   let balanceRequest = StoreContext.Balance.useLoad(account.address);
   let balanceTokenRequest =
-    StoreContext.Tokens.useLoadBalance(
+    StoreContext.BalanceToken.useLoad(
       account.address,
       token->Belt.Option.map(token => token.address),
     );
