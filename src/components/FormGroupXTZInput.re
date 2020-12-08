@@ -13,6 +13,7 @@ let make =
       ~handleChange,
       ~error,
       ~style: option(ReactNative.Style.t)=?,
+      ~decoration=?,
     ) => {
   let (value, setValue) = React.useState(() => value);
   <FormGroupTextInput
@@ -21,7 +22,7 @@ let make =
     value
     error
     onBlur={_ => formatOnBlur(setValue)}
-    decoration=xtzDecoration
+    decoration={decoration->Belt.Option.getWithDefault(xtzDecoration)}
     handleChange={text => {
       handleChange(text);
       setValue(_ => text);

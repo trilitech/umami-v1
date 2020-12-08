@@ -1,5 +1,32 @@
 open ReactNative;
 
+module FormGroupAmountWithTokenSelector = {
+  let tokenDecoration = (~currency, ~style) =>
+    <Typography.Body1 style> currency->React.string </Typography.Body1>;
+
+  [@react.component]
+  let make =
+      (
+        ~label,
+        ~value,
+        ~handleChange,
+        ~error,
+        ~style: option(ReactNative.Style.t)=?,
+        ~selectedToken,
+        ~setSelectedToken,
+        ~token: option(Token.t)=?,
+      ) => {
+    let decoration =
+      token->Belt.Option.map(token =>
+        tokenDecoration(~currency=token.currency)
+      );
+    <>
+      <AccountsView.TokenSelector selectedToken setSelectedToken />
+      <FormGroupXTZInput label value handleChange error ?decoration />
+    </>;
+  };
+};
+
 let styles =
   Style.(
     StyleSheet.create({
@@ -117,21 +144,28 @@ module Form = {
       };
       let (advancedOptionOpened, setAdvancedOptionOpened) = advancedOptionState;
 
+      let (selectedToken, setSelectedToken) = React.useState(_ => None);
+      let token = StoreContext.Tokens.useGet(selectedToken);
+
       <>
         <Typography.Headline2 style=styles##title>
           I18n.title#send->React.string
         </Typography.Headline2>
-        <FormGroupXTZInput
+        <FormGroupAmountWithTokenSelector
           label=I18n.label#send_amount
           value={form.values.amount}
           handleChange={form.handleChange(Amount)}
           error={form.getFieldError(Field(Amount))}
+          selectedToken
+          setSelectedToken
+          ?token
         />
         <FormGroupAccountSelector
           label=I18n.label#send_sender
           value={form.values.sender}
           handleChange={form.handleChange(Sender)}
           error={form.getFieldError(Field(Sender))}
+          ?token
         />
         <FormGroupContactSelector
           label=I18n.label#send_recipient

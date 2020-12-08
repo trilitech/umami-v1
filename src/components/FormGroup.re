@@ -2,9 +2,7 @@ open ReactNative;
 
 let styles =
   Style.(
-    StyleSheet.create({
-      "formGroup": style(~flex=1., ~marginVertical=10.->dp, ()),
-    })
+    StyleSheet.create({"formGroup": style(~marginVertical=10.->dp, ())})
   );
 
 [@react.component]
