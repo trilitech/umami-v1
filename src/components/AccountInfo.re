@@ -5,33 +5,16 @@ let styles =
     StyleSheet.create({
       "container": style(~height=62.->dp, ()),
       "alias": style(~height=19.->dp, ~marginBottom=2.->dp, ()),
-      "balance": style(~height=19.->dp, ~marginBottom=2.->dp, ()),
       "balanceEmpty": style(~height=2.->dp, ()),
       "address": style(~height=19.->dp, ()),
     })
   );
 
-let balance = (request: BalanceApiRequest.balanceApiRequest) => {
-  <Typography.Subtitle3 style=styles##balance>
-    {switch (request) {
-     | Done(Ok(balance)) =>
-       I18n.t#xtz_amount(balance->BusinessUtils.formatXTZ)->React.string
-     | Done(Error(error)) => error->React.string
-     | NotAsked
-     | Loading =>
-       <ActivityIndicator
-         animating=true
-         size={ActivityIndicator_Size.exact(19.)}
-         color=Colors.highIcon
-       />
-     }}
-  </Typography.Subtitle3>;
-};
-
 [@react.component]
 let make =
     (
       ~account: Account.t,
+      ~token: option(Token.t)=?,
       ~balanceRequest: option(BalanceApiRequest.balanceApiRequest)=?,
       ~showAlias=true,
     ) => {
@@ -41,8 +24,8 @@ let make =
      </Typography.Subtitle1>
      ->ReactUtils.onlyWhen(showAlias)}
     {balanceRequest->Belt.Option.mapWithDefault(
-       <View style=styles##balanceEmpty />,
-       balance,
+       <View style=styles##balanceEmpty />, balanceRequest =>
+       <AccountInfoBalance balanceRequest ?token />
      )}
     <Typography.Body3 style=styles##address>
       account.address->React.string

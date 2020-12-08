@@ -16,6 +16,7 @@ type state = {
   operationsRequestsState: apiRequestsState(array(Operation.t)),
   aliasesRequestState: reactState(ApiRequest.t(Map.String.t(Account.t))),
   bakersRequestState: reactState(ApiRequest.t(array(Delegate.t))),
+  tokensRequestState: reactState(ApiRequest.t(Map.String.t(Token.t))),
 };
 
 // Context and Provider
@@ -32,6 +33,7 @@ let initialState = {
   operationsRequestsState: initialApiRequestsState,
   aliasesRequestState: (NotAsked, _ => ()),
   bakersRequestState: (NotAsked, _ => ()),
+  tokensRequestState: (NotAsked, _ => ()),
 };
 
 let context = React.createContext(initialState);
@@ -64,6 +66,7 @@ let make = (~children) => {
 
   let aliasesRequestState = React.useState(() => ApiRequest.NotAsked);
   let bakersRequestState = React.useState(() => ApiRequest.NotAsked);
+  let tokensRequestState = React.useState(() => ApiRequest.NotAsked);
 
   AccountApiRequest.useLoad(accountsRequestState)->ignore;
   AliasApiRequest.useLoad(aliasesRequestState)->ignore;
@@ -96,6 +99,7 @@ let make = (~children) => {
       operationsRequestsState,
       aliasesRequestState,
       bakersRequestState,
+      tokensRequestState,
     }>
     children
   </Provider>;
@@ -289,14 +293,35 @@ module Bakers = {
 };
 
 module Tokens = {
+  let useRequestState = () => {
+    let store = useStoreContext();
+    store.tokensRequestState;
+  };
+
+  let useRequest = () => {
+    let (tokensRequest, _) = useRequestState();
+    tokensRequest;
+  };
+
   let useLoad = () => {
     let network = Network.useGet();
-    let tokensRequestState = React.useState(() => ApiRequest.NotAsked);
+    let requestState = useRequestState();
 
-    TokensApiRequest.useLoadTokens(
-      ~network,
-      ~requestState=tokensRequestState,
-    );
+    TokensApiRequest.useLoadTokens(~network, ~requestState);
+  };
+
+  let useGetAll = () => {
+    let accountsRequest = useRequest();
+    accountsRequest->ApiRequest.getOkWithDefault(Map.String.empty);
+  };
+
+  let useGet = (tokenAddress: option(string)) => {
+    let tokens = useGetAll();
+
+    switch (tokenAddress, tokens) {
+    | (Some(tokenAddress), tokens) => tokens->Map.String.get(tokenAddress)
+    | _ => None
+    };
   };
 
   let useLoadBalance = (address: string, tokenAddress: option(string)) => {

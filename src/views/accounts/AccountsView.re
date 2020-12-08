@@ -171,6 +171,8 @@ let make = () => {
 
   let (selectedToken, setSelectedToken) = React.useState(_ => None);
 
+  let token = StoreContext.Tokens.useGet(selectedToken);
+
   <Page>
     {switch (accountsRequest) {
      | Done(_)
@@ -194,7 +196,7 @@ let make = () => {
                 <AccountRowItem
                   key={account.address}
                   account
-                  tokenAddress=?selectedToken
+                  ?token
                   zIndex={accounts->Belt.Map.String.size - index}
                 />
               )

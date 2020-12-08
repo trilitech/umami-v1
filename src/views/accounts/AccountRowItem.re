@@ -36,25 +36,23 @@ let styles =
   );
 
 [@react.component]
-let make = (~account: Account.t, ~tokenAddress=?, ~zIndex) => {
+let make = (~account: Account.t, ~token: option(Token.t)=?, ~zIndex) => {
   let balanceRequest = StoreContext.Balance.useLoad(account.address);
+  let balanceTokenRequest =
+    StoreContext.Tokens.useLoadBalance(
+      account.address,
+      token->Belt.Option.map(token => token.address),
+    );
   let delegateRequest = StoreContext.Delegate.useLoad(account.address);
   let addToast = LogsContext.useToast();
-
-  Js.log(tokenAddress);
-
-  let balanceTokenRequest =
-    StoreContext.Tokens.useLoadBalance(account.address, tokenAddress);
-
-  Js.log(balanceTokenRequest);
 
   <RowItem.Bordered height=74. style={Style.style(~zIndex, ())}>
     <View style=styles##inner>
       <AccountInfo
         account
+        ?token
         balanceRequest={
-          tokenAddress->Belt.Option.isSome
-            ? balanceTokenRequest : balanceRequest
+          token->Belt.Option.isSome ? balanceTokenRequest : balanceRequest
         }
       />
     </View>

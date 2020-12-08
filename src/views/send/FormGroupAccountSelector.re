@@ -32,9 +32,8 @@ let make = (~label, ~value: string, ~handleChange, ~error) => {
   <FormGroup style=styles##formGroup>
     <FormLabel label hasError style=styles##label />
     <View>
-      <View
-        style={Style.array([|AccountInfo.styles##balance, styles##balance|])}>
-        {AccountInfo.balance(balanceRequest)}
+      <View style=styles##balance>
+        <AccountInfoBalance balanceRequest />
       </View>
       <Selector
         items
