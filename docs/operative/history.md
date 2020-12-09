@@ -53,5 +53,7 @@ gantt
     Sprint 7 - Alpha Candidate                        :done  , 2020-10-19, 2020-10-30
     section Sprint 8 - Alpha
     Sprint 8 - Alpha                                  :done  , 2020-11-02, 2020-11-13
+    section Sprint 9 - Refactoring
+    Sprint 9 - Refactoring                            :done  , 2020-11-15, 2020-11-27
 ```
 
