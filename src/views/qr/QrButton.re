@@ -1,9 +1,5 @@
 [@react.component]
-let make =
-    (
-      ~account,
-      ~balanceRequest: option(BalanceApiRequest.balanceApiRequest)=?,
-    ) => {
+let make = (~account, ~showBalance=true) => {
   let modal = React.useRef(Js.Nullable.null);
 
   let (visibleModal, setVisibleModal) = React.useState(_ => false);
@@ -24,7 +20,7 @@ let make =
   <>
     <IconButton icon=Icons.Qr.build onPress />
     <ModalAction ref=modal visible=visibleModal onRequestClose=closeAction>
-      <ReceiveView account ?balanceRequest onPressCancel />
+      <ReceiveView account onPressCancel showBalance />
     </ModalAction>
   </>;
 };

@@ -32,25 +32,13 @@ let make =
         {Selector.value: account.address, label: account.alias}
       );
 
-  let (currentAccount, setCurrent) = React.useState(() => value);
-
-  let balanceRequest = StoreContext.Balance.useLoad(currentAccount);
-  let balanceTokenRequest =
-    StoreContext.BalanceToken.useLoad(
-      currentAccount,
-      token->Belt.Option.map(token => token.address),
-    );
+  let (_currentAccount, setCurrent) = React.useState(() => value);
 
   <FormGroup style=styles##formGroup>
     <FormLabel label hasError style=styles##label />
     <View>
       <View style=styles##balance>
-        <AccountInfoBalance
-          ?token
-          balanceRequest={
-            token->Belt.Option.isSome ? balanceTokenRequest : balanceRequest
-          }
-        />
+        <AccountInfoBalance address=value ?token />
       </View>
       <Selector
         items

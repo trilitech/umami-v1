@@ -1,5 +1,44 @@
 open ReactNative;
 
+let balanceActivityIndicator =
+  <ActivityIndicator
+    animating=true
+    size={ActivityIndicator_Size.exact(19.)}
+    color=Colors.highIcon
+  />;
+
+module Balance = {
+  [@react.component]
+  let make = (~address: string) => {
+    let balanceRequest = StoreContext.Balance.useLoad(address);
+
+    switch (balanceRequest) {
+    | Done(Ok(balance)) =>
+      I18n.t#xtz_amount(balance->BusinessUtils.formatXTZ)->React.string
+    | Done(Error(_error)) => React.null
+    | NotAsked
+    | Loading => balanceActivityIndicator
+    };
+  };
+};
+
+module BalanceToken = {
+  [@react.component]
+  let make = (~address: string, ~token: Token.t) => {
+    let balanceTokenRequest =
+      StoreContext.BalanceToken.useLoad(address, Some(token.address));
+
+    switch (balanceTokenRequest) {
+    | Done(Ok(balance)) =>
+      I18n.t#amount(balance->BusinessUtils.formatXTZ, token.currency)
+      ->React.string
+    | Done(Error(_error)) => React.null
+    | NotAsked
+    | Loading => balanceActivityIndicator
+    };
+  };
+};
+
 let styles =
   Style.(
     StyleSheet.create({
@@ -8,29 +47,11 @@ let styles =
   );
 
 [@react.component]
-let make =
-    (
-      ~token: option(Token.t)=?,
-      ~balanceRequest: BalanceApiRequest.balanceApiRequest,
-    ) => {
+let make = (~address: string, ~token: option(Token.t)=?) => {
   <Typography.Subtitle3 style=styles##balance>
-    {switch (balanceRequest) {
-     | Done(Ok(balance)) =>
-       I18n.t#amount(
-         balance->BusinessUtils.formatXTZ,
-         token->Belt.Option.mapWithDefault(I18n.t#xtz, token =>
-           token.currency
-         ),
-       )
-       ->React.string
-     | Done(Error(error)) => error->React.string
-     | NotAsked
-     | Loading =>
-       <ActivityIndicator
-         animating=true
-         size={ActivityIndicator_Size.exact(19.)}
-         color=Colors.highIcon
-       />
+    {switch (token) {
+     | Some(token) => <BalanceToken address token />
+     | None => <Balance address />
      }}
   </Typography.Subtitle3>;
 };

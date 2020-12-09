@@ -64,7 +64,7 @@ let make =
           addToast
           data={account.address}
         />
-        <QrButton account />
+        <QrButton account showBalance=false />
       </View>
       <View>
         <Menu icon=Icons.More.build size=30.>

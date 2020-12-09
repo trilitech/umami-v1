@@ -27,8 +27,6 @@ let make = (~label, ~value: string, ~handleChange, ~error, ~disabled) => {
         Js.String.localeCompare(a.label, b.label)->int_of_float
       );
 
-  let balanceRequest = StoreContext.Balance.useLoad(value);
-
   React.useEffect2(
     () => {
       if (value == "") {
@@ -44,7 +42,7 @@ let make = (~label, ~value: string, ~handleChange, ~error, ~disabled) => {
     <FormLabel label hasError style=styles##label />
     <View>
       <View style=styles##balance>
-        <AccountInfoBalance balanceRequest />
+        <AccountInfoBalance address=value />
       </View>
       <Selector
         items

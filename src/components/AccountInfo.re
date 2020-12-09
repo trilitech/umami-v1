@@ -15,7 +15,7 @@ let make =
     (
       ~account: Account.t,
       ~token: option(Token.t)=?,
-      ~balanceRequest: option(BalanceApiRequest.balanceApiRequest)=?,
+      ~showBalance=true,
       ~showAlias=true,
     ) => {
   <View style=styles##container>
@@ -23,10 +23,9 @@ let make =
        account.alias->React.string
      </Typography.Subtitle1>
      ->ReactUtils.onlyWhen(showAlias)}
-    {balanceRequest->Belt.Option.mapWithDefault(
-       <View style=styles##balanceEmpty />, balanceRequest =>
-       <AccountInfoBalance balanceRequest ?token />
-     )}
+    {showBalance
+       ? <AccountInfoBalance address={account.address} ?token />
+       : <View style=styles##balanceEmpty />}
     <Typography.Body3 style=styles##address>
       account.address->React.string
     </Typography.Body3>
