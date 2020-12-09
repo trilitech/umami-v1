@@ -61,31 +61,62 @@ let styles =
     })
   );
 
-let buildTransaction = (state: SendForm.state, advancedOptionOpened) => {
+let buildTransaction =
+    (
+      state: SendForm.state,
+      advancedOptionOpened: bool,
+      token: option(Token.t),
+    ) => {
   let mapIfAdvanced = (v, map) =>
     advancedOptionOpened && v->Js.String2.length > 0 ? Some(v->map) : None;
 
-  Injection.makeTransfer(
-    ~source=state.values.sender,
-    ~amount=state.values.amount->Js.Float.fromString,
-    ~destination=state.values.recipient,
-    ~fee=?state.values.fee->mapIfAdvanced(Js.Float.fromString),
-    ~counter=?state.values.counter->mapIfAdvanced(int_of_string),
-    ~gasLimit=?state.values.gasLimit->mapIfAdvanced(int_of_string),
-    ~storageLimit=?state.values.storageLimit->mapIfAdvanced(int_of_string),
-    ~forceLowFee=?
-      advancedOptionOpened && state.values.forceLowFee ? Some(true) : None,
-    (),
-  );
+  switch (token) {
+  | Some(token) =>
+    SendForm.TokensOperation(
+      Tokens.makeTransfer(
+        ~source=state.values.sender,
+        ~amount=state.values.amount->Js.Float.fromString->int_of_float,
+        ~destination=state.values.recipient,
+        ~contract=token.address,
+        ~fee=?state.values.fee->mapIfAdvanced(Js.Float.fromString),
+        ~counter=?state.values.counter->mapIfAdvanced(int_of_string),
+        ~gasLimit=?state.values.gasLimit->mapIfAdvanced(int_of_string),
+        ~storageLimit=?
+          state.values.storageLimit->mapIfAdvanced(int_of_string),
+        ~forceLowFee=?
+          advancedOptionOpened && state.values.forceLowFee
+            ? Some(true) : None,
+        (),
+      ),
+      token,
+    )
+  | None =>
+    SendForm.InjectionOperation(
+      Injection.makeTransfer(
+        ~source=state.values.sender,
+        ~amount=state.values.amount->Js.Float.fromString,
+        ~destination=state.values.recipient,
+        ~fee=?state.values.fee->mapIfAdvanced(Js.Float.fromString),
+        ~counter=?state.values.counter->mapIfAdvanced(int_of_string),
+        ~gasLimit=?state.values.gasLimit->mapIfAdvanced(int_of_string),
+        ~storageLimit=?
+          state.values.storageLimit->mapIfAdvanced(int_of_string),
+        ~forceLowFee=?
+          advancedOptionOpened && state.values.forceLowFee
+            ? Some(true) : None,
+        (),
+      ),
+    )
+  };
 };
 
 type step =
   | SendStep
-  | PasswordStep(Injection.operation);
+  | PasswordStep(SendForm.operation);
 
 module Form = {
   let build =
-      (initAccount: option(Account.t), advancedOptionOpened, onSubmit) => {
+      (initAccount: option(Account.t), advancedOptionOpened, token, onSubmit) => {
     SendForm.use(
       ~schema={
         SendForm.Validation.(
@@ -115,7 +146,8 @@ module Form = {
       },
       ~onSubmit=
         ({state}) => {
-          let operation = buildTransaction(state, advancedOptionOpened);
+          let operation =
+            buildTransaction(state, advancedOptionOpened, token);
           onSubmit(operation);
 
           None;
@@ -138,14 +170,13 @@ module Form = {
     open SendForm;
 
     [@react.component]
-    let make = (~onPressCancel, ~advancedOptionState, ~form) => {
+    let make =
+        (~onPressCancel, ~advancedOptionState, ~tokenState, ~token=?, ~form) => {
       let onSubmitSendForm = _ => {
         form.submit();
       };
       let (advancedOptionOpened, setAdvancedOptionOpened) = advancedOptionState;
-
-      let (selectedToken, setSelectedToken) = React.useState(_ => None);
-      let token = StoreContext.Tokens.useGet(selectedToken);
+      let (selectedToken, setSelectedToken) = tokenState;
 
       <>
         <Typography.Headline2 style=styles##title>
@@ -213,23 +244,34 @@ let make = (~onPressCancel) => {
   let (advancedOptionOpened, _) as advancedOptionState =
     React.useState(_ => false);
 
+  let (selectedToken, _) as tokenState = React.useState(_ => None);
+  let token = StoreContext.Tokens.useGet(selectedToken);
+
   let (operationRequest, sendOperation) = StoreContext.Operations.useCreate();
+  let (operationTokenRequest, sendTokenOperation) =
+    StoreContext.OperationToken.useCreate();
 
   let sendOperation = (operation, ~password) =>
-    sendOperation(OperationApiRequest.{operation, password})->ignore;
+    switch (operation) {
+    | SendForm.InjectionOperation(operation) =>
+      sendOperation(OperationApiRequest.{operation, password})->ignore
+    | SendForm.TokensOperation(operation, _) =>
+      sendTokenOperation(TokensApiRequest.{operation, password})->ignore
+    };
 
   let (modalStep, setModalStep) = React.useState(_ => SendStep);
 
   let form =
-    Form.build(account, advancedOptionOpened, op =>
+    Form.build(account, advancedOptionOpened, token, op =>
       setModalStep(_ => PasswordStep(op))
     );
 
   React.useEffect0(() => {None});
 
   <ModalView.Form>
-    {switch (modalStep, operationRequest) {
-     | (_, Done(Ok((hash, _)))) =>
+    {switch (modalStep, operationRequest, operationTokenRequest) {
+     | (_, Done(Ok((hash, _))), _)
+     | (_, _, Done(Ok((hash, _)))) =>
        <>
          <Typography.Headline2 style=styles##title>
            I18n.title#operation_injected->React.string
@@ -242,7 +284,8 @@ let make = (~onPressCancel) => {
            <FormButton text=I18n.btn#ok onPress=onPressCancel />
          </View>
        </>
-     | (_, Done(Error(error))) =>
+     | (_, Done(Error(error)), _)
+     | (_, _, Done(Error(error))) =>
        <>
          <Typography.Body1 colorStyle=`error>
            error->React.string
@@ -251,7 +294,8 @@ let make = (~onPressCancel) => {
            <FormButton text=I18n.btn#ok onPress=onPressCancel />
          </View>
        </>
-     | (_, Loading) =>
+     | (_, Loading, _)
+     | (_, _, Loading) =>
        <View style=styles##loadingView>
          <ActivityIndicator
            animating=true
@@ -259,8 +303,9 @@ let make = (~onPressCancel) => {
            color=Colors.highIcon
          />
        </View>
-     | (SendStep, _) => <Form.View onPressCancel advancedOptionState form />
-     | (PasswordStep(operation), _) =>
+     | (SendStep, _, _) =>
+       <Form.View onPressCancel advancedOptionState tokenState ?token form />
+     | (PasswordStep(operation), _, _) =>
        <SignOperationView
          onPressCancel={_ => setModalStep(_ => SendStep)}
          operation

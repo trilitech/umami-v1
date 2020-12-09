@@ -17,12 +17,7 @@ let styles =
 
 [@react.component]
 let make =
-    (
-      ~title=?,
-      ~onPressCancel,
-      ~operation: Injection.operation,
-      ~sendOperation,
-    ) => {
+    (~title=?, ~onPressCancel, ~operation: SendForm.operation, ~sendOperation) => {
   let form: SendForm.Password.api =
     SendForm.Password.use(
       ~schema={
@@ -46,18 +41,22 @@ let make =
         (
           switch (title, operation) {
           | (Some(title), _) => title
-          | (_, Transaction({amount})) =>
+          | (_, InjectionOperation(Transaction({amount}))) =>
             I18n.t#xtz_amount(
               Js.Float.toFixedWithPrecision(amount, ~digits=1),
             )
-          | (_, Delegation(_)) => I18n.title#delegate
+          | (_, InjectionOperation(Delegation(_))) => I18n.title#delegate
+          | (_, TokensOperation({action: Transfer({amount})}, token)) =>
+            I18n.t#amount(amount->Js.Int.toString, token.currency)
+          | _ => ""
           }
         )
         ->React.string
       </Typography.Headline2>
       {switch (operation) {
-       | Transaction({options: {fee}})
-       | Delegation({fee}) =>
+       | InjectionOperation(Transaction({options: {fee}}))
+       | InjectionOperation(Delegation({fee}))
+       | TokensOperation({options: {fee}}, _) =>
          fee->ReactUtils.mapOpt(fee =>
            <Typography.Body1 colorStyle=`mediumEmphasis>
              {I18n.t#operation_summary_fee(fee->Js.Float.toString)
