@@ -19,19 +19,19 @@ let make = (~label, ~value: string, ~handleChange, ~error, ~disabled) => {
     accounts
     ->Belt.Map.String.valuesToArray
     ->Belt.Array.keepMap(((account, delegate)) =>
-        delegate->Belt.Option.isNone || disabled
-          ? Some({Selector.value: account.address, label: account.alias})
-          : None
+        delegate->Belt.Option.isNone || disabled ? Some(account) : None
       )
     ->Belt.SortArray.stableSortBy((a, b) =>
-        Js.String.localeCompare(a.label, b.label)->int_of_float
+        Js.String.localeCompare(a.alias, b.alias)->int_of_float
       );
 
   React.useEffect2(
     () => {
       if (value == "") {
         let firstItem = items->Belt.Array.get(0);
-        firstItem->Common.Lib.Option.iter(item => item.value->handleChange);
+        firstItem->Common.Lib.Option.iter(account =>
+          account.address->handleChange
+        );
       };
       None;
     },
@@ -41,11 +41,10 @@ let make = (~label, ~value: string, ~handleChange, ~error, ~disabled) => {
   <FormGroup style=styles##formGroup>
     <FormLabel label hasError style=styles##label />
     <View>
-      <View style=styles##balance>
-        <AccountInfoBalance address=value />
-      </View>
+      <View style=styles##balance> <AccountInfoBalance address=value /> </View>
       <Selector
         items
+        getItemValue={account => account.address}
         onValueChange=handleChange
         selectedValue=value
         renderButton=AccountSelector.renderButton

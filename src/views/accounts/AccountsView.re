@@ -40,25 +40,28 @@ module TokenSelector = {
       );
 
     [@react.component]
-    let make = (~alias) => {
+    let make = (~token: Token.t) => {
       <View style=styles##inner>
-        <Typography.Subtitle2> alias->React.string </Typography.Subtitle2>
+        <Typography.Subtitle2>
+          token.alias->React.string
+        </Typography.Subtitle2>
       </View>;
     };
   };
 
-  let renderButton = (selectedItem: option(Selector.item)) =>
+  let renderButton = (selectedToken: option(Token.t)) =>
     <View style=styles##selectorContent>
-      {selectedItem->Belt.Option.mapWithDefault(<LoadingView />, item =>
-         <TokenItem alias={item.label} />
+      {selectedToken->Belt.Option.mapWithDefault(<LoadingView />, token =>
+         <TokenItem token />
        )}
     </View>;
 
-  let renderItem = (item: Selector.item) => <TokenItem alias={item.label} />;
+  let renderItem = (token: Token.t) => <TokenItem token />;
 
-  let xtzItem: Selector.item = {
-    value: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-    label: "Tezos",
+  let xtzToken: Token.t = {
+    address: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    alias: "Tezos",
+    currency: "XTZ",
   };
 
   [@react.component]
@@ -68,25 +71,23 @@ module TokenSelector = {
     let items =
       tokensRequest
       ->ApiRequest.getDoneOk
-      ->Belt.Option.mapWithDefault([||], Belt.Map.String.valuesToArray)
-      ->Belt.Array.map(token =>
-          {Selector.value: token.address, label: token.alias}
-        );
+      ->Belt.Option.mapWithDefault([||], Belt.Map.String.valuesToArray);
 
     let onValueChange = newValue => {
       setSelectedToken(_ =>
-        newValue == xtzItem.value ? None : Some(newValue)
+        newValue == xtzToken.address ? None : Some(newValue)
       );
     };
 
     <Selector
       style=styles##selector
       items
+      getItemValue={token => token.address}
       renderButton
       onValueChange
       renderItem
       selectedValue=?selectedToken
-      noneItem=xtzItem
+      noneItem=xtzToken
     />;
   };
 };

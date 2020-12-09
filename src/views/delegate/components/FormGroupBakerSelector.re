@@ -6,6 +6,31 @@ type inputType =
   | Text;
 
 module BakerSelector = {
+  module BakerItem = {
+    let styles =
+      Style.(
+        StyleSheet.create({
+          "inner":
+            style(
+              ~height=48.->dp,
+              ~marginHorizontal=20.->dp,
+              ~justifyContent=`spaceBetween,
+              (),
+            ),
+        })
+      );
+
+    [@react.component]
+    let make = (~baker: Delegate.t) => {
+      <View style=styles##inner>
+        <Typography.Subtitle2> baker.name->React.string </Typography.Subtitle2>
+        <Typography.Body1 colorStyle=`mediumEmphasis>
+          baker.address->React.string
+        </Typography.Body1>
+      </View>;
+    };
+  };
+
   let styles =
     Style.(
       StyleSheet.create({
@@ -23,20 +48,22 @@ module BakerSelector = {
       })
     );
 
-  let renderButton = (selectedItem: option(Selector.item)) =>
+  let renderButton = (selectedBaker: option(Delegate.t)) =>
     <View style=styles##selectorContent>
-      {selectedItem->Option.mapWithDefault(<LoadingView />, item =>
+      {selectedBaker->Option.mapWithDefault(<LoadingView />, baker =>
          <View style=styles##inner>
            <Typography.Subtitle2>
-             item.label->React.string
+             baker.name->React.string
            </Typography.Subtitle2>
            <Typography.Body1
              colorStyle=`mediumEmphasis numberOfLines=1 style=styles##address>
-             item.value->React.string
+             baker.address->React.string
            </Typography.Body1>
          </View>
        )}
     </View>;
+
+  let renderItem = (baker: Delegate.t) => <BakerItem baker />;
 };
 
 module BakerInputTypeToogle = {
@@ -94,11 +121,7 @@ let make = (~label, ~value: string, ~handleChange, ~error) => {
 
   let hasError = error->Option.isSome;
 
-  let items =
-    bakersRequest
-    ->ApiRequest.getDoneOk
-    ->Option.getWithDefault([||])
-    ->Array.map(baker => {Selector.value: baker.address, label: baker.name});
+  let items = bakersRequest->ApiRequest.getDoneOk->Option.getWithDefault([||]);
 
   let (inputType, setInputType) = React.useState(_ => Selector);
 
@@ -108,9 +131,11 @@ let make = (~label, ~value: string, ~handleChange, ~error) => {
         if (value == "") {
           // if input selector and no value, select first entry
           let firstItem = items->Array.get(0);
-          firstItem->Common.Lib.Option.iter(item => item.value->handleChange);
+          firstItem->Common.Lib.Option.iter(baker =>
+            baker.address->handleChange
+          );
         } else if (items->Array.size > 0
-                   && !items->Array.some(item => item.value == value)) {
+                   && !items->Array.some(baker => baker.address == value)) {
           // if input selector and value isn't in the item list : switch to input text
           setInputType(_ =>
             Text
@@ -138,10 +163,11 @@ let make = (~label, ~value: string, ~handleChange, ~error) => {
        | Selector =>
          <Selector
            items
+           getItemValue={baker => baker.address}
            onValueChange=handleChange
            selectedValue=value
            renderButton=BakerSelector.renderButton
-           renderItem=AccountSelector.renderItem
+           renderItem=BakerSelector.renderItem
          />
        | Text =>
          <ThemedTextInput

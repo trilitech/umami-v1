@@ -1,10 +1,5 @@
 open ReactNative;
 
-type item = {
-  value: string,
-  label: string,
-};
-
 module Item = {
   let styles =
     Style.(
@@ -23,7 +18,7 @@ module Item = {
 
   [@react.component]
   let make = (~item, ~onChange, ~renderItem) => {
-    <PressableCustom onPress={_e => onChange(item.value)}>
+    <PressableCustom onPress={_e => onChange(item)}>
       {interactionState =>
          <View
            style=Style.(
@@ -71,10 +66,11 @@ let styles =
 let make =
     (
       ~style=?,
-      ~items: array(item),
+      ~items: array('item),
+      ~getItemValue: 'item => string,
       ~selectedValue=?,
       ~onValueChange,
-      ~noneItem: option(item)=?,
+      ~noneItem: option('item)=?,
       ~renderButton,
       ~renderItem,
       ~disabled=false,
@@ -94,13 +90,13 @@ let make =
     ),
   );
 
-  let onChange = newValue => {
-    onValueChange(newValue);
+  let onChange = newItem => {
+    onValueChange(newItem->getItemValue);
   };
 
   let selectedItem =
     items->Belt.Array.getBy(item =>
-      item.value == selectedValue->Belt.Option.getWithDefault("")
+      item->getItemValue == selectedValue->Belt.Option.getWithDefault("")
     );
 
   <View ?style>
@@ -124,11 +120,11 @@ let make =
     <View style={ReactUtils.displayOn(isOpen)}>
       <ScrollView style=styles##listContainer>
         {noneItem->Belt.Option.mapWithDefault(React.null, item =>
-           <Item key={item.value} item onChange renderItem />
+           <Item key={item->getItemValue} item onChange renderItem />
          )}
         {items
          ->Belt.Array.map(item =>
-             <Item key={item.value} item onChange renderItem />
+             <Item key={item->getItemValue} item onChange renderItem />
            )
          ->React.array}
       </ScrollView>

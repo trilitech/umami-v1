@@ -27,9 +27,6 @@ let make =
     ->Belt.Map.String.valuesToArray
     ->Belt.SortArray.stableSortBy((a, b) =>
         Pervasives.compare(a.alias, b.alias)
-      )
-    ->Belt.Array.map(account =>
-        {Selector.value: account.address, label: account.alias}
       );
 
   let (_currentAccount, setCurrent) = React.useState(() => value);
@@ -42,6 +39,7 @@ let make =
       </View>
       <Selector
         items
+        getItemValue={account => account.address}
         onValueChange={value => {
           setCurrent(_ => value);
           accounts
