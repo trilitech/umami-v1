@@ -108,3 +108,5 @@ module Change = Make(SVGIconChange);
 module List = Make(SVGIconList);
 module CheckOutline = Make(SVGIconCheckOutline);
 module CloseOutline = Make(SVGIconCloseOutline);
+module Token = Make(SVGIconToken);
+module Tezos = Make(SVGIconTezos);

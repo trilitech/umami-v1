@@ -1,6 +1,12 @@
 open ReactNative;
 
 module FormGroupAmountWithTokenSelector = {
+  let styles =
+    Style.(
+      StyleSheet.create({
+        "tokenSelector": style(~marginBottom=10.->dp, ~alignSelf=`auto, ()),
+      })
+    );
   let tokenDecoration = (~currency, ~style) =>
     <Typography.Body1 style> currency->React.string </Typography.Body1>;
 
@@ -21,7 +27,11 @@ module FormGroupAmountWithTokenSelector = {
         tokenDecoration(~currency=token.currency)
       );
     <>
-      <AccountsView.TokenSelector selectedToken setSelectedToken />
+      <AccountsView.TokenSelector
+        selectedToken
+        setSelectedToken
+        style=styles##tokenSelector
+      />
       <FormGroupXTZInput label value handleChange error ?decoration ?style />
     </>;
   };

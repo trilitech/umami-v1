@@ -25,6 +25,12 @@ module TokenSelector = {
       })
     );
 
+  let xtzToken: Token.t = {
+    address: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    alias: "Tezos",
+    currency: "XTZ",
+  };
+
   module TokenItem = {
     let styles =
       Style.(
@@ -32,19 +38,39 @@ module TokenSelector = {
           "inner":
             style(
               ~height=22.->dp,
-              ~marginHorizontal=20.->dp,
+              ~marginLeft=14.->dp,
+              ~marginRight=10.->dp,
+              ~flex=1.,
+              ~flexDirection=`row,
               ~justifyContent=`spaceBetween,
               (),
             ),
+          "titleContainer":
+            style(~flexDirection=`row, ~alignItems=`center, ()),
+          "icon": style(~marginRight=10.->dp, ()),
         })
       );
 
     [@react.component]
     let make = (~token: Token.t) => {
       <View style=styles##inner>
-        <Typography.Subtitle2>
-          token.alias->React.string
-        </Typography.Subtitle2>
+        <View style=styles##titleContainer>
+          {token.currency == "XTZ"
+             ? <Icons.Tezos
+                 size=20.
+                 color=Theme.colorDarkMediumEmphasis
+                 style=styles##icon
+               />
+             : <Icons.Token
+                 size=20.
+                 color=Theme.colorDarkMediumEmphasis
+                 style=styles##icon
+               />}
+          <Typography.Subtitle2>
+            token.alias->React.string
+          </Typography.Subtitle2>
+        </View>
+        <Typography.Body1> token.currency->React.string </Typography.Body1>
       </View>;
     };
   };
@@ -58,14 +84,13 @@ module TokenSelector = {
 
   let renderItem = (token: Token.t) => <TokenItem token />;
 
-  let xtzToken: Token.t = {
-    address: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-    alias: "Tezos",
-    currency: "XTZ",
-  };
-
   [@react.component]
-  let make = (~selectedToken, ~setSelectedToken) => {
+  let make =
+      (
+        ~selectedToken,
+        ~setSelectedToken,
+        ~style as styleProp=?,
+      ) => {
     let tokensRequest = StoreContext.Tokens.useLoad();
 
     let items =
@@ -80,7 +105,7 @@ module TokenSelector = {
     };
 
     <Selector
-      style=styles##selector
+      style=Style.(arrayOption([|Some(styles##selector), styleProp|]))
       items
       getItemValue={token => token.address}
       renderButton

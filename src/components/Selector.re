@@ -7,6 +7,7 @@ module Item = {
         "itemContainer":
           style(
             ~paddingVertical=5.->dp,
+            ~paddingRight=(24. +. 20.)->dp,
             ~flexDirection=`row,
             ~alignItems=`center,
             (),
