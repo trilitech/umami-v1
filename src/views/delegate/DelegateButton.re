@@ -6,6 +6,7 @@ let styles =
       "button":
         style(
           ~height=36.->dp,
+          ~minWidth=103.->dp,
           ~paddingHorizontal=16.->dp,
           ~justifyContent=`center,
           ~alignItems=`center,
