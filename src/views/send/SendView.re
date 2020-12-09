@@ -27,7 +27,7 @@ module FormGroupAmountWithTokenSelector = {
         tokenDecoration(~currency=token.currency)
       );
     <>
-      <AccountsView.TokenSelector
+      <TokenSelector
         selectedToken
         setSelectedToken
         style=styles##tokenSelector
