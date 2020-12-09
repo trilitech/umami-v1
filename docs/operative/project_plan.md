@@ -11,18 +11,18 @@ This is the **Project** Roadmap, which plans the progress of the development eff
      * Aliases
      * Transactions
      * Operation History
+     * Delegation
  * Beta release: Jan 2021 (limited release--more features, some left in the backlog: TBD)
+     * Bulk Transactions
+     * FA1.2 Tokens
      * Deploy Contracts
      * Contract Calls
-     * Delegation
-     * Voting
-     * Multisig
  * v1.0 release: Feb 2021 (public release--stable)
  * v1.x maintenance phase
  * v2.0 release: May 2021 (public release--no backlog)
-     * Bulk Transactions
-     * FA1.2 Tokens
-     * NFT
+     * Voting
+     * Multisig
+     * FA2
 
  **Note**:
 
@@ -58,14 +58,18 @@ gantt
     section Sprint 8 - Alpha
     Sprint 8 - Alpha                                  :done, 2020-11-03, 2020-11-15
     section Sprint 9 - Refactoring
-    Sprint 9 - Refactoring                            :active, 2020-11-18, 2020-11-30
+    Sprint 9 - Refactoring                            :done, 2020-11-18, 2020-11-30
+    section Sprint 10 - Tokens
+    Sprint 10 - Tokens                                :active, 2020-12-01, 2020-12-11
+    section Sprint 11 - SDK & Contracts
+    Sprint 11 - SDK & Contracts                       :active, 2020-12-14, 2021-01-08
     section Beta Release
-    Beta Release                                      :active, 2020-12-01, 2020-12-31
+    Beta Release                                      :active, 2021-01-11, 2021-02-01
     section Release - v 1.0
-    Release - v 1.0                                   :active, 2021-01-01, 2021-02-01
+    Release - v 1.0                                   :active, 2021-02-01, 2021-03-01
     section Maintenance - v 1.x
-    Maintenance - v 1.x                               :active, 2021-02-01, 2021-05-01
+    Maintenance - v 1.x                               :active, 2021-03-01, 2021-06-01
     section Upgrade - v 2.0
-    Upgrade - v 2.0                                   :active, 2021-02-01, 2021-05-01
+    Upgrade - v 2.0                                   :active, 2021-03-01, 2021-06-01
 ```
 
