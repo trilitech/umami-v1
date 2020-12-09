@@ -6,14 +6,20 @@ type injection = {
   password: string,
 };
 
-let useCreate = network => {
+let useCreate = (~sideEffect=?, ~network) => {
   let set = (~config, {operation, password}) =>
     (network, config)->TokensAPI.inject(operation, ~password);
 
-  ApiRequest.useSetter(~set, ~kind=Logs.Tokens, ());
+  ApiRequest.useSetter(
+    ~toast=false,
+    ~set,
+    ~kind=Logs.Tokens,
+    ~sideEffect?,
+    (),
+  );
 };
 
-let useSimulate = network => {
+let useSimulate = (~network) => {
   let set = (~config, operation) =>
     (network, config)->TokensAPI.simulate(operation);
   ApiRequest.useSetter(~set, ~kind=Logs.Tokens, ());

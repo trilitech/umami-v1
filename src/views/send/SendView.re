@@ -22,7 +22,7 @@ module FormGroupAmountWithTokenSelector = {
       );
     <>
       <AccountsView.TokenSelector selectedToken setSelectedToken />
-      <FormGroupXTZInput label value handleChange error ?decoration />
+      <FormGroupXTZInput label value handleChange error ?decoration ?style />
     </>;
   };
 };
@@ -194,7 +194,8 @@ module Form = {
               thumbStyle=styles##switchThumb
             />
           </TouchableOpacity>
-          {advancedOptionOpened ? <SendViewAdvancedOptions form /> : React.null}
+          {advancedOptionOpened
+             ? <SendViewAdvancedOptions form ?token /> : React.null}
         </View>
         <View style=styles##formAction>
           <FormButton text=I18n.btn#cancel onPress=onPressCancel />

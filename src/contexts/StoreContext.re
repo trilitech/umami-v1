@@ -365,6 +365,19 @@ module Operations = {
   };
 };
 
+module OperationToken = {
+  let useCreate = () => {
+    let network = Network.useGet();
+    let resetOperations = Operations.useResetAll();
+    TokensApiRequest.useCreate(~sideEffect=_ => resetOperations(), ~network);
+  };
+
+  let useSimulate = () => {
+    let network = Network.useGet();
+    TokensApiRequest.useSimulate(~network);
+  };
+};
+
 module Bakers = {
   let useRequestState = () => {
     let store = useStoreContext();
