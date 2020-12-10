@@ -22,12 +22,14 @@ let styles =
 
 [@react.component]
 let make = (~account: Account.t, ~showBalance, ~onPressCancel) => {
+  let token = StoreContext.SelectedToken.useGet();
+
   <ModalView.Form>
     <>
       <Typography.Headline2 style=styles##title>
         account.alias->React.string
       </Typography.Headline2>
-      <AccountInfo account showAlias=false showBalance />
+      <AccountInfo account showAlias=false showBalance ?token />
       <View style=styles##qrContainer>
         <View style=styles##qr>
           <QRCode value={account.address} size=200. />
