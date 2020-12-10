@@ -19,6 +19,8 @@ let formatXTZ = mutez => {
 let xtz = I18n.t#xtz;
 
 let formatToken = amount => {
+  // int fromString then toString because there is
+  // unwanted char in the string like line break
   amount
   ->Belt.Int.fromString
   ->Belt.Option.mapWithDefault("0", Belt.Int.toString);
