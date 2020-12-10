@@ -61,7 +61,7 @@ let make = (~cancel) => {
                   )
                 ->ignore;
               | Error(_) =>
-                let errorMsg = "Address is not a valid token contract";
+                let errorMsg = I18n.t#error_check_contract;
                 addToast(Logs.error(~origin=Tokens, errorMsg));
                 raiseSubmitFailed(Some(errorMsg));
               }
