@@ -184,7 +184,11 @@ let make = (~onPressCancel, ~action) => {
   let (operationRequest, sendOperation) = StoreContext.Operations.useCreate();
 
   let sendOperation = (operation, ~password) =>
-    sendOperation(OperationApiRequest.{operation, password})->ignore;
+    switch (operation) {
+    | SendForm.InjectionOperation(operation) =>
+      sendOperation(OperationApiRequest.{operation, password})->ignore
+    | _ => ()
+    };
 
   let (modalStep, setModalStep) =
     React.useState(_ =>
@@ -259,7 +263,7 @@ let make = (~onPressCancel, ~action) => {
            }
          }
          title
-         operation
+         operation={SendForm.InjectionOperation(operation)}
          sendOperation
        />
      }}

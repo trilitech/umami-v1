@@ -21,18 +21,13 @@ let styles =
   );
 
 [@react.component]
-let make =
-    (
-      ~account: Account.t,
-      ~balanceRequest: option(BalanceApiRequest.balanceApiRequest)=?,
-      ~onPressCancel,
-    ) => {
+let make = (~account: Account.t, ~showBalance, ~onPressCancel) => {
   <ModalView.Form>
     <>
       <Typography.Headline2 style=styles##title>
         account.alias->React.string
       </Typography.Headline2>
-      <AccountInfo account showAlias=false ?balanceRequest />
+      <AccountInfo account showAlias=false showBalance />
       <View style=styles##qrContainer>
         <View style=styles##qr>
           <QRCode value={account.address} size=200. />

@@ -78,6 +78,10 @@ let make = () => {
   let accounts = StoreContext.Accounts.useGetAll();
   let accountsRequest = StoreContext.Accounts.useRequest();
 
+  let (selectedToken, setSelectedToken) = React.useState(_ => None);
+
+  let token = StoreContext.Tokens.useGet(selectedToken);
+
   <Page>
     {switch (accountsRequest) {
      | Done(_)
@@ -89,7 +93,8 @@ let make = () => {
      | _ =>
        accountsRequest->ApiRequest.mapOrLoad(_ => {
          <>
-           <BalanceTotal />
+           <TokenSelector selectedToken setSelectedToken />
+           <BalanceTotal ?token />
            <AddAccountButton />
            {accounts
             ->Belt.Map.String.valuesToArray
@@ -100,6 +105,7 @@ let make = () => {
                 <AccountRowItem
                   key={account.address}
                   account
+                  ?token
                   zIndex={accounts->Belt.Map.String.size - index}
                 />
               )

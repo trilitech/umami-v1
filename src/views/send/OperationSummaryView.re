@@ -32,22 +32,26 @@ module AccountInfo = {
 };
 
 [@react.component]
-let make = (~style=?, ~operation: Injection.operation) => {
+let make = (~style=?, ~operation: SendForm.operation) => {
   <View ?style>
     {switch (operation) {
-     | Transaction({source}) =>
+     | InjectionOperation(Transaction({source}))
+     | TokensOperation({action: Transfer({source})}, _) =>
        <AccountInfo address=source title=I18n.title#sender_account />
-     | Delegation({source}) =>
+     | InjectionOperation(Delegation({source})) =>
        <AccountInfo address=source title=I18n.title#delegated_account />
+     | _ => React.null
      }}
     <View style=styles##iconContainer>
       <Icons.ArrowDown size=50. color=Theme.colorDarkMediumEmphasis />
     </View>
     {switch (operation) {
-     | Transaction({destination}) =>
+     | InjectionOperation(Transaction({destination}))
+     | TokensOperation({action: Transfer({destination})}, _) =>
        <AccountInfo address=destination title=I18n.title#recipient_account />
-     | Delegation({delegate}) =>
+     | InjectionOperation(Delegation({delegate})) =>
        <AccountInfo address=delegate title=I18n.title#baker_account />
+     | _ => React.null
      }}
   </View>;
 };

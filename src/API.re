@@ -815,10 +815,10 @@ module Tokens = (Caller: CallerAPI) => {
   let get = network => {
     switch (network) {
     | Network.Test =>
-      Future.value([|
-        ("Klondike", "KLD", "KT1BUdnCMfBKdVxCKyBvMUqwLqm27EDGWskB"),
-      |])
-    | Network.Main => Future.value([||])
+      Future.value(
+        Ok([|("Klondike", "KLD", "KT1BUdnCMfBKdVxCKyBvMUqwLqm27EDGWskB")|]),
+      )
+    | Network.Main => Future.value(Ok([||]))
     };
   };
 

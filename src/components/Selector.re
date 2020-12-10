@@ -1,17 +1,13 @@
 open ReactNative;
 
-type item = {
-  value: string,
-  label: string,
-};
-
 module Item = {
   let styles =
     Style.(
       StyleSheet.create({
         "itemContainer":
           style(
-            ~height=58.->dp,
+            ~paddingVertical=5.->dp,
+            ~paddingRight=(24. +. 20.)->dp,
             ~flexDirection=`row,
             ~alignItems=`center,
             (),
@@ -23,7 +19,7 @@ module Item = {
 
   [@react.component]
   let make = (~item, ~onChange, ~renderItem) => {
-    <PressableCustom onPress={_e => onChange(item.value)}>
+    <PressableCustom onPress={_e => onChange(item)}>
       {interactionState =>
          <View
            style=Style.(
@@ -71,9 +67,11 @@ let styles =
 let make =
     (
       ~style=?,
-      ~items: array(item),
+      ~items: array('item),
+      ~getItemValue: 'item => string,
       ~selectedValue=?,
       ~onValueChange,
+      ~noneItem: option('item)=?,
       ~renderButton,
       ~renderItem,
       ~disabled=false,
@@ -93,13 +91,13 @@ let make =
     ),
   );
 
-  let onChange = newValue => {
-    onValueChange(newValue);
+  let onChange = newItem => {
+    onValueChange(newItem->getItemValue);
   };
 
   let selectedItem =
     items->Belt.Array.getBy(item =>
-      item.value == selectedValue->Belt.Option.getWithDefault("")
+      item->getItemValue == selectedValue->Belt.Option.getWithDefault("")
     );
 
   <View ?style>
@@ -108,7 +106,9 @@ let make =
       onPress={_e => setIsOpen(prevIsOpen => !prevIsOpen)}
       disabled>
       <View style=styles##button pointerEvents=`none>
-        {renderButton(selectedItem)}
+        {renderButton(
+           selectedItem->Belt.Option.isSome ? selectedItem : noneItem,
+         )}
         {disabled
            ? React.null
            : <Icons.ChevronDown
@@ -120,9 +120,12 @@ let make =
     </TouchableOpacity>
     <View style={ReactUtils.displayOn(isOpen)}>
       <ScrollView style=styles##listContainer>
+        {noneItem->Belt.Option.mapWithDefault(React.null, item =>
+           <Item key={item->getItemValue} item onChange renderItem />
+         )}
         {items
          ->Belt.Array.map(item =>
-             <Item key={item.value} item onChange renderItem />
+             <Item key={item->getItemValue} item onChange renderItem />
            )
          ->React.array}
       </ScrollView>

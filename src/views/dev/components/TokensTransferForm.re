@@ -31,10 +31,10 @@ let make = () => {
     <Button
       onPress={_ =>
         Tokens.makeTransfer(
-          src,
-          dst,
-          int_of_string(amount),
-          "KT1BUdnCMfBKdVxCKyBvMUqwLqm27EDGWskB",
+          ~source=src,
+          ~destination=dst,
+          ~amount=int_of_string(amount),
+          ~contract="KT1BUdnCMfBKdVxCKyBvMUqwLqm27EDGWskB",
           (),
         )
         ->TokensAPI.simulate((Network.Test, config), _)

@@ -86,6 +86,8 @@ let t = {
   pub navbar_add_account = "ADD ACCOUNT";
   pub logs_no_recent = "No recent messages";
   pub logs_clearall = "CLEAR ALL";
+  pub amount = (a, b) => p("%s %s", a, b);
+  pub tezos = "Tezos";
   pub xtz = "XTZ";
   pub xtz_amount = a => p("%s %s", a, this#xtz);
   pub xtz_op_amount = op => p("%s %a", op, () => this#xtz_amount);

@@ -15,11 +15,13 @@ module AccountItem = {
     );
 
   [@react.component]
-  let make = (~alias, ~address) => {
+  let make = (~account: Account.t) => {
     <View style=styles##inner>
-      <Typography.Subtitle2> alias->React.string </Typography.Subtitle2>
+      <Typography.Subtitle2>
+        account.alias->React.string
+      </Typography.Subtitle2>
       <Typography.Body1 colorStyle=`mediumEmphasis>
-        address->React.string
+        account.address->React.string
       </Typography.Body1>
     </View>;
   };
@@ -40,15 +42,14 @@ let styles =
     })
   );
 
-let renderButton = (selectedItem: option(Selector.item)) =>
+let renderButton = (selectedAccount: option(Account.t)) =>
   <View style=styles##selectorContent>
-    {selectedItem->Belt.Option.mapWithDefault(<LoadingView />, item =>
-       <AccountItem alias={item.label} address={item.value} />
+    {selectedAccount->Belt.Option.mapWithDefault(<LoadingView />, account =>
+       <AccountItem account />
      )}
   </View>;
 
-let renderItem = (item: Selector.item) =>
-  <AccountItem alias={item.label} address={item.value} />;
+let renderItem = (account: Account.t) => <AccountItem account />;
 
 [@react.component]
 let make = (~style=?) => {
@@ -62,9 +63,6 @@ let make = (~style=?) => {
     ->Belt.Map.String.valuesToArray
     ->Belt.SortArray.stableSortBy((a, b) =>
         Pervasives.compare(a.alias, b.alias)
-      )
-    ->Belt.Array.map(account =>
-        {Selector.value: account.address, label: account.alias}
       );
 
   <>
@@ -72,6 +70,7 @@ let make = (~style=?) => {
     <View style=styles##spacer />
     <Selector
       items
+      getItemValue={account => account.address}
       ?style
       onValueChange={value => updateAccount(value)}
       selectedValue=?{account->Belt.Option.map(account => account.address)}

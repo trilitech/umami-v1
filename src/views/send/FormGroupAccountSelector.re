@@ -10,7 +10,14 @@ let styles =
   );
 
 [@react.component]
-let make = (~label, ~value: string, ~handleChange, ~error) => {
+let make =
+    (
+      ~label,
+      ~value: string,
+      ~handleChange,
+      ~error,
+      ~token: option(Token.t)=?,
+    ) => {
   let accounts = StoreContext.Accounts.useGetAll();
 
   let hasError = error->Belt.Option.isSome;
@@ -20,24 +27,19 @@ let make = (~label, ~value: string, ~handleChange, ~error) => {
     ->Belt.Map.String.valuesToArray
     ->Belt.SortArray.stableSortBy((a, b) =>
         Pervasives.compare(a.alias, b.alias)
-      )
-    ->Belt.Array.map(account =>
-        {Selector.value: account.address, label: account.alias}
       );
 
-  let (currentAccount, setCurrent) = React.useState(() => value);
-
-  let balanceRequest = StoreContext.Balance.useLoad(currentAccount);
+  let (_currentAccount, setCurrent) = React.useState(() => value);
 
   <FormGroup style=styles##formGroup>
     <FormLabel label hasError style=styles##label />
     <View>
-      <View
-        style={Style.array([|AccountInfo.styles##balance, styles##balance|])}>
-        {AccountInfo.balance(balanceRequest)}
+      <View style=styles##balance>
+        <AccountInfoBalance address=value ?token />
       </View>
       <Selector
         items
+        getItemValue={account => account.address}
         onValueChange={value => {
           setCurrent(_ => value);
           accounts
