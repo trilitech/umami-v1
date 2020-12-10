@@ -147,5 +147,6 @@ let t = {
   pub delegate_menu_delete = "End delegation";
   pub token_column_name = "NAME";
   pub token_column_symbol = "SYMBOL";
-  pub token_column_address = "ADDRESS"
+  pub token_column_address = "ADDRESS";
+  pub empty_token = "No token registered"
 };

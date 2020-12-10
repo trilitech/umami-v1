@@ -97,14 +97,16 @@ let make = (~selectedToken, ~setSelectedToken, ~style as styleProp=?) => {
     );
   };
 
-  <Selector
-    style=Style.(arrayOption([|Some(styles##selector), styleProp|]))
-    items
-    getItemValue={token => token.address}
-    renderButton
-    onValueChange
-    renderItem
-    selectedValue=?selectedToken
-    noneItem=xtzToken
-  />;
+  items->Belt.Array.size > 0
+    ? <Selector
+        style=Style.(arrayOption([|Some(styles##selector), styleProp|]))
+        items
+        getItemValue={token => token.address}
+        renderButton
+        onValueChange
+        renderItem
+        selectedValue=?selectedToken
+        noneItem=xtzToken
+      />
+    : React.null;
 };

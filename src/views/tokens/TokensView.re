@@ -78,6 +78,8 @@ let make = () => {
       </TokenRowItem.CellAddress>
     </Table.Head>
     {switch (tokensRequest) {
+     | Done(Ok(tokens)) when tokens->Belt.Map.String.size == 0 =>
+       <Table.Empty> I18n.t#empty_token->React.string </Table.Empty>
      | Done(Ok(tokens)) =>
        tokens
        ->Belt.Map.String.valuesToArray

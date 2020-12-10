@@ -45,11 +45,11 @@ let make = (~cancel) => {
       ~onSubmit=
         ({state}) => {
           cancel();
-          createToken((
-            state.values.address,
-            state.values.name,
-            state.values.symbol,
-          ))
+          createToken({
+            address: state.values.address,
+            alias: state.values.name,
+            currency: state.values.symbol,
+          })
           ->ApiRequest.logOk(addToast, Logs.Tokens, _ => I18n.t#token_created)
           ->ignore;
 

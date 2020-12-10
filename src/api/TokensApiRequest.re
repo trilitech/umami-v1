@@ -57,7 +57,7 @@ let useLoadOperationOffline =
   request;
 };
 
-let useLoadTokens = (~network, ~requestState) => {
+let useLoadRegisteredTokens = (~network, ~requestState) => {
   let get = (~config as _c, network) =>
     TokensAPI.get(network)
     ->Future.mapOk(response => {
@@ -70,4 +70,50 @@ let useLoadTokens = (~network, ~requestState) => {
       });
 
   ApiRequest.useLoader1(~get, ~kind=Logs.Tokens, ~requestState, network);
+};
+
+let tokensStorageKey = "wallet-tokens";
+
+let useLoadTokens = (~requestState) => {
+  let get = (~config as _c, _) =>
+    LocalStorage.getItem(tokensStorageKey)
+    ->Js.Nullable.toOption
+    ->Belt.Option.mapWithDefault([||], storageString =>
+        storageString->Js.Json.parseExn->Token.Decode.array
+      )
+    ->Belt.Array.map(token => {(token.address, token)})
+    ->Belt.Map.String.fromArray
+    ->Belt.Result.Ok
+    ->Future.value;
+
+  ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState);
+};
+
+let useCreate = (~sideEffect=?, ()) => {
+  let set = (~config as _c, token) => {
+    let tokens =
+      LocalStorage.getItem(tokensStorageKey)
+      ->Js.Nullable.toOption
+      ->Belt.Option.mapWithDefault([||], storageString =>
+          storageString->Js.Json.parseExn->Token.Decode.array
+        );
+
+    LocalStorage.setItem(
+      tokensStorageKey,
+      tokens
+      ->Belt.Array.concat([|token|])
+      ->Token.Encode.array
+      ->Js.Json.stringify,
+    )
+    ->Belt.Result.Ok
+    ->Future.value;
+  };
+
+  ApiRequest.useSetter(
+    ~toast=false,
+    ~set,
+    ~kind=Logs.Tokens,
+    ~sideEffect?,
+    (),
+  );
 };

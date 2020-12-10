@@ -407,10 +407,8 @@ module Tokens = {
   };
 
   let useLoad = () => {
-    let network = Network.useGet();
     let requestState = useRequestState();
-
-    TokensApiRequest.useLoadTokens(~network, ~requestState);
+    TokensApiRequest.useLoadTokens(~requestState);
   };
 
   let useGetAll = () => {
@@ -427,12 +425,14 @@ module Tokens = {
     };
   };
 
+  let useResetAll = () => {
+    let (_, setTokensRequest) = useRequestState();
+    () => setTokensRequest(_ => NotAsked);
+  };
+
   let useCreate = () => {
-    (
-      ApiRequest.NotAsked,
-      ((_address, _name, _symbol)) =>
-        Future.value(Error("not implemented yet")),
-    );
+    let resetTokens = useResetAll();
+    TokensApiRequest.useCreate(~sideEffect=_ => resetTokens(), ());
   };
 };
 

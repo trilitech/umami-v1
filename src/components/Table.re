@@ -37,6 +37,20 @@ module Row = {
   };
 };
 
+module Empty = {
+  let styles =
+    Style.(
+      StyleSheet.create({
+        "empty": style(~paddingLeft=22.->dp, ~paddingTop=14.->dp, ()),
+      })
+    );
+
+  [@react.component]
+  let make = (~children) => {
+    <Typography.Body1 style=styles##empty> children </Typography.Body1>;
+  };
+};
+
 module Cell = {
   let styles =
     Style.(
