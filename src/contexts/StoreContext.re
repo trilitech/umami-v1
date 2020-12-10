@@ -208,6 +208,10 @@ module BalanceToken = {
   let useRequestState =
     useRequestsState(store => store.balanceTokenRequestsState);
 
+  //Temporary Hardcoded balance reception contract
+  // https://gitlab.com/nomadic-labs/ref-wallet/-/issues/62
+  let hardCodedReceiptionKT1 = "KT1BZ6cBooBYubKv4Z3kd7izefLXgwTrSfoG";
+
   let useLoad = (address: string, tokenAddress: option(string)) => {
     let network = Network.useGet();
     let requestState = useRequestState(address->getRequestKey(tokenAddress));
@@ -218,7 +222,7 @@ module BalanceToken = {
           tokenAddress->Belt.Option.map(tokenAddress =>
             Tokens.makeGetBalance(
               address,
-              "KT1BZ6cBooBYubKv4Z3kd7izefLXgwTrSfoG",
+              hardCodedReceiptionKT1,
               tokenAddress,
               (),
             )
