@@ -20,6 +20,18 @@ let make =
       ~token: option(Token.t)=?,
     ) => {
   let (value, setValue) = React.useState(() => value);
+
+  // reformat value if token change
+  React.useEffect1(
+    () => {
+      if (value != "") {
+        formatOnBlur(token, setValue);
+      };
+      None;
+    },
+    [|token|],
+  );
+
   <FormGroupTextInput
     label
     ?style
