@@ -16,4 +16,4 @@ let formatXTZ = mutez => {
   String.contains(mutez, '.') ? mutez : mutez ++ ".0";
 };
 
-let xtz = "XTZ";
+let xtz = I18n.t#xtz;

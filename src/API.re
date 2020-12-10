@@ -802,14 +802,7 @@ module Tokens = (Caller: CallerAPI) => {
       "fungible",
       "assets",
     |];
-    Caller.call(arguments, ())
-    ->Future.map(res => {
-        switch (res) {
-        | Ok(_) => true
-        | Error(_) => false
-        /* the error is not relevant, it explains why the contract is not compatible */
-        }
-      });
+    Caller.call(arguments, ());
   };
 
   let get = network => {

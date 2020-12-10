@@ -27,7 +27,7 @@ let styles =
 let xtzToken: Token.t = {
   address: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
   alias: I18n.t#tezos,
-  currency: I18n.t#xtz,
+  symbol: I18n.t#xtz,
 };
 
 module TokenItem = {
@@ -53,7 +53,7 @@ module TokenItem = {
   let make = (~token: Token.t) => {
     <View style=styles##inner>
       <View style=styles##titleContainer>
-        {token.currency == "XTZ"
+        {token.symbol == xtzToken.symbol
            ? <Icons.Tezos
                size=20.
                color=Theme.colorDarkMediumEmphasis
@@ -68,7 +68,7 @@ module TokenItem = {
           token.alias->React.string
         </Typography.Subtitle2>
       </View>
-      <Typography.Body1> token.currency->React.string </Typography.Body1>
+      <Typography.Body1> token.symbol->React.string </Typography.Body1>
     </View>;
   };
 };
@@ -97,14 +97,16 @@ let make = (~selectedToken, ~setSelectedToken, ~style as styleProp=?) => {
     );
   };
 
-  <Selector
-    style=Style.(arrayOption([|Some(styles##selector), styleProp|]))
-    items
-    getItemValue={token => token.address}
-    renderButton
-    onValueChange
-    renderItem
-    selectedValue=?selectedToken
-    noneItem=xtzToken
-  />;
+  items->Belt.Array.size > 0
+    ? <Selector
+        style=Style.(arrayOption([|Some(styles##selector), styleProp|]))
+        items
+        getItemValue={token => token.address}
+        renderButton
+        onValueChange
+        renderItem
+        selectedValue=?selectedToken
+        noneItem=xtzToken
+      />
+    : React.null;
 };

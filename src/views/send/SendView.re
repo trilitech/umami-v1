@@ -7,8 +7,8 @@ module FormGroupAmountWithTokenSelector = {
         "tokenSelector": style(~marginBottom=10.->dp, ~alignSelf=`auto, ()),
       })
     );
-  let tokenDecoration = (~currency, ~style) =>
-    <Typography.Body1 style> currency->React.string </Typography.Body1>;
+  let tokenDecoration = (~symbol, ~style) =>
+    <Typography.Body1 style> symbol->React.string </Typography.Body1>;
 
   [@react.component]
   let make =
@@ -23,9 +23,7 @@ module FormGroupAmountWithTokenSelector = {
         ~token: option(Token.t)=?,
       ) => {
     let decoration =
-      token->Belt.Option.map(token =>
-        tokenDecoration(~currency=token.currency)
-      );
+      token->Belt.Option.map(token => tokenDecoration(~symbol=token.symbol));
     <>
       <TokenSelector
         selectedToken

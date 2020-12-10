@@ -373,7 +373,10 @@ module OperationToken = {
   let useCreate = () => {
     let network = Network.useGet();
     let resetOperations = Operations.useResetAll();
-    TokensApiRequest.useCreate(~sideEffect=_ => resetOperations(), ~network);
+    TokensApiRequest.useCreateOperation(
+      ~sideEffect=_ => resetOperations(),
+      ~network,
+    );
   };
 
   let useSimulate = () => {
@@ -408,10 +411,8 @@ module Tokens = {
   };
 
   let useLoad = () => {
-    let network = Network.useGet();
     let requestState = useRequestState();
-
-    TokensApiRequest.useLoadTokens(~network, ~requestState);
+    TokensApiRequest.useLoadTokens(~requestState);
   };
 
   let useGetAll = () => {
@@ -426,6 +427,21 @@ module Tokens = {
     | (Some(tokenAddress), tokens) => tokens->Map.String.get(tokenAddress)
     | _ => None
     };
+  };
+
+  let useResetAll = () => {
+    let (_, setTokensRequest) = useRequestState();
+    () => setTokensRequest(_ => NotAsked);
+  };
+
+  let useCreate = () => {
+    let resetTokens = useResetAll();
+    TokensApiRequest.useCreate(~sideEffect=_ => resetTokens(), ());
+  };
+
+  let useCheck = () => {
+    let network = Network.useGet();
+    TokensApiRequest.useCheckTokenContract(~network);
   };
 };
 
