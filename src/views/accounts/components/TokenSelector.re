@@ -92,9 +92,7 @@ let make = (~selectedToken, ~setSelectedToken, ~style as styleProp=?) => {
     ->Belt.Option.mapWithDefault([||], Belt.Map.String.valuesToArray);
 
   let onValueChange = newValue => {
-    setSelectedToken(_ =>
-      newValue == xtzToken.address ? None : Some(newValue)
-    );
+    setSelectedToken(newValue == xtzToken.address ? None : Some(newValue));
   };
 
   items->Belt.Array.size > 0
