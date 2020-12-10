@@ -1,7 +1,7 @@
 type t = {
   address: string,
   alias: string,
-  currency: string,
+  symbol: string,
 };
 
 module Decode = {
@@ -9,7 +9,7 @@ module Decode = {
     Json.Decode.{
       address: json |> field("address", string),
       alias: json |> field("alias", string),
-      currency: json |> field("currency", string),
+      symbol: json |> field("symbol", string),
     };
 
   let array = json => json |> Json.Decode.array(record);
@@ -21,7 +21,7 @@ module Encode = {
       object_([
         ("address", record.address |> string),
         ("alias", record.alias |> string),
-        ("currency", record.currency |> string),
+        ("symbol", record.symbol |> string),
       ])
     );
 

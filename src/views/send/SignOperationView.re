@@ -47,7 +47,7 @@ let make =
             )
           | (_, InjectionOperation(Delegation(_))) => I18n.title#delegate
           | (_, TokensOperation({action: Transfer({amount})}, token)) =>
-            I18n.t#amount(amount->Js.Int.toString, token.currency)
+            I18n.t#amount(amount->Js.Int.toString, token.symbol)
           | _ => ""
           }
         )

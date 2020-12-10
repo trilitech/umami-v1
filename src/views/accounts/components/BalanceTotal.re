@@ -20,7 +20,7 @@ let make = (~token: option(Token.t)=?) => {
        | (Some(token), _, Some(balanceTokenTotal)) =>
          I18n.t#amount(
            balanceTokenTotal->BusinessUtils.formatXTZ,
-           token.currency,
+           token.symbol,
          )
          ->React.string
        | (None, Some(balanceTotal), _) =>

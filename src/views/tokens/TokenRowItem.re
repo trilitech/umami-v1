@@ -29,7 +29,7 @@ let make = (~token: Token.t) => {
     </CellName>
     <CellSymbol>
       <Typography.Body1 numberOfLines=1>
-        token.currency->React.string
+        token.symbol->React.string
       </Typography.Body1>
     </CellSymbol>
     <CellAddress>

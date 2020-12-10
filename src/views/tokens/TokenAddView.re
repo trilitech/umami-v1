@@ -48,7 +48,7 @@ let make = (~cancel) => {
           createToken({
             address: state.values.address,
             alias: state.values.name,
-            currency: state.values.symbol,
+            symbol: state.values.symbol,
           })
           ->ApiRequest.logOk(addToast, Logs.Tokens, _ => I18n.t#token_created)
           ->ignore;

@@ -62,8 +62,8 @@ let useLoadRegisteredTokens = (~network, ~requestState) => {
     TokensAPI.get(network)
     ->Future.mapOk(response => {
         response
-        ->Belt.Array.map(((alias, currency, address)) => {
-            let token: Token.t = {alias, currency, address};
+        ->Belt.Array.map(((alias, symbol, address)) => {
+            let token: Token.t = {alias, symbol, address};
             (address, token);
           })
         ->Belt.Map.String.fromArray
