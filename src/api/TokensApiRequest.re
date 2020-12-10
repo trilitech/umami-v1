@@ -6,7 +6,7 @@ type injection = {
   password: string,
 };
 
-let useCreate = (~sideEffect=?, ~network) => {
+let useCreateOperation = (~sideEffect=?, ~network) => {
   let set = (~config, {operation, password}) =>
     (network, config)->TokensAPI.inject(operation, ~password);
 

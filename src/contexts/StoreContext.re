@@ -369,7 +369,10 @@ module OperationToken = {
   let useCreate = () => {
     let network = Network.useGet();
     let resetOperations = Operations.useResetAll();
-    TokensApiRequest.useCreate(~sideEffect=_ => resetOperations(), ~network);
+    TokensApiRequest.useCreateOperation(
+      ~sideEffect=_ => resetOperations(),
+      ~network,
+    );
   };
 
   let useSimulate = () => {
@@ -422,6 +425,14 @@ module Tokens = {
     | (Some(tokenAddress), tokens) => tokens->Map.String.get(tokenAddress)
     | _ => None
     };
+  };
+
+  let useCreate = () => {
+    (
+      ApiRequest.NotAsked,
+      ((_address, _name, _symbol)) =>
+        Future.value(Error("not implemented yet")),
+    );
   };
 };
 
