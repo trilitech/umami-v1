@@ -148,5 +148,6 @@ let t = {
   pub token_column_name = "NAME";
   pub token_column_symbol = "SYMBOL";
   pub token_column_address = "ADDRESS";
-  pub empty_token = "No token registered"
+  pub empty_token = "No token registered";
+  pub add_token_format_contract_sentence = {js|Please specify the address of a FA1.2 token contract for which you would like to view balances as well as to perform operations.|js}
 };

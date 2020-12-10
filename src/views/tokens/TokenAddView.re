@@ -12,7 +12,8 @@ module TokenCreateForm = ReForm.Make(StateLenses);
 let styles =
   Style.(
     StyleSheet.create({
-      "title": style(~marginBottom=20.->dp, ~textAlign=`center, ()),
+      "title": style(~marginBottom=6.->dp, ~textAlign=`center, ()),
+      "overline": style(~marginBottom=20.->dp, ~textAlign=`center, ()),
       "formAction":
         style(
           ~flexDirection=`row,
@@ -87,6 +88,9 @@ let make = (~cancel) => {
          <Typography.Headline2 style=styles##title>
            I18n.title#add_token->React.string
          </Typography.Headline2>
+         <Typography.Overline3 style=styles##overline>
+           I18n.t#add_token_format_contract_sentence->React.string
+         </Typography.Overline3>
          <FormGroupTextInput
            label=I18n.label#add_token_address
            value={form.values.address}
