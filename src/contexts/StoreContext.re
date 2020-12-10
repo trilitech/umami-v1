@@ -8,6 +8,7 @@ type apiRequestsState('requestResponse) =
 type state = {
   network: Network.t,
   selectedAccountState: reactState(option(string)),
+  selectedTokenState: reactState(option(string)),
   accountsRequestState: reactState(ApiRequest.t(Map.String.t(Account.t))),
   balanceRequestsState: apiRequestsState(string),
   delegateRequestsState: apiRequestsState(option(string)),
@@ -27,6 +28,7 @@ let initialApiRequestsState = (Map.String.empty, _ => ());
 let initialState = {
   network: Network.Test,
   selectedAccountState: (None, _ => ()),
+  selectedTokenState: (None, _ => ()),
   accountsRequestState: (NotAsked, _ => ()),
   balanceRequestsState: initialApiRequestsState,
   delegateRequestsState: initialApiRequestsState,
@@ -57,6 +59,8 @@ let make = (~children) => {
 
   let selectedAccountState = React.useState(() => None);
   let (selectedAccount, setSelectedAccount) = selectedAccountState;
+
+  let selectedTokenState = React.useState(() => None);
 
   let accountsRequestState = React.useState(() => ApiRequest.NotAsked);
   let (accountsRequest, _setAccountsRequest) = accountsRequestState;
@@ -95,6 +99,7 @@ let make = (~children) => {
     value={
       network,
       selectedAccountState,
+      selectedTokenState,
       accountsRequestState,
       balanceRequestsState,
       delegateRequestsState,
@@ -553,5 +558,25 @@ module SelectedAccount = {
     let (_, setSelectedAccount) = store.selectedAccountState;
 
     newAccount => setSelectedAccount(_ => Some(newAccount));
+  };
+};
+
+module SelectedToken = {
+  let useGet = () => {
+    let store = useStoreContext();
+    let tokens = Tokens.useGetAll();
+
+    switch (store.selectedTokenState, tokens) {
+    | ((Some(selectedToken), _), tokens) =>
+      tokens->Map.String.get(selectedToken)
+    | _ => None
+    };
+  };
+
+  let useSet = () => {
+    let store = useStoreContext();
+    let (_, setSelectedToken) = store.selectedTokenState;
+
+    newToken => setSelectedToken(_ => newToken);
   };
 };

@@ -196,7 +196,7 @@ module Form = {
           handleChange={form.handleChange(Amount)}
           error={form.getFieldError(Field(Amount))}
           selectedToken
-          setSelectedToken
+          setSelectedToken={newToken => setSelectedToken(_ => newToken)}
           ?token
         />
         <FormGroupAccountSelector
@@ -248,11 +248,15 @@ module Form = {
 [@react.component]
 let make = (~onPressCancel) => {
   let account = StoreContext.SelectedAccount.useGet();
+  let initToken = StoreContext.SelectedToken.useGet();
 
   let (advancedOptionOpened, _) as advancedOptionState =
     React.useState(_ => false);
 
-  let (selectedToken, _) as tokenState = React.useState(_ => None);
+  let (selectedToken, _) as tokenState =
+    React.useState(_ =>
+      initToken->Belt.Option.map(initToken => initToken.address)
+    );
   let token = StoreContext.Tokens.useGet(selectedToken);
 
   let (operationRequest, sendOperation) = StoreContext.Operations.useCreate();
