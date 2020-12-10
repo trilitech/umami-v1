@@ -30,7 +30,15 @@ module FormGroupAmountWithTokenSelector = {
         setSelectedToken
         style=styles##tokenSelector
       />
-      <FormGroupXTZInput label value handleChange error ?decoration ?style />
+      <FormGroupXTZInput
+        label
+        value
+        handleChange
+        error
+        ?decoration
+        ?style
+        ?token
+      />
     </>;
   };
 };

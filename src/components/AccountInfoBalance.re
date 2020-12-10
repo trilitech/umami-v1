@@ -30,7 +30,7 @@ module BalanceToken = {
 
     switch (balanceTokenRequest) {
     | Done(Ok(balance)) =>
-      I18n.t#amount(balance->BusinessUtils.formatXTZ, token.symbol)
+      I18n.t#amount(balance->BusinessUtils.formatToken, token.symbol)
       ->React.string
     | Done(Error(_error)) => React.null
     | NotAsked

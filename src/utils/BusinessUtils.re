@@ -17,3 +17,9 @@ let formatXTZ = mutez => {
 };
 
 let xtz = I18n.t#xtz;
+
+let formatToken = amount => {
+  amount
+  ->Belt.Int.fromString
+  ->Belt.Option.mapWithDefault("0", Belt.Int.toString);
+};
