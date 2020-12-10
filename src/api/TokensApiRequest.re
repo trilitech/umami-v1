@@ -25,7 +25,11 @@ let useSimulate = (~network) => {
   ApiRequest.useSetter(~set, ~kind=Logs.Tokens, ());
 };
 
-let useCheckTokenContract = TokensAPI.checkTokenContract;
+let useCheckTokenContract = (~network) => {
+  let set = (~config, address) =>
+    (network, config)->TokensAPI.checkTokenContract(address);
+  ApiRequest.useSetter(~set, ~kind=Logs.Tokens, ~toast=false, ());
+};
 
 let useLoadOperationOffline =
     (

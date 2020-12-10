@@ -33,6 +33,7 @@ let styles =
 [@react.component]
 let make = (~cancel) => {
   let (tokenCreateRequest, createToken) = StoreContext.Tokens.useCreate();
+  let (_checkTokenRequest, checkToken) = StoreContext.Tokens.useCheck();
   let addToast = LogsContext.useToast();
 
   let form: TokenCreateForm.api =
@@ -43,15 +44,27 @@ let make = (~cancel) => {
         );
       },
       ~onSubmit=
-        ({state}) => {
-          cancel();
-          createToken({
-            address: state.values.address,
-            alias: state.values.name,
-            symbol: state.values.symbol,
-          })
-          ->ApiRequest.logOk(addToast, Logs.Tokens, _ => I18n.t#token_created)
-          ->ignore;
+        ({state, raiseSubmitFailed}) => {
+          checkToken(state.values.address)
+          ->Future.get(result =>
+              switch (result) {
+              | Ok(_) =>
+                cancel();
+                createToken({
+                  address: state.values.address,
+                  alias: state.values.name,
+                  symbol: state.values.symbol,
+                })
+                ->ApiRequest.logOk(addToast, Logs.Tokens, _ =>
+                    I18n.t#token_created
+                  )
+                ->ignore;
+              | Error(_) =>
+                let errorMsg = "Address is not a valid token contract";
+                addToast(Logs.error(~origin=Tokens, errorMsg));
+                raiseSubmitFailed(Some(errorMsg));
+              }
+            );
 
           None;
         },

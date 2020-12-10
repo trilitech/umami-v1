@@ -434,6 +434,11 @@ module Tokens = {
     let resetTokens = useResetAll();
     TokensApiRequest.useCreate(~sideEffect=_ => resetTokens(), ());
   };
+
+  let useCheck = () => {
+    let network = Network.useGet();
+    TokensApiRequest.useCheckTokenContract(~network);
+  };
 };
 
 module Aliases = {

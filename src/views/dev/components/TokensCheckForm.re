@@ -19,6 +19,7 @@ let make = () => {
     <Button
       onPress={_ =>
         TokensAPI.checkTokenContract((Network.Test, config), kt1)
+        ->Future.map(Belt.Result.isOk)
         ->Future.get(result =>
             result ? Dialog.error("OK") : Dialog.error("KO")
           )
