@@ -61,8 +61,8 @@ gantt
     Sprint 9 - Refactoring                            :done, 2020-11-18, 2020-11-30
     section Sprint 10 - Tokens
     Sprint 10 - Tokens                                :active, 2020-12-01, 2020-12-11
-    section Sprint 11 - SDK & Contracts
-    Sprint 11 - SDK & Contracts                       :active, 2020-12-14, 2021-01-08
+    section Sprint 11 - Contracts
+    Sprint 11 - Contracts                             :active, 2020-12-14, 2021-01-08
     section Beta Release
     Beta Release                                      :active, 2021-01-11, 2021-02-01
     section Release - v 1.0
