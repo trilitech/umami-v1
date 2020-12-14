@@ -55,5 +55,7 @@ gantt
     Sprint 8 - Alpha                                  :done  , 2020-11-02, 2020-11-13
     section Sprint 9 - Refactoring
     Sprint 9 - Refactoring                            :done  , 2020-11-15, 2020-11-27
+    section Sprint 10 - Tokens
+    Sprint 10 - Tokens                                :done  , 2020-12-01, 2020-12-11
 ```
 
