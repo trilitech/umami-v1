@@ -160,6 +160,11 @@ let useRequestsState = (getRequestsState, key: option(string)) => {
   (request, setRequest);
 };
 
+let resetRequests = requestsState =>
+  requestsState->Map.String.map(ApiRequest.updateToResetState);
+
+//
+
 module Network = {
   let useGet = () => {
     let store = useStoreContext();
@@ -211,7 +216,7 @@ module Balance = {
   let useResetAll = () => {
     let store = useStoreContext();
     let (_, setBalanceRequests) = store.balanceRequestsState;
-    () => setBalanceRequests(_ => Map.String.empty);
+    () => setBalanceRequests(resetRequests);
   };
 };
 
@@ -287,7 +292,7 @@ module BalanceToken = {
   let useResetAll = () => {
     let store = useStoreContext();
     let (_, setBalanceTokenRequests) = store.balanceTokenRequestsState;
-    () => setBalanceTokenRequests(_ => Map.String.empty);
+    () => setBalanceTokenRequests(resetRequests);
   };
 };
 
@@ -331,8 +336,8 @@ module DelegateInfo = {
     let (_, setDelegateRequests) = store.delegateRequestsState;
     let (_, setDelegateInfoRequests) = store.delegateInfoRequestsState;
     () => {
-      setDelegateRequests(_ => Map.String.empty);
-      setDelegateInfoRequests(_ => Map.String.empty);
+      setDelegateRequests(resetRequests);
+      setDelegateInfoRequests(resetRequests);
     };
   };
 };
@@ -362,7 +367,7 @@ module Operations = {
     let resetDelegatesAndDelegatesInfo = DelegateInfo.useResetAll();
     let (_, setOperationsRequests) = store.operationsRequestsState;
     () => {
-      setOperationsRequests(_ => Map.String.empty);
+      setOperationsRequests(resetRequests);
       resetBalances();
       resetBalanceTokens();
       resetDelegatesAndDelegatesInfo();
@@ -446,7 +451,7 @@ module Tokens = {
 
   let useResetAll = () => {
     let (_, setTokensRequest) = useRequestState();
-    () => setTokensRequest(_ => NotAsked);
+    () => setTokensRequest(ApiRequest.updateToResetState);
   };
 
   let useCreate = () => {
@@ -473,7 +478,7 @@ module Aliases = {
 
   let useResetAll = () => {
     let (_, setAliasesRequest) = useRequestState();
-    () => setAliasesRequest(_ => NotAsked);
+    () => setAliasesRequest(ApiRequest.updateToResetState);
   };
 
   let useGetAll = () => {
@@ -530,7 +535,7 @@ module Accounts = {
     let resetAliases = Aliases.useResetAll();
     let (_, setAccountsRequest) = useRequestState();
     () => {
-      setAccountsRequest(_ => NotAsked);
+      setAccountsRequest(ApiRequest.updateToResetState);
       resetOperations();
       resetAliases();
     };

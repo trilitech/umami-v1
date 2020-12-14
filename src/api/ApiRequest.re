@@ -1,7 +1,7 @@
 type t('value) =
   | NotAsked
   | Loading(option('value))
-  | Done(Belt.Result.t('value, string));
+  | Done(Belt.Result.t('value, string), float);
 
 type setRequest('value) = (t('value) => t('value)) => unit;
 
@@ -9,39 +9,51 @@ type requestState('value) = (t('value), setRequest('value));
 
 let getDone = request =>
   switch (request) {
-  | Done(result) => Some(result)
+  | Done(result, _) => Some(result)
+  | Loading(Some(value)) => Some(Ok(value))
   | _ => None
   };
 
 let getDoneOk = request =>
   switch (request) {
-  | Done(Ok(value)) => Some(value)
+  | Done(Ok(value), _)
+  | Loading(Some(value)) => Some(value)
   | _ => None
   };
 
 let getOkWithDefault = (request, def) =>
   switch (request) {
-  | Done(Ok(value)) => value
+  | Done(Ok(value), _)
+  | Loading(Some(value)) => value
   | _ => def
   };
 
 let map = (request, f) =>
   switch (request) {
-  | Done(result) => f(result)
+  | Done(result, _) => f(result)
+  | Loading(Some(value)) => f(Ok(value))
   | _ => ()
   };
 
-let getOk = (request, f) =>
+let mapOk = (request, f) =>
   switch (request) {
-  | Done(Ok(value)) => f(value)
+  | Done(Ok(value), _)
+  | Loading(Some(value)) => f(value)
   | _ => ()
+  };
+
+let mapOkWithDefault = (request, def, f) =>
+  switch (request) {
+  | Done(Ok(value), _)
+  | Loading(Some(value)) => f(value)
+  | _ => def
   };
 
 let mapOrLoad = (req, f) =>
   switch (req) {
-  | Done(Ok(data))
+  | Done(Ok(data), _)
   | Loading(Some(data)) => f(data)
-  | Done(Error(_))
+  | Done(Error(_), _)
   | NotAsked
   | Loading(None) => <LoadingView />
   };
@@ -55,6 +67,14 @@ let isLoading = request =>
   };
 
 let isDone = request => request->getDone->Belt.Option.isSome;
+
+let delay = 30. *. 1000.; // 30sec
+
+let isExpired = request =>
+  switch (request) {
+  | Done(_, timestamp) => Js.Date.now() -. timestamp > delay
+  | _ => false
+  };
 
 let logError = (r, addLog, origin) =>
   r->Future.tapError(msg =>
@@ -73,10 +93,25 @@ let logOk = (r, addLog, origin, makeMsg) =>
     )
   });
 
+let updateToLoadingState = request =>
+  switch (request) {
+  | Done(Ok(data), _) => Loading(Some(data))
+  | _ => Loading(None)
+  };
+
+let updateToResetState = request =>
+  switch (request) {
+  | Done(result, _) => Done(result, 0.0)
+  | other => other
+  };
+
 let conditionToLoad = (request, isMounted) => {
+  let requestLoading = request->isLoading;
   let requestNotAskedAndMonted = request->isNotAsked && isMounted;
   let requestDoneButReloadOnMont = request->isDone && !isMounted;
-  requestNotAskedAndMonted || requestDoneButReloadOnMont;
+  let requestExpired = request->isExpired;
+  !requestLoading
+  && (requestNotAskedAndMonted || requestDoneButReloadOnMont || requestExpired);
 };
 
 let useGetter = (~toast=true, ~get, ~kind, ~setRequest, ()) => {
@@ -84,15 +119,10 @@ let useGetter = (~toast=true, ~get, ~kind, ~setRequest, ()) => {
   let config = ConfigContext.useConfig();
 
   let get = input => {
-    setRequest(previousRequest =>
-      switch (previousRequest) {
-      | Done(Ok(data)) => Loading(Some(data))
-      | _ => Loading(None)
-      }
-    );
+    setRequest(updateToLoadingState);
     get(~config, input)
     ->logError(addLog(toast), kind)
-    ->Future.get(result => setRequest(_ => Done(result)));
+    ->Future.get(result => setRequest(_ => Done(result, Js.Date.now())));
   };
 
   get;
@@ -182,7 +212,7 @@ let useSetter = (~toast=true, ~sideEffect=?, ~set, ~kind, ()) => {
     setRequest(_ => Loading(None));
     set(~config, input)
     ->logError(addLog(toast), kind)
-    ->Future.tap(result => {setRequest(_ => Done(result))})
+    ->Future.tap(result => {setRequest(_ => Done(result, Js.Date.now()))})
     ->Future.tapOk(sideEffect->Belt.Option.getWithDefault(_ => ()));
   };
 

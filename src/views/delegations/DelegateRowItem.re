@@ -75,7 +75,7 @@ let make =
       StoreContext.DelegateInfo.useLoad(account.address);
 
     switch (delegateRequest) {
-    | Done(Ok(Some(delegate)))
+    | Done(Ok(Some(delegate)), _)
     | Loading(Some(Some(delegate))) =>
       <Table.Row zIndex>
         <CellAddress>
@@ -86,13 +86,13 @@ let make =
         <CellAmount>
           <Typography.Body1>
             {switch (delegateInfoRequest) {
-             | Done(Ok(delegateInfo))
+             | Done(Ok(delegateInfo), _)
              | Loading(Some(delegateInfo)) =>
                I18n.t#xtz_amount(
                  delegateInfo.initialBalance->BusinessUtils.formatXTZ,
                )
                ->React.string
-             | Done(Error(_error)) => React.null
+             | Done(Error(_error), _) => React.null
              | NotAsked
              | Loading(None) =>
                <ActivityIndicator
@@ -106,11 +106,11 @@ let make =
         <CellAmount>
           <Typography.Body1>
             {switch (balanceRequest) {
-             | Done(Ok(balance))
+             | Done(Ok(balance), _)
              | Loading(Some(balance)) =>
                I18n.t#xtz_amount(balance->BusinessUtils.formatXTZ)
                ->React.string
-             | Done(Error(_error)) => React.null
+             | Done(Error(_error), _) => React.null
              | NotAsked
              | Loading(None) =>
                <ActivityIndicator
@@ -129,13 +129,13 @@ let make =
         <CellDuration>
           <Typography.Body1 numberOfLines=1>
             {switch (delegateInfoRequest) {
-             | Done(Ok(delegateInfo))
+             | Done(Ok(delegateInfo), _)
              | Loading(Some(delegateInfo)) =>
                Js.Date.make()
                ->DateFns.differenceInDays(delegateInfo.timestamp)
                ->(days => DateFns.formatDuration({days: days}))
                ->React.string
-             | Done(Error(_error)) => React.null
+             | Done(Error(_error), _) => React.null
              | NotAsked
              | Loading(None) =>
                <ActivityIndicator
@@ -148,7 +148,7 @@ let make =
         </CellDuration>
         <CellReward>
           {switch (delegateInfoRequest) {
-           | Done(Ok({lastReward: Some(lastReward)}))
+           | Done(Ok({lastReward: Some(lastReward)}), _)
            | Loading(Some({lastReward: Some(lastReward)})) =>
              <Typography.Body1 colorStyle=`valid>
                {I18n.t#xtz_op_amount(
@@ -157,10 +157,10 @@ let make =
                 )
                 ->React.string}
              </Typography.Body1>
-           | Done(Ok({lastReward: None}))
+           | Done(Ok({lastReward: None}), _)
            | Loading(Some({lastReward: None})) =>
              <Typography.Body1> "---"->React.string </Typography.Body1>
-           | Done(Error(_error)) => React.null
+           | Done(Error(_error), _) => React.null
            | NotAsked
            | Loading(None) =>
              <Typography.Body1>

@@ -290,8 +290,8 @@ let make = (~onPressCancel) => {
 
   <ModalView.Form>
     {switch (modalStep, operationRequest, operationTokenRequest) {
-     | (_, Done(Ok((hash, _))), _)
-     | (_, _, Done(Ok((hash, _)))) =>
+     | (_, Done(Ok((hash, _)), _), _)
+     | (_, _, Done(Ok((hash, _)), _)) =>
        <>
          <Typography.Headline2 style=styles##title>
            I18n.title#operation_injected->React.string
@@ -304,8 +304,8 @@ let make = (~onPressCancel) => {
            <FormButton text=I18n.btn#ok onPress=onPressCancel />
          </View>
        </>
-     | (_, Done(Error(error)), _)
-     | (_, _, Done(Error(error))) =>
+     | (_, Done(Error(error), _), _)
+     | (_, _, Done(Error(error), _)) =>
        <>
          <Typography.Body1 colorStyle=`error>
            error->React.string

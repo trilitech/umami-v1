@@ -44,7 +44,7 @@ let make =
     <ModalAction ref=modal visible onRequestClose=closeAction>
       <ModalView.Form>
         {switch (request) {
-         | Done(Ok(_result)) =>
+         | Done(Ok(_result), _) =>
            <>
              <Typography.Headline2 style=styles##title>
                titleDone->React.string
@@ -53,7 +53,7 @@ let make =
                <FormButton text=I18n.btn#ok onPress=onPressCancel />
              </View>
            </>
-         | Done(Error(error)) =>
+         | Done(Error(error), _) =>
            <>
              <Typography.Body1 colorStyle=`error>
                error->React.string

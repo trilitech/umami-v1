@@ -13,10 +13,10 @@ module Balance = {
     let balanceRequest = StoreContext.Balance.useLoad(address);
 
     switch (balanceRequest) {
-    | Done(Ok(balance))
+    | Done(Ok(balance), _)
     | Loading(Some(balance)) =>
       I18n.t#xtz_amount(balance->BusinessUtils.formatXTZ)->React.string
-    | Done(Error(_error)) => React.null
+    | Done(Error(_error), _) => React.null
     | NotAsked
     | Loading(None) => balanceActivityIndicator
     };
@@ -30,11 +30,11 @@ module BalanceToken = {
       StoreContext.BalanceToken.useLoad(address, Some(token.address));
 
     switch (balanceTokenRequest) {
-    | Done(Ok(balance))
+    | Done(Ok(balance), _)
     | Loading(Some(balance)) =>
       I18n.t#amount(balance->BusinessUtils.formatToken, token.symbol)
       ->React.string
-    | Done(Error(_error)) => React.null
+    | Done(Error(_error), _) => React.null
     | NotAsked
     | Loading(None) => balanceActivityIndicator
     };
