@@ -52,10 +52,9 @@ let useLoad =
   React.useEffect4(
     () => {
       address->Common.Lib.Option.iter(address => {
-        let (shouldReload, loading) =
-          ApiRequest.conditionToLoad(request, isMounted);
+        let shouldReload = ApiRequest.conditionToLoad(request, isMounted);
         if (address != "" && shouldReload) {
-          getRequest(~loading, (network, address));
+          getRequest((network, address));
         };
       });
 

@@ -1,7 +1,11 @@
 type t('value) =
   | NotAsked
-  | Loading
+  | Loading(option('value))
   | Done(Belt.Result.t('value, string));
+
+type setRequest('value) = (t('value) => t('value)) => unit;
+
+type requestState('value) = (t('value), setRequest('value));
 
 let getDone = request =>
   switch (request) {
@@ -35,14 +39,20 @@ let getOk = (request, f) =>
 
 let mapOrLoad = (req, f) =>
   switch (req) {
-  | Done(res) => f(res)
+  | Done(Ok(data))
+  | Loading(Some(data)) => f(data)
+  | Done(Error(_))
   | NotAsked
-  | Loading => <LoadingView />
+  | Loading(None) => <LoadingView />
   };
 
 let isNotAsked = request => request == NotAsked;
 
-let isLoading = request => request == Loading;
+let isLoading = request =>
+  switch (request) {
+  | Loading(_) => true
+  | _ => false
+  };
 
 let isDone = request => request->getDone->Belt.Option.isSome;
 
@@ -66,15 +76,20 @@ let logOk = (r, addLog, origin, makeMsg) =>
 let conditionToLoad = (request, isMounted) => {
   let requestNotAskedAndMonted = request->isNotAsked && isMounted;
   let requestDoneButReloadOnMont = request->isDone && !isMounted;
-  (requestNotAskedAndMonted || requestDoneButReloadOnMont, isMounted);
+  requestNotAskedAndMonted || requestDoneButReloadOnMont;
 };
 
 let useGetter = (~toast=true, ~get, ~kind, ~setRequest, ()) => {
   let addLog = LogsContext.useAdd();
   let config = ConfigContext.useConfig();
 
-  let get = (~loading=true, input) => {
-    loading ? setRequest(_ => Loading) : ();
+  let get = input => {
+    setRequest(previousRequest =>
+      switch (previousRequest) {
+      | Done(Ok(data)) => Loading(Some(data))
+      | _ => Loading(None)
+      }
+    );
     get(~config, input)
     ->logError(addLog(toast), kind)
     ->Future.get(result => setRequest(_ => Done(result)));
@@ -83,15 +98,20 @@ let useGetter = (~toast=true, ~get, ~kind, ~setRequest, ()) => {
   get;
 };
 
-let useLoader = (~get, ~kind, ~requestState as (request, setRequest)) => {
+let useLoader =
+    (
+      ~get,
+      ~kind,
+      ~requestState as (request, setRequest): requestState('value),
+    ) => {
   let getRequest = useGetter(~get, ~kind, ~setRequest, ());
 
   let isMounted = ReactUtils.useIsMonted();
   React.useEffect3(
     () => {
-      let (shouldReload, loading) = conditionToLoad(request, isMounted);
+      let shouldReload = conditionToLoad(request, isMounted);
       if (shouldReload) {
-        getRequest(~loading, ());
+        getRequest();
       };
 
       None;
@@ -102,15 +122,21 @@ let useLoader = (~get, ~kind, ~requestState as (request, setRequest)) => {
   request;
 };
 
-let useLoader1 = (~get, ~kind, ~requestState as (request, setRequest), arg1) => {
+let useLoader1 =
+    (
+      ~get,
+      ~kind,
+      ~requestState as (request, setRequest): requestState('value),
+      arg1,
+    ) => {
   let getRequest = useGetter(~get, ~kind, ~setRequest, ());
 
   let isMounted = ReactUtils.useIsMonted();
   React.useEffect4(
     () => {
-      let (shouldReload, loading) = conditionToLoad(request, isMounted);
+      let shouldReload = conditionToLoad(request, isMounted);
       if (shouldReload) {
-        getRequest(~loading, arg1);
+        getRequest(arg1);
       };
 
       None;
@@ -122,15 +148,21 @@ let useLoader1 = (~get, ~kind, ~requestState as (request, setRequest), arg1) => 
 };
 
 let useLoader2 =
-    (~get, ~kind, ~requestState as (request, setRequest), arg1, arg2) => {
+    (
+      ~get,
+      ~kind,
+      ~requestState as (request, setRequest): requestState('value),
+      arg1,
+      arg2,
+    ) => {
   let getRequest = useGetter(~get, ~kind, ~setRequest, ());
 
   let isMounted = ReactUtils.useIsMonted();
   React.useEffect5(
     () => {
-      let (shouldReload, loading) = conditionToLoad(request, isMounted);
+      let shouldReload = conditionToLoad(request, isMounted);
       if (shouldReload) {
-        getRequest(~loading, (arg1, arg2));
+        getRequest((arg1, arg2));
       };
 
       None;
@@ -147,7 +179,7 @@ let useSetter = (~toast=true, ~sideEffect=?, ~set, ~kind, ()) => {
   let config = ConfigContext.useConfig();
 
   let sendRequest = input => {
-    setRequest(_ => Loading);
+    setRequest(_ => Loading(None));
     set(~config, input)
     ->logError(addLog(toast), kind)
     ->Future.tap(result => {setRequest(_ => Done(result))})

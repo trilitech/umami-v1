@@ -75,7 +75,8 @@ let make =
       StoreContext.DelegateInfo.useLoad(account.address);
 
     switch (delegateRequest) {
-    | Done(Ok(Some(delegate))) =>
+    | Done(Ok(Some(delegate)))
+    | Loading(Some(Some(delegate))) =>
       <Table.Row zIndex>
         <CellAddress>
           <Typography.Body1 numberOfLines=1>
@@ -85,14 +86,15 @@ let make =
         <CellAmount>
           <Typography.Body1>
             {switch (delegateInfoRequest) {
-             | Done(Ok(delegateInfo)) =>
+             | Done(Ok(delegateInfo))
+             | Loading(Some(delegateInfo)) =>
                I18n.t#xtz_amount(
                  delegateInfo.initialBalance->BusinessUtils.formatXTZ,
                )
                ->React.string
              | Done(Error(_error)) => React.null
              | NotAsked
-             | Loading =>
+             | Loading(None) =>
                <ActivityIndicator
                  animating=true
                  size={ActivityIndicator_Size.exact(19.)}
@@ -104,12 +106,13 @@ let make =
         <CellAmount>
           <Typography.Body1>
             {switch (balanceRequest) {
-             | Done(Ok(balance)) =>
+             | Done(Ok(balance))
+             | Loading(Some(balance)) =>
                I18n.t#xtz_amount(balance->BusinessUtils.formatXTZ)
                ->React.string
              | Done(Error(_error)) => React.null
              | NotAsked
-             | Loading =>
+             | Loading(None) =>
                <ActivityIndicator
                  animating=true
                  size={ActivityIndicator_Size.exact(19.)}
@@ -126,14 +129,15 @@ let make =
         <CellDuration>
           <Typography.Body1 numberOfLines=1>
             {switch (delegateInfoRequest) {
-             | Done(Ok(delegateInfo)) =>
+             | Done(Ok(delegateInfo))
+             | Loading(Some(delegateInfo)) =>
                Js.Date.make()
                ->DateFns.differenceInDays(delegateInfo.timestamp)
                ->(days => DateFns.formatDuration({days: days}))
                ->React.string
              | Done(Error(_error)) => React.null
              | NotAsked
-             | Loading =>
+             | Loading(None) =>
                <ActivityIndicator
                  animating=true
                  size={ActivityIndicator_Size.exact(19.)}
@@ -144,7 +148,8 @@ let make =
         </CellDuration>
         <CellReward>
           {switch (delegateInfoRequest) {
-           | Done(Ok({lastReward: Some(lastReward)})) =>
+           | Done(Ok({lastReward: Some(lastReward)}))
+           | Loading(Some({lastReward: Some(lastReward)})) =>
              <Typography.Body1 colorStyle=`valid>
                {I18n.t#xtz_op_amount(
                   "+",
@@ -152,11 +157,12 @@ let make =
                 )
                 ->React.string}
              </Typography.Body1>
-           | Done(Ok({lastReward: None})) =>
+           | Done(Ok({lastReward: None}))
+           | Loading(Some({lastReward: None})) =>
              <Typography.Body1> "---"->React.string </Typography.Body1>
            | Done(Error(_error)) => React.null
            | NotAsked
-           | Loading =>
+           | Loading(None) =>
              <Typography.Body1>
                <ActivityIndicator
                  animating=true
@@ -184,6 +190,6 @@ let make =
       </Table.Row>
     | Done(_)
     | NotAsked
-    | Loading => React.null
+    | Loading(_) => React.null
     };
   });

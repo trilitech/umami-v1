@@ -64,7 +64,7 @@ let make = (~cancel) => {
 
   <ModalView.Form>
     {switch (aliasRequest) {
-     | Loading
+     | Loading(_)
      | Done(_) => <> </>
      | NotAsked =>
        <>

@@ -2,8 +2,12 @@ open Belt;
 open Common;
 
 type reactState('state) = ('state, ('state => 'state) => unit);
+
+type requestsState('requestResponse) =
+  Map.String.t(ApiRequest.t('requestResponse));
+
 type apiRequestsState('requestResponse) =
-  reactState(Map.String.t(ApiRequest.t('requestResponse)));
+  reactState(requestsState('requestResponse));
 
 type state = {
   network: Network.t,
@@ -127,7 +131,7 @@ let useRequestsState = (getRequestsState, key: option(string)) => {
   let request =
     React.useMemo2(
       () =>
-        key->Belt.Option.mapWithDefault(ApiRequest.NotAsked, key =>
+        key->Option.mapWithDefault(ApiRequest.NotAsked, key =>
           requests
           ->Map.String.get(key)
           ->Option.getWithDefault(ApiRequest.NotAsked)
@@ -139,9 +143,14 @@ let useRequestsState = (getRequestsState, key: option(string)) => {
     React.useCallback2(
       newRequestSetter =>
         key->Lib.Option.iter(key =>
-          setRequests(request =>
-            request->Map.String.update(key, oldRequest =>
-              Some(newRequestSetter(oldRequest))
+          setRequests((request: requestsState('requestResponse)) =>
+            request->Map.String.update(
+              key, (oldRequest: option(ApiRequest.t('requestResponse))) =>
+              Some(
+                newRequestSetter(
+                  oldRequest->Option.getWithDefault(NotAsked),
+                ),
+              )
             )
           )
         ),
@@ -191,8 +200,8 @@ module Balance = {
               acc
               +. balanceRequest
                  ->ApiRequest.getOkWithDefault("0.0")
-                 ->Belt.Float.fromString
-                 ->Belt.Option.getWithDefault(0.0)
+                 ->Float.fromString
+                 ->Option.getWithDefault(0.0)
             })
           ->Js.Float.toFixedWithPrecision(~digits=6),
         )
@@ -224,7 +233,7 @@ module BalanceToken = {
     let operation =
       React.useMemo2(
         () =>
-          tokenAddress->Belt.Option.map(tokenAddress =>
+          tokenAddress->Option.map(tokenAddress =>
             Tokens.makeGetBalance(
               address,
               hardCodedReceiptionKT1,
@@ -267,8 +276,8 @@ module BalanceToken = {
               acc
               +. balanceRequest
                  ->ApiRequest.getOkWithDefault("0.0")
-                 ->Belt.Float.fromString
-                 ->Belt.Option.getWithDefault(0.0)
+                 ->Float.fromString
+                 ->Option.getWithDefault(0.0)
             })
           ->Js.Float.toFixedWithPrecision(~digits=6),
         )
@@ -287,7 +296,8 @@ module Delegate = {
 
   let useLoad = (address: string) => {
     let network = Network.useGet();
-    let requestState = useRequestState(Some(address));
+    let requestState: ApiRequest.requestState(option(string)) =
+      useRequestState(Some(address));
 
     DelegateApiRequest.useLoad(~network, ~requestState, ~address);
   };

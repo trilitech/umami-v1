@@ -243,7 +243,7 @@ let make = (~onPressCancel, ~action) => {
            <FormButton text=I18n.btn#ok onPress=onPressCancel />
          </View>
        </>
-     | (_, Loading) =>
+     | (_, Loading(_)) =>
        <View style=styles##loadingView>
          <ActivityIndicator
            animating=true
