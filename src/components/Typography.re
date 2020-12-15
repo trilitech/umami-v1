@@ -14,7 +14,7 @@ let getColor = (colorStyle, theme: ThemeContext.theme) =>
   switch (colorStyle) {
   | `highEmphasis => theme.colors.textHighEmphasis
   | `mediumEmphasis => theme.colors.textMediumEmphasis
-  | `mediumEmphasisOpposite => Theme.colorLightMediumEmphasis
+  | `mediumEmphasisOpposite => theme.colors.primaryTextMediumEmphasis
   | `disabled => theme.colors.textDisabled
   | `error => theme.colors.error
   | `positive => theme.colors.textPositive

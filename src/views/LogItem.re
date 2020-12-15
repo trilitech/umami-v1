@@ -15,9 +15,9 @@ let styles =
       "actionButtons":
         style(~flexDirection=`row, ~flexShrink=0., ~marginLeft=auto, ()),
       "reqelt": style(~flexShrink=0., ~marginRight=5.->dp, ()),
-      "itemError": style(~borderColor=Theme.colorDarkError, ()),
-      "itemInfo": style(~borderColor=Theme.colorDarkValid, ()),
-      "hovered": style(~backgroundColor=Theme.colorDarkHighEmphasis, ()),
+      "itemError": style(~borderColor=Colors.Dark.error, ()),
+      "itemInfo": style(~borderColor=Colors.Dark.valid, ()),
+      "hovered": style(~backgroundColor=Colors.Dark.highEmphasis, ()),
       "buttonHovered": style(~backgroundColor="rgba(0, 0, 0, 0.04)", ()),
       "kindIcon": style(~marginRight=10.->dp, ()),
       "item":
@@ -25,7 +25,7 @@ let styles =
           ~display=`flex,
           ~flexDirection=`row,
           ~borderRadius=3.,
-          ~backgroundColor=Theme.colorBackgroundLight,
+          ~backgroundColor=Colors.Light.background,
           ~borderLeftWidth=5.,
           ~flexWrap=`nowrap,
           ~width=100.->pct,
@@ -71,8 +71,8 @@ let make =
 
   let icon =
     switch (log.kind) {
-    | Error => <Icons.CloseOutline size=16. color=Theme.colorDarkError />
-    | Info => <Icons.CheckOutline size=16. color=Theme.colorDarkValid />
+    | Error => <Icons.CloseOutline size=16. color=Colors.Dark.error />
+    | Info => <Icons.CheckOutline size=16. color=Colors.Dark.valid />
     };
 
   <Hoverable
@@ -106,11 +106,11 @@ let make =
               data={log.msg}
               copied=I18n.log#log_content
               addToast
-              color=Theme.colorLightMediumEmphasis
+              color=Colors.Light.mediumEmphasis
             />
             ->ReactUtils.onlyWhen(log.kind == Error)}
            <DeleteButton
-             color=Theme.colorLightMediumEmphasis
+             color=Colors.Light.mediumEmphasis
              indice
              handleDelete
            />

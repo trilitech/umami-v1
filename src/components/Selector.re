@@ -12,8 +12,6 @@ module Item = {
             ~alignItems=`center,
             (),
           ),
-        "itemContainerHovered":
-          style(~backgroundColor=Theme.colorDarkSelected, ()),
       })
     );
 
@@ -69,8 +67,6 @@ let styles =
           ~left=0.->dp,
           ~right=0.->dp,
           ~maxHeight=224.->dp,
-          //~paddingVertical=8.->dp,
-          //~backgroundColor="#2e2e2e",
           ~borderRadius=3.,
           (),
         ),

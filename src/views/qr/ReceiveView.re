@@ -24,6 +24,8 @@ let styles =
 let make = (~account: Account.t, ~showBalance, ~onPressCancel) => {
   let token = StoreContext.SelectedToken.useGet();
 
+  let theme = ThemeContext.useTheme();
+
   <ModalView.Form>
     <>
       <Typography.Headline2 style=styles##title>
@@ -37,7 +39,7 @@ let make = (~account: Account.t, ~showBalance, ~onPressCancel) => {
       </View>
       <View style=styles##closeAction>
         <TouchableOpacity onPress=onPressCancel>
-          <Icons.Close size=36. color=Theme.colorDarkMediumEmphasis />
+          <Icons.Close size=36. color={theme.colors.iconMediumEmphasis} />
         </TouchableOpacity>
       </View>
     </>

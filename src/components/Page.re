@@ -7,8 +7,8 @@ let styles =
       "scrollContent":
         style(
           ~flex=1.,
-          ~paddingVertical=Theme.pagePaddingVertical->dp,
-          ~paddingHorizontal=Theme.pagePaddingHorizontal->dp,
+          ~paddingVertical=LayoutConst.pagePaddingVertical->dp,
+          ~paddingHorizontal=LayoutConst.pagePaddingHorizontal->dp,
           (),
         ),
     })

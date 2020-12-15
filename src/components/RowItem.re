@@ -4,7 +4,6 @@ let styles =
   Style.(
     StyleSheet.create({
       "container": style(~flexDirection=`row, ()),
-      "containerHovered": style(~backgroundColor=Theme.colorDarkSelected, ()),
       "inner": style(~flex=1., ~flexDirection=`row, ~alignItems=`center, ()),
       "innerContainer":
         style(~paddingVertical=6.->dp, ~flexDirection=`row, ~flex=1., ()),

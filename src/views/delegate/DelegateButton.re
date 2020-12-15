@@ -13,8 +13,6 @@ let styles =
           ~borderRadius=4.,
           (),
         ),
-      "textButton": style(~color=Theme.colorLightHighEmphasis, ()),
-      "textButtonDisabled": style(~color=Theme.colorLightDisabled, ()),
     })
   );
 
