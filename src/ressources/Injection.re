@@ -23,9 +23,19 @@ type delegation = {
   forceLowFee: option(bool),
 };
 
+type batch_transactions = {
+  source: string,
+  transactions: array(transaction),
+  counter: option(int),
+  burnCap: option(float),
+  forceLowFee: option(bool),
+  confirmations: option(int),
+};
+
 type operation =
   | Transaction(transaction)
-  | Delegation(delegation);
+  | Delegation(delegation)
+  | BatchTransactions(batch_transactions);
 
 let makeTransferOptions =
     (
@@ -83,3 +93,22 @@ let makeDelegate =
     (~source, ~delegate, ~fee=?, ~burnCap=?, ~forceLowFee=?, ()) => {
   Delegation({source, delegate, fee, burnCap, forceLowFee});
 };
+
+let makeBatchTransfers =
+    (
+      ~source,
+      ~transactions,
+      ~counter=?,
+      ~burnCap=?,
+      ~forceLowFee=?,
+      ~confirmations=?,
+      (),
+    ) =>
+  BatchTransactions({
+    source,
+    transactions,
+    counter,
+    burnCap,
+    forceLowFee,
+    confirmations,
+  });

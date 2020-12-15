@@ -186,6 +186,7 @@ let make = () => {
               <TokensCheckForm />
               <TokensGetBalanceForm />
               <TokensTransferForm />
+              <BatchTransactionsForm />
               <OperationList />
             </View>
           </InjectionState.Provider>

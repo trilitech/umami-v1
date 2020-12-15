@@ -395,6 +395,30 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
           : Future.value(Ok(operations))
     );
 
+  let batch_single_transaction = (tx: Injection.transaction) => {
+    let obj = Js.Dict.empty();
+    Js.Dict.set(obj, "destination", Js.Json.string(tx.destination));
+    Js.Dict.set(obj, "amount", Js.Float.toString(tx.amount)->Js.Json.string);
+    tx.options.fee
+    ->Belt.Option.mapWithDefault((), v =>
+        Js.Dict.set(obj, "fee", Js.Float.toString(v)->Js.Json.string)
+      );
+    tx.options.gasLimit
+    ->Belt.Option.mapWithDefault((), v =>
+        Js.Dict.set(obj, "gas-limit", Js.Int.toString(v)->Js.Json.string)
+      );
+    tx.options.storageLimit
+    ->Belt.Option.mapWithDefault((), v =>
+        Js.Dict.set(obj, "storage-limit", Js.Int.toString(v)->Js.Json.string)
+      );
+    Js.Json.object_(obj);
+  };
+
+  let transactions_to_json = (btxs: Injection.batch_transactions) =>
+    Js.Array.map(batch_single_transaction, btxs.transactions)
+    ->Js.Json.array
+    ->Js.Json.stringify /* ->(json => "\'" ++ json ++ "\'") */;
+
   let arguments = (network, operation: Injection.operation) =>
     switch (operation) {
     | Transaction(transaction) =>
@@ -424,6 +448,18 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
         delegation.source,
         "to",
         delegation.delegate,
+      |]
+    | BatchTransactions(btxs) => [|
+        "-E",
+        network->endpoint,
+        "-w",
+        "none",
+        "multiple",
+        "transfers",
+        "from",
+        btxs.source,
+        "using",
+        transactions_to_json(btxs),
       |]
     };
 
