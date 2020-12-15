@@ -45,7 +45,7 @@ let memo = component =>
 let amount = (account, transaction: Operation.Business.Transaction.t) => {
   let colorStyle =
     account->Belt.Option.map((account: Account.t) =>
-      account.address == transaction.destination ? `valid : `error
+      account.address == transaction.destination ? `positive : `negative
     );
 
   let op = colorStyle == Some(`valid) ? "+" : "-";

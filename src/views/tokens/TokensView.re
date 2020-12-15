@@ -19,6 +19,8 @@ module AddTokenButton = {
 
   [@react.component]
   let make = () => {
+    let theme = ThemeContext.useTheme();
+
     let modal = React.useRef(Js.Nullable.null);
 
     let (visibleModal, setVisibleModal) = React.useState(_ => false);
@@ -40,7 +42,7 @@ module AddTokenButton = {
       <TouchableOpacity style=styles##button onPress>
         <Icons.Add
           size=15.5
-          color=Theme.colorDarkMediumEmphasis
+          color={theme.colors.iconMediumEmphasis}
           style=styles##icon
         />
         <Typography.ButtonSecondary>

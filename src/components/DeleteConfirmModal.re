@@ -40,6 +40,8 @@ let make =
     ->ignore;
   };
 
+  let theme = ThemeContext.useTheme();
+
   <>
     <ModalAction ref=modal visible onRequestClose=closeAction>
       <ModalView.Form>
@@ -67,7 +69,7 @@ let make =
              <ActivityIndicator
                animating=true
                size=ActivityIndicator_Size.large
-               color="#FFF"
+               color={theme.colors.iconMediumEmphasis}
              />
            </View>
          | NotAsked =>

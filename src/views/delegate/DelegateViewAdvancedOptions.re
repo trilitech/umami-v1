@@ -2,14 +2,7 @@ open ReactNative;
 
 let styles =
   Style.(
-    StyleSheet.create({
-      "formRowInput": style(~marginVertical=5.->dp, ()),
-      "loadingOverlay":
-        StyleSheet.flatten([|
-          StyleSheet.absoluteFillObject,
-          style(~backgroundColor="rgba(23,23,23,0.87)", ()),
-        |]),
-    })
+    StyleSheet.create({"formRowInput": style(~marginVertical=5.->dp, ())})
   );
 
 let xtzDecoration = (~style) =>
@@ -39,6 +32,8 @@ let make = (~form: DelegateForm.api) => {
     None;
   });
 
+  let theme = ThemeContext.useTheme();
+
   <View>
     <FormGroupTextInput
       label=I18n.label#fee
@@ -55,7 +50,19 @@ let make = (~form: DelegateForm.api) => {
       error={form.getFieldError(Field(ForceLowFee))}
     />
     {operationSimulateRequest->ApiRequest.isLoading
-       ? <View style=styles##loadingOverlay> <LoadingView /> </View>
+       ? <View
+           style=Style.(
+             array([|
+               StyleSheet.absoluteFillObject,
+               style(
+                 ~backgroundColor=theme.colors.background,
+                 ~opacity=0.87,
+                 (),
+               ),
+             |])
+           )>
+           <LoadingView />
+         </View>
        : React.null}
   </View>;
 };

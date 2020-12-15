@@ -64,8 +64,6 @@ let styles =
           ~paddingRight=12.->dp,
           (),
         ),
-      "switchCmp": style(~height=16.->dp, ~width=32.->dp, ()),
-      "switchThumb": style(~transform=[|scale(~scale=0.65)|], ()),
       "operationSummary": style(~marginBottom=20.->dp, ()),
       "loadingView":
         style(
@@ -228,18 +226,7 @@ module Form = {
             <Typography.Overline1>
               I18n.btn#advanced_options->React.string
             </Typography.Overline1>
-            <SwitchNative
-              value=advancedOptionOpened
-              //onValueChange=handleChange
-              thumbColor="#000"
-              trackColor={Switch.trackColor(
-                ~_true="#FFF",
-                ~_false="rgba(255,255,255,0.5)",
-                (),
-              )}
-              style=styles##switchCmp
-              thumbStyle=styles##switchThumb
-            />
+            <ThemedSwitch value=advancedOptionOpened />
           </TouchableOpacity>
           {advancedOptionOpened
              ? <SendViewAdvancedOptions form ?token /> : React.null}
@@ -288,6 +275,8 @@ let make = (~onPressCancel) => {
 
   React.useEffect0(() => {None});
 
+  let theme = ThemeContext.useTheme();
+
   <ModalView.Form>
     {switch (modalStep, operationRequest, operationTokenRequest) {
      | (_, Done(Ok((hash, _)), _), _)
@@ -320,7 +309,7 @@ let make = (~onPressCancel) => {
          <ActivityIndicator
            animating=true
            size=ActivityIndicator_Size.large
-           color=Colors.highIcon
+           color={theme.colors.iconMediumEmphasis}
          />
        </View>
      | (SendStep, _, _) =>

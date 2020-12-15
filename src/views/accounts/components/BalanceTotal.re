@@ -11,6 +11,8 @@ let make = (~token: option(Token.t)=?) => {
       token->Belt.Option.map(token => token.address),
     );
 
+  let theme = ThemeContext.useTheme();
+
   <View style=styles##container>
     <Typography.Overline2>
       "TOTAL BALANCE"->React.string
@@ -30,7 +32,7 @@ let make = (~token: option(Token.t)=?) => {
          <ActivityIndicator
            animating=true
            size={ActivityIndicator_Size.exact(22.)}
-           color=Colors.highIcon
+           color={theme.colors.iconHighEmphasis}
          />
        }}
     </Typography.Headline2>

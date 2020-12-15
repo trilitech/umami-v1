@@ -47,6 +47,8 @@ let make = (~cancel) => {
 
   let (mnemonic, setMnemonic) = React.useState(_ => Belt.Array.make(24, ""));
 
+  let theme = ThemeContext.useTheme();
+
   <ModalView.Form>
     {switch (accountWithMnemonicRequest) {
      | Done(_) => <> </>
@@ -55,7 +57,7 @@ let make = (~cancel) => {
          <ActivityIndicator
            animating=true
            size=ActivityIndicator_Size.large
-           color="#FFF"
+           color={theme.colors.iconMediumEmphasis}
          />
        </View>
      | NotAsked =>

@@ -45,7 +45,7 @@ let make =
           Animated.spring(
             overlayOpacity,
             Animated.Value.Spring.config(
-              ~toValue=Animated.Value.Spring.fromRawValue(visible ? 0.7 : 0.),
+              ~toValue=Animated.Value.Spring.fromRawValue(visible ? 1. : 0.),
               ~speed=20.,
               ~bounciness=3.,
               ~useNativeDriver=true,
@@ -105,6 +105,8 @@ let make =
       [|visible|],
     );
 
+    let theme = ThemeContext.useTheme();
+
     <Modal
       animationType=`none
       transparent=true
@@ -127,6 +129,8 @@ let make =
               style=Style.(
                 array([|
                   styles##modalOverlay,
+                  StyleSheet.absoluteFillObject,
+                  style(~backgroundColor=theme.colors.scrim, ()),
                   style(
                     ~opacity=overlayOpacity->Animated.StyleProp.float,
                     (),

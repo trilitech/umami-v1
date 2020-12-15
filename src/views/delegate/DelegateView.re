@@ -142,18 +142,7 @@ module Form = {
             <Typography.Overline1>
               I18n.btn#advanced_options->React.string
             </Typography.Overline1>
-            <SwitchNative
-              value=advancedOptionOpened
-              //onValueChange=handleChange
-              thumbColor="#000"
-              trackColor={Switch.trackColor(
-                ~_true="#FFF",
-                ~_false="rgba(255,255,255,0.5)",
-                (),
-              )}
-              style=styles##switchCmp
-              thumbStyle=styles##switchThumb
-            />
+            <ThemedSwitch value=advancedOptionOpened />
           </TouchableOpacity>
           {advancedOptionOpened
              ? <DelegateViewAdvancedOptions form /> : React.null}
@@ -214,6 +203,8 @@ let make = (~onPressCancel, ~action) => {
     | Delete(_) => I18n.title#delegate_delete
     };
 
+  let theme = ThemeContext.useTheme();
+
   <ModalView.Form>
     {switch (modalStep, operationRequest) {
      | (_, Done(Ok((hash, _)), _)) =>
@@ -248,7 +239,7 @@ let make = (~onPressCancel, ~action) => {
          <ActivityIndicator
            animating=true
            size=ActivityIndicator_Size.large
-           color=Colors.highIcon
+           color={theme.colors.iconMediumEmphasis}
          />
        </View>
      | (SendStep, _) =>

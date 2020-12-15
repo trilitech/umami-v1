@@ -10,18 +10,10 @@ let styles =
           ~paddingLeft=20.->dp,
           ~paddingRight=12.->dp,
           ~fontFamily="Avenir",
-          ~color=Theme.colorDarkHighEmphasis,
           ~fontSize=16.,
           ~fontWeight=`normal,
-          ~borderColor=Theme.colorDarkMediumEmphasis,
           ~borderWidth=1.,
           ~borderRadius=5.,
-          (),
-        ),
-      "inputError":
-        style(
-          ~color=Theme.colorDarkError,
-          ~borderColor=Theme.colorDarkError,
           (),
         ),
     })
@@ -43,15 +35,32 @@ let make =
       ~placeholder=?,
       ~style as styleFromProp: option(ReactNative.Style.t)=?,
     ) => {
+  let theme = ThemeContext.useTheme();
   <TextInput
     ref=?inputRef
     style=Style.(
       arrayOption([|
         Some(styles##input),
-        hasError ? Some(styles##inputError) : None,
+        Some(
+          style(
+            ~color=theme.colors.textHighEmphasis,
+            ~borderColor=theme.colors.borderMediumEmphasis,
+            (),
+          ),
+        ),
+        hasError
+          ? Some(
+              style(
+                ~color=theme.colors.error,
+                ~borderColor=theme.colors.error,
+                (),
+              ),
+            )
+          : None,
         styleFromProp,
       |])
     )
+    placeholderTextColor={theme.colors.textDisabled}
     value
     onChange={(event: TextInput.changeEvent) =>
       onValueChange(event.nativeEvent.text)

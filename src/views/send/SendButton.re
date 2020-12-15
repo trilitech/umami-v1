@@ -11,7 +11,6 @@ let styles =
           ~justifyContent=`center,
           ~alignItems=`center,
           ~borderRadius=35.,
-          ~backgroundColor="#D8BC63",
           (),
         ),
       "textButton": style(~marginTop=6.->dp, ()),
@@ -20,6 +19,8 @@ let styles =
 
 [@react.component]
 let make = () => {
+  let theme = ThemeContext.useTheme();
+
   let modal = React.useRef(Js.Nullable.null);
   let account = StoreContext.SelectedAccount.useGet();
 
@@ -31,13 +32,6 @@ let make = () => {
 
   let onPress = account->Belt.Option.map(_ => onPress);
 
-  let (iconColor, textColor) = {
-    switch (account) {
-    | Some(_) => (Colors.plainIconContent, Theme.colorLightHighEmphasis)
-    | None => (Theme.colorLightDisabled, Theme.colorLightDisabled)
-    };
-  };
-
   let onPressCancel = _e => {
     modal.current
     ->Js.Nullable.toOption
@@ -47,11 +41,33 @@ let make = () => {
 
   <>
     <TouchableOpacity style=styles##button ?onPress>
-      <View style=styles##iconContainer>
-        <Icons.Send size=24. color=iconColor />
+      <View
+        style=Style.(
+          array([|
+            styles##iconContainer,
+            style(~backgroundColor=theme.colors.primaryButtonBackground, ()),
+          |])
+        )>
+        <Icons.Send
+          size=24.
+          color={
+            account->Belt.Option.isSome
+              ? theme.colors.primaryIconHighEmphasis
+              : theme.colors.primaryIconDisabled
+          }
+        />
         <Typography.ButtonSecondary
           style=Style.(
-            array([|styles##textButton, style(~color=textColor, ())|])
+            array([|
+              styles##textButton,
+              style(
+                ~color=
+                  account->Belt.Option.isSome
+                    ? theme.colors.primaryTextHighEmphasis
+                    : theme.colors.primaryTextDisabled,
+                (),
+              ),
+            |])
           )>
           I18n.btn#send->React.string
         </Typography.ButtonSecondary>

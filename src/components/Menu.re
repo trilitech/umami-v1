@@ -12,7 +12,6 @@ module Item = {
             ~alignItems=`center,
             (),
           ),
-        "buttonHovered": style(~backgroundColor="rgba(255,255,255,0.04)", ()),
         "text": style(~marginLeft=10.->dp, ()),
       })
     );
@@ -20,19 +19,35 @@ module Item = {
   [@react.component]
   let make =
       (~text, ~icon: Icons.builder, ~colorStyle=`highEmphasis, ~onPress=?) => {
+    let theme = ThemeContext.useTheme();
     <PressableCustom ?onPress>
-      {({hovered}) =>
+      {({hovered, pressed}) =>
          <View
            style=Style.(
              arrayOption([|
                Some(styles##button),
-               hovered ? Some(styles##buttonHovered) : None,
+               hovered
+                 ? Some(
+                     Style.style(
+                       ~backgroundColor=theme.colors.stateHovered,
+                       (),
+                     ),
+                   )
+                 : None,
+               pressed
+                 ? Some(
+                     Style.style(
+                       ~backgroundColor=theme.colors.statePressed,
+                       (),
+                     ),
+                   )
+                 : None,
              |])
            )>
            {icon(
               ~style=?None,
               ~size=20.,
-              ~color=Typography.getColor(colorStyle),
+              ~color=colorStyle->Typography.getColor(theme),
             )}
            <Typography.ButtonSecondary colorStyle style=styles##text>
              text->React.string
@@ -46,8 +61,6 @@ let styles =
   Style.(
     StyleSheet.create({
       "button": style(~alignItems=`center, ~justifyContent=`center, ()),
-      "buttonHovered": style(~backgroundColor="rgba(255,255,255,0.04)", ()),
-      "buttonPressed": style(~backgroundColor="rgba(255,255,255,0.1)", ()),
       "listContainer":
         style(
           ~position=`absolute,
@@ -55,11 +68,11 @@ let styles =
           ~right=2.->dp,
           ~minWidth=170.->dp,
           ~maxHeight=224.->dp,
-          ~paddingVertical=8.->dp,
-          ~backgroundColor="#2e2e2e",
+          //~paddingVertical=8.->dp,
           ~borderRadius=3.,
           (),
         ),
+      "listContentContainer": style(~paddingVertical=8.->dp, ()),
     })
   );
 
@@ -82,11 +95,13 @@ let make = (~icon: Icons.builder, ~children, ~size=42.) => {
     ),
   );
 
+  let theme = ThemeContext.useTheme();
+
   <View style=Style.(style(~width=size->dp, ~height=size->dp, ()))>
     <PressableCustom
       ref={pressableRef->Ref.value}
       onPress={_ => setIsOpen(isOpen => !isOpen)}>
-      {({hovered}) =>
+      {({hovered, pressed}) =>
          <View
            style=Style.(
              arrayOption([|
@@ -99,20 +114,48 @@ let make = (~icon: Icons.builder, ~children, ~size=42.) => {
                    (),
                  ),
                ),
-               hovered ? Some(styles##buttonHovered) : None,
-               isOpen ? Some(styles##buttonPressed) : None,
+               hovered
+                 ? Some(
+                     Style.style(
+                       ~backgroundColor=theme.colors.stateHovered,
+                       (),
+                     ),
+                   )
+                 : None,
+               pressed || isOpen
+                 ? Some(
+                     Style.style(
+                       ~backgroundColor=theme.colors.statePressed,
+                       (),
+                     ),
+                   )
+                 : None,
              |])
            )
            pointerEvents=`none>
            {icon(
               ~style=?None,
               ~size=Js.Math.ceil_float(iconSizeRatio *. size),
-              ~color=Theme.colorDarkMediumEmphasis,
+              ~color=theme.colors.iconMediumEmphasis,
             )}
          </View>}
     </PressableCustom>
     <View style={ReactUtils.displayOn(isOpen)}>
-      <ScrollView style=styles##listContainer> children </ScrollView>
+      <ScrollView
+        style=Style.(
+          array([|
+            styles##listContainer,
+            style(~backgroundColor=theme.colors.background, ()),
+          |])
+        )
+        contentContainerStyle=Style.(
+          array([|
+            styles##listContentContainer,
+            style(~backgroundColor=theme.colors.stateActive, ()),
+          |])
+        )>
+        children
+      </ScrollView>
     </View>
   </View>;
 };

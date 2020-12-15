@@ -19,14 +19,29 @@ module Item = {
 
   [@react.component]
   let make = (~item, ~onChange, ~renderItem) => {
+    let theme = ThemeContext.useTheme();
     <PressableCustom onPress={_e => onChange(item)}>
-      {interactionState =>
+      {({hovered, pressed}) =>
          <View
            style=Style.(
              arrayOption([|
                Some(styles##itemContainer),
-               interactionState.hovered
-                 ? Some(styles##itemContainerHovered) : None,
+               hovered
+                 ? Some(
+                     Style.style(
+                       ~backgroundColor=theme.colors.stateHovered,
+                       (),
+                     ),
+                   )
+                 : None,
+               pressed
+                 ? Some(
+                     Style.style(
+                       ~backgroundColor=theme.colors.statePressed,
+                       (),
+                     ),
+                   )
+                 : None,
              |])
            )>
            {renderItem(item)}
@@ -42,7 +57,6 @@ let styles =
         style(
           ~flexDirection=`row,
           ~alignItems=`center,
-          ~borderColor="rgba(255,255,255,0.6)",
           ~borderWidth=1.,
           ~borderRadius=5.,
           (),
@@ -55,11 +69,12 @@ let styles =
           ~left=0.->dp,
           ~right=0.->dp,
           ~maxHeight=224.->dp,
-          ~paddingVertical=8.->dp,
-          ~backgroundColor="#2e2e2e",
+          //~paddingVertical=8.->dp,
+          //~backgroundColor="#2e2e2e",
           ~borderRadius=3.,
           (),
         ),
+      "listContentContainer": style(~paddingVertical=8.->dp, ()),
     })
   );
 
@@ -100,12 +115,21 @@ let make =
       item->getItemValue == selectedValue->Belt.Option.getWithDefault("")
     );
 
+  let theme = ThemeContext.useTheme();
+
   <View ?style>
     <TouchableOpacity
       ref={touchableRef->Ref.value}
       onPress={_e => setIsOpen(prevIsOpen => !prevIsOpen)}
       disabled>
-      <View style=styles##button pointerEvents=`none>
+      <View
+        style=Style.(
+          array([|
+            styles##button,
+            style(~borderColor=theme.colors.borderMediumEmphasis, ()),
+          |])
+        )
+        pointerEvents=`none>
         {renderButton(
            selectedItem->Belt.Option.isSome ? selectedItem : noneItem,
          )}
@@ -113,13 +137,25 @@ let make =
            ? React.null
            : <Icons.ChevronDown
                size=24.
-               color=Theme.colorDarkMediumEmphasis
+               color={theme.colors.iconMediumEmphasis}
                style=styles##icon
              />}
       </View>
     </TouchableOpacity>
     <View style={ReactUtils.displayOn(isOpen)}>
-      <ScrollView style=styles##listContainer>
+      <ScrollView
+        style=Style.(
+          array([|
+            styles##listContainer,
+            style(~backgroundColor=theme.colors.background, ()),
+          |])
+        )
+        contentContainerStyle=Style.(
+          array([|
+            styles##listContentContainer,
+            style(~backgroundColor=theme.colors.stateActive, ()),
+          |])
+        )>
         {noneItem->Belt.Option.mapWithDefault(React.null, item =>
            <Item key={item->getItemValue} item onChange renderItem />
          )}

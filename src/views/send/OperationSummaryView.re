@@ -33,6 +33,7 @@ module AccountInfo = {
 
 [@react.component]
 let make = (~style=?, ~operation: SendForm.operation) => {
+  let theme = ThemeContext.useTheme();
   <View ?style>
     {switch (operation) {
      | InjectionOperation(Transaction({source}))
@@ -43,7 +44,7 @@ let make = (~style=?, ~operation: SendForm.operation) => {
      | _ => React.null
      }}
     <View style=styles##iconContainer>
-      <Icons.ArrowDown size=50. color=Theme.colorDarkMediumEmphasis />
+      <Icons.ArrowDown size=50. color={theme.colors.iconMediumEmphasis} />
     </View>
     {switch (operation) {
      | InjectionOperation(Transaction({destination}))

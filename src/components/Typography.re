@@ -6,17 +6,19 @@ type colorStyle = [
   | `mediumEmphasisOpposite
   | `disabled
   | `error
-  | `valid
+  | `positive
+  | `negative
 ];
 
-let getColor = colorStyle =>
+let getColor = (colorStyle, theme: ThemeContext.theme) =>
   switch (colorStyle) {
-  | `highEmphasis => Theme.colorDarkHighEmphasis
-  | `mediumEmphasis => Theme.colorDarkMediumEmphasis
+  | `highEmphasis => theme.colors.textHighEmphasis
+  | `mediumEmphasis => theme.colors.textMediumEmphasis
   | `mediumEmphasisOpposite => Theme.colorLightMediumEmphasis
-  | `disabled => Theme.colorDarkDisabled
-  | `error => Theme.colorDarkError
-  | `valid => Theme.colorDarkValid
+  | `disabled => theme.colors.textDisabled
+  | `error => theme.colors.error
+  | `positive => theme.colors.textPositive
+  | `negative => theme.colors.textNegative
   };
 
 type fontWeightStyle = [ | `black | `heavy | `medium | `book | `light];
@@ -51,6 +53,7 @@ module Base = {
         ~ellipsizeMode: option([ | `clip | `head | `middle | `tail])=?,
         ~children: React.element,
       ) => {
+    let theme = ThemeContext.useTheme();
     <Text
       ?ellipsizeMode
       ?numberOfLines
@@ -59,7 +62,7 @@ module Base = {
           Some(styles##text),
           Some(
             style(
-              ~color=colorStyle->getColor,
+              ~color=colorStyle->getColor(theme),
               ~fontSize,
               ~fontWeight=fontWeightStyle->getFontWeight,
               (),

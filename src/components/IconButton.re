@@ -13,23 +13,43 @@ let styles =
           ~borderRadius=14.,
           (),
         ),
-      "buttonHovered": style(~backgroundColor="rgba(255,255,255,0.04)", ()),
     })
   );
 
 [@react.component]
 let make = (~icon: Icons.builder, ~hoveredStyle=?, ~onPress=?) => {
+  let theme = ThemeContext.useTheme();
   <PressableCustom ?onPress>
-    {({hovered}) =>
+    {({hovered, pressed}) => {
        <View
          style=Style.(
            arrayOption([|
              Some(styles##button),
-             hovered ? Some(styles##buttonHovered) : None,
+             hovered
+               ? Some(
+                   Style.style(
+                     ~backgroundColor=theme.colors.stateHovered,
+                     (),
+                   ),
+                 )
+               : None,
+             pressed
+               ? Some(
+                   Style.style(
+                     ~backgroundColor=theme.colors.statePressed,
+                     (),
+                   ),
+                 )
+               : None,
              hovered ? hoveredStyle : None,
            |])
          )>
-         {icon(~style=?None, ~size=16., ~color=Theme.colorDarkMediumEmphasis)}
-       </View>}
+         {icon(
+            ~style=?None,
+            ~size=16.,
+            ~color=theme.colors.iconMediumEmphasis,
+          )}
+       </View>;
+     }}
   </PressableCustom>;
 };

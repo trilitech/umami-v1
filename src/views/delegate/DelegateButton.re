@@ -11,7 +11,6 @@ let styles =
           ~justifyContent=`center,
           ~alignItems=`center,
           ~borderRadius=4.,
-          ~backgroundColor="#D8BC63",
           (),
         ),
       "textButton": style(~color=Theme.colorLightHighEmphasis, ()),
@@ -22,6 +21,8 @@ let styles =
 [@react.component]
 let make =
     (~account as defaultAccount=?, ~disabled=false, ~style as styleFromProp=?) => {
+  let theme = ThemeContext.useTheme();
+
   let modal = React.useRef(Js.Nullable.null);
 
   let (visibleModal, setVisibleModal) = React.useState(_ => false);
@@ -41,11 +42,27 @@ let make =
 
   <>
     <TouchableOpacity
-      style=Style.(arrayOption([|Some(styles##button), styleFromProp|]))
+      style=Style.(
+        arrayOption([|
+          Some(styles##button),
+          Some(
+            style(~backgroundColor=theme.colors.primaryButtonBackground, ()),
+          ),
+          styleFromProp,
+        |])
+      )
       onPress
       disabled>
       <Typography.ButtonSecondary
-        style={disabled ? styles##textButtonDisabled : styles##textButton}>
+        style=Style.(
+          style(
+            ~color=
+              disabled
+                ? theme.colors.primaryTextDisabled
+                : theme.colors.primaryTextHighEmphasis,
+            (),
+          )
+        )>
         (disabled ? I18n.btn#delegated : I18n.btn#delegate)->React.string
       </Typography.ButtonSecondary>
     </TouchableOpacity>

@@ -18,7 +18,14 @@ let styles =
 
 [@react.component]
 let make = () => {
-  <View style=styles##container>
+  let theme = ThemeContext.useTheme();
+  <View
+    style=Style.(
+      array([|
+        styles##container,
+        style(~backgroundColor=theme.colors.barBackground, ()),
+      |])
+    )>
     <SVGLogo
       width={36.->Style.dp}
       height={38.->Style.dp}

@@ -74,6 +74,8 @@ let make =
     let delegateInfoRequest =
       StoreContext.DelegateInfo.useLoad(account.address);
 
+    let theme = ThemeContext.useTheme();
+
     switch (delegateRequest) {
     | Done(Ok(Some(delegate)), _)
     | Loading(Some(Some(delegate))) =>
@@ -98,7 +100,7 @@ let make =
                <ActivityIndicator
                  animating=true
                  size={ActivityIndicator_Size.exact(19.)}
-                 color=Colors.highIcon
+                 color={theme.colors.iconHighEmphasis}
                />
              }}
           </Typography.Body1>
@@ -116,7 +118,7 @@ let make =
                <ActivityIndicator
                  animating=true
                  size={ActivityIndicator_Size.exact(19.)}
-                 color=Colors.highIcon
+                 color={theme.colors.iconHighEmphasis}
                />
              }}
           </Typography.Body1>
@@ -141,7 +143,7 @@ let make =
                <ActivityIndicator
                  animating=true
                  size={ActivityIndicator_Size.exact(19.)}
-                 color=Colors.highIcon
+                 color={theme.colors.iconHighEmphasis}
                />
              }}
           </Typography.Body1>
@@ -150,7 +152,7 @@ let make =
           {switch (delegateInfoRequest) {
            | Done(Ok({lastReward: Some(lastReward)}), _)
            | Loading(Some({lastReward: Some(lastReward)})) =>
-             <Typography.Body1 colorStyle=`valid>
+             <Typography.Body1 colorStyle=`positive>
                {I18n.t#xtz_op_amount(
                   "+",
                   lastReward->BusinessUtils.formatMilliXTZ,
@@ -167,7 +169,7 @@ let make =
                <ActivityIndicator
                  animating=true
                  size={ActivityIndicator_Size.exact(19.)}
-                 color=Colors.highIcon
+                 color={theme.colors.iconHighEmphasis}
                />
              </Typography.Body1>
            }}

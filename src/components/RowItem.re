@@ -10,7 +10,6 @@ let styles =
         style(~paddingVertical=6.->dp, ~flexDirection=`row, ~flex=1., ()),
       "border":
         style(
-          ~backgroundColor="#8D9093",
           ~width=2.->dp,
           ~borderTopRightRadius=2.,
           ~borderBottomRightRadius=2.,
@@ -22,6 +21,7 @@ let styles =
 module Base = {
   [@react.component]
   let make = (~height, ~style as stylearg=?, ~children) => {
+    let theme = ThemeContext.useTheme();
     <Hoverable
       style=Style.(
         arrayOption([|
@@ -35,7 +35,11 @@ module Base = {
            style=Style.(
              arrayOption([|
                Some(styles##innerContainer),
-               hovered ? Some(styles##containerHovered) : None,
+               hovered
+                 ? Some(
+                     style(~backgroundColor=theme.colors.stateHovered, ()),
+                   )
+                 : None,
              |])
            )>
            {children(hovered)}
@@ -48,10 +52,18 @@ module Base = {
 module Bordered = {
   [@react.component]
   let make = (~height, ~style=?, ~children) => {
+    let theme = ThemeContext.useTheme();
     <Base height ?style>
       {_ =>
          <>
-           <View style=styles##border />
+           <View
+             style=Style.(
+               array([|
+                 styles##border,
+                 style(~backgroundColor=theme.colors.borderHighEmphasis, ()),
+               |])
+             )
+           />
            <View style=styles##inner> children </View>
          </>}
     </Base>;

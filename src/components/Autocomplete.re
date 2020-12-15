@@ -10,8 +10,6 @@ module Item = {
             //~alignItems=`center,
             (),
           ),
-        "itemContainerHovered":
-          style(~backgroundColor=Theme.colorDarkSelected, ()),
       })
     );
 
@@ -36,6 +34,8 @@ module Item = {
       onSelect(_ => index);
     };
 
+    let theme = ThemeContext.useTheme();
+
     <View onMouseDown onMouseMove>
       <TouchableOpacity onPress>
         <View
@@ -43,7 +43,14 @@ module Item = {
             arrayOption([|
               Some(styles##itemContainer),
               Some(style(~height=itemHeight->dp, ())),
-              isSelected ? Some(styles##itemContainerHovered) : None,
+              isSelected
+                ? Some(
+                    Style.style(
+                      ~backgroundColor=theme.colors.stateHovered,
+                      (),
+                    ),
+                  )
+                : None,
             |])
           )>
           children
@@ -62,7 +69,6 @@ let styles =
           ~top=0.->dp,
           ~left=0.->dp,
           ~right=0.->dp,
-          ~backgroundColor="#2e2e2e",
           ~borderRadius=3.,
           (),
         ),
@@ -159,6 +165,8 @@ let make =
       scrollEvent->Event.ScrollEvent.nativeEvent##contentOffset##y;
   };
 
+  let theme = ThemeContext.useTheme();
+
   <View>
     {renderLabel->Belt.Option.mapWithDefault(React.null, renderLabel =>
        renderLabel(displayError)
@@ -187,6 +195,7 @@ let make =
                array([|
                  styles##listContainer,
                  style(
+                   ~backgroundColor=theme.colors.background,
                    ~maxHeight=
                      (
                        itemHeight
@@ -195,10 +204,16 @@ let make =
                        *. 2.
                      )
                      ->dp,
-                   ~paddingVertical=listVerticalPadding->dp,
                    (),
                  ),
                |])
+             )
+             contentContainerStyle=Style.(
+               style(
+                 ~paddingVertical=listVerticalPadding->dp,
+                 ~backgroundColor=theme.colors.stateActive,
+                 (),
+               )
              )
              onScroll
              scrollEventThrottle=16>

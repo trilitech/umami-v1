@@ -1,11 +1,16 @@
 open ReactNative;
 
-let balanceActivityIndicator =
-  <ActivityIndicator
-    animating=true
-    size={ActivityIndicator_Size.exact(19.)}
-    color=Colors.highIcon
-  />;
+module BalanceActivityIndicator = {
+  [@react.component]
+  let make = () => {
+    let theme = ThemeContext.useTheme();
+    <ActivityIndicator
+      animating=true
+      size={ActivityIndicator_Size.exact(19.)}
+      color={theme.colors.iconHighEmphasis}
+    />;
+  };
+};
 
 module Balance = {
   [@react.component]
@@ -18,7 +23,7 @@ module Balance = {
       I18n.t#xtz_amount(balance->BusinessUtils.formatXTZ)->React.string
     | Done(Error(_error), _) => React.null
     | NotAsked
-    | Loading(None) => balanceActivityIndicator
+    | Loading(None) => <BalanceActivityIndicator />
     };
   };
 };
@@ -36,7 +41,7 @@ module BalanceToken = {
       ->React.string
     | Done(Error(_error), _) => React.null
     | NotAsked
-    | Loading(None) => balanceActivityIndicator
+    | Loading(None) => <BalanceActivityIndicator />
     };
   };
 };

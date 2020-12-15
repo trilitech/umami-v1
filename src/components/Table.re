@@ -10,7 +10,6 @@ module Head = {
             ~alignItems=`center,
             ~height=30.->dp,
             ~paddingLeft=22.->dp,
-            ~borderColor="rgba(255,255,255,0.38)",
             ~borderBottomWidth=1.,
             ~zIndex=1,
             (),
@@ -20,7 +19,16 @@ module Head = {
 
   [@react.component]
   let make = (~children) => {
-    <View style=styles##thead> children </View>;
+    let theme = ThemeContext.useTheme();
+    <View
+      style=Style.(
+        array([|
+          styles##thead,
+          style(~borderColor=theme.colors.borderDisabled, ()),
+        |])
+      )>
+      children
+    </View>;
   };
 };
 
