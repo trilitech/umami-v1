@@ -51,18 +51,21 @@ let make = (~children) => {
     );
 
   let onStartShouldSetResponderCapture =
-    React.useCallback0(_pressEvent => true);
-
-  let onResponderRelease =
     React.useCallback1(
       pressEvent => {
-        listeners->Belt.Array.forEach(callback => callback(pressEvent))
+        Js.Global.setTimeout(
+          () => {
+            listeners->Belt.Array.forEach(callback => callback(pressEvent))
+          },
+          150,
+        )
+        ->ignore;
+        false;
       },
       [|listeners|],
     );
 
-  <View
-    style=styles##document onStartShouldSetResponderCapture onResponderRelease>
+  <View style=styles##document onStartShouldSetResponderCapture>
     <Provider value> children </Provider>
   </View>;
 };
