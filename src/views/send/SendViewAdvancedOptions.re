@@ -42,7 +42,7 @@ let make = (~form: SendForm.api, ~token: option(Token.t)=?) => {
           Tokens.makeTransfer(
             ~source=form.values.sender,
             ~amount=form.values.amount->Js.Float.fromString->int_of_float,
-            ~destination=form.values.sender,
+            ~destination=form.values.recipient,
             ~contract=token.address,
             (),
           );
@@ -52,7 +52,7 @@ let make = (~form: SendForm.api, ~token: option(Token.t)=?) => {
           Injection.makeTransfer(
             ~source=form.values.sender,
             ~amount=form.values.amount->Js.Float.fromString,
-            ~destination=form.values.sender,
+            ~destination=form.values.recipient,
             (),
           );
         sendOperationSimulate(operation)->ignore;
