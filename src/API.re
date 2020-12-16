@@ -179,11 +179,39 @@ module InjectorRaw = (Caller: CallerAPI) => {
     storageLimit: int,
   };
 
-  let parse = (receipt, pattern) =>
-    Js.Re.fromString(pattern)
-    ->Js.Re.exec_(receipt)
-    ->Belt.Option.map(Js.Re.captures)
-    ->Belt.Option.flatMap(captures => captures[1]->Js.Nullable.toOption);
+  let parse = (receipt, pattern, interp) => {
+    let rec parseAll = (acc, regexp) =>
+      switch (Js.Re.exec_(regexp, receipt)->Belt.Option.map(Js.Re.captures)) {
+      | Some(res) =>
+        acc
+        ->Js.Array2.concat([|res[1]->Js.Nullable.toOption|])
+        ->parseAll(regexp)
+      | None => acc
+      };
+    let interpret_results = results =>
+      if (Js.Array.length(results) == 0) {
+        None;
+      } else {
+        switch (interp) {
+        | `First(f) => results[0]->Belt.Option.flatMap(f)
+        | `Last(f) =>
+          results[Js.Array.length(results) - 1]->Belt.Option.flatMap(f)
+        | `AllReduce(f, init) => Some(Js.Array2.reduce(results, f, init))
+        };
+      };
+    parseAll([||], Js.Re.fromStringWithFlags(pattern, ~flags="g"))
+    ->interpret_results;
+  };
+
+  let parse_and_reduce_float = (f, s) => {
+    Belt.Option.mapWithDefault(s, Some(0.), float_of_string_opt)
+    ->Belt.Option.mapWithDefault(f, Belt.Float.(+)(f));
+  };
+
+  let parse_and_reduce_int = (f, s) => {
+    Belt.Option.mapWithDefault(s, Some(0), int_of_string_opt)
+    ->Belt.Option.mapWithDefault(f, Belt.Int.(+)(f));
+  };
 
   let transaction_options_arguments =
       (arguments, options: Injection.transaction_options) => {
@@ -243,24 +271,28 @@ module InjectorRaw = (Caller: CallerAPI) => {
     ->Future.map(result =>
         result->map(receipt => {
           let fee =
-            receipt
-            ->parse("[ ]*Fee to the baker: .([0-9]*\\.[0-9]+|[0-9]+)")
-            ->Belt.Option.flatMap(float_of_string_opt);
+            receipt->parse(
+              "[ ]*Fee to the baker: .([0-9]*\\.[0-9]+|[0-9]+)",
+              `AllReduce((parse_and_reduce_float, 0.)),
+            );
           Js.log(fee);
           let count =
-            receipt
-            ->parse("[ ]*Expected counter: ([0-9]+)")
-            ->Belt.Option.flatMap(int_of_string_opt);
+            receipt->parse(
+              "[ ]*Expected counter: ([0-9]+)",
+              `First(int_of_string_opt),
+            );
           Js.log(count);
           let gasLimit =
-            receipt
-            ->parse("[ ]*Gas limit: ([0-9]+)")
-            ->Belt.Option.flatMap(int_of_string_opt);
+            receipt->parse(
+              "[ ]*Gas limit: ([0-9]+)",
+              `AllReduce((parse_and_reduce_int, 0)),
+            );
           Js.log(gasLimit);
           let storageLimit =
-            receipt
-            ->parse("[ ]*Storage limit: ([0-9]+)")
-            ->Belt.Option.flatMap(int_of_string_opt);
+            receipt->parse(
+              "[ ]*Storage limit: ([0-9]+)",
+              `AllReduce((parse_and_reduce_int, 0)),
+            );
           Js.log(storageLimit);
           switch (fee, count, gasLimit, storageLimit) {
           | (Some(fee), Some(count), Some(gasLimit), Some(storageLimit)) => {
@@ -280,7 +312,11 @@ module InjectorRaw = (Caller: CallerAPI) => {
     ->Future.tapOk(Js.log)
     ->Future.map(result =>
         result->map(receipt => {
-          let result = receipt->parse("Operation hash is '([A-Za-z0-9]*)'");
+          let result =
+            receipt->parse(
+              "Operation hash is '([A-Za-z0-9]*)'",
+              `First(s => Some(s)),
+            );
           switch (result) {
           | Some(operationHash) => operationHash
           | None => raise(InvalidReceiptFormat)
@@ -295,8 +331,12 @@ module InjectorRaw = (Caller: CallerAPI) => {
     ->Future.map(result =>
         result->map(receipt => {
           let operationHash =
-            receipt->parse("Operation hash is '([A-Za-z0-9]+)'");
-          let branch = receipt->parse("--branch ([A-Za-z0-9]+)");
+            receipt->parse(
+              "Operation hash is '([A-Za-z0-9]+)'",
+              `First(s => Some(s)),
+            );
+          let branch =
+            receipt->parse("--branch ([A-Za-z0-9]+)", `First(s => Some(s)));
           switch (operationHash, branch) {
           | (Some(operationHash), Some(branch)) => (operationHash, branch)
           | (_, _) => raise(InvalidReceiptFormat)
