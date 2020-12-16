@@ -29,25 +29,15 @@ let make = (~form: DelegateForm.api) => {
           (),
         );
 
-      sendOperationSimulate(operation)->ignore;
+      sendOperationSimulate(operation)
+      ->Future.tapOk(dryRun => {
+          form.handleChange(Fee, dryRun.fee->Js.Float.toString)
+        })
+      ->ignore;
     };
 
     None;
   });
-
-  React.useEffect1(
-    () => {
-      operationSimulateRequest
-      ->ApiRequest.getDoneOk
-      ->Belt.Option.map(dryRun => {
-          form.handleChange(Fee, dryRun.fee->Js.Float.toString);
-          ();
-        })
-      ->ignore;
-      None;
-    },
-    [|operationSimulateRequest|],
-  );
 
   <View>
     <FormGroupTextInput

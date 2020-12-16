@@ -81,7 +81,7 @@ let make = (~cancel) => {
 
   <ModalView.Form>
     {switch (tokenCreateRequest) {
-     | Loading
+     | Loading(_)
      | Done(_) => React.null
      | NotAsked =>
        <>

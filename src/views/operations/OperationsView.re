@@ -49,7 +49,8 @@ let make = () => {
   <View style=styles##container>
     <OperationsHeaderView />
     {switch (operationsRequest) {
-     | Done(Ok(operations)) =>
+     | Done(Ok(operations), _)
+     | Loading(Some(operations)) =>
        <FlatList
          style=styles##list
          contentContainerStyle=styles##listContent
@@ -60,9 +61,9 @@ let make = () => {
          renderItem
          _ListEmptyComponent
        />
-     | Done(Error(error)) => error->React.string
+     | Done(Error(error), _) => error->React.string
      | NotAsked
-     | Loading => <LoadingView />
+     | Loading(None) => <LoadingView />
      }}
   </View>;
 };

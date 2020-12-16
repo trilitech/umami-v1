@@ -2,8 +2,12 @@ open Belt;
 open Common;
 
 type reactState('state) = ('state, ('state => 'state) => unit);
+
+type requestsState('requestResponse) =
+  Map.String.t(ApiRequest.t('requestResponse));
+
 type apiRequestsState('requestResponse) =
-  reactState(Map.String.t(ApiRequest.t('requestResponse)));
+  reactState(requestsState('requestResponse));
 
 type state = {
   network: Network.t,
@@ -127,7 +131,7 @@ let useRequestsState = (getRequestsState, key: option(string)) => {
   let request =
     React.useMemo2(
       () =>
-        key->Belt.Option.mapWithDefault(ApiRequest.NotAsked, key =>
+        key->Option.mapWithDefault(ApiRequest.NotAsked, key =>
           requests
           ->Map.String.get(key)
           ->Option.getWithDefault(ApiRequest.NotAsked)
@@ -139,9 +143,14 @@ let useRequestsState = (getRequestsState, key: option(string)) => {
     React.useCallback2(
       newRequestSetter =>
         key->Lib.Option.iter(key =>
-          setRequests(request =>
-            request->Map.String.update(key, oldRequest =>
-              Some(newRequestSetter(oldRequest))
+          setRequests((request: requestsState('requestResponse)) =>
+            request->Map.String.update(
+              key, (oldRequest: option(ApiRequest.t('requestResponse))) =>
+              Some(
+                newRequestSetter(
+                  oldRequest->Option.getWithDefault(NotAsked),
+                ),
+              )
             )
           )
         ),
@@ -150,6 +159,11 @@ let useRequestsState = (getRequestsState, key: option(string)) => {
 
   (request, setRequest);
 };
+
+let resetRequests = requestsState =>
+  requestsState->Map.String.map(ApiRequest.updateToResetState);
+
+//
 
 module Network = {
   let useGet = () => {
@@ -191,8 +205,8 @@ module Balance = {
               acc
               +. balanceRequest
                  ->ApiRequest.getOkWithDefault("0.0")
-                 ->Belt.Float.fromString
-                 ->Belt.Option.getWithDefault(0.0)
+                 ->Float.fromString
+                 ->Option.getWithDefault(0.0)
             })
           ->Js.Float.toFixedWithPrecision(~digits=6),
         )
@@ -202,7 +216,7 @@ module Balance = {
   let useResetAll = () => {
     let store = useStoreContext();
     let (_, setBalanceRequests) = store.balanceRequestsState;
-    () => setBalanceRequests(_ => Map.String.empty);
+    () => setBalanceRequests(resetRequests);
   };
 };
 
@@ -224,7 +238,7 @@ module BalanceToken = {
     let operation =
       React.useMemo2(
         () =>
-          tokenAddress->Belt.Option.map(tokenAddress =>
+          tokenAddress->Option.map(tokenAddress =>
             Tokens.makeGetBalance(
               address,
               hardCodedReceiptionKT1,
@@ -267,8 +281,8 @@ module BalanceToken = {
               acc
               +. balanceRequest
                  ->ApiRequest.getOkWithDefault("0.0")
-                 ->Belt.Float.fromString
-                 ->Belt.Option.getWithDefault(0.0)
+                 ->Float.fromString
+                 ->Option.getWithDefault(0.0)
             })
           ->Js.Float.toFixedWithPrecision(~digits=6),
         )
@@ -278,7 +292,7 @@ module BalanceToken = {
   let useResetAll = () => {
     let store = useStoreContext();
     let (_, setBalanceTokenRequests) = store.balanceTokenRequestsState;
-    () => setBalanceTokenRequests(_ => Map.String.empty);
+    () => setBalanceTokenRequests(resetRequests);
   };
 };
 
@@ -287,7 +301,8 @@ module Delegate = {
 
   let useLoad = (address: string) => {
     let network = Network.useGet();
-    let requestState = useRequestState(Some(address));
+    let requestState: ApiRequest.requestState(option(string)) =
+      useRequestState(Some(address));
 
     DelegateApiRequest.useLoad(~network, ~requestState, ~address);
   };
@@ -321,8 +336,8 @@ module DelegateInfo = {
     let (_, setDelegateRequests) = store.delegateRequestsState;
     let (_, setDelegateInfoRequests) = store.delegateInfoRequestsState;
     () => {
-      setDelegateRequests(_ => Map.String.empty);
-      setDelegateInfoRequests(_ => Map.String.empty);
+      setDelegateRequests(resetRequests);
+      setDelegateInfoRequests(resetRequests);
     };
   };
 };
@@ -352,7 +367,7 @@ module Operations = {
     let resetDelegatesAndDelegatesInfo = DelegateInfo.useResetAll();
     let (_, setOperationsRequests) = store.operationsRequestsState;
     () => {
-      setOperationsRequests(_ => Map.String.empty);
+      setOperationsRequests(resetRequests);
       resetBalances();
       resetBalanceTokens();
       resetDelegatesAndDelegatesInfo();
@@ -436,7 +451,7 @@ module Tokens = {
 
   let useResetAll = () => {
     let (_, setTokensRequest) = useRequestState();
-    () => setTokensRequest(_ => NotAsked);
+    () => setTokensRequest(ApiRequest.updateToResetState);
   };
 
   let useCreate = () => {
@@ -463,7 +478,7 @@ module Aliases = {
 
   let useResetAll = () => {
     let (_, setAliasesRequest) = useRequestState();
-    () => setAliasesRequest(_ => NotAsked);
+    () => setAliasesRequest(ApiRequest.updateToResetState);
   };
 
   let useGetAll = () => {
@@ -520,7 +535,7 @@ module Accounts = {
     let resetAliases = Aliases.useResetAll();
     let (_, setAccountsRequest) = useRequestState();
     () => {
-      setAccountsRequest(_ => NotAsked);
+      setAccountsRequest(ApiRequest.updateToResetState);
       resetOperations();
       resetAliases();
     };

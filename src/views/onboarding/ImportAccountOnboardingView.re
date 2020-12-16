@@ -50,7 +50,7 @@ let make = (~cancel) => {
   <ModalView.Form>
     {switch (accountWithMnemonicRequest) {
      | Done(_) => <> </>
-     | Loading =>
+     | Loading(_) =>
        <View style=styles##loadingView>
          <ActivityIndicator
            animating=true

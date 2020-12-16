@@ -50,13 +50,11 @@ let make = (~account: Account.t, ~token: option(Token.t)=?, ~zIndex) => {
       />
       <QrButton account />
     </View>
-    {switch (delegateRequest) {
-     | Done(Ok(delegate)) =>
+    {delegateRequest->ApiRequest.mapOkWithDefault(React.null, delegate => {
        <View style=styles##actionDelegate>
          <DelegateButton account disabled={delegate->Belt.Option.isSome} />
        </View>
-     | _ => React.null
-     }}
+     })}
     <Menu icon=Icons.More.build>
       <Menu.Item text="Edit account" icon=Icons.Edit.build />
       <AccountDeleteButton account />

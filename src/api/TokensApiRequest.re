@@ -46,11 +46,10 @@ let useLoadOperationOffline =
   let isMounted = ReactUtils.useIsMonted();
   React.useEffect4(
     () => {
-      let (shouldReload, loading) =
-        ApiRequest.conditionToLoad(request, isMounted);
+      let shouldReload = ApiRequest.conditionToLoad(request, isMounted);
       operation->Common.Lib.Option.iter(operation =>
         if (shouldReload) {
-          getRequest(~loading, (network, operation));
+          getRequest((network, operation));
         }
       );
       None;

@@ -78,16 +78,18 @@ let make = () => {
       </TokenRowItem.CellAddress>
     </Table.Head>
     {switch (tokensRequest) {
-     | Done(Ok(tokens)) when tokens->Belt.Map.String.size == 0 =>
+     | NotAsked
+     | Loading(None) => <LoadingView />
+     | Loading(Some(tokens))
+     | Done(Ok(tokens), _) when tokens->Belt.Map.String.size == 0 =>
        <Table.Empty> I18n.t#empty_token->React.string </Table.Empty>
-     | Done(Ok(tokens)) =>
+     | Loading(Some(tokens))
+     | Done(Ok(tokens), _) =>
        tokens
        ->Belt.Map.String.valuesToArray
        ->Belt.Array.map(token => <TokenRowItem key={token.address} token />)
        ->React.array
-     | Done(Error(error)) => <ErrorView error />
-     | NotAsked
-     | Loading => <LoadingView />
+     | Done(Error(error), _) => <ErrorView error />
      }}
   </Page>;
 };

@@ -63,7 +63,8 @@ let make = () => {
   <Page>
     <AddContactButton />
     {switch (aliasesRequest) {
-     | Done(Ok(aliases)) =>
+     | Done(Ok(aliases), _)
+     | Loading(Some(aliases)) =>
        aliases
        ->Belt.Map.String.valuesToArray
        ->Belt.Array.mapWithIndex((index, account) =>
@@ -74,9 +75,9 @@ let make = () => {
            />
          )
        ->React.array
-     | Done(Error(error)) => <ErrorView error />
+     | Done(Error(error), _) => <ErrorView error />
      | NotAsked
-     | Loading => <LoadingView />
+     | Loading(None) => <LoadingView />
      }}
   </Page>;
 };

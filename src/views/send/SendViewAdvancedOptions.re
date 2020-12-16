@@ -46,7 +46,17 @@ let make = (~form: SendForm.api, ~token: option(Token.t)=?) => {
             ~contract=token.address,
             (),
           );
-        sendOperationTokenSimulate(operation)->ignore;
+        sendOperationTokenSimulate(operation)
+        ->Future.tapOk(dryRun => {
+            form.handleChange(Fee, dryRun.fee->Js.Float.toString);
+            form.handleChange(GasLimit, dryRun.gasLimit->string_of_int);
+            form.handleChange(
+              StorageLimit,
+              dryRun.storageLimit->string_of_int,
+            );
+            form.handleChange(Counter, dryRun.count->string_of_int);
+          })
+        ->ignore;
       | None =>
         let operation =
           Injection.makeTransfer(
@@ -55,44 +65,22 @@ let make = (~form: SendForm.api, ~token: option(Token.t)=?) => {
             ~destination=form.values.recipient,
             (),
           );
-        sendOperationSimulate(operation)->ignore;
+        sendOperationSimulate(operation)
+        ->Future.tapOk(dryRun => {
+            form.handleChange(Fee, dryRun.fee->Js.Float.toString);
+            form.handleChange(GasLimit, dryRun.gasLimit->string_of_int);
+            form.handleChange(
+              StorageLimit,
+              dryRun.storageLimit->string_of_int,
+            );
+            form.handleChange(Counter, dryRun.count->string_of_int);
+          })
+        ->ignore;
       };
     };
 
     None;
   });
-
-  React.useEffect1(
-    () => {
-      operationSimulateRequest
-      ->ApiRequest.getDoneOk
-      ->Belt.Option.map(dryRun => {
-          form.handleChange(Fee, dryRun.fee->Js.Float.toString);
-          form.handleChange(GasLimit, dryRun.gasLimit->string_of_int);
-          form.handleChange(StorageLimit, dryRun.storageLimit->string_of_int);
-          form.handleChange(Counter, dryRun.count->string_of_int);
-        })
-      ->ignore;
-      None;
-    },
-    [|operationSimulateRequest|],
-  );
-
-  React.useEffect1(
-    () => {
-      operationTokenSimulateRequest
-      ->ApiRequest.getDoneOk
-      ->Belt.Option.map(dryRun => {
-          form.handleChange(Fee, dryRun.fee->Js.Float.toString);
-          form.handleChange(GasLimit, dryRun.gasLimit->string_of_int);
-          form.handleChange(StorageLimit, dryRun.storageLimit->string_of_int);
-          form.handleChange(Counter, dryRun.count->string_of_int);
-        })
-      ->ignore;
-      None;
-    },
-    [|operationTokenSimulateRequest|],
-  );
 
   <View>
     <View style=styles##formRowInputs>
