@@ -35,6 +35,39 @@ type theme = {
 
 // Themes
 
+let lightTheme = {
+  dark: false,
+  colors: {
+    textHighEmphasis: Colors.Light.highEmphasis,
+    textMediumEmphasis: Colors.Light.mediumEmphasis,
+    textDisabled: Colors.Light.disabled,
+    textPositive: Colors.Light.positive,
+    textNegative: Colors.Light.negative,
+    textPrimary: Colors.Light.primary,
+    iconHighEmphasis: Colors.Light.maxEmphasis,
+    iconMediumEmphasis: Colors.Light.mediumEmphasis,
+    iconDisabled: Colors.Light.disabled,
+    iconPrimary: Colors.Light.primary,
+    background: Colors.Light.background,
+    barBackground: Colors.Light.barBackground,
+    scrim: Colors.Light.scrim,
+    error: Colors.error,
+    statePressed: Colors.Light.statePressed,
+    stateHovered: Colors.Light.stateHovered,
+    stateActive: Colors.Light.stateActive,
+    primaryButtonBackground: Colors.Light.primary,
+    primaryTextHighEmphasis: Colors.Dark.highEmphasis,
+    primaryTextMediumEmphasis: Colors.Dark.mediumEmphasis,
+    primaryTextDisabled: Colors.Dark.disabled,
+    primaryIconHighEmphasis: Colors.Dark.highEmphasis,
+    primaryIconMediumEmphasis: Colors.Dark.mediumEmphasis,
+    primaryIconDisabled: Colors.Dark.disabled,
+    borderHighEmphasis: Colors.Light.highEmphasis,
+    borderMediumEmphasis: Colors.Light.mediumEmphasis,
+    borderDisabled: Colors.Light.disabled,
+  },
+};
+
 let darkTheme = {
   dark: true,
   colors: {
@@ -43,7 +76,7 @@ let darkTheme = {
     textDisabled: Colors.Dark.disabled,
     textPositive: Colors.Dark.positive,
     textNegative: Colors.Dark.negative,
-    textPrimary: Colors.Dark.primaryText,
+    textPrimary: Colors.Dark.primary,
     iconHighEmphasis: Colors.Dark.maxEmphasis,
     iconMediumEmphasis: Colors.Dark.mediumEmphasis,
     iconDisabled: Colors.Dark.disabled,
@@ -51,7 +84,7 @@ let darkTheme = {
     background: Colors.Dark.background,
     barBackground: Colors.Dark.barBackground,
     scrim: Colors.Dark.scrim,
-    error: Colors.Dark.error,
+    error: Colors.error,
     statePressed: Colors.Dark.statePressed,
     stateHovered: Colors.Dark.stateHovered,
     stateActive: Colors.Dark.stateActive,
@@ -70,7 +103,7 @@ let darkTheme = {
 
 // Context and Provider
 
-let initialState = darkTheme;
+let initialState = lightTheme;
 
 let context = React.createContext(initialState);
 
@@ -85,11 +118,32 @@ module Provider = {
 
 // Final Provider
 
+[@bs.val] external window: 'a = "window";
+let mediaQueryColorSchemeDark =
+  window##matchMedia("(prefers-color-scheme: dark)");
+
 [@react.component]
 let make = (~children) => {
-  let value = darkTheme;
+  let (dark, setDark) =
+    React.useState(_ => mediaQueryColorSchemeDark##matches);
 
-  <Provider value> children </Provider>;
+  let listener =
+    React.useCallback1(event => {setDark(_ => event##matches)}, [|setDark|]);
+
+  React.useEffect1(
+    () => {
+      mediaQueryColorSchemeDark##addEventListener("change", listener)->ignore;
+      Some(
+        () => {
+          mediaQueryColorSchemeDark##removeEventListener("change", listener)
+          ->ignore
+        },
+      );
+    },
+    [|listener|],
+  );
+
+  <Provider value={dark ? darkTheme : lightTheme}> children </Provider>;
 };
 
 // Hooks

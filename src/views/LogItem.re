@@ -15,8 +15,8 @@ let styles =
       "actionButtons":
         style(~flexDirection=`row, ~flexShrink=0., ~marginLeft=auto, ()),
       "reqelt": style(~flexShrink=0., ~marginRight=5.->dp, ()),
-      "itemError": style(~borderColor=Colors.Dark.error, ()),
-      "itemInfo": style(~borderColor=Colors.Dark.valid, ()),
+      "itemError": style(~borderColor=Colors.error, ()),
+      "itemInfo": style(~borderColor=Colors.valid, ()),
       "hovered": style(~backgroundColor=Colors.Dark.highEmphasis, ()),
       "buttonHovered": style(~backgroundColor="rgba(0, 0, 0, 0.04)", ()),
       "kindIcon": style(~marginRight=10.->dp, ()),
@@ -71,8 +71,8 @@ let make =
 
   let icon =
     switch (log.kind) {
-    | Error => <Icons.CloseOutline size=16. color=Colors.Dark.error />
-    | Info => <Icons.CheckOutline size=16. color=Colors.Dark.valid />
+    | Error => <Icons.CloseOutline size=16. color=Colors.error />
+    | Info => <Icons.CheckOutline size=16. color=Colors.valid />
     };
 
   <Hoverable
