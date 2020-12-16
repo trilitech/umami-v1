@@ -7,8 +7,9 @@ module NavBarItem = {
       StyleSheet.create({
         "item":
           style(
-            ~minHeight=68.->dp,
-            ~paddingVertical=12.->dp,
+            ~marginVertical=9.->dp,
+            ~minHeight=50.->dp,
+            ~paddingVertical=3.->dp,
             ~alignItems=`center,
             ~justifyContent=`center,
             (),
@@ -32,8 +33,7 @@ module NavBarItem = {
 
     let isCurrent = currentRoute == Some(route);
 
-    <TouchableOpacity
-      style=styles##item accessibilityRole=`link ?href ?onPress>
+    <ThemedPressable style=styles##item accessibilityRole=`link ?href ?onPress>
       {icon->Belt.Option.mapWithDefault(React.null, icon => {
          icon(
            ~style={
@@ -53,7 +53,7 @@ module NavBarItem = {
         fontSize=10.>
         title->React.string
       </Typography.ButtonPrimary>
-    </TouchableOpacity>;
+    </ThemedPressable>;
   };
 };
 

@@ -6,16 +6,19 @@ let make =
     (
       ~pressableRef: option(ref)=?,
       ~onPress=?,
+      ~href=?,
       ~style as styleFromProp=?,
       ~interactionStyle:
          option(
            PressableCustom.interactionState => option(ReactNative.Style.t),
          )=?,
       ~disabled: option(bool)=?,
+      ~accessibilityRole: option(Accessibility.role)=?,
       ~children,
     ) => {
   let theme = ThemeContext.useTheme();
-  <PressableCustom ref=?pressableRef ?onPress ?disabled>
+  <PressableCustom
+    ref=?pressableRef ?onPress ?disabled ?href ?accessibilityRole>
     {({hovered, pressed} as interactionState) => {
        <View
          pointerEvents=`none
