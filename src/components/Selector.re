@@ -17,34 +17,10 @@ module Item = {
 
   [@react.component]
   let make = (~item, ~onChange, ~renderItem) => {
-    let theme = ThemeContext.useTheme();
-    <PressableCustom onPress={_e => onChange(item)}>
-      {({hovered, pressed}) =>
-         <View
-           style=Style.(
-             arrayOption([|
-               Some(styles##itemContainer),
-               hovered
-                 ? Some(
-                     Style.style(
-                       ~backgroundColor=theme.colors.stateHovered,
-                       (),
-                     ),
-                   )
-                 : None,
-               pressed
-                 ? Some(
-                     Style.style(
-                       ~backgroundColor=theme.colors.statePressed,
-                       (),
-                     ),
-                   )
-                 : None,
-             |])
-           )>
-           {renderItem(item)}
-         </View>}
-    </PressableCustom>;
+    <ThemedPressable
+      onPress={_e => onChange(item)} style=styles##itemContainer>
+      {renderItem(item)}
+    </ThemedPressable>;
   };
 };
 
@@ -109,31 +85,27 @@ let make =
   let theme = ThemeContext.useTheme();
 
   <View ?style>
-    <PressableCustom
-      ref={touchableRef->Ref.value}
+    <ThemedPressable
+      pressableRef={touchableRef->Ref.value}
+      style=Style.(
+        array([|
+          styles##button,
+          style(~borderColor=theme.colors.borderMediumEmphasis, ()),
+        |])
+      )
       onPress={_e => setIsOpen(prevIsOpen => !prevIsOpen)}
       disabled>
-      {_interactionState =>
-         <View
-           style=Style.(
-             array([|
-               styles##button,
-               style(~borderColor=theme.colors.borderMediumEmphasis, ()),
-             |])
-           )
-           pointerEvents=`none>
-           {renderButton(
-              selectedItem->Belt.Option.isSome ? selectedItem : noneItem,
-            )}
-           {disabled
-              ? React.null
-              : <Icons.ChevronDown
-                  size=24.
-                  color={theme.colors.iconMediumEmphasis}
-                  style=styles##icon
-                />}
-         </View>}
-    </PressableCustom>
+      {renderButton(
+         selectedItem->Belt.Option.isSome ? selectedItem : noneItem,
+       )}
+      {disabled
+         ? React.null
+         : <Icons.ChevronDown
+             size=24.
+             color={theme.colors.iconMediumEmphasis}
+             style=styles##icon
+           />}
+    </ThemedPressable>
     <View style={ReactUtils.displayOn(isOpen)}>
       <ScrollView
         style=Style.(

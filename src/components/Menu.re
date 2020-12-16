@@ -20,40 +20,16 @@ module Item = {
   let make =
       (~text, ~icon: Icons.builder, ~colorStyle=`highEmphasis, ~onPress=?) => {
     let theme = ThemeContext.useTheme();
-    <PressableCustom ?onPress>
-      {({hovered, pressed}) =>
-         <View
-           style=Style.(
-             arrayOption([|
-               Some(styles##button),
-               hovered
-                 ? Some(
-                     Style.style(
-                       ~backgroundColor=theme.colors.stateHovered,
-                       (),
-                     ),
-                   )
-                 : None,
-               pressed
-                 ? Some(
-                     Style.style(
-                       ~backgroundColor=theme.colors.statePressed,
-                       (),
-                     ),
-                   )
-                 : None,
-             |])
-           )>
-           {icon(
-              ~style=?None,
-              ~size=20.,
-              ~color=colorStyle->Typography.getColor(theme),
-            )}
-           <Typography.ButtonSecondary colorStyle style=styles##text>
-             text->React.string
-           </Typography.ButtonSecondary>
-         </View>}
-    </PressableCustom>;
+    <ThemedPressable ?onPress style=styles##button>
+      {icon(
+         ~style=?None,
+         ~size=20.,
+         ~color=colorStyle->Typography.getColor(theme),
+       )}
+      <Typography.ButtonSecondary colorStyle style=styles##text>
+        text->React.string
+      </Typography.ButtonSecondary>
+    </ThemedPressable>;
   };
 };
 
@@ -93,48 +69,33 @@ let make = (~icon: Icons.builder, ~children, ~size=42.) => {
   let theme = ThemeContext.useTheme();
 
   <View style=Style.(style(~width=size->dp, ~height=size->dp, ()))>
-    <PressableCustom
-      ref={pressableRef->Ref.value}
-      onPress={_ => setIsOpen(isOpen => !isOpen)}>
-      {({hovered, pressed}) =>
-         <View
-           style=Style.(
-             arrayOption([|
-               Some(styles##button),
-               Some(
-                 style(
-                   ~width=size->dp,
-                   ~height=size->dp,
-                   ~borderRadius=size /. 2.,
-                   (),
-                 ),
-               ),
-               hovered
-                 ? Some(
-                     Style.style(
-                       ~backgroundColor=theme.colors.stateHovered,
-                       (),
-                     ),
-                   )
-                 : None,
-               pressed || isOpen
-                 ? Some(
-                     Style.style(
-                       ~backgroundColor=theme.colors.statePressed,
-                       (),
-                     ),
-                   )
-                 : None,
-             |])
-           )
-           pointerEvents=`none>
-           {icon(
-              ~style=?None,
-              ~size=Js.Math.ceil_float(iconSizeRatio *. size),
-              ~color=theme.colors.iconMediumEmphasis,
-            )}
-         </View>}
-    </PressableCustom>
+    <ThemedPressable
+      pressableRef={pressableRef->Ref.value}
+      onPress={_ => setIsOpen(isOpen => !isOpen)}
+      style=Style.(
+        array([|
+          styles##button,
+          style(
+            ~width=size->dp,
+            ~height=size->dp,
+            ~borderRadius=size /. 2.,
+            (),
+          ),
+        |])
+      )
+      interactionStyle={_ =>
+        isOpen
+          ? Some(
+              Style.style(~backgroundColor=theme.colors.statePressed, ()),
+            )
+          : None
+      }>
+      {icon(
+         ~style=?None,
+         ~size=Js.Math.ceil_float(iconSizeRatio *. size),
+         ~color=theme.colors.iconMediumEmphasis,
+       )}
+    </ThemedPressable>
     <View style={ReactUtils.displayOn(isOpen)}>
       <ScrollView
         style=Style.(
