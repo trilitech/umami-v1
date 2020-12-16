@@ -7,20 +7,15 @@ module AddTokenButton = {
         "button":
           style(
             ~alignSelf=`flexStart,
-            ~marginBottom=18.->dp,
-            ~flexDirection=`row,
-            ~alignItems=`center,
-            ~paddingVertical=6.->dp,
+            ~marginLeft=(-6.)->dp,
+            ~marginBottom=10.->dp,
             (),
           ),
-        "icon": style(~marginRight=4.->dp, ()),
       })
     );
 
   [@react.component]
   let make = () => {
-    let theme = ThemeContext.useTheme();
-
     let modal = React.useRef(Js.Nullable.null);
 
     let (visibleModal, setVisibleModal) = React.useState(_ => false);
@@ -39,16 +34,9 @@ module AddTokenButton = {
     };
 
     <>
-      <TouchableOpacity style=styles##button onPress>
-        <Icons.Add
-          size=15.5
-          color={theme.colors.iconMediumEmphasis}
-          style=styles##icon
-        />
-        <Typography.ButtonSecondary>
-          I18n.btn#add_token->React.string
-        </Typography.ButtonSecondary>
-      </TouchableOpacity>
+      <View style=styles##button>
+        <ButtonAction onPress text=I18n.btn#add_token icon=Icons.Add.build />
+      </View>
       <ModalAction ref=modal visible=visibleModal onRequestClose=closeAction>
         <TokenAddView cancel />
       </ModalAction>

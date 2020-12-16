@@ -16,6 +16,7 @@ let btn = {
   pub import_account = "IMPORT EXISTING ACCOUNT";
   pub create_account_new = "CREATE NEW ACCOUNT";
   pub create_account_record_ok = {js|OK, I’VE RECORDED IT|js};
+  pub add_account = "ADD ACCOUNT";
   pub add_contact = "ADD CONTACT";
   pub delete_contact = "Delete contact";
   pub add_token = "REGISTER TOKEN";
@@ -96,7 +97,6 @@ let expl = {
 
 let t = {
   pub error404 = "404 - Route Not Found :(";
-  pub navbar_add_account = "ADD ACCOUNT";
   pub logs_no_recent = "No recent messages";
   pub logs_clearall = "CLEAR ALL";
   pub amount = (a, b) => p("%s %s", a, b);
