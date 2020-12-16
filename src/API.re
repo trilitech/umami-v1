@@ -188,39 +188,29 @@ module InjectorRaw = (Caller: CallerAPI) => {
         ->parseAll(regexp)
       | None => acc
       };
+    let interpret_results = results =>
+      if (Js.Array.length(results) == 0) {
+        None;
+      } else {
+        switch (interp) {
+        | `First(f) => results[0]->Belt.Option.flatMap(f)
+        | `Last(f) =>
+          results[Js.Array.length(results) - 1]->Belt.Option.flatMap(f)
+        | `AllReduce(f, init) => Some(Js.Array2.reduce(results, f, init))
+        };
+      };
     parseAll([||], Js.Re.fromStringWithFlags(pattern, ~flags="g"))
-    ->(
-        results =>
-          if (Js.Array.length(results) == 0) {
-            None;
-          } else {
-            switch (interp) {
-            | `First(f) => results[0]->Belt.Option.flatMap(f)
-            | `Last(f) =>
-              results[Js.Array.length(results) - 1]->Belt.Option.flatMap(f)
-            | `AllReduce(f, init) =>
-              Some(Js.Array2.reduce(results, f, init))
-            };
-          }
-      );
+    ->interpret_results;
   };
 
   let parse_and_reduce_float = (f, s) => {
-    switch (s) {
-    | Some(s) =>
-      float_of_string_opt(s)
-      ->Belt.Option.getWithDefault(0.)
-      ->(Belt.Float.(+)(f))
-    | None => f
-    };
+    Belt.Option.mapWithDefault(s, Some(0.), float_of_string_opt)
+    ->Belt.Option.mapWithDefault(f, Belt.Float.(+)(f));
   };
 
   let parse_and_reduce_int = (f, s) => {
-    switch (s) {
-    | Some(s) =>
-      int_of_string_opt(s)->Belt.Option.getWithDefault(0)->(Belt.Int.(+)(f))
-    | None => f
-    };
+    Belt.Option.mapWithDefault(s, Some(0), int_of_string_opt)
+    ->Belt.Option.mapWithDefault(f, Belt.Int.(+)(f));
   };
 
   let transaction_options_arguments =
