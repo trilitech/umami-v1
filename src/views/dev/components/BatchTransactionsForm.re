@@ -53,17 +53,15 @@ let make = () => {
     <Button
       onPress={_ => {
         [@warning "-8"]
-        let Injection.Transaction(tx1) =
-          Injection.makeTransfer(
-            ~source,
+        let tx1 =
+          Injection.makeSingleBatchTransfer(
             ~amount=amount1,
             ~destination=destination1,
             (),
           );
         [@warning "-8"]
-        let Injection.Transaction(tx2) =
-          Injection.makeTransfer(
-            ~source,
+        let tx2 =
+          Injection.makeSingleBatchTransfer(
             ~amount=amount2,
             ~destination=destination2,
             (),

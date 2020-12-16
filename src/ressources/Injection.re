@@ -1,8 +1,15 @@
+/* 'fee' is duplicated in both option record */
 type transaction_options = {
   fee: option(float),
-  counter: option(int),
   gasLimit: option(int),
   storageLimit: option(int),
+  parameter: option(string),
+  entrypoint: option(string),
+};
+
+type common_options = {
+  fee: option(float),
+  counter: option(int),
   burnCap: option(float),
   confirmations: option(int),
   forceLowFee: option(bool),
@@ -12,24 +19,26 @@ type transaction = {
   source: string,
   amount: float,
   destination: string,
-  options: transaction_options,
+  tx_options: transaction_options,
+  common_options,
 };
 
 type delegation = {
   source: string,
   delegate: string,
-  fee: option(float),
-  burnCap: option(float),
-  forceLowFee: option(bool),
+  options: common_options,
+};
+
+type single_batch_transaction = {
+  amount: float,
+  destination: string,
+  tx_options: transaction_options,
 };
 
 type batch_transactions = {
   source: string,
-  transactions: array(transaction),
-  counter: option(int),
-  burnCap: option(float),
-  forceLowFee: option(bool),
-  confirmations: option(int),
+  transactions: array(single_batch_transaction),
+  options: common_options,
 };
 
 type operation =
@@ -38,20 +47,18 @@ type operation =
   | BatchTransactions(batch_transactions);
 
 let makeTransferOptions =
-    (
-      ~fee,
-      ~counter,
-      ~gasLimit,
-      ~storageLimit,
-      ~burnCap,
-      ~confirmations,
-      ~forceLowFee,
-      (),
-    ) => {
+    (~fee, ~gasLimit, ~storageLimit, ~parameter, ~entrypoint, ()) => {
   fee,
-  counter,
   gasLimit,
   storageLimit,
+  parameter,
+  entrypoint,
+};
+
+let makeCommonOptions =
+    (~fee, ~counter, ~burnCap, ~confirmations, ~forceLowFee, ()) => {
+  fee,
+  counter,
   burnCap,
   confirmations,
   forceLowFee,
@@ -75,12 +82,19 @@ let makeTransfer =
     source,
     amount,
     destination,
-    options:
+    tx_options:
       makeTransferOptions(
         ~fee,
-        ~counter,
         ~gasLimit,
         ~storageLimit,
+        ~parameter=None,
+        ~entrypoint=None,
+        (),
+      ),
+    common_options:
+      makeCommonOptions(
+        ~fee,
+        ~counter,
         ~burnCap,
         ~confirmations,
         ~forceLowFee,
@@ -90,8 +104,44 @@ let makeTransfer =
 };
 
 let makeDelegate =
-    (~source, ~delegate, ~fee=?, ~burnCap=?, ~forceLowFee=?, ()) => {
-  Delegation({source, delegate, fee, burnCap, forceLowFee});
+    (~source, ~delegate, ~fee=?, ~burnCap=?, ~forceLowFee=?, ~counter=?, ()) => {
+  Delegation({
+    source,
+    delegate,
+    options:
+      makeCommonOptions(
+        ~fee,
+        ~burnCap,
+        ~forceLowFee,
+        ~counter,
+        ~confirmations=None,
+        (),
+      ),
+  });
+};
+
+let makeSingleBatchTransfer =
+    (
+      ~amount,
+      ~destination,
+      ~fee=?,
+      ~parameter=?,
+      ~entrypoint=?,
+      ~gasLimit=?,
+      ~storageLimit=?,
+      (),
+    ) => {
+  amount,
+  destination,
+  tx_options:
+    makeTransferOptions(
+      ~fee,
+      ~parameter,
+      ~entrypoint,
+      ~gasLimit,
+      ~storageLimit,
+      (),
+    ),
 };
 
 let makeBatchTransfers =
@@ -107,8 +157,21 @@ let makeBatchTransfers =
   BatchTransactions({
     source,
     transactions,
-    counter,
-    burnCap,
-    forceLowFee,
-    confirmations,
+    options:
+      makeCommonOptions(
+        ~fee=None,
+        ~counter,
+        ~burnCap,
+        ~forceLowFee,
+        ~confirmations,
+        (),
+      ),
   });
+
+let simulableSingleBatchTransfer = (~source, ~singleBatchTransaction, ()) =>
+  makeTransfer(
+    ~source,
+    ~destination=singleBatchTransaction.destination,
+    ~amount=singleBatchTransaction.amount,
+    (),
+  );
