@@ -5,10 +5,19 @@ let styles =
     StyleSheet.create({
       "button":
         style(
-          ~width=160.->dp,
-          ~height=46.->dp,
+          ~minWidth=160.->dp,
+          ~minHeight=46.->dp,
           ~alignItems=`center,
           ~justifyContent=`center,
+          (),
+        ),
+      "pressable":
+        style(
+          ~paddingVertical=9.->dp,
+          ~paddingHorizontal=17.->dp,
+          ~alignItems=`center,
+          ~justifyContent=`center,
+          ~borderRadius=5.,
           (),
         ),
     })
@@ -16,18 +25,20 @@ let styles =
 
 [@react.component]
 let make = (~text, ~onPress, ~disabled=?, ~fontSize=?, ~style=?) => {
-  <TouchableOpacity
-    style={Style.arrayOption([|Some(styles##button), style|])}
-    onPress
-    ?disabled>
-    <Typography.ButtonPrimary
-      ?fontSize
-      colorStyle=?{
-        disabled->Belt.Option.flatMap(disabled =>
-          disabled ? Some(`disabled) : None
-        )
-      }>
-      text->React.string
-    </Typography.ButtonPrimary>
-  </TouchableOpacity>;
+  <View style=styles##button>
+    <ThemedPressable
+      style={Style.arrayOption([|Some(styles##pressable), style|])}
+      onPress
+      ?disabled>
+      <Typography.ButtonPrimary
+        ?fontSize
+        colorStyle=?{
+          disabled->Belt.Option.flatMap(disabled =>
+            disabled ? Some(`disabled) : None
+          )
+        }>
+        text->React.string
+      </Typography.ButtonPrimary>
+    </ThemedPressable>
+  </View>;
 };
