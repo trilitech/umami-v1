@@ -1,14 +1,18 @@
 open ReactNative;
 
+type element = React.ref(Js.Nullable.t(NativeElement.element));
 type callback = Event.pressEvent => unit;
 type state = {
-  addEventListener: callback => unit,
-  removeEventListener: callback => unit,
+  addEventListener: (element, bool, callback) => unit,
+  removeEventListener: (element, bool, callback) => unit,
 };
 
 // Context and Provider
 
-let initialState = {addEventListener: _ => (), removeEventListener: _ => ()};
+let initialState = {
+  addEventListener: (_, _, _) => (),
+  removeEventListener: (_, _, _) => (),
+};
 
 let context = React.createContext(initialState);
 
@@ -30,16 +34,21 @@ let make = (~children) => {
   let (listeners, setListeners) = React.useState(_ => [||]);
 
   let addEventListener =
-    React.useCallback1(
-      cb => {setListeners(listeners => listeners->Belt.Array.concat([|cb|]))},
-      //
+    React.useMemo1(
+      ((), element, isOpen, callback) => {
+        setListeners(listeners =>
+          listeners->Belt.Array.concat([|(element, isOpen, callback)|])
+        )
+      },
       [|setListeners|],
     );
 
   let removeEventListener =
-    React.useCallback1(
-      cb => {
-        setListeners(listeners => listeners->Belt.Array.keep(ls => ls !== cb))
+    React.useMemo1(
+      ((), _element, _isOpen, callback) => {
+        setListeners(listeners =>
+          listeners->Belt.Array.keep(((_, _, cb)) => cb !== callback)
+        )
       },
       [|setListeners|],
     );
@@ -53,19 +62,27 @@ let make = (~children) => {
   let onStartShouldSetResponderCapture =
     React.useCallback1(
       pressEvent => {
-        Js.Global.setTimeout(
-          () => {
-            listeners->Belt.Array.forEach(callback => callback(pressEvent))
-          },
-          150,
-        )
-        ->ignore;
-        false;
+        listeners->Belt.Array.some(((element, isOpen, _)) => {
+          isOpen
+          && element.current !==
+          pressEvent->Event.PressEvent.nativeEvent##target
+        })
       },
       [|listeners|],
     );
 
-  <View style=styles##document onStartShouldSetResponderCapture>
+  let onResponderRelease =
+    React.useCallback1(
+      pressEvent => {
+        listeners->Belt.Array.forEach(((_element, _isOpen, callback)) =>
+          callback(pressEvent)
+        )
+      },
+      [|listeners|],
+    );
+
+  <View
+    style=styles##document onStartShouldSetResponderCapture onResponderRelease>
     <Provider value> children </Provider>
   </View>;
 };
@@ -74,14 +91,14 @@ let make = (~children) => {
 
 let useDocumentContext = () => React.useContext(context);
 
-let useDocumentPress = callback => {
+let useClickOutside = (element, isOpen, callback) => {
   let document = useDocumentContext();
 
-  React.useEffect2(
+  React.useEffect3(
     () => {
-      document.addEventListener(callback);
-      Some(() => document.removeEventListener(callback));
+      document.addEventListener(element, isOpen, callback);
+      Some(() => document.removeEventListener(element, isOpen, callback));
     },
-    (document, callback),
+    (document, isOpen, callback),
   );
 };

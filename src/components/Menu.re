@@ -84,15 +84,10 @@ let make = (~icon: Icons.builder, ~children, ~size=42.) => {
 
   let (isOpen, setIsOpen) = React.useState(_ => false);
 
-  DocumentContext.useDocumentPress(
-    React.useCallback1(
-      pressEvent =>
-        if (pressableRef.current !==
-            pressEvent->Event.PressEvent.nativeEvent##target) {
-          setIsOpen(_ => false);
-        },
-      [|setIsOpen|],
-    ),
+  DocumentContext.useClickOutside(
+    pressableRef,
+    isOpen,
+    React.useCallback1(_pressEvent => setIsOpen(_ => false), [|setIsOpen|]),
   );
 
   let theme = ThemeContext.useTheme();

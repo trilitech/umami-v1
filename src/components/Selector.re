@@ -91,15 +91,10 @@ let make =
 
   let (isOpen, setIsOpen) = React.useState(_ => false);
 
-  DocumentContext.useDocumentPress(
-    React.useCallback1(
-      pressEvent =>
-        if (touchableRef.current !==
-            pressEvent->Event.PressEvent.nativeEvent##target) {
-          setIsOpen(_ => false);
-        },
-      [|setIsOpen|],
-    ),
+  DocumentContext.useClickOutside(
+    touchableRef,
+    isOpen,
+    React.useCallback1(_pressEvent => setIsOpen(_ => false), [|setIsOpen|]),
   );
 
   let onChange = newItem => {
@@ -114,30 +109,31 @@ let make =
   let theme = ThemeContext.useTheme();
 
   <View ?style>
-    <TouchableOpacity
+    <PressableCustom
       ref={touchableRef->Ref.value}
       onPress={_e => setIsOpen(prevIsOpen => !prevIsOpen)}
       disabled>
-      <View
-        style=Style.(
-          array([|
-            styles##button,
-            style(~borderColor=theme.colors.borderMediumEmphasis, ()),
-          |])
-        )
-        pointerEvents=`none>
-        {renderButton(
-           selectedItem->Belt.Option.isSome ? selectedItem : noneItem,
-         )}
-        {disabled
-           ? React.null
-           : <Icons.ChevronDown
-               size=24.
-               color={theme.colors.iconMediumEmphasis}
-               style=styles##icon
-             />}
-      </View>
-    </TouchableOpacity>
+      {_interactionState =>
+         <View
+           style=Style.(
+             array([|
+               styles##button,
+               style(~borderColor=theme.colors.borderMediumEmphasis, ()),
+             |])
+           )
+           pointerEvents=`none>
+           {renderButton(
+              selectedItem->Belt.Option.isSome ? selectedItem : noneItem,
+            )}
+           {disabled
+              ? React.null
+              : <Icons.ChevronDown
+                  size=24.
+                  color={theme.colors.iconMediumEmphasis}
+                  style=styles##icon
+                />}
+         </View>}
+    </PressableCustom>
     <View style={ReactUtils.displayOn(isOpen)}>
       <ScrollView
         style=Style.(
