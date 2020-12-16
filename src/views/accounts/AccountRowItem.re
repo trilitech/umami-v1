@@ -32,6 +32,7 @@ let styles =
           (),
         ),
       "actionDelegate": style(~marginRight=12.->dp, ()),
+      "actionMenu": style(~marginRight=24.->dp, ()),
     })
   );
 
@@ -55,9 +56,11 @@ let make = (~account: Account.t, ~token: option(Token.t)=?, ~zIndex) => {
          <DelegateButton account disabled={delegate->Belt.Option.isSome} />
        </View>
      })}
-    <Menu icon=Icons.More.build>
-      <Menu.Item text="Edit account" icon=Icons.Edit.build />
-      <AccountDeleteButton account />
-    </Menu>
+    <View style=styles##actionMenu>
+      <Menu icon=Icons.More.build>
+        <Menu.Item text="Edit account" icon=Icons.Edit.build />
+        <AccountDeleteButton account />
+      </Menu>
+    </View>
   </RowItem.Bordered>;
 };

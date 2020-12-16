@@ -36,6 +36,7 @@ let styles =
       "inner":
         style(~flexDirection=`row, ~width=520.->dp, ~marginLeft=22.->dp, ()),
       "actionButtons": style(~flexDirection=`row, ~flex=1., ()),
+      "actionMenu": style(~marginRight=24.->dp, ()),
     })
   );
 
@@ -55,7 +56,9 @@ let make =
           <Typography.Body1> account.alias->React.string </Typography.Body1>
         </View>
         <View style=styles##cellAddress>
-          <Typography.Address> account.address->React.string </Typography.Address>
+          <Typography.Address>
+            account.address->React.string
+          </Typography.Address>
         </View>
       </View>
       <View style=styles##actionButtons>
@@ -66,7 +69,7 @@ let make =
         />
         <QrButton account showBalance=false />
       </View>
-      <View>
+      <View style=styles##actionMenu>
         <Menu icon=Icons.More.build size=30.>
           <Menu.Item text=I18n.t#addressbook_menu_edit icon=Icons.Edit.build />
           <AliasDeleteButton account />
