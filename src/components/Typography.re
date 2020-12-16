@@ -21,15 +21,21 @@ let getColor = (colorStyle, theme: ThemeContext.theme) =>
   | `negative => theme.colors.textNegative
   };
 
-type fontWeightStyle = [ | `black | `heavy | `medium | `book | `light];
+type fontWeightStyle = [
+  | `extraBold
+  | `bold
+  | `semiBold
+  | `medium
+  | `regular
+];
 
 let getFontWeight = fontWeightStyle =>
   switch (fontWeightStyle) {
-  | `black => `_900
-  | `heavy => `bold
+  | `extraBold => `_800
+  | `bold => `bold
+  | `semiBold => `_600
   | `medium => `_500
-  | `book => `normal
-  | `light => `_300
+  | `regular => `normal
   };
 
 module type TextDesignStyle = {
@@ -40,7 +46,7 @@ module type TextDesignStyle = {
 
 module Base = {
   let styles =
-    Style.(StyleSheet.create({"text": style(~fontFamily="Avenir", ())}));
+    Style.(StyleSheet.create({"text": style(~fontFamily="EBGaramond", ())}));
 
   [@react.component]
   let make =
@@ -104,14 +110,14 @@ module Make = (DefaultStyle: TextDesignStyle) => {
 module Headline1 =
   Make({
     let colorStyle = `highEmphasis;
-    let fontWeightStyle = `black;
+    let fontWeightStyle = `extraBold;
     let fontSize = 24.;
   });
 
 module Headline2 =
   Make({
     let colorStyle = `highEmphasis;
-    let fontWeightStyle = `black;
+    let fontWeightStyle = `extraBold;
     let fontSize = 22.;
   });
 
@@ -120,21 +126,21 @@ module Headline2 =
 module Overline1 =
   Make({
     let colorStyle = `mediumEmphasis;
-    let fontWeightStyle = `heavy;
+    let fontWeightStyle = `bold;
     let fontSize = 16.;
   });
 
 module Overline2 =
   Make({
     let colorStyle = `highEmphasis;
-    let fontWeightStyle = `light;
+    let fontWeightStyle = `regular;
     let fontSize = 18.;
   });
 
 module Overline3 =
   Make({
     let colorStyle = `mediumEmphasis;
-    let fontWeightStyle = `light;
+    let fontWeightStyle = `regular;
     let fontSize = 14.;
   });
 
@@ -143,28 +149,28 @@ module Overline3 =
 module Subtitle1 =
   Make({
     let colorStyle = `highEmphasis;
-    let fontWeightStyle = `heavy;
+    let fontWeightStyle = `bold;
     let fontSize = 14.;
   });
 
 module Subtitle2 =
   Make({
     let colorStyle = `highEmphasis;
-    let fontWeightStyle = `heavy;
+    let fontWeightStyle = `bold;
     let fontSize = 16.;
   });
 
 module Subtitle3 =
   Make({
     let colorStyle = `highEmphasis;
-    let fontWeightStyle = `black;
+    let fontWeightStyle = `extraBold;
     let fontSize = 14.;
   });
 
 module Subtitle4 =
   Make({
     let colorStyle = `mediumEmphasis;
-    let fontWeightStyle = `heavy;
+    let fontWeightStyle = `bold;
     let fontSize = 12.;
   });
 
@@ -173,21 +179,21 @@ module Subtitle4 =
 module Body1 =
   Make({
     let colorStyle = `highEmphasis;
-    let fontWeightStyle = `medium;
+    let fontWeightStyle = `semiBold;
     let fontSize = 16.;
   });
 
 module Body2 =
   Make({
     let colorStyle = `highEmphasis;
-    let fontWeightStyle = `book;
+    let fontWeightStyle = `medium;
     let fontSize = 16.;
   });
 
 module Body3 =
   Make({
     let colorStyle = `highEmphasis;
-    let fontWeightStyle = `medium;
+    let fontWeightStyle = `semiBold;
     let fontSize = 14.;
   });
 
@@ -196,13 +202,40 @@ module Body3 =
 module ButtonPrimary =
   Make({
     let colorStyle = `highEmphasis;
-    let fontWeightStyle = `heavy;
+    let fontWeightStyle = `bold;
     let fontSize = 14.;
   });
 
 module ButtonSecondary =
   Make({
     let colorStyle = `mediumEmphasis;
-    let fontWeightStyle = `heavy;
+    let fontWeightStyle = `bold;
     let fontSize = 12.;
   });
+
+/* ADDRESS */
+
+module Address = {
+  let styles =
+    Style.(
+      StyleSheet.create({"address": style(~fontFamily="CutiveMono", ())})
+    );
+
+  [@react.component]
+  let make =
+      (
+        ~fontSize=14.,
+        ~numberOfLines: option(int)=?,
+        ~style as styleProp: option(ReactNative.Style.t)=?,
+        ~children,
+      ) => {
+    <Base
+      colorStyle=`highEmphasis
+      fontSize
+      fontWeightStyle=`regular
+      style=Style.(arrayOption([|Some(styles##address), styleProp|]))
+      ?numberOfLines>
+      children
+    </Base>;
+  };
+};

@@ -124,9 +124,17 @@ let make =
           </Typography.Body1>
         </CellAmount>
         <CellAddress>
-          <Typography.Body1 numberOfLines=1>
-            {delegate->AliasHelpers.getAliasFromAddress(aliases)->React.string}
-          </Typography.Body1>
+          {delegate
+           ->AliasHelpers.getAliasFromAddress(aliases)
+           ->Belt.Option.mapWithDefault(
+               <Typography.Address numberOfLines=1>
+                 delegate->React.string
+               </Typography.Address>,
+               alias =>
+               <Typography.Body1 numberOfLines=1>
+                 alias->React.string
+               </Typography.Body1>
+             )}
         </CellAddress>
         <CellDuration>
           <Typography.Body1 numberOfLines=1>

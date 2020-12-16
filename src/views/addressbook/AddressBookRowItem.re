@@ -55,7 +55,7 @@ let make =
           <Typography.Body1> account.alias->React.string </Typography.Body1>
         </View>
         <View style=styles##cellAddress>
-          <Typography.Body1> account.address->React.string </Typography.Body1>
+          <Typography.Address> account.address->React.string </Typography.Address>
         </View>
       </View>
       <View style=styles##actionButtons>

@@ -6,7 +6,7 @@ let styles =
       "container":
         style(~flexDirection=`row, ~height=60.->dp, ~alignItems=`center, ()),
       "spacer": style(~width=16.->dp, ()),
-      "title": style(~lineHeight=16., ()),
+      "title": style(~fontFamily="CormorantGaramond", ~lineHeight=16., ()),
     })
   );
 
@@ -29,10 +29,10 @@ let make = () => {
     <View style=styles##spacer />
     <Typography.Base
       colorStyle=`highEmphasis
-      fontSize=14.
-      fontWeightStyle=`black
+      fontSize=20.
+      fontWeightStyle=`semiBold
       style=styles##title>
-      {js|Zebra\nWallet|js}->React.string
+      {js|Zebra Wallet|js}->React.string
     </Typography.Base>
   </View>;
 };

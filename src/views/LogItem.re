@@ -86,7 +86,7 @@ let make =
             style=styles##reqelt
             fontSize=12.
             colorStyle
-            fontWeightStyle=`light
+            fontWeightStyle=`regular
             numberOfLines=1>
             "["->React.string
             Js.Date.(log.timestamp->fromFloat->toLocaleString)->React.string
@@ -95,7 +95,7 @@ let make =
           ->ReactUtils.onlyWhen(showTimestamp)}
          <Typography.Body2
            colorStyle
-           fontWeightStyle=`heavy
+           fontWeightStyle=`bold
            ellipsizeMode=`tail
            numberOfLines=1>
            log.msg->React.string

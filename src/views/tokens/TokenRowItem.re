@@ -33,9 +33,9 @@ let make = (~token: Token.t) => {
       </Typography.Body1>
     </CellSymbol>
     <CellAddress>
-      <Typography.Body1 numberOfLines=1>
+      <Typography.Address numberOfLines=1>
         token.address->React.string
-      </Typography.Body1>
+      </Typography.Address>
     </CellAddress>
   </Table.Row>;
 };

@@ -24,9 +24,9 @@ module AccountInfo = {
            account.alias->React.string
          </Typography.Subtitle1>
        )}
-      <Typography.Body1 colorStyle=`mediumEmphasis>
+      <Typography.Address fontSize=16.>
         address->React.string
-      </Typography.Body1>
+      </Typography.Address>
     </>;
   };
 };

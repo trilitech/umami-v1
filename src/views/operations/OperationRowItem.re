@@ -101,18 +101,30 @@ let make =
                </Typography.Body1>
              </CellFee>
              <CellAddress>
-               <Typography.Body1 numberOfLines=1>
-                 {business.source
-                  ->AliasHelpers.getAliasFromAddress(aliases)
-                  ->React.string}
-               </Typography.Body1>
+               {business.source
+                ->AliasHelpers.getAliasFromAddress(aliases)
+                ->Belt.Option.mapWithDefault(
+                    <Typography.Address numberOfLines=1>
+                      business.source->React.string
+                    </Typography.Address>,
+                    alias =>
+                    <Typography.Body1 numberOfLines=1>
+                      alias->React.string
+                    </Typography.Body1>
+                  )}
              </CellAddress>
              <CellAddress>
-               <Typography.Body1 numberOfLines=1>
-                 {transaction.destination
-                  ->AliasHelpers.getAliasFromAddress(aliases)
-                  ->React.string}
-               </Typography.Body1>
+               {transaction.destination
+                ->AliasHelpers.getAliasFromAddress(aliases)
+                ->Belt.Option.mapWithDefault(
+                    <Typography.Address numberOfLines=1>
+                      transaction.destination->React.string
+                    </Typography.Address>,
+                    alias =>
+                    <Typography.Body1 numberOfLines=1>
+                      alias->React.string
+                    </Typography.Body1>
+                  )}
              </CellAddress>
            </>
          | Origination(_origination) =>

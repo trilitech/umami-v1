@@ -20,9 +20,9 @@ module AccountItem = {
       <Typography.Subtitle2>
         account.alias->React.string
       </Typography.Subtitle2>
-      <Typography.Body1 colorStyle=`mediumEmphasis>
+      <Typography.Address fontSize=16.>
         account.address->React.string
-      </Typography.Body1>
+      </Typography.Address>
     </View>;
   };
 };

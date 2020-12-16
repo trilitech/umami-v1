@@ -24,9 +24,9 @@ module BakerSelector = {
     let make = (~baker: Delegate.t) => {
       <View style=styles##inner>
         <Typography.Subtitle2> baker.name->React.string </Typography.Subtitle2>
-        <Typography.Body1 colorStyle=`mediumEmphasis>
+        <Typography.Address fontSize=16.>
           baker.address->React.string
-        </Typography.Body1>
+        </Typography.Address>
       </View>;
     };
   };
@@ -55,10 +55,10 @@ module BakerSelector = {
            <Typography.Subtitle2>
              baker.name->React.string
            </Typography.Subtitle2>
-           <Typography.Body1
-             colorStyle=`mediumEmphasis numberOfLines=1 style=styles##address>
+           <Typography.Address
+             fontSize=16. numberOfLines=1 style=styles##address>
              baker.address->React.string
-           </Typography.Body1>
+           </Typography.Address>
          </View>
        )}
     </View>;

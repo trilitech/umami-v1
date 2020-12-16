@@ -134,7 +134,7 @@ let t = {
   pub operation_summary_fee = p("+ Fee %a", () => this#xtz_amount);
   pub navbar_accounts = "ACCOUNTS";
   pub navbar_operations = "OPERATIONS";
-  pub navbar_addressbook = {j|ADDRESS\nBOOK|j};
+  pub navbar_addressbook = {j|ADDRESS BOOK|j};
   pub navbar_delegations = "DELEGATIONS";
   pub navbar_tokens = "TOKENS";
   pub delegate_column_account = "ACCOUNT";
