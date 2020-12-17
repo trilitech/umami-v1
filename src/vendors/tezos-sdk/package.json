@@ -1,0 +1,16 @@
+{
+  "name": "@nomadic-labs/tezos-sdk",
+  "version": "0.0.1",
+  "main": "init.js",
+  "license": "MIT",
+  "dependencies": {
+    "@nomadic-labs/uecc-js": "file:./deps/uecc-js",
+    "@nomadic-labs/hacl-js": "file:./deps/hacl-js",
+    "@nomadic-labs/secp256k1-wasm": "file:./deps/secp256k1-wasm",
+    "xmlhttprequest": "^1.8.0"
+  },
+  "files": [
+    "init.js",
+    "TzSDK.js"
+  ]
+}
