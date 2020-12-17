@@ -32,7 +32,7 @@
   },
   "scripts": {
     "start": "EXTEND_ESLINT=true react-app-rewired start",
-    "build": "react-app-rewired build",
+    "build": "EXTEND_ESLINT=true react-app-rewired build",
     "test": "yarn bsb:build && jest --coverage",
     "bsb:start": "bsb -make-world -w",
     "bsb:build": "bsb -make-world",
@@ -70,6 +70,7 @@
       }
     ]
   },
+  "eslintIgnore": ["src/vendors/tezos-sdk/TzSDK.js"],
   "browserslist": {
     "production": [
       ">0.2%",

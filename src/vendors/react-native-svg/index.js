@@ -11,51 +11,51 @@ var styles = StyleSheet.create({
   },
 });
 
-exports.Svg = ({ style, ...props }) =>
+export const Svg = ({ style, ...props }) =>
   createElement("svg", { ...props, style: StyleSheet.compose(styles.svg, style) });
 
-exports.Rect = (props) => createElement("rect", props);
+export const Rect = (props) => createElement("rect", props);
 
-exports.Circle = (props) => createElement("circle", props);
+export const Circle = (props) => createElement("circle", props);
 
-exports.Ellipse = (props) => createElement("ellipse", props);
+export const Ellipse = (props) => createElement("ellipse", props);
 
-exports.Line = (props) => createElement("line", props);
+export const Line = (props) => createElement("line", props);
 
-exports.Polygon = (props) => createElement("polygon", props);
+export const Polygon = (props) => createElement("polygon", props);
 
-exports.Polyline = (props) => createElement("polyline", props);
+export const Polyline = (props) => createElement("polyline", props);
 
-exports.Path = (props) => createElement("path", props);
+export const Path = (props) => createElement("path", props);
 
-exports.Text = (props) => createElement("text", props);
+export const Text = (props) => createElement("text", props);
 
-exports.TextPath = (props) => createElement("textPath", props);
+export const TextPath = (props) => createElement("textPath", props);
 
-exports.Tspan = (props) => createElement("tspan", props);
+export const Tspan = (props) => createElement("tspan", props);
 
-exports.Use = (props) => createElement("use", props);
+export const Use = (props) => createElement("use", props);
 
-exports.G = (props) => createElement("g", props);
+export const G = (props) => createElement("g", props);
 
-exports.Symbol = (props) => createElement("symbol", props);
+export const Symbol = (props) => createElement("symbol", props);
 
-exports.Defs = (props) => createElement("defs", props);
+export const Defs = (props) => createElement("defs", props);
 
-exports.Image = (props) => createElement("image", props);
+export const Image = (props) => createElement("image", props);
 
-exports.ClipPath = (props) => createElement("clipPath", props);
+export const ClipPath = (props) => createElement("clipPath", props);
 
-exports.LinearGradient = (props) => createElement("linearGradient", props);
+export const LinearGradient = (props) => createElement("linearGradient", props);
 
-exports.Stop = (props) => createElement("stop", props);
+export const Stop = (props) => createElement("stop", props);
 
-exports.RadialGradient = (props) => createElement("radialGradient", props);
+export const RadialGradient = (props) => createElement("radialGradient", props);
 
-exports.Mask = (props) => createElement("mask", props);
+export const Mask = (props) => createElement("mask", props);
 
-exports.Pattern = (props) => createElement("pattern", props);
+export const Pattern = (props) => createElement("pattern", props);
 
-exports.Marker = (props) => createElement("marker", props);
+export const Marker = (props) => createElement("marker", props);
 
-exports.ForeignObject = (props) => createElement("foreignObject", props);
+export const ForeignObject = (props) => createElement("foreignObject", props);
