@@ -7,7 +7,7 @@ module Item = {
         "itemContainer":
           style(
             ~paddingVertical=5.->dp,
-            ~paddingRight=(24. +. 20.)->dp,
+            ~paddingRight=40.->dp,
             ~flexDirection=`row,
             ~alignItems=`center,
             (),
@@ -16,9 +16,11 @@ module Item = {
     );
 
   [@react.component]
-  let make = (~item, ~onChange, ~renderItem) => {
+  let make = (~item, ~onChange, ~renderItem, ~isSelected=false) => {
     <ThemedPressable
-      onPress={_e => onChange(item)} style=styles##itemContainer>
+      onPress={_e => onChange(item)}
+      style=styles##itemContainer
+      isActive=isSelected>
       {renderItem(item)}
     </ThemedPressable>;
   };
@@ -35,18 +37,16 @@ let styles =
           ~borderRadius=5.,
           (),
         ),
-      "icon": style(~marginRight=20.->dp, ()),
-      "listContainer":
+      "icon": style(~marginHorizontal=8.->dp, ()),
+      "dropdownmenu":
         style(
           ~position=`absolute,
-          ~top=0.->dp,
+          ~top=3.->dp,
           ~left=0.->dp,
           ~right=0.->dp,
           ~maxHeight=224.->dp,
-          ~borderRadius=3.,
           (),
         ),
-      "listContentContainer": style(~paddingVertical=8.->dp, ()),
     })
   );
 
@@ -85,50 +85,55 @@ let make =
   let theme = ThemeContext.useTheme();
 
   <View ?style>
-    <ThemedPressable
-      pressableRef={touchableRef->Ref.value}
-      style=Style.(
-        array([|
-          styles##button,
-          style(~borderColor=theme.colors.borderMediumEmphasis, ()),
-        |])
-      )
+    <PressableCustom
+      ref={touchableRef->Ref.value}
       onPress={_e => setIsOpen(prevIsOpen => !prevIsOpen)}
       disabled>
-      {renderButton(
-         selectedItem->Belt.Option.isSome ? selectedItem : noneItem,
-       )}
-      {disabled
-         ? React.null
-         : <Icons.ChevronDown
-             size=24.
-             color={theme.colors.iconMediumEmphasis}
-             style=styles##icon
-           />}
-    </ThemedPressable>
-    <View style={ReactUtils.displayOn(isOpen)}>
-      <ScrollView
-        style=Style.(
-          array([|
-            styles##listContainer,
-            style(~backgroundColor=theme.colors.background, ()),
-          |])
-        )
-        contentContainerStyle=Style.(
-          array([|
-            styles##listContentContainer,
-            style(~backgroundColor=theme.colors.stateActive, ()),
-          |])
-        )>
-        {noneItem->Belt.Option.mapWithDefault(React.null, item =>
-           <Item key={item->getItemValue} item onChange renderItem />
-         )}
-        {items
-         ->Belt.Array.map(item =>
-             <Item key={item->getItemValue} item onChange renderItem />
+      {_ =>
+         <View
+           style=Style.(
+             array([|
+               styles##button,
+               style(~borderColor=theme.colors.borderMediumEmphasis, ()),
+             |])
            )
-         ->React.array}
-      </ScrollView>
-    </View>
+           pointerEvents=`none>
+           {renderButton(
+              selectedItem->Belt.Option.isSome ? selectedItem : noneItem,
+            )}
+           {disabled
+              ? React.null
+              : <Icons.ChevronDown
+                  size=24.
+                  color={theme.colors.iconMediumEmphasis}
+                  style=styles##icon
+                />}
+         </View>}
+    </PressableCustom>
+    <DropdownMenu style=styles##dropdownmenu isOpen>
+      {noneItem->Belt.Option.mapWithDefault(React.null, item =>
+         <Item
+           key={item->getItemValue}
+           item
+           onChange
+           renderItem
+           isSelected={selectedValue->Belt.Option.isNone}
+         />
+       )}
+      {items
+       ->Belt.Array.map(item =>
+           <Item
+             key={item->getItemValue}
+             item
+             onChange
+             renderItem
+             isSelected={
+               item->getItemValue
+               == selectedValue->Belt.Option.getWithDefault("")
+             }
+           />
+         )
+       ->React.array}
+    </DropdownMenu>
   </View>;
 };

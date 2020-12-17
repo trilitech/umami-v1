@@ -1,6 +1,9 @@
 open ReactNative;
 include NativeElement;
 
+let styles =
+  Style.(StyleSheet.create({"container": style(~overflow=`hidden, ())}));
+
 [@react.component]
 let make =
     (
@@ -12,31 +15,40 @@ let make =
          option(
            PressableCustom.interactionState => option(ReactNative.Style.t),
          )=?,
+      ~isActive=false,
       ~disabled: option(bool)=?,
+      ~isPrimary=false,
       ~accessibilityRole: option(Accessibility.role)=?,
       ~children,
     ) => {
   let theme = ThemeContext.useTheme();
   <PressableCustom
     ref=?pressableRef ?onPress ?disabled ?href ?accessibilityRole>
-    {({hovered, pressed} as interactionState) => {
+    {({hovered, pressed, focused} as interactionState) => {
        <View
          pointerEvents=`none
          style=Style.(
            arrayOption([|
+             Some(styles##container),
              styleFromProp,
              hovered
                ? Some(
                    Style.style(
-                     ~backgroundColor=theme.colors.stateHovered,
+                     ~backgroundColor=
+                       isPrimary
+                         ? theme.colors.primaryStateHovered
+                         : theme.colors.stateHovered,
                      (),
                    ),
                  )
                : None,
-             pressed
+             pressed || focused
                ? Some(
                    Style.style(
-                     ~backgroundColor=theme.colors.statePressed,
+                     ~backgroundColor=
+                       isPrimary
+                         ? theme.colors.primaryStatePressed
+                         : theme.colors.statePressed,
                      (),
                    ),
                  )
@@ -46,6 +58,24 @@ let make =
              ),
            |])
          )>
+         <View
+           style=Style.(
+             arrayOption([|
+               Some(StyleSheet.absoluteFillObject),
+               isActive
+                 ? Some(
+                     Style.style(
+                       ~backgroundColor=
+                         isPrimary
+                           ? theme.colors.primaryStateActive
+                           : theme.colors.stateActive,
+                       (),
+                     ),
+                   )
+                 : None,
+             |])
+           )
+         />
          children
        </View>;
      }}

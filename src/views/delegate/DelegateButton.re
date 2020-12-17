@@ -4,13 +4,14 @@ let styles =
   Style.(
     StyleSheet.create({
       "button":
+        style(~alignSelf=`flexStart, ~overflow=`hidden, ~borderRadius=4., ()),
+      "pressable":
         style(
           ~height=36.->dp,
           ~minWidth=103.->dp,
           ~paddingHorizontal=16.->dp,
           ~justifyContent=`center,
           ~alignItems=`center,
-          ~borderRadius=4.,
           (),
         ),
     })
@@ -39,7 +40,7 @@ let make =
   };
 
   <>
-    <TouchableOpacity
+    <View
       style=Style.(
         arrayOption([|
           Some(styles##button),
@@ -48,22 +49,26 @@ let make =
           ),
           styleFromProp,
         |])
-      )
-      onPress
-      disabled>
-      <Typography.ButtonSecondary
-        style=Style.(
-          style(
-            ~color=
-              disabled
-                ? theme.colors.primaryTextDisabled
-                : theme.colors.primaryTextHighEmphasis,
-            (),
-          )
-        )>
-        (disabled ? I18n.btn#delegated : I18n.btn#delegate)->React.string
-      </Typography.ButtonSecondary>
-    </TouchableOpacity>
+      )>
+      <ThemedPressable
+        style=Style.(arrayOption([|Some(styles##pressable)|]))
+        isPrimary=true
+        onPress
+        disabled>
+        <Typography.ButtonSecondary
+          style=Style.(
+            style(
+              ~color=
+                disabled
+                  ? theme.colors.primaryTextDisabled
+                  : theme.colors.primaryTextHighEmphasis,
+              (),
+            )
+          )>
+          (disabled ? I18n.btn#delegated : I18n.btn#delegate)->React.string
+        </Typography.ButtonSecondary>
+      </ThemedPressable>
+    </View>
     <ModalAction ref=modal visible=visibleModal onRequestClose=closeAction>
       <DelegateView onPressCancel action={Delegate.Create(defaultAccount)} />
     </ModalAction>

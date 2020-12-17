@@ -24,6 +24,10 @@ main {
   display: inline-block;
 }
 
+*:focus {
+  outline: none;
+}
+
 /* EBGaramond */
 
 @font-face {

@@ -69,7 +69,9 @@ module TokenItem = {
           token.alias->React.string
         </Typography.Subtitle2>
       </View>
-      <Typography.Body1> token.symbol->React.string </Typography.Body1>
+      <Typography.Body1 colorStyle=`mediumEmphasis>
+        token.symbol->React.string
+      </Typography.Body1>
     </View>;
   };
 };

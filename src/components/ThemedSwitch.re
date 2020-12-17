@@ -16,7 +16,7 @@ let make = (~value: bool=false) => {
     value
     thumbColor={theme.colors.background}
     trackColor={Switch.trackColor(
-      ~_true=theme.colors.iconHighEmphasis,
+      ~_true=theme.colors.iconPrimary,
       ~_false=theme.colors.iconMediumEmphasis,
       (),
     )}

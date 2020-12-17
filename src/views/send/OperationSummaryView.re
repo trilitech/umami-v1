@@ -16,9 +16,9 @@ module AccountInfo = {
       StoreContext.Accounts.useGetFromAddress(address);
 
     <>
-      <Typography.Overline2 colorStyle=`mediumEmphasis style=styles##title>
+      <Typography.Overline1 colorStyle=`mediumEmphasis style=styles##title>
         title->React.string
-      </Typography.Overline2>
+      </Typography.Overline1>
       {account->ReactUtils.mapOpt(account =>
          <Typography.Subtitle1 style=styles##subtitle>
            account.alias->React.string

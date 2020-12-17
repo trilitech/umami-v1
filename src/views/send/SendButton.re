@@ -3,14 +3,17 @@ open ReactNative;
 let styles =
   Style.(
     StyleSheet.create({
-      "button": style(~alignItems=`center, ()),
+      "button":
+        style(~borderRadius=35., ~overflow=`hidden, ())
+        ->unsafeAddStyle({
+            "boxShadow": "0 3px 5px -1px rgba(0, 0, 0, 0.2), 0 1px 18px 0 rgba(0, 0, 0, 0.12), 0 6px 10px 0 rgba(0, 0, 0, 0.14)",
+          }),
       "iconContainer":
         style(
           ~width=70.->dp,
           ~height=70.->dp,
-          ~justifyContent=`center,
           ~alignItems=`center,
-          ~borderRadius=35.,
+          ~justifyContent=`center,
           (),
         ),
       "textButton": style(~marginTop=6.->dp, ()),
@@ -40,14 +43,14 @@ let make = () => {
   };
 
   <>
-    <TouchableOpacity style=styles##button ?onPress>
-      <View
-        style=Style.(
-          array([|
-            styles##iconContainer,
-            style(~backgroundColor=theme.colors.primaryButtonBackground, ()),
-          |])
-        )>
+    <View
+      style=Style.(
+        array([|
+          styles##button,
+          style(~backgroundColor=theme.colors.primaryButtonBackground, ()),
+        |])
+      )>
+      <ThemedPressable isPrimary=true style=styles##iconContainer ?onPress>
         <Icons.Send
           size=24.
           color={
@@ -71,8 +74,8 @@ let make = () => {
           )>
           I18n.btn#send->React.string
         </Typography.ButtonSecondary>
-      </View>
-    </TouchableOpacity>
+      </ThemedPressable>
+    </View>
     <ModalAction ref=modal visible=visibleModal onRequestClose=closeAction>
       <SendView onPressCancel />
     </ModalAction>

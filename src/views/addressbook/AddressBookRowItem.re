@@ -34,7 +34,13 @@ let styles =
           style(~flexBasis=300.->dp, ~flexGrow=1., ()),
         |]),
       "inner":
-        style(~flexDirection=`row, ~width=520.->dp, ~marginLeft=22.->dp, ()),
+        style(
+          ~flexDirection=`row,
+          ~alignItems=`center,
+          ~width=490.->dp,
+          ~marginLeft=22.->dp,
+          (),
+        ),
       "actionButtons": style(~flexDirection=`row, ~flex=1., ()),
       "actionMenu": style(~marginRight=24.->dp, ()),
     })

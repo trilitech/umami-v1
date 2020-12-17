@@ -48,9 +48,9 @@ let make =
         {switch (request) {
          | Done(Ok(_result), _) =>
            <>
-             <Typography.Headline2 style=styles##title>
+             <Typography.Headline style=styles##title>
                titleDone->React.string
-             </Typography.Headline2>
+             </Typography.Headline>
              <View style=styles##formAction>
                <FormButton text=I18n.btn#ok onPress=onPressCancel />
              </View>
@@ -74,9 +74,9 @@ let make =
            </View>
          | NotAsked =>
            <>
-             <Typography.Headline2 style=styles##title>
+             <Typography.Headline style=styles##title>
                title->React.string
-             </Typography.Headline2>
+             </Typography.Headline>
              <View style=styles##formAction>
                <FormButton text=I18n.btn#cancel onPress=onPressCancel />
                <FormButton text=I18n.btn#delete onPress=onPressConfirmDelete />

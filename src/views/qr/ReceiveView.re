@@ -28,9 +28,9 @@ let make = (~account: Account.t, ~showBalance, ~onPressCancel) => {
 
   <ModalView.Form>
     <>
-      <Typography.Headline2 style=styles##title>
+      <Typography.Headline style=styles##title>
         account.alias->React.string
-      </Typography.Headline2>
+      </Typography.Headline>
       <AccountInfo account showAlias=false showBalance ?token />
       <View style=styles##qrContainer>
         <View style=styles##qr>

@@ -11,6 +11,6 @@ let styles =
 [@react.component]
 let make = (~text) => {
   <View style=styles##container>
-    <Typography.Body3> text->React.string </Typography.Body3>
+    <Typography.Body2> text->React.string </Typography.Body2>
   </View>;
 };

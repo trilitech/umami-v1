@@ -24,7 +24,9 @@ module Item = {
       {icon(
          ~style=?None,
          ~size=20.,
-         ~color=colorStyle->Typography.getColor(theme),
+         ~color=
+           (colorStyle === `highEmphasis ? `mediumEmphasis : colorStyle)
+           ->Typography.getColor(theme),
        )}
       <Typography.ButtonSecondary colorStyle style=styles##text>
         text->React.string
@@ -37,18 +39,15 @@ let styles =
   Style.(
     StyleSheet.create({
       "button": style(~alignItems=`center, ~justifyContent=`center, ()),
-      "listContainer":
+      "dropdownmenu":
         style(
           ~position=`absolute,
           ~top=2.->dp,
           ~right=2.->dp,
           ~minWidth=170.->dp,
           ~maxHeight=224.->dp,
-          //~paddingVertical=8.->dp,
-          ~borderRadius=3.,
           (),
         ),
-      "listContentContainer": style(~paddingVertical=8.->dp, ()),
     })
   );
 
@@ -83,35 +82,13 @@ let make = (~icon: Icons.builder, ~children, ~size=42.) => {
           ),
         |])
       )
-      interactionStyle={_ =>
-        isOpen
-          ? Some(
-              Style.style(~backgroundColor=theme.colors.statePressed, ()),
-            )
-          : None
-      }>
+      isActive=isOpen>
       {icon(
          ~style=?None,
          ~size=Js.Math.ceil_float(iconSizeRatio *. size),
          ~color=theme.colors.iconMediumEmphasis,
        )}
     </ThemedPressable>
-    <View style={ReactUtils.displayOn(isOpen)}>
-      <ScrollView
-        style=Style.(
-          array([|
-            styles##listContainer,
-            style(~backgroundColor=theme.colors.background, ()),
-          |])
-        )
-        contentContainerStyle=Style.(
-          array([|
-            styles##listContentContainer,
-            style(~backgroundColor=theme.colors.stateActive, ()),
-          |])
-        )>
-        children
-      </ScrollView>
-    </View>
+    <DropdownMenu style=styles##dropdownmenu isOpen> children </DropdownMenu>
   </View>;
 };

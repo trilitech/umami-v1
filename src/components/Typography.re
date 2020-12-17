@@ -107,14 +107,7 @@ module Make = (DefaultStyle: TextDesignStyle) => {
 
 /* H */
 
-module Headline1 =
-  Make({
-    let colorStyle = `highEmphasis;
-    let fontWeightStyle = `extraBold;
-    let fontSize = 24.;
-  });
-
-module Headline2 =
+module Headline =
   Make({
     let colorStyle = `highEmphasis;
     let fontWeightStyle = `extraBold;
@@ -125,16 +118,16 @@ module Headline2 =
 
 module Overline1 =
   Make({
-    let colorStyle = `mediumEmphasis;
-    let fontWeightStyle = `bold;
-    let fontSize = 16.;
+    let colorStyle = `highEmphasis;
+    let fontWeightStyle = `regular;
+    let fontSize = 18.;
   });
 
 module Overline2 =
   Make({
-    let colorStyle = `highEmphasis;
-    let fontWeightStyle = `regular;
-    let fontSize = 18.;
+    let colorStyle = `mediumEmphasis;
+    let fontWeightStyle = `semiBold;
+    let fontSize = 16.;
   });
 
 module Overline3 =
@@ -149,29 +142,22 @@ module Overline3 =
 module Subtitle1 =
   Make({
     let colorStyle = `highEmphasis;
-    let fontWeightStyle = `bold;
-    let fontSize = 14.;
+    let fontWeightStyle = `semiBold;
+    let fontSize = 16.;
   });
 
 module Subtitle2 =
   Make({
     let colorStyle = `highEmphasis;
     let fontWeightStyle = `bold;
-    let fontSize = 16.;
+    let fontSize = 15.;
   });
 
 module Subtitle3 =
   Make({
     let colorStyle = `highEmphasis;
-    let fontWeightStyle = `extraBold;
+    let fontWeightStyle = `semiBold;
     let fontSize = 14.;
-  });
-
-module Subtitle4 =
-  Make({
-    let colorStyle = `mediumEmphasis;
-    let fontWeightStyle = `bold;
-    let fontSize = 12.;
   });
 
 /* BODY */
@@ -179,21 +165,14 @@ module Subtitle4 =
 module Body1 =
   Make({
     let colorStyle = `highEmphasis;
-    let fontWeightStyle = `semiBold;
+    let fontWeightStyle = `regular;
     let fontSize = 16.;
   });
 
 module Body2 =
   Make({
     let colorStyle = `highEmphasis;
-    let fontWeightStyle = `medium;
-    let fontSize = 16.;
-  });
-
-module Body3 =
-  Make({
-    let colorStyle = `highEmphasis;
-    let fontWeightStyle = `semiBold;
+    let fontWeightStyle = `regular;
     let fontSize = 14.;
   });
 
@@ -202,7 +181,7 @@ module Body3 =
 module ButtonPrimary =
   Make({
     let colorStyle = `highEmphasis;
-    let fontWeightStyle = `bold;
+    let fontWeightStyle = `extraBold;
     let fontSize = 14.;
   });
 

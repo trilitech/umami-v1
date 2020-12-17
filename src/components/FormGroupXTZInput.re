@@ -6,7 +6,9 @@ let formatOnBlur = (token, setValue) =>
   };
 
 let xtzDecoration = (~style) =>
-  <Typography.Body1 style> BusinessUtils.xtz->React.string </Typography.Body1>;
+  <Typography.Body1 colorStyle=`mediumEmphasis style>
+    BusinessUtils.xtz->React.string
+  </Typography.Body1>;
 
 [@react.component]
 let make =

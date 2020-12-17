@@ -6,20 +6,27 @@ module AccountItem = {
       StyleSheet.create({
         "inner":
           style(
-            ~height=48.->dp,
+            ~height=44.->dp,
             ~marginHorizontal=20.->dp,
             ~justifyContent=`spaceBetween,
             (),
           ),
+        "info": style(~flexDirection=`row, ~justifyContent=`spaceBetween, ()),
       })
     );
 
   [@react.component]
-  let make = (~account: Account.t) => {
+  let make =
+      (~account: Account.t, ~token: option(Token.t)=?, ~showBalance=true) => {
     <View style=styles##inner>
-      <Typography.Subtitle2>
-        account.alias->React.string
-      </Typography.Subtitle2>
+      <View style=styles##info>
+        <Typography.Subtitle2>
+          account.alias->React.string
+        </Typography.Subtitle2>
+        {showBalance
+           ? <AccountInfoBalance address={account.address} ?token />
+           : React.null}
+      </View>
       <Typography.Address fontSize=16.>
         account.address->React.string
       </Typography.Address>
@@ -42,14 +49,22 @@ let styles =
     })
   );
 
-let renderButton = (selectedAccount: option(Account.t)) =>
+let baseRenderButton =
+    (~showBalance, ~token, selectedAccount: option(Account.t)) =>
   <View style=styles##selectorContent>
     {selectedAccount->Belt.Option.mapWithDefault(<LoadingView />, account =>
-       <AccountItem account />
+       <AccountItem account showBalance ?token />
      )}
   </View>;
 
-let renderItem = (account: Account.t) => <AccountItem account />;
+let baseRenderItem = (~showBalance, ~token, account: Account.t) =>
+  <AccountItem account showBalance ?token />;
+
+///
+
+let renderButton = baseRenderButton(~showBalance=true, ~token=None);
+
+let renderItem = baseRenderItem(~showBalance=false, ~token=None);
 
 [@react.component]
 let make = (~style=?) => {
@@ -66,7 +81,7 @@ let make = (~style=?) => {
       );
 
   <>
-    <Typography.Overline1> I18n.t#account->React.string </Typography.Overline1>
+    <Typography.Overline2> I18n.t#account->React.string </Typography.Overline2>
     <View style=styles##spacer />
     <Selector
       items

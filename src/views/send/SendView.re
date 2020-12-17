@@ -193,9 +193,9 @@ module Form = {
       let (selectedToken, setSelectedToken) = tokenState;
 
       <>
-        <Typography.Headline2 style=styles##title>
+        <Typography.Headline style=styles##title>
           I18n.title#send->React.string
-        </Typography.Headline2>
+        </Typography.Headline>
         <FormGroupAmountWithTokenSelector
           label=I18n.label#send_amount
           value={form.values.amount}
@@ -223,9 +223,9 @@ module Form = {
             style=styles##advancedOptionButton
             activeOpacity=1.
             onPress={_ => setAdvancedOptionOpened(prev => !prev)}>
-            <Typography.Overline1>
+            <Typography.Overline2>
               I18n.btn#advanced_options->React.string
-            </Typography.Overline1>
+            </Typography.Overline2>
             <ThemedSwitch value=advancedOptionOpened />
           </TouchableOpacity>
           {advancedOptionOpened
@@ -282,12 +282,12 @@ let make = (~onPressCancel) => {
      | (_, Done(Ok((hash, _)), _), _)
      | (_, _, Done(Ok((hash, _)), _)) =>
        <>
-         <Typography.Headline2 style=styles##title>
+         <Typography.Headline style=styles##title>
            I18n.title#operation_injected->React.string
-         </Typography.Headline2>
-         <Typography.Overline1>
+         </Typography.Headline>
+         <Typography.Overline2>
            I18n.t#operation_hash->React.string
-         </Typography.Overline1>
+         </Typography.Overline2>
          <Typography.Body1> hash->React.string </Typography.Body1>
          <View style=styles##formAction>
            <FormButton text=I18n.btn#ok onPress=onPressCancel />

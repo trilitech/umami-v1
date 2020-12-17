@@ -1,18 +1,23 @@
 open ReactNative;
 
+let borderWidth = 1.;
+let paddingVertical = 12.;
+let paddingLeft = 22.;
+let paddingRight = 14.;
+
 let styles =
   Style.(
     StyleSheet.create({
       "input":
         style(
           ~height=46.->dp,
-          ~paddingVertical=10.->dp,
-          ~paddingLeft=20.->dp,
-          ~paddingRight=12.->dp,
+          ~paddingVertical=(paddingVertical -. borderWidth)->dp,
+          ~paddingLeft=(paddingLeft -. borderWidth)->dp,
+          ~paddingRight=(paddingRight -. borderWidth)->dp,
           ~fontFamily="EBGaramond",
           ~fontSize=16.,
           ~fontWeight=`normal,
-          ~borderWidth=1.,
+          ~borderWidth,
           ~borderRadius=5.,
           (),
         ),
@@ -36,6 +41,7 @@ let make =
       ~style as styleFromProp: option(ReactNative.Style.t)=?,
     ) => {
   let theme = ThemeContext.useTheme();
+  let (isFocused, setIsFocused) = React.useState(_ => false);
   <TextInput
     ref=?inputRef
     style=Style.(
@@ -48,11 +54,27 @@ let make =
             (),
           ),
         ),
+        isFocused
+          ? Some(
+              style(
+                ~borderColor=theme.colors.borderPrimary,
+                ~borderWidth=2.,
+                ~paddingVertical=(paddingVertical -. 2.)->dp,
+                ~paddingLeft=(paddingLeft -. 2.)->dp,
+                ~paddingRight=(paddingRight -. 2.)->dp,
+                (),
+              ),
+            )
+          : None,
         hasError
           ? Some(
               style(
                 ~color=theme.colors.error,
                 ~borderColor=theme.colors.error,
+                ~borderWidth=2.,
+                ~paddingVertical=(paddingVertical -. 2.)->dp,
+                ~paddingLeft=(paddingLeft -. 2.)->dp,
+                ~paddingRight=(paddingRight -. 2.)->dp,
                 (),
               ),
             )
@@ -65,8 +87,14 @@ let make =
     onChange={(event: TextInput.changeEvent) =>
       onValueChange(event.nativeEvent.text)
     }
-    ?onBlur
-    ?onFocus
+    onFocus={event => {
+      setIsFocused(_ => true);
+      onFocus->Common.Lib.Option.iter(onFocus => onFocus(event));
+    }}
+    onBlur={event => {
+      setIsFocused(_ => false);
+      onBlur->Common.Lib.Option.iter(onBlur => onBlur(event));
+    }}
     ?onKeyPress
     ?textContentType
     ?secureTextEntry

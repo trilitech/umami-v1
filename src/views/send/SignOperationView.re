@@ -37,7 +37,7 @@ let make =
 
   <>
     <View style=styles##title>
-      <Typography.Headline2>
+      <Typography.Headline>
         (
           switch (title, operation) {
           | (Some(title), _) => title
@@ -52,7 +52,7 @@ let make =
           }
         )
         ->React.string
-      </Typography.Headline2>
+      </Typography.Headline>
       {switch (operation) {
        | InjectionOperation(Transaction({options: {fee}}))
        | InjectionOperation(Delegation({fee}))

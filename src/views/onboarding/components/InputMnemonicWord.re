@@ -21,9 +21,9 @@ module Item = {
   [@react.component]
   let make = (~word) => {
     <View style=styles##itemContainer>
-      <Typography.Body3 colorStyle=`mediumEmphasis>
+      <Typography.Body2 colorStyle=`mediumEmphasis>
         word->React.string
-      </Typography.Body3>
+      </Typography.Body2>
     </View>;
   };
 };

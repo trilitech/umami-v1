@@ -33,7 +33,12 @@ module NavBarItem = {
 
     let isCurrent = currentRoute == Some(route);
 
-    <ThemedPressable style=styles##item accessibilityRole=`link ?href ?onPress>
+    <ThemedPressable
+      accessibilityRole=`link
+      ?href
+      ?onPress
+      style=styles##item
+      isActive=isCurrent>
       {icon->Belt.Option.mapWithDefault(React.null, icon => {
          icon(
            ~style={
@@ -42,8 +47,7 @@ module NavBarItem = {
            ~size=24.,
            ~color={
              isCurrent
-               ? theme.colors.iconHighEmphasis
-               : theme.colors.iconMediumEmphasis;
+               ? theme.colors.iconPrimary : theme.colors.iconMediumEmphasis;
            },
          )
        })}
@@ -67,7 +71,13 @@ let styles =
           ~paddingTop=60.->dp,
           (),
         ),
-      "sendButton": style(~marginTop=20.->dp, ~marginBottom=18.->dp, ()),
+      "sendButton":
+        style(
+          ~marginTop=20.->dp,
+          ~marginBottom=18.->dp,
+          ~alignItems=`center,
+          (),
+        ),
     })
   );
 

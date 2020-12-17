@@ -82,7 +82,7 @@ let make =
        <View
          style={Style.arrayOption([|Some(styles##itemContent), stylearg|])}>
          <View style=styles##kindIcon> icon </View>
-         {<Typography.Body3
+         {<Typography.Body2
             style=styles##reqelt
             fontSize=12.
             colorStyle
@@ -91,15 +91,15 @@ let make =
             "["->React.string
             Js.Date.(log.timestamp->fromFloat->toLocaleString)->React.string
             "]  -"->React.string
-          </Typography.Body3>
+          </Typography.Body2>
           ->ReactUtils.onlyWhen(showTimestamp)}
-         <Typography.Body2
+         <Typography.Body1
            colorStyle
            fontWeightStyle=`bold
            ellipsizeMode=`tail
            numberOfLines=1>
            log.msg->React.string
-         </Typography.Body2>
+         </Typography.Body1>
          <View style=styles##actionButtons>
            {<ClipboardButton
               hoveredStyle=styles##buttonHovered

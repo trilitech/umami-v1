@@ -6,7 +6,13 @@ let styles =
       "container": style(~flexDirection=`row, ()),
       "inner": style(~flex=1., ~flexDirection=`row, ~alignItems=`center, ()),
       "innerContainer":
-        style(~paddingVertical=6.->dp, ~flexDirection=`row, ~flex=1., ()),
+        style(
+          ~paddingVertical=6.->dp,
+          ~flexDirection=`row,
+          ~flex=1.,
+          ~borderRadius=5.,
+          (),
+        ),
       "border":
         style(
           ~width=2.->dp,

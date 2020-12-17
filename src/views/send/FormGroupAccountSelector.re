@@ -5,9 +5,12 @@ let styles =
     StyleSheet.create({
       "formGroup": style(~zIndex=11, ()),
       "label": style(~marginBottom=6.->dp, ()),
-      "balance": style(~position=`absolute, ~right=80.->dp, ~top=12.->dp, ()),
     })
   );
+
+let baseRenderButton = AccountSelector.baseRenderButton(~showBalance=true);
+
+let baseRenderItem = AccountSelector.baseRenderItem(~showBalance=false);
 
 [@react.component]
 let make =
@@ -34,9 +37,6 @@ let make =
   <FormGroup style=styles##formGroup>
     <FormLabel label hasError style=styles##label />
     <View>
-      <View style=styles##balance>
-        <AccountInfoBalance address=value ?token />
-      </View>
       <Selector
         items
         getItemValue={account => account.address}
@@ -48,8 +48,8 @@ let make =
           ->handleChange;
         }}
         selectedValue=value
-        renderButton=AccountSelector.renderButton
-        renderItem=AccountSelector.renderItem
+        renderButton={baseRenderButton(~token)}
+        renderItem={baseRenderItem(~token)}
       />
     </View>
   </FormGroup>;
