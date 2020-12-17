@@ -17,12 +17,16 @@ let styles =
   );
 
 [@react.component]
-let make = (~icon: Icons.builder, ~hoveredStyle=?, ~onPress=?) => {
+let make = (~icon: Icons.builder, ~isPrimary=?, ~onPress=?) => {
   let theme = ThemeContext.useTheme();
-  <ThemedPressable
-    ?onPress
-    style=styles##button
-    interactionStyle={({hovered}) => hovered ? hoveredStyle : None}>
-    {icon(~style=?None, ~size=16., ~color=theme.colors.iconMediumEmphasis)}
+  <ThemedPressable ?onPress style=styles##button ?isPrimary>
+    {icon(
+       ~style=?None,
+       ~size=16.,
+       ~color=
+         isPrimary->Belt.Option.getWithDefault(false)
+           ? theme.colors.primaryIconMediumEmphasis
+           : theme.colors.iconMediumEmphasis,
+     )}
   </ThemedPressable>;
 };

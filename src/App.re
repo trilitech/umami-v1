@@ -58,9 +58,11 @@ module AppView = {
 
 [@react.component]
 let make = () => {
-  <LogsContext>
-    <ConfigContext>
-      <StoreContext> <ThemeContext> <AppView /> </ThemeContext> </StoreContext>
-    </ConfigContext>
-  </LogsContext>;
+  <ThemeContext>
+    <LogsContext>
+      <ConfigContext>
+        <StoreContext> <AppView /> </StoreContext>
+      </ConfigContext>
+    </LogsContext>
+  </ThemeContext>;
 };
