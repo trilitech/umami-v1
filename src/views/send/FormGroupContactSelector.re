@@ -61,7 +61,10 @@ let make = (~label, ~value: string, ~handleChange, ~error) => {
 
   let items =
     accounts->Belt.Array.keep(account =>
-      account.alias->Js.String2.startsWith(value)
+      account.alias
+      ->Js.String2.trim
+      ->Js.String2.toLowerCase
+      ->Js.String2.startsWith(value->Js.String2.trim->Js.String2.toLowerCase)
     );
 
   <FormGroup style=styles##formGroup>

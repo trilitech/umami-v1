@@ -64,7 +64,9 @@ let renderLabel = (displayIndex, displayError) => {
 let make = (~displayIndex, ~value, ~handleChange, ~error) => {
   let wordlists =
     Bip39.wordlistsEnglish
-    ->Belt.Array.keep(Js.String.startsWith(value))
+    ->Belt.Array.keep(
+        Js.String.startsWith(value->Js.String2.trim->Js.String2.toLowerCase),
+      )
     ->Belt.Array.slice(~offset=0, ~len=12);
 
   <Autocomplete
