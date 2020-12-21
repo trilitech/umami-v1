@@ -5,7 +5,7 @@ module OperationsAPI = API.Operations(API.TezosClient, API.TezosExplorer);
 
 type operation =
   | Regular(Injection.operation)
-  | Token(Tokens.operation);
+  | Token(Token.operation);
 
 type injection = {
   operation,

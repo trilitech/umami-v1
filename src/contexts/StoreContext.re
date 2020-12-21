@@ -239,7 +239,7 @@ module BalanceToken = {
       React.useMemo2(
         () =>
           tokenAddress->Option.map(tokenAddress =>
-            Tokens.makeGetBalance(
+            Token.makeGetBalance(
               address,
               hardCodedReceiptionKT1,
               tokenAddress,

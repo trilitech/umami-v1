@@ -2,7 +2,7 @@ include ApiRequest;
 module TokensAPI = API.Tokens(API.TezosClient);
 
 type injection = {
-  operation: Tokens.operation,
+  operation: Token.operation,
   password: string,
 };
 
@@ -16,7 +16,7 @@ let useLoadOperationOffline =
     (
       ~network,
       ~requestState as (request, setRequest),
-      ~operation: option(Tokens.operation),
+      ~operation: option(Token.operation),
     ) => {
   let get = (~config, (network, operation)) =>
     (network, config)->TokensAPI.callGetOperationOffline(operation);

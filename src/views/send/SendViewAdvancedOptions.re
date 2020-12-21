@@ -33,7 +33,7 @@ let make = (~form: SendForm.api, ~token: option(Token.t)=?) => {
         switch (token) {
         | Some(token) =>
           OperationApiRequest.Token(
-            Tokens.makeTransfer(
+            Token.makeTransfer(
               ~source=form.values.sender,
               ~amount=form.values.amount->Js.Float.fromString->int_of_float,
               ~destination=form.values.recipient,

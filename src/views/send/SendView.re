@@ -87,7 +87,7 @@ let buildTransaction =
   switch (token) {
   | Some(token) =>
     SendForm.TokensOperation(
-      Tokens.makeTransfer(
+      Token.makeTransfer(
         ~source=state.values.sender,
         ~amount=state.values.amount->Js.Float.fromString->int_of_float,
         ~destination=state.values.recipient,
