@@ -1,4 +1,4 @@
-const _secp256k1 = require('secp256k1-wasm');
+const _secp256k1 = require('secp256k1-js');
 const _uecc = require('@nomadic-labs/uecc-js');
 const _hacl = require('hacl-wasm');
 const _sdk = require('./TzSDK.js');
@@ -23,4 +23,4 @@ function init() {
     })
   })
 }
-module.exports.init = init ;
+exports.init = init ;

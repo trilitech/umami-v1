@@ -38,8 +38,7 @@ var _SECP256K1 = (function() {
         if (Module["locateFile"]) {
           return Module["locateFile"](path, scriptDirectory)
         }
-        console.log("{ " + scriptDirectory + " " + path + "}");
-        return "./" + path
+        return "./" + path;
       }
       var read_, readAsync, readBinary, setWindowTitle;
       var nodeFS;
