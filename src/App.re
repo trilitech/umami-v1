@@ -3,13 +3,7 @@ open ReactNative;
 let styles =
   Style.(
     StyleSheet.create({
-      "layout":
-        style(
-          ~flex=1.,
-          ~flexDirection=`row,
-          ~backgroundColor=Colors.contentBackground,
-          (),
-        ),
+      "layout": style(~flex=1., ~flexDirection=`row, ()),
       "main": style(~flex=1., ()),
       "content": style(~flex=1., ()),
     })
@@ -22,6 +16,8 @@ module AppView = {
     let route = Routes.match(url);
 
     let confLoaded = ConfigContext.useLoaded();
+
+    let theme = ThemeContext.useTheme();
 
     let bodyView = () => {
       <View style=styles##content>
@@ -43,7 +39,13 @@ module AppView = {
     };
 
     <DocumentContext>
-      <View style=styles##layout>
+      <View
+        style=Style.(
+          array([|
+            styles##layout,
+            style(~backgroundColor=theme.colors.background, ()),
+          |])
+        )>
         <NavBar route />
         <View style=styles##main>
           <Header />
@@ -56,7 +58,11 @@ module AppView = {
 
 [@react.component]
 let make = () => {
-  <LogsContext>
-    <ConfigContext> <StoreContext> <AppView /> </StoreContext> </ConfigContext>
-  </LogsContext>;
+  <ThemeContext>
+    <LogsContext>
+      <ConfigContext>
+        <StoreContext> <AppView /> </StoreContext>
+      </ConfigContext>
+    </LogsContext>
+  </ThemeContext>;
 };

@@ -40,15 +40,17 @@ let make =
     ->ignore;
   };
 
+  let theme = ThemeContext.useTheme();
+
   <>
     <ModalAction ref=modal visible onRequestClose=closeAction>
       <ModalView.Form>
         {switch (request) {
          | Done(Ok(_result), _) =>
            <>
-             <Typography.Headline2 style=styles##title>
+             <Typography.Headline style=styles##title>
                titleDone->React.string
-             </Typography.Headline2>
+             </Typography.Headline>
              <View style=styles##formAction>
                <FormButton text=I18n.btn#ok onPress=onPressCancel />
              </View>
@@ -67,14 +69,14 @@ let make =
              <ActivityIndicator
                animating=true
                size=ActivityIndicator_Size.large
-               color="#FFF"
+               color={theme.colors.iconMediumEmphasis}
              />
            </View>
          | NotAsked =>
            <>
-             <Typography.Headline2 style=styles##title>
+             <Typography.Headline style=styles##title>
                title->React.string
-             </Typography.Headline2>
+             </Typography.Headline>
              <View style=styles##formAction>
                <FormButton text=I18n.btn#cancel onPress=onPressCancel />
                <FormButton text=I18n.btn#delete onPress=onPressConfirmDelete />

@@ -7,13 +7,10 @@ module AddContactButton = {
         "button":
           style(
             ~alignSelf=`flexStart,
+            ~marginLeft=(-6.)->dp,
             ~marginBottom=10.->dp,
-            ~flexDirection=`row,
-            ~alignItems=`center,
-            ~paddingVertical=6.->dp,
             (),
           ),
-        "icon": style(~marginRight=4.->dp, ()),
       })
     );
 
@@ -37,16 +34,9 @@ module AddContactButton = {
     };
 
     <>
-      <TouchableOpacity style=styles##button onPress>
-        <Icons.Add
-          size=15.5
-          color=Theme.colorDarkMediumEmphasis
-          style=styles##icon
-        />
-        <Typography.ButtonSecondary>
-          I18n.btn#add_contact->React.string
-        </Typography.ButtonSecondary>
-      </TouchableOpacity>
+      <View style=styles##button>
+        <ButtonAction onPress text=I18n.btn#add_contact icon=Icons.Add.build />
+      </View>
       <ModalAction ref=modal visible=visibleModal onRequestClose=closeAction>
         <ContactAddView cancel />
       </ModalAction>

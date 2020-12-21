@@ -51,24 +51,27 @@ module TokenItem = {
 
   [@react.component]
   let make = (~token: Token.t) => {
+    let theme = ThemeContext.useTheme();
     <View style=styles##inner>
       <View style=styles##titleContainer>
         {token.symbol == xtzToken.symbol
            ? <Icons.Tezos
                size=20.
-               color=Theme.colorDarkMediumEmphasis
+               color={theme.colors.iconMediumEmphasis}
                style=styles##icon
              />
            : <Icons.Token
                size=20.
-               color=Theme.colorDarkMediumEmphasis
+               color={theme.colors.iconMediumEmphasis}
                style=styles##icon
              />}
         <Typography.Subtitle2>
           token.alias->React.string
         </Typography.Subtitle2>
       </View>
-      <Typography.Body1> token.symbol->React.string </Typography.Body1>
+      <Typography.Body1 colorStyle=`mediumEmphasis>
+        token.symbol->React.string
+      </Typography.Body1>
     </View>;
   };
 };

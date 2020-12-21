@@ -7,8 +7,9 @@ module NavBarItem = {
       StyleSheet.create({
         "item":
           style(
-            ~minHeight=68.->dp,
-            ~paddingVertical=12.->dp,
+            ~marginVertical=9.->dp,
+            ~minHeight=50.->dp,
+            ~paddingVertical=3.->dp,
             ~alignItems=`center,
             ~justifyContent=`center,
             (),
@@ -21,6 +22,8 @@ module NavBarItem = {
 
   [@react.component]
   let make = (~currentRoute, ~route, ~title, ~icon: option(Icons.builder)=?) => {
+    let theme = ThemeContext.useTheme();
+
     let (href, onPress) = useHrefAndOnPress(route);
 
     let account = StoreContext.SelectedAccount.useGet();
@@ -30,8 +33,12 @@ module NavBarItem = {
 
     let isCurrent = currentRoute == Some(route);
 
-    <TouchableOpacity
-      style=styles##item accessibilityRole=`link ?href ?onPress>
+    <ThemedPressable
+      accessibilityRole=`link
+      ?href
+      ?onPress
+      style=styles##item
+      isActive=isCurrent>
       {icon->Belt.Option.mapWithDefault(React.null, icon => {
          icon(
            ~style={
@@ -39,17 +46,18 @@ module NavBarItem = {
            },
            ~size=24.,
            ~color={
-             isCurrent ? Theme.colorDarkHighEmphasis : Theme.colorDarkDisabled;
+             isCurrent
+               ? theme.colors.iconPrimary : theme.colors.iconMediumEmphasis;
            },
          )
        })}
       <Typography.ButtonPrimary
         style=styles##text
-        colorStyle={isCurrent ? `highEmphasis : `disabled}
+        colorStyle={isCurrent ? `highEmphasis : `mediumEmphasis}
         fontSize=10.>
         title->React.string
       </Typography.ButtonPrimary>
-    </TouchableOpacity>;
+    </ThemedPressable>;
   };
 };
 
@@ -61,16 +69,28 @@ let styles =
           ~flexDirection=`column,
           ~width=110.->dp,
           ~paddingTop=60.->dp,
-          ~backgroundColor=Colors.structBackground,
           (),
         ),
-      "sendButton": style(~marginTop=20.->dp, ~marginBottom=18.->dp, ()),
+      "sendButton":
+        style(
+          ~marginTop=20.->dp,
+          ~marginBottom=18.->dp,
+          ~alignItems=`center,
+          (),
+        ),
     })
   );
 
 [@react.component]
 let make = (~route as currentRoute) => {
-  <View style=styles##container>
+  let theme = ThemeContext.useTheme();
+  <View
+    style=Style.(
+      array([|
+        styles##container,
+        style(~backgroundColor=theme.colors.barBackground, ()),
+      |])
+    )>
     <View style=styles##sendButton> <SendButton /> </View>
     <NavBarItem
       currentRoute

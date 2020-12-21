@@ -7,13 +7,10 @@ module AddAccountButton = {
         "button":
           style(
             ~alignSelf=`flexStart,
+            ~marginLeft=(-6.)->dp,
             ~marginBottom=10.->dp,
-            ~flexDirection=`row,
-            ~alignItems=`center,
-            ~paddingVertical=6.->dp,
             (),
           ),
-        "icon": style(~marginRight=4.->dp, ()),
       })
     );
 
@@ -37,16 +34,9 @@ module AddAccountButton = {
     };
 
     <>
-      <TouchableOpacity style=styles##button onPress>
-        <Icons.Add
-          size=15.5
-          color=Theme.colorDarkMediumEmphasis
-          style=styles##icon
-        />
-        <Typography.ButtonSecondary>
-          I18n.t#navbar_add_account->React.string
-        </Typography.ButtonSecondary>
-      </TouchableOpacity>
+      <View style=styles##button>
+        <ButtonAction onPress text=I18n.btn#add_account icon=Icons.Add.build />
+      </View>
       <ModalAction ref=modal visible=visibleModal onRequestClose=closeAction>
         <AccountCreateView cancel />
       </ModalAction>
@@ -66,7 +56,6 @@ let styles =
             ~justifyContent=`spaceAround,
             ~paddingVertical=78.->dp,
             ~paddingHorizontal=58.->dp,
-            ~backgroundColor="rgba(92,92,92,0.32)",
             (),
           ),
         |]),
@@ -81,11 +70,19 @@ let make = () => {
   let token = StoreContext.SelectedToken.useGet();
   let updateToken = StoreContext.SelectedToken.useSet();
 
+  let theme = ThemeContext.useTheme();
+
   <Page>
     {switch (accountsRequest) {
      | Done(_)
      | NotAsked when accounts->Belt.Map.String.size <= 0 =>
-       <View style=styles##scrim>
+       <View
+         style=Style.(
+           array([|
+             styles##scrim,
+             style(~backgroundColor=theme.colors.scrim, ()),
+           |])
+         )>
          <CreateAccountBigButton />
          <ImportAccountBigButton />
        </View>

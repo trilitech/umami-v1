@@ -9,8 +9,8 @@ let styles =
         style(
           ~flex=1.,
           ~paddingTop=4.->dp,
-          ~paddingBottom=Theme.pagePaddingVertical->dp,
-          ~paddingHorizontal=Theme.pagePaddingHorizontal->dp,
+          ~paddingBottom=LayoutConst.pagePaddingVertical->dp,
+          ~paddingHorizontal=LayoutConst.pagePaddingHorizontal->dp,
           (),
         ),
     })

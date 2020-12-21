@@ -11,11 +11,13 @@ let make = (~token: option(Token.t)=?) => {
       token->Belt.Option.map(token => token.address),
     );
 
+  let theme = ThemeContext.useTheme();
+
   <View style=styles##container>
-    <Typography.Overline2>
+    <Typography.Overline1>
       "TOTAL BALANCE"->React.string
-    </Typography.Overline2>
-    <Typography.Headline2>
+    </Typography.Overline1>
+    <Typography.Headline>
       {switch (token, balanceTotal, balanceTokenTotal) {
        | (Some(token), _, Some(balanceTokenTotal)) =>
          I18n.t#amount(
@@ -30,9 +32,9 @@ let make = (~token: option(Token.t)=?) => {
          <ActivityIndicator
            animating=true
            size={ActivityIndicator_Size.exact(22.)}
-           color=Colors.highIcon
+           color={theme.colors.iconHighEmphasis}
          />
        }}
-    </Typography.Headline2>
+    </Typography.Headline>
   </View>;
 };

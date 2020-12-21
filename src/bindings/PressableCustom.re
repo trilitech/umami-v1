@@ -23,7 +23,9 @@ external make:
     ~onPressOut: Event.pressEvent => unit=?,
     ~style: Style.t=?,
     ~testID: string=?,
-    ~testOnly_pressed: bool=?
+    ~testOnly_pressed: bool=?,
+    ~accessibilityRole: Accessibility.role=?,
+    ~href: string=?
   ) =>
   React.element =
   "Pressable";

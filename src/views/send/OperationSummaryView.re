@@ -16,23 +16,24 @@ module AccountInfo = {
       StoreContext.Accounts.useGetFromAddress(address);
 
     <>
-      <Typography.Overline2 colorStyle=`mediumEmphasis style=styles##title>
+      <Typography.Overline1 colorStyle=`mediumEmphasis style=styles##title>
         title->React.string
-      </Typography.Overline2>
+      </Typography.Overline1>
       {account->ReactUtils.mapOpt(account =>
          <Typography.Subtitle1 style=styles##subtitle>
            account.alias->React.string
          </Typography.Subtitle1>
        )}
-      <Typography.Body1 colorStyle=`mediumEmphasis>
+      <Typography.Address fontSize=16.>
         address->React.string
-      </Typography.Body1>
+      </Typography.Address>
     </>;
   };
 };
 
 [@react.component]
 let make = (~style=?, ~operation: SendForm.operation) => {
+  let theme = ThemeContext.useTheme();
   <View ?style>
     {switch (operation) {
      | InjectionOperation(Transaction({source}))
@@ -43,7 +44,7 @@ let make = (~style=?, ~operation: SendForm.operation) => {
      | _ => React.null
      }}
     <View style=styles##iconContainer>
-      <Icons.ArrowDown size=50. color=Theme.colorDarkMediumEmphasis />
+      <Icons.ArrowDown size=50. color={theme.colors.iconMediumEmphasis} />
     </View>
     {switch (operation) {
      | InjectionOperation(Transaction({destination}))

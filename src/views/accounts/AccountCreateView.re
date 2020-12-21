@@ -60,9 +60,9 @@ let make = (~cancel) => {
      | Done(_) => <> </>
      | NotAsked =>
        <>
-         <Typography.Headline2 style=styles##title>
+         <Typography.Headline style=styles##title>
            I18n.title#account_create->React.string
-         </Typography.Headline2>
+         </Typography.Headline>
          <FormGroupTextInput
            label=I18n.label#account_create_name
            value={form.values.name}

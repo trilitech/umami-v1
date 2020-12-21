@@ -24,11 +24,13 @@ let styles =
 let make = (~account: Account.t, ~showBalance, ~onPressCancel) => {
   let token = StoreContext.SelectedToken.useGet();
 
+  let theme = ThemeContext.useTheme();
+
   <ModalView.Form>
     <>
-      <Typography.Headline2 style=styles##title>
+      <Typography.Headline style=styles##title>
         account.alias->React.string
-      </Typography.Headline2>
+      </Typography.Headline>
       <AccountInfo account showAlias=false showBalance ?token />
       <View style=styles##qrContainer>
         <View style=styles##qr>
@@ -37,7 +39,7 @@ let make = (~account: Account.t, ~showBalance, ~onPressCancel) => {
       </View>
       <View style=styles##closeAction>
         <TouchableOpacity onPress=onPressCancel>
-          <Icons.Close size=36. color=Theme.colorDarkMediumEmphasis />
+          <Icons.Close size=36. color={theme.colors.iconMediumEmphasis} />
         </TouchableOpacity>
       </View>
     </>

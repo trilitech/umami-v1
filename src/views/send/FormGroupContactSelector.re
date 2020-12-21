@@ -26,7 +26,9 @@ module Item = {
       <Typography.Subtitle1>
         account.alias->React.string
       </Typography.Subtitle1>
-      <Typography.Body3> account.address->React.string </Typography.Body3>
+      <Typography.Address fontSize=16.>
+        account.address->React.string
+      </Typography.Address>
     </View>;
   };
 };
@@ -59,7 +61,10 @@ let make = (~label, ~value: string, ~handleChange, ~error) => {
 
   let items =
     accounts->Belt.Array.keep(account =>
-      account.alias->Js.String2.startsWith(value)
+      account.alias
+      ->Js.String2.trim
+      ->Js.String2.toLowerCase
+      ->Js.String2.startsWith(value->Js.String2.trim->Js.String2.toLowerCase)
     );
 
   <FormGroup style=styles##formGroup>

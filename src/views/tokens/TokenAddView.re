@@ -85,9 +85,9 @@ let make = (~cancel) => {
      | Done(_) => React.null
      | NotAsked =>
        <>
-         <Typography.Headline2 style=styles##title>
+         <Typography.Headline style=styles##title>
            I18n.title#add_token->React.string
-         </Typography.Headline2>
+         </Typography.Headline>
          <Typography.Overline3 style=styles##overline>
            I18n.t#add_token_format_contract_sentence->React.string
          </Typography.Overline3>

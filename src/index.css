@@ -23,3 +23,77 @@ main {
   padding: 20px;
   display: inline-block;
 }
+
+*:focus {
+  outline: none;
+}
+
+/* EBGaramond */
+
+@font-face {
+  font-family: EBGaramond;
+  src: url(/fonts/EB_Garamond/EBGaramond-Regular.ttf) format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-stretch: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: EBGaramond;
+  src: url(/fonts/EB_Garamond/EBGaramond-Medium.ttf) format("truetype");
+  font-weight: 500;
+  font-style: normal;
+  font-stretch: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: EBGaramond;
+  src: url(/fonts/EB_Garamond/EBGaramond-SemiBold.ttf) format("truetype");
+  font-weight: 600;
+  font-style: normal;
+  font-stretch: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: EBGaramond;
+  src: url(/fonts/EB_Garamond/EBGaramond-Bold.ttf) format("truetype");
+  font-weight: bold;
+  font-style: normal;
+  font-stretch: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: EBGaramond;
+  src: url(/fonts/EB_Garamond/EBGaramond-ExtraBold.ttf) format("truetype");
+  font-weight: 800;
+  font-style: normal;
+  font-stretch: normal;
+  font-display: swap;
+}
+
+/* CormorantGaramond */
+
+@font-face {
+  font-family: CormorantGaramond;
+  src: url(/fonts/Cormorant_Garamond/CormorantGaramond-SemiBold.ttf)
+    format("truetype");
+  font-weight: 600;
+  font-style: normal;
+  font-stretch: normal;
+  font-display: swap;
+}
+
+/* CutiveMono */
+
+@font-face {
+  font-family: CutiveMono;
+  src: url(/fonts/Cutive_Mono/CutiveMono-Regular.ttf) format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-stretch: normal;
+  font-display: swap;
+}

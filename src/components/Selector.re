@@ -7,31 +7,22 @@ module Item = {
         "itemContainer":
           style(
             ~paddingVertical=5.->dp,
-            ~paddingRight=(24. +. 20.)->dp,
+            ~paddingRight=40.->dp,
             ~flexDirection=`row,
             ~alignItems=`center,
             (),
           ),
-        "itemContainerHovered":
-          style(~backgroundColor=Theme.colorDarkSelected, ()),
       })
     );
 
   [@react.component]
-  let make = (~item, ~onChange, ~renderItem) => {
-    <PressableCustom onPress={_e => onChange(item)}>
-      {interactionState =>
-         <View
-           style=Style.(
-             arrayOption([|
-               Some(styles##itemContainer),
-               interactionState.hovered
-                 ? Some(styles##itemContainerHovered) : None,
-             |])
-           )>
-           {renderItem(item)}
-         </View>}
-    </PressableCustom>;
+  let make = (~item, ~onChange, ~renderItem, ~isSelected=false) => {
+    <ThemedPressable
+      onPress={_e => onChange(item)}
+      style=styles##itemContainer
+      isActive=isSelected>
+      {renderItem(item)}
+    </ThemedPressable>;
   };
 };
 
@@ -42,22 +33,18 @@ let styles =
         style(
           ~flexDirection=`row,
           ~alignItems=`center,
-          ~borderColor="rgba(255,255,255,0.6)",
           ~borderWidth=1.,
           ~borderRadius=5.,
           (),
         ),
-      "icon": style(~marginRight=20.->dp, ()),
-      "listContainer":
+      "icon": style(~marginHorizontal=8.->dp, ()),
+      "dropdownmenu":
         style(
           ~position=`absolute,
-          ~top=0.->dp,
+          ~top=3.->dp,
           ~left=0.->dp,
           ~right=0.->dp,
           ~maxHeight=224.->dp,
-          ~paddingVertical=8.->dp,
-          ~backgroundColor="#2e2e2e",
-          ~borderRadius=3.,
           (),
         ),
     })
@@ -80,15 +67,10 @@ let make =
 
   let (isOpen, setIsOpen) = React.useState(_ => false);
 
-  DocumentContext.useDocumentPress(
-    React.useCallback1(
-      pressEvent =>
-        if (touchableRef.current !==
-            pressEvent->Event.PressEvent.nativeEvent##target) {
-          setIsOpen(_ => false);
-        },
-      [|setIsOpen|],
-    ),
+  DocumentContext.useClickOutside(
+    touchableRef,
+    isOpen,
+    React.useCallback1(_pressEvent => setIsOpen(_ => false), [|setIsOpen|]),
   );
 
   let onChange = newItem => {
@@ -100,35 +82,58 @@ let make =
       item->getItemValue == selectedValue->Belt.Option.getWithDefault("")
     );
 
+  let theme = ThemeContext.useTheme();
+
   <View ?style>
-    <TouchableOpacity
+    <PressableCustom
       ref={touchableRef->Ref.value}
       onPress={_e => setIsOpen(prevIsOpen => !prevIsOpen)}
       disabled>
-      <View style=styles##button pointerEvents=`none>
-        {renderButton(
-           selectedItem->Belt.Option.isSome ? selectedItem : noneItem,
-         )}
-        {disabled
-           ? React.null
-           : <Icons.ChevronDown
-               size=24.
-               color=Theme.colorDarkMediumEmphasis
-               style=styles##icon
-             />}
-      </View>
-    </TouchableOpacity>
-    <View style={ReactUtils.displayOn(isOpen)}>
-      <ScrollView style=styles##listContainer>
-        {noneItem->Belt.Option.mapWithDefault(React.null, item =>
-           <Item key={item->getItemValue} item onChange renderItem />
-         )}
-        {items
-         ->Belt.Array.map(item =>
-             <Item key={item->getItemValue} item onChange renderItem />
+      {_ =>
+         <View
+           style=Style.(
+             array([|
+               styles##button,
+               style(~borderColor=theme.colors.borderMediumEmphasis, ()),
+             |])
            )
-         ->React.array}
-      </ScrollView>
-    </View>
+           pointerEvents=`none>
+           {renderButton(
+              selectedItem->Belt.Option.isSome ? selectedItem : noneItem,
+            )}
+           {disabled
+              ? React.null
+              : <Icons.ChevronDown
+                  size=24.
+                  color={theme.colors.iconMediumEmphasis}
+                  style=styles##icon
+                />}
+         </View>}
+    </PressableCustom>
+    <DropdownMenu style=styles##dropdownmenu isOpen>
+      {noneItem->Belt.Option.mapWithDefault(React.null, item =>
+         <Item
+           key={item->getItemValue}
+           item
+           onChange
+           renderItem
+           isSelected={selectedValue->Belt.Option.isNone}
+         />
+       )}
+      {items
+       ->Belt.Array.map(item =>
+           <Item
+             key={item->getItemValue}
+             item
+             onChange
+             renderItem
+             isSelected={
+               item->getItemValue
+               == selectedValue->Belt.Option.getWithDefault("")
+             }
+           />
+         )
+       ->React.array}
+    </DropdownMenu>
   </View>;
 };

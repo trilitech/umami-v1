@@ -5,7 +5,6 @@ let styles =
     StyleSheet.create({
       "formGroup": style(~zIndex=11, ()),
       "label": style(~marginBottom=6.->dp, ()),
-      "balance": style(~position=`absolute, ~right=80.->dp, ~top=12.->dp, ()),
     })
   );
 
@@ -41,7 +40,6 @@ let make = (~label, ~value: string, ~handleChange, ~error, ~disabled) => {
   <FormGroup style=styles##formGroup>
     <FormLabel label hasError style=styles##label />
     <View>
-      <View style=styles##balance> <AccountInfoBalance address=value /> </View>
       <Selector
         items
         getItemValue={account => account.address}

@@ -24,9 +24,9 @@ module BakerSelector = {
     let make = (~baker: Delegate.t) => {
       <View style=styles##inner>
         <Typography.Subtitle2> baker.name->React.string </Typography.Subtitle2>
-        <Typography.Body1 colorStyle=`mediumEmphasis>
+        <Typography.Address fontSize=16.>
           baker.address->React.string
-        </Typography.Body1>
+        </Typography.Address>
       </View>;
     };
   };
@@ -55,10 +55,10 @@ module BakerSelector = {
            <Typography.Subtitle2>
              baker.name->React.string
            </Typography.Subtitle2>
-           <Typography.Body1
-             colorStyle=`mediumEmphasis numberOfLines=1 style=styles##address>
+           <Typography.Address
+             fontSize=16. numberOfLines=1 style=styles##address>
              baker.address->React.string
-           </Typography.Body1>
+           </Typography.Address>
          </View>
        )}
     </View>;
@@ -72,26 +72,38 @@ module BakerInputTypeToogle = {
       StyleSheet.create({
         "inputTypeButton":
           style(~flexDirection=`row, ~alignItems=`center, ()),
-        "inputTypeText":
-          style(~color="#D8BC63", ~lineHeight=16., ~marginLeft=7.->dp, ()),
+        "inputTypeText": style(~lineHeight=16., ~marginLeft=7.->dp, ()),
       })
     );
 
   [@react.component]
   let make = (~inputType, ~onPress) => {
+    let theme = ThemeContext.useTheme();
     <TouchableOpacity style=styles##inputTypeButton onPress>
       {switch (inputType) {
        | Selector =>
          <>
-           <Icons.Edit size=14. color="#D8BC63" />
-           <Typography.ButtonSecondary style=styles##inputTypeText>
+           <Icons.Edit size=14. color={theme.colors.iconPrimary} />
+           <Typography.ButtonSecondary
+             style=Style.(
+               array([|
+                 styles##inputTypeText,
+                 style(~color=theme.colors.textPrimary, ()),
+               |])
+             )>
              "CUSTOM"->React.string
            </Typography.ButtonSecondary>
          </>
        | Text =>
          <>
-           <Icons.List size=14. color="#D8BC63" />
-           <Typography.ButtonSecondary style=styles##inputTypeText>
+           <Icons.List size=14. color={theme.colors.iconPrimary} />
+           <Typography.ButtonSecondary
+             style=Style.(
+               array([|
+                 styles##inputTypeText,
+                 style(~color=theme.colors.textPrimary, ()),
+               |])
+             )>
              "SEE LIST"->React.string
            </Typography.ButtonSecondary>
          </>

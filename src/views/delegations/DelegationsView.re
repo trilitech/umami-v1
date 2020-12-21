@@ -6,8 +6,8 @@ let styles =
       "container": style(~flex=1., ()),
       "header":
         style(
-          ~marginHorizontal=Theme.pagePaddingHorizontal->dp,
-          ~marginTop=Theme.pagePaddingVertical->dp,
+          ~marginHorizontal=LayoutConst.pagePaddingHorizontal->dp,
+          ~marginTop=LayoutConst.pagePaddingVertical->dp,
           ~zIndex=2,
           (),
         ),
@@ -24,8 +24,8 @@ let styles =
         style(
           ~flex=1.,
           ~paddingTop=4.->dp,
-          ~paddingBottom=Theme.pagePaddingVertical->dp,
-          ~paddingHorizontal=Theme.pagePaddingHorizontal->dp,
+          ~paddingBottom=LayoutConst.pagePaddingVertical->dp,
+          ~paddingHorizontal=LayoutConst.pagePaddingHorizontal->dp,
           (),
         ),
     })

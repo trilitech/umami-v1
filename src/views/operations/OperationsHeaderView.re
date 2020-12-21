@@ -5,8 +5,8 @@ let styles =
     StyleSheet.create({
       "header":
         style(
-          ~marginHorizontal=Theme.pagePaddingHorizontal->dp,
-          ~marginTop=Theme.pagePaddingVertical->dp,
+          ~marginHorizontal=LayoutConst.pagePaddingHorizontal->dp,
+          ~marginTop=LayoutConst.pagePaddingVertical->dp,
           ~zIndex=2,
           (),
         ),

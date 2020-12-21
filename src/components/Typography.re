@@ -3,31 +3,37 @@ open ReactNative;
 type colorStyle = [
   | `highEmphasis
   | `mediumEmphasis
-  | `mediumEmphasisOpposite
   | `disabled
   | `error
-  | `valid
+  | `positive
+  | `negative
 ];
 
-let getColor = colorStyle =>
+let getColor = (colorStyle, theme: ThemeContext.theme) =>
   switch (colorStyle) {
-  | `highEmphasis => Theme.colorDarkHighEmphasis
-  | `mediumEmphasis => Theme.colorDarkMediumEmphasis
-  | `mediumEmphasisOpposite => Theme.colorLightMediumEmphasis
-  | `disabled => Theme.colorDarkDisabled
-  | `error => Theme.colorDarkError
-  | `valid => Theme.colorDarkValid
+  | `highEmphasis => theme.colors.textHighEmphasis
+  | `mediumEmphasis => theme.colors.textMediumEmphasis
+  | `disabled => theme.colors.textDisabled
+  | `error => theme.colors.error
+  | `positive => theme.colors.textPositive
+  | `negative => theme.colors.textNegative
   };
 
-type fontWeightStyle = [ | `black | `heavy | `medium | `book | `light];
+type fontWeightStyle = [
+  | `extraBold
+  | `bold
+  | `semiBold
+  | `medium
+  | `regular
+];
 
 let getFontWeight = fontWeightStyle =>
   switch (fontWeightStyle) {
-  | `black => `_900
-  | `heavy => `bold
+  | `extraBold => `_800
+  | `bold => `bold
+  | `semiBold => `_600
   | `medium => `_500
-  | `book => `normal
-  | `light => `_300
+  | `regular => `normal
   };
 
 module type TextDesignStyle = {
@@ -38,7 +44,7 @@ module type TextDesignStyle = {
 
 module Base = {
   let styles =
-    Style.(StyleSheet.create({"text": style(~fontFamily="Avenir", ())}));
+    Style.(StyleSheet.create({"text": style(~fontFamily="EBGaramond", ())}));
 
   [@react.component]
   let make =
@@ -51,6 +57,7 @@ module Base = {
         ~ellipsizeMode: option([ | `clip | `head | `middle | `tail])=?,
         ~children: React.element,
       ) => {
+    let theme = ThemeContext.useTheme();
     <Text
       ?ellipsizeMode
       ?numberOfLines
@@ -59,7 +66,7 @@ module Base = {
           Some(styles##text),
           Some(
             style(
-              ~color=colorStyle->getColor,
+              ~color=colorStyle->getColor(theme),
               ~fontSize,
               ~fontWeight=fontWeightStyle->getFontWeight,
               (),
@@ -98,17 +105,10 @@ module Make = (DefaultStyle: TextDesignStyle) => {
 
 /* H */
 
-module Headline1 =
+module Headline =
   Make({
     let colorStyle = `highEmphasis;
-    let fontWeightStyle = `black;
-    let fontSize = 24.;
-  });
-
-module Headline2 =
-  Make({
-    let colorStyle = `highEmphasis;
-    let fontWeightStyle = `black;
+    let fontWeightStyle = `extraBold;
     let fontSize = 22.;
   });
 
@@ -116,22 +116,22 @@ module Headline2 =
 
 module Overline1 =
   Make({
-    let colorStyle = `mediumEmphasis;
-    let fontWeightStyle = `heavy;
-    let fontSize = 16.;
+    let colorStyle = `highEmphasis;
+    let fontWeightStyle = `regular;
+    let fontSize = 18.;
   });
 
 module Overline2 =
   Make({
-    let colorStyle = `highEmphasis;
-    let fontWeightStyle = `light;
-    let fontSize = 18.;
+    let colorStyle = `mediumEmphasis;
+    let fontWeightStyle = `semiBold;
+    let fontSize = 16.;
   });
 
 module Overline3 =
   Make({
     let colorStyle = `mediumEmphasis;
-    let fontWeightStyle = `light;
+    let fontWeightStyle = `regular;
     let fontSize = 14.;
   });
 
@@ -140,29 +140,22 @@ module Overline3 =
 module Subtitle1 =
   Make({
     let colorStyle = `highEmphasis;
-    let fontWeightStyle = `heavy;
-    let fontSize = 14.;
+    let fontWeightStyle = `semiBold;
+    let fontSize = 16.;
   });
 
 module Subtitle2 =
   Make({
     let colorStyle = `highEmphasis;
-    let fontWeightStyle = `heavy;
-    let fontSize = 16.;
+    let fontWeightStyle = `bold;
+    let fontSize = 15.;
   });
 
 module Subtitle3 =
   Make({
     let colorStyle = `highEmphasis;
-    let fontWeightStyle = `black;
+    let fontWeightStyle = `semiBold;
     let fontSize = 14.;
-  });
-
-module Subtitle4 =
-  Make({
-    let colorStyle = `mediumEmphasis;
-    let fontWeightStyle = `heavy;
-    let fontSize = 12.;
   });
 
 /* BODY */
@@ -170,21 +163,14 @@ module Subtitle4 =
 module Body1 =
   Make({
     let colorStyle = `highEmphasis;
-    let fontWeightStyle = `medium;
+    let fontWeightStyle = `regular;
     let fontSize = 16.;
   });
 
 module Body2 =
   Make({
     let colorStyle = `highEmphasis;
-    let fontWeightStyle = `book;
-    let fontSize = 16.;
-  });
-
-module Body3 =
-  Make({
-    let colorStyle = `highEmphasis;
-    let fontWeightStyle = `medium;
+    let fontWeightStyle = `regular;
     let fontSize = 14.;
   });
 
@@ -193,13 +179,40 @@ module Body3 =
 module ButtonPrimary =
   Make({
     let colorStyle = `highEmphasis;
-    let fontWeightStyle = `heavy;
+    let fontWeightStyle = `extraBold;
     let fontSize = 14.;
   });
 
 module ButtonSecondary =
   Make({
     let colorStyle = `mediumEmphasis;
-    let fontWeightStyle = `heavy;
+    let fontWeightStyle = `bold;
     let fontSize = 12.;
   });
+
+/* ADDRESS */
+
+module Address = {
+  let styles =
+    Style.(
+      StyleSheet.create({"address": style(~fontFamily="CutiveMono", ())})
+    );
+
+  [@react.component]
+  let make =
+      (
+        ~fontSize=14.,
+        ~numberOfLines: option(int)=?,
+        ~style as styleProp: option(ReactNative.Style.t)=?,
+        ~children,
+      ) => {
+    <Base
+      colorStyle=`highEmphasis
+      fontSize
+      fontWeightStyle=`regular
+      style=Style.(arrayOption([|Some(styles##address), styleProp|]))
+      ?numberOfLines>
+      children
+    </Base>;
+  };
+};

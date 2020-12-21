@@ -21,9 +21,9 @@ module Item = {
   [@react.component]
   let make = (~word) => {
     <View style=styles##itemContainer>
-      <Typography.Body3 colorStyle=`mediumEmphasis>
+      <Typography.Body2 colorStyle=`mediumEmphasis>
         word->React.string
-      </Typography.Body3>
+      </Typography.Body2>
     </View>;
   };
 };
@@ -64,7 +64,9 @@ let renderLabel = (displayIndex, displayError) => {
 let make = (~displayIndex, ~value, ~handleChange, ~error) => {
   let wordlists =
     Bip39.wordlistsEnglish
-    ->Belt.Array.keep(Js.String.startsWith(value))
+    ->Belt.Array.keep(
+        Js.String.startsWith(value->Js.String2.trim->Js.String2.toLowerCase),
+      )
     ->Belt.Array.slice(~offset=0, ~len=12);
 
   <Autocomplete

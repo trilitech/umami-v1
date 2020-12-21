@@ -7,13 +7,10 @@ module AddTokenButton = {
         "button":
           style(
             ~alignSelf=`flexStart,
-            ~marginBottom=18.->dp,
-            ~flexDirection=`row,
-            ~alignItems=`center,
-            ~paddingVertical=6.->dp,
+            ~marginLeft=(-6.)->dp,
+            ~marginBottom=10.->dp,
             (),
           ),
-        "icon": style(~marginRight=4.->dp, ()),
       })
     );
 
@@ -37,22 +34,18 @@ module AddTokenButton = {
     };
 
     <>
-      <TouchableOpacity style=styles##button onPress>
-        <Icons.Add
-          size=15.5
-          color=Theme.colorDarkMediumEmphasis
-          style=styles##icon
-        />
-        <Typography.ButtonSecondary>
-          I18n.btn#add_token->React.string
-        </Typography.ButtonSecondary>
-      </TouchableOpacity>
+      <View style=styles##button>
+        <ButtonAction onPress text=I18n.btn#add_token icon=Icons.Add.build />
+      </View>
       <ModalAction ref=modal visible=visibleModal onRequestClose=closeAction>
         <TokenAddView cancel />
       </ModalAction>
     </>;
   };
 };
+
+let styles =
+  Style.(StyleSheet.create({"list": style(~paddingTop=4.->dp, ())}));
 
 [@react.component]
 let make = () => {
@@ -77,19 +70,21 @@ let make = () => {
         </Typography.Overline3>
       </TokenRowItem.CellAddress>
     </Table.Head>
-    {switch (tokensRequest) {
-     | NotAsked
-     | Loading(None) => <LoadingView />
-     | Loading(Some(tokens))
-     | Done(Ok(tokens), _) when tokens->Belt.Map.String.size == 0 =>
-       <Table.Empty> I18n.t#empty_token->React.string </Table.Empty>
-     | Loading(Some(tokens))
-     | Done(Ok(tokens), _) =>
-       tokens
-       ->Belt.Map.String.valuesToArray
-       ->Belt.Array.map(token => <TokenRowItem key={token.address} token />)
-       ->React.array
-     | Done(Error(error), _) => <ErrorView error />
-     }}
+    <View style=styles##list>
+      {switch (tokensRequest) {
+       | NotAsked
+       | Loading(None) => <LoadingView />
+       | Loading(Some(tokens))
+       | Done(Ok(tokens), _) when tokens->Belt.Map.String.size == 0 =>
+         <Table.Empty> I18n.t#empty_token->React.string </Table.Empty>
+       | Loading(Some(tokens))
+       | Done(Ok(tokens), _) =>
+         tokens
+         ->Belt.Map.String.valuesToArray
+         ->Belt.Array.map(token => <TokenRowItem key={token.address} token />)
+         ->React.array
+       | Done(Error(error), _) => <ErrorView error />
+       }}
+    </View>
   </Page>;
 };

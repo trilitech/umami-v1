@@ -38,9 +38,9 @@ let make = () => {
 
   <ModalView style=styles##modal>
     <View style=styles##view>
-      <Typography.Headline2 style=ModalAction.styles##title>
+      <Typography.Headline style=ModalAction.styles##title>
         I18n.title#error_logs->React.string
-      </Typography.Headline2>
+      </Typography.Headline>
       <View style=styles##content>
         {ReactUtils.onlyWhen(<ClearButton />, errors != [])}
         {switch (errors) {

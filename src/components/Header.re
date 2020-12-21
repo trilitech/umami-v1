@@ -4,34 +4,35 @@ let styles =
   Style.(
     StyleSheet.create({
       "container":
-        style(
-          ~flexDirection=`row,
-          ~height=60.->dp,
-          ~alignItems=`center,
-          ~backgroundColor=Colors.structBackground,
-          (),
-        ),
+        style(~flexDirection=`row, ~height=60.->dp, ~alignItems=`center, ()),
       "spacer": style(~width=16.->dp, ()),
-      "title": style(~lineHeight=16., ()),
+      "title": style(~fontFamily="CormorantGaramond", ~lineHeight=16., ()),
     })
   );
 
 [@react.component]
 let make = () => {
-  <View style=styles##container>
+  let theme = ThemeContext.useTheme();
+  <View
+    style=Style.(
+      array([|
+        styles##container,
+        style(~backgroundColor=theme.colors.barBackground, ()),
+      |])
+    )>
     <SVGLogo
       width={36.->Style.dp}
       height={38.->Style.dp}
-      fill=Colors.highIcon
-      stroke=Colors.highIcon
+      fill={theme.colors.iconHighEmphasis}
+      stroke={theme.colors.iconHighEmphasis}
     />
     <View style=styles##spacer />
     <Typography.Base
       colorStyle=`highEmphasis
-      fontSize=14.
-      fontWeightStyle=`black
+      fontSize=20.
+      fontWeightStyle=`semiBold
       style=styles##title>
-      {js|Zebra\nWallet|js}->React.string
+      {js|Zebra Wallet|js}->React.string
     </Typography.Base>
   </View>;
 };

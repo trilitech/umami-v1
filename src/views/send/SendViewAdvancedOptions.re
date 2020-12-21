@@ -14,11 +14,6 @@ let styles =
           ~marginVertical=5.->dp,
           (),
         ),
-      "loadingOverlay":
-        StyleSheet.flatten([|
-          StyleSheet.absoluteFillObject,
-          style(~backgroundColor="rgba(23,23,23,0.87)", ()),
-        |]),
     })
   );
 
@@ -82,6 +77,8 @@ let make = (~form: SendForm.api, ~token: option(Token.t)=?) => {
     None;
   });
 
+  let theme = ThemeContext.useTheme();
+
   <View>
     <View style=styles##formRowInputs>
       <FormGroupTextInput
@@ -130,7 +127,19 @@ let make = (~form: SendForm.api, ~token: option(Token.t)=?) => {
     />
     {operationSimulateRequest->ApiRequest.isLoading
      || operationTokenSimulateRequest->ApiRequest.isLoading
-       ? <View style=styles##loadingOverlay> <LoadingView /> </View>
+       ? <View
+           style=Style.(
+             array([|
+               StyleSheet.absoluteFillObject,
+               style(
+                 ~backgroundColor=theme.colors.background,
+                 ~opacity=0.87,
+                 (),
+               ),
+             |])
+           )>
+           <LoadingView />
+         </View>
        : React.null}
   </View>;
 };

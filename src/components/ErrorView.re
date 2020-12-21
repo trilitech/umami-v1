@@ -10,8 +10,8 @@ let styles =
 [@react.component]
 let make = (~error) => {
   <ScrollView style=styles##container alwaysBounceVertical=false>
-    <Typography.Body3 colorStyle=`error>
+    <Typography.Body2 colorStyle=`error>
       error->React.string
-    </Typography.Body3>
+    </Typography.Body2>
   </ScrollView>;
 };

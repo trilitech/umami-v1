@@ -4,13 +4,7 @@ let styles =
   Style.(
     StyleSheet.create({
       "modal":
-        style(
-          ~width=642.->dp,
-          ~alignSelf=`center,
-          ~backgroundColor=Colors.structBackground,
-          ~borderRadius=4.,
-          (),
-        ),
+        style(~width=642.->dp, ~alignSelf=`center, ~borderRadius=4., ()),
     })
   );
 
@@ -29,8 +23,16 @@ let formStyles =
 
 module Base = {
   [@react.component]
-  let make = (~children, ~style=?) => {
-    <View style={Style.arrayOption([|style, Some(styles##modal)|])}>
+  let make = (~children, ~style as styleFromProp=?) => {
+    let theme = ThemeContext.useTheme();
+    <View
+      style=Style.(
+        arrayOption([|
+          styleFromProp,
+          Some(styles##modal),
+          Some(style(~backgroundColor=theme.colors.background, ())),
+        |])
+      )>
       children
     </View>;
   };

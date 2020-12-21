@@ -26,8 +26,8 @@ let make =
     {showBalance
        ? <AccountInfoBalance address={account.address} ?token />
        : <View style=styles##balanceEmpty />}
-    <Typography.Body3 style=styles##address>
+    <Typography.Address style=styles##address>
       account.address->React.string
-    </Typography.Body3>
+    </Typography.Address>
   </View>;
 };

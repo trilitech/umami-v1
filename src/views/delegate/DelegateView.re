@@ -111,9 +111,9 @@ module Form = {
       let (advancedOptionOpened, setAdvancedOptionOpened) = advancedOptionState;
 
       <>
-        <Typography.Headline2 style=styles##title>
+        <Typography.Headline style=styles##title>
           title->React.string
-        </Typography.Headline2>
+        </Typography.Headline>
         <FormGroupDelegateSelector
           label=I18n.label#account_delegate
           value={form.values.sender}
@@ -139,21 +139,10 @@ module Form = {
             style=styles##advancedOptionButton
             activeOpacity=1.
             onPress={_ => setAdvancedOptionOpened(prev => !prev)}>
-            <Typography.Overline1>
+            <Typography.Overline2>
               I18n.btn#advanced_options->React.string
-            </Typography.Overline1>
-            <SwitchNative
-              value=advancedOptionOpened
-              //onValueChange=handleChange
-              thumbColor="#000"
-              trackColor={Switch.trackColor(
-                ~_true="#FFF",
-                ~_false="rgba(255,255,255,0.5)",
-                (),
-              )}
-              style=styles##switchCmp
-              thumbStyle=styles##switchThumb
-            />
+            </Typography.Overline2>
+            <ThemedSwitch value=advancedOptionOpened />
           </TouchableOpacity>
           {advancedOptionOpened
              ? <DelegateViewAdvancedOptions form /> : React.null}
@@ -214,21 +203,23 @@ let make = (~onPressCancel, ~action) => {
     | Delete(_) => I18n.title#delegate_delete
     };
 
+  let theme = ThemeContext.useTheme();
+
   <ModalView.Form>
     {switch (modalStep, operationRequest) {
      | (_, Done(Ok((hash, _)), _)) =>
        <>
-         <Typography.Headline2 style=styles##title>
+         <Typography.Headline style=styles##title>
            {switch (action) {
             | Create(_) => I18n.title#delegation_sent
             | Edit(_) => I18n.title#baker_updated
             | Delete(_) => I18n.title#delegation_deleted
             }}
            ->React.string
-         </Typography.Headline2>
-         <Typography.Overline1>
+         </Typography.Headline>
+         <Typography.Overline2>
            I18n.t#operation_hash->React.string
-         </Typography.Overline1>
+         </Typography.Overline2>
          <Typography.Body1> hash->React.string </Typography.Body1>
          <View style=styles##formAction>
            <FormButton text=I18n.btn#ok onPress=onPressCancel />
@@ -248,7 +239,7 @@ let make = (~onPressCancel, ~action) => {
          <ActivityIndicator
            animating=true
            size=ActivityIndicator_Size.large
-           color=Colors.highIcon
+           color={theme.colors.iconMediumEmphasis}
          />
        </View>
      | (SendStep, _) =>
