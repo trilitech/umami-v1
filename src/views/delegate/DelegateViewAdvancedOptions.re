@@ -22,7 +22,7 @@ let make = (~form: DelegateForm.api) => {
           (),
         );
 
-      sendOperationSimulate(operation)
+      sendOperationSimulate(Regular(operation))
       ->Future.tapOk(dryRun => {
           form.handleChange(Fee, dryRun.fee->Js.Float.toString)
         })

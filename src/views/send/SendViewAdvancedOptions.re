@@ -24,54 +24,42 @@ let xtzDecoration = (~style) =>
 let make = (~form: SendForm.api, ~token: option(Token.t)=?) => {
   let (operationSimulateRequest, sendOperationSimulate) =
     StoreContext.Operations.useSimulate();
-  let (operationTokenSimulateRequest, sendOperationTokenSimulate) =
-    StoreContext.OperationToken.useSimulate();
 
   React.useEffect0(() => {
     if (form.values.sender != ""
         && form.values.recipient != ""
         && form.values.amount != "") {
-      switch (token) {
-      | Some(token) =>
-        let operation =
-          Tokens.makeTransfer(
-            ~source=form.values.sender,
-            ~amount=form.values.amount->Js.Float.fromString->int_of_float,
-            ~destination=form.values.recipient,
-            ~contract=token.address,
-            (),
-          );
-        sendOperationTokenSimulate(operation)
-        ->Future.tapOk(dryRun => {
-            form.handleChange(Fee, dryRun.fee->Js.Float.toString);
-            form.handleChange(GasLimit, dryRun.gasLimit->string_of_int);
-            form.handleChange(
-              StorageLimit,
-              dryRun.storageLimit->string_of_int,
-            );
-            form.handleChange(Counter, dryRun.count->string_of_int);
-          })
-        ->ignore;
-      | None =>
-        let operation =
-          Injection.makeTransfer(
-            ~source=form.values.sender,
-            ~amount=form.values.amount->Js.Float.fromString,
-            ~destination=form.values.recipient,
-            (),
-          );
-        sendOperationSimulate(operation)
-        ->Future.tapOk(dryRun => {
-            form.handleChange(Fee, dryRun.fee->Js.Float.toString);
-            form.handleChange(GasLimit, dryRun.gasLimit->string_of_int);
-            form.handleChange(
-              StorageLimit,
-              dryRun.storageLimit->string_of_int,
-            );
-            form.handleChange(Counter, dryRun.count->string_of_int);
-          })
-        ->ignore;
+      let operation = {
+        switch (token) {
+        | Some(token) =>
+          OperationApiRequest.Token(
+            Token.makeTransfer(
+              ~source=form.values.sender,
+              ~amount=form.values.amount->Js.Float.fromString->int_of_float,
+              ~destination=form.values.recipient,
+              ~contract=token.address,
+              (),
+            ),
+          )
+        | None =>
+          OperationApiRequest.Regular(
+            Injection.makeTransfer(
+              ~source=form.values.sender,
+              ~amount=form.values.amount->Js.Float.fromString,
+              ~destination=form.values.recipient,
+              (),
+            ),
+          )
+        };
       };
+      sendOperationSimulate(operation)
+      ->Future.tapOk(dryRun => {
+          form.handleChange(Fee, dryRun.fee->Js.Float.toString);
+          form.handleChange(GasLimit, dryRun.gasLimit->string_of_int);
+          form.handleChange(StorageLimit, dryRun.storageLimit->string_of_int);
+          form.handleChange(Counter, dryRun.count->string_of_int);
+        })
+      ->ignore;
     };
 
     None;
@@ -125,21 +113,21 @@ let make = (~form: SendForm.api, ~token: option(Token.t)=?) => {
       handleChange={form.handleChange(ForceLowFee)}
       error={form.getFieldError(Field(ForceLowFee))}
     />
-    {operationSimulateRequest->ApiRequest.isLoading
-     || operationTokenSimulateRequest->ApiRequest.isLoading
-       ? <View
-           style=Style.(
-             array([|
-               StyleSheet.absoluteFillObject,
-               style(
-                 ~backgroundColor=theme.colors.background,
-                 ~opacity=0.87,
-                 (),
-               ),
-             |])
-           )>
-           <LoadingView />
-         </View>
-       : React.null}
+    {ReactUtils.onlyWhen(
+       <View
+         style=Style.(
+           array([|
+             StyleSheet.absoluteFillObject,
+             style(
+               ~backgroundColor=theme.colors.background,
+               ~opacity=0.87,
+               (),
+             ),
+           |])
+         )>
+         <LoadingView />
+       </View>,
+       operationSimulateRequest->ApiRequest.isLoading,
+     )}
   </View>;
 };

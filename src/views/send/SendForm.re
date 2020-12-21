@@ -21,4 +21,4 @@ module Password = {
 
 type operation =
   | InjectionOperation(Injection.operation)
-  | TokensOperation(Tokens.operation, Token.t);
+  | TokensOperation(Token.operation, Token.t);

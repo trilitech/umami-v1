@@ -8,20 +8,20 @@ module TokensAPI = API.Tokens(API.TezosClient);
 [@react.component]
 let make = () => {
   let config = ConfigContext.useConfig();
-  let (src, setSrc) = React.useState(() => "");
-  let (dst, setDst) = React.useState(() => "");
+  let (source, setSrc) = React.useState(() => "");
+  let (destination, setDst) = React.useState(() => "");
   let (amount, setAmount) = React.useState(() => "");
 
   <View style>
     <TextInput
       onChangeText={text => setSrc(_ => text)}
       placeholder="source"
-      value=src
+      value=source
     />
     <TextInput
       onChangeText={text => setDst(_ => text)}
       placeholder="destination"
-      value=dst
+      value=destination
     />
     <TextInput
       onChangeText={text => setAmount(_ => text)}
@@ -30,9 +30,9 @@ let make = () => {
     />
     <Button
       onPress={_ =>
-        Tokens.makeTransfer(
-          ~source=src,
-          ~destination=dst,
+        Token.makeTransfer(
+          ~source,
+          ~destination,
           ~amount=int_of_string(amount),
           ~contract="KT1BUdnCMfBKdVxCKyBvMUqwLqm27EDGWskB",
           (),

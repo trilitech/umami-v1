@@ -18,7 +18,7 @@ let make = () => {
     />
     <Button
       onPress={_ =>
-        Tokens.makeGetBalance(
+        Token.makeGetBalance(
           account,
           "KT1BZ6cBooBYubKv4Z3kd7izefLXgwTrSfoG",
           "KT1BUdnCMfBKdVxCKyBvMUqwLqm27EDGWskB",

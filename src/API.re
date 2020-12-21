@@ -863,7 +863,7 @@ module Tokens = (Caller: CallerAPI) => {
       ->Injector.transaction_options_arguments(options);
     };
 
-  let make_arguments = (network, operation: Tokens.operation, ~offline) => {
+  let make_arguments = (network, operation: Token.operation, ~offline) => {
     switch (operation.action) {
     | Transfer(transfer) =>
       [|
@@ -905,7 +905,7 @@ module Tokens = (Caller: CallerAPI) => {
     };
   };
 
-  let offline = (operation: Tokens.operation) => {
+  let offline = (operation: Token.operation) => {
     switch (operation.action) {
     | Transfer(_)
     | Approve(_) => false
@@ -915,20 +915,20 @@ module Tokens = (Caller: CallerAPI) => {
     };
   };
 
-  let simulate = (network, operation: Tokens.operation) =>
+  let simulate = (network, operation: Token.operation) =>
     Injector.simulate(network, make_arguments(_, operation, ~offline=false));
 
-  let create = (network, operation: Tokens.operation) =>
+  let create = (network, operation: Token.operation) =>
     Injector.create(network, make_arguments(_, operation, ~offline=false));
 
-  let inject = (network, operation: Tokens.operation, ~password) =>
+  let inject = (network, operation: Token.operation, ~password) =>
     Injector.inject(
       network,
       make_arguments(_, operation, ~offline=false),
       ~password,
     );
 
-  let callGetOperationOffline = (network, operation: Tokens.operation) =>
+  let callGetOperationOffline = (network, operation: Token.operation) =>
     if (offline(operation)) {
       Caller.call(make_arguments(network, operation, ~offline=true), ());
     } else {

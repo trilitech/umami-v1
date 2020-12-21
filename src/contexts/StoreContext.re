@@ -239,7 +239,7 @@ module BalanceToken = {
       React.useMemo2(
         () =>
           tokenAddress->Option.map(tokenAddress =>
-            Tokens.makeGetBalance(
+            Token.makeGetBalance(
               address,
               hardCodedReceiptionKT1,
               tokenAddress,
@@ -386,22 +386,6 @@ module Operations = {
   let useSimulate = () => {
     let network = Network.useGet();
     OperationApiRequest.useSimulate(~network);
-  };
-};
-
-module OperationToken = {
-  let useCreate = () => {
-    let network = Network.useGet();
-    let resetOperations = Operations.useResetAll();
-    TokensApiRequest.useCreateOperation(
-      ~sideEffect=_ => resetOperations(),
-      ~network,
-    );
-  };
-
-  let useSimulate = () => {
-    let network = Network.useGet();
-    TokensApiRequest.useSimulate(~network);
   };
 };
 

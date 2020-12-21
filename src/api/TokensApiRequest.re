@@ -2,27 +2,8 @@ include ApiRequest;
 module TokensAPI = API.Tokens(API.TezosClient);
 
 type injection = {
-  operation: Tokens.operation,
+  operation: Token.operation,
   password: string,
-};
-
-let useCreateOperation = (~sideEffect=?, ~network) => {
-  let set = (~config, {operation, password}) =>
-    (network, config)->TokensAPI.inject(operation, ~password);
-
-  ApiRequest.useSetter(
-    ~toast=false,
-    ~set,
-    ~kind=Logs.Tokens,
-    ~sideEffect?,
-    (),
-  );
-};
-
-let useSimulate = (~network) => {
-  let set = (~config, operation) =>
-    (network, config)->TokensAPI.simulate(operation);
-  ApiRequest.useSetter(~set, ~kind=Logs.Tokens, ());
 };
 
 let useCheckTokenContract = (~network) => {
@@ -35,7 +16,7 @@ let useLoadOperationOffline =
     (
       ~network,
       ~requestState as (request, setRequest),
-      ~operation: option(Tokens.operation),
+      ~operation: option(Token.operation),
     ) => {
   let get = (~config, (network, operation)) =>
     (network, config)->TokensAPI.callGetOperationOffline(operation);
