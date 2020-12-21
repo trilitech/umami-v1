@@ -6,25 +6,6 @@ type injection = {
   password: string,
 };
 
-let useCreateOperation = (~sideEffect=?, ~network) => {
-  let set = (~config, {operation, password}) =>
-    (network, config)->TokensAPI.inject(operation, ~password);
-
-  ApiRequest.useSetter(
-    ~toast=false,
-    ~set,
-    ~kind=Logs.Tokens,
-    ~sideEffect?,
-    (),
-  );
-};
-
-let useSimulate = (~network) => {
-  let set = (~config, operation) =>
-    (network, config)->TokensAPI.simulate(operation);
-  ApiRequest.useSetter(~set, ~kind=Logs.Tokens, ());
-};
-
 let useCheckTokenContract = (~network) => {
   let set = (~config, address) =>
     (network, config)->TokensAPI.checkTokenContract(address);

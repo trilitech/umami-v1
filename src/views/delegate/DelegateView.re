@@ -175,7 +175,10 @@ let make = (~onPressCancel, ~action) => {
   let sendOperation = (operation, ~password) =>
     switch (operation) {
     | SendForm.InjectionOperation(operation) =>
-      sendOperation(OperationApiRequest.{operation, password})->ignore
+      sendOperation(
+        OperationApiRequest.{operation: Regular(operation), password},
+      )
+      ->ignore
     | _ => ()
     };
 

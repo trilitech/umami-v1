@@ -3,14 +3,35 @@ module OperationsAPI = API.Operations(API.TezosClient, API.TezosExplorer);
 
 /* Create */
 
+type operation =
+  | Regular(Injection.operation)
+  | Token(Tokens.operation);
+
 type injection = {
-  operation: Injection.operation,
+  operation,
   password: string,
 };
 
+let regular = (operation, password) => {
+  operation: Regular(operation),
+  password,
+};
+
+let token = (operation, password) => {
+  operation: Token(operation),
+  password,
+};
+
 let useCreate = (~sideEffect=?, ~network) => {
-  let set = (~config, {operation, password}) =>
-    (network, config)->OperationsAPI.inject(operation, ~password);
+  let set = (~config, {operation, password}) => {
+    switch (operation) {
+    | Regular(operation) =>
+      (network, config)->OperationsAPI.inject(operation, ~password)
+    | Token(operation) =>
+      (network, config)
+      ->TokensApiRequest.TokensAPI.inject(operation, ~password)
+    };
+  };
 
   ApiRequest.useSetter(
     ~toast=false,
@@ -25,7 +46,13 @@ let useCreate = (~sideEffect=?, ~network) => {
 
 let useSimulate = (~network) => {
   let set = (~config, operation) =>
-    (network, config)->OperationsAPI.simulate(operation);
+    switch (operation) {
+    | Regular(operation) =>
+      (network, config)->OperationsAPI.simulate(operation)
+    | Token(operation) =>
+      (network, config)->TokensApiRequest.TokensAPI.simulate(operation)
+    };
+
   ApiRequest.useSetter(~set, ~kind=Logs.Operation, ());
 };
 

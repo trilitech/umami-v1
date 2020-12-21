@@ -255,15 +255,13 @@ let make = (~onPressCancel) => {
   let token = StoreContext.Tokens.useGet(selectedToken);
 
   let (operationRequest, sendOperation) = StoreContext.Operations.useCreate();
-  let (operationTokenRequest, sendTokenOperation) =
-    StoreContext.OperationToken.useCreate();
 
   let sendOperation = (operation, ~password) =>
     switch (operation) {
     | SendForm.InjectionOperation(operation) =>
-      sendOperation(OperationApiRequest.{operation, password})->ignore
+      sendOperation(OperationApiRequest.regular(operation, password))->ignore
     | SendForm.TokensOperation(operation, _) =>
-      sendTokenOperation(TokensApiRequest.{operation, password})->ignore
+      sendOperation(OperationApiRequest.token(operation, password))->ignore
     };
 
   let (modalStep, setModalStep) = React.useState(_ => SendStep);
@@ -278,9 +276,8 @@ let make = (~onPressCancel) => {
   let theme = ThemeContext.useTheme();
 
   <ModalView.Form>
-    {switch (modalStep, operationRequest, operationTokenRequest) {
-     | (_, Done(Ok((hash, _)), _), _)
-     | (_, _, Done(Ok((hash, _)), _)) =>
+    {switch (modalStep, operationRequest) {
+     | (_, Done(Ok((hash, _)), _)) =>
        <>
          <Typography.Headline style=styles##title>
            I18n.title#operation_injected->React.string
@@ -293,8 +290,7 @@ let make = (~onPressCancel) => {
            <FormButton text=I18n.btn#ok onPress=onPressCancel />
          </View>
        </>
-     | (_, Done(Error(error), _), _)
-     | (_, _, Done(Error(error), _)) =>
+     | (_, Done(Error(error), _)) =>
        <>
          <Typography.Body1 colorStyle=`error>
            error->React.string
@@ -303,8 +299,7 @@ let make = (~onPressCancel) => {
            <FormButton text=I18n.btn#ok onPress=onPressCancel />
          </View>
        </>
-     | (_, Loading(_), _)
-     | (_, _, Loading(_)) =>
+     | (_, Loading(_)) =>
        <View style=styles##loadingView>
          <ActivityIndicator
            animating=true
@@ -312,9 +307,9 @@ let make = (~onPressCancel) => {
            color={theme.colors.iconMediumEmphasis}
          />
        </View>
-     | (SendStep, _, _) =>
+     | (SendStep, _) =>
        <Form.View onPressCancel advancedOptionState tokenState ?token form />
-     | (PasswordStep(operation), _, _) =>
+     | (PasswordStep(operation), _) =>
        <SignOperationView
          onPressCancel={_ => setModalStep(_ => SendStep)}
          operation
