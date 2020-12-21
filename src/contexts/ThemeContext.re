@@ -133,30 +133,12 @@ module Provider = {
 
 // Final Provider
 
-[@bs.val] external window: 'a = "window";
-let mediaQueryColorSchemeDark =
-  window##matchMedia("(prefers-color-scheme: dark)");
-
 [@react.component]
 let make = (~children) => {
-  let (dark, setDark) =
-    React.useState(_ => mediaQueryColorSchemeDark##matches);
+  let conf = ConfigContext.useConfig();
+  let (dark, setDark) = React.useState(_ => conf.theme != Some(`light));
 
-  let listener =
-    React.useCallback1(event => {setDark(_ => event##matches)}, [|setDark|]);
-
-  React.useEffect1(
-    () => {
-      mediaQueryColorSchemeDark##addEventListener("change", listener)->ignore;
-      Some(
-        () => {
-          mediaQueryColorSchemeDark##removeEventListener("change", listener)
-          ->ignore
-        },
-      );
-    },
-    [|listener|],
-  );
+  React.useEffect1(() => {None}, [|setDark|]);
 
   <Provider value={dark ? darkTheme : lightTheme}> children </Provider>;
 };

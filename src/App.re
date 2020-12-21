@@ -15,28 +15,7 @@ module AppView = {
     let url = ReasonReactRouter.useUrl();
     let route = Routes.match(url);
 
-    let confLoaded = ConfigContext.useLoaded();
-
     let theme = ThemeContext.useTheme();
-
-    let bodyView = () => {
-      <View style=styles##content>
-        {switch (route) {
-         | Accounts => <AccountsView />
-         | Operations => <OperationsView />
-         | AddressBook => <AddressBookView />
-         | Delegations => <DelegationsView />
-         | Tokens => <TokensView />
-         | Debug => <DebugView />
-         | NotFound =>
-           <View>
-             <Typography.Body1>
-               I18n.t#error404->React.string
-             </Typography.Body1>
-           </View>
-         }}
-      </View>;
-    };
 
     <DocumentContext>
       <View
@@ -49,20 +28,45 @@ module AppView = {
         <NavBar route />
         <View style=styles##main>
           <Header />
-          {confLoaded ? bodyView() : <LoadingView />}
+          <View style=styles##content>
+            {switch (route) {
+             | Accounts => <AccountsView />
+             | Operations => <OperationsView />
+             | AddressBook => <AddressBookView />
+             | Delegations => <DelegationsView />
+             | Tokens => <TokensView />
+             | Debug => <DebugView />
+             | NotFound =>
+               <View>
+                 <Typography.Body1>
+                   I18n.t#error404->React.string
+                 </Typography.Body1>
+               </View>
+             }}
+          </View>
         </View>
       </View>
     </DocumentContext>;
   };
 };
 
+module ThemedView = {
+  [@react.component]
+  let make = () => {
+    let confLoaded = ConfigContext.useLoaded();
+    confLoaded
+      ? {
+        <ThemeContext> <AppView /> </ThemeContext>;
+      }
+      : <LoadingView />;
+  };
+};
+
 [@react.component]
 let make = () => {
-  <ThemeContext>
-    <LogsContext>
-      <ConfigContext>
-        <StoreContext> <AppView /> </StoreContext>
-      </ConfigContext>
-    </LogsContext>
-  </ThemeContext>;
+  <LogsContext>
+    <ConfigContext>
+      <StoreContext> <ThemedView /> </StoreContext>
+    </ConfigContext>
+  </LogsContext>;
 };
