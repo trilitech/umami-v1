@@ -192,6 +192,13 @@ module ButtonSecondary =
     let fontSize = 12.;
   });
 
+module ButtonTernary =
+  Make({
+    let colorStyle = `mediumEmphasis;
+    let fontWeightStyle = `semiBold;
+    let fontSize = 10.;
+  });
+
 /* ADDRESS */
 
 module Address = {

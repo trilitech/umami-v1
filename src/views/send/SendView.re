@@ -47,9 +47,8 @@ let styles =
   Style.(
     StyleSheet.create({
       "title": style(~marginBottom=20.->dp, ~textAlign=`center, ()),
-
-      "formAction": style(~flexDirection=`columnReverse, ()),
-
+      "formAction": style(~flexDirection=`column, ()),
+      "addTransaction": style(~marginTop=10.->dp, ()),
       "advancedOptionButton":
         style(
           ~flexDirection=`row,
@@ -229,8 +228,15 @@ module Form = {
         </View>
         <View
           style={ReactUtils.styles(FormStyles.formAction, styles##formAction)}>
-          <Buttons.FormPrimary text=I18n.btn#cancel onPress=onPressCancel />
-          <Buttons.SubmitPrimary text=I18n.btn#ok onPress=onSubmitSendForm />
+          <Buttons.SubmitPrimary
+            text=I18n.btn#send_submit
+            onPress=onSubmitSendForm
+          />
+          <Buttons.FormSecondary
+            style=styles##addTransaction
+            text=I18n.btn#send_another_transaction
+            onPress={_ => ()}
+          />
         </View>
       </>;
     };

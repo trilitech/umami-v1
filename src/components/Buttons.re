@@ -4,20 +4,29 @@ let styles =
   Style.(
     StyleSheet.create({
       "primary": style(~borderRadius=4., ()),
-      "button": style(~alignItems=`center, ~justifyContent=`center, ()),
+      "button":
+        style(
+          ~display=`flex,
+          ~alignItems=`center,
+          ~justifyContent=`center,
+          ~flexDirection=`row,
+          (),
+        ),
+      "outer": style(~flex=1., ()),
       "pressable":
         style(
+          ~flex=1.,
           ~paddingVertical=9.->dp,
           ~paddingHorizontal=17.->dp,
           ~alignItems=`center,
           ~justifyContent=`center,
-          ~borderRadius=5.,
+          ~borderRadius=4.,
           (),
         ),
     })
   );
 
-module Base = {
+module FormBase = {
   [@react.component]
   let make =
       (
@@ -31,6 +40,7 @@ module Base = {
     <View style=Style.(arrayOption([|Some(styles##button), vStyle|]))>
       <ThemedPressable
         style={Style.arrayOption([|Some(styles##pressable), style|])}
+        outerStyle=styles##outer
         isPrimary
         onPress
         ?disabled>
@@ -43,7 +53,7 @@ module Base = {
 module FormPrimary = {
   [@react.component]
   let make = (~text, ~onPress, ~disabled=?, ~fontSize=?, ~style=?) => {
-    <Base onPress ?disabled ?style>
+    <FormBase onPress ?disabled ?style>
       <Typography.ButtonPrimary
         ?fontSize
         colorStyle=?{
@@ -53,7 +63,24 @@ module FormPrimary = {
         }>
         text->React.string
       </Typography.ButtonPrimary>
-    </Base>;
+    </FormBase>;
+  };
+};
+
+module FormSecondary = {
+  [@react.component]
+  let make = (~text, ~onPress, ~disabled=?, ~fontSize=?, ~style=?) => {
+    <FormBase onPress ?disabled ?style>
+      <Typography.ButtonTernary
+        ?fontSize
+        colorStyle=?{
+          disabled->Belt.Option.flatMap(disabled =>
+            disabled ? Some(`disabled) : Some(`highEmphasis)
+          )
+        }>
+        text->React.string
+      </Typography.ButtonTernary>
+    </FormBase>;
   };
 };
 
@@ -62,7 +89,7 @@ module SubmitPrimary = {
   let make = (~text, ~onPress, ~disabled=false, ~fontSize=?, ~style=?) => {
     let theme = ThemeContext.useTheme();
 
-    <Base
+    <FormBase
       onPress
       isPrimary=true
       disabled
@@ -78,6 +105,6 @@ module SubmitPrimary = {
         colorStyle={disabled ? `reverseHighEmphasis : `reverseHighEmphasis}>
         text->React.string
       </Typography.ButtonPrimary>
-    </Base>;
+    </FormBase>;
   };
 };

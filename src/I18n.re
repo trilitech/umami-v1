@@ -22,6 +22,8 @@ let btn = {
   pub add_token = "REGISTER TOKEN";
   pub advanced_options = "Advanced options";
   pub delegate = "DELEGATE";
+  pub send_another_transaction = "ADD ANOTHER TRANSACTION";
+  pub send_submit = "SUBMIT TRANSACTION";
   pub delegated = "DELEGATED"
 };
 
