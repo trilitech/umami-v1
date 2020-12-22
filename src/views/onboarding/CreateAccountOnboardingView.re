@@ -12,13 +12,6 @@ let styles =
       "stepPager": style(~marginBottom=4.->dp, ~textAlign=`center, ()),
       "stepTitle": style(~marginBottom=10.->dp, ~textAlign=`center, ()),
       "stepBody": style(~marginBottom=28.->dp, ~textAlign=`center, ()),
-      "formAction":
-        style(
-          ~marginTop=28.->dp,
-          ~flexDirection=`row,
-          ~justifyContent=`center,
-          (),
-        ),
       "loadingView":
         style(
           ~height=400.->dp,
@@ -87,9 +80,12 @@ let make = (~cancel) => {
                 I18n.expl#account_create_record_recovery->React.string
               </Typography.Body2>
               <MnemonicListView mnemonic />
-              <View style=styles##formAction>
-                <FormButton text=I18n.btn#cancel onPress=onPressCancel />
-                <FormButton
+              <View style=FormStyles.formAction>
+                <Buttons.FormPrimary
+                  text=I18n.btn#cancel
+                  onPress=onPressCancel
+                />
+                <Buttons.FormPrimary
                   text=I18n.btn#create_account_record_ok
                   onPress={_ => setFormStep(_ => Step2)}
                 />

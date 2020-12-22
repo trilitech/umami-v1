@@ -14,13 +14,6 @@ let styles =
     StyleSheet.create({
       "title": style(~marginBottom=6.->dp, ~textAlign=`center, ()),
       "overline": style(~marginBottom=20.->dp, ~textAlign=`center, ()),
-      "formAction":
-        style(
-          ~flexDirection=`row,
-          ~justifyContent=`center,
-          ~marginTop=24.->dp,
-          (),
-        ),
       "loadingView":
         style(
           ~height=400.->dp,
@@ -112,9 +105,9 @@ let make = (~cancel) => {
            error={form.getFieldError(Field(Symbol))}
            placeholder=I18n.input_placeholder#add_token_symbol
          />
-         <View style=styles##formAction>
-           <FormButton text=I18n.btn#cancel onPress=onPressCancel />
-           <FormButton text=I18n.btn#register onPress=onSubmit />
+         <View style=FormStyles.formAction>
+           <Buttons.FormPrimary text=I18n.btn#cancel onPress=onPressCancel />
+           <Buttons.FormPrimary text=I18n.btn#register onPress=onSubmit />
          </View>
        </>
      }}

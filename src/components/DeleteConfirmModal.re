@@ -4,13 +4,6 @@ let styles =
   Style.(
     StyleSheet.create({
       "title": style(~marginBottom=20.->dp, ~textAlign=`center, ()),
-      "formAction":
-        style(
-          ~flexDirection=`row,
-          ~justifyContent=`center,
-          ~marginTop=24.->dp,
-          (),
-        ),
       "loadingView":
         style(
           ~height=120.->dp,
@@ -51,8 +44,8 @@ let make =
              <Typography.Headline style=styles##title>
                titleDone->React.string
              </Typography.Headline>
-             <View style=styles##formAction>
-               <FormButton text=I18n.btn#ok onPress=onPressCancel />
+             <View style=FormStyles.formAction>
+               <Buttons.FormPrimary text=I18n.btn#ok onPress=onPressCancel />
              </View>
            </>
          | Done(Error(error), _) =>
@@ -60,8 +53,8 @@ let make =
              <Typography.Body1 colorStyle=`error>
                error->React.string
              </Typography.Body1>
-             <View style=styles##formAction>
-               <FormButton text=I18n.btn#ok onPress=onPressCancel />
+             <View style=FormStyles.formAction>
+               <Buttons.FormPrimary text=I18n.btn#ok onPress=onPressCancel />
              </View>
            </>
          | Loading(_) =>
@@ -77,9 +70,15 @@ let make =
              <Typography.Headline style=styles##title>
                title->React.string
              </Typography.Headline>
-             <View style=styles##formAction>
-               <FormButton text=I18n.btn#cancel onPress=onPressCancel />
-               <FormButton text=I18n.btn#delete onPress=onPressConfirmDelete />
+             <View style=FormStyles.formAction>
+               <Buttons.FormPrimary
+                 text=I18n.btn#cancel
+                 onPress=onPressCancel
+               />
+               <Buttons.FormPrimary
+                 text=I18n.btn#delete
+                 onPress=onPressConfirmDelete
+               />
              </View>
            </>
          }}

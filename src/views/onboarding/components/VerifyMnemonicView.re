@@ -19,13 +19,6 @@ let styles =
           (),
         ),
       "wordSpacer": style(~width=20.->dp, ()),
-      "formAction":
-        style(
-          ~marginTop=28.->dp,
-          ~flexDirection=`row,
-          ~justifyContent=`center,
-          (),
-        ),
     })
   );
 
@@ -135,9 +128,10 @@ let make = (~mnemonic, ~onPressCancel, ~goNextStep) => {
          )
        ->React.array}
     </View>
-    <View style=Style.(array([|styles##formAction, style(~zIndex=1, ())|]))>
-      <FormButton text="CANCEL" onPress=onPressCancel />
-      <FormButton text="CONTINUE" onPress=onSubmit />
+    <View
+      style=Style.(array([|FormStyles.formAction, style(~zIndex=1, ())|]))>
+      <Buttons.FormPrimary text="CANCEL" onPress=onPressCancel />
+      <Buttons.FormPrimary text="CONTINUE" onPress=onSubmit />
     </View>
   </>;
 };

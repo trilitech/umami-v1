@@ -11,13 +11,6 @@ let styles =
       "stepPager": style(~marginBottom=4.->dp, ~textAlign=`center, ()),
       "stepTitle": style(~marginBottom=10.->dp, ~textAlign=`center, ()),
       "stepBody": style(~marginBottom=28.->dp, ~textAlign=`center, ()),
-      "formAction":
-        style(
-          ~marginTop=28.->dp,
-          ~flexDirection=`row,
-          ~justifyContent=`center,
-          (),
-        ),
       "loadingView":
         style(
           ~height=400.->dp,

@@ -4,13 +4,6 @@ let styles =
   Style.(
     StyleSheet.create({
       "title": style(~marginBottom=20.->dp, ~textAlign=`center, ()),
-      "formAction":
-        style(
-          ~flexDirection=`row,
-          ~justifyContent=`center,
-          ~marginTop=24.->dp,
-          (),
-        ),
       "operationSummary": style(~marginBottom=20.->dp, ()),
     })
   );
@@ -74,9 +67,12 @@ let make =
       textContentType=`password
       secureTextEntry=true
     />
-    <View style=styles##formAction>
-      <FormButton text=I18n.btn#cancel onPress=onPressCancel />
-      <FormButton text=I18n.btn#confirm onPress={operation->onSubmit} />
+    <View style=FormStyles.formAction>
+      <Buttons.FormPrimary text=I18n.btn#cancel onPress=onPressCancel />
+      <Buttons.FormPrimary
+        text=I18n.btn#confirm
+        onPress={operation->onSubmit}
+      />
     </View>
   </>;
 };

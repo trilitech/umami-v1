@@ -22,13 +22,6 @@ let styles =
           (),
         ),
       "wordSpacer": style(~width=20.->dp, ()),
-      "formAction":
-        style(
-          ~marginTop=28.->dp,
-          ~flexDirection=`row,
-          ~justifyContent=`center,
-          (),
-        ),
     })
   );
 
@@ -88,9 +81,9 @@ let make = (~mnemonic, ~onPressCancel, ~createAccountWithMnemonic) => {
       textContentType=`password
       secureTextEntry=true
     />
-    <View style=styles##formAction>
-      <FormButton text=I18n.btn#cancel onPress=onPressCancel />
-      <FormButton text=I18n.btn#finish onPress=onSubmit />
+    <View style=FormStyles.formAction>
+      <Buttons.FormPrimary text=I18n.btn#cancel onPress=onPressCancel />
+      <Buttons.FormPrimary text=I18n.btn#finish onPress=onSubmit />
     </View>
   </>;
 };

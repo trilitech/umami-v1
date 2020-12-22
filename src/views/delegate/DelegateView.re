@@ -5,13 +5,6 @@ let styles =
   Style.(
     StyleSheet.create({
       "title": style(~marginBottom=20.->dp, ~textAlign=`center, ()),
-      "formAction":
-        style(
-          ~flexDirection=`row,
-          ~justifyContent=`center,
-          ~marginTop=24.->dp,
-          (),
-        ),
       "advancedOptionButton":
         style(
           ~flexDirection=`row,
@@ -147,9 +140,9 @@ module Form = {
           {advancedOptionOpened
              ? <DelegateViewAdvancedOptions form /> : React.null}
         </View>
-        <View style=styles##formAction>
-          <FormButton text=I18n.btn#cancel onPress=onPressCancel />
-          <FormButton
+        <View style=FormStyles.formAction>
+          <Buttons.FormPrimary text=I18n.btn#cancel onPress=onPressCancel />
+          <Buttons.FormPrimary
             text={
               switch (action) {
               | Create(_) => I18n.btn#ok
@@ -224,8 +217,8 @@ let make = (~onPressCancel, ~action) => {
            I18n.t#operation_hash->React.string
          </Typography.Overline2>
          <Typography.Body1> hash->React.string </Typography.Body1>
-         <View style=styles##formAction>
-           <FormButton text=I18n.btn#ok onPress=onPressCancel />
+         <View style=FormStyles.formAction>
+           <Buttons.FormPrimary text=I18n.btn#ok onPress=onPressCancel />
          </View>
        </>
      | (_, Done(Error(error), _)) =>
@@ -233,8 +226,8 @@ let make = (~onPressCancel, ~action) => {
          <Typography.Body1 colorStyle=`error>
            error->React.string
          </Typography.Body1>
-         <View style=styles##formAction>
-           <FormButton text=I18n.btn#ok onPress=onPressCancel />
+         <View style=FormStyles.formAction>
+           <Buttons.FormPrimary text=I18n.btn#ok onPress=onPressCancel />
          </View>
        </>
      | (_, Loading(_)) =>

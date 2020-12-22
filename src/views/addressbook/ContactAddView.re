@@ -12,13 +12,6 @@ let styles =
   Style.(
     StyleSheet.create({
       "title": style(~marginBottom=20.->dp, ~textAlign=`center, ()),
-      "formAction":
-        style(
-          ~flexDirection=`row,
-          ~justifyContent=`center,
-          ~marginTop=24.->dp,
-          (),
-        ),
       "loadingView":
         style(
           ~height=400.->dp,
@@ -83,9 +76,9 @@ let make = (~cancel) => {
            handleChange={form.handleChange(Address)}
            error={form.getFieldError(Field(Address))}
          />
-         <View style=styles##formAction>
-           <FormButton text=I18n.btn#cancel onPress=onPressCancel />
-           <FormButton text=I18n.btn#add onPress=onSubmit />
+         <View style=FormStyles.formAction>
+           <Buttons.FormPrimary text=I18n.btn#cancel onPress=onPressCancel />
+           <Buttons.FormPrimary text=I18n.btn#add onPress=onSubmit />
          </View>
        </>
      }}

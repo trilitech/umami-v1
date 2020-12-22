@@ -47,13 +47,9 @@ let styles =
   Style.(
     StyleSheet.create({
       "title": style(~marginBottom=20.->dp, ~textAlign=`center, ()),
-      "formAction":
-        style(
-          ~flexDirection=`row,
-          ~justifyContent=`center,
-          ~marginTop=24.->dp,
-          (),
-        ),
+
+      "formAction": style(~flexDirection=`columnReverse, ()),
+
       "advancedOptionButton":
         style(
           ~flexDirection=`row,
@@ -231,9 +227,10 @@ module Form = {
           {advancedOptionOpened
              ? <SendViewAdvancedOptions form ?token /> : React.null}
         </View>
-        <View style=styles##formAction>
-          <FormButton text=I18n.btn#cancel onPress=onPressCancel />
-          <FormButton text=I18n.btn#ok onPress=onSubmitSendForm />
+        <View
+          style={ReactUtils.styles(FormStyles.formAction, styles##formAction)}>
+          <Buttons.FormPrimary text=I18n.btn#cancel onPress=onPressCancel />
+          <Buttons.SubmitPrimary text=I18n.btn#ok onPress=onSubmitSendForm />
         </View>
       </>;
     };
@@ -286,8 +283,8 @@ let make = (~onPressCancel) => {
            I18n.t#operation_hash->React.string
          </Typography.Overline2>
          <Typography.Body1> hash->React.string </Typography.Body1>
-         <View style=styles##formAction>
-           <FormButton text=I18n.btn#ok onPress=onPressCancel />
+         <View style=FormStyles.formAction>
+           <Buttons.FormPrimary text=I18n.btn#ok onPress=onPressCancel />
          </View>
        </>
      | (_, Done(Error(error), _)) =>
@@ -295,8 +292,8 @@ let make = (~onPressCancel) => {
          <Typography.Body1 colorStyle=`error>
            error->React.string
          </Typography.Body1>
-         <View style=styles##formAction>
-           <FormButton text=I18n.btn#ok onPress=onPressCancel />
+         <View style=FormStyles.formAction>
+           <Buttons.FormPrimary text=I18n.btn#ok onPress=onPressCancel />
          </View>
        </>
      | (_, Loading(_)) =>
