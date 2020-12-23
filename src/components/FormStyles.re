@@ -10,3 +10,5 @@ let formAction =
     ~alignSelf=`center,
     (),
   );
+
+let title = style(~marginBottom=20.->dp, ~textAlign=`center, ());

@@ -47,7 +47,7 @@ let styles =
   Style.(
     StyleSheet.create({
       "title": style(~marginBottom=20.->dp, ~textAlign=`center, ()),
-      "formAction": style(~flexDirection=`column, ()),
+      "formAction": style(~flexDirection=`column, ~width=100.->pct, ()),
       "addTransaction": style(~marginTop=10.->dp, ()),
       "advancedOptionButton":
         style(
@@ -179,8 +179,7 @@ module Form = {
     open SendForm;
 
     [@react.component]
-    let make =
-        (~onPressCancel, ~advancedOptionState, ~tokenState, ~token=?, ~form) => {
+    let make = (~advancedOptionState, ~tokenState, ~token=?, ~form) => {
       let onSubmitSendForm = _ => {
         form.submit();
       };
@@ -232,11 +231,6 @@ module Form = {
             text=I18n.btn#send_submit
             onPress=onSubmitSendForm
           />
-          <Buttons.FormSecondary
-            style=styles##addTransaction
-            text=I18n.btn#send_another_transaction
-            onPress={_ => ()}
-          />
         </View>
       </>;
     };
@@ -274,11 +268,18 @@ let make = (~onPressCancel) => {
       setModalStep(_ => PasswordStep(op))
     );
 
-  React.useEffect0(() => {None});
+  let closing =
+    switch (form.formState) {
+    | Pristine => ModalView.Close(_ => onPressCancel())
+    | _ =>
+      ModalView.confirm(~actionText=I18n.btn#send_cancel, _ => onPressCancel())
+    };
+
+  let onPressCancel = _ => onPressCancel();
 
   let theme = ThemeContext.useTheme();
 
-  <ModalView.Form>
+  <ModalView.Form closing>
     {switch (modalStep, operationRequest) {
      | (_, Done(Ok((hash, _)), _)) =>
        <>
@@ -311,7 +312,7 @@ let make = (~onPressCancel) => {
          />
        </View>
      | (SendStep, _) =>
-       <Form.View onPressCancel advancedOptionState tokenState ?token form />
+       <Form.View advancedOptionState tokenState ?token form />
      | (PasswordStep(operation), _) =>
        <SignOperationView
          onPressCancel={_ => setModalStep(_ => SendStep)}

@@ -3,7 +3,6 @@ open ReactNative;
 let styles =
   Style.(
     StyleSheet.create({
-      "title": style(~marginBottom=20.->dp, ~textAlign=`center, ()),
       "loadingView":
         style(
           ~height=120.->dp,
@@ -41,7 +40,7 @@ let make =
         {switch (request) {
          | Done(Ok(_result), _) =>
            <>
-             <Typography.Headline style=styles##title>
+             <Typography.Headline style=FormStyles.title>
                titleDone->React.string
              </Typography.Headline>
              <View style=FormStyles.formAction>
@@ -67,7 +66,7 @@ let make =
            </View>
          | NotAsked =>
            <>
-             <Typography.Headline style=styles##title>
+             <Typography.Headline style=FormStyles.title>
                title->React.string
              </Typography.Headline>
              <View style=FormStyles.formAction>
