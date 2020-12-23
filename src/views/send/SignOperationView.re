@@ -2,10 +2,7 @@ open ReactNative;
 
 let styles =
   Style.(
-    StyleSheet.create({
-      "title": style(~marginBottom=20.->dp, ~textAlign=`center, ()),
-      "operationSummary": style(~marginBottom=20.->dp, ()),
-    })
+    StyleSheet.create({"operationSummary": style(~marginBottom=20.->dp, ())})
   );
 
 [@react.component]
@@ -29,7 +26,7 @@ let make =
   };
 
   <>
-    <View style=styles##title>
+    <View style=FormStyles.title>
       <Typography.Headline>
         (
           switch (title, operation) {

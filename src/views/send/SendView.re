@@ -46,7 +46,6 @@ module FormGroupAmountWithTokenSelector = {
 let styles =
   Style.(
     StyleSheet.create({
-      "title": style(~marginBottom=20.->dp, ~textAlign=`center, ()),
       "formAction": style(~flexDirection=`column, ~width=100.->pct, ()),
       "addTransaction": style(~marginTop=10.->dp, ()),
       "advancedOptionButton":
@@ -187,7 +186,7 @@ module Form = {
       let (selectedToken, setSelectedToken) = tokenState;
 
       <>
-        <Typography.Headline style=styles##title>
+        <Typography.Headline style=FormStyles.title>
           I18n.title#send->React.string
         </Typography.Headline>
         <FormGroupAmountWithTokenSelector
@@ -282,7 +281,7 @@ let make = (~onPressCancel) => {
     {switch (modalStep, operationRequest) {
      | (_, Done(Ok((hash, _)), _)) =>
        <>
-         <Typography.Headline style=styles##title>
+         <Typography.Headline style=FormStyles.title>
            I18n.title#operation_injected->React.string
          </Typography.Headline>
          <Typography.Overline2>

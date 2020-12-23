@@ -11,7 +11,6 @@ module AccountCreateForm = ReForm.Make(StateLenses);
 let styles =
   Style.(
     StyleSheet.create({
-      "title": style(~marginBottom=20.->dp, ~textAlign=`center, ()),
       "loadingView":
         style(
           ~height=400.->dp,
@@ -61,7 +60,7 @@ let make = (~cancel) => {
      | Done(_) => <> </>
      | NotAsked =>
        <>
-         <Typography.Headline style=styles##title>
+         <Typography.Headline style=FormStyles.title>
            I18n.title#add_contact->React.string
          </Typography.Headline>
          <FormGroupTextInput

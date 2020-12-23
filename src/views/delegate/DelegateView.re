@@ -4,7 +4,6 @@ open Delegate;
 let styles =
   Style.(
     StyleSheet.create({
-      "title": style(~marginBottom=20.->dp, ~textAlign=`center, ()),
       "advancedOptionButton":
         style(
           ~flexDirection=`row,
@@ -104,7 +103,7 @@ module Form = {
       let (advancedOptionOpened, setAdvancedOptionOpened) = advancedOptionState;
 
       <>
-        <Typography.Headline style=styles##title>
+        <Typography.Headline style=FormStyles.title>
           title->React.string
         </Typography.Headline>
         <FormGroupDelegateSelector
@@ -207,7 +206,7 @@ let make = (~onPressCancel, ~action) => {
     {switch (modalStep, operationRequest) {
      | (_, Done(Ok((hash, _)), _)) =>
        <>
-         <Typography.Headline style=styles##title>
+         <Typography.Headline style=FormStyles.title>
            {switch (action) {
             | Create(_) => I18n.title#delegation_sent
             | Edit(_) => I18n.title#baker_updated
