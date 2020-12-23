@@ -16,7 +16,7 @@ let formStyles =
       "modal":
         style(
           ~paddingTop=45.->dp,
-          ~paddingBottom=32.->dp,
+          ~paddingBottom=40.->dp,
           ~paddingHorizontal=110.->dp,
           (),
         ),

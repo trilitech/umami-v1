@@ -11,4 +11,10 @@ let formAction =
     (),
   );
 
+let verticalFormAction =
+  ReactUtils.styles(
+    formAction,
+    style(~flexDirection=`column, ~width=100.->pct, ()),
+  );
+
 let title = style(~marginBottom=20.->dp, ~textAlign=`center, ());

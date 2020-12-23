@@ -97,7 +97,7 @@ module Form = {
     open DelegateForm;
 
     [@react.component]
-    let make = (~title, ~onPressCancel, ~advancedOptionState, ~form, ~action) => {
+    let make = (~title, ~advancedOptionState, ~form, ~action) => {
       let onSubmitDelegateForm = _ => {
         form.submit();
       };
@@ -140,12 +140,11 @@ module Form = {
           {advancedOptionOpened
              ? <DelegateViewAdvancedOptions form /> : React.null}
         </View>
-        <View style=FormStyles.formAction>
-          <Buttons.FormPrimary text=I18n.btn#cancel onPress=onPressCancel />
-          <Buttons.FormPrimary
+        <View style=FormStyles.verticalFormAction>
+          <Buttons.SubmitPrimary
             text={
               switch (action) {
-              | Create(_) => I18n.btn#ok
+              | Create(_) => I18n.btn#delegation_submit
               | Edit(_) => I18n.btn#update
               | Delete(_) => I18n.btn#confirm
               }
@@ -201,7 +200,10 @@ let make = (~onPressCancel, ~action) => {
 
   let theme = ThemeContext.useTheme();
 
-  <ModalView.Form>
+  let closing = ModalView.Close(_ => onPressCancel());
+  let onPressCancel = _ => onPressCancel();
+
+  <ModalView.Form closing>
     {switch (modalStep, operationRequest) {
      | (_, Done(Ok((hash, _)), _)) =>
        <>
@@ -238,8 +240,7 @@ let make = (~onPressCancel, ~action) => {
            color={theme.colors.iconMediumEmphasis}
          />
        </View>
-     | (SendStep, _) =>
-       <Form.View title onPressCancel advancedOptionState form action />
+     | (SendStep, _) => <Form.View title advancedOptionState form action />
      | (PasswordStep(operation), _) =>
        <SignOperationView
          onPressCancel={event =>

@@ -225,8 +225,7 @@ module Form = {
           {advancedOptionOpened
              ? <SendViewAdvancedOptions form ?token /> : React.null}
         </View>
-        <View
-          style={ReactUtils.styles(FormStyles.formAction, styles##formAction)}>
+        <View style=FormStyles.verticalFormAction>
           <Buttons.SubmitPrimary
             text=I18n.btn#send_submit
             onPress=onSubmitSendForm
