@@ -6,14 +6,6 @@ module AccountCreateForm = ReForm.Make(StateLenses);
 let styles =
   Style.(
     StyleSheet.create({
-      "title": style(~marginBottom=20.->dp, ~textAlign=`center, ()),
-      "formAction":
-        style(
-          ~flexDirection=`row,
-          ~justifyContent=`center,
-          ~marginTop=24.->dp,
-          (),
-        ),
       "loadingView":
         style(
           ~height=400.->dp,
@@ -60,7 +52,7 @@ let make = (~cancel) => {
      | Done(_) => <> </>
      | NotAsked =>
        <>
-         <Typography.Headline style=styles##title>
+         <Typography.Headline style=FormStyles.title>
            I18n.title#account_create->React.string
          </Typography.Headline>
          <FormGroupTextInput
@@ -69,9 +61,9 @@ let make = (~cancel) => {
            handleChange={form.handleChange(Name)}
            error={form.getFieldError(Field(Name))}
          />
-         <View style=styles##formAction>
-           <FormButton text=I18n.btn#cancel onPress=onPressCancel />
-           <FormButton text=I18n.btn#create onPress=onSubmit />
+         <View style=FormStyles.formAction>
+           <Buttons.FormPrimary text=I18n.btn#cancel onPress=onPressCancel />
+           <Buttons.FormPrimary text=I18n.btn#create onPress=onSubmit />
          </View>
        </>
      }}

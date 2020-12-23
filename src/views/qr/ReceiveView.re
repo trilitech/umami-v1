@@ -3,7 +3,6 @@ open ReactNative;
 let styles =
   Style.(
     StyleSheet.create({
-      "title": style(~marginBottom=20.->dp, ~textAlign=`center, ()),
       "separatorSmall": style(~height=2.->dp, ()),
       "separatorBig": style(~height=5.->dp, ()),
       "qrContainer":
@@ -28,7 +27,7 @@ let make = (~account: Account.t, ~showBalance, ~onPressCancel) => {
 
   <ModalView.Form>
     <>
-      <Typography.Headline style=styles##title>
+      <Typography.Headline style=FormStyles.title>
         account.alias->React.string
       </Typography.Headline>
       <AccountInfo account showAlias=false showBalance ?token />

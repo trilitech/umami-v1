@@ -4,14 +4,6 @@ open Delegate;
 let styles =
   Style.(
     StyleSheet.create({
-      "title": style(~marginBottom=20.->dp, ~textAlign=`center, ()),
-      "formAction":
-        style(
-          ~flexDirection=`row,
-          ~justifyContent=`center,
-          ~marginTop=24.->dp,
-          (),
-        ),
       "advancedOptionButton":
         style(
           ~flexDirection=`row,
@@ -104,14 +96,14 @@ module Form = {
     open DelegateForm;
 
     [@react.component]
-    let make = (~title, ~onPressCancel, ~advancedOptionState, ~form, ~action) => {
+    let make = (~title, ~advancedOptionState, ~form, ~action) => {
       let onSubmitDelegateForm = _ => {
         form.submit();
       };
       let (advancedOptionOpened, setAdvancedOptionOpened) = advancedOptionState;
 
       <>
-        <Typography.Headline style=styles##title>
+        <Typography.Headline style=FormStyles.title>
           title->React.string
         </Typography.Headline>
         <FormGroupDelegateSelector
@@ -147,12 +139,11 @@ module Form = {
           {advancedOptionOpened
              ? <DelegateViewAdvancedOptions form /> : React.null}
         </View>
-        <View style=styles##formAction>
-          <FormButton text=I18n.btn#cancel onPress=onPressCancel />
-          <FormButton
+        <View style=FormStyles.verticalFormAction>
+          <Buttons.SubmitPrimary
             text={
               switch (action) {
-              | Create(_) => I18n.btn#ok
+              | Create(_) => I18n.btn#delegation_submit
               | Edit(_) => I18n.btn#update
               | Delete(_) => I18n.btn#confirm
               }
@@ -208,11 +199,14 @@ let make = (~onPressCancel, ~action) => {
 
   let theme = ThemeContext.useTheme();
 
-  <ModalView.Form>
+  let closing = ModalView.Close(_ => onPressCancel());
+  let onPressCancel = _ => onPressCancel();
+
+  <ModalView.Form closing>
     {switch (modalStep, operationRequest) {
      | (_, Done(Ok((hash, _)), _)) =>
        <>
-         <Typography.Headline style=styles##title>
+         <Typography.Headline style=FormStyles.title>
            {switch (action) {
             | Create(_) => I18n.title#delegation_sent
             | Edit(_) => I18n.title#baker_updated
@@ -224,8 +218,8 @@ let make = (~onPressCancel, ~action) => {
            I18n.t#operation_hash->React.string
          </Typography.Overline2>
          <Typography.Body1> hash->React.string </Typography.Body1>
-         <View style=styles##formAction>
-           <FormButton text=I18n.btn#ok onPress=onPressCancel />
+         <View style=FormStyles.formAction>
+           <Buttons.FormPrimary text=I18n.btn#ok onPress=onPressCancel />
          </View>
        </>
      | (_, Done(Error(error), _)) =>
@@ -233,8 +227,8 @@ let make = (~onPressCancel, ~action) => {
          <Typography.Body1 colorStyle=`error>
            error->React.string
          </Typography.Body1>
-         <View style=styles##formAction>
-           <FormButton text=I18n.btn#ok onPress=onPressCancel />
+         <View style=FormStyles.formAction>
+           <Buttons.FormPrimary text=I18n.btn#ok onPress=onPressCancel />
          </View>
        </>
      | (_, Loading(_)) =>
@@ -245,8 +239,7 @@ let make = (~onPressCancel, ~action) => {
            color={theme.colors.iconMediumEmphasis}
          />
        </View>
-     | (SendStep, _) =>
-       <Form.View title onPressCancel advancedOptionState form action />
+     | (SendStep, _) => <Form.View title advancedOptionState form action />
      | (PasswordStep(operation), _) =>
        <SignOperationView
          onPressCancel={event =>

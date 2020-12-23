@@ -2,17 +2,7 @@ open ReactNative;
 
 let styles =
   Style.(
-    StyleSheet.create({
-      "title": style(~marginBottom=20.->dp, ~textAlign=`center, ()),
-      "formAction":
-        style(
-          ~flexDirection=`row,
-          ~justifyContent=`center,
-          ~marginTop=24.->dp,
-          (),
-        ),
-      "operationSummary": style(~marginBottom=20.->dp, ()),
-    })
+    StyleSheet.create({"operationSummary": style(~marginBottom=20.->dp, ())})
   );
 
 [@react.component]
@@ -36,7 +26,7 @@ let make =
   };
 
   <>
-    <View style=styles##title>
+    <View style=FormStyles.title>
       <Typography.Headline>
         (
           switch (title, operation) {
@@ -74,9 +64,12 @@ let make =
       textContentType=`password
       secureTextEntry=true
     />
-    <View style=styles##formAction>
-      <FormButton text=I18n.btn#cancel onPress=onPressCancel />
-      <FormButton text=I18n.btn#confirm onPress={operation->onSubmit} />
+    <View style=FormStyles.formAction>
+      <Buttons.FormPrimary text=I18n.btn#cancel onPress=onPressCancel />
+      <Buttons.FormPrimary
+        text=I18n.btn#confirm
+        onPress={operation->onSubmit}
+      />
     </View>
   </>;
 };

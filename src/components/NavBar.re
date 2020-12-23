@@ -51,12 +51,11 @@ module NavBarItem = {
            },
          )
        })}
-      <Typography.ButtonPrimary
+      <Typography.ButtonTernary
         style=styles##text
-        colorStyle={isCurrent ? `highEmphasis : `mediumEmphasis}
-        fontSize=10.>
+        colorStyle={isCurrent ? `highEmphasis : `mediumEmphasis}>
         title->React.string
-      </Typography.ButtonPrimary>
+      </Typography.ButtonTernary>
     </ThemedPressable>;
   };
 };

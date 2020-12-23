@@ -9,6 +9,7 @@ let btn = {
   pub finish = "FINISH";
   pub add = "ADD";
   pub send = "SEND";
+  pub go_back = "GO BACK";
   pub confirm = "CONFIRM";
   pub update = "UPDATE";
   pub register = "REGISTER";
@@ -22,6 +23,10 @@ let btn = {
   pub add_token = "REGISTER TOKEN";
   pub advanced_options = "Advanced options";
   pub delegate = "DELEGATE";
+  pub send_another_transaction = "ADD ANOTHER TRANSACTION";
+  pub send_submit = "SUBMIT TRANSACTION";
+  pub send_cancel = "CANCEL TRANSACTION";
+  pub delegation_submit = "CONFIRM DELEGATION";
   pub delegated = "DELEGATED"
 };
 
@@ -84,6 +89,7 @@ let title = {
   pub delegation_deleted = "Delegation deleted";
   pub delete_contact = "Delete contact?";
   pub deleted_contact = "Contact deleted";
+  pub confirm_cancel = "Are you sure you want to cancel ?";
   pub send = "Send"
 };
 

@@ -2,6 +2,7 @@ open ReactNative;
 
 type colorStyle = [
   | `highEmphasis
+  | `reverseHighEmphasis
   | `mediumEmphasis
   | `disabled
   | `error
@@ -13,6 +14,7 @@ let getColor = (colorStyle, theme: ThemeContext.theme) =>
   switch (colorStyle) {
   | `highEmphasis => theme.colors.textHighEmphasis
   | `mediumEmphasis => theme.colors.textMediumEmphasis
+  | `reverseHighEmphasis => theme.colors.textReverseHighEmphasis
   | `disabled => theme.colors.textDisabled
   | `error => theme.colors.error
   | `positive => theme.colors.textPositive
@@ -188,6 +190,13 @@ module ButtonSecondary =
     let colorStyle = `mediumEmphasis;
     let fontWeightStyle = `bold;
     let fontSize = 12.;
+  });
+
+module ButtonTernary =
+  Make({
+    let colorStyle = `mediumEmphasis;
+    let fontWeightStyle = `semiBold;
+    let fontSize = 10.;
   });
 
 /* ADDRESS */

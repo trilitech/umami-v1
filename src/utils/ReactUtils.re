@@ -4,6 +4,12 @@ let mapOpt = (v, f) => {
   v->Belt.Option.mapWithDefault(React.null, f);
 };
 
+let opt = e =>
+  switch (e) {
+  | Some(e) => e
+  | None => React.null
+  };
+
 let displayOn = b => Style.(style(~display=b ? `flex : `none, ()));
 
 let onlyWhen = (elt, b) => b ? elt : React.null;
@@ -36,3 +42,5 @@ let useIsMonted = () => {
   );
   isMounted;
 };
+
+let styles = (s1, s2) => Style.array([|s1, s2|]);

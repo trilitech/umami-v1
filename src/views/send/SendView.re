@@ -46,14 +46,8 @@ module FormGroupAmountWithTokenSelector = {
 let styles =
   Style.(
     StyleSheet.create({
-      "title": style(~marginBottom=20.->dp, ~textAlign=`center, ()),
-      "formAction":
-        style(
-          ~flexDirection=`row,
-          ~justifyContent=`center,
-          ~marginTop=24.->dp,
-          (),
-        ),
+      "formAction": style(~flexDirection=`column, ~width=100.->pct, ()),
+      "addTransaction": style(~marginTop=10.->dp, ()),
       "advancedOptionButton":
         style(
           ~flexDirection=`row,
@@ -184,8 +178,7 @@ module Form = {
     open SendForm;
 
     [@react.component]
-    let make =
-        (~onPressCancel, ~advancedOptionState, ~tokenState, ~token=?, ~form) => {
+    let make = (~advancedOptionState, ~tokenState, ~token=?, ~form) => {
       let onSubmitSendForm = _ => {
         form.submit();
       };
@@ -193,7 +186,7 @@ module Form = {
       let (selectedToken, setSelectedToken) = tokenState;
 
       <>
-        <Typography.Headline style=styles##title>
+        <Typography.Headline style=FormStyles.title>
           I18n.title#send->React.string
         </Typography.Headline>
         <FormGroupAmountWithTokenSelector
@@ -231,9 +224,11 @@ module Form = {
           {advancedOptionOpened
              ? <SendViewAdvancedOptions form ?token /> : React.null}
         </View>
-        <View style=styles##formAction>
-          <FormButton text=I18n.btn#cancel onPress=onPressCancel />
-          <FormButton text=I18n.btn#ok onPress=onSubmitSendForm />
+        <View style=FormStyles.verticalFormAction>
+          <Buttons.SubmitPrimary
+            text=I18n.btn#send_submit
+            onPress=onSubmitSendForm
+          />
         </View>
       </>;
     };
@@ -271,23 +266,30 @@ let make = (~onPressCancel) => {
       setModalStep(_ => PasswordStep(op))
     );
 
-  React.useEffect0(() => {None});
+  let closing =
+    switch (form.formState) {
+    | Pristine => ModalView.Close(_ => onPressCancel())
+    | _ =>
+      ModalView.confirm(~actionText=I18n.btn#send_cancel, _ => onPressCancel())
+    };
+
+  let onPressCancel = _ => onPressCancel();
 
   let theme = ThemeContext.useTheme();
 
-  <ModalView.Form>
+  <ModalView.Form closing>
     {switch (modalStep, operationRequest) {
      | (_, Done(Ok((hash, _)), _)) =>
        <>
-         <Typography.Headline style=styles##title>
+         <Typography.Headline style=FormStyles.title>
            I18n.title#operation_injected->React.string
          </Typography.Headline>
          <Typography.Overline2>
            I18n.t#operation_hash->React.string
          </Typography.Overline2>
          <Typography.Body1> hash->React.string </Typography.Body1>
-         <View style=styles##formAction>
-           <FormButton text=I18n.btn#ok onPress=onPressCancel />
+         <View style=FormStyles.formAction>
+           <Buttons.FormPrimary text=I18n.btn#ok onPress=onPressCancel />
          </View>
        </>
      | (_, Done(Error(error), _)) =>
@@ -295,8 +297,8 @@ let make = (~onPressCancel) => {
          <Typography.Body1 colorStyle=`error>
            error->React.string
          </Typography.Body1>
-         <View style=styles##formAction>
-           <FormButton text=I18n.btn#ok onPress=onPressCancel />
+         <View style=FormStyles.formAction>
+           <Buttons.FormPrimary text=I18n.btn#ok onPress=onPressCancel />
          </View>
        </>
      | (_, Loading(_)) =>
@@ -308,7 +310,7 @@ let make = (~onPressCancel) => {
          />
        </View>
      | (SendStep, _) =>
-       <Form.View onPressCancel advancedOptionState tokenState ?token form />
+       <Form.View advancedOptionState tokenState ?token form />
      | (PasswordStep(operation), _) =>
        <SignOperationView
          onPressCancel={_ => setModalStep(_ => SendStep)}
