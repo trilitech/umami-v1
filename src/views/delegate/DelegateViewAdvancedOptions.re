@@ -20,9 +20,9 @@ let make = (~form: DelegateForm.api) => {
           ~source=form.values.sender,
           ~delegate=form.values.baker,
           (),
-        );
-
-      sendOperationSimulate(Regular(operation))
+        )
+        ->Operation.delegation;
+      sendOperationSimulate(operation)
       ->Future.tapOk(dryRun => {
           form.handleChange(Fee, dryRun.fee->Js.Float.toString)
         })

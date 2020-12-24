@@ -7,7 +7,15 @@ let styles =
 
 [@react.component]
 let make =
-    (~title=?, ~onPressCancel, ~operation: SendForm.operation, ~sendOperation) => {
+    (
+      ~onPressCancel,
+      ~operation,
+      ~title,
+      ~fee,
+      ~source,
+      ~destination,
+      ~sendOperation,
+    ) => {
   let form: SendForm.Password.api =
     SendForm.Password.use(
       ~schema={
@@ -27,35 +35,14 @@ let make =
 
   <>
     <View style=FormStyles.title>
-      <Typography.Headline>
-        (
-          switch (title, operation) {
-          | (Some(title), _) => title
-          | (_, InjectionOperation(Transaction({amount}))) =>
-            I18n.t#xtz_amount(
-              Js.Float.toFixedWithPrecision(amount, ~digits=1),
-            )
-          | (_, InjectionOperation(Delegation(_))) => I18n.title#delegate
-          | (_, TokensOperation({action: Transfer({amount})}, token)) =>
-            I18n.t#amount(amount->Js.Int.toString, token.symbol)
-          | _ => ""
-          }
-        )
-        ->React.string
-      </Typography.Headline>
-      {switch (operation) {
-       | InjectionOperation(Transaction({tx_options: {fee}}))
-       | InjectionOperation(Delegation({options: {fee}}))
-       | TokensOperation({tx_options: {fee}}, _) =>
-         fee->ReactUtils.mapOpt(fee =>
-           <Typography.Body1 colorStyle=`mediumEmphasis>
-             {I18n.t#operation_summary_fee(fee->Js.Float.toString)
-              ->React.string}
-           </Typography.Body1>
-         )
-       }}
+      <Typography.Headline> title->React.string </Typography.Headline>
+      {fee->ReactUtils.mapOpt(fee =>
+         <Typography.Body1 colorStyle=`mediumEmphasis>
+           {I18n.t#operation_summary_fee(fee->Js.Float.toString)->React.string}
+         </Typography.Body1>
+       )}
     </View>
-    <OperationSummaryView style=styles##operationSummary operation />
+    <OperationSummaryView style=styles##operationSummary source destination />
     <FormGroupTextInput
       label=I18n.label#password
       value={form.values.password}

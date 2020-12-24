@@ -18,7 +18,3 @@ module Password = {
 
   include ReForm.Make(StateLenses);
 };
-
-type operation =
-  | InjectionOperation(Injection.operation)
-  | TokensOperation(Token.operation, Token.t);

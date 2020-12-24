@@ -101,7 +101,7 @@ type action =
 type operation = {
   action,
   token: string,
-  tx_options: Injection.transaction_options,
+  tx_options: Injection.transfer_options,
   common_options: Injection.common_options,
 };
 

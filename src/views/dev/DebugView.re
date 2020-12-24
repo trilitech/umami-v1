@@ -151,7 +151,8 @@ let make = () => {
                         ~amount,
                         ~destination,
                         (),
-                      ),
+                      )
+                      ->Operation.transfer_no_proto,
                     )
                   )
                 }
@@ -170,7 +171,8 @@ let make = () => {
                             ~source,
                             ~delegate="delegate",
                             (),
-                          ),
+                          )
+                          ->Injection.Delegation,
                         )
                       )
                     )

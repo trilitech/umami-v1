@@ -216,7 +216,7 @@ module InjectorRaw = (Caller: CallerAPI) => {
   let transaction_options_arguments =
       (
         arguments,
-        tx_options: Injection.transaction_options,
+        tx_options: Injection.transfer_options,
         common_options: Injection.common_options,
       ) => {
     let arguments =
@@ -358,14 +358,20 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
     ->Getter.get
     ->Future.map(result =>
         result->map(x =>
-          (operations, x |> Json.Decode.(array(Operation.decodeFromMempool)))
+          (
+            operations,
+            x |> Json.Decode.(array(Operation.Read.decodeFromMempool)),
+          )
         )
       )
     >>= (
       ((operations, mempool)) => {
-        module Comparator = Operation.Comparator;
+        module Comparator = Operation.Read.Comparator;
         let operations =
-          Belt.Set.fromArray(operations, ~id=(module Operation.Comparator));
+          Belt.Set.fromArray(
+            operations,
+            ~id=(module Operation.Read.Comparator),
+          );
 
         let operations =
           mempool
@@ -390,7 +396,7 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
     ->URL.operations(account, ~types?, ~destination?, ~limit?, ())
     ->Getter.get
     ->Future.map(result =>
-        result->map(Json.Decode.(array(Operation.decode)))
+        result->map(Json.Decode.(array(Operation.Read.decode)))
       )
     >>= (
       operations =>
@@ -423,9 +429,9 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
     ->Js.Json.array
     ->Js.Json.stringify /* ->(json => "\'" ++ json ++ "\'") */;
 
-  let arguments = (network, operation: Injection.operation) =>
+  let arguments = (network, operation: Injection.t) =>
     switch (operation) {
-    | Transaction(transaction) =>
+    | Transfer(transaction) =>
       let arguments = [|
         "-E",
         network->endpoint,
@@ -473,13 +479,13 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
 
   exception InvalidReceiptFormat;
 
-  let simulate = (network, operation: Injection.operation) =>
+  let simulate = (network, operation: Injection.t) =>
     Injector.simulate(network, arguments(_, operation));
 
-  let create = (network, operation: Injection.operation) =>
+  let create = (network, operation: Injection.t) =>
     Injector.create(network, arguments(_, operation));
 
-  let inject = (network, operation: Injection.operation, ~password) =>
+  let inject = (network, operation: Injection.t, ~password) =>
     Injector.inject(network, arguments(_, operation), ~password);
 
   let waitForOperationConfirmations = (network, hash, ~confirmations, ~branch) =>

@@ -1,5 +1,5 @@
 /* 'fee' is duplicated in both option record */
-type transaction_options = {
+type transfer_options = {
   fee: option(float),
   gasLimit: option(int),
   storageLimit: option(int),
@@ -15,11 +15,11 @@ type common_options = {
   forceLowFee: option(bool),
 };
 
-type transaction = {
+type transfer = {
   source: string,
   amount: float,
   destination: string,
-  tx_options: transaction_options,
+  tx_options: transfer_options,
   common_options,
 };
 
@@ -32,7 +32,7 @@ type delegation = {
 type single_batch_transaction = {
   amount: float,
   destination: string,
-  tx_options: transaction_options,
+  tx_options: transfer_options,
 };
 
 type batch_transactions = {
@@ -41,8 +41,8 @@ type batch_transactions = {
   options: common_options,
 };
 
-type operation =
-  | Transaction(transaction)
+type t =
+  | Transfer(transfer)
   | Delegation(delegation)
   | BatchTransactions(batch_transactions);
 
@@ -78,7 +78,7 @@ let makeTransfer =
       ~forceLowFee=?,
       (),
     ) => {
-  Transaction({
+  {
     source,
     amount,
     destination,
@@ -100,12 +100,12 @@ let makeTransfer =
         ~forceLowFee,
         (),
       ),
-  });
+  };
 };
 
 let makeDelegate =
     (~source, ~delegate, ~fee=?, ~burnCap=?, ~forceLowFee=?, ~counter=?, ()) => {
-  Delegation({
+  {
     source,
     delegate,
     options:
@@ -117,7 +117,7 @@ let makeDelegate =
         ~confirmations=None,
         (),
       ),
-  });
+  };
 };
 
 let makeSingleBatchTransfer =

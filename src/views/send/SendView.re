@@ -69,7 +69,11 @@ let styles =
     })
   );
 
-let buildTransaction =
+type transfer =
+  | ProtocolTransfer(Injection.transfer, list(Injection.transfer))
+  | TokenTransfer(Token.operation, int, option(float), string, string);
+
+let buildTransfer =
     (
       state: SendForm.state,
       advancedOptionOpened: bool,
@@ -78,49 +82,69 @@ let buildTransaction =
   let mapIfAdvanced = (v, map) =>
     advancedOptionOpened && v->Js.String2.length > 0 ? Some(v->map) : None;
 
+  let source = state.values.sender;
+  let amount = state.values.amount->Js.Float.fromString;
+  let destination = state.values.recipient;
+  let fee = state.values.fee->mapIfAdvanced(Js.Float.fromString);
+  let counter = state.values.counter->mapIfAdvanced(int_of_string);
+  let gasLimit = state.values.gasLimit->mapIfAdvanced(int_of_string);
+  let storageLimit = state.values.storageLimit->mapIfAdvanced(int_of_string);
+  let forceLowFee =
+    advancedOptionOpened && state.values.forceLowFee ? Some(true) : None;
+
   switch (token) {
   | Some(token) =>
-    SendForm.TokensOperation(
+    let amount = amount->int_of_float;
+    let transfer =
       Token.makeTransfer(
-        ~source=state.values.sender,
-        ~amount=state.values.amount->Js.Float.fromString->int_of_float,
-        ~destination=state.values.recipient,
+        ~source,
+        ~amount,
+        ~destination,
         ~contract=token.address,
-        ~fee=?state.values.fee->mapIfAdvanced(Js.Float.fromString),
-        ~counter=?state.values.counter->mapIfAdvanced(int_of_string),
-        ~gasLimit=?state.values.gasLimit->mapIfAdvanced(int_of_string),
-        ~storageLimit=?
-          state.values.storageLimit->mapIfAdvanced(int_of_string),
-        ~forceLowFee=?
-          advancedOptionOpened && state.values.forceLowFee
-            ? Some(true) : None,
+        ~fee?,
+        ~counter?,
+        ~gasLimit?,
+        ~storageLimit?,
+        ~forceLowFee?,
         (),
-      ),
-      token,
-    )
+      );
+    TokenTransfer(transfer, amount, fee, source, destination);
   | None =>
-    SendForm.InjectionOperation(
+    let transfer =
       Injection.makeTransfer(
-        ~source=state.values.sender,
-        ~amount=state.values.amount->Js.Float.fromString,
-        ~destination=state.values.recipient,
-        ~fee=?state.values.fee->mapIfAdvanced(Js.Float.fromString),
-        ~counter=?state.values.counter->mapIfAdvanced(int_of_string),
-        ~gasLimit=?state.values.gasLimit->mapIfAdvanced(int_of_string),
-        ~storageLimit=?
-          state.values.storageLimit->mapIfAdvanced(int_of_string),
-        ~forceLowFee=?
-          advancedOptionOpened && state.values.forceLowFee
-            ? Some(true) : None,
+        ~source,
+        ~amount,
+        ~destination,
+        ~fee?,
+        ~counter?,
+        ~gasLimit?,
+        ~storageLimit?,
+        ~forceLowFee?,
         (),
-      ),
-    )
+      );
+    ProtocolTransfer(transfer, []);
   };
 };
 
 type step =
   | SendStep
-  | PasswordStep(SendForm.operation);
+  | PasswordStep(transfer);
+
+let extractData = (operation, token) => {
+  switch (operation) {
+  | ProtocolTransfer({amount, source, destination, tx_options: {fee}}, _) =>
+    let title =
+      I18n.t#xtz_amount(Js.Float.toFixedWithPrecision(amount, ~digits=1));
+    (title, fee, source, destination);
+
+  | TokenTransfer(_, amount, fee, source, destination) =>
+    let title =
+      token->Belt.Option.mapWithDefault("", (Token.{symbol}) =>
+        I18n.t#amount(amount->Js.Int.toString, symbol)
+      );
+    (title, fee, source, destination);
+  };
+};
 
 module Form = {
   let build =
@@ -154,8 +178,7 @@ module Form = {
       },
       ~onSubmit=
         ({state}) => {
-          let operation =
-            buildTransaction(state, advancedOptionOpened, token);
+          let operation = buildTransfer(state, advancedOptionOpened, token);
           onSubmit(operation);
 
           None;
@@ -251,13 +274,14 @@ let make = (~onPressCancel) => {
 
   let (operationRequest, sendOperation) = StoreContext.Operations.useCreate();
 
-  let sendOperation = (operation, ~password) =>
-    switch (operation) {
-    | SendForm.InjectionOperation(operation) =>
-      sendOperation(OperationApiRequest.regular(operation, password))->ignore
-    | SendForm.TokensOperation(operation, _) =>
-      sendOperation(OperationApiRequest.token(operation, password))->ignore
-    };
+  let sendOperation = (operation, ~password) => {
+    let operation =
+      switch (operation) {
+      | ProtocolTransfer(operation, _) => Operation.transfer(operation)
+      | TokenTransfer(operation, _, _, _, _) => Operation.Token(operation)
+      };
+    sendOperation({operation, password})->ignore;
+  };
 
   let (modalStep, setModalStep) = React.useState(_ => SendStep);
 
@@ -311,12 +335,17 @@ let make = (~onPressCancel) => {
        </View>
      | (SendStep, _) =>
        <Form.View advancedOptionState tokenState ?token form />
-     | (PasswordStep(operation), _) =>
+     | (PasswordStep(transfer), _) =>
+       let (title, fee, source, destination) = extractData(transfer, token);
        <SignOperationView
+         title
+         fee
+         source=(source, I18n.title#sender_account)
+         destination=(destination, I18n.title#recipient_account)
          onPressCancel={_ => setModalStep(_ => SendStep)}
-         operation
+         operation=transfer
          sendOperation
-       />
+       />;
      }}
   </ModalView.Form>;
 };

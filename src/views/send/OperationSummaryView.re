@@ -32,27 +32,13 @@ module AccountInfo = {
 };
 
 [@react.component]
-let make = (~style=?, ~operation: SendForm.operation) => {
+let make = (~style=?, ~source, ~destination) => {
   let theme = ThemeContext.useTheme();
   <View ?style>
-    {switch (operation) {
-     | InjectionOperation(Transaction({source}))
-     | TokensOperation({action: Transfer({source})}, _) =>
-       <AccountInfo address=source title=I18n.title#sender_account />
-     | InjectionOperation(Delegation({source})) =>
-       <AccountInfo address=source title=I18n.title#delegated_account />
-     | _ => React.null
-     }}
+    <AccountInfo address={source->fst} title={source->snd} />
     <View style=styles##iconContainer>
       <Icons.ArrowDown size=50. color={theme.colors.iconMediumEmphasis} />
     </View>
-    {switch (operation) {
-     | InjectionOperation(Transaction({destination}))
-     | TokensOperation({action: Transfer({destination})}, _) =>
-       <AccountInfo address=destination title=I18n.title#recipient_account />
-     | InjectionOperation(Delegation({delegate})) =>
-       <AccountInfo address=delegate title=I18n.title#baker_account />
-     | _ => React.null
-     }}
+    <AccountInfo address={destination->fst} title={destination->snd} />
   </View>;
 };

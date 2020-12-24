@@ -50,7 +50,7 @@ describe("API tests", ({testAsync}) => {
         Future.value(Ok(data->Json.parseOrRaise));
       };
     };
-    let expected: array(Operation.t) = [||];
+    let expected: array(Operation.Read.t) = [||];
     module UnderTest = API.Operations(Dummy, Stub);
     UnderTest.get(network, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
@@ -109,7 +109,7 @@ describe("API tests", ({testAsync}) => {
         Future.value(Ok(data->Json.parseOrRaise));
       };
     };
-    let expected: array(Operation.t) = [|
+    let expected: array(Operation.Read.t) = [|
       {
         id: "9323046000",
         level: "704778",
@@ -227,7 +227,7 @@ describe("API tests", ({testAsync}) => {
         Future.value(Ok(data->Json.parseOrRaise));
       };
     };
-    let expected: array(Operation.t) = [|
+    let expected: array(Operation.Read.t) = [|
       {
         id: "1226434000",
         level: "114452",
@@ -331,7 +331,7 @@ describe("API tests", ({testAsync}) => {
         Future.value(Ok(data->Json.parseOrRaise));
       };
     };
-    let expected: array(Operation.t) = [|
+    let expected: array(Operation.Read.t) = [|
       {
         id: "9216974000",
         level: "696545",
@@ -437,7 +437,7 @@ describe("API tests", ({testAsync}) => {
         Future.value(Ok(data->Json.parseOrRaise));
       };
     };
-    let expected: array(Operation.t) = [|
+    let expected: array(Operation.Read.t) = [|
       {
         id: "7553106000",
         level: "573751",
@@ -536,7 +536,7 @@ describe("API tests", ({testAsync}) => {
         Future.value(Ok(data->Json.parseOrRaise));
       };
     };
-    let expected: array(Operation.t) = [|
+    let expected: array(Operation.Read.t) = [|
       {
         id: "9323046000",
         level: "704778",
@@ -591,7 +591,7 @@ describe("API tests", ({testAsync}) => {
         Future.value(Ok(data->Json.parseOrRaise));
       };
     };
-    let expected: array(Operation.t) = [|
+    let expected: array(Operation.Read.t) = [|
       {
         id: "9323046000",
         level: "704778",
@@ -681,14 +681,8 @@ describe("API tests", ({testAsync}) => {
       };
     };
     let expected = [|
-      {
-        Delegate.name: "foo",
-        address: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
-      },
-      {
-        Delegate.name: "bar",
-        address: "tz1NF7b38uQ43N4nmTHvDKpr1Qo5LF9iYawk",
-      },
+      {Delegate.name: "foo", address: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"},
+      {Delegate.name: "bar", address: "tz1NF7b38uQ43N4nmTHvDKpr1Qo5LF9iYawk"},
     |];
     module UnderTest = API.Delegate(Dummy, Stub);
     UnderTest.getBakers(Main)

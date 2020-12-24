@@ -1,7 +1,5 @@
-include Injection;
-
 type status =
-  | Pending(operation)
+  | Pending(Injection.t)
   | Done;
 
 let context = React.createContext((Done, (_: status) => ignore()));

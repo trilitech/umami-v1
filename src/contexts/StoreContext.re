@@ -18,7 +18,7 @@ type state = {
   delegateRequestsState: apiRequestsState(option(string)),
   delegateInfoRequestsState:
     apiRequestsState(DelegateApiRequest.DelegateAPI.delegationInfo),
-  operationsRequestsState: apiRequestsState(array(Operation.t)),
+  operationsRequestsState: apiRequestsState(array(Operation.Read.t)),
   aliasesRequestState: reactState(ApiRequest.t(Map.String.t(Account.t))),
   bakersRequestState: reactState(ApiRequest.t(array(Delegate.t))),
   tokensRequestState: reactState(ApiRequest.t(Map.String.t(Token.t))),

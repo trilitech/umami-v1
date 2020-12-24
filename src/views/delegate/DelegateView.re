@@ -43,7 +43,7 @@ let buildTransaction = (state: DelegateForm.state, advancedOptionOpened) => {
 
 type step =
   | SendStep
-  | PasswordStep(Injection.operation);
+  | PasswordStep(Injection.delegation);
 
 module Form = {
   let build = (action: action, advancedOptionOpened, onSubmit) => {
@@ -163,15 +163,9 @@ let make = (~onPressCancel, ~action) => {
 
   let (operationRequest, sendOperation) = StoreContext.Operations.useCreate();
 
-  let sendOperation = (operation, ~password) =>
-    switch (operation) {
-    | SendForm.InjectionOperation(operation) =>
-      sendOperation(
-        OperationApiRequest.{operation: Regular(operation), password},
-      )
-      ->ignore
-    | _ => ()
-    };
+  let sendOperation = (delegation, ~password) =>
+    sendOperation(OperationApiRequest.delegate(delegation, password))
+    ->ignore;
 
   let (modalStep, setModalStep) =
     React.useState(_ =>
@@ -240,7 +234,7 @@ let make = (~onPressCancel, ~action) => {
          />
        </View>
      | (SendStep, _) => <Form.View title advancedOptionState form action />
-     | (PasswordStep(operation), _) =>
+     | (PasswordStep(delegation), _) =>
        <SignOperationView
          onPressCancel={event =>
            switch (action) {
@@ -249,8 +243,11 @@ let make = (~onPressCancel, ~action) => {
            | Delete(_) => onPressCancel(event)
            }
          }
-         title
-         operation={SendForm.InjectionOperation(operation)}
+         source=(delegation.source, I18n.title#delegated_account)
+         destination=(delegation.delegate, I18n.title#baker_account)
+         fee={delegation.options.fee}
+         title=I18n.title#delegate
+         operation=delegation
          sendOperation
        />
      }}
