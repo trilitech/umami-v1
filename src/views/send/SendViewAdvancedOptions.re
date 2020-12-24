@@ -42,13 +42,12 @@ let make = (~form: SendForm.api, ~token: option(Token.t)=?) => {
             ),
           )
         | None =>
-          Injection.makeTransfer(
+          Operation.makeTransfer(
             ~source=form.values.sender,
             ~amount=form.values.amount->Js.Float.fromString,
             ~destination=form.values.recipient,
             (),
           )
-          ->Operation.transfer
         };
       };
       sendOperationSimulate(operation)

@@ -70,7 +70,7 @@ let styles =
   );
 
 type transfer =
-  | ProtocolTransfer(Injection.transfer, list(Injection.transfer))
+  | ProtocolTransfer(Protocol.transfer, list(Protocol.transfer))
   | TokenTransfer(Token.operation, int, option(float), string, string);
 
 let buildTransfer =
@@ -111,7 +111,7 @@ let buildTransfer =
     TokenTransfer(transfer, amount, fee, source, destination);
   | None =>
     let transfer =
-      Injection.makeTransfer(
+      Protocol.makeTransfer(
         ~source,
         ~amount,
         ~destination,

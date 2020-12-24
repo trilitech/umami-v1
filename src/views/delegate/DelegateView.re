@@ -31,7 +31,7 @@ let buildTransaction = (state: DelegateForm.state, advancedOptionOpened) => {
   let mapIfAdvanced = (v, map) =>
     advancedOptionOpened && v->Js.String2.length > 0 ? Some(v->map) : None;
 
-  Injection.makeDelegate(
+  Protocol.makeDelegate(
     ~source=state.values.sender,
     ~delegate=state.values.baker,
     ~fee=?state.values.fee->mapIfAdvanced(Js.Float.fromString),
@@ -43,7 +43,7 @@ let buildTransaction = (state: DelegateForm.state, advancedOptionOpened) => {
 
 type step =
   | SendStep
-  | PasswordStep(Injection.delegation);
+  | PasswordStep(Protocol.delegation);
 
 module Form = {
   let build = (action: action, advancedOptionOpened, onSubmit) => {
@@ -174,7 +174,7 @@ let make = (~onPressCancel, ~action) => {
       | Edit(_) => SendStep
       | Delete(account, _delegate) =>
         PasswordStep(
-          Injection.makeDelegate(~source=account.address, ~delegate="", ()),
+          Protocol.makeDelegate(~source=account.address, ~delegate="", ()),
         )
       }
     );

@@ -46,6 +46,8 @@ type t =
   | Delegation(delegation)
   | BatchTransactions(batch_transactions);
 
+let transfer = t => t->Transfer;
+
 let makeTransferOptions =
     (~fee, ~gasLimit, ~storageLimit, ~parameter, ~entrypoint, ()) => {
   fee,

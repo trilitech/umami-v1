@@ -1,5 +1,5 @@
 type status =
-  | Pending(Injection.t)
+  | Pending(Protocol.t)
   | Done;
 
 let context = React.createContext((Done, (_: status) => ignore()));

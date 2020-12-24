@@ -216,8 +216,8 @@ module InjectorRaw = (Caller: CallerAPI) => {
   let transaction_options_arguments =
       (
         arguments,
-        tx_options: Injection.transfer_options,
-        common_options: Injection.common_options,
+        tx_options: Protocol.transfer_options,
+        common_options: Protocol.common_options,
       ) => {
     let arguments =
       switch (tx_options.fee) {
@@ -405,7 +405,7 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
           : Future.value(Ok(operations))
     );
 
-  let single_batch_transaction = (tx: Injection.single_batch_transaction) => {
+  let single_batch_transaction = (tx: Protocol.single_batch_transaction) => {
     let obj = Js.Dict.empty();
     Js.Dict.set(obj, "destination", Js.Json.string(tx.destination));
     Js.Dict.set(obj, "amount", Js.Float.toString(tx.amount)->Js.Json.string);
@@ -424,12 +424,12 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
     Js.Json.object_(obj);
   };
 
-  let transactions_to_json = (btxs: Injection.batch_transactions) =>
+  let transactions_to_json = (btxs: Protocol.batch_transactions) =>
     Js.Array.map(single_batch_transaction, btxs.transactions)
     ->Js.Json.array
     ->Js.Json.stringify /* ->(json => "\'" ++ json ++ "\'") */;
 
-  let arguments = (network, operation: Injection.t) =>
+  let arguments = (network, operation: Protocol.t) =>
     switch (operation) {
     | Transfer(transaction) =>
       let arguments = [|
@@ -479,13 +479,13 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
 
   exception InvalidReceiptFormat;
 
-  let simulate = (network, operation: Injection.t) =>
+  let simulate = (network, operation: Protocol.t) =>
     Injector.simulate(network, arguments(_, operation));
 
-  let create = (network, operation: Injection.t) =>
+  let create = (network, operation: Protocol.t) =>
     Injector.create(network, arguments(_, operation));
 
-  let inject = (network, operation: Injection.t, ~password) =>
+  let inject = (network, operation: Protocol.t, ~password) =>
     Injector.inject(network, arguments(_, operation), ~password);
 
   let waitForOperationConfirmations = (network, hash, ~confirmations, ~branch) =>

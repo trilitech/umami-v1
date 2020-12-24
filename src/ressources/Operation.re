@@ -1,10 +1,10 @@
+open Protocol;
 type t =
-  | Protocol(Injection.t)
+  | Protocol(Protocol.t)
   | Token(Token.operation);
 
-let transfer_no_proto = t => t->Injection.Transfer;
-let transfer = t => t->Injection.Transfer->Protocol;
-let delegation = d => d->Injection.Delegation->Protocol;
+let transfer = t => t->Transfer->Protocol;
+let delegation = d => d->Delegation->Protocol;
 
 let makeDelegate =
     (~source, ~delegate, ~fee=?, ~burnCap=?, ~forceLowFee=?, ~counter=?, ()) => {
@@ -12,7 +12,7 @@ let makeDelegate =
     source,
     delegate,
     options:
-      Injection.makeCommonOptions(
+      Protocol.makeCommonOptions(
         ~fee,
         ~burnCap,
         ~forceLowFee,
@@ -39,12 +39,12 @@ let makeTransfer =
       ~forceLowFee=?,
       (),
     ) => {
-  {
+  Protocol.{
     source,
     amount,
     destination,
     tx_options:
-      Injection.makeTransferOptions(
+      makeTransferOptions(
         ~fee,
         ~gasLimit,
         ~storageLimit,
@@ -53,7 +53,7 @@ let makeTransfer =
         (),
       ),
     common_options:
-      Injection.makeCommonOptions(
+      Protocol.makeCommonOptions(
         ~fee,
         ~counter,
         ~burnCap,

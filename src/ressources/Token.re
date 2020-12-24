@@ -101,8 +101,8 @@ type action =
 type operation = {
   action,
   token: string,
-  tx_options: Injection.transfer_options,
-  common_options: Injection.common_options,
+  tx_options: Protocol.transfer_options,
+  common_options: Protocol.common_options,
 };
 
 let makeTransfer =
@@ -123,7 +123,7 @@ let makeTransfer =
   action: Transfer(Transfer.{source, destination, amount}),
   token: contract,
   tx_options:
-    Injection.makeTransferOptions(
+    Protocol.makeTransferOptions(
       ~fee,
       ~gasLimit,
       ~storageLimit,
@@ -132,7 +132,7 @@ let makeTransfer =
       (),
     ),
   common_options:
-    Injection.makeCommonOptions(
+    Protocol.makeCommonOptions(
       ~fee,
       ~counter,
       ~burnCap,
@@ -159,7 +159,7 @@ let makeGetBalance =
   action: GetBalance(GetBalance.{address, callback}),
   token: contract,
   tx_options:
-    Injection.makeTransferOptions(
+    Protocol.makeTransferOptions(
       ~fee,
       ~gasLimit,
       ~storageLimit,
@@ -168,7 +168,7 @@ let makeGetBalance =
       (),
     ),
   common_options:
-    Injection.makeCommonOptions(
+    Protocol.makeCommonOptions(
       ~fee,
       ~counter,
       ~burnCap,
