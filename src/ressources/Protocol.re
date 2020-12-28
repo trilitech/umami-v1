@@ -177,3 +177,10 @@ let simulableSingleBatchTransfer = (~source, ~singleBatchTransaction, ()) =>
     ~amount=singleBatchTransaction.amount,
     (),
   );
+
+type simulationResults = {
+  fee: float,
+  count: int,
+  gasLimit: int,
+  storageLimit: int,
+};

@@ -172,13 +172,6 @@ let map = (result: Belt.Result.t('a, string), transform: 'a => 'b) =>
   };
 
 module InjectorRaw = (Caller: CallerAPI) => {
-  type simulationResults = {
-    fee: float,
-    count: int,
-    gasLimit: int,
-    storageLimit: int,
-  };
-
   let parse = (receipt, pattern, interp) => {
     let rec parseAll = (acc, regexp) =>
       switch (Js.Re.exec_(regexp, receipt)->Belt.Option.map(Js.Re.captures)) {
@@ -299,12 +292,8 @@ module InjectorRaw = (Caller: CallerAPI) => {
             );
           Js.log(storageLimit);
           switch (fee, count, gasLimit, storageLimit) {
-          | (Some(fee), Some(count), Some(gasLimit), Some(storageLimit)) => {
-              fee,
-              count,
-              gasLimit,
-              storageLimit,
-            }
+          | (Some(fee), Some(count), Some(gasLimit), Some(storageLimit)) =>
+            Protocol.{fee, count, gasLimit, storageLimit}
           | _ => raise(InvalidReceiptFormat)
           };
         })

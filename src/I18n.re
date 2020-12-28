@@ -94,7 +94,9 @@ let title = {
   pub deleted_contact = "Contact deleted";
   pub confirm_cancel = "Are you sure you want to cancel ?";
   pub send = "Send";
-  pub confirmation = "Confirmation"
+  pub confirmation = "Confirmation";
+  pub simulation = "Simulation";
+  pub submitting = "Submitting operation"
 };
 
 let expl = {
@@ -103,7 +105,7 @@ let expl = {
   pub account_create_record_verify = {j|We will now verify that you’ve properly recorded your recovery phrase. To demonstrate this, please type in the word that corresponds to each sequence number.|j};
   pub account_create_password_not_recorded = {j|Please note that this password is not recorded anywhere and only applies to this machine.|j};
   pub import_account_enter_phrase = {j|Please fill in the recovery phrase in sequence.|j};
-  pub confirm_delegate = "Please confirm the details of the operation"
+  pub confirm_operation = "Please confirm the details of the operation"
 };
 
 let t = {

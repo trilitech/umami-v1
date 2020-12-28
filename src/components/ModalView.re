@@ -7,6 +7,13 @@ let styles =
         style(~position=`absolute, ~right=20.->dp, ~top=20.->dp, ()),
       "modal":
         style(~width=642.->dp, ~alignSelf=`center, ~borderRadius=4., ()),
+      "loadingView":
+        style(
+          ~height=400.->dp,
+          ~justifyContent=`center,
+          ~alignItems=`center,
+          (),
+        ),
     })
   );
 
@@ -44,6 +51,23 @@ let confirm =
       action,
     ) =>
   Confirm({title, subtitle, cancelText, actionText, action});
+
+module LoadingView = {
+  [@react.component]
+  let make = (~title) => {
+    let theme = ThemeContext.useTheme();
+    <View style=styles##loadingView>
+      <Typography.Headline style=FormStyles.header>
+        title->React.string
+      </Typography.Headline>
+      <ActivityIndicator
+        animating=true
+        size=ActivityIndicator_Size.large
+        color={theme.colors.iconMediumEmphasis}
+      />
+    </View>;
+  };
+};
 
 module ConfirmCloseModal = {
   [@react.component]

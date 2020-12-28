@@ -1,5 +1,4 @@
 open ReactNative;
-open Common;
 
 module FormGroupAmountWithTokenSelector = {
   let styles =
@@ -71,7 +70,13 @@ let styles =
 
 type transfer =
   | ProtocolTransfer(Protocol.transfer, list(Protocol.transfer))
-  | TokenTransfer(Token.operation, int, option(float), string, string);
+  | TokenTransfer(Token.operation, int, string, string);
+
+let toOperation = t =>
+  switch (t) {
+  | ProtocolTransfer(operation, _) => Operation.transfer(operation)
+  | TokenTransfer(operation, _, _, _) => Operation.Token(operation)
+  };
 
 let buildTransfer =
     (
@@ -108,7 +113,7 @@ let buildTransfer =
         ~forceLowFee?,
         (),
       );
-    TokenTransfer(transfer, amount, fee, source, destination);
+    TokenTransfer(transfer, amount, source, destination);
   | None =>
     let transfer =
       Protocol.makeTransfer(
@@ -128,43 +133,44 @@ let buildTransfer =
 
 type step =
   | SendStep
-  | PasswordStep(transfer);
+  | PasswordStep(transfer, Protocol.simulationResults);
 
 let sourceDestination = transfer => {
   switch (transfer) {
   | ProtocolTransfer({source, destination}, _) => (source, destination)
-  | TokenTransfer(_, _, _, source, destination) => (source, destination)
+  | TokenTransfer(_, _, source, destination) => (source, destination)
   };
 };
 
-let buildSummaryContent = (transfer, token) => {
+let buildSummaryContent =
+    (transfer, token, dryRun: Protocol.simulationResults) => {
   switch (transfer) {
-  | ProtocolTransfer({amount, tx_options: {fee}}, _) =>
-    let subtotal =
-      fee->Belt.Option.map(_ =>
-        (
-          I18n.label#summary_subtotal,
-          amount->Js.Float.toFixedWithPrecision(~digits=1),
-        )
-      );
-    let total =
-      fee->Belt.Option.mapWithDefault(amount, fee => {amount +. fee});
+  | ProtocolTransfer({amount}, _) =>
+    let subtotal = (
+      I18n.label#summary_subtotal,
+      I18n.t#xtz_amount(amount->Js.Float.toFixedWithPrecision(~digits=1)),
+    );
+    let total = amount +. dryRun.fee;
     let total = (
       I18n.label#summary_total,
-      I18n.t#xtz_amount(total->Js.Float.toFixedWithPrecision(~digits=1)),
+      I18n.t#xtz_amount(total->Js.Float.toString),
     );
-    let fee =
-      fee->Belt.Option.map(fee => (I18n.label#fee, fee->Js.Float.toString));
-    subtotal @? fee @? total @: [];
-  | TokenTransfer(_, amount, fee, _source, _destination) =>
-    let fee =
-      fee->Belt.Option.map(fee => (I18n.label#fee, fee->Js.Float.toString));
+    let fee = (
+      I18n.label#fee,
+      I18n.t#xtz_amount(dryRun.fee->Js.Float.toString),
+    );
+    [subtotal, fee, total];
+  | TokenTransfer(_, amount, _source, _destination) =>
+    let fee = (
+      I18n.label#fee,
+      I18n.t#xtz_amount(dryRun.fee->Js.Float.toString),
+    );
     let amount =
       token->Belt.Option.mapWithDefault("", (Token.{symbol}) =>
         I18n.t#amount(amount->Js.Int.toString, symbol)
       );
     let amount = (I18n.label#send_amount, amount);
-    amount @: fee @? [];
+    [amount, fee];
   };
 };
 
@@ -296,21 +302,25 @@ let make = (~onPressCancel) => {
 
   let (operationRequest, sendOperation) = StoreContext.Operations.useCreate();
 
-  let sendOperation = (operation, ~password) => {
-    let operation =
-      switch (operation) {
-      | ProtocolTransfer(operation, _) => Operation.transfer(operation)
-      | TokenTransfer(operation, _, _, _, _) => Operation.Token(operation)
-      };
+  let sendTransfer = (transfer, password) => {
+    let operation = toOperation(transfer);
     sendOperation({operation, password})->ignore;
   };
 
+  let (operationSimulateRequest, sendOperationSimulate) =
+    StoreContext.Operations.useSimulate();
+
   let (modalStep, setModalStep) = React.useState(_ => SendStep);
 
-  let form =
-    Form.build(account, advancedOptionOpened, token, op =>
-      setModalStep(_ => PasswordStep(op))
-    );
+  let form = {
+    let onSubmit = transfer =>
+      sendOperationSimulate(toOperation(transfer))
+      ->Future.tapOk(dryRun => {
+          setModalStep(_ => PasswordStep(transfer, dryRun))
+        })
+      ->ignore;
+    Form.build(account, advancedOptionOpened, token, onSubmit);
+  };
 
   let closing =
     switch (form.formState) {
@@ -324,8 +334,8 @@ let make = (~onPressCancel) => {
   let theme = ThemeContext.useTheme();
 
   <ModalView.Form closing>
-    {switch (modalStep, operationRequest) {
-     | (_, Done(Ok((hash, _)), _)) =>
+    {switch (modalStep, operationRequest, operationSimulateRequest) {
+     | (_, Done(Ok((hash, _)), _), _) =>
        <>
          <Typography.Headline style=FormStyles.header>
            I18n.title#operation_injected->React.string
@@ -338,7 +348,7 @@ let make = (~onPressCancel) => {
            <Buttons.FormPrimary text=I18n.btn#ok onPress=onPressCancel />
          </View>
        </>
-     | (_, Done(Error(error), _)) =>
+     | (_, Done(Error(error), _), _) =>
        <>
          <Typography.Body1 colorStyle=`error>
            error->React.string
@@ -347,26 +357,40 @@ let make = (~onPressCancel) => {
            <Buttons.FormPrimary text=I18n.btn#ok onPress=onPressCancel />
          </View>
        </>
-     | (_, Loading(_)) =>
+     | (_, Loading(_), _) =>
        <View style=styles##loadingView>
+         <Typography.Headline style=FormStyles.header>
+           I18n.title#submitting->React.string
+         </Typography.Headline>
          <ActivityIndicator
            animating=true
            size=ActivityIndicator_Size.large
            color={theme.colors.iconMediumEmphasis}
          />
        </View>
-     | (SendStep, _) =>
+     | (_, _, Loading(_)) =>
+       <View style=styles##loadingView>
+         <Typography.Headline style=FormStyles.header>
+           I18n.title#simulation->React.string
+         </Typography.Headline>
+         <ActivityIndicator
+           animating=true
+           size=ActivityIndicator_Size.large
+           color={theme.colors.iconMediumEmphasis}
+         />
+       </View>
+     | (SendStep, _, _) =>
        <Form.View advancedOptionState tokenState ?token form />
-     | (PasswordStep(transfer), _) =>
+     | (PasswordStep(transfer, dryRun), _, _) =>
        let (source, destination) = sourceDestination(transfer);
        <SignOperationView
          title=I18n.title#confirmation
          source=(source, I18n.title#sender_account)
          destination=(destination, I18n.title#recipient_account)
+         subtitle=I18n.expl#confirm_operation
          onPressCancel={_ => setModalStep(_ => SendStep)}
-         operation=transfer
-         content={buildSummaryContent(transfer, token)}
-         sendOperation
+         content={buildSummaryContent(transfer, token, dryRun)}
+         sendOperation={sendTransfer(transfer)}
        />;
      }}
   </ModalView.Form>;

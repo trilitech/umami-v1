@@ -9,7 +9,6 @@ let styles =
 let make =
     (
       ~onPressCancel,
-      ~operation,
       ~title,
       ~subtitle=?,
       ~source,
@@ -27,11 +26,11 @@ let make =
       (),
     );
 
-  let onSubmit = (operation, _) => {
+  let onSubmit = _ => {
     // checking password
     // getting stored data
     form.submit();
-    sendOperation(operation, ~password=form.values.password);
+    sendOperation(form.values.password);
   };
 
   <>
@@ -59,10 +58,7 @@ let make =
     />
     <View style=FormStyles.formAction>
       <Buttons.FormPrimary text=I18n.btn#cancel onPress=onPressCancel />
-      <Buttons.FormPrimary
-        text=I18n.btn#confirm
-        onPress={operation->onSubmit}
-      />
+      <Buttons.FormPrimary text=I18n.btn#confirm onPress=onSubmit />
     </View>
   </>;
 };
