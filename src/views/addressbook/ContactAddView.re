@@ -8,19 +8,6 @@ module StateLenses = [%lenses
 ];
 module AccountCreateForm = ReForm.Make(StateLenses);
 
-let styles =
-  Style.(
-    StyleSheet.create({
-      "loadingView":
-        style(
-          ~height=400.->dp,
-          ~justifyContent=`center,
-          ~alignItems=`center,
-          (),
-        ),
-    })
-  );
-
 [@react.component]
 let make = (~cancel) => {
   let (aliasRequest, createAlias) = StoreContext.Aliases.useCreate();

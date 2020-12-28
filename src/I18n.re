@@ -96,6 +96,8 @@ let title = {
   pub send = "Send";
   pub confirmation = "Confirmation";
   pub simulation = "Simulation";
+  pub creating_account = "Creating account";
+  pub importing_account = "Importing account";
   pub submitting = "Submitting operation"
 };
 

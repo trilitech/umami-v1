@@ -58,13 +58,6 @@ let styles =
           (),
         ),
       "operationSummary": style(~marginBottom=20.->dp, ()),
-      "loadingView":
-        style(
-          ~height=400.->dp,
-          ~justifyContent=`center,
-          ~alignItems=`center,
-          (),
-        ),
     })
   );
 
@@ -331,8 +324,6 @@ let make = (~onPressCancel) => {
 
   let onPressCancel = _ => onPressCancel();
 
-  let theme = ThemeContext.useTheme();
-
   <ModalView.Form closing>
     {switch (modalStep, operationRequest, operationSimulateRequest) {
      | (_, Done(Ok((hash, _)), _), _) =>
@@ -358,27 +349,9 @@ let make = (~onPressCancel) => {
          </View>
        </>
      | (_, Loading(_), _) =>
-       <View style=styles##loadingView>
-         <Typography.Headline style=FormStyles.header>
-           I18n.title#submitting->React.string
-         </Typography.Headline>
-         <ActivityIndicator
-           animating=true
-           size=ActivityIndicator_Size.large
-           color={theme.colors.iconMediumEmphasis}
-         />
-       </View>
+       <ModalView.LoadingView title=I18n.title#submitting />
      | (_, _, Loading(_)) =>
-       <View style=styles##loadingView>
-         <Typography.Headline style=FormStyles.header>
-           I18n.title#simulation->React.string
-         </Typography.Headline>
-         <ActivityIndicator
-           animating=true
-           size=ActivityIndicator_Size.large
-           color={theme.colors.iconMediumEmphasis}
-         />
-       </View>
+       <ModalView.LoadingView title=I18n.title#simulation />
      | (SendStep, _, _) =>
        <Form.View advancedOptionState tokenState ?token form />
      | (PasswordStep(transfer, dryRun), _, _) =>

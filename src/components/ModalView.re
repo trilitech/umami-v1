@@ -54,9 +54,15 @@ let confirm =
 
 module LoadingView = {
   [@react.component]
-  let make = (~title) => {
+  let make = (~title, ~height=?) => {
     let theme = ThemeContext.useTheme();
-    <View style=styles##loadingView>
+    <View
+      style={Style.arrayOption([|
+        Some(styles##loadingView),
+        height->Belt.Option.map(height =>
+          Style.style(~height=height->string_of_int, ())
+        ),
+      |])}>
       <Typography.Headline style=FormStyles.header>
         title->React.string
       </Typography.Headline>

@@ -17,13 +17,6 @@ let styles =
       "switchCmp": style(~height=16.->dp, ~width=32.->dp, ()),
       "switchThumb": style(~transform=[|scale(~scale=0.65)|], ()),
       "operationSummary": style(~marginBottom=20.->dp, ()),
-      "loadingView":
-        style(
-          ~height=400.->dp,
-          ~justifyContent=`center,
-          ~alignItems=`center,
-          (),
-        ),
     })
   );
 
@@ -205,8 +198,6 @@ let make = (~onPressCancel, ~action) => {
     | Delete(_) => I18n.title#delegate_delete
     };
 
-  let theme = ThemeContext.useTheme();
-
   let closing = ModalView.Close(_ => onPressCancel());
   let onPressCancel = _ => onPressCancel();
 
@@ -240,27 +231,9 @@ let make = (~onPressCancel, ~action) => {
          </View>
        </>
      | (_, _, Loading(_)) =>
-       <View style=styles##loadingView>
-         <Typography.Headline style=FormStyles.header>
-           I18n.title#simulation->React.string
-         </Typography.Headline>
-         <ActivityIndicator
-           animating=true
-           size=ActivityIndicator_Size.large
-           color={theme.colors.iconMediumEmphasis}
-         />
-       </View>
+       <ModalView.LoadingView title=I18n.title#simulation />
      | (_, Loading(_), _) =>
-       <View style=styles##loadingView>
-         <Typography.Headline style=FormStyles.header>
-           I18n.title#submitting->React.string
-         </Typography.Headline>
-         <ActivityIndicator
-           animating=true
-           size=ActivityIndicator_Size.large
-           color={theme.colors.iconMediumEmphasis}
-         />
-       </View>
+       <ModalView.LoadingView title=I18n.title#submitting />
      | (SendStep, _, _) => <Form.View title advancedOptionState form action />
      | (PasswordStep(delegation, dryRun), _, _) =>
        <SignOperationView

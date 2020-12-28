@@ -11,13 +11,6 @@ let styles =
       "stepPager": style(~marginBottom=4.->dp, ~textAlign=`center, ()),
       "stepTitle": style(~marginBottom=10.->dp, ~textAlign=`center, ()),
       "stepBody": style(~marginBottom=28.->dp, ~textAlign=`center, ()),
-      "loadingView":
-        style(
-          ~height=400.->dp,
-          ~justifyContent=`center,
-          ~alignItems=`center,
-          (),
-        ),
     })
   );
 
@@ -40,19 +33,11 @@ let make = (~cancel) => {
 
   let (mnemonic, setMnemonic) = React.useState(_ => Belt.Array.make(24, ""));
 
-  let theme = ThemeContext.useTheme();
-
   <ModalView.Form>
     {switch (accountWithMnemonicRequest) {
      | Done(_) => <> </>
      | Loading(_) =>
-       <View style=styles##loadingView>
-         <ActivityIndicator
-           animating=true
-           size=ActivityIndicator_Size.large
-           color={theme.colors.iconMediumEmphasis}
-         />
-       </View>
+       <ModalView.LoadingView title=I18n.title#importing_account />
      | NotAsked =>
        <>
          <Typography.Headline style=styles##title>

@@ -1,18 +1,5 @@
 open ReactNative;
 
-let styles =
-  Style.(
-    StyleSheet.create({
-      "loadingView":
-        style(
-          ~height=120.->dp,
-          ~justifyContent=`center,
-          ~alignItems=`center,
-          (),
-        ),
-    })
-  );
-
 [@react.component]
 let make =
     (
@@ -31,8 +18,6 @@ let make =
     ->Belt.Option.map(ModalAction.closeModal)
     ->ignore;
   };
-
-  let theme = ThemeContext.useTheme();
 
   <>
     <ModalAction ref=modal visible onRequestClose=closeAction>
@@ -57,13 +42,7 @@ let make =
              </View>
            </>
          | Loading(_) =>
-           <View style=styles##loadingView>
-             <ActivityIndicator
-               animating=true
-               size=ActivityIndicator_Size.large
-               color={theme.colors.iconMediumEmphasis}
-             />
-           </View>
+           <ModalView.LoadingView title=I18n.title#simulation height=120 />
          | NotAsked =>
            <>
              <Typography.Headline style=FormStyles.header>
