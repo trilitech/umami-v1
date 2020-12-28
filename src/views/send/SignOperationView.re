@@ -11,10 +11,11 @@ let make =
       ~onPressCancel,
       ~operation,
       ~title,
-      ~fee,
+      ~subtitle=?,
       ~source,
       ~destination,
       ~sendOperation,
+      ~content,
     ) => {
   let form: SendForm.Password.api =
     SendForm.Password.use(
@@ -36,13 +37,18 @@ let make =
   <>
     <View style=FormStyles.header>
       <Typography.Headline> title->React.string </Typography.Headline>
-      {fee->ReactUtils.mapOpt(fee =>
-         <Typography.Body1 colorStyle=`mediumEmphasis>
-           {I18n.t#operation_summary_fee(fee->Js.Float.toString)->React.string}
-         </Typography.Body1>
+      {subtitle->ReactUtils.mapOpt(subtitle =>
+         <Typography.Overline1 style=FormStyles.subtitle>
+           subtitle->React.string
+         </Typography.Overline1>
        )}
     </View>
-    <OperationSummaryView style=styles##operationSummary source destination />
+    <OperationSummaryView
+      style=styles##operationSummary
+      source
+      destination
+      content
+    />
     <FormGroupTextInput
       label=I18n.label#password
       value={form.values.password}

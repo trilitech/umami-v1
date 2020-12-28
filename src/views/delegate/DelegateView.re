@@ -1,5 +1,6 @@
 open ReactNative;
 open Delegate;
+open Common;
 
 let styles =
   Style.(
@@ -156,6 +157,14 @@ module Form = {
   };
 };
 
+let buildSummaryContent = (delegation: Protocol.delegation) => {
+  let fee =
+    delegation.options.fee
+    ->Belt.Option.map(fee => (I18n.label#fee, fee->Js.Float.toString));
+
+  fee @? [];
+};
+
 [@react.component]
 let make = (~onPressCancel, ~action) => {
   let (advancedOptionOpened, _) as advancedOptionState =
@@ -245,9 +254,10 @@ let make = (~onPressCancel, ~action) => {
          }
          source=(delegation.source, I18n.title#delegated_account)
          destination=(delegation.delegate, I18n.title#baker_account)
-         fee={delegation.options.fee}
-         title=I18n.title#delegate
+         title=I18n.title#confirm_delegate
+         subtitle=I18n.expl#confirm_delegate
          operation=delegation
+         content={buildSummaryContent(delegation)}
          sendOperation
        />
      }}

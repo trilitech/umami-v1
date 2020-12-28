@@ -1,4 +1,5 @@
 open ReactNative;
+open Common;
 
 module FormGroupAmountWithTokenSelector = {
   let styles =
@@ -129,19 +130,41 @@ type step =
   | SendStep
   | PasswordStep(transfer);
 
-let extractData = (operation, token) => {
-  switch (operation) {
-  | ProtocolTransfer({amount, source, destination, tx_options: {fee}}, _) =>
-    let title =
-      I18n.t#xtz_amount(Js.Float.toFixedWithPrecision(amount, ~digits=1));
-    (title, fee, source, destination);
+let sourceDestination = transfer => {
+  switch (transfer) {
+  | ProtocolTransfer({source, destination}, _) => (source, destination)
+  | TokenTransfer(_, _, _, source, destination) => (source, destination)
+  };
+};
 
-  | TokenTransfer(_, amount, fee, source, destination) =>
-    let title =
+let buildSummaryContent = (transfer, token) => {
+  switch (transfer) {
+  | ProtocolTransfer({amount, tx_options: {fee}}, _) =>
+    let subtotal =
+      fee->Belt.Option.map(_ =>
+        (
+          I18n.label#summary_subtotal,
+          amount->Js.Float.toFixedWithPrecision(~digits=1),
+        )
+      );
+    let total =
+      fee->Belt.Option.mapWithDefault(amount, fee => {amount +. fee});
+    let total = (
+      I18n.label#summary_total,
+      I18n.t#xtz_amount(total->Js.Float.toFixedWithPrecision(~digits=1)),
+    );
+    let fee =
+      fee->Belt.Option.map(fee => (I18n.label#fee, fee->Js.Float.toString));
+    subtotal @? fee @? total @: [];
+  | TokenTransfer(_, amount, fee, _source, _destination) =>
+    let fee =
+      fee->Belt.Option.map(fee => (I18n.label#fee, fee->Js.Float.toString));
+    let amount =
       token->Belt.Option.mapWithDefault("", (Token.{symbol}) =>
         I18n.t#amount(amount->Js.Int.toString, symbol)
       );
-    (title, fee, source, destination);
+    let amount = (I18n.label#send_amount, amount);
+    amount @: fee @? [];
   };
 };
 
@@ -335,14 +358,14 @@ let make = (~onPressCancel) => {
      | (SendStep, _) =>
        <Form.View advancedOptionState tokenState ?token form />
      | (PasswordStep(transfer), _) =>
-       let (title, fee, source, destination) = extractData(transfer, token);
+       let (source, destination) = sourceDestination(transfer);
        <SignOperationView
-         title
-         fee
+         title=I18n.title#confirmation
          source=(source, I18n.title#sender_account)
          destination=(destination, I18n.title#recipient_account)
          onPressCancel={_ => setModalStep(_ => SendStep)}
          operation=transfer
+         content={buildSummaryContent(transfer, token)}
          sendOperation
        />;
      }}

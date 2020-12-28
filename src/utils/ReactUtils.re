@@ -4,6 +4,12 @@ let mapOpt = (v, f) => {
   v->Belt.Option.mapWithDefault(React.null, f);
 };
 
+let hideNil = (v, f) =>
+  switch (v) {
+  | [] => React.null
+  | v => f(v)
+  };
+
 let opt = e =>
   switch (e) {
   | Some(e) => e
