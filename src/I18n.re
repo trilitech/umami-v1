@@ -25,6 +25,7 @@ let btn = {
   pub delegate = "DELEGATE";
   pub send_another_transaction = "ADD ANOTHER TRANSACTION";
   pub send_submit = "SUBMIT TRANSACTION";
+  pub batch_submit = "SUBMIT BATCH";
   pub send_cancel = "CANCEL TRANSACTION";
   pub delegation_submit = "CONFIRM DELEGATION";
   pub delegated = "DELEGATED"

@@ -19,6 +19,7 @@ let make =
       ~value: string,
       ~handleChange,
       ~error,
+      ~disabled=?,
       ~token: option(Token.t)=?,
     ) => {
   let accounts = StoreContext.Accounts.useGetAll();
@@ -39,6 +40,7 @@ let make =
     <View>
       <Selector
         items
+        ?disabled
         getItemValue={account => account.address}
         onValueChange={value => {
           setCurrent(_ => value);

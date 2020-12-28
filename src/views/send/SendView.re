@@ -21,18 +21,22 @@ module FormGroupAmountWithTokenSelector = {
         ~selectedToken,
         ~setSelectedToken,
         ~token: option(Token.t)=?,
+        ~showSelector,
+        ~setValue=?,
       ) => {
     let decoration =
       token->Belt.Option.map(token => tokenDecoration(~symbol=token.symbol));
     <>
-      <TokenSelector
-        selectedToken
-        setSelectedToken
-        style=styles##tokenSelector
-      />
+      {<TokenSelector
+         selectedToken
+         setSelectedToken
+         style=styles##tokenSelector
+       />
+       ->ReactUtils.onlyWhen(showSelector)}
       <FormGroupXTZInput
         label
         value
+        ?setValue
         handleChange
         error
         ?decoration
@@ -73,22 +77,22 @@ let toOperation = t =>
 
 let buildTransfer =
     (
-      state: SendForm.state,
+      values: SendForm.StateLenses.state,
       advancedOptionOpened: bool,
       token: option(Token.t),
     ) => {
   let mapIfAdvanced = (v, map) =>
     advancedOptionOpened && v->Js.String2.length > 0 ? Some(v->map) : None;
 
-  let source = state.values.sender;
-  let amount = state.values.amount->Js.Float.fromString;
-  let destination = state.values.recipient;
-  let fee = state.values.fee->mapIfAdvanced(Js.Float.fromString);
-  let counter = state.values.counter->mapIfAdvanced(int_of_string);
-  let gasLimit = state.values.gasLimit->mapIfAdvanced(int_of_string);
-  let storageLimit = state.values.storageLimit->mapIfAdvanced(int_of_string);
+  let source = values.sender;
+  let amount = values.amount->Js.Float.fromString;
+  let destination = values.recipient;
+  let fee = values.fee->mapIfAdvanced(Js.Float.fromString);
+  let counter = values.counter->mapIfAdvanced(int_of_string);
+  let gasLimit = values.gasLimit->mapIfAdvanced(int_of_string);
+  let storageLimit = values.storageLimit->mapIfAdvanced(int_of_string);
   let forceLowFee =
-    advancedOptionOpened && state.values.forceLowFee ? Some(true) : None;
+    advancedOptionOpened && values.forceLowFee ? Some(true) : None;
 
   switch (token) {
   | Some(token) =>
@@ -168,8 +172,7 @@ let buildSummaryContent =
 };
 
 module Form = {
-  let build =
-      (initAccount: option(Account.t), advancedOptionOpened, token, onSubmit) => {
+  let build = (initAccount: option(Account.t), onSubmit) => {
     SendForm.use(
       ~schema={
         SendForm.Validation.(
@@ -198,10 +201,8 @@ module Form = {
         );
       },
       ~onSubmit=
-        ({state}) => {
-          let operation = buildTransfer(state, advancedOptionOpened, token);
-          onSubmit(operation);
-
+        f => {
+          onSubmit(f);
           None;
         },
       ~initialState={
@@ -222,12 +223,23 @@ module Form = {
     open SendForm;
 
     [@react.component]
-    let make = (~advancedOptionState, ~tokenState, ~token=?, ~form) => {
-      let onSubmitSendForm = _ => {
-        form.submit();
-      };
+    let make =
+        (
+          ~batch,
+          ~advancedOptionState,
+          ~tokenState,
+          ~token=?,
+          ~onAddToBatch,
+          ~onSubmitAll,
+          ~form,
+        ) => {
       let (advancedOptionOpened, setAdvancedOptionOpened) = advancedOptionState;
       let (selectedToken, setSelectedToken) = tokenState;
+
+      let batchMode = batch != [];
+
+      let submitLabel =
+        batchMode ? I18n.btn#batch_submit : I18n.btn#send_submit;
 
       <>
         <View style=FormStyles.header>
@@ -244,13 +256,18 @@ module Form = {
         <FormGroupAmountWithTokenSelector
           label=I18n.label#send_amount
           value={form.values.amount}
+          setValue={f =>
+            form.setFieldValue(Amount, f(form.values.amount), ())
+          }
           handleChange={form.handleChange(Amount)}
           error={form.getFieldError(Field(Amount))}
           selectedToken
+          showSelector={!batchMode}
           setSelectedToken={newToken => setSelectedToken(_ => newToken)}
           ?token
         />
         <FormGroupAccountSelector
+          disabled=batchMode
           label=I18n.label#send_sender
           value={form.values.sender}
           handleChange={form.handleChange(Sender)}
@@ -277,15 +294,13 @@ module Form = {
              ? <SendViewAdvancedOptions form ?token /> : React.null}
         </View>
         <View style=FormStyles.verticalFormAction>
-          <Buttons.SubmitPrimary
-            text=I18n.btn#send_submit
-            onPress=onSubmitSendForm
-          />
-          <Buttons.FormSecondary
-            style=styles##addTransaction
-            text=I18n.btn#send_another_transaction
-            onPress={_ => ()}
-          />
+          <Buttons.SubmitPrimary text=submitLabel onPress=onSubmitAll />
+          {<Buttons.FormSecondary
+             style=styles##addTransaction
+             text=I18n.btn#send_another_transaction
+             onPress=onAddToBatch
+           />
+           ->ReactUtils.onlyWhen(token == None)}
         </View>
       </>;
     };
@@ -313,24 +328,43 @@ let make = (~onPressCancel) => {
     sendOperation({operation, password})->ignore;
   };
 
+  let (batch, setBatch) = React.useState(_ => []);
+
   let (operationSimulateRequest, sendOperationSimulate) =
     StoreContext.Operations.useSimulate();
 
   let (modalStep, setModalStep) = React.useState(_ => SendStep);
 
-  let form = {
-    let onSubmit = transfer =>
+  let isSubmitAll = React.useRef(true);
+
+  let onSubmit = ({state, send}: SendForm.onSubmitAPI) =>
+    if (isSubmitAll.current) {
+      let transfer = buildTransfer(state.values, advancedOptionOpened, token);
       sendOperationSimulate(toOperation(transfer))
       ->Future.tapOk(dryRun => {
           setModalStep(_ => PasswordStep(transfer, dryRun))
         })
       ->ignore;
-    Form.build(account, advancedOptionOpened, token, onSubmit);
+    } else {
+      setBatch(l => [state.values, ...l]);
+      send(SetValues({...state.values, amount: "", recipient: ""}));
+    };
+
+  let form = Form.build(account, onSubmit);
+
+  let onSubmitAll = _ => {
+    isSubmitAll.current = true;
+    form.submit();
+  };
+
+  let onAddToBatch = _ => {
+    isSubmitAll.current = false;
+    form.submit();
   };
 
   let closing =
     switch (form.formState) {
-    | Pristine => ModalView.Close(_ => onPressCancel())
+    | Pristine when batch == [] => ModalView.Close(_ => onPressCancel())
     | _ =>
       ModalView.confirm(~actionText=I18n.btn#send_cancel, _ => onPressCancel())
     };
@@ -338,8 +372,8 @@ let make = (~onPressCancel) => {
   let onPressCancel = _ => onPressCancel();
 
   <ModalView.Form closing>
-    {switch (modalStep, operationRequest, operationSimulateRequest) {
-     | (_, Done(Ok((hash, _)), _), _) =>
+    {switch (operationRequest) {
+     | Done(Ok((hash, _)), _) =>
        <>
          <Typography.Headline style=FormStyles.header>
            I18n.title#operation_injected->React.string
@@ -352,7 +386,7 @@ let make = (~onPressCancel) => {
            <Buttons.FormPrimary text=I18n.btn#ok onPress=onPressCancel />
          </View>
        </>
-     | (_, Done(Error(error), _), _) =>
+     | Done(Error(error), _) =>
        <>
          <Typography.Body1 colorStyle=`error>
            error->React.string
@@ -361,23 +395,35 @@ let make = (~onPressCancel) => {
            <Buttons.FormPrimary text=I18n.btn#ok onPress=onPressCancel />
          </View>
        </>
-     | (_, Loading(_), _) =>
-       <ModalView.LoadingView title=I18n.title#submitting />
-     | (_, _, Loading(_)) =>
-       <ModalView.LoadingView title=I18n.title#simulation />
-     | (SendStep, _, _) =>
-       <Form.View advancedOptionState tokenState ?token form />
-     | (PasswordStep(transfer, dryRun), _, _) =>
-       let (source, destination) = sourceDestination(transfer);
-       <SignOperationView
-         title=I18n.title#confirmation
-         source=(source, I18n.title#sender_account)
-         destination=(destination, I18n.title#recipient_account)
-         subtitle=I18n.expl#confirm_operation
-         onPressCancel={_ => setModalStep(_ => SendStep)}
-         content={buildSummaryContent(transfer, token, dryRun)}
-         sendOperation={sendTransfer(transfer)}
-       />;
+     | Loading(_) => <ModalView.LoadingView title=I18n.title#submitting />
+     | NotAsked =>
+       if (ApiRequest.isLoading(operationSimulateRequest)) {
+         <ModalView.LoadingView title=I18n.title#simulation />;
+       } else {
+         switch (modalStep, batch) {
+         | (SendStep, _) =>
+           <Form.View
+             batch
+             advancedOptionState
+             tokenState
+             ?token
+             form
+             onAddToBatch
+             onSubmitAll
+           />
+         | (PasswordStep(transfer, dryRun), _) =>
+           let (source, destination) = sourceDestination(transfer);
+           <SignOperationView
+             title=I18n.title#confirmation
+             source=(source, I18n.title#sender_account)
+             destination=(destination, I18n.title#recipient_account)
+             subtitle=I18n.expl#confirm_operation
+             onPressCancel={_ => setModalStep(_ => SendStep)}
+             content={buildSummaryContent(transfer, token, dryRun)}
+             sendOperation={sendTransfer(transfer)}
+           />;
+         };
+       }
      }}
   </ModalView.Form>;
 };

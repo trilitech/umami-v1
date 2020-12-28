@@ -14,14 +14,21 @@ let xtzDecoration = (~style) =>
 let make =
     (
       ~label,
-      ~value,
+      ~value: string,
       ~handleChange,
       ~error,
       ~style: option(ReactNative.Style.t)=?,
       ~decoration=?,
+      ~setValue: option((string => string) => unit)=?,
       ~token: option(Token.t)=?,
     ) => {
-  let (value, setValue) = React.useState(() => value);
+  let innerValue = React.useState(() => value);
+
+  let (value, setValue) =
+    switch (setValue) {
+    | Some(setValue) => (value, setValue)
+    | None => innerValue
+    };
 
   // reformat value if token change
   React.useEffect1(
