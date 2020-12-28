@@ -40,7 +40,7 @@ let make =
         {switch (request) {
          | Done(Ok(_result), _) =>
            <>
-             <Typography.Headline style=FormStyles.title>
+             <Typography.Headline style=FormStyles.header>
                titleDone->React.string
              </Typography.Headline>
              <View style=FormStyles.formAction>
@@ -66,7 +66,7 @@ let make =
            </View>
          | NotAsked =>
            <>
-             <Typography.Headline style=FormStyles.title>
+             <Typography.Headline style=FormStyles.header>
                title->React.string
              </Typography.Headline>
              <View style=FormStyles.formAction>

@@ -52,7 +52,7 @@ let make = (~cancel) => {
      | Done(_) => <> </>
      | NotAsked =>
        <>
-         <Typography.Headline style=FormStyles.title>
+         <Typography.Headline style=FormStyles.header>
            I18n.title#account_create->React.string
          </Typography.Headline>
          <FormGroupTextInput

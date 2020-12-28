@@ -34,7 +34,7 @@ let make =
   };
 
   <>
-    <View style=FormStyles.title>
+    <View style=FormStyles.header>
       <Typography.Headline> title->React.string </Typography.Headline>
       {fee->ReactUtils.mapOpt(fee =>
          <Typography.Body1 colorStyle=`mediumEmphasis>

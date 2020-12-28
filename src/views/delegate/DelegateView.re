@@ -103,7 +103,7 @@ module Form = {
       let (advancedOptionOpened, setAdvancedOptionOpened) = advancedOptionState;
 
       <>
-        <Typography.Headline style=FormStyles.title>
+        <Typography.Headline style=FormStyles.header>
           title->React.string
         </Typography.Headline>
         <FormGroupDelegateSelector
@@ -200,7 +200,7 @@ let make = (~onPressCancel, ~action) => {
     {switch (modalStep, operationRequest) {
      | (_, Done(Ok((hash, _)), _)) =>
        <>
-         <Typography.Headline style=FormStyles.title>
+         <Typography.Headline style=FormStyles.header>
            {switch (action) {
             | Create(_) => I18n.title#delegation_sent
             | Edit(_) => I18n.title#baker_updated

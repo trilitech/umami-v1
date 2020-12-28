@@ -70,7 +70,7 @@ module ConfirmCloseModal = {
             style(~backgroundColor=theme.colors.background, ()),
           |])
         )>
-        <Typography.Headline style=FormStyles.title>
+        <Typography.Headline style=FormStyles.header>
           title->React.string
         </Typography.Headline>
         {subtitle->ReactUtils.mapOpt(sub => {
