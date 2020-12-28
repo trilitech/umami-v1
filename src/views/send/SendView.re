@@ -230,9 +230,17 @@ module Form = {
       let (selectedToken, setSelectedToken) = tokenState;
 
       <>
-        <Typography.Headline style=FormStyles.header>
-          I18n.title#send->React.string
-        </Typography.Headline>
+        <View style=FormStyles.header>
+          <Typography.Headline>
+            I18n.title#send->React.string
+          </Typography.Headline>
+          <Typography.Overline1 style=FormStyles.subtitle>
+            I18n.title#send_many_transactions->React.string
+          </Typography.Overline1>
+          <Typography.Body2 style=FormStyles.subtitle>
+            I18n.expl#send_many_transactions->React.string
+          </Typography.Body2>
+        </View>
         <FormGroupAmountWithTokenSelector
           label=I18n.label#send_amount
           value={form.values.amount}
@@ -272,6 +280,11 @@ module Form = {
           <Buttons.SubmitPrimary
             text=I18n.btn#send_submit
             onPress=onSubmitSendForm
+          />
+          <Buttons.FormSecondary
+            style=styles##addTransaction
+            text=I18n.btn#send_another_transaction
+            onPress={_ => ()}
           />
         </View>
       </>;

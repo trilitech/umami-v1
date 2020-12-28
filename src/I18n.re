@@ -98,11 +98,13 @@ let title = {
   pub simulation = "Simulation";
   pub creating_account = "Creating account";
   pub importing_account = "Importing account";
-  pub submitting = "Submitting operation"
+  pub submitting = "Submitting operation";
+  pub send_many_transactions = "Send one or many transactions"
 };
 
 let expl = {
   pub _this = this;
+  pub send_many_transactions = "You have the ability to submit a batch of transactions, but please note that the batch will be confirmed as a whole: should one transaction in the batch fail then the whole batch will not be completed.";
   pub account_create_record_recovery = {j|Please record the following 24 words in sequence in order to restore it in the future. Ensure to back it up, keeping it securely offline.|j};
   pub account_create_record_verify = {j|We will now verify that you’ve properly recorded your recovery phrase. To demonstrate this, please type in the word that corresponds to each sequence number.|j};
   pub account_create_password_not_recorded = {j|Please note that this password is not recorded anywhere and only applies to this machine.|j};
