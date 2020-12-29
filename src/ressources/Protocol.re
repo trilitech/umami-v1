@@ -43,7 +43,7 @@ type batch_transactions = {
 
 type t =
   | Transfer(transfer)
-  | Delegation(delegation)
+  | Delegate(delegation)
   | BatchTransactions(batch_transactions);
 
 let transfer = t => t->Transfer;

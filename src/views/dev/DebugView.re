@@ -172,7 +172,7 @@ let make = () => {
                             ~delegate="delegate",
                             (),
                           )
-                          ->Delegation,
+                          ->Delegate,
                         )
                       )
                     )

@@ -4,7 +4,7 @@ type t =
   | Token(Token.operation);
 
 let transfer = t => t->Transfer->Protocol;
-let delegation = d => d->Delegation->Protocol;
+let delegation = d => d->Delegate->Protocol;
 
 let makeDelegate =
     (~source, ~delegate, ~fee=?, ~burnCap=?, ~forceLowFee=?, ~counter=?, ()) => {
@@ -21,8 +21,7 @@ let makeDelegate =
         (),
       ),
   }
-  ->Delegation
-  ->Protocol;
+  ->delegation;
 };
 
 let makeTransfer =

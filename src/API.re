@@ -440,7 +440,7 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
         transaction.tx_options,
         transaction.common_options,
       );
-    | Delegation(delegation) => [|
+    | Delegate(delegation) => [|
         "-E",
         network->endpoint,
         "-w",
