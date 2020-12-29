@@ -3,8 +3,8 @@ type t =
   | Protocol(Protocol.t)
   | Token(Token.operation);
 
-let transfer = t => t->Transfer->Protocol;
-let delegation = d => d->Delegate->Protocol;
+let transaction = t => t->Transaction->Protocol;
+let delegation = d => d->Delegation->Protocol;
 
 let makeDelegate =
     (~source, ~delegate, ~fee=?, ~burnCap=?, ~forceLowFee=?, ~counter=?, ()) => {
@@ -24,45 +24,70 @@ let makeDelegate =
   ->delegation;
 };
 
-let makeTransfer =
+let makeTransaction =
+    (
+      ~source,
+      ~transfers,
+      ~counter=?,
+      ~burnCap=?,
+      ~forceLowFee=?,
+      ~confirmations=?,
+      (),
+    ) =>
+  transaction({
+    source,
+    transfers,
+    options:
+      makeCommonOptions(
+        ~fee=None,
+        ~counter,
+        ~burnCap,
+        ~forceLowFee,
+        ~confirmations,
+        (),
+      ),
+  });
+
+let makeSingleTransaction =
     (
       ~source,
       ~amount,
       ~destination,
-      ~fee=?,
       ~counter=?,
+      ~burnCap=?,
+      ~forceLowFee=?,
+      ~confirmations=?,
+      ~fee=?,
+      ~parameter=?,
+      ~entrypoint=?,
       ~gasLimit=?,
       ~storageLimit=?,
-      ~burnCap=?,
-      ~confirmations=?,
-      ~forceLowFee=?,
       (),
-    ) => {
-  Protocol.{
+    ) =>
+  transaction({
     source,
-    amount,
-    destination,
-    tx_options:
-      makeTransferOptions(
-        ~fee,
-        ~gasLimit,
-        ~storageLimit,
-        ~parameter=None,
-        ~entrypoint=None,
+    transfers: [
+      makeTransfer(
+        ~amount,
+        ~destination,
+        ~fee?,
+        ~parameter?,
+        ~entrypoint?,
+        ~gasLimit?,
+        ~storageLimit?,
         (),
       ),
-    common_options:
-      Protocol.makeCommonOptions(
-        ~fee,
+    ],
+    options:
+      makeCommonOptions(
+        ~fee=None,
         ~counter,
         ~burnCap,
-        ~confirmations,
         ~forceLowFee,
+        ~confirmations,
         (),
       ),
-  }
-  ->transfer;
-};
+  });
 
 module Business = {
   module Reveal = {

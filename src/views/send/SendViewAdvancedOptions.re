@@ -42,7 +42,7 @@ let make = (~form: SendForm.api, ~token: option(Token.t)=?) => {
             ),
           )
         | None =>
-          Operation.makeTransfer(
+          Operation.makeSingleTransaction(
             ~source=form.values.sender,
             ~amount=form.values.amount->Js.Float.fromString,
             ~destination=form.values.recipient,

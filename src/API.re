@@ -394,7 +394,7 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
           : Future.value(Ok(operations))
     );
 
-  let single_batch_transaction = (tx: Protocol.single_batch_transaction) => {
+  let transfer = (tx: Protocol.transfer) => {
     let obj = Js.Dict.empty();
     Js.Dict.set(obj, "destination", Js.Json.string(tx.destination));
     Js.Dict.set(obj, "amount", Js.Float.toString(tx.amount)->Js.Json.string);
@@ -413,34 +413,48 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
     Js.Json.object_(obj);
   };
 
-  let transactions_to_json = (btxs: Protocol.batch_transactions) =>
-    Js.Array.map(single_batch_transaction, btxs.transactions)
+  let transfers_to_json = (btxs: Protocol.transaction) =>
+    btxs.transfers
+    ->Belt.List.map(transfer)
+    ->Belt.List.toArray
     ->Js.Json.array
     ->Js.Json.stringify /* ->(json => "\'" ++ json ++ "\'") */;
 
   let arguments = (network, operation: Protocol.t) =>
     switch (operation) {
-    | Transfer(transaction) =>
+    | Transaction({transfers: [transfer]} as transaction) =>
       let arguments = [|
         "-E",
         network->endpoint,
         "-w",
         "none",
         "transfer",
-        Js.Float.toString(transaction.amount),
+        Js.Float.toString(transfer.amount),
         "from",
         transaction.source,
         "to",
-        transaction.destination,
+        transfer.destination,
         "--burn-cap",
         "0.257",
       |];
       Injector.transaction_options_arguments(
         arguments,
-        transaction.tx_options,
-        transaction.common_options,
+        transfer.tx_options,
+        transaction.options,
       );
-    | Delegate(delegation) => [|
+    | Transaction(transaction) => [|
+        "-E",
+        network->endpoint,
+        "-w",
+        "none",
+        "multiple",
+        "transfers",
+        "from",
+        transaction.source,
+        "using",
+        transfers_to_json(transaction),
+      |]
+    | Delegation(delegation) => [|
         "-E",
         network->endpoint,
         "-w",
@@ -451,18 +465,6 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
         delegation.source,
         "to",
         delegation.delegate,
-      |]
-    | BatchTransactions(btxs) => [|
-        "-E",
-        network->endpoint,
-        "-w",
-        "none",
-        "multiple",
-        "transfers",
-        "from",
-        btxs.source,
-        "using",
-        transactions_to_json(btxs),
       |]
     };
 

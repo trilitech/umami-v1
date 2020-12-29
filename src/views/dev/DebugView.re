@@ -146,7 +146,7 @@ let make = () => {
                 onSubmit={(source, amount, destination) =>
                   setInjection(_ =>
                     Pending(
-                      Protocol.makeTransfer(
+                      Protocol.makeSingleTransaction(
                         ~source,
                         ~amount,
                         ~destination,
@@ -172,7 +172,7 @@ let make = () => {
                             ~delegate="delegate",
                             (),
                           )
-                          ->Delegate,
+                          ->Delegation,
                         )
                       )
                     )

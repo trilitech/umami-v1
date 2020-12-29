@@ -54,24 +54,24 @@ let make = () => {
       onPress={_ => {
         [@warning "-8"]
         let tx1 =
-          Protocol.makeSingleBatchTransfer(
+          Protocol.makeTransfer(
             ~amount=amount1,
             ~destination=destination1,
             (),
           );
         [@warning "-8"]
         let tx2 =
-          Protocol.makeSingleBatchTransfer(
+          Protocol.makeTransfer(
             ~amount=amount2,
             ~destination=destination2,
             (),
           );
-        Protocol.makeBatchTransfers(~source, ~transactions=[|tx1, tx2|], ())
+        Protocol.makeTransaction(~source, ~transfers=[tx1, tx2], ())
         ->(
             txs => {
               [@warning "-8"]
-              let Protocol.BatchTransactions(btxs) = txs;
-              Js.log(OperationsAPI.transactions_to_json(btxs));
+              let Protocol.Transaction(btxs) = txs;
+              Js.log(OperationsAPI.transfers_to_json(btxs));
               txs;
             }
           )

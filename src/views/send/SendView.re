@@ -62,12 +62,12 @@ let styles =
   );
 
 type transfer =
-  | ProtocolTransfer(Protocol.transfer, list(Protocol.transfer))
+  | ProtocolTransaction(Protocol.transaction)
   | TokenTransfer(Token.operation, int, string, string);
 
 let toOperation = t =>
   switch (t) {
-  | ProtocolTransfer(operation, _) => Operation.transfer(operation)
+  | ProtocolTransaction(transaction) => Operation.transaction(transaction)
   | TokenTransfer(operation, _, _, _) => Operation.Token(operation)
   };
 
@@ -108,8 +108,8 @@ let buildTransfer =
       );
     TokenTransfer(transfer, amount, source, destination);
   | None =>
-    let transfer =
-      Protocol.makeTransfer(
+    let t =
+      Protocol.makeSingleTransaction(
         ~source,
         ~amount,
         ~destination,
@@ -120,7 +120,7 @@ let buildTransfer =
         ~forceLowFee?,
         (),
       );
-    ProtocolTransfer(transfer, []);
+    ProtocolTransaction(t);
   };
 };
 
@@ -130,7 +130,7 @@ type step =
 
 let sourceDestination = transfer => {
   switch (transfer) {
-  | ProtocolTransfer({source, destination}, _) => (source, destination)
+  | ProtocolTransaction({source, transfers: [t]}) => (source, t.destination)
   | TokenTransfer(_, _, source, destination) => (source, destination)
   };
 };
@@ -138,7 +138,7 @@ let sourceDestination = transfer => {
 let buildSummaryContent =
     (transfer, token, dryRun: Protocol.simulationResults) => {
   switch (transfer) {
-  | ProtocolTransfer({amount}, _) =>
+  | ProtocolTransaction({transfers: [{amount}]}) =>
     let subtotal = (
       I18n.label#summary_subtotal,
       I18n.t#xtz_amount(amount->Js.Float.toFixedWithPrecision(~digits=1)),

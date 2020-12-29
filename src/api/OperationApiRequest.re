@@ -9,7 +9,7 @@ type injection = {
 };
 
 let transfert = (operation, password) => {
-  operation: Operation.transfer(operation),
+  operation: Operation.transaction(operation),
   password,
 };
 
