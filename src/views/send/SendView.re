@@ -179,16 +179,32 @@ type step =
   | BatchStep;
 
 let sourceDestination = transfer => {
+  let recipientLbl = I18n.title#recipient_account;
+  let sourceLbl = I18n.title#sender_account;
   switch (transfer) {
-  | ProtocolTransaction({source, transfers: [t]}) => (source, t.destination)
-  | TokenTransfer(_, _, source, destination) => (source, destination)
+  | ProtocolTransaction({source, transfers: [t]}) => (
+      (source, sourceLbl),
+      `One((t.destination, recipientLbl)),
+    )
+  | ProtocolTransaction({source, transfers}) =>
+    let destinations =
+      transfers->Belt.List.map(t =>
+        (t.destination, t.amount->Js.Float.toFixedWithPrecision(~digits=1))
+      );
+    ((source, sourceLbl), `Many(destinations));
+  | TokenTransfer(_, _, source, destination) => (
+      (source, sourceLbl),
+      `One((destination, recipientLbl)),
+    )
   };
 };
 
 let buildSummaryContent =
     (transfer, token, dryRun: Protocol.simulationResults) => {
   switch (transfer) {
-  | ProtocolTransaction({transfers: [{amount}]}) =>
+  | ProtocolTransaction({transfers}) =>
+    let amount =
+      transfers->Belt.List.reduce(0., (acc, {amount}) => acc +. amount);
     let subtotal = (
       I18n.label#summary_subtotal,
       I18n.t#xtz_amount(amount->Js.Float.toFixedWithPrecision(~digits=1)),
@@ -389,7 +405,8 @@ let make = (~onPressCancel) => {
   let submitAction = React.useRef(`SubmitAll);
 
   let onSubmitBatch = batch => {
-    let transaction = buildTransaction(batch, advancedOptionOpened, token);
+    let transaction =
+      buildTransaction(batch->Belt.List.reverse, advancedOptionOpened, token);
     sendOperationSimulate(toOperation(transaction))
     ->Future.tapOk(dryRun => {
         setModalStep(_ => PasswordStep(transaction, dryRun))
@@ -474,11 +491,11 @@ let make = (~onPressCancel) => {
              onSubmitAll
            />
          | PasswordStep(transfer, dryRun) =>
-           let (source, destination) = sourceDestination(transfer);
+           let (source, destinations) = sourceDestination(transfer);
            <SignOperationView
              title=I18n.title#confirmation
-             source=(source, I18n.title#sender_account)
-             destination=(destination, I18n.title#recipient_account)
+             source
+             destinations
              subtitle=I18n.expl#confirm_operation
              onPressCancel={_ => setModalStep(_ => SendStep)}
              content={buildSummaryContent(transfer, token, dryRun)}

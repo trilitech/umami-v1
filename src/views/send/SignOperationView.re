@@ -12,7 +12,7 @@ let make =
       ~title,
       ~subtitle=?,
       ~source,
-      ~destination,
+      ~destinations,
       ~sendOperation,
       ~content,
     ) => {
@@ -45,7 +45,7 @@ let make =
     <OperationSummaryView
       style=styles##operationSummary
       source
-      destination
+      destinations
       content
     />
     <FormGroupTextInput

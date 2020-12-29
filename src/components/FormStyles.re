@@ -22,3 +22,10 @@ let subtitle = style(~marginTop=10.->dp, ());
 
 let topLeftButton =
   style(~position=`absolute, ~left=20.->dp, ~top=20.->dp, ());
+let amountRow =
+  style(
+    ~display=`flex,
+    ~flexDirection=`row,
+    ~justifyContent=`spaceBetween,
+    (),
+  );

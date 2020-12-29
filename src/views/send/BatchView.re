@@ -30,7 +30,7 @@ let styles =
     })
   );
 
-let amount = amount => {
+let buildAmount = amount => {
   AccountSelector.Amount(
     <Typography.Body1 fontWeightStyle=`bold style=styles##amount>
       {I18n.t#xtz_amount(amount)->React.string}
@@ -45,7 +45,7 @@ let computeTotal = batch =>
 
 module Item = {
   [@react.component]
-  let make = (~i, ~formValues: SendForm.StateLenses.state) => {
+  let make = (~i, ~recipient, ~amount) => {
     let aliases = StoreContext.Aliases.useGetAll();
     let theme: ThemeContext.theme = ThemeContext.useTheme();
     <View
@@ -60,13 +60,13 @@ module Item = {
       </Typography.Subtitle1>
       <AccountSelector.AccountItem
         account={
-          address: formValues.recipient,
+          address: recipient,
           alias:
-            formValues.recipient
+            recipient
             ->AliasHelpers.getAliasFromAddress(aliases)
             ->Belt.Option.getWithDefault(""),
         }
-        showAmount={amount(formValues.amount)}
+        showAmount={buildAmount(amount)}
       />
       <TouchableOpacity style=styles##moreButton onPress={_ => ()}>
         <Icons.More size=24. color={theme.colors.iconMediumEmphasis} />
@@ -77,18 +77,17 @@ module Item = {
 
 module Transactions = {
   [@react.component]
-  let make = (~batch) => {
+  let make = (~recipients) => {
     <View style=styles##container>
       <Typography.Overline2 style=styles##listLabel>
         I18n.label#transactions->React.string
       </Typography.Overline2>
       <View style=styles##list>
         {{
-           batch
-           ->Belt.List.reverse
+           recipients
            ->Belt.List.toArray
-           ->Belt.Array.mapWithIndex((i, formValues) => {
-               <Item i formValues />
+           ->Belt.Array.mapWithIndex((i, (recipient, amount)) => {
+               <Item i recipient amount />
              });
          }
          ->React.array}
@@ -100,6 +99,7 @@ module Transactions = {
 [@react.component]
 let make = (~back, ~onSubmitBatch, ~batch: list(SendForm.StateLenses.state)) => {
   let theme: ThemeContext.theme = ThemeContext.useTheme();
+  let recipients = batch->Belt.List.map(t => (t.recipient, t.amount));
   <>
     {<TouchableOpacity onPress={_ => back()} style=FormStyles.topLeftButton>
        <Icons.ArrowLeft size=36. color={theme.colors.iconMediumEmphasis} />
@@ -112,11 +112,7 @@ let make = (~back, ~onSubmitBatch, ~batch: list(SendForm.StateLenses.state)) => 
         I18n.expl#batch->React.string
       </Typography.Overline1>
     </View>
-    <View
-      style={
-        [OperationSummaryView.styles##amountRow, styles##summary]
-        ->ReactUtils.styles
-      }>
+    <View style={[FormStyles.amountRow, styles##summary]->ReactUtils.styles}>
       <Typography.Overline2>
         I18n.label#summary_total->React.string
       </Typography.Overline2>
@@ -125,7 +121,7 @@ let make = (~back, ~onSubmitBatch, ~batch: list(SendForm.StateLenses.state)) => 
          ->React.string}
       </Typography.Subtitle1>
     </View>
-    <Transactions batch />
+    <Transactions recipients />
     <View style=FormStyles.verticalFormAction>
       <Buttons.SubmitPrimary
         text=I18n.btn#batch_submit
