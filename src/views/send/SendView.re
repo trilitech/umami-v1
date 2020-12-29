@@ -128,6 +128,51 @@ let buildTransfer =
   };
 };
 
+let buildTransaction =
+    (
+      batch: list(SendForm.StateLenses.state),
+      advancedOptionOpened: bool,
+      token: option(Token.t),
+    ) => {
+  switch (batch) {
+  | [] => assert(false)
+  | [transfer] => buildTransfer(transfer, advancedOptionOpened, token)
+  | [first, ..._] as transfers =>
+    let mapIfAdvanced = (v, map) =>
+      advancedOptionOpened && v->Js.String2.length > 0 ? Some(v->map) : None;
+
+    let source = first.sender;
+    let forceLowFee = first.forceLowFee ? Some(true) : None;
+    let counter = first.counter->mapIfAdvanced(int_of_string);
+
+    let transfers =
+      transfers->Belt.List.map((t: SendForm.StateLenses.state) => {
+        let amount = t.amount->Js.Float.fromString;
+        let destination = t.recipient;
+        let gasLimit = t.gasLimit->mapIfAdvanced(int_of_string);
+        let storageLimit = t.storageLimit->mapIfAdvanced(int_of_string);
+        let fee = t.fee->mapIfAdvanced(Js.Float.fromString);
+        Protocol.makeTransfer(
+          ~amount,
+          ~destination,
+          ~fee?,
+          ~gasLimit?,
+          ~storageLimit?,
+          (),
+        );
+      });
+
+    Protocol.makeTransaction(
+      ~source,
+      ~transfers,
+      ~counter?,
+      ~forceLowFee?,
+      (),
+    )
+    ->ProtocolTransaction;
+  };
+};
+
 type step =
   | SendStep
   | PasswordStep(transfer, Protocol.simulationResults)
@@ -343,25 +388,24 @@ let make = (~onPressCancel) => {
 
   let submitAction = React.useRef(`SubmitAll);
 
+  let onSubmitBatch = batch => {
+    let transaction = buildTransaction(batch, advancedOptionOpened, token);
+    sendOperationSimulate(toOperation(transaction))
+    ->Future.tapOk(dryRun => {
+        setModalStep(_ => PasswordStep(transaction, dryRun))
+      })
+    ->ignore;
+  };
+
   let onSubmit = ({state, send}: SendForm.onSubmitAPI) =>
     switch (submitAction.current) {
-    | `SubmitAll =>
-      let transfer = buildTransfer(state.values, advancedOptionOpened, token);
-      sendOperationSimulate(toOperation(transfer))
-      ->Future.tapOk(dryRun => {
-          setModalStep(_ => PasswordStep(transfer, dryRun))
-        })
-      ->ignore;
+    | `SubmitAll => onSubmitBatch([state.values, ...batch])
     | `AddToBatch =>
       setBatch(l => [state.values, ...l]);
       send(ResetForm);
     };
 
   let form = Form.build(account, onSubmit);
-
-  let onSubmitBatch = _batch => {
-    assert(false);
-  };
 
   let onSubmitAll = _ => {
     submitAction.current = `SubmitAll;
