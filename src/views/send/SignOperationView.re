@@ -44,9 +44,9 @@ let make =
         ->React.string
       </Typography.Headline>
       {switch (operation) {
-       | InjectionOperation(Transaction({options: {fee}}))
-       | InjectionOperation(Delegation({fee}))
-       | TokensOperation({options: {fee}}, _) =>
+       | InjectionOperation(Transaction({tx_options: {fee}}))
+       | InjectionOperation(Delegation({options: {fee}}))
+       | TokensOperation({tx_options: {fee}}, _) =>
          fee->ReactUtils.mapOpt(fee =>
            <Typography.Body1 colorStyle=`mediumEmphasis>
              {I18n.t#operation_summary_fee(fee->Js.Float.toString)

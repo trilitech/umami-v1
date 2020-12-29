@@ -214,33 +214,37 @@ module InjectorRaw = (Caller: CallerAPI) => {
   };
 
   let transaction_options_arguments =
-      (arguments, options: Injection.transaction_options) => {
+      (
+        arguments,
+        tx_options: Injection.transaction_options,
+        common_options: Injection.common_options,
+      ) => {
     let arguments =
-      switch (options.fee) {
+      switch (tx_options.fee) {
       | Some(fee) =>
         Js.Array2.concat(arguments, [|"--fee", fee->Js.Float.toString|])
       | None => arguments
       };
     let arguments =
-      switch (options.counter) {
+      switch (common_options.counter) {
       | Some(counter) =>
         Js.Array2.concat(arguments, [|"-C", counter->Js.Int.toString|])
       | None => arguments
       };
     let arguments =
-      switch (options.gasLimit) {
+      switch (tx_options.gasLimit) {
       | Some(gasLimit) =>
         Js.Array2.concat(arguments, [|"-G", gasLimit->Js.Int.toString|])
       | None => arguments
       };
     let arguments =
-      switch (options.storageLimit) {
+      switch (tx_options.storageLimit) {
       | Some(storageLimit) =>
         Js.Array2.concat(arguments, [|"-S", storageLimit->Js.Int.toString|])
       | None => arguments
       };
     let arguments =
-      switch (options.burnCap) {
+      switch (common_options.burnCap) {
       | Some(burnCap) =>
         Js.Array2.concat(
           arguments,
@@ -248,7 +252,7 @@ module InjectorRaw = (Caller: CallerAPI) => {
         )
       | None => arguments
       };
-    switch (options.forceLowFee) {
+    switch (common_options.forceLowFee) {
     | Some(true) => Js.Array2.concat(arguments, [|"--force-low-fee"|])
     | Some(false)
     | None => arguments
@@ -395,6 +399,30 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
           : Future.value(Ok(operations))
     );
 
+  let single_batch_transaction = (tx: Injection.single_batch_transaction) => {
+    let obj = Js.Dict.empty();
+    Js.Dict.set(obj, "destination", Js.Json.string(tx.destination));
+    Js.Dict.set(obj, "amount", Js.Float.toString(tx.amount)->Js.Json.string);
+    tx.tx_options.fee
+    ->Lib.Option.iter(v =>
+        Js.Dict.set(obj, "fee", Js.Float.toString(v)->Js.Json.string)
+      );
+    tx.tx_options.gasLimit
+    ->Lib.Option.iter(v =>
+        Js.Dict.set(obj, "gas-limit", Js.Int.toString(v)->Js.Json.string)
+      );
+    tx.tx_options.storageLimit
+    ->Lib.Option.iter(v =>
+        Js.Dict.set(obj, "storage-limit", Js.Int.toString(v)->Js.Json.string)
+      );
+    Js.Json.object_(obj);
+  };
+
+  let transactions_to_json = (btxs: Injection.batch_transactions) =>
+    Js.Array.map(single_batch_transaction, btxs.transactions)
+    ->Js.Json.array
+    ->Js.Json.stringify /* ->(json => "\'" ++ json ++ "\'") */;
+
   let arguments = (network, operation: Injection.operation) =>
     switch (operation) {
     | Transaction(transaction) =>
@@ -412,7 +440,11 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
         "--burn-cap",
         "0.257",
       |];
-      Injector.transaction_options_arguments(arguments, transaction.options);
+      Injector.transaction_options_arguments(
+        arguments,
+        transaction.tx_options,
+        transaction.common_options,
+      );
     | Delegation(delegation) => [|
         "-E",
         network->endpoint,
@@ -424,6 +456,18 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
         delegation.source,
         "to",
         delegation.delegate,
+      |]
+    | BatchTransactions(btxs) => [|
+        "-E",
+        network->endpoint,
+        "-w",
+        "none",
+        "multiple",
+        "transfers",
+        "from",
+        btxs.source,
+        "using",
+        transactions_to_json(btxs),
       |]
     };
 
@@ -855,12 +899,13 @@ module Tokens = (Caller: CallerAPI) => {
     };
   };
 
-  let make_get_arguments = (arguments, callback, offline, options) =>
+  let make_get_arguments =
+      (arguments, callback, offline, tx_options, common_options) =>
     if (offline) {
       Js.Array2.concat(arguments, [|"offline", "with", callback|]);
     } else {
       Js.Array2.concat(arguments, [|"callback", "on", callback|])
-      ->Injector.transaction_options_arguments(options);
+      ->Injector.transaction_options_arguments(tx_options, common_options);
     };
 
   let make_arguments = (network, operation: Token.operation, ~offline) => {
@@ -884,7 +929,10 @@ module Tokens = (Caller: CallerAPI) => {
         "--burn-cap",
         "0.01875",
       |]
-      ->Injector.transaction_options_arguments(operation.options)
+      ->Injector.transaction_options_arguments(
+          operation.tx_options,
+          operation.common_options,
+        )
     | GetBalance(getBalance) =>
       [|
         "-E",
@@ -900,7 +948,12 @@ module Tokens = (Caller: CallerAPI) => {
         "for",
         getBalance.address,
       |]
-      ->make_get_arguments(getBalance.callback, offline, operation.options)
+      ->make_get_arguments(
+          getBalance.callback,
+          offline,
+          operation.tx_options,
+          operation.common_options,
+        )
     | _ => assert(false)
     };
   };
