@@ -12,10 +12,13 @@ let formAction =
   );
 
 let verticalFormAction =
-  ReactUtils.styles(
+  ReactUtils.styles([
     formAction,
     style(~flexDirection=`column, ~width=100.->pct, ()),
-  );
+  ]);
 
 let header = style(~marginBottom=20.->dp, ~textAlign=`center, ());
 let subtitle = style(~marginTop=10.->dp, ());
+
+let topLeftButton =
+  style(~position=`absolute, ~left=20.->dp, ~top=20.->dp, ());

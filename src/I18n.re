@@ -59,7 +59,8 @@ let label = {
   pub add_token_name = "Name";
   pub add_token_symbol = "Symbol";
   pub summary_subtotal = "Subtotal";
-  pub summary_total = "Total"
+  pub summary_total = "Total";
+  pub transactions = "Transactions"
 };
 
 let input_placeholder = {
@@ -100,7 +101,8 @@ let title = {
   pub creating_account = "Creating account";
   pub importing_account = "Importing account";
   pub submitting = "Submitting operation";
-  pub send_many_transactions = "Send one or many transactions"
+  pub send_many_transactions = "Send one or many transactions";
+  pub batch = "Batch"
 };
 
 let expl = {
@@ -110,7 +112,8 @@ let expl = {
   pub account_create_record_verify = {j|We will now verify that you’ve properly recorded your recovery phrase. To demonstrate this, please type in the word that corresponds to each sequence number.|j};
   pub account_create_password_not_recorded = {j|Please note that this password is not recorded anywhere and only applies to this machine.|j};
   pub import_account_enter_phrase = {j|Please fill in the recovery phrase in sequence.|j};
-  pub confirm_operation = "Please confirm the details of the operation"
+  pub confirm_operation = "Please confirm the details of the operation";
+  pub batch = "Review, edit or delete the transactions of the batch"
 };
 
 let t = {

@@ -130,7 +130,8 @@ let buildTransfer =
 
 type step =
   | SendStep
-  | PasswordStep(transfer, Protocol.simulationResults);
+  | PasswordStep(transfer, Protocol.simulationResults)
+  | BatchStep;
 
 let sourceDestination = transfer => {
   switch (transfer) {
@@ -231,17 +232,22 @@ module Form = {
           ~token=?,
           ~onAddToBatch,
           ~onSubmitAll,
+          ~setBatchStep,
           ~form,
         ) => {
       let (advancedOptionOpened, setAdvancedOptionOpened) = advancedOptionState;
       let (selectedToken, setSelectedToken) = tokenState;
+      let theme = ThemeContext.useTheme();
 
       let batchMode = batch != [];
-
       let submitLabel =
         batchMode ? I18n.btn#batch_submit : I18n.btn#send_submit;
 
       <>
+        {<TouchableOpacity
+           onPress={_ => setBatchStep()} style=FormStyles.topLeftButton>
+           <Icons.List size=36. color={theme.colors.iconMediumEmphasis} />
+         </TouchableOpacity>}
         <View style=FormStyles.header>
           <Typography.Headline>
             I18n.title#send->React.string
@@ -335,30 +341,35 @@ let make = (~onPressCancel) => {
 
   let (modalStep, setModalStep) = React.useState(_ => SendStep);
 
-  let isSubmitAll = React.useRef(true);
+  let submitAction = React.useRef(`SubmitAll);
 
   let onSubmit = ({state, send}: SendForm.onSubmitAPI) =>
-    if (isSubmitAll.current) {
+    switch (submitAction.current) {
+    | `SubmitAll =>
       let transfer = buildTransfer(state.values, advancedOptionOpened, token);
       sendOperationSimulate(toOperation(transfer))
       ->Future.tapOk(dryRun => {
           setModalStep(_ => PasswordStep(transfer, dryRun))
         })
       ->ignore;
-    } else {
+    | `AddToBatch =>
       setBatch(l => [state.values, ...l]);
-      send(SetValues({...state.values, amount: "", recipient: ""}));
+      send(ResetForm);
     };
 
   let form = Form.build(account, onSubmit);
 
+  let onSubmitBatch = _batch => {
+    assert(false);
+  };
+
   let onSubmitAll = _ => {
-    isSubmitAll.current = true;
+    submitAction.current = `SubmitAll;
     form.submit();
   };
 
   let onAddToBatch = _ => {
-    isSubmitAll.current = false;
+    submitAction.current = `AddToBatch;
     form.submit();
   };
 
@@ -400,18 +411,25 @@ let make = (~onPressCancel) => {
        if (ApiRequest.isLoading(operationSimulateRequest)) {
          <ModalView.LoadingView title=I18n.title#simulation />;
        } else {
-         switch (modalStep, batch) {
-         | (SendStep, _) =>
+         switch (modalStep) {
+         | BatchStep =>
+           <BatchView
+             back={_ => setModalStep(_ => SendStep)}
+             batch
+             onSubmitBatch
+           />
+         | SendStep =>
            <Form.View
              batch
              advancedOptionState
              tokenState
              ?token
              form
+             setBatchStep={_ => setModalStep(_ => BatchStep)}
              onAddToBatch
              onSubmitAll
            />
-         | (PasswordStep(transfer, dryRun), _) =>
+         | PasswordStep(transfer, dryRun) =>
            let (source, destination) = sourceDestination(transfer);
            <SignOperationView
              title=I18n.title#confirmation

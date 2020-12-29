@@ -8,9 +8,9 @@ let styles =
     })
   );
 
-let baseRenderButton = AccountSelector.baseRenderButton(~showBalance=true);
+let baseRenderButton = AccountSelector.baseRenderButton(~showAmount=Balance);
 
-let baseRenderItem = AccountSelector.baseRenderItem(~showBalance=false);
+let baseRenderItem = AccountSelector.baseRenderItem(~showAmount=Nothing);
 
 [@react.component]
 let make =

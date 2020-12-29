@@ -49,4 +49,4 @@ let useIsMonted = () => {
   isMounted;
 };
 
-let styles = (s1, s2) => Style.array([|s1, s2|]);
+let styles = l => Style.array(Belt.List.toArray(l));

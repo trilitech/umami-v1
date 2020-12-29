@@ -24,6 +24,8 @@ module Lib = {
       };
     };
 
+    let onlyIf = (b, f) => b ? Some(f()) : None;
+
     let rec firstSome = l => {
       switch (l) {
       | [] => None

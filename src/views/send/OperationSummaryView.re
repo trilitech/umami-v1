@@ -25,7 +25,7 @@ module Content = {
          content
          ->Belt.List.toArray
          ->Belt.Array.map(((property, value)) =>
-             <View style=styles##amountRow>
+             <View key=property style=styles##amountRow>
                <Typography.Overline2>
                  property->React.string
                </Typography.Overline2>
