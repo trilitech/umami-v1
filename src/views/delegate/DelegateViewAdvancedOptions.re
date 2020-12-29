@@ -16,13 +16,12 @@ let make = (~form: DelegateForm.api) => {
   React.useEffect0(() => {
     if (form.values.sender != "" && form.values.baker != "") {
       let operation =
-        Injection.makeDelegate(
+        Operation.makeDelegate(
           ~source=form.values.sender,
           ~delegate=form.values.baker,
           (),
         );
-
-      sendOperationSimulate(Regular(operation))
+      sendOperationSimulate(operation)
       ->Future.tapOk(dryRun => {
           form.handleChange(Fee, dryRun.fee->Js.Float.toString)
         })

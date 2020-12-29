@@ -1,18 +1,5 @@
 open ReactNative;
 
-let styles =
-  Style.(
-    StyleSheet.create({
-      "loadingView":
-        style(
-          ~height=120.->dp,
-          ~justifyContent=`center,
-          ~alignItems=`center,
-          (),
-        ),
-    })
-  );
-
 [@react.component]
 let make =
     (
@@ -32,15 +19,13 @@ let make =
     ->ignore;
   };
 
-  let theme = ThemeContext.useTheme();
-
   <>
     <ModalAction ref=modal visible onRequestClose=closeAction>
       <ModalView.Form>
         {switch (request) {
          | Done(Ok(_result), _) =>
            <>
-             <Typography.Headline style=FormStyles.title>
+             <Typography.Headline style=FormStyles.header>
                titleDone->React.string
              </Typography.Headline>
              <View style=FormStyles.formAction>
@@ -57,16 +42,10 @@ let make =
              </View>
            </>
          | Loading(_) =>
-           <View style=styles##loadingView>
-             <ActivityIndicator
-               animating=true
-               size=ActivityIndicator_Size.large
-               color={theme.colors.iconMediumEmphasis}
-             />
-           </View>
+           <ModalView.LoadingView title=I18n.title#simulation height=120 />
          | NotAsked =>
            <>
-             <Typography.Headline style=FormStyles.title>
+             <Typography.Headline style=FormStyles.header>
                title->React.string
              </Typography.Headline>
              <View style=FormStyles.formAction>

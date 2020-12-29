@@ -172,13 +172,6 @@ let map = (result: Belt.Result.t('a, string), transform: 'a => 'b) =>
   };
 
 module InjectorRaw = (Caller: CallerAPI) => {
-  type simulationResults = {
-    fee: float,
-    count: int,
-    gasLimit: int,
-    storageLimit: int,
-  };
-
   let parse = (receipt, pattern, interp) => {
     let rec parseAll = (acc, regexp) =>
       switch (Js.Re.exec_(regexp, receipt)->Belt.Option.map(Js.Re.captures)) {
@@ -216,8 +209,8 @@ module InjectorRaw = (Caller: CallerAPI) => {
   let transaction_options_arguments =
       (
         arguments,
-        tx_options: Injection.transaction_options,
-        common_options: Injection.common_options,
+        tx_options: Protocol.transfer_options,
+        common_options: Protocol.common_options,
       ) => {
     let arguments =
       switch (tx_options.fee) {
@@ -299,12 +292,8 @@ module InjectorRaw = (Caller: CallerAPI) => {
             );
           Js.log(storageLimit);
           switch (fee, count, gasLimit, storageLimit) {
-          | (Some(fee), Some(count), Some(gasLimit), Some(storageLimit)) => {
-              fee,
-              count,
-              gasLimit,
-              storageLimit,
-            }
+          | (Some(fee), Some(count), Some(gasLimit), Some(storageLimit)) =>
+            Protocol.{fee, count, gasLimit, storageLimit}
           | _ => raise(InvalidReceiptFormat)
           };
         })
@@ -358,14 +347,20 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
     ->Getter.get
     ->Future.map(result =>
         result->map(x =>
-          (operations, x |> Json.Decode.(array(Operation.decodeFromMempool)))
+          (
+            operations,
+            x |> Json.Decode.(array(Operation.Read.decodeFromMempool)),
+          )
         )
       )
     >>= (
       ((operations, mempool)) => {
-        module Comparator = Operation.Comparator;
+        module Comparator = Operation.Read.Comparator;
         let operations =
-          Belt.Set.fromArray(operations, ~id=(module Operation.Comparator));
+          Belt.Set.fromArray(
+            operations,
+            ~id=(module Operation.Read.Comparator),
+          );
 
         let operations =
           mempool
@@ -390,7 +385,7 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
     ->URL.operations(account, ~types?, ~destination?, ~limit?, ())
     ->Getter.get
     ->Future.map(result =>
-        result->map(Json.Decode.(array(Operation.decode)))
+        result->map(Json.Decode.(array(Operation.Read.decode)))
       )
     >>= (
       operations =>
@@ -399,7 +394,7 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
           : Future.value(Ok(operations))
     );
 
-  let single_batch_transaction = (tx: Injection.single_batch_transaction) => {
+  let transfer = (tx: Protocol.transfer) => {
     let obj = Js.Dict.empty();
     Js.Dict.set(obj, "destination", Js.Json.string(tx.destination));
     Js.Dict.set(obj, "amount", Js.Float.toString(tx.amount)->Js.Json.string);
@@ -418,33 +413,47 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
     Js.Json.object_(obj);
   };
 
-  let transactions_to_json = (btxs: Injection.batch_transactions) =>
-    Js.Array.map(single_batch_transaction, btxs.transactions)
+  let transfers_to_json = (btxs: Protocol.transaction) =>
+    btxs.transfers
+    ->Belt.List.map(transfer)
+    ->Belt.List.toArray
     ->Js.Json.array
     ->Js.Json.stringify /* ->(json => "\'" ++ json ++ "\'") */;
 
-  let arguments = (network, operation: Injection.operation) =>
+  let arguments = (network, operation: Protocol.t) =>
     switch (operation) {
-    | Transaction(transaction) =>
+    | Transaction({transfers: [transfer]} as transaction) =>
       let arguments = [|
         "-E",
         network->endpoint,
         "-w",
         "none",
         "transfer",
-        Js.Float.toString(transaction.amount),
+        Js.Float.toString(transfer.amount),
         "from",
         transaction.source,
         "to",
-        transaction.destination,
+        transfer.destination,
         "--burn-cap",
         "0.257",
       |];
       Injector.transaction_options_arguments(
         arguments,
-        transaction.tx_options,
-        transaction.common_options,
+        transfer.tx_options,
+        transaction.options,
       );
+    | Transaction(transaction) => [|
+        "-E",
+        network->endpoint,
+        "-w",
+        "none",
+        "multiple",
+        "transfers",
+        "from",
+        transaction.source,
+        "using",
+        transfers_to_json(transaction),
+      |]
     | Delegation(delegation) => [|
         "-E",
         network->endpoint,
@@ -457,29 +466,17 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
         "to",
         delegation.delegate,
       |]
-    | BatchTransactions(btxs) => [|
-        "-E",
-        network->endpoint,
-        "-w",
-        "none",
-        "multiple",
-        "transfers",
-        "from",
-        btxs.source,
-        "using",
-        transactions_to_json(btxs),
-      |]
     };
 
   exception InvalidReceiptFormat;
 
-  let simulate = (network, operation: Injection.operation) =>
+  let simulate = (network, operation: Protocol.t) =>
     Injector.simulate(network, arguments(_, operation));
 
-  let create = (network, operation: Injection.operation) =>
+  let create = (network, operation: Protocol.t) =>
     Injector.create(network, arguments(_, operation));
 
-  let inject = (network, operation: Injection.operation, ~password) =>
+  let inject = (network, operation: Protocol.t, ~password) =>
     Injector.inject(network, arguments(_, operation), ~password);
 
   let waitForOperationConfirmations = (network, hash, ~confirmations, ~branch) =>

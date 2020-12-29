@@ -56,7 +56,9 @@ let label = {
   pub baker = "Baker";
   pub add_token_address = "Address";
   pub add_token_name = "Name";
-  pub add_token_symbol = "Symbol"
+  pub add_token_symbol = "Symbol";
+  pub summary_subtotal = "Subtotal";
+  pub summary_total = "Total"
 };
 
 let input_placeholder = {
@@ -81,6 +83,7 @@ let title = {
   pub recipient_account = "Recipient account";
   pub delegated_account = "Account to delegate";
   pub baker_account = "Baker";
+  pub confirm_delegate = "Confirm delegate";
   pub delegate = "Delegate";
   pub delegate_update = "Change baker";
   pub delegate_delete = "End delegation";
@@ -90,7 +93,12 @@ let title = {
   pub delete_contact = "Delete contact?";
   pub deleted_contact = "Contact deleted";
   pub confirm_cancel = "Are you sure you want to cancel ?";
-  pub send = "Send"
+  pub send = "Send";
+  pub confirmation = "Confirmation";
+  pub simulation = "Simulation";
+  pub creating_account = "Creating account";
+  pub importing_account = "Importing account";
+  pub submitting = "Submitting operation"
 };
 
 let expl = {
@@ -98,7 +106,8 @@ let expl = {
   pub account_create_record_recovery = {j|Please record the following 24 words in sequence in order to restore it in the future. Ensure to back it up, keeping it securely offline.|j};
   pub account_create_record_verify = {j|We will now verify that you’ve properly recorded your recovery phrase. To demonstrate this, please type in the word that corresponds to each sequence number.|j};
   pub account_create_password_not_recorded = {j|Please note that this password is not recorded anywhere and only applies to this machine.|j};
-  pub import_account_enter_phrase = {j|Please fill in the recovery phrase in sequence.|j}
+  pub import_account_enter_phrase = {j|Please fill in the recovery phrase in sequence.|j};
+  pub confirm_operation = "Please confirm the details of the operation"
 };
 
 let t = {

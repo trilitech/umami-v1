@@ -46,7 +46,6 @@ module FormGroupAmountWithTokenSelector = {
 let styles =
   Style.(
     StyleSheet.create({
-      "formAction": style(~flexDirection=`column, ~width=100.->pct, ()),
       "addTransaction": style(~marginTop=10.->dp, ()),
       "advancedOptionButton":
         style(
@@ -59,17 +58,20 @@ let styles =
           (),
         ),
       "operationSummary": style(~marginBottom=20.->dp, ()),
-      "loadingView":
-        style(
-          ~height=400.->dp,
-          ~justifyContent=`center,
-          ~alignItems=`center,
-          (),
-        ),
     })
   );
 
-let buildTransaction =
+type transfer =
+  | ProtocolTransaction(Protocol.transaction)
+  | TokenTransfer(Token.operation, int, string, string);
+
+let toOperation = t =>
+  switch (t) {
+  | ProtocolTransaction(transaction) => Operation.transaction(transaction)
+  | TokenTransfer(operation, _, _, _) => Operation.Token(operation)
+  };
+
+let buildTransfer =
     (
       state: SendForm.state,
       advancedOptionOpened: bool,
@@ -78,49 +80,92 @@ let buildTransaction =
   let mapIfAdvanced = (v, map) =>
     advancedOptionOpened && v->Js.String2.length > 0 ? Some(v->map) : None;
 
+  let source = state.values.sender;
+  let amount = state.values.amount->Js.Float.fromString;
+  let destination = state.values.recipient;
+  let fee = state.values.fee->mapIfAdvanced(Js.Float.fromString);
+  let counter = state.values.counter->mapIfAdvanced(int_of_string);
+  let gasLimit = state.values.gasLimit->mapIfAdvanced(int_of_string);
+  let storageLimit = state.values.storageLimit->mapIfAdvanced(int_of_string);
+  let forceLowFee =
+    advancedOptionOpened && state.values.forceLowFee ? Some(true) : None;
+
   switch (token) {
   | Some(token) =>
-    SendForm.TokensOperation(
+    let amount = amount->int_of_float;
+    let transfer =
       Token.makeTransfer(
-        ~source=state.values.sender,
-        ~amount=state.values.amount->Js.Float.fromString->int_of_float,
-        ~destination=state.values.recipient,
+        ~source,
+        ~amount,
+        ~destination,
         ~contract=token.address,
-        ~fee=?state.values.fee->mapIfAdvanced(Js.Float.fromString),
-        ~counter=?state.values.counter->mapIfAdvanced(int_of_string),
-        ~gasLimit=?state.values.gasLimit->mapIfAdvanced(int_of_string),
-        ~storageLimit=?
-          state.values.storageLimit->mapIfAdvanced(int_of_string),
-        ~forceLowFee=?
-          advancedOptionOpened && state.values.forceLowFee
-            ? Some(true) : None,
+        ~fee?,
+        ~counter?,
+        ~gasLimit?,
+        ~storageLimit?,
+        ~forceLowFee?,
         (),
-      ),
-      token,
-    )
+      );
+    TokenTransfer(transfer, amount, source, destination);
   | None =>
-    SendForm.InjectionOperation(
-      Injection.makeTransfer(
-        ~source=state.values.sender,
-        ~amount=state.values.amount->Js.Float.fromString,
-        ~destination=state.values.recipient,
-        ~fee=?state.values.fee->mapIfAdvanced(Js.Float.fromString),
-        ~counter=?state.values.counter->mapIfAdvanced(int_of_string),
-        ~gasLimit=?state.values.gasLimit->mapIfAdvanced(int_of_string),
-        ~storageLimit=?
-          state.values.storageLimit->mapIfAdvanced(int_of_string),
-        ~forceLowFee=?
-          advancedOptionOpened && state.values.forceLowFee
-            ? Some(true) : None,
+    let t =
+      Protocol.makeSingleTransaction(
+        ~source,
+        ~amount,
+        ~destination,
+        ~fee?,
+        ~counter?,
+        ~gasLimit?,
+        ~storageLimit?,
+        ~forceLowFee?,
         (),
-      ),
-    )
+      );
+    ProtocolTransaction(t);
   };
 };
 
 type step =
   | SendStep
-  | PasswordStep(SendForm.operation);
+  | PasswordStep(transfer, Protocol.simulationResults);
+
+let sourceDestination = transfer => {
+  switch (transfer) {
+  | ProtocolTransaction({source, transfers: [t]}) => (source, t.destination)
+  | TokenTransfer(_, _, source, destination) => (source, destination)
+  };
+};
+
+let buildSummaryContent =
+    (transfer, token, dryRun: Protocol.simulationResults) => {
+  switch (transfer) {
+  | ProtocolTransaction({transfers: [{amount}]}) =>
+    let subtotal = (
+      I18n.label#summary_subtotal,
+      I18n.t#xtz_amount(amount->Js.Float.toFixedWithPrecision(~digits=1)),
+    );
+    let total = amount +. dryRun.fee;
+    let total = (
+      I18n.label#summary_total,
+      I18n.t#xtz_amount(total->Js.Float.toString),
+    );
+    let fee = (
+      I18n.label#fee,
+      I18n.t#xtz_amount(dryRun.fee->Js.Float.toString),
+    );
+    [subtotal, fee, total];
+  | TokenTransfer(_, amount, _source, _destination) =>
+    let fee = (
+      I18n.label#fee,
+      I18n.t#xtz_amount(dryRun.fee->Js.Float.toString),
+    );
+    let amount =
+      token->Belt.Option.mapWithDefault("", (Token.{symbol}) =>
+        I18n.t#amount(amount->Js.Int.toString, symbol)
+      );
+    let amount = (I18n.label#send_amount, amount);
+    [amount, fee];
+  };
+};
 
 module Form = {
   let build =
@@ -154,8 +199,7 @@ module Form = {
       },
       ~onSubmit=
         ({state}) => {
-          let operation =
-            buildTransaction(state, advancedOptionOpened, token);
+          let operation = buildTransfer(state, advancedOptionOpened, token);
           onSubmit(operation);
 
           None;
@@ -186,7 +230,7 @@ module Form = {
       let (selectedToken, setSelectedToken) = tokenState;
 
       <>
-        <Typography.Headline style=FormStyles.title>
+        <Typography.Headline style=FormStyles.header>
           I18n.title#send->React.string
         </Typography.Headline>
         <FormGroupAmountWithTokenSelector
@@ -251,20 +295,25 @@ let make = (~onPressCancel) => {
 
   let (operationRequest, sendOperation) = StoreContext.Operations.useCreate();
 
-  let sendOperation = (operation, ~password) =>
-    switch (operation) {
-    | SendForm.InjectionOperation(operation) =>
-      sendOperation(OperationApiRequest.regular(operation, password))->ignore
-    | SendForm.TokensOperation(operation, _) =>
-      sendOperation(OperationApiRequest.token(operation, password))->ignore
-    };
+  let sendTransfer = (transfer, password) => {
+    let operation = toOperation(transfer);
+    sendOperation({operation, password})->ignore;
+  };
+
+  let (operationSimulateRequest, sendOperationSimulate) =
+    StoreContext.Operations.useSimulate();
 
   let (modalStep, setModalStep) = React.useState(_ => SendStep);
 
-  let form =
-    Form.build(account, advancedOptionOpened, token, op =>
-      setModalStep(_ => PasswordStep(op))
-    );
+  let form = {
+    let onSubmit = transfer =>
+      sendOperationSimulate(toOperation(transfer))
+      ->Future.tapOk(dryRun => {
+          setModalStep(_ => PasswordStep(transfer, dryRun))
+        })
+      ->ignore;
+    Form.build(account, advancedOptionOpened, token, onSubmit);
+  };
 
   let closing =
     switch (form.formState) {
@@ -275,13 +324,11 @@ let make = (~onPressCancel) => {
 
   let onPressCancel = _ => onPressCancel();
 
-  let theme = ThemeContext.useTheme();
-
   <ModalView.Form closing>
-    {switch (modalStep, operationRequest) {
-     | (_, Done(Ok((hash, _)), _)) =>
+    {switch (modalStep, operationRequest, operationSimulateRequest) {
+     | (_, Done(Ok((hash, _)), _), _) =>
        <>
-         <Typography.Headline style=FormStyles.title>
+         <Typography.Headline style=FormStyles.header>
            I18n.title#operation_injected->React.string
          </Typography.Headline>
          <Typography.Overline2>
@@ -292,7 +339,7 @@ let make = (~onPressCancel) => {
            <Buttons.FormPrimary text=I18n.btn#ok onPress=onPressCancel />
          </View>
        </>
-     | (_, Done(Error(error), _)) =>
+     | (_, Done(Error(error), _), _) =>
        <>
          <Typography.Body1 colorStyle=`error>
            error->React.string
@@ -301,22 +348,23 @@ let make = (~onPressCancel) => {
            <Buttons.FormPrimary text=I18n.btn#ok onPress=onPressCancel />
          </View>
        </>
-     | (_, Loading(_)) =>
-       <View style=styles##loadingView>
-         <ActivityIndicator
-           animating=true
-           size=ActivityIndicator_Size.large
-           color={theme.colors.iconMediumEmphasis}
-         />
-       </View>
-     | (SendStep, _) =>
+     | (_, Loading(_), _) =>
+       <ModalView.LoadingView title=I18n.title#submitting />
+     | (_, _, Loading(_)) =>
+       <ModalView.LoadingView title=I18n.title#simulation />
+     | (SendStep, _, _) =>
        <Form.View advancedOptionState tokenState ?token form />
-     | (PasswordStep(operation), _) =>
+     | (PasswordStep(transfer, dryRun), _, _) =>
+       let (source, destination) = sourceDestination(transfer);
        <SignOperationView
+         title=I18n.title#confirmation
+         source=(source, I18n.title#sender_account)
+         destination=(destination, I18n.title#recipient_account)
+         subtitle=I18n.expl#confirm_operation
          onPressCancel={_ => setModalStep(_ => SendStep)}
-         operation
-         sendOperation
-       />
+         content={buildSummaryContent(transfer, token, dryRun)}
+         sendOperation={sendTransfer(transfer)}
+       />;
      }}
   </ModalView.Form>;
 };

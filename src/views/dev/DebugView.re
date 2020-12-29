@@ -146,12 +146,13 @@ let make = () => {
                 onSubmit={(source, amount, destination) =>
                   setInjection(_ =>
                     Pending(
-                      Injection.makeTransfer(
+                      Protocol.makeSingleTransaction(
                         ~source,
                         ~amount,
                         ~destination,
                         (),
-                      ),
+                      )
+                      ->Protocol.transfer,
                     )
                   )
                 }
@@ -166,11 +167,12 @@ let make = () => {
                   ->FutureEx.getOk(_ =>
                       setInjection(_ =>
                         Pending(
-                          Injection.makeDelegate(
+                          Protocol.makeDelegate(
                             ~source,
                             ~delegate="delegate",
                             (),
-                          ),
+                          )
+                          ->Delegation,
                         )
                       )
                     )

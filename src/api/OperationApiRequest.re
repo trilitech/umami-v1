@@ -3,17 +3,19 @@ module OperationsAPI = API.Operations(API.TezosClient, API.TezosExplorer);
 
 /* Create */
 
-type operation =
-  | Regular(Injection.operation)
-  | Token(Token.operation);
-
 type injection = {
-  operation,
+  operation: Operation.t,
   password: string,
 };
 
-let regular = (operation, password) => {
-  operation: Regular(operation),
+let transfert = (operation, password) => {
+  operation: Operation.transaction(operation),
+  password,
+};
+
+let delegate = (d, password) => {
+  operation: Operation.delegation(d),
+
   password,
 };
 
@@ -25,7 +27,7 @@ let token = (operation, password) => {
 let useCreate = (~sideEffect=?, ~network) => {
   let set = (~config, {operation, password}) => {
     switch (operation) {
-    | Regular(operation) =>
+    | Protocol(operation) =>
       (network, config)->OperationsAPI.inject(operation, ~password)
     | Token(operation) =>
       (network, config)
@@ -47,9 +49,9 @@ let useCreate = (~sideEffect=?, ~network) => {
 let useSimulate = (~network) => {
   let set = (~config, operation) =>
     switch (operation) {
-    | Regular(operation) =>
+    | Operation.Protocol(operation) =>
       (network, config)->OperationsAPI.simulate(operation)
-    | Token(operation) =>
+    | Operation.Token(operation) =>
       (network, config)->TokensApiRequest.TokensAPI.simulate(operation)
     };
 

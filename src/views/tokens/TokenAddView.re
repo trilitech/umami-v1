@@ -14,13 +14,6 @@ let styles =
     StyleSheet.create({
       "title": style(~marginBottom=6.->dp, ~textAlign=`center, ()),
       "overline": style(~marginBottom=20.->dp, ~textAlign=`center, ()),
-      "loadingView":
-        style(
-          ~height=400.->dp,
-          ~justifyContent=`center,
-          ~alignItems=`center,
-          (),
-        ),
     })
   );
 

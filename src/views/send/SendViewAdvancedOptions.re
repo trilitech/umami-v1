@@ -32,7 +32,7 @@ let make = (~form: SendForm.api, ~token: option(Token.t)=?) => {
       let operation = {
         switch (token) {
         | Some(token) =>
-          OperationApiRequest.Token(
+          Operation.Token(
             Token.makeTransfer(
               ~source=form.values.sender,
               ~amount=form.values.amount->Js.Float.fromString->int_of_float,
@@ -42,13 +42,11 @@ let make = (~form: SendForm.api, ~token: option(Token.t)=?) => {
             ),
           )
         | None =>
-          OperationApiRequest.Regular(
-            Injection.makeTransfer(
-              ~source=form.values.sender,
-              ~amount=form.values.amount->Js.Float.fromString,
-              ~destination=form.values.recipient,
-              (),
-            ),
+          Operation.makeSingleTransaction(
+            ~source=form.values.sender,
+            ~amount=form.values.amount->Js.Float.fromString,
+            ~destination=form.values.recipient,
+            (),
           )
         };
       };

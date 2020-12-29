@@ -7,7 +7,15 @@ let styles =
 
 [@react.component]
 let make =
-    (~title=?, ~onPressCancel, ~operation: SendForm.operation, ~sendOperation) => {
+    (
+      ~onPressCancel,
+      ~title,
+      ~subtitle=?,
+      ~source,
+      ~destination,
+      ~sendOperation,
+      ~content,
+    ) => {
   let form: SendForm.Password.api =
     SendForm.Password.use(
       ~schema={
@@ -18,44 +26,28 @@ let make =
       (),
     );
 
-  let onSubmit = (operation, _) => {
+  let onSubmit = _ => {
     // checking password
     // getting stored data
     form.submit();
-    sendOperation(operation, ~password=form.values.password);
+    sendOperation(form.values.password);
   };
 
   <>
-    <View style=FormStyles.title>
-      <Typography.Headline>
-        (
-          switch (title, operation) {
-          | (Some(title), _) => title
-          | (_, InjectionOperation(Transaction({amount}))) =>
-            I18n.t#xtz_amount(
-              Js.Float.toFixedWithPrecision(amount, ~digits=1),
-            )
-          | (_, InjectionOperation(Delegation(_))) => I18n.title#delegate
-          | (_, TokensOperation({action: Transfer({amount})}, token)) =>
-            I18n.t#amount(amount->Js.Int.toString, token.symbol)
-          | _ => ""
-          }
-        )
-        ->React.string
-      </Typography.Headline>
-      {switch (operation) {
-       | InjectionOperation(Transaction({tx_options: {fee}}))
-       | InjectionOperation(Delegation({options: {fee}}))
-       | TokensOperation({tx_options: {fee}}, _) =>
-         fee->ReactUtils.mapOpt(fee =>
-           <Typography.Body1 colorStyle=`mediumEmphasis>
-             {I18n.t#operation_summary_fee(fee->Js.Float.toString)
-              ->React.string}
-           </Typography.Body1>
-         )
-       }}
+    <View style=FormStyles.header>
+      <Typography.Headline> title->React.string </Typography.Headline>
+      {subtitle->ReactUtils.mapOpt(subtitle =>
+         <Typography.Overline1 style=FormStyles.subtitle>
+           subtitle->React.string
+         </Typography.Overline1>
+       )}
     </View>
-    <OperationSummaryView style=styles##operationSummary operation />
+    <OperationSummaryView
+      style=styles##operationSummary
+      source
+      destination
+      content
+    />
     <FormGroupTextInput
       label=I18n.label#password
       value={form.values.password}
@@ -66,10 +58,7 @@ let make =
     />
     <View style=FormStyles.formAction>
       <Buttons.FormPrimary text=I18n.btn#cancel onPress=onPressCancel />
-      <Buttons.FormPrimary
-        text=I18n.btn#confirm
-        onPress={operation->onSubmit}
-      />
+      <Buttons.FormPrimary text=I18n.btn#confirm onPress=onSubmit />
     </View>
   </>;
 };

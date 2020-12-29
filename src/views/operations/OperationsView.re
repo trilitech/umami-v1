@@ -17,19 +17,19 @@ let styles =
   );
 
 let renderItem =
-    (renderItemProps: VirtualizedList.renderItemProps(Operation.t)) => {
+    (renderItemProps: VirtualizedList.renderItemProps(Operation.Read.t)) => {
   let operation = renderItemProps.item;
   <OperationRowItem operation />;
 };
 
-let keyExtractor = (operation: Operation.t, _i) => {
+let keyExtractor = (operation: Operation.Read.t, _i) => {
   operation.id;
 };
 
 let _ListEmptyComponent = () => <EmptyView text="No operations" />;
 
 let sort = op =>
-  Operation.(
+  Operation.Read.(
     op->Belt.SortArray.stableSortInPlaceBy(
       ({timestamp: t1}, {timestamp: t2}) =>
       - Pervasives.compare(Js.Date.getTime(t1), Js.Date.getTime(t2))

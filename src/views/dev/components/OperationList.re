@@ -20,7 +20,7 @@ let make = () => {
   let (injection, _) = React.useContext(InjectionState.context);
   let config = ConfigContext.useConfig();
 
-  let (operations: array(Operation.t), setOperations) =
+  let (operations: array(Operation.Read.t), setOperations) =
     React.useState(() => [||]);
 
   React.useEffect4(

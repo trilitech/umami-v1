@@ -7,6 +7,13 @@ let styles =
         style(~position=`absolute, ~right=20.->dp, ~top=20.->dp, ()),
       "modal":
         style(~width=642.->dp, ~alignSelf=`center, ~borderRadius=4., ()),
+      "loadingView":
+        style(
+          ~height=400.->dp,
+          ~justifyContent=`center,
+          ~alignItems=`center,
+          (),
+        ),
     })
   );
 
@@ -45,6 +52,29 @@ let confirm =
     ) =>
   Confirm({title, subtitle, cancelText, actionText, action});
 
+module LoadingView = {
+  [@react.component]
+  let make = (~title, ~height=?) => {
+    let theme = ThemeContext.useTheme();
+    <View
+      style={Style.arrayOption([|
+        Some(styles##loadingView),
+        height->Belt.Option.map(height =>
+          Style.style(~height=height->string_of_int, ())
+        ),
+      |])}>
+      <Typography.Headline style=FormStyles.header>
+        title->React.string
+      </Typography.Headline>
+      <ActivityIndicator
+        animating=true
+        size=ActivityIndicator_Size.large
+        color={theme.colors.iconMediumEmphasis}
+      />
+    </View>;
+  };
+};
+
 module ConfirmCloseModal = {
   [@react.component]
   let make = (~confirm, ~closeAction, ~visible) => {
@@ -70,7 +100,7 @@ module ConfirmCloseModal = {
             style(~backgroundColor=theme.colors.background, ()),
           |])
         )>
-        <Typography.Headline style=FormStyles.title>
+        <Typography.Headline style=FormStyles.header>
           title->React.string
         </Typography.Headline>
         {subtitle->ReactUtils.mapOpt(sub => {

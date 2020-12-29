@@ -17,13 +17,6 @@ let styles =
       "switchCmp": style(~height=16.->dp, ~width=32.->dp, ()),
       "switchThumb": style(~transform=[|scale(~scale=0.65)|], ()),
       "operationSummary": style(~marginBottom=20.->dp, ()),
-      "loadingView":
-        style(
-          ~height=400.->dp,
-          ~justifyContent=`center,
-          ~alignItems=`center,
-          (),
-        ),
     })
   );
 
@@ -31,7 +24,7 @@ let buildTransaction = (state: DelegateForm.state, advancedOptionOpened) => {
   let mapIfAdvanced = (v, map) =>
     advancedOptionOpened && v->Js.String2.length > 0 ? Some(v->map) : None;
 
-  Injection.makeDelegate(
+  Protocol.makeDelegate(
     ~source=state.values.sender,
     ~delegate=state.values.baker,
     ~fee=?state.values.fee->mapIfAdvanced(Js.Float.fromString),
@@ -43,7 +36,7 @@ let buildTransaction = (state: DelegateForm.state, advancedOptionOpened) => {
 
 type step =
   | SendStep
-  | PasswordStep(Injection.operation);
+  | PasswordStep(Protocol.delegation, Protocol.simulationResults);
 
 module Form = {
   let build = (action: action, advancedOptionOpened, onSubmit) => {
@@ -103,7 +96,7 @@ module Form = {
       let (advancedOptionOpened, setAdvancedOptionOpened) = advancedOptionState;
 
       <>
-        <Typography.Headline style=FormStyles.title>
+        <Typography.Headline style=FormStyles.header>
           title->React.string
         </Typography.Headline>
         <FormGroupDelegateSelector
@@ -156,6 +149,10 @@ module Form = {
   };
 };
 
+let buildSummaryContent = (dryRun: Protocol.simulationResults) => [
+  (I18n.label#fee, I18n.t#xtz_amount(dryRun.fee->Js.Float.toString)),
+];
+
 [@react.component]
 let make = (~onPressCancel, ~action) => {
   let (advancedOptionOpened, _) as advancedOptionState =
@@ -163,31 +160,35 @@ let make = (~onPressCancel, ~action) => {
 
   let (operationRequest, sendOperation) = StoreContext.Operations.useCreate();
 
-  let sendOperation = (operation, ~password) =>
-    switch (operation) {
-    | SendForm.InjectionOperation(operation) =>
-      sendOperation(
-        OperationApiRequest.{operation: Regular(operation), password},
-      )
-      ->ignore
+  let sendOperation = (delegation, password) =>
+    sendOperation(OperationApiRequest.delegate(delegation, password))
+    ->ignore;
+
+  let (operationSimulateRequest, sendOperationSimulate) =
+    StoreContext.Operations.useSimulate();
+
+  let (modalStep, setModalStep) = React.useState(_ => SendStep);
+
+  React.useEffect0(() => {
+    switch (action) {
+    | Delete(account, _) =>
+      let op =
+        Protocol.makeDelegate(~source=account.address, ~delegate="", ());
+      sendOperationSimulate(op->Operation.delegation)
+      ->Future.tapOk(dryRun => {setModalStep(_ => PasswordStep(op, dryRun))})
+      ->ignore;
+
     | _ => ()
     };
 
-  let (modalStep, setModalStep) =
-    React.useState(_ =>
-      switch (action) {
-      | Create(_)
-      | Edit(_) => SendStep
-      | Delete(account, _delegate) =>
-        PasswordStep(
-          Injection.makeDelegate(~source=account.address, ~delegate="", ()),
-        )
-      }
-    );
+    None;
+  });
 
   let form =
     Form.build(action, advancedOptionOpened, op =>
-      setModalStep(_ => PasswordStep(op))
+      sendOperationSimulate(op->Operation.delegation)
+      ->Future.tapOk(dryRun => {setModalStep(_ => PasswordStep(op, dryRun))})
+      ->ignore
     );
 
   let title =
@@ -197,16 +198,14 @@ let make = (~onPressCancel, ~action) => {
     | Delete(_) => I18n.title#delegate_delete
     };
 
-  let theme = ThemeContext.useTheme();
-
   let closing = ModalView.Close(_ => onPressCancel());
   let onPressCancel = _ => onPressCancel();
 
   <ModalView.Form closing>
-    {switch (modalStep, operationRequest) {
-     | (_, Done(Ok((hash, _)), _)) =>
+    {switch (modalStep, operationRequest, operationSimulateRequest) {
+     | (_, Done(Ok((hash, _)), _), _) =>
        <>
-         <Typography.Headline style=FormStyles.title>
+         <Typography.Headline style=FormStyles.header>
            {switch (action) {
             | Create(_) => I18n.title#delegation_sent
             | Edit(_) => I18n.title#baker_updated
@@ -222,7 +221,7 @@ let make = (~onPressCancel, ~action) => {
            <Buttons.FormPrimary text=I18n.btn#ok onPress=onPressCancel />
          </View>
        </>
-     | (_, Done(Error(error), _)) =>
+     | (_, Done(Error(error), _), _) =>
        <>
          <Typography.Body1 colorStyle=`error>
            error->React.string
@@ -231,16 +230,12 @@ let make = (~onPressCancel, ~action) => {
            <Buttons.FormPrimary text=I18n.btn#ok onPress=onPressCancel />
          </View>
        </>
-     | (_, Loading(_)) =>
-       <View style=styles##loadingView>
-         <ActivityIndicator
-           animating=true
-           size=ActivityIndicator_Size.large
-           color={theme.colors.iconMediumEmphasis}
-         />
-       </View>
-     | (SendStep, _) => <Form.View title advancedOptionState form action />
-     | (PasswordStep(operation), _) =>
+     | (_, _, Loading(_)) =>
+       <ModalView.LoadingView title=I18n.title#simulation />
+     | (_, Loading(_), _) =>
+       <ModalView.LoadingView title=I18n.title#submitting />
+     | (SendStep, _, _) => <Form.View title advancedOptionState form action />
+     | (PasswordStep(delegation, dryRun), _, _) =>
        <SignOperationView
          onPressCancel={event =>
            switch (action) {
@@ -249,9 +244,12 @@ let make = (~onPressCancel, ~action) => {
            | Delete(_) => onPressCancel(event)
            }
          }
-         title
-         operation={SendForm.InjectionOperation(operation)}
-         sendOperation
+         source=(delegation.source, I18n.title#delegated_account)
+         destination=(delegation.delegate, I18n.title#baker_account)
+         title=I18n.title#confirm_delegate
+         subtitle=I18n.expl#confirm_operation
+         content={buildSummaryContent(dryRun)}
+         sendOperation={sendOperation(delegation)}
        />
      }}
   </ModalView.Form>;
