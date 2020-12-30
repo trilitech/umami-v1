@@ -116,6 +116,19 @@ let expl = {
   pub batch = "Review, edit or delete the transactions of the batch"
 };
 
+let menu = {
+  pub _this = this;
+  pub operation_register_as_baker = "Register as new baker";
+  pub operation_delegate_to = p("Delegate_to %s");
+  pub operation_unknown = "Unknown";
+  pub operation_cancel_delegation = "Cancel delegation";
+  pub addressbook_edit = "Edit contact";
+  pub delegate_edit = "Change baker";
+  pub delegate_delete = "End delegation";
+  pub batch_edit = "Edit transfer";
+  pub batch_delete = "Delete transfer"
+};
+
 let t = {
   pub error404 = "404 - Route Not Found :(";
   pub logs_no_recent = "No recent messages";
@@ -147,11 +160,6 @@ let t = {
   pub token_created = "Token created";
   pub operation_hash = "Operation hash";
   pub account_imported = "Account imported";
-  pub operation_menu_register_as_baker = "Register as new baker";
-  pub operation_menu_delegate_to = p("Delegate_to %s");
-  pub operation_menu_unknown = "Unknown";
-  pub operation_menu_cancel_delegation = "Cancel delegation";
-  pub addressbook_menu_edit = "Edit contact";
   pub operation_summary_fee = p("+ Fee %a", () => this#xtz_amount);
   pub navbar_accounts = "ACCOUNTS";
   pub navbar_operations = "OPERATIONS";
@@ -164,8 +172,6 @@ let t = {
   pub delegate_column_duration = "DURATION";
   pub delegate_column_last_reward = "LAST REWARD";
   pub delegate_column_baker = "BAKER";
-  pub delegate_menu_edit = "Change baker";
-  pub delegate_menu_delete = "End delegation";
   pub token_column_name = "NAME";
   pub token_column_symbol = "SYMBOL";
   pub token_column_address = "ADDRESS";

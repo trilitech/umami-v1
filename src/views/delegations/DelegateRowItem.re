@@ -186,12 +186,12 @@ let make =
           <Menu icon=Icons.More.build size=30.>
             <DelegateActionButton
               action={Delegate.Edit(account, delegate)}
-              text=I18n.t#delegate_menu_edit
+              text=I18n.menu#delegate_edit
               icon=Icons.Change.build
             />
             <DelegateActionButton
               action={Delegate.Delete(account, delegate)}
-              text=I18n.t#delegate_menu_delete
+              text=I18n.menu#delegate_delete
               colorStyle=`error
               icon=Icons.Close.build
             />

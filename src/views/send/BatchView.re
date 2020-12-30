@@ -26,7 +26,7 @@ let styles =
       "notFirstRow": style(~borderTopWidth=1., ()),
       "num": style(~position=`absolute, ~left=10.->dp, ~top=10.->dp, ()),
       "moreButton":
-        style(~position=`absolute, ~top=21.->dp, ~right=9.->dp, ()),
+        style(~position=`absolute, ~top=13.->dp, ~right=2.->dp, ()),
     })
   );
 
@@ -43,16 +43,21 @@ let computeTotal = batch =>
     acc +. float_of_string(t.amount)
   );
 
+let delete = (setBatch, i) => {
+  setBatch(b => b->Belt.List.keepWithIndex((_, j) => j != i));
+};
+
 module Item = {
   [@react.component]
-  let make = (~i, ~recipient, ~amount) => {
+  let make = (~i, ~recipient, ~amount, ~onDelete=?, ~onEdit=?, ~zIndex) => {
     let aliases = StoreContext.Aliases.useGetAll();
     let theme: ThemeContext.theme = ThemeContext.useTheme();
     <View
-      key={string_of_int(i)}
       style={ReactUtils.styles(
         styles##row
-        @: Style.(style(~borderColor=theme.colors.borderDisabled, ()))
+        @: Style.(
+             style(~zIndex, ~borderColor=theme.colors.borderDisabled, ())
+           )
         @$? Lib.Option.onlyIf(i != 0, () => styles##notFirstRow),
       )}>
       <Typography.Subtitle1 colorStyle=`mediumEmphasis style=styles##num>
@@ -68,38 +73,78 @@ module Item = {
         }
         showAmount={buildAmount(amount)}
       />
-      <TouchableOpacity style=styles##moreButton onPress={_ => ()}>
-        <Icons.More size=24. color={theme.colors.iconMediumEmphasis} />
-      </TouchableOpacity>
+      {(
+         onEdit->Belt.Option.map(edit => {
+           <Menu.Item
+             key=I18n.menu#batch_edit
+             text=I18n.menu#batch_edit
+             icon=Icons.Edit.build
+             onPress={_ => edit(i)}
+           />
+         })
+         @?? onDelete->Belt.Option.map(delete => {
+               <Menu.Item
+                 key=I18n.menu#batch_delete
+                 text=I18n.menu#batch_delete
+                 icon=Icons.Delete.build
+                 onPress={_ => delete(i)}
+               />
+             })
+       )
+       ->ReactUtils.hideNil(l =>
+           <Menu style=styles##moreButton icon=Icons.More.build>
+             {l->Belt.List.toArray->React.array}
+           </Menu>
+         )}
     </View>;
   };
 };
 
 module Transactions = {
   [@react.component]
-  let make = (~recipients) => {
+  let make = (~recipients, ~onDelete=?) => {
     <View style=styles##container>
       <Typography.Overline2 style=styles##listLabel>
         I18n.label#transactions->React.string
       </Typography.Overline2>
-      <View style=styles##list>
+      <ScrollView style=styles##list alwaysBounceVertical=false>
         {{
            recipients
            ->Belt.List.toArray
-           ->Belt.Array.mapWithIndex((i, (recipient, amount)) => {
-               <Item i recipient amount />
+           ->Belt.Array.mapWithIndex((i, (onEdit, (recipient, amount))) => {
+               <Item
+                 zIndex={recipients->Belt.List.length - i}
+                 key={string_of_int(i)}
+                 i
+                 recipient
+                 amount
+                 ?onDelete
+                 ?onEdit
+               />
              });
          }
          ->React.array}
-      </View>
+      </ScrollView>
     </View>;
   };
 };
 
 [@react.component]
-let make = (~back, ~onSubmitBatch, ~batch: list(SendForm.StateLenses.state)) => {
+let make =
+    (
+      ~back,
+      ~onSubmitBatch,
+      ~onDelete,
+      ~onEdit,
+      ~batch: list(SendForm.StateLenses.state),
+    ) => {
   let theme: ThemeContext.theme = ThemeContext.useTheme();
-  let recipients = batch->Belt.List.map(t => (t.recipient, t.amount));
+  let recipients =
+    batch
+    ->Belt.List.map(t =>
+        (Some(i => onEdit(i, t)), (t.recipient, t.amount))
+      )
+    ->Belt.List.reverse;
   <>
     {<TouchableOpacity onPress={_ => back()} style=FormStyles.topLeftButton>
        <Icons.ArrowLeft size=36. color={theme.colors.iconMediumEmphasis} />
@@ -121,7 +166,7 @@ let make = (~back, ~onSubmitBatch, ~batch: list(SendForm.StateLenses.state)) => 
          ->React.string}
       </Typography.Subtitle1>
     </View>
-    <Transactions recipients />
+    <Transactions recipients onDelete />
     <View style=FormStyles.verticalFormAction>
       <Buttons.SubmitPrimary
         text=I18n.btn#batch_submit
