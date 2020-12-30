@@ -130,23 +130,25 @@ let buildTransfer =
 
 let buildTransaction =
     (
-      batch: list(SendForm.StateLenses.state),
-      advancedOptionOpened: bool,
+      batch: list((SendForm.StateLenses.state, bool)),
       token: option(Token.t),
     ) => {
   switch (batch) {
   | [] => assert(false)
-  | [transfer] => buildTransfer(transfer, advancedOptionOpened, token)
-  | [first, ..._] as transfers =>
-    let mapIfAdvanced = (v, map) =>
-      advancedOptionOpened && v->Js.String2.length > 0 ? Some(v->map) : None;
-
+  | [(transfer, advOpened)] => buildTransfer(transfer, advOpened, token)
+  | [(first, _), ..._] as transfers =>
     let source = first.sender;
     let forceLowFee = first.forceLowFee ? Some(true) : None;
-    let counter = first.counter->mapIfAdvanced(int_of_string);
+
+    let counter =
+      first.counter->Js.String2.length > 0
+        ? Some(first.counter->int_of_string) : None;
 
     let transfers =
-      transfers->Belt.List.map((t: SendForm.StateLenses.state) => {
+      transfers->Belt.List.map(((t: SendForm.StateLenses.state, advOpened)) => {
+        let mapIfAdvanced = (v, map) =>
+          advOpened && v->Js.String2.length > 0 ? Some(v->map) : None;
+
         let amount = t.amount->Js.Float.fromString;
         let destination = t.recipient;
         let gasLimit = t.gasLimit->mapIfAdvanced(int_of_string);
@@ -176,7 +178,7 @@ let buildTransaction =
 type step =
   | SendStep
   | PasswordStep(transfer, Protocol.simulationResults)
-  | EditStep(int, SendForm.StateLenses.state)
+  | EditStep(int, (SendForm.StateLenses.state, bool))
   | BatchStep;
 
 let sourceDestination = transfer => {
@@ -415,10 +417,16 @@ module Form = {
 module EditionView = {
   [@react.component]
   let make = (~initValues, ~onSubmit, ~batch, ~back) => {
-    let form = Form.use(~initValues, None, onSubmit);
+    let (initValues, advancedOptionOpened) = initValues;
+
+    let (advancedOptionOpened, _) as advancedOptionState =
+      React.useState(_ => advancedOptionOpened);
+
+    let form = Form.use(~initValues, None, onSubmit(advancedOptionOpened));
+
     <Form.View
       batch
-      advancedOptionState=(false, _ => ())
+      advancedOptionState
       tokenState=(None, _ => ())
       form
       mode={Form.View.Edition(back)}
@@ -431,7 +439,7 @@ let make = (~onPressCancel) => {
   let account = StoreContext.SelectedAccount.useGet();
   let initToken = StoreContext.SelectedToken.useGet();
 
-  let (advancedOptionOpened, _) as advancedOptionState =
+  let (advancedOptionsOpened, setAdvancedOptions) as advancedOptionState =
     React.useState(_ => false);
 
   let (selectedToken, _) as tokenState =
@@ -457,8 +465,7 @@ let make = (~onPressCancel) => {
   let submitAction = React.useRef(`SubmitAll);
 
   let onSubmitBatch = batch => {
-    let transaction =
-      buildTransaction(batch->Belt.List.reverse, advancedOptionOpened, token);
+    let transaction = buildTransaction(batch->Belt.List.reverse, token);
     sendOperationSimulate(toOperation(transaction))
     ->Future.tapOk(dryRun => {
         setModalStep(_ => PasswordStep(transaction, dryRun))
@@ -468,9 +475,11 @@ let make = (~onPressCancel) => {
 
   let onSubmit = ({state, send}: SendForm.onSubmitAPI) =>
     switch (submitAction.current) {
-    | `SubmitAll => onSubmitBatch([state.values, ...batch])
+    | `SubmitAll =>
+      onSubmitBatch([(state.values, advancedOptionsOpened), ...batch])
     | `AddToBatch =>
-      setBatch(l => [state.values, ...l]);
+      setBatch(l => [(state.values, advancedOptionsOpened), ...l]);
+      setAdvancedOptions(_ => false);
       send(ResetForm);
     };
 
@@ -486,9 +495,11 @@ let make = (~onPressCancel) => {
     form.submit();
   };
 
-  let onEdit = (i, {state}: SendForm.onSubmitAPI) => {
+  let onEdit = (i, advOpened, {state}: SendForm.onSubmitAPI) => {
     setBatch(b =>
-      b->Belt.List.mapWithIndex((j, v) => i == j ? state.values : v)
+      b->Belt.List.mapWithIndex((j, v) =>
+        i == j ? (state.values, advOpened) : v
+      )
     );
     setModalStep(_ => BatchStep);
   };
@@ -542,11 +553,11 @@ let make = (~onPressCancel) => {
              back={_ => setModalStep(_ => SendStep)}
              batch
              onSubmitBatch
-             onEdit={(i, values) => setModalStep(_ => EditStep(i, values))}
+             onEdit={(i, v) => setModalStep(_ => EditStep(i, v))}
              onDelete
            />
          | EditStep(i, initValues) =>
-           let onSubmit = form => onEdit(i, form);
+           let onSubmit = (advOpened, form) => onEdit(i, advOpened, form);
            let back = () => setModalStep(_ => BatchStep);
            <EditionView initValues onSubmit batch back />;
          | SendStep =>

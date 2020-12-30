@@ -130,19 +130,12 @@ module Transactions = {
 };
 
 [@react.component]
-let make =
-    (
-      ~back,
-      ~onSubmitBatch,
-      ~onDelete,
-      ~onEdit,
-      ~batch: list(SendForm.StateLenses.state),
-    ) => {
+let make = (~back, ~onSubmitBatch, ~onDelete, ~onEdit, ~batch) => {
   let theme: ThemeContext.theme = ThemeContext.useTheme();
   let recipients =
     batch
-    ->Belt.List.map(t =>
-        (Some(i => onEdit(i, t)), (t.recipient, t.amount))
+    ->Belt.List.map(((t: SendForm.StateLenses.state, _) as v) =>
+        (Some(i => onEdit(i, v)), (t.recipient, t.amount))
       )
     ->Belt.List.reverse;
   <>
@@ -162,7 +155,9 @@ let make =
         I18n.label#summary_total->React.string
       </Typography.Overline2>
       <Typography.Subtitle1>
-        {I18n.t#xtz_amount(computeTotal(batch)->Js.Float.toString)
+        {I18n.t#xtz_amount(
+           computeTotal(batch->Belt.List.map(fst))->Js.Float.toString,
+         )
          ->React.string}
       </Typography.Subtitle1>
     </View>
