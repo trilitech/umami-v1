@@ -111,3 +111,4 @@ module CloseOutline = Make(SVGIconCloseOutline);
 module Token = Make(SVGIconToken);
 module Tezos = Make(SVGIconTezos);
 module ArrowLeft = Make(SVGArrowLeft);
+module DarkMode = Make(SVGIconDarkMode);

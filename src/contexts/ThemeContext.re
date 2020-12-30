@@ -119,10 +119,16 @@ let darkTheme = {
   },
 };
 
+type themeMain = [ | `dark | `light];
+
+type state = {
+  theme,
+  switchTheme: unit => unit,
+};
+
 // Context and Provider
 
-let initialState = lightTheme;
-
+let initialState = {theme: lightTheme, switchTheme: () => ()};
 let context = React.createContext(initialState);
 
 module Provider = {
@@ -138,14 +144,33 @@ module Provider = {
 
 [@react.component]
 let make = (~children) => {
+  let writeConf = ConfigContext.useWrite();
   let conf = ConfigContext.useConfig();
-  let (dark, setDark) = React.useState(_ => conf.theme != Some(`light));
+  let (themeMain, setMain) =
+    React.useState(_ => conf.theme->Belt.Option.getWithDefault(`dark));
+  React.useEffect1(() => {None}, [|setMain|]);
 
-  React.useEffect1(() => {None}, [|setDark|]);
+  let switchTheme = () =>
+    setMain(_ => {
+      let theme = themeMain == `dark ? `light : `dark;
+      writeConf(c => {...c, theme: Some(theme)});
+      theme;
+    });
 
-  <Provider value={dark ? darkTheme : lightTheme}> children </Provider>;
+  <Provider
+    value={
+      theme:
+        switch (themeMain) {
+        | `dark => darkTheme
+        | `light => lightTheme
+        },
+      switchTheme,
+    }>
+    children
+  </Provider>;
 };
 
 // Hooks
 
-let useTheme = () => React.useContext(context);
+let useTheme = () => React.useContext(context).theme;
+let useSwitch = () => React.useContext(context).switchTheme;

@@ -1,6 +1,7 @@
+open Common;
 type config = {
   content: ConfigFile.t,
-  write: string => unit,
+  write: (ConfigFile.t => ConfigFile.t) => unit,
   loaded: bool,
 };
 
@@ -51,14 +52,24 @@ let make = (~children) => {
     None;
   });
 
-  let write = _ => {
-    Js.log("Not implemeted yet");
-  };
+  let write = f =>
+    setConfig(c => {
+      let c = f(c);
+      c
+      ->ConfigFile.toString
+      ->Lib.Option.iter(c => c->System.Config.write->Future.get(_ => ()));
+      c;
+    });
 
   <Provider value={content, loaded, write}> children </Provider>;
 };
 
 let useContext = () => React.useContext(context);
+
+let useWrite = () => {
+  let store = useContext();
+  store.write;
+};
 
 let useLoaded = () => {
   let store = useContext();
