@@ -5,14 +5,6 @@ let styles =
   Style.(
     StyleSheet.create({
       "container": style(~marginTop=30.->dp, ()),
-      "list":
-        style(
-          ~minHeight=300.->dp,
-          ~maxHeight=400.->dp,
-          ~borderWidth=1.,
-          ~borderRadius=4.,
-          (),
-        ),
       "listLabel": style(~marginBottom=4.->dp, ()),
       "amount": style(~height=19.->dp, ~marginBottom=2.->dp, ()),
       "summary": style(~marginTop=11.->dp, ()),
@@ -30,6 +22,18 @@ let styles =
     })
   );
 
+let listStyle = (theme: ThemeContext.theme) =>
+  Style.(
+    style(
+      ~borderColor=theme.colors.borderDisabled,
+      ~minHeight=300.->dp,
+      ~maxHeight=400.->dp,
+      ~borderWidth=1.,
+      ~borderRadius=4.,
+      (),
+    )
+  );
+
 let buildAmount = amount => {
   AccountSelector.Amount(
     <Typography.Body1 fontWeightStyle=`bold style=styles##amount>
@@ -42,10 +46,6 @@ let computeTotal = batch =>
   batch->Belt.List.reduce(0., (acc, t: SendForm.StateLenses.state) =>
     acc +. float_of_string(t.amount)
   );
-
-let delete = (setBatch, i) => {
-  setBatch(b => b->Belt.List.keepWithIndex((_, j) => j != i));
-};
 
 module Item = {
   [@react.component]
@@ -61,7 +61,7 @@ module Item = {
         @$? Lib.Option.onlyIf(i != 0, () => styles##notFirstRow),
       )}>
       <Typography.Subtitle1 colorStyle=`mediumEmphasis style=styles##num>
-        {(i + 1)->string_of_int->React.string}
+        {i->string_of_int->React.string}
       </Typography.Subtitle1>
       <AccountSelector.AccountItem
         account={
@@ -79,7 +79,7 @@ module Item = {
              key=I18n.menu#batch_edit
              text=I18n.menu#batch_edit
              icon=Icons.Edit.build
-             onPress={_ => edit(i)}
+             onPress={_ => edit()}
            />
          })
          @?? onDelete->Belt.Option.map(delete => {
@@ -87,7 +87,7 @@ module Item = {
                  key=I18n.menu#batch_delete
                  text=I18n.menu#batch_delete
                  icon=Icons.Delete.build
-                 onPress={_ => delete(i)}
+                 onPress={_ => delete()}
                />
              })
        )
@@ -103,26 +103,31 @@ module Item = {
 module Transactions = {
   [@react.component]
   let make = (~recipients, ~onDelete=?) => {
+    let length = recipients->Belt.List.length;
+    let theme = ThemeContext.useTheme();
     <View style=styles##container>
       <Typography.Overline2 style=styles##listLabel>
         I18n.label#transactions->React.string
       </Typography.Overline2>
-      <ScrollView style=styles##list alwaysBounceVertical=false>
+      <ScrollView style={listStyle(theme)} alwaysBounceVertical=false>
         {{
-           recipients
-           ->Belt.List.toArray
-           ->Belt.Array.mapWithIndex((i, (onEdit, (recipient, amount))) => {
-               <Item
-                 zIndex={recipients->Belt.List.length - i}
-                 key={string_of_int(i)}
-                 i
-                 recipient
-                 amount
-                 ?onDelete
-                 ?onEdit
-               />
-             });
+           recipients->Belt.List.mapWithIndex(
+             (i, (onEdit, (recipient, amount))) => {
+             let onDelete =
+               onDelete->Belt.Option.map((delete, ()) => delete(i));
+             <Item
+               zIndex=i
+               key={string_of_int(i)}
+               i={length - i}
+               recipient
+               amount
+               ?onDelete
+               ?onEdit
+             />;
+           });
          }
+         ->Belt.List.reverse
+         ->Belt.List.toArray
          ->React.array}
       </ScrollView>
     </View>;
@@ -133,11 +138,10 @@ module Transactions = {
 let make = (~back, ~onSubmitBatch, ~onDelete, ~onEdit, ~batch) => {
   let theme: ThemeContext.theme = ThemeContext.useTheme();
   let recipients =
-    batch
-    ->Belt.List.map(((t: SendForm.StateLenses.state, _) as v) =>
-        (Some(i => onEdit(i, v)), (t.recipient, t.amount))
-      )
-    ->Belt.List.reverse;
+    batch->Belt.List.mapWithIndex(
+      (i, (t: SendForm.StateLenses.state, _) as v) =>
+      (Some(() => onEdit(i, v)), (t.recipient, t.amount))
+    );
   <>
     {<TouchableOpacity onPress={_ => back()} style=FormStyles.topLeftButton>
        <Icons.ArrowLeft size=36. color={theme.colors.iconMediumEmphasis} />
