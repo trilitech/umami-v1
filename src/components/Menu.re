@@ -1,4 +1,5 @@
 open ReactNative;
+open Common;
 
 module Item = {
   let styles =
@@ -54,7 +55,7 @@ let styles =
 let iconSizeRatio = 4. /. 7.;
 
 [@react.component]
-let make = (~icon: Icons.builder, ~children, ~size=42.) => {
+let make = (~icon: Icons.builder, ~children, ~size=42., ~style as styleArg=?) => {
   let pressableRef = React.useRef(Js.Nullable.null);
 
   let (isOpen, setIsOpen) = React.useState(_ => false);
@@ -67,7 +68,11 @@ let make = (~icon: Icons.builder, ~children, ~size=42.) => {
 
   let theme = ThemeContext.useTheme();
 
-  <View style=Style.(style(~width=size->dp, ~height=size->dp, ()))>
+  <View
+    style={
+      (Style.(style(~width=size->dp, ~height=size->dp, ())) @$? styleArg)
+      ->ReactUtils.styles
+    }>
     <ThemedPressable
       pressableRef={pressableRef->Ref.value}
       onPress={_ => setIsOpen(isOpen => !isOpen)}

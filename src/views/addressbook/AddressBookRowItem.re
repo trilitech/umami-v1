@@ -77,7 +77,7 @@ let make =
       </View>
       <View style=styles##actionMenu>
         <Menu icon=Icons.More.build size=30.>
-          <Menu.Item text=I18n.t#addressbook_menu_edit icon=Icons.Edit.build />
+          <Menu.Item text=I18n.menu#addressbook_edit icon=Icons.Edit.build />
           <AliasDeleteButton account />
         </Menu>
       </View>

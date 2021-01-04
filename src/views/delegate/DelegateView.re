@@ -245,7 +245,7 @@ let make = (~onPressCancel, ~action) => {
            }
          }
          source=(delegation.source, I18n.title#delegated_account)
-         destination=(delegation.delegate, I18n.title#baker_account)
+         destinations={`One((delegation.delegate, I18n.title#baker_account))}
          title=I18n.title#confirm_delegate
          subtitle=I18n.expl#confirm_operation
          content={buildSummaryContent(dryRun)}

@@ -8,9 +8,9 @@ let styles =
     })
   );
 
-let baseRenderButton = AccountSelector.baseRenderButton(~showBalance=true);
+let baseRenderButton = AccountSelector.baseRenderButton(~showAmount=Balance);
 
-let baseRenderItem = AccountSelector.baseRenderItem(~showBalance=false);
+let baseRenderItem = AccountSelector.baseRenderItem(~showAmount=Nothing);
 
 [@react.component]
 let make =
@@ -19,6 +19,7 @@ let make =
       ~value: string,
       ~handleChange,
       ~error,
+      ~disabled=?,
       ~token: option(Token.t)=?,
     ) => {
   let accounts = StoreContext.Accounts.useGetAll();
@@ -39,6 +40,7 @@ let make =
     <View>
       <Selector
         items
+        ?disabled
         getItemValue={account => account.address}
         onValueChange={value => {
           setCurrent(_ => value);

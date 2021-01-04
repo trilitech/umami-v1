@@ -67,6 +67,7 @@ let make = () => {
             (),
           );
         Protocol.makeTransaction(~source, ~transfers=[tx1, tx2], ())
+        ->Transaction
         ->(
             txs => {
               [@warning "-8"]

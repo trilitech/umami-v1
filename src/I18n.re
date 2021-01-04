@@ -25,6 +25,7 @@ let btn = {
   pub delegate = "DELEGATE";
   pub send_another_transaction = "ADD ANOTHER TRANSACTION";
   pub send_submit = "SUBMIT TRANSACTION";
+  pub batch_submit = "SUBMIT BATCH";
   pub send_cancel = "CANCEL TRANSACTION";
   pub delegation_submit = "CONFIRM DELEGATION";
   pub delegated = "DELEGATED"
@@ -58,7 +59,8 @@ let label = {
   pub add_token_name = "Name";
   pub add_token_symbol = "Symbol";
   pub summary_subtotal = "Subtotal";
-  pub summary_total = "Total"
+  pub summary_total = "Total";
+  pub transactions = "Transactions"
 };
 
 let input_placeholder = {
@@ -98,16 +100,33 @@ let title = {
   pub simulation = "Simulation";
   pub creating_account = "Creating account";
   pub importing_account = "Importing account";
-  pub submitting = "Submitting operation"
+  pub submitting = "Submitting operation";
+  pub send_many_transactions = "Send one or many transactions";
+  pub batch = "Batch"
 };
 
 let expl = {
   pub _this = this;
+  pub send_many_transactions = "You have the ability to submit a batch of transactions, but please note that the batch will be confirmed as a whole: should one transaction in the batch fail then the whole batch will not be completed.";
   pub account_create_record_recovery = {j|Please record the following 24 words in sequence in order to restore it in the future. Ensure to back it up, keeping it securely offline.|j};
   pub account_create_record_verify = {j|We will now verify that you’ve properly recorded your recovery phrase. To demonstrate this, please type in the word that corresponds to each sequence number.|j};
   pub account_create_password_not_recorded = {j|Please note that this password is not recorded anywhere and only applies to this machine.|j};
   pub import_account_enter_phrase = {j|Please fill in the recovery phrase in sequence.|j};
-  pub confirm_operation = "Please confirm the details of the operation"
+  pub confirm_operation = "Please confirm the details of the operation";
+  pub batch = "Review, edit or delete the transactions of the batch"
+};
+
+let menu = {
+  pub _this = this;
+  pub operation_register_as_baker = "Register as new baker";
+  pub operation_delegate_to = p("Delegate_to %s");
+  pub operation_unknown = "Unknown";
+  pub operation_cancel_delegation = "Cancel delegation";
+  pub addressbook_edit = "Edit contact";
+  pub delegate_edit = "Change baker";
+  pub delegate_delete = "End delegation";
+  pub batch_edit = "Edit transfer";
+  pub batch_delete = "Delete transfer"
 };
 
 let t = {
@@ -141,11 +160,6 @@ let t = {
   pub token_created = "Token created";
   pub operation_hash = "Operation hash";
   pub account_imported = "Account imported";
-  pub operation_menu_register_as_baker = "Register as new baker";
-  pub operation_menu_delegate_to = p("Delegate_to %s");
-  pub operation_menu_unknown = "Unknown";
-  pub operation_menu_cancel_delegation = "Cancel delegation";
-  pub addressbook_menu_edit = "Edit contact";
   pub operation_summary_fee = p("+ Fee %a", () => this#xtz_amount);
   pub navbar_accounts = "ACCOUNTS";
   pub navbar_operations = "OPERATIONS";
@@ -158,8 +172,6 @@ let t = {
   pub delegate_column_duration = "DURATION";
   pub delegate_column_last_reward = "LAST REWARD";
   pub delegate_column_baker = "BAKER";
-  pub delegate_menu_edit = "Change baker";
-  pub delegate_menu_delete = "End delegation";
   pub token_column_name = "NAME";
   pub token_column_symbol = "SYMBOL";
   pub token_column_address = "ADDRESS";

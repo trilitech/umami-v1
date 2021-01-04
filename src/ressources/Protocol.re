@@ -107,20 +107,19 @@ let makeTransaction =
       ~forceLowFee=?,
       ~confirmations=?,
       (),
-    ) =>
-  Transaction({
-    source,
-    transfers,
-    options:
-      makeCommonOptions(
-        ~fee=None,
-        ~counter,
-        ~burnCap,
-        ~forceLowFee,
-        ~confirmations,
-        (),
-      ),
-  });
+    ) => {
+  source,
+  transfers,
+  options:
+    makeCommonOptions(
+      ~fee=None,
+      ~counter,
+      ~burnCap,
+      ~forceLowFee,
+      ~confirmations,
+      (),
+    ),
+};
 
 let makeSingleTransaction =
     (

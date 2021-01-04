@@ -100,20 +100,20 @@ let make = () => {
                     <Text>
                       (
                         if (payload.source == delegate) {
-                          I18n.t#operation_menu_register_as_baker;
+                          I18n.menu#operation_register_as_baker;
                         } else {
-                          I18n.t#operation_menu_delegate_to(delegate);
+                          I18n.menu#operation_delegate_to(delegate);
                         }
                       )
                       ->React.string
                     </Text>
                   | None =>
                     <Text>
-                      I18n.t#operation_menu_cancel_delegation->React.string
+                      I18n.menu#operation_cancel_delegation->React.string
                     </Text>
                   }
                 | Unknown =>
-                  <Text> I18n.t#operation_menu_unknown->React.string </Text>
+                  <Text> I18n.menu#operation_unknown->React.string </Text>
                 }}
                <Text>
                  {("fee " ++ payload.fee ++ {js| μꜩ|js})->React.string}
