@@ -176,22 +176,28 @@ module InjectorRaw = (Caller: CallerAPI) => {
     | AllReduce(('a, option(string)) => 'a, 'a)
     | First(string => option('a))
     | Last(string => option('a))
-    | Nth(string => option('a), int);
+    | Nth(string => option('a), int)
+    | Exists(string => option('a));
 
   let parse = (receipt, pattern, interp) => {
     let rec parseAll = (acc, regexp) =>
-      switch (Js.Re.exec_(regexp, receipt)->Belt.Option.map(Js.Re.captures)) {
-      | Some(res) =>
+      switch (
+        Js.Re.exec_(regexp, receipt)->Belt.Option.map(Js.Re.captures),
+        interp,
+      ) {
+      | (Some(res), Exists(_)) => [|res[0]->Js.Nullable.toOption|]
+      | (Some(res), _) =>
         acc
         ->Js.Array2.concat([|res[1]->Js.Nullable.toOption|])
         ->parseAll(regexp)
-      | None => acc
+      | (None, _) => acc
       };
     let interpretResults = results =>
       if (Js.Array.length(results) == 0) {
         None;
       } else {
         switch (interp) {
+        | Exists(f) => results[0]->Belt.Option.flatMap(f)
         | First(f) => results[0]->Belt.Option.flatMap(f)
         | Last(f) =>
           results[Js.Array.length(results) - 1]->Belt.Option.flatMap(f)
@@ -234,6 +240,23 @@ module InjectorRaw = (Caller: CallerAPI) => {
     counter: Nth(int_of_string_opt, index),
     gasLimit: Nth(int_of_string_opt, index),
     storageLimit: Nth(int_of_string_opt, index),
+  };
+
+  let patchNthForRevelation = (options, revelation) => {
+    let incrNth = nth =>
+      switch (nth) {
+      | Nth(f, i) => Nth(f, i + 1)
+      | _ => nth
+      };
+    switch (revelation) {
+    | None => options
+    | Some () => {
+        fees: incrNth(options.fees),
+        counter: incrNth(options.counter),
+        gasLimit: incrNth(options.gasLimit),
+        storageLimit: incrNth(options.storageLimit),
+      }
+    };
   };
 
   let transaction_options_arguments =
@@ -297,6 +320,14 @@ module InjectorRaw = (Caller: CallerAPI) => {
     ->Future.tapOk(Js.log)
     ->Future.map(result =>
         result->map(receipt => {
+          let revelation =
+            receipt->parse(
+              "[ ]*Revelation of manager public key:",
+              Exists(_ => Some()),
+            );
+          Js.log(revelation);
+          let parser_options =
+            patchNthForRevelation(parser_options, revelation);
           let fee =
             receipt->parse(
               "[ ]*Fee to the baker: .([0-9]*\\.[0-9]+|[0-9]+)",
