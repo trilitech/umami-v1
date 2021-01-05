@@ -1,9 +1,5 @@
 open ReactNative;
 
-type valueImperativeHandle = {closeModal: unit => unit};
-
-[@bs.send] external closeModal: unit => unit = "closeModal";
-
 let useAnimatedValue = value => {
   React.useRef(Animated.Value.create(value)).current;
 };
@@ -32,125 +28,132 @@ let styles =
   );
 
 [@react.component]
-let make =
-  React.forwardRef((~visible, ~onRequestClose=unit => unit, ~children, ref_) => {
-    let (showContent, setShowContent) = React.useState(_ => visible);
-    let overlayOpacity = useAnimatedValue(0.);
-    let viewScale = useAnimatedValue(0.8);
-    let viewOpacity = useAnimatedValue(0.);
+let make = (~visible, ~onRequestClose: unit => unit=unit => unit, ~children) => {
+  let (showContent, setShowContent) = React.useState(_ => visible);
 
-    let animateOverlay = (~endCallback=?, visible) => {
-      Animated.parallel(
-        [|
-          Animated.spring(
-            overlayOpacity,
-            Animated.Value.Spring.config(
-              ~toValue=Animated.Value.Spring.fromRawValue(visible ? 1. : 0.),
-              ~speed=20.,
-              ~bounciness=3.,
-              ~useNativeDriver=true,
-              (),
-            ),
+  let overlayOpacity = useAnimatedValue(0.);
+  let viewScale = useAnimatedValue(0.8);
+  let viewOpacity = useAnimatedValue(0.);
+
+  let animateOverlay = (~endCallback=?, visible) => {
+    Animated.parallel(
+      [|
+        Animated.spring(
+          overlayOpacity,
+          Animated.Value.Spring.config(
+            ~toValue=Animated.Value.Spring.fromRawValue(visible ? 1. : 0.),
+            ~speed=20.,
+            ~bounciness=3.,
+            ~useNativeDriver=true,
+            (),
           ),
-          Animated.spring(
-            viewScale,
-            Animated.Value.Spring.config(
-              ~toValue=Animated.Value.Spring.fromRawValue(visible ? 1. : 0.8),
-              ~speed=20.,
-              ~bounciness=3.,
-              ~useNativeDriver=true,
-              (),
-            ),
+        ),
+        Animated.spring(
+          viewScale,
+          Animated.Value.Spring.config(
+            ~toValue=Animated.Value.Spring.fromRawValue(visible ? 1. : 0.8),
+            ~speed=20.,
+            ~bounciness=3.,
+            ~useNativeDriver=true,
+            (),
           ),
-          Animated.spring(
-            viewOpacity,
-            Animated.Value.Spring.config(
-              ~toValue=Animated.Value.Spring.fromRawValue(visible ? 1. : 0.),
-              ~speed=20.,
-              ~bounciness=3.,
-              ~useNativeDriver=true,
-              (),
-            ),
+        ),
+        Animated.spring(
+          viewOpacity,
+          Animated.Value.Spring.config(
+            ~toValue=Animated.Value.Spring.fromRawValue(visible ? 1. : 0.),
+            ~speed=20.,
+            ~bounciness=3.,
+            ~useNativeDriver=true,
+            (),
           ),
-        |],
-        {stopTogether: true},
-      )
-      ->Animated.start(~endCallback?, ());
-    };
+        ),
+      |],
+      {stopTogether: true},
+    )
+    ->Animated.start(~endCallback?, ());
+  };
 
-    let closeModal = () => {
-      animateOverlay(
-        false,
-        ~endCallback=_ => {
-          setShowContent(_ => false);
-          onRequestClose();
-          ();
-        },
-      )
-      ->ignore;
-    };
-
-    React.useImperativeHandle1(
-      ref_,
-      () => {{closeModal: closeModal}},
-      [|closeModal|],
-    );
-
-    React.useEffect1(
-      () => {
-        setShowContent(_ => visible);
-        animateOverlay(visible);
-        None;
+  let onRequestClose = () => {
+    animateOverlay(
+      false,
+      ~endCallback=_ => {
+        setShowContent(_ => false);
+        onRequestClose();
+        ();
       },
-      [|visible|],
-    );
+    )
+    ->ignore;
+  };
 
-    let theme = ThemeContext.useTheme();
+  React.useEffect1(
+    () => {
+      if (visible == true) {
+        setShowContent(_ => true);
+        animateOverlay(true);
+      } else {
+        animateOverlay(
+          false,
+          ~endCallback=_ => {
+            setShowContent(_ => false);
+            onRequestClose();
+            ();
+          },
+        );
+      };
+      None;
+    },
+    [|visible|],
+  );
 
-    <Modal
-      animationType=`none
-      transparent=true
-      supportedOrientations=[|
-        Modal.Orientation.portrait,
-        Modal.Orientation.landscape,
-      |]
-      visible
-      onRequestClose=closeModal>
-      <DocumentContext>
-        <View
+  let theme = ThemeContext.useTheme();
+
+  <Modal
+    animationType=`none
+    transparent=true
+    supportedOrientations=[|
+      Modal.Orientation.portrait,
+      Modal.Orientation.landscape,
+    |]
+    visible=showContent
+    onRequestClose>
+    <DocumentContext>
+      <View style=styles##modal>
+        <Animated.View
           style=Style.(
             array([|
-              styles##modal,
-              style(~opacity=showContent ? 1. : 0., ()),
+              styles##modalOverlay,
+              StyleSheet.absoluteFillObject,
+              style(~backgroundColor=theme.colors.scrim, ()),
+              style(~opacity=overlayOpacity->Animated.StyleProp.float, ()),
             |])
-          )>
-          <Animated.View
-            style=Style.(
-              array([|
-                styles##modalOverlay,
-                StyleSheet.absoluteFillObject,
-                style(~backgroundColor=theme.colors.scrim, ()),
-                style(~opacity=overlayOpacity->Animated.StyleProp.float, ()),
-              |])
-            )
-          />
-          <Animated.View
-            style=Style.(
-              array([|
-                styles##modalView,
-                style(
-                  ~opacity=viewOpacity->Animated.StyleProp.float,
-                  ~transform=[|
-                    scale(~scale=viewScale->Animated.StyleProp.float),
-                  |],
-                  (),
-                ),
-              |])
-            )
-            pointerEvents=`boxNone>
-            children
-          </Animated.View>
-        </View>
-      </DocumentContext>
-    </Modal>;
-  });
+          )
+        />
+        <Animated.View
+          style=Style.(
+            array([|
+              styles##modalView,
+              style(
+                ~opacity=viewOpacity->Animated.StyleProp.float,
+                ~transform=[|
+                  scale(~scale=viewScale->Animated.StyleProp.float),
+                |],
+                (),
+              ),
+            |])
+          )
+          pointerEvents=`boxNone>
+          children
+        </Animated.View>
+      </View>
+    </DocumentContext>
+  </Modal>;
+};
+
+let useModalActionState = () => {
+  let (visible, setVisible) = React.useState(_ => false);
+  let openAction = () => setVisible(_ => true);
+  let closeAction = () => setVisible(_ => false);
+
+  (visible, openAction, closeAction);
+};

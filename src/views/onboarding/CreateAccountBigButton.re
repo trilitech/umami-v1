@@ -27,22 +27,12 @@ let styles =
 
 [@react.component]
 let make = () => {
-  let modal = React.useRef(Js.Nullable.null);
+  let (visibleModal, openAction, closeAction) =
+    ModalAction.useModalActionState();
 
-  let (visibleModal, setVisibleModal) = React.useState(_ => false);
-  let openAction = () => setVisibleModal(_ => true);
-  let closeAction = () => setVisibleModal(_ => false);
+  let onPress = _ => openAction();
 
-  let onPress = _e => {
-    openAction();
-  };
-
-  let cancel = _ => {
-    modal.current
-    ->Js.Nullable.toOption
-    ->Belt.Option.map(ModalAction.closeModal)
-    ->ignore;
-  };
+  let cancel = _ => closeAction();
 
   let theme = ThemeContext.useTheme();
 
@@ -68,7 +58,7 @@ let make = () => {
         I18n.btn#create_account_new->React.string
       </Typography.Subtitle2>
     </TouchableOpacity>
-    <ModalAction ref=modal visible=visibleModal onRequestClose=closeAction>
+    <ModalAction visible=visibleModal onRequestClose=closeAction>
       <CreateAccountOnboardingView cancel />
     </ModalAction>
   </>;

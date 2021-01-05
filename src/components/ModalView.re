@@ -92,18 +92,11 @@ module ConfirmCloseModal = {
   let make = (~confirm, ~closeAction, ~visible) => {
     let {title, subtitle, cancelText, actionText, action} = confirm;
 
-    let modal = React.useRef(Js.Nullable.null);
-
-    let onPressCancel = _e => {
-      modal.current
-      ->Js.Nullable.toOption
-      ->Belt.Option.map(ModalAction.closeModal)
-      ->ignore;
-    };
+    let onPressCancel = _e => closeAction();
 
     let theme = ThemeContext.useTheme();
 
-    <ModalAction ref=modal visible onRequestClose=closeAction>
+    <ModalAction visible onRequestClose=closeAction>
       <View
         style=Style.(
           array([|
@@ -138,9 +131,8 @@ module CloseButton = {
   let make = (~closing) => {
     let theme = ThemeContext.useTheme();
 
-    let (visibleModal, setVisibleModal) = React.useState(_ => false);
-    let openAction = () => setVisibleModal(_ => true);
-    let closeAction = () => setVisibleModal(_ => false);
+    let (visibleModal, openAction, closeAction) =
+      ModalAction.useModalActionState();
 
     let confirm =
       switch (closing) {
