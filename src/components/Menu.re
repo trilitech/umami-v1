@@ -95,6 +95,9 @@ let make = (~icon: Icons.builder, ~children, ~size=42., ~style as styleArg=?) =>
          ~color=theme.colors.iconMediumEmphasis,
        )}
     </ThemedPressable>
-    <DropdownMenu style=styles##dropdownmenu isOpen> children </DropdownMenu>
+    <DropdownMenu
+      openingStyle=DropdownMenu.TopRight style=styles##dropdownmenu isOpen>
+      children
+    </DropdownMenu>
   </View>;
 };
