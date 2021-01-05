@@ -299,33 +299,30 @@ module Form = {
 
     type mode =
       | Edition(unit => unit)
-      | Creation(unit => unit, unit => unit, unit => unit);
+      | Creation(option(unit => unit), unit => unit, option(unit => unit));
 
     [@react.component]
-    let make =
-        (~batch, ~advancedOptionState, ~tokenState, ~token=?, ~mode, ~form) => {
+    let make = (~advancedOptionState, ~tokenState, ~token=?, ~mode, ~form) => {
       let (advancedOptionOpened, setAdvancedOptionOpened) = advancedOptionState;
       let (selectedToken, setSelectedToken) = tokenState;
       let theme = ThemeContext.useTheme();
 
-      let batchMode = batch != [];
-
-      let (editing, back, onAddToBatch, onSubmitAll, setBatchStep) =
+      let (editing, back, onAddToBatch, onSubmitAll, batchMode) =
         switch (mode) {
-        | Edition(back) => (true, Some(back), None, None, None)
-        | Creation(batch, submit, setBatch) => (
+        | Edition(back) => (true, Some(back), None, None, false)
+        | Creation(batch, submit, back) => (
             false,
-            None,
-            Some(batch),
+            back,
+            batch,
             Some(submit),
-            Some(setBatch),
+            batch == None,
           )
         };
 
       let submitLabel =
         editing
           ? I18n.btn#update
-          : batchMode ? I18n.btn#batch_submit : I18n.btn#send_submit;
+          : batchMode ? I18n.btn#add_transaction : I18n.btn#send_submit;
 
       let onSubmit =
         onSubmitAll->Belt.Option.getWithDefault(() => form.submit());
@@ -338,12 +335,6 @@ module Form = {
                size=36.
                color={theme.colors.iconMediumEmphasis}
              />
-           </TouchableOpacity>
-         )}
-        {setBatchStep->ReactUtils.mapOpt(set =>
-           <TouchableOpacity
-             onPress={_ => set()} style=FormStyles.topLeftButton>
-             <Icons.List size=36. color={theme.colors.iconMediumEmphasis} />
            </TouchableOpacity>
          )}
         <View style=FormStyles.header>
@@ -403,7 +394,7 @@ module Form = {
            ->ReactUtils.mapOpt(addToBatch =>
                <Buttons.FormSecondary
                  style=styles##addTransaction
-                 text=I18n.btn#send_another_transaction
+                 text=I18n.btn#start_batch_transaction
                  onPress={_ => addToBatch()}
                />
              )
@@ -416,7 +407,7 @@ module Form = {
 
 module EditionView = {
   [@react.component]
-  let make = (~initValues, ~onSubmit, ~batch, ~back) => {
+  let make = (~initValues, ~onSubmit, ~back) => {
     let (initValues, advancedOptionOpened) = initValues;
 
     let (advancedOptionOpened, _) as advancedOptionState =
@@ -425,7 +416,6 @@ module EditionView = {
     let form = Form.use(~initValues, None, onSubmit(advancedOptionOpened));
 
     <Form.View
-      batch
       advancedOptionState
       tokenState=(None, _ => ())
       form
@@ -481,6 +471,7 @@ let make = (~onPressCancel) => {
       setBatch(l => [(state.values, advancedOptionsOpened), ...l]);
       setAdvancedOptions(_ => false);
       send(ResetForm);
+      send(SetFieldValue(Sender, state.values.sender));
     };
 
   let form = Form.use(account, onSubmit);
@@ -493,6 +484,7 @@ let make = (~onPressCancel) => {
   let onAddToBatch = _ => {
     submitAction.current = `AddToBatch;
     form.submit();
+    setModalStep(_ => BatchStep);
   };
 
   let onEdit = (i, advOpened, {state}: SendForm.onSubmitAPI) => {
@@ -550,7 +542,7 @@ let make = (~onPressCancel) => {
          switch (modalStep) {
          | BatchStep =>
            <BatchView
-             back={_ => setModalStep(_ => SendStep)}
+             onAddTransfer={_ => setModalStep(_ => SendStep)}
              batch
              onSubmitBatch
              onEdit={(i, v) => setModalStep(_ => EditStep(i, v))}
@@ -559,22 +551,19 @@ let make = (~onPressCancel) => {
          | EditStep(i, initValues) =>
            let onSubmit = (advOpened, form) => onEdit(i, advOpened, form);
            let back = () => setModalStep(_ => BatchStep);
-           <EditionView initValues onSubmit batch back />;
+           <EditionView initValues onSubmit back />;
          | SendStep =>
+           let back =
+             batch != [] ? Some(_ => setModalStep(_ => BatchStep)) : None;
+           let onSubmit = batch != [] ? onAddToBatch : onSubmitAll;
+           let onAddToBatch = batch != [] ? None : Some(onAddToBatch);
            <Form.View
-             batch
              advancedOptionState
              tokenState
              ?token
              form
-             mode={
-               Form.View.Creation(
-                 onAddToBatch,
-                 onSubmitAll,
-                 _ => setModalStep(_ => BatchStep),
-               )
-             }
-           />
+             mode={Form.View.Creation(onAddToBatch, onSubmit, back)}
+           />;
          | PasswordStep(transfer, dryRun) =>
            let (source, destinations) = sourceDestination(transfer);
            <SignOperationView
@@ -582,7 +571,7 @@ let make = (~onPressCancel) => {
              source
              destinations
              subtitle=I18n.expl#confirm_operation
-             onPressCancel={_ => setModalStep(_ => SendStep)}
+             back={() => setModalStep(_ => batch == [] ? SendStep : BatchStep)}
              content={buildSummaryContent(transfer, token, dryRun)}
              sendOperation={sendTransfer(transfer)}
            />;

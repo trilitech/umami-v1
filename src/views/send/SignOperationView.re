@@ -8,7 +8,7 @@ let styles =
 [@react.component]
 let make =
     (
-      ~onPressCancel,
+      ~back=?,
       ~title,
       ~subtitle=?,
       ~source,
@@ -34,6 +34,7 @@ let make =
   };
 
   <>
+    <ModalView.BackButton back />
     <View style=FormStyles.header>
       <Typography.Headline> title->React.string </Typography.Headline>
       {subtitle->ReactUtils.mapOpt(subtitle =>
@@ -56,9 +57,8 @@ let make =
       textContentType=`password
       secureTextEntry=true
     />
-    <View style=FormStyles.formAction>
-      <Buttons.FormPrimary text=I18n.btn#cancel onPress=onPressCancel />
-      <Buttons.FormPrimary text=I18n.btn#confirm onPress=onSubmit />
+    <View style=FormStyles.verticalFormAction>
+      <Buttons.SubmitPrimary text=I18n.btn#confirm onPress=onSubmit />
     </View>
   </>;
 };

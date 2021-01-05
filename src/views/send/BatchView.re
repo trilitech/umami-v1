@@ -15,6 +15,7 @@ let styles =
           ~paddingRight=43.->dp,
           (),
         ),
+      "addTransaction": style(~marginBottom=10.->dp, ()),
       "notFirstRow": style(~borderTopWidth=1., ()),
       "num": style(~position=`absolute, ~left=10.->dp, ~top=10.->dp, ()),
       "moreButton":
@@ -135,7 +136,8 @@ module Transactions = {
 };
 
 [@react.component]
-let make = (~back, ~onSubmitBatch, ~onDelete, ~onEdit, ~batch) => {
+let make =
+    (~back=?, ~onAddTransfer, ~onSubmitBatch, ~onDelete, ~onEdit, ~batch) => {
   let theme: ThemeContext.theme = ThemeContext.useTheme();
   let recipients =
     batch->Belt.List.mapWithIndex(
@@ -143,9 +145,11 @@ let make = (~back, ~onSubmitBatch, ~onDelete, ~onEdit, ~batch) => {
       (Some(() => onEdit(i, v)), (t.recipient, t.amount))
     );
   <>
-    {<TouchableOpacity onPress={_ => back()} style=FormStyles.topLeftButton>
-       <Icons.ArrowLeft size=36. color={theme.colors.iconMediumEmphasis} />
-     </TouchableOpacity>}
+    {back->ReactUtils.mapOpt(back => {
+       <TouchableOpacity onPress={_ => back()} style=FormStyles.topLeftButton>
+         <Icons.ArrowLeft size=36. color={theme.colors.iconMediumEmphasis} />
+       </TouchableOpacity>
+     })}
     <View style=FormStyles.header>
       <Typography.Headline>
         I18n.title#batch->React.string
@@ -167,6 +171,11 @@ let make = (~back, ~onSubmitBatch, ~onDelete, ~onEdit, ~batch) => {
     </View>
     <Transactions recipients onDelete />
     <View style=FormStyles.verticalFormAction>
+      <Buttons.SubmitSecondary
+        style=styles##addTransaction
+        text=I18n.btn#send_another_transaction
+        onPress={_ => onAddTransfer()}
+      />
       <Buttons.SubmitPrimary
         text=I18n.btn#batch_submit
         onPress={_ => onSubmitBatch(batch)}

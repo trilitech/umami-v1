@@ -1,4 +1,5 @@
 open ReactNative;
+open Common;
 
 let styles =
   Style.(
@@ -50,6 +51,23 @@ module FormBase = {
   };
 };
 
+module Form = {
+  [@react.component]
+  let make = (~text, ~onPress, ~disabled=?, ~fontSize=?, ~style=?) => {
+    <FormBase onPress ?disabled ?style>
+      <Typography.ButtonPrimary
+        ?fontSize
+        colorStyle=?{
+          disabled->Belt.Option.flatMap(disabled =>
+            disabled ? Some(`disabled) : Some(`highEmphasis)
+          )
+        }>
+        text->React.string
+      </Typography.ButtonPrimary>
+    </FormBase>;
+  };
+};
+
 module FormPrimary = {
   [@react.component]
   let make = (~text, ~onPress, ~disabled=?, ~fontSize=?, ~style=?) => {
@@ -93,16 +111,44 @@ module SubmitPrimary = {
       onPress
       isPrimary=true
       disabled
-      ?style
-      vStyle=Style.(
-        array([|
-          styles##primary,
-          style(~backgroundColor=theme.colors.primaryButtonBackground, ()),
-        |])
-      )>
+      vStyle={ReactUtils.styles(
+        style
+        @?
+        styles##primary
+        @$$ Style.style(
+              ~backgroundColor=theme.colors.primaryButtonBackground,
+              (),
+            ),
+      )}>
       <Typography.ButtonPrimary
         ?fontSize
         colorStyle={disabled ? `reverseHighEmphasis : `reverseHighEmphasis}>
+        text->React.string
+      </Typography.ButtonPrimary>
+    </FormBase>;
+  };
+};
+
+module SubmitSecondary = {
+  [@react.component]
+  let make = (~text, ~onPress, ~disabled=false, ~fontSize=?, ~style=?) => {
+    let theme = ThemeContext.useTheme();
+
+    <FormBase
+      onPress
+      isPrimary=false
+      disabled
+      vStyle={ReactUtils.styles(
+        style
+        @?
+        styles##primary
+        @$$ Style.style(
+              ~borderWidth=1.,
+              ~borderColor=theme.colors.borderHighEmphasis,
+              (),
+            ),
+      )}>
+      <Typography.ButtonPrimary ?fontSize>
         text->React.string
       </Typography.ButtonPrimary>
     </FormBase>;

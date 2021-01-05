@@ -21,7 +21,7 @@ module ClearButton = {
   [@react.component]
   let make = () => {
     let clearLogs = LogsContext.useClear();
-    <Buttons.FormPrimary
+    <Buttons.Form
       style=styles##clear
       fontSize=12.
       text=I18n.t#logs_clearall

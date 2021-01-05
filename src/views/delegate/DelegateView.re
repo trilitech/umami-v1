@@ -237,11 +237,11 @@ let make = (~onPressCancel, ~action) => {
      | (SendStep, _, _) => <Form.View title advancedOptionState form action />
      | (PasswordStep(delegation, dryRun), _, _) =>
        <SignOperationView
-         onPressCancel={event =>
+         back={() =>
            switch (action) {
            | Create(_)
            | Edit(_) => setModalStep(_ => SendStep)
-           | Delete(_) => onPressCancel(event)
+           | Delete(_) => onPressCancel()
            }
          }
          source=(delegation.source, I18n.title#delegated_account)
