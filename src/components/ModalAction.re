@@ -124,21 +124,16 @@ let make =
               style(~opacity=showContent ? 1. : 0., ()),
             |])
           )>
-          <TouchableWithoutFeedback onPress={_ => closeModal()}>
-            <Animated.View
-              style=Style.(
-                array([|
-                  styles##modalOverlay,
-                  StyleSheet.absoluteFillObject,
-                  style(~backgroundColor=theme.colors.scrim, ()),
-                  style(
-                    ~opacity=overlayOpacity->Animated.StyleProp.float,
-                    (),
-                  ),
-                |])
-              )
-            />
-          </TouchableWithoutFeedback>
+          <Animated.View
+            style=Style.(
+              array([|
+                styles##modalOverlay,
+                StyleSheet.absoluteFillObject,
+                style(~backgroundColor=theme.colors.scrim, ()),
+                style(~opacity=overlayOpacity->Animated.StyleProp.float, ()),
+              |])
+            )
+          />
           <Animated.View
             style=Style.(
               array([|
