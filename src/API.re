@@ -172,38 +172,91 @@ let map = (result: Belt.Result.t('a, string), transform: 'a => 'b) =>
   };
 
 module InjectorRaw = (Caller: CallerAPI) => {
+  type parserInterpret('a) =
+    | AllReduce(('a, option(string)) => 'a, 'a)
+    | First(string => option('a))
+    | Last(string => option('a))
+    | Nth(string => option('a), int)
+    | Exists(string => option('a));
+
   let parse = (receipt, pattern, interp) => {
     let rec parseAll = (acc, regexp) =>
-      switch (Js.Re.exec_(regexp, receipt)->Belt.Option.map(Js.Re.captures)) {
-      | Some(res) =>
+      switch (
+        Js.Re.exec_(regexp, receipt)->Belt.Option.map(Js.Re.captures),
+        interp,
+      ) {
+      | (Some(res), Exists(_)) => [|res[0]->Js.Nullable.toOption|]
+      | (Some(res), _) =>
         acc
         ->Js.Array2.concat([|res[1]->Js.Nullable.toOption|])
         ->parseAll(regexp)
-      | None => acc
+      | (None, _) => acc
       };
-    let interpret_results = results =>
+    let interpretResults = results =>
       if (Js.Array.length(results) == 0) {
         None;
       } else {
         switch (interp) {
-        | `First(f) => results[0]->Belt.Option.flatMap(f)
-        | `Last(f) =>
+        | Exists(f) => results[0]->Belt.Option.flatMap(f)
+        | First(f) => results[0]->Belt.Option.flatMap(f)
+        | Last(f) =>
           results[Js.Array.length(results) - 1]->Belt.Option.flatMap(f)
-        | `AllReduce(f, init) => Some(Js.Array2.reduce(results, f, init))
+        | Nth(f, i) =>
+          i < Js.Array.length(results)
+            ? results[i]->Belt.Option.flatMap(f) : None
+        | AllReduce(f, init) => Some(Js.Array2.reduce(results, f, init))
         };
       };
     parseAll([||], Js.Re.fromStringWithFlags(pattern, ~flags="g"))
-    ->interpret_results;
+    ->interpretResults;
   };
 
-  let parse_and_reduce_float = (f, s) => {
+  let parseAndReduceFloat = (f, s) => {
     Belt.Option.mapWithDefault(s, Some(0.), float_of_string_opt)
     ->Belt.Option.mapWithDefault(f, Belt.Float.(+)(f));
   };
 
-  let parse_and_reduce_int = (f, s) => {
+  let parseAndReduceInt = (f, s) => {
     Belt.Option.mapWithDefault(s, Some(0), int_of_string_opt)
     ->Belt.Option.mapWithDefault(f, Belt.Int.(+)(f));
+  };
+
+  type parserOptions = {
+    fees: parserInterpret(float),
+    counter: parserInterpret(int),
+    gasLimit: parserInterpret(int),
+    storageLimit: parserInterpret(int),
+  };
+
+  let singleOperationParser = {
+    fees: AllReduce(parseAndReduceFloat, 0.),
+    counter: First(int_of_string_opt),
+    gasLimit: AllReduce(parseAndReduceInt, 0),
+    storageLimit: AllReduce(parseAndReduceInt, 0),
+  };
+
+  let singleBatchTransferParser = index => {
+    fees: Nth(float_of_string_opt, index),
+    counter: Nth(int_of_string_opt, index),
+    gasLimit: Nth(int_of_string_opt, index),
+    storageLimit: Nth(int_of_string_opt, index),
+  };
+
+  let patchNthForRevelation = (options, revelation) => {
+    let incrNth = nth =>
+      switch (nth) {
+      | Nth(f, i) => Nth(f, i + 1)
+      | _ => nth
+      };
+    switch (revelation) {
+    | None => options
+    | Some () => {
+        fees: incrNth(options.fees),
+        counter: incrNth(options.counter),
+        gasLimit: incrNth(options.gasLimit),
+        storageLimit: incrNth(options.storageLimit),
+      }
+    };
   };
 
   let transaction_options_arguments =
@@ -254,7 +307,7 @@ module InjectorRaw = (Caller: CallerAPI) => {
 
   exception InvalidReceiptFormat;
 
-  let simulate = (network, make_arguments) =>
+  let simulate = (network, parser_options, make_arguments) =>
     Caller.call(
       make_arguments(network)->Js.Array2.concat([|"-D"|]),
       ~inputs=
@@ -267,28 +320,36 @@ module InjectorRaw = (Caller: CallerAPI) => {
     ->Future.tapOk(Js.log)
     ->Future.map(result =>
         result->map(receipt => {
+          let revelation =
+            receipt->parse(
+              "[ ]*Revelation of manager public key:",
+              Exists(_ => Some()),
+            );
+          Js.log(revelation);
+          let parser_options =
+            patchNthForRevelation(parser_options, revelation);
           let fee =
             receipt->parse(
               "[ ]*Fee to the baker: .([0-9]*\\.[0-9]+|[0-9]+)",
-              `AllReduce((parse_and_reduce_float, 0.)),
+              parser_options.fees,
             );
           Js.log(fee);
           let count =
             receipt->parse(
               "[ ]*Expected counter: ([0-9]+)",
-              `First(int_of_string_opt),
+              parser_options.counter,
             );
           Js.log(count);
           let gasLimit =
             receipt->parse(
               "[ ]*Gas limit: ([0-9]+)",
-              `AllReduce((parse_and_reduce_int, 0)),
+              parser_options.gasLimit,
             );
           Js.log(gasLimit);
           let storageLimit =
             receipt->parse(
               "[ ]*Storage limit: ([0-9]+)",
-              `AllReduce((parse_and_reduce_int, 0)),
+              parser_options.storageLimit,
             );
           Js.log(storageLimit);
           switch (fee, count, gasLimit, storageLimit) {
@@ -308,7 +369,7 @@ module InjectorRaw = (Caller: CallerAPI) => {
           let result =
             receipt->parse(
               "Operation hash is '([A-Za-z0-9]*)'",
-              `First(s => Some(s)),
+              First(s => Some(s)),
             );
           switch (result) {
           | Some(operationHash) => operationHash
@@ -326,10 +387,10 @@ module InjectorRaw = (Caller: CallerAPI) => {
           let operationHash =
             receipt->parse(
               "Operation hash is '([A-Za-z0-9]+)'",
-              `First(s => Some(s)),
+              First(s => Some(s)),
             );
           let branch =
-            receipt->parse("--branch ([A-Za-z0-9]+)", `First(s => Some(s)));
+            receipt->parse("--branch ([A-Za-z0-9]+)", First(s => Some(s)));
           switch (operationHash, branch) {
           | (Some(operationHash), Some(branch)) => (operationHash, branch)
           | (_, _) => raise(InvalidReceiptFormat)
@@ -471,7 +532,18 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
   exception InvalidReceiptFormat;
 
   let simulate = (network, operation: Protocol.t) =>
-    Injector.simulate(network, arguments(_, operation));
+    Injector.simulate(
+      network,
+      Injector.singleOperationParser,
+      arguments(_, operation),
+    );
+
+  let simulateSingleBatchTransfer = (network, index, operation: Protocol.t) =>
+    Injector.simulate(
+      network,
+      Injector.singleBatchTransferParser(index),
+      arguments(_, operation),
+    );
 
   let create = (network, operation: Protocol.t) =>
     Injector.create(network, arguments(_, operation));
@@ -966,7 +1038,11 @@ module Tokens = (Caller: CallerAPI) => {
   };
 
   let simulate = (network, operation: Token.operation) =>
-    Injector.simulate(network, make_arguments(_, operation, ~offline=false));
+    Injector.simulate(
+      network,
+      Injector.singleOperationParser,
+      make_arguments(_, operation, ~offline=false),
+    );
 
   let create = (network, operation: Token.operation) =>
     Injector.create(network, make_arguments(_, operation, ~offline=false));
