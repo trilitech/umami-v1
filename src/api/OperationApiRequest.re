@@ -24,14 +24,13 @@ let token = (operation, password) => {
   password,
 };
 
-let useCreate = (~sideEffect=?, ~network) => {
-  let set = (~config, {operation, password}) => {
+let useCreate = (~sideEffect=?, ()) => {
+  let set = (~settings, {operation, password}) => {
     switch (operation) {
     | Protocol(operation) =>
-      (network, config)->OperationsAPI.inject(operation, ~password)
+      settings->OperationsAPI.inject(operation, ~password)
     | Token(operation) =>
-      (network, config)
-      ->TokensApiRequest.TokensAPI.inject(operation, ~password)
+      settings->TokensApiRequest.TokensAPI.inject(operation, ~password)
     };
   };
 
@@ -46,13 +45,13 @@ let useCreate = (~sideEffect=?, ~network) => {
 
 /* Simulate */
 
-let useSimulate = (~network) => {
-  let set = (~config, operation) =>
+let useSimulate = () => {
+  let set = (~settings, operation) =>
     switch (operation) {
     | Operation.Protocol(operation) =>
-      (network, config)->OperationsAPI.simulate(operation)
+      settings->OperationsAPI.simulate(operation)
     | Operation.Token(operation) =>
-      (network, config)->TokensApiRequest.TokensAPI.simulate(operation)
+      settings->TokensApiRequest.TokensAPI.simulate(operation)
     };
 
   ApiRequest.useSetter(~set, ~kind=Logs.Operation, ());
@@ -62,34 +61,32 @@ let useSimulate = (~network) => {
 
 let useLoad =
     (
-      ~network,
       ~requestState as (request, setRequest),
       ~limit=?,
       ~types=?,
       ~address: option(string),
       (),
     ) => {
-  let get = (~config, (network, address)) => {
-    (network, config)
-    ->OperationsAPI.get(address, ~limit?, ~types?, ~mempool=true, ());
+  let get = (~settings, address) => {
+    settings->OperationsAPI.get(address, ~limit?, ~types?, ~mempool=true, ());
   };
 
   let getRequest =
     ApiRequest.useGetter(~get, ~kind=Logs.Operation, ~setRequest, ());
 
   let isMounted = ReactUtils.useIsMonted();
-  React.useEffect4(
+  React.useEffect3(
     () => {
       address->Common.Lib.Option.iter(address => {
         let shouldReload = ApiRequest.conditionToLoad(request, isMounted);
         if (address != "" && shouldReload) {
-          getRequest((network, address));
+          getRequest(address);
         };
       });
 
       None;
     },
-    (isMounted, network, request, address),
+    (isMounted, request, address),
   );
 
   request;

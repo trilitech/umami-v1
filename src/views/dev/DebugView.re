@@ -37,13 +37,13 @@ let toString = array =>
 
 [@react.component]
 let make = () => {
-  let (network, setNetwork) = React.useState(() => Network.Test);
+  let (network, setNetwork) = React.useState(() => AppSettings.Testnet);
   let (account, setAccount) =
     React.useState(() => "tz1QHESqw4VduUUyGEY9gLh5STBDuTacpydB");
   let (balance, setBalance) = React.useState(() => "");
   let (injection, setInjection) = React.useState(() => InjectionState.Done);
   let (accounts, setAccounts) = React.useState(() => dummy);
-  let config = ConfigContext.useConfig();
+  let settings = ConfigContext.useSettings();
 
   React.useEffect0(() => {
     /*
@@ -86,7 +86,7 @@ let make = () => {
      ->Future.tapError(Js.log)
      ->FutureEx.getOk(Js.log);
      */
-    (network, config)
+    AppSettings.withNetwork(settings, network)
     ->OperationsAPI.waitForOperationConfirmations(
         "oo38L1jPWGmf1RBg8zyq4BoUys9zhofWJN8e8eQPnB4D6NQctv5",
         ~confirmations=0,
@@ -101,7 +101,7 @@ let make = () => {
     () => {
       switch (injection) {
       | Pending(operation) =>
-        (network, config)
+        AppSettings.withNetwork(settings, network)
         ->OperationsAPI.inject(operation, ~password="blerot")
         ->Future.get(result =>
             switch (result) {
@@ -120,7 +120,7 @@ let make = () => {
 
   React.useEffect1(
     () => {
-      AccountsAPI.get(~config)
+      AccountsAPI.get(~settings)
       ->Future.tapOk(value => setAccounts(_ => value))
       ->ignore;
       None;
@@ -161,7 +161,7 @@ let make = () => {
                 onSubmit={(source, delegate) =>
                   AccountsAPI.add("delegate", delegate)
                   ->Future.tapOk(_ =>
-                      AccountsAPI.get(~config)
+                      AccountsAPI.get(~settings)
                       ->FutureEx.getOk(value => setAccounts(_ => value))
                     )
                   ->FutureEx.getOk(_ =>

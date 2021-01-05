@@ -7,7 +7,7 @@ module TokensAPI = API.Tokens(API.TezosClient);
 
 [@react.component]
 let make = () => {
-  let config = ConfigContext.useConfig();
+  let settings = ConfigContext.useSettings();
   let (account, setAccount) = React.useState(() => "");
 
   <View style>
@@ -24,7 +24,10 @@ let make = () => {
           "KT1BUdnCMfBKdVxCKyBvMUqwLqm27EDGWskB",
           (),
         )
-        ->TokensAPI.callGetOperationOffline((Network.Test, config), _)
+        ->TokensAPI.callGetOperationOffline(
+            AppSettings.testOnly(settings),
+            _,
+          )
         ->Future.get(result =>
             switch (result) {
             | Ok(balance) => Dialog.error(balance)

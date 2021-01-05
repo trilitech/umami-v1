@@ -7,7 +7,7 @@ module TokensAPI = API.Tokens(API.TezosClient);
 
 [@react.component]
 let make = () => {
-  let config = ConfigContext.useConfig();
+  let settings = ConfigContext.useSettings();
   let (source, setSrc) = React.useState(() => "");
   let (destination, setDst) = React.useState(() => "");
   let (amount, setAmount) = React.useState(() => "");
@@ -37,7 +37,7 @@ let make = () => {
           ~contract="KT1BUdnCMfBKdVxCKyBvMUqwLqm27EDGWskB",
           (),
         )
-        ->TokensAPI.simulate((Network.Test, config), _)
+        ->TokensAPI.simulate(AppSettings.testOnly(settings), _)
         ->Future.get(result =>
             switch (result) {
             | Ok(_) => Dialog.error("ok")

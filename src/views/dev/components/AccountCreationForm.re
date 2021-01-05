@@ -8,7 +8,7 @@ module AccountsAPI = API.Accounts(API.TezosClient);
 [@react.component]
 let make = () => {
   let (_, setAccounts) = React.useContext(AccountsState.context);
-  let config = ConfigContext.useConfig();
+  let settings = ConfigContext.useSettings();
   let (name, setName) = React.useState(() => "");
 
   <View style>
@@ -20,8 +20,8 @@ let make = () => {
     <Button
       onPress={_ =>
         name
-        ->AccountsAPI.create(~config)
-        ->Future.flatMapOk(_ => AccountsAPI.get(~config))
+        ->AccountsAPI.create(~settings)
+        ->Future.flatMapOk(_ => AccountsAPI.get(~settings))
         ->Future.get(result =>
             switch (result) {
             | Ok(value) => setAccounts(value)

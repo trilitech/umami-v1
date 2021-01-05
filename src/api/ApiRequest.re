@@ -116,11 +116,25 @@ let conditionToLoad = (request, isMounted) => {
 
 let useGetter = (~toast=true, ~get, ~kind, ~setRequest, ()) => {
   let addLog = LogsContext.useAdd();
-  let config = ConfigContext.useConfig();
+  let settings = ConfigContext.useSettings();
 
   let get = input => {
     setRequest(updateToLoadingState);
-    get(~config, input)
+    get(~settings, input)
+    ->logError(addLog(toast), kind)
+    ->Future.get(result => setRequest(_ => Done(result, Js.Date.now())));
+  };
+
+  get;
+};
+
+let useGetterSDK = (~toast=true, ~get, ~kind, ~setRequest, ()) => {
+  let addLog = LogsContext.useAdd();
+  let settings = ConfigContext.useSettings();
+
+  let get = input => {
+    setRequest(updateToLoadingState);
+    get(~settings, input)
     ->logError(addLog(toast), kind)
     ->Future.get(result => setRequest(_ => Done(result, Js.Date.now())));
   };
@@ -206,11 +220,11 @@ let useLoader2 =
 let useSetter = (~toast=true, ~sideEffect=?, ~set, ~kind, ()) => {
   let addLog = LogsContext.useAdd();
   let (request, setRequest) = React.useState(_ => NotAsked);
-  let config = ConfigContext.useConfig();
+  let settings = ConfigContext.useSettings();
 
   let sendRequest = input => {
     setRequest(_ => Loading(None));
-    set(~config, input)
+    set(~settings, input)
     ->logError(addLog(toast), kind)
     ->Future.tap(result => {setRequest(_ => Done(result, Js.Date.now()))})
     ->Future.tapOk(sideEffect->Belt.Option.getWithDefault(_ => ()));

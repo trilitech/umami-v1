@@ -16,6 +16,17 @@ module Infix = {
 include Infix;
 
 module Lib = {
+  module Future = {
+    let fromPromise = p =>
+      Future.make(resolve => {
+        p
+        |> Js.Promise.then_(v => {
+             resolve(Ok(v));
+             Js.Promise.resolve();
+           })
+      });
+  };
+
   module Option = {
     let iter = (o, f) => {
       switch (o) {

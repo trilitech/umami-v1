@@ -1,5 +1,7 @@
 let getCurrentPath: unit => string;
 
+let homeDir: unit => string;
+
 module File: {
   type encoding =
     | Utf8

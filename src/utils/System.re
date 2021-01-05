@@ -1,11 +1,16 @@
 %raw
 "
 var Electron = window.require('electron');
+var Process = window.require('process');
+var OS = window.require('os');
 var Fs = window.require('fs'); ";
 
 let electron = [%raw "Electron"];
 let app = electron##remote##app;
 let fs = [%raw "Fs"];
+let os = [%raw "OS"];
+
+let homeDir = () => os##homedir();
 
 let getCurrentPath: unit => string = () => app##getAppPath();
 

@@ -48,22 +48,24 @@ let make = () => {
 
   <View style=styles##container>
     <OperationsHeaderView />
-    {switch (operationsRequest) {
-     | Done(Ok(operations), _)
-     | Loading(Some(operations)) =>
-       <FlatList
-         style=styles##list
-         contentContainerStyle=styles##listContent
-         data={operations->sort;
-               operations}
-         initialNumToRender=20
-         keyExtractor
-         renderItem
-         _ListEmptyComponent
-       />
-     | Done(Error(error), _) => error->React.string
-     | NotAsked
-     | Loading(None) => <LoadingView />
-     }}
+    {ApiRequest.(
+       switch (operationsRequest) {
+       | Done(Ok(operations), _)
+       | Loading(Some(operations)) =>
+         <FlatList
+           style=styles##list
+           contentContainerStyle=styles##listContent
+           data={operations->sort;
+                 operations}
+           initialNumToRender=20
+           keyExtractor
+           renderItem
+           _ListEmptyComponent
+         />
+       | Done(Error(error), _) => error->React.string
+       | NotAsked
+       | Loading(None) => <LoadingView />
+       }
+     )}
   </View>;
 };

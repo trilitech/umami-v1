@@ -145,9 +145,11 @@ module Provider = {
 [@react.component]
 let make = (~children) => {
   let writeConf = ConfigContext.useWrite();
-  let conf = ConfigContext.useConfig();
+  let settings = ConfigContext.useSettings();
   let (themeMain, setMain) =
-    React.useState(_ => conf.theme->Belt.Option.getWithDefault(`dark));
+    React.useState(_ =>
+      settings.config.theme->Belt.Option.getWithDefault(`dark)
+    );
   React.useEffect1(() => {None}, [|setMain|]);
 
   let switchTheme = () =>

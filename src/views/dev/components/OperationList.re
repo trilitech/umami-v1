@@ -18,7 +18,7 @@ let make = () => {
   let (account, _) = React.useContext(AccountState.context);
   let (_, setBalance) = React.useContext(BalanceState.context);
   let (injection, _) = React.useContext(InjectionState.context);
-  let config = ConfigContext.useConfig();
+  let settings = ConfigContext.useSettings();
 
   let (operations: array(Operation.Read.t), setOperations) =
     React.useState(() => [||]);
@@ -28,7 +28,7 @@ let make = () => {
       switch (injection) {
       | Pending(_) => ()
       | Done =>
-        (network, config)
+        settings
         ->OperationsAPI.get(account, ())
         ->FutureEx.getOk(value => setOperations(_ => value))
       };
@@ -40,10 +40,10 @@ let make = () => {
   <View>
     <Button
       onPress={_ => {
-        (network, config)
+        settings
         ->BalanceAPI.get(account, ())
         ->FutureEx.getOk(value => setBalance(value));
-        (network, config)
+        settings
         ->OperationsAPI.get(account, ())
         ->FutureEx.getOk(value => setOperations(_ => value));
       }}

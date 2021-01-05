@@ -7,7 +7,7 @@ module OperationsAPI = API.Operations(API.TezosClient, API.TezosExplorer);
 
 [@react.component]
 let make = () => {
-  let config = ConfigContext.useConfig();
+  let settings = ConfigContext.useSettings();
   let (source, setSource) = React.useState(() => "");
   let (amount1, setAmount1) = React.useState(() => 0.0);
   let (destination1, setDestination1) = React.useState(() => "");
@@ -76,7 +76,7 @@ let make = () => {
               txs;
             }
           )
-        ->OperationsAPI.simulate((Network.Test, config), _)
+        ->OperationsAPI.simulate(AppSettings.testOnly(settings), _)
         ->Future.get(result =>
             switch (result) {
             | Ok(_) => Dialog.error("ok")

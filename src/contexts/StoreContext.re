@@ -10,7 +10,6 @@ type apiRequestsState('requestResponse) =
   reactState(requestsState('requestResponse));
 
 type state = {
-  network: Network.t,
   selectedAccountState: reactState(option(string)),
   selectedTokenState: reactState(option(string)),
   accountsRequestState: reactState(ApiRequest.t(Map.String.t(Account.t))),
@@ -30,7 +29,6 @@ type state = {
 let initialApiRequestsState = (Map.String.empty, _ => ());
 
 let initialState = {
-  network: Network.Test,
   selectedAccountState: (None, _ => ()),
   selectedTokenState: (None, _ => ()),
   accountsRequestState: (NotAsked, _ => ()),
@@ -59,8 +57,6 @@ module Provider = {
 
 [@react.component]
 let make = (~children) => {
-  let (network, _setNetwork) = React.useState(() => Network.Test);
-
   let selectedAccountState = React.useState(() => None);
   let (selectedAccount, setSelectedAccount) = selectedAccountState;
 
@@ -101,7 +97,6 @@ let make = (~children) => {
 
   <Provider
     value={
-      network,
       selectedAccountState,
       selectedTokenState,
       accountsRequestState,
@@ -165,21 +160,13 @@ let resetRequests = requestsState =>
 
 //
 
-module Network = {
-  let useGet = () => {
-    let store = useStoreContext();
-    store.network;
-  };
-};
-
 module Balance = {
   let useRequestState = useRequestsState(store => store.balanceRequestsState);
 
   let useLoad = (address: string) => {
-    let network = Network.useGet();
     let requestState = useRequestState(Some(address));
 
-    BalanceApiRequest.useLoad(~network, ~requestState, ~address);
+    BalanceApiRequest.useLoad(~requestState, ~address);
   };
 
   let useGetTotal = () => {
@@ -232,7 +219,6 @@ module BalanceToken = {
   let hardCodedReceiptionKT1 = "KT1BZ6cBooBYubKv4Z3kd7izefLXgwTrSfoG";
 
   let useLoad = (address: string, tokenAddress: option(string)) => {
-    let network = Network.useGet();
     let requestState = useRequestState(address->getRequestKey(tokenAddress));
 
     let operation =
@@ -249,11 +235,7 @@ module BalanceToken = {
         (address, tokenAddress),
       );
 
-    TokensApiRequest.useLoadOperationOffline(
-      ~network,
-      ~requestState,
-      ~operation,
-    );
+    TokensApiRequest.useLoadOperationOffline(~requestState, ~operation);
   };
 
   let useGetTotal = (tokenAddress: option(string)) => {
@@ -300,11 +282,10 @@ module Delegate = {
   let useRequestState = useRequestsState(store => store.delegateRequestsState);
 
   let useLoad = (address: string) => {
-    let network = Network.useGet();
     let requestState: ApiRequest.requestState(option(string)) =
       useRequestState(Some(address));
 
-    DelegateApiRequest.useLoad(~network, ~requestState, ~address);
+    DelegateApiRequest.useLoad(~requestState, ~address);
   };
 
   let useGetAll = () => {
@@ -325,10 +306,9 @@ module DelegateInfo = {
     useRequestsState(store => store.delegateInfoRequestsState);
 
   let useLoad = (address: string) => {
-    let network = Network.useGet();
     let requestState = useRequestState(Some(address));
 
-    DelegateApiRequest.useLoadInfo(~network, ~requestState, ~address);
+    DelegateApiRequest.useLoadInfo(~requestState, ~address);
   };
 
   let useResetAll = () => {
@@ -347,11 +327,9 @@ module Operations = {
     useRequestsState(store => store.operationsRequestsState);
 
   let useLoad = (~limit=?, ~types=?, ~address: option(string), ()) => {
-    let network = Network.useGet();
     let requestState = useRequestState(address);
 
     OperationApiRequest.useLoad(
-      ~network,
       ~requestState,
       ~limit?,
       ~types?,
@@ -375,17 +353,12 @@ module Operations = {
   };
 
   let useCreate = () => {
-    let network = Network.useGet();
     let resetOperations = useResetAll();
-    OperationApiRequest.useCreate(
-      ~sideEffect=_ => resetOperations(),
-      ~network,
-    );
+    OperationApiRequest.useCreate(~sideEffect=_ => resetOperations(), ());
   };
 
   let useSimulate = () => {
-    let network = Network.useGet();
-    OperationApiRequest.useSimulate(~network);
+    OperationApiRequest.useSimulate();
   };
 };
 
@@ -396,10 +369,9 @@ module Bakers = {
   };
 
   let useLoad = () => {
-    let network = Network.useGet();
     let requestState = useRequestState();
 
-    DelegateApiRequest.useLoadBakers(~network, ~requestState);
+    DelegateApiRequest.useLoadBakers(~requestState);
   };
 };
 
@@ -444,8 +416,7 @@ module Tokens = {
   };
 
   let useCheck = () => {
-    let network = Network.useGet();
-    TokensApiRequest.useCheckTokenContract(~network);
+    TokensApiRequest.useCheckTokenContract();
   };
 };
 

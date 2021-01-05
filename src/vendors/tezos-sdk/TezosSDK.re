@@ -1,24 +1,67 @@
 %raw
-"var SDK;";
+"var dummySDK;";
 
-let sdk = [%raw "SDK"];
-
-/* console.log('LOADING SDK'); */
+type sdkjs;
 
 %raw
 "
-console.log('require sdk');
 const initjs = require('tezos-sdk');
-console.log(initjs);
-
-initjs.init().then(function (api) {
-  console.log('SDK LOADED');
-  console.log(api.list_known_addresses(0));
-  sdk = api
-})
-
 ";
 
-let list_known_addresses = () => {
-  Js.log("toto");
+/* type sdk = Js.t(sdkjs); */
+type cctxt;
+type lib;
+type sdkInit;
+type t = {
+  lib,
+  cctxt,
 };
+
+let sdkInit: sdkInit = [%raw "initjs"];
+
+[@bs.send] external buildCctxt: (lib, string, string) => cctxt = "buildCctxt";
+[@bs.send] external init: sdkInit => Js.Promise.t(lib) = "init";
+
+let init: (string, string) => Js.Promise.t(t) =
+  (baseDir, endpoint) =>
+    init(sdkInit)
+    |> Js.Promise.then_(lib =>
+         Js.Promise.resolve({lib, cctxt: buildCctxt(lib, baseDir, endpoint)})
+       );
+
+type address = {
+  alias: string,
+  pkh: string,
+};
+
+type result('a) = {
+  kind: [ | `ok | `error],
+  payload: 'a,
+  msg: string,
+};
+
+let fromPromise = p =>
+  Future.make(resolve => {
+    p
+    |> Js.Promise.then_(v => {
+         v.kind == `ok
+           ? resolve(Ok(v.payload))
+           : {
+             resolve(Error(v.msg));
+           };
+         Js.Promise.resolve();
+       })
+    |> Js.Promise.catch(error => {
+         resolve(Error(Js.String.make(error)));
+         Js.Promise.resolve();
+       })
+  });
+
+[@bs.send]
+external listKnownAddresses:
+  (lib, cctxt, int) => Js.Promise.t(result(array(address))) =
+  "list_known_addresses";
+let listKnownAddresses = sdk =>
+  sdk
+  |> Js.Promise.then_(sdk => listKnownAddresses(sdk.lib, sdk.cctxt, 0))
+  |> fromPromise;

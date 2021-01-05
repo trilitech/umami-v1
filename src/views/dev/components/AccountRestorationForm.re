@@ -8,7 +8,7 @@ module AccountsAPI = API.Accounts(API.TezosClient);
 [@react.component]
 let make = () => {
   let (_, setAccounts) = React.useContext(AccountsState.context);
-  let config = ConfigContext.useConfig();
+  let settings = ConfigContext.useSettings();
   let (backupPhrase, setBackupPhrase) = React.useState(() => "");
   let (name, setName) = React.useState(() => "");
   let (password, setPassword) = React.useState(() => "");
@@ -32,8 +32,8 @@ let make = () => {
     />
     <Button
       onPress={_ =>
-        AccountsAPI.addWithMnemonic(~config, name, backupPhrase, ~password)
-        ->Future.flatMapOk(_ => AccountsAPI.get(~config))
+        AccountsAPI.addWithMnemonic(~settings, name, backupPhrase, ~password)
+        ->Future.flatMapOk(_ => AccountsAPI.get(~settings))
         ->Future.get(result =>
             switch (result) {
             | Ok(value) => setAccounts(value)
