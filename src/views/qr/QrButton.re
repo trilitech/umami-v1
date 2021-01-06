@@ -1,5 +1,5 @@
 [@react.component]
-let make = (~account, ~showBalance=true) => {
+let make = (~account) => {
   let (visibleModal, openAction, closeAction) =
     ModalAction.useModalActionState();
 
@@ -10,7 +10,7 @@ let make = (~account, ~showBalance=true) => {
   <>
     <IconButton icon=Icons.Qr.build onPress />
     <ModalAction visible=visibleModal onRequestClose=closeAction>
-      <ReceiveView account onPressCancel showBalance />
+      <ReceiveView account onPressCancel />
     </ModalAction>
   </>;
 };
