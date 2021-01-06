@@ -1,5 +1,9 @@
 open ReactNative;
 
+%raw
+"var Electron = window.require('electron');";
+let electron = [%raw "Electron"];
+
 module CellType =
   Table.MakeCell({
     let style = Style.(style(~flexBasis=90.->dp, ()));
@@ -34,6 +38,15 @@ module CellStatus =
 module CellDate =
   Table.MakeCell({
     let style = Style.(style(~flexBasis=220.->dp, ()));
+    ();
+  });
+
+module CellAction =
+  Table.MakeCell({
+    let style =
+      Style.(
+        style(~flexBasis=30.->dp, ~minWidth=30.->dp, ~alignItems=`center, ())
+      );
     ();
   });
 
@@ -169,5 +182,16 @@ let make =
           ->React.string
         </Typography.Body1>
       </CellStatus>
+      <CellAction>
+        <IconButton
+          icon=Icons.OpenExternal.build
+          onPress={_ => {
+            electron##shell##openExternal(
+              "https://delphinet.tzkt.io/" ++ operation.hash,
+            )
+            ->ignore
+          }}
+        />
+      </CellAction>
     </Table.Row>;
   });

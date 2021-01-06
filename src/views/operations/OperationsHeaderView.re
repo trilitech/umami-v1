@@ -63,6 +63,7 @@ let make = () => {
           I18n.t#operation_column_status->React.string
         </Typography.Overline3>
       </OperationRowItem.CellStatus>
+      <OperationRowItem.CellAction />
     </Table.Head>
   </View>;
 };
