@@ -82,7 +82,7 @@ let title = {
   pub account_create_password = "Set a password to secure your wallet";
   pub account_create_verify_phrase = "Verify your recovery phrase";
   pub import_account_enter_phrase = "Enter your recovery phrase";
-  pub operation_injected = "Operation injected in the node";
+  pub operation_submited = "Operation Submitted";
   pub sender_account = "Sender account";
   pub recipient_account = "Recipient account";
   pub delegated_account = "Account to delegate";
@@ -115,7 +115,8 @@ let expl = {
   pub account_create_password_not_recorded = {j|Please note that this password is not recorded anywhere and only applies to this machine.|j};
   pub import_account_enter_phrase = {j|Please fill in the recovery phrase in sequence.|j};
   pub confirm_operation = "Please confirm the details of the operation";
-  pub batch = "Review, edit or delete the transactions of the batch"
+  pub batch = "Review, edit or delete the transactions of the batch";
+  pub operation = "The operation will be processed and confirmed, you can see its progress in the Operations section."
 };
 
 let menu = {
@@ -160,7 +161,7 @@ let t = {
   pub contact_added = "Contact added";
   pub account_created = "Account created";
   pub token_created = "Token created";
-  pub operation_hash = "Operation hash";
+  pub operation_hash = "Operation Hash";
   pub account_imported = "Account imported";
   pub operation_summary_fee = p("+ Fee %a", () => this#xtz_amount);
   pub navbar_accounts = "ACCOUNTS";
