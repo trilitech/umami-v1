@@ -29,7 +29,7 @@ let make =
                titleDone->React.string
              </Typography.Headline>
              <View style=FormStyles.formAction>
-               <Buttons.FormPrimary text=I18n.btn#ok onPress=onPressCancel />
+               <Buttons.Form text=I18n.btn#ok onPress=onPressCancel />
              </View>
            </>
          | Done(Error(error), _) =>
@@ -38,7 +38,7 @@ let make =
                error->React.string
              </Typography.Body1>
              <View style=FormStyles.formAction>
-               <Buttons.FormPrimary text=I18n.btn#ok onPress=onPressCancel />
+               <Buttons.Form text=I18n.btn#ok onPress=onPressCancel />
              </View>
            </>
          | Loading(_) =>
@@ -49,11 +49,8 @@ let make =
                title->React.string
              </Typography.Headline>
              <View style=FormStyles.formAction>
-               <Buttons.FormPrimary
-                 text=I18n.btn#cancel
-                 onPress=onPressCancel
-               />
-               <Buttons.FormPrimary
+               <Buttons.Form text=I18n.btn#cancel onPress=onPressCancel />
+               <Buttons.Form
                  text=I18n.btn#delete
                  onPress=onPressConfirmDelete
                />

@@ -15,6 +15,7 @@ let styles =
           ~paddingRight=43.->dp,
           (),
         ),
+      "addTransaction": style(~marginBottom=10.->dp, ()),
       "notFirstRow": style(~borderTopWidth=1., ()),
       "num": style(~position=`absolute, ~left=10.->dp, ~top=10.->dp, ()),
       "moreButton":
@@ -53,13 +54,13 @@ module Item = {
     let aliases = StoreContext.Aliases.useGetAll();
     let theme: ThemeContext.theme = ThemeContext.useTheme();
     <View
-      style={ReactUtils.styles(
-        styles##row
-        @: Style.(
-             style(~zIndex, ~borderColor=theme.colors.borderDisabled, ())
-           )
-        @$? Lib.Option.onlyIf(i != 0, () => styles##notFirstRow),
-      )}>
+      style=Style.(
+        arrayOption([|
+          Some(styles##row),
+          Some(style(~zIndex, ~borderColor=theme.colors.borderDisabled, ())),
+          Lib.Option.onlyIf(i != 0, () => styles##notFirstRow),
+        |])
+      )>
       <Typography.Subtitle1 colorStyle=`mediumEmphasis style=styles##num>
         {i->string_of_int->React.string}
       </Typography.Subtitle1>
@@ -73,24 +74,27 @@ module Item = {
         }
         showAmount={buildAmount(amount)}
       />
-      {(
-         onEdit->Belt.Option.map(edit => {
-           <Menu.Item
-             key=I18n.menu#batch_edit
-             text=I18n.menu#batch_edit
-             icon=Icons.Edit.build
-             onPress={_ => edit()}
-           />
-         })
-         @?? onDelete->Belt.Option.map(delete => {
-               <Menu.Item
-                 key=I18n.menu#batch_delete
-                 text=I18n.menu#batch_delete
-                 icon=Icons.Delete.build
-                 onPress={_ => delete()}
-               />
-             })
-       )
+      {[]
+       ->Lib.List.addOpt(
+           onDelete->Belt.Option.map(delete => {
+             <Menu.Item
+               key=I18n.menu#batch_delete
+               text=I18n.menu#batch_delete
+               icon=Icons.Delete.build
+               onPress={_ => delete()}
+             />
+           }),
+         )
+       ->Lib.List.addOpt(
+           onEdit->Belt.Option.map(edit => {
+             <Menu.Item
+               key=I18n.menu#batch_edit
+               text=I18n.menu#batch_edit
+               icon=Icons.Edit.build
+               onPress={_ => edit()}
+             />
+           }),
+         )
        ->ReactUtils.hideNil(l =>
            <Menu style=styles##moreButton icon=Icons.More.build>
              {l->Belt.List.toArray->React.array}
@@ -135,7 +139,8 @@ module Transactions = {
 };
 
 [@react.component]
-let make = (~back, ~onSubmitBatch, ~onDelete, ~onEdit, ~batch) => {
+let make =
+    (~back=?, ~onAddTransfer, ~onSubmitBatch, ~onDelete, ~onEdit, ~batch) => {
   let theme: ThemeContext.theme = ThemeContext.useTheme();
   let recipients =
     batch->Belt.List.mapWithIndex(
@@ -143,9 +148,11 @@ let make = (~back, ~onSubmitBatch, ~onDelete, ~onEdit, ~batch) => {
       (Some(() => onEdit(i, v)), (t.recipient, t.amount))
     );
   <>
-    {<TouchableOpacity onPress={_ => back()} style=FormStyles.topLeftButton>
-       <Icons.ArrowLeft size=36. color={theme.colors.iconMediumEmphasis} />
-     </TouchableOpacity>}
+    {back->ReactUtils.mapOpt(back => {
+       <TouchableOpacity onPress={_ => back()} style=FormStyles.topLeftButton>
+         <Icons.ArrowLeft size=36. color={theme.colors.iconMediumEmphasis} />
+       </TouchableOpacity>
+     })}
     <View style=FormStyles.header>
       <Typography.Headline>
         I18n.title#batch->React.string
@@ -167,6 +174,11 @@ let make = (~back, ~onSubmitBatch, ~onDelete, ~onEdit, ~batch) => {
     </View>
     <Transactions recipients onDelete />
     <View style=FormStyles.verticalFormAction>
+      <Buttons.SubmitSecondary
+        style=styles##addTransaction
+        text=I18n.btn#send_another_transaction
+        onPress={_ => onAddTransfer()}
+      />
       <Buttons.SubmitPrimary
         text=I18n.btn#batch_submit
         onPress={_ => onSubmitBatch(batch)}

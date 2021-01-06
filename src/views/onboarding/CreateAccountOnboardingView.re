@@ -66,11 +66,8 @@ let make = (~cancel) => {
               </Typography.Body2>
               <MnemonicListView mnemonic />
               <View style=FormStyles.formAction>
-                <Buttons.FormPrimary
-                  text=I18n.btn#cancel
-                  onPress=onPressCancel
-                />
-                <Buttons.FormPrimary
+                <Buttons.Form text=I18n.btn#cancel onPress=onPressCancel />
+                <Buttons.Form
                   text=I18n.btn#create_account_record_ok
                   onPress={_ => setFormStep(_ => Step2)}
                 />

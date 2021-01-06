@@ -75,6 +75,18 @@ module LoadingView = {
   };
 };
 
+module BackButton = {
+  [@react.component]
+  let make = (~back) => {
+    let theme = ThemeContext.useTheme();
+    back->ReactUtils.mapOpt(back => {
+      <TouchableOpacity onPress={_ => back()} style=FormStyles.topLeftButton>
+        <Icons.ArrowLeft size=36. color={theme.colors.iconMediumEmphasis} />
+      </TouchableOpacity>
+    });
+  };
+};
+
 module ConfirmCloseModal = {
   [@react.component]
   let make = (~confirm, ~closeAction, ~visible) => {
@@ -107,8 +119,8 @@ module ConfirmCloseModal = {
            <Typography.Headline> sub->React.string </Typography.Headline>
          })}
         <View style=FormStyles.formAction>
-          <Buttons.FormPrimary text=cancelText onPress=onPressCancel />
-          <Buttons.FormPrimary
+          <Buttons.Form text=cancelText onPress=onPressCancel />
+          <Buttons.Form
             onPress={_ => {
               closeAction();
               action();

@@ -63,8 +63,8 @@ let make = (~cancel) => {
            error={form.getFieldError(Field(Address))}
          />
          <View style=FormStyles.formAction>
-           <Buttons.FormPrimary text=I18n.btn#cancel onPress=onPressCancel />
-           <Buttons.FormPrimary text=I18n.btn#add onPress=onSubmit />
+           <Buttons.Form text=I18n.btn#cancel onPress=onPressCancel />
+           <Buttons.Form text=I18n.btn#add onPress=onSubmit />
          </View>
        </>
      }}

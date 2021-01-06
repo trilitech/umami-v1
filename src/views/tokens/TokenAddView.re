@@ -99,8 +99,8 @@ let make = (~cancel) => {
            placeholder=I18n.input_placeholder#add_token_symbol
          />
          <View style=FormStyles.formAction>
-           <Buttons.FormPrimary text=I18n.btn#cancel onPress=onPressCancel />
-           <Buttons.FormPrimary text=I18n.btn#register onPress=onSubmit />
+           <Buttons.Form text=I18n.btn#cancel onPress=onPressCancel />
+           <Buttons.Form text=I18n.btn#register onPress=onSubmit />
          </View>
        </>
      }}

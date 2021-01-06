@@ -82,8 +82,8 @@ let make = (~mnemonic, ~onPressCancel, ~createAccountWithMnemonic) => {
       secureTextEntry=true
     />
     <View style=FormStyles.formAction>
-      <Buttons.FormPrimary text=I18n.btn#cancel onPress=onPressCancel />
-      <Buttons.FormPrimary text=I18n.btn#finish onPress=onSubmit />
+      <Buttons.Form text=I18n.btn#cancel onPress=onPressCancel />
+      <Buttons.Form text=I18n.btn#finish onPress=onSubmit />
     </View>
   </>;
 };

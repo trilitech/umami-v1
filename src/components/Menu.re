@@ -1,5 +1,4 @@
 open ReactNative;
-open Common;
 
 module Item = {
   let styles =
@@ -69,10 +68,12 @@ let make = (~icon: Icons.builder, ~children, ~size=42., ~style as styleArg=?) =>
   let theme = ThemeContext.useTheme();
 
   <View
-    style={
-      (Style.(style(~width=size->dp, ~height=size->dp, ())) @$? styleArg)
-      ->ReactUtils.styles
-    }>
+    style=Style.(
+      arrayOption([|
+        Some(style(~width=size->dp, ~height=size->dp, ())),
+        styleArg,
+      |])
+    )>
     <ThemedPressable
       pressableRef={pressableRef->Ref.value}
       onPress={_ => setIsOpen(isOpen => !isOpen)}

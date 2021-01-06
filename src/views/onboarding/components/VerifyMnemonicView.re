@@ -130,8 +130,8 @@ let make = (~mnemonic, ~onPressCancel, ~goNextStep) => {
     </View>
     <View
       style=Style.(array([|FormStyles.formAction, style(~zIndex=1, ())|]))>
-      <Buttons.FormPrimary text="CANCEL" onPress=onPressCancel />
-      <Buttons.FormPrimary text="CONTINUE" onPress=onSubmit />
+      <Buttons.Form text="CANCEL" onPress=onPressCancel />
+      <Buttons.Form text="CONTINUE" onPress=onSubmit />
     </View>
   </>;
 };
