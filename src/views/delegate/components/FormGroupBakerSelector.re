@@ -12,7 +12,7 @@ module BakerSelector = {
         StyleSheet.create({
           "inner":
             style(
-              ~height=48.->dp,
+              ~height=46.->dp,
               ~marginHorizontal=20.->dp,
               ~justifyContent=`spaceBetween,
               (),

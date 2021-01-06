@@ -46,7 +46,7 @@ let styles =
     StyleSheet.create({
       "selectorContent":
         style(
-          ~height=68.->dp,
+          ~height=66.->dp,
           ~flexDirection=`row,
           ~alignItems=`center,
           ~flex=1.,
