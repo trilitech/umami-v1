@@ -1,5 +1,4 @@
 open ReactNative;
-open Common;
 
 type amountDisplay =
   | Balance
@@ -24,7 +23,7 @@ module AccountItem = {
         ~token: option(Token.t)=?,
         ~showAmount=Balance,
       ) => {
-    <View style={ReactUtils.styles(itemStyles##inner @$? paramStyle)}>
+    <View style=Style.(arrayOption([|Some(itemStyles##inner), paramStyle|]))>
       <View style=itemStyles##info>
         <Typography.Subtitle2>
           account.alias->React.string

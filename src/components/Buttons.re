@@ -1,5 +1,4 @@
 open ReactNative;
-open Common;
 
 let styles =
   Style.(
@@ -104,22 +103,23 @@ module FormSecondary = {
 
 module SubmitPrimary = {
   [@react.component]
-  let make = (~text, ~onPress, ~disabled=false, ~fontSize=?, ~style=?) => {
+  let make =
+      (~text, ~onPress, ~disabled=false, ~fontSize=?, ~style as argStyle=?) => {
     let theme = ThemeContext.useTheme();
 
     <FormBase
       onPress
       isPrimary=true
       disabled
-      vStyle={ReactUtils.styles(
-        style
-        @?
-        styles##primary
-        @$$ Style.style(
-              ~backgroundColor=theme.colors.primaryButtonBackground,
-              (),
-            ),
-      )}>
+      vStyle=Style.(
+        arrayOption([|
+          argStyle,
+          Some(styles##primary),
+          Some(
+            style(~backgroundColor=theme.colors.primaryButtonBackground, ()),
+          ),
+        |])
+      )>
       <Typography.ButtonPrimary
         ?fontSize
         colorStyle={disabled ? `reverseHighEmphasis : `reverseHighEmphasis}>
@@ -131,23 +131,27 @@ module SubmitPrimary = {
 
 module SubmitSecondary = {
   [@react.component]
-  let make = (~text, ~onPress, ~disabled=false, ~fontSize=?, ~style=?) => {
+  let make =
+      (~text, ~onPress, ~disabled=false, ~fontSize=?, ~style as styleArg=?) => {
     let theme = ThemeContext.useTheme();
 
     <FormBase
       onPress
       isPrimary=false
       disabled
-      vStyle={ReactUtils.styles(
-        style
-        @?
-        styles##primary
-        @$$ Style.style(
+      vStyle=Style.(
+        arrayOption([|
+          styleArg,
+          Some(styles##primary),
+          Some(
+            style(
               ~borderWidth=1.,
               ~borderColor=theme.colors.borderHighEmphasis,
               (),
             ),
-      )}>
+          ),
+        |])
+      )>
       <Typography.ButtonPrimary ?fontSize>
         text->React.string
       </Typography.ButtonPrimary>

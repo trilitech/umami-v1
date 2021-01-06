@@ -33,10 +33,12 @@ module URL = {
       ) => {
     let operationsPath = "accounts/" ++ account ++ "/operations";
     let args =
-      types->arg_opt("types", t => t->Js.Array2.joinWith(","))
-      @? destination->arg_opt("destination", dst => dst)
-      @? limit->arg_opt("limit", lim => lim->Js.Int.toString)
-      @? [];
+      Lib.List.(
+        []
+        ->addOpt(destination->arg_opt("destination", dst => dst))
+        ->addOpt(limit->arg_opt("limit", lim => lim->Js.Int.toString))
+        ->addOpt(types->arg_opt("types", t => t->Js.Array2.joinWith(",")))
+      );
     let url = build_url(settings, operationsPath, args);
     url;
   };

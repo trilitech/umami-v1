@@ -54,13 +54,13 @@ module Item = {
     let aliases = StoreContext.Aliases.useGetAll();
     let theme: ThemeContext.theme = ThemeContext.useTheme();
     <View
-      style={ReactUtils.styles(
-        styles##row
-        @: Style.(
-             style(~zIndex, ~borderColor=theme.colors.borderDisabled, ())
-           )
-        @$? Lib.Option.onlyIf(i != 0, () => styles##notFirstRow),
-      )}>
+      style=Style.(
+        arrayOption([|
+          Some(styles##row),
+          Some(style(~zIndex, ~borderColor=theme.colors.borderDisabled, ())),
+          Lib.Option.onlyIf(i != 0, () => styles##notFirstRow),
+        |])
+      )>
       <Typography.Subtitle1 colorStyle=`mediumEmphasis style=styles##num>
         {i->string_of_int->React.string}
       </Typography.Subtitle1>
@@ -74,24 +74,27 @@ module Item = {
         }
         showAmount={buildAmount(amount)}
       />
-      {(
-         onEdit->Belt.Option.map(edit => {
-           <Menu.Item
-             key=I18n.menu#batch_edit
-             text=I18n.menu#batch_edit
-             icon=Icons.Edit.build
-             onPress={_ => edit()}
-           />
-         })
-         @?? onDelete->Belt.Option.map(delete => {
-               <Menu.Item
-                 key=I18n.menu#batch_delete
-                 text=I18n.menu#batch_delete
-                 icon=Icons.Delete.build
-                 onPress={_ => delete()}
-               />
-             })
-       )
+      {[]
+       ->Lib.List.addOpt(
+           onDelete->Belt.Option.map(delete => {
+             <Menu.Item
+               key=I18n.menu#batch_delete
+               text=I18n.menu#batch_delete
+               icon=Icons.Delete.build
+               onPress={_ => delete()}
+             />
+           }),
+         )
+       ->Lib.List.addOpt(
+           onEdit->Belt.Option.map(edit => {
+             <Menu.Item
+               key=I18n.menu#batch_edit
+               text=I18n.menu#batch_edit
+               icon=Icons.Edit.build
+               onPress={_ => edit()}
+             />
+           }),
+         )
        ->ReactUtils.hideNil(l =>
            <Menu style=styles##moreButton icon=Icons.More.build>
              {l->Belt.List.toArray->React.array}
