@@ -6,44 +6,43 @@ type injection = {
   password: string,
 };
 
-let useCheckTokenContract = (~network) => {
-  let set = (~config, address) =>
-    (network, config)->TokensAPI.checkTokenContract(address);
+let useCheckTokenContract = () => {
+  let set = (~settings, address) =>
+    settings->TokensAPI.checkTokenContract(address);
   ApiRequest.useSetter(~set, ~kind=Logs.Tokens, ~toast=false, ());
 };
 
 let useLoadOperationOffline =
     (
-      ~network,
       ~requestState as (request, setRequest),
       ~operation: option(Token.operation),
     ) => {
-  let get = (~config, (network, operation)) =>
-    (network, config)->TokensAPI.callGetOperationOffline(operation);
+  let get = (~settings, operation) =>
+    settings->TokensAPI.callGetOperationOffline(operation);
 
   let getRequest =
     ApiRequest.useGetter(~get, ~kind=Logs.Tokens, ~setRequest, ());
 
   let isMounted = ReactUtils.useIsMonted();
-  React.useEffect4(
+  React.useEffect3(
     () => {
       let shouldReload = ApiRequest.conditionToLoad(request, isMounted);
       operation->Common.Lib.Option.iter(operation =>
         if (shouldReload) {
-          getRequest((network, operation));
+          getRequest(operation);
         }
       );
       None;
     },
-    (isMounted, request, network, operation),
+    (isMounted, request, operation),
   );
 
   request;
 };
 
-let useLoadRegisteredTokens = (~network, ~requestState) => {
-  let get = (~config as _c, network) =>
-    TokensAPI.get(network)
+let useLoadRegisteredTokens = (~requestState) => {
+  let get = (~settings, ()) =>
+    TokensAPI.get(settings)
     ->Future.mapOk(response => {
         response
         ->Belt.Array.map(((alias, symbol, address)) => {
@@ -53,13 +52,13 @@ let useLoadRegisteredTokens = (~network, ~requestState) => {
         ->Belt.Map.String.fromArray
       });
 
-  ApiRequest.useLoader1(~get, ~kind=Logs.Tokens, ~requestState, network);
+  ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState);
 };
 
 let tokensStorageKey = "wallet-tokens";
 
 let useLoadTokens = (~requestState) => {
-  let get = (~config as _c, _) =>
+  let get = (~settings as _, ()) =>
     LocalStorage.getItem(tokensStorageKey)
     ->Js.Nullable.toOption
     ->Belt.Option.mapWithDefault([||], storageString =>
@@ -74,7 +73,7 @@ let useLoadTokens = (~requestState) => {
 };
 
 let useCreate = (~sideEffect=?, ()) => {
-  let set = (~config as _c, token) => {
+  let set = (~settings as _, token) => {
     let tokens =
       LocalStorage.getItem(tokensStorageKey)
       ->Js.Nullable.toOption

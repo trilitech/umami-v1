@@ -7,7 +7,7 @@ module API = API.Delegate(API.TezosClient, API.TezosExplorer);
 
 [@react.component]
 let make = (~onSubmit) => {
-  let (network, _) = React.useContext(NetworkState.context);
+  let settings = ConfigContext.useSettings();
 
   let (source, setSource) = React.useState(() => "");
   let (selectedDelegateIndex, setSelectedDelegateIndex) =
@@ -16,11 +16,11 @@ let make = (~onSubmit) => {
 
   React.useEffect2(
     () => {
-      API.getBakers(network)
+      API.getBakers(settings)
       ->FutureEx.getOk(value => setDelegates(_ => value));
       None;
     },
-    (network, setDelegates),
+    (settings, setDelegates),
   );
 
   <View style>
@@ -35,12 +35,18 @@ let make = (~onSubmit) => {
       {React.array(
          delegates
          |> Array.mapi((index, delegate: Delegate.t) =>
-              <Picker.Item label=delegate.name key=delegate.name value=index />
+              <Picker.Item
+                label={delegate.name}
+                key={delegate.name}
+                value=index
+              />
             ),
        )}
     </Picker>
     <Button
-      onPress={_ => onSubmit(source, delegates[selectedDelegateIndex].address)}
+      onPress={_ =>
+        onSubmit(source, delegates[selectedDelegateIndex].address)
+      }
       title="Delegate"
     />
   </View>;

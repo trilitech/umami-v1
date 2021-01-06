@@ -5,8 +5,8 @@ module AliasesAPI = API.Aliases(API.TezosClient);
 /* Get list */
 
 let useLoad = requestState => {
-  let get = (~config, ()) =>
-    AliasesAPI.get(~config)
+  let get = (~settings, ()) =>
+    AliasesAPI.get(~settings)
     ->Future.mapOk(response => {
         response
         ->Belt.Array.map(((alias, address)) => {
@@ -24,8 +24,8 @@ let useLoad = requestState => {
 let useCreate =
   ApiRequest.useSetter(
     ~set=
-      (~config, (alias, address)) =>
-        AliasesAPI.add(~config, alias, address),
+      (~settings, (alias, address)) =>
+        AliasesAPI.add(~settings, alias, address),
     ~kind=Logs.Aliases,
   );
 

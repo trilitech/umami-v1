@@ -3,12 +3,18 @@ type config = {
   content: ConfigFile.t,
   write: (ConfigFile.t => ConfigFile.t) => unit,
   loaded: bool,
+  sdkMain: Js.Promise.t(TezosSDK.t),
+  sdkTest: Js.Promise.t(TezosSDK.t),
+  network: AppSettings.network,
 };
 
 let initialState = {
   content: ConfigFile.default,
   write: _ => (),
   loaded: false,
+  sdkMain: TezosSDK.init("", ""),
+  sdkTest: TezosSDK.init("", ""),
+  network: Testnet,
 };
 
 let context = React.createContext(initialState);
@@ -26,6 +32,27 @@ module Provider = {
 let make = (~children) => {
   let (content, setConfig) = React.useState(() => initialState.content);
   let (loaded, setLoaded) = React.useState(() => initialState.loaded);
+
+  let (network, _) = React.useState(() => AppSettings.Testnet);
+
+  let ((sdkMain, sdkTest), _) =
+    React.useState(() => {
+      let endpointMain =
+        content.endpointMain
+        ->Belt.Option.getWithDefault(ConfigFile.endpointMain)
+        ->ConfigFile.mkSdkEndpoint;
+
+      let endpointTest =
+        content.endpointTest
+        ->Belt.Option.getWithDefault(ConfigFile.endpointTest)
+        ->ConfigFile.mkSdkEndpoint;
+
+      let dir =
+        ConfigFile.(
+          content.sdkBaseDir->Belt.Option.getWithDefault(sdkBaseDir)
+        );
+      (TezosSDK.init(dir, endpointMain), TezosSDK.init(dir, endpointTest));
+    });
 
   let load = () => {
     System.Config.read()
@@ -61,7 +88,9 @@ let make = (~children) => {
       c;
     });
 
-  <Provider value={content, loaded, write}> children </Provider>;
+  <Provider value={content, loaded, write, sdkMain, sdkTest, network}>
+    children
+  </Provider>;
 };
 
 let useContext = () => React.useContext(context);
@@ -76,7 +105,14 @@ let useLoaded = () => {
   store.loaded;
 };
 
-let useConfig = () => {
+let useSettings = () => {
   let store = useContext();
-  store.content;
+  AppSettings.{
+    config: store.content,
+    sdk: {
+      main: store.sdkMain,
+      test: store.sdkTest,
+    },
+    network: store.network,
+  };
 };

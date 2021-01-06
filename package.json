@@ -28,11 +28,12 @@
     "reason-react": "^0.9.1",
     "reason-react-native": "^0.63.2",
     "reason-react-update": "^2.0.0",
-    "reschema": "2.0.2-alpha.0"
+    "reschema": "2.0.2-alpha.0",
+    "tezos-sdk": "link:./src/vendors/tezos-sdk"
   },
   "scripts": {
     "start": "EXTEND_ESLINT=true react-app-rewired start",
-    "build": "react-app-rewired build",
+    "build": "EXTEND_ESLINT=true react-app-rewired build",
     "test": "yarn bsb:build && jest --coverage",
     "bsb:start": "bsb -make-world -w",
     "bsb:build": "bsb -make-world",
@@ -70,6 +71,9 @@
       }
     ]
   },
+  "eslintIgnore": [
+    "src/vendors/tezos-sdk/TzSDK.js"
+  ],
   "browserslist": {
     "production": [
       ">0.2%",
@@ -85,7 +89,7 @@
   "devDependencies": {
     "@types/electron-devtools-installer": "^2.2.0",
     "@types/jest": "26.0.4",
-    "@types/node": "14.0.23",
+    "@types/node": "^14.14.14",
     "@types/react": "16.9.43",
     "@types/react-dom": "16.9.8",
     "bs-platform": "^8.3.3",

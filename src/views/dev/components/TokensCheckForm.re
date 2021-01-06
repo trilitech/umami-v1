@@ -7,7 +7,7 @@ module TokensAPI = API.Tokens(API.TezosClient);
 
 [@react.component]
 let make = () => {
-  let config = ConfigContext.useConfig();
+  let settings = ConfigContext.useSettings();
   let (kt1, setKt1) = React.useState(() => "");
 
   <View style>
@@ -18,7 +18,7 @@ let make = () => {
     />
     <Button
       onPress={_ =>
-        TokensAPI.checkTokenContract((Network.Test, config), kt1)
+        TokensAPI.checkTokenContract(settings, kt1)
         ->Future.map(Belt.Result.isOk)
         ->Future.get(result =>
             result ? Dialog.error("OK") : Dialog.error("KO")

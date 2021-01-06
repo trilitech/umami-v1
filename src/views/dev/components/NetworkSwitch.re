@@ -17,8 +17,10 @@ let make = () => {
   <View style>
     <Text> "testnet  "->React.string </Text>
     <Switch
-      onValueChange={value => setNetwork(value ? Network.Main : Network.Test)}
-      value={network == Main}
+      onValueChange={value =>
+        setNetwork(value ? AppSettings.Mainnet : AppSettings.Testnet)
+      }
+      value={network == Mainnet}
     />
     <Text> "  mainnet"->React.string </Text>
   </View>;

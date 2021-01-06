@@ -5,8 +5,8 @@ module AccountsAPI = API.Accounts(API.TezosClient);
 /* Get */
 
 let useLoad = requestState => {
-  let get = (~config, ()) =>
-    AccountsAPI.get(~config)
+  let get = (~settings, ()) =>
+    AccountsAPI.get(~settings)
     ->Future.mapOk(response => {
         response
         ->Belt.Array.map(((alias, address)) => {
@@ -37,7 +37,7 @@ type createInput = {
 let useCreateWithMnemonics =
   ApiRequest.useSetter(
     ~set=
-      (~config, {name, mnemonics, password}) =>
-        AccountsAPI.addWithMnemonic(~config, name, mnemonics, ~password),
+      (~settings, {name, mnemonics, password}) =>
+        AccountsAPI.addWithMnemonic(~settings, name, mnemonics, ~password),
     ~kind=Logs.Account,
   );

@@ -2,30 +2,6 @@ open ChildReprocess.StdStream;
 open Common;
 open Delegate;
 
-let endpoint = ((network, config: ConfigFile.t)) =>
-  switch (network) {
-  | Network.Main =>
-    config.endpointMain->Belt.Option.getWithDefault(ConfigFile.endpointMain)
-  | Network.Test =>
-    config.endpointTest->Belt.Option.getWithDefault(ConfigFile.endpointTest)
-  };
-
-let explorer = ((network: Network.t, config: ConfigFile.t)) =>
-  switch (network) {
-  | Main =>
-    config.explorerMain->Belt.Option.getWithDefault(ConfigFile.explorerMain)
-
-  | Test =>
-    config.explorerTest->Belt.Option.getWithDefault(ConfigFile.explorerTest)
-  };
-
-let natviewer = ((network: Network.t, config: ConfigFile.t)) =>
-  switch (network) {
-  | Main => assert(false)
-  | Test =>
-    config.natviewerTest->Belt.Option.getWithDefault(ConfigFile.natviewerTest)
-  };
-
 module Path = {
   let delegates = "/chains/main/blocks/head/context/delegates\\?active=true";
   let operations = "operations";
@@ -40,7 +16,7 @@ module URL = {
     |> Js.Array.joinWith("&");
 
   let build_url = (network, path, args) => {
-    explorer(network)
+    AppSettings.explorer(network)
     ++ "/"
     ++ path
     ++ (args == [] ? "" : "?" ++ args->build_args);
@@ -48,7 +24,7 @@ module URL = {
 
   let operations =
       (
-        network,
+        settings: AppSettings.t,
         account,
         ~types: option(array(string))=?,
         ~destination: option(string)=?,
@@ -61,14 +37,15 @@ module URL = {
       @? destination->arg_opt("destination", dst => dst)
       @? limit->arg_opt("limit", lim => lim->Js.Int.toString)
       @? [];
-    let url = build_url(network, operationsPath, args);
+    let url = build_url(settings, operationsPath, args);
     url;
   };
 
   let mempool = (network, account) =>
     build_url(network, Path.mempool_operations, [("pkh", account)]);
 
-  let delegates = network => endpoint(network) ++ Path.delegates;
+  let delegates = settings =>
+    AppSettings.endpoint(settings) ++ Path.delegates;
 };
 
 module type CallerAPI = {
@@ -141,10 +118,10 @@ module TezosExplorer = {
 };
 
 module Balance = (Caller: CallerAPI) => {
-  let get = (network, account, ~block=?, ()) => {
+  let get = (settings, account, ~block=?, ()) => {
     let arguments = [|
       "-E",
-      network->endpoint,
+      settings->AppSettings.endpoint,
       "get",
       "balance",
       "for",
@@ -481,12 +458,12 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
     ->Js.Json.array
     ->Js.Json.stringify /* ->(json => "\'" ++ json ++ "\'") */;
 
-  let arguments = (network, operation: Protocol.t) =>
+  let arguments = (settings, operation: Protocol.t) =>
     switch (operation) {
     | Transaction({transfers: [transfer]} as transaction) =>
       let arguments = [|
         "-E",
-        network->endpoint,
+        settings->AppSettings.endpoint,
         "-w",
         "none",
         "transfer",
@@ -505,7 +482,7 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
       );
     | Transaction(transaction) => [|
         "-E",
-        network->endpoint,
+        settings->AppSettings.endpoint,
         "-w",
         "none",
         "multiple",
@@ -517,7 +494,7 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
       |]
     | Delegation(delegation) => [|
         "-E",
-        network->endpoint,
+        settings->AppSettings.endpoint,
         "-w",
         "none",
         "set",
@@ -551,11 +528,12 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
   let inject = (network, operation: Protocol.t, ~password) =>
     Injector.inject(network, arguments(_, operation), ~password);
 
-  let waitForOperationConfirmations = (network, hash, ~confirmations, ~branch) =>
+  let waitForOperationConfirmations =
+      (settings, hash, ~confirmations, ~branch) =>
     Caller.call(
       [|
         "-E",
-        network->endpoint,
+        settings->AppSettings.endpoint,
         "wait",
         "for",
         hash,
@@ -590,22 +568,17 @@ module Accounts = (Caller: CallerAPI) => {
     ->(rows => rows->Belt.Array.keep(data => data->Belt.Array.length > 2))
     ->Belt.Array.map(data => (data[0], data[1]));
 
-  let get = (~config) =>
-    Caller.call(
-      [|
-        "-E",
-        (Network.Test, config)->endpoint,
-        "list",
-        "known",
-        "addresses",
-      |],
-      (),
-    )
-    ->Future.mapOk(parse);
+  let get = (~settings: AppSettings.t) =>
+    settings
+    ->AppSettings.sdk
+    ->TezosSDK.listKnownAddresses
+    ->Future.mapOk(r =>
+        r |> Array.map((TezosSDK.{alias, pkh}) => (alias, pkh))
+      );
 
-  let create = (~config, name) =>
+  let create = (~settings, name) =>
     Caller.call(
-      [|"-E", (Network.Test, config)->endpoint, "gen", "keys", name|],
+      [|"-E", settings->AppSettings.endpoint, "gen", "keys", name|],
       (),
     );
 
@@ -618,11 +591,11 @@ module Accounts = (Caller: CallerAPI) => {
       (),
     );
 
-  let addWithMnemonic = (~config, name, mnemonic, ~password) =>
+  let addWithMnemonic = (~settings, name, mnemonic, ~password) =>
     Caller.call(
       [|
         "-E",
-        (Network.Test, config)->endpoint,
+        settings->AppSettings.endpoint,
         "import",
         "keys",
         "from",
@@ -638,7 +611,7 @@ module Accounts = (Caller: CallerAPI) => {
         LocalStorage.setItem("password", password);
       });
 
-  let restore = (~config, backupPhrase, name, ~derivationPath=?, ()) => {
+  let restore = (~settings, backupPhrase, name, ~derivationPath=?, ()) => {
     switch (derivationPath) {
     | Some(derivationPath) =>
       let seed = HD.BIP39.mnemonicToSeedSync(backupPhrase);
@@ -649,7 +622,7 @@ module Accounts = (Caller: CallerAPI) => {
       Caller.call(
         [|
           "-E",
-          (Network.Test, config)->endpoint,
+          settings->AppSettings.endpoint,
           "generate",
           "keys",
           "from",
@@ -665,11 +638,11 @@ module Accounts = (Caller: CallerAPI) => {
     };
   };
 
-  let delete = (~config, name) =>
+  let delete = (~settings, name) =>
     Caller.call(
       [|
         "-E",
-        (Network.Test, config)->endpoint,
+        settings->AppSettings.endpoint,
         "forget",
         "address",
         name,
@@ -678,11 +651,11 @@ module Accounts = (Caller: CallerAPI) => {
       (),
     );
 
-  let delegate = (network, account, delegate) =>
+  let delegate = (settings, account, delegate) =>
     Caller.call(
       [|
         "-E",
-        network->endpoint,
+        settings->AppSettings.endpoint,
         "set",
         "delegate",
         "for",
@@ -704,7 +677,14 @@ module Scanner = (Caller: CallerAPI, Getter: GetterAPI) => {
     ->Future.mapOk(operations => {operations->Js.Array2.length != 0});
   };
 
-  let rec scan = (network, backupPhrase, baseName, ~derivationSchema, ~index) => {
+  let rec scan =
+          (
+            settings: AppSettings.t,
+            backupPhrase,
+            baseName,
+            ~derivationSchema,
+            ~index,
+          ) => {
     let seed = HD.BIP39.mnemonicToSeedSync(backupPhrase);
     let suffix = index->Js.Int.toString;
     LocalStorage.setItem("index", suffix);
@@ -714,24 +694,24 @@ module Scanner = (Caller: CallerAPI, Getter: GetterAPI) => {
     let name = baseName ++ suffix;
     AccountsAPI.import(edsk2, name)
     ->Future.flatMapOk(_ =>
-        AccountsAPI.get(~config=network->snd)
+        AccountsAPI.get(~settings)
         ->Future.mapOk(MapString.fromArray)
         ->Future.flatMapOk(accounts =>
             switch (accounts->Belt.Map.String.get(name)) {
             | Some(address) =>
-              network
+              settings
               ->validate(address)
               ->Future.flatMapOk(isValidated =>
                   if (isValidated) {
                     scan(
-                      network,
+                      settings,
                       backupPhrase,
                       baseName,
                       ~derivationSchema,
                       ~index=index + 1,
                     );
                   } else {
-                    AccountsAPI.delete(~config=network->snd, name);
+                    AccountsAPI.delete(~settings, name);
                   }
                 )
             | None => Future.make(resolve => resolve(Ok("")))
@@ -754,37 +734,31 @@ module Aliases = (Caller: CallerAPI) => {
          a->compare(b);
        });
 
-  let get = (~config) =>
+  let get = (~settings) =>
     Caller.call(
-      [|
-        "-E",
-        (Network.Test, config)->endpoint,
-        "list",
-        "known",
-        "contracts",
-      |],
+      [|"-E", settings->AppSettings.endpoint, "list", "known", "contracts"|],
       (),
     )
     ->Future.mapOk(parse);
 
-  let getAliasForAddress = (~config, address) =>
-    get(~config)
+  let getAliasForAddress = (~settings, address) =>
+    get(~settings)
     ->Future.mapOk(addresses =>
         addresses->Belt.Array.map(((a, b)) => (b, a))
       )
     ->Future.mapOk(Belt.Map.String.fromArray)
     ->Future.mapOk(aliases => aliases->Belt.Map.String.get(address));
 
-  let getAddressForAlias = (~config, alias) =>
-    get(~config)
+  let getAddressForAlias = (~settings, alias) =>
+    get(~settings)
     ->Future.mapOk(Belt.Map.String.fromArray)
     ->Future.mapOk(addresses => addresses->Belt.Map.String.get(alias));
 
-  let add = (~config, alias, address) =>
+  let add = (~settings, alias, address) =>
     Caller.call(
       [|
         "-E",
-        (Network.Test, config)->endpoint,
+        settings->AppSettings.endpoint,
         "add",
         "address",
         alias,
@@ -793,11 +767,11 @@ module Aliases = (Caller: CallerAPI) => {
       (),
     );
 
-  let delete = (~config, name) =>
+  let delete = (~settings, name) =>
     Caller.call(
       [|
         "-E",
-        (Network.Test, config)->endpoint,
+        settings->AppSettings.endpoint,
         "forget",
         "address",
         name,
@@ -821,9 +795,16 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
       };
     };
 
-  let getForAccount = (network, account) =>
+  let getForAccount = (settings, account) =>
     Caller.call(
-      [|"-E", network->endpoint, "get", "delegate", "for", account|],
+      [|
+        "-E",
+        settings->AppSettings.endpoint,
+        "get",
+        "delegate",
+        "for",
+        account,
+      |],
       (),
     )
     ->Future.mapOk(parse)
@@ -839,13 +820,13 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
         }
       );
 
-  let getBakers = (network: Network.t) =>
-    switch (network) {
-    | Main =>
+  let getBakers = (settings: AppSettings.t) =>
+    switch (settings.network) {
+    | Mainnet =>
       "https://api.baking-bad.org/v2/bakers"
       ->Getter.get
       ->Future.map(result => result->map(Json.Decode.(array(decode))))
-    | Test =>
+    | Testnet =>
       Future.value(
         Ok([|
           {name: "zebra", address: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"},
@@ -944,10 +925,10 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
 module Tokens = (Caller: CallerAPI) => {
   module Injector = InjectorRaw(Caller);
 
-  let checkTokenContract = (network, addr) => {
+  let checkTokenContract = (settings, addr) => {
     let arguments = [|
       "-E",
-      network->endpoint,
+      settings->AppSettings.endpoint,
       "check",
       "contract",
       addr,
@@ -958,13 +939,13 @@ module Tokens = (Caller: CallerAPI) => {
     Caller.call(arguments, ());
   };
 
-  let get = network => {
-    switch (network) {
-    | Network.Test =>
+  let get = (settings: AppSettings.t) => {
+    switch (settings.network) {
+    | Testnet =>
       Future.value(
         Ok([|("Klondike", "KLD", "KT1BUdnCMfBKdVxCKyBvMUqwLqm27EDGWskB")|]),
       )
-    | Network.Main => Future.value(Ok([||]))
+    | Mainnet => Future.value(Ok([||]))
     };
   };
 
@@ -977,12 +958,12 @@ module Tokens = (Caller: CallerAPI) => {
       ->Injector.transaction_options_arguments(tx_options, common_options);
     };
 
-  let make_arguments = (network, operation: Token.operation, ~offline) => {
+  let make_arguments = (settings, operation: Token.operation, ~offline) => {
     switch (operation.action) {
     | Transfer(transfer) =>
       [|
         "-E",
-        network->endpoint,
+        settings->AppSettings.endpoint,
         "-w",
         "none",
         "from",
@@ -1005,7 +986,7 @@ module Tokens = (Caller: CallerAPI) => {
     | GetBalance(getBalance) =>
       [|
         "-E",
-        network->endpoint,
+        settings->AppSettings.endpoint,
         "-w",
         "none",
         "from",

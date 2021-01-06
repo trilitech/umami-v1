@@ -8,14 +8,13 @@ module ScannerAPI = API.Scanner(API.TezosClient, API.TezosExplorer);
 
 [@react.component]
 let make = () => {
-  let (network, _) = React.useContext(NetworkState.context);
   let (_, setAccounts) = React.useContext(AccountsState.context);
 
   let (backupPhrase, setBackupPhrase) = React.useState(() => "");
   let (derivationPath, setDerivationPath) =
     React.useState(() => "m/44'/1729'/0'/0'");
   let (name, setName) = React.useState(() => "");
-  let config = ConfigContext.useConfig();
+  let settings = ConfigContext.useSettings();
 
   <View style>
     <TextInput
@@ -38,16 +37,15 @@ let make = () => {
         let future =
           if (derivationPath->Js.String2.includes("?")) {
             Js.log("scan");
-            (network, config)
-            ->ScannerAPI.scan(
-                backupPhrase,
-                name,
-                ~derivationSchema=derivationPath,
-                ~index=0,
-              );
+            settings->ScannerAPI.scan(
+              backupPhrase,
+              name,
+              ~derivationSchema=derivationPath,
+              ~index=0,
+            );
           } else {
             AccountsAPI.restore(
-              ~config,
+              ~settings,
               backupPhrase,
               name,
               ~derivationPath,
@@ -55,7 +53,7 @@ let make = () => {
             );
           };
         future
-        ->Future.flatMapOk(_ => AccountsAPI.get(~config))
+        ->Future.flatMapOk(_ => AccountsAPI.get(~settings))
         ->Future.get(result =>
             switch (result) {
             | Ok(value) => setAccounts(value)
