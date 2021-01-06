@@ -61,7 +61,7 @@ let amount = (account, transaction: Operation.Business.Transaction.t) => {
       account.address == transaction.destination ? `positive : `negative
     );
 
-  let op = colorStyle == Some(`valid) ? "+" : "-";
+  let op = colorStyle == Some(`positive) ? "+" : "-";
 
   <CellAmount>
     <Typography.Body1 ?colorStyle>
