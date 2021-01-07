@@ -24,23 +24,15 @@ let styles =
 let make = () => {
   let theme = ThemeContext.useTheme();
 
-  let modal = React.useRef(Js.Nullable.null);
   let account = StoreContext.SelectedAccount.useGet();
 
-  let (visibleModal, setVisibleModal) = React.useState(_ => false);
-  let openAction = () => setVisibleModal(_ => true);
-  let closeAction = () => setVisibleModal(_ => false);
+  let disabled = account->Belt.Option.isNone;
+
+  let (visibleModal, openAction, closeAction) =
+    ModalAction.useModalActionState();
 
   let onPress = _ => openAction();
-
-  let onPress = account->Belt.Option.map(_ => onPress);
-
-  let onPressCancel = _e => {
-    modal.current
-    ->Js.Nullable.toOption
-    ->Belt.Option.map(ModalAction.closeModal)
-    ->ignore;
-  };
+  let onPressCancel = _ => closeAction();
 
   <>
     <View
@@ -50,11 +42,12 @@ let make = () => {
           style(~backgroundColor=theme.colors.primaryButtonBackground, ()),
         |])
       )>
-      <ThemedPressable isPrimary=true style=styles##iconContainer ?onPress>
+      <ThemedPressable
+        isPrimary=true style=styles##iconContainer onPress disabled>
         <Icons.Send
           size=24.
           color={
-            account->Belt.Option.isSome
+            !disabled
               ? theme.colors.primaryIconHighEmphasis
               : theme.colors.primaryIconDisabled
           }
@@ -65,7 +58,7 @@ let make = () => {
               styles##textButton,
               style(
                 ~color=
-                  account->Belt.Option.isSome
+                  !disabled
                     ? theme.colors.primaryTextHighEmphasis
                     : theme.colors.primaryTextDisabled,
                 (),
@@ -76,7 +69,7 @@ let make = () => {
         </Typography.ButtonSecondary>
       </ThemedPressable>
     </View>
-    <ModalAction ref=modal visible=visibleModal onRequestClose=closeAction>
+    <ModalAction visible=visibleModal onRequestClose=closeAction>
       <SendView onPressCancel />
     </ModalAction>
   </>;

@@ -14,7 +14,7 @@ let styles =
         ),
       "selectorContent":
         style(
-          ~height=42.->dp,
+          ~height=40.->dp,
           ~flexDirection=`row,
           ~alignItems=`center,
           ~flex=1.,

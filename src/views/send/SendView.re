@@ -424,6 +424,52 @@ module EditionView = {
   };
 };
 
+module SubmittedView = {
+  let styles =
+    Style.(
+      StyleSheet.create({
+        "container": style(~alignItems=`center, ()),
+        "title": style(~marginBottom=6.->dp, ()),
+        "body": style(~marginBottom=30.->dp, ~textAlign=`center, ()),
+        "hashTitle": style(~marginBottom=2.->dp, ()),
+        "addressContainer":
+          style(
+            ~flexDirection=`row,
+            ~justifyContent=`center,
+            ~alignItems=`center,
+            (),
+          ),
+        "address": style(~marginHorizontal=4.->dp, ()),
+      })
+    );
+
+  [@react.component]
+  let make = (~hash, ~onPressCancel) => {
+    let addToast = LogsContext.useToast();
+
+    <View style=styles##container>
+      <Typography.Headline style=styles##title>
+        I18n.title#operation_submited->React.string
+      </Typography.Headline>
+      <Typography.Body2 colorStyle=`mediumEmphasis style=styles##body>
+        I18n.expl#operation->React.string
+      </Typography.Body2>
+      <Typography.Overline2 style=styles##hashTitle>
+        I18n.t#operation_hash->React.string
+      </Typography.Overline2>
+      <View style=styles##addressContainer>
+        <Typography.Address fontSize=16. style=styles##address>
+          hash->React.string
+        </Typography.Address>
+        <ClipboardButton copied=I18n.log#address addToast data=hash />
+      </View>
+      <View style=FormStyles.formAction>
+        <Buttons.FormPrimary text=I18n.btn#ok onPress=onPressCancel />
+      </View>
+    </View>;
+  };
+};
+
 [@react.component]
 let make = (~onPressCancel) => {
   let account = StoreContext.SelectedAccount.useGet();
@@ -512,19 +558,7 @@ let make = (~onPressCancel) => {
 
   <ModalView.Form closing>
     {switch (operationRequest) {
-     | Done(Ok((hash, _)), _) =>
-       <>
-         <Typography.Headline style=FormStyles.header>
-           I18n.title#operation_injected->React.string
-         </Typography.Headline>
-         <Typography.Overline2>
-           I18n.t#operation_hash->React.string
-         </Typography.Overline2>
-         <Typography.Body1> hash->React.string </Typography.Body1>
-         <View style=FormStyles.formAction>
-           <Buttons.FormPrimary text=I18n.btn#ok onPress=onPressCancel />
-         </View>
-       </>
+     | Done(Ok((hash, _)), _) => <SubmittedView hash onPressCancel />
      | Done(Error(error), _) =>
        <>
          <Typography.Body1 colorStyle=`error>

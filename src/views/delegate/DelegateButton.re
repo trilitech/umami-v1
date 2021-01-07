@@ -22,22 +22,12 @@ let make =
     (~account as defaultAccount=?, ~disabled=false, ~style as styleFromProp=?) => {
   let theme = ThemeContext.useTheme();
 
-  let modal = React.useRef(Js.Nullable.null);
+  let (visibleModal, openAction, closeAction) =
+    ModalAction.useModalActionState();
 
-  let (visibleModal, setVisibleModal) = React.useState(_ => false);
-  let openAction = () => setVisibleModal(_ => true);
-  let closeAction = () => setVisibleModal(_ => false);
+  let onPress = _e => openAction();
 
-  let onPress = _e => {
-    openAction();
-  };
-
-  let onPressCancel = _e => {
-    modal.current
-    ->Js.Nullable.toOption
-    ->Belt.Option.map(ModalAction.closeModal)
-    ->ignore;
-  };
+  let onPressCancel = _e => closeAction();
 
   <>
     <View
@@ -69,7 +59,7 @@ let make =
         </Typography.ButtonSecondary>
       </ThemedPressable>
     </View>
-    <ModalAction ref=modal visible=visibleModal onRequestClose=closeAction>
+    <ModalAction visible=visibleModal onRequestClose=closeAction>
       <DelegateView onPressCancel action={Delegate.Create(defaultAccount)} />
     </ModalAction>
   </>;

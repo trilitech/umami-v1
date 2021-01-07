@@ -1,5 +1,9 @@
 open ReactNative;
 
+%raw
+"var Electron = window.require('electron');";
+let electron = [%raw "Electron"];
+
 module CellType =
   Table.MakeCell({
     let style = Style.(style(~flexBasis=90.->dp, ()));
@@ -37,6 +41,15 @@ module CellDate =
     ();
   });
 
+module CellAction =
+  Table.MakeCell({
+    let style =
+      Style.(
+        style(~flexBasis=30.->dp, ~minWidth=30.->dp, ~alignItems=`center, ())
+      );
+    ();
+  });
+
 let memo = component =>
   React.memoCustomCompareProps(component, (prevPros, nextProps) =>
     prevPros##operation == nextProps##operation
@@ -48,7 +61,7 @@ let amount = (account, transaction: Operation.Business.Transaction.t) => {
       account.address == transaction.destination ? `positive : `negative
     );
 
-  let op = colorStyle == Some(`valid) ? "+" : "-";
+  let op = colorStyle == Some(`positive) ? "+" : "-";
 
   <CellAmount>
     <Typography.Body1 ?colorStyle>
@@ -169,5 +182,16 @@ let make =
           ->React.string
         </Typography.Body1>
       </CellStatus>
+      <CellAction>
+        <IconButton
+          icon=Icons.OpenExternal.build
+          onPress={_ => {
+            electron##shell##openExternal(
+              "https://delphinet.tzkt.io/" ++ operation.hash,
+            )
+            ->ignore
+          }}
+        />
+      </CellAction>
     </Table.Row>;
   });

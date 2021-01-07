@@ -13,7 +13,7 @@ let styles =
           (),
         ),
       "nameLogo": style(~flexDirection=`row, ~alignItems=`center, ()),
-      "spacer": style(~width=16.->dp, ()),
+      "spacer": style(~width=14.->dp, ()),
       "darkModeButton": style(~alignSelf=`flexEnd, ()),
       "title": style(~fontFamily="CormorantGaramond", ~lineHeight=16., ()),
     })
@@ -32,11 +32,10 @@ let make = () => {
       |])
     )>
     <View style=styles##nameLogo>
-      <SVGLogo
-        width={36.->Style.dp}
-        height={38.->Style.dp}
+      <SVGLogoTmp
+        width={46.->Style.dp}
+        height={46.->Style.dp}
         fill={theme.colors.iconHighEmphasis}
-        stroke={theme.colors.iconHighEmphasis}
       />
       <View style=styles##spacer />
       <Typography.Base
@@ -44,7 +43,7 @@ let make = () => {
         fontSize=20.
         fontWeightStyle=`semiBold
         style=styles##title>
-        {js|Zebra Wallet|js}->React.string
+        {js|Umami|js}->React.string
       </Typography.Base>
     </View>
     <TouchableOpacity onPress={_ => switchTheme()}>

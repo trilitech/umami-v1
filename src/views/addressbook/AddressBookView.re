@@ -16,28 +16,18 @@ module AddContactButton = {
 
   [@react.component]
   let make = () => {
-    let modal = React.useRef(Js.Nullable.null);
+    let (visibleModal, openAction, closeAction) =
+      ModalAction.useModalActionState();
 
-    let (visibleModal, setVisibleModal) = React.useState(_ => false);
-    let openAction = () => setVisibleModal(_ => true);
-    let closeAction = () => setVisibleModal(_ => false);
+    let onPress = _e => openAction();
 
-    let onPress = _e => {
-      openAction();
-    };
-
-    let cancel = _e => {
-      modal.current
-      ->Js.Nullable.toOption
-      ->Belt.Option.map(ModalAction.closeModal)
-      ->ignore;
-    };
+    let cancel = _e => closeAction();
 
     <>
       <View style=styles##button>
         <ButtonAction onPress text=I18n.btn#add_contact icon=Icons.Add.build />
       </View>
-      <ModalAction ref=modal visible=visibleModal onRequestClose=closeAction>
+      <ModalAction visible=visibleModal onRequestClose=closeAction>
         <ContactAddView cancel />
       </ModalAction>
     </>;

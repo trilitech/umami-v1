@@ -5,10 +5,8 @@ let make = (~style=?) => {
   let setSeen = LogsContext.useSetSeen();
   let seen = LogsContext.useSeen();
 
-  let modal = React.useRef(Js.Nullable.null);
-  let (visibleModal, setVisibleModal) = React.useState(_ => false);
-  let openAction = () => setVisibleModal(_ => true);
-  let closeAction = () => setVisibleModal(_ => false);
+  let (visibleModal, openAction, closeAction) =
+    ModalAction.useModalActionState();
 
   let onPress = _ => {
     openAction();
@@ -22,7 +20,7 @@ let make = (~style=?) => {
         I18n.btn#logs->React.string
       </Typography.ButtonPrimary>
     </TouchableOpacity>
-    <ModalAction ref=modal visible=visibleModal onRequestClose=closeAction>
+    <ModalAction visible=visibleModal onRequestClose=closeAction>
       <LogsView />
     </ModalAction>
   </>;

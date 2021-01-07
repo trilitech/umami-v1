@@ -10,17 +10,10 @@ let make =
       ~onPressConfirmDelete,
       ~request: ApiRequest.t('a),
     ) => {
-  let modal = React.useRef(Js.Nullable.null);
-
-  let onPressCancel = _e => {
-    modal.current
-    ->Js.Nullable.toOption
-    ->Belt.Option.map(ModalAction.closeModal)
-    ->ignore;
-  };
+  let onPressCancel = _e => closeAction();
 
   <>
-    <ModalAction ref=modal visible onRequestClose=closeAction>
+    <ModalAction visible onRequestClose=closeAction>
       <ModalView.Form>
         {switch (request) {
          | Done(Ok(_result), _) =>

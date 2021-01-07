@@ -29,17 +29,20 @@ module Item = {
 let styles =
   Style.(
     StyleSheet.create({
+      "pressable": style(~zIndex=2, ()),
       "button":
         style(
           ~flexDirection=`row,
           ~alignItems=`center,
           ~borderWidth=1.,
+          ~padding=1.->dp,
           ~borderRadius=5.,
           (),
         ),
       "icon": style(~marginHorizontal=8.->dp, ()),
       "dropdownmenu":
         style(
+          ~zIndex=1,
           ~position=`absolute,
           ~top=3.->dp,
           ~left=0.->dp,
@@ -87,14 +90,31 @@ let make =
   <View ?style>
     <PressableCustom
       ref={touchableRef->Ref.value}
+      style=styles##pressable
       onPress={_e => setIsOpen(prevIsOpen => !prevIsOpen)}
       disabled>
       {_ =>
          <View
            style=Style.(
-             array([|
-               styles##button,
-               style(~borderColor=theme.colors.borderMediumEmphasis, ()),
+             arrayOption([|
+               Some(styles##button),
+               Some(
+                 style(
+                   ~borderColor=theme.colors.borderMediumEmphasis,
+                   ~backgroundColor=theme.colors.background,
+                   (),
+                 ),
+               ),
+               isOpen
+                 ? Some(
+                     style(
+                       ~borderColor=theme.colors.borderPrimary,
+                       ~borderWidth=2.,
+                       ~padding=0.->dp,
+                       (),
+                     ),
+                   )
+                 : None,
              |])
            )
            pointerEvents=`none>
