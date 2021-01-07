@@ -493,6 +493,10 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
         transaction.source,
         "using",
         transfers_to_json(transaction),
+        "--burn-cap",
+        Js.Float.toString(
+          0.06425 *. transaction.transfers->Belt.List.length->float_of_int,
+        ),
       |]
     | Delegation(delegation) => [|
         "-E",
