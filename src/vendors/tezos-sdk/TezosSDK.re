@@ -29,9 +29,13 @@ let init: (string, string) => Js.Promise.t(t) =
          Js.Promise.resolve({lib, cctxt: buildCctxt(lib, baseDir, endpoint)})
        );
 
-type address = {
-  alias: string,
-  pkh: string,
+module OutputAddress = {
+  type t = {
+    alias: string,
+    pkh: string,
+    pk_known: bool,
+    sk_known: bool,
+  };
 };
 
 type result('a) = {
@@ -59,7 +63,7 @@ let fromPromise = p =>
 
 [@bs.send]
 external listKnownAddresses:
-  (lib, cctxt, int) => Js.Promise.t(result(array(address))) =
+  (lib, cctxt, int) => Js.Promise.t(result(array(OutputAddress.t))) =
   "list_known_addresses";
 let listKnownAddresses = sdk =>
   sdk
