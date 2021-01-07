@@ -18,6 +18,8 @@ let opt = e =>
 
 let displayOn = b => Style.(style(~display=b ? `flex : `none, ()));
 
+let visibleOn = b => Style.(style(~opacity=b ? 1. : 0., ()));
+
 let onlyWhen = (elt, b) => b ? elt : React.null;
 
 let startFade = (refval, endval, duration, endCallback) => {

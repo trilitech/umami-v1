@@ -7,24 +7,28 @@ let styles =
         style(~position=`absolute, ~right=20.->dp, ~top=20.->dp, ()),
       "modal":
         style(~width=642.->dp, ~alignSelf=`center, ~borderRadius=4., ()),
+      "modalForm":
+        style(
+          ~width=642.->dp,
+          ~paddingTop=45.->dp,
+          ~paddingBottom=40.->dp,
+          ~paddingHorizontal=110.->dp,
+          (),
+        ),
+      "modalDialog":
+        style(
+          ~width=522.->dp,
+          ~paddingTop=40.->dp,
+          ~paddingBottom=40.->dp,
+          ~paddingHorizontal=50.->dp,
+          (),
+        ),
+
       "loadingView":
         style(
           ~height=400.->dp,
           ~justifyContent=`center,
           ~alignItems=`center,
-          (),
-        ),
-    })
-  );
-
-let formStyles =
-  Style.(
-    StyleSheet.create({
-      "modal":
-        style(
-          ~paddingTop=45.->dp,
-          ~paddingBottom=40.->dp,
-          ~paddingHorizontal=110.->dp,
           (),
         ),
     })
@@ -101,7 +105,7 @@ module ConfirmCloseModal = {
         style=Style.(
           array([|
             styles##modal,
-            formStyles##modal,
+            styles##modalDialog,
             style(~backgroundColor=theme.colors.background, ()),
           |])
         )>
@@ -167,9 +171,9 @@ module Base = {
     <View
       style=Style.(
         arrayOption([|
-          styleFromProp,
           Some(styles##modal),
           Some(style(~backgroundColor=theme.colors.background, ())),
+          styleFromProp,
         |])
       )>
       closeButton->ReactUtils.opt
@@ -181,7 +185,7 @@ module Base = {
 module Form = {
   [@react.component]
   let make = (~closing=?, ~children) => {
-    <Base ?closing style=formStyles##modal> children </Base>;
+    <Base ?closing style=styles##modalForm> children </Base>;
   };
 };
 
