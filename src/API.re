@@ -575,7 +575,10 @@ module Accounts = (Caller: CallerAPI) => {
     ->AppSettings.sdk
     ->TezosSDK.listKnownAddresses
     ->Future.mapOk(r =>
-        r |> Array.map((TezosSDK.{alias, pkh}) => (alias, pkh))
+        r->Belt.Array.keepMap(
+          (TezosSDK.OutputAddress.{alias, pkh, pk_known}) =>
+          pk_known ? Some((alias, pkh)) : None
+        )
       );
 
   let create = (~settings, name) =>
