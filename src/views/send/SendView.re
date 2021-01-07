@@ -229,7 +229,7 @@ module Form = {
 
       let (editing, back, onAddToBatch, onSubmitAll, batchMode) =
         switch (mode) {
-        | Edition(_, back) => (true, Some(back), None, None, false)
+        | Edition(_, back) => (true, Some(back), None, None, true)
         | Creation(batch, submit, back) => (
             false,
             back,
