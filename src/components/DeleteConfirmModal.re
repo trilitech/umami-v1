@@ -5,6 +5,7 @@ let make =
     (
       ~title,
       ~titleDone,
+      ~titleLoading,
       ~visible,
       ~closeAction,
       ~onPressConfirmDelete,
@@ -35,7 +36,7 @@ let make =
              </View>
            </>
          | Loading(_) =>
-           <ModalView.LoadingView title=I18n.title#simulation height=120 />
+           <ModalView.LoadingView title=titleLoading height=120 />
          | NotAsked =>
            <>
              <Typography.Headline style=FormStyles.header>

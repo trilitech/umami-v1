@@ -5,6 +5,7 @@ let make =
       ~buttonText,
       ~modalTitle,
       ~modalTitleDone,
+      ~modalTitleLoading: string,
       ~onPressConfirmDelete,
       ~request,
     ) => {
@@ -26,6 +27,7 @@ let make =
     <DeleteConfirmModal
       title=modalTitle
       titleDone=modalTitleDone
+      titleLoading=modalTitleLoading
       visible=visibleModal
       onPressConfirmDelete
       closeAction
