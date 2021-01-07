@@ -1,10 +1,22 @@
 open Protocol;
+
 type t =
   | Protocol(Protocol.t)
   | Token(Token.operation);
 
 let transaction = t => t->Transaction->Protocol;
 let delegation = d => d->Delegation->Protocol;
+
+module Simulation = {
+  type index = option(int);
+
+  type t =
+    | Protocol(Protocol.t, index)
+    | Token(Token.operation);
+
+  let delegation = d => Protocol(d->Delegation, None);
+  let transaction = (t, index) => Protocol(t->Transaction, index);
+};
 
 let makeDelegate =
     (~source, ~delegate, ~fee=?, ~burnCap=?, ~forceLowFee=?, ~counter=?, ()) => {

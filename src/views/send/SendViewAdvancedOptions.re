@@ -21,7 +21,7 @@ let xtzDecoration = (~style) =>
   <Typography.Body1 style> BusinessUtils.xtz->React.string </Typography.Body1>;
 
 [@react.component]
-let make = (~form: SendForm.api, ~token: option(Token.t)=?) => {
+let make = (~operation, ~form: SendForm.api) => {
   let (operationSimulateRequest, sendOperationSimulate) =
     StoreContext.Operations.useSimulate();
 
@@ -29,33 +29,14 @@ let make = (~form: SendForm.api, ~token: option(Token.t)=?) => {
     if (form.values.sender != ""
         && form.values.recipient != ""
         && form.values.amount != "") {
-      let operation = {
-        switch (token) {
-        | Some(token) =>
-          Operation.Token(
-            Token.makeTransfer(
-              ~source=form.values.sender,
-              ~amount=form.values.amount->Js.Float.fromString->int_of_float,
-              ~destination=form.values.recipient,
-              ~contract=token.address,
-              (),
-            ),
-          )
-        | None =>
-          Operation.makeSingleTransaction(
-            ~source=form.values.sender,
-            ~amount=form.values.amount->Js.Float.fromString,
-            ~destination=form.values.recipient,
-            (),
-          )
-        };
-      };
+      Js.log(operation);
       sendOperationSimulate(operation)
       ->Future.tapOk(dryRun => {
           form.handleChange(Fee, dryRun.fee->Js.Float.toString);
           form.handleChange(GasLimit, dryRun.gasLimit->string_of_int);
           form.handleChange(StorageLimit, dryRun.storageLimit->string_of_int);
           form.handleChange(Counter, dryRun.count->string_of_int);
+          form.setFieldValue(DryRun, Some(dryRun));
         })
       ->ignore;
     };
