@@ -11,6 +11,8 @@ let formAction =
     (),
   );
 
+let formSubmit = style(~marginTop=24.->dp, ());
+
 let verticalFormAction =
   ReactUtils.styles([
     formAction,

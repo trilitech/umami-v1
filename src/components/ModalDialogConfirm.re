@@ -6,7 +6,7 @@ let make =
       ~visible,
       ~closeAction,
       ~action,
-      ~loading,
+      ~loading=?,
       ~title,
       ~subtitle=?,
       ~cancelText,
@@ -24,9 +24,9 @@ let make =
         <Buttons.Form
           text=cancelText
           onPress={_ => closeAction()}
-          disabled=loading
+          disabled=?loading
         />
-        <Buttons.Form onPress={_ => action()} text=actionText loading />
+        <Buttons.Form onPress={_ => action()} text=actionText ?loading />
       </View>
     </ModalTemplate.Dialog>
   </ModalAction>;

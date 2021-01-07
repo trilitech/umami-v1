@@ -1,5 +1,3 @@
-open ReactNative;
-
 module StateLenses = [%lenses
   type state = {
     name: string,
@@ -9,7 +7,7 @@ module StateLenses = [%lenses
 module AccountCreateForm = ReForm.Make(StateLenses);
 
 [@react.component]
-let make = (~cancel) => {
+let make = (~closeAction) => {
   let (aliasRequest, createAlias) = StoreContext.Aliases.useCreate();
   let addToast = LogsContext.useToast();
 
@@ -22,8 +20,8 @@ let make = (~cancel) => {
       },
       ~onSubmit=
         ({state}) => {
-          cancel();
           createAlias((state.values.name, state.values.address))
+          ->Future.tapOk(_ => closeAction())
           ->ApiRequest.logOk(addToast, Logs.Account, _ =>
               I18n.t#account_created
             )
@@ -35,38 +33,33 @@ let make = (~cancel) => {
       (),
     );
 
-  let onPressCancel = _ => cancel();
-
   let onSubmit = _ => {
     form.submit();
   };
 
-  <ModalView.Form>
-    {switch (aliasRequest) {
-     | Loading(_)
-     | Done(_) => <> </>
-     | NotAsked =>
-       <>
-         <Typography.Headline style=FormStyles.header>
-           I18n.title#add_contact->React.string
-         </Typography.Headline>
-         <FormGroupTextInput
-           label=I18n.label#add_contact_name
-           value={form.values.name}
-           handleChange={form.handleChange(Name)}
-           error={form.getFieldError(Field(Name))}
-         />
-         <FormGroupTextInput
-           label=I18n.label#add_contact_address
-           value={form.values.address}
-           handleChange={form.handleChange(Address)}
-           error={form.getFieldError(Field(Address))}
-         />
-         <View style=FormStyles.formAction>
-           <Buttons.Form text=I18n.btn#cancel onPress=onPressCancel />
-           <Buttons.Form text=I18n.btn#add onPress=onSubmit />
-         </View>
-       </>
-     }}
-  </ModalView.Form>;
+  let loading = aliasRequest != ApiRequest.NotAsked;
+
+  <ModalFormView closing={ModalFormView.Close(closeAction)}>
+    <Typography.Headline style=FormStyles.header>
+      I18n.title#add_contact->React.string
+    </Typography.Headline>
+    <FormGroupTextInput
+      label=I18n.label#add_contact_name
+      value={form.values.name}
+      handleChange={form.handleChange(Name)}
+      error={form.getFieldError(Field(Name))}
+    />
+    <FormGroupTextInput
+      label=I18n.label#add_contact_address
+      value={form.values.address}
+      handleChange={form.handleChange(Address)}
+      error={form.getFieldError(Field(Address))}
+    />
+    <Buttons.SubmitPrimary
+      text=I18n.btn#add
+      onPress=onSubmit
+      loading
+      style=FormStyles.formSubmit
+    />
+  </ModalFormView>;
 };

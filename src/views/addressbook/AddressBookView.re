@@ -21,14 +21,12 @@ module AddContactButton = {
 
     let onPress = _e => openAction();
 
-    let cancel = _e => closeAction();
-
     <>
       <View style=styles##button>
         <ButtonAction onPress text=I18n.btn#add_contact icon=Icons.Add.build />
       </View>
       <ModalAction visible=visibleModal onRequestClose=closeAction>
-        <ContactAddView cancel />
+        <ContactAddView closeAction />
       </ModalAction>
     </>;
   };

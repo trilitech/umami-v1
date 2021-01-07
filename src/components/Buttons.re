@@ -51,7 +51,11 @@ module FormBase = {
            ? <ActivityIndicator
                animating=true
                size={18.->Style.dp}
-               color={theme.colors.iconMediumEmphasis}
+               color={
+                 isPrimary
+                   ? theme.colors.primaryIconMediumEmphasis
+                   : theme.colors.iconMediumEmphasis
+               }
                style=styles##loader
              />
            : React.null}
@@ -80,8 +84,8 @@ module Form = {
 
 module FormPrimary = {
   [@react.component]
-  let make = (~text, ~onPress, ~disabled=?, ~fontSize=?, ~style=?) => {
-    <FormBase onPress ?disabled ?style>
+  let make = (~text, ~onPress, ~disabled=?, ~loading=?, ~fontSize=?, ~style=?) => {
+    <FormBase onPress ?disabled ?loading ?style>
       <Typography.ButtonPrimary
         ?fontSize
         colorStyle=?{
@@ -97,8 +101,8 @@ module FormPrimary = {
 
 module FormSecondary = {
   [@react.component]
-  let make = (~text, ~onPress, ~disabled=?, ~fontSize=?, ~style=?) => {
-    <FormBase onPress ?disabled ?style>
+  let make = (~text, ~onPress, ~disabled=?, ~loading=?, ~fontSize=?, ~style=?) => {
+    <FormBase onPress ?disabled ?loading ?style>
       <Typography.ButtonTernary
         ?fontSize
         colorStyle=?{
@@ -115,13 +119,21 @@ module FormSecondary = {
 module SubmitPrimary = {
   [@react.component]
   let make =
-      (~text, ~onPress, ~disabled=false, ~fontSize=?, ~style as argStyle=?) => {
+      (
+        ~text,
+        ~onPress,
+        ~disabled=false,
+        ~loading=?,
+        ~fontSize=?,
+        ~style as argStyle=?,
+      ) => {
     let theme = ThemeContext.useTheme();
 
     <FormBase
       onPress
       isPrimary=true
       disabled
+      ?loading
       vStyle=Style.(
         arrayOption([|
           argStyle,
@@ -143,13 +155,21 @@ module SubmitPrimary = {
 module SubmitSecondary = {
   [@react.component]
   let make =
-      (~text, ~onPress, ~disabled=false, ~fontSize=?, ~style as styleArg=?) => {
+      (
+        ~text,
+        ~onPress,
+        ~disabled=false,
+        ~loading=?,
+        ~fontSize=?,
+        ~style as styleArg=?,
+      ) => {
     let theme = ThemeContext.useTheme();
 
     <FormBase
       onPress
       isPrimary=false
       disabled
+      ?loading
       vStyle=Style.(
         arrayOption([|
           styleArg,
