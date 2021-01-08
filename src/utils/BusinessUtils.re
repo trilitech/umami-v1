@@ -8,12 +8,10 @@ let formatMilliXTZ = mutez => {
 };
 
 let formatXTZ = mutez => {
-  let mutez =
-    mutez
-    ->Belt.Float.fromString
-    ->Belt.Option.getWithDefault(0.0)
-    ->Belt.Float.toString;
-  String.contains(mutez, '.') ? mutez : mutez ++ ".0";
+  mutez
+  ->Belt.Float.fromString
+  ->Belt.Option.getWithDefault(0.0)
+  ->Js.Float.toFixedWithPrecision(~digits=6);
 };
 
 let xtz = I18n.t#xtz;
