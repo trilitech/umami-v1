@@ -174,7 +174,7 @@ let make = (~onPressCancel, ~action) => {
     | Delete(account, _) =>
       let op =
         Protocol.makeDelegate(~source=account.address, ~delegate="", ());
-      sendOperationSimulate(op->Operation.delegation)
+      sendOperationSimulate(op->Operation.Simulation.delegation)
       ->Future.tapOk(dryRun => {setModalStep(_ => PasswordStep(op, dryRun))})
       ->ignore;
 
@@ -186,7 +186,7 @@ let make = (~onPressCancel, ~action) => {
 
   let form =
     Form.build(action, advancedOptionOpened, op =>
-      sendOperationSimulate(op->Operation.delegation)
+      sendOperationSimulate(op->Operation.Simulation.delegation)
       ->Future.tapOk(dryRun => {setModalStep(_ => PasswordStep(op, dryRun))})
       ->ignore
     );

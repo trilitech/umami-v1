@@ -65,123 +65,13 @@ let styles =
     })
   );
 
-type transfer =
-  | ProtocolTransaction(Protocol.transaction)
-  | TokenTransfer(Token.operation, int, string, string);
-
-let toOperation = t =>
-  switch (t) {
-  | ProtocolTransaction(transaction) => Operation.transaction(transaction)
-  | TokenTransfer(operation, _, _, _) => Operation.Token(operation)
-  };
-
-let buildTransfer =
-    (
-      values: SendForm.StateLenses.state,
-      advancedOptionOpened: bool,
-      token: option(Token.t),
-    ) => {
-  let mapIfAdvanced = (v, map) =>
-    advancedOptionOpened && v->Js.String2.length > 0 ? Some(v->map) : None;
-
-  let source = values.sender;
-  let amount = values.amount->Js.Float.fromString;
-  let destination = values.recipient;
-  let fee = values.fee->mapIfAdvanced(Js.Float.fromString);
-  let counter = values.counter->mapIfAdvanced(int_of_string);
-  let gasLimit = values.gasLimit->mapIfAdvanced(int_of_string);
-  let storageLimit = values.storageLimit->mapIfAdvanced(int_of_string);
-  let forceLowFee =
-    advancedOptionOpened && values.forceLowFee ? Some(true) : None;
-
-  switch (token) {
-  | Some(token) =>
-    let amount = amount->int_of_float;
-    let transfer =
-      Token.makeTransfer(
-        ~source,
-        ~amount,
-        ~destination,
-        ~contract=token.address,
-        ~fee?,
-        ~counter?,
-        ~gasLimit?,
-        ~storageLimit?,
-        ~forceLowFee?,
-        (),
-      );
-    TokenTransfer(transfer, amount, source, destination);
-  | None =>
-    let t =
-      Protocol.makeSingleTransaction(
-        ~source,
-        ~amount,
-        ~destination,
-        ~fee?,
-        ~counter?,
-        ~gasLimit?,
-        ~storageLimit?,
-        ~forceLowFee?,
-        (),
-      );
-    ProtocolTransaction(t);
-  };
-};
-
-let buildTransaction =
-    (
-      batch: list((SendForm.StateLenses.state, bool)),
-      token: option(Token.t),
-    ) => {
-  switch (batch) {
-  | [] => assert(false)
-  | [(transfer, advOpened)] => buildTransfer(transfer, advOpened, token)
-  | [(first, _), ..._] as transfers =>
-    let source = first.sender;
-    let forceLowFee = first.forceLowFee ? Some(true) : None;
-
-    let counter =
-      first.counter->Js.String2.length > 0
-        ? Some(first.counter->int_of_string) : None;
-
-    let transfers =
-      transfers->Belt.List.map(((t: SendForm.StateLenses.state, advOpened)) => {
-        let mapIfAdvanced = (v, map) =>
-          advOpened && v->Js.String2.length > 0 ? Some(v->map) : None;
-
-        let amount = t.amount->Js.Float.fromString;
-        let destination = t.recipient;
-        let gasLimit = t.gasLimit->mapIfAdvanced(int_of_string);
-        let storageLimit = t.storageLimit->mapIfAdvanced(int_of_string);
-        let fee = t.fee->mapIfAdvanced(Js.Float.fromString);
-        Protocol.makeTransfer(
-          ~amount,
-          ~destination,
-          ~fee?,
-          ~gasLimit?,
-          ~storageLimit?,
-          (),
-        );
-      });
-
-    Protocol.makeTransaction(
-      ~source,
-      ~transfers,
-      ~counter?,
-      ~forceLowFee?,
-      (),
-    )
-    ->ProtocolTransaction;
-  };
-};
-
 type step =
   | SendStep
-  | PasswordStep(transfer, Protocol.simulationResults)
+  | PasswordStep(SendForm.transaction, Protocol.simulationResults)
   | EditStep(int, (SendForm.StateLenses.state, bool))
   | BatchStep;
 
-let sourceDestination = transfer => {
+let sourceDestination = (transfer: SendForm.transaction) => {
   let recipientLbl = I18n.title#recipient_account;
   let sourceLbl = I18n.title#sender_account;
   switch (transfer) {
@@ -209,8 +99,12 @@ let sourceDestination = transfer => {
 };
 
 let buildSummaryContent =
-    (transfer, token, dryRun: Protocol.simulationResults) => {
-  switch (transfer) {
+    (
+      transaction: SendForm.transaction,
+      token,
+      dryRun: Protocol.simulationResults,
+    ) => {
+  switch (transaction) {
   | ProtocolTransaction({transfers}) =>
     let amount =
       transfers->Belt.List.reduce(0., (acc, {amount}) => acc +. amount);
@@ -253,6 +147,7 @@ module Form = {
       gasLimit: "",
       storageLimit: "",
       forceLowFee: false,
+      dryRun: None,
     };
 
   let use = (~initValues=?, initAccount, onSubmit) => {
@@ -298,18 +193,43 @@ module Form = {
     open SendForm;
 
     type mode =
-      | Edition(unit => unit)
+      | Edition(int, unit => unit)
       | Creation(option(unit => unit), unit => unit, option(unit => unit));
 
+    let simulateTransaction = (mode, batch, form: SendForm.api, token) => {
+      let (batch, index) =
+        switch (mode) {
+        | Edition(index, _) =>
+          let batch =
+            batch
+            ->Belt.List.mapWithIndex((id, elt) =>
+                id == index ? (form.state.values, true) : elt
+              )
+            ->Belt.List.reverse;
+          (batch, Some(batch->List.length - (index + 1)));
+
+        | Creation(_) =>
+          let batch =
+            [(form.state.values, true), ...batch]->Belt.List.reverse;
+          let length = batch->Belt.List.length;
+
+          (batch, Some(length - 1));
+        };
+
+      SendForm.buildTransaction(batch, token)
+      |> SendForm.toSimulation(~index?);
+    };
+
     [@react.component]
-    let make = (~advancedOptionState, ~tokenState, ~token=?, ~mode, ~form) => {
+    let make =
+        (~batch, ~advancedOptionState, ~tokenState, ~token=?, ~mode, ~form) => {
       let (advancedOptionOpened, setAdvancedOptionOpened) = advancedOptionState;
       let (selectedToken, setSelectedToken) = tokenState;
       let theme = ThemeContext.useTheme();
 
       let (editing, back, onAddToBatch, onSubmitAll, batchMode) =
         switch (mode) {
-        | Edition(back) => (true, Some(back), None, None, false)
+        | Edition(_, back) => (true, Some(back), None, None, false)
         | Creation(batch, submit, back) => (
             false,
             back,
@@ -386,7 +306,11 @@ module Form = {
             <ThemedSwitch value=advancedOptionOpened />
           </TouchableOpacity>
           {advancedOptionOpened
-             ? <SendViewAdvancedOptions form ?token /> : React.null}
+             ? <SendViewAdvancedOptions
+                 operation={simulateTransaction(mode, batch, form, token)}
+                 form
+               />
+             : React.null}
         </View>
         <View style=FormStyles.verticalFormAction>
           <Buttons.SubmitPrimary text=submitLabel onPress={_ => onSubmit()} />
@@ -407,7 +331,7 @@ module Form = {
 
 module EditionView = {
   [@react.component]
-  let make = (~initValues, ~onSubmit, ~back) => {
+  let make = (~batch, ~initValues, ~onSubmit, ~index, ~back) => {
     let (initValues, advancedOptionOpened) = initValues;
 
     let (advancedOptionOpened, _) as advancedOptionState =
@@ -416,10 +340,11 @@ module EditionView = {
     let form = Form.use(~initValues, None, onSubmit(advancedOptionOpened));
 
     <Form.View
+      batch
       advancedOptionState
       tokenState=(None, _ => ())
       form
-      mode={Form.View.Edition(back)}
+      mode={Form.View.Edition(index, back)}
     />;
   };
 };
@@ -487,7 +412,7 @@ let make = (~onPressCancel) => {
   let (operationRequest, sendOperation) = StoreContext.Operations.useCreate();
 
   let sendTransfer = (transfer, password) => {
-    let operation = toOperation(transfer);
+    let operation = SendForm.toOperation(transfer);
     sendOperation({operation, password})->ignore;
   };
 
@@ -501,8 +426,9 @@ let make = (~onPressCancel) => {
   let submitAction = React.useRef(`SubmitAll);
 
   let onSubmitBatch = batch => {
-    let transaction = buildTransaction(batch->Belt.List.reverse, token);
-    sendOperationSimulate(toOperation(transaction))
+    let transaction =
+      SendForm.buildTransaction(batch->Belt.List.reverse, token);
+    sendOperationSimulate(SendForm.toSimulation(transaction))
     ->Future.tapOk(dryRun => {
         setModalStep(_ => PasswordStep(transaction, dryRun))
       })
@@ -520,7 +446,7 @@ let make = (~onPressCancel) => {
       send(SetFieldValue(Sender, state.values.sender));
     };
 
-  let form = Form.use(account, onSubmit);
+  let form: SendForm.api = Form.use(account, onSubmit);
 
   let onSubmitAll = _ => {
     submitAction.current = `SubmitAll;
@@ -582,16 +508,18 @@ let make = (~onPressCancel) => {
              onEdit={(i, v) => setModalStep(_ => EditStep(i, v))}
              onDelete
            />
-         | EditStep(i, initValues) =>
-           let onSubmit = (advOpened, form) => onEdit(i, advOpened, form);
+         | EditStep(index, initValues) =>
+           let onSubmit = (advOpened, form) =>
+             onEdit(index, advOpened, form);
            let back = () => setModalStep(_ => BatchStep);
-           <EditionView initValues onSubmit back />;
+           <EditionView batch initValues onSubmit index back />;
          | SendStep =>
            let back =
              batch != [] ? Some(_ => setModalStep(_ => BatchStep)) : None;
            let onSubmit = batch != [] ? onAddToBatch : onSubmitAll;
            let onAddToBatch = batch != [] ? None : Some(onAddToBatch);
            <Form.View
+             batch
              advancedOptionState
              tokenState
              ?token

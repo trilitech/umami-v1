@@ -215,10 +215,19 @@ module InjectorRaw = (Caller: CallerAPI) => {
   };
 
   let singleBatchTransferParser = index => {
-    fees: Nth(float_of_string_opt, index),
-    counter: Nth(int_of_string_opt, index),
-    gasLimit: Nth(int_of_string_opt, index),
-    storageLimit: Nth(int_of_string_opt, index),
+    Js.log(
+      "FEE "
+      ++ Js.String.make(index)
+      ++ " FROM "
+      ++ Js.String.make(Nth(float_of_string_opt, index)),
+    );
+
+    {
+      fees: Nth(float_of_string_opt, index),
+      counter: Nth(int_of_string_opt, index),
+      gasLimit: Nth(int_of_string_opt, index),
+      storageLimit: Nth(int_of_string_opt, index),
+    };
   };
 
   let patchNthForRevelation = (options, revelation) => {
@@ -514,19 +523,30 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
 
   exception InvalidReceiptFormat;
 
-  let simulate = (network, operation: Protocol.t) =>
+  let simulateSingleBatchTransfer = (settings, index, operation: Protocol.t) =>
     Injector.simulate(
-      network,
+      settings,
+      Injector.singleBatchTransferParser(index),
+      arguments(_, operation),
+    );
+
+  let simpleSimulation = (settings, operation: Protocol.t) =>
+    Injector.simulate(
+      settings,
       Injector.singleOperationParser,
       arguments(_, operation),
     );
 
-  let simulateSingleBatchTransfer = (network, index, operation: Protocol.t) =>
-    Injector.simulate(
-      network,
-      Injector.singleBatchTransferParser(index),
-      arguments(_, operation),
-    );
+  let simulate = (settings, ~index=?, operation: Protocol.t) => {
+    switch (operation, index) {
+    | (Delegation(_), _)
+    | (Transaction(_), None)
+    | (Transaction({transfers: [_]}), _) =>
+      simpleSimulation(settings, operation)
+    | (Transaction(_), Some(index)) =>
+      simulateSingleBatchTransfer(settings, index, operation)
+    };
+  };
 
   let create = (network, operation: Protocol.t) =>
     Injector.create(network, arguments(_, operation));

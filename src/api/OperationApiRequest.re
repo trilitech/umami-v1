@@ -48,9 +48,9 @@ let useCreate = (~sideEffect=?, ()) => {
 let useSimulate = () => {
   let set = (~settings, operation) =>
     switch (operation) {
-    | Operation.Protocol(operation) =>
-      settings->OperationsAPI.simulate(operation)
-    | Operation.Token(operation) =>
+    | Operation.Simulation.Protocol(operation, index) =>
+      settings->OperationsAPI.simulate(~index?, operation)
+    | Operation.Simulation.Token(operation) =>
       settings->TokensApiRequest.TokensAPI.simulate(operation)
     };
 
