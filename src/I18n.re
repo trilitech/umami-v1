@@ -30,7 +30,8 @@ let btn = {
   pub batch_submit = "SUBMIT BATCH";
   pub send_cancel = "CANCEL TRANSACTION";
   pub delegation_submit = "CONFIRM DELEGATION";
-  pub delegated = "DELEGATED"
+  pub delegated = "DELEGATED";
+  pub delete_account = "Delete account"
 };
 
 let log = {
@@ -104,6 +105,9 @@ let title = {
   pub importing_account = "Importing account";
   pub submitting = "Submitting operation";
   pub send_many_transactions = "Send one or many transactions";
+  pub delete_account = "Delete account?";
+  pub delete_load = "Deleting";
+  pub delete_account_done = "Account deleted";
   pub batch = "Batch"
 };
 

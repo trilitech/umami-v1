@@ -10,9 +10,10 @@ module AccountDeleteButton = {
     };
 
     <DeleteButton
-      buttonText="Delete account"
-      modalTitle="Delete account?"
-      modalTitleDone="Account deleted"
+      buttonText=I18n.btn#delete_account
+      modalTitle=I18n.title#delete_account
+      modalTitleDone=I18n.title#delete_account_done
+      modalTitleLoading=I18n.title#delete_load
       onPressConfirmDelete
       request=accountRequest
     />;
