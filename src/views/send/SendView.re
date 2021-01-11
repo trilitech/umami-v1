@@ -195,13 +195,13 @@ module Form = {
     open SendForm;
 
     type mode =
-      | Edition(int, unit => unit)
-      | Creation(option(unit => unit), unit => unit, option(unit => unit));
+      | Edition(int)
+      | Creation(option(unit => unit), unit => unit);
 
     let simulateTransaction = (mode, batch, form: SendForm.api, token) => {
       let (batch, index) =
         switch (mode) {
-        | Edition(index, _) =>
+        | Edition(index) =>
           let batch =
             batch
             ->Belt.List.mapWithIndex((id, elt) =>
@@ -224,17 +224,23 @@ module Form = {
 
     [@react.component]
     let make =
-        (~batch, ~advancedOptionState, ~tokenState, ~token=?, ~mode, ~form) => {
+        (
+          ~batch,
+          ~advancedOptionState,
+          ~tokenState,
+          ~token=?,
+          ~mode,
+          ~form,
+          ~loading,
+        ) => {
       let (advancedOptionOpened, setAdvancedOptionOpened) = advancedOptionState;
       let (selectedToken, setSelectedToken) = tokenState;
-      let theme = ThemeContext.useTheme();
 
-      let (editing, back, onAddToBatch, onSubmitAll, batchMode) =
+      let (editing, onAddToBatch, onSubmitAll, batchMode) =
         switch (mode) {
-        | Edition(_, back) => (true, Some(back), None, None, true)
-        | Creation(batch, submit, back) => (
+        | Edition(_) => (true, None, None, false)
+        | Creation(batch, submit) => (
             false,
-            back,
             batch,
             Some(submit),
             batch == None,
@@ -250,15 +256,6 @@ module Form = {
         onSubmitAll->Belt.Option.getWithDefault(() => form.submit());
 
       <>
-        {back->ReactUtils.mapOpt(back =>
-           <TouchableOpacity
-             onPress={_ => back()} style=FormStyles.topLeftButton>
-             <Icons.ArrowLeft
-               size=36.
-               color={theme.colors.iconMediumEmphasis}
-             />
-           </TouchableOpacity>
-         )}
         <View style=FormStyles.header>
           <Typography.Headline>
             I18n.title#send->React.string
@@ -315,7 +312,11 @@ module Form = {
              : React.null}
         </View>
         <View style=FormStyles.verticalFormAction>
-          <Buttons.SubmitPrimary text=submitLabel onPress={_ => onSubmit()} />
+          <Buttons.SubmitPrimary
+            text=submitLabel
+            onPress={_ => onSubmit()}
+            loading
+          />
           {onAddToBatch
            ->ReactUtils.mapOpt(addToBatch =>
                <Buttons.FormSecondary
@@ -333,7 +334,7 @@ module Form = {
 
 module EditionView = {
   [@react.component]
-  let make = (~batch, ~initValues, ~onSubmit, ~index, ~back) => {
+  let make = (~batch, ~initValues, ~onSubmit, ~index, ~loading) => {
     let (initValues, advancedOptionOpened) = initValues;
 
     let (advancedOptionOpened, _) as advancedOptionState =
@@ -346,7 +347,8 @@ module EditionView = {
       advancedOptionState
       tokenState=(None, _ => ())
       form
-      mode={Form.View.Edition(index, back)}
+      mode={Form.View.Edition(index)}
+      loading
     />;
   };
 };
@@ -398,7 +400,7 @@ module SubmittedView = {
 };
 
 [@react.component]
-let make = (~onPressCancel) => {
+let make = (~closeAction) => {
   let account = StoreContext.SelectedAccount.useGet();
   let initToken = StoreContext.SelectedToken.useGet();
 
@@ -476,71 +478,67 @@ let make = (~onPressCancel) => {
   };
 
   let closing =
-    switch (form.formState) {
-    | Pristine when batch == [] => ModalView.Close(_ => onPressCancel())
+    switch (form.formState, operationRequest) {
+    | (Pristine, _) when batch == [] => ModalFormView.Close(closeAction)
+    | (_, Done(Ok((_, _)), _)) => ModalFormView.Close(closeAction)
     | _ =>
-      ModalView.confirm(~actionText=I18n.btn#send_cancel, _ => onPressCancel())
+      ModalFormView.confirm(~actionText=I18n.btn#send_cancel, closeAction)
     };
 
-  let onPressCancel = _ => onPressCancel();
+  let back =
+    switch (modalStep, operationRequest) {
+    | (_, Done(Ok((_, _)), _)) => None
+    | (PasswordStep(_, _), _) =>
+      Some(() => setModalStep(_ => batch == [] ? SendStep : BatchStep))
+    | (EditStep(_, _), _) => Some(() => setModalStep(_ => BatchStep))
+    | (SendStep, _) =>
+      batch != [] ? Some(_ => setModalStep(_ => BatchStep)) : None
+    | _ => None
+    };
 
-  <ModalView.Form closing>
-    {switch (operationRequest) {
-     | Done(Ok((hash, _)), _) => <SubmittedView hash onPressCancel />
-     | Done(Error(error), _) =>
-       <>
-         <Typography.Body1 colorStyle=`error>
-           error->React.string
-         </Typography.Body1>
-         <View style=FormStyles.formAction>
-           <Buttons.FormPrimary text=I18n.btn#ok onPress=onPressCancel />
-         </View>
-       </>
-     | Loading(_) => <ModalView.LoadingView title=I18n.title#submitting />
-     | NotAsked =>
-       if (ApiRequest.isLoading(operationSimulateRequest)) {
-         <ModalView.LoadingView title=I18n.title#simulation />;
-       } else {
-         switch (modalStep) {
-         | BatchStep =>
-           <BatchView
-             onAddTransfer={_ => setModalStep(_ => SendStep)}
-             batch
-             onSubmitBatch
-             onEdit={(i, v) => setModalStep(_ => EditStep(i, v))}
-             onDelete
-           />
-         | EditStep(index, initValues) =>
-           let onSubmit = (advOpened, form) =>
-             onEdit(index, advOpened, form);
-           let back = () => setModalStep(_ => BatchStep);
-           <EditionView batch initValues onSubmit index back />;
-         | SendStep =>
-           let back =
-             batch != [] ? Some(_ => setModalStep(_ => BatchStep)) : None;
-           let onSubmit = batch != [] ? onAddToBatch : onSubmitAll;
-           let onAddToBatch = batch != [] ? None : Some(onAddToBatch);
-           <Form.View
-             batch
-             advancedOptionState
-             tokenState
-             ?token
-             form
-             mode={Form.View.Creation(onAddToBatch, onSubmit, back)}
-           />;
-         | PasswordStep(transfer, dryRun) =>
-           let (source, destinations) = sourceDestination(transfer);
-           <SignOperationView
-             title=I18n.title#confirmation
-             source
-             destinations
-             subtitle=I18n.expl#confirm_operation
-             back={() => setModalStep(_ => batch == [] ? SendStep : BatchStep)}
-             content={buildSummaryContent(transfer, token, dryRun)}
-             sendOperation={sendTransfer(transfer)}
-           />;
-         };
-       }
+  let onPressCancel = _ => closeAction();
+
+  let loadingSimulate = operationSimulateRequest->ApiRequest.isLoading;
+  let loading = operationRequest != ApiRequest.NotAsked;
+
+  <ModalFormView back closing>
+    {switch (modalStep, operationRequest) {
+     | (_, Done(Ok((hash, _)), _)) => <SubmittedView hash onPressCancel />
+     | (BatchStep, _) =>
+       <BatchView
+         onAddTransfer={_ => setModalStep(_ => SendStep)}
+         batch
+         onSubmitBatch
+         onEdit={(i, v) => setModalStep(_ => EditStep(i, v))}
+         onDelete
+         loading=loadingSimulate
+       />
+     | (EditStep(index, initValues), _) =>
+       let onSubmit = (advOpened, form) => onEdit(index, advOpened, form);
+       <EditionView batch initValues onSubmit index loading=false />;
+     | (SendStep, _) =>
+       let onSubmit = batch != [] ? onAddToBatch : onSubmitAll;
+       let onAddToBatch = batch != [] ? None : Some(onAddToBatch);
+       <Form.View
+         batch
+         advancedOptionState
+         tokenState
+         ?token
+         form
+         mode={Form.View.Creation(onAddToBatch, onSubmit)}
+         loading=loadingSimulate
+       />;
+     | (PasswordStep(transfer, dryRun), _) =>
+       let (source, destinations) = sourceDestination(transfer);
+       <SignOperationView
+         title=I18n.title#confirmation
+         source
+         destinations
+         subtitle=I18n.expl#confirm_operation
+         content={buildSummaryContent(transfer, token, dryRun)}
+         sendOperation={sendTransfer(transfer)}
+         loading
+       />;
      }}
-  </ModalView.Form>;
+  </ModalFormView>;
 };

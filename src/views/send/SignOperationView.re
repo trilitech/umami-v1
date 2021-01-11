@@ -8,13 +8,13 @@ let styles =
 [@react.component]
 let make =
     (
-      ~back=?,
       ~title,
       ~subtitle=?,
       ~source,
       ~destinations,
       ~sendOperation,
       ~content,
+      ~loading=false,
     ) => {
   let form: SendForm.Password.api =
     SendForm.Password.use(
@@ -34,7 +34,6 @@ let make =
   };
 
   <>
-    <ModalView.BackButton back />
     <View style=FormStyles.header>
       <Typography.Headline> title->React.string </Typography.Headline>
       {subtitle->ReactUtils.mapOpt(subtitle =>
@@ -58,7 +57,7 @@ let make =
       secureTextEntry=true
     />
     <View style=FormStyles.verticalFormAction>
-      <Buttons.SubmitPrimary text=I18n.btn#confirm onPress=onSubmit />
+      <Buttons.SubmitPrimary text=I18n.btn#confirm onPress=onSubmit loading />
     </View>
   </>;
 };

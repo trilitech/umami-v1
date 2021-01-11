@@ -32,7 +32,6 @@ let make = () => {
     ModalAction.useModalActionState();
 
   let onPress = _ => openAction();
-  let onPressCancel = _ => closeAction();
 
   <>
     <View
@@ -70,7 +69,7 @@ let make = () => {
       </ThemedPressable>
     </View>
     <ModalAction visible=visibleModal onRequestClose=closeAction>
-      <SendView onPressCancel />
+      <SendView closeAction />
     </ModalAction>
   </>;
 };

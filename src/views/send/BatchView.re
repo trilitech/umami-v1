@@ -140,7 +140,15 @@ module Transactions = {
 
 [@react.component]
 let make =
-    (~back=?, ~onAddTransfer, ~onSubmitBatch, ~onDelete, ~onEdit, ~batch) => {
+    (
+      ~back=?,
+      ~onAddTransfer,
+      ~onSubmitBatch,
+      ~onDelete,
+      ~onEdit,
+      ~batch,
+      ~loading,
+    ) => {
   let theme: ThemeContext.theme = ThemeContext.useTheme();
   let recipients =
     batch->Belt.List.mapWithIndex(
@@ -179,10 +187,12 @@ let make =
         style=styles##addTransaction
         text=I18n.btn#send_another_transaction
         onPress={_ => onAddTransfer()}
+        disabled=loading
       />
       <Buttons.SubmitPrimary
         text=I18n.btn#batch_submit
         onPress={_ => onSubmitBatch(batch)}
+        loading
       />
     </View>
   </>;

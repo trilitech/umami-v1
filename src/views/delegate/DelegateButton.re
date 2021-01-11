@@ -27,8 +27,6 @@ let make =
 
   let onPress = _e => openAction();
 
-  let onPressCancel = _e => closeAction();
-
   <>
     <View
       style=Style.(
@@ -60,7 +58,7 @@ let make =
       </ThemedPressable>
     </View>
     <ModalAction visible=visibleModal onRequestClose=closeAction>
-      <DelegateView onPressCancel action={Delegate.Create(defaultAccount)} />
+      <DelegateView closeAction action={Delegate.Create(defaultAccount)} />
     </ModalAction>
   </>;
 };
