@@ -43,7 +43,11 @@ let styles =
         style(~position=`absolute, ~left=20.->dp, ~top=20.->dp, ()),
       "headerRight":
         style(~position=`absolute, ~right=20.->dp, ~top=20.->dp, ()),
-      "modal": style(~alignSelf=`center, ~borderRadius=4., ()),
+      "modal":
+        style(~alignSelf=`center, ~borderRadius=4., ())
+        ->unsafeAddStyle({
+            "boxShadow": "0 7px 8px -4px rgba(0, 0, 0, 0.2), 0 5px 22px 4px rgba(0, 0, 0, 0.12), 0 12px 17px 2px rgba(0, 0, 0, 0.14)",
+          }),
       "modalForm":
         style(
           ~width=642.->dp,

@@ -8,7 +8,8 @@ let styles =
       "modalOverlay":
         StyleSheet.flatten([|
           StyleSheet.absoluteFillObject,
-          style(~backgroundColor="black", ()),
+          style(~backgroundColor="black", ())
+          ->unsafeAddStyle({"willChange": "transform"}),
         |]),
       "modalView":
         style(
@@ -19,7 +20,8 @@ let styles =
           ~opacity=1.,
           ~transform=[|scale(~scale=1.)|],
           (),
-        ),
+        )
+        ->unsafeAddStyle({"willChange": "transform"}),
     })
   );
 
