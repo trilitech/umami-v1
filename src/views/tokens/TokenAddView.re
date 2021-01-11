@@ -63,7 +63,7 @@ let make = (~closeAction) => {
     form.submit();
   };
 
-  let loading = tokenCreateRequest != ApiRequest.NotAsked;
+  let loading = tokenCreateRequest->ApiRequest.isLoading;
 
   <ModalFormView closing={ModalFormView.Close(closeAction)}>
     <Typography.Headline style=styles##title>

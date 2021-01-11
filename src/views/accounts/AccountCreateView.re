@@ -29,7 +29,7 @@ let make = (~closeAction) => {
     form.submit();
   };
 
-  let loading = accountRequest != ApiRequest.NotAsked;
+  let loading = accountRequest->ApiRequest.isLoading;
 
   <ModalFormView closing={ModalFormView.Close(closeAction)}>
     <Typography.Headline style=FormStyles.header>

@@ -213,7 +213,7 @@ let make = (~closeAction, ~action) => {
     };
 
   let loadingSimulate = operationSimulateRequest->ApiRequest.isLoading;
-  let loading = operationRequest != ApiRequest.NotAsked;
+  let loading = operationRequest->ApiRequest.isLoading;
 
   let onPressCancel = _ => closeAction();
 
@@ -255,7 +255,6 @@ let make = (~closeAction, ~action) => {
          sendOperation={sendOperation(delegation)}
          loading
        />
-
      }}
   </ModalFormView>;
 };

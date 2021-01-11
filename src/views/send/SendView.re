@@ -419,9 +419,10 @@ let make = (~closeAction) => {
   let (operationRequest, sendOperation) = StoreContext.Operations.useCreate();
 
   let sendTransfer = (transfer, password) => {
-
     let operation = SendForm.toOperation(transfer);
-    sendOperation({operation, password})->Future.tapOk(((hash, _)) => {setModalStep(_ => SubmittedStep(hash))})->ignore;
+    sendOperation({operation, password})
+    ->Future.tapOk(((hash, _)) => {setModalStep(_ => SubmittedStep(hash))})
+    ->ignore;
   };
 
   let (batch, setBatch) = React.useState(_ => []);
@@ -480,28 +481,26 @@ let make = (~closeAction) => {
   };
 
   let closing =
-    switch (form.formState, operationRequest) {
+    switch (form.formState, modalStep) {
     | (Pristine, _) when batch == [] => ModalFormView.Close(closeAction)
-    | (_, Done(Ok((_, _)), _)) => ModalFormView.Close(closeAction)
+    | (_, SubmittedStep(_)) => ModalFormView.Close(closeAction)
     | _ =>
       ModalFormView.confirm(~actionText=I18n.btn#send_cancel, closeAction)
     };
 
   let back =
-    switch (modalStep, operationRequest) {
-    | (_, Done(Ok((_, _)), _)) => None
-    | (PasswordStep(_, _), _) =>
+    switch (modalStep) {
+    | PasswordStep(_, _) =>
       Some(() => setModalStep(_ => batch == [] ? SendStep : BatchStep))
-    | (EditStep(_, _), _) => Some(() => setModalStep(_ => BatchStep))
-    | (SendStep, _) =>
-      batch != [] ? Some(_ => setModalStep(_ => BatchStep)) : None
+    | EditStep(_, _) => Some(() => setModalStep(_ => BatchStep))
+    | SendStep => batch != [] ? Some(_ => setModalStep(_ => BatchStep)) : None
     | _ => None
     };
 
   let onPressCancel = _ => closeAction();
 
   let loadingSimulate = operationSimulateRequest->ApiRequest.isLoading;
-  let loading = operationRequest != ApiRequest.NotAsked;
+  let loading = operationRequest->ApiRequest.isLoading;
 
   <ModalFormView back closing>
     {switch (modalStep) {
@@ -517,7 +516,7 @@ let make = (~closeAction) => {
        />
      | EditStep(index, initValues) =>
        let onSubmit = (advOpened, form) => onEdit(index, advOpened, form);
-       <EditionView  batch initValues onSubmit index loading=false />;
+       <EditionView batch initValues onSubmit index loading=false />;
      | SendStep =>
        let onSubmit = batch != [] ? onAddToBatch : onSubmitAll;
        let onAddToBatch = batch != [] ? None : Some(onAddToBatch);

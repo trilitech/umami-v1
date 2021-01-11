@@ -37,7 +37,7 @@ let make = (~closeAction) => {
     form.submit();
   };
 
-  let loading = aliasRequest != ApiRequest.NotAsked;
+  let loading = aliasRequest->ApiRequest.isLoading;
 
   <ModalFormView closing={ModalFormView.Close(closeAction)}>
     <Typography.Headline style=FormStyles.header>

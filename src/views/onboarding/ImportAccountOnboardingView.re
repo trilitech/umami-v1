@@ -33,7 +33,7 @@ let make = (~cancel) => {
 
   let (mnemonic, setMnemonic) = React.useState(_ => Belt.Array.make(24, ""));
 
-  let loading = accountWithMnemonicRequest != ApiRequest.NotAsked;
+  let loading = accountWithMnemonicRequest->ApiRequest.isLoading;
 
   <ModalFormView>
     <Typography.Headline style=styles##title>

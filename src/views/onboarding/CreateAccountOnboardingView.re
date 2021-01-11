@@ -40,7 +40,7 @@ let make = (~cancel) => {
 
   let onPressCancel = _ => cancel();
 
-  let loading = accountWithMnemonicRequest != ApiRequest.NotAsked;
+  let loading = accountWithMnemonicRequest->ApiRequest.isLoading;
 
   <ModalFormView>
     <Typography.Headline style=styles##title>

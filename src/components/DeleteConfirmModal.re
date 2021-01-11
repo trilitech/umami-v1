@@ -7,7 +7,7 @@ let make =
       ~onPressConfirmDelete,
       ~request: ApiRequest.t('a),
     ) => {
-  let loading = request != ApiRequest.NotAsked;
+  let loading = request->ApiRequest.isLoading;
 
   React.useEffect1(
     () => {
