@@ -8,6 +8,7 @@ let styles =
       "view": style(~minHeight=400.->dp, ()),
       "modal":
         style(
+          ~width=642.->dp,
           ~paddingTop=45.->dp,
           ~paddingBottom=32.->dp,
           ~paddingHorizontal=55.->dp,
@@ -31,12 +32,16 @@ module ClearButton = {
 };
 
 [@react.component]
-let make = () => {
+let make = (~closeAction) => {
   let errors = LogsContext.useLogs();
   let deleteError = LogsContext.useDelete();
   let addLog = LogsContext.useAdd();
 
-  <ModalView style=styles##modal>
+  <ModalTemplate.Base
+    style=styles##modal
+    headerRight={
+      <ModalTemplate.HeaderButtons.Close onPress={_ => closeAction()} />
+    }>
     <View style=styles##view>
       <Typography.Headline style=ModalAction.styles##title>
         I18n.title#error_logs->React.string
@@ -65,5 +70,5 @@ let make = () => {
          }}
       </View>
     </View>
-  </ModalView>;
+  </ModalTemplate.Base>;
 };

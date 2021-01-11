@@ -1,38 +1,24 @@
 open ReactNative;
 
-module LoadingView = {
-  let styles =
-    Style.(
-      StyleSheet.create({
-        "loadingView":
-          style(
-            ~height=400.->dp,
-            ~justifyContent=`center,
-            ~alignItems=`center,
-            (),
-          ),
-      })
-    );
+module HeaderButtons = {
+  module Close = {
+    [@react.component]
+    let make = (~onPress) => {
+      let theme = ThemeContext.useTheme();
+      <TouchableOpacity onPress>
+        <Icons.Close size=36. color={theme.colors.iconMediumEmphasis} />
+      </TouchableOpacity>;
+    };
+  };
 
-  [@react.component]
-  let make = (~title, ~height=?) => {
-    let theme = ThemeContext.useTheme();
-    <View
-      style={Style.arrayOption([|
-        Some(styles##loadingView),
-        height->Belt.Option.map(height =>
-          Style.style(~height=height->string_of_int, ())
-        ),
-      |])}>
-      <Typography.Headline style=FormStyles.header>
-        title->React.string
-      </Typography.Headline>
-      <ActivityIndicator
-        animating=true
-        size=ActivityIndicator_Size.large
-        color={theme.colors.iconMediumEmphasis}
-      />
-    </View>;
+  module Back = {
+    [@react.component]
+    let make = (~onPress) => {
+      let theme = ThemeContext.useTheme();
+      <TouchableOpacity onPress>
+        <Icons.ArrowLeft size=36. color={theme.colors.iconMediumEmphasis} />
+      </TouchableOpacity>;
+    };
   };
 };
 

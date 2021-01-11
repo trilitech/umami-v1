@@ -1,5 +1,3 @@
-open ReactNative;
-
 type confirm = {
   title: string,
   subtitle: option(string),
@@ -25,11 +23,8 @@ let confirm =
 module BackButton = {
   [@react.component]
   let make = (~back) => {
-    let theme = ThemeContext.useTheme();
     back->ReactUtils.mapOpt(back => {
-      <TouchableOpacity onPress={_ => back()}>
-        <Icons.ArrowLeft size=36. color={theme.colors.iconMediumEmphasis} />
-      </TouchableOpacity>
+      <ModalTemplate.HeaderButtons.Back onPress={_ => back()} />
     });
   };
 };
@@ -56,8 +51,6 @@ module ConfirmCloseModal = {
 module CloseButton = {
   [@react.component]
   let make = (~closing) => {
-    let theme = ThemeContext.useTheme();
-
     let (visibleModal, openAction, closeAction) =
       ModalAction.useModalActionState();
 
@@ -75,12 +68,7 @@ module CloseButton = {
       };
     };
 
-    <>
-      <TouchableOpacity onPress>
-        <Icons.Close size=36. color={theme.colors.iconMediumEmphasis} />
-      </TouchableOpacity>
-      confirm
-    </>;
+    <> <ModalTemplate.HeaderButtons.Close onPress /> confirm </>;
   };
 };
 

@@ -40,79 +40,71 @@ let make = (~cancel) => {
 
   let onPressCancel = _ => cancel();
 
-  <ModalView.Form>
-    {switch (accountWithMnemonicRequest) {
-     | Done(_) => <> </>
-     | Loading(_) =>
-       <ModalView.LoadingView title=I18n.title#creating_account />
-     | NotAsked =>
+  let loading = accountWithMnemonicRequest != ApiRequest.NotAsked;
+
+  <ModalFormView>
+    <Typography.Headline style=styles##title>
+      I18n.title#account_create->React.string
+    </Typography.Headline>
+    {switch (formStep) {
+     | Step1 =>
        <>
-         <Typography.Headline style=styles##title>
-           I18n.title#account_create->React.string
-         </Typography.Headline>
-         {switch (formStep) {
-          | Step1 =>
-            <>
-              <Typography.Overline3
-                colorStyle=`highEmphasis style=styles##stepPager>
-                {I18n.t#stepof(1, 3)->React.string}
-              </Typography.Overline3>
-              <Typography.Overline1 style=styles##stepTitle>
-                I18n.t#account_create_record_recovery->React.string
-              </Typography.Overline1>
-              <Typography.Body2
-                colorStyle=`mediumEmphasis style=styles##stepBody>
-                I18n.expl#account_create_record_recovery->React.string
-              </Typography.Body2>
-              <MnemonicListView mnemonic />
-              <View style=FormStyles.formAction>
-                <Buttons.Form text=I18n.btn#cancel onPress=onPressCancel />
-                <Buttons.Form
-                  text=I18n.btn#create_account_record_ok
-                  onPress={_ => setFormStep(_ => Step2)}
-                />
-              </View>
-            </>
-          | Step2 =>
-            <>
-              <Typography.Overline3
-                colorStyle=`highEmphasis style=styles##stepPager>
-                {I18n.t#stepof(2, 3)->React.string}
-              </Typography.Overline3>
-              <Typography.Overline1 style=styles##stepTitle>
-                I18n.title#account_create_verify_phrase->React.string
-              </Typography.Overline1>
-              <Typography.Body2
-                colorStyle=`mediumEmphasis style=styles##stepBody>
-                I18n.expl#account_create_record_verify->React.string
-              </Typography.Body2>
-              <VerifyMnemonicView
-                mnemonic
-                onPressCancel
-                goNextStep={_ => setFormStep(_ => Step3)}
-              />
-            </>
-          | Step3 =>
-            <>
-              <Typography.Overline3
-                colorStyle=`highEmphasis style=styles##stepPager>
-                {I18n.t#stepof(3, 3)->React.string}
-              </Typography.Overline3>
-              <Typography.Overline1 style=styles##stepTitle>
-                I18n.title#account_create_password->React.string
-              </Typography.Overline1>
-              <Typography.Body2
-                colorStyle=`mediumEmphasis style=styles##stepBody>
-                I18n.expl#account_create_password_not_recorded->React.string
-              </Typography.Body2>
-              <CreatePasswordView
-                mnemonic
-                onPressCancel
-                createAccountWithMnemonic
-              />
-            </>
-          }}
+         <Typography.Overline3
+           colorStyle=`highEmphasis style=styles##stepPager>
+           {I18n.t#stepof(1, 3)->React.string}
+         </Typography.Overline3>
+         <Typography.Overline1 style=styles##stepTitle>
+           I18n.t#account_create_record_recovery->React.string
+         </Typography.Overline1>
+         <Typography.Body2 colorStyle=`mediumEmphasis style=styles##stepBody>
+           I18n.expl#account_create_record_recovery->React.string
+         </Typography.Body2>
+         <MnemonicListView mnemonic />
+         <View style=FormStyles.formAction>
+           <Buttons.Form text=I18n.btn#cancel onPress=onPressCancel />
+           <Buttons.Form
+             text=I18n.btn#create_account_record_ok
+             onPress={_ => setFormStep(_ => Step2)}
+           />
+         </View>
+       </>
+     | Step2 =>
+       <>
+         <Typography.Overline3
+           colorStyle=`highEmphasis style=styles##stepPager>
+           {I18n.t#stepof(2, 3)->React.string}
+         </Typography.Overline3>
+         <Typography.Overline1 style=styles##stepTitle>
+           I18n.title#account_create_verify_phrase->React.string
+         </Typography.Overline1>
+         <Typography.Body2 colorStyle=`mediumEmphasis style=styles##stepBody>
+           I18n.expl#account_create_record_verify->React.string
+         </Typography.Body2>
+         <VerifyMnemonicView
+           mnemonic
+           onPressCancel
+           goNextStep={_ => setFormStep(_ => Step3)}
+         />
+       </>
+     | Step3 =>
+       <>
+         <Typography.Overline3
+           colorStyle=`highEmphasis style=styles##stepPager>
+           {I18n.t#stepof(3, 3)->React.string}
+         </Typography.Overline3>
+         <Typography.Overline1 style=styles##stepTitle>
+           I18n.title#account_create_password->React.string
+         </Typography.Overline1>
+         <Typography.Body2 colorStyle=`mediumEmphasis style=styles##stepBody>
+           I18n.expl#account_create_password_not_recorded->React.string
+         </Typography.Body2>
+         <CreatePasswordView
+           mnemonic
+           onPressCancel
+           createAccountWithMnemonic
+           loading
+         />
        </>
      }}
-  </ModalView.Form>;
+  </ModalFormView>;
 };

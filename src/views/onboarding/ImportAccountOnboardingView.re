@@ -33,58 +33,51 @@ let make = (~cancel) => {
 
   let (mnemonic, setMnemonic) = React.useState(_ => Belt.Array.make(24, ""));
 
-  <ModalView.Form>
-    {switch (accountWithMnemonicRequest) {
-     | Done(_) => <> </>
-     | Loading(_) =>
-       <ModalView.LoadingView title=I18n.title#importing_account />
-     | NotAsked =>
+  let loading = accountWithMnemonicRequest != ApiRequest.NotAsked;
+
+  <ModalFormView>
+    <Typography.Headline style=styles##title>
+      I18n.title#import_account->React.string
+    </Typography.Headline>
+    {switch (formStep) {
+     | Step1 =>
        <>
-         <Typography.Headline style=styles##title>
-           I18n.title#import_account->React.string
-         </Typography.Headline>
-         {switch (formStep) {
-          | Step1 =>
-            <>
-              <Typography.Overline3
-                colorStyle=`highEmphasis style=styles##stepPager>
-                {I18n.t#stepof(1, 2)->React.string}
-              </Typography.Overline3>
-              <Typography.Overline1 style=styles##stepTitle>
-                I18n.title#import_account_enter_phrase->React.string
-              </Typography.Overline1>
-              <Typography.Body2
-                colorStyle=`mediumEmphasis style=styles##stepBody>
-                I18n.expl#import_account_enter_phrase->React.string
-              </Typography.Body2>
-              <FillMnemonicView
-                mnemonic
-                setMnemonic
-                onPressCancel={_ => cancel()}
-                goNextStep={_ => setFormStep(_ => Step2)}
-              />
-            </>
-          | Step2 =>
-            <>
-              <Typography.Overline3
-                colorStyle=`highEmphasis style=styles##stepPager>
-                {I18n.t#stepof(2, 2)->React.string}
-              </Typography.Overline3>
-              <Typography.Overline1 style=styles##stepTitle>
-                I18n.title#account_create->React.string
-              </Typography.Overline1>
-              <Typography.Body2
-                colorStyle=`mediumEmphasis style=styles##stepBody>
-                I18n.expl#account_create_password_not_recorded->React.string
-              </Typography.Body2>
-              <CreatePasswordView
-                mnemonic
-                onPressCancel={_ => cancel()}
-                createAccountWithMnemonic
-              />
-            </>
-          }}
+         <Typography.Overline3
+           colorStyle=`highEmphasis style=styles##stepPager>
+           {I18n.t#stepof(1, 2)->React.string}
+         </Typography.Overline3>
+         <Typography.Overline1 style=styles##stepTitle>
+           I18n.title#import_account_enter_phrase->React.string
+         </Typography.Overline1>
+         <Typography.Body2 colorStyle=`mediumEmphasis style=styles##stepBody>
+           I18n.expl#import_account_enter_phrase->React.string
+         </Typography.Body2>
+         <FillMnemonicView
+           mnemonic
+           setMnemonic
+           onPressCancel={_ => cancel()}
+           goNextStep={_ => setFormStep(_ => Step2)}
+         />
+       </>
+     | Step2 =>
+       <>
+         <Typography.Overline3
+           colorStyle=`highEmphasis style=styles##stepPager>
+           {I18n.t#stepof(2, 2)->React.string}
+         </Typography.Overline3>
+         <Typography.Overline1 style=styles##stepTitle>
+           I18n.title#account_create->React.string
+         </Typography.Overline1>
+         <Typography.Body2 colorStyle=`mediumEmphasis style=styles##stepBody>
+           I18n.expl#account_create_password_not_recorded->React.string
+         </Typography.Body2>
+         <CreatePasswordView
+           mnemonic
+           onPressCancel={_ => cancel()}
+           createAccountWithMnemonic
+           loading
+         />
        </>
      }}
-  </ModalView.Form>;
+  </ModalFormView>;
 };
