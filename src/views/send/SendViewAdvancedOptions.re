@@ -32,7 +32,10 @@ let make = (~operation, ~form: SendForm.api) => {
       Js.log(operation);
       sendOperationSimulate(operation)
       ->Future.tapOk(dryRun => {
-          form.handleChange(Fee, dryRun.fee->Js.Float.toString);
+          form.handleChange(
+            Fee,
+            dryRun.fee->Js.Float.toFixedWithPrecision(~digits=6),
+          );
           form.handleChange(GasLimit, dryRun.gasLimit->string_of_int);
           form.handleChange(StorageLimit, dryRun.storageLimit->string_of_int);
           form.handleChange(Counter, dryRun.count->string_of_int);

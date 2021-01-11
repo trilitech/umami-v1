@@ -167,7 +167,8 @@ let make =
       </Typography.Overline2>
       <Typography.Subtitle1>
         {I18n.t#xtz_amount(
-           computeTotal(batch->Belt.List.map(fst))->Js.Float.toString,
+           computeTotal(batch->Belt.List.map(fst))
+           ->Js.Float.toFixedWithPrecision(~digits=6),
          )
          ->React.string}
       </Typography.Subtitle1>

@@ -86,7 +86,7 @@ let sourceDestination = (transfer: SendForm.transaction) => {
           None,
           (
             t.destination,
-            t.amount->Js.Float.toFixedWithPrecision(~digits=1),
+            t.amount->Js.Float.toFixedWithPrecision(~digits=6),
           ),
         )
       );
@@ -110,16 +110,18 @@ let buildSummaryContent =
       transfers->Belt.List.reduce(0., (acc, {amount}) => acc +. amount);
     let subtotal = (
       I18n.label#summary_subtotal,
-      I18n.t#xtz_amount(amount->Js.Float.toFixedWithPrecision(~digits=1)),
+      I18n.t#xtz_amount(amount->Js.Float.toFixedWithPrecision(~digits=6)),
     );
     let total = amount +. dryRun.fee;
     let total = (
       I18n.label#summary_total,
-      I18n.t#xtz_amount(total->Js.Float.toString),
+      I18n.t#xtz_amount(total->Js.Float.toFixedWithPrecision(~digits=6)),
     );
     let fee = (
       I18n.label#fee,
-      I18n.t#xtz_amount(dryRun.fee->Js.Float.toString),
+      I18n.t#xtz_amount(
+        dryRun.fee->Js.Float.toFixedWithPrecision(~digits=6),
+      ),
     );
     [subtotal, fee, total];
   | TokenTransfer(_, amount, _source, _destination) =>
