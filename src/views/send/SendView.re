@@ -69,7 +69,8 @@ type step =
   | SendStep
   | PasswordStep(SendForm.transaction, Protocol.simulationResults)
   | EditStep(int, (SendForm.StateLenses.state, bool))
-  | BatchStep;
+  | BatchStep
+  | SubmittedStep(string);
 
 let sourceDestination = (transfer: SendForm.transaction) => {
   let recipientLbl = I18n.title#recipient_account;
@@ -407,6 +408,8 @@ let make = (~closeAction) => {
   let (advancedOptionsOpened, setAdvancedOptions) as advancedOptionState =
     React.useState(_ => false);
 
+  let (modalStep, setModalStep) = React.useState(_ => SendStep);
+
   let (selectedToken, _) as tokenState =
     React.useState(_ =>
       initToken->Belt.Option.map(initToken => initToken.address)
@@ -416,16 +419,15 @@ let make = (~closeAction) => {
   let (operationRequest, sendOperation) = StoreContext.Operations.useCreate();
 
   let sendTransfer = (transfer, password) => {
+
     let operation = SendForm.toOperation(transfer);
-    sendOperation({operation, password})->ignore;
+    sendOperation({operation, password})->Future.tapOk(((hash, _)) => {setModalStep(_ => SubmittedStep(hash))})->ignore;
   };
 
   let (batch, setBatch) = React.useState(_ => []);
 
   let (operationSimulateRequest, sendOperationSimulate) =
     StoreContext.Operations.useSimulate();
-
-  let (modalStep, setModalStep) = React.useState(_ => SendStep);
 
   let submitAction = React.useRef(`SubmitAll);
 
@@ -502,9 +504,9 @@ let make = (~closeAction) => {
   let loading = operationRequest != ApiRequest.NotAsked;
 
   <ModalFormView back closing>
-    {switch (modalStep, operationRequest) {
-     | (_, Done(Ok((hash, _)), _)) => <SubmittedView hash onPressCancel />
-     | (BatchStep, _) =>
+    {switch (modalStep) {
+     | SubmittedStep(hash) => <SubmittedView hash onPressCancel />
+     | BatchStep =>
        <BatchView
          onAddTransfer={_ => setModalStep(_ => SendStep)}
          batch
@@ -513,10 +515,10 @@ let make = (~closeAction) => {
          onDelete
          loading=loadingSimulate
        />
-     | (EditStep(index, initValues), _) =>
+     | EditStep(index, initValues) =>
        let onSubmit = (advOpened, form) => onEdit(index, advOpened, form);
-       <EditionView batch initValues onSubmit index loading=false />;
-     | (SendStep, _) =>
+       <EditionView  batch initValues onSubmit index loading=false />;
+     | SendStep =>
        let onSubmit = batch != [] ? onAddToBatch : onSubmitAll;
        let onAddToBatch = batch != [] ? None : Some(onAddToBatch);
        <Form.View
@@ -528,7 +530,7 @@ let make = (~closeAction) => {
          mode={Form.View.Creation(onAddToBatch, onSubmit)}
          loading=loadingSimulate
        />;
-     | (PasswordStep(transfer, dryRun), _) =>
+     | PasswordStep(transfer, dryRun) =>
        let (source, destinations) = sourceDestination(transfer);
        <SignOperationView
          title=I18n.title#confirmation
