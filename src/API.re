@@ -600,8 +600,8 @@ module Accounts = (Caller: CallerAPI) => {
     ->TezosSDK.listKnownAddresses
     ->Future.mapOk(r =>
         r->Belt.Array.keepMap(
-          (TezosSDK.OutputAddress.{alias, pkh, pk_known}) =>
-          pk_known ? Some((alias, pkh)) : None
+          (TezosSDK.OutputAddress.{alias, pkh, sk_known}) =>
+          sk_known ? Some((alias, pkh)) : None
         )
       );
 
