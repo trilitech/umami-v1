@@ -43,6 +43,11 @@ let styles =
         style(~position=`absolute, ~left=20.->dp, ~top=20.->dp, ()),
       "headerRight":
         style(~position=`absolute, ~right=20.->dp, ~top=20.->dp, ()),
+      "loadingView":
+        StyleSheet.flatten([|
+          StyleSheet.absoluteFillObject,
+          style(~justifyContent=`center, ~alignItems=`center, ()),
+        |]),
       "modal":
         style(~alignSelf=`center, ~borderRadius=4., ())
         ->unsafeAddStyle({
@@ -70,7 +75,13 @@ let styles =
 module Base = {
   [@react.component]
   let make =
-      (~children, ~headerLeft=?, ~headerRight=?, ~style as styleFromProp=?) => {
+      (
+        ~children,
+        ~headerLeft=?,
+        ~headerRight=?,
+        ~loading as (loadingState, loadingTitle)=(false, None),
+        ~style as styleFromProp=?,
+      ) => {
     let theme = ThemeContext.useTheme();
     <View
       style=Style.(
@@ -80,21 +91,47 @@ module Base = {
           styleFromProp,
         |])
       )>
+      children
+      {loadingState
+         ? <View
+             style=Style.(
+               array([|
+                 styles##loadingView,
+                 style(
+                   ~backgroundColor=theme.colors.background,
+                   ~opacity=0.87,
+                   (),
+                 ),
+               |])
+             )>
+             {loadingTitle->ReactUtils.mapOpt(loadingTitle =>
+                <Typography.Headline style=FormStyles.header>
+                  loadingTitle->React.string
+                </Typography.Headline>
+              )}
+             <ActivityIndicator
+               animating=true
+               size=ActivityIndicator_Size.large
+               color={theme.colors.iconMediumEmphasis}
+             />
+           </View>
+         : React.null}
       {headerLeft->ReactUtils.mapOpt(headerLeft =>
          <View style=styles##headerLeft> headerLeft </View>
        )}
       {headerRight->ReactUtils.mapOpt(headerRight =>
          <View style=styles##headerRight> headerRight </View>
        )}
-      children
     </View>;
   };
 };
 
 module Form = {
   [@react.component]
-  let make = (~headerLeft=?, ~headerRight=?, ~children) => {
-    <Base ?headerLeft ?headerRight style=styles##modalForm> children </Base>;
+  let make = (~headerLeft=?, ~headerRight=?, ~loading=?, ~children) => {
+    <Base ?headerLeft ?headerRight ?loading style=styles##modalForm>
+      children
+    </Base>;
   };
 };
 
