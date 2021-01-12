@@ -39,12 +39,10 @@ module DelegateActionButton = {
 
     let onPress = _ => openAction();
 
-    let onPressCancel = _ => closeAction();
-
     <>
       <Menu.Item text icon onPress ?colorStyle />
       <ModalAction visible=visibleModal onRequestClose=closeAction>
-        <DelegateView onPressCancel action />
+        <DelegateView closeAction action />
       </ModalAction>
     </>;
   };

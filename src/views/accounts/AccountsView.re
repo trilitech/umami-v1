@@ -21,14 +21,12 @@ module AddAccountButton = {
 
     let onPress = _e => openAction();
 
-    let cancel = _e => closeAction();
-
     <>
       <View style=styles##button>
         <ButtonAction onPress text=I18n.btn#add_account icon=Icons.Add.build />
       </View>
       <ModalAction visible=visibleModal onRequestClose=closeAction>
-        <AccountCreateView cancel />
+        <AccountCreateView closeAction />
       </ModalAction>
     </>;
   };

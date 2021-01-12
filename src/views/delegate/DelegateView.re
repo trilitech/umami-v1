@@ -36,7 +36,8 @@ let buildTransaction = (state: DelegateForm.state, advancedOptionOpened) => {
 
 type step =
   | SendStep
-  | PasswordStep(Protocol.delegation, Protocol.simulationResults);
+  | PasswordStep(Protocol.delegation, Protocol.simulationResults)
+  | SubmittedStep(string);
 
 module Form = {
   let build = (action: action, advancedOptionOpened, onSubmit) => {
@@ -89,7 +90,7 @@ module Form = {
     open DelegateForm;
 
     [@react.component]
-    let make = (~title, ~advancedOptionState, ~form, ~action) => {
+    let make = (~title, ~advancedOptionState, ~form, ~action, ~loading) => {
       let onSubmitDelegateForm = _ => {
         form.submit();
       };
@@ -142,6 +143,7 @@ module Form = {
               }
             }
             onPress=onSubmitDelegateForm
+            loading
           />
         </View>
       </>;
@@ -154,20 +156,21 @@ let buildSummaryContent = (dryRun: Protocol.simulationResults) => [
 ];
 
 [@react.component]
-let make = (~onPressCancel, ~action) => {
+let make = (~closeAction, ~action) => {
   let (advancedOptionOpened, _) as advancedOptionState =
     React.useState(_ => false);
+
+  let (modalStep, setModalStep) = React.useState(_ => SendStep);
 
   let (operationRequest, sendOperation) = StoreContext.Operations.useCreate();
 
   let sendOperation = (delegation, password) =>
     sendOperation(OperationApiRequest.delegate(delegation, password))
+    ->Future.tapOk(((hash, _)) => {setModalStep(_ => SubmittedStep(hash))})
     ->ignore;
 
   let (operationSimulateRequest, sendOperationSimulate) =
     StoreContext.Operations.useSimulate();
-
-  let (modalStep, setModalStep) = React.useState(_ => SendStep);
 
   React.useEffect0(() => {
     switch (action) {
@@ -198,12 +201,25 @@ let make = (~onPressCancel, ~action) => {
     | Delete(_) => I18n.title#delegate_delete
     };
 
-  let closing = ModalView.Close(_ => onPressCancel());
-  let onPressCancel = _ => onPressCancel();
+  let closing = ModalFormView.Close(closeAction);
 
-  <ModalView.Form closing>
-    {switch (modalStep, operationRequest, operationSimulateRequest) {
-     | (_, Done(Ok((hash, _)), _), _) =>
+  let back =
+    switch (modalStep, action) {
+    | (PasswordStep(_, _), Create(_))
+    | (PasswordStep(_, _), Edit(_)) =>
+      Some(() => setModalStep(_ => SendStep))
+    | (PasswordStep(_, _), Delete(_)) => Some(closeAction)
+    | _ => None
+    };
+
+  let loadingSimulate = operationSimulateRequest->ApiRequest.isLoading;
+  let loading = operationRequest->ApiRequest.isLoading;
+
+  let onPressCancel = _ => closeAction();
+
+  <ModalFormView back closing>
+    {switch (modalStep) {
+     | SubmittedStep(hash) =>
        <>
          <Typography.Headline style=FormStyles.header>
            {switch (action) {
@@ -221,36 +237,24 @@ let make = (~onPressCancel, ~action) => {
            <Buttons.FormPrimary text=I18n.btn#ok onPress=onPressCancel />
          </View>
        </>
-     | (_, Done(Error(error), _), _) =>
-       <>
-         <Typography.Body1 colorStyle=`error>
-           error->React.string
-         </Typography.Body1>
-         <View style=FormStyles.formAction>
-           <Buttons.FormPrimary text=I18n.btn#ok onPress=onPressCancel />
-         </View>
-       </>
-     | (_, _, Loading(_)) =>
-       <ModalView.LoadingView title=I18n.title#simulation />
-     | (_, Loading(_), _) =>
-       <ModalView.LoadingView title=I18n.title#submitting />
-     | (SendStep, _, _) => <Form.View title advancedOptionState form action />
-     | (PasswordStep(delegation, dryRun), _, _) =>
+     | SendStep =>
+       <Form.View
+         title
+         advancedOptionState
+         form
+         action
+         loading=loadingSimulate
+       />
+     | PasswordStep(delegation, dryRun) =>
        <SignOperationView
-         back={() =>
-           switch (action) {
-           | Create(_)
-           | Edit(_) => setModalStep(_ => SendStep)
-           | Delete(_) => onPressCancel()
-           }
-         }
          source=(delegation.source, I18n.title#delegated_account)
          destinations={`One((delegation.delegate, I18n.title#baker_account))}
          title=I18n.title#confirm_delegate
          subtitle=I18n.expl#confirm_operation
          content={buildSummaryContent(dryRun)}
          sendOperation={sendOperation(delegation)}
+         loading
        />
      }}
-  </ModalView.Form>;
+  </ModalFormView>;
 };

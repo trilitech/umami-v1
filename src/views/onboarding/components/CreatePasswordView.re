@@ -33,7 +33,7 @@ let isConfirmPassword = (values: StateLenses.state) => {
 };
 
 [@react.component]
-let make = (~mnemonic, ~onPressCancel, ~createAccountWithMnemonic) => {
+let make = (~mnemonic, ~onPressCancel, ~createAccountWithMnemonic, ~loading) => {
   let form: CreatePasswordForm.api =
     CreatePasswordForm.use(
       ~schema={
@@ -82,8 +82,12 @@ let make = (~mnemonic, ~onPressCancel, ~createAccountWithMnemonic) => {
       secureTextEntry=true
     />
     <View style=FormStyles.formAction>
-      <Buttons.Form text=I18n.btn#cancel onPress=onPressCancel />
-      <Buttons.Form text=I18n.btn#finish onPress=onSubmit />
+      <Buttons.Form
+        text=I18n.btn#cancel
+        onPress=onPressCancel
+        disabled=loading
+      />
+      <Buttons.Form text=I18n.btn#finish onPress=onSubmit loading />
     </View>
   </>;
 };

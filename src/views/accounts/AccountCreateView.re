@@ -1,10 +1,8 @@
-open ReactNative;
-
 module StateLenses = [%lenses type state = {name: string}];
 module AccountCreateForm = ReForm.Make(StateLenses);
 
 [@react.component]
-let make = (~cancel) => {
+let make = (~closeAction) => {
   let (accountRequest, createAccount) = StoreContext.Accounts.useCreate();
   let addLog = LogsContext.useAdd();
 
@@ -15,8 +13,8 @@ let make = (~cancel) => {
       },
       ~onSubmit=
         ({state}) => {
-          cancel();
           createAccount(state.values.name)
+          ->Future.tapOk(_ => closeAction())
           ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
               I18n.t#account_created
             )
@@ -27,32 +25,27 @@ let make = (~cancel) => {
       (),
     );
 
-  let onPressCancel = _ => cancel();
-
   let onSubmit = _ => {
     form.submit();
   };
 
-  <ModalView.Form>
-    {switch (accountRequest) {
-     | Loading(_)
-     | Done(_) => <> </>
-     | NotAsked =>
-       <>
-         <Typography.Headline style=FormStyles.header>
-           I18n.title#account_create->React.string
-         </Typography.Headline>
-         <FormGroupTextInput
-           label=I18n.label#account_create_name
-           value={form.values.name}
-           handleChange={form.handleChange(Name)}
-           error={form.getFieldError(Field(Name))}
-         />
-         <View style=FormStyles.formAction>
-           <Buttons.Form text=I18n.btn#cancel onPress=onPressCancel />
-           <Buttons.Form text=I18n.btn#create onPress=onSubmit />
-         </View>
-       </>
-     }}
-  </ModalView.Form>;
+  let loading = accountRequest->ApiRequest.isLoading;
+
+  <ModalFormView closing={ModalFormView.Close(closeAction)}>
+    <Typography.Headline style=FormStyles.header>
+      I18n.title#account_create->React.string
+    </Typography.Headline>
+    <FormGroupTextInput
+      label=I18n.label#account_create_name
+      value={form.values.name}
+      handleChange={form.handleChange(Name)}
+      error={form.getFieldError(Field(Name))}
+    />
+    <Buttons.SubmitPrimary
+      text=I18n.btn#create
+      onPress=onSubmit
+      loading
+      style=FormStyles.formSubmit
+    />
+  </ModalFormView>;
 };

@@ -12,8 +12,6 @@ module AliasDeleteButton = {
     <DeleteButton
       buttonText=I18n.btn#delete_contact
       modalTitle=I18n.title#delete_contact
-      modalTitleDone=I18n.title#delete_contact
-      modalTitleLoading=I18n.title#delete_load
       onPressConfirmDelete
       request=aliasRequest
     />;

@@ -21,14 +21,12 @@ module AddTokenButton = {
 
     let onPress = _ => openAction();
 
-    let cancel = _ => closeAction();
-
     <>
       <View style=styles##button>
         <ButtonAction onPress text=I18n.btn#add_token icon=Icons.Add.build />
       </View>
       <ModalAction visible=visibleModal onRequestClose=closeAction>
-        <TokenAddView cancel />
+        <TokenAddView closeAction />
       </ModalAction>
     </>;
   };

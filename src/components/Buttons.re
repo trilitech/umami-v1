@@ -23,6 +23,7 @@ let styles =
           ~borderRadius=4.,
           (),
         ),
+      "loader": style(~position=`absolute, ()),
     })
   );
 
@@ -31,20 +32,34 @@ module FormBase = {
   let make =
       (
         ~onPress,
-        ~disabled=?,
+        ~disabled=false,
+        ~loading=false,
         ~isPrimary=false,
         ~vStyle=?,
         ~style=?,
         ~children,
       ) => {
+    let theme = ThemeContext.useTheme();
     <View style=Style.(arrayOption([|Some(styles##button), vStyle|]))>
       <ThemedPressable
         style={Style.arrayOption([|Some(styles##pressable), style|])}
         outerStyle=styles##outer
         isPrimary
         onPress
-        ?disabled>
-        children
+        disabled={disabled || loading}>
+        {loading
+           ? <ActivityIndicator
+               animating=true
+               size={18.->Style.dp}
+               color={
+                 isPrimary
+                   ? theme.colors.primaryIconMediumEmphasis
+                   : theme.colors.iconMediumEmphasis
+               }
+               style=styles##loader
+             />
+           : React.null}
+        <View style={ReactUtils.visibleOn(!loading)}> children </View>
       </ThemedPressable>
     </View>;
   };
@@ -52,8 +67,8 @@ module FormBase = {
 
 module Form = {
   [@react.component]
-  let make = (~text, ~onPress, ~disabled=?, ~fontSize=?, ~style=?) => {
-    <FormBase onPress ?disabled ?style>
+  let make = (~text, ~onPress, ~disabled=?, ~loading=?, ~fontSize=?, ~style=?) => {
+    <FormBase onPress ?disabled ?loading ?style>
       <Typography.ButtonPrimary
         ?fontSize
         colorStyle=?{
@@ -69,8 +84,8 @@ module Form = {
 
 module FormPrimary = {
   [@react.component]
-  let make = (~text, ~onPress, ~disabled=?, ~fontSize=?, ~style=?) => {
-    <FormBase onPress ?disabled ?style>
+  let make = (~text, ~onPress, ~disabled=?, ~loading=?, ~fontSize=?, ~style=?) => {
+    <FormBase onPress ?disabled ?loading ?style>
       <Typography.ButtonPrimary
         ?fontSize
         colorStyle=?{
@@ -86,8 +101,8 @@ module FormPrimary = {
 
 module FormSecondary = {
   [@react.component]
-  let make = (~text, ~onPress, ~disabled=?, ~fontSize=?, ~style=?) => {
-    <FormBase onPress ?disabled ?style>
+  let make = (~text, ~onPress, ~disabled=?, ~loading=?, ~fontSize=?, ~style=?) => {
+    <FormBase onPress ?disabled ?loading ?style>
       <Typography.ButtonTernary
         ?fontSize
         colorStyle=?{
@@ -104,13 +119,21 @@ module FormSecondary = {
 module SubmitPrimary = {
   [@react.component]
   let make =
-      (~text, ~onPress, ~disabled=false, ~fontSize=?, ~style as argStyle=?) => {
+      (
+        ~text,
+        ~onPress,
+        ~disabled=false,
+        ~loading=?,
+        ~fontSize=?,
+        ~style as argStyle=?,
+      ) => {
     let theme = ThemeContext.useTheme();
 
     <FormBase
       onPress
       isPrimary=true
       disabled
+      ?loading
       vStyle=Style.(
         arrayOption([|
           argStyle,
@@ -132,13 +155,21 @@ module SubmitPrimary = {
 module SubmitSecondary = {
   [@react.component]
   let make =
-      (~text, ~onPress, ~disabled=false, ~fontSize=?, ~style as styleArg=?) => {
+      (
+        ~text,
+        ~onPress,
+        ~disabled=false,
+        ~loading=?,
+        ~fontSize=?,
+        ~style as styleArg=?,
+      ) => {
     let theme = ThemeContext.useTheme();
 
     <FormBase
       onPress
       isPrimary=false
       disabled
+      ?loading
       vStyle=Style.(
         arrayOption([|
           styleArg,

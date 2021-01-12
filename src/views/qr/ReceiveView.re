@@ -30,31 +30,29 @@ let make = (~account: Account.t, ~onPressCancel) => {
   let theme = ThemeContext.useTheme();
   let addToast = LogsContext.useToast();
 
-  <ModalView.Form>
-    <>
-      <Typography.Headline style=FormStyles.header>
-        account.alias->React.string
-      </Typography.Headline>
-      <View style=styles##qrContainer>
-        <View style=styles##qr>
-          <QRCode value={account.address} size=200. />
-        </View>
+  <ModalTemplate.Form>
+    <Typography.Headline style=FormStyles.header>
+      account.alias->React.string
+    </Typography.Headline>
+    <View style=styles##qrContainer>
+      <View style=styles##qr>
+        <QRCode value={account.address} size=200. />
       </View>
-      <View style=styles##addressContainer>
-        <Typography.Address fontSize=16. style=styles##address>
-          account.address->React.string
-        </Typography.Address>
-        <ClipboardButton
-          copied=I18n.log#address
-          addToast
-          data={account.address}
-        />
-      </View>
-      <View style=styles##closeAction>
-        <TouchableOpacity onPress=onPressCancel>
-          <Icons.Close size=36. color={theme.colors.iconMediumEmphasis} />
-        </TouchableOpacity>
-      </View>
-    </>
-  </ModalView.Form>;
+    </View>
+    <View style=styles##addressContainer>
+      <Typography.Address fontSize=16. style=styles##address>
+        account.address->React.string
+      </Typography.Address>
+      <ClipboardButton
+        copied=I18n.log#address
+        addToast
+        data={account.address}
+      />
+    </View>
+    <View style=styles##closeAction>
+      <TouchableOpacity onPress=onPressCancel>
+        <Icons.Close size=36. color={theme.colors.iconMediumEmphasis} />
+      </TouchableOpacity>
+    </View>
+  </ModalTemplate.Form>;
 };

@@ -21,7 +21,7 @@ let make = (~style=?) => {
       </Typography.ButtonPrimary>
     </TouchableOpacity>
     <ModalAction visible=visibleModal onRequestClose=closeAction>
-      <LogsView />
+      <LogsView closeAction />
     </ModalAction>
   </>;
 };
