@@ -38,16 +38,11 @@ let make = () => {
   let accountsRequest = StoreContext.Accounts.useRequest();
 
   let token = StoreContext.SelectedToken.useGet();
-  let updateToken = StoreContext.SelectedToken.useSet();
 
   <Page>
     {accountsRequest->ApiRequest.mapOrLoad(_ => {
        <>
-         <TokenSelector
-           selectedToken={token->Belt.Option.map(token => token.address)}
-           setSelectedToken=updateToken
-         />
-         <BalanceTotal ?token />
+         <BalanceTotal.WithTokenSelector ?token />
          <AddAccountButton />
          {accounts
           ->Belt.Map.String.valuesToArray
