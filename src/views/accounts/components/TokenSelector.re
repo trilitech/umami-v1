@@ -7,7 +7,7 @@ let styles =
         style(
           ~zIndex=4,
           ~alignSelf=`flexStart,
-          ~minWidth=320.->dp,
+          ~maxWidth=320.->dp,
           ~marginTop=0.->dp,
           ~marginBottom=30.->dp,
           (),
@@ -20,6 +20,7 @@ let styles =
           ~flex=1.,
           (),
         ),
+      "selectorDropdown": style(~minWidth=275.->dp, ~left=auto, ()),
       "spacer": style(~height=6.->dp, ()),
     })
   );
@@ -79,7 +80,9 @@ module TokenItem = {
 let renderButton = (selectedToken: option(Token.t)) =>
   <View style=styles##selectorContent>
     {selectedToken->Belt.Option.mapWithDefault(<LoadingView />, token =>
-       <TokenItem token />
+       <View style=TokenItem.styles##inner>
+         <Typography.Body1> token.symbol->React.string </Typography.Body1>
+       </View>
      )}
   </View>;
 
@@ -101,6 +104,7 @@ let make = (~selectedToken, ~setSelectedToken, ~style as styleProp=?) => {
   items->Belt.Array.size > 0
     ? <Selector
         style=Style.(arrayOption([|Some(styles##selector), styleProp|]))
+        dropdownStyle=styles##selectorDropdown
         items
         getItemValue={token => token.address}
         renderButton

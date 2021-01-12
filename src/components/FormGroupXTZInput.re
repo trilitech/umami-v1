@@ -49,7 +49,7 @@ let make =
     value
     error
     onBlur={_ => formatOnBlur(token, setValue)}
-    decoration={decoration->Belt.Option.getWithDefault(xtzDecoration)}
+    ?decoration
     handleChange={text => {
       handleChange(text);
       setValue(_ => text);

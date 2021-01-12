@@ -4,7 +4,10 @@ module FormGroupAmountWithTokenSelector = {
   let styles =
     Style.(
       StyleSheet.create({
-        "tokenSelector": style(~marginBottom=10.->dp, ~alignSelf=`auto, ()),
+        "container": style(~flexDirection=`row, ~zIndex=12, ()),
+        "amountGroup": style(~flexGrow=1., ~zIndex=2, ()),
+        "tokenGroup": style(~marginLeft=14.->dp, ~zIndex=1, ()),
+        "tokenSelector": style(~width=100.->dp, ~marginBottom=0.->dp, ()),
       })
     );
   let tokenDecoration = (~symbol, ~style) =>
@@ -17,7 +20,6 @@ module FormGroupAmountWithTokenSelector = {
         ~value,
         ~handleChange,
         ~error,
-        ~style: option(ReactNative.Style.t)=?,
         ~selectedToken,
         ~setSelectedToken,
         ~token: option(Token.t)=?,
@@ -25,25 +27,33 @@ module FormGroupAmountWithTokenSelector = {
         ~setValue=?,
       ) => {
     let decoration =
-      token->Belt.Option.map(token => tokenDecoration(~symbol=token.symbol));
-    <>
-      {<TokenSelector
-         selectedToken
-         setSelectedToken
-         style=styles##tokenSelector
-       />
-       ->ReactUtils.onlyWhen(showSelector)}
+      switch (showSelector, token) {
+      | (true, _) => None
+      | (false, None) => Some(FormGroupXTZInput.xtzDecoration)
+      | (false, Some(token)) => Some(tokenDecoration(~symbol=token.symbol))
+      };
+
+    <View style=styles##container>
       <FormGroupXTZInput
+        style=styles##amountGroup
         label
         value
         ?setValue
         handleChange
         error
         ?decoration
-        ?style
         ?token
       />
-    </>;
+      {<FormGroup style=styles##tokenGroup>
+         <FormLabel label="Token" style=FormGroupTextInput.styles##label />
+         <TokenSelector
+           selectedToken
+           setSelectedToken
+           style=styles##tokenSelector
+         />
+       </FormGroup>
+       ->ReactUtils.onlyWhen(showSelector)}
+    </View>;
   };
 };
 
