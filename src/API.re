@@ -611,8 +611,8 @@ module Accounts = (Caller: CallerAPI) => {
       (),
     );
 
-  let add = (name, address) =>
-    Caller.call([|"add", "address", name, address, "-f"|], ());
+  let add = (settings, alias, pkh) =>
+    settings->AppSettings.sdk->TezosSDK.addAddress(alias, pkh);
 
   let import = (key, name) =>
     Caller.call(
@@ -783,18 +783,8 @@ module Aliases = (Caller: CallerAPI) => {
     ->Future.mapOk(Belt.Map.String.fromArray)
     ->Future.mapOk(addresses => addresses->Belt.Map.String.get(alias));
 
-  let add = (~settings, alias, address) =>
-    Caller.call(
-      [|
-        "-E",
-        settings->AppSettings.endpoint,
-        "add",
-        "address",
-        alias,
-        address,
-      |],
-      (),
-    );
+  let add = (~settings, alias, pkh) =>
+    settings->AppSettings.sdk->TezosSDK.addAddress(alias, pkh);
 
   let delete = (~settings, name) =>
     Caller.call(

@@ -40,6 +40,14 @@ module OutputAddress = {
   };
 };
 
+module InputAddress = {
+  type t = {
+    alias: string,
+    pkh: string,
+    force: bool,
+  };
+};
+
 type result('a) = {
   kind: [ | `ok | `error],
   payload: 'a,
@@ -70,4 +78,15 @@ external listKnownAddresses:
 let listKnownAddresses = sdk =>
   sdk
   |> Js.Promise.then_(sdk => listKnownAddresses(sdk.lib, sdk.cctxt, 0))
+  |> fromPromise;
+
+[@bs.send]
+external addAddress:
+  (lib, cctxt, InputAddress.t) => Js.Promise.t(result(unit)) =
+  "add_address";
+let addAddress = (sdk, alias, pkh) =>
+  sdk
+  |> Js.Promise.then_(sdk =>
+       addAddress(sdk.lib, sdk.cctxt, {alias, pkh, force: true})
+     )
   |> fromPromise;
