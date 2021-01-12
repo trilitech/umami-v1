@@ -22,12 +22,14 @@ let sdkInit: sdkInit = [%raw "initjs"];
 [@bs.send] external buildCctxt: (lib, string, string) => cctxt = "buildCctxt";
 [@bs.send] external init: sdkInit => Js.Promise.t(lib) = "init";
 
+let libPromise = init(sdkInit);
+
 let init: (string, string) => Js.Promise.t(t) =
   (baseDir, endpoint) =>
-    init(sdkInit)
-    |> Js.Promise.then_(lib =>
+    libPromise
+    |> Js.Promise.then_(lib => {
          Js.Promise.resolve({lib, cctxt: buildCctxt(lib, baseDir, endpoint)})
-       );
+       });
 
 module OutputAddress = {
   type t = {
