@@ -24,10 +24,6 @@ let styles =
 let make = () => {
   let theme = ThemeContext.useTheme();
 
-  let account = StoreContext.SelectedAccount.useGet();
-
-  let disabled = account->Belt.Option.isNone;
-
   let (visibleModal, openAction, closeAction) =
     ModalAction.useModalActionState();
 
@@ -41,27 +37,13 @@ let make = () => {
           style(~backgroundColor=theme.colors.primaryButtonBackground, ()),
         |])
       )>
-      <ThemedPressable
-        isPrimary=true style=styles##iconContainer onPress disabled>
-        <Icons.Send
-          size=24.
-          color={
-            !disabled
-              ? theme.colors.primaryIconHighEmphasis
-              : theme.colors.primaryIconDisabled
-          }
-        />
+      <ThemedPressable isPrimary=true style=styles##iconContainer onPress>
+        <Icons.Send size=24. color={theme.colors.primaryIconHighEmphasis} />
         <Typography.ButtonSecondary
           style=Style.(
             array([|
               styles##textButton,
-              style(
-                ~color=
-                  !disabled
-                    ? theme.colors.primaryTextHighEmphasis
-                    : theme.colors.primaryTextDisabled,
-                (),
-              ),
+              style(~color=theme.colors.primaryTextHighEmphasis, ()),
             |])
           )>
           I18n.btn#send->React.string

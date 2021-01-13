@@ -10,6 +10,7 @@ let styles =
           ~height=60.->dp,
           ~alignItems=`center,
           ~paddingRight=40.->dp,
+          ~paddingLeft=NavBar.width->dp,
           (),
         ),
       "nameLogo": style(~flexDirection=`row, ~alignItems=`center, ()),

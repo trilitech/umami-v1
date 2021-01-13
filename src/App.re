@@ -3,8 +3,8 @@ open ReactNative;
 let styles =
   Style.(
     StyleSheet.create({
-      "layout": style(~flex=1., ~flexDirection=`row, ()),
-      "main": style(~flex=1., ()),
+      "layout": style(~flex=1., ~flexDirection=`column, ()),
+      "main": style(~flex=1., ~flexDirection=`row, ()),
       "content": style(~flex=1., ()),
     })
   );
@@ -14,6 +14,16 @@ module AppView = {
   let make = () => {
     let url = ReasonReactRouter.useUrl();
     let route = Routes.match(url);
+
+    let accounts = StoreContext.Accounts.useGetAll();
+    let accountsRequest = StoreContext.Accounts.useRequest();
+
+    let displayOnboarding =
+      switch (accountsRequest) {
+      | Done(_)
+      | NotAsked when accounts->Belt.Map.String.size <= 0 => true
+      | _ => false
+      };
 
     let theme = ThemeContext.useTheme();
 
@@ -25,24 +35,28 @@ module AppView = {
             style(~backgroundColor=theme.colors.background, ()),
           |])
         )>
-        <NavBar route />
+        <Header />
         <View style=styles##main>
-          <Header />
+          {displayOnboarding ? React.null : <NavBar route />}
           <View style=styles##content>
-            {switch (route) {
-             | Accounts => <AccountsView />
-             | Operations => <OperationsView />
-             | AddressBook => <AddressBookView />
-             | Delegations => <DelegationsView />
-             | Tokens => <TokensView />
-             | Debug => <DebugView />
-             | NotFound =>
-               <View>
-                 <Typography.Body1>
-                   I18n.t#error404->React.string
-                 </Typography.Body1>
-               </View>
-             }}
+            {displayOnboarding
+               ? <OnboardingView />
+               : (
+                 switch (route) {
+                 | Accounts => <AccountsView />
+                 | Operations => <OperationsView />
+                 | AddressBook => <AddressBookView />
+                 | Delegations => <DelegationsView />
+                 | Tokens => <TokensView />
+                 | Debug => <DebugView />
+                 | NotFound =>
+                   <View>
+                     <Typography.Body1>
+                       I18n.t#error404->React.string
+                     </Typography.Body1>
+                   </View>
+                 }
+               )}
           </View>
         </View>
       </View>
