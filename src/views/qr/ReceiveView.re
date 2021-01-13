@@ -27,10 +27,10 @@ let styles =
 
 [@react.component]
 let make = (~account: Account.t, ~onPressCancel) => {
-  let theme = ThemeContext.useTheme();
   let addToast = LogsContext.useToast();
 
-  <ModalTemplate.Form>
+  <ModalTemplate.Form
+    headerRight={<ModalTemplate.HeaderButtons.Close onPress=onPressCancel />}>
     <Typography.Headline style=FormStyles.header>
       account.alias->React.string
     </Typography.Headline>
@@ -48,11 +48,6 @@ let make = (~account: Account.t, ~onPressCancel) => {
         addToast
         data={account.address}
       />
-    </View>
-    <View style=styles##closeAction>
-      <TouchableOpacity onPress=onPressCancel>
-        <Icons.Close size=36. color={theme.colors.iconMediumEmphasis} />
-      </TouchableOpacity>
     </View>
   </ModalTemplate.Form>;
 };
