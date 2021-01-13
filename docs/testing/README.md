@@ -14,5 +14,7 @@
 
 **Tag**: a label (i.e. means to identify) a specific commit (or a build from a commit)
 
+**Test (Run)**: to evaluate a Candidate, resulting in a Test Result
+
 **Version**: either a tag, a candidate or a release, identifiable by a tag (or version number)
 
