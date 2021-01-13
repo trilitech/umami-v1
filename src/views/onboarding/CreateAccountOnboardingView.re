@@ -16,7 +16,7 @@ let styles =
   );
 
 [@react.component]
-let make = (~cancel) => {
+let make = (~closeAction) => {
   let (formStep, setFormStep) = React.useState(_ => Step1);
 
   let (accountWithMnemonicRequest, createAccountWithMnemonic) =
@@ -26,7 +26,7 @@ let make = (~cancel) => {
 
   let createAccountWithMnemonic = p =>
     createAccountWithMnemonic(p)
-    ->Future.tapOk(_ => {cancel()})
+    ->Future.tapOk(_ => {closeAction()})
     ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
         I18n.t#account_created
       )
@@ -37,8 +37,6 @@ let make = (~cancel) => {
   // other value later, it's unecessary to be used
   let mnemonic =
     React.useRef(Bip39.generate(256)->Js.String2.split(" ")).current;
-
-  let onPressCancel = _ => cancel();
 
   let loading = accountWithMnemonicRequest->ApiRequest.isLoading;
 
@@ -60,9 +58,9 @@ let make = (~cancel) => {
            I18n.expl#account_create_record_recovery->React.string
          </Typography.Body2>
          <MnemonicListView mnemonic />
-         <View style=FormStyles.formAction>
-           <Buttons.Form text=I18n.btn#cancel onPress=onPressCancel />
-           <Buttons.Form
+         <View style=FormStyles.formActionSpaceBetween>
+           <Buttons.Form text=I18n.btn#back onPress={_ => closeAction()} />
+           <Buttons.SubmitPrimary
              text=I18n.btn#create_account_record_ok
              onPress={_ => setFormStep(_ => Step2)}
            />
@@ -82,7 +80,7 @@ let make = (~cancel) => {
          </Typography.Body2>
          <VerifyMnemonicView
            mnemonic
-           onPressCancel
+           onPressCancel={_ => setFormStep(_ => Step1)}
            goNextStep={_ => setFormStep(_ => Step3)}
          />
        </>
@@ -100,7 +98,7 @@ let make = (~cancel) => {
          </Typography.Body2>
          <CreatePasswordView
            mnemonic
-           onPressCancel
+           onPressCancel={_ => setFormStep(_ => Step2)}
            createAccountWithMnemonic
            loading
          />

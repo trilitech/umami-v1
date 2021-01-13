@@ -11,6 +11,14 @@ let formAction =
     (),
   );
 
+let formActionSpaceBetween =
+  style(
+    ~flexDirection=`row,
+    ~justifyContent=`spaceBetween,
+    ~marginTop=32.->dp,
+    (),
+  );
+
 let formSubmit = style(~marginTop=24.->dp, ());
 
 let verticalFormAction =

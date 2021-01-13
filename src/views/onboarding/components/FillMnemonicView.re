@@ -95,9 +95,11 @@ let make = (~mnemonic, ~setMnemonic, ~onPressCancel, ~goNextStep) => {
        ->React.array}
     </View>
     <View
-      style=Style.(array([|FormStyles.formAction, style(~zIndex=1, ())|]))>
-      <Buttons.Form text="CANCEL" onPress=onPressCancel />
-      <Buttons.Form text="CONTINUE" onPress=onSubmit />
+      style=Style.(
+        array([|FormStyles.formActionSpaceBetween, style(~zIndex=1, ())|])
+      )>
+      <Buttons.Form text=I18n.btn#back onPress=onPressCancel />
+      <Buttons.SubmitPrimary text=I18n.btn#continue onPress=onSubmit />
     </View>
   </>;
 };
