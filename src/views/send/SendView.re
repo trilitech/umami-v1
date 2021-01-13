@@ -369,7 +369,7 @@ module SubmittedView = {
             ~alignItems=`center,
             (),
           ),
-        "address": style(~marginHorizontal=4.->dp, ()),
+        "address": style(~marginRight=4.->dp, ()),
       })
     );
 
