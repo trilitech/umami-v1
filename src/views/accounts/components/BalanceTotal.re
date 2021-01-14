@@ -26,8 +26,7 @@ let make = (~token: option(Token.t)=?) => {
          )
          ->React.string
        | (None, Some(balanceTotal), _) =>
-         I18n.t#xtz_amount(balanceTotal->BusinessUtils.formatXTZ)
-         ->React.string
+         I18n.t#xtz_amount(balanceTotal->ProtocolXTZ.toString)->React.string
        | _ =>
          <ActivityIndicator
            animating=true

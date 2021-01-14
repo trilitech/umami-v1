@@ -1,4 +1,5 @@
-let context = React.createContext(("", (_: string) => ignore()));
+let context =
+  React.createContext((ProtocolXTZ.zero, (_: ProtocolXTZ.t) => ignore()));
 
 module Provider = {
   let make = React.Context.provider(context);

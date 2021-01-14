@@ -9,9 +9,9 @@ module OperationsAPI = API.Operations(API.TezosClient, API.TezosExplorer);
 let make = () => {
   let settings = ConfigContext.useSettings();
   let (source, setSource) = React.useState(() => "");
-  let (amount1, setAmount1) = React.useState(() => 0.0);
+  let (amount1, setAmount1) = React.useState(() => ProtocolXTZ.zero);
   let (destination1, setDestination1) = React.useState(() => "");
-  let (amount2, setAmount2) = React.useState(() => 0.0);
+  let (amount2, setAmount2) = React.useState(() => ProtocolXTZ.zero);
   let (destination2, setDestination2) = React.useState(() => "");
 
   <View style>
@@ -23,12 +23,12 @@ let make = () => {
     <TextInput
       onChangeText={text =>
         text
-        ->Js.Float.fromString
-        ->(x => Js.Float.isNaN(x) ? amount1 : x)
+        ->ProtocolXTZ.fromString
+        ->(x => x->Belt.Option.getWithDefault(amount1))
         ->(x => setAmount1(_ => x))
       }
       placeholder="amount1"
-      value={amount1 == 0.0 ? "" : Js.Float.toString(amount1)}
+      value={amount1 == ProtocolXTZ.zero ? "" : ProtocolXTZ.toString(amount1)}
     />
     <TextInput
       onChangeText={text => setDestination1(_ => text)}
@@ -38,12 +38,12 @@ let make = () => {
     <TextInput
       onChangeText={text =>
         text
-        ->Js.Float.fromString
-        ->(x => Js.Float.isNaN(x) ? amount2 : x)
+        ->ProtocolXTZ.fromString
+        ->(x => x->Belt.Option.getWithDefault(amount2))
         ->(x => setAmount2(_ => x))
       }
       placeholder="amount2"
-      value={amount2 == 0.0 ? "" : Js.Float.toString(amount2)}
+      value={amount2 == ProtocolXTZ.zero ? "" : ProtocolXTZ.toString(amount2)}
     />
     <TextInput
       onChangeText={text => setDestination2(_ => text)}

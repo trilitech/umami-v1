@@ -111,14 +111,15 @@ module Business = {
 
   module Transaction = {
     type t = {
-      amount: string,
+      amount: ProtocolXTZ.t,
       destination: string,
       parameters: option(Js.Dict.t(string)),
     };
 
     let decode = json =>
       Json.Decode.{
-        amount: json |> field("amount", string),
+        amount:
+          json |> field("amount", string) |> ProtocolXTZ.fromMutezString,
         destination: json |> field("destination", string),
         parameters: json |> optional(field("parameters", dict(string))),
       };
@@ -160,7 +161,7 @@ module Business = {
 
   type t = {
     source: string,
-    fee: string,
+    fee: ProtocolXTZ.t,
     op_id: int,
     payload,
   };
@@ -179,7 +180,7 @@ module Business = {
 
     let x = {
       source: json |> field("source", string),
-      fee: json |> field("fee", string),
+      fee: json |> field("fee", string) |> ProtocolXTZ.fromMutezString,
       op_id,
       payload:
         switch (typ) {

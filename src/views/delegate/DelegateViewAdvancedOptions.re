@@ -6,7 +6,7 @@ let styles =
   );
 
 let xtzDecoration = (~style) =>
-  <Typography.Body1 style> BusinessUtils.xtz->React.string </Typography.Body1>;
+  <Typography.Body1 style> I18n.t#xtz->React.string </Typography.Body1>;
 
 [@react.component]
 let make = (~form: DelegateForm.api) => {
@@ -24,7 +24,7 @@ let make = (~form: DelegateForm.api) => {
       let operation = Operation.Simulation.delegation(operation);
       sendOperationSimulate(operation)
       ->Future.tapOk(dryRun => {
-          form.handleChange(Fee, dryRun.fee->Js.Float.toString)
+          form.handleChange(Fee, dryRun.fee->ProtocolXTZ.toString)
         })
       ->ignore;
     };

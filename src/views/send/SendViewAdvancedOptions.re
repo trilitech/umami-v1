@@ -18,7 +18,7 @@ let styles =
   );
 
 let xtzDecoration = (~style) =>
-  <Typography.Body1 style> BusinessUtils.xtz->React.string </Typography.Body1>;
+  <Typography.Body1 style> I18n.t#xtz->React.string </Typography.Body1>;
 
 [@react.component]
 let make = (~operation, ~form: SendForm.api) => {
@@ -32,10 +32,7 @@ let make = (~operation, ~form: SendForm.api) => {
       Js.log(operation);
       sendOperationSimulate(operation)
       ->Future.tapOk(dryRun => {
-          form.handleChange(
-            Fee,
-            dryRun.fee->Js.Float.toFixedWithPrecision(~digits=6),
-          );
+          form.handleChange(Fee, dryRun.fee->ProtocolXTZ.toString);
           form.handleChange(GasLimit, dryRun.gasLimit->string_of_int);
           form.handleChange(StorageLimit, dryRun.storageLimit->string_of_int);
           form.handleChange(Counter, dryRun.count->string_of_int);

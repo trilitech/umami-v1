@@ -40,7 +40,7 @@ let make = () => {
   let (network, setNetwork) = React.useState(() => AppSettings.Testnet);
   let (account, setAccount) =
     React.useState(() => "tz1QHESqw4VduUUyGEY9gLh5STBDuTacpydB");
-  let (balance, setBalance) = React.useState(() => "");
+  let (balance, setBalance) = React.useState(() => ProtocolXTZ.zero);
   let (injection, setInjection) = React.useState(() => InjectionState.Done);
   let (accounts, setAccounts) = React.useState(() => dummy);
   let settings = ConfigContext.useSettings();

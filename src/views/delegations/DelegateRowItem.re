@@ -79,7 +79,7 @@ let make =
              | Done(Ok(delegateInfo), _)
              | Loading(Some(delegateInfo)) =>
                I18n.t#xtz_amount(
-                 delegateInfo.initialBalance->BusinessUtils.formatXTZ,
+                 delegateInfo.initialBalance->ProtocolXTZ.toString,
                )
                ->React.string
              | Done(Error(_error), _) => React.null
@@ -98,8 +98,7 @@ let make =
             {switch (balanceRequest) {
              | Done(Ok(balance), _)
              | Loading(Some(balance)) =>
-               I18n.t#xtz_amount(balance->BusinessUtils.formatXTZ)
-               ->React.string
+               I18n.t#xtz_amount(balance->ProtocolXTZ.toString)->React.string
              | Done(Error(_error), _) => React.null
              | NotAsked
              | Loading(None) =>
@@ -149,10 +148,7 @@ let make =
            | Done(Ok({lastReward: Some(lastReward)}), _)
            | Loading(Some({lastReward: Some(lastReward)})) =>
              <Typography.Body1 colorStyle=`positive>
-               {I18n.t#xtz_op_amount(
-                  "+",
-                  lastReward->BusinessUtils.formatMilliXTZ,
-                )
+               {I18n.t#xtz_op_amount("+", lastReward->ProtocolXTZ.toString)
                 ->React.string}
              </Typography.Body1>
            | Done(Ok({lastReward: None}), _)

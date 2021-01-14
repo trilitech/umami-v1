@@ -145,7 +145,16 @@ module Balance = (Caller: CallerAPI) => {
       | Some(block) => Js.Array2.concat([|"-b", block|], arguments)
       | None => arguments
       };
-    Caller.call(arguments, ());
+
+    Caller.call(arguments, ())
+    ->Future.flatMapOk(r =>
+        r
+        ->Belt.Float.fromString
+        ->Belt.Option.map(Belt.Float.toString)
+        ->Belt.Option.flatMap(ProtocolXTZ.fromString)
+        ->Lib.Result.fromOption("Cannot parse balance")
+        ->Future.value
+      );
   };
 };
 
@@ -201,9 +210,13 @@ module InjectorRaw = (Caller: CallerAPI) => {
     ->interpretResults;
   };
 
-  let parseAndReduceFloat = (f, s) => {
-    Belt.Option.mapWithDefault(s, Some(0.), float_of_string_opt)
-    ->Belt.Option.mapWithDefault(f, Belt.Float.(+)(f));
+  let parseAndReduceXTZ = (f, s) => {
+    Belt.Option.mapWithDefault(
+      s,
+      Some(ProtocolXTZ.zero),
+      ProtocolXTZ.fromString,
+    )
+    ->Belt.Option.mapWithDefault(f, ProtocolXTZ.Infix.(+)(f));
   };
 
   let parseAndReduceInt = (f, s) => {
@@ -212,14 +225,14 @@ module InjectorRaw = (Caller: CallerAPI) => {
   };
 
   type parserOptions = {
-    fees: parserInterpret(float),
+    fees: parserInterpret(ProtocolXTZ.t),
     counter: parserInterpret(int),
     gasLimit: parserInterpret(int),
     storageLimit: parserInterpret(int),
   };
 
   let singleOperationParser = {
-    fees: AllReduce(parseAndReduceFloat, 0.),
+    fees: AllReduce(parseAndReduceXTZ, ProtocolXTZ.zero),
     counter: First(int_of_string_opt),
     gasLimit: AllReduce(parseAndReduceInt, 0),
     storageLimit: AllReduce(parseAndReduceInt, 0),
@@ -234,7 +247,7 @@ module InjectorRaw = (Caller: CallerAPI) => {
     );
 
     {
-      fees: Nth(float_of_string_opt, index),
+      fees: Nth(ProtocolXTZ.fromString, index),
       counter: Nth(int_of_string_opt, index),
       gasLimit: Nth(int_of_string_opt, index),
       storageLimit: Nth(int_of_string_opt, index),
@@ -267,7 +280,7 @@ module InjectorRaw = (Caller: CallerAPI) => {
     let arguments =
       switch (tx_options.fee) {
       | Some(fee) =>
-        Js.Array2.concat(arguments, [|"--fee", fee->Js.Float.toString|])
+        Js.Array2.concat(arguments, [|"--fee", fee->ProtocolXTZ.toString|])
       | None => arguments
       };
     let arguments =
@@ -293,7 +306,7 @@ module InjectorRaw = (Caller: CallerAPI) => {
       | Some(burnCap) =>
         Js.Array2.concat(
           arguments,
-          [|"--burn-cap", burnCap->Js.Float.toString|],
+          [|"--burn-cap", burnCap->ProtocolXTZ.toString|],
         )
       | None => arguments
       };
@@ -457,10 +470,14 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
   let transfer = (tx: Protocol.transfer) => {
     let obj = Js.Dict.empty();
     Js.Dict.set(obj, "destination", Js.Json.string(tx.destination));
-    Js.Dict.set(obj, "amount", Js.Float.toString(tx.amount)->Js.Json.string);
+    Js.Dict.set(
+      obj,
+      "amount",
+      tx.amount->ProtocolXTZ.toString->Js.Json.string,
+    );
     tx.tx_options.fee
     ->Lib.Option.iter(v =>
-        Js.Dict.set(obj, "fee", Js.Float.toString(v)->Js.Json.string)
+        Js.Dict.set(obj, "fee", v->ProtocolXTZ.toString->Js.Json.string)
       );
     tx.tx_options.gasLimit
     ->Lib.Option.iter(v =>
@@ -489,7 +506,7 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
         "-w",
         "none",
         "transfer",
-        Js.Float.toString(transfer.amount),
+        transfer.amount->ProtocolXTZ.toString,
         "from",
         transaction.source,
         "to",
@@ -865,10 +882,10 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
     };
 
   type delegationInfo = {
-    initialBalance: string,
+    initialBalance: ProtocolXTZ.t,
     delegate: string,
     timestamp: Js.Date.t,
-    lastReward: option(string),
+    lastReward: option(ProtocolXTZ.t),
   };
 
   let getDelegationInfoForAccount = (network, account: string) => {
@@ -881,7 +898,7 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
           //Future.value(Error("No delegation found!"));
           Future.value(
             Ok({
-              initialBalance: "",
+              initialBalance: ProtocolXTZ.zero,
               delegate: "",
               timestamp: Js.Date.make(),
               lastReward: None,
@@ -898,7 +915,7 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
                   //Future.value(Error("Bakers can't delegate!"));
                   Future.value(
                     Ok({
-                      initialBalance: "",
+                      initialBalance: ProtocolXTZ.zero,
                       delegate: "",
                       timestamp: Js.Date.make(),
                       lastReward: None,

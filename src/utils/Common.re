@@ -1,6 +1,5 @@
 module Infix = {
   let (>>=) = Future.(>>=);
-  // list elements composition
 };
 
 include Infix;
@@ -15,6 +14,13 @@ module Lib = {
              Js.Promise.resolve();
            })
       });
+  };
+
+  module String = {
+    let countLeading = (str, c) => {
+      let rec loop = n => str->Js.String2.charAt(n) == c ? loop(n + 1) : n;
+      loop(0);
+    };
   };
 
   module Option = {
@@ -43,6 +49,12 @@ module Lib = {
       | Error(_) => ()
       };
     };
+
+    let fromOption = (v: option('a), e) =>
+      switch (v) {
+      | None => Error(e)
+      | Some(v) => Ok(v)
+      };
   };
 
   module List = {

@@ -21,13 +21,13 @@ let styles =
   );
 
 let buildTransaction = (state: DelegateForm.state, advancedOptionOpened) => {
-  let mapIfAdvanced = (v, map) =>
-    advancedOptionOpened && v->Js.String2.length > 0 ? Some(v->map) : None;
+  let mapIfAdvanced = (v, flatMap) =>
+    advancedOptionOpened && v->Js.String2.length > 0 ? v->flatMap : None;
 
   Protocol.makeDelegate(
     ~source=state.values.sender,
     ~delegate=state.values.baker,
-    ~fee=?state.values.fee->mapIfAdvanced(Js.Float.fromString),
+    ~fee=?state.values.fee->mapIfAdvanced(ProtocolXTZ.fromString),
     ~forceLowFee=?
       advancedOptionOpened && state.values.forceLowFee ? Some(true) : None,
     (),
@@ -152,7 +152,7 @@ module Form = {
 };
 
 let buildSummaryContent = (dryRun: Protocol.simulationResults) => [
-  (I18n.label#fee, I18n.t#xtz_amount(dryRun.fee->Js.Float.toString)),
+  (I18n.label#fee, I18n.t#xtz_amount(dryRun.fee->ProtocolXTZ.toString)),
 ];
 
 [@react.component]
