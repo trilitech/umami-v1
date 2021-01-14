@@ -57,7 +57,7 @@ let useLoadRegisteredTokens = (~requestState) => {
 
 let tokensStorageKey = "wallet-tokens";
 
-let useLoadTokens = (~requestState) => {
+let useLoadTokens = requestState => {
   let get = (~settings as _, ()) =>
     LocalStorage.getItem(tokensStorageKey)
     ->Js.Nullable.toOption

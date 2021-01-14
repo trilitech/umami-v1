@@ -68,14 +68,9 @@ module WithTokenSelector = {
   let make = (~token: option(Token.t)=?) => {
     let updateToken = StoreContext.SelectedToken.useSet();
 
-    let tokensRequest = StoreContext.Tokens.useLoad();
+    let tokens = StoreContext.Tokens.useGetAll();
 
-    let displaySelector =
-      tokensRequest
-      ->ApiRequest.getDoneOk
-      ->Belt.Option.mapWithDefault(false, tokens =>
-          tokens->Belt.Map.String.size > 0
-        );
+    let displaySelector = tokens->Belt.Map.String.size > 0;
 
     <Base
       ?token

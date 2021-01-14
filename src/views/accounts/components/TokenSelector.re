@@ -96,12 +96,9 @@ let make =
       ~style as styleProp=?,
       ~renderButton=renderButton,
     ) => {
-  let tokensRequest = StoreContext.Tokens.useLoad();
+  let tokens = StoreContext.Tokens.useGetAll();
 
-  let items =
-    tokensRequest
-    ->ApiRequest.getDoneOk
-    ->Belt.Option.mapWithDefault([||], Belt.Map.String.valuesToArray);
+  let items = tokens->Belt.Map.String.valuesToArray;
 
   let onValueChange = newValue => {
     setSelectedToken(newValue == xtzToken.address ? None : Some(newValue));

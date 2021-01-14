@@ -77,6 +77,7 @@ let make = (~children) => {
 
   AccountApiRequest.useLoad(accountsRequestState)->ignore;
   AliasApiRequest.useLoad(aliasesRequestState)->ignore;
+  TokensApiRequest.useLoadTokens(tokensRequestState)->ignore;
 
   // Select a default account if no one selected
   React.useEffect2(
@@ -384,11 +385,6 @@ module Tokens = {
   let useRequest = () => {
     let (tokensRequest, _) = useRequestState();
     tokensRequest;
-  };
-
-  let useLoad = () => {
-    let requestState = useRequestState();
-    TokensApiRequest.useLoadTokens(~requestState);
   };
 
   let useGetAll = () => {

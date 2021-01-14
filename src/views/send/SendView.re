@@ -26,14 +26,9 @@ module FormGroupAmountWithTokenSelector = {
         ~showSelector,
         ~setValue=?,
       ) => {
-    let tokensRequest = StoreContext.Tokens.useLoad();
+    let tokens = StoreContext.Tokens.useGetAll();
 
-    let displaySelector =
-      switch (showSelector, tokensRequest->ApiRequest.getDoneOk) {
-      | (false, _) => false
-      | (true, Some(tokens)) when tokens->Belt.Map.String.size == 0 => false
-      | (true, _) => true
-      };
+    let displaySelector = showSelector && tokens->Belt.Map.String.size > 0;
 
     let decoration =
       switch (displaySelector, token) {

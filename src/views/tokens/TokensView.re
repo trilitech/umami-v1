@@ -37,7 +37,7 @@ let styles =
 
 [@react.component]
 let make = () => {
-  let tokensRequest = StoreContext.Tokens.useLoad();
+  let tokensRequest = StoreContext.Tokens.useRequest();
 
   <Page>
     <AddTokenButton />
