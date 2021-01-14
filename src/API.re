@@ -134,7 +134,16 @@ module Balance = (Caller: CallerAPI) => {
       | Some(block) => Js.Array2.concat([|"-b", block|], arguments)
       | None => arguments
       };
-    Caller.call(arguments, ());
+
+    Caller.call(arguments, ())
+    ->Future.flatMapOk(r =>
+        r
+        ->Belt.Float.fromString
+        ->Belt.Option.map(Belt.Float.toString)
+        ->Belt.Option.flatMap(ProtocolXTZ.fromString)
+        ->Lib.Result.fromOption("Cannot parse balance")
+        ->Future.value
+      );
   };
 };
 
@@ -872,10 +881,10 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
     };
 
   type delegationInfo = {
-    initialBalance: string,
+    initialBalance: ProtocolXTZ.t,
     delegate: string,
     timestamp: Js.Date.t,
-    lastReward: option(string),
+    lastReward: option(ProtocolXTZ.t),
   };
 
   let getDelegationInfoForAccount = (network, account: string) => {
@@ -888,7 +897,7 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
           //Future.value(Error("No delegation found!"));
           Future.value(
             Ok({
-              initialBalance: "",
+              initialBalance: ProtocolXTZ.zero,
               delegate: "",
               timestamp: Js.Date.make(),
               lastReward: None,
@@ -905,7 +914,7 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
                   //Future.value(Error("Bakers can't delegate!"));
                   Future.value(
                     Ok({
-                      initialBalance: "",
+                      initialBalance: ProtocolXTZ.zero,
                       delegate: "",
                       timestamp: Js.Date.make(),
                       lastReward: None,

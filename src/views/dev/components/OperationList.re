@@ -2,13 +2,6 @@ open ReactNative;
 
 let style = Style.(style(~padding=4.->dp, ()));
 
-let formated_amount = (transaction: Operation.Business.Transaction.t) =>
-  transaction.amount
-  ->Js.Float.fromString
-  ->(x => x /. 1000000.)
-  ->Js.Float.toString
-  ++ {js| ꜩ|js};
-
 module BalanceAPI = API.Balance(API.TezosClient);
 module OperationsAPI = API.Operations(API.TezosClient, API.TezosExplorer);
 
@@ -71,18 +64,19 @@ let make = () => {
                 | Transaction(transaction) =>
                   <Text>
                     (
-                      if (transaction.amount == "0") {
+                      if (transaction.amount == ProtocolXTZ.zero) {
                         "Call contract " ++ transaction.destination;
                       } else if (payload.source == transaction.destination) {
-                        transaction->formated_amount ++ " to itself";
+                        transaction.amount->ProtocolXTZ.toString
+                        ++ " to itself";
                       } else if (payload.source == account) {
                         "-"
-                        ++ transaction->formated_amount
+                        ++ transaction.amount->ProtocolXTZ.toString
                         ++ " to "
                         ++ transaction.destination;
                       } else {
                         "+"
-                        ++ transaction->formated_amount
+                        ++ transaction.amount->ProtocolXTZ.toString
                         ++ " from "
                         ++ payload.source;
                       }
@@ -116,7 +110,8 @@ let make = () => {
                   <Text> I18n.menu#operation_unknown->React.string </Text>
                 }}
                <Text>
-                 {("fee " ++ payload.fee ++ {js| μꜩ|js})->React.string}
+                 {("fee " ++ payload.fee->ProtocolXTZ.toString ++ {js| ꜩ|js})
+                  ->React.string}
                </Text>
              </View>
            }}

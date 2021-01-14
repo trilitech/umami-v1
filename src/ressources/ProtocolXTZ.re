@@ -14,7 +14,6 @@ open Infix;
 
 type t = Int64.t;
 
-let fromInt = Int64.of_int;
 let zero = Int64.zero;
 
 let mutez = Int64.of_int(1000000);
@@ -47,6 +46,9 @@ let fromString = (xtzStr): option(t) => {
   );
 };
 
+let fromMutezInt = Int64.of_int;
+let fromMutezString = Int64.of_string;
+
 let toString = (xtz: t) => {
   open Int64;
   let integer = to_string(xtz / mutez);
@@ -60,3 +62,5 @@ let toString = (xtz: t) => {
   let floatingStr = leading0 ++ floatingStr;
   integer ++ "." ++ floatingStr;
 };
+
+let formatString = s => s->fromString->Belt.Option.map(toString);

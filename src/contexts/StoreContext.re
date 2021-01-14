@@ -13,7 +13,7 @@ type state = {
   selectedAccountState: reactState(option(string)),
   selectedTokenState: reactState(option(string)),
   accountsRequestState: reactState(ApiRequest.t(Map.String.t(Account.t))),
-  balanceRequestsState: apiRequestsState(string),
+  balanceRequestsState: apiRequestsState(ProtocolXTZ.t),
   delegateRequestsState: apiRequestsState(option(string)),
   delegateInfoRequestsState:
     apiRequestsState(DelegateApiRequest.DelegateAPI.delegationInfo),
@@ -187,15 +187,15 @@ module Balance = {
     // check if balance requests for each accounts are done
     accountsBalanceRequests->Array.size == accounts->Map.String.size
       ? Some(
-          accountsBalanceRequests
-          ->Array.reduce(0.0, (acc, balanceRequest) => {
+          accountsBalanceRequests->Array.reduce(
+            ProtocolXTZ.zero, (acc, balanceRequest) => {
+            ProtocolXTZ.Infix.(
               acc
-              +. balanceRequest
-                 ->ApiRequest.getOkWithDefault("0.0")
-                 ->Float.fromString
-                 ->Option.getWithDefault(0.0)
-            })
-          ->Js.Float.toFixedWithPrecision(~digits=6),
+              + balanceRequest
+                ->ApiRequest.getDoneOk
+                ->Option.getWithDefault(ProtocolXTZ.zero)
+            )
+          }),
         )
       : None;
   };
@@ -259,14 +259,14 @@ module BalanceToken = {
     accountsBalanceRequests->Array.size == accounts->Map.String.size
       ? Some(
           accountsBalanceRequests
-          ->Array.reduce(0.0, (acc, balanceRequest) => {
+          ->Array.reduce(0, (acc, balanceRequest) => {
               acc
-              +. balanceRequest
-                 ->ApiRequest.getOkWithDefault("0.0")
-                 ->Float.fromString
-                 ->Option.getWithDefault(0.0)
+              + balanceRequest
+                ->ApiRequest.getDoneOk
+                ->Option.flatMap(Belt.Int.fromString)
+                ->Option.getWithDefault(0)
             })
-          ->Js.Float.toFixedWithPrecision(~digits=6),
+          ->Belt.Int.toString,
         )
       : None;
   };

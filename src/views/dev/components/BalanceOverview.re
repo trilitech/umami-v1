@@ -27,5 +27,7 @@ let make = () => {
     (network, account, injection, balance, setBalance),
   );
 
-  <Text style> {("Balance: " ++ balance)->React.string} </Text>;
+  <Text style>
+    {("Balance: " ++ balance->ProtocolXTZ.toString)->React.string}
+  </Text>;
 };

@@ -1,6 +1,5 @@
 type t;
 
-let fromInt: int => t;
 let zero: t;
 
 module Infix: {
@@ -10,5 +9,9 @@ module Infix: {
 };
 
 let fromString: string => option(t);
+let fromMutezString: string => t;
+let fromMutezInt: int => t;
 
 let toString: t => string;
+
+let formatString: string => option(string);

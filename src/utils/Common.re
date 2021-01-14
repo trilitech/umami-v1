@@ -49,6 +49,12 @@ module Lib = {
       | Error(_) => ()
       };
     };
+
+    let fromOption = (v: option('a), e) =>
+      switch (v) {
+      | None => Error(e)
+      | Some(v) => Ok(v)
+      };
   };
 
   module List = {

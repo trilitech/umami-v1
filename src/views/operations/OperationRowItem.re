@@ -65,10 +65,7 @@ let amount = (account, transaction: Operation.Business.Transaction.t) => {
 
   <CellAmount>
     <Typography.Body1 ?colorStyle>
-      {I18n.t#xtz_op_amount(
-         op,
-         transaction.amount->BusinessUtils.formatMilliXTZ,
-       )
+      {I18n.t#xtz_op_amount(op, transaction.amount->ProtocolXTZ.toString)
        ->React.string}
     </Typography.Body1>
   </CellAmount>;
@@ -94,7 +91,7 @@ let make =
              <CellAmount />
              <CellFee>
                <Typography.Body1>
-                 {business.fee->BusinessUtils.formatMilliXTZ->React.string}
+                 {business.fee->ProtocolXTZ.toString->React.string}
                </Typography.Body1>
              </CellFee>
              <CellAddress />
@@ -110,7 +107,7 @@ let make =
              {amount(account, transaction)}
              <CellFee>
                <Typography.Body1>
-                 {business.fee->BusinessUtils.formatMilliXTZ->React.string}
+                 {business.fee->ProtocolXTZ.toString->React.string}
                </Typography.Body1>
              </CellFee>
              <CellAddress>
