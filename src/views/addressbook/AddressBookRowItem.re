@@ -18,6 +18,27 @@ module AliasDeleteButton = {
   };
 };
 
+module AliasEditButton = {
+  [@react.component]
+  let make = (~account: Account.t) => {
+    let (visibleModal, openAction, closeAction) =
+      ModalAction.useModalActionState();
+
+    let onPress = _e => openAction();
+
+    <>
+      <Menu.Item
+        text=I18n.menu#addressbook_edit
+        icon=Icons.Edit.build
+        onPress
+      />
+      <ModalAction visible=visibleModal onRequestClose=closeAction>
+        <ContactFormView action={Edit(account)} closeAction />
+      </ModalAction>
+    </>;
+  };
+};
+
 let baseCellStyle = Style.(style(~flexShrink=0., ~marginRight=18.->dp, ()));
 let styles =
   Style.(
@@ -78,7 +99,7 @@ let make =
       </View>
       <View style=styles##actionMenu>
         <Menu icon=Icons.More.build size=30.>
-          <Menu.Item text=I18n.menu#addressbook_edit icon=Icons.Edit.build />
+          <AliasEditButton account />
           <AliasDeleteButton account />
         </Menu>
       </View>

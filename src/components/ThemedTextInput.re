@@ -38,6 +38,7 @@ let make =
       ~textContentType=?,
       ~secureTextEntry=?,
       ~placeholder=?,
+      ~disabled=?,
       ~style as styleFromProp: option(ReactNative.Style.t)=?,
     ) => {
   let theme = ThemeContext.useTheme();
@@ -103,5 +104,6 @@ let make =
     autoFocus=false
     ?keyboardType
     ?placeholder
+    editable=?{disabled->Belt.Option.map(disabled => !disabled)}
   />;
 };

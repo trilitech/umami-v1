@@ -477,6 +477,11 @@ module Aliases = {
     AliasApiRequest.useCreate(~sideEffect=_ => resetAliases(), ());
   };
 
+  let useUpdate = () => {
+    let resetAliases = useResetAll();
+    AliasApiRequest.useUpdate(~sideEffect=_ => resetAliases(), ());
+  };
+
   let useDelete = () => {
     let resetAliases = useResetAll();
     AliasApiRequest.useDelete(~sideEffect=_ => resetAliases(), ());

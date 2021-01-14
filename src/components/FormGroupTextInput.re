@@ -31,6 +31,7 @@ let make =
       ~textContentType=?,
       ~secureTextEntry=?,
       ~placeholder=?,
+      ~disabled=?,
       ~decoration: option((~style: Style.t) => React.element)=?,
       ~style: option(ReactNative.Style.t)=?,
     ) => {
@@ -47,6 +48,7 @@ let make =
         ?secureTextEntry
         ?keyboardType
         ?placeholder
+        ?disabled
       />
       {decoration->ReactUtils.mapOpt(deco => deco(~style=styles##decoration))}
     </View>

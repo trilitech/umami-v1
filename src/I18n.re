@@ -82,6 +82,7 @@ let title = {
   pub account_update = "Edit account";
   pub import_account = "Import account";
   pub add_contact = "Add contact";
+  pub update_contact = "Edit contact";
   pub add_token = "Register Token";
   pub account_create_password = "Set a password to secure your wallet";
   pub account_create_verify_phrase = "Verify your recovery phrase";

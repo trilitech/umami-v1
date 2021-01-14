@@ -26,7 +26,7 @@ module AddContactButton = {
         <ButtonAction onPress text=I18n.btn#add_contact icon=Icons.Add.build />
       </View>
       <ModalAction visible=visibleModal onRequestClose=closeAction>
-        <ContactAddView closeAction />
+        <ContactFormView action=Create closeAction />
       </ModalAction>
     </>;
   };
