@@ -26,8 +26,17 @@ module FormGroupAmountWithTokenSelector = {
         ~showSelector,
         ~setValue=?,
       ) => {
+    let tokensRequest = StoreContext.Tokens.useLoad();
+
+    let displaySelector =
+      switch (showSelector, tokensRequest->ApiRequest.getDoneOk) {
+      | (false, _) => false
+      | (true, Some(tokens)) when tokens->Belt.Map.String.size == 0 => false
+      | (true, _) => true
+      };
+
     let decoration =
-      switch (showSelector, token) {
+      switch (displaySelector, token) {
       | (true, _) => None
       | (false, None) => Some(FormGroupXTZInput.xtzDecoration)
       | (false, Some(token)) => Some(tokenDecoration(~symbol=token.symbol))
@@ -52,7 +61,7 @@ module FormGroupAmountWithTokenSelector = {
            style=styles##tokenSelector
          />
        </FormGroup>
-       ->ReactUtils.onlyWhen(showSelector)}
+       ->ReactUtils.onlyWhen(displaySelector)}
     </View>;
   };
 };

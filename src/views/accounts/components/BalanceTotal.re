@@ -5,6 +5,8 @@ module Base = {
     Style.(
       StyleSheet.create({
         "container": style(~marginBottom=10.->dp, ~zIndex=3, ()),
+        "total": style(~marginBottom=4.->dp, ()),
+        "balance": style(~lineHeight=22., ~height=22.->dp, ()),
       })
     );
 
@@ -19,7 +21,7 @@ module Base = {
     let theme = ThemeContext.useTheme();
 
     let balanceElement =
-      <Typography.Headline>
+      <Typography.Headline style=styles##balance>
         {switch (token, balanceTotal, balanceTokenTotal) {
          | (Some(token), _, Some(balanceTokenTotal)) =>
            I18n.t#amount(
@@ -39,7 +41,7 @@ module Base = {
       </Typography.Headline>;
 
     <View style=styles##container>
-      <Typography.Overline1>
+      <Typography.Overline1 style=styles##total>
         "TOTAL BALANCE"->React.string
       </Typography.Overline1>
       {renderBalance->Belt.Option.mapWithDefault(balanceElement, renderBalance =>
@@ -53,34 +55,46 @@ module WithTokenSelector = {
   let styles =
     Style.(
       StyleSheet.create({
-        "containerSelector":
-          style(
-            ~marginTop=2.->dp,
-            ~height=44.->dp,
-            ~flexDirection=`row,
-            ~alignItems=`center,
-            (),
-          ),
-        "tokenSelector": style(~marginLeft=12.->dp, ()),
+        "tokenSelector": style(~minWidth=380.->dp, ~marginBottom=0.->dp, ()),
       })
     );
+
+  let renderButton = (balanceElement, _) =>
+    <View style=TokenSelector.styles##selectorContent>
+      <View style=TokenSelector.TokenItem.styles##inner> balanceElement </View>
+    </View>;
 
   [@react.component]
   let make = (~token: option(Token.t)=?) => {
     let updateToken = StoreContext.SelectedToken.useSet();
 
+    let tokensRequest = StoreContext.Tokens.useLoad();
+
+    let displaySelector =
+      tokensRequest
+      ->ApiRequest.getDoneOk
+      ->Belt.Option.mapWithDefault(false, tokens =>
+          tokens->Belt.Map.String.size > 0
+        );
+
     <Base
       ?token
-      renderBalance={balanceElement => {
-        <View style=styles##containerSelector>
-          balanceElement
-          <TokenSelector
-            style=styles##tokenSelector
-            selectedToken={token->Belt.Option.map(token => token.address)}
-            setSelectedToken=updateToken
-          />
-        </View>
-      }}
+      renderBalance=?{
+        displaySelector
+          ? Some(
+              balanceElement => {
+                <TokenSelector
+                  style=styles##tokenSelector
+                  selectedToken={
+                    token->Belt.Option.map(token => token.address)
+                  }
+                  setSelectedToken=updateToken
+                  renderButton={renderButton(balanceElement)}
+                />
+              },
+            )
+          : None
+      }
     />;
   };
 };

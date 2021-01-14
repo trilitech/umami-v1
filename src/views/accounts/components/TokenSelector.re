@@ -89,7 +89,13 @@ let renderButton = (selectedToken: option(Token.t)) =>
 let renderItem = (token: Token.t) => <TokenItem token />;
 
 [@react.component]
-let make = (~selectedToken, ~setSelectedToken, ~style as styleProp=?) => {
+let make =
+    (
+      ~selectedToken,
+      ~setSelectedToken,
+      ~style as styleProp=?,
+      ~renderButton=renderButton,
+    ) => {
   let tokensRequest = StoreContext.Tokens.useLoad();
 
   let items =
