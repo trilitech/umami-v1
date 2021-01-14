@@ -15,7 +15,7 @@ let styles =
   );
 
 [@react.component]
-let make = (~cancel) => {
+let make = (~closeAction) => {
   let (formStep, setFormStep) = React.useState(_ => Step1);
 
   let (accountWithMnemonicRequest, createAccountWithMnemonic) =
@@ -25,7 +25,7 @@ let make = (~cancel) => {
 
   let createAccountWithMnemonic = p =>
     createAccountWithMnemonic(p)
-    ->Future.tapOk(_ => {cancel()})
+    ->Future.tapOk(_ => {closeAction()})
     ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
         I18n.t#account_created
       )
@@ -55,7 +55,7 @@ let make = (~cancel) => {
          <FillMnemonicView
            mnemonic
            setMnemonic
-           onPressCancel={_ => cancel()}
+           onPressCancel={_ => closeAction()}
            goNextStep={_ => setFormStep(_ => Step2)}
          />
        </>
@@ -73,7 +73,7 @@ let make = (~cancel) => {
          </Typography.Body2>
          <CreatePasswordView
            mnemonic
-           onPressCancel={_ => cancel()}
+           onPressCancel={_ => setFormStep(_ => Step1)}
            createAccountWithMnemonic
            loading
          />

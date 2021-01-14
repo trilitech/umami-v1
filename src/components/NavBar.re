@@ -26,17 +26,12 @@ module NavBarItem = {
 
     let (href, onPress) = useHrefAndOnPress(route);
 
-    let account = StoreContext.SelectedAccount.useGet();
-    let onPress = account->Belt.Option.map(_ => onPress);
-    let href = account->Belt.Option.map(_ => href);
-    let currentRoute = account->Belt.Option.map(_ => currentRoute);
-
-    let isCurrent = currentRoute == Some(route);
+    let isCurrent = currentRoute == route;
 
     <ThemedPressable
       accessibilityRole=`link
-      ?href
-      ?onPress
+      href
+      onPress
       style=styles##item
       isActive=isCurrent>
       {icon->Belt.Option.mapWithDefault(React.null, icon => {
@@ -60,14 +55,16 @@ module NavBarItem = {
   };
 };
 
+let width = 110.;
+
 let styles =
   Style.(
     StyleSheet.create({
       "container":
         style(
           ~flexDirection=`column,
-          ~width=110.->dp,
-          ~paddingTop=60.->dp,
+          ~width=width->dp,
+          //~paddingTop=60.->dp,
           (),
         ),
       "sendButton":
@@ -121,7 +118,7 @@ let make = (~route as currentRoute) => {
       title=I18n.t#navbar_tokens
       icon=Icons.Token.build
     />
-    <NavBarItem currentRoute route=Debug title="DEBUG" />
+    // <NavBarItem currentRoute route=Debug title="DEBUG" />
     <LogsButton
       style=Style.(
         array([|NavBarItem.styles##errorButton, NavBarItem.styles##item|])

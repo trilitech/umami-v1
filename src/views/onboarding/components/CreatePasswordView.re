@@ -81,13 +81,13 @@ let make = (~mnemonic, ~onPressCancel, ~createAccountWithMnemonic, ~loading) => 
       textContentType=`password
       secureTextEntry=true
     />
-    <View style=FormStyles.formAction>
+    <View style=FormStyles.formActionSpaceBetween>
       <Buttons.Form
-        text=I18n.btn#cancel
+        text=I18n.btn#back
         onPress=onPressCancel
         disabled=loading
       />
-      <Buttons.Form text=I18n.btn#finish onPress=onSubmit loading />
+      <Buttons.SubmitPrimary text=I18n.btn#finish onPress=onSubmit loading />
     </View>
   </>;
 };
