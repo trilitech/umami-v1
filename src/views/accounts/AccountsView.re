@@ -44,20 +44,22 @@ let make = () => {
        <>
          <BalanceTotal.WithTokenSelector ?token />
          <AddAccountButton />
-         {accounts
-          ->Belt.Map.String.valuesToArray
-          ->Belt.SortArray.stableSortBy((a, b) =>
-              Pervasives.compare(a.alias, b.alias)
-            )
-          ->Belt.Array.mapWithIndex((index, account) =>
-              <AccountRowItem
-                key={account.address}
-                account
-                ?token
-                zIndex={accounts->Belt.Map.String.size - index}
-              />
-            )
-          ->React.array}
+         <View>
+           {accounts
+            ->Belt.Map.String.valuesToArray
+            ->Belt.SortArray.stableSortBy((a, b) =>
+                Pervasives.compare(a.alias, b.alias)
+              )
+            ->Belt.Array.mapWithIndex((index, account) =>
+                <AccountRowItem
+                  key={account.address}
+                  account
+                  ?token
+                  zIndex={accounts->Belt.Map.String.size - index}
+                />
+              )
+            ->React.array}
+         </View>
        </>
      })}
   </Page>;
