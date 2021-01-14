@@ -322,11 +322,6 @@ module InjectorRaw = (Caller: CallerAPI) => {
   let simulate = (network, parser_options, make_arguments) =>
     Caller.call(
       make_arguments(network)->Js.Array2.concat([|"--simulation"|]),
-      ~inputs=
-        switch (LocalStorage.getItem("password")->Js.Nullable.toOption) {
-        | Some(password) => [|password|]
-        | None => [||]
-        },
       (),
     )
     ->Future.tapOk(Js.log)
@@ -663,10 +658,7 @@ module Accounts = (Caller: CallerAPI) => {
       ~inputs=[|mnemonic, "", password, password|],
       (),
     )
-    ->Future.tapOk(_ => {
-        LocalStorage.setItem("mnemonic", mnemonic);
-        LocalStorage.setItem("password", password);
-      });
+    ->Future.tapOk(_ => {LocalStorage.setItem("mnemonic", mnemonic)});
 
   let restore = (~settings, backupPhrase, name, ~derivationPath=?, ()) => {
     switch (derivationPath) {
