@@ -22,12 +22,14 @@ let sdkInit: sdkInit = [%raw "initjs"];
 [@bs.send] external buildCctxt: (lib, string, string) => cctxt = "buildCctxt";
 [@bs.send] external init: sdkInit => Js.Promise.t(lib) = "init";
 
+let libPromise = init(sdkInit);
+
 let init: (string, string) => Js.Promise.t(t) =
   (baseDir, endpoint) =>
-    init(sdkInit)
-    |> Js.Promise.then_(lib =>
+    libPromise
+    |> Js.Promise.then_(lib => {
          Js.Promise.resolve({lib, cctxt: buildCctxt(lib, baseDir, endpoint)})
-       );
+       });
 
 module OutputAddress = {
   type t = {
@@ -35,6 +37,14 @@ module OutputAddress = {
     pkh: string,
     pk_known: bool,
     sk_known: bool,
+  };
+};
+
+module InputAddress = {
+  type t = {
+    alias: string,
+    pkh: string,
+    force: bool,
   };
 };
 
@@ -68,4 +78,15 @@ external listKnownAddresses:
 let listKnownAddresses = sdk =>
   sdk
   |> Js.Promise.then_(sdk => listKnownAddresses(sdk.lib, sdk.cctxt, 0))
+  |> fromPromise;
+
+[@bs.send]
+external addAddress:
+  (lib, cctxt, InputAddress.t) => Js.Promise.t(result(unit)) =
+  "add_address";
+let addAddress = (sdk, alias, pkh) =>
+  sdk
+  |> Js.Promise.then_(sdk =>
+       addAddress(sdk.lib, sdk.cctxt, {alias, pkh, force: true})
+     )
   |> fromPromise;
