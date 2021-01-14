@@ -59,6 +59,15 @@ module type CallerAPI = {
 module TezosClient = {
   [@bs.send] external end_: Writeable.t => unit = "end";
 
+  let removeTestnetWarning = output => {
+    let warning =
+      Js.Re.fromString(
+        "[ ]*Warning:[ \n]*This is NOT the Tezos Mainnet.[ \n]*\
+       Do NOT use your fundraiser keys on this network.[ \n]*",
+      );
+    Js.String.replaceByRe(warning, "", output);
+  };
+
   let call = (command, ~inputs=?, ()) =>
     Future.make(resolve => {
       let process = ChildReprocess.spawn("tezos-client", command, ());
@@ -66,9 +75,11 @@ module TezosClient = {
       let _ =
         process
         ->child_stderr
-        ->Readable.on_data(buffer =>
-            result := Some(buffer->Node_buffer.toString->Error)
-          );
+        ->Readable.on_data(buffer => {
+            let err = Node_buffer.toString(buffer);
+            result :=
+              removeTestnetWarning(err) == "" ? None : Some(Error(err));
+          });
       let _ =
         process
         ->child_stdout
