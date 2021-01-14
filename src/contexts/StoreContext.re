@@ -1,4 +1,5 @@
 open Belt;
+
 open Common;
 
 type reactState('state) = ('state, ('state => 'state) => unit);
@@ -429,6 +430,34 @@ module Aliases = {
   let useRequest = () => {
     let (aliasesRequest, _) = useRequestState();
     aliasesRequest;
+  };
+
+  let filterAccounts = (~aliases, ~accounts) =>
+    aliases->Map.String.keep((k, _) => !accounts->Map.String.has(k));
+
+  let useRequestExceptAccounts = () => {
+    let store = useStoreContext();
+    let (aliasesRequest, _) = store.aliasesRequestState;
+    let (accountsRequest, _) = store.accountsRequestState;
+
+    switch (aliasesRequest, accountsRequest) {
+    | (ApiRequest.Done(Ok(aliases), t), Done(Ok(accounts), t')) =>
+      ApiRequest.Done(Ok(filterAccounts(~aliases, ~accounts)), min(t, t'))
+
+    | (Loading(Some(aliases)), Loading(Some(accounts))) =>
+      Loading(Some(filterAccounts(~aliases, ~accounts)))
+
+    | (Loading(Some(aliases)), Done(Ok(accounts), _))
+    | (Done(Ok(aliases), _), Loading(Some(accounts))) =>
+      Loading(Some(filterAccounts(~aliases, ~accounts)))
+    | (Done(Error(e), t), _)
+    | (_, Done(Error(e), t)) => Done(Error(e), t)
+
+    | (Loading(None), _)
+    | (_, Loading(None)) => Loading(None)
+    | (NotAsked, _)
+    | (_, NotAsked) => NotAsked
+    };
   };
 
   let useResetAll = () => {
