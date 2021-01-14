@@ -83,13 +83,7 @@ let sourceDestination = (transfer: SendForm.transaction) => {
   | ProtocolTransaction({source, transfers}) =>
     let destinations =
       transfers->Belt.List.map(t =>
-        (
-          None,
-          (
-            t.destination,
-            t.amount->Js.Float.toFixedWithPrecision(~digits=6),
-          ),
-        )
+        (None, (t.destination, t.amount->ProtocolXTZ.toString))
       );
     ((source, sourceLbl), `Many(destinations));
   | TokenTransfer(_, _, source, destination) => (
@@ -108,27 +102,27 @@ let buildSummaryContent =
   switch (transaction) {
   | ProtocolTransaction({transfers}) =>
     let amount =
-      transfers->Belt.List.reduce(0., (acc, {amount}) => acc +. amount);
+      transfers->Belt.List.reduce(ProtocolXTZ.zero, (acc, {amount}) =>
+        ProtocolXTZ.Infix.(acc + amount)
+      );
     let subtotal = (
       I18n.label#summary_subtotal,
-      I18n.t#xtz_amount(amount->Js.Float.toFixedWithPrecision(~digits=6)),
+      I18n.t#xtz_amount(amount->ProtocolXTZ.toString),
     );
-    let total = amount +. dryRun.fee;
+    let total = ProtocolXTZ.Infix.(amount + dryRun.fee);
     let total = (
       I18n.label#summary_total,
-      I18n.t#xtz_amount(total->Js.Float.toFixedWithPrecision(~digits=6)),
+      I18n.t#xtz_amount(total->ProtocolXTZ.toString),
     );
     let fee = (
       I18n.label#fee,
-      I18n.t#xtz_amount(
-        dryRun.fee->Js.Float.toFixedWithPrecision(~digits=6),
-      ),
+      I18n.t#xtz_amount(dryRun.fee->ProtocolXTZ.toString),
     );
     [subtotal, fee, total];
   | TokenTransfer(_, amount, _source, _destination) =>
     let fee = (
       I18n.label#fee,
-      I18n.t#xtz_amount(dryRun.fee->Js.Float.toString),
+      I18n.t#xtz_amount(dryRun.fee->ProtocolXTZ.toString),
     );
     let amount =
       token->Belt.Option.mapWithDefault("", (Token.{symbol}) =>
@@ -199,7 +193,7 @@ module Form = {
       | Edition(int)
       | Creation(option(unit => unit), unit => unit);
 
-    let simulateTransaction = (mode, batch, form: SendForm.api, token) => {
+    let simulatedTransaction = (mode, batch, form: SendForm.api, token) => {
       let (batch, index) =
         switch (mode) {
         | Edition(index) =>
@@ -307,7 +301,7 @@ module Form = {
           </TouchableOpacity>
           {advancedOptionOpened
              ? <SendViewAdvancedOptions
-                 operation={simulateTransaction(mode, batch, form, token)}
+                 operation={simulatedTransaction(mode, batch, form, token)}
                  form
                />
              : React.null}

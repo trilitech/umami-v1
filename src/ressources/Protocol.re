@@ -1,6 +1,6 @@
 /* 'fee' is duplicated in both option record */
 type transfer_options = {
-  fee: option(float),
+  fee: option(ProtocolXTZ.t),
   gasLimit: option(int),
   storageLimit: option(int),
   parameter: option(string),
@@ -8,9 +8,9 @@ type transfer_options = {
 };
 
 type common_options = {
-  fee: option(float),
+  fee: option(ProtocolXTZ.t),
   counter: option(int),
-  burnCap: option(float),
+  burnCap: option(ProtocolXTZ.t),
   confirmations: option(int),
   forceLowFee: option(bool),
 };
@@ -22,7 +22,7 @@ type delegation = {
 };
 
 type transfer = {
-  amount: float,
+  amount: ProtocolXTZ.t,
   destination: string,
   tx_options: transfer_options,
 };
@@ -162,7 +162,7 @@ let makeSingleTransaction =
 };
 
 type simulationResults = {
-  fee: float,
+  fee: ProtocolXTZ.t,
   count: int,
   gasLimit: int,
   storageLimit: int,

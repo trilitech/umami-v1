@@ -1,3 +1,7 @@
+type amount =
+  | XTZ(ProtocolXTZ.t)
+  | Token(int);
+
 module StateLenses = [%lenses
   type state = {
     amount: string,
@@ -30,31 +34,31 @@ let buildTransfer =
       advancedOptionOpened: bool,
       token: option(Token.t),
     ) => {
-  let mapIfAdvanced = (v, sim, map) =>
+  let mapIfAdvanced = (v, sim, flatMap) =>
     advancedOptionOpened && v->Js.String2.length > 0
-      ? sim == Some(map(v)) ? None : Some(v->map) : None;
+      ? sim == flatMap(v) ? None : v->flatMap : None;
 
   let dryRun: option(Protocol.simulationResults) = values.dryRun;
   let dryRunMap = f => dryRun->Belt.Option.map(f);
-
   let source = values.sender;
-  let amount = values.amount->Js.Float.fromString;
   let destination = values.recipient;
   let fee =
-    values.fee->mapIfAdvanced(dryRunMap(d => d.fee), Js.Float.fromString);
+    values.fee->mapIfAdvanced(dryRunMap(d => d.fee), ProtocolXTZ.fromString);
   let counter =
-    values.counter->mapIfAdvanced(dryRunMap(d => d.count), int_of_string);
+    values.counter
+    ->mapIfAdvanced(dryRunMap(d => d.count), Belt.Int.fromString);
   let gasLimit =
-    values.gasLimit->mapIfAdvanced(dryRunMap(d => d.gasLimit), int_of_string);
+    values.gasLimit
+    ->mapIfAdvanced(dryRunMap(d => d.gasLimit), Belt.Int.fromString);
   let storageLimit =
     values.storageLimit
-    ->mapIfAdvanced(dryRunMap(d => d.storageLimit), int_of_string);
+    ->mapIfAdvanced(dryRunMap(d => d.storageLimit), Belt.Int.fromString);
   let forceLowFee =
     advancedOptionOpened && values.forceLowFee ? Some(true) : None;
 
   switch (token) {
   | Some(token) =>
-    let amount = amount->int_of_float;
+    let amount = values.amount->int_of_string;
     let transfer =
       Token.makeTransfer(
         ~source,
@@ -70,6 +74,10 @@ let buildTransfer =
       );
     TokenTransfer(transfer, amount, source, destination);
   | None =>
+    let amount =
+      values.amount
+      ->ProtocolXTZ.fromString
+      ->Belt.Option.getWithDefault(ProtocolXTZ.zero);
     let t =
       Protocol.makeSingleTransaction(
         ~source,
@@ -105,7 +113,7 @@ let buildTransaction =
   switch (batch) {
   | [] => assert(false)
   | [(transfer, advOpened)] => buildTransfer(transfer, advOpened, token)
-  | [(first, _), ..._] as transfers =>
+  | [(first, _), ..._] as inputTransfers =>
     let source = first.sender;
     let forceLowFee = first.forceLowFee ? Some(true) : None;
 
@@ -114,22 +122,24 @@ let buildTransaction =
         ? Some(first.counter->int_of_string) : None;
 
     let transfers =
-      transfers->Belt.List.map(((t: StateLenses.state, advOpened)) => {
-        let mapIfAdvanced = (v, map) =>
-          advOpened && v->Js.String2.length > 0 ? Some(v->map) : None;
+      inputTransfers->Belt.List.keepMap(((t: StateLenses.state, advOpened)) => {
+        let mapIfAdvanced = (v, flatMap) =>
+          advOpened && v->Js.String2.length > 0 ? v->flatMap : None;
 
-        let amount = t.amount->Js.Float.fromString;
+        let amount = t.amount->ProtocolXTZ.fromString;
         let destination = t.recipient;
-        let gasLimit = t.gasLimit->mapIfAdvanced(int_of_string);
-        let storageLimit = t.storageLimit->mapIfAdvanced(int_of_string);
-        let fee = t.fee->mapIfAdvanced(Js.Float.fromString);
-        Protocol.makeTransfer(
-          ~amount,
-          ~destination,
-          ~fee?,
-          ~gasLimit?,
-          ~storageLimit?,
-          (),
+        let gasLimit = t.gasLimit->mapIfAdvanced(Belt.Int.fromString);
+        let storageLimit = t.storageLimit->mapIfAdvanced(Belt.Int.fromString);
+        let fee = t.fee->mapIfAdvanced(ProtocolXTZ.fromString);
+        amount->Belt.Option.map(amount =>
+          Protocol.makeTransfer(
+            ~amount,
+            ~destination,
+            ~fee?,
+            ~gasLimit?,
+            ~storageLimit?,
+            (),
+          )
         );
       });
 

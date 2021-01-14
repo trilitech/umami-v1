@@ -1,15 +1,14 @@
 type t;
-type xtz = t;
 
-let fromInt: int => xtz;
-let zero: xtz;
+let fromInt: int => t;
+let zero: t;
 
 module Infix: {
-  let (+): (xtz, xtz) => xtz;
-  let (-): (xtz, xtz) => xtz;
-  let ( * ): (xtz, xtz) => xtz;
+  let (+): (t, t) => t;
+  let (-): (t, t) => t;
+  let ( * ): (t, t) => t;
 };
 
-let fromString: string => option(xtz);
+let fromString: string => option(t);
 
-let toString: xtz => string;
+let toString: t => string;

@@ -13,7 +13,6 @@ module Infix = {
 open Infix;
 
 type t = Int64.t;
-type xtz = t;
 
 let fromInt = Int64.of_int;
 let zero = Int64.zero;
