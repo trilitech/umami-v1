@@ -321,7 +321,7 @@ module InjectorRaw = (Caller: CallerAPI) => {
 
   let simulate = (network, parser_options, make_arguments) =>
     Caller.call(
-      make_arguments(network)->Js.Array2.concat([|"-D"|]),
+      make_arguments(network)->Js.Array2.concat([|"--simulation"|]),
       ~inputs=
         switch (LocalStorage.getItem("password")->Js.Nullable.toOption) {
         | Some(password) => [|password|]
