@@ -58,6 +58,8 @@ let make = (~visible, ~onRequestClose: unit => unit=unit => unit, ~children) => 
     <DocumentContext>
       <View style=styles##modal>
         <Animated.View
+          accessibilityRole=`none
+          accessible=true
           style=Style.(
             array([|
               styles##modalOverlay,
