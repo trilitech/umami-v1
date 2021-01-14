@@ -18,6 +18,23 @@ module AccountDeleteButton = {
   };
 };
 
+module AccountEditButton = {
+  [@react.component]
+  let make = (~account: Account.t) => {
+    let (visibleModal, openAction, closeAction) =
+      ModalAction.useModalActionState();
+
+    let onPress = _e => openAction();
+
+    <>
+      <Menu.Item text="Edit account" icon=Icons.Edit.build onPress />
+      <ModalAction visible=visibleModal onRequestClose=closeAction>
+        <AccountFormView action={Edit(account)} closeAction />
+      </ModalAction>
+    </>;
+  };
+};
+
 let styles =
   Style.(
     StyleSheet.create({
@@ -59,7 +76,7 @@ let make = (~account: Account.t, ~token: option(Token.t)=?, ~zIndex) => {
      })}
     <View style=styles##actionMenu>
       <Menu icon=Icons.More.build>
-        <Menu.Item text="Edit account" icon=Icons.Edit.build />
+        <AccountEditButton account />
         <AccountDeleteButton account />
       </Menu>
     </View>

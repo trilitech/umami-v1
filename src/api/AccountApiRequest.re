@@ -25,6 +25,14 @@ let useLoad = requestState => {
 let useCreate =
   ApiRequest.useSetter(~set=AccountsAPI.create, ~kind=Logs.Account);
 
+let useUpdate =
+  ApiRequest.useSetter(
+    ~set=
+      (~settings, {alias, address}: Account.t) =>
+        AccountsAPI.add(~settings, alias, address),
+    ~kind=Logs.Account,
+  );
+
 let useDelete =
   ApiRequest.useSetter(~set=AccountsAPI.delete, ~kind=Logs.Account);
 

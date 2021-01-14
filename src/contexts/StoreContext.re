@@ -530,6 +530,11 @@ module Accounts = {
     AccountApiRequest.useCreate(~sideEffect=_ => resetAccounts(), ());
   };
 
+  let useUpdate = () => {
+    let resetAccounts = useResetAll();
+    AccountApiRequest.useUpdate(~sideEffect=_ => resetAccounts(), ());
+  };
+
   let useCreateWithMnemonics = () => {
     let resetAccounts = useResetAll();
     AccountApiRequest.useCreateWithMnemonics(
