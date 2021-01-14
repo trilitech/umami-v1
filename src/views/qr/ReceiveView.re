@@ -19,7 +19,7 @@ let styles =
           ~alignItems=`center,
           (),
         ),
-      "address": style(~marginHorizontal=4.->dp, ()),
+      "address": style(~marginRight=4.->dp, ()),
       "closeAction":
         style(~position=`absolute, ~right=20.->dp, ~top=20.->dp, ()),
     })

@@ -32,6 +32,7 @@ let styles =
         ),
       "actionDelegate": style(~marginRight=12.->dp, ()),
       "actionMenu": style(~marginRight=24.->dp, ()),
+      "button": style(~marginRight=4.->dp, ()),
     })
   );
 
@@ -47,8 +48,9 @@ let make = (~account: Account.t, ~token: option(Token.t)=?, ~zIndex) => {
         copied=I18n.log#address
         addToast
         data={account.address}
+        style=styles##button
       />
-      <QrButton account />
+      <QrButton account style=styles##button />
     </View>
     {delegateRequest->ApiRequest.mapOkWithDefault(React.null, delegate => {
        <View style=styles##actionDelegate>

@@ -38,7 +38,6 @@ module Item = {
 let styles =
   Style.(
     StyleSheet.create({
-      "button": style(~alignItems=`center, ~justifyContent=`center, ()),
       "dropdownmenu":
         style(
           ~position=`absolute,
@@ -50,8 +49,6 @@ let styles =
         ),
     })
   );
-
-let iconSizeRatio = 4. /. 7.;
 
 [@react.component]
 let make = (~icon: Icons.builder, ~children, ~size=42., ~style as styleArg=?) => {
@@ -65,8 +62,6 @@ let make = (~icon: Icons.builder, ~children, ~size=42., ~style as styleArg=?) =>
     React.useCallback1(_pressEvent => setIsOpen(_ => false), [|setIsOpen|]),
   );
 
-  let theme = ThemeContext.useTheme();
-
   <View
     style=Style.(
       arrayOption([|
@@ -74,27 +69,13 @@ let make = (~icon: Icons.builder, ~children, ~size=42., ~style as styleArg=?) =>
         styleArg,
       |])
     )>
-    <ThemedPressable
+    <IconButton
       pressableRef={pressableRef->Ref.value}
+      isActive=isOpen
+      icon
+      size
       onPress={_ => setIsOpen(isOpen => !isOpen)}
-      style=Style.(
-        array([|
-          styles##button,
-          style(
-            ~width=size->dp,
-            ~height=size->dp,
-            ~borderRadius=size /. 2.,
-            (),
-          ),
-        |])
-      )
-      isActive=isOpen>
-      {icon(
-         ~style=?None,
-         ~size=Js.Math.ceil_float(iconSizeRatio *. size),
-         ~color=theme.colors.iconMediumEmphasis,
-       )}
-    </ThemedPressable>
+    />
     <DropdownMenu
       openingStyle=DropdownMenu.TopRight style=styles##dropdownmenu isOpen>
       children

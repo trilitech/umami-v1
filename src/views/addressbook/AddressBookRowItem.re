@@ -42,6 +42,7 @@ let styles =
         ),
       "actionButtons": style(~flexDirection=`row, ~flex=1., ()),
       "actionMenu": style(~marginRight=24.->dp, ()),
+      "button": style(~marginRight=4.->dp, ()),
     })
   );
 
@@ -71,8 +72,9 @@ let make =
           copied=I18n.log#address
           addToast
           data={account.address}
+          style=styles##button
         />
-        <QrButton account />
+        <QrButton account style=styles##button />
       </View>
       <View style=styles##actionMenu>
         <Menu icon=Icons.More.build size=30.>

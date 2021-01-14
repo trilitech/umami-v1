@@ -1,5 +1,5 @@
 [@react.component]
-let make = (~account) => {
+let make = (~account, ~style=?) => {
   let (visibleModal, openAction, closeAction) =
     ModalAction.useModalActionState();
 
@@ -8,7 +8,7 @@ let make = (~account) => {
   let onPressCancel = _ => closeAction();
 
   <>
-    <IconButton icon=Icons.Qr.build onPress />
+    <IconButton icon=Icons.Qr.build onPress ?style />
     <ModalAction visible=visibleModal onRequestClose=closeAction>
       <ReceiveView account onPressCancel />
     </ModalAction>

@@ -5,24 +5,50 @@ let styles =
     StyleSheet.create({
       "button":
         style(
-          ~width=28.->dp,
-          ~height=28.->dp,
-          ~marginRight=4.->dp,
+          //~marginRight=4.->dp,
           ~alignItems=`center,
           ~justifyContent=`center,
-          ~borderRadius=14.,
           (),
         ),
     })
   );
 
+let iconSizeRatio = 5. /. 7.;
+
 [@react.component]
-let make = (~icon: Icons.builder, ~isPrimary=?, ~onPress=?) => {
+let make =
+    (
+      ~icon: Icons.builder,
+      ~size=28.,
+      ~isPrimary=?,
+      ~onPress=?,
+      ~isActive=?,
+      ~pressableRef=?,
+      ~style as styleFromProp: option(ReactNative.Style.t)=?,
+    ) => {
   let theme = ThemeContext.useTheme();
-  <ThemedPressable ?onPress style=styles##button ?isPrimary>
+  <ThemedPressable
+    ?pressableRef
+    ?onPress
+    ?isPrimary
+    ?isActive
+    style=Style.(
+      arrayOption([|
+        Some(styles##button),
+        Some(
+          style(
+            ~width=size->dp,
+            ~height=size->dp,
+            ~borderRadius=size /. 2.,
+            (),
+          ),
+        ),
+        styleFromProp,
+      |])
+    )>
     {icon(
        ~style=?None,
-       ~size=16.,
+       ~size=Js.Math.ceil_float(iconSizeRatio *. size),
        ~color=
          isPrimary->Belt.Option.getWithDefault(false)
            ? theme.colors.primaryIconMediumEmphasis

@@ -31,16 +31,17 @@ let styles =
           ~justifyContent=`flexStart,
           (),
         ),
+      "button": style(~marginRight=4.->dp, ()),
     })
   );
 
 module DeleteButton = {
   [@react.component]
-  let make = (~isPrimary=?, ~indice, ~handleDelete) => {
+  let make = (~isPrimary=?, ~style=?, ~indice, ~handleDelete) => {
     let onPress = _ => {
       handleDelete(indice);
     };
-    <IconButton ?isPrimary icon=Icons.Close.build onPress />;
+    <IconButton ?isPrimary ?style icon=Icons.Close.build onPress />;
   };
 };
 
@@ -108,9 +109,15 @@ let make =
                 data={log.msg}
                 copied=I18n.log#log_content
                 addToast
+                style=styles##button
               />
               ->ReactUtils.onlyWhen(log.kind == Error)}
-             <DeleteButton isPrimary=true indice handleDelete />
+             <DeleteButton
+               isPrimary=true
+               indice
+               handleDelete
+               style=styles##button
+             />
            </View>
          </View>;
        }}
