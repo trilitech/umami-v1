@@ -184,10 +184,12 @@ module InjectorRaw = (Caller: CallerAPI) => {
         Js.Re.exec_(regexp, receipt)->Belt.Option.map(Js.Re.captures),
         interp,
       ) {
-      | (Some(res), Exists(_)) => [|res[0]->Js.Nullable.toOption|]
+      | (Some(res), Exists(_)) => [|
+          res[0]->Option.flatMap(Js.Nullable.toOption),
+        |]
       | (Some(res), _) =>
         acc
-        ->Js.Array2.concat([|res[1]->Js.Nullable.toOption|])
+        ->Js.Array2.concat([|res[1]->Option.flatMap(Js.Nullable.toOption)|])
         ->parseAll(regexp)
       | (None, _) => acc
       };
@@ -196,13 +198,18 @@ module InjectorRaw = (Caller: CallerAPI) => {
         None;
       } else {
         switch (interp) {
-        | Exists(f) => results[0]->Belt.Option.flatMap(f)
-        | First(f) => results[0]->Belt.Option.flatMap(f)
+        | Exists(f) =>
+          results[0]->Option.flatMap(x => x)->Belt.Option.flatMap(f)
+        | First(f) =>
+          results[0]->Option.flatMap(x => x)->Belt.Option.flatMap(f)
         | Last(f) =>
-          results[Js.Array.length(results) - 1]->Belt.Option.flatMap(f)
+          results[Js.Array.length(results) - 1]
+          ->Option.flatMap(x => x)
+          ->Belt.Option.flatMap(f)
         | Nth(f, i) =>
           i < Js.Array.length(results)
-            ? results[i]->Belt.Option.flatMap(f) : None
+            ? results[i]->Option.flatMap(x => x)->Belt.Option.flatMap(f)
+            : None
         | AllReduce(f, init) => Some(Js.Array2.reduce(results, f, init))
         };
       };
@@ -621,8 +628,13 @@ module Accounts = (Caller: CallerAPI) => {
     ->Belt.Array.map(row => row->Js.String2.split(":"))
     ->(rows => rows->Belt.Array.keep(data => data->Belt.Array.length >= 2))
     ->Belt.Array.map(pair => {
-        [|pair[0]|]
-        ->Belt.Array.concat(pair[1]->Js.String2.trim->Js.String2.split(" ("))
+        [|pair->Array.getUnsafe(0)|]
+        ->Belt.Array.concat(
+            pair
+            ->Array.getUnsafe(1)
+            ->Js.String2.trim
+            ->Js.String2.split(" ("),
+          )
       })
     ->(rows => rows->Belt.Array.keep(data => data->Belt.Array.length > 2))
     ->Belt.Array.map(data => (data[0], data[1]));
@@ -691,7 +703,9 @@ module Accounts = (Caller: CallerAPI) => {
         (),
       )
       ->Future.tapOk(Js.log)
-      ->Future.mapOk(keys => (keys |> Js.String.split("\n"))[2])
+      ->Future.mapOk(keys =>
+          (keys |> Js.String.split("\n"))->Array.getUnsafe(2)
+        )
       ->Future.tapOk(Js.log)
       ->Future.flatMapOk(edsk => import(edsk, name))
     };
@@ -786,7 +800,9 @@ module Aliases = (Caller: CallerAPI) => {
     |> Js.String.split("\n")
     |> Js.Array.map(row => row |> Js.String.split(": "))
     |> (pairs => pairs->Js.Array2.filter(pair => pair->Array.length == 2))
-    |> Js.Array.map(pair => (pair[0], pair[1]))
+    |> Js.Array.map(pair =>
+         (pair->Array.getUnsafe(0), pair->Array.getUnsafe(1))
+       )
     |> Js.Array.sortInPlaceWith((a, b) => {
          let (a, _) = a;
          let (b, _) = b;
@@ -805,12 +821,12 @@ module Aliases = (Caller: CallerAPI) => {
     ->Future.mapOk(addresses =>
         addresses->Belt.Array.map(((a, b)) => (b, a))
       )
-    ->Future.mapOk(Belt.Map.String.fromArray)
+    ->Future.mapOk(Map.String.fromArray)
     ->Future.mapOk(aliases => aliases->Belt.Map.String.get(address));
 
   let getAddressForAlias = (~settings, alias) =>
     get(~settings)
-    ->Future.mapOk(Belt.Map.String.fromArray)
+    ->Future.mapOk(Map.String.fromArray)
     ->Future.mapOk(addresses => addresses->Belt.Map.String.get(alias));
 
   let add = (~settings, alias, pkh) =>
@@ -840,7 +856,7 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
           || splittedContent->Belt.Array.length == 0) {
         None;
       } else {
-        Some(splittedContent[0]);
+        Some(splittedContent->Array.getUnsafe(0));
       };
     };
 
@@ -907,7 +923,8 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
             }),
           );
         } else {
-          switch (operations[0].payload) {
+          let firstOperation = operations->Array.getUnsafe(0);
+          switch (firstOperation.payload) {
           | Business(payload) =>
             switch (payload.payload) {
             | Delegation(payload) =>
@@ -925,12 +942,12 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
                   );
                 } else {
                   network
-                  ->BalanceAPI.get(account, ~block=operations[0].level, ())
+                  ->BalanceAPI.get(account, ~block=firstOperation.level, ())
                   ->Future.mapOk(balance =>
                       {
                         initialBalance: balance,
                         delegate,
-                        timestamp: operations[0].timestamp,
+                        timestamp: firstOperation.timestamp,
                         lastReward: None,
                       }
                     )
@@ -944,10 +961,10 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
                           (),
                         )
                       ->Future.mapOk(operations =>
-                          if (operations->Belt.Array.length == 0) {
+                          if (operations->Array.length == 0) {
                             info;
                           } else {
-                            switch (operations[0].payload) {
+                            switch (firstOperation.payload) {
                             | Business(payload) =>
                               switch (payload.payload) {
                               | Transaction(payload) => {
