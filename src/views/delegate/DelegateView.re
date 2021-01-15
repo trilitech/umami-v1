@@ -219,24 +219,8 @@ let make = (~closeAction, ~action) => {
 
   <ModalFormView back closing>
     {switch (modalStep) {
-     | SubmittedStep(hash) =>
-       <>
-         <Typography.Headline style=FormStyles.header>
-           {switch (action) {
-            | Create(_) => I18n.title#delegation_sent
-            | Edit(_) => I18n.title#baker_updated
-            | Delete(_) => I18n.title#delegation_deleted
-            }}
-           ->React.string
-         </Typography.Headline>
-         <Typography.Overline2>
-           I18n.t#operation_hash->React.string
-         </Typography.Overline2>
-         <Typography.Body1> hash->React.string </Typography.Body1>
-         <View style=FormStyles.formAction>
-           <Buttons.FormPrimary text=I18n.btn#ok onPress=onPressCancel />
-         </View>
-       </>
+     | SubmittedStep(hash) => <SubmittedView hash onPressCancel />
+
      | SendStep =>
        <Form.View
          title
