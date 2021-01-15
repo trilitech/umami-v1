@@ -33,6 +33,7 @@ let btn = {
   pub send_cancel = "CANCEL TRANSACTION";
   pub delegation_submit = "CONFIRM DELEGATION";
   pub delegated = "DELEGATED";
+  pub delete_token = "Delete token";
   pub delete_account = "Delete account"
 };
 
@@ -102,6 +103,8 @@ let title = {
   pub delegation_deleted = "Delegation deleted";
   pub delete_contact = "Delete contact?";
   pub deleted_contact = "Contact deleted";
+  pub delete_token = "Delete token";
+  pub deleted_token = "Token deleted";
   pub confirm_cancel = "Are you sure you want to cancel?";
   pub send = "Send";
   pub confirmation = "Confirmation";

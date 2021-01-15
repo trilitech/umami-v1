@@ -73,6 +73,35 @@ let useLoadTokens = requestState => {
   ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState);
 };
 
+let useDelete = (~sideEffect=?, ()) => {
+  let set = (~settings as _, token) => {
+    let tokens =
+      LocalStorage.getItem(tokensStorageKey)
+      ->Js.Nullable.toOption
+      ->Option.mapWithDefault([||], storageString =>
+          storageString->Js.Json.parseExn->Token.Decode.array
+        );
+
+    LocalStorage.setItem(
+      tokensStorageKey,
+      tokens
+      ->Array.keep(t => t != token)
+      ->Token.Encode.array
+      ->Js.Json.stringify,
+    )
+    ->Result.Ok
+    ->Future.value;
+  };
+
+  ApiRequest.useSetter(
+    ~toast=false,
+    ~set,
+    ~kind=Logs.Tokens,
+    ~sideEffect?,
+    (),
+  );
+};
+
 let useCreate = (~sideEffect=?, ()) => {
   let set = (~settings as _, token) => {
     let tokens =

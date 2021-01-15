@@ -413,6 +413,11 @@ module Tokens = {
   let useCheck = () => {
     TokensApiRequest.useCheckTokenContract();
   };
+
+  let useDelete = () => {
+    let resetAccounts = useResetAll();
+    TokensApiRequest.useDelete(~sideEffect=_ => resetAccounts(), ());
+  };
 };
 
 module Aliases = {
