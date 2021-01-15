@@ -5,7 +5,7 @@ let make =
     ModalAction.useModalActionState();
 
   let icon = (~color as colorin=?) => {
-    let color = [color, colorin]->Common.Lib.Option.firstSome;
+    let color = [color, colorin]->UmamiCommon.Lib.Option.firstSome;
     Icons.Delete.build(~color?);
   };
 

@@ -16,8 +16,8 @@ module Content = {
     <View style=styles##element>
       {{
          content
-         ->Belt.List.toArray
-         ->Belt.Array.map(((property, value)) =>
+         ->List.toArray
+         ->Array.map(((property, value)) =>
              <View key=property style=FormStyles.amountRow>
                <Typography.Overline2>
                  property->React.string

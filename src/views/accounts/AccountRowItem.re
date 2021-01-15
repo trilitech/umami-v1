@@ -71,7 +71,7 @@ let make = (~account: Account.t, ~token: option(Token.t)=?, ~zIndex) => {
     </View>
     {delegateRequest->ApiRequest.mapOkWithDefault(React.null, delegate => {
        <View style=styles##actionDelegate>
-         <DelegateButton account disabled={delegate->Belt.Option.isSome} />
+         <DelegateButton account disabled={delegate->Option.isSome} />
        </View>
      })}
     <View style=styles##actionMenu>

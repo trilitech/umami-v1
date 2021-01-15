@@ -1,3 +1,4 @@
+open UmamiCommon;
 include ApiRequest;
 module OperationsAPI = API.Operations(API.TezosClient, API.TezosExplorer);
 
@@ -77,7 +78,7 @@ let useLoad =
   let isMounted = ReactUtils.useIsMonted();
   React.useEffect3(
     () => {
-      address->Common.Lib.Option.iter(address => {
+      address->Lib.Option.iter(address => {
         let shouldReload = ApiRequest.conditionToLoad(request, isMounted);
         if (address != "" && shouldReload) {
           getRequest(address);

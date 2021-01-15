@@ -44,12 +44,12 @@ let make = () => {
      | Done(Ok(aliases), _)
      | Loading(Some(aliases)) =>
        aliases
-       ->Belt.Map.String.valuesToArray
-       ->Belt.Array.mapWithIndex((index, account) =>
+       ->Map.String.valuesToArray
+       ->Array.mapWithIndex((index, account) =>
            <AddressBookRowItem
              key={account.address}
              account
-             zIndex={aliases->Belt.Map.String.size - index}
+             zIndex={aliases->Map.String.size - index}
            />
          )
        ->React.array

@@ -30,8 +30,7 @@ let _ListEmptyComponent = () => <EmptyView text="No operations" />;
 
 let sort = op =>
   Operation.Read.(
-    op->Belt.SortArray.stableSortInPlaceBy(
-      ({timestamp: t1}, {timestamp: t2}) =>
+    op->SortArray.stableSortInPlaceBy(({timestamp: t1}, {timestamp: t2}) =>
       - Pervasives.compare(Js.Date.getTime(t1), Js.Date.getTime(t2))
     )
   );
@@ -42,7 +41,7 @@ let make = () => {
 
   let operationsRequest =
     StoreContext.Operations.useLoad(
-      ~address=account->Belt.Option.map(account => account.address),
+      ~address=account->Option.map(account => account.address),
       (),
     );
 

@@ -21,7 +21,7 @@ module AppView = {
     let displayOnboarding =
       switch (accountsRequest) {
       | Done(_)
-      | NotAsked when accounts->Belt.Map.String.size <= 0 => true
+      | NotAsked when accounts->Map.String.size <= 0 => true
       | _ => false
       };
 

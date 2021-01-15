@@ -21,7 +21,7 @@ describe("API tests", ({testAsync}) => {
     module UnderTest = API.Balance(Stub);
     UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
-        expect.value(result).toEqual(Belt.Result.Ok(ProtocolXTZ.zero));
+        expect.value(result).toEqual(Result.Ok(ProtocolXTZ.zero));
         callback();
       });
     ();
@@ -37,7 +37,7 @@ describe("API tests", ({testAsync}) => {
     module UnderTest = API.Balance(Stub);
     UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
-        expect.value(result).toEqual(Belt.Result.Error("stub"));
+        expect.value(result).toEqual(Result.Error("stub"));
         callback();
       });
     ();
@@ -60,7 +60,7 @@ describe("API tests", ({testAsync}) => {
     module UnderTest = API.Operations(Dummy, Stub);
     UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
-        expect.value(result).toEqual(Belt.Result.Ok(expected));
+        expect.value(result).toEqual(Result.Ok(expected));
         callback();
       });
     ();
@@ -158,7 +158,7 @@ describe("API tests", ({testAsync}) => {
     module UnderTest = API.Operations(Dummy, Stub);
     UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
-        expect.value(result).toEqual(Belt.Result.Ok(expected));
+        expect.value(result).toEqual(Result.Ok(expected));
         callback();
       });
     ();
@@ -197,7 +197,7 @@ describe("API tests", ({testAsync}) => {
     ->Future.tapError(Js.log)
     ->Future.get(result => {
         expect.value(result).toEqual(
-          Belt.Result.Error("Expected field 'block'\n\tin array at index 0"),
+          Result.Error("Expected field 'block'\n\tin array at index 0"),
         );
         callback();
       });
@@ -256,7 +256,7 @@ describe("API tests", ({testAsync}) => {
     module UnderTest = API.Operations(Dummy, Stub);
     UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
-        expect.value(result).toEqual(Belt.Result.Ok(expected));
+        expect.value(result).toEqual(Result.Ok(expected));
         callback();
       });
     ();
@@ -294,9 +294,7 @@ describe("API tests", ({testAsync}) => {
     UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(
-          Belt.Result.Error(
-            "Expected field 'public_key'\n\tin array at index 0",
-          ),
+          Result.Error("Expected field 'public_key'\n\tin array at index 0"),
         );
         callback();
       });
@@ -362,7 +360,7 @@ describe("API tests", ({testAsync}) => {
     module UnderTest = API.Operations(Dummy, Stub);
     UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
-        expect.value(result).toEqual(Belt.Result.Ok(expected));
+        expect.value(result).toEqual(Result.Ok(expected));
         callback();
       });
     ();
@@ -405,9 +403,7 @@ describe("API tests", ({testAsync}) => {
     UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(
-          Belt.Result.Error(
-            "Expected field 'destination'\n\tin array at index 0",
-          ),
+          Result.Error("Expected field 'destination'\n\tin array at index 0"),
         );
         callback();
       });
@@ -467,7 +463,7 @@ describe("API tests", ({testAsync}) => {
     module UnderTest = API.Operations(Dummy, Stub);
     UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
-        expect.value(result).toEqual(Belt.Result.Ok(expected));
+        expect.value(result).toEqual(Result.Ok(expected));
         callback();
       });
     ();
@@ -505,7 +501,7 @@ describe("API tests", ({testAsync}) => {
     UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(
-          Belt.Result.Error(
+          Result.Error(
             "Expected field 'contract_address'\n\tin array at index 0",
           ),
         );
@@ -562,7 +558,7 @@ describe("API tests", ({testAsync}) => {
     module UnderTest = API.Operations(Dummy, Stub);
     UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
-        expect.value(result).toEqual(Belt.Result.Ok(expected));
+        expect.value(result).toEqual(Result.Ok(expected));
         callback();
       });
     ();
@@ -620,7 +616,7 @@ describe("API tests", ({testAsync}) => {
     module UnderTest = API.Operations(Dummy, Stub);
     UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
-        expect.value(result).toEqual(Belt.Result.Ok(expected));
+        expect.value(result).toEqual(Result.Ok(expected));
         callback();
       });
     ();
@@ -657,7 +653,7 @@ describe("API tests", ({testAsync}) => {
     UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(
-          Belt.Result.Error("Expected field 'type'\n\tin array at index 0"),
+          Result.Error("Expected field 'type'\n\tin array at index 0"),
         );
         callback();
       });
@@ -693,7 +689,7 @@ describe("API tests", ({testAsync}) => {
     module UnderTest = API.Delegate(Dummy, Stub);
     UnderTest.getBakers(AppSettings.mainOnly(settings))
     ->Future.get(result => {
-        expect.value(result).toEqual(Belt.Result.Ok(expected));
+        expect.value(result).toEqual(Result.Ok(expected));
         callback();
       });
     ();
@@ -725,7 +721,7 @@ describe("API tests", ({testAsync}) => {
     ->Future.tapError(Js.log)
     ->Future.get(result => {
         expect.value(result).toEqual(
-          Belt.Result.Error("Expected field 'name'\n\tin array at index 1"),
+          Result.Error("Expected field 'name'\n\tin array at index 1"),
         );
         callback();
       });

@@ -82,8 +82,8 @@ let make =
   };
 
   let selectedItem =
-    items->Belt.Array.getBy(item =>
-      item->getItemValue == selectedValue->Belt.Option.getWithDefault("")
+    items->Array.getBy(item =>
+      item->getItemValue == selectedValue->Option.getWithDefault("")
     );
 
   let theme = ThemeContext.useTheme();
@@ -120,7 +120,7 @@ let make =
            )
            pointerEvents=`none>
            {renderButton(
-              selectedItem->Belt.Option.isSome ? selectedItem : noneItem,
+              selectedItem->Option.isSome ? selectedItem : noneItem,
             )}
            {disabled
               ? React.null
@@ -137,25 +137,24 @@ let make =
         dropdownStyle,
       |])}
       isOpen>
-      {noneItem->Belt.Option.mapWithDefault(React.null, item =>
+      {noneItem->Option.mapWithDefault(React.null, item =>
          <Item
            key={item->getItemValue}
            item
            onChange
            renderItem
-           isSelected={selectedValue->Belt.Option.isNone}
+           isSelected={selectedValue->Option.isNone}
          />
        )}
       {items
-       ->Belt.Array.map(item =>
+       ->Array.map(item =>
            <Item
              key={item->getItemValue}
              item
              onChange
              renderItem
              isSelected={
-               item->getItemValue
-               == selectedValue->Belt.Option.getWithDefault("")
+               item->getItemValue == selectedValue->Option.getWithDefault("")
              }
            />
          )

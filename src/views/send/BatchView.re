@@ -1,5 +1,5 @@
 open ReactNative;
-open Common;
+open UmamiCommon;
 
 let styles =
   Style.(
@@ -44,7 +44,7 @@ let buildAmount = amount => {
 };
 
 let computeTotal = batch =>
-  batch->Belt.List.reduce(0., (acc, t: SendForm.StateLenses.state) =>
+  batch->List.reduce(0., (acc, t: SendForm.StateLenses.state) =>
     acc +. float_of_string(t.amount)
   );
 
@@ -70,13 +70,13 @@ module Item = {
           alias:
             recipient
             ->AliasHelpers.getAliasFromAddress(aliases)
-            ->Belt.Option.getWithDefault(""),
+            ->Option.getWithDefault(""),
         }
         showAmount={buildAmount(amount)}
       />
       {[]
        ->Lib.List.addOpt(
-           onDelete->Belt.Option.map(delete => {
+           onDelete->Option.map(delete => {
              <Menu.Item
                key=I18n.menu#batch_delete
                text=I18n.menu#batch_delete
@@ -86,7 +86,7 @@ module Item = {
            }),
          )
        ->Lib.List.addOpt(
-           onEdit->Belt.Option.map(edit => {
+           onEdit->Option.map(edit => {
              <Menu.Item
                key=I18n.menu#batch_edit
                text=I18n.menu#batch_edit
@@ -97,7 +97,7 @@ module Item = {
          )
        ->ReactUtils.hideNil(l =>
            <Menu style=styles##moreButton icon=Icons.More.build>
-             {l->Belt.List.toArray->React.array}
+             {l->List.toArray->React.array}
            </Menu>
          )}
     </View>;
@@ -107,7 +107,7 @@ module Item = {
 module Transactions = {
   [@react.component]
   let make = (~recipients, ~onDelete=?) => {
-    let length = recipients->Belt.List.length;
+    let length = recipients->List.length;
     let theme = ThemeContext.useTheme();
     <View style=styles##container>
       <Typography.Overline2 style=styles##listLabel>
@@ -115,10 +115,8 @@ module Transactions = {
       </Typography.Overline2>
       <ScrollView style={listStyle(theme)} alwaysBounceVertical=false>
         {{
-           recipients->Belt.List.mapWithIndex(
-             (i, (onEdit, (recipient, amount))) => {
-             let onDelete =
-               onDelete->Belt.Option.map((delete, ()) => delete(i));
+           recipients->List.mapWithIndex((i, (onEdit, (recipient, amount))) => {
+             let onDelete = onDelete->Option.map((delete, ()) => delete(i));
              <Item
                zIndex=i
                key={string_of_int(i)}
@@ -130,8 +128,8 @@ module Transactions = {
              />;
            });
          }
-         ->Belt.List.reverse
-         ->Belt.List.toArray
+         ->List.reverse
+         ->List.toArray
          ->React.array}
       </ScrollView>
     </View>;
@@ -151,8 +149,7 @@ let make =
     ) => {
   let theme: ThemeContext.theme = ThemeContext.useTheme();
   let recipients =
-    batch->Belt.List.mapWithIndex(
-      (i, (t: SendForm.StateLenses.state, _) as v) =>
+    batch->List.mapWithIndex((i, (t: SendForm.StateLenses.state, _) as v) =>
       (Some(() => onEdit(i, v)), (t.recipient, t.amount))
     );
   <>
@@ -175,7 +172,7 @@ let make =
       </Typography.Overline2>
       <Typography.Subtitle1>
         {I18n.t#xtz_amount(
-           computeTotal(batch->Belt.List.map(fst))
+           computeTotal(batch->List.map(fst))
            ->Js.Float.toFixedWithPrecision(~digits=6),
          )
          ->React.string}

@@ -31,7 +31,7 @@ let make = (~closeAction) => {
       )
     ->ignore;
 
-  let (mnemonic, setMnemonic) = React.useState(_ => Belt.Array.make(24, ""));
+  let (mnemonic, setMnemonic) = React.useState(_ => Array.make(24, ""));
 
   let loading = accountWithMnemonicRequest->ApiRequest.isLoading;
 

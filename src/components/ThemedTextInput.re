@@ -1,4 +1,5 @@
 open ReactNative;
+open UmamiCommon;
 
 let borderWidth = 1.;
 let paddingVertical = 12.;
@@ -92,11 +93,11 @@ let make =
     }
     onFocus={event => {
       setIsFocused(_ => true);
-      onFocus->Common.Lib.Option.iter(onFocus => onFocus(event));
+      onFocus->Lib.Option.iter(onFocus => onFocus(event));
     }}
     onBlur={event => {
       setIsFocused(_ => false);
-      onBlur->Common.Lib.Option.iter(onBlur => onBlur(event));
+      onBlur->Lib.Option.iter(onBlur => onBlur(event));
     }}
     ?onKeyPress
     ?textContentType

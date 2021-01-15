@@ -59,7 +59,7 @@ let styles =
 let baseRenderButton =
     (~showAmount, ~token, selectedAccount: option(Account.t)) =>
   <View style=styles##selectorContent>
-    {selectedAccount->Belt.Option.mapWithDefault(<LoadingView />, account =>
+    {selectedAccount->Option.mapWithDefault(<LoadingView />, account =>
        <AccountItem
          style=itemStyles##itemInSelector
          account
@@ -85,10 +85,8 @@ let make = (~style=?) => {
 
   let items =
     accounts
-    ->Belt.Map.String.valuesToArray
-    ->Belt.SortArray.stableSortBy((a, b) =>
-        Pervasives.compare(a.alias, b.alias)
-      );
+    ->Map.String.valuesToArray
+    ->SortArray.stableSortBy((a, b) => Pervasives.compare(a.alias, b.alias));
 
   <>
     <Typography.Overline2> I18n.t#account->React.string </Typography.Overline2>
@@ -98,7 +96,7 @@ let make = (~style=?) => {
       getItemValue={account => account.address}
       ?style
       onValueChange={value => updateAccount(value)}
-      selectedValue=?{account->Belt.Option.map(account => account.address)}
+      selectedValue=?{account->Option.map(account => account.address)}
       renderButton
       renderItem
     />

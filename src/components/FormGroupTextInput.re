@@ -35,7 +35,7 @@ let make =
       ~decoration: option((~style: Style.t) => React.element)=?,
       ~style: option(ReactNative.Style.t)=?,
     ) => {
-  let hasError = error->Belt.Option.isSome;
+  let hasError = error->Option.isSome;
   <FormGroup ?style>
     <FormLabel label hasError style=styles##label />
     <View>

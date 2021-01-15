@@ -32,7 +32,7 @@ let make = (~mnemonic) => {
 
   <View style=styles##wordsList>
     {mnemonic
-     ->Belt.Array.mapWithIndex((index, word) => {
+     ->Array.mapWithIndex((index, word) => {
          <React.Fragment key={word ++ index->string_of_int}>
            <View
              style=Style.(

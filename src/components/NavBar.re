@@ -34,7 +34,7 @@ module NavBarItem = {
       onPress
       style=styles##item
       isActive=isCurrent>
-      {icon->Belt.Option.mapWithDefault(React.null, icon => {
+      {icon->Option.mapWithDefault(React.null, icon => {
          icon(
            ~style={
              styles##icon;

@@ -1,5 +1,5 @@
 open ReactNative;
-open Common;
+open UmamiCommon;
 type state = {
   logs: list(Logs.t),
   add: (bool, Logs.t) => unit,
@@ -42,20 +42,18 @@ let make = (~children) => {
     let (logs, setLogs) = React.useState(() => []);
 
     let delete = (i: int) => {
-      setLogs(es => es->Belt.List.keepWithIndex((_, i') => i != i'));
+      setLogs(es => es->List.keepWithIndex((_, i') => i != i'));
     };
 
     let clear = () => setLogs(_ => []);
 
     let add = (toast, l) => {
-      setLogs(es => es->Belt.List.add(l));
+      setLogs(es => es->List.add(l));
 
       if (toast) {
-        toastState
-        ->Belt.Option.map(fst)
-        ->Lib.Option.iter(Js.Global.clearTimeout);
+        toastState->Option.map(fst)->Lib.Option.iter(Js.Global.clearTimeout);
         setToastState(prev => {
-          let firsts = prev->Belt.Option.mapWithDefault(0, snd) + 1;
+          let firsts = prev->Option.mapWithDefault(0, snd) + 1;
           let animCallback = _ => {
             setToastState(_ => None);
             fadeAnim->Animated.Value.setValue(1.);

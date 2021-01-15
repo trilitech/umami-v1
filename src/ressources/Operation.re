@@ -249,7 +249,7 @@ module Read = {
   };
 
   module Comparator =
-    Belt.Id.MakeComparable({
+    Id.MakeComparable({
       type t = operation;
       let cmp = ({hash: hash1}, {hash: hash2}) =>
         Pervasives.compare(hash1, hash2);

@@ -1,6 +1,4 @@
-open Belt;
-
-open Common;
+open UmamiCommon;
 
 type reactState('state) = ('state, ('state => 'state) => unit);
 
@@ -265,10 +263,10 @@ module BalanceToken = {
               acc
               + balanceRequest
                 ->ApiRequest.getDoneOk
-                ->Option.flatMap(Belt.Int.fromString)
+                ->Option.flatMap(Int.fromString)
                 ->Option.getWithDefault(0)
             })
-          ->Belt.Int.toString,
+          ->Int.toString,
         )
       : None;
   };

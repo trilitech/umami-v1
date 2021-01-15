@@ -1,5 +1,5 @@
 open ChildReprocess.StdStream;
-open Common;
+open UmamiCommon;
 open Delegate;
 
 module Path = {
@@ -9,10 +9,10 @@ module Path = {
 };
 
 module URL = {
-  let arg_opt = (v, n, f) => v->Belt.Option.map(a => (n, f(a)));
+  let arg_opt = (v, n, f) => v->Option.map(a => (n, f(a)));
 
   let build_args = l =>
-    l->Belt.List.map(((a, v)) => a ++ "=" ++ v)->Belt.List.toArray
+    l->List.map(((a, v)) => a ++ "=" ++ v)->List.toArray
     |> Js.Array.joinWith("&");
 
   let build_url = (network, path, args) => {
@@ -53,7 +53,7 @@ module URL = {
 module type CallerAPI = {
   let call:
     (array(string), ~inputs: array(string)=?, unit) =>
-    Future.t(Belt.Result.t(string, string));
+    Future.t(Result.t(string, string));
 };
 
 module TezosClient = {
@@ -71,7 +71,7 @@ module TezosClient = {
   let call = (command, ~inputs=?, ()) =>
     Future.make(resolve => {
       let process = ChildReprocess.spawn("tezos-client", command, ());
-      let result: ref(option(Belt.Result.t(string, string))) = ref(None);
+      let result: ref(option(Result.t(string, string))) = ref(None);
       let _ =
         process
         ->child_stderr
@@ -117,7 +117,7 @@ module TezosClient = {
 };
 
 module type GetterAPI = {
-  let get: string => Future.t(Belt.Result.t(Js.Json.t, string));
+  let get: string => Future.t(Result.t(Js.Json.t, string));
 };
 
 module TezosExplorer = {
@@ -149,16 +149,16 @@ module Balance = (Caller: CallerAPI) => {
     Caller.call(arguments, ())
     ->Future.flatMapOk(r =>
         r
-        ->Belt.Float.fromString
-        ->Belt.Option.map(Belt.Float.toString)
-        ->Belt.Option.flatMap(ProtocolXTZ.fromString)
+        ->Float.fromString
+        ->Option.map(Float.toString)
+        ->Option.flatMap(ProtocolXTZ.fromString)
         ->Lib.Result.fromOption("Cannot parse balance")
         ->Future.value
       );
   };
 };
 
-let map = (result: Belt.Result.t('a, string), transform: 'a => 'b) =>
+let map = (result: Result.t('a, string), transform: 'a => 'b) =>
   try(
     switch (result) {
     | Ok(value) => Ok(transform(value))
@@ -181,13 +181,15 @@ module InjectorRaw = (Caller: CallerAPI) => {
   let parse = (receipt, pattern, interp) => {
     let rec parseAll = (acc, regexp) =>
       switch (
-        Js.Re.exec_(regexp, receipt)->Belt.Option.map(Js.Re.captures),
+        Js.Re.exec_(regexp, receipt)->Option.map(Js.Re.captures),
         interp,
       ) {
-      | (Some(res), Exists(_)) => [|res[0]->Js.Nullable.toOption|]
+      | (Some(res), Exists(_)) => [|
+          res[0]->Option.flatMap(Js.Nullable.toOption),
+        |]
       | (Some(res), _) =>
         acc
-        ->Js.Array2.concat([|res[1]->Js.Nullable.toOption|])
+        ->Js.Array2.concat([|res[1]->Option.flatMap(Js.Nullable.toOption)|])
         ->parseAll(regexp)
       | (None, _) => acc
       };
@@ -196,13 +198,15 @@ module InjectorRaw = (Caller: CallerAPI) => {
         None;
       } else {
         switch (interp) {
-        | Exists(f) => results[0]->Belt.Option.flatMap(f)
-        | First(f) => results[0]->Belt.Option.flatMap(f)
+        | Exists(f) => results[0]->Option.flatMap(x => x)->Option.flatMap(f)
+        | First(f) => results[0]->Option.flatMap(x => x)->Option.flatMap(f)
         | Last(f) =>
-          results[Js.Array.length(results) - 1]->Belt.Option.flatMap(f)
+          results[Js.Array.length(results) - 1]
+          ->Option.flatMap(x => x)
+          ->Option.flatMap(f)
         | Nth(f, i) =>
           i < Js.Array.length(results)
-            ? results[i]->Belt.Option.flatMap(f) : None
+            ? results[i]->Option.flatMap(x => x)->Option.flatMap(f) : None
         | AllReduce(f, init) => Some(Js.Array2.reduce(results, f, init))
         };
       };
@@ -211,17 +215,13 @@ module InjectorRaw = (Caller: CallerAPI) => {
   };
 
   let parseAndReduceXTZ = (f, s) => {
-    Belt.Option.mapWithDefault(
-      s,
-      Some(ProtocolXTZ.zero),
-      ProtocolXTZ.fromString,
-    )
-    ->Belt.Option.mapWithDefault(f, ProtocolXTZ.Infix.(+)(f));
+    Option.mapWithDefault(s, Some(ProtocolXTZ.zero), ProtocolXTZ.fromString)
+    ->Option.mapWithDefault(f, ProtocolXTZ.Infix.(+)(f));
   };
 
   let parseAndReduceInt = (f, s) => {
-    Belt.Option.mapWithDefault(s, Some(0), int_of_string_opt)
-    ->Belt.Option.mapWithDefault(f, Belt.Int.(+)(f));
+    Option.mapWithDefault(s, Some(0), int_of_string_opt)
+    ->Option.mapWithDefault(f, Int.(+)(f));
   };
 
   type parserOptions = {
@@ -425,15 +425,10 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
       ((operations, mempool)) => {
         module Comparator = Operation.Read.Comparator;
         let operations =
-          Belt.Set.fromArray(
-            operations,
-            ~id=(module Operation.Read.Comparator),
-          );
+          Set.fromArray(operations, ~id=(module Operation.Read.Comparator));
 
         let operations =
-          mempool
-          ->Belt.Array.reduce(operations, Belt.Set.add)
-          ->Belt.Set.toArray;
+          mempool->Array.reduce(operations, Set.add)->Set.toArray;
 
         Future.value(Ok(operations));
       }
@@ -487,8 +482,8 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
 
   let transfers_to_json = (btxs: Protocol.transaction) =>
     btxs.transfers
-    ->Belt.List.map(transfer)
-    ->Belt.List.toArray
+    ->List.map(transfer)
+    ->List.toArray
     ->Js.Json.array
     ->Js.Json.stringify /* ->(json => "\'" ++ json ++ "\'") */;
 
@@ -527,7 +522,7 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
         transfers_to_json(transaction),
         "--burn-cap",
         Js.Float.toString(
-          0.06425 *. transaction.transfers->Belt.List.length->float_of_int,
+          0.06425 *. transaction.transfers->List.length->float_of_int,
         ),
       |]
     | Delegation({delegate: None, source}) => [|
@@ -608,7 +603,7 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
     );
 };
 
-module MapString = Belt.Map.String;
+module MapString = Map.String;
 
 module Mnemonic = {
   [@bs.module "bip39"] external generate: unit => string = "generateMnemonic";
@@ -618,22 +613,26 @@ module Accounts = (Caller: CallerAPI) => {
   let parse = content =>
     content
     ->Js.String2.split("\n")
-    ->Belt.Array.map(row => row->Js.String2.split(":"))
-    ->(rows => rows->Belt.Array.keep(data => data->Belt.Array.length >= 2))
-    ->Belt.Array.map(pair => {
-        [|pair[0]|]
-        ->Belt.Array.concat(pair[1]->Js.String2.trim->Js.String2.split(" ("))
+    ->Array.map(row => row->Js.String2.split(":"))
+    ->(rows => rows->Array.keep(data => data->Array.length >= 2))
+    ->Array.map(pair => {
+        [|pair->Array.getUnsafe(0)|]
+        ->Array.concat(
+            pair
+            ->Array.getUnsafe(1)
+            ->Js.String2.trim
+            ->Js.String2.split(" ("),
+          )
       })
-    ->(rows => rows->Belt.Array.keep(data => data->Belt.Array.length > 2))
-    ->Belt.Array.map(data => (data[0], data[1]));
+    ->(rows => rows->Array.keep(data => data->Array.length > 2))
+    ->Array.map(data => (data[0], data[1]));
 
   let get = (~settings: AppSettings.t) =>
     settings
     ->AppSettings.sdk
     ->TezosSDK.listKnownAddresses
     ->Future.mapOk(r =>
-        r->Belt.Array.keepMap(
-          (TezosSDK.OutputAddress.{alias, pkh, sk_known}) =>
+        r->Array.keepMap((TezosSDK.OutputAddress.{alias, pkh, sk_known}) =>
           sk_known ? Some((alias, pkh)) : None
         )
       );
@@ -691,7 +690,9 @@ module Accounts = (Caller: CallerAPI) => {
         (),
       )
       ->Future.tapOk(Js.log)
-      ->Future.mapOk(keys => (keys |> Js.String.split("\n"))[2])
+      ->Future.mapOk(keys =>
+          (keys |> Js.String.split("\n"))->Array.getUnsafe(2)
+        )
       ->Future.tapOk(Js.log)
       ->Future.flatMapOk(edsk => import(edsk, name))
     };
@@ -756,7 +757,7 @@ module Scanner = (Caller: CallerAPI, Getter: GetterAPI) => {
         AccountsAPI.get(~settings)
         ->Future.mapOk(MapString.fromArray)
         ->Future.flatMapOk(accounts =>
-            switch (accounts->Belt.Map.String.get(name)) {
+            switch (accounts->Map.String.get(name)) {
             | Some(address) =>
               settings
               ->validate(address)
@@ -786,7 +787,9 @@ module Aliases = (Caller: CallerAPI) => {
     |> Js.String.split("\n")
     |> Js.Array.map(row => row |> Js.String.split(": "))
     |> (pairs => pairs->Js.Array2.filter(pair => pair->Array.length == 2))
-    |> Js.Array.map(pair => (pair[0], pair[1]))
+    |> Js.Array.map(pair =>
+         (pair->Array.getUnsafe(0), pair->Array.getUnsafe(1))
+       )
     |> Js.Array.sortInPlaceWith((a, b) => {
          let (a, _) = a;
          let (b, _) = b;
@@ -802,16 +805,14 @@ module Aliases = (Caller: CallerAPI) => {
 
   let getAliasForAddress = (~settings, address) =>
     get(~settings)
-    ->Future.mapOk(addresses =>
-        addresses->Belt.Array.map(((a, b)) => (b, a))
-      )
-    ->Future.mapOk(Belt.Map.String.fromArray)
-    ->Future.mapOk(aliases => aliases->Belt.Map.String.get(address));
+    ->Future.mapOk(addresses => addresses->Array.map(((a, b)) => (b, a)))
+    ->Future.mapOk(Map.String.fromArray)
+    ->Future.mapOk(aliases => aliases->Map.String.get(address));
 
   let getAddressForAlias = (~settings, alias) =>
     get(~settings)
-    ->Future.mapOk(Belt.Map.String.fromArray)
-    ->Future.mapOk(addresses => addresses->Belt.Map.String.get(alias));
+    ->Future.mapOk(Map.String.fromArray)
+    ->Future.mapOk(addresses => addresses->Map.String.get(alias));
 
   let add = (~settings, alias, pkh) =>
     settings->AppSettings.sdk->TezosSDK.addAddress(alias, pkh);
@@ -836,11 +837,10 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
       None;
     } else {
       let splittedContent = content->Js.String2.split(" ");
-      if (content->Js.String2.length == 0
-          || splittedContent->Belt.Array.length == 0) {
+      if (content->Js.String2.length == 0 || splittedContent->Array.length == 0) {
         None;
       } else {
-        Some(splittedContent[0]);
+        Some(splittedContent->Array.getUnsafe(0));
       };
     };
 
@@ -896,7 +896,7 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
     network
     ->OperationsAPI.get(account, ~types=[|"delegation"|], ~limit=1, ())
     ->Future.flatMapOk(operations =>
-        if (operations->Belt.Array.length == 0) {
+        if (operations->Array.length == 0) {
           //Future.value(Error("No delegation found!"));
           Future.value(
             Ok({
@@ -907,7 +907,8 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
             }),
           );
         } else {
-          switch (operations[0].payload) {
+          let firstOperation = operations->Array.getUnsafe(0);
+          switch (firstOperation.payload) {
           | Business(payload) =>
             switch (payload.payload) {
             | Delegation(payload) =>
@@ -925,12 +926,12 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
                   );
                 } else {
                   network
-                  ->BalanceAPI.get(account, ~block=operations[0].level, ())
+                  ->BalanceAPI.get(account, ~block=firstOperation.level, ())
                   ->Future.mapOk(balance =>
                       {
                         initialBalance: balance,
                         delegate,
-                        timestamp: operations[0].timestamp,
+                        timestamp: firstOperation.timestamp,
                         lastReward: None,
                       }
                     )
@@ -944,10 +945,10 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
                           (),
                         )
                       ->Future.mapOk(operations =>
-                          if (operations->Belt.Array.length == 0) {
+                          if (operations->Array.length == 0) {
                             info;
                           } else {
-                            switch (operations[0].payload) {
+                            switch (firstOperation.payload) {
                             | Business(payload) =>
                               switch (payload.payload) {
                               | Transaction(payload) => {

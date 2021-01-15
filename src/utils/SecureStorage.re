@@ -155,8 +155,8 @@ type json = Js.Json.t;
 let getEncryptedData = key =>
   LocalStorage.getItem(key)
   ->Js.Nullable.toOption
-  ->Belt.Option.flatMap(Json.parse)
-  ->Belt.Option.map(json =>
+  ->Option.flatMap(Json.parse)
+  ->Option.map(json =>
       Json.Decode.{
         Cipher.salt: json |> field("salt", string),
         iv: json |> field("iv", string),

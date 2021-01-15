@@ -1,7 +1,7 @@
 open ReactNative;
 
 let mapOpt = (v, f) => {
-  v->Belt.Option.mapWithDefault(React.null, f);
+  v->Option.mapWithDefault(React.null, f);
 };
 
 let hideNil = (v, f) =>
@@ -51,4 +51,4 @@ let useIsMonted = () => {
   isMounted;
 };
 
-let styles = l => Style.array(Belt.List.toArray(l));
+let styles = l => Style.array(List.toArray(l));

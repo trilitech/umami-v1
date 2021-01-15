@@ -23,19 +23,17 @@ let styles =
   );
 
 let createUniquesRandomInts = (~count, ~min, ~max) => {
-  let randomNumbers = ref(Belt.Set.Int.empty);
-  while (randomNumbers.contents->Belt.Set.Int.size < count) {
+  let randomNumbers = ref(Set.Int.empty);
+  while (randomNumbers.contents->Set.Int.size < count) {
     randomNumbers :=
-      randomNumbers.contents->Belt.Set.Int.add(Js.Math.random_int(min, max));
+      randomNumbers.contents->Set.Int.add(Js.Math.random_int(min, max));
   };
-  randomNumbers.contents->Belt.Set.Int.toArray;
+  randomNumbers.contents->Set.Int.toArray;
 };
 
 let isEqualMnemonicWord = (value, mnemonic, verifyMnemonicIndexes, index) => {
   let word =
-    mnemonic->Belt.Array.getExn(
-      verifyMnemonicIndexes->Belt.Array.getExn(index),
-    );
+    mnemonic->Array.getExn(verifyMnemonicIndexes->Array.getExn(index));
   value == word;
 };
 
@@ -46,7 +44,7 @@ let make = (~mnemonic, ~onPressCancel, ~goNextStep) => {
       createUniquesRandomInts(
         ~count=numInput,
         ~min=0,
-        ~max=mnemonic->Belt.Array.size - 1,
+        ~max=mnemonic->Array.size - 1,
       ),
     ).
       current;
@@ -61,7 +59,7 @@ let make = (~mnemonic, ~onPressCancel, ~goNextStep) => {
               ({words}) => {
                 let errors =
                   words
-                  ->Belt.Array.mapWithIndex((index, word) => {
+                  ->Array.mapWithIndex((index, word) => {
                       word->isEqualMnemonicWord(
                         mnemonic,
                         verifyMnemonicIndexes,
@@ -74,10 +72,10 @@ let make = (~mnemonic, ~onPressCancel, ~goNextStep) => {
                             name: "word",
                           })
                     })
-                  ->Belt.Array.keepMap(e => e);
+                  ->Array.keepMap(e => e);
 
                 let fieldState: ReSchema.fieldState =
-                  errors->Belt.Array.size == 0 ? Valid : NestedErrors(errors);
+                  errors->Array.size == 0 ? Valid : NestedErrors(errors);
 
                 fieldState;
               },
@@ -91,7 +89,7 @@ let make = (~mnemonic, ~onPressCancel, ~goNextStep) => {
           goNextStep();
           None;
         },
-      ~initialState={words: Belt.Array.make(numInput, "")},
+      ~initialState={words: Array.make(numInput, "")},
       (),
     );
 
@@ -102,22 +100,20 @@ let make = (~mnemonic, ~onPressCancel, ~goNextStep) => {
   <>
     <View style=Style.(array([|styles##wordsList, style(~zIndex=2, ())|]))>
       {form.state.values.words
-       ->Belt.Array.mapWithIndex((index, word) =>
+       ->Array.mapWithIndex((index, word) =>
            <React.Fragment key={index->string_of_int}>
              <View
                style=Style.(
                  array([|
                    styles##wordItem,
                    style(
-                     ~zIndex=form.state.values.words->Belt.Array.size - index,
+                     ~zIndex=form.state.values.words->Array.size - index,
                      (),
                    ),
                  |])
                )>
                <InputMnemonicWord
-                 displayIndex={
-                   verifyMnemonicIndexes->Belt.Array.getExn(index)
-                 }
+                 displayIndex={verifyMnemonicIndexes->Array.getExn(index)}
                  value=word
                  handleChange={form.arrayUpdateByIndex(~field=Words, ~index)}
                  error={form.getNestedFieldError(Field(Words), index)}

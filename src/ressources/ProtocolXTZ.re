@@ -20,7 +20,7 @@ let xtzExp10 = 6;
 let toMutez = i => i * oneXtz;
 
 let rec mulExp10 = (x, n) => {
-  Int64.(n <= 0 ? x : mulExp10(x * of_int(10), Belt.Int.(n - 1)));
+  Int64.(n <= 0 ? x : mulExp10(x * of_int(10), Int.(n - 1)));
 };
 
 let int64OfString = s =>
@@ -33,13 +33,13 @@ let int64OfString = s =>
 let fromString = (xtzStr): option(t) => {
   Int64.(
     switch (Js.String.split(".", xtzStr)) {
-    | [|v|] => v->int64OfString->Belt.Option.map(toMutez)
+    | [|v|] => v->int64OfString->Option.map(toMutez)
     | [|integer, floating|] =>
       switch (int64OfString(integer), int64OfString(floating)) {
       | (Some(integer64), Some(floating64)) =>
         let floating64 = {
           let floatingMult =
-            one->mulExp10(Belt.Int.(xtzExp10 - floating->Js.String.length));
+            one->mulExp10(Int.(xtzExp10 - floating->Js.String.length));
           floating64 == zero ? zero : floating64 * floatingMult;
         };
         Some(integer64->toMutez + floating64);
@@ -62,9 +62,9 @@ let toString = (xtz: t) => {
 
   let leading0 =
     fLen >= xtzExp10 && floating != zero
-      ? "" : Js.String.repeat(Belt.Int.(xtzExp10 - fLen), "0");
+      ? "" : Js.String.repeat(Int.(xtzExp10 - fLen), "0");
   let floatingStr = leading0 ++ floatingStr;
   integer ++ "." ++ floatingStr;
 };
 
-let formatString = s => s->fromString->Belt.Option.map(toString);
+let formatString = s => s->fromString->Option.map(toString);

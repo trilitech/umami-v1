@@ -1,4 +1,4 @@
-open Common;
+open UmamiCommon;
 type config = {
   content: ConfigFile.t,
   write: (ConfigFile.t => ConfigFile.t) => unit,
@@ -39,18 +39,16 @@ let make = (~children) => {
     React.useState(() => {
       let endpointMain =
         content.endpointMain
-        ->Belt.Option.getWithDefault(ConfigFile.endpointMain)
+        ->Option.getWithDefault(ConfigFile.endpointMain)
         ->ConfigFile.mkSdkEndpoint;
 
       let endpointTest =
         content.endpointTest
-        ->Belt.Option.getWithDefault(ConfigFile.endpointTest)
+        ->Option.getWithDefault(ConfigFile.endpointTest)
         ->ConfigFile.mkSdkEndpoint;
 
       let dir =
-        ConfigFile.(
-          content.sdkBaseDir->Belt.Option.getWithDefault(sdkBaseDir)
-        );
+        ConfigFile.(content.sdkBaseDir->Option.getWithDefault(sdkBaseDir));
       (TezosSDK.init(dir, endpointMain), TezosSDK.init(dir, endpointTest));
     });
 

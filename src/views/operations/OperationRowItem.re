@@ -57,7 +57,7 @@ let memo = component =>
 
 let amount = (account, transaction: Operation.Business.Transaction.t) => {
   let colorStyle =
-    account->Belt.Option.map((account: Account.t) =>
+    account->Option.map((account: Account.t) =>
       account.address == transaction.destination ? `positive : `negative
     );
 
@@ -113,7 +113,7 @@ let make =
              <CellAddress>
                {business.source
                 ->AliasHelpers.getAliasFromAddress(aliases)
-                ->Belt.Option.mapWithDefault(
+                ->Option.mapWithDefault(
                     <Typography.Address numberOfLines=1>
                       business.source->React.string
                     </Typography.Address>,
@@ -126,7 +126,7 @@ let make =
              <CellAddress>
                {transaction.destination
                 ->AliasHelpers.getAliasFromAddress(aliases)
-                ->Belt.Option.mapWithDefault(
+                ->Option.mapWithDefault(
                     <Typography.Address numberOfLines=1>
                       transaction.destination->React.string
                     </Typography.Address>,

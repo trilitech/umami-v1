@@ -44,7 +44,7 @@ let make =
        ~style=?None,
        ~size=Js.Math.ceil_float(iconSizeRatio *. size),
        ~color=
-         isPrimary->Belt.Option.getWithDefault(false)
+         isPrimary->Option.getWithDefault(false)
            ? theme.colors.primaryIconMediumEmphasis
            : theme.colors.iconMediumEmphasis,
      )}

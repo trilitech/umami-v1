@@ -14,7 +14,7 @@ let make = (~onSubmit) => {
       onChangeText={text =>
         text
         ->ProtocolXTZ.fromString
-        ->(x => x->Belt.Option.getWithDefault(amount))
+        ->(x => x->Option.getWithDefault(amount))
         ->(x => setAmount(_ => x))
       }
       placeholder="amount"
