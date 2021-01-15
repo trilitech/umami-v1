@@ -1,3 +1,5 @@
+open Belt;
+
 open UmamiCommon;
 
 type reactState('state) = ('state, ('state => 'state) => unit);
@@ -214,11 +216,8 @@ module BalanceToken = {
   let useRequestState =
     useRequestsState(store => store.balanceTokenRequestsState);
 
-  //Temporary Hardcoded balance reception contract
-  // https://gitlab.com/nomadic-labs/ref-wallet/-/issues/62
-  let hardCodedReceiptionKT1 = "KT1BZ6cBooBYubKv4Z3kd7izefLXgwTrSfoG";
-
   let useLoad = (address: string, tokenAddress: option(string)) => {
+    let {config} = ConfigContext.useSettings();
     let requestState = useRequestState(address->getRequestKey(tokenAddress));
 
     let operation =
@@ -227,7 +226,8 @@ module BalanceToken = {
           tokenAddress->Option.map(tokenAddress =>
             Token.makeGetBalance(
               address,
-              hardCodedReceiptionKT1,
+              config.natviewerTest
+              ->Option.getWithDefault(ConfigFile.natviewerTest),
               tokenAddress,
               (),
             )
@@ -263,10 +263,10 @@ module BalanceToken = {
               acc
               + balanceRequest
                 ->ApiRequest.getDoneOk
-                ->Option.flatMap(Int.fromString)
+                ->Option.flatMap(Belt.Int.fromString)
                 ->Option.getWithDefault(0)
             })
-          ->Int.toString,
+          ->Belt.Int.toString,
         )
       : None;
   };

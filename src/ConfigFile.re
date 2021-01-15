@@ -12,10 +12,10 @@ type t = {
 [@bs.val] [@bs.scope "JSON"] external parse: string => t = "parse";
 
 let endpointMain = "https://mainnet-tezos.giganode.io";
-let endpointTest = "https://delphinet-tezos.giganode.io";
+let endpointTest = "https://edonet-tezos.giganode.io";
 let explorerMain = "https://mezos.lamini.ca/mezos/mainnet7";
 let explorerTest = "https://mezos.lamini.ca/mezos/delphinet";
-let natviewerTest = "KT1BZ6cBooBYubKv4Z3kd7izefLXgwTrSfoG";
+let natviewerTest = "KT1QW4QRMgmdKFvq6MZhk3x85eriyL5AVoP4";
 let theme = `dark;
 let sdkBaseDir = System.homeDir() ++ "/.tezos-client";
 
