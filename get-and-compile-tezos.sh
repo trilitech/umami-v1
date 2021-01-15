@@ -1,6 +1,6 @@
 #!/bin/sh
 
-git clone -b alex@dry_run_no_pass git@gitlab.com:nomadic-labs/tezos.git .tezos
+git clone -b umami@dry_run_no_pass+fa1.2 git@gitlab.com:nomadic-labs/tezos.git .tezos
 cd .tezos
 
 rust_version=`rustc -V | cut -d' ' -f2`
