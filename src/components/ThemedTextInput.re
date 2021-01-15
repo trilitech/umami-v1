@@ -10,7 +10,7 @@ let styles =
     StyleSheet.create({
       "input":
         style(
-          ~height=46.->dp,
+          ~height=44.->dp,
           ~paddingVertical=(paddingVertical -. borderWidth)->dp,
           ~paddingLeft=(paddingLeft -. borderWidth)->dp,
           ~paddingRight=(paddingRight -. borderWidth)->dp,
@@ -51,6 +51,7 @@ let make =
         Some(
           style(
             ~color=theme.colors.textHighEmphasis,
+            ~backgroundColor=theme.colors.background,
             ~borderColor=theme.colors.borderMediumEmphasis,
             (),
           ),

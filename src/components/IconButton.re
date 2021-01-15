@@ -3,17 +3,11 @@ open ReactNative;
 let styles =
   Style.(
     StyleSheet.create({
-      "button":
-        style(
-          //~marginRight=4.->dp,
-          ~alignItems=`center,
-          ~justifyContent=`center,
-          (),
-        ),
+      "button": style(~alignItems=`center, ~justifyContent=`center, ()),
     })
   );
 
-let iconSizeRatio = 5. /. 7.;
+let iconSizeRatio = 4. /. 7.;
 
 [@react.component]
 let make =

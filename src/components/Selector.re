@@ -57,6 +57,7 @@ let styles =
 let make =
     (
       ~style=?,
+      ~dropdownStyle=?,
       ~items: array('item),
       ~getItemValue: 'item => string,
       ~selectedValue=?,
@@ -130,7 +131,12 @@ let make =
                 />}
          </View>}
     </PressableCustom>
-    <DropdownMenu style=styles##dropdownmenu isOpen>
+    <DropdownMenu
+      style={Style.arrayOption([|
+        Some(styles##dropdownmenu),
+        dropdownStyle,
+      |])}
+      isOpen>
       {noneItem->Belt.Option.mapWithDefault(React.null, item =>
          <Item
            key={item->getItemValue}
