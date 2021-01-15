@@ -530,7 +530,17 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
           0.06425 *. transaction.transfers->Belt.List.length->float_of_int,
         ),
       |]
-    | Delegation(delegation) => [|
+    | Delegation({delegate: None, source}) => [|
+        "-E",
+        settings->AppSettings.endpoint,
+        "-w",
+        "none",
+        "withdraw",
+        "delegate",
+        "from",
+        source,
+      |]
+    | Delegation({delegate: Some(delegate), source}) => [|
         "-E",
         settings->AppSettings.endpoint,
         "-w",
@@ -538,9 +548,9 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
         "set",
         "delegate",
         "for",
-        delegation.source,
+        source,
         "to",
-        delegation.delegate,
+        delegate,
       |]
     };
 

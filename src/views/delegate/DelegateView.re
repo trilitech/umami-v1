@@ -26,7 +26,7 @@ let buildTransaction = (state: DelegateForm.state, advancedOptionOpened) => {
 
   Protocol.makeDelegate(
     ~source=state.values.sender,
-    ~delegate=state.values.baker,
+    ~delegate=Some(state.values.baker),
     ~fee=?state.values.fee->mapIfAdvanced(ProtocolXTZ.fromString),
     ~forceLowFee=?
       advancedOptionOpened && state.values.forceLowFee ? Some(true) : None,
@@ -176,7 +176,7 @@ let make = (~closeAction, ~action) => {
     switch (action) {
     | Delete(account, _) =>
       let op =
-        Protocol.makeDelegate(~source=account.address, ~delegate="", ());
+        Protocol.makeDelegate(~source=account.address, ~delegate=None, ());
       sendOperationSimulate(op->Operation.Simulation.delegation)
       ->Future.tapOk(dryRun => {setModalStep(_ => PasswordStep(op, dryRun))})
       ->ignore;
@@ -219,24 +219,8 @@ let make = (~closeAction, ~action) => {
 
   <ModalFormView back closing>
     {switch (modalStep) {
-     | SubmittedStep(hash) =>
-       <>
-         <Typography.Headline style=FormStyles.header>
-           {switch (action) {
-            | Create(_) => I18n.title#delegation_sent
-            | Edit(_) => I18n.title#baker_updated
-            | Delete(_) => I18n.title#delegation_deleted
-            }}
-           ->React.string
-         </Typography.Headline>
-         <Typography.Overline2>
-           I18n.t#operation_hash->React.string
-         </Typography.Overline2>
-         <Typography.Body1> hash->React.string </Typography.Body1>
-         <View style=FormStyles.formAction>
-           <Buttons.FormPrimary text=I18n.btn#ok onPress=onPressCancel />
-         </View>
-       </>
+     | SubmittedStep(hash) => <SubmittedView hash onPressCancel />
+
      | SendStep =>
        <Form.View
          title
@@ -246,15 +230,20 @@ let make = (~closeAction, ~action) => {
          loading=loadingSimulate
        />
      | PasswordStep(delegation, dryRun) =>
+       let target =
+         switch (delegation.delegate) {
+         | None => ("", I18n.title#withdraw_baker)
+         | Some(d) => (d, I18n.title#baker_account)
+         };
        <SignOperationView
          source=(delegation.source, I18n.title#delegated_account)
-         destinations={`One((delegation.delegate, I18n.title#baker_account))}
+         destinations={`One(target)}
          title=I18n.title#confirm_delegate
          subtitle=I18n.expl#confirm_operation
          content={buildSummaryContent(dryRun)}
          sendOperation={sendOperation(delegation)}
          loading
-       />
+       />;
      }}
   </ModalFormView>;
 };

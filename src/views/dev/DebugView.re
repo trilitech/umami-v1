@@ -169,7 +169,7 @@ let make = () => {
                         Pending(
                           Protocol.makeDelegate(
                             ~source,
-                            ~delegate="delegate",
+                            ~delegate=Some("delegate"),
                             (),
                           )
                           ->Delegation,
