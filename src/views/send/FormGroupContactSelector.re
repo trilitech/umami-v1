@@ -1,5 +1,4 @@
 open ReactNative;
-open Belt;
 
 let itemHeight = 54.;
 let numItemsToDisplay = 4.;
@@ -60,7 +59,7 @@ let make = (~label, ~value: string, ~handleChange, ~error) => {
     ->Option.mapWithDefault([||], Map.String.valuesToArray);
 
   let items =
-    accounts->Belt.Array.keep(account =>
+    accounts->Array.keep(account =>
       account.alias
       ->Js.String2.trim
       ->Js.String2.toLowerCase

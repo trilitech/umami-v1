@@ -45,11 +45,11 @@ let useLoadRegisteredTokens = (~requestState) => {
     TokensAPI.get(settings)
     ->Future.mapOk(response => {
         response
-        ->Belt.Array.map(((alias, symbol, address)) => {
+        ->Array.map(((alias, symbol, address)) => {
             let token: Token.t = {alias, symbol, address};
             (address, token);
           })
-        ->Belt.Map.String.fromArray
+        ->Map.String.fromArray
       });
 
   ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState);
@@ -61,12 +61,12 @@ let useLoadTokens = requestState => {
   let get = (~settings as _, ()) =>
     LocalStorage.getItem(tokensStorageKey)
     ->Js.Nullable.toOption
-    ->Belt.Option.mapWithDefault([||], storageString =>
+    ->Option.mapWithDefault([||], storageString =>
         storageString->Js.Json.parseExn->Token.Decode.array
       )
-    ->Belt.Array.map(token => {(token.address, token)})
-    ->Belt.Map.String.fromArray
-    ->Belt.Result.Ok
+    ->Array.map(token => {(token.address, token)})
+    ->Map.String.fromArray
+    ->Result.Ok
     ->Future.value;
 
   ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState);
@@ -77,18 +77,15 @@ let useCreate = (~sideEffect=?, ()) => {
     let tokens =
       LocalStorage.getItem(tokensStorageKey)
       ->Js.Nullable.toOption
-      ->Belt.Option.mapWithDefault([||], storageString =>
+      ->Option.mapWithDefault([||], storageString =>
           storageString->Js.Json.parseExn->Token.Decode.array
         );
 
     LocalStorage.setItem(
       tokensStorageKey,
-      tokens
-      ->Belt.Array.concat([|token|])
-      ->Token.Encode.array
-      ->Js.Json.stringify,
+      tokens->Array.concat([|token|])->Token.Encode.array->Js.Json.stringify,
     )
-    ->Belt.Result.Ok
+    ->Result.Ok
     ->Future.value;
   };
 

@@ -1,5 +1,4 @@
 open ReactNative;
-open Belt;
 
 type inputType =
   | Selector

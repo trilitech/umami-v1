@@ -9,12 +9,12 @@ let useLoad = requestState => {
     AccountsAPI.get(~settings)
     ->Future.mapOk(response => {
         response
-        ->Belt.Array.map(((alias, address)) => {
+        ->Array.map(((alias, address)) => {
             let account: Account.t = {alias, address};
             (address, account);
           })
-        ->Belt.Array.reverse
-        ->Belt.Map.String.fromArray
+        ->Array.reverse
+        ->Map.String.fromArray
       });
 
   ApiRequest.useLoader(~get, ~kind=Logs.Account, ~requestState);

@@ -72,7 +72,7 @@ module Form = {
       <Typography.ButtonPrimary
         ?fontSize
         colorStyle=?{
-          disabled->Belt.Option.flatMap(disabled =>
+          disabled->Option.flatMap(disabled =>
             disabled ? Some(`disabled) : Some(`highEmphasis)
           )
         }>
@@ -89,7 +89,7 @@ module FormPrimary = {
       <Typography.ButtonPrimary
         ?fontSize
         colorStyle=?{
-          disabled->Belt.Option.flatMap(disabled =>
+          disabled->Option.flatMap(disabled =>
             disabled ? Some(`disabled) : Some(`highEmphasis)
           )
         }>
@@ -106,7 +106,7 @@ module FormSecondary = {
       <Typography.ButtonTernary
         ?fontSize
         colorStyle=?{
-          disabled->Belt.Option.flatMap(disabled =>
+          disabled->Option.flatMap(disabled =>
             disabled ? Some(`disabled) : Some(`highEmphasis)
           )
         }>

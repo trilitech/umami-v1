@@ -55,9 +55,9 @@ let make = (~closeAction) => {
            </Typography.Body1>
          | errors =>
            errors
-           ->Belt.List.keep(({Logs.kind}) => kind == Logs.Error)
-           ->Belt.List.toArray
-           ->Belt.Array.mapWithIndex((i, log) =>
+           ->List.keep(({Logs.kind}) => kind == Logs.Error)
+           ->List.toArray
+           ->Array.mapWithIndex((i, log) =>
                <LogItem
                  key={i->string_of_int}
                  indice=i

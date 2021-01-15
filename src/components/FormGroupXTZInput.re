@@ -1,10 +1,8 @@
 let formatOnBlur = (token, setValue) =>
-  if (token->Belt.Option.isSome) {
+  if (token->Option.isSome) {
     setValue(BusinessUtils.formatToken);
   } else {
-    setValue(s =>
-      s->ProtocolXTZ.formatString->Belt.Option.getWithDefault("")
-    );
+    setValue(s => s->ProtocolXTZ.formatString->Option.getWithDefault(""));
   };
 
 let xtzDecoration = (~style) =>

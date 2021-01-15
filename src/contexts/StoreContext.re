@@ -1,5 +1,3 @@
-open Belt;
-
 open Common;
 
 type reactState('state) = ('state, ('state => 'state) => unit);
@@ -265,10 +263,10 @@ module BalanceToken = {
               acc
               + balanceRequest
                 ->ApiRequest.getDoneOk
-                ->Option.flatMap(Belt.Int.fromString)
+                ->Option.flatMap(Int.fromString)
                 ->Option.getWithDefault(0)
             })
-          ->Belt.Int.toString,
+          ->Int.toString,
         )
       : None;
   };

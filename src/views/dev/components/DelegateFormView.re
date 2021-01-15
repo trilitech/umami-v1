@@ -33,19 +33,21 @@ let make = (~onSubmit) => {
       selectedValue=selectedDelegateIndex
       onValueChange={(value, _) => setSelectedDelegateIndex(_ => value)}>
       {React.array(
-         delegates
-         |> Array.mapi((index, delegate: Delegate.t) =>
-              <Picker.Item
-                label={delegate.name}
-                key={delegate.name}
-                value=index
-              />
-            ),
+         delegates->Array.mapWithIndex((index, delegate: Delegate.t) =>
+           <Picker.Item
+             label={delegate.name}
+             key={delegate.name}
+             value=index
+           />
+         ),
        )}
     </Picker>
     <Button
       onPress={_ =>
-        onSubmit(source, delegates[selectedDelegateIndex].address)
+        onSubmit(
+          source,
+          delegates->Array.getUnsafe(selectedDelegateIndex).address,
+        )
       }
       title="Delegate"
     />

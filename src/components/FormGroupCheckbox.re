@@ -17,7 +17,7 @@ let styles =
 
 [@react.component]
 let make = (~label, ~value, ~handleChange, ~error) => {
-  let hasError = error->Belt.Option.isSome;
+  let hasError = error->Option.isSome;
   <FormGroup>
     <TouchableOpacity
       onPress={_ => handleChange(!value)}

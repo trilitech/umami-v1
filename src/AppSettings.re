@@ -17,10 +17,10 @@ let endpoint = settings =>
   switch (settings.network) {
   | Mainnet =>
     settings.config.endpointMain
-    ->Belt.Option.getWithDefault(ConfigFile.endpointMain)
+    ->Option.getWithDefault(ConfigFile.endpointMain)
   | Testnet =>
     settings.config.endpointTest
-    ->Belt.Option.getWithDefault(ConfigFile.endpointTest)
+    ->Option.getWithDefault(ConfigFile.endpointTest)
   };
 
 let sdk = s =>
@@ -37,11 +37,11 @@ let explorer = (settings: t) =>
   switch (settings.network) {
   | Mainnet =>
     settings.config.explorerMain
-    ->Belt.Option.getWithDefault(ConfigFile.explorerMain)
+    ->Option.getWithDefault(ConfigFile.explorerMain)
 
   | Testnet =>
     settings.config.explorerTest
-    ->Belt.Option.getWithDefault(ConfigFile.explorerTest)
+    ->Option.getWithDefault(ConfigFile.explorerTest)
   };
 
 let natviewer = settings =>
@@ -49,5 +49,5 @@ let natviewer = settings =>
   | Mainnet => assert(false)
   | Testnet =>
     settings.config.natviewerTest
-    ->Belt.Option.getWithDefault(ConfigFile.natviewerTest)
+    ->Option.getWithDefault(ConfigFile.natviewerTest)
   };

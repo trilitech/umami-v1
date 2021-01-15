@@ -147,9 +147,7 @@ let make = (~children) => {
   let writeConf = ConfigContext.useWrite();
   let settings = ConfigContext.useSettings();
   let (themeMain, setMain) =
-    React.useState(_ =>
-      settings.config.theme->Belt.Option.getWithDefault(`dark)
-    );
+    React.useState(_ => settings.config.theme->Option.getWithDefault(`dark));
   React.useEffect1(() => {None}, [|setMain|]);
 
   let switchTheme = () =>

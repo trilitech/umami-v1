@@ -113,7 +113,7 @@ let make =
         <CellAddress>
           {delegate
            ->AliasHelpers.getAliasFromAddress(aliases)
-           ->Belt.Option.mapWithDefault(
+           ->Option.mapWithDefault(
                <Typography.Address numberOfLines=1>
                  delegate->React.string
                </Typography.Address>,

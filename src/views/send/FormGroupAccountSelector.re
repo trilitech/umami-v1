@@ -24,14 +24,12 @@ let make =
     ) => {
   let accounts = StoreContext.Accounts.useGetAll();
 
-  let hasError = error->Belt.Option.isSome;
+  let hasError = error->Option.isSome;
 
   let items =
     accounts
-    ->Belt.Map.String.valuesToArray
-    ->Belt.SortArray.stableSortBy((a, b) =>
-        Pervasives.compare(a.alias, b.alias)
-      );
+    ->Map.String.valuesToArray
+    ->SortArray.stableSortBy((a, b) => Pervasives.compare(a.alias, b.alias));
 
   let (_currentAccount, setCurrent) = React.useState(() => value);
 
@@ -45,8 +43,8 @@ let make =
         onValueChange={value => {
           setCurrent(_ => value);
           accounts
-          ->Belt.Map.String.get(value)
-          ->Belt.Option.mapWithDefault("", a => a.address)
+          ->Map.String.get(value)
+          ->Option.mapWithDefault("", a => a.address)
           ->handleChange;
         }}
         selectedValue=value

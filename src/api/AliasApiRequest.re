@@ -9,11 +9,11 @@ let useLoad = requestState => {
     AliasesAPI.get(~settings)
     ->Future.mapOk(response => {
         response
-        ->Belt.Array.map(((alias, address)) => {
+        ->Array.map(((alias, address)) => {
             let account: Account.t = {alias, address};
             (address, account);
           })
-        ->Belt.Map.String.fromArray
+        ->Map.String.fromArray
       });
 
   ApiRequest.useLoader(~get, ~kind=Logs.Aliases, ~requestState);

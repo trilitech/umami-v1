@@ -77,8 +77,8 @@ module Form = {
           None;
         },
       ~initialState={
-        sender: initAccount->Belt.Option.mapWithDefault("", a => a.address),
-        baker: initDelegate->Belt.Option.getWithDefault(""),
+        sender: initAccount->Option.mapWithDefault("", a => a.address),
+        baker: initDelegate->Option.getWithDefault(""),
         fee: "",
         forceLowFee: false,
       },

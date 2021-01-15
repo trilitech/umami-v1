@@ -24,7 +24,7 @@ let make = () => {
       onChangeText={text =>
         text
         ->ProtocolXTZ.fromString
-        ->(x => x->Belt.Option.getWithDefault(amount1))
+        ->(x => x->Option.getWithDefault(amount1))
         ->(x => setAmount1(_ => x))
       }
       placeholder="amount1"
@@ -39,7 +39,7 @@ let make = () => {
       onChangeText={text =>
         text
         ->ProtocolXTZ.fromString
-        ->(x => x->Belt.Option.getWithDefault(amount2))
+        ->(x => x->Option.getWithDefault(amount2))
         ->(x => setAmount2(_ => x))
       }
       placeholder="amount2"

@@ -88,7 +88,7 @@ let make =
       ~itemHeight=26.,
       ~numItemsToDisplay=8.,
     ) => {
-  let hasError = error->Belt.Option.isSome;
+  let hasError = error->Option.isSome;
 
   let textInputRef = React.useRef(Js.Nullable.null);
   let scrollViewRef = React.useRef(Js.Nullable.null);
@@ -104,7 +104,7 @@ let make =
     handleChange(newValue);
     textInputRef.current
     ->Js.Nullable.toOption
-    ->Belt.Option.map(TextInput.blur)
+    ->Option.map(TextInput.blur)
     ->ignore;
   };
 
@@ -123,7 +123,7 @@ let make =
       if (itemScrollPosition < scrollYRef.current) {
         scrollViewRef.current
         ->Js.Nullable.toOption
-        ->Belt.Option.map(scrollElement =>
+        ->Option.map(scrollElement =>
             scrollElement->ScrollView.scrollTo(
               ScrollView.scrollToParams(~x=0., ~y=itemScrollPosition, ()),
             )
@@ -132,7 +132,7 @@ let make =
       };
     | "ArrowDown" =>
       let newIndex =
-        Js.Math.min_int(list->Belt.Array.size - 1, selectedItemIndex + 1);
+        Js.Math.min_int(list->Array.size - 1, selectedItemIndex + 1);
       setSelectedItemIndex(_ => newIndex);
 
       let topPosition = itemHeight *. (numItemsToDisplay -. 1.);
@@ -142,7 +142,7 @@ let make =
       if (itemScrollPosition > scrollYRef.current) {
         scrollViewRef.current
         ->Js.Nullable.toOption
-        ->Belt.Option.map(scrollElement =>
+        ->Option.map(scrollElement =>
             scrollElement->ScrollView.scrollTo(
               ScrollView.scrollToParams(~x=0., ~y=itemScrollPosition, ()),
             )
@@ -151,8 +151,8 @@ let make =
       };
     | "Enter" =>
       list
-      ->Belt.Array.get(selectedItemIndex)
-      ->Belt.Option.map(item => onChangeItem(item->keyExtractor))
+      ->Array.get(selectedItemIndex)
+      ->Option.map(item => onChangeItem(item->keyExtractor))
       ->ignore
     | _ => ()
     };
@@ -166,7 +166,7 @@ let make =
   let theme = ThemeContext.useTheme();
 
   <View>
-    {renderLabel->Belt.Option.mapWithDefault(React.null, renderLabel =>
+    {renderLabel->Option.mapWithDefault(React.null, renderLabel =>
        renderLabel(displayError)
      )}
     <ThemedTextInput
@@ -189,9 +189,7 @@ let make =
       scrollRef={scrollViewRef->Ref.value}
       onScroll
       scrollEventThrottle=16
-      isOpen={
-        hasFocus && list->Belt.Array.size > 0 && value->Js.String.length > 0
-      }
+      isOpen={hasFocus && list->Array.size > 0 && value->Js.String.length > 0}
       style=Style.(
         array([|
           styles##dropdownmenu,
@@ -210,7 +208,7 @@ let make =
         |])
       )>
       {list
-       ->Belt.Array.mapWithIndex((index, item) =>
+       ->Array.mapWithIndex((index, item) =>
            <Item
              key={item->keyExtractor}
              value={item->keyExtractor}

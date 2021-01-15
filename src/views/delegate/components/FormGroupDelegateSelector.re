@@ -12,22 +12,22 @@ let styles =
 let make = (~label, ~value: string, ~handleChange, ~error, ~disabled) => {
   let accounts = StoreContext.Accounts.useGetAllWithDelegates();
 
-  let hasError = error->Belt.Option.isSome;
+  let hasError = error->Option.isSome;
 
   let items =
     accounts
-    ->Belt.Map.String.valuesToArray
-    ->Belt.Array.keepMap(((account, delegate)) =>
-        delegate->Belt.Option.isNone || disabled ? Some(account) : None
+    ->Map.String.valuesToArray
+    ->Array.keepMap(((account, delegate)) =>
+        delegate->Option.isNone || disabled ? Some(account) : None
       )
-    ->Belt.SortArray.stableSortBy((a, b) =>
+    ->SortArray.stableSortBy((a, b) =>
         Js.String.localeCompare(a.alias, b.alias)->int_of_float
       );
 
   React.useEffect2(
     () => {
       if (value == "") {
-        let firstItem = items->Belt.Array.get(0);
+        let firstItem = items->Array.get(0);
         firstItem->Common.Lib.Option.iter(account =>
           account.address->handleChange
         );

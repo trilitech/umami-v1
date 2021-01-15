@@ -37,7 +37,7 @@ let make = (~children) => {
     React.useMemo1(
       ((), element, isOpen, callback) => {
         setListeners(listeners =>
-          listeners->Belt.Array.concat([|(element, isOpen, callback)|])
+          listeners->Array.concat([|(element, isOpen, callback)|])
         )
       },
       [|setListeners|],
@@ -47,7 +47,7 @@ let make = (~children) => {
     React.useMemo1(
       ((), _element, _isOpen, callback) => {
         setListeners(listeners =>
-          listeners->Belt.Array.keep(((_, _, cb)) => cb !== callback)
+          listeners->Array.keep(((_, _, cb)) => cb !== callback)
         )
       },
       [|setListeners|],
@@ -62,7 +62,7 @@ let make = (~children) => {
   let onStartShouldSetResponderCapture =
     React.useCallback1(
       pressEvent => {
-        listeners->Belt.Array.some(((element, isOpen, _)) => {
+        listeners->Array.some(((element, isOpen, _)) => {
           isOpen
           && element.current !==
           pressEvent->Event.PressEvent.nativeEvent##target
@@ -74,7 +74,7 @@ let make = (~children) => {
   let onResponderRelease =
     React.useCallback1(
       pressEvent => {
-        listeners->Belt.Array.forEach(((_element, _isOpen, callback)) =>
+        listeners->Array.forEach(((_element, _isOpen, callback)) =>
           callback(pressEvent)
         )
       },

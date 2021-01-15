@@ -15,7 +15,7 @@ module Base = {
     let balanceTotal = StoreContext.Balance.useGetTotal();
     let balanceTokenTotal =
       StoreContext.BalanceToken.useGetTotal(
-        token->Belt.Option.map(token => token.address),
+        token->Option.map(token => token.address),
       );
 
     let theme = ThemeContext.useTheme();
@@ -44,7 +44,7 @@ module Base = {
       <Typography.Overline1 style=styles##total>
         "TOTAL BALANCE"->React.string
       </Typography.Overline1>
-      {renderBalance->Belt.Option.mapWithDefault(balanceElement, renderBalance =>
+      {renderBalance->Option.mapWithDefault(balanceElement, renderBalance =>
          renderBalance(balanceElement)
        )}
     </View>;
@@ -70,7 +70,7 @@ module WithTokenSelector = {
 
     let tokens = StoreContext.Tokens.useGetAll();
 
-    let displaySelector = tokens->Belt.Map.String.size > 0;
+    let displaySelector = tokens->Map.String.size > 0;
 
     <Base
       ?token
@@ -80,9 +80,7 @@ module WithTokenSelector = {
               balanceElement => {
                 <TokenSelector
                   style=styles##tokenSelector
-                  selectedToken={
-                    token->Belt.Option.map(token => token.address)
-                  }
+                  selectedToken={token->Option.map(token => token.address)}
                   setSelectedToken=updateToken
                   renderButton={renderButton(balanceElement)}
                 />

@@ -59,7 +59,7 @@ let make =
                    ),
                  )
                : None,
-             interactionStyle->Belt.Option.flatMap(interactionStyle =>
+             interactionStyle->Option.flatMap(interactionStyle =>
                interactionStyle(interactionState)
              ),
            |])

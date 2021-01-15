@@ -1,5 +1,5 @@
 let getAliasFromAddress = (address, aliases) => {
   aliases
-  ->Belt.Map.String.get(address)
-  ->Belt.Option.map((account: Account.t) => account.alias);
+  ->Map.String.get(address)
+  ->Option.map((account: Account.t) => account.alias);
 };

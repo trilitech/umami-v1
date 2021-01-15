@@ -1,7 +1,7 @@
 type t('value) =
   | NotAsked
   | Loading(option('value))
-  | Done(Belt.Result.t('value, string), float);
+  | Done(Result.t('value, string), float);
 
 type setRequest('value) = (t('value) => t('value)) => unit;
 
@@ -66,7 +66,7 @@ let isLoading = request =>
   | _ => false
   };
 
-let isDone = request => request->getDone->Belt.Option.isSome;
+let isDone = request => request->getDone->Option.isSome;
 
 let delay = 30. *. 1000.; // 30sec
 
@@ -227,7 +227,7 @@ let useSetter = (~toast=true, ~sideEffect=?, ~set, ~kind, ()) => {
     set(~settings, input)
     ->logError(addLog(toast), kind)
     ->Future.tap(result => {setRequest(_ => Done(result, Js.Date.now()))})
-    ->Future.tapOk(sideEffect->Belt.Option.getWithDefault(_ => ()));
+    ->Future.tapOk(sideEffect->Option.getWithDefault(_ => ()));
   };
 
   (request, sendRequest);

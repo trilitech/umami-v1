@@ -32,7 +32,7 @@ let make = (~mnemonic, ~setMnemonic, ~onPressCancel, ~goNextStep) => {
               ({words}) => {
                 let errors =
                   words
-                  ->Belt.Array.mapWithIndex((index, word) => {
+                  ->Array.mapWithIndex((index, word) => {
                       Js.String.length(word) == 0
                         ? Some({
                             ReSchema.error: "Invalid word",
@@ -41,10 +41,10 @@ let make = (~mnemonic, ~setMnemonic, ~onPressCancel, ~goNextStep) => {
                           })
                         : None
                     })
-                  ->Belt.Array.keepMap(e => e);
+                  ->Array.keepMap(e => e);
 
                 let fieldState: ReSchema.fieldState =
-                  errors->Belt.Array.size == 0 ? Valid : NestedErrors(errors);
+                  errors->Array.size == 0 ? Valid : NestedErrors(errors);
 
                 fieldState;
               },
@@ -70,14 +70,14 @@ let make = (~mnemonic, ~setMnemonic, ~onPressCancel, ~goNextStep) => {
   <>
     <View style=Style.(array([|styles##wordsList, style(~zIndex=2, ())|]))>
       {form.state.values.words
-       ->Belt.Array.mapWithIndex((index, word) =>
+       ->Array.mapWithIndex((index, word) =>
            <React.Fragment key={index->string_of_int}>
              <View
                style=Style.(
                  array([|
                    styles##wordItem,
                    style(
-                     ~zIndex=form.state.values.words->Belt.Array.size - index,
+                     ~zIndex=form.state.values.words->Array.size - index,
                      (),
                    ),
                  |])

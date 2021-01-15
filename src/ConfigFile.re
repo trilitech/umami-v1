@@ -35,7 +35,7 @@ let default = {
 let toString = c =>
   c
   ->Js.Json.stringifyAny
-  ->Belt.Option.map(Js.Json.parseExn)
-  ->Belt.Option.map(j => Js.Json.stringifyWithSpace(j, 1));
+  ->Option.map(Js.Json.parseExn)
+  ->Option.map(j => Js.Json.stringifyWithSpace(j, 1));
 
 let defaultToString = () => default->toString;

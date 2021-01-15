@@ -1,4 +1,3 @@
-open Belt;
 open ReactNative;
 
 module BalanceAPI = API.Balance(API.TezosClient);

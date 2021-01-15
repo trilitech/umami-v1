@@ -36,7 +36,7 @@ let make = () => {
   let accounts = StoreContext.Accounts.useGetAll();
 
   <View style=styles##container>
-    {accounts->Belt.Map.String.size == 0
+    {accounts->Map.String.size == 0
        ? <LoadingView />
        : <>
            <View style=styles##header>
@@ -79,15 +79,15 @@ let make = () => {
            <View style=styles##list>
              <View style=styles##listContent>
                {accounts
-                ->Belt.Map.String.valuesToArray
-                ->Belt.SortArray.stableSortBy((a, b) =>
+                ->Map.String.valuesToArray
+                ->SortArray.stableSortBy((a, b) =>
                     Pervasives.compare(a.alias, b.alias)
                   )
-                ->Belt.Array.mapWithIndex((index, account) =>
+                ->Array.mapWithIndex((index, account) =>
                     <DelegateRowItem
                       key={account.address}
                       account
-                      zIndex={accounts->Belt.Map.String.size - index}
+                      zIndex={accounts->Map.String.size - index}
                     />
                   )
                 ->React.array}

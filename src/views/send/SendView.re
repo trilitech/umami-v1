@@ -28,7 +28,7 @@ module FormGroupAmountWithTokenSelector = {
       ) => {
     let tokens = StoreContext.Tokens.useGetAll();
 
-    let displaySelector = showSelector && tokens->Belt.Map.String.size > 0;
+    let displaySelector = showSelector && tokens->Map.String.size > 0;
 
     let decoration =
       switch (displaySelector, token) {
@@ -96,7 +96,7 @@ let sourceDestination = (transfer: SendForm.transaction) => {
     )
   | ProtocolTransaction({source, transfers}) =>
     let destinations =
-      transfers->Belt.List.map(t =>
+      transfers->List.map(t =>
         (None, (t.destination, t.amount->ProtocolXTZ.toString))
       );
     ((source, sourceLbl), `Many(destinations));
@@ -116,7 +116,7 @@ let buildSummaryContent =
   switch (transaction) {
   | ProtocolTransaction({transfers}) =>
     let amount =
-      transfers->Belt.List.reduce(ProtocolXTZ.zero, (acc, {amount}) =>
+      transfers->List.reduce(ProtocolXTZ.zero, (acc, {amount}) =>
         ProtocolXTZ.Infix.(acc + amount)
       );
     let subtotal = (
@@ -139,7 +139,7 @@ let buildSummaryContent =
       I18n.t#xtz_amount(dryRun.fee->ProtocolXTZ.toString),
     );
     let amount =
-      token->Belt.Option.mapWithDefault("", (Token.{symbol}) =>
+      token->Option.mapWithDefault("", (Token.{symbol}) =>
         I18n.t#amount(amount->Js.Int.toString, symbol)
       );
     let amount = (I18n.label#send_amount, amount);
@@ -151,7 +151,7 @@ module Form = {
   let defaultInit = (account: option(Account.t)) =>
     SendForm.StateLenses.{
       amount: "",
-      sender: account->Belt.Option.mapWithDefault("", a => a.address),
+      sender: account->Option.mapWithDefault("", a => a.address),
       recipient: "",
       fee: "",
       counter: "",
@@ -195,7 +195,7 @@ module Form = {
           None;
         },
       ~initialState=
-        initValues->Belt.Option.getWithDefault(defaultInit(initAccount)),
+        initValues->Option.getWithDefault(defaultInit(initAccount)),
       (),
     );
   };
@@ -213,16 +213,15 @@ module Form = {
         | Edition(index) =>
           let batch =
             batch
-            ->Belt.List.mapWithIndex((id, elt) =>
+            ->List.mapWithIndex((id, elt) =>
                 id == index ? (form.state.values, true) : elt
               )
-            ->Belt.List.reverse;
+            ->List.reverse;
           (batch, Some(batch->List.length - (index + 1)));
 
         | Creation(_) =>
-          let batch =
-            [(form.state.values, true), ...batch]->Belt.List.reverse;
-          let length = batch->Belt.List.length;
+          let batch = [(form.state.values, true), ...batch]->List.reverse;
+          let length = batch->List.length;
 
           (batch, Some(length - 1));
         };
@@ -261,8 +260,7 @@ module Form = {
           ? I18n.btn#update
           : batchMode ? I18n.btn#add_transaction : I18n.btn#send_submit;
 
-      let onSubmit =
-        onSubmitAll->Belt.Option.getWithDefault(() => form.submit());
+      let onSubmit = onSubmitAll->Option.getWithDefault(() => form.submit());
 
       <>
         <View style=FormStyles.header>
@@ -373,9 +371,7 @@ let make = (~closeAction) => {
   let (modalStep, setModalStep) = React.useState(_ => SendStep);
 
   let (selectedToken, _) as tokenState =
-    React.useState(_ =>
-      initToken->Belt.Option.map(initToken => initToken.address)
-    );
+    React.useState(_ => initToken->Option.map(initToken => initToken.address));
   let token = StoreContext.Tokens.useGet(selectedToken);
 
   let (operationRequest, sendOperation) = StoreContext.Operations.useCreate();
@@ -395,8 +391,7 @@ let make = (~closeAction) => {
   let submitAction = React.useRef(`SubmitAll);
 
   let onSubmitBatch = batch => {
-    let transaction =
-      SendForm.buildTransaction(batch->Belt.List.reverse, token);
+    let transaction = SendForm.buildTransaction(batch->List.reverse, token);
     sendOperationSimulate(SendForm.toSimulation(transaction))
     ->Future.tapOk(dryRun => {
         setModalStep(_ => PasswordStep(transaction, dryRun))
@@ -430,16 +425,14 @@ let make = (~closeAction) => {
 
   let onEdit = (i, advOpened, {state}: SendForm.onSubmitAPI) => {
     setBatch(b =>
-      b->Belt.List.mapWithIndex((j, v) =>
-        i == j ? (state.values, advOpened) : v
-      )
+      b->List.mapWithIndex((j, v) => i == j ? (state.values, advOpened) : v)
     );
     setModalStep(_ => BatchStep);
   };
 
   let onDelete = i => {
-    setBatch(b => b->Belt.List.keepWithIndex((_, j) => j != i));
-    Belt.List.length(batch) == 1 ? setModalStep(_ => SendStep) : ();
+    setBatch(b => b->List.keepWithIndex((_, j) => j != i));
+    List.length(batch) == 1 ? setModalStep(_ => SendStep) : ();
   };
 
   let closing =

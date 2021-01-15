@@ -27,7 +27,7 @@ module File = {
 
   let read =
       (~encoding: encoding=Utf8, name: string)
-      : Future.t(Belt.Result.t(string, string)) => {
+      : Future.t(Result.t(string, string)) => {
     let encoding_str = string_of_encoding(encoding);
     Future.make(resolve => {
       fs##readFile(name, encoding_str, (e, data) => {
@@ -41,7 +41,7 @@ module File = {
 
   let write =
       (~encoding: encoding=Utf8, ~name: string, content: string)
-      : Future.t(Belt.Result.t(unit, string)) => {
+      : Future.t(Result.t(unit, string)) => {
     let encoding_str = string_of_encoding(encoding);
     Future.make(resolve => {
       fs##writeFile(name, content, encoding_str, e => {

@@ -6,8 +6,7 @@ let isValidFloat = value => {
 
 let isValidInt = value => {
   let fieldState: ReSchema.fieldState =
-    value->Js.String2.length == 0
-    || value->int_of_string_opt->Belt.Option.isSome
+    value->Js.String2.length == 0 || value->int_of_string_opt->Option.isSome
       ? Valid : Error("not an int");
   fieldState;
 };

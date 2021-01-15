@@ -79,7 +79,7 @@ module TokenItem = {
 
 let renderButton = (selectedToken: option(Token.t)) =>
   <View style=styles##selectorContent>
-    {selectedToken->Belt.Option.mapWithDefault(<LoadingView />, token =>
+    {selectedToken->Option.mapWithDefault(<LoadingView />, token =>
        <View style=TokenItem.styles##inner>
          <Typography.Body1> token.symbol->React.string </Typography.Body1>
        </View>
@@ -98,13 +98,13 @@ let make =
     ) => {
   let tokens = StoreContext.Tokens.useGetAll();
 
-  let items = tokens->Belt.Map.String.valuesToArray;
+  let items = tokens->Map.String.valuesToArray;
 
   let onValueChange = newValue => {
     setSelectedToken(newValue == xtzToken.address ? None : Some(newValue));
   };
 
-  items->Belt.Array.size > 0
+  items->Array.size > 0
     ? <Selector
         style=Style.(arrayOption([|Some(styles##selector), styleProp|]))
         dropdownStyle=styles##selectorDropdown
