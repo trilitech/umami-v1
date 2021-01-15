@@ -29,44 +29,36 @@ module Encode = {
 };
 
 module Transfer = {
-  type t = {
-    source: string,
+  type elt = {
     destination: string,
     amount: int,
+    token: string,
+    tx_options: Protocol.transfer_options,
   };
 
-  let decode = json =>
-    Json.Decode.{
-      source: json |> field("transfer_source", string),
-      destination: json |> field("transfer_destination", string),
-      amount: json |> field("transfer_amount", int),
-    };
+  type t = {
+    source: string,
+    transfers: list(elt),
+    common_options: Protocol.common_options,
+  };
 };
 
 module Approve = {
   type t = {
     address: string,
     amount: int,
+    token: string,
+    options: (Protocol.transfer_options, Protocol.common_options),
   };
-
-  let decode = json =>
-    Json.Decode.{
-      address: json |> field("approve_address", string),
-      amount: json |> field("approve_amount", int),
-    };
 };
 
 module GetBalance = {
   type t = {
     address: string,
     callback: string,
+    token: string,
+    options: (Protocol.transfer_options, Protocol.common_options),
   };
-
-  let decode = json =>
-    Json.Decode.{
-      address: json |> field("getBalance_address", string),
-      callback: json |> field("getBalance_callback", string),
-    };
 };
 
 module GetAllowance = {
@@ -74,38 +66,66 @@ module GetAllowance = {
     source: string,
     destination: string,
     callback: string,
+    token: string,
+    options: (Protocol.transfer_options, Protocol.common_options),
   };
-
-  let decode = json =>
-    Json.Decode.{
-      source: json |> field("getAllowance_source", string),
-      destination: json |> field("getAllowance_destination", string),
-      callback: json |> field("getAllowance_callback", string),
-    };
 };
 
 module GetTotalSupply = {
-  type t = {callback: string};
-
-  let decode = json =>
-    Json.Decode.{callback: json |> field("getTotalSupply_callback", string)};
+  type t = {
+    callback: string,
+    token: string,
+    options: (Protocol.transfer_options, Protocol.common_options),
+  };
 };
 
-type action =
+type operation =
   | Transfer(Transfer.t)
   | Approve(Approve.t)
   | GetBalance(GetBalance.t)
   | GetAllowance(GetAllowance.t)
   | GetTotalSupply(GetTotalSupply.t);
 
-type operation = {
-  action,
-  token: string,
-  tx_options: Protocol.transfer_options,
-  common_options: Protocol.common_options,
+let makeSingleTransferElt =
+    (~destination, ~amount, ~token, ~fee=?, ~gasLimit=?, ~storageLimit=?, ()) =>
+  Transfer.{
+    token,
+    destination,
+    amount,
+    tx_options:
+      Protocol.makeTransferOptions(
+        ~fee,
+        ~gasLimit,
+        ~storageLimit,
+        ~parameter=None,
+        ~entrypoint=None,
+        (),
+      ),
+  };
+
+let makeTransfers =
+    (
+      ~source,
+      ~transfers,
+      ~counter=?,
+      ~burnCap=?,
+      ~confirmations=?,
+      ~forceLowFee=?,
+      (),
+    ) => {
+  let common_options =
+    Protocol.makeCommonOptions(
+      ~fee=None,
+      ~counter,
+      ~burnCap,
+      ~confirmations,
+      ~forceLowFee,
+      (),
+    );
+  Transfer(Transfer.{source, transfers, common_options});
 };
 
-let makeTransfer =
+let makeSingleTransfer =
     (
       ~source,
       ~destination,
@@ -120,18 +140,7 @@ let makeTransfer =
       ~forceLowFee=?,
       (),
     ) => {
-  action: Transfer(Transfer.{source, destination, amount}),
-  token: contract,
-  tx_options:
-    Protocol.makeTransferOptions(
-      ~fee,
-      ~gasLimit,
-      ~storageLimit,
-      ~parameter=None,
-      ~entrypoint=None,
-      (),
-    ),
-  common_options:
+  let common_options =
     Protocol.makeCommonOptions(
       ~fee,
       ~counter,
@@ -139,7 +148,19 @@ let makeTransfer =
       ~confirmations,
       ~forceLowFee,
       (),
-    ),
+    );
+  let elt =
+    makeSingleTransferElt(
+      ~destination,
+      ~amount,
+      ~token=contract,
+      ~fee?,
+      ~gasLimit?,
+      ~storageLimit?,
+      (),
+    );
+  ();
+  Transfer(Transfer.{source, transfers: [elt], common_options});
 };
 
 let makeGetBalance =
@@ -156,9 +177,7 @@ let makeGetBalance =
       ~forceLowFee=?,
       (),
     ) => {
-  action: GetBalance(GetBalance.{address, callback}),
-  token: contract,
-  tx_options:
+  let tx_options =
     Protocol.makeTransferOptions(
       ~fee,
       ~gasLimit,
@@ -166,8 +185,8 @@ let makeGetBalance =
       ~parameter=None,
       ~entrypoint=None,
       (),
-    ),
-  common_options:
+    );
+  let common_options =
     Protocol.makeCommonOptions(
       ~fee,
       ~counter,
@@ -175,5 +194,13 @@ let makeGetBalance =
       ~confirmations,
       ~forceLowFee,
       (),
-    ),
+    );
+  GetBalance(
+    GetBalance.{
+      address,
+      callback,
+      token: contract,
+      options: (tx_options, common_options),
+    },
+  );
 };

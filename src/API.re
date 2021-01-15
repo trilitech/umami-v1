@@ -1011,8 +1011,8 @@ module Tokens = (Caller: CallerAPI) => {
     };
 
   let make_arguments = (settings, operation: Token.operation, ~offline) => {
-    switch (operation.action) {
-    | Transfer(transfer) =>
+    switch (operation) {
+    | Transfer({source, transfers: [elt], common_options}) =>
       [|
         "-E",
         settings->AppSettings.endpoint,
@@ -1021,21 +1021,23 @@ module Tokens = (Caller: CallerAPI) => {
         "from",
         "token",
         "contract",
-        operation.token,
+        elt.token,
         "transfer",
-        Js.Int.toString(transfer.amount),
+        Js.Int.toString(elt.amount),
         "from",
-        transfer.source,
+        source,
         "to",
-        transfer.destination,
+        elt.destination,
         "--burn-cap",
         "0.01875",
       |]
-      ->Injector.transaction_options_arguments(
-          operation.tx_options,
-          operation.common_options,
-        )
-    | GetBalance(getBalance) =>
+      ->Injector.transaction_options_arguments(elt.tx_options, common_options)
+    | GetBalance({
+        token,
+        address,
+        callback,
+        options: (tx_options, common_options),
+      }) =>
       [|
         "-E",
         settings->AppSettings.endpoint,
@@ -1044,24 +1046,19 @@ module Tokens = (Caller: CallerAPI) => {
         "from",
         "token",
         "contract",
-        operation.token,
+        token,
         "get",
         "balance",
         "for",
-        getBalance.address,
+        address,
       |]
-      ->make_get_arguments(
-          getBalance.callback,
-          offline,
-          operation.tx_options,
-          operation.common_options,
-        )
+      ->make_get_arguments(callback, offline, tx_options, common_options)
     | _ => assert(false)
     };
   };
 
   let offline = (operation: Token.operation) => {
-    switch (operation.action) {
+    switch (operation) {
     | Transfer(_)
     | Approve(_) => false
     | GetBalance(_)
