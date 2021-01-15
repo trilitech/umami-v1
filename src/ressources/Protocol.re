@@ -17,7 +17,7 @@ type common_options = {
 
 type delegation = {
   source: string,
-  delegate: string,
+  delegate: option(string),
   options: common_options,
 };
 

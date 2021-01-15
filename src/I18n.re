@@ -90,6 +90,7 @@ let title = {
   pub recipient_account = "Recipient account";
   pub delegated_account = "Account to delegate";
   pub baker_account = "Baker";
+  pub withdraw_baker = "Withdraw baker";
   pub confirm_delegate = "Confirm delegate";
   pub delegate = "Delegate";
   pub delegate_update = "Change baker";

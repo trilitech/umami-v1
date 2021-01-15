@@ -18,7 +18,7 @@ let make = (~form: DelegateForm.api) => {
       let operation =
         Protocol.makeDelegate(
           ~source=form.values.sender,
-          ~delegate=form.values.baker,
+          ~delegate=Some(form.values.baker),
           (),
         );
       let operation = Operation.Simulation.delegation(operation);
