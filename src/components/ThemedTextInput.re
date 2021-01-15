@@ -38,6 +38,7 @@ let make =
       ~textContentType=?,
       ~secureTextEntry=?,
       ~placeholder=?,
+      ~disabled=false,
       ~style as styleFromProp: option(ReactNative.Style.t)=?,
     ) => {
   let theme = ThemeContext.useTheme();
@@ -54,7 +55,7 @@ let make =
             (),
           ),
         ),
-        isFocused
+        isFocused && !disabled
           ? Some(
               style(
                 ~borderColor=theme.colors.borderPrimary,
@@ -79,6 +80,7 @@ let make =
               ),
             )
           : None,
+        disabled ? Some(style(~color=theme.colors.textDisabled, ())) : None,
         styleFromProp,
       |])
     )
@@ -103,5 +105,6 @@ let make =
     autoFocus=false
     ?keyboardType
     ?placeholder
+    editable={!disabled}
   />;
 };

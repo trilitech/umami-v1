@@ -26,7 +26,7 @@ module AddAccountButton = {
         <ButtonAction onPress text=I18n.btn#add_account icon=Icons.Add.build />
       </View>
       <ModalAction visible=visibleModal onRequestClose=closeAction>
-        <AccountCreateView closeAction />
+        <AccountFormView action=Create closeAction />
       </ModalAction>
     </>;
   };

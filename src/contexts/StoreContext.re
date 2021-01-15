@@ -477,6 +477,11 @@ module Aliases = {
     AliasApiRequest.useCreate(~sideEffect=_ => resetAliases(), ());
   };
 
+  let useUpdate = () => {
+    let resetAliases = useResetAll();
+    AliasApiRequest.useUpdate(~sideEffect=_ => resetAliases(), ());
+  };
+
   let useDelete = () => {
     let resetAliases = useResetAll();
     AliasApiRequest.useDelete(~sideEffect=_ => resetAliases(), ());
@@ -528,6 +533,11 @@ module Accounts = {
   let useCreate = () => {
     let resetAccounts = useResetAll();
     AccountApiRequest.useCreate(~sideEffect=_ => resetAccounts(), ());
+  };
+
+  let useUpdate = () => {
+    let resetAccounts = useResetAll();
+    AccountApiRequest.useUpdate(~sideEffect=_ => resetAccounts(), ());
   };
 
   let useCreateWithMnemonics = () => {

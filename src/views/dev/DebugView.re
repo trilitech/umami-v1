@@ -159,7 +159,7 @@ let make = () => {
               />
               <DelegateFormView
                 onSubmit={(source, delegate) =>
-                  AccountsAPI.add(settings, "delegate", delegate)
+                  AccountsAPI.add(~settings, "delegate", delegate)
                   ->Future.tapOk(_ =>
                       AccountsAPI.get(~settings)
                       ->FutureEx.getOk(value => setAccounts(_ => value))

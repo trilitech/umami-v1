@@ -29,6 +29,16 @@ let useCreate =
     ~kind=Logs.Aliases,
   );
 
+/* Update */
+
+let useUpdate =
+  ApiRequest.useSetter(
+    ~set=
+      (~settings, {alias, address}: Account.t) =>
+        AliasesAPI.add(~settings, alias, address),
+    ~kind=Logs.Aliases,
+  );
+
 /* Delete */
 
 let useDelete =

@@ -644,7 +644,7 @@ module Accounts = (Caller: CallerAPI) => {
       (),
     );
 
-  let add = (settings, alias, pkh) =>
+  let add = (~settings, alias, pkh) =>
     settings->AppSettings.sdk->TezosSDK.addAddress(alias, pkh);
 
   let import = (key, name) =>
