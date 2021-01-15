@@ -1,3 +1,4 @@
+open UmamiCommon;
 include ApiRequest;
 module TokensAPI = API.Tokens(API.TezosClient);
 
@@ -27,7 +28,7 @@ let useLoadOperationOffline =
   React.useEffect3(
     () => {
       let shouldReload = ApiRequest.conditionToLoad(request, isMounted);
-      operation->Common.Lib.Option.iter(operation =>
+      operation->Lib.Option.iter(operation =>
         if (shouldReload) {
           getRequest(operation);
         }

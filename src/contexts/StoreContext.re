@@ -1,4 +1,4 @@
-open Common;
+open UmamiCommon;
 
 type reactState('state) = ('state, ('state => 'state) => unit);
 

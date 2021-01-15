@@ -1,4 +1,5 @@
 open ReactNative;
+open UmamiCommon;
 
 let styles =
   Style.(
@@ -28,9 +29,7 @@ let make = (~label, ~value: string, ~handleChange, ~error, ~disabled) => {
     () => {
       if (value == "") {
         let firstItem = items->Array.get(0);
-        firstItem->Common.Lib.Option.iter(account =>
-          account.address->handleChange
-        );
+        firstItem->Lib.Option.iter(account => account.address->handleChange);
       };
       None;
     },

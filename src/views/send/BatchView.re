@@ -1,5 +1,5 @@
 open ReactNative;
-open Common;
+open UmamiCommon;
 
 let styles =
   Style.(

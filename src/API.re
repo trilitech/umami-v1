@@ -1,5 +1,5 @@
 open ChildReprocess.StdStream;
-open Common;
+open UmamiCommon;
 open Delegate;
 
 module Path = {

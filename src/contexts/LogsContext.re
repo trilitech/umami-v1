@@ -1,5 +1,5 @@
 open ReactNative;
-open Common;
+open UmamiCommon;
 type state = {
   logs: list(Logs.t),
   add: (bool, Logs.t) => unit,

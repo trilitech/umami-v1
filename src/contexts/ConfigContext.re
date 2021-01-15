@@ -1,4 +1,4 @@
-open Common;
+open UmamiCommon;
 type config = {
   content: ConfigFile.t,
   write: (ConfigFile.t => ConfigFile.t) => unit,

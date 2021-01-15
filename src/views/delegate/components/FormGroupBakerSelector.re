@@ -1,3 +1,4 @@
+open UmamiCommon;
 open ReactNative;
 
 type inputType =
@@ -142,9 +143,7 @@ let make = (~label, ~value: string, ~handleChange, ~error) => {
         if (value == "") {
           // if input selector and no value, select first entry
           let firstItem = items->Array.get(0);
-          firstItem->Common.Lib.Option.iter(baker =>
-            baker.address->handleChange
-          );
+          firstItem->Lib.Option.iter(baker => baker.address->handleChange);
         } else if (items->Array.size > 0
                    && !items->Array.some(baker => baker.address == value)) {
           // if input selector and value isn't in the item list : switch to input text
