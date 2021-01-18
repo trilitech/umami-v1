@@ -33,19 +33,11 @@ let make = () => {
       |])
     )>
     <View style=styles##nameLogo>
-      <SVGLogoTmp
-        width={46.->Style.dp}
-        height={46.->Style.dp}
-        fill={theme.colors.iconHighEmphasis}
+      <SVGLogoUmami
+        width={87.->Style.dp}
+        height={20.->Style.dp}
+        fill={theme.colors.textHighEmphasis}
       />
-      <View style=styles##spacer />
-      <Typography.Base
-        colorStyle=`highEmphasis
-        fontSize=20.
-        fontWeightStyle=`semiBold
-        style=styles##title>
-        {js|Umami|js}->React.string
-      </Typography.Base>
     </View>
     <TouchableOpacity onPress={_ => switchTheme()}>
       <Icons.DarkMode size=36. color={theme.colors.iconDisabled} />
