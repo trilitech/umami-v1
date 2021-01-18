@@ -5,88 +5,109 @@ type action =
   | Create
   | Edit(Account.t);
 
-[@react.component]
-let make = (~action: action, ~closeAction) => {
-  let (createAccountRequest, createAccount) =
-    StoreContext.Accounts.useCreate();
-  let (updateAccountRequest, updateAccount) =
-    StoreContext.Accounts.useUpdate();
-
-  let addLog = LogsContext.useAdd();
-
-  let form: AccountCreateForm.api =
-    AccountCreateForm.use(
-      ~schema={
-        AccountCreateForm.Validation.(Schema(nonEmpty(Name)));
-      },
-      ~onSubmit=
-        ({state}) => {
-          switch (action) {
-          | Create =>
-            createAccount(state.values.name)
-            ->Future.tapOk(_ => closeAction())
-            ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
-                I18n.t#account_created
-              )
-            ->ignore
-          | Edit(account) =>
-            updateAccount({
-              alias: state.values.name,
-              address: account.address,
-            })
-            ->Future.tapOk(_ => closeAction())
-            ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
-                I18n.t#account_updated
-              )
-            ->ignore
-          };
-
-          None;
-        },
-      ~initialState={
-        name:
-          switch (action) {
-          | Create => ""
-          | Edit(account) => account.alias
-          },
-      },
-      (),
-    );
-
-  let onSubmit = _ => {
-    form.submit();
-  };
-
-  let loading =
-    createAccountRequest->ApiRequest.isLoading
-    || updateAccountRequest->ApiRequest.isLoading;
-
-  <ModalFormView closing={ModalFormView.Close(closeAction)}>
-    <Typography.Headline style=FormStyles.header>
+module Generic = {
+  [@react.component]
+  let make =
       (
-        switch (action) {
-        | Create => I18n.title#account_create
-        | Edit(_) => I18n.title#account_update
-        }
-      )
-      ->React.string
-    </Typography.Headline>
-    <FormGroupTextInput
-      label=I18n.label#account_create_name
-      value={form.values.name}
-      handleChange={form.handleChange(Name)}
-      error={form.getFieldError(Field(Name))}
-    />
-    <Buttons.SubmitPrimary
-      text={
-        switch (action) {
-          | Create => I18n.btn#create
-          | Edit(_) => I18n.btn#update
-          }
-      }
-      onPress=onSubmit
-      loading
-      style=FormStyles.formSubmit
-    />
-  </ModalFormView>;
+        ~init,
+        ~title,
+        ~buttonText,
+        ~action: string => Future.t(Result.t('a, 'b)),
+        ~request,
+        ~closeAction,
+      ) => {
+    let form: AccountCreateForm.api =
+      AccountCreateForm.use(
+        ~schema={
+          AccountCreateForm.Validation.(Schema(nonEmpty(Name)));
+        },
+        ~onSubmit=
+          ({state}) => {
+            action(state.values.name)
+            ->Future.tapOk(() => closeAction())
+            ->ignore;
+
+            None;
+          },
+        ~initialState={name: init},
+        (),
+      );
+
+    let onSubmit = _ => {
+      form.submit();
+    };
+
+    let loading = request->ApiRequest.isLoading;
+
+    <ModalFormView closing={ModalFormView.Close(closeAction)}>
+      <Typography.Headline style=FormStyles.header>
+        title->React.string
+      </Typography.Headline>
+      <FormGroupTextInput
+        label=I18n.label#account_create_name
+        value={form.values.name}
+        handleChange={form.handleChange(Name)}
+        error={form.getFieldError(Field(Name))}
+      />
+      <Buttons.SubmitPrimary
+        text=buttonText
+        onPress=onSubmit
+        loading
+        style=FormStyles.formSubmit
+      />
+    </ModalFormView>;
+  };
+};
+
+module Update = {
+  [@react.component]
+  let make = (~closeAction, ~account: Account.t) => {
+    let (updateAccountRequest, updateAccount) =
+      StoreContext.Accounts.useUpdate();
+
+    let addLog = LogsContext.useAdd();
+
+    let action = name => {
+      updateAccount({alias: name, address: account.address})
+      ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
+          I18n.t#account_updated
+        );
+    };
+
+    <Generic
+      init={account.alias}
+      buttonText=I18n.btn#update
+      title=I18n.title#account_update
+      request=updateAccountRequest
+      action
+      closeAction
+    />;
+  };
+};
+
+module Create = {
+  [@react.component]
+  let make = (~closeAction) => {
+    let (createAccountRequest, createAccount) =
+      StoreContext.Accounts.useCreate();
+
+    let addLog = LogsContext.useAdd();
+
+    let action = (name): Future.t(Belt.Result.t(unit, string)) => {
+      createAccount(name)
+      ->Future.mapOk(_ => ())
+      ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
+          I18n.t#account_created
+        );
+    };
+
+    <Generic
+      init=""
+      buttonText=I18n.btn#create
+      title=I18n.title#account_create
+      request=createAccountRequest
+      action
+      closeAction
+    />;
+  };
 };

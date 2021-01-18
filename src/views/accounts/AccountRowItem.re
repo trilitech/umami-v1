@@ -29,7 +29,7 @@ module AccountEditButton = {
     <>
       <Menu.Item text="Edit account" icon=Icons.Edit.build onPress />
       <ModalAction visible=visibleModal onRequestClose=closeAction>
-        <AccountFormView action={Edit(account)} closeAction />
+        <AccountFormView.Update account closeAction />
       </ModalAction>
     </>;
   };
