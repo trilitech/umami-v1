@@ -11,26 +11,27 @@ type t =
 
 exception RouteToNotFound;
 
-let match = (url: url) =>
-  switch (url.path) {
-  | ["index.html"] // need to fix this in electron
-  | [] => Accounts
-  | ["operations"] => Operations
-  | ["address-book"] => AddressBook
-  | ["delegations"] => Delegations
-  | ["tokens"] => Tokens
-  | ["debug"] => Debug
+let match = (url: url) => {
+  switch (url.hash) {
+  | ""
+  | "/" => Accounts
+  | "/operations" => Operations
+  | "/address-book" => AddressBook
+  | "/delegations" => Delegations
+  | "/tokens" => Tokens
+  | "/debug" => Debug
   | _ => NotFound
   };
+};
 
 let toHref =
   fun
-  | Accounts => "/"
-  | Operations => "/operations"
-  | AddressBook => "/address-book"
-  | Delegations => "/delegations"
-  | Tokens => "/tokens"
-  | Debug => "/debug"
+  | Accounts => "#/"
+  | Operations => "#/operations"
+  | AddressBook => "#/address-book"
+  | Delegations => "#/delegations"
+  | Tokens => "#/tokens"
+  | Debug => "#/debug"
   | NotFound => raise(RouteToNotFound);
 
 /* This lets us push a Routes.t instead of a string to transition to a new  screen */
