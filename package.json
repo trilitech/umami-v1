@@ -1,5 +1,6 @@
 {
   "name": "@nomadic-labs/umami",
+  "productName": "umami",
   "version": "0.1.0",
   "author": "Nomadic Labs",
   "description": "React-TypeScript-Electron sample with Create React App and Electron Builder",
