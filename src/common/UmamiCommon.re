@@ -73,4 +73,9 @@ module Lib = {
       };
     };
   };
+
+  let tap = (x, f) => {
+    f(x);
+    x;
+  };
 };
