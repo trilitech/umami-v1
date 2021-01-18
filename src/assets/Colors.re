@@ -9,7 +9,7 @@ module Dark = {
   let positive = "#76E59B";
   let negative = "#f97977";
 
-  let primary = "#f69679";
+  let primary = "#f74f18";
 
   let background = "#121212";
   let barBackground = "#212121";
@@ -31,7 +31,7 @@ module Light = {
   let positive = "#55a388";
   let negative = "#d46250";
 
-  let primary = "#ff8c69";
+  let primary = "#f74f18";
 
   let background = "#f9f9f9";
   let barBackground = "#FFF";
