@@ -338,6 +338,15 @@ module Operations = {
     );
   };
 
+  let useResetNames = () => {
+    let store = useStoreContext();
+
+    let (_, setOperationsRequests) = store.operationsRequestsState;
+    () => {
+      setOperationsRequests(resetRequests);
+    };
+  };
+
   let useResetAll = () => {
     let store = useStoreContext();
     let resetBalances = Balance.useResetAll();
@@ -513,6 +522,17 @@ module Accounts = {
     accounts->Map.String.get(address);
   };
 
+  let useResetNames = () => {
+    let resetAliases = Aliases.useResetAll();
+    let resetOperations = Operations.useResetNames();
+    let (_, setAccountsRequest) = useRequestState();
+    () => {
+      setAccountsRequest(ApiRequest.updateToResetState);
+      resetAliases();
+      resetOperations();
+    };
+  };
+
   let useResetAll = () => {
     let resetOperations = Operations.useResetAll();
     let resetAliases = Aliases.useResetAll();
@@ -530,7 +550,7 @@ module Accounts = {
   };
 
   let useUpdate = () => {
-    let resetAccounts = useResetAll();
+    let resetAccounts = useResetNames();
     AccountApiRequest.useUpdate(~sideEffect=_ => resetAccounts(), ());
   };
 
