@@ -19,6 +19,30 @@ module CellAddress =
     ();
   });
 
+module CellAction =
+  Table.MakeCell({
+    let style = Style.(style(~flexBasis=68.->dp, ~alignItems=`flexEnd, ()));
+    ();
+  });
+
+module TokenDeleteButton = {
+  [@react.component]
+  let make = (~token: Token.t) => {
+    let (tokenRequest, deleteToken) = StoreContext.Tokens.useDelete();
+
+    let onPressConfirmDelete = _e => {
+      deleteToken(token)->ignore;
+    };
+
+    <DeleteButton
+      buttonText=I18n.btn#delete_token
+      modalTitle=I18n.title#delete_token
+      onPressConfirmDelete
+      request=tokenRequest
+    />;
+  };
+};
+
 [@react.component]
 let make = (~token: Token.t) => {
   <Table.Row>
@@ -37,5 +61,8 @@ let make = (~token: Token.t) => {
         token.address->React.string
       </Typography.Address>
     </CellAddress>
+    <CellAction>
+      <Menu icon=Icons.More.build size=30.> <TokenDeleteButton token /> </Menu>
+    </CellAction>
   </Table.Row>;
 };
