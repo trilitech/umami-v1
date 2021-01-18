@@ -61,24 +61,33 @@ let renderLabel = (displayIndex, displayError) => {
 };
 
 [@react.component]
-let make = (~displayIndex, ~value, ~handleChange, ~error) => {
-  let wordlists =
-    Bip39.wordlistsEnglish
-    ->Array.keep(
-        Js.String.startsWith(value->Js.String2.trim->Js.String2.toLowerCase),
-      )
-    ->Array.slice(~offset=0, ~len=12);
+let make =
+  React.memo(
+    (
+      ~displayIndex: int,
+      ~value: string,
+      ~handleChange: string => unit,
+      ~error: option(string),
+    ) => {
+    let wordlists =
+      Bip39.wordlistsEnglish
+      ->Array.keep(
+          Js.String.startsWith(
+            value->Js.String2.trim->Js.String2.toLowerCase,
+          ),
+        )
+      ->Array.slice(~offset=0, ~len=12);
 
-  <Autocomplete
-    value
-    handleChange
-    error
-    list=wordlists
-    renderItem
-    keyExtractor
-    renderLabel={renderLabel(displayIndex)}
-    style=styles##input
-    itemHeight
-    numItemsToDisplay
-  />;
-};
+    <Autocomplete
+      value
+      handleChange
+      error
+      list=wordlists
+      renderItem
+      keyExtractor
+      renderLabel={renderLabel(displayIndex)}
+      style=styles##input
+      itemHeight
+      numItemsToDisplay
+    />;
+  });
