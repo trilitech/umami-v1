@@ -152,7 +152,14 @@ module Balance = (Caller: CallerAPI) => {
         ->Float.fromString
         ->Option.map(Float.toString)
         ->Option.flatMap(ProtocolXTZ.fromString)
-        ->Lib.Result.fromOption("Cannot parse balance")
+        ->(
+            ropt =>
+              switch (ropt) {
+              | None when r == "" => Ok(ProtocolXTZ.zero)
+              | None => Error("Cannot parse balance")
+              | Some(r) => Ok(r)
+              }
+          )
         ->Future.value
       );
   };
@@ -789,12 +796,7 @@ module Aliases = (Caller: CallerAPI) => {
     |> (pairs => pairs->Js.Array2.filter(pair => pair->Array.length == 2))
     |> Js.Array.map(pair =>
          (pair->Array.getUnsafe(0), pair->Array.getUnsafe(1))
-       )
-    |> Js.Array.sortInPlaceWith((a, b) => {
-         let (a, _) = a;
-         let (b, _) = b;
-         a->compare(b);
-       });
+       );
 
   let get = (~settings) =>
     Caller.call(
