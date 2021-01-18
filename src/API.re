@@ -152,7 +152,14 @@ module Balance = (Caller: CallerAPI) => {
         ->Float.fromString
         ->Option.map(Float.toString)
         ->Option.flatMap(ProtocolXTZ.fromString)
-        ->Lib.Result.fromOption("Cannot parse balance")
+        ->(
+            ropt =>
+              switch (ropt) {
+              | None when r == "" => Ok(ProtocolXTZ.zero)
+              | None => Error("Cannot parse balance")
+              | Some(r) => Ok(r)
+              }
+          )
         ->Future.value
       );
   };
