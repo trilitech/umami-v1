@@ -35,7 +35,10 @@ let make = (~action: action, ~closeAction) => {
               )
             ->ignore
           | Edit(account) =>
-            updateAlias({alias: state.values.name, address: account.address})
+            updateAlias({
+              new_name: state.values.name,
+              old_name: account.alias,
+            })
             ->Future.tapOk(_ => closeAction())
             ->ApiRequest.logOk(addToast, Logs.Account, _ =>
                 I18n.t#account_updated

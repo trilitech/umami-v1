@@ -90,3 +90,18 @@ let addAddress = (sdk, alias, pkh) =>
        addAddress(sdk.lib, sdk.cctxt, {alias, pkh, force: true})
      )
   |> fromPromise;
+
+type renameParams = {
+  old_name: string,
+  new_name: string,
+};
+
+[@bs.send]
+external renameAliases:
+  (lib, cctxt, renameParams) => Js.Promise.t(result(unit)) =
+  "rename_aliases";
+
+let renameAliases = (sdk, renameAlias) =>
+  sdk
+  |> Js.Promise.then_(sdk => renameAliases(sdk.lib, sdk.cctxt, renameAlias))
+  |> fromPromise;

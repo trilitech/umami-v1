@@ -67,8 +67,8 @@ module Update = {
 
     let addLog = LogsContext.useAdd();
 
-    let action = name => {
-      updateAccount({alias: name, address: account.address})
+    let action = new_name => {
+      updateAccount({old_name: account.alias, new_name})
       ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
           I18n.t#account_updated
         );
