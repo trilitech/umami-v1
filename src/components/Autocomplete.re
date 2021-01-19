@@ -85,6 +85,9 @@ let make =
       ~keyExtractor: 'item => string,
       ~renderLabel: option(bool => React.element)=?,
       ~style as styleFromProp=?,
+      ~inputPaddingLeft=?,
+      ~inputPaddingRight=?,
+      ~inputPaddingVertical=?,
       ~itemHeight=26.,
       ~numItemsToDisplay=8.,
     ) => {
@@ -172,6 +175,9 @@ let make =
     <ThemedTextInput
       inputRef={textInputRef->Ref.value}
       style=?styleFromProp
+      paddingLeft=?inputPaddingLeft
+      paddingRight=?inputPaddingRight
+      paddingVertical=?inputPaddingVertical
       value
       hasError
       onValueChange={newValue => {

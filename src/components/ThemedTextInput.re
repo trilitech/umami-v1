@@ -12,9 +12,6 @@ let styles =
       "input":
         style(
           ~height=44.->dp,
-          ~paddingVertical=(paddingVertical -. borderWidth)->dp,
-          ~paddingLeft=(paddingLeft -. borderWidth)->dp,
-          ~paddingRight=(paddingRight -. borderWidth)->dp,
           ~fontFamily="EBGaramond",
           ~fontSize=16.,
           ~fontWeight=`normal,
@@ -40,10 +37,14 @@ let make =
       ~secureTextEntry=?,
       ~placeholder=?,
       ~disabled=false,
+      ~paddingVertical=paddingVertical,
+      ~paddingLeft=paddingLeft,
+      ~paddingRight=paddingRight,
       ~style as styleFromProp: option(ReactNative.Style.t)=?,
     ) => {
   let theme = ThemeContext.useTheme();
   let (isFocused, setIsFocused) = React.useState(_ => false);
+
   <TextInput
     ref=?inputRef
     style=Style.(
@@ -54,6 +55,9 @@ let make =
             ~color=theme.colors.textHighEmphasis,
             ~backgroundColor=theme.colors.background,
             ~borderColor=theme.colors.borderMediumEmphasis,
+            ~paddingVertical=(paddingVertical -. borderWidth)->dp,
+            ~paddingLeft=(paddingLeft -. borderWidth)->dp,
+            ~paddingRight=(paddingRight -. borderWidth)->dp,
             (),
           ),
         ),

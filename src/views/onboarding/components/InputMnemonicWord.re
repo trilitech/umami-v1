@@ -31,8 +31,7 @@ module Item = {
 let styles =
   Style.(
     StyleSheet.create({
-      "input":
-        style(~paddingLeft=(10. +. 17. +. 13.)->dp, ~height=36.->dp, ()),
+      "input": style(~height=36.->dp, ()),
       "wordItemIndexContainer":
         style(
           ~position=`absolute,
@@ -88,6 +87,7 @@ module Base = {
         keyExtractor
         renderLabel={renderLabel(displayIndex)}
         style=styles##input
+        inputPaddingLeft={10. +. 17. +. 13.}
         itemHeight
         numItemsToDisplay
       />;
