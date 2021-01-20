@@ -1001,6 +1001,33 @@ module Tokens = (Caller: CallerAPI) => {
     };
   };
 
+  let transfer = (elt: Token.Transfer.elt) => {
+    let obj = Js.Dict.empty();
+    Js.Dict.set(obj, "destination", Js.Json.string(elt.destination));
+    Js.Dict.set(obj, "amount", elt.amount->Js.Int.toString->Js.Json.string);
+    Js.Dict.set(obj, "token", elt.token->Js.Json.string);
+    elt.tx_options.fee
+    ->Lib.Option.iter(v =>
+        Js.Dict.set(obj, "fee", v->ProtocolXTZ.toString->Js.Json.string)
+      );
+    elt.tx_options.gasLimit
+    ->Lib.Option.iter(v =>
+        Js.Dict.set(obj, "gas-limit", Js.Int.toString(v)->Js.Json.string)
+      );
+    elt.tx_options.storageLimit
+    ->Lib.Option.iter(v =>
+        Js.Dict.set(obj, "storage-limit", Js.Int.toString(v)->Js.Json.string)
+      );
+    Js.Json.object_(obj);
+  };
+
+  let transfers_to_json = (transfers: list(Token.Transfer.elt)) =>
+    transfers
+    ->List.map(transfer)
+    ->List.toArray
+    ->Js.Json.array
+    ->Js.Json.stringify /* ->(json => "\'" ++ json ++ "\'") */;
+
   let make_get_arguments =
       (arguments, callback, offline, tx_options, common_options) =>
     if (offline) {
@@ -1011,8 +1038,8 @@ module Tokens = (Caller: CallerAPI) => {
     };
 
   let make_arguments = (settings, operation: Token.operation, ~offline) => {
-    switch (operation.action) {
-    | Transfer(transfer) =>
+    switch (operation) {
+    | Transfer({source, transfers: [elt], common_options}) =>
       [|
         "-E",
         settings->AppSettings.endpoint,
@@ -1021,21 +1048,43 @@ module Tokens = (Caller: CallerAPI) => {
         "from",
         "token",
         "contract",
-        operation.token,
+        elt.token,
         "transfer",
-        Js.Int.toString(transfer.amount),
+        Js.Int.toString(elt.amount),
         "from",
-        transfer.source,
+        source,
         "to",
-        transfer.destination,
+        elt.destination,
         "--burn-cap",
         "0.01875",
       |]
+      ->Injector.transaction_options_arguments(elt.tx_options, common_options)
+    | Transfer({source, transfers, common_options}) =>
+      [|
+        "-E",
+        settings->AppSettings.endpoint,
+        "-w",
+        "none",
+        "multiple",
+        "tokens",
+        "transfers",
+        "from",
+        source,
+        "using",
+        transfers_to_json(transfers),
+        "--burn-cap",
+        Js.Float.toString(0.08300 *. transfers->List.length->float_of_int),
+      |]
       ->Injector.transaction_options_arguments(
-          operation.tx_options,
-          operation.common_options,
+          Protocol.emptyTransferOptions,
+          common_options,
         )
-    | GetBalance(getBalance) =>
+    | GetBalance({
+        token,
+        address,
+        callback,
+        options: (tx_options, common_options),
+      }) =>
       [|
         "-E",
         settings->AppSettings.endpoint,
@@ -1044,24 +1093,19 @@ module Tokens = (Caller: CallerAPI) => {
         "from",
         "token",
         "contract",
-        operation.token,
+        token,
         "get",
         "balance",
         "for",
-        getBalance.address,
+        address,
       |]
-      ->make_get_arguments(
-          getBalance.callback,
-          offline,
-          operation.tx_options,
-          operation.common_options,
-        )
+      ->make_get_arguments(callback, offline, tx_options, common_options)
     | _ => assert(false)
     };
   };
 
   let offline = (operation: Token.operation) => {
-    switch (operation.action) {
+    switch (operation) {
     | Transfer(_)
     | Approve(_) => false
     | GetBalance(_)

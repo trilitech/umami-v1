@@ -39,6 +39,14 @@ type t =
 
 let transfer = t => t->Transaction;
 
+let emptyTransferOptions = {
+  fee: None,
+  gasLimit: None,
+  storageLimit: None,
+  parameter: None,
+  entrypoint: None,
+};
+
 let makeTransferOptions =
     (~fee, ~gasLimit, ~storageLimit, ~parameter, ~entrypoint, ()) => {
   fee,

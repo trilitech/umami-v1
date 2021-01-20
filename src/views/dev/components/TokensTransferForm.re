@@ -30,7 +30,7 @@ let make = () => {
     />
     <Button
       onPress={_ =>
-        Token.makeTransfer(
+        Token.makeSingleTransfer(
           ~source,
           ~destination,
           ~amount=int_of_string(amount),

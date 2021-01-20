@@ -59,7 +59,7 @@ let buildTransfer =
   | Some(token) =>
     let amount = values.amount->int_of_string;
     let transfer =
-      Token.makeTransfer(
+      Token.makeSingleTransfer(
         ~source,
         ~amount,
         ~destination,
