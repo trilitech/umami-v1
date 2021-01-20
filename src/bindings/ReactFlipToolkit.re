@@ -39,10 +39,43 @@ module Flipped = {
   };
 };
 
-module FlippedView = {
-  [@react.component] [@bs.module "./FlippedView"]
+module ViewWithFlippedProps = {
+  [@react.component] [@bs.module "./ViewWithFlippedProps"]
   external make:
     (~flippedProps: Flipped.flippedProps, ~children: React.element) =>
     React.element =
     "default";
+};
+
+module FlippedView = {
+  [@react.component]
+  let make =
+      (
+        ~flipId,
+        ~scale=?,
+        ~translate=?,
+        ~opacity=?,
+        ~onAppear=?,
+        ~onExit=?,
+        ~children,
+      ) => {
+    <Flipped flipId ?scale ?translate ?opacity ?onAppear ?onExit>
+      {flippedProps => {
+         <ViewWithFlippedProps flippedProps> children </ViewWithFlippedProps>;
+       }}
+    </Flipped>;
+  };
+
+  module Inverse = {
+    [@react.component]
+    let make = (~inverseFlipId: string, ~children: React.element) => {
+      <Flipped.Inverse inverseFlipId>
+        {flippedProps => {
+           <ViewWithFlippedProps flippedProps>
+             children
+           </ViewWithFlippedProps>;
+         }}
+      </Flipped.Inverse>;
+    };
+  };
 };
