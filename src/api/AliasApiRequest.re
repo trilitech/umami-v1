@@ -1,6 +1,5 @@
 /* ALIAS */
 
-open UmamiCommon;
 module AliasesAPI = API.Aliases(API.TezosClient);
 
 /* Get list */
@@ -36,8 +35,8 @@ let useCreate =
 let useUpdate =
   ApiRequest.useSetter(
     ~set=
-      (~settings, {alias, address}: Account.t) =>
-        AliasesAPI.add(~settings, alias, address),
+      (~settings, renaming: TezosSDK.renameParams) =>
+        TezosSDK.renameAliases(AppSettings.sdk(settings), renaming),
     ~kind=Logs.Aliases,
   );
 

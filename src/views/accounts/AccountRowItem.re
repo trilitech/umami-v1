@@ -76,9 +76,8 @@ let make = (~account: Account.t, ~token: option(Token.t)=?, ~zIndex) => {
      })}
     <View style=styles##actionMenu>
       <Menu icon=Icons.More.build>
-        <AccountEditButton account />
-        <AccountDeleteButton account />
-      </Menu>
+         <AccountEditButton account /> </Menu>
+        /* <AccountDeleteButton account /> */
     </View>
   </RowItem.Bordered>;
 };

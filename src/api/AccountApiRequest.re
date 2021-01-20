@@ -28,8 +28,8 @@ let useCreate =
 let useUpdate =
   ApiRequest.useSetter(
     ~set=
-      (~settings, {alias, address}: Account.t) =>
-        AccountsAPI.add(~settings, alias, address),
+      (~settings, renaming: TezosSDK.renameParams) =>
+        TezosSDK.renameAliases(AppSettings.sdk(settings), renaming),
     ~kind=Logs.Account,
   );
 
