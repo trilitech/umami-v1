@@ -1,3 +1,8 @@
+%raw
+"
+   jest.mock('../__mocks__/electron.js')
+   ";
+
 open TestFramework;
 
 let settings =
@@ -5,8 +10,8 @@ let settings =
     network: Testnet,
     config: ConfigFile.default,
     sdk: {
-      main: TezosSDK.init("", ""),
-      test: TezosSDK.init("", ""),
+      main: Obj.magic(""),
+      test: Obj.magic(""),
     },
   };
 
