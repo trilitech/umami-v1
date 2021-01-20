@@ -102,7 +102,8 @@ module Form = {
     let onExit = (el, _, removeElement) => {
       ReactFlipToolkit.spring({
         onUpdate: value => {
-          el->ReactDOMRe.domElementToObj##style##opacity #= (1. -. value);
+          el->ReactDOMRe.domElementToObj##style##opacity
+          #= Js.Math.max_float(0., 1. -. value -. 0.1);
         },
         delay: 0.,
         onComplete: removeElement,
