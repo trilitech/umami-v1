@@ -4,6 +4,9 @@ module StateLenses = [%lenses type state = {words: array(string)}];
 
 module VerifyMnemonicForm = ReForm.Make(StateLenses);
 
+let stateField = StateLenses.Words;
+let formField = VerifyMnemonicForm.ReSchema.Field(stateField);
+
 let styles =
   Style.(
     StyleSheet.create({
@@ -83,10 +86,12 @@ let make = (~mnemonic, ~setMnemonic, ~onPressCancel, ~goNextStep) => {
                  |])
                )>
                <InputMnemonicWord
-                 displayIndex=index
-                 value=word
-                 handleChange={form.arrayUpdateByIndex(~field=Words, ~index)}
-                 error={form.getNestedFieldError(Field(Words), index)}
+                 index
+                 word
+                 arrayUpdateByIndex={form.arrayUpdateByIndex}
+                 getNestedFieldError={form.getNestedFieldError}
+                 formField
+                 stateField
                />
              </View>
              {index mod 2 == 0 ? <View style=styles##wordSpacer /> : React.null}
