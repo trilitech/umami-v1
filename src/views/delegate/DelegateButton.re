@@ -33,7 +33,13 @@ let make =
         arrayOption([|
           Some(styles##button),
           Some(
-            style(~backgroundColor=theme.colors.primaryButtonBackground, ()),
+            style(
+              ~backgroundColor=
+                disabled
+                  ? theme.colors.iconDisabled
+                  : theme.colors.primaryButtonBackground,
+              (),
+            ),
           ),
           styleFromProp,
         |])
@@ -43,7 +49,7 @@ let make =
         isPrimary=true
         onPress
         disabled>
-        <Typography.ButtonSecondary
+        <Typography.ButtonPrimary
           style=Style.(
             style(
               ~color=
@@ -54,7 +60,7 @@ let make =
             )
           )>
           (disabled ? I18n.btn#delegated : I18n.btn#delegate)->React.string
-        </Typography.ButtonSecondary>
+        </Typography.ButtonPrimary>
       </ThemedPressable>
     </View>
     <ModalAction visible=visibleModal onRequestClose=closeAction>
