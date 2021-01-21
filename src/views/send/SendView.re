@@ -86,6 +86,15 @@ type step =
   | BatchStep
   | SubmittedStep(string);
 
+let stepToString = step =>
+  switch (step) {
+  | SendStep => "sendstep"
+  | PasswordStep(_, _) => "passwordstep"
+  | EditStep(_, _) => "editstep"
+  | BatchStep => "batchstep"
+  | SubmittedStep(_) => "submittedstep"
+  };
+
 let sourceDestination = (transfer: SendForm.transaction) => {
   let recipientLbl = I18n.title#recipient_account;
   let sourceLbl = I18n.title#sender_account;
@@ -497,7 +506,8 @@ let make = (~closeAction) => {
   let loadingSimulate = operationSimulateRequest->ApiRequest.isLoading;
   let loading = operationRequest->ApiRequest.isLoading;
 
-  <ReactFlipToolkit.Flipper flipKey={advancedOptionsOpened->string_of_bool}>
+  <ReactFlipToolkit.Flipper
+    flipKey={advancedOptionsOpened->string_of_bool ++ modalStep->stepToString}>
     <ReactFlipToolkit.FlippedView flipId="modal">
       <ModalFormView back closing>
         <ReactFlipToolkit.FlippedView.Inverse inverseFlipId="modal">

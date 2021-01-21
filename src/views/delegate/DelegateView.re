@@ -39,6 +39,13 @@ type step =
   | PasswordStep(Protocol.delegation, Protocol.simulationResults)
   | SubmittedStep(string);
 
+let stepToString = step =>
+  switch (step) {
+  | SendStep => "sendstep"
+  | PasswordStep(_, _) => "passwordstep"
+  | SubmittedStep(_) => "submittedstep"
+  };
+
 module Form = {
   let build = (action: action, advancedOptionOpened, onSubmit) => {
     let (initAccount, initDelegate) =
@@ -253,7 +260,8 @@ let make = (~closeAction, ~action) => {
 
   let onPressCancel = _ => closeAction();
 
-  <ReactFlipToolkit.Flipper flipKey={advancedOptionOpened->string_of_bool}>
+  <ReactFlipToolkit.Flipper
+    flipKey={advancedOptionOpened->string_of_bool ++ modalStep->stepToString}>
     <ReactFlipToolkit.FlippedView flipId="modal">
       <ModalFormView back closing>
         <ReactFlipToolkit.FlippedView.Inverse inverseFlipId="modal">
