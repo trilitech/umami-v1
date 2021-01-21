@@ -28,29 +28,29 @@ main {
   outline: none;
 }
 
-/* EBGaramond */
+/* SourceSansPro */
 
 @font-face {
-  font-family: EBGaramond;
-  src: url(fonts/EB_Garamond/EBGaramond-Regular.ttf) format("truetype");
-  font-weight: normal;
+  font-family: SourceSansPro;
+  src: url(fonts/Source_Sans_Pro/SourceSansPro-Light.ttf) format("truetype");
+  font-weight: 300;
   font-style: normal;
   font-stretch: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: EBGaramond;
-  src: url(fonts/EB_Garamond/EBGaramond-Medium.ttf) format("truetype");
-  font-weight: 500;
+  font-family: SourceSansPro;
+  src: url(fonts/Source_Sans_Pro/SourceSansPro-Regular.ttf) format("truetype");
+  font-weight: normal; /* 400 */
   font-style: normal;
   font-stretch: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: EBGaramond;
-  src: url(fonts/EB_Garamond/EBGaramond-SemiBold.ttf) format("truetype");
+  font-family: SourceSansPro;
+  src: url(fonts/Source_Sans_Pro/SourceSansPro-SemiBold.ttf) format("truetype");
   font-weight: 600;
   font-style: normal;
   font-stretch: normal;
@@ -58,41 +58,29 @@ main {
 }
 
 @font-face {
-  font-family: EBGaramond;
-  src: url(fonts/EB_Garamond/EBGaramond-Bold.ttf) format("truetype");
-  font-weight: bold;
+  font-family: SourceSansPro;
+  src: url(fonts/Source_Sans_Pro/SourceSansPro-Bold.ttf) format("truetype");
+  font-weight: bold; /* 700 */
   font-style: normal;
   font-stretch: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: EBGaramond;
-  src: url(fonts/EB_Garamond/EBGaramond-ExtraBold.ttf) format("truetype");
-  font-weight: 800;
+  font-family: SourceSansPro;
+  src: url(fonts/Source_Sans_Pro/SourceSansPro-Black.ttf) format("truetype");
+  font-weight: 900;
   font-style: normal;
   font-stretch: normal;
   font-display: swap;
 }
 
-/* CormorantGaramond */
+/* JetBrainsMono */
 
 @font-face {
-  font-family: CormorantGaramond;
-  src: url(fonts/Cormorant_Garamond/CormorantGaramond-SemiBold.ttf)
-    format("truetype");
-  font-weight: 600;
-  font-style: normal;
-  font-stretch: normal;
-  font-display: swap;
-}
-
-/* CutiveMono */
-
-@font-face {
-  font-family: CutiveMono;
-  src: url(fonts/Cutive_Mono/CutiveMono-Regular.ttf) format("truetype");
-  font-weight: normal;
+  font-family: JetBrainsMono;
+  src: url(fonts/JetBrains_Mono/JetBrainsMono-ExtraLight.ttf) format("truetype");
+  font-weight: 300;
   font-style: normal;
   font-stretch: normal;
   font-display: swap;
