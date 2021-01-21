@@ -1,5 +1,5 @@
 {
-  "name": "@nomadic-labs/umami",
+  "name": "umami",
   "productName": "umami",
   "version": "0.1.0",
   "author": "Nomadic Labs",
@@ -43,11 +43,18 @@
     "postinstall": "electron-builder install-app-deps",
     "electron:dev": "concurrently -k \"cross-env BROWSER=none yarn start\" \"wait-on tcp:3000 && tsc -p electron && electron --disable-gpu .\"",
     "electron:build": "yarn bsb:build && yarn build && tsc -p electron && electron-builder",
+    "electron:buildAll": "yarn bsb:build && yarn build && tsc -p electron && electron-builder",
     "eject": "react-app-rewired eject",
     "fromsvg": "react-from-svg src/svg/source src/svg/components --remove-stroke --remove-fill --with-native-for-reason"
   },
   "build": {
     "extends": null,
+    "mac": {
+      "target": "zip"
+    },
+     "linux": {
+      "target": "AppImage"
+    },
     "files": [
       "build/**/*"
     ],

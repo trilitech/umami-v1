@@ -1,6 +1,7 @@
 stages:
   - build
   - test
+  - dist
 
 cache:
   paths:
@@ -22,23 +23,22 @@ default:
     - NPM_PACKAGE_VERSION=$(node -p "require('./package.json').version")
     - yarn
 
-# Validate that the package name is properly scoped to the project's root namespace.
-# For more information, see https://docs.gitlab.com/ee/user/packages/npm_registry/#package-naming-convention
-validate_package_scope:
+build-reason:
   stage: build
-  script:
-    - echo $NPM_PACKAGE_NAME
-    - echo ^@$CI_PROJECT_ROOT_NAMESPACE
-    - |
-      if [[ ! $NPM_PACKAGE_NAME =~ ^@$CI_PROJECT_ROOT_NAMESPACE/ ]]; then
-        echo "Invalid package scope! Packages must be scoped in the root namespace of the project, e.g. \"@${CI_PROJECT_ROOT_NAMESPACE}/${CI_PROJECT_NAME}\""
-        echo 'For more information, see https://docs.gitlab.com/ee/user/packages/npm_registry/#package-naming-convention'
-        exit 1
-      fi
+  script: yarn bsb:build
+
+dist:
+  stage: dist
+  script: CI=false yarn electron:buildAll
+  only:
+    - master
+    - develop
 
 test:
   stage: test
   script:
     - yarn test
+  rules:
+    - if: '"1" != "1"'
   after_script:
     - bash <(curl -s https://codecov.io/bash)

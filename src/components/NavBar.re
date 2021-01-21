@@ -118,7 +118,7 @@ let make = (~route as currentRoute) => {
       title=I18n.t#navbar_tokens
       icon=Icons.Token.build
     />
-    // <NavBarItem currentRoute route=Debug title="DEBUG" />
+    <NavBarItem currentRoute route=Debug title="DEBUG" />
     <LogsButton
       style=Style.(
         array([|NavBarItem.styles##errorButton, NavBarItem.styles##item|])

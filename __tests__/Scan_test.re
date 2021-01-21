@@ -1,5 +1,10 @@
 open TestFramework;
 
+%raw
+"
+   window.require = require;
+   ";
+
 describe("Scan tests", ({test}) => {
   test("runs valid derivation path test", ({expect}) => {
     let seed =
