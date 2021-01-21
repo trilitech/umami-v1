@@ -21,7 +21,7 @@ module Base = {
     let theme = ThemeContext.useTheme();
 
     let balanceElement =
-      <Typography.Headline style=styles##balance>
+      <Typography.Headline fontWeightStyle=`black style=styles##balance>
         {switch (token, balanceTotal, balanceTokenTotal) {
          | (Some(token), _, Some(balanceTokenTotal)) =>
            I18n.t#amount(

@@ -12,13 +12,13 @@ module CellType =
 
 module CellAmount =
   Table.MakeCell({
-    let style = Style.(style(~flexBasis=120.->dp, ()));
+    let style = Style.(style(~flexBasis=140.->dp, ()));
     ();
   });
 
 module CellFee =
   Table.MakeCell({
-    let style = Style.(style(~flexBasis=120.->dp, ()));
+    let style = Style.(style(~flexBasis=80.->dp, ()));
     ();
   });
 
@@ -37,7 +37,7 @@ module CellStatus =
 
 module CellDate =
   Table.MakeCell({
-    let style = Style.(style(~flexBasis=220.->dp, ()));
+    let style = Style.(style(~flexBasis=160.->dp, ()));
     ();
   });
 

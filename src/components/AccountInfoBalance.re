@@ -6,7 +6,7 @@ module BalanceActivityIndicator = {
     let theme = ThemeContext.useTheme();
     <ActivityIndicator
       animating=true
-      size={ActivityIndicator_Size.exact(19.)}
+      size={ActivityIndicator_Size.exact(20.)}
       color={theme.colors.iconHighEmphasis}
     />;
   };
@@ -49,16 +49,16 @@ module BalanceToken = {
 let styles =
   Style.(
     StyleSheet.create({
-      "balance": style(~height=19.->dp, ~marginBottom=2.->dp, ()),
+      "balance": style(~height=20.->dp, ~marginBottom=4.->dp, ()),
     })
   );
 
 [@react.component]
 let make = (~address: string, ~token: option(Token.t)=?) => {
-  <Typography.Subtitle3 style=styles##balance>
+  <Typography.Subtitle1 fontWeightStyle=`black style=styles##balance>
     {switch (token) {
      | Some(token) => <BalanceToken address token />
      | None => <Balance address />
      }}
-  </Typography.Subtitle3>;
+  </Typography.Subtitle1>;
 };

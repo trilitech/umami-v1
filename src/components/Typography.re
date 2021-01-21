@@ -118,7 +118,7 @@ module Make = (DefaultStyle: TextDesignStyle) => {
 module Headline =
   Make({
     let colorStyle = `highEmphasis;
-    let fontWeightStyle = `black;
+    let fontWeightStyle = `bold;
     let fontSize = 22.;
   });
 

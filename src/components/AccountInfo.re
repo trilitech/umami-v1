@@ -3,10 +3,9 @@ open ReactNative;
 let styles =
   Style.(
     StyleSheet.create({
-      "container": style(~height=62.->dp, ()),
-      "alias": style(~height=19.->dp, ~marginBottom=2.->dp, ()),
-      "balanceEmpty": style(~height=2.->dp, ()),
-      "address": style(~height=19.->dp, ()),
+      "alias": style(~height=20.->dp, ~marginBottom=4.->dp, ()),
+      "balanceEmpty": style(~height=4.->dp, ()),
+      "address": style(~height=18.->dp, ()),
     })
   );
 
@@ -18,7 +17,7 @@ let make =
       ~showBalance=true,
       ~showAlias=true,
     ) => {
-  <View style=styles##container>
+  <View>
     {<Typography.Subtitle1 style=styles##alias>
        account.alias->React.string
      </Typography.Subtitle1>

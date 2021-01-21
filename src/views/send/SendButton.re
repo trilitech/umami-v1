@@ -40,6 +40,7 @@ let make = () => {
       <ThemedPressable isPrimary=true style=styles##iconContainer onPress>
         <Icons.Send size=24. color={theme.colors.primaryIconHighEmphasis} />
         <Typography.ButtonSecondary
+          fontSize=13.
           style=Style.(
             array([|
               styles##textButton,
