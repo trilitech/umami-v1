@@ -414,6 +414,8 @@ let make = (~closeAction) => {
   let account = StoreContext.SelectedAccount.useGet();
   let initToken = StoreContext.SelectedToken.useGet();
 
+  let updateAccount = StoreContext.SelectedAccount.useSet();
+
   let (advancedOptionsOpened, setAdvancedOptions) as advancedOptionState =
     React.useState(_ => false);
 
@@ -427,8 +429,12 @@ let make = (~closeAction) => {
 
   let sendTransfer = (transfer, password) => {
     let operation = SendForm.toOperation(transfer);
+
+    let ((sourceAddress, _), _) = sourceDestination(transfer);
+
     sendOperation({operation, password})
     ->Future.tapOk(((hash, _)) => {setModalStep(_ => SubmittedStep(hash))})
+    ->Future.tapOk(_ => {updateAccount(sourceAddress)})
     ->ignore;
   };
 
@@ -501,7 +507,10 @@ let make = (~closeAction) => {
     | _ => None
     };
 
-  let onPressCancel = _ => closeAction();
+  let onPressCancel = _ => {
+    closeAction();
+    Routes.(push(Operations));
+  };
 
   let loadingSimulate = operationSimulateRequest->ApiRequest.isLoading;
   let loading = operationRequest->ApiRequest.isLoading;
@@ -512,7 +521,12 @@ let make = (~closeAction) => {
       <ModalFormView back closing>
         <ReactFlipToolkit.FlippedView.Inverse inverseFlipId="modal">
           {switch (modalStep) {
-           | SubmittedStep(hash) => <SubmittedView hash onPressCancel />
+           | SubmittedStep(hash) =>
+             <SubmittedView
+               hash
+               onPressCancel
+               submitText=I18n.btn#go_operations
+             />
            | BatchStep =>
              <BatchView
                onAddTransfer={_ => setModalStep(_ => SendStep)}

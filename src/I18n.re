@@ -12,6 +12,7 @@ let btn = {
   pub add = "ADD";
   pub send = "SEND";
   pub go_back = "GO BACK";
+  pub go_operations = "GO TO OPERATIONS";
   pub confirm = "CONFIRM";
   pub update = "UPDATE";
   pub register = "REGISTER";

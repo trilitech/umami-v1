@@ -19,7 +19,7 @@ let styles =
   );
 
 [@react.component]
-let make = (~hash, ~onPressCancel) => {
+let make = (~hash, ~onPressCancel, ~submitText=I18n.btn#ok) => {
   let addToast = LogsContext.useToast();
 
   <View style=styles##container>
@@ -39,7 +39,7 @@ let make = (~hash, ~onPressCancel) => {
       <ClipboardButton copied=I18n.log#address addToast data=hash />
     </View>
     <View style=FormStyles.formAction>
-      <Buttons.FormPrimary text=I18n.btn#ok onPress=onPressCancel />
+      <Buttons.FormPrimary text=submitText onPress=onPressCancel />
     </View>
   </View>;
 };
