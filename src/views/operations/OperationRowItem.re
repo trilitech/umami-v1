@@ -184,7 +184,7 @@ let make =
           icon=Icons.OpenExternal.build
           onPress={_ => {
             electron##shell##openExternal(
-              "https://delphinet.tzkt.io/" ++ operation.hash,
+              "https://edonet.tzkt.io/" ++ operation.hash,
             )
             ->ignore
           }}
