@@ -86,6 +86,15 @@ type step =
   | BatchStep
   | SubmittedStep(string);
 
+let stepToString = step =>
+  switch (step) {
+  | SendStep => "sendstep"
+  | PasswordStep(_, _) => "passwordstep"
+  | EditStep(_, _) => "editstep"
+  | BatchStep => "batchstep"
+  | SubmittedStep(_) => "submittedstep"
+  };
+
 let sourceDestination = (transfer: SendForm.transaction) => {
   let recipientLbl = I18n.title#recipient_account;
   let sourceLbl = I18n.title#sender_account;
@@ -203,6 +212,27 @@ module Form = {
   module View = {
     open SendForm;
 
+    let onAppear = (el, _) => {
+      ReactFlipToolkit.spring({
+        onUpdate: value => {
+          el->ReactDOMRe.domElementToObj##style##opacity #= value;
+        },
+        delay: 100.,
+        onComplete: () => (),
+      });
+    };
+
+    let onExit = (el, _, removeElement) => {
+      ReactFlipToolkit.spring({
+        onUpdate: value => {
+          el->ReactDOMRe.domElementToObj##style##opacity
+          #= Js.Math.max_float(0., 1. -. value -. 0.3);
+        },
+        delay: 0.,
+        onComplete: removeElement,
+      });
+    };
+
     type mode =
       | Edition(int)
       | Creation(option(unit => unit), unit => unit);
@@ -263,45 +293,45 @@ module Form = {
       let onSubmit = onSubmitAll->Option.getWithDefault(() => form.submit());
 
       <>
-        <View style=FormStyles.header>
-          <Typography.Headline>
-            I18n.title#send->React.string
-          </Typography.Headline>
-          <Typography.Overline1 style=FormStyles.subtitle>
-            I18n.title#send_many_transactions->React.string
-          </Typography.Overline1>
-          <Typography.Body2 style=FormStyles.subtitle>
-            I18n.expl#send_many_transactions->React.string
-          </Typography.Body2>
-        </View>
-        <FormGroupAmountWithTokenSelector
-          label=I18n.label#send_amount
-          value={form.values.amount}
-          setValue={f =>
-            form.setFieldValue(Amount, f(form.values.amount), ())
-          }
-          handleChange={form.handleChange(Amount)}
-          error={form.getFieldError(Field(Amount))}
-          selectedToken
-          showSelector={!batchMode}
-          setSelectedToken={newToken => setSelectedToken(_ => newToken)}
-          ?token
-        />
-        <FormGroupAccountSelector
-          disabled=batchMode
-          label=I18n.label#send_sender
-          value={form.values.sender}
-          handleChange={form.handleChange(Sender)}
-          error={form.getFieldError(Field(Sender))}
-          ?token
-        />
-        <FormGroupContactSelector
-          label=I18n.label#send_recipient
-          value={form.values.recipient}
-          handleChange={form.handleChange(Recipient)}
-          error={form.getFieldError(Field(Recipient))}
-        />
-        <View>
+        <ReactFlipToolkit.FlippedView flipId="form">
+          <View style=FormStyles.header>
+            <Typography.Headline>
+              I18n.title#send->React.string
+            </Typography.Headline>
+            <Typography.Overline1 style=FormStyles.subtitle>
+              I18n.title#send_many_transactions->React.string
+            </Typography.Overline1>
+            <Typography.Body2 style=FormStyles.subtitle>
+              I18n.expl#send_many_transactions->React.string
+            </Typography.Body2>
+          </View>
+          <FormGroupAmountWithTokenSelector
+            label=I18n.label#send_amount
+            value={form.values.amount}
+            setValue={f =>
+              form.setFieldValue(Amount, f(form.values.amount), ())
+            }
+            handleChange={form.handleChange(Amount)}
+            error={form.getFieldError(Field(Amount))}
+            selectedToken
+            showSelector={!batchMode}
+            setSelectedToken={newToken => setSelectedToken(_ => newToken)}
+            ?token
+          />
+          <FormGroupAccountSelector
+            disabled=batchMode
+            label=I18n.label#send_sender
+            value={form.values.sender}
+            handleChange={form.handleChange(Sender)}
+            error={form.getFieldError(Field(Sender))}
+            ?token
+          />
+          <FormGroupContactSelector
+            label=I18n.label#send_recipient
+            value={form.values.recipient}
+            handleChange={form.handleChange(Recipient)}
+            error={form.getFieldError(Field(Recipient))}
+          />
           <TouchableOpacity
             style=styles##advancedOptionButton
             activeOpacity=1.
@@ -311,29 +341,48 @@ module Form = {
             </Typography.Overline2>
             <ThemedSwitch value=advancedOptionOpened />
           </TouchableOpacity>
-          {advancedOptionOpened
-             ? <SendViewAdvancedOptions
-                 operation={simulatedTransaction(mode, batch, form, token)}
-                 form
-               />
-             : React.null}
-        </View>
-        <View style=FormStyles.verticalFormAction>
-          <Buttons.SubmitPrimary
-            text=submitLabel
-            onPress={_ => onSubmit()}
-            loading
-          />
-          {onAddToBatch
-           ->ReactUtils.mapOpt(addToBatch =>
-               <Buttons.FormSecondary
-                 style=styles##addTransaction
-                 text=I18n.btn#start_batch_transaction
-                 onPress={_ => addToBatch()}
-               />
-             )
-           ->ReactUtils.onlyWhen(token == None)}
-        </View>
+        </ReactFlipToolkit.FlippedView>
+        <ReactFlipToolkit.FlippedView
+          flipId="advancedOption"
+          scale=false
+          translate=advancedOptionOpened
+          opacity=true>
+          <ReactFlipToolkit.Flipper
+            flipKey={advancedOptionOpened->string_of_bool}>
+            {advancedOptionOpened
+               ? <ReactFlipToolkit.FlippedView
+                   flipId="innerAdvancedOption" onAppear onExit>
+                   <SendViewAdvancedOptions
+                     operation={simulatedTransaction(
+                       mode,
+                       batch,
+                       form,
+                       token,
+                     )}
+                     form
+                   />
+                 </ReactFlipToolkit.FlippedView>
+               : React.null}
+          </ReactFlipToolkit.Flipper>
+        </ReactFlipToolkit.FlippedView>
+        <ReactFlipToolkit.FlippedView flipId="submit">
+          <View style=FormStyles.verticalFormAction>
+            <Buttons.SubmitPrimary
+              text=submitLabel
+              onPress={_ => onSubmit()}
+              loading
+            />
+            {onAddToBatch
+             ->ReactUtils.mapOpt(addToBatch =>
+                 <Buttons.FormSecondary
+                   style=styles##addTransaction
+                   text=I18n.btn#start_batch_transaction
+                   onPress={_ => addToBatch()}
+                 />
+               )
+             ->ReactUtils.onlyWhen(token == None)}
+          </View>
+        </ReactFlipToolkit.FlippedView>
       </>;
     };
   };
@@ -457,44 +506,52 @@ let make = (~closeAction) => {
   let loadingSimulate = operationSimulateRequest->ApiRequest.isLoading;
   let loading = operationRequest->ApiRequest.isLoading;
 
-  <ModalFormView back closing>
-    {switch (modalStep) {
-     | SubmittedStep(hash) => <SubmittedView hash onPressCancel />
-     | BatchStep =>
-       <BatchView
-         onAddTransfer={_ => setModalStep(_ => SendStep)}
-         batch
-         onSubmitBatch
-         onEdit={(i, v) => setModalStep(_ => EditStep(i, v))}
-         onDelete
-         loading=loadingSimulate
-       />
-     | EditStep(index, initValues) =>
-       let onSubmit = (advOpened, form) => onEdit(index, advOpened, form);
-       <EditionView batch initValues onSubmit index loading=false />;
-     | SendStep =>
-       let onSubmit = batch != [] ? onAddToBatch : onSubmitAll;
-       let onAddToBatch = batch != [] ? None : Some(onAddToBatch);
-       <Form.View
-         batch
-         advancedOptionState
-         tokenState
-         ?token
-         form
-         mode={Form.View.Creation(onAddToBatch, onSubmit)}
-         loading=loadingSimulate
-       />;
-     | PasswordStep(transfer, dryRun) =>
-       let (source, destinations) = sourceDestination(transfer);
-       <SignOperationView
-         title=I18n.title#confirmation
-         source
-         destinations
-         subtitle=I18n.expl#confirm_operation
-         content={buildSummaryContent(transfer, token, dryRun)}
-         sendOperation={sendTransfer(transfer)}
-         loading
-       />;
-     }}
-  </ModalFormView>;
+  <ReactFlipToolkit.Flipper
+    flipKey={advancedOptionsOpened->string_of_bool ++ modalStep->stepToString}>
+    <ReactFlipToolkit.FlippedView flipId="modal">
+      <ModalFormView back closing>
+        <ReactFlipToolkit.FlippedView.Inverse inverseFlipId="modal">
+          {switch (modalStep) {
+           | SubmittedStep(hash) => <SubmittedView hash onPressCancel />
+           | BatchStep =>
+             <BatchView
+               onAddTransfer={_ => setModalStep(_ => SendStep)}
+               batch
+               onSubmitBatch
+               onEdit={(i, v) => setModalStep(_ => EditStep(i, v))}
+               onDelete
+               loading=loadingSimulate
+             />
+           | EditStep(index, initValues) =>
+             let onSubmit = (advOpened, form) =>
+               onEdit(index, advOpened, form);
+             <EditionView batch initValues onSubmit index loading=false />;
+           | SendStep =>
+             let onSubmit = batch != [] ? onAddToBatch : onSubmitAll;
+             let onAddToBatch = batch != [] ? None : Some(onAddToBatch);
+             <Form.View
+               batch
+               advancedOptionState
+               tokenState
+               ?token
+               form
+               mode={Form.View.Creation(onAddToBatch, onSubmit)}
+               loading=loadingSimulate
+             />;
+           | PasswordStep(transfer, dryRun) =>
+             let (source, destinations) = sourceDestination(transfer);
+             <SignOperationView
+               title=I18n.title#confirmation
+               source
+               destinations
+               subtitle=I18n.expl#confirm_operation
+               content={buildSummaryContent(transfer, token, dryRun)}
+               sendOperation={sendTransfer(transfer)}
+               loading
+             />;
+           }}
+        </ReactFlipToolkit.FlippedView.Inverse>
+      </ModalFormView>
+    </ReactFlipToolkit.FlippedView>
+  </ReactFlipToolkit.Flipper>;
 };

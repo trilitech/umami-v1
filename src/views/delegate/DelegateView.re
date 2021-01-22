@@ -39,6 +39,13 @@ type step =
   | PasswordStep(Protocol.delegation, Protocol.simulationResults)
   | SubmittedStep(string);
 
+let stepToString = step =>
+  switch (step) {
+  | SendStep => "sendstep"
+  | PasswordStep(_, _) => "passwordstep"
+  | SubmittedStep(_) => "submittedstep"
+  };
+
 module Form = {
   let build = (action: action, advancedOptionOpened, onSubmit) => {
     let (initAccount, initDelegate) =
@@ -89,6 +96,27 @@ module Form = {
   module View = {
     open DelegateForm;
 
+    let onAppear = (el, _) => {
+      ReactFlipToolkit.spring({
+        onUpdate: value => {
+          el->ReactDOMRe.domElementToObj##style##opacity #= value;
+        },
+        delay: 50.,
+        onComplete: () => (),
+      });
+    };
+
+    let onExit = (el, _, removeElement) => {
+      ReactFlipToolkit.spring({
+        onUpdate: value => {
+          el->ReactDOMRe.domElementToObj##style##opacity
+          #= Js.Math.max_float(0., 1. -. value -. 0.1);
+        },
+        delay: 0.,
+        onComplete: removeElement,
+      });
+    };
+
     [@react.component]
     let make = (~title, ~advancedOptionState, ~form, ~action, ~loading) => {
       let onSubmitDelegateForm = _ => {
@@ -97,30 +125,30 @@ module Form = {
       let (advancedOptionOpened, setAdvancedOptionOpened) = advancedOptionState;
 
       <>
-        <Typography.Headline style=FormStyles.header>
-          title->React.string
-        </Typography.Headline>
-        <FormGroupDelegateSelector
-          label=I18n.label#account_delegate
-          value={form.values.sender}
-          handleChange={form.handleChange(Sender)}
-          error={form.getFieldError(Field(Sender))}
-          disabled={
-            switch (action) {
-            | Create(None) => false
-            | Create(Some(_))
-            | Edit(_)
-            | Delete(_) => true
+        <ReactFlipToolkit.FlippedView flipId="form">
+          <Typography.Headline style=FormStyles.header>
+            title->React.string
+          </Typography.Headline>
+          <FormGroupDelegateSelector
+            label=I18n.label#account_delegate
+            value={form.values.sender}
+            handleChange={form.handleChange(Sender)}
+            error={form.getFieldError(Field(Sender))}
+            disabled={
+              switch (action) {
+              | Create(None) => false
+              | Create(Some(_))
+              | Edit(_)
+              | Delete(_) => true
+              }
             }
-          }
-        />
-        <FormGroupBakerSelector
-          label=I18n.label#baker
-          value={form.values.baker}
-          handleChange={form.handleChange(Baker)}
-          error={form.getFieldError(Field(Baker))}
-        />
-        <View>
+          />
+          <FormGroupBakerSelector
+            label=I18n.label#baker
+            value={form.values.baker}
+            handleChange={form.handleChange(Baker)}
+            error={form.getFieldError(Field(Baker))}
+          />
           <TouchableOpacity
             style=styles##advancedOptionButton
             activeOpacity=1.
@@ -130,22 +158,37 @@ module Form = {
             </Typography.Overline2>
             <ThemedSwitch value=advancedOptionOpened />
           </TouchableOpacity>
-          {advancedOptionOpened
-             ? <DelegateViewAdvancedOptions form /> : React.null}
-        </View>
-        <View style=FormStyles.verticalFormAction>
-          <Buttons.SubmitPrimary
-            text={
-              switch (action) {
-              | Create(_) => I18n.btn#delegation_submit
-              | Edit(_) => I18n.btn#update
-              | Delete(_) => I18n.btn#confirm
+        </ReactFlipToolkit.FlippedView>
+        <ReactFlipToolkit.FlippedView
+          flipId="advancedOption"
+          scale=false
+          translate=advancedOptionOpened
+          opacity=true>
+          <ReactFlipToolkit.Flipper
+            flipKey={advancedOptionOpened->string_of_bool}>
+            {advancedOptionOpened
+               ? <ReactFlipToolkit.FlippedView
+                   flipId="innerAdvancedOption" onAppear onExit>
+                   <DelegateViewAdvancedOptions form />
+                 </ReactFlipToolkit.FlippedView>
+               : React.null}
+          </ReactFlipToolkit.Flipper>
+        </ReactFlipToolkit.FlippedView>
+        <ReactFlipToolkit.FlippedView flipId="submit">
+          <View style=FormStyles.verticalFormAction>
+            <Buttons.SubmitPrimary
+              text={
+                switch (action) {
+                | Create(_) => I18n.btn#delegation_submit
+                | Edit(_) => I18n.btn#update
+                | Delete(_) => I18n.btn#confirm
+                }
               }
-            }
-            onPress=onSubmitDelegateForm
-            loading
-          />
-        </View>
+              onPress=onSubmitDelegateForm
+              loading
+            />
+          </View>
+        </ReactFlipToolkit.FlippedView>
       </>;
     };
   };
@@ -217,33 +260,39 @@ let make = (~closeAction, ~action) => {
 
   let onPressCancel = _ => closeAction();
 
-  <ModalFormView back closing>
-    {switch (modalStep) {
-     | SubmittedStep(hash) => <SubmittedView hash onPressCancel />
-
-     | SendStep =>
-       <Form.View
-         title
-         advancedOptionState
-         form
-         action
-         loading=loadingSimulate
-       />
-     | PasswordStep(delegation, dryRun) =>
-       let target =
-         switch (delegation.delegate) {
-         | None => ("", I18n.title#withdraw_baker)
-         | Some(d) => (d, I18n.title#baker_account)
-         };
-       <SignOperationView
-         source=(delegation.source, I18n.title#delegated_account)
-         destinations={`One(target)}
-         title=I18n.title#confirm_delegate
-         subtitle=I18n.expl#confirm_operation
-         content={buildSummaryContent(dryRun)}
-         sendOperation={sendOperation(delegation)}
-         loading
-       />;
-     }}
-  </ModalFormView>;
+  <ReactFlipToolkit.Flipper
+    flipKey={advancedOptionOpened->string_of_bool ++ modalStep->stepToString}>
+    <ReactFlipToolkit.FlippedView flipId="modal">
+      <ModalFormView back closing>
+        <ReactFlipToolkit.FlippedView.Inverse inverseFlipId="modal">
+          {switch (modalStep) {
+           | SubmittedStep(hash) => <SubmittedView hash onPressCancel />
+           | SendStep =>
+             <Form.View
+               title
+               advancedOptionState
+               form
+               action
+               loading=loadingSimulate
+             />
+           | PasswordStep(delegation, dryRun) =>
+             let target =
+               switch (delegation.delegate) {
+               | None => ("", I18n.title#withdraw_baker)
+               | Some(d) => (d, I18n.title#baker_account)
+               };
+             <SignOperationView
+               source=(delegation.source, I18n.title#delegated_account)
+               destinations={`One(target)}
+               title=I18n.title#confirm_delegate
+               subtitle=I18n.expl#confirm_operation
+               content={buildSummaryContent(dryRun)}
+               sendOperation={sendOperation(delegation)}
+               loading
+             />;
+           }}
+        </ReactFlipToolkit.FlippedView.Inverse>
+      </ModalFormView>
+    </ReactFlipToolkit.FlippedView>
+  </ReactFlipToolkit.Flipper>;
 };
