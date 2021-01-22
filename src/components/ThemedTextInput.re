@@ -12,7 +12,7 @@ let styles =
       "input":
         style(
           ~height=44.->dp,
-          ~fontFamily="EBGaramond",
+          ~fontFamily="SourceSansPro",
           ~fontSize=16.,
           ~fontWeight=`normal,
           ~borderWidth,

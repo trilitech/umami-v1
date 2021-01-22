@@ -44,20 +44,17 @@ let styles =
   Style.(
     StyleSheet.create({
       "cellAlias":
-        StyleSheet.flatten([|
-          baseCellStyle,
-          style(~flexBasis=140.->dp, ()),
-        |]),
+        StyleSheet.flatten([|baseCellStyle, style(~minWidth=140.->dp, ())|]),
       "cellAddress":
         StyleSheet.flatten([|
           baseCellStyle,
-          style(~flexBasis=300.->dp, ~flexGrow=1., ()),
+          style(~minWidth=303.->dp, ~marginRight=10.->dp, ()),
         |]),
       "inner":
         style(
           ~flexDirection=`row,
           ~alignItems=`center,
-          ~width=490.->dp,
+          ~flexShrink=0.,
           ~marginLeft=22.->dp,
           (),
         ),

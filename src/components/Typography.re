@@ -22,20 +22,26 @@ let getColor = (colorStyle, theme: ThemeContext.theme) =>
   };
 
 type fontWeightStyle = [
+  | `black
   | `extraBold
   | `bold
   | `semiBold
   | `medium
   | `regular
+  | `light
+  | `extraLight
 ];
 
 let getFontWeight = fontWeightStyle =>
   switch (fontWeightStyle) {
+  | `black => `_900
   | `extraBold => `_800
   | `bold => `bold
   | `semiBold => `_600
   | `medium => `_500
   | `regular => `normal
+  | `light => `_300
+  | `extraLight => `_200
   };
 
 module type TextDesignStyle = {
@@ -46,7 +52,9 @@ module type TextDesignStyle = {
 
 module Base = {
   let styles =
-    Style.(StyleSheet.create({"text": style(~fontFamily="EBGaramond", ())}));
+    Style.(
+      StyleSheet.create({"text": style(~fontFamily="SourceSansPro", ())})
+    );
 
   [@react.component]
   let make =
@@ -110,7 +118,7 @@ module Make = (DefaultStyle: TextDesignStyle) => {
 module Headline =
   Make({
     let colorStyle = `highEmphasis;
-    let fontWeightStyle = `extraBold;
+    let fontWeightStyle = `bold;
     let fontSize = 22.;
   });
 
@@ -181,7 +189,7 @@ module Body2 =
 module ButtonPrimary =
   Make({
     let colorStyle = `highEmphasis;
-    let fontWeightStyle = `extraBold;
+    let fontWeightStyle = `bold;
     let fontSize = 14.;
   });
 
@@ -204,7 +212,7 @@ module ButtonTernary =
 module Address = {
   let styles =
     Style.(
-      StyleSheet.create({"address": style(~fontFamily="CutiveMono", ())})
+      StyleSheet.create({"address": style(~fontFamily="JetBrainsMono", ())})
     );
 
   [@react.component]
@@ -218,7 +226,7 @@ module Address = {
     <Base
       colorStyle=`highEmphasis
       fontSize
-      fontWeightStyle=`regular
+      fontWeightStyle=`extraLight
       style=Style.(arrayOption([|Some(styles##address), styleProp|]))
       ?numberOfLines>
       children
