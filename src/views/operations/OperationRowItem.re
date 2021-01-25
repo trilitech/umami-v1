@@ -73,7 +73,7 @@ let amount = (account, transaction: Operation.Business.Transaction.t) => {
 
 [@react.component]
 let make =
-  memo((~operation: Operation.Read.t) => {
+  memo((~operation: Operation.Read.t, ~currentLevel as _: int) => {
     let account = StoreContext.SelectedAccount.useGet();
     let aliases = StoreContext.Aliases.useGetAll();
 
