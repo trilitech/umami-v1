@@ -145,6 +145,14 @@ let menu = {
   pub batch_delete = "Delete transfer"
 };
 
+let settings = {
+  pub _this = this;
+  pub theme_title = "THEME";
+  pub theme_system = "Default to system";
+  pub theme_dark = "Dark";
+  pub theme_light = "Light";
+};
+
 let t = {
   pub error404 = "404 - Route Not Found :(";
   pub logs_no_recent = "No recent messages";
