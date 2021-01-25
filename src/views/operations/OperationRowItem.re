@@ -73,7 +73,7 @@ let amount = (account, transaction: Operation.Business.Transaction.t) => {
 
 [@react.component]
 let make =
-  memo((~operation: Operation.Read.t, ~currentLevel as _: int) => {
+  memo((~operation: Operation.Read.t, ~currentLevel) => {
     let account = StoreContext.SelectedAccount.useGet();
     let aliases = StoreContext.Aliases.useGetAll();
 
@@ -173,8 +173,8 @@ let make =
       <CellStatus>
         <Typography.Body1>
           {switch (operation.status) {
-           | Mempool => I18n.t#state_in_mempool
-           | Chain => I18n.t#state_in_chain
+           | Mempool => I18n.t#state_mempool
+           | Chain => I18n.t#state_levels(currentLevel - operation.level)
            }}
           ->React.string
         </Typography.Body1>
