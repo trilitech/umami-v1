@@ -184,6 +184,7 @@ let t = {
   pub navbar_addressbook = {j|ADDRESS BOOK|j};
   pub navbar_delegations = "DELEGATIONS";
   pub navbar_tokens = "TOKENS";
+  pub navbar_settings = "SETTINGS";
   pub delegate_column_account = "ACCOUNT";
   pub delegate_column_initial_balance = "INITIAL BALANCE";
   pub delegate_column_current_balance = "CURRENT BALANCE";

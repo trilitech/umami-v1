@@ -113,3 +113,4 @@ module Tezos = Make(SVGIconTezos);
 module ArrowLeft = Make(SVGArrowLeft);
 module DarkMode = Make(SVGIconDarkMode);
 module OpenExternal = Make(SVGIconOpenExternal);
+module Settings = Make(SVGIconSettings);

@@ -14,16 +14,12 @@ let styles =
           (),
         ),
       "nameLogo": style(~flexDirection=`row, ~alignItems=`center, ()),
-      "spacer": style(~width=14.->dp, ()),
-      "darkModeButton": style(~alignSelf=`flexEnd, ()),
-      "title": style(~fontFamily="CormorantGaramond", ~lineHeight=16., ()),
     })
   );
 
 [@react.component]
 let make = () => {
   let theme = ThemeContext.useTheme();
-  let switchTheme = ThemeContext.useSwitch();
 
   <View
     style=Style.(
@@ -39,8 +35,5 @@ let make = () => {
         fill={theme.colors.textHighEmphasis}
       />
     </View>
-    <TouchableOpacity onPress={_ => switchTheme()}>
-      <Icons.DarkMode size=36. color={theme.colors.iconDisabled} />
-    </TouchableOpacity>
   </View>;
 };

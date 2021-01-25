@@ -123,12 +123,12 @@ type themeMain = [ | `dark | `light];
 
 type state = {
   theme,
-  switchTheme: unit => unit,
+  themeSetting: (themeMain, (themeMain => themeMain) => unit),
 };
 
 // Context and Provider
 
-let initialState = {theme: lightTheme, switchTheme: () => ()};
+let initialState = {theme: lightTheme, themeSetting: (`light, _ => ())};
 let context = React.createContext(initialState);
 
 module Provider = {
@@ -146,25 +146,26 @@ module Provider = {
 let make = (~children) => {
   let writeConf = ConfigContext.useWrite();
   let settings = ConfigContext.useSettings();
-  let (themeMain, setMain) =
-    React.useState(_ => settings.config.theme->Option.getWithDefault(`dark));
-  React.useEffect1(() => {None}, [|setMain|]);
 
-  let switchTheme = () =>
-    setMain(_ => {
-      let theme = themeMain == `dark ? `light : `dark;
-      writeConf(c => {...c, theme: Some(theme)});
-      theme;
+  let (themeConfig, setThemeConfig) =
+    React.useState(_ => settings.config.theme->Option.getWithDefault(`light));
+
+  let setThemeSetting = updater => {
+    setThemeConfig(prevThemeConfig => {
+      let newThemeConfig = updater(prevThemeConfig);
+      writeConf(c => {...c, theme: Some(newThemeConfig)});
+      newThemeConfig;
     });
+  };
 
   <Provider
     value={
       theme:
-        switch (themeMain) {
+        switch (themeConfig) {
         | `dark => darkTheme
         | `light => lightTheme
         },
-      switchTheme,
+      themeSetting: (themeConfig, setThemeSetting),
     }>
     children
   </Provider>;
@@ -173,4 +174,5 @@ let make = (~children) => {
 // Hooks
 
 let useTheme = () => React.useContext(context).theme;
-let useSwitch = () => React.useContext(context).switchTheme;
+
+let useThemeSetting = () => React.useContext(context).themeSetting;
