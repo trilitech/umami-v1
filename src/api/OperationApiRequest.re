@@ -1,83 +1,94 @@
+open UmamiCommon;
 include ApiRequest;
 module OperationsAPI = API.Operations(API.TezosClient, API.TezosExplorer);
 
 /* Create */
 
-type createOperationApiRequest = t(string);
+type injection = {
+  operation: Operation.t,
+  password: string,
+};
 
-let useCreateOperation = network => {
-  let config = ConfigContext.useConfig();
+let transfert = (operation, password) => {
+  operation: Operation.transaction(operation),
+  password,
+};
 
-  let (request, setRequest) = React.useState(_ => NotAsked);
+let delegate = (d, password) => {
+  operation: Operation.delegation(d),
 
-  let addError = ErrorsContext.useAddError();
+  password,
+};
 
-  let sendRequest = (operation, ~password) => {
-    setRequest(_ => Loading);
+let token = (operation, password) => {
+  operation: Token(operation),
+  password,
+};
 
-    (network, config)
-    ->OperationsAPI.inject(operation, ~password)
-    ->Future.tap(result => {
-        switch (result) {
-        | Error(msg) =>
-          addError(Error.{kind: Operation, msg, timestamp: Js.Date.now()})
-        | _ => ()
-        };
-        setRequest(_ => Done(result));
-      });
+let useCreate = (~sideEffect=?, ()) => {
+  let set = (~settings, {operation, password}) => {
+    switch (operation) {
+    | Protocol(operation) =>
+      settings->OperationsAPI.inject(operation, ~password)
+    | Token(operation) =>
+      settings->TokensApiRequest.TokensAPI.inject(operation, ~password)
+    };
   };
 
-  (request, sendRequest);
+  ApiRequest.useSetter(
+    ~toast=false,
+    ~set,
+    ~kind=Logs.Operation,
+    ~sideEffect?,
+    (),
+  );
 };
 
 /* Simulate */
 
-type simulateOperationApiRequest = t(string);
+let useSimulate = () => {
+  let set = (~settings, operation) =>
+    switch (operation) {
+    | Operation.Simulation.Protocol(operation, index) =>
+      settings->OperationsAPI.simulate(~index?, operation)
+    | Operation.Simulation.Token(operation) =>
+      settings->TokensApiRequest.TokensAPI.simulate(operation)
+    };
 
-let useSimulateOperation = network => {
-  let config = ConfigContext.useConfig();
-
-  let (request, setRequest) = React.useState(_ => NotAsked);
-
-  let sendRequest = operation => {
-    setRequest(_ => Loading);
-
-    (network, config)
-    ->OperationsAPI.simulate(operation)
-    ->Future.get(result => {setRequest(_ => Done(result))});
-  };
-
-  (request, sendRequest);
+  ApiRequest.useSetter(~set, ~kind=Logs.Operation, ());
 };
 
 /* Get list */
 
-type getOperationsApiRequest = t(array(Operation.t));
-
-let useGetOperations = (~limit=?, ~types=?, ()) => {
-  let setOperations = StoreContext.useSetOperations();
-
-  let (request, setRequest) = React.useState(_ => NotAsked);
-  let config = ConfigContext.useConfig();
-
-  let get = (network, account: option(Account.t)) => {
-    switch (account) {
-    | Some(account) =>
-      setRequest(_ => Loading);
-      (network, config)
-      ->OperationsAPI.get(
-          account.address,
-          ~limit?,
-          ~types?,
-          ~mempool=true,
-          (),
-        )
-      ->Future.tapOk(res => setOperations(_ => res))
-      ->Future.get(result => setRequest(_ => {Done(result)}));
-    | None => ()
-    };
-    ();
+let useLoad =
+    (
+      ~requestState as (request, setRequest),
+      ~limit=?,
+      ~types=?,
+      ~address: option(string),
+      (),
+    ) => {
+  let get = (~settings, address) => {
+    settings->OperationsAPI.get(address, ~limit?, ~types?, ~mempool=true, ());
   };
 
-  (get, request);
+  let getRequest =
+    ApiRequest.useGetter(~get, ~kind=Logs.Operation, ~setRequest, ());
+
+  let isMounted = ReactUtils.useIsMonted();
+  React.useEffect3(
+    () => {
+      address->Lib.Option.iter(address => {
+        let shouldReload = ApiRequest.conditionToLoad(request, isMounted);
+        if (address != "" && shouldReload) {
+          getRequest(address);
+        };
+      });
+
+      None;
+    },
+    (isMounted, request, address),
+  );
+
+  request;
 };

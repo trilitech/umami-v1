@@ -3,51 +3,56 @@ open ReactNative;
 let styles =
   Style.(
     StyleSheet.create({
-      "button": style(~alignItems=`center, ()),
+      "button":
+        style(~borderRadius=35., ~overflow=`hidden, ())
+        ->unsafeAddStyle({
+            "boxShadow": "0 3px 5px -1px rgba(0, 0, 0, 0.2), 0 1px 18px 0 rgba(0, 0, 0, 0.12), 0 6px 10px 0 rgba(0, 0, 0, 0.14)",
+          }),
       "iconContainer":
         style(
           ~width=70.->dp,
           ~height=70.->dp,
-          ~justifyContent=`center,
           ~alignItems=`center,
-          ~borderRadius=35.,
-          ~backgroundColor="#D8BC63",
+          ~justifyContent=`center,
           (),
         ),
-      "textButton": style(~marginTop=6.->dp, ~color="rgba(0,0,0,0.87)", ()),
+      "textButton": style(~marginTop=6.->dp, ()),
     })
   );
 
 [@react.component]
 let make = () => {
-  let modal = React.useRef(Js.Nullable.null);
+  let theme = ThemeContext.useTheme();
 
-  let (visibleModal, setVisibleModal) = React.useState(_ => false);
-  let openAction = () => setVisibleModal(_ => true);
-  let closeAction = () => setVisibleModal(_ => false);
+  let (visibleModal, openAction, closeAction) =
+    ModalAction.useModalActionState();
 
-  let onPress = _e => {
-    openAction();
-  };
-
-  let onPressCancel = _e => {
-    modal.current
-    ->Js.Nullable.toOption
-    ->Belt.Option.map(ModalAction.closeModal)
-    ->ignore;
-  };
+  let onPress = _ => openAction();
 
   <>
-    <TouchableOpacity style=styles##button onPress>
-      <View style=styles##iconContainer>
-        <Icons.Send size=24. color=Colors.plainIconContent />
-        <Typography.ButtonSecondary style=styles##textButton>
-          "SEND"->React.string
+    <View
+      style=Style.(
+        array([|
+          styles##button,
+          style(~backgroundColor=theme.colors.primaryButtonBackground, ()),
+        |])
+      )>
+      <ThemedPressable isPrimary=true style=styles##iconContainer onPress>
+        <Icons.Send size=24. color={theme.colors.primaryIconHighEmphasis} />
+        <Typography.ButtonSecondary
+          fontSize=13.
+          style=Style.(
+            array([|
+              styles##textButton,
+              style(~color=theme.colors.primaryTextHighEmphasis, ()),
+            |])
+          )>
+          I18n.btn#send->React.string
         </Typography.ButtonSecondary>
-      </View>
-    </TouchableOpacity>
-    <ModalAction ref=modal visible=visibleModal onRequestClose=closeAction>
-      <SendView onPressCancel />
+      </ThemedPressable>
+    </View>
+    <ModalAction visible=visibleModal onRequestClose=closeAction>
+      <SendView closeAction />
     </ModalAction>
   </>;
 };

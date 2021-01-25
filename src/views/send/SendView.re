@@ -1,16 +1,70 @@
 open ReactNative;
 
+module FormGroupAmountWithTokenSelector = {
+  let styles =
+    Style.(
+      StyleSheet.create({
+        "container": style(~flexDirection=`row, ~zIndex=12, ()),
+        "amountGroup": style(~flexGrow=1., ~zIndex=2, ()),
+        "tokenGroup": style(~marginLeft=14.->dp, ~zIndex=1, ()),
+        "tokenSelector": style(~width=100.->dp, ~marginBottom=0.->dp, ()),
+      })
+    );
+  let tokenDecoration = (~symbol, ~style) =>
+    <Typography.Body1 style> symbol->React.string </Typography.Body1>;
+
+  [@react.component]
+  let make =
+      (
+        ~label,
+        ~value,
+        ~handleChange,
+        ~error,
+        ~selectedToken,
+        ~setSelectedToken,
+        ~token: option(Token.t)=?,
+        ~showSelector,
+        ~setValue=?,
+      ) => {
+    let tokens = StoreContext.Tokens.useGetAll();
+
+    let displaySelector = showSelector && tokens->Map.String.size > 0;
+
+    let decoration =
+      switch (displaySelector, token) {
+      | (true, _) => None
+      | (false, None) => Some(FormGroupXTZInput.xtzDecoration)
+      | (false, Some(token)) => Some(tokenDecoration(~symbol=token.symbol))
+      };
+
+    <View style=styles##container>
+      <FormGroupXTZInput
+        style=styles##amountGroup
+        label
+        value
+        ?setValue
+        handleChange
+        error
+        ?decoration
+        ?token
+      />
+      {<FormGroup style=styles##tokenGroup>
+         <FormLabel label="Token" style=FormGroupTextInput.styles##label />
+         <TokenSelector
+           selectedToken
+           setSelectedToken
+           style=styles##tokenSelector
+         />
+       </FormGroup>
+       ->ReactUtils.onlyWhen(displaySelector)}
+    </View>;
+  };
+};
+
 let styles =
   Style.(
     StyleSheet.create({
-      "title": style(~marginBottom=20.->dp, ~textAlign=`center, ()),
-      "formAction":
-        style(
-          ~flexDirection=`row,
-          ~justifyContent=`center,
-          ~marginTop=24.->dp,
-          (),
-        ),
+      "addTransaction": style(~marginTop=10.->dp, ()),
       "advancedOptionButton":
         style(
           ~flexDirection=`row,
@@ -21,64 +75,102 @@ let styles =
           ~paddingRight=12.->dp,
           (),
         ),
-      "switchCmp": style(~height=16.->dp, ~width=32.->dp, ()),
-      "switchThumb": style(~transform=[|scale(~scale=0.65)|], ()),
       "operationSummary": style(~marginBottom=20.->dp, ()),
-      "loadingView":
-        style(
-          ~height=400.->dp,
-          ~justifyContent=`center,
-          ~alignItems=`center,
-          (),
-        ),
     })
   );
 
-let isValidFloat = value => {
-  let fieldState: ReSchema.fieldState =
-    value->Js.Float.fromString->Js.Float.isNaN ? Error("not a float") : Valid;
-  fieldState;
-};
-
-let isSomeAccount = value => {
-  let fieldState: ReSchema.fieldState =
-    value->Belt.Option.isNone ? Error("account needed") : Valid;
-  fieldState;
-};
-
-let isValidInt = value => {
-  let fieldState: ReSchema.fieldState =
-    value->Js.String2.length == 0
-    || value->int_of_string_opt->Belt.Option.isSome
-      ? Valid : Error("not an int");
-  fieldState;
-};
-
-let buildTransaction = (state: SendForm.state, advancedOptionOpened) => {
-  let mapIfAdvanced = (v, map) =>
-    advancedOptionOpened && v->Js.String2.length > 0 ? Some(v->map) : None;
-
-  Injection.makeTransfer(
-    ~source=state.values.sender,
-    ~amount=state.values.amount->Js.Float.fromString,
-    ~destination=state.values.recipient,
-    ~fee=?state.values.fee->mapIfAdvanced(Js.Float.fromString),
-    ~counter=?state.values.counter->mapIfAdvanced(int_of_string),
-    ~gasLimit=?state.values.gasLimit->mapIfAdvanced(int_of_string),
-    ~storageLimit=?state.values.storageLimit->mapIfAdvanced(int_of_string),
-    ~forceLowFee=?
-      advancedOptionOpened && state.values.forceLowFee ? Some(true) : None,
-    (),
-  );
-};
-
 type step =
   | SendStep
-  | PasswordStep(Injection.transaction);
+  | PasswordStep(SendForm.transaction, Protocol.simulationResults)
+  | EditStep(int, (SendForm.StateLenses.state, bool))
+  | BatchStep
+  | SubmittedStep(string);
+
+let stepToString = step =>
+  switch (step) {
+  | SendStep => "sendstep"
+  | PasswordStep(_, _) => "passwordstep"
+  | EditStep(_, _) => "editstep"
+  | BatchStep => "batchstep"
+  | SubmittedStep(_) => "submittedstep"
+  };
+
+let sourceDestination = (transfer: SendForm.transaction) => {
+  let recipientLbl = I18n.title#recipient_account;
+  let sourceLbl = I18n.title#sender_account;
+  switch (transfer) {
+  | ProtocolTransaction({source, transfers: [t]}) => (
+      (source, sourceLbl),
+      `One((t.destination, recipientLbl)),
+    )
+  | ProtocolTransaction({source, transfers}) =>
+    let destinations =
+      transfers->List.map(t =>
+        (None, (t.destination, t.amount->ProtocolXTZ.toString))
+      );
+    ((source, sourceLbl), `Many(destinations));
+  | TokenTransfer(_, _, source, destination) => (
+      (source, sourceLbl),
+      `One((destination, recipientLbl)),
+    )
+  };
+};
+
+let buildSummaryContent =
+    (
+      transaction: SendForm.transaction,
+      token,
+      dryRun: Protocol.simulationResults,
+    ) => {
+  switch (transaction) {
+  | ProtocolTransaction({transfers}) =>
+    let amount =
+      transfers->List.reduce(ProtocolXTZ.zero, (acc, {amount}) =>
+        ProtocolXTZ.Infix.(acc + amount)
+      );
+    let subtotal = (
+      I18n.label#summary_subtotal,
+      I18n.t#xtz_amount(amount->ProtocolXTZ.toString),
+    );
+    let total = ProtocolXTZ.Infix.(amount + dryRun.fee);
+    let total = (
+      I18n.label#summary_total,
+      I18n.t#xtz_amount(total->ProtocolXTZ.toString),
+    );
+    let fee = (
+      I18n.label#fee,
+      I18n.t#xtz_amount(dryRun.fee->ProtocolXTZ.toString),
+    );
+    [subtotal, fee, total];
+  | TokenTransfer(_, amount, _source, _destination) =>
+    let fee = (
+      I18n.label#fee,
+      I18n.t#xtz_amount(dryRun.fee->ProtocolXTZ.toString),
+    );
+    let amount =
+      token->Option.mapWithDefault("", (Token.{symbol}) =>
+        I18n.t#amount(amount->Js.Int.toString, symbol)
+      );
+    let amount = (I18n.label#send_amount, amount);
+    [amount, fee];
+  };
+};
 
 module Form = {
-  let build =
-      (initAccount: option(Account.t), advancedOptionOpened, onSubmit) => {
+  let defaultInit = (account: option(Account.t)) =>
+    SendForm.StateLenses.{
+      amount: "",
+      sender: account->Option.mapWithDefault("", a => a.address),
+      recipient: "",
+      fee: "",
+      counter: "",
+      gasLimit: "",
+      storageLimit: "",
+      forceLowFee: false,
+      dryRun: None,
+    };
+
+  let use = (~initValues=?, initAccount, onSubmit) => {
     SendForm.use(
       ~schema={
         SendForm.Validation.(
@@ -86,31 +178,33 @@ module Form = {
             nonEmpty(Amount)
             + nonEmpty(Sender)
             + nonEmpty(Recipient)
-            + custom(values => isValidFloat(values.amount), Amount)
-            + custom(values => isValidFloat(values.fee), Fee)
-            + custom(values => isValidInt(values.counter), Counter)
-            + custom(values => isValidInt(values.gasLimit), GasLimit)
-            + custom(values => isValidInt(values.storageLimit), StorageLimit),
+            + custom(
+                values => FormUtils.isValidFloat(values.amount),
+                Amount,
+              )
+            + custom(values => FormUtils.isValidFloat(values.fee), Fee)
+            + custom(
+                values => FormUtils.isValidInt(values.counter),
+                Counter,
+              )
+            + custom(
+                values => FormUtils.isValidInt(values.gasLimit),
+                GasLimit,
+              )
+            + custom(
+                values => FormUtils.isValidInt(values.storageLimit),
+                StorageLimit,
+              ),
           )
         );
       },
       ~onSubmit=
-        ({state}) => {
-          let operation = buildTransaction(state, advancedOptionOpened);
-          onSubmit(operation);
-
+        f => {
+          onSubmit(f);
           None;
         },
-      ~initialState={
-        amount: "",
-        sender: initAccount->Belt.Option.mapWithDefault("", a => a.address),
-        recipient: "",
-        fee: "",
-        counter: "",
-        gasLimit: "",
-        storageLimit: "",
-        forceLowFee: false,
-      },
+      ~initialState=
+        initValues->Option.getWithDefault(defaultInit(initAccount)),
       (),
     );
   };
@@ -118,136 +212,360 @@ module Form = {
   module View = {
     open SendForm;
 
+    let onAppear = (el, _) => {
+      ReactFlipToolkit.spring({
+        onUpdate: value => {
+          el->ReactDOMRe.domElementToObj##style##opacity #= value;
+        },
+        delay: 100.,
+        onComplete: () => (),
+      });
+    };
+
+    let onExit = (el, _, removeElement) => {
+      ReactFlipToolkit.spring({
+        onUpdate: value => {
+          el->ReactDOMRe.domElementToObj##style##opacity
+          #= Js.Math.max_float(0., 1. -. value -. 0.3);
+        },
+        delay: 0.,
+        onComplete: removeElement,
+      });
+    };
+
+    type mode =
+      | Edition(int)
+      | Creation(option(unit => unit), unit => unit);
+
+    let simulatedTransaction = (mode, batch, form: SendForm.api, token) => {
+      let (batch, index) =
+        switch (mode) {
+        | Edition(index) =>
+          let batch =
+            batch
+            ->List.mapWithIndex((id, elt) =>
+                id == index ? (form.state.values, true) : elt
+              )
+            ->List.reverse;
+          (batch, Some(batch->List.length - (index + 1)));
+
+        | Creation(_) =>
+          let batch = [(form.state.values, true), ...batch]->List.reverse;
+          let length = batch->List.length;
+
+          (batch, Some(length - 1));
+        };
+
+      SendForm.buildTransaction(batch, token)
+      |> SendForm.toSimulation(~index?);
+    };
+
     [@react.component]
-    let make = (~onPressCancel, ~advancedOptionState, ~form) => {
-      let onSubmitSendForm = _ => {
-        form.submit();
-      };
+    let make =
+        (
+          ~batch,
+          ~advancedOptionState,
+          ~tokenState,
+          ~token=?,
+          ~mode,
+          ~form,
+          ~loading,
+        ) => {
       let (advancedOptionOpened, setAdvancedOptionOpened) = advancedOptionState;
+      let (selectedToken, setSelectedToken) = tokenState;
+
+      let (editing, onAddToBatch, onSubmitAll, batchMode) =
+        switch (mode) {
+        | Edition(_) => (true, None, None, false)
+        | Creation(batch, submit) => (
+            false,
+            batch,
+            Some(submit),
+            batch == None,
+          )
+        };
+
+      let submitLabel =
+        editing
+          ? I18n.btn#update
+          : batchMode ? I18n.btn#add_transaction : I18n.btn#send_submit;
+
+      let onSubmit = onSubmitAll->Option.getWithDefault(() => form.submit());
 
       <>
-        <Typography.Headline2 style=styles##title>
-          "Send"->React.string
-        </Typography.Headline2>
-        <FormGroupXTZInput
-          label="Amount"
-          value={form.values.amount}
-          handleChange={form.handleChange(Amount)}
-          error={form.getFieldError(Field(Amount))}
-        />
-        <FormGroupAccountSelector
-          label="Sender account"
-          value={form.values.sender}
-          handleChange={form.handleChange(Sender)}
-          error={form.getFieldError(Field(Sender))}
-        />
-        <FormGroupContactSelector
-          label="Recipient account"
-          value={form.values.recipient}
-          handleChange={form.handleChange(Recipient)}
-          error={form.getFieldError(Field(Recipient))}
-        />
-        <View>
+        <ReactFlipToolkit.FlippedView flipId="form">
+          <View style=FormStyles.header>
+            <Typography.Headline>
+              I18n.title#send->React.string
+            </Typography.Headline>
+            <Typography.Overline1 style=FormStyles.subtitle>
+              I18n.title#send_many_transactions->React.string
+            </Typography.Overline1>
+            <Typography.Body2 style=FormStyles.subtitle>
+              I18n.expl#send_many_transactions->React.string
+            </Typography.Body2>
+          </View>
+          <FormGroupAmountWithTokenSelector
+            label=I18n.label#send_amount
+            value={form.values.amount}
+            setValue={f =>
+              form.setFieldValue(Amount, f(form.values.amount), ())
+            }
+            handleChange={form.handleChange(Amount)}
+            error={form.getFieldError(Field(Amount))}
+            selectedToken
+            showSelector={!batchMode}
+            setSelectedToken={newToken => setSelectedToken(_ => newToken)}
+            ?token
+          />
+          <FormGroupAccountSelector
+            disabled=batchMode
+            label=I18n.label#send_sender
+            value={form.values.sender}
+            handleChange={form.handleChange(Sender)}
+            error={form.getFieldError(Field(Sender))}
+            ?token
+          />
+          <FormGroupContactSelector
+            label=I18n.label#send_recipient
+            value={form.values.recipient}
+            handleChange={form.handleChange(Recipient)}
+            error={form.getFieldError(Field(Recipient))}
+          />
           <TouchableOpacity
             style=styles##advancedOptionButton
             activeOpacity=1.
             onPress={_ => setAdvancedOptionOpened(prev => !prev)}>
-            <Typography.Overline1>
-              "Advanced options"->React.string
-            </Typography.Overline1>
-            <SwitchNative
-              value=advancedOptionOpened
-              //onValueChange=handleChange
-              thumbColor="#000"
-              trackColor={Switch.trackColor(
-                ~_true="#FFF",
-                ~_false="rgba(255,255,255,0.5)",
-                (),
-              )}
-              style=styles##switchCmp
-              thumbStyle=styles##switchThumb
-            />
+            <Typography.Overline2>
+              I18n.btn#advanced_options->React.string
+            </Typography.Overline2>
+            <ThemedSwitch value=advancedOptionOpened />
           </TouchableOpacity>
-          {advancedOptionOpened ? <SendViewAdvancedOptions form /> : React.null}
-        </View>
-        <View style=styles##formAction>
-          <FormButton text="CANCEL" onPress=onPressCancel />
-          <FormButton
-            text="OK"
-            onPress=onSubmitSendForm
-          />
-        </View>
+        </ReactFlipToolkit.FlippedView>
+        <ReactFlipToolkit.FlippedView
+          flipId="advancedOption"
+          scale=false
+          translate=advancedOptionOpened
+          opacity=true>
+          <ReactFlipToolkit.Flipper
+            flipKey={advancedOptionOpened->string_of_bool}>
+            {advancedOptionOpened
+               ? <ReactFlipToolkit.FlippedView
+                   flipId="innerAdvancedOption" onAppear onExit>
+                   <SendViewAdvancedOptions
+                     operation={simulatedTransaction(
+                       mode,
+                       batch,
+                       form,
+                       token,
+                     )}
+                     form
+                   />
+                 </ReactFlipToolkit.FlippedView>
+               : React.null}
+          </ReactFlipToolkit.Flipper>
+        </ReactFlipToolkit.FlippedView>
+        <ReactFlipToolkit.FlippedView flipId="submit">
+          <View style=FormStyles.verticalFormAction>
+            <Buttons.SubmitPrimary
+              text=submitLabel
+              onPress={_ => onSubmit()}
+              loading
+            />
+            {onAddToBatch
+             ->ReactUtils.mapOpt(addToBatch =>
+                 <Buttons.FormSecondary
+                   style=styles##addTransaction
+                   text=I18n.btn#start_batch_transaction
+                   onPress={_ => addToBatch()}
+                 />
+               )
+             ->ReactUtils.onlyWhen(token == None)}
+          </View>
+        </ReactFlipToolkit.FlippedView>
       </>;
     };
   };
 };
 
+module EditionView = {
+  [@react.component]
+  let make = (~batch, ~initValues, ~onSubmit, ~index, ~loading) => {
+    let (initValues, advancedOptionOpened) = initValues;
+
+    let (advancedOptionOpened, _) as advancedOptionState =
+      React.useState(_ => advancedOptionOpened);
+
+    let form = Form.use(~initValues, None, onSubmit(advancedOptionOpened));
+
+    <Form.View
+      batch
+      advancedOptionState
+      tokenState=(None, _ => ())
+      form
+      mode={Form.View.Edition(index)}
+      loading
+    />;
+  };
+};
+
 [@react.component]
-let make = (~onPressCancel) => {
-  let account = StoreContext.useAccount();
-  let network = StoreContext.useNetwork();
-  let (refreshOperations, _) = OperationApiRequest.useGetOperations();
+let make = (~closeAction) => {
+  let account = StoreContext.SelectedAccount.useGet();
+  let initToken = StoreContext.SelectedToken.useGet();
 
-  let (advancedOptionOpened, _) as advancedOptionState =
+  let updateAccount = StoreContext.SelectedAccount.useSet();
+
+  let (advancedOptionsOpened, setAdvancedOptions) as advancedOptionState =
     React.useState(_ => false);
-
-  let (operationRequest, sendOperation) =
-    OperationApiRequest.useCreateOperation(network);
-
-  let sendOperation = (op, ~password) =>
-    sendOperation(op, ~password)
-    ->Future.get(res =>
-        res->Belt.Result.isOk ? refreshOperations(network, account) : ()
-      );
 
   let (modalStep, setModalStep) = React.useState(_ => SendStep);
 
-  let form =
-    Form.build(account, advancedOptionOpened, op =>
-      setModalStep(_ => PasswordStep(op))
+  let (selectedToken, _) as tokenState =
+    React.useState(_ => initToken->Option.map(initToken => initToken.address));
+  let token = StoreContext.Tokens.useGet(selectedToken);
+
+  let (operationRequest, sendOperation) = StoreContext.Operations.useCreate();
+
+  let sendTransfer = (transfer, password) => {
+    let operation = SendForm.toOperation(transfer);
+
+    let ((sourceAddress, _), _) = sourceDestination(transfer);
+
+    sendOperation({operation, password})
+    ->Future.tapOk(((hash, _)) => {setModalStep(_ => SubmittedStep(hash))})
+    ->Future.tapOk(_ => {updateAccount(sourceAddress)})
+    ->ignore;
+  };
+
+  let (batch, setBatch) = React.useState(_ => []);
+
+  let (operationSimulateRequest, sendOperationSimulate) =
+    StoreContext.Operations.useSimulate();
+
+  let submitAction = React.useRef(`SubmitAll);
+
+  let onSubmitBatch = batch => {
+    let transaction = SendForm.buildTransaction(batch->List.reverse, token);
+    sendOperationSimulate(SendForm.toSimulation(transaction))
+    ->Future.tapOk(dryRun => {
+        setModalStep(_ => PasswordStep(transaction, dryRun))
+      })
+    ->ignore;
+  };
+
+  let onSubmit = ({state, send}: SendForm.onSubmitAPI) =>
+    switch (submitAction.current) {
+    | `SubmitAll =>
+      onSubmitBatch([(state.values, advancedOptionsOpened), ...batch])
+    | `AddToBatch =>
+      setBatch(l => [(state.values, advancedOptionsOpened), ...l]);
+      setAdvancedOptions(_ => false);
+      send(ResetForm);
+      send(SetFieldValue(Sender, state.values.sender));
+    };
+
+  let form: SendForm.api = Form.use(account, onSubmit);
+
+  let onSubmitAll = _ => {
+    submitAction.current = `SubmitAll;
+    form.submit();
+  };
+
+  let onAddToBatch = _ => {
+    submitAction.current = `AddToBatch;
+    form.submit();
+    setModalStep(_ => BatchStep);
+  };
+
+  let onEdit = (i, advOpened, {state}: SendForm.onSubmitAPI) => {
+    setBatch(b =>
+      b->List.mapWithIndex((j, v) => i == j ? (state.values, advOpened) : v)
     );
+    setModalStep(_ => BatchStep);
+  };
 
-  React.useEffect0(() => {None});
+  let onDelete = i => {
+    setBatch(b => b->List.keepWithIndex((_, j) => j != i));
+    List.length(batch) == 1 ? setModalStep(_ => SendStep) : ();
+  };
 
-  <ModalView.Form>
-    {switch (modalStep, operationRequest) {
-     | (_, Done(Ok(hash))) =>
-       <>
-         <Typography.Headline2 style=styles##title>
-           "Operation injected in the node"->React.string
-         </Typography.Headline2>
-         <Typography.Overline1>
-           "Operation hash"->React.string
-         </Typography.Overline1>
-         <Typography.Body1> hash->React.string </Typography.Body1>
-         <View style=styles##formAction>
-           <FormButton text="OK" onPress=onPressCancel />
-         </View>
-       </>
-     | (_, Done(Error(error))) =>
-       <>
-         <Typography.Body1 colorStyle=`error>
-           error->React.string
-         </Typography.Body1>
-         <View style=styles##formAction>
-           <FormButton text="OK" onPress=onPressCancel />
-         </View>
-       </>
-     | (_, Loading) =>
-       <View style=styles##loadingView>
-         <ActivityIndicator
-           animating=true
-           size=ActivityIndicator_Size.large
-           color=Colors.highIcon
-         />
-       </View>
-     | (SendStep, _) => <Form.View onPressCancel advancedOptionState form />
-     | (PasswordStep(operation), _) =>
-       <SignOperationView
-         onPressCancel={_ => setModalStep(_ => SendStep)}
-         operation
-         sendOperation
-       />
-     }}
-  </ModalView.Form>;
+  let closing =
+    switch (form.formState, modalStep) {
+    | (Pristine, _) when batch == [] => ModalFormView.Close(closeAction)
+    | (_, SubmittedStep(_)) => ModalFormView.Close(closeAction)
+    | _ =>
+      ModalFormView.confirm(~actionText=I18n.btn#send_cancel, closeAction)
+    };
+
+  let back =
+    switch (modalStep) {
+    | PasswordStep(_, _) =>
+      Some(() => setModalStep(_ => batch == [] ? SendStep : BatchStep))
+    | EditStep(_, _) => Some(() => setModalStep(_ => BatchStep))
+    | SendStep => batch != [] ? Some(_ => setModalStep(_ => BatchStep)) : None
+    | _ => None
+    };
+
+  let onPressCancel = _ => {
+    closeAction();
+    Routes.(push(Operations));
+  };
+
+  let loadingSimulate = operationSimulateRequest->ApiRequest.isLoading;
+  let loading = operationRequest->ApiRequest.isLoading;
+
+  <ReactFlipToolkit.Flipper
+    flipKey={advancedOptionsOpened->string_of_bool ++ modalStep->stepToString}>
+    <ReactFlipToolkit.FlippedView flipId="modal">
+      <ModalFormView back closing>
+        <ReactFlipToolkit.FlippedView.Inverse inverseFlipId="modal">
+          {switch (modalStep) {
+           | SubmittedStep(hash) =>
+             <SubmittedView
+               hash
+               onPressCancel
+               submitText=I18n.btn#go_operations
+             />
+           | BatchStep =>
+             <BatchView
+               onAddTransfer={_ => setModalStep(_ => SendStep)}
+               batch
+               onSubmitBatch
+               onEdit={(i, v) => setModalStep(_ => EditStep(i, v))}
+               onDelete
+               loading=loadingSimulate
+             />
+           | EditStep(index, initValues) =>
+             let onSubmit = (advOpened, form) =>
+               onEdit(index, advOpened, form);
+             <EditionView batch initValues onSubmit index loading=false />;
+           | SendStep =>
+             let onSubmit = batch != [] ? onAddToBatch : onSubmitAll;
+             let onAddToBatch = batch != [] ? None : Some(onAddToBatch);
+             <Form.View
+               batch
+               advancedOptionState
+               tokenState
+               ?token
+               form
+               mode={Form.View.Creation(onAddToBatch, onSubmit)}
+               loading=loadingSimulate
+             />;
+           | PasswordStep(transfer, dryRun) =>
+             let (source, destinations) = sourceDestination(transfer);
+             <SignOperationView
+               title=I18n.title#confirmation
+               source
+               destinations
+               subtitle=I18n.expl#confirm_operation
+               content={buildSummaryContent(transfer, token, dryRun)}
+               sendOperation={sendTransfer(transfer)}
+               loading
+             />;
+           }}
+        </ReactFlipToolkit.FlippedView.Inverse>
+      </ModalFormView>
+    </ReactFlipToolkit.FlippedView>
+  </ReactFlipToolkit.Flipper>;
 };

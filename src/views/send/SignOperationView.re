@@ -2,21 +2,20 @@ open ReactNative;
 
 let styles =
   Style.(
-    StyleSheet.create({
-      "title": style(~marginBottom=20.->dp, ~textAlign=`center, ()),
-      "formAction":
-        style(
-          ~flexDirection=`row,
-          ~justifyContent=`center,
-          ~marginTop=24.->dp,
-          (),
-        ),
-      "operationSummary": style(~marginBottom=20.->dp, ()),
-    })
+    StyleSheet.create({"operationSummary": style(~marginBottom=20.->dp, ())})
   );
 
 [@react.component]
-let make = (~onPressCancel, ~operation, ~sendOperation) => {
+let make =
+    (
+      ~title,
+      ~subtitle=?,
+      ~source,
+      ~destinations,
+      ~sendOperation,
+      ~content,
+      ~loading=false,
+    ) => {
   let form: SendForm.Password.api =
     SendForm.Password.use(
       ~schema={
@@ -27,48 +26,38 @@ let make = (~onPressCancel, ~operation, ~sendOperation) => {
       (),
     );
 
-  let onSubmit = (operation, _) => {
+  let onSubmit = _ => {
     // checking password
     // getting stored data
     form.submit();
-    sendOperation(Injection.Transaction(operation), ~password=form.values.password);
+    sendOperation(form.values.password);
   };
 
   <>
-    <View style=styles##title>
-      <Typography.Headline2>
-        {Js.Float.toFixedWithPrecision(operation.Injection.amount, ~digits=1)
-         ->React.string}
-        BusinessUtils.xtz->React.string
-      </Typography.Headline2>
-      {operation.Injection.fee
-       ->ReactUtils.mapOpt(fee =>
-           <Typography.Body1 colorStyle=`mediumEmphasis>
-             "+ Fee "->React.string
-             {fee->Js.Float.toString->React.string}
-             " "->React.string
-             BusinessUtils.xtz->React.string
-           </Typography.Body1>
-         )}
+    <View style=FormStyles.header>
+      <Typography.Headline> title->React.string </Typography.Headline>
+      {subtitle->ReactUtils.mapOpt(subtitle =>
+         <Typography.Overline1 style=FormStyles.subtitle>
+           subtitle->React.string
+         </Typography.Overline1>
+       )}
     </View>
     <OperationSummaryView
       style=styles##operationSummary
-      transaction=operation
+      source
+      destinations
+      content
     />
     <FormGroupTextInput
-      label="Password"
+      label=I18n.label#password
       value={form.values.password}
       handleChange={form.handleChange(Password)}
       error={form.getFieldError(Field(Password))}
       textContentType=`password
       secureTextEntry=true
     />
-    <View style=styles##formAction>
-      <FormButton text="CANCEL" onPress=onPressCancel />
-      <FormButton
-        text="SEND"
-        onPress={operation->onSubmit}
-      />
+    <View style=FormStyles.verticalFormAction>
+      <Buttons.SubmitPrimary text=I18n.btn#confirm onPress=onSubmit loading />
     </View>
   </>;
 };

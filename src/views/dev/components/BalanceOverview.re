@@ -11,15 +11,15 @@ let make = () => {
   let (injection, _) = React.useContext(InjectionState.context);
 
   let (balance, setBalance) = React.useContext(BalanceState.context);
-  let config = ConfigContext.useConfig();
+  let settings = ConfigContext.useSettings();
 
   React.useEffect5(
     () => {
       switch (injection) {
       | Pending(_) => ()
       | Done =>
-        (network, config)
-        ->BalanceAPI.get(account)
+        settings
+        ->BalanceAPI.get(account, ())
         ->FutureEx.getOk(value => setBalance(value))
       };
       None;
@@ -27,5 +27,7 @@ let make = () => {
     (network, account, injection, balance, setBalance),
   );
 
-  <Text style> {("Balance: " ++ balance)->React.string} </Text>;
+  <Text style>
+    {("Balance: " ++ balance->ProtocolXTZ.toString)->React.string}
+  </Text>;
 };

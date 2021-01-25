@@ -1,38 +1,22 @@
 open ChildReprocess.StdStream;
-open Common;
-
-let endpoint = ((network, config: ConfigFile.t)) =>
-  switch (network) {
-  | Network.Main =>
-    config.endpointMain->Belt.Option.getWithDefault(ConfigFile.endpointMain)
-  | Network.Test =>
-    config.endpointTest->Belt.Option.getWithDefault(ConfigFile.endpointTest)
-  };
-
-let explorer = ((network: Network.t, config: ConfigFile.t)) =>
-  switch (network) {
-  | Main =>
-    config.explorerMain->Belt.Option.getWithDefault(ConfigFile.explorerMain)
-
-  | Test =>
-    config.explorerTest->Belt.Option.getWithDefault(ConfigFile.explorerTest)
-  };
+open UmamiCommon;
+open Delegate;
 
 module Path = {
-  let delegates = "chains/main/blocks/head/context/delegates\\?active=true";
+  let delegates = "/chains/main/blocks/head/context/delegates\\?active=true";
   let operations = "operations";
   let mempool_operations = "mempool_operations";
 };
 
 module URL = {
-  let arg_opt = (v, n, f) => v->Belt.Option.map(a => (n, f(a)));
+  let arg_opt = (v, n, f) => v->Option.map(a => (n, f(a)));
 
   let build_args = l =>
-    l->Belt.List.map(((a, v)) => a ++ "=" ++ v)->Belt.List.toArray
+    l->List.map(((a, v)) => a ++ "=" ++ v)->List.toArray
     |> Js.Array.joinWith("&");
 
   let build_url = (network, path, args) => {
-    explorer(network)
+    AppSettings.explorer(network)
     ++ "/"
     ++ path
     ++ (args == [] ? "" : "?" ++ args->build_args);
@@ -40,46 +24,62 @@ module URL = {
 
   let operations =
       (
-        network,
+        settings: AppSettings.t,
         account,
         ~types: option(array(string))=?,
+        ~destination: option(string)=?,
         ~limit: option(int)=?,
         (),
       ) => {
-    let operationsPath = "operations";
+    let operationsPath = "accounts/" ++ account ++ "/operations";
     let args =
-      ("address", account)
-      @: types->arg_opt("types", t => t->Js.Array2.joinWith(","))
-      @?? limit->arg_opt("limit", lim => lim->Js.Int.toString);
-    let url = build_url(network, operationsPath, args);
+      Lib.List.(
+        []
+        ->addOpt(destination->arg_opt("destination", dst => dst))
+        ->addOpt(limit->arg_opt("limit", lim => lim->Js.Int.toString))
+        ->addOpt(types->arg_opt("types", t => t->Js.Array2.joinWith(",")))
+      );
+    let url = build_url(settings, operationsPath, args);
     url;
   };
 
   let mempool = (network, account) =>
     build_url(network, Path.mempool_operations, [("pkh", account)]);
 
-  let delegates = network => endpoint(network) ++ Path.delegates;
+  let delegates = settings =>
+    AppSettings.endpoint(settings) ++ Path.delegates;
 };
 
 module type CallerAPI = {
   let call:
     (array(string), ~inputs: array(string)=?, unit) =>
-    Future.t(Belt.Result.t(string, string));
+    Future.t(Result.t(string, string));
 };
 
 module TezosClient = {
   [@bs.send] external end_: Writeable.t => unit = "end";
 
+  let removeTestnetWarning = output => {
+    let warning =
+      Js.Re.fromString(
+        "[ ]*Warning:[ \n]*This is NOT the Tezos Mainnet.[ \n]*\
+       Do NOT use your fundraiser keys on this network.[ \n]*",
+      );
+    Js.String.replaceByRe(warning, "", output);
+  };
+
   let call = (command, ~inputs=?, ()) =>
     Future.make(resolve => {
       let process = ChildReprocess.spawn("tezos-client", command, ());
-      let result: ref(option(Belt.Result.t(string, string))) = ref(None);
+      let result: ref(option(Result.t(string, string))) = ref(None);
       let _ =
         process
         ->child_stderr
-        ->Readable.on_data(buffer =>
-            result := Some(buffer->Node_buffer.toString->Error)
-          );
+        ->Readable.on_data(buffer => {
+            let err = Node_buffer.toString(buffer);
+            result :=
+              removeTestnetWarning(err) == "" ? None : Some(Error(err));
+          });
       let _ =
         process
         ->child_stdout
@@ -104,7 +104,7 @@ module TezosClient = {
         | None => ()
         };
       let _ =
-        process->ChildReprocess.on_exit((_, _) =>
+        process->ChildReprocess.on_close((_, _) =>
           resolve(
             switch (result^) {
             | Some(value) => value
@@ -117,7 +117,7 @@ module TezosClient = {
 };
 
 module type GetterAPI = {
-  let get: string => Future.t(Belt.Result.t(Js.Json.t, string));
+  let get: string => Future.t(Result.t(Js.Json.t, string));
 };
 
 module TezosExplorer = {
@@ -131,14 +131,41 @@ module TezosExplorer = {
 };
 
 module Balance = (Caller: CallerAPI) => {
-  let get = (network, account) =>
-    Caller.call(
-      [|"-E", network->endpoint, "get", "balance", "for", account|],
-      (),
-    );
+  let get = (settings, account, ~block=?, ()) => {
+    let arguments = [|
+      "-E",
+      settings->AppSettings.endpoint,
+      "get",
+      "balance",
+      "for",
+      account,
+    |];
+    let arguments =
+      switch (block) {
+      | Some(block) => Js.Array2.concat([|"-b", block|], arguments)
+      | None => arguments
+      };
+
+    Caller.call(arguments, ())
+    ->Future.flatMapOk(r =>
+        r
+        ->Float.fromString
+        ->Option.map(Float.toString)
+        ->Option.flatMap(ProtocolXTZ.fromString)
+        ->(
+            ropt =>
+              switch (ropt) {
+              | None when r == "" => Ok(ProtocolXTZ.zero)
+              | None => Error("Cannot parse balance")
+              | Some(r) => Ok(r)
+              }
+          )
+        ->Future.value
+      );
+  };
 };
 
-let map = (result: Belt.Result.t('a, string), transform: 'a => 'b) =>
+let map = (result: Result.t('a, string), transform: 'a => 'b) =>
   try(
     switch (result) {
     | Ok(value) => Ok(transform(value))
@@ -150,26 +177,265 @@ let map = (result: Belt.Result.t('a, string), transform: 'a => 'b) =>
   | _ => Error("Unknown error")
   };
 
+module InjectorRaw = (Caller: CallerAPI) => {
+  type parserInterpret('a) =
+    | AllReduce(('a, option(string)) => 'a, 'a)
+    | First(string => option('a))
+    | Last(string => option('a))
+    | Nth(string => option('a), int)
+    | Exists(string => option('a));
+
+  let parse = (receipt, pattern, interp) => {
+    let rec parseAll = (acc, regexp) =>
+      switch (
+        Js.Re.exec_(regexp, receipt)->Option.map(Js.Re.captures),
+        interp,
+      ) {
+      | (Some(res), Exists(_)) => [|
+          res[0]->Option.flatMap(Js.Nullable.toOption),
+        |]
+      | (Some(res), _) =>
+        acc
+        ->Js.Array2.concat([|res[1]->Option.flatMap(Js.Nullable.toOption)|])
+        ->parseAll(regexp)
+      | (None, _) => acc
+      };
+    let interpretResults = results =>
+      if (Js.Array.length(results) == 0) {
+        None;
+      } else {
+        switch (interp) {
+        | Exists(f) => results[0]->Option.flatMap(x => x)->Option.flatMap(f)
+        | First(f) => results[0]->Option.flatMap(x => x)->Option.flatMap(f)
+        | Last(f) =>
+          results[Js.Array.length(results) - 1]
+          ->Option.flatMap(x => x)
+          ->Option.flatMap(f)
+        | Nth(f, i) =>
+          i < Js.Array.length(results)
+            ? results[i]->Option.flatMap(x => x)->Option.flatMap(f) : None
+        | AllReduce(f, init) => Some(Js.Array2.reduce(results, f, init))
+        };
+      };
+    parseAll([||], Js.Re.fromStringWithFlags(pattern, ~flags="g"))
+    ->interpretResults;
+  };
+
+  let parseAndReduceXTZ = (f, s) => {
+    Option.mapWithDefault(s, Some(ProtocolXTZ.zero), ProtocolXTZ.fromString)
+    ->Option.mapWithDefault(f, ProtocolXTZ.Infix.(+)(f));
+  };
+
+  let parseAndReduceInt = (f, s) => {
+    Option.mapWithDefault(s, Some(0), int_of_string_opt)
+    ->Option.mapWithDefault(f, Int.(+)(f));
+  };
+
+  type parserOptions = {
+    fees: parserInterpret(ProtocolXTZ.t),
+    counter: parserInterpret(int),
+    gasLimit: parserInterpret(int),
+    storageLimit: parserInterpret(int),
+  };
+
+  let singleOperationParser = {
+    fees: AllReduce(parseAndReduceXTZ, ProtocolXTZ.zero),
+    counter: First(int_of_string_opt),
+    gasLimit: AllReduce(parseAndReduceInt, 0),
+    storageLimit: AllReduce(parseAndReduceInt, 0),
+  };
+
+  let singleBatchTransferParser = index => {
+    Js.log(
+      "FEE "
+      ++ Js.String.make(index)
+      ++ " FROM "
+      ++ Js.String.make(Nth(float_of_string_opt, index)),
+    );
+
+    {
+      fees: Nth(ProtocolXTZ.fromString, index),
+      counter: Nth(int_of_string_opt, index),
+      gasLimit: Nth(int_of_string_opt, index),
+      storageLimit: Nth(int_of_string_opt, index),
+    };
+  };
+
+  let patchNthForRevelation = (options, revelation) => {
+    let incrNth = nth =>
+      switch (nth) {
+      | Nth(f, i) => Nth(f, i + 1)
+      | _ => nth
+      };
+    switch (revelation) {
+    | None => options
+    | Some () => {
+        fees: incrNth(options.fees),
+        counter: incrNth(options.counter),
+        gasLimit: incrNth(options.gasLimit),
+        storageLimit: incrNth(options.storageLimit),
+      }
+    };
+  };
+
+  let transaction_options_arguments =
+      (
+        arguments,
+        tx_options: Protocol.transfer_options,
+        common_options: Protocol.common_options,
+      ) => {
+    let arguments =
+      switch (tx_options.fee) {
+      | Some(fee) =>
+        Js.Array2.concat(arguments, [|"--fee", fee->ProtocolXTZ.toString|])
+      | None => arguments
+      };
+    let arguments =
+      switch (common_options.counter) {
+      | Some(counter) =>
+        Js.Array2.concat(arguments, [|"-C", counter->Js.Int.toString|])
+      | None => arguments
+      };
+    let arguments =
+      switch (tx_options.gasLimit) {
+      | Some(gasLimit) =>
+        Js.Array2.concat(arguments, [|"-G", gasLimit->Js.Int.toString|])
+      | None => arguments
+      };
+    let arguments =
+      switch (tx_options.storageLimit) {
+      | Some(storageLimit) =>
+        Js.Array2.concat(arguments, [|"-S", storageLimit->Js.Int.toString|])
+      | None => arguments
+      };
+    let arguments =
+      switch (common_options.burnCap) {
+      | Some(burnCap) =>
+        Js.Array2.concat(
+          arguments,
+          [|"--burn-cap", burnCap->ProtocolXTZ.toString|],
+        )
+      | None => arguments
+      };
+    switch (common_options.forceLowFee) {
+    | Some(true) => Js.Array2.concat(arguments, [|"--force-low-fee"|])
+    | Some(false)
+    | None => arguments
+    };
+  };
+
+  exception InvalidReceiptFormat;
+
+  let simulate = (network, parser_options, make_arguments) =>
+    Caller.call(
+      make_arguments(network)->Js.Array2.concat([|"--simulation"|]),
+      (),
+    )
+    ->Future.tapOk(Js.log)
+    ->Future.map(result =>
+        result->map(receipt => {
+          let revelation =
+            receipt->parse(
+              "[ ]*Revelation of manager public key:",
+              Exists(_ => Some()),
+            );
+          Js.log(revelation);
+          let parser_options =
+            patchNthForRevelation(parser_options, revelation);
+          let fee =
+            receipt->parse(
+              "[ ]*Fee to the baker: .([0-9]*\\.[0-9]+|[0-9]+)",
+              parser_options.fees,
+            );
+          Js.log(fee);
+          let count =
+            receipt->parse(
+              "[ ]*Expected counter: ([0-9]+)",
+              parser_options.counter,
+            );
+          Js.log(count);
+          let gasLimit =
+            receipt->parse(
+              "[ ]*Gas limit: ([0-9]+)",
+              parser_options.gasLimit,
+            );
+          Js.log(gasLimit);
+          let storageLimit =
+            receipt->parse(
+              "[ ]*Storage limit: ([0-9]+)",
+              parser_options.storageLimit,
+            );
+          Js.log(storageLimit);
+          switch (fee, count, gasLimit, storageLimit) {
+          | (Some(fee), Some(count), Some(gasLimit), Some(storageLimit)) =>
+            Protocol.{fee, count, gasLimit, storageLimit}
+          | _ => raise(InvalidReceiptFormat)
+          };
+        })
+      )
+    ->Future.tapOk(Js.log);
+
+  let create = (network, make_arguments) =>
+    Caller.call(make_arguments(network), ())
+    ->Future.tapOk(Js.log)
+    ->Future.map(result =>
+        result->map(receipt => {
+          let result =
+            receipt->parse(
+              "Operation hash is '([A-Za-z0-9]*)'",
+              First(s => Some(s)),
+            );
+          switch (result) {
+          | Some(operationHash) => operationHash
+          | None => raise(InvalidReceiptFormat)
+          };
+        })
+      )
+    ->Future.tapOk(Js.log);
+
+  let inject = (network, make_arguments, ~password) =>
+    Caller.call(make_arguments(network), ~inputs=[|password|], ())
+    ->Future.tapOk(Js.log)
+    ->Future.map(result =>
+        result->map(receipt => {
+          let operationHash =
+            receipt->parse(
+              "Operation hash is '([A-Za-z0-9]+)'",
+              First(s => Some(s)),
+            );
+          let branch =
+            receipt->parse("--branch ([A-Za-z0-9]+)", First(s => Some(s)));
+          switch (operationHash, branch) {
+          | (Some(operationHash), Some(branch)) => (operationHash, branch)
+          | (_, _) => raise(InvalidReceiptFormat)
+          };
+        })
+      );
+};
+
 module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
+  module Injector = InjectorRaw(Caller);
+
   let getFromMempool = (account, network, operations) =>
     network
     ->URL.mempool(account)
     ->Getter.get
     ->Future.map(result =>
         result->map(x =>
-          (operations, x |> Json.Decode.(array(Operation.decodeFromMempool)))
+          (
+            operations,
+            x |> Json.Decode.(array(Operation.Read.decodeFromMempool)),
+          )
         )
       )
     >>= (
       ((operations, mempool)) => {
-        module Comparator = Operation.Comparator;
+        module Comparator = Operation.Read.Comparator;
         let operations =
-          Belt.Set.fromArray(operations, ~id=(module Operation.Comparator));
+          Set.fromArray(operations, ~id=(module Operation.Read.Comparator));
 
         let operations =
-          mempool
-          ->Belt.Array.reduce(operations, Belt.Set.add)
-          ->Belt.Set.toArray;
+          mempool->Array.reduce(operations, Set.add)->Set.toArray;
 
         Future.value(Ok(operations));
       }
@@ -180,15 +446,16 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
         network,
         account,
         ~types: option(array(string))=?,
+        ~destination: option(string)=?,
         ~limit: option(int)=?,
         ~mempool: bool=false,
         (),
       ) =>
     network
-    ->URL.operations(account, ~types?, ~limit?, ())
+    ->URL.operations(account, ~types?, ~destination?, ~limit?, ())
     ->Getter.get
     ->Future.map(result =>
-        result->map(Json.Decode.(array(Operation.decode)))
+        result->map(Json.Decode.(array(Operation.Read.decode)))
       )
     >>= (
       operations =>
@@ -197,166 +464,153 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
           : Future.value(Ok(operations))
     );
 
-  let arguments = (network, operation: Injection.operation) =>
+  let transfer = (tx: Protocol.transfer) => {
+    let obj = Js.Dict.empty();
+    Js.Dict.set(obj, "destination", Js.Json.string(tx.destination));
+    Js.Dict.set(
+      obj,
+      "amount",
+      tx.amount->ProtocolXTZ.toString->Js.Json.string,
+    );
+    tx.tx_options.fee
+    ->Lib.Option.iter(v =>
+        Js.Dict.set(obj, "fee", v->ProtocolXTZ.toString->Js.Json.string)
+      );
+    tx.tx_options.gasLimit
+    ->Lib.Option.iter(v =>
+        Js.Dict.set(obj, "gas-limit", Js.Int.toString(v)->Js.Json.string)
+      );
+    tx.tx_options.storageLimit
+    ->Lib.Option.iter(v =>
+        Js.Dict.set(obj, "storage-limit", Js.Int.toString(v)->Js.Json.string)
+      );
+    Js.Json.object_(obj);
+  };
+
+  let transfers_to_json = (btxs: Protocol.transaction) =>
+    btxs.transfers
+    ->List.map(transfer)
+    ->List.toArray
+    ->Js.Json.array
+    ->Js.Json.stringify /* ->(json => "\'" ++ json ++ "\'") */;
+
+  let arguments = (settings, operation: Protocol.t) =>
     switch (operation) {
-    | Transaction(transaction) =>
+    | Transaction({transfers: [transfer]} as transaction) =>
       let arguments = [|
         "-E",
-        network->endpoint,
+        settings->AppSettings.endpoint,
         "-w",
         "none",
         "transfer",
-        Js.Float.toString(transaction.amount),
+        transfer.amount->ProtocolXTZ.toString,
         "from",
         transaction.source,
         "to",
-        transaction.destination,
+        transfer.destination,
         "--burn-cap",
         "0.257",
       |];
-      let arguments =
-        switch (transaction.fee) {
-        | Some(fee) =>
-          Js.Array2.concat(arguments, [|"--fee", fee->Js.Float.toString|])
-        | None => arguments
-        };
-      let arguments =
-        switch (transaction.counter) {
-        | Some(counter) =>
-          Js.Array2.concat(arguments, [|"-C", counter->Js.Int.toString|])
-        | None => arguments
-        };
-      let arguments =
-        switch (transaction.gasLimit) {
-        | Some(gasLimit) =>
-          Js.Array2.concat(arguments, [|"-G", gasLimit->Js.Int.toString|])
-        | None => arguments
-        };
-      let arguments =
-        switch (transaction.storageLimit) {
-        | Some(storageLimit) =>
-          Js.Array2.concat(
-            arguments,
-            [|"-S", storageLimit->Js.Int.toString|],
-          )
-        | None => arguments
-        };
-      let arguments =
-        switch (transaction.burnCap) {
-        | Some(burnCap) =>
-          Js.Array2.concat(
-            arguments,
-            [|"--burn-cap", burnCap->Js.Float.toString|],
-          )
-        | None => arguments
-        };
-      switch (transaction.forceLowFee) {
-      | Some(true) => Js.Array2.concat(arguments, [|"--force-low-fee"|])
-      | Some(false)
-      | None => arguments
-      };
-    | Delegation(delegation) => [|
+      Injector.transaction_options_arguments(
+        arguments,
+        transfer.tx_options,
+        transaction.options,
+      );
+    | Transaction(transaction) => [|
         "-E",
-        network->endpoint,
+        settings->AppSettings.endpoint,
+        "-w",
+        "none",
+        "multiple",
+        "transfers",
+        "from",
+        transaction.source,
+        "using",
+        transfers_to_json(transaction),
+        "--burn-cap",
+        Js.Float.toString(
+          0.06425 *. transaction.transfers->List.length->float_of_int,
+        ),
+      |]
+    | Delegation({delegate: None, source}) => [|
+        "-E",
+        settings->AppSettings.endpoint,
+        "-w",
+        "none",
+        "withdraw",
+        "delegate",
+        "from",
+        source,
+      |]
+    | Delegation({delegate: Some(delegate), source}) => [|
+        "-E",
+        settings->AppSettings.endpoint,
+        "-w",
+        "none",
         "set",
         "delegate",
         "for",
-        delegation.source,
+        source,
         "to",
-        delegation.delegate,
+        delegate,
       |]
     };
 
-  type dryRun = {
-    fee: float,
-    count: int,
-    gasLimit: int,
-    storageLimit: int,
-  };
-
-  let parse = (receipt, pattern) =>
-    Js.Re.fromString(pattern)
-    ->Js.Re.exec_(receipt)
-    ->Belt.Option.map(Js.Re.captures)
-    ->Belt.Option.flatMap(captures => captures[1]->Js.Nullable.toOption);
-
   exception InvalidReceiptFormat;
 
-  let simulate = (network, operation: Injection.operation) =>
+  let simulateSingleBatchTransfer = (settings, index, operation: Protocol.t) =>
+    Injector.simulate(
+      settings,
+      Injector.singleBatchTransferParser(index),
+      arguments(_, operation),
+    );
+
+  let simpleSimulation = (settings, operation: Protocol.t) =>
+    Injector.simulate(
+      settings,
+      Injector.singleOperationParser,
+      arguments(_, operation),
+    );
+
+  let simulate = (settings, ~index=?, operation: Protocol.t) => {
+    switch (operation, index) {
+    | (Delegation(_), _)
+    | (Transaction(_), None)
+    | (Transaction({transfers: [_]}), _) =>
+      simpleSimulation(settings, operation)
+    | (Transaction(_), Some(index)) =>
+      simulateSingleBatchTransfer(settings, index, operation)
+    };
+  };
+
+  let create = (network, operation: Protocol.t) =>
+    Injector.create(network, arguments(_, operation));
+
+  let inject = (network, operation: Protocol.t, ~password) =>
+    Injector.inject(network, arguments(_, operation), ~password);
+
+  let waitForOperationConfirmations =
+      (settings, hash, ~confirmations, ~branch) =>
     Caller.call(
-      arguments(network, operation)->Js.Array2.concat([|"-D"|]),
-      ~inputs=
-        switch (LocalStorage.getItem("password")->Js.Nullable.toOption) {
-        | Some(password) => [|password|]
-        | None => [||]
-        },
+      [|
+        "-E",
+        settings->AppSettings.endpoint,
+        "wait",
+        "for",
+        hash,
+        "to",
+        "be",
+        "included",
+        "--confirmations",
+        confirmations->string_of_int,
+        "--branch",
+        branch,
+      |],
       (),
-    )
-    ->Future.tapOk(Js.log)
-    ->Future.map(result =>
-        result->map(receipt => {
-          let fee =
-            receipt
-            ->parse("[ ]*Fee to the baker: .([0-9]*\\.[0-9]+|[0-9]+)")
-            ->Belt.Option.flatMap(float_of_string_opt);
-          Js.log(fee);
-          let count =
-            receipt
-            ->parse("[ ]*Expected counter: ([0-9]+)")
-            ->Belt.Option.flatMap(int_of_string_opt);
-          Js.log(count);
-          let gasLimit =
-            receipt
-            ->parse("[ ]*Gas limit: ([0-9]+)")
-            ->Belt.Option.flatMap(int_of_string_opt);
-          Js.log(gasLimit);
-          let storageLimit =
-            receipt
-            ->parse("[ ]*Storage limit: ([0-9]+)")
-            ->Belt.Option.flatMap(int_of_string_opt);
-          Js.log(storageLimit);
-          switch (fee, count, gasLimit, storageLimit) {
-          | (Some(fee), Some(count), Some(gasLimit), Some(storageLimit)) => {
-              fee,
-              count,
-              gasLimit,
-              storageLimit,
-            }
-          | _ => raise(InvalidReceiptFormat)
-          };
-        })
-      )
-    ->Future.tapOk(Js.log);
-
-  let create = (network, operation: Injection.operation) =>
-    Caller.call(arguments(network, operation), ())
-    ->Future.tapOk(Js.log)
-    ->Future.map(result =>
-        result->map(receipt => {
-          let result = receipt->parse("Operation hash is '([A-Za-z0-9]*)'");
-          switch (result) {
-          | Some(operationHash) => operationHash
-          | None => raise(InvalidReceiptFormat)
-          };
-        })
-      )
-    ->Future.tapOk(Js.log);
-
-  let inject = (network, operation: Injection.operation, ~password) =>
-    Caller.call(arguments(network, operation), ~inputs=[|password|], ())
-    ->Future.tapOk(Js.log)
-    ->Future.map(result =>
-        result->map(receipt => {
-          let result = receipt->parse("Operation hash is '([A-Za-z0-9]*)'");
-          switch (result) {
-          | Some(operationHash) => operationHash
-          | None => raise(InvalidReceiptFormat)
-          };
-        })
-      );
+    );
 };
 
-module MapString = Belt.Map.String;
+module MapString = Map.String;
 
 module Mnemonic = {
   [@bs.module "bip39"] external generate: unit => string = "generateMnemonic";
@@ -366,36 +620,38 @@ module Accounts = (Caller: CallerAPI) => {
   let parse = content =>
     content
     ->Js.String2.split("\n")
-    ->Belt.Array.map(row => row->Js.String2.split(":"))
-    ->(rows => rows->Belt.Array.keep(data => data->Belt.Array.length >= 2))
-    ->Belt.Array.map(pair => {
-        [|pair[0]|]
-        ->Belt.Array.concat(pair[1]->Js.String2.trim->Js.String2.split(" ("))
+    ->Array.map(row => row->Js.String2.split(":"))
+    ->(rows => rows->Array.keep(data => data->Array.length >= 2))
+    ->Array.map(pair => {
+        [|pair->Array.getUnsafe(0)|]
+        ->Array.concat(
+            pair
+            ->Array.getUnsafe(1)
+            ->Js.String2.trim
+            ->Js.String2.split(" ("),
+          )
       })
-    ->(rows => rows->Belt.Array.keep(data => data->Belt.Array.length > 2))
-    ->Belt.Array.map(data => (data[0], data[1]));
+    ->(rows => rows->Array.keep(data => data->Array.length > 2))
+    ->Array.map(data => (data[0], data[1]));
 
-  let get = (~config) =>
-    Caller.call(
-      [|
-        "-E",
-        (Network.Test, config)->endpoint,
-        "list",
-        "known",
-        "addresses",
-      |],
-      (),
-    )
-    ->Future.mapOk(parse);
+  let get = (~settings: AppSettings.t) =>
+    settings
+    ->AppSettings.sdk
+    ->TezosSDK.listKnownAddresses
+    ->Future.mapOk(r =>
+        r->Array.keepMap((TezosSDK.OutputAddress.{alias, pkh, sk_known}) =>
+          sk_known ? Some((alias, pkh)) : None
+        )
+      );
 
-  let create = (~config, name) =>
+  let create = (~settings, name) =>
     Caller.call(
-      [|"-E", (Network.Test, config)->endpoint, "gen", "keys", name|],
+      [|"-E", settings->AppSettings.endpoint, "gen", "keys", name|],
       (),
     );
 
-  let add = (name, address) =>
-    Caller.call([|"add", "address", name, address, "-f"|], ());
+  let add = (~settings, alias, pkh) =>
+    settings->AppSettings.sdk->TezosSDK.addAddress(alias, pkh);
 
   let import = (key, name) =>
     Caller.call(
@@ -403,11 +659,11 @@ module Accounts = (Caller: CallerAPI) => {
       (),
     );
 
-  let addWithMnemonic = (~config, name, mnemonic, ~password) =>
+  let addWithMnemonic = (~settings, name, mnemonic, ~password) =>
     Caller.call(
       [|
         "-E",
-        (Network.Test, config)->endpoint,
+        settings->AppSettings.endpoint,
         "import",
         "keys",
         "from",
@@ -418,12 +674,9 @@ module Accounts = (Caller: CallerAPI) => {
       ~inputs=[|mnemonic, "", password, password|],
       (),
     )
-    ->Future.tapOk(_ => {
-        LocalStorage.setItem("mnemonic", mnemonic);
-        LocalStorage.setItem("password", password);
-      });
+    ->Future.tapOk(_ => {LocalStorage.setItem("mnemonic", mnemonic)});
 
-  let restore = (~config, backupPhrase, name, ~derivationPath=?, ()) => {
+  let restore = (~settings, backupPhrase, name, ~derivationPath=?, ()) => {
     switch (derivationPath) {
     | Some(derivationPath) =>
       let seed = HD.BIP39.mnemonicToSeedSync(backupPhrase);
@@ -434,7 +687,7 @@ module Accounts = (Caller: CallerAPI) => {
       Caller.call(
         [|
           "-E",
-          (Network.Test, config)->endpoint,
+          settings->AppSettings.endpoint,
           "generate",
           "keys",
           "from",
@@ -444,17 +697,19 @@ module Accounts = (Caller: CallerAPI) => {
         (),
       )
       ->Future.tapOk(Js.log)
-      ->Future.mapOk(keys => (keys |> Js.String.split("\n"))[2])
+      ->Future.mapOk(keys =>
+          (keys |> Js.String.split("\n"))->Array.getUnsafe(2)
+        )
       ->Future.tapOk(Js.log)
       ->Future.flatMapOk(edsk => import(edsk, name))
     };
   };
 
-  let delete = (name, ~config) =>
+  let delete = (~settings, name) =>
     Caller.call(
       [|
         "-E",
-        (Network.Test, config)->endpoint,
+        settings->AppSettings.endpoint,
         "forget",
         "address",
         name,
@@ -463,11 +718,11 @@ module Accounts = (Caller: CallerAPI) => {
       (),
     );
 
-  let delegate = (network, account, delegate) =>
+  let delegate = (settings, account, delegate) =>
     Caller.call(
       [|
         "-E",
-        network->endpoint,
+        settings->AppSettings.endpoint,
         "set",
         "delegate",
         "for",
@@ -489,34 +744,41 @@ module Scanner = (Caller: CallerAPI, Getter: GetterAPI) => {
     ->Future.mapOk(operations => {operations->Js.Array2.length != 0});
   };
 
-  let rec scan = (network, backupPhrase, baseName, ~derivationSchema, ~index) => {
+  let rec scan =
+          (
+            settings: AppSettings.t,
+            backupPhrase,
+            baseName,
+            ~derivationSchema,
+            ~index,
+          ) => {
     let seed = HD.BIP39.mnemonicToSeedSync(backupPhrase);
     let suffix = index->Js.Int.toString;
-    LocalStorage.setItem("index", suffix)
+    LocalStorage.setItem("index", suffix);
     let derivationPath = derivationSchema->Js.String2.replace("?", suffix);
     let edsk2 = HD.seedToPrivateKey(HD.deriveSeed(seed, derivationPath));
     Js.log(baseName ++ index->Js.Int.toString ++ " " ++ edsk2);
     let name = baseName ++ suffix;
     AccountsAPI.import(edsk2, name)
     ->Future.flatMapOk(_ =>
-        AccountsAPI.get(~config=network->snd)
+        AccountsAPI.get(~settings)
         ->Future.mapOk(MapString.fromArray)
         ->Future.flatMapOk(accounts =>
-            switch (accounts->Belt.Map.String.get(name)) {
+            switch (accounts->Map.String.get(name)) {
             | Some(address) =>
-              network
+              settings
               ->validate(address)
               ->Future.flatMapOk(isValidated =>
                   if (isValidated) {
                     scan(
-                      network,
+                      settings,
                       backupPhrase,
                       baseName,
                       ~derivationSchema,
                       ~index=index + 1,
                     );
                   } else {
-                    AccountsAPI.delete(~config=network->snd, name);
+                    AccountsAPI.delete(~settings, name);
                   }
                 )
             | None => Future.make(resolve => resolve(Ok("")))
@@ -526,71 +788,42 @@ module Scanner = (Caller: CallerAPI, Getter: GetterAPI) => {
   };
 };
 
-module Delegates = (Getter: GetterAPI) => {
-  let get = network =>
-    network
-    ->URL.delegates
-    ->Getter.get
-    ->Future.map(result => result->map(Json.Decode.(array(string))));
-};
-
 module Aliases = (Caller: CallerAPI) => {
   let parse = content =>
     content
     |> Js.String.split("\n")
     |> Js.Array.map(row => row |> Js.String.split(": "))
     |> (pairs => pairs->Js.Array2.filter(pair => pair->Array.length == 2))
-    |> Js.Array.map(pair => (pair[0], pair[1]))
-    |> Js.Array.sortInPlaceWith((a, b) => {
-         let (a, _) = a;
-         let (b, _) = b;
-         a->compare(b);
-       });
+    |> Js.Array.map(pair =>
+         (pair->Array.getUnsafe(0), pair->Array.getUnsafe(1))
+       );
 
-  let get = (~config) =>
+  let get = (~settings) =>
     Caller.call(
-      [|
-        "-E",
-        (Network.Test, config)->endpoint,
-        "list",
-        "known",
-        "contracts",
-      |],
+      [|"-E", settings->AppSettings.endpoint, "list", "known", "contracts"|],
       (),
     )
     ->Future.mapOk(parse);
 
-  let getAliasForAddress = (~config, address) =>
-    get(~config)
-    ->Future.mapOk(addresses =>
-        addresses->Belt.Array.map(((a, b)) => (b, a))
-      )
-    ->Future.mapOk(Belt.Map.String.fromArray)
-    ->Future.mapOk(aliases => aliases->Belt.Map.String.get(address));
+  let getAliasForAddress = (~settings, address) =>
+    get(~settings)
+    ->Future.mapOk(addresses => addresses->Array.map(((a, b)) => (b, a)))
+    ->Future.mapOk(Map.String.fromArray)
+    ->Future.mapOk(aliases => aliases->Map.String.get(address));
 
-  let getAddressForAlias = (~config, alias) =>
-    get(~config)
-    ->Future.mapOk(Belt.Map.String.fromArray)
-    ->Future.mapOk(addresses => addresses->Belt.Map.String.get(alias));
+  let getAddressForAlias = (~settings, alias) =>
+    get(~settings)
+    ->Future.mapOk(Map.String.fromArray)
+    ->Future.mapOk(addresses => addresses->Map.String.get(alias));
 
-  let add = (~config, alias, address) =>
+  let add = (~settings, alias, pkh) =>
+    settings->AppSettings.sdk->TezosSDK.addAddress(alias, pkh);
+
+  let delete = (~settings, name) =>
     Caller.call(
       [|
         "-E",
-        (Network.Test, config)->endpoint,
-        "add",
-        "address",
-        alias,
-        address,
-      |],
-      (),
-    );
-
-  let delete = (~config, name) =>
-    Caller.call(
-      [|
-        "-E",
-        (Network.Test, config)->endpoint,
+        settings->AppSettings.endpoint,
         "forget",
         "address",
         name,
@@ -598,4 +831,310 @@ module Aliases = (Caller: CallerAPI) => {
       |],
       (),
     );
+};
+
+module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
+  let parse = content =>
+    if (content == "none\n") {
+      None;
+    } else {
+      let splittedContent = content->Js.String2.split(" ");
+      if (content->Js.String2.length == 0 || splittedContent->Array.length == 0) {
+        None;
+      } else {
+        Some(splittedContent->Array.getUnsafe(0));
+      };
+    };
+
+  let getForAccount = (settings, account) =>
+    Caller.call(
+      [|
+        "-E",
+        settings->AppSettings.endpoint,
+        "get",
+        "delegate",
+        "for",
+        account,
+      |],
+      (),
+    )
+    ->Future.mapOk(parse)
+    ->Future.mapOk(result =>
+        switch (result) {
+        | Some(delegate) =>
+          if (account == delegate) {
+            None;
+          } else {
+            result;
+          }
+        | None => None
+        }
+      );
+
+  let getBakers = (settings: AppSettings.t) =>
+    switch (settings.network) {
+    | Mainnet =>
+      "https://api.baking-bad.org/v2/bakers"
+      ->Getter.get
+      ->Future.map(result => result->map(Json.Decode.(array(decode))))
+    | Testnet =>
+      Future.value(
+        Ok([|
+          {name: "zebra", address: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"},
+        |]),
+      )
+    };
+
+  type delegationInfo = {
+    initialBalance: ProtocolXTZ.t,
+    delegate: string,
+    timestamp: Js.Date.t,
+    lastReward: option(ProtocolXTZ.t),
+  };
+
+  let getDelegationInfoForAccount = (network, account: string) => {
+    module OperationsAPI = Operations(Caller, Getter);
+    module BalanceAPI = Balance(Caller);
+    network
+    ->OperationsAPI.get(account, ~types=[|"delegation"|], ~limit=1, ())
+    ->Future.flatMapOk(operations =>
+        if (operations->Array.length == 0) {
+          //Future.value(Error("No delegation found!"));
+          Future.value(
+            Ok({
+              initialBalance: ProtocolXTZ.zero,
+              delegate: "",
+              timestamp: Js.Date.make(),
+              lastReward: None,
+            }),
+          );
+        } else {
+          let firstOperation = operations->Array.getUnsafe(0);
+          switch (firstOperation.payload) {
+          | Business(payload) =>
+            switch (payload.payload) {
+            | Delegation(payload) =>
+              switch (payload.delegate) {
+              | Some(delegate) =>
+                if (account == delegate) {
+                  //Future.value(Error("Bakers can't delegate!"));
+                  Future.value(
+                    Ok({
+                      initialBalance: ProtocolXTZ.zero,
+                      delegate: "",
+                      timestamp: Js.Date.make(),
+                      lastReward: None,
+                    }),
+                  );
+                } else {
+                  network
+                  ->BalanceAPI.get(account, ~block=firstOperation.level, ())
+                  ->Future.mapOk(balance =>
+                      {
+                        initialBalance: balance,
+                        delegate,
+                        timestamp: firstOperation.timestamp,
+                        lastReward: None,
+                      }
+                    )
+                  ->Future.flatMapOk(info =>
+                      network
+                      ->OperationsAPI.get(
+                          info.delegate,
+                          ~types=[|"transaction"|],
+                          ~destination=account,
+                          ~limit=1,
+                          (),
+                        )
+                      ->Future.mapOk(operations =>
+                          if (operations->Array.length == 0) {
+                            info;
+                          } else {
+                            switch (firstOperation.payload) {
+                            | Business(payload) =>
+                              switch (payload.payload) {
+                              | Transaction(payload) => {
+                                  ...info,
+                                  lastReward: Some(payload.amount),
+                                }
+                              | _ => info
+                              }
+                            };
+                          }
+                        )
+                    );
+                }
+              | None => Future.value(Error("No delegate set!"))
+              }
+            | _ => Future.value(Error("Invalid operation type!"))
+            }
+          };
+        }
+      );
+  };
+};
+
+module Tokens = (Caller: CallerAPI) => {
+  module Injector = InjectorRaw(Caller);
+
+  let checkTokenContract = (settings, addr) => {
+    let arguments = [|
+      "-E",
+      settings->AppSettings.endpoint,
+      "check",
+      "contract",
+      addr,
+      "implements",
+      "fungible",
+      "assets",
+    |];
+    Caller.call(arguments, ());
+  };
+
+  let get = (settings: AppSettings.t) => {
+    switch (settings.network) {
+    | Testnet =>
+      Future.value(
+        Ok([|("Klondike", "KLD", "KT1BUdnCMfBKdVxCKyBvMUqwLqm27EDGWskB")|]),
+      )
+    | Mainnet => Future.value(Ok([||]))
+    };
+  };
+
+  let transfer = (elt: Token.Transfer.elt) => {
+    let obj = Js.Dict.empty();
+    Js.Dict.set(obj, "destination", Js.Json.string(elt.destination));
+    Js.Dict.set(obj, "amount", elt.amount->Js.Int.toString->Js.Json.string);
+    Js.Dict.set(obj, "token", elt.token->Js.Json.string);
+    elt.tx_options.fee
+    ->Lib.Option.iter(v =>
+        Js.Dict.set(obj, "fee", v->ProtocolXTZ.toString->Js.Json.string)
+      );
+    elt.tx_options.gasLimit
+    ->Lib.Option.iter(v =>
+        Js.Dict.set(obj, "gas-limit", Js.Int.toString(v)->Js.Json.string)
+      );
+    elt.tx_options.storageLimit
+    ->Lib.Option.iter(v =>
+        Js.Dict.set(obj, "storage-limit", Js.Int.toString(v)->Js.Json.string)
+      );
+    Js.Json.object_(obj);
+  };
+
+  let transfers_to_json = (transfers: list(Token.Transfer.elt)) =>
+    transfers
+    ->List.map(transfer)
+    ->List.toArray
+    ->Js.Json.array
+    ->Js.Json.stringify /* ->(json => "\'" ++ json ++ "\'") */;
+
+  let make_get_arguments =
+      (arguments, callback, offline, tx_options, common_options) =>
+    if (offline) {
+      Js.Array2.concat(arguments, [|"offline", "with", callback|]);
+    } else {
+      Js.Array2.concat(arguments, [|"callback", "on", callback|])
+      ->Injector.transaction_options_arguments(tx_options, common_options);
+    };
+
+  let make_arguments = (settings, operation: Token.operation, ~offline) => {
+    switch (operation) {
+    | Transfer({source, transfers: [elt], common_options}) =>
+      [|
+        "-E",
+        settings->AppSettings.endpoint,
+        "-w",
+        "none",
+        "from",
+        "token",
+        "contract",
+        elt.token,
+        "transfer",
+        Js.Int.toString(elt.amount),
+        "from",
+        source,
+        "to",
+        elt.destination,
+        "--burn-cap",
+        "0.01875",
+      |]
+      ->Injector.transaction_options_arguments(elt.tx_options, common_options)
+    | Transfer({source, transfers, common_options}) =>
+      [|
+        "-E",
+        settings->AppSettings.endpoint,
+        "-w",
+        "none",
+        "multiple",
+        "tokens",
+        "transfers",
+        "from",
+        source,
+        "using",
+        transfers_to_json(transfers),
+        "--burn-cap",
+        Js.Float.toString(0.08300 *. transfers->List.length->float_of_int),
+      |]
+      ->Injector.transaction_options_arguments(
+          Protocol.emptyTransferOptions,
+          common_options,
+        )
+    | GetBalance({
+        token,
+        address,
+        callback,
+        options: (tx_options, common_options),
+      }) =>
+      [|
+        "-E",
+        settings->AppSettings.endpoint,
+        "-w",
+        "none",
+        "from",
+        "token",
+        "contract",
+        token,
+        "get",
+        "balance",
+        "for",
+        address,
+      |]
+      ->make_get_arguments(callback, offline, tx_options, common_options)
+    | _ => assert(false)
+    };
+  };
+
+  let offline = (operation: Token.operation) => {
+    switch (operation) {
+    | Transfer(_)
+    | Approve(_) => false
+    | GetBalance(_)
+    | GetAllowance(_)
+    | GetTotalSupply(_) => true
+    };
+  };
+
+  let simulate = (network, operation: Token.operation) =>
+    Injector.simulate(
+      network,
+      Injector.singleOperationParser,
+      make_arguments(_, operation, ~offline=false),
+    );
+
+  let create = (network, operation: Token.operation) =>
+    Injector.create(network, make_arguments(_, operation, ~offline=false));
+
+  let inject = (network, operation: Token.operation, ~password) =>
+    Injector.inject(
+      network,
+      make_arguments(_, operation, ~offline=false),
+      ~password,
+    );
+
+  let callGetOperationOffline = (network, operation: Token.operation) =>
+    if (offline(operation)) {
+      Caller.call(make_arguments(network, operation, ~offline=true), ());
+    } else {
+      Future.value(Error("Operation not runnable offline"));
+    };
 };

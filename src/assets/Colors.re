@@ -1,29 +1,47 @@
-module Raw = {
-  let lightGrey = "#8d9093";
-  let mediumGrey = "#171717";
-  let darkGrey = "#121212";
+module Dark = {
+  let maxEmphasis = "#FFF";
+  let highEmphasis = "rgba(255,255,255,0.87)";
+  let reverseHighEmphasis = "rgba(0,0,0,0.87)";
+  let mediumEmphasis = "rgba(255,255,255,0.6)";
+  let disabled = "rgba(255,255,255,0.38)";
 
-  let black = "#000";
-  let white = "#FFF";
-  let lowWhite = "rgba(255,255,255, 0.87)";
-  let vLowWhite = "rgba(255,255,255, 0.60)";
-  let vvLowWhite = "rgba(255,255,255, 0.38)";
+  // for amount data
+  let positive = "#76E59B";
+  let negative = "#f97977";
 
-  let red = "#f97977";
+  let primary = "#f74f18";
+
+  let background = "#121212";
+  let barBackground = "#212121";
+  let scrim = "rgba(92,92,92,0.32)";
+
+  let statePressed = "rgba(255, 255, 255, 0.1)";
+  let stateHovered = "rgba(255, 255, 255, 0.04)";
+  let stateActive = "rgba(255, 255, 255, 0.08)";
 };
 
-let border = Raw.lightGrey;
+module Light = {
+  let maxEmphasis = "#000";
+  let highEmphasis = "rgba(0,0,0,0.87)";
+  let reverseHighEmphasis = "rgba(255,255,255,0.87)";
+  let mediumEmphasis = "rgba(0,0,0,0.6)";
+  let disabled = "rgba(0,0,0,0.38)";
 
-let widgetBorder = Raw.lowWhite;
+  // for amount data
+  let positive = "#55a388";
+  let negative = "#d46250";
 
-let stdText = Raw.lowWhite;
-let lowText = Raw.vLowWhite;
-let highText = Raw.white;
-let disabledText = Raw.vvLowWhite;
-let plainIconContent = Raw.black;
-let plainIconBack = Raw.white;
-let plainIconText = Raw.white;
-let highIcon = Raw.white;
-let contentBackground = Raw.darkGrey;
-let structBackground = Raw.mediumGrey;
-let error = Raw.red;
+  let primary = "#f74f18";
+
+  let background = "#f9f9f9";
+  let barBackground = "#FFF";
+  let scrim = "rgba(153,145,134,0.32)";
+
+  let statePressed = "rgba(0, 0, 0, 0.1)";
+  let stateHovered = "rgba(0, 0, 0, 0.04)";
+  let stateActive = "rgba(0, 0, 0, 0.08)";
+};
+
+// for application state like form
+let error = "#BB3838";
+let valid = "#76E59B";

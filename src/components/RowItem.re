@@ -4,13 +4,17 @@ let styles =
   Style.(
     StyleSheet.create({
       "container": style(~flexDirection=`row, ()),
-      "containerHovered": style(~backgroundColor=Theme.colorDarkSelected, ()),
       "inner": style(~flex=1., ~flexDirection=`row, ~alignItems=`center, ()),
       "innerContainer":
-        style(~paddingVertical=6.->dp, ~flexDirection=`row, ~flex=1., ()),
+        style(
+          ~paddingVertical=6.->dp,
+          ~flexDirection=`row,
+          ~flex=1.,
+          ~borderRadius=5.,
+          (),
+        ),
       "border":
         style(
-          ~backgroundColor="#8D9093",
           ~width=2.->dp,
           ~borderTopRightRadius=2.,
           ~borderBottomRightRadius=2.,
@@ -22,48 +26,51 @@ let styles =
 module Base = {
   [@react.component]
   let make = (~height, ~style as stylearg=?, ~children) => {
-    <Pressable>
-      {interactionState =>
+    let theme = ThemeContext.useTheme();
+    <Hoverable
+      style=Style.(
+        arrayOption([|
+          stylearg,
+          Some(styles##container),
+          Some(style(~height=height->dp, ())),
+        |])
+      )>
+      {hovered => {
          <View
            style=Style.(
              arrayOption([|
-               stylearg,
-               Some(styles##container),
-               Some(style(~height=height->dp, ())),
+               Some(styles##innerContainer),
+               hovered
+                 ? Some(
+                     style(~backgroundColor=theme.colors.stateHovered, ()),
+                   )
+                 : None,
              |])
            )>
-           <View
-             style=Style.(
-               arrayOption([|
-                 Some(styles##innerContainer),
-                 interactionState.hovered
-                   ? Some(styles##containerHovered) : None,
-               |])
-             )>
-             {children(interactionState)}
-           </View>
-         </View>}
-    </Pressable>;
+           {children(hovered)}
+         </View>;
+       }}
+    </Hoverable>;
   };
 };
 
 module Bordered = {
   [@react.component]
   let make = (~height, ~style=?, ~children) => {
+    let theme = ThemeContext.useTheme();
     <Base height ?style>
-      {interactionState =>
+      {_ =>
          <>
-           {<View style=styles##border />}
-           <View style=styles##inner> {children(interactionState)} </View>
+           <View
+             style=Style.(
+               array([|
+                 styles##border,
+                 style(~backgroundColor=theme.colors.borderHighEmphasis, ()),
+               |])
+             )
+           />
+           <View style=styles##inner> children </View>
          </>}
     </Base>;
   };
-};
-
-[@react.component]
-let make = (~height, ~style=?, ~children) => {
-  <Base ?style height>
-    {interactionState =>
-       <> <View style=styles##inner> {children(interactionState)} </View> </>}
-  </Base>;
 };

@@ -7,48 +7,26 @@ module AddContactButton = {
         "button":
           style(
             ~alignSelf=`flexStart,
+            ~marginLeft=(-6.)->dp,
             ~marginBottom=10.->dp,
-            ~flexDirection=`row,
-            ~alignItems=`center,
-            ~paddingVertical=6.->dp,
             (),
           ),
-        "icon": style(~marginRight=4.->dp, ()),
       })
     );
 
   [@react.component]
   let make = () => {
-    let modal = React.useRef(Js.Nullable.null);
+    let (visibleModal, openAction, closeAction) =
+      ModalAction.useModalActionState();
 
-    let (visibleModal, setVisibleModal) = React.useState(_ => false);
-    let openAction = () => setVisibleModal(_ => true);
-    let closeAction = () => setVisibleModal(_ => false);
-
-    let onPress = _e => {
-      openAction();
-    };
-
-    let onPressCancel = _e => {
-      modal.current
-      ->Js.Nullable.toOption
-      ->Belt.Option.map(ModalAction.closeModal)
-      ->ignore;
-    };
+    let onPress = _e => openAction();
 
     <>
-      <TouchableOpacity style=styles##button onPress>
-        <Icons.Add
-          size=15.5
-          color=Theme.colorDarkMediumEmphasis
-          style=styles##icon
-        />
-        <Typography.ButtonSecondary>
-          "ADD CONTACT"->React.string
-        </Typography.ButtonSecondary>
-      </TouchableOpacity>
-      <ModalAction ref=modal visible=visibleModal onRequestClose=closeAction>
-        <ContactAddView onPressCancel />
+      <View style=styles##button>
+        <ButtonAction onPress text=I18n.btn#add_contact icon=Icons.Add.build />
+      </View>
+      <ModalAction visible=visibleModal onRequestClose=closeAction>
+        <ContactFormView action=Create closeAction />
       </ModalAction>
     </>;
   };
@@ -58,24 +36,26 @@ let styles = Style.(StyleSheet.create({"container": style(~flex=1., ())}));
 
 [@react.component]
 let make = () => {
-  let aliasesRequest = AliasApiRequest.useGetAliases();
+  let aliasesRequest = StoreContext.Aliases.useRequestExceptAccounts();
 
   <Page>
     <AddContactButton />
     {switch (aliasesRequest) {
-     | Done(Ok(aliases)) =>
+     | Done(Ok(aliases), _)
+     | Loading(Some(aliases)) =>
        aliases
-       ->Belt.Array.map(((alias, address)) => {
-           let account: Account.t = {alias, address};
-           account;
-         })
-       ->Belt.Array.map(account =>
-           <AddressBookRowItem key={account.address} account />
+       ->Map.String.valuesToArray
+       ->Array.mapWithIndex((index, account) =>
+           <AddressBookRowItem
+             key={account.address}
+             account
+             zIndex={aliases->Map.String.size - index}
+           />
          )
        ->React.array
-     | Done(Error(error)) => <ErrorView error />
+     | Done(Error(error), _) => <ErrorView error />
      | NotAsked
-     | Loading => <LoadingView />
+     | Loading(None) => <LoadingView />
      }}
   </Page>;
 };

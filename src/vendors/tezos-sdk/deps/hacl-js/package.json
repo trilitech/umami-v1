@@ -1,0 +1,48 @@
+{
+  "name": "@nomadic-labs/hacl-js",
+  "version": "1.0.5",
+  "main": "hacl.js",
+  "license": "MIT",
+  "scripts": {
+    "build:emscripten": "docker run -u $(id -u) --rm -v $(pwd)/src:/src trzeci/emscripten-slim ./build.sh",
+    "build:app": "cp src/hacl.wasm src/hacl.js .",
+    "build": "npm run build:emscripten && npm run build:app",
+    "lint-fix": "eslint src/hacl_stubs.js test/test_ml.js test/test.js --fix",
+    "lint": "eslint src/hacl_stubs.js test/test_ml.js test/test.js",
+    "test": "mocha"
+  },
+  "devDependencies": {
+    "eslint": "^6.8.0",
+    "eslint-plugin-import": "^2.20.1",
+    "mocha": "*"
+  },
+  "repository": {
+    "type" : "git",
+    "url" : "https://gitlab.com/tezos/tezos.git",
+    "directory": "vendors/ocaml-hacl"
+  },
+  "files": [ "hacl.wasm", "hacl.js" ],
+  "eslintConfig": {
+    "env": {
+        "browser": true,
+        "node": true,
+        "es6": true
+    },
+    "extends": [
+       "eslint:recommended"
+    ],
+    "globals": {
+        "Atomics": "readonly",
+        "SharedArrayBuffer": "readonly"
+    },
+    "parserOptions": {
+        "ecmaVersion": 2018
+    },
+    "rules": {
+      "camelcase": "off",
+      "no-underscore-dangle": "off",
+      "no-unused-vars": "warn",
+      "indent": ["error", 2]
+    }
+  }
+}

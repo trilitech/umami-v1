@@ -1,6 +1,8 @@
-open Network;
-
-let context = React.createContext((Test, (_: t) => ignore()));
+let context =
+  React.createContext((
+    AppSettings.Testnet,
+    (_: AppSettings.network) => ignore(),
+  ));
 
 module Provider = {
   let make = React.Context.provider(context);

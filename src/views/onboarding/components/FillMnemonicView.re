@@ -4,6 +4,9 @@ module StateLenses = [%lenses type state = {words: array(string)}];
 
 module VerifyMnemonicForm = ReForm.Make(StateLenses);
 
+let stateField = StateLenses.Words;
+let formField = VerifyMnemonicForm.ReSchema.Field(stateField);
+
 let styles =
   Style.(
     StyleSheet.create({
@@ -17,13 +20,6 @@ let styles =
           (),
         ),
       "wordSpacer": style(~width=20.->dp, ()),
-      "formAction":
-        style(
-          ~marginTop=28.->dp,
-          ~flexDirection=`row,
-          ~justifyContent=`center,
-          (),
-        ),
     })
   );
 
@@ -39,7 +35,7 @@ let make = (~mnemonic, ~setMnemonic, ~onPressCancel, ~goNextStep) => {
               ({words}) => {
                 let errors =
                   words
-                  ->Belt.Array.mapWithIndex((index, word) => {
+                  ->Array.mapWithIndex((index, word) => {
                       Js.String.length(word) == 0
                         ? Some({
                             ReSchema.error: "Invalid word",
@@ -48,10 +44,10 @@ let make = (~mnemonic, ~setMnemonic, ~onPressCancel, ~goNextStep) => {
                           })
                         : None
                     })
-                  ->Belt.Array.keepMap(e => e);
+                  ->Array.keepMap(e => e);
 
                 let fieldState: ReSchema.fieldState =
-                  errors->Belt.Array.size == 0 ? Valid : NestedErrors(errors);
+                  errors->Array.size == 0 ? Valid : NestedErrors(errors);
 
                 fieldState;
               },
@@ -77,23 +73,25 @@ let make = (~mnemonic, ~setMnemonic, ~onPressCancel, ~goNextStep) => {
   <>
     <View style=Style.(array([|styles##wordsList, style(~zIndex=2, ())|]))>
       {form.state.values.words
-       ->Belt.Array.mapWithIndex((index, word) =>
+       ->Array.mapWithIndex((index, word) =>
            <React.Fragment key={index->string_of_int}>
              <View
                style=Style.(
                  array([|
                    styles##wordItem,
                    style(
-                     ~zIndex=form.state.values.words->Belt.Array.size - index,
+                     ~zIndex=form.state.values.words->Array.size - index,
                      (),
                    ),
                  |])
                )>
                <InputMnemonicWord
-                 displayIndex=index
-                 value=word
-                 handleChange={form.arrayUpdateByIndex(~field=Words, ~index)}
-                 error={form.getNestedFieldError(Field(Words), index)}
+                 index
+                 word
+                 arrayUpdateByIndex={form.arrayUpdateByIndex}
+                 getNestedFieldError={form.getNestedFieldError}
+                 formField
+                 stateField
                />
              </View>
              {index mod 2 == 0 ? <View style=styles##wordSpacer /> : React.null}
@@ -101,9 +99,12 @@ let make = (~mnemonic, ~setMnemonic, ~onPressCancel, ~goNextStep) => {
          )
        ->React.array}
     </View>
-    <View style=Style.(array([|styles##formAction, style(~zIndex=1, ())|]))>
-      <FormButton text="CANCEL" onPress=onPressCancel />
-      <FormButton text="CONTINUE" onPress=onSubmit />
+    <View
+      style=Style.(
+        array([|FormStyles.formActionSpaceBetween, style(~zIndex=1, ())|])
+      )>
+      <Buttons.Form text=I18n.btn#back onPress=onPressCancel />
+      <Buttons.SubmitPrimary text=I18n.btn#continue onPress=onSubmit />
     </View>
   </>;
 };

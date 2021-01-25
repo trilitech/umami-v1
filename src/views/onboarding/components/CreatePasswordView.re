@@ -22,13 +22,6 @@ let styles =
           (),
         ),
       "wordSpacer": style(~width=20.->dp, ()),
-      "formAction":
-        style(
-          ~marginTop=28.->dp,
-          ~flexDirection=`row,
-          ~justifyContent=`center,
-          (),
-        ),
     })
   );
 
@@ -40,7 +33,7 @@ let isConfirmPassword = (values: StateLenses.state) => {
 };
 
 [@react.component]
-let make = (~mnemonic, ~onPressCancel, ~createAccountWithMnemonic) => {
+let make = (~mnemonic, ~onPressCancel, ~createAccountWithMnemonic, ~loading) => {
   let form: CreatePasswordForm.api =
     CreatePasswordForm.use(
       ~schema={
@@ -52,10 +45,13 @@ let make = (~mnemonic, ~onPressCancel, ~createAccountWithMnemonic) => {
       },
       ~onSubmit=
         ({state}) => {
+          let mnemonics = mnemonic->Js.Array2.joinWith(" ");
           createAccountWithMnemonic(
-            "Account 1",
-            mnemonic->Js.Array2.joinWith(" "),
-            ~password=state.values.password,
+            AccountApiRequest.{
+              name: "Account 1",
+              mnemonics,
+              password: state.values.password,
+            },
           );
 
           None;
@@ -70,7 +66,7 @@ let make = (~mnemonic, ~onPressCancel, ~createAccountWithMnemonic) => {
 
   <>
     <FormGroupTextInput
-      label="Password"
+      label=I18n.label#password
       value={form.values.password}
       handleChange={form.handleChange(Password)}
       error={form.getFieldError(Field(Password))}
@@ -78,16 +74,20 @@ let make = (~mnemonic, ~onPressCancel, ~createAccountWithMnemonic) => {
       secureTextEntry=true
     />
     <FormGroupTextInput
-      label="Confirm password"
+      label=I18n.label#password
       value={form.values.confirmPassword}
       handleChange={form.handleChange(ConfirmPassword)}
       error={form.getFieldError(Field(ConfirmPassword))}
       textContentType=`password
       secureTextEntry=true
     />
-    <View style=styles##formAction>
-      <FormButton text="CANCEL" onPress=onPressCancel />
-      <FormButton text="FINISH" onPress=onSubmit />
+    <View style=FormStyles.formActionSpaceBetween>
+      <Buttons.Form
+        text=I18n.btn#back
+        onPress=onPressCancel
+        disabled=loading
+      />
+      <Buttons.SubmitPrimary text=I18n.btn#finish onPress=onSubmit loading />
     </View>
   </>;
 };

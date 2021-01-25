@@ -1,26 +1,25 @@
-include ApiRequest;
-
 module BalanceAPI = API.Balance(API.TezosClient);
 
-type balanceApiRequest = t(string);
+type balanceApiRequest = ApiRequest.t(string);
 
-let useBalance = account => {
-  let network = StoreContext.useNetwork();
-  let config = ConfigContext.useConfig();
+let useLoad = (~requestState as (request, setRequest), ~address: string) => {
+  let get = (~settings, address) => {
+    settings->BalanceAPI.get(address, ());
+  };
 
-  let (request, setRequest) = React.useState(_ => NotAsked);
+  let getRequest =
+    ApiRequest.useGetter(~get, ~kind=Logs.Balance, ~setRequest, ());
 
+  let isMounted = ReactUtils.useIsMonted();
   React.useEffect3(
     () => {
-      setRequest(_ => Loading);
-
-      (network, config)
-      ->BalanceAPI.get(account)
-      ->Future.get(result => setRequest(_ => Done(result)));
-
+      let shouldReload = ApiRequest.conditionToLoad(request, isMounted);
+      if (address != "" && shouldReload) {
+        getRequest(address);
+      };
       None;
     },
-    (network, account, setRequest),
+    (isMounted, request, address),
   );
 
   request;

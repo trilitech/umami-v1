@@ -2,13 +2,6 @@ open ReactNative;
 
 let style = Style.(style(~padding=4.->dp, ()));
 
-let formated_amount = (transaction: Operation.Business.Transaction.t) =>
-  transaction.amount
-  ->Js.Float.fromString
-  ->(x => x /. 1000000.)
-  ->Js.Float.toString
-  ++ {js| ꜩ|js};
-
 module BalanceAPI = API.Balance(API.TezosClient);
 module OperationsAPI = API.Operations(API.TezosClient, API.TezosExplorer);
 
@@ -18,9 +11,9 @@ let make = () => {
   let (account, _) = React.useContext(AccountState.context);
   let (_, setBalance) = React.useContext(BalanceState.context);
   let (injection, _) = React.useContext(InjectionState.context);
-  let config = ConfigContext.useConfig();
+  let settings = ConfigContext.useSettings();
 
-  let (operations: array(Operation.t), setOperations) =
+  let (operations: array(Operation.Read.t), setOperations) =
     React.useState(() => [||]);
 
   React.useEffect4(
@@ -28,7 +21,7 @@ let make = () => {
       switch (injection) {
       | Pending(_) => ()
       | Done =>
-        (network, config)
+        settings
         ->OperationsAPI.get(account, ())
         ->FutureEx.getOk(value => setOperations(_ => value))
       };
@@ -40,10 +33,10 @@ let make = () => {
   <View>
     <Button
       onPress={_ => {
-        (network, config)
-        ->BalanceAPI.get(account)
+        settings
+        ->BalanceAPI.get(account, ())
         ->FutureEx.getOk(value => setBalance(value));
-        (network, config)
+        settings
         ->OperationsAPI.get(account, ())
         ->FutureEx.getOk(value => setOperations(_ => value));
       }}
@@ -71,18 +64,19 @@ let make = () => {
                 | Transaction(transaction) =>
                   <Text>
                     (
-                      if (transaction.amount == "0") {
+                      if (transaction.amount == ProtocolXTZ.zero) {
                         "Call contract " ++ transaction.destination;
                       } else if (payload.source == transaction.destination) {
-                        transaction->formated_amount ++ " to itself";
+                        transaction.amount->ProtocolXTZ.toString
+                        ++ " to itself";
                       } else if (payload.source == account) {
                         "-"
-                        ++ transaction->formated_amount
+                        ++ transaction.amount->ProtocolXTZ.toString
                         ++ " to "
                         ++ transaction.destination;
                       } else {
                         "+"
-                        ++ transaction->formated_amount
+                        ++ transaction.amount->ProtocolXTZ.toString
                         ++ " from "
                         ++ payload.source;
                       }
@@ -100,19 +94,24 @@ let make = () => {
                     <Text>
                       (
                         if (payload.source == delegate) {
-                          "Register as new baker";
+                          I18n.menu#operation_register_as_baker;
                         } else {
-                          "Delegate to " ++ delegate;
+                          I18n.menu#operation_delegate_to(delegate);
                         }
                       )
                       ->React.string
                     </Text>
-                  | None => <Text> "Cancel delegation"->React.string </Text>
+                  | None =>
+                    <Text>
+                      I18n.menu#operation_cancel_delegation->React.string
+                    </Text>
                   }
-                | Unknown => <Text> "Unknown"->React.string </Text>
+                | Unknown =>
+                  <Text> I18n.menu#operation_unknown->React.string </Text>
                 }}
                <Text>
-                 {("fee " ++ payload.fee ++ {js| μꜩ|js})->React.string}
+                 {("fee " ++ payload.fee->ProtocolXTZ.toString ++ {js| ꜩ|js})
+                  ->React.string}
                </Text>
              </View>
            }}

@@ -113,7 +113,7 @@ module Make = (Lenses: Lenses) => {
     type schema('meta) =
       | Schema(array(t('meta))): schema('meta);
 
-    let (+) = (a, b) => a->Belt.Array.concat(b);
+    let (+) = (a, b) => a->Array.concat(b);
     let (<?) = (arr, maybeArr) => {
       switch (maybeArr) {
       | Some(someArr) => arr + [|someArr|]
@@ -142,7 +142,7 @@ module Make = (Lenses: Lenses) => {
     |];
 
     let string = (~min=?, ~minError=?, ~max=?, ~maxError=?, ~meta=?, field) => {
-      Belt.Option.(
+      Option.(
         [||]
         <? min->map(min => StringMin({field, meta, min, error: minError}))
         <? max->map(max => StringMax({field, meta, max, error: maxError}))
@@ -154,7 +154,7 @@ module Make = (Lenses: Lenses) => {
     };
 
     let float = (~min=?, ~minError=?, ~max=?, ~maxError=?, ~meta=?, field) => {
-      Belt.Option.(
+      Option.(
         [||]
         <? min->map(min => FloatMin({field, meta, min, error: minError}))
         <? max->map(max => FloatMax({field, meta, max, error: maxError}))
@@ -162,7 +162,7 @@ module Make = (Lenses: Lenses) => {
     };
 
     let int = (~min=?, ~minError=?, ~max=?, ~maxError=?, ~meta=?, field) => {
-      Belt.Option.(
+      Option.(
         [||]
         <? min->map(min => IntMin({field, meta, min, error: minError}))
         <? max->map(max => IntMax({field, meta, max, error: maxError}))
@@ -181,15 +181,14 @@ module Make = (Lenses: Lenses) => {
       let value = Lenses.get(values, field);
       (
         Field(field),
-        value
-          ? Valid : Error(error->Belt.Option.getWithDefault(i18n.true_())),
+        value ? Valid : Error(error->Option.getWithDefault(i18n.true_())),
       );
     | Validation.False({field, error}) =>
       let value = Lenses.get(values, field);
       (
         Field(field),
         value == false
-          ? Valid : Error(error->Belt.Option.getWithDefault(i18n.false_())),
+          ? Valid : Error(error->Option.getWithDefault(i18n.false_())),
       );
     | Validation.IntMin({field, min, error}) =>
       let value = Lenses.get(values, field);
@@ -197,9 +196,7 @@ module Make = (Lenses: Lenses) => {
         Field(field),
         value >= min
           ? Valid
-          : Error(
-              error->Belt.Option.getWithDefault(i18n.intMin(~value, ~min)),
-            ),
+          : Error(error->Option.getWithDefault(i18n.intMin(~value, ~min))),
       );
     | Validation.IntMax({field, max, error}) =>
       let value = Lenses.get(values, field);
@@ -208,9 +205,7 @@ module Make = (Lenses: Lenses) => {
         Field(field),
         value <= max
           ? Valid
-          : Error(
-              error->Belt.Option.getWithDefault(i18n.intMax(~value, ~max)),
-            ),
+          : Error(error->Option.getWithDefault(i18n.intMax(~value, ~max))),
       );
     | Validation.FloatMin({field, min, error}) =>
       let value = Lenses.get(values, field);
@@ -218,9 +213,7 @@ module Make = (Lenses: Lenses) => {
         Field(field),
         value >= min
           ? Valid
-          : Error(
-              error->Belt.Option.getWithDefault(i18n.floatMin(~value, ~min)),
-            ),
+          : Error(error->Option.getWithDefault(i18n.floatMin(~value, ~min))),
       );
     | Validation.FloatMax({field, max, error}) =>
       let value = Lenses.get(values, field);
@@ -228,17 +221,14 @@ module Make = (Lenses: Lenses) => {
         Field(field),
         Lenses.get(values, field) <= max
           ? Valid
-          : Error(
-              error->Belt.Option.getWithDefault(i18n.floatMax(~value, ~max)),
-            ),
+          : Error(error->Option.getWithDefault(i18n.floatMax(~value, ~max))),
       );
     | Validation.Email({field, error}) =>
       let value = Lenses.get(values, field);
       (
         Field(field),
         Js.Re.test_(RegExps.email, value)
-          ? Valid
-          : Error(error->Belt.Option.getWithDefault(i18n.email(~value))),
+          ? Valid : Error(error->Option.getWithDefault(i18n.email(~value))),
       );
     | Validation.NoValidation({field}) => (Field(field), Valid)
     | Validation.StringNonEmpty({field, error}) =>
@@ -247,7 +237,7 @@ module Make = (Lenses: Lenses) => {
         Field(field),
         value === ""
           ? Error(
-              error->Belt.Option.getWithDefault(i18n.stringNonEmpty(~value)),
+              error->Option.getWithDefault(i18n.stringNonEmpty(~value)),
             )
           : Valid,
       );
@@ -258,7 +248,7 @@ module Make = (Lenses: Lenses) => {
         Js.Re.test_(Js.Re.fromString(matches), value)
           ? Valid
           : Error(
-              error->Belt.Option.getWithDefault(
+              error->Option.getWithDefault(
                 i18n.stringRegExp(~value, ~pattern=matches),
               ),
             ),
@@ -270,9 +260,7 @@ module Make = (Lenses: Lenses) => {
         Js.String.length(value) >= min
           ? Valid
           : Error(
-              error->Belt.Option.getWithDefault(
-                i18n.stringMin(~value, ~min),
-              ),
+              error->Option.getWithDefault(i18n.stringMin(~value, ~min)),
             ),
       );
     | Validation.StringMax({field, max, error}) =>
@@ -282,9 +270,7 @@ module Make = (Lenses: Lenses) => {
         Js.String.length(value) <= max
           ? Valid
           : Error(
-              error->Belt.Option.getWithDefault(
-                i18n.stringMax(~value, ~max),
-              ),
+              error->Option.getWithDefault(i18n.stringMax(~value, ~max)),
             ),
       );
     | Validation.Custom({field, predicate}) => (
@@ -294,7 +280,7 @@ module Make = (Lenses: Lenses) => {
     };
 
   let getFieldValidator = (~validators, ~fieldName) =>
-    validators->Belt.Array.getBy(validator =>
+    validators->Array.getBy(validator =>
       switch (validator) {
       | Validation.False({field}) => Field(field) == fieldName
       | Validation.True({field}) => Field(field) == fieldName
@@ -317,18 +303,16 @@ module Make = (Lenses: Lenses) => {
     let Validation.Schema(validators) = schema;
 
     getFieldValidator(~validators, ~fieldName=field)
-    ->Belt.Option.map(validator => validateField(~validator, ~values, ~i18n));
+    ->Option.map(validator => validateField(~validator, ~values, ~i18n));
   };
 
   let validateFields =
       (~fields, ~values, ~i18n, schema: Validation.schema('meta)) => {
     let Validation.Schema(validators) = schema;
 
-    Belt.Array.map(fields, field =>
+    Array.map(fields, field =>
       getFieldValidator(~validators, ~fieldName=field)
-      ->Belt.Option.map(validator =>
-          validateField(~validator, ~values, ~i18n)
-        )
+      ->Option.map(validator => validateField(~validator, ~values, ~i18n))
     );
   };
 
@@ -341,12 +325,12 @@ module Make = (Lenses: Lenses) => {
     let Validation.Schema(validators) = schema;
 
     let validationList =
-      validators->Belt.Array.map(validator =>
+      validators->Array.map(validator =>
         validateField(~validator, ~values, ~i18n)
       );
 
     let errors =
-      validationList->Belt.Array.keepMap(((field, fieldState)) =>
+      validationList->Array.keepMap(((field, fieldState)) =>
         switch (fieldState) {
         | Error(_) => Some((field, fieldState))
         | NestedErrors(_) => Some((field, fieldState))
@@ -354,6 +338,6 @@ module Make = (Lenses: Lenses) => {
         }
       );
 
-    Belt.Array.length(errors) > 0 ? Errors(errors) : Valid;
+    Array.length(errors) > 0 ? Errors(errors) : Valid;
   };
 };

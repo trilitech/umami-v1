@@ -1,9 +1,10 @@
-open Belt;
 open ReactNative;
 
+module BalanceAPI = API.Balance(API.TezosClient);
 module AccountsAPI = API.Accounts(API.TezosClient);
 module OperationsAPI = API.Operations(API.TezosClient, API.TezosExplorer);
 module AliasesAPI = API.Aliases(API.TezosClient);
+module DelegateAPI = API.Delegate(API.TezosClient, API.TezosExplorer);
 
 let styles =
   Style.(
@@ -35,13 +36,13 @@ let toString = array =>
 
 [@react.component]
 let make = () => {
-  let (network, setNetwork) = React.useState(() => Network.Test);
+  let (network, setNetwork) = React.useState(() => AppSettings.Testnet);
   let (account, setAccount) =
     React.useState(() => "tz1QHESqw4VduUUyGEY9gLh5STBDuTacpydB");
-  let (balance, setBalance) = React.useState(() => "");
+  let (balance, setBalance) = React.useState(() => ProtocolXTZ.zero);
   let (injection, setInjection) = React.useState(() => InjectionState.Done);
   let (accounts, setAccounts) = React.useState(() => dummy);
-  let config = ConfigContext.useConfig();
+  let settings = ConfigContext.useSettings();
 
   React.useEffect0(() => {
     /*
@@ -76,14 +77,30 @@ let make = () => {
      ->Future.tapError(Js.log)
      ->FutureEx.getOk(Js.log);
      */
-    None
+    /*
+     (network, config)
+     ->DelegateAPI.getDelegationInfoForAccount(
+         "tz1RDrPJYrpdA7MbfUJSamGdcfceLXGpUdc7",
+       )
+     ->Future.tapError(Js.log)
+     ->FutureEx.getOk(Js.log);
+     */
+    AppSettings.withNetwork(settings, network)
+    ->OperationsAPI.waitForOperationConfirmations(
+        "oo38L1jPWGmf1RBg8zyq4BoUys9zhofWJN8e8eQPnB4D6NQctv5",
+        ~confirmations=0,
+        ~branch="BMNnzkSH6oHZpfroJPczV9DcASFRsHAQ3qGD7mzB9nQ6EmGGM7n",
+      )
+    ->Future.tapError(Js.log)
+    ->FutureEx.getOk(Js.log);
+    None;
   });
 
   React.useEffect3(
     () => {
       switch (injection) {
       | Pending(operation) =>
-        (network, config)
+        AppSettings.withNetwork(settings, network)
         ->OperationsAPI.inject(operation, ~password="blerot")
         ->Future.get(result =>
             switch (result) {
@@ -102,7 +119,7 @@ let make = () => {
 
   React.useEffect1(
     () => {
-      AccountsAPI.get(~config)
+      AccountsAPI.get(~settings)
       ->Future.tapOk(value => setAccounts(_ => value))
       ->ignore;
       None;
@@ -128,28 +145,34 @@ let make = () => {
                 onSubmit={(source, amount, destination) =>
                   setInjection(_ =>
                     Pending(
-                      Transaction(
-                        Injection.makeTransfer(
-                          ~source,
-                          ~amount,
-                          ~destination,
-                          (),
-                        ),
-                      ),
+                      Protocol.makeSingleTransaction(
+                        ~source,
+                        ~amount,
+                        ~destination,
+                        (),
+                      )
+                      ->Protocol.transfer,
                     )
                   )
                 }
               />
-              <DelegateForm
+              <DelegateFormView
                 onSubmit={(source, delegate) =>
-                  AccountsAPI.add("delegate", delegate)
+                  AccountsAPI.add(~settings, "delegate", delegate)
                   ->Future.tapOk(_ =>
-                      AccountsAPI.get(~config)
+                      AccountsAPI.get(~settings)
                       ->FutureEx.getOk(value => setAccounts(_ => value))
                     )
                   ->FutureEx.getOk(_ =>
                       setInjection(_ =>
-                        Pending(Delegation({source, delegate: "delegate"}))
+                        Pending(
+                          Protocol.makeDelegate(
+                            ~source,
+                            ~delegate=Some("delegate"),
+                            (),
+                          )
+                          ->Delegation,
+                        )
                       )
                     )
                 }
@@ -161,6 +184,11 @@ let make = () => {
               <Text style=styles##section>
                 {accounts->toString->React.string}
               </Text>
+              <TokensCheckForm />
+              <TokensGetBalanceForm />
+              <TokensTransferForm />
+              <BatchTransactionsForm />
+              <BatchTokensTxsForm />
               <OperationList />
             </View>
           </InjectionState.Provider>

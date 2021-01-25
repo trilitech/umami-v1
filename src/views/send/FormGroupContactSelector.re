@@ -1,5 +1,4 @@
 open ReactNative;
-open Belt;
 
 let itemHeight = 54.;
 let numItemsToDisplay = 4.;
@@ -26,7 +25,9 @@ module Item = {
       <Typography.Subtitle1>
         account.alias->React.string
       </Typography.Subtitle1>
-      <Typography.Body3> account.address->React.string </Typography.Body3>
+      <Typography.Address fontSize=16.>
+        account.address->React.string
+      </Typography.Address>
     </View>;
   };
 };
@@ -50,17 +51,19 @@ let renderLabel = (label, hasError) => {
 
 [@react.component]
 let make = (~label, ~value: string, ~handleChange, ~error) => {
-  let aliasesRequest = AliasApiRequest.useGetAliases();
+  let aliasesRequest = StoreContext.Aliases.useRequest();
 
   let accounts =
     aliasesRequest
     ->ApiRequest.getDoneOk
-    ->Option.getWithDefault([||])
-    ->Array.map(((alias, address)) => {Account.{alias, address}});
+    ->Option.mapWithDefault([||], Map.String.valuesToArray);
 
   let items =
-    accounts->Belt.Array.keep(account =>
-      account.alias->Js.String2.startsWith(value)
+    accounts->Array.keep(account =>
+      account.alias
+      ->Js.String2.trim
+      ->Js.String2.toLowerCase
+      ->Js.String2.startsWith(value->Js.String2.trim->Js.String2.toLowerCase)
     );
 
   <FormGroup style=styles##formGroup>

@@ -110,7 +110,7 @@ module Make = (Config: Config) => {
     Validation.schema('meta) => array((field, fieldState)) =
     schema => {
       let Validation.Schema(validators) = schema;
-      validators->Belt.Array.map(validator =>
+      validators->Array.map(validator =>
         switch (validator) {
         | Validation.IntMin({field}) => (
             ReSchema.Field(field),
@@ -137,7 +137,7 @@ module Make = (Config: Config) => {
   let useFormContext = () => React.useContext(formContext);
   let useField = field => {
     let interface = useFormContext();
-    interface->Belt.Option.map(
+    interface->Option.map(
       ({handleChange, getFieldError, getFieldState, validateField, state}) =>
       {
         handleChange: handleChange(field),
@@ -170,12 +170,12 @@ module Make = (Config: Config) => {
       React.useMemo3(
         () =>
           fieldInterface
-          ->Belt.Option.map(render)
-          ->Belt.Option.getWithDefault(renderOnMissingContext),
+          ->Option.map(render)
+          ->Option.getWithDefault(renderOnMissingContext),
         (
-          Belt.Option.(fieldInterface->map(({error}) => error)),
-          Belt.Option.(fieldInterface->map(({value}) => value)),
-          Belt.Option.(fieldInterface->map(({state}) => state)),
+          Option.(fieldInterface->map(({error}) => error)),
+          Option.(fieldInterface->map(({value}) => value)),
+          Option.(fieldInterface->map(({state}) => state)),
         ),
       );
     };
@@ -242,11 +242,11 @@ module Make = (Config: Config) => {
 
               let newFieldsState =
                 state.fieldsState
-                ->Belt.Array.keep(elem =>
+                ->Array.keep(elem =>
                     elem
                     |> (((fieldValue, _fieldState)) => fieldValue != field)
                   )
-                ->Belt.Array.concat([|(field, newFieldState)|]);
+                ->Array.concat([|(field, newFieldState)|]);
               self.send(SetFieldsState(newFieldsState));
               None;
             },
@@ -263,7 +263,7 @@ module Make = (Config: Config) => {
                 submit ? self.send(Submit) : ();
               | Errors(erroredFields) =>
                 let newFieldsState: array((field, fieldState)) =
-                  erroredFields->Belt.Array.map(((field, fieldState)) =>
+                  erroredFields->Array.map(((field, fieldState)) =>
                     switch (fieldState) {
                     // seemes unnecessary, but it transform ReSchema.fieldState to ReForm.fieldState
                     | Error(error) => (field, Error(error))
@@ -334,10 +334,7 @@ module Make = (Config: Config) => {
               Config.set(
                 state.values,
                 field,
-                Belt.Array.concat(
-                  Config.get(state.values, field),
-                  [|entry|],
-                ),
+                Array.concat(Config.get(state.values, field), [|entry|]),
               ),
           })
         | FieldArrayRemove(field, index) =>
@@ -348,7 +345,7 @@ module Make = (Config: Config) => {
                 state.values,
                 field,
                 Config.get(state.values, field)
-                ->Belt.Array.keepWithIndex((_, i) => i != index),
+                ->Array.keepWithIndex((_, i) => i != index),
               ),
           })
         | FieldArrayRemoveBy(field, predicate) =>
@@ -359,7 +356,7 @@ module Make = (Config: Config) => {
                 state.values,
                 field,
                 Config.get(state.values, field)
-                ->Belt.Array.keep(entry => !predicate(entry)),
+                ->Array.keep(entry => !predicate(entry)),
               ),
           })
         | FieldArrayUpdateByIndex(field, value, index) =>
@@ -372,7 +369,7 @@ module Make = (Config: Config) => {
                   state.values,
                   field,
                   Config.get(state.values, field)
-                  ->Belt.Array.mapWithIndex((i, currentValue) =>
+                  ->Array.mapWithIndex((i, currentValue) =>
                       i == index ? value : currentValue
                     ),
                 ),
@@ -404,10 +401,8 @@ module Make = (Config: Config) => {
 
     let getFieldState = field =>
       state.fieldsState
-      ->Belt.Array.getBy(((nameField, _nameFieldState)) =>
-          nameField == field
-        )
-      ->Belt.Option.mapWithDefault(
+      ->Array.getBy(((nameField, _nameFieldState)) => nameField == field)
+      ->Option.mapWithDefault(
           Pristine: fieldState, ((_nameField, nameFieldState)) =>
           nameFieldState
         );
@@ -433,23 +428,22 @@ module Make = (Config: Config) => {
         ReSchema.validateFields(~fields, ~values=state.values, ~i18n, schema);
 
       let newFieldsState =
-        Belt.Array.map(
+        Array.map(
           state.fieldsState,
           fieldStateItem => {
             let (field, _) = fieldStateItem;
 
-            Belt.Array.some(fields, fieldItem => fieldItem == field)
+            Array.some(fields, fieldItem => fieldItem == field)
               ? {
                 let newFieldState =
-                  fieldsValidated->Belt.Array.getBy(fieldStateValidated =>
-                    Belt.Option.map(fieldStateValidated, ((item, _)) => item)
+                  fieldsValidated->Array.getBy(fieldStateValidated =>
+                    Option.map(fieldStateValidated, ((item, _)) => item)
                     == Some(field)
                   );
 
                 newFieldState
-                ->Belt.Option.getWithDefault(None)
-                ->Belt.Option.mapWithDefault(
-                    [||], ((_, newFieldStateValidated)) =>
+                ->Option.getWithDefault(None)
+                ->Option.mapWithDefault([||], ((_, newFieldStateValidated)) =>
                     switch (newFieldStateValidated) {
                     | Valid => [|(field, Valid: fieldState)|]
                     | Error(message) => [|(field, Error(message))|]
@@ -462,12 +456,12 @@ module Make = (Config: Config) => {
               : [|fieldStateItem|];
           },
         )
-        ->Belt.Array.concatMany;
+        ->Array.concatMany;
 
       send(SetFieldsState(newFieldsState));
 
-      Belt.Array.keepMap(newFieldsState, ((field, fieldState)) => {
-        Belt.Array.some(fields, fieldItem => fieldItem == field)
+      Array.keepMap(newFieldsState, ((field, fieldState)) => {
+        Array.some(fields, fieldItem => fieldItem == field)
           ? Some(fieldState) : None
       });
     };
@@ -480,7 +474,7 @@ module Make = (Config: Config) => {
         fun
         | NestedErrors(errors) => {
             switch (
-              errors->Belt.Array.getBy(childFieldError =>
+              errors->Array.getBy(childFieldError =>
                 childFieldError.index == index
               )
             ) {

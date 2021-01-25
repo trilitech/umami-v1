@@ -1,5 +1,4 @@
 open ReactNative;
-
 module AddAccountButton = {
   let styles =
     Style.(
@@ -7,92 +6,60 @@ module AddAccountButton = {
         "button":
           style(
             ~alignSelf=`flexStart,
+            ~marginLeft=(-6.)->dp,
             ~marginBottom=10.->dp,
-            ~flexDirection=`row,
-            ~alignItems=`center,
-            ~paddingVertical=6.->dp,
             (),
           ),
-        "icon": style(~marginRight=4.->dp, ()),
       })
     );
 
   [@react.component]
   let make = () => {
-    let modal = React.useRef(Js.Nullable.null);
+    let (visibleModal, openAction, closeAction) =
+      ModalAction.useModalActionState();
 
-    let (visibleModal, setVisibleModal) = React.useState(_ => false);
-    let openAction = () => setVisibleModal(_ => true);
-    let closeAction = () => setVisibleModal(_ => false);
-
-    let onPress = _e => {
-      openAction();
-    };
-
-    let onPressCancel = _e => {
-      modal.current
-      ->Js.Nullable.toOption
-      ->Belt.Option.map(ModalAction.closeModal)
-      ->ignore;
-    };
+    let onPress = _e => openAction();
 
     <>
-      <TouchableOpacity style=styles##button onPress>
-        <Icons.Add
-          size=15.5
-          color=Theme.colorDarkMediumEmphasis
-          style=styles##icon
-        />
-        <Typography.ButtonSecondary>
-          "ADD ACCOUNT"->React.string
-        </Typography.ButtonSecondary>
-      </TouchableOpacity>
-      <ModalAction ref=modal visible=visibleModal onRequestClose=closeAction>
-        <AccountCreateView onPressCancel />
+      <View style=styles##button>
+        <ButtonAction onPress text=I18n.btn#add_account icon=Icons.Add.build />
+      </View>
+      <ModalAction visible=visibleModal onRequestClose=closeAction>
+        <AccountFormView.Create closeAction />
       </ModalAction>
     </>;
   };
 };
 
-let styles =
-  Style.(
-    StyleSheet.create({
-      "container": style(~flex=1., ()),
-      "scrim":
-        StyleSheet.flatten([|
-          StyleSheet.absoluteFillObject,
-          style(
-            ~flexDirection=`row,
-            ~justifyContent=`spaceAround,
-            ~paddingVertical=78.->dp,
-            ~paddingHorizontal=58.->dp,
-            ~backgroundColor="rgba(92,92,92,0.32)",
-            (),
-          ),
-        |]),
-    })
-  );
-
 [@react.component]
 let make = () => {
-  let accounts = StoreContext.useAccounts();
+  let accounts = StoreContext.Accounts.useGetAll();
+  let accountsRequest = StoreContext.Accounts.useRequest();
+
+  let token = StoreContext.SelectedToken.useGet();
+
   <Page>
-    {accounts->Belt.Option.mapWithDefault(<LoadingView />, accounts => {
-       accounts->Belt.Map.String.size > 0
-         ? <>
-             <AddAccountButton />
-             {accounts
-              ->Belt.Map.String.valuesToArray
-              ->Belt.SortArray.stableSortBy((a, b) => Pervasives.compare(a.alias, b.alias))
-              ->Belt.Array.map(account =>
-                  <AccountRowItem key={account.address} account />
-                )
-              ->React.array}
-           </>
-         : <View style=styles##scrim>
-             <CreateAccountBigButton />
-             <ImportAccountBigButton />
-           </View>
+    {accountsRequest->ApiRequest.mapOrLoad(_ => {
+       <>
+         <BalanceTotal.WithTokenSelector ?token />
+         <AddAccountButton />
+         <View>
+           {accounts
+            ->Map.String.valuesToArray
+            ->SortArray.stableSortBy((a, b) =>
+                Pervasives.compare(a.alias, b.alias)
+              )
+            ->Array.mapWithIndex((index, account) =>
+                <AccountRowItem
+                  key={account.address}
+                  account
+                  ?token
+                  zIndex={accounts->Map.String.size - index}
+                />
+              )
+            ->React.array}
+         </View>
+       </>
      })}
   </Page>;
 };

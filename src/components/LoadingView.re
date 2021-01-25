@@ -10,11 +10,12 @@ let styles =
 
 [@react.component]
 let make = () => {
+  let theme = ThemeContext.useTheme();
   <View style=styles##container>
     <ActivityIndicator
       animating=true
       size=ActivityIndicator_Size.small
-      color=Colors.highIcon
+      color={theme.colors.iconHighEmphasis}
     />
   </View>;
 };

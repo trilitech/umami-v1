@@ -1,11 +1,16 @@
 %raw
 "
 var Electron = window.require('electron');
+var Process = window.require('process');
+var OS = window.require('os');
 var Fs = window.require('fs'); ";
 
 let electron = [%raw "Electron"];
 let app = electron##remote##app;
 let fs = [%raw "Fs"];
+let os = [%raw "OS"];
+
+let homeDir = () => os##homedir();
 
 let getCurrentPath: unit => string = () => app##getAppPath();
 
@@ -22,7 +27,7 @@ module File = {
 
   let read =
       (~encoding: encoding=Utf8, name: string)
-      : Future.t(Belt.Result.t(string, string)) => {
+      : Future.t(Result.t(string, string)) => {
     let encoding_str = string_of_encoding(encoding);
     Future.make(resolve => {
       fs##readFile(name, encoding_str, (e, data) => {
@@ -36,7 +41,7 @@ module File = {
 
   let write =
       (~encoding: encoding=Utf8, ~name: string, content: string)
-      : Future.t(Belt.Result.t(unit, string)) => {
+      : Future.t(Result.t(unit, string)) => {
     let encoding_str = string_of_encoding(encoding);
     Future.make(resolve => {
       fs##writeFile(name, content, encoding_str, e => {

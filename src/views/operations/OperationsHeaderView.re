@@ -5,8 +5,8 @@ let styles =
     StyleSheet.create({
       "header":
         style(
-          ~marginHorizontal=Theme.pagePaddingHorizontal->dp,
-          ~marginTop=Theme.pagePaddingVertical->dp,
+          ~marginHorizontal=LayoutConst.pagePaddingHorizontal->dp,
+          ~marginTop=LayoutConst.pagePaddingVertical->dp,
           ~zIndex=2,
           (),
         ),
@@ -19,50 +19,51 @@ let styles =
           ~zIndex=2,
           (),
         ),
-      "thead":
-        style(
-          ~flexDirection=`row,
-          ~alignItems=`center,
-          ~height=30.->dp,
-          ~paddingLeft=22.->dp,
-          ~borderColor="rgba(255,255,255,0.38)",
-          ~borderBottomWidth=1.,
-          ~zIndex=1,
-          (),
-        ),
     })
   );
 
 [@react.component]
 let make = () => {
   <View style=styles##header>
+    <BalanceTotal />
     <AccountSelector style=styles##selector />
-    <View style=styles##thead>
-      <View style=OperationRowItem.styles##cellType>
-        <Typography.Overline3> "TYPE"->React.string </Typography.Overline3>
-      </View>
-      <View style=OperationRowItem.styles##cellAmount>
-        <Typography.Overline3> "AMOUNT"->React.string </Typography.Overline3>
-      </View>
-      <View style=OperationRowItem.styles##cellFee>
-        <Typography.Overline3> "FEE"->React.string </Typography.Overline3>
-      </View>
-      <View style=OperationRowItem.styles##cellAddress>
-        <Typography.Overline3> "SENDER"->React.string </Typography.Overline3>
-      </View>
-      <View style=OperationRowItem.styles##cellAddress>
+    <Table.Head>
+      <OperationRowItem.CellType>
         <Typography.Overline3>
-          "RECIPIENT"->React.string
+          I18n.t#operation_column_type->React.string
         </Typography.Overline3>
-      </View>
-      <View style=OperationRowItem.styles##cellDate>
+      </OperationRowItem.CellType>
+      <OperationRowItem.CellAmount>
         <Typography.Overline3>
-          "TIMESTAMP"->React.string
+          I18n.t#operation_column_amount->React.string
         </Typography.Overline3>
-      </View>
-      <View style=OperationRowItem.styles##cellStatus>
-        <Typography.Overline3> "STATUS"->React.string </Typography.Overline3>
-      </View>
-    </View>
+      </OperationRowItem.CellAmount>
+      <OperationRowItem.CellFee>
+        <Typography.Overline3>
+          I18n.t#operation_column_fee->React.string
+        </Typography.Overline3>
+      </OperationRowItem.CellFee>
+      <OperationRowItem.CellAddress>
+        <Typography.Overline3>
+          I18n.t#operation_column_sender->React.string
+        </Typography.Overline3>
+      </OperationRowItem.CellAddress>
+      <OperationRowItem.CellAddress>
+        <Typography.Overline3>
+          I18n.t#operation_column_recipient->React.string
+        </Typography.Overline3>
+      </OperationRowItem.CellAddress>
+      <OperationRowItem.CellDate>
+        <Typography.Overline3>
+          I18n.t#operation_column_timestamp->React.string
+        </Typography.Overline3>
+      </OperationRowItem.CellDate>
+      <OperationRowItem.CellStatus>
+        <Typography.Overline3>
+          I18n.t#operation_column_status->React.string
+        </Typography.Overline3>
+      </OperationRowItem.CellStatus>
+      <OperationRowItem.CellAction />
+    </Table.Head>
   </View>;
 };

@@ -1,67 +1,53 @@
 open ReactNative;
 
-type item = {
-  value: string,
-  label: string,
-};
-
 module Item = {
   let styles =
     Style.(
       StyleSheet.create({
         "itemContainer":
           style(
-            ~height=58.->dp,
+            ~paddingVertical=5.->dp,
+            ~paddingRight=40.->dp,
             ~flexDirection=`row,
             ~alignItems=`center,
             (),
           ),
-        "itemContainerHovered":
-          style(~backgroundColor=Theme.colorDarkSelected, ()),
       })
     );
 
   [@react.component]
-  let make = (~item, ~onChange, ~renderItem) => {
-    <Pressable onPress={_e => onChange(item.value)}>
-      {interactionState =>
-         <View
-           style=Style.(
-             arrayOption([|
-               Some(styles##itemContainer),
-               interactionState.hovered
-                 ? Some(styles##itemContainerHovered) : None,
-             |])
-           )>
-           {renderItem(item)}
-         </View>}
-    </Pressable>;
+  let make = (~item, ~onChange, ~renderItem, ~isSelected=false) => {
+    <ThemedPressable
+      onPress={_e => onChange(item)}
+      style=styles##itemContainer
+      isActive=isSelected>
+      {renderItem(item)}
+    </ThemedPressable>;
   };
 };
 
 let styles =
   Style.(
     StyleSheet.create({
+      "pressable": style(~zIndex=2, ()),
       "button":
         style(
           ~flexDirection=`row,
           ~alignItems=`center,
-          ~borderColor="rgba(255,255,255,0.6)",
           ~borderWidth=1.,
+          ~padding=1.->dp,
           ~borderRadius=5.,
           (),
         ),
-      "icon": style(~marginRight=20.->dp, ()),
-      "listContainer":
+      "icon": style(~marginHorizontal=8.->dp, ()),
+      "dropdownmenu":
         style(
+          ~zIndex=1,
           ~position=`absolute,
-          ~top=0.->dp,
+          ~top=3.->dp,
           ~left=0.->dp,
           ~right=0.->dp,
           ~maxHeight=224.->dp,
-          ~paddingVertical=8.->dp,
-          ~backgroundColor="#2e2e2e",
-          ~borderRadius=3.,
           (),
         ),
     })
@@ -71,45 +57,108 @@ let styles =
 let make =
     (
       ~style=?,
-      ~items: array(item),
+      ~dropdownStyle=?,
+      ~items: array('item),
+      ~getItemValue: 'item => string,
       ~selectedValue=?,
       ~onValueChange,
+      ~noneItem: option('item)=?,
       ~renderButton,
       ~renderItem,
+      ~disabled=false,
     ) => {
+  let touchableRef = React.useRef(Js.Nullable.null);
+
   let (isOpen, setIsOpen) = React.useState(_ => false);
 
-  let onChange = newValue => {
-    onValueChange(newValue);
-    setIsOpen(_ => false);
+  DocumentContext.useClickOutside(
+    touchableRef,
+    isOpen,
+    React.useCallback1(_pressEvent => setIsOpen(_ => false), [|setIsOpen|]),
+  );
+
+  let onChange = newItem => {
+    onValueChange(newItem->getItemValue);
   };
 
   let selectedItem =
-    items->Belt.Array.getBy(item =>
-      item.value == selectedValue->Belt.Option.getWithDefault("")
+    items->Array.getBy(item =>
+      item->getItemValue == selectedValue->Option.getWithDefault("")
     );
 
+  let theme = ThemeContext.useTheme();
+
   <View ?style>
-    <TouchableOpacity onPress={_e => setIsOpen(prevIsOpen => !prevIsOpen)}>
-      <View style=styles##button>
-        {renderButton(selectedItem)}
-        <Icons.ChevronDown
-          size=24.
-          color=Theme.colorDarkMediumEmphasis
-          style=styles##icon
-        />
-      </View>
-    </TouchableOpacity>
-    {isOpen
-       ? <View>
-           <ScrollView style=styles##listContainer>
-             {items
-              ->Belt.Array.map(item =>
-                  <Item key={item.value} item onChange renderItem />
-                )
-              ->React.array}
-           </ScrollView>
-         </View>
-       : React.null}
+    <PressableCustom
+      ref={touchableRef->Ref.value}
+      style=styles##pressable
+      onPress={_e => setIsOpen(prevIsOpen => !prevIsOpen)}
+      disabled>
+      {_ =>
+         <View
+           style=Style.(
+             arrayOption([|
+               Some(styles##button),
+               Some(
+                 style(
+                   ~borderColor=theme.colors.borderMediumEmphasis,
+                   ~backgroundColor=theme.colors.background,
+                   (),
+                 ),
+               ),
+               isOpen
+                 ? Some(
+                     style(
+                       ~borderColor=theme.colors.borderPrimary,
+                       ~borderWidth=2.,
+                       ~padding=0.->dp,
+                       (),
+                     ),
+                   )
+                 : None,
+             |])
+           )
+           pointerEvents=`none>
+           {renderButton(
+              selectedItem->Option.isSome ? selectedItem : noneItem,
+            )}
+           {disabled
+              ? React.null
+              : <Icons.ChevronDown
+                  size=24.
+                  color={theme.colors.iconMediumEmphasis}
+                  style=styles##icon
+                />}
+         </View>}
+    </PressableCustom>
+    <DropdownMenu
+      style={Style.arrayOption([|
+        Some(styles##dropdownmenu),
+        dropdownStyle,
+      |])}
+      isOpen>
+      {noneItem->Option.mapWithDefault(React.null, item =>
+         <Item
+           key={item->getItemValue}
+           item
+           onChange
+           renderItem
+           isSelected={selectedValue->Option.isNone}
+         />
+       )}
+      {items
+       ->Array.map(item =>
+           <Item
+             key={item->getItemValue}
+             item
+             onChange
+             renderItem
+             isSelected={
+               item->getItemValue == selectedValue->Option.getWithDefault("")
+             }
+           />
+         )
+       ->React.array}
+    </DropdownMenu>
   </View>;
 };

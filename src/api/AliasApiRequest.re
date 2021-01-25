@@ -1,64 +1,46 @@
-include ApiRequest;
-
 /* ALIAS */
 
 module AliasesAPI = API.Aliases(API.TezosClient);
 
 /* Get list */
 
-type getAliasesAPIRequest = t(array((string, string)));
+let useLoad = requestState => {
+  let get = (~settings, ()) =>
+    AliasesAPI.get(~settings)
+    ->Future.mapOk(response => {
+        response
+        ->Array.map(((alias, address)) => {
+            let account: Account.t = {alias, address};
+            (address, account);
+          })
+        ->Array.reverse
+        ->Map.String.fromArray
+      });
 
-let useGetAliases = () => {
-  let (request, setRequest) = React.useState(_ => NotAsked);
-  let config = ConfigContext.useConfig();
-
-  React.useEffect1(
-    () => {
-      setRequest(_ => Loading);
-
-      AliasesAPI.get(~config)
-      ->Future.get(result => setRequest(_ => Done(result)));
-
-      None;
-    },
-    [|setRequest|],
-  );
-
-  request;
+  ApiRequest.useLoader(~get, ~kind=Logs.Aliases, ~requestState);
 };
 
 /* Create */
 
-type createAliasApiRequest = t(string);
+let useCreate =
+  ApiRequest.useSetter(
+    ~set=
+      (~settings, (alias, address)) =>
+        AliasesAPI.add(~settings, alias, address),
+    ~kind=Logs.Aliases,
+  );
 
-let useCreateAlias = () => {
-  let (request, setRequest) = React.useState(_ => NotAsked);
-  let config = ConfigContext.useConfig();
+/* Update */
 
-  let sendRequest = (alias, address) => {
-    setRequest(_ => Loading);
-
-    AliasesAPI.add(~config, alias, address)
-    ->Future.get(result => setRequest(_ => Done(result)));
-  };
-
-  (request, sendRequest);
-};
+let useUpdate =
+  ApiRequest.useSetter(
+    ~set=
+      (~settings, renaming: TezosSDK.renameParams) =>
+        TezosSDK.renameAliases(AppSettings.sdk(settings), renaming),
+    ~kind=Logs.Aliases,
+  );
 
 /* Delete */
 
-type deleteAliasApiRequest = t(string);
-
-let useDeleteAlias = () => {
-  let (request, setRequest) = React.useState(_ => NotAsked);
-  let config = ConfigContext.useConfig();
-
-  let sendRequest = name => {
-    setRequest(_ => Loading);
-
-    AliasesAPI.delete(~config, name)
-    ->Future.get(result => setRequest(_ => Done(result)));
-  };
-
-  (request, sendRequest);
-};
+let useDelete =
+  ApiRequest.useSetter(~set=AliasesAPI.delete, ~kind=Logs.Aliases);

@@ -3,38 +3,64 @@ open ReactNative;
 module AliasDeleteButton = {
   [@react.component]
   let make = (~account: Account.t) => {
-    let (aliasRequest, deleteAlias) = AliasApiRequest.useDeleteAlias();
+    let (aliasRequest, deleteAlias) = StoreContext.Aliases.useDelete();
 
     let onPressConfirmDelete = _e => {
-      deleteAlias(account.alias);
+      deleteAlias(account.alias)->ignore;
     };
 
     <DeleteButton
-      title="Delete contact?"
-      titleDone="Contact deleted"
+      buttonText=I18n.btn#delete_contact
+      modalTitle=I18n.title#delete_contact
       onPressConfirmDelete
       request=aliasRequest
     />;
   };
 };
 
-let baseCellStyle = Style.(style(~flexShrink=0., ~marginRight=24.->dp, ()));
+module AliasEditButton = {
+  [@react.component]
+  let make = (~account: Account.t) => {
+    let (visibleModal, openAction, closeAction) =
+      ModalAction.useModalActionState();
+
+    let onPress = _e => openAction();
+
+    <>
+      <Menu.Item
+        text=I18n.menu#addressbook_edit
+        icon=Icons.Edit.build
+        onPress
+      />
+      <ModalAction visible=visibleModal onRequestClose=closeAction>
+        <ContactFormView action={Edit(account)} closeAction />
+      </ModalAction>
+    </>;
+  };
+};
+
+let baseCellStyle = Style.(style(~flexShrink=0., ~marginRight=18.->dp, ()));
 let styles =
   Style.(
     StyleSheet.create({
       "cellAlias":
-        StyleSheet.flatten([|
-          baseCellStyle,
-          style(~flexBasis=140.->dp, ()),
-        |]),
+        StyleSheet.flatten([|baseCellStyle, style(~minWidth=140.->dp, ())|]),
       "cellAddress":
         StyleSheet.flatten([|
           baseCellStyle,
-          style(~flexBasis=360.->dp, ~flexGrow=1., ()),
+          style(~minWidth=303.->dp, ~marginRight=10.->dp, ()),
         |]),
       "inner":
-        style(~flexDirection=`row, ~width=600.->dp, ~marginLeft=22.->dp, ()),
-      "actionButtons": style(~flexDirection=`row, ()),
+        style(
+          ~flexDirection=`row,
+          ~alignItems=`center,
+          ~flexShrink=0.,
+          ~marginLeft=22.->dp,
+          (),
+        ),
+      "actionButtons": style(~flexDirection=`row, ~flex=1., ()),
+      "actionMenu": style(~marginRight=24.->dp, ()),
+      "button": style(~marginRight=4.->dp, ()),
     })
   );
 
@@ -45,35 +71,34 @@ let memo = component =>
 
 [@react.component]
 let make =
-  memo((~account: Account.t) => {
-    <RowItem.Bordered height=46.>
-      {({hovered}: Pressable.interactionState) => {
-         <>
-           <View style=styles##inner>
-             <View style=styles##cellAlias>
-               <Typography.Body1>
-                 account.alias->React.string
-               </Typography.Body1>
-             </View>
-             <View style=styles##cellAddress>
-               <Typography.Body1>
-                 account.address->React.string
-               </Typography.Body1>
-             </View>
-           </View>
-           <View
-             style=Style.(
-               array([|
-                 styles##actionButtons,
-                 ReactUtils.displayOn(hovered),
-               |])
-             )>
-             <ClipboardButton data={account.address} />
-             <QrButton account />
-             <IconButton icon=Icons.Edit.build />
-             <AliasDeleteButton account />
-           </View>
-         </>;
-       }}
-    </RowItem.Bordered>
+  memo((~account: Account.t, ~zIndex) => {
+    let addToast = LogsContext.useToast();
+
+    <RowItem.Bordered height=46. style={Style.style(~zIndex, ())}>
+      <View style=styles##inner>
+        <View style=styles##cellAlias>
+          <Typography.Body1> account.alias->React.string </Typography.Body1>
+        </View>
+        <View style=styles##cellAddress>
+          <Typography.Address>
+            account.address->React.string
+          </Typography.Address>
+        </View>
+      </View>
+      <View style=styles##actionButtons>
+        <ClipboardButton
+          copied=I18n.log#address
+          addToast
+          data={account.address}
+          style=styles##button
+        />
+        <QrButton account style=styles##button />
+      </View>
+      <View style=styles##actionMenu>
+        <Menu icon=Icons.More.build size=30.>
+          <AliasEditButton account />
+          <AliasDeleteButton account />
+        </Menu>
+      </View>
+    </RowItem.Bordered>;
   });

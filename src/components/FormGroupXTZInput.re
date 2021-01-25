@@ -1,27 +1,53 @@
-let formatOnBlur = setValue => {
-  setValue(BusinessUtils.formatXTZ);
-};
+let formatOnBlur = (token, setValue) =>
+  if (token->Option.isSome) {
+    setValue(BusinessUtils.formatToken);
+  } else {
+    setValue(s => s->ProtocolXTZ.formatString->Option.getWithDefault(""));
+  };
 
 let xtzDecoration = (~style) =>
-  <Typography.Body1 style> BusinessUtils.xtz->React.string </Typography.Body1>;
+  <Typography.Body1 colorStyle=`mediumEmphasis style>
+    I18n.t#xtz->React.string
+  </Typography.Body1>;
 
 [@react.component]
 let make =
     (
       ~label,
-      ~value,
+      ~value: string,
       ~handleChange,
       ~error,
       ~style: option(ReactNative.Style.t)=?,
+      ~decoration=?,
+      ~setValue: option((string => string) => unit)=?,
+      ~token: option(Token.t)=?,
     ) => {
-  let (value, setValue) = React.useState(() => value);
+  let innerValue = React.useState(() => value);
+
+  let (value, setValue) =
+    switch (setValue) {
+    | Some(setValue) => (value, setValue)
+    | None => innerValue
+    };
+
+  // reformat value if token change
+  React.useEffect1(
+    () => {
+      if (value != "") {
+        formatOnBlur(token, setValue);
+      };
+      None;
+    },
+    [|token|],
+  );
+
   <FormGroupTextInput
     label
     ?style
     value
     error
-    onBlur={_ => formatOnBlur(setValue)}
-    decoration=xtzDecoration
+    onBlur={_ => formatOnBlur(token, setValue)}
+    ?decoration
     handleChange={text => {
       handleChange(text);
       setValue(_ => text);

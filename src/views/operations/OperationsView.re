@@ -9,66 +9,62 @@ let styles =
         style(
           ~flex=1.,
           ~paddingTop=4.->dp,
-          ~paddingBottom=Theme.pagePaddingVertical->dp,
-          ~paddingHorizontal=Theme.pagePaddingHorizontal->dp,
+          ~paddingBottom=LayoutConst.pagePaddingVertical->dp,
+          ~paddingHorizontal=LayoutConst.pagePaddingHorizontal->dp,
           (),
         ),
     })
   );
 
 let renderItem =
-    (renderItemProps: VirtualizedList.renderItemProps(Operation.t)) => {
+    (renderItemProps: VirtualizedList.renderItemProps(Operation.Read.t)) => {
   let operation = renderItemProps.item;
   <OperationRowItem operation />;
 };
 
-let keyExtractor = (operation: Operation.t, _i) => {
+let keyExtractor = (operation: Operation.Read.t, _i) => {
   operation.id;
 };
 
 let _ListEmptyComponent = () => <EmptyView text="No operations" />;
 
 let sort = op =>
-  Operation.(
-    op->Belt.SortArray.stableSortInPlaceBy(
-      ({timestamp: t1}, {timestamp: t2}) =>
+  Operation.Read.(
+    op->SortArray.stableSortInPlaceBy(({timestamp: t1}, {timestamp: t2}) =>
       - Pervasives.compare(Js.Date.getTime(t1), Js.Date.getTime(t2))
     )
   );
 
 [@react.component]
 let make = () => {
-  let operations = StoreContext.useOperations();
-  let account = StoreContext.useAccount();
-  let network = StoreContext.useNetwork();
+  let account = StoreContext.SelectedAccount.useGet();
 
-  let (get, operationsRequest) = OperationApiRequest.useGetOperations();
-
-  React.useEffect2(
-    () => {
-      get(network, account);
-      None;
-    },
-    (network, account),
-  );
+  let operationsRequest =
+    StoreContext.Operations.useLoad(
+      ~address=account->Option.map(account => account.address),
+      (),
+    );
 
   <View style=styles##container>
     <OperationsHeaderView />
-    {switch (operationsRequest) {
-     | Done(Ok(_)) =>
-       <FlatList
-         style=styles##list
-         contentContainerStyle=styles##listContent
-         data={operations->sort;
-               operations}
-         initialNumToRender=20
-         keyExtractor
-         renderItem
-         _ListEmptyComponent
-       />
-     | Done(Error(error)) => error->React.string
-     | NotAsked
-     | Loading => <LoadingView />
-     }}
+    {ApiRequest.(
+       switch (operationsRequest) {
+       | Done(Ok(operations), _)
+       | Loading(Some(operations)) =>
+         <FlatList
+           style=styles##list
+           contentContainerStyle=styles##listContent
+           data={operations->sort;
+                 operations}
+           initialNumToRender=20
+           keyExtractor
+           renderItem
+           _ListEmptyComponent
+         />
+       | Done(Error(error), _) => error->React.string
+       | NotAsked
+       | Loading(None) => <LoadingView />
+       }
+     )}
   </View>;
 };

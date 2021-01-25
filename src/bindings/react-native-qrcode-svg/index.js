@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react'
-import Svg, {
+import {
+  Svg,
   Defs,
   G,
   Path,

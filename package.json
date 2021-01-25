@@ -1,5 +1,6 @@
 {
-  "name": "@nomadic-labs/ref-wallet",
+  "name": "umami",
+  "productName": "umami",
   "version": "0.1.0",
   "author": "Nomadic Labs",
   "description": "React-TypeScript-Electron sample with Create React App and Electron Builder",
@@ -8,42 +9,53 @@
   "private": true,
   "dependencies": {
     "@glennsl/bs-json": "^5.0.2",
-    "@reason-react-native/svg": "lin2jie2/svg#341b27f528c07209f333cc8e82217dab08e22aa8",
-    "bip39": "^3.0.2",
+    "@reason-react-native/svg": "12.1.5-0.63",
+    "bip39": "^3.0.3",
     "bs-fetch": "^0.6.2",
     "bs-reform": "10.0.2-alpha.0",
     "bs58check": "^2.1.2",
     "child-reprocess": "^0.1.2",
+    "date-fns": "2.16.1",
     "ed25519-hd-key": "^1.1.2",
     "electron-devtools-installer": "^3.1.0",
     "electron-is-dev": "^1.2.0",
     "electron-reload": "^1.5.0",
+    "proper-lockfile": "^4.1.1",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
+    "react-flip-toolkit": "7.0.13",
     "react-native-qrcode-svg": "6.0.6",
-    "react-native-svg": "12.1.0",
-    "react-native-web": "^0.14.2",
+    "react-native-svg": "link:./src/vendors/react-native-svg",
+    "react-native-web": "^0.14.10",
     "reason-future": "^2.6.0",
     "reason-react": "^0.9.1",
-    "reason-react-native": "^0.62.2",
+    "reason-react-native": "^0.63.2",
     "reason-react-update": "^2.0.0",
-    "reschema": "2.0.2-alpha.0"
+    "reschema": "2.0.2-alpha.0",
+    "tezos-sdk": "link:./src/vendors/tezos-sdk"
   },
   "scripts": {
     "start": "EXTEND_ESLINT=true react-app-rewired start",
-    "build": "react-app-rewired build",
-    "test": "yarn bsb:build && jest",
+    "build": "EXTEND_ESLINT=true react-app-rewired build",
+    "test": "yarn bsb:build && jest --coverage",
     "bsb:start": "bsb -make-world -w",
     "bsb:build": "bsb -make-world",
     "bsb:clean": "bsb -clean-world",
     "postinstall": "electron-builder install-app-deps",
     "electron:dev": "concurrently -k \"cross-env BROWSER=none yarn start\" \"wait-on tcp:3000 && tsc -p electron && electron --disable-gpu .\"",
     "electron:build": "yarn bsb:build && yarn build && tsc -p electron && electron-builder",
+    "electron:buildAll": "yarn bsb:build && yarn build && tsc -p electron && electron-builder",
     "eject": "react-app-rewired eject",
     "fromsvg": "react-from-svg src/svg/source src/svg/components --remove-stroke --remove-fill --with-native-for-reason"
   },
   "build": {
     "extends": null,
+    "mac": {
+      "target": "zip"
+    },
+     "linux": {
+      "target": "AppImage"
+    },
     "files": [
       "build/**/*"
     ],
@@ -69,6 +81,9 @@
       }
     ]
   },
+  "eslintIgnore": [
+    "src/vendors/tezos-sdk/TzSDK.js"
+  ],
   "browserslist": {
     "production": [
       ">0.2%",
@@ -84,15 +99,15 @@
   "devDependencies": {
     "@types/electron-devtools-installer": "^2.2.0",
     "@types/jest": "26.0.4",
-    "@types/node": "14.0.23",
+    "@types/node": "^14.14.14",
     "@types/react": "16.9.43",
     "@types/react-dom": "16.9.8",
-    "bs-platform": "^8.0.3",
+    "bs-platform": "^8.3.3",
     "concurrently": "^5.2.0",
     "cross-env": "^7.0.2",
     "electron": "^9.1.0",
     "electron-builder": "^22.7.0",
-    "lenses-ppx": "6.1.0",
+    "lenses-ppx": "6.1.2",
     "react-app-rewired": "^2.1.6",
     "react-from-svg": "4.0.6",
     "react-scripts": "3.4.1",

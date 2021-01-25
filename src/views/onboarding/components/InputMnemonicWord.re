@@ -21,9 +21,9 @@ module Item = {
   [@react.component]
   let make = (~word) => {
     <View style=styles##itemContainer>
-      <Typography.Body3 colorStyle=`mediumEmphasis>
+      <Typography.Body2 colorStyle=`mediumEmphasis>
         word->React.string
-      </Typography.Body3>
+      </Typography.Body2>
     </View>;
   };
 };
@@ -31,8 +31,7 @@ module Item = {
 let styles =
   Style.(
     StyleSheet.create({
-      "input":
-        style(~paddingLeft=(10. +. 17. +. 13.)->dp, ~height=36.->dp, ()),
+      "input": style(~height=36.->dp, ()),
       "wordItemIndexContainer":
         style(
           ~position=`absolute,
@@ -60,23 +59,62 @@ let renderLabel = (displayIndex, displayError) => {
   </View>;
 };
 
-[@react.component]
-let make = (~displayIndex, ~value, ~handleChange, ~error) => {
-  let wordlists =
-    Bip39.wordlistsEnglish
-    ->Belt.Array.keep(Js.String.startsWith(value))
-    ->Belt.Array.slice(~offset=0, ~len=12);
+module Base = {
+  [@react.component]
+  let make =
+    React.memo(
+      (
+        ~displayIndex: int,
+        ~value: string,
+        ~handleChange: string => unit,
+        ~error: option(string),
+      ) => {
+      let wordlists =
+        Bip39.wordlistsEnglish
+        ->Array.keep(
+            Js.String.startsWith(
+              value->Js.String2.trim->Js.String2.toLowerCase,
+            ),
+          )
+        ->Array.slice(~offset=0, ~len=12);
 
-  <Autocomplete
-    value
-    handleChange
-    error
-    list=wordlists
-    renderItem
-    keyExtractor
-    renderLabel={renderLabel(displayIndex)}
-    style=styles##input
-    itemHeight
-    numItemsToDisplay
-  />;
+      <Autocomplete
+        value
+        handleChange
+        error
+        list=wordlists
+        renderItem
+        keyExtractor
+        renderLabel={renderLabel(displayIndex)}
+        style=styles##input
+        inputPaddingLeft={10. +. 17. +. 13.}
+        itemHeight
+        numItemsToDisplay
+      />;
+    });
+};
+
+[@react.component]
+let make =
+    (
+      ~arrayUpdateByIndex,
+      ~getNestedFieldError,
+      ~index,
+      ~word,
+      ~stateField,
+      ~formField,
+    ) => {
+  let handleChange =
+    React.useMemo2(
+      () => {arrayUpdateByIndex(~field=stateField, ~index)},
+      (index, stateField),
+    );
+
+  let error =
+    React.useMemo2(
+      () => {getNestedFieldError(formField, index)},
+      (index, formField),
+    );
+
+  <Base displayIndex=index value=word handleChange error />;
 };

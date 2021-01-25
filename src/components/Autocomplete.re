@@ -10,8 +10,6 @@ module Item = {
             //~alignItems=`center,
             (),
           ),
-        "itemContainerHovered":
-          style(~backgroundColor=Theme.colorDarkSelected, ()),
       })
     );
 
@@ -36,6 +34,8 @@ module Item = {
       onSelect(_ => index);
     };
 
+    let theme = ThemeContext.useTheme();
+
     <View onMouseDown onMouseMove>
       <TouchableOpacity onPress>
         <View
@@ -43,7 +43,14 @@ module Item = {
             arrayOption([|
               Some(styles##itemContainer),
               Some(style(~height=itemHeight->dp, ())),
-              isSelected ? Some(styles##itemContainerHovered) : None,
+              isSelected
+                ? Some(
+                    Style.style(
+                      ~backgroundColor=theme.colors.stateActive,
+                      (),
+                    ),
+                  )
+                : None,
             |])
           )>
           children
@@ -56,33 +63,12 @@ module Item = {
 let styles =
   Style.(
     StyleSheet.create({
-      "input":
-        style(
-          ~paddingHorizontal=10.->dp,
-          ~height=46.->dp,
-          ~borderColor=Theme.colorDarkMediumEmphasis,
-          ~borderWidth=1.,
-          ~borderRadius=4.,
-          ~fontFamily="Avenir",
-          ~color=Theme.colorDarkHighEmphasis,
-          ~fontSize=16.,
-          ~fontWeight=`normal,
-          (),
-        ),
-      "inputError":
-        style(
-          ~color=Theme.colorDarkError,
-          ~borderColor=Theme.colorDarkError,
-          (),
-        ),
-      "listContainer":
+      "dropdownmenu":
         style(
           ~position=`absolute,
-          ~top=0.->dp,
+          ~top=3.->dp,
           ~left=0.->dp,
           ~right=0.->dp,
-          ~backgroundColor="#2e2e2e",
-          ~borderRadius=3.,
           (),
         ),
     })
@@ -99,11 +85,13 @@ let make =
       ~keyExtractor: 'item => string,
       ~renderLabel: option(bool => React.element)=?,
       ~style as styleFromProp=?,
+      ~inputPaddingLeft=?,
+      ~inputPaddingRight=?,
+      ~inputPaddingVertical=?,
       ~itemHeight=26.,
-      ~listVerticalPadding=8.,
       ~numItemsToDisplay=8.,
     ) => {
-  let hasError = error->Belt.Option.isSome;
+  let hasError = error->Option.isSome;
 
   let textInputRef = React.useRef(Js.Nullable.null);
   let scrollViewRef = React.useRef(Js.Nullable.null);
@@ -119,7 +107,7 @@ let make =
     handleChange(newValue);
     textInputRef.current
     ->Js.Nullable.toOption
-    ->Belt.Option.map(TextInput.blur)
+    ->Option.map(TextInput.blur)
     ->ignore;
   };
 
@@ -131,14 +119,14 @@ let make =
       let newIndex = Js.Math.max_int(0, selectedItemIndex - 1);
       setSelectedItemIndex(_ => newIndex);
 
-      let topPosition = listVerticalPadding;
+      let topPosition = DropdownMenu.listVerticalPadding;
       let itemPosition = newIndex->float_of_int *. itemHeight;
       let itemScrollPosition = itemPosition -. topPosition;
 
       if (itemScrollPosition < scrollYRef.current) {
         scrollViewRef.current
         ->Js.Nullable.toOption
-        ->Belt.Option.map(scrollElement =>
+        ->Option.map(scrollElement =>
             scrollElement->ScrollView.scrollTo(
               ScrollView.scrollToParams(~x=0., ~y=itemScrollPosition, ()),
             )
@@ -147,7 +135,7 @@ let make =
       };
     | "ArrowDown" =>
       let newIndex =
-        Js.Math.min_int(list->Belt.Array.size - 1, selectedItemIndex + 1);
+        Js.Math.min_int(list->Array.size - 1, selectedItemIndex + 1);
       setSelectedItemIndex(_ => newIndex);
 
       let topPosition = itemHeight *. (numItemsToDisplay -. 1.);
@@ -157,7 +145,7 @@ let make =
       if (itemScrollPosition > scrollYRef.current) {
         scrollViewRef.current
         ->Js.Nullable.toOption
-        ->Belt.Option.map(scrollElement =>
+        ->Option.map(scrollElement =>
             scrollElement->ScrollView.scrollTo(
               ScrollView.scrollToParams(~x=0., ~y=itemScrollPosition, ()),
             )
@@ -166,8 +154,8 @@ let make =
       };
     | "Enter" =>
       list
-      ->Belt.Array.get(selectedItemIndex)
-      ->Belt.Option.map(item => onChangeItem(item->keyExtractor))
+      ->Array.get(selectedItemIndex)
+      ->Option.map(item => onChangeItem(item->keyExtractor))
       ->ignore
     | _ => ()
     };
@@ -178,22 +166,22 @@ let make =
       scrollEvent->Event.ScrollEvent.nativeEvent##contentOffset##y;
   };
 
+  let theme = ThemeContext.useTheme();
+
   <View>
-    {renderLabel->Belt.Option.mapWithDefault(React.null, renderLabel =>
+    {renderLabel->Option.mapWithDefault(React.null, renderLabel =>
        renderLabel(displayError)
      )}
-    <TextInput
-      ref={textInputRef->Ref.value}
-      style=Style.(
-        arrayOption([|
-          Some(styles##input),
-          displayError ? Some(styles##inputError) : None,
-          styleFromProp,
-        |])
-      )
+    <ThemedTextInput
+      inputRef={textInputRef->Ref.value}
+      style=?styleFromProp
+      paddingLeft=?inputPaddingLeft
+      paddingRight=?inputPaddingRight
+      paddingVertical=?inputPaddingVertical
       value
-      onChange={(event: TextInput.changeEvent) => {
-        handleChange(event.nativeEvent.text);
+      hasError
+      onValueChange={newValue => {
+        handleChange(newValue);
         setSelectedItemIndex(_ => 0);
       }}
       onFocus={_ => setHasFocus(_ => true)}
@@ -202,49 +190,43 @@ let make =
         setSelectedItemIndex(_ => 0);
       }}
       onKeyPress
-      autoCapitalize=`none
-      autoCorrect=false
-      autoFocus=false
     />
-    {hasFocus && list->Belt.Array.size > 0 && value->Js.String.length > 0
-       ? <View>
-           <ScrollView
-             ref={scrollViewRef->Ref.value}
-             style=Style.(
-               array([|
-                 styles##listContainer,
-                 style(
-                   ~maxHeight=
-                     (
-                       itemHeight
-                       *. numItemsToDisplay
-                       +. listVerticalPadding
-                       *. 2.
-                     )
-                     ->dp,
-                   ~paddingVertical=listVerticalPadding->dp,
-                   (),
-                 ),
-               |])
-             )
-             onScroll
-             scrollEventThrottle=16>
-             {list
-              ->Belt.Array.mapWithIndex((index, item) =>
-                  <Item
-                    key={item->keyExtractor}
-                    value={item->keyExtractor}
-                    index
-                    isSelected={index == selectedItemIndex}
-                    itemHeight
-                    onSelect=setSelectedItemIndex
-                    onChange=onChangeItem>
-                    {renderItem(item)}
-                  </Item>
-                )
-              ->React.array}
-           </ScrollView>
-         </View>
-       : React.null}
+    <DropdownMenu
+      scrollRef={scrollViewRef->Ref.value}
+      onScroll
+      scrollEventThrottle=16
+      isOpen={hasFocus && list->Array.size > 0 && value->Js.String.length > 0}
+      style=Style.(
+        array([|
+          styles##dropdownmenu,
+          style(
+            ~backgroundColor=theme.colors.background,
+            ~maxHeight=
+              (
+                itemHeight
+                *. numItemsToDisplay
+                +. DropdownMenu.listVerticalPadding
+                *. 2.
+              )
+              ->dp,
+            (),
+          ),
+        |])
+      )>
+      {list
+       ->Array.mapWithIndex((index, item) =>
+           <Item
+             key={item->keyExtractor}
+             value={item->keyExtractor}
+             index
+             isSelected={index == selectedItemIndex}
+             itemHeight
+             onSelect=setSelectedItemIndex
+             onChange=onChangeItem>
+             {renderItem(item)}
+           </Item>
+         )
+       ->React.array}
+    </DropdownMenu>
   </View>;
 };

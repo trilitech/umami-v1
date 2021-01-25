@@ -2,30 +2,46 @@ open ReactNative;
 
 type colorStyle = [
   | `highEmphasis
+  | `reverseHighEmphasis
   | `mediumEmphasis
   | `disabled
   | `error
-  | `valid
+  | `positive
+  | `negative
 ];
 
-let getColor = colorStyle =>
+let getColor = (colorStyle, theme: ThemeContext.theme) =>
   switch (colorStyle) {
-  | `highEmphasis => Theme.colorDarkHighEmphasis
-  | `mediumEmphasis => Theme.colorDarkMediumEmphasis
-  | `disabled => Theme.colorDarkDisabled
-  | `error => Theme.colorDarkError
-  | `valid => Theme.colorDarkValid
+  | `highEmphasis => theme.colors.textHighEmphasis
+  | `mediumEmphasis => theme.colors.textMediumEmphasis
+  | `reverseHighEmphasis => theme.colors.textReverseHighEmphasis
+  | `disabled => theme.colors.textDisabled
+  | `error => theme.colors.error
+  | `positive => theme.colors.textPositive
+  | `negative => theme.colors.textNegative
   };
 
-type fontWeightStyle = [ | `black | `heavy | `medium | `book | `light];
+type fontWeightStyle = [
+  | `black
+  | `extraBold
+  | `bold
+  | `semiBold
+  | `medium
+  | `regular
+  | `light
+  | `extraLight
+];
 
 let getFontWeight = fontWeightStyle =>
   switch (fontWeightStyle) {
   | `black => `_900
-  | `heavy => `bold
+  | `extraBold => `_800
+  | `bold => `bold
+  | `semiBold => `_600
   | `medium => `_500
-  | `book => `normal
+  | `regular => `normal
   | `light => `_300
+  | `extraLight => `_200
   };
 
 module type TextDesignStyle = {
@@ -36,19 +52,22 @@ module type TextDesignStyle = {
 
 module Base = {
   let styles =
-    Style.(StyleSheet.create({"text": style(~fontFamily="Avenir", ())}));
+    Style.(
+      StyleSheet.create({"text": style(~fontFamily="SourceSansPro", ())})
+    );
 
   [@react.component]
   let make =
       (
-        ~colorStyle,
-        ~fontSize,
-        ~fontWeightStyle,
-        ~numberOfLines=?,
-        ~style as styleProp=?,
-        ~ellipsizeMode=?,
-        ~children,
+        ~colorStyle: colorStyle,
+        ~fontSize: float,
+        ~fontWeightStyle: fontWeightStyle,
+        ~numberOfLines: option(int)=?,
+        ~style as styleProp: option(ReactNative.Style.t)=?,
+        ~ellipsizeMode: option([ | `clip | `head | `middle | `tail])=?,
+        ~children: React.element,
       ) => {
+    let theme = ThemeContext.useTheme();
     <Text
       ?ellipsizeMode
       ?numberOfLines
@@ -57,7 +76,7 @@ module Base = {
           Some(styles##text),
           Some(
             style(
-              ~color=colorStyle->getColor,
+              ~color=colorStyle->getColor(theme),
               ~fontSize,
               ~fontWeight=fontWeightStyle->getFontWeight,
               (),
@@ -72,8 +91,7 @@ module Base = {
 };
 
 module Make = (DefaultStyle: TextDesignStyle) => {
-  [@react.component]
-  let make =
+  let makeProps =
       (
         ~colorStyle=DefaultStyle.colorStyle,
         ~fontSize=DefaultStyle.fontSize,
@@ -82,27 +100,25 @@ module Make = (DefaultStyle: TextDesignStyle) => {
         ~ellipsizeMode=?,
         ~style=?,
         ~children,
-      ) => {
-    <Base
-      colorStyle fontSize fontWeightStyle ?numberOfLines ?ellipsizeMode ?style>
-      children
-    </Base>;
-  };
+      ) =>
+    Base.makeProps(
+      ~colorStyle,
+      ~fontSize,
+      ~fontWeightStyle,
+      ~numberOfLines?,
+      ~ellipsizeMode?,
+      ~style?,
+      ~children,
+    );
+  let make = Base.make;
 };
 
 /* H */
 
-module Headline1 =
+module Headline =
   Make({
     let colorStyle = `highEmphasis;
-    let fontWeightStyle = `black;
-    let fontSize = 24.;
-  });
-
-module Headline2 =
-  Make({
-    let colorStyle = `highEmphasis;
-    let fontWeightStyle = `black;
+    let fontWeightStyle = `bold;
     let fontSize = 22.;
   });
 
@@ -110,22 +126,22 @@ module Headline2 =
 
 module Overline1 =
   Make({
-    let colorStyle = `mediumEmphasis;
-    let fontWeightStyle = `heavy;
-    let fontSize = 16.;
+    let colorStyle = `highEmphasis;
+    let fontWeightStyle = `regular;
+    let fontSize = 18.;
   });
 
 module Overline2 =
   Make({
-    let colorStyle = `highEmphasis;
-    let fontWeightStyle = `light;
-    let fontSize = 18.;
+    let colorStyle = `mediumEmphasis;
+    let fontWeightStyle = `semiBold;
+    let fontSize = 16.;
   });
 
 module Overline3 =
   Make({
     let colorStyle = `mediumEmphasis;
-    let fontWeightStyle = `light;
+    let fontWeightStyle = `regular;
     let fontSize = 14.;
   });
 
@@ -134,29 +150,22 @@ module Overline3 =
 module Subtitle1 =
   Make({
     let colorStyle = `highEmphasis;
-    let fontWeightStyle = `heavy;
-    let fontSize = 14.;
+    let fontWeightStyle = `semiBold;
+    let fontSize = 16.;
   });
 
 module Subtitle2 =
   Make({
     let colorStyle = `highEmphasis;
-    let fontWeightStyle = `heavy;
-    let fontSize = 16.;
+    let fontWeightStyle = `bold;
+    let fontSize = 15.;
   });
 
 module Subtitle3 =
   Make({
     let colorStyle = `highEmphasis;
-    let fontWeightStyle = `black;
+    let fontWeightStyle = `semiBold;
     let fontSize = 14.;
-  });
-
-module Subtitle4 =
-  Make({
-    let colorStyle = `mediumEmphasis;
-    let fontWeightStyle = `heavy;
-    let fontSize = 12.;
   });
 
 /* BODY */
@@ -164,21 +173,14 @@ module Subtitle4 =
 module Body1 =
   Make({
     let colorStyle = `highEmphasis;
-    let fontWeightStyle = `medium;
+    let fontWeightStyle = `regular;
     let fontSize = 16.;
   });
 
 module Body2 =
   Make({
     let colorStyle = `highEmphasis;
-    let fontWeightStyle = `book;
-    let fontSize = 16.;
-  });
-
-module Body3 =
-  Make({
-    let colorStyle = `highEmphasis;
-    let fontWeightStyle = `medium;
+    let fontWeightStyle = `regular;
     let fontSize = 14.;
   });
 
@@ -187,13 +189,47 @@ module Body3 =
 module ButtonPrimary =
   Make({
     let colorStyle = `highEmphasis;
-    let fontWeightStyle = `heavy;
+    let fontWeightStyle = `bold;
     let fontSize = 14.;
   });
 
 module ButtonSecondary =
   Make({
     let colorStyle = `mediumEmphasis;
-    let fontWeightStyle = `heavy;
+    let fontWeightStyle = `bold;
     let fontSize = 12.;
   });
+
+module ButtonTernary =
+  Make({
+    let colorStyle = `mediumEmphasis;
+    let fontWeightStyle = `semiBold;
+    let fontSize = 10.;
+  });
+
+/* ADDRESS */
+
+module Address = {
+  let styles =
+    Style.(
+      StyleSheet.create({"address": style(~fontFamily="JetBrainsMono", ())})
+    );
+
+  [@react.component]
+  let make =
+      (
+        ~fontSize=14.,
+        ~numberOfLines: option(int)=?,
+        ~style as styleProp: option(ReactNative.Style.t)=?,
+        ~children,
+      ) => {
+    <Base
+      colorStyle=`highEmphasis
+      fontSize
+      fontWeightStyle=`extraLight
+      style=Style.(arrayOption([|Some(styles##address), styleProp|]))
+      ?numberOfLines>
+      children
+    </Base>;
+  };
+};

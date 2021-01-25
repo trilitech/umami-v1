@@ -14,7 +14,6 @@ let styles =
           ~flexDirection=`row,
           ~alignItems=`center,
           ~height=36.->dp,
-          ~borderColor=Theme.colorDarkDisabled,
           ~borderWidth=1.,
           ~borderRadius=4.,
           ~borderStyle=`dashed,
@@ -29,11 +28,19 @@ let styles =
 
 [@react.component]
 let make = (~mnemonic) => {
+  let theme = ThemeContext.useTheme();
+
   <View style=styles##wordsList>
     {mnemonic
-     ->Belt.Array.mapWithIndex((index, word) => {
+     ->Array.mapWithIndex((index, word) => {
          <React.Fragment key={word ++ index->string_of_int}>
-           <View style=styles##wordItem>
+           <View
+             style=Style.(
+               array([|
+                 styles##wordItem,
+                 style(~borderColor=theme.colors.borderDisabled, ()),
+               |])
+             )>
              <View style=styles##wordItemInner>
                <Typography.Subtitle1
                  colorStyle=`disabled style=styles##wordItemIndex>

@@ -1,21 +1,32 @@
+%raw
+"
+   jest.mock('../__mocks__/electron.js')
+   ";
+
 open TestFramework;
 
-let config = ConfigFile.default;
-
-let network = (Network.Test, config);
+let settings =
+  AppSettings.{
+    network: Testnet,
+    config: ConfigFile.default,
+    sdk: {
+      main: Obj.magic(""),
+      test: Obj.magic(""),
+    },
+  };
 
 describe("API tests", ({testAsync}) => {
   testAsync("runs valid balance test", ({expect, callback}) => {
     module Stub = {
       let call = (_, ~inputs=?, ()) => {
         ignore(inputs);
-        Future.value(Ok("stub"));
+        Future.value(Ok("0.00"));
       };
     };
     module UnderTest = API.Balance(Stub);
-    UnderTest.get(network, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3")
+    UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
-        expect.value(result).toEqual(Belt.Result.Ok("stub"));
+        expect.value(result).toEqual(Result.Ok(ProtocolXTZ.zero));
         callback();
       });
     ();
@@ -29,9 +40,9 @@ describe("API tests", ({testAsync}) => {
       };
     };
     module UnderTest = API.Balance(Stub);
-    UnderTest.get(network, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3")
+    UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
-        expect.value(result).toEqual(Belt.Result.Error("stub"));
+        expect.value(result).toEqual(Result.Error("stub"));
         callback();
       });
     ();
@@ -50,11 +61,11 @@ describe("API tests", ({testAsync}) => {
         Future.value(Ok(data->Json.parseOrRaise));
       };
     };
-    let expected: array(Operation.t) = [||];
+    let expected: array(Operation.Read.t) = [||];
     module UnderTest = API.Operations(Dummy, Stub);
-    UnderTest.get(network, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
-        expect.value(result).toEqual(Belt.Result.Ok(expected));
+        expect.value(result).toEqual(Result.Ok(expected));
         callback();
       });
     ();
@@ -109,7 +120,7 @@ describe("API tests", ({testAsync}) => {
         Future.value(Ok(data->Json.parseOrRaise));
       };
     };
-    let expected: array(Operation.t) = [|
+    let expected: array(Operation.Read.t) = [|
       {
         id: "9323046000",
         level: "704778",
@@ -120,7 +131,7 @@ describe("API tests", ({testAsync}) => {
         payload:
           Business({
             source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
-            fee: "1258",
+            fee: ProtocolXTZ.fromMutezInt(1258),
             op_id: 0,
             payload:
               Delegation({
@@ -138,11 +149,11 @@ describe("API tests", ({testAsync}) => {
         payload:
           Business({
             source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
-            fee: "1283",
+            fee: ProtocolXTZ.fromMutezInt(1283),
             op_id: 0,
             payload:
               Transaction({
-                amount: "1000000",
+                amount: ProtocolXTZ.fromMutezInt(1000000),
                 destination: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
                 parameters: Some(Js.Dict.fromArray([|("prim", "Unit")|])),
               }),
@@ -150,9 +161,9 @@ describe("API tests", ({testAsync}) => {
       },
     |];
     module UnderTest = API.Operations(Dummy, Stub);
-    UnderTest.get(network, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
-        expect.value(result).toEqual(Belt.Result.Ok(expected));
+        expect.value(result).toEqual(Result.Ok(expected));
         callback();
       });
     ();
@@ -187,11 +198,11 @@ describe("API tests", ({testAsync}) => {
       };
     };
     module UnderTest = API.Operations(Dummy, Stub);
-    UnderTest.get(network, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.tapError(Js.log)
     ->Future.get(result => {
         expect.value(result).toEqual(
-          Belt.Result.Error("Expected field 'block'\n\tin array at index 0"),
+          Result.Error("Expected field 'block'\n\tin array at index 0"),
         );
         callback();
       });
@@ -227,7 +238,7 @@ describe("API tests", ({testAsync}) => {
         Future.value(Ok(data->Json.parseOrRaise));
       };
     };
-    let expected: array(Operation.t) = [|
+    let expected: array(Operation.Read.t) = [|
       {
         id: "1226434000",
         level: "114452",
@@ -238,7 +249,7 @@ describe("API tests", ({testAsync}) => {
         payload:
           Business({
             source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
-            fee: "1269",
+            fee: ProtocolXTZ.fromMutezInt(1269),
             op_id: 0,
             payload:
               Reveal({
@@ -248,9 +259,9 @@ describe("API tests", ({testAsync}) => {
       },
     |];
     module UnderTest = API.Operations(Dummy, Stub);
-    UnderTest.get(network, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
-        expect.value(result).toEqual(Belt.Result.Ok(expected));
+        expect.value(result).toEqual(Result.Ok(expected));
         callback();
       });
     ();
@@ -285,12 +296,10 @@ describe("API tests", ({testAsync}) => {
       };
     };
     module UnderTest = API.Operations(Dummy, Stub);
-    UnderTest.get(network, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(
-          Belt.Result.Error(
-            "Expected field 'public_key'\n\tin array at index 0",
-          ),
+          Result.Error("Expected field 'public_key'\n\tin array at index 0"),
         );
         callback();
       });
@@ -331,7 +340,7 @@ describe("API tests", ({testAsync}) => {
         Future.value(Ok(data->Json.parseOrRaise));
       };
     };
-    let expected: array(Operation.t) = [|
+    let expected: array(Operation.Read.t) = [|
       {
         id: "9216974000",
         level: "696545",
@@ -342,11 +351,11 @@ describe("API tests", ({testAsync}) => {
         payload:
           Business({
             source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
-            fee: "1283",
+            fee: ProtocolXTZ.fromMutezInt(1283),
             op_id: 0,
             payload:
               Transaction({
-                amount: "1000000",
+                amount: ProtocolXTZ.fromMutezInt(1000000),
                 destination: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
                 parameters: Some(Js.Dict.fromArray([|("prim", "Unit")|])),
               }),
@@ -354,9 +363,9 @@ describe("API tests", ({testAsync}) => {
       },
     |];
     module UnderTest = API.Operations(Dummy, Stub);
-    UnderTest.get(network, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
-        expect.value(result).toEqual(Belt.Result.Ok(expected));
+        expect.value(result).toEqual(Result.Ok(expected));
         callback();
       });
     ();
@@ -396,12 +405,10 @@ describe("API tests", ({testAsync}) => {
       };
     };
     module UnderTest = API.Operations(Dummy, Stub);
-    UnderTest.get(network, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(
-          Belt.Result.Error(
-            "Expected field 'destination'\n\tin array at index 0",
-          ),
+          Result.Error("Expected field 'destination'\n\tin array at index 0"),
         );
         callback();
       });
@@ -437,7 +444,7 @@ describe("API tests", ({testAsync}) => {
         Future.value(Ok(data->Json.parseOrRaise));
       };
     };
-    let expected: array(Operation.t) = [|
+    let expected: array(Operation.Read.t) = [|
       {
         id: "7553106000",
         level: "573751",
@@ -448,7 +455,7 @@ describe("API tests", ({testAsync}) => {
         payload:
           Business({
             source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
-            fee: "2065",
+            fee: ProtocolXTZ.fromMutezInt(2065),
             op_id: 0,
             payload:
               Origination({
@@ -459,9 +466,9 @@ describe("API tests", ({testAsync}) => {
       },
     |];
     module UnderTest = API.Operations(Dummy, Stub);
-    UnderTest.get(network, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
-        expect.value(result).toEqual(Belt.Result.Ok(expected));
+        expect.value(result).toEqual(Result.Ok(expected));
         callback();
       });
     ();
@@ -496,10 +503,10 @@ describe("API tests", ({testAsync}) => {
       };
     };
     module UnderTest = API.Operations(Dummy, Stub);
-    UnderTest.get(network, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(
-          Belt.Result.Error(
+          Result.Error(
             "Expected field 'contract_address'\n\tin array at index 0",
           ),
         );
@@ -536,7 +543,7 @@ describe("API tests", ({testAsync}) => {
         Future.value(Ok(data->Json.parseOrRaise));
       };
     };
-    let expected: array(Operation.t) = [|
+    let expected: array(Operation.Read.t) = [|
       {
         id: "9323046000",
         level: "704778",
@@ -547,16 +554,16 @@ describe("API tests", ({testAsync}) => {
         payload:
           Business({
             source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
-            fee: "1258",
+            fee: ProtocolXTZ.fromMutezInt(1258),
             op_id: 0,
             payload: Delegation({delegate: None}),
           }),
       },
     |];
     module UnderTest = API.Operations(Dummy, Stub);
-    UnderTest.get(network, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
-        expect.value(result).toEqual(Belt.Result.Ok(expected));
+        expect.value(result).toEqual(Result.Ok(expected));
         callback();
       });
     ();
@@ -591,7 +598,7 @@ describe("API tests", ({testAsync}) => {
         Future.value(Ok(data->Json.parseOrRaise));
       };
     };
-    let expected: array(Operation.t) = [|
+    let expected: array(Operation.Read.t) = [|
       {
         id: "9323046000",
         level: "704778",
@@ -602,7 +609,7 @@ describe("API tests", ({testAsync}) => {
         payload:
           Business({
             source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
-            fee: "1258",
+            fee: ProtocolXTZ.fromMutezInt(1258),
             op_id: 0,
             payload:
               Delegation({
@@ -612,9 +619,9 @@ describe("API tests", ({testAsync}) => {
       },
     |];
     module UnderTest = API.Operations(Dummy, Stub);
-    UnderTest.get(network, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
-        expect.value(result).toEqual(Belt.Result.Ok(expected));
+        expect.value(result).toEqual(Result.Ok(expected));
         callback();
       });
     ();
@@ -648,10 +655,10 @@ describe("API tests", ({testAsync}) => {
       };
     };
     module UnderTest = API.Operations(Dummy, Stub);
-    UnderTest.get(network, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(
-          Belt.Result.Error("Expected field 'type'\n\tin array at index 0"),
+          Result.Error("Expected field 'type'\n\tin array at index 0"),
         );
         callback();
       });
@@ -659,42 +666,67 @@ describe("API tests", ({testAsync}) => {
   });
 
   testAsync("runs valid account.delegates test", ({expect, callback}) => {
+    module Dummy = {
+      let call = (_, ~inputs=?, ()) => {
+        ignore(inputs);
+        Future.value(Ok(""));
+      };
+    };
     module Stub = {
       let get = _ => {
         let data = {|[
-          "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
-          "tz1NF7b38uQ43N4nmTHvDKpr1Qo5LF9iYawk"
+          {
+            "name": "foo",
+            "address": "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"
+          },
+          {
+            "name": "bar",
+            "address": "tz1NF7b38uQ43N4nmTHvDKpr1Qo5LF9iYawk"
+          }
         ]|};
         Future.value(Ok(data->Json.parseOrRaise));
       };
     };
     let expected = [|
-      "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
-      "tz1NF7b38uQ43N4nmTHvDKpr1Qo5LF9iYawk",
+      {Delegate.name: "foo", address: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"},
+      {Delegate.name: "bar", address: "tz1NF7b38uQ43N4nmTHvDKpr1Qo5LF9iYawk"},
     |];
-    module UnderTest = API.Delegates(Stub);
-    UnderTest.get(network)
+    module UnderTest = API.Delegate(Dummy, Stub);
+    UnderTest.getBakers(AppSettings.mainOnly(settings))
     ->Future.get(result => {
-        expect.value(result).toEqual(Belt.Result.Ok(expected));
+        expect.value(result).toEqual(Result.Ok(expected));
         callback();
       });
     ();
   });
 
   testAsync("runs invalid account.delegates test", ({expect, callback}) => {
+    module Dummy = {
+      let call = (_, ~inputs=?, ()) => {
+        ignore(inputs);
+        Future.value(Ok(""));
+      };
+    };
     module Stub = {
       let get = _ => {
-        let data = {|"tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"|};
+        let data = {|[
+          {
+            "name": "foo",
+            "address": "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"
+          },
+          {
+            "address": "tz1NF7b38uQ43N4nmTHvDKpr1Qo5LF9iYawk"
+          }
+        ]|};
         Future.value(Ok(data->Json.parseOrRaise));
       };
     };
-    module UnderTest = API.Delegates(Stub);
-    UnderTest.get(network)
+    module UnderTest = API.Delegate(Dummy, Stub);
+    UnderTest.getBakers(AppSettings.mainOnly(settings))
+    ->Future.tapError(Js.log)
     ->Future.get(result => {
         expect.value(result).toEqual(
-          Belt.Result.Error(
-            "Expected array, got \"tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3\"",
-          ),
+          Result.Error("Expected field 'name'\n\tin array at index 1"),
         );
         callback();
       });

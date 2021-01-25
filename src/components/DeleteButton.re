@@ -1,18 +1,22 @@
 [@react.component]
-let make = (~title, ~titleDone, ~onPressConfirmDelete, ~request) => {
-  let (visibleModal, setVisibleModal) = React.useState(_ => false);
-  let openAction = () => setVisibleModal(_ => true);
-  let closeAction = () => setVisibleModal(_ => false);
+let make =
+    (~color=?, ~buttonText, ~modalTitle, ~onPressConfirmDelete, ~request) => {
+  let (visibleModal, openAction, closeAction) =
+    ModalAction.useModalActionState();
+
+  let icon = (~color as colorin=?) => {
+    let color = [color, colorin]->UmamiCommon.Lib.Option.firstSome;
+    Icons.Delete.build(~color?);
+  };
 
   let onPress = _ => {
     openAction();
   };
 
   <>
-    <IconButton icon=Icons.Delete.build onPress />
+    <Menu.Item text=buttonText icon onPress />
     <DeleteConfirmModal
-      title
-      titleDone
+      title=modalTitle
       visible=visibleModal
       onPressConfirmDelete
       closeAction

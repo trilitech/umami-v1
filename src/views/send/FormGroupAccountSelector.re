@@ -5,50 +5,51 @@ let styles =
     StyleSheet.create({
       "formGroup": style(~zIndex=11, ()),
       "label": style(~marginBottom=6.->dp, ()),
-      "balance": style(~position=`absolute, ~right=80.->dp, ~top=12.->dp, ()),
     })
   );
 
-[@react.component]
-let make = (~label, ~value: string, ~handleChange, ~error) => {
-  let accounts = StoreContext.useAccounts();
+let baseRenderButton = AccountSelector.baseRenderButton(~showAmount=Balance);
 
-  let hasError = error->Belt.Option.isSome;
+let baseRenderItem = AccountSelector.baseRenderItem(~showAmount=Nothing);
+
+[@react.component]
+let make =
+    (
+      ~label,
+      ~value: string,
+      ~handleChange,
+      ~error,
+      ~disabled=?,
+      ~token: option(Token.t)=?,
+    ) => {
+  let accounts = StoreContext.Accounts.useGetAll();
+
+  let hasError = error->Option.isSome;
 
   let items =
     accounts
-    ->Belt.Option.getWithDefault(Belt.Map.String.empty)
-    ->Belt.Map.String.valuesToArray
-    ->Belt.SortArray.stableSortBy((a, b) => Pervasives.compare(a.alias, b.alias))
-    ->Belt.Array.map(account =>
-        {Selector.value: account.address, label: account.alias}
-      );
+    ->Map.String.valuesToArray
+    ->SortArray.stableSortBy((a, b) => Pervasives.compare(a.alias, b.alias));
 
-  let (currentAccount, setCurrent) = React.useState(() => value);
-
-  let balanceRequest = BalanceApiRequest.useBalance(currentAccount);
+  let (_currentAccount, setCurrent) = React.useState(() => value);
 
   <FormGroup style=styles##formGroup>
     <FormLabel label hasError style=styles##label />
     <View>
-      <View
-        style={Style.array([|AccountInfo.styles##balance, styles##balance|])}>
-        {AccountInfo.balance(balanceRequest)}
-      </View>
       <Selector
         items
+        ?disabled
+        getItemValue={account => account.address}
         onValueChange={value => {
           setCurrent(_ => value);
           accounts
-          ->Belt.Option.flatMap(accounts =>
-              accounts->Belt.Map.String.get(value)
-            )
-          ->Belt.Option.mapWithDefault("", a => a.address)
+          ->Map.String.get(value)
+          ->Option.mapWithDefault("", a => a.address)
           ->handleChange;
         }}
         selectedValue=value
-        renderButton=AccountSelector.renderButton
-        renderItem=AccountSelector.renderItem
+        renderButton={baseRenderButton(~token)}
+        renderItem={baseRenderItem(~token)}
       />
     </View>
   </FormGroup>;
