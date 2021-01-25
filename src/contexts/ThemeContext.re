@@ -119,7 +119,7 @@ let darkTheme = {
   },
 };
 
-type themeMain = [ | `dark | `light];
+type themeMain = [ | `system | `dark | `light];
 
 type state = {
   theme,
@@ -128,7 +128,7 @@ type state = {
 
 // Context and Provider
 
-let initialState = {theme: lightTheme, themeSetting: (`light, _ => ())};
+let initialState = {theme: lightTheme, themeSetting: (`system, _ => ())};
 let context = React.createContext(initialState);
 
 module Provider = {
@@ -142,13 +142,41 @@ module Provider = {
 
 // Final Provider
 
+[@bs.val] external window: 'a = "window";
+let mediaQueryColorSchemeDark =
+  window##matchMedia("(prefers-color-scheme: dark)");
+
 [@react.component]
 let make = (~children) => {
   let writeConf = ConfigContext.useWrite();
   let settings = ConfigContext.useSettings();
 
   let (themeConfig, setThemeConfig) =
-    React.useState(_ => settings.config.theme->Option.getWithDefault(`light));
+    React.useState(_ =>
+      settings.config.theme->Option.getWithDefault(`system)
+    );
+
+  let (prefersColorSchemeDark, setPrefersColorSchemeDark) =
+    React.useState(_ => mediaQueryColorSchemeDark##matches);
+
+  let listener =
+    React.useCallback1(
+      event => {setPrefersColorSchemeDark(_ => event##matches)},
+      [|setPrefersColorSchemeDark|],
+    );
+
+  React.useEffect1(
+    () => {
+      mediaQueryColorSchemeDark##addEventListener("change", listener)->ignore;
+      Some(
+        () => {
+          mediaQueryColorSchemeDark##removeEventListener("change", listener)
+          ->ignore
+        },
+      );
+    },
+    [|listener|],
+  );
 
   let setThemeSetting = updater => {
     setThemeConfig(prevThemeConfig => {
@@ -161,9 +189,11 @@ let make = (~children) => {
   <Provider
     value={
       theme:
-        switch (themeConfig) {
-        | `dark => darkTheme
-        | `light => lightTheme
+        switch (themeConfig, prefersColorSchemeDark) {
+        | (`system, true)
+        | (`dark, _) => darkTheme
+        | (`system, false)
+        | (`light, _) => lightTheme
         },
       themeSetting: (themeConfig, setThemeSetting),
     }>

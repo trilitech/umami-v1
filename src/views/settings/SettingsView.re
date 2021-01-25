@@ -25,14 +25,20 @@ let make = () => {
   <Page>
     <Typography.Overline1> "Theme"->React.string </Typography.Overline1>
     <Radio
-      label="Light"
-      value=`light
+      label="Default to system"
+      value=`system
       setValue=setThemeSetting
       currentValue=themeSetting
     />
     <Radio
       label="Dark"
       value=`dark
+      setValue=setThemeSetting
+      currentValue=themeSetting
+    />
+    <Radio
+      label="Light"
+      value=`light
       setValue=setThemeSetting
       currentValue=themeSetting
     />
