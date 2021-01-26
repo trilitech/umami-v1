@@ -205,6 +205,7 @@ module Read = {
 
   type t = {
     id: string,
+    op_id: int,
     level: int,
     timestamp: Js.Date.t,
     block: option(string),
@@ -218,6 +219,7 @@ module Read = {
   let decode = json => {
     Json.Decode.{
       id: json |> field("id", string),
+      op_id: json |> field("op_id", int),
       level: json |> field("level", string) |> int_of_string,
       timestamp: json |> field("timestamp", date),
       block: json |> field("block", optional(string)),
@@ -234,7 +236,8 @@ module Read = {
     let op =
       json |> field("operation", Js.Json.stringify) |> Json.parseOrRaise;
     {
-      id: op_id |> string_of_int,
+      id: "",
+      op_id,
       level: json |> field("last_seen_level", int),
       timestamp:
         json
@@ -251,7 +254,7 @@ module Read = {
   module Comparator =
     Id.MakeComparable({
       type t = operation;
-      let cmp = ({hash: hash1}, {hash: hash2}) =>
-        Pervasives.compare(hash1, hash2);
+      let cmp = ({hash: hash1, op_id: id1}, {hash: hash2, op_id: id2}) =>
+        Pervasives.compare((hash1, id1), (hash2, id2));
     });
 };
