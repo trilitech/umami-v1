@@ -8,7 +8,8 @@ type origin =
   | Global
   | Delegate
   | Balance
-  | Tokens;
+  | Tokens
+  | Settings;
 
 type kind =
   | Info
@@ -43,5 +44,6 @@ let originToString = e => {
   | Account => "Account"
   | Delegate => "Delegate"
   | Tokens => "Tokens"
+  | Settings => "Settings"
   };
 };

@@ -28,7 +28,7 @@ let make =
       ~inputRef=?,
       ~value,
       ~onValueChange,
-      ~hasError,
+      ~hasError=false,
       ~keyboardType=?,
       ~onBlur=?,
       ~onFocus=?,

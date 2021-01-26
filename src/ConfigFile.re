@@ -6,6 +6,7 @@ type t = {
   natviewerMain: option(string),
   natviewerTest: option(string),
   theme: option([ | `system | `dark | `light]),
+  confirmations: option(string),
   sdkBaseDir: option(string),
 };
 
@@ -29,6 +30,7 @@ let default = {
   natviewerMain: None,
   natviewerTest: Some(natviewerTest),
   theme: Some(theme),
+  confirmations: None,
   sdkBaseDir: Some(sdkBaseDir),
 };
 

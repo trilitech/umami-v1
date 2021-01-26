@@ -7,13 +7,12 @@ module RadioItem = {
         "container":
           style(
             ~alignSelf=`flexStart,
-            ~marginLeft=24.->dp,
             ~height=37.->dp,
             ~flexDirection=`row,
             ~alignItems=`center,
             (),
           ),
-        "radio": style(~padding=8.->dp, ~marginRight=8.->dp, ()),
+        "radio": style(~marginRight=16.->dp, ()),
       })
     );
 
@@ -33,6 +32,43 @@ module RadioItem = {
   };
 };
 
+module ColumnLeft = {
+  let styles =
+    Style.(
+      StyleSheet.create({
+        "column": style(~flexGrow=3., ~flexShrink=3., ~flexBasis=0.->dp, ()),
+      })
+    );
+
+  [@react.component]
+  let make = (~children) => {
+    <View style=styles##column> children </View>;
+  };
+};
+
+module ColumnRight = {
+  let styles =
+    Style.(
+      StyleSheet.create({
+        "column":
+          style(
+            ~flexGrow=4.,
+            ~flexShrink=4.,
+            ~flexBasis=0.->dp,
+            ~marginLeft=16.->dp,
+            (),
+          ),
+      })
+    );
+
+  [@react.component]
+  let make = (~children=?) => {
+    <View style=styles##column>
+      {children->Belt.Option.getWithDefault(React.null)}
+    </View>;
+  };
+};
+
 module Bloc = {
   let styles =
     Style.(
@@ -45,6 +81,7 @@ module Bloc = {
             (),
           ),
         "title": style(~marginLeft=16.->dp, ~marginBottom=18.->dp, ()),
+        "content": style(~flexDirection=`row, ~paddingHorizontal=30.->dp, ()),
       })
     );
 
@@ -62,35 +99,138 @@ module Bloc = {
       <Typography.Headline fontSize=16. style=styles##title>
         title->React.string
       </Typography.Headline>
-      children
+      <View style=styles##content> children </View>
     </View>;
+  };
+};
+
+module BlocVerification = {
+  module StateLenses = [%lenses type state = {confirmations: string}];
+  module VerificationForm = ReForm.Make(StateLenses);
+
+  let styles =
+    Style.(
+      StyleSheet.create({
+        "rowNumberBlock":
+          style(
+            ~flex=1.,
+            ~flexDirection=`row,
+            ~alignItems=`center,
+            ~marginBottom=20.->dp,
+            (),
+          ),
+        "input": style(~height=36.->dp, ()),
+        "button": style(~width=104.->dp, ~height=34.->dp, ()),
+      })
+    );
+
+  [@react.component]
+  let make = () => {
+    let writeConf = ConfigContext.useWrite();
+    let settings = ConfigContext.useSettings();
+    let addToast = LogsContext.useToast();
+
+    let form: VerificationForm.api =
+      VerificationForm.use(
+        ~schema={
+          VerificationForm.Validation.(
+            Schema(
+              custom(
+                values => FormUtils.isValidInt(values.confirmations),
+                Confirmations,
+              ),
+            )
+          );
+        },
+        ~onSubmit=
+          ({state}) => {
+            Js.log(state);
+            writeConf(c =>
+              {
+                ...c,
+                confirmations:
+                  state.values.confirmations->Js.String2.length > 0
+                    ? Some(state.values.confirmations) : None,
+              }
+            );
+            addToast(Logs.info(~origin=Settings, "Saved"));
+
+            None;
+          },
+        ~initialState={
+          confirmations:
+            settings.config.confirmations->Option.getWithDefault(""),
+        },
+        (),
+      );
+
+    let onSubmit = _ => {
+      form.submit();
+    };
+
+    <Bloc title="VERIFICATION">
+      <View style=styles##rowNumberBlock>
+        <ColumnLeft>
+          <Typography.Body1>
+            "Number of confirmations (blocks)"->React.string
+          </Typography.Body1>
+        </ColumnLeft>
+        <ColumnRight>
+          <ThemedTextInput
+            style=styles##input
+            value={form.values.confirmations}
+            onValueChange={form.handleChange(Confirmations)}
+            hasError={
+              form.getFieldError(Field(Confirmations))->Belt.Option.isSome
+            }
+            keyboardType=`numeric
+            paddingLeft=16.
+            paddingVertical=8.
+          />
+        </ColumnRight>
+        <ColumnRight>
+          <Buttons.SubmitPrimary
+            style=styles##button
+            text="SAVE"
+            onPress=onSubmit
+          />
+        </ColumnRight>
+      </View>
+    </Bloc>;
+  };
+};
+
+module BlocTheme = {
+  [@react.component]
+  let make = () => {
+    let (themeSetting, setThemeSetting) = ThemeContext.useThemeSetting();
+
+    <Bloc title=I18n.settings#theme_title>
+      <ColumnLeft>
+        <RadioItem
+          label=I18n.settings#theme_system
+          value=`system
+          setValue=setThemeSetting
+          currentValue=themeSetting
+        />
+        <RadioItem
+          label=I18n.settings#theme_dark
+          value=`dark
+          setValue=setThemeSetting
+          currentValue=themeSetting
+        />
+        <RadioItem
+          label=I18n.settings#theme_light
+          value=`light
+          setValue=setThemeSetting
+          currentValue=themeSetting
+        />
+      </ColumnLeft>
+    </Bloc>;
   };
 };
 
 [@react.component]
 let make = () => {
-  let (themeSetting, setThemeSetting) = ThemeContext.useThemeSetting();
-
-  <Page>
-    <Bloc title=I18n.settings#theme_title>
-      <RadioItem
-        label=I18n.settings#theme_system
-        value=`system
-        setValue=setThemeSetting
-        currentValue=themeSetting
-      />
-      <RadioItem
-        label=I18n.settings#theme_dark
-        value=`dark
-        setValue=setThemeSetting
-        currentValue=themeSetting
-      />
-      <RadioItem
-        label=I18n.settings#theme_light
-        value=`light
-        setValue=setThemeSetting
-        currentValue=themeSetting
-      />
-    </Bloc>
-  </Page>;
+  <Page> <BlocVerification /> <BlocTheme /> </Page>;
 };
