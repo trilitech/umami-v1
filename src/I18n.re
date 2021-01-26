@@ -11,6 +11,7 @@ let btn = {
   pub finish = "FINISH";
   pub add = "ADD";
   pub send = "SEND";
+  pub save = "SAVE";
   pub go_back = "GO BACK";
   pub go_operations = "GO TO OPERATIONS";
   pub confirm = "CONFIRM";
@@ -151,6 +152,9 @@ let settings = {
   pub theme_system = "Default to system";
   pub theme_dark = "Dark";
   pub theme_light = "Light";
+  pub confirmations_title = "VERIFICATION";
+  pub confirmations_label = "Number of confirmations (blocks)";
+  pub confirmations_saved = "Number of confirmations Saved"
 };
 
 let t = {

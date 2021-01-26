@@ -153,7 +153,7 @@ module BlocVerification = {
                     ? Some(state.values.confirmations) : None,
               }
             );
-            addToast(Logs.info(~origin=Settings, "Saved"));
+            addToast(Logs.info(~origin=Settings, I18n.settings#confirmations_saved));
 
             None;
           },
@@ -168,11 +168,11 @@ module BlocVerification = {
       form.submit();
     };
 
-    <Bloc title="VERIFICATION">
+    <Bloc title=I18n.settings#confirmations_title>
       <View style=styles##rowNumberBlock>
         <ColumnLeft>
           <Typography.Body1>
-            "Number of confirmations (blocks)"->React.string
+            I18n.settings#confirmations_label->React.string
           </Typography.Body1>
         </ColumnLeft>
         <ColumnRight>
@@ -191,7 +191,7 @@ module BlocVerification = {
         <ColumnRight>
           <Buttons.SubmitPrimary
             style=styles##button
-            text="SAVE"
+            text=I18n.btn#save
             onPress=onSubmit
           />
         </ColumnRight>
