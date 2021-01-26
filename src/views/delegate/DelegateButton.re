@@ -48,7 +48,8 @@ let make =
         style=Style.(arrayOption([|Some(styles##pressable)|]))
         isPrimary=true
         onPress
-        disabled>
+        disabled
+        accessibilityRole=`button>
         <Typography.ButtonPrimary
           style=Style.(
             style(

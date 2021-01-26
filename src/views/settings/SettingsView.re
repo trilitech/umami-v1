@@ -153,7 +153,9 @@ module BlocVerification = {
                     ? Some(state.values.confirmations) : None,
               }
             );
-            addToast(Logs.info(~origin=Settings, I18n.settings#confirmations_saved));
+            addToast(
+              Logs.info(~origin=Settings, I18n.settings#confirmations_saved),
+            );
 
             None;
           },
@@ -169,7 +171,7 @@ module BlocVerification = {
     };
 
     <Bloc title=I18n.settings#confirmations_title>
-      <View style=styles##rowNumberBlock>
+      <View accessibilityRole=`form style=styles##rowNumberBlock>
         <ColumnLeft>
           <Typography.Body1>
             I18n.settings#confirmations_label->React.string
@@ -186,6 +188,7 @@ module BlocVerification = {
             keyboardType=`numeric
             paddingLeft=16.
             paddingVertical=8.
+            onSubmitEditing=onSubmit
           />
         </ColumnRight>
         <ColumnRight>

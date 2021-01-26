@@ -36,6 +36,7 @@ let make =
       ~textContentType=?,
       ~secureTextEntry=?,
       ~placeholder=?,
+      ~onSubmitEditing=?,
       ~disabled=false,
       ~paddingVertical=paddingVertical,
       ~paddingLeft=paddingLeft,
@@ -111,6 +112,7 @@ let make =
     autoFocus=false
     ?keyboardType
     ?placeholder
+    ?onSubmitEditing
     editable={!disabled}
   />;
 };

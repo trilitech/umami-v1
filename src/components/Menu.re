@@ -20,7 +20,7 @@ module Item = {
   let make =
       (~text, ~icon: Icons.builder, ~colorStyle=`highEmphasis, ~onPress=?) => {
     let theme = ThemeContext.useTheme();
-    <ThemedPressable ?onPress style=styles##button>
+    <ThemedPressable ?onPress style=styles##button accessibilityRole=`button>
       {icon(
          ~style=?None,
          ~size=20.,

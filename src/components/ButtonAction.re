@@ -21,7 +21,7 @@ let styles =
 let make = (~text, ~onPress, ~icon: Icons.builder) => {
   let theme = ThemeContext.useTheme();
 
-  <ThemedPressable style=styles##pressable onPress>
+  <ThemedPressable style=styles##pressable onPress accessibilityRole=`button>
     {icon(
        ~style=styles##icon,
        ~size=15.5,

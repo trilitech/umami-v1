@@ -46,7 +46,8 @@ module FormBase = {
         outerStyle=styles##outer
         isPrimary
         onPress
-        disabled={disabled || loading}>
+        disabled={disabled || loading}
+        accessibilityRole=`button>
         {loading
            ? <ActivityIndicator
                animating=true
