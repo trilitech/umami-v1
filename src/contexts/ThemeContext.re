@@ -181,7 +181,16 @@ let make = (~children) => {
   let setThemeSetting = updater => {
     setThemeConfig(prevThemeConfig => {
       let newThemeConfig = updater(prevThemeConfig);
-      writeConf(c => {...c, theme: Some(newThemeConfig)});
+      writeConf(c =>
+        {
+          ...c,
+          theme:
+            switch (newThemeConfig) {
+            | `system => None
+            | other => Some(other)
+            },
+        }
+      );
       newThemeConfig;
     });
   };
