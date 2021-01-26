@@ -61,7 +61,14 @@ let buildTransfers = (transfers, parseAmount, build) => {
 };
 
 let buildTokenTransfer =
-    (inputTransfers, token: Token.t, source, counter, forceLowFee) =>
+    (
+      inputTransfers,
+      token: Token.t,
+      source,
+      counter,
+      forceLowFee,
+      confirmations,
+    ) =>
   TokenTransfer(
     Token.makeTransfers(
       ~source,
@@ -73,12 +80,14 @@ let buildTokenTransfer =
         ),
       ~counter?,
       ~forceLowFee?,
+      ~confirmations?,
       (),
     ),
     token,
   );
 
-let buildProtocolTransaction = (inputTransfers, source, counter, forceLowFee) =>
+let buildProtocolTransaction =
+    (inputTransfers, source, counter, forceLowFee, confirmations) =>
   Protocol.makeTransaction(
     ~source,
     ~transfers=
@@ -89,12 +98,18 @@ let buildProtocolTransaction = (inputTransfers, source, counter, forceLowFee) =>
       ),
     ~counter?,
     ~forceLowFee?,
+    ~confirmations?,
     (),
   )
   ->ProtocolTransaction;
 
 let buildTransaction =
-    (batch: list((StateLenses.state, bool)), token: option(Token.t)) => {
+    (
+      batch: list((StateLenses.state, bool)),
+      token: option(Token.t),
+      confirmations: option(string),
+    ) => {
+  let confirmations = confirmations->Option.flatMap(Int.fromString);
   switch (batch) {
   | [] => assert(false)
   | [(first, _), ..._] as inputTransfers =>
@@ -107,9 +122,22 @@ let buildTransaction =
 
     switch (token) {
     | Some(token) =>
-      buildTokenTransfer(inputTransfers, token, source, counter, forceLowFee)
+      buildTokenTransfer(
+        inputTransfers,
+        token,
+        source,
+        counter,
+        forceLowFee,
+        confirmations,
+      )
     | None =>
-      buildProtocolTransaction(inputTransfers, source, counter, forceLowFee)
+      buildProtocolTransaction(
+        inputTransfers,
+        source,
+        counter,
+        forceLowFee,
+        confirmations,
+      )
     };
   };
 };
