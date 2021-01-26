@@ -47,3 +47,24 @@ You can use the provided script get-and-compile-tezos.sh, it will get and compil
 `npm run electron:build`
 
 Builds the Electron app package for production to the `dist` folder.
+
+### Last update (25/01/2021)
+
+- Various Build system fixes/improvements
+- Single file download installation
+- CI improvements
+- Fix slow onboarding mnemonic
+- Edit Accounts
+- Edit Contacts
+- Support for batch token txs (API side)
+- Indexation benchmarking/optimizations
+- Ability to delete tokens contracts
+- Update readme and installation script
+- Filter out accounts from the address book
+- XTZ from float to int64 representation
+- Onboarding redesign
+- Redesign token selector
+- SDK integration improvements and fixes
+- Improved modal management
+- Advanced options animation
+- "Go to operations" button after Tx
