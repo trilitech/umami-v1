@@ -32,6 +32,59 @@ module RadioItem = {
   };
 };
 
+module SettingTextInput = {
+  let styles =
+    Style.(StyleSheet.create({"input": style(~height=36.->dp, ())}));
+
+  [@react.component]
+  let make =
+      (~value, ~onValueChange, ~error, ~keyboardType=?, ~onSubmitEditing=?) => {
+    <ThemedTextInput
+      style=styles##input
+      paddingLeft=16.
+      paddingVertical=8.
+      value
+      onValueChange
+      hasError={error->Belt.Option.isSome}
+      ?keyboardType
+      ?onSubmitEditing
+    />;
+  };
+};
+
+module SettingFormGroupTextInput = {
+  let styles =
+    Style.(
+      StyleSheet.create({
+        "label": style(~marginBottom=6.->dp, ()),
+        "formGroup": style(~marginTop=0.->dp, ~marginBottom=32.->dp, ()),
+      })
+    );
+
+  [@react.component]
+  let make =
+      (
+        ~label,
+        ~value,
+        ~onValueChange,
+        ~error,
+        ~keyboardType=?,
+        ~onSubmitEditing=?,
+      ) => {
+    let hasError = error->Option.isSome;
+    <FormGroup style=styles##formGroup>
+      <FormLabel label hasError style=styles##label />
+      <SettingTextInput
+        value
+        onValueChange
+        error
+        ?keyboardType
+        ?onSubmitEditing
+      />
+    </FormGroup>;
+  };
+};
+
 module ColumnLeft = {
   let styles =
     Style.(
@@ -119,7 +172,6 @@ module BlocVerification = {
             ~marginBottom=20.->dp,
             (),
           ),
-        "input": style(~height=36.->dp, ()),
         "button": style(~width=104.->dp, ~height=34.->dp, ()),
       })
     );
@@ -144,7 +196,6 @@ module BlocVerification = {
         },
         ~onSubmit=
           ({state}) => {
-            Js.log(state);
             writeConf(c =>
               {
                 ...c,
@@ -178,16 +229,11 @@ module BlocVerification = {
           </Typography.Body1>
         </ColumnLeft>
         <ColumnRight>
-          <ThemedTextInput
-            style=styles##input
+          <SettingTextInput
             value={form.values.confirmations}
             onValueChange={form.handleChange(Confirmations)}
-            hasError={
-              form.getFieldError(Field(Confirmations))->Belt.Option.isSome
-            }
+            error={form.getFieldError(Field(Confirmations))}
             keyboardType=`numeric
-            paddingLeft=16.
-            paddingVertical=8.
             onSubmitEditing=onSubmit
           />
         </ColumnRight>
@@ -233,7 +279,99 @@ module BlocTheme = {
   };
 };
 
+module BlocChain = {
+  module StateLenses = [%lenses
+    type state = {
+      endpointTest: string,
+      explorerTest: string,
+    }
+  ];
+  module ChainForm = ReForm.Make(StateLenses);
+
+  let styles =
+    Style.(
+      StyleSheet.create({
+        "row": style(~flex=1., ~flexDirection=`row, ()),
+        "button": style(~height=34.->dp, ()),
+      })
+    );
+
+  [@react.component]
+  let make = () => {
+    let writeConf = ConfigContext.useWrite();
+    let settings = ConfigContext.useSettings();
+    let addToast = LogsContext.useToast();
+
+    let form: ChainForm.api =
+      ChainForm.use(
+        ~schema={
+          ChainForm.Validation.(
+            Schema(nonEmpty(EndpointTest) + nonEmpty(ExplorerTest))
+          );
+        },
+        ~onSubmit=
+          ({state}) => {
+            writeConf(c =>
+              {
+                ...c,
+                endpointTest:
+                  state.values.endpointTest->Js.String2.length > 0
+                    ? Some(state.values.endpointTest) : None,
+                explorerTest:
+                  state.values.explorerTest->Js.String2.length > 0
+                    ? Some(state.values.explorerTest) : None,
+              }
+            );
+            addToast(Logs.info(~origin=Settings, I18n.settings#chain_saved));
+
+            None;
+          },
+        ~initialState={
+          endpointTest:
+            settings.config.endpointTest->Option.getWithDefault(""),
+          explorerTest:
+            settings.config.explorerTest->Option.getWithDefault(""),
+        },
+        (),
+      );
+
+    let onSubmit = _ => {
+      form.submit();
+    };
+
+    <Bloc title=I18n.settings#chain_title>
+      <View accessibilityRole=`form style=styles##row>
+        <ColumnLeft>
+          <Typography.Body1> I18n.t#testnet->React.string </Typography.Body1>
+        </ColumnLeft>
+        <ColumnRight>
+          <SettingFormGroupTextInput
+            label=I18n.settings#chain_node_label
+            value={form.values.endpointTest}
+            onValueChange={form.handleChange(EndpointTest)}
+            error={form.getFieldError(Field(EndpointTest))}
+            onSubmitEditing=onSubmit
+          />
+          <SettingFormGroupTextInput
+            label=I18n.settings#chain_mezos_label
+            value={form.values.explorerTest}
+            onValueChange={form.handleChange(ExplorerTest)}
+            error={form.getFieldError(Field(ExplorerTest))}
+            onSubmitEditing=onSubmit
+          />
+          <Buttons.SubmitPrimary
+            style=styles##button
+            text=I18n.btn#validate_save
+            onPress=onSubmit
+          />
+        </ColumnRight>
+        <ColumnRight />
+      </View>
+    </Bloc>;
+  };
+};
+
 [@react.component]
 let make = () => {
-  <Page> <BlocVerification /> <BlocTheme /> </Page>;
+  <Page> <BlocVerification /> <BlocTheme /> <BlocChain /> </Page>;
 };

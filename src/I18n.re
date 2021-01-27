@@ -12,6 +12,7 @@ let btn = {
   pub add = "ADD";
   pub send = "SEND";
   pub save = "SAVE";
+  pub validate_save = "VALIDATE AND SAVE";
   pub go_back = "GO BACK";
   pub go_operations = "GO TO OPERATIONS";
   pub confirm = "CONFIRM";
@@ -154,7 +155,11 @@ let settings = {
   pub theme_light = "Light";
   pub confirmations_title = "VERIFICATION";
   pub confirmations_label = "Number of confirmations (blocks)";
-  pub confirmations_saved = "Number of confirmations Saved"
+  pub confirmations_saved = "Number of confirmations Saved";
+  pub chain_title = {j|CHAIN/NETWORK|j};
+  pub chain_node_label = "Node URL";
+  pub chain_mezos_label = "Mezos URL";
+  pub chain_saved = "Chain URLs Saved"
 };
 
 let t = {
@@ -164,6 +169,8 @@ let t = {
   pub amount = (a, b) => p("%s %s", a, b);
   pub tezos = "Tez";
   pub xtz = "tez";
+  pub mainnet = "Mainnet";
+  pub testnet = "Testnet";
   pub xtz_amount = a => p("%s %s", a, this#xtz);
   pub xtz_op_amount = op => p("%s %a", op, () => this#xtz_amount);
   pub address = "Address";
