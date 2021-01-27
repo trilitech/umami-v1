@@ -137,11 +137,11 @@ module SubmitPrimary = {
       ?loading
       vStyle=Style.(
         arrayOption([|
-          argStyle,
           Some(styles##primary),
           Some(
             style(~backgroundColor=theme.colors.primaryButtonBackground, ()),
           ),
+          argStyle,
         |])
       )>
       <Typography.ButtonPrimary

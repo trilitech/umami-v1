@@ -162,7 +162,11 @@ let settings = {
   pub chain_saved = "Chain URLs Saved";
   pub token_title = "TOKENS";
   pub token_label = "Token Balance Viewer Contract";
-  pub token_saved = "Token Balance Viewer Contract Saved"
+  pub token_saved = "Token Balance Viewer Contract Saved";
+  pub danger_title = "DANGER ZONE";
+  pub danger_offboard_section = "Offboard wallet";
+  pub danger_offboard_text = {js|Offboarding will permanently delete any data from this computer. The accounts are still available to be imported in the future ; in order to regain access to your accounts, please make sure that you keep the backup phrase.|js};
+  pub danger_offboard_button = "OFFBOARD"
 };
 
 let t = {

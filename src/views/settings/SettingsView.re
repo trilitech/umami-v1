@@ -90,12 +90,16 @@ module ColumnLeft = {
     Style.(
       StyleSheet.create({
         "column": style(~flexGrow=3., ~flexShrink=3., ~flexBasis=0.->dp, ()),
+        "columnDouble":
+          style(~flexGrow=7., ~flexShrink=7., ~flexBasis=0.->dp, ()),
       })
     );
 
   [@react.component]
-  let make = (~children) => {
-    <View style=styles##column> children </View>;
+  let make = (~double=false, ~children) => {
+    <View style={double ? styles##columnDouble : styles##column}>
+      children
+    </View>;
   };
 };
 
@@ -454,6 +458,61 @@ module BlocToken = {
   };
 };
 
+module BlocDanger = {
+  module StateLenses = [%lenses type state = {natviewerTest: string}];
+  module TokenBalanceForm = ReForm.Make(StateLenses);
+
+  let styles =
+    Style.(
+      StyleSheet.create({
+        "row":
+          style(
+            ~flex=1.,
+            ~flexDirection=`row,
+            ~alignItems=`center,
+            //~marginBottom=20.->dp,
+            (),
+          ),
+        "section": style(~marginBottom=8.->dp, ()),
+        "button": style(~width=104.->dp, ~height=34.->dp, ()),
+      })
+    );
+
+  [@react.component]
+  let make = () => {
+    let onSubmit = _ => {
+      Js.log("click");
+    };
+
+    let theme = ThemeContext.useTheme();
+
+    <Bloc title=I18n.settings#danger_title>
+      <View style=styles##row>
+        <ColumnLeft double=true>
+          <Typography.Body1 colorStyle=`error style=styles##section>
+            I18n.settings#danger_offboard_section->React.string
+          </Typography.Body1>
+          <Typography.Body1 colorStyle=`error>
+            I18n.settings#danger_offboard_text->React.string
+          </Typography.Body1>
+        </ColumnLeft>
+        <ColumnRight>
+          <Buttons.SubmitPrimary
+            style=Style.(
+              array([|
+                styles##button,
+                style(~backgroundColor=theme.colors.error, ()),
+              |])
+            )
+            text=I18n.settings#danger_offboard_button
+            onPress=onSubmit
+          />
+        </ColumnRight>
+      </View>
+    </Bloc>;
+  };
+};
+
 [@react.component]
 let make = () => {
   <Page>
@@ -461,5 +520,6 @@ let make = () => {
     <BlocTheme />
     <BlocChain />
     <BlocToken />
+    <BlocDanger />
   </Page>;
 };
