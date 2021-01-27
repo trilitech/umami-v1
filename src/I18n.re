@@ -159,7 +159,10 @@ let settings = {
   pub chain_title = {j|CHAIN/NETWORK|j};
   pub chain_node_label = "Node URL";
   pub chain_mezos_label = "Mezos URL";
-  pub chain_saved = "Chain URLs Saved"
+  pub chain_saved = "Chain URLs Saved";
+  pub token_title = "TOKENS";
+  pub token_label = "Token Balance Viewer Contract";
+  pub token_saved = "Token Balance Viewer Contract Saved"
 };
 
 let t = {
