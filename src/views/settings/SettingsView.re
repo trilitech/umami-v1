@@ -90,14 +90,12 @@ module ColumnLeft = {
     Style.(
       StyleSheet.create({
         "column": style(~flexGrow=3., ~flexShrink=3., ~flexBasis=0.->dp, ()),
-        "columnDouble":
-          style(~flexGrow=7., ~flexShrink=7., ~flexBasis=0.->dp, ()),
       })
     );
 
   [@react.component]
-  let make = (~double=false, ~children) => {
-    <View style={double ? styles##columnDouble : styles##column}>
+  let make = (~style as styleFromProp=?, ~children) => {
+    <View style=Style.(arrayOption([|Some(styles##column), styleFromProp|]))>
       children
     </View>;
   };
@@ -119,8 +117,8 @@ module ColumnRight = {
     );
 
   [@react.component]
-  let make = (~children=?) => {
-    <View style=styles##column>
+  let make = (~style as styleFromProp=?, ~children=?) => {
+    <View style=Style.(arrayOption([|Some(styles##column), styleFromProp|]))>
       {children->Belt.Option.getWithDefault(React.null)}
     </View>;
   };
@@ -465,14 +463,10 @@ module BlocDanger = {
   let styles =
     Style.(
       StyleSheet.create({
-        "row":
-          style(
-            ~flex=1.,
-            ~flexDirection=`row,
-            ~alignItems=`center,
-            //~marginBottom=20.->dp,
-            (),
-          ),
+        "row": style(~flex=1., ~flexDirection=`row, ~alignItems=`center, ()),
+        "columnLeft":
+          style(~flexGrow=7., ~flexShrink=7., ~flexBasis=0.->dp, ()),
+        "columnRight": style(~marginLeft=32.->dp, ()),
         "section": style(~marginBottom=8.->dp, ()),
         "button": style(~width=104.->dp, ~height=34.->dp, ()),
       })
@@ -488,7 +482,7 @@ module BlocDanger = {
 
     <Bloc title=I18n.settings#danger_title>
       <View style=styles##row>
-        <ColumnLeft double=true>
+        <ColumnLeft style=styles##columnLeft>
           <Typography.Body1 colorStyle=`error style=styles##section>
             I18n.settings#danger_offboard_section->React.string
           </Typography.Body1>
@@ -496,7 +490,7 @@ module BlocDanger = {
             I18n.settings#danger_offboard_text->React.string
           </Typography.Body1>
         </ColumnLeft>
-        <ColumnRight>
+        <ColumnRight style=styles##columnRight>
           <Buttons.SubmitPrimary
             style=Style.(
               array([|
@@ -516,10 +510,6 @@ module BlocDanger = {
 [@react.component]
 let make = () => {
   <Page>
-    <BlocVerification />
-    <BlocTheme />
-    <BlocChain />
-    <BlocToken />
-    <BlocDanger />
-  </Page>;
+     <BlocVerification /> <BlocTheme /> <BlocChain /> <BlocToken /> </Page>;
+    /*<BlocDanger />*/
 };
