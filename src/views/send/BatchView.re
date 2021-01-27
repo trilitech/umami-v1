@@ -38,15 +38,15 @@ let listStyle = (theme: ThemeContext.theme) =>
 let buildAmount = amount => {
   AccountSelector.Amount(
     <Typography.Body1 fontWeightStyle=`bold style=styles##amount>
-      {I18n.t#xtz_amount(amount)->React.string}
+      amount->React.string
     </Typography.Body1>,
   );
 };
 
-let computeTotal = batch =>
-  batch->List.reduce(0., (acc, t: SendForm.StateLenses.state) =>
-    acc +. float_of_string(t.amount)
-  );
+/* let computeTotal = batch => */
+/*   batch->List.reduce(0., (acc, t: SendForm.StateLenses.state) => */
+/*     acc +. float_of_string(t.amount) */
+/*   ); */
 
 module Item = {
   [@react.component]
@@ -106,7 +106,7 @@ module Item = {
 
 module Transactions = {
   [@react.component]
-  let make = (~recipients, ~onDelete=?) => {
+  let make = (~recipients, ~showCurrency, ~onDelete=?) => {
     let length = recipients->List.length;
     let theme = ThemeContext.useTheme();
     <View style=styles##container>
@@ -122,7 +122,7 @@ module Transactions = {
                key={string_of_int(i)}
                i={length - i}
                recipient
-               amount
+               amount={showCurrency(amount)}
                ?onDelete
                ?onEdit
              />;
@@ -145,6 +145,8 @@ let make =
       ~onDelete,
       ~onEdit,
       ~batch,
+      ~showCurrency,
+      ~reduceAmounts,
       ~loading,
     ) => {
   let theme: ThemeContext.theme = ThemeContext.useTheme();
@@ -171,14 +173,10 @@ let make =
         I18n.label#summary_total->React.string
       </Typography.Overline2>
       <Typography.Subtitle1>
-        {I18n.t#xtz_amount(
-           computeTotal(batch->List.map(fst))
-           ->Js.Float.toFixedWithPrecision(~digits=6),
-         )
-         ->React.string}
+        {reduceAmounts(batch->List.map(fst))->showCurrency->React.string}
       </Typography.Subtitle1>
     </View>
-    <Transactions recipients onDelete />
+    <Transactions recipients showCurrency onDelete />
     <View style=FormStyles.verticalFormAction>
       <Buttons.SubmitSecondary
         style=styles##addTransaction

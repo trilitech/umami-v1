@@ -26,7 +26,7 @@ module Password = {
 
 type transaction =
   | ProtocolTransaction(Protocol.transaction)
-  | TokenTransfer(Token.operation, int, string, string);
+  | TokenTransfer(Token.t, Token.Transfer.t);
 
 let buildTransfer =
     (
@@ -71,7 +71,7 @@ let buildTransfer =
         ~forceLowFee?,
         (),
       );
-    TokenTransfer(transfer, amount, source, destination);
+    TokenTransfer(token, transfer);
   | None =>
     let amount =
       values.amount
@@ -96,22 +96,40 @@ let buildTransfer =
 let toOperation = (t: transaction) =>
   switch (t) {
   | ProtocolTransaction(transaction) => Operation.transaction(transaction)
-  | TokenTransfer(operation, _, _, _) => Operation.Token(operation)
+  | TokenTransfer(_, transfer) => Operation.Token(transfer->Token.transfer)
   };
 
 let toSimulation = (~index=?, t: transaction) =>
   switch (t) {
   | ProtocolTransaction(transaction) =>
     Operation.Simulation.transaction(transaction, index)
-  | TokenTransfer(operation, _, _, _) =>
-    Operation.Simulation.Token(operation)
+  | TokenTransfer(_, transfer) =>
+    Operation.Simulation.Token(transfer->Token.transfer)
   };
+
+let buildTransfers = (transfers, parseAmount, build) => {
+  transfers->List.keepMap(((t: StateLenses.state, advOpened)) => {
+    let mapIfAdvanced = (v, flatMap) =>
+      advOpened && v->Js.String2.length > 0 ? v->flatMap : None;
+
+    let destination = t.recipient;
+    let gasLimit = t.gasLimit->mapIfAdvanced(Int.fromString);
+    let storageLimit = t.storageLimit->mapIfAdvanced(Int.fromString);
+    let fee = t.fee->mapIfAdvanced(ProtocolXTZ.fromString);
+
+    let amount = parseAmount(t.amount);
+
+    amount->Option.map(amount =>
+      build(~destination, ~amount, ~fee?, ~gasLimit?, ~storageLimit?, ())
+    );
+  });
+};
 
 let buildTransaction =
     (batch: list((StateLenses.state, bool)), token: option(Token.t)) => {
   switch (batch) {
   | [] => assert(false)
-  | [(transfer, advOpened)] => buildTransfer(transfer, advOpened, token)
+  | [(transfer, advOpened)] => buildTransfer(transfer, advOpened, None)
   | [(first, _), ..._] as inputTransfers =>
     let source = first.sender;
     let forceLowFee = first.forceLowFee ? Some(true) : None;
@@ -120,35 +138,37 @@ let buildTransaction =
       first.counter->Js.String2.length > 0
         ? Some(first.counter->int_of_string) : None;
 
-    let transfers =
-      inputTransfers->List.keepMap(((t: StateLenses.state, advOpened)) => {
-        let mapIfAdvanced = (v, flatMap) =>
-          advOpened && v->Js.String2.length > 0 ? v->flatMap : None;
-
-        let amount = t.amount->ProtocolXTZ.fromString;
-        let destination = t.recipient;
-        let gasLimit = t.gasLimit->mapIfAdvanced(Int.fromString);
-        let storageLimit = t.storageLimit->mapIfAdvanced(Int.fromString);
-        let fee = t.fee->mapIfAdvanced(ProtocolXTZ.fromString);
-        amount->Option.map(amount =>
-          Protocol.makeTransfer(
-            ~amount,
-            ~destination,
-            ~fee?,
-            ~gasLimit?,
-            ~storageLimit?,
-            (),
-          )
-        );
-      });
-
-    Protocol.makeTransaction(
-      ~source,
-      ~transfers,
-      ~counter?,
-      ~forceLowFee?,
-      (),
-    )
-    ->ProtocolTransaction;
+    switch (token) {
+    | Some(token) =>
+      TokenTransfer(
+        token,
+        Token.makeTransfers(
+          ~source,
+          ~transfers=
+            buildTransfers(
+              inputTransfers,
+              Int.fromString,
+              Token.makeSingleTransferElt(~token=token.address),
+            ),
+          ~counter?,
+          ~forceLowFee?,
+          (),
+        ),
+      )
+    | None =>
+      Protocol.makeTransaction(
+        ~source,
+        ~transfers=
+          buildTransfers(
+            inputTransfers,
+            ProtocolXTZ.fromString,
+            Protocol.makeTransfer(~parameter=?None, ~entrypoint=?None),
+          ),
+        ~counter?,
+        ~forceLowFee?,
+        (),
+      )
+      ->ProtocolTransaction
+    };
   };
 };

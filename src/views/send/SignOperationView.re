@@ -12,6 +12,7 @@ let make =
       ~subtitle=?,
       ~source,
       ~destinations,
+      ~showCurrency,
       ~sendOperation,
       ~content,
       ~loading=false,
@@ -46,6 +47,7 @@ let make =
       style=styles##operationSummary
       source
       destinations
+      showCurrency
       content
     />
     <FormGroupTextInput
