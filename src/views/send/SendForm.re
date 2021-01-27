@@ -26,84 +26,19 @@ module Password = {
 
 type transaction =
   | ProtocolTransaction(Protocol.transaction)
-  | TokenTransfer(Token.t, Token.Transfer.t);
-
-let buildTransfer =
-    (
-      values: StateLenses.state,
-      advancedOptionOpened: bool,
-      token: option(Token.t),
-    ) => {
-  let mapIfAdvanced = (v, sim, flatMap) =>
-    advancedOptionOpened && v->Js.String2.length > 0
-      ? sim == flatMap(v) ? None : v->flatMap : None;
-
-  let dryRun: option(Protocol.simulationResults) = values.dryRun;
-  let dryRunMap = f => dryRun->Option.map(f);
-  let source = values.sender;
-  let destination = values.recipient;
-  let fee =
-    values.fee->mapIfAdvanced(dryRunMap(d => d.fee), ProtocolXTZ.fromString);
-  let counter =
-    values.counter->mapIfAdvanced(dryRunMap(d => d.count), Int.fromString);
-  let gasLimit =
-    values.gasLimit
-    ->mapIfAdvanced(dryRunMap(d => d.gasLimit), Int.fromString);
-  let storageLimit =
-    values.storageLimit
-    ->mapIfAdvanced(dryRunMap(d => d.storageLimit), Int.fromString);
-  let forceLowFee =
-    advancedOptionOpened && values.forceLowFee ? Some(true) : None;
-
-  switch (token) {
-  | Some(token) =>
-    let amount = values.amount->int_of_string;
-    let transfer =
-      Token.makeSingleTransfer(
-        ~source,
-        ~amount,
-        ~destination,
-        ~contract=token.address,
-        ~fee?,
-        ~counter?,
-        ~gasLimit?,
-        ~storageLimit?,
-        ~forceLowFee?,
-        (),
-      );
-    TokenTransfer(token, transfer);
-  | None =>
-    let amount =
-      values.amount
-      ->ProtocolXTZ.fromString
-      ->Option.getWithDefault(ProtocolXTZ.zero);
-    let t =
-      Protocol.makeSingleTransaction(
-        ~source,
-        ~amount,
-        ~destination,
-        ~fee?,
-        ~counter?,
-        ~gasLimit?,
-        ~storageLimit?,
-        ~forceLowFee?,
-        (),
-      );
-    ProtocolTransaction(t);
-  };
-};
+  | TokenTransfer(Token.Transfer.t, Token.t);
 
 let toOperation = (t: transaction) =>
   switch (t) {
   | ProtocolTransaction(transaction) => Operation.transaction(transaction)
-  | TokenTransfer(_, transfer) => Operation.Token(transfer->Token.transfer)
+  | TokenTransfer(transfer, _) => Operation.Token(transfer->Token.transfer)
   };
 
 let toSimulation = (~index=?, t: transaction) =>
   switch (t) {
   | ProtocolTransaction(transaction) =>
     Operation.Simulation.transaction(transaction, index)
-  | TokenTransfer(_, transfer) =>
+  | TokenTransfer(transfer, _) =>
     Operation.Simulation.Token(transfer->Token.transfer)
   };
 
@@ -125,11 +60,43 @@ let buildTransfers = (transfers, parseAmount, build) => {
   });
 };
 
+let buildTokenTransfer =
+    (inputTransfers, token: Token.t, source, counter, forceLowFee) =>
+  TokenTransfer(
+    Token.makeTransfers(
+      ~source,
+      ~transfers=
+        buildTransfers(
+          inputTransfers,
+          Int.fromString,
+          Token.makeSingleTransferElt(~token=token.address),
+        ),
+      ~counter?,
+      ~forceLowFee?,
+      (),
+    ),
+    token,
+  );
+
+let buildProtocolTransaction = (inputTransfers, source, counter, forceLowFee) =>
+  Protocol.makeTransaction(
+    ~source,
+    ~transfers=
+      buildTransfers(
+        inputTransfers,
+        ProtocolXTZ.fromString,
+        Protocol.makeTransfer(~parameter=?None, ~entrypoint=?None),
+      ),
+    ~counter?,
+    ~forceLowFee?,
+    (),
+  )
+  ->ProtocolTransaction;
+
 let buildTransaction =
     (batch: list((StateLenses.state, bool)), token: option(Token.t)) => {
   switch (batch) {
   | [] => assert(false)
-  | [(transfer, advOpened)] => buildTransfer(transfer, advOpened, None)
   | [(first, _), ..._] as inputTransfers =>
     let source = first.sender;
     let forceLowFee = first.forceLowFee ? Some(true) : None;
@@ -140,35 +107,9 @@ let buildTransaction =
 
     switch (token) {
     | Some(token) =>
-      TokenTransfer(
-        token,
-        Token.makeTransfers(
-          ~source,
-          ~transfers=
-            buildTransfers(
-              inputTransfers,
-              Int.fromString,
-              Token.makeSingleTransferElt(~token=token.address),
-            ),
-          ~counter?,
-          ~forceLowFee?,
-          (),
-        ),
-      )
+      buildTokenTransfer(inputTransfers, token, source, counter, forceLowFee)
     | None =>
-      Protocol.makeTransaction(
-        ~source,
-        ~transfers=
-          buildTransfers(
-            inputTransfers,
-            ProtocolXTZ.fromString,
-            Protocol.makeTransfer(~parameter=?None, ~entrypoint=?None),
-          ),
-        ~counter?,
-        ~forceLowFee?,
-        (),
-      )
-      ->ProtocolTransaction
+      buildProtocolTransaction(inputTransfers, source, counter, forceLowFee)
     };
   };
 };

@@ -110,22 +110,16 @@ let sourceDestination = (transfer: SendForm.transaction) => {
       );
     ((source, sourceLbl), `Many(destinations));
   | TokenTransfer(
-      _,
       {source, transfers: [{destination}]}: Token.Transfer.t,
+      _,
     ) => (
       (source, sourceLbl),
       `One((destination, recipientLbl)),
     )
-  | TokenTransfer(token, {source, transfers}: Token.Transfer.t) =>
+  | TokenTransfer({source, transfers}: Token.Transfer.t, _) =>
     let destinations =
       transfers->List.map(t =>
-        (
-          None,
-          (
-            t.destination,
-            t.amount->Int.toString->(I18n.t#amount(token.symbol)),
-          ),
-        )
+        (None, (t.destination, t.amount->Int.toString))
       );
     ((source, sourceLbl), `Many(destinations));
   };
@@ -153,7 +147,7 @@ let buildSummaryContent =
       I18n.t#xtz_amount(dryRun.fee->ProtocolXTZ.toString),
     );
     [subtotal, fee, total];
-  | TokenTransfer(token, {transfers}) =>
+  | TokenTransfer({transfers}, token) =>
     let amount = transfers->List.reduce(0, (acc, {amount}) => acc + amount);
     let amount = I18n.t#amount(amount->Int.toString, token.symbol);
 
