@@ -124,7 +124,7 @@ module ColumnRight = {
   };
 };
 
-module Bloc = {
+module Block = {
   let styles =
     Style.(
       StyleSheet.create({
@@ -159,7 +159,7 @@ module Bloc = {
   };
 };
 
-module BlocVerification = {
+module VerificationBlock = {
   module StateLenses = [%lenses type state = {confirmations: string}];
   module VerificationForm = ReForm.Make(StateLenses);
 
@@ -223,7 +223,7 @@ module BlocVerification = {
       form.submit();
     };
 
-    <Bloc title=I18n.settings#confirmations_title>
+    <Block title=I18n.settings#confirmations_title>
       <View accessibilityRole=`form style=styles##row>
         <ColumnLeft>
           <Typography.Body1>
@@ -247,41 +247,41 @@ module BlocVerification = {
           />
         </ColumnRight>
       </View>
-    </Bloc>;
+    </Block>;
   };
 };
 
-module BlocTheme = {
+module ThemeBlock = {
   [@react.component]
   let make = () => {
     let (themeSetting, setThemeSetting) = ThemeContext.useThemeSetting();
 
-    <Bloc title=I18n.settings#theme_title>
+    <Block title=I18n.settings#theme_title>
       <ColumnLeft>
         <RadioItem
           label=I18n.settings#theme_system
-          value=`system
+          value=None
           setValue=setThemeSetting
           currentValue=themeSetting
         />
         <RadioItem
           label=I18n.settings#theme_dark
-          value=`dark
+          value={Some(`dark)}
           setValue=setThemeSetting
           currentValue=themeSetting
         />
         <RadioItem
           label=I18n.settings#theme_light
-          value=`light
+          value={Some(`light)}
           setValue=setThemeSetting
           currentValue=themeSetting
         />
       </ColumnLeft>
-    </Bloc>;
+    </Block>;
   };
 };
 
-module BlocChain = {
+module ChainBlock = {
   module StateLenses = [%lenses
     type state = {
       endpointTest: string,
@@ -341,7 +341,7 @@ module BlocChain = {
       form.submit();
     };
 
-    <Bloc title=I18n.settings#chain_title>
+    <Block title=I18n.settings#chain_title>
       <View accessibilityRole=`form style=styles##row>
         <ColumnLeft>
           <Typography.Body1> I18n.t#testnet->React.string </Typography.Body1>
@@ -369,11 +369,11 @@ module BlocChain = {
         </ColumnRight>
         <ColumnRight />
       </View>
-    </Bloc>;
+    </Block>;
   };
 };
 
-module BlocToken = {
+module TokenBlock = {
   module StateLenses = [%lenses type state = {natviewerTest: string}];
   module TokenBalanceForm = ReForm.Make(StateLenses);
 
@@ -428,7 +428,7 @@ module BlocToken = {
       form.submit();
     };
 
-    <Bloc title=I18n.settings#token_title>
+    <Block title=I18n.settings#token_title>
       <View accessibilityRole=`form style=styles##row>
         <ColumnLeft>
           <Typography.Body1>
@@ -452,11 +452,11 @@ module BlocToken = {
           />
         </ColumnRight>
       </View>
-    </Bloc>;
+    </Block>;
   };
 };
 
-module BlocDanger = {
+module DangerBlock = {
   module StateLenses = [%lenses type state = {natviewerTest: string}];
   module TokenBalanceForm = ReForm.Make(StateLenses);
 
@@ -480,7 +480,7 @@ module BlocDanger = {
 
     let theme = ThemeContext.useTheme();
 
-    <Bloc title=I18n.settings#danger_title>
+    <Block title=I18n.settings#danger_title>
       <View style=styles##row>
         <ColumnLeft style=styles##columnLeft>
           <Typography.Body1 colorStyle=`error style=styles##section>
@@ -503,13 +503,16 @@ module BlocDanger = {
           />
         </ColumnRight>
       </View>
-    </Bloc>;
+    </Block>;
   };
 };
 
 [@react.component]
 let make = () => {
   <Page>
-     <BlocVerification /> <BlocTheme /> <BlocChain /> <BlocToken /> </Page>;
-    /*<BlocDanger />*/
+    <VerificationBlock />
+    <ThemeBlock />
+    <ChainBlock />
+    <TokenBlock />
+  </Page>;
 };

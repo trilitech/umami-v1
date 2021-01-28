@@ -119,7 +119,7 @@ let darkTheme = {
   },
 };
 
-type themeMain = [ | `system | `dark | `light];
+type themeMain = option([ | `dark | `light]);
 
 type state = {
   theme,
@@ -128,7 +128,7 @@ type state = {
 
 // Context and Provider
 
-let initialState = {theme: lightTheme, themeSetting: (`system, _ => ())};
+let initialState = {theme: lightTheme, themeSetting: (None, _ => ())};
 let context = React.createContext(initialState);
 
 module Provider = {
@@ -152,9 +152,7 @@ let make = (~children) => {
   let settings = ConfigContext.useSettings();
 
   let (themeConfig, setThemeConfig) =
-    React.useState(_ =>
-      settings.config.theme->Option.getWithDefault(`system)
-    );
+    React.useState(_ => settings.config.theme);
 
   let (prefersColorSchemeDark, setPrefersColorSchemeDark) =
     React.useState(_ => mediaQueryColorSchemeDark##matches);
@@ -181,16 +179,7 @@ let make = (~children) => {
   let setThemeSetting = updater => {
     setThemeConfig(prevThemeConfig => {
       let newThemeConfig = updater(prevThemeConfig);
-      writeConf(c =>
-        {
-          ...c,
-          theme:
-            switch (newThemeConfig) {
-            | `system => None
-            | other => Some(other)
-            },
-        }
-      );
+      writeConf(c => {...c, theme: newThemeConfig});
       newThemeConfig;
     });
   };
@@ -199,10 +188,10 @@ let make = (~children) => {
     value={
       theme:
         switch (themeConfig, prefersColorSchemeDark) {
-        | (`system, true)
-        | (`dark, _) => darkTheme
-        | (`system, false)
-        | (`light, _) => lightTheme
+        | (None, true)
+        | (Some(`dark), _) => darkTheme
+        | (None, false)
+        | (Some(`light), _) => lightTheme
         },
       themeSetting: (themeConfig, setThemeSetting),
     }>

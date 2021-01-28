@@ -5,7 +5,7 @@ type t = {
   explorerTest: option(string),
   natviewerMain: option(string),
   natviewerTest: option(string),
-  theme: option([ | `system | `dark | `light]),
+  theme: option([ | `dark | `light]),
   confirmations: option(string),
   sdkBaseDir: option(string),
 };
