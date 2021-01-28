@@ -286,6 +286,7 @@ let make = (~closeAction, ~action) => {
                destinations={`One(target)}
                title=I18n.title#confirm_delegate
                subtitle=I18n.expl#confirm_operation
+               showCurrency=I18n.t#xtz_amount
                content={buildSummaryContent(dryRun)}
                sendOperation={sendOperation(delegation)}
                loading

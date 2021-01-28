@@ -56,19 +56,19 @@ module AccountInfo = {
   };
 };
 
-let buildDestinations = destinations => {
+let buildDestinations = (destinations, showCurrency) => {
   switch (destinations) {
   | `One(address, title) =>
     <AccountInfo style=styles##element address title />
-  | `Many(recipients) => <BatchView.Transactions recipients />
+  | `Many(recipients) => <BatchView.Transactions recipients showCurrency />
   };
 };
 
 [@react.component]
-let make = (~style=?, ~source, ~destinations, ~content) => {
+let make = (~style=?, ~source, ~destinations, ~showCurrency, ~content) => {
   <View ?style>
     <AccountInfo address={source->fst} title={source->snd} />
     {content->ReactUtils.hideNil(content => <Content content />)}
-    {buildDestinations(destinations)}
+    {buildDestinations(destinations, showCurrency)}
   </View>;
 };

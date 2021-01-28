@@ -122,8 +122,10 @@ let makeTransfers =
       ~forceLowFee,
       (),
     );
-  Transfer(Transfer.{source, transfers, common_options});
+  Transfer.{source, transfers, common_options};
 };
+
+let transfer = t => t->Transfer;
 
 let makeSingleTransfer =
     (
@@ -160,7 +162,7 @@ let makeSingleTransfer =
       (),
     );
   ();
-  Transfer(Transfer.{source, transfers: [elt], common_options});
+  Transfer.{source, transfers: [elt], common_options};
 };
 
 let makeGetBalance =

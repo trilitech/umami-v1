@@ -84,8 +84,8 @@ let makeDelegate =
 
 let makeTransfer =
     (
-      ~amount,
       ~destination,
+      ~amount,
       ~fee=?,
       ~parameter=?,
       ~entrypoint=?,

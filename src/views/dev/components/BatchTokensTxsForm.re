@@ -74,7 +74,7 @@ let make = () => {
             ~destination=destination2,
             (),
           );
-        Token.makeTransfers(~source, ~transfers=[tx1, tx2], ())
+        Token.(makeTransfers(~source, ~transfers=[tx1, tx2], ())->transfer)
         ->(
             txs => {
               [@warning "-8"]

@@ -109,19 +109,24 @@ let sourceDestination = (transfer: SendForm.transaction) => {
         (None, (t.destination, t.amount->ProtocolXTZ.toString))
       );
     ((source, sourceLbl), `Many(destinations));
-  | TokenTransfer(_, _, source, destination) => (
+  | TokenTransfer(
+      {source, transfers: [{destination}]}: Token.Transfer.t,
+      _,
+    ) => (
       (source, sourceLbl),
       `One((destination, recipientLbl)),
     )
+  | TokenTransfer({source, transfers}: Token.Transfer.t, _) =>
+    let destinations =
+      transfers->List.map(t =>
+        (None, (t.destination, t.amount->Int.toString))
+      );
+    ((source, sourceLbl), `Many(destinations));
   };
 };
 
 let buildSummaryContent =
-    (
-      transaction: SendForm.transaction,
-      token,
-      dryRun: Protocol.simulationResults,
-    ) => {
+    (transaction: SendForm.transaction, dryRun: Protocol.simulationResults) => {
   switch (transaction) {
   | ProtocolTransaction({transfers}) =>
     let amount =
@@ -142,19 +147,42 @@ let buildSummaryContent =
       I18n.t#xtz_amount(dryRun.fee->ProtocolXTZ.toString),
     );
     [subtotal, fee, total];
-  | TokenTransfer(_, amount, _source, _destination) =>
+  | TokenTransfer({transfers}, token) =>
+    let amount = transfers->List.reduce(0, (acc, {amount}) => acc + amount);
+    let amount = I18n.t#amount(amount->Int.toString, token.symbol);
+
     let fee = (
       I18n.label#fee,
       I18n.t#xtz_amount(dryRun.fee->ProtocolXTZ.toString),
     );
-    let amount =
-      token->Option.mapWithDefault("", (Token.{symbol}) =>
-        I18n.t#amount(amount->Js.Int.toString, symbol)
-      );
     let amount = (I18n.label#send_amount, amount);
     [amount, fee];
   };
 };
+
+let reduceAmounts = token =>
+  switch (token) {
+  | Some(_) => (
+      amounts =>
+        amounts
+        ->List.reduce(0, (total, SendForm.StateLenses.{amount}) =>
+            Int.fromString(amount)->Option.getWithDefault(0) + total
+          )
+        ->Int.toString
+    )
+
+  | None => (
+      amounts => {
+        ProtocolXTZ.(
+          amounts
+          ->List.reduce(zero, (total, {amount}) =>
+              Infix.(fromString(amount)->Option.getWithDefault(zero) + total)
+            )
+          ->toString
+        );
+      }
+    )
+  };
 
 module Form = {
   let defaultInit = (account: option(Account.t)) =>
@@ -372,15 +400,13 @@ module Form = {
               onPress={_ => onSubmit()}
               loading
             />
-            {onAddToBatch
-             ->ReactUtils.mapOpt(addToBatch =>
-                 <Buttons.FormSecondary
-                   style=styles##addTransaction
-                   text=I18n.btn#start_batch_transaction
-                   onPress={_ => addToBatch()}
-                 />
-               )
-             ->ReactUtils.onlyWhen(token == None)}
+            {onAddToBatch->ReactUtils.mapOpt(addToBatch =>
+               <Buttons.FormSecondary
+                 style=styles##addTransaction
+                 text=I18n.btn#start_batch_transaction
+                 onPress={_ => addToBatch()}
+               />
+             )}
           </View>
         </ReactFlipToolkit.FlippedView>
       </>;
@@ -515,6 +541,12 @@ let make = (~closeAction) => {
   let loadingSimulate = operationSimulateRequest->ApiRequest.isLoading;
   let loading = operationRequest->ApiRequest.isLoading;
 
+  let showCurrency = {
+    token->Option.mapWithDefault(I18n.t#xtz_amount, (token, a) =>
+      I18n.t#amount(a, token.symbol)
+    );
+  };
+
   <ReactFlipToolkit.Flipper
     flipKey={advancedOptionsOpened->string_of_bool ++ modalStep->stepToString}>
     <ReactFlipToolkit.FlippedView flipId="modal">
@@ -531,6 +563,8 @@ let make = (~closeAction) => {
              <BatchView
                onAddTransfer={_ => setModalStep(_ => SendStep)}
                batch
+               showCurrency
+               reduceAmounts={reduceAmounts(token)}
                onSubmitBatch
                onEdit={(i, v) => setModalStep(_ => EditStep(i, v))}
                onDelete
@@ -559,7 +593,8 @@ let make = (~closeAction) => {
                source
                destinations
                subtitle=I18n.expl#confirm_operation
-               content={buildSummaryContent(transfer, token, dryRun)}
+               content={buildSummaryContent(transfer, dryRun)}
+               showCurrency
                sendOperation={sendTransfer(transfer)}
                loading
              />;
