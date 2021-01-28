@@ -128,7 +128,10 @@ type state = {
 
 // Context and Provider
 
-let initialState = {theme: lightTheme, themeSetting: (`system, _ => ())};
+let initialState = {
+  theme: lightTheme,
+  themeSetting: (ConfigFile.theme, _ => ()),
+};
 let context = React.createContext(initialState);
 
 module Provider = {
@@ -153,7 +156,7 @@ let make = (~children) => {
 
   let (themeConfig, setThemeConfig) =
     React.useState(_ =>
-      settings.config.theme->Option.getWithDefault(`system)
+      settings.config.theme->Option.getWithDefault(ConfigFile.theme)
     );
 
   let (prefersColorSchemeDark, setPrefersColorSchemeDark) =

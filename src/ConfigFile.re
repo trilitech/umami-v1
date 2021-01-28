@@ -17,6 +17,7 @@ let endpointTest = "https://edonet-tezos.giganode.io";
 let explorerMain = "https://mezos.lamini.ca/mezos/mainnet7";
 let explorerTest = "https://mezos.lamini.ca/mezos/edonet";
 let natviewerTest = "KT1QW4QRMgmdKFvq6MZhk3x85eriyL5AVoP4";
+let theme = `system;
 let sdkBaseDir = System.homeDir() ++ "/.tezos-client";
 
 let mkSdkEndpoint = url => url ++ ":443";
@@ -28,7 +29,7 @@ let default = {
   explorerTest: Some(explorerTest),
   natviewerMain: None,
   natviewerTest: Some(natviewerTest),
-  theme: None,
+  theme: Some(theme),
   confirmations: None,
   sdkBaseDir: Some(sdkBaseDir),
 };
