@@ -110,13 +110,13 @@ let sourceDestination = (transfer: SendForm.transaction) => {
       );
     ((source, sourceLbl), `Many(destinations));
   | TokenTransfer(
-      {source, transfers: [{destination}]}: Token.Transfer.t,
+      ({source, transfers: [{destination}]}: Token.Transfer.t),
       _,
     ) => (
       (source, sourceLbl),
       `One((destination, recipientLbl)),
     )
-  | TokenTransfer({source, transfers}: Token.Transfer.t, _) =>
+  | TokenTransfer(({source, transfers}: Token.Transfer.t), _) =>
     let destinations =
       transfers->List.map(t =>
         (None, (t.destination, t.amount->Int.toString))
@@ -321,7 +321,7 @@ module Form = {
       let onSubmit = onSubmitAll->Option.getWithDefault(() => form.submit());
 
       <>
-        <ReactFlipToolkit.FlippedView flipId="form">
+        <ReactFlipToolkit.FlippedView flipId="form" zIndex=3>
           <View style=FormStyles.header>
             <Typography.Headline>
               I18n.title#send->React.string
@@ -371,6 +371,7 @@ module Form = {
           </TouchableOpacity>
         </ReactFlipToolkit.FlippedView>
         <ReactFlipToolkit.FlippedView
+          zIndex=1
           flipId="advancedOption"
           scale=false
           translate=advancedOptionOpened
@@ -393,7 +394,7 @@ module Form = {
                : React.null}
           </ReactFlipToolkit.Flipper>
         </ReactFlipToolkit.FlippedView>
-        <ReactFlipToolkit.FlippedView flipId="submit">
+        <ReactFlipToolkit.FlippedView flipId="submit" zIndex=2>
           <View style=FormStyles.verticalFormAction>
             <Buttons.SubmitPrimary
               text=submitLabel
