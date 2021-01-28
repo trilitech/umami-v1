@@ -928,7 +928,11 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
                   );
                 } else {
                   network
-                  ->BalanceAPI.get(account, ~block=firstOperation.level, ())
+                  ->BalanceAPI.get(
+                      account,
+                      ~block=firstOperation.level->string_of_int,
+                      (),
+                    )
                   ->Future.mapOk(balance =>
                       {
                         initialBalance: balance,

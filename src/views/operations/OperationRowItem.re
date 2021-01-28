@@ -55,7 +55,7 @@ let memo = component =>
     prevPros##operation == nextProps##operation
   );
 
-let amount = (account, transaction: Operation.Business.Transaction.t) => {
+let amount = (isToken, account, transaction: Operation.Business.Transaction.t) => {
   let colorStyle =
     account->Option.map((account: Account.t) =>
       account.address == transaction.destination ? `positive : `negative
@@ -64,18 +64,20 @@ let amount = (account, transaction: Operation.Business.Transaction.t) => {
   let op = colorStyle == Some(`positive) ? "+" : "-";
 
   <CellAmount>
-    <Typography.Body1 ?colorStyle>
-      {I18n.t#xtz_op_amount(op, transaction.amount->ProtocolXTZ.toString)
-       ->React.string}
-    </Typography.Body1>
+    {<Typography.Body1 ?colorStyle>
+       {I18n.t#xtz_op_amount(op, transaction.amount->ProtocolXTZ.toString)
+        ->React.string}
+     </Typography.Body1>
+     ->ReactUtils.onlyWhen(!isToken)}
   </CellAmount>;
 };
 
 [@react.component]
 let make =
-  memo((~operation: Operation.Read.t) => {
+  memo((~operation: Operation.Read.t, ~currentLevel) => {
     let account = StoreContext.SelectedAccount.useGet();
     let aliases = StoreContext.Aliases.useGetAll();
+    let tokens = StoreContext.Tokens.useGetAll();
 
     <Table.Row>
       {switch (operation.payload) {
@@ -98,13 +100,14 @@ let make =
              <CellAddress />
            </>
          | Transaction(transaction) =>
+           let isToken = tokens->Map.String.has(transaction.destination);
            <>
              <CellType>
                <Typography.Body1>
                  I18n.t#operation_transaction->React.string
                </Typography.Body1>
              </CellType>
-             {amount(account, transaction)}
+             {amount(isToken, account, transaction)}
              <CellFee>
                <Typography.Body1>
                  {business.fee->ProtocolXTZ.toString->React.string}
@@ -112,7 +115,7 @@ let make =
              </CellFee>
              <CellAddress>
                {business.source
-                ->AliasHelpers.getAliasFromAddress(aliases)
+                ->AliasHelpers.getContractAliasFromAddress(aliases, tokens)
                 ->Option.mapWithDefault(
                     <Typography.Address numberOfLines=1>
                       business.source->React.string
@@ -125,7 +128,7 @@ let make =
              </CellAddress>
              <CellAddress>
                {transaction.destination
-                ->AliasHelpers.getAliasFromAddress(aliases)
+                ->AliasHelpers.getContractAliasFromAddress(aliases, tokens)
                 ->Option.mapWithDefault(
                     <Typography.Address numberOfLines=1>
                       transaction.destination->React.string
@@ -136,7 +139,7 @@ let make =
                     </Typography.Body1>
                   )}
              </CellAddress>
-           </>
+           </>;
          | Origination(_origination) =>
            <>
              <CellType>
@@ -173,8 +176,8 @@ let make =
       <CellStatus>
         <Typography.Body1>
           {switch (operation.status) {
-           | Mempool => I18n.t#state_in_mempool
-           | Chain => I18n.t#state_in_chain
+           | Mempool => I18n.t#state_mempool
+           | Chain => I18n.t#state_levels(currentLevel - operation.level)
            }}
           ->React.string
         </Typography.Body1>

@@ -69,7 +69,24 @@ let useLoad =
       (),
     ) => {
   let get = (~settings, address) => {
-    settings->OperationsAPI.get(address, ~limit?, ~types?, ~mempool=true, ());
+    let operations =
+      settings->OperationsAPI.get(
+        address,
+        ~limit?,
+        ~types?,
+        ~mempool=true,
+        (),
+      );
+    let currentLevel = TezosSDK.currentLevel(AppSettings.sdk(settings));
+    let f = (operations, currentLevel) =>
+      switch (operations, currentLevel) {
+      | (Ok(operations), Ok(currentLevel)) =>
+        Ok((operations, currentLevel))
+      | (Error(_) as e, _)
+      | (_, Error(_) as e) => e
+      };
+
+    Future.map2(operations, currentLevel, f);
   };
 
   let getRequest =
