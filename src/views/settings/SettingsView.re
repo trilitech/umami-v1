@@ -189,10 +189,11 @@ module BlocVerification = {
         ~schema={
           VerificationForm.Validation.(
             Schema(
-              custom(
-                values => FormUtils.isValidInt(values.confirmations),
-                Confirmations,
-              ),
+              nonEmpty(Confirmations)
+              + custom(
+                  values => FormUtils.isValidInt(values.confirmations),
+                  Confirmations,
+                ),
             )
           );
         },
@@ -202,8 +203,7 @@ module BlocVerification = {
               {
                 ...c,
                 confirmations:
-                  state.values.confirmations->Js.String2.length > 0
-                    ? Some(state.values.confirmations) : None,
+                  Some(state.values.confirmations->int_of_string),
               }
             );
             addToast(
@@ -214,7 +214,9 @@ module BlocVerification = {
           },
         ~initialState={
           confirmations:
-            settings.config.confirmations->Option.getWithDefault(""),
+            settings.config.confirmations
+            ->Option.getWithDefault(ConfigFile.confirmations)
+            ->string_of_int,
         },
         (),
       );

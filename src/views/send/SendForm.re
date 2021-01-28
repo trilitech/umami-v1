@@ -107,9 +107,8 @@ let buildTransaction =
     (
       batch: list((StateLenses.state, bool)),
       token: option(Token.t),
-      confirmations: option(string),
+      confirmations: option(int),
     ) => {
-  let confirmations = confirmations->Option.flatMap(Int.fromString);
   switch (batch) {
   | [] => assert(false)
   | [(first, _), ..._] as inputTransfers =>
