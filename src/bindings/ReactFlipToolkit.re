@@ -42,7 +42,11 @@ module Flipped = {
 module ViewWithFlippedProps = {
   [@react.component] [@bs.module "./ViewWithFlippedProps"]
   external make:
-    (~flippedProps: Flipped.flippedProps, ~children: React.element) =>
+    (
+      ~flippedProps: Flipped.flippedProps,
+      ~zIndex: int=?,
+      ~children: React.element
+    ) =>
     React.element =
     "default";
 };
@@ -57,11 +61,14 @@ module FlippedView = {
         ~opacity=?,
         ~onAppear=?,
         ~onExit=?,
+        ~zIndex=?,
         ~children,
       ) => {
     <Flipped flipId ?scale ?translate ?opacity ?onAppear ?onExit>
       {flippedProps => {
-         <ViewWithFlippedProps flippedProps> children </ViewWithFlippedProps>;
+         <ViewWithFlippedProps flippedProps ?zIndex>
+           children
+         </ViewWithFlippedProps>;
        }}
     </Flipped>;
   };
