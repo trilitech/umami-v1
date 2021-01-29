@@ -17,6 +17,7 @@ let styles =
       "switchCmp": style(~height=16.->dp, ~width=32.->dp, ()),
       "switchThumb": style(~transform=[|scale(~scale=0.65)|], ()),
       "operationSummary": style(~marginBottom=20.->dp, ()),
+      "deleteLoading": style(~paddingVertical=170.->dp, ()),
     })
   );
 
@@ -251,7 +252,6 @@ let make = (~closeAction, ~action) => {
     | (PasswordStep(_, _), Create(_))
     | (PasswordStep(_, _), Edit(_)) =>
       Some(() => setModalStep(_ => SendStep))
-    | (PasswordStep(_, _), Delete(_)) => Some(closeAction)
     | _ => None
     };
 
@@ -268,23 +268,41 @@ let make = (~closeAction, ~action) => {
           {switch (modalStep) {
            | SubmittedStep(hash) => <SubmittedView hash onPressCancel />
            | SendStep =>
-             <Form.View
-               title
-               advancedOptionState
-               form
-               action
-               loading=loadingSimulate
-             />
+             switch (action) {
+             | Delete(_) =>
+               <View>
+                 <View style=FormStyles.header>
+                   <Typography.Headline>
+                     I18n.title#delegate_delete->React.string
+                   </Typography.Headline>
+                 </View>
+                 <LoadingView style=styles##deleteLoading />
+               </View>
+             | _ =>
+               <Form.View
+                 title
+                 advancedOptionState
+                 form
+                 action
+                 loading=loadingSimulate
+               />
+             }
            | PasswordStep(delegation, dryRun) =>
-             let target =
+             let (target, title) =
                switch (delegation.delegate) {
-               | None => ("", I18n.title#withdraw_baker)
-               | Some(d) => (d, I18n.title#baker_account)
+               | None => (
+                   ("", I18n.title#withdraw_baker),
+                   I18n.title#delegate_delete,
+                 )
+               | Some(d) => (
+                   (d, I18n.title#baker_account),
+                   I18n.title#confirm_delegate,
+                 )
                };
              <SignOperationView
                source=(delegation.source, I18n.title#delegated_account)
                destinations={`One(target)}
-               title=I18n.title#confirm_delegate
+               title
                subtitle=I18n.expl#confirm_operation
                showCurrency=I18n.t#xtz_amount
                content={buildSummaryContent(dryRun)}
