@@ -74,7 +74,7 @@ let input_placeholder = {
   pub _this = this;
   pub add_token_address = "Enter KT1 address of a contract";
   pub add_token_name = "e.g. Tezos";
-  pub add_token_symbol = "e.g. XTZ"
+  pub add_token_symbol = "e.g. tez, KLD, ..."
 };
 
 let title = {
@@ -150,8 +150,8 @@ let t = {
   pub logs_no_recent = "No recent messages";
   pub logs_clearall = "CLEAR ALL";
   pub amount = (a, b) => p("%s %s", a, b);
-  pub tezos = "Tezos";
-  pub xtz = "XTZ";
+  pub tezos = "Tez";
+  pub xtz = "tez";
   pub xtz_amount = a => p("%s %s", a, this#xtz);
   pub xtz_op_amount = op => p("%s %a", op, () => this#xtz_amount);
   pub address = "Address";
