@@ -21,3 +21,6 @@
 1. Delegate your tez
 2. Check on a block explorer your tez are well delegated
 3. Check on an block explorer if your delegation informations look consistent
+
+## Tokens screen
+1. Test register and manage a FA1.2 token
