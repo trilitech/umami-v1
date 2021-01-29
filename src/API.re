@@ -437,6 +437,16 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
         let operations =
           mempool->Array.reduce(operations, Set.add)->Set.toArray;
 
+        operations
+        ->SortArray.stableSortBy(({timestamp: t1}, {timestamp: t2}) =>
+            - Pervasives.compare(Js.Date.getTime(t1), Js.Date.getTime(t2))
+          )
+        ->Array.forEach((o: Operation.Read.t) =>
+            Js.log(
+              Format.sprintf("%d %s %d %s", o.level, o.id, o.op_id, o.hash),
+            )
+          );
+
         Future.value(Ok(operations));
       }
     );
