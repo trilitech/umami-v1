@@ -48,6 +48,7 @@ module AppView = {
                  | AddressBook => <AddressBookView />
                  | Delegations => <DelegationsView />
                  | Tokens => <TokensView />
+                 | Settings => <SettingsView />
                  | Debug => <DebugView />
                  | NotFound =>
                    <View>

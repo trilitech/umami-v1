@@ -11,6 +11,8 @@ let btn = {
   pub finish = "FINISH";
   pub add = "ADD";
   pub send = "SEND";
+  pub save = "SAVE";
+  pub validate_save = "VALIDATE AND SAVE";
   pub go_back = "GO BACK";
   pub go_operations = "GO TO OPERATIONS";
   pub confirm = "CONFIRM";
@@ -145,6 +147,28 @@ let menu = {
   pub batch_delete = "Delete transfer"
 };
 
+let settings = {
+  pub _this = this;
+  pub theme_title = "THEME";
+  pub theme_system = "Default to system";
+  pub theme_dark = "Dark";
+  pub theme_light = "Light";
+  pub confirmations_title = "VERIFICATION";
+  pub confirmations_label = "Number of confirmations (blocks)";
+  pub confirmations_saved = "Number of confirmations Saved";
+  pub chain_title = {j|CHAIN/NETWORK|j};
+  pub chain_node_label = "Node URL";
+  pub chain_mezos_label = "Mezos URL";
+  pub chain_saved = "Chain URLs Saved";
+  pub token_title = "TOKENS";
+  pub token_label = "Token Balance Viewer Contract";
+  pub token_saved = "Token Balance Viewer Contract Saved";
+  pub danger_title = "DANGER ZONE";
+  pub danger_offboard_section = "Offboard wallet";
+  pub danger_offboard_text = {js|Offboarding will permanently delete any data from this computer. The accounts are still available to be imported in the future ; in order to regain access to your accounts, please make sure that you keep the backup phrase.|js};
+  pub danger_offboard_button = "OFFBOARD"
+};
+
 let t = {
   pub error404 = "404 - Route Not Found :(";
   pub logs_no_recent = "No recent messages";
@@ -152,6 +176,8 @@ let t = {
   pub amount = (a, b) => p("%s %s", a, b);
   pub tezos = "Tez";
   pub xtz = "tez";
+  pub mainnet = "Mainnet";
+  pub testnet = "Testnet";
   pub xtz_amount = a => p("%s %s", a, this#xtz);
   pub xtz_op_amount = op => p("%s %a", op, () => this#xtz_amount);
   pub address = "Address";
@@ -184,6 +210,7 @@ let t = {
   pub navbar_addressbook = {j|ADDRESS BOOK|j};
   pub navbar_delegations = "DELEGATIONS";
   pub navbar_tokens = "TOKENS";
+  pub navbar_settings = "SETTINGS";
   pub delegate_column_account = "ACCOUNT";
   pub delegate_column_initial_balance = "INITIAL BALANCE";
   pub delegate_column_current_balance = "CURRENT BALANCE";

@@ -20,7 +20,8 @@ module Item = {
     <ThemedPressable
       onPress={_e => onChange(item)}
       style=styles##itemContainer
-      isActive=isSelected>
+      isActive=isSelected
+      accessibilityRole=`button>
       {renderItem(item)}
     </ThemedPressable>;
   };

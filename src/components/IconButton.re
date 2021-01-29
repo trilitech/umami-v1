@@ -39,7 +39,8 @@ let make =
         ),
         styleFromProp,
       |])
-    )>
+    )
+    accessibilityRole=`button>
     {icon(
        ~style=?None,
        ~size=Js.Math.ceil_float(iconSizeRatio *. size),

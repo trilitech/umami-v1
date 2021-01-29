@@ -119,16 +119,19 @@ let darkTheme = {
   },
 };
 
-type themeMain = [ | `dark | `light];
+type themeMain = [ | `system | `dark | `light];
 
 type state = {
   theme,
-  switchTheme: unit => unit,
+  themeSetting: (themeMain, (themeMain => themeMain) => unit),
 };
 
 // Context and Provider
 
-let initialState = {theme: lightTheme, switchTheme: () => ()};
+let initialState = {
+  theme: lightTheme,
+  themeSetting: (ConfigFile.theme, _ => ()),
+};
 let context = React.createContext(initialState);
 
 module Provider = {
@@ -142,29 +145,69 @@ module Provider = {
 
 // Final Provider
 
+[@bs.val] external window: 'a = "window";
+let mediaQueryColorSchemeDark =
+  window##matchMedia("(prefers-color-scheme: dark)");
+
 [@react.component]
 let make = (~children) => {
   let writeConf = ConfigContext.useWrite();
   let settings = ConfigContext.useSettings();
-  let (themeMain, setMain) =
-    React.useState(_ => settings.config.theme->Option.getWithDefault(`dark));
-  React.useEffect1(() => {None}, [|setMain|]);
 
-  let switchTheme = () =>
-    setMain(_ => {
-      let theme = themeMain == `dark ? `light : `dark;
-      writeConf(c => {...c, theme: Some(theme)});
-      theme;
+  let (themeConfig, setThemeConfig) =
+    React.useState(_ =>
+      settings.config.theme->Option.getWithDefault(ConfigFile.theme)
+    );
+
+  let (prefersColorSchemeDark, setPrefersColorSchemeDark) =
+    React.useState(_ => mediaQueryColorSchemeDark##matches);
+
+  let listener =
+    React.useCallback1(
+      event => {setPrefersColorSchemeDark(_ => event##matches)},
+      [|setPrefersColorSchemeDark|],
+    );
+
+  React.useEffect1(
+    () => {
+      mediaQueryColorSchemeDark##addEventListener("change", listener)->ignore;
+      Some(
+        () => {
+          mediaQueryColorSchemeDark##removeEventListener("change", listener)
+          ->ignore
+        },
+      );
+    },
+    [|listener|],
+  );
+
+  let setThemeSetting = updater => {
+    setThemeConfig(prevThemeConfig => {
+      let newThemeConfig = updater(prevThemeConfig);
+      writeConf(c =>
+        {
+          ...c,
+          theme:
+            switch (newThemeConfig) {
+            | `system => None
+            | other => Some(other)
+            },
+        }
+      );
+      newThemeConfig;
     });
+  };
 
   <Provider
     value={
       theme:
-        switch (themeMain) {
-        | `dark => darkTheme
-        | `light => lightTheme
+        switch (themeConfig, prefersColorSchemeDark) {
+        | (`system, true)
+        | (`dark, _) => darkTheme
+        | (`system, false)
+        | (`light, _) => lightTheme
         },
-      switchTheme,
+      themeSetting: (themeConfig, setThemeSetting),
     }>
     children
   </Provider>;
@@ -173,4 +216,5 @@ let make = (~children) => {
 // Hooks
 
 let useTheme = () => React.useContext(context).theme;
-let useSwitch = () => React.useContext(context).switchTheme;
+
+let useThemeSetting = () => React.useContext(context).themeSetting;
