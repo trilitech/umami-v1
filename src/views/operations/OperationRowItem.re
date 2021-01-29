@@ -50,6 +50,21 @@ module CellAction =
     ();
   });
 
+let status = (operation: Operation.Read.t, currentLevel, config: ConfigFile.t) => {
+  switch (operation.status) {
+  | Mempool => I18n.t#state_mempool
+  | Chain =>
+    let minConfirmations =
+      config.confirmations->Option.getWithDefault(ConfigFile.confirmations);
+
+    let currentConfirmations = currentLevel - operation.level;
+
+    currentConfirmations > minConfirmations
+      ? I18n.t#state_confirmed
+      : I18n.t#state_levels(currentConfirmations, minConfirmations);
+  };
+};
+
 let memo = component =>
   React.memoCustomCompareProps(component, (prevPros, nextProps) =>
     prevPros##operation == nextProps##operation
@@ -78,6 +93,7 @@ let make =
     let account = StoreContext.SelectedAccount.useGet();
     let aliases = StoreContext.Aliases.useGetAll();
     let tokens = StoreContext.Tokens.useGetAll();
+    let config = ConfigContext.useSettings().config;
 
     <Table.Row>
       {switch (operation.payload) {
@@ -175,11 +191,7 @@ let make =
       </CellDate>
       <CellStatus>
         <Typography.Body1>
-          {switch (operation.status) {
-           | Mempool => I18n.t#state_mempool
-           | Chain => I18n.t#state_levels(currentLevel - operation.level)
-           }}
-          ->React.string
+          {status(operation, currentLevel, config)->React.string}
         </Typography.Body1>
       </CellStatus>
       <CellAction>
