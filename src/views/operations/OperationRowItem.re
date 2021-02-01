@@ -51,18 +51,24 @@ module CellAction =
   });
 
 let status = (operation: Operation.Read.t, currentLevel, config: ConfigFile.t) => {
-  switch (operation.status) {
-  | Mempool => I18n.t#state_mempool
-  | Chain =>
-    let minConfirmations =
-      config.confirmations->Option.getWithDefault(ConfigFile.confirmations);
+  let (txt, colorStyle) =
+    switch (operation.status) {
+    | Mempool => (I18n.t#state_mempool, Some(`negative))
+    | Chain =>
+      let minConfirmations =
+        config.confirmations->Option.getWithDefault(ConfigFile.confirmations);
 
-    let currentConfirmations = currentLevel - operation.level;
+      let currentConfirmations = currentLevel - operation.level;
 
-    currentConfirmations > minConfirmations
-      ? I18n.t#state_confirmed
-      : I18n.t#state_levels(currentConfirmations, minConfirmations);
-  };
+      currentConfirmations > minConfirmations
+        ? (I18n.t#state_confirmed, None)
+        : (
+          I18n.t#state_levels(currentConfirmations, minConfirmations),
+          Some(`negative),
+        );
+    };
+
+  <Typography.Body1 ?colorStyle> txt->React.string </Typography.Body1>;
 };
 
 let memo = component =>
@@ -189,11 +195,7 @@ let make =
           {operation.timestamp->DateFns.format("P pp")->React.string}
         </Typography.Body1>
       </CellDate>
-      <CellStatus>
-        <Typography.Body1>
-          {status(operation, currentLevel, config)->React.string}
-        </Typography.Body1>
-      </CellStatus>
+      <CellStatus> {status(operation, currentLevel, config)} </CellStatus>
       <CellAction>
         <IconButton
           icon=Icons.OpenExternal.build
