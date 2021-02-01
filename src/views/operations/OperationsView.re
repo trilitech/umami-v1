@@ -26,7 +26,7 @@ let renderItem =
 };
 
 let keyExtractor = (operation: Operation.Read.t, _i) => {
-  operation.id;
+  operation.hash ++ Int.toString(operation.op_id);
 };
 
 let _ListEmptyComponent = () => <EmptyView text="No operations" />;
