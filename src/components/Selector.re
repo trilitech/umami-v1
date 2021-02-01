@@ -41,6 +41,7 @@ let styles =
           (),
         ),
       "icon": style(~marginHorizontal=8.->dp, ()),
+      "iconSpacer": style(~width=(8. +. 24. +. 8.)->dp, ()),
       "dropdownmenu":
         style(
           ~zIndex=1,
@@ -68,6 +69,8 @@ let make =
       ~renderItem,
       ~disabled=false,
     ) => {
+  let disabled = disabled || items->Array.size == 1 && noneItem->Option.isNone;
+
   let touchableRef = React.useRef(Js.Nullable.null);
 
   let (isOpen, setIsOpen) = React.useState(_ => false);
@@ -124,7 +127,7 @@ let make =
               selectedItem->Option.isSome ? selectedItem : noneItem,
             )}
            {disabled
-              ? React.null
+              ? <View style=styles##iconSpacer />
               : <Icons.ChevronDown
                   size=24.
                   color={theme.colors.iconMediumEmphasis}
