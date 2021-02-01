@@ -25,9 +25,7 @@ module Item = {
       <Typography.Subtitle1>
         account.alias->React.string
       </Typography.Subtitle1>
-      <Typography.Address fontSize=16.>
-        account.address->React.string
-      </Typography.Address>
+      <Typography.Address> account.address->React.string </Typography.Address>
     </View>;
   };
 };

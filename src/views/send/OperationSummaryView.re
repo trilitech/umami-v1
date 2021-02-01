@@ -49,9 +49,7 @@ module AccountInfo = {
              alias->React.string
            </Typography.Subtitle1>
          )}
-      <Typography.Address fontSize=16.>
-        address->React.string
-      </Typography.Address>
+      <Typography.Address> address->React.string </Typography.Address>
     </View>;
   };
 };
