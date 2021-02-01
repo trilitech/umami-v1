@@ -58,6 +58,15 @@ let useSimulate = () => {
   ApiRequest.useSetter(~set, ~kind=Logs.Operation, ());
 };
 
+let waitForConfirmation = (settings, hash, branch) => {
+  OperationsAPI.waitForOperationConfirmations(
+    settings,
+    hash,
+    ~confirmations=0,
+    ~branch,
+  );
+};
+
 /* Get list */
 
 let useLoad =
