@@ -58,6 +58,12 @@
     "files": [
       "build/**/*"
     ],
+    "extraResources": [
+      {
+       "from": "./public",
+       "to": "./public"
+      }
+    ],
     "directories": {
       "buildResources": "assets"
     }

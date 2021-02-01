@@ -88,7 +88,10 @@ var HaclWasm = (function() {
   var checkIfInitialized = function() {
     if (isInitialized === false) {
       return Promise.all(shell.my_modules.map(function(m) {
-        let p = './public/' + m + ".wasm";
+        let pDev = './public/' + m + ".wasm";
+        let p = process.env.NODE_ENV == "production"
+            ? path.join(process.resourcesPath,pDev)
+            : pDev;
         var source = fs.readFileSync(p);
         return new Uint8Array(source);
       })).then(function(bufs) {
