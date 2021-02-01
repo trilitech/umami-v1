@@ -9,9 +9,9 @@ let styles =
   );
 
 [@react.component]
-let make = () => {
+let make = (~style as styleArg=?) => {
   let theme = ThemeContext.useTheme();
-  <View style=styles##container>
+  <View style=Style.(arrayOption([|Some(styles##container), styleArg|]))>
     <ActivityIndicator
       animating=true
       size=ActivityIndicator_Size.small
