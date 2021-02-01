@@ -40,7 +40,13 @@ let styles =
     StyleSheet.create({
       "inner": style(~marginRight=10.->dp, ~marginLeft=14.->dp, ()),
       "actionButtons":
-        style(~alignSelf=`flexEnd, ~flexDirection=`row, ~flex=1., ()),
+        style(
+          ~alignSelf=`flexEnd,
+          ~flexDirection=`row,
+          ~flex=1.,
+          ~marginBottom=6.->dp,
+          (),
+        ),
       "actionDelegate": style(~marginRight=8.->dp, ()),
       "actionMenu": style(~marginRight=24.->dp, ()),
       "button": style(~marginRight=4.->dp, ()),
@@ -48,11 +54,17 @@ let styles =
   );
 
 [@react.component]
-let make = (~account: Account.t, ~token: option(Token.t)=?) => {
+let make =
+    (
+      ~account: Account.t,
+      ~token: option(Token.t)=?,
+      ~isDerived=false,
+      ~isLast=false,
+    ) => {
   let delegateRequest = StoreContext.Delegate.useLoad(account.address);
   let addToast = LogsContext.useToast();
 
-  <RowItem.Bordered height=90.>
+  <RowItem.Bordered height=90. isNested=isDerived isLast>
     <View style=styles##inner> <AccountInfo account ?token /> </View>
     <View style=styles##actionButtons>
       <ClipboardButton
