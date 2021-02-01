@@ -12,7 +12,7 @@ let styles =
           ~left=150.->dp,
           ~display=`flex,
           ~flexDirection=`columnReverse,
-          ~zIndex=2,
+          ~zIndex=10000,
           (),
         ),
     })
