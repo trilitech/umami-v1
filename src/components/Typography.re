@@ -204,7 +204,7 @@ module ButtonTernary =
   Make({
     let colorStyle = `mediumEmphasis;
     let fontWeightStyle = `semiBold;
-    let fontSize = 10.;
+    let fontSize = 11.;
   });
 
 /* ADDRESS */
