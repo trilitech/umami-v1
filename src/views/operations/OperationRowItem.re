@@ -198,6 +198,7 @@ let make =
       <CellStatus> {status(operation, currentLevel, config)} </CellStatus>
       <CellAction>
         <IconButton
+          size=34.
           icon=Icons.OpenExternal.build
           onPress={_ => {
             electron##shell##openExternal(
