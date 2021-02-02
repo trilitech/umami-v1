@@ -22,9 +22,9 @@ module Content = {
                <Typography.Overline2>
                  property->React.string
                </Typography.Overline2>
-               <Typography.Subtitle1>
+               <Typography.Body1 fontWeightStyle=`black>
                  value->React.string
-               </Typography.Subtitle1>
+               </Typography.Body1>
              </View>
            );
        }
@@ -39,15 +39,15 @@ module AccountInfo = {
     let aliases = StoreContext.Aliases.useGetAll();
 
     <View ?style>
-      <Typography.Overline1 colorStyle=`mediumEmphasis style=styles##title>
+      <Typography.Overline2 colorStyle=`mediumEmphasis style=styles##title>
         title->React.string
-      </Typography.Overline1>
+      </Typography.Overline2>
       {address
        ->AliasHelpers.getAliasFromAddress(aliases)
        ->ReactUtils.mapOpt(alias =>
-           <Typography.Subtitle1 style=styles##subtitle>
+           <Typography.Subtitle2 fontSize=16. style=styles##subtitle>
              alias->React.string
-           </Typography.Subtitle1>
+           </Typography.Subtitle2>
          )}
       <Typography.Address> address->React.string </Typography.Address>
     </View>;

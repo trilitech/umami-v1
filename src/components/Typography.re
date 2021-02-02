@@ -131,8 +131,8 @@ module Headline =
 module Overline1 =
   Make({
     let colorStyle = `highEmphasis;
-    let fontWeightStyle = `regular;
-    let fontSize = 18.;
+    let fontWeightStyle = `light;
+    let fontSize = 19.;
   });
 
 module Overline2 =
@@ -146,7 +146,7 @@ module Overline3 =
   Make({
     let colorStyle = `mediumEmphasis;
     let fontWeightStyle = `regular;
-    let fontSize = 14.;
+    let fontSize = 16.;
   });
 
 /* SUBTITLE */
@@ -163,13 +163,6 @@ module Subtitle2 =
     let colorStyle = `highEmphasis;
     let fontWeightStyle = `bold;
     let fontSize = 15.;
-  });
-
-module Subtitle3 =
-  Make({
-    let colorStyle = `highEmphasis;
-    let fontWeightStyle = `semiBold;
-    let fontSize = 14.;
   });
 
 /* BODY */
