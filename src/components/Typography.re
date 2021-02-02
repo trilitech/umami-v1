@@ -2,23 +2,27 @@ open ReactNative;
 
 type colorStyle = [
   | `highEmphasis
-  | `reverseHighEmphasis
   | `mediumEmphasis
   | `disabled
   | `error
   | `positive
   | `negative
+  | `primaryHighEmphasis
+  | `primaryMediumEmphasis
+  | `primaryDisabled
 ];
 
 let getColor = (colorStyle, theme: ThemeContext.theme) =>
   switch (colorStyle) {
   | `highEmphasis => theme.colors.textHighEmphasis
   | `mediumEmphasis => theme.colors.textMediumEmphasis
-  | `reverseHighEmphasis => theme.colors.textReverseHighEmphasis
   | `disabled => theme.colors.textDisabled
   | `error => theme.colors.error
   | `positive => theme.colors.textPositive
   | `negative => theme.colors.textNegative
+  | `primaryHighEmphasis => theme.colors.primaryTextHighEmphasis
+  | `primaryMediumEmphasis => theme.colors.primaryTextMediumEmphasis
+  | `primaryDisabled => theme.colors.primaryTextDisabled
   };
 
 type fontWeightStyle = [

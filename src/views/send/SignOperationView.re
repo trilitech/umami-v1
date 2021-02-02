@@ -34,6 +34,9 @@ let make =
     sendOperation(form.values.password);
   };
 
+  let formFieldsAreValids =
+    FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
+
   <>
     <View style=FormStyles.header>
       <Typography.Headline> title->React.string </Typography.Headline>
@@ -59,7 +62,12 @@ let make =
       secureTextEntry=true
     />
     <View style=FormStyles.verticalFormAction>
-      <Buttons.SubmitPrimary text=I18n.btn#confirm onPress=onSubmit loading />
+      <Buttons.SubmitPrimary
+        text=I18n.btn#confirm
+        onPress=onSubmit
+        loading
+        disabledLook={!formFieldsAreValids}
+      />
     </View>
   </>;
 };

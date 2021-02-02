@@ -458,7 +458,7 @@ module Make = (Config: Config) => {
         )
         ->Array.concatMany;
 
-      send(SetFieldsState(newFieldsState));
+      /*send(SetFieldsState(newFieldsState));*/
 
       Array.keepMap(newFieldsState, ((field, fieldState)) => {
         Array.some(fields, fieldItem => fieldItem == field)

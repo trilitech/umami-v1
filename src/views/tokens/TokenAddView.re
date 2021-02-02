@@ -65,6 +65,9 @@ let make = (~closeAction) => {
 
   let loading = tokenCreateRequest->ApiRequest.isLoading;
 
+  let formFieldsAreValids =
+    FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
+
   <ModalFormView closing={ModalFormView.Close(closeAction)}>
     <Typography.Headline style=styles##title>
       I18n.title#add_token->React.string
@@ -98,6 +101,7 @@ let make = (~closeAction) => {
       onPress=onSubmit
       loading
       style=FormStyles.formSubmit
+      disabledLook={!formFieldsAreValids}
     />
   </ModalFormView>;
 };

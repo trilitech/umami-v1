@@ -64,6 +64,9 @@ let make = (~action: action, ~closeAction) => {
     createAliasRequest->ApiRequest.isLoading
     || updateAliasRequest->ApiRequest.isLoading;
 
+  let formFieldsAreValids =
+    FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
+
   <ModalFormView closing={ModalFormView.Close(closeAction)}>
     <Typography.Headline style=FormStyles.header>
       (
@@ -102,6 +105,7 @@ let make = (~action: action, ~closeAction) => {
       onPress=onSubmit
       loading
       style=FormStyles.formSubmit
+      disabledLook={!formFieldsAreValids}
     />
   </ModalFormView>;
 };

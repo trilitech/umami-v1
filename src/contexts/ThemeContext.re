@@ -1,6 +1,5 @@
 type colors = {
   textHighEmphasis: string,
-  textReverseHighEmphasis: string,
   textMediumEmphasis: string,
   textDisabled: string,
   textPositive: string,
@@ -46,7 +45,6 @@ let lightTheme = {
   dark: false,
   colors: {
     textHighEmphasis: Colors.Light.highEmphasis,
-    textReverseHighEmphasis: Colors.Light.reverseHighEmphasis,
     textMediumEmphasis: Colors.Light.mediumEmphasis,
     textDisabled: Colors.Light.disabled,
     textPositive: Colors.Light.positive,
@@ -86,7 +84,6 @@ let darkTheme = {
   dark: true,
   colors: {
     textHighEmphasis: Colors.Dark.highEmphasis,
-    textReverseHighEmphasis: Colors.Dark.reverseHighEmphasis,
     textMediumEmphasis: Colors.Dark.mediumEmphasis,
     textDisabled: Colors.Dark.disabled,
     textPositive: Colors.Dark.positive,

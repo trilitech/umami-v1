@@ -70,6 +70,9 @@ let make = (~mnemonic, ~setMnemonic, ~onPressCancel, ~goNextStep) => {
     form.submit();
   };
 
+  let formFieldsAreValids =
+    FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
+
   <>
     <View style=Style.(array([|styles##wordsList, style(~zIndex=2, ())|]))>
       {form.state.values.words
@@ -104,7 +107,11 @@ let make = (~mnemonic, ~setMnemonic, ~onPressCancel, ~goNextStep) => {
         array([|FormStyles.formActionSpaceBetween, style(~zIndex=1, ())|])
       )>
       <Buttons.Form text=I18n.btn#back onPress=onPressCancel />
-      <Buttons.SubmitPrimary text=I18n.btn#continue onPress=onSubmit />
+      <Buttons.SubmitPrimary
+        text=I18n.btn#continue
+        onPress=onSubmit
+        disabledLook={!formFieldsAreValids}
+      />
     </View>
   </>;
 };
