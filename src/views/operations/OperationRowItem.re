@@ -31,13 +31,13 @@ module CellAddress =
 
 module CellStatus =
   Table.MakeCell({
-    let style = Style.(style(~flexBasis=120.->dp, ~alignItems=`center, ()));
+    let style = Style.(style(~flexBasis=100.->dp, ()));
     ();
   });
 
 module CellDate =
   Table.MakeCell({
-    let style = Style.(style(~flexBasis=160.->dp, ()));
+    let style = Style.(style(~flexBasis=180.->dp, ()));
     ();
   });
 
