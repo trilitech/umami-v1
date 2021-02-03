@@ -126,20 +126,6 @@ let useGetter = (~toast=true, ~get, ~kind, ~setRequest, ()) => {
   get;
 };
 
-let useGetterSDK = (~toast=true, ~get, ~kind, ~setRequest, ()) => {
-  let addLog = LogsContext.useAdd();
-  let settings = ConfigContext.useSettings();
-
-  let get = input => {
-    setRequest(updateToLoadingState);
-    get(~settings, input)
-    ->logError(addLog(toast), kind)
-    ->Future.get(result => setRequest(_ => Done(result, Js.Date.now())));
-  };
-
-  get;
-};
-
 let useLoader =
     (
       ~get,
