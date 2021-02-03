@@ -39,6 +39,8 @@ let styles =
           ~position=`absolute,
           ~top=LayoutConst.pagePaddingVertical->dp,
           ~right=LayoutConst.pagePaddingHorizontal->dp,
+          ~height=40.->dp,
+          ~zIndex=3,
           (),
         ),
     })
@@ -47,10 +49,9 @@ let styles =
 [@react.component]
 let make = () => {
   let accounts = StoreContext.Accounts.useGetAll();
+  let resetAccounts = StoreContext.Accounts.useResetAll();
   let accountsRequest = StoreContext.Accounts.useRequest();
-
   let token = StoreContext.SelectedToken.useGet();
-
   <Page>
     {accountsRequest->ApiRequest.mapOrLoad(_ => {
        <>
@@ -75,7 +76,10 @@ let make = () => {
        </>
      })}
     <View style=styles##refreshPosition>
-      <RefreshButton onRefresh={_ => ()} />
+      <RefreshButton
+        loading={accountsRequest->ApiRequest.isLoading}
+        onRefresh=resetAccounts
+      />
     </View>
   </Page>;
 };

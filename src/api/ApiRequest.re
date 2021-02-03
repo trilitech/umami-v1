@@ -106,12 +106,10 @@ let updateToResetState = request =>
   };
 
 let conditionToLoad = (request, isMounted) => {
-  let requestLoading = request->isLoading;
-  let requestNotAskedAndMonted = request->isNotAsked && isMounted;
-  let requestDoneButReloadOnMont = request->isDone && !isMounted;
+  let requestNotAskedAndMounted = request->isNotAsked && isMounted;
+  let requestDoneButReloadOnMount = request->isDone && !isMounted;
   let requestExpired = request->isExpired;
-  !requestLoading
-  && (requestNotAskedAndMonted || requestDoneButReloadOnMont || requestExpired);
+  requestNotAskedAndMounted || requestDoneButReloadOnMount || requestExpired;
 };
 
 let useGetter = (~toast=true, ~get, ~kind, ~setRequest, ()) => {

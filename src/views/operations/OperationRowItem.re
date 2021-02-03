@@ -72,8 +72,20 @@ let status = (operation: Operation.Read.t, currentLevel, config: ConfigFile.t) =
 };
 
 let memo = component =>
-  React.memoCustomCompareProps(component, (prevPros, nextProps) =>
-    prevPros##operation == nextProps##operation
+  React.memoCustomCompareProps(
+    component,
+    (prevPros, nextProps) => {
+      let currentConfirmations =
+        prevPros##currentLevel - prevPros##operation.Operation.Read.level;
+
+      currentConfirmations > 5
+        ? prevPros##operation == nextProps##operation
+        : prevPros##operation ==
+          nextProps##operation
+          &&
+          prevPros##currentLevel ==
+          nextProps##currentLevel;
+    },
   );
 
 let amount = (isToken, account, transaction: Operation.Business.Transaction.t) => {
