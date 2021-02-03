@@ -6,9 +6,16 @@ module SettingTextInput = {
 
   [@react.component]
   let make =
-      (~value, ~onValueChange, ~error, ~keyboardType=?, ~onSubmitEditing=?) => {
+      (
+        ~value,
+        ~onValueChange,
+        ~error,
+        ~keyboardType=?,
+        ~onSubmitEditing=?,
+        ~style as styleFromProp=?,
+      ) => {
     <ThemedTextInput
-      style=styles##input
+      style=Style.(arrayOption([|Some(styles##input), styleFromProp|]))
       paddingLeft=16.
       paddingVertical=8.
       value

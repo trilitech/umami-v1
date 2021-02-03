@@ -15,6 +15,13 @@ let styles =
           ~marginBottom=20.->dp,
           (),
         ),
+      "inputAddress":
+        style(
+          ~fontFamily="JetBrainsMono",
+          ~fontSize=14.,
+          ~fontWeight=`_200,
+          (),
+        ),
       "button": style(~width=104.->dp, ~height=34.->dp, ()),
     })
   );
@@ -64,6 +71,7 @@ let make = () => {
       </ColumnLeft>
       <ColumnRight>
         <SettingTextInput
+          style=styles##inputAddress
           value={form.values.natviewerTest}
           onValueChange={form.handleChange(NatviewerTest)}
           error={form.getFieldError(Field(NatviewerTest))}
