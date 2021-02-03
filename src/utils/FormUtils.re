@@ -10,3 +10,15 @@ let isValidInt = value => {
       ? Valid : Error("not an int");
   fieldState;
 };
+
+let formFieldsAreValids = (fieldsState, validateFields) => {
+  let fields = fieldsState->Array.map(((field, _)) => field);
+  let fieldsState = validateFields(fields);
+
+  fieldsState->Array.every((fieldState: ReForm.fieldState) => {
+    switch (fieldState) {
+    | Valid => true
+    | _ => false
+    }
+  });
+};

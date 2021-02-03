@@ -45,6 +45,9 @@ let make = () => {
      | Loading(Some(aliases)) =>
        aliases
        ->Map.String.valuesToArray
+       ->SortArray.stableSortBy((a, b) =>
+           Js.String.localeCompare(b.alias, a.alias)->int_of_float
+         )
        ->Array.mapWithIndex((index, account) =>
            <AddressBookRowItem
              key={account.address}

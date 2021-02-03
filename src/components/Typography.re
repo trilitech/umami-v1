@@ -2,23 +2,27 @@ open ReactNative;
 
 type colorStyle = [
   | `highEmphasis
-  | `reverseHighEmphasis
   | `mediumEmphasis
   | `disabled
   | `error
   | `positive
   | `negative
+  | `primaryHighEmphasis
+  | `primaryMediumEmphasis
+  | `primaryDisabled
 ];
 
 let getColor = (colorStyle, theme: ThemeContext.theme) =>
   switch (colorStyle) {
   | `highEmphasis => theme.colors.textHighEmphasis
   | `mediumEmphasis => theme.colors.textMediumEmphasis
-  | `reverseHighEmphasis => theme.colors.textReverseHighEmphasis
   | `disabled => theme.colors.textDisabled
   | `error => theme.colors.error
   | `positive => theme.colors.textPositive
   | `negative => theme.colors.textNegative
+  | `primaryHighEmphasis => theme.colors.primaryTextHighEmphasis
+  | `primaryMediumEmphasis => theme.colors.primaryTextMediumEmphasis
+  | `primaryDisabled => theme.colors.primaryTextDisabled
   };
 
 type fontWeightStyle = [
@@ -127,8 +131,8 @@ module Headline =
 module Overline1 =
   Make({
     let colorStyle = `highEmphasis;
-    let fontWeightStyle = `regular;
-    let fontSize = 18.;
+    let fontWeightStyle = `light;
+    let fontSize = 19.;
   });
 
 module Overline2 =
@@ -142,7 +146,7 @@ module Overline3 =
   Make({
     let colorStyle = `mediumEmphasis;
     let fontWeightStyle = `regular;
-    let fontSize = 14.;
+    let fontSize = 16.;
   });
 
 /* SUBTITLE */
@@ -159,13 +163,6 @@ module Subtitle2 =
     let colorStyle = `highEmphasis;
     let fontWeightStyle = `bold;
     let fontSize = 15.;
-  });
-
-module Subtitle3 =
-  Make({
-    let colorStyle = `highEmphasis;
-    let fontWeightStyle = `semiBold;
-    let fontSize = 14.;
   });
 
 /* BODY */
@@ -204,7 +201,7 @@ module ButtonTernary =
   Make({
     let colorStyle = `mediumEmphasis;
     let fontWeightStyle = `semiBold;
-    let fontSize = 10.;
+    let fontSize = 11.;
   });
 
 /* ADDRESS */
@@ -218,14 +215,13 @@ module Address = {
   [@react.component]
   let make =
       (
-        ~fontSize=14.,
         ~numberOfLines: option(int)=?,
         ~style as styleProp: option(ReactNative.Style.t)=?,
         ~children,
       ) => {
     <Base
       colorStyle=`highEmphasis
-      fontSize
+      fontSize=14.
       fontWeightStyle=`extraLight
       style=Style.(arrayOption([|Some(styles##address), styleProp|]))
       ?numberOfLines>

@@ -125,6 +125,9 @@ module Form = {
       };
       let (advancedOptionOpened, setAdvancedOptionOpened) = advancedOptionState;
 
+      let formFieldsAreValids =
+        FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
+
       <>
         <ReactFlipToolkit.FlippedView flipId="form">
           <Typography.Headline style=FormStyles.header>
@@ -187,6 +190,7 @@ module Form = {
               }
               onPress=onSubmitDelegateForm
               loading
+              disabledLook={!formFieldsAreValids}
             />
           </View>
         </ReactFlipToolkit.FlippedView>

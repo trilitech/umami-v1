@@ -42,13 +42,16 @@ module NavBarItem = {
            ~size=24.,
            ~color={
              isCurrent
-               ? theme.colors.iconPrimary : theme.colors.iconMediumEmphasis;
+               ? theme.dark
+                   ? theme.colors.iconMaxEmphasis : theme.colors.iconPrimary
+               : theme.colors.iconMediumEmphasis;
            },
          )
        })}
       <Typography.ButtonTernary
         style=styles##text
-        colorStyle={isCurrent ? `highEmphasis : `mediumEmphasis}>
+        colorStyle=?{isCurrent ? Some(`highEmphasis) : None}
+        fontWeightStyle=?{isCurrent ? Some(`black) : None}>
         title->React.string
       </Typography.ButtonTernary>
     </ThemedPressable>;

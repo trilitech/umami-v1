@@ -13,7 +13,7 @@ let styles =
       "selector":
         style(
           ~alignSelf=`flexStart,
-          ~minWidth=440.->dp,
+          ~minWidth=390.->dp,
           ~marginTop=0.->dp,
           ~marginBottom=30.->dp,
           ~zIndex=2,

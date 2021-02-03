@@ -167,7 +167,7 @@ let make =
            }}
         </CellReward>
         <CellAction>
-          <Menu icon=Icons.More.build size=30.>
+          <Menu icon=Icons.More.build>
             <DelegateActionButton
               action={Delegate.Edit(account, delegate)}
               text=I18n.menu#delegate_edit

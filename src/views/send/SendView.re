@@ -321,6 +321,10 @@ module Form = {
           : batchMode ? I18n.btn#add_transaction : I18n.btn#send_submit;
 
       let onSubmit = onSubmitAll->Option.getWithDefault(() => form.submit());
+
+      let formFieldsAreValids =
+        FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
+
       <>
         <ReactFlipToolkit.FlippedView flipId="form" zIndex=3>
           <View style=FormStyles.header>
@@ -402,6 +406,7 @@ module Form = {
               text=submitLabel
               onPress={_ => onSubmit()}
               loading
+              disabledLook={!formFieldsAreValids}
             />
             {onAddToBatch->ReactUtils.mapOpt(addToBatch =>
                <Buttons.FormSecondary

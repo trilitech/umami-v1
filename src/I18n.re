@@ -129,7 +129,7 @@ let expl = {
   pub account_create_record_verify = {j|We will now verify that you’ve properly recorded your recovery phrase. To demonstrate this, please type in the word that corresponds to each sequence number.|j};
   pub account_create_password_not_recorded = {j|Please note that this password is not recorded anywhere and only applies to this machine.|j};
   pub import_account_enter_phrase = {j|Please fill in the recovery phrase in sequence.|j};
-  pub confirm_operation = "Please confirm the details of the operation";
+  pub confirm_operation = "Please validate the details of the transaction and enter password to confirm";
   pub batch = "Review, edit or delete the transactions of the batch";
   pub operation = "The operation will be processed and confirmed, you can see its progress in the Operations section."
 };

@@ -51,7 +51,7 @@ let styles =
   );
 
 [@react.component]
-let make = (~icon: Icons.builder, ~children, ~size=42., ~style as styleArg=?) => {
+let make = (~icon: Icons.builder, ~children, ~size=34., ~style as styleArg=?) => {
   let pressableRef = React.useRef(Js.Nullable.null);
 
   let (isOpen, setIsOpen) = React.useState(_ => false);

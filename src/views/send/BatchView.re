@@ -19,7 +19,7 @@ let styles =
       "notFirstRow": style(~borderTopWidth=1., ()),
       "num": style(~position=`absolute, ~left=10.->dp, ~top=10.->dp, ()),
       "moreButton":
-        style(~position=`absolute, ~top=13.->dp, ~right=2.->dp, ()),
+        style(~position=`absolute, ~top=17.->dp, ~right=4.->dp, ()),
     })
   );
 
