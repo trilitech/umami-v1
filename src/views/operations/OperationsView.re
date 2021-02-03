@@ -5,6 +5,14 @@ let styles =
     StyleSheet.create({
       "container": style(~flex=1., ()),
       "list": style(~flex=1., ~zIndex=1, ()),
+      "refreshPosition":
+        style(
+          ~position=`absolute,
+          ~top=LayoutConst.pagePaddingVertical->dp,
+          ~right=LayoutConst.pagePaddingHorizontal->dp,
+          ~zIndex=2,
+          (),
+        ),
       "listContent":
         style(
           ~flex=1.,
@@ -68,5 +76,8 @@ let make = () => {
        | Loading(None) => <LoadingView />
        }
      )}
+    <View style=styles##refreshPosition>
+      <RefreshButton onRefresh={_ => ()} />
+    </View>
   </View>;
 };

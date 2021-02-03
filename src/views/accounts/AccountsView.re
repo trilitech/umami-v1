@@ -31,6 +31,19 @@ module AddAccountButton = {
   };
 };
 
+let styles =
+  Style.(
+    StyleSheet.create({
+      "refreshPosition":
+        style(
+          ~position=`absolute,
+          ~top=LayoutConst.pagePaddingVertical->dp,
+          ~right=LayoutConst.pagePaddingHorizontal->dp,
+          (),
+        ),
+    })
+  );
+
 [@react.component]
 let make = () => {
   let accounts = StoreContext.Accounts.useGetAll();
@@ -61,5 +74,8 @@ let make = () => {
          </View>
        </>
      })}
+    <View style=styles##refreshPosition>
+      <RefreshButton onRefresh={_ => ()} />
+    </View>
   </Page>;
 };
