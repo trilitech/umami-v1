@@ -24,3 +24,6 @@ run:
 update-and-run: update
 	yarn electron:dev
 
+.PHONY: dist
+dist: update
+	yarn electron:build

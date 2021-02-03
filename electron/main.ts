@@ -30,6 +30,9 @@ function createWindow() {
       hardResetMethod: 'exit'
     });
   }
+  if (isDev) {
+    process.env.NODE_ENV = 'production';
+  }
 
   // DevTools
   installExtension(REACT_DEVELOPER_TOOLS)
