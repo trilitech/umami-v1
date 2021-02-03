@@ -29,7 +29,7 @@ build-reason:
 
 dist:
   stage: dist
-  script: CI=false yarn electron:buildAll
+  script: CI=false yarn electron:build
   only:
     - master
     - develop
