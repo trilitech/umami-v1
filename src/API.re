@@ -437,8 +437,6 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
         let operations =
           mempool->Array.reduce(operations, Set.add)->Set.toArray;
 
-        Js.log("toto");
-
         Future.value(Ok(operations));
       }
     );

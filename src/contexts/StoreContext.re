@@ -360,9 +360,7 @@ module Operations = {
     let resetBalanceTokens = BalanceToken.useResetAll();
     let resetDelegatesAndDelegatesInfo = DelegateInfo.useResetAll();
     let (_, setOperationsRequests) = store.operationsRequestsState;
-    Js.log("useReset");
     () => {
-      Js.log("reset");
       setOperationsRequests(resetRequests);
       resetBalances();
       resetBalanceTokens();
@@ -376,9 +374,7 @@ module Operations = {
     let resetBalanceTokens = BalanceToken.useResetAll();
     let resetDelegatesAndDelegatesInfo = DelegateInfo.useResetAll();
     let (_, setOperationsRequests) = store.operationsRequestsState;
-    Js.log("useReload");
     () => {
-      Js.log("Reload");
       setOperationsRequests(reloadRequests);
       resetBalances();
       resetBalanceTokens();

@@ -35,9 +35,7 @@ let renderItem =
 };
 
 let keyExtractor = (operation: Operation.Read.t, _i) => {
-  operation.hash
-  ++ Int.toString(operation.op_id)
-  ++ Js.String.make(operation.status);
+  operation.hash ++ Int.toString(operation.op_id);
 };
 
 let _ListEmptyComponent = () => <EmptyView text="No operations" />;
@@ -75,7 +73,7 @@ let make = () => {
            keyExtractor
            renderItem={renderItem(operations->snd)}
            _ListEmptyComponent
-         />;
+         />
        | Done(Error(error), _) => error->React.string
        | NotAsked
        | Loading(None) => <LoadingView />
