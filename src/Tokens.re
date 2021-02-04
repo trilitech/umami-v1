@@ -82,7 +82,6 @@ let makeTransfer =
       ~amount,
       ~contract,
       ~fee=?,
-      ~counter=?,
       ~gasLimit=?,
       ~storageLimit=?,
       ~burnCap=?,
@@ -104,7 +103,6 @@ let makeTransfer =
   common_options:
     Protocol.makeCommonOptions(
       ~fee,
-      ~counter,
       ~burnCap,
       ~confirmations,
       ~forceLowFee,
@@ -118,7 +116,6 @@ let makeGetBalance =
       callback,
       contract,
       ~fee=?,
-      ~counter=?,
       ~gasLimit=?,
       ~storageLimit=?,
       ~burnCap=?,
@@ -140,7 +137,6 @@ let makeGetBalance =
   common_options:
     Protocol.makeCommonOptions(
       ~fee,
-      ~counter,
       ~burnCap,
       ~confirmations,
       ~forceLowFee,

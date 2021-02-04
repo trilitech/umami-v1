@@ -291,12 +291,6 @@ module InjectorRaw = (Caller: CallerAPI) => {
       | None => arguments
       };
     let arguments =
-      switch (common_options.counter) {
-      | Some(counter) =>
-        Js.Array2.concat(arguments, [|"-C", counter->Js.Int.toString|])
-      | None => arguments
-      };
-    let arguments =
       switch (tx_options.gasLimit) {
       | Some(gasLimit) =>
         Js.Array2.concat(arguments, [|"-G", gasLimit->Js.Int.toString|])

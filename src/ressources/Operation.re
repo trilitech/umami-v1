@@ -19,7 +19,7 @@ module Simulation = {
 };
 
 let makeDelegate =
-    (~source, ~delegate, ~fee=?, ~burnCap=?, ~forceLowFee=?, ~counter=?, ()) => {
+    (~source, ~delegate, ~fee=?, ~burnCap=?, ~forceLowFee=?, ()) => {
   {
     source,
     delegate,
@@ -28,7 +28,6 @@ let makeDelegate =
         ~fee,
         ~burnCap,
         ~forceLowFee,
-        ~counter,
         ~confirmations=None,
         (),
       ),
@@ -37,22 +36,13 @@ let makeDelegate =
 };
 
 let makeTransaction =
-    (
-      ~source,
-      ~transfers,
-      ~counter=?,
-      ~burnCap=?,
-      ~forceLowFee=?,
-      ~confirmations=?,
-      (),
-    ) =>
+    (~source, ~transfers, ~burnCap=?, ~forceLowFee=?, ~confirmations=?, ()) =>
   transaction({
     source,
     transfers,
     options:
       makeCommonOptions(
         ~fee=None,
-        ~counter,
         ~burnCap,
         ~forceLowFee,
         ~confirmations,
@@ -65,7 +55,6 @@ let makeSingleTransaction =
       ~source,
       ~amount,
       ~destination,
-      ~counter=?,
       ~burnCap=?,
       ~forceLowFee=?,
       ~confirmations=?,
@@ -93,7 +82,6 @@ let makeSingleTransaction =
     options:
       makeCommonOptions(
         ~fee=None,
-        ~counter,
         ~burnCap,
         ~forceLowFee,
         ~confirmations,
