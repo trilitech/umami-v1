@@ -110,13 +110,13 @@ let sourceDestination = (transfer: SendForm.transaction) => {
       );
     ((source, sourceLbl), `Many(destinations));
   | TokenTransfer(
-      ({source, transfers: [{destination}]}: Token.Transfer.t),
+      {source, transfers: [{destination}]}: Token.Transfer.t,
       _,
     ) => (
       (source, sourceLbl),
       `One((destination, recipientLbl)),
     )
-  | TokenTransfer(({source, transfers}: Token.Transfer.t), _) =>
+  | TokenTransfer({source, transfers}: Token.Transfer.t, _) =>
     let destinations =
       transfers->List.map(t =>
         (None, (t.destination, t.amount->Int.toString))
@@ -191,7 +191,6 @@ module Form = {
       sender: account->Option.mapWithDefault("", a => a.address),
       recipient: "",
       fee: "",
-      counter: "",
       gasLimit: "",
       storageLimit: "",
       forceLowFee: false,
@@ -211,10 +210,6 @@ module Form = {
                 Amount,
               )
             + custom(values => FormUtils.isValidFloat(values.fee), Fee)
-            + custom(
-                values => FormUtils.isValidInt(values.counter),
-                Counter,
-              )
             + custom(
                 values => FormUtils.isValidInt(values.gasLimit),
                 GasLimit,

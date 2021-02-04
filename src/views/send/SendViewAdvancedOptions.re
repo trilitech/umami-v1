@@ -35,7 +35,6 @@ let make = (~operation, ~form: SendForm.api) => {
           form.handleChange(Fee, dryRun.fee->ProtocolXTZ.toString);
           form.handleChange(GasLimit, dryRun.gasLimit->string_of_int);
           form.handleChange(StorageLimit, dryRun.storageLimit->string_of_int);
-          form.handleChange(Counter, dryRun.count->string_of_int);
           form.setFieldValue(DryRun, Some(dryRun));
         })
       ->ignore;
@@ -72,19 +71,6 @@ let make = (~operation, ~form: SendForm.api) => {
         error={form.getFieldError(Field(StorageLimit))}
         style=styles##formRowInput
       />
-    </View>
-    <View style=styles##formRowInputs>
-      <FormGroupTextInput
-        label=I18n.label#counter
-        value={form.values.counter}
-        handleChange={form.handleChange(Counter)}
-        error={form.getFieldError(Field(Counter))}
-        style=styles##formRowInput
-      />
-      <View style=styles##formRowInputsSeparator />
-      <View style=styles##formRowInput />
-      <View style=styles##formRowInputsSeparator />
-      <View style=styles##formRowInput />
     </View>
     <FormGroupCheckbox
       label=I18n.label#force_low_fee

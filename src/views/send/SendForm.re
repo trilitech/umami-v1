@@ -8,7 +8,6 @@ module StateLenses = [%lenses
     sender: string,
     recipient: string,
     fee: string,
-    counter: string,
     gasLimit: string,
     storageLimit: string,
     forceLowFee: bool,
@@ -61,14 +60,7 @@ let buildTransfers = (transfers, parseAmount, build) => {
 };
 
 let buildTokenTransfer =
-    (
-      inputTransfers,
-      token: Token.t,
-      source,
-      counter,
-      forceLowFee,
-      confirmations,
-    ) =>
+    (inputTransfers, token: Token.t, source, forceLowFee, confirmations) =>
   TokenTransfer(
     Token.makeTransfers(
       ~source,
@@ -78,7 +70,6 @@ let buildTokenTransfer =
           Int.fromString,
           Token.makeSingleTransferElt(~token=token.address),
         ),
-      ~counter?,
       ~forceLowFee?,
       ~confirmations?,
       (),
@@ -87,7 +78,7 @@ let buildTokenTransfer =
   );
 
 let buildProtocolTransaction =
-    (inputTransfers, source, counter, forceLowFee, confirmations) =>
+    (inputTransfers, source, forceLowFee, confirmations) =>
   Protocol.makeTransaction(
     ~source,
     ~transfers=
@@ -96,7 +87,6 @@ let buildProtocolTransaction =
         ProtocolXTZ.fromString,
         Protocol.makeTransfer(~parameter=?None, ~entrypoint=?None),
       ),
-    ~counter?,
     ~forceLowFee?,
     ~confirmations?,
     (),
@@ -115,17 +105,12 @@ let buildTransaction =
     let source = first.sender;
     let forceLowFee = first.forceLowFee ? Some(true) : None;
 
-    let counter =
-      first.counter->Js.String2.length > 0
-        ? Some(first.counter->int_of_string) : None;
-
     switch (token) {
     | Some(token) =>
       buildTokenTransfer(
         inputTransfers,
         token,
         source,
-        counter,
         forceLowFee,
         confirmations,
       )
@@ -133,7 +118,6 @@ let buildTransaction =
       buildProtocolTransaction(
         inputTransfers,
         source,
-        counter,
         forceLowFee,
         confirmations,
       )
