@@ -103,27 +103,25 @@ module Block = {
   let styles =
     Style.(
       StyleSheet.create({
-        "bloc":
-          style(
-            ~paddingBottom=32.->dp,
-            ~marginBottom=16.->dp,
-            ~borderBottomWidth=1.,
-            (),
-          ),
+        "bloc": style(~paddingBottom=32.->dp, ~marginBottom=16.->dp, ()),
         "title": style(~marginLeft=16.->dp, ~marginBottom=18.->dp, ()),
         "content": style(~flexDirection=`row, ~paddingHorizontal=30.->dp, ()),
       })
     );
 
   [@react.component]
-  let make = (~title, ~children) => {
+  let make = (~title, ~children, ~isLast=false) => {
     let theme = ThemeContext.useTheme();
 
     <View
       style=Style.(
         array([|
           styles##bloc,
-          style(~borderBottomColor=theme.colors.borderDisabled, ()),
+          style(
+            ~borderBottomColor=theme.colors.borderDisabled,
+            ~borderBottomWidth=isLast ? 0. : 1.,
+            (),
+          ),
         |])
       )>
       <Typography.Headline fontSize=16. style=styles##title>

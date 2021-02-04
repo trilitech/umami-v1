@@ -115,6 +115,13 @@ let useSettings = () => {
   };
 };
 
+let useResetConfig = () => {
+  let {write} = useContext();
+  () => {
+    write(_ => ConfigFile.default);
+  };
+};
+
 let useCleanSdkBaseDir = () => {
   let {content: {sdkBaseDir}} = useContext();
   () => {
