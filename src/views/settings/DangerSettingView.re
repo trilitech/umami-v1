@@ -2,6 +2,8 @@ open ReactNative;
 open SettingsComponents;
 
 module OffBoardView = {
+  open StoreContext;
+
   module StateLenses = [%lenses
     type state = {
       confirm: bool,
@@ -36,8 +38,24 @@ module OffBoardView = {
       })
     );
 
+  let useOffboardWallet = () => {
+    let cleanSdkBaseDir = ConfigContext.useCleanSdkBaseDir();
+    let resetAccounts = Accounts.useResetAll();
+    let resetTokens = Tokens.useResetAll();
+
+    () => {
+      cleanSdkBaseDir()
+      ->Future.tapOk(() => {
+          resetAccounts();
+          resetTokens();
+        });
+    };
+  };
+
   [@react.component]
   let make = (~closeAction) => {
+    let offboardWallet = useOffboardWallet();
+
     let form: OffboardForm.api =
       OffboardForm.use(
         ~schema={
@@ -61,8 +79,8 @@ module OffBoardView = {
           );
         },
         ~onSubmit=
-          ({state}) => {
-            Js.log(state);
+          _ => {
+            offboardWallet()->ignore;
 
             None;
           },
@@ -81,35 +99,38 @@ module OffBoardView = {
       <ModalTemplate.HeaderButtons.Close onPress={_ => closeAction()} />;
 
     <ModalTemplate.Base style=styles##modal headerRight=closeButton>
-      <Typography.Headline style=styles##title>
-        I18n.settings#danger_offboard_form_title->React.string
-      </Typography.Headline>
-      <Typography.Body1
-        colorStyle=`error fontWeightStyle=`black style=styles##text>
-        I18n.settings#danger_offboard_form_text->React.string
-      </Typography.Body1>
-      <TouchableOpacity
-        onPress={_ => form.handleChange(Confirm, !form.values.confirm)}
-        style=styles##touchable
-        activeOpacity=1.>
-        <Checkbox value={form.values.confirm} style=styles##checkbox />
-        <Typography.Overline2 fontWeightStyle=`regular>
-          I18n.settings#danger_offboard_form_checkbox_label->React.string
-        </Typography.Overline2>
-      </TouchableOpacity>
-      <View style=styles##input>
-        <ThemedTextInput
-          value={form.values.word}
-          onValueChange={form.handleChange(Word)}
-          placeholder=I18n.settings#danger_offboard_form_input_placeholder
+      <View accessibilityRole=`form>
+        <Typography.Headline style=styles##title>
+          I18n.settings#danger_offboard_form_title->React.string
+        </Typography.Headline>
+        <Typography.Body1
+          colorStyle=`error fontWeightStyle=`black style=styles##text>
+          I18n.settings#danger_offboard_form_text->React.string
+        </Typography.Body1>
+        <TouchableOpacity
+          onPress={_ => form.handleChange(Confirm, !form.values.confirm)}
+          style=styles##touchable
+          activeOpacity=1.>
+          <Checkbox value={form.values.confirm} style=styles##checkbox />
+          <Typography.Overline2 fontWeightStyle=`regular>
+            I18n.settings#danger_offboard_form_checkbox_label->React.string
+          </Typography.Overline2>
+        </TouchableOpacity>
+        <View style=styles##input>
+          <ThemedTextInput
+            value={form.values.word}
+            onValueChange={form.handleChange(Word)}
+            placeholder=I18n.settings#danger_offboard_form_input_placeholder
+            onSubmitEditing=onSubmit
+          />
+        </View>
+        <Buttons.SubmitPrimary
+          text=I18n.btn#confirm
+          onPress=onSubmit
+          style=FormStyles.formSubmit
+          disabledLook={!formFieldsAreValids}
         />
       </View>
-      <Buttons.SubmitPrimary
-        text=I18n.btn#confirm
-        onPress=onSubmit
-        style=FormStyles.formSubmit
-        disabledLook={!formFieldsAreValids}
-      />
     </ModalTemplate.Base>;
   };
 };

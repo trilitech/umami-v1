@@ -114,3 +114,12 @@ let useSettings = () => {
     network: store.network,
   };
 };
+
+let useCleanSdkBaseDir = () => {
+  let {content: {sdkBaseDir}} = useContext();
+  () => {
+    System.Client.reset(
+      sdkBaseDir->Option.getWithDefault(ConfigFile.sdkBaseDir),
+    );
+  };
+};
