@@ -39,3 +39,5 @@ let amountRow =
     ~justifyContent=`spaceBetween,
     (),
   );
+
+let square = v => style(~width=v->dp, ~height=v->dp, ());

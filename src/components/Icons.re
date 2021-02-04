@@ -116,3 +116,4 @@ module OpenExternal = Make(SVGIconOpenExternal);
 module Settings = Make(SVGIconSettings);
 module RadioOn = Make(SVGIconRadioOn);
 module RadioOff = Make(SVGIconRadioOff);
+module Refresh = Make(SVGIconRefresh);

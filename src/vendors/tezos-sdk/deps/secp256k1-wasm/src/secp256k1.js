@@ -418,7 +418,6 @@ var _SECP256K1 = (function() {
           return getBinaryPromise().then(function(binary) {
             return WebAssembly.instantiate(binary, info)
           }).then(receiver, function(reason) {
-            console.log('TOTO');
             err("failed to asynchronously prepare wasm: " + reason);
             abort(reason)
           })

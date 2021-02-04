@@ -164,6 +164,9 @@ let useRequestsState = (getRequestsState, key: option(string)) => {
 let resetRequests = requestsState =>
   requestsState->Map.String.map(ApiRequest.updateToResetState);
 
+let reloadRequests = requestsState =>
+  requestsState->Map.String.map(ApiRequest.updateToLoadingState);
+
 //
 
 module Balance = {
@@ -359,6 +362,20 @@ module Operations = {
     let (_, setOperationsRequests) = store.operationsRequestsState;
     () => {
       setOperationsRequests(resetRequests);
+      resetBalances();
+      resetBalanceTokens();
+      resetDelegatesAndDelegatesInfo();
+    };
+  };
+
+  let useReloadAll = () => {
+    let store = useStoreContext();
+    let resetBalances = Balance.useResetAll();
+    let resetBalanceTokens = BalanceToken.useResetAll();
+    let resetDelegatesAndDelegatesInfo = DelegateInfo.useResetAll();
+    let (_, setOperationsRequests) = store.operationsRequestsState;
+    () => {
+      setOperationsRequests(reloadRequests);
       resetBalances();
       resetBalanceTokens();
       resetDelegatesAndDelegatesInfo();

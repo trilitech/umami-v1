@@ -106,29 +106,13 @@ let updateToResetState = request =>
   };
 
 let conditionToLoad = (request, isMounted) => {
-  let requestLoading = request->isLoading;
-  let requestNotAskedAndMonted = request->isNotAsked && isMounted;
-  let requestDoneButReloadOnMont = request->isDone && !isMounted;
+  let requestNotAskedAndMounted = request->isNotAsked && isMounted;
+  let requestDoneButReloadOnMount = request->isDone && !isMounted;
   let requestExpired = request->isExpired;
-  !requestLoading
-  && (requestNotAskedAndMonted || requestDoneButReloadOnMont || requestExpired);
+  requestNotAskedAndMounted || requestDoneButReloadOnMount || requestExpired;
 };
 
 let useGetter = (~toast=true, ~get, ~kind, ~setRequest, ()) => {
-  let addLog = LogsContext.useAdd();
-  let settings = ConfigContext.useSettings();
-
-  let get = input => {
-    setRequest(updateToLoadingState);
-    get(~settings, input)
-    ->logError(addLog(toast), kind)
-    ->Future.get(result => setRequest(_ => Done(result, Js.Date.now())));
-  };
-
-  get;
-};
-
-let useGetterSDK = (~toast=true, ~get, ~kind, ~setRequest, ()) => {
   let addLog = LogsContext.useAdd();
   let settings = ConfigContext.useSettings();
 
