@@ -125,6 +125,7 @@ module SubmitPrimary = {
         ~onPress,
         ~disabled=false,
         ~disabledLook=false,
+        ~danger=false,
         ~loading=?,
         ~fontSize=?,
         ~style as argStyle=?,
@@ -140,7 +141,12 @@ module SubmitPrimary = {
         arrayOption([|
           Some(styles##primary),
           Some(
-            style(~backgroundColor=theme.colors.primaryButtonBackground, ()),
+            style(
+              ~backgroundColor=
+                danger
+                  ? theme.colors.error : theme.colors.primaryButtonBackground,
+              (),
+            ),
           ),
           argStyle,
         |])

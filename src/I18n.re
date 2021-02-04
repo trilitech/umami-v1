@@ -164,9 +164,20 @@ let settings = {
   pub token_label = "Token Balance Viewer Contract";
   pub token_saved = "Token Balance Viewer Contract Saved";
   pub danger_title = "DANGER ZONE";
+  pub danger_reset_section = "Reset settings";
+  pub danger_reset_text = {js|This will remove or restore custom settings to default values.|js};
+  pub danger_reset_button = "RESET";
+  pub danger_reset_confirm_title = "Reset settings";
+  pub danger_reset_confirm_text = {js|This will remove or reset all customized settings to their defaults. Personnal data -including saved contacts, password and accounts- won't be affected.|js};
+  pub danger_reset_confirm_button = "RESET SETTINGS";
   pub danger_offboard_section = "Offboard wallet";
   pub danger_offboard_text = {js|Offboarding will permanently delete any data from this computer. The accounts are still available to be imported in the future ; in order to regain access to your accounts, please make sure that you keep the backup phrase.|js};
-  pub danger_offboard_button = "OFFBOARD"
+  pub danger_offboard_button = "OFFBOARD";
+  pub danger_offboard_form_title = "Offboard wallet";
+  pub danger_offboard_form_text = {js|Offboarding will permanently delete any data from this computer. Please acknowledge that you have read and understood the disclaimer, then enter « wasabi » to confirm. The accounts are still available to be imported in the future ; in order to regain access to your accounts, please make sure that you keep the recovery phrase.|js};
+  pub danger_offboard_form_checkbox_label = {js|I have read the warning and I am certain I want to delete my private keys locally. I also made sure to keep my recovery phrase.|js};
+  pub danger_offboard_form_input_placeholder = "Enter code word to confirm";
+  pub danger_offboard_form_input_error = "Not the correct confirm code word"
 };
 
 let t = {
