@@ -5,19 +5,19 @@ let make = (~onRefresh, ~loading, ~style as styleArg=?) => {
   let theme = ThemeContext.useTheme();
 
   let style =
-    Style.(arrayOption([|Some(SendButton.styles##button), styleArg|]));
+    Style.(
+      arrayOption([|
+        Some(SendButton.styles##button),
+        styleArg,
+        Some(style(~backgroundColor=theme.colors.elevatedBackground, ())),
+      |])
+    );
 
   loading
-    ? <LoadingView
-        style={Style.array([|style, FormStyles.square(40.)|])}
-        color={theme.colors.iconPrimary}
-      />
+    ? <LoadingView style={Style.array([|style, FormStyles.square(40.)|])} />
     : <IconButton
         size=40.
-        isActive=false
-        icon={(~color as _=?) =>
-          Icons.Refresh.build(~color=theme.colors.iconPrimary)
-        }
+        icon=Icons.Refresh.build
         onPress={_ => onRefresh()}
         style
       />;
