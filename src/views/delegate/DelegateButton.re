@@ -7,8 +7,8 @@ let styles =
         style(~alignSelf=`flexStart, ~overflow=`hidden, ~borderRadius=4., ()),
       "pressable":
         style(
-          ~height=36.->dp,
-          ~minWidth=103.->dp,
+          ~height=34.->dp,
+          ~minWidth=104.->dp,
           ~paddingHorizontal=16.->dp,
           ~justifyContent=`center,
           ~alignItems=`center,
@@ -48,7 +48,8 @@ let make =
         style=Style.(arrayOption([|Some(styles##pressable)|]))
         isPrimary=true
         onPress
-        disabled>
+        disabled
+        accessibilityRole=`button>
         <Typography.ButtonPrimary
           style=Style.(
             style(

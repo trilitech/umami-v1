@@ -5,7 +5,8 @@ type t = {
   explorerTest: option(string),
   natviewerMain: option(string),
   natviewerTest: option(string),
-  theme: option([ | `dark | `light]),
+  theme: option([ | `system | `dark | `light]),
+  confirmations: option(int),
   sdkBaseDir: option(string),
 };
 
@@ -16,9 +17,9 @@ let endpointTest = "https://edonet-tezos.giganode.io";
 let explorerMain = "https://mezos.lamini.ca/mezos/mainnet7";
 let explorerTest = "https://mezos.lamini.ca/mezos/edonet";
 let natviewerTest = "KT1QW4QRMgmdKFvq6MZhk3x85eriyL5AVoP4";
-let theme = `dark;
+let theme = `system;
 let sdkBaseDir = System.homeDir() ++ "/.tezos-client";
-
+let confirmations = 5;
 let mkSdkEndpoint = url => url ++ ":443";
 
 let default = {
@@ -29,6 +30,7 @@ let default = {
   natviewerMain: None,
   natviewerTest: Some(natviewerTest),
   theme: Some(theme),
+  confirmations: Some(confirmations),
   sdkBaseDir: Some(sdkBaseDir),
 };
 

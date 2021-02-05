@@ -1,7 +1,6 @@
 module Dark = {
   let maxEmphasis = "#FFF";
   let highEmphasis = "rgba(255,255,255,0.87)";
-  let reverseHighEmphasis = "rgba(0,0,0,0.87)";
   let mediumEmphasis = "rgba(255,255,255,0.6)";
   let disabled = "rgba(255,255,255,0.38)";
 
@@ -15,6 +14,8 @@ module Dark = {
   let barBackground = "#212121";
   let scrim = "rgba(92,92,92,0.32)";
 
+  let elevatedBackground = "#212121";
+
   let statePressed = "rgba(255, 255, 255, 0.1)";
   let stateHovered = "rgba(255, 255, 255, 0.04)";
   let stateActive = "rgba(255, 255, 255, 0.08)";
@@ -23,7 +24,6 @@ module Dark = {
 module Light = {
   let maxEmphasis = "#000";
   let highEmphasis = "rgba(0,0,0,0.87)";
-  let reverseHighEmphasis = "rgba(255,255,255,0.87)";
   let mediumEmphasis = "rgba(0,0,0,0.6)";
   let disabled = "rgba(0,0,0,0.38)";
 

@@ -41,7 +41,7 @@ let styles =
       "inner": style(~marginRight=10.->dp, ~marginLeft=14.->dp, ()),
       "actionButtons":
         style(~alignSelf=`flexEnd, ~flexDirection=`row, ~flex=1., ()),
-      "actionDelegate": style(~marginRight=12.->dp, ()),
+      "actionDelegate": style(~marginRight=8.->dp, ()),
       "actionMenu": style(~marginRight=24.->dp, ()),
       "button": style(~marginRight=4.->dp, ()),
     })

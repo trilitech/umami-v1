@@ -20,7 +20,7 @@ module Item = {
   let make =
       (~text, ~icon: Icons.builder, ~colorStyle=`highEmphasis, ~onPress=?) => {
     let theme = ThemeContext.useTheme();
-    <ThemedPressable ?onPress style=styles##button>
+    <ThemedPressable ?onPress style=styles##button accessibilityRole=`button>
       {icon(
          ~style=?None,
          ~size=20.,
@@ -51,7 +51,7 @@ let styles =
   );
 
 [@react.component]
-let make = (~icon: Icons.builder, ~children, ~size=42., ~style as styleArg=?) => {
+let make = (~icon: Icons.builder, ~children, ~size=34., ~style as styleArg=?) => {
   let pressableRef = React.useRef(Js.Nullable.null);
 
   let (isOpen, setIsOpen) = React.useState(_ => false);

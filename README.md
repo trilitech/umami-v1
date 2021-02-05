@@ -3,8 +3,8 @@
 Umami Wallet
 ===========================================================================
 
-Cryptocurrency wallet to interact with Tezos Blockchain. 
-Umami is a desktop electron based app with various features: 
+Cryptocurrency wallet to interact with Tezos Blockchain.
+Umami is a desktop electron based app with various features:
 
 - manage multiple accounts with XTZ
 - tranfers, delegates
@@ -48,7 +48,20 @@ You can use the provided script get-and-compile-tezos.sh, it will get and compil
 
 Builds the Electron app package for production to the `dist` folder.
 
-### Last update (25/01/2021)
+### Last update (05/01/2021)
+
+- Settings page
+- Refresh button in operations
+- Auto-refresh operation page on operation inclusion
+- Operations improvements (status, level, etc)
+- rename Tezos currency name from XTZ to tez
+- Token batches from transfer
+- Remove counter from advanced options
+- Binary deployments from CI for Linux and MacOs
+- Various bug fixes
+- Documentation
+
+### Previous update (25/01/2021)
 
 - Various Build system fixes/improvements
 - Single file download installation

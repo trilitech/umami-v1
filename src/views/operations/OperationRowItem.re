@@ -31,13 +31,13 @@ module CellAddress =
 
 module CellStatus =
   Table.MakeCell({
-    let style = Style.(style(~flexBasis=120.->dp, ~alignItems=`center, ()));
+    let style = Style.(style(~flexBasis=100.->dp, ()));
     ();
   });
 
 module CellDate =
   Table.MakeCell({
-    let style = Style.(style(~flexBasis=160.->dp, ()));
+    let style = Style.(style(~flexBasis=180.->dp, ()));
     ();
   });
 
@@ -50,12 +50,45 @@ module CellAction =
     ();
   });
 
+let status = (operation: Operation.Read.t, currentLevel, config: ConfigFile.t) => {
+  let (txt, colorStyle) =
+    switch (operation.status) {
+    | Mempool => (I18n.t#state_mempool, Some(`negative))
+    | Chain =>
+      let minConfirmations =
+        config.confirmations->Option.getWithDefault(ConfigFile.confirmations);
+
+      let currentConfirmations = currentLevel - operation.level;
+
+      currentConfirmations > minConfirmations
+        ? (I18n.t#state_confirmed, None)
+        : (
+          I18n.t#state_levels(currentConfirmations, minConfirmations),
+          Some(`negative),
+        );
+    };
+
+  <Typography.Body1 ?colorStyle> txt->React.string </Typography.Body1>;
+};
+
 let memo = component =>
-  React.memoCustomCompareProps(component, (prevPros, nextProps) =>
-    prevPros##operation == nextProps##operation
+  React.memoCustomCompareProps(
+    component,
+    (prevPros, nextProps) => {
+      let currentConfirmations =
+        prevPros##currentLevel - prevPros##operation.Operation.Read.level;
+
+      currentConfirmations > 5
+        ? prevPros##operation == nextProps##operation
+        : prevPros##operation ==
+          nextProps##operation
+          &&
+          prevPros##currentLevel ==
+          nextProps##currentLevel;
+    },
   );
 
-let amount = (account, transaction: Operation.Business.Transaction.t) => {
+let amount = (isToken, account, transaction: Operation.Business.Transaction.t) => {
   let colorStyle =
     account->Option.map((account: Account.t) =>
       account.address == transaction.destination ? `positive : `negative
@@ -64,18 +97,21 @@ let amount = (account, transaction: Operation.Business.Transaction.t) => {
   let op = colorStyle == Some(`positive) ? "+" : "-";
 
   <CellAmount>
-    <Typography.Body1 ?colorStyle>
-      {I18n.t#xtz_op_amount(op, transaction.amount->ProtocolXTZ.toString)
-       ->React.string}
-    </Typography.Body1>
+    {<Typography.Body1 ?colorStyle>
+       {I18n.t#xtz_op_amount(op, transaction.amount->ProtocolXTZ.toString)
+        ->React.string}
+     </Typography.Body1>
+     ->ReactUtils.onlyWhen(!isToken)}
   </CellAmount>;
 };
 
 [@react.component]
 let make =
-  memo((~operation: Operation.Read.t) => {
+  memo((~operation: Operation.Read.t, ~currentLevel) => {
     let account = StoreContext.SelectedAccount.useGet();
     let aliases = StoreContext.Aliases.useGetAll();
+    let tokens = StoreContext.Tokens.useGetAll();
+    let config = ConfigContext.useSettings().config;
 
     <Table.Row>
       {switch (operation.payload) {
@@ -98,13 +134,14 @@ let make =
              <CellAddress />
            </>
          | Transaction(transaction) =>
+           let isToken = tokens->Map.String.has(transaction.destination);
            <>
              <CellType>
                <Typography.Body1>
                  I18n.t#operation_transaction->React.string
                </Typography.Body1>
              </CellType>
-             {amount(account, transaction)}
+             {amount(isToken, account, transaction)}
              <CellFee>
                <Typography.Body1>
                  {business.fee->ProtocolXTZ.toString->React.string}
@@ -112,7 +149,7 @@ let make =
              </CellFee>
              <CellAddress>
                {business.source
-                ->AliasHelpers.getAliasFromAddress(aliases)
+                ->AliasHelpers.getContractAliasFromAddress(aliases, tokens)
                 ->Option.mapWithDefault(
                     <Typography.Address numberOfLines=1>
                       business.source->React.string
@@ -125,7 +162,7 @@ let make =
              </CellAddress>
              <CellAddress>
                {transaction.destination
-                ->AliasHelpers.getAliasFromAddress(aliases)
+                ->AliasHelpers.getContractAliasFromAddress(aliases, tokens)
                 ->Option.mapWithDefault(
                     <Typography.Address numberOfLines=1>
                       transaction.destination->React.string
@@ -136,7 +173,7 @@ let make =
                     </Typography.Body1>
                   )}
              </CellAddress>
-           </>
+           </>;
          | Origination(_origination) =>
            <>
              <CellType>
@@ -170,17 +207,10 @@ let make =
           {operation.timestamp->DateFns.format("P pp")->React.string}
         </Typography.Body1>
       </CellDate>
-      <CellStatus>
-        <Typography.Body1>
-          {switch (operation.status) {
-           | Mempool => I18n.t#state_in_mempool
-           | Chain => I18n.t#state_in_chain
-           }}
-          ->React.string
-        </Typography.Body1>
-      </CellStatus>
+      <CellStatus> {status(operation, currentLevel, config)} </CellStatus>
       <CellAction>
         <IconButton
+          size=34.
           icon=Icons.OpenExternal.build
           onPress={_ => {
             electron##shell##openExternal(

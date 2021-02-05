@@ -64,6 +64,9 @@ let make = (~mnemonic, ~onPressCancel, ~createAccountWithMnemonic, ~loading) => 
     form.submit();
   };
 
+  let formFieldsAreValids =
+    FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
+
   <>
     <FormGroupTextInput
       label=I18n.label#password
@@ -87,7 +90,12 @@ let make = (~mnemonic, ~onPressCancel, ~createAccountWithMnemonic, ~loading) => 
         onPress=onPressCancel
         disabled=loading
       />
-      <Buttons.SubmitPrimary text=I18n.btn#finish onPress=onSubmit loading />
+      <Buttons.SubmitPrimary
+        text=I18n.btn#finish
+        onPress=onSubmit
+        loading
+        disabledLook={!formFieldsAreValids}
+      />
     </View>
   </>;
 };

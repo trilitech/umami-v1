@@ -291,12 +291,6 @@ module InjectorRaw = (Caller: CallerAPI) => {
       | None => arguments
       };
     let arguments =
-      switch (common_options.counter) {
-      | Some(counter) =>
-        Js.Array2.concat(arguments, [|"-C", counter->Js.Int.toString|])
-      | None => arguments
-      };
-    let arguments =
       switch (tx_options.gasLimit) {
       | Some(gasLimit) =>
         Js.Array2.concat(arguments, [|"-G", gasLimit->Js.Int.toString|])
@@ -928,7 +922,11 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
                   );
                 } else {
                   network
-                  ->BalanceAPI.get(account, ~block=firstOperation.level, ())
+                  ->BalanceAPI.get(
+                      account,
+                      ~block=firstOperation.level->string_of_int,
+                      (),
+                    )
                   ->Future.mapOk(balance =>
                       {
                         initialBalance: balance,

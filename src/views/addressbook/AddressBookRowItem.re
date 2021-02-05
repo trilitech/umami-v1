@@ -95,7 +95,7 @@ let make =
         <QrButton account style=styles##button />
       </View>
       <View style=styles##actionMenu>
-        <Menu icon=Icons.More.build size=30.>
+        <Menu icon=Icons.More.build>
           <AliasEditButton account />
           <AliasDeleteButton account />
         </Menu>

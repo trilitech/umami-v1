@@ -9,7 +9,6 @@ type transfer_options = {
 
 type common_options = {
   fee: option(ProtocolXTZ.t),
-  counter: option(int),
   burnCap: option(ProtocolXTZ.t),
   confirmations: option(int),
   forceLowFee: option(bool),
@@ -56,17 +55,15 @@ let makeTransferOptions =
   entrypoint,
 };
 
-let makeCommonOptions =
-    (~fee, ~counter, ~burnCap, ~confirmations, ~forceLowFee, ()) => {
+let makeCommonOptions = (~fee, ~burnCap, ~confirmations, ~forceLowFee, ()) => {
   fee,
-  counter,
   burnCap,
   confirmations,
   forceLowFee,
 };
 
 let makeDelegate =
-    (~source, ~delegate, ~fee=?, ~burnCap=?, ~forceLowFee=?, ~counter=?, ()) => {
+    (~source, ~delegate, ~fee=?, ~burnCap=?, ~forceLowFee=?, ()) => {
   {
     source,
     delegate,
@@ -75,7 +72,6 @@ let makeDelegate =
         ~fee,
         ~burnCap,
         ~forceLowFee,
-        ~counter,
         ~confirmations=None,
         (),
       ),
@@ -84,8 +80,8 @@ let makeDelegate =
 
 let makeTransfer =
     (
-      ~amount,
       ~destination,
+      ~amount,
       ~fee=?,
       ~parameter=?,
       ~entrypoint=?,
@@ -107,26 +103,11 @@ let makeTransfer =
 };
 
 let makeTransaction =
-    (
-      ~source,
-      ~transfers,
-      ~counter=?,
-      ~burnCap=?,
-      ~forceLowFee=?,
-      ~confirmations=?,
-      (),
-    ) => {
+    (~source, ~transfers, ~burnCap=?, ~forceLowFee=?, ~confirmations=?, ()) => {
   source,
   transfers,
   options:
-    makeCommonOptions(
-      ~fee=None,
-      ~counter,
-      ~burnCap,
-      ~forceLowFee,
-      ~confirmations,
-      (),
-    ),
+    makeCommonOptions(~fee=None, ~burnCap, ~forceLowFee, ~confirmations, ()),
 };
 
 let makeSingleTransaction =
@@ -134,7 +115,6 @@ let makeSingleTransaction =
       ~source,
       ~amount,
       ~destination,
-      ~counter=?,
       ~burnCap=?,
       ~forceLowFee=?,
       ~confirmations=?,
@@ -159,14 +139,7 @@ let makeSingleTransaction =
     ),
   ],
   options:
-    makeCommonOptions(
-      ~fee=None,
-      ~counter,
-      ~burnCap,
-      ~forceLowFee,
-      ~confirmations,
-      (),
-    ),
+    makeCommonOptions(~fee=None, ~burnCap, ~forceLowFee, ~confirmations, ()),
 };
 
 type simulationResults = {

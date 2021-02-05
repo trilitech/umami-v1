@@ -30,12 +30,15 @@ let make = () => {
     />
     <Button
       onPress={_ =>
-        Token.makeSingleTransfer(
-          ~source,
-          ~destination,
-          ~amount=int_of_string(amount),
-          ~contract="KT1BUdnCMfBKdVxCKyBvMUqwLqm27EDGWskB",
-          (),
+        Token.(
+          makeSingleTransfer(
+            ~source,
+            ~destination,
+            ~amount=int_of_string(amount),
+            ~contract="KT1BUdnCMfBKdVxCKyBvMUqwLqm27EDGWskB",
+            (),
+          )
+          ->transfer
         )
         ->TokensAPI.simulate(AppSettings.testOnly(settings), _)
         ->Future.get(result =>

@@ -22,9 +22,9 @@ module Content = {
                <Typography.Overline2>
                  property->React.string
                </Typography.Overline2>
-               <Typography.Subtitle1>
+               <Typography.Body1 fontWeightStyle=`black>
                  value->React.string
-               </Typography.Subtitle1>
+               </Typography.Body1>
              </View>
            );
        }
@@ -39,36 +39,34 @@ module AccountInfo = {
     let aliases = StoreContext.Aliases.useGetAll();
 
     <View ?style>
-      <Typography.Overline1 colorStyle=`mediumEmphasis style=styles##title>
+      <Typography.Overline2 colorStyle=`mediumEmphasis style=styles##title>
         title->React.string
-      </Typography.Overline1>
+      </Typography.Overline2>
       {address
        ->AliasHelpers.getAliasFromAddress(aliases)
        ->ReactUtils.mapOpt(alias =>
-           <Typography.Subtitle1 style=styles##subtitle>
+           <Typography.Subtitle2 fontSize=16. style=styles##subtitle>
              alias->React.string
-           </Typography.Subtitle1>
+           </Typography.Subtitle2>
          )}
-      <Typography.Address fontSize=16.>
-        address->React.string
-      </Typography.Address>
+      <Typography.Address> address->React.string </Typography.Address>
     </View>;
   };
 };
 
-let buildDestinations = destinations => {
+let buildDestinations = (destinations, showCurrency) => {
   switch (destinations) {
   | `One(address, title) =>
     <AccountInfo style=styles##element address title />
-  | `Many(recipients) => <BatchView.Transactions recipients />
+  | `Many(recipients) => <BatchView.Transactions recipients showCurrency />
   };
 };
 
 [@react.component]
-let make = (~style=?, ~source, ~destinations, ~content) => {
+let make = (~style=?, ~source, ~destinations, ~showCurrency, ~content) => {
   <View ?style>
     <AccountInfo address={source->fst} title={source->snd} />
     {content->ReactUtils.hideNil(content => <Content content />)}
-    {buildDestinations(destinations)}
+    {buildDestinations(destinations, showCurrency)}
   </View>;
 };

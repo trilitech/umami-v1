@@ -1,11 +1,11 @@
 type colors = {
   textHighEmphasis: string,
-  textReverseHighEmphasis: string,
   textMediumEmphasis: string,
   textDisabled: string,
   textPositive: string,
   textNegative: string,
   textPrimary: string,
+  iconMaxEmphasis: string,
   iconHighEmphasis: string,
   iconMediumEmphasis: string,
   iconDisabled: string,
@@ -13,6 +13,7 @@ type colors = {
   background: string,
   barBackground: string,
   logBackground: string,
+  elevatedBackground: string,
   scrim: string,
   error: string,
   statePressed: string,
@@ -45,12 +46,12 @@ let lightTheme = {
   dark: false,
   colors: {
     textHighEmphasis: Colors.Light.highEmphasis,
-    textReverseHighEmphasis: Colors.Light.reverseHighEmphasis,
     textMediumEmphasis: Colors.Light.mediumEmphasis,
     textDisabled: Colors.Light.disabled,
     textPositive: Colors.Light.positive,
     textNegative: Colors.Light.negative,
     textPrimary: Colors.Light.primary,
+    iconMaxEmphasis: Colors.Light.maxEmphasis,
     iconHighEmphasis: Colors.Light.highEmphasis,
     iconMediumEmphasis: Colors.Light.mediumEmphasis,
     iconDisabled: Colors.Light.disabled,
@@ -58,6 +59,7 @@ let lightTheme = {
     background: Colors.Light.background,
     barBackground: Colors.Light.barBackground,
     logBackground: Colors.Dark.background,
+    elevatedBackground: Colors.Light.background,
     scrim: Colors.Light.scrim,
     error: Colors.error,
     statePressed: Colors.Light.statePressed,
@@ -84,12 +86,12 @@ let darkTheme = {
   dark: true,
   colors: {
     textHighEmphasis: Colors.Dark.highEmphasis,
-    textReverseHighEmphasis: Colors.Dark.reverseHighEmphasis,
     textMediumEmphasis: Colors.Dark.mediumEmphasis,
     textDisabled: Colors.Dark.disabled,
     textPositive: Colors.Dark.positive,
     textNegative: Colors.Dark.negative,
     textPrimary: Colors.Dark.primary,
+    iconMaxEmphasis: Colors.Dark.maxEmphasis,
     iconHighEmphasis: Colors.Dark.highEmphasis,
     iconMediumEmphasis: Colors.Dark.mediumEmphasis,
     iconDisabled: Colors.Dark.disabled,
@@ -97,6 +99,7 @@ let darkTheme = {
     background: Colors.Dark.background,
     barBackground: Colors.Dark.barBackground,
     logBackground: Colors.Light.background,
+    elevatedBackground: Colors.Dark.elevatedBackground,
     scrim: Colors.Dark.scrim,
     error: Colors.error,
     statePressed: Colors.Dark.statePressed,
@@ -119,16 +122,19 @@ let darkTheme = {
   },
 };
 
-type themeMain = [ | `dark | `light];
+type themeMain = [ | `system | `dark | `light];
 
 type state = {
   theme,
-  switchTheme: unit => unit,
+  themeSetting: (themeMain, (themeMain => themeMain) => unit),
 };
 
 // Context and Provider
 
-let initialState = {theme: lightTheme, switchTheme: () => ()};
+let initialState = {
+  theme: lightTheme,
+  themeSetting: (ConfigFile.theme, _ => ()),
+};
 let context = React.createContext(initialState);
 
 module Provider = {
@@ -142,29 +148,69 @@ module Provider = {
 
 // Final Provider
 
+[@bs.val] external window: 'a = "window";
+let mediaQueryColorSchemeDark =
+  window##matchMedia("(prefers-color-scheme: dark)");
+
 [@react.component]
 let make = (~children) => {
   let writeConf = ConfigContext.useWrite();
   let settings = ConfigContext.useSettings();
-  let (themeMain, setMain) =
-    React.useState(_ => settings.config.theme->Option.getWithDefault(`dark));
-  React.useEffect1(() => {None}, [|setMain|]);
 
-  let switchTheme = () =>
-    setMain(_ => {
-      let theme = themeMain == `dark ? `light : `dark;
-      writeConf(c => {...c, theme: Some(theme)});
-      theme;
+  let (themeConfig, setThemeConfig) =
+    React.useState(_ =>
+      settings.config.theme->Option.getWithDefault(ConfigFile.theme)
+    );
+
+  let (prefersColorSchemeDark, setPrefersColorSchemeDark) =
+    React.useState(_ => mediaQueryColorSchemeDark##matches);
+
+  let listener =
+    React.useCallback1(
+      event => {setPrefersColorSchemeDark(_ => event##matches)},
+      [|setPrefersColorSchemeDark|],
+    );
+
+  React.useEffect1(
+    () => {
+      mediaQueryColorSchemeDark##addEventListener("change", listener)->ignore;
+      Some(
+        () => {
+          mediaQueryColorSchemeDark##removeEventListener("change", listener)
+          ->ignore
+        },
+      );
+    },
+    [|listener|],
+  );
+
+  let setThemeSetting = updater => {
+    setThemeConfig(prevThemeConfig => {
+      let newThemeConfig = updater(prevThemeConfig);
+      writeConf(c =>
+        {
+          ...c,
+          theme:
+            switch (newThemeConfig) {
+            | `system => None
+            | other => Some(other)
+            },
+        }
+      );
+      newThemeConfig;
     });
+  };
 
   <Provider
     value={
       theme:
-        switch (themeMain) {
-        | `dark => darkTheme
-        | `light => lightTheme
+        switch (themeConfig, prefersColorSchemeDark) {
+        | (`system, true)
+        | (`dark, _) => darkTheme
+        | (`system, false)
+        | (`light, _) => lightTheme
         },
-      switchTheme,
+      themeSetting: (themeConfig, setThemeSetting),
     }>
     children
   </Provider>;
@@ -173,4 +219,5 @@ let make = (~children) => {
 // Hooks
 
 let useTheme = () => React.useContext(context).theme;
-let useSwitch = () => React.useContext(context).switchTheme;
+
+let useThemeSetting = () => React.useContext(context).themeSetting;

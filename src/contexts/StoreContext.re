@@ -18,7 +18,8 @@ type state = {
   delegateRequestsState: apiRequestsState(option(string)),
   delegateInfoRequestsState:
     apiRequestsState(DelegateApiRequest.DelegateAPI.delegationInfo),
-  operationsRequestsState: apiRequestsState(array(Operation.Read.t)),
+  operationsRequestsState: apiRequestsState((array(Operation.Read.t), int)),
+  operationsConfirmations: reactState(Set.String.t),
   aliasesRequestState: reactState(ApiRequest.t(Map.String.t(Account.t))),
   bakersRequestState: reactState(ApiRequest.t(array(Delegate.t))),
   tokensRequestState: reactState(ApiRequest.t(Map.String.t(Token.t))),
@@ -37,6 +38,7 @@ let initialState = {
   delegateRequestsState: initialApiRequestsState,
   delegateInfoRequestsState: initialApiRequestsState,
   operationsRequestsState: initialApiRequestsState,
+  operationsConfirmations: (Set.String.empty, _ => ()),
   aliasesRequestState: (NotAsked, _ => ()),
   bakersRequestState: (NotAsked, _ => ()),
   tokensRequestState: (NotAsked, _ => ()),
@@ -71,6 +73,7 @@ let make = (~children) => {
   let delegateInfoRequestsState = React.useState(() => Map.String.empty);
   let operationsRequestsState = React.useState(() => Map.String.empty);
   let balanceTokenRequestsState = React.useState(() => Map.String.empty);
+  let operationsConfirmations = React.useState(() => Set.String.empty);
 
   let aliasesRequestState = React.useState(() => ApiRequest.NotAsked);
   let bakersRequestState = React.useState(() => ApiRequest.NotAsked);
@@ -106,6 +109,7 @@ let make = (~children) => {
       delegateRequestsState,
       delegateInfoRequestsState,
       operationsRequestsState,
+      operationsConfirmations,
       aliasesRequestState,
       bakersRequestState,
       tokensRequestState,
@@ -159,6 +163,9 @@ let useRequestsState = (getRequestsState, key: option(string)) => {
 
 let resetRequests = requestsState =>
   requestsState->Map.String.map(ApiRequest.updateToResetState);
+
+let reloadRequests = requestsState =>
+  requestsState->Map.String.map(ApiRequest.updateToLoadingState);
 
 //
 
@@ -361,9 +368,32 @@ module Operations = {
     };
   };
 
+  let useReloadAll = () => {
+    let store = useStoreContext();
+    let resetBalances = Balance.useResetAll();
+    let resetBalanceTokens = BalanceToken.useResetAll();
+    let resetDelegatesAndDelegatesInfo = DelegateInfo.useResetAll();
+    let (_, setOperationsRequests) = store.operationsRequestsState;
+    () => {
+      setOperationsRequests(reloadRequests);
+      resetBalances();
+      resetBalanceTokens();
+      resetDelegatesAndDelegatesInfo();
+    };
+  };
+
   let useCreate = () => {
     let resetOperations = useResetAll();
-    OperationApiRequest.useCreate(~sideEffect=_ => resetOperations(), ());
+    let settings = ConfigContext.useSettings();
+    OperationApiRequest.useCreate(
+      ~sideEffect=
+        ((hash, branch)) => {
+          resetOperations();
+          OperationApiRequest.waitForConfirmation(settings, hash, branch)
+          ->Future.get(_ => resetOperations());
+        },
+      (),
+    );
   };
 
   let useSimulate = () => {

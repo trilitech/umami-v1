@@ -19,7 +19,7 @@ module Simulation = {
 };
 
 let makeDelegate =
-    (~source, ~delegate, ~fee=?, ~burnCap=?, ~forceLowFee=?, ~counter=?, ()) => {
+    (~source, ~delegate, ~fee=?, ~burnCap=?, ~forceLowFee=?, ()) => {
   {
     source,
     delegate,
@@ -28,7 +28,6 @@ let makeDelegate =
         ~fee,
         ~burnCap,
         ~forceLowFee,
-        ~counter,
         ~confirmations=None,
         (),
       ),
@@ -37,22 +36,13 @@ let makeDelegate =
 };
 
 let makeTransaction =
-    (
-      ~source,
-      ~transfers,
-      ~counter=?,
-      ~burnCap=?,
-      ~forceLowFee=?,
-      ~confirmations=?,
-      (),
-    ) =>
+    (~source, ~transfers, ~burnCap=?, ~forceLowFee=?, ~confirmations=?, ()) =>
   transaction({
     source,
     transfers,
     options:
       makeCommonOptions(
         ~fee=None,
-        ~counter,
         ~burnCap,
         ~forceLowFee,
         ~confirmations,
@@ -65,7 +55,6 @@ let makeSingleTransaction =
       ~source,
       ~amount,
       ~destination,
-      ~counter=?,
       ~burnCap=?,
       ~forceLowFee=?,
       ~confirmations=?,
@@ -93,7 +82,6 @@ let makeSingleTransaction =
     options:
       makeCommonOptions(
         ~fee=None,
-        ~counter,
         ~burnCap,
         ~forceLowFee,
         ~confirmations,
@@ -205,7 +193,8 @@ module Read = {
 
   type t = {
     id: string,
-    level: string,
+    op_id: int,
+    level: int,
     timestamp: Js.Date.t,
     block: option(string),
     hash: string,
@@ -218,7 +207,8 @@ module Read = {
   let decode = json => {
     Json.Decode.{
       id: json |> field("id", string),
-      level: json |> field("level", string),
+      op_id: json |> field("op_id", int),
+      level: json |> field("level", string) |> int_of_string,
       timestamp: json |> field("timestamp", date),
       block: json |> field("block", optional(string)),
       hash: json |> field("hash", string),
@@ -234,8 +224,9 @@ module Read = {
     let op =
       json |> field("operation", Js.Json.stringify) |> Json.parseOrRaise;
     {
-      id: op_id |> string_of_int,
-      level: json |> field("last_seen_level", int) |> string_of_int,
+      id: "",
+      op_id,
+      level: json |> field("last_seen_level", int),
       timestamp:
         json
         |> field("first_seen_timestamp", float)
@@ -251,7 +242,7 @@ module Read = {
   module Comparator =
     Id.MakeComparable({
       type t = operation;
-      let cmp = ({hash: hash1}, {hash: hash2}) =>
-        Pervasives.compare(hash1, hash2);
+      let cmp = ({hash: hash1, op_id: id1}, {hash: hash2, op_id: id2}) =>
+        Pervasives.compare((hash1, id1), (hash2, id2));
     });
 };

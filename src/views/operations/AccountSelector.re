@@ -34,9 +34,7 @@ module AccountItem = {
          | Amount(e) => e
          }}
       </View>
-      <Typography.Address fontSize=16.>
-        account.address->React.string
-      </Typography.Address>
+      <Typography.Address> account.address->React.string </Typography.Address>
     </View>;
   };
 };

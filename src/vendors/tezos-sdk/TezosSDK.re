@@ -105,3 +105,12 @@ let renameAliases = (sdk, renameAlias) =>
   sdk
   |> Js.Promise.then_(sdk => renameAliases(sdk.lib, sdk.cctxt, renameAlias))
   |> fromPromise;
+
+[@bs.send]
+external currentLevel: (lib, cctxt, int) => Js.Promise.t(result(int)) =
+  "current_level";
+
+let currentLevel = sdk =>
+  sdk
+  |> Js.Promise.then_(sdk => currentLevel(sdk.lib, sdk.cctxt, 0))
+  |> fromPromise;

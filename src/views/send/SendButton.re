@@ -37,7 +37,11 @@ let make = () => {
           style(~backgroundColor=theme.colors.primaryButtonBackground, ()),
         |])
       )>
-      <ThemedPressable isPrimary=true style=styles##iconContainer onPress>
+      <ThemedPressable
+        isPrimary=true
+        style=styles##iconContainer
+        onPress
+        accessibilityRole=`button>
         <Icons.Send size=24. color={theme.colors.primaryIconHighEmphasis} />
         <Typography.ButtonSecondary
           fontSize=13.

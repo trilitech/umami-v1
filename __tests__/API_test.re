@@ -123,10 +123,11 @@ describe("API tests", ({testAsync}) => {
     let expected: array(Operation.Read.t) = [|
       {
         id: "9323046000",
-        level: "704778",
+        level: 704778,
         timestamp: Js.Date.fromString("2020-09-07T15:13:52Z"),
         block: Some("BLmmAGRe4JkyT2aD2vWoFYS6NF4e49XoXvMfcCdvbUmjve8uRkh"),
         hash: "opZj2yByVxxEg4YRsZcERMqiy9VgnJkzDGQBPdFNycxxsFBZYus",
+        op_id: 0,
         status: Chain,
         payload:
           Business({
@@ -141,11 +142,12 @@ describe("API tests", ({testAsync}) => {
       },
       {
         id: "9216974000",
-        level: "696545",
+        level: 696545,
         timestamp: Js.Date.fromString("2020-09-04T10:00:58Z"),
         block: Some("BLK27pNneaexvbE4QwgEqdsSA5NM8f8XMxbYu1ufbhWD7Dhh3eG"),
         hash: "opQTxvSXMGuZ2rkox6q7ZNQhdp9a1j1ELoVdnHcvrh5ShyocEFD",
         status: Chain,
+        op_id: 0,
         payload:
           Business({
             source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
@@ -241,7 +243,8 @@ describe("API tests", ({testAsync}) => {
     let expected: array(Operation.Read.t) = [|
       {
         id: "1226434000",
-        level: "114452",
+        level: 114452,
+        op_id: 0,
         timestamp: Js.Date.fromString("2020-01-15T11:34:47Z"),
         block: Some("BMKrQdWfmYtsGVPR7kp2HohJbWRFSB7tWZdRCARVLcNnZTQhJMR"),
         status: Chain,
@@ -343,7 +346,8 @@ describe("API tests", ({testAsync}) => {
     let expected: array(Operation.Read.t) = [|
       {
         id: "9216974000",
-        level: "696545",
+        op_id: 0,
+        level: 696545,
         timestamp: Js.Date.fromString("2020-09-04T10:00:58Z"),
         block: Some("BLK27pNneaexvbE4QwgEqdsSA5NM8f8XMxbYu1ufbhWD7Dhh3eG"),
         status: Chain,
@@ -447,7 +451,8 @@ describe("API tests", ({testAsync}) => {
     let expected: array(Operation.Read.t) = [|
       {
         id: "7553106000",
-        level: "573751",
+        op_id: 0,
+        level: 573751,
         timestamp: Js.Date.fromString("2020-07-17T08:20:00Z"),
         block: Some("BLvjLexwMByGckFEqn6rAwFMwdN89vZ5L4YZ6UG43w2j2JX7tDG"),
         status: Chain,
@@ -546,7 +551,8 @@ describe("API tests", ({testAsync}) => {
     let expected: array(Operation.Read.t) = [|
       {
         id: "9323046000",
-        level: "704778",
+        op_id: 0,
+        level: 704778,
         timestamp: Js.Date.fromString("2020-09-07T15:13:52Z"),
         block: Some("BLmmAGRe4JkyT2aD2vWoFYS6NF4e49XoXvMfcCdvbUmjve8uRkh"),
         status: Chain,
@@ -601,7 +607,8 @@ describe("API tests", ({testAsync}) => {
     let expected: array(Operation.Read.t) = [|
       {
         id: "9323046000",
-        level: "704778",
+        op_id: 0,
+        level: 704778,
         timestamp: Js.Date.fromString("2020-09-07T15:13:52Z"),
         block: Some("BLmmAGRe4JkyT2aD2vWoFYS6NF4e49XoXvMfcCdvbUmjve8uRkh"),
         status: Chain,

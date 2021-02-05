@@ -33,7 +33,7 @@ let make = (~hash, ~onPressCancel, ~submitText=I18n.btn#ok) => {
       I18n.t#operation_hash->React.string
     </Typography.Overline2>
     <View style=styles##addressContainer>
-      <Typography.Address fontSize=16. style=styles##address>
+      <Typography.Address style=styles##address>
         hash->React.string
       </Typography.Address>
       <ClipboardButton copied=I18n.log#address addToast data=hash />

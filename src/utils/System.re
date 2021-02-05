@@ -52,6 +52,19 @@ module File = {
       })
     });
   };
+
+  type rmdirOption = {recursive: bool};
+
+  let rmdir = (path: string): Future.t(Result.t(unit, string)) => {
+    Future.make(resolve => {
+      fs##rmdir(path, {recursive: true}, e => {
+        switch (Js.Nullable.toOption(e)) {
+        | Some(e) => Error(e)->resolve
+        | None => Ok()->resolve
+        }
+      })
+    });
+  };
 };
 
 module Config = {
@@ -60,4 +73,8 @@ module Config = {
 
   let write = s => File.write(~name=getPath(), s);
   let read = () => File.read(getPath());
+};
+
+module Client = {
+  let reset = path => File.rmdir(path);
 };

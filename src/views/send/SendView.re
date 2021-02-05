@@ -109,19 +109,24 @@ let sourceDestination = (transfer: SendForm.transaction) => {
         (None, (t.destination, t.amount->ProtocolXTZ.toString))
       );
     ((source, sourceLbl), `Many(destinations));
-  | TokenTransfer(_, _, source, destination) => (
+  | TokenTransfer(
+      {source, transfers: [{destination}]}: Token.Transfer.t,
+      _,
+    ) => (
       (source, sourceLbl),
       `One((destination, recipientLbl)),
     )
+  | TokenTransfer({source, transfers}: Token.Transfer.t, _) =>
+    let destinations =
+      transfers->List.map(t =>
+        (None, (t.destination, t.amount->Int.toString))
+      );
+    ((source, sourceLbl), `Many(destinations));
   };
 };
 
 let buildSummaryContent =
-    (
-      transaction: SendForm.transaction,
-      token,
-      dryRun: Protocol.simulationResults,
-    ) => {
+    (transaction: SendForm.transaction, dryRun: Protocol.simulationResults) => {
   switch (transaction) {
   | ProtocolTransaction({transfers}) =>
     let amount =
@@ -142,19 +147,42 @@ let buildSummaryContent =
       I18n.t#xtz_amount(dryRun.fee->ProtocolXTZ.toString),
     );
     [subtotal, fee, total];
-  | TokenTransfer(_, amount, _source, _destination) =>
+  | TokenTransfer({transfers}, token) =>
+    let amount = transfers->List.reduce(0, (acc, {amount}) => acc + amount);
+    let amount = I18n.t#amount(amount->Int.toString, token.symbol);
+
     let fee = (
       I18n.label#fee,
       I18n.t#xtz_amount(dryRun.fee->ProtocolXTZ.toString),
     );
-    let amount =
-      token->Option.mapWithDefault("", (Token.{symbol}) =>
-        I18n.t#amount(amount->Js.Int.toString, symbol)
-      );
     let amount = (I18n.label#send_amount, amount);
     [amount, fee];
   };
 };
+
+let reduceAmounts = token =>
+  switch (token) {
+  | Some(_) => (
+      amounts =>
+        amounts
+        ->List.reduce(0, (total, SendForm.StateLenses.{amount}) =>
+            Int.fromString(amount)->Option.getWithDefault(0) + total
+          )
+        ->Int.toString
+    )
+
+  | None => (
+      amounts => {
+        ProtocolXTZ.(
+          amounts
+          ->List.reduce(zero, (total, {amount}) =>
+              Infix.(fromString(amount)->Option.getWithDefault(zero) + total)
+            )
+          ->toString
+        );
+      }
+    )
+  };
 
 module Form = {
   let defaultInit = (account: option(Account.t)) =>
@@ -163,7 +191,6 @@ module Form = {
       sender: account->Option.mapWithDefault("", a => a.address),
       recipient: "",
       fee: "",
-      counter: "",
       gasLimit: "",
       storageLimit: "",
       forceLowFee: false,
@@ -183,10 +210,6 @@ module Form = {
                 Amount,
               )
             + custom(values => FormUtils.isValidFloat(values.fee), Fee)
-            + custom(
-                values => FormUtils.isValidInt(values.counter),
-                Counter,
-              )
             + custom(
                 values => FormUtils.isValidInt(values.gasLimit),
                 GasLimit,
@@ -237,7 +260,8 @@ module Form = {
       | Edition(int)
       | Creation(option(unit => unit), unit => unit);
 
-    let simulatedTransaction = (mode, batch, form: SendForm.api, token) => {
+    let simulatedTransaction =
+        (mode, batch, form: SendForm.api, token, confirmations) => {
       let (batch, index) =
         switch (mode) {
         | Edition(index) =>
@@ -256,7 +280,7 @@ module Form = {
           (batch, Some(length - 1));
         };
 
-      SendForm.buildTransaction(batch, token)
+      SendForm.buildTransaction(batch, token, confirmations)
       |> SendForm.toSimulation(~index?);
     };
 
@@ -270,6 +294,7 @@ module Form = {
           ~mode,
           ~form,
           ~loading,
+          ~config: ConfigFile.t,
         ) => {
       let (advancedOptionOpened, setAdvancedOptionOpened) = advancedOptionState;
       let (selectedToken, setSelectedToken) = tokenState;
@@ -292,8 +317,11 @@ module Form = {
 
       let onSubmit = onSubmitAll->Option.getWithDefault(() => form.submit());
 
+      let formFieldsAreValids =
+        FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
+
       <>
-        <ReactFlipToolkit.FlippedView flipId="form">
+        <ReactFlipToolkit.FlippedView flipId="form" zIndex=3>
           <View style=FormStyles.header>
             <Typography.Headline>
               I18n.title#send->React.string
@@ -343,6 +371,7 @@ module Form = {
           </TouchableOpacity>
         </ReactFlipToolkit.FlippedView>
         <ReactFlipToolkit.FlippedView
+          zIndex=1
           flipId="advancedOption"
           scale=false
           translate=advancedOptionOpened
@@ -358,6 +387,7 @@ module Form = {
                        batch,
                        form,
                        token,
+                       config.confirmations,
                      )}
                      form
                    />
@@ -365,22 +395,21 @@ module Form = {
                : React.null}
           </ReactFlipToolkit.Flipper>
         </ReactFlipToolkit.FlippedView>
-        <ReactFlipToolkit.FlippedView flipId="submit">
+        <ReactFlipToolkit.FlippedView flipId="submit" zIndex=2>
           <View style=FormStyles.verticalFormAction>
             <Buttons.SubmitPrimary
               text=submitLabel
               onPress={_ => onSubmit()}
               loading
+              disabledLook={!formFieldsAreValids}
             />
-            {onAddToBatch
-             ->ReactUtils.mapOpt(addToBatch =>
-                 <Buttons.FormSecondary
-                   style=styles##addTransaction
-                   text=I18n.btn#start_batch_transaction
-                   onPress={_ => addToBatch()}
-                 />
-               )
-             ->ReactUtils.onlyWhen(token == None)}
+            {onAddToBatch->ReactUtils.mapOpt(addToBatch =>
+               <Buttons.FormSecondary
+                 style=styles##addTransaction
+                 text=I18n.btn#start_batch_transaction
+                 onPress={_ => addToBatch()}
+               />
+             )}
           </View>
         </ReactFlipToolkit.FlippedView>
       </>;
@@ -390,7 +419,7 @@ module Form = {
 
 module EditionView = {
   [@react.component]
-  let make = (~batch, ~initValues, ~onSubmit, ~index, ~loading) => {
+  let make = (~batch, ~initValues, ~onSubmit, ~index, ~loading, ~config) => {
     let (initValues, advancedOptionOpened) = initValues;
 
     let (advancedOptionOpened, _) as advancedOptionState =
@@ -405,6 +434,7 @@ module EditionView = {
       form
       mode={Form.View.Edition(index)}
       loading
+      config
     />;
   };
 };
@@ -415,6 +445,8 @@ let make = (~closeAction) => {
   let initToken = StoreContext.SelectedToken.useGet();
 
   let updateAccount = StoreContext.SelectedAccount.useSet();
+
+  let settings = ConfigContext.useSettings();
 
   let (advancedOptionsOpened, setAdvancedOptions) as advancedOptionState =
     React.useState(_ => false);
@@ -446,7 +478,12 @@ let make = (~closeAction) => {
   let submitAction = React.useRef(`SubmitAll);
 
   let onSubmitBatch = batch => {
-    let transaction = SendForm.buildTransaction(batch->List.reverse, token);
+    let transaction =
+      SendForm.buildTransaction(
+        batch->List.reverse,
+        token,
+        settings.config.confirmations,
+      );
     sendOperationSimulate(SendForm.toSimulation(transaction))
     ->Future.tapOk(dryRun => {
         setModalStep(_ => PasswordStep(transaction, dryRun))
@@ -515,6 +552,12 @@ let make = (~closeAction) => {
   let loadingSimulate = operationSimulateRequest->ApiRequest.isLoading;
   let loading = operationRequest->ApiRequest.isLoading;
 
+  let showCurrency = {
+    token->Option.mapWithDefault(I18n.t#xtz_amount, (token, a) =>
+      I18n.t#amount(a, token.symbol)
+    );
+  };
+
   <ReactFlipToolkit.Flipper
     flipKey={advancedOptionsOpened->string_of_bool ++ modalStep->stepToString}>
     <ReactFlipToolkit.FlippedView flipId="modal">
@@ -531,6 +574,8 @@ let make = (~closeAction) => {
              <BatchView
                onAddTransfer={_ => setModalStep(_ => SendStep)}
                batch
+               showCurrency
+               reduceAmounts={reduceAmounts(token)}
                onSubmitBatch
                onEdit={(i, v) => setModalStep(_ => EditStep(i, v))}
                onDelete
@@ -539,7 +584,14 @@ let make = (~closeAction) => {
            | EditStep(index, initValues) =>
              let onSubmit = (advOpened, form) =>
                onEdit(index, advOpened, form);
-             <EditionView batch initValues onSubmit index loading=false />;
+             <EditionView
+               batch
+               initValues
+               onSubmit
+               index
+               loading=false
+               config={settings.config}
+             />;
            | SendStep =>
              let onSubmit = batch != [] ? onAddToBatch : onSubmitAll;
              let onAddToBatch = batch != [] ? None : Some(onAddToBatch);
@@ -551,6 +603,7 @@ let make = (~closeAction) => {
                form
                mode={Form.View.Creation(onAddToBatch, onSubmit)}
                loading=loadingSimulate
+               config={settings.config}
              />;
            | PasswordStep(transfer, dryRun) =>
              let (source, destinations) = sourceDestination(transfer);
@@ -559,7 +612,8 @@ let make = (~closeAction) => {
                source
                destinations
                subtitle=I18n.expl#confirm_operation
-               content={buildSummaryContent(transfer, token, dryRun)}
+               content={buildSummaryContent(transfer, dryRun)}
+               showCurrency
                sendOperation={sendTransfer(transfer)}
                loading
              />;

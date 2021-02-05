@@ -35,8 +35,8 @@
     "tezos-sdk": "link:./src/vendors/tezos-sdk"
   },
   "scripts": {
-    "start": "EXTEND_ESLINT=true react-app-rewired start",
-    "build": "EXTEND_ESLINT=true react-app-rewired build",
+    "start": "GENERATE_SOURCEMAP=false EXTEND_ESLINT=true react-app-rewired start",
+    "build": "GENERATE_SOURCEMAP=false EXTEND_ESLINT=true react-app-rewired build",
     "test": "yarn bsb:build && jest --coverage",
     "bsb:start": "bsb -make-world -w",
     "bsb:build": "bsb -make-world",
@@ -44,7 +44,6 @@
     "postinstall": "electron-builder install-app-deps",
     "electron:dev": "concurrently -k \"cross-env BROWSER=none yarn start\" \"wait-on tcp:3000 && tsc -p electron && electron --disable-gpu .\"",
     "electron:build": "yarn bsb:build && yarn build && tsc -p electron && electron-builder",
-    "electron:buildAll": "yarn bsb:build && yarn build && tsc -p electron && electron-builder",
     "eject": "react-app-rewired eject",
     "fromsvg": "react-from-svg src/svg/source src/svg/components --remove-stroke --remove-fill --with-native-for-reason"
   },
@@ -58,6 +57,12 @@
     },
     "files": [
       "build/**/*"
+    ],
+    "extraResources": [
+      {
+       "from": "./public",
+       "to": "./public"
+      }
     ],
     "directories": {
       "buildResources": "assets"

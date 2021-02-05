@@ -46,7 +46,8 @@ module FormBase = {
         outerStyle=styles##outer
         isPrimary
         onPress
-        disabled={disabled || loading}>
+        disabled={disabled || loading}
+        accessibilityRole=`button>
         {loading
            ? <ActivityIndicator
                animating=true
@@ -123,6 +124,8 @@ module SubmitPrimary = {
         ~text,
         ~onPress,
         ~disabled=false,
+        ~disabledLook=false,
+        ~danger=false,
         ~loading=?,
         ~fontSize=?,
         ~style as argStyle=?,
@@ -136,16 +139,23 @@ module SubmitPrimary = {
       ?loading
       vStyle=Style.(
         arrayOption([|
-          argStyle,
           Some(styles##primary),
           Some(
-            style(~backgroundColor=theme.colors.primaryButtonBackground, ()),
+            style(
+              ~backgroundColor=
+                danger
+                  ? theme.colors.error : theme.colors.primaryButtonBackground,
+              (),
+            ),
           ),
+          argStyle,
         |])
       )>
       <Typography.ButtonPrimary
         ?fontSize
-        colorStyle={disabled ? `reverseHighEmphasis : `reverseHighEmphasis}>
+        colorStyle={
+          disabled || disabledLook ? `primaryDisabled : `primaryHighEmphasis
+        }>
         text->React.string
       </Typography.ButtonPrimary>
     </FormBase>;

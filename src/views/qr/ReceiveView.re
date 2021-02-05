@@ -40,7 +40,7 @@ let make = (~account: Account.t, ~onPressCancel) => {
       </View>
     </View>
     <View style=styles##addressContainer>
-      <Typography.Address fontSize=16. style=styles##address>
+      <Typography.Address style=styles##address>
         account.address->React.string
       </Typography.Address>
       <ClipboardButton

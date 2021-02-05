@@ -6,6 +6,7 @@ type t =
   | AddressBook
   | Delegations
   | Tokens
+  | Settings
   | Debug
   | NotFound;
 
@@ -19,6 +20,7 @@ let match = (url: url) => {
   | "/address-book" => AddressBook
   | "/delegations" => Delegations
   | "/tokens" => Tokens
+  | "/settings" => Settings
   | "/debug" => Debug
   | _ => NotFound
   };
@@ -31,6 +33,7 @@ let toHref =
   | AddressBook => "#/address-book"
   | Delegations => "#/delegations"
   | Tokens => "#/tokens"
+  | Settings => "#/settings"
   | Debug => "#/debug"
   | NotFound => raise(RouteToNotFound);
 

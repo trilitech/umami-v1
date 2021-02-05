@@ -11,6 +11,8 @@ let btn = {
   pub finish = "FINISH";
   pub add = "ADD";
   pub send = "SEND";
+  pub save = "SAVE";
+  pub validate_save = "VALIDATE AND SAVE";
   pub go_back = "GO BACK";
   pub go_operations = "GO TO OPERATIONS";
   pub confirm = "CONFIRM";
@@ -74,7 +76,7 @@ let input_placeholder = {
   pub _this = this;
   pub add_token_address = "Enter KT1 address of a contract";
   pub add_token_name = "e.g. Tezos";
-  pub add_token_symbol = "e.g. XTZ"
+  pub add_token_symbol = "e.g. tez, KLD, ..."
 };
 
 let title = {
@@ -127,7 +129,7 @@ let expl = {
   pub account_create_record_verify = {j|We will now verify that you’ve properly recorded your recovery phrase. To demonstrate this, please type in the word that corresponds to each sequence number.|j};
   pub account_create_password_not_recorded = {j|Please note that this password is not recorded anywhere and only applies to this machine.|j};
   pub import_account_enter_phrase = {j|Please fill in the recovery phrase in sequence.|j};
-  pub confirm_operation = "Please confirm the details of the operation";
+  pub confirm_operation = "Please validate the details of the transaction and enter password to confirm";
   pub batch = "Review, edit or delete the transactions of the batch";
   pub operation = "The operation will be processed and confirmed, you can see its progress in the Operations section."
 };
@@ -145,13 +147,48 @@ let menu = {
   pub batch_delete = "Delete transfer"
 };
 
+let settings = {
+  pub _this = this;
+  pub theme_title = "THEME";
+  pub theme_system = "Default to system";
+  pub theme_dark = "Dark";
+  pub theme_light = "Light";
+  pub confirmations_title = "VERIFICATION";
+  pub confirmations_label = "Number of confirmations (blocks)";
+  pub confirmations_saved = "Number of confirmations Saved";
+  pub chain_title = {j|CHAIN/NETWORK|j};
+  pub chain_node_label = "Node URL";
+  pub chain_mezos_label = "Mezos URL";
+  pub chain_saved = "Chain URLs Saved";
+  pub token_title = "TOKENS";
+  pub token_label = "Token Balance Viewer Contract";
+  pub token_saved = "Token Balance Viewer Contract Saved";
+  pub danger_title = "DANGER ZONE";
+  pub danger_reset_section = "Reset settings";
+  pub danger_reset_text = {js|This will remove or restore custom settings to default values.|js};
+  pub danger_reset_button = "RESET";
+  pub danger_reset_confirm_title = "Reset settings";
+  pub danger_reset_confirm_text = {js|This will remove or reset all customized settings to their defaults. Personnal data -including saved contacts, password and accounts- won't be affected.|js};
+  pub danger_reset_confirm_button = "RESET SETTINGS";
+  pub danger_offboard_section = "Offboard wallet";
+  pub danger_offboard_text = {js|Offboarding will permanently delete any data from this computer. The accounts are still available to be imported in the future ; in order to regain access to your accounts, please make sure that you keep the backup phrase.|js};
+  pub danger_offboard_button = "OFFBOARD";
+  pub danger_offboard_form_title = "Offboard wallet";
+  pub danger_offboard_form_text = {js|Offboarding will permanently delete any data from this computer. Please acknowledge that you have read and understood the disclaimer, then enter « wasabi » to confirm. The accounts are still available to be imported in the future ; in order to regain access to your accounts, please make sure that you keep the recovery phrase.|js};
+  pub danger_offboard_form_checkbox_label = {js|I have read the warning and I am certain I want to delete my private keys locally. I also made sure to keep my recovery phrase.|js};
+  pub danger_offboard_form_input_placeholder = "Enter code word to confirm";
+  pub danger_offboard_form_input_error = "Not the correct confirm code word"
+};
+
 let t = {
   pub error404 = "404 - Route Not Found :(";
   pub logs_no_recent = "No recent messages";
   pub logs_clearall = "CLEAR ALL";
   pub amount = (a, b) => p("%s %s", a, b);
-  pub tezos = "Tezos";
-  pub xtz = "XTZ";
+  pub tezos = "Tez";
+  pub xtz = "tez";
+  pub mainnet = "Mainnet";
+  pub testnet = "Testnet";
   pub xtz_amount = a => p("%s %s", a, this#xtz);
   pub xtz_op_amount = op => p("%s %a", op, () => this#xtz_amount);
   pub address = "Address";
@@ -167,13 +204,15 @@ let t = {
   pub operation_column_fee = "FEE";
   pub operation_column_sender = "SENDER";
   pub operation_column_status = "STATUS";
-  pub state_in_mempool = "in mempool";
-  pub state_in_chain = "in chain";
+  pub state_mempool = "Mempool";
+  pub state_levels = p("%d/%d blocks");
+  pub state_confirmed = "Confirmed";
   pub stepof = p("Step %d of %d");
   pub account_create_record_recovery = "Record your recovery phrase";
   pub contact_added = "Contact added";
   pub account_created = "Account created";
   pub account_updated = "Account updated";
+  pub token_contract = p("%s Token Contract");
   pub token_created = "Token created";
   pub operation_hash = "Operation Hash";
   pub account_imported = "Account imported";
@@ -183,6 +222,7 @@ let t = {
   pub navbar_addressbook = {j|ADDRESS BOOK|j};
   pub navbar_delegations = "DELEGATIONS";
   pub navbar_tokens = "TOKENS";
+  pub navbar_settings = "SETTINGS";
   pub delegate_column_account = "ACCOUNT";
   pub delegate_column_initial_balance = "INITIAL BALANCE";
   pub delegate_column_current_balance = "CURRENT BALANCE";

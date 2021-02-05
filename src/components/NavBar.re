@@ -42,13 +42,16 @@ module NavBarItem = {
            ~size=24.,
            ~color={
              isCurrent
-               ? theme.colors.iconPrimary : theme.colors.iconMediumEmphasis;
+               ? theme.dark
+                   ? theme.colors.iconMaxEmphasis : theme.colors.iconPrimary
+               : theme.colors.iconMediumEmphasis;
            },
          )
        })}
       <Typography.ButtonTernary
         style=styles##text
-        colorStyle={isCurrent ? `highEmphasis : `mediumEmphasis}>
+        colorStyle=?{isCurrent ? Some(`highEmphasis) : None}
+        fontWeightStyle=?{isCurrent ? Some(`black) : None}>
         title->React.string
       </Typography.ButtonTernary>
     </ThemedPressable>;
@@ -117,6 +120,12 @@ let make = (~route as currentRoute) => {
       route=Tokens
       title=I18n.t#navbar_tokens
       icon=Icons.Token.build
+    />
+    <NavBarItem
+      currentRoute
+      route=Settings
+      title=I18n.t#navbar_settings
+      icon=Icons.Settings.build
     />
     /* <NavBarItem currentRoute route=Debug title="DEBUG" /> */
     <LogsButton

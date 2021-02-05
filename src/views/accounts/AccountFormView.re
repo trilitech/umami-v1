@@ -39,6 +39,9 @@ module Generic = {
 
     let loading = request->ApiRequest.isLoading;
 
+    let formFieldsAreValids =
+      FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
+
     <ModalFormView closing={ModalFormView.Close(closeAction)}>
       <Typography.Headline style=FormStyles.header>
         title->React.string
@@ -54,6 +57,7 @@ module Generic = {
         onPress=onSubmit
         loading
         style=FormStyles.formSubmit
+        disabledLook={!formFieldsAreValids}
       />
     </ModalFormView>;
   };
