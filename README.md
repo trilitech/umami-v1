@@ -3,7 +3,7 @@
 Umami Wallet
 ===========================================================================
 
-Reference cryptocurrency wallet to interact with Tezos Blockchain. 
+Cryptocurrency wallet to interact with Tezos Blockchain. 
 Umami is a desktop electron based app with various features: 
 
 - manage multiple accounts with XTZ
