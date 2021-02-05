@@ -43,5 +43,5 @@ graph LR
   Node3 -- Js_of_ocaml --> Node9[Tezos SDK]
   Node9 -- binded to Reason/TS --> Node10
   Node10[Tezos API] -- embedded in --> Node11
-  Node1 -- code generation --> Node10
+  Node1 -- typed bindings code generation --> Node10
 ```
