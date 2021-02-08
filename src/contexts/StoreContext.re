@@ -306,6 +306,15 @@ module Delegate = {
     ->Map.String.keep((_k, v) => v->Option.isSome)
     ->Map.String.map(Option.getExn);
   };
+
+  let useGetAllLoaded = () => {
+    let store = useStoreContext();
+    let (delegateRequests, _) = store.delegateRequestsState;
+
+    delegateRequests
+    ->Map.String.valuesToArray
+    ->Array.keepMap(request => request->ApiRequest.getDoneOk);
+  };
 };
 
 module DelegateInfo = {
