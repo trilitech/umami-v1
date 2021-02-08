@@ -38,7 +38,8 @@ let keyExtractor = (operation: Operation.Read.t, _i) => {
   operation.hash ++ Int.toString(operation.op_id);
 };
 
-let _ListEmptyComponent = () => <EmptyView text="No operations" />;
+let _ListEmptyComponent = () =>
+  <Table.Empty> I18n.t#empty_operations->React.string </Table.Empty>;
 
 let sort = op =>
   Operation.Read.(
