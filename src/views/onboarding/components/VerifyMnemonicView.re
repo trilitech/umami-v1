@@ -121,6 +121,7 @@ let make = (~mnemonic, ~onPressCancel, ~goNextStep) => {
                <InputMnemonicWord
                  index
                  word
+                 displayIndex={verifyMnemonicIndexes->Array.getExn(index)}
                  arrayUpdateByIndex={form.arrayUpdateByIndex}
                  getNestedFieldError={form.getNestedFieldError}
                  formField

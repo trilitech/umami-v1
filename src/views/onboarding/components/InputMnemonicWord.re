@@ -101,6 +101,7 @@ let make =
       ~getNestedFieldError,
       ~index,
       ~word,
+      ~displayIndex=?,
       ~stateField,
       ~formField,
     ) => {
@@ -112,5 +113,10 @@ let make =
 
   let error = getNestedFieldError(formField, index);
 
-  <Base displayIndex=index value=word handleChange error />;
+  <Base
+    displayIndex={displayIndex->Option.getWithDefault(index)}
+    value=word
+    handleChange
+    error
+  />;
 };
