@@ -58,6 +58,7 @@ let make = () => {
           ->Option.getWithDefault(ConfigFile.confirmations)
           ->string_of_int,
       },
+      ~i18n=FormUtils.i18n,
       (),
     );
 

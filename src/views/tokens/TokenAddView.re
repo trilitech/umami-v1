@@ -56,6 +56,7 @@ let make = (~closeAction) => {
           None;
         },
       ~initialState={name: "", address: "", symbol: ""},
+      ~i18n=FormUtils.i18n,
       (),
     );
 

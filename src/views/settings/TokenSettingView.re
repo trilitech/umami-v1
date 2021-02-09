@@ -55,6 +55,7 @@ let make = () => {
         natviewerTest:
           settings.config.natviewerTest->Option.getWithDefault(""),
       },
+      ~i18n=FormUtils.i18n,
       (),
     );
 

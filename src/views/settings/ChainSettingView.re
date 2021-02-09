@@ -51,6 +51,7 @@ let make = () => {
         endpointTest: settings.config.endpointTest->Option.getWithDefault(""),
         explorerTest: settings.config.explorerTest->Option.getWithDefault(""),
       },
+      ~i18n=FormUtils.i18n,
       (),
     );
 

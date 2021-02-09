@@ -83,6 +83,7 @@ module OffBoardView = {
             None;
           },
         ~initialState={confirm: false, word: ""},
+        ~i18n=FormUtils.i18n,
         (),
       );
 

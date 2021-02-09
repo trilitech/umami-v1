@@ -53,6 +53,7 @@ let make = (~action: action, ~closeAction) => {
         | Create => {name: "", address: ""}
         | Edit(account) => {name: account.alias, address: account.address}
         },
+      ~i18n=FormUtils.i18n,
       (),
     );
 

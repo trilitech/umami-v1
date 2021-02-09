@@ -228,6 +228,7 @@ module Form = {
         },
       ~initialState=
         initValues->Option.getWithDefault(defaultInit(initAccount)),
+      ~i18n=FormUtils.i18n,
       (),
     );
   };
