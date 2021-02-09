@@ -6,7 +6,7 @@ let formAction =
     ~flexDirection=`row,
     ~justifyContent=`spaceAround,
     ~width=300.->dp,
-    ~marginTop=24.->dp,
+    ~marginTop=12.->dp,
     ~alignSelf=`center,
     (),
   );
@@ -19,7 +19,7 @@ let formActionSpaceBetween =
     (),
   );
 
-let formSubmit = style(~marginTop=24.->dp, ());
+let formSubmit = style(~marginTop=12.->dp, ());
 
 let verticalFormAction =
   ReactUtils.styles([

@@ -112,7 +112,7 @@ module BakerInputTypeToogle = {
 let styles =
   Style.(
     StyleSheet.create({
-      "formGroup": style(~zIndex=10, ()),
+      "formGroup": style(~zIndex=10, ~marginBottom=0.->dp, ()),
       "labelContainer":
         style(
           ~marginBottom=6.->dp,
@@ -185,5 +185,6 @@ let make = (~label, ~value: string, ~handleChange, ~error) => {
          />
        }}
     </View>
+    <FormError ?error />
   </FormGroup>;
 };

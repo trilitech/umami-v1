@@ -264,7 +264,7 @@ let make = () => {
     <View style=styles##inner>
       <View style=styles##row>
         <ColumnLeft style=styles##columnLeft>
-          <Typography.Body1 style=styles##section>
+          <Typography.Body1 fontWeightStyle=`bold style=styles##section>
             I18n.settings#danger_reset_section->React.string
           </Typography.Body1>
           <Typography.Body1>
@@ -276,7 +276,8 @@ let make = () => {
       <View style=styles##spacer />
       <View style=styles##row>
         <ColumnLeft style=styles##columnLeft>
-          <Typography.Body1 colorStyle=`error style=styles##section>
+          <Typography.Body1
+            colorStyle=`error fontWeightStyle=`bold style=styles##section>
             I18n.settings#danger_offboard_section->React.string
           </Typography.Body1>
           <Typography.Body1 colorStyle=`error>

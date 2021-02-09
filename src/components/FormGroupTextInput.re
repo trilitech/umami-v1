@@ -3,7 +3,8 @@ open ReactNative;
 let styles =
   Style.(
     StyleSheet.create({
-      "label": style(~marginBottom=6.->dp, ()),
+      "formGroup": style(~marginBottom=0.->dp, ()),
+      "label": style(~marginVertical=4.->dp, ()),
       "decoration":
         style(
           ~display=`flex,
@@ -33,10 +34,11 @@ let make =
       ~placeholder=?,
       ~disabled=?,
       ~decoration: option((~style: Style.t) => React.element)=?,
-      ~style: option(ReactNative.Style.t)=?,
+      ~style as styleFromProp: option(ReactNative.Style.t)=?,
     ) => {
   let hasError = error->Option.isSome;
-  <FormGroup ?style>
+  <FormGroup
+    style=Style.(arrayOption([|Some(styles##formGroup), styleFromProp|]))>
     <FormLabel label hasError style=styles##label />
     <View>
       <ThemedTextInput
@@ -52,5 +54,6 @@ let make =
       />
       {decoration->ReactUtils.mapOpt(deco => deco(~style=styles##decoration))}
     </View>
+    <FormError ?error />
   </FormGroup>;
 };
