@@ -57,7 +57,6 @@ module Form = {
       };
 
     DelegateForm.use(
-      ~validationStrategy=OnDemand,
       ~schema={
         DelegateForm.Validation.(
           Schema(
