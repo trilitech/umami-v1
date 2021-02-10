@@ -14,6 +14,8 @@ let homeDir = () => os##homedir();
 
 let getCurrentPath: unit => string = () => app##getAppPath();
 
+let getVersion = () => app##getVersion();
+
 module File = {
   type encoding =
     | Utf8
