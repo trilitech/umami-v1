@@ -101,6 +101,7 @@ let make =
       ~getNestedFieldError,
       ~index,
       ~word,
+      ~displayIndex=?,
       ~stateField,
       ~formField,
     ) => {
@@ -110,11 +111,12 @@ let make =
       (index, stateField),
     );
 
-  let error =
-    React.useMemo2(
-      () => {getNestedFieldError(formField, index)},
-      (index, formField),
-    );
+  let error = getNestedFieldError(formField, index);
 
-  <Base displayIndex=index value=word handleChange error />;
+  <Base
+    displayIndex={displayIndex->Option.getWithDefault(index)}
+    value=word
+    handleChange
+    error
+  />;
 };
