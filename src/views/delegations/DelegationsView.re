@@ -34,6 +34,7 @@ let styles =
 [@react.component]
 let make = () => {
   let accounts = StoreContext.Accounts.useGetAll();
+  let delegatesRequestsLoaded = StoreContext.Delegate.useGetAllLoaded();
 
   <View style=styles##container>
     {accounts->Map.String.size == 0
@@ -78,6 +79,20 @@ let make = () => {
            </View>
            <View style=styles##list>
              <View style=styles##listContent>
+               {/* tricky because all delegateRequest are separate requests done by each delegateRowItem that all need to be mounted  */
+                switch (
+                  delegatesRequestsLoaded->Array.some(Option.isSome),
+                  delegatesRequestsLoaded->Array.size
+                  === accounts->Map.String.size,
+                ) {
+                | (true, _) => React.null /* at least one delegate is loaded and so at least one row will be displayed */
+                | (false, false) => <LoadingView /> /* some delegate requests aren't loaded yet */
+                | (false, true) =>
+                  /* all delegate requests are loaded but all are none */
+                  <Table.Empty>
+                    I18n.t#empty_delegations->React.string
+                  </Table.Empty>
+                }}
                {accounts
                 ->Map.String.valuesToArray
                 ->SortArray.stableSortBy((a, b) =>
