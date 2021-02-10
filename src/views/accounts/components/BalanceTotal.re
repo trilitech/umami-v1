@@ -59,7 +59,7 @@ module WithTokenSelector = {
       })
     );
 
-  let renderButton = (balanceElement, _) =>
+  let renderButton = (balanceElement, _, _) =>
     <View style=TokenSelector.styles##selectorContent>
       <View style=TokenSelector.TokenItem.styles##inner> balanceElement </View>
     </View>;

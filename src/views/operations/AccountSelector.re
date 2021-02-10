@@ -55,7 +55,7 @@ let styles =
   );
 
 let baseRenderButton =
-    (~showAmount, ~token, selectedAccount: option(Account.t)) =>
+    (~showAmount, ~token, selectedAccount: option(Account.t), _hasError) =>
   <View style=styles##selectorContent>
     {selectedAccount->Option.mapWithDefault(<LoadingView />, account =>
        <AccountItem

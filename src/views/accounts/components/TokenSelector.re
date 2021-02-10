@@ -77,7 +77,7 @@ module TokenItem = {
   };
 };
 
-let renderButton = (selectedToken: option(Token.t)) =>
+let renderButton = (selectedToken: option(Token.t), _hasError) =>
   <View style=styles##selectorContent>
     {selectedToken->Option.mapWithDefault(<LoadingView />, token =>
        <View style=TokenItem.styles##inner>
