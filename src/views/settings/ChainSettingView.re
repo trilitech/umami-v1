@@ -59,6 +59,9 @@ let make = () => {
     form.submit();
   };
 
+  let formFieldsAreValids =
+    FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
+
   <Block title=I18n.settings#chain_title>
     <View accessibilityRole=`form style=styles##row>
       <ColumnLeft>
@@ -83,6 +86,7 @@ let make = () => {
           style=styles##button
           text=I18n.btn#validate_save
           onPress=onSubmit
+          disabledLook={!formFieldsAreValids}
         />
       </ColumnRight>
       <ColumnRight />

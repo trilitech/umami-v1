@@ -7,14 +7,8 @@ module TokenBalanceForm = ReForm.Make(StateLenses);
 let styles =
   Style.(
     StyleSheet.create({
-      "row":
-        style(
-          ~flex=1.,
-          ~flexDirection=`row,
-          ~alignItems=`center,
-          ~marginBottom=20.->dp,
-          (),
-        ),
+      "row": style(~flex=1., ~flexDirection=`row, ~alignItems=`center, ()),
+      "spacerForInputError": style(~marginBottom=20.->dp, ()),
       "inputAddress":
         style(
           ~fontFamily="JetBrainsMono",
@@ -63,9 +57,12 @@ let make = () => {
     form.submit();
   };
 
+  let formFieldsAreValids =
+    FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
+
   <Block title=I18n.settings#token_title>
     <View accessibilityRole=`form style=styles##row>
-      <ColumnLeft>
+      <ColumnLeft style=styles##spacerForInputError>
         <Typography.Body1>
           I18n.settings#token_label->React.string
         </Typography.Body1>
@@ -80,11 +77,12 @@ let make = () => {
           onSubmitEditing=onSubmit
         />
       </ColumnRight>
-      <ColumnRight>
+      <ColumnRight style=styles##spacerForInputError>
         <Buttons.SubmitPrimary
           style=styles##button
           text=I18n.btn#save
           onPress=onSubmit
+          disabledLook={!formFieldsAreValids}
         />
       </ColumnRight>
     </View>

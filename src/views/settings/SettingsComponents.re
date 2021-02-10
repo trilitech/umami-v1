@@ -14,16 +14,19 @@ module SettingTextInput = {
         ~onSubmitEditing=?,
         ~style as styleFromProp=?,
       ) => {
-    <ThemedTextInput
-      style=Style.(arrayOption([|Some(styles##input), styleFromProp|]))
-      paddingLeft=16.
-      paddingVertical=8.
-      value
-      onValueChange
-      hasError={error->Belt.Option.isSome}
-      ?keyboardType
-      ?onSubmitEditing
-    />;
+    <View>
+      <ThemedTextInput
+        style=Style.(arrayOption([|Some(styles##input), styleFromProp|]))
+        paddingLeft=16.
+        paddingVertical=8.
+        value
+        onValueChange
+        hasError={error->Belt.Option.isSome}
+        ?keyboardType
+        ?onSubmitEditing
+      />
+      <FormError ?error />
+    </View>;
   };
 };
 
@@ -32,7 +35,7 @@ module SettingFormGroupTextInput = {
     Style.(
       StyleSheet.create({
         "label": style(~marginBottom=6.->dp, ()),
-        "formGroup": style(~marginTop=0.->dp, ~marginBottom=32.->dp, ()),
+        "formGroup": style(~marginTop=0.->dp, ~marginBottom=12.->dp, ()),
       })
     );
 
