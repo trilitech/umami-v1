@@ -51,12 +51,16 @@ let make = () => {
         endpointTest: settings.config.endpointTest->Option.getWithDefault(""),
         explorerTest: settings.config.explorerTest->Option.getWithDefault(""),
       },
+      ~i18n=FormUtils.i18n,
       (),
     );
 
   let onSubmit = _ => {
     form.submit();
   };
+
+  let formFieldsAreValids =
+    FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
 
   <Block title=I18n.settings#chain_title>
     <View accessibilityRole=`form style=styles##row>
@@ -82,6 +86,7 @@ let make = () => {
           style=styles##button
           text=I18n.btn#validate_save
           onPress=onSubmit
+          disabledLook={!formFieldsAreValids}
         />
       </ColumnRight>
       <ColumnRight />

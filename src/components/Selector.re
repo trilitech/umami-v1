@@ -67,6 +67,7 @@ let make =
       ~noneItem: option('item)=?,
       ~renderButton,
       ~renderItem,
+      ~hasError=false,
       ~disabled=false,
     ) => {
   let disabled = disabled || items->Array.size == 1 && noneItem->Option.isNone;
@@ -120,11 +121,22 @@ let make =
                      ),
                    )
                  : None,
+               hasError
+                 ? Some(
+                     style(
+                       ~borderColor=theme.colors.error,
+                       ~borderWidth=2.,
+                       ~padding=0.->dp,
+                       (),
+                     ),
+                   )
+                 : None,
              |])
            )
            pointerEvents=`none>
            {renderButton(
               selectedItem->Option.isSome ? selectedItem : noneItem,
+              hasError,
             )}
            {disabled
               ? <View style=styles##iconSpacer />

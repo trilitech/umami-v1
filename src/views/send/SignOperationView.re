@@ -24,6 +24,7 @@ let make =
       },
       ~onSubmit=({state: _}) => {None},
       ~initialState={password: ""},
+      ~i18n=FormUtils.i18n,
       (),
     );
 

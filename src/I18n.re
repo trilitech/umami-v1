@@ -79,6 +79,15 @@ let input_placeholder = {
   pub add_token_symbol = "e.g. tez, KLD, ..."
 };
 
+let form_input_error = {
+  pub _this = this;
+  pub string_empty = "This input is mandatory";
+  pub int = "must be an integer";
+  pub float = "must be a float";
+  pub change_baker = "It must be a different baker than the current one";
+  pub confirm_password = "It must be the same password";
+};
+
 let title = {
   pub _this = this;
   pub error_logs = "Logs";

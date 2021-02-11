@@ -32,7 +32,6 @@ module OffBoardView = {
             (),
           ),
         "checkbox": style(~marginRight=14.->dp, ()),
-        "input": style(~marginBottom=8.->dp, ()),
       })
     );
 
@@ -56,6 +55,7 @@ module OffBoardView = {
 
     let form: OffboardForm.api =
       OffboardForm.use(
+        ~validationStrategy=OnDemand,
         ~schema={
           OffboardForm.Validation.(
             Schema(
@@ -78,11 +78,11 @@ module OffBoardView = {
         },
         ~onSubmit=
           _ => {
-            offboardWallet()->ignore;
-
-            None;
+            //offboardWallet()->ignore;
+            None
           },
         ~initialState={confirm: false, word: ""},
+        ~i18n=FormUtils.i18n,
         (),
       );
 
@@ -114,13 +114,15 @@ module OffBoardView = {
             I18n.settings#danger_offboard_form_checkbox_label->React.string
           </Typography.Overline2>
         </TouchableOpacity>
-        <View style=styles##input>
+        <View>
           <ThemedTextInput
             value={form.values.word}
             onValueChange={form.handleChange(Word)}
             placeholder=I18n.settings#danger_offboard_form_input_placeholder
+            hasError={form.getFieldError(Field(Word))->Option.isSome}
             onSubmitEditing=onSubmit
           />
+          <FormError error=?{form.getFieldError(Field(Word))} />
         </View>
         <Buttons.SubmitPrimary
           text=I18n.btn#confirm
@@ -264,7 +266,7 @@ let make = () => {
     <View style=styles##inner>
       <View style=styles##row>
         <ColumnLeft style=styles##columnLeft>
-          <Typography.Body1 style=styles##section>
+          <Typography.Body1 fontWeightStyle=`bold style=styles##section>
             I18n.settings#danger_reset_section->React.string
           </Typography.Body1>
           <Typography.Body1>
@@ -276,7 +278,8 @@ let make = () => {
       <View style=styles##spacer />
       <View style=styles##row>
         <ColumnLeft style=styles##columnLeft>
-          <Typography.Body1 colorStyle=`error style=styles##section>
+          <Typography.Body1
+            colorStyle=`error fontWeightStyle=`bold style=styles##section>
             I18n.settings#danger_offboard_section->React.string
           </Typography.Body1>
           <Typography.Body1 colorStyle=`error>

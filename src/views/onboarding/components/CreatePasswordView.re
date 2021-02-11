@@ -28,7 +28,7 @@ let styles =
 let isConfirmPassword = (values: StateLenses.state) => {
   let fieldState: ReSchema.fieldState =
     values.confirmPassword == values.password
-      ? Valid : Error("not the same password");
+      ? Valid : Error(I18n.form_input_error#confirm_password);
   fieldState;
 };
 
@@ -57,6 +57,7 @@ let make = (~mnemonic, ~onPressCancel, ~createAccountWithMnemonic, ~loading) => 
           None;
         },
       ~initialState={password: "", confirmPassword: ""},
+      ~i18n=FormUtils.i18n,
       (),
     );
 

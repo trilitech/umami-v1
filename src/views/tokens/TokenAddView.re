@@ -13,7 +13,7 @@ let styles =
   Style.(
     StyleSheet.create({
       "title": style(~marginBottom=6.->dp, ~textAlign=`center, ()),
-      "overline": style(~marginBottom=20.->dp, ~textAlign=`center, ()),
+      "overline": style(~marginBottom=2.->dp, ~textAlign=`center, ()),
     })
   );
 
@@ -56,6 +56,7 @@ let make = (~closeAction) => {
           None;
         },
       ~initialState={name: "", address: "", symbol: ""},
+      ~i18n=FormUtils.i18n,
       (),
     );
 

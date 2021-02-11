@@ -57,7 +57,6 @@ module Form = {
       };
 
     DelegateForm.use(
-      ~validationStrategy=OnDemand,
       ~schema={
         DelegateForm.Validation.(
           Schema(
@@ -69,7 +68,7 @@ module Form = {
                   switch (initDelegate) {
                   | Some(initDelegate) =>
                     initDelegate == values.baker
-                      ? Error("not the same baker") : Valid
+                      ? Error(I18n.form_input_error#change_baker) : Valid
                   | None => Valid
                   },
                 Baker,
@@ -90,6 +89,7 @@ module Form = {
         fee: "",
         forceLowFee: false,
       },
+      ~i18n=FormUtils.i18n,
       (),
     );
   };
