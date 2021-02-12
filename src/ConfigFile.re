@@ -14,14 +14,13 @@ type t = {
 
 module Default = {
   let endpointMain = "https://mainnet-tezos.giganode.io";
-  let endpointTest = "https://edonet-tezos.giganode.io";
+  let endpointTest = "https://api.umamiwallet.com/node/edo2net";
   let explorerMain = "https://mezos.lamini.ca/mezos/mainnet7";
-  let explorerTest = "https://mezos.lamini.ca/mezos/edonet";
+  let explorerTest = "https://api.umamiwallet.com/edo2net";
   let natviewerTest = "KT1QW4QRMgmdKFvq6MZhk3x85eriyL5AVoP4";
   let theme = `system;
   let sdkBaseDir = System.homeDir() ++ "/.tezos-client";
   let confirmations = 5;
-  let mkSdkEndpoint = url => url ++ ":443";
 };
 
 let dummy = {

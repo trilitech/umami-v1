@@ -5,7 +5,7 @@ open Delegate;
 module Path = {
   let delegates = "/chains/main/blocks/head/context/delegates\\?active=true";
   let operations = "operations";
-  let mempool_operations = "mempool/operations";
+  let mempool_operations = "mempool/accounts";
 };
 
 module URL = {
@@ -43,8 +43,10 @@ module URL = {
     url;
   };
 
-  let mempool = (network, account) =>
-    build_url(network, Path.mempool_operations, [("pkh", account)]);
+  let mempool = (network, account) => {
+    let path = Path.mempool_operations ++ "/" ++ account ++ "/operations";
+    build_url(network, path, []);
+  };
 
   let delegates = settings =>
     AppSettings.endpoint(settings) ++ Path.delegates;

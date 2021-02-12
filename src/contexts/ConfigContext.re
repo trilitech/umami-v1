@@ -39,13 +39,11 @@ let make = (~children) => {
     React.useState(() => {
       let endpointMain =
         content.endpointMain
-        ->Option.getWithDefault(ConfigFile.Default.endpointMain)
-        ->ConfigFile.Default.mkSdkEndpoint;
+        ->Option.getWithDefault(ConfigFile.Default.endpointMain);
 
       let endpointTest =
         content.endpointTest
-        ->Option.getWithDefault(ConfigFile.Default.endpointTest)
-        ->ConfigFile.Default.mkSdkEndpoint;
+        ->Option.getWithDefault(ConfigFile.Default.endpointTest);
 
       let dir =
         ConfigFile.(
