@@ -49,7 +49,7 @@ let make = () => {
       ~initialState={
         confirmations:
           settings.config.confirmations
-          ->Option.getWithDefault(ConfigFile.confirmations)
+          ->Option.getWithDefault(ConfigFile.Default.confirmations)
           ->string_of_int,
       },
       ~i18n=FormUtils.i18n,

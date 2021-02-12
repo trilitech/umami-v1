@@ -234,7 +234,7 @@ module BalanceToken = {
             Token.makeGetBalance(
               address,
               config.natviewerTest
-              ->Option.getWithDefault(ConfigFile.natviewerTest),
+              ->Option.getWithDefault(ConfigFile.Default.natviewerTest),
               tokenAddress,
               (),
             )
