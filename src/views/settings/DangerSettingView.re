@@ -78,7 +78,7 @@ module OffBoardView = {
         },
         ~onSubmit=
           _ => {
-            //offboardWallet()->ignore;
+            offboardWallet()->ignore;
             None
           },
         ~initialState={confirm: false, word: ""},
