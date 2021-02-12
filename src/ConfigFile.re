@@ -3,8 +3,6 @@ type t = {
   endpointTest: option(string),
   explorerMain: option(string),
   explorerTest: option(string),
-  natviewerMain: option(string),
-  natviewerTest: option(string),
   theme: option([ | `system | `dark | `light]),
   confirmations: option(int),
   sdkBaseDir: option(string),
@@ -17,7 +15,6 @@ module Default = {
   let endpointTest = "https://api.umamiwallet.com/node/edo2net";
   let explorerMain = "https://mezos.lamini.ca/mezos/mainnet7";
   let explorerTest = "https://api.umamiwallet.com/edo2net";
-  let natviewerTest = "KT1QW4QRMgmdKFvq6MZhk3x85eriyL5AVoP4";
   let theme = `system;
   let sdkBaseDir = System.homeDir() ++ "/.tezos-client";
   let confirmations = 5;
@@ -28,8 +25,6 @@ let dummy = {
   endpointTest: None,
   explorerMain: None,
   explorerTest: None,
-  natviewerMain: None,
-  natviewerTest: None,
   theme: None,
   confirmations: None,
   sdkBaseDir: None,

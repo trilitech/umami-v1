@@ -1,6 +1,6 @@
 open UmamiCommon;
 include ApiRequest;
-module TokensAPI = API.Tokens(API.TezosClient);
+module TokensAPI = API.Tokens(API.TezosClient, API.TezosExplorer);
 
 type injection = {
   operation: Token.operation,

@@ -3,7 +3,7 @@ open ReactNative;
 let style =
   Style.(style(~padding=4.->dp, ~margin=4.->dp, ~borderWidth=1.0, ()));
 
-module TokensAPI = API.Tokens(API.TezosClient);
+module TokensAPI = API.Tokens(API.TezosClient, API.TezosExplorer);
 
 [@react.component]
 let make = () => {
@@ -20,8 +20,8 @@ let make = () => {
       onPress={_ =>
         Token.makeGetBalance(
           account,
-          "KT1BZ6cBooBYubKv4Z3kd7izefLXgwTrSfoG",
           "KT1BUdnCMfBKdVxCKyBvMUqwLqm27EDGWskB",
+          ~callback="KT1BZ6cBooBYubKv4Z3kd7izefLXgwTrSfoG",
           (),
         )
         ->TokensAPI.callGetOperationOffline(

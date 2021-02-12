@@ -6,6 +6,7 @@ module Path = {
   let delegates = "/chains/main/blocks/head/context/delegates\\?active=true";
   let operations = "operations";
   let mempool_operations = "mempool/accounts";
+  let tokenViewer = "tokens/viewer";
 };
 
 module URL = {
@@ -47,6 +48,8 @@ module URL = {
     let path = Path.mempool_operations ++ "/" ++ account ++ "/operations";
     build_url(network, path, []);
   };
+
+  let tokenViewer = network => build_url(network, Path.tokenViewer, []);
 
   let delegates = settings =>
     AppSettings.endpoint(settings) ++ Path.delegates;
@@ -974,8 +977,10 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
   };
 };
 
-module Tokens = (Caller: CallerAPI) => {
+module Tokens = (Caller: CallerAPI, Getter: GetterAPI) => {
   module Injector = InjectorRaw(Caller);
+
+  let getTokenViewer = settings => URL.tokenViewer(settings)->Getter.get;
 
   let checkTokenContract = (settings, addr) => {
     let arguments = [|
@@ -1030,11 +1035,13 @@ module Tokens = (Caller: CallerAPI) => {
 
   let make_get_arguments =
       (arguments, callback, offline, tx_options, common_options) =>
-    if (offline) {
-      Js.Array2.concat(arguments, [|"offline", "with", callback|]);
-    } else {
+    switch (callback, offline) {
+    | (Some(callback), true) =>
+      Js.Array2.concat(arguments, [|"offline", "with", callback|])
+    | (Some(callback), false) =>
       Js.Array2.concat(arguments, [|"callback", "on", callback|])
-      ->Injector.transaction_options_arguments(tx_options, common_options);
+      ->Injector.transaction_options_arguments(tx_options, common_options)
+    | (None, _) => assert(false)
     };
 
   let make_arguments = (settings, operation: Token.operation, ~offline) => {
@@ -1131,10 +1138,21 @@ module Tokens = (Caller: CallerAPI) => {
       ~password,
     );
 
-  let callGetOperationOffline = (network, operation: Token.operation) =>
-    if (offline(operation)) {
-      Caller.call(make_arguments(network, operation, ~offline=true), ());
-    } else {
-      Future.value(Error("Operation not runnable offline"));
-    };
+  let callGetOperationOffline = (settings, operation: Token.operation) =>
+    getTokenViewer(settings)
+    ->Future.map(viewer => viewer->map(Token.Decode.viewer))
+    >>= (
+      callback => {
+        let operation = operation->Token.setCallback(callback);
+
+        if (offline(operation)) {
+          Caller.call(
+            make_arguments(settings, operation, ~offline=true),
+            (),
+          );
+        } else {
+          Future.value(Error("Operation not runnable offline"));
+        };
+      }
+    );
 };

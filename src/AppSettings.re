@@ -43,11 +43,3 @@ let explorer = (settings: t) =>
     settings.config.explorerTest
     ->Option.getWithDefault(ConfigFile.Default.explorerTest)
   };
-
-let natviewer = settings =>
-  switch (settings.network) {
-  | Mainnet => assert(false)
-  | Testnet =>
-    settings.config.natviewerTest
-    ->Option.getWithDefault(ConfigFile.Default.natviewerTest)
-  };
