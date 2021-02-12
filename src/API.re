@@ -5,7 +5,7 @@ open Delegate;
 module Path = {
   let delegates = "/chains/main/blocks/head/context/delegates\\?active=true";
   let operations = "operations";
-  let mempool_operations = "mempool_operations";
+  let mempool_operations = "mempool/operations";
 };
 
 module URL = {
