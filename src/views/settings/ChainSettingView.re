@@ -37,9 +37,11 @@ let make = () => {
               ...c,
               endpointTest:
                 state.values.endpointTest->Js.String2.length > 0
+                && state.values.endpointTest != ConfigFile.Default.endpointTest
                   ? Some(state.values.endpointTest) : None,
               explorerTest:
                 state.values.explorerTest->Js.String2.length > 0
+                && state.values.explorerTest != ConfigFile.Default.explorerTest
                   ? Some(state.values.explorerTest) : None,
             }
           );

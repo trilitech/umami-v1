@@ -191,10 +191,8 @@ let make = (~children) => {
         {
           ...c,
           theme:
-            switch (newThemeConfig) {
-            | `system => None
-            | other => Some(other)
-            },
+            newThemeConfig != ConfigFile.Default.theme
+              ? Some(newThemeConfig) : None,
         }
       );
       newThemeConfig;

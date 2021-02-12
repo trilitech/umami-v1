@@ -34,10 +34,14 @@ let make = () => {
       },
       ~onSubmit=
         ({state}) => {
+          let confirmations = state.values.confirmations->int_of_string;
+
           writeConf(c =>
             {
               ...c,
-              confirmations: Some(state.values.confirmations->int_of_string),
+              confirmations:
+                confirmations != ConfigFile.Default.confirmations
+                  ? Some(confirmations) : None,
             }
           );
           addToast(
