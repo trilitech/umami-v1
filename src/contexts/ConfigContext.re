@@ -62,9 +62,8 @@ let make = (~children) => {
           setLoaded(_ => true);
         | Error(e) =>
           switch (ConfigFile.defaultToString()) {
-          | Some(conf) =>
+          | Some(_conf) =>
             Js.log(e);
-            conf->System.Config.write->Future.get(_ => ());
             setLoaded(_ => true);
           | None => Js.Console.error("Unreadable default config")
           }
