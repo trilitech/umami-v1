@@ -12,6 +12,7 @@ module SettingTextInput = {
         ~error,
         ~keyboardType=?,
         ~onSubmitEditing=?,
+        ~placeholder=?,
         ~style as styleFromProp=?,
       ) => {
     <View>
@@ -23,6 +24,7 @@ module SettingTextInput = {
         onValueChange
         hasError={error->Belt.Option.isSome}
         ?keyboardType
+        ?placeholder
         ?onSubmitEditing
       />
       <FormError ?error />
@@ -48,6 +50,7 @@ module SettingFormGroupTextInput = {
         ~error,
         ~keyboardType=?,
         ~onSubmitEditing=?,
+        ~placeholder=?,
       ) => {
     let hasError = error->Option.isSome;
     <FormGroup style=styles##formGroup>
@@ -58,6 +61,7 @@ module SettingFormGroupTextInput = {
         error
         ?keyboardType
         ?onSubmitEditing
+        ?placeholder
       />
     </FormGroup>;
   };
