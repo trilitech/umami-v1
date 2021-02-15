@@ -682,16 +682,24 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
       })
     ->(rows => rows->Array.keep(data => data->Array.length > 2))
     ->Array.map(data => (data[0], data[1]));
-
+  /*
+     let get = (~settings: AppSettings.t) =>
+       settings
+       ->AppSettings.sdk
+       ->TezosSDK.listKnownAddresses
+       ->Future.mapOk(r =>
+           r->Array.keepMap((TezosSDK.OutputAddress.{alias, pkh, sk_known}) =>
+             sk_known ? Some((alias, pkh)) : None
+           )
+         );
+   */
   let get = (~settings: AppSettings.t) =>
-    settings
-    ->AppSettings.sdk
-    ->TezosSDK.listKnownAddresses
-    ->Future.mapOk(r =>
-        r->Array.keepMap((TezosSDK.OutputAddress.{alias, pkh, sk_known}) =>
-          sk_known ? Some((alias, pkh)) : None
-        )
-      );
+    Result.Ok([|
+      ("account 0", "tz1dyX3B1CFYa2DfdFLyPtiJCfQRUgPVME6E"),
+      ("account 1", "tz1VTfGqp34NypRQJmjNiPrCTG5TRonevsmf"),
+      ("zebra", "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"),
+    |])
+    ->Future.value;
 
   let create = (~settings, name) =>
     Caller.call(

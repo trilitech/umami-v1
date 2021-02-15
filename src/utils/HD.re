@@ -1,13 +1,5 @@
 module Buffer = Js.TypedArray2.Uint8Array;
 
-/*
- [@bs.val] [@bs.scope "Buffer"] external nodeBufferFromBytes: Buffer.t => Node_buffer.t = "from";
-
- module Node_bufferEx = {
-   [@bs.get] external buffer: Node_buffer.t => Js.Typed_array.array_buffer = "buffer";
- };
- */
-
 [@bs.send] external toHex: (Buffer.t, [@bs.as "hex"] _) => string = "toString";
 
 module ED25519 = {
@@ -18,8 +10,6 @@ module ED25519 = {
 
   [@bs.module "ed25519-hd-key"]
   external derivePath: (string, string) => t = "derivePath";
-  //[@bs.module "ed25519-hd-key"]
-  //external getMasterKeyFromSeed: Buffer.t => t = "getMasterKeyFromSeed";
 };
 
 module BIP39 = {
@@ -38,16 +28,6 @@ let b58cencode = (data, prefix) => {
   buffer->BufferEx.setArrayAt(data, prefix->Js.Array2.length);
   BS58Check.encode(buffer);
 };
-
-/*
- let getMainDerivationPath = index => {
-   {j|m/44'/1729'/$(index)'/0'|j};
- };
-
- let seedToHDPrivateKey = (seed, index) => {
-   toEDSK(derivePath(getMainDerivationPath(index), seed));
- };
- */
 
 module Sodium = {
   [@bs.module "libsodium-wrappers-sumo"]

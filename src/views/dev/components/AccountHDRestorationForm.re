@@ -34,27 +34,15 @@ let make = () => {
     <Button
       onPress={_ => {
         let future =
-          if (derivationPath->Js.String2.includes("?")) {
-            Js.log("scan");
-            AccountsAPI.scan(
-              ~settings,
-              backupPhrase,
-              name,
-              ~derivationScheme=derivationPath,
-              ~password="blerot",
-              ~index=0,
-              (),
-            );
-          } else {
-            AccountsAPI.restore(
-              ~settings,
-              backupPhrase,
-              name,
-              ~derivationScheme=derivationPath,
-              ~password="blerot",
-              (),
-            );
-          };
+          AccountsAPI.restore(
+            ~settings,
+            backupPhrase,
+            name,
+            ~derivationScheme=derivationPath,
+            ~password="blerot",
+            (),
+          );
+
         future
         ->Future.flatMapOk(_ => AccountsAPI.get(~settings))
         ->Future.get(result =>
