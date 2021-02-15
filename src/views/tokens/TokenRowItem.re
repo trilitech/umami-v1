@@ -44,8 +44,8 @@ module TokenDeleteButton = {
 };
 
 [@react.component]
-let make = (~token: Token.t) => {
-  <Table.Row>
+let make = (~token: Token.t, ~zIndex) => {
+  <Table.Row zIndex>
     <CellName>
       <Typography.Body1 numberOfLines=1>
         token.alias->React.string
@@ -62,7 +62,7 @@ let make = (~token: Token.t) => {
       </Typography.Address>
     </CellAddress>
     <CellAction>
-      <Menu icon=Icons.More.build > <TokenDeleteButton token /> </Menu>
+      <Menu icon=Icons.More.build> <TokenDeleteButton token /> </Menu>
     </CellAction>
   </Table.Row>;
 };
