@@ -40,7 +40,7 @@ let make = () => {
             settings->ScannerAPI.scan(
               backupPhrase,
               name,
-              ~derivationSchema=derivationPath,
+              ~derivationScheme=derivationPath,
               ~index=0,
             );
           } else {

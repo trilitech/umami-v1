@@ -46,23 +46,6 @@ let make = () => {
 
   React.useEffect0(() => {
     /*
-         SecureStorage.Cipher.encrypt("yo", "ga")
-         ->FutureEx.getOk(SecureStorage.setEncryptedData("test"));
-
-         switch (SecureStorage.getEncryptedData("test")) {
-         | Some(data) =>
-           data
-           ->SecureStorage.Cipher.decrypt("sdf")
-           ->Future.tapError(Js.log)
-           ->FutureEx.getOk(Js.log)
-         | None => ()
-         };
-
-         SecureStorage.clear();
-
-         SecureStorage.getEncryptedData("test")->Js.log;
-     */
-    /*
      Network.Test
      ->OperationsAPI.simulate(
          Transaction(

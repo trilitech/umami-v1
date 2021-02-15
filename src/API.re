@@ -616,6 +616,37 @@ module Mnemonic = {
 };
 
 module Accounts = (Caller: CallerAPI) => {
+  module Secret = {
+    type t = {
+      name: string,
+      derivationScheme: string,
+      addresses: Js.Array.t(string),
+      legacyAddress: option(string),
+    };
+
+    let decoder = json =>
+      Json.Decode.{
+        name: json |> field("name", string),
+        derivationScheme: json |> field("derivationScheme", string),
+        addresses: json |> field("addresses", array(string)),
+        legacyAddress: json |> optional(field("legacyAddress", string)),
+      };
+  };
+
+  let secrets = (~settings: AppSettings.t) =>
+    Result.Ok([|
+      {
+        Secret.name: "secret 0",
+        derivationScheme: "m/44'/1729'/0'/0'",
+        addresses: [|
+          "tz1dyX3B1CFYa2DfdFLyPtiJCfQRUgPVME6E",
+          "tz1VTfGqp34NypRQJmjNiPrCTG5TRonevsmf",
+        |],
+        legacyAddress: Some("tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"),
+      },
+    |])
+    ->Future.value;
+
   let parse = content =>
     content
     ->Js.String2.split("\n")
@@ -632,16 +663,24 @@ module Accounts = (Caller: CallerAPI) => {
       })
     ->(rows => rows->Array.keep(data => data->Array.length > 2))
     ->Array.map(data => (data[0], data[1]));
-
+  /*
+     let get = (~settings: AppSettings.t) =>
+       settings
+       ->AppSettings.sdk
+       ->TezosSDK.listKnownAddresses
+       ->Future.mapOk(r =>
+           r->Array.keepMap((TezosSDK.OutputAddress.{alias, pkh, sk_known}) =>
+             sk_known ? Some((alias, pkh)) : None
+           )
+         );
+   */
   let get = (~settings: AppSettings.t) =>
-    settings
-    ->AppSettings.sdk
-    ->TezosSDK.listKnownAddresses
-    ->Future.mapOk(r =>
-        r->Array.keepMap((TezosSDK.OutputAddress.{alias, pkh, sk_known}) =>
-          sk_known ? Some((alias, pkh)) : None
-        )
-      );
+    Result.Ok([|
+      ("account 0", "tz1dyX3B1CFYa2DfdFLyPtiJCfQRUgPVME6E"),
+      ("account 1", "tz1VTfGqp34NypRQJmjNiPrCTG5TRonevsmf"),
+      ("zebra", "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"),
+    |])
+    ->Future.value;
 
   let create = (~settings, name) =>
     Caller.call(
@@ -678,10 +717,11 @@ module Accounts = (Caller: CallerAPI) => {
   let restore = (~settings, backupPhrase, name, ~derivationPath=?, ()) => {
     switch (derivationPath) {
     | Some(derivationPath) =>
-      let seed = HD.BIP39.mnemonicToSeedSync(backupPhrase);
-      let edsk2 = HD.seedToPrivateKey(HD.deriveSeed(seed, derivationPath));
-      Js.log(edsk2);
-      import(edsk2, name);
+      let seed = backupPhrase->HD.BIP39.seed;
+      let edsk =
+        HD.toEDSK(derivationPath->HD.ED25519.derivePath(seed->HD.toHex).key);
+      Js.log(edsk);
+      import(edsk, name);
     | None =>
       Caller.call(
         [|
@@ -748,17 +788,18 @@ module Scanner = (Caller: CallerAPI, Getter: GetterAPI) => {
             settings: AppSettings.t,
             backupPhrase,
             baseName,
-            ~derivationSchema,
+            ~derivationScheme,
             ~index,
           ) => {
-    let seed = HD.BIP39.mnemonicToSeedSync(backupPhrase);
+    let seed = backupPhrase->HD.BIP39.seed;
     let suffix = index->Js.Int.toString;
     LocalStorage.setItem("index", suffix);
-    let derivationPath = derivationSchema->Js.String2.replace("?", suffix);
-    let edsk2 = HD.seedToPrivateKey(HD.deriveSeed(seed, derivationPath));
-    Js.log(baseName ++ index->Js.Int.toString ++ " " ++ edsk2);
+    let derivationPath = derivationScheme->Js.String2.replace("?", suffix);
+    let edsk =
+      HD.toEDSK(derivationPath->HD.ED25519.derivePath(seed->HD.toHex).key);
+    Js.log(baseName ++ index->Js.Int.toString ++ " " ++ edsk);
     let name = baseName ++ suffix;
-    AccountsAPI.import(edsk2, name)
+    AccountsAPI.import(edsk, name)
     ->Future.flatMapOk(_ =>
         AccountsAPI.get(~settings)
         ->Future.mapOk(MapString.fromArray)
@@ -773,7 +814,7 @@ module Scanner = (Caller: CallerAPI, Getter: GetterAPI) => {
                       settings,
                       backupPhrase,
                       baseName,
-                      ~derivationSchema,
+                      ~derivationScheme,
                       ~index=index + 1,
                     );
                   } else {

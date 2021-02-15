@@ -152,7 +152,7 @@ module Cipher = {
 
 type json = Js.Json.t;
 
-let getEncryptedData = key =>
+let fetchEncryptedData = key =>
   LocalStorage.getItem(key)
   ->Js.Nullable.toOption
   ->Option.flatMap(Json.parse)
@@ -164,7 +164,7 @@ let getEncryptedData = key =>
       }
     );
 
-let setEncryptedData = (key, data) => {
+let storeEncryptedData = (data, ~key) =>
   Json.Encode.(
     object_([
       ("salt", string(data.Cipher.salt)),
@@ -174,4 +174,14 @@ let setEncryptedData = (key, data) => {
   )
   ->Json.stringify
   |> LocalStorage.setItem(key);
-};
+
+let fetch = (key, ~password) =>
+  switch (fetchEncryptedData(key)) {
+    | Some(encryptedData) => encryptedData->Cipher.decrypt(password)
+    | None => Future.value(Error("Data not found!"))
+  };
+
+let store = (data, ~key, ~password) =>
+  data->Cipher.encrypt(password)->Future.mapOk(encryptedData =>
+    encryptedData->storeEncryptedData(~key)
+  );
