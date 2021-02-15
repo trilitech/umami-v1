@@ -133,7 +133,7 @@ type state = {
 
 let initialState = {
   theme: lightTheme,
-  themeSetting: (ConfigFile.theme, _ => ()),
+  themeSetting: (ConfigFile.Default.theme, _ => ()),
 };
 let context = React.createContext(initialState);
 
@@ -159,7 +159,7 @@ let make = (~children) => {
 
   let (themeConfig, setThemeConfig) =
     React.useState(_ =>
-      settings.config.theme->Option.getWithDefault(ConfigFile.theme)
+      settings.config.theme->Option.getWithDefault(ConfigFile.Default.theme)
     );
 
   let (prefersColorSchemeDark, setPrefersColorSchemeDark) =
@@ -191,10 +191,8 @@ let make = (~children) => {
         {
           ...c,
           theme:
-            switch (newThemeConfig) {
-            | `system => None
-            | other => Some(other)
-            },
+            newThemeConfig != ConfigFile.Default.theme
+              ? Some(newThemeConfig) : None,
         }
       );
       newThemeConfig;

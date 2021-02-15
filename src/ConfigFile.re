@@ -3,8 +3,6 @@ type t = {
   endpointTest: option(string),
   explorerMain: option(string),
   explorerTest: option(string),
-  natviewerMain: option(string),
-  natviewerTest: option(string),
   theme: option([ | `system | `dark | `light]),
   confirmations: option(int),
   sdkBaseDir: option(string),
@@ -12,26 +10,24 @@ type t = {
 
 [@bs.val] [@bs.scope "JSON"] external parse: string => t = "parse";
 
-let endpointMain = "https://mainnet-tezos.giganode.io";
-let endpointTest = "https://edonet-tezos.giganode.io";
-let explorerMain = "https://mezos.lamini.ca/mezos/mainnet7";
-let explorerTest = "https://mezos.lamini.ca/mezos/edonet";
-let natviewerTest = "KT1QW4QRMgmdKFvq6MZhk3x85eriyL5AVoP4";
-let theme = `system;
-let sdkBaseDir = System.homeDir() ++ "/.tezos-client";
-let confirmations = 5;
-let mkSdkEndpoint = url => url ++ ":443";
+module Default = {
+  let endpointMain = "https://mainnet-tezos.giganode.io";
+  let endpointTest = "https://api.umamiwallet.com/node/edo2net";
+  let explorerMain = "https://mezos.lamini.ca/mezos/mainnet7";
+  let explorerTest = "https://api.umamiwallet.com/edo2net";
+  let theme = `system;
+  let sdkBaseDir = System.homeDir() ++ "/.tezos-client";
+  let confirmations = 5;
+};
 
-let default = {
-  endpointMain: Some(endpointMain),
-  endpointTest: Some(endpointTest),
-  explorerMain: Some(explorerMain),
-  explorerTest: Some(explorerTest),
-  natviewerMain: None,
-  natviewerTest: Some(natviewerTest),
-  theme: Some(theme),
-  confirmations: Some(confirmations),
-  sdkBaseDir: Some(sdkBaseDir),
+let dummy = {
+  endpointMain: None,
+  endpointTest: None,
+  explorerMain: None,
+  explorerTest: None,
+  theme: None,
+  confirmations: None,
+  sdkBaseDir: None,
 };
 
 let toString = c =>
@@ -39,5 +35,3 @@ let toString = c =>
   ->Js.Json.stringifyAny
   ->Option.map(Js.Json.parseExn)
   ->Option.map(j => Js.Json.stringifyWithSpace(j, 1));
-
-let defaultToString = () => default->toString;

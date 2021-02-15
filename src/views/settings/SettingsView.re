@@ -4,7 +4,6 @@ let make = () => {
     <VerificationSettingView />
     <ThemeSettingView />
     <ChainSettingView />
-    <TokenSettingView />
     <DangerSettingView />
   </Page>;
 };

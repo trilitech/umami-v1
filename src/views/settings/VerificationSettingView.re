@@ -34,10 +34,14 @@ let make = () => {
       },
       ~onSubmit=
         ({state}) => {
+          let confirmations = state.values.confirmations->int_of_string;
+
           writeConf(c =>
             {
               ...c,
-              confirmations: Some(state.values.confirmations->int_of_string),
+              confirmations:
+                confirmations != ConfigFile.Default.confirmations
+                  ? Some(confirmations) : None,
             }
           );
           addToast(
@@ -49,8 +53,7 @@ let make = () => {
       ~initialState={
         confirmations:
           settings.config.confirmations
-          ->Option.getWithDefault(ConfigFile.confirmations)
-          ->string_of_int,
+          ->Option.mapWithDefault("", Int.toString),
       },
       ~i18n=FormUtils.i18n,
       (),
@@ -75,6 +78,7 @@ let make = () => {
           value={form.values.confirmations}
           onValueChange={form.handleChange(Confirmations)}
           error={form.getFieldError(Field(Confirmations))}
+          placeholder={ConfigFile.Default.confirmations->Int.toString}
           keyboardType=`numeric
           onSubmitEditing=onSubmit
         />

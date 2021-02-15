@@ -224,20 +224,13 @@ module BalanceToken = {
     useRequestsState(store => store.balanceTokenRequestsState);
 
   let useLoad = (address: string, tokenAddress: option(string)) => {
-    let {config} = ConfigContext.useSettings();
     let requestState = useRequestState(address->getRequestKey(tokenAddress));
 
     let operation =
       React.useMemo2(
         () =>
           tokenAddress->Option.map(tokenAddress =>
-            Token.makeGetBalance(
-              address,
-              config.natviewerTest
-              ->Option.getWithDefault(ConfigFile.natviewerTest),
-              tokenAddress,
-              (),
-            )
+            Token.makeGetBalance(address, tokenAddress, ())
           ),
         (address, tokenAddress),
       );

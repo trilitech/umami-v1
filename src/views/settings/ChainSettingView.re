@@ -37,9 +37,11 @@ let make = () => {
               ...c,
               endpointTest:
                 state.values.endpointTest->Js.String2.length > 0
+                && state.values.endpointTest != ConfigFile.Default.endpointTest
                   ? Some(state.values.endpointTest) : None,
               explorerTest:
                 state.values.explorerTest->Js.String2.length > 0
+                && state.values.explorerTest != ConfigFile.Default.explorerTest
                   ? Some(state.values.explorerTest) : None,
             }
           );
@@ -72,12 +74,14 @@ let make = () => {
           label=I18n.settings#chain_node_label
           value={form.values.endpointTest}
           onValueChange={form.handleChange(EndpointTest)}
+          placeholder=ConfigFile.Default.endpointTest
           error={form.getFieldError(Field(EndpointTest))}
           onSubmitEditing=onSubmit
         />
         <SettingFormGroupTextInput
           label=I18n.settings#chain_mezos_label
           value={form.values.explorerTest}
+          placeholder=ConfigFile.Default.explorerTest
           onValueChange={form.handleChange(ExplorerTest)}
           error={form.getFieldError(Field(ExplorerTest))}
           onSubmitEditing=onSubmit

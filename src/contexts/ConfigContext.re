@@ -9,7 +9,7 @@ type config = {
 };
 
 let initialState = {
-  content: ConfigFile.default,
+  content: ConfigFile.dummy,
   write: _ => (),
   loaded: false,
   sdkMain: TezosSDK.init("", ""),
@@ -39,16 +39,16 @@ let make = (~children) => {
     React.useState(() => {
       let endpointMain =
         content.endpointMain
-        ->Option.getWithDefault(ConfigFile.endpointMain)
-        ->ConfigFile.mkSdkEndpoint;
+        ->Option.getWithDefault(ConfigFile.Default.endpointMain);
 
       let endpointTest =
         content.endpointTest
-        ->Option.getWithDefault(ConfigFile.endpointTest)
-        ->ConfigFile.mkSdkEndpoint;
+        ->Option.getWithDefault(ConfigFile.Default.endpointTest);
 
       let dir =
-        ConfigFile.(content.sdkBaseDir->Option.getWithDefault(sdkBaseDir));
+        ConfigFile.(
+          content.sdkBaseDir->Option.getWithDefault(Default.sdkBaseDir)
+        );
       (TezosSDK.init(dir, endpointMain), TezosSDK.init(dir, endpointTest));
     });
 
@@ -61,13 +61,8 @@ let make = (~children) => {
           setConfig(_ => conf);
           setLoaded(_ => true);
         | Error(e) =>
-          switch (ConfigFile.defaultToString()) {
-          | Some(conf) =>
-            Js.log(e);
-            conf->System.Config.write->Future.get(_ => ());
-            setLoaded(_ => true);
-          | None => Js.Console.error("Unreadable default config")
-          }
+          Js.log(e);
+          setLoaded(_ => true);
         }
       });
   };
@@ -118,7 +113,7 @@ let useSettings = () => {
 let useResetConfig = () => {
   let {write} = useContext();
   () => {
-    write(_ => ConfigFile.default);
+    write(_ => ConfigFile.dummy);
   };
 };
 
@@ -126,7 +121,7 @@ let useCleanSdkBaseDir = () => {
   let {content: {sdkBaseDir}} = useContext();
   () => {
     System.Client.reset(
-      sdkBaseDir->Option.getWithDefault(ConfigFile.sdkBaseDir),
+      sdkBaseDir->Option.getWithDefault(ConfigFile.Default.sdkBaseDir),
     );
   };
 };
