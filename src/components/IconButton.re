@@ -7,13 +7,12 @@ let styles =
     })
   );
 
-let iconSizeRatio = 4. /. 7.;
-
 [@react.component]
 let make =
     (
       ~icon: Icons.builder,
       ~size=28.,
+      ~iconSizeRatio=4. /. 7.,
       ~isPrimary=?,
       ~onPress=?,
       ~isActive=?,

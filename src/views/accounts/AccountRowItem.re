@@ -1,40 +1,5 @@
 open ReactNative;
 
-module AccountDeleteButton = {
-  [@react.component]
-  let make = (~account: Account.t) => {
-    let (accountRequest, deleteAccount) = StoreContext.Accounts.useDelete();
-
-    let onPressConfirmDelete = _e => {
-      deleteAccount(account.alias)->ignore;
-    };
-
-    <DeleteButton
-      buttonText="Delete account"
-      modalTitle="Delete account?"
-      onPressConfirmDelete
-      request=accountRequest
-    />;
-  };
-};
-
-module AccountEditButton = {
-  [@react.component]
-  let make = (~account: Account.t) => {
-    let (visibleModal, openAction, closeAction) =
-      ModalAction.useModalActionState();
-
-    let onPress = _e => openAction();
-
-    <>
-      <Menu.Item text="Edit account" icon=Icons.Edit.build onPress />
-      <ModalAction visible=visibleModal onRequestClose=closeAction>
-        <AccountFormView.Update account closeAction />
-      </ModalAction>
-    </>;
-  };
-};
-
 let styles =
   Style.(
     StyleSheet.create({
@@ -47,8 +12,6 @@ let styles =
           ~marginBottom=6.->dp,
           (),
         ),
-      "actionDelegate": style(~marginRight=8.->dp, ()),
-      "actionMenu": style(~marginRight=24.->dp, ()),
       "button": style(~marginRight=4.->dp, ()),
     })
   );
@@ -70,7 +33,7 @@ let make = (~account: Account.t, ~token: option(Token.t)=?) => {
       <QrButton account style=styles##button />
     </View>
     {delegateRequest->ApiRequest.mapOkWithDefault(React.null, delegate => {
-       <View style=styles##actionDelegate>
+       <View>
          <DelegateButton account disabled={delegate->Option.isSome} />
        </View>
      })}
@@ -80,7 +43,6 @@ let make = (~account: Account.t, ~token: option(Token.t)=?) => {
         keyPopover={"accountRowItemMenu" ++ account.address}>
         <AccountEditButton account />
       </Menu>
-    </View>
+    </View>ccounts editButtons and menu only on editMode
   </RowItem.Bordered>;
-  /* <AccountDeleteButton account /> */
 };

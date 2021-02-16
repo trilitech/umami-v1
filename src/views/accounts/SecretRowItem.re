@@ -6,10 +6,33 @@ let styles =
       "inner": style(~marginLeft=14.->dp, ()),
       "alias": style(~height=20.->dp, ~marginBottom=4.->dp, ()),
       "derivation": style(~height=18.->dp, ()),
+      "actionContainer": style(~marginLeft=auto, ~marginRight=24.->dp, ()),
     })
   );
 
 module AccountNestedRowItem = {
+  module AccountEditButton = {
+    [@react.component]
+    let make = (~account: Account.t) => {
+      let (visibleModal, openAction, closeAction) =
+        ModalAction.useModalActionState();
+
+      let onPress = _e => openAction();
+
+      <>
+        <IconButton
+          icon=Icons.Edit.build
+          size=34.
+          iconSizeRatio={3. /. 7.}
+          onPress
+        />
+        <ModalAction visible=visibleModal onRequestClose=closeAction>
+          <AccountFormView.Update account closeAction />
+        </ModalAction>
+      </>;
+    };
+  };
+
   [@react.component]
   let make = (~address: string, ~index: int, ~zIndex, ~isLast=false) => {
     let account = StoreContext.Accounts.useGetFromAddress(address);
@@ -26,12 +49,50 @@ module AccountNestedRowItem = {
             {("/" ++ index->string_of_int)->React.string}
           </Typography.Address>
         </View>
+        <View style=styles##actionContainer>
+          <AccountEditButton account />
+        </View>
       </RowItem.Bordered>
     );
   };
 };
 
 module AccountImportedRowItem = {
+  module AccountDeleteButton = {
+    [@react.component]
+    let make = (~account: Account.t) => {
+      let (accountRequest, deleteAccount) = StoreContext.Accounts.useDelete();
+
+      let onPressConfirmDelete = _e => {
+        deleteAccount(account.alias)->ignore;
+      };
+
+      <DeleteButton
+        buttonText="Delete account"
+        modalTitle="Delete account?"
+        onPressConfirmDelete
+        request=accountRequest
+      />;
+    };
+  };
+
+  module AccountEditButton = {
+    [@react.component]
+    let make = (~account: Account.t) => {
+      let (visibleModal, openAction, closeAction) =
+        ModalAction.useModalActionState();
+
+      let onPress = _e => openAction();
+
+      <>
+        <Menu.Item text="Edit account" icon=Icons.Edit.build onPress />
+        <ModalAction visible=visibleModal onRequestClose=closeAction>
+          <AccountFormView.Update account closeAction />
+        </ModalAction>
+      </>;
+    };
+  };
+
   [@react.component]
   let make = (~address: string, ~zIndex) => {
     let account = StoreContext.Accounts.useGetFromAddress(address);
@@ -43,6 +104,9 @@ module AccountImportedRowItem = {
             account.alias->React.string
           </Typography.Subtitle1>
           <AccountInfoBalance address={account.address} />
+        </View>
+        <View style=styles##actionContainer>
+          <Menu icon=Icons.More.build> <AccountEditButton account /> </Menu>
         </View>
       </RowItem.Bordered>
     );
