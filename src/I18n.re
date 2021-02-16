@@ -12,6 +12,8 @@ let btn = {
   pub add = "ADD";
   pub send = "SEND";
   pub save = "SAVE";
+  pub done_ = "DONE";
+  pub edit = "EDIT";
   pub validate_save = "VALIDATE AND SAVE";
   pub go_back = "GO BACK";
   pub go_operations = "GO TO OPERATIONS";
@@ -85,7 +87,7 @@ let form_input_error = {
   pub int = "must be an integer";
   pub float = "must be a float";
   pub change_baker = "It must be a different baker than the current one";
-  pub confirm_password = "It must be the same password";
+  pub confirm_password = "It must be the same password"
 };
 
 let title = {

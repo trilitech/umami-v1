@@ -54,17 +54,11 @@ let styles =
   );
 
 [@react.component]
-let make =
-    (
-      ~account: Account.t,
-      ~token: option(Token.t)=?,
-      ~isDerived=false,
-      ~isLast=false,
-    ) => {
+let make = (~account: Account.t, ~token: option(Token.t)=?) => {
   let delegateRequest = StoreContext.Delegate.useLoad(account.address);
   let addToast = LogsContext.useToast();
 
-  <RowItem.Bordered height=90. isNested=isDerived isLast>
+  <RowItem.Bordered height=90.>
     <View style=styles##inner> <AccountInfo account ?token /> </View>
     <View style=styles##actionButtons>
       <ClipboardButton

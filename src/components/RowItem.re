@@ -24,6 +24,7 @@ module NestedElement = {
             ~top=50.->pct,
             (),
           ),
+        "nestedBarHorizontalLast": style(~left=0.->dp, ()),
       })
     );
 
@@ -36,16 +37,17 @@ module NestedElement = {
         style=Style.(
           arrayOption([|
             Some(styles##nestedBarVertical),
-            isLast ? Some(styles##nestedBarVertical) : None,
+            isLast ? Some(styles##nestedBarVerticalLast) : None,
             Some(style(~backgroundColor=theme.colors.borderDisabled, ())),
           |])
         )
       />
       <View
         style=Style.(
-          array([|
-            styles##nestedBarHorizontal,
-            style(~backgroundColor=theme.colors.borderDisabled, ()),
+          arrayOption([|
+            Some(styles##nestedBarHorizontal),
+            isLast ? Some(styles##nestedBarHorizontalLast) : None,
+            Some(style(~backgroundColor=theme.colors.borderDisabled, ())),
           |])
         )
       />

@@ -20,6 +20,12 @@ let useLoad = requestState => {
   ApiRequest.useLoader(~get, ~kind=Logs.Account, ~requestState);
 };
 
+let useLoadSecrets = requestState => {
+  let get = (~settings, ()) => AccountsAPI.secrets(~settings);
+
+  ApiRequest.useLoader(~get, ~kind=Logs.Account, ~requestState);
+};
+
 /* Set */
 
 let useCreate =

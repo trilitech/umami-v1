@@ -14,6 +14,8 @@ type state = {
   selectedAccountState: reactState(option(string)),
   selectedTokenState: reactState(option(string)),
   accountsRequestState: reactState(ApiRequest.t(Map.String.t(Account.t))),
+  secretsRequestState:
+    reactState(ApiRequest.t(array(AccountApiRequest.AccountsAPI.Secret.t))),
   balanceRequestsState: apiRequestsState(ProtocolXTZ.t),
   delegateRequestsState: apiRequestsState(option(string)),
   delegateInfoRequestsState:
@@ -34,6 +36,7 @@ let initialState = {
   selectedAccountState: (None, _ => ()),
   selectedTokenState: (None, _ => ()),
   accountsRequestState: (NotAsked, _ => ()),
+  secretsRequestState: (NotAsked, _ => ()),
   balanceRequestsState: initialApiRequestsState,
   delegateRequestsState: initialApiRequestsState,
   delegateInfoRequestsState: initialApiRequestsState,
@@ -78,6 +81,7 @@ let make = (~children) => {
   let aliasesRequestState = React.useState(() => ApiRequest.NotAsked);
   let bakersRequestState = React.useState(() => ApiRequest.NotAsked);
   let tokensRequestState = React.useState(() => ApiRequest.NotAsked);
+  let secretsRequestState = React.useState(() => ApiRequest.NotAsked);
 
   AccountApiRequest.useLoad(accountsRequestState)->ignore;
   AliasApiRequest.useLoad(aliasesRequestState)->ignore;
@@ -105,6 +109,7 @@ let make = (~children) => {
       selectedAccountState,
       selectedTokenState,
       accountsRequestState,
+      secretsRequestState,
       balanceRequestsState,
       delegateRequestsState,
       delegateInfoRequestsState,
@@ -525,6 +530,18 @@ module Aliases = {
   let useDelete = () => {
     let resetAliases = useResetAll();
     AliasApiRequest.useDelete(~sideEffect=_ => resetAliases(), ());
+  };
+};
+
+module Secrets = {
+  let useRequestState = () => {
+    let store = useStoreContext();
+    store.secretsRequestState;
+  };
+
+  let useLoad = () => {
+    let requestState = useRequestState();
+    AccountApiRequest.useLoadSecrets(requestState);
   };
 };
 

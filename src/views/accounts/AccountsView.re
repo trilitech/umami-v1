@@ -1,15 +1,10 @@
 open ReactNative;
+
 module AddAccountButton = {
   let styles =
     Style.(
       StyleSheet.create({
-        "button":
-          style(
-            ~alignSelf=`flexStart,
-            ~marginLeft=(-6.)->dp,
-            ~marginBottom=10.->dp,
-            (),
-          ),
+        "button": style(~alignSelf=`flexStart, ~marginLeft=(-6.)->dp, ()),
       })
     );
 
@@ -31,9 +26,99 @@ module AddAccountButton = {
   };
 };
 
+module EditButton = {
+  let styles =
+    Style.(
+      StyleSheet.create({
+        "button": style(~alignSelf=`flexStart, ~marginLeft=auto, ()),
+      })
+    );
+
+  [@react.component]
+  let make = (~editMode, ~setEditMode) => {
+    let onPress = _ => setEditMode(editMode => !editMode);
+    <View style=styles##button>
+      <ButtonAction
+        onPress
+        text={editMode ? I18n.btn#done_ : I18n.btn#edit}
+        icon=Icons.Edit.build
+      />
+    </View>;
+  };
+};
+
+module AccountsFlatList = {
+  [@react.component]
+  let make = (~token=?) => {
+    let accounts = StoreContext.Accounts.useGetAll();
+    <View>
+      {accounts
+       ->Map.String.valuesToArray
+       ->SortArray.stableSortBy((a, b) =>
+           Pervasives.compare(a.alias, b.alias)
+         )
+       ->Array.mapWithIndex((index, account) =>
+           <AccountRowItem
+             key={account.address}
+             account
+             ?token
+             zIndex={accounts->Map.String.size - index}
+           />
+         )
+       ->React.array}
+    </View>;
+  };
+};
+
+module AccountsTreeList = {
+  let styles =
+    Style.(
+      StyleSheet.create({
+        "listDerived": style(~zIndex=2, ()),
+        "listImported": style(~zIndex=1, ()),
+      })
+    );
+
+  [@react.component]
+  let make = () => {
+    let secretsRequest = StoreContext.Secrets.useLoad();
+
+    <>
+      <View style=styles##listDerived>
+        {secretsRequest->ApiRequest.mapOrLoad(secrets =>
+           secrets
+           ->Array.mapWithIndex((index, secret) =>
+               <SecretRowItem
+                 key={secret.derivationScheme}
+                 secret
+                 zIndex={secrets->Array.size - index}
+               />
+             )
+           ->React.array
+         )}
+      </View>
+      <View style=styles##listImported>
+        {secretsRequest->ApiRequest.mapOrLoad(secrets =>
+           secrets
+           ->Array.keepMap(secret => secret.legacyAddress)
+           ->Array.mapWithIndex((index, legacyAddress) =>
+               <SecretRowItem.AccountImportedRowItem
+                 key=legacyAddress
+                 address=legacyAddress
+                 zIndex={secrets->Array.size - index}
+               />
+             )
+           ->React.array
+         )}
+      </View>
+    </>;
+  };
+};
+
 let styles =
   Style.(
     StyleSheet.create({
+      "actionBar": style(~flexDirection=`row, ~marginBottom=10.->dp, ()),
       "refreshPosition":
         style(
           ~position=`absolute,
@@ -47,35 +132,21 @@ let styles =
 
 [@react.component]
 let make = () => {
-  React.useEffect0(() => {
-    HD.edesk(
-      "m/44'/1729'/0'/1'",
-      "zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra",
-      ~password="blerot",
-    )
-    ->Future.get(edesk => {Js.log(edesk)});
-    None;
-  });
-  let accounts = StoreContext.Accounts.useGetAll();
   let resetAccounts = StoreContext.Accounts.useResetAll();
   let accountsRequest = StoreContext.Accounts.useRequest();
   let token = StoreContext.SelectedToken.useGet();
+
+  let (editMode, setEditMode) = React.useState(_ => false);
+
   <Page>
     {accountsRequest->ApiRequest.mapOrEmpty(_ => {
        <>
          <BalanceTotal.WithTokenSelector ?token />
-         <AddAccountButton />
-         <View>
-           {accounts
-            ->Map.String.valuesToArray
-            ->SortArray.stableSortBy((a, b) =>
-                Pervasives.compare(a.alias, b.alias)
-              )
-            ->Array.map(account =>
-                <AccountRowItem key={account.address} account ?token />
-              )
-            ->React.array}
+         <View style=styles##actionBar>
+           <AddAccountButton />
+           <EditButton editMode setEditMode />
          </View>
+         {editMode ? <AccountsTreeList /> : <AccountsFlatList ?token />}
        </>
      })}
     <View style=styles##refreshPosition>
