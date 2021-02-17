@@ -88,7 +88,7 @@ module AccountsTreeList = {
         {secretsRequest->ApiRequest.mapOrLoad(secrets =>
            secrets
            ->Array.mapWithIndex((index, secret) =>
-               <SecretRowItem
+               <SecretRowTree
                  key={secret.derivationScheme}
                  secret
                  zIndex={secrets->Array.size - index}
@@ -102,7 +102,7 @@ module AccountsTreeList = {
            secrets
            ->Array.keepMap(secret => secret.legacyAddress)
            ->Array.mapWithIndex((index, legacyAddress) =>
-               <SecretRowItem.AccountImportedRowItem
+               <SecretRowTree.AccountImportedRowItem
                  key=legacyAddress
                  address=legacyAddress
                  zIndex={secrets->Array.size - index}
@@ -136,7 +136,7 @@ let make = () => {
   let accountsRequest = StoreContext.Accounts.useRequest();
   let token = StoreContext.SelectedToken.useGet();
 
-  let (editMode, setEditMode) = React.useState(_ => false);
+  let (editMode, setEditMode) = React.useState(_ => true);
 
   <Page>
     {accountsRequest->ApiRequest.mapOrEmpty(_ => {

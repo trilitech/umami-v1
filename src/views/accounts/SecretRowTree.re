@@ -6,7 +6,16 @@ let styles =
       "inner": style(~marginLeft=14.->dp, ()),
       "alias": style(~height=20.->dp, ~marginBottom=4.->dp, ()),
       "derivation": style(~height=18.->dp, ()),
-      "actionContainer": style(~marginLeft=auto, ~marginRight=24.->dp, ()),
+      "actionContainer":
+        style(
+          ~flexDirection=`row,
+          ~alignItems=`center,
+          ~marginLeft=auto,
+          ~marginRight=24.->dp,
+          (),
+        ),
+      "actionIconButton": style(~marginLeft=2.->dp, ()),
+      "actionButton": style(~marginLeft=9.->dp, ~marginRight=7.->dp, ()),
     })
   );
 
@@ -25,6 +34,7 @@ module AccountNestedRowItem = {
           size=34.
           iconSizeRatio={3. /. 7.}
           onPress
+          style=styles##actionIconButton
         />
         <ModalAction visible=visibleModal onRequestClose=closeAction>
           <AccountFormView.Update account closeAction />
@@ -93,6 +103,19 @@ module AccountImportedRowItem = {
     };
   };
 
+  module AccountExportButton = {
+    [@react.component]
+    let make = () => {
+      <>
+        <Buttons.SubmitTertiary
+          onPress={_ => ()}
+          text="EXPORT"
+          style=styles##actionButton
+        />
+      </>;
+    };
+  };
+
   [@react.component]
   let make = (~address: string, ~zIndex) => {
     let account = StoreContext.Accounts.useGetFromAddress(address);
@@ -106,19 +129,61 @@ module AccountImportedRowItem = {
           <AccountInfoBalance address={account.address} />
         </View>
         <View style=styles##actionContainer>
-          <Menu icon=Icons.More.build> <AccountEditButton account /> </Menu>
+          <AccountExportButton />
+          <Menu icon=Icons.More.build style=styles##actionIconButton>
+            <AccountEditButton account />
+          </Menu>
         </View>
       </RowItem.Bordered>
     );
   };
 };
 
-[@react.component]
-let make = (~secret: AccountApiRequest.AccountsAPI.Secret.t, ~zIndex) => {
-  <View style={Style.style(~zIndex, ())}>
-    <RowItem.Bordered
-      height=66.
-      style={Style.style(~zIndex=secret.addresses->Array.size + 1, ())}>
+module SecretRowItem = {
+  module SecretEditButton = {
+    [@react.component]
+    let make = () => {
+      <> <Menu.Item text="Edit" icon=Icons.Edit.build onPress={_ => ()} /> </>;
+    };
+  };
+
+  module SecretAddAccountButton = {
+    [@react.component]
+    let make = () => {
+      let (visibleModal, openAction, closeAction) =
+        ModalAction.useModalActionState();
+
+      let onPress = _e => openAction();
+
+      <>
+        <Buttons.SubmitTertiary
+          onPress
+          text=I18n.btn#add_account
+          style=styles##actionButton
+        />
+        <ModalAction visible=visibleModal onRequestClose=closeAction>
+          <AccountFormView.Create closeAction />
+        </ModalAction>
+      </>;
+    };
+  };
+
+  module SecretExportButton = {
+    [@react.component]
+    let make = () => {
+      <>
+        <Buttons.SubmitTertiary
+          onPress={_ => ()}
+          text="EXPORT"
+          style=styles##actionButton
+        />
+      </>;
+    };
+  };
+
+  [@react.component]
+  let make = (~secret: AccountApiRequest.AccountsAPI.Secret.t, ~zIndex) => {
+    <RowItem.Bordered height=66. style={Style.style(~zIndex, ())}>
       <View style=styles##inner>
         <Typography.Subtitle1 style=styles##alias>
           secret.name->React.string
@@ -127,7 +192,21 @@ let make = (~secret: AccountApiRequest.AccountsAPI.Secret.t, ~zIndex) => {
           secret.derivationScheme->React.string
         </Typography.Address>
       </View>
-    </RowItem.Bordered>
+      <View style=styles##actionContainer>
+        <SecretAddAccountButton />
+        <SecretExportButton />
+        <Menu icon=Icons.More.build style=styles##actionIconButton>
+          <SecretEditButton />
+        </Menu>
+      </View>
+    </RowItem.Bordered>;
+  };
+};
+
+[@react.component]
+let make = (~secret: AccountApiRequest.AccountsAPI.Secret.t, ~zIndex) => {
+  <View style={Style.style(~zIndex, ())}>
+    <SecretRowItem secret zIndex={secret.addresses->Array.size + 1} />
     {secret.addresses
      ->Array.mapWithIndex((index, address) =>
          <AccountNestedRowItem
