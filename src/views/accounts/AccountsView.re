@@ -1,38 +1,8 @@
 open ReactNative;
 
-module AddAccountButton = {
-  let styles =
-    Style.(
-      StyleSheet.create({
-        "button": style(~alignSelf=`flexStart, ~marginLeft=(-6.)->dp, ()),
-      })
-    );
-
-  [@react.component]
-  let make = () => {
-    let (visibleModal, openAction, closeAction) =
-      ModalAction.useModalActionState();
-
-    let onPress = _e => openAction();
-
-    <>
-      <View style=styles##button>
-        <ButtonAction onPress text=I18n.btn#add_account icon=Icons.Add.build />
-      </View>
-      <ModalAction visible=visibleModal onRequestClose=closeAction>
-        <AccountFormView.Create closeAction />
-      </ModalAction>
-    </>;
-  };
-};
-
 module EditButton = {
   let styles =
-    Style.(
-      StyleSheet.create({
-        "button": style(~alignSelf=`flexStart, ~marginLeft=auto, ()),
-      })
-    );
+    Style.(StyleSheet.create({"button": style(~marginLeft=auto, ())}));
 
   [@react.component]
   let make = (~editMode, ~setEditMode) => {
@@ -43,6 +13,36 @@ module EditButton = {
         text={editMode ? I18n.btn#done_ : I18n.btn#edit}
         icon=Icons.Edit.build
       />
+    </View>;
+  };
+};
+
+module AccountImportButton = {
+  let styles =
+    Style.(
+      StyleSheet.create({
+        "button": style(~marginLeft=(-6.)->dp, ~marginBottom=2.->dp, ()),
+      })
+    );
+
+  [@react.component]
+  let make = () => {
+    let onPress = _ => ();
+    <View style=styles##button>
+      <ButtonAction onPress text="IMPORT" icon=Icons.Add.build primary=true />
+    </View>;
+  };
+};
+
+module ScanImportButton = {
+  let styles =
+    Style.(StyleSheet.create({"button": style(~marginLeft=(-6.)->dp, ())}));
+
+  [@react.component]
+  let make = () => {
+    let onPress = _ => ();
+    <View style=styles##button>
+      <ButtonAction onPress text="SCAN" icon=Icons.Add.build primary=true />
     </View>;
   };
 };
@@ -98,7 +98,7 @@ module AccountsTreeList = {
          )}
       </View>
       <View style=styles##listImported>
-        {secretsRequest->ApiRequest.mapOrLoad(secrets =>
+        {secretsRequest->ApiRequest.mapOkWithDefault(React.null, secrets =>
            secrets
            ->Array.keepMap(secret => secret.legacyAddress)
            ->Array.mapWithIndex((index, legacyAddress) =>
@@ -136,14 +136,17 @@ let make = () => {
   let accountsRequest = StoreContext.Accounts.useRequest();
   let token = StoreContext.SelectedToken.useGet();
 
-  let (editMode, setEditMode) = React.useState(_ => true);
+  let (editMode, setEditMode) = React.useState(_ => false);
 
   <Page>
     {accountsRequest->ApiRequest.mapOrEmpty(_ => {
        <>
-         <BalanceTotal.WithTokenSelector ?token />
+         {editMode
+            ? <BalanceTotal /> : <BalanceTotal.WithTokenSelector ?token />}
          <View style=styles##actionBar>
-           <AddAccountButton />
+           {editMode
+              ? <View> <AccountImportButton /> <ScanImportButton /> </View>
+              : React.null}
            <EditButton editMode setEditMode />
          </View>
          {editMode ? <AccountsTreeList /> : <AccountsFlatList ?token />}
