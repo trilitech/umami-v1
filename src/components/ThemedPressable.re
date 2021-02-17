@@ -37,7 +37,7 @@ let make =
            arrayOption([|
              Some(styles##container),
              styleFromProp,
-             hovered
+             hovered || focused
                ? Some(
                    Style.style(
                      ~backgroundColor=
@@ -48,7 +48,7 @@ let make =
                    ),
                  )
                : None,
-             pressed || focused
+             pressed
                ? Some(
                    Style.style(
                      ~backgroundColor=
