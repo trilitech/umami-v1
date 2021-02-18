@@ -8,5 +8,4 @@ let make =
       ~height: option(Style.size)=?,
       ~fill: option(string)=?,
       ~stroke: option(string)=?,
-    ) => <Svg  viewBox="0 0 24 24" ?width ?height ?fill ?stroke> <G fillRule=`evenodd> <G> <G> <G> <G> <G> <Path d="M0 0L24 0 24 24 0 24z" transform="translate(-1297 -145) translate(147 100) translate(1137 37) translate(5) translate(8 8)"/> <Path d="M19 8L15 8 15 2 9 2 9 8 5 8 12 15zM5 20L5 22 19 22 19 20z" transform="translate(-1297 -145) translate(147 100) translate(1137 37) translate(5) translate(8 8)"/> </G> </G> </G> </G> </G> </G> </Svg>
-;
+    ) => <Svg viewBox="0 0 24 24" ?width ?height ?fill ?stroke> <Path d="M9.000 5.000 L 9.000 7.999 7.020 8.010 L 5.040 8.020 8.520 11.500 L 12.000 14.981 15.480 11.500 L 18.960 8.020 16.980 8.010 L 15.000 7.999 15.000 5.000 L 15.000 2.000 12.000 2.000 L 9.000 2.000 9.000 5.000 M5.000 21.000 L 5.000 22.000 12.000 22.000 L 19.000 22.000 19.000 21.000 L 19.000 20.000 12.000 20.000 L 5.000 20.000 5.000 21.000 " fillRule=`evenodd> </Path> </Svg>;
