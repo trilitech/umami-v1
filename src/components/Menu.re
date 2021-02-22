@@ -51,16 +51,37 @@ let styles =
   );
 
 [@react.component]
-let make = (~icon: Icons.builder, ~children, ~size=34., ~style as styleArg=?) => {
+let make =
+    (
+      ~keyMenu="menu",
+      ~icon: Icons.builder,
+      ~children,
+      ~size=34.,
+      ~style as styleArg=?,
+    ) => {
   let pressableRef = React.useRef(Js.Nullable.null);
 
   let (isOpen, setIsOpen) = React.useState(_ => false);
+  let (config, setConfig) = React.useState(_ => None);
 
   DocumentContext.useClickOutside(
     pressableRef,
     isOpen,
     React.useCallback1(_pressEvent => setIsOpen(_ => false), [|setIsOpen|]),
   );
+
+  let onPress = _ => {
+    pressableRef.current
+    ->Js.Nullable.toOption
+    ->Option.map(pressableElement => {
+        pressableElement->PressableCustom.measureInWindow(
+          (x, y, width, height) => {
+          setConfig(_ => Some(PressableCustom.{x, y, width, height}))
+        })
+      })
+    ->ignore;
+    setIsOpen(isOpen => !isOpen);
+  };
 
   <View
     style=Style.(
@@ -74,11 +95,17 @@ let make = (~icon: Icons.builder, ~children, ~size=34., ~style as styleArg=?) =>
       isActive=isOpen
       icon
       size
-      onPress={_ => setIsOpen(isOpen => !isOpen)}
+      onPress
     />
-    <DropdownMenu
-      openingStyle=DropdownMenu.TopRight style=styles##dropdownmenu isOpen>
-      children
-    </DropdownMenu>
+    <Portal>
+      <DropdownMenu
+        key=keyMenu
+        openingStyle=DropdownMenu.TopRight
+        style=styles##dropdownmenu
+        isOpen
+        ?config>
+        children
+      </DropdownMenu>
+    </Portal>
   </View>;
 };

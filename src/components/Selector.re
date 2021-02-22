@@ -75,6 +75,7 @@ let make =
   let touchableRef = React.useRef(Js.Nullable.null);
 
   let (isOpen, setIsOpen) = React.useState(_ => false);
+  let (config, setConfig) = React.useState(_ => None);
 
   DocumentContext.useClickOutside(
     touchableRef,
@@ -93,12 +94,22 @@ let make =
 
   let theme = ThemeContext.useTheme();
 
+  let onPress = _ => {
+    touchableRef.current
+    ->Js.Nullable.toOption
+    ->Option.map(touchableElement => {
+        touchableElement->PressableCustom.measureInWindow(
+          (x, y, width, height) => {
+          setConfig(_ => Some(PressableCustom.{x, y, width, height}))
+        })
+      })
+    ->ignore;
+    setIsOpen(prevIsOpen => !prevIsOpen);
+  };
+
   <View ?style>
     <PressableCustom
-      ref={touchableRef->Ref.value}
-      style=styles##pressable
-      onPress={_e => setIsOpen(prevIsOpen => !prevIsOpen)}
-      disabled>
+      ref={touchableRef->Ref.value} style=styles##pressable onPress disabled>
       {_ =>
          <View
            style=Style.(
@@ -147,34 +158,39 @@ let make =
                 />}
          </View>}
     </PressableCustom>
-    <DropdownMenu
-      style={Style.arrayOption([|
-        Some(styles##dropdownmenu),
-        dropdownStyle,
-      |])}
-      isOpen>
-      {noneItem->Option.mapWithDefault(React.null, item =>
-         <Item
-           key={item->getItemValue}
-           item
-           onChange
-           renderItem
-           isSelected={selectedValue->Option.isNone}
-         />
-       )}
-      {items
-       ->Array.map(item =>
+    <Portal>
+      <DropdownMenu
+        key="selector"
+        style={Style.arrayOption([|
+          Some(styles##dropdownmenu),
+          dropdownStyle,
+        |])}
+        isOpen
+        ?config>
+        {noneItem->Option.mapWithDefault(React.null, item =>
            <Item
              key={item->getItemValue}
              item
              onChange
              renderItem
-             isSelected={
-               item->getItemValue == selectedValue->Option.getWithDefault("")
-             }
+             isSelected={selectedValue->Option.isNone}
            />
-         )
-       ->React.array}
-    </DropdownMenu>
+         )}
+        {items
+         ->Array.map(item =>
+             <Item
+               key={item->getItemValue}
+               item
+               onChange
+               renderItem
+               isSelected={
+                 item->getItemValue
+                 == selectedValue->Option.getWithDefault("")
+               }
+             />
+           )
+         ->React.array}
+      </DropdownMenu>
+    </Portal>
   </View>;
 };

@@ -63,13 +63,8 @@ let make = () => {
             ->SortArray.stableSortBy((a, b) =>
                 Pervasives.compare(a.alias, b.alias)
               )
-            ->Array.mapWithIndex((index, account) =>
-                <AccountRowItem
-                  key={account.address}
-                  account
-                  ?token
-                  zIndex={accounts->Map.String.size - index}
-                />
+            ->Array.map(account =>
+                <AccountRowItem key={account.address} account ?token />
               )
             ->React.array}
          </View>

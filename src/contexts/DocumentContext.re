@@ -81,10 +81,14 @@ let make = (~children) => {
       [|listeners|],
     );
 
-  <View
-    style=styles##document onStartShouldSetResponderCapture onResponderRelease>
-    <Provider value> children </Provider>
-  </View>;
+  <Portal.Provider>
+    <View
+      style=styles##document
+      onStartShouldSetResponderCapture
+      onResponderRelease>
+      <Provider value> children </Provider>
+    </View>
+  </Portal.Provider>;
 };
 
 // Hooks

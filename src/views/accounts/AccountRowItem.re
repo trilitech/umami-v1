@@ -48,11 +48,11 @@ let styles =
   );
 
 [@react.component]
-let make = (~account: Account.t, ~token: option(Token.t)=?, ~zIndex) => {
+let make = (~account: Account.t, ~token: option(Token.t)=?) => {
   let delegateRequest = StoreContext.Delegate.useLoad(account.address);
   let addToast = LogsContext.useToast();
 
-  <RowItem.Bordered height=90. style={Style.style(~zIndex, ())}>
+  <RowItem.Bordered height=90.>
     <View style=styles##inner> <AccountInfo account ?token /> </View>
     <View style=styles##actionButtons>
       <ClipboardButton
@@ -69,7 +69,11 @@ let make = (~account: Account.t, ~token: option(Token.t)=?, ~zIndex) => {
        </View>
      })}
     <View style=styles##actionMenu>
-      <Menu icon=Icons.More.build> <AccountEditButton account /> </Menu>
+      <Menu
+        icon=Icons.More.build
+        keyMenu={"accountRowItemMenu" ++ account.address}>
+        <AccountEditButton account />
+      </Menu>
     </View>
   </RowItem.Bordered>;
   /* <AccountDeleteButton account /> */
