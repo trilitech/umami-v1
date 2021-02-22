@@ -1,5 +1,6 @@
 module Buffer = Js.TypedArray2.Uint8Array;
 
+[@bs.send] external setArray: (Buffer.t, Buffer.t) => unit = "set";
 [@bs.send] external setArrayAt: (Buffer.t, Buffer.t, int) => unit = "set";
 [@bs.send] external toHex: (Buffer.t, [@bs.as "hex"] _) => string = "toString";
 
@@ -8,6 +9,4 @@ module Buffer = Js.TypedArray2.Uint8Array;
 [@bs.val] [@bs.scope "crypto"]
 external getRandomValues: Buffer.t => Buffer.t = "getRandomValues";
 
-let make = size => Buffer.fromBuffer(Js.TypedArray2.ArrayBuffer.make(size));
-
-let filledWithRandomValues = size => getRandomValues(make(size));
+let filledWithRandomValues = size => getRandomValues(Buffer.fromLength(size));

@@ -1,7 +1,7 @@
 open ReactNative;
 
 module BalanceAPI = API.Balance(API.TezosClient);
-module AccountsAPI = API.Accounts(API.TezosClient);
+module AccountsAPI = API.Accounts(API.TezosClient, API.TezosExplorer);
 module OperationsAPI = API.Operations(API.TezosClient, API.TezosExplorer);
 module AliasesAPI = API.Aliases(API.TezosClient);
 module DelegateAPI = API.Delegate(API.TezosClient, API.TezosExplorer);

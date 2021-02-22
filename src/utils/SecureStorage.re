@@ -177,11 +177,11 @@ let storeEncryptedData = (data, ~key) =>
 
 let fetch = (key, ~password) =>
   switch (fetchEncryptedData(key)) {
-    | Some(encryptedData) => encryptedData->Cipher.decrypt(password)
-    | None => Future.value(Error("Data not found!"))
+  | Some(encryptedData) => encryptedData->Cipher.decrypt(password)
+  | None => Future.value(Error("Data not found!"))
   };
 
 let store = (data, ~key, ~password) =>
-  data->Cipher.encrypt(password)->Future.mapOk(encryptedData =>
-    encryptedData->storeEncryptedData(~key)
-  );
+  data
+  ->Cipher.encrypt(password)
+  ->Future.mapOk(encryptedData => encryptedData->storeEncryptedData(~key));

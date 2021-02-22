@@ -47,6 +47,15 @@ let styles =
 
 [@react.component]
 let make = () => {
+  React.useEffect0(() => {
+    HD.edesk(
+      "m/44'/1729'/0'/1'",
+      "zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra",
+      ~password="blerot",
+    )
+    ->Future.get(edesk => {Js.log(edesk)});
+    None;
+  });
   let accounts = StoreContext.Accounts.useGetAll();
   let resetAccounts = StoreContext.Accounts.useResetAll();
   let accountsRequest = StoreContext.Accounts.useRequest();

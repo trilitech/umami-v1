@@ -3,7 +3,7 @@ open ReactNative;
 let style =
   Style.(style(~padding=4.->dp, ~margin=4.->dp, ~borderWidth=1.0, ()));
 
-module AccountsAPI = API.Accounts(API.TezosClient);
+module AccountsAPI = API.Accounts(API.TezosClient, API.TezosExplorer);
 
 [@react.component]
 let make = () => {

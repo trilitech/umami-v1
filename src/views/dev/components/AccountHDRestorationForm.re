@@ -3,8 +3,7 @@ open ReactNative;
 let style =
   Style.(style(~padding=4.->dp, ~margin=4.->dp, ~borderWidth=1.0, ()));
 
-module AccountsAPI = API.Accounts(API.TezosClient);
-module ScannerAPI = API.Scanner(API.TezosClient, API.TezosExplorer);
+module AccountsAPI = API.Accounts(API.TezosClient, API.TezosExplorer);
 
 [@react.component]
 let make = () => {
@@ -37,18 +36,22 @@ let make = () => {
         let future =
           if (derivationPath->Js.String2.includes("?")) {
             Js.log("scan");
-            settings->ScannerAPI.scan(
+            AccountsAPI.scan(
+              ~settings,
               backupPhrase,
               name,
               ~derivationScheme=derivationPath,
+              ~password="blerot",
               ~index=0,
+              (),
             );
           } else {
             AccountsAPI.restore(
               ~settings,
               backupPhrase,
               name,
-              ~derivationPath,
+              ~derivationScheme=derivationPath,
+              ~password="blerot",
               (),
             );
           };

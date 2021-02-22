@@ -170,7 +170,7 @@ module Balance = (Caller: CallerAPI) => {
   };
 };
 
-let map = (result: Result.t('a, string), transform: 'a => 'b) =>
+let tryMap = (result: Result.t('a, string), transform: 'a => 'b) =>
   try(
     switch (result) {
     | Ok(value) => Ok(transform(value))
@@ -332,7 +332,7 @@ module InjectorRaw = (Caller: CallerAPI) => {
     )
     ->Future.tapOk(Js.log)
     ->Future.map(result =>
-        result->map(receipt => {
+        result->tryMap(receipt => {
           let revelation =
             receipt->parse(
               "[ ]*Revelation of manager public key:",
@@ -378,7 +378,7 @@ module InjectorRaw = (Caller: CallerAPI) => {
     Caller.call(make_arguments(network), ())
     ->Future.tapOk(Js.log)
     ->Future.map(result =>
-        result->map(receipt => {
+        result->tryMap(receipt => {
           let result =
             receipt->parse(
               "Operation hash is '([A-Za-z0-9]*)'",
@@ -396,7 +396,7 @@ module InjectorRaw = (Caller: CallerAPI) => {
     Caller.call(make_arguments(network), ~inputs=[|password|], ())
     ->Future.tapOk(Js.log)
     ->Future.map(result =>
-        result->map(receipt => {
+        result->tryMap(receipt => {
           let operationHash =
             receipt->parse(
               "Operation hash is '([A-Za-z0-9]+)'",
@@ -420,7 +420,7 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
     ->URL.mempool(account)
     ->Getter.get
     ->Future.map(result =>
-        result->map(x =>
+        result->tryMap(x =>
           (
             operations,
             x |> Json.Decode.(array(Operation.Read.decodeFromMempool)),
@@ -454,7 +454,7 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
     ->URL.operations(account, ~types?, ~destination?, ~limit?, ())
     ->Getter.get
     ->Future.map(result =>
-        result->map(Json.Decode.(array(Operation.Read.decode)))
+        result->tryMap(Json.Decode.(array(Operation.Read.decode)))
       )
     >>= (
       operations =>
@@ -615,37 +615,56 @@ module Mnemonic = {
   [@bs.module "bip39"] external generate: unit => string = "generateMnemonic";
 };
 
-module Accounts = (Caller: CallerAPI) => {
-  module Secret = {
-    type t = {
-      name: string,
-      derivationScheme: string,
-      addresses: Js.Array.t(string),
-      legacyAddress: option(string),
-    };
-
-    let decoder = json =>
-      Json.Decode.{
-        name: json |> field("name", string),
-        derivationScheme: json |> field("derivationScheme", string),
-        addresses: json |> field("addresses", array(string)),
-        legacyAddress: json |> optional(field("legacyAddress", string)),
-      };
+module Secret = {
+  type t = {
+    name: string,
+    derivationScheme: string,
+    addresses: Js.Array.t(string),
+    legacyAddress: option(string),
   };
 
-  let secrets = (~settings: AppSettings.t) =>
-    Result.Ok([|
-      {
-        Secret.name: "secret 0",
-        derivationScheme: "m/44'/1729'/0'/0'",
-        addresses: [|
-          "tz1dyX3B1CFYa2DfdFLyPtiJCfQRUgPVME6E",
-          "tz1VTfGqp34NypRQJmjNiPrCTG5TRonevsmf",
-        |],
-        legacyAddress: Some("tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"),
-      },
-    |])
-    ->Future.value;
+  let decoder = json =>
+    Json.Decode.{
+      name: json |> field("name", string),
+      derivationScheme: json |> field("derivationScheme", string),
+      addresses: json |> field("addresses", array(string)),
+      legacyAddress: json |> optional(field("legacyAddress", string)),
+    };
+
+  let encoder = secret =>
+    Json.Encode.(
+      switch (secret.legacyAddress) {
+      | Some(legacyAddress) =>
+        object_([
+          ("name", string(secret.name)),
+          ("derivationScheme", string(secret.derivationScheme)),
+          ("addresses", stringArray(secret.addresses)),
+          ("legacyAddress", string(legacyAddress)),
+        ])
+      | None =>
+        object_([
+          ("name", string(secret.name)),
+          ("derivationScheme", string(secret.derivationScheme)),
+          ("addresses", stringArray(secret.addresses)),
+        ])
+      }
+    );
+};
+
+module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
+  let secrets = (~settings: AppSettings.t) => {
+    LocalStorage.getItem("secrets")
+    ->Js.Nullable.toOption
+    ->Option.flatMap(Json.parse)
+    ->Option.map(Json.Decode.(array(Secret.decoder)));
+  };
+
+  let recoveryPhrases = (~settings: AppSettings.t, password) =>
+    SecureStorage.fetch("recoveryPhrases", ~password)
+    ->Future.mapOk(Json.parse)
+    ->Future.mapOk(result =>
+        result->Option.map(Json.Decode.(array(string)))
+      );
 
   let parse = content =>
     content
@@ -663,24 +682,16 @@ module Accounts = (Caller: CallerAPI) => {
       })
     ->(rows => rows->Array.keep(data => data->Array.length > 2))
     ->Array.map(data => (data[0], data[1]));
-  /*
-     let get = (~settings: AppSettings.t) =>
-       settings
-       ->AppSettings.sdk
-       ->TezosSDK.listKnownAddresses
-       ->Future.mapOk(r =>
-           r->Array.keepMap((TezosSDK.OutputAddress.{alias, pkh, sk_known}) =>
-             sk_known ? Some((alias, pkh)) : None
-           )
-         );
-   */
+
   let get = (~settings: AppSettings.t) =>
-    Result.Ok([|
-      ("account 0", "tz1dyX3B1CFYa2DfdFLyPtiJCfQRUgPVME6E"),
-      ("account 1", "tz1VTfGqp34NypRQJmjNiPrCTG5TRonevsmf"),
-      ("zebra", "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"),
-    |])
-    ->Future.value;
+    settings
+    ->AppSettings.sdk
+    ->TezosSDK.listKnownAddresses
+    ->Future.mapOk(r =>
+        r->Array.keepMap((TezosSDK.OutputAddress.{alias, pkh, sk_known}) =>
+          sk_known ? Some((alias, pkh)) : None
+        )
+      );
 
   let create = (~settings, name) =>
     Caller.call(
@@ -693,56 +704,9 @@ module Accounts = (Caller: CallerAPI) => {
 
   let import = (key, name) =>
     Caller.call(
-      [|"import", "secret", "key", name, "unencrypted:" ++ key|],
+      [|"import", "secret", "key", name, "encrypted:" ++ key|],
       (),
     );
-
-  let addWithMnemonic = (~settings, name, mnemonic, ~password) =>
-    Caller.call(
-      [|
-        "-E",
-        settings->AppSettings.endpoint,
-        "import",
-        "keys",
-        "from",
-        "mnemonic",
-        name,
-        "--encrypt",
-      |],
-      ~inputs=[|mnemonic, "", password, password|],
-      (),
-    )
-    ->Future.tapOk(_ => {LocalStorage.setItem("mnemonic", mnemonic)});
-
-  let restore = (~settings, backupPhrase, name, ~derivationPath=?, ()) => {
-    switch (derivationPath) {
-    | Some(derivationPath) =>
-      let seed = backupPhrase->HD.BIP39.seed;
-      let edsk =
-        HD.toEDSK(derivationPath->HD.ED25519.derivePath(seed->HD.toHex).key);
-      Js.log(edsk);
-      import(edsk, name);
-    | None =>
-      Caller.call(
-        [|
-          "-E",
-          settings->AppSettings.endpoint,
-          "generate",
-          "keys",
-          "from",
-          "mnemonic",
-          backupPhrase,
-        |],
-        (),
-      )
-      ->Future.tapOk(Js.log)
-      ->Future.mapOk(keys =>
-          (keys |> Js.String.split("\n"))->Array.getUnsafe(2)
-        )
-      ->Future.tapOk(Js.log)
-      ->Future.flatMapOk(edsk => import(edsk, name))
-    };
-  };
 
   let delete = (~settings, name) =>
     Caller.call(
@@ -757,27 +721,8 @@ module Accounts = (Caller: CallerAPI) => {
       (),
     );
 
-  let delegate = (settings, account, delegate) =>
-    Caller.call(
-      [|
-        "-E",
-        settings->AppSettings.endpoint,
-        "set",
-        "delegate",
-        "for",
-        account,
-        "to",
-        delegate,
-      |],
-      (),
-    );
-};
-
-module Scanner = (Caller: CallerAPI, Getter: GetterAPI) => {
-  module AccountsAPI = Accounts(Caller);
-  module OperationsAPI = Operations(Caller, Getter);
-
   let validate = (network, address) => {
+    module OperationsAPI = Operations(Caller, Getter);
     network
     ->OperationsAPI.get(address, ~limit=1, ())
     ->Future.mapOk(operations => {operations->Js.Array2.length != 0});
@@ -785,46 +730,111 @@ module Scanner = (Caller: CallerAPI, Getter: GetterAPI) => {
 
   let rec scan =
           (
-            settings: AppSettings.t,
-            backupPhrase,
+            ~settings: AppSettings.t,
+            seed,
             baseName,
-            ~derivationScheme,
-            ~index,
+            ~derivationScheme="m/44'/1729'/?'/0'",
+            ~password,
+            ~index=0,
+            (),
           ) => {
-    let seed = backupPhrase->HD.BIP39.seed;
     let suffix = index->Js.Int.toString;
-    LocalStorage.setItem("index", suffix);
-    let derivationPath = derivationScheme->Js.String2.replace("?", suffix);
-    let edsk =
-      HD.toEDSK(derivationPath->HD.ED25519.derivePath(seed->HD.toHex).key);
-    Js.log(baseName ++ index->Js.Int.toString ++ " " ++ edsk);
     let name = baseName ++ suffix;
-    AccountsAPI.import(edsk, name)
-    ->Future.flatMapOk(_ =>
-        AccountsAPI.get(~settings)
-        ->Future.mapOk(MapString.fromArray)
-        ->Future.flatMapOk(accounts =>
-            switch (accounts->Map.String.get(name)) {
-            | Some(address) =>
-              settings
-              ->validate(address)
-              ->Future.flatMapOk(isValidated =>
-                  if (isValidated) {
-                    scan(
-                      settings,
-                      backupPhrase,
-                      baseName,
-                      ~derivationScheme,
-                      ~index=index + 1,
-                    );
-                  } else {
-                    AccountsAPI.delete(~settings, name);
-                  }
-                )
-            | None => Future.make(resolve => resolve(Ok("")))
-            }
+    LocalStorage.setItem("index", suffix);
+    let path = derivationScheme->Js.String2.replace("?", suffix);
+    HD.edesk(path, seed, ~password)
+    ->Future.tapOk(edesk =>
+        Js.log(baseName ++ index->Js.Int.toString ++ " " ++ edesk)
+      )
+    ->Future.flatMapOk(edesk =>
+        import(edesk, name)
+        ->Future.flatMapOk(_ =>
+            get(~settings)
+            ->Future.mapOk(MapString.fromArray)
+            ->Future.flatMapOk(accounts =>
+                switch (accounts->Map.String.get(name)) {
+                | Some(address) =>
+                  (
+                    if (index == 0) {
+                      // always include 0'
+                      Future.value(Ok(true));
+                    } else {
+                      settings->validate(address);
+                    }
+                  )
+                  ->Future.flatMapOk(isValidated =>
+                      if (isValidated) {
+                        scan(
+                          ~settings,
+                          seed,
+                          baseName,
+                          ~derivationScheme,
+                          ~password,
+                          ~index=index + 1,
+                          (),
+                        )
+                        ->Future.mapOk(addresses =>
+                            Array.concat([|address|], addresses)
+                          );
+                      } else {
+                        delete(~settings, name)->Future.map(_ => Ok([||]));
+                      }
+                    )
+                | None => Future.make(resolve => resolve(Ok([||])))
+                }
+              )
           )
       );
+  };
+
+  let restore =
+      (
+        ~settings,
+        backupPhrase,
+        name,
+        ~derivationScheme="m/44'/1729'/?'/0'",
+        ~password,
+        (),
+      ) => {
+    scan(
+      ~settings,
+      backupPhrase->HD.seed,
+      name,
+      ~derivationScheme,
+      ~password,
+      (),
+    )
+    ->Future.tapOk(_ => {
+        recoveryPhrases(~settings, password)
+        ->Future.mapOk(recoveryPhrases =>
+            recoveryPhrases->Option.mapWithDefault(
+              [|backupPhrase|], recoveryPhrases =>
+              Array.concat(recoveryPhrases, [|backupPhrase|])
+            )
+          )
+        ->Future.mapOk(Json.Encode.(array(string)))
+        ->Future.mapOk(json => json->Json.stringify)
+        ->Future.flatMapOk(string =>
+            string->SecureStorage.store(~key="recoveryPhrases", ~password)
+          )
+      })
+    ->Future.tapOk(addresses => {
+        Js.log(addresses);
+        let secret = {
+          Secret.name,
+          derivationScheme,
+          addresses,
+          legacyAddress: None,
+        };
+        let secrets =
+          secrets(~settings)
+          ->Option.getWithDefault([||])
+          ->Array.concat([|secret|]);
+        LocalStorage.setItem(
+          "secrets",
+          Json.Encode.array(Secret.encoder, secrets)->Json.stringify,
+        );
+      });
   };
 };
 
@@ -916,7 +926,7 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
     | Mainnet =>
       "https://api.baking-bad.org/v2/bakers"
       ->Getter.get
-      ->Future.map(result => result->map(Json.Decode.(array(decode))))
+      ->Future.mapOk(Json.Decode.(array(Delegate.decode)))
     | Testnet =>
       Future.value(
         Ok([|
@@ -1181,7 +1191,7 @@ module Tokens = (Caller: CallerAPI, Getter: GetterAPI) => {
 
   let callGetOperationOffline = (settings, operation: Token.operation) =>
     getTokenViewer(settings)
-    ->Future.map(viewer => viewer->map(Token.Decode.viewer))
+    ->Future.map(viewer => viewer->tryMap(Token.Decode.viewer))
     >>= (
       callback => {
         let operation = operation->Token.setCallback(callback);

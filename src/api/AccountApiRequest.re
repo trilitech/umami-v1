@@ -1,6 +1,6 @@
 /* ACCOUNT */
 
-module AccountsAPI = API.Accounts(API.TezosClient);
+module AccountsAPI = API.Accounts(API.TezosClient, API.TezosExplorer);
 
 /* Get */
 
@@ -46,6 +46,6 @@ let useCreateWithMnemonics =
   ApiRequest.useSetter(
     ~set=
       (~settings, {name, mnemonics, password}) =>
-        AccountsAPI.addWithMnemonic(~settings, name, mnemonics, ~password),
+        AccountsAPI.restore(~settings, mnemonics, name, ~password, ()),
     ~kind=Logs.Account,
   );
