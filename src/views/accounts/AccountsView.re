@@ -40,7 +40,6 @@ let styles =
           ~top=LayoutConst.pagePaddingVertical->dp,
           ~right=LayoutConst.pagePaddingHorizontal->dp,
           ~height=40.->dp,
-          ~zIndex=3,
           (),
         ),
     })

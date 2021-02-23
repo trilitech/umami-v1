@@ -20,36 +20,42 @@ let make =
     (
       ~scrollRef=?,
       ~isOpen=false,
-      ~popoverConfig: option(Popover.targetLayout)=?,
+      ~popoverConfig: option(Popover.targetLayout),
       ~openingStyle=Popover.Top,
       ~style as styleFromProp=?,
       ~onScroll=?,
       ~scrollEventThrottle=?,
+      ~onRequestClose: unit => unit,
+      ~keyPopover,
       ~children,
     ) => {
   let theme = ThemeContext.useTheme();
 
-  <Popover isOpen openingStyle config=?popoverConfig style=?styleFromProp>
-    <ScrollView
-      ref=?scrollRef
-      style=Style.(
-        arrayOption([|
-          Some(styles##listContainer),
-          Some(style(~backgroundColor=theme.colors.background, ())),
-          //styleFromProp,
-        |])
-      )
-      contentContainerStyle=Style.(
-        arrayOption([|
-          Some(styles##listContentContainer),
-          theme.dark
-            ? Some(style(~backgroundColor=theme.colors.stateActive, ()))
-            : None,
-        |])
-      )
-      ?onScroll
-      ?scrollEventThrottle>
-      children
-    </ScrollView>
+  <Popover
+    isOpen openingStyle config=popoverConfig style=?styleFromProp keyPopover>
+    <View
+      onStartShouldSetResponderCapture={_ => true}
+      onResponderRelease={_ => onRequestClose()}>
+      <ScrollView
+        ref=?scrollRef
+        style=Style.(
+          array([|
+            styles##listContainer,
+            style(~backgroundColor=theme.colors.background, ()),
+          |])
+        )
+        contentContainerStyle=Style.(
+          arrayOption([|
+            Some(styles##listContentContainer),
+            theme.dark
+              ? Some(style(~backgroundColor=theme.colors.stateActive, ()))
+              : None,
+          |])
+        )
+        ?onScroll
+        ?scrollEventThrottle>
+        children
+      </ScrollView>
+    </View>
   </Popover>;
 };

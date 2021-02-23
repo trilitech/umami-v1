@@ -24,9 +24,10 @@ let styles =
 let make =
     (
       ~isOpen=false,
-      ~config: option(targetLayout)=?,
+      ~config: option(targetLayout),
       ~openingStyle=Top,
       ~style as styleFromProp=?,
+      ~keyPopover,
       ~children,
     ) => {
   let (visible, animatedOpenValue) =
@@ -34,120 +35,123 @@ let make =
       ()
     );
 
-  <View
-    style={Style.array([|
-      StyleSheet.absoluteFillObject,
-      ReactUtils.displayOn(visible),
-    |])}
-    pointerEvents=`boxNone>
-    <Animated.View
-      style=Style.(
-        style(
-          ~position=`absolute,
-          ~width=?{
-            switch (openingStyle) {
-            | Top => config->Option.map(({width}) => width->dp)
-            | TopRight => None
-            };
-          },
-          ~top=?{
-            config->Option.map(({y, height}) => (y +. height)->dp);
-          },
-          ~left=?{
-            config->Option.map(({x, width}) =>
-              (
-                switch (openingStyle) {
-                | Top => x
-                | TopRight => x +. width
-                }
-              )
-              ->dp
-            );
-          },
-          ~opacity=animatedOpenValue->Animated.StyleProp.float,
-          ~transform=[|
-            translateY(
-              ~translateY=
-                Animated.Interpolation.(
-                  animatedOpenValue->interpolate(
-                    config(
-                      ~inputRange=[|0., 1.|],
-                      ~outputRange=
-                        (
-                          switch (openingStyle) {
-                          | Top => [|(-16.), 0.|]
-                          | TopRight => [|0., 0.|]
-                          }
-                        )
-                        ->fromFloatArray,
-                      ~extrapolate=`clamp,
-                      (),
-                    ),
-                  )
-                )
-                ->Animated.StyleProp.float,
-            ),
-            scaleX(
-              ~scaleX=
-                Animated.Interpolation.(
-                  animatedOpenValue->interpolate(
-                    config(
-                      ~inputRange=[|0., 1.|],
-                      ~outputRange=
-                        (
-                          switch (openingStyle) {
-                          | Top => [|1., 1.|]
-                          | TopRight => [|0.9, 1.|]
-                          }
-                        )
-                        ->fromFloatArray,
-                      ~extrapolate=`clamp,
-                      (),
-                    ),
-                  )
-                )
-                ->Animated.StyleProp.float,
-            ),
-            scaleY(
-              ~scaleY=
-                Animated.Interpolation.(
-                  animatedOpenValue->interpolate(
-                    config(
-                      ~inputRange=[|0., 1.|],
-                      ~outputRange=[|0.9, 1.|]->fromFloatArray,
-                      ~extrapolate=`clamp,
-                      (),
-                    ),
-                  )
-                )
-                ->Animated.StyleProp.float,
-            ),
-          |],
-          (),
-        )
-        ->unsafeAddStyle({
-            "transformOrigin":
-              switch (openingStyle) {
-              | Top => "top center"
-              | TopRight => "top right"
-              },
-          })
-      )>
-      <View
+  <Portal>
+    <View
+      key=keyPopover
+      style={Style.array([|
+        StyleSheet.absoluteFillObject,
+        ReactUtils.displayOn(visible),
+      |])}
+      pointerEvents=`boxNone>
+      <Animated.View
         style=Style.(
-          arrayOption([|
-            Some(styles##popover),
-            switch (openingStyle) {
-            | Top => Some(styles##popoverTop)
-            | TopRight => Some(styles##popoverTopRight)
+          style(
+            ~position=`absolute,
+            ~width=?{
+              switch (openingStyle) {
+              | Top => config->Option.map(({width}) => width->dp)
+              | TopRight => None
+              };
             },
-            styleFromProp,
-          |])
+            ~top=?{
+              config->Option.map(({y, height}) => (y +. height)->dp);
+            },
+            ~left=?{
+              config->Option.map(({x, width}) =>
+                (
+                  switch (openingStyle) {
+                  | Top => x
+                  | TopRight => x +. width
+                  }
+                )
+                ->dp
+              );
+            },
+            ~opacity=animatedOpenValue->Animated.StyleProp.float,
+            ~transform=[|
+              translateY(
+                ~translateY=
+                  Animated.Interpolation.(
+                    animatedOpenValue->interpolate(
+                      config(
+                        ~inputRange=[|0., 1.|],
+                        ~outputRange=
+                          (
+                            switch (openingStyle) {
+                            | Top => [|(-16.), 0.|]
+                            | TopRight => [|0., 0.|]
+                            }
+                          )
+                          ->fromFloatArray,
+                        ~extrapolate=`clamp,
+                        (),
+                      ),
+                    )
+                  )
+                  ->Animated.StyleProp.float,
+              ),
+              scaleX(
+                ~scaleX=
+                  Animated.Interpolation.(
+                    animatedOpenValue->interpolate(
+                      config(
+                        ~inputRange=[|0., 1.|],
+                        ~outputRange=
+                          (
+                            switch (openingStyle) {
+                            | Top => [|1., 1.|]
+                            | TopRight => [|0.9, 1.|]
+                            }
+                          )
+                          ->fromFloatArray,
+                        ~extrapolate=`clamp,
+                        (),
+                      ),
+                    )
+                  )
+                  ->Animated.StyleProp.float,
+              ),
+              scaleY(
+                ~scaleY=
+                  Animated.Interpolation.(
+                    animatedOpenValue->interpolate(
+                      config(
+                        ~inputRange=[|0., 1.|],
+                        ~outputRange=[|0.9, 1.|]->fromFloatArray,
+                        ~extrapolate=`clamp,
+                        (),
+                      ),
+                    )
+                  )
+                  ->Animated.StyleProp.float,
+              ),
+            |],
+            (),
+          )
+          ->unsafeAddStyle({
+              "transformOrigin":
+                switch (openingStyle) {
+                | Top => "top center"
+                | TopRight => "top right"
+                },
+            })
         )>
-        children
-      </View>
-    </Animated.View>
-  </View>;
+        <View
+          style=Style.(
+            arrayOption([|
+              Some(styles##popover),
+              switch (openingStyle) {
+              | Top => Some(styles##popoverTop)
+              | TopRight => Some(styles##popoverTopRight)
+              },
+              styleFromProp,
+            |])
+          )>
+          children
+        </View>
+      </Animated.View>
+    </View>
+  </Portal>;
 };
 
 let usePopoverState = () => {

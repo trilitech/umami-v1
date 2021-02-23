@@ -8,7 +8,6 @@ let styles =
         style(
           ~marginHorizontal=LayoutConst.pagePaddingHorizontal->dp,
           ~marginTop=LayoutConst.pagePaddingVertical->dp,
-          ~zIndex=2,
           (),
         ),
       "button":
@@ -16,10 +15,9 @@ let styles =
           ~alignSelf=`flexStart,
           ~marginTop=0.->dp,
           ~marginBottom=30.->dp,
-          ~zIndex=2,
           (),
         ),
-      "list": style(~flex=1., ~zIndex=1, ()),
+      "list": style(~flex=1., ()),
       "listContent":
         style(
           ~flex=1.,
@@ -98,12 +96,8 @@ let make = () => {
                 ->SortArray.stableSortBy((a, b) =>
                     Pervasives.compare(a.alias, b.alias)
                   )
-                ->Array.mapWithIndex((index, account) =>
-                    <DelegateRowItem
-                      key={account.address}
-                      account
-                      zIndex={accounts->Map.String.size - index}
-                    />
+                ->Array.map(account =>
+                    <DelegateRowItem key={account.address} account />
                   )
                 ->React.array}
              </View>

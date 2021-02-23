@@ -104,20 +104,11 @@ let make = (~mnemonic, ~onPressCancel, ~goNextStep) => {
     FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
 
   <>
-    <View style=Style.(array([|styles##wordsList, style(~zIndex=2, ())|]))>
+    <View style=styles##wordsList>
       {form.state.values.words
        ->Array.mapWithIndex((index, word) =>
            <React.Fragment key={index->string_of_int}>
-             <View
-               style=Style.(
-                 array([|
-                   styles##wordItem,
-                   style(
-                     ~zIndex=form.state.values.words->Array.size - index,
-                     (),
-                   ),
-                 |])
-               )>
+             <View style=styles##wordItem>
                <InputMnemonicWord
                  index
                  word
@@ -133,10 +124,7 @@ let make = (~mnemonic, ~onPressCancel, ~goNextStep) => {
          )
        ->React.array}
     </View>
-    <View
-      style=Style.(
-        array([|FormStyles.formActionSpaceBetween, style(~zIndex=1, ())|])
-      )>
+    <View style=FormStyles.formActionSpaceBetween>
       <Buttons.Form text=I18n.btn#back onPress=onPressCancel />
       <Buttons.SubmitPrimary
         text=I18n.btn#continue

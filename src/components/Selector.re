@@ -30,7 +30,6 @@ module Item = {
 let styles =
   Style.(
     StyleSheet.create({
-      "pressable": style(~zIndex=2, ()),
       "button":
         style(
           ~flexDirection=`row,
@@ -60,6 +59,7 @@ let make =
       ~renderItem,
       ~hasError=false,
       ~disabled=false,
+      ~keyPopover,
     ) => {
   let disabled = disabled || items->Array.size == 1 && noneItem->Option.isNone;
 
@@ -79,10 +79,7 @@ let make =
 
   <View ?style>
     <PressableCustom
-      ref={pressableRef->Ref.value}
-      style=styles##pressable
-      onPress={_ => togglePopover()}
-      disabled>
+      ref={pressableRef->Ref.value} onPress={_ => togglePopover()} disabled>
       {_ =>
          <View
            style=Style.(
@@ -131,39 +128,37 @@ let make =
                 />}
          </View>}
     </PressableCustom>
-    <Portal>
-      <DropdownMenu
-        key="selector"
-        style={Style.arrayOption([|
-          Some(styles##dropdownmenu),
-          dropdownStyle,
-        |])}
-        isOpen
-        ?popoverConfig>
-        {noneItem->Option.mapWithDefault(React.null, item =>
+    <DropdownMenu
+      keyPopover
+      style={Style.arrayOption([|
+        Some(styles##dropdownmenu),
+        dropdownStyle,
+      |])}
+      isOpen
+      popoverConfig
+      onRequestClose=togglePopover>
+      {noneItem->Option.mapWithDefault(React.null, item =>
+         <Item
+           key={item->getItemValue}
+           item
+           onChange
+           renderItem
+           isSelected={selectedValue->Option.isNone}
+         />
+       )}
+      {items
+       ->Array.map(item =>
            <Item
              key={item->getItemValue}
              item
              onChange
              renderItem
-             isSelected={selectedValue->Option.isNone}
+             isSelected={
+               item->getItemValue == selectedValue->Option.getWithDefault("")
+             }
            />
-         )}
-        {items
-         ->Array.map(item =>
-             <Item
-               key={item->getItemValue}
-               item
-               onChange
-               renderItem
-               isSelected={
-                 item->getItemValue
-                 == selectedValue->Option.getWithDefault("")
-               }
-             />
-           )
-         ->React.array}
-      </DropdownMenu>
-    </Portal>
+         )
+       ->React.array}
+    </DropdownMenu>
   </View>;
 };

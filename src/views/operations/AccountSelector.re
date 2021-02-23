@@ -97,6 +97,7 @@ let make = (~style=?) => {
       selectedValue=?{account->Option.map(account => account.address)}
       renderButton
       renderItem
+      keyPopover="accountSelector"
     />
   </>;
 };

@@ -71,7 +71,7 @@ let make = (~account: Account.t, ~token: option(Token.t)=?) => {
     <View style=styles##actionMenu>
       <Menu
         icon=Icons.More.build
-        keyMenu={"accountRowItemMenu" ++ account.address}>
+        keyPopover={"accountRowItemMenu" ++ account.address}>
         <AccountEditButton account />
       </Menu>
     </View>

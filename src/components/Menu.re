@@ -52,7 +52,7 @@ let styles =
 [@react.component]
 let make =
     (
-      ~keyMenu="menu",
+      ~keyPopover,
       ~icon: Icons.builder,
       ~children,
       ~size=34.,
@@ -75,15 +75,14 @@ let make =
       size
       onPress={_ => togglePopover()}
     />
-    <Portal>
-      <DropdownMenu
-        key=keyMenu
-        openingStyle=Popover.TopRight
-        style=styles##dropdownmenu
-        isOpen
-        ?popoverConfig>
-        children
-      </DropdownMenu>
-    </Portal>
+    <DropdownMenu
+      keyPopover
+      openingStyle=Popover.TopRight
+      style=styles##dropdownmenu
+      isOpen
+      popoverConfig
+      onRequestClose=togglePopover>
+      children
+    </DropdownMenu>
   </View>;
 };

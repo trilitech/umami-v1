@@ -50,14 +50,14 @@ let buildAmount = amount => {
 
 module Item = {
   [@react.component]
-  let make = (~i, ~recipient, ~amount, ~onDelete=?, ~onEdit=?, ~zIndex) => {
+  let make = (~i, ~recipient, ~amount, ~onDelete=?, ~onEdit=?) => {
     let aliases = StoreContext.Aliases.useGetAll();
     let theme: ThemeContext.theme = ThemeContext.useTheme();
     <View
       style=Style.(
         arrayOption([|
           Some(styles##row),
-          Some(style(~zIndex, ~borderColor=theme.colors.borderDisabled, ())),
+          Some(style(~borderColor=theme.colors.borderDisabled, ())),
           Lib.Option.onlyIf(i != 0, () => styles##notFirstRow),
         |])
       )>
@@ -96,7 +96,10 @@ module Item = {
            }),
          )
        ->ReactUtils.hideNil(l =>
-           <Menu style=styles##moreButton icon=Icons.More.build>
+           <Menu
+             style=styles##moreButton
+             icon=Icons.More.build
+             keyPopover={"batchItem" ++ i->string_of_int}>
              {l->List.toArray->React.array}
            </Menu>
          )}
@@ -118,7 +121,6 @@ module Transactions = {
            recipients->List.mapWithIndex((i, (onEdit, (recipient, amount))) => {
              let onDelete = onDelete->Option.map((delete, ()) => delete(i));
              <Item
-               zIndex=i
                key={string_of_int(i)}
                i={length - i}
                recipient

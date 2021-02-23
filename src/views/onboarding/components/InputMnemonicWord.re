@@ -79,6 +79,7 @@ module Base = {
         ->Array.slice(~offset=0, ~len=12);
 
       <Autocomplete
+        keyPopover={"inputMnemonicWord" ++ displayIndex->string_of_int}
         value
         handleChange
         error

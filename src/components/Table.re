@@ -11,7 +11,6 @@ module Head = {
             ~height=30.->dp,
             ~paddingLeft=22.->dp,
             ~borderBottomWidth=1.,
-            ~zIndex=1,
             (),
           ),
       })
@@ -37,8 +36,8 @@ module Row = {
     Style.(StyleSheet.create({"borderSpacer": style(~width=20.->dp, ())}));
 
   [@react.component]
-  let make = (~zIndex=?, ~children) => {
-    <RowItem.Bordered height=48. style={Style.style(~zIndex?, ())}>
+  let make = (~children) => {
+    <RowItem.Bordered height=48.>
       <View style=styles##borderSpacer />
       children
     </RowItem.Bordered>;

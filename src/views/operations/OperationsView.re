@@ -4,14 +4,13 @@ let styles =
   Style.(
     StyleSheet.create({
       "container": style(~flex=1., ()),
-      "list": style(~flex=1., ~zIndex=1, ()),
+      "list": style(~flex=1., ()),
       "refreshPosition":
         style(
           ~position=`absolute,
           ~top=LayoutConst.pagePaddingVertical->dp,
           ~right=LayoutConst.pagePaddingHorizontal->dp,
           ~height=40.->dp,
-          ~zIndex=2,
           (),
         ),
       "listContent":
