@@ -1,9 +1,5 @@
 open ReactNative;
 
-type openingStyle =
-  | Top
-  | TopRight;
-
 let listVerticalPadding = 8.;
 
 let styles =
@@ -24,136 +20,36 @@ let make =
     (
       ~scrollRef=?,
       ~isOpen=false,
-      ~config: option(PressableCustom.targetLayout)=?,
-      ~openingStyle=Top,
+      ~popoverConfig: option(Popover.targetLayout)=?,
+      ~openingStyle=Popover.Top,
       ~style as styleFromProp=?,
       ~onScroll=?,
       ~scrollEventThrottle=?,
       ~children,
     ) => {
-  let (visible, animatedOpenValue) =
-    AnimationHooks.useAnimationOpen(~speed=80., ~bounciness=0., isOpen, _ =>
-      ()
-    );
-
   let theme = ThemeContext.useTheme();
 
-  //<View style={ReactUtils.displayOn(visible)}>
-  <View style=StyleSheet.absoluteFill pointerEvents=`boxNone>
-    <Animated.View
+  <Popover isOpen openingStyle config=?popoverConfig style=?styleFromProp>
+    <ScrollView
+      ref=?scrollRef
       style=Style.(
-        style(
-          ~position=`absolute,
-          ~width=?{
-            switch (openingStyle) {
-            | Top => config->Option.map(({width}) => width->dp)
-            | TopRight => None
-            };
-          },
-          ~top=?{
-            config->Option.map(({y, height}) => (y +. height)->dp);
-          },
-          ~left=?{
-            config->Option.map(({x, width}) =>
-              (
-                switch (openingStyle) {
-                | Top => x
-                | TopRight => x +. width
-                }
-              )
-              ->dp
-            );
-          },
-          ~opacity=animatedOpenValue->Animated.StyleProp.float,
-          ~transform=[|
-            translateY(
-              ~translateY=
-                Animated.Interpolation.(
-                  animatedOpenValue->interpolate(
-                    config(
-                      ~inputRange=[|0., 1.|],
-                      ~outputRange=
-                        (
-                          switch (openingStyle) {
-                          | Top => [|(-16.), 0.|]
-                          | TopRight => [|0., 0.|]
-                          }
-                        )
-                        ->fromFloatArray,
-                      ~extrapolate=`clamp,
-                      (),
-                    ),
-                  )
-                )
-                ->Animated.StyleProp.float,
-            ),
-            scaleX(
-              ~scaleX=
-                Animated.Interpolation.(
-                  animatedOpenValue->interpolate(
-                    config(
-                      ~inputRange=[|0., 1.|],
-                      ~outputRange=
-                        (
-                          switch (openingStyle) {
-                          | Top => [|1., 1.|]
-                          | TopRight => [|0.9, 1.|]
-                          }
-                        )
-                        ->fromFloatArray,
-                      ~extrapolate=`clamp,
-                      (),
-                    ),
-                  )
-                )
-                ->Animated.StyleProp.float,
-            ),
-            scaleY(
-              ~scaleY=
-                Animated.Interpolation.(
-                  animatedOpenValue->interpolate(
-                    config(
-                      ~inputRange=[|0., 1.|],
-                      ~outputRange=[|0.9, 1.|]->fromFloatArray,
-                      ~extrapolate=`clamp,
-                      (),
-                    ),
-                  )
-                )
-                ->Animated.StyleProp.float,
-            ),
-          |],
-          (),
-        )
-        ->unsafeAddStyle({
-            "transformOrigin":
-              switch (openingStyle) {
-              | Top => "top center"
-              | TopRight => "top right"
-              },
-          })
-      )>
-      <ScrollView
-        ref=?scrollRef
-        style=Style.(
-          arrayOption([|
-            Some(styles##listContainer),
-            Some(style(~backgroundColor=theme.colors.background, ())),
-            styleFromProp,
-          |])
-        )
-        contentContainerStyle=Style.(
-          arrayOption([|
-            Some(styles##listContentContainer),
-            theme.dark
-              ? Some(style(~backgroundColor=theme.colors.stateActive, ()))
-              : None,
-          |])
-        )
-        ?onScroll
-        ?scrollEventThrottle>
-        children
-      </ScrollView>
-    </Animated.View>
-  </View>;
+        arrayOption([|
+          Some(styles##listContainer),
+          Some(style(~backgroundColor=theme.colors.background, ())),
+          //styleFromProp,
+        |])
+      )
+      contentContainerStyle=Style.(
+        arrayOption([|
+          Some(styles##listContentContainer),
+          theme.dark
+            ? Some(style(~backgroundColor=theme.colors.stateActive, ()))
+            : None,
+        |])
+      )
+      ?onScroll
+      ?scrollEventThrottle>
+      children
+    </ScrollView>
+  </Popover>;
 };

@@ -30,14 +30,8 @@ external make:
   React.element =
   "Pressable";
 
-type targetLayout = {
-  x: float,
-  y: float,
-  width: float,
-  height: float,
-};
-
 [@bs.send]
 external measureInWindow:
-  (element, (float, float, float, float) => unit) => unit =
+  (element, (~x: float, ~y: float, ~width: float, ~height: float) => unit) =>
+  unit =
   "measureInWindow";

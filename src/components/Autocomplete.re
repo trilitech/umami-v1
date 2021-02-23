@@ -60,20 +60,6 @@ module Item = {
   };
 };
 
-let styles =
-  Style.(
-    StyleSheet.create({
-      "dropdownmenu":
-        style(
-          ~position=`absolute,
-          ~top=3.->dp,
-          ~left=0.->dp,
-          ~right=0.->dp,
-          (),
-        ),
-    })
-  );
-
 [@react.component]
 let make =
     (
@@ -198,7 +184,6 @@ let make =
       isOpen={hasFocus && list->Array.size > 0 && value->Js.String.length > 0}
       style=Style.(
         array([|
-          styles##dropdownmenu,
           style(
             ~backgroundColor=theme.colors.background,
             ~maxHeight=

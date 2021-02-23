@@ -42,16 +42,7 @@ let styles =
         ),
       "icon": style(~marginHorizontal=8.->dp, ()),
       "iconSpacer": style(~width=(8. +. 24. +. 8.)->dp, ()),
-      "dropdownmenu":
-        style(
-          ~zIndex=1,
-          ~position=`absolute,
-          ~top=3.->dp,
-          ~left=0.->dp,
-          ~right=0.->dp,
-          ~maxHeight=224.->dp,
-          (),
-        ),
+      "dropdownmenu": style(~maxHeight=224.->dp, ()),
     })
   );
 
@@ -72,16 +63,8 @@ let make =
     ) => {
   let disabled = disabled || items->Array.size == 1 && noneItem->Option.isNone;
 
-  let touchableRef = React.useRef(Js.Nullable.null);
-
-  let (isOpen, setIsOpen) = React.useState(_ => false);
-  let (config, setConfig) = React.useState(_ => None);
-
-  DocumentContext.useClickOutside(
-    touchableRef,
-    isOpen,
-    React.useCallback1(_pressEvent => setIsOpen(_ => false), [|setIsOpen|]),
-  );
+  let (pressableRef, isOpen, popoverConfig, togglePopover) =
+    Popover.usePopoverState();
 
   let onChange = newItem => {
     onValueChange(newItem->getItemValue);
@@ -94,22 +77,12 @@ let make =
 
   let theme = ThemeContext.useTheme();
 
-  let onPress = _ => {
-    touchableRef.current
-    ->Js.Nullable.toOption
-    ->Option.map(touchableElement => {
-        touchableElement->PressableCustom.measureInWindow(
-          (x, y, width, height) => {
-          setConfig(_ => Some(PressableCustom.{x, y, width, height}))
-        })
-      })
-    ->ignore;
-    setIsOpen(prevIsOpen => !prevIsOpen);
-  };
-
   <View ?style>
     <PressableCustom
-      ref={touchableRef->Ref.value} style=styles##pressable onPress disabled>
+      ref={pressableRef->Ref.value}
+      style=styles##pressable
+      onPress={_ => togglePopover()}
+      disabled>
       {_ =>
          <View
            style=Style.(
@@ -166,7 +139,7 @@ let make =
           dropdownStyle,
         |])}
         isOpen
-        ?config>
+        ?popoverConfig>
         {noneItem->Option.mapWithDefault(React.null, item =>
            <Item
              key={item->getItemValue}
