@@ -3,8 +3,8 @@ type network =
   | Testnet;
 
 type sdks = {
-  main: Js.Promise.t(TezosSDK.t),
-  test: Js.Promise.t(TezosSDK.t),
+  main: TezosSDK.t,
+  test: TezosSDK.t,
 };
 
 type t = {

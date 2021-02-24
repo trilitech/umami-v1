@@ -70,18 +70,14 @@ module ThemedView = {
   let make = () => {
     let confLoaded = ConfigContext.useLoaded();
     confLoaded
-      ? {
-        <ThemeContext> <AppView /> </ThemeContext>;
-      }
+      ? <StoreContext>
+          <ThemeContext> <AppView /> </ThemeContext>
+        </StoreContext>
       : <LoadingView />;
   };
 };
 
 [@react.component]
 let make = () => {
-  <LogsContext>
-    <ConfigContext>
-      <StoreContext> <ThemedView /> </StoreContext>
-    </ConfigContext>
-  </LogsContext>;
+  <LogsContext> <ConfigContext> <ThemedView /> </ConfigContext> </LogsContext>;
 };

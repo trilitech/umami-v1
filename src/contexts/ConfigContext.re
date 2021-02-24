@@ -3,8 +3,8 @@ type config = {
   content: ConfigFile.t,
   write: (ConfigFile.t => ConfigFile.t) => unit,
   loaded: bool,
-  sdkMain: Js.Promise.t(TezosSDK.t),
-  sdkTest: Js.Promise.t(TezosSDK.t),
+  sdkMain: TezosSDK.t,
+  sdkTest: TezosSDK.t,
   network: AppSettings.network,
 };
 
@@ -12,8 +12,8 @@ let initialState = {
   content: ConfigFile.dummy,
   write: _ => (),
   loaded: false,
-  sdkMain: TezosSDK.init("", ""),
-  sdkTest: TezosSDK.init("", ""),
+  sdkMain: TezosSDK.dummySdk,
+  sdkTest: TezosSDK.dummySdk,
   network: Testnet,
 };
 
@@ -35,36 +35,55 @@ let make = (~children) => {
 
   let (network, _) = React.useState(() => AppSettings.Testnet);
 
-  let ((sdkMain, sdkTest), _) =
-    React.useState(() => {
-      let endpointMain =
-        content.endpointMain
-        ->Option.getWithDefault(ConfigFile.Default.endpointMain);
+  let (sdkMain, setSdkMain) = React.useState(() => TezosSDK.dummySdk);
+  let (sdkTest, setSdkTest) = React.useState(() => TezosSDK.dummySdk);
 
-      let endpointTest =
-        content.endpointTest
-        ->Option.getWithDefault(ConfigFile.Default.endpointTest);
+  let loadSdk = (conf: ConfigFile.t) => {
+    let endpointMain =
+      conf.endpointMain
+      ->Option.getWithDefault(ConfigFile.Default.endpointMain);
 
-      let dir =
-        ConfigFile.(
-          content.sdkBaseDir->Option.getWithDefault(Default.sdkBaseDir)
-        );
-      (TezosSDK.init(dir, endpointMain), TezosSDK.init(dir, endpointTest));
-    });
+    let endpointTest =
+      conf.endpointTest
+      ->Option.getWithDefault(ConfigFile.Default.endpointTest);
+
+    let dir =
+      ConfigFile.(conf.sdkBaseDir->Option.getWithDefault(Default.sdkBaseDir));
+
+    let pMain =
+      TezosSDK.init(dir, endpointMain)
+      |> Js.Promise.then_(sdk => {
+           setSdkMain(_ => sdk);
+           Js.Promise.resolve();
+         });
+
+    let pTest =
+      TezosSDK.init(dir, endpointTest)
+      |> Js.Promise.then_(sdk => {
+           setSdkTest(_ => sdk);
+           Js.Promise.resolve();
+         });
+
+    Js.Promise.all([|pMain, pTest|])
+    |> Js.Promise.then_(_ => setLoaded(_ => true)->Js.Promise.resolve)
+    |> ignore;
+  };
 
   let load = () => {
     System.Config.read()
-    ->Future.get(conf => {
+    ->Future.map(conf => {
         switch (conf) {
         | Ok(conf) =>
           let conf = ConfigFile.parse(conf);
           setConfig(_ => conf);
-          setLoaded(_ => true);
+          conf;
         | Error(e) =>
           Js.log(e);
           setLoaded(_ => true);
+          ConfigFile.dummy;
         }
-      });
+      })
+    ->Future.get(conf => loadSdk(conf));
   };
 
   React.useEffect0(() => {
