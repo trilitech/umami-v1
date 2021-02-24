@@ -166,6 +166,10 @@ let usePopoverState = () => {
     React.useCallback1(_pressEvent => setIsOpen(_ => false), [|setIsOpen|]),
   );
 
+  DocumentContext.useScroll(
+    React.useCallback1(_scrollEvent => setIsOpen(_ => false), [|setIsOpen|]),
+  );
+
   let togglePopover = () => {
     pressableRef.current
     ->Js.Nullable.toOption

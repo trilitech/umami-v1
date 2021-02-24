@@ -59,6 +59,8 @@ let make = () => {
 
   let operationsReload = StoreContext.Operations.useResetAll();
 
+  let onScroll = DocumentContext.useScrollListener();
+
   <View style=styles##container>
     <OperationsHeaderView />
     {ApiRequest.(
@@ -73,6 +75,8 @@ let make = () => {
            keyExtractor
            renderItem={renderItem(operations->snd)}
            _ListEmptyComponent
+           onScroll
+           scrollEventThrottle=250
          />
        | Done(Error(error), _) => error->React.string
        | NotAsked

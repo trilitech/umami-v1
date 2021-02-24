@@ -16,7 +16,12 @@ let styles =
 
 [@react.component]
 let make = (~children) => {
-  <ScrollView style=styles##scroll contentContainerStyle=styles##scrollContent>
+  let onScroll = DocumentContext.useScrollListener();
+  <ScrollView
+    style=styles##scroll
+    contentContainerStyle=styles##scrollContent
+    onScroll
+    scrollEventThrottle=250>
     children
   </ScrollView>;
 };
