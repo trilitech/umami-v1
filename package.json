@@ -45,14 +45,17 @@
     "electron:dev": "concurrently -k \"cross-env BROWSER=none yarn start\" \"wait-on tcp:3000 && tsc -p electron && electron --disable-gpu .\"",
     "electron:build": "yarn bsb:build && yarn build && tsc -p electron && electron-builder",
     "eject": "react-app-rewired eject",
-    "fromsvg": "react-from-svg src/svg/source src/svg/components --remove-stroke --remove-fill --with-native-for-reason"
+    "svgo": "svgo --folder=src/svg/source --output=src/svg/optimized --disable=removeViewBox --enable=removeDimensions --pretty",
+    "svgfixer": "oslllo-svg-fixer --source=src/svg/optimized --destination=src/svg/optimized2",
+    "fromsvg": "react-from-svg src/svg/optimized2 src/svg/components --remove-stroke --remove-fill --with-native-for-reason",
+    "svg": "yarn svgo && yarn svgfixer && yarn fromsvg"
   },
   "build": {
     "extends": null,
     "mac": {
       "target": "zip"
     },
-     "linux": {
+    "linux": {
       "target": "AppImage"
     },
     "files": [
@@ -60,8 +63,8 @@
     ],
     "extraResources": [
       {
-       "from": "./public",
-       "to": "./public"
+        "from": "./public",
+        "to": "./public"
       }
     ],
     "directories": {
@@ -113,10 +116,12 @@
     "electron": "^9.1.0",
     "electron-builder": "^22.7.0",
     "lenses-ppx": "6.1.2",
+    "oslllo-svg-fixer": "1.1.2",
     "react-app-rewired": "^2.1.6",
     "react-from-svg": "4.0.6",
     "react-scripts": "3.4.1",
     "reason-test-framework": "^0.3.2",
+    "svgo": "1.3.2",
     "typescript": "3.9.6",
     "wait-on": "^5.1.0"
   }
