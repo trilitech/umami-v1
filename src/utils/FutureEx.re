@@ -3,3 +3,11 @@ let getOk = (future, sink) =>
 
 let getError = (future, sink) =>
   future->Future.get(result => result->ResultEx.getError(sink));
+
+let fromOption = (option, ~error) =>
+  Future.value(
+    switch (option) {
+    | Some(value) => Ok(value)
+    | None => Error(error)
+    },
+  );

@@ -707,6 +707,72 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
       (),
     );
 
+  let secretAt = (~settings, index) =>
+    secrets(~settings)
+    ->FutureEx.fromOption(~error="No secrets found!")
+    ->Future.flatMapOk(secrets =>
+        secrets[index]
+        ->FutureEx.fromOption(
+            ~error="Secret at index " ++ index->Int.toString ++ " not found!",
+          )
+      );
+
+  let updateSecretAt = (secret, ~settings, index) =>
+    secrets(~settings)
+    ->FutureEx.fromOption(~error="No secrets found!")
+    ->Future.flatMapOk(secrets => {
+        (secrets[index] = secret)
+          ? Future.value(
+              Ok(
+                LocalStorage.setItem(
+                  "secrets",
+                  Json.Encode.array(Secret.encoder, secrets)->Json.stringify,
+                ),
+              ),
+            )
+          : Future.value(
+              Error(
+                "Can't update secret at index " ++ index->Int.toString ++ "!",
+              ),
+            )
+      });
+
+  let recoveryPhraseAt = (~settings, index, ~password) =>
+    recoveryPhrases(~settings, password)
+    ->Future.flatMapOk(recoveryPhrases =>
+        recoveryPhrases->FutureEx.fromOption(
+          ~error="No recovery phrases found!",
+        )
+      )
+    ->Future.flatMapOk(recoveryPhrases =>
+        recoveryPhrases[index]
+        ->FutureEx.fromOption(
+            ~error=
+              "Recovery phrase at index "
+              ++ index->Int.toString
+              ++ " not found!",
+          )
+      );
+
+  let derive = (~settings, name, ~index, ~password) =>
+    Js.Promise.all2((
+      secretAt(~settings, index)->FutureJs.toPromise,
+      recoveryPhraseAt(~settings, index, ~password)->FutureJs.toPromise,
+    ))
+    ->FutureJs.fromPromise(Js.String.make)
+    ->Future.flatMapOk(((secret, recoveryPhrase)) => {
+        switch (secret, recoveryPhrase) {
+        | (Ok(secret), Ok(recoveryPhrase)) =>
+          HD.edesk(
+            secret.derivationScheme,
+            recoveryPhrase->HD.seed,
+            ~password,
+          )
+        | (Error(error), _)
+        | (_, Error(error)) => Future.value(Error(error))
+        }
+      });
+
   let add = (~settings, alias, pkh) =>
     settings->AppSettings.sdk->TezosSDK.addAddress(alias, pkh);
 
