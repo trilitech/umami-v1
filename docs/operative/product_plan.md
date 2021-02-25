@@ -49,10 +49,10 @@ gantt
     section Beta
     Upgrade website                                   :done  , 2021-01-15, 2021-01-31
     section Release - v 1.0
+    Draft User Manual                                 :active, 2021-02-01, 2021-04-01
     Establish Support Structure                       :active, 2021-03-15, 2021-03-31
     Draft Runbooks & Support Rules                    :active, 2021-03-01, 2021-03-30
     Integrate Help Documentation                      :active, 2021-03-15, 2021-03-30
-    Draft User Manual                                 :active, 2021-03-01, 2021-04-01
     section Maintenance - v 1.x
     Maintenance - v 1.x                               :active, 2021-03-01, 2021-06-01
     section Upgrade - v 2.0
