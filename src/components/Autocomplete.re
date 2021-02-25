@@ -60,20 +60,6 @@ module Item = {
   };
 };
 
-let styles =
-  Style.(
-    StyleSheet.create({
-      "dropdownmenu":
-        style(
-          ~position=`absolute,
-          ~top=3.->dp,
-          ~left=0.->dp,
-          ~right=0.->dp,
-          (),
-        ),
-    })
-  );
-
 [@react.component]
 let make =
     (
@@ -84,6 +70,7 @@ let make =
       ~renderItem: 'item => React.element,
       ~keyExtractor: 'item => string,
       ~renderLabel: option(bool => React.element)=?,
+      ~keyPopover,
       ~style as styleFromProp=?,
       ~inputPaddingLeft=?,
       ~inputPaddingRight=?,
@@ -100,6 +87,7 @@ let make =
 
   let (selectedItemIndex, setSelectedItemIndex) = React.useState(_ => 0);
   let (hasFocus, setHasFocus) = React.useState(_ => false);
+  let (popoverConfig, setPopoverConfig) = React.useState(_ => None);
 
   let displayError = hasError && !hasFocus;
 
@@ -184,7 +172,18 @@ let make =
         handleChange(newValue);
         setSelectedItemIndex(_ => 0);
       }}
-      onFocus={_ => setHasFocus(_ => true)}
+      onFocus={_ => {
+        textInputRef.current
+        ->Js.Nullable.toOption
+        ->Option.map(textInputElement => {
+            textInputElement->ThemedTextInput.measureInWindow(
+              (~x, ~y, ~width, ~height) => {
+              setPopoverConfig(_ => Some(Popover.{x, y, width, height}))
+            })
+          })
+        ->ignore;
+        setHasFocus(_ => true);
+      }}
       onBlur={_ => {
         setHasFocus(_ => false);
         setSelectedItemIndex(_ => 0);
@@ -192,13 +191,18 @@ let make =
       onKeyPress
     />
     <DropdownMenu
+      keyPopover
       scrollRef={scrollViewRef->Ref.value}
       onScroll
       scrollEventThrottle=16
       isOpen={hasFocus && list->Array.size > 0 && value->Js.String.length > 0}
+      popoverConfig
+      onRequestClose={_ => {
+        setHasFocus(_ => false);
+        setSelectedItemIndex(_ => 0);
+      }}
       style=Style.(
         array([|
-          styles##dropdownmenu,
           style(
             ~backgroundColor=theme.colors.background,
             ~maxHeight=

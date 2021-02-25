@@ -29,3 +29,9 @@ external make:
   ) =>
   React.element =
   "Pressable";
+
+[@bs.send]
+external measureInWindow:
+  (element, (~x: float, ~y: float, ~width: float, ~height: float) => unit) =>
+  unit =
+  "measureInWindow";

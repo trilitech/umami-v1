@@ -5,7 +5,6 @@ let styles =
     StyleSheet.create({
       "selector":
         style(
-          ~zIndex=4,
           ~alignSelf=`flexStart,
           ~maxWidth=320.->dp,
           ~marginTop=0.->dp,
@@ -115,6 +114,7 @@ let make =
         renderItem
         selectedValue=?selectedToken
         noneItem=xtzToken
+        keyPopover="tokenSelector"
       />
     : React.null;
 };

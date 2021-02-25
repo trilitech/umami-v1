@@ -8,7 +8,6 @@ let styles =
         style(
           ~marginHorizontal=LayoutConst.pagePaddingHorizontal->dp,
           ~marginTop=LayoutConst.pagePaddingVertical->dp,
-          ~zIndex=2,
           (),
         ),
       "button":
@@ -16,10 +15,9 @@ let styles =
           ~alignSelf=`flexStart,
           ~marginTop=0.->dp,
           ~marginBottom=30.->dp,
-          ~zIndex=2,
           (),
         ),
-      "list": style(~flex=1., ~zIndex=1, ()),
+      "list": style(~flex=1., ()),
       "listContent":
         style(
           ~flex=1.,
@@ -77,37 +75,32 @@ let make = () => {
                <DelegateRowItem.CellAction />
              </Table.Head>
            </View>
-           <View style=styles##list>
-             <View style=styles##listContent>
-               {/* tricky because all delegateRequest are separate requests done by each delegateRowItem that all need to be mounted  */
-                switch (
-                  delegatesRequestsLoaded->Array.some(Option.isSome),
-                  delegatesRequestsLoaded->Array.size
-                  === accounts->Map.String.size,
-                ) {
-                | (true, _) => React.null /* at least one delegate is loaded and so at least one row will be displayed */
-                | (false, false) => <LoadingView /> /* some delegate requests aren't loaded yet */
-                | (false, true) =>
-                  /* all delegate requests are loaded but all are none */
-                  <Table.Empty>
-                    I18n.t#empty_delegations->React.string
-                  </Table.Empty>
-                }}
-               {accounts
-                ->Map.String.valuesToArray
-                ->SortArray.stableSortBy((a, b) =>
-                    Pervasives.compare(a.alias, b.alias)
-                  )
-                ->Array.mapWithIndex((index, account) =>
-                    <DelegateRowItem
-                      key={account.address}
-                      account
-                      zIndex={accounts->Map.String.size - index}
-                    />
-                  )
-                ->React.array}
-             </View>
-           </View>
+           <DocumentContext.ScrollView
+             style=styles##list contentContainerStyle=styles##listContent>
+             {/* tricky because all delegateRequest are separate requests done by each delegateRowItem that all need to be mounted  */
+              switch (
+                delegatesRequestsLoaded->Array.some(Option.isSome),
+                delegatesRequestsLoaded->Array.size
+                === accounts->Map.String.size,
+              ) {
+              | (true, _) => React.null /* at least one delegate is loaded and so at least one row will be displayed */
+              | (false, false) => <LoadingView /> /* some delegate requests aren't loaded yet */
+              | (false, true) =>
+                /* all delegate requests are loaded but all are none */
+                <Table.Empty>
+                  I18n.t#empty_delegations->React.string
+                </Table.Empty>
+              }}
+             {accounts
+              ->Map.String.valuesToArray
+              ->SortArray.stableSortBy((a, b) =>
+                  Pervasives.compare(a.alias, b.alias)
+                )
+              ->Array.map(account =>
+                  <DelegateRowItem key={account.address} account />
+                )
+              ->React.array}
+           </DocumentContext.ScrollView>
          </>}
   </View>;
 };

@@ -9,6 +9,7 @@
   "private": true,
   "dependencies": {
     "@glennsl/bs-json": "^5.0.2",
+    "@gorhom/portal": "1.0.0",
     "@reason-react-native/svg": "12.1.5-0.63",
     "bip39": "^3.0.3",
     "bs-fetch": "^0.6.2",

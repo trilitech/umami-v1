@@ -116,3 +116,12 @@ let make =
     editable={!disabled}
   />;
 };
+
+[@bs.send]
+external measureInWindow:
+  (
+    TextInput.element,
+    (~x: float, ~y: float, ~width: float, ~height: float) => unit
+  ) =>
+  unit =
+  "measureInWindow";

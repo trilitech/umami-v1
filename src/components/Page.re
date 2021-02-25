@@ -16,7 +16,8 @@ let styles =
 
 [@react.component]
 let make = (~children) => {
-  <ScrollView style=styles##scroll contentContainerStyle=styles##scrollContent>
+  <DocumentContext.ScrollView
+    style=styles##scroll contentContainerStyle=styles##scrollContent>
     children
-  </ScrollView>;
+  </DocumentContext.ScrollView>;
 };

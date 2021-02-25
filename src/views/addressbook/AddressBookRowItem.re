@@ -71,10 +71,10 @@ let memo = component =>
 
 [@react.component]
 let make =
-  memo((~account: Account.t, ~zIndex) => {
+  memo((~account: Account.t) => {
     let addToast = LogsContext.useToast();
 
-    <RowItem.Bordered height=46. style={Style.style(~zIndex, ())}>
+    <RowItem.Bordered height=46.>
       <View style=styles##inner>
         <View style=styles##cellAlias>
           <Typography.Body1> account.alias->React.string </Typography.Body1>
@@ -95,7 +95,9 @@ let make =
         <QrButton account style=styles##button />
       </View>
       <View style=styles##actionMenu>
-        <Menu icon=Icons.More.build>
+        <Menu
+          icon=Icons.More.build
+          keyPopover={"aaddressBookRowItemMenu" ++ account.address}>
           <AliasEditButton account />
           <AliasDeleteButton account />
         </Menu>

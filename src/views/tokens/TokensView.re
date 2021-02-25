@@ -69,13 +69,7 @@ let make = () => {
        | Done(Ok(tokens), _) =>
          tokens
          ->Map.String.valuesToArray
-         ->Array.mapWithIndex((index, token) =>
-             <TokenRowItem
-               key={token.address}
-               token
-               zIndex={tokens->Map.String.size - index}
-             />
-           )
+         ->Array.map(token => <TokenRowItem key={token.address} token />)
          ->React.array
        | Done(Error(error), _) => <ErrorView error />
        }}

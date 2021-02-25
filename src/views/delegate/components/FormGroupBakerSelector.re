@@ -115,7 +115,7 @@ module BakerInputTypeToogle = {
 let styles =
   Style.(
     StyleSheet.create({
-      "formGroup": style(~zIndex=10, ~marginBottom=0.->dp, ()),
+      "formGroup": style( ~marginBottom=0.->dp, ()),
       "labelContainer":
         style(
           ~marginBottom=6.->dp,
@@ -179,6 +179,7 @@ let make = (~label, ~value: string, ~handleChange, ~error) => {
            hasError
            renderButton=BakerSelector.renderButton
            renderItem=BakerSelector.renderItem
+           keyPopover="formGroupBakerSelector"
          />
        | Text =>
          <ThemedTextInput

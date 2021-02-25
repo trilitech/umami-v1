@@ -2,12 +2,7 @@ open ReactNative;
 open UmamiCommon;
 
 let styles =
-  Style.(
-    StyleSheet.create({
-      "formGroup": style(~zIndex=11, ()),
-      "label": style(~marginBottom=6.->dp, ()),
-    })
-  );
+  Style.(StyleSheet.create({"label": style(~marginBottom=6.->dp, ())}));
 
 [@react.component]
 let make = (~label, ~value: string, ~handleChange, ~error, ~disabled) => {
@@ -36,7 +31,7 @@ let make = (~label, ~value: string, ~handleChange, ~error, ~disabled) => {
     (value, items),
   );
 
-  <FormGroup style=styles##formGroup>
+  <FormGroup>
     <FormLabel label hasError style=styles##label />
     <View>
       <Selector
@@ -47,6 +42,7 @@ let make = (~label, ~value: string, ~handleChange, ~error, ~disabled) => {
         renderButton=AccountSelector.renderButton
         renderItem=AccountSelector.renderItem
         disabled
+        keyPopover="formGroupDelegateSelector"
       />
     </View>
   </FormGroup>;

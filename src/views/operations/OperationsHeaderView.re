@@ -7,7 +7,6 @@ let styles =
         style(
           ~marginHorizontal=LayoutConst.pagePaddingHorizontal->dp,
           ~marginTop=LayoutConst.pagePaddingVertical->dp,
-          ~zIndex=2,
           (),
         ),
       "selector":
@@ -16,7 +15,6 @@ let styles =
           ~minWidth=390.->dp,
           ~marginTop=0.->dp,
           ~marginBottom=30.->dp,
-          ~zIndex=2,
           (),
         ),
     })

@@ -40,7 +40,6 @@ let styles =
     StyleSheet.create({
       "dropdownmenu":
         style(
-          ~position=`absolute,
           ~top=2.->dp,
           ~right=2.->dp,
           ~minWidth=170.->dp,
@@ -51,16 +50,16 @@ let styles =
   );
 
 [@react.component]
-let make = (~icon: Icons.builder, ~children, ~size=34., ~style as styleArg=?) => {
-  let pressableRef = React.useRef(Js.Nullable.null);
-
-  let (isOpen, setIsOpen) = React.useState(_ => false);
-
-  DocumentContext.useClickOutside(
-    pressableRef,
-    isOpen,
-    React.useCallback1(_pressEvent => setIsOpen(_ => false), [|setIsOpen|]),
-  );
+let make =
+    (
+      ~keyPopover,
+      ~icon: Icons.builder,
+      ~children,
+      ~size=34.,
+      ~style as styleArg=?,
+    ) => {
+  let (pressableRef, isOpen, popoverConfig, togglePopover) =
+    Popover.usePopoverState();
 
   <View
     style=Style.(
@@ -74,10 +73,15 @@ let make = (~icon: Icons.builder, ~children, ~size=34., ~style as styleArg=?) =>
       isActive=isOpen
       icon
       size
-      onPress={_ => setIsOpen(isOpen => !isOpen)}
+      onPress={_ => togglePopover()}
     />
     <DropdownMenu
-      openingStyle=DropdownMenu.TopRight style=styles##dropdownmenu isOpen>
+      keyPopover
+      openingStyle=Popover.TopRight
+      style=styles##dropdownmenu
+      isOpen
+      popoverConfig
+      onRequestClose=togglePopover>
       children
     </DropdownMenu>
   </View>;

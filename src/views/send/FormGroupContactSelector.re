@@ -33,7 +33,7 @@ module Item = {
 let styles =
   Style.(
     StyleSheet.create({
-      "formGroup": style(~zIndex=10, ~marginBottom=0.->dp, ()),
+      "formGroup": style(~marginBottom=0.->dp, ()),
       "label": style(~marginBottom=6.->dp, ()),
       "input": style(~paddingHorizontal=20.->dp, ()),
     })
@@ -66,6 +66,7 @@ let make = (~label, ~value: string, ~handleChange, ~error) => {
 
   <FormGroup style=styles##formGroup>
     <Autocomplete
+      keyPopover="formGroupContactSelector"
       value
       handleChange
       error
