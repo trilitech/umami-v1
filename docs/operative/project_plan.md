@@ -34,6 +34,16 @@ This is the **Project** Roadmap, which plans the progress of the development eff
 
 ```mermaid
 gantt
+    title Release Overview
+    Alpha Release                                     :done,   2020-07-19, 2020-12-01
+    Beta Release                                      :active, 2020-12-01, 2021-03-05
+    Release - v 1.0                                   :active, 2021-03-05, 2021-06-01
+    Maintenance - v 1.x                               :active, 2021-06-01, 2021-09-01
+    Upgrade - v 2.0                                   :active, 2021-06-01, 2021-09-01
+```
+
+```mermaid
+gantt
     title Sprint Overview
     section Project Initiation
     Cortez export                                     :done  , 2020-07-01 , 30d
@@ -71,15 +81,5 @@ gantt
     Sprint 14 - SDK Integ                             :done  , 2021-02-08, 2021-02-19
     section Beta Candidate
     Sprint 15 - Beta Candidate                        :active, 2021-02-22, 2021-03-05
-```
-
-```mermaid
-gantt
-    title Release Overview
-    Alpha Release                                     :done,   2020-07-19, 2020-12-01
-    Beta Release                                      :active, 2020-12-01, 2021-03-05
-    Release - v 1.0                                   :active, 2021-03-05, 2021-06-01
-    Maintenance - v 1.x                               :active, 2021-06-01, 2021-09-01
-    Upgrade - v 2.0                                   :active, 2021-06-01, 2021-09-01
 ```
 
