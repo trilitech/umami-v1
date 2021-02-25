@@ -24,7 +24,7 @@ module Provider = {
 };
 
 [@react.component]
-let make = (~children) => {
+let make = (~empty, ~children) => {
   let config = ConfigContext.useContent();
 
   let (network, _) = React.useState(() => AppSettings.Testnet);
@@ -74,7 +74,7 @@ let make = (~children) => {
   });
 
   <Provider value={config, sdkMain, sdkTest, network}>
-    {loaded ? children : <LoadingView />}
+    {loaded ? children : empty()}
   </Provider>;
 };
 

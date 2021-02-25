@@ -9,6 +9,27 @@ let styles =
     })
   );
 
+module EmptyAppView = {
+  [@react.component]
+  let make = () => {
+    let theme = ThemeContext.useTheme();
+
+    <View
+      style=Style.(
+        array([|
+          styles##layout,
+          style(~backgroundColor=theme.colors.background, ()),
+        |])
+      )>
+      <Header />
+      <View style=styles##main>
+        <NavBar.Empty />
+        <View style=styles##content />
+      </View>
+    </View>;
+  };
+};
+
 module AppView = {
   [@react.component]
   let make = () => {
@@ -18,10 +39,12 @@ module AppView = {
     let accounts = StoreContext.Accounts.useGetAll();
     let accountsRequest = StoreContext.Accounts.useRequest();
 
-    let displayOnboarding = {
+    let (displayOnboarding, displayNavbar) = {
       switch (accountsRequest) {
-      | Done(_) when accounts->Map.String.size <= 0 => true
-      | _ => false
+      | Done(_) when accounts->Map.String.size <= 0 => (true, false)
+      | NotAsked => (false, false)
+      | Loading(_) => (false, false)
+      | Done(_) => (false, true)
       };
     };
 
@@ -37,7 +60,7 @@ module AppView = {
         )>
         <Header />
         <View style=styles##main>
-          {displayOnboarding ? React.null : <NavBar route />}
+          {displayNavbar ? <NavBar route /> : <NavBar.Empty />}
           <View style=styles##content>
             {displayOnboarding
                ? <OnboardingView />
@@ -70,7 +93,9 @@ let make = () => {
   <LogsContext>
     <ConfigContext>
       <ThemeContext>
-        <SdkContext> <StoreContext> <AppView /> </StoreContext> </SdkContext>
+        <SdkContext empty={() => <EmptyAppView />}>
+          <StoreContext> <AppView /> </StoreContext>
+        </SdkContext>
       </ThemeContext>
     </ConfigContext>
   </LogsContext>;

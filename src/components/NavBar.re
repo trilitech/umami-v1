@@ -81,6 +81,21 @@ let styles =
     })
   );
 
+module Empty = {
+  [@react.component]
+  let make = () => {
+    let theme = ThemeContext.useTheme();
+    <View
+      style=Style.(
+        array([|
+          styles##container,
+          style(~backgroundColor=theme.colors.barBackground, ()),
+        |])
+      )
+    />;
+  };
+};
+
 [@react.component]
 let make = (~route as currentRoute) => {
   let theme = ThemeContext.useTheme();

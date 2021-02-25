@@ -58,6 +58,15 @@ let mapOrLoad = (req, f) =>
   | Loading(None) => <LoadingView />
   };
 
+let mapOrEmpty = (req, f) =>
+  switch (req) {
+  | Done(Ok(data), _)
+  | Loading(Some(data)) => f(data)
+  | Done(Error(_), _)
+  | NotAsked
+  | Loading(None) => React.null
+  };
+
 let isNotAsked = request => request == NotAsked;
 
 let isLoading = request =>
