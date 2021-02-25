@@ -37,12 +37,5 @@ let make = (~account: Account.t, ~token: option(Token.t)=?) => {
          <DelegateButton account disabled={delegate->Option.isSome} />
        </View>
      })}
-    <View style=styles##actionMenu>
-      <Menu
-        icon=Icons.More.build
-        keyPopover={"accountRowItemMenu" ++ account.address}>
-        <AccountEditButton account />
-      </Menu>
-    </View>ccounts editButtons and menu only on editMode
   </RowItem.Bordered>;
 };

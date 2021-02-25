@@ -57,13 +57,8 @@ module AccountsFlatList = {
        ->SortArray.stableSortBy((a, b) =>
            Pervasives.compare(a.alias, b.alias)
          )
-       ->Array.mapWithIndex((index, account) =>
-           <AccountRowItem
-             key={account.address}
-             account
-             ?token
-             zIndex={accounts->Map.String.size - index}
-           />
+       ->Array.map(account =>
+           <AccountRowItem key={account.address} account ?token />
          )
        ->React.array}
     </View>;
@@ -71,14 +66,6 @@ module AccountsFlatList = {
 };
 
 module AccountsTreeList = {
-  let styles =
-    Style.(
-      StyleSheet.create({
-        "listDerived": style(~zIndex=2, ()),
-        "listImported": style(~zIndex=1, ()),
-      })
-    );
-
   [@react.component]
   let make = () => {
     let secretsRequest = StoreContext.Secrets.useLoad();
@@ -102,25 +89,20 @@ module AccountsTreeList = {
         });
 
       <>
-        <View style=styles##listDerived>
+        <View>
           {secrets
-           ->Array.mapWithIndex((index, secret) =>
-               <SecretRowTree
-                 key={secret.derivationScheme}
-                 secret
-                 zIndex={secrets->Array.size - index}
-               />
+           ->Array.map(secret =>
+               <SecretRowTree key={secret.derivationScheme} secret />
              )
            ->React.array}
         </View>
-        <View style=styles##listImported>
+        <View>
           {secrets
            ->Array.keepMap(secret => secret.legacyAddress)
-           ->Array.mapWithIndex((index, legacyAddress) =>
+           ->Array.map(legacyAddress =>
                <SecretRowTree.AccountImportedRowItem.Umami
                  key=legacyAddress
                  address=legacyAddress
-                 zIndex={secrets->Array.size - index}
                />
              )
            ->React.array}
@@ -128,11 +110,10 @@ module AccountsTreeList = {
         <View>
           {accountsNotInSecrets
            ->Map.String.valuesToArray
-           ->Array.mapWithIndex((index, account) =>
+           ->Array.map(account =>
                <SecretRowTree.AccountImportedRowItem.Cli
                  key={account.address}
                  account
-                 zIndex={accountsNotInSecrets->Map.String.size - index}
                />
              )
            ->React.array}

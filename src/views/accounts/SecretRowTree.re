@@ -57,12 +57,11 @@ module AccountNestedRowItem = {
   };
 
   [@react.component]
-  let make = (~address: string, ~index: int, ~zIndex, ~isLast=false) => {
+  let make = (~address: string, ~index: int, ~isLast=false) => {
     let account = StoreContext.Accounts.useGetFromAddress(address);
 
     account->ReactUtils.mapOpt(account =>
-      <RowItem.Bordered
-        height=90. style={Style.style(~zIndex, ())} isNested=true isLast>
+      <RowItem.Bordered height=90. isNested=true isLast>
         <View style=styles##inner>
           <Typography.Subtitle1 style=styles##alias>
             account.alias->React.string
@@ -132,13 +131,8 @@ module AccountImportedRowItem = {
   module Base = {
     [@react.component]
     let make =
-        (
-          ~account: Account.t,
-          ~tag: React.element,
-          ~actions: React.element,
-          ~zIndex,
-        ) => {
-      <RowItem.Bordered height=66. style={Style.style(~zIndex, ())}>
+        (~account: Account.t, ~tag: React.element, ~actions: React.element) => {
+      <RowItem.Bordered height=66.>
         <View style={Style.array([|styles##inner, styles##tagContainer|])}>
           tag
           <View>
@@ -155,14 +149,13 @@ module AccountImportedRowItem = {
 
   module Umami = {
     [@react.component]
-    let make = (~address: string, ~zIndex) => {
+    let make = (~address: string) => {
       let account = StoreContext.Accounts.useGetFromAddress(address);
       let theme = ThemeContext.useTheme();
 
       account->ReactUtils.mapOpt(account =>
         <Base
           account
-          zIndex
           tag={
             <View
               style=Style.(
@@ -179,7 +172,12 @@ module AccountImportedRowItem = {
           actions=
             {<>
                <AccountExportButton />
-               <Menu icon=Icons.More.build style=styles##actionIconButton>
+               <Menu
+                 icon=Icons.More.build
+                 style=styles##actionIconButton
+                 keyPopover={
+                   "accountImportRowItemMenuUmami" ++ account.address
+                 }>
                  <AccountEditButton account />
                </Menu>
              </>}
@@ -190,12 +188,11 @@ module AccountImportedRowItem = {
 
   module Cli = {
     [@react.component]
-    let make = (~account: Account.t, ~zIndex) => {
+    let make = (~account: Account.t) => {
       let theme = ThemeContext.useTheme();
 
       <Base
         account
-        zIndex
         tag={
           <View
             style=Style.(
@@ -211,7 +208,10 @@ module AccountImportedRowItem = {
         }
         actions=
           {<>
-             <Menu icon=Icons.More.build style=styles##actionIconButton>
+             <Menu
+               icon=Icons.More.build
+               style=styles##actionIconButton
+               keyPopover={"accountImportRowItemMenuCli" ++ account.address}>
                <AccountEditButton account />
              </Menu>
            </>}
@@ -263,8 +263,8 @@ module SecretRowItem = {
   };
 
   [@react.component]
-  let make = (~secret: API.Secret.t, ~zIndex) => {
-    <RowItem.Bordered height=66. style={Style.style(~zIndex, ())}>
+  let make = (~secret: API.Secret.t) => {
+    <RowItem.Bordered height=66.>
       <View style=styles##inner>
         <Typography.Subtitle1 style=styles##alias>
           secret.name->React.string
@@ -276,7 +276,10 @@ module SecretRowItem = {
       <View style=styles##actionContainer>
         <SecretAddAccountButton />
         <SecretExportButton />
-        <Menu icon=Icons.More.build style=styles##actionIconButton>
+        <Menu
+          icon=Icons.More.build
+          style=styles##actionIconButton
+          keyPopover={"secretRowItem" ++ secret.derivationScheme}>
           <SecretEditButton />
         </Menu>
       </View>
@@ -285,16 +288,15 @@ module SecretRowItem = {
 };
 
 [@react.component]
-let make = (~secret: API.Secret.t, ~zIndex) => {
-  <View style={Style.style(~zIndex, ())}>
-    <SecretRowItem secret zIndex={secret.addresses->Array.size + 1} />
+let make = (~secret: API.Secret.t) => {
+  <View>
+    <SecretRowItem secret  />
     {secret.addresses
      ->Array.mapWithIndex((index, address) =>
          <AccountNestedRowItem
            key=address
            address
            index
-           zIndex={secret.addresses->Array.size - index}
            isLast={secret.addresses->Array.size - 1 === index}
          />
        )
