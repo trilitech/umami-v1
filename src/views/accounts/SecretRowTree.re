@@ -182,7 +182,7 @@ module SecretRowItem = {
   };
 
   [@react.component]
-  let make = (~secret: AccountApiRequest.AccountsAPI.Secret.t, ~zIndex) => {
+  let make = (~secret: API.Secret.t, ~zIndex) => {
     <RowItem.Bordered height=66. style={Style.style(~zIndex, ())}>
       <View style=styles##inner>
         <Typography.Subtitle1 style=styles##alias>
@@ -204,7 +204,7 @@ module SecretRowItem = {
 };
 
 [@react.component]
-let make = (~secret: AccountApiRequest.AccountsAPI.Secret.t, ~zIndex) => {
+let make = (~secret: API.Secret.t, ~zIndex) => {
   <View style={Style.style(~zIndex, ())}>
     <SecretRowItem secret zIndex={secret.addresses->Array.size + 1} />
     {secret.addresses

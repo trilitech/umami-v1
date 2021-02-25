@@ -21,7 +21,11 @@ let useLoad = requestState => {
 };
 
 let useLoadSecrets = requestState => {
-  let get = (~settings, ()) => AccountsAPI.secrets(~settings);
+  let get = (~settings, ()) =>
+    AccountsAPI.secrets(~settings)
+    ->Option.mapWithDefault(Future.value(Result.Ok([||])), secrets => {
+        Future.value(Result.Ok(secrets))
+      });
 
   ApiRequest.useLoader(~get, ~kind=Logs.Account, ~requestState);
 };
