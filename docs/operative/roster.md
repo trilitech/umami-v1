@@ -5,7 +5,7 @@ Here's a list of contributors and their corresponding title/roles:
 | Type | Name | Title/Role | Area | Description |
 |--|--|--|--|--|
 | Team Member | Samuel Bourque | Product Manager | Management | General oversight of project and product |
-| Team Member | Remy El Sibaie | Senior Developer - Deputy Manager | Core Wallet & Tezos SDK | Development oversight |
+| Team Member | Remy El Sibaie | Senior Developer - Tech Lead | Core Wallet & Tezos SDK | Development oversight |
 | Team Member | Pierrick Couderc | Senior Developer | Core Wallet & Tezos SDK | Tokenization and Tezos SDK |
 | Team Member | Steve Sanches | Developer | Core Wallet | Core development and integration |
 | Team Member | Nicolas Fillion | Developer | Testing | Automated testing and CI |
