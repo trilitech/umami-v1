@@ -114,7 +114,7 @@ let conditionToLoad = (request, isMounted) => {
 
 let useGetter = (~toast=true, ~get, ~kind, ~setRequest, ()) => {
   let addLog = LogsContext.useAdd();
-  let settings = ConfigContext.useSettings();
+  let settings = SdkContext.useSettings();
 
   let get = input => {
     setRequest(updateToLoadingState);
@@ -204,7 +204,7 @@ let useLoader2 =
 let useSetter = (~toast=true, ~sideEffect=?, ~set, ~kind, ()) => {
   let addLog = LogsContext.useAdd();
   let (request, setRequest) = React.useState(_ => NotAsked);
-  let settings = ConfigContext.useSettings();
+  let settings = SdkContext.useSettings();
 
   let sendRequest = input => {
     setRequest(_ => Loading(None));

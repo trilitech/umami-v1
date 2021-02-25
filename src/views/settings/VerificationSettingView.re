@@ -16,7 +16,7 @@ let styles =
 [@react.component]
 let make = () => {
   let writeConf = ConfigContext.useWrite();
-  let settings = ConfigContext.useSettings();
+  let settings = SdkContext.useSettings();
   let addToast = LogsContext.useToast();
 
   let form: VerificationForm.api =

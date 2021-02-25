@@ -11,6 +11,7 @@ let styles =
 [@react.component]
 let make = (~color=?, ~style as styleArg=?) => {
   let theme = ThemeContext.useTheme();
+
   <View style=Style.(arrayOption([|Some(styles##container), styleArg|]))>
     <ActivityIndicator
       animating=true

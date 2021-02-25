@@ -447,7 +447,7 @@ let make = (~closeAction) => {
 
   let updateAccount = StoreContext.SelectedAccount.useSet();
 
-  let settings = ConfigContext.useSettings();
+  let settings = SdkContext.useSettings();
 
   let (advancedOptionsOpened, setAdvancedOptions) as advancedOptionState =
     React.useState(_ => false);

@@ -18,12 +18,12 @@ module AppView = {
     let accounts = StoreContext.Accounts.useGetAll();
     let accountsRequest = StoreContext.Accounts.useRequest();
 
-    let displayOnboarding =
+    let displayOnboarding = {
       switch (accountsRequest) {
-      | Done(_)
-      | NotAsked when accounts->Map.String.size <= 0 => true
+      | Done(_) when accounts->Map.String.size <= 0 => true
       | _ => false
       };
+    };
 
     let theme = ThemeContext.useTheme();
 
@@ -65,19 +65,13 @@ module AppView = {
   };
 };
 
-module ThemedView = {
-  [@react.component]
-  let make = () => {
-    let confLoaded = ConfigContext.useLoaded();
-    confLoaded
-      ? <StoreContext>
-          <ThemeContext> <AppView /> </ThemeContext>
-        </StoreContext>
-      : <LoadingView />;
-  };
-};
-
 [@react.component]
 let make = () => {
-  <LogsContext> <ConfigContext> <ThemedView /> </ConfigContext> </LogsContext>;
+  <LogsContext>
+    <ConfigContext>
+      <ThemeContext>
+        <SdkContext> <StoreContext> <AppView /> </StoreContext> </SdkContext>
+      </ThemeContext>
+    </ConfigContext>
+  </LogsContext>;
 };

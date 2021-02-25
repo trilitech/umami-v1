@@ -14,7 +14,7 @@ let make = () => {
   let (derivationPath, setDerivationPath) =
     React.useState(() => "m/44'/1729'/0'/0'");
   let (name, setName) = React.useState(() => "");
-  let settings = ConfigContext.useSettings();
+  let settings = SdkContext.useSettings();
 
   <View style>
     <TextInput

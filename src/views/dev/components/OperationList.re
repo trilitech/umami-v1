@@ -11,7 +11,7 @@ let make = () => {
   let (account, _) = React.useContext(AccountState.context);
   let (_, setBalance) = React.useContext(BalanceState.context);
   let (injection, _) = React.useContext(InjectionState.context);
-  let settings = ConfigContext.useSettings();
+  let settings = SdkContext.useSettings();
 
   let (operations: array(Operation.Read.t), setOperations) =
     React.useState(() => [||]);

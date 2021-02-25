@@ -8,7 +8,7 @@ module AccountsAPI = API.Accounts(API.TezosClient);
 [@react.component]
 let make = () => {
   let (_, setAccounts) = React.useContext(AccountsState.context);
-  let settings = ConfigContext.useSettings();
+  let settings = SdkContext.useSettings();
   let (backupPhrase, setBackupPhrase) = React.useState(() => "");
   let (name, setName) = React.useState(() => "");
   let (password, setPassword) = React.useState(() => "");

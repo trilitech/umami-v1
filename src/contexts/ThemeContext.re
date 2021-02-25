@@ -155,11 +155,11 @@ let mediaQueryColorSchemeDark =
 [@react.component]
 let make = (~children) => {
   let writeConf = ConfigContext.useWrite();
-  let settings = ConfigContext.useSettings();
+  let config = ConfigContext.useContent();
 
   let (themeConfig, setThemeConfig) =
     React.useState(_ =>
-      settings.config.theme->Option.getWithDefault(ConfigFile.Default.theme)
+      config.theme->Option.getWithDefault(ConfigFile.Default.theme)
     );
 
   let (prefersColorSchemeDark, setPrefersColorSchemeDark) =

@@ -7,7 +7,7 @@ module OperationsAPI = API.Operations(API.TezosClient, API.TezosExplorer);
 
 [@react.component]
 let make = () => {
-  let settings = ConfigContext.useSettings();
+  let settings = SdkContext.useSettings();
   let (source, setSource) = React.useState(() => "");
   let (amount1, setAmount1) = React.useState(() => ProtocolXTZ.zero);
   let (destination1, setDestination1) = React.useState(() => "");

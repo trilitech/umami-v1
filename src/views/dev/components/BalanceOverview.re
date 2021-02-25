@@ -11,7 +11,7 @@ let make = () => {
   let (injection, _) = React.useContext(InjectionState.context);
 
   let (balance, setBalance) = React.useContext(BalanceState.context);
-  let settings = ConfigContext.useSettings();
+  let settings = SdkContext.useSettings();
 
   React.useEffect5(
     () => {

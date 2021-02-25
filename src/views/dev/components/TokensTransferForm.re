@@ -7,7 +7,7 @@ module TokensAPI = API.Tokens(API.TezosClient, API.TezosExplorer);
 
 [@react.component]
 let make = () => {
-  let settings = ConfigContext.useSettings();
+  let settings = SdkContext.useSettings();
   let (source, setSrc) = React.useState(() => "");
   let (destination, setDst) = React.useState(() => "");
   let (amount, setAmount) = React.useState(() => "");
