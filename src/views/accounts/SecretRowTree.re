@@ -4,6 +4,19 @@ let styles =
   Style.(
     StyleSheet.create({
       "inner": style(~marginLeft=14.->dp, ()),
+      "tagContainer": style(~flexDirection=`row, ()),
+      "tag":
+        style(
+          ~width=40.->dp,
+          ~height=18.->dp,
+          ~marginRight=8.->dp,
+          ~marginLeft=2.->dp,
+          ~borderRadius=9.,
+          ~alignItems=`center,
+          ~justifyContent=`center,
+          ~borderWidth=1.,
+          (),
+        ),
       "alias": style(~height=20.->dp, ~marginBottom=4.->dp, ()),
       "derivation": style(~height=18.->dp, ()),
       "actionContainer":
@@ -116,26 +129,94 @@ module AccountImportedRowItem = {
     };
   };
 
-  [@react.component]
-  let make = (~address: string, ~zIndex) => {
-    let account = StoreContext.Accounts.useGetFromAddress(address);
-
-    account->ReactUtils.mapOpt(account =>
+  module Base = {
+    [@react.component]
+    let make =
+        (
+          ~account: Account.t,
+          ~tag: React.element,
+          ~actions: React.element,
+          ~zIndex,
+        ) => {
       <RowItem.Bordered height=66. style={Style.style(~zIndex, ())}>
-        <View style=styles##inner>
-          <Typography.Subtitle1 style=styles##alias>
-            account.alias->React.string
-          </Typography.Subtitle1>
-          <AccountInfoBalance address={account.address} />
+        <View style={Style.array([|styles##inner, styles##tagContainer|])}>
+          tag
+          <View>
+            <Typography.Subtitle1 style=styles##alias>
+              account.alias->React.string
+            </Typography.Subtitle1>
+            <AccountInfoBalance address={account.address} />
+          </View>
         </View>
-        <View style=styles##actionContainer>
-          <AccountExportButton />
-          <Menu icon=Icons.More.build style=styles##actionIconButton>
-            <AccountEditButton account />
-          </Menu>
-        </View>
-      </RowItem.Bordered>
-    );
+        <View style=styles##actionContainer> actions </View>
+      </RowItem.Bordered>;
+    };
+  };
+
+  module Umami = {
+    [@react.component]
+    let make = (~address: string, ~zIndex) => {
+      let account = StoreContext.Accounts.useGetFromAddress(address);
+      let theme = ThemeContext.useTheme();
+
+      account->ReactUtils.mapOpt(account =>
+        <Base
+          account
+          zIndex
+          tag={
+            <View
+              style=Style.(
+                array([|
+                  styles##tag,
+                  style(~borderColor=theme.colors.borderMediumEmphasis, ()),
+                |])
+              )>
+              <Typography.Body2 fontSize=9.7 colorStyle=`mediumEmphasis>
+                "Umami"->React.string
+              </Typography.Body2>
+            </View>
+          }
+          actions=
+            {<>
+               <AccountExportButton />
+               <Menu icon=Icons.More.build style=styles##actionIconButton>
+                 <AccountEditButton account />
+               </Menu>
+             </>}
+        />
+      );
+    };
+  };
+
+  module Cli = {
+    [@react.component]
+    let make = (~account: Account.t, ~zIndex) => {
+      let theme = ThemeContext.useTheme();
+
+      <Base
+        account
+        zIndex
+        tag={
+          <View
+            style=Style.(
+              array([|
+                styles##tag,
+                style(~backgroundColor=theme.colors.statePressed, ()),
+              |])
+            )>
+            <Typography.Body2 fontSize=9.7 colorStyle=`mediumEmphasis>
+              "CLI"->React.string
+            </Typography.Body2>
+          </View>
+        }
+        actions=
+          {<>
+             <Menu icon=Icons.More.build style=styles##actionIconButton>
+               <AccountEditButton account />
+             </Menu>
+           </>}
+      />;
+    };
   };
 };
 

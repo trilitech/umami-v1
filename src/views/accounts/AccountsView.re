@@ -82,11 +82,28 @@ module AccountsTreeList = {
   [@react.component]
   let make = () => {
     let secretsRequest = StoreContext.Secrets.useLoad();
+    let accounts = StoreContext.Accounts.useGetAll();
 
-    <>
-      <View style=styles##listDerived>
-        {secretsRequest->ApiRequest.mapOrLoad(secrets =>
-           secrets
+    secretsRequest->ApiRequest.mapOrLoad(secrets => {
+      let addressesInSecrets =
+        secrets
+        ->Array.map(secret => {
+            secret.legacyAddress
+            ->Option.mapWithDefault(secret.addresses, legacyAddress => {
+                secret.addresses->Array.concat([|legacyAddress|])
+              })
+          })
+        ->Array.reduce([||], (acc, arr) => acc->Array.concat(arr))
+        ->Set.String.fromArray;
+
+      let accountsNotInSecrets =
+        accounts->Map.String.keep((address, _account) => {
+          !addressesInSecrets->Set.String.has(address)
+        });
+
+      <>
+        <View style=styles##listDerived>
+          {secrets
            ->Array.mapWithIndex((index, secret) =>
                <SecretRowTree
                  key={secret.derivationScheme}
@@ -94,24 +111,34 @@ module AccountsTreeList = {
                  zIndex={secrets->Array.size - index}
                />
              )
-           ->React.array
-         )}
-      </View>
-      <View style=styles##listImported>
-        {secretsRequest->ApiRequest.mapOkWithDefault(React.null, secrets =>
-           secrets
+           ->React.array}
+        </View>
+        <View style=styles##listImported>
+          {secrets
            ->Array.keepMap(secret => secret.legacyAddress)
            ->Array.mapWithIndex((index, legacyAddress) =>
-               <SecretRowTree.AccountImportedRowItem
+               <SecretRowTree.AccountImportedRowItem.Umami
                  key=legacyAddress
                  address=legacyAddress
                  zIndex={secrets->Array.size - index}
                />
              )
-           ->React.array
-         )}
-      </View>
-    </>;
+           ->React.array}
+        </View>
+        <View>
+          {accountsNotInSecrets
+           ->Map.String.valuesToArray
+           ->Array.mapWithIndex((index, account) =>
+               <SecretRowTree.AccountImportedRowItem.Cli
+                 key={account.address}
+                 account
+                 zIndex={accountsNotInSecrets->Map.String.size - index}
+               />
+             )
+           ->React.array}
+        </View>
+      </>;
+    });
   };
 };
 
