@@ -27,10 +27,23 @@ module AccountImportButton = {
 
   [@react.component]
   let make = () => {
-    let onPress = _ => ();
-    <View style=styles##button>
-      <ButtonAction onPress text="IMPORT" icon=Icons.Add.build primary=true />
-    </View>;
+    let (visibleModal, openAction, closeAction) =
+      ModalAction.useModalActionState();
+
+    let onPress = _ => openAction();
+    <>
+      <View style=styles##button>
+        <ButtonAction
+          onPress
+          text="IMPORT"
+          icon=Icons.Add.build
+          primary=true
+        />
+      </View>
+      <ModalAction visible=visibleModal onRequestClose=closeAction>
+        <ImportAccountOnboardingView closeAction />
+      </ModalAction>
+    </>;
   };
 };
 
