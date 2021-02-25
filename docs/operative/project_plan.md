@@ -72,6 +72,7 @@ gantt
     section SDK Integ
     Sprint 15 - SDK Integ                             :active, 2021-02-22, 2021-03-05
     section Release Overview
+    Alpha Release                                     :done,   2020-07-19, 2021-12-01
     Beta Release                                      :active, 2020-12-01, 2021-03-05
     Release - v 1.0                                   :active, 2021-03-05, 2021-06-01
     Maintenance - v 1.x                               :active, 2021-06-01, 2021-09-01
