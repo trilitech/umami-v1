@@ -1,8 +1,6 @@
 # Ref-Wallet - Project Roadmap
 
-> as of Oct 2020
-
-This is the **Project** Roadmap, which plans the progress of the development efforts of the Ref-Wallet.
+This is the **Project** Roadmap, which plans the progress of the development efforts of Umami.
 
 ## Projected Milestones:
 
@@ -12,17 +10,19 @@ This is the **Project** Roadmap, which plans the progress of the development eff
      * Transactions
      * Operation History
      * Delegation
- * Beta release: Jan 2021 (limited release--more features, some left in the backlog: TBD)
-     * Bulk Transactions
+ * Beta release: Mar 2021 (limited release--more features, some left in the backlog: TBD)
+     * Batch Transactions
      * FA1.2 Tokens
-     * Deploy Contracts
-     * Contract Calls
- * v1.0 release: Feb 2021 (public release--stable)
- * v1.x maintenance phase
- * v2.0 release: May 2021 (public release--no backlog)
-     * Voting
-     * Multisig
+ * v1.0 release: Jun 2021 (public release--stable)
      * FA2
+     * Remote Signing (TZIP-10)
+     * Hardware wallet support
+     * DirectAuth
+ * v1.x maintenance phase
+ * v2.0 release: Q4 2021 (public release--no backlog)
+     * Contracts
+     * Sapling
+     * Multisig
 
  **Note**:
 
@@ -34,7 +34,7 @@ This is the **Project** Roadmap, which plans the progress of the development eff
 
 ```mermaid
 gantt
-    title Ref-Wallet
+    title Sprint Overview
     section Project Initiation
     Cortez export                                     :done  , 2020-07-01 , 30d
     Project Initiation                                :done  , 2020-06-01, 2020-07-13
@@ -69,10 +69,14 @@ gantt
     Sprint 13 - Key Management                        :done  , 2021-01-25, 2021-02-05
     section Sprint 14 - SDK Integ
     Sprint 14 - SDK Integ                             :done  , 2021-02-08, 2021-02-19
-    section SDK Integ
-    Sprint 15 - SDK Integ                             :active, 2021-02-22, 2021-03-05
-    section Release Overview
-    Alpha Release                                     :done,   2020-07-19, 2021-12-01
+    section Beta Candidate
+    Sprint 15 - Beta Candidate                        :active, 2021-02-22, 2021-03-05
+```
+
+```mermaid
+gantt
+    title Release Overview
+    Alpha Release                                     :done,   2020-07-19, 2020-12-01
     Beta Release                                      :active, 2020-12-01, 2021-03-05
     Release - v 1.0                                   :active, 2021-03-05, 2021-06-01
     Maintenance - v 1.x                               :active, 2021-06-01, 2021-09-01
