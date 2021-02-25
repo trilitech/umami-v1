@@ -55,7 +55,15 @@ gantt
     Sprint 8 - Alpha                                  :done  , 2020-11-02, 2020-11-13
     section Sprint 9 - Refactoring
     Sprint 9 - Refactoring                            :done  , 2020-11-15, 2020-11-27
-    section Sprint 10 - Tokens
+    section Sprint 10 - Tokens FA1.2
     Sprint 10 - Tokens                                :done  , 2020-12-01, 2020-12-11
+    section Sprint 11 - Batch Txs
+    Sprint 11 - Batch Txs                             :done  , 2020-12-15, 2021-01-08
+    section Sprint 12 - Token Batching
+    Sprint 12 - Token Batching                        :done  , 2021-01-11, 2021-01-22
+    section Sprint 13 - Key Management
+    Sprint 13 - Key Management                        :done  , 2021-01-25, 2021-02-05
+    section Sprint 14 - SDK Integ
+    Sprint 14 - SDK Integ                             :done  , 2021-02-08, 2021-02-19
 ```
 
