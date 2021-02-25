@@ -34,8 +34,6 @@ let make = () => {
   let accounts = StoreContext.Accounts.useGetAll();
   let delegatesRequestsLoaded = StoreContext.Delegate.useGetAllLoaded();
 
-  let onScroll = DocumentContext.useScrollListener();
-
   <View style=styles##container>
     {accounts->Map.String.size == 0
        ? <LoadingView />
@@ -77,11 +75,8 @@ let make = () => {
                <DelegateRowItem.CellAction />
              </Table.Head>
            </View>
-           <ScrollView
-             style=styles##list
-             contentContainerStyle=styles##listContent
-             onScroll
-             scrollEventThrottle=250>
+           <DocumentContext.ScrollView
+             style=styles##list contentContainerStyle=styles##listContent>
              {/* tricky because all delegateRequest are separate requests done by each delegateRowItem that all need to be mounted  */
               switch (
                 delegatesRequestsLoaded->Array.some(Option.isSome),
@@ -105,7 +100,7 @@ let make = () => {
                   <DelegateRowItem key={account.address} account />
                 )
               ->React.array}
-           </ScrollView>
+           </DocumentContext.ScrollView>
          </>}
   </View>;
 };

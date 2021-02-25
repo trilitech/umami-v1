@@ -189,3 +189,48 @@ let useScroll = callback => {
     ),
   );
 };
+
+// Components
+
+module ScrollView = {
+  [@react.component]
+  let make =
+      (~style=?, ~contentContainerStyle=?, ~alwaysBounceVertical=?, ~children) => {
+    let onScroll = useScrollListener();
+    <ScrollView
+      ?style
+      ?contentContainerStyle
+      ?alwaysBounceVertical
+      onScroll
+      scrollEventThrottle=250>
+      children
+    </ScrollView>;
+  };
+};
+
+module FlatList = {
+  [@react.component]
+  let make =
+      (
+        ~style,
+        ~contentContainerStyle,
+        ~data,
+        ~initialNumToRender,
+        ~keyExtractor,
+        ~renderItem,
+        ~_ListEmptyComponent,
+      ) => {
+    let onScroll = useScrollListener();
+    <FlatList
+      style
+      contentContainerStyle
+      data
+      initialNumToRender
+      keyExtractor
+      renderItem
+      _ListEmptyComponent
+      onScroll
+      scrollEventThrottle=250
+    />;
+  };
+};

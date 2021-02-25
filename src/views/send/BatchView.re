@@ -116,7 +116,8 @@ module Transactions = {
       <Typography.Overline2 style=styles##listLabel>
         I18n.label#transactions->React.string
       </Typography.Overline2>
-      <ScrollView style={listStyle(theme)} alwaysBounceVertical=false>
+      <DocumentContext.ScrollView
+        style={listStyle(theme)} alwaysBounceVertical=false>
         {{
            recipients->List.mapWithIndex((i, (onEdit, (recipient, amount))) => {
              let onDelete = onDelete->Option.map((delete, ()) => delete(i));
@@ -133,7 +134,7 @@ module Transactions = {
          ->List.reverse
          ->List.toArray
          ->React.array}
-      </ScrollView>
+      </DocumentContext.ScrollView>
     </View>;
   };
 };
