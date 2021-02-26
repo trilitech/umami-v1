@@ -2,20 +2,9 @@ open UmamiCommon;
 type config = {
   content: ConfigFile.t,
   write: (ConfigFile.t => ConfigFile.t) => unit,
-  loaded: bool,
-  sdkMain: Js.Promise.t(TezosSDK.t),
-  sdkTest: Js.Promise.t(TezosSDK.t),
-  network: AppSettings.network,
 };
 
-let initialState = {
-  content: ConfigFile.dummy,
-  write: _ => (),
-  loaded: false,
-  sdkMain: TezosSDK.init("", ""),
-  sdkTest: TezosSDK.init("", ""),
-  network: Testnet,
-};
+let initialState = {content: ConfigFile.dummy, write: _ => ()};
 
 let context = React.createContext(initialState);
 
@@ -28,62 +17,27 @@ module Provider = {
   let make = React.Context.provider(context);
 };
 
+let load = () => {
+  switch (ConfigFile.read()->Js.Nullable.toOption) {
+  | Some(conf) => ConfigFile.parse(conf)
+  | None =>
+    Js.log("No config to load. Using default config");
+    ConfigFile.dummy;
+  };
+};
+
 [@react.component]
 let make = (~children) => {
-  let (content, setConfig) = React.useState(() => initialState.content);
-  let (loaded, setLoaded) = React.useState(() => initialState.loaded);
-
-  let (network, _) = React.useState(() => AppSettings.Testnet);
-
-  let ((sdkMain, sdkTest), _) =
-    React.useState(() => {
-      let endpointMain =
-        content.endpointMain
-        ->Option.getWithDefault(ConfigFile.Default.endpointMain);
-
-      let endpointTest =
-        content.endpointTest
-        ->Option.getWithDefault(ConfigFile.Default.endpointTest);
-
-      let dir =
-        ConfigFile.(
-          content.sdkBaseDir->Option.getWithDefault(Default.sdkBaseDir)
-        );
-      (TezosSDK.init(dir, endpointMain), TezosSDK.init(dir, endpointTest));
-    });
-
-  let load = () => {
-    System.Config.read()
-    ->Future.get(conf => {
-        switch (conf) {
-        | Ok(conf) =>
-          let conf = ConfigFile.parse(conf);
-          setConfig(_ => conf);
-          setLoaded(_ => true);
-        | Error(e) =>
-          Js.log(e);
-          setLoaded(_ => true);
-        }
-      });
-  };
-
-  React.useEffect0(() => {
-    load();
-    None;
-  });
+  let (content, setConfig) = React.useState(() => load());
 
   let write = f =>
     setConfig(c => {
       let c = f(c);
-      c
-      ->ConfigFile.toString
-      ->Lib.Option.iter(c => c->System.Config.write->Future.get(_ => ()));
+      c->ConfigFile.toString->Lib.Option.iter(c => c->ConfigFile.write);
       c;
     });
 
-  <Provider value={content, loaded, write, sdkMain, sdkTest, network}>
-    children
-  </Provider>;
+  <Provider value={content, write}> children </Provider>;
 };
 
 let useContext = () => React.useContext(context);
@@ -93,21 +47,9 @@ let useWrite = () => {
   store.write;
 };
 
-let useLoaded = () => {
+let useContent = () => {
   let store = useContext();
-  store.loaded;
-};
-
-let useSettings = () => {
-  let store = useContext();
-  AppSettings.{
-    config: store.content,
-    sdk: {
-      main: store.sdkMain,
-      test: store.sdkTest,
-    },
-    network: store.network,
-  };
+  store.content;
 };
 
 let useResetConfig = () => {

@@ -35,3 +35,11 @@ let toString = c =>
   ->Js.Json.stringifyAny
   ->Option.map(Js.Json.parseExn)
   ->Option.map(j => Js.Json.stringifyWithSpace(j, 1));
+
+let configKey = "Config";
+
+let write = s => LocalStorage.setItem(configKey, s);
+
+let read = () => LocalStorage.getItem(configKey);
+
+let reset = () => LocalStorage.removeItem(configKey);

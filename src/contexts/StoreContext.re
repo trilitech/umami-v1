@@ -386,7 +386,7 @@ module Operations = {
 
   let useCreate = () => {
     let resetOperations = useResetAll();
-    let settings = ConfigContext.useSettings();
+    let settings = SdkContext.useSettings();
     OperationApiRequest.useCreate(
       ~sideEffect=
         ((hash, branch)) => {

@@ -19,6 +19,8 @@ type t = {
 
 let sdkInit: sdkInit = [%raw "initjs"];
 
+let dummySdk = {lib: (Obj.magic(""): lib), cctxt: Obj.magic("")};
+
 [@bs.send] external buildCctxt: (lib, string, string) => cctxt = "buildCctxt";
 [@bs.send] external init: sdkInit => Js.Promise.t(lib) = "init";
 
@@ -75,21 +77,16 @@ let fromPromise = p =>
 external listKnownAddresses:
   (lib, cctxt, int) => Js.Promise.t(result(array(OutputAddress.t))) =
   "list_known_addresses";
-let listKnownAddresses = sdk =>
-  sdk
-  |> Js.Promise.then_(sdk => listKnownAddresses(sdk.lib, sdk.cctxt, 0))
-  |> fromPromise;
+let listKnownAddresses = sdk => {
+  listKnownAddresses(sdk.lib, sdk.cctxt, 0) |> fromPromise;
+};
 
 [@bs.send]
 external addAddress:
   (lib, cctxt, InputAddress.t) => Js.Promise.t(result(unit)) =
   "add_address";
 let addAddress = (sdk, alias, pkh) =>
-  sdk
-  |> Js.Promise.then_(sdk =>
-       addAddress(sdk.lib, sdk.cctxt, {alias, pkh, force: true})
-     )
-  |> fromPromise;
+  addAddress(sdk.lib, sdk.cctxt, {alias, pkh, force: true}) |> fromPromise;
 
 type renameParams = {
   old_name: string,
@@ -102,15 +99,10 @@ external renameAliases:
   "rename_aliases";
 
 let renameAliases = (sdk, renameAlias) =>
-  sdk
-  |> Js.Promise.then_(sdk => renameAliases(sdk.lib, sdk.cctxt, renameAlias))
-  |> fromPromise;
+  renameAliases(sdk.lib, sdk.cctxt, renameAlias) |> fromPromise;
 
 [@bs.send]
 external currentLevel: (lib, cctxt, int) => Js.Promise.t(result(int)) =
   "current_level";
 
-let currentLevel = sdk =>
-  sdk
-  |> Js.Promise.then_(sdk => currentLevel(sdk.lib, sdk.cctxt, 0))
-  |> fromPromise;
+let currentLevel = sdk => currentLevel(sdk.lib, sdk.cctxt, 0) |> fromPromise;

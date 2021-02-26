@@ -69,14 +69,6 @@ module File = {
   };
 };
 
-module Config = {
-  let getPath: unit => string =
-    () => app##getPath("appData") ++ "/" ++ app##getName() ++ "/Config";
-
-  let write = s => File.write(~name=getPath(), s);
-  let read = () => File.read(getPath());
-};
-
 module Client = {
   let reset = path => File.rmdir(path);
 };

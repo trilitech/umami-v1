@@ -42,7 +42,7 @@ let make = () => {
   let (balance, setBalance) = React.useState(() => ProtocolXTZ.zero);
   let (injection, setInjection) = React.useState(() => InjectionState.Done);
   let (accounts, setAccounts) = React.useState(() => dummy);
-  let settings = ConfigContext.useSettings();
+  let settings = SdkContext.useSettings();
 
   React.useEffect0(() => {
     /*

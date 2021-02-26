@@ -9,7 +9,7 @@ module AccountsAPI = API.Accounts(API.TezosClient);
 let make = () => {
   let (_, setAccounts) = React.useContext(AccountsState.context);
   let (name, setName) = React.useState(() => "");
-  let settings = ConfigContext.useSettings();
+  let settings = SdkContext.useSettings();
 
   <View style>
     <TextInput

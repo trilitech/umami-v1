@@ -112,7 +112,7 @@ let make =
     let account = StoreContext.SelectedAccount.useGet();
     let aliases = StoreContext.Aliases.useGetAll();
     let tokens = StoreContext.Tokens.useGetAll();
-    let config = ConfigContext.useSettings().config;
+    let config = SdkContext.useSettings().config;
 
     <Table.Row>
       {switch (operation.payload) {

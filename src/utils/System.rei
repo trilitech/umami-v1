@@ -17,9 +17,4 @@ module File: {
     Future.t(Result.t(unit, string));
 };
 
-module Config: {
-  let write: string => Future.t(Result.t(unit, string));
-  let read: unit => Future.t(Result.t(string, string));
-};
-
 module Client: {let reset: string => Future.t(Result.t(unit, string));};

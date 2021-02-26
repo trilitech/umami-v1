@@ -52,7 +52,7 @@ let make = () => {
   let accountsRequest = StoreContext.Accounts.useRequest();
   let token = StoreContext.SelectedToken.useGet();
   <Page>
-    {accountsRequest->ApiRequest.mapOrLoad(_ => {
+    {accountsRequest->ApiRequest.mapOrEmpty(_ => {
        <>
          <BalanceTotal.WithTokenSelector ?token />
          <AddAccountButton />

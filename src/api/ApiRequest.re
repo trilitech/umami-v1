@@ -58,6 +58,15 @@ let mapOrLoad = (req, f) =>
   | Loading(None) => <LoadingView />
   };
 
+let mapOrEmpty = (req, f) =>
+  switch (req) {
+  | Done(Ok(data), _)
+  | Loading(Some(data)) => f(data)
+  | Done(Error(_), _)
+  | NotAsked
+  | Loading(None) => React.null
+  };
+
 let isNotAsked = request => request == NotAsked;
 
 let isLoading = request =>
@@ -114,7 +123,7 @@ let conditionToLoad = (request, isMounted) => {
 
 let useGetter = (~toast=true, ~get, ~kind, ~setRequest, ()) => {
   let addLog = LogsContext.useAdd();
-  let settings = ConfigContext.useSettings();
+  let settings = SdkContext.useSettings();
 
   let get = input => {
     setRequest(updateToLoadingState);
@@ -204,7 +213,7 @@ let useLoader2 =
 let useSetter = (~toast=true, ~sideEffect=?, ~set, ~kind, ()) => {
   let addLog = LogsContext.useAdd();
   let (request, setRequest) = React.useState(_ => NotAsked);
-  let settings = ConfigContext.useSettings();
+  let settings = SdkContext.useSettings();
 
   let sendRequest = input => {
     setRequest(_ => Loading(None));
