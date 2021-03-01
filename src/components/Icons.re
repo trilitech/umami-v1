@@ -118,3 +118,5 @@ module RadioOn = Make(SVGIconRadioOn);
 module RadioOff = Make(SVGIconRadioOff);
 module Refresh = Make(SVGIconRefresh);
 module Contract = Make(SVGIconContract);
+module Import = Make(SVGIconImport);
+module Scan = Make(SVGIconScan);

@@ -36,7 +36,7 @@ module AccountImportButton = {
         <ButtonAction
           onPress
           text="IMPORT"
-          icon=Icons.Add.build
+          icon=Icons.Import.build
           primary=true
         />
       </View>
@@ -55,7 +55,7 @@ module ScanImportButton = {
   let make = () => {
     let onPress = _ => ();
     <View style=styles##button>
-      <ButtonAction onPress text="SCAN" icon=Icons.Add.build primary=true />
+      <ButtonAction onPress text="SCAN" icon=Icons.Scan.build primary=true />
     </View>;
   };
 };
