@@ -11,7 +11,7 @@ module SecretItem = {
     );
 
   [@react.component]
-  let make = (~style as paramStyle=?, ~secret: API.Secret.t) => {
+  let make = (~style as paramStyle=?, ~secret: Secret.t) => {
     <View style=Style.(arrayOption([|Some(itemStyles##inner), paramStyle|]))>
       <View style=itemStyles##info>
         <Typography.Subtitle2>
@@ -42,14 +42,14 @@ let styles =
     })
   );
 
-let renderButton = (selectedSecret: option(API.Secret.t), _hasError) =>
+let renderButton = (selectedSecret: option(Secret.t), _hasError) =>
   <View style=styles##selectorContent>
     {selectedSecret->Option.mapWithDefault(<LoadingView />, secret =>
        <SecretItem style=styles##itemInSelector secret />
      )}
   </View>;
 
-let renderItem = (secret: API.Secret.t) =>
+let renderItem = (secret: Secret.t) =>
   <SecretItem style=styles##itemInSelector secret />;
 
 [@react.component]
@@ -70,7 +70,7 @@ let make = (~label, ~value: string, ~handleChange, ~error, ~disabled) => {
       if (value == "") {
         let firstItem = items->Array.get(0);
         firstItem->Lib.Option.iter(secret =>
-          secret.derivationScheme->handleChange
+          secret.index->string_of_int->handleChange
         );
       };
       None;
@@ -83,7 +83,7 @@ let make = (~label, ~value: string, ~handleChange, ~error, ~disabled) => {
     <View>
       <Selector
         items
-        getItemValue={secret => secret.derivationScheme}
+        getItemValue={secret => secret.index->string_of_int}
         onValueChange=handleChange
         selectedValue=value
         renderButton

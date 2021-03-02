@@ -21,7 +21,7 @@ module Generic = {
            (~name: string, ~secret: string) => Future.t(Result.t('a, 'b)),
         ~request,
         ~closeAction,
-        ~secret: option(API.Secret.t)=?,
+        ~secret: option(Secret.t)=?,
         ~hideSecretSelector=false,
       ) => {
     let form: AccountCreateForm.api =
@@ -41,7 +41,7 @@ module Generic = {
           name: init,
           secret:
             secret->Option.mapWithDefault("", secret =>
-              secret.derivationScheme
+              secret.index->string_of_int
             ),
         },
         ~i18n=FormUtils.i18n,
@@ -116,7 +116,7 @@ module Update = {
 
 module Create = {
   [@react.component]
-  let make = (~closeAction, ~secret: option(API.Secret.t)=?) => {
+  let make = (~closeAction, ~secret: option(Secret.t)=?) => {
     let (createAccountRequest, createAccount) =
       StoreContext.Accounts.useCreate();
 

@@ -263,7 +263,7 @@ module SecretRowItem = {
   };
 
   [@react.component]
-  let make = (~secret: API.Secret.t) => {
+  let make = (~secret: Secret.t) => {
     <RowItem.Bordered height=66.>
       <View style=styles##inner>
         <Typography.Subtitle1 style=styles##alias>
@@ -279,7 +279,7 @@ module SecretRowItem = {
         <Menu
           icon=Icons.More.build
           style=styles##actionIconButton
-          keyPopover={"secretRowItem" ++ secret.derivationScheme}>
+          keyPopover={"secretRowItem" ++ secret.index->string_of_int}>
           <SecretEditButton />
         </Menu>
       </View>
@@ -288,7 +288,7 @@ module SecretRowItem = {
 };
 
 [@react.component]
-let make = (~secret: API.Secret.t) => {
+let make = (~secret: Secret.t) => {
   <View>
     <SecretRowItem secret />
     {secret.addresses

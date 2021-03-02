@@ -105,7 +105,7 @@ module AccountsTreeList = {
         <View>
           {secrets
            ->Array.map(secret =>
-               <SecretRowTree key={secret.derivationScheme} secret />
+               <SecretRowTree key={secret.index->string_of_int} secret />
              )
            ->React.array}
         </View>
@@ -157,7 +157,7 @@ let make = () => {
   let accountsRequest = StoreContext.Accounts.useRequest();
   let token = StoreContext.SelectedToken.useGet();
 
-  let (editMode, setEditMode) = React.useState(_ => false);
+  let (editMode, setEditMode) = React.useState(_ => true);
 
   <Page>
     {accountsRequest->ApiRequest.mapOrEmpty(_ => {

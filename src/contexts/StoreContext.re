@@ -14,7 +14,7 @@ type state = {
   selectedAccountState: reactState(option(string)),
   selectedTokenState: reactState(option(string)),
   accountsRequestState: reactState(ApiRequest.t(Map.String.t(Account.t))),
-  secretsRequestState: reactState(ApiRequest.t(array(API.Secret.t))),
+  secretsRequestState: reactState(ApiRequest.t(array(Secret.t))),
   balanceRequestsState: apiRequestsState(ProtocolXTZ.t),
   delegateRequestsState: apiRequestsState(option(string)),
   delegateInfoRequestsState:

@@ -25,7 +25,13 @@ let useLoadSecrets = requestState => {
     AccountsAPI.secrets(~settings)
     ->Option.mapWithDefault(Future.value(Result.Ok([||])), secrets => {
         Future.value(Result.Ok(secrets))
-      });
+      })
+    ->Future.mapOk(secrets =>
+        secrets->Array.mapWithIndex(
+          (index, {name, derivationScheme, addresses, legacyAddress}) =>
+          Secret.{index, name, derivationScheme, addresses, legacyAddress}
+        )
+      );
 
   ApiRequest.useLoader(~get, ~kind=Logs.Account, ~requestState);
 };
