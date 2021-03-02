@@ -815,7 +815,7 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
       )
     ->Future.flatMapOk(edesk =>
         import(edesk, name, ~password)
-        ->Future.flatMapOk(_ =>
+        ->Future.flatMap(_ =>
             get(~settings)
             ->Future.mapOk(MapString.fromArray)
             ->Future.flatMapOk(accounts =>
