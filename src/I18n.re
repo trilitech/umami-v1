@@ -71,7 +71,8 @@ let label = {
   pub add_token_symbol = "Symbol";
   pub summary_subtotal = "Subtotal";
   pub summary_total = "Total";
-  pub transactions = "Transactions"
+  pub transactions = "Transactions";
+  pub account_secret = "Root"
 };
 
 let input_placeholder = {
@@ -93,7 +94,7 @@ let form_input_error = {
 let title = {
   pub _this = this;
   pub error_logs = "Logs";
-  pub account_create = "Create new account";
+  pub account_create = "Add account";
   pub account_update = "Edit account";
   pub import_account = "Import account";
   pub add_contact = "Add contact";

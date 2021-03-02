@@ -230,7 +230,7 @@ module SecretRowItem = {
 
   module SecretAddAccountButton = {
     [@react.component]
-    let make = () => {
+    let make = (~secret) => {
       let (visibleModal, openAction, closeAction) =
         ModalAction.useModalActionState();
 
@@ -243,7 +243,7 @@ module SecretRowItem = {
           style=styles##actionButton
         />
         <ModalAction visible=visibleModal onRequestClose=closeAction>
-          <AccountFormView.Create closeAction />
+          <AccountFormView.Create closeAction secret />
         </ModalAction>
       </>;
     };
@@ -274,7 +274,7 @@ module SecretRowItem = {
         </Typography.Address>
       </View>
       <View style=styles##actionContainer>
-        <SecretAddAccountButton />
+        <SecretAddAccountButton secret />
         <SecretExportButton />
         <Menu
           icon=Icons.More.build
@@ -290,7 +290,7 @@ module SecretRowItem = {
 [@react.component]
 let make = (~secret: API.Secret.t) => {
   <View>
-    <SecretRowItem secret  />
+    <SecretRowItem secret />
     {secret.addresses
      ->Array.mapWithIndex((index, address) =>
          <AccountNestedRowItem
