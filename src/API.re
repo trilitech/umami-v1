@@ -661,7 +661,7 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
 
   let recoveryPhrases = (~settings: AppSettings.t, password) =>
     SecureStorage.fetch("recoveryPhrases", ~password)
-    ->Future.mapOk(Json.parse)
+    ->Future.mapOk(option => option->Option.flatMap(Json.parse))
     ->Future.mapOk(result =>
         result->Option.map(Json.Decode.(array(string)))
       );
@@ -810,9 +810,8 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
     LocalStorage.setItem("index", suffix);
     let path = derivationScheme->Js.String2.replace("?", suffix);
     HD.edesk(path, seed, ~password)
-    ->Future.tapOk(edesk =>
-        Js.log(name ++ " " ++ edesk)
-      )
+    ->Future.tapOk(edesk => Js.log(name ++ " " ++ edesk))
+    ->Future.tapOk(edsk => {})
     ->Future.flatMapOk(edesk =>
         import(edesk, name, ~password)
         ->Future.flatMap(_ =>
@@ -871,8 +870,10 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
       ~password,
       (),
     )
-    ->Future.tapOk(_ => {
+    ->Future.tapOk(_ => 
         recoveryPhrases(~settings, password)
+        ->Future.tapOk(Js.log)
+        ->Future.tapError(Js.log)
         ->Future.mapOk(recoveryPhrases =>
             recoveryPhrases->Option.mapWithDefault(
               [|backupPhrase|], recoveryPhrases =>
@@ -882,9 +883,10 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
         ->Future.mapOk(Json.Encode.(array(string)))
         ->Future.mapOk(json => json->Json.stringify)
         ->Future.flatMapOk(string =>
-            string->SecureStorage.store(~key="recoveryPhrases", ~password)
+            string->SecureStorage.store(~key="recovery-phrases", ~password)
           )
-      })
+        ->Future.get(_ => ())
+      )
     ->Future.tapOk(addresses => {
         Js.log(addresses);
         let secret = {
