@@ -540,7 +540,12 @@ module Secrets = {
 
   let useLoad = () => {
     let requestState = useRequestState();
-    AccountApiRequest.useLoadSecrets(requestState);
+    SecretApiRequest.useLoad(requestState);
+  };
+
+  let useGetRecoveryPhrase = (~index: int) => {
+    let requestState = React.useState(() => ApiRequest.NotAsked);
+    SecretApiRequest.useGetRecoveryPhrase(~requestState, ~index);
   };
 
   let useResetNames = () => {
@@ -552,7 +557,7 @@ module Secrets = {
 
   let useUpdate = () => {
     let resetSecrets = useResetNames();
-    AccountApiRequest.useUpdateSecret(~sideEffect=_ => resetSecrets(), ());
+    SecretApiRequest.useUpdate(~sideEffect=_ => resetSecrets(), ());
   };
 };
 

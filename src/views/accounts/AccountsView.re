@@ -111,11 +111,15 @@ module AccountsTreeList = {
         </View>
         <View>
           {secrets
-           ->Array.keepMap(secret => secret.legacyAddress)
-           ->Array.map(legacyAddress =>
+           ->Array.keepMap(secret =>
+               secret.legacyAddress
+               ->Option.map(legacyAddress => (secret, legacyAddress))
+             )
+           ->Array.map(((secret, legacyAddress)) =>
                <SecretRowTree.AccountImportedRowItem.Umami
                  key=legacyAddress
                  address=legacyAddress
+                 secret
                />
              )
            ->React.array}
@@ -157,7 +161,7 @@ let make = () => {
   let accountsRequest = StoreContext.Accounts.useRequest();
   let token = StoreContext.SelectedToken.useGet();
 
-  let (editMode, setEditMode) = React.useState(_ => true);
+  let (editMode, setEditMode) = React.useState(_ => false);
 
   <Page>
     {accountsRequest->ApiRequest.mapOrEmpty(_ => {

@@ -79,6 +79,27 @@ module AccountNestedRowItem = {
   };
 };
 
+module SecretExportButton = {
+  [@react.component]
+  let make = (~secret) => {
+    let (visibleModal, openAction, closeAction) =
+      ModalAction.useModalActionState();
+
+    let onPress = _e => openAction();
+
+    <>
+      <Buttons.SubmitTertiary
+        onPress
+        text="EXPORT"
+        style=styles##actionButton
+      />
+      <ModalAction visible=visibleModal onRequestClose=closeAction>
+        <SecretMnemonicView closeAction secret />
+      </ModalAction>
+    </>;
+  };
+};
+
 module AccountImportedRowItem = {
   module AccountDeleteButton = {
     [@react.component]
@@ -115,19 +136,6 @@ module AccountImportedRowItem = {
     };
   };
 
-  module AccountExportButton = {
-    [@react.component]
-    let make = () => {
-      <>
-        <Buttons.SubmitTertiary
-          onPress={_ => ()}
-          text="EXPORT"
-          style=styles##actionButton
-        />
-      </>;
-    };
-  };
-
   module Base = {
     [@react.component]
     let make =
@@ -149,7 +157,7 @@ module AccountImportedRowItem = {
 
   module Umami = {
     [@react.component]
-    let make = (~address: string) => {
+    let make = (~address: string, ~secret) => {
       let account = StoreContext.Accounts.useGetFromAddress(address);
       let theme = ThemeContext.useTheme();
 
@@ -171,7 +179,7 @@ module AccountImportedRowItem = {
           }
           actions=
             {<>
-               <AccountExportButton />
+               <SecretExportButton secret />
                <Menu
                  icon=Icons.More.build
                  style=styles##actionIconButton
@@ -259,19 +267,6 @@ module SecretRowItem = {
     };
   };
 
-  module SecretExportButton = {
-    [@react.component]
-    let make = () => {
-      <>
-        <Buttons.SubmitTertiary
-          onPress={_ => ()}
-          text="EXPORT"
-          style=styles##actionButton
-        />
-      </>;
-    };
-  };
-
   [@react.component]
   let make = (~secret: Secret.t) => {
     <RowItem.Bordered height=66.>
@@ -285,7 +280,7 @@ module SecretRowItem = {
       </View>
       <View style=styles##actionContainer>
         <SecretAddAccountButton secret />
-        <SecretExportButton />
+        <SecretExportButton secret />
         <Menu
           icon=Icons.More.build
           style=styles##actionIconButton

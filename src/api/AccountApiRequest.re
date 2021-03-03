@@ -20,22 +20,6 @@ let useLoad = requestState => {
   ApiRequest.useLoader(~get, ~kind=Logs.Account, ~requestState);
 };
 
-let useLoadSecrets = requestState => {
-  let get = (~settings, ()) =>
-    AccountsAPI.secrets(~settings)
-    ->Option.mapWithDefault(Future.value(Result.Ok([||])), secrets => {
-        Future.value(Result.Ok(secrets))
-      })
-    ->Future.mapOk(secrets =>
-        secrets->Array.mapWithIndex(
-          (index, {name, derivationScheme, addresses, legacyAddress}) =>
-          Secret.{index, name, derivationScheme, addresses, legacyAddress}
-        )
-      );
-
-  ApiRequest.useLoader(~get, ~kind=Logs.Account, ~requestState);
-};
-
 /* Set */
 
 let useCreate =
@@ -46,20 +30,6 @@ let useUpdate =
     ~set=
       (~settings, renaming: TezosSDK.renameParams) =>
         TezosSDK.renameAliases(AppSettings.sdk(settings), renaming),
-    ~kind=Logs.Account,
-  );
-
-let useUpdateSecret =
-  ApiRequest.useSetter(
-    ~set=
-      (
-        ~settings,
-        {index, name, derivationScheme, addresses, legacyAddress}: Secret.t,
-      ) => {
-        let secret =
-          API.Secret.{name, derivationScheme, addresses, legacyAddress};
-        AccountsAPI.updateSecretAt(secret, ~settings, index);
-      },
     ~kind=Logs.Account,
   );
 
