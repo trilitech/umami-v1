@@ -49,6 +49,20 @@ let useUpdate =
     ~kind=Logs.Account,
   );
 
+let useUpdateSecret =
+  ApiRequest.useSetter(
+    ~set=
+      (
+        ~settings,
+        {index, name, derivationScheme, addresses, legacyAddress}: Secret.t,
+      ) => {
+        let secret =
+          API.Secret.{name, derivationScheme, addresses, legacyAddress};
+        AccountsAPI.updateSecretAt(secret, ~settings, index);
+      },
+    ~kind=Logs.Account,
+  );
+
 let useDelete =
   ApiRequest.useSetter(~set=AccountsAPI.delete, ~kind=Logs.Account);
 

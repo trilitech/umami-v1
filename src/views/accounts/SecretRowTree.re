@@ -223,8 +223,18 @@ module AccountImportedRowItem = {
 module SecretRowItem = {
   module SecretEditButton = {
     [@react.component]
-    let make = () => {
-      <> <Menu.Item text="Edit" icon=Icons.Edit.build onPress={_ => ()} /> </>;
+    let make = (~secret) => {
+      let (visibleModal, openAction, closeAction) =
+        ModalAction.useModalActionState();
+
+      let onPress = _e => openAction();
+
+      <>
+        <Menu.Item text="Edit" icon=Icons.Edit.build onPress />
+        <ModalAction visible=visibleModal onRequestClose=closeAction>
+          <SecretUpdateFormView secret closeAction />
+        </ModalAction>
+      </>;
     };
   };
 
@@ -280,7 +290,7 @@ module SecretRowItem = {
           icon=Icons.More.build
           style=styles##actionIconButton
           keyPopover={"secretRowItem" ++ secret.index->string_of_int}>
-          <SecretEditButton />
+          <SecretEditButton secret />
         </Menu>
       </View>
     </RowItem.Bordered>;

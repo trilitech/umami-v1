@@ -542,6 +542,18 @@ module Secrets = {
     let requestState = useRequestState();
     AccountApiRequest.useLoadSecrets(requestState);
   };
+
+  let useResetNames = () => {
+    let (_, setSecretsRequest) = useRequestState();
+    () => {
+      setSecretsRequest(ApiRequest.updateToResetState);
+    };
+  };
+
+  let useUpdate = () => {
+    let resetSecrets = useResetNames();
+    AccountApiRequest.useUpdateSecret(~sideEffect=_ => resetSecrets(), ());
+  };
 };
 
 module Accounts = {
