@@ -2,7 +2,7 @@ open ReactNative;
 
 module EditButton = {
   let styles =
-    Style.(StyleSheet.create({"button": style(~marginLeft=auto, ())}));
+    Style.(StyleSheet.create({"button": style(~marginTop=15.->dp, ())}));
 
   [@react.component]
   let make = (~editMode, ~setEditMode) => {
@@ -11,7 +11,7 @@ module EditButton = {
       <ButtonAction
         onPress
         text={editMode ? I18n.btn#done_ : I18n.btn#edit}
-        icon=Icons.Edit.build
+        icon={editMode ? Icons.Checkmark.build : Icons.Edit.build}
       />
     </View>;
   };
@@ -141,19 +141,7 @@ module AccountsTreeList = {
 };
 
 let styles =
-  Style.(
-    StyleSheet.create({
-      "actionBar": style(~flexDirection=`row, ~marginBottom=10.->dp, ()),
-      "refreshPosition":
-        style(
-          ~position=`absolute,
-          ~top=LayoutConst.pagePaddingVertical->dp,
-          ~right=LayoutConst.pagePaddingHorizontal->dp,
-          ~height=40.->dp,
-          (),
-        ),
-    })
-  );
+  Style.(StyleSheet.create({"actionBar": style(~flexDirection=`row, ())}));
 
 [@react.component]
 let make = () => {
@@ -166,22 +154,25 @@ let make = () => {
   <Page>
     {accountsRequest->ApiRequest.mapOrEmpty(_ => {
        <>
-         {editMode
-            ? <BalanceTotal /> : <BalanceTotal.WithTokenSelector ?token />}
-         <View style=styles##actionBar>
+         <Page.Header
+           right=
+             {<>
+                <RefreshButton
+                  loading={accountsRequest->ApiRequest.isLoading}
+                  onRefresh=resetAccounts
+                />
+                <EditButton editMode setEditMode />
+              </>}>
            {editMode
-              ? <View> <AccountImportButton /> <ScanImportButton /> </View>
-              : React.null}
-           <EditButton editMode setEditMode />
-         </View>
+              ? <BalanceTotal /> : <BalanceTotal.WithTokenSelector ?token />}
+           <View style=styles##actionBar>
+             {editMode
+                ? <View> <AccountImportButton /> <ScanImportButton /> </View>
+                : React.null}
+           </View>
+         </Page.Header>
          {editMode ? <AccountsTreeList /> : <AccountsFlatList ?token />}
        </>
      })}
-    <View style=styles##refreshPosition>
-      <RefreshButton
-        loading={accountsRequest->ApiRequest.isLoading}
-        onRefresh=resetAccounts
-      />
-    </View>
   </Page>;
 };

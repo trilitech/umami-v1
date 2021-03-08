@@ -21,10 +21,12 @@ let styles =
   );
 
 [@react.component]
-let make = () => {
+let make = (~children as right) => {
   <View style=styles##header>
-    <BalanceTotal />
-    <AccountSelector style=styles##selector />
+    <Page.Header right>
+      <BalanceTotal />
+      <AccountSelector style=styles##selector />
+    </Page.Header>
     <Table.Head>
       <OperationRowItem.CellType>
         <Typography.Overline3>

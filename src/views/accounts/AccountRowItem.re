@@ -13,6 +13,7 @@ let styles =
           (),
         ),
       "button": style(~marginRight=4.->dp, ()),
+      "actionContainer": style(~marginRight=24.->dp, ()),
     })
   );
 
@@ -33,7 +34,7 @@ let make = (~account: Account.t, ~token: option(Token.t)=?) => {
       <QrButton account style=styles##button />
     </View>
     {delegateRequest->ApiRequest.mapOkWithDefault(React.null, delegate => {
-       <View>
+       <View style=styles##actionContainer>
          <DelegateButton account disabled={delegate->Option.isSome} />
        </View>
      })}

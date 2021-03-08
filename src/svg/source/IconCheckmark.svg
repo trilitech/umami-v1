@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14">
+    <g fill="none" fill-rule="evenodd">
+        <g>
+            <g>
+                <g>
+                    <g transform="translate(-1344 -148) translate(145 80) translate(1191 63) translate(3)">
+                        <g>
+                            <g>
+                                <path d="M0 0L14 0 14 14 0 14z" transform="translate(5 5)"/>
+                                <path fill="#000" fill-rule="nonzero" d="M5.25 9.45L2.8 7 1.983 7.817 5.25 11.083 12.25 4.083 11.433 3.267z" transform="translate(5 5)"/>
+                            </g>
+                        </g>
+                        <circle cx="12" cy="12" r="11.667"/>
+                    </g>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>
