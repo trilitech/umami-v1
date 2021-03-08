@@ -45,7 +45,7 @@ module AccountNestedRowItem = {
         <IconButton
           icon=Icons.Edit.build
           size=34.
-          iconSizeRatio={3. /. 7.}
+          iconSizeRatio={1. /. 2.}
           onPress
           style=styles##actionIconButton
         />
@@ -53,6 +53,20 @@ module AccountNestedRowItem = {
           <AccountFormView.Update account closeAction />
         </ModalAction>
       </>;
+    };
+  };
+
+  module AccountDisplayButton = {
+    [@react.component]
+    let make = () => {
+      let onPress = _ => Js.log("Todo : Show/Hide account");
+      <IconButton
+        icon=Icons.Show.build
+        size=34.
+        iconSizeRatio={1. /. 2.}
+        style=styles##actionIconButton
+        onPress
+      />;
     };
   };
 
@@ -73,6 +87,7 @@ module AccountNestedRowItem = {
         </View>
         <View style=styles##actionContainer>
           <AccountEditButton account />
+          <AccountDisplayButton />
         </View>
       </RowItem.Bordered>
     );
@@ -111,11 +126,20 @@ module AccountImportedRowItem = {
       };
 
       <DeleteButton
-        buttonText="Delete account"
+        buttonText="Delete"
         modalTitle="Delete account?"
         onPressConfirmDelete
         request=accountRequest
       />;
+    };
+  };
+
+  module AccountDisplayButton = {
+    [@react.component]
+    let make = () => {
+      let onPress = _e => Js.log("Todo : Show/Hide account");
+
+      <Menu.Item text="Show" icon=Icons.Show.build onPress />;
     };
   };
 
@@ -128,7 +152,7 @@ module AccountImportedRowItem = {
       let onPress = _e => openAction();
 
       <>
-        <Menu.Item text="Edit account" icon=Icons.Edit.build onPress />
+        <Menu.Item text="Edit" icon=Icons.Edit.build onPress />
         <ModalAction visible=visibleModal onRequestClose=closeAction>
           <AccountFormView.Update account closeAction />
         </ModalAction>
@@ -187,6 +211,7 @@ module AccountImportedRowItem = {
                    "accountImportRowItemMenuUmami" ++ account.address
                  }>
                  <AccountEditButton account />
+                 <AccountDisplayButton />
                </Menu>
              </>}
         />
@@ -221,6 +246,7 @@ module AccountImportedRowItem = {
                style=styles##actionIconButton
                keyPopover={"accountImportRowItemMenuCli" ++ account.address}>
                <AccountEditButton account />
+               <AccountDisplayButton />
              </Menu>
            </>}
       />;

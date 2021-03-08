@@ -121,3 +121,5 @@ module Contract = Make(SVGIconContract);
 module Import = Make(SVGIconImport);
 module Scan = Make(SVGIconScan);
 module Checkmark = Make(SVGIconCheckmark);
+module Show = Make(SVGIconShow);
+module Hide = Make(SVGIconHide);
