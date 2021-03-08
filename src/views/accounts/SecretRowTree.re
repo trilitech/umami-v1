@@ -118,11 +118,15 @@ module SecretExportButton = {
 module AccountImportedRowItem = {
   module AccountDeleteButton = {
     [@react.component]
-    let make = (~account: Account.t) => {
-      let (accountRequest, deleteAccount) = StoreContext.Accounts.useDelete();
+    let make = (~account as _a: Account.t) => {
+      let (accountRequest, _deleteAccount) =
+        StoreContext.Accounts.useDelete();
 
       let onPressConfirmDelete = _e => {
-        deleteAccount(account.alias)->ignore;
+        Js.log(
+          "Todo : Delete account",
+          //deleteAccount(account.alias)->ignore;
+        );
       };
 
       <DeleteButton
@@ -212,6 +216,7 @@ module AccountImportedRowItem = {
                  }>
                  <AccountEditButton account />
                  <AccountDisplayButton />
+                 <AccountDeleteButton account />
                </Menu>
              </>}
         />
@@ -247,6 +252,7 @@ module AccountImportedRowItem = {
                keyPopover={"accountImportRowItemMenuCli" ++ account.address}>
                <AccountEditButton account />
                <AccountDisplayButton />
+               <AccountDeleteButton account />
              </Menu>
            </>}
       />;
@@ -312,6 +318,12 @@ module SecretRowItem = {
           style=styles##actionIconButton
           keyPopover={"secretRowItem" ++ secret.index->string_of_int}>
           <SecretEditButton secret />
+          <Menu.Item
+            text="Delete"
+            icon=Icons.Delete.build
+            onPress={_ => Js.log("Todo : Delete secret")}
+            colorStyle=`error
+          />
         </Menu>
       </View>
     </RowItem.Bordered>;
