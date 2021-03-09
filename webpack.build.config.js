@@ -1,7 +1,7 @@
 const webpack = require('webpack')
 const path = require('path')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
-const { spawn } = require('child_process')
+const CopyPlugin = require('copy-webpack-plugin')
 
 // Any directories you will be adding code/files into, need to be added to this array so webpack will pick them up
 const defaultInclude = path.resolve(__dirname, 'src')
@@ -13,35 +13,31 @@ module.exports = {
         test: /\.jsx?$/,
         use: [{ loader: 'babel-loader' }],
         include: defaultInclude
-      }
+      },
     ]
   },
   target: 'electron-renderer',
   plugins: [
+    new CopyPlugin({
+      patterns: [
+        { from: 'public', to: '.' },
+      ],
+    }),
     new HtmlWebpackPlugin({
       template: 'public/index.html'
     }),
     new webpack.DefinePlugin({
-      'process.env.NODE_ENV': JSON.stringify('development')
-    })
+      'process.env.NODE_ENV': JSON.stringify('production')
+    }),
   ],
-  devtool: 'cheap-source-map',
-  devServer: {
-    contentBase: path.resolve(__dirname, 'public'),
-    stats: {
-      colors: true,
-      chunks: false,
-      children: false
-    },
-    before() {
-      spawn(
-        'electron',
-        ['.'],
-        { shell: true, env: process.env/*, stdio: 'inherit'*/ }
-      )
-      .on('close', code => process.exit(0))
-      .on('error', spawnError => console.error(spawnError))
-    }
+  stats: {
+    colors: true,
+    children: false,
+    chunks: false,
+    modules: false
+  },
+  optimization: {
+    minimize: true
   },
   resolve: {
     // This will only alias the exact import "react-native"
