@@ -48,5 +48,8 @@ module.exports = {
     // module implementations should be written in files using the extension
     // `.web.js`.
     extensions: ['.web.js', '.js', '.bs.js']
-  }
+  },
+  output: {
+    path: path.resolve(__dirname, 'build'),
+  },
 }

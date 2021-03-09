@@ -48,7 +48,7 @@
     "postinstall": "electron-builder install-app-deps",
     "electron:dev": "concurrently -k \"cross-env BROWSER=none yarn start\" \"wait-on tcp:3000 && tsc -p electron && electron --disable-gpu .\"",
     "electron:build": "yarn bsb:build && yarn build && tsc -p electron && electron-builder",
-    "electron:build2": "yarn bsb:build && yarn webpack:build && tsc -p electron && electron-builder",
+    "electron:build2": "yarn bsb:build && yarn webpack:build && electron-builder",
     "eject": "react-app-rewired eject",
     "svgo": "svgo --folder=src/svg/source --output=src/svg/optimized --disable=removeViewBox --enable=removeDimensions --pretty",
     "svgfixer": "oslllo-svg-fixer --source=src/svg/optimized --destination=src/svg/optimized2",
@@ -64,7 +64,8 @@
       "target": "AppImage"
     },
     "files": [
-      "build/**/*"
+      "build/**/*",
+      "./main.js"
     ],
     "extraResources": [
       {
