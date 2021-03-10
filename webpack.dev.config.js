@@ -12,7 +12,8 @@ module.exports = {
       {
         test: /\.jsx?$/,
         use: [{ loader: 'babel-loader' }],
-        include: defaultInclude
+        include: defaultInclude,
+        exclude: path.resolve(__dirname, 'src', 'vendors', 'tezos-sdk')
       }
     ]
   },
