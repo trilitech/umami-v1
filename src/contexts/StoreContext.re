@@ -619,6 +619,11 @@ module Accounts = {
     AccountApiRequest.useCreate(~sideEffect=_ => resetAccounts(), ());
   };
 
+  let useDerive = () => {
+    let resetAccounts = useResetAll();
+    AccountApiRequest.useDerive(~sideEffect=_ => resetAccounts(), ());
+  };
+
   let useUpdate = () => {
     let resetAccounts = useResetNames();
     AccountApiRequest.useUpdate(~sideEffect=_ => resetAccounts(), ());

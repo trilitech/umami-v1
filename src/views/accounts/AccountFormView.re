@@ -18,7 +18,7 @@ module Generic = {
         ~title,
         ~buttonText,
         ~action:
-           (~name: string, ~secret: string) => Future.t(Result.t('a, 'b)),
+           (~name: string, ~secretIndex: int) => Future.t(Result.t('a, 'b)),
         ~request,
         ~closeAction,
         ~secret: option(Secret.t)=?,
@@ -31,7 +31,10 @@ module Generic = {
         },
         ~onSubmit=
           ({state}) => {
-            action(~name=state.values.name, ~secret=state.values.secret)
+            action(
+              ~name=state.values.name,
+              ~secretIndex=state.values.secret->int_of_string,
+            )
             ->Future.tapOk(() => closeAction())
             ->ignore;
 
@@ -95,7 +98,7 @@ module Update = {
 
     let addLog = LogsContext.useAdd();
 
-    let action = (~name as new_name, ~secret as _s) => {
+    let action = (~name as new_name, ~secretIndex as _s) => {
       updateAccount({old_name: account.alias, new_name})
       ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
           I18n.t#account_updated
@@ -117,17 +120,17 @@ module Update = {
 module Create = {
   [@react.component]
   let make = (~closeAction, ~secret: option(Secret.t)=?) => {
-    let (createAccountRequest, createAccount) =
-      StoreContext.Accounts.useCreate();
+    let (createDeriveRequest, deriveAccount) =
+      StoreContext.Accounts.useDerive();
 
     let addLog = LogsContext.useAdd();
 
     let action =
-        (~name, ~secret as _s): Future.t(Belt.Result.t(unit, string)) => {
+        (~name, ~secretIndex): Future.t(Belt.Result.t(unit, string)) => {
       Js.log(
         "TODO : use derivate when it will be ready, to create a derivate from the secret",
       );
-      createAccount(name)
+      deriveAccount({name, index: secretIndex, password: "azerty"})
       ->Future.mapOk(_ => ())
       ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
           I18n.t#account_created
@@ -138,7 +141,7 @@ module Create = {
       init=""
       buttonText=I18n.btn#add
       title=I18n.title#account_create
-      request=createAccountRequest
+      request=createDeriveRequest
       action
       closeAction
       ?secret

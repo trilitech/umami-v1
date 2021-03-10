@@ -25,6 +25,20 @@ let useLoad = requestState => {
 let useCreate =
   ApiRequest.useSetter(~set=AccountsAPI.create, ~kind=Logs.Account);
 
+type deriveInput = {
+  name: string,
+  index: int,
+  password: string,
+};
+
+let useDerive =
+  ApiRequest.useSetter(
+    ~set=
+      (~settings, {name, index, password}) =>
+        AccountsAPI.derive(~settings, ~index, ~name, ~password),
+    ~kind=Logs.Account,
+  );
+
 let useUpdate =
   ApiRequest.useSetter(
     ~set=

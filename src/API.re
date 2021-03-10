@@ -763,7 +763,7 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
       )
     ->Future.tapOk(Js.log);
 
-  let derive = (~settings, ~index, ~password) =>
+  let derive = (~settings, ~index, ~name, ~password) =>
     Js.Promise.all2((
       secretAt(~settings, index)->FutureJs.toPromise,
       recoveryPhraseAt(~settings, index, ~password)->FutureJs.toPromise,
@@ -773,7 +773,6 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
         switch (secret, recoveryPhrase) {
         | (Ok(secret), Ok(recoveryPhrase)) =>
           let suffix = secret.addresses->Array.length->Js.Int.toString;
-          let name = secret.name ++ suffix;
           let path = secret.derivationScheme->Js.String2.replace("?", suffix);
           HD.edesk(path, recoveryPhrase->HD.seed, ~password)
           ->Future.flatMapOk(edesk =>
