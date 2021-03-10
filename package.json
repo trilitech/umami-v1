@@ -115,7 +115,7 @@
     "cross-env": "^7.0.2",
     "electron": "^9.1.0",
     "electron-builder": "^22.7.0",
-    "html-webpack-plugin": "^4.5.0",
+    "html-webpack-plugin": "^5.3.1",
     "lenses-ppx": "6.1.2",
     "oslllo-svg-fixer": "1.1.2",
     "react-from-svg": "4.0.6",
