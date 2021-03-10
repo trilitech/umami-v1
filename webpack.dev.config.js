@@ -20,7 +20,7 @@ module.exports = {
   target: 'electron-renderer',
   plugins: [
     new HtmlWebpackPlugin({
-      template: 'index.html'
+      template: 'src/index.html'
     }),
     new webpack.DefinePlugin({
       'process.env.NODE_ENV': JSON.stringify('development')
