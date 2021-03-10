@@ -1,1 +1,1 @@
-[@bs.module "./dialog-js"] [@bs.val] external error: string => unit = "error";
+[@bs.module "./dialog"] [@bs.val] external error: string => unit = "error";
