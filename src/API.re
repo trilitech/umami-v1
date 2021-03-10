@@ -739,9 +739,18 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
   let add = (~settings, alias, pkh) =>
     settings->AppSettings.sdk->TezosSDK.addAddress(alias, pkh);
 
-  let import = (key, name, ~password) =>
+  let import = (~settings, key, name, ~password) =>
     Caller.call(
-      [|"import", "secret", "key", name, "encrypted:" ++ key, "-f"|],
+      [|
+        "-E",
+        settings->AppSettings.endpoint,
+        "import",
+        "secret",
+        "key",
+        name,
+        "encrypted:" ++ key,
+        "-f",
+      |],
       ~inputs=[|password|],
       (),
     )
@@ -767,7 +776,9 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
           let name = secret.name ++ suffix;
           let path = secret.derivationScheme->Js.String2.replace("?", suffix);
           HD.edesk(path, recoveryPhrase->HD.seed, ~password)
-          ->Future.flatMapOk(edesk => import(edesk, name, ~password))
+          ->Future.flatMapOk(edesk =>
+              import(~settings, edesk, name, ~password)
+            )
           ->Future.tapOk(address =>
               {
                 ...secret,
@@ -815,7 +826,7 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
     let path = derivationScheme->Js.String2.replace("?", suffix);
     HD.edesk(path, seed, ~password)
     ->Future.flatMapOk(edesk =>
-        import(edesk, name, ~password)
+        import(~settings, edesk, name, ~password)
         ->Future.flatMapOk(address
             // always include 0'
             =>
