@@ -33,7 +33,7 @@ module Generic = {
           ({state}) => {
             action(
               ~name=state.values.name,
-              ~secretIndex=state.values.secret->int_of_string,
+              ~secretIndex=state.values.secret->Js.Float.fromString->int_of_float
             )
             ->Future.tapOk(() => closeAction())
             ->ignore;
