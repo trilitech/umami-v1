@@ -650,7 +650,7 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
   };
 
   let recoveryPhrases = (~settings: AppSettings.t, password) =>
-    SecureStorage.fetch("recoveryPhrases", ~password)
+    SecureStorage.fetch("recovery-phrases", ~password)
     ->Future.mapOk(option => option->Option.flatMap(Json.parse))
     ->Future.mapOk(result =>
         result->Option.map(Json.Decode.(array(string)))
