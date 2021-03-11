@@ -53,7 +53,7 @@ module ScanImportButton = {
 
   [@react.component]
   let make = () => {
-    let onPress = _ => ();
+    let onPress = _ => Js.log("Todo : scan global");
     <View style=styles##button>
       <ButtonAction onPress text="SCAN" icon=Icons.Scan.build primary=true />
     </View>;
