@@ -44,3 +44,13 @@ end
 * Umami Front-end - Tezos CLI or SDK :
 ## Tezos Codebase :
 * tezos-cli / SDK : https://gitlab.com/nomadic-labs/tezos/-/tree/umami@fa1.2+dry_run_no_pass+8.2 (back-end for Umami JS Front-end + by-pass of tezos-cli)
+
+
+# Compatibility Table - Prescribed versions
+
+We list here the prescribed versions recommended for each of the tools needed to run the Umami project.
+
+| tezos-node | tezos-indexer | mezos | umami | (status) |
+|---         |---            |---    |---    |---       |
+| nomadic-labs/umami@fa1.2+dry_run_no_pass+8.2 | origin/master | indexer-v9 | origin/develop | branches (dev) |
+ 
