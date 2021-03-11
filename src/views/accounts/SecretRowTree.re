@@ -118,15 +118,11 @@ module SecretExportButton = {
 module AccountImportedRowItem = {
   module AccountDeleteButton = {
     [@react.component]
-    let make = (~account as _a: Account.t) => {
-      let (accountRequest, _deleteAccount) =
-        StoreContext.Accounts.useDelete();
+    let make = (~account: Account.t) => {
+      let (accountRequest, deleteAccount) = StoreContext.Accounts.useDelete();
 
       let onPressConfirmDelete = _e => {
-        Js.log(
-          "Todo : Delete account",
-          //deleteAccount(account.alias)->ignore;
-        );
+        deleteAccount(account.alias)->ignore;
       };
 
       <DeleteButton
