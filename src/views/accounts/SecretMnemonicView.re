@@ -56,12 +56,7 @@ module PasswordView = {
 module RecoveryPhrase = {
   [@react.component]
   let make = (~recoveryPhrase: string) => {
-    let mnemonic =
-      React.useRef(Bip39.generate(256)->Js.String2.split(" ")).current;
-
-    Js.log2("Todo : use the recoveryPhrase", recoveryPhrase);
-
-    <MnemonicListView mnemonic />;
+    <MnemonicListView mnemonic={recoveryPhrase->Js.String2.split(" ")} />;
   };
 };
 
