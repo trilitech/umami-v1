@@ -127,9 +127,6 @@ module Create = {
 
     let action =
         (~name, ~secretIndex): Future.t(Belt.Result.t(unit, string)) => {
-      Js.log(
-        "TODO : use derivate when it will be ready, to create a derivate from the secret",
-      );
       deriveAccount({name, index: secretIndex, password: "azerty"})
       ->Future.mapOk(_ => ())
       ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>

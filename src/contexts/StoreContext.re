@@ -548,7 +548,7 @@ module Secrets = {
     SecretApiRequest.useGetRecoveryPhrase(~requestState, ~index);
   };
 
-  let useResetNames = () => {
+  let useResetAll = () => {
     let (_, setSecretsRequest) = useRequestState();
     () => {
       setSecretsRequest(ApiRequest.updateToResetState);
@@ -556,7 +556,7 @@ module Secrets = {
   };
 
   let useUpdate = () => {
-    let resetSecrets = useResetNames();
+    let resetSecrets = useResetAll();
     SecretApiRequest.useUpdate(~sideEffect=_ => resetSecrets(), ());
   };
 };
@@ -606,8 +606,10 @@ module Accounts = {
   let useResetAll = () => {
     let resetOperations = Operations.useResetAll();
     let resetAliases = Aliases.useResetAll();
+    let resetSecrets = Secrets.useResetAll();
     let (_, setAccountsRequest) = useRequestState();
     () => {
+      resetSecrets();
       setAccountsRequest(ApiRequest.updateToResetState);
       resetOperations();
       resetAliases();
