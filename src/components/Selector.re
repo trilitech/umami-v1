@@ -78,7 +78,7 @@ let make =
   let theme = ThemeContext.useTheme();
 
   <View ?style>
-    <PressableCustom
+    <Pressable_
       ref={pressableRef->Ref.value} onPress={_ => togglePopover()} disabled>
       {_ =>
          <View
@@ -127,7 +127,7 @@ let make =
                   style=styles##icon
                 />}
          </View>}
-    </PressableCustom>
+    </Pressable_>
     <DropdownMenu
       keyPopover
       style={Style.arrayOption([|

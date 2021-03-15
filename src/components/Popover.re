@@ -174,7 +174,7 @@ let usePopoverState = () => {
     pressableRef.current
     ->Js.Nullable.toOption
     ->Option.map(pressableElement => {
-        pressableElement->PressableCustom.measureInWindow(
+        pressableElement->Pressable_.measureInWindow(
           (~x, ~y, ~width, ~height) => {
           setPopoverConfig(_ => Some({x, y, width, height}))
         })
