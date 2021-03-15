@@ -697,12 +697,11 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
     ->Option.map(Json.Decode.(array(Secret.decoder)));
   };
 
-  let recoveryPhrases = (~settings: AppSettings.t, password) =>
-    SecureStorage.fetch("recovery-phrases", ~password)
-    ->Future.mapOk(option => option->Option.flatMap(Json.parse))
-    ->Future.mapOk(result =>
-        result->Option.map(Json.Decode.(array(string)))
-      );
+  let recoveryPhrases = (~settings: AppSettings.t) =>
+    LocalStorage.getItem("recovery-phrases")
+    ->Js.Nullable.toOption
+    ->Option.flatMap(Json.parse)
+    ->Option.map(Json.Decode.(array(SecureStorage.Cipher.decoder)));
 
   let parse = content =>
     content
@@ -768,21 +767,13 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
       });
 
   let recoveryPhraseAt = (~settings, index, ~password) =>
-    recoveryPhrases(~settings, password)
-    ->Future.flatMapOk(recoveryPhrases =>
-        recoveryPhrases->FutureEx.fromOption(
-          ~error="No recovery phrases found!",
-        )
+    recoveryPhrases(~settings)
+    ->Option.flatMap(recoveryPhrases => recoveryPhrases[index])
+    ->FutureEx.fromOption(
+        ~error=
+          "Recovery phrase at index " ++ index->Int.toString ++ " not found!",
       )
-    ->Future.flatMapOk(recoveryPhrases =>
-        recoveryPhrases[index]
-        ->FutureEx.fromOption(
-            ~error=
-              "Recovery phrase at index "
-              ++ index->Int.toString
-              ++ " not found!",
-          )
-      );
+    ->Future.flatMapOk(SecureStorage.Cipher.decrypt2(password));
 
   let add = (~settings, alias, pkh) =>
     settings->AppSettings.sdk->TezosSDK.addAddress(alias, pkh);
@@ -853,7 +844,7 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
 
   module AliasesAPI = Aliases(Caller);
 
-  let deleteSecret = (~settings, index) =>
+  let deleteSecretAt = (~settings, index) =>
     Js.Promise.all2((
       secrets(~settings)
       ->FutureEx.fromOption(~error="No secrets found!")
@@ -888,6 +879,24 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
                 )
                 ->Json.stringify,
               )
+            )
+          ->Future.tapOk(_ =>
+              switch (recoveryPhrases(~settings)) {
+              | Some(recoveryPhrases) =>
+                LocalStorage.setItem(
+                  "recovery-phrases",
+                  Json.Encode.array(
+                    SecureStorage.Cipher.encoder,
+                    recoveryPhrases->Js.Array2.spliceInPlace(
+                      ~pos=index,
+                      ~remove=1,
+                      ~add=[||],
+                    ),
+                  )
+                  ->Json.stringify,
+                )
+              | None => ()
+              }
             )
         | (Error(error), _)
         | (_, Error(error)) => Future.value(Error(error))
@@ -986,21 +995,30 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
       (),
     )
     ->Future.tapOk(_ =>
-        recoveryPhrases(~settings, password)
-        ->Future.tapOk(Js.log)
-        ->Future.tapError(Js.log)
-        ->Future.mapOk(recoveryPhrases =>
-            recoveryPhrases->Option.mapWithDefault(
-              [|backupPhrase|], recoveryPhrases =>
-              Array.concat(recoveryPhrases, [|backupPhrase|])
-            )
+        Js.Promise.all2((
+          recoveryPhrases(~settings)
+          ->FutureEx.fromOptionWithDefault(~default=[||])
+          ->FutureJs.toPromise,
+          backupPhrase
+          ->SecureStorage.Cipher.encrypt(password)
+          ->FutureJs.toPromise,
+        ))
+        ->FutureJs.fromPromise(Js.String.make)
+        ->Future.flatMapOk(((recoveryPhrases, newRecoveryPhrase)) =>
+            switch (recoveryPhrases, newRecoveryPhrase) {
+            | (Ok(recoveryPhrases), Ok(newRecoveryPhrase)) =>
+              Future.value(
+                Ok(Array.concat(recoveryPhrases, [|newRecoveryPhrase|])),
+              )
+            | (Error(error), _)
+            | (_, Error(error)) => Future.value(Error(error))
+            }
           )
-        ->Future.mapOk(Json.Encode.(array(string)))
+        ->Future.mapOk(Json.Encode.(array(SecureStorage.Cipher.encoder)))
         ->Future.mapOk(json => json->Json.stringify)
-        ->Future.flatMapOk(a =>
-            a->SecureStorage.store(~key="recovery-phrases", ~password)
+        ->FutureEx.getOk(recoveryPhrases =>
+            LocalStorage.setItem("recovery-phrases", recoveryPhrases)
           )
-        ->Future.get(_ => ())
       )
     ->Future.flatMapOk(addresses => {
         legacyImport(~settings, name, backupPhrase, ~password)

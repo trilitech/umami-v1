@@ -12,5 +12,13 @@ let fromOption = (option, ~error) =>
     },
   );
 
+let fromOptionWithDefault = (option, ~default) =>
+  Future.value(
+    switch (option) {
+    | Some(value) => Ok(value)
+    | None => Ok(default)
+    },
+  );
+
 let all = array =>
   array->List.fromArray->Future.all->Future.map(results => Ok(results));

@@ -93,6 +93,22 @@ module Cipher = {
     data: string,
   };
 
+  let decoder = json =>
+    Json.Decode.{
+      salt: json |> field("salt", string),
+      iv: json |> field("iv", string),
+      data: json |> field("data", string),
+    };
+
+  let encoder = encryptedData =>
+    Json.Encode.(
+      object_([
+        ("salt", string(encryptedData.salt)),
+        ("iv", string(encryptedData.iv)),
+        ("data", string(encryptedData.data)),
+      ])
+    );
+
   let keyFromPassword = password => {
     let buffer = Buffer.allocWithString(32, password);
     Crypto.Subtle.importKey(buffer, false, [|"deriveBits", "deriveKey"|])
@@ -133,6 +149,8 @@ module Cipher = {
       });
   };
 
+  let encrypt2 = (password, data) => encrypt(data, password);
+
   let decrypt = (encryptedData, password) => {
     keyFromPassword(password)
     ->Future.flatMapOk(key => {
@@ -148,6 +166,9 @@ module Cipher = {
       )
     ->Future.mapOk(data => Buffer.fromBytes(data)->Buffer.toString(`utf8));
   };
+
+  let decrypt2 = (password, encryptedData) =>
+    decrypt(encryptedData, password);
 };
 
 type json = Js.Json.t;
@@ -156,24 +177,10 @@ let fetchEncryptedData = key =>
   LocalStorage.getItem(key)
   ->Js.Nullable.toOption
   ->Option.flatMap(Json.parse)
-  ->Option.map(json =>
-      Json.Decode.{
-        Cipher.salt: json |> field("salt", string),
-        iv: json |> field("iv", string),
-        data: json |> field("data", string),
-      }
-    );
+  ->Option.map(Cipher.decoder);
 
 let storeEncryptedData = (data, ~key) =>
-  Json.Encode.(
-    object_([
-      ("salt", string(data.Cipher.salt)),
-      ("iv", string(data.iv)),
-      ("data", string(data.data)),
-    ])
-  )
-  ->Json.stringify
-  |> LocalStorage.setItem(key);
+  data->Cipher.encoder->Json.stringify |> LocalStorage.setItem(key);
 
 let fetch = (key, ~password) =>
   switch (fetchEncryptedData(key)) {
