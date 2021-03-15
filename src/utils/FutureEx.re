@@ -11,3 +11,6 @@ let fromOption = (option, ~error) =>
     | None => Error(error)
     },
   );
+
+let all = array =>
+  array->List.fromArray->Future.all->Future.map(results => Ok(results));

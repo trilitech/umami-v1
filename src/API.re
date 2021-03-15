@@ -641,6 +641,54 @@ module Secret = {
     );
 };
 
+module Aliases = (Caller: CallerAPI) => {
+  let parse = content =>
+    content
+    |> Js.String.split("\n")
+    |> Js.Array.map(row => row |> Js.String.split(": "))
+    |> (pairs => pairs->Js.Array2.filter(pair => pair->Array.length == 2))
+    |> Js.Array.map(pair =>
+         (pair->Array.getUnsafe(0), pair->Array.getUnsafe(1))
+       );
+
+  let get = (~settings) =>
+    Caller.call(
+      [|"-E", settings->AppSettings.endpoint, "list", "known", "contracts"|],
+      (),
+    )
+    ->Future.mapOk(parse);
+
+  let getAliasMap = (~settings) =>
+    get(~settings)
+    ->Future.mapOk(addresses => addresses->Array.map(((a, b)) => (b, a)))
+    ->Future.mapOk(Map.String.fromArray);
+
+  let getAliasForAddress = (~settings, address) =>
+    getAliasMap(~settings)
+    ->Future.mapOk(aliases => aliases->Map.String.get(address));
+
+  let getAddressForAlias = (~settings, alias) =>
+    get(~settings)
+    ->Future.mapOk(Map.String.fromArray)
+    ->Future.mapOk(addresses => addresses->Map.String.get(alias));
+
+  let add = (~settings, alias, pkh) =>
+    settings->AppSettings.sdk->TezosSDK.addAddress(alias, pkh);
+
+  let delete = (~settings, name) =>
+    Caller.call(
+      [|
+        "-E",
+        settings->AppSettings.endpoint,
+        "forget",
+        "address",
+        name,
+        "-f",
+      |],
+      (),
+    );
+};
+
 module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
   let secrets = (~settings: AppSettings.t) => {
     LocalStorage.getItem("secrets")
@@ -803,6 +851,49 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
       (),
     );
 
+  module AliasesAPI = Aliases(Caller);
+
+  let deleteSecret = (~settings, index) =>
+    Js.Promise.all2((
+      secrets(~settings)
+      ->FutureEx.fromOption(~error="No secrets found!")
+      ->FutureJs.toPromise,
+      AliasesAPI.getAliasMap(~settings)->FutureJs.toPromise,
+    ))
+    ->FutureJs.fromPromise(Js.String.make)
+    ->Future.flatMapOk(((secrets, aliases)) =>
+        switch (secrets, aliases) {
+        | (Ok(secrets), Ok(aliases)) =>
+          secrets[index]
+          ->Option.map(secret =>
+              secret.addresses
+              ->Array.keepMap(aliases->Map.String.get)
+              ->Array.map(delete(~settings))
+            )
+          ->FutureEx.fromOption(
+              ~error=
+                "Secret at index " ++ index->Int.toString ++ " not found!",
+            )
+          ->Future.flatMapOk(FutureEx.all)
+          ->Future.tapOk(_ =>
+              LocalStorage.setItem(
+                "secrets",
+                Json.Encode.array(
+                  Secret.encoder,
+                  secrets->Js.Array2.spliceInPlace(
+                    ~pos=index,
+                    ~remove=1,
+                    ~add=[||],
+                  ),
+                )
+                ->Json.stringify,
+              )
+            )
+        | (Error(error), _)
+        | (_, Error(error)) => Future.value(Error(error))
+        }
+      );
+
   let validate = (network, address) => {
     module OperationsAPI = Operations(Caller, Getter);
     network
@@ -939,51 +1030,6 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
         );
       });
   };
-};
-
-module Aliases = (Caller: CallerAPI) => {
-  let parse = content =>
-    content
-    |> Js.String.split("\n")
-    |> Js.Array.map(row => row |> Js.String.split(": "))
-    |> (pairs => pairs->Js.Array2.filter(pair => pair->Array.length == 2))
-    |> Js.Array.map(pair =>
-         (pair->Array.getUnsafe(0), pair->Array.getUnsafe(1))
-       );
-
-  let get = (~settings) =>
-    Caller.call(
-      [|"-E", settings->AppSettings.endpoint, "list", "known", "contracts"|],
-      (),
-    )
-    ->Future.mapOk(parse);
-
-  let getAliasForAddress = (~settings, address) =>
-    get(~settings)
-    ->Future.mapOk(addresses => addresses->Array.map(((a, b)) => (b, a)))
-    ->Future.mapOk(Map.String.fromArray)
-    ->Future.mapOk(aliases => aliases->Map.String.get(address));
-
-  let getAddressForAlias = (~settings, alias) =>
-    get(~settings)
-    ->Future.mapOk(Map.String.fromArray)
-    ->Future.mapOk(addresses => addresses->Map.String.get(alias));
-
-  let add = (~settings, alias, pkh) =>
-    settings->AppSettings.sdk->TezosSDK.addAddress(alias, pkh);
-
-  let delete = (~settings, name) =>
-    Caller.call(
-      [|
-        "-E",
-        settings->AppSettings.endpoint,
-        "forget",
-        "address",
-        name,
-        "-f",
-      |],
-      (),
-    );
 };
 
 module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
