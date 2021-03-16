@@ -18,13 +18,13 @@ let styles =
 let make = (~closeAction) => {
   let (formStep, setFormStep) = React.useState(_ => Step1);
 
-  let (accountWithMnemonicRequest, createAccountWithMnemonic) =
-    StoreContext.Accounts.useCreateWithMnemonics();
+  let (secretWithMnemonicRequest, createSecretWithMnemonic) =
+    StoreContext.Secrets.useCreateWithMnemonics();
 
   let addLog = LogsContext.useAdd();
 
-  let createAccountWithMnemonic = p =>
-    createAccountWithMnemonic(p)
+  let createSecretWithMnemonic = p =>
+    createSecretWithMnemonic(p)
     ->Future.tapOk(_ => {closeAction()})
     ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
         I18n.t#account_created
@@ -33,7 +33,7 @@ let make = (~closeAction) => {
 
   let (mnemonic, setMnemonic) = React.useState(_ => Array.make(24, "zebra"));
 
-  let loading = accountWithMnemonicRequest->ApiRequest.isLoading;
+  let loading = secretWithMnemonicRequest->ApiRequest.isLoading;
 
   <ModalFormView>
     <Typography.Headline style=styles##title>
@@ -74,7 +74,7 @@ let make = (~closeAction) => {
          <CreatePasswordView
            mnemonic
            onPressCancel={_ => setFormStep(_ => Step1)}
-           createAccountWithMnemonic
+           createSecretWithMnemonic
            loading
          />
        </>

@@ -173,7 +173,7 @@ module Create = {
   [@react.component]
   let make = (~closeAction, ~secret: option(Secret.t)=?) => {
     let (createDeriveRequest, deriveAccount) =
-      StoreContext.Accounts.useDerive();
+      StoreContext.Secrets.useDerive();
 
     let addLog = LogsContext.useAdd();
 

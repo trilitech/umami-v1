@@ -32,6 +32,34 @@ let useGetRecoveryPhrase = (~requestState as (request, setRequest), ~index) => {
 
 /* Set */
 
+type deriveInput = {
+  name: string,
+  index: int,
+  password: string,
+};
+
+let useDerive =
+  ApiRequest.useSetter(
+    ~set=
+      (~settings, {name, index, password}) =>
+        AccountsAPI.derive(~settings, ~index, ~name, ~password),
+    ~kind=Logs.Account,
+  );
+
+type createInput = {
+  name: string,
+  mnemonics: string,
+  password: string,
+};
+
+let useCreateWithMnemonics =
+  ApiRequest.useSetter(
+    ~set=
+      (~settings, {name, mnemonics, password}) =>
+        AccountsAPI.restore(~settings, mnemonics, name, ~password, ()),
+    ~kind=Logs.Account,
+  );
+
 let useUpdate =
   ApiRequest.useSetter(
     ~set=
@@ -45,3 +73,6 @@ let useUpdate =
       },
     ~kind=Logs.Account,
   );
+
+let useDelete =
+  ApiRequest.useSetter(~set=AccountsAPI.deleteSecretAt, ~kind=Logs.Account);

@@ -247,7 +247,7 @@ module AccountImportedRowItem = {
                style=styles##actionIconButton
                keyPopover={"accountImportRowItemMenuCli" ++ account.address}>
                <AccountEditButton account />
-               <AccountDisplayButton />
+               /*<AccountDisplayButton />*/
                <AccountDeleteButton account />
              </Menu>
            </>}
@@ -257,6 +257,24 @@ module AccountImportedRowItem = {
 };
 
 module SecretRowItem = {
+  module SecretDeleteButton = {
+    [@react.component]
+    let make = (~secret: Secret.t) => {
+      let (secretRequest, deleteSecret) = StoreContext.Secrets.useDelete();
+
+      let onPressConfirmDelete = _e => {
+        deleteSecret(secret.index)->ignore;
+      };
+
+      <DeleteButton
+        buttonText="Delete"
+        modalTitle="Delete secret?"
+        onPressConfirmDelete
+        request=secretRequest
+      />;
+    };
+  };
+
   module SecretEditButton = {
     [@react.component]
     let make = (~secret) => {
@@ -314,12 +332,7 @@ module SecretRowItem = {
           style=styles##actionIconButton
           keyPopover={"secretRowItem" ++ secret.index->string_of_int}>
           <SecretEditButton secret />
-          <Menu.Item
-            text="Delete"
-            icon=Icons.Delete.build
-            onPress={_ => Js.log("Todo : Delete secret")}
-            colorStyle=`error
-          />
+          <SecretDeleteButton secret />
         </Menu>
       </View>
     </RowItem.Bordered>;

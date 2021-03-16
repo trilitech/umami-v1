@@ -33,7 +33,7 @@ let isConfirmPassword = (values: StateLenses.state) => {
 };
 
 [@react.component]
-let make = (~mnemonic, ~onPressCancel, ~createAccountWithMnemonic, ~loading) => {
+let make = (~mnemonic, ~onPressCancel, ~createSecretWithMnemonic, ~loading) => {
   let form: CreatePasswordForm.api =
     CreatePasswordForm.use(
       ~schema={
@@ -46,8 +46,8 @@ let make = (~mnemonic, ~onPressCancel, ~createAccountWithMnemonic, ~loading) => 
       ~onSubmit=
         ({state}) => {
           let mnemonics = mnemonic->Js.Array2.joinWith(" ");
-          createAccountWithMnemonic(
-            AccountApiRequest.{
+          createSecretWithMnemonic(
+            SecretApiRequest.{
               name: "Account 1",
               mnemonics,
               password: state.values.password,
