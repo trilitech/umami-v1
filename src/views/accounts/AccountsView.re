@@ -27,6 +27,8 @@ module AccountImportButton = {
 
   [@react.component]
   let make = () => {
+    let secrets = StoreContext.Secrets.useGetAll();
+
     let (visibleModal, openAction, closeAction) =
       ModalAction.useModalActionState();
 
@@ -41,7 +43,10 @@ module AccountImportButton = {
         />
       </View>
       <ModalAction visible=visibleModal onRequestClose=closeAction>
-        <ImportAccountOnboardingView closeAction />
+        <ImportAccountOnboardingView
+          closeAction
+          existingSecretsCount={secrets->Array.size}
+        />
       </ModalAction>
     </>;
   };

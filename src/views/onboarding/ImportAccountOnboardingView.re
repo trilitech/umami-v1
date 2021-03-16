@@ -15,7 +15,7 @@ let styles =
   );
 
 [@react.component]
-let make = (~closeAction) => {
+let make = (~closeAction, ~existingSecretsCount=0) => {
   let (formStep, setFormStep) = React.useState(_ => Step1);
 
   let (secretWithMnemonicRequest, createSecretWithMnemonic) =
@@ -76,6 +76,7 @@ let make = (~closeAction) => {
            onPressCancel={_ => setFormStep(_ => Step1)}
            createSecretWithMnemonic
            loading
+           existingSecretsCount
          />
        </>
      }}

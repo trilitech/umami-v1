@@ -607,6 +607,11 @@ module Secrets = {
     store.secretsRequestState;
   };
 
+  let useGetAll = () => {
+    let (secretsRequest, _) = useRequestState();
+    secretsRequest->ApiRequest.getOkWithDefault([||]);
+  };
+
   let useLoad = () => {
     let requestState = useRequestState();
     SecretApiRequest.useLoad(requestState);
