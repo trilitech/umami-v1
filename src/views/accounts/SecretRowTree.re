@@ -87,10 +87,10 @@ module AccountNestedRowItem = {
         </View>
         <View style=styles##actionContainer>
           <AccountEditButton account />
-          <AccountDisplayButton />
         </View>
       </RowItem.Bordered>
     );
+    /*<AccountDisplayButton />*/
   };
 };
 
@@ -211,7 +211,7 @@ module AccountImportedRowItem = {
                    "accountImportRowItemMenuUmami" ++ account.address
                  }>
                  <AccountEditButton account />
-                 <AccountDisplayButton />
+                 /*<AccountDisplayButton />*/
                  <AccountDeleteButton account />
                </Menu>
              </>}
