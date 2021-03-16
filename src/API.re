@@ -873,7 +873,6 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
                   ~remove=1,
                   ~add=[||],
                 );
-              Js.log(secrets);
               LocalStorage.setItem(
                 "secrets",
                 Json.Encode.array(Secret.encoder, secrets)->Json.stringify,
@@ -902,7 +901,15 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
         | (Error(error), _)
         | (_, Error(error)) => Future.value(Error(error))
         }
-      );
+      )
+    ->Future.tapOk(_ => {
+        let recoveryPhrases = recoveryPhrases(~settings);
+        if (recoveryPhrases == Some([||]) || recoveryPhrases == None) {
+          "lock"->LocalStorage.removeItem;
+          "recovery-phrases"->LocalStorage.removeItem;
+          "secrets"->LocalStorage.removeItem;
+        };
+      });
 
   let validate = (network, address) => {
     module OperationsAPI = Operations(Caller, Getter);
@@ -987,14 +994,18 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
         ~password,
         (),
       ) => {
-    scan(
-      ~settings,
-      backupPhrase->HD.seed,
-      name,
-      ~derivationScheme,
-      ~password,
-      (),
-    )
+    password
+    ->SecureStorage.validatePassword
+    ->Future.flatMapOk(_ =>
+        scan(
+          ~settings,
+          backupPhrase->HD.seed,
+          name,
+          ~derivationScheme,
+          ~password,
+          (),
+        )
+      )
     ->Future.tapOk(_ =>
         Js.Promise.all2((
           recoveryPhrases(~settings)

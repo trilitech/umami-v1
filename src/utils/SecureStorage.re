@@ -125,7 +125,7 @@ module Cipher = {
     )
     ->FutureJs.fromPromise(Js.String.make);
 
-  let encrypt = (data, password) => {
+  let encrypt = (data, password) =>
     keyFromPassword(password)
     ->Future.flatMapOk(key => {
         let salt = Buffer.fromBytes(Crypto.allocAndFillWithRandomValues(32));
@@ -147,11 +147,10 @@ module Cipher = {
             }
           );
       });
-  };
 
   let encrypt2 = (password, data) => encrypt(data, password);
 
-  let decrypt = (encryptedData, password) => {
+  let decrypt = (encryptedData, password) =>
     keyFromPassword(password)
     ->Future.flatMapOk(key => {
         deriveKey(key, Buffer.fromString(encryptedData.salt, `hex))
@@ -165,7 +164,6 @@ module Cipher = {
         ->FutureJs.fromPromise(Js.String.make)
       )
     ->Future.mapOk(data => Buffer.fromBytes(data)->Buffer.toString(`utf8));
-  };
 
   let decrypt2 = (password, encryptedData) =>
     decrypt(encryptedData, password);
@@ -193,3 +191,15 @@ let store = (data, ~key, ~password) =>
   data
   ->Cipher.encrypt(password)
   ->Future.mapOk(encryptedData => encryptedData->storeEncryptedData(~key));
+
+let validatePassword = password =>
+  "lock"
+  ->fetch(~password)
+  ->Future.flatMapOk(data =>
+      Future.value(
+        data == Some("lock") || data == None
+          ? Ok("lock") : Error("Invalid lock!"),
+      )
+    )
+  ->Future.flatMapOk(data => data->store(~key="lock", ~password))
+  ->Future.mapOk(_ => true);
