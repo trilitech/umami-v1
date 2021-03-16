@@ -145,7 +145,7 @@ let styles =
 
 [@react.component]
 let make = () => {
-  let resetAccounts = StoreContext.Accounts.useResetAll();
+  let resetSecrets = StoreContext.Secrets.useResetAll();
   let accountsRequest = StoreContext.Accounts.useRequest();
   let token = StoreContext.SelectedToken.useGet();
 
@@ -159,7 +159,7 @@ let make = () => {
              {<>
                 <RefreshButton
                   loading={accountsRequest->ApiRequest.isLoading}
-                  onRefresh=resetAccounts
+                  onRefresh=resetSecrets
                 />
                 <EditButton editMode setEditMode />
               </>}>
