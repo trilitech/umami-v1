@@ -929,7 +929,7 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
             (),
           ) => {
     let suffix = index->Js.Int.toString;
-    let name = baseName ++ suffix;
+    let name = baseName ++ " /" ++ suffix;
     let path = derivationScheme->Js.String2.replace("?", suffix);
     HD.edesk(path, seed, ~password)
     ->Future.flatMapOk(edesk =>
@@ -1033,7 +1033,7 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
           )
       )
     ->Future.flatMapOk(addresses => {
-        legacyImport(~settings, name, backupPhrase, ~password)
+        legacyImport(~settings, name ++ " legacy", backupPhrase, ~password)
         ->Future.flatMapOk(legacyAddress =>
             settings
             ->validate(legacyAddress)
