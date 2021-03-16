@@ -866,35 +866,36 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
                 "Secret at index " ++ index->Int.toString ++ " not found!",
             )
           ->Future.flatMapOk(FutureEx.all)
-          ->Future.tapOk(_ =>
+          ->Future.tapOk(_ => {
+              let _ =
+                secrets->Js.Array2.spliceInPlace(
+                  ~pos=index,
+                  ~remove=1,
+                  ~add=[||],
+                );
+              Js.log(secrets);
               LocalStorage.setItem(
                 "secrets",
-                Json.Encode.array(
-                  Secret.encoder,
-                  secrets->Js.Array2.spliceInPlace(
-                    ~pos=index,
-                    ~remove=1,
-                    ~add=[||],
-                  ),
-                )
-                ->Json.stringify,
-              )
-            )
+                Json.Encode.array(Secret.encoder, secrets)->Json.stringify,
+              );
+            })
           ->Future.tapOk(_ =>
               switch (recoveryPhrases(~settings)) {
               | Some(recoveryPhrases) =>
+                let _ =
+                  recoveryPhrases->Js.Array2.spliceInPlace(
+                    ~pos=index,
+                    ~remove=1,
+                    ~add=[||],
+                  );
                 LocalStorage.setItem(
                   "recovery-phrases",
                   Json.Encode.array(
                     SecureStorage.Cipher.encoder,
-                    recoveryPhrases->Js.Array2.spliceInPlace(
-                      ~pos=index,
-                      ~remove=1,
-                      ~add=[||],
-                    ),
+                    recoveryPhrases,
                   )
                   ->Json.stringify,
-                )
+                );
               | None => ()
               }
             )
