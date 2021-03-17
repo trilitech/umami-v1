@@ -37,7 +37,7 @@ module AccountImportButton = {
       <View style=styles##button>
         <ButtonAction
           onPress
-          text="IMPORT"
+          text=I18n.btn#import
           icon=Icons.Import.build
           primary=true
         />
@@ -53,15 +53,50 @@ module AccountImportButton = {
 };
 
 module ScanImportButton = {
+  module ScanView = {
+    [@react.component]
+    let make = (~closeAction) => {
+      let (scanRequest, scan) = StoreContext.Secrets.useScanGlobal();
+
+      let submitPassword = (~password) => {
+        scan(password)->Future.tapOk(_ => closeAction())->ignore;
+      };
+
+      <ModalFormView closing={ModalFormView.Close(closeAction)}>
+        <Typography.Headline style=FormStyles.header>
+          I18n.title#scan->React.string
+        </Typography.Headline>
+        <PasswordFormView
+          loading={scanRequest->ApiRequest.isLoading}
+          submitPassword
+        />
+      </ModalFormView>;
+    };
+  };
+
   let styles =
     Style.(StyleSheet.create({"button": style(~marginLeft=(-6.)->dp, ())}));
 
   [@react.component]
   let make = () => {
-    let onPress = _ => Js.log("Todo : scan global");
-    <View style=styles##button>
-      <ButtonAction onPress text="SCAN" icon=Icons.Scan.build primary=true />
-    </View>;
+    let (visibleModal, openAction, closeAction) =
+      ModalAction.useModalActionState();
+
+    let onPress = _e => openAction();
+
+    <>
+      <View style=styles##button>
+        <ButtonAction
+          onPress
+          text=I18n.btn#scan
+          icon=Icons.Scan.build
+          primary=true
+        />
+      </View>
+      <ModalAction visible=visibleModal onRequestClose=closeAction>
+        <ScanView closeAction />
+      </ModalAction>
+    </>;
   };
 };
 

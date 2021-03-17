@@ -1,58 +1,3 @@
-open ReactNative;
-
-module PasswordView = {
-  module StateLenses = [%lenses type state = {password: string}];
-
-  module PasswordForm = ReForm.Make(StateLenses);
-
-  [@react.component]
-  let make = (~recoveryPhraseRequest, ~getRecoveryPhrase) => {
-    let form: PasswordForm.api =
-      PasswordForm.use(
-        ~schema={
-          PasswordForm.Validation.(Schema(nonEmpty(Password)));
-        },
-        ~onSubmit=
-          ({state}) => {
-            getRecoveryPhrase(state.values.password);
-            None;
-          },
-        ~initialState={password: ""},
-        ~i18n=FormUtils.i18n,
-        (),
-      );
-
-    let onSubmit = _ => {
-      form.submit();
-    };
-
-    let loading = recoveryPhraseRequest->ApiRequest.isLoading;
-
-    let formFieldsAreValids =
-      FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
-
-    <>
-      <FormGroupTextInput
-        label=I18n.label#password
-        value={form.values.password}
-        handleChange={form.handleChange(Password)}
-        error={form.getFieldError(Field(Password))}
-        textContentType=`password
-        secureTextEntry=true
-        onSubmitEditing={_event => {form.submit()}}
-      />
-      <View style=FormStyles.verticalFormAction>
-        <Buttons.SubmitPrimary
-          text=I18n.btn#confirm
-          onPress=onSubmit
-          loading
-          disabledLook={!formFieldsAreValids}
-        />
-      </View>
-    </>;
-  };
-};
-
 module RecoveryPhrase = {
   [@react.component]
   let make = (~recoveryPhrase: string) => {
@@ -65,13 +10,21 @@ let make = (~secret: Secret.t, ~closeAction) => {
   let (recoveryPhraseRequest, getRecoveryPhrase) =
     StoreContext.Secrets.useGetRecoveryPhrase(~index=secret.index);
 
+  let submitPassword = (~password) => {
+    getRecoveryPhrase(password)->ignore;
+  };
+
   <ModalFormView closing={ModalFormView.Close(closeAction)}>
     <Typography.Headline style=FormStyles.header>
       I18n.title#secret_recovery->React.string
     </Typography.Headline>
     {switch (recoveryPhraseRequest) {
      | Done(Ok(recoveryPhrase), _) => <RecoveryPhrase recoveryPhrase />
-     | _ => <PasswordView recoveryPhraseRequest getRecoveryPhrase />
+     | _ =>
+       <PasswordFormView
+         loading={recoveryPhraseRequest->ApiRequest.isLoading}
+         submitPassword
+       />
      }}
   </ModalFormView>;
 };

@@ -107,7 +107,7 @@ let useLoad =
       address->Lib.Option.iter(address => {
         let shouldReload = ApiRequest.conditionToLoad(request, isMounted);
         if (address != "" && shouldReload) {
-          getRequest(address);
+          getRequest(address)->ignore;
         };
       });
 

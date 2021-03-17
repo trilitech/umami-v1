@@ -30,6 +30,16 @@ let useGetRecoveryPhrase = (~requestState as (request, setRequest), ~index) => {
   (request, getRequest);
 };
 
+let useScanGlobal = (~requestState as (request, setRequest), ()) => {
+  let get = (~settings, password) =>
+    AccountsAPI.scanAll(~settings, ~password);
+
+  let getRequest =
+    ApiRequest.useGetter(~get, ~kind=Logs.Account, ~setRequest, ());
+
+  (request, getRequest);
+};
+
 /* Set */
 
 type deriveInput = {

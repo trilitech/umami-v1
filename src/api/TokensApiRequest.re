@@ -30,7 +30,7 @@ let useLoadOperationOffline =
       let shouldReload = ApiRequest.conditionToLoad(request, isMounted);
       operation->Lib.Option.iter(operation =>
         if (shouldReload) {
-          getRequest(operation);
+          getRequest(operation)->ignore;
         }
       );
       None;

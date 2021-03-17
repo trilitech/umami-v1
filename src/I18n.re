@@ -39,7 +39,10 @@ let btn = {
   pub delegation_submit = "CONFIRM DELEGATION";
   pub delegated = "DELEGATED";
   pub delete_token = "Delete token";
-  pub delete_account = "Delete account"
+  pub delete_account = "Delete account";
+  pub import = "IMPORT";
+  pub export = "EXPORT";
+  pub scan = "SCAN"
 };
 
 let log = {
@@ -133,7 +136,8 @@ let title = {
   pub delete_account = "Delete account?";
   pub delete_load = "Deleting";
   pub delete_account_done = "Account deleted";
-  pub batch = "Batch"
+  pub batch = "Batch";
+  pub scan = "Scan"
 };
 
 let expl = {
@@ -158,7 +162,8 @@ let menu = {
   pub delegate_edit = "Change baker";
   pub delegate_delete = "End delegation";
   pub batch_edit = "Edit transfer";
-  pub batch_delete = "Delete transfer"
+  pub batch_delete = "Delete transfer";
+  pub edit = "Edit"
 };
 
 let settings = {

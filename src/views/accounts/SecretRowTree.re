@@ -105,7 +105,7 @@ module SecretExportButton = {
     <>
       <Buttons.SubmitTertiary
         onPress
-        text="EXPORT"
+        text=I18n.btn#export
         style=styles##actionButton
       />
       <ModalAction visible=visibleModal onRequestClose=closeAction>
@@ -152,7 +152,7 @@ module AccountImportedRowItem = {
       let onPress = _e => openAction();
 
       <>
-        <Menu.Item text="Edit" icon=Icons.Edit.build onPress />
+        <Menu.Item text=I18n.menu#edit icon=Icons.Edit.build onPress />
         <ModalAction visible=visibleModal onRequestClose=closeAction>
           <AccountFormView.Update account closeAction />
         </ModalAction>
@@ -284,7 +284,7 @@ module SecretRowItem = {
       let onPress = _e => openAction();
 
       <>
-        <Menu.Item text="Edit" icon=Icons.Edit.build onPress />
+        <Menu.Item text=I18n.menu#edit icon=Icons.Edit.build onPress />
         <ModalAction visible=visibleModal onRequestClose=closeAction>
           <SecretUpdateFormView secret closeAction />
         </ModalAction>

@@ -638,6 +638,20 @@ module Secrets = {
     };
   };
 
+  let useScanGlobal = () => {
+    let resetSecrets = useResetAll();
+
+    let requestState = React.useState(() => ApiRequest.NotAsked);
+    let (scanRequest, scanGet) =
+      SecretApiRequest.useScanGlobal(~requestState, ());
+
+    let scan = input => {
+      scanGet(input)->Future.tapOk(_ => resetSecrets());
+    };
+
+    (scanRequest, scan);
+  };
+
   let useCreateWithMnemonics = () => {
     let resetSecrets = useResetAll();
     SecretApiRequest.useCreateWithMnemonics(

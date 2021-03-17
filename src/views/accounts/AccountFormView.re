@@ -1,18 +1,16 @@
-open ReactNative;
-
-module StateLenses = [%lenses
-  type state = {
-    name: string,
-    secret: string,
-  }
-];
-module AccountCreateForm = ReForm.Make(StateLenses);
-
-type action =
-  | Create
-  | Edit(Account.t);
-
 module Generic = {
+  module StateLenses = [%lenses
+    type state = {
+      name: string,
+      secret: string,
+    }
+  ];
+  module AccountCreateForm = ReForm.Make(StateLenses);
+
+  type action =
+    | Create
+    | Edit(Account.t);
+
   [@react.component]
   let make =
       (
@@ -117,59 +115,6 @@ module Update = {
 };
 
 module Create = {
-  module PasswordView = {
-    module StateLenses = [%lenses type state = {password: string}];
-
-    module PasswordForm = ReForm.Make(StateLenses);
-
-    [@react.component]
-    let make = (~request, ~action) => {
-      let form: PasswordForm.api =
-        PasswordForm.use(
-          ~schema={
-            PasswordForm.Validation.(Schema(nonEmpty(Password)));
-          },
-          ~onSubmit=
-            ({state}) => {
-              action(~password=state.values.password);
-              None;
-            },
-          ~initialState={password: ""},
-          ~i18n=FormUtils.i18n,
-          (),
-        );
-
-      let onSubmit = _ => {
-        form.submit();
-      };
-
-      let loading = request->ApiRequest.isLoading;
-
-      let formFieldsAreValids =
-        FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
-
-      <>
-        <FormGroupTextInput
-          label=I18n.label#password
-          value={form.values.password}
-          handleChange={form.handleChange(Password)}
-          error={form.getFieldError(Field(Password))}
-          textContentType=`password
-          secureTextEntry=true
-          onSubmitEditing={_event => {form.submit()}}
-        />
-        <View style=FormStyles.verticalFormAction>
-          <Buttons.SubmitPrimary
-            text=I18n.btn#confirm
-            onPress=onSubmit
-            loading
-            disabledLook={!formFieldsAreValids}
-          />
-        </View>
-      </>;
-    };
-  };
-
   [@react.component]
   let make = (~closeAction, ~secret: option(Secret.t)=?) => {
     let (createDeriveRequest, deriveAccount) =
@@ -205,9 +150,9 @@ module Create = {
            ?secret
          />
        | Some((name, secretIndex)) =>
-         <PasswordView
-           request=createDeriveRequest
-           action={action(~name, ~secretIndex)}
+         <PasswordFormView
+           loading={createDeriveRequest->ApiRequest.isLoading}
+           submitPassword={action(~name, ~secretIndex)}
          />
        }}
     </ModalFormView>;
