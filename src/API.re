@@ -831,20 +831,23 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
 
   module AliasesAPI = Aliases(Caller);
 
+  let unsafeDelete = (~settings, name) =>
+    Caller.call(
+      [|
+        "-E",
+        settings->AppSettings.endpoint,
+        "forget",
+        "address",
+        name,
+        "-f",
+      |],
+      (),
+    );
+
   let delete = (~settings, name) =>
     AliasesAPI.getAddressForAlias(~settings, name)
     ->Future.flatMapOk(address =>
-        Caller.call(
-          [|
-            "-E",
-            settings->AppSettings.endpoint,
-            "forget",
-            "address",
-            name,
-            "-f",
-          |],
-          (),
-        )
+        unsafeDelete(~settings, name)
         ->Future.mapOk(_ =>
             secrets(~settings)
             ->Option.map(secrets =>
@@ -875,7 +878,7 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
           ->Option.map(secret =>
               secret.addresses
               ->Array.keepMap(aliases->Map.String.get)
-              ->Array.map(delete(~settings))
+              ->Array.map(unsafeDelete(~settings))
             )
           ->FutureEx.fromOption(
               ~error=
@@ -971,7 +974,7 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
                       ->Future.mapOk(addresses =>
                           Array.concat([|address|], addresses)
                         )
-                    : delete(~settings, name)->Future.map(_ => Ok([||]))
+                    : unsafeDelete(~settings, name)->Future.map(_ => Ok([||]))
                 )
             )
       );
@@ -1012,7 +1015,7 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
       )
     ->Future.flatMapOk(legacyAddress =>
         legacyAddress == None
-          ? delete(~settings, name)->Future.map(_ => Ok(None))
+          ? unsafeDelete(~settings, name)->Future.map(_ => Ok(None))
           : Future.value(Ok(legacyAddress))
       );
 
@@ -1106,6 +1109,15 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
       });
   };
 
+  let unsafeDeleteAddresses = (~settings, addresses) =>
+    AliasesAPI.getAliasMap(~settings)
+    ->Future.mapOk(aliases =>
+        addresses->Array.keepMap(aliases->Map.String.get)
+      )
+    ->Future.flatMapOk(names =>
+        names->Array.map(unsafeDelete(~settings))->FutureEx.all
+      );
+
   let scanAll = (~settings, ~password) =>
     (
       switch (recoveryPhrases(~settings), secrets(~settings)) {
@@ -1114,6 +1126,10 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
         ->Array.map(((recoveryPhrase, secret)) =>
             recoveryPhrase
             ->SecureStorage.Cipher.decrypt(password)
+            ->Future.flatMapOk(recoveryPhrase =>
+                unsafeDeleteAddresses(~settings, secret.addresses)
+                ->Future.mapOk(_ => recoveryPhrase)
+              )
             ->Future.flatMapOk(recoveryPhrase =>
                 scan(
                   ~settings,
@@ -1134,14 +1150,12 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
     )
     ->FutureEx.all
     ->Future.mapOk(secrets =>
-        secrets
-        ->List.keepMap(secret =>
-            switch (secret) {
-            | Ok(secret) => Some(secret)
-            | _ => None
-            }
-          )
-        ->List.toArray
+        secrets->Array.keepMap(secret =>
+          switch (secret) {
+          | Ok(secret) => Some(secret)
+          | _ => None
+          }
+        )
       )
     ->Future.mapOk(secrets =>
         Json.Encode.array(Secret.encoder, secrets)->Json.stringify

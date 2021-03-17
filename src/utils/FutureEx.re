@@ -21,4 +21,4 @@ let fromOptionWithDefault = (option, ~default) =>
   );
 
 let all = array =>
-  array->List.fromArray->Future.all->Future.map(results => Ok(results));
+  array->List.fromArray->Future.all->Future.map(results => Ok(results->List.toArray));
