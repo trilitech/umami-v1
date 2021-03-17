@@ -918,7 +918,7 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
     ->Future.mapOk(operations => {operations->Js.Array2.length != 0});
   };
 
-  let rec scan =
+  let rec scanSeed =
           (
             ~settings: AppSettings.t,
             seed,
@@ -943,7 +943,7 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
               )
               ->Future.flatMapOk(isValidated =>
                   isValidated
-                    ? scan(
+                    ? scanSeed(
                         ~settings,
                         seed,
                         baseName,
@@ -985,6 +985,53 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
         a->Js.String.slice(~from=0, ~to_=a->Js.String.length - 1)
       );
 
+  let legacyScan = (~settings, recoveryPhrase, name, ~password) =>
+    legacyImport(~settings, name, recoveryPhrase, ~password)
+    ->Future.flatMapOk(legacyAddress =>
+        settings
+        ->validate(legacyAddress)
+        ->Future.mapOk(isValidated =>
+            isValidated ? Some(legacyAddress) : None
+          )
+      )
+    ->Future.flatMapOk(legacyAddress =>
+        legacyAddress == None
+          ? delete(~settings, name)->Future.map(_ => Ok(None))
+          : Future.value(Ok(legacyAddress))
+      );
+
+  let scan =
+      (
+        ~settings,
+        recoveryPhrase,
+        baseName,
+        ~derivationScheme="m/44'/1729'/?'/0'",
+        ~password,
+        (),
+      ) =>
+    Js.Promise.all2((
+      scanSeed(
+        ~settings,
+        recoveryPhrase->HD.seed,
+        baseName,
+        ~derivationScheme,
+        ~password,
+        (),
+      )
+      ->FutureJs.toPromise,
+      legacyScan(~settings, recoveryPhrase, baseName ++ " legacy", ~password)
+      ->FutureJs.toPromise,
+    ))
+    ->FutureJs.fromPromise(Js.String.make)
+    ->Future.flatMapOk(((addresses, legacyAddress)) =>
+        switch (addresses, legacyAddress) {
+        | (Ok(addresses), Ok(legacyAddress)) =>
+          Future.value(Ok((addresses, legacyAddress)))
+        | (Error(error), _)
+        | (_, Error(error)) => Future.value(Error(error))
+        }
+      );
+
   let restore =
       (
         ~settings,
@@ -997,14 +1044,7 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
     password
     ->SecureStorage.validatePassword
     ->Future.flatMapOk(_ =>
-        scan(
-          ~settings,
-          backupPhrase->HD.seed,
-          name,
-          ~derivationScheme,
-          ~password,
-          (),
-        )
+        scan(~settings, backupPhrase, name, ~derivationScheme, ~password, ())
       )
     ->Future.tapOk(_ =>
         Js.Promise.all2((
@@ -1032,18 +1072,7 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
             LocalStorage.setItem("recovery-phrases", recoveryPhrases)
           )
       )
-    ->Future.flatMapOk(addresses => {
-        legacyImport(~settings, name ++ " legacy", backupPhrase, ~password)
-        ->Future.flatMapOk(legacyAddress =>
-            settings
-            ->validate(legacyAddress)
-            ->Future.mapOk(isValidated =>
-                (addresses, isValidated ? Some(legacyAddress) : None)
-              )
-          )
-      })
-    ->Future.tapOk(a => {
-        let (addresses, legacyAddress) = a;
+    ->Future.tapOk(((addresses, legacyAddress)) => {
         let secret = {
           Secret.name,
           derivationScheme,
@@ -1060,6 +1089,48 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
         );
       });
   };
+
+  let scanAll = (~settings, ~password) =>
+    (
+      switch (recoveryPhrases(~settings), secrets(~settings)) {
+      | (Some(recoveryPhrases), Some(secrets)) =>
+        Array.zip(recoveryPhrases, secrets)
+        ->Array.map(((recoveryPhrase, secret)) =>
+            recoveryPhrase
+            ->SecureStorage.Cipher.decrypt(password)
+            ->Future.flatMapOk(recoveryPhrase =>
+                scan(
+                  ~settings,
+                  recoveryPhrase,
+                  secret.name,
+                  ~derivationScheme=secret.derivationScheme,
+                  ~password,
+                  (),
+                )
+              )
+            ->Future.mapOk(((addresses, legacyAddress)) =>
+                {...secret, addresses, legacyAddress}
+              )
+            ->Future.flatMapError(_ => Future.value(Ok(secret)))
+          )
+      | _ => [||]
+      }
+    )
+    ->FutureEx.all
+    ->Future.mapOk(secrets =>
+        secrets
+        ->List.keepMap(secret =>
+            switch (secret) {
+            | Ok(secret) => Some(secret)
+            | _ => None
+            }
+          )
+        ->List.toArray
+      )
+    ->Future.mapOk(secrets =>
+        Json.Encode.array(Secret.encoder, secrets)->Json.stringify
+      )
+    ->Future.mapOk(LocalStorage.setItem("secrets"));
 };
 
 module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
