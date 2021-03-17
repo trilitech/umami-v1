@@ -52,7 +52,7 @@ We list here the prescribed versions recommended for each of the tools needed to
 
 | tezos-node | tezos-indexer | mezos | umami | (status) |
 |---         |---            |---    |---    |---       |
-| nomadic-labs/umami@fa1.2+dry_run_no_pass+8.2 | origin/master     | indexer-v9 | origin/develop | branches (dev-build) |
-| nomadic-labs/pierrick@fa1.2 | (master == v9.1.0)  | indexer-v9-fixes | origin/develop | current QA-api |
+| nomadic-labs/umami@fa1.2+dry_run_no_pass+8.2 | origin/master     | indexer-v9 | origin/develop | branches to build |
+| nomadic-labs/pierrick@fa1.2 | (master == v9.1.0)  | indexer-v9-fixes | origin/develop | current dev-api |
 
  
