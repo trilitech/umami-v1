@@ -829,20 +829,36 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
         }
       });
 
-  let delete = (~settings, name) =>
-    Caller.call(
-      [|
-        "-E",
-        settings->AppSettings.endpoint,
-        "forget",
-        "address",
-        name,
-        "-f",
-      |],
-      (),
-    );
-
   module AliasesAPI = Aliases(Caller);
+
+  let delete = (~settings, name) =>
+    AliasesAPI.getAddressForAlias(~settings, name)
+    ->Future.flatMapOk(address =>
+        Caller.call(
+          [|
+            "-E",
+            settings->AppSettings.endpoint,
+            "forget",
+            "address",
+            name,
+            "-f",
+          |],
+          (),
+        )
+        ->Future.mapOk(_ =>
+            secrets(~settings)
+            ->Option.map(secrets =>
+                secrets->Array.map(secret =>
+                  address == secret.legacyAddress
+                    ? {...secret, legacyAddress: None} : secret
+                )
+              )
+            ->Option.map(secrets =>
+                Json.Encode.array(Secret.encoder, secrets)->Json.stringify
+              )
+            ->Option.map("secrets"->LocalStorage.setItem)
+          )
+      );
 
   let deleteSecretAt = (~settings, index) =>
     Js.Promise.all2((
