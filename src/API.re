@@ -1026,6 +1026,7 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
         baseName,
         ~derivationScheme="m/44'/1729'/?'/0'",
         ~password,
+        ~index=0,
         (),
       ) =>
     Js.Promise.all2((
@@ -1035,6 +1036,7 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
         baseName,
         ~derivationScheme,
         ~password,
+        ~index,
         (),
       )
       ->FutureJs.toPromise,
@@ -1127,21 +1129,22 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
             recoveryPhrase
             ->SecureStorage.Cipher.decrypt(password)
             ->Future.flatMapOk(recoveryPhrase =>
-                unsafeDeleteAddresses(~settings, secret.addresses)
-                ->Future.mapOk(_ => recoveryPhrase)
-              )
-            ->Future.flatMapOk(recoveryPhrase =>
                 scan(
                   ~settings,
                   recoveryPhrase,
                   secret.name,
                   ~derivationScheme=secret.derivationScheme,
                   ~password,
+                  ~index=secret.addresses->Array.length,
                   (),
                 )
               )
             ->Future.mapOk(((addresses, legacyAddress)) =>
-                {...secret, addresses, legacyAddress}
+                {
+                  ...secret,
+                  addresses: secret.addresses->Array.concat(addresses),
+                  legacyAddress,
+                }
               )
             ->Future.flatMapError(_ => Future.value(Ok(secret)))
           )
@@ -1229,7 +1232,6 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
     ->OperationsAPI.get(account, ~types=[|"delegation"|], ~limit=1, ())
     ->Future.flatMapOk(operations =>
         if (operations->Array.length == 0) {
-          //Future.value(Error("No delegation found!"));
           Future.value(
             Ok({
               initialBalance: ProtocolXTZ.zero,
@@ -1247,7 +1249,6 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
               switch (payload.delegate) {
               | Some(delegate) =>
                 if (account == delegate) {
-                  //Future.value(Error("Bakers can't delegate!"));
                   Future.value(
                     Ok({
                       initialBalance: ProtocolXTZ.zero,
