@@ -16,12 +16,13 @@ We list here the prescribed versions recommended for each of the tools needed to
 
 ## "back-end" 
 ### Tezos Codebase with umami specific branches for back-end
-* tezos node : https://gitlab.com/nomadic-labs/tezos/-/tree/master (tezos-node unmodified)
+* tezos node : https://gitlab.com/nomadic-labs/tezos/-/tree/master (for tezos-node)
 
 ### Umami Back-end Components
-* (Umami&others) Back-end - Tezos Indexer - DB : https://gitlab.com/nomadic-labs/tezos-indexer
+* (Umami&others) Back-end - Tezos Indexer - DB : 
+  * https://gitlab.com/nomadic-labs/tezos-indexer
 * (Umami&others) Back-end - Mezos - web server : https://gitlab.com/nomadic-labs/mezos
-
+ 
 ## "front-end"
 ## Umami Front-end
 * Umami Front-end - Electron app : https://gitlab.com/nomadic-labs/umami
