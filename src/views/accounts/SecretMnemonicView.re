@@ -16,7 +16,7 @@ let make = (~secret: Secret.t, ~closeAction) => {
 
   <ModalFormView closing={ModalFormView.Close(closeAction)}>
     <Typography.Headline style=FormStyles.header>
-      I18n.title#secret_recovery->React.string
+      I18n.title#export->React.string
     </Typography.Headline>
     {switch (recoveryPhraseRequest) {
      | Done(Ok(recoveryPhrase), _) => <RecoveryPhrase recoveryPhrase />
