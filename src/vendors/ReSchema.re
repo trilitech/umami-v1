@@ -307,6 +307,7 @@ module Make = (Lenses: Lenses) => {
     ->Array.getBy(fieldStateValidated =>
         switch (fieldStateValidated) {
         | (_, Error(_)) => true
+        | (_, NestedErrors(_)) => true
         | _ => false
         }
       );
@@ -322,6 +323,7 @@ module Make = (Lenses: Lenses) => {
       ->Array.getBy(fieldStateValidated =>
           switch (fieldStateValidated) {
           | (_, Error(_)) => true
+          | (_, NestedErrors(_)) => true
           | _ => false
           }
         )
