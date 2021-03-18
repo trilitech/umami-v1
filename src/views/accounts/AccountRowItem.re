@@ -35,7 +35,14 @@ let make = (~account: Account.t, ~token: option(Token.t)=?) => {
     </View>
     {delegateRequest->ApiRequest.mapOkWithDefault(React.null, delegate => {
        <View style=styles##actionContainer>
-         <DelegateButton account disabled={delegate->Option.isSome} />
+         <DelegateButton
+           action={
+             delegate->Option.mapWithDefault(
+               Delegate.Create(Some(account)), delegate =>
+               Delegate.Edit(account, delegate)
+             )
+           }
+         />
        </View>
      })}
   </RowItem.Bordered>;

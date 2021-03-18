@@ -18,9 +18,15 @@ let styles =
   );
 
 [@react.component]
-let make =
-    (~account as defaultAccount=?, ~disabled=false, ~style as styleFromProp=?) => {
+let make = (~action: Delegate.action, ~style as styleFromProp=?) => {
   let theme = ThemeContext.useTheme();
+
+  let disabledLook =
+    switch (action) {
+    | Create(_) => false
+    | Edit(_) => true
+    | Delete(_) => true
+    };
 
   let (visibleModal, openAction, closeAction) =
     ModalAction.useModalActionState();
@@ -35,7 +41,7 @@ let make =
           Some(
             style(
               ~backgroundColor=
-                disabled
+                disabledLook
                   ? theme.colors.iconDisabled
                   : theme.colors.primaryButtonBackground,
               (),
@@ -48,24 +54,23 @@ let make =
         style=Style.(arrayOption([|Some(styles##pressable)|]))
         isPrimary=true
         onPress
-        disabled
         accessibilityRole=`button>
         <Typography.ButtonPrimary
           style=Style.(
             style(
               ~color=
-                disabled
+                disabledLook
                   ? theme.colors.primaryTextDisabled
                   : theme.colors.primaryTextHighEmphasis,
               (),
             )
           )>
-          (disabled ? I18n.btn#delegated : I18n.btn#delegate)->React.string
+          (disabledLook ? I18n.btn#delegated : I18n.btn#delegate)->React.string
         </Typography.ButtonPrimary>
       </ThemedPressable>
     </View>
     <ModalAction visible=visibleModal onRequestClose=closeAction>
-      <DelegateView closeAction action={Delegate.Create(defaultAccount)} />
+      <DelegateView closeAction action />
     </ModalAction>
   </>;
 };
