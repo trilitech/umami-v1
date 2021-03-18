@@ -22,7 +22,7 @@
 
 ## Checklist
 
-> Legend: tick the box means: (1) it completed successfully; or (2) completed partially without defect; or (3) failed but was recoverable. If an issue comes up that is not severe and is recoverable: file an issue, but still tick the box as successful.
+> Legend: ticking the box means: (1) it completed successfully; or (2) completed partially without defect; or (3) failed but was recoverable. If an issue comes up that is not severe and is recoverable: file an issue, but still tick the box as successful.
 
 ### Accounts and Operations
 
