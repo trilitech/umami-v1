@@ -31,7 +31,7 @@ let make = (~closeAction, ~existingSecretsCount=0) => {
       )
     ->ignore;
 
-  let (mnemonic, setMnemonic) = React.useState(_ => Array.make(24, "zebra"));
+  let (mnemonic, setMnemonic) = React.useState(_ => Array.make(24, ""));
 
   let loading = secretWithMnemonicRequest->ApiRequest.isLoading;
 
