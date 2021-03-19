@@ -224,20 +224,13 @@ module BalanceToken = {
     useRequestsState(store => store.balanceTokenRequestsState);
 
   let useLoad = (address: string, tokenAddress: option(string)) => {
-    let {config} = ConfigContext.useSettings();
     let requestState = useRequestState(address->getRequestKey(tokenAddress));
 
     let operation =
       React.useMemo2(
         () =>
           tokenAddress->Option.map(tokenAddress =>
-            Token.makeGetBalance(
-              address,
-              config.natviewerTest
-              ->Option.getWithDefault(ConfigFile.natviewerTest),
-              tokenAddress,
-              (),
-            )
+            Token.makeGetBalance(address, tokenAddress, ())
           ),
         (address, tokenAddress),
       );
@@ -305,6 +298,15 @@ module Delegate = {
       )
     ->Map.String.keep((_k, v) => v->Option.isSome)
     ->Map.String.map(Option.getExn);
+  };
+
+  let useGetAllLoaded = () => {
+    let store = useStoreContext();
+    let (delegateRequests, _) = store.delegateRequestsState;
+
+    delegateRequests
+    ->Map.String.valuesToArray
+    ->Array.keepMap(request => request->ApiRequest.getDoneOk);
   };
 };
 
@@ -384,7 +386,7 @@ module Operations = {
 
   let useCreate = () => {
     let resetOperations = useResetAll();
-    let settings = ConfigContext.useSettings();
+    let settings = SdkContext.useSettings();
     OperationApiRequest.useCreate(
       ~sideEffect=
         ((hash, branch)) => {

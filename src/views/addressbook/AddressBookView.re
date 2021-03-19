@@ -43,19 +43,19 @@ let make = () => {
     {switch (aliasesRequest) {
      | Done(Ok(aliases), _)
      | Loading(Some(aliases)) =>
-       aliases
-       ->Map.String.valuesToArray
-       ->SortArray.stableSortBy((a, b) =>
-           Js.String.localeCompare(b.alias, a.alias)->int_of_float
-         )
-       ->Array.mapWithIndex((index, account) =>
-           <AddressBookRowItem
-             key={account.address}
-             account
-             zIndex={aliases->Map.String.size - index}
-           />
-         )
-       ->React.array
+       aliases->Map.String.size === 0
+         ? <Table.Empty>
+             I18n.t#empty_address_book->React.string
+           </Table.Empty>
+         : aliases
+           ->Map.String.valuesToArray
+           ->SortArray.stableSortBy((a, b) =>
+               Js.String.localeCompare(b.alias, a.alias)->int_of_float
+             )
+           ->Array.map(account =>
+               <AddressBookRowItem key={account.address} account />
+             )
+           ->React.array
      | Done(Error(error), _) => <ErrorView error />
      | NotAsked
      | Loading(None) => <LoadingView />

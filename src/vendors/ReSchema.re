@@ -279,8 +279,8 @@ module Make = (Lenses: Lenses) => {
       )
     };
 
-  let getFieldValidator = (~validators, ~fieldName) =>
-    validators->Array.getBy(validator =>
+  let getFieldValidators = (~validators, ~fieldName) =>
+    validators->Array.keep(validator =>
       switch (validator) {
       | Validation.False({field}) => Field(field) == fieldName
       | Validation.True({field}) => Field(field) == fieldName
@@ -302,8 +302,14 @@ module Make = (Lenses: Lenses) => {
       (~field, ~values, ~i18n, schema: Validation.schema('meta)) => {
     let Validation.Schema(validators) = schema;
 
-    getFieldValidator(~validators, ~fieldName=field)
-    ->Option.map(validator => validateField(~validator, ~values, ~i18n));
+    getFieldValidators(~validators, ~fieldName=field)
+    ->Array.map(validator => validateField(~validator, ~values, ~i18n))
+    ->Array.getBy(fieldStateValidated =>
+        switch (fieldStateValidated) {
+        | (_, Error(_)) => true
+        | _ => false
+        }
+      );
   };
 
   let validateFields =
@@ -311,8 +317,14 @@ module Make = (Lenses: Lenses) => {
     let Validation.Schema(validators) = schema;
 
     Array.map(fields, field =>
-      getFieldValidator(~validators, ~fieldName=field)
-      ->Option.map(validator => validateField(~validator, ~values, ~i18n))
+      getFieldValidators(~validators, ~fieldName=field)
+      ->Array.map(validator => validateField(~validator, ~values, ~i18n))
+      ->Array.getBy(fieldStateValidated =>
+          switch (fieldStateValidated) {
+          | (_, Error(_)) => true
+          | _ => false
+          }
+        )
     );
   };
 

@@ -79,6 +79,15 @@ let input_placeholder = {
   pub add_token_symbol = "e.g. tez, KLD, ..."
 };
 
+let form_input_error = {
+  pub _this = this;
+  pub string_empty = "This input is mandatory";
+  pub int = "must be an integer";
+  pub float = "must be a float";
+  pub change_baker = "It must be a different baker than the current one";
+  pub confirm_password = "It must be the same password";
+};
+
 let title = {
   pub _this = this;
   pub error_logs = "Logs";
@@ -233,6 +242,9 @@ let t = {
   pub token_column_symbol = "SYMBOL";
   pub token_column_address = "ADDRESS";
   pub empty_token = "No token registered";
+  pub empty_delegations = "No delegations";
+  pub empty_operations = "No operations";
+  pub empty_address_book = "No contacts";
   pub add_token_format_contract_sentence = {js|Please specify the address of a FA1.2 token contract for which you would like to view balances as well as to perform operations.|js};
   pub error_check_contract = "Address is not a valid token contract"
 };

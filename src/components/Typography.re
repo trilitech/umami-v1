@@ -215,12 +215,13 @@ module Address = {
   [@react.component]
   let make =
       (
+        ~colorStyle=`highEmphasis,
         ~numberOfLines: option(int)=?,
         ~style as styleProp: option(ReactNative.Style.t)=?,
         ~children,
       ) => {
     <Base
-      colorStyle=`highEmphasis
+      colorStyle
       fontSize=14.
       fontWeightStyle=`extraLight
       style=Style.(arrayOption([|Some(styles##address), styleProp|]))

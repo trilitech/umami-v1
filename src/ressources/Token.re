@@ -13,6 +13,8 @@ module Decode = {
     };
 
   let array = json => json |> Json.Decode.array(record);
+
+  let viewer = Json.Decode.string;
 };
 
 module Encode = {
@@ -55,7 +57,7 @@ module Approve = {
 module GetBalance = {
   type t = {
     address: string,
-    callback: string,
+    callback: option(string),
     token: string,
     options: (Protocol.transfer_options, Protocol.common_options),
   };
@@ -65,7 +67,7 @@ module GetAllowance = {
   type t = {
     source: string,
     destination: string,
-    callback: string,
+    callback: option(string),
     token: string,
     options: (Protocol.transfer_options, Protocol.common_options),
   };
@@ -73,7 +75,7 @@ module GetAllowance = {
 
 module GetTotalSupply = {
   type t = {
-    callback: string,
+    callback: option(string),
     token: string,
     options: (Protocol.transfer_options, Protocol.common_options),
   };
@@ -85,6 +87,17 @@ type operation =
   | GetBalance(GetBalance.t)
   | GetAllowance(GetAllowance.t)
   | GetTotalSupply(GetTotalSupply.t);
+
+let setCallback = (op, callback) => {
+  let callback = Some(callback);
+  switch (op) {
+  | Transfer(_) as t => t
+  | Approve(_) as a => a
+  | GetBalance(gb) => GetBalance({...gb, callback})
+  | GetAllowance(ga) => GetAllowance({...ga, callback})
+  | GetTotalSupply(gts) => GetTotalSupply({...gts, callback})
+  };
+};
 
 let makeSingleTransferElt =
     (~destination, ~amount, ~token, ~fee=?, ~gasLimit=?, ~storageLimit=?, ()) =>
@@ -157,7 +170,6 @@ let makeSingleTransfer =
 let makeGetBalance =
     (
       address,
-      callback,
       contract,
       ~fee=?,
       ~gasLimit=?,
@@ -165,6 +177,7 @@ let makeGetBalance =
       ~burnCap=?,
       ~confirmations=?,
       ~forceLowFee=?,
+      ~callback=?,
       (),
     ) => {
   let tx_options =

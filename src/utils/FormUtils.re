@@ -1,13 +1,13 @@
 let isValidFloat = value => {
   let fieldState: ReSchema.fieldState =
-    value->Js.Float.fromString->Js.Float.isNaN ? Error("not a float") : Valid;
+    value->Js.Float.fromString->Js.Float.isNaN ? Error(I18n.form_input_error#float) : Valid;
   fieldState;
 };
 
 let isValidInt = value => {
   let fieldState: ReSchema.fieldState =
     value->Js.String2.length == 0 || value->int_of_string_opt->Option.isSome
-      ? Valid : Error("not an int");
+      ? Valid : Error(I18n.form_input_error#int);
   fieldState;
 };
 
@@ -21,4 +21,9 @@ let formFieldsAreValids = (fieldsState, validateFields) => {
     | _ => false
     }
   });
+};
+
+let i18n = {
+  ...ReSchemaI18n.default,
+  stringNonEmpty: (~value as _) => I18n.form_input_error#string_empty,
 };

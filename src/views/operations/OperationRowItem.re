@@ -56,7 +56,8 @@ let status = (operation: Operation.Read.t, currentLevel, config: ConfigFile.t) =
     | Mempool => (I18n.t#state_mempool, Some(`negative))
     | Chain =>
       let minConfirmations =
-        config.confirmations->Option.getWithDefault(ConfigFile.confirmations);
+        config.confirmations
+        ->Option.getWithDefault(ConfigFile.Default.confirmations);
 
       let currentConfirmations = currentLevel - operation.level;
 
@@ -111,7 +112,7 @@ let make =
     let account = StoreContext.SelectedAccount.useGet();
     let aliases = StoreContext.Aliases.useGetAll();
     let tokens = StoreContext.Tokens.useGetAll();
-    let config = ConfigContext.useSettings().config;
+    let config = SdkContext.useSettings().config;
 
     <Table.Row>
       {switch (operation.payload) {

@@ -40,7 +40,6 @@ let styles =
           ~top=LayoutConst.pagePaddingVertical->dp,
           ~right=LayoutConst.pagePaddingHorizontal->dp,
           ~height=40.->dp,
-          ~zIndex=3,
           (),
         ),
     })
@@ -53,7 +52,7 @@ let make = () => {
   let accountsRequest = StoreContext.Accounts.useRequest();
   let token = StoreContext.SelectedToken.useGet();
   <Page>
-    {accountsRequest->ApiRequest.mapOrLoad(_ => {
+    {accountsRequest->ApiRequest.mapOrEmpty(_ => {
        <>
          <BalanceTotal.WithTokenSelector ?token />
          <AddAccountButton />
@@ -63,13 +62,8 @@ let make = () => {
             ->SortArray.stableSortBy((a, b) =>
                 Pervasives.compare(a.alias, b.alias)
               )
-            ->Array.mapWithIndex((index, account) =>
-                <AccountRowItem
-                  key={account.address}
-                  account
-                  ?token
-                  zIndex={accounts->Map.String.size - index}
-                />
+            ->Array.map(account =>
+                <AccountRowItem key={account.address} account ?token />
               )
             ->React.array}
          </View>

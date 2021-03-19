@@ -62,7 +62,10 @@ let make = (~token: Token.t) => {
       </Typography.Address>
     </CellAddress>
     <CellAction>
-      <Menu icon=Icons.More.build > <TokenDeleteButton token /> </Menu>
+      <Menu
+        icon=Icons.More.build keyPopover={"tokenRowItemMenu" ++ token.address}>
+        <TokenDeleteButton token />
+      </Menu>
     </CellAction>
   </Table.Row>;
 };

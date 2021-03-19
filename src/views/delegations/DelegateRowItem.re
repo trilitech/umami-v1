@@ -55,7 +55,7 @@ let memo = component =>
 
 [@react.component]
 let make =
-  memo((~account: Account.t, ~zIndex) => {
+  memo((~account: Account.t) => {
     let aliases = StoreContext.Aliases.useGetAll();
     let balanceRequest = StoreContext.Balance.useLoad(account.address);
     let delegateRequest = StoreContext.Delegate.useLoad(account.address);
@@ -67,7 +67,7 @@ let make =
     switch (delegateRequest) {
     | Done(Ok(Some(delegate)), _)
     | Loading(Some(Some(delegate))) =>
-      <Table.Row zIndex>
+      <Table.Row>
         <CellAddress>
           <Typography.Body1 numberOfLines=1>
             account.alias->React.string
@@ -167,7 +167,9 @@ let make =
            }}
         </CellReward>
         <CellAction>
-          <Menu icon=Icons.More.build>
+          <Menu
+            icon=Icons.More.build
+            keyPopover={"delegateRowItem" ++ account.address}>
             <DelegateActionButton
               action={Delegate.Edit(account, delegate)}
               text=I18n.menu#delegate_edit

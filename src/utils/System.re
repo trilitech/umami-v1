@@ -14,6 +14,8 @@ let homeDir = () => os##homedir();
 
 let getCurrentPath: unit => string = () => app##getAppPath();
 
+let getVersion = () => app##getVersion();
+
 module File = {
   type encoding =
     | Utf8
@@ -65,14 +67,6 @@ module File = {
       })
     });
   };
-};
-
-module Config = {
-  let getPath: unit => string =
-    () => app##getPath("appData") ++ "/" ++ app##getName() ++ "/Config";
-
-  let write = s => File.write(~name=getPath(), s);
-  let read = () => File.read(getPath());
 };
 
 module Client = {

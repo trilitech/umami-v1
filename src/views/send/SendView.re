@@ -4,9 +4,9 @@ module FormGroupAmountWithTokenSelector = {
   let styles =
     Style.(
       StyleSheet.create({
-        "container": style(~flexDirection=`row, ~zIndex=12, ()),
-        "amountGroup": style(~flexGrow=1., ~zIndex=2, ()),
-        "tokenGroup": style(~marginLeft=14.->dp, ~zIndex=1, ()),
+        "container": style(~flexDirection=`row, ()),
+        "amountGroup": style(~flexGrow=1., ()),
+        "tokenGroup": style(~marginLeft=14.->dp, ()),
         "tokenSelector": style(~width=100.->dp, ~marginBottom=0.->dp, ()),
       })
     );
@@ -110,13 +110,13 @@ let sourceDestination = (transfer: SendForm.transaction) => {
       );
     ((source, sourceLbl), `Many(destinations));
   | TokenTransfer(
-      {source, transfers: [{destination}]}: Token.Transfer.t,
+      ({source, transfers: [{destination}]}: Token.Transfer.t),
       _,
     ) => (
       (source, sourceLbl),
       `One((destination, recipientLbl)),
     )
-  | TokenTransfer({source, transfers}: Token.Transfer.t, _) =>
+  | TokenTransfer(({source, transfers}: Token.Transfer.t), _) =>
     let destinations =
       transfers->List.map(t =>
         (None, (t.destination, t.amount->Int.toString))
@@ -228,6 +228,7 @@ module Form = {
         },
       ~initialState=
         initValues->Option.getWithDefault(defaultInit(initAccount)),
+      ~i18n=FormUtils.i18n,
       (),
     );
   };
@@ -321,7 +322,7 @@ module Form = {
         FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
 
       <>
-        <ReactFlipToolkit.FlippedView flipId="form" zIndex=3>
+        <ReactFlipToolkit.FlippedView flipId="form">
           <View style=FormStyles.header>
             <Typography.Headline>
               I18n.title#send->React.string
@@ -371,7 +372,6 @@ module Form = {
           </TouchableOpacity>
         </ReactFlipToolkit.FlippedView>
         <ReactFlipToolkit.FlippedView
-          zIndex=1
           flipId="advancedOption"
           scale=false
           translate=advancedOptionOpened
@@ -395,7 +395,7 @@ module Form = {
                : React.null}
           </ReactFlipToolkit.Flipper>
         </ReactFlipToolkit.FlippedView>
-        <ReactFlipToolkit.FlippedView flipId="submit" zIndex=2>
+        <ReactFlipToolkit.FlippedView flipId="submit">
           <View style=FormStyles.verticalFormAction>
             <Buttons.SubmitPrimary
               text=submitLabel
@@ -446,7 +446,7 @@ let make = (~closeAction) => {
 
   let updateAccount = StoreContext.SelectedAccount.useSet();
 
-  let settings = ConfigContext.useSettings();
+  let settings = SdkContext.useSettings();
 
   let (advancedOptionsOpened, setAdvancedOptions) as advancedOptionState =
     React.useState(_ => false);

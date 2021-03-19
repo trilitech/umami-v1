@@ -3,11 +3,11 @@ open ReactNative;
 let style =
   Style.(style(~padding=4.->dp, ~margin=4.->dp, ~borderWidth=1.0, ()));
 
-module TokensAPI = API.Tokens(API.TezosClient);
+module TokensAPI = API.Tokens(API.TezosClient, API.TezosExplorer);
 
 [@react.component]
 let make = () => {
-  let settings = ConfigContext.useSettings();
+  let settings = SdkContext.useSettings();
   let (kt1, setKt1) = React.useState(() => "");
 
   <View style>

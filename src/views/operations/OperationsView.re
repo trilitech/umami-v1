@@ -4,14 +4,13 @@ let styles =
   Style.(
     StyleSheet.create({
       "container": style(~flex=1., ()),
-      "list": style(~flex=1., ~zIndex=1, ()),
+      "list": style(~flex=1., ()),
       "refreshPosition":
         style(
           ~position=`absolute,
           ~top=LayoutConst.pagePaddingVertical->dp,
           ~right=LayoutConst.pagePaddingHorizontal->dp,
           ~height=40.->dp,
-          ~zIndex=2,
           (),
         ),
       "listContent":
@@ -38,7 +37,8 @@ let keyExtractor = (operation: Operation.Read.t, _i) => {
   operation.hash ++ Int.toString(operation.op_id);
 };
 
-let _ListEmptyComponent = () => <EmptyView text="No operations" />;
+let _ListEmptyComponent = () =>
+  <Table.Empty> I18n.t#empty_operations->React.string </Table.Empty>;
 
 let sort = op =>
   Operation.Read.(
@@ -65,7 +65,7 @@ let make = () => {
        switch (operationsRequest) {
        | Done(Ok(operations), _)
        | Loading(Some(operations)) =>
-         <FlatList
+         <DocumentContext.FlatList
            style=styles##list
            contentContainerStyle=styles##listContent
            data={operations->fst->sort}

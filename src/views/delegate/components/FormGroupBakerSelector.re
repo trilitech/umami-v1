@@ -46,14 +46,17 @@ module BakerSelector = {
       })
     );
 
-  let renderButton = (selectedBaker: option(Delegate.t)) =>
+  let renderButton = (selectedBaker: option(Delegate.t), hasError) =>
     <View style=styles##selectorContent>
       {selectedBaker->Option.mapWithDefault(<LoadingView />, baker =>
          <View style=styles##inner>
-           <Typography.Subtitle2>
+           <Typography.Subtitle2 colorStyle=?{hasError ? Some(`error) : None}>
              baker.name->React.string
            </Typography.Subtitle2>
-           <Typography.Address numberOfLines=1 style=styles##address>
+           <Typography.Address
+             colorStyle=?{hasError ? Some(`error) : None}
+             numberOfLines=1
+             style=styles##address>
              baker.address->React.string
            </Typography.Address>
          </View>
@@ -112,7 +115,7 @@ module BakerInputTypeToogle = {
 let styles =
   Style.(
     StyleSheet.create({
-      "formGroup": style(~zIndex=10, ()),
+      "formGroup": style( ~marginBottom=0.->dp, ()),
       "labelContainer":
         style(
           ~marginBottom=6.->dp,
@@ -173,8 +176,10 @@ let make = (~label, ~value: string, ~handleChange, ~error) => {
            getItemValue={baker => baker.address}
            onValueChange=handleChange
            selectedValue=value
+           hasError
            renderButton=BakerSelector.renderButton
            renderItem=BakerSelector.renderItem
+           keyPopover="formGroupBakerSelector"
          />
        | Text =>
          <ThemedTextInput
@@ -185,5 +190,6 @@ let make = (~label, ~value: string, ~handleChange, ~error) => {
          />
        }}
     </View>
+    <FormError ?error />
   </FormGroup>;
 };

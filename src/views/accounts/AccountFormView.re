@@ -30,6 +30,7 @@ module Generic = {
             None;
           },
         ~initialState={name: init},
+        ~i18n=FormUtils.i18n,
         (),
       );
 

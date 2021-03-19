@@ -5,7 +5,6 @@ let styles =
     StyleSheet.create({
       "selector":
         style(
-          ~zIndex=4,
           ~alignSelf=`flexStart,
           ~maxWidth=320.->dp,
           ~marginTop=0.->dp,
@@ -77,7 +76,7 @@ module TokenItem = {
   };
 };
 
-let renderButton = (selectedToken: option(Token.t)) =>
+let renderButton = (selectedToken: option(Token.t), _hasError) =>
   <View style=styles##selectorContent>
     {selectedToken->Option.mapWithDefault(<LoadingView />, token =>
        <View style=TokenItem.styles##inner>
@@ -115,6 +114,7 @@ let make =
         renderItem
         selectedValue=?selectedToken
         noneItem=xtzToken
+        keyPopover="tokenSelector"
       />
     : React.null;
 };

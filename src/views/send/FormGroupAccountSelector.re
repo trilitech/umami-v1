@@ -1,12 +1,7 @@
 open ReactNative;
 
 let styles =
-  Style.(
-    StyleSheet.create({
-      "formGroup": style(~zIndex=11, ()),
-      "label": style(~marginBottom=6.->dp, ()),
-    })
-  );
+  Style.(StyleSheet.create({"label": style(~marginBottom=6.->dp, ())}));
 
 let baseRenderButton = AccountSelector.baseRenderButton(~showAmount=Balance);
 
@@ -33,7 +28,7 @@ let make =
 
   let (_currentAccount, setCurrent) = React.useState(() => value);
 
-  <FormGroup style=styles##formGroup>
+  <FormGroup>
     <FormLabel label hasError style=styles##label />
     <View>
       <Selector
@@ -50,6 +45,7 @@ let make =
         selectedValue=value
         renderButton={baseRenderButton(~token)}
         renderItem={baseRenderItem(~token)}
+        keyPopover="formGroupAccountSelector"
       />
     </View>
   </FormGroup>;

@@ -30,7 +30,6 @@ module Item = {
 let styles =
   Style.(
     StyleSheet.create({
-      "pressable": style(~zIndex=2, ()),
       "button":
         style(
           ~flexDirection=`row,
@@ -42,16 +41,7 @@ let styles =
         ),
       "icon": style(~marginHorizontal=8.->dp, ()),
       "iconSpacer": style(~width=(8. +. 24. +. 8.)->dp, ()),
-      "dropdownmenu":
-        style(
-          ~zIndex=1,
-          ~position=`absolute,
-          ~top=3.->dp,
-          ~left=0.->dp,
-          ~right=0.->dp,
-          ~maxHeight=224.->dp,
-          (),
-        ),
+      "dropdownmenu": style(~maxHeight=224.->dp, ()),
     })
   );
 
@@ -67,19 +57,14 @@ let make =
       ~noneItem: option('item)=?,
       ~renderButton,
       ~renderItem,
+      ~hasError=false,
       ~disabled=false,
+      ~keyPopover,
     ) => {
   let disabled = disabled || items->Array.size == 1 && noneItem->Option.isNone;
 
-  let touchableRef = React.useRef(Js.Nullable.null);
-
-  let (isOpen, setIsOpen) = React.useState(_ => false);
-
-  DocumentContext.useClickOutside(
-    touchableRef,
-    isOpen,
-    React.useCallback1(_pressEvent => setIsOpen(_ => false), [|setIsOpen|]),
-  );
+  let (pressableRef, isOpen, popoverConfig, togglePopover) =
+    Popover.usePopoverState();
 
   let onChange = newItem => {
     onValueChange(newItem->getItemValue);
@@ -94,10 +79,7 @@ let make =
 
   <View ?style>
     <PressableCustom
-      ref={touchableRef->Ref.value}
-      style=styles##pressable
-      onPress={_e => setIsOpen(prevIsOpen => !prevIsOpen)}
-      disabled>
+      ref={pressableRef->Ref.value} onPress={_ => togglePopover()} disabled>
       {_ =>
          <View
            style=Style.(
@@ -120,11 +102,22 @@ let make =
                      ),
                    )
                  : None,
+               hasError
+                 ? Some(
+                     style(
+                       ~borderColor=theme.colors.error,
+                       ~borderWidth=2.,
+                       ~padding=0.->dp,
+                       (),
+                     ),
+                   )
+                 : None,
              |])
            )
            pointerEvents=`none>
            {renderButton(
               selectedItem->Option.isSome ? selectedItem : noneItem,
+              hasError,
             )}
            {disabled
               ? <View style=styles##iconSpacer />
@@ -136,11 +129,14 @@ let make =
          </View>}
     </PressableCustom>
     <DropdownMenu
+      keyPopover
       style={Style.arrayOption([|
         Some(styles##dropdownmenu),
         dropdownStyle,
       |])}
-      isOpen>
+      isOpen
+      popoverConfig
+      onRequestClose=togglePopover>
       {noneItem->Option.mapWithDefault(React.null, item =>
          <Item
            key={item->getItemValue}

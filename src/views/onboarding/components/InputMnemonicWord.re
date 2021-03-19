@@ -79,6 +79,7 @@ module Base = {
         ->Array.slice(~offset=0, ~len=12);
 
       <Autocomplete
+        keyPopover={"inputMnemonicWord" ++ displayIndex->string_of_int}
         value
         handleChange
         error
@@ -101,6 +102,7 @@ let make =
       ~getNestedFieldError,
       ~index,
       ~word,
+      ~displayIndex=?,
       ~stateField,
       ~formField,
     ) => {
@@ -110,11 +112,12 @@ let make =
       (index, stateField),
     );
 
-  let error =
-    React.useMemo2(
-      () => {getNestedFieldError(formField, index)},
-      (index, formField),
-    );
+  let error = getNestedFieldError(formField, index);
 
-  <Base displayIndex=index value=word handleChange error />;
+  <Base
+    displayIndex={displayIndex->Option.getWithDefault(index)}
+    value=word
+    handleChange
+    error
+  />;
 };

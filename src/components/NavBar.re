@@ -16,7 +16,6 @@ module NavBarItem = {
           ),
         "icon": style(~marginBottom=6.->dp, ()),
         "text": style(~textAlign=`center, ()),
-        "errorButton": style(~marginTop=auto, ()),
       })
     );
 
@@ -67,7 +66,7 @@ let styles =
         style(
           ~flexDirection=`column,
           ~width=width->dp,
-          //~paddingTop=60.->dp,
+          ~paddingBottom=15.->dp,
           (),
         ),
       "sendButton":
@@ -77,8 +76,25 @@ let styles =
           ~alignItems=`center,
           (),
         ),
+      "bottomContainer": style(~marginTop=auto, ()),
+      "version": style(~display=`flex, ~justifyContent=`center, ()),
     })
   );
+
+module Empty = {
+  [@react.component]
+  let make = () => {
+    let theme = ThemeContext.useTheme();
+    <View
+      style=Style.(
+        array([|
+          styles##container,
+          style(~backgroundColor=theme.colors.barBackground, ()),
+        |])
+      )
+    />;
+  };
+};
 
 [@react.component]
 let make = (~route as currentRoute) => {
@@ -128,10 +144,11 @@ let make = (~route as currentRoute) => {
       icon=Icons.Settings.build
     />
     /* <NavBarItem currentRoute route=Debug title="DEBUG" /> */
-    <LogsButton
-      style=Style.(
-        array([|NavBarItem.styles##errorButton, NavBarItem.styles##item|])
-      )
-    />
+    <View style=styles##bottomContainer>
+      <LogsButton style=NavBarItem.styles##item />
+      <Typography.Overline3 style=styles##version>
+        {("v." ++ System.getVersion())->React.string}
+      </Typography.Overline3>
+    </View>
   </View>;
 };

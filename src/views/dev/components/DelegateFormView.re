@@ -7,7 +7,7 @@ module API = API.Delegate(API.TezosClient, API.TezosExplorer);
 
 [@react.component]
 let make = (~onSubmit) => {
-  let settings = ConfigContext.useSettings();
+  let settings = SdkContext.useSettings();
 
   let (source, setSource) = React.useState(() => "");
   let (selectedDelegateIndex, setSelectedDelegateIndex) =

@@ -4,7 +4,7 @@ module Base = {
   let styles =
     Style.(
       StyleSheet.create({
-        "container": style(~marginBottom=10.->dp, ~zIndex=3, ()),
+        "container": style(~marginBottom=10.->dp, ()),
         "total": style(~marginBottom=4.->dp, ()),
         "balance": style(~lineHeight=22., ~height=22.->dp, ()),
       })
@@ -59,7 +59,7 @@ module WithTokenSelector = {
       })
     );
 
-  let renderButton = (balanceElement, _) =>
+  let renderButton = (balanceElement, _, _) =>
     <View style=TokenSelector.styles##selectorContent>
       <View style=TokenSelector.TokenItem.styles##inner> balanceElement </View>
     </View>;
