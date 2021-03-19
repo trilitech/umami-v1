@@ -65,5 +65,9 @@ gantt
     Sprint 13 - Key Management                        :done  , 2021-01-25, 2021-02-05
     section Sprint 14 - SDK Integ
     Sprint 14 - SDK Integ                             :done  , 2021-02-08, 2021-02-19
+    section Beta Candidate
+    Sprint 15 - SDK Integ & Headstart on FA2          :done. , 2021-02-22, 2021-03-05
+    section Beta Candidate
+    Sprint 16 - SDK Integ & Headstart on FA2          :active, 2021-03-08, 2021-03-19
 ```
 
