@@ -13,9 +13,7 @@ let make =
       ~style as styleFromProp=?,
       ~outerStyle=?,
       ~interactionStyle:
-         option(
-           PressableCustom.interactionState => option(ReactNative.Style.t),
-         )=?,
+         option(Pressable_.interactionState => option(ReactNative.Style.t))=?,
       ~isActive=false,
       ~disabled: option(bool)=?,
       ~isPrimary=false,
@@ -23,7 +21,7 @@ let make =
       ~children,
     ) => {
   let theme = ThemeContext.useTheme();
-  <PressableCustom
+  <Pressable_
     style=?outerStyle
     ref=?pressableRef
     ?onPress
@@ -31,6 +29,8 @@ let make =
     ?href
     ?accessibilityRole>
     {({hovered, pressed, focused} as interactionState) => {
+       let hovered = hovered->Option.getWithDefault(false);
+       let focused = focused->Option.getWithDefault(false);
        <View
          pointerEvents=`none
          style=Style.(
@@ -85,5 +85,5 @@ let make =
          children
        </View>;
      }}
-  </PressableCustom>;
+  </Pressable_>;
 };
