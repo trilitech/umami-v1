@@ -733,12 +733,6 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
         )
       );
 
-  let create = (~settings, name) =>
-    Caller.call(
-      [|"-E", settings->AppSettings.endpoint, "gen", "keys", name|],
-      (),
-    );
-
   let secretAt = (~settings, index) =>
     secrets(~settings)
     ->FutureEx.fromOption(~error="No secrets found!")
