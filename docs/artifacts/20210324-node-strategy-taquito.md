@@ -7,7 +7,7 @@
 
 ## Cause of Delay
 
- * Umami was sidetracked/distracted by a desired tezos-client compiled in JS to be used as an SDK
+ * Umami was fixated on a desire to integrate tezos-client compiled in JS to be used as an SDK
  * The SDK timelines slipped exessively--due to its degree of difficulty
 
 ## Goals
