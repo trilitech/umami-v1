@@ -13,5 +13,6 @@ let fromMutezString: string => t;
 let fromMutezInt: int => t;
 
 let toString: t => string;
+let toInt64: t => Int64.t;
 
 let formatString: string => option(string);

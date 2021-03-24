@@ -14,6 +14,7 @@
     "@taquito/rpc": "^8.0.6-beta.0",
     "@taquito/signer": "^8.0.6-beta.0",
     "@taquito/taquito": "^8.0.6-beta.0",
+    "bignumber.js": "^9.0.1",
     "bip39": "^3.0.3",
     "bs-fetch": "^0.6.2",
     "bs-reform": "10.0.2-alpha.0",
