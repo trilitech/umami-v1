@@ -126,7 +126,13 @@ module TezosExplorer = {
 };
 
 module Balance = (Caller: CallerAPI) => {
-  let get = (settings, account, ~block=?, ()) => {
+  let get = (settings, account) => {
+    AppSettings.endpoint(settings)
+    ->ReTaquito.getBalance(account)
+    ->Future.mapOk(ProtocolXTZ.fromMutezInt);
+  };
+
+  let getOld = (settings, account, ~block=?, ()) => {
     let arguments = [|
       "-E",
       settings->AppSettings.endpoint,
@@ -140,7 +146,6 @@ module Balance = (Caller: CallerAPI) => {
       | Some(block) => Js.Array2.concat([|"-b", block|], arguments)
       | None => arguments
       };
-
     Caller.call(arguments, ())
     ->Future.flatMapOk(r =>
         r
@@ -1169,7 +1174,7 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
                   );
                 } else {
                   network
-                  ->BalanceAPI.get(
+                  ->BalanceAPI.getOld(
                       account,
                       ~block=firstOperation.level->string_of_int,
                       (),

@@ -12,9 +12,9 @@ type t = {
 
 module Default = {
   let endpointMain = "https://mainnet-tezos.giganode.io";
-  let endpointTest = "https://api.umamiwallet.com/node/edo2net";
+  let endpointTest = "https://edonet.smartpy.io/";
   let explorerMain = "https://mezos.lamini.ca/mezos/mainnet7";
-  let explorerTest = "https://api.umamiwallet.com/edo2net";
+  let explorerTest = "https://dev-api.umamiwallet.com/edo2net";
   let theme = `system;
   let sdkBaseDir = System.appDir() ++ "/tezos-client";
   let confirmations = 5;

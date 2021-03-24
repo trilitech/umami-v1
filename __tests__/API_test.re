@@ -24,7 +24,7 @@ describe("API tests", ({testAsync}) => {
       };
     };
     module UnderTest = API.Balance(Stub);
-    UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.getOld(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(Result.Ok(ProtocolXTZ.zero));
         callback();
@@ -40,7 +40,7 @@ describe("API tests", ({testAsync}) => {
       };
     };
     module UnderTest = API.Balance(Stub);
-    UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3")
     ->Future.get(result => {
         expect.value(result).toEqual(Result.Error("stub"));
         callback();
