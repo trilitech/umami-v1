@@ -652,11 +652,14 @@ module Aliases = (Caller: CallerAPI) => {
        );
 
   let get = (~settings) =>
-    Caller.call(
-      [|"-E", settings->AppSettings.endpoint, "list", "known", "contracts"|],
-      (),
-    )
-    ->Future.mapOk(parse);
+    settings
+    ->AppSettings.sdk
+    ->TezosSDK.listKnownContracts
+    ->Future.mapOk(l =>
+        l->Array.map((TezosSDK.OutputContract.{alias, contract}) =>
+          (alias, contract)
+        )
+      );
 
   let getAliasMap = (~settings) =>
     get(~settings)
@@ -676,17 +679,7 @@ module Aliases = (Caller: CallerAPI) => {
     settings->AppSettings.sdk->TezosSDK.addAddress(alias, pkh);
 
   let delete = (~settings, name) =>
-    Caller.call(
-      [|
-        "-E",
-        settings->AppSettings.endpoint,
-        "forget",
-        "address",
-        name,
-        "-f",
-      |],
-      (),
-    );
+    settings->AppSettings.sdk->TezosSDK.forgetAddress(name);
 };
 
 module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
@@ -775,29 +768,13 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
   let add = (~settings, alias, pkh) =>
     settings->AppSettings.sdk->TezosSDK.addAddress(alias, pkh);
 
-  let import = (~settings, key, name, ~password) =>
-    Caller.call(
-      [|
-        "-E",
-        settings->AppSettings.endpoint,
-        "import",
-        "secret",
-        "key",
-        name,
-        "encrypted:" ++ key,
-        "-f",
-      |],
-      ~inputs=[|password|],
-      (),
-    )
-    ->Future.mapOk(Js.String.split(": "))
-    ->Future.mapOk(a =>
-        a[a->Array.length - 1]->Option.mapWithDefault("", a => a)
-      )
-    ->Future.mapOk(a =>
-        a->Js.String.slice(~from=0, ~to_=a->Js.String.length - 1)
-      )
-    ->Future.tapOk(Js.log);
+  let import = (~settings, key, name, ~password) => {
+    let skUri = "encrypted:" ++ key;
+    settings
+    ->AppSettings.sdk
+    ->TezosSDK.importSecretKey(~name, ~skUri, ~password, ())
+    ->Future.tapOk(k => Js.log("key found : " ++ k));
+  };
 
   let derive = (~settings, ~index, ~name, ~password) =>
     Future.mapOk2(
@@ -822,17 +799,7 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
   module AliasesAPI = Aliases(Caller);
 
   let unsafeDelete = (~settings, name) =>
-    Caller.call(
-      [|
-        "-E",
-        settings->AppSettings.endpoint,
-        "forget",
-        "address",
-        name,
-        "-f",
-      |],
-      (),
-    );
+    settings->AppSettings.sdk->TezosSDK.forgetAddress(name);
 
   let delete = (~settings, name) =>
     AliasesAPI.getAddressForAlias(~settings, name)
@@ -959,27 +926,13 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
   };
 
   let legacyImport = (~settings, name, recoveryPhrase, ~password) =>
-    Caller.call(
-      [|
-        "-E",
-        settings->AppSettings.endpoint,
-        "import",
-        "keys",
-        "from",
-        "mnemonic",
-        name,
-        "--encrypt",
-        "-f",
-      |],
-      ~inputs=[|recoveryPhrase, "", password, password|],
-      (),
-    )
-    ->Future.mapOk(Js.String.split(": "))
-    ->Future.mapOk(a =>
-        a[a->Array.length - 1]->Option.mapWithDefault("", a => a)
-      )
-    ->Future.mapOk(a =>
-        a->Js.String.slice(~from=0, ~to_=a->Js.String.length - 1)
+    settings
+    ->AppSettings.sdk
+    ->TezosSDK.importKeysFromMnemonics(
+        ~name,
+        ~mnemonics=recoveryPhrase,
+        ~password,
+        (),
       );
 
   let legacyScan = (~settings, recoveryPhrase, name, ~password) =>
