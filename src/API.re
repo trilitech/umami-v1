@@ -126,9 +126,9 @@ module TezosExplorer = {
 };
 
 module Balance = {
-  let get = (settings, address, ~options=?, ()) => {
+  let get = (settings, address, ~params=?, ()) => {
     AppSettings.endpoint(settings)
-    ->ReTaquito.Balance.get(~address, ~options?, ())
+    ->ReTaquito.Balance.get(~address, ~params?, ())
     ->Future.mapOk(ProtocolXTZ.fromMutezInt);
   };
 };
@@ -548,8 +548,31 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
   let create = (network, operation: Protocol.t) =>
     Injector.create(network, arguments(_, operation));
 
-  let inject = (network, operation: Protocol.t, ~password) =>
-    Injector.inject(network, arguments(_, operation), ~password);
+  let transfer = (settings, transfer, source, password) => {
+    ReTaquito.Operations.transfer(
+      ~endpoint=settings->AppSettings.endpoint,
+      ~baseDir=settings->AppSettings.baseDir,
+      ~source,
+      ~dest=transfer.Protocol.destination,
+      ~amount=transfer.Protocol.amount->ProtocolXTZ.toInt64,
+      ~password,
+      ~fee=?transfer.Protocol.tx_options.fee->Option.map(ProtocolXTZ.toInt64),
+      ~gasLimit=?transfer.Protocol.tx_options.gasLimit,
+      ~storageLimit=?transfer.Protocol.tx_options.storageLimit,
+      (),
+    )
+    ->Future.mapOk((op: ReTaquito.Toolkit.operation) => op.hash);
+  };
+
+  let inject = (settings, operation: Protocol.t, ~password) =>
+    switch (operation) {
+    | Transaction({transfers: [t], source}) =>
+      transfer(settings, t, source, password)
+
+    | operation =>
+      Injector.inject(settings, arguments(_, operation), ~password)
+      ->Future.mapOk(fst)
+    };
 
   let waitForOperationConfirmations =
       (settings, hash, ~confirmations, ~branch) =>
@@ -1144,7 +1167,7 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
                   network
                   ->BalanceAPI.get(
                       account,
-                      ~options={block: firstOperation.level->string_of_int},
+                      ~params={block: firstOperation.level->string_of_int},
                       (),
                     )
                   ->Future.mapOk(balance =>
@@ -1351,7 +1374,8 @@ module Tokens = (Caller: CallerAPI, Getter: GetterAPI) => {
       network,
       make_arguments(_, operation, ~offline=false),
       ~password,
-    );
+    )
+    ->Future.mapOk(fst);
 
   let callGetOperationOffline = (settings, operation: Token.operation) =>
     getTokenViewer(settings)

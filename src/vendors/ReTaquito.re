@@ -55,25 +55,26 @@ module Toolkit = {
   type provider = {signer};
 
   type transfer = {
-    to_: string,
-    source: string,
-    amount: BigNumber.t,
-    fee: option(BigNumber.t),
-    gasLimit: option(int),
-    storageLimit: option(int),
-    mutez: option(bool),
+    .
+    "to": string,
+    "source": string,
+    "amount": BigNumber.t,
+    "fee": option(BigNumber.t),
+    "gasLimit": option(int),
+    "storageLimit": option(int),
+    "mutez": option(bool),
   };
 
   let makeTransfer =
       (~source, ~dest, ~amount, ~fee=?, ~gasLimit=?, ~storageLimit=?, ()) => {
     {
-      to_: dest,
-      source,
-      amount,
-      fee,
-      gasLimit,
-      storageLimit,
-      mutez: Some(true),
+      "to": dest,
+      "source": source,
+      "amount": amount,
+      "fee": fee,
+      "gasLimit": gasLimit,
+      "storageLimit": storageLimit,
+      "mutez": Some(true),
     };
   };
 

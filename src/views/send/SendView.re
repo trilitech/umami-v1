@@ -110,13 +110,13 @@ let sourceDestination = (transfer: SendForm.transaction) => {
       );
     ((source, sourceLbl), `Many(destinations));
   | TokenTransfer(
-      ({source, transfers: [{destination}]}: Token.Transfer.t),
+      {source, transfers: [{destination}]}: Token.Transfer.t,
       _,
     ) => (
       (source, sourceLbl),
       `One((destination, recipientLbl)),
     )
-  | TokenTransfer(({source, transfers}: Token.Transfer.t), _) =>
+  | TokenTransfer({source, transfers}: Token.Transfer.t, _) =>
     let destinations =
       transfers->List.map(t =>
         (None, (t.destination, t.amount->Int.toString))
@@ -465,7 +465,7 @@ let make = (~closeAction) => {
     let ((sourceAddress, _), _) = sourceDestination(transfer);
 
     sendOperation({operation, password})
-    ->Future.tapOk(((hash, _)) => {setModalStep(_ => SubmittedStep(hash))})
+    ->Future.tapOk(hash => {setModalStep(_ => SubmittedStep(hash))})
     ->Future.tapOk(_ => {updateAccount(sourceAddress)})
     ->ignore;
   };
