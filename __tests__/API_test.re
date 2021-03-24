@@ -18,13 +18,14 @@ let settings =
 describe("API tests", ({testAsync}) => {
   testAsync("runs valid balance test", ({expect, callback}) => {
     module Stub = {
-      let call = (_, ~inputs=?, ()) => {
-        ignore(inputs);
-        Future.value(Ok("0.00"));
-      };
+      let _ =
+        (_, ~inputs=?, ()) => {
+          ignore(inputs);
+          Future.value(Ok("0.00"));
+        };
     };
-    module UnderTest = API.Balance(Stub);
-    UnderTest.getOld(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    module UnderTest = API.Balance;
+    UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(Result.Ok(ProtocolXTZ.zero));
         callback();
@@ -34,13 +35,14 @@ describe("API tests", ({testAsync}) => {
 
   testAsync("runs invalid balance test", ({expect, callback}) => {
     module Stub = {
-      let call = (_, ~inputs=?, ()) => {
-        ignore(inputs);
-        Future.value(Error("stub"));
-      };
+      let _ =
+        (_, ~inputs=?, ()) => {
+          ignore(inputs);
+          Future.value(Error("stub"));
+        };
     };
-    module UnderTest = API.Balance(Stub);
-    UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3")
+    module UnderTest = API.Balance;
+    UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(Result.Error("stub"));
         callback();

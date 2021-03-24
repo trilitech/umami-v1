@@ -2,7 +2,7 @@ open ReactNative;
 
 let style = Style.(style(~padding=4.->dp, ()));
 
-module BalanceAPI = API.Balance(API.TezosClient);
+module BalanceAPI = API.Balance;
 module OperationsAPI = API.Operations(API.TezosClient, API.TezosExplorer);
 
 [@react.component]
@@ -34,7 +34,7 @@ let make = () => {
     <Button
       onPress={_ => {
         settings
-        ->BalanceAPI.getOld(account, ())
+        ->BalanceAPI.get(account, ())
         ->FutureEx.getOk(value => setBalance(value));
         settings
         ->OperationsAPI.get(account, ())

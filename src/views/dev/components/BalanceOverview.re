@@ -1,6 +1,6 @@
 open ReactNative;
 
-module BalanceAPI = API.Balance(API.TezosClient);
+module BalanceAPI = API.Balance;
 
 let style = Style.(style(~padding=4.->dp, ()));
 
@@ -19,7 +19,7 @@ let make = () => {
       | Pending(_) => ()
       | Done =>
         settings
-        ->BalanceAPI.getOld(account, ())
+        ->BalanceAPI.get(account, ())
         ->FutureEx.getOk(value => setBalance(value))
       };
       None;

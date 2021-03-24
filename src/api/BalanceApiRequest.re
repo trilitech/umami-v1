@@ -1,10 +1,10 @@
-module BalanceAPI = API.Balance(API.TezosClient);
+module BalanceAPI = API.Balance;
 
 type balanceApiRequest = ApiRequest.t(string);
 
 let useLoad = (~requestState as (request, setRequest), ~address: string) => {
   let get = (~settings, address) => {
-    settings->BalanceAPI.get(address);
+    settings->BalanceAPI.get(address, ());
   };
 
   let getRequest =

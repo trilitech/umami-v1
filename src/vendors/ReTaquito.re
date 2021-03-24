@@ -13,15 +13,20 @@ let inMemorySigner = [%raw "InMemorySigner"];
 
 %raw
 "
-function getBalance (endpoint, address) {
-   const t = new TezosToolkit(endpoint);
-   return t.tz.getBalance(address).then(v => v.toNumber());
+function getBalance (endpoint, address, options) {
+   const t = new RpcClient(endpoint);
+   return t.getBalance(address, options).then(v => v.toNumber());
 }
 ";
 
-[@bs.val]
-external getBalance: (string, string) => Js.Promise.t(int) = "getBalance";
+module Balance = {
+  type params = {block: string};
 
-let getBalance = (endpoint, address) => {
-  getBalance(endpoint, address)->FutureJs.fromPromise(Js.String.make);
+  [@bs.val]
+  external get: (string, string, option(params)) => Js.Promise.t(int) =
+    "getBalance";
+
+  let get = (endpoint, ~address, ~options=?, ()) => {
+    get(endpoint, address, options)->FutureJs.fromPromise(Js.String.make);
+  };
 };

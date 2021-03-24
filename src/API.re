@@ -125,43 +125,11 @@ module TezosExplorer = {
       );
 };
 
-module Balance = (Caller: CallerAPI) => {
-  let get = (settings, account) => {
+module Balance = {
+  let get = (settings, address, ~options=?, ()) => {
     AppSettings.endpoint(settings)
-    ->ReTaquito.getBalance(account)
+    ->ReTaquito.Balance.get(~address, ~options?, ())
     ->Future.mapOk(ProtocolXTZ.fromMutezInt);
-  };
-
-  let getOld = (settings, account, ~block=?, ()) => {
-    let arguments = [|
-      "-E",
-      settings->AppSettings.endpoint,
-      "get",
-      "balance",
-      "for",
-      account,
-    |];
-    let arguments =
-      switch (block) {
-      | Some(block) => Js.Array2.concat([|"-b", block|], arguments)
-      | None => arguments
-      };
-    Caller.call(arguments, ())
-    ->Future.flatMapOk(r =>
-        r
-        ->Float.fromString
-        ->Option.map(Float.toString)
-        ->Option.flatMap(ProtocolXTZ.fromString)
-        ->(
-            ropt =>
-              switch (ropt) {
-              | None when r == "" => Ok(ProtocolXTZ.zero)
-              | None => Error("Cannot parse balance")
-              | Some(r) => Ok(r)
-              }
-          )
-        ->Future.value
-      );
   };
 };
 
@@ -1142,7 +1110,7 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
 
   let getDelegationInfoForAccount = (network, account: string) => {
     module OperationsAPI = Operations(Caller, Getter);
-    module BalanceAPI = Balance(Caller);
+    module BalanceAPI = Balance;
     network
     ->OperationsAPI.get(account, ~types=[|"delegation"|], ~limit=1, ())
     ->Future.flatMapOk(operations =>
@@ -1174,9 +1142,9 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
                   );
                 } else {
                   network
-                  ->BalanceAPI.getOld(
+                  ->BalanceAPI.get(
                       account,
-                      ~block=firstOperation.level->string_of_int,
+                      ~options={block: firstOperation.level->string_of_int},
                       (),
                     )
                   ->Future.mapOk(balance =>
