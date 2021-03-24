@@ -76,7 +76,7 @@ let fromPromise = p =>
 [@bs.send]
 external listKnownAddresses:
   (lib, cctxt, int) => Js.Promise.t(result(array(OutputAddress.t))) =
-  "list_known_addresses";
+  "listKnownAddresses";
 let listKnownAddresses = sdk => {
   listKnownAddresses(sdk.lib, sdk.cctxt, 0) |> fromPromise;
 };
@@ -96,13 +96,13 @@ type renameParams = {
 [@bs.send]
 external renameAliases:
   (lib, cctxt, renameParams) => Js.Promise.t(result(unit)) =
-  "rename_aliases";
+  "renameAliases";
 
 let renameAliases = (sdk, renameAlias) =>
   renameAliases(sdk.lib, sdk.cctxt, renameAlias) |> fromPromise;
 
 [@bs.send]
 external currentLevel: (lib, cctxt, int) => Js.Promise.t(result(int)) =
-  "current_level";
+  "currentLevel";
 
 let currentLevel = sdk => currentLevel(sdk.lib, sdk.cctxt, 0) |> fromPromise;
