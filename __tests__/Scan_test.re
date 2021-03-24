@@ -5,7 +5,7 @@ open TestFramework;
    window.require = require;
    ";
 
-describe("Scan tests", ({test, testAsync}) => {
+describe("Scan tests", ({test: _, testAsync}) => {
   testAsync("foo", ({expect, callback})
     => {
       HD.edesk(
