@@ -12,6 +12,8 @@ let btn = {
   pub add = "ADD";
   pub send = "SEND";
   pub save = "SAVE";
+  pub done_ = "SIMPLE VIEW";
+  pub edit = "MANAGEMENT VIEW";
   pub validate_save = "VALIDATE AND SAVE";
   pub go_back = "GO BACK";
   pub go_operations = "GO TO OPERATIONS";
@@ -37,7 +39,10 @@ let btn = {
   pub delegation_submit = "CONFIRM DELEGATION";
   pub delegated = "DELEGATED";
   pub delete_token = "Delete token";
-  pub delete_account = "Delete account"
+  pub delete_account = "Delete account";
+  pub import = "IMPORT";
+  pub export = "EXPORT";
+  pub scan = "SCAN"
 };
 
 let log = {
@@ -69,7 +74,10 @@ let label = {
   pub add_token_symbol = "Symbol";
   pub summary_subtotal = "Subtotal";
   pub summary_total = "Total";
-  pub transactions = "Transactions"
+  pub transactions = "Transactions";
+  pub account_secret = "Root";
+  pub account_umami = "Umami";
+  pub account_cli = "Cli"
 };
 
 let input_placeholder = {
@@ -85,18 +93,20 @@ let form_input_error = {
   pub int = "must be an integer";
   pub float = "must be a float";
   pub change_baker = "It must be a different baker than the current one";
-  pub confirm_password = "It must be the same password";
+  pub confirm_password = "It must be the same password"
 };
 
 let title = {
   pub _this = this;
   pub error_logs = "Logs";
-  pub account_create = "Create new account";
+  pub account_create = "Add account";
   pub account_update = "Edit account";
   pub import_account = "Import account";
+  pub secret_update = "Edit secret";
   pub add_contact = "Add contact";
   pub update_contact = "Edit contact";
   pub add_token = "Register Token";
+  pub export = "Export";
   pub account_create_password = "Set a password to secure your wallet";
   pub account_create_verify_phrase = "Verify your recovery phrase";
   pub import_account_enter_phrase = "Enter your recovery phrase";
@@ -128,7 +138,8 @@ let title = {
   pub delete_account = "Delete account?";
   pub delete_load = "Deleting";
   pub delete_account_done = "Account deleted";
-  pub batch = "Batch"
+  pub batch = "Batch";
+  pub scan = "Scan"
 };
 
 let expl = {
@@ -153,7 +164,8 @@ let menu = {
   pub delegate_edit = "Change baker";
   pub delegate_delete = "End delegation";
   pub batch_edit = "Edit transfer";
-  pub batch_delete = "Delete transfer"
+  pub batch_delete = "Delete transfer";
+  pub edit = "Edit"
 };
 
 let settings = {
@@ -221,6 +233,7 @@ let t = {
   pub contact_added = "Contact added";
   pub account_created = "Account created";
   pub account_updated = "Account updated";
+  pub secret_updated = "Secret updated";
   pub token_contract = p("%s Token Contract");
   pub token_created = "Token created";
   pub operation_hash = "Operation Hash";

@@ -33,22 +33,35 @@ let isConfirmPassword = (values: StateLenses.state) => {
 };
 
 [@react.component]
-let make = (~mnemonic, ~onPressCancel, ~createAccountWithMnemonic, ~loading) => {
+let make =
+    (
+      ~mnemonic,
+      ~onPressCancel,
+      ~createSecretWithMnemonic,
+      ~loading,
+      ~existingSecretsCount=0,
+    ) => {
+  let displayConfirmPassword = existingSecretsCount < 1;
   let form: CreatePasswordForm.api =
     CreatePasswordForm.use(
+      ~validationStrategy=OnDemand,
       ~schema={
         CreatePasswordForm.Validation.(
           Schema(
-            nonEmpty(Password) + custom(isConfirmPassword, ConfirmPassword),
+            nonEmpty(Password)
+            + (
+              displayConfirmPassword
+                ? custom(isConfirmPassword, ConfirmPassword) : [||]
+            ),
           )
         );
       },
       ~onSubmit=
         ({state}) => {
           let mnemonics = mnemonic->Js.Array2.joinWith(" ");
-          createAccountWithMnemonic(
-            AccountApiRequest.{
-              name: "Account 1",
+          createSecretWithMnemonic(
+            SecretApiRequest.{
+              name: "Secret " ++ (existingSecretsCount + 1)->string_of_int,
               mnemonics,
               password: state.values.password,
             },
@@ -77,14 +90,16 @@ let make = (~mnemonic, ~onPressCancel, ~createAccountWithMnemonic, ~loading) => 
       textContentType=`password
       secureTextEntry=true
     />
-    <FormGroupTextInput
-      label=I18n.label#password
-      value={form.values.confirmPassword}
-      handleChange={form.handleChange(ConfirmPassword)}
-      error={form.getFieldError(Field(ConfirmPassword))}
-      textContentType=`password
-      secureTextEntry=true
-    />
+    {displayConfirmPassword
+       ? <FormGroupTextInput
+           label=I18n.label#confirm_password
+           value={form.values.confirmPassword}
+           handleChange={form.handleChange(ConfirmPassword)}
+           error={form.getFieldError(Field(ConfirmPassword))}
+           textContentType=`password
+           secureTextEntry=true
+         />
+       : React.null}
     <View style=FormStyles.formActionSpaceBetween>
       <Buttons.Form
         text=I18n.btn#back

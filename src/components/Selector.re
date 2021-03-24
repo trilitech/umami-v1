@@ -66,6 +66,11 @@ let make =
   let (pressableRef, isOpen, popoverConfig, togglePopover) =
     Popover.usePopoverState();
 
+  let (_, animatedOpenValue) =
+    AnimationHooks.useAnimationOpen(~speed=80., ~bounciness=0., isOpen, _ =>
+      ()
+    );
+
   let onChange = newItem => {
     onValueChange(newItem->getItemValue);
   };
@@ -121,11 +126,35 @@ let make =
             )}
            {disabled
               ? <View style=styles##iconSpacer />
-              : <Icons.ChevronDown
-                  size=24.
-                  color={theme.colors.iconMediumEmphasis}
-                  style=styles##icon
-                />}
+              : <Animated.View
+                  style=Style.(
+                    style(
+                      ~transform=[|
+                        rotate(
+                          ~rotate=
+                            Animated.Interpolation.(
+                              animatedOpenValue->interpolate(
+                                config(
+                                  ~inputRange=[|0., 1.|],
+                                  ~outputRange=
+                                    [|"0deg", "180deg"|]->fromStringArray,
+                                  ~extrapolate=`clamp,
+                                  (),
+                                ),
+                              )
+                            )
+                            ->Animated.StyleProp.angle,
+                        ),
+                      |],
+                      (),
+                    )
+                  )>
+                  <Icons.ChevronDown
+                    size=24.
+                    color={theme.colors.iconMediumEmphasis}
+                    style=styles##icon
+                  />
+                </Animated.View>}
          </View>}
     </Pressable_>
     <DropdownMenu

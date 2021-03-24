@@ -40,7 +40,10 @@ let make = () => {
        : <>
            <View style=styles##header>
              <BalanceTotal />
-             <DelegateButton style=styles##button />
+             <DelegateButton
+               action={Delegate.Create(None)}
+               style=styles##button
+             />
              <Table.Head>
                <DelegateRowItem.CellAddress>
                  <Typography.Overline3>

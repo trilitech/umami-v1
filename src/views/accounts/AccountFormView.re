@@ -1,20 +1,25 @@
-module StateLenses = [%lenses type state = {name: string}];
-module AccountCreateForm = ReForm.Make(StateLenses);
-
-type action =
-  | Create
-  | Edit(Account.t);
-
 module Generic = {
+  module StateLenses = [%lenses
+    type state = {
+      name: string,
+      secret: string,
+    }
+  ];
+  module AccountCreateForm = ReForm.Make(StateLenses);
+
+  type action =
+    | Create
+    | Edit(Account.t);
+
   [@react.component]
   let make =
       (
         ~init,
-        ~title,
         ~buttonText,
-        ~action: string => Future.t(Result.t('a, 'b)),
+        ~action: (~name: string, ~secretIndex: int) => unit,
         ~request,
-        ~closeAction,
+        ~secret: option(Secret.t)=?,
+        ~hideSecretSelector=false,
       ) => {
     let form: AccountCreateForm.api =
       AccountCreateForm.use(
@@ -23,13 +28,20 @@ module Generic = {
         },
         ~onSubmit=
           ({state}) => {
-            action(state.values.name)
-            ->Future.tapOk(() => closeAction())
-            ->ignore;
-
+            action(
+              ~name=state.values.name,
+              ~secretIndex=
+                state.values.secret->Js.Float.fromString->int_of_float,
+            );
             None;
           },
-        ~initialState={name: init},
+        ~initialState={
+          name: init,
+          secret:
+            secret->Option.mapWithDefault("", secret =>
+              secret.index->string_of_int
+            ),
+        },
         ~i18n=FormUtils.i18n,
         (),
       );
@@ -43,10 +55,16 @@ module Generic = {
     let formFieldsAreValids =
       FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
 
-    <ModalFormView closing={ModalFormView.Close(closeAction)}>
-      <Typography.Headline style=FormStyles.header>
-        title->React.string
-      </Typography.Headline>
+    <>
+      {hideSecretSelector
+         ? React.null
+         : <FormGroupSecretSelector
+             label=I18n.label#account_secret
+             value={form.values.secret}
+             handleChange={form.handleChange(Secret)}
+             error={form.getFieldError(Field(Secret))}
+             disabled={secret->Option.isSome}
+           />}
       <FormGroupTextInput
         label=I18n.label#account_create_name
         value={form.values.name}
@@ -60,7 +78,7 @@ module Generic = {
         style=FormStyles.formSubmit
         disabledLook={!formFieldsAreValids}
       />
-    </ModalFormView>;
+    </>;
   };
 };
 
@@ -72,47 +90,71 @@ module Update = {
 
     let addLog = LogsContext.useAdd();
 
-    let action = new_name => {
+    let action = (~name as new_name, ~secretIndex as _s) => {
       updateAccount({old_name: account.alias, new_name})
       ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
           I18n.t#account_updated
-        );
+        )
+      ->Future.tapOk(() => closeAction())
+      ->ignore;
     };
 
-    <Generic
-      init={account.alias}
-      buttonText=I18n.btn#update
-      title=I18n.title#account_update
-      request=updateAccountRequest
-      action
-      closeAction
-    />;
+    <ModalFormView closing={ModalFormView.Close(closeAction)}>
+      <Typography.Headline style=FormStyles.header>
+        I18n.title#account_update->React.string
+      </Typography.Headline>
+      <Generic
+        init={account.alias}
+        buttonText=I18n.btn#update
+        request=updateAccountRequest
+        action
+        hideSecretSelector=true
+      />
+    </ModalFormView>;
   };
 };
 
 module Create = {
   [@react.component]
-  let make = (~closeAction) => {
-    let (createAccountRequest, createAccount) =
-      StoreContext.Accounts.useCreate();
+  let make = (~closeAction, ~secret: option(Secret.t)=?) => {
+    let (createDeriveRequest, deriveAccount) =
+      StoreContext.Secrets.useDerive();
 
     let addLog = LogsContext.useAdd();
 
-    let action = (name): Future.t(Belt.Result.t(unit, string)) => {
-      createAccount(name)
+    let (formValues, setFormValues) = React.useState(_ => None);
+
+    let action = (~name, ~secretIndex, ~password) => {
+      deriveAccount({name, index: secretIndex, password})
       ->Future.mapOk(_ => ())
       ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
           I18n.t#account_created
-        );
+        )
+      ->Future.tapOk(() => closeAction())
+      ->ignore;
     };
 
-    <Generic
-      init=""
-      buttonText=I18n.btn#create
-      title=I18n.title#account_create
-      request=createAccountRequest
-      action
-      closeAction
-    />;
+    <ModalFormView closing={ModalFormView.Close(closeAction)}>
+      <Typography.Headline style=FormStyles.header>
+        I18n.title#account_create->React.string
+      </Typography.Headline>
+      {switch (formValues) {
+       | None =>
+         <Generic
+           init=""
+           buttonText=I18n.btn#add
+           request=createDeriveRequest
+           action={(~name, ~secretIndex) =>
+             setFormValues(_ => Some((name, secretIndex)))
+           }
+           ?secret
+         />
+       | Some((name, secretIndex)) =>
+         <PasswordFormView
+           loading={createDeriveRequest->ApiRequest.isLoading}
+           submitPassword={action(~name, ~secretIndex)}
+         />
+       }}
+    </ModalFormView>;
   };
 };

@@ -28,7 +28,7 @@ module Item = {
            (colorStyle === `highEmphasis ? `mediumEmphasis : colorStyle)
            ->Typography.getColor(theme),
        )}
-      <Typography.ButtonSecondary colorStyle style=styles##text>
+      <Typography.ButtonSecondary colorStyle fontSize=14. style=styles##text>
         text->React.string
       </Typography.ButtonSecondary>
     </ThemedPressable>;

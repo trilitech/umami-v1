@@ -43,7 +43,8 @@ module AppView = {
       switch (accountsRequest) {
       | Done(_) when accounts->Map.String.size <= 0 => (true, false)
       | NotAsked => (false, false)
-      | Loading(_) => (false, false)
+      | Loading(None) => (false, false)
+      | Loading(Some(_)) => (false, true)
       | Done(_) => (false, true)
       };
     };

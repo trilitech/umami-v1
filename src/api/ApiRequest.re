@@ -121,15 +121,26 @@ let conditionToLoad = (request, isMounted) => {
   requestNotAskedAndMounted || requestDoneButReloadOnMount || requestExpired;
 };
 
-let useGetter = (~toast=true, ~get, ~kind, ~setRequest, ()) => {
+let useGetter =
+    (
+      ~toast=true,
+      ~get:
+         (~settings: TezosClient.AppSettings.t, 'input) =>
+         Future.t(Belt.Result.t('response, string)),
+      ~kind,
+      ~setRequest,
+      (),
+    )
+    : ('input => Future.t(Belt.Result.t('response, string))) => {
   let addLog = LogsContext.useAdd();
   let settings = SdkContext.useSettings();
 
   let get = input => {
     setRequest(updateToLoadingState);
+
     get(~settings, input)
     ->logError(addLog(toast), kind)
-    ->Future.get(result => setRequest(_ => Done(result, Js.Date.now())));
+    ->Future.tap(result => setRequest(_ => Done(result, Js.Date.now())));
   };
 
   get;
@@ -148,7 +159,7 @@ let useLoader =
     () => {
       let shouldReload = conditionToLoad(request, isMounted);
       if (shouldReload) {
-        getRequest();
+        getRequest()->ignore;
       };
 
       None;
@@ -173,7 +184,7 @@ let useLoader1 =
     () => {
       let shouldReload = conditionToLoad(request, isMounted);
       if (shouldReload) {
-        getRequest(arg1);
+        getRequest(arg1)->ignore;
       };
 
       None;
@@ -199,7 +210,7 @@ let useLoader2 =
     () => {
       let shouldReload = conditionToLoad(request, isMounted);
       if (shouldReload) {
-        getRequest((arg1, arg2));
+        getRequest((arg1, arg2))->ignore;
       };
 
       None;

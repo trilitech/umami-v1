@@ -1,6 +1,6 @@
 /* ACCOUNT */
 
-module AccountsAPI = API.Accounts(API.TezosClient);
+module AccountsAPI = API.Accounts(API.TezosClient, API.TezosExplorer);
 
 /* Get */
 
@@ -35,17 +35,3 @@ let useUpdate =
 
 let useDelete =
   ApiRequest.useSetter(~set=AccountsAPI.delete, ~kind=Logs.Account);
-
-type createInput = {
-  name: string,
-  mnemonics: string,
-  password: string,
-};
-
-let useCreateWithMnemonics =
-  ApiRequest.useSetter(
-    ~set=
-      (~settings, {name, mnemonics, password}) =>
-        AccountsAPI.addWithMnemonic(~settings, name, mnemonics, ~password),
-    ~kind=Logs.Account,
-  );

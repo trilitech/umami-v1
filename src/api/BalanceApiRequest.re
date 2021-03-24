@@ -15,7 +15,7 @@ let useLoad = (~requestState as (request, setRequest), ~address: string) => {
     () => {
       let shouldReload = ApiRequest.conditionToLoad(request, isMounted);
       if (address != "" && shouldReload) {
-        getRequest(address);
+        getRequest(address)->ignore;
       };
       None;
     },

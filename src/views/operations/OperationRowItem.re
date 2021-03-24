@@ -18,7 +18,7 @@ module CellAmount =
 
 module CellFee =
   Table.MakeCell({
-    let style = Style.(style(~flexBasis=80.->dp, ()));
+    let style = Style.(style(~flexBasis=86.->dp, ()));
     ();
   });
 
@@ -128,7 +128,8 @@ let make =
              <CellAmount />
              <CellFee>
                <Typography.Body1>
-                 {business.fee->ProtocolXTZ.toString->React.string}
+                 {I18n.t#xtz_amount(business.fee->ProtocolXTZ.toString)
+                  ->React.string}
                </Typography.Body1>
              </CellFee>
              <CellAddress />
@@ -145,7 +146,8 @@ let make =
              {amount(isToken, account, transaction)}
              <CellFee>
                <Typography.Body1>
-                 {business.fee->ProtocolXTZ.toString->React.string}
+                 {I18n.t#xtz_amount(business.fee->ProtocolXTZ.toString)
+                  ->React.string}
                </Typography.Body1>
              </CellFee>
              <CellAddress>

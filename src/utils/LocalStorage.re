@@ -3,6 +3,6 @@ external getItem: string => Js.Nullable.t(string) = "getItem";
 [@bs.val] [@bs.scope "localStorage"]
 external setItem: (string, string) => unit = "setItem";
 [@bs.val] [@bs.scope "localStorage"]
-external removeItem: string => unit = "revomeItem";
+external removeItem: string => unit = "removeItem";
 
 [@bs.val] [@bs.scope "localStorage"] external clear: unit => unit = "clear";

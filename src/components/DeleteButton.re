@@ -14,7 +14,7 @@ let make =
   };
 
   <>
-    <Menu.Item text=buttonText icon onPress />
+    <Menu.Item text=buttonText icon onPress colorStyle=`error />
     <DeleteConfirmModal
       title=modalTitle
       visible=visibleModal
