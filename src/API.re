@@ -53,6 +53,16 @@ module URL = {
 
   let delegates = settings =>
     AppSettings.endpoint(settings) ++ Path.delegates;
+
+  let checkToken = (network, contract) => {
+    let path = "tokens/exists/" ++ contract;
+    build_url(network, path, []);
+  };
+
+  let getTokenBalance = (network, contract, addr) => {
+    let path = "accounts/" ++ addr ++ "/tokens/" ++ contract ++ "/balance";
+    build_url(network, path, []);
+  };
 };
 
 module type CallerAPI = {
@@ -1326,17 +1336,7 @@ module Tokens = (Caller: CallerAPI, Getter: GetterAPI) => {
   let getTokenViewer = settings => URL.tokenViewer(settings)->Getter.get;
 
   let checkTokenContract = (settings, addr) => {
-    let arguments = [|
-      "-E",
-      settings->AppSettings.endpoint,
-      "check",
-      "contract",
-      addr,
-      "implements",
-      "fungible",
-      "assets",
-    |];
-    Caller.call(arguments, ());
+    URL.checkToken(settings, addr)->Getter.get;
   };
 
   let get = (settings: AppSettings.t) => {
@@ -1422,7 +1422,7 @@ module Tokens = (Caller: CallerAPI, Getter: GetterAPI) => {
     | (None, _) => assert(false)
     };
 
-  let make_arguments = (settings, operation: Token.operation, ~offline) => {
+  let make_arguments = (settings, operation: Token.operation) => {
     switch (operation) {
     | Transfer({source, transfers: [elt], common_options}) =>
       [|
@@ -1464,27 +1464,6 @@ module Tokens = (Caller: CallerAPI, Getter: GetterAPI) => {
           Protocol.emptyTransferOptions,
           common_options,
         )
-    | GetBalance({
-        token,
-        address,
-        callback,
-        options: (tx_options, common_options),
-      }) =>
-      [|
-        "-E",
-        settings->AppSettings.endpoint,
-        "-w",
-        "none",
-        "from",
-        "token",
-        "contract",
-        token,
-        "get",
-        "balance",
-        "for",
-        address,
-      |]
-      ->make_get_arguments(callback, offline, tx_options, common_options)
     | _ => assert(false)
     };
   };
@@ -1588,12 +1567,12 @@ module Tokens = (Caller: CallerAPI, Getter: GetterAPI) => {
       Injector.simulate(
         network,
         Injector.singleOperationParser,
-        make_arguments(_, operation, ~offline=false),
+        make_arguments(_, operation),
       )
     };
 
   let create = (network, operation: Token.operation) =>
-    Injector.create(network, make_arguments(_, operation, ~offline=false));
+    Injector.create(network, make_arguments(_, operation));
 
   let transfer = (settings, transfer, source, password) => {
     ReTaquito.FA12Operations.transfer(
@@ -1621,11 +1600,7 @@ module Tokens = (Caller: CallerAPI, Getter: GetterAPI) => {
     | Transfer({source, transfers, _}) =>
       injectBatch(network, transfers, ~source, ~password)
     | _ =>
-      Injector.inject(
-        network,
-        make_arguments(_, operation, ~offline=false),
-        ~password,
-      )
+      Injector.inject(network, make_arguments(_, operation), ~password)
       ->Future.map(v =>
           switch (v) {
           | Ok((hash, _)) => Ok(hash)
@@ -1635,20 +1610,17 @@ module Tokens = (Caller: CallerAPI, Getter: GetterAPI) => {
     };
 
   let callGetOperationOffline = (settings, operation: Token.operation) =>
-    getTokenViewer(settings)
-    ->Future.map(viewer => viewer->tryMap(Token.Decode.viewer))
-    >>= (
-      callback => {
-        let operation = operation->Token.setCallback(callback);
-
-        if (offline(operation)) {
-          Caller.call(
-            make_arguments(settings, operation, ~offline=true),
-            (),
-          );
-        } else {
-          Future.value(Error("Operation not runnable offline"));
-        };
-      }
-    );
+    if (offline(operation)) {
+      switch (operation) {
+      | GetBalance({token, address, _}) =>
+        URL.getTokenBalance(settings, token, address)
+        ->Getter.get
+        ->Future.mapOk(res =>
+            res->Js.Json.decodeString->Option.getWithDefault("0")
+          )
+      | _ => Caller.call(make_arguments(settings, operation), ())
+      };
+    } else {
+      Future.value(Error("Operation not runnable offline"));
+    };
 };
