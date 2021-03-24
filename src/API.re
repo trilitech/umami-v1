@@ -691,17 +691,20 @@ module Aliases = (Caller: CallerAPI) => {
 
 module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
   let secrets = (~settings: AppSettings.t) => {
+    let _ = settings;
     LocalStorage.getItem("secrets")
     ->Js.Nullable.toOption
     ->Option.flatMap(Json.parse)
     ->Option.map(Json.Decode.(array(Secret.decoder)));
   };
 
-  let recoveryPhrases = (~settings: AppSettings.t) =>
+  let recoveryPhrases = (~settings: AppSettings.t) => {
+    let _ = settings;
     LocalStorage.getItem("recovery-phrases")
     ->Js.Nullable.toOption
     ->Option.flatMap(Json.parse)
     ->Option.map(Json.Decode.(array(SecureStorage.Cipher.decoder)));
+  };
 
   let parse = content =>
     content
@@ -803,31 +806,24 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
     ->Future.tapOk(Js.log);
 
   let derive = (~settings, ~index, ~name, ~password) =>
-    Js.Promise.all2((
-      secretAt(~settings, index)->FutureJs.toPromise,
-      recoveryPhraseAt(~settings, index, ~password)->FutureJs.toPromise,
-    ))
-    ->FutureJs.fromPromise(Js.String.make)
-    ->Future.flatMapOk(((secret, recoveryPhrase)) => {
-        switch (secret, recoveryPhrase) {
-        | (Ok(secret), Ok(recoveryPhrase)) =>
-          let suffix = secret.addresses->Array.length->Js.Int.toString;
-          let path = secret.derivationScheme->Js.String2.replace("?", suffix);
-          HD.edesk(path, recoveryPhrase->HD.seed, ~password)
-          ->Future.flatMapOk(edesk =>
-              import(~settings, edesk, name, ~password)
-            )
-          ->Future.tapOk(address =>
-              {
-                ...secret,
-                addresses: Array.concat(secret.addresses, [|address|]),
-              }
-              ->updateSecretAt(~settings, index)
-            );
-        | (Error(error), _)
-        | (_, Error(error)) => Future.value(Error(error))
-        }
-      });
+    Future.mapOk2(
+      secretAt(~settings, index),
+      recoveryPhraseAt(~settings, index, ~password),
+      (secret, recoveryPhrase) => {
+        let suffix = secret.addresses->Array.length->Js.Int.toString;
+        let path = secret.derivationScheme->Js.String2.replace("?", suffix);
+        HD.edesk(path, recoveryPhrase->HD.seed, ~password)
+        ->Future.flatMapOk(edesk => import(~settings, edesk, name, ~password))
+        ->Future.tapOk(address =>
+            {
+              ...secret,
+              addresses: Array.concat(secret.addresses, [|address|]),
+            }
+            ->updateSecretAt(~settings, index)
+          );
+      },
+    )
+    ->Future.flatMapOk(update => update);
 
   module AliasesAPI = Aliases(Caller);
 
@@ -864,63 +860,51 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
       );
 
   let deleteSecretAt = (~settings, index) =>
-    Js.Promise.all2((
-      secrets(~settings)
-      ->FutureEx.fromOption(~error="No secrets found!")
-      ->FutureJs.toPromise,
-      AliasesAPI.getAliasMap(~settings)->FutureJs.toPromise,
-    ))
-    ->FutureJs.fromPromise(Js.String.make)
-    ->Future.flatMapOk(((secrets, aliases)) =>
-        switch (secrets, aliases) {
-        | (Ok(secrets), Ok(aliases)) =>
-          secrets[index]
-          ->Option.map(secret =>
-              secret.addresses
-              ->Array.keepMap(aliases->Map.String.get)
-              ->Array.map(unsafeDelete(~settings))
-            )
-          ->FutureEx.fromOption(
-              ~error=
-                "Secret at index " ++ index->Int.toString ++ " not found!",
-            )
-          ->Future.flatMapOk(FutureEx.all)
-          ->Future.tapOk(_ => {
-              let _ =
-                secrets->Js.Array2.spliceInPlace(
-                  ~pos=index,
-                  ~remove=1,
-                  ~add=[||],
-                );
-              LocalStorage.setItem(
-                "secrets",
-                Json.Encode.array(Secret.encoder, secrets)->Json.stringify,
+    Future.mapOk2(
+      secrets(~settings)->FutureEx.fromOption(~error="No secrets found!"),
+      AliasesAPI.getAliasMap(~settings),
+      (secrets, aliases) => {
+      secrets[index]
+      ->Option.map(secret =>
+          secret.addresses
+          ->Array.keepMap(aliases->Map.String.get)
+          ->Array.map(unsafeDelete(~settings))
+        )
+      ->FutureEx.fromOption(
+          ~error="Secret at index " ++ index->Int.toString ++ " not found!",
+        )
+      ->Future.flatMapOk(FutureEx.all)
+      ->Future.tapOk(_ => {
+          let _ =
+            secrets->Js.Array2.spliceInPlace(
+              ~pos=index,
+              ~remove=1,
+              ~add=[||],
+            );
+          LocalStorage.setItem(
+            "secrets",
+            Json.Encode.array(Secret.encoder, secrets)->Json.stringify,
+          );
+        })
+      ->Future.tapOk(_ =>
+          switch (recoveryPhrases(~settings)) {
+          | Some(recoveryPhrases) =>
+            let _ =
+              recoveryPhrases->Js.Array2.spliceInPlace(
+                ~pos=index,
+                ~remove=1,
+                ~add=[||],
               );
-            })
-          ->Future.tapOk(_ =>
-              switch (recoveryPhrases(~settings)) {
-              | Some(recoveryPhrases) =>
-                let _ =
-                  recoveryPhrases->Js.Array2.spliceInPlace(
-                    ~pos=index,
-                    ~remove=1,
-                    ~add=[||],
-                  );
-                LocalStorage.setItem(
-                  "recovery-phrases",
-                  Json.Encode.array(
-                    SecureStorage.Cipher.encoder,
-                    recoveryPhrases,
-                  )
-                  ->Json.stringify,
-                );
-              | None => ()
-              }
-            )
-        | (Error(error), _)
-        | (_, Error(error)) => Future.value(Error(error))
-        }
-      )
+            LocalStorage.setItem(
+              "recovery-phrases",
+              Json.Encode.array(SecureStorage.Cipher.encoder, recoveryPhrases)
+              ->Json.stringify,
+            );
+          | None => ()
+          }
+        )
+    })
+    ->Future.flatMapOk(update => update)
     ->Future.tapOk(_ => {
         let recoveryPhrases = recoveryPhrases(~settings);
         if (recoveryPhrases == Some([||]) || recoveryPhrases == None) {
@@ -1029,7 +1013,7 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
         ~index=0,
         (),
       ) =>
-    Js.Promise.all2((
+    Future.mapOk2(
       scanSeed(
         ~settings,
         recoveryPhrase->HD.seed,
@@ -1038,20 +1022,11 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
         ~password,
         ~index,
         (),
-      )
-      ->FutureJs.toPromise,
-      legacyScan(~settings, recoveryPhrase, baseName ++ " legacy", ~password)
-      ->FutureJs.toPromise,
-    ))
-    ->FutureJs.fromPromise(Js.String.make)
-    ->Future.flatMapOk(((addresses, legacyAddress)) =>
-        switch (addresses, legacyAddress) {
-        | (Ok(addresses), Ok(legacyAddress)) =>
-          Future.value(Ok((addresses, legacyAddress)))
-        | (Error(error), _)
-        | (_, Error(error)) => Future.value(Error(error))
-        }
-      );
+      ),
+      legacyScan(~settings, recoveryPhrase, baseName ++ " legacy", ~password),
+      (addresses, legacyAddress) => {
+      (addresses, legacyAddress)
+    });
 
   let restore =
       (
@@ -1068,25 +1043,13 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
         scan(~settings, backupPhrase, name, ~derivationScheme, ~password, ())
       )
     ->Future.tapOk(_ =>
-        Js.Promise.all2((
+        Future.mapOk2(
           recoveryPhrases(~settings)
-          ->FutureEx.fromOptionWithDefault(~default=[||])
-          ->FutureJs.toPromise,
-          backupPhrase
-          ->SecureStorage.Cipher.encrypt(password)
-          ->FutureJs.toPromise,
-        ))
-        ->FutureJs.fromPromise(Js.String.make)
-        ->Future.flatMapOk(((recoveryPhrases, newRecoveryPhrase)) =>
-            switch (recoveryPhrases, newRecoveryPhrase) {
-            | (Ok(recoveryPhrases), Ok(newRecoveryPhrase)) =>
-              Future.value(
-                Ok(Array.concat(recoveryPhrases, [|newRecoveryPhrase|])),
-              )
-            | (Error(error), _)
-            | (_, Error(error)) => Future.value(Error(error))
-            }
-          )
+          ->FutureEx.fromOptionWithDefault(~default=[||]),
+          backupPhrase->SecureStorage.Cipher.encrypt(password),
+          (recoveryPhrases, newRecoveryPhrase) => {
+          Array.concat(recoveryPhrases, [|newRecoveryPhrase|])
+        })
         ->Future.mapOk(Json.Encode.(array(SecureStorage.Cipher.encoder)))
         ->Future.mapOk(json => json->Json.stringify)
         ->FutureEx.getOk(recoveryPhrases =>

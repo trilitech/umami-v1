@@ -12,8 +12,8 @@ let btn = {
   pub add = "ADD";
   pub send = "SEND";
   pub save = "SAVE";
-  pub done_ = "DONE";
-  pub edit = "EDIT";
+  pub done_ = "SIMPLE VIEW";
+  pub edit = "MANAGEMENT VIEW";
   pub validate_save = "VALIDATE AND SAVE";
   pub go_back = "GO BACK";
   pub go_operations = "GO TO OPERATIONS";
@@ -75,7 +75,9 @@ let label = {
   pub summary_subtotal = "Subtotal";
   pub summary_total = "Total";
   pub transactions = "Transactions";
-  pub account_secret = "Root"
+  pub account_secret = "Root";
+  pub account_umami = "Umami";
+  pub account_cli = "Cli"
 };
 
 let input_placeholder = {

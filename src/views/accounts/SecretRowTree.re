@@ -197,7 +197,7 @@ module AccountImportedRowItem = {
                 |])
               )>
               <Typography.Body2 fontSize=9.7 colorStyle=`mediumEmphasis>
-                "Umami"->React.string
+                I18n.label#account_umami->React.string
               </Typography.Body2>
             </View>
           }
@@ -236,7 +236,7 @@ module AccountImportedRowItem = {
               |])
             )>
             <Typography.Body2 fontSize=9.7 colorStyle=`mediumEmphasis>
-              "CLI"->React.string
+              I18n.label#account_cli->React.string
             </Typography.Body2>
           </View>
         }

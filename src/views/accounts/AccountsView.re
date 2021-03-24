@@ -11,7 +11,7 @@ module EditButton = {
       <ButtonAction
         onPress
         text={editMode ? I18n.btn#done_ : I18n.btn#edit}
-        icon={editMode ? Icons.Checkmark.build : Icons.Edit.build}
+        icon={editMode ? Icons.List.build : Icons.Edit.build}
       />
     </View>;
   };
