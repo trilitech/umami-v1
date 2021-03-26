@@ -1404,13 +1404,37 @@ module Tokens = (Caller: CallerAPI, Getter: GetterAPI) => {
   let create = (network, operation: Token.operation) =>
     Injector.create(network, make_arguments(_, operation, ~offline=false));
 
-  let inject = (network, operation: Token.operation, ~password) =>
-    Injector.inject(
-      network,
-      make_arguments(_, operation, ~offline=false),
+  let transfer = (settings, transfer, source, password) => {
+    ReTaquito.FA12Operations.transfer(
+      ~endpoint=settings->AppSettings.endpoint,
+      ~baseDir=settings->AppSettings.baseDir,
+      ~tokenContract=transfer.Token.Transfer.token,
+      ~source,
+      ~dest=transfer.Token.Transfer.destination,
+      ~amount=transfer.Token.Transfer.amount->Int64.of_int,
       ~password,
+      ~fee=?
+        transfer.Token.Transfer.tx_options.fee
+        ->Option.map(ProtocolXTZ.toInt64),
+      ~gasLimit=?transfer.Token.Transfer.tx_options.gasLimit,
+      ~storageLimit=?transfer.Token.Transfer.tx_options.storageLimit,
+      (),
     )
-    ->Future.mapOk(fst);
+    ->Future.mapOk((op: ReTaquito.Toolkit.operation) => op.hash);
+  };
+
+  let inject = (network, operation: Token.operation, ~password) =>
+    switch (operation) {
+    | Transfer({source, transfers: [elt], _}) =>
+      transfer(network, elt, source, password)
+    | _ =>
+      Injector.inject(
+        network,
+        make_arguments(_, operation, ~offline=false),
+        ~password,
+      )
+      ->Future.mapOk(fst)
+    };
 
   let callGetOperationOffline = (settings, operation: Token.operation) =>
     getTokenViewer(settings)
