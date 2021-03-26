@@ -1132,18 +1132,7 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
     };
 
   let getForAccount = (settings, account) =>
-    Caller.call(
-      [|
-        "-E",
-        settings->AppSettings.endpoint,
-        "get",
-        "delegate",
-        "for",
-        account,
-      |],
-      (),
-    )
-    ->Future.mapOk(parse)
+    ReTaquito.getDelegate(settings->AppSettings.endpoint, account)
     ->Future.mapOk(result =>
         switch (result) {
         | Some(delegate) =>

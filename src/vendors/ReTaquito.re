@@ -100,6 +100,9 @@ module Toolkit = {
   external setDelegate: (contract, delegateParams) => Js.Promise.t(operation) =
     "setDelegate";
 
+  [@bs.send]
+  external getDelegate: (tz, string) => Js.Promise.t(string) = "getDelegate";
+
   module Batch = {
     type t;
 
@@ -180,6 +183,23 @@ let readSecretKey = (address, passphrase, dirname) => {
         Error("Can't readkey, bad format: " ++ key)->Future.value;
       }
     );
+};
+
+exception Error(string);
+
+let getDelegate = (endpoint, address) => {
+  let tk = Toolkit.create(endpoint);
+
+  Toolkit.getDelegate(tk.tz, address)
+  |> Js.Promise.then_(v => Js.Promise.resolve(Some(v)))
+  |> Js.Promise.catch(e =>
+       if (Obj.magic(e)##status == 404) {
+         Js.Promise.resolve(None);
+       } else {
+         Js.Promise.reject(Error(e->Js.String.make));
+       }
+     )
+  |> (v => FutureJs.fromPromise(v, Js.String.make));
 };
 
 module Operations = {
