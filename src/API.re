@@ -548,7 +548,38 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
   let create = (network, operation: Protocol.t) =>
     Injector.create(network, arguments(_, operation));
 
-  let injectTransfer = (settings, transfer, source, password) => {
+  let injectBatch = (settings, transfers, ~source, ~password) => {
+    let transfers = source =>
+      transfers
+      ->List.map(({amount, destination, tx_options}: Protocol.transfer) =>
+          ReTaquito.Toolkit.prepareTransfer(
+            ~amount=amount->ProtocolXTZ.toInt64->ReTaquito.BigNumber.fromInt64,
+            ~dest=destination,
+            ~source,
+            ~fee=?
+              tx_options.fee
+              ->Option.map(fee =>
+                  fee->ProtocolXTZ.toInt64->ReTaquito.BigNumber.fromInt64
+                ),
+            ~gasLimit=?tx_options.gasLimit,
+            ~storageLimit=?tx_options.storageLimit,
+            (),
+          )
+        )
+      ->List.toArray;
+
+    ReTaquito.Operations.batch(
+      ~endpoint=settings->AppSettings.endpoint,
+      ~baseDir=settings->AppSettings.baseDir,
+      ~source,
+      ~transfers,
+      ~password,
+      (),
+    )
+    ->Future.mapOk((op: ReTaquito.Toolkit.operation) => op.hash);
+  };
+
+  let injectTransfer = (settings, transfer, ~source, ~password) => {
     ReTaquito.Operations.transfer(
       ~endpoint=settings->AppSettings.endpoint,
       ~baseDir=settings->AppSettings.baseDir,
@@ -565,7 +596,7 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
   };
 
   let injectSetDelegate =
-      (settings, Protocol.{delegate, source, options}, password) => {
+      (settings, Protocol.{delegate, source, options}, ~password) => {
     ReTaquito.Operations.setDelegate(
       ~endpoint=settings->AppSettings.endpoint,
       ~baseDir=settings->AppSettings.baseDir,
@@ -581,13 +612,12 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
   let inject = (settings, operation: Protocol.t, ~password) =>
     switch (operation) {
     | Transaction({transfers: [t], source}) =>
-      injectTransfer(settings, t, source, password)
+      injectTransfer(settings, t, ~source, ~password)
 
-    | Delegation(d) => injectSetDelegate(settings, d, password)
+    | Delegation(d) => injectSetDelegate(settings, d, ~password)
 
-    | operation =>
-      Injector.inject(settings, arguments(_, operation), ~password)
-      ->Future.mapOk(fst)
+    | Transaction({transfers, source}) =>
+      injectBatch(settings, transfers, ~source, ~password)
     };
 
   let waitForOperationConfirmations =
