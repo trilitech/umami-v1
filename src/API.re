@@ -564,11 +564,26 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
     ->Future.mapOk((op: ReTaquito.Toolkit.operation) => op.hash);
   };
 
+  let injectSetDelegate =
+      (settings, Protocol.{delegate, source, options}, password) => {
+    ReTaquito.Operations.setDelegate(
+      ~endpoint=settings->AppSettings.endpoint,
+      ~baseDir=settings->AppSettings.baseDir,
+      ~source,
+      ~delegate,
+      ~password,
+      ~fee=?options.fee->Option.map(ProtocolXTZ.unsafeToMutezInt),
+      (),
+    )
+    ->Future.mapOk((op: ReTaquito.Toolkit.operation) => op.hash);
+  };
+
   let inject = (settings, operation: Protocol.t, ~password) =>
     switch (operation) {
     | Transaction({transfers: [t], source}) =>
       injectTransfer(settings, t, source, password)
 
+    | Delegation(d) => injectSetDelegate(settings, d, password)
 
     | operation =>
       Injector.inject(settings, arguments(_, operation), ~password)
