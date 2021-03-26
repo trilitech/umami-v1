@@ -99,6 +99,17 @@ module Toolkit = {
   [@bs.send]
   external setDelegate: (contract, delegateParams) => Js.Promise.t(operation) =
     "setDelegate";
+
+  module Batch = {
+    type t;
+
+    [@bs.send] external send: t => Js.Promise.t(operation) = "send";
+
+    [@bs.send] external make: contract => t = "batch";
+
+    [@bs.send]
+    external withTransfer: (t, transferParams) => t = "withTransfer";
+  };
 };
 
 module Balance = {
@@ -199,6 +210,26 @@ module Operations = {
           });
       })
     ->Future.tapOk(Js.log);
+  };
+
+  let batch = (~endpoint, ~baseDir, ~source, ~transfers, ~password, ()) => {
+    let tk = Toolkit.create(endpoint);
+
+    readSecretKey(source, password, baseDir)
+    ->Future.flatMapOk(signer => {
+        let provider = Toolkit.{signer: signer};
+        tk->Toolkit.setProvider(provider);
+
+        let batch: Toolkit.Batch.t = tk.contract->Toolkit.Batch.make;
+
+        transfers(source)
+        ->Array.reduce(batch, Toolkit.Batch.withTransfer)
+        ->Toolkit.Batch.send
+        ->FutureJs.fromPromise(e => {
+            Js.log(e);
+            Js.String.make(e);
+          });
+      });
   };
 
   let transfer =
