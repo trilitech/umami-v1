@@ -15,3 +15,4 @@ Here is the list of features that have not yet been implemented:
 1. Voting
 1. Spending limits
 1. Decentralized ID
+1. automatic backup of wallet files to Google drive / Dropbox / iCloud (opt in)
