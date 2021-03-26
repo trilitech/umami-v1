@@ -107,6 +107,18 @@ module Toolkit = {
     {source, delegate, fee};
   };
 
+  type sendParams = {
+    amount: BigNumber.t,
+    fee: option(BigNumber.t),
+    gasLimit: option(int),
+    storageLimit: option(int),
+    mutez: option(bool),
+  };
+
+  let makeSendParams = (~amount, ~fee=?, ~gasLimit=?, ~storageLimit=?, ()) => {
+    {amount, fee, gasLimit, storageLimit, mutez: Some(true)};
+  };
+
   [@bs.new] external create: endpoint => toolkit = "TezosToolkit";
 
   [@bs.send] external setProvider: (toolkit, provider) => unit = "setProvider";
@@ -124,6 +136,27 @@ module Toolkit = {
   [@bs.send]
   external getDelegate: (tz, string) => Js.Promise.t(string) = "getDelegate";
 
+  module type METHODS = {type t;};
+
+  module Contract = (M: METHODS) => {
+    type contractAbstraction = {methods: M.t};
+
+    type methodResult('meth);
+
+    [@bs.send]
+    external at: (contract, string) => Js.Promise.t(contractAbstraction) =
+      "at";
+
+    [@bs.send]
+    external send: (methodResult(_), sendParams) => Js.Promise.t(operation) =
+      "send";
+
+    [@bs.send]
+    external toTransferParams:
+      (methodResult(_), sendParams) => Js.Promise.t(operation) =
+      "toTransferParams";
+  };
+
   module Batch = {
     type t;
 
@@ -133,6 +166,22 @@ module Toolkit = {
 
     [@bs.send]
     external withTransfer: (t, transferParams) => t = "withTransfer";
+  };
+
+  module FA12Methods = {
+    type t;
+
+    type transfer;
+  };
+
+  module FA12 = {
+    module M = FA12Methods;
+    include Contract(M);
+
+    [@bs.send]
+    external transfer:
+      (M.t, string, string, BigNumber.t) => methodResult(M.transfer) =
+      "transfer";
   };
 };
 
@@ -332,5 +381,59 @@ module Operations = {
         ->Toolkit.transfer(tr)
         ->FutureJs.fromPromise(e => e->Js.String.make->Generic);
       });
+  };
+};
+
+module FA12Operations = {
+  let transfer =
+      (
+        ~endpoint,
+        ~baseDir,
+        ~tokenContract,
+        ~source,
+        ~dest,
+        ~amount,
+        ~password,
+        ~fee=?,
+        ~gasLimit=?,
+        ~storageLimit=?,
+        (),
+      ) => {
+    let tk = Toolkit.create(endpoint);
+
+    let amount = BigNumber.fromInt64(amount);
+    let fee = fee->Option.map(BigNumber.fromInt64);
+
+    readSecretKey(source, password, baseDir)
+    ->Future.flatMapOk(signer => {
+        let provider = Toolkit.{signer: signer};
+        tk->Toolkit.setProvider(provider);
+
+        let params =
+          Toolkit.makeSendParams(
+            ~amount=BigNumber.fromInt64(0L),
+            ~fee?,
+            ~gasLimit?,
+            ~storageLimit?,
+            (),
+          );
+
+        tk.contract
+        ->Toolkit.FA12.at(tokenContract)
+        ->FutureJs.fromPromise(e => {
+            Js.log(e);
+            Js.String.make(e);
+          })
+        ->Future.flatMapOk(c =>
+            c.methods
+            ->Toolkit.FA12.transfer(source, dest, amount)
+            ->Toolkit.FA12.send(params)
+            ->FutureJs.fromPromise(e => {
+                Js.log(e);
+                Js.String.make(e);
+              })
+          );
+      })
+    ->Future.tapOk(Js.log);
   };
 };
