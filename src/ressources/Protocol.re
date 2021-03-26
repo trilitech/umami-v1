@@ -10,7 +10,6 @@ type transfer_options = {
 type common_options = {
   fee: option(ProtocolXTZ.t),
   burnCap: option(ProtocolXTZ.t),
-  confirmations: option(int),
   forceLowFee: option(bool),
 };
 
@@ -55,10 +54,9 @@ let makeTransferOptions =
   entrypoint,
 };
 
-let makeCommonOptions = (~fee, ~burnCap, ~confirmations, ~forceLowFee, ()) => {
+let makeCommonOptions = (~fee, ~burnCap, ~forceLowFee, ()) => {
   fee,
   burnCap,
-  confirmations,
   forceLowFee,
 };
 
@@ -67,14 +65,7 @@ let makeDelegate =
   {
     source,
     delegate,
-    options:
-      makeCommonOptions(
-        ~fee,
-        ~burnCap,
-        ~forceLowFee,
-        ~confirmations=None,
-        (),
-      ),
+    options: makeCommonOptions(~fee, ~burnCap, ~forceLowFee, ()),
   };
 };
 
@@ -102,12 +93,10 @@ let makeTransfer =
     ),
 };
 
-let makeTransaction =
-    (~source, ~transfers, ~burnCap=?, ~forceLowFee=?, ~confirmations=?, ()) => {
+let makeTransaction = (~source, ~transfers, ~burnCap=?, ~forceLowFee=?, ()) => {
   source,
   transfers,
-  options:
-    makeCommonOptions(~fee=None, ~burnCap, ~forceLowFee, ~confirmations, ()),
+  options: makeCommonOptions(~fee=None, ~burnCap, ~forceLowFee, ()),
 };
 
 let makeSingleTransaction =
@@ -117,7 +106,6 @@ let makeSingleTransaction =
       ~destination,
       ~burnCap=?,
       ~forceLowFee=?,
-      ~confirmations=?,
       ~fee=?,
       ~parameter=?,
       ~entrypoint=?,
@@ -138,8 +126,7 @@ let makeSingleTransaction =
       (),
     ),
   ],
-  options:
-    makeCommonOptions(~fee=None, ~burnCap, ~forceLowFee, ~confirmations, ()),
+  options: makeCommonOptions(~fee=None, ~burnCap, ~forceLowFee, ()),
 };
 
 type simulationResults = {

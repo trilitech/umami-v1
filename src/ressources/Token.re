@@ -116,16 +116,9 @@ let makeSingleTransferElt =
       ),
   };
 
-let makeTransfers =
-    (~source, ~transfers, ~burnCap=?, ~confirmations=?, ~forceLowFee=?, ()) => {
+let makeTransfers = (~source, ~transfers, ~burnCap=?, ~forceLowFee=?, ()) => {
   let common_options =
-    Protocol.makeCommonOptions(
-      ~fee=None,
-      ~burnCap,
-      ~confirmations,
-      ~forceLowFee,
-      (),
-    );
+    Protocol.makeCommonOptions(~fee=None, ~burnCap, ~forceLowFee, ());
   Transfer.{source, transfers, common_options};
 };
 
@@ -141,18 +134,11 @@ let makeSingleTransfer =
       ~gasLimit=?,
       ~storageLimit=?,
       ~burnCap=?,
-      ~confirmations=?,
       ~forceLowFee=?,
       (),
     ) => {
   let common_options =
-    Protocol.makeCommonOptions(
-      ~fee,
-      ~burnCap,
-      ~confirmations,
-      ~forceLowFee,
-      (),
-    );
+    Protocol.makeCommonOptions(~fee, ~burnCap, ~forceLowFee, ());
   let elt =
     makeSingleTransferElt(
       ~destination,
@@ -175,7 +161,6 @@ let makeGetBalance =
       ~gasLimit=?,
       ~storageLimit=?,
       ~burnCap=?,
-      ~confirmations=?,
       ~forceLowFee=?,
       ~callback=?,
       (),
@@ -190,13 +175,7 @@ let makeGetBalance =
       (),
     );
   let common_options =
-    Protocol.makeCommonOptions(
-      ~fee,
-      ~burnCap,
-      ~confirmations,
-      ~forceLowFee,
-      (),
-    );
+    Protocol.makeCommonOptions(~fee, ~burnCap, ~forceLowFee, ());
   GetBalance(
     GetBalance.{
       address,

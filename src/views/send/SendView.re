@@ -261,8 +261,7 @@ module Form = {
       | Edition(int)
       | Creation(option(unit => unit), unit => unit);
 
-    let simulatedTransaction =
-        (mode, batch, form: SendForm.api, token, confirmations) => {
+    let simulatedTransaction = (mode, batch, form: SendForm.api, token) => {
       let (batch, index) =
         switch (mode) {
         | Edition(index) =>
@@ -281,7 +280,7 @@ module Form = {
           (batch, Some(length - 1));
         };
 
-      SendForm.buildTransaction(batch, token, confirmations)
+      SendForm.buildTransaction(batch, token)
       |> SendForm.toSimulation(~index?);
     };
 
@@ -295,7 +294,6 @@ module Form = {
           ~mode,
           ~form,
           ~loading,
-          ~config: ConfigFile.t,
         ) => {
       let (advancedOptionOpened, setAdvancedOptionOpened) = advancedOptionState;
       let (selectedToken, setSelectedToken) = tokenState;
@@ -387,7 +385,6 @@ module Form = {
                        batch,
                        form,
                        token,
-                       config.confirmations,
                      )}
                      form
                    />
@@ -419,7 +416,7 @@ module Form = {
 
 module EditionView = {
   [@react.component]
-  let make = (~batch, ~initValues, ~onSubmit, ~index, ~loading, ~config) => {
+  let make = (~batch, ~initValues, ~onSubmit, ~index, ~loading) => {
     let (initValues, advancedOptionOpened) = initValues;
 
     let (advancedOptionOpened, _) as advancedOptionState =
@@ -434,7 +431,6 @@ module EditionView = {
       form
       mode={Form.View.Edition(index)}
       loading
-      config
     />;
   };
 };
@@ -445,8 +441,6 @@ let make = (~closeAction) => {
   let initToken = StoreContext.SelectedToken.useGet();
 
   let updateAccount = StoreContext.SelectedAccount.useSet();
-
-  let settings = SdkContext.useSettings();
 
   let (advancedOptionsOpened, setAdvancedOptions) as advancedOptionState =
     React.useState(_ => false);
@@ -478,12 +472,7 @@ let make = (~closeAction) => {
   let submitAction = React.useRef(`SubmitAll);
 
   let onSubmitBatch = batch => {
-    let transaction =
-      SendForm.buildTransaction(
-        batch->List.reverse,
-        token,
-        settings.config.confirmations,
-      );
+    let transaction = SendForm.buildTransaction(batch->List.reverse, token);
     sendOperationSimulate(SendForm.toSimulation(transaction))
     ->Future.tapOk(dryRun => {
         setModalStep(_ => PasswordStep(transaction, dryRun))
@@ -584,14 +573,7 @@ let make = (~closeAction) => {
            | EditStep(index, initValues) =>
              let onSubmit = (advOpened, form) =>
                onEdit(index, advOpened, form);
-             <EditionView
-               batch
-               initValues
-               onSubmit
-               index
-               loading=false
-               config={settings.config}
-             />;
+             <EditionView batch initValues onSubmit index loading=false />;
            | SendStep =>
              let onSubmit = batch != [] ? onAddToBatch : onSubmitAll;
              let onAddToBatch = batch != [] ? None : Some(onAddToBatch);
@@ -603,7 +585,6 @@ let make = (~closeAction) => {
                form
                mode={Form.View.Creation(onAddToBatch, onSubmit)}
                loading=loadingSimulate
-               config={settings.config}
              />;
            | PasswordStep(transfer, dryRun) =>
              let (source, destinations) = sourceDestination(transfer);
