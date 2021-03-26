@@ -548,7 +548,7 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
   let create = (network, operation: Protocol.t) =>
     Injector.create(network, arguments(_, operation));
 
-  let transfer = (settings, transfer, source, password) => {
+  let injectTransfer = (settings, transfer, source, password) => {
     ReTaquito.Operations.transfer(
       ~endpoint=settings->AppSettings.endpoint,
       ~baseDir=settings->AppSettings.baseDir,
@@ -567,7 +567,8 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
   let inject = (settings, operation: Protocol.t, ~password) =>
     switch (operation) {
     | Transaction({transfers: [t], source}) =>
-      transfer(settings, t, source, password)
+      injectTransfer(settings, t, source, password)
+
 
     | operation =>
       Injector.inject(settings, arguments(_, operation), ~password)

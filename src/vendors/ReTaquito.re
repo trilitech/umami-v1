@@ -54,27 +54,27 @@ module Toolkit = {
 
   type provider = {signer};
 
-  type transfer = {
-    .
-    "to": string,
-    "source": string,
-    "amount": BigNumber.t,
-    "fee": option(BigNumber.t),
-    "gasLimit": option(int),
-    "storageLimit": option(int),
-    "mutez": option(bool),
+  type transferParams = {
+    [@bs.as "to"]
+    to_: string,
+    source: string,
+    amount: BigNumber.t,
+    fee: option(BigNumber.t),
+    gasLimit: option(int),
+    storageLimit: option(int),
+    mutez: option(bool),
   };
 
-  let makeTransfer =
+  let prepareTransfer =
       (~source, ~dest, ~amount, ~fee=?, ~gasLimit=?, ~storageLimit=?, ()) => {
     {
-      "to": dest,
-      "source": source,
-      "amount": amount,
-      "fee": fee,
-      "gasLimit": gasLimit,
-      "storageLimit": storageLimit,
-      "mutez": Some(true),
+      to_: dest,
+      source,
+      amount,
+      fee,
+      gasLimit,
+      storageLimit,
+      mutez: Some(true),
     };
   };
 
@@ -83,7 +83,7 @@ module Toolkit = {
   [@bs.send] external setProvider: (toolkit, provider) => unit = "setProvider";
 
   [@bs.send]
-  external transfer: (contract, transfer) => Js.Promise.t(operation) =
+  external transfer: (contract, transferParams) => Js.Promise.t(operation) =
     "transfer";
 };
 
@@ -182,7 +182,7 @@ module Operations = {
         tk->Toolkit.setProvider(provider);
 
         let tr =
-          Toolkit.makeTransfer(
+          Toolkit.prepareTransfer(
             ~source,
             ~dest,
             ~amount,
@@ -198,7 +198,6 @@ module Operations = {
             Js.log(e);
             Js.String.make(e);
           });
-      })
-    ->Future.tapOk(Js.log);
+      });
   };
 };
