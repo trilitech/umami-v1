@@ -78,6 +78,16 @@ module Toolkit = {
     };
   };
 
+  type delegateParams = {
+    source: string,
+    delegate: option(string),
+    fee: option(int),
+  };
+
+  let prepareDelegate = (~source, ~delegate, ~fee=?, ()) => {
+    {source, delegate, fee};
+  };
+
   [@bs.new] external create: endpoint => toolkit = "TezosToolkit";
 
   [@bs.send] external setProvider: (toolkit, provider) => unit = "setProvider";
@@ -85,6 +95,10 @@ module Toolkit = {
   [@bs.send]
   external transfer: (contract, transferParams) => Js.Promise.t(operation) =
     "transfer";
+
+  [@bs.send]
+  external setDelegate: (contract, delegateParams) => Js.Promise.t(operation) =
+    "setDelegate";
 };
 
 module Balance = {
@@ -158,6 +172,35 @@ let readSecretKey = (address, passphrase, dirname) => {
 };
 
 module Operations = {
+  let setDelegate =
+      (
+        ~endpoint,
+        ~baseDir,
+        ~source,
+        ~delegate: option(string),
+        ~password,
+        ~fee=?,
+        (),
+      ) => {
+    let tk = Toolkit.create(endpoint);
+
+    readSecretKey(source, password, baseDir)
+    ->Future.flatMapOk(signer => {
+        let provider = Toolkit.{signer: signer};
+        tk->Toolkit.setProvider(provider);
+
+        let dg = Toolkit.prepareDelegate(~source, ~delegate, ~fee?, ());
+
+        tk.contract
+        ->Toolkit.setDelegate(dg)
+        ->FutureJs.fromPromise(e => {
+            Js.log(e);
+            Js.String.make(e);
+          });
+      })
+    ->Future.tapOk(Js.log);
+  };
+
   let transfer =
       (
         ~endpoint,
