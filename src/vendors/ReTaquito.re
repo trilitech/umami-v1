@@ -45,7 +45,7 @@ module Toolkit = {
   type tz;
   type contract;
 
-  type operation = {hash: string};
+  type operationResult = {hash: string};
 
   type toolkit = {
     tz,
@@ -93,11 +93,13 @@ module Toolkit = {
   [@bs.send] external setProvider: (toolkit, provider) => unit = "setProvider";
 
   [@bs.send]
-  external transfer: (contract, transferParams) => Js.Promise.t(operation) =
+  external transfer:
+    (contract, transferParams) => Js.Promise.t(operationResult) =
     "transfer";
 
   [@bs.send]
-  external setDelegate: (contract, delegateParams) => Js.Promise.t(operation) =
+  external setDelegate:
+    (contract, delegateParams) => Js.Promise.t(operationResult) =
     "setDelegate";
 
   [@bs.send]
@@ -106,7 +108,7 @@ module Toolkit = {
   module Batch = {
     type t;
 
-    [@bs.send] external send: t => Js.Promise.t(operation) = "send";
+    [@bs.send] external send: t => Js.Promise.t(operationResult) = "send";
 
     [@bs.send] external make: contract => t = "batch";
 

@@ -576,7 +576,7 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
       ~password,
       (),
     )
-    ->Future.mapOk((op: ReTaquito.Toolkit.operation) => op.hash);
+    ->Future.mapOk((op: ReTaquito.Toolkit.operationResult) => op.hash);
   };
 
   let injectTransfer = (settings, transfer, ~source, ~password) => {
@@ -592,7 +592,7 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
       ~storageLimit=?transfer.Protocol.tx_options.storageLimit,
       (),
     )
-    ->Future.mapOk((op: ReTaquito.Toolkit.operation) => op.hash);
+    ->Future.mapOk((op: ReTaquito.Toolkit.operationResult) => op.hash);
   };
 
   let injectSetDelegate =
@@ -606,7 +606,7 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
       ~fee=?options.fee->Option.map(ProtocolXTZ.unsafeToMutezInt),
       (),
     )
-    ->Future.mapOk((op: ReTaquito.Toolkit.operation) => op.hash);
+    ->Future.mapOk((op: ReTaquito.Toolkit.operationResult) => op.hash);
   };
 
   let inject = (settings, operation: Protocol.t, ~password) =>
