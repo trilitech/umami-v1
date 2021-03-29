@@ -14,6 +14,7 @@ module BigNumber = {
 
   let fromInt64 = i => i->Int64.to_string->fromString;
   let toInt64 = i => i->toString->Int64.of_string;
+  let fromInt = i => i->Int.toString->fromString;
 };
 
 let walletOperation = [%raw "WalletOperation"];
@@ -152,8 +153,7 @@ module Toolkit = {
       "send";
 
     [@bs.send]
-    external toTransferParams:
-      (methodResult(_), sendParams) => Js.Promise.t(operation) =
+    external toTransferParams: (methodResult(_), sendParams) => transferParams =
       "toTransferParams";
   };
 
@@ -409,6 +409,14 @@ module FA12Operations = {
         let provider = Toolkit.{signer: signer};
         tk->Toolkit.setProvider(provider);
 
+        tk.contract
+        ->Toolkit.FA12.at(tokenContract)
+        ->FutureJs.fromPromise(e => {
+            Js.log(e);
+            Js.String.make(e);
+          });
+      })
+    ->Future.flatMapOk(c => {
         let params =
           Toolkit.makeSendParams(
             ~amount=BigNumber.fromInt64(0L),
@@ -418,22 +426,115 @@ module FA12Operations = {
             (),
           );
 
-        tk.contract
-        ->Toolkit.FA12.at(tokenContract)
+        c.methods
+        ->Toolkit.FA12.transfer(source, dest, amount)
+        ->Toolkit.FA12.send(params)
+        ->FutureJs.fromPromise(e => {
+            Js.log(e);
+            Js.String.make(e);
+          });
+      })
+    ->Future.tapOk(Js.log);
+  };
+
+  type rawTransfer = {
+    token: string,
+    amount: BigNumber.t,
+    dest: string,
+    fee: option(BigNumber.t),
+    gasLimit: option(int),
+    storageLimit: option(int),
+  };
+
+  let toRawTransfer =
+      (~token, ~dest, ~amount, ~fee=?, ~gasLimit=?, ~storageLimit=?, ()) => {
+    token,
+    dest,
+    amount,
+    fee,
+    gasLimit,
+    storageLimit,
+  };
+
+  let prepareTransfers:
+    (_, _, _) =>
+    Future.t(list(Belt.Result.t(Toolkit.transferParams, Js.String.t))) =
+    (transfers: list(rawTransfer), source, endpoint) => {
+      let tk = Toolkit.create(endpoint);
+      let contracts =
+        transfers->List.reduce(Map.String.empty, (m, elt) =>
+          m->Map.String.set(
+            elt.token,
+            tk.contract->Toolkit.FA12.at(elt.token),
+          )
+        );
+
+      transfers
+      ->List.map(rawTransfer => {
+          let sendParams =
+            Toolkit.makeSendParams(
+              ~amount=BigNumber.fromInt64(0L),
+              ~fee=?rawTransfer.fee,
+              ~gasLimit=?rawTransfer.gasLimit,
+              ~storageLimit=?rawTransfer.storageLimit,
+              (),
+            );
+
+          // By construction, this exception will never be raised
+          contracts
+          ->Map.String.getExn(rawTransfer.token)
+          ->FutureJs.fromPromise(e => {
+              Js.log(e);
+              Js.String.make(e);
+            })
+          ->Future.mapOk(c =>
+              c.methods
+              ->Toolkit.FA12.transfer(
+                  source,
+                  rawTransfer.dest,
+                  rawTransfer.amount,
+                )
+              ->Toolkit.FA12.toTransferParams(sendParams)
+            );
+        })
+      ->Future.all;
+    };
+
+  let batch =
+      (
+        ~endpoint,
+        ~baseDir,
+        ~source,
+        ~transfers:
+           string =>
+           Future.t(
+             list(Belt.Result.t(Toolkit.transferParams, Js.String.t)),
+           ),
+        ~password,
+        (),
+      ) => {
+    let tk = Toolkit.create(endpoint);
+
+    readSecretKey(source, password, baseDir)
+    ->Future.flatMapOk(signer => {
+        let provider = Toolkit.{signer: signer};
+        tk->Toolkit.setProvider(provider);
+
+        transfers(source)->Future.map(ResultEx.collect);
+      })
+    ->Future.mapOk(txs =>
+        txs->List.reduce(
+          tk.contract->Toolkit.Batch.make,
+          Toolkit.Batch.withTransfer,
+        )
+      )
+    ->Future.flatMapOk(p =>
+        p
+        ->Toolkit.Batch.send
         ->FutureJs.fromPromise(e => {
             Js.log(e);
             Js.String.make(e);
           })
-        ->Future.flatMapOk(c =>
-            c.methods
-            ->Toolkit.FA12.transfer(source, dest, amount)
-            ->Toolkit.FA12.send(params)
-            ->FutureJs.fromPromise(e => {
-                Js.log(e);
-                Js.String.make(e);
-              })
-          );
-      })
-    ->Future.tapOk(Js.log);
+      );
   };
 };
