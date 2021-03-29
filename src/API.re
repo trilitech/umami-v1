@@ -1306,6 +1306,41 @@ module Tokens = (Caller: CallerAPI, Getter: GetterAPI) => {
     ->Js.Json.array
     ->Js.Json.stringify /* ->(json => "\'" ++ json ++ "\'") */;
 
+  let injectBatch = (settings, transfers, ~source, ~password) => {
+    let transfers = source =>
+      transfers
+      ->List.map(
+          ({token, amount, destination, tx_options}: Token.Transfer.elt) =>
+          ReTaquito.FA12Operations.toRawTransfer(
+            ~token,
+            ~amount=amount->ReTaquito.BigNumber.fromInt,
+            ~dest=destination,
+            ~fee=?
+              tx_options.fee
+              ->Option.map(fee =>
+                  fee->ProtocolXTZ.toInt64->ReTaquito.BigNumber.fromInt64
+                ),
+            ~gasLimit=?tx_options.gasLimit,
+            ~storageLimit=?tx_options.storageLimit,
+            (),
+          )
+        )
+      ->ReTaquito.FA12Operations.prepareTransfers(
+          source,
+          settings->AppSettings.endpoint,
+        );
+
+    ReTaquito.FA12Operations.batch(
+      ~endpoint=settings->AppSettings.endpoint,
+      ~baseDir=settings->AppSettings.baseDir,
+      ~source,
+      ~transfers,
+      ~password,
+      (),
+    )
+    ->Future.mapOk((op: ReTaquito.Toolkit.operation) => op.hash);
+  };
+
   let make_get_arguments =
       (arguments, callback, offline, tx_options, common_options) =>
     switch (callback, offline) {
@@ -1427,6 +1462,8 @@ module Tokens = (Caller: CallerAPI, Getter: GetterAPI) => {
     switch (operation) {
     | Transfer({source, transfers: [elt], _}) =>
       transfer(network, elt, source, password)
+    | Transfer({source, transfers, _}) =>
+      injectBatch(network, transfers, ~source, ~password)
     | _ =>
       Injector.inject(
         network,
