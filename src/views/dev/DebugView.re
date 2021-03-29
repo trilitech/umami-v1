@@ -88,7 +88,7 @@ let make = () => {
         ->Future.get(result =>
             switch (result) {
             | Ok(_) => setInjection(_ => Done)
-            | Error(value) => Dialog.error(value)
+            | Error(value) => Dialog.error(value->Js.String.make)
             }
           )
       | Done =>

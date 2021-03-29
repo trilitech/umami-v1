@@ -138,7 +138,10 @@ module Balance = {
   let get = (endpoint, ~address, ~params=?, ()) => {
     RPCClient.create(endpoint)
     ->RPCClient.getBalance(address, ~params?, ())
-    ->FutureJs.fromPromise(Js.String.make);
+    ->FutureJs.fromPromise(e => {
+        Js.log(e);
+        Js.String.make(e);
+      });
   };
 };
 
@@ -162,12 +165,17 @@ module PkhAliases = {
   [@bs.val] [@bs.scope "JSON"] external parse: string => t = "parse";
 };
 
+type error =
+  | Generic(string)
+  | WrongPassword;
+
 let aliasFromPkh = (dirname, pkh) => {
   System.File.read(dirname ++ "/public_key_hashs")
+  ->Future.mapError(e => Generic(e))
   ->Future.flatMapOk(file => {
       PkhAliases.parse(file)
       ->Js.Array2.find(a => a.value == pkh)
-      ->FutureEx.fromOption(~error="No key found !")
+      ->FutureEx.fromOption(~error=Generic("No key found !"))
       ->Future.mapOk(a => a.PkhAliases.name)
     });
 };
@@ -176,10 +184,11 @@ let readSecretKey = (address, passphrase, dirname) => {
   aliasFromPkh(dirname, address)
   ->Future.flatMapOk(alias => {
       System.File.read(dirname ++ "/secret_keys")
+      ->Future.mapError(e => Generic(e))
       ->Future.flatMapOk(file => {
           SecretAliases.parse(file)
           ->Js.Array2.find(a => a.SecretAliases.name == alias)
-          ->FutureEx.fromOption(~error="No key found !")
+          ->FutureEx.fromOption(~error=Generic("No key found !"))
           ->Future.mapOk(a => a.SecretAliases.value)
         })
     })
@@ -190,16 +199,22 @@ let readSecretKey = (address, passphrase, dirname) => {
           ~passphrase,
           (),
         )
-        ->FutureJs.fromPromise(Js.String.make);
+        ->FutureJs.fromPromise(e =>
+            if (Js.String.make(e)->Js.String2.includes("wrong secret key")) {
+              WrongPassword;
+            } else {
+              Generic(Js.String.make(e));
+            }
+          );
       } else if (key->Js.String2.startsWith("unencrypted:")) {
         fromSecretKey(
           key->Js.String2.substringToEnd(~from=12),
           ~passphrase,
           (),
         )
-        ->FutureJs.fromPromise(Js.String.make);
+        ->FutureJs.fromPromise(e => e->Js.String.make->Generic);
       } else {
-        Error("Can't readkey, bad format: " ++ key)->Future.value;
+        Error(Generic("Can't readkey, bad format: " ++ key))->Future.value;
       }
     );
 };
@@ -255,12 +270,8 @@ module Operations = {
 
         tk.contract
         ->Toolkit.setDelegate(dg)
-        ->FutureJs.fromPromise(e => {
-            Js.log(e);
-            Js.String.make(e);
-          });
-      })
-    ->Future.tapOk(Js.log);
+        ->FutureJs.fromPromise(e => {Generic(Js.String.make(e))});
+      });
   };
 
   let batch = (~endpoint, ~baseDir, ~source, ~transfers, ~password, ()) => {
@@ -276,10 +287,7 @@ module Operations = {
         transfers(source)
         ->Array.reduce(batch, Toolkit.Batch.withTransfer)
         ->Toolkit.Batch.send
-        ->FutureJs.fromPromise(e => {
-            Js.log(e);
-            Js.String.make(e);
-          });
+        ->FutureJs.fromPromise(e => e->Js.String.make->Generic);
       });
   };
 
@@ -319,10 +327,7 @@ module Operations = {
 
         tk.contract
         ->Toolkit.transfer(tr)
-        ->FutureJs.fromPromise(e => {
-            Js.log(e);
-            Js.String.make(e);
-          });
+        ->FutureJs.fromPromise(e => e->Js.String.make->Generic);
       });
   };
 };

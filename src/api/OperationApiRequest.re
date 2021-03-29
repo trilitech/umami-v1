@@ -29,14 +29,22 @@ let useCreate = (~sideEffect=?, ()) => {
   let set = (~settings, {operation, password}) => {
     switch (operation) {
     | Protocol(operation) =>
-      settings->OperationsAPI.inject(operation, ~password)
+      settings
+      ->OperationsAPI.inject(operation, ~password)
+      ->Future.mapError(e =>
+          switch (e) {
+          | ReTaquito.WrongPassword => I18n.form_input_error#wrong_password
+          | ReTaquito.Generic(e) => e
+          }
+        )
+
     | Token(operation) =>
       settings->TokensApiRequest.TokensAPI.inject(operation, ~password)
     };
   };
 
   ApiRequest.useSetter(
-    ~toast=false,
+    ~toast=true,
     ~set,
     ~kind=Logs.Operation,
     ~sideEffect?,
