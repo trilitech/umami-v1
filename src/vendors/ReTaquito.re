@@ -47,9 +47,26 @@ module Toolkit = {
 
   type operationResult = {hash: string};
 
+  module Operation = {
+    type field;
+    type t;
+
+    type block = {hash: string};
+
+    type confirmationResult = {block};
+
+    [@bs.send] external create: (field, string) => t = "createOperation";
+
+    [@bs.send]
+    external confirmation:
+      (t, ~blocks: int=?) => Js.Promise.t(confirmationResult) =
+      "confirmation";
+  };
+
   type toolkit = {
     tz,
     contract,
+    operation: Operation.field,
   };
 
   type provider = {signer};
@@ -205,6 +222,18 @@ let getDelegate = (endpoint, address) => {
 };
 
 module Operations = {
+  let confirmation = (endpoint, hash, ~blocks=?, ()) => {
+    let tk = Toolkit.create(endpoint);
+    let res =
+      tk.operation
+      ->Toolkit.Operation.create(hash)
+      ->Toolkit.Operation.confirmation(~blocks?);
+    res->FutureJs.fromPromise(e => {
+      Js.log(e);
+      Js.String.make(e);
+    });
+  };
+
   let setDelegate =
       (
         ~endpoint,
