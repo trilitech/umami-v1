@@ -58,13 +58,8 @@ let useSimulate = () => {
   ApiRequest.useSetter(~set, ~kind=Logs.Operation, ());
 };
 
-let waitForConfirmation = (settings, hash, branch) => {
-  OperationsAPI.waitForOperationConfirmations(
-    settings,
-    hash,
-    ~confirmations=0,
-    ~branch,
-  );
+let waitForConfirmation = (settings, hash) => {
+  settings->AppSettings.endpoint->ReTaquito.Operations.confirmation(hash, ());
 };
 
 /* Get list */
