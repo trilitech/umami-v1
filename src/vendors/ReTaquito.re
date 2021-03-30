@@ -10,8 +10,10 @@ module BigNumber = {
   type t;
 
   [@bs.new] external fromString: string => t = "BigNumber";
+  [@bs.send] external toString: t => string = "toString";
 
   let fromInt64 = i => i->Int64.to_string->fromString;
+  let toInt64 = i => i->toString->Int64.of_string;
 };
 
 let walletOperation = [%raw "WalletOperation"];
@@ -37,7 +39,7 @@ module RPCClient = {
 
   [@bs.send]
   external getBalance:
-    (rpcClient, string, ~params: params=?, unit) => Js.Promise.t(int) =
+    (rpcClient, string, ~params: params=?, unit) => Js.Promise.t(BigNumber.t) =
     "getBalance";
 };
 
@@ -141,7 +143,8 @@ module Balance = {
     ->FutureJs.fromPromise(e => {
         Js.log(e);
         Js.String.make(e);
-      });
+      })
+    ->Future.mapOk(BigNumber.toInt64);
   };
 };
 

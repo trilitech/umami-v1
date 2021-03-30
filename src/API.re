@@ -129,7 +129,7 @@ module Balance = {
   let get = (settings, address, ~params=?, ()) => {
     AppSettings.endpoint(settings)
     ->ReTaquito.Balance.get(~address, ~params?, ())
-    ->Future.mapOk(ProtocolXTZ.fromMutezInt);
+    ->Future.mapOk(ProtocolXTZ.ofInt64);
   };
 };
 

@@ -54,6 +54,7 @@ let fromMutezInt = Int64.of_int;
 let unsafeToMutezInt = Int64.to_int;
 let fromMutezString = Int64.of_string;
 let toInt64 = x => x;
+let ofInt64 = x => x;
 
 let toString = (xtz: t) => {
   open Int64;
