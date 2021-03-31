@@ -1338,7 +1338,7 @@ module Tokens = (Caller: CallerAPI, Getter: GetterAPI) => {
       ~password,
       (),
     )
-    ->Future.mapOk((op: ReTaquito.Toolkit.operation) => op.hash);
+    ->Future.mapOk((op: ReTaquito.Toolkit.operationResult) => op.hash);
   };
 
   let make_get_arguments =
@@ -1455,7 +1455,7 @@ module Tokens = (Caller: CallerAPI, Getter: GetterAPI) => {
       ~storageLimit=?transfer.Token.Transfer.tx_options.storageLimit,
       (),
     )
-    ->Future.mapOk((op: ReTaquito.Toolkit.operation) => op.hash);
+    ->Future.mapOk((op: ReTaquito.Toolkit.operationResult) => op.hash);
   };
 
   let inject = (network, operation: Token.operation, ~password) =>
@@ -1470,7 +1470,12 @@ module Tokens = (Caller: CallerAPI, Getter: GetterAPI) => {
         make_arguments(_, operation, ~offline=false),
         ~password,
       )
-      ->Future.mapOk(fst)
+      ->Future.map(v =>
+          switch (v) {
+          | Ok((hash, _)) => Ok(hash)
+          | Error(e) => Error(ReTaquito.Generic(e))
+          }
+        )
     };
 
   let callGetOperationOffline = (settings, operation: Token.operation) =>

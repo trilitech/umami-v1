@@ -39,7 +39,14 @@ let useCreate = (~sideEffect=?, ()) => {
         )
 
     | Token(operation) =>
-      settings->TokensApiRequest.TokensAPI.inject(operation, ~password)
+      settings
+      ->TokensApiRequest.TokensAPI.inject(operation, ~password)
+      ->Future.mapError(e =>
+          switch (e) {
+          | ReTaquito.WrongPassword => I18n.form_input_error#wrong_password
+          | ReTaquito.Generic(e) => e
+          }
+        )
     };
   };
 

@@ -149,7 +149,8 @@ module Toolkit = {
       "at";
 
     [@bs.send]
-    external send: (methodResult(_), sendParams) => Js.Promise.t(operation) =
+    external send:
+      (methodResult(_), sendParams) => Js.Promise.t(operationResult) =
       "send";
 
     [@bs.send]
@@ -413,7 +414,7 @@ module FA12Operations = {
         ->Toolkit.FA12.at(tokenContract)
         ->FutureJs.fromPromise(e => {
             Js.log(e);
-            Js.String.make(e);
+            Generic(Js.String.make(e));
           });
       })
     ->Future.flatMapOk(c => {
@@ -431,7 +432,7 @@ module FA12Operations = {
         ->Toolkit.FA12.send(params)
         ->FutureJs.fromPromise(e => {
             Js.log(e);
-            Js.String.make(e);
+            Generic(Js.String.make(e));
           });
       })
     ->Future.tapOk(Js.log);
@@ -458,7 +459,7 @@ module FA12Operations = {
 
   let prepareTransfers:
     (_, _, _) =>
-    Future.t(list(Belt.Result.t(Toolkit.transferParams, Js.String.t))) =
+    Future.t(list(Belt.Result.t(Toolkit.transferParams, error))) =
     (transfers: list(rawTransfer), source, endpoint) => {
       let tk = Toolkit.create(endpoint);
       let contracts =
@@ -485,7 +486,7 @@ module FA12Operations = {
           ->Map.String.getExn(rawTransfer.token)
           ->FutureJs.fromPromise(e => {
               Js.log(e);
-              Js.String.make(e);
+              Generic(Js.String.make(e));
             })
           ->Future.mapOk(c =>
               c.methods
@@ -507,9 +508,7 @@ module FA12Operations = {
         ~source,
         ~transfers:
            string =>
-           Future.t(
-             list(Belt.Result.t(Toolkit.transferParams, Js.String.t)),
-           ),
+           Future.t(list(Belt.Result.t(Toolkit.transferParams, error))),
         ~password,
         (),
       ) => {
@@ -533,7 +532,7 @@ module FA12Operations = {
         ->Toolkit.Batch.send
         ->FutureJs.fromPromise(e => {
             Js.log(e);
-            Js.String.make(e);
+            Generic(Js.String.make(e));
           })
       );
   };
