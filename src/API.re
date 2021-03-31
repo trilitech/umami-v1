@@ -1336,7 +1336,19 @@ module Tokens = (Caller: CallerAPI, Getter: GetterAPI) => {
   let getTokenViewer = settings => URL.tokenViewer(settings)->Getter.get;
 
   let checkTokenContract = (settings, addr) => {
-    URL.checkToken(settings, addr)->Getter.get;
+    URL.checkToken(settings, addr)
+    ->Getter.get
+    ->Future.map(result => {
+        switch (result) {
+        | Ok(json) =>
+          switch (Js.Json.classify(json)) {
+          | Js.Json.JSONTrue => Ok(true)
+          | JSONFalse => Ok(false)
+          | _ => Error("Error")
+          }
+        | Error(e) => Error(e)
+        }
+      });
   };
 
   let get = (settings: AppSettings.t) => {

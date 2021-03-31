@@ -35,7 +35,7 @@ let make = (~closeAction) => {
           checkToken(state.values.address)
           ->Future.get(result =>
               switch (result) {
-              | Ok(_) =>
+              | Ok(true) =>
                 createToken({
                   address: state.values.address,
                   alias: state.values.name,
@@ -46,7 +46,8 @@ let make = (~closeAction) => {
                     I18n.t#token_created
                   )
                 ->ignore
-              | Error(_) =>
+              | Error(_)
+              | Ok(false) =>
                 let errorMsg = I18n.t#error_check_contract;
                 addToast(Logs.error(~origin=Tokens, errorMsg));
                 raiseSubmitFailed(Some(errorMsg));
