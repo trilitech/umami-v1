@@ -466,6 +466,56 @@ module Operations = {
 };
 
 module FA12Operations = {
+  module Estimate = {
+    let transfer =
+        (
+          ~endpoint,
+          ~tokenContract,
+          ~source,
+          ~dest,
+          ~amount,
+          ~fee=?,
+          ~gasLimit=?,
+          ~storageLimit=?,
+          (),
+        ) => {
+      let tk = Toolkit.create(endpoint);
+
+      let amount = BigNumber.fromInt64(amount);
+      let fee = fee->Option.map(BigNumber.fromInt64);
+
+      let signer = makeDummySigner(source);
+      let provider = Toolkit.{signer: signer};
+      tk->Toolkit.setProvider(provider);
+
+      tk.contract
+      ->Toolkit.FA12.at(tokenContract)
+      ->FutureJs.fromPromise(e => {
+          Js.log(e);
+          Js.String.make(e);
+        })
+      ->Future.flatMapOk(c => {
+          let params =
+            Toolkit.makeSendParams(
+              ~amount=BigNumber.fromInt64(0L),
+              ~fee?,
+              ~gasLimit?,
+              ~storageLimit?,
+              (),
+            );
+
+          c.methods
+          ->Toolkit.FA12.transfer(source, dest, amount)
+          ->Toolkit.FA12.toTransferParams(params)
+          ->(tr => tk.estimate->Toolkit.Estimation.transfer(tr))
+          ->FutureJs.fromPromise(e => {
+              Js.log(e);
+              Js.String.make(e);
+            });
+        });
+    };
+  };
+
   let transfer =
       (
         ~endpoint,
