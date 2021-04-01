@@ -1537,12 +1537,40 @@ module Tokens = (Caller: CallerAPI, Getter: GetterAPI) => {
     };
   };
 
+  let transferEstimate = (settings, transfer, source) => {
+    ReTaquito.FA12Operations.Estimate.transfer(
+      ~endpoint=settings->AppSettings.endpoint,
+      ~tokenContract=transfer.Token.Transfer.token,
+      ~source,
+      ~dest=transfer.Token.Transfer.destination,
+      ~amount=transfer.Token.Transfer.amount->Int64.of_int,
+      ~fee=?
+        transfer.Token.Transfer.tx_options.fee
+        ->Option.map(ProtocolXTZ.toInt64),
+      ~gasLimit=?transfer.Token.Transfer.tx_options.gasLimit,
+      ~storageLimit=?transfer.Token.Transfer.tx_options.storageLimit,
+      (),
+    )
+    ->Future.mapOk(({totalCost, gasLimit, storageLimit}) =>
+        Protocol.{
+          fee: totalCost->ProtocolXTZ.fromMutezInt,
+          gasLimit,
+          storageLimit,
+        }
+      );
+  };
+
   let simulate = (network, operation: Token.operation) =>
-    Injector.simulate(
-      network,
-      Injector.singleOperationParser,
-      make_arguments(_, operation, ~offline=false),
-    );
+    switch (operation) {
+    | Transfer({source, transfers: [elt], _}) =>
+      estimate_transfer(network, elt, source)
+    | _ =>
+      Injector.simulate(
+        network,
+        Injector.singleOperationParser,
+        make_arguments(_, operation, ~offline=false),
+      )
+    };
 
   let create = (network, operation: Token.operation) =>
     Injector.create(network, make_arguments(_, operation, ~offline=false));
