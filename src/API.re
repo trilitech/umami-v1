@@ -1560,10 +1560,78 @@ module Tokens = (Caller: CallerAPI, Getter: GetterAPI) => {
       );
   };
 
+  let batchEstimate = (settings, transfers, ~source, ~index=?, ()) => {
+    let transfers = source =>
+      transfers
+      ->List.map(
+          ({token, amount, destination, tx_options}: Token.Transfer.elt) =>
+          ReTaquito.FA12Operations.toRawTransfer(
+            ~token,
+            ~amount=amount->ReTaquito.BigNumber.fromInt,
+            ~dest=destination,
+            ~fee=?
+              tx_options.fee
+              ->Option.map(fee =>
+                  fee->ProtocolXTZ.toInt64->ReTaquito.BigNumber.fromInt64
+                ),
+            ~gasLimit=?tx_options.gasLimit,
+            ~storageLimit=?tx_options.storageLimit,
+            (),
+          )
+        )
+      ->ReTaquito.FA12Operations.prepareTransfers(
+          source,
+          settings->AppSettings.endpoint,
+        );
+
+    ReTaquito.FA12Operations.Estimate.batch(
+      ~endpoint=settings->AppSettings.endpoint,
+      ~source,
+      ~transfers,
+      (),
+    )
+    ->Future.flatMapOk(results => {
+        let results =
+          results->Array.map(({totalCost, gasLimit, storageLimit}) =>
+            Protocol.{
+              fee: totalCost->ProtocolXTZ.fromMutezInt,
+              gasLimit,
+              storageLimit,
+            }
+          );
+
+        switch (index) {
+        | Some(index) =>
+          results
+          ->Array.get(index)
+          ->FutureEx.fromOption(~error="No transfer with such index")
+
+        | None =>
+          results
+          ->Array.reduce(
+              Protocol.{fee: ProtocolXTZ.zero, gasLimit: 0, storageLimit: 0},
+              (
+                Protocol.{fee, gasLimit, storageLimit},
+                {fee: fee1, gasLimit: gasLimit1, storageLimit: storageLimit1},
+              ) =>
+              {
+                fee: ProtocolXTZ.Infix.(fee + fee1),
+                storageLimit: max(storageLimit, storageLimit1),
+                gasLimit: max(gasLimit, gasLimit1),
+              }
+            )
+          ->Ok
+          ->Future.value
+        };
+      });
+  };
+
   let simulate = (network, operation: Token.operation) =>
     switch (operation) {
     | Transfer({source, transfers: [elt], _}) =>
-      estimate_transfer(network, elt, source)
+      transferEstimate(network, elt, source)
+    | Transfer({source, transfers, _}) =>
+      batchEstimate(network, transfers, ~source, ())
     | _ =>
       Injector.simulate(
         network,
