@@ -131,7 +131,6 @@ let makeSingleTransaction =
 
 type simulationResults = {
   fee: ProtocolXTZ.t,
-  count: int,
   gasLimit: int,
   storageLimit: int,
 };

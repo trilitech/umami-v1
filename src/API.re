@@ -310,12 +310,6 @@ module InjectorRaw = (Caller: CallerAPI) => {
               parser_options.fees,
             );
           Js.log(fee);
-          let count =
-            receipt->parse(
-              "[ ]*Expected counter: ([0-9]+)",
-              parser_options.counter,
-            );
-          Js.log(count);
           let gasLimit =
             receipt->parse(
               "[ ]*Gas limit: ([0-9]+)",
@@ -328,9 +322,9 @@ module InjectorRaw = (Caller: CallerAPI) => {
               parser_options.storageLimit,
             );
           Js.log(storageLimit);
-          switch (fee, count, gasLimit, storageLimit) {
-          | (Some(fee), Some(count), Some(gasLimit), Some(storageLimit)) =>
-            Protocol.{fee, count, gasLimit, storageLimit}
+          switch (fee, gasLimit, storageLimit) {
+          | (Some(fee), Some(gasLimit), Some(storageLimit)) =>
+            Protocol.{fee, gasLimit, storageLimit}
           | _ => raise(InvalidReceiptFormat)
           };
         })
@@ -534,12 +528,35 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
       arguments(_, operation),
     );
 
+  let transferEstimate = (settings, transfer, source) => {
+    ReTaquito.Estimate.transfer(
+      ~endpoint=settings->AppSettings.endpoint,
+      ~baseDir=settings->AppSettings.baseDir,
+      ~source,
+      ~dest=transfer.Protocol.destination,
+      ~amount=transfer.Protocol.amount->ProtocolXTZ.toInt64,
+      ~fee=?transfer.Protocol.tx_options.fee->Option.map(ProtocolXTZ.toInt64),
+      ~gasLimit=?transfer.Protocol.tx_options.gasLimit,
+      ~storageLimit=?transfer.Protocol.tx_options.storageLimit,
+      (),
+    );
+  };
+
   let simulate = (settings, ~index=?, operation: Protocol.t) => {
     switch (operation, index) {
+    | (Transaction({transfers: [t], source}), _) =>
+      transferEstimate(settings, t, source)
+      ->Future.mapOk(({totalCost, gasLimit, storageLimit}) =>
+          Protocol.{
+            fee: totalCost->ProtocolXTZ.fromMutezInt,
+            gasLimit,
+            storageLimit,
+          }
+        )
+
     | (Delegation(_), _)
-    | (Transaction(_), None)
-    | (Transaction({transfers: [_]}), _) =>
-      simpleSimulation(settings, operation)
+    | (Transaction(_), None) => simpleSimulation(settings, operation)
+
     | (Transaction(_), Some(index)) =>
       simulateSingleBatchTransfer(settings, index, operation)
     };

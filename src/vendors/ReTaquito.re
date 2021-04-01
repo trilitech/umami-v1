@@ -47,6 +47,7 @@ module RPCClient = {
 module Toolkit = {
   type tz;
   type contract;
+  type estimate;
 
   type operationResult = {hash: string};
 
@@ -70,6 +71,7 @@ module Toolkit = {
     tz,
     contract,
     operation: Operation.field,
+    estimate,
   };
 
   type provider = {signer};
@@ -184,6 +186,18 @@ module Toolkit = {
       (M.t, string, string, BigNumber.t) => methodResult(M.transfer) =
       "transfer";
   };
+
+  module Estimation = {
+    type result = {
+      totalCost: int,
+      storageLimit: int,
+      gasLimit: int,
+    };
+
+    [@bs.send]
+    external transfer: (estimate, transferParams) => Js.Promise.t(result) =
+      "transfer";
+  };
 };
 
 module Balance = {
@@ -271,6 +285,33 @@ let readSecretKey = (address, passphrase, dirname) => {
       }
     );
 };
+
+%raw
+"
+class NoopSigner {
+  constructor(pkh) {
+    this.pkh = pkh;
+  }
+  async publicKey() {
+      console.log('Publickey');
+    throw new UnconfiguredSignerError();
+  }
+  async publicKeyHash() {
+      console.log('PublickeyHash');
+    return this.pkh;
+  }
+  async secretKey() {
+      console.log('SecretKey');
+    throw new UnconfiguredSignerError();
+  }
+  async sign(_bytes, _watermark) {
+      console.log('Sign');
+    throw new UnconfiguredSignerError();
+  }
+}
+";
+
+[@bs.new] external makeDummySigner: string => signer = "NoopSigner";
 
 exception Error(string);
 
@@ -535,5 +576,49 @@ module FA12Operations = {
             Generic(Js.String.make(e));
           })
       );
+  };
+};
+
+module Estimate = {
+  let transfer =
+      (
+        ~endpoint,
+        ~baseDir as _,
+        ~source,
+        ~dest,
+        ~amount,
+        ~fee=?,
+        ~gasLimit=?,
+        ~storageLimit=?,
+        (),
+      ) => {
+    let tk = Toolkit.create(endpoint);
+
+    let amount = BigNumber.fromInt64(amount);
+    let fee = fee->Option.map(BigNumber.fromInt64);
+
+    let signer = makeDummySigner(source);
+    let provider = Toolkit.{signer: signer};
+    tk->Toolkit.setProvider(provider);
+
+    let tr =
+      Toolkit.prepareTransfer(
+        ~source,
+        ~dest,
+        ~amount,
+        ~fee?,
+        ~gasLimit?,
+        ~storageLimit?,
+        (),
+      );
+
+    Js.log(tr);
+
+    tk.estimate
+    ->Toolkit.Estimation.transfer(tr)
+    ->FutureJs.fromPromise(e => {
+        Js.log(e);
+        Js.String.make(e);
+      });
   };
 };
