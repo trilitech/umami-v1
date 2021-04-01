@@ -106,7 +106,7 @@ module Toolkit = {
     fee: option(BigNumber.t),
   };
 
-  let prepareDelegate = (~source, ~delegate=?, ~fee=?, ()) => {
+  let prepareDelegate = (~source, ~delegate, ~fee=?, ()) => {
     {source, delegate, fee};
   };
 
@@ -266,8 +266,8 @@ let aliasFromPkh = (dirname, pkh) => {
     });
 };
 
-let pkFromAlias = (dirname, filename, alias) => {
-  System.File.read(dirname ++ "/" ++ filename)
+let pkFromAlias = (path, alias) => {
+  System.File.read(path)
   ->Future.mapError(e => Generic(e))
   ->Future.flatMapOk(file => {
       PkAliases.parse(file)
@@ -392,7 +392,7 @@ module Operations = {
         let provider = Toolkit.{signer: signer};
         tk->Toolkit.setProvider(provider);
 
-        let dg = Toolkit.prepareDelegate(~source, ~delegate?, ~fee?, ());
+        let dg = Toolkit.prepareDelegate(~source, ~delegate, ~fee?, ());
 
         tk.contract
         ->Toolkit.setDelegate(dg)
@@ -625,7 +625,7 @@ module Estimate = {
         (),
       ) =>
     aliasFromPkh(baseDir, source)
-    ->Future.flatMapOk(alias => pkFromAlias(baseDir, "./public_keys", alias))
+    ->Future.flatMapOk(alias => pkFromAlias(baseDir ++ "/public_keys", alias))
     ->Future.flatMapOk(pk => {
         let tk = Toolkit.create(endpoint);
         let signer = makeDummySigner(pk, source);
@@ -656,7 +656,7 @@ module Estimate = {
 
   let setDelegate = (~endpoint, ~baseDir, ~source, ~delegate=?, ~fee=?, ()) =>
     aliasFromPkh(baseDir, source)
-    ->Future.flatMapOk(alias => pkFromAlias(baseDir, "./public_keys", alias))
+    ->Future.flatMapOk(alias => pkFromAlias(baseDir ++ "/public_keys", alias))
     ->Future.flatMapOk(pk => {
         let tk = Toolkit.create(endpoint);
         let signer = makeDummySigner(pk, source);
@@ -664,7 +664,7 @@ module Estimate = {
         tk->Toolkit.setProvider(provider);
 
         let fee = fee->Option.map(BigNumber.fromInt64);
-        let sd = Toolkit.prepareDelegate(~source, ~delegate?, ~fee?, ());
+        let sd = Toolkit.prepareDelegate(~source, ~delegate, ~fee?, ());
         Js.log(sd);
 
         tk.estimate
