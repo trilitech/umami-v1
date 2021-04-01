@@ -542,6 +542,17 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
     );
   };
 
+  let setDelegateEstimate = (settings, delegation: Protocol.delegation) => {
+    ReTaquito.Estimate.setDelegate(
+      ~endpoint=settings->AppSettings.endpoint,
+      ~baseDir=settings->AppSettings.baseDir,
+      ~source=delegation.Protocol.source,
+      ~delegate=?delegation.Protocol.delegate,
+      ~fee=?delegation.Protocol.options.fee->Option.map(ProtocolXTZ.toInt64),
+      (),
+    );
+  };
+
   let simulate = (settings, ~index=?, operation: Protocol.t) => {
     switch (operation, index) {
     | (Transaction({transfers: [t], source}), _) =>
@@ -553,8 +564,28 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
             storageLimit,
           }
         )
+      ->Future.mapError(e =>
+          switch (e) {
+          | Generic(s) => s
+          | WrongPassword => I18n.form_input_error#wrong_password
+          }
+        )
 
-    | (Delegation(_), _)
+    | (Delegation(d), _) =>
+      setDelegateEstimate(settings, d)
+      ->Future.mapOk(({totalCost, gasLimit, storageLimit}) =>
+          Protocol.{
+            fee: totalCost->ProtocolXTZ.fromMutezInt,
+            gasLimit,
+            storageLimit,
+          }
+        )
+      ->Future.mapError(e =>
+          switch (e) {
+          | Generic(s) => s
+          | WrongPassword => I18n.form_input_error#wrong_password
+          }
+        )
     | (Transaction(_), None) => simpleSimulation(settings, operation)
 
     | (Transaction(_), Some(index)) =>
@@ -620,7 +651,7 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
       ~source,
       ~delegate,
       ~password,
-      ~fee=?options.fee->Option.map(ProtocolXTZ.unsafeToMutezInt),
+      ~fee=?options.fee->Option.map(ProtocolXTZ.toInt64),
       (),
     )
     ->Future.mapOk((op: ReTaquito.Toolkit.operationResult) => op.hash);

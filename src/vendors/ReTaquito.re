@@ -103,10 +103,10 @@ module Toolkit = {
   type delegateParams = {
     source: string,
     delegate: option(string),
-    fee: option(int),
+    fee: option(BigNumber.t),
   };
 
-  let prepareDelegate = (~source, ~delegate, ~fee=?, ()) => {
+  let prepareDelegate = (~source, ~delegate=?, ~fee=?, ()) => {
     {source, delegate, fee};
   };
 
@@ -197,6 +197,10 @@ module Toolkit = {
     [@bs.send]
     external transfer: (estimate, transferParams) => Js.Promise.t(result) =
       "transfer";
+
+    [@bs.send]
+    external setDelegate: (estimate, delegateParams) => Js.Promise.t(result) =
+      "setDelegate";
   };
 };
 
@@ -216,6 +220,21 @@ module SecretAliases = {
   type alias = {
     name: string,
     value: string,
+  };
+  type t = array(alias);
+
+  [@bs.val] [@bs.scope "JSON"] external parse: string => t = "parse";
+};
+
+module PkAliases = {
+  type value = {
+    locator: string,
+    key: string,
+  };
+
+  type alias = {
+    name: string,
+    value,
   };
   type t = array(alias);
 
@@ -244,6 +263,17 @@ let aliasFromPkh = (dirname, pkh) => {
       ->Js.Array2.find(a => a.value == pkh)
       ->FutureEx.fromOption(~error=Generic("No key found !"))
       ->Future.mapOk(a => a.PkhAliases.name)
+    });
+};
+
+let pkFromAlias = (dirname, filename, alias) => {
+  System.File.read(dirname ++ "/" ++ filename)
+  ->Future.mapError(e => Generic(e))
+  ->Future.flatMapOk(file => {
+      PkAliases.parse(file)
+      ->Js.Array2.find(a => a.PkAliases.name == alias)
+      ->FutureEx.fromOption(~error=Generic("No key found !"))
+      ->Future.mapOk(a => a.PkAliases.value.key)
     });
 };
 
@@ -289,12 +319,13 @@ let readSecretKey = (address, passphrase, dirname) => {
 %raw
 "
 class NoopSigner {
-  constructor(pkh) {
+  constructor(pk, pkh) {
+    this.pk = pk;
     this.pkh = pkh;
   }
   async publicKey() {
       console.log('Publickey');
-    throw new UnconfiguredSignerError();
+    return this.pk;
   }
   async publicKeyHash() {
       console.log('PublickeyHash');
@@ -311,7 +342,7 @@ class NoopSigner {
 }
 ";
 
-[@bs.new] external makeDummySigner: string => signer = "NoopSigner";
+[@bs.new] external makeDummySigner: (string, string) => signer = "NoopSigner";
 
 exception Error(string);
 
@@ -354,13 +385,14 @@ module Operations = {
         (),
       ) => {
     let tk = Toolkit.create(endpoint);
+    let fee = fee->Option.map(BigNumber.fromInt64);
 
     readSecretKey(source, password, baseDir)
     ->Future.flatMapOk(signer => {
         let provider = Toolkit.{signer: signer};
         tk->Toolkit.setProvider(provider);
 
-        let dg = Toolkit.prepareDelegate(~source, ~delegate, ~fee?, ());
+        let dg = Toolkit.prepareDelegate(~source, ~delegate?, ~fee?, ());
 
         tk.contract
         ->Toolkit.setDelegate(dg)
@@ -583,7 +615,7 @@ module Estimate = {
   let transfer =
       (
         ~endpoint,
-        ~baseDir as _,
+        ~baseDir,
         ~source,
         ~dest,
         ~amount,
@@ -591,34 +623,55 @@ module Estimate = {
         ~gasLimit=?,
         ~storageLimit=?,
         (),
-      ) => {
-    let tk = Toolkit.create(endpoint);
+      ) =>
+    aliasFromPkh(baseDir, source)
+    ->Future.flatMapOk(alias => pkFromAlias(baseDir, "./public_keys", alias))
+    ->Future.flatMapOk(pk => {
+        let tk = Toolkit.create(endpoint);
+        let signer = makeDummySigner(pk, source);
+        let provider = Toolkit.{signer: signer};
+        tk->Toolkit.setProvider(provider);
 
-    let amount = BigNumber.fromInt64(amount);
-    let fee = fee->Option.map(BigNumber.fromInt64);
+        let amount = BigNumber.fromInt64(amount);
+        let fee = fee->Option.map(BigNumber.fromInt64);
+        let tr =
+          Toolkit.prepareTransfer(
+            ~source,
+            ~dest,
+            ~amount,
+            ~fee?,
+            ~gasLimit?,
+            ~storageLimit?,
+            (),
+          );
+        Js.log(tr);
 
-    let signer = makeDummySigner(source);
-    let provider = Toolkit.{signer: signer};
-    tk->Toolkit.setProvider(provider);
-
-    let tr =
-      Toolkit.prepareTransfer(
-        ~source,
-        ~dest,
-        ~amount,
-        ~fee?,
-        ~gasLimit?,
-        ~storageLimit?,
-        (),
-      );
-
-    Js.log(tr);
-
-    tk.estimate
-    ->Toolkit.Estimation.transfer(tr)
-    ->FutureJs.fromPromise(e => {
-        Js.log(e);
-        Js.String.make(e);
+        tk.estimate
+        ->Toolkit.Estimation.transfer(tr)
+        ->FutureJs.fromPromise(e => {
+            Js.log(e);
+            Generic(Js.String.make(e));
+          });
       });
-  };
+
+  let setDelegate = (~endpoint, ~baseDir, ~source, ~delegate=?, ~fee=?, ()) =>
+    aliasFromPkh(baseDir, source)
+    ->Future.flatMapOk(alias => pkFromAlias(baseDir, "./public_keys", alias))
+    ->Future.flatMapOk(pk => {
+        let tk = Toolkit.create(endpoint);
+        let signer = makeDummySigner(pk, source);
+        let provider = Toolkit.{signer: signer};
+        tk->Toolkit.setProvider(provider);
+
+        let fee = fee->Option.map(BigNumber.fromInt64);
+        let sd = Toolkit.prepareDelegate(~source, ~delegate?, ~fee?, ());
+        Js.log(sd);
+
+        tk.estimate
+        ->Toolkit.Estimation.setDelegate(sd)
+        ->FutureJs.fromPromise(e => {
+            Js.log(e);
+            Generic(Js.String.make(e));
+          });
+      });
 };
