@@ -514,6 +514,43 @@ module FA12Operations = {
             });
         });
     };
+
+    let batch =
+        (
+          ~endpoint,
+          ~source,
+          ~transfers:
+             string =>
+             Future.t(list(Belt.Result.t(Toolkit.transferParams, error))),
+          (),
+        ) => {
+      let tk = Toolkit.create(endpoint);
+
+      let signer = makeDummySigner(source);
+      let provider = Toolkit.{signer: signer};
+      tk->Toolkit.setProvider(provider);
+
+      transfers(source)
+      ->Future.map(ResultEx.collect)
+      ->Future.mapError(err =>
+          switch (err) {
+          | Generic(e) => e
+          | WrongPassword => I18n.form_input_error#wrong_password
+          }
+        )
+      ->Future.flatMapOk(txs => {
+          tk.estimate
+          ->Toolkit.Estimation.batch(
+              txs
+              ->List.map(txs => {...txs, kind: opKindTransaction})
+              ->List.toArray,
+            )
+          ->FutureJs.fromPromise(e => {
+              Js.log(e);
+              Js.String.make(e);
+            })
+        });
+    };
   };
 
   let transfer =
