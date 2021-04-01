@@ -6,6 +6,8 @@ const { InMemorySigner, importKey } = require('@taquito/signer');
 const BigNumber = require('bignumber.js');
 ";
 
+let opKindTransaction = [%raw "OpKind.TRANSACTION"];
+
 module BigNumber = {
   type t;
 
@@ -77,6 +79,7 @@ module Toolkit = {
   type provider = {signer};
 
   type transferParams = {
+    kind: string,
     [@bs.as "to"]
     to_: string,
     source: string,
@@ -90,6 +93,7 @@ module Toolkit = {
   let prepareTransfer =
       (~source, ~dest, ~amount, ~fee=?, ~gasLimit=?, ~storageLimit=?, ()) => {
     {
+      kind: opKindTransaction,
       to_: dest,
       source,
       amount,
@@ -195,6 +199,11 @@ module Toolkit = {
     };
 
     [@bs.send]
+    external batch:
+      (estimate, array(transferParams)) => Js.Promise.t(array(result)) =
+      "batch";
+
+    [@bs.send]
     external transfer: (estimate, transferParams) => Js.Promise.t(result) =
       "transfer";
 
@@ -255,7 +264,7 @@ type error =
   | Generic(string)
   | WrongPassword;
 
-let aliasFromPkh = (dirname, pkh) => {
+let aliasFromPkh = (~dirname, ~pkh, ()) => {
   System.File.read(dirname ++ "/public_key_hashs")
   ->Future.mapError(e => Generic(e))
   ->Future.flatMapOk(file => {
@@ -266,8 +275,8 @@ let aliasFromPkh = (dirname, pkh) => {
     });
 };
 
-let pkFromAlias = (path, alias) => {
-  System.File.read(path)
+let pkFromAlias = (~dirname, ~alias, ()) => {
+  System.File.read(dirname ++ "/public_keys")
   ->Future.mapError(e => Generic(e))
   ->Future.flatMapOk(file => {
       PkAliases.parse(file)
@@ -278,7 +287,7 @@ let pkFromAlias = (path, alias) => {
 };
 
 let readSecretKey = (address, passphrase, dirname) => {
-  aliasFromPkh(dirname, address)
+  aliasFromPkh(~dirname, ~pkh=address, ())
   ->Future.flatMapOk(alias => {
       System.File.read(dirname ++ "/secret_keys")
       ->Future.mapError(e => Generic(e))
@@ -324,25 +333,23 @@ class NoopSigner {
     this.pkh = pkh;
   }
   async publicKey() {
-      console.log('Publickey');
     return this.pk;
   }
   async publicKeyHash() {
-      console.log('PublickeyHash');
     return this.pkh;
   }
   async secretKey() {
-      console.log('SecretKey');
     throw new UnconfiguredSignerError();
   }
   async sign(_bytes, _watermark) {
-      console.log('Sign');
     throw new UnconfiguredSignerError();
   }
 }
 ";
 
-[@bs.new] external makeDummySigner: (string, string) => signer = "NoopSigner";
+[@bs.new]
+external makeDummySigner: (~pk: string, ~pkh: string, unit) => signer =
+  "NoopSigner";
 
 exception Error(string);
 
@@ -624,11 +631,11 @@ module Estimate = {
         ~storageLimit=?,
         (),
       ) =>
-    aliasFromPkh(baseDir, source)
-    ->Future.flatMapOk(alias => pkFromAlias(baseDir ++ "/public_keys", alias))
+    aliasFromPkh(~dirname=baseDir, ~pkh=source, ())
+    ->Future.flatMapOk(alias => pkFromAlias(~dirname=baseDir, ~alias, ()))
     ->Future.flatMapOk(pk => {
         let tk = Toolkit.create(endpoint);
-        let signer = makeDummySigner(pk, source);
+        let signer = makeDummySigner(~pk, ~pkh=source, ());
         let provider = Toolkit.{signer: signer};
         tk->Toolkit.setProvider(provider);
 
@@ -655,11 +662,11 @@ module Estimate = {
       });
 
   let setDelegate = (~endpoint, ~baseDir, ~source, ~delegate=?, ~fee=?, ()) =>
-    aliasFromPkh(baseDir, source)
-    ->Future.flatMapOk(alias => pkFromAlias(baseDir ++ "/public_keys", alias))
+    aliasFromPkh(~dirname=baseDir, ~pkh=source, ())
+    ->Future.flatMapOk(alias => pkFromAlias(~dirname=baseDir, ~alias, ()))
     ->Future.flatMapOk(pk => {
         let tk = Toolkit.create(endpoint);
-        let signer = makeDummySigner(pk, source);
+        let signer = makeDummySigner(~pk, ~pkh=source, ());
         let provider = Toolkit.{signer: signer};
         tk->Toolkit.setProvider(provider);
 
@@ -674,4 +681,20 @@ module Estimate = {
             Generic(Js.String.make(e));
           });
       });
+
+  let batch = (~endpoint, ~baseDir, ~source, ~transfers, ()) => {
+    aliasFromPkh(~dirname=baseDir, ~pkh=source, ())
+    ->Future.flatMapOk(alias => pkFromAlias(~dirname=baseDir, ~alias, ()))
+    ->Future.flatMapOk(pk => {
+        let tk = Toolkit.create(endpoint);
+
+        let signer = makeDummySigner(~pk, ~pkh=source, ());
+
+        let provider = Toolkit.{signer: signer};
+        tk->Toolkit.setProvider(provider);
+
+        Toolkit.Estimation.batch(tk.estimate, source->transfers)
+        ->FutureJs.fromPromise(e => e->Js.String.make->Generic);
+      });
+  };
 };

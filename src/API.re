@@ -542,6 +542,76 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
     );
   };
 
+  let batchEstimate = (settings, transfers, ~source, ~index=?, ()) => {
+    let transfers = source =>
+      transfers
+      ->List.map(({amount, destination, tx_options}: Protocol.transfer) =>
+          ReTaquito.Toolkit.prepareTransfer(
+            ~amount=amount->ProtocolXTZ.toInt64->ReTaquito.BigNumber.fromInt64,
+            ~dest=destination,
+            ~source,
+            ~fee=?
+              tx_options.fee
+              ->Option.map(fee =>
+                  fee->ProtocolXTZ.toInt64->ReTaquito.BigNumber.fromInt64
+                ),
+            ~gasLimit=?tx_options.gasLimit,
+            ~storageLimit=?tx_options.storageLimit,
+            (),
+          )
+        )
+      ->List.toArray;
+
+    ReTaquito.Estimate.batch(
+      ~endpoint=settings->AppSettings.endpoint,
+      ~baseDir=settings->AppSettings.baseDir,
+      ~source,
+      ~transfers,
+      (),
+    )
+    ->Future.flatMapOk(results => {
+        switch (index) {
+        | Some(index) =>
+          results
+          ->Array.get(index)
+          ->FutureEx.fromOption(
+              ~error=ReTaquito.Generic("No transfer with such index"),
+            )
+        | None =>
+          results
+          ->Array.reduce(
+              ReTaquito.Toolkit.Estimation.{
+                totalCost: 0,
+                gasLimit: 0,
+                storageLimit: 0,
+              },
+              (
+                {totalCost, gasLimit, storageLimit},
+                {
+                  totalCost: totalCost1,
+                  gasLimit: gasLimit1,
+                  storageLimit: storageLimit1,
+                },
+              ) =>
+              {
+                totalCost: totalCost + totalCost1,
+                storageLimit: storageLimit + storageLimit1,
+                gasLimit: gasLimit + gasLimit1,
+              }
+            )
+          ->(
+              (ReTaquito.Toolkit.Estimation.{gasLimit, storageLimit} as r) => {
+                ...r,
+                gasLimit: gasLimit + 100,
+                storageLimit: storageLimit + 100,
+              }
+            )
+          ->Ok
+          ->Future.value
+        }
+      });
+  };
+
   let setDelegateEstimate = (settings, delegation: Protocol.delegation) => {
     ReTaquito.Estimate.setDelegate(
       ~endpoint=settings->AppSettings.endpoint,
@@ -554,43 +624,33 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
   };
 
   let simulate = (settings, ~index=?, operation: Protocol.t) => {
-    switch (operation, index) {
-    | (Transaction({transfers: [t], source}), _) =>
-      transferEstimate(settings, t, source)
-      ->Future.mapOk(({totalCost, gasLimit, storageLimit}) =>
-          Protocol.{
-            fee: totalCost->ProtocolXTZ.fromMutezInt,
-            gasLimit,
-            storageLimit,
-          }
-        )
-      ->Future.mapError(e =>
-          switch (e) {
-          | Generic(s) => s
-          | WrongPassword => I18n.form_input_error#wrong_password
-          }
-        )
+    let r =
+      switch (operation, index) {
+      | (Transaction({transfers: [t], source}), _) =>
+        transferEstimate(settings, t, source)
 
-    | (Delegation(d), _) =>
-      setDelegateEstimate(settings, d)
-      ->Future.mapOk(({totalCost, gasLimit, storageLimit}) =>
-          Protocol.{
-            fee: totalCost->ProtocolXTZ.fromMutezInt,
-            gasLimit,
-            storageLimit,
-          }
-        )
-      ->Future.mapError(e =>
-          switch (e) {
-          | Generic(s) => s
-          | WrongPassword => I18n.form_input_error#wrong_password
-          }
-        )
-    | (Transaction(_), None) => simpleSimulation(settings, operation)
+      | (Delegation(d), _) => setDelegateEstimate(settings, d)
+      | (Transaction({transfers, source}), None) =>
+        batchEstimate(settings, transfers, ~source, ())
 
-    | (Transaction(_), Some(index)) =>
-      simulateSingleBatchTransfer(settings, index, operation)
-    };
+      | (Transaction({transfers, source}), Some(index)) =>
+        batchEstimate(settings, transfers, ~source, ~index, ())
+      };
+
+    r
+    ->Future.mapError(e =>
+        switch (e) {
+        | Generic(s) => s
+        | WrongPassword => I18n.form_input_error#wrong_password
+        }
+      )
+    ->Future.mapOk(({totalCost, gasLimit, storageLimit}) =>
+        Protocol.{
+          fee: totalCost->ProtocolXTZ.fromMutezInt,
+          gasLimit,
+          storageLimit,
+        }
+      );
   };
 
   let create = (network, operation: Protocol.t) =>
