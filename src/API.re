@@ -569,47 +569,9 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
       ~transfers,
       (),
     )
-    ->Future.flatMapOk(results => {
-        switch (index) {
-        | Some(index) =>
-          results
-          ->Array.get(index)
-          ->FutureEx.fromOption(
-              ~error=ReTaquito.Generic("No transfer with such index"),
-            )
-        | None =>
-          results
-          ->Array.reduce(
-              ReTaquito.Toolkit.Estimation.{
-                totalCost: 0,
-                gasLimit: 0,
-                storageLimit: 0,
-              },
-              (
-                {totalCost, gasLimit, storageLimit},
-                {
-                  totalCost: totalCost1,
-                  gasLimit: gasLimit1,
-                  storageLimit: storageLimit1,
-                },
-              ) =>
-              {
-                totalCost: totalCost + totalCost1,
-                storageLimit: storageLimit + storageLimit1,
-                gasLimit: gasLimit + gasLimit1,
-              }
-            )
-          ->(
-              (ReTaquito.Toolkit.Estimation.{gasLimit, storageLimit} as r) => {
-                ...r,
-                gasLimit: gasLimit + 100,
-                storageLimit: storageLimit + 100,
-              }
-            )
-          ->Ok
-          ->Future.value
-        }
-      });
+    ->Future.flatMapOk(r =>
+        ReTaquito.Estimate.handleEstimationResults(r, index)
+      );
   };
 
   let setDelegateEstimate = (settings, delegation: Protocol.delegation) => {
@@ -1592,47 +1554,9 @@ module Tokens = (Caller: CallerAPI, Getter: GetterAPI) => {
       ~transfers,
       (),
     )
-    ->Future.flatMapOk(results => {
-        switch (index) {
-        | Some(index) =>
-          results
-          ->Array.get(index)
-          ->FutureEx.fromOption(
-              ~error=ReTaquito.Generic("No transfer with such index"),
-            )
-        | None =>
-          results
-          ->Array.reduce(
-              ReTaquito.Toolkit.Estimation.{
-                totalCost: 0,
-                gasLimit: 0,
-                storageLimit: 0,
-              },
-              (
-                {totalCost, gasLimit, storageLimit},
-                {
-                  totalCost: totalCost1,
-                  gasLimit: gasLimit1,
-                  storageLimit: storageLimit1,
-                },
-              ) =>
-              {
-                totalCost: totalCost + totalCost1,
-                storageLimit: storageLimit + storageLimit1,
-                gasLimit: gasLimit + gasLimit1,
-              }
-            )
-          ->(
-              (ReTaquito.Toolkit.Estimation.{gasLimit, storageLimit} as r) => {
-                ...r,
-                gasLimit: gasLimit + 100,
-                storageLimit: storageLimit + 100,
-              }
-            )
-          ->Ok
-          ->Future.value
-        }
-      })
+    ->Future.flatMapOk(r =>
+        ReTaquito.Estimate.handleEstimationResults(r, index)
+      )
     ->Future.mapOk(({totalCost, gasLimit, storageLimit}) =>
         Protocol.{
           fee: totalCost->ProtocolXTZ.fromMutezInt,

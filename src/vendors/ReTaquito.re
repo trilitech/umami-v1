@@ -791,4 +791,40 @@ module Estimate = {
         ->FutureJs.fromPromise(e => e->Js.String.make->Generic);
       });
   };
+
+  let handleEstimationResults = (results, index) => {
+    switch (index) {
+    | Some(index) =>
+      results
+      ->Array.get(index)
+      ->FutureEx.fromOption(~error=Generic("No transfer with such index"))
+    | None =>
+      results
+      ->Array.reduce(
+          Toolkit.Estimation.{totalCost: 0, gasLimit: 0, storageLimit: 0},
+          (
+            {totalCost, gasLimit, storageLimit},
+            {
+              Toolkit.Estimation.totalCost: totalCost1,
+              gasLimit: gasLimit1,
+              storageLimit: storageLimit1,
+            },
+          ) =>
+          {
+            totalCost: totalCost + totalCost1,
+            storageLimit: storageLimit + storageLimit1,
+            gasLimit: gasLimit + gasLimit1,
+          }
+        )
+      ->(
+          (Toolkit.Estimation.{gasLimit, storageLimit} as r) => {
+            ...r,
+            gasLimit: gasLimit + 100,
+            storageLimit: storageLimit + 100,
+          }
+        )
+      ->Ok
+      ->Future.value
+    };
+  };
 };
