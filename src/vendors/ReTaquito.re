@@ -52,6 +52,7 @@ module Toolkit = {
   type estimate;
 
   type operationResult = {hash: string};
+  type transferMichelsonParameter;
 
   module Operation = {
     type field;
@@ -88,6 +89,7 @@ module Toolkit = {
     gasLimit: option(int),
     storageLimit: option(int),
     mutez: option(bool),
+    parameter: option(transferMichelsonParameter),
   };
 
   let prepareTransfer =
@@ -101,6 +103,7 @@ module Toolkit = {
       gasLimit,
       storageLimit,
       mutez: Some(true),
+      parameter: None,
     };
   };
 
@@ -470,6 +473,7 @@ module FA12Operations = {
     let transfer =
         (
           ~endpoint,
+          ~baseDir,
           ~tokenContract,
           ~source,
           ~dest,
@@ -478,23 +482,27 @@ module FA12Operations = {
           ~gasLimit=?,
           ~storageLimit=?,
           (),
-        ) => {
-      let tk = Toolkit.create(endpoint);
+        ) =>
+      aliasFromPkh(~dirname=baseDir, ~pkh=source, ())
+      ->Future.flatMapOk(alias => pkFromAlias(~dirname=baseDir, ~alias, ()))
+      ->Future.flatMapOk(pk => {
+          let tk = Toolkit.create(endpoint);
 
-      let amount = BigNumber.fromInt64(amount);
-      let fee = fee->Option.map(BigNumber.fromInt64);
+          let signer = makeDummySigner(~pk, ~pkh=source, ());
+          let provider = Toolkit.{signer: signer};
+          tk->Toolkit.setProvider(provider);
 
-      let signer = makeDummySigner(source);
-      let provider = Toolkit.{signer: signer};
-      tk->Toolkit.setProvider(provider);
-
-      tk.contract
-      ->Toolkit.FA12.at(tokenContract)
-      ->FutureJs.fromPromise(e => {
-          Js.log(e);
-          Js.String.make(e);
+          tk.contract
+          ->Toolkit.FA12.at(tokenContract)
+          ->FutureJs.fromPromise(e => {
+              Js.log(e);
+              Generic(Js.String.make(e));
+            })
+          ->Future.mapOk(c => (c, tk));
         })
-      ->Future.flatMapOk(c => {
+      ->Future.flatMapOk(((c, tk)) => {
+          let amount = BigNumber.fromInt64(amount);
+          let fee = fee->Option.map(BigNumber.fromInt64);
           let params =
             Toolkit.makeSendParams(
               ~amount=BigNumber.fromInt64(0L),
@@ -510,46 +518,45 @@ module FA12Operations = {
           ->(tr => tk.estimate->Toolkit.Estimation.transfer(tr))
           ->FutureJs.fromPromise(e => {
               Js.log(e);
-              Js.String.make(e);
+              Generic(Js.String.make(e));
             });
         });
-    };
 
     let batch =
         (
           ~endpoint,
+          ~baseDir,
           ~source,
           ~transfers:
              string =>
              Future.t(list(Belt.Result.t(Toolkit.transferParams, error))),
           (),
         ) => {
-      let tk = Toolkit.create(endpoint);
-
-      let signer = makeDummySigner(source);
-      let provider = Toolkit.{signer: signer};
-      tk->Toolkit.setProvider(provider);
-
-      transfers(source)
-      ->Future.map(ResultEx.collect)
-      ->Future.mapError(err =>
-          switch (err) {
-          | Generic(e) => e
-          | WrongPassword => I18n.form_input_error#wrong_password
-          }
-        )
-      ->Future.flatMapOk(txs => {
-          tk.estimate
-          ->Toolkit.Estimation.batch(
-              txs
-              ->List.map(txs => {...txs, kind: opKindTransaction})
-              ->List.toArray,
+      aliasFromPkh(~dirname=baseDir, ~pkh=source, ())
+      ->Future.flatMapOk(alias => pkFromAlias(~dirname=baseDir, ~alias, ()))
+      ->Future.mapOk(pk => {
+          let tk = Toolkit.create(endpoint);
+          let signer = makeDummySigner(~pk, ~pkh=source, ());
+          let provider = Toolkit.{signer: signer};
+          tk->Toolkit.setProvider(provider);
+          tk;
+        })
+      ->Future.flatMapOk(tk =>
+          transfers(source)
+          ->Future.map(ResultEx.collect)
+          ->Future.flatMapOk(txs =>
+              tk.estimate
+              ->Toolkit.Estimation.batch(
+                  txs
+                  ->List.map(tr => {...tr, kind: opKindTransaction})
+                  ->List.toArray,
+                )
+              ->FutureJs.fromPromise(e => {
+                  Js.log(e);
+                  Generic(Js.String.make(e));
+                })
             )
-          ->FutureJs.fromPromise(e => {
-              Js.log(e);
-              Js.String.make(e);
-            })
-        });
+        );
     };
   };
 

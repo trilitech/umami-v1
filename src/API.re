@@ -1540,6 +1540,7 @@ module Tokens = (Caller: CallerAPI, Getter: GetterAPI) => {
   let transferEstimate = (settings, transfer, source) => {
     ReTaquito.FA12Operations.Estimate.transfer(
       ~endpoint=settings->AppSettings.endpoint,
+      ~baseDir=settings->AppSettings.baseDir,
       ~tokenContract=transfer.Token.Transfer.token,
       ~source,
       ~dest=transfer.Token.Transfer.destination,
@@ -1586,52 +1587,79 @@ module Tokens = (Caller: CallerAPI, Getter: GetterAPI) => {
 
     ReTaquito.FA12Operations.Estimate.batch(
       ~endpoint=settings->AppSettings.endpoint,
+      ~baseDir=settings->AppSettings.baseDir,
       ~source,
       ~transfers,
       (),
     )
     ->Future.flatMapOk(results => {
-        let results =
-          results->Array.map(({totalCost, gasLimit, storageLimit}) =>
-            Protocol.{
-              fee: totalCost->ProtocolXTZ.fromMutezInt,
-              gasLimit,
-              storageLimit,
-            }
-          );
-
         switch (index) {
         | Some(index) =>
           results
           ->Array.get(index)
-          ->FutureEx.fromOption(~error="No transfer with such index")
-
+          ->FutureEx.fromOption(
+              ~error=ReTaquito.Generic("No transfer with such index"),
+            )
         | None =>
           results
           ->Array.reduce(
-              Protocol.{fee: ProtocolXTZ.zero, gasLimit: 0, storageLimit: 0},
+              ReTaquito.Toolkit.Estimation.{
+                totalCost: 0,
+                gasLimit: 0,
+                storageLimit: 0,
+              },
               (
-                Protocol.{fee, gasLimit, storageLimit},
-                {fee: fee1, gasLimit: gasLimit1, storageLimit: storageLimit1},
+                {totalCost, gasLimit, storageLimit},
+                {
+                  totalCost: totalCost1,
+                  gasLimit: gasLimit1,
+                  storageLimit: storageLimit1,
+                },
               ) =>
               {
-                fee: ProtocolXTZ.Infix.(fee + fee1),
-                storageLimit: max(storageLimit, storageLimit1),
-                gasLimit: max(gasLimit, gasLimit1),
+                totalCost: totalCost + totalCost1,
+                storageLimit: storageLimit + storageLimit1,
+                gasLimit: gasLimit + gasLimit1,
+              }
+            )
+          ->(
+              (ReTaquito.Toolkit.Estimation.{gasLimit, storageLimit} as r) => {
+                ...r,
+                gasLimit: gasLimit + 100,
+                storageLimit: storageLimit + 100,
               }
             )
           ->Ok
           ->Future.value
-        };
-      });
+        }
+      })
+    ->Future.mapOk(({totalCost, gasLimit, storageLimit}) =>
+        Protocol.{
+          fee: totalCost->ProtocolXTZ.fromMutezInt,
+          gasLimit,
+          storageLimit,
+        }
+      );
   };
 
   let simulate = (network, operation: Token.operation) =>
     switch (operation) {
     | Transfer({source, transfers: [elt], _}) =>
       transferEstimate(network, elt, source)
+      ->Future.mapError(e =>
+          switch (e) {
+          | Generic(s) => s
+          | WrongPassword => I18n.form_input_error#wrong_password
+          }
+        )
     | Transfer({source, transfers, _}) =>
       batchEstimate(network, transfers, ~source, ())
+      ->Future.mapError(e =>
+          switch (e) {
+          | Generic(s) => s
+          | WrongPassword => I18n.form_input_error#wrong_password
+          }
+        )
     | _ =>
       Injector.simulate(
         network,
