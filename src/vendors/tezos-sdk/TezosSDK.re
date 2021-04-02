@@ -50,13 +50,6 @@ module InputAddress = {
   };
 };
 
-module OutputContract = {
-  type t = {
-    alias: string,
-    contract: string,
-  };
-};
-
 type result('a) = {
   kind: [ | `ok | `error],
   payload: 'a,
@@ -125,13 +118,6 @@ external currentLevel: (lib, cctxt, int) => Js.Promise.t(result(int)) =
   "currentLevel";
 
 let currentLevel = sdk => currentLevel(sdk.lib, sdk.cctxt, 0) |> fromPromise;
-
-[@bs.send]
-external listKnownContracts:
-  (lib, cctxt, int) => Js.Promise.t(result(array(OutputContract.t))) =
-  "listKnownContracts";
-let listKnownContracts = sdk =>
-  listKnownContracts(sdk.lib, sdk.cctxt, 0) |> fromPromise;
 
 type importSecretKeyParams = {
   name: string,
