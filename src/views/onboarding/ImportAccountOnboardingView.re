@@ -21,10 +21,13 @@ let make = (~closeAction, ~existingSecretsCount=0) => {
   let (secretWithMnemonicRequest, createSecretWithMnemonic) =
     StoreContext.Secrets.useCreateWithMnemonics();
 
+  let settings = SdkContext.useSettings();
+
   let addLog = LogsContext.useAdd();
 
   let createSecretWithMnemonic = p =>
-    createSecretWithMnemonic(p)
+    System.Client.initDir(settings->AppSettings.baseDir)
+    ->Future.flatMapOk(() => createSecretWithMnemonic(p))
     ->Future.tapOk(_ => {closeAction()})
     ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
         I18n.t#account_created

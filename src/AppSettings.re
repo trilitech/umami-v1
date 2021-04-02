@@ -13,6 +13,10 @@ type t = {
   network,
 };
 
+let baseDir = settings =>
+  settings.config.sdkBaseDir
+  ->Option.getWithDefault(ConfigFile.Default.sdkBaseDir);
+
 let endpoint = settings =>
   switch (settings.network) {
   | Mainnet =>
