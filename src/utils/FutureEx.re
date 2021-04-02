@@ -21,4 +21,31 @@ let fromOptionWithDefault = (option, ~default) =>
   );
 
 let all = array =>
-  array->List.fromArray->Future.all->Future.map(results => Ok(results->List.toArray));
+  array
+  ->List.fromArray
+  ->Future.all
+  ->Future.map(results => Ok(results->List.toArray));
+
+let fromCallback = (f, mapError) =>
+  Future.make(resolve =>
+    {
+      (e, v) =>
+        switch (Js.Nullable.toOption(e)) {
+        | Some(e) => Error(e->mapError)->resolve
+        | None => Ok(v)->resolve
+        };
+    }
+    ->f
+  );
+
+let fromUnitCallback = (f, mapError) =>
+  Future.make(resolve =>
+    {
+      e =>
+        switch (Js.Nullable.toOption(e)) {
+        | Some(e) => Error(e->mapError)->resolve
+        | None => Ok()->resolve
+        };
+    }
+    ->f
+  );
