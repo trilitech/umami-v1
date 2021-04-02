@@ -58,7 +58,7 @@ describe("API tests", ({testAsync}) => {
       };
     };
     let expected: array(Operation.Read.t) = [||];
-    module UnderTest = API.Operations(Stub);
+    module UnderTest = API.Explorer(Stub);
     UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(Result.Ok(expected));
@@ -152,7 +152,7 @@ describe("API tests", ({testAsync}) => {
           }),
       },
     |];
-    module UnderTest = API.Operations(Stub);
+    module UnderTest = API.Explorer(Stub);
     UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(Result.Ok(expected));
@@ -183,7 +183,7 @@ describe("API tests", ({testAsync}) => {
         Future.value(Ok(data->Json.parseOrRaise));
       };
     };
-    module UnderTest = API.Operations(Stub);
+    module UnderTest = API.Explorer(Stub);
     UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.tapError(Js.log)
     ->Future.get(result => {
@@ -239,7 +239,7 @@ describe("API tests", ({testAsync}) => {
           }),
       },
     |];
-    module UnderTest = API.Operations(Stub);
+    module UnderTest = API.Explorer(Stub);
     UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(Result.Ok(expected));
@@ -270,7 +270,7 @@ describe("API tests", ({testAsync}) => {
         Future.value(Ok(data->Json.parseOrRaise));
       };
     };
-    module UnderTest = API.Operations(Stub);
+    module UnderTest = API.Explorer(Stub);
     UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(
@@ -332,7 +332,7 @@ describe("API tests", ({testAsync}) => {
           }),
       },
     |];
-    module UnderTest = API.Operations(Stub);
+    module UnderTest = API.Explorer(Stub);
     UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(Result.Ok(expected));
@@ -368,7 +368,7 @@ describe("API tests", ({testAsync}) => {
         Future.value(Ok(data->Json.parseOrRaise));
       };
     };
-    module UnderTest = API.Operations(Stub);
+    module UnderTest = API.Explorer(Stub);
     UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(
@@ -424,7 +424,7 @@ describe("API tests", ({testAsync}) => {
           }),
       },
     |];
-    module UnderTest = API.Operations(Stub);
+    module UnderTest = API.Explorer(Stub);
     UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(Result.Ok(expected));
@@ -455,7 +455,7 @@ describe("API tests", ({testAsync}) => {
         Future.value(Ok(data->Json.parseOrRaise));
       };
     };
-    module UnderTest = API.Operations(Stub);
+    module UnderTest = API.Explorer(Stub);
     UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(
@@ -508,7 +508,7 @@ describe("API tests", ({testAsync}) => {
           }),
       },
     |];
-    module UnderTest = API.Operations(Stub);
+    module UnderTest = API.Explorer(Stub);
     UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(Result.Ok(expected));
@@ -561,7 +561,7 @@ describe("API tests", ({testAsync}) => {
           }),
       },
     |];
-    module UnderTest = API.Operations(Stub);
+    module UnderTest = API.Explorer(Stub);
     UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(Result.Ok(expected));
@@ -591,7 +591,7 @@ describe("API tests", ({testAsync}) => {
         Future.value(Ok(data->Json.parseOrRaise));
       };
     };
-    module UnderTest = API.Operations(Stub);
+    module UnderTest = API.Explorer(Stub);
     UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(

@@ -3,7 +3,7 @@ open ReactNative;
 let style = Style.(style(~padding=4.->dp, ()));
 
 module BalanceAPI = API.Balance;
-module OperationsAPI = API.Operations(API.TezosExplorer);
+module Explorer = API.Explorer(API.TezosExplorer);
 
 [@react.component]
 let make = () => {
@@ -22,7 +22,7 @@ let make = () => {
       | Pending(_) => ()
       | Done =>
         settings
-        ->OperationsAPI.get(account, ())
+        ->Explorer.get(account, ())
         ->FutureEx.getOk(value => setOperations(_ => value))
       };
       None;
@@ -37,7 +37,7 @@ let make = () => {
         ->BalanceAPI.get(account, ())
         ->FutureEx.getOk(value => setBalance(value));
         settings
-        ->OperationsAPI.get(account, ())
+        ->Explorer.get(account, ())
         ->FutureEx.getOk(value => setOperations(_ => value));
       }}
       title="Refresh"

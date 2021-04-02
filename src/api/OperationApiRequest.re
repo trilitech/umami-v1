@@ -1,6 +1,6 @@
 open UmamiCommon;
 include ApiRequest;
-module OperationsAPI = API.Operations(API.TezosExplorer);
+module Explorer = API.Explorer(API.TezosExplorer);
 
 /* Create */
 
@@ -30,7 +30,7 @@ let useCreate = (~sideEffect=?, ()) => {
     switch (operation) {
     | Protocol(operation) =>
       settings
-      ->OperationsAPI.inject(operation, ~password)
+      ->API.Operation.run(operation, ~password)
       ->Future.mapError(e =>
           switch (e) {
           | ReTaquito.WrongPassword => I18n.form_input_error#wrong_password
@@ -60,7 +60,7 @@ let useSimulate = () => {
   let set = (~settings, operation) =>
     switch (operation) {
     | Operation.Simulation.Protocol(operation, index) =>
-      settings->OperationsAPI.simulate(~index?, operation)
+      settings->API.Simulation.run(~index?, operation)
     | Operation.Simulation.Token(operation) =>
       settings
       ->TokensApiRequest.TokensAPI.simulate(operation)
@@ -86,13 +86,7 @@ let useLoad =
     ) => {
   let get = (~settings, address) => {
     let operations =
-      settings->OperationsAPI.get(
-        address,
-        ~limit?,
-        ~types?,
-        ~mempool=true,
-        (),
-      );
+      settings->Explorer.get(address, ~limit?, ~types?, ~mempool=true, ());
     let currentLevel = TezosSDK.currentLevel(AppSettings.sdk(settings));
     let f = (operations, currentLevel) =>
       switch (operations, currentLevel) {

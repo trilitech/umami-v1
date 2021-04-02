@@ -2,7 +2,6 @@ open ReactNative;
 
 module BalanceAPI = API.Balance;
 module AccountsAPI = API.Accounts(API.TezosClient, API.TezosExplorer);
-module OperationsAPI = API.Operations(API.TezosExplorer);
 module AliasesAPI = API.Aliases(API.TezosClient);
 module DelegateAPI = API.Delegate(API.TezosExplorer);
 
@@ -49,7 +48,7 @@ let make = () => {
       switch (injection) {
       | Pending(operation) =>
         AppSettings.withNetwork(settings, network)
-        ->OperationsAPI.inject(operation, ~password="blerot")
+        ->API.Operation.run(operation, ~password="blerot")
         ->Future.get(result =>
             switch (result) {
             | Ok(_) => setInjection(_ => Done)

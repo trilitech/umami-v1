@@ -155,7 +155,7 @@ let tryMap = (result: Result.t('a, string), transform: 'a => 'b) =>
   | _ => Error("Unknown error")
   };
 
-module Operations = (Getter: GetterAPI) => {
+module Explorer = (Getter: GetterAPI) => {
   let getFromMempool = (account, network, operations) =>
     network
     ->URL.mempool(account)
@@ -203,10 +203,10 @@ module Operations = (Getter: GetterAPI) => {
           ? getFromMempool(account, network, operations)
           : Future.value(Ok(operations))
     );
+};
 
-  exception InvalidReceiptFormat;
-
-  let transferEstimate = (settings, transfer, source) => {
+module Simulation = {
+  let transfer = (settings, transfer, source) => {
     ReTaquito.Estimate.transfer(
       ~endpoint=settings->AppSettings.endpoint,
       ~baseDir=settings->AppSettings.baseDir,
@@ -220,7 +220,7 @@ module Operations = (Getter: GetterAPI) => {
     );
   };
 
-  let batchEstimate = (settings, transfers, ~source, ~index=?, ()) => {
+  let batch = (settings, transfers, ~source, ~index=?, ()) => {
     let transfers = source =>
       transfers
       ->List.map(({amount, destination, tx_options}: Protocol.transfer) =>
@@ -252,7 +252,7 @@ module Operations = (Getter: GetterAPI) => {
       );
   };
 
-  let setDelegateEstimate = (settings, delegation: Protocol.delegation) => {
+  let setDelegate = (settings, delegation: Protocol.delegation) => {
     ReTaquito.Estimate.setDelegate(
       ~endpoint=settings->AppSettings.endpoint,
       ~baseDir=settings->AppSettings.baseDir,
@@ -263,18 +263,18 @@ module Operations = (Getter: GetterAPI) => {
     );
   };
 
-  let simulate = (settings, ~index=?, operation: Protocol.t) => {
+  let run = (settings, ~index=?, operation: Protocol.t) => {
     let r =
       switch (operation, index) {
       | (Transaction({transfers: [t], source}), _) =>
-        transferEstimate(settings, t, source)
+        transfer(settings, t, source)
 
-      | (Delegation(d), _) => setDelegateEstimate(settings, d)
+      | (Delegation(d), _) => setDelegate(settings, d)
       | (Transaction({transfers, source}), None) =>
-        batchEstimate(settings, transfers, ~source, ())
+        batch(settings, transfers, ~source, ())
 
       | (Transaction({transfers, source}), Some(index)) =>
-        batchEstimate(settings, transfers, ~source, ~index, ())
+        batch(settings, transfers, ~source, ~index, ())
       };
 
     r
@@ -292,8 +292,10 @@ module Operations = (Getter: GetterAPI) => {
         }
       );
   };
+};
 
-  let injectBatch = (settings, transfers, ~source, ~password) => {
+module Operation = {
+  let batch = (settings, transfers, ~source, ~password) => {
     let transfers = source =>
       transfers
       ->List.map(({amount, destination, tx_options}: Protocol.transfer) =>
@@ -324,7 +326,7 @@ module Operations = (Getter: GetterAPI) => {
     ->Future.mapOk((op: ReTaquito.Toolkit.operationResult) => op.hash);
   };
 
-  let injectTransfer = (settings, transfer, ~source, ~password) => {
+  let transfer = (settings, transfer, ~source, ~password) => {
     ReTaquito.Operations.transfer(
       ~endpoint=settings->AppSettings.endpoint,
       ~baseDir=settings->AppSettings.baseDir,
@@ -340,7 +342,7 @@ module Operations = (Getter: GetterAPI) => {
     ->Future.mapOk((op: ReTaquito.Toolkit.operationResult) => op.hash);
   };
 
-  let injectSetDelegate =
+  let setDelegate =
       (settings, Protocol.{delegate, source, options}, ~password) => {
     ReTaquito.Operations.setDelegate(
       ~endpoint=settings->AppSettings.endpoint,
@@ -354,15 +356,15 @@ module Operations = (Getter: GetterAPI) => {
     ->Future.mapOk((op: ReTaquito.Toolkit.operationResult) => op.hash);
   };
 
-  let inject = (settings, operation: Protocol.t, ~password) =>
+  let run = (settings, operation: Protocol.t, ~password) =>
     switch (operation) {
     | Transaction({transfers: [t], source}) =>
-      injectTransfer(settings, t, ~source, ~password)
+      transfer(settings, t, ~source, ~password)
 
-    | Delegation(d) => injectSetDelegate(settings, d, ~password)
+    | Delegation(d) => setDelegate(settings, d, ~password)
 
     | Transaction({transfers, source}) =>
-      injectBatch(settings, transfers, ~source, ~password)
+      batch(settings, transfers, ~source, ~password)
     };
 };
 
@@ -639,9 +641,9 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
       });
 
   let validate = (network, address) => {
-    module OperationsAPI = Operations(Getter);
+    module ExplorerAPI = Explorer(Getter);
     network
-    ->OperationsAPI.get(address, ~limit=1, ())
+    ->ExplorerAPI.get(address, ~limit=1, ())
     ->Future.mapOk(operations => {operations->Js.Array2.length != 0});
   };
 
@@ -892,10 +894,10 @@ module Delegate = (Getter: GetterAPI) => {
   };
 
   let getDelegationInfoForAccount = (network, account: string) => {
-    module OperationsAPI = Operations(Getter);
+    module ExplorerAPI = Explorer(Getter);
     module BalanceAPI = Balance;
     network
-    ->OperationsAPI.get(account, ~types=[|"delegation"|], ~limit=1, ())
+    ->ExplorerAPI.get(account, ~types=[|"delegation"|], ~limit=1, ())
     ->Future.flatMapOk(operations =>
         if (operations->Array.length == 0) {
           Future.value(
@@ -940,7 +942,7 @@ module Delegate = (Getter: GetterAPI) => {
                     )
                   ->Future.flatMapOk(info =>
                       network
-                      ->OperationsAPI.get(
+                      ->ExplorerAPI.get(
                           info.delegate,
                           ~types=[|"transaction"|],
                           ~destination=account,
