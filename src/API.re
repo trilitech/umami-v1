@@ -960,20 +960,24 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
         ~index=0,
         (),
       ) =>
-    Future.mapOk2(
-      scanSeed(
-        ~settings,
-        recoveryPhrase->HD.seed,
-        baseName,
-        ~derivationScheme,
-        ~password,
-        ~index,
-        (),
-      ),
-      legacyScan(~settings, recoveryPhrase, baseName ++ " legacy", ~password),
-      (addresses, legacyAddress) => {
-      (addresses, legacyAddress)
-    });
+    scanSeed(
+      ~settings,
+      recoveryPhrase->HD.seed,
+      baseName,
+      ~derivationScheme,
+      ~password,
+      ~index,
+      (),
+    )
+    ->Future.flatMapOk(addresses => {
+        legacyScan(
+          ~settings,
+          recoveryPhrase,
+          baseName ++ " legacy",
+          ~password,
+        )
+        ->Future.mapOk(legacyAddresses => (addresses, legacyAddresses))
+      });
 
   let restore =
       (
