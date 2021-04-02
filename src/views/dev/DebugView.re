@@ -2,9 +2,9 @@ open ReactNative;
 
 module BalanceAPI = API.Balance;
 module AccountsAPI = API.Accounts(API.TezosClient, API.TezosExplorer);
-module OperationsAPI = API.Operations(API.TezosClient, API.TezosExplorer);
+module OperationsAPI = API.Operations(API.TezosExplorer);
 module AliasesAPI = API.Aliases(API.TezosClient);
-module DelegateAPI = API.Delegate(API.TezosClient, API.TezosExplorer);
+module DelegateAPI = API.Delegate(API.TezosExplorer);
 
 let styles =
   Style.(
@@ -43,41 +43,6 @@ let make = () => {
   let (injection, setInjection) = React.useState(() => InjectionState.Done);
   let (accounts, setAccounts) = React.useState(() => dummy);
   let settings = SdkContext.useSettings();
-
-  React.useEffect0(() => {
-    /*
-     Network.Test
-     ->OperationsAPI.simulate(
-         Transaction(
-           Injection.makeTransfer(
-             ~source="bob",
-             ~amount=1,
-             ~destination="zebra",
-             (),
-           ),
-         ),
-       )
-     ->Future.tapError(Js.log)
-     ->FutureEx.getOk(Js.log);
-     */
-    /*
-     (network, config)
-     ->DelegateAPI.getDelegationInfoForAccount(
-         "tz1RDrPJYrpdA7MbfUJSamGdcfceLXGpUdc7",
-       )
-     ->Future.tapError(Js.log)
-     ->FutureEx.getOk(Js.log);
-     */
-    AppSettings.withNetwork(settings, network)
-    ->OperationsAPI.waitForOperationConfirmations(
-        "oo38L1jPWGmf1RBg8zyq4BoUys9zhofWJN8e8eQPnB4D6NQctv5",
-        ~confirmations=0,
-        ~branch="BMNnzkSH6oHZpfroJPczV9DcASFRsHAQ3qGD7mzB9nQ6EmGGM7n",
-      )
-    ->Future.tapError(Js.log)
-    ->FutureEx.getOk(Js.log);
-    None;
-  });
 
   React.useEffect3(
     () => {

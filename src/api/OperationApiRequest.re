@@ -1,6 +1,6 @@
 open UmamiCommon;
 include ApiRequest;
-module OperationsAPI = API.Operations(API.TezosClient, API.TezosExplorer);
+module OperationsAPI = API.Operations(API.TezosExplorer);
 
 /* Create */
 

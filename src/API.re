@@ -155,233 +155,7 @@ let tryMap = (result: Result.t('a, string), transform: 'a => 'b) =>
   | _ => Error("Unknown error")
   };
 
-module InjectorRaw = (Caller: CallerAPI) => {
-  type parserInterpret('a) =
-    | AllReduce(('a, option(string)) => 'a, 'a)
-    | First(string => option('a))
-    | Last(string => option('a))
-    | Nth(string => option('a), int)
-    | Exists(string => option('a));
-
-  let parse = (receipt, pattern, interp) => {
-    let rec parseAll = (acc, regexp) =>
-      switch (
-        Js.Re.exec_(regexp, receipt)->Option.map(Js.Re.captures),
-        interp,
-      ) {
-      | (Some(res), Exists(_)) => [|
-          res[0]->Option.flatMap(Js.Nullable.toOption),
-        |]
-      | (Some(res), _) =>
-        acc
-        ->Js.Array2.concat([|res[1]->Option.flatMap(Js.Nullable.toOption)|])
-        ->parseAll(regexp)
-      | (None, _) => acc
-      };
-    let interpretResults = results =>
-      if (Js.Array.length(results) == 0) {
-        None;
-      } else {
-        switch (interp) {
-        | Exists(f) => results[0]->Option.flatMap(x => x)->Option.flatMap(f)
-        | First(f) => results[0]->Option.flatMap(x => x)->Option.flatMap(f)
-        | Last(f) =>
-          results[Js.Array.length(results) - 1]
-          ->Option.flatMap(x => x)
-          ->Option.flatMap(f)
-        | Nth(f, i) =>
-          i < Js.Array.length(results)
-            ? results[i]->Option.flatMap(x => x)->Option.flatMap(f) : None
-        | AllReduce(f, init) => Some(Js.Array2.reduce(results, f, init))
-        };
-      };
-    parseAll([||], Js.Re.fromStringWithFlags(pattern, ~flags="g"))
-    ->interpretResults;
-  };
-
-  let parseAndReduceXTZ = (f, s) => {
-    Option.mapWithDefault(s, Some(ProtocolXTZ.zero), ProtocolXTZ.fromString)
-    ->Option.mapWithDefault(f, ProtocolXTZ.Infix.(+)(f));
-  };
-
-  let parseAndReduceInt = (f, s) => {
-    Option.mapWithDefault(s, Some(0), int_of_string_opt)
-    ->Option.mapWithDefault(f, Int.(+)(f));
-  };
-
-  type parserOptions = {
-    fees: parserInterpret(ProtocolXTZ.t),
-    counter: parserInterpret(int),
-    gasLimit: parserInterpret(int),
-    storageLimit: parserInterpret(int),
-  };
-
-  let singleOperationParser = {
-    fees: AllReduce(parseAndReduceXTZ, ProtocolXTZ.zero),
-    counter: First(int_of_string_opt),
-    gasLimit: AllReduce(parseAndReduceInt, 0),
-    storageLimit: AllReduce(parseAndReduceInt, 0),
-  };
-
-  let singleBatchTransferParser = index => {
-    Js.log(
-      "FEE "
-      ++ Js.String.make(index)
-      ++ " FROM "
-      ++ Js.String.make(Nth(float_of_string_opt, index)),
-    );
-
-    {
-      fees: Nth(ProtocolXTZ.fromString, index),
-      counter: Nth(int_of_string_opt, index),
-      gasLimit: Nth(int_of_string_opt, index),
-      storageLimit: Nth(int_of_string_opt, index),
-    };
-  };
-
-  let patchNthForRevelation = (options, revelation) => {
-    let incrNth = nth =>
-      switch (nth) {
-      | Nth(f, i) => Nth(f, i + 1)
-      | _ => nth
-      };
-    switch (revelation) {
-    | None => options
-    | Some () => {
-        fees: incrNth(options.fees),
-        counter: incrNth(options.counter),
-        gasLimit: incrNth(options.gasLimit),
-        storageLimit: incrNth(options.storageLimit),
-      }
-    };
-  };
-
-  let transaction_options_arguments =
-      (
-        arguments,
-        tx_options: Protocol.transfer_options,
-        common_options: Protocol.common_options,
-      ) => {
-    let arguments =
-      switch (tx_options.fee) {
-      | Some(fee) =>
-        Js.Array2.concat(arguments, [|"--fee", fee->ProtocolXTZ.toString|])
-      | None => arguments
-      };
-    let arguments =
-      switch (tx_options.gasLimit) {
-      | Some(gasLimit) =>
-        Js.Array2.concat(arguments, [|"-G", gasLimit->Js.Int.toString|])
-      | None => arguments
-      };
-    let arguments =
-      switch (tx_options.storageLimit) {
-      | Some(storageLimit) =>
-        Js.Array2.concat(arguments, [|"-S", storageLimit->Js.Int.toString|])
-      | None => arguments
-      };
-    let arguments =
-      switch (common_options.burnCap) {
-      | Some(burnCap) =>
-        Js.Array2.concat(
-          arguments,
-          [|"--burn-cap", burnCap->ProtocolXTZ.toString|],
-        )
-      | None => arguments
-      };
-    switch (common_options.forceLowFee) {
-    | Some(true) => Js.Array2.concat(arguments, [|"--force-low-fee"|])
-    | Some(false)
-    | None => arguments
-    };
-  };
-
-  exception InvalidReceiptFormat;
-
-  let simulate = (network, parser_options, make_arguments) =>
-    Caller.call(
-      make_arguments(network)->Js.Array2.concat([|"--simulation"|]),
-      (),
-    )
-    ->Future.tapOk(Js.log)
-    ->Future.map(result =>
-        result->tryMap(receipt => {
-          let revelation =
-            receipt->parse(
-              "[ ]*Revelation of manager public key:",
-              Exists(_ => Some()),
-            );
-          Js.log(revelation);
-          let parser_options =
-            patchNthForRevelation(parser_options, revelation);
-          let fee =
-            receipt->parse(
-              "[ ]*Fee to the baker: .([0-9]*\\.[0-9]+|[0-9]+)",
-              parser_options.fees,
-            );
-          Js.log(fee);
-          let gasLimit =
-            receipt->parse(
-              "[ ]*Gas limit: ([0-9]+)",
-              parser_options.gasLimit,
-            );
-          Js.log(gasLimit);
-          let storageLimit =
-            receipt->parse(
-              "[ ]*Storage limit: ([0-9]+)",
-              parser_options.storageLimit,
-            );
-          Js.log(storageLimit);
-          switch (fee, gasLimit, storageLimit) {
-          | (Some(fee), Some(gasLimit), Some(storageLimit)) =>
-            Protocol.{fee, gasLimit, storageLimit}
-          | _ => raise(InvalidReceiptFormat)
-          };
-        })
-      )
-    ->Future.tapOk(Js.log);
-
-  let create = (network, make_arguments) =>
-    Caller.call(make_arguments(network), ())
-    ->Future.tapOk(Js.log)
-    ->Future.map(result =>
-        result->tryMap(receipt => {
-          let result =
-            receipt->parse(
-              "Operation hash is '([A-Za-z0-9]*)'",
-              First(s => Some(s)),
-            );
-          switch (result) {
-          | Some(operationHash) => operationHash
-          | None => raise(InvalidReceiptFormat)
-          };
-        })
-      )
-    ->Future.tapOk(Js.log);
-
-  let inject = (network, make_arguments, ~password) =>
-    Caller.call(make_arguments(network), ~inputs=[|password|], ())
-    ->Future.tapOk(Js.log)
-    ->Future.map(result =>
-        result->tryMap(receipt => {
-          let operationHash =
-            receipt->parse(
-              "Operation hash is '([A-Za-z0-9]+)'",
-              First(s => Some(s)),
-            );
-          let branch =
-            receipt->parse("--branch ([A-Za-z0-9]+)", First(s => Some(s)));
-          switch (operationHash, branch) {
-          | (Some(operationHash), Some(branch)) => (operationHash, branch)
-          | (_, _) => raise(InvalidReceiptFormat)
-          };
-        })
-      );
-};
-
-module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
-  module Injector = InjectorRaw(Caller);
-
+module Operations = (Getter: GetterAPI) => {
   let getFromMempool = (account, network, operations) =>
     network
     ->URL.mempool(account)
@@ -430,113 +204,7 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
           : Future.value(Ok(operations))
     );
 
-  let transfer = (tx: Protocol.transfer) => {
-    let obj = Js.Dict.empty();
-    Js.Dict.set(obj, "destination", Js.Json.string(tx.destination));
-    Js.Dict.set(
-      obj,
-      "amount",
-      tx.amount->ProtocolXTZ.toString->Js.Json.string,
-    );
-    tx.tx_options.fee
-    ->Lib.Option.iter(v =>
-        Js.Dict.set(obj, "fee", v->ProtocolXTZ.toString->Js.Json.string)
-      );
-    tx.tx_options.gasLimit
-    ->Lib.Option.iter(v =>
-        Js.Dict.set(obj, "gas-limit", Js.Int.toString(v)->Js.Json.string)
-      );
-    tx.tx_options.storageLimit
-    ->Lib.Option.iter(v =>
-        Js.Dict.set(obj, "storage-limit", Js.Int.toString(v)->Js.Json.string)
-      );
-    Js.Json.object_(obj);
-  };
-
-  let transfers_to_json = (btxs: Protocol.transaction) =>
-    btxs.transfers
-    ->List.map(transfer)
-    ->List.toArray
-    ->Js.Json.array
-    ->Js.Json.stringify /* ->(json => "\'" ++ json ++ "\'") */;
-
-  let arguments = (settings, operation: Protocol.t) =>
-    switch (operation) {
-    | Transaction({transfers: [transfer]} as transaction) =>
-      let arguments = [|
-        "-E",
-        settings->AppSettings.endpoint,
-        "-w",
-        "none",
-        "transfer",
-        transfer.amount->ProtocolXTZ.toString,
-        "from",
-        transaction.source,
-        "to",
-        transfer.destination,
-        "--burn-cap",
-        "0.257",
-      |];
-      Injector.transaction_options_arguments(
-        arguments,
-        transfer.tx_options,
-        transaction.options,
-      );
-    | Transaction(transaction) => [|
-        "-E",
-        settings->AppSettings.endpoint,
-        "-w",
-        "none",
-        "multiple",
-        "transfers",
-        "from",
-        transaction.source,
-        "using",
-        transfers_to_json(transaction),
-        "--burn-cap",
-        Js.Float.toString(
-          0.06425 *. transaction.transfers->List.length->float_of_int,
-        ),
-      |]
-    | Delegation({delegate: None, source}) => [|
-        "-E",
-        settings->AppSettings.endpoint,
-        "-w",
-        "none",
-        "withdraw",
-        "delegate",
-        "from",
-        source,
-      |]
-    | Delegation({delegate: Some(delegate), source}) => [|
-        "-E",
-        settings->AppSettings.endpoint,
-        "-w",
-        "none",
-        "set",
-        "delegate",
-        "for",
-        source,
-        "to",
-        delegate,
-      |]
-    };
-
   exception InvalidReceiptFormat;
-
-  let simulateSingleBatchTransfer = (settings, index, operation: Protocol.t) =>
-    Injector.simulate(
-      settings,
-      Injector.singleBatchTransferParser(index),
-      arguments(_, operation),
-    );
-
-  let simpleSimulation = (settings, operation: Protocol.t) =>
-    Injector.simulate(
-      settings,
-      Injector.singleOperationParser,
-      arguments(_, operation),
-    );
 
   let transferEstimate = (settings, transfer, source) => {
     ReTaquito.Estimate.transfer(
@@ -625,9 +293,6 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
       );
   };
 
-  let create = (network, operation: Protocol.t) =>
-    Injector.create(network, arguments(_, operation));
-
   let injectBatch = (settings, transfers, ~source, ~password) => {
     let transfers = source =>
       transfers
@@ -699,26 +364,6 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
     | Transaction({transfers, source}) =>
       injectBatch(settings, transfers, ~source, ~password)
     };
-
-  let waitForOperationConfirmations =
-      (settings, hash, ~confirmations, ~branch) =>
-    Caller.call(
-      [|
-        "-E",
-        settings->AppSettings.endpoint,
-        "wait",
-        "for",
-        hash,
-        "to",
-        "be",
-        "included",
-        "--confirmations",
-        confirmations->string_of_int,
-        "--branch",
-        branch,
-      |],
-      (),
-    );
 };
 
 module MapString = Map.String;
@@ -994,7 +639,7 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
       });
 
   let validate = (network, address) => {
-    module OperationsAPI = Operations(Caller, Getter);
+    module OperationsAPI = Operations(Getter);
     network
     ->OperationsAPI.get(address, ~limit=1, ())
     ->Future.mapOk(operations => {operations->Js.Array2.length != 0});
@@ -1198,7 +843,7 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
     ->Future.mapOk(LocalStorage.setItem("secrets"));
 };
 
-module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
+module Delegate = (Getter: GetterAPI) => {
   let parse = content =>
     if (content == "none\n") {
       None;
@@ -1247,7 +892,7 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
   };
 
   let getDelegationInfoForAccount = (network, account: string) => {
-    module OperationsAPI = Operations(Caller, Getter);
+    module OperationsAPI = Operations(Getter);
     module BalanceAPI = Balance;
     network
     ->OperationsAPI.get(account, ~types=[|"delegation"|], ~limit=1, ())

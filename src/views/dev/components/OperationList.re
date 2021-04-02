@@ -3,7 +3,7 @@ open ReactNative;
 let style = Style.(style(~padding=4.->dp, ()));
 
 module BalanceAPI = API.Balance;
-module OperationsAPI = API.Operations(API.TezosClient, API.TezosExplorer);
+module OperationsAPI = API.Operations(API.TezosExplorer);
 
 [@react.component]
 let make = () => {

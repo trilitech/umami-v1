@@ -3,7 +3,7 @@ open ReactNative;
 let style =
   Style.(style(~padding=4.->dp, ~margin=4.->dp, ~borderWidth=1.0, ()));
 
-module OperationsAPI = API.Operations(API.TezosClient, API.TezosExplorer);
+module OperationsAPI = API.Operations(API.TezosExplorer);
 
 [@react.component]
 let make = () => {
@@ -71,8 +71,7 @@ let make = () => {
         ->(
             txs => {
               [@warning "-8"]
-              let Protocol.Transaction(btxs) = txs;
-              Js.log(OperationsAPI.transfers_to_json(btxs));
+              let Protocol.Transaction(_btxs) = txs;
               txs;
             }
           )
