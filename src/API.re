@@ -654,12 +654,8 @@ module Aliases = (Caller: CallerAPI) => {
   let get = (~settings) =>
     settings
     ->AppSettings.sdk
-    ->TezosSDK.listKnownContracts
-    ->Future.mapOk(l =>
-        l->Array.map((TezosSDK.OutputContract.{alias, contract}) =>
-          (alias, contract)
-        )
-      );
+    ->TezosSDK.listKnownAddresses
+    ->Future.mapOk(l => l->Array.map(({alias, pkh}) => (alias, pkh)));
 
   let getAliasMap = (~settings) =>
     get(~settings)
