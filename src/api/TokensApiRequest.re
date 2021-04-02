@@ -19,7 +19,9 @@ let useLoadOperationOffline =
       ~operation: option(Token.operation),
     ) => {
   let get = (~settings, operation) =>
-    settings->TokensAPI.callGetOperationOffline(operation);
+    settings
+    ->TokensAPI.callGetOperationOffline(operation)
+    ->Future.mapError(TokensAPI.errorToString);
 
   let getRequest =
     ApiRequest.useGetter(~get, ~kind=Logs.Tokens, ~setRequest, ());

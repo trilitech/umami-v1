@@ -41,12 +41,7 @@ let useCreate = (~sideEffect=?, ()) => {
     | Token(operation) =>
       settings
       ->TokensApiRequest.TokensAPI.inject(operation, ~password)
-      ->Future.mapError(e =>
-          switch (e) {
-          | ReTaquito.WrongPassword => I18n.form_input_error#wrong_password
-          | ReTaquito.Generic(e) => e
-          }
-        )
+      ->Future.mapError(TokensApiRequest.TokensAPI.errorToString)
     };
   };
 
@@ -67,7 +62,9 @@ let useSimulate = () => {
     | Operation.Simulation.Protocol(operation, index) =>
       settings->OperationsAPI.simulate(~index?, operation)
     | Operation.Simulation.Token(operation) =>
-      settings->TokensApiRequest.TokensAPI.simulate(operation)
+      settings
+      ->TokensApiRequest.TokensAPI.simulate(operation)
+      ->Future.mapError(TokensApiRequest.TokensAPI.errorToString)
     };
 
   ApiRequest.useSetter(~set, ~kind=Logs.Operation, ());

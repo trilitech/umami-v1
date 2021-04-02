@@ -44,7 +44,7 @@ let make = () => {
         ->Future.get(result =>
             switch (result) {
             | Ok(_) => Dialog.error("ok")
-            | Error(err) => Dialog.error(err)
+            | Error(err) => Dialog.error(TokensAPI.errorToString(err))
             }
           )
       }

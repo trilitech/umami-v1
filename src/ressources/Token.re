@@ -88,6 +88,14 @@ type operation =
   | GetAllowance(GetAllowance.t)
   | GetTotalSupply(GetTotalSupply.t);
 
+let operationEntrypoint =
+  fun
+  | Transfer(_) => "transfer"
+  | Approve(_) => "approve"
+  | GetBalance(_) => "getBalance"
+  | GetAllowance(_) => "getAllowance"
+  | GetTotalSupply(_) => "getTotalSupply";
+
 let setCallback = (op, callback) => {
   let callback = Some(callback);
   switch (op) {

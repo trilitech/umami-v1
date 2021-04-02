@@ -1331,6 +1331,38 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
 };
 
 module Tokens = (Getter: GetterAPI) => {
+  type error =
+    | OperationNotRunnableOffchain(string)
+    | SimulationNotAvailable(string)
+    | InjectionNotImplemented(string)
+    | OffchainCallNotImplemented(string)
+    | BackendError(string);
+
+  let printError = (fmt, err) => {
+    switch (err) {
+    | OperationNotRunnableOffchain(s) =>
+      Format.fprintf(fmt, "Operation '%s' cannot be run offchain.", s)
+    | SimulationNotAvailable(s) =>
+      Format.fprintf(fmt, "Operation '%s' is not simulable.", s)
+    | InjectionNotImplemented(s) =>
+      Format.fprintf(fmt, "Operation '%s' injection is not implemented", s)
+    | OffchainCallNotImplemented(s) =>
+      Format.fprintf(
+        fmt,
+        "Operation '%s' offchain call is not implemented",
+        s,
+      )
+    | BackendError(s) => Format.fprintf(fmt, "%s", s)
+    };
+  };
+
+  let errorToString = err => Format.asprintf("%a", printError, err);
+
+  let handleTaquitoError =
+    fun
+    | ReTaquito.Generic(s) => BackendError(s)
+    | WrongPassword => BackendError(I18n.form_input_error#wrong_password);
+
   let getTokenViewer = settings => URL.tokenViewer(settings)->Getter.get;
 
   let checkTokenContract = (settings, addr) => {
@@ -1475,21 +1507,14 @@ module Tokens = (Getter: GetterAPI) => {
     switch (operation) {
     | Transfer({source, transfers: [elt], _}) =>
       transferEstimate(network, elt, source)
-      ->Future.mapError(e =>
-          switch (e) {
-          | Generic(s) => s
-          | WrongPassword => I18n.form_input_error#wrong_password
-          }
-        )
+      ->Future.mapError(handleTaquitoError)
     | Transfer({source, transfers, _}) =>
       batchEstimate(network, transfers, ~source, ())
-      ->Future.mapError(e =>
-          switch (e) {
-          | Generic(s) => s
-          | WrongPassword => I18n.form_input_error#wrong_password
-          }
-        )
-    | _ => Future.value(Error("Cannot simulate"))
+      ->Future.mapError(handleTaquitoError)
+    | _ =>
+      Future.value(
+        Error(SimulationNotAvailable(Token.operationEntrypoint(operation))),
+      )
     };
 
   let transfer = (settings, transfer, source, password) => {
@@ -1515,9 +1540,16 @@ module Tokens = (Getter: GetterAPI) => {
     switch (operation) {
     | Transfer({source, transfers: [elt], _}) =>
       transfer(network, elt, source, password)
+      ->Future.mapError(handleTaquitoError)
     | Transfer({source, transfers, _}) =>
       injectBatch(network, transfers, ~source, ~password)
-    | _ => Future.value(Error(ReTaquito.Generic("Cannot inject")))
+      ->Future.mapError(handleTaquitoError)
+    | _ =>
+      Future.value(
+        Error(
+          InjectionNotImplemented(Token.operationEntrypoint(operation)),
+        ),
+      )
     };
 
   let callGetOperationOffline = (settings, operation: Token.operation) =>
@@ -1529,9 +1561,19 @@ module Tokens = (Getter: GetterAPI) => {
         ->Future.mapOk(res =>
             res->Js.Json.decodeString->Option.getWithDefault("0")
           )
-      | _ => Future.value(Error("Offchain run not implemented"))
+        ->Future.mapError(s => BackendError(s))
+      | _ =>
+        Future.value(
+          Error(
+            OffchainCallNotImplemented(Token.operationEntrypoint(operation)),
+          ),
+        )
       };
     } else {
-      Future.value(Error("Operation not runnable offline"));
+      Future.value(
+        Error(
+          OperationNotRunnableOffchain(Token.operationEntrypoint(operation)),
+        ),
+      );
     };
 };
