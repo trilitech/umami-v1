@@ -17,4 +17,6 @@ module File: {
     Future.t(Result.t(unit, string));
 };
 
-module Client: {let reset: string => Future.t(Result.t(unit, string));};
+module Client: {
+  let resetDir: string => Future.t(Result.t(unit, string));
+};

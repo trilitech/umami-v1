@@ -70,5 +70,5 @@ module File = {
 };
 
 module Client = {
-  let reset = path => File.rmdir(path);
+  let resetDir = path => File.rmdir(path);
 };
