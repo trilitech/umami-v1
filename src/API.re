@@ -1330,9 +1330,7 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
   };
 };
 
-module Tokens = (Caller: CallerAPI, Getter: GetterAPI) => {
-  module Injector = InjectorRaw(Caller);
-
+module Tokens = (Getter: GetterAPI) => {
   let getTokenViewer = settings => URL.tokenViewer(settings)->Getter.get;
 
   let checkTokenContract = (settings, addr) => {
@@ -1360,33 +1358,6 @@ module Tokens = (Caller: CallerAPI, Getter: GetterAPI) => {
     | Mainnet => Future.value(Ok([||]))
     };
   };
-
-  let transfer = (elt: Token.Transfer.elt) => {
-    let obj = Js.Dict.empty();
-    Js.Dict.set(obj, "destination", Js.Json.string(elt.destination));
-    Js.Dict.set(obj, "amount", elt.amount->Js.Int.toString->Js.Json.string);
-    Js.Dict.set(obj, "token", elt.token->Js.Json.string);
-    elt.tx_options.fee
-    ->Lib.Option.iter(v =>
-        Js.Dict.set(obj, "fee", v->ProtocolXTZ.toString->Js.Json.string)
-      );
-    elt.tx_options.gasLimit
-    ->Lib.Option.iter(v =>
-        Js.Dict.set(obj, "gas-limit", Js.Int.toString(v)->Js.Json.string)
-      );
-    elt.tx_options.storageLimit
-    ->Lib.Option.iter(v =>
-        Js.Dict.set(obj, "storage-limit", Js.Int.toString(v)->Js.Json.string)
-      );
-    Js.Json.object_(obj);
-  };
-
-  let transfers_to_json = (transfers: list(Token.Transfer.elt)) =>
-    transfers
-    ->List.map(transfer)
-    ->List.toArray
-    ->Js.Json.array
-    ->Js.Json.stringify /* ->(json => "\'" ++ json ++ "\'") */;
 
   let injectBatch = (settings, transfers, ~source, ~password) => {
     let transfers = source =>
@@ -1421,63 +1392,6 @@ module Tokens = (Caller: CallerAPI, Getter: GetterAPI) => {
       (),
     )
     ->Future.mapOk((op: ReTaquito.Toolkit.operationResult) => op.hash);
-  };
-
-  let make_get_arguments =
-      (arguments, callback, offline, tx_options, common_options) =>
-    switch (callback, offline) {
-    | (Some(callback), true) =>
-      Js.Array2.concat(arguments, [|"offline", "with", callback|])
-    | (Some(callback), false) =>
-      Js.Array2.concat(arguments, [|"callback", "on", callback|])
-      ->Injector.transaction_options_arguments(tx_options, common_options)
-    | (None, _) => assert(false)
-    };
-
-  let make_arguments = (settings, operation: Token.operation) => {
-    switch (operation) {
-    | Transfer({source, transfers: [elt], common_options}) =>
-      [|
-        "-E",
-        settings->AppSettings.endpoint,
-        "-w",
-        "none",
-        "from",
-        "token",
-        "contract",
-        elt.token,
-        "transfer",
-        Js.Int.toString(elt.amount),
-        "from",
-        source,
-        "to",
-        elt.destination,
-        "--burn-cap",
-        "0.01875",
-      |]
-      ->Injector.transaction_options_arguments(elt.tx_options, common_options)
-    | Transfer({source, transfers, common_options}) =>
-      [|
-        "-E",
-        settings->AppSettings.endpoint,
-        "-w",
-        "none",
-        "multiple",
-        "tokens",
-        "transfers",
-        "from",
-        source,
-        "using",
-        transfers_to_json(transfers),
-        "--burn-cap",
-        Js.Float.toString(0.08300 *. transfers->List.length->float_of_int),
-      |]
-      ->Injector.transaction_options_arguments(
-          Protocol.emptyTransferOptions,
-          common_options,
-        )
-    | _ => assert(false)
-    };
   };
 
   let offline = (operation: Token.operation) => {
@@ -1575,16 +1489,8 @@ module Tokens = (Caller: CallerAPI, Getter: GetterAPI) => {
           | WrongPassword => I18n.form_input_error#wrong_password
           }
         )
-    | _ =>
-      Injector.simulate(
-        network,
-        Injector.singleOperationParser,
-        make_arguments(_, operation),
-      )
+    | _ => Future.value(Error("Cannot simulate"))
     };
-
-  let create = (network, operation: Token.operation) =>
-    Injector.create(network, make_arguments(_, operation));
 
   let transfer = (settings, transfer, source, password) => {
     ReTaquito.FA12Operations.transfer(
@@ -1611,14 +1517,7 @@ module Tokens = (Caller: CallerAPI, Getter: GetterAPI) => {
       transfer(network, elt, source, password)
     | Transfer({source, transfers, _}) =>
       injectBatch(network, transfers, ~source, ~password)
-    | _ =>
-      Injector.inject(network, make_arguments(_, operation), ~password)
-      ->Future.map(v =>
-          switch (v) {
-          | Ok((hash, _)) => Ok(hash)
-          | Error(e) => Error(ReTaquito.Generic(e))
-          }
-        )
+    | _ => Future.value(Error(ReTaquito.Generic("Cannot inject")))
     };
 
   let callGetOperationOffline = (settings, operation: Token.operation) =>
@@ -1630,7 +1529,7 @@ module Tokens = (Caller: CallerAPI, Getter: GetterAPI) => {
         ->Future.mapOk(res =>
             res->Js.Json.decodeString->Option.getWithDefault("0")
           )
-      | _ => Caller.call(make_arguments(settings, operation), ())
+      | _ => Future.value(Error("Offchain run not implemented"))
       };
     } else {
       Future.value(Error("Operation not runnable offline"));
