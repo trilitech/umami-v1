@@ -7,7 +7,7 @@ Cryptocurrency wallet to interact with Tezos Blockchain.
 Umami is a desktop electron based app with various features:
 
 - manage multiple accounts with XTZ
-- tranfers, delegates
+- transfers, delegates
 - token (FA1.2) interactions
 - last operations
 
