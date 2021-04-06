@@ -202,6 +202,23 @@ let settings = {
   pub danger_offboard_form_input_error = "Not the correct confirm code word"
 };
 
+let network = {
+  pub _this = this;
+  pub api_not_available = "The API is not available";
+  pub api_version_rpc_error = a =>
+    p("The API `/version` RPC parsing returned an error: %s", a);
+  pub node_not_available = "The node is not available";
+  pub node_version_rpc_error = a =>
+    p("Node `/chains/main/chain_id` RPC parsing returned an error: %s", a);
+  pub chain_inconsistency = (a, b) =>
+    p(
+      "The API and Node are not running on the same network.\n\
+     API runs on chain `%s` and the node on the chain `%s`.",
+      a,
+      b,
+    )
+};
+
 let t = {
   pub error404 = "404 - Route Not Found :(";
   pub logs_no_recent = "No recent messages";
