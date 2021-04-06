@@ -22,9 +22,6 @@ let useLoad = requestState => {
 
 /* Set */
 
-let useCreate =
-  ApiRequest.useSetter(~set=AccountsAPI.create, ~kind=Logs.Account);
-
 let useUpdate =
   ApiRequest.useSetter(
     ~set=

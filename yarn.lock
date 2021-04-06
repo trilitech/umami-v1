@@ -271,6 +271,11 @@
     lodash "^4.17.19"
     to-fast-properties "^2.0.0"
 
+"@dannywillems/rustc-bls12-381@0.8.1":
+  version "0.8.1"
+  resolved "https://gitlab.com/api/v4/projects/16564977/packages/npm/@dannywillems/rustc-bls12-381/-/@dannywillems/rustc-bls12-381-0.8.1.tgz#35dd3f81281432b2cfb92a2608a63b6eaf307b70"
+  integrity sha1-Nd0/gSgUMrLPuSomCKY7bq8we3A=
+
 "@develar/schema-utils@~2.6.5":
   version "2.6.5"
   resolved "https://registry.yarnpkg.com/@develar/schema-utils/-/schema-utils-2.6.5.tgz#3ece22c5838402419a6e0425f85742b961d9b6c6"
@@ -643,8 +648,21 @@
     "@nodelib/fs.scandir" "2.1.4"
     fastq "^1.6.0"
 
-"@nomadic-labs/uecc-js@file:./src/vendors/tezos-sdk/deps/uecc-js":
+"@nomadic-labs/hacl-wasm@file:./src/vendors/tezos-sdk/deps/hacl-wasm":
+  version "1.0.6-nomadic"
+
+"@nomadic-labs/secp256k1-wasm-browser@*":
   version "1.0.6"
+  resolved "https://gitlab.com/api/v4/projects/25020679/packages/npm/@nomadic-labs/secp256k1-wasm-browser/-/@nomadic-labs/secp256k1-wasm-browser-1.0.6.tgz#9ca8d217b85e0ebdbbda7ba02625c6105508688a"
+  integrity sha1-nKjSF7heDr272nugJiXGEFUIaIo=
+
+"@nomadic-labs/uecc-wasm@file:./src/vendors/tezos-sdk/deps/uecc-wasm":
+  version "1.0.6"
+
+"@nomadic-labs/xmlhttprequest@^1.8.0":
+  version "1.8.1"
+  resolved "https://gitlab.com/api/v4/projects/25020679/packages/npm/@nomadic-labs/xmlhttprequest/-/@nomadic-labs/xmlhttprequest-1.8.1.tgz#d607b73d38fda018348dc441b36f4d1d0fde1783"
+  integrity sha1-1ge3PTj9oBg0jcRBs29NHQ/eF4M=
 
 "@reason-react-native/svg@12.1.5-0.63":
   version "12.1.5-0.63"
@@ -3462,9 +3480,6 @@ graceful-fs@^4.1.11, graceful-fs@^4.1.2, graceful-fs@^4.1.6, graceful-fs@^4.2.0,
   resolved "https://registry.yarnpkg.com/graceful-readlink/-/graceful-readlink-1.0.1.tgz#4cafad76bc62f02fa039b2f94e9a3dd3a391a725"
   integrity sha1-TK+tdrxi8C+gObL5Tpo906ORpyU=
 
-"hacl-wasm@file:./src/vendors/tezos-sdk/deps/hacl-wasm":
-  version "1.0.6-nomadic"
-
 handle-thing@^2.0.0:
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/handle-thing/-/handle-thing-2.0.1.tgz#857f79ce359580c340d43081cc648970d0bb234e"
@@ -6255,9 +6270,6 @@ schema-utils@^3.0.0:
     ajv "^6.12.5"
     ajv-keywords "^3.5.2"
 
-"secp256k1-js@file:./src/vendors/tezos-sdk/deps/secp256k1-wasm":
-  version "1.0.4"
-
 select-hose@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/select-hose/-/select-hose-2.0.0.tgz#625d8658f865af43ec962bfc376a37359a4994ca"
@@ -7432,9 +7444,9 @@ webpack-sources@^2.1.1:
     source-map "^0.6.1"
 
 webpack@^5.25.1:
-  version "5.27.2"
-  resolved "https://registry.yarnpkg.com/webpack/-/webpack-5.27.2.tgz#44442219e1469ebe00292703b848580faae03f07"
-  integrity sha512-brNF3N/EdvMzkaZ/Xzb8sqPn5Si3iw6meqCnmNFtcnkorZsFZCBFMa2ElpIMjx6sKWYsnUpBO2dnX+7xgj+mjg==
+  version "5.28.0"
+  resolved "https://registry.yarnpkg.com/webpack/-/webpack-5.28.0.tgz#0de8bcd706186b26da09d4d1e8cbd3e4025a7c2f"
+  integrity sha512-1xllYVmA4dIvRjHzwELgW4KjIU1fW4PEuEnjsylz7k7H5HgPOctIq7W1jrt3sKH9yG5d72//XWzsHhfoWvsQVg==
   dependencies:
     "@types/eslint-scope" "^3.7.0"
     "@types/estree" "^0.0.46"
@@ -7651,11 +7663,6 @@ xmldom@0.1.x:
   version "0.1.31"
   resolved "https://registry.yarnpkg.com/xmldom/-/xmldom-0.1.31.tgz#b76c9a1bd9f0a9737e5a72dc37231cf38375e2ff"
   integrity sha512-yS2uJflVQs6n+CyjHoaBmVSqIDevTAWrzMmjG1Gc7h1qQ7uVozNhEPJAwZXWyGQ/Gafo3fCwrcaokezLPupVyQ==
-
-xmlhttprequest@^1.8.0:
-  version "1.8.0"
-  resolved "https://registry.yarnpkg.com/xmlhttprequest/-/xmlhttprequest-1.8.0.tgz#67fe075c5c24fef39f9d65f5f7b7fe75171968fc"
-  integrity sha1-Z/4HXFwk/vOfnWX197f+dRcZaPw=
 
 xtend@^4.0.0:
   version "4.0.2"

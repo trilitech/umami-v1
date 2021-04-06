@@ -62,7 +62,7 @@ let useResetConfig = () => {
 let useCleanSdkBaseDir = () => {
   let {content: {sdkBaseDir}} = useContext();
   () => {
-    System.Client.reset(
+    System.Client.resetDir(
       sdkBaseDir->Option.getWithDefault(ConfigFile.Default.sdkBaseDir),
     );
   };

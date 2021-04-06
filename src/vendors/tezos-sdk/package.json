@@ -4,10 +4,11 @@
   "main": "init.js",
   "license": "MIT",
   "dependencies": {
-    "@nomadic-labs/uecc-js": "file:./deps/uecc-js",
-    "hacl-wasm": "file:./deps/hacl-wasm",
-    "secp256k1-js": "file:./deps/secp256k1-wasm",
-    "xmlhttprequest": "^1.8.0"
+    "@nomadic-labs/uecc-wasm": "file:./deps/uecc-wasm",
+    "@nomadic-labs/hacl-wasm": "file:./deps/hacl-wasm",
+    "@nomadic-labs/secp256k1-wasm-browser": "*",
+    "@nomadic-labs/xmlhttprequest": "^1.8.0",
+    "@dannywillems/rustc-bls12-381": "0.8.1"
   },
   "files": [
     "init.js",

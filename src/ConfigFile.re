@@ -16,7 +16,7 @@ module Default = {
   let explorerMain = "https://mezos.lamini.ca/mezos/mainnet7";
   let explorerTest = "https://api.umamiwallet.com/edo2net";
   let theme = `system;
-  let sdkBaseDir = System.homeDir() ++ "/.tezos-client";
+  let sdkBaseDir = System.appDir() ++ "/tezos-client";
   let confirmations = 5;
 };
 
