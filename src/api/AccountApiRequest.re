@@ -1,6 +1,6 @@
 /* ACCOUNT */
 
-module AccountsAPI = API.Accounts(API.TezosClient, API.TezosExplorer);
+module AccountsAPI = API.Accounts(API.TezosExplorer);
 
 /* Get */
 

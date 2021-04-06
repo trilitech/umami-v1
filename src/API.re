@@ -1,4 +1,3 @@
-open ChildReprocess.StdStream;
 open UmamiCommon;
 open Delegate;
 
@@ -63,62 +62,6 @@ module URL = {
     let path = "accounts/" ++ addr ++ "/tokens/" ++ contract ++ "/balance";
     build_url(network, path, []);
   };
-};
-
-module type CallerAPI = {
-  let call:
-    (array(string), ~inputs: array(string)=?, unit) =>
-    Future.t(Result.t(string, string));
-};
-
-module TezosClient = {
-  [@bs.send] external end_: Writeable.t => unit = "end";
-
-  let removeTestnetWarning = output => {
-    let warning =
-      Js.Re.fromString(
-        "[ ]*Warning:[ \n]*This is NOT the Tezos Mainnet.[ \n]*\
-       Do NOT use your fundraiser keys on this network.[ \n]*",
-      );
-    Js.String.replaceByRe(warning, "", output);
-  };
-
-  let call = (command, ~inputs=?, ()) =>
-    Future.make(resolve => {
-      let process = ChildReprocess.spawn("tezos-client", command, ());
-      let result = ref(Result.Ok(""));
-      let _ =
-        process
-        ->child_stderr
-        ->Readable.on_data(buffer => {
-            let error = Node_buffer.toString(buffer);
-            if (removeTestnetWarning(error) != "") {
-              result := Error(error);
-            };
-          });
-      let _ =
-        process
-        ->child_stdout
-        ->Readable.on_data(buffer =>
-            switch (result^) {
-            | Ok(text) =>
-              result :=
-                Ok(Js.String2.concat(text, buffer->Node_buffer.toString))
-            | Error(_) => ()
-            }
-          );
-      let _ =
-        switch (inputs) {
-        | Some(inputs) =>
-          process
-          ->child_stdin
-          ->Writeable.write(inputs->Js.Array2.joinWith("\n") ++ "\n\000");
-          process->child_stdin->end_;
-        | None => ()
-        };
-      let _ = process->ChildReprocess.on_close((_, _) => resolve(result^));
-      ();
-    });
 };
 
 module type GetterAPI = {
@@ -409,7 +352,7 @@ module Secret = {
     );
 };
 
-module Aliases = (Caller: CallerAPI) => {
+module Aliases = {
   let parse = content =>
     content
     |> Js.String.split("\n")
@@ -446,7 +389,7 @@ module Aliases = (Caller: CallerAPI) => {
     settings->AppSettings.sdk->TezosSDK.forgetAddress(name);
 };
 
-module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
+module Accounts = (Getter: GetterAPI) => {
   let secrets = (~settings: AppSettings.t) => {
     let _ = settings;
     LocalStorage.getItem("secrets")
@@ -560,13 +503,11 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
     )
     ->Future.flatMapOk(update => update);
 
-  module AliasesAPI = Aliases(Caller);
-
   let unsafeDelete = (~settings, name) =>
     settings->AppSettings.sdk->TezosSDK.forgetAddress(name);
 
   let delete = (~settings, name) =>
-    AliasesAPI.getAddressForAlias(~settings, name)
+    Aliases.getAddressForAlias(~settings, name)
     ->Future.flatMapOk(address =>
         unsafeDelete(~settings, name)
         ->Future.mapOk(_ =>
@@ -587,7 +528,7 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
   let deleteSecretAt = (~settings, index) =>
     Future.mapOk2(
       secrets(~settings)->FutureEx.fromOption(~error="No secrets found!"),
-      AliasesAPI.getAliasMap(~settings),
+      Aliases.getAliasMap(~settings),
       (secrets, aliases) => {
       secrets[index]
       ->Option.map(secret =>
@@ -790,7 +731,7 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
   };
 
   let unsafeDeleteAddresses = (~settings, addresses) =>
-    AliasesAPI.getAliasMap(~settings)
+    Aliases.getAliasMap(~settings)
     ->Future.mapOk(aliases =>
         addresses->Array.keepMap(aliases->Map.String.get)
       )

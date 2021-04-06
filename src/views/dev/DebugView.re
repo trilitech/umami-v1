@@ -1,8 +1,7 @@
 open ReactNative;
 
 module BalanceAPI = API.Balance;
-module AccountsAPI = API.Accounts(API.TezosClient, API.TezosExplorer);
-module AliasesAPI = API.Aliases(API.TezosClient);
+module AccountsAPI = API.Accounts(API.TezosExplorer);
 module DelegateAPI = API.Delegate(API.TezosExplorer);
 
 let styles =
