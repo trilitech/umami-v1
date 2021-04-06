@@ -19,6 +19,16 @@ module BigNumber = {
   let fromInt = i => i->Int.toString->fromString;
 };
 
+type error =
+  | Generic(string)
+  | WrongPassword;
+
+let fromPromiseGeneric = p =>
+  p->FutureJs.fromPromise(e => {
+    Js.log(e);
+    Generic(Js.String.make(e));
+  });
+
 let walletOperation = [%raw "WalletOperation"];
 let opKind = [%raw "OpKind"];
 
@@ -263,10 +273,6 @@ module PkhAliases = {
   [@bs.val] [@bs.scope "JSON"] external parse: string => t = "parse";
 };
 
-type error =
-  | Generic(string)
-  | WrongPassword;
-
 let aliasFromPkh = (~dirname, ~pkh, ()) => {
   System.File.read(dirname ++ "/public_key_hashs")
   ->Future.mapError(e => Generic(e))
@@ -321,7 +327,7 @@ let readSecretKey = (address, passphrase, dirname) => {
           ~passphrase,
           (),
         )
-        ->FutureJs.fromPromise(e => e->Js.String.make->Generic);
+        ->fromPromiseGeneric;
       } else {
         Error(Generic("Can't readkey, bad format: " ++ key))->Future.value;
       }
@@ -404,9 +410,7 @@ module Operations = {
 
         let dg = Toolkit.prepareDelegate(~source, ~delegate, ~fee?, ());
 
-        tk.contract
-        ->Toolkit.setDelegate(dg)
-        ->FutureJs.fromPromise(e => {Generic(Js.String.make(e))});
+        tk.contract->Toolkit.setDelegate(dg)->fromPromiseGeneric;
       });
   };
 
@@ -423,7 +427,7 @@ module Operations = {
         transfers(source)
         ->Array.reduce(batch, Toolkit.Batch.withTransfer)
         ->Toolkit.Batch.send
-        ->FutureJs.fromPromise(e => e->Js.String.make->Generic);
+        ->fromPromiseGeneric;
       });
   };
 
@@ -461,9 +465,7 @@ module Operations = {
             (),
           );
 
-        tk.contract
-        ->Toolkit.transfer(tr)
-        ->FutureJs.fromPromise(e => e->Js.String.make->Generic);
+        tk.contract->Toolkit.transfer(tr)->fromPromiseGeneric;
       });
   };
 };
@@ -494,10 +496,7 @@ module FA12Operations = {
 
           tk.contract
           ->Toolkit.FA12.at(tokenContract)
-          ->FutureJs.fromPromise(e => {
-              Js.log(e);
-              Generic(Js.String.make(e));
-            })
+          ->fromPromiseGeneric
           ->Future.mapOk(c => (c, tk));
         })
       ->Future.flatMapOk(((c, tk)) => {
@@ -516,10 +515,7 @@ module FA12Operations = {
           ->Toolkit.FA12.transfer(source, dest, amount)
           ->Toolkit.FA12.toTransferParams(params)
           ->(tr => tk.estimate->Toolkit.Estimation.transfer(tr))
-          ->FutureJs.fromPromise(e => {
-              Js.log(e);
-              Generic(Js.String.make(e));
-            });
+          ->fromPromiseGeneric;
         });
 
     let batch =
@@ -551,10 +547,7 @@ module FA12Operations = {
                   ->List.map(tr => {...tr, kind: opKindTransaction})
                   ->List.toArray,
                 )
-              ->FutureJs.fromPromise(e => {
-                  Js.log(e);
-                  Generic(Js.String.make(e));
-                })
+              ->fromPromiseGeneric
             )
         );
     };
@@ -584,12 +577,7 @@ module FA12Operations = {
         let provider = Toolkit.{signer: signer};
         tk->Toolkit.setProvider(provider);
 
-        tk.contract
-        ->Toolkit.FA12.at(tokenContract)
-        ->FutureJs.fromPromise(e => {
-            Js.log(e);
-            Generic(Js.String.make(e));
-          });
+        tk.contract->Toolkit.FA12.at(tokenContract)->fromPromiseGeneric;
       })
     ->Future.flatMapOk(c => {
         let params =
@@ -604,10 +592,7 @@ module FA12Operations = {
         c.methods
         ->Toolkit.FA12.transfer(source, dest, amount)
         ->Toolkit.FA12.send(params)
-        ->FutureJs.fromPromise(e => {
-            Js.log(e);
-            Generic(Js.String.make(e));
-          });
+        ->fromPromiseGeneric;
       })
     ->Future.tapOk(Js.log);
   };
@@ -658,10 +643,7 @@ module FA12Operations = {
           // By construction, this exception will never be raised
           contracts
           ->Map.String.getExn(rawTransfer.token)
-          ->FutureJs.fromPromise(e => {
-              Js.log(e);
-              Generic(Js.String.make(e));
-            })
+          ->fromPromiseGeneric
           ->Future.mapOk(c =>
               c.methods
               ->Toolkit.FA12.transfer(
@@ -701,14 +683,7 @@ module FA12Operations = {
           Toolkit.Batch.withTransfer,
         )
       )
-    ->Future.flatMapOk(p =>
-        p
-        ->Toolkit.Batch.send
-        ->FutureJs.fromPromise(e => {
-            Js.log(e);
-            Generic(Js.String.make(e));
-          })
-      );
+    ->Future.flatMapOk(p => p->Toolkit.Batch.send->fromPromiseGeneric);
   };
 };
 
@@ -747,12 +722,7 @@ module Estimate = {
           );
         Js.log(tr);
 
-        tk.estimate
-        ->Toolkit.Estimation.transfer(tr)
-        ->FutureJs.fromPromise(e => {
-            Js.log(e);
-            Generic(Js.String.make(e));
-          });
+        tk.estimate->Toolkit.Estimation.transfer(tr)->fromPromiseGeneric;
       });
 
   let setDelegate = (~endpoint, ~baseDir, ~source, ~delegate=?, ~fee=?, ()) =>
@@ -768,12 +738,7 @@ module Estimate = {
         let sd = Toolkit.prepareDelegate(~source, ~delegate, ~fee?, ());
         Js.log(sd);
 
-        tk.estimate
-        ->Toolkit.Estimation.setDelegate(sd)
-        ->FutureJs.fromPromise(e => {
-            Js.log(e);
-            Generic(Js.String.make(e));
-          });
+        tk.estimate->Toolkit.Estimation.setDelegate(sd)->fromPromiseGeneric;
       });
 
   let batch = (~endpoint, ~baseDir, ~source, ~transfers, ()) => {
@@ -788,7 +753,7 @@ module Estimate = {
         tk->Toolkit.setProvider(provider);
 
         Toolkit.Estimation.batch(tk.estimate, source->transfers)
-        ->FutureJs.fromPromise(e => e->Js.String.make->Generic);
+        ->fromPromiseGeneric;
       });
   };
 
