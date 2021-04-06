@@ -1,12 +1,14 @@
 %raw
 "
-const { TezosToolkit, WalletOperation, OpKind } = require('@taquito/taquito');
+const { TezosToolkit, WalletOperation, OpKind, DEFAULT_FEE } =
+   require('@taquito/taquito');
 const { RpcClient } = require ('@taquito/rpc');
 const { InMemorySigner, importKey } = require('@taquito/signer');
 const BigNumber = require('bignumber.js');
 ";
 
 let opKindTransaction = [%raw "OpKind.TRANSACTION"];
+let default_fee_reveal = [%raw "DEFAULT_FEE.REVEAL"];
 
 module BigNumber = {
   type t;
@@ -49,11 +51,25 @@ module RPCClient = {
   [@bs.new] external create: endpoint => rpcClient = "RpcClient";
 
   type params = {block: string};
+  type managerKeyResult = {key: string};
 
   [@bs.send]
   external getBalance:
     (rpcClient, string, ~params: params=?, unit) => Js.Promise.t(BigNumber.t) =
     "getBalance";
+
+  [@bs.send]
+  external getManagerKey:
+    (rpcClient, string) => Js.Promise.t(Js.Nullable.t(managerKeyResult)) =
+    "getManagerKey";
+};
+
+let revealFee = (~endpoint, source) => {
+  let client = RPCClient.create(endpoint);
+
+  RPCClient.getManagerKey(client, source)
+  ->fromPromiseGeneric
+  ->Future.mapOk(k => Js.Nullable.isNullable(k) ? default_fee_reveal : 0);
 };
 
 module Toolkit = {
@@ -209,6 +225,7 @@ module Toolkit = {
       totalCost: int,
       storageLimit: int,
       gasLimit: int,
+      revealFee: int,
     };
 
     [@bs.send]
@@ -470,6 +487,13 @@ module Operations = {
   };
 };
 
+let addRevealFee = (~source, ~endpoint, r) => {
+  revealFee(~endpoint, source)
+  ->Future.mapOk(fee =>
+      Toolkit.Estimation.{...r, totalCost: fee + r.totalCost, revealFee: fee}
+    );
+};
+
 module FA12Operations = {
   module Estimate = {
     let transfer =
@@ -515,7 +539,8 @@ module FA12Operations = {
           ->Toolkit.FA12.transfer(source, dest, amount)
           ->Toolkit.FA12.toTransferParams(params)
           ->(tr => tk.estimate->Toolkit.Estimation.transfer(tr))
-          ->fromPromiseGeneric;
+          ->fromPromiseGeneric
+          ->Future.flatMapOk(addRevealFee(~source, ~endpoint));
         });
 
     let batch =
@@ -549,6 +574,10 @@ module FA12Operations = {
                 )
               ->fromPromiseGeneric
             )
+        )
+      ->Future.flatMapOk(r =>
+          revealFee(~endpoint, source)
+          ->Future.mapOk(revealFee => (r, revealFee))
         );
     };
   };
@@ -723,7 +752,8 @@ module Estimate = {
         Js.log(tr);
 
         tk.estimate->Toolkit.Estimation.transfer(tr)->fromPromiseGeneric;
-      });
+      })
+    ->Future.flatMapOk(addRevealFee(~source, ~endpoint));
 
   let setDelegate = (~endpoint, ~baseDir, ~source, ~delegate=?, ~fee=?, ()) =>
     aliasFromPkh(~dirname=baseDir, ~pkh=source, ())
@@ -739,7 +769,8 @@ module Estimate = {
         Js.log(sd);
 
         tk.estimate->Toolkit.Estimation.setDelegate(sd)->fromPromiseGeneric;
-      });
+      })
+    ->Future.flatMapOk(addRevealFee(~source, ~endpoint));
 
   let batch = (~endpoint, ~baseDir, ~source, ~transfers, ()) => {
     aliasFromPkh(~dirname=baseDir, ~pkh=source, ())
@@ -754,10 +785,14 @@ module Estimate = {
 
         Toolkit.Estimation.batch(tk.estimate, source->transfers)
         ->fromPromiseGeneric;
-      });
+      })
+    ->Future.flatMapOk(r =>
+        revealFee(~endpoint, source)
+        ->Future.mapOk(revealFee => (r, revealFee))
+      );
   };
 
-  let handleEstimationResults = (results, index) => {
+  let handleEstimationResults = ((results, revealFee), index) => {
     switch (index) {
     | Some(index) =>
       results
@@ -766,27 +801,35 @@ module Estimate = {
     | None =>
       results
       ->Array.reduce(
-          Toolkit.Estimation.{totalCost: 0, gasLimit: 0, storageLimit: 0},
+          Toolkit.Estimation.{
+            totalCost: 0,
+            gasLimit: 0,
+            storageLimit: 0,
+            revealFee: 0,
+          },
           (
             {totalCost, gasLimit, storageLimit},
             {
               Toolkit.Estimation.totalCost: totalCost1,
               gasLimit: gasLimit1,
               storageLimit: storageLimit1,
-            },
+            } as est,
           ) =>
           {
+            ...est,
             totalCost: totalCost + totalCost1,
             storageLimit: storageLimit + storageLimit1,
             gasLimit: gasLimit + gasLimit1,
           }
         )
       ->(
-          (Toolkit.Estimation.{gasLimit, storageLimit} as r) => {
-            ...r,
-            gasLimit: gasLimit + 100,
-            storageLimit: storageLimit + 100,
-          }
+          (Toolkit.Estimation.{gasLimit, storageLimit, totalCost}) =>
+            Toolkit.Estimation.{
+              gasLimit: gasLimit + 100,
+              totalCost: totalCost + revealFee,
+              storageLimit: storageLimit + 100,
+              revealFee,
+            }
         )
       ->Ok
       ->Future.value

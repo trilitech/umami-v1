@@ -133,4 +133,5 @@ type simulationResults = {
   fee: ProtocolXTZ.t,
   gasLimit: int,
   storageLimit: int,
+  revealFee: ProtocolXTZ.t,
 };

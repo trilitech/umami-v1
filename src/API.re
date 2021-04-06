@@ -268,11 +268,9 @@ module Simulation = {
       switch (operation, index) {
       | (Transaction({transfers: [t], source}), _) =>
         transfer(settings, t, source)
-
       | (Delegation(d), _) => setDelegate(settings, d)
       | (Transaction({transfers, source}), None) =>
         batch(settings, transfers, ~source, ())
-
       | (Transaction({transfers, source}), Some(index)) =>
         batch(settings, transfers, ~source, ~index, ())
       };
@@ -284,11 +282,12 @@ module Simulation = {
         | WrongPassword => I18n.form_input_error#wrong_password
         }
       )
-    ->Future.mapOk(({totalCost, gasLimit, storageLimit}) =>
+    ->Future.mapOk(({totalCost, gasLimit, storageLimit, revealFee}) =>
         Protocol.{
           fee: totalCost->ProtocolXTZ.fromMutezInt,
           gasLimit,
           storageLimit,
+          revealFee: revealFee->ProtocolXTZ.fromMutezInt,
         }
       );
   };
@@ -1084,8 +1083,9 @@ module Tokens = (Getter: GetterAPI) => {
   };
 
   let transferEstimate = (settings, transfer, source) => {
+    let endpoint = settings->AppSettings.endpoint;
     ReTaquito.FA12Operations.Estimate.transfer(
-      ~endpoint=settings->AppSettings.endpoint,
+      ~endpoint,
       ~baseDir=settings->AppSettings.baseDir,
       ~tokenContract=transfer.Token.Transfer.token,
       ~source,
@@ -1098,16 +1098,18 @@ module Tokens = (Getter: GetterAPI) => {
       ~storageLimit=?transfer.Token.Transfer.tx_options.storageLimit,
       (),
     )
-    ->Future.mapOk(({totalCost, gasLimit, storageLimit}) =>
+    ->Future.mapOk(({totalCost, gasLimit, storageLimit, revealFee}) =>
         Protocol.{
           fee: totalCost->ProtocolXTZ.fromMutezInt,
           gasLimit,
           storageLimit,
+          revealFee: revealFee->ProtocolXTZ.fromMutezInt,
         }
       );
   };
 
   let batchEstimate = (settings, transfers, ~source, ~index=?, ()) => {
+    let endpoint = settings->AppSettings.endpoint;
     let transfers = source =>
       transfers
       ->List.map(
@@ -1126,13 +1128,10 @@ module Tokens = (Getter: GetterAPI) => {
             (),
           )
         )
-      ->ReTaquito.FA12Operations.prepareTransfers(
-          source,
-          settings->AppSettings.endpoint,
-        );
+      ->ReTaquito.FA12Operations.prepareTransfers(source, endpoint);
 
     ReTaquito.FA12Operations.Estimate.batch(
-      ~endpoint=settings->AppSettings.endpoint,
+      ~endpoint,
       ~baseDir=settings->AppSettings.baseDir,
       ~source,
       ~transfers,
@@ -1141,11 +1140,12 @@ module Tokens = (Getter: GetterAPI) => {
     ->Future.flatMapOk(r =>
         ReTaquito.Estimate.handleEstimationResults(r, index)
       )
-    ->Future.mapOk(({totalCost, gasLimit, storageLimit}) =>
+    ->Future.mapOk(({totalCost, gasLimit, storageLimit, revealFee}) =>
         Protocol.{
           fee: totalCost->ProtocolXTZ.fromMutezInt,
           gasLimit,
           storageLimit,
+          revealFee: revealFee->ProtocolXTZ.fromMutezInt,
         }
       );
   };
