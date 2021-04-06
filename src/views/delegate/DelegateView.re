@@ -214,7 +214,7 @@ let make = (~closeAction, ~action) => {
 
   let sendOperation = (delegation, password) =>
     sendOperation(OperationApiRequest.delegate(delegation, password))
-    ->Future.tapOk(((hash, _)) => {setModalStep(_ => SubmittedStep(hash))})
+    ->Future.tapOk(hash => {setModalStep(_ => SubmittedStep(hash))})
     ->ignore;
 
   let (operationSimulateRequest, sendOperationSimulate) =

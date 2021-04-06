@@ -93,6 +93,7 @@ let form_input_error = {
   pub int = "must be an integer";
   pub float = "must be a float";
   pub change_baker = "It must be a different baker than the current one";
+  pub wrong_password = "Wrong password";
   pub confirm_password = "It must be the same password"
 };
 

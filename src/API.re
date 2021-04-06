@@ -53,6 +53,16 @@ module URL = {
 
   let delegates = settings =>
     AppSettings.endpoint(settings) ++ Path.delegates;
+
+  let checkToken = (network, contract) => {
+    let path = "tokens/exists/" ++ contract;
+    build_url(network, path, []);
+  };
+
+  let getTokenBalance = (network, contract, addr) => {
+    let path = "accounts/" ++ addr ++ "/tokens/" ++ contract ++ "/balance";
+    build_url(network, path, []);
+  };
 };
 
 module type CallerAPI = {
@@ -125,38 +135,11 @@ module TezosExplorer = {
       );
 };
 
-module Balance = (Caller: CallerAPI) => {
-  let get = (settings, account, ~block=?, ()) => {
-    let arguments = [|
-      "-E",
-      settings->AppSettings.endpoint,
-      "get",
-      "balance",
-      "for",
-      account,
-    |];
-    let arguments =
-      switch (block) {
-      | Some(block) => Js.Array2.concat([|"-b", block|], arguments)
-      | None => arguments
-      };
-
-    Caller.call(arguments, ())
-    ->Future.flatMapOk(r =>
-        r
-        ->Float.fromString
-        ->Option.map(Float.toString)
-        ->Option.flatMap(ProtocolXTZ.fromString)
-        ->(
-            ropt =>
-              switch (ropt) {
-              | None when r == "" => Ok(ProtocolXTZ.zero)
-              | None => Error("Cannot parse balance")
-              | Some(r) => Ok(r)
-              }
-          )
-        ->Future.value
-      );
+module Balance = {
+  let get = (settings, address, ~params=?, ()) => {
+    AppSettings.endpoint(settings)
+    ->ReTaquito.Balance.get(~address, ~params?, ())
+    ->Future.mapOk(ProtocolXTZ.ofInt64);
   };
 };
 
@@ -172,239 +155,7 @@ let tryMap = (result: Result.t('a, string), transform: 'a => 'b) =>
   | _ => Error("Unknown error")
   };
 
-module InjectorRaw = (Caller: CallerAPI) => {
-  type parserInterpret('a) =
-    | AllReduce(('a, option(string)) => 'a, 'a)
-    | First(string => option('a))
-    | Last(string => option('a))
-    | Nth(string => option('a), int)
-    | Exists(string => option('a));
-
-  let parse = (receipt, pattern, interp) => {
-    let rec parseAll = (acc, regexp) =>
-      switch (
-        Js.Re.exec_(regexp, receipt)->Option.map(Js.Re.captures),
-        interp,
-      ) {
-      | (Some(res), Exists(_)) => [|
-          res[0]->Option.flatMap(Js.Nullable.toOption),
-        |]
-      | (Some(res), _) =>
-        acc
-        ->Js.Array2.concat([|res[1]->Option.flatMap(Js.Nullable.toOption)|])
-        ->parseAll(regexp)
-      | (None, _) => acc
-      };
-    let interpretResults = results =>
-      if (Js.Array.length(results) == 0) {
-        None;
-      } else {
-        switch (interp) {
-        | Exists(f) => results[0]->Option.flatMap(x => x)->Option.flatMap(f)
-        | First(f) => results[0]->Option.flatMap(x => x)->Option.flatMap(f)
-        | Last(f) =>
-          results[Js.Array.length(results) - 1]
-          ->Option.flatMap(x => x)
-          ->Option.flatMap(f)
-        | Nth(f, i) =>
-          i < Js.Array.length(results)
-            ? results[i]->Option.flatMap(x => x)->Option.flatMap(f) : None
-        | AllReduce(f, init) => Some(Js.Array2.reduce(results, f, init))
-        };
-      };
-    parseAll([||], Js.Re.fromStringWithFlags(pattern, ~flags="g"))
-    ->interpretResults;
-  };
-
-  let parseAndReduceXTZ = (f, s) => {
-    Option.mapWithDefault(s, Some(ProtocolXTZ.zero), ProtocolXTZ.fromString)
-    ->Option.mapWithDefault(f, ProtocolXTZ.Infix.(+)(f));
-  };
-
-  let parseAndReduceInt = (f, s) => {
-    Option.mapWithDefault(s, Some(0), int_of_string_opt)
-    ->Option.mapWithDefault(f, Int.(+)(f));
-  };
-
-  type parserOptions = {
-    fees: parserInterpret(ProtocolXTZ.t),
-    counter: parserInterpret(int),
-    gasLimit: parserInterpret(int),
-    storageLimit: parserInterpret(int),
-  };
-
-  let singleOperationParser = {
-    fees: AllReduce(parseAndReduceXTZ, ProtocolXTZ.zero),
-    counter: First(int_of_string_opt),
-    gasLimit: AllReduce(parseAndReduceInt, 0),
-    storageLimit: AllReduce(parseAndReduceInt, 0),
-  };
-
-  let singleBatchTransferParser = index => {
-    Js.log(
-      "FEE "
-      ++ Js.String.make(index)
-      ++ " FROM "
-      ++ Js.String.make(Nth(float_of_string_opt, index)),
-    );
-
-    {
-      fees: Nth(ProtocolXTZ.fromString, index),
-      counter: Nth(int_of_string_opt, index),
-      gasLimit: Nth(int_of_string_opt, index),
-      storageLimit: Nth(int_of_string_opt, index),
-    };
-  };
-
-  let patchNthForRevelation = (options, revelation) => {
-    let incrNth = nth =>
-      switch (nth) {
-      | Nth(f, i) => Nth(f, i + 1)
-      | _ => nth
-      };
-    switch (revelation) {
-    | None => options
-    | Some () => {
-        fees: incrNth(options.fees),
-        counter: incrNth(options.counter),
-        gasLimit: incrNth(options.gasLimit),
-        storageLimit: incrNth(options.storageLimit),
-      }
-    };
-  };
-
-  let transaction_options_arguments =
-      (
-        arguments,
-        tx_options: Protocol.transfer_options,
-        common_options: Protocol.common_options,
-      ) => {
-    let arguments =
-      switch (tx_options.fee) {
-      | Some(fee) =>
-        Js.Array2.concat(arguments, [|"--fee", fee->ProtocolXTZ.toString|])
-      | None => arguments
-      };
-    let arguments =
-      switch (tx_options.gasLimit) {
-      | Some(gasLimit) =>
-        Js.Array2.concat(arguments, [|"-G", gasLimit->Js.Int.toString|])
-      | None => arguments
-      };
-    let arguments =
-      switch (tx_options.storageLimit) {
-      | Some(storageLimit) =>
-        Js.Array2.concat(arguments, [|"-S", storageLimit->Js.Int.toString|])
-      | None => arguments
-      };
-    let arguments =
-      switch (common_options.burnCap) {
-      | Some(burnCap) =>
-        Js.Array2.concat(
-          arguments,
-          [|"--burn-cap", burnCap->ProtocolXTZ.toString|],
-        )
-      | None => arguments
-      };
-    switch (common_options.forceLowFee) {
-    | Some(true) => Js.Array2.concat(arguments, [|"--force-low-fee"|])
-    | Some(false)
-    | None => arguments
-    };
-  };
-
-  exception InvalidReceiptFormat;
-
-  let simulate = (network, parser_options, make_arguments) =>
-    Caller.call(
-      make_arguments(network)->Js.Array2.concat([|"--simulation"|]),
-      (),
-    )
-    ->Future.tapOk(Js.log)
-    ->Future.map(result =>
-        result->tryMap(receipt => {
-          let revelation =
-            receipt->parse(
-              "[ ]*Revelation of manager public key:",
-              Exists(_ => Some()),
-            );
-          Js.log(revelation);
-          let parser_options =
-            patchNthForRevelation(parser_options, revelation);
-          let fee =
-            receipt->parse(
-              "[ ]*Fee to the baker: .([0-9]*\\.[0-9]+|[0-9]+)",
-              parser_options.fees,
-            );
-          Js.log(fee);
-          let count =
-            receipt->parse(
-              "[ ]*Expected counter: ([0-9]+)",
-              parser_options.counter,
-            );
-          Js.log(count);
-          let gasLimit =
-            receipt->parse(
-              "[ ]*Gas limit: ([0-9]+)",
-              parser_options.gasLimit,
-            );
-          Js.log(gasLimit);
-          let storageLimit =
-            receipt->parse(
-              "[ ]*Storage limit: ([0-9]+)",
-              parser_options.storageLimit,
-            );
-          Js.log(storageLimit);
-          switch (fee, count, gasLimit, storageLimit) {
-          | (Some(fee), Some(count), Some(gasLimit), Some(storageLimit)) =>
-            Protocol.{fee, count, gasLimit, storageLimit}
-          | _ => raise(InvalidReceiptFormat)
-          };
-        })
-      )
-    ->Future.tapOk(Js.log);
-
-  let create = (network, make_arguments) =>
-    Caller.call(make_arguments(network), ())
-    ->Future.tapOk(Js.log)
-    ->Future.map(result =>
-        result->tryMap(receipt => {
-          let result =
-            receipt->parse(
-              "Operation hash is '([A-Za-z0-9]*)'",
-              First(s => Some(s)),
-            );
-          switch (result) {
-          | Some(operationHash) => operationHash
-          | None => raise(InvalidReceiptFormat)
-          };
-        })
-      )
-    ->Future.tapOk(Js.log);
-
-  let inject = (network, make_arguments, ~password) =>
-    Caller.call(make_arguments(network), ~inputs=[|password|], ())
-    ->Future.tapOk(Js.log)
-    ->Future.map(result =>
-        result->tryMap(receipt => {
-          let operationHash =
-            receipt->parse(
-              "Operation hash is '([A-Za-z0-9]+)'",
-              First(s => Some(s)),
-            );
-          let branch =
-            receipt->parse("--branch ([A-Za-z0-9]+)", First(s => Some(s)));
-          switch (operationHash, branch) {
-          | (Some(operationHash), Some(branch)) => (operationHash, branch)
-          | (_, _) => raise(InvalidReceiptFormat)
-          };
-        })
-      );
-};
-
-module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
-  module Injector = InjectorRaw(Caller);
-
+module Explorer = (Getter: GetterAPI) => {
   let getFromMempool = (account, network, operations) =>
     network
     ->URL.mempool(account)
@@ -452,151 +203,168 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
           ? getFromMempool(account, network, operations)
           : Future.value(Ok(operations))
     );
+};
 
-  let transfer = (tx: Protocol.transfer) => {
-    let obj = Js.Dict.empty();
-    Js.Dict.set(obj, "destination", Js.Json.string(tx.destination));
-    Js.Dict.set(
-      obj,
-      "amount",
-      tx.amount->ProtocolXTZ.toString->Js.Json.string,
-    );
-    tx.tx_options.fee
-    ->Lib.Option.iter(v =>
-        Js.Dict.set(obj, "fee", v->ProtocolXTZ.toString->Js.Json.string)
-      );
-    tx.tx_options.gasLimit
-    ->Lib.Option.iter(v =>
-        Js.Dict.set(obj, "gas-limit", Js.Int.toString(v)->Js.Json.string)
-      );
-    tx.tx_options.storageLimit
-    ->Lib.Option.iter(v =>
-        Js.Dict.set(obj, "storage-limit", Js.Int.toString(v)->Js.Json.string)
-      );
-    Js.Json.object_(obj);
-  };
-
-  let transfers_to_json = (btxs: Protocol.transaction) =>
-    btxs.transfers
-    ->List.map(transfer)
-    ->List.toArray
-    ->Js.Json.array
-    ->Js.Json.stringify /* ->(json => "\'" ++ json ++ "\'") */;
-
-  let arguments = (settings, operation: Protocol.t) =>
-    switch (operation) {
-    | Transaction({transfers: [transfer]} as transaction) =>
-      let arguments = [|
-        "-E",
-        settings->AppSettings.endpoint,
-        "-w",
-        "none",
-        "transfer",
-        transfer.amount->ProtocolXTZ.toString,
-        "from",
-        transaction.source,
-        "to",
-        transfer.destination,
-        "--burn-cap",
-        "0.257",
-      |];
-      Injector.transaction_options_arguments(
-        arguments,
-        transfer.tx_options,
-        transaction.options,
-      );
-    | Transaction(transaction) => [|
-        "-E",
-        settings->AppSettings.endpoint,
-        "-w",
-        "none",
-        "multiple",
-        "transfers",
-        "from",
-        transaction.source,
-        "using",
-        transfers_to_json(transaction),
-        "--burn-cap",
-        Js.Float.toString(
-          0.06425 *. transaction.transfers->List.length->float_of_int,
-        ),
-      |]
-    | Delegation({delegate: None, source}) => [|
-        "-E",
-        settings->AppSettings.endpoint,
-        "-w",
-        "none",
-        "withdraw",
-        "delegate",
-        "from",
-        source,
-      |]
-    | Delegation({delegate: Some(delegate), source}) => [|
-        "-E",
-        settings->AppSettings.endpoint,
-        "-w",
-        "none",
-        "set",
-        "delegate",
-        "for",
-        source,
-        "to",
-        delegate,
-      |]
-    };
-
-  exception InvalidReceiptFormat;
-
-  let simulateSingleBatchTransfer = (settings, index, operation: Protocol.t) =>
-    Injector.simulate(
-      settings,
-      Injector.singleBatchTransferParser(index),
-      arguments(_, operation),
-    );
-
-  let simpleSimulation = (settings, operation: Protocol.t) =>
-    Injector.simulate(
-      settings,
-      Injector.singleOperationParser,
-      arguments(_, operation),
-    );
-
-  let simulate = (settings, ~index=?, operation: Protocol.t) => {
-    switch (operation, index) {
-    | (Delegation(_), _)
-    | (Transaction(_), None)
-    | (Transaction({transfers: [_]}), _) =>
-      simpleSimulation(settings, operation)
-    | (Transaction(_), Some(index)) =>
-      simulateSingleBatchTransfer(settings, index, operation)
-    };
-  };
-
-  let create = (network, operation: Protocol.t) =>
-    Injector.create(network, arguments(_, operation));
-
-  let inject = (network, operation: Protocol.t, ~password) =>
-    Injector.inject(network, arguments(_, operation), ~password);
-
-  let waitForOperationConfirmations =
-      (settings, hash, ~confirmations, ~branch) =>
-    Caller.call(
-      [|
-        "-E",
-        settings->AppSettings.endpoint,
-        "wait",
-        "for",
-        hash,
-        "to",
-        "be",
-        "included",
-        "--confirmations",
-        confirmations->string_of_int,
-        "--branch",
-        branch,
-      |],
+module Simulation = {
+  let transfer = (settings, transfer, source) => {
+    ReTaquito.Estimate.transfer(
+      ~endpoint=settings->AppSettings.endpoint,
+      ~baseDir=settings->AppSettings.baseDir,
+      ~source,
+      ~dest=transfer.Protocol.destination,
+      ~amount=transfer.Protocol.amount->ProtocolXTZ.toInt64,
+      ~fee=?transfer.Protocol.tx_options.fee->Option.map(ProtocolXTZ.toInt64),
+      ~gasLimit=?transfer.Protocol.tx_options.gasLimit,
+      ~storageLimit=?transfer.Protocol.tx_options.storageLimit,
       (),
     );
+  };
+
+  let batch = (settings, transfers, ~source, ~index=?, ()) => {
+    let transfers = source =>
+      transfers
+      ->List.map(({amount, destination, tx_options}: Protocol.transfer) =>
+          ReTaquito.Toolkit.prepareTransfer(
+            ~amount=amount->ProtocolXTZ.toInt64->ReTaquito.BigNumber.fromInt64,
+            ~dest=destination,
+            ~source,
+            ~fee=?
+              tx_options.fee
+              ->Option.map(fee =>
+                  fee->ProtocolXTZ.toInt64->ReTaquito.BigNumber.fromInt64
+                ),
+            ~gasLimit=?tx_options.gasLimit,
+            ~storageLimit=?tx_options.storageLimit,
+            (),
+          )
+        )
+      ->List.toArray;
+
+    ReTaquito.Estimate.batch(
+      ~endpoint=settings->AppSettings.endpoint,
+      ~baseDir=settings->AppSettings.baseDir,
+      ~source,
+      ~transfers,
+      (),
+    )
+    ->Future.flatMapOk(r =>
+        ReTaquito.Estimate.handleEstimationResults(r, index)
+      );
+  };
+
+  let setDelegate = (settings, delegation: Protocol.delegation) => {
+    ReTaquito.Estimate.setDelegate(
+      ~endpoint=settings->AppSettings.endpoint,
+      ~baseDir=settings->AppSettings.baseDir,
+      ~source=delegation.Protocol.source,
+      ~delegate=?delegation.Protocol.delegate,
+      ~fee=?delegation.Protocol.options.fee->Option.map(ProtocolXTZ.toInt64),
+      (),
+    );
+  };
+
+  let run = (settings, ~index=?, operation: Protocol.t) => {
+    let r =
+      switch (operation, index) {
+      | (Transaction({transfers: [t], source}), _) =>
+        transfer(settings, t, source)
+      | (Delegation(d), _) => setDelegate(settings, d)
+      | (Transaction({transfers, source}), None) =>
+        batch(settings, transfers, ~source, ())
+      | (Transaction({transfers, source}), Some(index)) =>
+        batch(settings, transfers, ~source, ~index, ())
+      };
+
+    r
+    ->Future.mapError(e =>
+        switch (e) {
+        | Generic(s) => s
+        | WrongPassword => I18n.form_input_error#wrong_password
+        }
+      )
+    ->Future.mapOk(({totalCost, gasLimit, storageLimit, revealFee}) =>
+        Protocol.{
+          fee: totalCost->ProtocolXTZ.fromMutezInt,
+          gasLimit,
+          storageLimit,
+          revealFee: revealFee->ProtocolXTZ.fromMutezInt,
+        }
+      );
+  };
+};
+
+module Operation = {
+  let batch = (settings, transfers, ~source, ~password) => {
+    let transfers = source =>
+      transfers
+      ->List.map(({amount, destination, tx_options}: Protocol.transfer) =>
+          ReTaquito.Toolkit.prepareTransfer(
+            ~amount=amount->ProtocolXTZ.toInt64->ReTaquito.BigNumber.fromInt64,
+            ~dest=destination,
+            ~source,
+            ~fee=?
+              tx_options.fee
+              ->Option.map(fee =>
+                  fee->ProtocolXTZ.toInt64->ReTaquito.BigNumber.fromInt64
+                ),
+            ~gasLimit=?tx_options.gasLimit,
+            ~storageLimit=?tx_options.storageLimit,
+            (),
+          )
+        )
+      ->List.toArray;
+
+    ReTaquito.Operations.batch(
+      ~endpoint=settings->AppSettings.endpoint,
+      ~baseDir=settings->AppSettings.baseDir,
+      ~source,
+      ~transfers,
+      ~password,
+      (),
+    )
+    ->Future.mapOk((op: ReTaquito.Toolkit.operationResult) => op.hash);
+  };
+
+  let transfer = (settings, transfer, ~source, ~password) => {
+    ReTaquito.Operations.transfer(
+      ~endpoint=settings->AppSettings.endpoint,
+      ~baseDir=settings->AppSettings.baseDir,
+      ~source,
+      ~dest=transfer.Protocol.destination,
+      ~amount=transfer.Protocol.amount->ProtocolXTZ.toInt64,
+      ~password,
+      ~fee=?transfer.Protocol.tx_options.fee->Option.map(ProtocolXTZ.toInt64),
+      ~gasLimit=?transfer.Protocol.tx_options.gasLimit,
+      ~storageLimit=?transfer.Protocol.tx_options.storageLimit,
+      (),
+    )
+    ->Future.mapOk((op: ReTaquito.Toolkit.operationResult) => op.hash);
+  };
+
+  let setDelegate =
+      (settings, Protocol.{delegate, source, options}, ~password) => {
+    ReTaquito.Operations.setDelegate(
+      ~endpoint=settings->AppSettings.endpoint,
+      ~baseDir=settings->AppSettings.baseDir,
+      ~source,
+      ~delegate,
+      ~password,
+      ~fee=?options.fee->Option.map(ProtocolXTZ.toInt64),
+      (),
+    )
+    ->Future.mapOk((op: ReTaquito.Toolkit.operationResult) => op.hash);
+  };
+
+  let run = (settings, operation: Protocol.t, ~password) =>
+    switch (operation) {
+    | Transaction({transfers: [t], source}) =>
+      transfer(settings, t, ~source, ~password)
+
+    | Delegation(d) => setDelegate(settings, d, ~password)
+
+    | Transaction({transfers, source}) =>
+      batch(settings, transfers, ~source, ~password)
+    };
 };
 
 module MapString = Map.String;
@@ -872,9 +640,9 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
       });
 
   let validate = (network, address) => {
-    module OperationsAPI = Operations(Caller, Getter);
+    module ExplorerAPI = Explorer(Getter);
     network
-    ->OperationsAPI.get(address, ~limit=1, ())
+    ->ExplorerAPI.get(address, ~limit=1, ())
     ->Future.mapOk(operations => {operations->Js.Array2.length != 0});
   };
 
@@ -1076,7 +844,7 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
     ->Future.mapOk(LocalStorage.setItem("secrets"));
 };
 
-module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
+module Delegate = (Getter: GetterAPI) => {
   let parse = content =>
     if (content == "none\n") {
       None;
@@ -1090,18 +858,7 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
     };
 
   let getForAccount = (settings, account) =>
-    Caller.call(
-      [|
-        "-E",
-        settings->AppSettings.endpoint,
-        "get",
-        "delegate",
-        "for",
-        account,
-      |],
-      (),
-    )
-    ->Future.mapOk(parse)
+    ReTaquito.getDelegate(settings->AppSettings.endpoint, account)
     ->Future.mapOk(result =>
         switch (result) {
         | Some(delegate) =>
@@ -1136,10 +893,10 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
   };
 
   let getDelegationInfoForAccount = (network, account: string) => {
-    module OperationsAPI = Operations(Caller, Getter);
-    module BalanceAPI = Balance(Caller);
+    module ExplorerAPI = Explorer(Getter);
+    module BalanceAPI = Balance;
     network
-    ->OperationsAPI.get(account, ~types=[|"delegation"|], ~limit=1, ())
+    ->ExplorerAPI.get(account, ~types=[|"delegation"|], ~limit=1, ())
     ->Future.flatMapOk(operations =>
         if (operations->Array.length == 0) {
           Future.value(
@@ -1171,7 +928,7 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
                   network
                   ->BalanceAPI.get(
                       account,
-                      ~block=firstOperation.level->string_of_int,
+                      ~params={block: firstOperation.level->string_of_int},
                       (),
                     )
                   ->Future.mapOk(balance =>
@@ -1184,7 +941,7 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
                     )
                   ->Future.flatMapOk(info =>
                       network
-                      ->OperationsAPI.get(
+                      ->ExplorerAPI.get(
                           info.delegate,
                           ~types=[|"transaction"|],
                           ~destination=account,
@@ -1219,23 +976,55 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
   };
 };
 
-module Tokens = (Caller: CallerAPI, Getter: GetterAPI) => {
-  module Injector = InjectorRaw(Caller);
+module Tokens = (Getter: GetterAPI) => {
+  type error =
+    | OperationNotRunnableOffchain(string)
+    | SimulationNotAvailable(string)
+    | InjectionNotImplemented(string)
+    | OffchainCallNotImplemented(string)
+    | BackendError(string);
+
+  let printError = (fmt, err) => {
+    switch (err) {
+    | OperationNotRunnableOffchain(s) =>
+      Format.fprintf(fmt, "Operation '%s' cannot be run offchain.", s)
+    | SimulationNotAvailable(s) =>
+      Format.fprintf(fmt, "Operation '%s' is not simulable.", s)
+    | InjectionNotImplemented(s) =>
+      Format.fprintf(fmt, "Operation '%s' injection is not implemented", s)
+    | OffchainCallNotImplemented(s) =>
+      Format.fprintf(
+        fmt,
+        "Operation '%s' offchain call is not implemented",
+        s,
+      )
+    | BackendError(s) => Format.fprintf(fmt, "%s", s)
+    };
+  };
+
+  let errorToString = err => Format.asprintf("%a", printError, err);
+
+  let handleTaquitoError =
+    fun
+    | ReTaquito.Generic(s) => BackendError(s)
+    | WrongPassword => BackendError(I18n.form_input_error#wrong_password);
 
   let getTokenViewer = settings => URL.tokenViewer(settings)->Getter.get;
 
   let checkTokenContract = (settings, addr) => {
-    let arguments = [|
-      "-E",
-      settings->AppSettings.endpoint,
-      "check",
-      "contract",
-      addr,
-      "implements",
-      "fungible",
-      "assets",
-    |];
-    Caller.call(arguments, ());
+    URL.checkToken(settings, addr)
+    ->Getter.get
+    ->Future.map(result => {
+        switch (result) {
+        | Ok(json) =>
+          switch (Js.Json.classify(json)) {
+          | Js.Json.JSONTrue => Ok(true)
+          | JSONFalse => Ok(false)
+          | _ => Error("Error")
+          }
+        | Error(e) => Error(e)
+        }
+      });
   };
 
   let get = (settings: AppSettings.t) => {
@@ -1248,109 +1037,39 @@ module Tokens = (Caller: CallerAPI, Getter: GetterAPI) => {
     };
   };
 
-  let transfer = (elt: Token.Transfer.elt) => {
-    let obj = Js.Dict.empty();
-    Js.Dict.set(obj, "destination", Js.Json.string(elt.destination));
-    Js.Dict.set(obj, "amount", elt.amount->Js.Int.toString->Js.Json.string);
-    Js.Dict.set(obj, "token", elt.token->Js.Json.string);
-    elt.tx_options.fee
-    ->Lib.Option.iter(v =>
-        Js.Dict.set(obj, "fee", v->ProtocolXTZ.toString->Js.Json.string)
-      );
-    elt.tx_options.gasLimit
-    ->Lib.Option.iter(v =>
-        Js.Dict.set(obj, "gas-limit", Js.Int.toString(v)->Js.Json.string)
-      );
-    elt.tx_options.storageLimit
-    ->Lib.Option.iter(v =>
-        Js.Dict.set(obj, "storage-limit", Js.Int.toString(v)->Js.Json.string)
-      );
-    Js.Json.object_(obj);
-  };
-
-  let transfers_to_json = (transfers: list(Token.Transfer.elt)) =>
-    transfers
-    ->List.map(transfer)
-    ->List.toArray
-    ->Js.Json.array
-    ->Js.Json.stringify /* ->(json => "\'" ++ json ++ "\'") */;
-
-  let make_get_arguments =
-      (arguments, callback, offline, tx_options, common_options) =>
-    switch (callback, offline) {
-    | (Some(callback), true) =>
-      Js.Array2.concat(arguments, [|"offline", "with", callback|])
-    | (Some(callback), false) =>
-      Js.Array2.concat(arguments, [|"callback", "on", callback|])
-      ->Injector.transaction_options_arguments(tx_options, common_options)
-    | (None, _) => assert(false)
-    };
-
-  let make_arguments = (settings, operation: Token.operation, ~offline) => {
-    switch (operation) {
-    | Transfer({source, transfers: [elt], common_options}) =>
-      [|
-        "-E",
-        settings->AppSettings.endpoint,
-        "-w",
-        "none",
-        "from",
-        "token",
-        "contract",
-        elt.token,
-        "transfer",
-        Js.Int.toString(elt.amount),
-        "from",
-        source,
-        "to",
-        elt.destination,
-        "--burn-cap",
-        "0.01875",
-      |]
-      ->Injector.transaction_options_arguments(elt.tx_options, common_options)
-    | Transfer({source, transfers, common_options}) =>
-      [|
-        "-E",
-        settings->AppSettings.endpoint,
-        "-w",
-        "none",
-        "multiple",
-        "tokens",
-        "transfers",
-        "from",
-        source,
-        "using",
-        transfers_to_json(transfers),
-        "--burn-cap",
-        Js.Float.toString(0.08300 *. transfers->List.length->float_of_int),
-      |]
-      ->Injector.transaction_options_arguments(
-          Protocol.emptyTransferOptions,
-          common_options,
+  let injectBatch = (settings, transfers, ~source, ~password) => {
+    let transfers = source =>
+      transfers
+      ->List.map(
+          ({token, amount, destination, tx_options}: Token.Transfer.elt) =>
+          ReTaquito.FA12Operations.toRawTransfer(
+            ~token,
+            ~amount=amount->ReTaquito.BigNumber.fromInt,
+            ~dest=destination,
+            ~fee=?
+              tx_options.fee
+              ->Option.map(fee =>
+                  fee->ProtocolXTZ.toInt64->ReTaquito.BigNumber.fromInt64
+                ),
+            ~gasLimit=?tx_options.gasLimit,
+            ~storageLimit=?tx_options.storageLimit,
+            (),
+          )
         )
-    | GetBalance({
-        token,
-        address,
-        callback,
-        options: (tx_options, common_options),
-      }) =>
-      [|
-        "-E",
-        settings->AppSettings.endpoint,
-        "-w",
-        "none",
-        "from",
-        "token",
-        "contract",
-        token,
-        "get",
-        "balance",
-        "for",
-        address,
-      |]
-      ->make_get_arguments(callback, offline, tx_options, common_options)
-    | _ => assert(false)
-    };
+      ->ReTaquito.FA12Operations.prepareTransfers(
+          source,
+          settings->AppSettings.endpoint,
+        );
+
+    ReTaquito.FA12Operations.batch(
+      ~endpoint=settings->AppSettings.endpoint,
+      ~baseDir=settings->AppSettings.baseDir,
+      ~source,
+      ~transfers,
+      ~password,
+      (),
+    )
+    ->Future.mapOk((op: ReTaquito.Toolkit.operationResult) => op.hash);
   };
 
   let offline = (operation: Token.operation) => {
@@ -1363,38 +1082,145 @@ module Tokens = (Caller: CallerAPI, Getter: GetterAPI) => {
     };
   };
 
-  let simulate = (network, operation: Token.operation) =>
-    Injector.simulate(
-      network,
-      Injector.singleOperationParser,
-      make_arguments(_, operation, ~offline=false),
-    );
+  let transferEstimate = (settings, transfer, source) => {
+    let endpoint = settings->AppSettings.endpoint;
+    ReTaquito.FA12Operations.Estimate.transfer(
+      ~endpoint,
+      ~baseDir=settings->AppSettings.baseDir,
+      ~tokenContract=transfer.Token.Transfer.token,
+      ~source,
+      ~dest=transfer.Token.Transfer.destination,
+      ~amount=transfer.Token.Transfer.amount->Int64.of_int,
+      ~fee=?
+        transfer.Token.Transfer.tx_options.fee
+        ->Option.map(ProtocolXTZ.toInt64),
+      ~gasLimit=?transfer.Token.Transfer.tx_options.gasLimit,
+      ~storageLimit=?transfer.Token.Transfer.tx_options.storageLimit,
+      (),
+    )
+    ->Future.mapOk(({totalCost, gasLimit, storageLimit, revealFee}) =>
+        Protocol.{
+          fee: totalCost->ProtocolXTZ.fromMutezInt,
+          gasLimit,
+          storageLimit,
+          revealFee: revealFee->ProtocolXTZ.fromMutezInt,
+        }
+      );
+  };
 
-  let create = (network, operation: Token.operation) =>
-    Injector.create(network, make_arguments(_, operation, ~offline=false));
+  let batchEstimate = (settings, transfers, ~source, ~index=?, ()) => {
+    let endpoint = settings->AppSettings.endpoint;
+    let transfers = source =>
+      transfers
+      ->List.map(
+          ({token, amount, destination, tx_options}: Token.Transfer.elt) =>
+          ReTaquito.FA12Operations.toRawTransfer(
+            ~token,
+            ~amount=amount->ReTaquito.BigNumber.fromInt,
+            ~dest=destination,
+            ~fee=?
+              tx_options.fee
+              ->Option.map(fee =>
+                  fee->ProtocolXTZ.toInt64->ReTaquito.BigNumber.fromInt64
+                ),
+            ~gasLimit=?tx_options.gasLimit,
+            ~storageLimit=?tx_options.storageLimit,
+            (),
+          )
+        )
+      ->ReTaquito.FA12Operations.prepareTransfers(source, endpoint);
+
+    ReTaquito.FA12Operations.Estimate.batch(
+      ~endpoint,
+      ~baseDir=settings->AppSettings.baseDir,
+      ~source,
+      ~transfers,
+      (),
+    )
+    ->Future.flatMapOk(r =>
+        ReTaquito.Estimate.handleEstimationResults(r, index)
+      )
+    ->Future.mapOk(({totalCost, gasLimit, storageLimit, revealFee}) =>
+        Protocol.{
+          fee: totalCost->ProtocolXTZ.fromMutezInt,
+          gasLimit,
+          storageLimit,
+          revealFee: revealFee->ProtocolXTZ.fromMutezInt,
+        }
+      );
+  };
+
+  let simulate = (network, operation: Token.operation) =>
+    switch (operation) {
+    | Transfer({source, transfers: [elt], _}) =>
+      transferEstimate(network, elt, source)
+      ->Future.mapError(handleTaquitoError)
+    | Transfer({source, transfers, _}) =>
+      batchEstimate(network, transfers, ~source, ())
+      ->Future.mapError(handleTaquitoError)
+    | _ =>
+      Future.value(
+        Error(SimulationNotAvailable(Token.operationEntrypoint(operation))),
+      )
+    };
+
+  let transfer = (settings, transfer, source, password) => {
+    ReTaquito.FA12Operations.transfer(
+      ~endpoint=settings->AppSettings.endpoint,
+      ~baseDir=settings->AppSettings.baseDir,
+      ~tokenContract=transfer.Token.Transfer.token,
+      ~source,
+      ~dest=transfer.Token.Transfer.destination,
+      ~amount=transfer.Token.Transfer.amount->Int64.of_int,
+      ~password,
+      ~fee=?
+        transfer.Token.Transfer.tx_options.fee
+        ->Option.map(ProtocolXTZ.toInt64),
+      ~gasLimit=?transfer.Token.Transfer.tx_options.gasLimit,
+      ~storageLimit=?transfer.Token.Transfer.tx_options.storageLimit,
+      (),
+    )
+    ->Future.mapOk((op: ReTaquito.Toolkit.operationResult) => op.hash);
+  };
 
   let inject = (network, operation: Token.operation, ~password) =>
-    Injector.inject(
-      network,
-      make_arguments(_, operation, ~offline=false),
-      ~password,
-    );
+    switch (operation) {
+    | Transfer({source, transfers: [elt], _}) =>
+      transfer(network, elt, source, password)
+      ->Future.mapError(handleTaquitoError)
+    | Transfer({source, transfers, _}) =>
+      injectBatch(network, transfers, ~source, ~password)
+      ->Future.mapError(handleTaquitoError)
+    | _ =>
+      Future.value(
+        Error(
+          InjectionNotImplemented(Token.operationEntrypoint(operation)),
+        ),
+      )
+    };
 
   let callGetOperationOffline = (settings, operation: Token.operation) =>
-    getTokenViewer(settings)
-    ->Future.map(viewer => viewer->tryMap(Token.Decode.viewer))
-    >>= (
-      callback => {
-        let operation = operation->Token.setCallback(callback);
-
-        if (offline(operation)) {
-          Caller.call(
-            make_arguments(settings, operation, ~offline=true),
-            (),
-          );
-        } else {
-          Future.value(Error("Operation not runnable offline"));
-        };
-      }
-    );
+    if (offline(operation)) {
+      switch (operation) {
+      | GetBalance({token, address, _}) =>
+        URL.getTokenBalance(settings, token, address)
+        ->Getter.get
+        ->Future.mapOk(res =>
+            res->Js.Json.decodeString->Option.getWithDefault("0")
+          )
+        ->Future.mapError(s => BackendError(s))
+      | _ =>
+        Future.value(
+          Error(
+            OffchainCallNotImplemented(Token.operationEntrypoint(operation)),
+          ),
+        )
+      };
+    } else {
+      Future.value(
+        Error(
+          OperationNotRunnableOffchain(Token.operationEntrypoint(operation)),
+        ),
+      );
+    };
 };

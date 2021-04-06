@@ -3,7 +3,7 @@ open ReactNative;
 let style =
   Style.(style(~padding=4.->dp, ~margin=4.->dp, ~borderWidth=1.0, ()));
 
-module TokensAPI = API.Tokens(API.TezosClient, API.TezosExplorer);
+module TokensAPI = API.Tokens(API.TezosExplorer);
 
 [@react.component]
 let make = () => {
@@ -44,7 +44,7 @@ let make = () => {
         ->Future.get(result =>
             switch (result) {
             | Ok(_) => Dialog.error("ok")
-            | Error(err) => Dialog.error(err)
+            | Error(err) => Dialog.error(TokensAPI.errorToString(err))
             }
           )
       }

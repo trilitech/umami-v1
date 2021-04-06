@@ -23,31 +23,16 @@ let makeDelegate =
   {
     source,
     delegate,
-    options:
-      Protocol.makeCommonOptions(
-        ~fee,
-        ~burnCap,
-        ~forceLowFee,
-        ~confirmations=None,
-        (),
-      ),
+    options: Protocol.makeCommonOptions(~fee, ~burnCap, ~forceLowFee, ()),
   }
   ->delegation;
 };
 
-let makeTransaction =
-    (~source, ~transfers, ~burnCap=?, ~forceLowFee=?, ~confirmations=?, ()) =>
+let makeTransaction = (~source, ~transfers, ~burnCap=?, ~forceLowFee=?, ()) =>
   transaction({
     source,
     transfers,
-    options:
-      makeCommonOptions(
-        ~fee=None,
-        ~burnCap,
-        ~forceLowFee,
-        ~confirmations,
-        (),
-      ),
+    options: makeCommonOptions(~fee=None, ~burnCap, ~forceLowFee, ()),
   });
 
 let makeSingleTransaction =
@@ -57,7 +42,6 @@ let makeSingleTransaction =
       ~destination,
       ~burnCap=?,
       ~forceLowFee=?,
-      ~confirmations=?,
       ~fee=?,
       ~parameter=?,
       ~entrypoint=?,
@@ -79,14 +63,7 @@ let makeSingleTransaction =
         (),
       ),
     ],
-    options:
-      makeCommonOptions(
-        ~fee=None,
-        ~burnCap,
-        ~forceLowFee,
-        ~confirmations,
-        (),
-      ),
+    options: makeCommonOptions(~fee=None, ~burnCap, ~forceLowFee, ()),
   });
 
 module Business = {

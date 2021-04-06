@@ -3,7 +3,7 @@ open ReactNative;
 let style =
   Style.(style(~padding=4.->dp, ~margin=4.->dp, ~borderWidth=1.0, ()));
 
-module TokensAPI = API.Tokens(API.TezosClient, API.TezosExplorer);
+module TokensAPI = API.Tokens(API.TezosExplorer);
 
 [@react.component]
 let make = () => {
@@ -75,14 +75,6 @@ let make = () => {
             (),
           );
         Token.(makeTransfers(~source, ~transfers=[tx1, tx2], ())->transfer)
-        ->(
-            txs => {
-              [@warning "-8"]
-              let Token.Transfer({transfers}) = txs;
-              Js.log(TokensAPI.transfers_to_json(transfers));
-              txs;
-            }
-          )
         ->TokensAPI.simulate(AppSettings.testOnly(settings), _)
         ->Future.get(result =>
             switch (result) {

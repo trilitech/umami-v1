@@ -1,4 +1,4 @@
-module BalanceAPI = API.Balance(API.TezosClient);
+module BalanceAPI = API.Balance;
 
 type balanceApiRequest = ApiRequest.t(string);
 

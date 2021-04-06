@@ -1,5 +1,5 @@
 include ApiRequest;
-module DelegateAPI = API.Delegate(API.TezosClient, API.TezosExplorer);
+module DelegateAPI = API.Delegate(API.TezosExplorer);
 
 /* Get delegate */
 

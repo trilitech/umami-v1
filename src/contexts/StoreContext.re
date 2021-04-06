@@ -393,10 +393,9 @@ module Operations = {
     let settings = SdkContext.useSettings();
     OperationApiRequest.useCreate(
       ~sideEffect=
-        ((hash, branch)) => {
-          resetOperations();
-          OperationApiRequest.waitForConfirmation(settings, hash, branch)
-          ->Future.get(_ => resetOperations());
+        hash => {
+          OperationApiRequest.waitForConfirmation(settings, hash)
+          ->Future.get(_ => resetOperations())
         },
       (),
     );
