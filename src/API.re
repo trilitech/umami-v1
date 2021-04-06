@@ -743,6 +743,19 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
         ->Future.mapOk(legacyAddresses => (addresses, legacyAddresses))
       });
 
+  let indexOfRecoveryPhrase = (~settings, recoveryPhrase, ~password) =>
+    recoveryPhrases(~settings)
+    ->Option.getWithDefault([||])
+    ->Array.map(SecureStorage.Cipher.decrypt2(password))
+    ->List.fromArray
+    ->Future.all
+    ->Future.map(List.toArray)
+    ->Future.map(decryptedRecoveryPhrases =>
+        decryptedRecoveryPhrases->Array.getBy(decryptedRecoveryPhrase =>
+          decryptedRecoveryPhrase == Ok(recoveryPhrase)
+        )
+      );
+
   let restore =
       (
         ~settings,
@@ -754,6 +767,15 @@ module Accounts = (Caller: CallerAPI, Getter: GetterAPI) => {
       ) => {
     password
     ->SecureStorage.validatePassword
+    ->Future.flatMapOk(_ =>
+        indexOfRecoveryPhrase(~settings, backupPhrase, ~password)
+        ->Future.map(index =>
+            switch (index) {
+            | Some(_) => Error("Secret already imported!")
+            | None => Ok(index)
+            }
+          )
+      )
     ->Future.flatMapOk(_ =>
         scan(~settings, backupPhrase, name, ~derivationScheme, ~password, ())
       )
