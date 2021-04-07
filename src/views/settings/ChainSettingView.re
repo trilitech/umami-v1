@@ -23,6 +23,34 @@ let make = () => {
   let settings = SdkContext.useSettings();
   let addToast = LogsContext.useToast();
 
+  let checkConfigurationAndContinue = (state: ChainForm.state, k) => {
+    Network.checkConfiguration(
+      state.values.explorerTest,
+      state.values.endpointTest,
+    )
+    ->Future.get(
+        fun
+        | Ok () => k(state)
+        | Error(e) =>
+          addToast(Logs.error(~origin=Settings, Network.errorMsg(e))),
+      );
+  };
+
+  let writeConf = (state: ChainForm.state) =>
+    writeConf(c =>
+      {
+        ...c,
+        endpointTest:
+          state.values.endpointTest->Js.String2.length > 0
+          && state.values.endpointTest != ConfigFile.Default.endpointTest
+            ? Some(state.values.endpointTest) : None,
+        explorerTest:
+          state.values.explorerTest->Js.String2.length > 0
+          && state.values.explorerTest != ConfigFile.Default.explorerTest
+            ? Some(state.values.explorerTest) : None,
+      }
+    );
+
   let form: ChainForm.api =
     ChainForm.use(
       ~schema={
@@ -32,21 +60,15 @@ let make = () => {
       },
       ~onSubmit=
         ({state}) => {
-          writeConf(c =>
-            {
-              ...c,
-              endpointTest:
-                state.values.endpointTest->Js.String2.length > 0
-                && state.values.endpointTest != ConfigFile.Default.endpointTest
-                  ? Some(state.values.endpointTest) : None,
-              explorerTest:
-                state.values.explorerTest->Js.String2.length > 0
-                && state.values.explorerTest != ConfigFile.Default.explorerTest
-                  ? Some(state.values.explorerTest) : None,
-            }
+          checkConfigurationAndContinue(
+            state,
+            state => {
+              writeConf(state);
+              addToast(
+                Logs.info(~origin=Settings, I18n.settings#chain_saved),
+              );
+            },
           );
-          addToast(Logs.info(~origin=Settings, I18n.settings#chain_saved));
-
           None;
         },
       ~initialState={
