@@ -58,7 +58,7 @@ let make =
       ~size=34.,
       ~style as styleArg=?,
     ) => {
-  let (pressableRef, isOpen, popoverConfig, togglePopover) =
+  let (pressableRef, isOpen, popoverConfig, togglePopover, _) =
     Popover.usePopoverState();
 
   <View
@@ -69,7 +69,7 @@ let make =
       |])
     )>
     <IconButton
-      pressableRef={pressableRef->Ref.value}
+      pressableRef
       isActive=isOpen
       icon
       size

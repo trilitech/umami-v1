@@ -63,7 +63,7 @@ let make =
     ) => {
   let disabled = disabled || items->Array.size == 1 && noneItem->Option.isNone;
 
-  let (pressableRef, isOpen, popoverConfig, togglePopover) =
+  let (pressableRef, isOpen, popoverConfig, togglePopover, _) =
     Popover.usePopoverState();
 
   let (_, animatedOpenValue) =

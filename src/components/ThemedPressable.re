@@ -1,5 +1,4 @@
 open ReactNative;
-include NativeElement;
 
 let styles =
   Style.(StyleSheet.create({"container": style(~overflow=`hidden, ())}));
@@ -7,7 +6,7 @@ let styles =
 [@react.component]
 let make =
     (
-      ~pressableRef: option(ref)=?,
+      ~pressableRef: option(NativeElement.ref)=?,
       ~onPress=?,
       ~href=?,
       ~style as styleFromProp=?,
