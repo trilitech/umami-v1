@@ -4,43 +4,46 @@ module CellAddress =
   Table.MakeCell({
     let style =
       Style.(style(~flexBasis=180.->dp, ~flexGrow=1., ~flexShrink=1., ()));
-    ();
   });
 
 module CellAmount =
   Table.MakeCell({
     let style = Style.(style(~flexBasis=146.->dp, ()));
-    ();
   });
 
 module CellDuration =
   Table.MakeCell({
     let style = Style.(style(~flexBasis=114.->dp, ()));
-    ();
   });
 
 module CellReward =
   Table.MakeCell({
     let style = Style.(style(~flexBasis=160.->dp, ~flexGrow=1., ()));
-    ();
   });
 
 module CellAction =
   Table.MakeCell({
-    let style = Style.(style(~flexBasis=68.->dp, ~alignItems=`flexEnd, ()));
-    ();
+    let style =
+      Style.(
+        style(
+          ~flexBasis=68.->dp,
+          ~flexDirection=`row,
+          ~alignItems=`center,
+          (),
+        )
+      );
   });
 
 module DelegateActionButton = {
   [@react.component]
-  let make = (~action, ~text, ~icon, ~colorStyle=?) => {
+  let make = (~action, ~icon, ~tooltip=?) => {
     let (visibleModal, openAction, closeAction) =
       ModalAction.useModalActionState();
 
     let onPress = _ => openAction();
 
     <>
-      <Menu.Item text icon onPress ?colorStyle />
+      <IconButton ?tooltip icon size=30. onPress />
       <ModalAction visible=visibleModal onRequestClose=closeAction>
         <DelegateView closeAction action />
       </ModalAction>
@@ -167,21 +170,16 @@ let make =
            }}
         </CellReward>
         <CellAction>
-          <Menu
-            icon=Icons.More.build
-            keyPopover={"delegateRowItem" ++ account.address}>
-            <DelegateActionButton
-              action={Delegate.Edit(account, delegate)}
-              text=I18n.menu#delegate_edit
-              icon=Icons.Change.build
-            />
-            <DelegateActionButton
-              action={Delegate.Delete(account, delegate)}
-              text=I18n.menu#delegate_delete
-              colorStyle=`error
-              icon=Icons.Close.build
-            />
-          </Menu>
+          <DelegateActionButton
+            action={Delegate.Edit(account, delegate)}
+            tooltip=("delegate_edit", I18n.menu#delegate_edit)
+            icon=Icons.Change.build
+          />
+          <DelegateActionButton
+            action={Delegate.Delete(account, delegate)}
+            tooltip=("delegate_delete", I18n.menu#delegate_delete)
+            icon=Icons.Stop.build
+          />
         </CellAction>
       </Table.Row>
     | Done(_)

@@ -39,7 +39,6 @@ let btn = {
   pub delegation_submit = "CONFIRM DELEGATION";
   pub delegated = "DELEGATED";
   pub delete_token = "Delete token";
-  pub delete_account = "Delete account";
   pub import = "IMPORT";
   pub export = "EXPORT";
   pub scan = "SCAN"
@@ -137,6 +136,7 @@ let title = {
   pub submitting = "Submitting operation";
   pub send_many_transactions = "Send one or many transactions";
   pub delete_account = "Delete account?";
+  pub delete_secret = "Delete secret?";
   pub delete_load = "Deleting";
   pub delete_account_done = "Account deleted";
   pub batch = "Batch";
@@ -166,6 +166,8 @@ let menu = {
   pub delegate_delete = "End delegation";
   pub batch_edit = "Edit transfer";
   pub batch_delete = "Delete transfer";
+  pub delete_account = "Delete";
+  pub delete_secret = "Delete";
   pub edit = "Edit"
 };
 

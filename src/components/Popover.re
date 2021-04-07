@@ -28,6 +28,7 @@ let make =
       ~openingStyle=Top,
       ~style as styleFromProp=?,
       ~keyPopover,
+      ~pointerEvents=`boxNone,
       ~children,
     ) => {
   let (visible, animatedOpenValue) =
@@ -42,7 +43,7 @@ let make =
         StyleSheet.absoluteFillObject,
         ReactUtils.displayOn(visible),
       |])}
-      pointerEvents=`boxNone>
+      pointerEvents>
       <Animated.View
         style=Style.(
           style(
@@ -154,8 +155,12 @@ let make =
   </Portal>;
 };
 
-let usePopoverState = () => {
-  let pressableRef = React.useRef(Js.Nullable.null);
+let usePopoverState = (~elementRef=?, ()) => {
+  let pressableRef =
+    switch (elementRef) {
+    | Some(e) => e
+    | None => React.useRef(Js.Nullable.null)
+    };
 
   let (isOpen, setIsOpen) = React.useState(_ => false);
   let (popoverConfig, setPopoverConfig) = React.useState(_ => None);
@@ -170,6 +175,8 @@ let usePopoverState = () => {
     React.useCallback1(_scrollEvent => setIsOpen(_ => false), [|setIsOpen|]),
   );
 
+  let setClosed = () => setIsOpen(_ => false);
+
   let togglePopover = () => {
     pressableRef.current
     ->Js.Nullable.toOption
@@ -183,5 +190,5 @@ let usePopoverState = () => {
     setIsOpen(isOpen => !isOpen);
   };
 
-  (pressableRef, isOpen, popoverConfig, togglePopover);
+  (pressableRef, isOpen, popoverConfig, togglePopover, setClosed);
 };

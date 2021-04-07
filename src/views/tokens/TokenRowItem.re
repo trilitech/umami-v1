@@ -34,8 +34,8 @@ module TokenDeleteButton = {
       deleteToken(token)->ignore;
     };
 
-    <DeleteButton
-      buttonText=I18n.btn#delete_token
+    <DeleteButton.IconButton
+      tooltip=("delete_token", I18n.btn#delete_token)
       modalTitle=I18n.title#delete_token
       onPressConfirmDelete
       request=tokenRequest
@@ -61,11 +61,6 @@ let make = (~token: Token.t) => {
         token.address->React.string
       </Typography.Address>
     </CellAddress>
-    <CellAction>
-      <Menu
-        icon=Icons.More.build keyPopover={"tokenRowItemMenu" ++ token.address}>
-        <TokenDeleteButton token />
-      </Menu>
-    </CellAction>
+    <CellAction> <TokenDeleteButton token /> </CellAction>
   </Table.Row>;
 };
