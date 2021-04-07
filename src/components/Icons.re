@@ -123,3 +123,4 @@ module Scan = Make(SVGIconScan);
 module Checkmark = Make(SVGIconCheckmark);
 module Show = Make(SVGIconShow);
 module Hide = Make(SVGIconHide);
+module Stop = Make(SVGIconStop);

@@ -178,7 +178,7 @@ let make =
           <DelegateActionButton
             action={Delegate.Delete(account, delegate)}
             tooltip=("delegate_delete", I18n.menu#delegate_delete)
-            icon=Icons.Close.build
+            icon=Icons.Stop.build
           />
         </CellAction>
       </Table.Row>
