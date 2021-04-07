@@ -198,8 +198,25 @@ let make =
                </Typography.Body1>
              </CellType>
              <CellAmount />
-             <CellFee />
-             <CellAddress />
+             <CellFee>
+               <Typography.Body1>
+                 {I18n.t#xtz_amount(business.fee->ProtocolXTZ.toString)
+                  ->React.string}
+               </Typography.Body1>
+             </CellFee>
+             <CellAddress>
+               {business.source
+                ->AliasHelpers.getContractAliasFromAddress(aliases, tokens)
+                ->Option.mapWithDefault(
+                    <Typography.Address numberOfLines=1>
+                      business.source->React.string
+                    </Typography.Address>,
+                    alias =>
+                    <Typography.Body1 numberOfLines=1>
+                      alias->React.string
+                    </Typography.Body1>
+                  )}
+             </CellAddress>
              <CellAddress />
            </>
          | Unknown => React.null
