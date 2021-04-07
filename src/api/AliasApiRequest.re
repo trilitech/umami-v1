@@ -1,12 +1,10 @@
 /* ALIAS */
 
-module AliasesAPI = API.Aliases(API.TezosClient);
-
 /* Get list */
 
 let useLoad = requestState => {
   let get = (~settings, ()) =>
-    AliasesAPI.get(~settings)
+    API.Aliases.get(~settings)
     ->Future.mapOk(response => {
         response
         ->Array.map(((alias, address)) => {
@@ -26,7 +24,7 @@ let useCreate =
   ApiRequest.useSetter(
     ~set=
       (~settings, (alias, address)) =>
-        AliasesAPI.add(~settings, alias, address),
+        API.Aliases.add(~settings, alias, address),
     ~kind=Logs.Aliases,
   );
 
@@ -43,4 +41,4 @@ let useUpdate =
 /* Delete */
 
 let useDelete =
-  ApiRequest.useSetter(~set=AliasesAPI.delete, ~kind=Logs.Aliases);
+  ApiRequest.useSetter(~set=API.Aliases.delete, ~kind=Logs.Aliases);
