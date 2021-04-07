@@ -300,7 +300,8 @@ module Form = {
 
       let (editing, onAddToBatch, onSubmitAll, batchMode) =
         switch (mode) {
-        | Edition(_) => (true, None, None, false)
+        // Edition state is always on batch mode
+        | Edition(_) => (true, None, None, true)
         | Creation(batch, submit) => (
             false,
             batch,
@@ -416,7 +417,7 @@ module Form = {
 
 module EditionView = {
   [@react.component]
-  let make = (~batch, ~initValues, ~onSubmit, ~index, ~loading) => {
+  let make = (~batch, ~initValues, ~onSubmit, ~token=?, ~index, ~loading) => {
     let (initValues, advancedOptionOpened) = initValues;
 
     let (advancedOptionOpened, _) as advancedOptionState =
@@ -428,6 +429,7 @@ module EditionView = {
       batch
       advancedOptionState
       tokenState=(None, _ => ())
+      ?token
       form
       mode={Form.View.Edition(index)}
       loading
@@ -573,7 +575,14 @@ let make = (~closeAction) => {
            | EditStep(index, initValues) =>
              let onSubmit = (advOpened, form) =>
                onEdit(index, advOpened, form);
-             <EditionView batch initValues onSubmit index loading=false />;
+             <EditionView
+               batch
+               initValues
+               onSubmit
+               ?token
+               index
+               loading=false
+             />;
            | SendStep =>
              let onSubmit = batch != [] ? onAddToBatch : onSubmitAll;
              let onAddToBatch = batch != [] ? None : Some(onAddToBatch);
