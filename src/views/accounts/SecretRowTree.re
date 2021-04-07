@@ -125,9 +125,9 @@ module AccountImportedRowItem = {
         deleteAccount(account.alias)->ignore;
       };
 
-      <DeleteButton
-        buttonText="Delete"
-        modalTitle="Delete account?"
+      <DeleteButton.MenuItem
+        buttonText=I18n.menu#delete_account
+        modalTitle=I18n.title#delete_account
         onPressConfirmDelete
         request=accountRequest
       />;
@@ -266,9 +266,9 @@ module SecretRowItem = {
         deleteSecret(secret.index)->ignore;
       };
 
-      <DeleteButton
-        buttonText="Delete"
-        modalTitle="Delete secret?"
+      <DeleteButton.MenuItem
+        buttonText=I18n.menu#delete_secret
+        modalTitle=I18n.title#delete_secret
         onPressConfirmDelete
         request=secretRequest
       />;

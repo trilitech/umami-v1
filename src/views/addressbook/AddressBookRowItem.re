@@ -9,8 +9,8 @@ module AliasDeleteButton = {
       deleteAlias(account.alias)->ignore;
     };
 
-    <DeleteButton
-      buttonText=I18n.btn#delete_contact
+    <DeleteButton.IconButton
+      tooltip=("addressbook_delete", I18n.btn#delete_contact)
       modalTitle=I18n.title#delete_contact
       onPressConfirmDelete
       request=aliasRequest
@@ -27,8 +27,8 @@ module AliasEditButton = {
     let onPress = _e => openAction();
 
     <>
-      <Menu.Item
-        text=I18n.menu#addressbook_edit
+      <IconButton
+        tooltip=("addressbook_edit", I18n.menu#addressbook_edit)
         icon=Icons.Edit.build
         onPress
       />
@@ -59,7 +59,7 @@ let styles =
           (),
         ),
       "actionButtons": style(~flexDirection=`row, ~flex=1., ()),
-      "actionMenu": style(~marginRight=24.->dp, ()),
+      "actionMenu": style(~marginRight=24.->dp, ~flexDirection=`row, ()),
       "button": style(~marginRight=4.->dp, ()),
     })
   );
@@ -95,12 +95,8 @@ let make =
         <QrButton account style=styles##button />
       </View>
       <View style=styles##actionMenu>
-        <Menu
-          icon=Icons.More.build
-          keyPopover={"aaddressBookRowItemMenu" ++ account.address}>
-          <AliasEditButton account />
-          <AliasDeleteButton account />
-        </Menu>
+        <AliasEditButton account />
+        <AliasDeleteButton account />
       </View>
     </RowItem.Bordered>;
   });
