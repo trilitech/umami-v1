@@ -3,19 +3,48 @@
 var Electron = window.require('electron');
 var Process = window.require('process');
 var OS = window.require('os');
-var fs = window.require('fs'); ";
+var fs = window.require('fs');
+var path = window.require('path'); ";
 
 let electron = [%raw "Electron"];
 let app = electron##remote##app;
 let os = [%raw "OS"];
 
-let homeDir = () => os##homedir();
-
-let getCurrentPath: unit => string = () => app##getAppPath();
-
 let getVersion = () => app##getVersion();
 
-let appDir = () => app##getPath("appData") ++ "/" ++ app##getName();
+module Path: {
+  type t = pri string;
+
+  let mk: string => t;
+
+  let toString: t => string;
+
+  let join: array(t) => t;
+  module Ops: {
+    let (!): string => t;
+    let (/): (t, t) => t;
+  };
+} = {
+  type t = string;
+
+  let mk = p => p;
+
+  let toString = p => p;
+
+  [@bs.module "path"] [@bs.variadic]
+  external join: array(t) => string = "join";
+
+  module Ops = {
+    let (!) = a => mk(a);
+    let (/) = (a, b) => join([|a, b|]);
+  };
+};
+
+let appDir = () => Path.Ops.(!app##getPath("appData") / (!app##getName()));
+
+let homeDir = () => os##homedir();
+
+let getCurrentPath: unit => Path.t = () => app##getAppPath();
 
 module File = {
   type error = {message: string};
@@ -34,7 +63,7 @@ module File = {
   [@bs.scope "fs"] [@bs.val]
   external readFile:
     (
-      ~name: string,
+      ~name: Path.t,
       ~encoding: string,
       (Js.Nullable.t(error), string) => unit
     ) =>
@@ -49,7 +78,7 @@ module File = {
   [@bs.scope "fs"] [@bs.val]
   external writeFile:
     (
-      ~name: string,
+      ~name: Path.t,
       ~content: string,
       ~encoding: string,
       Js.Nullable.t(error) => unit
@@ -67,7 +96,7 @@ module File = {
 
   [@bs.scope "fs"] [@bs.val]
   external rmdir:
-    (~path: string, ~options: rmdirOptions, Js.Nullable.t(error) => unit) =>
+    (~path: Path.t, ~options: rmdirOptions, Js.Nullable.t(error) => unit) =>
     unit =
     "rmdir";
 
@@ -87,7 +116,7 @@ module File = {
 
   [@bs.scope "fs"] [@bs.val]
   external access:
-    (~path: string, ~constant: constant, Js.Nullable.t(error) => unit) => unit =
+    (~path: Path.t, ~constant: constant, Js.Nullable.t(error) => unit) => unit =
     "access";
 
   let access = path =>
@@ -103,28 +132,30 @@ module File = {
   };
 
   [@bs.scope "fs"] [@bs.val]
-  external mkdir: (string, Js.Nullable.t(error) => unit) => unit = "mkdir";
+  external mkdir: (Path.t, Js.Nullable.t(error) => unit) => unit = "mkdir";
 
   let mkdir = path => mkdir(path)->FutureEx.fromUnitCallback(mapError);
 
-  let initDirIfNotExists = path => {
+  let initDirIfNotExists = (path: Path.t) => {
     access(path)
     ->Future.flatMap(access => access ? Future.value(Ok()) : mkdir(path));
   };
 };
 
 module Client = {
+  open Path.Ops;
+
   let resetDir = path => File.rmdir(path);
 
   let initDir = baseDir => {
     File.initDirIfNotExists(baseDir)
     ->Future.flatMapOk(() => {
         let secret =
-          File.initIfNotExists(~path=baseDir ++ "/secret_keys", "[]");
+          File.initIfNotExists(~path=baseDir / (!"secret_keys"), "[]");
         let public =
-          File.initIfNotExists(~path=baseDir ++ "/public_keys", "[]");
+          File.initIfNotExists(~path=baseDir / (!"public_keys"), "[]");
         let pkh =
-          File.initIfNotExists(~path=baseDir ++ "/public_key_hashs", "[]");
+          File.initIfNotExists(~path=baseDir / (!"public_key_hashs"), "[]");
         Future.mapOk3(secret, public, pkh, (_, _, _) => ());
       });
   };
