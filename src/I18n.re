@@ -279,5 +279,6 @@ let t = {
   pub empty_operations = "No operations";
   pub empty_address_book = "No contacts";
   pub add_token_format_contract_sentence = {js|Please specify the address of a FA1.2 token contract for which you would like to view balances as well as to perform operations.|js};
+  pub delegation_removal = "Delegation Removal";
   pub error_check_contract = "Address is not a valid token contract"
 };

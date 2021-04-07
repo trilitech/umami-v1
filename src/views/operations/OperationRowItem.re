@@ -50,6 +50,50 @@ module CellAction =
     ();
   });
 
+let styles =
+  Style.(
+    StyleSheet.create({
+      "rawAddressContainer":
+        style(~display=`flex, ~flexDirection=`row, ~alignItems=`center, ()),
+    })
+  );
+
+module AddContactButton = {
+  [@react.component]
+  let make = (~address) => {
+    let (visibleModal, openAction, closeAction) =
+      ModalAction.useModalActionState();
+
+    let onPress = _e => openAction();
+
+    <>
+      <IconButton icon=Icons.AddContact.build onPress />
+      <ModalAction visible=visibleModal onRequestClose=closeAction>
+        <ContactFormView initAddress=address action=Create closeAction />
+      </ModalAction>
+    </>;
+  };
+};
+
+let rawUnknownAddress = address => {
+  <View style=styles##rawAddressContainer>
+    <Typography.Address numberOfLines=1>
+      address->React.string
+    </Typography.Address>
+    <AddContactButton address />
+  </View>;
+};
+
+let getContactOrRaw = (aliases, tokens, address) => {
+  address
+  ->AliasHelpers.getContractAliasFromAddress(aliases, tokens)
+  ->Option.mapWithDefault(rawUnknownAddress(address), alias =>
+      <Typography.Body1 numberOfLines=1>
+        alias->React.string
+      </Typography.Body1>
+    );
+};
+
 let status = (operation: Operation.Read.t, currentLevel, config: ConfigFile.t) => {
   let (txt, colorStyle) =
     switch (operation.status) {
@@ -154,27 +198,14 @@ let make =
                {business.source
                 ->AliasHelpers.getContractAliasFromAddress(aliases, tokens)
                 ->Option.mapWithDefault(
-                    <Typography.Address numberOfLines=1>
-                      business.source->React.string
-                    </Typography.Address>,
-                    alias =>
+                    rawUnknownAddress(business.source), alias =>
                     <Typography.Body1 numberOfLines=1>
                       alias->React.string
                     </Typography.Body1>
                   )}
              </CellAddress>
              <CellAddress>
-               {transaction.destination
-                ->AliasHelpers.getContractAliasFromAddress(aliases, tokens)
-                ->Option.mapWithDefault(
-                    <Typography.Address numberOfLines=1>
-                      transaction.destination->React.string
-                    </Typography.Address>,
-                    alias =>
-                    <Typography.Body1 numberOfLines=1>
-                      alias->React.string
-                    </Typography.Body1>
-                  )}
+               {getContactOrRaw(aliases, tokens, transaction.destination)}
              </CellAddress>
            </>;
          | Origination(_origination) =>
@@ -190,7 +221,7 @@ let make =
              <CellAddress />
              <View />
            </>
-         | Delegation(_delegation) =>
+         | Delegation(delegation) =>
            <>
              <CellType>
                <Typography.Body1>
@@ -205,19 +236,20 @@ let make =
                </Typography.Body1>
              </CellFee>
              <CellAddress>
-               {business.source
-                ->AliasHelpers.getContractAliasFromAddress(aliases, tokens)
-                ->Option.mapWithDefault(
-                    <Typography.Address numberOfLines=1>
-                      business.source->React.string
-                    </Typography.Address>,
-                    alias =>
-                    <Typography.Body1 numberOfLines=1>
-                      alias->React.string
-                    </Typography.Body1>
-                  )}
+               {getContactOrRaw(aliases, tokens, business.source)}
              </CellAddress>
-             <CellAddress />
+             {delegation.delegate
+              ->Option.mapWithDefault(
+                  <CellAddress>
+                    <Typography.Body1 numberOfLines=1>
+                      I18n.t#delegation_removal->React.string
+                    </Typography.Body1>
+                  </CellAddress>,
+                  d =>
+                  <CellAddress>
+                    {getContactOrRaw(aliases, tokens, d)}
+                  </CellAddress>
+                )}
            </>
          | Unknown => React.null
          }

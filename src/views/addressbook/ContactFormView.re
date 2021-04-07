@@ -11,7 +11,7 @@ type action =
   | Edit(Account.t);
 
 [@react.component]
-let make = (~action: action, ~closeAction) => {
+let make = (~initAddress=?, ~action: action, ~closeAction) => {
   let (createAliasRequest, createAlias) = StoreContext.Aliases.useCreate();
   let (updateAliasRequest, updateAlias) = StoreContext.Aliases.useUpdate();
 
@@ -31,7 +31,7 @@ let make = (~action: action, ~closeAction) => {
             createAlias((state.values.name, state.values.address))
             ->Future.tapOk(_ => closeAction())
             ->ApiRequest.logOk(addToast, Logs.Account, _ =>
-                I18n.t#account_created
+                I18n.t#contact_added
               )
             ->ignore
           | Edit(account) =>
@@ -50,7 +50,10 @@ let make = (~action: action, ~closeAction) => {
         },
       ~initialState=
         switch (action) {
-        | Create => {name: "", address: ""}
+        | Create => {
+            name: "",
+            address: initAddress->Option.getWithDefault(""),
+          }
         | Edit(account) => {name: account.alias, address: account.address}
         },
       ~i18n=FormUtils.i18n,
