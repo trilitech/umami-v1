@@ -69,7 +69,7 @@ let make = (~closeAction, ~existingSecretsCount=0) => {
            {I18n.t#stepof(2, 2)->React.string}
          </Typography.Overline3>
          <Typography.Overline1 style=styles##stepTitle>
-           I18n.title#account_create->React.string
+           I18n.title#account_create_password->React.string
          </Typography.Overline1>
          <Typography.Body2 colorStyle=`mediumEmphasis style=styles##stepBody>
            I18n.expl#account_create_password_not_recorded->React.string
