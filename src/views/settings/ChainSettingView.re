@@ -91,10 +91,10 @@ let make = () => {
           None;
         },
       ~initialState={
-        endpointTest: settings.config.endpointTest->Option.getWithDefault(""),
-        explorerTest: settings.config.explorerTest->Option.getWithDefault(""),
-        endpointMain: settings.config.endpointMain->Option.getWithDefault(""),
-        explorerMain: settings.config.explorerMain->Option.getWithDefault(""),
+        endpointTest: settings->AppSettings.endpointTest,
+        explorerTest: settings->AppSettings.explorerTest,
+        endpointMain: settings->AppSettings.endpointMain,
+        explorerMain: settings->AppSettings.explorerMain,
       },
       ~i18n=FormUtils.i18n,
       (),
@@ -129,14 +129,12 @@ let make = () => {
           label=I18n.settings#chain_node_label
           value={form.values.endpointMain}
           onValueChange={form.handleChange(EndpointMain)}
-          placeholder=ConfigFile.Default.endpointMain
           error={form.getFieldError(Field(EndpointMain))}
           onSubmitEditing=onSubmit
         />
         <SettingFormGroupTextInput
           label=I18n.settings#chain_mezos_label
           value={form.values.explorerMain}
-          placeholder=ConfigFile.Default.explorerMain
           onValueChange={form.handleChange(ExplorerMain)}
           error={form.getFieldError(Field(ExplorerMain))}
           onSubmitEditing=onSubmit
@@ -146,14 +144,12 @@ let make = () => {
           label=I18n.settings#chain_node_label
           value={form.values.endpointTest}
           onValueChange={form.handleChange(EndpointTest)}
-          placeholder=ConfigFile.Default.endpointTest
           error={form.getFieldError(Field(EndpointTest))}
           onSubmitEditing=onSubmit
         />
         <SettingFormGroupTextInput
           label=I18n.settings#chain_mezos_label
           value={form.values.explorerTest}
-          placeholder=ConfigFile.Default.explorerTest
           onValueChange={form.handleChange(ExplorerTest)}
           error={form.getFieldError(Field(ExplorerTest))}
           onSubmitEditing=onSubmit

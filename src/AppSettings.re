@@ -12,15 +12,19 @@ let baseDir = settings =>
   settings.config.sdkBaseDir
   ->Option.getWithDefault(ConfigFile.Default.sdkBaseDir);
 
+let endpointMain = settings =>
+  settings.config.endpointMain
+  ->Option.getWithDefault(ConfigFile.Default.endpointMain);
+
+let endpointTest = settings =>
+  settings.config.endpointTest
+  ->Option.getWithDefault(ConfigFile.Default.endpointTest);
+
 let endpoint = settings =>
   switch (settings.config.network) {
-  | Some(`Mainnet) =>
-    settings.config.endpointMain
-    ->Option.getWithDefault(ConfigFile.Default.endpointMain)
+  | Some(`Mainnet) => endpointMain(settings)
   | None
-  | Some(`Testnet) =>
-    settings.config.endpointTest
-    ->Option.getWithDefault(ConfigFile.Default.endpointTest)
+  | Some(`Testnet) => endpointTest(settings)
   };
 
 let sdk = s =>
@@ -52,17 +56,20 @@ let withNetwork = (s, network) => {
   },
 };
 
-let network = (settings: t) =>
+let network = (settings: t): ConfigFile.network =>
   settings.config.network->Option.getWithDefault(ConfigFile.Default.network);
+
+let explorerMain = settings =>
+  settings.config.explorerMain
+  ->Option.getWithDefault(ConfigFile.Default.explorerMain);
+
+let explorerTest = settings =>
+  settings.config.explorerTest
+  ->Option.getWithDefault(ConfigFile.Default.explorerTest);
 
 let explorer = (settings: t) =>
   switch (settings.config.network) {
-  | Some(`Mainnet) =>
-    settings.config.explorerMain
-    ->Option.getWithDefault(ConfigFile.Default.explorerMain)
-
+  | Some(`Mainnet) => explorerMain(settings)
   | None
-  | Some(`Testnet) =>
-    settings.config.explorerTest
-    ->Option.getWithDefault(ConfigFile.Default.explorerTest)
+  | Some(`Testnet) => explorerTest(settings)
   };
