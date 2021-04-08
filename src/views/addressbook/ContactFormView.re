@@ -84,12 +84,14 @@ let make = (~initAddress=?, ~action: action, ~closeAction) => {
     <FormGroupTextInput
       label=I18n.label#add_contact_name
       value={form.values.name}
+      placeholder=I18n.input_placeholder#add_contacts_name
       handleChange={form.handleChange(Name)}
       error={form.getFieldError(Field(Name))}
     />
     <FormGroupTextInput
       label=I18n.label#add_contact_address
       value={form.values.address}
+      placeholder=I18n.input_placeholder#add_contacts_tz
       handleChange={form.handleChange(Address)}
       error={form.getFieldError(Field(Address))}
       disabled=?{

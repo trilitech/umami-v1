@@ -70,6 +70,7 @@ let make =
       ~renderItem: 'item => React.element,
       ~keyExtractor: 'item => string,
       ~renderLabel: option(bool => React.element)=?,
+      ~placeholder=?,
       ~keyPopover,
       ~style as styleFromProp=?,
       ~inputPaddingLeft=?,
@@ -166,6 +167,7 @@ let make =
       paddingLeft=?inputPaddingLeft
       paddingRight=?inputPaddingRight
       paddingVertical=?inputPaddingVertical
+      ?placeholder
       value
       hasError
       onValueChange={newValue => {

@@ -73,6 +73,7 @@ let make = (~label, ~value: string, ~handleChange, ~error) => {
       list=items
       renderItem
       keyExtractor
+      placeholder=I18n.input_placeholder#add_contact_or_tz
       renderLabel={renderLabel(label)}
       itemHeight
       numItemsToDisplay

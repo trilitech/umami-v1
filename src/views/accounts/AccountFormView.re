@@ -69,6 +69,7 @@ module Generic = {
         label=I18n.label#account_create_name
         value={form.values.name}
         handleChange={form.handleChange(Name)}
+        placeholder=I18n.input_placeholder#add_accounts_name
         error={form.getFieldError(Field(Name))}
       />
       <Buttons.SubmitPrimary

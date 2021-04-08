@@ -45,6 +45,7 @@ let make =
     label
     ?style
     value
+    placeholder=I18n.input_placeholder#tez_amount
     error
     onBlur={_ => formatOnBlur(token, setValue)}
     ?decoration
