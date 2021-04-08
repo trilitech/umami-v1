@@ -25,6 +25,7 @@ let make = () => {
 
   let checkConfigurationAndContinue = (state: ChainForm.state, k) => {
     Network.checkConfiguration(
+      ~network=settings->AppSettings.network,
       state.values.explorerTest,
       state.values.endpointTest,
     )

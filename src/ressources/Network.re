@@ -8,6 +8,8 @@ type apiVersion = {
   protocol: string,
 };
 
+let mainnetChainId = "NetXdQprcVkpaWU";
+
 type error =
   | APINotAvailable(string)
   | APIVersionRPCError(string)
@@ -64,7 +66,7 @@ let getNodeChain = url => {
     });
 };
 
-let checkConfiguration = (api_url, node_url) =>
+let checkConfiguration = (~network, api_url, node_url) =>
   Future.map2(
     getAPIChain(api_url), getNodeChain(node_url), (api_res, node_res) =>
     switch (api_res, node_res) {
@@ -72,6 +74,12 @@ let checkConfiguration = (api_url, node_url) =>
     | (_, Error(err)) => Error(err)
     | (Ok(api_chain), Ok(node_chain)) =>
       String.equal(api_chain, node_chain)
+      && (
+        network == `Mainnet
+        && String.equal(node_chain, mainnetChainId)
+        || network == `Testnet
+        && !String.equal(node_chain, mainnetChainId)
+      )
         ? Ok() : Error(ChainInconsistency(api_chain, node_chain))
     }
   );
