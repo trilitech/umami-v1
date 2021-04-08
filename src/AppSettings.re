@@ -1,7 +1,3 @@
-type network =
-  | Mainnet
-  | Testnet;
-
 type sdks = {
   main: TezosSDK.t,
   test: TezosSDK.t,
@@ -10,7 +6,6 @@ type sdks = {
 type t = {
   config: ConfigFile.t,
   sdk: sdks,
-  network,
 };
 
 let baseDir = settings =>
@@ -18,32 +13,56 @@ let baseDir = settings =>
   ->Option.getWithDefault(ConfigFile.Default.sdkBaseDir);
 
 let endpoint = settings =>
-  switch (settings.network) {
-  | Mainnet =>
+  switch (settings.config.network) {
+  | Some(`Mainnet) =>
     settings.config.endpointMain
     ->Option.getWithDefault(ConfigFile.Default.endpointMain)
-  | Testnet =>
+  | None
+  | Some(`Testnet) =>
     settings.config.endpointTest
     ->Option.getWithDefault(ConfigFile.Default.endpointTest)
   };
 
 let sdk = s =>
-  switch (s.network) {
-  | Mainnet => s.sdk.main
-  | Testnet => s.sdk.test
+  switch (s.config.network) {
+  | Some(`Mainnet) => s.sdk.main
+  | None
+  | Some(`Testnet) => s.sdk.test
   };
 
-let testOnly = s => {...s, network: Testnet};
-let mainOnly = s => {...s, network: Mainnet};
-let withNetwork = (s, network) => {...s, network};
+let testOnly = s => {
+  ...s,
+  config: {
+    ...s.config,
+    network: Some(`Testnet),
+  },
+};
+let mainOnly = s => {
+  ...s,
+  config: {
+    ...s.config,
+    network: Some(`Mainnet),
+  },
+};
+let withNetwork = (s, network) => {
+  ...s,
+  config: {
+    ...s.config,
+    network,
+  },
+};
+
+let network = (settings: t) =>
+  settings.config.network->Option.getWithDefault(ConfigFile.Default.network);
 
 let explorer = (settings: t) =>
-  switch (settings.network) {
-  | Mainnet =>
+  switch (settings.config.network) {
+  | Some(`Mainnet) =>
     settings.config.explorerMain
     ->Option.getWithDefault(ConfigFile.Default.explorerMain)
 
-  | Testnet =>
+  | None
+  | Some(`Testnet) =>
     settings.config.explorerTest
     ->Option.getWithDefault(ConfigFile.Default.explorerTest)
   };

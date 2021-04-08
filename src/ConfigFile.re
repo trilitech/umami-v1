@@ -1,4 +1,7 @@
+type network = [ | `Mainnet | `Testnet];
+
 type t = {
+  network: option(network),
   endpointMain: option(string),
   endpointTest: option(string),
   explorerMain: option(string),
@@ -11,6 +14,7 @@ type t = {
 [@bs.val] [@bs.scope "JSON"] external parse: string => t = "parse";
 
 module Default = {
+  let network = `Testnet;
   let endpointMain = "https://mainnet-tezos.giganode.io";
   let endpointTest = "https://edonet.smartpy.io/";
   let explorerMain = "https://mezos.lamini.ca/mezos/mainnet7";
@@ -21,6 +25,7 @@ module Default = {
 };
 
 let dummy = {
+  network: None,
   endpointMain: None,
   endpointTest: None,
   explorerMain: None,
