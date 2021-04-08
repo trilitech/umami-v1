@@ -17,6 +17,10 @@ module.exports = {
       },
     ]
   },
+  experiments: {
+    syncWebAssembly: true,
+    asyncWebAssembly: true,
+  },
   target: 'electron-renderer',
   plugins: [
     new CopyPlugin({
