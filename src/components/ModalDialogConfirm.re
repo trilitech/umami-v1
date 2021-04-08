@@ -22,6 +22,7 @@ let make =
        })}
       <View style=FormStyles.formAction>
         <Buttons.Form
+          style=Style.(style(~backgroundColor=theme.colors.stateActive, ()))
           text=cancelText
           onPress={_ => closeAction()}
           disabled=?loading
