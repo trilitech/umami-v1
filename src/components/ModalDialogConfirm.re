@@ -12,6 +12,7 @@ let make =
       ~cancelText,
       ~actionText,
     ) => {
+  let theme = ThemeContext.useTheme();
   <ModalAction visible onRequestClose=closeAction>
     <ModalTemplate.Dialog>
       <Typography.Headline style=FormStyles.header>
