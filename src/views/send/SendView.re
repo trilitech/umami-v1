@@ -49,7 +49,10 @@ module FormGroupAmountWithTokenSelector = {
         ?token
       />
       {<FormGroup style=styles##tokenGroup>
-         <FormLabel label="Token" style=FormGroupTextInput.styles##label />
+         <FormLabel
+           label=I18n.label#token
+           style=FormGroupTextInput.styles##label
+         />
          <TokenSelector
            selectedToken
            setSelectedToken

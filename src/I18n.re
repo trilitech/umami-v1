@@ -76,6 +76,7 @@ let label = {
   pub transactions = "Transactions";
   pub account_secret = "Root";
   pub account_umami = "Umami";
+  pub token = "Token";
   pub account_cli = "Cli"
 };
 
