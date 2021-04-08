@@ -46,14 +46,14 @@ let make = (~empty, ~children) => {
       ConfigFile.(conf.sdkBaseDir->Option.getWithDefault(Default.sdkBaseDir));
 
     let pMain =
-      TezosSDK.init(dir, endpointMain)
+      TezosSDK.init(System.Path.toString(dir), endpointMain)
       |> Js.Promise.then_(sdk => {
            setSdkMain(_ => sdk);
            Js.Promise.resolve();
          });
 
     let pTest =
-      TezosSDK.init(dir, endpointTest)
+      TezosSDK.init(System.Path.toString(dir), endpointTest)
       |> Js.Promise.then_(sdk => {
            setSdkTest(_ => sdk);
            Js.Promise.resolve();

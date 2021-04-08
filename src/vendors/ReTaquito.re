@@ -290,8 +290,10 @@ module PkhAliases = {
   [@bs.val] [@bs.scope "JSON"] external parse: string => t = "parse";
 };
 
-let aliasFromPkh = (~dirname, ~pkh, ()) => {
-  System.File.read(dirname ++ "/public_key_hashs")
+open System.Path.Ops;
+
+let aliasFromPkh = (~dirpath, ~pkh, ()) => {
+  System.File.read(dirpath / (!"public_key_hashs"))
   ->Future.mapError(e => Generic(e))
   ->Future.flatMapOk(file => {
       PkhAliases.parse(file)
@@ -301,8 +303,8 @@ let aliasFromPkh = (~dirname, ~pkh, ()) => {
     });
 };
 
-let pkFromAlias = (~dirname, ~alias, ()) => {
-  System.File.read(dirname ++ "/public_keys")
+let pkFromAlias = (~dirpath, ~alias, ()) => {
+  System.File.read(dirpath / (!"public_keys"))
   ->Future.mapError(e => Generic(e))
   ->Future.flatMapOk(file => {
       PkAliases.parse(file)
@@ -312,10 +314,10 @@ let pkFromAlias = (~dirname, ~alias, ()) => {
     });
 };
 
-let readSecretKey = (address, passphrase, dirname) => {
-  aliasFromPkh(~dirname, ~pkh=address, ())
+let readSecretKey = (address, passphrase, dirpath) => {
+  aliasFromPkh(~dirpath, ~pkh=address, ())
   ->Future.flatMapOk(alias => {
-      System.File.read(dirname ++ "/secret_keys")
+      System.File.read(dirpath / (!"secret_keys"))
       ->Future.mapError(e => Generic(e))
       ->Future.flatMapOk(file => {
           SecretAliases.parse(file)
@@ -509,8 +511,8 @@ module FA12Operations = {
           ~storageLimit=?,
           (),
         ) =>
-      aliasFromPkh(~dirname=baseDir, ~pkh=source, ())
-      ->Future.flatMapOk(alias => pkFromAlias(~dirname=baseDir, ~alias, ()))
+      aliasFromPkh(~dirpath=baseDir, ~pkh=source, ())
+      ->Future.flatMapOk(alias => pkFromAlias(~dirpath=baseDir, ~alias, ()))
       ->Future.flatMapOk(pk => {
           let tk = Toolkit.create(endpoint);
 
@@ -553,8 +555,8 @@ module FA12Operations = {
              Future.t(list(Belt.Result.t(Toolkit.transferParams, error))),
           (),
         ) => {
-      aliasFromPkh(~dirname=baseDir, ~pkh=source, ())
-      ->Future.flatMapOk(alias => pkFromAlias(~dirname=baseDir, ~alias, ()))
+      aliasFromPkh(~dirpath=baseDir, ~pkh=source, ())
+      ->Future.flatMapOk(alias => pkFromAlias(~dirpath=baseDir, ~alias, ()))
       ->Future.mapOk(pk => {
           let tk = Toolkit.create(endpoint);
           let signer = makeDummySigner(~pk, ~pkh=source, ());
@@ -729,8 +731,8 @@ module Estimate = {
         ~storageLimit=?,
         (),
       ) =>
-    aliasFromPkh(~dirname=baseDir, ~pkh=source, ())
-    ->Future.flatMapOk(alias => pkFromAlias(~dirname=baseDir, ~alias, ()))
+    aliasFromPkh(~dirpath=baseDir, ~pkh=source, ())
+    ->Future.flatMapOk(alias => pkFromAlias(~dirpath=baseDir, ~alias, ()))
     ->Future.flatMapOk(pk => {
         let tk = Toolkit.create(endpoint);
         let signer = makeDummySigner(~pk, ~pkh=source, ());
@@ -756,8 +758,8 @@ module Estimate = {
     ->Future.flatMapOk(addRevealFee(~source, ~endpoint));
 
   let setDelegate = (~endpoint, ~baseDir, ~source, ~delegate=?, ~fee=?, ()) =>
-    aliasFromPkh(~dirname=baseDir, ~pkh=source, ())
-    ->Future.flatMapOk(alias => pkFromAlias(~dirname=baseDir, ~alias, ()))
+    aliasFromPkh(~dirpath=baseDir, ~pkh=source, ())
+    ->Future.flatMapOk(alias => pkFromAlias(~dirpath=baseDir, ~alias, ()))
     ->Future.flatMapOk(pk => {
         let tk = Toolkit.create(endpoint);
         let signer = makeDummySigner(~pk, ~pkh=source, ());
@@ -773,8 +775,8 @@ module Estimate = {
     ->Future.flatMapOk(addRevealFee(~source, ~endpoint));
 
   let batch = (~endpoint, ~baseDir, ~source, ~transfers, ()) => {
-    aliasFromPkh(~dirname=baseDir, ~pkh=source, ())
-    ->Future.flatMapOk(alias => pkFromAlias(~dirname=baseDir, ~alias, ()))
+    aliasFromPkh(~dirpath=baseDir, ~pkh=source, ())
+    ->Future.flatMapOk(alias => pkFromAlias(~dirpath=baseDir, ~alias, ()))
     ->Future.flatMapOk(pk => {
         let tk = Toolkit.create(endpoint);
 

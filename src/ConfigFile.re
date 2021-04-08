@@ -5,7 +5,7 @@ type t = {
   explorerTest: option(string),
   theme: option([ | `system | `dark | `light]),
   confirmations: option(int),
-  sdkBaseDir: option(string),
+  sdkBaseDir: option(System.Path.t),
 };
 
 [@bs.val] [@bs.scope "JSON"] external parse: string => t = "parse";
@@ -16,7 +16,7 @@ module Default = {
   let explorerMain = "https://mezos.lamini.ca/mezos/mainnet7";
   let explorerTest = "https://dev-api.umamiwallet.com/edo2net";
   let theme = `system;
-  let sdkBaseDir = System.appDir() ++ "/tezos-client";
+  let sdkBaseDir = System.(Path.Ops.(appDir() / (!"tezos-client")));
   let confirmations = 5;
 };
 
