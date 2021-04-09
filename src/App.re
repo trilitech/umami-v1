@@ -73,7 +73,6 @@ module AppView = {
                  | Delegations => <DelegationsView />
                  | Tokens => <TokensView />
                  | Settings => <SettingsView />
-                 | Debug => <DebugView />
                  | NotFound =>
                    <View>
                      <Typography.Body1>
