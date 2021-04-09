@@ -87,7 +87,11 @@ let useLoad =
   let get = (~settings, address) => {
     let operations =
       settings->Explorer.get(address, ~limit?, ~types?, ~mempool=true, ());
-    let currentLevel = TezosSDK.currentLevel(AppSettings.sdk(settings));
+    let currentLevel =
+      Network.monitor(AppSettings.explorer(settings))
+      ->Future.mapOk(monitor => monitor.nodeLastBlock)
+      ->Future.mapError(Network.errorMsg);
+
     let f = (operations, currentLevel) =>
       switch (operations, currentLevel) {
       | (Ok(operations), Ok(currentLevel)) =>
