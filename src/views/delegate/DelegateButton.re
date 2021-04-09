@@ -18,11 +18,17 @@ let styles =
   );
 
 [@react.component]
-let make = (~action: Delegate.action, ~style as styleFromProp=?) => {
+let make = (~zeroTez, ~action: Delegate.action, ~style as styleFromProp=?) => {
   let theme = ThemeContext.useTheme();
 
   let (textColor, backgroundColor, text) =
     switch (action) {
+    | _ when zeroTez => (
+        theme.colors.primaryTextDisabled,
+        theme.colors.primaryButtonBackground,
+        I18n.btn#delegate,
+      )
+
     | Create(_) => (
         theme.colors.primaryTextHighEmphasis,
         theme.colors.primaryButtonBackground,
@@ -53,6 +59,7 @@ let make = (~action: Delegate.action, ~style as styleFromProp=?) => {
       <ThemedPressable
         style=Style.(arrayOption([|Some(styles##pressable)|]))
         isPrimary=true
+        disabled=zeroTez
         onPress
         accessibilityRole=`button>
         <Typography.ButtonPrimary style=Style.(style(~color=textColor, ()))>
