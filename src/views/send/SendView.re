@@ -137,10 +137,14 @@ let buildSummaryContent =
     ),
   );
 
-  let revealFee = (
-    I18n.label#implicit_reveal_fee,
-    I18n.t#xtz_amount(dryRun.revealFee->ProtocolXTZ.toString),
-  );
+  let revealFee =
+    dryRun.revealFee != ProtocolXTZ.zero
+      ? (
+          I18n.label#implicit_reveal_fee,
+          I18n.t#xtz_amount(dryRun.revealFee->ProtocolXTZ.toString),
+        )
+        ->Some
+      : None;
 
   switch (transaction) {
   | ProtocolTransaction({transfers}) =>
@@ -157,7 +161,11 @@ let buildSummaryContent =
       I18n.label#summary_total,
       I18n.t#xtz_amount(total->ProtocolXTZ.toString),
     );
-    [subtotal, fee, revealFee, total];
+    [
+      subtotal,
+      fee,
+      ...revealFee->Option.mapWithDefault([total], r => [r, total]),
+    ];
   | TokenTransfer({transfers}, token) =>
     let amount = transfers->List.reduce(0, (acc, {amount}) => acc + amount);
     let amount = I18n.t#amount(amount->Int.toString, token.symbol);
@@ -170,7 +178,11 @@ let buildSummaryContent =
       I18n.t#xtz_amount(total->ProtocolXTZ.toString),
     );
 
-    [amount, fee, revealFee, total];
+    [
+      amount,
+      fee,
+      ...revealFee->Option.mapWithDefault([total], r => [r, total]),
+    ];
   };
 };
 
