@@ -21,11 +21,19 @@ let styles =
 let make = (~action: Delegate.action, ~style as styleFromProp=?) => {
   let theme = ThemeContext.useTheme();
 
-  let disabledLook =
+  let (textColor, backgroundColor, text) =
     switch (action) {
-    | Create(_) => false
-    | Edit(_) => true
-    | Delete(_) => true
+    | Create(_) => (
+        theme.colors.primaryTextHighEmphasis,
+        theme.colors.primaryButtonBackground,
+        I18n.btn#delegate,
+      )
+    | Edit(_)
+    | Delete(_) => (
+        theme.colors.primaryTextDisabled,
+        theme.colors.iconDisabled,
+        I18n.btn#delegated,
+      )
     };
 
   let (visibleModal, openAction, closeAction) =
@@ -38,15 +46,7 @@ let make = (~action: Delegate.action, ~style as styleFromProp=?) => {
       style=Style.(
         arrayOption([|
           Some(styles##button),
-          Some(
-            style(
-              ~backgroundColor=
-                disabledLook
-                  ? theme.colors.iconDisabled
-                  : theme.colors.primaryButtonBackground,
-              (),
-            ),
-          ),
+          Some(style(~backgroundColor, ())),
           styleFromProp,
         |])
       )>
@@ -55,17 +55,8 @@ let make = (~action: Delegate.action, ~style as styleFromProp=?) => {
         isPrimary=true
         onPress
         accessibilityRole=`button>
-        <Typography.ButtonPrimary
-          style=Style.(
-            style(
-              ~color=
-                disabledLook
-                  ? theme.colors.primaryTextDisabled
-                  : theme.colors.primaryTextHighEmphasis,
-              (),
-            )
-          )>
-          (disabledLook ? I18n.btn#delegated : I18n.btn#delegate)->React.string
+        <Typography.ButtonPrimary style=Style.(style(~color=textColor, ()))>
+          text->React.string
         </Typography.ButtonPrimary>
       </ThemedPressable>
     </View>
