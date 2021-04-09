@@ -37,13 +37,13 @@ module OffBoardView = {
 
   let useOffboardWallet = () => {
     let cleanSdkBaseDir = ConfigContext.useCleanSdkBaseDir();
-    let resetAccounts = StoreContext.Accounts.useResetAll();
+    let resetSecrets = StoreContext.Secrets.useResetAll();
     let resetTokens = StoreContext.Tokens.useResetAll();
 
     () => {
       cleanSdkBaseDir()
       ->Future.tapOk(() => {
-          resetAccounts();
+          resetSecrets();
           resetTokens();
         });
     };
