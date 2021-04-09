@@ -19,6 +19,7 @@ module Dark = {
   let statePressed = "rgba(255, 255, 255, 0.1)";
   let stateHovered = "rgba(255, 255, 255, 0.04)";
   let stateActive = "rgba(255, 255, 255, 0.08)";
+  let stateDisabled = "rgba(255, 255, 255, 0.12)";
 };
 
 module Light = {
@@ -40,6 +41,7 @@ module Light = {
   let statePressed = "rgba(0, 0, 0, 0.1)";
   let stateHovered = "rgba(0, 0, 0, 0.04)";
   let stateActive = "rgba(0, 0, 0, 0.08)";
+  let stateDisabled = "rgba(0, 0, 0, 0.12)";
 };
 
 // for application state like form

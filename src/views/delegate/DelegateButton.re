@@ -18,15 +18,39 @@ let styles =
   );
 
 [@react.component]
-let make = (~action: Delegate.action, ~style as styleFromProp=?) => {
+let make = (~zeroTez, ~action: Delegate.action, ~style as styleFromProp=?) => {
   let theme = ThemeContext.useTheme();
 
-  let disabledLook =
+  let tooltipId =
+    "delegate_button_"
+    ++ Delegate.account(action)->Option.mapWithDefault("", a => a.address);
+
+  let (textColor, backgroundColor, text, tooltip) =
     switch (action) {
-    | Create(_) => false
-    | Edit(_) => true
-    | Delete(_) => true
+    | _ when zeroTez => (
+        theme.colors.primaryTextDisabled,
+        theme.colors.primaryButtonBackground,
+        I18n.btn#delegate,
+        Some((tooltipId, I18n.expl#no_tez_no_delegation)),
+      )
+
+    | Create(_) => (
+        theme.colors.primaryTextHighEmphasis,
+        theme.colors.primaryButtonBackground,
+        I18n.btn#delegate,
+        None,
+      )
+    | Edit(_)
+    | Delete(_) => (
+        theme.colors.primaryTextDisabled,
+        theme.colors.iconDisabled,
+        I18n.btn#delegated,
+        Some((tooltipId, I18n.btn#update_delegation)),
+      )
     };
+
+  let (pressableRef, isOpen, popoverConfig, togglePopover, setClosed) =
+    Popover.usePopoverState();
 
   let (visibleModal, openAction, closeAction) =
     ModalAction.useModalActionState();
@@ -35,37 +59,27 @@ let make = (~action: Delegate.action, ~style as styleFromProp=?) => {
 
   <>
     <View
+      onMouseEnter={_ => togglePopover()}
+      onMouseLeave={_ => setClosed()}
       style=Style.(
         arrayOption([|
           Some(styles##button),
-          Some(
-            style(
-              ~backgroundColor=
-                disabledLook
-                  ? theme.colors.iconDisabled
-                  : theme.colors.primaryButtonBackground,
-              (),
-            ),
-          ),
+          Some(style(~backgroundColor, ())),
           styleFromProp,
         |])
       )>
+      {ReactUtils.mapOpt(tooltip, ((keyPopover, text)) => {
+         <Tooltip keyPopover text isOpen config=popoverConfig />
+       })}
       <ThemedPressable
         style=Style.(arrayOption([|Some(styles##pressable)|]))
         isPrimary=true
+        pressableRef={pressableRef->Ref.value}
+        disabled=zeroTez
         onPress
         accessibilityRole=`button>
-        <Typography.ButtonPrimary
-          style=Style.(
-            style(
-              ~color=
-                disabledLook
-                  ? theme.colors.primaryTextDisabled
-                  : theme.colors.primaryTextHighEmphasis,
-              (),
-            )
-          )>
-          (disabledLook ? I18n.btn#delegated : I18n.btn#delegate)->React.string
+        <Typography.ButtonPrimary style=Style.(style(~color=textColor, ()))>
+          text->React.string
         </Typography.ButtonPrimary>
       </ThemedPressable>
     </View>

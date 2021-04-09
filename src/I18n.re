@@ -38,6 +38,7 @@ let btn = {
   pub send_cancel = "CANCEL TRANSACTION";
   pub delegation_submit = "CONFIRM DELEGATION";
   pub delegated = "DELEGATED";
+  pub update_delegation = "update delegation";
   pub delete_token = "Delete token";
   pub import = "IMPORT";
   pub export = "EXPORT";
@@ -152,6 +153,7 @@ let expl = {
   pub import_account_enter_phrase = {j|Please fill in the recovery phrase in sequence.|j};
   pub confirm_operation = "Please validate the details of the transaction and enter password to confirm";
   pub batch = "Review, edit or delete the transactions of the batch";
+  pub no_tez_no_delegation = "Delegation requires tez";
   pub operation = "The operation will be processed and confirmed, you can see its progress in the Operations section."
 };
 

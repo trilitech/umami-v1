@@ -41,6 +41,7 @@ let make = () => {
            <View style=styles##header>
              <BalanceTotal />
              <DelegateButton
+               zeroTez=false
                action={Delegate.Create(None)}
                style=styles##button
              />

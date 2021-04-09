@@ -14,17 +14,35 @@ let make =
       ~interactionStyle:
          option(Pressable_.interactionState => option(ReactNative.Style.t))=?,
       ~isActive=false,
-      ~disabled: option(bool)=?,
+      ~disabled=false,
       ~isPrimary=false,
       ~accessibilityRole: option(Accessibility.role)=?,
       ~children,
     ) => {
   let theme = ThemeContext.useTheme();
+
+  let backgroundColor = (~pressed, ~hovered, ~focused) =>
+    if (disabled) {
+      isPrimary
+        ? Some(theme.colors.primaryStateDisabled)
+        : Some(theme.colors.stateDisabled);
+    } else if (hovered || focused) {
+      isPrimary
+        ? Some(theme.colors.primaryStateHovered)
+        : Some(theme.colors.stateHovered);
+    } else if (pressed) {
+      isPrimary
+        ? Some(theme.colors.primaryStatePressed)
+        : Some(theme.colors.statePressed);
+    } else {
+      None;
+    };
+
   <Pressable_
     style=?outerStyle
     ref=?pressableRef
     ?onPress
-    ?disabled
+    disabled
     ?href
     ?accessibilityRole>
     {({hovered, pressed, focused} as interactionState) => {
@@ -36,28 +54,8 @@ let make =
            arrayOption([|
              Some(styles##container),
              styleFromProp,
-             hovered || focused
-               ? Some(
-                   Style.style(
-                     ~backgroundColor=
-                       isPrimary
-                         ? theme.colors.primaryStateHovered
-                         : theme.colors.stateHovered,
-                     (),
-                   ),
-                 )
-               : None,
-             pressed
-               ? Some(
-                   Style.style(
-                     ~backgroundColor=
-                       isPrimary
-                         ? theme.colors.primaryStatePressed
-                         : theme.colors.statePressed,
-                     (),
-                   ),
-                 )
-               : None,
+             backgroundColor(~pressed, ~hovered, ~focused)
+             ->Option.map(b => Style.(style(~backgroundColor=b, ()))),
              interactionStyle->Option.flatMap(interactionStyle =>
                interactionStyle(interactionState)
              ),

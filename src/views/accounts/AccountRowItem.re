@@ -22,6 +22,14 @@ let make = (~account: Account.t, ~token: option(Token.t)=?) => {
   let delegateRequest = StoreContext.Delegate.useLoad(account.address);
   let addToast = LogsContext.useToast();
 
+  let balanceRequest = StoreContext.Balance.useLoad(account.address);
+
+  let zeroTez =
+    switch (balanceRequest->ApiRequest.getDoneOk) {
+    | None => true
+    | Some(balance) => balance == ProtocolXTZ.zero
+    };
+
   <RowItem.Bordered height=90.>
     <View style=styles##inner> <AccountInfo account ?token /> </View>
     <View style=styles##actionButtons>
@@ -36,6 +44,7 @@ let make = (~account: Account.t, ~token: option(Token.t)=?) => {
     {delegateRequest->ApiRequest.mapOkWithDefault(React.null, delegate => {
        <View style=styles##actionContainer>
          <DelegateButton
+           zeroTez
            action={
              delegate->Option.mapWithDefault(
                Delegate.Create(Some(account)), delegate =>
