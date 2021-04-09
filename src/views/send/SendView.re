@@ -127,6 +127,18 @@ let sourceDestination = (transfer: SendForm.transaction) => {
 
 let buildSummaryContent =
     (transaction: SendForm.transaction, dryRun: Protocol.simulationResults) => {
+  let fee = (
+    I18n.label#fee,
+    I18n.t#xtz_amount(
+      ProtocolXTZ.Infix.(dryRun.fee - dryRun.revealFee)->ProtocolXTZ.toString,
+    ),
+  );
+
+  let revealFee = (
+    I18n.label#implicit_reveal_fee,
+    I18n.t#xtz_amount(dryRun.revealFee->ProtocolXTZ.toString),
+  );
+
   switch (transaction) {
   | ProtocolTransaction({transfers}) =>
     let amount =
@@ -142,21 +154,20 @@ let buildSummaryContent =
       I18n.label#summary_total,
       I18n.t#xtz_amount(total->ProtocolXTZ.toString),
     );
-    let fee = (
-      I18n.label#fee,
-      I18n.t#xtz_amount(dryRun.fee->ProtocolXTZ.toString),
-    );
-    [subtotal, fee, total];
+    [subtotal, fee, revealFee, total];
   | TokenTransfer({transfers}, token) =>
     let amount = transfers->List.reduce(0, (acc, {amount}) => acc + amount);
     let amount = I18n.t#amount(amount->Int.toString, token.symbol);
 
-    let fee = (
-      I18n.label#fee,
-      I18n.t#xtz_amount(dryRun.fee->ProtocolXTZ.toString),
-    );
     let amount = (I18n.label#send_amount, amount);
-    [amount, fee];
+
+    let total = dryRun.fee;
+    let total = (
+      I18n.label#summary_total_tez,
+      I18n.t#xtz_amount(total->ProtocolXTZ.toString),
+    );
+
+    [amount, fee, revealFee, total];
   };
 };
 
