@@ -20,6 +20,7 @@ type monitorResult = {
 type error =
   | APINotAvailable(string)
   | APIVersionRPCError(string)
+  | APIMonitorRPCError(string)
   | NodeNotAvailable(string)
   | NodeChainRPCError(string)
   | ChainInconsistency(string, string)
@@ -29,6 +30,7 @@ let errorMsg =
   fun
   | APINotAvailable(_) => I18n.network#api_not_available
   | APIVersionRPCError(err) => I18n.network#api_version_rpc_error(err)
+  | APIMonitorRPCError(err) => I18n.network#api_monitor_rpc_error(err)
   | NodeNotAvailable(_) => I18n.network#node_not_available
   | NodeChainRPCError(err) => I18n.network#node_version_rpc_error(err)
   | ChainInconsistency(api, node) =>
@@ -65,9 +67,9 @@ let monitor = url => {
           }
           ->Ok
         ) {
-        | Json.ParseError(error) => Error(APIVersionRPCError(error))
-        | Json.Decode.DecodeError(error) => Error(APIVersionRPCError(error))
-        | _ => Error(APIVersionRPCError("Unknown error"))
+        | Json.ParseError(error) => Error(APIMonitorRPCError(error))
+        | Json.Decode.DecodeError(error) => Error(APIMonitorRPCError(error))
+        | _ => Error(APIMonitorRPCError("Unknown error"))
         }
       )
       ->Future.value

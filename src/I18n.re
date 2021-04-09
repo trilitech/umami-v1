@@ -219,6 +219,8 @@ let network = {
   pub api_not_available = "The API is not available";
   pub api_version_rpc_error = a =>
     p("The API `/version` RPC parsing returned an error: %s", a);
+  pub api_monitor_rpc_error = a =>
+    p("The API `/monitor/blocks` RPC parsing returned an error: %s", a);
   pub node_not_available = "The node is not available";
   pub node_version_rpc_error = a =>
     p("Node `/chains/main/chain_id` RPC parsing returned an error: %s", a);
