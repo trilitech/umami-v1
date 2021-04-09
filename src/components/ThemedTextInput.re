@@ -16,7 +16,7 @@ let styles =
           ~fontSize=16.,
           ~fontWeight=`normal,
           ~borderWidth,
-          ~borderRadius=5.,
+          ~borderRadius=4.,
           (),
         ),
     })

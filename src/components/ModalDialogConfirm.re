@@ -12,6 +12,7 @@ let make =
       ~cancelText,
       ~actionText,
     ) => {
+  let theme = ThemeContext.useTheme();
   <ModalAction visible onRequestClose=closeAction>
     <ModalTemplate.Dialog>
       <Typography.Headline style=FormStyles.header>
@@ -22,6 +23,7 @@ let make =
        })}
       <View style=FormStyles.formAction>
         <Buttons.Form
+          style=Style.(style(~backgroundColor=theme.colors.stateActive, ()))
           text=cancelText
           onPress={_ => closeAction()}
           disabled=?loading

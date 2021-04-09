@@ -172,7 +172,7 @@ module Subtitle2 =
   Make({
     let colorStyle = `highEmphasis;
     let fontWeightStyle = `bold;
-    let fontSize = 15.;
+    let fontSize = 16.;
     let selectable = true;
   });
 

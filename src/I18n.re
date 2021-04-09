@@ -79,11 +79,17 @@ let label = {
   pub transactions = "Transactions";
   pub account_secret = "Root";
   pub account_umami = "Umami";
+  pub token = "Token";
   pub account_cli = "Cli"
 };
 
 let input_placeholder = {
   pub _this = this;
+  pub tez_amount = "0.000000";
+  pub add_accounts_name = "Enter account's name";
+  pub add_contacts_name = "Enter contact's name";
+  pub add_contacts_tz = "Enter contact's tz address";
+  pub add_contact_or_tz = "Paste a tz address or type in a contact's name";
   pub add_token_address = "Enter KT1 address of a contract";
   pub add_token_name = "e.g. Tezos";
   pub add_token_symbol = "e.g. tez, KLD, ..."
