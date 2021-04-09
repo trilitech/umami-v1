@@ -7,7 +7,6 @@ open TestFramework;
 
 let settings =
   AppSettings.{
-    network: Testnet,
     config: ConfigFile.dummy,
     sdk: {
       main: Obj.magic(""),
