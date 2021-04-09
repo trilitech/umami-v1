@@ -64,6 +64,7 @@ let useCleanSdkBaseDir = () => {
   () => {
     System.Client.resetDir(
       sdkBaseDir->Option.getWithDefault(ConfigFile.Default.sdkBaseDir),
-    );
+    )
+    ->Future.tapOk(_ => LocalStorage.clear());
   };
 };
