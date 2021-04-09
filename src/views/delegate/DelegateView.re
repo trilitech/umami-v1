@@ -200,10 +200,14 @@ module Form = {
 };
 
 let buildSummaryContent = (dryRun: Protocol.simulationResults) => {
-  let revealFee = (
-    I18n.label#implicit_reveal_fee,
-    I18n.t#xtz_amount(dryRun.revealFee->ProtocolXTZ.toString),
-  );
+  let revealFee =
+    dryRun.revealFee != ProtocolXTZ.zero
+      ? (
+          I18n.label#implicit_reveal_fee,
+          I18n.t#xtz_amount(dryRun.revealFee->ProtocolXTZ.toString),
+        )
+        ->Some
+      : None;
 
   let fee = (
     I18n.label#fee,
@@ -217,7 +221,7 @@ let buildSummaryContent = (dryRun: Protocol.simulationResults) => {
     I18n.t#xtz_amount(dryRun.fee->ProtocolXTZ.toString),
   );
 
-  [fee, revealFee, total];
+  [fee, ...revealFee->Option.mapWithDefault([total], r => [r, total])];
 };
 
 [@react.component]
