@@ -8,14 +8,13 @@ type apiVersion = {
   protocol: string,
 };
 
-let mainnetChainId = "NetXdQprcVkpaWU";
-
 type error =
   | APINotAvailable(string)
   | APIVersionRPCError(string)
   | NodeNotAvailable(string)
   | NodeChainRPCError(string)
-  | ChainInconsistency(string, string);
+  | ChainInconsistency(string, string)
+  | UnknownChainId(string);
 
 let errorMsg =
   fun
@@ -24,7 +23,12 @@ let errorMsg =
   | NodeNotAvailable(_) => I18n.network#node_not_available
   | NodeChainRPCError(err) => I18n.network#node_version_rpc_error(err)
   | ChainInconsistency(api, node) =>
-    I18n.network#chain_inconsistency(api, node);
+    I18n.network#chain_inconsistency(api, node)
+  | UnknownChainId(chain_id) => I18n.network#unknown_chain_id(chain_id);
+
+let mainnetChain = "NetXdQprcVkpaWU";
+let florencenetChain = "NetXxkAx4woPLyu";
+let edo2netChain = "NetXSgo1ZT2DRUG";
 
 let getAPIChain = url =>
   (url ++ "/version")
@@ -66,6 +70,20 @@ let getNodeChain = url => {
     });
 };
 
+let isMainnet = n => n == `Mainnet;
+let isTestnet =
+  fun
+  | `Mainnet => false
+  | `Testnet(_) => true;
+
+let networkOfChain = c =>
+  c == mainnetChain
+    ? Ok(`Mainnet)
+    : c == edo2netChain
+        ? Ok(`Testnet(edo2netChain))
+        : c == florencenetChain
+            ? Ok(`Testnet(florencenetChain)) : Error(UnknownChainId(c));
+
 let checkConfiguration = (~network, api_url, node_url) =>
   Future.map2(
     getAPIChain(api_url), getNodeChain(node_url), (api_res, node_res) =>
@@ -75,11 +93,12 @@ let checkConfiguration = (~network, api_url, node_url) =>
     | (Ok(api_chain), Ok(node_chain)) =>
       String.equal(api_chain, node_chain)
       && (
-        network == `Mainnet
-        && String.equal(node_chain, mainnetChainId)
-        || network == `Testnet
-        && !String.equal(node_chain, mainnetChainId)
+        isMainnet(network)
+        && String.equal(node_chain, mainnetChain)
+        || isTestnet(network)
+        && !String.equal(node_chain, mainnetChain)
       )
-        ? Ok() : Error(ChainInconsistency(api_chain, node_chain))
+        ? networkOfChain(api_chain)
+        : Error(ChainInconsistency(api_chain, node_chain))
     }
   );

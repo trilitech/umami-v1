@@ -3,6 +3,7 @@ open SettingsComponents;
 
 module StateLenses = [%lenses
   type state = {
+    network: [ | `Mainnet | `Testnet(string)],
     endpointTest: string,
     explorerTest: string,
     endpointMain: string,
@@ -36,7 +37,15 @@ let make = () => {
     )
     ->Future.get(
         fun
-        | Ok () => k(state)
+        | Ok(network) => {
+            k({
+              ...state,
+              values: {
+                ...state.values,
+                network,
+              },
+            });
+          }
         | Error(e) =>
           addToast(Logs.error(~origin=Settings, Network.errorMsg(e))),
       );
@@ -54,6 +63,7 @@ let make = () => {
     writeConf(c =>
       {
         ...c,
+        network: Some(state.values.network),
         endpointTest:
           state.values.endpointTest->Js.String2.length > 0
           && state.values.endpointTest != ConfigFile.Default.endpointTest
@@ -91,6 +101,7 @@ let make = () => {
           None;
         },
       ~initialState={
+        network: settings->AppSettings.network,
         endpointTest: settings->AppSettings.endpointTest,
         explorerTest: settings->AppSettings.explorerTest,
         endpointMain: settings->AppSettings.endpointMain,
@@ -118,7 +129,7 @@ let make = () => {
         />
         <RadioItem
           label=I18n.t#testnet
-          value=`Testnet
+          value={`Testnet(Network.edo2netChain)}
           setValue=writeNetwork
           currentValue={settings->AppSettings.network}
         />

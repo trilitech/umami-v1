@@ -218,6 +218,11 @@ let network = {
      API runs on chain `%s` and the node on the chain `%s`.",
       a,
       b,
+    );
+  pub unknown_chain_id = a =>
+    p(
+      "Network %s is not supported, your operation cannot be viewed in an explorer.",
+      a,
     )
 };
 
