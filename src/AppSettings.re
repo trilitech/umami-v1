@@ -24,21 +24,21 @@ let endpoint = settings =>
   switch (settings.config.network) {
   | Some(`Mainnet) => endpointMain(settings)
   | None
-  | Some(`Testnet) => endpointTest(settings)
+  | Some(`Testnet(_)) => endpointTest(settings)
   };
 
 let sdk = s =>
   switch (s.config.network) {
   | Some(`Mainnet) => s.sdk.main
   | None
-  | Some(`Testnet) => s.sdk.test
+  | Some(`Testnet(_)) => s.sdk.test
   };
 
-let testOnly = s => {
+let testOnly = (s, chainId) => {
   ...s,
   config: {
     ...s.config,
-    network: Some(`Testnet),
+    network: Some(`Testnet(chainId)),
   },
 };
 let mainOnly = s => {
@@ -59,6 +59,12 @@ let withNetwork = (s, network) => {
 let network = (settings: t): ConfigFile.network =>
   settings.config.network->Option.getWithDefault(ConfigFile.Default.network);
 
+let chainId = (settings: t) =>
+  switch (network(settings)) {
+  | `Mainnet => Network.mainnetChain
+  | `Testnet(chainId) => chainId
+  };
+
 let explorerMain = settings =>
   settings.config.explorerMain
   ->Option.getWithDefault(ConfigFile.Default.explorerMain);
@@ -71,5 +77,19 @@ let explorer = (settings: t) =>
   switch (settings.config.network) {
   | Some(`Mainnet) => explorerMain(settings)
   | None
-  | Some(`Testnet) => explorerTest(settings)
+  | Some(`Testnet(_)) => explorerTest(settings)
   };
+
+let externalExplorers =
+  Map.String.empty
+  ->Map.String.set(Network.mainnetChain, "https://tzkt.io/")
+  ->Map.String.set(Network.florencenetChain, "https://florence.tzkt.io/")
+  ->Map.String.set(Network.edo2netChain, "https://edo2net.tzkt.io/");
+
+let findExternalExplorer = c =>
+  externalExplorers
+  ->Map.String.get(c)
+  ->Option.map(v => Ok(v))
+  ->Option.getWithDefault(Error(Network.UnknownChainId(c)));
+
+let getExternalExplorer = settings => chainId(settings)->findExternalExplorer;

@@ -840,7 +840,7 @@ module Delegate = (Getter: GetterAPI) => {
       "https://api.baking-bad.org/v2/bakers"
       ->Getter.get
       ->Future.mapOk(Json.Decode.(array(Delegate.decode)))
-    | `Testnet =>
+    | `Testnet(_) =>
       Future.value(
         Ok([|
           {name: "zebra", address: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"},
@@ -992,7 +992,7 @@ module Tokens = (Getter: GetterAPI) => {
 
   let get = (settings: AppSettings.t) => {
     switch (settings->AppSettings.network) {
-    | `Testnet =>
+    | `Testnet(_) =>
       Future.value(
         Ok([|("Klondike", "KLD", "KT1BUdnCMfBKdVxCKyBvMUqwLqm27EDGWskB")|]),
       )

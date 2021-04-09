@@ -156,7 +156,8 @@ let make =
     let account = StoreContext.SelectedAccount.useGet();
     let aliases = StoreContext.Aliases.useGetAll();
     let tokens = StoreContext.Tokens.useGetAll();
-    let config = SdkContext.useSettings().config;
+    let settings = SdkContext.useSettings();
+    let addToast = LogsContext.useToast();
 
     <Table.Row>
       {switch (operation.payload) {
@@ -259,16 +260,20 @@ let make =
           {operation.timestamp->DateFns.format("P pp")->React.string}
         </Typography.Body1>
       </CellDate>
-      <CellStatus> {status(operation, currentLevel, config)} </CellStatus>
+      <CellStatus>
+        {status(operation, currentLevel, settings.config)}
+      </CellStatus>
       <CellAction>
         <IconButton
           size=34.
           icon=Icons.OpenExternal.build
           onPress={_ => {
-            electron##shell##openExternal(
-              "https://edonet.tzkt.io/" ++ operation.hash,
-            )
-            ->ignore
+            switch (AppSettings.getExternalExplorer(settings)) {
+            | Ok(url) =>
+              electron##shell##openExternal(url ++ operation.hash)->ignore
+            | Error(err) =>
+              addToast(Logs.error(~origin=Settings, Network.errorMsg(err)))
+            }
           }}
         />
       </CellAction>
