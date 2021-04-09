@@ -48,13 +48,14 @@ let renderLabel = (label, hasError) => {
 };
 
 [@react.component]
-let make = (~label, ~value: string, ~handleChange, ~error) => {
+let make = (~label, ~filterOut, ~value: string, ~handleChange, ~error) => {
   let aliasesRequest = StoreContext.Aliases.useRequest();
 
   let accounts =
     aliasesRequest
     ->ApiRequest.getDoneOk
-    ->Option.mapWithDefault([||], Map.String.valuesToArray);
+    ->Option.mapWithDefault([||], Map.String.valuesToArray)
+    ->Array.keep(v => v.address != filterOut);
 
   let items =
     accounts->Array.keep(account =>
