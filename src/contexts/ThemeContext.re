@@ -17,6 +17,7 @@ type colors = {
   scrim: string,
   error: string,
   statePressed: string,
+  stateDisabled: string,
   stateHovered: string,
   stateActive: string,
   borderHighEmphasis: string,
@@ -33,6 +34,7 @@ type colors = {
   primaryStatePressed: string,
   primaryStateHovered: string,
   primaryStateActive: string,
+  primaryStateDisabled: string,
 };
 
 type theme = {
@@ -65,6 +67,7 @@ let lightTheme = {
     statePressed: Colors.Light.statePressed,
     stateHovered: Colors.Light.stateHovered,
     stateActive: Colors.Light.stateActive,
+    stateDisabled: Colors.Light.stateDisabled,
     borderHighEmphasis: Colors.Light.highEmphasis,
     borderMediumEmphasis: Colors.Light.mediumEmphasis,
     borderDisabled: Colors.Light.disabled,
@@ -79,6 +82,7 @@ let lightTheme = {
     primaryStatePressed: Colors.Dark.statePressed,
     primaryStateHovered: Colors.Dark.stateHovered,
     primaryStateActive: Colors.Dark.stateActive,
+    primaryStateDisabled: Colors.Dark.stateDisabled,
   },
 };
 
@@ -105,6 +109,7 @@ let darkTheme = {
     statePressed: Colors.Dark.statePressed,
     stateHovered: Colors.Dark.stateHovered,
     stateActive: Colors.Dark.stateActive,
+    stateDisabled: Colors.Dark.stateDisabled,
     borderHighEmphasis: Colors.Dark.highEmphasis,
     borderMediumEmphasis: Colors.Dark.mediumEmphasis,
     borderDisabled: Colors.Dark.disabled,
@@ -119,6 +124,7 @@ let darkTheme = {
     primaryStatePressed: Colors.Light.statePressed,
     primaryStateHovered: Colors.Light.stateHovered,
     primaryStateActive: Colors.Light.stateActive,
+    primaryStateDisabled: Colors.Light.stateActive,
   },
 };
 
