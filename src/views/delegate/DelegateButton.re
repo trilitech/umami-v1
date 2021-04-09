@@ -21,26 +21,36 @@ let styles =
 let make = (~zeroTez, ~action: Delegate.action, ~style as styleFromProp=?) => {
   let theme = ThemeContext.useTheme();
 
-  let (textColor, backgroundColor, text) =
+  let tooltipId =
+    "delegate_button_"
+    ++ Delegate.account(action)->Option.mapWithDefault("", a => a.address);
+
+  let (textColor, backgroundColor, text, tooltip) =
     switch (action) {
     | _ when zeroTez => (
         theme.colors.primaryTextDisabled,
         theme.colors.primaryButtonBackground,
         I18n.btn#delegate,
+        Some((tooltipId, I18n.expl#no_tez_no_delegation)),
       )
 
     | Create(_) => (
         theme.colors.primaryTextHighEmphasis,
         theme.colors.primaryButtonBackground,
         I18n.btn#delegate,
+        None,
       )
     | Edit(_)
     | Delete(_) => (
         theme.colors.primaryTextDisabled,
         theme.colors.iconDisabled,
         I18n.btn#delegated,
+        Some((tooltipId, I18n.btn#update_delegation)),
       )
     };
+
+  let (pressableRef, isOpen, popoverConfig, togglePopover, setClosed) =
+    Popover.usePopoverState();
 
   let (visibleModal, openAction, closeAction) =
     ModalAction.useModalActionState();
@@ -49,6 +59,8 @@ let make = (~zeroTez, ~action: Delegate.action, ~style as styleFromProp=?) => {
 
   <>
     <View
+      onMouseEnter={_ => togglePopover()}
+      onMouseLeave={_ => setClosed()}
       style=Style.(
         arrayOption([|
           Some(styles##button),
@@ -56,9 +68,13 @@ let make = (~zeroTez, ~action: Delegate.action, ~style as styleFromProp=?) => {
           styleFromProp,
         |])
       )>
+      {ReactUtils.mapOpt(tooltip, ((keyPopover, text)) => {
+         <Tooltip keyPopover text isOpen config=popoverConfig />
+       })}
       <ThemedPressable
         style=Style.(arrayOption([|Some(styles##pressable)|]))
         isPrimary=true
+        pressableRef={pressableRef->Ref.value}
         disabled=zeroTez
         onPress
         accessibilityRole=`button>

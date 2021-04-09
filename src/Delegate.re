@@ -13,3 +13,10 @@ type action =
   | Create(option(Account.t))
   | Edit(Account.t, string)
   | Delete(Account.t, string);
+
+let account = action =>
+  switch (action) {
+  | Create(a) => a
+  | Edit(a, _) => Some(a)
+  | Delete(a, _) => Some(a)
+  };
