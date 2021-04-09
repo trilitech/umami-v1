@@ -356,6 +356,7 @@ module Form = {
           />
           <FormGroupContactSelector
             label=I18n.label#send_recipient
+            filterOut={form.values.sender}
             value={form.values.recipient}
             handleChange={form.handleChange(Recipient)}
             error={form.getFieldError(Field(Recipient))}
