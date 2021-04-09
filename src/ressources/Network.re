@@ -8,9 +8,19 @@ type apiVersion = {
   protocol: string,
 };
 
+let mainnetChainId = "NetXdQprcVkpaWU";
+
+type monitorResult = {
+  nodeLastBlock: int,
+  nodeLastBlockTimestamp: string,
+  indexerLastBlock: int,
+  indexerLastBlockTimestamp: string,
+};
+
 type error =
   | APINotAvailable(string)
   | APIVersionRPCError(string)
+  | APIMonitorRPCError(string)
   | NodeNotAvailable(string)
   | NodeChainRPCError(string)
   | ChainInconsistency(string, string)
@@ -20,6 +30,7 @@ let errorMsg =
   fun
   | APINotAvailable(_) => I18n.network#api_not_available
   | APIVersionRPCError(err) => I18n.network#api_version_rpc_error(err)
+  | APIMonitorRPCError(err) => I18n.network#api_monitor_rpc_error(err)
   | NodeNotAvailable(_) => I18n.network#node_not_available
   | NodeChainRPCError(err) => I18n.network#node_version_rpc_error(err)
   | ChainInconsistency(api, node) =>
@@ -30,15 +41,44 @@ let mainnetChain = "NetXdQprcVkpaWU";
 let florencenetChain = "NetXxkAx4woPLyu";
 let edo2netChain = "NetXSgo1ZT2DRUG";
 
-let getAPIChain = url =>
-  (url ++ "/version")
+let fetchJson = (url, mkError) =>
+  url
   ->Fetch.fetch
-  ->FutureJs.fromPromise(err => APINotAvailable(Js.String.make(err)))
+  ->FutureJs.fromPromise(err => mkError(Js.String.make(err)))
   ->Future.flatMapOk(response =>
       response
       ->Fetch.Response.json
-      ->FutureJs.fromPromise(err => APINotAvailable(Js.String.make(err)))
-    )
+      ->FutureJs.fromPromise(err => mkError(Js.String.make(err)))
+    );
+
+let monitor = url => {
+  (url ++ "/monitor/blocks")
+  ->fetchJson(e => APINotAvailable(e))
+  ->Future.flatMapOk(json => {
+      (
+        try(
+          Json.Decode.{
+            nodeLastBlock: json |> field("node_last_block", int),
+            nodeLastBlockTimestamp:
+              json |> field("node_last_block_timestamp", string),
+            indexerLastBlock: json |> field("indexer_last_block", int),
+            indexerLastBlockTimestamp:
+              json |> field("indexer_last_block_timestamp", string),
+          }
+          ->Ok
+        ) {
+        | Json.ParseError(error) => Error(APIMonitorRPCError(error))
+        | Json.Decode.DecodeError(error) => Error(APIMonitorRPCError(error))
+        | _ => Error(APIMonitorRPCError("Unknown error"))
+        }
+      )
+      ->Future.value
+    });
+};
+
+let getAPIChain = url =>
+  (url ++ "/version")
+  ->fetchJson(e => APINotAvailable(e))
   ->Future.flatMapOk(json => {
       let obj =
         json
@@ -55,13 +95,7 @@ let getAPIChain = url =>
 
 let getNodeChain = url => {
   (url ++ "/chains/main/chain_id")
-  ->Fetch.fetch
-  ->FutureJs.fromPromise(err => NodeNotAvailable(Js.String.make(err)))
-  ->Future.flatMapOk(response =>
-      response
-      ->Fetch.Response.json
-      ->FutureJs.fromPromise(err => NodeNotAvailable(Js.String.make(err)))
-    )
+  ->fetchJson(e => NodeNotAvailable(e))
   ->Future.flatMapOk(json => {
       switch (Js.Json.decodeString(json)) {
       | Some(v) => Future.value(Ok(v))
