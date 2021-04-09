@@ -8,7 +8,7 @@
 
 | Setting | Value |
 |--|--|
-| Operating System | [Mac|Linux] |
+| Operating System | [Mac or Linux] |
 | Flavor (if applicable) | [N/A for Mac] |
 
 ### Components
