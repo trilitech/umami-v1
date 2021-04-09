@@ -50,7 +50,6 @@
 - [ ] Delete a secret
 - [ ] Create derived Account
 - [ ] Rename derived Account
-- [ ] Select Advanced Options
 - [ ] Add contact from Operations
 
 ### Address Book
