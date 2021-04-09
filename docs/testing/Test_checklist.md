@@ -4,14 +4,21 @@
 
 ## Test Parameters
 
+### OS
+
+| Setting | Value |
+|--|--|
+| Operating System | [Mac|Linux] |
+| Flavor (if applicable) | [N/A for Mac] |
+
 ### Components
 
 | Component | Tag or Branch |
 |--|--|
-| umami | [TAG or BRANCH] |
-| tezos-indexer | [TAG or BRANCH] |
-| mezos | [TAG or BRANCH] |
-| tezos | [TAG or BRANCH] |
+| umami | [TAG] |
+| tezos-indexer | [TAG] |
+| mezos | [TAG] |
+| tezos | [TAG] |
 
 ### Settings
 
