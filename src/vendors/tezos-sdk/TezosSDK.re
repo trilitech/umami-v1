@@ -50,10 +50,29 @@ module InputAddress = {
   };
 };
 
+module Error = {
+  type t =
+    | BadPkh
+    | Generic(string);
+
+  type error_payload = {msg: string};
+
+  let badPkh = "(Signature.Public_key_hash)";
+
+  let parse = e => {
+    e.msg
+    ->(
+        fun
+        | s when s->Js.String2.includes(badPkh) => BadPkh
+        | s => Generic(s)
+      );
+  };
+};
+
 type result('a) = {
   kind: [ | `ok | `error],
   payload: 'a,
-  msg: string,
+  error_payload: Error.error_payload,
 };
 
 let fromPromise = p =>
@@ -63,12 +82,13 @@ let fromPromise = p =>
          v.kind == `ok
            ? resolve(Ok(v.payload))
            : {
-             resolve(Error(v.msg));
+             Js.log(v);
+             resolve(Error(v.error_payload->Error.parse));
            };
          Js.Promise.resolve();
        })
     |> Js.Promise.catch(error => {
-         resolve(Error(Js.String.make(error)));
+         resolve(Error(Js.String.make(error)->Generic));
          Js.Promise.resolve();
        })
   });

@@ -159,6 +159,13 @@ let handleTaquitoError = e =>
        | InvalidContract => I18n.form_input_error#invalid_contract
      );
 
+let handleSdkError = e =>
+  e->TezosSDK.Error.(
+       fun
+       | Generic(s) => s
+       | BadPkh => I18n.form_input_error#bad_pkh
+     );
+
 module Simulation = {
   let extractCustomValues = (tx_options: Protocol.transfer_options) => (
     tx_options.Protocol.fee
@@ -383,6 +390,7 @@ module Aliases = {
     settings
     ->AppSettings.sdk
     ->TezosSDK.listKnownAddresses
+    ->Future.mapError(handleSdkError)
     ->Future.mapOk(l => l->Array.map(({alias, pkh}) => (alias, pkh)));
 
   let getAliasMap = (~settings) =>
@@ -400,10 +408,22 @@ module Aliases = {
     ->Future.mapOk(addresses => addresses->Map.String.get(alias));
 
   let add = (~settings, alias, pkh) =>
-    settings->AppSettings.sdk->TezosSDK.addAddress(alias, pkh);
+    settings
+    ->AppSettings.sdk
+    ->TezosSDK.addAddress(alias, pkh)
+    ->Future.mapError(handleSdkError);
 
   let delete = (~settings, name) =>
-    settings->AppSettings.sdk->TezosSDK.forgetAddress(name);
+    settings
+    ->AppSettings.sdk
+    ->TezosSDK.forgetAddress(name)
+    ->Future.mapError(handleSdkError);
+
+  let rename = (~settings, renaming) =>
+    settings
+    ->AppSettings.sdk
+    ->TezosSDK.renameAliases(renaming)
+    ->Future.mapError(handleSdkError);
 };
 
 module Accounts = (Getter: GetterAPI) => {
@@ -444,6 +464,7 @@ module Accounts = (Getter: GetterAPI) => {
     settings
     ->AppSettings.sdk
     ->TezosSDK.listKnownAddresses
+    ->Future.mapError(handleSdkError)
     ->Future.mapOk(r =>
         r->Array.keepMap((TezosSDK.OutputAddress.{alias, pkh, sk_known}) =>
           sk_known ? Some((alias, pkh)) : None
@@ -497,6 +518,7 @@ module Accounts = (Getter: GetterAPI) => {
     settings
     ->AppSettings.sdk
     ->TezosSDK.importSecretKey(~name, ~skUri, ~password, ())
+    ->Future.mapError(handleSdkError)
     ->Future.tapOk(k => Js.log("key found : " ++ k));
   };
 
@@ -521,7 +543,10 @@ module Accounts = (Getter: GetterAPI) => {
     ->Future.flatMapOk(update => update);
 
   let unsafeDelete = (~settings, name) =>
-    settings->AppSettings.sdk->TezosSDK.forgetAddress(name);
+    settings
+    ->AppSettings.sdk
+    ->TezosSDK.forgetAddress(name)
+    ->Future.mapError(handleSdkError);
 
   let delete = (~settings, name) =>
     Aliases.getAddressForAlias(~settings, name)
@@ -655,7 +680,8 @@ module Accounts = (Getter: GetterAPI) => {
         ~mnemonics=recoveryPhrase,
         ~password,
         (),
-      );
+      )
+    ->Future.mapError(handleSdkError);
 
   let legacyScan = (~settings, recoveryPhrase, name, ~password) =>
     legacyImport(~settings, name, recoveryPhrase, ~password)
