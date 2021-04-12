@@ -226,6 +226,9 @@ module Toolkit = {
       storageLimit: int,
       gasLimit: int,
       revealFee: int,
+      minimalFeeMutez: int,
+      suggestedFeeMutez: int,
+      burnFeeMutez: int,
     };
 
     [@bs.send]
@@ -808,13 +811,26 @@ module Estimate = {
             gasLimit: 0,
             storageLimit: 0,
             revealFee: 0,
+            minimalFeeMutez: 0,
+            suggestedFeeMutez: 0,
+            burnFeeMutez: 0,
           },
           (
-            {totalCost, gasLimit, storageLimit},
+            {
+              totalCost,
+              gasLimit,
+              storageLimit,
+              minimalFeeMutez,
+              suggestedFeeMutez,
+              burnFeeMutez,
+            },
             {
               Toolkit.Estimation.totalCost: totalCost1,
               gasLimit: gasLimit1,
               storageLimit: storageLimit1,
+              minimalFeeMutez: minimalFeeMutez1,
+              suggestedFeeMutez: suggestedFeeMutez1,
+              burnFeeMutez: burnFeeMutez1,
             } as est,
           ) =>
           {
@@ -822,6 +838,9 @@ module Estimate = {
             totalCost: totalCost + totalCost1,
             storageLimit: storageLimit + storageLimit1,
             gasLimit: gasLimit + gasLimit1,
+            minimalFeeMutez: minimalFeeMutez + minimalFeeMutez1,
+            suggestedFeeMutez: suggestedFeeMutez + suggestedFeeMutez1,
+            burnFeeMutez: burnFeeMutez + burnFeeMutez1,
           }
         )
       ->(
