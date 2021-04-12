@@ -106,6 +106,9 @@ let form_input_error = {
   pub change_baker = "It must be a different baker than the current one";
   pub wrong_password = "Wrong password";
   pub password_length = "Password length must be at least 8 characters";
+  pub unregistered_delegate = "This key is not registered as a baker";
+  pub bad_pkh = "Not a valid key";
+  pub invalid_contract = "The recipient is not a key or an alias";
   pub confirm_password = "It must be the same password"
 };
 

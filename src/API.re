@@ -148,6 +148,17 @@ module Explorer = (Getter: GetterAPI) => {
     );
 };
 
+let handleTaquitoError = e =>
+  e->ReTaquito.Error.(
+       fun
+       | Generic(s) => s
+       | WrongPassword => I18n.form_input_error#wrong_password
+       | UnregisteredDelegate => I18n.form_input_error#unregistered_delegate
+       | UnchangedDelegate => I18n.form_input_error#change_baker
+       | BadPkh => I18n.form_input_error#bad_pkh
+       | InvalidContract => I18n.form_input_error#invalid_contract
+     );
+
 module Simulation = {
   let extractCustomValues = (tx_options: Protocol.transfer_options) => (
     tx_options.Protocol.fee
@@ -230,12 +241,7 @@ module Simulation = {
       };
 
     r
-    ->Future.mapError(e =>
-        switch (e) {
-        | Generic(s) => s
-        | WrongPassword => I18n.form_input_error#wrong_password
-        }
-      )
+    ->Future.mapError(e => e->handleTaquitoError)
     ->Future.mapOk(({totalCost, gasLimit, storageLimit, revealFee}) =>
         Protocol.{
           fee: totalCost->ProtocolXTZ.fromMutezInt,
@@ -976,12 +982,9 @@ module Tokens = (Getter: GetterAPI) => {
     };
   };
 
-  let errorToString = err => Format.asprintf("%a", printError, err);
+  let handleTaquitoError = e => e->handleTaquitoError->BackendError;
 
-  let handleTaquitoError =
-    fun
-    | ReTaquito.Generic(s) => BackendError(s)
-    | WrongPassword => BackendError(I18n.form_input_error#wrong_password);
+  let errorToString = err => Format.asprintf("%a", printError, err);
 
   let getTokenViewer = settings => URL.tokenViewer(settings)->Getter.get;
 
