@@ -72,6 +72,7 @@ let make = (~label, ~filterOut, ~value: string, ~handleChange, ~error) => {
       handleChange
       error
       list=items
+      clearButton=true
       renderItem
       keyExtractor
       placeholder=I18n.input_placeholder#add_contact_or_tz
