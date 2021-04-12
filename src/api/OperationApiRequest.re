@@ -61,9 +61,9 @@ let useSimulate = () => {
     switch (operation) {
     | Operation.Simulation.Protocol(operation, index) =>
       settings->API.Simulation.run(~index?, operation)
-    | Operation.Simulation.Token(operation) =>
+    | Operation.Simulation.Token(operation, index) =>
       settings
-      ->TokensApiRequest.TokensAPI.simulate(operation)
+      ->TokensApiRequest.TokensAPI.simulate(~index?, operation)
       ->Future.mapError(TokensApiRequest.TokensAPI.errorToString)
     };
 

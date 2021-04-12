@@ -12,7 +12,7 @@ module Simulation = {
 
   type t =
     | Protocol(Protocol.t, index)
-    | Token(Token.operation);
+    | Token(Token.operation, index);
 
   let delegation = d => Protocol(d->Delegation, None);
   let transaction = (t, index) => Protocol(t->Transaction, index);

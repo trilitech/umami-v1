@@ -1113,13 +1113,13 @@ module Tokens = (Getter: GetterAPI) => {
       );
   };
 
-  let simulate = (network, operation: Token.operation) =>
+  let simulate = (network, ~index=?, operation: Token.operation) =>
     switch (operation) {
     | Transfer({source, transfers: [elt], _}) =>
       transferEstimate(network, elt, source)
       ->Future.mapError(handleTaquitoError)
     | Transfer({source, transfers, _}) =>
-      batchEstimate(network, transfers, ~source, ())
+      batchEstimate(network, transfers, ~source, ~index?, ())
       ->Future.mapError(handleTaquitoError)
     | _ =>
       Future.value(
