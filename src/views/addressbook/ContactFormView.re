@@ -19,11 +19,8 @@ let addressExistsCheck =
   };
 };
 
-let aliasExistsCheck =
-    (aliases, values: StateLenses.state): ReSchema.fieldState => {
-  aliases->Map.String.some((_, v: Account.t) => v.alias == values.name)
-    ? Error(I18n.form_input_error#name_already_registered) : Valid;
-};
+let formCheckExists = (aliases, values: StateLenses.state) =>
+  AliasHelpers.formCheckExists(aliases, values.name);
 
 [@react.component]
 let make = (~initAddress=?, ~action: action, ~closeAction) => {
@@ -46,7 +43,7 @@ let make = (~initAddress=?, ~action: action, ~closeAction) => {
             nonEmpty(Name)
             + nonEmpty(Address)
             + custom(addressExistsCheck(aliases), Address)
-            + custom(aliasExistsCheck(aliases), Name),
+            + custom(formCheckExists(aliases), Name),
           )
         );
       },

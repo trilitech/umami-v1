@@ -18,3 +18,8 @@ let getContractAliasFromAddress = (address, aliases, tokens) => {
   | Some(r) => Some(r)
   };
 };
+
+let formCheckExists = (aliases, alias): ReSchema.fieldState => {
+  aliases->Map.String.some((_, v: Account.t) => v.alias == alias)
+    ? Error(I18n.form_input_error#name_already_registered) : Valid;
+};

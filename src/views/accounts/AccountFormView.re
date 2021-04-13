@@ -11,6 +11,10 @@ module Generic = {
     | Create
     | Edit(Account.t);
 
+  let aliasCheckExists = (aliases, values: StateLenses.state) => {
+    AliasHelpers.formCheckExists(aliases, values.name);
+  };
+
   [@react.component]
   let make =
       (
@@ -21,10 +25,20 @@ module Generic = {
         ~secret: option(Secret.t)=?,
         ~hideSecretSelector=false,
       ) => {
+    let aliasesRequest = StoreContext.Aliases.useRequest();
+    let aliases =
+      aliasesRequest
+      ->ApiRequest.getDoneOk
+      ->Option.getWithDefault(Map.String.empty);
+
     let form: AccountCreateForm.api =
       AccountCreateForm.use(
         ~schema={
-          AccountCreateForm.Validation.(Schema(nonEmpty(Name)));
+          AccountCreateForm.Validation.(
+            Schema(
+              nonEmpty(Name) + custom(aliasCheckExists(aliases), Name),
+            )
+          );
         },
         ~onSubmit=
           ({state}) => {
