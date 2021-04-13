@@ -41,7 +41,7 @@ let make = (~account: Account.t, ~token: option(Token.t)=?) => {
       />
       <QrButton account style=styles##button />
     </View>
-    {delegateRequest->ApiRequest.mapOkWithDefault(React.null, delegate => {
+    {delegateRequest->ApiRequest.mapWithDefault(React.null, delegate => {
        <View style=styles##actionContainer>
          <DelegateButton
            zeroTez
