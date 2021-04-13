@@ -38,7 +38,7 @@ let toSimulation = (~index=?, t: transaction) =>
   | ProtocolTransaction(transaction) =>
     Operation.Simulation.transaction(transaction, index)
   | TokenTransfer(transfer, _) =>
-    Operation.Simulation.Token(transfer->Token.transfer)
+    Operation.Simulation.Token(transfer->Token.transfer, index)
   };
 
 let buildTransfers = (transfers, parseAmount, build) => {

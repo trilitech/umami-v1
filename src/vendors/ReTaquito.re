@@ -226,6 +226,9 @@ module Toolkit = {
       storageLimit: int,
       gasLimit: int,
       revealFee: int,
+      minimalFeeMutez: int,
+      suggestedFeeMutez: int,
+      burnFeeMutez: int,
     };
 
     [@bs.send]
@@ -496,6 +499,14 @@ let addRevealFee = (~source, ~endpoint, r) => {
     );
 };
 
+let handleCustomOptions = (results, (fee, storageLimit, gasLimit)) => {
+  ...results,
+  Toolkit.Estimation.totalCost:
+    fee->Option.getWithDefault(results.Toolkit.Estimation.totalCost),
+  storageLimit: storageLimit->Option.getWithDefault(results.storageLimit),
+  gasLimit: gasLimit->Option.getWithDefault(results.gasLimit),
+};
+
 module FA12Operations = {
   module Estimate = {
     let transfer =
@@ -542,7 +553,14 @@ module FA12Operations = {
           ->Toolkit.FA12.toTransferParams(params)
           ->(tr => tk.estimate->Toolkit.Estimation.transfer(tr))
           ->fromPromiseGeneric
-          ->Future.flatMapOk(addRevealFee(~source, ~endpoint));
+          ->Future.flatMapOk(addRevealFee(~source, ~endpoint))
+          ->Future.mapOk(res =>
+              res->handleCustomOptions((
+                fee->Option.map(f => f->BigNumber.toInt64->Int64.to_int),
+                storageLimit,
+                gasLimit,
+              ))
+            );
         });
 
     let batch =
@@ -755,7 +773,14 @@ module Estimate = {
 
         tk.estimate->Toolkit.Estimation.transfer(tr)->fromPromiseGeneric;
       })
-    ->Future.flatMapOk(addRevealFee(~source, ~endpoint));
+    ->Future.flatMapOk(addRevealFee(~source, ~endpoint))
+    ->Future.mapOk(res =>
+        res->handleCustomOptions((
+          fee->Option.map(Int64.to_int),
+          storageLimit,
+          gasLimit,
+        ))
+      );
 
   let setDelegate = (~endpoint, ~baseDir, ~source, ~delegate=?, ~fee=?, ()) =>
     aliasFromPkh(~dirpath=baseDir, ~pkh=source, ())
@@ -794,39 +819,56 @@ module Estimate = {
       );
   };
 
-  let handleEstimationResults = ((results, revealFee), index) => {
+  let handleEstimationResults = ((results, revealFee), options, index) => {
     switch (index) {
     | Some(index) =>
+      let customOptions =
+        options[index]->Option.getWithDefault((None, None, None));
+      Js.log(customOptions);
       results
       ->Array.get(index)
       ->FutureEx.fromOption(~error=Generic("No transfer with such index"))
+      ->Future.mapOk(res => res->handleCustomOptions(customOptions));
     | None =>
       results
+      ->Array.zip(options)
       ->Array.reduce(
           Toolkit.Estimation.{
             totalCost: 0,
             gasLimit: 0,
             storageLimit: 0,
             revealFee: 0,
+            minimalFeeMutez: 0,
+            suggestedFeeMutez: 0,
+            burnFeeMutez: 0,
           },
           (
-            {totalCost, gasLimit, storageLimit},
             {
-              Toolkit.Estimation.totalCost: totalCost1,
-              gasLimit: gasLimit1,
-              storageLimit: storageLimit1,
-            } as est,
-          ) =>
-          {
-            ...est,
-            totalCost: totalCost + totalCost1,
-            storageLimit: storageLimit + storageLimit1,
-            gasLimit: gasLimit + gasLimit1,
-          }
+              totalCost,
+              gasLimit,
+              storageLimit,
+              minimalFeeMutez,
+              suggestedFeeMutez,
+              burnFeeMutez,
+            },
+            (est, customValues),
+          ) => {
+            let est = handleCustomOptions(est, customValues);
+            {
+              ...est,
+              totalCost: totalCost + est.totalCost,
+              storageLimit: storageLimit + est.storageLimit,
+              gasLimit: gasLimit + est.gasLimit,
+              minimalFeeMutez: minimalFeeMutez + est.minimalFeeMutez,
+              suggestedFeeMutez: suggestedFeeMutez + est.suggestedFeeMutez,
+              burnFeeMutez: burnFeeMutez + est.burnFeeMutez,
+            };
+          },
         )
       ->(
-          (Toolkit.Estimation.{gasLimit, storageLimit, totalCost}) =>
+          (Toolkit.Estimation.{gasLimit, storageLimit, totalCost} as est) =>
             Toolkit.Estimation.{
+              ...est,
               gasLimit: gasLimit + 100,
               totalCost: totalCost + revealFee,
               storageLimit: storageLimit + 100,

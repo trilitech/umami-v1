@@ -149,6 +149,13 @@ module Explorer = (Getter: GetterAPI) => {
 };
 
 module Simulation = {
+  let extractCustomValues = (tx_options: Protocol.transfer_options) => (
+    tx_options.Protocol.fee
+    ->Option.map(fee => fee->ProtocolXTZ.unsafeToMutezInt),
+    tx_options.storageLimit,
+    tx_options.gasLimit,
+  );
+
   let transfer = (settings, transfer, source) => {
     ReTaquito.Estimate.transfer(
       ~endpoint=settings->AppSettings.endpoint,
@@ -164,6 +171,10 @@ module Simulation = {
   };
 
   let batch = (settings, transfers, ~source, ~index=?, ()) => {
+    let customValues =
+      List.map(transfers, tx => tx.Protocol.tx_options->extractCustomValues)
+      ->List.toArray;
+
     let transfers = source =>
       transfers
       ->List.map(({amount, destination, tx_options}: Protocol.transfer) =>
@@ -191,7 +202,7 @@ module Simulation = {
       (),
     )
     ->Future.flatMapOk(r =>
-        ReTaquito.Estimate.handleEstimationResults(r, index)
+        ReTaquito.Estimate.handleEstimationResults(r, customValues, index)
       );
   };
 
@@ -1073,6 +1084,13 @@ module Tokens = (Getter: GetterAPI) => {
 
   let batchEstimate = (settings, transfers, ~source, ~index=?, ()) => {
     let endpoint = settings->AppSettings.endpoint;
+
+    let customValues =
+      List.map(transfers, tx =>
+        tx.Token.Transfer.tx_options->Simulation.extractCustomValues
+      )
+      ->List.toArray;
+
     let transfers = source =>
       transfers
       ->List.map(
@@ -1101,7 +1119,7 @@ module Tokens = (Getter: GetterAPI) => {
       (),
     )
     ->Future.flatMapOk(r =>
-        ReTaquito.Estimate.handleEstimationResults(r, index)
+        ReTaquito.Estimate.handleEstimationResults(r, customValues, index)
       )
     ->Future.mapOk(({totalCost, gasLimit, storageLimit, revealFee}) =>
         Protocol.{
@@ -1113,13 +1131,13 @@ module Tokens = (Getter: GetterAPI) => {
       );
   };
 
-  let simulate = (network, operation: Token.operation) =>
+  let simulate = (network, ~index=?, operation: Token.operation) =>
     switch (operation) {
     | Transfer({source, transfers: [elt], _}) =>
       transferEstimate(network, elt, source)
       ->Future.mapError(handleTaquitoError)
     | Transfer({source, transfers, _}) =>
-      batchEstimate(network, transfers, ~source, ())
+      batchEstimate(network, transfers, ~source, ~index?, ())
       ->Future.mapError(handleTaquitoError)
     | _ =>
       Future.value(
