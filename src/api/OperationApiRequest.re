@@ -31,12 +31,7 @@ let useCreate = (~sideEffect=?, ()) => {
     | Protocol(operation) =>
       settings
       ->API.Operation.run(operation, ~password)
-      ->Future.mapError(e =>
-          switch (e) {
-          | ReTaquito.WrongPassword => I18n.form_input_error#wrong_password
-          | ReTaquito.Generic(e) => e
-          }
-        )
+      ->Future.mapError(e => e->API.handleTaquitoError)
 
     | Token(operation) =>
       settings

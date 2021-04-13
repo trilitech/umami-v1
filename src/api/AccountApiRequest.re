@@ -26,7 +26,7 @@ let useUpdate =
   ApiRequest.useSetter(
     ~set=
       (~settings, renaming: TezosSDK.renameParams) =>
-        TezosSDK.renameAliases(AppSettings.sdk(settings), renaming),
+        API.Aliases.rename(~settings, renaming),
     ~kind=Logs.Account,
   );
 

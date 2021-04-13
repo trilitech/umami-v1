@@ -21,14 +21,42 @@ module BigNumber = {
   let fromInt = i => i->Int.toString->fromString;
 };
 
-type error =
-  | Generic(string)
-  | WrongPassword;
+module Error = {
+  type raw = {message: string};
 
-let fromPromiseGeneric = p =>
+  let toRaw: Js.Promise.error => raw = Obj.magic;
+
+  let wrongSecretKey = "wrong secret key";
+  let badPkh = "Unexpected data (Signature.Public_key_hash)";
+  let unregisteredDelegate = "contract.manager.unregistered_delegate";
+  let unchangedDelegate = "contract.manager.delegate.unchanged";
+  let invalidContract = "Invalid contract notation";
+  type t =
+    | Generic(string)
+    | WrongPassword
+    | UnregisteredDelegate
+    | UnchangedDelegate
+    | InvalidContract
+    | BadPkh;
+
+  let parse = e =>
+    switch (e.message) {
+    | s when s->Js.String2.includes(wrongSecretKey) => WrongPassword
+    | s when s->Js.String2.includes(badPkh) => BadPkh
+    | s when s->Js.String2.includes(unregisteredDelegate) =>
+      UnregisteredDelegate
+    | s when s->Js.String2.includes(unchangedDelegate) => UnchangedDelegate
+    | s when s->Js.String2.includes(invalidContract) => InvalidContract
+    | s => Generic(Js.String.make(s))
+    };
+};
+
+let fromPromiseParsed = p =>
   p->FutureJs.fromPromise(e => {
-    Js.log(e);
-    Generic(Js.String.make(e));
+    let e = e->Error.toRaw;
+    Js.log(e.Error.message);
+
+    e->Error.parse;
   });
 
 let walletOperation = [%raw "WalletOperation"];
@@ -68,7 +96,7 @@ let revealFee = (~endpoint, source) => {
   let client = RPCClient.create(endpoint);
 
   RPCClient.getManagerKey(client, source)
-  ->fromPromiseGeneric
+  ->fromPromiseParsed
   ->Future.mapOk(k => Js.Nullable.isNullable(k) ? default_fee_reveal : 0);
 };
 
@@ -297,22 +325,22 @@ open System.Path.Ops;
 
 let aliasFromPkh = (~dirpath, ~pkh, ()) => {
   System.File.read(dirpath / (!"public_key_hashs"))
-  ->Future.mapError(e => Generic(e))
+  ->Future.mapError(e => Error.Generic(e))
   ->Future.flatMapOk(file => {
       PkhAliases.parse(file)
       ->Js.Array2.find(a => a.value == pkh)
-      ->FutureEx.fromOption(~error=Generic("No key found !"))
+      ->FutureEx.fromOption(~error=Error.Generic("No key found !"))
       ->Future.mapOk(a => a.PkhAliases.name)
     });
 };
 
 let pkFromAlias = (~dirpath, ~alias, ()) => {
   System.File.read(dirpath / (!"public_keys"))
-  ->Future.mapError(e => Generic(e))
+  ->Future.mapError(e => Error.Generic(e))
   ->Future.flatMapOk(file => {
       PkAliases.parse(file)
       ->Js.Array2.find(a => a.PkAliases.name == alias)
-      ->FutureEx.fromOption(~error=Generic("No key found !"))
+      ->FutureEx.fromOption(~error=Error.Generic("No key found !"))
       ->Future.mapOk(a => a.PkAliases.value.key)
     });
 };
@@ -321,11 +349,11 @@ let readSecretKey = (address, passphrase, dirpath) => {
   aliasFromPkh(~dirpath, ~pkh=address, ())
   ->Future.flatMapOk(alias => {
       System.File.read(dirpath / (!"secret_keys"))
-      ->Future.mapError(e => Generic(e))
+      ->Future.mapError(e => Error.Generic(e))
       ->Future.flatMapOk(file => {
           SecretAliases.parse(file)
           ->Js.Array2.find(a => a.SecretAliases.name == alias)
-          ->FutureEx.fromOption(~error=Generic("No key found !"))
+          ->FutureEx.fromOption(~error=Error.Generic("No key found !"))
           ->Future.mapOk(a => a.SecretAliases.value)
         })
     })
@@ -338,9 +366,9 @@ let readSecretKey = (address, passphrase, dirpath) => {
         )
         ->FutureJs.fromPromise(e =>
             if (Js.String.make(e)->Js.String2.includes("wrong secret key")) {
-              WrongPassword;
+              Error.WrongPassword;
             } else {
-              Generic(Js.String.make(e));
+              Error.Generic(Js.String.make(e));
             }
           );
       } else if (key->Js.String2.startsWith("unencrypted:")) {
@@ -349,9 +377,10 @@ let readSecretKey = (address, passphrase, dirpath) => {
           ~passphrase,
           (),
         )
-        ->fromPromiseGeneric;
+        ->fromPromiseParsed;
       } else {
-        Error(Generic("Can't readkey, bad format: " ++ key))->Future.value;
+        Error(Error.Generic("Can't readkey, bad format: " ++ key))
+        ->Future.value;
       }
     );
 };
@@ -382,7 +411,7 @@ class NoopSigner {
 external makeDummySigner: (~pk: string, ~pkh: string, unit) => signer =
   "NoopSigner";
 
-exception Error(string);
+exception RejectError(string);
 
 let getDelegate = (endpoint, address) => {
   let tk = Toolkit.create(endpoint);
@@ -393,7 +422,7 @@ let getDelegate = (endpoint, address) => {
        if (Obj.magic(e)##status == 404) {
          Js.Promise.resolve(None);
        } else {
-         Js.Promise.reject(Error(e->Js.String.make));
+         Js.Promise.reject(RejectError(e->Js.String.make));
        }
      )
   |> (v => FutureJs.fromPromise(v, Js.String.make));
@@ -432,7 +461,7 @@ module Operations = {
 
         let dg = Toolkit.prepareDelegate(~source, ~delegate, ~fee?, ());
 
-        tk.contract->Toolkit.setDelegate(dg)->fromPromiseGeneric;
+        tk.contract->Toolkit.setDelegate(dg)->fromPromiseParsed;
       });
   };
 
@@ -449,7 +478,7 @@ module Operations = {
         transfers(source)
         ->Array.reduce(batch, Toolkit.Batch.withTransfer)
         ->Toolkit.Batch.send
-        ->fromPromiseGeneric;
+        ->fromPromiseParsed;
       });
   };
 
@@ -487,7 +516,7 @@ module Operations = {
             (),
           );
 
-        tk.contract->Toolkit.transfer(tr)->fromPromiseGeneric;
+        tk.contract->Toolkit.transfer(tr)->fromPromiseParsed;
       });
   };
 };
@@ -533,7 +562,7 @@ module FA12Operations = {
 
           tk.contract
           ->Toolkit.FA12.at(tokenContract)
-          ->fromPromiseGeneric
+          ->fromPromiseParsed
           ->Future.mapOk(c => (c, tk));
         })
       ->Future.flatMapOk(((c, tk)) => {
@@ -552,7 +581,7 @@ module FA12Operations = {
           ->Toolkit.FA12.transfer(source, dest, amount)
           ->Toolkit.FA12.toTransferParams(params)
           ->(tr => tk.estimate->Toolkit.Estimation.transfer(tr))
-          ->fromPromiseGeneric
+          ->fromPromiseParsed
           ->Future.flatMapOk(addRevealFee(~source, ~endpoint))
           ->Future.mapOk(res =>
               res->handleCustomOptions((
@@ -570,7 +599,7 @@ module FA12Operations = {
           ~source,
           ~transfers:
              string =>
-             Future.t(list(Belt.Result.t(Toolkit.transferParams, error))),
+             Future.t(list(Belt.Result.t(Toolkit.transferParams, Error.t))),
           (),
         ) => {
       aliasFromPkh(~dirpath=baseDir, ~pkh=source, ())
@@ -592,7 +621,7 @@ module FA12Operations = {
                   ->List.map(tr => {...tr, kind: opKindTransaction})
                   ->List.toArray,
                 )
-              ->fromPromiseGeneric
+              ->fromPromiseParsed
             )
         )
       ->Future.flatMapOk(r =>
@@ -626,7 +655,7 @@ module FA12Operations = {
         let provider = Toolkit.{signer: signer};
         tk->Toolkit.setProvider(provider);
 
-        tk.contract->Toolkit.FA12.at(tokenContract)->fromPromiseGeneric;
+        tk.contract->Toolkit.FA12.at(tokenContract)->fromPromiseParsed;
       })
     ->Future.flatMapOk(c => {
         let params =
@@ -641,7 +670,7 @@ module FA12Operations = {
         c.methods
         ->Toolkit.FA12.transfer(source, dest, amount)
         ->Toolkit.FA12.send(params)
-        ->fromPromiseGeneric;
+        ->fromPromiseParsed;
       })
     ->Future.tapOk(Js.log);
   };
@@ -667,7 +696,7 @@ module FA12Operations = {
 
   let prepareTransfers:
     (_, _, _) =>
-    Future.t(list(Belt.Result.t(Toolkit.transferParams, error))) =
+    Future.t(list(Belt.Result.t(Toolkit.transferParams, Error.t))) =
     (transfers: list(rawTransfer), source, endpoint) => {
       let tk = Toolkit.create(endpoint);
       let contracts =
@@ -692,7 +721,7 @@ module FA12Operations = {
           // By construction, this exception will never be raised
           contracts
           ->Map.String.getExn(rawTransfer.token)
-          ->fromPromiseGeneric
+          ->fromPromiseParsed
           ->Future.mapOk(c =>
               c.methods
               ->Toolkit.FA12.transfer(
@@ -713,7 +742,7 @@ module FA12Operations = {
         ~source,
         ~transfers:
            string =>
-           Future.t(list(Belt.Result.t(Toolkit.transferParams, error))),
+           Future.t(list(Belt.Result.t(Toolkit.transferParams, Error.t))),
         ~password,
         (),
       ) => {
@@ -732,7 +761,7 @@ module FA12Operations = {
           Toolkit.Batch.withTransfer,
         )
       )
-    ->Future.flatMapOk(p => p->Toolkit.Batch.send->fromPromiseGeneric);
+    ->Future.flatMapOk(p => p->Toolkit.Batch.send->fromPromiseParsed);
   };
 };
 
@@ -771,7 +800,7 @@ module Estimate = {
           );
         Js.log(tr);
 
-        tk.estimate->Toolkit.Estimation.transfer(tr)->fromPromiseGeneric;
+        tk.estimate->Toolkit.Estimation.transfer(tr)->fromPromiseParsed;
       })
     ->Future.flatMapOk(addRevealFee(~source, ~endpoint))
     ->Future.mapOk(res =>
@@ -795,7 +824,7 @@ module Estimate = {
         let sd = Toolkit.prepareDelegate(~source, ~delegate, ~fee?, ());
         Js.log(sd);
 
-        tk.estimate->Toolkit.Estimation.setDelegate(sd)->fromPromiseGeneric;
+        tk.estimate->Toolkit.Estimation.setDelegate(sd)->fromPromiseParsed;
       })
     ->Future.flatMapOk(addRevealFee(~source, ~endpoint));
 
@@ -811,7 +840,7 @@ module Estimate = {
         tk->Toolkit.setProvider(provider);
 
         Toolkit.Estimation.batch(tk.estimate, source->transfers)
-        ->fromPromiseGeneric;
+        ->fromPromiseParsed;
       })
     ->Future.flatMapOk(r =>
         revealFee(~endpoint, source)
@@ -827,7 +856,9 @@ module Estimate = {
       Js.log(customOptions);
       results
       ->Array.get(index)
-      ->FutureEx.fromOption(~error=Generic("No transfer with such index"))
+      ->FutureEx.fromOption(
+          ~error=Error.Generic("No transfer with such index"),
+        )
       ->Future.mapOk(res => res->handleCustomOptions(customOptions));
     | None =>
       results
