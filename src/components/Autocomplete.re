@@ -71,6 +71,7 @@ let make =
       ~keyExtractor: 'item => string,
       ~renderLabel: option(bool => React.element)=?,
       ~placeholder=?,
+      ~clearButton=false,
       ~keyPopover,
       ~style as styleFromProp=?,
       ~inputPaddingLeft=?,
@@ -166,6 +167,7 @@ let make =
       style=?styleFromProp
       paddingLeft=?inputPaddingLeft
       paddingRight=?inputPaddingRight
+      onClear=?{clearButton ? Some(() => onChangeItem("")) : None}
       paddingVertical=?inputPaddingVertical
       ?placeholder
       value
