@@ -154,6 +154,7 @@ let getAPIVersion = url =>
         try(
           Json.Decode.(field("api", string, json))
           ->parseVersion
+          // this two lines should disappear once mezos returns a valid version
           ->Result.getWithDefault(mkVersion(1, 0))
           ->Ok
           ->Result.map(api =>
@@ -213,7 +214,7 @@ let checkConfiguration = (~network, api_url, node_url) =>
         || isTestnet(network)
         && !String.equal(nodeChain, mainnetChain)
       )
-        ? networkOfChain(apiVersion.chain)
+        ? Ok(apiVersion)
         : Error(ChainInconsistency(apiVersion.chain, nodeChain))
     }
   );
