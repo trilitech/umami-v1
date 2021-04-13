@@ -449,6 +449,20 @@ module Bakers = {
 
     DelegateApiRequest.useLoadBakers(~requestState);
   };
+
+  let useShrinked = filterOut => {
+    let requestState = useRequestState();
+
+    DelegateApiRequest.useLoadBakers(~requestState)
+    ->ApiRequest.map(a =>
+        filterOut
+        ->Option.mapWithDefault(a, filterOut =>
+            a->Array.keep(v => v.address != filterOut)
+          )
+        ->Array.shuffle
+        ->Array.slice(~offset=0, ~len=5)
+      );
+  };
 };
 
 module Tokens = {
