@@ -224,6 +224,11 @@ let network = {
   pub api_not_available = "The API is not available";
   pub api_version_rpc_error = a =>
     p("The API `/version` RPC parsing returned an error: %s", a);
+  pub api_version_format_error = a =>
+    p(
+      "The API `/version` RPC parsing returned an unknown version format: %s",
+      a,
+    );
   pub api_monitor_rpc_error = a =>
     p("The API `/monitor/blocks` RPC parsing returned an error: %s", a);
   pub node_not_available = "The node is not available";
@@ -240,7 +245,9 @@ let network = {
     p(
       "Network %s is not supported, your operation cannot be viewed in an explorer.",
       a,
-    )
+    );
+  pub api_not_supported = a =>
+    p("The API %s is not supported by this version of Umami.", a)
 };
 
 let t = {
