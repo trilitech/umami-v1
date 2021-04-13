@@ -32,6 +32,13 @@ let isConfirmPassword = (values: StateLenses.state) => {
   fieldState;
 };
 
+let passwordLengthCheck = (values: StateLenses.state) => {
+  let fieldState: ReSchema.fieldState =
+    values.password->Js.String.length > 8
+      ? Valid : Error(I18n.form_input_error#password_length);
+  fieldState;
+};
+
 [@react.component]
 let make =
     (
@@ -49,6 +56,10 @@ let make =
         CreatePasswordForm.Validation.(
           Schema(
             nonEmpty(Password)
+            + (
+              displayConfirmPassword
+                ? custom(passwordLengthCheck, Password) : [||]
+            )
             + (
               displayConfirmPassword
                 ? custom(isConfirmPassword, ConfirmPassword) : [||]
@@ -81,12 +92,18 @@ let make =
   let formFieldsAreValids =
     FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
 
+  let passwordPlaceholder =
+    displayConfirmPassword
+      ? I18n.input_placeholder#enter_new_password
+      : I18n.input_placeholder#enter_password;
+
   <>
     <FormGroupTextInput
       label=I18n.label#password
       value={form.values.password}
       handleChange={form.handleChange(Password)}
       error={form.getFieldError(Field(Password))}
+      placeholder=passwordPlaceholder
       textContentType=`password
       secureTextEntry=true
     />
@@ -96,6 +113,7 @@ let make =
            value={form.values.confirmPassword}
            handleChange={form.handleChange(ConfirmPassword)}
            error={form.getFieldError(Field(ConfirmPassword))}
+           placeholder=I18n.input_placeholder#confirm_password
            textContentType=`password
            secureTextEntry=true
          />

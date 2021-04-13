@@ -92,6 +92,9 @@ let input_placeholder = {
   pub add_contact_or_tz = "Paste a tz address or type in a contact's name";
   pub add_token_address = "Enter KT1 address of a contract";
   pub add_token_name = "e.g. Tezos";
+  pub enter_new_password = "Enter new password, at least 8 characters";
+  pub confirm_password = "Confirm your new password";
+  pub enter_password = "Enter your password";
   pub add_token_symbol = "e.g. tez, KLD, ..."
 };
 
@@ -102,6 +105,7 @@ let form_input_error = {
   pub float = "must be a float";
   pub change_baker = "It must be a different baker than the current one";
   pub wrong_password = "Wrong password";
+  pub password_length = "Password length must be at least 8 characters";
   pub confirm_password = "It must be the same password"
 };
 
