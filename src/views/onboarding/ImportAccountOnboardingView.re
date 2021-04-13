@@ -38,6 +38,8 @@ let make = (~closeAction, ~existingSecretsCount=0) => {
 
   let loading = secretWithMnemonicRequest->ApiRequest.isLoading;
 
+  let displayConfirmPassword = existingSecretsCount < 1;
+
   <ModalFormView>
     <Typography.Headline style=styles##title>
       I18n.title#import_account->React.string
@@ -63,17 +65,23 @@ let make = (~closeAction, ~existingSecretsCount=0) => {
          />
        </>
      | Step2 =>
+       let subtitle =
+         displayConfirmPassword
+           ? I18n.title#account_create_password
+           : I18n.title#account_enter_password;
+
        <>
          <Typography.Overline3
            colorStyle=`highEmphasis style=styles##stepPager>
            {I18n.t#stepof(2, 2)->React.string}
          </Typography.Overline3>
          <Typography.Overline1 style=styles##stepTitle>
-           I18n.title#account_create_password->React.string
+           subtitle->React.string
          </Typography.Overline1>
-         <Typography.Body2 colorStyle=`mediumEmphasis style=styles##stepBody>
-           I18n.expl#account_create_password_not_recorded->React.string
-         </Typography.Body2>
+         {<Typography.Body2 colorStyle=`mediumEmphasis style=styles##stepBody>
+            I18n.expl#account_create_password_not_recorded->React.string
+          </Typography.Body2>
+          ->ReactUtils.onlyWhen(displayConfirmPassword)}
          <CreatePasswordView
            mnemonic
            onPressCancel={_ => setFormStep(_ => Step1)}
@@ -81,7 +89,7 @@ let make = (~closeAction, ~existingSecretsCount=0) => {
            loading
            existingSecretsCount
          />
-       </>
+       </>;
      }}
   </ModalFormView>;
 };

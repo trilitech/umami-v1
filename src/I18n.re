@@ -121,6 +121,7 @@ let title = {
   pub add_token = "Register Token";
   pub export = "Export";
   pub account_create_password = "Set a password to secure your wallet";
+  pub account_enter_password = "Please enter password to confirm";
   pub account_create_verify_phrase = "Verify your recovery phrase";
   pub import_account_enter_phrase = "Enter your recovery phrase";
   pub operation_submited = "Operation Submitted";
