@@ -17,6 +17,8 @@ let styles =
     })
   );
 
+let tooltip = ("refresh_button", I18n.tooltip#refresh);
+
 [@react.component]
 let make = (~onRefresh, ~loading, ~style as styleArg=?) => {
   let theme = ThemeContext.useTheme();
@@ -38,6 +40,7 @@ let make = (~onRefresh, ~loading, ~style as styleArg=?) => {
        : <IconButton
            size=40.
            icon=Icons.Refresh.build
+           tooltip
            onPress={_ => onRefresh()}
          />}
   </View>;

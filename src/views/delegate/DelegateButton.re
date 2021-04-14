@@ -31,7 +31,7 @@ let make = (~zeroTez, ~action: Delegate.action, ~style as styleFromProp=?) => {
         theme.colors.primaryTextDisabled,
         theme.colors.primaryButtonBackground,
         I18n.btn#delegate,
-        Some((tooltipId, I18n.expl#no_tez_no_delegation)),
+        Some((tooltipId, I18n.tooltip#no_tez_no_delegation)),
       )
 
     | Create(_) => (
@@ -45,7 +45,7 @@ let make = (~zeroTez, ~action: Delegate.action, ~style as styleFromProp=?) => {
         theme.colors.primaryTextDisabled,
         theme.colors.iconDisabled,
         I18n.btn#delegated,
-        Some((tooltipId, I18n.btn#update_delegation)),
+        Some((tooltipId, I18n.tooltip#update_delegation)),
       )
     };
 

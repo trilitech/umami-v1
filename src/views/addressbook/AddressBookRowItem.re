@@ -10,7 +10,10 @@ module AliasDeleteButton = {
     };
 
     <DeleteButton.IconButton
-      tooltip=("addressbook_delete", I18n.btn#delete_contact)
+      tooltip=(
+        "addressbook_delete" ++ account.address,
+        I18n.tooltip#addressbook_delete,
+      )
       modalTitle=I18n.title#delete_contact
       onPressConfirmDelete
       request=aliasRequest
@@ -28,7 +31,10 @@ module AliasEditButton = {
 
     <>
       <IconButton
-        tooltip=("addressbook_edit", I18n.menu#addressbook_edit)
+        tooltip=(
+          "addressbook_edit" ++ account.address,
+          I18n.tooltip#addressbook_edit,
+        )
         icon=Icons.Edit.build
         onPress
       />
@@ -89,10 +95,11 @@ let make =
         <ClipboardButton
           copied=I18n.log#address
           addToast
+          tooltipKey={account.address}
           data={account.address}
           style=styles##button
         />
-        <QrButton account style=styles##button />
+        <QrButton account tooltipKey={account.address} style=styles##button />
       </View>
       <View style=styles##actionMenu>
         <AliasEditButton account />

@@ -26,7 +26,6 @@ let btn = {
   pub create_account_record_ok = {js|OK, I’VE RECORDED IT|js};
   pub add_account = "ADD ACCOUNT";
   pub add_contact = "ADD CONTACT";
-  pub delete_contact = "Delete contact";
   pub add_token = "REGISTER TOKEN";
   pub advanced_options = "Advanced options";
   pub delegate = "DELEGATE";
@@ -38,11 +37,24 @@ let btn = {
   pub send_cancel = "CANCEL TRANSACTION";
   pub delegation_submit = "CONFIRM DELEGATION";
   pub delegated = "DELEGATED";
-  pub update_delegation = "update delegation";
   pub delete_token = "Delete token";
   pub import = "IMPORT";
   pub export = "EXPORT";
   pub scan = "SCAN"
+};
+
+let tooltip = {
+  pub _this = this;
+  pub show_qr = "Show QR Code";
+  pub copy_clipboard = "Copy to clipboard";
+  pub addressbook_edit = "Edit contact";
+  pub addressbook_delete = "Delete contact";
+  pub add_contact = "Add to contacts";
+  pub no_tez_no_delegation = "Delegation requires tez";
+  pub refresh = "Refresh";
+  pub open_in_explorer = "Open in explorer";
+  pub update_delegation = "update delegation";
+  pub chain_not_connected = "Not connected to a chain"
 };
 
 let log = {
@@ -103,7 +115,6 @@ let form_input_error = {
   pub key_already_registered = a =>
     p("Address already registered under: %s", a);
   pub name_already_registered = "Name already registered";
-  pub chain_not_connected = "Not connected to a chain";
   pub string_empty = "This input is mandatory";
   pub int = "must be an integer";
   pub float = "must be a float";
@@ -173,7 +184,6 @@ let expl = {
   pub import_account_enter_phrase = {j|Please fill in the recovery phrase in sequence.|j};
   pub confirm_operation = "Please validate the details of the transaction and enter password to confirm";
   pub batch = "Review, edit or delete the transactions of the batch";
-  pub no_tez_no_delegation = "Delegation requires tez";
   pub operation = "The operation will be processed and confirmed, you can see its progress in the Operations section."
 };
 
@@ -183,7 +193,6 @@ let menu = {
   pub operation_delegate_to = p("Delegate_to %s");
   pub operation_unknown = "Unknown";
   pub operation_cancel_delegation = "Cancel delegation";
-  pub addressbook_edit = "Edit contact";
   pub delegate_edit = "Change baker";
   pub delegate_delete = "End delegation";
   pub batch_edit = "Edit transfer";

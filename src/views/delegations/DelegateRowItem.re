@@ -172,12 +172,18 @@ let make =
         <CellAction>
           <DelegateActionButton
             action={Delegate.Edit(account, delegate)}
-            tooltip=("delegate_edit", I18n.menu#delegate_edit)
+            tooltip=(
+              "delegate_edit" ++ account.address,
+              I18n.menu#delegate_edit,
+            )
             icon=Icons.Change.build
           />
           <DelegateActionButton
             action={Delegate.Delete(account, delegate)}
-            tooltip=("delegate_delete", I18n.menu#delegate_delete)
+            tooltip=(
+              "delegate_delete" ++ account.address,
+              I18n.menu#delegate_delete,
+            )
             icon=Icons.Stop.build
           />
         </CellAction>

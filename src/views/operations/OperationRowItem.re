@@ -60,14 +60,19 @@ let styles =
 
 module AddContactButton = {
   [@react.component]
-  let make = (~address) => {
+  let make = (~address, ~operation: Operation.Read.t) => {
     let (visibleModal, openAction, closeAction) =
       ModalAction.useModalActionState();
+
+    let tooltip = (
+      "add_contact_from_op" ++ operation.hash ++ operation.op_id->string_of_int,
+      I18n.tooltip#add_contact,
+    );
 
     let onPress = _e => openAction();
 
     <>
-      <IconButton icon=Icons.AddContact.build onPress />
+      <IconButton icon=Icons.AddContact.build onPress tooltip />
       <ModalAction visible=visibleModal onRequestClose=closeAction>
         <ContactFormView initAddress=address action=Create closeAction />
       </ModalAction>
@@ -75,19 +80,19 @@ module AddContactButton = {
   };
 };
 
-let rawUnknownAddress = address => {
+let rawUnknownAddress = (address, operation) => {
   <View style=styles##rawAddressContainer>
     <Typography.Address numberOfLines=1>
       address->React.string
     </Typography.Address>
-    <AddContactButton address />
+    <AddContactButton address operation />
   </View>;
 };
 
-let getContactOrRaw = (aliases, tokens, address) => {
+let getContactOrRaw = (aliases, tokens, address, operation) => {
   address
   ->AliasHelpers.getContractAliasFromAddress(aliases, tokens)
-  ->Option.mapWithDefault(rawUnknownAddress(address), alias =>
+  ->Option.mapWithDefault(rawUnknownAddress(address, operation), alias =>
       <Typography.Body1 numberOfLines=1>
         alias->React.string
       </Typography.Body1>
@@ -199,14 +204,19 @@ let make =
                {business.source
                 ->AliasHelpers.getContractAliasFromAddress(aliases, tokens)
                 ->Option.mapWithDefault(
-                    rawUnknownAddress(business.source), alias =>
+                    rawUnknownAddress(business.source, operation), alias =>
                     <Typography.Body1 numberOfLines=1>
                       alias->React.string
                     </Typography.Body1>
                   )}
              </CellAddress>
              <CellAddress>
-               {getContactOrRaw(aliases, tokens, transaction.destination)}
+               {getContactOrRaw(
+                  aliases,
+                  tokens,
+                  transaction.destination,
+                  operation,
+                )}
              </CellAddress>
            </>;
          | Origination(_origination) =>
@@ -237,7 +247,7 @@ let make =
                </Typography.Body1>
              </CellFee>
              <CellAddress>
-               {getContactOrRaw(aliases, tokens, business.source)}
+               {getContactOrRaw(aliases, tokens, business.source, operation)}
              </CellAddress>
              {delegation.delegate
               ->Option.mapWithDefault(
@@ -248,7 +258,7 @@ let make =
                   </CellAddress>,
                   d =>
                   <CellAddress>
-                    {getContactOrRaw(aliases, tokens, d)}
+                    {getContactOrRaw(aliases, tokens, d, operation)}
                   </CellAddress>
                 )}
            </>
@@ -267,6 +277,12 @@ let make =
         <IconButton
           size=34.
           icon=Icons.OpenExternal.build
+          tooltip=(
+            "open_in_explorer"
+            ++ operation.hash
+            ++ operation.op_id->string_of_int,
+            I18n.tooltip#open_in_explorer,
+          )
           onPress={_ => {
             switch (AppSettings.getExternalExplorer(settings)) {
             | Ok(url) =>

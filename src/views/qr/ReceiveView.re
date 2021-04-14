@@ -45,6 +45,7 @@ let make = (~account: Account.t, ~onPressCancel) => {
       </Typography.Address>
       <ClipboardButton
         copied=I18n.log#address
+        tooltipKey="QrView"
         addToast
         data={account.address}
       />
