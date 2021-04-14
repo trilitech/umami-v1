@@ -18,7 +18,7 @@ type state = {
   balanceRequestsState: apiRequestsState(ProtocolXTZ.t),
   delegateRequestsState: apiRequestsState(option(string)),
   delegateInfoRequestsState:
-    apiRequestsState(DelegateApiRequest.DelegateAPI.delegationInfo),
+    apiRequestsState(option(DelegateApiRequest.DelegateAPI.delegationInfo)),
   operationsRequestsState: apiRequestsState((array(Operation.Read.t), int)),
   operationsConfirmations: reactState(Set.String.t),
   aliasesRequestState: reactState(ApiRequest.t(Map.String.t(Account.t))),
@@ -340,13 +340,11 @@ module Delegate = {
     ->Map.String.map(Option.getExn);
   };
 
-  let useGetAllLoaded = () => {
+  let useGetAllRequests = () => {
     let store = useStoreContext();
     let (delegateRequests, _) = store.delegateRequestsState;
 
-    delegateRequests
-    ->Map.String.valuesToArray
-    ->Array.keepMap(request => request->ApiRequest.getDoneOk);
+    delegateRequests;
   };
 };
 
