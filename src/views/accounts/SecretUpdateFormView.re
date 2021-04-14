@@ -9,7 +9,7 @@ let checkExists = (secrets, values: StateLenses.state): ReSchema.fieldState =>
 let make = (~secret: Secret.t, ~closeAction) => {
   let secretsRequest = StoreContext.Secrets.useLoad();
   let (updateSecretRequest, updateSecret) = StoreContext.Secrets.useUpdate();
-  let secrets = secretsRequest->ApiRequest.getOkWithDefault([||]);
+  let secrets = secretsRequest->ApiRequest.getWithDefault([||]);
 
   let addLog = LogsContext.useAdd();
 

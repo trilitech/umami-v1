@@ -115,7 +115,7 @@ module BakerInputTypeToogle = {
 let styles =
   Style.(
     StyleSheet.create({
-      "formGroup": style( ~marginBottom=0.->dp, ()),
+      "formGroup": style(~marginBottom=0.->dp, ()),
       "labelContainer":
         style(
           ~marginBottom=6.->dp,
@@ -128,22 +128,25 @@ let styles =
   );
 
 [@react.component]
-let make = (~label, ~value: string, ~handleChange, ~error) => {
-  let bakersRequest = StoreContext.Bakers.useLoad();
+let make = (~label, ~value: string, ~handleChange, ~filterOut=?, ~error) => {
+  let bakersRequest = StoreContext.Bakers.useShrinked(filterOut);
 
   let hasError = error->Option.isSome;
 
-  let items = bakersRequest->ApiRequest.getDoneOk->Option.getWithDefault([||]);
+  let items = bakersRequest->ApiRequest.getWithDefault([||]);
 
   let (inputType, setInputType) = React.useState(_ => Selector);
 
   React.useEffect4(
     () => {
       if (inputType == Selector) {
-        if (value == "") {
+        if (!bakersRequest->ApiRequest.isLoading && items == [||]) {
+          setInputType(_ => Text);
+        } else if (value == "") {
           // if input selector and no value, select first entry
-          let firstItem = items->Array.get(0);
-          firstItem->Lib.Option.iter(baker => baker.address->handleChange);
+          items
+          ->Array.get(0)
+          ->Lib.Option.iter(baker => baker.address->handleChange);
         } else if (items->Array.size > 0
                    && !items->Array.some(baker => baker.address == value)) {
           // if input selector and value isn't in the item list : switch to input text

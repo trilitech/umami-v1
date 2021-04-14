@@ -122,7 +122,7 @@ let make = (~children) => {
     () => {
       if (selectedAccount->Option.isNone) {
         accountsRequest
-        ->ApiRequest.getOkWithDefault(Map.String.empty)
+        ->ApiRequest.getWithDefault(Map.String.empty)
         ->Map.String.valuesToArray
         ->Array.get(0)
         ->Lib.Option.iter((account: Account.t) =>
@@ -219,7 +219,7 @@ module Balance = {
     let (balanceRequests, _) = store.balanceRequestsState;
     let (accountsRequest, _) = store.accountsRequestState;
     let accounts =
-      accountsRequest->ApiRequest.getOkWithDefault(Map.String.empty);
+      accountsRequest->ApiRequest.getWithDefault(Map.String.empty);
 
     let accountsBalanceRequests =
       accounts
@@ -279,7 +279,7 @@ module BalanceToken = {
     let (balanceRequests, _) = store.balanceTokenRequestsState;
     let (accountsRequest, _) = store.accountsRequestState;
     let accounts =
-      accountsRequest->ApiRequest.getOkWithDefault(Map.String.empty);
+      accountsRequest->ApiRequest.getWithDefault(Map.String.empty);
 
     let accountsBalanceRequests =
       accounts
@@ -449,6 +449,20 @@ module Bakers = {
 
     DelegateApiRequest.useLoadBakers(~requestState);
   };
+
+  let useShrinked = filterOut => {
+    let requestState = useRequestState();
+
+    DelegateApiRequest.useLoadBakers(~requestState)
+    ->ApiRequest.map(a =>
+        filterOut
+        ->Option.mapWithDefault(a, filterOut =>
+            a->Array.keep(v => v.address != filterOut)
+          )
+        ->Array.shuffle
+        ->Array.slice(~offset=0, ~len=5)
+      );
+  };
 };
 
 module Tokens = {
@@ -464,7 +478,7 @@ module Tokens = {
 
   let useGetAll = () => {
     let accountsRequest = useRequest();
-    accountsRequest->ApiRequest.getOkWithDefault(Map.String.empty);
+    accountsRequest->ApiRequest.getWithDefault(Map.String.empty);
   };
 
   let useGet = (tokenAddress: option(string)) => {
@@ -576,7 +590,7 @@ module Accounts = {
 
   let useGetAll = () => {
     let accountsRequest = useRequest();
-    accountsRequest->ApiRequest.getOkWithDefault(Map.String.empty);
+    accountsRequest->ApiRequest.getWithDefault(Map.String.empty);
   };
 
   let useGetAllWithDelegates = () => {
@@ -635,7 +649,7 @@ module Secrets = {
 
   let useGetAll = () => {
     let (secretsRequest, _) = useRequestState();
-    secretsRequest->ApiRequest.getOkWithDefault([||]);
+    secretsRequest->ApiRequest.getWithDefault([||]);
   };
 
   let useLoad = () => {

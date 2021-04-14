@@ -21,28 +21,28 @@ let getDoneOk = request =>
   | _ => None
   };
 
-let getOkWithDefault = (request, def) =>
+let getWithDefault = (request, def) =>
   switch (request) {
   | Done(Ok(value), _)
   | Loading(Some(value)) => value
   | _ => def
   };
 
-let map = (request, f) =>
+let iterDone = (request, f) =>
   switch (request) {
   | Done(result, _) => f(result)
   | Loading(Some(value)) => f(Ok(value))
   | _ => ()
   };
 
-let mapOk = (request, f) =>
+let map = (request, f) =>
   switch (request) {
-  | Done(Ok(value), _)
-  | Loading(Some(value)) => f(value)
-  | _ => ()
+  | Done(Ok(value), t) => Done(Ok(f(value)), t)
+  | Loading(Some(value)) => Loading(Some(f(value)))
+  | r => r
   };
 
-let mapOkWithDefault = (request, def, f) =>
+let mapWithDefault = (request, def, f) =>
   switch (request) {
   | Done(Ok(value), _)
   | Loading(Some(value)) => f(value)

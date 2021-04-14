@@ -1,6 +1,4 @@
 open UmamiCommon;
-open Delegate;
-
 module Path = {
   let delegates = "/chains/main/blocks/head/context/delegates\\?active=true";
   let operations = "operations";
@@ -883,12 +881,7 @@ module Delegate = (Getter: GetterAPI) => {
       "https://api.baking-bad.org/v2/bakers"
       ->Getter.get
       ->Future.mapOk(Json.Decode.(array(Delegate.decode)))
-    | `Testnet(_) =>
-      Future.value(
-        Ok([|
-          {name: "zebra", address: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"},
-        |]),
-      )
+    | `Testnet(_) => Future.value(Ok([||]))
     };
 
   type delegationInfo = {

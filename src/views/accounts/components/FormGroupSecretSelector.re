@@ -60,7 +60,7 @@ let make = (~label, ~value: string, ~handleChange, ~error, ~disabled) => {
 
   let items =
     secretsRequest
-    ->ApiRequest.getOkWithDefault([||])
+    ->ApiRequest.getWithDefault([||])
     ->SortArray.stableSortBy((a, b) =>
         Js.String.localeCompare(b.name, a.name)->int_of_float
       );
