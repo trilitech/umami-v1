@@ -57,8 +57,15 @@
   },
   "build": {
     "extends": null,
+    "afterSign": "scripts/notarize.js",
+    "dmg": {
+      "sign": false
+    },
     "mac": {
-      "target": "dmg"
+      "target": "dmg",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "public/entitlements.mac.plist"
     },
     "linux": {
       "target": "AppImage"
@@ -119,6 +126,7 @@
     "cross-env": "^7.0.2",
     "electron": "11.3.0",
     "electron-builder": "^22.7.0",
+    "electron-notarize": "^1.0.0",
     "html-webpack-plugin": "^5.3.1",
     "lenses-ppx": "6.1.2",
     "oslllo-svg-fixer": "1.1.2",
