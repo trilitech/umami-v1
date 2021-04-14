@@ -34,7 +34,7 @@ let isConfirmPassword = (values: StateLenses.state) => {
 
 let passwordLengthCheck = (values: StateLenses.state) => {
   let fieldState: ReSchema.fieldState =
-    values.password->Js.String.length > 8
+    values.password->Js.String.length >= 8
       ? Valid : Error(I18n.form_input_error#password_length);
   fieldState;
 };
