@@ -22,6 +22,11 @@ let addressExistsCheck =
 let formCheckExists = (aliases, values: StateLenses.state) =>
   AliasHelpers.formCheckExists(aliases, values.name);
 
+let isEditMode =
+  fun
+  | Edit(_) => true
+  | _ => false;
+
 [@react.component]
 let make = (~initAddress=?, ~action: action, ~closeAction) => {
   let (createAliasRequest, createAlias) = StoreContext.Aliases.useCreate();
@@ -42,7 +47,12 @@ let make = (~initAddress=?, ~action: action, ~closeAction) => {
           Schema(
             nonEmpty(Name)
             + nonEmpty(Address)
-            + custom(addressExistsCheck(aliases), Address)
+            + custom(
+                values =>
+                  action->isEditMode
+                    ? Valid : addressExistsCheck(aliases, values),
+                Address,
+              )
             + custom(formCheckExists(aliases), Name),
           )
         );
