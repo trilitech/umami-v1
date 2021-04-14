@@ -40,7 +40,8 @@ let btn = {
   pub delete_token = "Delete token";
   pub import = "IMPORT";
   pub export = "EXPORT";
-  pub scan = "SCAN"
+  pub scan = "SCAN";
+  pub upgrade = "Download"
 };
 
 let tooltip = {
@@ -326,5 +327,6 @@ let t = {
   pub empty_address_book = "No contacts";
   pub add_token_format_contract_sentence = {js|Please specify the address of a FA1.2 token contract for which you would like to view balances as well as to perform operations.|js};
   pub delegation_removal = "Delegation Removal";
-  pub error_check_contract = "Address is not a valid token contract"
+  pub error_check_contract = "Address is not a valid token contract";
+  pub upgrade_notice = "We recommend you upgrade your version of Umami."
 };
