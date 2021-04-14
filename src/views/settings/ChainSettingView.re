@@ -23,6 +23,12 @@ let styles =
     })
   );
 
+let getExplorerAndEndpoint = (network, state: ChainForm.state) =>
+  switch (network) {
+  | `Mainnet => (state.values.explorerMain, state.values.endpointMain)
+  | `Testnet(_) => (state.values.explorerTest, state.values.endpointTest)
+  };
+
 [@react.component]
 let make = () => {
   let writeConf = ConfigContext.useWrite();
@@ -30,10 +36,12 @@ let make = () => {
   let addToast = LogsContext.useToast();
 
   let checkConfigurationAndContinue = (state: ChainForm.state, k) => {
+    let (explorer, endpoint) =
+      getExplorerAndEndpoint(settings->AppSettings.network, state);
     Network.checkConfiguration(
       ~network=settings->AppSettings.network,
-      state.values.explorerTest,
-      state.values.endpointTest,
+      explorer,
+      endpoint,
     )
     ->Future.flatMapOk(apiVersion => {
         if (!Network.checkInBound(apiVersion.Network.api)) {
@@ -83,6 +91,14 @@ let make = () => {
           state.values.explorerTest->Js.String2.length > 0
           && state.values.explorerTest != ConfigFile.Default.explorerTest
             ? Some(state.values.explorerTest) : None,
+        endpointMain:
+          state.values.endpointMain->Js.String2.length > 0
+          && state.values.endpointMain != ConfigFile.Default.endpointMain
+            ? Some(state.values.endpointMain) : None,
+        explorerMain:
+          state.values.explorerMain->Js.String2.length > 0
+          && state.values.explorerMain != ConfigFile.Default.explorerMain
+            ? Some(state.values.explorerMain) : None,
       }
     );
 
