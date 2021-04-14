@@ -23,6 +23,12 @@ let styles =
     })
   );
 
+let getExplorerAndEndpoint = (network, state: ChainForm.state) =>
+  switch (network) {
+  | `Mainnet => (state.values.explorerMain, state.values.endpointMain)
+  | `Testnet(_) => (state.values.explorerTest, state.values.endpointTest)
+  };
+
 [@react.component]
 let make = () => {
   let writeConf = ConfigContext.useWrite();
@@ -30,10 +36,12 @@ let make = () => {
   let addToast = LogsContext.useToast();
 
   let checkConfigurationAndContinue = (state: ChainForm.state, k) => {
+    let (explorer, endpoint) =
+      getExplorerAndEndpoint(settings->AppSettings.network, state);
     Network.checkConfiguration(
       ~network=settings->AppSettings.network,
-      state.values.explorerTest,
-      state.values.endpointTest,
+      explorer,
+      endpoint,
     )
     ->Future.flatMapOk(apiVersion => {
         if (!Network.checkInBound(apiVersion.Network.api)) {
@@ -83,6 +91,14 @@ let make = () => {
           state.values.explorerTest->Js.String2.length > 0
           && state.values.explorerTest != ConfigFile.Default.explorerTest
             ? Some(state.values.explorerTest) : None,
+        endpointMain:
+          state.values.endpointMain->Js.String2.length > 0
+          && state.values.endpointMain != ConfigFile.Default.endpointMain
+            ? Some(state.values.endpointMain) : None,
+        explorerMain:
+          state.values.explorerMain->Js.String2.length > 0
+          && state.values.explorerMain != ConfigFile.Default.explorerMain
+            ? Some(state.values.explorerMain) : None,
       }
     );
 
@@ -131,61 +147,59 @@ let make = () => {
 
   <Block title=I18n.settings#chain_title>
     <View accessibilityRole=`form style=styles##row>
-
-        <ColumnLeft style=styles##leftcolumntitles>
-          /* <RadioItem */
-          /*   label=I18n.t#mainnet */
-          /*   value=`Mainnet */
-          /*   setValue=writeNetwork */
-          /*   currentValue={settings->AppSettings.network} */
-          /* /> */
-
-            <RadioItem
-              label=I18n.t#testnet
-              value={`Testnet(Network.edo2netChain)}
-              setValue=writeNetwork
-              currentValue={settings->AppSettings.network}
-            />
-            <View />
-          </ColumnLeft>
-        <ColumnRight>
-          <SettingFormGroupTextInput
-            label=I18n.settings#chain_node_label
-            value={form.values.endpointTest}
-            onValueChange={form.handleChange(EndpointTest)}
-            error={form.getFieldError(Field(EndpointTest))}
-            onSubmitEditing=onSubmit
-          />
-          <SettingFormGroupTextInput
-            label=I18n.settings#chain_mezos_label
-            value={form.values.explorerTest}
-            onValueChange={form.handleChange(ExplorerTest)}
-            error={form.getFieldError(Field(ExplorerTest))}
-            onSubmitEditing=onSubmit
-          />
-          <Buttons.SubmitPrimary
-            style=styles##button
-            text=I18n.btn#validate_save
-            onPress=onSubmit
-            disabledLook={!formFieldsAreValids}
-          />
-        </ColumnRight>
-        <ColumnRight />
-      </View>
-      /* <View style=styles##chainSeparation /> */
-      /* /> */
-      /*   onSubmitEditing=onSubmit */
-      /*   error={form.getFieldError(Field(ExplorerMain))} */
-      /*   onValueChange={form.handleChange(ExplorerMain)} */
-      /*   value={form.values.explorerMain} */
-      /*   label=I18n.settings#chain_mezos_label */
-      /* <SettingFormGroupTextInput */
-      /* /> */
-      /*   onSubmitEditing=onSubmit */
-      /*   error={form.getFieldError(Field(EndpointMain))} */
-      /*   onValueChange={form.handleChange(EndpointMain)} */
-      /*   value={form.values.endpointMain} */
-      /*   label=I18n.settings#chain_node_label */
-      /* <SettingFormGroupTextInput */
+      <ColumnLeft style=styles##leftcolumntitles>
+        <RadioItem
+          label=I18n.t#mainnet
+          value=`Mainnet
+          setValue=writeNetwork
+          currentValue={settings->AppSettings.network}
+        />
+        <RadioItem
+          label=I18n.t#testnet
+          value={`Testnet(Network.edo2netChain)}
+          setValue=writeNetwork
+          currentValue={settings->AppSettings.network}
+        />
+        <View />
+      </ColumnLeft>
+      <ColumnRight>
+        <SettingFormGroupTextInput
+          onSubmitEditing=onSubmit
+          error={form.getFieldError(Field(EndpointMain))}
+          onValueChange={form.handleChange(EndpointMain)}
+          value={form.values.endpointMain}
+          label=I18n.settings#chain_node_label
+        />
+        <SettingFormGroupTextInput
+          onSubmitEditing=onSubmit
+          error={form.getFieldError(Field(ExplorerMain))}
+          onValueChange={form.handleChange(ExplorerMain)}
+          value={form.values.explorerMain}
+          label=I18n.settings#chain_mezos_label
+        />
+        <View style=styles##chainSeparation />
+        <SettingFormGroupTextInput
+          label=I18n.settings#chain_node_label
+          value={form.values.endpointTest}
+          onValueChange={form.handleChange(EndpointTest)}
+          error={form.getFieldError(Field(EndpointTest))}
+          onSubmitEditing=onSubmit
+        />
+        <SettingFormGroupTextInput
+          label=I18n.settings#chain_mezos_label
+          value={form.values.explorerTest}
+          onValueChange={form.handleChange(ExplorerTest)}
+          error={form.getFieldError(Field(ExplorerTest))}
+          onSubmitEditing=onSubmit
+        />
+        <Buttons.SubmitPrimary
+          style=styles##button
+          text=I18n.btn#validate_save
+          onPress=onSubmit
+          disabledLook={!formFieldsAreValids}
+        />
+      </ColumnRight>
+      <ColumnRight />
+    </View>
   </Block>;
 };
