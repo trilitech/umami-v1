@@ -10,6 +10,18 @@ type action =
   | Create
   | Edit(Account.t);
 
+let addressExistsCheck =
+    (aliases, values: StateLenses.state): ReSchema.fieldState => {
+  switch (aliases->Map.String.get(values.address)) {
+  | None => Valid
+  | Some(a: Account.t) =>
+    Error(I18n.form_input_error#key_already_registered(a.alias))
+  };
+};
+
+let formCheckExists = (aliases, values: StateLenses.state) =>
+  AliasHelpers.formCheckExists(aliases, values.name);
+
 [@react.component]
 let make = (~initAddress=?, ~action: action, ~closeAction) => {
   let (createAliasRequest, createAlias) = StoreContext.Aliases.useCreate();
@@ -17,11 +29,22 @@ let make = (~initAddress=?, ~action: action, ~closeAction) => {
 
   let addToast = LogsContext.useToast();
 
+  let aliasesRequest = StoreContext.Aliases.useRequest();
+  let aliases =
+    aliasesRequest
+    ->ApiRequest.getDoneOk
+    ->Option.getWithDefault(Map.String.empty);
+
   let form: AccountCreateForm.api =
     AccountCreateForm.use(
       ~schema={
         AccountCreateForm.Validation.(
-          Schema(nonEmpty(Name) + nonEmpty(Address))
+          Schema(
+            nonEmpty(Name)
+            + nonEmpty(Address)
+            + custom(addressExistsCheck(aliases), Address)
+            + custom(formCheckExists(aliases), Name),
+          )
         );
       },
       ~onSubmit=
