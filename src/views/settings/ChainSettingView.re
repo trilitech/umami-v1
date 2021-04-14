@@ -131,61 +131,59 @@ let make = () => {
 
   <Block title=I18n.settings#chain_title>
     <View accessibilityRole=`form style=styles##row>
-
-        <ColumnLeft style=styles##leftcolumntitles>
-          /* <RadioItem */
-          /*   label=I18n.t#mainnet */
-          /*   value=`Mainnet */
-          /*   setValue=writeNetwork */
-          /*   currentValue={settings->AppSettings.network} */
-          /* /> */
-
-            <RadioItem
-              label=I18n.t#testnet
-              value={`Testnet(Network.edo2netChain)}
-              setValue=writeNetwork
-              currentValue={settings->AppSettings.network}
-            />
-            <View />
-          </ColumnLeft>
-        <ColumnRight>
-          <SettingFormGroupTextInput
-            label=I18n.settings#chain_node_label
-            value={form.values.endpointTest}
-            onValueChange={form.handleChange(EndpointTest)}
-            error={form.getFieldError(Field(EndpointTest))}
-            onSubmitEditing=onSubmit
-          />
-          <SettingFormGroupTextInput
-            label=I18n.settings#chain_mezos_label
-            value={form.values.explorerTest}
-            onValueChange={form.handleChange(ExplorerTest)}
-            error={form.getFieldError(Field(ExplorerTest))}
-            onSubmitEditing=onSubmit
-          />
-          <Buttons.SubmitPrimary
-            style=styles##button
-            text=I18n.btn#validate_save
-            onPress=onSubmit
-            disabledLook={!formFieldsAreValids}
-          />
-        </ColumnRight>
-        <ColumnRight />
-      </View>
-      /* <View style=styles##chainSeparation /> */
-      /* /> */
-      /*   onSubmitEditing=onSubmit */
-      /*   error={form.getFieldError(Field(ExplorerMain))} */
-      /*   onValueChange={form.handleChange(ExplorerMain)} */
-      /*   value={form.values.explorerMain} */
-      /*   label=I18n.settings#chain_mezos_label */
-      /* <SettingFormGroupTextInput */
-      /* /> */
-      /*   onSubmitEditing=onSubmit */
-      /*   error={form.getFieldError(Field(EndpointMain))} */
-      /*   onValueChange={form.handleChange(EndpointMain)} */
-      /*   value={form.values.endpointMain} */
-      /*   label=I18n.settings#chain_node_label */
-      /* <SettingFormGroupTextInput */
+      <ColumnLeft style=styles##leftcolumntitles>
+        <RadioItem
+          label=I18n.t#mainnet
+          value=`Mainnet
+          setValue=writeNetwork
+          currentValue={settings->AppSettings.network}
+        />
+        <RadioItem
+          label=I18n.t#testnet
+          value={`Testnet(Network.edo2netChain)}
+          setValue=writeNetwork
+          currentValue={settings->AppSettings.network}
+        />
+        <View />
+      </ColumnLeft>
+      <ColumnRight>
+        <SettingFormGroupTextInput
+          onSubmitEditing=onSubmit
+          error={form.getFieldError(Field(EndpointMain))}
+          onValueChange={form.handleChange(EndpointMain)}
+          value={form.values.endpointMain}
+          label=I18n.settings#chain_node_label
+        />
+        <SettingFormGroupTextInput
+          onSubmitEditing=onSubmit
+          error={form.getFieldError(Field(ExplorerMain))}
+          onValueChange={form.handleChange(ExplorerMain)}
+          value={form.values.explorerMain}
+          label=I18n.settings#chain_mezos_label
+        />
+        <View style=styles##chainSeparation />
+        <SettingFormGroupTextInput
+          label=I18n.settings#chain_node_label
+          value={form.values.endpointTest}
+          onValueChange={form.handleChange(EndpointTest)}
+          error={form.getFieldError(Field(EndpointTest))}
+          onSubmitEditing=onSubmit
+        />
+        <SettingFormGroupTextInput
+          label=I18n.settings#chain_mezos_label
+          value={form.values.explorerTest}
+          onValueChange={form.handleChange(ExplorerTest)}
+          error={form.getFieldError(Field(ExplorerTest))}
+          onSubmitEditing=onSubmit
+        />
+        <Buttons.SubmitPrimary
+          style=styles##button
+          text=I18n.btn#validate_save
+          onPress=onSubmit
+          disabledLook={!formFieldsAreValids}
+        />
+      </ColumnRight>
+      <ColumnRight />
+    </View>
   </Block>;
 };
