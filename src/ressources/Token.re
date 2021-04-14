@@ -2,6 +2,7 @@ type t = {
   address: string,
   alias: string,
   symbol: string,
+  chain: string,
 };
 
 module Decode = {
@@ -10,6 +11,9 @@ module Decode = {
       address: json |> field("address", string),
       alias: json |> field("alias", string),
       symbol: json |> field("symbol", string),
+      chain:
+        (json |> field("chain", optional(string)))
+        ->Option.getWithDefault(Network.edo2netChain),
     };
 
   let array = json => json |> Json.Decode.array(record);
@@ -24,6 +28,7 @@ module Encode = {
         ("address", record.address |> string),
         ("alias", record.alias |> string),
         ("symbol", record.symbol |> string),
+        ("chain", record.chain |> string),
       ])
     );
 

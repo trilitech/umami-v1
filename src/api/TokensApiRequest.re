@@ -43,21 +43,6 @@ let useLoadOperationOffline =
   request;
 };
 
-let useLoadRegisteredTokens = (~requestState) => {
-  let get = (~settings, ()) =>
-    TokensAPI.get(settings)
-    ->Future.mapOk(response => {
-        response
-        ->Array.map(((alias, symbol, address)) => {
-            let token: Token.t = {alias, symbol, address};
-            (address, token);
-          })
-        ->Map.String.fromArray
-      });
-
-  ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState);
-};
-
 let tokensStorageKey = "wallet-tokens";
 
 let useLoadTokens = requestState => {

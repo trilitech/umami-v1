@@ -1023,16 +1023,6 @@ module Tokens = (Getter: GetterAPI) => {
       });
   };
 
-  let get = (settings: AppSettings.t) => {
-    switch (settings->AppSettings.network) {
-    | `Testnet(_) =>
-      Future.value(
-        Ok([|("Klondike", "KLD", "KT1BUdnCMfBKdVxCKyBvMUqwLqm27EDGWskB")|]),
-      )
-    | `Mainnet => Future.value(Ok([||]))
-    };
-  };
-
   let injectBatch = (settings, transfers, ~source, ~password) => {
     let transfers = source =>
       transfers

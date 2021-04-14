@@ -43,7 +43,7 @@ module FormBase = {
     <View style=Style.(arrayOption([|Some(styles##button), vStyle|]))>
       <ThemedPressable
         style={Style.arrayOption([|Some(styles##pressable), style|])}
-        outerStyle={_ => styles##outer}
+        outerStyle=styles##outer
         isPrimary
         onPress
         disabled={disabled || loading}

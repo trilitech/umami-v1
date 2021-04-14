@@ -103,6 +103,7 @@ let form_input_error = {
   pub key_already_registered = a =>
     p("Address already registered under: %s", a);
   pub name_already_registered = "Name already registered";
+  pub chain_not_connected = "Not connected to a chain";
   pub string_empty = "This input is mandatory";
   pub int = "must be an integer";
   pub float = "must be a float";
@@ -309,7 +310,7 @@ let t = {
   pub token_column_name = "NAME";
   pub token_column_symbol = "SYMBOL";
   pub token_column_address = "ADDRESS";
-  pub empty_token = "No token registered";
+  pub empty_token = "No token registered on the current chain";
   pub empty_delegations = "No delegations";
   pub empty_operations = "No operations";
   pub empty_address_book = "No contacts";

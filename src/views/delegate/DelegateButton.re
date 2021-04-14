@@ -49,9 +49,6 @@ let make = (~zeroTez, ~action: Delegate.action, ~style as styleFromProp=?) => {
       )
     };
 
-  let (pressableRef, isOpen, popoverConfig, togglePopover, setClosed) =
-    Popover.usePopoverState();
-
   let (visibleModal, openAction, closeAction) =
     ModalAction.useModalActionState();
 
@@ -59,8 +56,6 @@ let make = (~zeroTez, ~action: Delegate.action, ~style as styleFromProp=?) => {
 
   <>
     <View
-      onMouseEnter={_ => togglePopover()}
-      onMouseLeave={_ => setClosed()}
       style=Style.(
         arrayOption([|
           Some(styles##button),
@@ -68,13 +63,10 @@ let make = (~zeroTez, ~action: Delegate.action, ~style as styleFromProp=?) => {
           styleFromProp,
         |])
       )>
-      {ReactUtils.mapOpt(tooltip, ((keyPopover, text)) => {
-         <Tooltip keyPopover text isOpen config=popoverConfig />
-       })}
       <ThemedPressable
         style=Style.(arrayOption([|Some(styles##pressable)|]))
         isPrimary=true
-        pressableRef={pressableRef->Ref.value}
+        ?tooltip
         disabled=zeroTez
         onPress
         accessibilityRole=`button>

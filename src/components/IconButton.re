@@ -24,17 +24,13 @@ let make =
       ~style as styleFromProp: option(ReactNative.Style.t)=?,
     ) => {
   let theme = ThemeContext.useTheme();
-  let (pressableRef, isOpen, popoverConfig, togglePopover, setClosed) =
-    Popover.usePopoverState(~elementRef=?pressableRef, ());
 
-  <View onMouseEnter={_ => togglePopover()} onMouseLeave={_ => setClosed()}>
-    {ReactUtils.mapOpt(tooltip, ((keyPopover, text)) => {
-       <Tooltip keyPopover text isOpen config=popoverConfig />
-     })}
+  <View>
     <ThemedPressable
-      pressableRef={pressableRef->Ref.value}
+      ?pressableRef
       ?onPress
       ?isPrimary
+      ?tooltip
       ?isActive
       style=Style.(
         arrayOption([|

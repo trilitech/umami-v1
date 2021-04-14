@@ -18,10 +18,23 @@ let styles =
   );
 
 [@react.component]
-let make = (~text, ~onPress, ~icon: Icons.builder, ~primary=false) => {
+let make =
+    (
+      ~text,
+      ~onPress,
+      ~tooltip=?,
+      ~disabled=?,
+      ~icon: Icons.builder,
+      ~primary=false,
+    ) => {
   let theme = ThemeContext.useTheme();
 
-  <ThemedPressable style=styles##pressable onPress accessibilityRole=`button>
+  <ThemedPressable
+    style=styles##pressable
+    ?tooltip
+    ?disabled
+    onPress
+    accessibilityRole=`button>
     {icon(
        ~style=styles##icon,
        ~size=15.5,
