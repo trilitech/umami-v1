@@ -35,6 +35,17 @@ let make = () => {
       state.values.explorerTest,
       state.values.endpointTest,
     )
+    ->Future.flatMapOk(apiVersion => {
+        if (!Network.checkInBound(apiVersion.Network.api)) {
+          addToast(
+            Logs.error(
+              ~origin=Settings,
+              Network.errorMsg(Network.APINotSupported(apiVersion.api)),
+            ),
+          );
+        };
+        Future.value(Network.networkOfChain(apiVersion.chain));
+      })
     ->Future.get(
         fun
         | Ok(network) => {

@@ -25,6 +25,7 @@ type state = {
   bakersRequestState: reactState(ApiRequest.t(array(Delegate.t))),
   tokensRequestState: reactState(ApiRequest.t(Map.String.t(Token.t))),
   balanceTokenRequestsState: apiRequestsState(string),
+  apiVersionRequestState: reactState(option(Network.apiVersion)),
 };
 
 // Context and Provider
@@ -45,6 +46,7 @@ let initialState = {
   bakersRequestState: (NotAsked, _ => ()),
   tokensRequestState: (NotAsked, _ => ()),
   balanceTokenRequestsState: initialApiRequestsState,
+  apiVersionRequestState: (None, _ => ()),
 };
 
 let context = React.createContext(initialState);
@@ -62,6 +64,9 @@ module Provider = {
 
 [@react.component]
 let make = (~children) => {
+  let settings = SdkContext.useSettings();
+  let addToast = LogsContext.useToast();
+
   let selectedAccountState = React.useState(() => None);
   let (selectedAccount, setSelectedAccount) = selectedAccountState;
 
@@ -82,9 +87,35 @@ let make = (~children) => {
   let tokensRequestState = React.useState(() => ApiRequest.NotAsked);
   let secretsRequestState = React.useState(() => ApiRequest.NotAsked);
 
+  let apiVersionRequestState = React.useState(() => None);
+  let (apiVersion, setApiVersion) = apiVersionRequestState;
+
   AccountApiRequest.useLoad(accountsRequestState)->ignore;
   AliasApiRequest.useLoad(aliasesRequestState)->ignore;
   TokensApiRequest.useLoadTokens(tokensRequestState)->ignore;
+
+  React.useEffect0(() => {
+    if (apiVersion->Option.isNone) {
+      Network.checkConfiguration(
+        ~network=settings->AppSettings.network,
+        settings->AppSettings.explorer,
+        settings->AppSettings.endpoint,
+      )
+      ->Future.mapOk(apiVersion => {
+          if (!Network.checkInBound(apiVersion.Network.api)) {
+            addToast(
+              Logs.error(
+                ~origin=Settings,
+                Network.errorMsg(Network.APINotSupported(apiVersion.api)),
+              ),
+            );
+          };
+          apiVersion;
+        })
+      ->FutureEx.getOk(v => setApiVersion(_ => Some(v)));
+    };
+    None;
+  });
 
   // Select a default account if no one selected
   React.useEffect2(
@@ -118,6 +149,7 @@ let make = (~children) => {
       bakersRequestState,
       tokensRequestState,
       balanceTokenRequestsState,
+      apiVersionRequestState,
     }>
     children
   </Provider>;
