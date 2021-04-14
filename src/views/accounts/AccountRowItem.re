@@ -35,11 +35,12 @@ let make = (~account: Account.t, ~token: option(Token.t)=?) => {
     <View style=styles##actionButtons>
       <ClipboardButton
         copied=I18n.log#address
+        tooltipKey={account.address}
         addToast
         data={account.address}
         style=styles##button
       />
-      <QrButton account style=styles##button />
+      <QrButton tooltipKey={account.address} account style=styles##button />
     </View>
     {delegateRequest->ApiRequest.mapWithDefault(React.null, delegate => {
        <View style=styles##actionContainer>

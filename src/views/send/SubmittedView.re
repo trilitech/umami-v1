@@ -36,7 +36,12 @@ let make = (~hash, ~onPressCancel, ~submitText=I18n.btn#ok) => {
       <Typography.Address style=styles##address>
         hash->React.string
       </Typography.Address>
-      <ClipboardButton copied=I18n.log#address addToast data=hash />
+      <ClipboardButton
+        tooltipKey="OperationSubmitted"
+        copied=I18n.log#address
+        addToast
+        data=hash
+      />
     </View>
     <View style=FormStyles.formAction>
       <Buttons.FormPrimary text=submitText onPress=onPressCancel />

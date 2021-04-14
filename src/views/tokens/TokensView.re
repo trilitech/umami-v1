@@ -23,11 +23,7 @@ module AddTokenButton = {
 
     let tooltip =
       chain == None
-        ? Some((
-            "add_token_button",
-            I18n.form_input_error#chain_not_connected,
-          ))
-        : None;
+        ? Some(("add_token_button", I18n.tooltip#chain_not_connected)) : None;
 
     <>
       <View style=styles##button>
