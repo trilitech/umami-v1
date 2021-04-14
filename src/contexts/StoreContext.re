@@ -477,7 +477,12 @@ module Tokens = {
 
   let useRequest = () => {
     let (tokensRequest, _) = useRequestState();
-    tokensRequest;
+    let apiVersion = useApiVersion();
+    tokensRequest->ApiRequest.map(tokens =>
+      apiVersion->Option.mapWithDefault(Map.String.empty, v =>
+        tokens->Map.String.keep((_, t) => t.Token.chain == v.Network.chain)
+      )
+    );
   };
 
   let useGetAll = () => {
