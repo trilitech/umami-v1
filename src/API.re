@@ -891,21 +891,16 @@ module Delegate = (Getter: GetterAPI) => {
     lastReward: option(ProtocolXTZ.t),
   };
 
-  let getDelegationInfoForAccount = (network, account: string) => {
+  let getDelegationInfoForAccount =
+      (network, account: string)
+      : Future.t(Belt.Result.t(option(delegationInfo), Js.String.t)) => {
     module ExplorerAPI = Explorer(Getter);
     module BalanceAPI = Balance;
     network
     ->ExplorerAPI.get(account, ~types=[|"delegation"|], ~limit=1, ())
     ->Future.flatMapOk(operations =>
         if (operations->Array.length == 0) {
-          Future.value(
-            Ok({
-              initialBalance: ProtocolXTZ.zero,
-              delegate: "",
-              timestamp: Js.Date.make(),
-              lastReward: None,
-            }),
-          );
+          Future.value(Ok(None));
         } else {
           let firstOperation = operations->Array.getUnsafe(0);
           switch (firstOperation.payload) {
@@ -916,12 +911,15 @@ module Delegate = (Getter: GetterAPI) => {
               | Some(delegate) =>
                 if (account == delegate) {
                   Future.value(
-                    Ok({
-                      initialBalance: ProtocolXTZ.zero,
-                      delegate: "",
-                      timestamp: Js.Date.make(),
-                      lastReward: None,
-                    }),
+                    Ok(
+                      {
+                        initialBalance: ProtocolXTZ.zero,
+                        delegate: "",
+                        timestamp: Js.Date.make(),
+                        lastReward: None,
+                      }
+                      ->Some,
+                    ),
                   );
                 } else {
                   network
@@ -949,16 +947,15 @@ module Delegate = (Getter: GetterAPI) => {
                         )
                       ->Future.mapOk(operations =>
                           if (operations->Array.length == 0) {
-                            info;
+                            info->Some;
                           } else {
                             switch (firstOperation.payload) {
                             | Business(payload) =>
                               switch (payload.payload) {
-                              | Transaction(payload) => {
-                                  ...info,
-                                  lastReward: Some(payload.amount),
-                                }
-                              | _ => info
+                              | Transaction(payload) =>
+                                {...info, lastReward: Some(payload.amount)}
+                                ->Some
+                              | _ => info->Some
                               }
                             };
                           }

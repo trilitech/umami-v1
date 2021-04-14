@@ -58,16 +58,15 @@ let memo = component =>
 
 [@react.component]
 let make =
-  memo((~account: Account.t) => {
+  memo((~account: Account.t, ~delegateRequest) => {
     let aliases = StoreContext.Aliases.useGetAll();
     let balanceRequest = StoreContext.Balance.useLoad(account.address);
-    let delegateRequest = StoreContext.Delegate.useLoad(account.address);
     let delegateInfoRequest =
       StoreContext.DelegateInfo.useLoad(account.address);
 
     let theme = ThemeContext.useTheme();
 
-    switch (delegateRequest) {
+    switch ((delegateRequest: ApiRequest.t(_))) {
     | Done(Ok(Some(delegate)), _)
     | Loading(Some(Some(delegate))) =>
       <Table.Row>
@@ -79,13 +78,15 @@ let make =
         <CellAmount>
           <Typography.Body1>
             {switch (delegateInfoRequest) {
-             | Done(Ok(delegateInfo), _)
-             | Loading(Some(delegateInfo)) =>
+             | Done(Ok(Some(delegateInfo)), _)
+             | Loading(Some(Some(delegateInfo))) =>
                I18n.t#xtz_amount(
                  delegateInfo.initialBalance->ProtocolXTZ.toString,
                )
                ->React.string
-             | Done(Error(_error), _) => React.null
+             | Done(Ok(None), _)
+             | Loading(Some(None))
+             | Done(Error(_), _) => React.null
              | NotAsked
              | Loading(None) =>
                <ActivityIndicator
@@ -129,13 +130,15 @@ let make =
         <CellDuration>
           <Typography.Body1 numberOfLines=1>
             {switch (delegateInfoRequest) {
-             | Done(Ok(delegateInfo), _)
-             | Loading(Some(delegateInfo)) =>
+             | Done(Ok(Some(delegateInfo)), _)
+             | Loading(Some(Some(delegateInfo))) =>
                Js.Date.make()
                ->DateFns.differenceInDays(delegateInfo.timestamp)
                ->(days => DateFns.formatDuration({days: days}))
                ->React.string
-             | Done(Error(_error), _) => React.null
+             | Done(Ok(None), _)
+             | Loading(Some(None))
+             | Done(Error(_), _) => React.null
              | NotAsked
              | Loading(None) =>
                <ActivityIndicator
@@ -148,16 +151,18 @@ let make =
         </CellDuration>
         <CellReward>
           {switch (delegateInfoRequest) {
-           | Done(Ok({lastReward: Some(lastReward)}), _)
-           | Loading(Some({lastReward: Some(lastReward)})) =>
+           | Done(Ok(Some({lastReward: Some(lastReward)})), _)
+           | Loading(Some(Some({lastReward: Some(lastReward)}))) =>
              <Typography.Body1 colorStyle=`positive>
                {I18n.t#xtz_op_amount("+", lastReward->ProtocolXTZ.toString)
                 ->React.string}
              </Typography.Body1>
-           | Done(Ok({lastReward: None}), _)
-           | Loading(Some({lastReward: None})) =>
+           | Done(Ok(Some({lastReward: None})), _)
+           | Loading(Some(Some({lastReward: None}))) =>
              <Typography.Body1> "---"->React.string </Typography.Body1>
-           | Done(Error(_error), _) => React.null
+           | Done(Ok(None), _)
+           | Loading(Some(None))
+           | Done(Error(_), _) => React.null
            | NotAsked
            | Loading(None) =>
              <Typography.Body1>
