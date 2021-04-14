@@ -14,17 +14,41 @@ let styles =
           ~borderWidth=1.,
           (),
         ),
-      "position":
-        style(~top=15.->dp, ~right=50.->pct, ~position=`absolute, ()),
+      "positionLeft":
+        style(
+          ~top=15.->dp,
+          ~right=0.->dp,
+          ~left="unset",
+          ~position=`absolute,
+          (),
+        ),
+      "positionRight":
+        style(
+          ~top=15.->dp,
+          ~right="unset",
+          ~left=0.->dp,
+          ~position=`absolute,
+          (),
+        ),
     })
   );
 
 [@react.component]
-let make = (~keyPopover, ~config, ~text, ~isOpen) => {
+let make =
+    (~keyPopover, ~config: option(Popover.targetLayout), ~text, ~isOpen) => {
   let theme = ThemeContext.useTheme();
+
+  let dimensions = Dimensions.useWindowDimensions();
+
+  let position =
+    config->Option.mapWithDefault(styles##positionRight, config =>
+      config.x /. dimensions.width > 0.75
+        ? styles##positionLeft : styles##positionRight
+    );
+
   <Popover
     openingStyle=Popover.Top
-    style=styles##position
+    style=position
     pointerEvents=`none
     keyPopover
     isOpen
