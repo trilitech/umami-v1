@@ -103,6 +103,7 @@ let form_input_error = {
   pub key_already_registered = a =>
     p("Address already registered under: %s", a);
   pub name_already_registered = "Name already registered";
+  pub chain_not_connected = "Not connected to a chain";
   pub string_empty = "This input is mandatory";
   pub int = "must be an integer";
   pub float = "must be a float";

@@ -18,7 +18,7 @@ let styles =
   );
 
 [@react.component]
-let make = (~closeAction) => {
+let make = (~chain, ~closeAction) => {
   let (tokenCreateRequest, createToken) = StoreContext.Tokens.useCreate();
   let (_checkTokenRequest, checkToken) = StoreContext.Tokens.useCheck();
   let addToast = LogsContext.useToast();
@@ -40,6 +40,7 @@ let make = (~closeAction) => {
                   address: state.values.address,
                   alias: state.values.name,
                   symbol: state.values.symbol,
+                  chain,
                 })
                 ->Future.tapOk(_ => closeAction())
                 ->ApiRequest.logOk(addToast, Logs.Tokens, _ =>
