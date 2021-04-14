@@ -101,7 +101,8 @@ let make = (~children) => {
         settings->AppSettings.explorer,
         settings->AppSettings.endpoint,
       )
-      ->Future.mapOk(apiVersion => {
+      ->Future.tapOk(v => setApiVersion(_ => Some(v)))
+      ->FutureEx.getOk(apiVersion =>
           if (!Network.checkInBound(apiVersion.Network.api)) {
             addToast(
               Logs.error(
@@ -109,10 +110,8 @@ let make = (~children) => {
                 Network.errorMsg(Network.APINotSupported(apiVersion.api)),
               ),
             );
-          };
-          apiVersion;
-        })
-      ->FutureEx.getOk(v => setApiVersion(_ => Some(v)));
+          }
+        );
     };
     None;
   });
@@ -204,6 +203,11 @@ let reloadRequests = requestsState =>
   requestsState->Map.String.map(ApiRequest.updateToLoadingState);
 
 //
+
+let useApiVersion = () => {
+  let store = useStoreContext();
+  store.apiVersionRequestState->fst;
+};
 
 module Balance = {
   let useRequestState = useRequestsState(store => store.balanceRequestsState);
