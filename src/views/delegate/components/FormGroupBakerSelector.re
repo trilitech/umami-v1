@@ -140,9 +140,7 @@ let make = (~label, ~value: string, ~handleChange, ~error) => {
   React.useEffect4(
     () => {
       if (inputType == Selector) {
-        if (!bakersRequest->ApiRequest.isLoading && items == [||]) {
-          setInputType(_ => Text);
-        } else if (value == "") {
+        if (value == "") {
           // if input selector and no value, select first entry
           let firstItem = items->Array.get(0);
           firstItem->Lib.Option.iter(baker => baker.address->handleChange);
