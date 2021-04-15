@@ -246,3 +246,14 @@ module Address = {
     </Base>;
   };
 };
+
+/* NOTICE */
+
+module Notice =
+  Make({
+    let colorStyle = `highEmphasis;
+    let fontWeightStyle = `bold;
+    let fontSize = 14.;
+    let selectable = true;
+  });
+

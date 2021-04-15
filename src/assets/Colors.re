@@ -12,6 +12,7 @@ module Dark = {
 
   let background = "#121212";
   let barBackground = "#212121";
+  let backgroundMediumEmphasis = "rgba(0,0,0,0.74)";
   let scrim = "rgba(92,92,92,0.32)";
 
   let elevatedBackground = "#212121";
@@ -36,6 +37,7 @@ module Light = {
 
   let background = "#f9f9f9";
   let barBackground = "#FFF";
+  let backgroundMediumEmphasis = "rgba(255,255,255,0.74)";
   let scrim = "rgba(153,145,134,0.32)";
 
   let statePressed = "rgba(0, 0, 0, 0.1)";
