@@ -197,7 +197,7 @@ module Read = {
   let decodeFromMempool = json => {
     open Json.Decode;
     let typ = json |> field("operation_kind", string);
-    let op_id = json |> field("id", int);
+    let op_id = json |> field("id", string) |> int_of_string;
     let op =
       json |> field("operation", Js.Json.stringify) |> Json.parseOrRaise;
     {
