@@ -128,6 +128,13 @@ module Form = {
       let formFieldsAreValids =
         FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
 
+      let initDelegate =
+        switch (action) {
+        | Create(_) => None
+        | Edit(_, delegate)
+        | Delete(_, delegate) => Some(delegate)
+        };
+
       <>
         <ReactFlipToolkit.FlippedView flipId="form">
           <Typography.Headline style=FormStyles.header>
@@ -160,7 +167,13 @@ module Form = {
             <Typography.Overline2>
               I18n.btn#advanced_options->React.string
             </Typography.Overline2>
-            <ThemedSwitch value=advancedOptionOpened />
+            <ThemedSwitch
+              disabled={
+                form.values.baker == ""
+                || Some(form.values.baker) == initDelegate
+              }
+              value=advancedOptionOpened
+            />
           </TouchableOpacity>
         </ReactFlipToolkit.FlippedView>
         <ReactFlipToolkit.FlippedView
