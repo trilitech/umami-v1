@@ -969,7 +969,9 @@ module Delegate = (Getter: GetterAPI) => {
                         )
                     );
                 }
-              | None => Future.value(Error("No delegate set!"))
+              | None =>
+                Js.log("No delegation set");
+                Future.value(Ok(None));
               }
             | _ => Future.value(Error("Invalid operation type!"))
             }
