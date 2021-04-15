@@ -16,9 +16,7 @@ let make = (~label, ~value: string, ~handleChange, ~error, ~disabled) => {
     ->Array.keepMap(((account, delegate)) =>
         delegate->Option.isNone || disabled ? Some(account) : None
       )
-    ->SortArray.stableSortBy((a, b) =>
-        Js.String.localeCompare(a.alias, b.alias)->int_of_float
-      );
+    ->SortArray.stableSortBy((a, b) => Pervasives.compare(a.alias, b.alias));
 
   React.useEffect2(
     () => {
