@@ -154,9 +154,6 @@ let getAPIVersion = url =>
         try(
           Json.Decode.(field("api", string, json))
           ->parseVersion
-          // this two lines should disappear once mezos returns a valid version
-          ->Result.getWithDefault(mkVersion(1, 0))
-          ->Ok
           ->Result.map(api =>
               Json.Decode.{
                 api,
