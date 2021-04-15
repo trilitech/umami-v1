@@ -101,6 +101,7 @@ let label = {
 let input_placeholder = {
   pub _this = this;
   pub tez_amount = "0.000000";
+  pub token_amount = "0";
   pub add_accounts_name = "Enter account's name";
   pub add_contacts_name = "Enter contact's name";
   pub add_contacts_tz = "Enter contact's tz address";
