@@ -151,7 +151,7 @@ module Create = {
 
     <ModalFormView closing={ModalFormView.Close(closeAction)}>
       <Typography.Headline style=FormStyles.header>
-        I18n.title#account_create->React.string
+        I18n.title#derive_account->React.string
       </Typography.Headline>
       {switch (formValues) {
        | None =>
