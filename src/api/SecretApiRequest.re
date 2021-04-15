@@ -59,14 +59,15 @@ let useDerive =
 type createInput = {
   name: string,
   mnemonics: string,
+  derivationScheme: string,
   password: string,
 };
 
 let useCreateWithMnemonics =
   ApiRequest.useSetter(
     ~set=
-      (~settings, {name, mnemonics, password}) =>
-        AccountsAPI.restore(~settings, mnemonics, name, ~password, ()),
+      (~settings, {name, mnemonics, derivationScheme, password}) =>
+        AccountsAPI.restore(~settings, mnemonics, name, ~derivationScheme, ~password, ()),
     ~kind=Logs.Account,
   );
 

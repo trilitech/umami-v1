@@ -654,8 +654,11 @@ module Accounts = (Getter: GetterAPI) => {
                   ? Future.value(Ok(true)) : settings->validate(address)
               )
               ->Future.flatMapOk(isValidated =>
-                  isValidated
-                    ? scanSeed(
+                  if (isValidated) {
+                    if (path == derivationScheme) {
+                      Future.value(Ok([|address|]));
+                    } else {
+                      scanSeed(
                         ~settings,
                         seed,
                         baseName,
@@ -666,8 +669,11 @@ module Accounts = (Getter: GetterAPI) => {
                       )
                       ->Future.mapOk(addresses =>
                           Array.concat([|address|], addresses)
-                        )
-                    : unsafeDelete(~settings, name)->Future.map(_ => Ok([||]))
+                        );
+                    };
+                  } else {
+                    unsafeDelete(~settings, name)->Future.map(_ => Ok([||]));
+                  }
                 )
             )
       );

@@ -93,7 +93,9 @@ let label = {
   pub account_secret = "Root";
   pub account_umami = "Umami";
   pub token = "Token";
-  pub account_cli = "Cli"
+  pub account_cli = "Cli";
+  pub account_default_path = "Default Path - m/44'/1729'/?'/0'";
+  pub account_custom_path = "Custom Path"
 };
 
 let input_placeholder = {
@@ -108,7 +110,8 @@ let input_placeholder = {
   pub enter_new_password = "Enter new password, at least 8 characters";
   pub confirm_password = "Confirm your new password";
   pub enter_password = "Enter your password";
-  pub add_token_symbol = "e.g. tez, KLD, ..."
+  pub add_token_symbol = "e.g. tez, KLD, ...";
+  pub enter_derivation_path = "Enter your derivation path"
 };
 
 let form_input_error = {
@@ -126,7 +129,8 @@ let form_input_error = {
   pub unregistered_delegate = "This key is not registered as a baker";
   pub bad_pkh = "Not a valid key";
   pub invalid_contract = "The recipient is not a key or an alias";
-  pub confirm_password = "It must be the same password"
+  pub confirm_password = "It must be the same password";
+  pub derivation_path_error = "Invalid derivation path"
 };
 
 let title = {
@@ -144,6 +148,7 @@ let title = {
   pub account_create_password = "Set a password to secure your wallet";
   pub account_enter_password = "Please enter password to confirm";
   pub account_create_verify_phrase = "Verify your recovery phrase";
+  pub account_derivation_path = "Derivation path";
   pub import_account_enter_phrase = "Enter your recovery phrase";
   pub operation_submited = "Operation Submitted";
   pub sender_account = "Sender account";
@@ -184,6 +189,7 @@ let expl = {
   pub account_create_record_recovery = {j|Please record the following 24 words in sequence in order to restore it in the future. Ensure to back it up, keeping it securely offline.|j};
   pub account_create_record_verify = {j|We will now verify that you’ve properly recorded your recovery phrase. To demonstrate this, please type in the word that corresponds to each sequence number.|j};
   pub account_create_password_not_recorded = {j|Please note that this password is not recorded anywhere and only applies to this machine.|j};
+  pub account_select_derivation_path = {j|Umami wallet supports custom derivation path to select new addresses. You may also select the default derivation path and use the default key.|j};
   pub import_account_enter_phrase = {j|Please fill in the recovery phrase in sequence.|j};
   pub confirm_operation = "Please validate the details of the transaction and enter password to confirm";
   pub batch = "Review, edit or delete the transactions of the batch";

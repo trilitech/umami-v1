@@ -29,6 +29,7 @@ let make =
       ~error,
       ~keyboardType=?,
       ~onBlur=?,
+      ~onFocus=?,
       ~textContentType=?,
       ~secureTextEntry=?,
       ~placeholder=?,
@@ -47,6 +48,7 @@ let make =
         onValueChange=handleChange
         hasError
         ?onBlur
+        ?onFocus
         ?textContentType
         ?secureTextEntry
         ?keyboardType

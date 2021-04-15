@@ -59,9 +59,13 @@ let seed = recoveryPhrase => recoveryPhrase->BIP39.seed->toHex;
 let edesk = (path, seed, ~password) => {
   Sodium.ready
   ->FutureJs.fromPromise(Js.String.make)
-  ->Future.mapOk(_ => {
-      let secretKey =
-        ED25519.derivePath(path, seed).key;
+  ->Future.flatMapOk(_ =>
+      switch (ED25519.derivePath(path, seed).key) {
+      | key => Future.value(Ok(key))
+      | exception _ => Future.value(Error(I18n.form_input_error#derivation_path_error))
+      }
+    )
+  ->Future.mapOk(secretKey => {
       let salt = Sodium.randombytes_buf(8);
       let encryptionKey = pbkdf2Sync(password, salt);
       let encryptedSecretkey =

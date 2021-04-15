@@ -3,7 +3,8 @@ open ReactNative;
 type step =
   | Step1
   | Step2
-  | Step3;
+  | Step3
+  | Step4;
 
 let styles =
   Style.(
@@ -40,6 +41,8 @@ let make = (~closeAction) => {
   // other value later, it's unecessary to be used
   let mnemonic =
     React.useRef(Bip39.generate(256)->Js.String2.split(" ")).current;
+  let (derivationScheme, setDerivationScheme) =
+    React.useState(_ => "m/44'/1729'/?'/0'");
 
   let loading = secretWithMnemonicRequest->ApiRequest.isLoading;
 
@@ -52,7 +55,7 @@ let make = (~closeAction) => {
        <>
          <Typography.Overline3
            colorStyle=`highEmphasis style=styles##stepPager>
-           {I18n.t#stepof(1, 3)->React.string}
+           {I18n.t#stepof(1, 4)->React.string}
          </Typography.Overline3>
          <Typography.Overline1 style=styles##stepTitle>
            I18n.t#account_create_record_recovery->React.string
@@ -73,7 +76,7 @@ let make = (~closeAction) => {
        <>
          <Typography.Overline3
            colorStyle=`highEmphasis style=styles##stepPager>
-           {I18n.t#stepof(2, 3)->React.string}
+           {I18n.t#stepof(2, 4)->React.string}
          </Typography.Overline3>
          <Typography.Overline1 style=styles##stepTitle>
            I18n.title#account_create_verify_phrase->React.string
@@ -88,10 +91,31 @@ let make = (~closeAction) => {
          />
        </>
      | Step3 =>
+       let subtitle = I18n.title#account_derivation_path;
+
        <>
          <Typography.Overline3
            colorStyle=`highEmphasis style=styles##stepPager>
-           {I18n.t#stepof(3, 3)->React.string}
+           {I18n.t#stepof(2, 3)->React.string}
+         </Typography.Overline3>
+         <Typography.Overline1 style=styles##stepTitle>
+           subtitle->React.string
+         </Typography.Overline1>
+         {<Typography.Body2 colorStyle=`mediumEmphasis style=styles##stepBody>
+            I18n.expl#account_select_derivation_path->React.string
+          </Typography.Body2>}
+         <SelectDerivationPathView
+           derivationScheme
+           setDerivationScheme
+           onPressCancel={_ => setFormStep(_ => Step2)}
+           goNextStep={_ => setFormStep(_ => Step4)}
+         />
+       </>;
+     | Step4 =>
+       <>
+         <Typography.Overline3
+           colorStyle=`highEmphasis style=styles##stepPager>
+           {I18n.t#stepof(4, 4)->React.string}
          </Typography.Overline3>
          <Typography.Overline1 style=styles##stepTitle>
            I18n.title#account_create_password->React.string
@@ -101,6 +125,7 @@ let make = (~closeAction) => {
          </Typography.Body2>
          <CreatePasswordView
            mnemonic
+           derivationScheme
            onPressCancel={_ => setFormStep(_ => Step2)}
            createSecretWithMnemonic
            loading
