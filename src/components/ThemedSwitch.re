@@ -9,11 +9,12 @@ let styles =
   );
 
 [@react.component]
-let make = (~value: bool=false) => {
+let make = (~value: bool=false, ~disabled=false) => {
   let theme = ThemeContext.useTheme();
 
   <SwitchNative
     value
+    disabled
     thumbColor={theme.colors.background}
     trackColor={Switch.trackColor(
       ~_true=theme.colors.iconPrimary,

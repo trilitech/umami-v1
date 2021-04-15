@@ -52,7 +52,7 @@ module Form = {
     let (initAccount, initDelegate) =
       switch (action) {
       | Create(account) => (account, None)
-      | Edit(account, _) => (Some(account), None)
+      | Edit(account, delegate)
       | Delete(account, delegate) => (Some(account), Some(delegate))
       };
 
@@ -131,7 +131,7 @@ module Form = {
       let initDelegate =
         switch (action) {
         | Create(_) => None
-        | Edit(_, delegate) => Some(delegate)
+        | Edit(_, delegate)
         | Delete(_, delegate) => Some(delegate)
         };
 
@@ -158,7 +158,6 @@ module Form = {
             label=I18n.label#baker
             value={form.values.baker}
             handleChange={form.handleChange(Baker)}
-            filterOut=?initDelegate
             error={form.getFieldError(Field(Baker))}
           />
           <TouchableOpacity
@@ -168,7 +167,13 @@ module Form = {
             <Typography.Overline2>
               I18n.btn#advanced_options->React.string
             </Typography.Overline2>
-            <ThemedSwitch value=advancedOptionOpened />
+            <ThemedSwitch
+              disabled={
+                form.values.baker == ""
+                || Some(form.values.baker) == initDelegate
+              }
+              value=advancedOptionOpened
+            />
           </TouchableOpacity>
         </ReactFlipToolkit.FlippedView>
         <ReactFlipToolkit.FlippedView
