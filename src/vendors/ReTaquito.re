@@ -26,6 +26,7 @@ module Error = {
 
   let toRaw: Js.Promise.error => raw = Obj.magic;
 
+  let branchRefused = "branch refused";
   let wrongSecretKey = "wrong secret key";
   let badPkh = "Unexpected data (Signature.Public_key_hash)";
   let unregisteredDelegate = "contract.manager.unregistered_delegate";
@@ -37,11 +38,13 @@ module Error = {
     | UnregisteredDelegate
     | UnchangedDelegate
     | InvalidContract
+    | BranchRefused
     | BadPkh;
 
   let parse = e =>
     switch (e.message) {
     | s when s->Js.String2.includes(wrongSecretKey) => WrongPassword
+    | s when s->Js.String2.includes(branchRefused) => BranchRefused
     | s when s->Js.String2.includes(badPkh) => BadPkh
     | s when s->Js.String2.includes(unregisteredDelegate) =>
       UnregisteredDelegate
