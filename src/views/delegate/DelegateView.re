@@ -52,7 +52,7 @@ module Form = {
     let (initAccount, initDelegate) =
       switch (action) {
       | Create(account) => (account, None)
-      | Edit(account, _) => (Some(account), None)
+      | Edit(account, delegate)
       | Delete(account, delegate) => (Some(account), Some(delegate))
       };
 
@@ -128,13 +128,6 @@ module Form = {
       let formFieldsAreValids =
         FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
 
-      let initDelegate =
-        switch (action) {
-        | Create(_) => None
-        | Edit(_, delegate) => Some(delegate)
-        | Delete(_, delegate) => Some(delegate)
-        };
-
       <>
         <ReactFlipToolkit.FlippedView flipId="form">
           <Typography.Headline style=FormStyles.header>
@@ -158,7 +151,6 @@ module Form = {
             label=I18n.label#baker
             value={form.values.baker}
             handleChange={form.handleChange(Baker)}
-            filterOut=?initDelegate
             error={form.getFieldError(Field(Baker))}
           />
           <TouchableOpacity
