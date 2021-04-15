@@ -154,6 +154,7 @@ let handleTaquitoError = e =>
        | UnregisteredDelegate => I18n.form_input_error#unregistered_delegate
        | UnchangedDelegate => I18n.form_input_error#change_baker
        | BadPkh => I18n.form_input_error#bad_pkh
+       | BranchRefused => I18n.form_input_error#branch_refused_error
        | InvalidContract => I18n.form_input_error#invalid_contract
      );
 

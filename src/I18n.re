@@ -112,6 +112,7 @@ let input_placeholder = {
 
 let form_input_error = {
   pub _this = this;
+  pub branch_refused_error = "Please retry. An error came up while communicating with the node";
   pub key_already_registered = a =>
     p("Address already registered under: %s", a);
   pub name_already_registered = "Name already registered";
