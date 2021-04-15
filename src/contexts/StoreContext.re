@@ -67,6 +67,8 @@ let make = (~children) => {
   let settings = SdkContext.useSettings();
   let addToast = LogsContext.useToast();
 
+  let network = settings->AppSettings.network;
+
   let selectedAccountState = React.useState(() => None);
   let (selectedAccount, setSelectedAccount) = selectedAccountState;
 
@@ -88,14 +90,14 @@ let make = (~children) => {
   let secretsRequestState = React.useState(() => ApiRequest.NotAsked);
 
   let apiVersionRequestState = React.useState(() => None);
-  let (apiVersion, setApiVersion) = apiVersionRequestState;
+  let (_, setApiVersion) = apiVersionRequestState;
 
   AccountApiRequest.useLoad(accountsRequestState)->ignore;
   AliasApiRequest.useLoad(aliasesRequestState)->ignore;
   TokensApiRequest.useLoadTokens(tokensRequestState)->ignore;
 
-  React.useEffect0(() => {
-    if (apiVersion->Option.isNone) {
+  React.useEffect1(
+    () => {
       Network.checkConfiguration(
         ~network=settings->AppSettings.network,
         settings->AppSettings.explorer,
@@ -112,9 +114,10 @@ let make = (~children) => {
             );
           }
         );
-    };
-    None;
-  });
+      None;
+    },
+    [|network|],
+  );
 
   // Select a default account if no one selected
   React.useEffect2(
