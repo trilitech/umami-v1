@@ -35,7 +35,7 @@ let make = (~closeAction, ~existingSecretsCount=0) => {
       )
     ->ignore;
 
-  let (mnemonic, setMnemonic) = React.useState(_ => Array.make(24, "zebra"));
+  let (mnemonic, setMnemonic) = React.useState(_ => Array.make(24, ""));
   let (derivationScheme, setDerivationScheme) =
     React.useState(_ => "m/44'/1729'/?'/0'");
 
