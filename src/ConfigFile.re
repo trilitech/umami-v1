@@ -15,7 +15,7 @@ type t = {
 
 module Default = {
   let network = `Testnet(Network.edo2netChain);
-  let endpointMain = "https://mainnet-tezos.giganode.io";
+  let endpointMain = "https://mainnet.smartpy.io/";
   let endpointTest = "https://edonet.smartpy.io/";
   let explorerMain = "https://api.umamiwallet.com/mainnet";
   let explorerTest = "https://api.umamiwallet.com/edo2net";
