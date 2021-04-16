@@ -6,7 +6,10 @@ const CopyPlugin = require('copy-webpack-plugin')
 // Any directories you will be adding code/files into, need to be added to this array so webpack will pick them up
 const defaultInclude = path.resolve(__dirname, 'src')
 
-module.exports = {
+const SpeedMeasurePlugin = require("speed-measure-webpack-plugin");
+const smp = new SpeedMeasurePlugin();
+
+module.exports = smp.wrap({
   module: {
     rules: [
       {
@@ -23,6 +26,7 @@ module.exports = {
   },
   target: 'electron-renderer',
   plugins: [
+
     new CopyPlugin({
       patterns: [
         { from: 'public', to: '.' },
@@ -44,6 +48,7 @@ module.exports = {
   optimization: {
     minimize: true
   },
+  devtool: "eval",
   resolve: {
     // This will only alias the exact import "react-native"
     alias: {
@@ -57,4 +62,4 @@ module.exports = {
   output: {
     path: path.resolve(__dirname, 'build'),
   },
-}
+});
