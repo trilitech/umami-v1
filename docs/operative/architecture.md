@@ -1,5 +1,9 @@
 # Architecture & Tech Stack
 
+This is high-level only, serves for purposes of planning the tech-stack.
+
+For specifications, refer to [specs](/docs/specs/)
+
 ## Front-End
 
 ```mermaid

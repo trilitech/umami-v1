@@ -7,10 +7,10 @@ The **Product** roadmap plans the To-Market efforts to capture public attention 
 ## Projected Milestones:
 
  * Alpha version: Nov 2020 (internal only--usable with basic feature set)
- * Beta release: Jan 2021 (limited release--more features, some left in the backlog: TBD)
- * v1.0 release: Feb 2021 (public release--stable)
+ * Beta release: Apr 2021 (limited release--more features, some left in the backlog: TBD)
+ * v1.0 release: Jun 2021 (public release--stable)
  * v1.x maintenance phase
- * v2.0 release: May 2021 (public release--no backlog)
+ * v2.0 release: Q4 2021 (public release--no backlog)
 
 ## Strategy
 
@@ -41,20 +41,21 @@ The **Product** roadmap plans the To-Market efforts to capture public attention 
 gantt
     title Ref-Wallet Product Roadmap
     section Alpha
-    Approve Branding                                  :active, 2020-09-25, 2020-11-13
-    Planning.                                         :active, 2020-11-13, 2020-11-20
-    Simple website                                    :active, 2020-11-20, 2020-11-30
-    Social Media Profiles                             :active, 2020-11-20, 2020-11-30
-    Announce Project & Launch Blog                    :active, 2020-11-30, 2020-11-30
+    Approve Branding                                  :done  , 2020-09-25, 2021-01-13
+    Planning                                          :done  , 2020-11-13, 2020-11-20
+    Simple website                                    :done  , 2020-12-01, 2020-12-30
+    Social Media Profiles                             :done  , 2020-11-20, 2020-11-30
+    Announce Project                                  :done  , 2021-01-15, 2021-01-31
     section Beta
-    Draft Runbooks & Support Rules                    :active, 2020-12-03, 2020-12-30
-    Establish Support Structure                       :active, 2021-01-01, 2021-01-31
-    Upgrade website                                   :active, 2021-01-15, 2021-01-31
+    Upgrade website                                   :done  , 2021-01-15, 2021-01-31
     section Release - v 1.0
-    Integrate Help Documentation                      :active, 2021-02-01, 2021-02-15
-    Draft User Manual                                 :active, 2021-02-16, 2021-03-01
+    Setup Infrastructure                              :done  , 2021-02-01, 2021-03-15
+    Draft User Manual Articles                        :active, 2021-03-01, 2021-05-01
+    Establish Support Structure                       :active, 2021-03-15, 2021-05-31
+    Draft Runbooks & Support Rules                    :active, 2021-04-01, 2021-05-31
+    Integrate Help Documentation                      :active, 2021-04-15, 2021-05-31
     section Maintenance - v 1.x
-    Maintenance - v 1.x                               :active, 2021-03-01, 2021-06-01
+    Maintenance - v 1.x                               :active, 2021-04-01, 2021-06-01
     section Upgrade - v 2.0
-    Upgrade - v 2.0                                   :active, 2021-03-01, 2021-06-01
+    Upgrade - v 2.0                                   :active, 2021-06-01, 2021-09-01
 ```

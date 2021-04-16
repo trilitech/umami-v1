@@ -2,15 +2,15 @@
 
 Here's a list of contributors and their corresponding title/roles:
 
-| Type | Name | Title/Role | Area | Description |
-|--|--|--|--|--|
-| Team Member | Samuel Bourque | PM/PO | Management | General oversight of Ref-Wallet Project and its subprojects/dependencies |
-| Team Member | Remy El Sibaie | Senior Developer | Core Wallet & Tezos SDK | UI Programming |
-| Team Member | Pierrick Couderc | Senior Developer | Core Wallet & Tezos SDK | Tezos SDK |
-| Team Member | Steve Sanches | Developer | Core Wallet | Core development and integration of related systems and UX |
-| Team Member | Nicolas Fillion | Developer | Indexer | Indexer improvements |
-| Team Member | Julia Ah-Yionne | Designer | UX | Mockups, User flows, User feedback |
-| Transitioning | Alexandre Doussot | Developer | Node/Shell/Michelson | Tezos Client, libclient improvements |
-| Ext. Contributor | Philippe Wang | Developer | Indexer | Indexer improvements |
-| Ext. Contributor | Raphael Proust | Developer | Tezos SDK | Compiling Tezos Client to JS |
-| Contractor | Freddy Harris | Developer | UI Programing | Integrating UI to codebase |
+| Name | Title/Role | Area | Description |
+|--|--|--|--|
+| Samuel Bourque | Product Manager | Management | General oversight of project and product |
+| Remy El Sibaie | Senior Developer - Tech Lead | Core Wallet & Tezos SDK | Development oversight |
+| Pierrick Couderc | Senior Developer | Core Wallet & Tezos SDK | Tokenization and Tezos SDK |
+| Philippe Wang | Senior Developer | Indexer | Indexer improvements |
+| Steve Sanches | Developer | Core Wallet | Core development and integration |
+| Nicolas Fillion | Developer | Testing | Automated testing and CI |
+| Julia Ah-Yionne | Designer | UX | Mockups, User flows, User feedback |
+| Alexandre Doussot | Developer | Node/Shell/Michelson | Tezos Client, libclient improvements |
+| Corentin Mehat | DevOps | Infrastructure | Deployments and versioning |
+| Freddy Harris | Developer | UI Programing | Integrating UI to codebase |

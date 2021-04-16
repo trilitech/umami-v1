@@ -1,8 +1,6 @@
 # Ref-Wallet - Project Roadmap
 
-> as of Oct 2020
-
-This is the **Project** Roadmap, which plans the progress of the development efforts of the Ref-Wallet.
+This is the **Project** Roadmap, which plans the progress of the development efforts of Umami.
 
 ## Projected Milestones:
 
@@ -12,17 +10,19 @@ This is the **Project** Roadmap, which plans the progress of the development eff
      * Transactions
      * Operation History
      * Delegation
- * Beta release: Jan 2021 (limited release--more features, some left in the backlog: TBD)
-     * Bulk Transactions
+ * Beta release: Mar 2021 (limited release--more features, some left in the backlog: TBD)
+     * Batch Transactions
      * FA1.2 Tokens
-     * Deploy Contracts
-     * Contract Calls
- * v1.0 release: Feb 2021 (public release--stable)
- * v1.x maintenance phase
- * v2.0 release: May 2021 (public release--no backlog)
-     * Voting
-     * Multisig
+ * v1.0 release: Jun 2021 (public release--stable)
      * FA2
+     * Remote Signing (TZIP-10)
+     * Hardware wallet support
+     * DirectAuth
+ * v1.x maintenance phase
+ * v2.0 release: Q4 2021 (public release--no backlog)
+     * Contracts
+     * Sapling
+     * Multisig
 
  **Note**:
 
@@ -34,7 +34,17 @@ This is the **Project** Roadmap, which plans the progress of the development eff
 
 ```mermaid
 gantt
-    title Ref-Wallet Project Roadmap
+    title Release Overview
+    Alpha Release                                     :done,   2020-07-19, 2020-12-01
+    Beta Release                                      :active, 2020-12-01, 2021-03-05
+    Release - v 1.0                                   :active, 2021-03-05, 2021-06-01
+    Maintenance - v 1.x                               :active, 2021-06-01, 2021-09-01
+    Upgrade - v 2.0                                   :active, 2021-06-01, 2021-09-01
+```
+
+```mermaid
+gantt
+    title Sprint Overview
     section Project Initiation
     Cortez export                                     :done  , 2020-07-01 , 30d
     Project Initiation                                :done  , 2020-06-01, 2020-07-13
@@ -56,20 +66,24 @@ gantt
     section Sprint 7 - Alpha Candidate
     Sprint 7 - Alpha Candidate                        :done  , 2020-10-19, 2020-10-30
     section Sprint 8 - Alpha
-    Sprint 8 - Alpha                                  :done, 2020-11-03, 2020-11-15
+    Sprint 8 - Alpha                                  :done  , 2020-11-02, 2020-11-13
     section Sprint 9 - Refactoring
-    Sprint 9 - Refactoring                            :done, 2020-11-18, 2020-11-30
-    section Sprint 10 - Tokens
-    Sprint 10 - Tokens                                :done, 2020-12-01, 2020-12-11
-    section Sprint 11 - Contracts
-    Sprint 11 - Contracts                             :active, 2020-12-14, 2021-01-08
-    section Beta Release
-    Beta Release                                      :active, 2021-01-11, 2021-02-01
-    section Release - v 1.0
-    Release - v 1.0                                   :active, 2021-02-01, 2021-03-01
-    section Maintenance - v 1.x
-    Maintenance - v 1.x                               :active, 2021-03-01, 2021-06-01
-    section Upgrade - v 2.0
-    Upgrade - v 2.0                                   :active, 2021-03-01, 2021-06-01
+    Sprint 9 - Refactoring                            :done  , 2020-11-15, 2020-11-27
+    section Sprint 10 - Tokens FA1.2
+    Sprint 10 - Tokens                                :done  , 2020-12-01, 2020-12-11
+    section Sprint 11 - Batch Txs
+    Sprint 11 - Batch Txs                             :done  , 2020-12-15, 2021-01-08
+    section Sprint 12 - Token Batching
+    Sprint 12 - Token Batching                        :done  , 2021-01-11, 2021-01-22
+    section Sprint 13 - Key Management
+    Sprint 13 - Key Management                        :done  , 2021-01-25, 2021-02-05
+    section Sprint 14 - SDK Integ
+    Sprint 14 - SDK Integ                             :done  , 2021-02-08, 2021-02-19
+    section Beta Candidate
+    Sprint 15 - SDK Integ & Headstart on FA2          :done  , 2021-02-22, 2021-03-05
+    section Beta Candidate
+    Sprint 16 - SDK Integ & Headstart on FA2          :done  , 2021-03-08, 2021-03-19
+    section Beta Candidate
+    Sprint 17 - Beta Candidate                        :active, 2021-03-22, 2021-04-05
 ```
 
