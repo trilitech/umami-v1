@@ -4,12 +4,10 @@
 
 We list here the prescribed versions recommended for each of the tools needed to run the Umami project.
 
-| tezos-node | tezos-indexer | mezos | Umami | (status) |
-|---         |---            |---    |---    |---       |
-| nomadic-labs/umami@fa1.2+dry_run_no_pass+8.2 | origin/master     | indexer-v9 | origin/develop | branches to build |
-| nomadic-labs/pierrick@fa1.2 | (master == v9.1.0)  | indexer-v9-fixes | origin/develop | current dev-api |
-| nomadic-labs/pierrick@fa1.2 | (master == v9.1.0)  | indexer-v9-fixes | origin/develop | current qa-api |
-
+| tezos-node | tezos-indexer | mezos         | Umami | Release |(comment) |
+|---         |---            |---            |---    |---     |---   |
+| v9.0-rc1     | v9.2.0        | TBD (> v1.0.0)     | TBD | TBD | breaking indexer-mezos Compatibility | 
+| v9.0-rc1     | v9.1.6        | v1.0.0      | 0.3.4 | 2020-APR-16 | closed-beta release | 
 
 
 # Related git repositories
