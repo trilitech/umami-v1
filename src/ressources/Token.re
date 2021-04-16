@@ -2,6 +2,7 @@ type t = {
   address: string,
   alias: string,
   symbol: string,
+  chain: string,
 };
 
 module Decode = {
@@ -10,6 +11,9 @@ module Decode = {
       address: json |> field("address", string),
       alias: json |> field("alias", string),
       symbol: json |> field("symbol", string),
+      chain:
+        (json |> field("chain", optional(string)))
+        ->Option.getWithDefault(Network.edo2netChain),
     };
 
   let array = json => json |> Json.Decode.array(record);
@@ -24,6 +28,7 @@ module Encode = {
         ("address", record.address |> string),
         ("alias", record.alias |> string),
         ("symbol", record.symbol |> string),
+        ("chain", record.chain |> string),
       ])
     );
 
@@ -88,6 +93,14 @@ type operation =
   | GetAllowance(GetAllowance.t)
   | GetTotalSupply(GetTotalSupply.t);
 
+let operationEntrypoint =
+  fun
+  | Transfer(_) => "transfer"
+  | Approve(_) => "approve"
+  | GetBalance(_) => "getBalance"
+  | GetAllowance(_) => "getAllowance"
+  | GetTotalSupply(_) => "getTotalSupply";
+
 let setCallback = (op, callback) => {
   let callback = Some(callback);
   switch (op) {
@@ -116,16 +129,9 @@ let makeSingleTransferElt =
       ),
   };
 
-let makeTransfers =
-    (~source, ~transfers, ~burnCap=?, ~confirmations=?, ~forceLowFee=?, ()) => {
+let makeTransfers = (~source, ~transfers, ~burnCap=?, ~forceLowFee=?, ()) => {
   let common_options =
-    Protocol.makeCommonOptions(
-      ~fee=None,
-      ~burnCap,
-      ~confirmations,
-      ~forceLowFee,
-      (),
-    );
+    Protocol.makeCommonOptions(~fee=None, ~burnCap, ~forceLowFee, ());
   Transfer.{source, transfers, common_options};
 };
 
@@ -141,18 +147,11 @@ let makeSingleTransfer =
       ~gasLimit=?,
       ~storageLimit=?,
       ~burnCap=?,
-      ~confirmations=?,
       ~forceLowFee=?,
       (),
     ) => {
   let common_options =
-    Protocol.makeCommonOptions(
-      ~fee,
-      ~burnCap,
-      ~confirmations,
-      ~forceLowFee,
-      (),
-    );
+    Protocol.makeCommonOptions(~fee, ~burnCap, ~forceLowFee, ());
   let elt =
     makeSingleTransferElt(
       ~destination,
@@ -175,7 +174,6 @@ let makeGetBalance =
       ~gasLimit=?,
       ~storageLimit=?,
       ~burnCap=?,
-      ~confirmations=?,
       ~forceLowFee=?,
       ~callback=?,
       (),
@@ -190,13 +188,7 @@ let makeGetBalance =
       (),
     );
   let common_options =
-    Protocol.makeCommonOptions(
-      ~fee,
-      ~burnCap,
-      ~confirmations,
-      ~forceLowFee,
-      (),
-    );
+    Protocol.makeCommonOptions(~fee, ~burnCap, ~forceLowFee, ());
   GetBalance(
     GetBalance.{
       address,

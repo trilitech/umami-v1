@@ -18,7 +18,7 @@ module CellAmount =
 
 module CellFee =
   Table.MakeCell({
-    let style = Style.(style(~flexBasis=80.->dp, ()));
+    let style = Style.(style(~flexBasis=86.->dp, ()));
     ();
   });
 
@@ -49,6 +49,55 @@ module CellAction =
       );
     ();
   });
+
+let styles =
+  Style.(
+    StyleSheet.create({
+      "rawAddressContainer":
+        style(~display=`flex, ~flexDirection=`row, ~alignItems=`center, ()),
+    })
+  );
+
+module AddContactButton = {
+  [@react.component]
+  let make = (~address, ~operation: Operation.Read.t) => {
+    let (visibleModal, openAction, closeAction) =
+      ModalAction.useModalActionState();
+
+    let tooltip = (
+      "add_contact_from_op" ++ operation.hash ++ operation.op_id->string_of_int,
+      I18n.tooltip#add_contact,
+    );
+
+    let onPress = _e => openAction();
+
+    <>
+      <IconButton icon=Icons.AddContact.build onPress tooltip />
+      <ModalAction visible=visibleModal onRequestClose=closeAction>
+        <ContactFormView initAddress=address action=Create closeAction />
+      </ModalAction>
+    </>;
+  };
+};
+
+let rawUnknownAddress = (address, operation) => {
+  <View style=styles##rawAddressContainer>
+    <Typography.Address numberOfLines=1>
+      address->React.string
+    </Typography.Address>
+    <AddContactButton address operation />
+  </View>;
+};
+
+let getContactOrRaw = (aliases, tokens, address, operation) => {
+  address
+  ->AliasHelpers.getContractAliasFromAddress(aliases, tokens)
+  ->Option.mapWithDefault(rawUnknownAddress(address, operation), alias =>
+      <Typography.Body1 numberOfLines=1>
+        alias->React.string
+      </Typography.Body1>
+    );
+};
 
 let status = (operation: Operation.Read.t, currentLevel, config: ConfigFile.t) => {
   let (txt, colorStyle) =
@@ -112,7 +161,8 @@ let make =
     let account = StoreContext.SelectedAccount.useGet();
     let aliases = StoreContext.Aliases.useGetAll();
     let tokens = StoreContext.Tokens.useGetAll();
-    let config = SdkContext.useSettings().config;
+    let settings = SdkContext.useSettings();
+    let addToast = LogsContext.useToast();
 
     <Table.Row>
       {switch (operation.payload) {
@@ -128,7 +178,8 @@ let make =
              <CellAmount />
              <CellFee>
                <Typography.Body1>
-                 {business.fee->ProtocolXTZ.toString->React.string}
+                 {I18n.t#xtz_amount(business.fee->ProtocolXTZ.toString)
+                  ->React.string}
                </Typography.Body1>
              </CellFee>
              <CellAddress />
@@ -145,34 +196,27 @@ let make =
              {amount(isToken, account, transaction)}
              <CellFee>
                <Typography.Body1>
-                 {business.fee->ProtocolXTZ.toString->React.string}
+                 {I18n.t#xtz_amount(business.fee->ProtocolXTZ.toString)
+                  ->React.string}
                </Typography.Body1>
              </CellFee>
              <CellAddress>
                {business.source
                 ->AliasHelpers.getContractAliasFromAddress(aliases, tokens)
                 ->Option.mapWithDefault(
-                    <Typography.Address numberOfLines=1>
-                      business.source->React.string
-                    </Typography.Address>,
-                    alias =>
+                    rawUnknownAddress(business.source, operation), alias =>
                     <Typography.Body1 numberOfLines=1>
                       alias->React.string
                     </Typography.Body1>
                   )}
              </CellAddress>
              <CellAddress>
-               {transaction.destination
-                ->AliasHelpers.getContractAliasFromAddress(aliases, tokens)
-                ->Option.mapWithDefault(
-                    <Typography.Address numberOfLines=1>
-                      transaction.destination->React.string
-                    </Typography.Address>,
-                    alias =>
-                    <Typography.Body1 numberOfLines=1>
-                      alias->React.string
-                    </Typography.Body1>
-                  )}
+               {getContactOrRaw(
+                  aliases,
+                  tokens,
+                  transaction.destination,
+                  operation,
+                )}
              </CellAddress>
            </>;
          | Origination(_origination) =>
@@ -188,7 +232,7 @@ let make =
              <CellAddress />
              <View />
            </>
-         | Delegation(_delegation) =>
+         | Delegation(delegation) =>
            <>
              <CellType>
                <Typography.Body1>
@@ -196,9 +240,27 @@ let make =
                </Typography.Body1>
              </CellType>
              <CellAmount />
-             <CellFee />
-             <CellAddress />
-             <CellAddress />
+             <CellFee>
+               <Typography.Body1>
+                 {I18n.t#xtz_amount(business.fee->ProtocolXTZ.toString)
+                  ->React.string}
+               </Typography.Body1>
+             </CellFee>
+             <CellAddress>
+               {getContactOrRaw(aliases, tokens, business.source, operation)}
+             </CellAddress>
+             {delegation.delegate
+              ->Option.mapWithDefault(
+                  <CellAddress>
+                    <Typography.Body1 numberOfLines=1>
+                      I18n.t#delegation_removal->React.string
+                    </Typography.Body1>
+                  </CellAddress>,
+                  d =>
+                  <CellAddress>
+                    {getContactOrRaw(aliases, tokens, d, operation)}
+                  </CellAddress>
+                )}
            </>
          | Unknown => React.null
          }
@@ -208,16 +270,26 @@ let make =
           {operation.timestamp->DateFns.format("P pp")->React.string}
         </Typography.Body1>
       </CellDate>
-      <CellStatus> {status(operation, currentLevel, config)} </CellStatus>
+      <CellStatus>
+        {status(operation, currentLevel, settings.config)}
+      </CellStatus>
       <CellAction>
         <IconButton
           size=34.
           icon=Icons.OpenExternal.build
+          tooltip=(
+            "open_in_explorer"
+            ++ operation.hash
+            ++ operation.op_id->string_of_int,
+            I18n.tooltip#open_in_explorer,
+          )
           onPress={_ => {
-            electron##shell##openExternal(
-              "https://edonet.tzkt.io/" ++ operation.hash,
-            )
-            ->ignore
+            switch (AppSettings.getExternalExplorer(settings)) {
+            | Ok(url) =>
+              electron##shell##openExternal(url ++ operation.hash)->ignore
+            | Error(err) =>
+              addToast(Logs.error(~origin=Settings, Network.errorMsg(err)))
+            }
           }}
         />
       </CellAction>

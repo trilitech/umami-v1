@@ -10,18 +10,51 @@ type action =
   | Create
   | Edit(Account.t);
 
+let addressExistsCheck =
+    (aliases, values: StateLenses.state): ReSchema.fieldState => {
+  switch (aliases->Map.String.get(values.address)) {
+  | None => Valid
+  | Some(a: Account.t) =>
+    Error(I18n.form_input_error#key_already_registered(a.alias))
+  };
+};
+
+let formCheckExists = (aliases, values: StateLenses.state) =>
+  AliasHelpers.formCheckExists(aliases, values.name);
+
+let isEditMode =
+  fun
+  | Edit(_) => true
+  | _ => false;
+
 [@react.component]
-let make = (~action: action, ~closeAction) => {
+let make = (~initAddress=?, ~action: action, ~closeAction) => {
   let (createAliasRequest, createAlias) = StoreContext.Aliases.useCreate();
   let (updateAliasRequest, updateAlias) = StoreContext.Aliases.useUpdate();
 
   let addToast = LogsContext.useToast();
 
+  let aliasesRequest = StoreContext.Aliases.useRequest();
+  let aliases =
+    aliasesRequest
+    ->ApiRequest.getDoneOk
+    ->Option.getWithDefault(Map.String.empty);
+
   let form: AccountCreateForm.api =
     AccountCreateForm.use(
       ~schema={
         AccountCreateForm.Validation.(
-          Schema(nonEmpty(Name) + nonEmpty(Address))
+          Schema(
+            nonEmpty(Name)
+            + nonEmpty(Address)
+            + custom(
+                values =>
+                  action->isEditMode
+                    ? Valid : addressExistsCheck(aliases, values),
+                Address,
+              )
+            + custom(formCheckExists(aliases), Name),
+          )
         );
       },
       ~onSubmit=
@@ -31,7 +64,7 @@ let make = (~action: action, ~closeAction) => {
             createAlias((state.values.name, state.values.address))
             ->Future.tapOk(_ => closeAction())
             ->ApiRequest.logOk(addToast, Logs.Account, _ =>
-                I18n.t#account_created
+                I18n.t#contact_added
               )
             ->ignore
           | Edit(account) =>
@@ -50,7 +83,10 @@ let make = (~action: action, ~closeAction) => {
         },
       ~initialState=
         switch (action) {
-        | Create => {name: "", address: ""}
+        | Create => {
+            name: "",
+            address: initAddress->Option.getWithDefault(""),
+          }
         | Edit(account) => {name: account.alias, address: account.address}
         },
       ~i18n=FormUtils.i18n,
@@ -81,12 +117,14 @@ let make = (~action: action, ~closeAction) => {
     <FormGroupTextInput
       label=I18n.label#add_contact_name
       value={form.values.name}
+      placeholder=I18n.input_placeholder#add_contacts_name
       handleChange={form.handleChange(Name)}
       error={form.getFieldError(Field(Name))}
     />
     <FormGroupTextInput
       label=I18n.label#add_contact_address
       value={form.values.address}
+      placeholder=I18n.input_placeholder#add_contacts_tz
       handleChange={form.handleChange(Address)}
       error={form.getFieldError(Field(Address))}
       disabled=?{

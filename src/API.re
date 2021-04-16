@@ -1,4 +1,3 @@
-open ChildReprocess.StdStream;
 open UmamiCommon;
 open Delegate;
 
@@ -53,72 +52,16 @@ module URL = {
 
   let delegates = settings =>
     AppSettings.endpoint(settings) ++ Path.delegates;
-};
 
-module type CallerAPI = {
-  let call:
-    (array(string), ~inputs: array(string)=?, unit) =>
-    Future.t(Result.t(string, string));
-};
-
-module TezosClient = {
-  [@bs.send] external end_: Writeable.t => unit = "end";
-
-  let removeTestnetWarning = output => {
-    let warning =
-      Js.Re.fromString(
-        "[ ]*Warning:[ \n]*This is NOT the Tezos Mainnet.[ \n]*\
-       Do NOT use your fundraiser keys on this network.[ \n]*",
-      );
-    Js.String.replaceByRe(warning, "", output);
+  let checkToken = (network, contract) => {
+    let path = "tokens/exists/" ++ contract;
+    build_url(network, path, []);
   };
 
-  let call = (command, ~inputs=?, ()) =>
-    Future.make(resolve => {
-      let process = ChildReprocess.spawn("tezos-client", command, ());
-      let result: ref(option(Result.t(string, string))) = ref(None);
-      let _ =
-        process
-        ->child_stderr
-        ->Readable.on_data(buffer => {
-            let err = Node_buffer.toString(buffer);
-            result :=
-              removeTestnetWarning(err) == "" ? None : Some(Error(err));
-          });
-      let _ =
-        process
-        ->child_stdout
-        ->Readable.on_data(buffer =>
-            switch (result^) {
-            | Some(Ok(text)) =>
-              result :=
-                Some(
-                  Ok(Js.String2.concat(text, buffer->Node_buffer.toString)),
-                )
-            | Some(Error(_)) => ()
-            | None => result := Some(buffer->Node_buffer.toString->Ok)
-            }
-          );
-      let _ =
-        switch (inputs) {
-        | Some(inputs) =>
-          process
-          ->child_stdin
-          ->Writeable.write(inputs->Js.Array2.joinWith("\n") ++ "\n\000");
-          process->child_stdin->end_;
-        | None => ()
-        };
-      let _ =
-        process->ChildReprocess.on_close((_, _) =>
-          resolve(
-            switch (result^) {
-            | Some(value) => value
-            | None => Ok("")
-            },
-          )
-        );
-      ();
-    });
+  let getTokenBalance = (network, contract, addr) => {
+    let path = "accounts/" ++ addr ++ "/tokens/" ++ contract ++ "/balance";
+    build_url(network, path, []);
+  };
 };
 
 module type GetterAPI = {
@@ -135,42 +78,15 @@ module TezosExplorer = {
       );
 };
 
-module Balance = (Caller: CallerAPI) => {
-  let get = (settings, account, ~block=?, ()) => {
-    let arguments = [|
-      "-E",
-      settings->AppSettings.endpoint,
-      "get",
-      "balance",
-      "for",
-      account,
-    |];
-    let arguments =
-      switch (block) {
-      | Some(block) => Js.Array2.concat([|"-b", block|], arguments)
-      | None => arguments
-      };
-
-    Caller.call(arguments, ())
-    ->Future.flatMapOk(r =>
-        r
-        ->Float.fromString
-        ->Option.map(Float.toString)
-        ->Option.flatMap(ProtocolXTZ.fromString)
-        ->(
-            ropt =>
-              switch (ropt) {
-              | None when r == "" => Ok(ProtocolXTZ.zero)
-              | None => Error("Cannot parse balance")
-              | Some(r) => Ok(r)
-              }
-          )
-        ->Future.value
-      );
+module Balance = {
+  let get = (settings, address, ~params=?, ()) => {
+    AppSettings.endpoint(settings)
+    ->ReTaquito.Balance.get(~address, ~params?, ())
+    ->Future.mapOk(ProtocolXTZ.ofInt64);
   };
 };
 
-let map = (result: Result.t('a, string), transform: 'a => 'b) =>
+let tryMap = (result: Result.t('a, string), transform: 'a => 'b) =>
   try(
     switch (result) {
     | Ok(value) => Ok(transform(value))
@@ -182,245 +98,13 @@ let map = (result: Result.t('a, string), transform: 'a => 'b) =>
   | _ => Error("Unknown error")
   };
 
-module InjectorRaw = (Caller: CallerAPI) => {
-  type parserInterpret('a) =
-    | AllReduce(('a, option(string)) => 'a, 'a)
-    | First(string => option('a))
-    | Last(string => option('a))
-    | Nth(string => option('a), int)
-    | Exists(string => option('a));
-
-  let parse = (receipt, pattern, interp) => {
-    let rec parseAll = (acc, regexp) =>
-      switch (
-        Js.Re.exec_(regexp, receipt)->Option.map(Js.Re.captures),
-        interp,
-      ) {
-      | (Some(res), Exists(_)) => [|
-          res[0]->Option.flatMap(Js.Nullable.toOption),
-        |]
-      | (Some(res), _) =>
-        acc
-        ->Js.Array2.concat([|res[1]->Option.flatMap(Js.Nullable.toOption)|])
-        ->parseAll(regexp)
-      | (None, _) => acc
-      };
-    let interpretResults = results =>
-      if (Js.Array.length(results) == 0) {
-        None;
-      } else {
-        switch (interp) {
-        | Exists(f) => results[0]->Option.flatMap(x => x)->Option.flatMap(f)
-        | First(f) => results[0]->Option.flatMap(x => x)->Option.flatMap(f)
-        | Last(f) =>
-          results[Js.Array.length(results) - 1]
-          ->Option.flatMap(x => x)
-          ->Option.flatMap(f)
-        | Nth(f, i) =>
-          i < Js.Array.length(results)
-            ? results[i]->Option.flatMap(x => x)->Option.flatMap(f) : None
-        | AllReduce(f, init) => Some(Js.Array2.reduce(results, f, init))
-        };
-      };
-    parseAll([||], Js.Re.fromStringWithFlags(pattern, ~flags="g"))
-    ->interpretResults;
-  };
-
-  let parseAndReduceXTZ = (f, s) => {
-    Option.mapWithDefault(s, Some(ProtocolXTZ.zero), ProtocolXTZ.fromString)
-    ->Option.mapWithDefault(f, ProtocolXTZ.Infix.(+)(f));
-  };
-
-  let parseAndReduceInt = (f, s) => {
-    Option.mapWithDefault(s, Some(0), int_of_string_opt)
-    ->Option.mapWithDefault(f, Int.(+)(f));
-  };
-
-  type parserOptions = {
-    fees: parserInterpret(ProtocolXTZ.t),
-    counter: parserInterpret(int),
-    gasLimit: parserInterpret(int),
-    storageLimit: parserInterpret(int),
-  };
-
-  let singleOperationParser = {
-    fees: AllReduce(parseAndReduceXTZ, ProtocolXTZ.zero),
-    counter: First(int_of_string_opt),
-    gasLimit: AllReduce(parseAndReduceInt, 0),
-    storageLimit: AllReduce(parseAndReduceInt, 0),
-  };
-
-  let singleBatchTransferParser = index => {
-    Js.log(
-      "FEE "
-      ++ Js.String.make(index)
-      ++ " FROM "
-      ++ Js.String.make(Nth(float_of_string_opt, index)),
-    );
-
-    {
-      fees: Nth(ProtocolXTZ.fromString, index),
-      counter: Nth(int_of_string_opt, index),
-      gasLimit: Nth(int_of_string_opt, index),
-      storageLimit: Nth(int_of_string_opt, index),
-    };
-  };
-
-  let patchNthForRevelation = (options, revelation) => {
-    let incrNth = nth =>
-      switch (nth) {
-      | Nth(f, i) => Nth(f, i + 1)
-      | _ => nth
-      };
-    switch (revelation) {
-    | None => options
-    | Some () => {
-        fees: incrNth(options.fees),
-        counter: incrNth(options.counter),
-        gasLimit: incrNth(options.gasLimit),
-        storageLimit: incrNth(options.storageLimit),
-      }
-    };
-  };
-
-  let transaction_options_arguments =
-      (
-        arguments,
-        tx_options: Protocol.transfer_options,
-        common_options: Protocol.common_options,
-      ) => {
-    let arguments =
-      switch (tx_options.fee) {
-      | Some(fee) =>
-        Js.Array2.concat(arguments, [|"--fee", fee->ProtocolXTZ.toString|])
-      | None => arguments
-      };
-    let arguments =
-      switch (tx_options.gasLimit) {
-      | Some(gasLimit) =>
-        Js.Array2.concat(arguments, [|"-G", gasLimit->Js.Int.toString|])
-      | None => arguments
-      };
-    let arguments =
-      switch (tx_options.storageLimit) {
-      | Some(storageLimit) =>
-        Js.Array2.concat(arguments, [|"-S", storageLimit->Js.Int.toString|])
-      | None => arguments
-      };
-    let arguments =
-      switch (common_options.burnCap) {
-      | Some(burnCap) =>
-        Js.Array2.concat(
-          arguments,
-          [|"--burn-cap", burnCap->ProtocolXTZ.toString|],
-        )
-      | None => arguments
-      };
-    switch (common_options.forceLowFee) {
-    | Some(true) => Js.Array2.concat(arguments, [|"--force-low-fee"|])
-    | Some(false)
-    | None => arguments
-    };
-  };
-
-  exception InvalidReceiptFormat;
-
-  let simulate = (network, parser_options, make_arguments) =>
-    Caller.call(
-      make_arguments(network)->Js.Array2.concat([|"--simulation"|]),
-      (),
-    )
-    ->Future.tapOk(Js.log)
-    ->Future.map(result =>
-        result->map(receipt => {
-          let revelation =
-            receipt->parse(
-              "[ ]*Revelation of manager public key:",
-              Exists(_ => Some()),
-            );
-          Js.log(revelation);
-          let parser_options =
-            patchNthForRevelation(parser_options, revelation);
-          let fee =
-            receipt->parse(
-              "[ ]*Fee to the baker: .([0-9]*\\.[0-9]+|[0-9]+)",
-              parser_options.fees,
-            );
-          Js.log(fee);
-          let count =
-            receipt->parse(
-              "[ ]*Expected counter: ([0-9]+)",
-              parser_options.counter,
-            );
-          Js.log(count);
-          let gasLimit =
-            receipt->parse(
-              "[ ]*Gas limit: ([0-9]+)",
-              parser_options.gasLimit,
-            );
-          Js.log(gasLimit);
-          let storageLimit =
-            receipt->parse(
-              "[ ]*Storage limit: ([0-9]+)",
-              parser_options.storageLimit,
-            );
-          Js.log(storageLimit);
-          switch (fee, count, gasLimit, storageLimit) {
-          | (Some(fee), Some(count), Some(gasLimit), Some(storageLimit)) =>
-            Protocol.{fee, count, gasLimit, storageLimit}
-          | _ => raise(InvalidReceiptFormat)
-          };
-        })
-      )
-    ->Future.tapOk(Js.log);
-
-  let create = (network, make_arguments) =>
-    Caller.call(make_arguments(network), ())
-    ->Future.tapOk(Js.log)
-    ->Future.map(result =>
-        result->map(receipt => {
-          let result =
-            receipt->parse(
-              "Operation hash is '([A-Za-z0-9]*)'",
-              First(s => Some(s)),
-            );
-          switch (result) {
-          | Some(operationHash) => operationHash
-          | None => raise(InvalidReceiptFormat)
-          };
-        })
-      )
-    ->Future.tapOk(Js.log);
-
-  let inject = (network, make_arguments, ~password) =>
-    Caller.call(make_arguments(network), ~inputs=[|password|], ())
-    ->Future.tapOk(Js.log)
-    ->Future.map(result =>
-        result->map(receipt => {
-          let operationHash =
-            receipt->parse(
-              "Operation hash is '([A-Za-z0-9]+)'",
-              First(s => Some(s)),
-            );
-          let branch =
-            receipt->parse("--branch ([A-Za-z0-9]+)", First(s => Some(s)));
-          switch (operationHash, branch) {
-          | (Some(operationHash), Some(branch)) => (operationHash, branch)
-          | (_, _) => raise(InvalidReceiptFormat)
-          };
-        })
-      );
-};
-
-module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
-  module Injector = InjectorRaw(Caller);
-
+module Explorer = (Getter: GetterAPI) => {
   let getFromMempool = (account, network, operations) =>
     network
     ->URL.mempool(account)
     ->Getter.get
     ->Future.map(result =>
-        result->map(x =>
+        result->tryMap(x =>
           (
             operations,
             x |> Json.Decode.(array(Operation.Read.decodeFromMempool)),
@@ -454,7 +138,7 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
     ->URL.operations(account, ~types?, ~destination?, ~limit?, ())
     ->Getter.get
     ->Future.map(result =>
-        result->map(Json.Decode.(array(Operation.Read.decode)))
+        result->tryMap(Json.Decode.(array(Operation.Read.decode)))
       )
     >>= (
       operations =>
@@ -462,151 +146,193 @@ module Operations = (Caller: CallerAPI, Getter: GetterAPI) => {
           ? getFromMempool(account, network, operations)
           : Future.value(Ok(operations))
     );
+};
 
-  let transfer = (tx: Protocol.transfer) => {
-    let obj = Js.Dict.empty();
-    Js.Dict.set(obj, "destination", Js.Json.string(tx.destination));
-    Js.Dict.set(
-      obj,
-      "amount",
-      tx.amount->ProtocolXTZ.toString->Js.Json.string,
-    );
-    tx.tx_options.fee
-    ->Lib.Option.iter(v =>
-        Js.Dict.set(obj, "fee", v->ProtocolXTZ.toString->Js.Json.string)
-      );
-    tx.tx_options.gasLimit
-    ->Lib.Option.iter(v =>
-        Js.Dict.set(obj, "gas-limit", Js.Int.toString(v)->Js.Json.string)
-      );
-    tx.tx_options.storageLimit
-    ->Lib.Option.iter(v =>
-        Js.Dict.set(obj, "storage-limit", Js.Int.toString(v)->Js.Json.string)
-      );
-    Js.Json.object_(obj);
-  };
+let handleTaquitoError = e =>
+  e->ReTaquito.Error.(
+       fun
+       | Generic(s) => s
+       | WrongPassword => I18n.form_input_error#wrong_password
+       | UnregisteredDelegate => I18n.form_input_error#unregistered_delegate
+       | UnchangedDelegate => I18n.form_input_error#change_baker
+       | BadPkh => I18n.form_input_error#bad_pkh
+       | BranchRefused => I18n.form_input_error#branch_refused_error
+       | InvalidContract => I18n.form_input_error#invalid_contract
+     );
 
-  let transfers_to_json = (btxs: Protocol.transaction) =>
-    btxs.transfers
-    ->List.map(transfer)
-    ->List.toArray
-    ->Js.Json.array
-    ->Js.Json.stringify /* ->(json => "\'" ++ json ++ "\'") */;
+let handleSdkError = e =>
+  e->TezosSDK.Error.(
+       fun
+       | Generic(s) => s
+       | BadPkh => I18n.form_input_error#bad_pkh
+     );
 
-  let arguments = (settings, operation: Protocol.t) =>
-    switch (operation) {
-    | Transaction({transfers: [transfer]} as transaction) =>
-      let arguments = [|
-        "-E",
-        settings->AppSettings.endpoint,
-        "-w",
-        "none",
-        "transfer",
-        transfer.amount->ProtocolXTZ.toString,
-        "from",
-        transaction.source,
-        "to",
-        transfer.destination,
-        "--burn-cap",
-        "0.257",
-      |];
-      Injector.transaction_options_arguments(
-        arguments,
-        transfer.tx_options,
-        transaction.options,
-      );
-    | Transaction(transaction) => [|
-        "-E",
-        settings->AppSettings.endpoint,
-        "-w",
-        "none",
-        "multiple",
-        "transfers",
-        "from",
-        transaction.source,
-        "using",
-        transfers_to_json(transaction),
-        "--burn-cap",
-        Js.Float.toString(
-          0.06425 *. transaction.transfers->List.length->float_of_int,
-        ),
-      |]
-    | Delegation({delegate: None, source}) => [|
-        "-E",
-        settings->AppSettings.endpoint,
-        "-w",
-        "none",
-        "withdraw",
-        "delegate",
-        "from",
-        source,
-      |]
-    | Delegation({delegate: Some(delegate), source}) => [|
-        "-E",
-        settings->AppSettings.endpoint,
-        "-w",
-        "none",
-        "set",
-        "delegate",
-        "for",
-        source,
-        "to",
-        delegate,
-      |]
-    };
+module Simulation = {
+  let extractCustomValues = (tx_options: Protocol.transfer_options) => (
+    tx_options.Protocol.fee
+    ->Option.map(fee => fee->ProtocolXTZ.unsafeToMutezInt),
+    tx_options.storageLimit,
+    tx_options.gasLimit,
+  );
 
-  exception InvalidReceiptFormat;
-
-  let simulateSingleBatchTransfer = (settings, index, operation: Protocol.t) =>
-    Injector.simulate(
-      settings,
-      Injector.singleBatchTransferParser(index),
-      arguments(_, operation),
-    );
-
-  let simpleSimulation = (settings, operation: Protocol.t) =>
-    Injector.simulate(
-      settings,
-      Injector.singleOperationParser,
-      arguments(_, operation),
-    );
-
-  let simulate = (settings, ~index=?, operation: Protocol.t) => {
-    switch (operation, index) {
-    | (Delegation(_), _)
-    | (Transaction(_), None)
-    | (Transaction({transfers: [_]}), _) =>
-      simpleSimulation(settings, operation)
-    | (Transaction(_), Some(index)) =>
-      simulateSingleBatchTransfer(settings, index, operation)
-    };
-  };
-
-  let create = (network, operation: Protocol.t) =>
-    Injector.create(network, arguments(_, operation));
-
-  let inject = (network, operation: Protocol.t, ~password) =>
-    Injector.inject(network, arguments(_, operation), ~password);
-
-  let waitForOperationConfirmations =
-      (settings, hash, ~confirmations, ~branch) =>
-    Caller.call(
-      [|
-        "-E",
-        settings->AppSettings.endpoint,
-        "wait",
-        "for",
-        hash,
-        "to",
-        "be",
-        "included",
-        "--confirmations",
-        confirmations->string_of_int,
-        "--branch",
-        branch,
-      |],
+  let transfer = (settings, transfer, source) => {
+    ReTaquito.Estimate.transfer(
+      ~endpoint=settings->AppSettings.endpoint,
+      ~baseDir=settings->AppSettings.baseDir,
+      ~source,
+      ~dest=transfer.Protocol.destination,
+      ~amount=transfer.Protocol.amount->ProtocolXTZ.toInt64,
+      ~fee=?transfer.Protocol.tx_options.fee->Option.map(ProtocolXTZ.toInt64),
+      ~gasLimit=?transfer.Protocol.tx_options.gasLimit,
+      ~storageLimit=?transfer.Protocol.tx_options.storageLimit,
       (),
     );
+  };
+
+  let batch = (settings, transfers, ~source, ~index=?, ()) => {
+    let customValues =
+      List.map(transfers, tx => tx.Protocol.tx_options->extractCustomValues)
+      ->List.toArray;
+
+    let transfers = source =>
+      transfers
+      ->List.map(({amount, destination, tx_options}: Protocol.transfer) =>
+          ReTaquito.Toolkit.prepareTransfer(
+            ~amount=amount->ProtocolXTZ.toInt64->ReTaquito.BigNumber.fromInt64,
+            ~dest=destination,
+            ~source,
+            ~fee=?
+              tx_options.fee
+              ->Option.map(fee =>
+                  fee->ProtocolXTZ.toInt64->ReTaquito.BigNumber.fromInt64
+                ),
+            ~gasLimit=?tx_options.gasLimit,
+            ~storageLimit=?tx_options.storageLimit,
+            (),
+          )
+        )
+      ->List.toArray;
+
+    ReTaquito.Estimate.batch(
+      ~endpoint=settings->AppSettings.endpoint,
+      ~baseDir=settings->AppSettings.baseDir,
+      ~source,
+      ~transfers,
+      (),
+    )
+    ->Future.flatMapOk(r =>
+        ReTaquito.Estimate.handleEstimationResults(r, customValues, index)
+      );
+  };
+
+  let setDelegate = (settings, delegation: Protocol.delegation) => {
+    ReTaquito.Estimate.setDelegate(
+      ~endpoint=settings->AppSettings.endpoint,
+      ~baseDir=settings->AppSettings.baseDir,
+      ~source=delegation.Protocol.source,
+      ~delegate=?delegation.Protocol.delegate,
+      ~fee=?delegation.Protocol.options.fee->Option.map(ProtocolXTZ.toInt64),
+      (),
+    );
+  };
+
+  let run = (settings, ~index=?, operation: Protocol.t) => {
+    let r =
+      switch (operation, index) {
+      | (Transaction({transfers: [t], source}), _) =>
+        transfer(settings, t, source)
+      | (Delegation(d), _) => setDelegate(settings, d)
+      | (Transaction({transfers, source}), None) =>
+        batch(settings, transfers, ~source, ())
+      | (Transaction({transfers, source}), Some(index)) =>
+        batch(settings, transfers, ~source, ~index, ())
+      };
+
+    r
+    ->Future.mapError(e => e->handleTaquitoError)
+    ->Future.mapOk(({totalCost, gasLimit, storageLimit, revealFee}) =>
+        Protocol.{
+          fee: totalCost->ProtocolXTZ.fromMutezInt,
+          gasLimit,
+          storageLimit,
+          revealFee: revealFee->ProtocolXTZ.fromMutezInt,
+        }
+      );
+  };
+};
+
+module Operation = {
+  let batch = (settings, transfers, ~source, ~password) => {
+    let transfers = source =>
+      transfers
+      ->List.map(({amount, destination, tx_options}: Protocol.transfer) =>
+          ReTaquito.Toolkit.prepareTransfer(
+            ~amount=amount->ProtocolXTZ.toInt64->ReTaquito.BigNumber.fromInt64,
+            ~dest=destination,
+            ~source,
+            ~fee=?
+              tx_options.fee
+              ->Option.map(fee =>
+                  fee->ProtocolXTZ.toInt64->ReTaquito.BigNumber.fromInt64
+                ),
+            ~gasLimit=?tx_options.gasLimit,
+            ~storageLimit=?tx_options.storageLimit,
+            (),
+          )
+        )
+      ->List.toArray;
+
+    ReTaquito.Operations.batch(
+      ~endpoint=settings->AppSettings.endpoint,
+      ~baseDir=settings->AppSettings.baseDir,
+      ~source,
+      ~transfers,
+      ~password,
+      (),
+    )
+    ->Future.mapOk((op: ReTaquito.Toolkit.operationResult) => op.hash);
+  };
+
+  let transfer = (settings, transfer, ~source, ~password) => {
+    ReTaquito.Operations.transfer(
+      ~endpoint=settings->AppSettings.endpoint,
+      ~baseDir=settings->AppSettings.baseDir,
+      ~source,
+      ~dest=transfer.Protocol.destination,
+      ~amount=transfer.Protocol.amount->ProtocolXTZ.toInt64,
+      ~password,
+      ~fee=?transfer.Protocol.tx_options.fee->Option.map(ProtocolXTZ.toInt64),
+      ~gasLimit=?transfer.Protocol.tx_options.gasLimit,
+      ~storageLimit=?transfer.Protocol.tx_options.storageLimit,
+      (),
+    )
+    ->Future.mapOk((op: ReTaquito.Toolkit.operationResult) => op.hash);
+  };
+
+  let setDelegate =
+      (settings, Protocol.{delegate, source, options}, ~password) => {
+    ReTaquito.Operations.setDelegate(
+      ~endpoint=settings->AppSettings.endpoint,
+      ~baseDir=settings->AppSettings.baseDir,
+      ~source,
+      ~delegate,
+      ~password,
+      ~fee=?options.fee->Option.map(ProtocolXTZ.toInt64),
+      (),
+    )
+    ->Future.mapOk((op: ReTaquito.Toolkit.operationResult) => op.hash);
+  };
+
+  let run = (settings, operation: Protocol.t, ~password) =>
+    switch (operation) {
+    | Transaction({transfers: [t], source}) =>
+      transfer(settings, t, ~source, ~password)
+
+    | Delegation(d) => setDelegate(settings, d, ~password)
+
+    | Transaction({transfers, source}) =>
+      batch(settings, transfers, ~source, ~password)
+    };
 };
 
 module MapString = Map.String;
@@ -615,7 +341,109 @@ module Mnemonic = {
   [@bs.module "bip39"] external generate: unit => string = "generateMnemonic";
 };
 
-module Accounts = (Caller: CallerAPI) => {
+module Secret = {
+  type t = {
+    name: string,
+    derivationScheme: string,
+    addresses: Js.Array.t(string),
+    legacyAddress: option(string),
+  };
+
+  let decoder = json =>
+    Json.Decode.{
+      name: json |> field("name", string),
+      derivationScheme: json |> field("derivationScheme", string),
+      addresses: json |> field("addresses", array(string)),
+      legacyAddress: json |> optional(field("legacyAddress", string)),
+    };
+
+  let encoder = secret =>
+    Json.Encode.(
+      switch (secret.legacyAddress) {
+      | Some(legacyAddress) =>
+        object_([
+          ("name", string(secret.name)),
+          ("derivationScheme", string(secret.derivationScheme)),
+          ("addresses", stringArray(secret.addresses)),
+          ("legacyAddress", string(legacyAddress)),
+        ])
+      | None =>
+        object_([
+          ("name", string(secret.name)),
+          ("derivationScheme", string(secret.derivationScheme)),
+          ("addresses", stringArray(secret.addresses)),
+        ])
+      }
+    );
+};
+
+module Aliases = {
+  let parse = content =>
+    content
+    |> Js.String.split("\n")
+    |> Js.Array.map(row => row |> Js.String.split(": "))
+    |> (pairs => pairs->Js.Array2.filter(pair => pair->Array.length == 2))
+    |> Js.Array.map(pair =>
+         (pair->Array.getUnsafe(0), pair->Array.getUnsafe(1))
+       );
+
+  let get = (~settings) =>
+    settings
+    ->AppSettings.sdk
+    ->TezosSDK.listKnownAddresses
+    ->Future.mapError(handleSdkError)
+    ->Future.mapOk(l => l->Array.map(({alias, pkh}) => (alias, pkh)));
+
+  let getAliasMap = (~settings) =>
+    get(~settings)
+    ->Future.mapOk(addresses => addresses->Array.map(((a, b)) => (b, a)))
+    ->Future.mapOk(Map.String.fromArray);
+
+  let getAliasForAddress = (~settings, address) =>
+    getAliasMap(~settings)
+    ->Future.mapOk(aliases => aliases->Map.String.get(address));
+
+  let getAddressForAlias = (~settings, alias) =>
+    get(~settings)
+    ->Future.mapOk(Map.String.fromArray)
+    ->Future.mapOk(addresses => addresses->Map.String.get(alias));
+
+  let add = (~settings, alias, pkh) =>
+    settings
+    ->AppSettings.sdk
+    ->TezosSDK.addAddress(alias, pkh)
+    ->Future.mapError(handleSdkError);
+
+  let delete = (~settings, name) =>
+    settings
+    ->AppSettings.sdk
+    ->TezosSDK.forgetAddress(name)
+    ->Future.mapError(handleSdkError);
+
+  let rename = (~settings, renaming) =>
+    settings
+    ->AppSettings.sdk
+    ->TezosSDK.renameAliases(renaming)
+    ->Future.mapError(handleSdkError);
+};
+
+module Accounts = (Getter: GetterAPI) => {
+  let secrets = (~settings: AppSettings.t) => {
+    let _ = settings;
+    LocalStorage.getItem("secrets")
+    ->Js.Nullable.toOption
+    ->Option.flatMap(Json.parse)
+    ->Option.map(Json.Decode.(array(Secret.decoder)));
+  };
+
+  let recoveryPhrases = (~settings: AppSettings.t) => {
+    let _ = settings;
+    LocalStorage.getItem("recovery-phrases")
+    ->Js.Nullable.toOption
+    ->Option.flatMap(Json.parse)
+    ->Option.map(Json.Decode.(array(SecureStorage.Cipher.decoder)));
+  };
+
   let parse = content =>
     content
     ->Js.String2.split("\n")
@@ -637,202 +465,399 @@ module Accounts = (Caller: CallerAPI) => {
     settings
     ->AppSettings.sdk
     ->TezosSDK.listKnownAddresses
+    ->Future.mapError(handleSdkError)
     ->Future.mapOk(r =>
         r->Array.keepMap((TezosSDK.OutputAddress.{alias, pkh, sk_known}) =>
           sk_known ? Some((alias, pkh)) : None
         )
       );
 
-  let create = (~settings, name) =>
-    Caller.call(
-      [|"-E", settings->AppSettings.endpoint, "gen", "keys", name|],
-      (),
-    );
+  let secretAt = (~settings, index) =>
+    secrets(~settings)
+    ->FutureEx.fromOption(~error="No secrets found!")
+    ->Future.flatMapOk(secrets =>
+        secrets[index]
+        ->FutureEx.fromOption(
+            ~error="Secret at index " ++ index->Int.toString ++ " not found!",
+          )
+      );
+
+  let updateSecretAt = (secret, ~settings, index) =>
+    secrets(~settings)
+    ->FutureEx.fromOption(~error="No secrets found!")
+    ->Future.flatMapOk(secrets => {
+        (secrets[index] = secret)
+          ? Future.value(
+              Ok(
+                LocalStorage.setItem(
+                  "secrets",
+                  Json.Encode.array(Secret.encoder, secrets)->Json.stringify,
+                ),
+              ),
+            )
+          : Future.value(
+              Error(
+                "Can't update secret at index " ++ index->Int.toString ++ "!",
+              ),
+            )
+      });
+
+  let recoveryPhraseAt = (~settings, index, ~password) =>
+    recoveryPhrases(~settings)
+    ->Option.flatMap(recoveryPhrases => recoveryPhrases[index])
+    ->FutureEx.fromOption(
+        ~error=
+          "Recovery phrase at index " ++ index->Int.toString ++ " not found!",
+      )
+    ->Future.flatMapOk(SecureStorage.Cipher.decrypt2(password));
 
   let add = (~settings, alias, pkh) =>
     settings->AppSettings.sdk->TezosSDK.addAddress(alias, pkh);
 
-  let import = (key, name) =>
-    Caller.call(
-      [|"import", "secret", "key", name, "unencrypted:" ++ key|],
-      (),
-    );
-
-  let addWithMnemonic = (~settings, name, mnemonic, ~password) =>
-    Caller.call(
-      [|
-        "-E",
-        settings->AppSettings.endpoint,
-        "import",
-        "keys",
-        "from",
-        "mnemonic",
-        name,
-        "--encrypt",
-      |],
-      ~inputs=[|mnemonic, "", password, password|],
-      (),
-    )
-    ->Future.tapOk(_ => {LocalStorage.setItem("mnemonic", mnemonic)});
-
-  let restore = (~settings, backupPhrase, name, ~derivationPath=?, ()) => {
-    switch (derivationPath) {
-    | Some(derivationPath) =>
-      let seed = HD.BIP39.mnemonicToSeedSync(backupPhrase);
-      let edsk2 = HD.seedToPrivateKey(HD.deriveSeed(seed, derivationPath));
-      Js.log(edsk2);
-      import(edsk2, name);
-    | None =>
-      Caller.call(
-        [|
-          "-E",
-          settings->AppSettings.endpoint,
-          "generate",
-          "keys",
-          "from",
-          "mnemonic",
-          backupPhrase,
-        |],
-        (),
-      )
-      ->Future.tapOk(Js.log)
-      ->Future.mapOk(keys =>
-          (keys |> Js.String.split("\n"))->Array.getUnsafe(2)
-        )
-      ->Future.tapOk(Js.log)
-      ->Future.flatMapOk(edsk => import(edsk, name))
-    };
+  let import = (~settings, key, name, ~password) => {
+    let skUri = "encrypted:" ++ key;
+    settings
+    ->AppSettings.sdk
+    ->TezosSDK.importSecretKey(~name, ~skUri, ~password, ())
+    ->Future.mapError(handleSdkError)
+    ->Future.tapOk(k => Js.log("key found : " ++ k));
   };
 
+  let derive = (~settings, ~index, ~name, ~password) =>
+    Future.mapOk2(
+      secretAt(~settings, index),
+      recoveryPhraseAt(~settings, index, ~password),
+      (secret, recoveryPhrase) => {
+        let suffix = secret.addresses->Array.length->Js.Int.toString;
+        let path = secret.derivationScheme->Js.String2.replace("?", suffix);
+        HD.edesk(path, recoveryPhrase->HD.seed, ~password)
+        ->Future.flatMapOk(edesk => import(~settings, edesk, name, ~password))
+        ->Future.tapOk(address =>
+            {
+              ...secret,
+              addresses: Array.concat(secret.addresses, [|address|]),
+            }
+            ->updateSecretAt(~settings, index)
+          );
+      },
+    )
+    ->Future.flatMapOk(update => update);
+
+  let unsafeDelete = (~settings, name) =>
+    settings
+    ->AppSettings.sdk
+    ->TezosSDK.forgetAddress(name)
+    ->Future.mapError(handleSdkError);
+
   let delete = (~settings, name) =>
-    Caller.call(
-      [|
-        "-E",
-        settings->AppSettings.endpoint,
-        "forget",
-        "address",
-        name,
-        "-f",
-      |],
-      (),
-    );
+    Aliases.getAddressForAlias(~settings, name)
+    ->Future.flatMapOk(address =>
+        unsafeDelete(~settings, name)
+        ->Future.mapOk(_ =>
+            secrets(~settings)
+            ->Option.map(secrets =>
+                secrets->Array.map(secret =>
+                  address == secret.legacyAddress
+                    ? {...secret, legacyAddress: None} : secret
+                )
+              )
+            ->Option.map(secrets =>
+                Json.Encode.array(Secret.encoder, secrets)->Json.stringify
+              )
+            ->Option.map("secrets"->LocalStorage.setItem)
+          )
+      );
 
-  let delegate = (settings, account, delegate) =>
-    Caller.call(
-      [|
-        "-E",
-        settings->AppSettings.endpoint,
-        "set",
-        "delegate",
-        "for",
-        account,
-        "to",
-        delegate,
-      |],
-      (),
-    );
-};
-
-module Scanner = (Caller: CallerAPI, Getter: GetterAPI) => {
-  module AccountsAPI = Accounts(Caller);
-  module OperationsAPI = Operations(Caller, Getter);
+  let deleteSecretAt = (~settings, index) =>
+    Future.mapOk2(
+      secrets(~settings)->FutureEx.fromOption(~error="No secrets found!"),
+      Aliases.getAliasMap(~settings),
+      (secrets, aliases) => {
+      secrets[index]
+      ->Option.map(secret =>
+          secret.addresses
+          ->Array.keepMap(aliases->Map.String.get)
+          ->Array.map(unsafeDelete(~settings))
+        )
+      ->FutureEx.fromOption(
+          ~error="Secret at index " ++ index->Int.toString ++ " not found!",
+        )
+      ->Future.flatMapOk(FutureEx.all)
+      ->Future.tapOk(_ => {
+          let _ =
+            secrets->Js.Array2.spliceInPlace(
+              ~pos=index,
+              ~remove=1,
+              ~add=[||],
+            );
+          LocalStorage.setItem(
+            "secrets",
+            Json.Encode.array(Secret.encoder, secrets)->Json.stringify,
+          );
+        })
+      ->Future.tapOk(_ =>
+          switch (recoveryPhrases(~settings)) {
+          | Some(recoveryPhrases) =>
+            let _ =
+              recoveryPhrases->Js.Array2.spliceInPlace(
+                ~pos=index,
+                ~remove=1,
+                ~add=[||],
+              );
+            LocalStorage.setItem(
+              "recovery-phrases",
+              Json.Encode.array(SecureStorage.Cipher.encoder, recoveryPhrases)
+              ->Json.stringify,
+            );
+          | None => ()
+          }
+        )
+    })
+    ->Future.flatMapOk(update => update)
+    ->Future.tapOk(_ => {
+        let recoveryPhrases = recoveryPhrases(~settings);
+        if (recoveryPhrases == Some([||]) || recoveryPhrases == None) {
+          "lock"->LocalStorage.removeItem;
+          "recovery-phrases"->LocalStorage.removeItem;
+          "secrets"->LocalStorage.removeItem;
+        };
+      });
 
   let validate = (network, address) => {
+    module ExplorerAPI = Explorer(Getter);
     network
-    ->OperationsAPI.get(address, ~limit=1, ())
+    ->ExplorerAPI.get(address, ~limit=1, ())
     ->Future.mapOk(operations => {operations->Js.Array2.length != 0});
   };
 
-  let rec scan =
+  let rec scanSeed =
           (
-            settings: AppSettings.t,
-            backupPhrase,
+            ~settings: AppSettings.t,
+            seed,
             baseName,
-            ~derivationSchema,
-            ~index,
+            ~derivationScheme="m/44'/1729'/?'/0'",
+            ~password,
+            ~index=0,
+            (),
           ) => {
-    let seed = HD.BIP39.mnemonicToSeedSync(backupPhrase);
     let suffix = index->Js.Int.toString;
-    LocalStorage.setItem("index", suffix);
-    let derivationPath = derivationSchema->Js.String2.replace("?", suffix);
-    let edsk2 = HD.seedToPrivateKey(HD.deriveSeed(seed, derivationPath));
-    Js.log(baseName ++ index->Js.Int.toString ++ " " ++ edsk2);
-    let name = baseName ++ suffix;
-    AccountsAPI.import(edsk2, name)
-    ->Future.flatMapOk(_ =>
-        AccountsAPI.get(~settings)
-        ->Future.mapOk(MapString.fromArray)
-        ->Future.flatMapOk(accounts =>
-            switch (accounts->Map.String.get(name)) {
-            | Some(address) =>
-              settings
-              ->validate(address)
+    let name = baseName ++ " /" ++ suffix;
+    let path = derivationScheme->Js.String2.replace("?", suffix);
+    HD.edesk(path, seed, ~password)
+    ->Future.flatMapOk(edesk =>
+        import(~settings, edesk, name, ~password)
+        ->Future.flatMapOk(address
+            // always include 0'
+            =>
+              (
+                index == 0
+                  ? Future.value(Ok(true)) : settings->validate(address)
+              )
               ->Future.flatMapOk(isValidated =>
                   if (isValidated) {
-                    scan(
-                      settings,
-                      backupPhrase,
-                      baseName,
-                      ~derivationSchema,
-                      ~index=index + 1,
-                    );
+                    if (path == derivationScheme) {
+                      Future.value(Ok([|address|]));
+                    } else {
+                      scanSeed(
+                        ~settings,
+                        seed,
+                        baseName,
+                        ~derivationScheme,
+                        ~password,
+                        ~index=index + 1,
+                        (),
+                      )
+                      ->Future.mapOk(addresses =>
+                          Array.concat([|address|], addresses)
+                        );
+                    };
                   } else {
-                    AccountsAPI.delete(~settings, name);
+                    unsafeDelete(~settings, name)->Future.map(_ => Ok([||]));
                   }
                 )
-            | None => Future.make(resolve => resolve(Ok("")))
-            }
-          )
+            )
       );
   };
-};
 
-module Aliases = (Caller: CallerAPI) => {
-  let parse = content =>
-    content
-    |> Js.String.split("\n")
-    |> Js.Array.map(row => row |> Js.String.split(": "))
-    |> (pairs => pairs->Js.Array2.filter(pair => pair->Array.length == 2))
-    |> Js.Array.map(pair =>
-         (pair->Array.getUnsafe(0), pair->Array.getUnsafe(1))
-       );
+  let legacyImport = (~settings, name, recoveryPhrase, ~password) =>
+    settings
+    ->AppSettings.sdk
+    ->TezosSDK.importKeysFromMnemonics(
+        ~name,
+        ~mnemonics=recoveryPhrase,
+        ~password,
+        (),
+      )
+    ->Future.mapError(handleSdkError);
 
-  let get = (~settings) =>
-    Caller.call(
-      [|"-E", settings->AppSettings.endpoint, "list", "known", "contracts"|],
+  let legacyScan = (~settings, recoveryPhrase, name, ~password) =>
+    legacyImport(~settings, name, recoveryPhrase, ~password)
+    ->Future.flatMapOk(legacyAddress =>
+        settings
+        ->validate(legacyAddress)
+        ->Future.mapOk(isValidated =>
+            isValidated ? Some(legacyAddress) : None
+          )
+      )
+    ->Future.flatMapOk(legacyAddress =>
+        legacyAddress == None
+          ? unsafeDelete(~settings, name)->Future.map(_ => Ok(None))
+          : Future.value(Ok(legacyAddress))
+      );
+
+  let scan =
+      (
+        ~settings,
+        recoveryPhrase,
+        baseName,
+        ~derivationScheme="m/44'/1729'/?'/0'",
+        ~password,
+        ~index=0,
+        (),
+      ) =>
+    scanSeed(
+      ~settings,
+      recoveryPhrase->HD.seed,
+      baseName,
+      ~derivationScheme,
+      ~password,
+      ~index,
       (),
     )
-    ->Future.mapOk(parse);
+    ->Future.flatMapOk(addresses => {
+        legacyScan(
+          ~settings,
+          recoveryPhrase,
+          baseName ++ " legacy",
+          ~password,
+        )
+        ->Future.mapOk(legacyAddresses => (addresses, legacyAddresses))
+      });
 
-  let getAliasForAddress = (~settings, address) =>
-    get(~settings)
-    ->Future.mapOk(addresses => addresses->Array.map(((a, b)) => (b, a)))
-    ->Future.mapOk(Map.String.fromArray)
-    ->Future.mapOk(aliases => aliases->Map.String.get(address));
+  let indexOfRecoveryPhrase = (~settings, recoveryPhrase, ~password) =>
+    recoveryPhrases(~settings)
+    ->Option.getWithDefault([||])
+    ->Array.map(SecureStorage.Cipher.decrypt2(password))
+    ->List.fromArray
+    ->Future.all
+    ->Future.map(List.toArray)
+    ->Future.map(decryptedRecoveryPhrases =>
+        decryptedRecoveryPhrases->Array.getBy(decryptedRecoveryPhrase =>
+          decryptedRecoveryPhrase == Ok(recoveryPhrase)
+        )
+      );
 
-  let getAddressForAlias = (~settings, alias) =>
-    get(~settings)
-    ->Future.mapOk(Map.String.fromArray)
-    ->Future.mapOk(addresses => addresses->Map.String.get(alias));
-
-  let add = (~settings, alias, pkh) =>
-    settings->AppSettings.sdk->TezosSDK.addAddress(alias, pkh);
-
-  let delete = (~settings, name) =>
-    Caller.call(
-      [|
-        "-E",
-        settings->AppSettings.endpoint,
-        "forget",
-        "address",
+  let restore =
+      (
+        ~settings,
+        backupPhrase,
         name,
-        "-f",
-      |],
-      (),
-    );
+        ~derivationScheme="m/44'/1729'/?'/0'",
+        ~password,
+        (),
+      ) => {
+    password
+    ->SecureStorage.validatePassword
+    ->Future.flatMapOk(_ =>
+        indexOfRecoveryPhrase(~settings, backupPhrase, ~password)
+        ->Future.map(index =>
+            switch (index) {
+            | Some(_) => Error("Secret already imported!")
+            | None => Ok(index)
+            }
+          )
+      )
+    ->Future.flatMapOk(_ =>
+        scan(~settings, backupPhrase, name, ~derivationScheme, ~password, ())
+      )
+    ->Future.tapOk(_ =>
+        Future.mapOk2(
+          recoveryPhrases(~settings)
+          ->FutureEx.fromOptionWithDefault(~default=[||]),
+          backupPhrase->SecureStorage.Cipher.encrypt(password),
+          (recoveryPhrases, newRecoveryPhrase) => {
+          Array.concat(recoveryPhrases, [|newRecoveryPhrase|])
+        })
+        ->Future.mapOk(Json.Encode.(array(SecureStorage.Cipher.encoder)))
+        ->Future.mapOk(json => json->Json.stringify)
+        ->FutureEx.getOk(recoveryPhrases =>
+            LocalStorage.setItem("recovery-phrases", recoveryPhrases)
+          )
+      )
+    ->Future.tapOk(((addresses, legacyAddress)) => {
+        let secret = {
+          Secret.name,
+          derivationScheme,
+          addresses,
+          legacyAddress,
+        };
+        let secrets =
+          secrets(~settings)
+          ->Option.getWithDefault([||])
+          ->Array.concat([|secret|]);
+        LocalStorage.setItem(
+          "secrets",
+          Json.Encode.array(Secret.encoder, secrets)->Json.stringify,
+        );
+      });
+  };
+
+  let unsafeDeleteAddresses = (~settings, addresses) =>
+    Aliases.getAliasMap(~settings)
+    ->Future.mapOk(aliases =>
+        addresses->Array.keepMap(aliases->Map.String.get)
+      )
+    ->Future.flatMapOk(names =>
+        names->Array.map(unsafeDelete(~settings))->FutureEx.all
+      );
+
+  let scanAll = (~settings, ~password) =>
+    (
+      switch (recoveryPhrases(~settings), secrets(~settings)) {
+      | (Some(recoveryPhrases), Some(secrets)) =>
+        Array.zip(recoveryPhrases, secrets)
+        ->Array.map(((recoveryPhrase, secret)) =>
+            recoveryPhrase
+            ->SecureStorage.Cipher.decrypt(password)
+            ->Future.flatMapOk(recoveryPhrase =>
+                scan(
+                  ~settings,
+                  recoveryPhrase,
+                  secret.name,
+                  ~derivationScheme=secret.derivationScheme,
+                  ~password,
+                  ~index=secret.addresses->Array.length,
+                  (),
+                )
+              )
+            ->Future.mapOk(((addresses, legacyAddress)) =>
+                {
+                  ...secret,
+                  addresses: secret.addresses->Array.concat(addresses),
+                  legacyAddress,
+                }
+              )
+            ->Future.flatMapError(_ => Future.value(Ok(secret)))
+          )
+      | _ => [||]
+      }
+    )
+    ->FutureEx.all
+    ->Future.mapOk(secrets =>
+        secrets->Array.keepMap(secret =>
+          switch (secret) {
+          | Ok(secret) => Some(secret)
+          | _ => None
+          }
+        )
+      )
+    ->Future.mapOk(secrets =>
+        Json.Encode.array(Secret.encoder, secrets)->Json.stringify
+      )
+    ->Future.mapOk(LocalStorage.setItem("secrets"));
 };
 
-module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
+module Delegate = (Getter: GetterAPI) => {
   let parse = content =>
     if (content == "none\n") {
       None;
@@ -846,18 +871,7 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
     };
 
   let getForAccount = (settings, account) =>
-    Caller.call(
-      [|
-        "-E",
-        settings->AppSettings.endpoint,
-        "get",
-        "delegate",
-        "for",
-        account,
-      |],
-      (),
-    )
-    ->Future.mapOk(parse)
+    ReTaquito.getDelegate(settings->AppSettings.endpoint, account)
     ->Future.mapOk(result =>
         switch (result) {
         | Some(delegate) =>
@@ -871,12 +885,12 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
       );
 
   let getBakers = (settings: AppSettings.t) =>
-    switch (settings.network) {
-    | Mainnet =>
+    switch (settings->AppSettings.network) {
+    | `Mainnet =>
       "https://api.baking-bad.org/v2/bakers"
       ->Getter.get
-      ->Future.map(result => result->map(Json.Decode.(array(decode))))
-    | Testnet =>
+      ->Future.mapOk(Json.Decode.(array(Delegate.decode)))
+    | `Testnet(_) =>
       Future.value(
         Ok([|
           {name: "zebra", address: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"},
@@ -891,22 +905,16 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
     lastReward: option(ProtocolXTZ.t),
   };
 
-  let getDelegationInfoForAccount = (network, account: string) => {
-    module OperationsAPI = Operations(Caller, Getter);
-    module BalanceAPI = Balance(Caller);
+  let getDelegationInfoForAccount =
+      (network, account: string)
+      : Future.t(Belt.Result.t(option(delegationInfo), Js.String.t)) => {
+    module ExplorerAPI = Explorer(Getter);
+    module BalanceAPI = Balance;
     network
-    ->OperationsAPI.get(account, ~types=[|"delegation"|], ~limit=1, ())
+    ->ExplorerAPI.get(account, ~types=[|"delegation"|], ~limit=1, ())
     ->Future.flatMapOk(operations =>
         if (operations->Array.length == 0) {
-          //Future.value(Error("No delegation found!"));
-          Future.value(
-            Ok({
-              initialBalance: ProtocolXTZ.zero,
-              delegate: "",
-              timestamp: Js.Date.make(),
-              lastReward: None,
-            }),
-          );
+          Future.value(Ok(None));
         } else {
           let firstOperation = operations->Array.getUnsafe(0);
           switch (firstOperation.payload) {
@@ -916,20 +924,22 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
               switch (payload.delegate) {
               | Some(delegate) =>
                 if (account == delegate) {
-                  //Future.value(Error("Bakers can't delegate!"));
                   Future.value(
-                    Ok({
-                      initialBalance: ProtocolXTZ.zero,
-                      delegate: "",
-                      timestamp: Js.Date.make(),
-                      lastReward: None,
-                    }),
+                    Ok(
+                      {
+                        initialBalance: ProtocolXTZ.zero,
+                        delegate: "",
+                        timestamp: Js.Date.make(),
+                        lastReward: None,
+                      }
+                      ->Some,
+                    ),
                   );
                 } else {
                   network
                   ->BalanceAPI.get(
                       account,
-                      ~block=firstOperation.level->string_of_int,
+                      ~params={block: firstOperation.level->string_of_int},
                       (),
                     )
                   ->Future.mapOk(balance =>
@@ -942,7 +952,7 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
                     )
                   ->Future.flatMapOk(info =>
                       network
-                      ->OperationsAPI.get(
+                      ->ExplorerAPI.get(
                           info.delegate,
                           ~types=[|"transaction"|],
                           ~destination=account,
@@ -951,23 +961,24 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
                         )
                       ->Future.mapOk(operations =>
                           if (operations->Array.length == 0) {
-                            info;
+                            info->Some;
                           } else {
                             switch (firstOperation.payload) {
                             | Business(payload) =>
                               switch (payload.payload) {
-                              | Transaction(payload) => {
-                                  ...info,
-                                  lastReward: Some(payload.amount),
-                                }
-                              | _ => info
+                              | Transaction(payload) =>
+                                {...info, lastReward: Some(payload.amount)}
+                                ->Some
+                              | _ => info->Some
                               }
                             };
                           }
                         )
                     );
                 }
-              | None => Future.value(Error("No delegate set!"))
+              | None =>
+                Js.log("No delegation set");
+                Future.value(Ok(None));
               }
             | _ => Future.value(Error("Invalid operation type!"))
             }
@@ -977,138 +988,87 @@ module Delegate = (Caller: CallerAPI, Getter: GetterAPI) => {
   };
 };
 
-module Tokens = (Caller: CallerAPI, Getter: GetterAPI) => {
-  module Injector = InjectorRaw(Caller);
+module Tokens = (Getter: GetterAPI) => {
+  type error =
+    | OperationNotRunnableOffchain(string)
+    | SimulationNotAvailable(string)
+    | InjectionNotImplemented(string)
+    | OffchainCallNotImplemented(string)
+    | BackendError(string);
+
+  let printError = (fmt, err) => {
+    switch (err) {
+    | OperationNotRunnableOffchain(s) =>
+      Format.fprintf(fmt, "Operation '%s' cannot be run offchain.", s)
+    | SimulationNotAvailable(s) =>
+      Format.fprintf(fmt, "Operation '%s' is not simulable.", s)
+    | InjectionNotImplemented(s) =>
+      Format.fprintf(fmt, "Operation '%s' injection is not implemented", s)
+    | OffchainCallNotImplemented(s) =>
+      Format.fprintf(
+        fmt,
+        "Operation '%s' offchain call is not implemented",
+        s,
+      )
+    | BackendError(s) => Format.fprintf(fmt, "%s", s)
+    };
+  };
+
+  let handleTaquitoError = e => e->handleTaquitoError->BackendError;
+
+  let errorToString = err => Format.asprintf("%a", printError, err);
 
   let getTokenViewer = settings => URL.tokenViewer(settings)->Getter.get;
 
   let checkTokenContract = (settings, addr) => {
-    let arguments = [|
-      "-E",
-      settings->AppSettings.endpoint,
-      "check",
-      "contract",
-      addr,
-      "implements",
-      "fungible",
-      "assets",
-    |];
-    Caller.call(arguments, ());
+    URL.checkToken(settings, addr)
+    ->Getter.get
+    ->Future.map(result => {
+        switch (result) {
+        | Ok(json) =>
+          switch (Js.Json.classify(json)) {
+          | Js.Json.JSONTrue => Ok(true)
+          | JSONFalse => Ok(false)
+          | _ => Error("Error")
+          }
+        | Error(e) => Error(e)
+        }
+      });
   };
 
-  let get = (settings: AppSettings.t) => {
-    switch (settings.network) {
-    | Testnet =>
-      Future.value(
-        Ok([|("Klondike", "KLD", "KT1BUdnCMfBKdVxCKyBvMUqwLqm27EDGWskB")|]),
-      )
-    | Mainnet => Future.value(Ok([||]))
-    };
-  };
-
-  let transfer = (elt: Token.Transfer.elt) => {
-    let obj = Js.Dict.empty();
-    Js.Dict.set(obj, "destination", Js.Json.string(elt.destination));
-    Js.Dict.set(obj, "amount", elt.amount->Js.Int.toString->Js.Json.string);
-    Js.Dict.set(obj, "token", elt.token->Js.Json.string);
-    elt.tx_options.fee
-    ->Lib.Option.iter(v =>
-        Js.Dict.set(obj, "fee", v->ProtocolXTZ.toString->Js.Json.string)
-      );
-    elt.tx_options.gasLimit
-    ->Lib.Option.iter(v =>
-        Js.Dict.set(obj, "gas-limit", Js.Int.toString(v)->Js.Json.string)
-      );
-    elt.tx_options.storageLimit
-    ->Lib.Option.iter(v =>
-        Js.Dict.set(obj, "storage-limit", Js.Int.toString(v)->Js.Json.string)
-      );
-    Js.Json.object_(obj);
-  };
-
-  let transfers_to_json = (transfers: list(Token.Transfer.elt)) =>
-    transfers
-    ->List.map(transfer)
-    ->List.toArray
-    ->Js.Json.array
-    ->Js.Json.stringify /* ->(json => "\'" ++ json ++ "\'") */;
-
-  let make_get_arguments =
-      (arguments, callback, offline, tx_options, common_options) =>
-    switch (callback, offline) {
-    | (Some(callback), true) =>
-      Js.Array2.concat(arguments, [|"offline", "with", callback|])
-    | (Some(callback), false) =>
-      Js.Array2.concat(arguments, [|"callback", "on", callback|])
-      ->Injector.transaction_options_arguments(tx_options, common_options)
-    | (None, _) => assert(false)
-    };
-
-  let make_arguments = (settings, operation: Token.operation, ~offline) => {
-    switch (operation) {
-    | Transfer({source, transfers: [elt], common_options}) =>
-      [|
-        "-E",
-        settings->AppSettings.endpoint,
-        "-w",
-        "none",
-        "from",
-        "token",
-        "contract",
-        elt.token,
-        "transfer",
-        Js.Int.toString(elt.amount),
-        "from",
-        source,
-        "to",
-        elt.destination,
-        "--burn-cap",
-        "0.01875",
-      |]
-      ->Injector.transaction_options_arguments(elt.tx_options, common_options)
-    | Transfer({source, transfers, common_options}) =>
-      [|
-        "-E",
-        settings->AppSettings.endpoint,
-        "-w",
-        "none",
-        "multiple",
-        "tokens",
-        "transfers",
-        "from",
-        source,
-        "using",
-        transfers_to_json(transfers),
-        "--burn-cap",
-        Js.Float.toString(0.08300 *. transfers->List.length->float_of_int),
-      |]
-      ->Injector.transaction_options_arguments(
-          Protocol.emptyTransferOptions,
-          common_options,
+  let injectBatch = (settings, transfers, ~source, ~password) => {
+    let transfers = source =>
+      transfers
+      ->List.map(
+          ({token, amount, destination, tx_options}: Token.Transfer.elt) =>
+          ReTaquito.FA12Operations.toRawTransfer(
+            ~token,
+            ~amount=amount->ReTaquito.BigNumber.fromInt,
+            ~dest=destination,
+            ~fee=?
+              tx_options.fee
+              ->Option.map(fee =>
+                  fee->ProtocolXTZ.toInt64->ReTaquito.BigNumber.fromInt64
+                ),
+            ~gasLimit=?tx_options.gasLimit,
+            ~storageLimit=?tx_options.storageLimit,
+            (),
+          )
         )
-    | GetBalance({
-        token,
-        address,
-        callback,
-        options: (tx_options, common_options),
-      }) =>
-      [|
-        "-E",
-        settings->AppSettings.endpoint,
-        "-w",
-        "none",
-        "from",
-        "token",
-        "contract",
-        token,
-        "get",
-        "balance",
-        "for",
-        address,
-      |]
-      ->make_get_arguments(callback, offline, tx_options, common_options)
-    | _ => assert(false)
-    };
+      ->ReTaquito.FA12Operations.prepareTransfers(
+          source,
+          settings->AppSettings.endpoint,
+        );
+
+    ReTaquito.FA12Operations.batch(
+      ~endpoint=settings->AppSettings.endpoint,
+      ~baseDir=settings->AppSettings.baseDir,
+      ~source,
+      ~transfers,
+      ~password,
+      (),
+    )
+    ->Future.mapOk((op: ReTaquito.Toolkit.operationResult) => op.hash);
   };
 
   let offline = (operation: Token.operation) => {
@@ -1121,38 +1081,152 @@ module Tokens = (Caller: CallerAPI, Getter: GetterAPI) => {
     };
   };
 
-  let simulate = (network, operation: Token.operation) =>
-    Injector.simulate(
-      network,
-      Injector.singleOperationParser,
-      make_arguments(_, operation, ~offline=false),
-    );
+  let transferEstimate = (settings, transfer, source) => {
+    let endpoint = settings->AppSettings.endpoint;
+    ReTaquito.FA12Operations.Estimate.transfer(
+      ~endpoint,
+      ~baseDir=settings->AppSettings.baseDir,
+      ~tokenContract=transfer.Token.Transfer.token,
+      ~source,
+      ~dest=transfer.Token.Transfer.destination,
+      ~amount=transfer.Token.Transfer.amount->Int64.of_int,
+      ~fee=?
+        transfer.Token.Transfer.tx_options.fee
+        ->Option.map(ProtocolXTZ.toInt64),
+      ~gasLimit=?transfer.Token.Transfer.tx_options.gasLimit,
+      ~storageLimit=?transfer.Token.Transfer.tx_options.storageLimit,
+      (),
+    )
+    ->Future.mapOk(({totalCost, gasLimit, storageLimit, revealFee}) =>
+        Protocol.{
+          fee: totalCost->ProtocolXTZ.fromMutezInt,
+          gasLimit,
+          storageLimit,
+          revealFee: revealFee->ProtocolXTZ.fromMutezInt,
+        }
+      );
+  };
 
-  let create = (network, operation: Token.operation) =>
-    Injector.create(network, make_arguments(_, operation, ~offline=false));
+  let batchEstimate = (settings, transfers, ~source, ~index=?, ()) => {
+    let endpoint = settings->AppSettings.endpoint;
+
+    let customValues =
+      List.map(transfers, tx =>
+        tx.Token.Transfer.tx_options->Simulation.extractCustomValues
+      )
+      ->List.toArray;
+
+    let transfers = source =>
+      transfers
+      ->List.map(
+          ({token, amount, destination, tx_options}: Token.Transfer.elt) =>
+          ReTaquito.FA12Operations.toRawTransfer(
+            ~token,
+            ~amount=amount->ReTaquito.BigNumber.fromInt,
+            ~dest=destination,
+            ~fee=?
+              tx_options.fee
+              ->Option.map(fee =>
+                  fee->ProtocolXTZ.toInt64->ReTaquito.BigNumber.fromInt64
+                ),
+            ~gasLimit=?tx_options.gasLimit,
+            ~storageLimit=?tx_options.storageLimit,
+            (),
+          )
+        )
+      ->ReTaquito.FA12Operations.prepareTransfers(source, endpoint);
+
+    ReTaquito.FA12Operations.Estimate.batch(
+      ~endpoint,
+      ~baseDir=settings->AppSettings.baseDir,
+      ~source,
+      ~transfers,
+      (),
+    )
+    ->Future.flatMapOk(r =>
+        ReTaquito.Estimate.handleEstimationResults(r, customValues, index)
+      )
+    ->Future.mapOk(({totalCost, gasLimit, storageLimit, revealFee}) =>
+        Protocol.{
+          fee: totalCost->ProtocolXTZ.fromMutezInt,
+          gasLimit,
+          storageLimit,
+          revealFee: revealFee->ProtocolXTZ.fromMutezInt,
+        }
+      );
+  };
+
+  let simulate = (network, ~index=?, operation: Token.operation) =>
+    switch (operation) {
+    | Transfer({source, transfers: [elt], _}) =>
+      transferEstimate(network, elt, source)
+      ->Future.mapError(handleTaquitoError)
+    | Transfer({source, transfers, _}) =>
+      batchEstimate(network, transfers, ~source, ~index?, ())
+      ->Future.mapError(handleTaquitoError)
+    | _ =>
+      Future.value(
+        Error(SimulationNotAvailable(Token.operationEntrypoint(operation))),
+      )
+    };
+
+  let transfer = (settings, transfer, source, password) => {
+    ReTaquito.FA12Operations.transfer(
+      ~endpoint=settings->AppSettings.endpoint,
+      ~baseDir=settings->AppSettings.baseDir,
+      ~tokenContract=transfer.Token.Transfer.token,
+      ~source,
+      ~dest=transfer.Token.Transfer.destination,
+      ~amount=transfer.Token.Transfer.amount->Int64.of_int,
+      ~password,
+      ~fee=?
+        transfer.Token.Transfer.tx_options.fee
+        ->Option.map(ProtocolXTZ.toInt64),
+      ~gasLimit=?transfer.Token.Transfer.tx_options.gasLimit,
+      ~storageLimit=?transfer.Token.Transfer.tx_options.storageLimit,
+      (),
+    )
+    ->Future.mapOk((op: ReTaquito.Toolkit.operationResult) => op.hash);
+  };
 
   let inject = (network, operation: Token.operation, ~password) =>
-    Injector.inject(
-      network,
-      make_arguments(_, operation, ~offline=false),
-      ~password,
-    );
+    switch (operation) {
+    | Transfer({source, transfers: [elt], _}) =>
+      transfer(network, elt, source, password)
+      ->Future.mapError(handleTaquitoError)
+    | Transfer({source, transfers, _}) =>
+      injectBatch(network, transfers, ~source, ~password)
+      ->Future.mapError(handleTaquitoError)
+    | _ =>
+      Future.value(
+        Error(
+          InjectionNotImplemented(Token.operationEntrypoint(operation)),
+        ),
+      )
+    };
 
   let callGetOperationOffline = (settings, operation: Token.operation) =>
-    getTokenViewer(settings)
-    ->Future.map(viewer => viewer->map(Token.Decode.viewer))
-    >>= (
-      callback => {
-        let operation = operation->Token.setCallback(callback);
-
-        if (offline(operation)) {
-          Caller.call(
-            make_arguments(settings, operation, ~offline=true),
-            (),
-          );
-        } else {
-          Future.value(Error("Operation not runnable offline"));
-        };
-      }
-    );
+    if (offline(operation)) {
+      switch (operation) {
+      | GetBalance({token, address, _}) =>
+        URL.getTokenBalance(settings, token, address)
+        ->Getter.get
+        ->Future.mapOk(res =>
+            res->Js.Json.decodeString->Option.getWithDefault("0")
+          )
+        ->Future.mapError(s => BackendError(s))
+      | _ =>
+        Future.value(
+          Error(
+            OffchainCallNotImplemented(Token.operationEntrypoint(operation)),
+          ),
+        )
+      };
+    } else {
+      Future.value(
+        Error(
+          OperationNotRunnableOffchain(Token.operationEntrypoint(operation)),
+        ),
+      );
+    };
 };

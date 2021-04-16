@@ -18,9 +18,36 @@ let styles =
   );
 
 [@react.component]
-let make =
-    (~account as defaultAccount=?, ~disabled=false, ~style as styleFromProp=?) => {
+let make = (~zeroTez, ~action: Delegate.action, ~style as styleFromProp=?) => {
   let theme = ThemeContext.useTheme();
+
+  let tooltipId =
+    "delegate_button_"
+    ++ Delegate.account(action)->Option.mapWithDefault("", a => a.address);
+
+  let (textColor, backgroundColor, text, tooltip) =
+    switch (action) {
+    | _ when zeroTez => (
+        theme.colors.primaryTextDisabled,
+        theme.colors.primaryButtonBackground,
+        I18n.btn#delegate,
+        Some((tooltipId, I18n.tooltip#no_tez_no_delegation)),
+      )
+
+    | Create(_) => (
+        theme.colors.primaryTextHighEmphasis,
+        theme.colors.primaryButtonBackground,
+        I18n.btn#delegate,
+        None,
+      )
+    | Edit(_)
+    | Delete(_) => (
+        theme.colors.primaryTextDisabled,
+        theme.colors.iconDisabled,
+        I18n.btn#delegated,
+        Some((tooltipId, I18n.tooltip#update_delegation)),
+      )
+    };
 
   let (visibleModal, openAction, closeAction) =
     ModalAction.useModalActionState();
@@ -32,40 +59,24 @@ let make =
       style=Style.(
         arrayOption([|
           Some(styles##button),
-          Some(
-            style(
-              ~backgroundColor=
-                disabled
-                  ? theme.colors.iconDisabled
-                  : theme.colors.primaryButtonBackground,
-              (),
-            ),
-          ),
+          Some(style(~backgroundColor, ())),
           styleFromProp,
         |])
       )>
       <ThemedPressable
         style=Style.(arrayOption([|Some(styles##pressable)|]))
         isPrimary=true
+        ?tooltip
+        disabled=zeroTez
         onPress
-        disabled
         accessibilityRole=`button>
-        <Typography.ButtonPrimary
-          style=Style.(
-            style(
-              ~color=
-                disabled
-                  ? theme.colors.primaryTextDisabled
-                  : theme.colors.primaryTextHighEmphasis,
-              (),
-            )
-          )>
-          (disabled ? I18n.btn#delegated : I18n.btn#delegate)->React.string
+        <Typography.ButtonPrimary style=Style.(style(~color=textColor, ()))>
+          text->React.string
         </Typography.ButtonPrimary>
       </ThemedPressable>
     </View>
     <ModalAction visible=visibleModal onRequestClose=closeAction>
-      <DelegateView closeAction action={Delegate.Create(defaultAccount)} />
+      <DelegateView closeAction action />
     </ModalAction>
   </>;
 };

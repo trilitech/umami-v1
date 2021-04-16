@@ -11,7 +11,7 @@ let make =
 
   React.useEffect1(
     () => {
-      request->ApiRequest.map(_ => closeAction());
+      request->ApiRequest.iterDone(_ => closeAction());
       None;
     },
     [|request|],

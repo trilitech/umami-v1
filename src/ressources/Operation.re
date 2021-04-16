@@ -12,7 +12,7 @@ module Simulation = {
 
   type t =
     | Protocol(Protocol.t, index)
-    | Token(Token.operation);
+    | Token(Token.operation, index);
 
   let delegation = d => Protocol(d->Delegation, None);
   let transaction = (t, index) => Protocol(t->Transaction, index);
@@ -23,31 +23,16 @@ let makeDelegate =
   {
     source,
     delegate,
-    options:
-      Protocol.makeCommonOptions(
-        ~fee,
-        ~burnCap,
-        ~forceLowFee,
-        ~confirmations=None,
-        (),
-      ),
+    options: Protocol.makeCommonOptions(~fee, ~burnCap, ~forceLowFee, ()),
   }
   ->delegation;
 };
 
-let makeTransaction =
-    (~source, ~transfers, ~burnCap=?, ~forceLowFee=?, ~confirmations=?, ()) =>
+let makeTransaction = (~source, ~transfers, ~burnCap=?, ~forceLowFee=?, ()) =>
   transaction({
     source,
     transfers,
-    options:
-      makeCommonOptions(
-        ~fee=None,
-        ~burnCap,
-        ~forceLowFee,
-        ~confirmations,
-        (),
-      ),
+    options: makeCommonOptions(~fee=None, ~burnCap, ~forceLowFee, ()),
   });
 
 let makeSingleTransaction =
@@ -57,7 +42,6 @@ let makeSingleTransaction =
       ~destination,
       ~burnCap=?,
       ~forceLowFee=?,
-      ~confirmations=?,
       ~fee=?,
       ~parameter=?,
       ~entrypoint=?,
@@ -79,14 +63,7 @@ let makeSingleTransaction =
         (),
       ),
     ],
-    options:
-      makeCommonOptions(
-        ~fee=None,
-        ~burnCap,
-        ~forceLowFee,
-        ~confirmations,
-        (),
-      ),
+    options: makeCommonOptions(~fee=None, ~burnCap, ~forceLowFee, ()),
   });
 
 module Business = {
@@ -220,7 +197,7 @@ module Read = {
   let decodeFromMempool = json => {
     open Json.Decode;
     let typ = json |> field("operation_kind", string);
-    let op_id = json |> field("id", int);
+    let op_id = json |> field("id", string) |> int_of_string;
     let op =
       json |> field("operation", Js.Json.stringify) |> Json.parseOrRaise;
     {

@@ -1,6 +1,6 @@
 open UmamiCommon;
 include ApiRequest;
-module OperationsAPI = API.Operations(API.TezosClient, API.TezosExplorer);
+module Explorer = API.Explorer(API.TezosExplorer);
 
 /* Create */
 
@@ -29,14 +29,19 @@ let useCreate = (~sideEffect=?, ()) => {
   let set = (~settings, {operation, password}) => {
     switch (operation) {
     | Protocol(operation) =>
-      settings->OperationsAPI.inject(operation, ~password)
+      settings
+      ->API.Operation.run(operation, ~password)
+      ->Future.mapError(e => e->API.handleTaquitoError)
+
     | Token(operation) =>
-      settings->TokensApiRequest.TokensAPI.inject(operation, ~password)
+      settings
+      ->TokensApiRequest.TokensAPI.inject(operation, ~password)
+      ->Future.mapError(TokensApiRequest.TokensAPI.errorToString)
     };
   };
 
   ApiRequest.useSetter(
-    ~toast=false,
+    ~toast=true,
     ~set,
     ~kind=Logs.Operation,
     ~sideEffect?,
@@ -50,21 +55,18 @@ let useSimulate = () => {
   let set = (~settings, operation) =>
     switch (operation) {
     | Operation.Simulation.Protocol(operation, index) =>
-      settings->OperationsAPI.simulate(~index?, operation)
-    | Operation.Simulation.Token(operation) =>
-      settings->TokensApiRequest.TokensAPI.simulate(operation)
+      settings->API.Simulation.run(~index?, operation)
+    | Operation.Simulation.Token(operation, index) =>
+      settings
+      ->TokensApiRequest.TokensAPI.simulate(~index?, operation)
+      ->Future.mapError(TokensApiRequest.TokensAPI.errorToString)
     };
 
   ApiRequest.useSetter(~set, ~kind=Logs.Operation, ());
 };
 
-let waitForConfirmation = (settings, hash, branch) => {
-  OperationsAPI.waitForOperationConfirmations(
-    settings,
-    hash,
-    ~confirmations=0,
-    ~branch,
-  );
+let waitForConfirmation = (settings, hash) => {
+  settings->AppSettings.endpoint->ReTaquito.Operations.confirmation(hash, ());
 };
 
 /* Get list */
@@ -79,14 +81,12 @@ let useLoad =
     ) => {
   let get = (~settings, address) => {
     let operations =
-      settings->OperationsAPI.get(
-        address,
-        ~limit?,
-        ~types?,
-        ~mempool=true,
-        (),
-      );
-    let currentLevel = TezosSDK.currentLevel(AppSettings.sdk(settings));
+      settings->Explorer.get(address, ~limit?, ~types?, ~mempool=true, ());
+    let currentLevel =
+      Network.monitor(AppSettings.explorer(settings))
+      ->Future.mapOk(monitor => monitor.nodeLastBlock)
+      ->Future.mapError(Network.errorMsg);
+
     let f = (operations, currentLevel) =>
       switch (operations, currentLevel) {
       | (Ok(operations), Ok(currentLevel)) =>
@@ -107,7 +107,7 @@ let useLoad =
       address->Lib.Option.iter(address => {
         let shouldReload = ApiRequest.conditionToLoad(request, isMounted);
         if (address != "" && shouldReload) {
-          getRequest(address);
+          getRequest(address)->ignore;
         };
       });
 

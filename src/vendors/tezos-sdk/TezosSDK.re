@@ -50,10 +50,29 @@ module InputAddress = {
   };
 };
 
+module Error = {
+  type t =
+    | BadPkh
+    | Generic(string);
+
+  type error_payload = {msg: string};
+
+  let badPkh = "(Signature.Public_key_hash)";
+
+  let parse = e => {
+    e.msg
+    ->(
+        fun
+        | s when s->Js.String2.includes(badPkh) => BadPkh
+        | s => Generic(s)
+      );
+  };
+};
+
 type result('a) = {
   kind: [ | `ok | `error],
   payload: 'a,
-  msg: string,
+  error_payload: Error.error_payload,
 };
 
 let fromPromise = p =>
@@ -63,12 +82,13 @@ let fromPromise = p =>
          v.kind == `ok
            ? resolve(Ok(v.payload))
            : {
-             resolve(Error(v.msg));
+             Js.log(v);
+             resolve(Error(v.error_payload->Error.parse));
            };
          Js.Promise.resolve();
        })
     |> Js.Promise.catch(error => {
-         resolve(Error(Js.String.make(error)));
+         resolve(Error(Js.String.make(error)->Generic));
          Js.Promise.resolve();
        })
   });
@@ -76,7 +96,7 @@ let fromPromise = p =>
 [@bs.send]
 external listKnownAddresses:
   (lib, cctxt, int) => Js.Promise.t(result(array(OutputAddress.t))) =
-  "list_known_addresses";
+  "listKnownAddresses";
 let listKnownAddresses = sdk => {
   listKnownAddresses(sdk.lib, sdk.cctxt, 0) |> fromPromise;
 };
@@ -84,9 +104,21 @@ let listKnownAddresses = sdk => {
 [@bs.send]
 external addAddress:
   (lib, cctxt, InputAddress.t) => Js.Promise.t(result(unit)) =
-  "add_address";
+  "addAddress";
 let addAddress = (sdk, alias, pkh) =>
   addAddress(sdk.lib, sdk.cctxt, {alias, pkh, force: true}) |> fromPromise;
+
+type forgetParams = {
+  name: string,
+  force: bool,
+};
+
+[@bs.send]
+external forgetAddress:
+  (lib, cctxt, forgetParams) => Js.Promise.t(result(unit)) =
+  "forgetAddress";
+let forgetAddress = (sdk, name) =>
+  forgetAddress(sdk.lib, sdk.cctxt, {name, force: true}) |> fromPromise;
 
 type renameParams = {
   old_name: string,
@@ -96,13 +128,49 @@ type renameParams = {
 [@bs.send]
 external renameAliases:
   (lib, cctxt, renameParams) => Js.Promise.t(result(unit)) =
-  "rename_aliases";
+  "renameAliases";
 
 let renameAliases = (sdk, renameAlias) =>
   renameAliases(sdk.lib, sdk.cctxt, renameAlias) |> fromPromise;
 
 [@bs.send]
 external currentLevel: (lib, cctxt, int) => Js.Promise.t(result(int)) =
-  "current_level";
+  "currentLevel";
 
 let currentLevel = sdk => currentLevel(sdk.lib, sdk.cctxt, 0) |> fromPromise;
+
+type importSecretKeyParams = {
+  name: string,
+  force: bool,
+  sk_uri: string,
+};
+
+[@bs.send]
+external importSecretKey:
+  (lib, cctxt, importSecretKeyParams, unit => string) =>
+  Js.Promise.t(result(string)) =
+  "importSecretKey";
+let importSecretKey = (sdk, ~name, ~skUri, ~password, ()) =>
+  importSecretKey(sdk.lib, sdk.cctxt, {name, sk_uri: skUri, force: true}, () =>
+    password
+  )
+  |> fromPromise;
+
+type importKeysFromMnemonicsParams = {
+  name: string,
+  encrypt: bool,
+  mnemonics: string,
+  passphrase: string,
+};
+
+[@bs.send]
+external importKeysFromMnemonics:
+  (lib, cctxt, importKeysFromMnemonicsParams, unit => string) =>
+  Js.Promise.t(result(string)) =
+  "importKeysFromMnemonics";
+let importKeysFromMnemonics = (sdk, ~name, ~mnemonics, ~password, ()) =>
+  importKeysFromMnemonics(
+    sdk.lib, sdk.cctxt, {name, mnemonics, passphrase: "", encrypt: true}, () =>
+    password
+  )
+  |> fromPromise;

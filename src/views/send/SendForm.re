@@ -38,7 +38,7 @@ let toSimulation = (~index=?, t: transaction) =>
   | ProtocolTransaction(transaction) =>
     Operation.Simulation.transaction(transaction, index)
   | TokenTransfer(transfer, _) =>
-    Operation.Simulation.Token(transfer->Token.transfer)
+    Operation.Simulation.Token(transfer->Token.transfer, index)
   };
 
 let buildTransfers = (transfers, parseAmount, build) => {
@@ -59,8 +59,7 @@ let buildTransfers = (transfers, parseAmount, build) => {
   });
 };
 
-let buildTokenTransfer =
-    (inputTransfers, token: Token.t, source, forceLowFee, confirmations) =>
+let buildTokenTransfer = (inputTransfers, token: Token.t, source, forceLowFee) =>
   TokenTransfer(
     Token.makeTransfers(
       ~source,
@@ -71,14 +70,12 @@ let buildTokenTransfer =
           Token.makeSingleTransferElt(~token=token.address),
         ),
       ~forceLowFee?,
-      ~confirmations?,
       (),
     ),
     token,
   );
 
-let buildProtocolTransaction =
-    (inputTransfers, source, forceLowFee, confirmations) =>
+let buildProtocolTransaction = (inputTransfers, source, forceLowFee) =>
   Protocol.makeTransaction(
     ~source,
     ~transfers=
@@ -88,17 +85,12 @@ let buildProtocolTransaction =
         Protocol.makeTransfer(~parameter=?None, ~entrypoint=?None),
       ),
     ~forceLowFee?,
-    ~confirmations?,
     (),
   )
   ->ProtocolTransaction;
 
 let buildTransaction =
-    (
-      batch: list((StateLenses.state, bool)),
-      token: option(Token.t),
-      confirmations: option(int),
-    ) => {
+    (batch: list((StateLenses.state, bool)), token: option(Token.t)) => {
   switch (batch) {
   | [] => assert(false)
   | [(first, _), ..._] as inputTransfers =>
@@ -107,20 +99,8 @@ let buildTransaction =
 
     switch (token) {
     | Some(token) =>
-      buildTokenTransfer(
-        inputTransfers,
-        token,
-        source,
-        forceLowFee,
-        confirmations,
-      )
-    | None =>
-      buildProtocolTransaction(
-        inputTransfers,
-        source,
-        forceLowFee,
-        confirmations,
-      )
+      buildTokenTransfer(inputTransfers, token, source, forceLowFee)
+    | None => buildProtocolTransaction(inputTransfers, source, forceLowFee)
     };
   };
 };

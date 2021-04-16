@@ -2,14 +2,12 @@ type config = {
   config: ConfigFile.t,
   sdkMain: TezosSDK.t,
   sdkTest: TezosSDK.t,
-  network: AppSettings.network,
 };
 
 let initialState = {
   config: ConfigFile.dummy,
   sdkMain: TezosSDK.dummySdk,
   sdkTest: TezosSDK.dummySdk,
-  network: Testnet,
 };
 
 let context = React.createContext(initialState);
@@ -26,8 +24,6 @@ module Provider = {
 [@react.component]
 let make = (~empty, ~children) => {
   let config = ConfigContext.useContent();
-
-  let (network, _) = React.useState(() => AppSettings.Testnet);
 
   let (sdkMain, setSdkMain) = React.useState(() => TezosSDK.dummySdk);
   let (sdkTest, setSdkTest) = React.useState(() => TezosSDK.dummySdk);
@@ -46,14 +42,14 @@ let make = (~empty, ~children) => {
       ConfigFile.(conf.sdkBaseDir->Option.getWithDefault(Default.sdkBaseDir));
 
     let pMain =
-      TezosSDK.init(dir, endpointMain)
+      TezosSDK.init(System.Path.toString(dir), endpointMain)
       |> Js.Promise.then_(sdk => {
            setSdkMain(_ => sdk);
            Js.Promise.resolve();
          });
 
     let pTest =
-      TezosSDK.init(dir, endpointTest)
+      TezosSDK.init(System.Path.toString(dir), endpointTest)
       |> Js.Promise.then_(sdk => {
            setSdkTest(_ => sdk);
            Js.Promise.resolve();
@@ -73,7 +69,7 @@ let make = (~empty, ~children) => {
     None;
   });
 
-  <Provider value={config, sdkMain, sdkTest, network}>
+  <Provider value={config, sdkMain, sdkTest}>
     {loaded ? children : empty()}
   </Provider>;
 };
@@ -89,6 +85,5 @@ let useSettings = () => {
 
       test: store.sdkTest,
     },
-    network: store.network,
   };
 };

@@ -1,4 +1,4 @@
-module BalanceAPI = API.Balance(API.TezosClient);
+module BalanceAPI = API.Balance;
 
 type balanceApiRequest = ApiRequest.t(string);
 
@@ -15,7 +15,7 @@ let useLoad = (~requestState as (request, setRequest), ~address: string) => {
     () => {
       let shouldReload = ApiRequest.conditionToLoad(request, isMounted);
       if (address != "" && shouldReload) {
-        getRequest(address);
+        getRequest(address)->ignore;
       };
       None;
     },

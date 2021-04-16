@@ -12,6 +12,8 @@ let btn = {
   pub add = "ADD";
   pub send = "SEND";
   pub save = "SAVE";
+  pub done_ = "SIMPLE VIEW";
+  pub edit = "MANAGEMENT VIEW";
   pub validate_save = "VALIDATE AND SAVE";
   pub go_back = "GO BACK";
   pub go_operations = "GO TO OPERATIONS";
@@ -24,7 +26,6 @@ let btn = {
   pub create_account_record_ok = {js|OK, I’VE RECORDED IT|js};
   pub add_account = "ADD ACCOUNT";
   pub add_contact = "ADD CONTACT";
-  pub delete_contact = "Delete contact";
   pub add_token = "REGISTER TOKEN";
   pub advanced_options = "Advanced options";
   pub delegate = "DELEGATE";
@@ -37,7 +38,24 @@ let btn = {
   pub delegation_submit = "CONFIRM DELEGATION";
   pub delegated = "DELEGATED";
   pub delete_token = "Delete token";
-  pub delete_account = "Delete account"
+  pub import = "IMPORT";
+  pub export = "EXPORT";
+  pub scan = "SCAN";
+  pub upgrade = "Download"
+};
+
+let tooltip = {
+  pub _this = this;
+  pub show_qr = "Show QR Code";
+  pub copy_clipboard = "Copy to clipboard";
+  pub addressbook_edit = "Edit contact";
+  pub addressbook_delete = "Delete contact";
+  pub add_contact = "Add to contacts";
+  pub no_tez_no_delegation = "Delegation requires tez";
+  pub refresh = "Refresh";
+  pub open_in_explorer = "Open in explorer";
+  pub update_delegation = "update delegation";
+  pub chain_not_connected = "Not connected to a chain"
 };
 
 let log = {
@@ -57,6 +75,7 @@ let label = {
   pub send_recipient = "Recipient account";
   pub password = "Password";
   pub fee = "Fee";
+  pub implicit_reveal_fee = "Implicit reveal fee";
   pub gas_limit = "Gas limit";
   pub storage_limit = "Storage limit";
   pub counter = "Counter";
@@ -69,36 +88,67 @@ let label = {
   pub add_token_symbol = "Symbol";
   pub summary_subtotal = "Subtotal";
   pub summary_total = "Total";
-  pub transactions = "Transactions"
+  pub summary_total_tez = "Total tez";
+  pub transactions = "Transactions";
+  pub account_secret = "Root";
+  pub account_umami = "Umami";
+  pub token = "Token";
+  pub account_cli = "Cli";
+  pub account_default_path = "Default Path - m/44'/1729'/?'/0'";
+  pub account_custom_path = "Custom Path"
 };
 
 let input_placeholder = {
   pub _this = this;
+  pub tez_amount = "0.000000";
+  pub add_accounts_name = "Enter account's name";
+  pub add_contacts_name = "Enter contact's name";
+  pub add_contacts_tz = "Enter contact's tz address";
+  pub add_contact_or_tz = "Paste a tz address or type in a contact's name";
   pub add_token_address = "Enter KT1 address of a contract";
   pub add_token_name = "e.g. Tezos";
-  pub add_token_symbol = "e.g. tez, KLD, ..."
+  pub enter_new_password = "Enter new password, at least 8 characters";
+  pub confirm_password = "Confirm your new password";
+  pub enter_password = "Enter your password";
+  pub add_token_symbol = "e.g. tez, KLD, ...";
+  pub enter_derivation_path = "Enter your derivation path"
 };
 
 let form_input_error = {
   pub _this = this;
+  pub branch_refused_error = "Please retry. An error came up while communicating with the node";
+  pub key_already_registered = a =>
+    p("Address already registered under: %s", a);
+  pub name_already_registered = "Name already registered";
   pub string_empty = "This input is mandatory";
   pub int = "must be an integer";
   pub float = "must be a float";
   pub change_baker = "It must be a different baker than the current one";
+  pub wrong_password = "Wrong password";
+  pub password_length = "Password length must be at least 8 characters";
+  pub unregistered_delegate = "This key is not registered as a baker";
+  pub bad_pkh = "Not a valid key";
+  pub invalid_contract = "The recipient is not a key or an alias";
   pub confirm_password = "It must be the same password";
+  pub derivation_path_error = "Invalid derivation path"
 };
 
 let title = {
   pub _this = this;
   pub error_logs = "Logs";
   pub account_create = "Create new account";
+  pub derive_account = "Add account";
   pub account_update = "Edit account";
   pub import_account = "Import account";
+  pub secret_update = "Edit secret";
   pub add_contact = "Add contact";
   pub update_contact = "Edit contact";
   pub add_token = "Register Token";
+  pub export = "Export";
   pub account_create_password = "Set a password to secure your wallet";
+  pub account_enter_password = "Please enter password to confirm";
   pub account_create_verify_phrase = "Verify your recovery phrase";
+  pub account_derivation_path = "Derivation path";
   pub import_account_enter_phrase = "Enter your recovery phrase";
   pub operation_submited = "Operation Submitted";
   pub sender_account = "Sender account";
@@ -126,9 +176,11 @@ let title = {
   pub submitting = "Submitting operation";
   pub send_many_transactions = "Send one or many transactions";
   pub delete_account = "Delete account?";
+  pub delete_secret = "Delete secret?";
   pub delete_load = "Deleting";
   pub delete_account_done = "Account deleted";
-  pub batch = "Batch"
+  pub batch = "Batch";
+  pub scan = "Scan"
 };
 
 let expl = {
@@ -137,6 +189,7 @@ let expl = {
   pub account_create_record_recovery = {j|Please record the following 24 words in sequence in order to restore it in the future. Ensure to back it up, keeping it securely offline.|j};
   pub account_create_record_verify = {j|We will now verify that you’ve properly recorded your recovery phrase. To demonstrate this, please type in the word that corresponds to each sequence number.|j};
   pub account_create_password_not_recorded = {j|Please note that this password is not recorded anywhere and only applies to this machine.|j};
+  pub account_select_derivation_path = {j|Umami wallet supports custom derivation path to select new addresses. You may also select the default derivation path and use the default key.|j};
   pub import_account_enter_phrase = {j|Please fill in the recovery phrase in sequence.|j};
   pub confirm_operation = "Please validate the details of the transaction and enter password to confirm";
   pub batch = "Review, edit or delete the transactions of the batch";
@@ -149,11 +202,13 @@ let menu = {
   pub operation_delegate_to = p("Delegate_to %s");
   pub operation_unknown = "Unknown";
   pub operation_cancel_delegation = "Cancel delegation";
-  pub addressbook_edit = "Edit contact";
   pub delegate_edit = "Change baker";
   pub delegate_delete = "End delegation";
   pub batch_edit = "Edit transfer";
-  pub batch_delete = "Delete transfer"
+  pub batch_delete = "Delete transfer";
+  pub delete_account = "Delete";
+  pub delete_secret = "Delete";
+  pub edit = "Edit"
 };
 
 let settings = {
@@ -189,6 +244,37 @@ let settings = {
   pub danger_offboard_form_input_error = "Not the correct confirm code word"
 };
 
+let network = {
+  pub _this = this;
+  pub api_not_available = "The API is not available";
+  pub api_version_rpc_error = a =>
+    p("The API `/version` RPC parsing returned an error: %s", a);
+  pub api_version_format_error = a =>
+    p(
+      "The API `/version` RPC parsing returned an unknown version format: %s",
+      a,
+    );
+  pub api_monitor_rpc_error = a =>
+    p("The API `/monitor/blocks` RPC parsing returned an error: %s", a);
+  pub node_not_available = "The node is not available";
+  pub node_version_rpc_error = a =>
+    p("Node `/chains/main/chain_id` RPC parsing returned an error: %s", a);
+  pub chain_inconsistency = (a, b) =>
+    p(
+      "The API and Node are not running on the same network.\n\
+     API runs on chain `%s` and the node on the chain `%s`.",
+      a,
+      b,
+    );
+  pub unknown_chain_id = a =>
+    p(
+      "Network %s is not supported, your operation cannot be viewed in an explorer.",
+      a,
+    );
+  pub api_not_supported = a =>
+    p("The API %s is not supported by this version of Umami.", a)
+};
+
 let t = {
   pub error404 = "404 - Route Not Found :(";
   pub logs_no_recent = "No recent messages";
@@ -221,6 +307,7 @@ let t = {
   pub contact_added = "Contact added";
   pub account_created = "Account created";
   pub account_updated = "Account updated";
+  pub secret_updated = "Secret updated";
   pub token_contract = p("%s Token Contract");
   pub token_created = "Token created";
   pub operation_hash = "Operation Hash";
@@ -241,10 +328,12 @@ let t = {
   pub token_column_name = "NAME";
   pub token_column_symbol = "SYMBOL";
   pub token_column_address = "ADDRESS";
-  pub empty_token = "No token registered";
+  pub empty_token = "No token registered on the current chain";
   pub empty_delegations = "No delegations";
   pub empty_operations = "No operations";
   pub empty_address_book = "No contacts";
   pub add_token_format_contract_sentence = {js|Please specify the address of a FA1.2 token contract for which you would like to view balances as well as to perform operations.|js};
-  pub error_check_contract = "Address is not a valid token contract"
+  pub delegation_removal = "Delegation Removal";
+  pub error_check_contract = "Address is not a valid token contract";
+  pub upgrade_notice = "We recommend you upgrade your version of Umami."
 };

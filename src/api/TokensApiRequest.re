@@ -1,6 +1,6 @@
 open UmamiCommon;
 include ApiRequest;
-module TokensAPI = API.Tokens(API.TezosClient, API.TezosExplorer);
+module TokensAPI = API.Tokens(API.TezosExplorer);
 
 type injection = {
   operation: Token.operation,
@@ -19,7 +19,9 @@ let useLoadOperationOffline =
       ~operation: option(Token.operation),
     ) => {
   let get = (~settings, operation) =>
-    settings->TokensAPI.callGetOperationOffline(operation);
+    settings
+    ->TokensAPI.callGetOperationOffline(operation)
+    ->Future.mapError(TokensAPI.errorToString);
 
   let getRequest =
     ApiRequest.useGetter(~get, ~kind=Logs.Tokens, ~setRequest, ());
@@ -30,7 +32,7 @@ let useLoadOperationOffline =
       let shouldReload = ApiRequest.conditionToLoad(request, isMounted);
       operation->Lib.Option.iter(operation =>
         if (shouldReload) {
-          getRequest(operation);
+          getRequest(operation)->ignore;
         }
       );
       None;
@@ -39,21 +41,6 @@ let useLoadOperationOffline =
   );
 
   request;
-};
-
-let useLoadRegisteredTokens = (~requestState) => {
-  let get = (~settings, ()) =>
-    TokensAPI.get(settings)
-    ->Future.mapOk(response => {
-        response
-        ->Array.map(((alias, symbol, address)) => {
-            let token: Token.t = {alias, symbol, address};
-            (address, token);
-          })
-        ->Map.String.fromArray
-      });
-
-  ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState);
 };
 
 let tokensStorageKey = "wallet-tokens";

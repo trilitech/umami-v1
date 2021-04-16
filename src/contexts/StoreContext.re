@@ -14,16 +14,18 @@ type state = {
   selectedAccountState: reactState(option(string)),
   selectedTokenState: reactState(option(string)),
   accountsRequestState: reactState(ApiRequest.t(Map.String.t(Account.t))),
+  secretsRequestState: reactState(ApiRequest.t(array(Secret.t))),
   balanceRequestsState: apiRequestsState(ProtocolXTZ.t),
   delegateRequestsState: apiRequestsState(option(string)),
   delegateInfoRequestsState:
-    apiRequestsState(DelegateApiRequest.DelegateAPI.delegationInfo),
+    apiRequestsState(option(DelegateApiRequest.DelegateAPI.delegationInfo)),
   operationsRequestsState: apiRequestsState((array(Operation.Read.t), int)),
   operationsConfirmations: reactState(Set.String.t),
   aliasesRequestState: reactState(ApiRequest.t(Map.String.t(Account.t))),
   bakersRequestState: reactState(ApiRequest.t(array(Delegate.t))),
   tokensRequestState: reactState(ApiRequest.t(Map.String.t(Token.t))),
   balanceTokenRequestsState: apiRequestsState(string),
+  apiVersionRequestState: reactState(option(Network.apiVersion)),
 };
 
 // Context and Provider
@@ -34,6 +36,7 @@ let initialState = {
   selectedAccountState: (None, _ => ()),
   selectedTokenState: (None, _ => ()),
   accountsRequestState: (NotAsked, _ => ()),
+  secretsRequestState: (NotAsked, _ => ()),
   balanceRequestsState: initialApiRequestsState,
   delegateRequestsState: initialApiRequestsState,
   delegateInfoRequestsState: initialApiRequestsState,
@@ -43,6 +46,7 @@ let initialState = {
   bakersRequestState: (NotAsked, _ => ()),
   tokensRequestState: (NotAsked, _ => ()),
   balanceTokenRequestsState: initialApiRequestsState,
+  apiVersionRequestState: (None, _ => ()),
 };
 
 let context = React.createContext(initialState);
@@ -60,6 +64,11 @@ module Provider = {
 
 [@react.component]
 let make = (~children) => {
+  let settings = SdkContext.useSettings();
+  let addToast = LogsContext.useToast();
+
+  let network = settings->AppSettings.network;
+
   let selectedAccountState = React.useState(() => None);
   let (selectedAccount, setSelectedAccount) = selectedAccountState;
 
@@ -78,17 +87,44 @@ let make = (~children) => {
   let aliasesRequestState = React.useState(() => ApiRequest.NotAsked);
   let bakersRequestState = React.useState(() => ApiRequest.NotAsked);
   let tokensRequestState = React.useState(() => ApiRequest.NotAsked);
+  let secretsRequestState = React.useState(() => ApiRequest.NotAsked);
+
+  let apiVersionRequestState = React.useState(() => None);
+  let (_, setApiVersion) = apiVersionRequestState;
 
   AccountApiRequest.useLoad(accountsRequestState)->ignore;
   AliasApiRequest.useLoad(aliasesRequestState)->ignore;
   TokensApiRequest.useLoadTokens(tokensRequestState)->ignore;
+
+  React.useEffect1(
+    () => {
+      Network.checkConfiguration(
+        ~network=settings->AppSettings.network,
+        settings->AppSettings.explorer,
+        settings->AppSettings.endpoint,
+      )
+      ->Future.tapOk(v => setApiVersion(_ => Some(v)))
+      ->FutureEx.getOk(apiVersion =>
+          if (!Network.checkInBound(apiVersion.Network.api)) {
+            addToast(
+              Logs.error(
+                ~origin=Settings,
+                Network.errorMsg(Network.APINotSupported(apiVersion.api)),
+              ),
+            );
+          }
+        );
+      None;
+    },
+    [|network|],
+  );
 
   // Select a default account if no one selected
   React.useEffect2(
     () => {
       if (selectedAccount->Option.isNone) {
         accountsRequest
-        ->ApiRequest.getOkWithDefault(Map.String.empty)
+        ->ApiRequest.getWithDefault(Map.String.empty)
         ->Map.String.valuesToArray
         ->Array.get(0)
         ->Lib.Option.iter((account: Account.t) =>
@@ -105,6 +141,7 @@ let make = (~children) => {
       selectedAccountState,
       selectedTokenState,
       accountsRequestState,
+      secretsRequestState,
       balanceRequestsState,
       delegateRequestsState,
       delegateInfoRequestsState,
@@ -114,6 +151,7 @@ let make = (~children) => {
       bakersRequestState,
       tokensRequestState,
       balanceTokenRequestsState,
+      apiVersionRequestState,
     }>
     children
   </Provider>;
@@ -169,6 +207,11 @@ let reloadRequests = requestsState =>
 
 //
 
+let useApiVersion = () => {
+  let store = useStoreContext();
+  store.apiVersionRequestState->fst;
+};
+
 module Balance = {
   let useRequestState = useRequestsState(store => store.balanceRequestsState);
 
@@ -183,7 +226,7 @@ module Balance = {
     let (balanceRequests, _) = store.balanceRequestsState;
     let (accountsRequest, _) = store.accountsRequestState;
     let accounts =
-      accountsRequest->ApiRequest.getOkWithDefault(Map.String.empty);
+      accountsRequest->ApiRequest.getWithDefault(Map.String.empty);
 
     let accountsBalanceRequests =
       accounts
@@ -243,7 +286,7 @@ module BalanceToken = {
     let (balanceRequests, _) = store.balanceTokenRequestsState;
     let (accountsRequest, _) = store.accountsRequestState;
     let accounts =
-      accountsRequest->ApiRequest.getOkWithDefault(Map.String.empty);
+      accountsRequest->ApiRequest.getWithDefault(Map.String.empty);
 
     let accountsBalanceRequests =
       accounts
@@ -300,13 +343,11 @@ module Delegate = {
     ->Map.String.map(Option.getExn);
   };
 
-  let useGetAllLoaded = () => {
+  let useGetAllRequests = () => {
     let store = useStoreContext();
     let (delegateRequests, _) = store.delegateRequestsState;
 
-    delegateRequests
-    ->Map.String.valuesToArray
-    ->Array.keepMap(request => request->ApiRequest.getDoneOk);
+    delegateRequests;
   };
 };
 
@@ -389,10 +430,9 @@ module Operations = {
     let settings = SdkContext.useSettings();
     OperationApiRequest.useCreate(
       ~sideEffect=
-        ((hash, branch)) => {
-          resetOperations();
-          OperationApiRequest.waitForConfirmation(settings, hash, branch)
-          ->Future.get(_ => resetOperations());
+        hash => {
+          OperationApiRequest.waitForConfirmation(settings, hash)
+          ->Future.get(_ => resetOperations())
         },
       (),
     );
@@ -424,12 +464,17 @@ module Tokens = {
 
   let useRequest = () => {
     let (tokensRequest, _) = useRequestState();
-    tokensRequest;
+    let apiVersion = useApiVersion();
+    tokensRequest->ApiRequest.map(tokens =>
+      apiVersion->Option.mapWithDefault(Map.String.empty, v =>
+        tokens->Map.String.keep((_, t) => t.Token.chain == v.Network.chain)
+      )
+    );
   };
 
   let useGetAll = () => {
     let accountsRequest = useRequest();
-    accountsRequest->ApiRequest.getOkWithDefault(Map.String.empty);
+    accountsRequest->ApiRequest.getWithDefault(Map.String.empty);
   };
 
   let useGet = (tokenAddress: option(string)) => {
@@ -541,7 +586,7 @@ module Accounts = {
 
   let useGetAll = () => {
     let accountsRequest = useRequest();
-    accountsRequest->ApiRequest.getOkWithDefault(Map.String.empty);
+    accountsRequest->ApiRequest.getWithDefault(Map.String.empty);
   };
 
   let useGetAllWithDelegates = () => {
@@ -581,27 +626,89 @@ module Accounts = {
     };
   };
 
-  let useCreate = () => {
-    let resetAccounts = useResetAll();
-    AccountApiRequest.useCreate(~sideEffect=_ => resetAccounts(), ());
-  };
-
   let useUpdate = () => {
     let resetAccounts = useResetNames();
     AccountApiRequest.useUpdate(~sideEffect=_ => resetAccounts(), ());
   };
 
-  let useCreateWithMnemonics = () => {
+  let useDelete = () => {
     let resetAccounts = useResetAll();
-    AccountApiRequest.useCreateWithMnemonics(
-      ~sideEffect=_ => resetAccounts(),
+    AccountApiRequest.useDelete(~sideEffect=_ => resetAccounts(), ());
+  };
+};
+
+module Secrets = {
+  let useRequestState = () => {
+    let store = useStoreContext();
+    store.secretsRequestState;
+  };
+
+  let useGetAll = () => {
+    let (secretsRequest, _) = useRequestState();
+    secretsRequest->ApiRequest.getWithDefault([||]);
+  };
+
+  let useLoad = () => {
+    let requestState = useRequestState();
+    SecretApiRequest.useLoad(requestState);
+  };
+
+  let useGetRecoveryPhrase = (~index: int) => {
+    let requestState = React.useState(() => ApiRequest.NotAsked);
+    SecretApiRequest.useGetRecoveryPhrase(~requestState, ~index);
+  };
+
+  let useResetNames = () => {
+    let (_, setSecretsRequest) = useRequestState();
+    () => {
+      setSecretsRequest(ApiRequest.updateToResetState);
+    };
+  };
+
+  let useResetAll = () => {
+    let resetAccounts = Accounts.useResetAll();
+    let (_, setSecretsRequest) = useRequestState();
+    () => {
+      setSecretsRequest(ApiRequest.updateToResetState);
+      resetAccounts();
+    };
+  };
+
+  let useScanGlobal = () => {
+    let resetSecrets = useResetAll();
+
+    let requestState = React.useState(() => ApiRequest.NotAsked);
+    let (scanRequest, scanGet) =
+      SecretApiRequest.useScanGlobal(~requestState, ());
+
+    let scan = input => {
+      scanGet(input)->Future.tapOk(_ => resetSecrets());
+    };
+
+    (scanRequest, scan);
+  };
+
+  let useCreateWithMnemonics = () => {
+    let resetSecrets = useResetAll();
+    SecretApiRequest.useCreateWithMnemonics(
+      ~sideEffect=_ => resetSecrets(),
       (),
     );
   };
 
+  let useDerive = () => {
+    let resetAccounts = useResetAll();
+    SecretApiRequest.useDerive(~sideEffect=_ => resetAccounts(), ());
+  };
+
+  let useUpdate = () => {
+    let resetSecrets = useResetNames();
+    SecretApiRequest.useUpdate(~sideEffect=_ => resetSecrets(), ());
+  };
+
   let useDelete = () => {
     let resetAccounts = useResetAll();
-    AccountApiRequest.useDelete(~sideEffect=_ => resetAccounts(), ());
+    SecretApiRequest.useDelete(~sideEffect=_ => resetAccounts(), ());
   };
 };
 

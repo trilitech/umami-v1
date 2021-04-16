@@ -15,18 +15,28 @@ module AddTokenButton = {
     );
 
   [@react.component]
-  let make = () => {
+  let make = (~chain=?) => {
     let (visibleModal, openAction, closeAction) =
       ModalAction.useModalActionState();
 
     let onPress = _ => openAction();
 
+    let tooltip =
+      chain == None
+        ? Some(("add_token_button", I18n.tooltip#chain_not_connected)) : None;
+
     <>
       <View style=styles##button>
-        <ButtonAction onPress text=I18n.btn#add_token icon=Icons.Add.build />
+        <ButtonAction
+          disabled={chain == None}
+          ?tooltip
+          onPress
+          text=I18n.btn#add_token
+          icon=Icons.Add.build
+        />
       </View>
       <ModalAction visible=visibleModal onRequestClose=closeAction>
-        <TokenAddView closeAction />
+        <TokenAddView chain={chain->Option.getWithDefault("")} closeAction />
       </ModalAction>
     </>;
   };
@@ -38,9 +48,10 @@ let styles =
 [@react.component]
 let make = () => {
   let tokensRequest = StoreContext.Tokens.useRequest();
+  let apiVersion: option(Network.apiVersion) = StoreContext.useApiVersion();
 
   <Page>
-    <AddTokenButton />
+    <AddTokenButton chain=?{apiVersion->Option.map(v => v.chain)} />
     <Table.Head>
       <TokenRowItem.CellName>
         <Typography.Overline3>

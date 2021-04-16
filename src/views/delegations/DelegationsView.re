@@ -29,10 +29,42 @@ let styles =
     })
   );
 
+let someDone = delegateRequests =>
+  delegateRequests->Map.String.some((_, r) => r->ApiRequest.isDone);
+
+let allNone = delegateRequests =>
+  delegateRequests->Map.String.every((_, r) =>
+    switch (r->ApiRequest.getDoneOk) {
+    | Some(None) => true
+    | _ => false
+    }
+  );
+
+let accountsToShow = accounts =>
+  accounts
+  ->Map.String.valuesToArray
+  ->SortArray.stableSortBy((a, b) =>
+      Pervasives.compare(a.Account.alias, b.Account.alias)
+    );
+
+module DelegateItem = {
+  [@react.component]
+  let make = (~account: Account.t) => {
+    let delegateRequest = StoreContext.Delegate.useLoad(account.address);
+
+    delegateRequest
+    ->ApiRequest.getDoneOk
+    ->Option.flatMap(x => x)
+    ->ReactUtils.mapOpt(_ =>
+        <DelegateRowItem key={account.address} account delegateRequest />
+      );
+  };
+};
+
 [@react.component]
 let make = () => {
   let accounts = StoreContext.Accounts.useGetAll();
-  let delegatesRequestsLoaded = StoreContext.Delegate.useGetAllLoaded();
+  let delegateRequests = StoreContext.Delegate.useGetAllRequests();
 
   <View style=styles##container>
     {accounts->Map.String.size == 0
@@ -40,7 +72,11 @@ let make = () => {
        : <>
            <View style=styles##header>
              <BalanceTotal />
-             <DelegateButton style=styles##button />
+             <DelegateButton
+               zeroTez=false
+               action={Delegate.Create(None)}
+               style=styles##button
+             />
              <Table.Head>
                <DelegateRowItem.CellAddress>
                  <Typography.Overline3>
@@ -77,27 +113,16 @@ let make = () => {
            </View>
            <DocumentContext.ScrollView
              style=styles##list contentContainerStyle=styles##listContent>
-             {/* tricky because all delegateRequest are separate requests done by each delegateRowItem that all need to be mounted  */
-              switch (
-                delegatesRequestsLoaded->Array.some(Option.isSome),
-                delegatesRequestsLoaded->Array.size
-                === accounts->Map.String.size,
-              ) {
-              | (true, _) => React.null /* at least one delegate is loaded and so at least one row will be displayed */
-              | (false, false) => <LoadingView /> /* some delegate requests aren't loaded yet */
-              | (false, true) =>
-                /* all delegate requests are loaded but all are none */
-                <Table.Empty>
-                  I18n.t#empty_delegations->React.string
-                </Table.Empty>
-              }}
-             {accounts
-              ->Map.String.valuesToArray
-              ->SortArray.stableSortBy((a, b) =>
-                  Pervasives.compare(a.alias, b.alias)
-                )
+             {!someDone(delegateRequests) ? <LoadingView /> : React.null}
+             {allNone(delegateRequests)
+                ? <Table.Empty>
+                    I18n.t#empty_delegations->React.string
+                  </Table.Empty>
+                : React.null}
+             {let accountsToShow = accountsToShow(accounts);
+              accountsToShow
               ->Array.map(account =>
-                  <DelegateRowItem key={account.address} account />
+                  <DelegateItem key={account.address} account />
                 )
               ->React.array}
            </DocumentContext.ScrollView>

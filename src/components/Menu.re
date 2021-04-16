@@ -28,7 +28,7 @@ module Item = {
            (colorStyle === `highEmphasis ? `mediumEmphasis : colorStyle)
            ->Typography.getColor(theme),
        )}
-      <Typography.ButtonSecondary colorStyle style=styles##text>
+      <Typography.ButtonSecondary colorStyle fontSize=14. style=styles##text>
         text->React.string
       </Typography.ButtonSecondary>
     </ThemedPressable>;
@@ -58,7 +58,7 @@ let make =
       ~size=34.,
       ~style as styleArg=?,
     ) => {
-  let (pressableRef, isOpen, popoverConfig, togglePopover) =
+  let (pressableRef, isOpen, popoverConfig, togglePopover, _) =
     Popover.usePopoverState();
 
   <View
@@ -69,7 +69,7 @@ let make =
       |])
     )>
     <IconButton
-      pressableRef={pressableRef->Ref.value}
+      pressableRef
       isActive=isOpen
       icon
       size

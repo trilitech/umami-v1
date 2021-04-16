@@ -16,7 +16,7 @@ let styles =
       "pressable":
         style(
           ~flex=1.,
-          ~paddingVertical=9.->dp,
+          ~paddingVertical=8.->dp,
           ~paddingHorizontal=17.->dp,
           ~alignItems=`center,
           ~justifyContent=`center,
@@ -194,6 +194,44 @@ module SubmitSecondary = {
         |])
       )>
       <Typography.ButtonPrimary ?fontSize>
+        text->React.string
+      </Typography.ButtonPrimary>
+    </FormBase>;
+  };
+};
+
+module SubmitTertiary = {
+  [@react.component]
+  let make =
+      (
+        ~text,
+        ~onPress,
+        ~disabled=false,
+        ~loading=?,
+        ~fontSize=?,
+        ~style as styleArg=?,
+      ) => {
+    let theme = ThemeContext.useTheme();
+
+    <FormBase
+      onPress
+      isPrimary=false
+      disabled
+      ?loading
+      vStyle=Style.(
+        arrayOption([|
+          styleArg,
+          Some(styles##primary),
+          Some(
+            style(
+              ~borderWidth=1.,
+              ~borderColor=theme.colors.borderMediumEmphasis,
+              (),
+            ),
+          ),
+        |])
+      )>
+      <Typography.ButtonPrimary colorStyle=`mediumEmphasis ?fontSize>
         text->React.string
       </Typography.ButtonPrimary>
     </FormBase>;

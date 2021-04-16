@@ -1,26 +1,31 @@
+type network = [ | `Mainnet | `Testnet(string)];
+
 type t = {
+  network: option(network),
   endpointMain: option(string),
   endpointTest: option(string),
   explorerMain: option(string),
   explorerTest: option(string),
   theme: option([ | `system | `dark | `light]),
   confirmations: option(int),
-  sdkBaseDir: option(string),
+  sdkBaseDir: option(System.Path.t),
 };
 
 [@bs.val] [@bs.scope "JSON"] external parse: string => t = "parse";
 
 module Default = {
-  let endpointMain = "https://mainnet-tezos.giganode.io";
-  let endpointTest = "https://api.umamiwallet.com/node/edo2net";
-  let explorerMain = "https://mezos.lamini.ca/mezos/mainnet7";
+  let network = `Testnet(Network.edo2netChain);
+  let endpointMain = "https://mainnet.smartpy.io/";
+  let endpointTest = "https://edonet.smartpy.io/";
+  let explorerMain = "https://api.umamiwallet.com/mainnet";
   let explorerTest = "https://api.umamiwallet.com/edo2net";
   let theme = `system;
-  let sdkBaseDir = System.homeDir() ++ "/.tezos-client";
+  let sdkBaseDir = System.(Path.Ops.(appDir() / (!"tezos-client")));
   let confirmations = 5;
 };
 
 let dummy = {
+  network: None,
   endpointMain: None,
   endpointTest: None,
   explorerMain: None,

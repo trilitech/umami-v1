@@ -628,6 +628,21 @@ var _SECP256K1 = (function() {
       var _secp256k1_ecdsa_sign_recoverable = Module["_secp256k1_ecdsa_sign_recoverable"] = function() {
         return (_secp256k1_ecdsa_sign_recoverable = Module["_secp256k1_ecdsa_sign_recoverable"] = Module["asm"]["z"]).apply(null, arguments)
       };
+      var _ml_secp256k1_fe_const_bytecode = Module["_ml_secp256k1_fe_const_bytecode"] = function() {
+        return (_ml_secp256k1_fe_const_bytecode = Module["_ml_secp256k1_fe_const_bytecode"] = Module["asm"]["x"]).apply(null, arguments)
+      };
+      var _ml_secp256k1_fe_set_b32 = Module["_ml_secp256k1_fe_set_b32"] = function() {
+        return (_ml_secp256k1_fe_set_b32 = Module["_ml_secp256k1_fe_set_b32"] = Module["asm"]["y"]).apply(null, arguments)
+      };
+      var _ml_secp256k1_ge_of_fields = Module["_ml_secp256k1_ge_of_fields"] = function() {
+        return (_ml_secp256k1_ge_of_fields = Module["_ml_secp256k1_ge_of_fields"] = Module["asm"]["z"]).apply(null, arguments)
+      };
+      var _ml_secp256k1_gej_of_fields = Module["_ml_secp256k1_gej_of_fields"] = function() {
+        return (_ml_secp256k1_gej_of_fields = Module["_ml_secp256k1_gej_of_fields"] = Module["asm"]["A"]).apply(null, arguments)
+      };
+      var _ml_secp256k1_gej_set_ge = Module["_ml_secp256k1_gej_set_ge"] = function() {
+        return (_ml_secp256k1_gej_set_ge = Module["_ml_secp256k1_gej_set_ge"] = Module["asm"]["B"]).apply(null, arguments)
+      };
       var calledRun;
 
       function ExitStatus(status) {

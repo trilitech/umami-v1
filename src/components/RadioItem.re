@@ -16,13 +16,7 @@ let styles =
   );
 
 [@react.component]
-let make =
-    (
-      ~label,
-      ~value,
-      ~setValue: (ThemeContext.themeMain => ThemeContext.themeMain) => unit,
-      ~currentValue,
-    ) => {
+let make = (~label, ~value, ~setValue: ('a => 'a) => unit, ~currentValue) => {
   <TouchableOpacity
     style=styles##container onPress={_ => setValue(_ => value)}>
     <Radio value={currentValue == value} style=styles##radio />

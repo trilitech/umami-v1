@@ -52,6 +52,7 @@ module type TextDesignStyle = {
   let colorStyle: colorStyle;
   let fontWeightStyle: fontWeightStyle;
   let fontSize: float;
+  let selectable: bool;
 };
 
 module Base = {
@@ -69,12 +70,14 @@ module Base = {
         ~numberOfLines: option(int)=?,
         ~style as styleProp: option(ReactNative.Style.t)=?,
         ~ellipsizeMode: option([ | `clip | `head | `middle | `tail])=?,
+        ~selectable: option(bool)=?,
         ~children: React.element,
       ) => {
     let theme = ThemeContext.useTheme();
     <Text
       ?ellipsizeMode
       ?numberOfLines
+      ?selectable
       style=Style.(
         arrayOption([|
           Some(styles##text),
@@ -100,6 +103,7 @@ module Make = (DefaultStyle: TextDesignStyle) => {
         ~colorStyle=DefaultStyle.colorStyle,
         ~fontSize=DefaultStyle.fontSize,
         ~fontWeightStyle=DefaultStyle.fontWeightStyle,
+        ~selectable=DefaultStyle.selectable,
         ~numberOfLines=?,
         ~ellipsizeMode=?,
         ~style=?,
@@ -109,6 +113,7 @@ module Make = (DefaultStyle: TextDesignStyle) => {
       ~colorStyle,
       ~fontSize,
       ~fontWeightStyle,
+      ~selectable,
       ~numberOfLines?,
       ~ellipsizeMode?,
       ~style?,
@@ -124,6 +129,7 @@ module Headline =
     let colorStyle = `highEmphasis;
     let fontWeightStyle = `bold;
     let fontSize = 22.;
+    let selectable = true;
   });
 
 /* OVERLINE */
@@ -133,6 +139,7 @@ module Overline1 =
     let colorStyle = `highEmphasis;
     let fontWeightStyle = `light;
     let fontSize = 19.;
+    let selectable = true;
   });
 
 module Overline2 =
@@ -140,6 +147,7 @@ module Overline2 =
     let colorStyle = `mediumEmphasis;
     let fontWeightStyle = `semiBold;
     let fontSize = 16.;
+    let selectable = true;
   });
 
 module Overline3 =
@@ -147,6 +155,7 @@ module Overline3 =
     let colorStyle = `mediumEmphasis;
     let fontWeightStyle = `regular;
     let fontSize = 16.;
+    let selectable = true;
   });
 
 /* SUBTITLE */
@@ -156,13 +165,15 @@ module Subtitle1 =
     let colorStyle = `highEmphasis;
     let fontWeightStyle = `semiBold;
     let fontSize = 16.;
+    let selectable = true;
   });
 
 module Subtitle2 =
   Make({
     let colorStyle = `highEmphasis;
     let fontWeightStyle = `bold;
-    let fontSize = 15.;
+    let fontSize = 16.;
+    let selectable = true;
   });
 
 /* BODY */
@@ -172,6 +183,7 @@ module Body1 =
     let colorStyle = `highEmphasis;
     let fontWeightStyle = `regular;
     let fontSize = 16.;
+    let selectable = true;
   });
 
 module Body2 =
@@ -179,6 +191,7 @@ module Body2 =
     let colorStyle = `highEmphasis;
     let fontWeightStyle = `regular;
     let fontSize = 14.;
+    let selectable = true;
   });
 
 /* BUTTON */
@@ -188,6 +201,7 @@ module ButtonPrimary =
     let colorStyle = `highEmphasis;
     let fontWeightStyle = `bold;
     let fontSize = 14.;
+    let selectable = false;
   });
 
 module ButtonSecondary =
@@ -195,6 +209,7 @@ module ButtonSecondary =
     let colorStyle = `mediumEmphasis;
     let fontWeightStyle = `bold;
     let fontSize = 12.;
+    let selectable = false;
   });
 
 module ButtonTernary =
@@ -202,6 +217,7 @@ module ButtonTernary =
     let colorStyle = `mediumEmphasis;
     let fontWeightStyle = `semiBold;
     let fontSize = 11.;
+    let selectable = false;
   });
 
 /* ADDRESS */
@@ -230,3 +246,14 @@ module Address = {
     </Base>;
   };
 };
+
+/* NOTICE */
+
+module Notice =
+  Make({
+    let colorStyle = `highEmphasis;
+    let fontWeightStyle = `bold;
+    let fontSize = 14.;
+    let selectable = true;
+  });
+

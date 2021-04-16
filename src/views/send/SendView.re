@@ -49,7 +49,10 @@ module FormGroupAmountWithTokenSelector = {
         ?token
       />
       {<FormGroup style=styles##tokenGroup>
-         <FormLabel label="Token" style=FormGroupTextInput.styles##label />
+         <FormLabel
+           label=I18n.label#token
+           style=FormGroupTextInput.styles##label
+         />
          <TokenSelector
            selectedToken
            setSelectedToken
@@ -110,13 +113,13 @@ let sourceDestination = (transfer: SendForm.transaction) => {
       );
     ((source, sourceLbl), `Many(destinations));
   | TokenTransfer(
-      ({source, transfers: [{destination}]}: Token.Transfer.t),
+      {source, transfers: [{destination}]}: Token.Transfer.t,
       _,
     ) => (
       (source, sourceLbl),
       `One((destination, recipientLbl)),
     )
-  | TokenTransfer(({source, transfers}: Token.Transfer.t), _) =>
+  | TokenTransfer({source, transfers}: Token.Transfer.t, _) =>
     let destinations =
       transfers->List.map(t =>
         (None, (t.destination, t.amount->Int.toString))
@@ -127,6 +130,22 @@ let sourceDestination = (transfer: SendForm.transaction) => {
 
 let buildSummaryContent =
     (transaction: SendForm.transaction, dryRun: Protocol.simulationResults) => {
+  let fee = (
+    I18n.label#fee,
+    I18n.t#xtz_amount(
+      ProtocolXTZ.Infix.(dryRun.fee - dryRun.revealFee)->ProtocolXTZ.toString,
+    ),
+  );
+
+  let revealFee =
+    dryRun.revealFee != ProtocolXTZ.zero
+      ? (
+          I18n.label#implicit_reveal_fee,
+          I18n.t#xtz_amount(dryRun.revealFee->ProtocolXTZ.toString),
+        )
+        ->Some
+      : None;
+
   switch (transaction) {
   | ProtocolTransaction({transfers}) =>
     let amount =
@@ -142,21 +161,28 @@ let buildSummaryContent =
       I18n.label#summary_total,
       I18n.t#xtz_amount(total->ProtocolXTZ.toString),
     );
-    let fee = (
-      I18n.label#fee,
-      I18n.t#xtz_amount(dryRun.fee->ProtocolXTZ.toString),
-    );
-    [subtotal, fee, total];
+    [
+      subtotal,
+      fee,
+      ...revealFee->Option.mapWithDefault([total], r => [r, total]),
+    ];
   | TokenTransfer({transfers}, token) =>
     let amount = transfers->List.reduce(0, (acc, {amount}) => acc + amount);
     let amount = I18n.t#amount(amount->Int.toString, token.symbol);
 
-    let fee = (
-      I18n.label#fee,
-      I18n.t#xtz_amount(dryRun.fee->ProtocolXTZ.toString),
-    );
     let amount = (I18n.label#send_amount, amount);
-    [amount, fee];
+
+    let total = dryRun.fee;
+    let total = (
+      I18n.label#summary_total_tez,
+      I18n.t#xtz_amount(total->ProtocolXTZ.toString),
+    );
+
+    [
+      amount,
+      fee,
+      ...revealFee->Option.mapWithDefault([total], r => [r, total]),
+    ];
   };
 };
 
@@ -261,8 +287,7 @@ module Form = {
       | Edition(int)
       | Creation(option(unit => unit), unit => unit);
 
-    let simulatedTransaction =
-        (mode, batch, form: SendForm.api, token, confirmations) => {
+    let simulatedTransaction = (mode, batch, form: SendForm.api, token) => {
       let (batch, index) =
         switch (mode) {
         | Edition(index) =>
@@ -281,7 +306,7 @@ module Form = {
           (batch, Some(length - 1));
         };
 
-      SendForm.buildTransaction(batch, token, confirmations)
+      SendForm.buildTransaction(batch, token)
       |> SendForm.toSimulation(~index?);
     };
 
@@ -295,14 +320,14 @@ module Form = {
           ~mode,
           ~form,
           ~loading,
-          ~config: ConfigFile.t,
         ) => {
       let (advancedOptionOpened, setAdvancedOptionOpened) = advancedOptionState;
       let (selectedToken, setSelectedToken) = tokenState;
 
       let (editing, onAddToBatch, onSubmitAll, batchMode) =
         switch (mode) {
-        | Edition(_) => (true, None, None, false)
+        // Edition state is always on batch mode
+        | Edition(_) => (true, None, None, true)
         | Creation(batch, submit) => (
             false,
             batch,
@@ -357,6 +382,7 @@ module Form = {
           />
           <FormGroupContactSelector
             label=I18n.label#send_recipient
+            filterOut={form.values.sender}
             value={form.values.recipient}
             handleChange={form.handleChange(Recipient)}
             error={form.getFieldError(Field(Recipient))}
@@ -387,7 +413,6 @@ module Form = {
                        batch,
                        form,
                        token,
-                       config.confirmations,
                      )}
                      form
                    />
@@ -419,7 +444,7 @@ module Form = {
 
 module EditionView = {
   [@react.component]
-  let make = (~batch, ~initValues, ~onSubmit, ~index, ~loading, ~config) => {
+  let make = (~batch, ~initValues, ~onSubmit, ~token=?, ~index, ~loading) => {
     let (initValues, advancedOptionOpened) = initValues;
 
     let (advancedOptionOpened, _) as advancedOptionState =
@@ -431,10 +456,10 @@ module EditionView = {
       batch
       advancedOptionState
       tokenState=(None, _ => ())
+      ?token
       form
       mode={Form.View.Edition(index)}
       loading
-      config
     />;
   };
 };
@@ -445,8 +470,6 @@ let make = (~closeAction) => {
   let initToken = StoreContext.SelectedToken.useGet();
 
   let updateAccount = StoreContext.SelectedAccount.useSet();
-
-  let settings = SdkContext.useSettings();
 
   let (advancedOptionsOpened, setAdvancedOptions) as advancedOptionState =
     React.useState(_ => false);
@@ -465,7 +488,7 @@ let make = (~closeAction) => {
     let ((sourceAddress, _), _) = sourceDestination(transfer);
 
     sendOperation({operation, password})
-    ->Future.tapOk(((hash, _)) => {setModalStep(_ => SubmittedStep(hash))})
+    ->Future.tapOk(hash => {setModalStep(_ => SubmittedStep(hash))})
     ->Future.tapOk(_ => {updateAccount(sourceAddress)})
     ->ignore;
   };
@@ -478,12 +501,7 @@ let make = (~closeAction) => {
   let submitAction = React.useRef(`SubmitAll);
 
   let onSubmitBatch = batch => {
-    let transaction =
-      SendForm.buildTransaction(
-        batch->List.reverse,
-        token,
-        settings.config.confirmations,
-      );
+    let transaction = SendForm.buildTransaction(batch->List.reverse, token);
     sendOperationSimulate(SendForm.toSimulation(transaction))
     ->Future.tapOk(dryRun => {
         setModalStep(_ => PasswordStep(transaction, dryRun))
@@ -588,9 +606,9 @@ let make = (~closeAction) => {
                batch
                initValues
                onSubmit
+               ?token
                index
                loading=false
-               config={settings.config}
              />;
            | SendStep =>
              let onSubmit = batch != [] ? onAddToBatch : onSubmitAll;
@@ -603,7 +621,6 @@ let make = (~closeAction) => {
                form
                mode={Form.View.Creation(onAddToBatch, onSubmit)}
                loading=loadingSimulate
-               config={settings.config}
              />;
            | PasswordStep(transfer, dryRun) =>
              let (source, destinations) = sourceDestination(transfer);

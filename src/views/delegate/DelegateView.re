@@ -128,6 +128,13 @@ module Form = {
       let formFieldsAreValids =
         FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
 
+      let initDelegate =
+        switch (action) {
+        | Create(_) => None
+        | Edit(_, delegate)
+        | Delete(_, delegate) => Some(delegate)
+        };
+
       <>
         <ReactFlipToolkit.FlippedView flipId="form">
           <Typography.Headline style=FormStyles.header>
@@ -160,7 +167,13 @@ module Form = {
             <Typography.Overline2>
               I18n.btn#advanced_options->React.string
             </Typography.Overline2>
-            <ThemedSwitch value=advancedOptionOpened />
+            <ThemedSwitch
+              disabled={
+                form.values.baker == ""
+                || Some(form.values.baker) == initDelegate
+              }
+              value=advancedOptionOpened
+            />
           </TouchableOpacity>
         </ReactFlipToolkit.FlippedView>
         <ReactFlipToolkit.FlippedView
@@ -199,9 +212,30 @@ module Form = {
   };
 };
 
-let buildSummaryContent = (dryRun: Protocol.simulationResults) => [
-  (I18n.label#fee, I18n.t#xtz_amount(dryRun.fee->ProtocolXTZ.toString)),
-];
+let buildSummaryContent = (dryRun: Protocol.simulationResults) => {
+  let revealFee =
+    dryRun.revealFee != ProtocolXTZ.zero
+      ? (
+          I18n.label#implicit_reveal_fee,
+          I18n.t#xtz_amount(dryRun.revealFee->ProtocolXTZ.toString),
+        )
+        ->Some
+      : None;
+
+  let fee = (
+    I18n.label#fee,
+    I18n.t#xtz_amount(
+      ProtocolXTZ.Infix.(dryRun.fee - dryRun.revealFee)->ProtocolXTZ.toString,
+    ),
+  );
+
+  let total = (
+    I18n.label#summary_total,
+    I18n.t#xtz_amount(dryRun.fee->ProtocolXTZ.toString),
+  );
+
+  [fee, ...revealFee->Option.mapWithDefault([total], r => [r, total])];
+};
 
 [@react.component]
 let make = (~closeAction, ~action) => {
@@ -214,7 +248,7 @@ let make = (~closeAction, ~action) => {
 
   let sendOperation = (delegation, password) =>
     sendOperation(OperationApiRequest.delegate(delegation, password))
-    ->Future.tapOk(((hash, _)) => {setModalStep(_ => SubmittedStep(hash))})
+    ->Future.tapOk(hash => {setModalStep(_ => SubmittedStep(hash))})
     ->ignore;
 
   let (operationSimulateRequest, sendOperationSimulate) =

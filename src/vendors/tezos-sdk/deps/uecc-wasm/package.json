@@ -1,5 +1,5 @@
 {
-  "name": "@nomadic-labs/uecc-js",
+  "name": "@nomadic-labs/uecc-wasm",
   "version": "1.0.6",
   "main": "uECC.js",
   "license": "MIT",

@@ -29,10 +29,12 @@ let make =
       ~error,
       ~keyboardType=?,
       ~onBlur=?,
+      ~onFocus=?,
       ~textContentType=?,
       ~secureTextEntry=?,
       ~placeholder=?,
       ~disabled=?,
+      ~onSubmitEditing=?,
       ~decoration: option((~style: Style.t) => React.element)=?,
       ~style as styleFromProp: option(ReactNative.Style.t)=?,
     ) => {
@@ -46,11 +48,13 @@ let make =
         onValueChange=handleChange
         hasError
         ?onBlur
+        ?onFocus
         ?textContentType
         ?secureTextEntry
         ?keyboardType
         ?placeholder
         ?disabled
+        ?onSubmitEditing
       />
       {decoration->ReactUtils.mapOpt(deco => deco(~style=styles##decoration))}
     </View>

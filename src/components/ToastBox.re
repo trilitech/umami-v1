@@ -6,7 +6,7 @@ let styles =
     StyleSheet.create({
       "container":
         style(
-          ~width=500.->dp,
+          ~width=600.->dp,
           ~position=`absolute,
           ~bottom=20.->dp,
           ~left=150.->dp,
