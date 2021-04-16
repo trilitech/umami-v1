@@ -4,80 +4,59 @@ Umami Wallet
 ===========================================================================
 
 Cryptocurrency wallet to interact with Tezos Blockchain.
-Umami is a desktop electron based app with various features:
+Umami is a desktop electron based app with multiple features:
 
-- manage multiple accounts with XTZ
-- transfers, delegates
-- token (FA1.2) interactions
-- last operations
+- Manage multiple accounts using HD Wallet features
+- Register your contacts in you address book
+- Tranfers, delegates and batch transfers
+- Token (FA1.2) transactions : balance, transfers, batch, etc
+- See your last operations
 
-__Umami is still in ALPHA version. Please do not use it with your Mainnet keys.__
+__Umami is still in Beta version.__
 
-# Install from sources
+## Support
 
-### Requirements
+- open an issue
+- `#slack` channel on [tezos slack](https://tezos-dev.slack.com)
+- [email](mailto:incoming+nomadic-labs-umami-wallet-umami-20392089-issue-@incoming.gitlab.com)
+
+## Install
+
+### binary
+
+- pick your system binary on our [release page](https://gitlab.com/nomadic-labs/umami-wallet/umami/-/releases)
+
+### from sources
+
+#### Requirements
 
 * [node](https://nodejs.org)
 * [yarn](https://yarnpkg.com)
-* [tezos-client](https://gitlab.com/tezos/tezos)
-  It must be accessible from PATH where electron starts.
 
-### Compile Tezos Client (branch umami@dry_run_no_pass+fa1.2)
+#### Scripts
 
-To compile Tezos you need rust.
+##### install Js dependancies
 
-You can use the provided script get-and-compile-tezos.sh, it will get and compile the branch alex@dry_run_no_pass of Tezos.
+```
+yarn install
+```
 
-### Scripts
+##### build
 
-* install Js dependancies
-
-`yarn install`
-
-* build code
-
-`yarn bsb:build`
+```
+yarn bsb:build
+```
 
 * start the electron server with hot refresh
 
-`yarn electron:dev`
+```
+yarn electron:dev
+```
 
 * Production script
 
-`npm run electron:build`
+```
+yarn run electron:build
+```
 
 Builds the Electron app package for production to the `dist` folder.
-
-### Last update (05/01/2021)
-
-- Settings page
-- Refresh button in operations
-- Auto-refresh operation page on operation inclusion
-- Operations improvements (status, level, etc)
-- rename Tezos currency name from XTZ to tez
-- Token batches from transfer
-- Remove counter from advanced options
-- Binary deployments from CI for Linux and MacOs
-- Various bug fixes
-- Documentation
-
-### Previous update (25/01/2021)
-
-- Various Build system fixes/improvements
-- Single file download installation
-- CI improvements
-- Fix slow onboarding mnemonic
-- Edit Accounts
-- Edit Contacts
-- Support for batch token txs (API side)
-- Indexation benchmarking/optimizations
-- Ability to delete tokens contracts
-- Update readme and installation script
-- Filter out accounts from the address book
-- XTZ from float to int64 representation
-- Onboarding redesign
-- Redesign token selector
-- SDK integration improvements and fixes
-- Improved modal management
-- Advanced options animation
-- "Go to operations" button after Tx
