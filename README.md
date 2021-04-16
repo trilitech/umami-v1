@@ -17,7 +17,7 @@ __Umami is still in Beta version.__
 ## Support
 
 - open an issue
-- `#slack` channel on [tezos slack](https://tezos-dev.slack.com)
+- `#umami` channel on [tezos slack](https://tezos-dev.slack.com)
 - [email](mailto:incoming+nomadic-labs-umami-wallet-umami-20392089-issue-@incoming.gitlab.com)
 
 ## Install
