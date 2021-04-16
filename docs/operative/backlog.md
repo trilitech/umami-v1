@@ -15,3 +15,4 @@ Here is the list of features that have not yet been implemented:
 1. Multisig
 1. Spending limits
 1. Decentralized ID
+1. Cryptonomic image mirror
