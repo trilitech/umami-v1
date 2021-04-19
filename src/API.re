@@ -266,7 +266,7 @@ module CSV = {
           (acc, (destination, amount, _, _), index) => {
             let tx =
               amount
-              ->Token.Repr.fromBigNumber
+              ->Token.Unit.fromBigNumber
               ->ResultEx.fromOption(
                   Error(CannotParseTokenAmount(amount, index, 2)),
                 )
@@ -320,37 +320,36 @@ let handleCSVError = e =>
      );
 
 module Simulation = {
-  let extractCustomValues = (tx_options: Protocol.transfer_options) => (
-    tx_options.Protocol.fee
-    ->Option.map(fee => fee->ProtocolXTZ.unsafeToMutezInt),
+  let extractCustomValues = (tx_options: ProtocolOptions.transferOptions) => (
+    tx_options.fee->Option.map(fee => fee->ProtocolXTZ.unsafeToMutezInt),
     tx_options.storageLimit,
     tx_options.gasLimit,
   );
 
-  let transfer = (settings, transfer, source) => {
+  let transfer = (settings, transfer: Transfer.elt, source) => {
     ReTaquito.Estimate.transfer(
       ~endpoint=settings->AppSettings.endpoint,
       ~baseDir=settings->AppSettings.baseDir,
       ~source,
-      ~dest=transfer.Protocol.destination,
-      ~amount=transfer.Protocol.amount->ProtocolXTZ.toInt64,
-      ~fee=?transfer.Protocol.tx_options.fee->Option.map(ProtocolXTZ.toInt64),
-      ~gasLimit=?transfer.Protocol.tx_options.gasLimit,
-      ~storageLimit=?transfer.Protocol.tx_options.storageLimit,
+      ~dest=transfer.destination,
+      ~amount=transfer.amount->Transfer.currencyToInt64,
+      ~fee=?transfer.tx_options.fee->Option.map(ProtocolXTZ.toInt64),
+      ~gasLimit=?transfer.tx_options.gasLimit,
+      ~storageLimit=?transfer.tx_options.storageLimit,
       (),
     );
   };
 
   let batch = (settings, transfers, ~source, ~index=?, ()) => {
     let customValues =
-      List.map(transfers, tx => tx.Protocol.tx_options->extractCustomValues)
+      List.map(transfers, tx => tx.Transfer.tx_options->extractCustomValues)
       ->List.toArray;
 
     let transfers = source =>
       transfers
       ->List.map(({amount, destination, tx_options}: Protocol.transfer) =>
           ReTaquito.Toolkit.prepareTransfer(
-            ~amount=amount->ProtocolXTZ.toInt64->ReTaquito.BigNumber.fromInt64,
+            ~amount=amount->Transfer.currencyToBigNumber,
             ~dest=destination,
             ~source,
             ~fee=?
@@ -417,7 +416,7 @@ module Operation = {
       transfers
       ->List.map(({amount, destination, tx_options}: Protocol.transfer) =>
           ReTaquito.Toolkit.prepareTransfer(
-            ~amount=amount->ProtocolXTZ.toInt64->ReTaquito.BigNumber.fromInt64,
+            ~amount=amount->Transfer.currencyToBigNumber,
             ~dest=destination,
             ~source,
             ~fee=?
@@ -443,17 +442,17 @@ module Operation = {
     ->Future.mapOk((op: ReTaquito.Toolkit.operationResult) => op.hash);
   };
 
-  let transfer = (settings, transfer, ~source, ~password) => {
+  let transfer = (settings, transfer: Transfer.elt, ~source, ~password) => {
     ReTaquito.Operations.transfer(
       ~endpoint=settings->AppSettings.endpoint,
       ~baseDir=settings->AppSettings.baseDir,
       ~source,
-      ~dest=transfer.Protocol.destination,
-      ~amount=transfer.Protocol.amount->ProtocolXTZ.toInt64,
+      ~dest=transfer.destination,
+      ~amount=transfer.amount->Transfer.currencyToInt64,
       ~password,
-      ~fee=?transfer.Protocol.tx_options.fee->Option.map(ProtocolXTZ.toInt64),
-      ~gasLimit=?transfer.Protocol.tx_options.gasLimit,
-      ~storageLimit=?transfer.Protocol.tx_options.storageLimit,
+      ~fee=?transfer.tx_options.fee->Option.map(ProtocolXTZ.toInt64),
+      ~gasLimit=?transfer.tx_options.gasLimit,
+      ~storageLimit=?transfer.tx_options.storageLimit,
       (),
     )
     ->Future.mapOk((op: ReTaquito.Toolkit.operationResult) => op.hash);
@@ -1178,22 +1177,26 @@ module Tokens = (Getter: GetterAPI) => {
   let injectBatch = (settings, transfers, ~source, ~password) => {
     let transfers = source =>
       transfers
-      ->List.map(
-          ({token, amount, destination, tx_options}: Token.Transfer.elt) =>
-          ReTaquito.FA12Operations.toRawTransfer(
-            ~token,
-            ~amount=amount->Token.Repr.toBigNumber,
-            ~dest=destination,
-            ~fee=?
-              tx_options.fee
-              ->Option.map(fee =>
-                  fee->ProtocolXTZ.toInt64->ReTaquito.BigNumber.fromInt64
-                ),
-            ~gasLimit=?tx_options.gasLimit,
-            ~storageLimit=?tx_options.storageLimit,
-            (),
-          )
-        )
+      ->ListEx.filterMap(
+          ({amount, destination, tx_options}: Token.Transfer.elt) => {
+          amount
+          ->Transfer.getToken
+          ->Option.map(((amount, token)) =>
+              ReTaquito.FA12Operations.toRawTransfer(
+                ~token,
+                ~amount=amount->Token.Unit.toBigNumber,
+                ~dest=destination,
+                ~fee=?
+                  tx_options.fee
+                  ->Option.map(fee =>
+                      fee->ProtocolXTZ.toInt64->ReTaquito.BigNumber.fromInt64
+                    ),
+                ~gasLimit=?tx_options.gasLimit,
+                ~storageLimit=?tx_options.storageLimit,
+                (),
+              )
+            )
+        })
       ->ReTaquito.FA12Operations.prepareTransfers(
           source,
           settings->AppSettings.endpoint,
@@ -1220,22 +1223,25 @@ module Tokens = (Getter: GetterAPI) => {
     };
   };
 
-  let transferEstimate = (settings, transfer, source) => {
+  let transferEstimate = (settings, transfer: Transfer.elt, source) => {
     let endpoint = settings->AppSettings.endpoint;
-    ReTaquito.FA12Operations.Estimate.transfer(
-      ~endpoint,
-      ~baseDir=settings->AppSettings.baseDir,
-      ~tokenContract=transfer.Token.Transfer.token,
-      ~source,
-      ~dest=transfer.Token.Transfer.destination,
-      ~amount=transfer.Token.Transfer.amount->Token.Repr.toBigNumber,
-      ~fee=?
-        transfer.Token.Transfer.tx_options.fee
-        ->Option.map(ProtocolXTZ.toInt64),
-      ~gasLimit=?transfer.Token.Transfer.tx_options.gasLimit,
-      ~storageLimit=?transfer.Token.Transfer.tx_options.storageLimit,
-      (),
-    )
+    transfer.amount
+    ->Transfer.getTokenExn
+    ->(
+        ((amount, token)) =>
+          ReTaquito.FA12Operations.Estimate.transfer(
+            ~endpoint,
+            ~baseDir=settings->AppSettings.baseDir,
+            ~tokenContract=token,
+            ~source,
+            ~dest=transfer.destination,
+            ~amount=amount->Token.Unit.toBigNumber,
+            ~fee=?transfer.tx_options.fee->Option.map(ProtocolXTZ.toInt64),
+            ~gasLimit=?transfer.tx_options.gasLimit,
+            ~storageLimit=?transfer.tx_options.storageLimit,
+            (),
+          )
+      )
     ->Future.mapOk(({totalCost, gasLimit, storageLimit, revealFee}) =>
         Protocol.{
           fee: totalCost->ProtocolXTZ.fromMutezInt,
@@ -1251,27 +1257,30 @@ module Tokens = (Getter: GetterAPI) => {
 
     let customValues =
       List.map(transfers, tx =>
-        tx.Token.Transfer.tx_options->Simulation.extractCustomValues
+        tx.Transfer.tx_options->Simulation.extractCustomValues
       )
       ->List.toArray;
 
     let transfers = source =>
       transfers
-      ->List.map(
-          ({token, amount, destination, tx_options}: Token.Transfer.elt) =>
-          ReTaquito.FA12Operations.toRawTransfer(
-            ~token,
-            ~amount=amount->Token.Repr.toBigNumber,
-            ~dest=destination,
-            ~fee=?
-              tx_options.fee
-              ->Option.map(fee =>
-                  fee->ProtocolXTZ.toInt64->ReTaquito.BigNumber.fromInt64
-                ),
-            ~gasLimit=?tx_options.gasLimit,
-            ~storageLimit=?tx_options.storageLimit,
-            (),
-          )
+      ->ListEx.filterMap(({amount, destination, tx_options}: Transfer.elt) =>
+          amount
+          ->Transfer.getToken
+          ->Option.map(((amount, token)) =>
+              ReTaquito.FA12Operations.toRawTransfer(
+                ~token,
+                ~amount=amount->Token.Unit.toBigNumber,
+                ~dest=destination,
+                ~fee=?
+                  tx_options.fee
+                  ->Option.map(fee =>
+                      fee->ProtocolXTZ.toInt64->ReTaquito.BigNumber.fromInt64
+                    ),
+                ~gasLimit=?tx_options.gasLimit,
+                ~storageLimit=?tx_options.storageLimit,
+                (),
+              )
+            )
         )
       ->ReTaquito.FA12Operations.prepareTransfers(source, endpoint);
 
@@ -1311,22 +1320,25 @@ module Tokens = (Getter: GetterAPI) => {
       )
     };
 
-  let transfer = (settings, transfer, source, password) => {
-    ReTaquito.FA12Operations.transfer(
-      ~endpoint=settings->AppSettings.endpoint,
-      ~baseDir=settings->AppSettings.baseDir,
-      ~tokenContract=transfer.Token.Transfer.token,
-      ~source,
-      ~dest=transfer.Token.Transfer.destination,
-      ~amount=transfer.Token.Transfer.amount->Token.Repr.toBigNumber,
-      ~password,
-      ~fee=?
-        transfer.Token.Transfer.tx_options.fee
-        ->Option.map(ProtocolXTZ.toInt64),
-      ~gasLimit=?transfer.Token.Transfer.tx_options.gasLimit,
-      ~storageLimit=?transfer.Token.Transfer.tx_options.storageLimit,
-      (),
-    )
+  let transfer = (settings, transfer: Transfer.elt, source, password) => {
+    transfer.amount
+    ->Transfer.getTokenExn
+    ->(
+        ((amount, token)) =>
+          ReTaquito.FA12Operations.transfer(
+            ~endpoint=settings->AppSettings.endpoint,
+            ~baseDir=settings->AppSettings.baseDir,
+            ~tokenContract=token,
+            ~source,
+            ~dest=transfer.destination,
+            ~amount=amount->Token.Unit.toBigNumber,
+            ~password,
+            ~fee=?transfer.tx_options.fee->Option.map(ProtocolXTZ.toInt64),
+            ~gasLimit=?transfer.tx_options.gasLimit,
+            ~storageLimit=?transfer.tx_options.storageLimit,
+            (),
+          )
+      )
     ->Future.mapOk((op: ReTaquito.Toolkit.operationResult) => op.hash);
   };
 
@@ -1354,10 +1366,10 @@ module Tokens = (Getter: GetterAPI) => {
         ->Getter.get
         ->Future.flatMapOk(res => {
             switch (res->Js.Json.decodeString) {
-            | None => Token.Repr.zero->Ok->Future.value
+            | None => Token.Unit.zero->Ok->Future.value
             | Some(v) =>
               v
-              ->Token.Repr.fromNatString
+              ->Token.Unit.fromNatString
               ->FutureEx.fromOption(~error="cannot read Token amount: " ++ v)
             }
           })

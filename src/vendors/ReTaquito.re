@@ -19,8 +19,8 @@ module BigNumber: {
 
   let toFixed = ReBigNumber.toFixed;
 
-  let fromInt64 = i => i->Int64.to_string->ReBigNumber.fromString;
-  let toInt64 = i => i->ReBigNumber.toFixed->Int64.of_string;
+  let fromInt64 = ReBigNumber.fromInt64;
+  let toInt64 = ReBigNumber.toInt64;
 };
 
 module Error = {

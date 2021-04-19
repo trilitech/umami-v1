@@ -31,7 +31,7 @@ type state = {
   bakersRequestState: reactState(ApiRequest.t(array(Delegate.t), string)),
   tokensRequestState:
     reactState(ApiRequest.t(Map.String.t(Token.t), string)),
-  balanceTokenRequestsState: apiRequestsState(Token.Repr.t, string),
+  balanceTokenRequestsState: apiRequestsState(Token.Unit.t, string),
   apiVersionRequestState: reactState(option(Network.apiVersion)),
 };
 
@@ -309,12 +309,12 @@ module BalanceToken = {
     accountsBalanceRequests->Array.size == accounts->Map.String.size
       ? Some(
           accountsBalanceRequests->Array.reduce(
-            Token.Repr.zero, (acc, balanceRequest) => {
-            Token.Repr.Infix.(
+            Token.Unit.zero, (acc, balanceRequest) => {
+            Token.Unit.Infix.(
               acc
               + balanceRequest
                 ->ApiRequest.getDoneOk
-                ->Option.getWithDefault(Token.Repr.zero)
+                ->Option.getWithDefault(Token.Unit.zero)
             )
           }),
         )
@@ -474,7 +474,9 @@ module Tokens = {
     let apiVersion = useApiVersion();
     tokensRequest->ApiRequest.map(tokens =>
       apiVersion->Option.mapWithDefault(Map.String.empty, v =>
-        tokens->Map.String.keep((_, t) => t.Token.chain == v.Network.chain)
+        tokens->Map.String.keep((_, t) =>
+          t.TokenRepr.chain == v.Network.chain
+        )
       )
     );
   };

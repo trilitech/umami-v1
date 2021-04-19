@@ -1,8 +1,8 @@
 let formatOnBlur = (token, handleChange, value) =>
   if (token->Option.isSome) {
     value
-    ->Token.Repr.forceFromString
-    ->Option.mapWithDefault("", Token.Repr.toNatString)
+    ->Token.Unit.forceFromString
+    ->Option.mapWithDefault("", Token.Unit.toNatString)
     ->handleChange;
   } else {
     value->ProtocolXTZ.formatString->Option.getWithDefault("")->handleChange;

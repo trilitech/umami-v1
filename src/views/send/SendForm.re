@@ -100,7 +100,7 @@ let buildTokenTransfer = (inputTransfers, token: Token.t, source, forceLowFee) =
         buildTransfers(
           inputTransfers,
           v => v->FormUtils.keepStrictToken->Option.map(fst),
-          Token.makeSingleTransferElt(~token=token.address),
+          Token.makeSingleTransferElt(~token=token.TokenRepr.address),
         ),
       ~forceLowFee?,
       (),
@@ -109,7 +109,7 @@ let buildTokenTransfer = (inputTransfers, token: Token.t, source, forceLowFee) =
   );
 
 let buildProtocolTransaction = (inputTransfers, source, forceLowFee) =>
-  Protocol.makeTransaction(
+  Transfer.makeTransfers(
     ~source=source.Account.address,
     ~transfers=
       buildTransfers(

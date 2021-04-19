@@ -108,20 +108,20 @@ let sourceDestination = (transfer: SendForm.transaction) => {
   | ProtocolTransaction({source, transfers}) =>
     let destinations =
       transfers->List.map(t =>
-        (None, (t.destination, t.amount->ProtocolXTZ.toString))
+        (None, (t.destination, t.amount->Transfer.currencyToString))
       );
     ((source, sourceLbl), `Many(destinations));
   | TokenTransfer(
-      {source, transfers: [{destination}]}: Token.Transfer.t,
+      ({source, transfers: [{destination}]}: Token.Transfer.t),
       _,
     ) => (
       (source, sourceLbl),
       `One((destination, recipientLbl)),
     )
-  | TokenTransfer({source, transfers}: Token.Transfer.t, _) =>
+  | TokenTransfer(({source, transfers}: Transfer.t), _) =>
     let destinations =
       transfers->List.map(t =>
-        (None, (t.destination, t.amount->Token.Repr.toNatString))
+        (None, (t.destination, t.amount->Transfer.currencyToString))
       );
     ((source, sourceLbl), `Many(destinations));
   };
@@ -149,7 +149,10 @@ let buildSummaryContent =
   | ProtocolTransaction({transfers}) =>
     let amount =
       transfers->List.reduce(ProtocolXTZ.zero, (acc, {amount}) =>
-        ProtocolXTZ.Infix.(acc + amount)
+        ProtocolXTZ.Infix.(
+          acc
+          + amount->Transfer.getXTZ->Option.getWithDefault(ProtocolXTZ.zero)
+        )
       );
     let subtotal = (
       I18n.label#summary_subtotal,
@@ -167,10 +170,15 @@ let buildSummaryContent =
     ];
   | TokenTransfer({transfers}, token) =>
     let amount =
-      transfers->List.reduce(Token.Repr.zero, (acc, {amount}) =>
-        Token.Repr.add(acc, amount)
+      transfers->List.reduce(Token.Unit.zero, (acc, {amount}) =>
+        amount
+        ->Transfer.getToken
+        ->Option.getWithDefault((Token.Unit.zero, token.address))
+        ->TokenRepr.addCurrency((acc, token.address))
+        ->Option.getWithDefault((Token.Unit.zero, token.address))
+        ->fst
       );
-    let amount = I18n.t#amount(amount->Token.Repr.toNatString, token.symbol);
+    let amount = I18n.t#amount(amount->Token.Unit.toNatString, token.symbol);
 
     let amount = (I18n.label#send_amount, amount);
 
@@ -201,14 +209,14 @@ let reduceAmounts = (token, l) =>
         | (None, v) => v
         | (Some(XTZ(acc)), XTZ(v)) => XTZ(ProtocolXTZ.Infix.(acc + v))
         | (Some(Token(acc, tacc)), Token(v, tv)) when tacc == tv =>
-          Token(Token.Repr.Infix.(acc + v), tacc)
+          Token(Token.Unit.Infix.(acc + v), tacc)
         | (Some(acc), _) => acc
         }
       )
     ->List.getAssoc(token, (==))
     ->Option.getWithDefault(
         token->Option.mapWithDefault(ProtocolXTZ.zero->XTZ, t =>
-          Token(Token.Repr.zero, t)
+          Token(Token.Unit.zero, t)
         ),
       )
   );
@@ -592,7 +600,7 @@ let make = (~closeAction) => {
       let transformTransfer =
         transfersTez->List.mapReverse(({destination, amount}) => {
           let formStateValues: SendForm.validState = {
-            amount: amount->FormUtils.XTZ,
+            amount: amount->FormUtils.fromTransferCurrency,
             sender: form.values.sender->FormUtils.Unsafe.getValue,
             recipient: FormUtils.Account.Address(destination),
             fee: None,
@@ -605,12 +613,13 @@ let make = (~closeAction) => {
         });
       setBatch(_ => transformTransfer);
     | TokenRows(transfersToken) =>
-      let tokenAddress =
-        transfersToken->List.get(0)->Option.map(transfer => transfer.token);
       let token =
-        tokenAddress->Option.flatMap(tokenAddress =>
-          tokens->Map.String.get(tokenAddress)
-        );
+        transfersToken
+        ->List.get(0)
+        ->Option.flatMap(transfer => transfer.amount->Transfer.getToken)
+        ->Option.flatMap(((_, tokenAddress)) =>
+            tokens->Map.String.get(tokenAddress)
+          );
 
       switch (token) {
       | Some(token) =>
@@ -619,7 +628,7 @@ let make = (~closeAction) => {
         let transformTransfer =
           transfersToken->List.mapReverse(({destination, amount}) => {
             let formStateValues: SendForm.validState = {
-              amount: FormUtils.Token(amount, token),
+              amount: FormUtils.fromTransferCurrency(~token, amount),
               sender: form.values.sender->FormUtils.Unsafe.getValue,
               recipient: FormUtils.Account.Address(destination),
               fee: None,
@@ -684,7 +693,7 @@ let make = (~closeAction) => {
     FormUtils.(
       fun
       | XTZ(v) => I18n.t#xtz_amount(v->ProtocolXTZ.toString)
-      | Token(v, t) => I18n.t#amount(v->Token.Repr.toNatString, t.symbol)
+      | Token(v, t) => I18n.t#amount(v->Token.Unit.toNatString, t.symbol)
     );
 
   <ReactFlipToolkit.Flipper

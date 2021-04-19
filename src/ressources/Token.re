@@ -1,54 +1,7 @@
-module Repr: {
-  type t = pri ReBigNumber.t;
+open TokenRepr;
+module Unit = Unit;
 
-  let fromBigNumber: ReBigNumber.t => option(t);
-  let toBigNumber: t => ReBigNumber.t;
-
-  let toNatString: t => string;
-  let fromNatString: string => option(t);
-
-  let isValid: string => bool;
-
-  let zero: t;
-
-  let forceFromString: string => option(t);
-
-  let add: (t, t) => t;
-
-  module Infix: {let (+): (t, t) => t;};
-} = {
-  type t = ReBigNumber.t;
-  open ReBigNumber;
-
-  let toBigNumber = x => x;
-  let fromBigNumber = x =>
-    x->isNaN || !x->isInteger || x->isNegative ? None : x->Some;
-
-  let toNatString = toFixed;
-  let fromNatString = s => s->fromString->fromBigNumber;
-  let forceFromString = s => {
-    let v = s->fromString;
-    v->isNaN ? None : v->isInteger ? v->integerValue->Some : None;
-  };
-
-  let isValid = v =>
-    v->fromNatString->Option.mapWithDefault(false, isInteger);
-
-  let zero = fromString("0");
-
-  let add = plus;
-
-  module Infix = {
-    let (+) = plus;
-  };
-};
-
-type t = {
-  address: string,
-  alias: string,
-  symbol: string,
-  chain: string,
-};
+type t = TokenRepr.t;
 
 module Decode = {
   let record = json =>
@@ -80,27 +33,26 @@ module Encode = {
   let array = arrayRecord => arrayRecord |> Json.Encode.array(record);
 };
 
-module Transfer = {
-  type elt = {
-    destination: string,
-    amount: Repr.t,
-    token: string,
-    tx_options: Protocol.transfer_options,
-  };
+type options = (
+  ProtocolOptions.transferOptions,
+  ProtocolOptions.commonOptions,
+);
 
-  type t = {
-    source: string,
-    transfers: list(elt),
-    common_options: Protocol.common_options,
-  };
+/* Temporary proxy for the Transfer module */
+module Tr = Transfer;
+
+module Transfer = {
+  type elt = Tr.elt;
+
+  type t = Tr.t;
 };
 
 module Approve = {
   type t = {
     address: string,
-    amount: Repr.t,
-    token: string,
-    options: (Protocol.transfer_options, Protocol.common_options),
+    amount: Unit.t,
+    token: TokenRepr.address,
+    options,
   };
 };
 
@@ -108,8 +60,8 @@ module GetBalance = {
   type t = {
     address: string,
     callback: option(string),
-    token: string,
-    options: (Protocol.transfer_options, Protocol.common_options),
+    token: TokenRepr.address,
+    options,
   };
 };
 
@@ -118,16 +70,16 @@ module GetAllowance = {
     source: string,
     destination: string,
     callback: option(string),
-    token: string,
-    options: (Protocol.transfer_options, Protocol.common_options),
+    token: TokenRepr.address,
+    options,
   };
 };
 
 module GetTotalSupply = {
   type t = {
     callback: option(string),
-    token: string,
-    options: (Protocol.transfer_options, Protocol.common_options),
+    token: TokenRepr.address,
+    options,
   };
 };
 
@@ -159,25 +111,20 @@ let setCallback = (op, callback) => {
 
 let makeSingleTransferElt =
     (~destination, ~amount, ~token, ~fee=?, ~gasLimit=?, ~storageLimit=?, ()) =>
-  Transfer.{
-    token,
-    destination,
-    amount,
-    tx_options:
-      Protocol.makeTransferOptions(
-        ~fee,
-        ~gasLimit,
-        ~storageLimit,
-        ~parameter=None,
-        ~entrypoint=None,
-        (),
-      ),
-  };
+  Tr.makeSingleTokenTransferElt(
+    ~destination,
+    ~amount,
+    ~token,
+    ~fee?,
+    ~gasLimit?,
+    ~storageLimit?,
+    (),
+  );
 
 let makeTransfers = (~source, ~transfers, ~burnCap=?, ~forceLowFee=?, ()) => {
   let common_options =
-    Protocol.makeCommonOptions(~fee=None, ~burnCap, ~forceLowFee, ());
-  Transfer.{source, transfers, common_options};
+    ProtocolOptions.makeCommonOptions(~fee=None, ~burnCap, ~forceLowFee, ());
+  Tr.{source, transfers, common_options};
 };
 
 let transfer = t => t->Transfer;
@@ -196,7 +143,7 @@ let makeSingleTransfer =
       (),
     ) => {
   let common_options =
-    Protocol.makeCommonOptions(~fee, ~burnCap, ~forceLowFee, ());
+    ProtocolOptions.makeCommonOptions(~fee, ~burnCap, ~forceLowFee, ());
   let elt =
     makeSingleTransferElt(
       ~destination,
@@ -208,13 +155,13 @@ let makeSingleTransfer =
       (),
     );
   ();
-  Transfer.{source, transfers: [elt], common_options};
+  Tr.{source, transfers: [elt], common_options};
 };
 
 let makeGetBalance =
     (
       address,
-      contract,
+      contract: TokenRepr.address,
       ~fee=?,
       ~gasLimit=?,
       ~storageLimit=?,
@@ -224,7 +171,7 @@ let makeGetBalance =
       (),
     ) => {
   let tx_options =
-    Protocol.makeTransferOptions(
+    ProtocolOptions.makeTransferOptions(
       ~fee,
       ~gasLimit,
       ~storageLimit,
@@ -233,7 +180,7 @@ let makeGetBalance =
       (),
     );
   let common_options =
-    Protocol.makeCommonOptions(~fee, ~burnCap, ~forceLowFee, ());
+    ProtocolOptions.makeCommonOptions(~fee, ~burnCap, ~forceLowFee, ());
   GetBalance(
     GetBalance.{
       address,

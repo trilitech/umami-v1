@@ -44,6 +44,8 @@ let useCreate = (~sideEffect=?, ()) => {
       settings
       ->TokensApiRequest.API.inject(operation, ~password)
       ->Future.mapError(e => e)
+
+    | Transfer(_) => assert(false)
     };
   };
 
@@ -69,6 +71,7 @@ let useSimulate = () => {
       ->Future.mapError(API.Error.taquito)
     | Operation.Simulation.Token(operation, index) =>
       settings->TokensApiRequest.API.simulate(~index?, operation)
+    | Operation.Simulation.Transfer(_) => assert(false)
     };
 
   ApiRequest.useSetter(

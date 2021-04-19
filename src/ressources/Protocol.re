@@ -1,35 +1,15 @@
-/* 'fee' is duplicated in both option record */
-type transfer_options = {
-  fee: option(ProtocolXTZ.t),
-  gasLimit: option(int),
-  storageLimit: option(int),
-  parameter: option(string),
-  entrypoint: option(string),
-};
-
-type common_options = {
-  fee: option(ProtocolXTZ.t),
-  burnCap: option(ProtocolXTZ.t),
-  forceLowFee: option(bool),
-};
+/** Protocol specific operations */
+open ProtocolOptions;
 
 type delegation = {
   source: string,
   delegate: option(string),
-  options: common_options,
+  options: commonOptions,
 };
 
-type transfer = {
-  amount: ProtocolXTZ.t,
-  destination: string,
-  tx_options: transfer_options,
-};
+type transfer = Transfer.elt;
 
-type transaction = {
-  source: string,
-  transfers: list(transfer),
-  options: common_options,
-};
+type transaction = Transfer.t;
 
 type t =
   | Delegation(delegation)
@@ -43,21 +23,6 @@ let emptyTransferOptions = {
   storageLimit: None,
   parameter: None,
   entrypoint: None,
-};
-
-let makeTransferOptions =
-    (~fee, ~gasLimit, ~storageLimit, ~parameter, ~entrypoint, ()) => {
-  fee,
-  gasLimit,
-  storageLimit,
-  parameter,
-  entrypoint,
-};
-
-let makeCommonOptions = (~fee, ~burnCap, ~forceLowFee, ()) => {
-  fee,
-  burnCap,
-  forceLowFee,
 };
 
 let makeDelegate =
@@ -79,25 +44,29 @@ let makeTransfer =
       ~gasLimit=?,
       ~storageLimit=?,
       (),
-    ) => {
-  amount,
-  destination,
-  tx_options:
-    makeTransferOptions(
-      ~fee,
-      ~parameter,
-      ~entrypoint,
-      ~gasLimit,
-      ~storageLimit,
-      (),
-    ),
-};
+    ) =>
+  Transfer.makeSingleXTZTransferElt(
+    ~destination,
+    ~amount,
+    ~fee?,
+    ~parameter?,
+    ~entrypoint?,
+    ~gasLimit?,
+    ~storageLimit?,
+    (),
+  );
 
-let makeTransaction = (~source, ~transfers, ~burnCap=?, ~forceLowFee=?, ()) => {
-  source,
-  transfers,
-  options: makeCommonOptions(~fee=None, ~burnCap, ~forceLowFee, ()),
-};
+let makeTransaction =
+    (~source, ~transfers, ~fee=?, ~burnCap=?, ~forceLowFee=?, ()) =>
+  Transfer.makeTransfers(
+    ~source,
+    ~transfers,
+    ~fee?,
+    ~burnCap?,
+    ~forceLowFee?,
+    (),
+  )
+  ->transfer;
 
 let makeSingleTransaction =
     (
@@ -113,8 +82,7 @@ let makeSingleTransaction =
       ~storageLimit=?,
       (),
     ) => {
-  source,
-  transfers: [
+  let transfers = [
     makeTransfer(
       ~amount,
       ~destination,
@@ -125,8 +93,8 @@ let makeSingleTransaction =
       ~storageLimit?,
       (),
     ),
-  ],
-  options: makeCommonOptions(~fee=None, ~burnCap, ~forceLowFee, ()),
+  ];
+  makeTransaction(~source, ~transfers, ~fee?, ~burnCap?, ~forceLowFee?, ());
 };
 
 type simulationResults = {
