@@ -30,6 +30,45 @@ module EmptyAppView = {
   };
 };
 
+let menu = {
+  open System.Menu;
+  let appMenuRole = System.isMac ? `appMenu : `fileMenu;
+
+  let supportUrl = "https://umamiwallet.com/#support";
+  let downloadUrl = "https://umamiwallet.com/#download";
+  let websiteUrl = "https://umamiwallet.com";
+
+  let supportItem =
+    mkItem(
+      ~label=I18n.menu#app_menu_support,
+      ~click=_ => System.openExternal(supportUrl),
+      (),
+    );
+  let downloadItem =
+    mkItem(
+      ~label=I18n.menu#app_menu_new_version,
+      ~click=_ => System.openExternal(downloadUrl),
+      (),
+    );
+  let websiteItem =
+    mkItem(
+      ~label=I18n.menu#app_menu_website,
+      ~click=_ => System.openExternal(websiteUrl),
+      (),
+    );
+
+  buildFromTemplate([|
+    mkItem(~role=appMenuRole, ()),
+    mkItem(~role=`editMenu, ()),
+    mkItem(~role=`viewMenu, ()),
+    mkSubmenu(
+      ~label=I18n.menu#app_menu_help,
+      ~submenu=[|supportItem, downloadItem, websiteItem|],
+      (),
+    ),
+  |]);
+};
+
 module AppView = {
   [@react.component]
   let make = () => {
@@ -50,6 +89,11 @@ module AppView = {
     };
 
     let theme = ThemeContext.useTheme();
+
+    React.useEffect0(() => {
+      System.Menu.setApplicationMenu(menu);
+      None;
+    });
 
     <DocumentContext>
       <View

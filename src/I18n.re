@@ -199,6 +199,10 @@ let expl = {
 
 let menu = {
   pub _this = this;
+  pub app_menu_support = "Support";
+  pub app_menu_help = "Help";
+  pub app_menu_new_version = "Check for new versions";
+  pub app_menu_website = "Website";
   pub operation_register_as_baker = "Register as new baker";
   pub operation_delegate_to = p("Delegate_to %s");
   pub operation_unknown = "Unknown";
