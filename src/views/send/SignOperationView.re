@@ -22,17 +22,19 @@ let make =
       ~schema={
         SendForm.Password.Validation.(Schema(nonEmpty(Password)));
       },
-      ~onSubmit=({state: _}) => {None},
+      ~onSubmit=
+        ({state}) => {
+          sendOperation(state.values.password);
+
+          None;
+        },
       ~initialState={password: ""},
       ~i18n=FormUtils.i18n,
       (),
     );
 
   let onSubmit = _ => {
-    // checking password
-    // getting stored data
     form.submit();
-    sendOperation(form.values.password);
   };
 
   let formFieldsAreValids =
