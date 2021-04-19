@@ -58,12 +58,16 @@ let make = (~label, ~filterOut, ~value: string, ~handleChange, ~error) => {
     ->Array.keep(v => v.address != filterOut);
 
   let items =
-    accounts->Array.keep(account =>
-      account.alias
-      ->Js.String2.trim
-      ->Js.String2.toLowerCase
-      ->Js.String2.startsWith(value->Js.String2.trim->Js.String2.toLowerCase)
-    );
+    value == ""
+      ? accounts->Array.slice(~offset=0, ~len=4)
+      : accounts->Array.keep(account =>
+          account.alias
+          ->Js.String2.trim
+          ->Js.String2.toLowerCase
+          ->Js.String2.startsWith(
+              value->Js.String2.trim->Js.String2.toLowerCase,
+            )
+        );
 
   <FormGroup style=styles##formGroup>
     <Autocomplete
