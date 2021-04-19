@@ -509,7 +509,8 @@ module Accounts = (Getter: GetterAPI) => {
         ~error=
           "Recovery phrase at index " ++ index->Int.toString ++ " not found!",
       )
-    ->Future.flatMapOk(SecureStorage.Cipher.decrypt2(password));
+    ->Future.flatMapOk(SecureStorage.Cipher.decrypt2(password))
+    ->Future.mapError(_ => {I18n.form_input_error#wrong_password});
 
   let add = (~settings, alias, pkh) =>
     settings->AppSettings.sdk->TezosSDK.addAddress(alias, pkh);
@@ -758,6 +759,7 @@ module Accounts = (Getter: GetterAPI) => {
       ) => {
     password
     ->SecureStorage.validatePassword
+    ->Future.mapError(_ => I18n.form_input_error#wrong_password)
     ->Future.flatMapOk(_ =>
         indexOfRecoveryPhrase(~settings, backupPhrase, ~password)
         ->Future.map(index =>
