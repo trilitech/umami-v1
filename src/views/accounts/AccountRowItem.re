@@ -42,18 +42,20 @@ let make = (~account: Account.t, ~token: option(Token.t)=?) => {
       />
       <QrButton tooltipKey={account.address} account style=styles##button />
     </View>
-    {delegateRequest->ApiRequest.mapWithDefault(React.null, delegate => {
-       <View style=styles##actionContainer>
-         <DelegateButton
-           zeroTez
-           action={
-             delegate->Option.mapWithDefault(
-               Delegate.Create(Some(account)), delegate =>
-               Delegate.Edit(account, delegate)
-             )
-           }
-         />
-       </View>
-     })}
+    {delegateRequest
+     ->ApiRequest.mapWithDefault(React.null, delegate => {
+         <View style=styles##actionContainer>
+           <DelegateButton
+             zeroTez
+             action={
+               delegate->Option.mapWithDefault(
+                 Delegate.Create(Some(account)), delegate =>
+                 Delegate.Edit(account, delegate)
+               )
+             }
+           />
+         </View>
+       })
+     ->ReactUtils.onlyWhen(token == None)}
   </RowItem.Bordered>;
 };
