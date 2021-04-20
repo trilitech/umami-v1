@@ -73,6 +73,7 @@ let make =
       ~placeholder=?,
       ~clearButton=false,
       ~keyPopover,
+      ~dropdownOnEmpty=true,
       ~style as styleFromProp=?,
       ~inputPaddingLeft=?,
       ~inputPaddingRight=?,
@@ -199,7 +200,9 @@ let make =
       scrollRef={scrollViewRef->Ref.value}
       onScroll
       scrollEventThrottle=16
-      isOpen={hasFocus && list->Array.size > 0 && value->Js.String.length > 0}
+      isOpen={
+        hasFocus && list->Array.size > 0 && (dropdownOnEmpty || value != "")
+      }
       popoverConfig
       onRequestClose={_ => {
         setHasFocus(_ => false);
