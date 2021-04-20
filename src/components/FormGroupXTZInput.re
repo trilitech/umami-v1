@@ -41,11 +41,15 @@ let make =
     [|token|],
   );
 
+  let placeholder =
+    token == None
+      ? I18n.input_placeholder#tez_amount : I18n.input_placeholder#token_amount;
+
   <FormGroupTextInput
     label
     ?style
     value
-    placeholder=I18n.input_placeholder#tez_amount
+    placeholder
     error
     onBlur={_ => formatOnBlur(token, setValue)}
     ?decoration
