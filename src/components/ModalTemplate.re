@@ -44,7 +44,7 @@ let styles =
           ~width=642.->dp,
           ~paddingTop=40.->dp,
           ~paddingBottom=40.->dp,
-          ~paddingHorizontal=110.->dp,
+          ~paddingHorizontal=135.->dp,
           (),
         ),
       "modalDialog":

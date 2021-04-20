@@ -14,7 +14,7 @@ let styles =
           ~alignItems=`center,
           (),
         ),
-      "address": style(~marginRight=4.->dp, ()),
+      "address": style(~maxWidth=80.->dp, ~overflow=`hidden, ()),
     })
   );
 
@@ -24,7 +24,7 @@ let make = (~hash, ~onPressCancel, ~submitText=I18n.btn#ok) => {
 
   <View style=styles##container>
     <Typography.Headline style=styles##title>
-      I18n.title#operation_submited->React.string
+      I18n.title#operation_submitted->React.string
     </Typography.Headline>
     <Typography.Body2 colorStyle=`mediumEmphasis style=styles##body>
       I18n.expl#operation->React.string
@@ -33,7 +33,7 @@ let make = (~hash, ~onPressCancel, ~submitText=I18n.btn#ok) => {
       I18n.t#operation_hash->React.string
     </Typography.Overline2>
     <View style=styles##addressContainer>
-      <Typography.Address style=styles##address>
+      <Typography.Address numberOfLines=1 style=styles##address>
         hash->React.string
       </Typography.Address>
       <ClipboardButton
