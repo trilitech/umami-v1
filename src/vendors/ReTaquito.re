@@ -12,7 +12,6 @@ let default_fee_reveal = [%raw "DEFAULT_FEE.REVEAL"];
 module BigNumber = {
   let fromInt64 = i => i->Int64.to_string->ReBigNumber.fromString;
   let toInt64 = i => i->ReBigNumber.toFixed->Int64.of_string;
-  let fromInt = i => i->Int.toString->ReBigNumber.fromString;
 };
 
 module Error = {
@@ -564,7 +563,6 @@ module FA12Operations = {
           ->Future.mapOk(c => (c, tk));
         })
       ->Future.flatMapOk(((c, tk)) => {
-          let amount = BigNumber.fromInt64(amount);
           let fee = fee->Option.map(BigNumber.fromInt64);
           let params =
             Toolkit.makeSendParams(
@@ -645,7 +643,6 @@ module FA12Operations = {
       ) => {
     let tk = Toolkit.create(endpoint);
 
-    let amount = BigNumber.fromInt64(amount);
     let fee = fee->Option.map(BigNumber.fromInt64);
 
     readSecretKey(source, password, baseDir)

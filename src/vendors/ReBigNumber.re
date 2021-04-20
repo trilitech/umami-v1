@@ -5,5 +5,6 @@ type t;
 [@bs.send] external toString: t => string = "toString";
 [@bs.send] external toFixed: t => string = "toFixed";
 [@bs.send] external plus: (t, t) => t = "plus";
-[@bs.send] external toFixedZero: (t, [@bs.as "0"] _) => string = "toFixed";
 [@bs.send] external isNaN: t => bool = "isNaN";
+[@bs.send] external integerValue: t => t = "integerValue";
+[@bs.send] external isInteger: t => bool = "isInteger";

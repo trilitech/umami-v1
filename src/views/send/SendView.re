@@ -122,7 +122,7 @@ let sourceDestination = (transfer: SendForm.transaction) => {
   | TokenTransfer({source, transfers}: Token.Transfer.t, _) =>
     let destinations =
       transfers->List.map(t =>
-        (None, (t.destination, t.amount->Int.toString))
+        (None, (t.destination, t.amount->Token.Repr.toNatString))
       );
     ((source, sourceLbl), `Many(destinations));
   };
@@ -167,8 +167,11 @@ let buildSummaryContent =
       ...revealFee->Option.mapWithDefault([total], r => [r, total]),
     ];
   | TokenTransfer({transfers}, token) =>
-    let amount = transfers->List.reduce(0, (acc, {amount}) => acc + amount);
-    let amount = I18n.t#amount(amount->Int.toString, token.symbol);
+    let amount =
+      transfers->List.reduce(Token.Repr.zero, (acc, {amount}) =>
+        Token.Repr.add(acc, amount)
+      );
+    let amount = I18n.t#amount(amount->Token.Repr.toNatString, token.symbol);
 
     let amount = (I18n.label#send_amount, amount);
 
@@ -223,7 +226,7 @@ module Form = {
       dryRun: None,
     };
 
-  let use = (~initValues=?, initAccount, onSubmit) => {
+  let use = (~initValues=?, initAccount, token, onSubmit) => {
     SendForm.use(
       ~schema={
         SendForm.Validation.(
@@ -232,7 +235,10 @@ module Form = {
             + nonEmpty(Sender)
             + nonEmpty(Recipient)
             + custom(
-                values => FormUtils.isValidFloat(values.amount),
+                values =>
+                  token != None
+                    ? FormUtils.isValidTokenAmount(values.amount)
+                    : FormUtils.isValidFloat(values.amount),
                 Amount,
               )
             + custom(values => FormUtils.isValidFloat(values.fee), Fee)
@@ -450,7 +456,8 @@ module EditionView = {
     let (advancedOptionOpened, _) as advancedOptionState =
       React.useState(_ => advancedOptionOpened);
 
-    let form = Form.use(~initValues, None, onSubmit(advancedOptionOpened));
+    let form =
+      Form.use(~initValues, None, token, onSubmit(advancedOptionOpened));
 
     <Form.View
       batch
@@ -520,7 +527,7 @@ let make = (~closeAction) => {
       send(SetFieldValue(Sender, state.values.sender));
     };
 
-  let form: SendForm.api = Form.use(account, onSubmit);
+  let form: SendForm.api = Form.use(account, token, onSubmit);
 
   let onSubmitAll = _ => {
     submitAction.current = `SubmitAll;
