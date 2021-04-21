@@ -4,21 +4,23 @@ const { TezosToolkit, WalletOperation, OpKind, DEFAULT_FEE } =
    require('@taquito/taquito');
 const { RpcClient } = require ('@taquito/rpc');
 const { InMemorySigner, importKey } = require('@taquito/signer');
-const BigNumber = require('bignumber.js');
 ";
 
 let opKindTransaction = [%raw "OpKind.TRANSACTION"];
 let default_fee_reveal = [%raw "DEFAULT_FEE.REVEAL"];
 
-module BigNumber = {
-  type t;
+module BigNumber: {
+  type fixed;
+  let toFixed: ReBigNumber.t => fixed;
+  let fromInt64: Int64.t => ReBigNumber.t;
+  let toInt64: ReBigNumber.t => Int64.t;
+} = {
+  type fixed = string;
 
-  [@bs.new] external fromString: string => t = "BigNumber";
-  [@bs.send] external toString: t => string = "toString";
+  let toFixed = ReBigNumber.toFixed;
 
-  let fromInt64 = i => i->Int64.to_string->fromString;
-  let toInt64 = i => i->toString->Int64.of_string;
-  let fromInt = i => i->Int.toString->fromString;
+  let fromInt64 = i => i->Int64.to_string->ReBigNumber.fromString;
+  let toInt64 = i => i->ReBigNumber.toFixed->Int64.of_string;
 };
 
 module Error = {
@@ -86,7 +88,8 @@ module RPCClient = {
 
   [@bs.send]
   external getBalance:
-    (rpcClient, string, ~params: params=?, unit) => Js.Promise.t(BigNumber.t) =
+    (rpcClient, string, ~params: params=?, unit) =>
+    Js.Promise.t(ReBigNumber.t) =
     "getBalance";
 
   [@bs.send]
@@ -141,8 +144,8 @@ module Toolkit = {
     [@bs.as "to"]
     to_: string,
     source: string,
-    amount: BigNumber.t,
-    fee: option(BigNumber.t),
+    amount: ReBigNumber.t,
+    fee: option(ReBigNumber.t),
     gasLimit: option(int),
     storageLimit: option(int),
     mutez: option(bool),
@@ -167,7 +170,7 @@ module Toolkit = {
   type delegateParams = {
     source: string,
     delegate: option(string),
-    fee: option(BigNumber.t),
+    fee: option(ReBigNumber.t),
   };
 
   let prepareDelegate = (~source, ~delegate, ~fee=?, ()) => {
@@ -175,8 +178,8 @@ module Toolkit = {
   };
 
   type sendParams = {
-    amount: BigNumber.t,
-    fee: option(BigNumber.t),
+    amount: ReBigNumber.t,
+    fee: option(ReBigNumber.t),
     gasLimit: option(int),
     storageLimit: option(int),
     mutez: option(bool),
@@ -247,7 +250,7 @@ module Toolkit = {
 
     [@bs.send]
     external transfer:
-      (M.t, string, string, BigNumber.t) => methodResult(M.transfer) =
+      (M.t, string, string, BigNumber.fixed) => methodResult(M.transfer) =
       "transfer";
   };
 
@@ -548,7 +551,7 @@ module FA12Operations = {
           ~tokenContract,
           ~source,
           ~dest,
-          ~amount,
+          ~amount: ReBigNumber.t,
           ~fee=?,
           ~gasLimit=?,
           ~storageLimit=?,
@@ -569,7 +572,6 @@ module FA12Operations = {
           ->Future.mapOk(c => (c, tk));
         })
       ->Future.flatMapOk(((c, tk)) => {
-          let amount = BigNumber.fromInt64(amount);
           let fee = fee->Option.map(BigNumber.fromInt64);
           let params =
             Toolkit.makeSendParams(
@@ -581,7 +583,7 @@ module FA12Operations = {
             );
 
           c.methods
-          ->Toolkit.FA12.transfer(source, dest, amount)
+          ->Toolkit.FA12.transfer(source, dest, amount->BigNumber.toFixed)
           ->Toolkit.FA12.toTransferParams(params)
           ->(tr => tk.estimate->Toolkit.Estimation.transfer(tr))
           ->fromPromiseParsed
@@ -641,7 +643,7 @@ module FA12Operations = {
         ~tokenContract,
         ~source,
         ~dest,
-        ~amount,
+        ~amount: ReBigNumber.t,
         ~password,
         ~fee=?,
         ~gasLimit=?,
@@ -650,7 +652,6 @@ module FA12Operations = {
       ) => {
     let tk = Toolkit.create(endpoint);
 
-    let amount = BigNumber.fromInt64(amount);
     let fee = fee->Option.map(BigNumber.fromInt64);
 
     readSecretKey(source, password, baseDir)
@@ -671,7 +672,7 @@ module FA12Operations = {
           );
 
         c.methods
-        ->Toolkit.FA12.transfer(source, dest, amount)
+        ->Toolkit.FA12.transfer(source, dest, amount->BigNumber.toFixed)
         ->Toolkit.FA12.send(params)
         ->fromPromiseParsed;
       })
@@ -680,9 +681,9 @@ module FA12Operations = {
 
   type rawTransfer = {
     token: string,
-    amount: BigNumber.t,
+    amount: ReBigNumber.t,
     dest: string,
-    fee: option(BigNumber.t),
+    fee: option(ReBigNumber.t),
     gasLimit: option(int),
     storageLimit: option(int),
   };
@@ -730,7 +731,7 @@ module FA12Operations = {
               ->Toolkit.FA12.transfer(
                   source,
                   rawTransfer.dest,
-                  rawTransfer.amount,
+                  rawTransfer.amount->BigNumber.toFixed,
                 )
               ->Toolkit.FA12.toTransferParams(sendParams)
             );

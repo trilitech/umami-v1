@@ -1,6 +1,6 @@
 let formatOnBlur = (token, setValue) =>
   if (token->Option.isSome) {
-    setValue(BusinessUtils.formatToken);
+    setValue(Token.Repr.formatZ);
   } else {
     setValue(s => s->ProtocolXTZ.formatString->Option.getWithDefault(""));
   };

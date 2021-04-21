@@ -1045,7 +1045,7 @@ module Tokens = (Getter: GetterAPI) => {
           ({token, amount, destination, tx_options}: Token.Transfer.elt) =>
           ReTaquito.FA12Operations.toRawTransfer(
             ~token,
-            ~amount=amount->ReTaquito.BigNumber.fromInt,
+            ~amount=amount->Token.Repr.toBigNumber,
             ~dest=destination,
             ~fee=?
               tx_options.fee
@@ -1091,7 +1091,7 @@ module Tokens = (Getter: GetterAPI) => {
       ~tokenContract=transfer.Token.Transfer.token,
       ~source,
       ~dest=transfer.Token.Transfer.destination,
-      ~amount=transfer.Token.Transfer.amount->Int64.of_int,
+      ~amount=transfer.Token.Transfer.amount->Token.Repr.toBigNumber,
       ~fee=?
         transfer.Token.Transfer.tx_options.fee
         ->Option.map(ProtocolXTZ.toInt64),
@@ -1124,7 +1124,7 @@ module Tokens = (Getter: GetterAPI) => {
           ({token, amount, destination, tx_options}: Token.Transfer.elt) =>
           ReTaquito.FA12Operations.toRawTransfer(
             ~token,
-            ~amount=amount->ReTaquito.BigNumber.fromInt,
+            ~amount=amount->Token.Repr.toBigNumber,
             ~dest=destination,
             ~fee=?
               tx_options.fee
@@ -1179,7 +1179,7 @@ module Tokens = (Getter: GetterAPI) => {
       ~tokenContract=transfer.Token.Transfer.token,
       ~source,
       ~dest=transfer.Token.Transfer.destination,
-      ~amount=transfer.Token.Transfer.amount->Int64.of_int,
+      ~amount=transfer.Token.Transfer.amount->Token.Repr.toBigNumber,
       ~password,
       ~fee=?
         transfer.Token.Transfer.tx_options.fee
@@ -1213,9 +1213,15 @@ module Tokens = (Getter: GetterAPI) => {
       | GetBalance({token, address, _}) =>
         URL.getTokenBalance(settings, token, address)
         ->Getter.get
-        ->Future.mapOk(res =>
-            res->Js.Json.decodeString->Option.getWithDefault("0")
-          )
+        ->Future.flatMapOk(res => {
+            switch (res->Js.Json.decodeString) {
+            | None => Token.Repr.zero->Ok->Future.value
+            | Some(v) =>
+              v
+              ->Token.Repr.fromNatString
+              ->FutureEx.fromOption(~error="cannot read Token amount: " ++ v)
+            }
+          })
         ->Future.mapError(s => BackendError(s))
       | _ =>
         Future.value(

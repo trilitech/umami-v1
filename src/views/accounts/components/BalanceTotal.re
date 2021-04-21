@@ -25,7 +25,7 @@ module Base = {
         {switch (token, balanceTotal, balanceTokenTotal) {
          | (Some(token), _, Some(balanceTokenTotal)) =>
            I18n.t#amount(
-             balanceTokenTotal->BusinessUtils.formatToken,
+             balanceTokenTotal->Token.Repr.toNatString,
              token.symbol,
            )
            ->React.string

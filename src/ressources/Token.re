@@ -1,3 +1,49 @@
+module Repr: {
+  type t = pri ReBigNumber.t;
+
+  let fromBigNumber: ReBigNumber.t => option(t);
+  let toBigNumber: t => ReBigNumber.t;
+
+  let toNatString: t => string;
+  let fromNatString: string => option(t);
+
+  let isValid: string => bool;
+
+  let zero: t;
+
+  let formatZ: string => string;
+
+  let add: (t, t) => t;
+
+  module Infix: {let (+): (t, t) => t;};
+} = {
+  type t = ReBigNumber.t;
+  open ReBigNumber;
+
+  let toBigNumber = x => x;
+  let fromBigNumber = x =>
+    x->isNaN || !x->isInteger || x->isNegative ? None : x->Some;
+
+  let toNatString = toFixed;
+  let fromNatString = s => s->fromString->fromBigNumber;
+
+  let isValid = v =>
+    v->fromNatString->Option.mapWithDefault(false, isInteger);
+
+  let zero = fromString("0");
+
+  let formatZ = amount =>
+    amount
+    ->fromNatString
+    ->Option.mapWithDefault("0", v => v->integerValue->toNatString);
+
+  let add = plus;
+
+  module Infix = {
+    let (+) = plus;
+  };
+};
+
 type t = {
   address: string,
   alias: string,
@@ -38,7 +84,7 @@ module Encode = {
 module Transfer = {
   type elt = {
     destination: string,
-    amount: int,
+    amount: Repr.t,
     token: string,
     tx_options: Protocol.transfer_options,
   };
@@ -53,7 +99,7 @@ module Transfer = {
 module Approve = {
   type t = {
     address: string,
-    amount: int,
+    amount: Repr.t,
     token: string,
     options: (Protocol.transfer_options, Protocol.common_options),
   };
