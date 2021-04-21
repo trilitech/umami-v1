@@ -198,6 +198,7 @@ module ScrollView = {
       (~style=?, ~contentContainerStyle=?, ~alwaysBounceVertical=?, ~children) => {
     let onScroll = useScrollListener();
     <ScrollView
+      showsVerticalScrollIndicator=false
       ?style
       ?contentContainerStyle
       ?alwaysBounceVertical
@@ -224,6 +225,7 @@ module FlatList = {
     <FlatList
       style
       contentContainerStyle
+      showsVerticalScrollIndicator=false
       data
       initialNumToRender
       keyExtractor
