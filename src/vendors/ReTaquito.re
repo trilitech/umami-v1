@@ -9,7 +9,16 @@ const { InMemorySigner, importKey } = require('@taquito/signer');
 let opKindTransaction = [%raw "OpKind.TRANSACTION"];
 let default_fee_reveal = [%raw "DEFAULT_FEE.REVEAL"];
 
-module BigNumber = {
+module BigNumber: {
+  type fixed;
+  let toFixed: ReBigNumber.t => fixed;
+  let fromInt64: Int64.t => ReBigNumber.t;
+  let toInt64: ReBigNumber.t => Int64.t;
+} = {
+  type fixed = string;
+
+  let toFixed = ReBigNumber.toFixed;
+
   let fromInt64 = i => i->Int64.to_string->ReBigNumber.fromString;
   let toInt64 = i => i->ReBigNumber.toFixed->Int64.of_string;
 };
@@ -241,7 +250,7 @@ module Toolkit = {
 
     [@bs.send]
     external transfer:
-      (M.t, string, string, ReBigNumber.t) => methodResult(M.transfer) =
+      (M.t, string, string, BigNumber.fixed) => methodResult(M.transfer) =
       "transfer";
   };
 
@@ -542,7 +551,7 @@ module FA12Operations = {
           ~tokenContract,
           ~source,
           ~dest,
-          ~amount,
+          ~amount: ReBigNumber.t,
           ~fee=?,
           ~gasLimit=?,
           ~storageLimit=?,
@@ -574,7 +583,7 @@ module FA12Operations = {
             );
 
           c.methods
-          ->Toolkit.FA12.transfer(source, dest, amount)
+          ->Toolkit.FA12.transfer(source, dest, amount->BigNumber.toFixed)
           ->Toolkit.FA12.toTransferParams(params)
           ->(tr => tk.estimate->Toolkit.Estimation.transfer(tr))
           ->fromPromiseParsed
@@ -634,7 +643,7 @@ module FA12Operations = {
         ~tokenContract,
         ~source,
         ~dest,
-        ~amount,
+        ~amount: ReBigNumber.t,
         ~password,
         ~fee=?,
         ~gasLimit=?,
@@ -663,7 +672,7 @@ module FA12Operations = {
           );
 
         c.methods
-        ->Toolkit.FA12.transfer(source, dest, amount)
+        ->Toolkit.FA12.transfer(source, dest, amount->BigNumber.toFixed)
         ->Toolkit.FA12.send(params)
         ->fromPromiseParsed;
       })
@@ -722,7 +731,7 @@ module FA12Operations = {
               ->Toolkit.FA12.transfer(
                   source,
                   rawTransfer.dest,
-                  rawTransfer.amount,
+                  rawTransfer.amount->BigNumber.toFixed,
                 )
               ->Toolkit.FA12.toTransferParams(sendParams)
             );
