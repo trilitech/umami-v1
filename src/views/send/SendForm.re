@@ -66,7 +66,7 @@ let buildTokenTransfer = (inputTransfers, token: Token.t, source, forceLowFee) =
       ~transfers=
         buildTransfers(
           inputTransfers,
-          Token.Repr.fromString,
+          Token.Repr.fromNatString,
           Token.makeSingleTransferElt(~token=token.address),
         ),
       ~forceLowFee?,

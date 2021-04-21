@@ -8,3 +8,4 @@ type t;
 [@bs.send] external isNaN: t => bool = "isNaN";
 [@bs.send] external integerValue: t => t = "integerValue";
 [@bs.send] external isInteger: t => bool = "isInteger";
+[@bs.send] external isNegative: t => bool = "isNegative";

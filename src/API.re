@@ -1045,7 +1045,7 @@ module Tokens = (Getter: GetterAPI) => {
           ({token, amount, destination, tx_options}: Token.Transfer.elt) =>
           ReTaquito.FA12Operations.toRawTransfer(
             ~token,
-            ~amount=amount->Token.Repr.fromBigNumber,
+            ~amount=amount->Token.Repr.toBigNumber,
             ~dest=destination,
             ~fee=?
               tx_options.fee
@@ -1091,7 +1091,7 @@ module Tokens = (Getter: GetterAPI) => {
       ~tokenContract=transfer.Token.Transfer.token,
       ~source,
       ~dest=transfer.Token.Transfer.destination,
-      ~amount=transfer.Token.Transfer.amount,
+      ~amount=transfer.Token.Transfer.amount->Token.Repr.toBigNumber,
       ~fee=?
         transfer.Token.Transfer.tx_options.fee
         ->Option.map(ProtocolXTZ.toInt64),
@@ -1124,7 +1124,7 @@ module Tokens = (Getter: GetterAPI) => {
           ({token, amount, destination, tx_options}: Token.Transfer.elt) =>
           ReTaquito.FA12Operations.toRawTransfer(
             ~token,
-            ~amount,
+            ~amount=amount->Token.Repr.toBigNumber,
             ~dest=destination,
             ~fee=?
               tx_options.fee
@@ -1179,7 +1179,7 @@ module Tokens = (Getter: GetterAPI) => {
       ~tokenContract=transfer.Token.Transfer.token,
       ~source,
       ~dest=transfer.Token.Transfer.destination,
-      ~amount=transfer.Token.Transfer.amount,
+      ~amount=transfer.Token.Transfer.amount->Token.Repr.toBigNumber,
       ~password,
       ~fee=?
         transfer.Token.Transfer.tx_options.fee
@@ -1218,8 +1218,8 @@ module Tokens = (Getter: GetterAPI) => {
             | None => Token.Repr.zero->Ok->Future.value
             | Some(v) =>
               v
-              ->Token.Repr.fromString
-              ->FutureEx.fromOption(~error="cannot read bignumber " ++ v)
+              ->Token.Repr.fromNatString
+              ->FutureEx.fromOption(~error="cannot read Token amount: " ++ v)
             }
           })
         ->Future.mapError(s => BackendError(s))

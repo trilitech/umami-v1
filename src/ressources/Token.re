@@ -1,27 +1,46 @@
-module Repr = {
+module Repr: {
+  type t = pri ReBigNumber.t;
+
+  let fromBigNumber: ReBigNumber.t => option(t);
+  let toBigNumber: t => ReBigNumber.t;
+
+  let toNatString: t => string;
+  let fromNatString: string => option(t);
+
+  let isValid: string => bool;
+
+  let zero: t;
+
+  let formatZ: string => string;
+
+  let add: (t, t) => t;
+
+  module Infix: {let (+): (t, t) => t;};
+} = {
   type t = ReBigNumber.t;
-
-  let fromBigNumber = x => x;
-
   open ReBigNumber;
 
+  let toBigNumber = x => x;
+  let fromBigNumber = x =>
+    x->isNaN || !x->isInteger || x->isNegative ? None : x->Some;
+
   let toNatString = toFixed;
-  let fromString = s => s->fromString->(r => r->isNaN ? None : r->Some);
+  let fromNatString = s => s->fromString->fromBigNumber;
 
   let isValid = v =>
-    v->fromString->Option.mapWithDefault(false, ReBigNumber.isInteger);
+    v->fromNatString->Option.mapWithDefault(false, isInteger);
 
-  let zero = ReBigNumber.fromString("0");
+  let zero = fromString("0");
 
-  let formatNat = amount =>
+  let formatZ = amount =>
     amount
-    ->fromString
+    ->fromNatString
     ->Option.mapWithDefault("0", v => v->integerValue->toNatString);
 
-  let add = ReBigNumber.plus;
+  let add = plus;
 
   module Infix = {
-    let (+) = ReBigNumber.plus;
+    let (+) = plus;
   };
 };
 
