@@ -84,10 +84,12 @@ let make =
 
   let theme = ThemeContext.useTheme();
 
-  let borderColor =
+  let (borderColor, borderWidth, padding) =
     isOpen
-      ? theme.colors.borderPrimary
-      : hasError ? theme.colors.error : theme.colors.borderMediumEmphasis;
+      ? (theme.colors.borderPrimary, Some(2.), Some(0.->Style.dp))
+      : hasError
+          ? (theme.colors.error, Some(2.), Some(0.->Style.dp))
+          : (theme.colors.borderMediumEmphasis, None, None);
 
   <View ?style>
     <Pressable_
@@ -98,7 +100,7 @@ let make =
              array([|
                styles##button,
                style(~backgroundColor=theme.colors.background, ()),
-               style(~borderColor, ~borderWidth=2., ~padding=0.->dp, ()),
+               style(~borderColor, ~borderWidth?, ~padding?, ()),
              |])
            )
            pointerEvents=`none>
