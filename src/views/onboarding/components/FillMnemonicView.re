@@ -107,7 +107,14 @@ let stateField = StateLenses.Words;
 let formField = VerifyMnemonicForm.ReSchema.Field(stateField);
 
 [@react.component]
-let make = (~mnemonic, ~setMnemonic, ~secondaryStepButton=?, ~goNextStep) => {
+let make =
+    (
+      ~mnemonic,
+      ~setMnemonic,
+      ~formatState,
+      ~secondaryStepButton=?,
+      ~goNextStep,
+    ) => {
   let form: VerifyMnemonicForm.api =
     VerifyMnemonicForm.use(
       ~validationStrategy=OnDemand,
@@ -142,10 +149,12 @@ let make = (~mnemonic, ~setMnemonic, ~secondaryStepButton=?, ~goNextStep) => {
       ~onSubmit=
         ({state}) => {
           setMnemonic(_ => state.values.words);
+          formatState->snd(_ => state.values.format);
+
           goNextStep();
           None;
         },
-      ~initialState={format: Words24, words: mnemonic},
+      ~initialState={format: formatState->fst, words: mnemonic},
       (),
     );
 

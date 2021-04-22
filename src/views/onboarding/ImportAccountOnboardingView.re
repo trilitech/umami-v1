@@ -40,6 +40,8 @@ let make = (~closeAction, ~existingSecretsCount=0) => {
     ->ignore;
 
   let (mnemonic, setMnemonic) = React.useState(_ => Array.make(24, ""));
+  let formatState =
+    React.useState(_ => FillMnemonicView.FormatSelector.Words24);
   let (derivationScheme, setDerivationScheme) =
     React.useState(_ => "m/44'/1729'/?'/0'");
 
