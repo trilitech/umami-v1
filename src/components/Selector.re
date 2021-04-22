@@ -51,9 +51,9 @@ let make =
       ~style=?,
       ~dropdownStyle=?,
       ~items: array('item),
-      ~getItemValue: 'item => string,
-      ~selectedValue=?,
-      ~onValueChange,
+      ~selectedValueKey: option(string)=?,
+      ~onValueChange: 'item => unit,
+      ~getItemKey: 'item => string,
       ~noneItem: option('item)=?,
       ~renderButton,
       ~renderItem,
@@ -72,15 +72,22 @@ let make =
     );
 
   let onChange = newItem => {
-    onValueChange(newItem->getItemValue);
+    onValueChange(newItem);
   };
 
-  let selectedItem =
-    items->Array.getBy(item =>
-      item->getItemValue == selectedValue->Option.getWithDefault("")
+  let isSelected = item =>
+    selectedValueKey->Option.mapWithDefault(false, sel =>
+      sel == item->getItemKey
     );
 
+  let selectedItem = items->Array.getBy(isSelected);
+
   let theme = ThemeContext.useTheme();
+
+  let borderColor =
+    isOpen
+      ? theme.colors.borderPrimary
+      : hasError ? theme.colors.error : theme.colors.borderMediumEmphasis;
 
   <View ?style>
     <Pressable_
@@ -88,35 +95,10 @@ let make =
       {_ =>
          <View
            style=Style.(
-             arrayOption([|
-               Some(styles##button),
-               Some(
-                 style(
-                   ~borderColor=theme.colors.borderMediumEmphasis,
-                   ~backgroundColor=theme.colors.background,
-                   (),
-                 ),
-               ),
-               isOpen
-                 ? Some(
-                     style(
-                       ~borderColor=theme.colors.borderPrimary,
-                       ~borderWidth=2.,
-                       ~padding=0.->dp,
-                       (),
-                     ),
-                   )
-                 : None,
-               hasError
-                 ? Some(
-                     style(
-                       ~borderColor=theme.colors.error,
-                       ~borderWidth=2.,
-                       ~padding=0.->dp,
-                       (),
-                     ),
-                   )
-                 : None,
+             array([|
+               styles##button,
+               style(~backgroundColor=theme.colors.background, ()),
+               style(~borderColor, ~borderWidth=2., ~padding=0.->dp, ()),
              |])
            )
            pointerEvents=`none>
@@ -166,28 +148,32 @@ let make =
       isOpen
       popoverConfig
       onRequestClose=togglePopover>
-      {noneItem->Option.mapWithDefault(React.null, item =>
-         <Item
-           key={item->getItemValue}
-           item
-           onChange
-           renderItem
-           isSelected={selectedValue->Option.isNone}
-         />
-       )}
-      {items
-       ->Array.map(item =>
-           <Item
-             key={item->getItemValue}
-             item
-             onChange
-             renderItem
-             isSelected={
-               item->getItemValue == selectedValue->Option.getWithDefault("")
-             }
-           />
-         )
-       ->React.array}
+      {[|
+         {
+           noneItem->Option.mapWithDefault(React.null, item =>
+             <Item
+               key={item->getItemKey}
+               item
+               onChange
+               renderItem
+               isSelected={selectedValueKey->Option.isNone}
+             />
+           );
+         },
+       |]
+       ->Array.concat(
+           {
+             items->Array.map(item =>
+               <Item
+                 key={item->getItemKey}
+                 item
+                 onChange
+                 renderItem
+                 isSelected={item->isSelected}
+               />
+             );
+           },
+         )}
     </DropdownMenu>
   </View>;
 };

@@ -143,7 +143,7 @@ module Form = {
           <FormGroupDelegateSelector
             label=I18n.label#account_delegate
             value={form.values.sender}
-            handleChange={form.handleChange(Sender)}
+            handleChange={d => form.handleChange(Sender, d.Account.address)}
             error={form.getFieldError(Field(Sender))}
             disabled={
               switch (action) {
@@ -156,8 +156,10 @@ module Form = {
           />
           <FormGroupBakerSelector
             label=I18n.label#baker
-            value={form.values.baker}
-            handleChange={form.handleChange(Baker)}
+            value={form.values.baker == "" ? None : form.values.baker->Some}
+            handleChange={b =>
+              b->Option.getWithDefault("") |> form.handleChange(Baker)
+            }
             error={form.getFieldError(Field(Baker))}
           />
           <TouchableOpacity

@@ -31,15 +31,16 @@ let make =
       ~scrollEventThrottle=?,
       ~onRequestClose: unit => unit,
       ~keyPopover,
-      ~children,
+      ~reversePositionPct=0.80,
+      ~children: array(React.element),
     ) => {
   let theme = ThemeContext.useTheme();
 
   let dimensions = Dimensions.useWindowDimensions();
 
-  let position =
+  let positionReversed =
     popoverConfig->Option.flatMap(config =>
-      config.y /. dimensions.height > 0.80
+      config.y /. dimensions.height > reversePositionPct
         ? Some(styles##positionBottomTop) : None
     );
 
@@ -47,7 +48,7 @@ let make =
     isOpen
     openingStyle
     config=popoverConfig
-    style={Style.arrayOption([|styleFromProp, position|])}
+    style={Style.arrayOption([|styleFromProp, positionReversed|])}
     keyPopover>
     <View
       onStartShouldSetResponderCapture={_ => true}
@@ -70,7 +71,9 @@ let make =
         )
         ?onScroll
         ?scrollEventThrottle>
-        children
+        {children
+         ->(a => positionReversed == None ? a : a->Array.reverse)
+         ->React.array}
       </ScrollView>
     </View>
   </Popover>;

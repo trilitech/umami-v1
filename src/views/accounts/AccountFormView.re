@@ -74,8 +74,12 @@ module Generic = {
          ? React.null
          : <FormGroupSecretSelector
              label=I18n.label#account_secret
-             value={form.values.secret}
-             handleChange={form.handleChange(Secret)}
+             value={
+               form.values.secret == "" ? None : Some(form.values.secret)
+             }
+             handleChange={secret =>
+               form.handleChange(Secret, secret.Secret.index->Int.toString)
+             }
              error={form.getFieldError(Field(Secret))}
              disabled={secret->Option.isSome}
            />}

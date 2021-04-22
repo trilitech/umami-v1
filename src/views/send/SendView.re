@@ -321,7 +321,11 @@ module Form = {
         (
           ~batch,
           ~advancedOptionState,
-          ~tokenState,
+          ~tokenState: (
+             option(TezosClient.Token.t),
+             (option(TezosClient.Token.t) => option(TezosClient.Token.t)) =>
+             unit,
+           ),
           ~token=?,
           ~mode,
           ~form,
@@ -373,16 +377,21 @@ module Form = {
             }
             handleChange={form.handleChange(Amount)}
             error={form.getFieldError(Field(Amount))}
-            selectedToken
+            selectedToken={selectedToken->Option.map(t => t.address)}
             showSelector={!batchMode}
-            setSelectedToken={newToken => setSelectedToken(_ => newToken)}
+            setSelectedToken={newToken =>
+              setSelectedToken(_ => Some(newToken))
+            }
             ?token
           />
           <FormGroupAccountSelector
             disabled=batchMode
             label=I18n.label#send_sender
             value={form.values.sender}
-            handleChange={form.handleChange(Sender)}
+            handleChange={a =>
+              a->Option.mapWithDefault("", a => a.Account.address)
+              |> form.handleChange(Sender)
+            }
             error={form.getFieldError(Field(Sender))}
             ?token
           />
@@ -484,8 +493,9 @@ let make = (~closeAction) => {
   let (modalStep, setModalStep) = React.useState(_ => SendStep);
 
   let (selectedToken, _) as tokenState =
-    React.useState(_ => initToken->Option.map(initToken => initToken.address));
-  let token = StoreContext.Tokens.useGet(selectedToken);
+    React.useState(_ => initToken->Option.map(initToken => initToken));
+  let token =
+    StoreContext.Tokens.useGet(selectedToken->Option.map(t => t.address));
 
   let (operationRequest, sendOperation) = StoreContext.Operations.useCreate();
 
