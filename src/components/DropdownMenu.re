@@ -10,6 +10,10 @@ let styles =
         ->unsafeAddStyle({
             "boxShadow": "0 5px 5px -3px rgba(0, 0, 0, 0.2), 0 3px 14px 2px rgba(0, 0, 0, 0.12), 0 8px 10px 1px rgba(0, 0, 0, 0.14)",
           }),
+
+      "positionBottomTop":
+        style(~bottom=35.->dp, ~top="unset", ~position=`absolute, ()),
+
       "listContentContainer":
         style(~paddingVertical=listVerticalPadding->dp, ()),
     })
@@ -19,7 +23,7 @@ let styles =
 let make =
     (
       ~scrollRef=?,
-      ~isOpen=false,
+      ~isOpen,
       ~popoverConfig: option(Popover.targetLayout),
       ~openingStyle=Popover.Top,
       ~style as styleFromProp=?,
@@ -31,8 +35,20 @@ let make =
     ) => {
   let theme = ThemeContext.useTheme();
 
+  let dimensions = Dimensions.useWindowDimensions();
+
+  let position =
+    popoverConfig->Option.flatMap(config =>
+      config.y /. dimensions.height > 0.80
+        ? Some(styles##positionBottomTop) : None
+    );
+
   <Popover
-    isOpen openingStyle config=popoverConfig style=?styleFromProp keyPopover>
+    isOpen
+    openingStyle
+    config=popoverConfig
+    style={Style.arrayOption([|styleFromProp, position|])}
+    keyPopover>
     <View
       onStartShouldSetResponderCapture={_ => true}
       onResponderRelease={_ => onRequestClose()}>

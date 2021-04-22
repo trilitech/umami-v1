@@ -74,25 +74,28 @@ let make = (~mnemonic, ~setMnemonic, ~onPressCancel, ~goNextStep) => {
     FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
 
   <>
-    <View style=styles##wordsList>
-      {form.state.values.words
-       ->Array.mapWithIndex((index, word) =>
-           <React.Fragment key={index->string_of_int}>
-             <View style=styles##wordItem>
-               <InputMnemonicWord
-                 index
-                 word
-                 arrayUpdateByIndex={form.arrayUpdateByIndex}
-                 getNestedFieldError={form.getNestedFieldError}
-                 formField
-                 stateField
-               />
-             </View>
-             {index mod 2 == 0 ? <View style=styles##wordSpacer /> : React.null}
-           </React.Fragment>
-         )
-       ->React.array}
-    </View>
+    <DocumentContext.ScrollView showsVerticalScrollIndicator=true>
+      <View style=styles##wordsList>
+        {form.state.values.words
+         ->Array.mapWithIndex((index, word) =>
+             <React.Fragment key={index->string_of_int}>
+               <View style=styles##wordItem>
+                 <InputMnemonicWord
+                   index
+                   word
+                   arrayUpdateByIndex={form.arrayUpdateByIndex}
+                   getNestedFieldError={form.getNestedFieldError}
+                   formField
+                   stateField
+                 />
+               </View>
+               {index mod 2 == 0
+                  ? <View style=styles##wordSpacer /> : React.null}
+             </React.Fragment>
+           )
+         ->React.array}
+      </View>
+    </DocumentContext.ScrollView>
     <View style=FormStyles.formActionSpaceBetween>
       <Buttons.Form text=I18n.btn#back onPress=onPressCancel />
       <Buttons.SubmitPrimary
