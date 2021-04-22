@@ -524,24 +524,39 @@ module Accounts = (Getter: GetterAPI) => {
     ->Future.tapOk(k => Js.log("key found : " ++ k));
   };
 
+  let path = (scheme, ~index) =>
+    Future.make(resolve => {
+      let suffix = index->Js.Int.toString;
+      if (scheme->Js.String2.includes("?")) {
+        resolve(Ok(scheme->Js.String2.replace("?", suffix)));
+      } else if (index == 0) {
+        resolve(Ok(scheme));
+      } else {
+        resolve(
+          Ok(scheme->Js.String2.replace("/0'", "/" ++ suffix ++ "'")),
+        );
+      };
+      resolve(Error("Invalid index!"));
+    });
+
   let derive = (~settings, ~index, ~name, ~password) =>
     Future.mapOk2(
       secretAt(~settings, index),
       recoveryPhraseAt(~settings, index, ~password),
       (secret, recoveryPhrase) => {
-        let suffix = secret.addresses->Array.length->Js.Int.toString;
-        let path = secret.derivationScheme->Js.String2.replace("?", suffix);
-        HD.edesk(path, recoveryPhrase->HD.seed, ~password)
-        ->Future.flatMapOk(edesk => import(~settings, edesk, name, ~password))
-        ->Future.tapOk(address =>
-            {
-              ...secret,
-              addresses: Array.concat(secret.addresses, [|address|]),
-            }
-            ->updateSecretAt(~settings, index)
-          );
-      },
-    )
+      path(secret.derivationScheme, ~index=secret.addresses->Array.length)
+      ->Future.flatMapOk(path =>
+          path->HD.edesk(recoveryPhrase->HD.seed, ~password)
+        )
+      ->Future.flatMapOk(edesk => import(~settings, edesk, name, ~password))
+      ->Future.tapOk(address =>
+          {
+            ...secret,
+            addresses: Array.concat(secret.addresses, [|address|]),
+          }
+          ->updateSecretAt(~settings, index)
+        )
+    })
     ->Future.flatMapOk(update => update);
 
   let unsafeDelete = (~settings, name) =>
@@ -641,10 +656,9 @@ module Accounts = (Getter: GetterAPI) => {
             ~index=0,
             (),
           ) => {
-    let suffix = index->Js.Int.toString;
-    let name = baseName ++ " /" ++ suffix;
-    let path = derivationScheme->Js.String2.replace("?", suffix);
-    HD.edesk(path, seed, ~password)
+    let name = baseName ++ " /" ++ index->Js.Int.toString;
+    path(derivationScheme, ~index)
+    ->Future.flatMapOk(path => path->HD.edesk(seed, ~password))
     ->Future.flatMapOk(edesk =>
         import(~settings, edesk, name, ~password)
         ->Future.flatMapOk(address
@@ -656,22 +670,18 @@ module Accounts = (Getter: GetterAPI) => {
               )
               ->Future.flatMapOk(isValidated =>
                   if (isValidated) {
-                    if (path == derivationScheme) {
-                      Future.value(Ok([|address|]));
-                    } else {
-                      scanSeed(
-                        ~settings,
-                        seed,
-                        baseName,
-                        ~derivationScheme,
-                        ~password,
-                        ~index=index + 1,
-                        (),
-                      )
-                      ->Future.mapOk(addresses =>
-                          Array.concat([|address|], addresses)
-                        );
-                    };
+                    scanSeed(
+                      ~settings,
+                      seed,
+                      baseName,
+                      ~derivationScheme,
+                      ~password,
+                      ~index=index + 1,
+                      (),
+                    )
+                    ->Future.mapOk(addresses =>
+                        Array.concat([|address|], addresses)
+                      );
                   } else {
                     unsafeDelete(~settings, name)->Future.map(_ => Ok([||]));
                   }
