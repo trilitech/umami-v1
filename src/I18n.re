@@ -2,6 +2,7 @@ let p = Format.sprintf;
 
 let btn = {
   pub _this = this;
+  pub customize_derivation_path = "Customize derivation path";
   pub ok = "OK";
   pub cancel = "CANCEL";
   pub back = "BACK";
