@@ -82,41 +82,21 @@ let make =
 
   let theme = ThemeContext.useTheme();
 
+  let borderColor =
+    isOpen
+      ? theme.colors.borderPrimary
+      : hasError ? theme.colors.error : theme.colors.borderMediumEmphasis;
+
   <View ?style>
     <Pressable_
       ref={pressableRef->Ref.value} onPress={_ => togglePopover()} disabled>
       {_ =>
          <View
            style=Style.(
-             arrayOption([|
-               Some(styles##button),
-               Some(
-                 style(
-                   ~borderColor=theme.colors.borderMediumEmphasis,
-                   ~backgroundColor=theme.colors.background,
-                   (),
-                 ),
-               ),
-               isOpen
-                 ? Some(
-                     style(
-                       ~borderColor=theme.colors.borderPrimary,
-                       ~borderWidth=2.,
-                       ~padding=0.->dp,
-                       (),
-                     ),
-                   )
-                 : None,
-               hasError
-                 ? Some(
-                     style(
-                       ~borderColor=theme.colors.error,
-                       ~borderWidth=2.,
-                       ~padding=0.->dp,
-                       (),
-                     ),
-                   )
-                 : None,
+             array([|
+               styles##button,
+               style(~backgroundColor=theme.colors.background, ()),
+               style(~borderColor, ~borderWidth=2., ~padding=0.->dp, ()),
              |])
            )
            pointerEvents=`none>
