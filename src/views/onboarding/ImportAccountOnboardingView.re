@@ -74,8 +74,9 @@ let make = (~closeAction, ~existingSecretsCount=0) => {
          <FillMnemonicView
            mnemonic
            setMnemonic
-           secondaryStepButton={
+           secondaryStepButton={disabled =>
              <Buttons.FormSecondary
+               disabled
                text=I18n.btn#customize_derivation_path
                onPress={_ => setFormStep(_ => DerivationPathStep)}
              />

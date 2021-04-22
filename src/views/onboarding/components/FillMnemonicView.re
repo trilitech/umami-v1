@@ -208,7 +208,9 @@ let make = (~mnemonic, ~setMnemonic, ~secondaryStepButton=?, ~goNextStep) => {
         onPress=onSubmit
         disabledLook={!formFieldsAreValids}
       />
-      secondaryStepButton->ReactUtils.opt
+      {secondaryStepButton
+       ->Option.map(f => f(!formFieldsAreValids))
+       ->ReactUtils.opt}
     </View>
   </>;
 };
