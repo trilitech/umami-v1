@@ -84,7 +84,9 @@ module Base = {
         handleChange
         error
         list=wordlists
+        dropdownOnEmpty=false
         renderItem
+        reversePositionPct=0.60
         keyExtractor
         renderLabel={renderLabel(displayIndex)}
         style=styles##input

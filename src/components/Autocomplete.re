@@ -72,6 +72,7 @@ let make =
       ~renderLabel: option(bool => React.element)=?,
       ~placeholder=?,
       ~clearButton=false,
+      ~reversePositionPct=?,
       ~keyPopover,
       ~dropdownOnEmpty=true,
       ~style as styleFromProp=?,
@@ -198,6 +199,7 @@ let make =
     <DropdownMenu
       keyPopover
       scrollRef={scrollViewRef->Ref.value}
+      ?reversePositionPct
       onScroll
       scrollEventThrottle=16
       isOpen={
@@ -209,35 +211,20 @@ let make =
         setSelectedItemIndex(_ => 0);
       }}
       style=Style.(
-        array([|
-          style(
-            ~backgroundColor=theme.colors.background,
-            ~maxHeight=
-              (
-                itemHeight
-                *. numItemsToDisplay
-                +. DropdownMenu.listVerticalPadding
-                *. 2.
-              )
-              ->dp,
-            (),
-          ),
-        |])
+        array([|style(~backgroundColor=theme.colors.background, ())|])
       )>
-      {list
-       ->Array.mapWithIndex((index, item) =>
-           <Item
-             key={item->keyExtractor}
-             value={item->keyExtractor}
-             index
-             isSelected={index == selectedItemIndex}
-             itemHeight
-             onSelect=setSelectedItemIndex
-             onChange=onChangeItem>
-             {renderItem(item)}
-           </Item>
-         )
-       ->React.array}
+      {list->Array.mapWithIndex((index, item) =>
+         <Item
+           key={item->keyExtractor}
+           value={item->keyExtractor}
+           index
+           isSelected={index == selectedItemIndex}
+           itemHeight
+           onSelect=setSelectedItemIndex
+           onChange=onChangeItem>
+           {renderItem(item)}
+         </Item>
+       )}
     </DropdownMenu>
   </View>;
 };

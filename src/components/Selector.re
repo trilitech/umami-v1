@@ -148,26 +148,32 @@ let make =
       isOpen
       popoverConfig
       onRequestClose=togglePopover>
-      {noneItem->Option.mapWithDefault(React.null, item =>
-         <Item
-           key={item->getItemKey}
-           item
-           onChange
-           renderItem
-           isSelected={selectedValueKey->Option.isNone}
-         />
-       )}
-      {items
-       ->Array.map(item =>
-           <Item
-             key={item->getItemKey}
-             item
-             onChange
-             renderItem
-             isSelected={item->isSelected}
-           />
-         )
-       ->React.array}
+      {[|
+         {
+           noneItem->Option.mapWithDefault(React.null, item =>
+             <Item
+               key={item->getItemKey}
+               item
+               onChange
+               renderItem
+               isSelected={selectedValueKey->Option.isNone}
+             />
+           );
+         },
+       |]
+       ->Array.concat(
+           {
+             items->Array.map(item =>
+               <Item
+                 key={item->getItemKey}
+                 item
+                 onChange
+                 renderItem
+                 isSelected={item->isSelected}
+               />
+             );
+           },
+         )}
     </DropdownMenu>
   </View>;
 };
