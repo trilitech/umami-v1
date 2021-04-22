@@ -13,6 +13,7 @@ let styles =
           (),
         ),
       "wordSpacer": style(~width=20.->dp, ()),
+      "secondaryBtn": style(~marginTop=8.->dp, ()),
     })
   );
 
@@ -208,9 +209,11 @@ let make = (~mnemonic, ~setMnemonic, ~secondaryStepButton=?, ~goNextStep) => {
         onPress=onSubmit
         disabledLook={!formFieldsAreValids}
       />
-      {secondaryStepButton
-       ->Option.map(f => f(!formFieldsAreValids))
-       ->ReactUtils.opt}
+      <View style=styles##secondaryBtn>
+        {secondaryStepButton
+         ->Option.map(f => f(!formFieldsAreValids, onSubmit))
+         ->ReactUtils.opt}
+      </View>
     </View>
   </>;
 };
