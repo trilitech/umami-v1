@@ -31,7 +31,7 @@ module Item = {
 let styles =
   Style.(
     StyleSheet.create({
-      "input": style(~height=36.->dp, ()),
+      "input": style(~maxWidth=176.->dp, ~height=36.->dp, ()),
       "wordItemIndexContainer":
         style(
           ~position=`absolute,
