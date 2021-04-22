@@ -195,10 +195,16 @@ let useScroll = callback => {
 module ScrollView = {
   [@react.component]
   let make =
-      (~style=?, ~contentContainerStyle=?, ~alwaysBounceVertical=?, ~children) => {
+      (
+        ~style=?,
+        ~showsVerticalScrollIndicator=false,
+        ~contentContainerStyle=?,
+        ~alwaysBounceVertical=?,
+        ~children,
+      ) => {
     let onScroll = useScrollListener();
     <ScrollView
-      showsVerticalScrollIndicator=false
+      showsVerticalScrollIndicator
       ?style
       ?contentContainerStyle
       ?alwaysBounceVertical

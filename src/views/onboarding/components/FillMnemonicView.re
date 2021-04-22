@@ -74,7 +74,7 @@ let make = (~mnemonic, ~setMnemonic, ~onPressCancel, ~goNextStep) => {
     FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
 
   <>
-    <DocumentContext.ScrollView>
+    <DocumentContext.ScrollView showsVerticalScrollIndicator=true>
       <View style=styles##wordsList>
         {form.state.values.words
          ->Array.mapWithIndex((index, word) =>
