@@ -31,7 +31,7 @@ module Item = {
 let styles =
   Style.(
     StyleSheet.create({
-      "input": style(~maxWidth=176.->dp, ~height=36.->dp, ()),
+      "input": style(~height=36.->dp, ()),
       "wordItemIndexContainer":
         style(
           ~position=`absolute,
@@ -93,6 +93,12 @@ module Base = {
         numItemsToDisplay
       />;
     });
+};
+
+module Dummy = {
+  [@react.component]
+  let make = () =>
+    <View style=Style.(style(~flexBasis=40.->pct, ~flexGrow=1., ())) />;
 };
 
 [@react.component]

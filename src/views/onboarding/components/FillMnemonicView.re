@@ -188,6 +188,11 @@ let make = (~mnemonic, ~setMnemonic, ~onPressCancel, ~goNextStep) => {
                   ? <View style=styles##wordSpacer /> : React.null}
              </React.Fragment>
            )
+         ->(
+             a =>
+               a->Array.length mod 2 != 0
+                 ? a->Array.concat([|<InputMnemonicWord.Dummy />|]) : a
+           )
          ->React.array}
       </View>
     </DocumentContext.ScrollView>
