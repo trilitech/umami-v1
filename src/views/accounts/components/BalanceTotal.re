@@ -81,7 +81,9 @@ module WithTokenSelector = {
                 <TokenSelector
                   style=styles##tokenSelector
                   selectedToken={token->Option.map(token => token.address)}
-                  setSelectedToken={t => updateToken(Some(t.Token.address))}
+                  setSelectedToken={t =>
+                    updateToken(t->Option.map(t => t.Token.address))
+                  }
                   renderButton={renderButton(balanceElement)}
                 />
               },

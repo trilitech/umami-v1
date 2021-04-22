@@ -379,9 +379,7 @@ module Form = {
             error={form.getFieldError(Field(Amount))}
             selectedToken={selectedToken->Option.map(t => t.address)}
             showSelector={!batchMode}
-            setSelectedToken={newToken =>
-              setSelectedToken(_ => Some(newToken))
-            }
+            setSelectedToken={newToken => setSelectedToken(_ => newToken)}
             ?token
           />
           <FormGroupAccountSelector
