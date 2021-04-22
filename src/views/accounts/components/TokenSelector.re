@@ -92,7 +92,7 @@ let renderItem = (token: Token.t) => <TokenItem token />;
 let make =
     (
       ~selectedToken,
-      ~setSelectedToken,
+      ~setSelectedToken: Token.t => unit,
       ~style as styleProp=?,
       ~renderButton=renderButton,
     ) => {
@@ -100,20 +100,21 @@ let make =
 
   let items = tokens->Map.String.valuesToArray;
 
-  let onValueChange = newValue => {
-    setSelectedToken(newValue == xtzToken.address ? None : Some(newValue));
-  };
+  let onValueChange = (newValue: Token.t) =>
+    if (newValue.address == xtzToken.address) {
+      setSelectedToken(newValue);
+    };
 
   items->Array.size > 0
     ? <Selector
         style=Style.(arrayOption([|Some(styles##selector), styleProp|]))
         dropdownStyle=styles##selectorDropdown
         items
-        getItemValue={token => token.address}
+        getItemKey={token => token.address}
         renderButton
         onValueChange
         renderItem
-        selectedValue=?selectedToken
+        selectedValueKey=?selectedToken
         noneItem=xtzToken
         keyPopover="tokenSelector"
       />

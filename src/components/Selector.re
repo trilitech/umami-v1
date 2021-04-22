@@ -51,9 +51,9 @@ let make =
       ~style=?,
       ~dropdownStyle=?,
       ~items: array('item),
-      ~getItemValue: 'item => string,
-      ~selectedValue=?,
-      ~onValueChange,
+      ~selectedValueKey: option(string)=?,
+      ~onValueChange: 'item => unit,
+      ~getItemKey: 'item => string,
       ~noneItem: option('item)=?,
       ~renderButton,
       ~renderItem,
@@ -72,13 +72,15 @@ let make =
     );
 
   let onChange = newItem => {
-    onValueChange(newItem->getItemValue);
+    onValueChange(newItem);
   };
 
-  let selectedItem =
-    items->Array.getBy(item =>
-      item->getItemValue == selectedValue->Option.getWithDefault("")
+  let isSelected = item =>
+    selectedValueKey->Option.mapWithDefault(false, sel =>
+      sel == item->getItemKey
     );
+
+  let selectedItem = items->Array.getBy(isSelected);
 
   let theme = ThemeContext.useTheme();
 
@@ -148,23 +150,21 @@ let make =
       onRequestClose=togglePopover>
       {noneItem->Option.mapWithDefault(React.null, item =>
          <Item
-           key={item->getItemValue}
+           key={item->getItemKey}
            item
            onChange
            renderItem
-           isSelected={selectedValue->Option.isNone}
+           isSelected={selectedValueKey->Option.isNone}
          />
        )}
       {items
        ->Array.map(item =>
            <Item
-             key={item->getItemValue}
+             key={item->getItemKey}
              item
              onChange
              renderItem
-             isSelected={
-               item->getItemValue == selectedValue->Option.getWithDefault("")
-             }
+             isSelected={item->isSelected}
            />
          )
        ->React.array}

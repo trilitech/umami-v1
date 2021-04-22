@@ -53,7 +53,7 @@ let renderItem = (secret: Secret.t) =>
   <SecretItem style=styles##itemInSelector secret />;
 
 [@react.component]
-let make = (~label, ~value: string, ~handleChange, ~error, ~disabled) => {
+let make = (~label, ~value: option(string), ~handleChange, ~error, ~disabled) => {
   let secretsRequest = StoreContext.Secrets.useLoad();
 
   let hasError = error->Option.isSome;
@@ -67,11 +67,9 @@ let make = (~label, ~value: string, ~handleChange, ~error, ~disabled) => {
 
   React.useEffect2(
     () => {
-      if (value == "") {
+      if (value == None) {
         let firstItem = items->Array.get(0);
-        firstItem->Lib.Option.iter(secret =>
-          secret.index->string_of_int->handleChange
-        );
+        firstItem->Lib.Option.iter(secret => secret->handleChange);
       };
       None;
     },
@@ -83,9 +81,9 @@ let make = (~label, ~value: string, ~handleChange, ~error, ~disabled) => {
     <View>
       <Selector
         items
-        getItemValue={secret => secret.index->string_of_int}
+        getItemKey={secret => secret.index->string_of_int}
         onValueChange=handleChange
-        selectedValue=value
+        selectedValueKey=?value
         renderButton
         renderItem
         disabled
