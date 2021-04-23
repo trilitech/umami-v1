@@ -428,6 +428,7 @@ module Form = {
                ? <ReactFlipToolkit.FlippedView
                    flipId="innerAdvancedOption" onAppear onExit>
                    <SendViewAdvancedOptions
+                     token
                      operation={simulatedTransaction(
                        mode,
                        batch,
