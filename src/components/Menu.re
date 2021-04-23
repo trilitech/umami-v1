@@ -82,7 +82,7 @@ let make =
       isOpen
       popoverConfig
       onRequestClose=togglePopover>
-      children
+      {_ => children}
     </DropdownMenu>
   </View>;
 };

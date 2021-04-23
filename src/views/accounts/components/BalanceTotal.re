@@ -25,7 +25,7 @@ module Base = {
         {switch (token, balanceTotal, balanceTokenTotal) {
          | (Some(token), _, Some(balanceTokenTotal)) =>
            I18n.t#amount(
-             balanceTokenTotal->BusinessUtils.formatToken,
+             balanceTokenTotal->Token.Repr.toNatString,
              token.symbol,
            )
            ->React.string
@@ -81,7 +81,9 @@ module WithTokenSelector = {
                 <TokenSelector
                   style=styles##tokenSelector
                   selectedToken={token->Option.map(token => token.address)}
-                  setSelectedToken=updateToken
+                  setSelectedToken={t =>
+                    updateToken(t->Option.map(t => t.Token.address))
+                  }
                   renderButton={renderButton(balanceElement)}
                 />
               },

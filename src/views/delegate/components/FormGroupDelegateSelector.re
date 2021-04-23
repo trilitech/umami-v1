@@ -22,7 +22,7 @@ let make = (~label, ~value: string, ~handleChange, ~error, ~disabled) => {
     () => {
       if (value == "") {
         let firstItem = items->Array.get(0);
-        firstItem->Lib.Option.iter(account => account.address->handleChange);
+        firstItem->Lib.Option.iter(account => account->handleChange);
       };
       None;
     },
@@ -34,9 +34,9 @@ let make = (~label, ~value: string, ~handleChange, ~error, ~disabled) => {
     <View>
       <Selector
         items
-        getItemValue={account => account.address}
+        getItemKey={account => account.address}
         onValueChange=handleChange
-        selectedValue=value
+        selectedValueKey=value
         renderButton=AccountSelector.renderButton
         renderItem=AccountSelector.renderItem
         disabled

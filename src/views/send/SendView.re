@@ -122,7 +122,7 @@ let sourceDestination = (transfer: SendForm.transaction) => {
   | TokenTransfer({source, transfers}: Token.Transfer.t, _) =>
     let destinations =
       transfers->List.map(t =>
-        (None, (t.destination, t.amount->Int.toString))
+        (None, (t.destination, t.amount->Token.Repr.toNatString))
       );
     ((source, sourceLbl), `Many(destinations));
   };
@@ -167,8 +167,11 @@ let buildSummaryContent =
       ...revealFee->Option.mapWithDefault([total], r => [r, total]),
     ];
   | TokenTransfer({transfers}, token) =>
-    let amount = transfers->List.reduce(0, (acc, {amount}) => acc + amount);
-    let amount = I18n.t#amount(amount->Int.toString, token.symbol);
+    let amount =
+      transfers->List.reduce(Token.Repr.zero, (acc, {amount}) =>
+        Token.Repr.add(acc, amount)
+      );
+    let amount = I18n.t#amount(amount->Token.Repr.toNatString, token.symbol);
 
     let amount = (I18n.label#send_amount, amount);
 
@@ -223,7 +226,7 @@ module Form = {
       dryRun: None,
     };
 
-  let use = (~initValues=?, initAccount, onSubmit) => {
+  let use = (~initValues=?, initAccount, token, onSubmit) => {
     SendForm.use(
       ~schema={
         SendForm.Validation.(
@@ -232,7 +235,10 @@ module Form = {
             + nonEmpty(Sender)
             + nonEmpty(Recipient)
             + custom(
-                values => FormUtils.isValidFloat(values.amount),
+                values =>
+                  token != None
+                    ? FormUtils.isValidTokenAmount(values.amount)
+                    : FormUtils.isValidFloat(values.amount),
                 Amount,
               )
             + custom(values => FormUtils.isValidFloat(values.fee), Fee)
@@ -315,7 +321,11 @@ module Form = {
         (
           ~batch,
           ~advancedOptionState,
-          ~tokenState,
+          ~tokenState: (
+             option(TezosClient.Token.t),
+             (option(TezosClient.Token.t) => option(TezosClient.Token.t)) =>
+             unit,
+           ),
           ~token=?,
           ~mode,
           ~form,
@@ -367,7 +377,7 @@ module Form = {
             }
             handleChange={form.handleChange(Amount)}
             error={form.getFieldError(Field(Amount))}
-            selectedToken
+            selectedToken={selectedToken->Option.map(t => t.address)}
             showSelector={!batchMode}
             setSelectedToken={newToken => setSelectedToken(_ => newToken)}
             ?token
@@ -376,7 +386,10 @@ module Form = {
             disabled=batchMode
             label=I18n.label#send_sender
             value={form.values.sender}
-            handleChange={form.handleChange(Sender)}
+            handleChange={a =>
+              a->Option.mapWithDefault("", a => a.Account.address)
+              |> form.handleChange(Sender)
+            }
             error={form.getFieldError(Field(Sender))}
             ?token
           />
@@ -450,7 +463,8 @@ module EditionView = {
     let (advancedOptionOpened, _) as advancedOptionState =
       React.useState(_ => advancedOptionOpened);
 
-    let form = Form.use(~initValues, None, onSubmit(advancedOptionOpened));
+    let form =
+      Form.use(~initValues, None, token, onSubmit(advancedOptionOpened));
 
     <Form.View
       batch
@@ -477,8 +491,9 @@ let make = (~closeAction) => {
   let (modalStep, setModalStep) = React.useState(_ => SendStep);
 
   let (selectedToken, _) as tokenState =
-    React.useState(_ => initToken->Option.map(initToken => initToken.address));
-  let token = StoreContext.Tokens.useGet(selectedToken);
+    React.useState(_ => initToken->Option.map(initToken => initToken));
+  let token =
+    StoreContext.Tokens.useGet(selectedToken->Option.map(t => t.address));
 
   let (operationRequest, sendOperation) = StoreContext.Operations.useCreate();
 
@@ -520,7 +535,7 @@ let make = (~closeAction) => {
       send(SetFieldValue(Sender, state.values.sender));
     };
 
-  let form: SendForm.api = Form.use(account, onSubmit);
+  let form: SendForm.api = Form.use(account, token, onSubmit);
 
   let onSubmitAll = _ => {
     submitAction.current = `SubmitAll;

@@ -84,7 +84,9 @@ module Base = {
         handleChange
         error
         list=wordlists
+        dropdownOnEmpty=false
         renderItem
+        reversePositionPct=0.60
         keyExtractor
         renderLabel={renderLabel(displayIndex)}
         style=styles##input
@@ -93,6 +95,12 @@ module Base = {
         numItemsToDisplay
       />;
     });
+};
+
+module Dummy = {
+  [@react.component]
+  let make = () =>
+    <View style=Style.(style(~flexBasis=40.->pct, ~flexGrow=1., ())) />;
 };
 
 [@react.component]

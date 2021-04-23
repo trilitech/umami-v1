@@ -60,10 +60,12 @@ let make = (~closeAction) => {
          <Typography.Overline1 style=styles##stepTitle>
            I18n.t#account_create_record_recovery->React.string
          </Typography.Overline1>
-         <Typography.Body2 colorStyle=`mediumEmphasis style=styles##stepBody>
-           I18n.expl#account_create_record_recovery->React.string
-         </Typography.Body2>
-         <MnemonicListView mnemonic />
+         <DocumentContext.ScrollView showsVerticalScrollIndicator=true>
+           <Typography.Body2 colorStyle=`mediumEmphasis style=styles##stepBody>
+             I18n.expl#account_create_record_recovery->React.string
+           </Typography.Body2>
+           <MnemonicListView mnemonic />
+         </DocumentContext.ScrollView>
          <View style=FormStyles.formActionSpaceBetween>
            <Buttons.Form text=I18n.btn#back onPress={_ => closeAction()} />
            <Buttons.SubmitPrimary

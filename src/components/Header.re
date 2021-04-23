@@ -1,9 +1,5 @@
 open ReactNative;
 
-%raw
-"var Electron = window.require('electron');";
-let electron = [%raw "Electron"];
-
 let styles =
   Style.(
     StyleSheet.create({
@@ -57,12 +53,10 @@ module UpdateNotice = {
   let make = (~displayNotice) => {
     let theme = ThemeContext.useTheme();
 
-    let onPress = _ => {
-      electron##shell##openExternal(
+    let onPress = _ =>
+      System.openExternal(
         "https://gitlab.com/nomadic-labs/umami-wallet/umami/-/releases",
-      )
-      ->ignore;
-    };
+      );
 
     !displayNotice
       ? React.null

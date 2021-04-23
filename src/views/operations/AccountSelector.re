@@ -91,10 +91,10 @@ let make = (~style=?) => {
     <View style=styles##spacer />
     <Selector
       items
-      getItemValue={account => account.address}
+      getItemKey={account => account.address}
       ?style
-      onValueChange={value => updateAccount(value)}
-      selectedValue=?{account->Option.map(account => account.address)}
+      onValueChange={value => updateAccount(value.address)}
+      selectedValueKey=?{account->Option.map(account => account.address)}
       renderButton
       renderItem
       keyPopover="accountSelector"
