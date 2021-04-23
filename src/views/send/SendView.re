@@ -293,7 +293,8 @@ module Form = {
       | Edition(int)
       | Creation(option(unit => unit), unit => unit);
 
-    let simulatedTransaction = (mode, batch, form: SendForm.api, token) => {
+    let simulatedTransaction =
+        (mode, batch, form: SendForm.api, accounts, token) => {
       let (batch, index) =
         switch (mode) {
         | Edition(index) =>
@@ -312,7 +313,7 @@ module Form = {
           (batch, Some(length - 1));
         };
 
-      SendForm.buildTransaction(batch, token)
+      SendForm.buildTransaction(batch, token, accounts)
       |> SendForm.toSimulation(~index?);
     };
 
@@ -329,6 +330,7 @@ module Form = {
           ~token=?,
           ~mode,
           ~form,
+          ~accounts,
           ~loading,
         ) => {
       let (advancedOptionOpened, setAdvancedOptionOpened) = advancedOptionState;
@@ -398,6 +400,7 @@ module Form = {
           <FormGroupContactSelector
             label=I18n.label#send_recipient
             filterOut={form.values.sender}
+            accounts
             value={form.values.recipient}
             handleChange={form.handleChange(Recipient)}
             error={form.getFieldError(Field(Recipient))}
@@ -427,6 +430,7 @@ module Form = {
                        mode,
                        batch,
                        form,
+                       accounts,
                        token,
                      )}
                      form
@@ -459,7 +463,8 @@ module Form = {
 
 module EditionView = {
   [@react.component]
-  let make = (~batch, ~initValues, ~onSubmit, ~token=?, ~index, ~loading) => {
+  let make =
+      (~batch, ~accounts, ~initValues, ~onSubmit, ~token=?, ~index, ~loading) => {
     let (initValues, advancedOptionOpened) = initValues;
 
     let (advancedOptionOpened, _) as advancedOptionState =
@@ -475,6 +480,7 @@ module EditionView = {
       ?token
       form
       mode={Form.View.Edition(index)}
+      accounts
       loading
     />;
   };
@@ -484,6 +490,12 @@ module EditionView = {
 let make = (~closeAction) => {
   let account = StoreContext.SelectedAccount.useGet();
   let initToken = StoreContext.SelectedToken.useGet();
+  let aliasesRequest = StoreContext.Aliases.useRequest();
+
+  let accounts =
+    aliasesRequest
+    ->ApiRequest.getDoneOk
+    ->Option.getWithDefault(Map.String.empty);
 
   let updateAccount = StoreContext.SelectedAccount.useSet();
 
@@ -518,7 +530,8 @@ let make = (~closeAction) => {
   let submitAction = React.useRef(`SubmitAll);
 
   let onSubmitBatch = batch => {
-    let transaction = SendForm.buildTransaction(batch->List.reverse, token);
+    let transaction =
+      SendForm.buildTransaction(batch->List.reverse, token, accounts);
     sendOperationSimulate(SendForm.toSimulation(transaction))
     ->Future.tapOk(dryRun => {
         setModalStep(_ => PasswordStep(transaction, dryRun))
@@ -626,6 +639,7 @@ let make = (~closeAction) => {
                ?token
                index
                loading=false
+               accounts
              />;
            | SendStep =>
              let onSubmit = batch != [] ? onAddToBatch : onSubmitAll;
@@ -638,6 +652,7 @@ let make = (~closeAction) => {
                form
                mode={Form.View.Creation(onAddToBatch, onSubmit)}
                loading=loadingSimulate
+               accounts
              />;
            | PasswordStep(transfer, dryRun) =>
              let (source, destinations) = sourceDestination(transfer);

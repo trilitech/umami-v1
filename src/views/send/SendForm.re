@@ -41,12 +41,18 @@ let toSimulation = (~index=?, t: transaction) =>
     Operation.Simulation.Token(transfer->Token.transfer, index)
   };
 
-let buildTransfers = (transfers, parseAmount, build) => {
+let resolveAlias = (accounts, value) =>
+  accounts
+  ->Map.String.findFirstBy((_, v: Account.t) => v.alias == value)
+  ->Option.mapWithDefault(value, ((k, _)) => k);
+
+let buildTransfers = (transfers, parseAmount, accounts, build) => {
   transfers->List.keepMap(((t: StateLenses.state, advOpened)) => {
     let mapIfAdvanced = (v, flatMap) =>
       advOpened && v->Js.String2.length > 0 ? v->flatMap : None;
 
-    let destination = t.recipient;
+    let destination = resolveAlias(accounts, t.recipient);
+
     let gasLimit = t.gasLimit->mapIfAdvanced(Int.fromString);
     let storageLimit = t.storageLimit->mapIfAdvanced(Int.fromString);
     let fee = t.fee->mapIfAdvanced(ProtocolXTZ.fromString);
@@ -59,7 +65,8 @@ let buildTransfers = (transfers, parseAmount, build) => {
   });
 };
 
-let buildTokenTransfer = (inputTransfers, token: Token.t, source, forceLowFee) =>
+let buildTokenTransfer =
+    (inputTransfers, token: Token.t, accounts, source, forceLowFee) =>
   TokenTransfer(
     Token.makeTransfers(
       ~source,
@@ -67,6 +74,7 @@ let buildTokenTransfer = (inputTransfers, token: Token.t, source, forceLowFee) =
         buildTransfers(
           inputTransfers,
           Token.Repr.fromNatString,
+          accounts,
           Token.makeSingleTransferElt(~token=token.address),
         ),
       ~forceLowFee?,
@@ -75,13 +83,14 @@ let buildTokenTransfer = (inputTransfers, token: Token.t, source, forceLowFee) =
     token,
   );
 
-let buildProtocolTransaction = (inputTransfers, source, forceLowFee) =>
+let buildProtocolTransaction = (inputTransfers, accounts, source, forceLowFee) =>
   Protocol.makeTransaction(
     ~source,
     ~transfers=
       buildTransfers(
         inputTransfers,
         ProtocolXTZ.fromString,
+        accounts,
         Protocol.makeTransfer(~parameter=?None, ~entrypoint=?None),
       ),
     ~forceLowFee?,
@@ -90,7 +99,11 @@ let buildProtocolTransaction = (inputTransfers, source, forceLowFee) =>
   ->ProtocolTransaction;
 
 let buildTransaction =
-    (batch: list((StateLenses.state, bool)), token: option(Token.t)) => {
+    (
+      batch: list((StateLenses.state, bool)),
+      token: option(Token.t),
+      accounts,
+    ) => {
   switch (batch) {
   | [] => assert(false)
   | [(first, _), ..._] as inputTransfers =>
@@ -99,8 +112,9 @@ let buildTransaction =
 
     switch (token) {
     | Some(token) =>
-      buildTokenTransfer(inputTransfers, token, source, forceLowFee)
-    | None => buildProtocolTransaction(inputTransfers, source, forceLowFee)
+      buildTokenTransfer(inputTransfers, token, accounts, source, forceLowFee)
+    | None =>
+      buildProtocolTransaction(inputTransfers, accounts, source, forceLowFee)
     };
   };
 };
