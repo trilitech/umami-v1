@@ -13,6 +13,7 @@ let styles =
           (),
         ),
       "wordSpacer": style(~width=20.->dp, ()),
+      "secondaryBtn": style(~marginTop=8.->dp, ()),
     })
   );
 
@@ -106,7 +107,14 @@ let stateField = StateLenses.Words;
 let formField = VerifyMnemonicForm.ReSchema.Field(stateField);
 
 [@react.component]
-let make = (~mnemonic, ~setMnemonic, ~onPressCancel, ~goNextStep) => {
+let make =
+    (
+      ~mnemonic,
+      ~setMnemonic,
+      ~formatState,
+      ~secondaryStepButton=?,
+      ~goNextStep,
+    ) => {
   let form: VerifyMnemonicForm.api =
     VerifyMnemonicForm.use(
       ~validationStrategy=OnDemand,
@@ -141,10 +149,12 @@ let make = (~mnemonic, ~setMnemonic, ~onPressCancel, ~goNextStep) => {
       ~onSubmit=
         ({state}) => {
           setMnemonic(_ => state.values.words);
+          formatState->snd(_ => state.values.format);
+
           goNextStep();
           None;
         },
-      ~initialState={format: Words24, words: mnemonic},
+      ~initialState={format: formatState->fst, words: mnemonic},
       (),
     );
 
@@ -196,13 +206,23 @@ let make = (~mnemonic, ~setMnemonic, ~onPressCancel, ~goNextStep) => {
          ->React.array}
       </View>
     </DocumentContext.ScrollView>
-    <View style=FormStyles.formActionSpaceBetween>
-      <Buttons.Form text=I18n.btn#back onPress=onPressCancel />
+    <View
+      style=Style.(
+        array([|
+          FormStyles.verticalFormAction,
+          style(~marginTop=32.->dp, ()),
+        |])
+      )>
       <Buttons.SubmitPrimary
         text=I18n.btn#continue
         onPress=onSubmit
         disabledLook={!formFieldsAreValids}
       />
+      <View style=styles##secondaryBtn>
+        {secondaryStepButton
+         ->Option.map(f => f(!formFieldsAreValids, onSubmit))
+         ->ReactUtils.opt}
+      </View>
     </View>
   </>;
 };
