@@ -42,7 +42,6 @@ let styles =
       "modalForm":
         style(
           ~width=642.->dp,
-          ~minHeight=400.->dp,
           ~maxHeight=100.->pct,
           ~paddingTop=40.->dp,
           ~paddingBottom=40.->dp,
