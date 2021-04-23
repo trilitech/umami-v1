@@ -1,9 +1,5 @@
 open ReactNative;
 
-%raw
-"var Electron = window.require('electron');";
-let electron = [%raw "Electron"];
-
 module CellType =
   Table.MakeCell({
     let style = Style.(style(~flexBasis=90.->dp, ()));
@@ -285,8 +281,7 @@ let make =
           )
           onPress={_ => {
             switch (AppSettings.getExternalExplorer(settings)) {
-            | Ok(url) =>
-              electron##shell##openExternal(url ++ operation.hash)->ignore
+            | Ok(url) => System.openExternal(url ++ operation.hash)
             | Error(err) =>
               addToast(Logs.error(~origin=Settings, Network.errorMsg(err)))
             }

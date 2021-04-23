@@ -42,9 +42,10 @@ let styles =
       "modalForm":
         style(
           ~width=642.->dp,
+          ~maxHeight=100.->pct,
           ~paddingTop=40.->dp,
           ~paddingBottom=40.->dp,
-          ~paddingHorizontal=110.->dp,
+          ~paddingHorizontal=135.->dp,
           (),
         ),
       "modalDialog":

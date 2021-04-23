@@ -26,23 +26,17 @@ let make =
     ->Map.String.valuesToArray
     ->SortArray.stableSortBy((a, b) => Pervasives.compare(a.alias, b.alias));
 
-  let (_currentAccount, setCurrent) = React.useState(() => value);
-
   <FormGroup>
     <FormLabel label hasError style=styles##label />
     <View>
       <Selector
         items
         ?disabled
-        getItemValue={account => account.address}
-        onValueChange={value => {
-          setCurrent(_ => value);
-          accounts
-          ->Map.String.get(value)
-          ->Option.mapWithDefault("", a => a.address)
-          ->handleChange;
+        getItemKey={account => account.address}
+        onValueChange={account => {
+          accounts->Map.String.get(account.address)->handleChange
         }}
-        selectedValue=value
+        selectedValueKey=value
         renderButton={baseRenderButton(~token)}
         renderItem={baseRenderItem(~token)}
         keyPopover="formGroupAccountSelector"

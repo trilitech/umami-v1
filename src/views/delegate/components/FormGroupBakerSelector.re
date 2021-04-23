@@ -115,7 +115,7 @@ module BakerInputTypeToogle = {
 let styles =
   Style.(
     StyleSheet.create({
-      "formGroup": style( ~marginBottom=0.->dp, ()),
+      "formGroup": style(~marginBottom=0.->dp, ()),
       "labelContainer":
         style(
           ~marginBottom=6.->dp,
@@ -128,7 +128,7 @@ let styles =
   );
 
 [@react.component]
-let make = (~label, ~value: string, ~handleChange, ~error) => {
+let make = (~label, ~value: option(string), ~handleChange, ~error) => {
   let bakersRequest = StoreContext.Bakers.useLoad();
 
   let hasError = error->Option.isSome;
@@ -140,12 +140,17 @@ let make = (~label, ~value: string, ~handleChange, ~error) => {
   React.useEffect4(
     () => {
       if (inputType == Selector) {
-        if (value == "") {
+        if (value == None) {
           // if input selector and no value, select first entry
           let firstItem = items->Array.get(0);
-          firstItem->Lib.Option.iter(baker => baker.address->handleChange);
+          firstItem->Lib.Option.iter(baker =>
+            baker.address->Some->handleChange
+          );
         } else if (items->Array.size > 0
-                   && !items->Array.some(baker => baker.address == value)) {
+                   && !
+                        items->Array.some(baker =>
+                          Some(baker.address) == value
+                        )) {
           // if input selector and value isn't in the item list : switch to input text
           setInputType(_ =>
             Text
@@ -160,7 +165,7 @@ let make = (~label, ~value: string, ~handleChange, ~error) => {
   let onPressInputType = _e => {
     setInputType(prevInputType => prevInputType == Selector ? Text : Selector);
     // reset value when switching inputType
-    handleChange("");
+    handleChange(None);
   };
 
   <FormGroup style=styles##formGroup>
@@ -173,9 +178,9 @@ let make = (~label, ~value: string, ~handleChange, ~error) => {
        | Selector =>
          <Selector
            items
-           getItemValue={baker => baker.address}
-           onValueChange=handleChange
-           selectedValue=value
+           getItemKey={baker => baker.address}
+           onValueChange={b => b.address->Some->handleChange}
+           selectedValueKey=?value
            hasError
            renderButton=BakerSelector.renderButton
            renderItem=BakerSelector.renderItem
@@ -183,8 +188,10 @@ let make = (~label, ~value: string, ~handleChange, ~error) => {
          />
        | Text =>
          <ThemedTextInput
-           value
-           onValueChange=handleChange
+           value={value->Option.getWithDefault("")}
+           onValueChange={v =>
+             v == "" ? handleChange(None) : v->Some->handleChange
+           }
            hasError
            placeholder={js|Enter baker's tz1 address|js}
          />

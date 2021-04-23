@@ -1,16 +1,29 @@
 %raw
 "
-var Electron = window.require('electron');
-var Process = window.require('process');
+var electron = window.require('electron');
+var { app, Menu } = electron.remote;
+var shell = electron.shell;
+var process = window.require('process');
 var OS = window.require('os');
 var fs = window.require('fs');
-var path = window.require('path'); ";
+var path = window.require('path');
 
-let electron = [%raw "Electron"];
-let app = electron##remote##app;
+";
+
 let os = [%raw "OS"];
 
-let getVersion = () => app##getVersion();
+[@bs.scope "app"] [@bs.val] external getVersion: unit => string = "getVersion";
+[@bs.scope "app"] [@bs.val] external getName: unit => string = "getName";
+
+[@bs.scope "shell"] [@bs.val]
+external openExternal: string => Js.Promise.t(unit) = "openExternal";
+let openExternal = url => url->openExternal->ignore;
+
+type plateform = [ | `darwin | `win32 | `linux];
+
+[@bs.scope "process"] [@bs.val] external plateform: plateform = "plateform";
+
+let isMac = plateform == `darwin;
 
 module Path: {
   type t = pri string;
@@ -20,6 +33,9 @@ module Path: {
   let toString: t => string;
 
   let join: array(t) => t;
+
+  let getCurrent: unit => t;
+  let getAppData: unit => t;
   module Ops: {
     let (!): string => t;
     let (/): (t, t) => t;
@@ -31,6 +47,11 @@ module Path: {
 
   let toString = p => p;
 
+  [@bs.scope "app"] [@bs.val] external getCurrent: unit => t = "getAppPath";
+
+  [@bs.scope "app"] [@bs.val]
+  external getAppData: ([@bs.as "appData"] _, unit) => t = "getPath";
+
   [@bs.module "path"] [@bs.variadic]
   external join: array(t) => string = "join";
 
@@ -40,11 +61,9 @@ module Path: {
   };
 };
 
-let appDir = () => Path.Ops.(!app##getPath("appData") / (!app##getName()));
+let appDir = () => Path.Ops.(Path.getAppData() / (!getName()));
 
 let homeDir = () => os##homedir();
-
-let getCurrentPath: unit => Path.t = () => app##getAppPath();
 
 module File = {
   type error = {message: string};
@@ -159,4 +178,89 @@ module Client = {
         Future.mapOk3(secret, public, pkh, (_, _, _) => ());
       });
   };
+};
+
+module Menu = {
+  type kind = [ | `normal | `separator | `submenu | `checkbox | `radio];
+
+  type role = [
+    | `undo
+    | `about
+    | `redo
+    | `cut
+    | `copy
+    | `paste
+    | `pasteAndMatchStyle
+    | `selectAll
+    | `delete
+    | `minimize
+    | `close
+    | `quit
+    | `reload
+    | `forceReload
+    | `toggleDevTools
+    | `togglefullscreen
+    | `resetZoom
+    | `zoomIn
+    | `zoomOut
+    | `toggleSpellChecker
+    | `fileMenu
+    | `editMenu
+    | `viewMenu
+    | `windowMenu
+    | `appMenu
+    | `hide
+    | `hideOthers
+    | `unhide
+    | `startSpeaking
+    | `stopSpeaking
+    | `front
+    | `zoom
+    | `toggleTabBar
+    | `selectNextTab
+    | `selectPreviousTab
+    | `mergeAllWindows
+    | `moveTabToNewWindow
+    | `window
+    | `help
+    | `services
+    | `recentDocuments
+    | `clearRecentDocuments
+    | `shareMenu
+  ];
+
+  type item = {
+    role: option(role),
+    [@bs.as "type"]
+    kind: option(kind),
+    label: option(string),
+    click: option(ReactNative.Event.pressEvent => unit),
+    submenu: option(array(item)),
+  };
+
+  let mkItem = (~role=?, ~kind=?, ~label=?, ~click=?, ~submenu=?, ()) => {
+    role,
+    kind,
+    click,
+    label,
+    submenu,
+  };
+
+  let mkSubmenu = (~role=?, ~label=?, ~submenu, ()) => {
+    role,
+    kind: Some(`submenu),
+    click: None,
+    label,
+    submenu: Some(submenu),
+  };
+
+  type template = array(item);
+
+  type menu;
+
+  [@bs.scope "Menu"] [@bs.val]
+  external buildFromTemplate: template => menu = "buildFromTemplate";
+
+  [@bs.scope "Menu"] [@bs.val]
+  external setApplicationMenu: menu => unit = "setApplicationMenu";
 };

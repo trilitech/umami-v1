@@ -1,6 +1,14 @@
 let isValidFloat = value => {
   let fieldState: ReSchema.fieldState =
-    value->Js.Float.fromString->Js.Float.isNaN ? Error(I18n.form_input_error#float) : Valid;
+    value->Js.Float.fromString->Js.Float.isNaN
+      ? Error(I18n.form_input_error#float) : Valid;
+  fieldState;
+};
+
+let isValidTokenAmount = value => {
+  let fieldState: ReSchema.fieldState =
+    value->Js.String2.length == 0 || value->Token.Repr.isValid
+      ? Valid : Error(I18n.form_input_error#int);
   fieldState;
 };
 

@@ -195,9 +195,16 @@ let useScroll = callback => {
 module ScrollView = {
   [@react.component]
   let make =
-      (~style=?, ~contentContainerStyle=?, ~alwaysBounceVertical=?, ~children) => {
+      (
+        ~style=?,
+        ~showsVerticalScrollIndicator=false,
+        ~contentContainerStyle=?,
+        ~alwaysBounceVertical=?,
+        ~children,
+      ) => {
     let onScroll = useScrollListener();
     <ScrollView
+      showsVerticalScrollIndicator
       ?style
       ?contentContainerStyle
       ?alwaysBounceVertical
@@ -224,6 +231,7 @@ module FlatList = {
     <FlatList
       style
       contentContainerStyle
+      showsVerticalScrollIndicator=false
       data
       initialNumToRender
       keyExtractor

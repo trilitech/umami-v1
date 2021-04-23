@@ -1,7 +1,9 @@
 module RecoveryPhrase = {
   [@react.component]
   let make = (~recoveryPhrase: string) => {
-    <MnemonicListView mnemonic={recoveryPhrase->Js.String2.split(" ")} />;
+    <DocumentContext.ScrollView showsVerticalScrollIndicator=true>
+      <MnemonicListView mnemonic={recoveryPhrase->Js.String2.split(" ")} />
+    </DocumentContext.ScrollView>;
   };
 };
 

@@ -100,7 +100,7 @@ module Item = {
              style=styles##moreButton
              icon=Icons.More.build
              keyPopover={"batchItem" ++ i->string_of_int}>
-             {l->List.toArray->React.array}
+             l->List.toArray
            </Menu>
          )}
     </View>;

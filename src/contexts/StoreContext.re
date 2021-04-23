@@ -24,7 +24,7 @@ type state = {
   aliasesRequestState: reactState(ApiRequest.t(Map.String.t(Account.t))),
   bakersRequestState: reactState(ApiRequest.t(array(Delegate.t))),
   tokensRequestState: reactState(ApiRequest.t(Map.String.t(Token.t))),
-  balanceTokenRequestsState: apiRequestsState(string),
+  balanceTokenRequestsState: apiRequestsState(Token.Repr.t),
   apiVersionRequestState: reactState(option(Network.apiVersion)),
 };
 
@@ -301,15 +301,15 @@ module BalanceToken = {
     // check if balance requests for each accounts are done
     accountsBalanceRequests->Array.size == accounts->Map.String.size
       ? Some(
-          accountsBalanceRequests
-          ->Array.reduce(0, (acc, balanceRequest) => {
+          accountsBalanceRequests->Array.reduce(
+            Token.Repr.zero, (acc, balanceRequest) => {
+            Token.Repr.Infix.(
               acc
               + balanceRequest
                 ->ApiRequest.getDoneOk
-                ->Option.flatMap(Belt.Int.fromString)
-                ->Option.getWithDefault(0)
-            })
-          ->Belt.Int.toString,
+                ->Option.getWithDefault(Token.Repr.zero)
+            )
+          }),
         )
       : None;
   };
