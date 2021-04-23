@@ -32,7 +32,7 @@ let make =
       ~onRequestClose: unit => unit,
       ~keyPopover,
       ~reversePositionPct=0.80,
-      ~children: array(React.element),
+      ~children: bool => array(React.element),
     ) => {
   let theme = ThemeContext.useTheme();
 
@@ -71,7 +71,7 @@ let make =
         )
         ?onScroll
         ?scrollEventThrottle>
-        {children
+        {children(positionReversed != None)
          ->(a => positionReversed == None ? a : a->Array.reverse)
          ->React.array}
       </ScrollView>

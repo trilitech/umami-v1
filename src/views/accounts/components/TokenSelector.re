@@ -92,7 +92,7 @@ let renderItem = (token: Token.t) => <TokenItem token />;
 let make =
     (
       ~selectedToken,
-      ~setSelectedToken: Token.t => unit,
+      ~setSelectedToken: option(Token.t) => unit,
       ~style as styleProp=?,
       ~renderButton=renderButton,
     ) => {
@@ -101,9 +101,9 @@ let make =
   let items = tokens->Map.String.valuesToArray;
 
   let onValueChange = (newValue: Token.t) =>
-    if (newValue.address == xtzToken.address) {
-      setSelectedToken(newValue);
-    };
+    setSelectedToken(
+      newValue.address == xtzToken.address ? None : newValue->Some,
+    );
 
   items->Array.size > 0
     ? <Selector

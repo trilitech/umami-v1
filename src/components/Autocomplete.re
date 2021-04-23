@@ -89,6 +89,8 @@ let make =
 
   let scrollYRef = React.useRef(0.);
 
+  let dropdownReversed = React.useRef(false);
+
   let (selectedItemIndex, setSelectedItemIndex) = React.useState(_ => 0);
   let (hasFocus, setHasFocus) = React.useState(_ => false);
   let (popoverConfig, setPopoverConfig) = React.useState(_ => None);
@@ -106,8 +108,9 @@ let make =
   let onKeyPress = keyPressEvent => {
     let key = keyPressEvent->TextInput.KeyPressEvent.nativeEvent##key;
 
-    switch (key) {
-    | "ArrowUp" =>
+    switch (key, dropdownReversed.current) {
+    | ("ArrowUp", false)
+    | ("ArrowDown", true) =>
       let newIndex = Js.Math.max_int(0, selectedItemIndex - 1);
       setSelectedItemIndex(_ => newIndex);
 
@@ -125,7 +128,8 @@ let make =
           )
         ->ignore;
       };
-    | "ArrowDown" =>
+    | ("ArrowDown", false)
+    | ("ArrowUp", true) =>
       let newIndex =
         Js.Math.min_int(list->Array.size - 1, selectedItemIndex + 1);
       setSelectedItemIndex(_ => newIndex);
@@ -144,7 +148,7 @@ let make =
           )
         ->ignore;
       };
-    | "Enter" =>
+    | ("Enter", _) =>
       list
       ->Array.get(selectedItemIndex)
       ->Option.map(item => onChangeItem(item->keyExtractor))
@@ -213,18 +217,26 @@ let make =
       style=Style.(
         array([|style(~backgroundColor=theme.colors.background, ())|])
       )>
-      {list->Array.mapWithIndex((index, item) =>
-         <Item
-           key={item->keyExtractor}
-           value={item->keyExtractor}
-           index
-           isSelected={index == selectedItemIndex}
-           itemHeight
-           onSelect=setSelectedItemIndex
-           onChange=onChangeItem>
-           {renderItem(item)}
-         </Item>
-       )}
+      {reversed => {
+         dropdownReversed.current = reversed;
+         list->Array.mapWithIndex((index, item) =>
+           <Item
+             key={item->keyExtractor}
+             value={item->keyExtractor}
+             index
+             isSelected={
+               /* reversed */
+               /*     ? list->Array.length - selectedItemIndex - 1 == index */
+               /* : */
+               index == selectedItemIndex
+             }
+             itemHeight
+             onSelect=setSelectedItemIndex
+             onChange=onChangeItem>
+             {renderItem(item)}
+           </Item>
+         );
+       }}
     </DropdownMenu>
   </View>;
 };
