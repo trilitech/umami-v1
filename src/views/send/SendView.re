@@ -226,7 +226,7 @@ module Form = {
       dryRun: None,
     };
 
-  let use = (~initValues=?, initAccount, token, onSubmit) => {
+  let use = (~initValues=?, initAccount, accounts, token, onSubmit) => {
     SendForm.use(
       ~schema={
         SendForm.Validation.(
@@ -234,6 +234,18 @@ module Form = {
             nonEmpty(Amount)
             + nonEmpty(Sender)
             + nonEmpty(Recipient)
+            + custom(
+                values =>
+                  accounts->Map.String.some((_, v) =>
+                    v.Account.alias == values.recipient
+                  )
+                    ? Valid
+                    : values.recipient->ReTaquito.Utils.validateAddress
+                      == ReTaquito.Utils.Valid
+                        ? Valid
+                        : Error(I18n.form_input_error#invalid_contract),
+                Recipient,
+              )
             + custom(
                 values =>
                   token != None
@@ -471,7 +483,13 @@ module EditionView = {
       React.useState(_ => advancedOptionOpened);
 
     let form =
-      Form.use(~initValues, None, token, onSubmit(advancedOptionOpened));
+      Form.use(
+        ~initValues,
+        None,
+        accounts,
+        token,
+        onSubmit(advancedOptionOpened),
+      );
 
     <Form.View
       batch
@@ -550,7 +568,7 @@ let make = (~closeAction) => {
       send(SetFieldValue(Sender, state.values.sender));
     };
 
-  let form: SendForm.api = Form.use(account, token, onSubmit);
+  let form: SendForm.api = Form.use(account, accounts, token, onSubmit);
 
   let onSubmitAll = _ => {
     submitAction.current = `SubmitAll;
