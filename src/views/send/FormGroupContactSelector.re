@@ -78,6 +78,10 @@ let make =
             )
         );
 
+  let validAlias = accounts->Map.String.some((_, v) => v.alias == value);
+  let styleValidAlias =
+    validAlias ? Style.(style(~fontWeight=`bold, ()))->Some : None;
+
   <FormGroup style=styles##formGroup>
     <Autocomplete
       keyPopover="formGroupContactSelector"
@@ -92,7 +96,7 @@ let make =
       renderLabel={renderLabel(label)}
       itemHeight
       numItemsToDisplay
-      style=styles##input
+      style=Style.(arrayOption([|Some(styles##input), styleValidAlias|]))
     />
     <FormError ?error />
   </FormGroup>;
