@@ -148,7 +148,8 @@ let make =
           )
         ->ignore;
       };
-    | ("Enter", _) =>
+    | ("Enter", _)
+    | ("Tap", _) =>
       list
       ->Array.get(selectedItemIndex)
       ->Option.map(item => onChangeItem(item->keyExtractor))
