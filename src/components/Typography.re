@@ -7,9 +7,10 @@ type colorStyle = [
   | `error
   | `positive
   | `negative
-  | `primaryHighEmphasis
-  | `primaryMediumEmphasis
-  | `primaryDisabled
+  | `filledBackHighEmphasis
+  | `filledBackMediumEmphasis
+  | `filledBackDisabled
+  | `primary
 ];
 
 let getColor = (colorStyle, theme: ThemeContext.theme) =>
@@ -20,9 +21,10 @@ let getColor = (colorStyle, theme: ThemeContext.theme) =>
   | `error => theme.colors.error
   | `positive => theme.colors.textPositive
   | `negative => theme.colors.textNegative
-  | `primaryHighEmphasis => theme.colors.primaryTextHighEmphasis
-  | `primaryMediumEmphasis => theme.colors.primaryTextMediumEmphasis
-  | `primaryDisabled => theme.colors.primaryTextDisabled
+  | `filledBackHighEmphasis => theme.colors.primaryTextHighEmphasis
+  | `filledBackMediumEmphasis => theme.colors.primaryTextMediumEmphasis
+  | `filledBackDisabled => theme.colors.primaryTextDisabled
+  | `primary => theme.colors.textPrimary
   };
 
 type fontWeightStyle = [
@@ -256,4 +258,3 @@ module Notice =
     let fontSize = 14.;
     let selectable = true;
   });
-

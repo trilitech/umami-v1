@@ -74,10 +74,9 @@ let explorerTest = settings =>
   ->Option.getWithDefault(ConfigFile.Default.explorerTest);
 
 let explorer = (settings: t) =>
-  switch (settings.config.network) {
-  | Some(`Mainnet) => explorerMain(settings)
-  | None
-  | Some(`Testnet(_)) => explorerTest(settings)
+  switch (settings->network) {
+  | `Mainnet => explorerMain(settings)
+  | `Testnet(_) => explorerTest(settings)
   };
 
 let externalExplorers =
