@@ -56,6 +56,27 @@ module Error = {
     };
 };
 
+module Utils = {
+  type addressValidity =
+    | No_prefix_matched
+    | Invalid_checksum
+    | Invalid_length
+    | UnknownError(int)
+    | Valid;
+
+  [@bs.module "@taquito/utils"]
+  external validateAddressRaw: string => int = "validateAddress";
+
+  let validateAddress = s =>
+    switch (s->validateAddressRaw) {
+    | 0 => No_prefix_matched
+    | 1 => Invalid_checksum
+    | 2 => Invalid_length
+    | 3 => Valid
+    | n => UnknownError(n)
+    };
+};
+
 let fromPromiseParsed = p =>
   p->FutureJs.fromPromise(e => {
     let e = e->Error.toRaw;

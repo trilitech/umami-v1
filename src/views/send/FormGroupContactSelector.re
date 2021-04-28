@@ -1,4 +1,5 @@
 open ReactNative;
+open UmamiCommon;
 
 let itemHeight = 54.;
 let numItemsToDisplay = 4.;
@@ -48,19 +49,27 @@ let renderLabel = (label, hasError) => {
 };
 
 [@react.component]
-let make = (~label, ~filterOut, ~value: string, ~handleChange, ~error) => {
-  let aliasesRequest = StoreContext.Aliases.useRequest();
+let make =
+    (~label, ~filterOut, ~accounts, ~value: string, ~handleChange, ~error) => {
+  let accountsArray =
+    accounts
+    ->Map.String.valuesToArray
+    ->Array.keep((v: Account.t) => v.address != filterOut);
 
-  let accounts =
-    aliasesRequest
-    ->ApiRequest.getDoneOk
-    ->Option.mapWithDefault([||], Map.String.valuesToArray)
-    ->Array.keep(v => v.address != filterOut);
+  React.useEffect1(
+    () => {
+      accounts
+      ->Map.String.get(value)
+      ->Lib.Option.iter((v: Account.t) => handleChange(v.alias));
+      None;
+    },
+    [|value|],
+  );
 
   let items =
     value == ""
-      ? accounts->Array.slice(~offset=0, ~len=4)
-      : accounts->Array.keep(account =>
+      ? accountsArray->Array.slice(~offset=0, ~len=4)
+      : accountsArray->Array.keep(account =>
           account.alias
           ->Js.String2.trim
           ->Js.String2.toLowerCase
@@ -68,6 +77,10 @@ let make = (~label, ~filterOut, ~value: string, ~handleChange, ~error) => {
               value->Js.String2.trim->Js.String2.toLowerCase,
             )
         );
+
+  let validAlias = accounts->Map.String.some((_, v) => v.alias == value);
+  let styleValidAlias =
+    validAlias ? Style.(style(~fontWeight=`bold, ()))->Some : None;
 
   <FormGroup style=styles##formGroup>
     <Autocomplete
@@ -83,7 +96,7 @@ let make = (~label, ~filterOut, ~value: string, ~handleChange, ~error) => {
       renderLabel={renderLabel(label)}
       itemHeight
       numItemsToDisplay
-      style=styles##input
+      style=Style.(arrayOption([|Some(styles##input), styleValidAlias|]))
     />
     <FormError ?error />
   </FormGroup>;
