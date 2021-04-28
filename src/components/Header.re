@@ -13,6 +13,7 @@ let styles =
           (),
         ),
       "nameLogo": style(~flexDirection=`row, ~alignItems=`center, ()),
+      "networkInfo": style(~marginBottom=4.->dp, ~marginLeft=16.->dp, ()),
     })
   );
 
@@ -115,10 +116,18 @@ let make = () => {
   let theme = ThemeContext.useTheme();
   let apiVersion = StoreContext.useApiVersion();
 
+  let settings = SdkContext.useSettings();
+
   let displayNotice =
     apiVersion
     ->Option.map(apiVersion => !Network.checkInBound(apiVersion.Network.api))
     ->Option.getWithDefault(false);
+
+  let (networkText, networkColor) =
+    switch (settings->AppSettings.network) {
+    | `Mainnet => (I18n.t#mainnet, Some(`primary))
+    | `Testnet(_) => (I18n.t#testnet, None)
+    };
 
   <View
     style=Style.(
@@ -133,6 +142,12 @@ let make = () => {
         height={20.->Style.dp}
         fill={theme.colors.textHighEmphasis}
       />
+      <Typography.Overline2
+        fontWeightStyle=`black
+        colorStyle=?networkColor
+        style={styles##networkInfo}>
+        networkText->React.string
+      </Typography.Overline2>
     </View>
     <UpdateNotice displayNotice />
   </View>;
