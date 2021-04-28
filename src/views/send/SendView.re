@@ -407,7 +407,14 @@ module Form = {
             <Typography.Overline2>
               I18n.btn#advanced_options->React.string
             </Typography.Overline2>
-            <ThemedSwitch value=advancedOptionOpened />
+            <ThemedSwitch
+              disabled={
+                form.values.recipient == ""
+                || form.values.sender == ""
+                || form.values.amount == ""
+              }
+              value=advancedOptionOpened
+            />
           </TouchableOpacity>
         </ReactFlipToolkit.FlippedView>
         <ReactFlipToolkit.FlippedView
@@ -421,6 +428,7 @@ module Form = {
                ? <ReactFlipToolkit.FlippedView
                    flipId="innerAdvancedOption" onAppear onExit>
                    <SendViewAdvancedOptions
+                     token
                      operation={simulatedTransaction(
                        mode,
                        batch,

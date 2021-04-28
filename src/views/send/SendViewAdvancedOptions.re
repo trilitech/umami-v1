@@ -21,7 +21,7 @@ let xtzDecoration = (~style) =>
   <Typography.Body1 style> I18n.t#xtz->React.string </Typography.Body1>;
 
 [@react.component]
-let make = (~operation, ~form: SendForm.api) => {
+let make = (~operation, ~token, ~form: SendForm.api) => {
   let (operationSimulateRequest, sendOperationSimulate) =
     StoreContext.Operations.useSimulate();
 
@@ -56,21 +56,27 @@ let make = (~operation, ~form: SendForm.api) => {
         decoration=FormGroupXTZInput.xtzDecoration
       />
       <View style=styles##formRowInputsSeparator />
-      <FormGroupTextInput
-        label=I18n.label#gas_limit
-        value={form.values.gasLimit}
-        handleChange={form.handleChange(GasLimit)}
-        error={form.getFieldError(Field(GasLimit))}
-        style=styles##formRowInput
-      />
+      {{
+         <FormGroupTextInput
+           label=I18n.label#gas_limit
+           value={form.values.gasLimit}
+           handleChange={form.handleChange(GasLimit)}
+           error={form.getFieldError(Field(GasLimit))}
+           style=styles##formRowInput
+         />;
+       }
+       ->ReactUtils.onlyWhen(token != None)}
       <View style=styles##formRowInputsSeparator />
-      <FormGroupTextInput
-        label=I18n.label#storage_limit
-        value={form.values.storageLimit}
-        handleChange={form.handleChange(StorageLimit)}
-        error={form.getFieldError(Field(StorageLimit))}
-        style=styles##formRowInput
-      />
+      {{
+         <FormGroupTextInput
+           label=I18n.label#storage_limit
+           value={form.values.storageLimit}
+           handleChange={form.handleChange(StorageLimit)}
+           error={form.getFieldError(Field(StorageLimit))}
+           style=styles##formRowInput
+         />;
+       }
+       ->ReactUtils.onlyWhen(token != None)}
     </View>
     <FormGroupCheckbox
       label=I18n.label#force_low_fee
