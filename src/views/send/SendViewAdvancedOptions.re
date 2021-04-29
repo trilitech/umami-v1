@@ -55,26 +55,30 @@ let make = (~operation, ~token, ~form: SendForm.api) => {
         style=styles##formRowInput
         decoration=FormGroupXTZInput.xtzDecoration
       />
-      <View style=styles##formRowInputsSeparator />
       {{
-         <FormGroupTextInput
-           label=I18n.label#gas_limit
-           value={form.values.gasLimit}
-           handleChange={form.handleChange(GasLimit)}
-           error={form.getFieldError(Field(GasLimit))}
-           style=styles##formRowInput
-         />;
+         <>
+           <View style=styles##formRowInputsSeparator />
+           <FormGroupTextInput
+             label=I18n.label#gas_limit
+             value={form.values.gasLimit}
+             handleChange={form.handleChange(GasLimit)}
+             error={form.getFieldError(Field(GasLimit))}
+             style=styles##formRowInput
+           />
+         </>;
        }
        ->ReactUtils.onlyWhen(token != None)}
-      <View style=styles##formRowInputsSeparator />
       {{
-         <FormGroupTextInput
-           label=I18n.label#storage_limit
-           value={form.values.storageLimit}
-           handleChange={form.handleChange(StorageLimit)}
-           error={form.getFieldError(Field(StorageLimit))}
-           style=styles##formRowInput
-         />;
+         <>
+           <View style=styles##formRowInputsSeparator />
+           <FormGroupTextInput
+             label=I18n.label#storage_limit
+             value={form.values.storageLimit}
+             handleChange={form.handleChange(StorageLimit)}
+             error={form.getFieldError(Field(StorageLimit))}
+             style=styles##formRowInput
+           />
+         </>;
        }
        ->ReactUtils.onlyWhen(token != None)}
     </View>
