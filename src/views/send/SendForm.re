@@ -1,7 +1,3 @@
-type amount =
-  | XTZ(ProtocolXTZ.t)
-  | Token(int);
-
 module StateLenses = [%lenses
   type state = {
     amount: string,
@@ -14,6 +10,44 @@ module StateLenses = [%lenses
     dryRun: option(Protocol.simulationResults),
   }
 ];
+
+type validState = {
+  amount: FormUtils.strictAmount,
+  sender: string,
+  recipient: FormUtils.Account.t,
+  fee: option(ProtocolXTZ.t),
+  gasLimit: string,
+  storageLimit: string,
+  forceLowFee: bool,
+  dryRun: option(Protocol.simulationResults),
+};
+
+let unsafeExtractValidState = (token, state: StateLenses.state): validState => {
+  {
+    amount:
+      state.amount
+      ->FormUtils.parseAmount(token)
+      ->FormUtils.Unsafe.getCurrency,
+    sender: state.sender,
+    recipient: state.recipient,
+    fee: state.fee->ProtocolXTZ.fromString,
+    gasLimit: state.gasLimit,
+    storageLimit: state.storageLimit,
+    forceLowFee: state.forceLowFee,
+    dryRun: state.dryRun,
+  };
+};
+
+let toState = (vs: validState): StateLenses.state => {
+  amount: vs.amount->FormUtils.amountToString,
+  sender: vs.sender,
+  recipient: vs.recipient,
+  fee: vs.fee->Option.mapWithDefault("", ProtocolXTZ.toString),
+  gasLimit: vs.gasLimit,
+  storageLimit: vs.storageLimit,
+  forceLowFee: vs.forceLowFee,
+  dryRun: vs.dryRun,
+};
 
 include ReForm.Make(StateLenses);
 
@@ -47,7 +81,7 @@ let resolveAlias = (accounts, value) =>
   ->Option.mapWithDefault(value, ((k, _)) => k);
 
 let buildTransfers = (transfers, parseAmount, accounts, build) => {
-  transfers->List.keepMap(((t: StateLenses.state, advOpened)) => {
+  transfers->List.keepMap(((t: validState, advOpened)) => {
     let mapIfAdvanced = (v, flatMap) =>
       advOpened && v->Js.String2.length > 0 ? v->flatMap : None;
 
@@ -56,7 +90,7 @@ let buildTransfers = (transfers, parseAmount, accounts, build) => {
 
     let gasLimit = t.gasLimit->mapIfAdvanced(Int.fromString);
     let storageLimit = t.storageLimit->mapIfAdvanced(Int.fromString);
-    let fee = t.fee->mapIfAdvanced(ProtocolXTZ.fromString);
+    let fee = advOpened ? t.fee : None;
 
     let amount = parseAmount(t.amount);
 
@@ -74,7 +108,7 @@ let buildTokenTransfer =
       ~transfers=
         buildTransfers(
           inputTransfers,
-          Token.Repr.fromNatString,
+          v => v->FormUtils.keepStrictToken->Option.map(fst),
           accounts,
           Token.makeSingleTransferElt(~token=token.address),
         ),
@@ -90,7 +124,7 @@ let buildProtocolTransaction = (inputTransfers, accounts, source, forceLowFee) =
     ~transfers=
       buildTransfers(
         inputTransfers,
-        ProtocolXTZ.fromString,
+        FormUtils.keepStrictXTZ,
         accounts,
         Protocol.makeTransfer(~parameter=?None, ~entrypoint=?None),
       ),
@@ -100,11 +134,7 @@ let buildProtocolTransaction = (inputTransfers, accounts, source, forceLowFee) =
   ->ProtocolTransaction;
 
 let buildTransaction =
-    (
-      batch: list((StateLenses.state, bool)),
-      token: option(Token.t),
-      accounts,
-    ) => {
+    (batch: list((validState, bool)), token: option(Token.t), accounts) => {
   switch (batch) {
   | [] => assert(false)
   | [(first, _), ..._] as inputTransfers =>

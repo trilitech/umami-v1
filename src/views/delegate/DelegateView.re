@@ -62,7 +62,7 @@ module Form = {
           Schema(
             nonEmpty(Sender)
             + nonEmpty(Baker)
-            + custom(values => FormUtils.isValidFloat(values.fee), Fee)
+            + custom(values => FormUtils.isValidXtzAmount(values.fee), Fee)
             + custom(
                 values =>
                   switch (initDelegate) {

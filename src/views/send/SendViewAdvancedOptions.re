@@ -46,10 +46,10 @@ let make = (~operation, ~token, ~form: SendForm.api) => {
 
   <View>
     <View style=styles##formRowInputs>
-      <FormGroupTextInput
+      <FormGroupXTZInput
         label=I18n.label#fee
         value={form.values.fee}
-        handleChange={form.handleChange(Fee)}
+        handleChange={fee => form.handleChange(Fee, fee)}
         error={form.getFieldError(Field(Fee))}
         style=styles##formRowInput
         decoration=FormGroupXTZInput.xtzDecoration

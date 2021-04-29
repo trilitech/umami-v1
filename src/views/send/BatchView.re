@@ -140,7 +140,7 @@ module Transactions = {
   };
 
   [@react.component]
-  let make = (~recipients, ~showCurrency, ~onAddCSVList=?, ~onDelete=?) => {
+  let make = (~recipients, ~showAmount, ~onAddCSVList=?, ~onDelete=?) => {
     let length = recipients->List.length;
     let theme = ThemeContext.useTheme();
 
@@ -162,7 +162,7 @@ module Transactions = {
                key={string_of_int(i)}
                i={length - i}
                recipient
-               amount={showCurrency(amount)}
+               amount={showAmount(amount)}
                ?onDelete
                ?onEdit
              />;
@@ -186,13 +186,13 @@ let make =
       ~onDelete,
       ~onEdit,
       ~batch,
-      ~showCurrency,
-      ~reduceAmounts,
+      ~showAmount,
+      ~reduceAmounts: _ => FormUtils.strictAmount,
       ~loading,
     ) => {
   let theme: ThemeContext.theme = ThemeContext.useTheme();
   let recipients =
-    batch->List.mapWithIndex((i, (t: SendForm.StateLenses.state, _) as v) =>
+    batch->List.mapWithIndex((i, (t: SendForm.validState, _) as v) =>
       (
         Some(() => onEdit(i, v)),
         (t.recipient->FormUtils.Account.address, t.amount),
@@ -218,10 +218,14 @@ let make =
         I18n.label#summary_total->React.string
       </Typography.Overline2>
       <Typography.Subtitle1>
-        {reduceAmounts(batch->List.map(fst))->showCurrency->React.string}
+        {batch
+         ->List.map(((t, _)) => t.amount)
+         ->reduceAmounts
+         ->showAmount
+         ->React.string}
       </Typography.Subtitle1>
     </View>
-    <Transactions recipients showCurrency onAddCSVList onDelete />
+    <Transactions recipients showAmount onAddCSVList onDelete />
     <View style=FormStyles.verticalFormAction>
       <Buttons.SubmitSecondary
         style=styles##addTransaction

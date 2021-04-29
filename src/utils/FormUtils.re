@@ -1,14 +1,100 @@
+type strictAmount =
+  | XTZ(ProtocolXTZ.t)
+  | Token(Token.Repr.t, Token.t);
+
+type amount =
+  | Amount(strictAmount)
+  | Illformed(string);
+
+let xtzAmount = v => v->XTZ->Amount;
+let tkAmount = (v, tk) => Token(v, tk)->Amount;
+
+let parseAmount = (v, token) =>
+  if (v == "") {
+    None;
+  } else {
+    token->Option.mapWithDefault(
+      {
+        let vxtz = v->ProtocolXTZ.fromString;
+        vxtz == None ? v->Illformed->Some : vxtz->Option.map(xtzAmount);
+      },
+      t => {
+        let vt = v->Token.Repr.fromNatString;
+        vt == None ? v->Illformed->Some : vt->Option.map(v => v->tkAmount(t));
+      },
+    );
+  };
+
+let amountToString =
+  fun
+  | Token(v, _) => v->Token.Repr.toNatString
+  | XTZ(v) => v->ProtocolXTZ.toString;
+
+let keepToken = v =>
+  v->Option.flatMap(
+    fun
+    | Illformed(_)
+    | Amount(XTZ(_)) => None
+    | Amount(Token(v, _)) => v->Some,
+  );
+
+let keepXTZ = v =>
+  v->Option.flatMap(
+    fun
+    | Amount(XTZ(v)) => v->Some
+    | Illformed(_)
+    | Amount(Token(_)) => None,
+  );
+
+let keepStrictToken =
+  fun
+  | XTZ(_) => None
+  | Token(v, t) => Some((v, t));
+
+let keepStrictXTZ =
+  fun
+  | XTZ(v) => v->Some
+  | Token(_) => None;
+
+module Unsafe = {
+  // more explicit than assert(false)
+
+  let getCurrency = v =>
+    switch (v) {
+    | None => failwith("Should not be empty")
+    | Some(Illformed(_)) => failwith("Should not be malformed")
+    | Some(Amount(a)) => a
+    };
+
+  let getXTZ = v =>
+    switch (v) {
+    | Amount(XTZ(a)) => a
+    | Illformed(_)
+    | Amount(Token(_)) => failwith("Should not be malformed")
+    };
+};
+
+let emptyOr = (f, v): ReSchema.fieldState => v == "" ? Valid : f(v);
+
+let isValidXtzAmount: string => ReSchema.fieldState =
+  fun
+  | s when ProtocolXTZ.fromString(s) != None => Valid
+  | "" => Error(I18n.form_input_error#string_empty)
+  | _ => Error(I18n.form_input_error#float);
+
+let isValidTokenAmount: string => ReSchema.fieldState =
+  fun
+  | s when Token.Repr.forceFromString(s) != None => Valid
+  | "" => Error(I18n.form_input_error#string_empty)
+  | _ => Error(I18n.form_input_error#int);
+
+let notNone = (v): ReSchema.fieldState =>
+  v == None ? Valid : Error(I18n.form_input_error#string_empty);
+
 let isValidFloat = value => {
   let fieldState: ReSchema.fieldState =
     value->Js.Float.fromString->Js.Float.isNaN
       ? Error(I18n.form_input_error#float) : Valid;
-  fieldState;
-};
-
-let isValidTokenAmount = value => {
-  let fieldState: ReSchema.fieldState =
-    value->Js.String2.length == 0 || value->Token.Repr.isValid
-      ? Valid : Error(I18n.form_input_error#int);
   fieldState;
 };
 
