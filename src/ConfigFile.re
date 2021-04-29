@@ -14,7 +14,8 @@ type t = {
 [@bs.val] [@bs.scope "JSON"] external parse: string => t = "parse";
 
 module Default = {
-  let network = `Testnet(Network.edo2netChain);
+  /* let network = `Testnet(Network.edo2netChain); */
+  let network = `Mainnet;
   let endpointMain = "https://mainnet.smartpy.io/";
   let endpointTest = "https://edonet.smartpy.io/";
   let explorerMain = "https://api.umamiwallet.com/mainnet";
