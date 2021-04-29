@@ -20,18 +20,16 @@ let endpointTest = settings =>
   settings.config.endpointTest
   ->Option.getWithDefault(ConfigFile.Default.endpointTest);
 
-let endpoint = settings =>
-  switch (settings.config.network) {
-  | Some(`Mainnet) => endpointMain(settings)
-  | None
-  | Some(`Testnet(_)) => endpointTest(settings)
+let endpoint = s =>
+  switch (s.config.network->Option.getWithDefault(ConfigFile.Default.network)) {
+  | `Mainnet => endpointMain(s)
+  | `Testnet(_) => endpointTest(s)
   };
 
 let sdk = s =>
-  switch (s.config.network) {
-  | Some(`Mainnet) => s.sdk.main
-  | None
-  | Some(`Testnet(_)) => s.sdk.test
+  switch (s.config.network->Option.getWithDefault(ConfigFile.Default.network)) {
+  | `Mainnet => s.sdk.main
+  | `Testnet(_) => s.sdk.test
   };
 
 let testOnly = (s, chainId) => {
@@ -73,10 +71,10 @@ let explorerTest = settings =>
   settings.config.explorerTest
   ->Option.getWithDefault(ConfigFile.Default.explorerTest);
 
-let explorer = (settings: t) =>
-  switch (settings->network) {
-  | `Mainnet => explorerMain(settings)
-  | `Testnet(_) => explorerTest(settings)
+let explorer = (s: t) =>
+  switch (s.config.network->Option.getWithDefault(ConfigFile.Default.network)) {
+  | `Mainnet => explorerMain(s)
+  | `Testnet(_) => explorerTest(s)
   };
 
 let externalExplorers =
