@@ -591,14 +591,20 @@ module Accounts = (Getter: GetterAPI) => {
       (secrets, aliases) => {
       secrets[index]
       ->Option.map(secret =>
-          secret.addresses
-          ->Array.keepMap(aliases->Map.String.get)
-          ->Array.map(unsafeDelete(~settings))
+          secret.addresses->Array.keepMap(aliases->Map.String.get)
         )
       ->FutureEx.fromOption(
           ~error="Secret at index " ++ index->Int.toString ++ " not found!",
         )
-      ->Future.flatMapOk(FutureEx.all)
+      ->Future.flatMapOk(array =>
+          array->Array.reduce(Future.value(Ok([||])), (a, b) =>
+            a->Future.flatMapOk(a =>
+              b
+              ->unsafeDelete(~settings)
+              ->Future.mapOk(b => a->Array.concat([|b|]))
+            )
+          )
+        )
       ->Future.tapOk(_ => {
           let _ =
             secrets->Js.Array2.spliceInPlace(
