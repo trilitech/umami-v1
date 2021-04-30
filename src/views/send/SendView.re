@@ -226,7 +226,7 @@ module Form = {
       dryRun: None,
     };
 
-  let use = (~initValues=?, initAccount, token, onSubmit) => {
+  let use = (~initValues=?, initAccount, accounts, token, onSubmit) => {
     SendForm.use(
       ~schema={
         SendForm.Validation.(
@@ -234,6 +234,18 @@ module Form = {
             nonEmpty(Amount)
             + nonEmpty(Sender)
             + nonEmpty(Recipient)
+            + custom(
+                values =>
+                  accounts->Map.String.some((_, v) =>
+                    v.Account.alias == values.recipient
+                  )
+                    ? Valid
+                    : values.recipient->ReTaquito.Utils.validateAddress
+                      == ReTaquito.Utils.Valid
+                        ? Valid
+                        : Error(I18n.form_input_error#invalid_contract),
+                Recipient,
+              )
             + custom(
                 values =>
                   token != None
@@ -293,7 +305,8 @@ module Form = {
       | Edition(int)
       | Creation(option(unit => unit), unit => unit);
 
-    let simulatedTransaction = (mode, batch, form: SendForm.api, token) => {
+    let simulatedTransaction =
+        (mode, batch, form: SendForm.api, accounts, token) => {
       let (batch, index) =
         switch (mode) {
         | Edition(index) =>
@@ -312,7 +325,7 @@ module Form = {
           (batch, Some(length - 1));
         };
 
-      SendForm.buildTransaction(batch, token)
+      SendForm.buildTransaction(batch, token, accounts)
       |> SendForm.toSimulation(~index?);
     };
 
@@ -329,6 +342,7 @@ module Form = {
           ~token=?,
           ~mode,
           ~form,
+          ~accounts,
           ~loading,
         ) => {
       let (advancedOptionOpened, setAdvancedOptionOpened) = advancedOptionState;
@@ -355,6 +369,11 @@ module Form = {
 
       let formFieldsAreValids =
         FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
+
+      let advancedOptionsDisabled =
+        form.getFieldState(Field(Amount)) != Valid
+        || form.getFieldState(Field(Sender)) != Valid
+        || form.getFieldState(Field(Recipient)) != Valid;
 
       <>
         <ReactFlipToolkit.FlippedView flipId="form">
@@ -396,6 +415,7 @@ module Form = {
           <FormGroupContactSelector
             label=I18n.label#send_recipient
             filterOut={form.values.sender}
+            accounts
             value={form.values.recipient}
             handleChange={form.handleChange(Recipient)}
             error={form.getFieldError(Field(Recipient))}
@@ -403,11 +423,18 @@ module Form = {
           <TouchableOpacity
             style=styles##advancedOptionButton
             activeOpacity=1.
-            onPress={_ => setAdvancedOptionOpened(prev => !prev)}>
+            onPress={_ =>
+              if (!advancedOptionsDisabled) {
+                setAdvancedOptionOpened(prev => !prev);
+              }
+            }>
             <Typography.Overline2>
               I18n.btn#advanced_options->React.string
             </Typography.Overline2>
-            <ThemedSwitch value=advancedOptionOpened />
+            <ThemedSwitch
+              disabled=advancedOptionsDisabled
+              value=advancedOptionOpened
+            />
           </TouchableOpacity>
         </ReactFlipToolkit.FlippedView>
         <ReactFlipToolkit.FlippedView
@@ -421,10 +448,12 @@ module Form = {
                ? <ReactFlipToolkit.FlippedView
                    flipId="innerAdvancedOption" onAppear onExit>
                    <SendViewAdvancedOptions
+                     token
                      operation={simulatedTransaction(
                        mode,
                        batch,
                        form,
+                       accounts,
                        token,
                      )}
                      form
@@ -457,14 +486,21 @@ module Form = {
 
 module EditionView = {
   [@react.component]
-  let make = (~batch, ~initValues, ~onSubmit, ~token=?, ~index, ~loading) => {
+  let make =
+      (~batch, ~accounts, ~initValues, ~onSubmit, ~token=?, ~index, ~loading) => {
     let (initValues, advancedOptionOpened) = initValues;
 
     let (advancedOptionOpened, _) as advancedOptionState =
       React.useState(_ => advancedOptionOpened);
 
     let form =
-      Form.use(~initValues, None, token, onSubmit(advancedOptionOpened));
+      Form.use(
+        ~initValues,
+        None,
+        accounts,
+        token,
+        onSubmit(advancedOptionOpened),
+      );
 
     <Form.View
       batch
@@ -473,6 +509,7 @@ module EditionView = {
       ?token
       form
       mode={Form.View.Edition(index)}
+      accounts
       loading
     />;
   };
@@ -482,6 +519,12 @@ module EditionView = {
 let make = (~closeAction) => {
   let account = StoreContext.SelectedAccount.useGet();
   let initToken = StoreContext.SelectedToken.useGet();
+  let aliasesRequest = StoreContext.Aliases.useRequest();
+
+  let accounts =
+    aliasesRequest
+    ->ApiRequest.getDoneOk
+    ->Option.getWithDefault(Map.String.empty);
 
   let updateAccount = StoreContext.SelectedAccount.useSet();
 
@@ -516,7 +559,8 @@ let make = (~closeAction) => {
   let submitAction = React.useRef(`SubmitAll);
 
   let onSubmitBatch = batch => {
-    let transaction = SendForm.buildTransaction(batch->List.reverse, token);
+    let transaction =
+      SendForm.buildTransaction(batch->List.reverse, token, accounts);
     sendOperationSimulate(SendForm.toSimulation(transaction))
     ->Future.tapOk(dryRun => {
         setModalStep(_ => PasswordStep(transaction, dryRun))
@@ -535,7 +579,7 @@ let make = (~closeAction) => {
       send(SetFieldValue(Sender, state.values.sender));
     };
 
-  let form: SendForm.api = Form.use(account, token, onSubmit);
+  let form: SendForm.api = Form.use(account, accounts, token, onSubmit);
 
   let onSubmitAll = _ => {
     submitAction.current = `SubmitAll;
@@ -624,6 +668,7 @@ let make = (~closeAction) => {
                ?token
                index
                loading=false
+               accounts
              />;
            | SendStep =>
              let onSubmit = batch != [] ? onAddToBatch : onSubmitAll;
@@ -636,6 +681,7 @@ let make = (~closeAction) => {
                form
                mode={Form.View.Creation(onAddToBatch, onSubmit)}
                loading=loadingSimulate
+               accounts
              />;
            | PasswordStep(transfer, dryRun) =>
              let (source, destinations) = sourceDestination(transfer);

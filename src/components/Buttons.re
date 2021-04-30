@@ -154,7 +154,8 @@ module SubmitPrimary = {
       <Typography.ButtonPrimary
         ?fontSize
         colorStyle={
-          disabled || disabledLook ? `primaryDisabled : `primaryHighEmphasis
+          disabled || disabledLook
+            ? `filledBackDisabled : `filledBackHighEmphasis
         }>
         text->React.string
       </Typography.ButtonPrimary>

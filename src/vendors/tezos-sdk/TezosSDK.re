@@ -158,6 +158,7 @@ let importSecretKey = (sdk, ~name, ~skUri, ~password, ()) =>
 
 type importKeysFromMnemonicsParams = {
   name: string,
+  force: bool,
   encrypt: bool,
   mnemonics: string,
   passphrase: string,
@@ -170,7 +171,7 @@ external importKeysFromMnemonics:
   "importKeysFromMnemonics";
 let importKeysFromMnemonics = (sdk, ~name, ~mnemonics, ~password, ()) =>
   importKeysFromMnemonics(
-    sdk.lib, sdk.cctxt, {name, mnemonics, passphrase: "", encrypt: true}, () =>
+    sdk.lib, sdk.cctxt, {name, mnemonics, passphrase: "", encrypt: true, force: true}, () =>
     password
   )
   |> fromPromise;
