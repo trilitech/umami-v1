@@ -563,7 +563,6 @@ module Accounts = (Getter: GetterAPI) => {
     settings
     ->AppSettings.sdk
     ->TezosSDK.forgetAddress(name)
-    ->Future.tapOk(_ => Js.log("did forget " ++ name))
     ->Future.mapError(handleSdkError);
 
   let delete = (~settings, name) =>

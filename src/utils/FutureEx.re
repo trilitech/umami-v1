@@ -20,11 +20,6 @@ let fromOptionWithDefault = (option, ~default) =>
     },
   );
 
-let delay = (future, t) =>
-  future->Future.flatMap(result =>
-    Future.make(resolve => Js.Global.setTimeout(() => resolve(result), t))
-  );
-
 let all = array =>
   array
   ->List.fromArray
