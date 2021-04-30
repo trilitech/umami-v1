@@ -12,7 +12,7 @@ let styles =
         style(
           ~paddingVertical=12.->dp,
           ~paddingLeft=28.->dp,
-          ~paddingRight=43.->dp,
+          ~paddingRight=38.->dp,
           (),
         ),
       "addTransaction": style(~marginBottom=10.->dp, ()),
