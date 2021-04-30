@@ -370,6 +370,11 @@ module Form = {
       let formFieldsAreValids =
         FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
 
+      let advancedOptionsDisabled =
+        form.getFieldState(Field(Amount)) != Valid
+        || form.getFieldState(Field(Sender)) != Valid
+        || form.getFieldState(Field(Recipient)) != Valid;
+
       <>
         <ReactFlipToolkit.FlippedView flipId="form">
           <View style=FormStyles.header>
@@ -418,16 +423,16 @@ module Form = {
           <TouchableOpacity
             style=styles##advancedOptionButton
             activeOpacity=1.
-            onPress={_ => setAdvancedOptionOpened(prev => !prev)}>
+            onPress={_ =>
+              if (!advancedOptionsDisabled) {
+                setAdvancedOptionOpened(prev => !prev);
+              }
+            }>
             <Typography.Overline2>
               I18n.btn#advanced_options->React.string
             </Typography.Overline2>
             <ThemedSwitch
-              disabled={
-                form.values.recipient == ""
-                || form.values.sender == ""
-                || form.values.amount == ""
-              }
+              disabled=advancedOptionsDisabled
               value=advancedOptionOpened
             />
           </TouchableOpacity>
