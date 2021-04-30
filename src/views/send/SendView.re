@@ -373,6 +373,7 @@ module Form = {
       let advancedOptionsDisabled =
         form.getFieldState(Field(Amount)) != Valid
         || form.getFieldState(Field(Sender)) != Valid
+        && form.getFieldState(Field(Sender)) != Pristine
         || form.getFieldState(Field(Recipient)) != Valid;
 
       <>
