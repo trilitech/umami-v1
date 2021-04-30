@@ -6,7 +6,7 @@ module StateLenses = [%lenses
   type state = {
     amount: string,
     sender: string,
-    recipient: string,
+    recipient: FormUtils.Account.t,
     fee: string,
     gasLimit: string,
     storageLimit: string,
@@ -51,7 +51,8 @@ let buildTransfers = (transfers, parseAmount, accounts, build) => {
     let mapIfAdvanced = (v, flatMap) =>
       advOpened && v->Js.String2.length > 0 ? v->flatMap : None;
 
-    let destination = resolveAlias(accounts, t.recipient);
+    let destination =
+      resolveAlias(accounts, t.recipient->FormUtils.Account.address);
 
     let gasLimit = t.gasLimit->mapIfAdvanced(Int.fromString);
     let storageLimit = t.storageLimit->mapIfAdvanced(Int.fromString);

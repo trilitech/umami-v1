@@ -35,3 +35,19 @@ let i18n = {
   ...ReSchemaI18n.default,
   stringNonEmpty: (~value as _) => I18n.form_input_error#string_empty,
 };
+
+module Account = {
+  type t =
+    | Address(string)
+    | Account(Account.t);
+
+  let address =
+    fun
+    | Address(s) => s
+    | Account(a) => a.address;
+
+  let alias =
+    fun
+    | Address(_) => ""
+    | Account(a) => a.alias;
+};

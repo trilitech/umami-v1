@@ -1,6 +1,4 @@
 open ReactNative;
-open UmamiCommon;
-
 let itemHeight = 54.;
 let numItemsToDisplay = 4.;
 
@@ -50,43 +48,58 @@ let renderLabel = (label, hasError) => {
 
 [@react.component]
 let make =
-    (~label, ~filterOut, ~accounts, ~value: string, ~handleChange, ~error) => {
+    (
+      ~label,
+      ~filterOut,
+      ~accounts,
+      ~value: FormUtils.Account.t,
+      ~handleChange,
+      ~error,
+    ) => {
   let accountsArray =
     accounts
     ->Map.String.valuesToArray
     ->Array.keep((v: Account.t) => v.address != filterOut);
 
-  React.useEffect1(
-    () => {
-      accounts
-      ->Map.String.get(value)
-      ->Lib.Option.iter((v: Account.t) => handleChange(v.alias));
-      None;
-    },
-    [|value|],
-  );
-
   let items =
-    value == ""
-      ? accountsArray->Array.slice(~offset=0, ~len=4)
-      : accountsArray->Array.keep(account =>
-          account.alias
-          ->Js.String2.trim
-          ->Js.String2.toLowerCase
-          ->Js.String2.startsWith(
-              value->Js.String2.trim->Js.String2.toLowerCase,
-            )
-        );
+    switch (value) {
+    | Address("") => accountsArray->Array.slice(~offset=0, ~len=4)
+    | Address(v) =>
+      accountsArray->Array.keep(account =>
+        account.alias
+        ->Js.String2.trim
+        ->Js.String2.toLowerCase
+        ->Js.String2.startsWith(v->Js.String2.trim->Js.String2.toLowerCase)
+      )
+    | Account(_) => [||]
+    };
 
-  let validAlias = accounts->Map.String.some((_, v) => v.alias == value);
+  let validAlias =
+    accounts->Map.String.some((_, v) =>
+      v.alias == value->FormUtils.Account.alias
+      || v.address == value->FormUtils.Account.address
+    );
   let styleValidAlias =
     validAlias ? Style.(style(~fontWeight=`bold, ()))->Some : None;
 
   <FormGroup style=styles##formGroup>
     <Autocomplete
       keyPopover="formGroupContactSelector"
-      value
-      handleChange
+      value={
+        switch (value) {
+        | Address(s) =>
+          accounts->Map.String.get(s)->Option.mapWithDefault(s, a => a.alias)
+        | Account(a) => a.alias
+        }
+      }
+      handleChange={s =>
+        accountsArray
+        ->Array.getBy(v => v.Account.alias == s)
+        ->Option.mapWithDefault(FormUtils.Account.Address(s), account =>
+            account->FormUtils.Account.Account
+          )
+        ->handleChange
+      }
       error
       list=items
       clearButton=true

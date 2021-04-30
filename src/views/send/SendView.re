@@ -218,7 +218,7 @@ module Form = {
     SendForm.StateLenses.{
       amount: "",
       sender: account->Option.mapWithDefault("", a => a.address),
-      recipient: "",
+      recipient: FormUtils.Account.Address(""),
       fee: "",
       gasLimit: "",
       storageLimit: "",
@@ -226,24 +226,21 @@ module Form = {
       dryRun: None,
     };
 
-  let use = (~initValues=?, initAccount, accounts, token, onSubmit) => {
+  let use = (~initValues=?, initAccount, token, onSubmit) => {
     SendForm.use(
       ~schema={
         SendForm.Validation.(
           Schema(
             nonEmpty(Amount)
             + nonEmpty(Sender)
-            + nonEmpty(Recipient)
             + custom(
                 values =>
-                  accounts->Map.String.some((_, v) =>
-                    v.Account.alias == values.recipient
-                  )
-                    ? Valid
-                    : values.recipient->ReTaquito.Utils.validateAddress
-                      == ReTaquito.Utils.Valid
-                        ? Valid
-                        : Error(I18n.form_input_error#invalid_contract),
+                  switch (values.recipient) {
+                  | Account(_) => Valid
+                  | Address(a) =>
+                    a->ReTaquito.Utils.validateAddress == ReTaquito.Utils.Valid
+                      ? Valid : Error(I18n.form_input_error#invalid_contract)
+                  },
                 Recipient,
               )
             + custom(
@@ -495,13 +492,7 @@ module EditionView = {
       React.useState(_ => advancedOptionOpened);
 
     let form =
-      Form.use(
-        ~initValues,
-        None,
-        accounts,
-        token,
-        onSubmit(advancedOptionOpened),
-      );
+      Form.use(~initValues, None, token, onSubmit(advancedOptionOpened));
 
     <Form.View
       batch
@@ -580,7 +571,7 @@ let make = (~closeAction) => {
       send(SetFieldValue(Sender, state.values.sender));
     };
 
-  let form: SendForm.api = Form.use(account, accounts, token, onSubmit);
+  let form: SendForm.api = Form.use(account, token, onSubmit);
 
   let onSubmitAll = _ => {
     submitAction.current = `SubmitAll;
