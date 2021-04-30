@@ -155,7 +155,10 @@ let make =
   let theme: ThemeContext.theme = ThemeContext.useTheme();
   let recipients =
     batch->List.mapWithIndex((i, (t: SendForm.StateLenses.state, _) as v) =>
-      (Some(() => onEdit(i, v)), (t.recipient, t.amount))
+      (
+        Some(() => onEdit(i, v)),
+        (t.recipient->FormUtils.Account.address, t.amount),
+      )
     );
   <>
     {back->ReactUtils.mapOpt(back => {
