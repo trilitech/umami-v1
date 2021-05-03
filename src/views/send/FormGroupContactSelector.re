@@ -50,7 +50,7 @@ let renderLabel = (label, hasError) => {
 let make =
     (
       ~label,
-      ~filterOut,
+      ~filterOut: option(Account.t),
       ~accounts,
       ~value: FormUtils.Account.t,
       ~handleChange,
@@ -59,7 +59,9 @@ let make =
   let accountsArray =
     accounts
     ->Map.String.valuesToArray
-    ->Array.keep((v: Account.t) => v.address != filterOut);
+    ->Array.keep((v: Account.t) =>
+        Some(v.address) != filterOut->Option.map(a => a.address)
+      );
 
   let items =
     switch (value) {

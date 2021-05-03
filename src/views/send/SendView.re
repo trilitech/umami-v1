@@ -217,7 +217,7 @@ module Form = {
   let defaultInit = (account: option(Account.t)) =>
     SendForm.StateLenses.{
       amount: "",
-      sender: account->Option.mapWithDefault("", a => a.address),
+      sender: account,
       recipient: FormUtils.Account.Address(""),
       fee: "",
       gasLimit: "",
@@ -231,7 +231,7 @@ module Form = {
       ~schema={
         SendForm.Validation.(
           Schema(
-            nonEmpty(Sender)
+            custom(values => values.sender->FormUtils.notNone, Sender)
             + custom(
                 values =>
                   switch (values.recipient) {
@@ -306,7 +306,7 @@ module Form = {
       | Creation(option(unit => unit), unit => unit);
 
     let simulatedTransaction =
-        (mode, batch, state: SendForm.validState, accounts, token) => {
+        (mode, batch, state: SendForm.validState, token) => {
       let (batch, index) =
         switch (mode) {
         | Edition(index) =>
@@ -325,7 +325,7 @@ module Form = {
           (batch, Some(length - 1));
         };
 
-      SendForm.buildTransaction(batch, token, accounts)
+      SendForm.buildTransaction(batch, token)
       |> SendForm.toSimulation(~index?);
     };
 
@@ -403,10 +403,7 @@ module Form = {
             disabled=batchMode
             label=I18n.label#send_sender
             value={form.values.sender}
-            handleChange={a =>
-              a->Option.mapWithDefault("", a => a.Account.address)
-              |> form.handleChange(Sender)
-            }
+            handleChange={form.handleChange(Sender)}
             error={form.getFieldError(Field(Sender))}
             ?token
           />
@@ -451,7 +448,6 @@ module Form = {
                        mode,
                        batch,
                        SendForm.unsafeExtractValidState(token, form.values),
-                       accounts,
                        token,
                      )}
                      form
@@ -555,8 +551,7 @@ let make = (~closeAction) => {
   let submitAction = React.useRef(`SubmitAll);
 
   let onSubmitBatch = batch => {
-    let transaction =
-      SendForm.buildTransaction(batch->List.reverse, token, accounts);
+    let transaction = SendForm.buildTransaction(batch->List.reverse, token);
     sendOperationSimulate(SendForm.toSimulation(transaction))
     ->Future.tapOk(dryRun => {
         setModalStep(_ => PasswordStep(transaction, dryRun))
@@ -599,11 +594,11 @@ let make = (~closeAction) => {
         transfersTez->List.mapReverse(({destination, amount}) => {
           let formStateValues: SendForm.validState = {
             amount: amount->FormUtils.XTZ,
-            sender: form.values.sender,
+            sender: form.values.sender->FormUtils.Unsafe.getValue,
             recipient: FormUtils.Account.Address(destination),
             fee: None,
-            gasLimit: "",
-            storageLimit: "",
+            gasLimit: None,
+            storageLimit: None,
             forceLowFee: false,
             dryRun: None,
           };
@@ -626,11 +621,11 @@ let make = (~closeAction) => {
           transfersToken->List.mapReverse(({destination, amount}) => {
             let formStateValues: SendForm.validState = {
               amount: FormUtils.Token(amount, token),
-              sender: form.values.sender,
+              sender: form.values.sender->FormUtils.Unsafe.getValue,
               recipient: FormUtils.Account.Address(destination),
               fee: None,
-              gasLimit: "",
-              storageLimit: "",
+              gasLimit: None,
+              storageLimit: None,
               forceLowFee: false,
               dryRun: None,
             };

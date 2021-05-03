@@ -56,8 +56,15 @@ let keepStrictXTZ =
   | XTZ(v) => v->Some
   | Token(_) => None;
 
+let optToString = (v, f) => v->Option.mapWithDefault("", f);
+
 module Unsafe = {
   // more explicit than assert(false)
+
+  let getValue =
+    fun
+    | None => failwith("Should not be None")
+    | Some(v) => v;
 
   let getCurrency = v =>
     switch (v) {
@@ -79,17 +86,17 @@ let emptyOr = (f, v): ReSchema.fieldState => v == "" ? Valid : f(v);
 let isValidXtzAmount: string => ReSchema.fieldState =
   fun
   | s when ProtocolXTZ.fromString(s) != None => Valid
-  | "" => Error(I18n.form_input_error#string_empty)
+  | "" => Error(I18n.form_input_error#mandatory)
   | _ => Error(I18n.form_input_error#float);
 
 let isValidTokenAmount: string => ReSchema.fieldState =
   fun
   | s when Token.Repr.forceFromString(s) != None => Valid
-  | "" => Error(I18n.form_input_error#string_empty)
+  | "" => Error(I18n.form_input_error#mandatory)
   | _ => Error(I18n.form_input_error#int);
 
 let notNone = (v): ReSchema.fieldState =>
-  v == None ? Valid : Error(I18n.form_input_error#string_empty);
+  v != None ? Valid : Error(I18n.form_input_error#mandatory);
 
 let isValidFloat = value => {
   let fieldState: ReSchema.fieldState =
@@ -119,7 +126,7 @@ let formFieldsAreValids = (fieldsState, validateFields) => {
 
 let i18n = {
   ...ReSchemaI18n.default,
-  stringNonEmpty: (~value as _) => I18n.form_input_error#string_empty,
+  stringNonEmpty: (~value as _) => I18n.form_input_error#mandatory,
 };
 
 module Account = {

@@ -26,9 +26,7 @@ let make = (~operation, ~token, ~form: SendForm.api) => {
     StoreContext.Operations.useSimulate();
 
   React.useEffect0(() => {
-    if (form.values.sender != ""
-        && form.values.recipient != Address("")
-        && form.values.amount != "") {
+    if (form.values.recipient != Address("") && form.values.amount != "") {
       sendOperationSimulate(operation)
       ->Future.tapOk(dryRun => {
           form.handleChange(Fee, dryRun.fee->ProtocolXTZ.toString);
