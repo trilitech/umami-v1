@@ -1,11 +1,15 @@
-type t('value) =
+type t('value, 'error) =
   | NotAsked
   | Loading(option('value))
-  | Done(Result.t('value, string), float);
+  | Done(Result.t('value, 'error), float);
 
-type setRequest('value) = (t('value) => t('value)) => unit;
+type setRequest('value, 'error) =
+  (t('value, 'error) => t('value, 'error)) => unit;
 
-type requestState('value) = (t('value), setRequest('value));
+type requestState('value, 'error) = (
+  t('value, 'error),
+  setRequest('value, 'error),
+);
 
 let getDone = request =>
   switch (request) {
@@ -85,9 +89,18 @@ let isExpired = request =>
   | _ => false
   };
 
-let logError = (r, addLog, origin) =>
+let logError = (r, addLog, ~keep=_ => true, ~toString=Js.String.make, origin) =>
   r->Future.tapError(msg =>
-    addLog(Logs.{kind: Logs.Error, msg, origin, timestamp: Js.Date.now()})
+    msg->keep
+      ? addLog(
+          Logs.{
+            kind: Logs.Error,
+            msg: msg->toString,
+            origin,
+            timestamp: Js.Date.now(),
+          },
+        )
+      : ()
   );
 
 let logOk = (r, addLog, origin, makeMsg) =>
@@ -124,6 +137,7 @@ let conditionToLoad = (request, isMounted) => {
 let useGetter =
     (
       ~toast=true,
+      ~errorToString=?,
       ~get:
          (~settings: TezosClient.AppSettings.t, 'input) =>
          Future.t(Belt.Result.t('response, string)),
@@ -139,7 +153,7 @@ let useGetter =
     setRequest(updateToLoadingState);
 
     get(~settings, input)
-    ->logError(addLog(toast), kind)
+    ->logError(addLog(toast), ~toString=?errorToString, kind)
     ->Future.tap(result => setRequest(_ => Done(result, Js.Date.now())));
   };
 
@@ -150,9 +164,11 @@ let useLoader =
     (
       ~get,
       ~kind,
-      ~requestState as (request, setRequest): requestState('value),
+      ~errorToString=?,
+      ~requestState as (request, setRequest): requestState('value, 'error),
+      (),
     ) => {
-  let getRequest = useGetter(~get, ~kind, ~setRequest, ());
+  let getRequest = useGetter(~get, ~kind, ~errorToString?, ~setRequest, ());
 
   let isMounted = ReactUtils.useIsMonted();
   React.useEffect3(
@@ -174,10 +190,11 @@ let useLoader1 =
     (
       ~get,
       ~kind,
-      ~requestState as (request, setRequest): requestState('value),
+      ~errorToString=?,
+      ~requestState as (request, setRequest): requestState('value, 'error),
       arg1,
     ) => {
-  let getRequest = useGetter(~get, ~kind, ~setRequest, ());
+  let getRequest = useGetter(~get, ~kind, ~errorToString?, ~setRequest, ());
 
   let isMounted = ReactUtils.useIsMonted();
   React.useEffect4(
@@ -199,11 +216,12 @@ let useLoader2 =
     (
       ~get,
       ~kind,
-      ~requestState as (request, setRequest): requestState('value),
+      ~errorToString=?,
+      ~requestState as (request, setRequest): requestState('value, 'error),
       arg1,
       arg2,
     ) => {
-  let getRequest = useGetter(~get, ~kind, ~setRequest, ());
+  let getRequest = useGetter(~get, ~kind, ~errorToString?, ~setRequest, ());
 
   let isMounted = ReactUtils.useIsMonted();
   React.useEffect5(
@@ -221,7 +239,16 @@ let useLoader2 =
   request;
 };
 
-let useSetter = (~toast=true, ~sideEffect=?, ~set, ~kind, ()) => {
+let useSetter =
+    (
+      ~toast=true,
+      ~sideEffect=?,
+      ~set: (~settings: _, _) => Future.t(Result.t(_, 'b)),
+      ~kind,
+      ~keepError=?,
+      ~errorToString=?,
+      (),
+    ) => {
   let addLog = LogsContext.useAdd();
   let (request, setRequest) = React.useState(_ => NotAsked);
   let settings = SdkContext.useSettings();
@@ -229,7 +256,12 @@ let useSetter = (~toast=true, ~sideEffect=?, ~set, ~kind, ()) => {
   let sendRequest = input => {
     setRequest(_ => Loading(None));
     set(~settings, input)
-    ->logError(addLog(toast), kind)
+    ->logError(
+        addLog(toast),
+        ~keep=?keepError,
+        ~toString=?errorToString,
+        kind,
+      )
     ->Future.tap(result => {setRequest(_ => Done(result, Js.Date.now()))})
     ->Future.tapOk(sideEffect->Option.getWithDefault(_ => ()));
   };

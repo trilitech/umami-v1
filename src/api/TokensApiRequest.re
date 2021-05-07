@@ -1,6 +1,6 @@
 open UmamiCommon;
 include ApiRequest;
-module TokensAPI = API.Tokens(API.TezosExplorer);
+module API = API.Tokens(API.TezosExplorer);
 
 type injection = {
   operation: Token.operation,
@@ -9,7 +9,7 @@ type injection = {
 
 let useCheckTokenContract = () => {
   let set = (~settings, address) =>
-    settings->TokensAPI.checkTokenContract(address);
+    settings->API.checkTokenContract(address);
   ApiRequest.useSetter(~set, ~kind=Logs.Tokens, ~toast=false, ());
 };
 
@@ -20,8 +20,8 @@ let useLoadOperationOffline =
     ) => {
   let get = (~settings, operation) =>
     settings
-    ->TokensAPI.callGetOperationOffline(operation)
-    ->Future.mapError(TokensAPI.errorToString);
+    ->API.callGetOperationOffline(operation)
+    ->Future.mapError(API.errorToString);
 
   let getRequest =
     ApiRequest.useGetter(~get, ~kind=Logs.Tokens, ~setRequest, ());
@@ -57,7 +57,7 @@ let useLoadTokens = requestState => {
     ->Result.Ok
     ->Future.value;
 
-  ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState);
+  ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, ());
 };
 
 let useDelete = (~sideEffect=?, ()) => {

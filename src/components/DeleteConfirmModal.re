@@ -5,7 +5,7 @@ let make =
       ~visible,
       ~closeAction,
       ~onPressConfirmDelete,
-      ~request: ApiRequest.t('a),
+      ~request: ApiRequest.t('a, 'error),
     ) => {
   let loading = request->ApiRequest.isLoading;
 

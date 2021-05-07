@@ -25,18 +25,29 @@ let token = (operation, password) => {
   password,
 };
 
+let errorToString =
+  fun
+  | `TokenError(e) => e->TokensApiRequest.API.errorToString
+  | `Error(e) => e->API.handleTaquitoError;
+
+let filterOutPasswordError =
+  fun
+  | `TokenError(TokensApiRequest.API.BackendError(WrongPassword))
+  | `Error(ReTaquito.Error.WrongPassword) => false
+  | _ => true;
+
 let useCreate = (~sideEffect=?, ()) => {
   let set = (~settings, {operation, password}) => {
     switch (operation) {
     | Protocol(operation) =>
       settings
       ->API.Operation.run(operation, ~password)
-      ->Future.mapError(e => e->API.handleTaquitoError)
+      ->Future.mapError(e => e->`Error)
 
     | Token(operation) =>
       settings
-      ->TokensApiRequest.TokensAPI.inject(operation, ~password)
-      ->Future.mapError(TokensApiRequest.TokensAPI.errorToString)
+      ->TokensApiRequest.API.inject(operation, ~password)
+      ->Future.mapError(e => e->`TokenError)
     };
   };
 
@@ -44,6 +55,8 @@ let useCreate = (~sideEffect=?, ()) => {
     ~toast=true,
     ~set,
     ~kind=Logs.Operation,
+    ~keepError=filterOutPasswordError,
+    ~errorToString,
     ~sideEffect?,
     (),
   );
@@ -58,11 +71,11 @@ let useSimulate = () => {
       settings->API.Simulation.run(~index?, operation)
     | Operation.Simulation.Token(operation, index) =>
       settings
-      ->TokensApiRequest.TokensAPI.simulate(~index?, operation)
-      ->Future.mapError(TokensApiRequest.TokensAPI.errorToString)
+      ->TokensApiRequest.API.simulate(~index?, operation)
+      ->Future.mapError(TokensApiRequest.API.errorToString)
     };
 
-  ApiRequest.useSetter(~set, ~kind=Logs.Operation, ());
+  ApiRequest.useSetter(~set, ~kind=Logs.Operation, ~errorToString=x => x, ());
 };
 
 let waitForConfirmation = (settings, hash) => {
@@ -99,7 +112,13 @@ let useLoad =
   };
 
   let getRequest =
-    ApiRequest.useGetter(~get, ~kind=Logs.Operation, ~setRequest, ());
+    ApiRequest.useGetter(
+      ~get,
+      ~kind=Logs.Operation,
+      ~errorToString=x => x,
+      ~setRequest,
+      (),
+    );
 
   let isMounted = ReactUtils.useIsMonted();
   React.useEffect3(

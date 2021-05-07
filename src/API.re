@@ -1012,7 +1012,8 @@ module Tokens = (Getter: GetterAPI) => {
     | SimulationNotAvailable(string)
     | InjectionNotImplemented(string)
     | OffchainCallNotImplemented(string)
-    | BackendError(string);
+    | BackendError(ReTaquito.Error.t)
+    | RawError(string);
 
   let printError = (fmt, err) => {
     switch (err) {
@@ -1028,11 +1029,12 @@ module Tokens = (Getter: GetterAPI) => {
         "Operation '%s' offchain call is not implemented",
         s,
       )
-    | BackendError(s) => Format.fprintf(fmt, "%s", s)
+    | RawError(s) => Format.fprintf(fmt, "%s", s)
+    | BackendError(e) => Format.fprintf(fmt, "%s", e->handleTaquitoError)
     };
   };
 
-  let handleTaquitoError = e => e->handleTaquitoError->BackendError;
+  let handleTaquitoError = e => e->BackendError;
 
   let errorToString = err => Format.asprintf("%a", printError, err);
 
@@ -1238,7 +1240,7 @@ module Tokens = (Getter: GetterAPI) => {
               ->FutureEx.fromOption(~error="cannot read Token amount: " ++ v)
             }
           })
-        ->Future.mapError(s => BackendError(s))
+        ->Future.mapError(s => RawError(s))
       | _ =>
         Future.value(
           Error(
