@@ -25,15 +25,11 @@ let token = (operation, password) => {
   password,
 };
 
-let errorToString =
-  fun
-  | `TokenError(e) => e->TokensApiRequest.API.errorToString
-  | `Error(e) => e->API.handleTaquitoError;
+let errorToString = TokensApiRequest.API.errorToString;
 
-let filterOutPasswordError =
+let filterOutFormError =
   fun
-  | `TokenError(TokensApiRequest.API.BackendError(WrongPassword))
-  | `Error(ReTaquito.Error.WrongPassword) => false
+  | TokensApiRequest.API.BackendError(WrongPassword) => false
   | _ => true;
 
 let useCreate = (~sideEffect=?, ()) => {
@@ -42,12 +38,12 @@ let useCreate = (~sideEffect=?, ()) => {
     | Protocol(operation) =>
       settings
       ->API.Operation.run(operation, ~password)
-      ->Future.mapError(e => e->`Error)
+      ->Future.mapError(e => e->TokensApiRequest.API.BackendError)
 
     | Token(operation) =>
       settings
       ->TokensApiRequest.API.inject(operation, ~password)
-      ->Future.mapError(e => e->`TokenError)
+      ->Future.mapError(e => e)
     };
   };
 
@@ -55,7 +51,7 @@ let useCreate = (~sideEffect=?, ()) => {
     ~toast=true,
     ~set,
     ~kind=Logs.Operation,
-    ~keepError=filterOutPasswordError,
+    ~keepError=filterOutFormError,
     ~errorToString,
     ~sideEffect?,
     (),
@@ -68,14 +64,20 @@ let useSimulate = () => {
   let set = (~settings, operation) =>
     switch (operation) {
     | Operation.Simulation.Protocol(operation, index) =>
-      settings->API.Simulation.run(~index?, operation)
-    | Operation.Simulation.Token(operation, index) =>
       settings
-      ->TokensApiRequest.API.simulate(~index?, operation)
-      ->Future.mapError(TokensApiRequest.API.errorToString)
+      ->API.Simulation.run(~index?, operation)
+      ->Future.mapError(e => e->TokensApiRequest.API.BackendError)
+    | Operation.Simulation.Token(operation, index) =>
+      settings->TokensApiRequest.API.simulate(~index?, operation)
     };
 
-  ApiRequest.useSetter(~set, ~kind=Logs.Operation, ~errorToString=x => x, ());
+  ApiRequest.useSetter(
+    ~set,
+    ~kind=Logs.Operation,
+    ~errorToString,
+    ~keepError=filterOutFormError,
+    (),
+  );
 };
 
 let waitForConfirmation = (settings, hash) => {

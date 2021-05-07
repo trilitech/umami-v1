@@ -34,11 +34,14 @@ module Error = {
   let unregisteredDelegate = "contract.manager.unregistered_delegate";
   let unchangedDelegate = "contract.manager.delegate.unchanged";
   let invalidContract = "Invalid contract notation";
+  let emptyTransaction = "contract.empty_transaction";
+
   type t =
     | Generic(string)
     | WrongPassword
     | UnregisteredDelegate
     | UnchangedDelegate
+    | EmptyTransaction
     | InvalidContract
     | BranchRefused
     | BadPkh;
@@ -52,6 +55,7 @@ module Error = {
       UnregisteredDelegate
     | s when s->Js.String2.includes(unchangedDelegate) => UnchangedDelegate
     | s when s->Js.String2.includes(invalidContract) => InvalidContract
+    | s when s->Js.String2.includes(emptyTransaction) => EmptyTransaction
     | s => Generic(Js.String.make(s))
     };
 };

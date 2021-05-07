@@ -158,6 +158,7 @@ let handleTaquitoError = e =>
        | BadPkh => I18n.form_input_error#bad_pkh
        | BranchRefused => I18n.form_input_error#branch_refused_error
        | InvalidContract => I18n.form_input_error#invalid_contract
+       | EmptyTransaction => I18n.form_input_error#empty_transaction
      );
 
 let handleSdkError = e =>
@@ -248,16 +249,14 @@ module Simulation = {
         batch(settings, transfers, ~source, ~index, ())
       };
 
-    r
-    ->Future.mapError(e => e->handleTaquitoError)
-    ->Future.mapOk(({totalCost, gasLimit, storageLimit, revealFee}) =>
-        Protocol.{
-          fee: totalCost->ProtocolXTZ.fromMutezInt,
-          gasLimit,
-          storageLimit,
-          revealFee: revealFee->ProtocolXTZ.fromMutezInt,
-        }
-      );
+    r->Future.mapOk(({totalCost, gasLimit, storageLimit, revealFee}) =>
+      Protocol.{
+        fee: totalCost->ProtocolXTZ.fromMutezInt,
+        gasLimit,
+        storageLimit,
+        revealFee: revealFee->ProtocolXTZ.fromMutezInt,
+      }
+    );
   };
 };
 
