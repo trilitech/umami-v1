@@ -119,7 +119,6 @@ let input_placeholder = {
 
 let form_input_error = {
   pub _this = this;
-  pub amount_greater_0 = "An amount greater than 0 is required.";
   pub empty_transaction = "Transaction is empty.";
   pub branch_refused_error = "Please retry. An error came up while communicating with the node";
   pub key_already_registered = a =>

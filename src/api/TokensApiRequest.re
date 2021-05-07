@@ -1,5 +1,6 @@
 open UmamiCommon;
 include ApiRequest;
+module Error = API.Error;
 module API = API.Tokens(API.TezosExplorer);
 
 type injection = {
@@ -21,7 +22,7 @@ let useLoadOperationOffline =
   let get = (~settings, operation) =>
     settings
     ->API.callGetOperationOffline(operation)
-    ->Future.mapError(API.errorToString);
+    ->Future.mapError(Error.fromApiToString);
 
   let getRequest =
     ApiRequest.useGetter(~get, ~kind=Logs.Tokens, ~setRequest, ());
