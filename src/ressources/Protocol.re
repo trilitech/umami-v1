@@ -99,6 +99,13 @@ let makeTransaction = (~source, ~transfers, ~burnCap=?, ~forceLowFee=?, ()) => {
   options: makeCommonOptions(~fee=None, ~burnCap, ~forceLowFee, ()),
 };
 
+let fromCSV = (~source, ~rows, ~burnCap=?, ~forceLowFee=?, ()) => {
+  let fromRow = ((destination, amount)) =>
+    makeTransfer(~destination, ~amount, ());
+  let transfers = rows->List.map(fromRow);
+  makeTransaction(~source, ~transfers, ~burnCap?, ~forceLowFee?, ());
+};
+
 let makeSingleTransaction =
     (
       ~source,
