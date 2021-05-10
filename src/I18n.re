@@ -42,7 +42,8 @@ let btn = {
   pub import = "IMPORT";
   pub export = "EXPORT";
   pub scan = "SCAN";
-  pub upgrade = "Download"
+  pub upgrade = "Download";
+  pub load_file = "LOAD FROM FILE"
 };
 
 let tooltip = {

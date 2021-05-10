@@ -5,6 +5,13 @@ let styles =
   Style.(
     StyleSheet.create({
       "container": style(~marginTop=30.->dp, ()),
+      "listLabelContainer":
+        style(
+          ~flexDirection=`row,
+          ~alignItems=`center,
+          ~justifyContent=`spaceBetween,
+          (),
+        ),
       "listLabel": style(~marginBottom=4.->dp, ()),
       "amount": style(~height=19.->dp, ~marginBottom=2.->dp, ()),
       "summary": style(~marginTop=11.->dp, ()),
@@ -112,10 +119,19 @@ module Transactions = {
   let make = (~recipients, ~showCurrency, ~onDelete=?) => {
     let length = recipients->List.length;
     let theme = ThemeContext.useTheme();
+
     <View style=styles##container>
-      <Typography.Overline2 style=styles##listLabel>
-        I18n.label#transactions->React.string
-      </Typography.Overline2>
+      <View style=styles##listLabelContainer>
+        <Typography.Overline2 style=styles##listLabel>
+          I18n.label#transactions->React.string
+        </Typography.Overline2>
+        <TextFilePicker
+          text=I18n.btn#load_file
+          primary=true
+          accept=".csv"
+          onChange=Js.log
+        />
+      </View>
       <DocumentContext.ScrollView
         style={listStyle(theme)} alwaysBounceVertical=false>
         {{
