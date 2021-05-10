@@ -282,6 +282,27 @@ let network = {
     p("The API %s is not supported by this version of Umami.", a)
 };
 
+let csv = {
+  pub _this = this;
+  pub cannot_parse_number = (row, col) =>
+    p("Value at row %d column %d is not a number", row, col);
+  pub cannot_parse_boolean = (row, col) =>
+    p("Value at row %d column %d is not a boolean", row, col);
+  pub cannot_parse_custom_value = (row, col) =>
+    p("Value at row %d column %d is not valid", row, col);
+  pub cannot_parse_row = row =>
+    p("Row %d is not valid, some columns are probably missing", row);
+  pub cannot_parse_csv = p("CSV is not valid");
+  pub cannot_mix_tokens = p("Tokens from CSV must be all the same");
+  pub cannot_parse_token_amount = (v, row, col) =>
+    p(
+      "Value %s at row %d column %d is not a valid token amount",
+      ReBigNumber.toString(v),
+      row,
+      col,
+    )
+};
+
 let t = {
   pub error404 = "404 - Route Not Found :(";
   pub logs_no_recent = "No recent messages";

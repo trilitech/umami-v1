@@ -167,6 +167,76 @@ let handleSdkError = e =>
        | BadPkh => I18n.form_input_error#bad_pkh
      );
 
+module CSV = {
+  open CSVParser;
+
+  type error =
+    | Parser(CSVParser.error)
+    | CannotMixTokens
+    | CannotParseTokenAmount(ReBigNumber.t, int, int);
+
+  let addr = Encodings.string;
+  let token = addr;
+  let nat = Encodings.custom(~conv=Token.Repr.fromNatString);
+
+  /* Both encodings will be merged eventually once the batchs accept
+     any token */
+  let tezEncoding = Encodings.(mkRow(tup2(addr, number)));
+
+  let tokensEncoding =
+    Encodings.(mkRow(tup4(addr, nat, token, opt(number))));
+
+  let parseTezCSV = (content, ~source, ~burnCap=?, ~forceLowFee=?, ()) =>
+    parseCSV(content, tezEncoding)
+    ->ResultEx.mapError(e => Error(Parser(e)))
+    ->Result.map(rows =>
+        rows->List.map(((destination, amount)) =>
+          (
+            destination,
+            amount->ReBigNumber.toFixed->Int64.of_string->ProtocolXTZ.ofInt64,
+          )
+        )
+      )
+    ->Result.map(rows =>
+        Protocol.fromCSV(~source, ~rows, ~burnCap?, ~forceLowFee?, ())
+      );
+
+  let checkTokenUnique = rows =>
+    rows
+    ->List.reduce(Ok(None), (prev, (_, _, token, _)) =>
+        switch (prev) {
+        | Error(e) => Error(e)
+        | Ok(Some(t)) => t == token ? prev : Error(CannotMixTokens)
+        | Ok(None) => Ok(Some(token))
+        }
+      )
+    ->Result.map(_ => rows);
+
+  let parseTokenCSV = (content, ~source, ~burnCap=?, ~forceLowFee=?, ()) =>
+    parseCSV(content, tokensEncoding)
+    ->ResultEx.mapError(e => Error(Parser(e)))
+    ->Result.flatMap(checkTokenUnique)
+    ->Result.map(rows =>
+        Token.fromCSV(~source, ~rows, ~burnCap?, ~forceLowFee?, ())
+      );
+};
+
+let handleCSVError = e =>
+  e->CSVParser.(
+       fun
+       | CSV.Parser(CannotParseNumber(row, col)) =>
+         I18n.csv#cannot_parse_number(row, col)
+       | Parser(CannotParseBool(row, col)) =>
+         I18n.csv#cannot_parse_boolean(row, col)
+       | Parser(CannotParseCustomValue(row, col)) =>
+         I18n.csv#cannot_parse_custom_value(row, col)
+       | Parser(CannotParseRow(row)) => I18n.csv#cannot_parse_row(row)
+       | Parser(CannotParseCSV) => I18n.csv#cannot_parse_csv
+       | CannotMixTokens => I18n.csv#cannot_mix_tokens
+       | CannotParseTokenAmount(v, row, col) =>
+         I18n.csv#cannot_parse_token_amount(v, row, col)
+     );
+
 module Simulation = {
   let extractCustomValues = (tx_options: Protocol.transfer_options) => (
     tx_options.Protocol.fee
