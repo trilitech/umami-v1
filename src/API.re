@@ -172,34 +172,19 @@ module CSV = {
 
   type error =
     | Parser(CSVParser.error)
+    | NoRows
     | CannotMixTokens
     | CannotParseTokenAmount(ReBigNumber.t, int, int);
 
+  type t =
+    | TezRows(list(Protocol.transfer))
+    | TokenRows(list(Token.Transfer.elt));
+
   let addr = Encodings.string;
   let token = addr;
-  let nat = Encodings.custom(~conv=Token.Repr.fromNatString);
 
-  /* Both encodings will be merged eventually once the batchs accept
-     any token */
-  let tezEncoding = Encodings.(mkRow(tup2(addr, number)));
-
-  let tokensEncoding =
-    Encodings.(mkRow(tup4(addr, nat, token, opt(number))));
-
-  let parseTezCSV = (content, ~source, ~burnCap=?, ~forceLowFee=?, ()) =>
-    parseCSV(content, tezEncoding)
-    ->ResultEx.mapError(e => Error(Parser(e)))
-    ->Result.map(rows =>
-        rows->List.map(((destination, amount)) =>
-          (
-            destination,
-            amount->ReBigNumber.toFixed->Int64.of_string->ProtocolXTZ.ofInt64,
-          )
-        )
-      )
-    ->Result.map(rows =>
-        Protocol.fromCSV(~source, ~rows, ~burnCap?, ~forceLowFee?, ())
-      );
+  let rowEncoding =
+    Encodings.(mkRow(tup4(addr, number, opt(token), opt(number))));
 
   let checkTokenUnique = rows =>
     rows
@@ -212,13 +197,59 @@ module CSV = {
       )
     ->Result.map(_ => rows);
 
-  let parseTokenCSV = (content, ~source, ~burnCap=?, ~forceLowFee=?, ()) =>
-    parseCSV(content, tokensEncoding)
-    ->ResultEx.mapError(e => Error(Parser(e)))
-    ->Result.flatMap(checkTokenUnique)
-    ->Result.map(rows =>
-        Token.fromCSV(~source, ~rows, ~burnCap?, ~forceLowFee?, ())
-      );
+  let handleTezCSV = res =>
+    res->Result.map(rows =>
+      rows->List.map(((destination, amount, _, _)) =>
+        Protocol.makeTransfer(
+          ~destination,
+          ~amount=
+            amount->ReBigNumber.toFixed->Int64.of_string->ProtocolXTZ.ofInt64,
+          (),
+        )
+      )
+    );
+
+  let handleTokenCSV = (res, token) =>
+    res->Result.flatMap(rows =>
+      rows
+      ->List.reverse
+      ->List.reduceWithIndex(
+          [],
+          (acc, (destination, amount, _, _), index) => {
+            let tx =
+              amount
+              ->Token.Repr.fromBigNumber
+              ->ResultEx.fromOption(
+                  Error(CannotParseTokenAmount(amount, index, 3)),
+                )
+              ->Result.map(amount =>
+                  Token.makeSingleTransferElt(
+                    ~destination,
+                    ~amount,
+                    ~token,
+                    (),
+                  )
+                );
+            [tx, ...acc];
+          },
+        )
+      ->ResultEx.collect
+    );
+
+  let parseCSV = content => {
+    let rows =
+      parseCSV(content, rowEncoding)
+      ->ResultEx.mapError(e => Error(Parser(e)))
+      ->Result.flatMap(checkTokenUnique);
+    switch (rows) {
+    | Ok([(_, _, None, _), ..._]) =>
+      rows->handleTezCSV->Result.map(r => TezRows(r))
+    | Ok([(_, _, Some(token), _), ..._]) =>
+      handleTokenCSV(rows, token)->Result.map(r => TokenRows(r))
+    | Ok([]) => Error(NoRows)
+    | Error(e) => Error(e)
+    };
+  };
 };
 
 let handleCSVError = e =>
@@ -232,6 +263,7 @@ let handleCSVError = e =>
          I18n.csv#cannot_parse_custom_value(row, col)
        | Parser(CannotParseRow(row)) => I18n.csv#cannot_parse_row(row)
        | Parser(CannotParseCSV) => I18n.csv#cannot_parse_csv
+       | NoRows => I18n.csv#no_rows
        | CannotMixTokens => I18n.csv#cannot_mix_tokens
        | CannotParseTokenAmount(v, row, col) =>
          I18n.csv#cannot_parse_token_amount(v, row, col)
