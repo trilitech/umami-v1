@@ -115,31 +115,40 @@ module Item = {
 };
 
 module Transactions = {
+  module CSVFilePicker = {
+    [@react.component]
+    let make = (~onAddList) => {
+      let onChange = fileTextContent => {
+        Js.log(fileTextContent);
+        let parsedCSV = fileTextContent->API.CSV.parseCSV;
+        switch (parsedCSV) {
+        | Result.Ok(parsedCSV) => onAddList(parsedCSV)
+        | Result.Error(_) => ()
+        };
+      };
+
+      <TextFilePicker
+        text=I18n.btn#load_file
+        primary=true
+        accept=".csv"
+        onChange
+      />;
+    };
+  };
+
   [@react.component]
   let make = (~recipients, ~showCurrency, ~onAddList=?, ~onDelete=?) => {
     let length = recipients->List.length;
     let theme = ThemeContext.useTheme();
-
-    let onChangeFile = fileTextContent => {
-      Js.log(fileTextContent);
-      let parsed = fileTextContent->API.CSV.parseTezCSV;
-      Js.log(parsed);
-      // onAddList
-      // ->Option.map(onAddList => onAddList(parsed->Result.getExn))
-      // ->ignore;
-    };
 
     <View style=styles##container>
       <View style=styles##listLabelContainer>
         <Typography.Overline2 style=styles##listLabel>
           I18n.label#transactions->React.string
         </Typography.Overline2>
-        <TextFilePicker
-          text=I18n.btn#load_file
-          primary=true
-          accept=".csv"
-          onChange=onChangeFile
-        />
+        {onAddList->Option.mapWithDefault(React.null, onAddList =>
+           <CSVFilePicker onAddList />
+         )}
       </View>
       <DocumentContext.ScrollView
         style={listStyle(theme)} alwaysBounceVertical=false>

@@ -511,6 +511,7 @@ module EditionView = {
 let make = (~closeAction) => {
   let account = StoreContext.SelectedAccount.useGet();
   let initToken = StoreContext.SelectedToken.useGet();
+  let tokens = StoreContext.Tokens.useGetAll();
   let aliasesRequest = StoreContext.Aliases.useRequest();
 
   let accounts =
@@ -525,7 +526,7 @@ let make = (~closeAction) => {
 
   let (modalStep, setModalStep) = React.useState(_ => SendStep);
 
-  let (selectedToken, _) as tokenState =
+  let (selectedToken, setSelectedToken) as tokenState =
     React.useState(_ => initToken->Option.map(initToken => initToken));
   let token =
     StoreContext.Tokens.useGet(selectedToken->Option.map(t => t.address));
@@ -584,23 +585,54 @@ let make = (~closeAction) => {
     setModalStep(_ => BatchStep);
   };
 
-  let onAddList = (transfers: list((string, ProtocolXTZ.t))) => {
-    let transformTransfer =
-      transfers->List.map(((recipient, amount)) => {
-        let formStateValues: SendForm.StateLenses.state = {
-          amount: amount->ProtocolXTZ.toString,
-          sender: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
-          recipient: FormUtils.Account.Address(recipient),
-          fee: "",
-          gasLimit: "",
-          storageLimit: "",
-          forceLowFee: false,
-          dryRun: None,
-        };
-        (formStateValues, false);
-      });
+  let onAddList = (csvRows: API.CSV.t) => {
+    switch (csvRows) {
+    | TezRows(transfersTez) =>
+      let transformTransfer =
+        transfersTez->List.map(({destination, amount}) => {
+          let formStateValues: SendForm.StateLenses.state = {
+            amount: amount->ProtocolXTZ.toString,
+            sender: form.values.sender,
+            recipient: FormUtils.Account.Address(destination),
+            fee: "",
+            gasLimit: "",
+            storageLimit: "",
+            forceLowFee: false,
+            dryRun: None,
+          };
+          (formStateValues, false);
+        });
+      setBatch(_ => transformTransfer);
+    | TokenRows(transfersToken) =>
+      let tokenAddress =
+        transfersToken->List.get(0)->Option.map(transfer => transfer.token);
+      let token =
+        tokenAddress->Option.flatMap(tokenAddress =>
+          tokens->Map.String.get(tokenAddress)
+        );
 
-    setBatch(b => b->List.concat(transformTransfer));
+      switch (token) {
+      | Some(token) =>
+        setSelectedToken(_ => Some(token));
+
+        let transformTransfer =
+          transfersToken->List.map(({destination, amount}) => {
+            let formStateValues: SendForm.StateLenses.state = {
+              amount: amount->Token.Repr.toNatString,
+              sender: form.values.sender,
+              recipient: FormUtils.Account.Address(destination),
+              fee: "",
+              gasLimit: "",
+              storageLimit: "",
+              forceLowFee: false,
+              dryRun: None,
+            };
+            (formStateValues, false);
+          });
+        setBatch(_ => transformTransfer);
+      | None => ()
+      };
+    };
   };
 
   let onEdit = (i, advOpened, {state}: SendForm.onSubmitAPI) => {
