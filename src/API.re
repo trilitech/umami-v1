@@ -174,7 +174,8 @@ module CSV = {
     | Parser(CSVParser.error)
     | NoRows
     | CannotMixTokens
-    | CannotParseTokenAmount(ReBigNumber.t, int, int);
+    | CannotParseTokenAmount(ReBigNumber.t, int, int)
+    | CannotParseTezAmount(ReBigNumber.t, int, int);
 
   type t =
     | TezRows(list(Protocol.transfer))
@@ -198,15 +199,20 @@ module CSV = {
     ->Result.map(_ => rows);
 
   let handleTezCSV = res =>
-    res->Result.map(rows =>
-      rows->List.map(((destination, amount, _, _)) =>
-        Protocol.makeTransfer(
-          ~destination,
-          ~amount=
-            amount->ReBigNumber.toFixed->Int64.of_string->ProtocolXTZ.ofInt64,
-          (),
+    res->Result.flatMap(rows =>
+      rows
+      ->List.mapWithIndex((index, (destination, amount, _, _)) =>
+          amount
+          ->ReBigNumber.toString
+          ->ProtocolXTZ.fromString
+          ->ResultEx.fromOption(
+              Error(CannotParseTezAmount(amount, index, 2)),
+            )
+          ->Result.map(amount =>
+              Protocol.makeTransfer(~destination, ~amount, ())
+            )
         )
-      )
+      ->ResultEx.collect
     );
 
   let handleTokenCSV = (res, token) =>
@@ -220,7 +226,7 @@ module CSV = {
               amount
               ->Token.Repr.fromBigNumber
               ->ResultEx.fromOption(
-                  Error(CannotParseTokenAmount(amount, index, 3)),
+                  Error(CannotParseTokenAmount(amount, index, 2)),
                 )
               ->Result.map(amount =>
                   Token.makeSingleTransferElt(
@@ -267,6 +273,8 @@ let handleCSVError = e =>
        | CannotMixTokens => I18n.csv#cannot_mix_tokens
        | CannotParseTokenAmount(v, row, col) =>
          I18n.csv#cannot_parse_token_amount(v, row, col)
+       | CannotParseTezAmount(v, row, col) =>
+         I18n.csv#cannot_parse_tez_amount(v, row, col)
      );
 
 module Simulation = {

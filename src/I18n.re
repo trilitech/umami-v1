@@ -301,6 +301,13 @@ let csv = {
       ReBigNumber.toString(v),
       row,
       col,
+    );
+  pub cannot_parse_tez_amount = (v, row, col) =>
+    p(
+      "Value %s at row %d column %d is not a valid tez amount",
+      ReBigNumber.toString(v),
+      row,
+      col,
     )
 };
 
