@@ -218,7 +218,7 @@ module Form = {
     SendForm.StateLenses.{
       amount: "",
       sender: account,
-      recipient: FormUtils.Account.Address(""),
+      recipient: FormUtils.Account.AnyString(""),
       fee: "",
       gasLimit: "",
       storageLimit: "",
@@ -235,10 +235,10 @@ module Form = {
             + custom(
                 values =>
                   switch (values.recipient) {
-                  | Account(_) => Valid
-                  | Address(a) =>
-                    a->ReTaquito.Utils.validateAddress == ReTaquito.Utils.Valid
-                      ? Valid : Error(I18n.form_input_error#invalid_contract)
+                  | AnyString(_) =>
+                    Error(I18n.form_input_error#invalid_contract)
+                  | Valid(Account(_)) => Valid
+                  | Valid(Address(_)) => Valid
                   },
                 Recipient,
               )

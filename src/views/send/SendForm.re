@@ -2,7 +2,7 @@ module StateLenses = [%lenses
   type state = {
     amount: string,
     sender: option(Account.t),
-    recipient: FormUtils.Account.t,
+    recipient: FormUtils.Account.any,
     fee: string,
     gasLimit: string,
     storageLimit: string,
@@ -29,7 +29,7 @@ let unsafeExtractValidState = (token, state: StateLenses.state): validState => {
       ->FormUtils.parseAmount(token)
       ->FormUtils.Unsafe.getCurrency,
     sender: state.sender->FormUtils.Unsafe.getValue,
-    recipient: state.recipient,
+    recipient: state.recipient->FormUtils.Unsafe.account,
     fee: state.fee->ProtocolXTZ.fromString,
     gasLimit: state.gasLimit->Int.fromString,
     storageLimit: state.storageLimit->Int.fromString,
@@ -41,7 +41,8 @@ let unsafeExtractValidState = (token, state: StateLenses.state): validState => {
 let toState = (vs: validState): StateLenses.state => {
   amount: vs.amount->FormUtils.amountToString,
   sender: vs.sender->Some,
-  recipient: vs.recipient,
+  recipient: vs.recipient->FormUtils.Account.Valid,
+
   fee: vs.fee->Option.mapWithDefault("", ProtocolXTZ.toString),
   gasLimit: vs.gasLimit->FormUtils.optToString(Int.toString),
   storageLimit: vs.storageLimit->FormUtils.optToString(Int.toString),

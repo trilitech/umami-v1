@@ -58,6 +58,26 @@ let keepStrictXTZ =
 
 let optToString = (v, f) => v->Option.mapWithDefault("", f);
 
+module Account = {
+  type t =
+    | Address(string)
+    | Account(Account.t);
+
+  type any =
+    | AnyString(string)
+    | Valid(t);
+
+  let address =
+    fun
+    | Address(s) => s
+    | Account(a) => a.address;
+
+  let alias =
+    fun
+    | Address(_) => ""
+    | Account(a) => a.alias;
+};
+
 module Unsafe = {
   // more explicit than assert(false)
 
@@ -79,6 +99,11 @@ module Unsafe = {
     | Illformed(_)
     | Amount(Token(_)) => failwith("Should not be malformed")
     };
+
+  let account =
+    fun
+    | Account.AnyString(_) => failwith("Should be an address or an alias")
+    | Account.Valid(a) => a;
 };
 
 let emptyOr = (f, v): ReSchema.fieldState => v == "" ? Valid : f(v);
@@ -127,20 +152,4 @@ let formFieldsAreValids = (fieldsState, validateFields) => {
 let i18n = {
   ...ReSchemaI18n.default,
   stringNonEmpty: (~value as _) => I18n.form_input_error#mandatory,
-};
-
-module Account = {
-  type t =
-    | Address(string)
-    | Account(Account.t);
-
-  let address =
-    fun
-    | Address(s) => s
-    | Account(a) => a.address;
-
-  let alias =
-    fun
-    | Address(_) => ""
-    | Account(a) => a.alias;
 };
