@@ -117,13 +117,16 @@ module Item = {
 module Transactions = {
   module CSVFilePicker = {
     [@react.component]
-    let make = (~onAddList) => {
+    let make = (~onAddCSVList) => {
+      let addLog = LogsContext.useAdd();
+
       let onChange = fileTextContent => {
         Js.log(fileTextContent);
         let parsedCSV = fileTextContent->API.CSV.parseCSV;
         switch (parsedCSV) {
-        | Result.Ok(parsedCSV) => onAddList(parsedCSV)
-        | Result.Error(_) => ()
+        | Result.Ok(parsedCSV) => onAddCSVList(parsedCSV)
+        | Result.Error(error) =>
+          addLog(true, Logs.error(error->API.handleCSVError))
         };
       };
 
@@ -137,7 +140,7 @@ module Transactions = {
   };
 
   [@react.component]
-  let make = (~recipients, ~showCurrency, ~onAddList=?, ~onDelete=?) => {
+  let make = (~recipients, ~showCurrency, ~onAddCSVList=?, ~onDelete=?) => {
     let length = recipients->List.length;
     let theme = ThemeContext.useTheme();
 
@@ -146,8 +149,8 @@ module Transactions = {
         <Typography.Overline2 style=styles##listLabel>
           I18n.label#transactions->React.string
         </Typography.Overline2>
-        {onAddList->Option.mapWithDefault(React.null, onAddList =>
-           <CSVFilePicker onAddList />
+        {onAddCSVList->Option.mapWithDefault(React.null, onAddCSVList =>
+           <CSVFilePicker onAddCSVList />
          )}
       </View>
       <DocumentContext.ScrollView
@@ -178,7 +181,7 @@ let make =
     (
       ~back=?,
       ~onAddTransfer,
-      ~onAddList,
+      ~onAddCSVList,
       ~onSubmitBatch,
       ~onDelete,
       ~onEdit,
@@ -218,7 +221,7 @@ let make =
         {reduceAmounts(batch->List.map(fst))->showCurrency->React.string}
       </Typography.Subtitle1>
     </View>
-    <Transactions recipients showCurrency onAddList onDelete />
+    <Transactions recipients showCurrency onAddCSVList onDelete />
     <View style=FormStyles.verticalFormAction>
       <Buttons.SubmitSecondary
         style=styles##addTransaction

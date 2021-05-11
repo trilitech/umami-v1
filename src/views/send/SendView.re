@@ -521,6 +521,8 @@ let make = (~closeAction) => {
 
   let updateAccount = StoreContext.SelectedAccount.useSet();
 
+  let addLog = LogsContext.useAdd();
+
   let (advancedOptionsOpened, setAdvancedOptions) as advancedOptionState =
     React.useState(_ => false);
 
@@ -585,7 +587,7 @@ let make = (~closeAction) => {
     setModalStep(_ => BatchStep);
   };
 
-  let onAddList = (csvRows: API.CSV.t) => {
+  let onAddCSVList = (csvRows: API.CSV.t) => {
     switch (csvRows) {
     | TezRows(transfersTez) =>
       let transformTransfer =
@@ -630,7 +632,7 @@ let make = (~closeAction) => {
             (formStateValues, false);
           });
         setBatch(_ => transformTransfer);
-      | None => ()
+      | None => addLog(true, Logs.error(I18n.csv#unknown_token))
       };
     };
   };
@@ -693,7 +695,7 @@ let make = (~closeAction) => {
            | BatchStep =>
              <BatchView
                onAddTransfer={_ => setModalStep(_ => SendStep)}
-               onAddList
+               onAddCSVList
                batch
                showCurrency
                reduceAmounts={reduceAmounts(token)}

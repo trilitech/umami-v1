@@ -309,7 +309,8 @@ let csv = {
       ReBigNumber.toString(v),
       row,
       col,
-    )
+    );
+  pub unknown_token = "Unknown token"
 };
 
 let t = {
