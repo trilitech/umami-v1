@@ -113,13 +113,13 @@ let sourceDestination = (transfer: SendForm.transaction) => {
       );
     ((source, sourceLbl), `Many(destinations));
   | TokenTransfer(
-      {source, transfers: [{destination}]}: Token.Transfer.t,
+      ({source, transfers: [{destination}]}: Token.Transfer.t),
       _,
     ) => (
       (source, sourceLbl),
       `One((destination, recipientLbl)),
     )
-  | TokenTransfer({source, transfers}: Token.Transfer.t, _) =>
+  | TokenTransfer(({source, transfers}: Token.Transfer.t), _) =>
     let destinations =
       transfers->List.map(t =>
         (None, (t.destination, t.amount->Token.Repr.toNatString))
@@ -584,6 +584,25 @@ let make = (~closeAction) => {
     setModalStep(_ => BatchStep);
   };
 
+  let onAddList = (transfers: list((string, ProtocolXTZ.t))) => {
+    let transformTransfer =
+      transfers->List.map(((recipient, amount)) => {
+        let formStateValues: SendForm.StateLenses.state = {
+          amount: amount->ProtocolXTZ.toString,
+          sender: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
+          recipient: FormUtils.Account.Address(recipient),
+          fee: "",
+          gasLimit: "",
+          storageLimit: "",
+          forceLowFee: false,
+          dryRun: None,
+        };
+        (formStateValues, false);
+      });
+
+    setBatch(b => b->List.concat(transformTransfer));
+  };
+
   let onEdit = (i, advOpened, {state}: SendForm.onSubmitAPI) => {
     setBatch(b =>
       b->List.mapWithIndex((j, v) => i == j ? (state.values, advOpened) : v)
@@ -642,6 +661,7 @@ let make = (~closeAction) => {
            | BatchStep =>
              <BatchView
                onAddTransfer={_ => setModalStep(_ => SendStep)}
+               onAddList
                batch
                showCurrency
                reduceAmounts={reduceAmounts(token)}

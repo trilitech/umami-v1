@@ -116,9 +116,18 @@ module Item = {
 
 module Transactions = {
   [@react.component]
-  let make = (~recipients, ~showCurrency, ~onDelete=?) => {
+  let make = (~recipients, ~showCurrency, ~onAddList=?, ~onDelete=?) => {
     let length = recipients->List.length;
     let theme = ThemeContext.useTheme();
+
+    let onChangeFile = fileTextContent => {
+      Js.log(fileTextContent);
+      let parsed = fileTextContent->API.CSV.parseTezCSV;
+      Js.log(parsed);
+      // onAddList
+      // ->Option.map(onAddList => onAddList(parsed->Result.getExn))
+      // ->ignore;
+    };
 
     <View style=styles##container>
       <View style=styles##listLabelContainer>
@@ -129,7 +138,7 @@ module Transactions = {
           text=I18n.btn#load_file
           primary=true
           accept=".csv"
-          onChange=Js.log
+          onChange=onChangeFile
         />
       </View>
       <DocumentContext.ScrollView
@@ -160,6 +169,7 @@ let make =
     (
       ~back=?,
       ~onAddTransfer,
+      ~onAddList,
       ~onSubmitBatch,
       ~onDelete,
       ~onEdit,
@@ -176,6 +186,7 @@ let make =
         (t.recipient->FormUtils.Account.address, t.amount),
       )
     );
+
   <>
     {back->ReactUtils.mapOpt(back => {
        <TouchableOpacity onPress={_ => back()} style=FormStyles.topLeftButton>
@@ -198,7 +209,7 @@ let make =
         {reduceAmounts(batch->List.map(fst))->showCurrency->React.string}
       </Typography.Subtitle1>
     </View>
-    <Transactions recipients showCurrency onDelete />
+    <Transactions recipients showCurrency onAddList onDelete />
     <View style=FormStyles.verticalFormAction>
       <Buttons.SubmitSecondary
         style=styles##addTransaction
