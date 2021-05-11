@@ -181,13 +181,6 @@ let makeTransfers = (~source, ~transfers, ~burnCap=?, ~forceLowFee=?, ()) => {
   Transfer.{source, transfers, common_options};
 };
 
-let fromCSV = (~source, ~rows, ~burnCap=?, ~forceLowFee=?, ()) => {
-  let fromRow = ((destination, amount, token, _token_id)) =>
-    makeSingleTransferElt(~destination, ~amount, ~token, ());
-  let transfers = rows->List.map(fromRow);
-  makeTransfers(~source, ~transfers, ~burnCap?, ~forceLowFee?, ());
-};
-
 let transfer = t => t->Transfer;
 
 let makeSingleTransfer =
