@@ -80,7 +80,7 @@ let explorer = (s: t) =>
 let externalExplorers =
   Map.String.empty
   ->Map.String.set(Network.mainnetChain, "https://tzkt.io/")
-  ->Map.String.set(Network.florencenetChain, "https://florence.tzkt.io/")
+  ->Map.String.set(Network.florencenetChain, "https://florencenet.tzkt.io/")
   ->Map.String.set(Network.edo2netChain, "https://edo2net.tzkt.io/");
 
 let findExternalExplorer = c =>
