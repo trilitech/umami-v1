@@ -58,7 +58,11 @@ let buildDestinations = (destinations, showCurrency) => {
   switch (destinations) {
   | `One(address, title) =>
     <AccountInfo style=styles##element address title />
-  | `Many(recipients) => <BatchView.Transactions recipients showCurrency />
+  | `Many(recipients) =>
+    <BatchView.Transactions
+      recipients={recipients->List.reverse}
+      showCurrency
+    />
   };
 };
 

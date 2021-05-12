@@ -113,13 +113,13 @@ let sourceDestination = (transfer: SendForm.transaction) => {
       );
     ((source, sourceLbl), `Many(destinations));
   | TokenTransfer(
-      {source, transfers: [{destination}]}: Token.Transfer.t,
+      ({source, transfers: [{destination}]}: Token.Transfer.t),
       _,
     ) => (
       (source, sourceLbl),
       `One((destination, recipientLbl)),
     )
-  | TokenTransfer({source, transfers}: Token.Transfer.t, _) =>
+  | TokenTransfer(({source, transfers}: Token.Transfer.t), _) =>
     let destinations =
       transfers->List.map(t =>
         (None, (t.destination, t.amount->Token.Repr.toNatString))
@@ -511,6 +511,7 @@ module EditionView = {
 let make = (~closeAction) => {
   let account = StoreContext.SelectedAccount.useGet();
   let initToken = StoreContext.SelectedToken.useGet();
+  let tokens = StoreContext.Tokens.useGetAll();
   let aliasesRequest = StoreContext.Aliases.useRequest();
 
   let accounts =
@@ -520,12 +521,14 @@ let make = (~closeAction) => {
 
   let updateAccount = StoreContext.SelectedAccount.useSet();
 
+  let addLog = LogsContext.useAdd();
+
   let (advancedOptionsOpened, setAdvancedOptions) as advancedOptionState =
     React.useState(_ => false);
 
   let (modalStep, setModalStep) = React.useState(_ => SendStep);
 
-  let (selectedToken, _) as tokenState =
+  let (selectedToken, setSelectedToken) as tokenState =
     React.useState(_ => initToken->Option.map(initToken => initToken));
   let token =
     StoreContext.Tokens.useGet(selectedToken->Option.map(t => t.address));
@@ -582,6 +585,58 @@ let make = (~closeAction) => {
     submitAction.current = `AddToBatch;
     form.submit();
     setModalStep(_ => BatchStep);
+  };
+
+  let onAddCSVList = (csvRows: API.CSV.t) => {
+    switch (csvRows) {
+    | TezRows(transfersTez) =>
+      setSelectedToken(_ => None);
+
+      let transformTransfer =
+        transfersTez->List.mapReverse(({destination, amount}) => {
+          let formStateValues: SendForm.StateLenses.state = {
+            amount: amount->ProtocolXTZ.toString,
+            sender: form.values.sender,
+            recipient: FormUtils.Account.Address(destination),
+            fee: "",
+            gasLimit: "",
+            storageLimit: "",
+            forceLowFee: false,
+            dryRun: None,
+          };
+          (formStateValues, false);
+        });
+      setBatch(_ => transformTransfer);
+    | TokenRows(transfersToken) =>
+      let tokenAddress =
+        transfersToken->List.get(0)->Option.map(transfer => transfer.token);
+      let token =
+        tokenAddress->Option.flatMap(tokenAddress =>
+          tokens->Map.String.get(tokenAddress)
+        );
+
+      switch (token) {
+      | Some(token) =>
+        setSelectedToken(_ => Some(token));
+
+        let transformTransfer =
+          transfersToken->List.mapReverse(({destination, amount}) => {
+            let formStateValues: SendForm.StateLenses.state = {
+              amount: amount->Token.Repr.toNatString,
+              sender: form.values.sender,
+              recipient: FormUtils.Account.Address(destination),
+              fee: "",
+              gasLimit: "",
+              storageLimit: "",
+              forceLowFee: false,
+              dryRun: None,
+            };
+            (formStateValues, false);
+          });
+        setBatch(_ => transformTransfer);
+      | None => addLog(true, Logs.error(I18n.csv#unknown_token))
+      };
+    };
   };
 
   let onEdit = (i, advOpened, {state}: SendForm.onSubmitAPI) => {
@@ -642,6 +697,7 @@ let make = (~closeAction) => {
            | BatchStep =>
              <BatchView
                onAddTransfer={_ => setModalStep(_ => SendStep)}
+               onAddCSVList
                batch
                showCurrency
                reduceAmounts={reduceAmounts(token)}

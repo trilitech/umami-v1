@@ -5,21 +5,29 @@ let styles =
   Style.(
     StyleSheet.create({
       "container": style(~marginTop=30.->dp, ()),
+      "listLabelContainer":
+        style(
+          ~flexDirection=`row,
+          ~alignItems=`center,
+          ~justifyContent=`spaceBetween,
+          (),
+        ),
       "listLabel": style(~marginBottom=4.->dp, ()),
       "amount": style(~height=19.->dp, ~marginBottom=2.->dp, ()),
       "summary": style(~marginTop=11.->dp, ()),
       "row":
-        style(
-          ~paddingVertical=12.->dp,
-          ~paddingLeft=28.->dp,
-          ~paddingRight=38.->dp,
-          (),
-        ),
+        style(~height=68.->dp, ~flexDirection=`row, ~alignItems=`center, ()),
       "addTransaction": style(~marginBottom=10.->dp, ()),
       "notFirstRow": style(~borderTopWidth=1., ()),
-      "num": style(~position=`absolute, ~left=10.->dp, ~top=10.->dp, ()),
-      "moreButton":
-        style(~position=`absolute, ~top=17.->dp, ~right=4.->dp, ()),
+      "num":
+        style(
+          ~width=22.->dp,
+          ~height=44.->dp,
+          ~marginRight=6.->dp,
+          ~textAlign=`right,
+          (),
+        ),
+      "moreButton": style(~marginHorizontal=auto, ()),
     })
   );
 
@@ -58,7 +66,7 @@ module Item = {
         arrayOption([|
           Some(styles##row),
           Some(style(~borderColor=theme.colors.borderDisabled, ())),
-          Lib.Option.onlyIf(i != 0, () => styles##notFirstRow),
+          Lib.Option.onlyIf(i > 1, () => styles##notFirstRow),
         |])
       )>
       <Typography.Subtitle1 colorStyle=`mediumEmphasis style=styles##num>
@@ -108,14 +116,43 @@ module Item = {
 };
 
 module Transactions = {
+  module CSVFilePicker = {
+    [@react.component]
+    let make = (~onAddCSVList) => {
+      let addLog = LogsContext.useAdd();
+
+      let onChange = fileTextContent => {
+        let parsedCSV = fileTextContent->API.CSV.parseCSV;
+        switch (parsedCSV) {
+        | Result.Ok(parsedCSV) => onAddCSVList(parsedCSV)
+        | Result.Error(error) =>
+          addLog(true, Logs.error(error->API.handleCSVError))
+        };
+      };
+
+      <TextFilePicker
+        text=I18n.btn#load_file
+        primary=true
+        accept=".csv"
+        onChange
+      />;
+    };
+  };
+
   [@react.component]
-  let make = (~recipients, ~showCurrency, ~onDelete=?) => {
+  let make = (~recipients, ~showCurrency, ~onAddCSVList=?, ~onDelete=?) => {
     let length = recipients->List.length;
     let theme = ThemeContext.useTheme();
+
     <View style=styles##container>
-      <Typography.Overline2 style=styles##listLabel>
-        I18n.label#transactions->React.string
-      </Typography.Overline2>
+      <View style=styles##listLabelContainer>
+        <Typography.Overline2 style=styles##listLabel>
+          I18n.label#transactions->React.string
+        </Typography.Overline2>
+        {onAddCSVList->Option.mapWithDefault(React.null, onAddCSVList =>
+           <CSVFilePicker onAddCSVList />
+         )}
+      </View>
       <DocumentContext.ScrollView
         style={listStyle(theme)} alwaysBounceVertical=false>
         {{
@@ -144,6 +181,7 @@ let make =
     (
       ~back=?,
       ~onAddTransfer,
+      ~onAddCSVList,
       ~onSubmitBatch,
       ~onDelete,
       ~onEdit,
@@ -160,6 +198,7 @@ let make =
         (t.recipient->FormUtils.Account.address, t.amount),
       )
     );
+
   <>
     {back->ReactUtils.mapOpt(back => {
        <TouchableOpacity onPress={_ => back()} style=FormStyles.topLeftButton>
@@ -182,7 +221,7 @@ let make =
         {reduceAmounts(batch->List.map(fst))->showCurrency->React.string}
       </Typography.Subtitle1>
     </View>
-    <Transactions recipients showCurrency onDelete />
+    <Transactions recipients showCurrency onAddCSVList onDelete />
     <View style=FormStyles.verticalFormAction>
       <Buttons.SubmitSecondary
         style=styles##addTransaction
