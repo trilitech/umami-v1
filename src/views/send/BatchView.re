@@ -16,17 +16,18 @@ let styles =
       "amount": style(~height=19.->dp, ~marginBottom=2.->dp, ()),
       "summary": style(~marginTop=11.->dp, ()),
       "row":
-        style(
-          ~paddingVertical=12.->dp,
-          ~paddingLeft=28.->dp,
-          ~paddingRight=38.->dp,
-          (),
-        ),
+        style(~height=68.->dp, ~flexDirection=`row, ~alignItems=`center, ()),
       "addTransaction": style(~marginBottom=10.->dp, ()),
       "notFirstRow": style(~borderTopWidth=1., ()),
-      "num": style(~position=`absolute, ~left=10.->dp, ~top=10.->dp, ()),
-      "moreButton":
-        style(~position=`absolute, ~top=17.->dp, ~right=4.->dp, ()),
+      "num":
+        style(
+          ~width=22.->dp,
+          ~height=44.->dp,
+          ~marginRight=6.->dp,
+          ~textAlign=`right,
+          (),
+        ),
+      "moreButton": style(~marginHorizontal=auto, ()),
     })
   );
 
