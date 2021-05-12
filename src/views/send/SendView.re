@@ -593,21 +593,19 @@ let make = (~closeAction) => {
       setSelectedToken(_ => None);
 
       let transformTransfer =
-        transfersTez
-        ->List.reverse
-        ->List.map(({destination, amount}) => {
-            let formStateValues: SendForm.StateLenses.state = {
-              amount: amount->ProtocolXTZ.toString,
-              sender: form.values.sender,
-              recipient: FormUtils.Account.Address(destination),
-              fee: "",
-              gasLimit: "",
-              storageLimit: "",
-              forceLowFee: false,
-              dryRun: None,
-            };
-            (formStateValues, false);
-          });
+        transfersTez->List.mapReverse(({destination, amount}) => {
+          let formStateValues: SendForm.StateLenses.state = {
+            amount: amount->ProtocolXTZ.toString,
+            sender: form.values.sender,
+            recipient: FormUtils.Account.Address(destination),
+            fee: "",
+            gasLimit: "",
+            storageLimit: "",
+            forceLowFee: false,
+            dryRun: None,
+          };
+          (formStateValues, false);
+        });
       setBatch(_ => transformTransfer);
     | TokenRows(transfersToken) =>
       let tokenAddress =
@@ -622,21 +620,19 @@ let make = (~closeAction) => {
         setSelectedToken(_ => Some(token));
 
         let transformTransfer =
-          transfersToken
-          ->List.reverse
-          ->List.map(({destination, amount}) => {
-              let formStateValues: SendForm.StateLenses.state = {
-                amount: amount->Token.Repr.toNatString,
-                sender: form.values.sender,
-                recipient: FormUtils.Account.Address(destination),
-                fee: "",
-                gasLimit: "",
-                storageLimit: "",
-                forceLowFee: false,
-                dryRun: None,
-              };
-              (formStateValues, false);
-            });
+          transfersToken->List.mapReverse(({destination, amount}) => {
+            let formStateValues: SendForm.StateLenses.state = {
+              amount: amount->Token.Repr.toNatString,
+              sender: form.values.sender,
+              recipient: FormUtils.Account.Address(destination),
+              fee: "",
+              gasLimit: "",
+              storageLimit: "",
+              forceLowFee: false,
+              dryRun: None,
+            };
+            (formStateValues, false);
+          });
         setBatch(_ => transformTransfer);
       | None => addLog(true, Logs.error(I18n.csv#unknown_token))
       };
