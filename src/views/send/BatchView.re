@@ -122,7 +122,6 @@ module Transactions = {
       let addLog = LogsContext.useAdd();
 
       let onChange = fileTextContent => {
-        Js.log(fileTextContent);
         let parsedCSV = fileTextContent->API.CSV.parseCSV;
         switch (parsedCSV) {
         | Result.Ok(parsedCSV) => onAddCSVList(parsedCSV)
