@@ -590,6 +590,8 @@ let make = (~closeAction) => {
   let onAddCSVList = (csvRows: API.CSV.t) => {
     switch (csvRows) {
     | TezRows(transfersTez) =>
+      setSelectedToken(_ => None);
+
       let transformTransfer =
         transfersTez->List.map(({destination, amount}) => {
           let formStateValues: SendForm.StateLenses.state = {
