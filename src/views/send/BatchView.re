@@ -65,7 +65,7 @@ module Item = {
         arrayOption([|
           Some(styles##row),
           Some(style(~borderColor=theme.colors.borderDisabled, ())),
-          Lib.Option.onlyIf(i != 0, () => styles##notFirstRow),
+          Lib.Option.onlyIf(i > 1, () => styles##notFirstRow),
         |])
       )>
       <Typography.Subtitle1 colorStyle=`mediumEmphasis style=styles##num>
