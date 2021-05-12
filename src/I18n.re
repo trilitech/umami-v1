@@ -295,7 +295,11 @@ let csv = {
     p("Row %d is not valid, some columns are probably missing", row);
   pub cannot_parse_csv = p("CSV is not valid");
   pub no_rows = p("CSV is empty");
-  pub cannot_mix_tokens = p("Tokens from CSV must be all the same");
+  pub cannot_mix_tokens = row =>
+    p(
+      "Tokens from CSV must be all the same. Row %d is different from the previous ones.",
+      row,
+    );
   pub cannot_parse_token_amount = (v, row, col) =>
     p(
       "Value %s at row %d column %d is not a valid token amount",

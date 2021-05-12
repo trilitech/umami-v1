@@ -173,7 +173,7 @@ module CSV = {
   type error =
     | Parser(CSVParser.error)
     | NoRows
-    | CannotMixTokens
+    | CannotMixTokens(int)
     | CannotParseTokenAmount(ReBigNumber.t, int, int)
     | CannotParseTezAmount(ReBigNumber.t, int, int);
 
@@ -189,10 +189,10 @@ module CSV = {
 
   let checkTokenUnique = rows =>
     rows
-    ->List.reduce(Ok(None), (prev, (_, _, token, _)) =>
+    ->List.reduceWithIndex(Ok(None), (prev, (_, _, token, _), index) =>
         switch (prev) {
         | Error(e) => Error(e)
-        | Ok(Some(t)) => t == token ? prev : Error(CannotMixTokens)
+        | Ok(Some(t)) => t == token ? prev : Error(CannotMixTokens(index))
         | Ok(None) => Ok(Some(token))
         }
       )
@@ -262,19 +262,19 @@ let handleCSVError = e =>
   e->CSVParser.(
        fun
        | CSV.Parser(CannotParseNumber(row, col)) =>
-         I18n.csv#cannot_parse_number(row, col)
+         I18n.csv#cannot_parse_number(row + 1, col + 1)
        | Parser(CannotParseBool(row, col)) =>
-         I18n.csv#cannot_parse_boolean(row, col)
+         I18n.csv#cannot_parse_boolean(row + 1, col + 1)
        | Parser(CannotParseCustomValue(row, col)) =>
-         I18n.csv#cannot_parse_custom_value(row, col)
-       | Parser(CannotParseRow(row)) => I18n.csv#cannot_parse_row(row)
+         I18n.csv#cannot_parse_custom_value(row + 1, col + 1)
+       | Parser(CannotParseRow(row)) => I18n.csv#cannot_parse_row(row + 1)
        | Parser(CannotParseCSV) => I18n.csv#cannot_parse_csv
        | NoRows => I18n.csv#no_rows
-       | CannotMixTokens => I18n.csv#cannot_mix_tokens
+       | CannotMixTokens(row) => I18n.csv#cannot_mix_tokens(row + 1)
        | CannotParseTokenAmount(v, row, col) =>
-         I18n.csv#cannot_parse_token_amount(v, row, col)
+         I18n.csv#cannot_parse_token_amount(v, row + 1, col + 1)
        | CannotParseTezAmount(v, row, col) =>
-         I18n.csv#cannot_parse_tez_amount(v, row, col)
+         I18n.csv#cannot_parse_tez_amount(v, row + 1, col + 1)
      );
 
 module Simulation = {
