@@ -24,9 +24,9 @@ let versionToString = (Version(major, minor, fix, patch)) =>
      ->Option.getWithDefault("")
   ++ patch->Option.map(patch => "~" ++ patch)->Option.getWithDefault("");
 
-let apiLowestBound = mkVersion(~fix=0, 1, 0);
+let apiLowestBound = mkVersion(~fix=0, 2, 0);
 
-let apiHighestBound = mkVersion(1, Js.Int.max);
+let apiHighestBound = mkVersion(2, 0);
 
 let leqFix =
   fun
