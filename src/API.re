@@ -965,12 +965,19 @@ module Accounts = (Getter: GetterAPI) => {
                   legacyAddress,
                 }
               )
-            ->Future.flatMapError(_ => Future.value(Ok(secret)))
           )
-      | _ => [||]
+        ->List.fromArray
+      | _ => []
       }
     )
-    ->FutureEx.all
+    ->Future.all
+    ->Future.map(results => {
+        let error = results->List.getBy(Result.isError);
+        switch (error) {
+        | Some(Error(error)) => Error(error)
+        | _ => Ok(results->List.toArray)
+        };
+      })
     ->Future.mapOk(secrets =>
         secrets->Array.keepMap(secret =>
           switch (secret) {
