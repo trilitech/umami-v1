@@ -1,8 +1,15 @@
 ## Configuration change
+<!-- Configuration change, to be approved by the CAB before applying. -->
+/label ~"Change::Configuration"
 
-<!-- Configuration change, to be approved by the CAB. -->
-
-/label ~Change::Configuration ~CAB ~CAB::to-approve
+/label ~CAB ~"CAB::to-approve"
+## Severity
+<!-- Pick one -->
+<!-- /label ~"Severity::1-Critical" --> 
+<!-- /label ~"Severity::2-Major" -->
+<!-- /label ~"Severity::3-Moderate" -->
+<!-- /label ~"Severity::4-Minor" -->
+<!-- /label ~"Severity::5-Cosmetic" -->
 
 ## Summary
 <!-- Outline the issue being faced, and why this needs to change !-->
@@ -25,10 +32,3 @@
 - [ ] Medium (This will bring a good increase in performance/productivity/usability)
 - [ ] Low (anything else e.g., trivial, minor improvements)
 
-## Severity
-<!-- Pick one -->
-<!-- /label ~Severity::1-Critical --> 
-<!-- /label ~Severity::2-Major -->
-<!-- /label ~Severity::3-Moderate -->
-<!-- /label ~Severity::4-Minor -->
-<!-- /label ~Severity::5-Cosmetic -->

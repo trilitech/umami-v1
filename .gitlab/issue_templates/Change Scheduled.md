@@ -2,11 +2,21 @@
 
 <!-- Scheduled change, to be reviewed by the CAB. -->
 <!-- A scheduled change is usually set on external dependencies -->
+/label ~"Change::Scheduled"
 
-/label ~Change::Scheduled ~CAB ~CAB::to-approve
+/label ~CAB ~"CAB::to-approve"
 
 <!-- Set Due Date : /due <in 2 days | this Friday | December 31st> -->
 /due 
+
+## Severity
+<!-- Pick one -->
+<!-- /label ~"Severity::1-Critical" --> 
+<!-- /label ~"Severity::2-Major" -->
+<!-- /label ~"Severity::3-Moderate" -->
+<!-- /label ~"Severity::4-Minor" -->
+<!-- /label ~"Severity::5-Cosmetic" -->
+
 
 ## Summary
 <!-- Outline the issue being faced, and why this required a change !-->
@@ -30,10 +40,3 @@
 - [ ] Low (anything else e.g., trivial, minor improvements)
 
 
-## Severity
-<!-- Pick one -->
-<!-- /label ~Severity::1-Critical --> 
-<!-- /label ~Severity::2-Major -->
-<!-- /label ~Severity::3-Moderate -->
-<!-- /label ~Severity::4-Minor -->
-<!-- /label ~Severity::5-Cosmetic -->

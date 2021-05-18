@@ -1,8 +1,16 @@
 ## Regular change
+<!-- Regular change, to be approved by the CAB before applying. -->
+/label ~"Change::Regular" 
 
-<!-- Regular change, to be approved by the CAB. -->
+/label ~CAB ~"CAB::to-approve"
 
-/label ~Change::Regular ~CAB ~CAB::to-approve
+## Severity
+<!-- Pick one -->
+<!-- /label ~"Severity::1-Critical" --> 
+<!-- /label ~"Severity::2-Major" -->
+<!-- /label ~"Severity::3-Moderate" -->
+<!-- /label ~"Severity::4-Minor" -->
+<!-- /label ~"Severity::5-Cosmetic" -->
 
 ## Summary
 <!-- Outline the issue being faced, and why this required a change !-->
@@ -26,10 +34,3 @@
 - [ ] Low (anything else e.g., trivial, minor improvements)
 
 
-## Severity
-<!-- Pick one -->
-<!-- /label ~Severity::1-Critical --> 
-<!-- /label ~Severity::2-Major -->
-<!-- /label ~Severity::3-Moderate -->
-<!-- /label ~Severity::4-Minor -->
-<!-- /label ~Severity::5-Cosmetic -->

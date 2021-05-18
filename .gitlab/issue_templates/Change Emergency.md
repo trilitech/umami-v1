@@ -1,9 +1,18 @@
 ## Emergency change
-
 <!-- An Emergency change should be filed whenever an incident caused a required change. It will be reviewed by the CAB afterward !-->
-<!-- Emergency change request, usually on incident, to be reviewed by the CAB for review after. -->
+<!-- Emergency change request, usually on incident, to be reviewed by the CAB for review after applying. -->
 
-/label ~Change::Emergency ~CAB ~CAB::to-review
+/label ~Change::Emergency 
+
+/label ~CAB ~"CAB::to-review"
+
+## Severity
+<!-- Pick one -->
+<!-- /label ~"Severity::1-Critical" --> 
+<!-- /label ~"Severity::2-Major" -->
+<!-- /label ~"Severity::3-Moderate" -->
+<!-- /label ~"Severity::4-Minor" -->
+<!-- /label ~"Severity::5-Cosmetic" -->
 
 ## Summary
 <!-- Outline the issue being faced, and why this required a change !-->
@@ -27,10 +36,3 @@
 - [ ] Low (anything else e.g., trivial, minor improvements)
 
 
-## Severity
-<!-- Pick one -->
-<!-- /label ~Severity::1-Critical --> 
-<!-- /label ~Severity::2-Major -->
-<!-- /label ~Severity::3-Moderate -->
-<!-- /label ~Severity::4-Minor -->
-<!-- /label ~Severity::5-Cosmetic -->
