@@ -2,7 +2,7 @@
 <!-- An Emergency change should be filed whenever an incident caused a required change. It will be reviewed by the CAB afterward !-->
 <!-- Emergency change request, usually on incident, to be reviewed by the CAB for review after applying. -->
 
-/label ~Change::Emergency 
+/label ~"Change::Emergency"
 
 /label ~CAB ~"CAB::to-review"
 

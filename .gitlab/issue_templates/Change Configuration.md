@@ -1,4 +1,5 @@
 ## Configuration change
+
 <!-- Configuration change, to be approved by the CAB before applying. -->
 /label ~"Change::Configuration"
 
