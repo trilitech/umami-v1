@@ -29,7 +29,7 @@ let make =
           sendOperation(state.values.password)
           ->Future.tapError(
               fun
-              | TokensApiRequest.API.BackendError(WrongPassword) =>
+              | API.Error.Taquito(WrongPassword) =>
                 setWrongPassword(_ => true)
               | _ => (),
             )

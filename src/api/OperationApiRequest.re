@@ -25,11 +25,11 @@ let token = (operation, password) => {
   password,
 };
 
-let errorToString = TokensApiRequest.API.errorToString;
+let errorToString = API.Error.fromApiToString;
 
 let filterOutFormError =
   fun
-  | TokensApiRequest.API.BackendError(WrongPassword) => false
+  | API.Error.Taquito(WrongPassword) => false
   | _ => true;
 
 let useCreate = (~sideEffect=?, ()) => {
@@ -38,7 +38,7 @@ let useCreate = (~sideEffect=?, ()) => {
     | Protocol(operation) =>
       settings
       ->API.Operation.run(operation, ~password)
-      ->Future.mapError(e => e->TokensApiRequest.API.BackendError)
+      ->Future.mapError(API.Error.taquito)
 
     | Token(operation) =>
       settings
@@ -66,7 +66,7 @@ let useSimulate = () => {
     | Operation.Simulation.Protocol(operation, index) =>
       settings
       ->API.Simulation.run(~index?, operation)
-      ->Future.mapError(e => e->TokensApiRequest.API.BackendError)
+      ->Future.mapError(API.Error.taquito)
     | Operation.Simulation.Token(operation, index) =>
       settings->TokensApiRequest.API.simulate(~index?, operation)
     };

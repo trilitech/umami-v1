@@ -148,25 +148,66 @@ module Explorer = (Getter: GetterAPI) => {
     );
 };
 
-let handleTaquitoError = e =>
-  e->ReTaquito.Error.(
-       fun
-       | Generic(s) => s
-       | WrongPassword => I18n.form_input_error#wrong_password
-       | UnregisteredDelegate => I18n.form_input_error#unregistered_delegate
-       | UnchangedDelegate => I18n.form_input_error#change_baker
-       | BadPkh => I18n.form_input_error#bad_pkh
-       | BranchRefused => I18n.form_input_error#branch_refused_error
-       | InvalidContract => I18n.form_input_error#invalid_contract
-       | EmptyTransaction => I18n.form_input_error#empty_transaction
-     );
+module Error = {
+  type token =
+    | OperationNotRunnableOffchain(string)
+    | SimulationNotAvailable(string)
+    | InjectionNotImplemented(string)
+    | OffchainCallNotImplemented(string)
+    | RawError(string);
 
-let handleSdkError = e =>
-  e->TezosSDK.Error.(
-       fun
-       | Generic(s) => s
-       | BadPkh => I18n.form_input_error#bad_pkh
-     );
+  type t =
+    | Taquito(ReTaquito.Error.t)
+    | Token(token);
+
+  let taquito = e => Taquito(e);
+  let token = e => Token(e);
+
+  let fromTaquitoToString = e =>
+    e->ReTaquito.Error.(
+         fun
+         | Generic(s) => s
+         | WrongPassword => I18n.form_input_error#wrong_password
+         | UnregisteredDelegate => I18n.form_input_error#unregistered_delegate
+         | UnchangedDelegate => I18n.form_input_error#change_baker
+         | BadPkh => I18n.form_input_error#bad_pkh
+         | BranchRefused => I18n.form_input_error#branch_refused_error
+         | InvalidContract => I18n.form_input_error#invalid_contract
+         | EmptyTransaction => I18n.form_input_error#empty_transaction
+       );
+
+  let printError = (fmt, err) => {
+    switch (err) {
+    | OperationNotRunnableOffchain(s) =>
+      Format.fprintf(fmt, "Operation '%s' cannot be run offchain.", s)
+    | SimulationNotAvailable(s) =>
+      Format.fprintf(fmt, "Operation '%s' is not simulable.", s)
+    | InjectionNotImplemented(s) =>
+      Format.fprintf(fmt, "Operation '%s' injection is not implemented", s)
+    | OffchainCallNotImplemented(s) =>
+      Format.fprintf(
+        fmt,
+        "Operation '%s' offchain call is not implemented",
+        s,
+      )
+    | RawError(s) => Format.fprintf(fmt, "%s", s)
+    };
+  };
+
+  let fromTokenToString = err => Format.asprintf("%a", printError, err);
+
+  let fromApiToString =
+    fun
+    | Token(e) => fromTokenToString(e)
+    | Taquito(e) => fromTaquitoToString(e);
+
+  let fromSdkToString = e =>
+    e->TezosSDK.Error.(
+         fun
+         | Generic(s) => s
+         | BadPkh => I18n.form_input_error#bad_pkh
+       );
+};
 
 module CSV = {
   open CSVParser;
@@ -500,7 +541,7 @@ module Aliases = {
     settings
     ->AppSettings.sdk
     ->TezosSDK.listKnownAddresses
-    ->Future.mapError(handleSdkError)
+    ->Future.mapError(Error.fromSdkToString)
     ->Future.mapOk(l => l->Array.map(({alias, pkh}) => (alias, pkh)));
 
   let getAliasMap = (~settings) =>
@@ -521,19 +562,19 @@ module Aliases = {
     settings
     ->AppSettings.sdk
     ->TezosSDK.addAddress(alias, pkh)
-    ->Future.mapError(handleSdkError);
+    ->Future.mapError(Error.fromSdkToString);
 
   let delete = (~settings, name) =>
     settings
     ->AppSettings.sdk
     ->TezosSDK.forgetAddress(name)
-    ->Future.mapError(handleSdkError);
+    ->Future.mapError(Error.fromSdkToString);
 
   let rename = (~settings, renaming) =>
     settings
     ->AppSettings.sdk
     ->TezosSDK.renameAliases(renaming)
-    ->Future.mapError(handleSdkError);
+    ->Future.mapError(Error.fromSdkToString);
 };
 
 module Accounts = (Getter: GetterAPI) => {
@@ -574,7 +615,7 @@ module Accounts = (Getter: GetterAPI) => {
     settings
     ->AppSettings.sdk
     ->TezosSDK.listKnownAddresses
-    ->Future.mapError(handleSdkError)
+    ->Future.mapError(Error.fromSdkToString)
     ->Future.mapOk(r =>
         r->Array.keepMap((TezosSDK.OutputAddress.{alias, pkh, sk_known}) =>
           sk_known ? Some((alias, pkh)) : None
@@ -629,7 +670,7 @@ module Accounts = (Getter: GetterAPI) => {
     settings
     ->AppSettings.sdk
     ->TezosSDK.importSecretKey(~name, ~skUri, ~password, ())
-    ->Future.mapError(handleSdkError)
+    ->Future.mapError(Error.fromSdkToString)
     ->Future.tapOk(k => Js.log("key found : " ++ k));
   };
 
@@ -672,7 +713,7 @@ module Accounts = (Getter: GetterAPI) => {
     settings
     ->AppSettings.sdk
     ->TezosSDK.forgetAddress(name)
-    ->Future.mapError(handleSdkError);
+    ->Future.mapError(Error.fromSdkToString);
 
   let delete = (~settings, name) =>
     Aliases.getAddressForAlias(~settings, name)
@@ -814,7 +855,7 @@ module Accounts = (Getter: GetterAPI) => {
         ~password,
         (),
       )
-    ->Future.mapError(handleSdkError);
+    ->Future.mapError(Error.fromSdkToString);
 
   let legacyScan = (~settings, recoveryPhrase, name, ~password) =>
     legacyImport(~settings, name, recoveryPhrase, ~password)
@@ -1116,37 +1157,6 @@ module Delegate = (Getter: GetterAPI) => {
 };
 
 module Tokens = (Getter: GetterAPI) => {
-  type error =
-    | OperationNotRunnableOffchain(string)
-    | SimulationNotAvailable(string)
-    | InjectionNotImplemented(string)
-    | OffchainCallNotImplemented(string)
-    | BackendError(ReTaquito.Error.t)
-    | RawError(string);
-
-  let printError = (fmt, err) => {
-    switch (err) {
-    | OperationNotRunnableOffchain(s) =>
-      Format.fprintf(fmt, "Operation '%s' cannot be run offchain.", s)
-    | SimulationNotAvailable(s) =>
-      Format.fprintf(fmt, "Operation '%s' is not simulable.", s)
-    | InjectionNotImplemented(s) =>
-      Format.fprintf(fmt, "Operation '%s' injection is not implemented", s)
-    | OffchainCallNotImplemented(s) =>
-      Format.fprintf(
-        fmt,
-        "Operation '%s' offchain call is not implemented",
-        s,
-      )
-    | RawError(s) => Format.fprintf(fmt, "%s", s)
-    | BackendError(e) => Format.fprintf(fmt, "%s", e->handleTaquitoError)
-    };
-  };
-
-  let handleTaquitoError = e => e->BackendError;
-
-  let errorToString = err => Format.asprintf("%a", printError, err);
-
   let getTokenViewer = settings => URL.tokenViewer(settings)->Getter.get;
 
   let checkTokenContract = (settings, addr) => {
@@ -1289,13 +1299,15 @@ module Tokens = (Getter: GetterAPI) => {
     switch (operation) {
     | Transfer({source, transfers: [elt], _}) =>
       transferEstimate(network, elt, source)
-      ->Future.mapError(handleTaquitoError)
+      ->Future.mapError(e => e->Error.Taquito)
     | Transfer({source, transfers, _}) =>
       batchEstimate(network, transfers, ~source, ~index?, ())
-      ->Future.mapError(handleTaquitoError)
+      ->Future.mapError(e => e->Error.Taquito)
     | _ =>
       Future.value(
-        Error(SimulationNotAvailable(Token.operationEntrypoint(operation))),
+        SimulationNotAvailable(Token.operationEntrypoint(operation))
+        ->Error.token
+        ->Error,
       )
     };
 
@@ -1322,15 +1334,15 @@ module Tokens = (Getter: GetterAPI) => {
     switch (operation) {
     | Transfer({source, transfers: [elt], _}) =>
       transfer(network, elt, source, password)
-      ->Future.mapError(handleTaquitoError)
+      ->Future.mapError(Error.taquito)
     | Transfer({source, transfers, _}) =>
       injectBatch(network, transfers, ~source, ~password)
-      ->Future.mapError(handleTaquitoError)
+      ->Future.mapError(Error.taquito)
     | _ =>
       Future.value(
-        Error(
-          InjectionNotImplemented(Token.operationEntrypoint(operation)),
-        ),
+        InjectionNotImplemented(Token.operationEntrypoint(operation))
+        ->Error.token
+        ->Error,
       )
     };
 
@@ -1349,19 +1361,19 @@ module Tokens = (Getter: GetterAPI) => {
               ->FutureEx.fromOption(~error="cannot read Token amount: " ++ v)
             }
           })
-        ->Future.mapError(s => RawError(s))
+        ->Future.mapError(s => s->RawError->Error.Token)
       | _ =>
         Future.value(
-          Error(
-            OffchainCallNotImplemented(Token.operationEntrypoint(operation)),
-          ),
+          OffchainCallNotImplemented(Token.operationEntrypoint(operation))
+          ->Error.token
+          ->Error,
         )
       };
     } else {
       Future.value(
-        Error(
-          OperationNotRunnableOffchain(Token.operationEntrypoint(operation)),
-        ),
+        OperationNotRunnableOffchain(Token.operationEntrypoint(operation))
+        ->Error.token
+        ->Error,
       );
     };
 };
