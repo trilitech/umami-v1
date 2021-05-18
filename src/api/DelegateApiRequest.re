@@ -24,5 +24,5 @@ let useLoadInfo = (~requestState, ~address: string) => {
 let useLoadBakers = (~requestState) => {
   let get = (~settings, ()) => DelegateAPI.getBakers(settings);
 
-  ApiRequest.useLoader(~get, ~kind=Logs.Delegate, ~requestState);
+  ApiRequest.useLoader(~get, ~kind=Logs.Delegate, ~requestState, ());
 };

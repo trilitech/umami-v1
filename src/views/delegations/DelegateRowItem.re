@@ -66,7 +66,7 @@ let make =
 
     let theme = ThemeContext.useTheme();
 
-    switch ((delegateRequest: ApiRequest.t(_))) {
+    switch ((delegateRequest: ApiRequest.t(_, string))) {
     | Done(Ok(Some(delegate)), _)
     | Loading(Some(Some(delegate))) =>
       <Table.Row>

@@ -17,7 +17,7 @@ let useLoad = requestState => {
         )
       );
 
-  ApiRequest.useLoader(~get, ~kind=Logs.Account, ~requestState);
+  ApiRequest.useLoader(~get, ~kind=Logs.Account, ~requestState, ());
 };
 
 let useGetRecoveryPhrase = (~requestState as (request, setRequest), ~index) => {
@@ -67,7 +67,14 @@ let useCreateWithMnemonics =
   ApiRequest.useSetter(
     ~set=
       (~settings, {name, mnemonics, derivationScheme, password}) =>
-        AccountsAPI.restore(~settings, mnemonics, name, ~derivationScheme, ~password, ()),
+        AccountsAPI.restore(
+          ~settings,
+          mnemonics,
+          name,
+          ~derivationScheme,
+          ~password,
+          (),
+        ),
     ~kind=Logs.Account,
   );
 

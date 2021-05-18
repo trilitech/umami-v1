@@ -13,10 +13,12 @@ let make =
       ~source,
       ~destinations,
       ~showCurrency,
-      ~sendOperation,
+      ~sendOperation: _ => Future.t(Result.t(_)),
       ~content,
       ~loading=false,
     ) => {
+  let (wrongPassword, setWrongPassword) = React.useState(() => false);
+
   let form: SendForm.Password.api =
     SendForm.Password.use(
       ~schema={
@@ -24,7 +26,14 @@ let make =
       },
       ~onSubmit=
         ({state}) => {
-          sendOperation(state.values.password);
+          sendOperation(state.values.password)
+          ->Future.tapError(
+              fun
+              | TokensApiRequest.API.BackendError(WrongPassword) =>
+                setWrongPassword(_ => true)
+              | _ => (),
+            )
+          ->ignore;
 
           None;
         },
@@ -59,8 +68,15 @@ let make =
     <FormGroupTextInput
       label=I18n.label#password
       value={form.values.password}
-      handleChange={form.handleChange(Password)}
-      error={form.getFieldError(Field(Password))}
+      handleChange={v => {
+        setWrongPassword(_ => false);
+        form.handleChange(Password, v);
+      }}
+      error={
+        wrongPassword
+          ? Some(I18n.form_input_error#wrong_password)
+          : form.getFieldError(Field(Password))
+      }
       textContentType=`password
       secureTextEntry=true
     />

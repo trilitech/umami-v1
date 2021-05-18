@@ -15,7 +15,7 @@ let useLoad = requestState => {
         ->Map.String.fromArray
       });
 
-  ApiRequest.useLoader(~get, ~kind=Logs.Aliases, ~requestState);
+  ApiRequest.useLoader(~get, ~kind=Logs.Aliases, ~requestState, ());
 };
 
 /* Create */

@@ -250,8 +250,7 @@ let make = (~closeAction, ~action) => {
 
   let sendOperation = (delegation, password) =>
     sendOperation(OperationApiRequest.delegate(delegation, password))
-    ->Future.tapOk(hash => {setModalStep(_ => SubmittedStep(hash))})
-    ->ignore;
+    ->Future.tapOk(hash => {setModalStep(_ => SubmittedStep(hash))});
 
   let (operationSimulateRequest, sendOperationSimulate) =
     StoreContext.Operations.useSimulate();

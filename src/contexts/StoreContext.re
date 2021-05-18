@@ -4,27 +4,34 @@ open UmamiCommon;
 
 type reactState('state) = ('state, ('state => 'state) => unit);
 
-type requestsState('requestResponse) =
-  Map.String.t(ApiRequest.t('requestResponse));
+type requestsState('requestResponse, 'error) =
+  Map.String.t(ApiRequest.t('requestResponse, 'error));
 
-type apiRequestsState('requestResponse) =
-  reactState(requestsState('requestResponse));
+type apiRequestsState('requestResponse, 'error) =
+  reactState(requestsState('requestResponse, 'error));
 
 type state = {
   selectedAccountState: reactState(option(string)),
   selectedTokenState: reactState(option(string)),
-  accountsRequestState: reactState(ApiRequest.t(Map.String.t(Account.t))),
-  secretsRequestState: reactState(ApiRequest.t(array(Secret.t))),
-  balanceRequestsState: apiRequestsState(ProtocolXTZ.t),
-  delegateRequestsState: apiRequestsState(option(string)),
+  accountsRequestState:
+    reactState(ApiRequest.t(Map.String.t(Account.t), string)),
+  secretsRequestState: reactState(ApiRequest.t(array(Secret.t), string)),
+  balanceRequestsState: apiRequestsState(ProtocolXTZ.t, string),
+  delegateRequestsState: apiRequestsState(option(string), string),
   delegateInfoRequestsState:
-    apiRequestsState(option(DelegateApiRequest.DelegateAPI.delegationInfo)),
-  operationsRequestsState: apiRequestsState((array(Operation.Read.t), int)),
+    apiRequestsState(
+      option(DelegateApiRequest.DelegateAPI.delegationInfo),
+      string,
+    ),
+  operationsRequestsState:
+    apiRequestsState((array(Operation.Read.t), int), string),
   operationsConfirmations: reactState(Set.String.t),
-  aliasesRequestState: reactState(ApiRequest.t(Map.String.t(Account.t))),
-  bakersRequestState: reactState(ApiRequest.t(array(Delegate.t))),
-  tokensRequestState: reactState(ApiRequest.t(Map.String.t(Token.t))),
-  balanceTokenRequestsState: apiRequestsState(Token.Repr.t),
+  aliasesRequestState:
+    reactState(ApiRequest.t(Map.String.t(Account.t), string)),
+  bakersRequestState: reactState(ApiRequest.t(array(Delegate.t), string)),
+  tokensRequestState:
+    reactState(ApiRequest.t(Map.String.t(Token.t), string)),
+  balanceTokenRequestsState: apiRequestsState(Token.Repr.t, string),
   apiVersionRequestState: reactState(option(Network.apiVersion)),
 };
 
@@ -182,9 +189,9 @@ let useRequestsState = (getRequestsState, key: option(string)) => {
     React.useCallback2(
       newRequestSetter =>
         key->Lib.Option.iter(key =>
-          setRequests((request: requestsState('requestResponse)) =>
+          setRequests((request: requestsState('requestResponse, _)) =>
             request->Map.String.update(
-              key, (oldRequest: option(ApiRequest.t('requestResponse))) =>
+              key, (oldRequest: option(ApiRequest.t('requestResponse, _))) =>
               Some(
                 newRequestSetter(
                   oldRequest->Option.getWithDefault(NotAsked),
@@ -325,7 +332,7 @@ module Delegate = {
   let useRequestState = useRequestsState(store => store.delegateRequestsState);
 
   let useLoad = (address: string) => {
-    let requestState: ApiRequest.requestState(option(string)) =
+    let requestState: ApiRequest.requestState(option(string), _) =
       useRequestState(Some(address));
 
     DelegateApiRequest.useLoad(~requestState, ~address);

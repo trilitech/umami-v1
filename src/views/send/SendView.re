@@ -542,8 +542,7 @@ let make = (~closeAction) => {
 
     sendOperation({operation, password})
     ->Future.tapOk(hash => {setModalStep(_ => SubmittedStep(hash))})
-    ->Future.tapOk(_ => {updateAccount(sourceAddress)})
-    ->ignore;
+    ->Future.tapOk(_ => {updateAccount(sourceAddress)});
   };
 
   let (batch, setBatch) = React.useState(_ => []);

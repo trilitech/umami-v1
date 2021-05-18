@@ -1,6 +1,6 @@
 module BalanceAPI = API.Balance;
 
-type balanceApiRequest = ApiRequest.t(string);
+type balanceApiRequest = ApiRequest.t(string, string);
 
 let useLoad = (~requestState as (request, setRequest), ~address: string) => {
   let get = (~settings, address) => {
@@ -8,7 +8,13 @@ let useLoad = (~requestState as (request, setRequest), ~address: string) => {
   };
 
   let getRequest =
-    ApiRequest.useGetter(~get, ~kind=Logs.Balance, ~setRequest, ());
+    ApiRequest.useGetter(
+      ~get,
+      ~kind=Logs.Balance,
+      ~setRequest,
+      ~errorToString=x => x,
+      (),
+    );
 
   let isMounted = ReactUtils.useIsMonted();
   React.useEffect3(

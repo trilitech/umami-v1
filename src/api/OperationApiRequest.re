@@ -25,18 +25,25 @@ let token = (operation, password) => {
   password,
 };
 
+let errorToString = TokensApiRequest.API.errorToString;
+
+let filterOutFormError =
+  fun
+  | TokensApiRequest.API.BackendError(WrongPassword) => false
+  | _ => true;
+
 let useCreate = (~sideEffect=?, ()) => {
   let set = (~settings, {operation, password}) => {
     switch (operation) {
     | Protocol(operation) =>
       settings
       ->API.Operation.run(operation, ~password)
-      ->Future.mapError(e => e->API.handleTaquitoError)
+      ->Future.mapError(e => e->TokensApiRequest.API.BackendError)
 
     | Token(operation) =>
       settings
-      ->TokensApiRequest.TokensAPI.inject(operation, ~password)
-      ->Future.mapError(TokensApiRequest.TokensAPI.errorToString)
+      ->TokensApiRequest.API.inject(operation, ~password)
+      ->Future.mapError(e => e)
     };
   };
 
@@ -44,6 +51,8 @@ let useCreate = (~sideEffect=?, ()) => {
     ~toast=true,
     ~set,
     ~kind=Logs.Operation,
+    ~keepError=filterOutFormError,
+    ~errorToString,
     ~sideEffect?,
     (),
   );
@@ -55,14 +64,20 @@ let useSimulate = () => {
   let set = (~settings, operation) =>
     switch (operation) {
     | Operation.Simulation.Protocol(operation, index) =>
-      settings->API.Simulation.run(~index?, operation)
-    | Operation.Simulation.Token(operation, index) =>
       settings
-      ->TokensApiRequest.TokensAPI.simulate(~index?, operation)
-      ->Future.mapError(TokensApiRequest.TokensAPI.errorToString)
+      ->API.Simulation.run(~index?, operation)
+      ->Future.mapError(e => e->TokensApiRequest.API.BackendError)
+    | Operation.Simulation.Token(operation, index) =>
+      settings->TokensApiRequest.API.simulate(~index?, operation)
     };
 
-  ApiRequest.useSetter(~set, ~kind=Logs.Operation, ());
+  ApiRequest.useSetter(
+    ~set,
+    ~kind=Logs.Operation,
+    ~errorToString,
+    ~keepError=filterOutFormError,
+    (),
+  );
 };
 
 let waitForConfirmation = (settings, hash) => {
@@ -99,7 +114,13 @@ let useLoad =
   };
 
   let getRequest =
-    ApiRequest.useGetter(~get, ~kind=Logs.Operation, ~setRequest, ());
+    ApiRequest.useGetter(
+      ~get,
+      ~kind=Logs.Operation,
+      ~errorToString=x => x,
+      ~setRequest,
+      (),
+    );
 
   let isMounted = ReactUtils.useIsMonted();
   React.useEffect3(
