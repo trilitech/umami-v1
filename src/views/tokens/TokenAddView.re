@@ -84,6 +84,7 @@ let make = (~chain, ~closeAction) => {
       handleChange={form.handleChange(Address)}
       error={form.getFieldError(Field(Address))}
       placeholder=I18n.input_placeholder#add_token_address
+      clearButton=true
     />
     <FormGroupTextInput
       label=I18n.label#add_token_name

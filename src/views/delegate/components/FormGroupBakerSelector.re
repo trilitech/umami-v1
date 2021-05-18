@@ -194,6 +194,7 @@ let make = (~label, ~value: option(string), ~handleChange, ~error) => {
            }
            hasError
            placeholder={js|Enter baker's tz1 address|js}
+           onClear={() => handleChange(None)}
          />
        }}
     </View>

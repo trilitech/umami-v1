@@ -5,13 +5,20 @@ let borderWidth = 1.;
 let paddingVertical = 12.;
 let paddingLeft = 22.;
 let paddingRight = 14.;
+let clearIconSize = 28.;
 
 let styles =
   Style.(
     StyleSheet.create({
       "clearMargin": style(~paddingRight=35.->dp, ()),
       "clearBtn":
-        style(~right=5.->dp, ~bottom=8.->dp, ~position=`absolute, ()),
+        style(
+          ~right=5.->dp,
+          ~top=50.->pct,
+          ~marginTop=(-. clearIconSize /. 2.)->dp,
+          ~position=`absolute,
+          (),
+        ),
       "input":
         style(
           ~height=44.->dp,
@@ -54,7 +61,11 @@ let make =
     {onClear
      ->ReactUtils.mapOpt(onClear => {
          <View style=styles##clearBtn>
-           <IconButton onPress={_ => onClear()} icon=Icons.Close.build />
+           <IconButton
+             onPress={_ => onClear()}
+             icon=Icons.Close.build
+             size=clearIconSize
+           />
          </View>
        })
      ->ReactUtils.onlyWhen(value != "")}
