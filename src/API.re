@@ -220,8 +220,8 @@ module CSV = {
     | CannotParseTezAmount(ReBigNumber.t, int, int);
 
   type t =
-    | TezRows(list(Protocol.transfer))
-    | TokenRows(list(Token.Transfer.elt));
+    | TezRows(list(Transfer.elt))
+    | TokenRows(list(Transfer.elt));
 
   let addr = Encodings.string;
   let token = addr;
@@ -251,7 +251,7 @@ module CSV = {
               Error(CannotParseTezAmount(amount, index, 2)),
             )
           ->Result.map(amount =>
-              Protocol.makeTransfer(~destination, ~amount, ())
+              Transfer.makeSingleXTZTransferElt(~destination, ~amount, ())
             )
         )
       ->ResultEx.collect
@@ -271,7 +271,7 @@ module CSV = {
                   Error(CannotParseTokenAmount(amount, index, 2)),
                 )
               ->Result.map(amount =>
-                  Token.makeSingleTransferElt(
+                  Transfer.makeSingleTokenTransferElt(
                     ~destination,
                     ~amount,
                     ~token,
@@ -347,7 +347,7 @@ module Simulation = {
 
     let transfers = source =>
       transfers
-      ->List.map(({amount, destination, tx_options}: Protocol.transfer) =>
+      ->List.map(({amount, destination, tx_options}: Transfer.elt) =>
           ReTaquito.Toolkit.prepareTransfer(
             ~amount=amount->Transfer.currencyToBigNumber,
             ~dest=destination,
@@ -414,7 +414,7 @@ module Operation = {
   let batch = (settings, transfers, ~source, ~password) => {
     let transfers = source =>
       transfers
-      ->List.map(({amount, destination, tx_options}: Protocol.transfer) =>
+      ->List.map(({amount, destination, tx_options}: Transfer.elt) =>
           ReTaquito.Toolkit.prepareTransfer(
             ~amount=amount->Transfer.currencyToBigNumber,
             ~dest=destination,
@@ -1177,8 +1177,7 @@ module Tokens = (Getter: GetterAPI) => {
   let injectBatch = (settings, transfers, ~source, ~password) => {
     let transfers = source =>
       transfers
-      ->ListEx.filterMap(
-          ({amount, destination, tx_options}: Token.Transfer.elt) => {
+      ->ListEx.filterMap(({amount, destination, tx_options}: Transfer.elt) => {
           amount
           ->Transfer.getToken
           ->Option.map(((amount, token)) =>

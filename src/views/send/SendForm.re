@@ -59,13 +59,13 @@ module Password = {
 };
 
 type transaction =
-  | ProtocolTransaction(Protocol.transaction)
-  | TokenTransfer(Token.Transfer.t, Token.t);
+  | ProtocolTransaction(Transfer.t)
+  | TokenTransfer(Transfer.t, Token.t);
 
 let toOperation = (t: transaction) =>
   switch (t) {
   | ProtocolTransaction(transaction) => Operation.transaction(transaction)
-  | TokenTransfer(transfer, _) => Operation.Token(transfer->Token.transfer)
+  | TokenTransfer(transfer, _) => Operation.Token(transfer->Token.Transfer)
   };
 
 let toSimulation = (~index=?, t: transaction) =>
@@ -73,7 +73,7 @@ let toSimulation = (~index=?, t: transaction) =>
   | ProtocolTransaction(transaction) =>
     Operation.Simulation.transaction(transaction, index)
   | TokenTransfer(transfer, _) =>
-    Operation.Simulation.Token(transfer->Token.transfer, index)
+    Operation.Simulation.Token(transfer->Token.Transfer, index)
   };
 
 let buildTransfers = (transfers, parseAmount, build) => {
@@ -94,13 +94,13 @@ let buildTransfers = (transfers, parseAmount, build) => {
 
 let buildTokenTransfer = (inputTransfers, token: Token.t, source, forceLowFee) =>
   TokenTransfer(
-    Token.makeTransfers(
+    Transfer.makeTransfers(
       ~source=source.Account.address,
       ~transfers=
         buildTransfers(
           inputTransfers,
           v => v->FormUtils.keepStrictToken->Option.map(fst),
-          Token.makeSingleTransferElt(~token=token.TokenRepr.address),
+          Transfer.makeSingleTokenTransferElt(~token=token.TokenRepr.address),
         ),
       ~forceLowFee?,
       (),
@@ -115,7 +115,10 @@ let buildProtocolTransaction = (inputTransfers, source, forceLowFee) =>
       buildTransfers(
         inputTransfers,
         FormUtils.keepStrictXTZ,
-        Protocol.makeTransfer(~parameter=?None, ~entrypoint=?None),
+        Transfer.makeSingleXTZTransferElt(
+          ~parameter=?None,
+          ~entrypoint=?None,
+        ),
       ),
     ~forceLowFee?,
     (),

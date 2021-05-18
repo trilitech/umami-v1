@@ -38,15 +38,6 @@ type options = (
   ProtocolOptions.commonOptions,
 );
 
-/* Temporary proxy for the Transfer module */
-module Tr = Transfer;
-
-module Transfer = {
-  type elt = Tr.elt;
-
-  type t = Tr.t;
-};
-
 module Approve = {
   type t = {
     address: string,
@@ -107,55 +98,6 @@ let setCallback = (op, callback) => {
   | GetAllowance(ga) => GetAllowance({...ga, callback})
   | GetTotalSupply(gts) => GetTotalSupply({...gts, callback})
   };
-};
-
-let makeSingleTransferElt =
-    (~destination, ~amount, ~token, ~fee=?, ~gasLimit=?, ~storageLimit=?, ()) =>
-  Tr.makeSingleTokenTransferElt(
-    ~destination,
-    ~amount,
-    ~token,
-    ~fee?,
-    ~gasLimit?,
-    ~storageLimit?,
-    (),
-  );
-
-let makeTransfers = (~source, ~transfers, ~burnCap=?, ~forceLowFee=?, ()) => {
-  let common_options =
-    ProtocolOptions.makeCommonOptions(~fee=None, ~burnCap, ~forceLowFee, ());
-  Tr.{source, transfers, common_options};
-};
-
-let transfer = t => t->Transfer;
-
-let makeSingleTransfer =
-    (
-      ~source,
-      ~destination,
-      ~amount,
-      ~contract,
-      ~fee=?,
-      ~gasLimit=?,
-      ~storageLimit=?,
-      ~burnCap=?,
-      ~forceLowFee=?,
-      (),
-    ) => {
-  let common_options =
-    ProtocolOptions.makeCommonOptions(~fee, ~burnCap, ~forceLowFee, ());
-  let elt =
-    makeSingleTransferElt(
-      ~destination,
-      ~amount,
-      ~token=contract,
-      ~fee?,
-      ~gasLimit?,
-      ~storageLimit?,
-      (),
-    );
-  ();
-  Tr.{source, transfers: [elt], common_options};
 };
 
 let makeGetBalance =

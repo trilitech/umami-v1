@@ -111,10 +111,7 @@ let sourceDestination = (transfer: SendForm.transaction) => {
         (None, (t.destination, t.amount->Transfer.currencyToString))
       );
     ((source, sourceLbl), `Many(destinations));
-  | TokenTransfer(
-      ({source, transfers: [{destination}]}: Token.Transfer.t),
-      _,
-    ) => (
+  | TokenTransfer(({source, transfers: [{destination}]}: Transfer.t), _) => (
       (source, sourceLbl),
       `One((destination, recipientLbl)),
     )

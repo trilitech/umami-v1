@@ -26,3 +26,18 @@ let makeCommonOptions = (~fee, ~burnCap, ~forceLowFee, ()) => {
   burnCap,
   forceLowFee,
 };
+
+let emptyTransferOptions = {
+  fee: None,
+  gasLimit: None,
+  storageLimit: None,
+  parameter: None,
+  entrypoint: None,
+};
+
+type simulationResults = {
+  fee: ProtocolXTZ.t,
+  gasLimit: int,
+  storageLimit: int,
+  revealFee: ProtocolXTZ.t,
+};

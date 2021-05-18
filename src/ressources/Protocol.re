@@ -7,23 +7,9 @@ type delegation = {
   options: commonOptions,
 };
 
-type transfer = Transfer.elt;
-
-type transaction = Transfer.t;
-
 type t =
   | Delegation(delegation)
-  | Transaction(transaction);
-
-let transfer = t => t->Transaction;
-
-let emptyTransferOptions = {
-  fee: None,
-  gasLimit: None,
-  storageLimit: None,
-  parameter: None,
-  entrypoint: None,
-};
+  | Transaction(Transfer.t);
 
 let makeDelegate =
     (~source, ~delegate, ~fee=?, ~burnCap=?, ~forceLowFee=?, ()) => {
@@ -32,69 +18,6 @@ let makeDelegate =
     delegate,
     options: makeCommonOptions(~fee, ~burnCap, ~forceLowFee, ()),
   };
-};
-
-let makeTransfer =
-    (
-      ~destination,
-      ~amount,
-      ~fee=?,
-      ~parameter=?,
-      ~entrypoint=?,
-      ~gasLimit=?,
-      ~storageLimit=?,
-      (),
-    ) =>
-  Transfer.makeSingleXTZTransferElt(
-    ~destination,
-    ~amount,
-    ~fee?,
-    ~parameter?,
-    ~entrypoint?,
-    ~gasLimit?,
-    ~storageLimit?,
-    (),
-  );
-
-let makeTransaction =
-    (~source, ~transfers, ~fee=?, ~burnCap=?, ~forceLowFee=?, ()) =>
-  Transfer.makeTransfers(
-    ~source,
-    ~transfers,
-    ~fee?,
-    ~burnCap?,
-    ~forceLowFee?,
-    (),
-  )
-  ->transfer;
-
-let makeSingleTransaction =
-    (
-      ~source,
-      ~amount,
-      ~destination,
-      ~burnCap=?,
-      ~forceLowFee=?,
-      ~fee=?,
-      ~parameter=?,
-      ~entrypoint=?,
-      ~gasLimit=?,
-      ~storageLimit=?,
-      (),
-    ) => {
-  let transfers = [
-    makeTransfer(
-      ~amount,
-      ~destination,
-      ~fee?,
-      ~parameter?,
-      ~entrypoint?,
-      ~gasLimit?,
-      ~storageLimit?,
-      (),
-    ),
-  ];
-  makeTransaction(~source, ~transfers, ~fee?, ~burnCap?, ~forceLowFee?, ());
 };
 
 type simulationResults = {
