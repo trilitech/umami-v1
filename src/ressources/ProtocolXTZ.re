@@ -56,6 +56,8 @@ let fromMutezString = Int64.of_string;
 let toInt64 = x => x;
 let ofInt64 = x => x;
 
+let toBigNumber = x => x->toInt64->ReBigNumber.fromInt64;
+
 let toString = (xtz: t) => {
   open Int64;
   let integer = to_string(xtz / oneXtz);
