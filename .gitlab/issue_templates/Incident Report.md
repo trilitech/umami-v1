@@ -31,3 +31,11 @@
 
 ### What is the evidence (i.e. screenshots, logs, etc)?
 
+
+## Severity
+<!-- Pick one -->
+<!-- /label ~"Severity::1-Critical" --> 
+<!-- /label ~"Severity::2-Major" -->
+<!-- /label ~"Severity::3-Moderate" -->
+<!-- /label ~"Severity::4-Minor" -->
+<!-- /label ~"Severity::5-Cosmetic" -->
