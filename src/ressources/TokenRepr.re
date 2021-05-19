@@ -33,8 +33,3 @@ type t = {
   symbol: string,
   chain: string,
 };
-
-type currency = (Unit.t, t);
-
-let addCurrency = ((v, t), (v', t')) =>
-  t == t' ? Some((Unit.add(v, v'), t)) : None;

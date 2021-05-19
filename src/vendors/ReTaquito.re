@@ -665,7 +665,7 @@ module Transfer = {
           )
           ->Ok
           ->Future.value
-        | Token((amount, token)) =>
+        | Token(amount, token) =>
           prepareFA12Transfer(
             contractCache,
             ~source,

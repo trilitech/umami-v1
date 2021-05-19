@@ -130,13 +130,13 @@ let reduceAmounts = l =>
         ~group=
           fun
           | Transfer.XTZ(_) => None
-          | Token((_, t)) => Some(t),
+          | Token(_, t) => Some(t),
         ~map=(acc, v) =>
         switch (acc, v) {
         | (None, v) => v
         | (Some(XTZ(acc)), XTZ(v)) => XTZ(ProtocolXTZ.Infix.(acc + v))
-        | (Some(Token((acc, t))), Token((v, _))) =>
-          Token((Token.Unit.Infix.(acc + v), t))
+        | (Some(Token(acc, t)), Token(v, _)) =>
+          Token(Token.Unit.Infix.(acc + v), t)
         | (Some(acc), _) => acc
         }
       )
@@ -636,7 +636,7 @@ let make = (~closeAction) => {
     Transfer.(
       fun
       | XTZ(v) => I18n.t#xtz_amount(v->ProtocolXTZ.toString)
-      | Token((v, t)) => I18n.t#amount(v->Token.Unit.toNatString, t.symbol)
+      | Token(v, t) => I18n.t#amount(v->Token.Unit.toNatString, t.symbol)
     );
 
   <ReactFlipToolkit.Flipper

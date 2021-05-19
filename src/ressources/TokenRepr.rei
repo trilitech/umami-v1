@@ -26,6 +26,3 @@ type t = {
   symbol: string,
   chain: string,
 };
-
-type currency = (Unit.t, t);
-let addCurrency: (currency, currency) => option(currency);
