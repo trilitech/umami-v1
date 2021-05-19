@@ -54,15 +54,12 @@ module AccountInfo = {
   };
 };
 
-let buildDestinations = (destinations, showCurrency) => {
+let buildDestinations = (destinations, showAmount) => {
   switch (destinations) {
   | `One(address, title) =>
     <AccountInfo style=styles##element address title />
   | `Many(recipients) =>
-    <BatchView.Transactions
-      recipients={recipients->List.reverse}
-      showCurrency
-    />
+    <BatchView.Transactions recipients={recipients->List.reverse} showAmount />
   };
 };
 

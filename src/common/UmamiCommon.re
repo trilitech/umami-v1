@@ -60,6 +60,18 @@ module Lib = {
   module List = {
     let add = (l, e) => [e, ...l];
 
+    let reduceGroupBy =
+        (l: list('a), ~group: 'a => 'g, ~map: (option('b), 'a) => 'b)
+        : list(('g, 'b)) =>
+      l->List.reduce(
+        [],
+        (acc, e) => {
+          let group: 'g = e->group;
+          let groupValue = acc->List.getAssoc(group, (==));
+          acc->List.setAssoc(group, map(groupValue, e), (==));
+        },
+      );
+
     let addOpt = (l, e) =>
       switch (e) {
       | None => l

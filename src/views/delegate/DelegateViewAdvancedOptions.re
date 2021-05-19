@@ -35,10 +35,10 @@ let make = (~form: DelegateForm.api) => {
   let theme = ThemeContext.useTheme();
 
   <View>
-    <FormGroupTextInput
+    <FormGroupXTZInput
       label=I18n.label#fee
       value={form.values.fee}
-      handleChange={form.handleChange(Fee)}
+      handleChange={fee => form.handleChange(Fee, fee)}
       error={form.getFieldError(Field(Fee))}
       style=styles##formRowInput
       decoration=FormGroupXTZInput.xtzDecoration

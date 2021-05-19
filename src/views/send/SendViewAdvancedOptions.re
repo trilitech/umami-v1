@@ -26,9 +26,7 @@ let make = (~operation, ~token, ~form: SendForm.api) => {
     StoreContext.Operations.useSimulate();
 
   React.useEffect0(() => {
-    if (form.values.sender != ""
-        && form.values.recipient != Address("")
-        && form.values.amount != "") {
+    if (form.values.recipient != AnyString("") && form.values.amount != "") {
       sendOperationSimulate(operation)
       ->Future.tapOk(dryRun => {
           form.handleChange(Fee, dryRun.fee->ProtocolXTZ.toString);
@@ -46,10 +44,10 @@ let make = (~operation, ~token, ~form: SendForm.api) => {
 
   <View>
     <View style=styles##formRowInputs>
-      <FormGroupTextInput
+      <FormGroupXTZInput
         label=I18n.label#fee
         value={form.values.fee}
-        handleChange={form.handleChange(Fee)}
+        handleChange={fee => form.handleChange(Fee, fee)}
         error={form.getFieldError(Field(Fee))}
         style=styles##formRowInput
         decoration=FormGroupXTZInput.xtzDecoration

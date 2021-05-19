@@ -11,7 +11,7 @@ let baseRenderItem = AccountSelector.baseRenderItem(~showAmount=Nothing);
 let make =
     (
       ~label,
-      ~value: string,
+      ~value: option(Account.t),
       ~handleChange,
       ~error,
       ~disabled=?,
@@ -36,7 +36,9 @@ let make =
         onValueChange={account => {
           accounts->Map.String.get(account.address)->handleChange
         }}
-        selectedValueKey=value
+        selectedValueKey={
+          value->Option.mapWithDefault("", a => a.Account.address)
+        }
         renderButton={baseRenderButton(~token)}
         renderItem={baseRenderItem(~token)}
         keyPopover="formGroupAccountSelector"

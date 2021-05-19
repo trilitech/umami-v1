@@ -11,7 +11,7 @@ module Repr: {
 
   let zero: t;
 
-  let formatZ: string => string;
+  let forceFromString: string => option(t);
 
   let add: (t, t) => t;
 
@@ -26,16 +26,15 @@ module Repr: {
 
   let toNatString = toFixed;
   let fromNatString = s => s->fromString->fromBigNumber;
+  let forceFromString = s => {
+    let v = s->fromString;
+    v->isNaN ? None : !v->isInteger ? v->integerValue->Some : None;
+  };
 
   let isValid = v =>
     v->fromNatString->Option.mapWithDefault(false, isInteger);
 
   let zero = fromString("0");
-
-  let formatZ = amount =>
-    amount
-    ->fromNatString
-    ->Option.mapWithDefault("0", v => v->integerValue->toNatString);
 
   let add = plus;
 
