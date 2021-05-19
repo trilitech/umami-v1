@@ -45,7 +45,10 @@ let useCreate = (~sideEffect=?, ()) => {
       ->TokensApiRequest.API.inject(operation, ~password)
       ->Future.mapError(e => e)
 
-    | Transfer(_) => assert(false)
+    | Transfer(t) =>
+      settings
+      ->API.Operation.batch(t.transfers, ~source=t.source, ~password)
+      ->Future.mapError(API.Error.taquito)
     };
   };
 
@@ -71,7 +74,10 @@ let useSimulate = () => {
       ->Future.mapError(API.Error.taquito)
     | Operation.Simulation.Token(operation, index) =>
       settings->TokensApiRequest.API.simulate(~index?, operation)
-    | Operation.Simulation.Transfer(_) => assert(false)
+    | Operation.Simulation.Transfer(t, index) =>
+      settings
+      ->API.Simulation.batch(t.transfers, ~source=t.source, ~index?, ())
+      ->Future.mapError(API.Error.taquito)
     };
 
   ApiRequest.useSetter(

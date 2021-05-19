@@ -343,6 +343,14 @@ module Simulation = {
     )
     ->Future.flatMapOk(r =>
         ReTaquito.Estimate.handleEstimationResults(r, customValues, index)
+      )
+    ->Future.mapOk(({totalCost, gasLimit, storageLimit, revealFee}) =>
+        Protocol.{
+          fee: totalCost->ProtocolXTZ.fromMutezInt,
+          gasLimit,
+          storageLimit,
+          revealFee: revealFee->ProtocolXTZ.fromMutezInt,
+        }
       );
   };
 
@@ -354,27 +362,25 @@ module Simulation = {
       ~delegate=?delegation.Protocol.delegate,
       ~fee=?delegation.Protocol.options.fee->Option.map(ProtocolXTZ.toInt64),
       (),
-    );
+    )
+    ->Future.mapOk(({totalCost, gasLimit, storageLimit, revealFee}) =>
+        Protocol.{
+          fee: totalCost->ProtocolXTZ.fromMutezInt,
+          gasLimit,
+          storageLimit,
+          revealFee: revealFee->ProtocolXTZ.fromMutezInt,
+        }
+      );
   };
 
   let run = (settings, ~index=?, operation: Protocol.t) => {
-    let r =
-      switch (operation, index) {
-      | (Delegation(d), _) => setDelegate(settings, d)
-      | (Transaction({transfers, source}), None) =>
-        batch(settings, transfers, ~source, ())
-      | (Transaction({transfers, source}), Some(index)) =>
-        batch(settings, transfers, ~source, ~index, ())
-      };
-
-    r->Future.mapOk(({totalCost, gasLimit, storageLimit, revealFee}) =>
-      Protocol.{
-        fee: totalCost->ProtocolXTZ.fromMutezInt,
-        gasLimit,
-        storageLimit,
-        revealFee: revealFee->ProtocolXTZ.fromMutezInt,
-      }
-    );
+    switch (operation, index) {
+    | (Delegation(d), _) => setDelegate(settings, d)
+    | (Transaction({transfers, source}), None) =>
+      batch(settings, transfers, ~source, ())
+    | (Transaction({transfers, source}), Some(index)) =>
+      batch(settings, transfers, ~source, ~index, ())
+    };
   };
 };
 
@@ -1107,17 +1113,8 @@ module Tokens = (Getter: GetterAPI) => {
       });
   };
 
-  let batchEstimate = (settings, transfers, ~source, ~index=?, ()) => {
-    Simulation.batch(settings, transfers, ~source, ~index?, ())
-    ->Future.mapOk(({totalCost, gasLimit, storageLimit, revealFee}) =>
-        Protocol.{
-          fee: totalCost->ProtocolXTZ.fromMutezInt,
-          gasLimit,
-          storageLimit,
-          revealFee: revealFee->ProtocolXTZ.fromMutezInt,
-        }
-      );
-  };
+  let batchEstimate = (settings, transfers, ~source, ~index=?, ()) =>
+    Simulation.batch(settings, transfers, ~source, ~index?, ());
 
   let batch = (settings, transfers, ~source, ~password) =>
     Operation.batch(settings, transfers, ~source, ~password);

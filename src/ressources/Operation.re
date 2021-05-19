@@ -16,11 +16,11 @@ module Simulation = {
   type t =
     | Protocol(Protocol.t, index)
     | Token(Token.operation, index)
-    | Transfer(Transfer.t);
+    | Transfer(Transfer.t, index);
 
   let delegation = d => Protocol(d->Delegation, None);
   let transaction = (t, index) => Protocol(t->Transaction, index);
-  let batch = b => b->Transfer;
+  let batch = (b, index) => Transfer(b, index);
 };
 
 let makeDelegate =
