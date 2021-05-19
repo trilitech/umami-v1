@@ -15,20 +15,23 @@ module SettingTextInput = {
         ~placeholder=?,
         ~style as styleFromProp=?,
       ) => {
-    <View>
-      <ThemedTextInput
-        style=Style.(arrayOption([|Some(styles##input), styleFromProp|]))
-        paddingLeft=16.
-        paddingVertical=8.
-        value
-        onValueChange
-        hasError={error->Belt.Option.isSome}
-        ?keyboardType
-        ?placeholder
-        ?onSubmitEditing
-      />
+    <>
+      <View>
+        <ThemedTextInput
+          style=Style.(arrayOption([|Some(styles##input), styleFromProp|]))
+          paddingLeft=16.
+          paddingVertical=8.
+          value
+          onValueChange
+          hasError={error->Belt.Option.isSome}
+          ?keyboardType
+          ?placeholder
+          ?onSubmitEditing
+          onClear={() => onValueChange("")}
+        />
+      </View>
       <FormError ?error />
-    </View>;
+    </>;
   };
 };
 

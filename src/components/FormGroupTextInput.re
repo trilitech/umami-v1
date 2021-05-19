@@ -34,6 +34,7 @@ let make =
       ~secureTextEntry=?,
       ~placeholder=?,
       ~disabled=?,
+      ~clearButton=false,
       ~onSubmitEditing=?,
       ~decoration: option((~style: Style.t) => React.element)=?,
       ~style as styleFromProp: option(ReactNative.Style.t)=?,
@@ -55,6 +56,7 @@ let make =
         ?placeholder
         ?disabled
         ?onSubmitEditing
+        onClear=?{clearButton ? Some(() => handleChange("")) : None}
       />
       {decoration->ReactUtils.mapOpt(deco => deco(~style=styles##decoration))}
     </View>

@@ -14,7 +14,7 @@ let addressExistsCheck =
     (aliases, values: StateLenses.state): ReSchema.fieldState => {
   switch (aliases->Map.String.get(values.address)) {
   | None => Valid
-  | Some(a: Account.t) =>
+  | Some((a: Account.t)) =>
     Error(I18n.form_input_error#key_already_registered(a.alias))
   };
 };
@@ -133,6 +133,7 @@ let make = (~initAddress=?, ~action: action, ~closeAction) => {
         | Edit(_) => Some(true)
         }
       }
+      clearButton=true
     />
     <Buttons.SubmitPrimary
       text={
