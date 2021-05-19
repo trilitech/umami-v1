@@ -28,7 +28,7 @@ module Repr: {
   let fromNatString = s => s->fromString->fromBigNumber;
   let forceFromString = s => {
     let v = s->fromString;
-    v->isNaN ? None : !v->isInteger ? v->integerValue->Some : None;
+    v->isNaN ? None : v->isInteger ? v->integerValue->Some : None;
   };
 
   let isValid = v =>
