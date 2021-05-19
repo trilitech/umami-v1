@@ -214,6 +214,7 @@ module CSV = {
 
   type error =
     | Parser(CSVParser.error)
+    | UnknownToken(string)
     | NoRows
     | CannotMixTokens(int)
     | CannotParseTokenAmount(ReBigNumber.t, int, int)
@@ -284,7 +285,7 @@ module CSV = {
       ->ResultEx.collect
     );
 
-  let parseCSV = content => {
+  let parseCSV = (content, tokens) => {
     let rows =
       parseCSV(content, rowEncoding)
       ->ResultEx.mapError(e => Error(Parser(e)))
@@ -293,7 +294,12 @@ module CSV = {
     | Ok([(_, _, None, _), ..._]) =>
       rows->handleTezCSV->Result.map(r => TezRows(r))
     | Ok([(_, _, Some(token), _), ..._]) =>
-      handleTokenCSV(rows, token)->Result.map(r => TokenRows(r))
+      tokens
+      ->Map.String.get(token)
+      ->Option.mapWithDefault(Error(UnknownToken(token)), token =>
+          handleTokenCSV(rows, token)->Result.map(r => TokenRows(r))
+        )
+
     | Ok([]) => Error(NoRows)
     | Error(e) => Error(e)
     };
@@ -317,6 +323,7 @@ let handleCSVError = e =>
          I18n.csv#cannot_parse_token_amount(v, row + 1, col + 1)
        | CannotParseTezAmount(v, row, col) =>
          I18n.csv#cannot_parse_tez_amount(v, row + 1, col + 1)
+       | UnknownToken(s) => I18n.csv#unknown_token(s)
      );
 
 module Simulation = {

@@ -669,7 +669,7 @@ module Transfer = {
           prepareFA12Transfer(
             contractCache,
             ~source,
-            ~token,
+            ~token=token.TokenRepr.address,
             ~dest=tx.destination,
             ~amount=amount->TokenRepr.Unit.toBigNumber,
             ~fee=?tx.tx_options.fee->Option.map(ProtocolXTZ.toBigNumber),

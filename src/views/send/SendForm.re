@@ -12,7 +12,7 @@ module StateLenses = [%lenses
 ];
 
 type validState = {
-  amount: FormUtils.strictAmount,
+  amount: Transfer.currency,
   sender: Account.t,
   recipient: FormUtils.Account.t,
   fee: option(ProtocolXTZ.t),
@@ -39,7 +39,7 @@ let unsafeExtractValidState = (token, state: StateLenses.state): validState => {
 };
 
 let toState = (vs: validState): StateLenses.state => {
-  amount: vs.amount->FormUtils.amountToString,
+  amount: vs.amount->Transfer.currencyToString,
   sender: vs.sender->Some,
   recipient: vs.recipient->FormUtils.Account.Valid,
 
@@ -58,85 +58,46 @@ module Password = {
   include ReForm.Make(StateLenses);
 };
 
-type transaction =
-  | ProtocolTransaction(Transfer.t)
-  | TokenTransfer(Transfer.t, Token.t);
+type transaction = Transfer.t;
 
-let toOperation = (t: transaction) =>
-  switch (t) {
-  | ProtocolTransaction(transaction) => Operation.transaction(transaction)
-  | TokenTransfer(transfer, _) => Operation.Token(transfer->Token.Transfer)
-  };
-
-let toSimulation = (~index=?, t: transaction) =>
-  switch (t) {
-  | ProtocolTransaction(transaction) =>
-    Operation.Simulation.transaction(transaction, index)
-  | TokenTransfer(transfer, _) =>
-    Operation.Simulation.Token(transfer->Token.Transfer, index)
-  };
-
-let buildTransfers = (transfers, parseAmount, build) => {
-  transfers->List.keepMap(((t: validState, advOpened)) => {
+let buildTransferElts = (transfers, build) => {
+  transfers->List.map(((t: validState, advOpened)) => {
     let destination = t.recipient->FormUtils.Account.address;
 
     let gasLimit = advOpened ? t.gasLimit : None;
     let storageLimit = advOpened ? t.storageLimit : None;
     let fee = advOpened ? t.fee : None;
 
-    let amount = parseAmount(t.amount);
-
-    amount->Option.map(amount =>
-      build(~destination, ~amount, ~fee?, ~gasLimit?, ~storageLimit?, ())
+    build(
+      ~destination,
+      ~amount=t.amount,
+      ~fee?,
+      ~gasLimit?,
+      ~storageLimit?,
+      (),
     );
   });
 };
 
-let buildTokenTransfer = (inputTransfers, token: Token.t, source, forceLowFee) =>
-  TokenTransfer(
-    Transfer.makeTransfers(
-      ~source=source.Account.address,
-      ~transfers=
-        buildTransfers(
-          inputTransfers,
-          v => v->FormUtils.keepStrictToken->Option.map(fst),
-          Transfer.makeSingleTokenTransferElt(~token=token.TokenRepr.address),
-        ),
-      ~forceLowFee?,
-      (),
-    ),
-    token,
-  );
-
-let buildProtocolTransaction = (inputTransfers, source, forceLowFee) =>
+let buildTransfer = (inputTransfers, source, forceLowFee) =>
   Transfer.makeTransfers(
     ~source=source.Account.address,
     ~transfers=
-      buildTransfers(
+      buildTransferElts(
         inputTransfers,
-        FormUtils.keepStrictXTZ,
-        Transfer.makeSingleXTZTransferElt(
-          ~parameter=?None,
-          ~entrypoint=?None,
-        ),
+        Transfer.makeSingleTransferElt(~parameter=?None, ~entrypoint=?None),
       ),
     ~forceLowFee?,
     (),
-  )
-  ->ProtocolTransaction;
+  );
 
-let buildTransaction =
-    (batch: list((validState, bool)), token: option(Token.t)) => {
+let buildTransaction = (batch: list((validState, bool))) => {
   switch (batch) {
   | [] => assert(false)
   | [(first, _), ..._] as inputTransfers =>
     let source = first.sender;
     let forceLowFee = first.forceLowFee ? Some(true) : None;
 
-    switch (token) {
-    | Some(token) =>
-      buildTokenTransfer(inputTransfers, token, source, forceLowFee)
-    | None => buildProtocolTransaction(inputTransfers, source, forceLowFee)
-    };
+    buildTransfer(inputTransfers, source, forceLowFee);
   };
 };

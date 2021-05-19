@@ -5,6 +5,7 @@ let styles =
   Style.(
     StyleSheet.create({
       "container": style(~marginTop=30.->dp, ()),
+      "totalAmount": style(~textAlign=`right, ()),
       "listLabelContainer":
         style(
           ~flexDirection=`row,
@@ -120,9 +121,10 @@ module Transactions = {
     [@react.component]
     let make = (~onAddCSVList) => {
       let addLog = LogsContext.useAdd();
+      let tokens = StoreContext.Tokens.useGetAll();
 
       let onChange = fileTextContent => {
-        let parsedCSV = fileTextContent->API.CSV.parseCSV;
+        let parsedCSV = fileTextContent->API.CSV.parseCSV(tokens);
         switch (parsedCSV) {
         | Result.Ok(parsedCSV) => onAddCSVList(parsedCSV)
         | Result.Error(error) =>
@@ -187,7 +189,7 @@ let make =
       ~onEdit,
       ~batch,
       ~showAmount,
-      ~reduceAmounts: _ => FormUtils.strictAmount,
+      ~reduceAmounts: _ => list(Transfer.currency),
       ~loading,
     ) => {
   let theme: ThemeContext.theme = ThemeContext.useTheme();
@@ -217,13 +219,26 @@ let make =
       <Typography.Overline2>
         I18n.label#summary_total->React.string
       </Typography.Overline2>
-      <Typography.Subtitle1>
+      <View>
         {batch
          ->List.map(((t, _)) => t.amount)
          ->reduceAmounts
-         ->showAmount
-         ->React.string}
-      </Typography.Subtitle1>
+         ->List.map(a =>
+             <Typography.Subtitle1
+               style=styles##totalAmount
+               key={
+                 a
+                 ->Transfer.getToken
+                 ->Option.mapWithDefault("xtz", ((_, t)) =>
+                     t.TokenRepr.alias
+                   )
+               }>
+               {a->showAmount->React.string}
+             </Typography.Subtitle1>
+           )
+         ->List.toArray
+         ->React.array}
+      </View>
     </View>
     <Transactions recipients showAmount onAddCSVList onDelete />
     <View style=FormStyles.verticalFormAction>
