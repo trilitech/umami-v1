@@ -144,25 +144,40 @@ let reduceAmounts = l =>
     ->List.sort(compareCurrencies)
   );
 
+let showAmount =
+  Transfer.(
+    fun
+    | XTZ(v) => I18n.t#xtz_amount(v->ProtocolXTZ.toString)
+    | Token(v, t) => I18n.t#amount(v->Token.Unit.toNatString, t.symbol)
+  );
+
 let buildSummaryContent =
     (transaction: Transfer.t, dryRun: Protocol.simulationResults) => {
   let fee = (
     I18n.label#fee,
-    I18n.t#xtz_amount(
-      ProtocolXTZ.Infix.(dryRun.fee - dryRun.revealFee)->ProtocolXTZ.toString,
-    ),
+    [
+      I18n.t#xtz_amount(
+        ProtocolXTZ.Infix.(dryRun.fee - dryRun.revealFee)
+        ->ProtocolXTZ.toString,
+      ),
+    ],
   );
 
   let revealFee =
     dryRun.revealFee != ProtocolXTZ.zero
       ? (
           I18n.label#implicit_reveal_fee,
-          I18n.t#xtz_amount(dryRun.revealFee->ProtocolXTZ.toString),
+          [I18n.t#xtz_amount(dryRun.revealFee->ProtocolXTZ.toString)],
         )
         ->Some
       : None;
 
   let totals = transaction.transfers->List.map(t => t.amount)->reduceAmounts;
+
+  let subtotals = (
+    I18n.label#summary_subtotal,
+    totals->List.map(showAmount),
+  );
 
   let totalTez = {
     let (sub, noTokens) =
@@ -173,13 +188,15 @@ let buildSummaryContent =
 
     (
       noTokens ? I18n.label#summary_total : I18n.label#summary_total_tez,
-      I18n.t#xtz_amount(
-        ProtocolXTZ.Infix.(sub + dryRun.fee)->ProtocolXTZ.toString,
-      ),
+      [
+        I18n.t#xtz_amount(
+          ProtocolXTZ.Infix.(sub + dryRun.fee)->ProtocolXTZ.toString,
+        ),
+      ],
     );
   };
 
-  Lib.List.([totalTez]->addOpt(revealFee)->add(fee));
+  Lib.List.([totalTez]->addOpt(revealFee)->add(fee)->add(subtotals));
 };
 
 module Form = {
@@ -631,13 +648,6 @@ let make = (~closeAction) => {
       I18n.t#amount(a, token.symbol)
     );
   };
-
-  let showAmount =
-    Transfer.(
-      fun
-      | XTZ(v) => I18n.t#xtz_amount(v->ProtocolXTZ.toString)
-      | Token(v, t) => I18n.t#amount(v->Token.Unit.toNatString, t.symbol)
-    );
 
   <ReactFlipToolkit.Flipper
     flipKey={advancedOptionsOpened->string_of_bool ++ modalStep->stepToString}>

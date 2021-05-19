@@ -219,21 +219,24 @@ let buildSummaryContent = (dryRun: Protocol.simulationResults) => {
     dryRun.revealFee != ProtocolXTZ.zero
       ? (
           I18n.label#implicit_reveal_fee,
-          I18n.t#xtz_amount(dryRun.revealFee->ProtocolXTZ.toString),
+          [I18n.t#xtz_amount(dryRun.revealFee->ProtocolXTZ.toString)],
         )
         ->Some
       : None;
 
   let fee = (
     I18n.label#fee,
-    I18n.t#xtz_amount(
-      ProtocolXTZ.Infix.(dryRun.fee - dryRun.revealFee)->ProtocolXTZ.toString,
-    ),
+    [
+      I18n.t#xtz_amount(
+        ProtocolXTZ.Infix.(dryRun.fee - dryRun.revealFee)
+        ->ProtocolXTZ.toString,
+      ),
+    ],
   );
 
   let total = (
     I18n.label#summary_total,
-    I18n.t#xtz_amount(dryRun.fee->ProtocolXTZ.toString),
+    [I18n.t#xtz_amount(dryRun.fee->ProtocolXTZ.toString)],
   );
 
   [fee, ...revealFee->Option.mapWithDefault([total], r => [r, total])];

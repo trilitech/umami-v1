@@ -52,11 +52,6 @@ let buildAmount = amount => {
   );
 };
 
-/* let computeTotal = batch => */
-/*   batch->List.reduce(0., (acc, t: SendForm.StateLenses.state) => */
-/*     acc +. float_of_string(t.amount) */
-/*   ); */
-
 module Item = {
   [@react.component]
   let make = (~i, ~recipient, ~amount, ~onDelete=?, ~onEdit=?) => {
@@ -223,16 +218,9 @@ let make =
         {batch
          ->List.map(((t, _)) => t.amount)
          ->reduceAmounts
-         ->List.map(a =>
+         ->List.mapWithIndex((i, a) =>
              <Typography.Subtitle1
-               style=styles##totalAmount
-               key={
-                 a
-                 ->Transfer.getToken
-                 ->Option.mapWithDefault("xtz", ((_, t)) =>
-                     t.TokenRepr.alias
-                   )
-               }>
+               style=styles##totalAmount key={i->Int.toString}>
                {a->showAmount->React.string}
              </Typography.Subtitle1>
            )
