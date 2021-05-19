@@ -57,6 +57,7 @@ let make =
       ?isPrimary
       ?tooltip
       ?isActive
+      focusOutline=(Default, 2.)
       style=Style.(
         arrayOption([|
           Some(styles##button),

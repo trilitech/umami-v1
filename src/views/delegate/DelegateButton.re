@@ -28,10 +28,10 @@ open ReactNative;
 let styles =
   Style.(
     StyleSheet.create({
-      "button":
-        style(~alignSelf=`flexStart, ~overflow=`hidden, ~borderRadius=4., ()),
+      "button": style(~alignSelf=`flexStart, ~borderRadius=4., ()),
       "pressable":
         style(
+          ~borderRadius=4.,
           ~height=34.->dp,
           ~minWidth=104.->dp,
           ~paddingHorizontal=16.->dp,
@@ -50,11 +50,12 @@ let make = (~zeroTez, ~action: Delegate.action, ~style as styleFromProp=?) => {
     "delegate_button_"
     ++ Delegate.account(action)->Option.mapWithDefault("", a => a.address);
 
-  let (textColor, backgroundColor, text, tooltip) =
+  let (textColor, backgroundColor, focusOutlineColor, text, tooltip) =
     switch (action) {
     | _ when zeroTez => (
         theme.colors.primaryTextDisabled,
         theme.colors.primaryButtonBackground,
+        "",
         I18n.btn#delegate,
         Some((tooltipId, I18n.tooltip#no_tez_no_delegation)),
       )
@@ -62,13 +63,15 @@ let make = (~zeroTez, ~action: Delegate.action, ~style as styleFromProp=?) => {
     | Create(_) => (
         theme.colors.primaryTextHighEmphasis,
         theme.colors.primaryButtonBackground,
+        theme.colors.primaryButtonOutline,
         I18n.btn#delegate,
         None,
       )
     | Edit(_)
     | Delete(_) => (
         theme.colors.primaryTextDisabled,
-        theme.colors.iconDisabled,
+        theme.colors.surfaceButtonBackground,
+        theme.colors.surfaceButtonOutline,
         I18n.btn#delegated,
         Some((tooltipId, I18n.tooltip#update_delegation)),
       )
@@ -91,6 +94,7 @@ let make = (~zeroTez, ~action: Delegate.action, ~style as styleFromProp=?) => {
       <ThemedPressable
         style=Style.(arrayOption([|Some(styles##pressable)|]))
         isPrimary=true
+        focusOutline=(Color(focusOutlineColor), 3.)
         ?tooltip
         disabled=zeroTez
         onPress

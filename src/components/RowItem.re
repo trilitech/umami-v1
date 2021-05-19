@@ -117,7 +117,7 @@ module Base = {
                Some(styles##innerContainer),
                hovered
                  ? Some(
-                     style(~backgroundColor=theme.colors.stateHovered, ()),
+                     style(~backgroundColor=theme.colors.stateRowHovered, ()),
                    )
                  : None,
              |])

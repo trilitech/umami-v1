@@ -25,6 +25,12 @@
 
 open ReactNative;
 
+type focusOutlineColor =
+  | Default
+  | Color(string);
+
+type focusOutlineConfig = (focusOutlineColor, float);
+
 let styles =
   Style.(StyleSheet.create({"container": style(~overflow=`hidden, ())}));
 
@@ -42,6 +48,7 @@ let make =
       ~isActive=false,
       ~disabled=false,
       ~isPrimary=false,
+      ~focusOutline: option(focusOutlineConfig)=?,
       ~accessibilityRole: option(Accessibility.role)=?,
       ~children,
     ) => {
@@ -53,16 +60,24 @@ let make =
   let backgroundColor = (~pressed, ~hovered, ~focused) =>
     if (disabled) {
       isPrimary ? Some(theme.colors.primaryStateDisabled) : None;
-    } else if (hovered || focused) {
-      isPrimary
-        ? Some(theme.colors.primaryStateHovered)
-        : Some(theme.colors.stateHovered);
     } else if (pressed) {
       isPrimary
         ? Some(theme.colors.primaryStatePressed)
         : Some(theme.colors.statePressed);
+    } else if (hovered || focused && focusOutline->Option.isNone) {
+      isPrimary
+        ? Some(theme.colors.primaryStateHovered)
+        : Some(theme.colors.stateHovered);
     } else {
       None;
+    };
+
+  let outlineColor = (~focused) =>
+    switch (focused, focusOutline) {
+    | (true, Some((Default, size))) =>
+      Some((theme.colors.stateFocusedOutline, size))
+    | (true, Some((Color(color), size))) => Some((color, size))
+    | _ => None
     };
 
   <View
@@ -82,6 +97,15 @@ let make =
                styleFromProp,
                backgroundColor(~pressed, ~hovered, ~focused)
                ->Option.map(b => Style.(style(~backgroundColor=b, ()))),
+               outlineColor(~focused)
+               ->Option.map(((c, s)) =>
+                   Style.(
+                     style()
+                     ->unsafeAddStyle({
+                         "boxShadow": {j|0px 0px 0px $(s)px $c|j},
+                       })
+                   )
+                 ),
                interactionStyle->Option.flatMap(interactionStyle =>
                  interactionStyle(interactionState)
                ),

@@ -60,6 +60,7 @@ module FormBase = {
         ~disabled=false,
         ~loading=false,
         ~isPrimary=false,
+        ~focusOutline=?,
         ~vStyle=?,
         ~style=?,
         ~children,
@@ -70,6 +71,7 @@ module FormBase = {
         style={Style.arrayOption([|Some(styles##pressable), style|])}
         outerStyle=styles##outer
         isPrimary
+        ?focusOutline
         onPress
         disabled={disabled || loading}
         accessibilityRole=`button>
@@ -160,6 +162,10 @@ module SubmitPrimary = {
     <FormBase
       onPress
       isPrimary=true
+      focusOutline=ThemedPressable.(
+        Color(theme.colors.primaryButtonOutline),
+        3.,
+      )
       disabled
       ?loading
       vStyle=Style.(

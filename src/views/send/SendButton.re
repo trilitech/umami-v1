@@ -30,11 +30,12 @@ let styles =
     StyleSheet.create({
       "button":
         StyleSheet.flatten([|
-          style(~borderRadius=35., ~overflow=`hidden, ()),
+          style(~borderRadius=35., ()),
           ShadowStyles.button,
         |]),
       "iconContainer":
         style(
+          ~borderRadius=35.,
           ~width=70.->dp,
           ~height=70.->dp,
           ~alignItems=`center,
@@ -64,6 +65,7 @@ let make = () => {
       )>
       <ThemedPressable
         isPrimary=true
+        focusOutline=(Color(theme.colors.primaryButtonOutline), 3.)
         style=styles##iconContainer
         onPress
         accessibilityRole=`button>
