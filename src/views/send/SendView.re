@@ -505,7 +505,7 @@ let make = (~closeAction) => {
 
   let (modalStep, setModalStep) = React.useState(_ => SendStep);
 
-  let (selectedToken, setSelectedToken) as tokenState =
+  let (selectedToken, _) as tokenState =
     React.useState(_ => initToken->Option.map(initToken => initToken));
   let token =
     StoreContext.Tokens.useGet(selectedToken->Option.map(t => t.address));
@@ -567,42 +567,21 @@ let make = (~closeAction) => {
   };
 
   let onAddCSVList = (csvRows: API.CSV.t) => {
-    switch (csvRows) {
-    | TezRows(transfersTez) =>
-      setSelectedToken(_ => None);
-
-      let transformTransfer =
-        transfersTez->List.mapReverse(({destination, amount}) => {
-          let formStateValues: SendForm.validState = {
-            amount,
-            sender: form.values.sender->FormUtils.Unsafe.getValue,
-            recipient: FormUtils.Account.Address(destination),
-            fee: None,
-            gasLimit: None,
-            storageLimit: None,
-            forceLowFee: false,
-            dryRun: None,
-          };
-          (formStateValues, false);
-        });
-      setBatch(_ => transformTransfer);
-    | TokenRows(transfersToken) =>
-      let transformTransfer =
-        transfersToken->List.mapReverse(({destination, amount}) => {
-          let formStateValues: SendForm.validState = {
-            amount,
-            sender: form.values.sender->FormUtils.Unsafe.getValue,
-            recipient: FormUtils.Account.Address(destination),
-            fee: None,
-            gasLimit: None,
-            storageLimit: None,
-            forceLowFee: false,
-            dryRun: None,
-          };
-          (formStateValues, false);
-        });
-      setBatch(_ => transformTransfer);
-    };
+    let transformTransfer =
+      csvRows->List.mapReverse(({destination, amount}) => {
+        let formStateValues: SendForm.validState = {
+          amount,
+          sender: form.values.sender->FormUtils.Unsafe.getValue,
+          recipient: FormUtils.Account.Address(destination),
+          fee: None,
+          gasLimit: None,
+          storageLimit: None,
+          forceLowFee: false,
+          dryRun: None,
+        };
+        (formStateValues, false);
+      });
+    setBatch(_ => transformTransfer);
   };
 
   let onEdit = (i, advOpened, {state}: SendForm.onSubmitAPI) => {

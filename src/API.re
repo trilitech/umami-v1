@@ -220,9 +220,7 @@ module CSV = {
     | CannotParseTokenAmount(ReBigNumber.t, int, int)
     | CannotParseTezAmount(ReBigNumber.t, int, int);
 
-  type t =
-    | TezRows(list(Transfer.elt))
-    | TokenRows(list(Transfer.elt));
+  type t = list(Transfer.elt);
 
   let addr = Encodings.string;
   let token = addr;
@@ -230,77 +228,52 @@ module CSV = {
   let rowEncoding =
     Encodings.(mkRow(tup4(addr, number, opt(token), opt(number))));
 
-  let checkTokenUnique = rows =>
-    rows
-    ->List.reduceWithIndex(Ok(None), (prev, (_, _, token, _), index) =>
-        switch (prev) {
-        | Error(e) => Error(e)
-        | Ok(Some(t)) => t == token ? prev : Error(CannotMixTokens(index))
-        | Ok(None) => Ok(Some(token))
-        }
-      )
-    ->Result.map(_ => rows);
+  let handleTezRow = (index, destination, amount) =>
+    amount
+    ->ReBigNumber.toString
+    ->ProtocolXTZ.fromString
+    ->ResultEx.fromOption(Error(CannotParseTezAmount(amount, index, 2)))
+    ->Result.map(amount =>
+        Transfer.makeSingleXTZTransferElt(~destination, ~amount, ())
+      );
 
-  let handleTezCSV = res =>
-    res->Result.flatMap(rows =>
-      rows
-      ->List.mapWithIndex((index, (destination, amount, _, _)) =>
-          amount
-          ->ReBigNumber.toString
-          ->ProtocolXTZ.fromString
-          ->ResultEx.fromOption(
-              Error(CannotParseTezAmount(amount, index, 2)),
+  let handleTokenRow = (tokens, index, destination, amount, token) =>
+    tokens
+    ->Map.String.get(token)
+    ->Option.mapWithDefault(Error(UnknownToken(token)), token =>
+        amount
+        ->Token.Unit.fromBigNumber
+        ->ResultEx.fromOption(
+            Error(CannotParseTokenAmount(amount, index, 2)),
+          )
+        ->Result.map(amount =>
+            Transfer.makeSingleTokenTransferElt(
+              ~destination,
+              ~amount,
+              ~token,
+              (),
             )
-          ->Result.map(amount =>
-              Transfer.makeSingleXTZTransferElt(~destination, ~amount, ())
-            )
-        )
-      ->ResultEx.collect
-    );
+          )
+      );
 
-  let handleTokenCSV = (res, token) =>
-    res->Result.flatMap(rows =>
-      rows
-      ->List.reverse
-      ->List.reduceWithIndex(
-          [],
-          (acc, (destination, amount, _, _), index) => {
-            let tx =
-              amount
-              ->Token.Unit.fromBigNumber
-              ->ResultEx.fromOption(
-                  Error(CannotParseTokenAmount(amount, index, 2)),
-                )
-              ->Result.map(amount =>
-                  Transfer.makeSingleTokenTransferElt(
-                    ~destination,
-                    ~amount,
-                    ~token,
-                    (),
-                  )
-                );
-            [tx, ...acc];
-          },
-        )
-      ->ResultEx.collect
-    );
+  let handleRow = (tokens, index, row) =>
+    switch (row) {
+    | (destination, amount, None, _) =>
+      handleTezRow(index, destination, amount)
+    | (destination, amount, Some(token), _) =>
+      handleTokenRow(tokens, index, destination, amount, token)
+    };
+
+  let handleCSV = (rows, tokens) =>
+    rows->List.mapWithIndex(handleRow(tokens))->ResultEx.collect;
 
   let parseCSV = (content, tokens) => {
     let rows =
       parseCSV(content, rowEncoding)
-      ->ResultEx.mapError(e => Error(Parser(e)))
-      ->Result.flatMap(checkTokenUnique);
+      ->ResultEx.mapError(e => Error(Parser(e)));
     switch (rows) {
-    | Ok([(_, _, None, _), ..._]) =>
-      rows->handleTezCSV->Result.map(r => TezRows(r))
-    | Ok([(_, _, Some(token), _), ..._]) =>
-      tokens
-      ->Map.String.get(token)
-      ->Option.mapWithDefault(Error(UnknownToken(token)), token =>
-          handleTokenCSV(rows, token)->Result.map(r => TokenRows(r))
-        )
-
     | Ok([]) => Error(NoRows)
+    | Ok(rows) => handleCSV(rows, tokens)
     | Error(e) => Error(e)
     };
   };
