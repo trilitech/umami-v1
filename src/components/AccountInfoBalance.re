@@ -36,8 +36,8 @@ module BalanceToken = {
 
     switch (balanceTokenRequest) {
     | Done(Ok(balance), _)
-    | Loading(Some(balance: Token.Repr.t)) =>
-      I18n.t#amount(balance->Token.Repr.toNatString, token.symbol)
+    | Loading(Some((balance: Token.Unit.t))) =>
+      I18n.t#amount(balance->Token.Unit.toNatString, token.symbol)
       ->React.string
     | Done(Error(_error), _) => React.null
     | NotAsked

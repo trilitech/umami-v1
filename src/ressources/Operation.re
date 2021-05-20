@@ -1,21 +1,26 @@
+open ProtocolOptions;
 open Protocol;
 
 type t =
   | Protocol(Protocol.t)
-  | Token(Token.operation);
+  | Token(Token.operation)
+  | Transfer(Transfer.t);
 
 let transaction = t => t->Transaction->Protocol;
 let delegation = d => d->Delegation->Protocol;
+let transfer = b => b->Transfer;
 
 module Simulation = {
   type index = option(int);
 
   type t =
     | Protocol(Protocol.t, index)
-    | Token(Token.operation, index);
+    | Token(Token.operation, index)
+    | Transfer(Transfer.t, index);
 
   let delegation = d => Protocol(d->Delegation, None);
   let transaction = (t, index) => Protocol(t->Transaction, index);
+  let batch = (b, index) => Transfer(b, index);
 };
 
 let makeDelegate =
@@ -23,17 +28,23 @@ let makeDelegate =
   {
     source,
     delegate,
-    options: Protocol.makeCommonOptions(~fee, ~burnCap, ~forceLowFee, ()),
+    options: makeCommonOptions(~fee, ~burnCap, ~forceLowFee, ()),
   }
   ->delegation;
 };
 
-let makeTransaction = (~source, ~transfers, ~burnCap=?, ~forceLowFee=?, ()) =>
-  transaction({
-    source,
-    transfers,
-    options: makeCommonOptions(~fee=None, ~burnCap, ~forceLowFee, ()),
-  });
+let makeTransaction =
+    (~source, ~transfers, ~fee=?, ~burnCap=?, ~forceLowFee=?, ()) =>
+  transaction(
+    Transfer.makeTransfers(
+      ~source,
+      ~transfers,
+      ~fee?,
+      ~burnCap?,
+      ~forceLowFee?,
+      (),
+    ),
+  );
 
 let makeSingleTransaction =
     (
@@ -48,23 +59,22 @@ let makeSingleTransaction =
       ~gasLimit=?,
       ~storageLimit=?,
       (),
-    ) =>
-  transaction({
-    source,
-    transfers: [
-      makeTransfer(
-        ~amount,
-        ~destination,
-        ~fee?,
-        ~parameter?,
-        ~entrypoint?,
-        ~gasLimit?,
-        ~storageLimit?,
-        (),
-      ),
-    ],
-    options: makeCommonOptions(~fee=None, ~burnCap, ~forceLowFee, ()),
-  });
+    ) => {
+  let transfers = [
+    Transfer.makeSingleXTZTransferElt(
+      ~amount,
+      ~destination,
+      ~fee?,
+      ~parameter?,
+      ~entrypoint?,
+      ~gasLimit?,
+      ~storageLimit?,
+      (),
+    ),
+  ];
+
+  makeTransaction(~source, ~transfers, ~fee?, ~burnCap?, ~forceLowFee?, ());
+};
 
 module Business = {
   module Reveal = {

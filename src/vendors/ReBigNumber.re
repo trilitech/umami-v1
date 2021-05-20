@@ -9,3 +9,6 @@ type t;
 [@bs.send] external integerValue: t => t = "integerValue";
 [@bs.send] external isInteger: t => bool = "isInteger";
 [@bs.send] external isNegative: t => bool = "isNegative";
+
+let fromInt64 = i => i->Int64.to_string->fromString;
+let toInt64 = i => i->toFixed->Int64.of_string;

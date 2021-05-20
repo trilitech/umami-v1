@@ -1,6 +1,6 @@
 type strictAmount =
   | XTZ(ProtocolXTZ.t)
-  | Token(Token.Repr.t, Token.t);
+  | Token(Token.Unit.t, Token.t);
 
 type amount =
   | Amount(strictAmount)
@@ -19,15 +19,23 @@ let parseAmount = (v, token) =>
         vxtz == None ? v->Illformed->Some : vxtz->Option.map(xtzAmount);
       },
       t => {
-        let vt = v->Token.Repr.fromNatString;
+        let vt = v->Token.Unit.fromNatString;
         vt == None ? v->Illformed->Some : vt->Option.map(v => v->tkAmount(t));
       },
     );
   };
 
+let fromTransferCurrency = (~token=?, amount) =>
+  switch (amount, token) {
+  | (Transfer.XTZ(v), None) => XTZ(v)
+  | (Token((v, _)), Some(t)) => Token(v, t)
+  /* This function should actually be removed later */
+  | (_, _) => assert(false)
+  };
+
 let amountToString =
   fun
-  | Token(v, _) => v->Token.Repr.toNatString
+  | Token(v, _) => v->Token.Unit.toNatString
   | XTZ(v) => v->ProtocolXTZ.toString;
 
 let keepToken = v =>
@@ -116,7 +124,7 @@ let isValidXtzAmount: string => ReSchema.fieldState =
 
 let isValidTokenAmount: string => ReSchema.fieldState =
   fun
-  | s when Token.Repr.forceFromString(s) != None => Valid
+  | s when Token.Unit.forceFromString(s) != None => Valid
   | "" => Error(I18n.form_input_error#mandatory)
   | _ => Error(I18n.form_input_error#int);
 

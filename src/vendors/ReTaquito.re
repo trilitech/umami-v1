@@ -19,8 +19,8 @@ module BigNumber: {
 
   let toFixed = ReBigNumber.toFixed;
 
-  let fromInt64 = i => i->Int64.to_string->ReBigNumber.fromString;
-  let toInt64 = i => i->ReBigNumber.toFixed->Int64.of_string;
+  let fromInt64 = ReBigNumber.fromInt64;
+  let toInt64 = ReBigNumber.toInt64;
 };
 
 module Error = {
@@ -495,61 +495,6 @@ module Operations = {
         tk.contract->Toolkit.setDelegate(dg)->fromPromiseParsed;
       });
   };
-
-  let batch = (~endpoint, ~baseDir, ~source, ~transfers, ~password, ()) => {
-    let tk = Toolkit.create(endpoint);
-
-    readSecretKey(source, password, baseDir)
-    ->Future.flatMapOk(signer => {
-        let provider = Toolkit.{signer: signer};
-        tk->Toolkit.setProvider(provider);
-
-        let batch: Toolkit.Batch.t = tk.contract->Toolkit.Batch.make;
-
-        transfers(source)
-        ->Array.reduce(batch, Toolkit.Batch.withTransfer)
-        ->Toolkit.Batch.send
-        ->fromPromiseParsed;
-      });
-  };
-
-  let transfer =
-      (
-        ~endpoint,
-        ~baseDir,
-        ~source,
-        ~dest,
-        ~amount,
-        ~password,
-        ~fee=?,
-        ~gasLimit=?,
-        ~storageLimit=?,
-        (),
-      ) => {
-    let tk = Toolkit.create(endpoint);
-
-    let amount = BigNumber.fromInt64(amount);
-    let fee = fee->Option.map(BigNumber.fromInt64);
-
-    readSecretKey(source, password, baseDir)
-    ->Future.flatMapOk(signer => {
-        let provider = Toolkit.{signer: signer};
-        tk->Toolkit.setProvider(provider);
-
-        let tr =
-          Toolkit.prepareTransfer(
-            ~source,
-            ~dest,
-            ~amount,
-            ~fee?,
-            ~gasLimit?,
-            ~storageLimit?,
-            (),
-          );
-
-        tk.contract->Toolkit.transfer(tr)->fromPromiseParsed;
-      });
-  };
 };
 
 let addRevealFee = (~source, ~endpoint, r) => {
@@ -567,279 +512,7 @@ let handleCustomOptions = (results, (fee, storageLimit, gasLimit)) => {
   gasLimit: gasLimit->Option.getWithDefault(results.gasLimit),
 };
 
-module FA12Operations = {
-  module Estimate = {
-    let transfer =
-        (
-          ~endpoint,
-          ~baseDir,
-          ~tokenContract,
-          ~source,
-          ~dest,
-          ~amount: ReBigNumber.t,
-          ~fee=?,
-          ~gasLimit=?,
-          ~storageLimit=?,
-          (),
-        ) =>
-      aliasFromPkh(~dirpath=baseDir, ~pkh=source, ())
-      ->Future.flatMapOk(alias => pkFromAlias(~dirpath=baseDir, ~alias, ()))
-      ->Future.flatMapOk(pk => {
-          let tk = Toolkit.create(endpoint);
-
-          let signer = makeDummySigner(~pk, ~pkh=source, ());
-          let provider = Toolkit.{signer: signer};
-          tk->Toolkit.setProvider(provider);
-
-          tk.contract
-          ->Toolkit.FA12.at(tokenContract)
-          ->fromPromiseParsed
-          ->Future.mapOk(c => (c, tk));
-        })
-      ->Future.flatMapOk(((c, tk)) => {
-          let fee = fee->Option.map(BigNumber.fromInt64);
-          let params =
-            Toolkit.makeSendParams(
-              ~amount=BigNumber.fromInt64(0L),
-              ~fee?,
-              ~gasLimit?,
-              ~storageLimit?,
-              (),
-            );
-
-          c.methods
-          ->Toolkit.FA12.transfer(source, dest, amount->BigNumber.toFixed)
-          ->Toolkit.FA12.toTransferParams(params)
-          ->(tr => tk.estimate->Toolkit.Estimation.transfer(tr))
-          ->fromPromiseParsed
-          ->Future.flatMapOk(addRevealFee(~source, ~endpoint))
-          ->Future.mapOk(res =>
-              res->handleCustomOptions((
-                fee->Option.map(f => f->BigNumber.toInt64->Int64.to_int),
-                storageLimit,
-                gasLimit,
-              ))
-            );
-        });
-
-    let batch =
-        (
-          ~endpoint,
-          ~baseDir,
-          ~source,
-          ~transfers:
-             string =>
-             Future.t(list(Belt.Result.t(Toolkit.transferParams, Error.t))),
-          (),
-        ) => {
-      aliasFromPkh(~dirpath=baseDir, ~pkh=source, ())
-      ->Future.flatMapOk(alias => pkFromAlias(~dirpath=baseDir, ~alias, ()))
-      ->Future.mapOk(pk => {
-          let tk = Toolkit.create(endpoint);
-          let signer = makeDummySigner(~pk, ~pkh=source, ());
-          let provider = Toolkit.{signer: signer};
-          tk->Toolkit.setProvider(provider);
-          tk;
-        })
-      ->Future.flatMapOk(tk =>
-          transfers(source)
-          ->Future.map(ResultEx.collect)
-          ->Future.flatMapOk(txs =>
-              tk.estimate
-              ->Toolkit.Estimation.batch(
-                  txs
-                  ->List.map(tr => {...tr, kind: opKindTransaction})
-                  ->List.toArray,
-                )
-              ->fromPromiseParsed
-            )
-        )
-      ->Future.flatMapOk(r =>
-          revealFee(~endpoint, source)
-          ->Future.mapOk(revealFee => (r, revealFee))
-        );
-    };
-  };
-
-  let transfer =
-      (
-        ~endpoint,
-        ~baseDir,
-        ~tokenContract,
-        ~source,
-        ~dest,
-        ~amount: ReBigNumber.t,
-        ~password,
-        ~fee=?,
-        ~gasLimit=?,
-        ~storageLimit=?,
-        (),
-      ) => {
-    let tk = Toolkit.create(endpoint);
-
-    let fee = fee->Option.map(BigNumber.fromInt64);
-
-    readSecretKey(source, password, baseDir)
-    ->Future.flatMapOk(signer => {
-        let provider = Toolkit.{signer: signer};
-        tk->Toolkit.setProvider(provider);
-
-        tk.contract->Toolkit.FA12.at(tokenContract)->fromPromiseParsed;
-      })
-    ->Future.flatMapOk(c => {
-        let params =
-          Toolkit.makeSendParams(
-            ~amount=BigNumber.fromInt64(0L),
-            ~fee?,
-            ~gasLimit?,
-            ~storageLimit?,
-            (),
-          );
-
-        c.methods
-        ->Toolkit.FA12.transfer(source, dest, amount->BigNumber.toFixed)
-        ->Toolkit.FA12.send(params)
-        ->fromPromiseParsed;
-      })
-    ->Future.tapOk(Js.log);
-  };
-
-  type rawTransfer = {
-    token: string,
-    amount: ReBigNumber.t,
-    dest: string,
-    fee: option(ReBigNumber.t),
-    gasLimit: option(int),
-    storageLimit: option(int),
-  };
-
-  let toRawTransfer =
-      (~token, ~dest, ~amount, ~fee=?, ~gasLimit=?, ~storageLimit=?, ()) => {
-    token,
-    dest,
-    amount,
-    fee,
-    gasLimit,
-    storageLimit,
-  };
-
-  let prepareTransfers:
-    (_, _, _) =>
-    Future.t(list(Belt.Result.t(Toolkit.transferParams, Error.t))) =
-    (transfers: list(rawTransfer), source, endpoint) => {
-      let tk = Toolkit.create(endpoint);
-      let contracts =
-        transfers->List.reduce(Map.String.empty, (m, elt) =>
-          m->Map.String.set(
-            elt.token,
-            tk.contract->Toolkit.FA12.at(elt.token),
-          )
-        );
-
-      transfers
-      ->List.map(rawTransfer => {
-          let sendParams =
-            Toolkit.makeSendParams(
-              ~amount=BigNumber.fromInt64(0L),
-              ~fee=?rawTransfer.fee,
-              ~gasLimit=?rawTransfer.gasLimit,
-              ~storageLimit=?rawTransfer.storageLimit,
-              (),
-            );
-
-          // By construction, this exception will never be raised
-          contracts
-          ->Map.String.getExn(rawTransfer.token)
-          ->fromPromiseParsed
-          ->Future.mapOk(c =>
-              c.methods
-              ->Toolkit.FA12.transfer(
-                  source,
-                  rawTransfer.dest,
-                  rawTransfer.amount->BigNumber.toFixed,
-                )
-              ->Toolkit.FA12.toTransferParams(sendParams)
-            );
-        })
-      ->Future.all;
-    };
-
-  let batch =
-      (
-        ~endpoint,
-        ~baseDir,
-        ~source,
-        ~transfers:
-           string =>
-           Future.t(list(Belt.Result.t(Toolkit.transferParams, Error.t))),
-        ~password,
-        (),
-      ) => {
-    let tk = Toolkit.create(endpoint);
-
-    readSecretKey(source, password, baseDir)
-    ->Future.flatMapOk(signer => {
-        let provider = Toolkit.{signer: signer};
-        tk->Toolkit.setProvider(provider);
-
-        transfers(source)->Future.map(ResultEx.collect);
-      })
-    ->Future.mapOk(txs =>
-        txs->List.reduce(
-          tk.contract->Toolkit.Batch.make,
-          Toolkit.Batch.withTransfer,
-        )
-      )
-    ->Future.flatMapOk(p => p->Toolkit.Batch.send->fromPromiseParsed);
-  };
-};
-
 module Estimate = {
-  let transfer =
-      (
-        ~endpoint,
-        ~baseDir,
-        ~source,
-        ~dest,
-        ~amount,
-        ~fee=?,
-        ~gasLimit=?,
-        ~storageLimit=?,
-        (),
-      ) =>
-    aliasFromPkh(~dirpath=baseDir, ~pkh=source, ())
-    ->Future.flatMapOk(alias => pkFromAlias(~dirpath=baseDir, ~alias, ()))
-    ->Future.flatMapOk(pk => {
-        let tk = Toolkit.create(endpoint);
-        let signer = makeDummySigner(~pk, ~pkh=source, ());
-        let provider = Toolkit.{signer: signer};
-        tk->Toolkit.setProvider(provider);
-
-        let amount = BigNumber.fromInt64(amount);
-        let fee = fee->Option.map(BigNumber.fromInt64);
-        let tr =
-          Toolkit.prepareTransfer(
-            ~source,
-            ~dest,
-            ~amount,
-            ~fee?,
-            ~gasLimit?,
-            ~storageLimit?,
-            (),
-          );
-        Js.log(tr);
-
-        tk.estimate->Toolkit.Estimation.transfer(tr)->fromPromiseParsed;
-      })
-    ->Future.flatMapOk(addRevealFee(~source, ~endpoint))
-    ->Future.mapOk(res =>
-        res->handleCustomOptions((
-          fee->Option.map(Int64.to_int),
-          storageLimit,
-          gasLimit,
-        ))
-      );
-
   let setDelegate = (~endpoint, ~baseDir, ~source, ~delegate=?, ~fee=?, ()) =>
     aliasFromPkh(~dirpath=baseDir, ~pkh=source, ())
     ->Future.flatMapOk(alias => pkFromAlias(~dirpath=baseDir, ~alias, ()))
@@ -856,26 +529,6 @@ module Estimate = {
         tk.estimate->Toolkit.Estimation.setDelegate(sd)->fromPromiseParsed;
       })
     ->Future.flatMapOk(addRevealFee(~source, ~endpoint));
-
-  let batch = (~endpoint, ~baseDir, ~source, ~transfers, ()) => {
-    aliasFromPkh(~dirpath=baseDir, ~pkh=source, ())
-    ->Future.flatMapOk(alias => pkFromAlias(~dirpath=baseDir, ~alias, ()))
-    ->Future.flatMapOk(pk => {
-        let tk = Toolkit.create(endpoint);
-
-        let signer = makeDummySigner(~pk, ~pkh=source, ());
-
-        let provider = Toolkit.{signer: signer};
-        tk->Toolkit.setProvider(provider);
-
-        Toolkit.Estimation.batch(tk.estimate, source->transfers)
-        ->fromPromiseParsed;
-      })
-    ->Future.flatMapOk(r =>
-        revealFee(~endpoint, source)
-        ->Future.mapOk(revealFee => (r, revealFee))
-      );
-  };
 
   let handleEstimationResults = ((results, revealFee), options, index) => {
     switch (index) {
@@ -938,5 +591,170 @@ module Estimate = {
       ->Ok
       ->Future.value
     };
+  };
+};
+
+module Transfer = {
+  module ContractCache = {
+    type t = {
+      contracts:
+        MutableMap.String.t(Js.Promise.t(Toolkit.FA12.contractAbstraction)),
+      toolkit: Toolkit.toolkit,
+    };
+
+    let make = toolkit => {contracts: MutableMap.String.make(), toolkit};
+
+    let findContract = (cache, token) =>
+      switch (MutableMap.String.get(cache.contracts, token)) {
+      | Some(c) => c
+      | None =>
+        let c = cache.toolkit.contract->Toolkit.FA12.at(token);
+        cache.contracts->MutableMap.String.set(token, c);
+        c;
+      };
+
+    let clear = cache => cache.contracts->MutableMap.String.clear;
+  };
+
+  let prepareFA12Transfer =
+      (
+        contractCache,
+        ~source,
+        ~token,
+        ~dest,
+        ~amount,
+        ~fee=?,
+        ~gasLimit=?,
+        ~storageLimit=?,
+        (),
+      ) => {
+    let sendParams =
+      Toolkit.makeSendParams(
+        ~amount=BigNumber.fromInt64(0L),
+        ~fee?,
+        ~gasLimit?,
+        ~storageLimit?,
+        (),
+      );
+
+    contractCache
+    ->ContractCache.findContract(token)
+    ->fromPromiseParsed
+    ->Future.mapOk(c =>
+        c.methods
+        ->Toolkit.FA12.transfer(source, dest, amount->BigNumber.toFixed)
+        ->Toolkit.FA12.toTransferParams(sendParams)
+      );
+  };
+
+  let prepareTransfer = Toolkit.prepareTransfer;
+
+  let prepareTransfers = (txs, contractCache, source) =>
+    txs
+    ->List.map((tx: Transfer.elt) =>
+        switch (tx.amount) {
+        | XTZ(amount) =>
+          prepareTransfer(
+            ~source,
+            ~dest=tx.destination,
+            ~amount=amount->ProtocolXTZ.toBigNumber,
+            ~fee=?tx.tx_options.fee->Option.map(ProtocolXTZ.toBigNumber),
+            ~gasLimit=?tx.tx_options.gasLimit,
+            ~storageLimit=?tx.tx_options.storageLimit,
+            (),
+          )
+          ->Ok
+          ->Future.value
+        | Token((amount, token)) =>
+          prepareFA12Transfer(
+            contractCache,
+            ~source,
+            ~token,
+            ~dest=tx.destination,
+            ~amount=amount->TokenRepr.Unit.toBigNumber,
+            ~fee=?tx.tx_options.fee->Option.map(ProtocolXTZ.toBigNumber),
+            ~gasLimit=?tx.tx_options.gasLimit,
+            ~storageLimit=?tx.tx_options.storageLimit,
+            (),
+          )
+        }
+      )
+    ->Future.all;
+
+  module Estimate = {
+    let batch =
+        (
+          ~endpoint,
+          ~baseDir,
+          ~source,
+          ~transfers:
+             (ContractCache.t, string) =>
+             Future.t(list(Belt.Result.t(Toolkit.transferParams, Error.t))),
+          (),
+        ) => {
+      aliasFromPkh(~dirpath=baseDir, ~pkh=source, ())
+      ->Future.flatMapOk(alias => pkFromAlias(~dirpath=baseDir, ~alias, ()))
+      ->Future.mapOk(pk => {
+          let tk = Toolkit.create(endpoint);
+          let signer = makeDummySigner(~pk, ~pkh=source, ());
+          let provider = Toolkit.{signer: signer};
+          tk->Toolkit.setProvider(provider);
+          tk;
+        })
+      ->Future.flatMapOk(tk =>
+          ContractCache.make(tk)
+          ->transfers(source)
+          ->Future.map(ResultEx.collect)
+          ->Future.flatMapOk(txs =>
+              tk.estimate
+              ->Toolkit.Estimation.batch(
+                  txs
+                  ->List.map(tr => {...tr, kind: opKindTransaction})
+                  ->List.toArray,
+                )
+              ->fromPromiseParsed
+            )
+        )
+      ->Future.flatMapOk(r =>
+          revealFee(~endpoint, source)
+          ->Future.mapOk(revealFee => (r, revealFee))
+        );
+    };
+  };
+
+  let batch =
+      (
+        ~endpoint,
+        ~baseDir,
+        ~source,
+        ~transfers:
+           (ContractCache.t, string) =>
+           Future.t(list(Belt.Result.t(Toolkit.transferParams, Error.t))),
+        ~password,
+        (),
+      ) => {
+    let tk = Toolkit.create(endpoint);
+
+    readSecretKey(source, password, baseDir)
+    ->Future.mapOk(signer => {
+        let provider = Toolkit.{signer: signer};
+        tk->Toolkit.setProvider(provider);
+        tk;
+      })
+    ->Future.flatMapOk(tk =>
+        ContractCache.make(tk)
+        ->transfers(source)
+        ->Future.map(ResultEx.collect)
+        ->Future.mapOk(txs => {
+            txs->List.map(tr => {...tr, kind: opKindTransaction})
+          })
+      )
+    ->Future.flatMapOk(txs => {
+        let batch = tk.contract->Toolkit.Batch.make;
+        txs
+        ->List.reduce(batch, Toolkit.Batch.withTransfer)
+        ->Toolkit.Batch.send
+        ->fromPromiseParsed;
+      });
   };
 };
