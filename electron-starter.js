@@ -109,3 +109,8 @@ app.on('activate', () => {
     createWindow()
   }
 })
+
+if (!app.isDefaultProtocolClient('umami')) {
+  // Define custom protocol handler. Deep linking works on packaged versions of the application!
+  app.setAsDefaultProtocolClient('umami')
+}
