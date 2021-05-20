@@ -19,9 +19,6 @@ module Unit: {
 };
 
 type address = string;
-type currency = (Unit.t, address);
-
-let addCurrency: (currency, currency) => option(currency);
 
 type t = {
   address,

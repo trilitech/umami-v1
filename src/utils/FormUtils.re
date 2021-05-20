@@ -1,13 +1,22 @@
-type strictAmount =
-  | XTZ(ProtocolXTZ.t)
-  | Token(Token.Unit.t, Token.t);
+open Transfer;
 
 type amount =
-  | Amount(strictAmount)
+  | Amount(Transfer.currency)
   | Illformed(string);
 
-let xtzAmount = v => v->XTZ->Amount;
-let tkAmount = (v, tk) => Token(v, tk)->Amount;
+let keepToken = v =>
+  v->Option.flatMap(
+    fun
+    | Illformed(_) => None
+    | Amount(v) => v->Transfer.getXTZ,
+  );
+
+let keepXTZ = v =>
+  v->Option.flatMap(
+    fun
+    | Amount(v) => v->Transfer.getXTZ
+    | Illformed(_) => None,
+  );
 
 let parseAmount = (v, token) =>
   if (v == "") {
@@ -16,53 +25,18 @@ let parseAmount = (v, token) =>
     token->Option.mapWithDefault(
       {
         let vxtz = v->ProtocolXTZ.fromString;
-        vxtz == None ? v->Illformed->Some : vxtz->Option.map(xtzAmount);
+        vxtz == None
+          ? v->Illformed->Some
+          : vxtz->Option.map(v => v->Transfer.makeXTZ->Amount);
       },
       t => {
         let vt = v->Token.Unit.fromNatString;
-        vt == None ? v->Illformed->Some : vt->Option.map(v => v->tkAmount(t));
+        vt == None
+          ? v->Illformed->Some
+          : vt->Option.map(amount => makeToken(~amount, ~token=t)->Amount);
       },
     );
   };
-
-let fromTransferCurrency = (~token=?, amount) =>
-  switch (amount, token) {
-  | (Transfer.XTZ(v), None) => XTZ(v)
-  | (Token((v, _)), Some(t)) => Token(v, t)
-  /* This function should actually be removed later */
-  | (_, _) => assert(false)
-  };
-
-let amountToString =
-  fun
-  | Token(v, _) => v->Token.Unit.toNatString
-  | XTZ(v) => v->ProtocolXTZ.toString;
-
-let keepToken = v =>
-  v->Option.flatMap(
-    fun
-    | Illformed(_)
-    | Amount(XTZ(_)) => None
-    | Amount(Token(v, _)) => v->Some,
-  );
-
-let keepXTZ = v =>
-  v->Option.flatMap(
-    fun
-    | Amount(XTZ(v)) => v->Some
-    | Illformed(_)
-    | Amount(Token(_)) => None,
-  );
-
-let keepStrictToken =
-  fun
-  | XTZ(_) => None
-  | Token(v, t) => Some((v, t));
-
-let keepStrictXTZ =
-  fun
-  | XTZ(v) => v->Some
-  | Token(_) => None;
 
 let optToString = (v, f) => v->Option.mapWithDefault("", f);
 

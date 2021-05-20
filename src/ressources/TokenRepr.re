@@ -26,10 +26,6 @@ module Unit = {
 };
 
 type address = string;
-type currency = (Unit.t, address);
-
-let addCurrency = ((v, t), (v', t')) =>
-  t == t' ? Some((Unit.add(v, v'), t)) : None;
 
 type t = {
   address,

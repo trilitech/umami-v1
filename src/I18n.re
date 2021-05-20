@@ -315,7 +315,7 @@ let csv = {
       row,
       col,
     );
-  pub unknown_token = "Unknown token"
+  pub unknown_token = p("Unknown token %s")
 };
 
 let t = {

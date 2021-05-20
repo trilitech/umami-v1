@@ -665,11 +665,11 @@ module Transfer = {
           )
           ->Ok
           ->Future.value
-        | Token((amount, token)) =>
+        | Token(amount, token) =>
           prepareFA12Transfer(
             contractCache,
             ~source,
-            ~token,
+            ~token=token.TokenRepr.address,
             ~dest=tx.destination,
             ~amount=amount->TokenRepr.Unit.toBigNumber,
             ~fee=?tx.tx_options.fee->Option.map(ProtocolXTZ.toBigNumber),

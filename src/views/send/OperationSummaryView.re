@@ -6,6 +6,7 @@ let styles =
       "title": style(~marginBottom=4.->dp, ()),
       "subtitle": style(~marginBottom=4.->dp, ()),
       "iconContainer": style(~padding=25.->dp, ()),
+      "amount": style(~textAlign=`right, ()),
       "element": style(~marginTop=25.->dp, ()),
     })
   );
@@ -17,14 +18,24 @@ module Content = {
       {{
          content
          ->List.toArray
-         ->Array.map(((property, value)) =>
+         ->Array.map(((property, values)) =>
              <View key=property style=FormStyles.amountRow>
                <Typography.Overline2>
                  property->React.string
                </Typography.Overline2>
-               <Typography.Body1 fontWeightStyle=`black>
-                 value->React.string
-               </Typography.Body1>
+               <View>
+                 {values
+                  ->List.mapWithIndex((i, value) =>
+                      <Typography.Body1
+                        key={i->Int.toString}
+                        style=styles##amount
+                        fontWeightStyle=`black>
+                        value->React.string
+                      </Typography.Body1>
+                    )
+                  ->List.toArray
+                  ->React.array}
+               </View>
              </View>
            );
        }

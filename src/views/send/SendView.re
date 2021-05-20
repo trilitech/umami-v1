@@ -24,11 +24,10 @@ module FormGroupAmountWithTokenSelector = {
         ~selectedToken,
         ~setSelectedToken,
         ~token: option(Token.t)=?,
-        ~showSelector,
       ) => {
     let tokens = StoreContext.Tokens.useGetAll();
 
-    let displaySelector = showSelector && tokens->Map.String.size > 0;
+    let displaySelector = tokens->Map.String.size > 0;
 
     let decoration =
       switch (displaySelector, token) {
@@ -97,25 +96,15 @@ let stepToString = step =>
   | SubmittedStep(_) => "submittedstep"
   };
 
-let sourceDestination = (transfer: SendForm.transaction) => {
+let sourceDestination = (transfer: Transfer.t) => {
   let recipientLbl = I18n.title#recipient_account;
   let sourceLbl = I18n.title#sender_account;
   switch (transfer) {
-  | ProtocolTransaction({source, transfers: [t]}) => (
+  | {source, transfers: [t]} => (
       (source, sourceLbl),
       `One((t.destination, recipientLbl)),
     )
-  | ProtocolTransaction({source, transfers}) =>
-    let destinations =
-      transfers->List.map(t =>
-        (None, (t.destination, t.amount->Transfer.currencyToString))
-      );
-    ((source, sourceLbl), `Many(destinations));
-  | TokenTransfer(({source, transfers: [{destination}]}: Transfer.t), _) => (
-      (source, sourceLbl),
-      `One((destination, recipientLbl)),
-    )
-  | TokenTransfer(({source, transfers}: Transfer.t), _) =>
+  | {source, transfers} =>
     let destinations =
       transfers->List.map(t =>
         (None, (t.destination, t.amount->Transfer.currencyToString))
@@ -124,99 +113,91 @@ let sourceDestination = (transfer: SendForm.transaction) => {
   };
 };
 
+let compareCurrencies = (v1, v2) => {
+  Transfer.(
+    switch (v1, v2) {
+    | (XTZ(_), Token(_)) => (-1)
+    | (Token(_), XTZ(_)) => 1
+    | _ => 0
+    }
+  );
+};
+
+let reduceAmounts = l =>
+  Transfer.(
+    l
+    ->Lib.List.reduceGroupBy(
+        ~group=
+          fun
+          | Transfer.XTZ(_) => None
+          | Token(_, t) => Some(t),
+        ~map=(acc, v) =>
+        switch (acc, v) {
+        | (None, v) => v
+        | (Some(XTZ(acc)), XTZ(v)) => XTZ(ProtocolXTZ.Infix.(acc + v))
+        | (Some(Token(acc, t)), Token(v, _)) =>
+          Token(Token.Unit.Infix.(acc + v), t)
+        | (Some(acc), _) => acc
+        }
+      )
+    ->List.map(snd)
+    ->List.sort(compareCurrencies)
+  );
+
+let showAmount =
+  Transfer.(
+    fun
+    | XTZ(v) => I18n.t#xtz_amount(v->ProtocolXTZ.toString)
+    | Token(v, t) => I18n.t#amount(v->Token.Unit.toNatString, t.symbol)
+  );
+
 let buildSummaryContent =
-    (transaction: SendForm.transaction, dryRun: Protocol.simulationResults) => {
+    (transaction: Transfer.t, dryRun: Protocol.simulationResults) => {
   let fee = (
     I18n.label#fee,
-    I18n.t#xtz_amount(
-      ProtocolXTZ.Infix.(dryRun.fee - dryRun.revealFee)->ProtocolXTZ.toString,
-    ),
+    [
+      I18n.t#xtz_amount(
+        ProtocolXTZ.Infix.(dryRun.fee - dryRun.revealFee)
+        ->ProtocolXTZ.toString,
+      ),
+    ],
   );
 
   let revealFee =
     dryRun.revealFee != ProtocolXTZ.zero
       ? (
           I18n.label#implicit_reveal_fee,
-          I18n.t#xtz_amount(dryRun.revealFee->ProtocolXTZ.toString),
+          [I18n.t#xtz_amount(dryRun.revealFee->ProtocolXTZ.toString)],
         )
         ->Some
       : None;
 
-  switch (transaction) {
-  | ProtocolTransaction({transfers}) =>
-    let amount =
-      transfers->List.reduce(ProtocolXTZ.zero, (acc, {amount}) =>
-        ProtocolXTZ.Infix.(
-          acc
-          + amount->Transfer.getXTZ->Option.getWithDefault(ProtocolXTZ.zero)
-        )
-      );
-    let subtotal = (
-      I18n.label#summary_subtotal,
-      I18n.t#xtz_amount(amount->ProtocolXTZ.toString),
-    );
-    let total = ProtocolXTZ.Infix.(amount + dryRun.fee);
-    let total = (
-      I18n.label#summary_total,
-      I18n.t#xtz_amount(total->ProtocolXTZ.toString),
-    );
-    [
-      subtotal,
-      fee,
-      ...revealFee->Option.mapWithDefault([total], r => [r, total]),
-    ];
-  | TokenTransfer({transfers}, token) =>
-    let amount =
-      transfers->List.reduce(Token.Unit.zero, (acc, {amount}) =>
-        amount
-        ->Transfer.getToken
-        ->Option.getWithDefault((Token.Unit.zero, token.address))
-        ->TokenRepr.addCurrency((acc, token.address))
-        ->Option.getWithDefault((Token.Unit.zero, token.address))
-        ->fst
-      );
-    let amount = I18n.t#amount(amount->Token.Unit.toNatString, token.symbol);
+  let totals = transaction.transfers->List.map(t => t.amount)->reduceAmounts;
 
-    let amount = (I18n.label#send_amount, amount);
-
-    let total = dryRun.fee;
-    let total = (
-      I18n.label#summary_total_tez,
-      I18n.t#xtz_amount(total->ProtocolXTZ.toString),
-    );
-
-    [
-      amount,
-      fee,
-      ...revealFee->Option.mapWithDefault([total], r => [r, total]),
-    ];
-  };
-};
-
-let reduceAmounts = (token, l) =>
-  FormUtils.(
-    l
-    ->Lib.List.reduceGroupBy(
-        ~group=
-          fun
-          | XTZ(_) => None
-          | Token(_, t) => Some(t),
-        ~map=(acc, v: strictAmount) =>
-        switch (acc, v) {
-        | (None, v) => v
-        | (Some(XTZ(acc)), XTZ(v)) => XTZ(ProtocolXTZ.Infix.(acc + v))
-        | (Some(Token(acc, tacc)), Token(v, tv)) when tacc == tv =>
-          Token(Token.Unit.Infix.(acc + v), tacc)
-        | (Some(acc), _) => acc
-        }
-      )
-    ->List.getAssoc(token, (==))
-    ->Option.getWithDefault(
-        token->Option.mapWithDefault(ProtocolXTZ.zero->XTZ, t =>
-          Token(Token.Unit.zero, t)
-        ),
-      )
+  let subtotals = (
+    I18n.label#summary_subtotal,
+    totals->List.map(showAmount),
   );
+
+  let totalTez = {
+    let (sub, noTokens) =
+      switch (totals) {
+      | [XTZ(a), ...t] => (a, t == [])
+      | t => (ProtocolXTZ.zero, t == [])
+      };
+
+    (
+      noTokens ? I18n.label#summary_total : I18n.label#summary_total_tez,
+      [
+        I18n.t#xtz_amount(
+          ProtocolXTZ.Infix.(sub + dryRun.fee)->ProtocolXTZ.toString,
+        ),
+      ],
+    );
+  };
+
+  Lib.List.([totalTez]->addOpt(revealFee)->add(fee)->add(subtotals));
+};
 
 module Form = {
   let defaultInit = (account: option(Account.t)) =>
@@ -310,8 +291,7 @@ module Form = {
       | Edition(int)
       | Creation(option(unit => unit), unit => unit);
 
-    let simulatedTransaction =
-        (mode, batch, state: SendForm.validState, token) => {
+    let simulatedTransaction = (mode, batch, state: SendForm.validState) => {
       let (batch, index) =
         switch (mode) {
         | Edition(index) =>
@@ -330,8 +310,8 @@ module Form = {
           (batch, Some(length - 1));
         };
 
-      SendForm.buildTransaction(batch, token)
-      |> SendForm.toSimulation(~index?);
+      SendForm.buildTransaction(batch)
+      ->Operation.Simulation.transaction(index);
     };
 
     [@react.component]
@@ -400,7 +380,6 @@ module Form = {
             handleChange={form.handleChange(Amount)}
             error={form.getFieldError(Field(Amount))}
             selectedToken={selectedToken->Option.map(t => t.address)}
-            showSelector={!batchMode}
             setSelectedToken={newToken => setSelectedToken(_ => newToken)}
             ?token
           />
@@ -453,7 +432,6 @@ module Form = {
                        mode,
                        batch,
                        SendForm.unsafeExtractValidState(token, form.values),
-                       token,
                      )}
                      form
                    />
@@ -513,7 +491,6 @@ module EditionView = {
 let make = (~closeAction) => {
   let account = StoreContext.SelectedAccount.useGet();
   let initToken = StoreContext.SelectedToken.useGet();
-  let tokens = StoreContext.Tokens.useGetAll();
   let aliasesRequest = StoreContext.Aliases.useRequest();
 
   let accounts =
@@ -523,14 +500,12 @@ let make = (~closeAction) => {
 
   let updateAccount = StoreContext.SelectedAccount.useSet();
 
-  let addLog = LogsContext.useAdd();
-
   let (advancedOptionsOpened, setAdvancedOptions) as advancedOptionState =
     React.useState(_ => false);
 
   let (modalStep, setModalStep) = React.useState(_ => SendStep);
 
-  let (selectedToken, setSelectedToken) as tokenState =
+  let (selectedToken, _) as tokenState =
     React.useState(_ => initToken->Option.map(initToken => initToken));
   let token =
     StoreContext.Tokens.useGet(selectedToken->Option.map(t => t.address));
@@ -538,7 +513,7 @@ let make = (~closeAction) => {
   let (operationRequest, sendOperation) = StoreContext.Operations.useCreate();
 
   let sendTransfer = (transfer, password) => {
-    let operation = SendForm.toOperation(transfer);
+    let operation = Operation.transfer(transfer);
 
     let ((sourceAddress, _), _) = sourceDestination(transfer);
 
@@ -555,8 +530,10 @@ let make = (~closeAction) => {
   let submitAction = React.useRef(`SubmitAll);
 
   let onSubmitBatch = batch => {
-    let transaction = SendForm.buildTransaction(batch->List.reverse, token);
-    sendOperationSimulate(SendForm.toSimulation(transaction))
+    let transaction = SendForm.buildTransaction(batch->List.reverse);
+    sendOperationSimulate(
+      Operation.Simulation.transaction(transaction, None),
+    )
     ->Future.tapOk(dryRun => {
         setModalStep(_ => PasswordStep(transaction, dryRun))
       })
@@ -590,56 +567,21 @@ let make = (~closeAction) => {
   };
 
   let onAddCSVList = (csvRows: API.CSV.t) => {
-    switch (csvRows) {
-    | TezRows(transfersTez) =>
-      setSelectedToken(_ => None);
-
-      let transformTransfer =
-        transfersTez->List.mapReverse(({destination, amount}) => {
-          let formStateValues: SendForm.validState = {
-            amount: amount->FormUtils.fromTransferCurrency,
-            sender: form.values.sender->FormUtils.Unsafe.getValue,
-            recipient: FormUtils.Account.Address(destination),
-            fee: None,
-            gasLimit: None,
-            storageLimit: None,
-            forceLowFee: false,
-            dryRun: None,
-          };
-          (formStateValues, false);
-        });
-      setBatch(_ => transformTransfer);
-    | TokenRows(transfersToken) =>
-      let token =
-        transfersToken
-        ->List.get(0)
-        ->Option.flatMap(transfer => transfer.amount->Transfer.getToken)
-        ->Option.flatMap(((_, tokenAddress)) =>
-            tokens->Map.String.get(tokenAddress)
-          );
-
-      switch (token) {
-      | Some(token) =>
-        setSelectedToken(_ => Some(token));
-
-        let transformTransfer =
-          transfersToken->List.mapReverse(({destination, amount}) => {
-            let formStateValues: SendForm.validState = {
-              amount: FormUtils.fromTransferCurrency(~token, amount),
-              sender: form.values.sender->FormUtils.Unsafe.getValue,
-              recipient: FormUtils.Account.Address(destination),
-              fee: None,
-              gasLimit: None,
-              storageLimit: None,
-              forceLowFee: false,
-              dryRun: None,
-            };
-            (formStateValues, false);
-          });
-        setBatch(_ => transformTransfer);
-      | None => addLog(true, Logs.error(I18n.csv#unknown_token))
-      };
-    };
+    let transformTransfer =
+      csvRows->List.mapReverse(({destination, amount}) => {
+        let formStateValues: SendForm.validState = {
+          amount,
+          sender: form.values.sender->FormUtils.Unsafe.getValue,
+          recipient: FormUtils.Account.Address(destination),
+          fee: None,
+          gasLimit: None,
+          storageLimit: None,
+          forceLowFee: false,
+          dryRun: None,
+        };
+        (formStateValues, false);
+      });
+    setBatch(_ => transformTransfer);
   };
 
   let onEdit = (i, advOpened, {state}: SendForm.onSubmitAPI) => {
@@ -686,13 +628,6 @@ let make = (~closeAction) => {
     );
   };
 
-  let showAmount =
-    FormUtils.(
-      fun
-      | XTZ(v) => I18n.t#xtz_amount(v->ProtocolXTZ.toString)
-      | Token(v, t) => I18n.t#amount(v->Token.Unit.toNatString, t.symbol)
-    );
-
   <ReactFlipToolkit.Flipper
     flipKey={advancedOptionsOpened->string_of_bool ++ modalStep->stepToString}>
     <ReactFlipToolkit.FlippedView flipId="modal">
@@ -711,7 +646,7 @@ let make = (~closeAction) => {
                onAddCSVList
                batch
                showAmount
-               reduceAmounts={reduceAmounts(token)}
+               reduceAmounts
                onSubmitBatch
                onEdit={(i, (state, adv)) =>
                  setModalStep(_ => EditStep(i, (state, adv)))
