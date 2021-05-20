@@ -288,6 +288,7 @@ module Toolkit = {
       minimalFeeMutez: int,
       suggestedFeeMutez: int,
       burnFeeMutez: int,
+      customFeeMutez: int,
     };
 
     [@bs.send]
@@ -504,10 +505,11 @@ let addRevealFee = (~source, ~endpoint, r) => {
     );
 };
 
-let handleCustomOptions = (results, (fee, storageLimit, gasLimit)) => {
+let handleCustomOptions =
+    (results: Toolkit.Estimation.result, (fee, storageLimit, gasLimit)) => {
   ...results,
-  Toolkit.Estimation.totalCost:
-    fee->Option.getWithDefault(results.Toolkit.Estimation.totalCost),
+  Toolkit.Estimation.customFeeMutez:
+    fee->Option.getWithDefault(results.Toolkit.Estimation.suggestedFeeMutez),
   storageLimit: storageLimit->Option.getWithDefault(results.storageLimit),
   gasLimit: gasLimit->Option.getWithDefault(results.gasLimit),
 };
@@ -554,6 +556,7 @@ module Estimate = {
             minimalFeeMutez: 0,
             suggestedFeeMutez: 0,
             burnFeeMutez: 0,
+            customFeeMutez: 0,
           },
           (
             {
@@ -563,6 +566,7 @@ module Estimate = {
               minimalFeeMutez,
               suggestedFeeMutez,
               burnFeeMutez,
+              customFeeMutez,
             },
             (est, customValues),
           ) => {
@@ -575,15 +579,24 @@ module Estimate = {
               minimalFeeMutez: minimalFeeMutez + est.minimalFeeMutez,
               suggestedFeeMutez: suggestedFeeMutez + est.suggestedFeeMutez,
               burnFeeMutez: burnFeeMutez + est.burnFeeMutez,
+              customFeeMutez: customFeeMutez + est.customFeeMutez,
             };
           },
         )
       ->(
-          (Toolkit.Estimation.{gasLimit, storageLimit, totalCost} as est) =>
+          (
+            Toolkit.Estimation.{
+              gasLimit,
+              storageLimit,
+              totalCost,
+              customFeeMutez,
+            } as est,
+          ) =>
             Toolkit.Estimation.{
               ...est,
               gasLimit: gasLimit + 100,
               totalCost: totalCost + revealFee,
+              customFeeMutez: customFeeMutez + revealFee,
               storageLimit: storageLimit + 100,
               revealFee,
             }

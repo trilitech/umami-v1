@@ -325,11 +325,9 @@ module Simulation = {
         ReTaquito.Estimate.handleEstimationResults(r, customValues, index)
       )
     ->Future.mapOk(
-        (
-          {suggestedFeeMutez, burnFeeMutez, gasLimit, storageLimit, revealFee} as r,
-        ) => {
+        ({customFeeMutez, burnFeeMutez, gasLimit, storageLimit, revealFee}) => {
         Protocol.{
-          fee: (suggestedFeeMutez + burnFeeMutez)->ProtocolXTZ.fromMutezInt,
+          fee: (customFeeMutez + burnFeeMutez)->ProtocolXTZ.fromMutezInt,
           gasLimit,
           storageLimit,
           revealFee: revealFee->ProtocolXTZ.fromMutezInt,
@@ -347,11 +345,9 @@ module Simulation = {
       (),
     )
     ->Future.mapOk(
-        (
-          {suggestedFeeMutez, burnFeeMutez, gasLimit, storageLimit, revealFee},
-        ) =>
+        ({customFeeMutez, burnFeeMutez, gasLimit, storageLimit, revealFee}) =>
         Protocol.{
-          fee: (suggestedFeeMutez + burnFeeMutez)->ProtocolXTZ.fromMutezInt,
+          fee: (customFeeMutez + burnFeeMutez)->ProtocolXTZ.fromMutezInt,
           gasLimit,
           storageLimit,
           revealFee: revealFee->ProtocolXTZ.fromMutezInt,
