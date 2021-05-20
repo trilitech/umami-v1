@@ -324,14 +324,17 @@ module Simulation = {
     ->Future.flatMapOk(r =>
         ReTaquito.Estimate.handleEstimationResults(r, customValues, index)
       )
-    ->Future.mapOk(({totalCost, gasLimit, storageLimit, revealFee}) =>
+    ->Future.mapOk(
+        (
+          {suggestedFeeMutez, burnFeeMutez, gasLimit, storageLimit, revealFee} as r,
+        ) => {
         Protocol.{
-          fee: totalCost->ProtocolXTZ.fromMutezInt,
+          fee: (suggestedFeeMutez + burnFeeMutez)->ProtocolXTZ.fromMutezInt,
           gasLimit,
           storageLimit,
           revealFee: revealFee->ProtocolXTZ.fromMutezInt,
         }
-      );
+      });
   };
 
   let setDelegate = (settings, delegation: Protocol.delegation) => {
@@ -343,9 +346,12 @@ module Simulation = {
       ~fee=?delegation.Protocol.options.fee->Option.map(ProtocolXTZ.toInt64),
       (),
     )
-    ->Future.mapOk(({totalCost, gasLimit, storageLimit, revealFee}) =>
+    ->Future.mapOk(
+        (
+          {suggestedFeeMutez, burnFeeMutez, gasLimit, storageLimit, revealFee},
+        ) =>
         Protocol.{
-          fee: totalCost->ProtocolXTZ.fromMutezInt,
+          fee: (suggestedFeeMutez + burnFeeMutez)->ProtocolXTZ.fromMutezInt,
           gasLimit,
           storageLimit,
           revealFee: revealFee->ProtocolXTZ.fromMutezInt,
