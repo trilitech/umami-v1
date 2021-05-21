@@ -70,6 +70,6 @@ If any line does not match a transaction specification, the line, the transactio
 
 ```
 # This is an example
-tz1Z3JYEXYs88wAdaB6WW8H9tSRVxwuzEQz2,1.23456 # this is a simple tez tx
+tz1Z3JYEXYs88wAdaB6WW8H9tSRVxwuzEQz2,1.23456 # this is a simple tez tx -- all comments are optional
 tz1cbGwhSRwNt9XVdSnrqb4kzRyRJNAJrQni,1000,KT1RJ6PbjHpwc3M5rw5s2Nbmefwbuwbdxton,2 # this is a simple token tx
 ```
