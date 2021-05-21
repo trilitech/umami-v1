@@ -524,12 +524,19 @@ module Estimate = {
         let provider = Toolkit.{signer: signer};
         tk->Toolkit.setProvider(provider);
 
-        let fee = fee->Option.map(BigNumber.fromInt64);
+        let fee = fee->Option.map(ProtocolXTZ.toBigNumber);
         let sd = Toolkit.prepareDelegate(~source, ~delegate, ~fee?, ());
         Js.log(sd);
 
         tk.estimate->Toolkit.Estimation.setDelegate(sd)->fromPromiseParsed;
       })
+    ->Future.mapOk(res =>
+        res->handleCustomOptions((
+          fee->Option.map(ProtocolXTZ.unsafeToMutezInt),
+          None,
+          None,
+        ))
+      )
     ->Future.flatMapOk(addRevealFee(~source, ~endpoint));
 
   let handleEstimationResults = ((results, revealFee), options, index) => {
@@ -596,7 +603,7 @@ module Estimate = {
               ...est,
               gasLimit: gasLimit + 100,
               totalCost: totalCost + revealFee,
-              customFeeMutez: customFeeMutez + revealFee,
+              customFeeMutez,
               storageLimit: storageLimit + 100,
               revealFee,
             }

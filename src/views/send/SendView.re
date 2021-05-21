@@ -155,12 +155,7 @@ let buildSummaryContent =
     (transaction: Transfer.t, dryRun: Protocol.simulationResults) => {
   let fee = (
     I18n.label#fee,
-    [
-      I18n.t#xtz_amount(
-        ProtocolXTZ.Infix.(dryRun.fee - dryRun.revealFee)
-        ->ProtocolXTZ.toString,
-      ),
-    ],
+    [I18n.t#xtz_amount(dryRun.fee->ProtocolXTZ.toString)],
   );
 
   let revealFee =
@@ -190,7 +185,8 @@ let buildSummaryContent =
       noTokens ? I18n.label#summary_total : I18n.label#summary_total_tez,
       [
         I18n.t#xtz_amount(
-          ProtocolXTZ.Infix.(sub + dryRun.fee)->ProtocolXTZ.toString,
+          ProtocolXTZ.Infix.(sub + dryRun.fee + dryRun.revealFee)
+          ->ProtocolXTZ.toString,
         ),
       ],
     );
