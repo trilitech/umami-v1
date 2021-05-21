@@ -160,16 +160,31 @@ let rec parseRowRec:
       }
     );
 
+let removeComments = line => {
+  let commentIndex = Js.String.indexOf("#", line);
+  commentIndex != (-1)
+    ? Js.String.substring(line, ~from=0, ~to_=commentIndex) : line;
+};
+
 let parseRow = (~row=0, value, encoding) => {
   Js.String.split(",", value)
   ->Array.map(Js.String.trim)
   ->parseRowRec(encoding, row, 0);
 };
 
+let parseRows = (rows, encoding) =>
+  rows
+  ->Js.Array2.reducei(
+      (parsed, value, i) =>
+        value == ""
+          ? parsed : [parseRow(~row=i, value, encoding), ...parsed],
+      [],
+    )
+  ->List.reverse;
+
 let parseCSV = (value, encoding) => {
   Js.String.split("\n", value)
-  ->Js.Array2.filter(l => l != "")
-  ->Js.Array2.mapi((l, i) => parseRow(~row=i, l, encoding))
-  ->List.fromArray
+  ->Js.Array2.map(removeComments)
+  ->parseRows(encoding)
   ->ResultEx.collect;
 };
