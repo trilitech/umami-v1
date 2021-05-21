@@ -40,7 +40,7 @@
 
 <!-- Validators : please fill with your gitlab user @handle -->
 Validations required :
-- [] Devevlopment
+- [] Development
 - [] Operation
 - [] Business
 

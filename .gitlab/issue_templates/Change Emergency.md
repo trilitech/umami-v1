@@ -41,7 +41,7 @@
 
 <!-- Reviewers : please fill with your gitlab user @handle -->
 Reviewers (all required) :
-- [] Devevlopment
+- [] Development
 - [] Operation
 - [] Business
 
