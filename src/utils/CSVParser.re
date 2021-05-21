@@ -1,12 +1,12 @@
 module Encodings = {
   exception IllformedEncoder;
 
-  type element(_) =
-    | String: element(string)
-    | Number: element(ReBigNumber.t)
-    | Bool: element(bool)
-    | Option(element('a)): element(option('a))
-    | Custom(string => option('a)): element('a);
+  type element(_, 'error) =
+    | String: element(string, 'error')
+    | Number: element(ReBigNumber.t, 'error)
+    | Bool: element(bool, 'error)
+    | Option(element('a, 'error)): element(option('a), 'error)
+    | Custom(string => result('a, 'error)): element('a, 'error);
 
   let string = String;
   let number = Number;
@@ -16,26 +16,36 @@ module Encodings = {
 
   /* Directly encode rows as tuples from 1 to 5, instead of an
      heterogenous list. It simplifies the usage. */
-  type row_repr(_) =
-    | Cell(element('a)): row_repr('a)
-    | Tup2(row_repr('a), row_repr('b)): row_repr(('a, 'b))
-    | Tup3(row_repr('a), row_repr('b), row_repr('c))
-      : row_repr(('a, 'b, 'c))
-    | Tup4(row_repr('a), row_repr('b), row_repr('c), row_repr('d))
-      : row_repr(('a, 'b, 'c, 'd))
-    | Tup5(
-        row_repr('a),
-        row_repr('b),
-        row_repr('c),
-        row_repr('d),
-        row_repr('e),
+  type row_repr(_, 'error) =
+    | Cell(element('a, 'error)): row_repr('a, 'error)
+    | Tup2(row_repr('a, 'error), row_repr('b, 'error))
+      : row_repr(('a, 'b), 'error)
+    | Tup3(
+        row_repr('a, 'error),
+        row_repr('b, 'error),
+        row_repr('c, 'error),
       )
-      : row_repr(('a, 'b, 'c, 'd, 'e));
+      : row_repr(('a, 'b, 'c), 'error)
+    | Tup4(
+        row_repr('a, 'error),
+        row_repr('b, 'error),
+        row_repr('c, 'error),
+        row_repr('d, 'error),
+      )
+      : row_repr(('a, 'b, 'c, 'd), 'error)
+    | Tup5(
+        row_repr('a, 'error),
+        row_repr('b, 'error),
+        row_repr('c, 'error),
+        row_repr('d, 'error),
+        row_repr('e, 'error),
+      )
+      : row_repr(('a, 'b, 'c, 'd, 'e), 'error);
 
   /* This proxy can be used to enforce invariants in the future */
-  type row('a) = row_repr('a);
+  type row('a, 'error) = row_repr('a, 'error);
 
-  let rec isEndingNullable: type t. row_repr(t) => bool =
+  let rec isEndingNullable: type t. row_repr(t, 'error) => bool =
     fun
     | Cell(Option(_)) => true
     | Cell(_) => false
@@ -64,7 +74,7 @@ module Encodings = {
 
   let mkRow = r => r;
 
-  let rec length: type elt. row_repr(elt) => int =
+  let rec length: type elt. row_repr(elt, 'error) => int =
     fun
     | Cell(_) => 1
     | Tup2(r1, r2) => length(r1) + length(r2)
@@ -78,10 +88,10 @@ module Encodings = {
 type row = int;
 type col = int;
 
-type error =
+type error('custom) =
   | CannotParseNumber(row, col)
   | CannotParseBool(row, col)
-  | CannotParseCustomValue(row, col)
+  | CannotParseCustomValue('custom, row, col)
   | CannotParseRow(row)
   | CannotParseCSV;
 
@@ -98,11 +108,15 @@ let parseBool = (v, row, col) => {
     : b == "false" ? Ok(false) : Error(CannotParseBool(row, col));
 };
 let parseCustom = (v, conv, row, col) => {
-  v->conv->ResultEx.fromOption(Error(CannotParseCustomValue(row, col)));
+  v
+  ->conv
+  ->ResultEx.mapError(e => Error(CannotParseCustomValue(e, row, col)));
 };
 
 let rec parseElementRaw:
-  type t. (string, Encodings.element(t), row, col) => result(t, error) =
+  type t.
+    (string, Encodings.element(t, 'error), row, col) =>
+    result(t, error('error)) =
   (value, enc, row, col) =>
     switch (enc) {
     | Encodings.Number => parseNumber(value, row, col)
@@ -124,7 +138,9 @@ let parseNullableElement = (v, enc, row, col) =>
   ->Option.getWithDefault(Error(CannotParseRow(row)));
 
 let rec parseRowRec:
-  type t. (array(string), Encodings.row(t), row, col) => result(t, error) =
+  type t.
+    (array(string), Encodings.row(t, 'error), row, col) =>
+    result(t, error('error)) =
   (values, enc, row, col) =>
     Encodings.(
       switch (enc) {

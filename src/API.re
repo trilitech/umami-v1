@@ -212,8 +212,12 @@ module Error = {
 module CSV = {
   open CSVParser;
 
+  type customEncodingError =
+    | CannotParseAddress(string)
+    | CannotParseContract(string);
+
   type error =
-    | Parser(CSVParser.error)
+    | Parser(CSVParser.error(customEncodingError))
     | UnknownToken(string)
     | NoRows
     | CannotMixTokens(int)
@@ -222,8 +226,18 @@ module CSV = {
 
   type t = list(Transfer.elt);
 
-  let addr = Encodings.string;
-  let token = addr;
+  let checkAddress = a => {
+    Js.Re.(fromString("^(tz)(1|2|3)[A-Za-z0-9]{33}")->test_(a))
+      ? Ok(a) : Error(CannotParseAddress(a));
+  };
+
+  let checkContract = a => {
+    Js.Re.(fromString("^(KT1)[A-Za-z0-9]{33}")->test_(a))
+      ? Ok(a) : Error(CannotParseContract(a));
+  };
+
+  let addr = Encodings.custom(~conv=checkAddress);
+  let token = Encodings.custom(~conv=checkContract);
 
   let rowEncoding =
     Encodings.(mkRow(tup4(addr, number, opt(token), opt(number))));
@@ -279,6 +293,11 @@ module CSV = {
   };
 };
 
+let handleCustomError =
+  fun
+  | CSV.CannotParseAddress(a) => I18n.csv#cannot_parse_address(a)
+  | CannotParseContract(a) => I18n.csv#cannot_parse_contract(a);
+
 let handleCSVError = e =>
   e->CSVParser.(
        fun
@@ -286,8 +305,12 @@ let handleCSVError = e =>
          I18n.csv#cannot_parse_number(row + 1, col + 1)
        | Parser(CannotParseBool(row, col)) =>
          I18n.csv#cannot_parse_boolean(row + 1, col + 1)
-       | Parser(CannotParseCustomValue(row, col)) =>
-         I18n.csv#cannot_parse_custom_value(row + 1, col + 1)
+       | Parser(CannotParseCustomValue(e, row, col)) =>
+         I18n.csv#cannot_parse_custom_value(
+           handleCustomError(e),
+           row + 1,
+           col + 1,
+         )
        | Parser(CannotParseRow(row)) => I18n.csv#cannot_parse_row(row + 1)
        | Parser(CannotParseCSV) => I18n.csv#cannot_parse_csv
        | NoRows => I18n.csv#no_rows
