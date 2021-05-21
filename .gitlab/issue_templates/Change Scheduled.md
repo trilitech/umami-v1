@@ -12,6 +12,7 @@
 <!-- /label ~"Severity::4-Minor" -->
 <!-- /label ~"Severity::5-Cosmetic" -->
 
+<!-- /confidential -->
 
 ## Summary
 <!-- Outline the issue being faced, and why this required a change !-->
@@ -45,8 +46,8 @@
 
 <!-- Validators : please fill with your gitlab user @handle -->
 Validations required :
-- [] Development
-- [] Operation
-- [] Business
+- [ ] Development
+- [ ] Operation
+- [ ] Business
 
 <!-- METADATA - end -->

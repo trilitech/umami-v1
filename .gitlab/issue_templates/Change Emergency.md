@@ -1,4 +1,4 @@
-## Emergency change
+# Emergency change
 <!-- Emergency change should be filed whenever an incident caused a required change. It will be reviewed by the CAB afterward !-->
 
 <!-- Severity : choose one -->
@@ -7,6 +7,8 @@
 <!-- /label ~"Severity::3-Moderate" -->
 <!-- /label ~"Severity::4-Minor" -->
 <!-- /label ~"Severity::5-Cosmetic" -->
+
+<!-- /confidential -->
 
 ## Summary
 <!-- Outline the issue being faced, and why this required a change !-->
@@ -41,8 +43,8 @@
 
 <!-- Reviewers : please fill with your gitlab user @handle -->
 Reviewers (all required) :
-- [] Development
-- [] Operation
-- [] Business
+- [ ] Development
+- [ ] Operation
+- [ ] Business
 
 <!-- METADATA - end -->

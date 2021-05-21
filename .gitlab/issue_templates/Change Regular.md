@@ -1,4 +1,4 @@
-## Regular change
+# Regular change
 <!-- Regular change, to be approved by the CAB before applying. -->
 
 <!-- Severity : choose one -->
@@ -7,6 +7,8 @@
 <!-- /label ~"Severity::3-Moderate" -->
 <!-- /label ~"Severity::4-Minor" -->
 <!-- /label ~"Severity::5-Cosmetic" -->
+
+<!-- /confidential -->
 
 ## Summary
 <!-- Outline the issue being faced, and why this required a change !-->
@@ -40,8 +42,8 @@
 
 <!-- Validators : please fill with your gitlab user @handle -->
 Validations required :
-- [] Development
-- [] Operation
-- [] Business
+- [ ] Development
+- [ ] Operation
+- [ ] Business
 
 <!-- METADATA - end -->
