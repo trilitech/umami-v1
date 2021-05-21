@@ -1,8 +1,5 @@
 ## Regular change
 <!-- Regular change, to be approved by the CAB before applying. -->
-/label ~"Change::Regular" 
-
-/label ~CAB ~"CAB::to-approve"
 
 ## Severity
 <!-- Pick one -->
@@ -34,3 +31,18 @@
 - [ ] Low (anything else e.g., trivial, minor improvements)
 
 
+
+<!-- METADATA for project management, please leave the following lines -->
+<!-- Regular change, to be approved by the CAB before applying. -->
+<!-- labels for gitlab CAB issues Board -->
+/label ~CAB ~"CAB::to-approve"
+<!-- identify the kind of change -->
+/label ~"Change::Regular" 
+
+<!-- Validators : please fill with your gitlab user @handle -->
+Validations required :
+- [] Devevlopment
+- [] Operation
+- [] Business
+
+<!-- METADATA - end -->

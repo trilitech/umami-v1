@@ -1,9 +1,6 @@
 ## Configuration change
-
 <!-- Configuration change, to be approved by the CAB before applying. -->
-/label ~"Change::Configuration"
 
-/label ~CAB ~"CAB::to-approve"
 ## Severity
 <!-- Pick one -->
 <!-- /label ~"Severity::1-Critical" --> 
@@ -33,3 +30,18 @@
 - [ ] Medium (This will bring a good increase in performance/productivity/usability)
 - [ ] Low (anything else e.g., trivial, minor improvements)
 
+
+<!-- METADATA for project management, please leave the following lines -->
+<!-- Configuration change, to be approved by the CAB before applying. -->
+<!-- labels for gitlab CAB issues Board -->
+/label ~CAB ~"CAB::to-approve"
+<!-- identify the kind of change -->
+/label ~"Change::Configuration"
+
+<!-- Validators : please fill with your gitlab user @handle -->
+Validations required :
+- [] Devevlopment
+- [] Operation
+- [optional] Business
+
+<!-- METADATA - end -->

@@ -1,10 +1,5 @@
 ## Emergency change
-<!-- An Emergency change should be filed whenever an incident caused a required change. It will be reviewed by the CAB afterward !-->
-<!-- Emergency change request, usually on incident, to be reviewed by the CAB for review after applying. -->
-
-/label ~"Change::Emergency"
-
-/label ~CAB ~"CAB::to-review"
+<!-- Emergency change should be filed whenever an incident caused a required change. It will be reviewed by the CAB afterward !-->
 
 ## Severity
 <!-- Pick one -->
@@ -36,3 +31,19 @@
 - [ ] Low (anything else e.g., trivial, minor improvements)
 
 
+
+<!-- METADATA for project management, please leave the following lines -->
+<!-- Emergency change request, usually on incident, sent to the CAB for review after applying. -->
+<!-- labels for gitlab CAB issues Board -->
+/label ~CAB ~"CAB::to-review"
+
+<!-- identify the kind of change -->
+/label ~"Change::Emergency"
+
+<!-- Reviewers : please fill with your gitlab user @handle -->
+Reviewers (all required) :
+- [] Devevlopment
+- [] Operation
+- [] Business
+
+<!-- METADATA - end -->

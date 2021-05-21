@@ -1,10 +1,6 @@
 ## Scheduled change
-
-<!-- Scheduled change, to be reviewed by the CAB. -->
+<!-- Scheduled change, to be approved by the CAB before due date. -->
 <!-- A scheduled change is usually set on external dependencies -->
-/label ~"Change::Scheduled"
-
-/label ~CAB ~"CAB::to-approve"
 
 <!-- Set Due Date : /due <in 2 days | this Friday | December 31st> -->
 /due 
@@ -40,3 +36,18 @@
 - [ ] Low (anything else e.g., trivial, minor improvements)
 
 
+
+<!-- METADATA for project management, please leave the following lines -->
+<!-- Scheduled change, to be approved by the CAB before due date. -->
+<!-- labels for gitlab CAB issues Board -->
+/label ~CAB ~"CAB::to-approve"
+<!-- identify the kind of change -->
+/label ~"Change::Scheduled"
+
+<!-- Validators : please fill with your gitlab user @handle -->
+Validations required :
+- [] Devevlopment
+- [] Operation
+- [] Business
+
+<!-- METADATA - end -->
