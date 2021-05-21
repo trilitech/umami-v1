@@ -5,8 +5,7 @@
 <!-- Set Due Date : /due <in 2 days | this Friday | December 31st> -->
 /due 
 
-## Severity
-<!-- Pick one -->
+<!-- Severity : choose one -->
 <!-- /label ~"Severity::1-Critical" --> 
 <!-- /label ~"Severity::2-Major" -->
 <!-- /label ~"Severity::3-Moderate" -->

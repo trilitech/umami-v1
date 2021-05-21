@@ -1,8 +1,7 @@
 ## Emergency change
 <!-- Emergency change should be filed whenever an incident caused a required change. It will be reviewed by the CAB afterward !-->
 
-## Severity
-<!-- Pick one -->
+<!-- Severity : choose one -->
 <!-- /label ~"Severity::1-Critical" --> 
 <!-- /label ~"Severity::2-Major" -->
 <!-- /label ~"Severity::3-Moderate" -->

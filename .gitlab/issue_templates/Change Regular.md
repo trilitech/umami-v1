@@ -1,8 +1,7 @@
 ## Regular change
 <!-- Regular change, to be approved by the CAB before applying. -->
 
-## Severity
-<!-- Pick one -->
+<!-- Severity : choose one -->
 <!-- /label ~"Severity::1-Critical" --> 
 <!-- /label ~"Severity::2-Major" -->
 <!-- /label ~"Severity::3-Moderate" -->
