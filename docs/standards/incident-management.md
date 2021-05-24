@@ -77,14 +77,17 @@ The Incident Report ("IR") is intended to document what is known, at the time of
 1. File a New Issue in the Umami main repo
 2. Select "Issue Type" as "Incident"
 3. Choose "Incident Report" template in "Description" field
-4. Fill out the details
+4. Fill out the details 
 5. Add the **INC** label
 6. Submit Issue
 7. Notify IRT in Slack channel: #umami-incidents
 
+[open Incient Report here](https://gitlab.com/nomadic-labs/umami-wallet/umami/-/issues/new?issuable_template=Incident%20Report&issue[issue_type]=incident#)
+
+
 ### Composition of an IR
 
-The acutal template is stored [here](https://gitlab.com/nomadic-labs/umami-wallet/umami/-/blob/master/.gitlab/issue_templates/Incident%20Request.md), but it's general content is as follows:
+The acutal template is stored [here](https://gitlab.com/nomadic-labs/umami-wallet/umami/-/blob/master/.gitlab/issue_templates/Incident%20Report.md), but it's general content is as follows:
 
  * How the INC was discovered?
  * What is the nature of the INC?
@@ -93,16 +96,16 @@ The acutal template is stored [here](https://gitlab.com/nomadic-labs/umami-walle
 
 ## Incident Response
 
-Once the IR is filed, the INC must be handled appropriately--this becomes the responibility of the IRT.
+Once the IR is filed, the INC must be handled appropriately--this becomes the responibility of the Incident Response Team (IRT).
 
 ### IRT Composition
 
 The Incident Response Team ("IRT") is as follows:
 
- * Product Manager (Samuel), or Development Lead as backup (Remy)
- * Development Lead (Remy), or Pierrick as backup
- * Operations Lead (Corentin), or Philippe as backup
- * Relevent SME (whoever is most informed on technical implications)
+ * *Product Manager* (Samuel), or Development Lead as backup (Remy)
+ * *Development Lead* (Remy), or Pierrick as backup
+ * *Operations Lead* (Corentin), or Philippe as backup
+ * *Relevent SME* (whoever is most informed on technical implications)
 
 Note: in Product Manager's absence, Development Lead can only act as one role--hence, the Development Lead backup must also be consulted.
 
