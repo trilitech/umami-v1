@@ -1,4 +1,5 @@
 ## Incident Report
+/label ~INC ~incident
 
 ### Checklist
 <!-- Before filing an incident report, if there are any doubt, follow the checklist to ensure you are in fact dealing with an incident: !-->
