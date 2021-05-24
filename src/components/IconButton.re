@@ -29,9 +29,6 @@ let styles =
   Style.(
     StyleSheet.create({
       "button": style(~alignItems=`center, ~justifyContent=`center, ()),
-      "popover":
-        style(~top=(-100.)->dp, ~right=2.->dp, ~position=`absolute, ()),
-      "hoverable": style(~position=`relative, ()),
     })
   );
 
@@ -41,7 +38,7 @@ let make =
       ~icon: Icons.builder,
       ~size=28.,
       ~iconSizeRatio=4. /. 7.,
-      ~isPrimary=?,
+      ~isPrimary=false,
       ~onPress=?,
       ~tooltip=?,
       ~isActive=?,
@@ -50,37 +47,58 @@ let make =
     ) => {
   let theme = ThemeContext.useTheme();
 
-  <View>
-    <ThemedPressable
-      ?pressableRef
-      ?onPress
-      ?isPrimary
-      ?tooltip
-      ?isActive
-      focusOutline=(Default, 2.)
-      style=Style.(
-        arrayOption([|
-          Some(styles##button),
-          Some(
-            style(
-              ~width=size->dp,
-              ~height=size->dp,
-              ~borderRadius=size /. 2.,
-              (),
-            ),
+  let children =
+    icon(
+      ~style=?None,
+      ~size=Js.Math.ceil_float(iconSizeRatio *. size),
+      ~color=
+        isPrimary
+          ? theme.colors.primaryIconMediumEmphasis
+          : theme.colors.iconMediumEmphasis,
+    );
+
+  let pressableStyle =
+    Style.(
+      arrayOption([|
+        Some(styles##button),
+        Some(
+          style(
+            ~width=size->dp,
+            ~height=size->dp,
+            ~borderRadius=size /. 2.,
+            (),
           ),
-          styleFromProp,
-        |])
-      )
-      accessibilityRole=`button>
-      {icon(
-         ~style=?None,
-         ~size=Js.Math.ceil_float(iconSizeRatio *. size),
-         ~color=
-           isPrimary->Option.getWithDefault(false)
-             ? theme.colors.primaryIconMediumEmphasis
-             : theme.colors.iconMediumEmphasis,
-       )}
-    </ThemedPressable>
+        ),
+        styleFromProp,
+      |])
+    );
+
+  let pressableElement = (~pressableRef=?) =>
+    isPrimary
+      ? <ThemedPressable.Primary
+          ?pressableRef
+          ?onPress
+          ?isActive
+          style=pressableStyle
+          accessibilityRole=`button>
+          children
+        </ThemedPressable.Primary>
+      : <ThemedPressable.Outline
+          ?pressableRef
+          ?onPress
+          ?isActive
+          style=pressableStyle
+          accessibilityRole=`button>
+          children
+        </ThemedPressable.Outline>;
+
+  <View>
+    {switch (tooltip) {
+     | Some((keyPopover, text)) =>
+       <Tooltip keyPopover text>
+         {((~pressableRef) => pressableElement(~pressableRef))}
+       </Tooltip>
+     | None => pressableElement(~pressableRef?)
+     }}
   </View>;
 };

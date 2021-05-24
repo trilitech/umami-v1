@@ -34,6 +34,162 @@ type focusOutlineConfig = (focusOutlineColor, float);
 let styles =
   Style.(StyleSheet.create({"container": style(~overflow=`hidden, ())}));
 
+module ContainerInteractionState = {
+  module Base = {
+    [@react.component]
+    let make =
+        (
+          ~hovered,
+          ~pressed,
+          ~focused,
+          ~disabled,
+          ~children,
+          ~style as styleFromProp=?,
+        ) => {
+      let theme = ThemeContext.useTheme();
+
+      let backgroundColor =
+        if (disabled) {
+          None;
+        } else if (pressed) {
+          Some(theme.colors.statePressed);
+        } else if (hovered || focused) {
+          Some(theme.colors.stateHovered);
+        } else {
+          None;
+        };
+
+      <View
+        pointerEvents=`none
+        style=Style.(
+          arrayOption([|
+            Some(styles##container),
+            styleFromProp,
+            backgroundColor->Option.map(b =>
+              Style.(style(~backgroundColor=b, ()))
+            ),
+          |])
+        )>
+        children
+      </View>;
+    };
+  };
+
+  module Outline = {
+    [@react.component]
+    let make =
+        (
+          ~hovered,
+          ~pressed,
+          ~focused,
+          ~disabled,
+          ~children,
+          ~style as styleFromProp=?,
+          ~focusedSize=2.,
+          ~focusedColor=?,
+        ) => {
+      let theme = ThemeContext.useTheme();
+
+      let backgroundColor =
+        if (disabled) {
+          None;
+        } else if (pressed) {
+          Some(theme.colors.statePressed);
+        } else if (hovered) {
+          Some(theme.colors.stateHovered);
+        } else {
+          None;
+        };
+
+      let outlineColor =
+        switch (focused, focusedColor) {
+        | (true, None) => Some(theme.colors.stateFocusedOutline)
+        | (true, Some(color)) => Some(color)
+        | _ => None
+        };
+
+      <View
+        pointerEvents=`none
+        style=Style.(
+          arrayOption([|
+            Some(styles##container),
+            styleFromProp,
+            backgroundColor->Option.map(b =>
+              Style.(style(~backgroundColor=b, ()))
+            ),
+            outlineColor->Option.map(c =>
+              Style.(
+                style()
+                ->unsafeAddStyle({
+                    "boxShadow": {j|0px 0px 0px $(focusedSize)px $c|j},
+                  })
+              )
+            ),
+          |])
+        )>
+        children
+      </View>;
+    };
+  };
+
+  module Primary = {
+    [@react.component]
+    let make =
+        (
+          ~hovered,
+          ~pressed,
+          ~focused,
+          ~disabled,
+          ~children,
+          ~style as styleFromProp=?,
+          ~focusedSize=3.,
+          ~focusedColor=?,
+        ) => {
+      let theme = ThemeContext.useTheme();
+
+      let backgroundColor =
+        if (disabled) {
+          Some(theme.colors.primaryStateDisabled);
+        } else if (pressed) {
+          Some(theme.colors.primaryStatePressed);
+        } else if (hovered) {
+          Some(theme.colors.primaryStateHovered);
+        } else {
+          None;
+        };
+
+      let outlineColor =
+        switch (focused, focusedColor) {
+        | (true, None) => Some(theme.colors.primaryButtonOutline)
+        | (true, Some(color)) => Some(color)
+        | _ => None
+        };
+
+      <View
+        pointerEvents=`none
+        style=Style.(
+          arrayOption([|
+            Some(styles##container),
+            styleFromProp,
+            backgroundColor->Option.map(b =>
+              Style.(style(~backgroundColor=b, ()))
+            ),
+            outlineColor->Option.map(c =>
+              Style.(
+                style()
+                ->unsafeAddStyle({
+                    "boxShadow": {j|0px 0px 0px $(focusedSize)px $c|j},
+                  })
+              )
+            ),
+          |])
+        )>
+        children
+      </View>;
+    };
+  };
+};
+
 [@react.component]
 let make =
     (
@@ -41,79 +197,79 @@ let make =
       ~onPress=?,
       ~href=?,
       ~style as styleFromProp=?,
-      ~outerStyle=?,
-      ~tooltip=?,
-      ~interactionStyle:
-         option(Pressable_.interactionState => option(ReactNative.Style.t))=?,
       ~isActive=false,
       ~disabled=false,
-      ~isPrimary=false,
-      ~focusOutline: option(focusOutlineConfig)=?,
       ~accessibilityRole: option(Accessibility.role)=?,
       ~children,
     ) => {
   let theme = ThemeContext.useTheme();
 
-  let (pressableRef, isOpen, popoverConfig, togglePopover, setClosed) =
-    Popover.usePopoverState(~elementRef=?pressableRef, ());
-
-  let backgroundColor = (~pressed, ~hovered, ~focused) =>
-    if (disabled) {
-      isPrimary ? Some(theme.colors.primaryStateDisabled) : None;
-    } else if (pressed) {
-      isPrimary
-        ? Some(theme.colors.primaryStatePressed)
-        : Some(theme.colors.statePressed);
-    } else if (hovered || focused && focusOutline->Option.isNone) {
-      isPrimary
-        ? Some(theme.colors.primaryStateHovered)
-        : Some(theme.colors.stateHovered);
-    } else {
-      None;
-    };
-
-  let outlineColor = (~focused) =>
-    switch (focused, focusOutline) {
-    | (true, Some((Default, size))) =>
-      Some((theme.colors.stateFocusedOutline, size))
-    | (true, Some((Color(color), size))) => Some((color, size))
-    | _ => None
-    };
-
-  <View
-    style=?outerStyle
-    onMouseEnter={_ => togglePopover()}
-    onMouseLeave={_ => setClosed()}>
-    <Pressable_
-      ref={pressableRef->Ref.value} ?onPress disabled ?href ?accessibilityRole>
-      {({hovered, pressed, focused} as interactionState) => {
-         let hovered = hovered->Option.getWithDefault(false);
-         let focused = focused->Option.getWithDefault(false);
+  <Pressable_
+    ref=?{pressableRef->Option.map(Ref.value)}
+    ?onPress
+    disabled
+    ?href
+    ?accessibilityRole>
+    {({hovered, pressed, focused}) => {
+       let hovered = hovered->Option.getWithDefault(false);
+       let focused = focused->Option.getWithDefault(false);
+       <ContainerInteractionState.Base
+         disabled hovered pressed focused style=?styleFromProp>
          <View
-           pointerEvents=`none
            style=Style.(
              arrayOption([|
-               Some(styles##container),
-               styleFromProp,
-               backgroundColor(~pressed, ~hovered, ~focused)
-               ->Option.map(b => Style.(style(~backgroundColor=b, ()))),
-               outlineColor(~focused)
-               ->Option.map(((c, s)) =>
-                   Style.(
-                     style()
-                     ->unsafeAddStyle({
-                         "boxShadow": {j|0px 0px 0px $(s)px $c|j},
-                       })
+               Some(StyleSheet.absoluteFillObject),
+               isActive
+                 ? Some(
+                     Style.style(
+                       ~backgroundColor=theme.colors.stateActive,
+                       (),
+                     ),
                    )
-                 ),
-               interactionStyle->Option.flatMap(interactionStyle =>
-                 interactionStyle(interactionState)
-               ),
+                 : None,
              |])
-           )>
-           {ReactUtils.mapOpt(tooltip, ((keyPopover, text)) => {
-              <Tooltip keyPopover text isOpen config=popoverConfig />
-            })}
+           )
+         />
+         children
+       </ContainerInteractionState.Base>;
+     }}
+  </Pressable_>;
+};
+
+module Outline = {
+  [@react.component]
+  let make =
+      (
+        ~pressableRef=?,
+        ~onPress=?,
+        ~href=?,
+        ~style as styleFromProp=?,
+        ~focusedSize=?,
+        ~focusedColor=?,
+        ~isActive=false,
+        ~disabled=false,
+        ~accessibilityRole: option(Accessibility.role)=?,
+        ~children,
+      ) => {
+    let theme = ThemeContext.useTheme();
+
+    <Pressable_
+      ref=?{pressableRef->Option.map(Ref.value)}
+      ?onPress
+      disabled
+      ?href
+      ?accessibilityRole>
+      {({hovered, pressed, focused}) => {
+         let hovered = hovered->Option.getWithDefault(false);
+         let focused = focused->Option.getWithDefault(false);
+         <ContainerInteractionState.Outline
+           disabled
+           hovered
+           pressed
+           focused
+           style=?styleFromProp
+           ?focusedSize
+           ?focusedColor>
            <View
              style=Style.(
                arrayOption([|
@@ -121,10 +277,7 @@ let make =
                  isActive
                    ? Some(
                        Style.style(
-                         ~backgroundColor=
-                           isPrimary
-                             ? theme.colors.primaryStateActive
-                             : theme.colors.stateActive,
+                         ~backgroundColor=theme.colors.stateActive,
                          (),
                        ),
                      )
@@ -133,8 +286,64 @@ let make =
              )
            />
            children
-         </View>;
+         </ContainerInteractionState.Outline>;
        }}
-    </Pressable_>
-  </View>;
+    </Pressable_>;
+  };
+};
+
+module Primary = {
+  [@react.component]
+  let make =
+      (
+        ~pressableRef=?,
+        ~onPress=?,
+        ~href=?,
+        ~style as styleFromProp=?,
+        ~focusedSize=?,
+        ~focusedColor=?,
+        ~isActive=false,
+        ~disabled=false,
+        ~accessibilityRole: option(Accessibility.role)=?,
+        ~children,
+      ) => {
+    let theme = ThemeContext.useTheme();
+
+    <Pressable_
+      ref=?{pressableRef->Option.map(Ref.value)}
+      ?onPress
+      disabled
+      ?href
+      ?accessibilityRole>
+      {({hovered, pressed, focused}) => {
+         let hovered = hovered->Option.getWithDefault(false);
+         let focused = focused->Option.getWithDefault(false);
+         <ContainerInteractionState.Primary
+           disabled
+           hovered
+           pressed
+           focused
+           style=?styleFromProp
+           ?focusedSize
+           ?focusedColor>
+           <View
+             style=Style.(
+               arrayOption([|
+                 Some(StyleSheet.absoluteFillObject),
+                 isActive
+                   ? Some(
+                       Style.style(
+                         ~backgroundColor=theme.colors.primaryStateActive,
+                         (),
+                       ),
+                     )
+                   : None,
+               |])
+             )
+           />
+           children
+         </ContainerInteractionState.Primary>;
+       }}
+    </Pressable_>;
+  };
 };

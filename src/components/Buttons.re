@@ -29,15 +29,7 @@ let styles =
   Style.(
     StyleSheet.create({
       "primary": style(~borderRadius=4., ()),
-      "button":
-        style(
-          ~display=`flex,
-          ~alignItems=`center,
-          ~justifyContent=`center,
-          ~flexDirection=`row,
-          (),
-        ),
-      "outer": style(~flex=1., ()),
+      "button": style(),
       "pressable":
         style(
           ~flex=1.,
@@ -60,21 +52,14 @@ module FormBase = {
         ~disabled=false,
         ~loading=false,
         ~isPrimary=false,
-        ~focusOutline=?,
         ~vStyle=?,
         ~style=?,
         ~children,
       ) => {
     let theme = ThemeContext.useTheme();
-    <View style=Style.(arrayOption([|Some(styles##button), vStyle|]))>
-      <ThemedPressable
-        style={Style.arrayOption([|Some(styles##pressable), style|])}
-        outerStyle=styles##outer
-        isPrimary
-        ?focusOutline
-        onPress
-        disabled={disabled || loading}
-        accessibilityRole=`button>
+
+    let children =
+      <>
         {loading
            ? <ActivityIndicator
                animating=true
@@ -88,7 +73,24 @@ module FormBase = {
              />
            : React.null}
         <View style={ReactUtils.visibleOn(!loading)}> children </View>
-      </ThemedPressable>
+      </>;
+
+    <View style=Style.(arrayOption([|Some(styles##button), vStyle|]))>
+      {isPrimary
+         ? <ThemedPressable.Primary
+             style={Style.arrayOption([|Some(styles##pressable), style|])}
+             onPress
+             disabled={disabled || loading}
+             accessibilityRole=`button>
+             children
+           </ThemedPressable.Primary>
+         : <ThemedPressable
+             style={Style.arrayOption([|Some(styles##pressable), style|])}
+             onPress
+             disabled={disabled || loading}
+             accessibilityRole=`button>
+             children
+           </ThemedPressable>}
     </View>;
   };
 };
@@ -162,10 +164,6 @@ module SubmitPrimary = {
     <FormBase
       onPress
       isPrimary=true
-      focusOutline=ThemedPressable.(
-        Color(theme.colors.primaryButtonOutline),
-        3.,
-      )
       disabled
       ?loading
       vStyle=Style.(
@@ -209,7 +207,6 @@ module SubmitSecondary = {
 
     <FormBase
       onPress
-      isPrimary=false
       disabled
       ?loading
       vStyle=Style.(
@@ -247,7 +244,6 @@ module SubmitTertiary = {
 
     <FormBase
       onPress
-      isPrimary=false
       disabled
       ?loading
       vStyle=Style.(

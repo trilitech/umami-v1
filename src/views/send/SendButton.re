@@ -63,12 +63,8 @@ let make = () => {
           style(~backgroundColor=theme.colors.primaryButtonBackground, ()),
         |])
       )>
-      <ThemedPressable
-        isPrimary=true
-        focusOutline=(Color(theme.colors.primaryButtonOutline), 3.)
-        style=styles##iconContainer
-        onPress
-        accessibilityRole=`button>
+      <ThemedPressable.Primary
+        style=styles##iconContainer onPress accessibilityRole=`button>
         <Icons.Send size=24. color={theme.colors.primaryIconHighEmphasis} />
         <Typography.ButtonSecondary
           fontSize=13.
@@ -80,7 +76,7 @@ let make = () => {
           )>
           I18n.btn#send->React.string
         </Typography.ButtonSecondary>
-      </ThemedPressable>
+      </ThemedPressable.Primary>
     </View>
     <ModalAction visible=visibleModal onRequestClose=closeAction>
       <SendView closeAction />
