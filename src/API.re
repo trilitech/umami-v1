@@ -213,8 +213,8 @@ module CSV = {
   open CSVParser;
 
   type customEncodingError =
-    | CannotParseAddress(string)
-    | CannotParseContract(string);
+    | CannotParseAddress(string, ReTaquito.Utils.addressValidity)
+    | CannotParseContract(string, ReTaquito.Utils.addressValidity);
 
   type error =
     | Parser(CSVParser.error(customEncodingError))
@@ -227,13 +227,17 @@ module CSV = {
   type t = list(Transfer.elt);
 
   let checkAddress = a => {
-    Js.Re.(fromString("^(tz)(1|2|3)[A-Za-z0-9]{33}")->test_(a))
-      ? Ok(a) : Error(CannotParseAddress(a));
+    switch (ReTaquito.Utils.validateAddress(a)) {
+    | Valid => Ok(a)
+    | err => Error(CannotParseAddress(a, err))
+    };
   };
 
   let checkContract = a => {
-    Js.Re.(fromString("^(KT1)[A-Za-z0-9]{33}")->test_(a))
-      ? Ok(a) : Error(CannotParseContract(a));
+    switch (ReTaquito.Utils.validateContractAddress(a)) {
+    | Valid => Ok(a)
+    | err => Error(CannotParseAddress(a, err))
+    };
   };
 
   let addr = Encodings.custom(~conv=checkAddress);
@@ -293,10 +297,20 @@ module CSV = {
   };
 };
 
+let handleAddressValidationError =
+  fun
+  | ReTaquito.Utils.No_prefix_matched => I18n.taquito#no_prefix_matched
+  | Invalid_checksum => I18n.taquito#invalid_checksum
+  | Invalid_length => I18n.taquito#invalid_length
+  | Valid => I18n.taquito#valid
+  | UnknownError(n) => I18n.taquito#unknown_error_code(n);
+
 let handleCustomError =
   fun
-  | CSV.CannotParseAddress(a) => I18n.csv#cannot_parse_address(a)
-  | CannotParseContract(a) => I18n.csv#cannot_parse_contract(a);
+  | CSV.CannotParseAddress(a, r) =>
+    I18n.csv#cannot_parse_address(a, handleAddressValidationError(r))
+  | CannotParseContract(a, r) =>
+    I18n.csv#cannot_parse_contract(a, handleAddressValidationError(r));
 
 let handleCSVError = e =>
   e->CSVParser.(

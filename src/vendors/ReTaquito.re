@@ -79,6 +79,19 @@ module Utils = {
     | 3 => Valid
     | n => UnknownError(n)
     };
+
+  [@bs.module "@taquito/utils"]
+  external validateContractAddressRaw: string => int =
+    "validateContractAddress";
+
+  let validateContractAddress = s =>
+    switch (s->validateContractAddressRaw) {
+    | 0 => No_prefix_matched
+    | 1 => Invalid_checksum
+    | 2 => Invalid_length
+    | 3 => Valid
+    | n => UnknownError(n)
+    };
 };
 
 let fromPromiseParsed = p =>

@@ -284,6 +284,15 @@ let network = {
     p("The API %s is not supported by this version of Umami.", a)
 };
 
+let taquito = {
+  pub _this = this;
+  pub no_prefix_matched = "Unknown address prefix";
+  pub invalid_checksum = "Invalid checksum";
+  pub invalid_length = "Invalid length";
+  pub valid = "Valid";
+  pub unknown_error_code = n => p("Unknown error code %d", n)
+};
+
 let csv = {
   pub _this = this;
   pub cannot_parse_number = (row, col) =>
@@ -316,8 +325,10 @@ let csv = {
       col,
     );
   pub unknown_token = p("Unknown token %s");
-  pub cannot_parse_address = a => p("%s in not a valid address.", a);
-  pub cannot_parse_contract = a => p("%s in not a valid contract address.", a)
+  pub cannot_parse_address = (a, reason) =>
+    p("%s in not a valid address: %s.", a, reason);
+  pub cannot_parse_contract = (a, reason) =>
+    p("%s in not a valid contract address: %s.", a, reason)
 };
 
 let t = {
