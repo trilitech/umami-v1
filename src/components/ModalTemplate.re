@@ -29,20 +29,24 @@ module HeaderButtons = {
   module Close = {
     [@react.component]
     let make = (~onPress) => {
-      let theme = ThemeContext.useTheme();
-      <TouchableOpacity onPress>
-        <Icons.Close size=36. color={theme.colors.iconMediumEmphasis} />
-      </TouchableOpacity>;
+      <IconButton
+        icon=Icons.Close.build
+        onPress
+        size=48.
+        iconSizeRatio={3. /. 4.}
+      />;
     };
   };
 
   module Back = {
     [@react.component]
     let make = (~onPress) => {
-      let theme = ThemeContext.useTheme();
-      <TouchableOpacity onPress>
-        <Icons.ArrowLeft size=36. color={theme.colors.iconMediumEmphasis} />
-      </TouchableOpacity>;
+      <IconButton
+        icon=Icons.ArrowLeft.build
+        onPress
+        size=48.
+        iconSizeRatio={3. /. 4.}
+      />;
     };
   };
 };
@@ -51,9 +55,9 @@ let styles =
   Style.(
     StyleSheet.create({
       "headerLeft":
-        style(~position=`absolute, ~left=20.->dp, ~top=20.->dp, ()),
+        style(~position=`absolute, ~left=14.->dp, ~top=14.->dp, ()),
       "headerRight":
-        style(~position=`absolute, ~right=20.->dp, ~top=20.->dp, ()),
+        style(~position=`absolute, ~right=14.->dp, ~top=14.->dp, ()),
       "loadingView":
         StyleSheet.flatten([|
           StyleSheet.absoluteFillObject,
