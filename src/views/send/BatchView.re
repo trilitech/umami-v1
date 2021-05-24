@@ -29,6 +29,13 @@ let styles =
           (),
         ),
       "moreButton": style(~marginHorizontal=auto, ()),
+      "csvFormat":
+        style(
+          ~alignItems=`flexEnd,
+          ~paddingBottom=4.->dp,
+          ~marginRight=10.->dp,
+          (),
+        ),
     })
   );
 
@@ -136,6 +143,28 @@ module Transactions = {
     };
   };
 
+  module CSVFormatLink = {
+    let onPress = _ =>
+      System.openExternal(
+        "https://gitlab.com/nomadic-labs/umami-wallet/umami/-/blob/master/docs/specs/batch_csv_format.md#example",
+      );
+
+    [@react.component]
+    let make = () => {
+      let theme = ThemeContext.useTheme();
+      <ThemedPressable
+        style=Style.(array([|style(~color=theme.colors.textPrimary, ())|]))
+        isPrimary=true
+        onPress
+        accessibilityRole=`button>
+        <Typography.ButtonPrimary
+          style=Style.(style(~color=theme.colors.textPrimary, ()))>
+          I18n.btn#csv_format_link->React.string
+        </Typography.ButtonPrimary>
+      </ThemedPressable>;
+    };
+  };
+
   [@react.component]
   let make = (~recipients, ~showAmount, ~onAddCSVList=?, ~onDelete=?) => {
     let length = recipients->List.length;
@@ -150,6 +179,7 @@ module Transactions = {
            <CSVFilePicker onAddCSVList />
          )}
       </View>
+      <View style=styles##csvFormat> <CSVFormatLink /> </View>
       <DocumentContext.ScrollView
         style={listStyle(theme)} alwaysBounceVertical=false>
         {{

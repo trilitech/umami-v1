@@ -43,7 +43,8 @@ let btn = {
   pub export = "EXPORT";
   pub scan = "SCAN";
   pub upgrade = "Download";
-  pub load_file = "LOAD FROM FILE"
+  pub load_file = "LOAD FROM FILE";
+  pub csv_format_link = "CSV specification and example"
 };
 
 let tooltip = {
