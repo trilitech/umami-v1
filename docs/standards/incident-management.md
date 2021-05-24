@@ -136,7 +136,7 @@ A review of the INC and its handling is to be performed, in order to:
  * assess whether a policy change is recommended
  * assess whether a feature request is appropriate
 
-### Filing an IPM
+### Following up on an IPM
 
 In the INC ticket, add a final report in the end as a comment
 
