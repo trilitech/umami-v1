@@ -48,14 +48,8 @@ module OffBoardView = {
           ),
         "title": style(~marginBottom=4.->dp, ~textAlign=`center, ()),
         "text": style(~marginBottom=24.->dp, ~textAlign=`center, ()),
-        "touchable":
-          style(
-            ~marginBottom=24.->dp,
-            ~alignSelf=`flexStart,
-            ~flexDirection=`row,
-            ~alignItems=`flexStart,
-            (),
-          ),
+        "checkboxLabel":
+          style(~marginBottom=24.->dp, ~alignItems=`flexStart, ()),
         "checkbox": style(~marginRight=14.->dp, ()),
       })
     );
@@ -130,15 +124,13 @@ module OffBoardView = {
           colorStyle=`error fontWeightStyle=`black style=styles##text>
           I18n.settings#danger_offboard_form_text->React.string
         </Typography.Body1>
-        <TouchableOpacity
-          onPress={_ => form.handleChange(Confirm, !form.values.confirm)}
-          style=styles##touchable
-          activeOpacity=1.>
-          <Checkbox value={form.values.confirm} style=styles##checkbox />
-          <Typography.Overline2 fontWeightStyle=`regular>
-            I18n.settings#danger_offboard_form_checkbox_label->React.string
-          </Typography.Overline2>
-        </TouchableOpacity>
+        <CheckboxLabel
+          style=styles##checkboxLabel
+          label=I18n.settings#danger_offboard_form_checkbox_label
+          labelFontWeightStyle=`regular
+          value={form.values.confirm}
+          handleChange={form.handleChange(Confirm)}
+        />
         <View>
           <ThemedTextInput
             value={form.values.word}
