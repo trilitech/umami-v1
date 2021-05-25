@@ -172,7 +172,8 @@ module Toolkit = {
 
     type confirmationResult = {block};
 
-    [@bs.send] external create: (field, string) => t = "createOperation";
+    [@bs.send]
+    external create: (field, string) => Js.Promise.t(t) = "createOperation";
 
     [@bs.send]
     external confirmation:
@@ -254,7 +255,8 @@ module Toolkit = {
     "setDelegate";
 
   [@bs.send]
-  external getDelegate: (tz, string) => Js.Promise.t(string) = "getDelegate";
+  external getDelegate: (tz, string) => Js.Promise.t(Js.Nullable.t(string)) =
+    "getDelegate";
 
   module type METHODS = {type t;};
 
@@ -474,7 +476,7 @@ let getDelegate = (endpoint, address) => {
   let tk = Toolkit.create(endpoint);
 
   Toolkit.getDelegate(tk.tz, address)
-  |> Js.Promise.then_(v => Js.Promise.resolve(Some(v)))
+  |> Js.Promise.then_(v => Js.Promise.resolve(Js.Nullable.toOption(v)))
   |> Js.Promise.catch(e =>
        if (Obj.magic(e)##status == 404) {
          Js.Promise.resolve(None);
@@ -489,9 +491,8 @@ module Operations = {
   let confirmation = (endpoint, hash, ~blocks=?, ()) => {
     let tk = Toolkit.create(endpoint);
     let res =
-      tk.operation
-      ->Toolkit.Operation.create(hash)
-      ->Toolkit.Operation.confirmation(~blocks?);
+      tk.operation->Toolkit.Operation.create(hash)
+      |> Js.Promise.then_(op => op->Toolkit.Operation.confirmation(~blocks?));
     res->FutureJs.fromPromise(e => {
       Js.log(e);
       Js.String.make(e);
