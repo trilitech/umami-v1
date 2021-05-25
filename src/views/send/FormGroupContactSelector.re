@@ -103,7 +103,7 @@ let make =
         ->(
             fun
             | Some(v) => v->Account->FormUtils.Account.Valid
-            | None when ReTaquito.Utils.validateAddress(s) == Valid =>
+            | None when ReTaquito.Utils.validateAddress(s)->Result.isOk =>
               s->FormUtils.Account.Address->FormUtils.Account.Valid
             | None => s->FormUtils.Account.AnyString
           )

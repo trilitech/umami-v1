@@ -212,9 +212,15 @@ module Error = {
 module CSV = {
   open CSVParser;
 
+  type addressValidityError = [
+    | `NotAnAccount
+    | `NotAContract
+    | ReTaquito.Utils.addressValidityError
+  ];
+
   type customEncodingError =
-    | CannotParseAddress(string, ReTaquito.Utils.addressValidity)
-    | CannotParseContract(string, ReTaquito.Utils.addressValidity);
+    | CannotParseAddress(string, addressValidityError)
+    | CannotParseContract(string, addressValidityError);
 
   type error =
     | Parser(CSVParser.error(customEncodingError))
@@ -227,16 +233,20 @@ module CSV = {
   type t = list(Transfer.elt);
 
   let checkAddress = a => {
-    switch (ReTaquito.Utils.validateAddress(a)) {
-    | Valid => Ok(a)
-    | err => Error(CannotParseAddress(a, err))
+    switch (ReTaquito.Utils.validateAnyAddress(a)) {
+    | Ok(`Address) => Ok(a)
+    | Ok(`Contract) => Error(CannotParseAddress(a, `NotAnAccount))
+    | Error(#addressValidityError as err) =>
+      Error(CannotParseAddress(a, err))
     };
   };
 
   let checkContract = a => {
-    switch (ReTaquito.Utils.validateContractAddress(a)) {
-    | Valid => Ok(a)
-    | err => Error(CannotParseAddress(a, err))
+    switch (ReTaquito.Utils.validateAnyAddress(a)) {
+    | Ok(`Contract) => Ok(a)
+    | Ok(`Address) => Error(CannotParseContract(a, `NotAContract))
+    | Error(#addressValidityError as err) =>
+      Error(CannotParseContract(a, err))
     };
   };
 
@@ -297,13 +307,14 @@ module CSV = {
   };
 };
 
-let handleAddressValidationError =
+let handleAddressValidationError: CSV.addressValidityError => string =
   fun
-  | ReTaquito.Utils.No_prefix_matched => I18n.taquito#no_prefix_matched
-  | Invalid_checksum => I18n.taquito#invalid_checksum
-  | Invalid_length => I18n.taquito#invalid_length
-  | Valid => I18n.taquito#valid
-  | UnknownError(n) => I18n.taquito#unknown_error_code(n);
+  | `NotAnAccount => I18n.taquito#not_an_account
+  | `NotAContract => I18n.taquito#not_a_contract
+  | `No_prefix_matched => I18n.taquito#no_prefix_matched
+  | `Invalid_checksum => I18n.taquito#invalid_checksum
+  | `Invalid_length => I18n.taquito#invalid_length
+  | `UnknownError(n) => I18n.taquito#unknown_error_code(n);
 
 let handleCustomError =
   fun

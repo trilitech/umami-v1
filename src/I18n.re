@@ -286,6 +286,8 @@ let network = {
 
 let taquito = {
   pub _this = this;
+  pub not_an_account = "Not a tz address";
+  pub not_a_contract = "Not a contract address";
   pub no_prefix_matched = "Unknown address prefix";
   pub invalid_checksum = "Invalid checksum";
   pub invalid_length = "Invalid length";
