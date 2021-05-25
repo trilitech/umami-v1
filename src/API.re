@@ -341,7 +341,7 @@ module Simulation = {
       ~baseDir=settings->AppSettings.baseDir,
       ~source=delegation.Protocol.source,
       ~delegate=?delegation.Protocol.delegate,
-      ~fee=?delegation.Protocol.options.fee->Option.map(ProtocolXTZ.toInt64),
+      ~fee=?delegation.Protocol.options.fee,
       (),
     )
     ->Future.mapOk(

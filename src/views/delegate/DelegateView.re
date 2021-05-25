@@ -62,7 +62,10 @@ module Form = {
           Schema(
             nonEmpty(Sender)
             + nonEmpty(Baker)
-            + custom(values => FormUtils.isValidXtzAmount(values.fee), Fee)
+            + custom(
+                values => FormUtils.(emptyOr(isValidXtzAmount, values.fee)),
+                Fee,
+              )
             + custom(
                 values =>
                   switch (initDelegate) {
@@ -226,17 +229,17 @@ let buildSummaryContent = (dryRun: Protocol.simulationResults) => {
 
   let fee = (
     I18n.label#fee,
-    [
-      I18n.t#xtz_amount(
-        ProtocolXTZ.Infix.(dryRun.fee - dryRun.revealFee)
-        ->ProtocolXTZ.toString,
-      ),
-    ],
+    [I18n.t#xtz_amount(dryRun.fee->ProtocolXTZ.toString)],
   );
 
   let total = (
     I18n.label#summary_total,
-    [I18n.t#xtz_amount(dryRun.fee->ProtocolXTZ.toString)],
+    [
+      I18n.t#xtz_amount(
+        ProtocolXTZ.Infix.(dryRun.fee + dryRun.revealFee)
+        ->ProtocolXTZ.toString,
+      ),
+    ],
   );
 
   [fee, ...revealFee->Option.mapWithDefault([total], r => [r, total])];
