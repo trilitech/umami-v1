@@ -65,7 +65,7 @@ let make =
        let focused = focused->Option.getWithDefault(false);
        <>
          <ThemedPressable.ContainerInteractionState.Outline
-           hovered pressed focused style=styles##checkboxContainer>
+           hovered pressed focused disabled style=styles##checkboxContainer>
            <Checkbox value />
          </ThemedPressable.ContainerInteractionState.Outline>
          <FormLabel label hasError fontWeightStyle=?labelFontWeightStyle />

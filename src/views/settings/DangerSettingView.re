@@ -124,7 +124,7 @@ module OffBoardView = {
           colorStyle=`error fontWeightStyle=`black style=styles##text>
           I18n.settings#danger_offboard_form_text->React.string
         </Typography.Body1>
-        <CheckboxLabel
+        <CheckboxItem
           style=styles##checkboxLabel
           label=I18n.settings#danger_offboard_form_checkbox_label
           labelFontWeightStyle=`regular

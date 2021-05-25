@@ -26,5 +26,5 @@
 [@react.component]
 let make = (~label, ~value, ~handleChange, ~error) => {
   let hasError = error->Option.isSome;
-  <FormGroup> <CheckboxLabel label value handleChange hasError /> </FormGroup>;
+  <FormGroup> <CheckboxItem label value handleChange hasError /> </FormGroup>;
 };
