@@ -212,8 +212,18 @@ module Error = {
 module CSV = {
   open CSVParser;
 
+  type addressValidityError = [
+    | `NotAnAccount
+    | `NotAContract
+    | ReTaquito.Utils.addressValidityError
+  ];
+
+  type customEncodingError =
+    | CannotParseAddress(string, addressValidityError)
+    | CannotParseContract(string, addressValidityError);
+
   type error =
-    | Parser(CSVParser.error)
+    | Parser(CSVParser.error(customEncodingError))
     | UnknownToken(string)
     | NoRows
     | CannotMixTokens(int)
@@ -222,8 +232,26 @@ module CSV = {
 
   type t = list(Transfer.elt);
 
-  let addr = Encodings.string;
-  let token = addr;
+  let checkAddress = a => {
+    switch (ReTaquito.Utils.validateAnyAddress(a)) {
+    | Ok(`Address) => Ok(a)
+    | Ok(`Contract) => Error(CannotParseAddress(a, `NotAnAccount))
+    | Error(#addressValidityError as err) =>
+      Error(CannotParseAddress(a, err))
+    };
+  };
+
+  let checkContract = a => {
+    switch (ReTaquito.Utils.validateAnyAddress(a)) {
+    | Ok(`Contract) => Ok(a)
+    | Ok(`Address) => Error(CannotParseContract(a, `NotAContract))
+    | Error(#addressValidityError as err) =>
+      Error(CannotParseContract(a, err))
+    };
+  };
+
+  let addr = Encodings.custom(~conv=checkAddress);
+  let token = Encodings.custom(~conv=checkContract);
 
   let rowEncoding =
     Encodings.(mkRow(tup4(addr, number, opt(token), opt(number))));
@@ -279,6 +307,22 @@ module CSV = {
   };
 };
 
+let handleAddressValidationError: CSV.addressValidityError => string =
+  fun
+  | `NotAnAccount => I18n.taquito#not_an_account
+  | `NotAContract => I18n.taquito#not_a_contract
+  | `No_prefix_matched => I18n.taquito#no_prefix_matched
+  | `Invalid_checksum => I18n.taquito#invalid_checksum
+  | `Invalid_length => I18n.taquito#invalid_length
+  | `UnknownError(n) => I18n.taquito#unknown_error_code(n);
+
+let handleCustomError =
+  fun
+  | CSV.CannotParseAddress(a, r) =>
+    I18n.csv#cannot_parse_address(a, handleAddressValidationError(r))
+  | CannotParseContract(a, r) =>
+    I18n.csv#cannot_parse_contract(a, handleAddressValidationError(r));
+
 let handleCSVError = e =>
   e->CSVParser.(
        fun
@@ -286,8 +330,12 @@ let handleCSVError = e =>
          I18n.csv#cannot_parse_number(row + 1, col + 1)
        | Parser(CannotParseBool(row, col)) =>
          I18n.csv#cannot_parse_boolean(row + 1, col + 1)
-       | Parser(CannotParseCustomValue(row, col)) =>
-         I18n.csv#cannot_parse_custom_value(row + 1, col + 1)
+       | Parser(CannotParseCustomValue(e, row, col)) =>
+         I18n.csv#cannot_parse_custom_value(
+           handleCustomError(e),
+           row + 1,
+           col + 1,
+         )
        | Parser(CannotParseRow(row)) => I18n.csv#cannot_parse_row(row + 1)
        | Parser(CannotParseCSV) => I18n.csv#cannot_parse_csv
        | NoRows => I18n.csv#no_rows

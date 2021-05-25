@@ -285,14 +285,25 @@ let network = {
     p("The API %s is not supported by this version of Umami.", a)
 };
 
+let taquito = {
+  pub _this = this;
+  pub not_an_account = "Not a tz address";
+  pub not_a_contract = "Not a contract address";
+  pub no_prefix_matched = "Unknown address prefix";
+  pub invalid_checksum = "Invalid checksum";
+  pub invalid_length = "Invalid length";
+  pub valid = "Valid";
+  pub unknown_error_code = n => p("Unknown error code %d", n)
+};
+
 let csv = {
   pub _this = this;
   pub cannot_parse_number = (row, col) =>
     p("Value at row %d column %d is not a number", row, col);
   pub cannot_parse_boolean = (row, col) =>
     p("Value at row %d column %d is not a boolean", row, col);
-  pub cannot_parse_custom_value = (row, col) =>
-    p("Value at row %d column %d is not valid", row, col);
+  pub cannot_parse_custom_value = (err, row, col) =>
+    p("Value at row %d column %d is not valid:\n%s", row, col, err);
   pub cannot_parse_row = row =>
     p("Row %d is not valid, some columns are probably missing", row);
   pub cannot_parse_csv = p("CSV is not valid");
@@ -316,7 +327,11 @@ let csv = {
       row,
       col,
     );
-  pub unknown_token = p("Unknown token %s")
+  pub unknown_token = p("Unknown token %s");
+  pub cannot_parse_address = (a, reason) =>
+    p("%s in not a valid address: %s.", a, reason);
+  pub cannot_parse_contract = (a, reason) =>
+    p("%s in not a valid contract address: %s.", a, reason)
 };
 
 let t = {
