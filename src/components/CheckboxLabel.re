@@ -34,10 +34,9 @@ let styles =
           ~marginLeft=(-5.)->dp,
           ~height=30.->dp,
           ~width=30.->dp,
+          ~borderRadius=15.,
           ~alignItems=`center,
           ~justifyContent=`center,
-          ~overflow=`hidden,
-          ~borderRadius=15.,
           (),
         ),
     })
@@ -54,8 +53,6 @@ let make =
       ~labelFontWeightStyle=?,
       ~style as styleFromProp: option(Style.t)=?,
     ) => {
-  let theme = ThemeContext.useTheme();
-
   <Pressable_
     style={_ =>
       Style.arrayOption([|Some(styles##pressable), styleFromProp|])
@@ -66,27 +63,11 @@ let make =
     {({hovered, pressed, focused}) => {
        let hovered = hovered->Option.getWithDefault(false);
        let focused = focused->Option.getWithDefault(false);
-       let backgroundColor =
-         disabled
-           ? theme.colors.primaryStateDisabled
-           : pressed
-               ? theme.colors.primaryStatePressed
-               : hovered ? theme.colors.primaryStateHovered : "transparent";
-       let colorOutline =
-         focused ? theme.colors.stateFocusedOutline : "transparent";
        <>
-         <View
-           style=Style.(
-             array([|
-               styles##checkboxContainer,
-               style(~backgroundColor, ())
-               ->unsafeAddStyle({
-                   "boxShadow": {j|0px 0px 0px 2px $(colorOutline)|j},
-                 }),
-             |])
-           )>
+         <ThemedPressable.ContainerInteractionState.Outline
+           hovered pressed focused style=styles##checkboxContainer>
            <Checkbox value />
-         </View>
+         </ThemedPressable.ContainerInteractionState.Outline>
          <FormLabel label hasError fontWeightStyle=?labelFontWeightStyle />
        </>;
      }}
