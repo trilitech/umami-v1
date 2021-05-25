@@ -42,7 +42,7 @@ module ContainerInteractionState = {
           ~hovered,
           ~pressed,
           ~focused,
-          ~disabled,
+          ~disabled=false,
           ~children,
           ~style as styleFromProp=?,
         ) => {
@@ -82,7 +82,7 @@ module ContainerInteractionState = {
           ~hovered,
           ~pressed,
           ~focused,
-          ~disabled,
+          ~disabled=false,
           ~children,
           ~style as styleFromProp=?,
           ~focusedSize=2.,
@@ -139,7 +139,7 @@ module ContainerInteractionState = {
           ~hovered,
           ~pressed,
           ~focused,
-          ~disabled,
+          ~disabled=false,
           ~children,
           ~style as styleFromProp=?,
           ~focusedSize=3.,
@@ -190,53 +190,61 @@ module ContainerInteractionState = {
   };
 };
 
-[@react.component]
-let make =
-    (
-      ~pressableRef=?,
-      ~onPress=?,
-      ~href=?,
-      ~style as styleFromProp=?,
-      ~isActive=false,
-      ~disabled=false,
-      ~accessibilityRole: option(Accessibility.role)=?,
-      ~children,
-    ) => {
-  let theme = ThemeContext.useTheme();
+module Base = {
+  [@react.component]
+  let make =
+      (
+        ~pressableRef=?,
+        ~onPress=?,
+        ~href=?,
+        ~style as styleFromProp=?,
+        ~focusedSize as _fS: option(float)=?,
+        ~focusedColor as _fC: option(string)=?,
+        ~isActive=false,
+        ~disabled=false,
+        ~accessibilityRole: option(Accessibility.role)=?,
+        ~children,
+      ) => {
+    let theme = ThemeContext.useTheme();
 
-  <Pressable_
-    ref=?{pressableRef->Option.map(Ref.value)}
-    ?onPress
-    disabled
-    ?href
-    ?accessibilityRole>
-    {({hovered, pressed, focused}) => {
-       let hovered = hovered->Option.getWithDefault(false);
-       let focused = focused->Option.getWithDefault(false);
-       <ContainerInteractionState.Base
-         disabled hovered pressed focused style=?styleFromProp>
-         <View
-           style=Style.(
-             arrayOption([|
-               Some(StyleSheet.absoluteFillObject),
-               isActive
-                 ? Some(
-                     Style.style(
-                       ~backgroundColor=theme.colors.stateActive,
-                       (),
-                     ),
-                   )
-                 : None,
-             |])
-           )
-         />
-         children
-       </ContainerInteractionState.Base>;
-     }}
-  </Pressable_>;
+    <Pressable_
+      ref=?{pressableRef->Option.map(Ref.value)}
+      ?onPress
+      disabled
+      ?href
+      ?accessibilityRole>
+      {({hovered, pressed, focused}) => {
+         let hovered = hovered->Option.getWithDefault(false);
+         let focused = focused->Option.getWithDefault(false);
+         <ContainerInteractionState.Base
+           disabled hovered pressed focused style=?styleFromProp>
+           <View
+             style=Style.(
+               arrayOption([|
+                 Some(StyleSheet.absoluteFillObject),
+                 isActive
+                   ? Some(
+                       Style.style(
+                         ~backgroundColor=theme.colors.stateActive,
+                         (),
+                       ),
+                     )
+                   : None,
+               |])
+             )
+           />
+           children
+         </ContainerInteractionState.Base>;
+       }}
+    </Pressable_>;
+  };
 };
 
-module Outline = {
+include Base;
+
+module type T = (module type of Base);
+
+module Outline: T = {
   [@react.component]
   let make =
       (
@@ -292,7 +300,7 @@ module Outline = {
   };
 };
 
-module Primary = {
+module Primary: T = {
   [@react.component]
   let make =
       (

@@ -58,8 +58,16 @@ module FormBase = {
       ) => {
     let theme = ThemeContext.useTheme();
 
-    let children =
-      <>
+    let (module ThemedPressableComp): (module ThemedPressable.T) =
+      isPrimary
+        ? (module ThemedPressable.Primary) : (module ThemedPressable.Base);
+
+    <View style=Style.(arrayOption([|Some(styles##button), vStyle|]))>
+      <ThemedPressableComp
+        style={Style.arrayOption([|Some(styles##pressable), style|])}
+        onPress
+        disabled={disabled || loading}
+        accessibilityRole=`button>
         {loading
            ? <ActivityIndicator
                animating=true
@@ -73,24 +81,7 @@ module FormBase = {
              />
            : React.null}
         <View style={ReactUtils.visibleOn(!loading)}> children </View>
-      </>;
-
-    <View style=Style.(arrayOption([|Some(styles##button), vStyle|]))>
-      {isPrimary
-         ? <ThemedPressable.Primary
-             style={Style.arrayOption([|Some(styles##pressable), style|])}
-             onPress
-             disabled={disabled || loading}
-             accessibilityRole=`button>
-             children
-           </ThemedPressable.Primary>
-         : <ThemedPressable
-             style={Style.arrayOption([|Some(styles##pressable), style|])}
-             onPress
-             disabled={disabled || loading}
-             accessibilityRole=`button>
-             children
-           </ThemedPressable>}
+      </ThemedPressableComp>
     </View>;
   };
 };

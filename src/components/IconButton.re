@@ -47,50 +47,39 @@ let make =
     ) => {
   let theme = ThemeContext.useTheme();
 
-  let children =
-    icon(
-      ~style=?None,
-      ~size=Js.Math.ceil_float(iconSizeRatio *. size),
-      ~color=
-        isPrimary
-          ? theme.colors.primaryIconMediumEmphasis
-          : theme.colors.iconMediumEmphasis,
-    );
-
-  let pressableStyle =
-    Style.(
-      arrayOption([|
-        Some(styles##button),
-        Some(
-          style(
-            ~width=size->dp,
-            ~height=size->dp,
-            ~borderRadius=size /. 2.,
-            (),
-          ),
-        ),
-        styleFromProp,
-      |])
-    );
+  let (module ThemedPressableComp): (module ThemedPressable.T) =
+    isPrimary
+      ? (module ThemedPressable.Primary) : (module ThemedPressable.Outline);
 
   let pressableElement = (~pressableRef=?) =>
-    isPrimary
-      ? <ThemedPressable.Primary
-          ?pressableRef
-          ?onPress
-          ?isActive
-          style=pressableStyle
-          accessibilityRole=`button>
-          children
-        </ThemedPressable.Primary>
-      : <ThemedPressable.Outline
-          ?pressableRef
-          ?onPress
-          ?isActive
-          style=pressableStyle
-          accessibilityRole=`button>
-          children
-        </ThemedPressable.Outline>;
+    <ThemedPressableComp
+      ?pressableRef
+      ?onPress
+      ?isActive
+      style=Style.(
+        arrayOption([|
+          Some(styles##button),
+          Some(
+            style(
+              ~width=size->dp,
+              ~height=size->dp,
+              ~borderRadius=size /. 2.,
+              (),
+            ),
+          ),
+          styleFromProp,
+        |])
+      )
+      accessibilityRole=`button>
+      {icon(
+         ~style=?None,
+         ~size=Js.Math.ceil_float(iconSizeRatio *. size),
+         ~color=
+           isPrimary
+             ? theme.colors.primaryIconMediumEmphasis
+             : theme.colors.iconMediumEmphasis,
+       )}
+    </ThemedPressableComp>;
 
   <View>
     {switch (tooltip) {
