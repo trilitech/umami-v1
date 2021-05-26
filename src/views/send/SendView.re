@@ -470,9 +470,13 @@ module Form = {
 
 module EditionView = {
   [@react.component]
-  let make =
-      (~batch, ~accounts, ~initValues, ~onSubmit, ~token=?, ~index, ~loading) => {
+  let make = (~batch, ~accounts, ~initValues, ~onSubmit, ~index, ~loading) => {
     let (initValues, advancedOptionOpened) = initValues;
+    let token =
+      switch (initValues.SendForm.amount) {
+      | Transfer.XTZ(_) => None
+      | Token(_, t) => Some(t)
+      };
     let initValues = initValues->SendForm.toState;
 
     let (advancedOptionOpened, _) as advancedOptionState =
@@ -484,7 +488,7 @@ module EditionView = {
     <Form.View
       batch
       advancedOptionState
-      tokenState=(None, _ => ())
+      tokenState=(token, _ => ())
       ?token
       form
       mode={Form.View.Edition(index)}
@@ -662,7 +666,6 @@ let make = (~closeAction) => {
                batch
                initValues
                onSubmit
-               ?token
                index
                loading=false
                accounts
