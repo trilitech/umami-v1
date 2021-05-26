@@ -82,7 +82,7 @@ let make =
   let theme = ThemeContext.useTheme();
   let (isFocused, setIsFocused) = React.useState(_ => false);
 
-  <>
+  <View>
     {onClear
      ->ReactUtils.mapOpt(onClear => {
          <View style=styles##clearBtn>
@@ -165,7 +165,7 @@ let make =
       ?onSubmitEditing
       editable={!disabled}
     />
-  </>;
+  </View>;
 };
 
 [@bs.send]
