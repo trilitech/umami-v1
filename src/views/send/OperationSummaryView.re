@@ -100,7 +100,18 @@ let buildDestinations = (destinations, showAmount) => {
 };
 
 [@react.component]
-let make = (~style=?, ~source, ~destinations, ~showCurrency, ~content) => {
+let make =
+    (
+      ~style=?,
+      ~source,
+      ~destinations,
+      ~showCurrency,
+      ~content: list((string, Belt.List.t(TezosClient.Transfer.currency))),
+    ) => {
+  let content: list((string, Belt.List.t(string))) =
+    content->List.map(((field, amounts)) =>
+      (field, amounts->List.map(showCurrency))
+    );
   <View ?style>
     <AccountInfo address={source->fst} title={source->snd} />
     {content->ReactUtils.hideNil(content => <Content content />)}
