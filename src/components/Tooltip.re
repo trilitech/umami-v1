@@ -31,19 +31,15 @@ module Popper = {
       StyleSheet.create({
         "container":
           style(
-            ~padding=5.->dp,
-            ~width=120.->dp,
+            ~paddingVertical=4.->dp,
+            ~paddingHorizontal=16.->dp,
             ~borderRadius=4.,
-            ~display=`flex,
-            ~justifyContent=`center,
-            ~alignItems=`center,
-            ~textAlign=`center,
             ~borderWidth=1.,
             (),
           ),
         "positionLeft":
           style(
-            ~top=15.->dp,
+            ~top=6.->dp,
             ~right=0.->dp,
             ~left="unset",
             ~position=`absolute,
@@ -51,7 +47,7 @@ module Popper = {
           ),
         "positionRight":
           style(
-            ~top=15.->dp,
+            ~top=6.->dp,
             ~right="unset",
             ~left=0.->dp,
             ~position=`absolute,
@@ -73,27 +69,31 @@ module Popper = {
           ? styles##positionLeft : styles##positionRight
       );
 
-    <Popover
-      openingStyle=Popover.Top
-      style=position
-      pointerEvents=`none
-      keyPopover
-      isOpen
-      config>
-      <View
-        style=Style.(
-          array([|
-            styles##container,
-            style(
-              ~backgroundColor=theme.colors.barBackground,
-              ~borderColor=theme.colors.borderMediumEmphasis,
-              (),
-            ),
-          |])
-        )>
-        <Typography.Overline2> text->React.string </Typography.Overline2>
-      </View>
-    </Popover>;
+    <>
+      <Popover
+        openingStyle=Popover.Top
+        style=position
+        pointerEvents=`none
+        keyPopover
+        isOpen
+        config>
+        <View
+          style=Style.(
+            array([|
+              styles##container,
+              style(
+                ~backgroundColor=theme.colors.barBackground,
+                ~borderColor=theme.colors.borderMediumEmphasis,
+                (),
+              ),
+            |])
+          )>
+          <Typography.Overline3 numberOfLines=1 fontSize=12.>
+            text->React.string
+          </Typography.Overline3>
+        </View>
+      </Popover>
+    </>;
   };
 };
 
