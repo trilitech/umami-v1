@@ -30,7 +30,7 @@ let styles =
 
 let baseRenderButton = AccountSelector.baseRenderButton(~showAmount=Balance);
 
-let baseRenderItem = AccountSelector.baseRenderItem(~showAmount=Nothing);
+let baseRenderItem = AccountSelector.baseRenderItem(~showAmount=Balance);
 
 [@react.component]
 let make =
