@@ -25,6 +25,12 @@
 
 open ReactNative;
 
+type trackColor;
+[@bs.obj]
+external trackColor:
+  (~_true: Color.t=?, ~_false: Color.t=?, ~disabled: Color.t=?, unit) =>
+  trackColor;
+
 [@bs.module "./SwitchNative"] [@react.component]
 external make:
   (
@@ -35,7 +41,7 @@ external make:
     ~onValueChange: bool => unit=?,
     ~disabled: bool=?,
     ~thumbColor: Color.t=?,
-    ~trackColor: Switch.trackColor=?
+    ~trackColor: trackColor=?
   ) =>
   React.element =
   "default";

@@ -73,7 +73,13 @@ const Switch = forwardRef((props, forwardedRef) => {
   const width = styleWidth > minWidth ? styleWidth : minWidth;
   const trackBorderRadius = multiplyStyleLengthValue(height, 0.5);
   const trackCurrentColor = (function() {
-    if (value === true) {
+    if (disabled === true) {
+      if (trackColor != null && typeof trackColor === 'object') {
+        return trackColor.disabled;
+      } else {
+        return '#D5D5D5';
+      }
+    } else if (value === true) {
       if (trackColor != null && typeof trackColor === 'object') {
         return trackColor.true;
       } else {
@@ -96,7 +102,7 @@ const Switch = forwardRef((props, forwardedRef) => {
   const trackStyle = [
     styles.track,
     {
-      backgroundColor: disabled ? '#D5D5D5' : trackCurrentColor,
+      backgroundColor: trackCurrentColor,
       borderRadius: trackBorderRadius
     }
   ];
@@ -105,7 +111,7 @@ const Switch = forwardRef((props, forwardedRef) => {
     styles.thumb,
     value && styles.thumbActive,
     {
-      backgroundColor: disabled ? '#BDBDBD' : thumbCurrentColor,
+      backgroundColor: thumbCurrentColor,
       height: thumbHeight,
       marginStart: value ? multiplyStyleLengthValue(thumbWidth, -1) : 0,
       width: thumbWidth

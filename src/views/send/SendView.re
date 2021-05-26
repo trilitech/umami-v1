@@ -91,16 +91,6 @@ let styles =
   Style.(
     StyleSheet.create({
       "addTransaction": style(~marginTop=10.->dp, ()),
-      "advancedOptionButton":
-        style(
-          ~flexDirection=`row,
-          ~justifyContent=`spaceBetween,
-          ~alignItems=`center,
-          ~paddingVertical=8.->dp,
-          ~marginVertical=10.->dp,
-          ~paddingRight=12.->dp,
-          (),
-        ),
       "operationSummary": style(~marginBottom=20.->dp, ()),
     })
   );
@@ -406,22 +396,12 @@ module Form = {
             handleChange={form.handleChange(Recipient)}
             error={form.getFieldError(Field(Recipient))}
           />
-          <TouchableOpacity
-            style=styles##advancedOptionButton
-            activeOpacity=1.
-            onPress={_ =>
-              if (!advancedOptionsDisabled) {
-                setAdvancedOptionOpened(prev => !prev);
-              }
-            }>
-            <Typography.Overline2>
-              I18n.btn#advanced_options->React.string
-            </Typography.Overline2>
-            <ThemedSwitch
-              disabled=advancedOptionsDisabled
-              value=advancedOptionOpened
-            />
-          </TouchableOpacity>
+          <SwitchItem
+            label=I18n.btn#advanced_options
+            value=advancedOptionOpened
+            setValue=setAdvancedOptionOpened
+            disabled=advancedOptionsDisabled
+          />
         </ReactFlipToolkit.FlippedView>
         <ReactFlipToolkit.FlippedView
           flipId="advancedOption"

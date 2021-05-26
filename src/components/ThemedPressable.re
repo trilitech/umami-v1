@@ -69,7 +69,7 @@ module ContainerInteractionState = {
           ~focused,
           ~disabled=false,
           ~isActive=false,
-          ~children,
+          ~children=?,
           ~style as styleFromProp=?,
           ~focusedSize=Config.defaultFocusedSize,
           ~focusedColor=?,
@@ -110,7 +110,7 @@ module ContainerInteractionState = {
           |])
         )>
         <LayerActiveState isActive color=activeColor />
-        children
+        {children->Option.getWithDefault(React.null)}
       </View>;
     };
   };
