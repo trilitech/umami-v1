@@ -178,7 +178,12 @@ module Transactions = {
     let make = () => {
       let theme = ThemeContext.useTheme();
       <ThemedPressable
-        style=Style.(array([|style(~color=theme.colors.textPrimary, ())|]))
+        style=Style.(
+          array([|
+            style(~color=theme.colors.textPrimary, ()),
+            styles##csvFormat,
+          |])
+        )
         isPrimary=true
         onPress
         accessibilityRole=`button>
@@ -204,7 +209,7 @@ module Transactions = {
            <CSVFilePicker onAddCSVList />
          )}
       </View>
-      <View style=styles##csvFormat> <CSVFormatLink /> </View>
+      {onAddCSVList->Option.mapWithDefault(React.null, _ => <CSVFormatLink />)}
       <DocumentContext.ScrollView
         style={listStyle(theme)} alwaysBounceVertical=false>
         {{

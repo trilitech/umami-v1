@@ -245,30 +245,26 @@ module Form = {
 let buildSummaryContent = (dryRun: Protocol.simulationResults) => {
   let revealFee =
     dryRun.revealFee != ProtocolXTZ.zero
-      ? (
-          I18n.label#implicit_reveal_fee,
-          [I18n.t#xtz_amount(dryRun.revealFee->ProtocolXTZ.toString)],
-        )
+      ? (I18n.label#implicit_reveal_fee, [Transfer.XTZ(dryRun.revealFee)])
         ->Some
       : None;
 
-  let fee = (
-    I18n.label#fee,
-    [I18n.t#xtz_amount(dryRun.fee->ProtocolXTZ.toString)],
-  );
+  let fee = (I18n.label#fee, [Transfer.XTZ(dryRun.fee)]);
 
   let total = (
     I18n.label#summary_total,
-    [
-      I18n.t#xtz_amount(
-        ProtocolXTZ.Infix.(dryRun.fee + dryRun.revealFee)
-        ->ProtocolXTZ.toString,
-      ),
-    ],
+    [Transfer.XTZ(ProtocolXTZ.Infix.(dryRun.fee + dryRun.revealFee))],
   );
 
   [fee, ...revealFee->Option.mapWithDefault([total], r => [r, total])];
 };
+
+let showAmount =
+  Transfer.(
+    fun
+    | XTZ(v) => I18n.t#xtz_amount(v->ProtocolXTZ.toString)
+    | Token(v, t) => I18n.t#amount(v->Token.Unit.toNatString, t.symbol)
+  );
 
 [@react.component]
 let make = (~closeAction, ~action) => {
@@ -374,7 +370,7 @@ let make = (~closeAction, ~action) => {
                destinations={`One(target)}
                title
                subtitle=I18n.expl#confirm_operation
-               showCurrency=I18n.t#xtz_amount
+               showCurrency=showAmount
                content={buildSummaryContent(dryRun)}
                sendOperation={sendOperation(delegation)}
                loading
