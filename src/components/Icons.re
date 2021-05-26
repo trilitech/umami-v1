@@ -150,3 +150,4 @@ module Show = Make(SVGIconShow);
 module Hide = Make(SVGIconHide);
 module Stop = Make(SVGIconStop);
 module AddContact = Make(SVGIconAddContact);
+module Logs = Make(SVGIconLogs);

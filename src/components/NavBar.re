@@ -45,40 +45,83 @@ module NavBarItem = {
     );
 
   [@react.component]
-  let make = (~currentRoute, ~route, ~title, ~icon: option(Icons.builder)=?) => {
+  let make =
+      (
+        ~href=?,
+        ~onPress,
+        ~title,
+        ~icon: option(Icons.builder)=?,
+        ~isActive=false,
+        ~colorStyle=?,
+      ) => {
     let theme = ThemeContext.useTheme();
 
-    let (href, onPress) = useHrefAndOnPress(route);
-
-    let isCurrent = currentRoute == route;
+    let iconColor =
+      colorStyle->Option.mapWithDefault(
+        isActive
+          ? theme.dark
+              ? theme.colors.iconMaxEmphasis : theme.colors.iconPrimary
+          : theme.colors.iconMediumEmphasis,
+        colorStyle =>
+        colorStyle->Typography.getColor(theme)
+      );
 
     <ThemedPressable
-      accessibilityRole=`link
-      href
-      onPress
-      style=styles##item
-      isActive=isCurrent>
+      accessibilityRole=`link ?href onPress style=styles##item isActive>
       {icon->Option.mapWithDefault(React.null, icon => {
          icon(
            ~style={
              styles##icon;
            },
            ~size=24.,
-           ~color={
-             isCurrent
-               ? theme.dark
-                   ? theme.colors.iconMaxEmphasis : theme.colors.iconPrimary
-               : theme.colors.iconMediumEmphasis;
-           },
+           ~color=iconColor,
          )
        })}
       <Typography.ButtonTernary
         style=styles##text
-        colorStyle=?{isCurrent ? Some(`highEmphasis) : None}
-        fontWeightStyle=?{isCurrent ? Some(`black) : None}>
+        colorStyle=?{isActive ? Some(`highEmphasis) : colorStyle}
+        fontWeightStyle=?{isActive ? Some(`black) : None}>
         title->React.string
       </Typography.ButtonTernary>
     </ThemedPressable>;
+  };
+};
+
+module NavBarItemRoute = {
+  [@react.component]
+  let make = (~currentRoute, ~route, ~title, ~icon: option(Icons.builder)=?) => {
+    let (href, onPress) = useHrefAndOnPress(route);
+    let isCurrent = currentRoute == route;
+
+    <NavBarItem href onPress title ?icon isActive=isCurrent />;
+  };
+};
+
+module LogsButton = {
+  [@react.component]
+  let make = () => {
+    let setSeen = LogsContext.useSetSeen();
+    let seen = LogsContext.useSeen();
+
+    let (visibleModal, openAction, closeAction) =
+      ModalAction.useModalActionState();
+
+    let onPress = _ => {
+      openAction();
+      true->setSeen;
+    };
+
+    <>
+      <NavBarItem
+        onPress
+        title=I18n.btn#logs
+        icon=Icons.Logs.build
+        colorStyle={!seen ? `error : `disabled}
+      />
+      <ModalAction visible=visibleModal onRequestClose=closeAction>
+        <LogsView closeAction />
+      </ModalAction>
+    </>;
   };
 };
 
@@ -132,37 +175,37 @@ let make = (~route as currentRoute) => {
       |])
     )>
     <View style=styles##sendButton> <SendButton /> </View>
-    <NavBarItem
+    <NavBarItemRoute
       currentRoute
       route=Accounts
       title=I18n.t#navbar_accounts
       icon=Icons.Account.build
     />
-    <NavBarItem
+    <NavBarItemRoute
       currentRoute
       route=Operations
       title=I18n.t#navbar_operations
       icon=Icons.History.build
     />
-    <NavBarItem
+    <NavBarItemRoute
       currentRoute
       route=AddressBook
       title=I18n.t#navbar_addressbook
       icon=Icons.AddressBook.build
     />
-    <NavBarItem
+    <NavBarItemRoute
       currentRoute
       route=Delegations
       title=I18n.t#navbar_delegations
       icon=Icons.Delegate.build
     />
-    <NavBarItem
+    <NavBarItemRoute
       currentRoute
       route=Tokens
       title=I18n.t#navbar_tokens
       icon=Icons.Token.build
     />
-    <NavBarItem
+    <NavBarItemRoute
       currentRoute
       route=Settings
       title=I18n.t#navbar_settings
@@ -170,7 +213,7 @@ let make = (~route as currentRoute) => {
     />
     /* <NavBarItem currentRoute route=Debug title="DEBUG" /> */
     <View style=styles##bottomContainer>
-      <LogsButton style=NavBarItem.styles##item />
+      <LogsButton />
       <Typography.Overline3 style=styles##version>
         {("v." ++ System.getVersion())->React.string}
       </Typography.Overline3>
