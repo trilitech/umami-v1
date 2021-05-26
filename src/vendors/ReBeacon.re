@@ -34,6 +34,99 @@ type appMetadata = {
 type network = {
   [@bs.as "type"]
   type_: string,
+  id: id,
+  network: network,
+  scopes: Js.Array.t(permissionScope),
+};
+
+    type baseMessage = {
+      [@bs.as "type"]
+      type_: messageType,
+    };
+
+    type permissionRequest = {
+      id,
+      version,
+      senderId,
+      appMetadata,
+      network,
+      scopes,
+    };
+
+    type operationRequest = {
+      id,
+      version,
+      senderId,
+      network,
+      operationDetails,
+      sourceAddress,
+    };
+
+    type t =
+      | PermissionRequest(permissionRequest)
+      | OperationRequest(operationRequest);
+
+    let classify = (message: baseMessage): t => {
+      switch (message) {
+      | {type_: `permission_request} => PermissionRequest(message->Obj.magic)
+      | {type_: `operation_request} => OperationRequest(message->Obj.magic)
+      };
+    };
+  };
+
+  module ResponseInput = {
+    type messageType = [ | `permission_response | `operation_response];
+
+    type baseMessage;
+
+    type permissionResponse = {
+      id,
+      network,
+      scopes,
+      publicKey,
+    };
+
+    type operationResponse = {
+      id,
+      transactionHash,
+    };
+
+    type t =
+      | PermissionResponse(permissionResponse)
+      | OperationResponse(operationResponse);
+
+    let toObj = (responseInput: t): baseMessage => {
+      switch (responseInput) {
+      | PermissionResponse({id, network, scopes, publicKey}) =>
+        {
+          "type": `permission_response,
+          "id": id,
+          "network": network,
+          "scopes": scopes,
+          "publicKey": publicKey,
+        }
+        ->Obj.magic
+      | OperationResponse({id, transactionHash}) =>
+        {
+          "type": `operation_response,
+          "id": id,
+          "transactionHash": transactionHash,
+        }
+        ->Obj.magic
+      };
+    };
+  };
+};
+
+type peerInfo;
+
+module Serializer = {
+  type t;
+
+  [@bs.module "@airgap/beacon-sdk"] [@bs.new]
+  external make: unit => t = "Serializer";
+  [@bs.send]
+  external deserialize: (t, string) => Js.Promise.t(peerInfo) = "deserialize";
 };
 type scopes = array(string);
 type operationDetails;
@@ -296,6 +389,8 @@ module Serializer = {
   [@bs.send]
   external deserialize: (t, string) => Js.Promise.t(peerInfo) = "deserialize";
 };
+
+type transportType;
 
 module WalletClient = {
   type t;

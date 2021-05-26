@@ -114,3 +114,20 @@ if (!app.isDefaultProtocolClient('umami')) {
   // Define custom protocol handler. Deep linking works on packaged versions of the application!
   app.setAsDefaultProtocolClient('umami')
 }
+
+app.on('will-finish-launching', function() {
+  // Protocol handler for osx
+  app.on('open-url', function(event, url) {
+    event.preventDefault()
+    //logEverywhere('open-url# ' + url)
+    mainWindow.webContents.send('deeplinkURL', url)
+  })
+})
+
+// Log both at dev console and at running node console instance
+//function logEverywhere(s) {
+//  console.log(s)
+//  if (mainWindow && mainWindow.webContents) {
+//    mainWindow.webContents.executeJavaScript(`console.log("${s}")`)
+//  }
+//}

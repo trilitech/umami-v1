@@ -135,14 +135,6 @@ module AppView = {
       None;
     });
 
-    React.useEffect0(() => {
-      {
-        let client = ReBeacon.WalletClient.make({name: "umami"});
-        client->ReBeacon.WalletClient.init()->Future.get(Js.log);
-      }
-      None;
-    });
-
     <DocumentContext>
       <View
         style=Style.(
@@ -189,7 +181,9 @@ let make = () => {
     <ConfigContext>
       <ThemeContext>
         <SdkContext empty={() => <EmptyAppView />}>
-          <StoreContext> <AppView /> </StoreContext>
+          <StoreContext>
+            <BeaconContext> <AppView /> </BeaconContext>
+          </StoreContext>
         </SdkContext>
       </ThemeContext>
     </ConfigContext>
