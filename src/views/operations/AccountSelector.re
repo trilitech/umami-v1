@@ -97,7 +97,7 @@ let baseRenderItem = (~showAmount, ~token, account: Account.t) =>
 
 let renderButton = baseRenderButton(~showAmount=Balance, ~token=None);
 
-let renderItem = baseRenderItem(~showAmount=Nothing, ~token=None);
+let renderItem = baseRenderItem(~showAmount=Balance, ~token=None);
 
 [@react.component]
 let make = (~style=?) => {
