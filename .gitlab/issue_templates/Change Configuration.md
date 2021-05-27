@@ -28,11 +28,13 @@
 <!-- describe how to rollback the change in case the expected change is not working -->
 
 ## Priority
-<!-- Delete as appropriate. The priority and severity assigned may be different to this !-->
-- [ ] High (This will bring a huge increase in performance/productivity/usability, or is a legislative requirement)
-- [ ] Medium (This will bring a good increase in performance/productivity/usability)
-- [ ] Low (anything else e.g., trivial, minor improvements)
-
+<!-- Uncomment as appropriate. The priority and severity assigned may be different to this !-->
+<!--High : (This will bring a huge increase in performance/productivity/usability, or is a legislative requirement)-->
+<!-- /label ~"Priority::1-High" -->
+<!--Medium : (This will bring a good increase in performance/productivity/usability)-->
+<!-- /label ~"Priority::2-Medium" -->
+<!--Low : (anything else e.g., trivial, minor improvements) -->
+<!--  /label ~"Priority::3-Low" -->
 
 
 <!-- METADATA for project management, please leave the following lines and edit as needed -->
