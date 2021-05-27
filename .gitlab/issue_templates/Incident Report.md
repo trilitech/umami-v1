@@ -1,5 +1,4 @@
 ## Incident Report
-/label ~INC ~incident
 
 ### Checklist
 <!-- Before filing an incident report, if there are any doubt, follow the checklist to ensure you are in fact dealing with an incident: !-->
@@ -19,23 +18,31 @@
 <!-- If you can tick boxes 1, 2, 3, and 4--you have uncovered an Incident; otherwise, it may not be, please consult management or you may file it anyway if unsure. !-->
 
 ### What is the nature of the INC?
-
+<!-- Which parts of the system where affected ? -->
 
 
 ### How the INC was discovered?
 
 
-
 ### What is the potential impact of the INC?
-
 
 
 ### What is the evidence (i.e. screenshots, logs, etc)?
 
 
-<!-- Severity : choose one -->
-<!-- /label ~"Severity::1-Critical" --> 
-<!-- /label ~"Severity::2-Major" -->
-<!-- /label ~"Severity::3-Moderate" -->
-<!-- /label ~"Severity::4-Minor" -->
-<!-- /label ~"Severity::5-Cosmetic" -->
+
+
+
+<!-- METADATA for project management, please leave the following lines and edit as needed -->
+/label ~INC ~incident
+
+<!-- Labels and default review status for gitlab Change management process, uncomment as needed --> 
+<!-- 
+/label ~Change ~"CAB::to-review" ~"Change::Emergency"
+Change reviewers (all required) :  (ping  @picdc @remyzorg @comeh @philippewang.info @SamREye )
+- [ ] Development
+- [ ] Operation
+- [ ] Business
+-->
+<!-- Reviewers : fill with your gitlab user @handle -->
+<!-- METADATA - end -->

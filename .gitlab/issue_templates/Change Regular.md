@@ -1,14 +1,8 @@
 # Regular change
 <!-- Regular change, to be approved by the CAB before applying. -->
 
-<!-- Severity : choose one -->
-<!-- /label ~"Severity::1-Critical" --> 
-<!-- /label ~"Severity::2-Major" -->
-<!-- /label ~"Severity::3-Moderate" -->
-<!-- /label ~"Severity::4-Minor" -->
-<!-- /label ~"Severity::5-Cosmetic" -->
-
 <!-- /confidential -->
+<!-- If confidential, explain why -->
 
 ## Summary
 <!-- Outline the issue being faced, and why this required a change !-->
@@ -17,10 +11,18 @@
 <!-- This might only be one part, but may involve multiple sections !-->
 
 ## How does this currently work?
-<!-- the current process, and any associated business rules !-->
+<!-- The current process, and any associated business rules !-->
 
 ## What is the desired way of working?
-<!-- after the change, what should the process be, and what should the business rules be !-->
+<!-- After the change, what should the process be, and what should the business rules be !-->
+
+<!-- When relevant, include how to test the success of change application -->
+
+# Change Procedure
+- [ ] Change procedure been tested successfully
+
+<!-- Include step by step description -->
+
 
 ## Rollback plan ?
 <!-- describe how to rollback the change in case the expected change is not working -->
@@ -33,15 +35,15 @@
 
 
 
-<!-- METADATA for project management, please leave the following lines -->
+<!-- METADATA for project management, please leave the following lines and edit as needed -->
 <!-- Regular change, to be approved by the CAB before applying. -->
-<!-- labels for gitlab CAB issues Board -->
-/label ~CAB ~"CAB::to-approve"
+<!-- labels for gitlab CAB Change issues management -->
+/label ~Change ~"CAB::to-approve"
 <!-- identify the kind of change -->
 /label ~"Change::Regular" 
 
-<!-- Validators : please fill with your gitlab user @handle -->
-Validations required :
+<!-- Validators : fill with your gitlab user @handle -->
+Validations required : (ping  @picdc @remyzorg @comeh @philippewang.info @SamREye )
 - [ ] Development
 - [ ] Operation
 - [ ] Business

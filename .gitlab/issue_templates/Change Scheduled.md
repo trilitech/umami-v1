@@ -1,18 +1,12 @@
 ## Scheduled change
-<!-- Scheduled change, to be approved by the CAB before due date. -->
-<!-- A scheduled change is usually set on external dependencies -->
+<!-- Scheduled change, to be approved by the CAB before applying, and performed on the indicated due date. -->
+<!-- A scheduled change is usually set on external dependencies. -->
 
 <!-- Set Due Date : /due <in 2 days | this Friday | December 31st> -->
 /due 
 
-<!-- Severity : choose one -->
-<!-- /label ~"Severity::1-Critical" --> 
-<!-- /label ~"Severity::2-Major" -->
-<!-- /label ~"Severity::3-Moderate" -->
-<!-- /label ~"Severity::4-Minor" -->
-<!-- /label ~"Severity::5-Cosmetic" -->
-
 <!-- /confidential -->
+<!-- If confidential, explain why -->
 
 ## Summary
 <!-- Outline the issue being faced, and why this required a change !-->
@@ -21,13 +15,20 @@
 <!-- This might only be one part, but may involve multiple sections !-->
 
 ## How does this currently work?
-<!-- the current process, and any associated business rules !-->
+<!-- The current process, and any associated business rules !-->
 
 ## What is the desired way of working?
-<!-- after the change, what should the process be, and what should the business rules be !-->
+<!-- After the change, what should the process be, and what should the business rules be !-->
+
+<!-- When relevant, include how to test the success of change application -->
+
+## Change Procedure
+- [ ] Change procedure been tested successfully
+
+<!-- Include step by step description -->
 
 ## Rollback plan ?
-<!-- describe how to rollback the change in case the expected change is not working -->
+<!-- Describe how to rollback the change in case the expected change is not working -->
 
 ## Priority/Severity
 <!-- Delete as appropriate. The priority and severity assigned may be different to this !-->
@@ -37,15 +38,15 @@
 
 
 
-<!-- METADATA for project management, please leave the following lines -->
+<!-- METADATA for project management, please leave the following lines and edit as needed -->
 <!-- Scheduled change, to be approved by the CAB before due date. -->
-<!-- labels for gitlab CAB issues Board -->
-/label ~CAB ~"CAB::to-approve"
+<!-- labels for gitlab CAB Change issues management -->
+/label ~Change ~"CAB::to-approve"
 <!-- identify the kind of change -->
 /label ~"Change::Scheduled"
 
 <!-- Validators : please fill with your gitlab user @handle -->
-Validations required :
+Validations required : (ping  @picdc @remyzorg @comeh @philippewang.info @SamREye )
 - [ ] Development
 - [ ] Operation
 - [ ] Business
