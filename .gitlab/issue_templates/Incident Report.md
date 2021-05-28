@@ -37,12 +37,12 @@
 /label ~INC ~incident
 
 <!-- Labels and default review status for gitlab Change management process, uncomment as needed --> 
-<!-- 
 /label ~Change ~"CAB::to-review" ~"Change::Emergency"
-Change reviewers (all required) :  (ping  @picdc @remyzorg @comeh @philippewang.info @SamREye )
-- [ ] Development
-- [ ] Operation
-- [ ] Business
+
+Reviews (all required): check the box [x], you may also add you @user handle  (ping  @picdc @remyzorg @comeh @philippewang.info @SamREye )
+- [ ] Review from Development aspects
+- [ ] Review from Operational aspects
+- [ ] Review from Business aspects 
 -->
 <!-- Reviewers : fill with your gitlab user @handle -->
 <!-- METADATA - end -->

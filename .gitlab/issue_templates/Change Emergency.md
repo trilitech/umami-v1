@@ -45,10 +45,10 @@
 <!-- identify the kind of change -->
 /label ~"Change::Emergency"
 
-<!-- Validators : check the box [x], you may also add you @user handle  -->
-Reviewers (all required) : (ping  @picdc @remyzorg @comeh @philippewang.info @SamREye )
-- [ ] Validation from Development aspects
-- [ ] Validation from Operational aspects
-- [ ] Validation from Business aspects 
+<!-- Reviewers : check the box [x], you may also add you @user handle  -->
+Reviews (all required) : (ping  @picdc @remyzorg @comeh @philippewang.info @SamREye )
+- [ ] Review from Development aspects
+- [ ] Review from Operational aspects
+- [ ] Review from Business aspects 
 
 <!-- METADATA - end -->

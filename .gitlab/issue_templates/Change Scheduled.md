@@ -47,8 +47,8 @@
 <!-- identify the kind of change -->
 /label ~"Change::Scheduled"
 
-<!-- Validators : check the box [x], you may also add you @user handle  -->
-Reviewers (all required) : (ping  @picdc @remyzorg @comeh @philippewang.info @SamREye )
+<!-- Reviewers : check the box [x], you may also add you @user handle  -->
+Validations (all required) : (ping  @picdc @remyzorg @comeh @philippewang.info @SamREye )
 - [ ] Validation from Development aspects
 - [ ] Validation from Operational aspects
 - [ ] Validation from Business aspects 
