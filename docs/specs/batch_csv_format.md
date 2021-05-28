@@ -33,7 +33,7 @@ Any non-empty and non-commented line in the batch file, that matches a transacti
 
 All transactions described by a CSV line in the file compose the batch.
 
-#### Formal Specification
+### Formal Specification
 
 ```
 file = [comment CRLF] transaction *(CRLF transaction) [comment] [CRLF]
