@@ -121,11 +121,11 @@ module Utils = {
     };
 
   let validateAnyAddress = s =>
-    switch (s->validateAddress) {
-    | Ok(`Address) => Ok(`Address)
+    switch (s->validateContractAddress) {
+    | Ok(`Contract) => Ok(`Contract)
     | Error(_) =>
-      switch (s->validateContractAddress) {
-      | Ok(`Contract) => Ok(`Contract)
+      switch (s->validateAddress) {
+      | Ok(`Address) => Ok(`Address)
       | Error(#addressValidityError as err) => Error(err)
       }
     };

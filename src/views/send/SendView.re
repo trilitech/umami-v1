@@ -131,9 +131,7 @@ let sourceDestination = (transfer: Transfer.t) => {
     )
   | {source, transfers} =>
     let destinations =
-      transfers->List.map(t =>
-        (None, (t.destination, t.amount->Transfer.currencyToString))
-      );
+      transfers->List.map(t => (None, (t.destination, t.amount)));
     ((source, sourceLbl), `Many(destinations));
   };
 };
@@ -178,26 +176,17 @@ let showAmount =
 
 let buildSummaryContent =
     (transaction: Transfer.t, dryRun: Protocol.simulationResults) => {
-  let fee = (
-    I18n.label#fee,
-    [I18n.t#xtz_amount(dryRun.fee->ProtocolXTZ.toString)],
-  );
+  let fee = (I18n.label#fee, [Transfer.XTZ(dryRun.fee)]);
 
   let revealFee =
     dryRun.revealFee != ProtocolXTZ.zero
-      ? (
-          I18n.label#implicit_reveal_fee,
-          [I18n.t#xtz_amount(dryRun.revealFee->ProtocolXTZ.toString)],
-        )
+      ? (I18n.label#implicit_reveal_fee, [Transfer.XTZ(dryRun.revealFee)])
         ->Some
       : None;
 
   let totals = transaction.transfers->List.map(t => t.amount)->reduceAmounts;
 
-  let subtotals = (
-    I18n.label#summary_subtotal,
-    totals->List.map(showAmount),
-  );
+  let subtotals = (I18n.label#summary_subtotal, totals);
 
   let totalTez = {
     let (sub, noTokens) =
@@ -209,10 +198,7 @@ let buildSummaryContent =
     (
       noTokens ? I18n.label#summary_total : I18n.label#summary_total_tez,
       [
-        I18n.t#xtz_amount(
-          ProtocolXTZ.Infix.(sub + dryRun.fee + dryRun.revealFee)
-          ->ProtocolXTZ.toString,
-        ),
+        Transfer.XTZ(ProtocolXTZ.Infix.(sub + dryRun.fee + dryRun.revealFee)),
       ],
     );
   };
@@ -484,9 +470,13 @@ module Form = {
 
 module EditionView = {
   [@react.component]
-  let make =
-      (~batch, ~accounts, ~initValues, ~onSubmit, ~token=?, ~index, ~loading) => {
+  let make = (~batch, ~accounts, ~initValues, ~onSubmit, ~index, ~loading) => {
     let (initValues, advancedOptionOpened) = initValues;
+    let token =
+      switch (initValues.SendForm.amount) {
+      | Transfer.XTZ(_) => None
+      | Token(_, t) => Some(t)
+      };
     let initValues = initValues->SendForm.toState;
 
     let (advancedOptionOpened, _) as advancedOptionState =
@@ -498,7 +488,7 @@ module EditionView = {
     <Form.View
       batch
       advancedOptionState
-      tokenState=(None, _ => ())
+      tokenState=(token, _ => ())
       ?token
       form
       mode={Form.View.Edition(index)}
@@ -643,12 +633,6 @@ let make = (~closeAction) => {
   let loadingSimulate = operationSimulateRequest->ApiRequest.isLoading;
   let loading = operationRequest->ApiRequest.isLoading;
 
-  let showCurrency = {
-    token->Option.mapWithDefault(I18n.t#xtz_amount, (token, a) =>
-      I18n.t#amount(a, token.symbol)
-    );
-  };
-
   <ReactFlipToolkit.Flipper
     flipKey={advancedOptionsOpened->string_of_bool ++ modalStep->stepToString}>
     <ReactFlipToolkit.FlippedView flipId="modal">
@@ -682,7 +666,6 @@ let make = (~closeAction) => {
                batch
                initValues
                onSubmit
-               ?token
                index
                loading=false
                accounts
@@ -708,7 +691,7 @@ let make = (~closeAction) => {
                destinations
                subtitle=I18n.expl#confirm_operation
                content={buildSummaryContent(transfer, dryRun)}
-               showCurrency
+               showCurrency=showAmount
                sendOperation={sendTransfer(transfer)}
                loading
              />;
