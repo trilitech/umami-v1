@@ -39,7 +39,7 @@ let make =
       ~destinations,
       ~showCurrency,
       ~sendOperation: _ => Future.t(Result.t(_)),
-      ~content,
+      ~content: list((string, Belt.List.t(TezosClient.Transfer.currency))),
       ~loading=false,
     ) => {
   let (wrongPassword, setWrongPassword) = React.useState(() => false);
