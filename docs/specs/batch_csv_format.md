@@ -17,7 +17,7 @@ tz1cbGwhSRwNt9XVdSnrqb4kzRyRJNAJrQni,2000,KT1RJ6PbjHpwc3M5rw5s2Nbmefwbuwbdxton
 
 ## Abstract
 
-Batch File Format Specifications, as defined herein, allow convenience to scale large batches with the additional benefit of reusability and interoperability across wallets that implemente this specification. From a simple, human-readable CSV file, a batch can be loaded into a wallet ready for signature.
+Batch File Format Specifications, as defined herein, allow convenience to scale large batches with the additional benefit of reusability and interoperability across wallets that implement this specification. From a simple, human-readable CSV file, a batch can be loaded into a wallet ready for signature.
 
 ## Introduction
 
