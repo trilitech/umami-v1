@@ -1,6 +1,15 @@
-# Nomadic Labs
-
 # Umami Wallet - Batch File Format Specifications
+
+[[_TOC_]]
+
+## Example
+
+```
+# This is an example CSV file for a Tezos batch of transactions
+tz1Z3JYEXYs88wAdaB6WW8H9tSRVxwuzEQz2,1.23456 # this is a simple tez tx -- all comments are optional
+tz1cbGwhSRwNt9XVdSnrqb4kzRyRJNAJrQni,1000,KT1RJ6PbjHpwc3M5rw5s2Nbmefwbuwbdxton,2 # this is a simple token tx
+tz1cbGwhSRwNt9XVdSnrqb4kzRyRJNAJrQni,2000,KT1RJ6PbjHpwc3M5rw5s2Nbmefwbuwbdxton # this is a simple token tx -- defaults to tokenid 0 or ignored if a single asset contract
+```
 
 ## Abstract
 
@@ -30,7 +39,7 @@ All transactions described by a CSV line in the file compose the batch.
 file = [comment CRLF] transaction *(CRLF transaction) [comment] [CRLF]
 transaction = teztx | tokentx
 teztx = destination COMMA amount CRLF
-tokentx = destination COMMA amount COMMA tokenaddr COMMA tokenid
+tokentx = destination COMMA amount COMMA tokenaddr *(COMMA tokenid)
 comment = HASHTAG text
 destination = tz(1|2|3)[A-Za-z0-9]+{33}
 amount = [0-9]+(.[0-9]*)
@@ -58,18 +67,9 @@ As per the [specification](#Formal Specification)'s `tokentx` definition, a toke
 1. a tz(1|2|3) address as the intended destination;
 1. the amount of token to send;
 1. the address to the contract that manages the token; and
-1. the token_id of the token within the contract
+1. (optional) the token_id of the token within the contract
 
-## Exceptions
-
-### Mismatch
+## Exception Handling
 
 If any line does not match a transaction specification, the line, the transaction, the file and the batch are considered invalid.
 
-## Example
-
-```
-# This is an example
-tz1Z3JYEXYs88wAdaB6WW8H9tSRVxwuzEQz2,1.23456 # this is a simple tez tx -- all comments are optional
-tz1cbGwhSRwNt9XVdSnrqb4kzRyRJNAJrQni,1000,KT1RJ6PbjHpwc3M5rw5s2Nbmefwbuwbdxton,2 # this is a simple token tx
-```
