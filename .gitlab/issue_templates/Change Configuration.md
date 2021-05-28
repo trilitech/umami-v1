@@ -44,9 +44,9 @@
 <!-- identify the kind of change -->
 /label ~"Change::Configuration"
 
-<!-- Validators : please fill with your gitlab user @handle -->
+<!-- Validators : check the box [x], you may also add you @user handle  -->
 Validations required : (ping  @picdc @remyzorg @comeh @philippewang.info @SamREye )
-- [ ] Development
-- [ ] Operation
-- [ (optional) ] Business
+- [ ] Validation from Development aspects
+- [ ] Validation from Operational aspects
+- [x]  (optional) Validation from Business aspects
 <!-- METADATA - end -->

@@ -44,10 +44,10 @@
 <!-- identify the kind of change -->
 /label ~"Change::Regular" 
 
-<!-- Validators : fill with your gitlab user @handle -->
-Validations required : (ping  @picdc @remyzorg @comeh @philippewang.info @SamREye )
-- [ ] Development
-- [ ] Operation
-- [ ] Business
+<!-- Validators : check the box [x], you may also add you @user handle  -->
+Reviewers (all required) : (ping  @picdc @remyzorg @comeh @philippewang.info @SamREye )
+- [ ] Validation from Development aspects
+- [ ] Validation from Operational aspects
+- [ ] Validation from Business aspects 
 
 <!-- METADATA - end -->

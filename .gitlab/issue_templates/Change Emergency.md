@@ -45,10 +45,10 @@
 <!-- identify the kind of change -->
 /label ~"Change::Emergency"
 
-<!-- Reviewers : please fill with your gitlab user @handle -->
+<!-- Validators : check the box [x], you may also add you @user handle  -->
 Reviewers (all required) : (ping  @picdc @remyzorg @comeh @philippewang.info @SamREye )
-- [ ] Development
-- [ ] Operation
-- [ ] Business
+- [ ] Validation from Development aspects
+- [ ] Validation from Operational aspects
+- [ ] Validation from Business aspects 
 
 <!-- METADATA - end -->
