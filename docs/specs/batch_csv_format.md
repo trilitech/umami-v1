@@ -33,18 +33,17 @@ The file format defined herein describes a batch of Tezos operations in the [CSV
 
 A batch is a collection of operations, which in this definition are necessarily transactions (although they may imply operations, such as reveals).
 
-Any non-empty and non-commented line in the batch file, that matches a transaction specification as per the section below, describes a transaction.
+Any non-empty line in the batch file, that matches a transaction specification as per the section below, describes a transaction.
 
 All transactions described by a CSV line in the file compose the batch.
 
 #### Formal Specification
 
 ```
-file = [comment CRLF] transaction *(CRLF transaction) [comment] [CRLF]
+file = transaction *(CRLF transaction) [CRLF]
 transaction = teztx | tokentx
 teztx = destination COMMA amount CRLF
 tokentx = destination COMMA amount COMMA tokenaddr *(COMMA tokenid)
-comment = HASHTAG text
 destination = tz[123][A-Za-z0-9]+{33}
 amount = [0-9]+(.[0-9]*)
 tokenaddr = KT1[A-Za-z0-9]+{33}
