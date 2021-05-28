@@ -23,7 +23,7 @@ For large batches however, it may be tedious to enter the transactions one by on
 
 ## Definition of the Batch Format
 
-### Overview
+### Batch
 
 The file format defined herein describes a batch of Tezos operations in the [CSV format](https://datatracker.ietf.org/doc/html/rfc4180).
 
@@ -33,7 +33,7 @@ Any non-empty and non-commented line in the batch file, that matches a transacti
 
 All transactions described by a CSV line in the file compose the batch.
 
-### Formal Specification
+#### Formal Specification
 
 ```
 file = [comment CRLF] transaction *(CRLF transaction) [comment] [CRLF]
