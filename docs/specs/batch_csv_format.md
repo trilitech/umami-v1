@@ -5,11 +5,15 @@
 ## Example
 
 ```
-# This is an example CSV file for a Tezos batch of transactions
-tz1Z3JYEXYs88wAdaB6WW8H9tSRVxwuzEQz2,1.23456 # this is a simple tez tx -- all comments are optional
-tz1cbGwhSRwNt9XVdSnrqb4kzRyRJNAJrQni,1000,KT1RJ6PbjHpwc3M5rw5s2Nbmefwbuwbdxton,2 # this is a simple token tx
-tz1cbGwhSRwNt9XVdSnrqb4kzRyRJNAJrQni,2000,KT1RJ6PbjHpwc3M5rw5s2Nbmefwbuwbdxton # this is a simple token tx -- defaults to tokenid 0 or ignored if a single asset contract
+tz1Z3JYEXYs88wAdaB6WW8H9tSRVxwuzEQz2,1.23456
+tz1cbGwhSRwNt9XVdSnrqb4kzRyRJNAJrQni,1000,KT1RJ6PbjHpwc3M5rw5s2Nbmefwbuwbdxton,2
+tz1cbGwhSRwNt9XVdSnrqb4kzRyRJNAJrQni,2000,KT1RJ6PbjHpwc3M5rw5s2Nbmefwbuwbdxton
 ```
+
+> Commentary: 
+>   1. a simple tez transaction, destined for the address in the first field, in the amount of the second field
+>   2. a simple token transaction, defined by the contract in the third field and the tokenid of the fourth field
+>   3. a simple token transaction with the default tokenid of 0, or ignored in the case of a single-asset contract
 
 ## Abstract
 
