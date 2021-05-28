@@ -1,3 +1,28 @@
+/*****************************************************************************/
+/*                                                                           */
+/* Open Source License                                                       */
+/* Copyright (c) 2019-2021 Nomadic Labs, <contact@nomadic-labs.com>          */
+/*                                                                           */
+/* Permission is hereby granted, free of charge, to any person obtaining a   */
+/* copy of this software and associated documentation files (the "Software"),*/
+/* to deal in the Software without restriction, including without limitation */
+/* the rights to use, copy, modify, merge, publish, distribute, sublicense,  */
+/* and/or sell copies of the Software, and to permit persons to whom the     */
+/* Software is furnished to do so, subject to the following conditions:      */
+/*                                                                           */
+/* The above copyright notice and this permission notice shall be included   */
+/* in all copies or substantial portions of the Software.                    */
+/*                                                                           */
+/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR*/
+/* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,  */
+/* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL   */
+/* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER*/
+/* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING   */
+/* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER       */
+/* DEALINGS IN THE SOFTWARE.                                                 */
+/*                                                                           */
+/*****************************************************************************/
+
 open ReactNative;
 open UmamiCommon;
 
@@ -5,21 +30,37 @@ let styles =
   Style.(
     StyleSheet.create({
       "container": style(~marginTop=30.->dp, ()),
+      "totalAmount": style(~textAlign=`right, ()),
+      "listLabelContainer":
+        style(
+          ~flexDirection=`row,
+          ~alignItems=`center,
+          ~justifyContent=`spaceBetween,
+          (),
+        ),
       "listLabel": style(~marginBottom=4.->dp, ()),
       "amount": style(~height=19.->dp, ~marginBottom=2.->dp, ()),
       "summary": style(~marginTop=11.->dp, ()),
       "row":
-        style(
-          ~paddingVertical=12.->dp,
-          ~paddingLeft=28.->dp,
-          ~paddingRight=38.->dp,
-          (),
-        ),
+        style(~height=68.->dp, ~flexDirection=`row, ~alignItems=`center, ()),
       "addTransaction": style(~marginBottom=10.->dp, ()),
       "notFirstRow": style(~borderTopWidth=1., ()),
-      "num": style(~position=`absolute, ~left=10.->dp, ~top=10.->dp, ()),
-      "moreButton":
-        style(~position=`absolute, ~top=17.->dp, ~right=4.->dp, ()),
+      "num":
+        style(
+          ~width=22.->dp,
+          ~height=44.->dp,
+          ~marginRight=6.->dp,
+          ~textAlign=`right,
+          (),
+        ),
+      "moreButton": style(~marginHorizontal=auto, ()),
+      "csvFormat":
+        style(
+          ~alignItems=`flexEnd,
+          ~paddingBottom=4.->dp,
+          ~marginRight=10.->dp,
+          (),
+        ),
     })
   );
 
@@ -43,11 +84,6 @@ let buildAmount = amount => {
   );
 };
 
-/* let computeTotal = batch => */
-/*   batch->List.reduce(0., (acc, t: SendForm.StateLenses.state) => */
-/*     acc +. float_of_string(t.amount) */
-/*   ); */
-
 module Item = {
   [@react.component]
   let make = (~i, ~recipient, ~amount, ~onDelete=?, ~onEdit=?) => {
@@ -58,7 +94,7 @@ module Item = {
         arrayOption([|
           Some(styles##row),
           Some(style(~borderColor=theme.colors.borderDisabled, ())),
-          Lib.Option.onlyIf(i != 0, () => styles##notFirstRow),
+          Lib.Option.onlyIf(i > 1, () => styles##notFirstRow),
         |])
       )>
       <Typography.Subtitle1 colorStyle=`mediumEmphasis style=styles##num>
@@ -108,14 +144,72 @@ module Item = {
 };
 
 module Transactions = {
+  module CSVFilePicker = {
+    [@react.component]
+    let make = (~onAddCSVList) => {
+      let addLog = LogsContext.useAdd();
+      let tokens = StoreContext.Tokens.useGetAll();
+
+      let onChange = fileTextContent => {
+        let parsedCSV = fileTextContent->API.CSV.parseCSV(tokens);
+        switch (parsedCSV) {
+        | Result.Ok(parsedCSV) => onAddCSVList(parsedCSV)
+        | Result.Error(error) =>
+          addLog(true, Logs.error(error->API.handleCSVError))
+        };
+      };
+
+      <TextFilePicker
+        text=I18n.btn#load_file
+        primary=true
+        accept=".csv"
+        onChange
+      />;
+    };
+  };
+
+  module CSVFormatLink = {
+    let onPress = _ =>
+      System.openExternal(
+        "https://gitlab.com/nomadic-labs/umami-wallet/umami/-/blob/master/docs/specs/batch_csv_format.md#example",
+      );
+
+    [@react.component]
+    let make = () => {
+      let theme = ThemeContext.useTheme();
+      <ThemedPressable
+        style=Style.(
+          array([|
+            style(~color=theme.colors.textPrimary, ()),
+            styles##csvFormat,
+          |])
+        )
+        isPrimary=true
+        onPress
+        accessibilityRole=`button>
+        <Typography.ButtonPrimary
+          style=Style.(style(~color=theme.colors.textPrimary, ()))>
+          I18n.btn#csv_format_link->React.string
+        </Typography.ButtonPrimary>
+      </ThemedPressable>;
+    };
+  };
+
   [@react.component]
-  let make = (~recipients, ~showCurrency, ~onDelete=?) => {
+  let make = (~recipients, ~showAmount, ~onAddCSVList=?, ~onDelete=?) => {
     let length = recipients->List.length;
     let theme = ThemeContext.useTheme();
+
     <View style=styles##container>
-      <Typography.Overline2 style=styles##listLabel>
-        I18n.label#transactions->React.string
-      </Typography.Overline2>
+      <View style=styles##listLabelContainer>
+        <Typography.Overline2 style=styles##listLabel>
+          I18n.label#transactions->React.string
+        </Typography.Overline2>
+        {onAddCSVList->Option.mapWithDefault(React.null, onAddCSVList =>
+           <CSVFilePicker onAddCSVList />
+         )}
+      </View>
+      {onAddCSVList->Option.mapWithDefault(React.null, _ => <CSVFormatLink />)}
       <DocumentContext.ScrollView
         style={listStyle(theme)} alwaysBounceVertical=false>
         {{
@@ -125,7 +219,7 @@ module Transactions = {
                key={string_of_int(i)}
                i={length - i}
                recipient
-               amount={showCurrency(amount)}
+               amount={showAmount(amount)}
                ?onDelete
                ?onEdit
              />;
@@ -144,22 +238,24 @@ let make =
     (
       ~back=?,
       ~onAddTransfer,
+      ~onAddCSVList,
       ~onSubmitBatch,
       ~onDelete,
       ~onEdit,
       ~batch,
-      ~showCurrency,
-      ~reduceAmounts,
+      ~showAmount,
+      ~reduceAmounts: _ => list(Transfer.currency),
       ~loading,
     ) => {
   let theme: ThemeContext.theme = ThemeContext.useTheme();
   let recipients =
-    batch->List.mapWithIndex((i, (t: SendForm.StateLenses.state, _) as v) =>
+    batch->List.mapWithIndex((i, (t: SendForm.validState, _) as v) =>
       (
         Some(() => onEdit(i, v)),
         (t.recipient->FormUtils.Account.address, t.amount),
       )
     );
+
   <>
     {back->ReactUtils.mapOpt(back => {
        <TouchableOpacity onPress={_ => back()} style=FormStyles.topLeftButton>
@@ -178,11 +274,21 @@ let make =
       <Typography.Overline2>
         I18n.label#summary_total->React.string
       </Typography.Overline2>
-      <Typography.Subtitle1>
-        {reduceAmounts(batch->List.map(fst))->showCurrency->React.string}
-      </Typography.Subtitle1>
+      <View>
+        {batch
+         ->List.map(((t, _)) => t.amount)
+         ->reduceAmounts
+         ->List.mapWithIndex((i, a) =>
+             <Typography.Subtitle1
+               style=styles##totalAmount key={i->Int.toString}>
+               {a->showAmount->React.string}
+             </Typography.Subtitle1>
+           )
+         ->List.toArray
+         ->React.array}
+      </View>
     </View>
-    <Transactions recipients showCurrency onDelete />
+    <Transactions recipients showAmount onAddCSVList onDelete />
     <View style=FormStyles.verticalFormAction>
       <Buttons.SubmitSecondary
         style=styles##addTransaction

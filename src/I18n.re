@@ -1,3 +1,28 @@
+/*****************************************************************************/
+/*                                                                           */
+/* Open Source License                                                       */
+/* Copyright (c) 2019-2021 Nomadic Labs, <contact@nomadic-labs.com>          */
+/*                                                                           */
+/* Permission is hereby granted, free of charge, to any person obtaining a   */
+/* copy of this software and associated documentation files (the "Software"),*/
+/* to deal in the Software without restriction, including without limitation */
+/* the rights to use, copy, modify, merge, publish, distribute, sublicense,  */
+/* and/or sell copies of the Software, and to permit persons to whom the     */
+/* Software is furnished to do so, subject to the following conditions:      */
+/*                                                                           */
+/* The above copyright notice and this permission notice shall be included   */
+/* in all copies or substantial portions of the Software.                    */
+/*                                                                           */
+/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR*/
+/* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,  */
+/* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL   */
+/* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER*/
+/* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING   */
+/* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER       */
+/* DEALINGS IN THE SOFTWARE.                                                 */
+/*                                                                           */
+/*****************************************************************************/
+
 let p = Format.sprintf;
 
 let btn = {
@@ -42,7 +67,9 @@ let btn = {
   pub import = "IMPORT";
   pub export = "EXPORT";
   pub scan = "SCAN";
-  pub upgrade = "Download"
+  pub upgrade = "Download";
+  pub load_file = "LOAD FROM FILE";
+  pub csv_format_link = "CSV specification and example"
 };
 
 let tooltip = {
@@ -119,11 +146,12 @@ let input_placeholder = {
 
 let form_input_error = {
   pub _this = this;
+  pub empty_transaction = "Transaction is empty.";
   pub branch_refused_error = "Please retry. An error came up while communicating with the node";
   pub key_already_registered = a =>
     p("Address already registered under: %s", a);
   pub name_already_registered = "Name already registered";
-  pub string_empty = "This input is mandatory";
+  pub mandatory = "This input is mandatory";
   pub int = "must be an integer";
   pub float = "must be a float";
   pub change_baker = "It must be a different baker than the current one";
@@ -282,6 +310,55 @@ let network = {
     p("The API %s is not supported by this version of Umami.", a)
 };
 
+let taquito = {
+  pub _this = this;
+  pub not_an_account = "Not a tz address";
+  pub not_a_contract = "Not a contract address";
+  pub no_prefix_matched = "Unknown address prefix";
+  pub invalid_checksum = "Invalid checksum";
+  pub invalid_length = "Invalid length";
+  pub valid = "Valid";
+  pub unknown_error_code = n => p("Unknown error code %d", n)
+};
+
+let csv = {
+  pub _this = this;
+  pub cannot_parse_number = (row, col) =>
+    p("Value at row %d column %d is not a number", row, col);
+  pub cannot_parse_boolean = (row, col) =>
+    p("Value at row %d column %d is not a boolean", row, col);
+  pub cannot_parse_custom_value = (err, row, col) =>
+    p("Value at row %d column %d is not valid:\n%s", row, col, err);
+  pub cannot_parse_row = row =>
+    p("Row %d is not valid, some columns are probably missing", row);
+  pub cannot_parse_csv = p("CSV is not valid");
+  pub no_rows = p("CSV is empty");
+  pub cannot_mix_tokens = row =>
+    p(
+      "Tokens from CSV must be all the same. Row %d is different from the previous ones.",
+      row,
+    );
+  pub cannot_parse_token_amount = (v, row, col) =>
+    p(
+      "Value %s at row %d column %d is not a valid token amount",
+      ReBigNumber.toString(v),
+      row,
+      col,
+    );
+  pub cannot_parse_tez_amount = (v, row, col) =>
+    p(
+      "Value %s at row %d column %d is not a valid tez amount",
+      ReBigNumber.toString(v),
+      row,
+      col,
+    );
+  pub unknown_token = p("Unknown token %s");
+  pub cannot_parse_address = (a, reason) =>
+    p("%s in not a valid address: %s.", a, reason);
+  pub cannot_parse_contract = (a, reason) =>
+    p("%s in not a valid contract address: %s.", a, reason)
+};
+
 let t = {
   pub error404 = "404 - Route Not Found :(";
   pub logs_no_recent = "No recent messages";
@@ -336,9 +413,9 @@ let t = {
   pub token_column_symbol = "SYMBOL";
   pub token_column_address = "ADDRESS";
   pub empty_token = "No token registered on the current chain";
-  pub empty_delegations = "No delegations";
-  pub empty_operations = "No operations";
-  pub empty_address_book = "No contacts";
+  pub empty_delegations = "No delegation";
+  pub empty_operations = "No operation";
+  pub empty_address_book = "No contact";
   pub add_token_format_contract_sentence = {js|Please specify the address of a FA1.2 token contract for which you would like to view balances as well as to perform operations.|js};
   pub delegation_removal = "Delegation Removal";
   pub error_check_contract = "Address is not a valid token contract";

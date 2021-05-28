@@ -1,4 +1,30 @@
+/*****************************************************************************/
+/*                                                                           */
+/* Open Source License                                                       */
+/* Copyright (c) 2019-2021 Nomadic Labs, <contact@nomadic-labs.com>          */
+/*                                                                           */
+/* Permission is hereby granted, free of charge, to any person obtaining a   */
+/* copy of this software and associated documentation files (the "Software"),*/
+/* to deal in the Software without restriction, including without limitation */
+/* the rights to use, copy, modify, merge, publish, distribute, sublicense,  */
+/* and/or sell copies of the Software, and to permit persons to whom the     */
+/* Software is furnished to do so, subject to the following conditions:      */
+/*                                                                           */
+/* The above copyright notice and this permission notice shall be included   */
+/* in all copies or substantial portions of the Software.                    */
+/*                                                                           */
+/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR*/
+/* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,  */
+/* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL   */
+/* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER*/
+/* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING   */
+/* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER       */
+/* DEALINGS IN THE SOFTWARE.                                                 */
+/*                                                                           */
+/*****************************************************************************/
+
 open ReactNative;
+open UmamiCommon;
 
 module FormGroupAmountWithTokenSelector = {
   let styles =
@@ -23,12 +49,10 @@ module FormGroupAmountWithTokenSelector = {
         ~selectedToken,
         ~setSelectedToken,
         ~token: option(Token.t)=?,
-        ~showSelector,
-        ~setValue=?,
       ) => {
     let tokens = StoreContext.Tokens.useGetAll();
 
-    let displaySelector = showSelector && tokens->Map.String.size > 0;
+    let displaySelector = tokens->Map.String.size > 0;
 
     let decoration =
       switch (displaySelector, token) {
@@ -42,7 +66,6 @@ module FormGroupAmountWithTokenSelector = {
         style=styles##amountGroup
         label
         value
-        ?setValue
         handleChange
         error
         ?decoration
@@ -85,7 +108,7 @@ let styles =
 type step =
   | SendStep
   | PasswordStep(SendForm.transaction, Protocol.simulationResults)
-  | EditStep(int, (SendForm.StateLenses.state, bool))
+  | EditStep(int, (SendForm.validState, bool))
   | BatchStep
   | SubmittedStep(string);
 
@@ -98,127 +121,97 @@ let stepToString = step =>
   | SubmittedStep(_) => "submittedstep"
   };
 
-let sourceDestination = (transfer: SendForm.transaction) => {
+let sourceDestination = (transfer: Transfer.t) => {
   let recipientLbl = I18n.title#recipient_account;
   let sourceLbl = I18n.title#sender_account;
   switch (transfer) {
-  | ProtocolTransaction({source, transfers: [t]}) => (
+  | {source, transfers: [t]} => (
       (source, sourceLbl),
       `One((t.destination, recipientLbl)),
     )
-  | ProtocolTransaction({source, transfers}) =>
+  | {source, transfers} =>
     let destinations =
-      transfers->List.map(t =>
-        (None, (t.destination, t.amount->ProtocolXTZ.toString))
-      );
-    ((source, sourceLbl), `Many(destinations));
-  | TokenTransfer(
-      {source, transfers: [{destination}]}: Token.Transfer.t,
-      _,
-    ) => (
-      (source, sourceLbl),
-      `One((destination, recipientLbl)),
-    )
-  | TokenTransfer({source, transfers}: Token.Transfer.t, _) =>
-    let destinations =
-      transfers->List.map(t =>
-        (None, (t.destination, t.amount->Token.Repr.toNatString))
-      );
+      transfers->List.map(t => (None, (t.destination, t.amount)));
     ((source, sourceLbl), `Many(destinations));
   };
 };
 
-let buildSummaryContent =
-    (transaction: SendForm.transaction, dryRun: Protocol.simulationResults) => {
-  let fee = (
-    I18n.label#fee,
-    I18n.t#xtz_amount(
-      ProtocolXTZ.Infix.(dryRun.fee - dryRun.revealFee)->ProtocolXTZ.toString,
-    ),
+let compareCurrencies = (v1, v2) => {
+  Transfer.(
+    switch (v1, v2) {
+    | (XTZ(_), Token(_)) => (-1)
+    | (Token(_), XTZ(_)) => 1
+    | _ => 0
+    }
   );
+};
+
+let reduceAmounts = l =>
+  Transfer.(
+    l
+    ->Lib.List.reduceGroupBy(
+        ~group=
+          fun
+          | Transfer.XTZ(_) => None
+          | Token(_, t) => Some(t),
+        ~map=(acc, v) =>
+        switch (acc, v) {
+        | (None, v) => v
+        | (Some(XTZ(acc)), XTZ(v)) => XTZ(ProtocolXTZ.Infix.(acc + v))
+        | (Some(Token(acc, t)), Token(v, _)) =>
+          Token(Token.Unit.Infix.(acc + v), t)
+        | (Some(acc), _) => acc
+        }
+      )
+    ->List.map(snd)
+    ->List.sort(compareCurrencies)
+  );
+
+let showAmount =
+  Transfer.(
+    fun
+    | XTZ(v) => I18n.t#xtz_amount(v->ProtocolXTZ.toString)
+    | Token(v, t) => I18n.t#amount(v->Token.Unit.toNatString, t.symbol)
+  );
+
+let buildSummaryContent =
+    (transaction: Transfer.t, dryRun: Protocol.simulationResults) => {
+  let fee = (I18n.label#fee, [Transfer.XTZ(dryRun.fee)]);
 
   let revealFee =
     dryRun.revealFee != ProtocolXTZ.zero
-      ? (
-          I18n.label#implicit_reveal_fee,
-          I18n.t#xtz_amount(dryRun.revealFee->ProtocolXTZ.toString),
-        )
+      ? (I18n.label#implicit_reveal_fee, [Transfer.XTZ(dryRun.revealFee)])
         ->Some
       : None;
 
-  switch (transaction) {
-  | ProtocolTransaction({transfers}) =>
-    let amount =
-      transfers->List.reduce(ProtocolXTZ.zero, (acc, {amount}) =>
-        ProtocolXTZ.Infix.(acc + amount)
-      );
-    let subtotal = (
-      I18n.label#summary_subtotal,
-      I18n.t#xtz_amount(amount->ProtocolXTZ.toString),
-    );
-    let total = ProtocolXTZ.Infix.(amount + dryRun.fee);
-    let total = (
-      I18n.label#summary_total,
-      I18n.t#xtz_amount(total->ProtocolXTZ.toString),
-    );
-    [
-      subtotal,
-      fee,
-      ...revealFee->Option.mapWithDefault([total], r => [r, total]),
-    ];
-  | TokenTransfer({transfers}, token) =>
-    let amount =
-      transfers->List.reduce(Token.Repr.zero, (acc, {amount}) =>
-        Token.Repr.add(acc, amount)
-      );
-    let amount = I18n.t#amount(amount->Token.Repr.toNatString, token.symbol);
+  let totals = transaction.transfers->List.map(t => t.amount)->reduceAmounts;
 
-    let amount = (I18n.label#send_amount, amount);
+  let subtotals = (I18n.label#summary_subtotal, totals);
 
-    let total = dryRun.fee;
-    let total = (
-      I18n.label#summary_total_tez,
-      I18n.t#xtz_amount(total->ProtocolXTZ.toString),
+  let totalTez = {
+    let (sub, noTokens) =
+      switch (totals) {
+      | [XTZ(a), ...t] => (a, t == [])
+      | t => (ProtocolXTZ.zero, t == [])
+      };
+
+    (
+      noTokens ? I18n.label#summary_total : I18n.label#summary_total_tez,
+      [
+        Transfer.XTZ(ProtocolXTZ.Infix.(sub + dryRun.fee + dryRun.revealFee)),
+      ],
     );
-
-    [
-      amount,
-      fee,
-      ...revealFee->Option.mapWithDefault([total], r => [r, total]),
-    ];
   };
+
+  Lib.List.([totalTez]->addOpt(revealFee)->add(fee)->add(subtotals));
 };
-
-let reduceAmounts = token =>
-  switch (token) {
-  | Some(_) => (
-      amounts =>
-        amounts
-        ->List.reduce(0, (total, SendForm.StateLenses.{amount}) =>
-            Int.fromString(amount)->Option.getWithDefault(0) + total
-          )
-        ->Int.toString
-    )
-
-  | None => (
-      amounts => {
-        ProtocolXTZ.(
-          amounts
-          ->List.reduce(zero, (total, {amount}) =>
-              Infix.(fromString(amount)->Option.getWithDefault(zero) + total)
-            )
-          ->toString
-        );
-      }
-    )
-  };
 
 module Form = {
   let defaultInit = (account: option(Account.t)) =>
     SendForm.StateLenses.{
       amount: "",
-      sender: account->Option.mapWithDefault("", a => a.address),
-      recipient: FormUtils.Account.Address(""),
+      sender: account,
+      recipient: FormUtils.Account.AnyString(""),
       fee: "",
       gasLimit: "",
       storageLimit: "",
@@ -231,26 +224,29 @@ module Form = {
       ~schema={
         SendForm.Validation.(
           Schema(
-            nonEmpty(Amount)
-            + nonEmpty(Sender)
+            custom(values => values.sender->FormUtils.notNone, Sender)
             + custom(
                 values =>
                   switch (values.recipient) {
-                  | Account(_) => Valid
-                  | Address(a) =>
-                    a->ReTaquito.Utils.validateAddress == ReTaquito.Utils.Valid
-                      ? Valid : Error(I18n.form_input_error#invalid_contract)
+                  | AnyString(_) =>
+                    Error(I18n.form_input_error#invalid_contract)
+                  | Valid(Account(_)) => Valid
+                  | Valid(Address(_)) => Valid
                   },
                 Recipient,
               )
             + custom(
-                values =>
+                values => {
                   token != None
                     ? FormUtils.isValidTokenAmount(values.amount)
-                    : FormUtils.isValidFloat(values.amount),
+                    : FormUtils.isValidXtzAmount(values.amount)
+                },
                 Amount,
               )
-            + custom(values => FormUtils.isValidFloat(values.fee), Fee)
+            + custom(
+                values => FormUtils.(emptyOr(isValidXtzAmount, values.fee)),
+                Fee,
+              )
             + custom(
                 values => FormUtils.isValidInt(values.gasLimit),
                 GasLimit,
@@ -302,28 +298,27 @@ module Form = {
       | Edition(int)
       | Creation(option(unit => unit), unit => unit);
 
-    let simulatedTransaction =
-        (mode, batch, form: SendForm.api, accounts, token) => {
+    let simulatedTransaction = (mode, batch, state: SendForm.validState) => {
       let (batch, index) =
         switch (mode) {
         | Edition(index) =>
           let batch =
             batch
             ->List.mapWithIndex((id, elt) =>
-                id == index ? (form.state.values, true) : elt
+                id == index ? (state, true) : elt
               )
             ->List.reverse;
           (batch, Some(batch->List.length - (index + 1)));
 
         | Creation(_) =>
-          let batch = [(form.state.values, true), ...batch]->List.reverse;
+          let batch = [(state, true), ...batch]->List.reverse;
           let length = batch->List.length;
 
           (batch, Some(length - 1));
         };
 
-      SendForm.buildTransaction(batch, token, accounts)
-      |> SendForm.toSimulation(~index?);
+      SendForm.buildTransaction(batch)
+      ->Operation.Simulation.transaction(index);
     };
 
     [@react.component]
@@ -389,13 +384,9 @@ module Form = {
           <FormGroupAmountWithTokenSelector
             label=I18n.label#send_amount
             value={form.values.amount}
-            setValue={f =>
-              form.setFieldValue(Amount, f(form.values.amount), ())
-            }
             handleChange={form.handleChange(Amount)}
             error={form.getFieldError(Field(Amount))}
             selectedToken={selectedToken->Option.map(t => t.address)}
-            showSelector={!batchMode}
             setSelectedToken={newToken => setSelectedToken(_ => newToken)}
             ?token
           />
@@ -403,10 +394,7 @@ module Form = {
             disabled=batchMode
             label=I18n.label#send_sender
             value={form.values.sender}
-            handleChange={a =>
-              a->Option.mapWithDefault("", a => a.Account.address)
-              |> form.handleChange(Sender)
-            }
+            handleChange={form.handleChange(Sender)}
             error={form.getFieldError(Field(Sender))}
             ?token
           />
@@ -450,9 +438,7 @@ module Form = {
                      operation={simulatedTransaction(
                        mode,
                        batch,
-                       form,
-                       accounts,
-                       token,
+                       SendForm.unsafeExtractValidState(token, form.values),
                      )}
                      form
                    />
@@ -484,9 +470,14 @@ module Form = {
 
 module EditionView = {
   [@react.component]
-  let make =
-      (~batch, ~accounts, ~initValues, ~onSubmit, ~token=?, ~index, ~loading) => {
+  let make = (~batch, ~accounts, ~initValues, ~onSubmit, ~index, ~loading) => {
     let (initValues, advancedOptionOpened) = initValues;
+    let token =
+      switch (initValues.SendForm.amount) {
+      | Transfer.XTZ(_) => None
+      | Token(_, t) => Some(t)
+      };
+    let initValues = initValues->SendForm.toState;
 
     let (advancedOptionOpened, _) as advancedOptionState =
       React.useState(_ => advancedOptionOpened);
@@ -497,7 +488,7 @@ module EditionView = {
     <Form.View
       batch
       advancedOptionState
-      tokenState=(None, _ => ())
+      tokenState=(token, _ => ())
       ?token
       form
       mode={Form.View.Edition(index)}
@@ -533,14 +524,13 @@ let make = (~closeAction) => {
   let (operationRequest, sendOperation) = StoreContext.Operations.useCreate();
 
   let sendTransfer = (transfer, password) => {
-    let operation = SendForm.toOperation(transfer);
+    let operation = Operation.transfer(transfer);
 
     let ((sourceAddress, _), _) = sourceDestination(transfer);
 
     sendOperation({operation, password})
     ->Future.tapOk(hash => {setModalStep(_ => SubmittedStep(hash))})
-    ->Future.tapOk(_ => {updateAccount(sourceAddress)})
-    ->ignore;
+    ->Future.tapOk(_ => {updateAccount(sourceAddress)});
   };
 
   let (batch, setBatch) = React.useState(_ => []);
@@ -551,25 +541,28 @@ let make = (~closeAction) => {
   let submitAction = React.useRef(`SubmitAll);
 
   let onSubmitBatch = batch => {
-    let transaction =
-      SendForm.buildTransaction(batch->List.reverse, token, accounts);
-    sendOperationSimulate(SendForm.toSimulation(transaction))
+    let transaction = SendForm.buildTransaction(batch->List.reverse);
+    sendOperationSimulate(
+      Operation.Simulation.transaction(transaction, None),
+    )
     ->Future.tapOk(dryRun => {
         setModalStep(_ => PasswordStep(transaction, dryRun))
       })
     ->ignore;
   };
 
-  let onSubmit = ({state, send}: SendForm.onSubmitAPI) =>
+  let onSubmit = ({state, send}: SendForm.onSubmitAPI) => {
+    let validState = SendForm.unsafeExtractValidState(token, state.values);
     switch (submitAction.current) {
     | `SubmitAll =>
-      onSubmitBatch([(state.values, advancedOptionsOpened), ...batch])
+      onSubmitBatch([(validState, advancedOptionsOpened), ...batch])
     | `AddToBatch =>
-      setBatch(l => [(state.values, advancedOptionsOpened), ...l]);
+      setBatch(l => [(validState, advancedOptionsOpened), ...l]);
       setAdvancedOptions(_ => false);
       send(ResetForm);
       send(SetFieldValue(Sender, state.values.sender));
     };
+  };
 
   let form: SendForm.api = Form.use(account, token, onSubmit);
 
@@ -584,9 +577,28 @@ let make = (~closeAction) => {
     setModalStep(_ => BatchStep);
   };
 
+  let onAddCSVList = (csvRows: API.CSV.t) => {
+    let transformTransfer =
+      csvRows->List.mapReverse(({destination, amount}) => {
+        let formStateValues: SendForm.validState = {
+          amount,
+          sender: form.values.sender->FormUtils.Unsafe.getValue,
+          recipient: FormUtils.Account.Address(destination),
+          fee: None,
+          gasLimit: None,
+          storageLimit: None,
+          forceLowFee: false,
+          dryRun: None,
+        };
+        (formStateValues, false);
+      });
+    setBatch(_ => transformTransfer);
+  };
+
   let onEdit = (i, advOpened, {state}: SendForm.onSubmitAPI) => {
+    let validState = SendForm.unsafeExtractValidState(token, state.values);
     setBatch(b =>
-      b->List.mapWithIndex((j, v) => i == j ? (state.values, advOpened) : v)
+      b->List.mapWithIndex((j, v) => i == j ? (validState, advOpened) : v)
     );
     setModalStep(_ => BatchStep);
   };
@@ -621,12 +633,6 @@ let make = (~closeAction) => {
   let loadingSimulate = operationSimulateRequest->ApiRequest.isLoading;
   let loading = operationRequest->ApiRequest.isLoading;
 
-  let showCurrency = {
-    token->Option.mapWithDefault(I18n.t#xtz_amount, (token, a) =>
-      I18n.t#amount(a, token.symbol)
-    );
-  };
-
   <ReactFlipToolkit.Flipper
     flipKey={advancedOptionsOpened->string_of_bool ++ modalStep->stepToString}>
     <ReactFlipToolkit.FlippedView flipId="modal">
@@ -642,11 +648,14 @@ let make = (~closeAction) => {
            | BatchStep =>
              <BatchView
                onAddTransfer={_ => setModalStep(_ => SendStep)}
+               onAddCSVList
                batch
-               showCurrency
-               reduceAmounts={reduceAmounts(token)}
+               showAmount
+               reduceAmounts
                onSubmitBatch
-               onEdit={(i, v) => setModalStep(_ => EditStep(i, v))}
+               onEdit={(i, (state, adv)) =>
+                 setModalStep(_ => EditStep(i, (state, adv)))
+               }
                onDelete
                loading=loadingSimulate
              />
@@ -657,7 +666,6 @@ let make = (~closeAction) => {
                batch
                initValues
                onSubmit
-               ?token
                index
                loading=false
                accounts
@@ -683,7 +691,7 @@ let make = (~closeAction) => {
                destinations
                subtitle=I18n.expl#confirm_operation
                content={buildSummaryContent(transfer, dryRun)}
-               showCurrency
+               showCurrency=showAmount
                sendOperation={sendTransfer(transfer)}
                loading
              />;

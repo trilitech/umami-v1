@@ -1,64 +1,40 @@
-/* 'fee' is duplicated in both option record */
-type transfer_options = {
-  fee: option(ProtocolXTZ.t),
-  gasLimit: option(int),
-  storageLimit: option(int),
-  parameter: option(string),
-  entrypoint: option(string),
-};
+/*****************************************************************************/
+/*                                                                           */
+/* Open Source License                                                       */
+/* Copyright (c) 2019-2021 Nomadic Labs, <contact@nomadic-labs.com>          */
+/*                                                                           */
+/* Permission is hereby granted, free of charge, to any person obtaining a   */
+/* copy of this software and associated documentation files (the "Software"),*/
+/* to deal in the Software without restriction, including without limitation */
+/* the rights to use, copy, modify, merge, publish, distribute, sublicense,  */
+/* and/or sell copies of the Software, and to permit persons to whom the     */
+/* Software is furnished to do so, subject to the following conditions:      */
+/*                                                                           */
+/* The above copyright notice and this permission notice shall be included   */
+/* in all copies or substantial portions of the Software.                    */
+/*                                                                           */
+/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR*/
+/* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,  */
+/* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL   */
+/* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER*/
+/* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING   */
+/* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER       */
+/* DEALINGS IN THE SOFTWARE.                                                 */
+/*                                                                           */
+/*****************************************************************************/
 
-type common_options = {
-  fee: option(ProtocolXTZ.t),
-  burnCap: option(ProtocolXTZ.t),
-  forceLowFee: option(bool),
-};
+/** Protocol specific operations */
+open ProtocolOptions;
 
 type delegation = {
   source: string,
   delegate: option(string),
-  options: common_options,
-};
-
-type transfer = {
-  amount: ProtocolXTZ.t,
-  destination: string,
-  tx_options: transfer_options,
-};
-
-type transaction = {
-  source: string,
-  transfers: list(transfer),
-  options: common_options,
+  options: commonOptions,
 };
 
 type t =
   | Delegation(delegation)
-  | Transaction(transaction);
-
-let transfer = t => t->Transaction;
-
-let emptyTransferOptions = {
-  fee: None,
-  gasLimit: None,
-  storageLimit: None,
-  parameter: None,
-  entrypoint: None,
-};
-
-let makeTransferOptions =
-    (~fee, ~gasLimit, ~storageLimit, ~parameter, ~entrypoint, ()) => {
-  fee,
-  gasLimit,
-  storageLimit,
-  parameter,
-  entrypoint,
-};
-
-let makeCommonOptions = (~fee, ~burnCap, ~forceLowFee, ()) => {
-  fee,
-  burnCap,
-  forceLowFee,
-};
+  | Transaction(Transfer.t);
 
 let makeDelegate =
     (~source, ~delegate, ~fee=?, ~burnCap=?, ~forceLowFee=?, ()) => {
@@ -67,66 +43,6 @@ let makeDelegate =
     delegate,
     options: makeCommonOptions(~fee, ~burnCap, ~forceLowFee, ()),
   };
-};
-
-let makeTransfer =
-    (
-      ~destination,
-      ~amount,
-      ~fee=?,
-      ~parameter=?,
-      ~entrypoint=?,
-      ~gasLimit=?,
-      ~storageLimit=?,
-      (),
-    ) => {
-  amount,
-  destination,
-  tx_options:
-    makeTransferOptions(
-      ~fee,
-      ~parameter,
-      ~entrypoint,
-      ~gasLimit,
-      ~storageLimit,
-      (),
-    ),
-};
-
-let makeTransaction = (~source, ~transfers, ~burnCap=?, ~forceLowFee=?, ()) => {
-  source,
-  transfers,
-  options: makeCommonOptions(~fee=None, ~burnCap, ~forceLowFee, ()),
-};
-
-let makeSingleTransaction =
-    (
-      ~source,
-      ~amount,
-      ~destination,
-      ~burnCap=?,
-      ~forceLowFee=?,
-      ~fee=?,
-      ~parameter=?,
-      ~entrypoint=?,
-      ~gasLimit=?,
-      ~storageLimit=?,
-      (),
-    ) => {
-  source,
-  transfers: [
-    makeTransfer(
-      ~amount,
-      ~destination,
-      ~fee?,
-      ~parameter?,
-      ~entrypoint?,
-      ~gasLimit?,
-      ~storageLimit?,
-      (),
-    ),
-  ],
-  options: makeCommonOptions(~fee=None, ~burnCap, ~forceLowFee, ()),
 };
 
 type simulationResults = {

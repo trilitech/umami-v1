@@ -1,3 +1,28 @@
+/*****************************************************************************/
+/*                                                                           */
+/* Open Source License                                                       */
+/* Copyright (c) 2019-2021 Nomadic Labs, <contact@nomadic-labs.com>          */
+/*                                                                           */
+/* Permission is hereby granted, free of charge, to any person obtaining a   */
+/* copy of this software and associated documentation files (the "Software"),*/
+/* to deal in the Software without restriction, including without limitation */
+/* the rights to use, copy, modify, merge, publish, distribute, sublicense,  */
+/* and/or sell copies of the Software, and to permit persons to whom the     */
+/* Software is furnished to do so, subject to the following conditions:      */
+/*                                                                           */
+/* The above copyright notice and this permission notice shall be included   */
+/* in all copies or substantial portions of the Software.                    */
+/*                                                                           */
+/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR*/
+/* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,  */
+/* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL   */
+/* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER*/
+/* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING   */
+/* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER       */
+/* DEALINGS IN THE SOFTWARE.                                                 */
+/*                                                                           */
+/*****************************************************************************/
+
 open ReactNative;
 open Delegate;
 
@@ -62,7 +87,10 @@ module Form = {
           Schema(
             nonEmpty(Sender)
             + nonEmpty(Baker)
-            + custom(values => FormUtils.isValidFloat(values.fee), Fee)
+            + custom(
+                values => FormUtils.(emptyOr(isValidXtzAmount, values.fee)),
+                Fee,
+              )
             + custom(
                 values =>
                   switch (initDelegate) {
@@ -217,27 +245,26 @@ module Form = {
 let buildSummaryContent = (dryRun: Protocol.simulationResults) => {
   let revealFee =
     dryRun.revealFee != ProtocolXTZ.zero
-      ? (
-          I18n.label#implicit_reveal_fee,
-          I18n.t#xtz_amount(dryRun.revealFee->ProtocolXTZ.toString),
-        )
+      ? (I18n.label#implicit_reveal_fee, [Transfer.XTZ(dryRun.revealFee)])
         ->Some
       : None;
 
-  let fee = (
-    I18n.label#fee,
-    I18n.t#xtz_amount(
-      ProtocolXTZ.Infix.(dryRun.fee - dryRun.revealFee)->ProtocolXTZ.toString,
-    ),
-  );
+  let fee = (I18n.label#fee, [Transfer.XTZ(dryRun.fee)]);
 
   let total = (
     I18n.label#summary_total,
-    I18n.t#xtz_amount(dryRun.fee->ProtocolXTZ.toString),
+    [Transfer.XTZ(ProtocolXTZ.Infix.(dryRun.fee + dryRun.revealFee))],
   );
 
   [fee, ...revealFee->Option.mapWithDefault([total], r => [r, total])];
 };
+
+let showAmount =
+  Transfer.(
+    fun
+    | XTZ(v) => I18n.t#xtz_amount(v->ProtocolXTZ.toString)
+    | Token(v, t) => I18n.t#amount(v->Token.Unit.toNatString, t.symbol)
+  );
 
 [@react.component]
 let make = (~closeAction, ~action) => {
@@ -250,8 +277,7 @@ let make = (~closeAction, ~action) => {
 
   let sendOperation = (delegation, password) =>
     sendOperation(OperationApiRequest.delegate(delegation, password))
-    ->Future.tapOk(hash => {setModalStep(_ => SubmittedStep(hash))})
-    ->ignore;
+    ->Future.tapOk(hash => {setModalStep(_ => SubmittedStep(hash))});
 
   let (operationSimulateRequest, sendOperationSimulate) =
     StoreContext.Operations.useSimulate();
@@ -344,7 +370,7 @@ let make = (~closeAction, ~action) => {
                destinations={`One(target)}
                title
                subtitle=I18n.expl#confirm_operation
-               showCurrency=I18n.t#xtz_amount
+               showCurrency=showAmount
                content={buildSummaryContent(dryRun)}
                sendOperation={sendOperation(delegation)}
                loading

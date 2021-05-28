@@ -1,12 +1,33 @@
-type amount =
-  | XTZ(ProtocolXTZ.t)
-  | Token(int);
+/*****************************************************************************/
+/*                                                                           */
+/* Open Source License                                                       */
+/* Copyright (c) 2019-2021 Nomadic Labs, <contact@nomadic-labs.com>          */
+/*                                                                           */
+/* Permission is hereby granted, free of charge, to any person obtaining a   */
+/* copy of this software and associated documentation files (the "Software"),*/
+/* to deal in the Software without restriction, including without limitation */
+/* the rights to use, copy, modify, merge, publish, distribute, sublicense,  */
+/* and/or sell copies of the Software, and to permit persons to whom the     */
+/* Software is furnished to do so, subject to the following conditions:      */
+/*                                                                           */
+/* The above copyright notice and this permission notice shall be included   */
+/* in all copies or substantial portions of the Software.                    */
+/*                                                                           */
+/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR*/
+/* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,  */
+/* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL   */
+/* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER*/
+/* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING   */
+/* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER       */
+/* DEALINGS IN THE SOFTWARE.                                                 */
+/*                                                                           */
+/*****************************************************************************/
 
 module StateLenses = [%lenses
   type state = {
     amount: string,
-    sender: string,
-    recipient: FormUtils.Account.t,
+    sender: option(Account.t),
+    recipient: FormUtils.Account.any,
     fee: string,
     gasLimit: string,
     storageLimit: string,
@@ -14,6 +35,45 @@ module StateLenses = [%lenses
     dryRun: option(Protocol.simulationResults),
   }
 ];
+
+type validState = {
+  amount: Transfer.currency,
+  sender: Account.t,
+  recipient: FormUtils.Account.t,
+  fee: option(ProtocolXTZ.t),
+  gasLimit: option(int),
+  storageLimit: option(int),
+  forceLowFee: bool,
+  dryRun: option(Protocol.simulationResults),
+};
+
+let unsafeExtractValidState = (token, state: StateLenses.state): validState => {
+  {
+    amount:
+      state.amount
+      ->FormUtils.parseAmount(token)
+      ->FormUtils.Unsafe.getCurrency,
+    sender: state.sender->FormUtils.Unsafe.getValue,
+    recipient: state.recipient->FormUtils.Unsafe.account,
+    fee: state.fee->ProtocolXTZ.fromString,
+    gasLimit: state.gasLimit->Int.fromString,
+    storageLimit: state.storageLimit->Int.fromString,
+    forceLowFee: state.forceLowFee,
+    dryRun: state.dryRun,
+  };
+};
+
+let toState = (vs: validState): StateLenses.state => {
+  amount: vs.amount->Transfer.currencyToString,
+  sender: vs.sender->Some,
+  recipient: vs.recipient->FormUtils.Account.Valid,
+
+  fee: vs.fee->Option.mapWithDefault("", ProtocolXTZ.toString),
+  gasLimit: vs.gasLimit->FormUtils.optToString(Int.toString),
+  storageLimit: vs.storageLimit->FormUtils.optToString(Int.toString),
+  forceLowFee: vs.forceLowFee,
+  dryRun: vs.dryRun,
+};
 
 include ReForm.Make(StateLenses);
 
@@ -23,99 +83,46 @@ module Password = {
   include ReForm.Make(StateLenses);
 };
 
-type transaction =
-  | ProtocolTransaction(Protocol.transaction)
-  | TokenTransfer(Token.Transfer.t, Token.t);
+type transaction = Transfer.t;
 
-let toOperation = (t: transaction) =>
-  switch (t) {
-  | ProtocolTransaction(transaction) => Operation.transaction(transaction)
-  | TokenTransfer(transfer, _) => Operation.Token(transfer->Token.transfer)
-  };
+let buildTransferElts = (transfers, build) => {
+  transfers->List.map(((t: validState, advOpened)) => {
+    let destination = t.recipient->FormUtils.Account.address;
 
-let toSimulation = (~index=?, t: transaction) =>
-  switch (t) {
-  | ProtocolTransaction(transaction) =>
-    Operation.Simulation.transaction(transaction, index)
-  | TokenTransfer(transfer, _) =>
-    Operation.Simulation.Token(transfer->Token.transfer, index)
-  };
+    let gasLimit = advOpened ? t.gasLimit : None;
+    let storageLimit = advOpened ? t.storageLimit : None;
+    let fee = advOpened ? t.fee : None;
 
-let resolveAlias = (accounts, value) =>
-  accounts
-  ->Map.String.findFirstBy((_, v: Account.t) => v.alias == value)
-  ->Option.mapWithDefault(value, ((k, _)) => k);
-
-let buildTransfers = (transfers, parseAmount, accounts, build) => {
-  transfers->List.keepMap(((t: StateLenses.state, advOpened)) => {
-    let mapIfAdvanced = (v, flatMap) =>
-      advOpened && v->Js.String2.length > 0 ? v->flatMap : None;
-
-    let destination =
-      resolveAlias(accounts, t.recipient->FormUtils.Account.address);
-
-    let gasLimit = t.gasLimit->mapIfAdvanced(Int.fromString);
-    let storageLimit = t.storageLimit->mapIfAdvanced(Int.fromString);
-    let fee = t.fee->mapIfAdvanced(ProtocolXTZ.fromString);
-
-    let amount = parseAmount(t.amount);
-
-    amount->Option.map(amount =>
-      build(~destination, ~amount, ~fee?, ~gasLimit?, ~storageLimit?, ())
+    build(
+      ~destination,
+      ~amount=t.amount,
+      ~fee?,
+      ~gasLimit?,
+      ~storageLimit?,
+      (),
     );
   });
 };
 
-let buildTokenTransfer =
-    (inputTransfers, token: Token.t, accounts, source, forceLowFee) =>
-  TokenTransfer(
-    Token.makeTransfers(
-      ~source,
-      ~transfers=
-        buildTransfers(
-          inputTransfers,
-          Token.Repr.fromNatString,
-          accounts,
-          Token.makeSingleTransferElt(~token=token.address),
-        ),
-      ~forceLowFee?,
-      (),
-    ),
-    token,
-  );
-
-let buildProtocolTransaction = (inputTransfers, accounts, source, forceLowFee) =>
-  Protocol.makeTransaction(
-    ~source,
+let buildTransfer = (inputTransfers, source, forceLowFee) =>
+  Transfer.makeTransfers(
+    ~source=source.Account.address,
     ~transfers=
-      buildTransfers(
+      buildTransferElts(
         inputTransfers,
-        ProtocolXTZ.fromString,
-        accounts,
-        Protocol.makeTransfer(~parameter=?None, ~entrypoint=?None),
+        Transfer.makeSingleTransferElt(~parameter=?None, ~entrypoint=?None),
       ),
     ~forceLowFee?,
     (),
-  )
-  ->ProtocolTransaction;
+  );
 
-let buildTransaction =
-    (
-      batch: list((StateLenses.state, bool)),
-      token: option(Token.t),
-      accounts,
-    ) => {
+let buildTransaction = (batch: list((validState, bool))) => {
   switch (batch) {
   | [] => assert(false)
   | [(first, _), ..._] as inputTransfers =>
     let source = first.sender;
     let forceLowFee = first.forceLowFee ? Some(true) : None;
 
-    switch (token) {
-    | Some(token) =>
-      buildTokenTransfer(inputTransfers, token, accounts, source, forceLowFee)
-    | None =>
-      buildProtocolTransaction(inputTransfers, accounts, source, forceLowFee)
-    };
+    buildTransfer(inputTransfers, source, forceLowFee);
   };
 };

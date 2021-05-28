@@ -1,3 +1,28 @@
+/*****************************************************************************/
+/*                                                                           */
+/* Open Source License                                                       */
+/* Copyright (c) 2019-2021 Nomadic Labs, <contact@nomadic-labs.com>          */
+/*                                                                           */
+/* Permission is hereby granted, free of charge, to any person obtaining a   */
+/* copy of this software and associated documentation files (the "Software"),*/
+/* to deal in the Software without restriction, including without limitation */
+/* the rights to use, copy, modify, merge, publish, distribute, sublicense,  */
+/* and/or sell copies of the Software, and to permit persons to whom the     */
+/* Software is furnished to do so, subject to the following conditions:      */
+/*                                                                           */
+/* The above copyright notice and this permission notice shall be included   */
+/* in all copies or substantial portions of the Software.                    */
+/*                                                                           */
+/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR*/
+/* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,  */
+/* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL   */
+/* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER*/
+/* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING   */
+/* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER       */
+/* DEALINGS IN THE SOFTWARE.                                                 */
+/*                                                                           */
+/*****************************************************************************/
+
 open UmamiCommon;
 open Delegate;
 
@@ -148,72 +173,221 @@ module Explorer = (Getter: GetterAPI) => {
     );
 };
 
-let handleTaquitoError = e =>
-  e->ReTaquito.Error.(
-       fun
-       | Generic(s) => s
-       | WrongPassword => I18n.form_input_error#wrong_password
-       | UnregisteredDelegate => I18n.form_input_error#unregistered_delegate
-       | UnchangedDelegate => I18n.form_input_error#change_baker
-       | BadPkh => I18n.form_input_error#bad_pkh
-       | BranchRefused => I18n.form_input_error#branch_refused_error
-       | InvalidContract => I18n.form_input_error#invalid_contract
-     );
+module Error = {
+  type token =
+    | OperationNotRunnableOffchain(string)
+    | SimulationNotAvailable(string)
+    | InjectionNotImplemented(string)
+    | OffchainCallNotImplemented(string)
+    | RawError(string);
 
-let handleSdkError = e =>
-  e->TezosSDK.Error.(
+  type t =
+    | Taquito(ReTaquito.Error.t)
+    | Token(token);
+
+  let taquito = e => Taquito(e);
+  let token = e => Token(e);
+
+  let fromTaquitoToString = e =>
+    e->ReTaquito.Error.(
+         fun
+         | Generic(s) => s
+         | WrongPassword => I18n.form_input_error#wrong_password
+         | UnregisteredDelegate => I18n.form_input_error#unregistered_delegate
+         | UnchangedDelegate => I18n.form_input_error#change_baker
+         | BadPkh => I18n.form_input_error#bad_pkh
+         | BranchRefused => I18n.form_input_error#branch_refused_error
+         | InvalidContract => I18n.form_input_error#invalid_contract
+         | EmptyTransaction => I18n.form_input_error#empty_transaction
+       );
+
+  let printError = (fmt, err) => {
+    switch (err) {
+    | OperationNotRunnableOffchain(s) =>
+      Format.fprintf(fmt, "Operation '%s' cannot be run offchain.", s)
+    | SimulationNotAvailable(s) =>
+      Format.fprintf(fmt, "Operation '%s' is not simulable.", s)
+    | InjectionNotImplemented(s) =>
+      Format.fprintf(fmt, "Operation '%s' injection is not implemented", s)
+    | OffchainCallNotImplemented(s) =>
+      Format.fprintf(
+        fmt,
+        "Operation '%s' offchain call is not implemented",
+        s,
+      )
+    | RawError(s) => Format.fprintf(fmt, "%s", s)
+    };
+  };
+
+  let fromTokenToString = err => Format.asprintf("%a", printError, err);
+
+  let fromApiToString =
+    fun
+    | Token(e) => fromTokenToString(e)
+    | Taquito(e) => fromTaquitoToString(e);
+
+  let fromSdkToString = e =>
+    e->TezosSDK.Error.(
+         fun
+         | Generic(s) => s
+         | BadPkh => I18n.form_input_error#bad_pkh
+       );
+};
+
+module CSV = {
+  open CSVParser;
+
+  type addressValidityError = [
+    | `NotAnAccount
+    | `NotAContract
+    | ReTaquito.Utils.addressValidityError
+  ];
+
+  type customEncodingError =
+    | CannotParseAddress(string, addressValidityError)
+    | CannotParseContract(string, addressValidityError);
+
+  type error =
+    | Parser(CSVParser.error(customEncodingError))
+    | UnknownToken(string)
+    | NoRows
+    | CannotMixTokens(int)
+    | CannotParseTokenAmount(ReBigNumber.t, int, int)
+    | CannotParseTezAmount(ReBigNumber.t, int, int);
+
+  type t = list(Transfer.elt);
+
+  let checkAddress = a => {
+    switch (ReTaquito.Utils.validateAnyAddress(a)) {
+    | Ok(`Address) => Ok(a)
+    | Ok(`Contract) => Error(CannotParseAddress(a, `NotAnAccount))
+    | Error(#addressValidityError as err) =>
+      Error(CannotParseAddress(a, err))
+    };
+  };
+
+  let checkContract = a => {
+    switch (ReTaquito.Utils.validateAnyAddress(a)) {
+    | Ok(`Contract) => Ok(a)
+    | Ok(`Address) => Error(CannotParseContract(a, `NotAContract))
+    | Error(#addressValidityError as err) =>
+      Error(CannotParseContract(a, err))
+    };
+  };
+
+  let addr = Encodings.custom(~conv=checkAddress);
+  let token = Encodings.custom(~conv=checkContract);
+
+  let rowEncoding =
+    Encodings.(mkRow(tup4(addr, number, opt(token), opt(number))));
+
+  let handleTezRow = (index, destination, amount) =>
+    amount
+    ->ReBigNumber.toString
+    ->ProtocolXTZ.fromString
+    ->ResultEx.fromOption(Error(CannotParseTezAmount(amount, index, 2)))
+    ->Result.map(amount =>
+        Transfer.makeSingleXTZTransferElt(~destination, ~amount, ())
+      );
+
+  let handleTokenRow = (tokens, index, destination, amount, token) =>
+    tokens
+    ->Map.String.get(token)
+    ->Option.mapWithDefault(Error(UnknownToken(token)), token =>
+        amount
+        ->Token.Unit.fromBigNumber
+        ->ResultEx.fromOption(
+            Error(CannotParseTokenAmount(amount, index, 2)),
+          )
+        ->Result.map(amount =>
+            Transfer.makeSingleTokenTransferElt(
+              ~destination,
+              ~amount,
+              ~token,
+              (),
+            )
+          )
+      );
+
+  let handleRow = (tokens, index, row) =>
+    switch (row) {
+    | (destination, amount, None, _) =>
+      handleTezRow(index, destination, amount)
+    | (destination, amount, Some(token), _) =>
+      handleTokenRow(tokens, index, destination, amount, token)
+    };
+
+  let handleCSV = (rows, tokens) =>
+    rows->List.mapWithIndex(handleRow(tokens))->ResultEx.collect;
+
+  let parseCSV = (content, tokens) => {
+    let rows =
+      parseCSV(content, rowEncoding)
+      ->ResultEx.mapError(e => Error(Parser(e)));
+    switch (rows) {
+    | Ok([]) => Error(NoRows)
+    | Ok(rows) => handleCSV(rows, tokens)
+    | Error(e) => Error(e)
+    };
+  };
+};
+
+let handleAddressValidationError: CSV.addressValidityError => string =
+  fun
+  | `NotAnAccount => I18n.taquito#not_an_account
+  | `NotAContract => I18n.taquito#not_a_contract
+  | `No_prefix_matched => I18n.taquito#no_prefix_matched
+  | `Invalid_checksum => I18n.taquito#invalid_checksum
+  | `Invalid_length => I18n.taquito#invalid_length
+  | `UnknownError(n) => I18n.taquito#unknown_error_code(n);
+
+let handleCustomError =
+  fun
+  | CSV.CannotParseAddress(a, r) =>
+    I18n.csv#cannot_parse_address(a, handleAddressValidationError(r))
+  | CannotParseContract(a, r) =>
+    I18n.csv#cannot_parse_contract(a, handleAddressValidationError(r));
+
+let handleCSVError = e =>
+  e->CSVParser.(
        fun
-       | Generic(s) => s
-       | BadPkh => I18n.form_input_error#bad_pkh
+       | CSV.Parser(CannotParseNumber(row, col)) =>
+         I18n.csv#cannot_parse_number(row + 1, col + 1)
+       | Parser(CannotParseBool(row, col)) =>
+         I18n.csv#cannot_parse_boolean(row + 1, col + 1)
+       | Parser(CannotParseCustomValue(e, row, col)) =>
+         I18n.csv#cannot_parse_custom_value(
+           handleCustomError(e),
+           row + 1,
+           col + 1,
+         )
+       | Parser(CannotParseRow(row)) => I18n.csv#cannot_parse_row(row + 1)
+       | Parser(CannotParseCSV) => I18n.csv#cannot_parse_csv
+       | NoRows => I18n.csv#no_rows
+       | CannotMixTokens(row) => I18n.csv#cannot_mix_tokens(row + 1)
+       | CannotParseTokenAmount(v, row, col) =>
+         I18n.csv#cannot_parse_token_amount(v, row + 1, col + 1)
+       | CannotParseTezAmount(v, row, col) =>
+         I18n.csv#cannot_parse_tez_amount(v, row + 1, col + 1)
+       | UnknownToken(s) => I18n.csv#unknown_token(s)
      );
 
 module Simulation = {
-  let extractCustomValues = (tx_options: Protocol.transfer_options) => (
-    tx_options.Protocol.fee
-    ->Option.map(fee => fee->ProtocolXTZ.unsafeToMutezInt),
+  let extractCustomValues = (tx_options: ProtocolOptions.transferOptions) => (
+    tx_options.fee->Option.map(fee => fee->ProtocolXTZ.unsafeToMutezInt),
     tx_options.storageLimit,
     tx_options.gasLimit,
   );
 
-  let transfer = (settings, transfer, source) => {
-    ReTaquito.Estimate.transfer(
-      ~endpoint=settings->AppSettings.endpoint,
-      ~baseDir=settings->AppSettings.baseDir,
-      ~source,
-      ~dest=transfer.Protocol.destination,
-      ~amount=transfer.Protocol.amount->ProtocolXTZ.toInt64,
-      ~fee=?transfer.Protocol.tx_options.fee->Option.map(ProtocolXTZ.toInt64),
-      ~gasLimit=?transfer.Protocol.tx_options.gasLimit,
-      ~storageLimit=?transfer.Protocol.tx_options.storageLimit,
-      (),
-    );
-  };
-
   let batch = (settings, transfers, ~source, ~index=?, ()) => {
     let customValues =
-      List.map(transfers, tx => tx.Protocol.tx_options->extractCustomValues)
+      List.map(transfers, tx => tx.Transfer.tx_options->extractCustomValues)
       ->List.toArray;
 
-    let transfers = source =>
-      transfers
-      ->List.map(({amount, destination, tx_options}: Protocol.transfer) =>
-          ReTaquito.Toolkit.prepareTransfer(
-            ~amount=amount->ProtocolXTZ.toInt64->ReTaquito.BigNumber.fromInt64,
-            ~dest=destination,
-            ~source,
-            ~fee=?
-              tx_options.fee
-              ->Option.map(fee =>
-                  fee->ProtocolXTZ.toInt64->ReTaquito.BigNumber.fromInt64
-                ),
-            ~gasLimit=?tx_options.gasLimit,
-            ~storageLimit=?tx_options.storageLimit,
-            (),
-          )
-        )
-      ->List.toArray;
+    let transfers = (cache, source) =>
+      transfers->ReTaquito.Transfer.prepareTransfers(cache, source);
 
-    ReTaquito.Estimate.batch(
+    ReTaquito.Transfer.Estimate.batch(
       ~endpoint=settings->AppSettings.endpoint,
       ~baseDir=settings->AppSettings.baseDir,
       ~source,
@@ -222,7 +396,16 @@ module Simulation = {
     )
     ->Future.flatMapOk(r =>
         ReTaquito.Estimate.handleEstimationResults(r, customValues, index)
-      );
+      )
+    ->Future.mapOk(
+        ({customFeeMutez, burnFeeMutez, gasLimit, storageLimit, revealFee}) => {
+        Protocol.{
+          fee: (customFeeMutez + burnFeeMutez)->ProtocolXTZ.fromMutezInt,
+          gasLimit,
+          storageLimit,
+          revealFee: revealFee->ProtocolXTZ.fromMutezInt,
+        }
+      });
   };
 
   let setDelegate = (settings, delegation: Protocol.delegation) => {
@@ -231,79 +414,42 @@ module Simulation = {
       ~baseDir=settings->AppSettings.baseDir,
       ~source=delegation.Protocol.source,
       ~delegate=?delegation.Protocol.delegate,
-      ~fee=?delegation.Protocol.options.fee->Option.map(ProtocolXTZ.toInt64),
+      ~fee=?delegation.Protocol.options.fee,
       (),
-    );
-  };
-
-  let run = (settings, ~index=?, operation: Protocol.t) => {
-    let r =
-      switch (operation, index) {
-      | (Transaction({transfers: [t], source}), _) =>
-        transfer(settings, t, source)
-      | (Delegation(d), _) => setDelegate(settings, d)
-      | (Transaction({transfers, source}), None) =>
-        batch(settings, transfers, ~source, ())
-      | (Transaction({transfers, source}), Some(index)) =>
-        batch(settings, transfers, ~source, ~index, ())
-      };
-
-    r
-    ->Future.mapError(e => e->handleTaquitoError)
-    ->Future.mapOk(({totalCost, gasLimit, storageLimit, revealFee}) =>
+    )
+    ->Future.mapOk(
+        ({customFeeMutez, burnFeeMutez, gasLimit, storageLimit, revealFee}) =>
         Protocol.{
-          fee: totalCost->ProtocolXTZ.fromMutezInt,
+          fee: (customFeeMutez + burnFeeMutez)->ProtocolXTZ.fromMutezInt,
           gasLimit,
           storageLimit,
           revealFee: revealFee->ProtocolXTZ.fromMutezInt,
         }
       );
   };
+
+  let run = (settings, ~index=?, operation: Protocol.t) => {
+    switch (operation, index) {
+    | (Delegation(d), _) => setDelegate(settings, d)
+    | (Transaction({transfers, source}), None) =>
+      batch(settings, transfers, ~source, ())
+    | (Transaction({transfers, source}), Some(index)) =>
+      batch(settings, transfers, ~source, ~index, ())
+    };
+  };
 };
 
 module Operation = {
   let batch = (settings, transfers, ~source, ~password) => {
-    let transfers = source =>
-      transfers
-      ->List.map(({amount, destination, tx_options}: Protocol.transfer) =>
-          ReTaquito.Toolkit.prepareTransfer(
-            ~amount=amount->ProtocolXTZ.toInt64->ReTaquito.BigNumber.fromInt64,
-            ~dest=destination,
-            ~source,
-            ~fee=?
-              tx_options.fee
-              ->Option.map(fee =>
-                  fee->ProtocolXTZ.toInt64->ReTaquito.BigNumber.fromInt64
-                ),
-            ~gasLimit=?tx_options.gasLimit,
-            ~storageLimit=?tx_options.storageLimit,
-            (),
-          )
-        )
-      ->List.toArray;
+    let transfers = (cache, source) =>
+      transfers->ReTaquito.Transfer.prepareTransfers(cache, source);
 
-    ReTaquito.Operations.batch(
+    ReTaquito.Transfer.batch(
       ~endpoint=settings->AppSettings.endpoint,
       ~baseDir=settings->AppSettings.baseDir,
       ~source,
       ~transfers,
       ~password,
-      (),
-    )
-    ->Future.mapOk((op: ReTaquito.Toolkit.operationResult) => op.hash);
-  };
-
-  let transfer = (settings, transfer, ~source, ~password) => {
-    ReTaquito.Operations.transfer(
-      ~endpoint=settings->AppSettings.endpoint,
-      ~baseDir=settings->AppSettings.baseDir,
-      ~source,
-      ~dest=transfer.Protocol.destination,
-      ~amount=transfer.Protocol.amount->ProtocolXTZ.toInt64,
-      ~password,
-      ~fee=?transfer.Protocol.tx_options.fee->Option.map(ProtocolXTZ.toInt64),
-      ~gasLimit=?transfer.Protocol.tx_options.gasLimit,
-      ~storageLimit=?transfer.Protocol.tx_options.storageLimit,
       (),
     )
     ->Future.mapOk((op: ReTaquito.Toolkit.operationResult) => op.hash);
@@ -325,9 +471,6 @@ module Operation = {
 
   let run = (settings, operation: Protocol.t, ~password) =>
     switch (operation) {
-    | Transaction({transfers: [t], source}) =>
-      transfer(settings, t, ~source, ~password)
-
     | Delegation(d) => setDelegate(settings, d, ~password)
 
     | Transaction({transfers, source}) =>
@@ -391,7 +534,7 @@ module Aliases = {
     settings
     ->AppSettings.sdk
     ->TezosSDK.listKnownAddresses
-    ->Future.mapError(handleSdkError)
+    ->Future.mapError(Error.fromSdkToString)
     ->Future.mapOk(l => l->Array.map(({alias, pkh}) => (alias, pkh)));
 
   let getAliasMap = (~settings) =>
@@ -412,19 +555,19 @@ module Aliases = {
     settings
     ->AppSettings.sdk
     ->TezosSDK.addAddress(alias, pkh)
-    ->Future.mapError(handleSdkError);
+    ->Future.mapError(Error.fromSdkToString);
 
   let delete = (~settings, name) =>
     settings
     ->AppSettings.sdk
     ->TezosSDK.forgetAddress(name)
-    ->Future.mapError(handleSdkError);
+    ->Future.mapError(Error.fromSdkToString);
 
   let rename = (~settings, renaming) =>
     settings
     ->AppSettings.sdk
     ->TezosSDK.renameAliases(renaming)
-    ->Future.mapError(handleSdkError);
+    ->Future.mapError(Error.fromSdkToString);
 };
 
 module Accounts = (Getter: GetterAPI) => {
@@ -465,7 +608,7 @@ module Accounts = (Getter: GetterAPI) => {
     settings
     ->AppSettings.sdk
     ->TezosSDK.listKnownAddresses
-    ->Future.mapError(handleSdkError)
+    ->Future.mapError(Error.fromSdkToString)
     ->Future.mapOk(r =>
         r->Array.keepMap((TezosSDK.OutputAddress.{alias, pkh, sk_known}) =>
           sk_known ? Some((alias, pkh)) : None
@@ -520,7 +663,7 @@ module Accounts = (Getter: GetterAPI) => {
     settings
     ->AppSettings.sdk
     ->TezosSDK.importSecretKey(~name, ~skUri, ~password, ())
-    ->Future.mapError(handleSdkError)
+    ->Future.mapError(Error.fromSdkToString)
     ->Future.tapOk(k => Js.log("key found : " ++ k));
   };
 
@@ -563,7 +706,7 @@ module Accounts = (Getter: GetterAPI) => {
     settings
     ->AppSettings.sdk
     ->TezosSDK.forgetAddress(name)
-    ->Future.mapError(handleSdkError);
+    ->Future.mapError(Error.fromSdkToString);
 
   let delete = (~settings, name) =>
     Aliases.getAddressForAlias(~settings, name)
@@ -705,7 +848,7 @@ module Accounts = (Getter: GetterAPI) => {
         ~password,
         (),
       )
-    ->Future.mapError(handleSdkError);
+    ->Future.mapError(Error.fromSdkToString);
 
   let legacyScan = (~settings, recoveryPhrase, name, ~password) =>
     legacyImport(~settings, name, recoveryPhrase, ~password)
@@ -855,12 +998,19 @@ module Accounts = (Getter: GetterAPI) => {
                   legacyAddress,
                 }
               )
-            ->Future.flatMapError(_ => Future.value(Ok(secret)))
           )
-      | _ => [||]
+        ->List.fromArray
+      | _ => []
       }
     )
-    ->FutureEx.all
+    ->Future.all
+    ->Future.map(results => {
+        let error = results->List.getBy(Result.isError);
+        switch (error) {
+        | Some(Error(error)) => Error(error)
+        | _ => Ok(results->List.toArray)
+        };
+      })
     ->Future.mapOk(secrets =>
         secrets->Array.keepMap(secret =>
           switch (secret) {
@@ -1007,35 +1157,6 @@ module Delegate = (Getter: GetterAPI) => {
 };
 
 module Tokens = (Getter: GetterAPI) => {
-  type error =
-    | OperationNotRunnableOffchain(string)
-    | SimulationNotAvailable(string)
-    | InjectionNotImplemented(string)
-    | OffchainCallNotImplemented(string)
-    | BackendError(string);
-
-  let printError = (fmt, err) => {
-    switch (err) {
-    | OperationNotRunnableOffchain(s) =>
-      Format.fprintf(fmt, "Operation '%s' cannot be run offchain.", s)
-    | SimulationNotAvailable(s) =>
-      Format.fprintf(fmt, "Operation '%s' is not simulable.", s)
-    | InjectionNotImplemented(s) =>
-      Format.fprintf(fmt, "Operation '%s' injection is not implemented", s)
-    | OffchainCallNotImplemented(s) =>
-      Format.fprintf(
-        fmt,
-        "Operation '%s' offchain call is not implemented",
-        s,
-      )
-    | BackendError(s) => Format.fprintf(fmt, "%s", s)
-    };
-  };
-
-  let handleTaquitoError = e => e->handleTaquitoError->BackendError;
-
-  let errorToString = err => Format.asprintf("%a", printError, err);
-
   let getTokenViewer = settings => URL.tokenViewer(settings)->Getter.get;
 
   let checkTokenContract = (settings, addr) => {
@@ -1054,40 +1175,11 @@ module Tokens = (Getter: GetterAPI) => {
       });
   };
 
-  let injectBatch = (settings, transfers, ~source, ~password) => {
-    let transfers = source =>
-      transfers
-      ->List.map(
-          ({token, amount, destination, tx_options}: Token.Transfer.elt) =>
-          ReTaquito.FA12Operations.toRawTransfer(
-            ~token,
-            ~amount=amount->Token.Repr.toBigNumber,
-            ~dest=destination,
-            ~fee=?
-              tx_options.fee
-              ->Option.map(fee =>
-                  fee->ProtocolXTZ.toInt64->ReTaquito.BigNumber.fromInt64
-                ),
-            ~gasLimit=?tx_options.gasLimit,
-            ~storageLimit=?tx_options.storageLimit,
-            (),
-          )
-        )
-      ->ReTaquito.FA12Operations.prepareTransfers(
-          source,
-          settings->AppSettings.endpoint,
-        );
+  let batchEstimate = (settings, transfers, ~source, ~index=?, ()) =>
+    Simulation.batch(settings, transfers, ~source, ~index?, ());
 
-    ReTaquito.FA12Operations.batch(
-      ~endpoint=settings->AppSettings.endpoint,
-      ~baseDir=settings->AppSettings.baseDir,
-      ~source,
-      ~transfers,
-      ~password,
-      (),
-    )
-    ->Future.mapOk((op: ReTaquito.Toolkit.operationResult) => op.hash);
-  };
+  let batch = (settings, transfers, ~source, ~password) =>
+    Operation.batch(settings, transfers, ~source, ~password);
 
   let offline = (operation: Token.operation) => {
     switch (operation) {
@@ -1099,127 +1191,29 @@ module Tokens = (Getter: GetterAPI) => {
     };
   };
 
-  let transferEstimate = (settings, transfer, source) => {
-    let endpoint = settings->AppSettings.endpoint;
-    ReTaquito.FA12Operations.Estimate.transfer(
-      ~endpoint,
-      ~baseDir=settings->AppSettings.baseDir,
-      ~tokenContract=transfer.Token.Transfer.token,
-      ~source,
-      ~dest=transfer.Token.Transfer.destination,
-      ~amount=transfer.Token.Transfer.amount->Token.Repr.toBigNumber,
-      ~fee=?
-        transfer.Token.Transfer.tx_options.fee
-        ->Option.map(ProtocolXTZ.toInt64),
-      ~gasLimit=?transfer.Token.Transfer.tx_options.gasLimit,
-      ~storageLimit=?transfer.Token.Transfer.tx_options.storageLimit,
-      (),
-    )
-    ->Future.mapOk(({totalCost, gasLimit, storageLimit, revealFee}) =>
-        Protocol.{
-          fee: totalCost->ProtocolXTZ.fromMutezInt,
-          gasLimit,
-          storageLimit,
-          revealFee: revealFee->ProtocolXTZ.fromMutezInt,
-        }
-      );
-  };
-
-  let batchEstimate = (settings, transfers, ~source, ~index=?, ()) => {
-    let endpoint = settings->AppSettings.endpoint;
-
-    let customValues =
-      List.map(transfers, tx =>
-        tx.Token.Transfer.tx_options->Simulation.extractCustomValues
-      )
-      ->List.toArray;
-
-    let transfers = source =>
-      transfers
-      ->List.map(
-          ({token, amount, destination, tx_options}: Token.Transfer.elt) =>
-          ReTaquito.FA12Operations.toRawTransfer(
-            ~token,
-            ~amount=amount->Token.Repr.toBigNumber,
-            ~dest=destination,
-            ~fee=?
-              tx_options.fee
-              ->Option.map(fee =>
-                  fee->ProtocolXTZ.toInt64->ReTaquito.BigNumber.fromInt64
-                ),
-            ~gasLimit=?tx_options.gasLimit,
-            ~storageLimit=?tx_options.storageLimit,
-            (),
-          )
-        )
-      ->ReTaquito.FA12Operations.prepareTransfers(source, endpoint);
-
-    ReTaquito.FA12Operations.Estimate.batch(
-      ~endpoint,
-      ~baseDir=settings->AppSettings.baseDir,
-      ~source,
-      ~transfers,
-      (),
-    )
-    ->Future.flatMapOk(r =>
-        ReTaquito.Estimate.handleEstimationResults(r, customValues, index)
-      )
-    ->Future.mapOk(({totalCost, gasLimit, storageLimit, revealFee}) =>
-        Protocol.{
-          fee: totalCost->ProtocolXTZ.fromMutezInt,
-          gasLimit,
-          storageLimit,
-          revealFee: revealFee->ProtocolXTZ.fromMutezInt,
-        }
-      );
-  };
-
   let simulate = (network, ~index=?, operation: Token.operation) =>
     switch (operation) {
-    | Transfer({source, transfers: [elt], _}) =>
-      transferEstimate(network, elt, source)
-      ->Future.mapError(handleTaquitoError)
     | Transfer({source, transfers, _}) =>
       batchEstimate(network, transfers, ~source, ~index?, ())
-      ->Future.mapError(handleTaquitoError)
+      ->Future.mapError(e => e->Error.Taquito)
     | _ =>
       Future.value(
-        Error(SimulationNotAvailable(Token.operationEntrypoint(operation))),
+        SimulationNotAvailable(Token.operationEntrypoint(operation))
+        ->Error.token
+        ->Error,
       )
     };
 
-  let transfer = (settings, transfer, source, password) => {
-    ReTaquito.FA12Operations.transfer(
-      ~endpoint=settings->AppSettings.endpoint,
-      ~baseDir=settings->AppSettings.baseDir,
-      ~tokenContract=transfer.Token.Transfer.token,
-      ~source,
-      ~dest=transfer.Token.Transfer.destination,
-      ~amount=transfer.Token.Transfer.amount->Token.Repr.toBigNumber,
-      ~password,
-      ~fee=?
-        transfer.Token.Transfer.tx_options.fee
-        ->Option.map(ProtocolXTZ.toInt64),
-      ~gasLimit=?transfer.Token.Transfer.tx_options.gasLimit,
-      ~storageLimit=?transfer.Token.Transfer.tx_options.storageLimit,
-      (),
-    )
-    ->Future.mapOk((op: ReTaquito.Toolkit.operationResult) => op.hash);
-  };
-
   let inject = (network, operation: Token.operation, ~password) =>
     switch (operation) {
-    | Transfer({source, transfers: [elt], _}) =>
-      transfer(network, elt, source, password)
-      ->Future.mapError(handleTaquitoError)
     | Transfer({source, transfers, _}) =>
-      injectBatch(network, transfers, ~source, ~password)
-      ->Future.mapError(handleTaquitoError)
+      batch(network, transfers, ~source, ~password)
+      ->Future.mapError(Error.taquito)
     | _ =>
       Future.value(
-        Error(
-          InjectionNotImplemented(Token.operationEntrypoint(operation)),
-        ),
+        InjectionNotImplemented(Token.operationEntrypoint(operation))
+        ->Error.token
+        ->Error,
       )
     };
 
@@ -1231,26 +1225,26 @@ module Tokens = (Getter: GetterAPI) => {
         ->Getter.get
         ->Future.flatMapOk(res => {
             switch (res->Js.Json.decodeString) {
-            | None => Token.Repr.zero->Ok->Future.value
+            | None => Token.Unit.zero->Ok->Future.value
             | Some(v) =>
               v
-              ->Token.Repr.fromNatString
+              ->Token.Unit.fromNatString
               ->FutureEx.fromOption(~error="cannot read Token amount: " ++ v)
             }
           })
-        ->Future.mapError(s => BackendError(s))
+        ->Future.mapError(s => s->RawError->Error.Token)
       | _ =>
         Future.value(
-          Error(
-            OffchainCallNotImplemented(Token.operationEntrypoint(operation)),
-          ),
+          OffchainCallNotImplemented(Token.operationEntrypoint(operation))
+          ->Error.token
+          ->Error,
         )
       };
     } else {
       Future.value(
-        Error(
-          OperationNotRunnableOffchain(Token.operationEntrypoint(operation)),
-        ),
+        OperationNotRunnableOffchain(Token.operationEntrypoint(operation))
+        ->Error.token
+        ->Error,
       );
     };
 };

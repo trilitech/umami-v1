@@ -1,30 +1,62 @@
+/*****************************************************************************/
+/*                                                                           */
+/* Open Source License                                                       */
+/* Copyright (c) 2019-2021 Nomadic Labs, <contact@nomadic-labs.com>          */
+/*                                                                           */
+/* Permission is hereby granted, free of charge, to any person obtaining a   */
+/* copy of this software and associated documentation files (the "Software"),*/
+/* to deal in the Software without restriction, including without limitation */
+/* the rights to use, copy, modify, merge, publish, distribute, sublicense,  */
+/* and/or sell copies of the Software, and to permit persons to whom the     */
+/* Software is furnished to do so, subject to the following conditions:      */
+/*                                                                           */
+/* The above copyright notice and this permission notice shall be included   */
+/* in all copies or substantial portions of the Software.                    */
+/*                                                                           */
+/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR*/
+/* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,  */
+/* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL   */
+/* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER*/
+/* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING   */
+/* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER       */
+/* DEALINGS IN THE SOFTWARE.                                                 */
+/*                                                                           */
+/*****************************************************************************/
+
 open Belt;
 
 open UmamiCommon;
 
 type reactState('state) = ('state, ('state => 'state) => unit);
 
-type requestsState('requestResponse) =
-  Map.String.t(ApiRequest.t('requestResponse));
+type requestsState('requestResponse, 'error) =
+  Map.String.t(ApiRequest.t('requestResponse, 'error));
 
-type apiRequestsState('requestResponse) =
-  reactState(requestsState('requestResponse));
+type apiRequestsState('requestResponse, 'error) =
+  reactState(requestsState('requestResponse, 'error));
 
 type state = {
   selectedAccountState: reactState(option(string)),
   selectedTokenState: reactState(option(string)),
-  accountsRequestState: reactState(ApiRequest.t(Map.String.t(Account.t))),
-  secretsRequestState: reactState(ApiRequest.t(array(Secret.t))),
-  balanceRequestsState: apiRequestsState(ProtocolXTZ.t),
-  delegateRequestsState: apiRequestsState(option(string)),
+  accountsRequestState:
+    reactState(ApiRequest.t(Map.String.t(Account.t), string)),
+  secretsRequestState: reactState(ApiRequest.t(array(Secret.t), string)),
+  balanceRequestsState: apiRequestsState(ProtocolXTZ.t, string),
+  delegateRequestsState: apiRequestsState(option(string), string),
   delegateInfoRequestsState:
-    apiRequestsState(option(DelegateApiRequest.DelegateAPI.delegationInfo)),
-  operationsRequestsState: apiRequestsState((array(Operation.Read.t), int)),
+    apiRequestsState(
+      option(DelegateApiRequest.DelegateAPI.delegationInfo),
+      string,
+    ),
+  operationsRequestsState:
+    apiRequestsState((array(Operation.Read.t), int), string),
   operationsConfirmations: reactState(Set.String.t),
-  aliasesRequestState: reactState(ApiRequest.t(Map.String.t(Account.t))),
-  bakersRequestState: reactState(ApiRequest.t(array(Delegate.t))),
-  tokensRequestState: reactState(ApiRequest.t(Map.String.t(Token.t))),
-  balanceTokenRequestsState: apiRequestsState(Token.Repr.t),
+  aliasesRequestState:
+    reactState(ApiRequest.t(Map.String.t(Account.t), string)),
+  bakersRequestState: reactState(ApiRequest.t(array(Delegate.t), string)),
+  tokensRequestState:
+    reactState(ApiRequest.t(Map.String.t(Token.t), string)),
+  balanceTokenRequestsState: apiRequestsState(Token.Unit.t, string),
   apiVersionRequestState: reactState(option(Network.apiVersion)),
 };
 
@@ -182,9 +214,9 @@ let useRequestsState = (getRequestsState, key: option(string)) => {
     React.useCallback2(
       newRequestSetter =>
         key->Lib.Option.iter(key =>
-          setRequests((request: requestsState('requestResponse)) =>
+          setRequests((request: requestsState('requestResponse, _)) =>
             request->Map.String.update(
-              key, (oldRequest: option(ApiRequest.t('requestResponse))) =>
+              key, (oldRequest: option(ApiRequest.t('requestResponse, _))) =>
               Some(
                 newRequestSetter(
                   oldRequest->Option.getWithDefault(NotAsked),
@@ -302,12 +334,12 @@ module BalanceToken = {
     accountsBalanceRequests->Array.size == accounts->Map.String.size
       ? Some(
           accountsBalanceRequests->Array.reduce(
-            Token.Repr.zero, (acc, balanceRequest) => {
-            Token.Repr.Infix.(
+            Token.Unit.zero, (acc, balanceRequest) => {
+            Token.Unit.Infix.(
               acc
               + balanceRequest
                 ->ApiRequest.getDoneOk
-                ->Option.getWithDefault(Token.Repr.zero)
+                ->Option.getWithDefault(Token.Unit.zero)
             )
           }),
         )
@@ -325,7 +357,7 @@ module Delegate = {
   let useRequestState = useRequestsState(store => store.delegateRequestsState);
 
   let useLoad = (address: string) => {
-    let requestState: ApiRequest.requestState(option(string)) =
+    let requestState: ApiRequest.requestState(option(string), _) =
       useRequestState(Some(address));
 
     DelegateApiRequest.useLoad(~requestState, ~address);
@@ -467,7 +499,9 @@ module Tokens = {
     let apiVersion = useApiVersion();
     tokensRequest->ApiRequest.map(tokens =>
       apiVersion->Option.mapWithDefault(Map.String.empty, v =>
-        tokens->Map.String.keep((_, t) => t.Token.chain == v.Network.chain)
+        tokens->Map.String.keep((_, t) =>
+          t.TokenRepr.chain == v.Network.chain
+        )
       )
     );
   };

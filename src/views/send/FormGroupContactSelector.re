@@ -1,3 +1,28 @@
+/*****************************************************************************/
+/*                                                                           */
+/* Open Source License                                                       */
+/* Copyright (c) 2019-2021 Nomadic Labs, <contact@nomadic-labs.com>          */
+/*                                                                           */
+/* Permission is hereby granted, free of charge, to any person obtaining a   */
+/* copy of this software and associated documentation files (the "Software"),*/
+/* to deal in the Software without restriction, including without limitation */
+/* the rights to use, copy, modify, merge, publish, distribute, sublicense,  */
+/* and/or sell copies of the Software, and to permit persons to whom the     */
+/* Software is furnished to do so, subject to the following conditions:      */
+/*                                                                           */
+/* The above copyright notice and this permission notice shall be included   */
+/* in all copies or substantial portions of the Software.                    */
+/*                                                                           */
+/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR*/
+/* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,  */
+/* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL   */
+/* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER*/
+/* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING   */
+/* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER       */
+/* DEALINGS IN THE SOFTWARE.                                                 */
+/*                                                                           */
+/*****************************************************************************/
+
 open ReactNative;
 let itemHeight = 54.;
 let numItemsToDisplay = 4.;
@@ -50,53 +75,62 @@ let renderLabel = (label, hasError) => {
 let make =
     (
       ~label,
-      ~filterOut,
+      ~filterOut: option(Account.t),
       ~accounts,
-      ~value: FormUtils.Account.t,
-      ~handleChange,
+      ~value: FormUtils.Account.any,
+      ~handleChange: FormUtils.Account.any => unit,
       ~error,
     ) => {
   let accountsArray =
     accounts
     ->Map.String.valuesToArray
-    ->Array.keep((v: Account.t) => v.address != filterOut);
+    ->Array.keep((v: Account.t) =>
+        Some(v.address) != filterOut->Option.map(a => a.address)
+      );
 
   let items =
     switch (value) {
-    | Address("") => accountsArray->Array.slice(~offset=0, ~len=4)
-    | Address(v) =>
+    | AnyString("") => accountsArray->Array.slice(~offset=0, ~len=4)
+    | Valid(Address(v))
+    | AnyString(v) =>
       accountsArray->Array.keep(account =>
         account.alias
         ->Js.String2.trim
         ->Js.String2.toLowerCase
         ->Js.String2.startsWith(v->Js.String2.trim->Js.String2.toLowerCase)
       )
-    | Account(_) => [||]
+    | Valid(Account(_)) => [||]
     };
 
-  let validAlias =
-    accounts->Map.String.some((_, v) =>
-      v.alias == value->FormUtils.Account.alias
-      || v.address == value->FormUtils.Account.address
-    );
-  let styleValidAlias =
-    validAlias ? Style.(style(~fontWeight=`bold, ()))->Some : None;
+  let validAccount =
+    switch (value) {
+    | FormUtils.Account.Valid(_) => true
+    | FormUtils.Account.AnyString(_) => false
+    };
+
+  let styleValidAccount =
+    validAccount ? Style.(style(~fontWeight=`bold, ()))->Some : None;
 
   <FormGroup style=styles##formGroup>
     <Autocomplete
       keyPopover="formGroupContactSelector"
       value={
         switch (value) {
-        | Address(s) =>
+        | Valid(Address(s)) =>
           accounts->Map.String.get(s)->Option.mapWithDefault(s, a => a.alias)
-        | Account(a) => a.alias
+        | Valid(Account(a)) => a.alias
+        | AnyString(s) => s
         }
       }
       handleChange={s =>
         accountsArray
         ->Array.getBy(v => v.Account.alias == s)
-        ->Option.mapWithDefault(FormUtils.Account.Address(s), account =>
-            account->FormUtils.Account.Account
+        ->(
+            fun
+            | Some(v) => v->Account->FormUtils.Account.Valid
+            | None when ReTaquito.Utils.validateAddress(s)->Result.isOk =>
+              s->FormUtils.Account.Address->FormUtils.Account.Valid
+            | None => s->FormUtils.Account.AnyString
           )
         ->handleChange
       }
@@ -109,7 +143,7 @@ let make =
       renderLabel={renderLabel(label)}
       itemHeight
       numItemsToDisplay
-      style=Style.(arrayOption([|Some(styles##input), styleValidAlias|]))
+      style=Style.(arrayOption([|Some(styles##input), styleValidAccount|]))
     />
     <FormError ?error />
   </FormGroup>;
