@@ -49,7 +49,6 @@ amount = [0-9]+(.[0-9]*)
 tokenaddr = KT1[A-Za-z0-9]+{33}
 tokenid = [0-9]+
 COMMA = %x2C
-HASHTAG = %x23
 ```
 
 ### Transaction
