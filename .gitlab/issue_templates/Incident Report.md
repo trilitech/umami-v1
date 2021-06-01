@@ -1,3 +1,4 @@
+[[_TOC_]]
 ## Incident Report
 
 ### Checklist
@@ -34,15 +35,14 @@
 
 
 <!-- METADATA for project management, please leave the following lines and edit as needed -->
-/label ~INC ~incident
+/label ~INC ~incident  
+<!-- Labels and default review status for gitlab Change management process, uncomment as needed -->
+<!-- /label ~Change ~"CAB::to-review" ~"Change::Emergency" -->
 
-<!-- Labels and default review status for gitlab Change management process, uncomment as needed --> 
-/label ~Change ~"CAB::to-review" ~"Change::Emergency"
-
-Reviews (all required): check the box [x], you may also add you @user handle  (ping  @picdc @remyzorg @comeh @philippewang.info @SamREye )
-- [ ] Review from Development aspects
-- [ ] Review from Operational aspects
-- [ ] Review from Business aspects 
--->
-<!-- Reviewers : fill with your gitlab user @handle -->
+## Reviews (all required)
+ (ping  @picdc @remyzorg @comeh @philippewang.info @SamREye )
+- [ ] Incident Review from Development aspects 
+- [ ] Incident Review from Operational aspects 
+- [ ] Incident Review from Business    aspects 
+<!-- check the box [x], you may also add you @user handle at the end of the line -->
 <!-- METADATA - end -->

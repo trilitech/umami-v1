@@ -1,3 +1,4 @@
+[[_TOC_]]
 ## Scheduled change
 <!-- Scheduled change, to be approved by the CAB before applying, and performed on the indicated due date. -->
 <!-- A scheduled change is usually set on external dependencies. -->
@@ -8,21 +9,21 @@
 <!-- /confidential -->
 <!-- If confidential, explain why -->
 
-## Summary
+### Summary
 <!-- Outline the issue being faced, and why this required a change !-->
 
-## Area of the system
+### Area of the system
 <!-- This might only be one part, but may involve multiple sections !-->
 
-## How does this currently work?
+### How does this currently work?
 <!-- The current process, and any associated business rules !-->
 
-## What is the desired way of working?
+### What is the desired way of working?
 <!-- After the change, what should the process be, and what should the business rules be !-->
 
 <!-- When relevant, include how to test the success of change application -->
 
-## Change Procedure
+### Change Procedure
 - [ ] Change procedure been tested successfully
 
 <!-- Include step by step description -->
@@ -30,8 +31,10 @@
 ## Rollback plan ?
 <!-- Describe how to rollback the change in case the expected change is not working -->
 
-## Priority
-<!-- Uncomment as appropriate. The priority and severity assigned may be different to this !-->
+
+<!-- METADATA for project management, please leave the following lines and edit as needed -->
+
+<!-- Uncomment /label quick actions as appropriate. The priority and severity assigned may be different to this !-->
 <!--High : (This will bring a huge increase in performance/productivity/usability, or is a legislative requirement)-->
 <!-- /label ~"Priority::1-High" -->
 <!--Medium : (This will bring a good increase in performance/productivity/usability)-->
@@ -39,18 +42,15 @@
 <!--Low : (anything else e.g., trivial, minor improvements) -->
 <!--  /label ~"Priority::3-Low" -->
 
-
-<!-- METADATA for project management, please leave the following lines and edit as needed -->
-<!-- Scheduled change, to be approved by the CAB before due date. -->
-<!-- labels for gitlab CAB Change issues management -->
-/label ~Change ~"CAB::to-approve"
-<!-- identify the kind of change -->
-/label ~"Change::Scheduled"
-
 <!-- Reviewers : check the box [x], you may also add you @user handle  -->
-Validations (all required) : (ping  @picdc @remyzorg @comeh @philippewang.info @SamREye )
-- [ ] Validation from Development aspects
-- [ ] Validation from Operational aspects
-- [ ] Validation from Business aspects 
+# Validations (all required)
+ (ping  @picdc @remyzorg @comeh @philippewang.info @SamREye )
+- [ ] Validation from Development aspects 
+- [ ] Validation from Operational aspects 
+- [ ] Validation from Business    aspects 
+<!-- check the box [x], you may also add you @user handle at the end of the line -->
+
+/label ~"Change::Scheduled" <!-- Scheduled change, to be approved by the CAB before due date. -->
+/label ~Change ~"CAB::to-approve" <!-- labels for gitlab CAB Change issues management -->
 
 <!-- METADATA - end -->
