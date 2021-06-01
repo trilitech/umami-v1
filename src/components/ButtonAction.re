@@ -54,28 +54,41 @@ let make =
     ) => {
   let theme = ThemeContext.useTheme();
 
-  <ThemedPressable
-    style=styles##pressable
-    ?tooltip
-    ?disabled
-    onPress
-    accessibilityRole=`button>
-    {icon(
-       ~style=styles##icon,
-       ~size=15.5,
-       ~color=
-         primary ? theme.colors.iconPrimary : theme.colors.iconMediumEmphasis,
-     )}
-    <Typography.ButtonSecondary
-      style=Style.(
-        style(
-          ~color=?{
-            primary ? Some(theme.colors.iconPrimary) : None;
-          },
-          (),
-        )
-      )>
-      text->React.string
-    </Typography.ButtonSecondary>
-  </ThemedPressable>;
+  let pressableElement = (~pressableRef) =>
+    <ThemedPressable
+      ?pressableRef
+      style=styles##pressable
+      ?disabled
+      onPress
+      accessibilityRole=`button>
+      {icon(
+         ~style=styles##icon,
+         ~size=15.5,
+         ~color=
+           primary
+             ? theme.colors.iconPrimary : theme.colors.iconMediumEmphasis,
+       )}
+      <Typography.ButtonSecondary
+        style=Style.(
+          style(
+            ~color=?{
+              primary ? Some(theme.colors.iconPrimary) : None;
+            },
+            (),
+          )
+        )>
+        text->React.string
+      </Typography.ButtonSecondary>
+    </ThemedPressable>;
+
+  switch (tooltip) {
+  | Some((keyPopover, text)) =>
+    <Tooltip keyPopover text>
+      {(
+         (~pressableRef) =>
+           pressableElement(~pressableRef=Some(pressableRef))
+       )}
+    </Tooltip>
+  | None => pressableElement(~pressableRef=None)
+  };
 };

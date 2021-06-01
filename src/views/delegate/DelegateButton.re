@@ -28,10 +28,10 @@ open ReactNative;
 let styles =
   Style.(
     StyleSheet.create({
-      "button":
-        style(~alignSelf=`flexStart, ~overflow=`hidden, ~borderRadius=4., ()),
+      "button": style(~alignSelf=`flexStart, ~borderRadius=4., ()),
       "pressable":
         style(
+          ~borderRadius=4.,
           ~height=34.->dp,
           ~minWidth=104.->dp,
           ~paddingHorizontal=16.->dp,
@@ -50,25 +50,27 @@ let make = (~zeroTez, ~action: Delegate.action, ~style as styleFromProp=?) => {
     "delegate_button_"
     ++ Delegate.account(action)->Option.mapWithDefault("", a => a.address);
 
-  let (textColor, backgroundColor, text, tooltip) =
+  let (textColor, backgroundColor, focusOutlineColor, text, tooltip) =
     switch (action) {
     | _ when zeroTez => (
         theme.colors.primaryTextDisabled,
         theme.colors.primaryButtonBackground,
+        None,
         I18n.btn#delegate,
         Some((tooltipId, I18n.tooltip#no_tez_no_delegation)),
       )
-
     | Create(_) => (
         theme.colors.primaryTextHighEmphasis,
         theme.colors.primaryButtonBackground,
+        None,
         I18n.btn#delegate,
         None,
       )
     | Edit(_)
     | Delete(_) => (
         theme.colors.primaryTextDisabled,
-        theme.colors.iconDisabled,
+        theme.colors.surfaceButtonBackground,
+        Some(theme.colors.surfaceButtonOutline),
         I18n.btn#delegated,
         Some((tooltipId, I18n.tooltip#update_delegation)),
       )
@@ -79,6 +81,19 @@ let make = (~zeroTez, ~action: Delegate.action, ~style as styleFromProp=?) => {
 
   let onPress = _e => openAction();
 
+  let pressableElement = (~pressableRef) =>
+    <ThemedPressable.Primary
+      ?pressableRef
+      style=Style.(arrayOption([|Some(styles##pressable)|]))
+      focusedColor=?focusOutlineColor
+      disabled=zeroTez
+      onPress
+      accessibilityRole=`button>
+      <Typography.ButtonPrimary style=Style.(style(~color=textColor, ()))>
+        text->React.string
+      </Typography.ButtonPrimary>
+    </ThemedPressable.Primary>;
+
   <>
     <View
       style=Style.(
@@ -88,17 +103,16 @@ let make = (~zeroTez, ~action: Delegate.action, ~style as styleFromProp=?) => {
           styleFromProp,
         |])
       )>
-      <ThemedPressable
-        style=Style.(arrayOption([|Some(styles##pressable)|]))
-        isPrimary=true
-        ?tooltip
-        disabled=zeroTez
-        onPress
-        accessibilityRole=`button>
-        <Typography.ButtonPrimary style=Style.(style(~color=textColor, ()))>
-          text->React.string
-        </Typography.ButtonPrimary>
-      </ThemedPressable>
+      {switch (tooltip) {
+       | Some((keyPopover, text)) =>
+         <Tooltip keyPopover text>
+           {(
+              (~pressableRef) =>
+                pressableElement(~pressableRef=Some(pressableRef))
+            )}
+         </Tooltip>
+       | None => pressableElement(~pressableRef=None)
+       }}
     </View>
     <ModalAction visible=visibleModal onRequestClose=closeAction>
       <DelegateView closeAction action />

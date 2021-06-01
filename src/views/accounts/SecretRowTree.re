@@ -236,8 +236,8 @@ module AccountImportedRowItem = {
                    "accountImportRowItemMenuUmami" ++ account.address
                  }>
                  [|
-                   <AccountEditButton account />,
-                   <AccountDeleteButton account />,
+                   <AccountEditButton key="accountEditButton" account />,
+                   <AccountDeleteButton key="accountDeleteButton" account />,
                  |]
                </Menu>
              </>}
@@ -273,9 +273,9 @@ module AccountImportedRowItem = {
                style=styles##actionIconButton
                keyPopover={"accountImportRowItemMenuCli" ++ account.address}>
                [|
-                 <AccountEditButton account />,
+                 <AccountEditButton key="accountEditButton" account />,
                  /*<AccountDisplayButton />*/
-                 <AccountDeleteButton account />,
+                 <AccountDeleteButton key="accountDeleteButton" account />,
                |]
              </Menu>
            </>}
@@ -359,7 +359,10 @@ module SecretRowItem = {
           icon=Icons.More.build
           style=styles##actionIconButton
           keyPopover={"secretRowItem" ++ secret.index->string_of_int}>
-          [|<SecretEditButton secret />, <SecretDeleteButton secret />|]
+          [|
+            <SecretEditButton key="secretEditButton" secret />,
+            <SecretDeleteButton key="secretDeleteButton" secret />,
+          |]
         </Menu>
       </View>
     </RowItem.Bordered>;

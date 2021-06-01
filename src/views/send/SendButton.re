@@ -30,11 +30,12 @@ let styles =
     StyleSheet.create({
       "button":
         StyleSheet.flatten([|
-          style(~borderRadius=35., ~overflow=`hidden, ()),
+          style(~borderRadius=35., ()),
           ShadowStyles.button,
         |]),
       "iconContainer":
         style(
+          ~borderRadius=35.,
           ~width=70.->dp,
           ~height=70.->dp,
           ~alignItems=`center,
@@ -62,11 +63,8 @@ let make = () => {
           style(~backgroundColor=theme.colors.primaryButtonBackground, ()),
         |])
       )>
-      <ThemedPressable
-        isPrimary=true
-        style=styles##iconContainer
-        onPress
-        accessibilityRole=`button>
+      <ThemedPressable.Primary
+        style=styles##iconContainer onPress accessibilityRole=`button>
         <Icons.Send size=24. color={theme.colors.primaryIconHighEmphasis} />
         <Typography.ButtonSecondary
           fontSize=13.
@@ -78,7 +76,7 @@ let make = () => {
           )>
           I18n.btn#send->React.string
         </Typography.ButtonSecondary>
-      </ThemedPressable>
+      </ThemedPressable.Primary>
     </View>
     <ModalAction visible=visibleModal onRequestClose=closeAction>
       <SendView closeAction />

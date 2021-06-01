@@ -34,6 +34,10 @@ module Dark = {
   let negative = "#f97977";
 
   let primary = "#f74f18";
+  let primaryOutline = "rgba(247, 79, 24, 0.38)";
+
+  let surface = "#a4a4a4";
+  let surfaceOutline = "rgba(164, 164, 164, 0.38)";
 
   let background = "#121212";
   let barBackground = "#212121";
@@ -42,10 +46,12 @@ module Dark = {
 
   let elevatedBackground = "#212121";
 
-  let statePressed = "rgba(255, 255, 255, 0.1)";
-  let stateHovered = "rgba(255, 255, 255, 0.04)";
+  let statePressed = "rgba(255, 255, 255, 0.28)";
+  let stateHovered = "rgba(255, 255, 255, 0.16)";
+  let stateFocusedOutline = "rgba(255, 255, 255, 0.38)";
   let stateActive = "rgba(255, 255, 255, 0.08)";
   let stateDisabled = "rgba(255, 255, 255, 0.12)";
+  let stateSmallHovered = "rgba(255, 255, 255, 0.04)";
 };
 
 module Light = {
@@ -59,16 +65,22 @@ module Light = {
   let negative = "#d46250";
 
   let primary = "#f74f18";
+  let primaryOutline = "rgba(247, 79, 24, 0.38)";
+
+  let surface = "#a4a4a4";
+  let surfaceOutline = "rgba(164, 164, 164, 0.38)";
 
   let background = "#f9f9f9";
   let barBackground = "#FFF";
   let backgroundMediumEmphasis = "rgba(255,255,255,0.74)";
   let scrim = "rgba(153,145,134,0.32)";
 
-  let statePressed = "rgba(0, 0, 0, 0.1)";
-  let stateHovered = "rgba(0, 0, 0, 0.04)";
+  let statePressed = "rgba(0, 0, 0, 0.2)";
+  let stateHovered = "rgba(0, 0, 0, 0.12)";
+  let stateFocusedOutline = "rgba(0, 0, 0, 0.38)";
   let stateActive = "rgba(0, 0, 0, 0.08)";
   let stateDisabled = "rgba(0, 0, 0, 0.12)";
+  let stateSmallHovered = "rgba(0, 0, 0, 0.04)";
 };
 
 // for application state like form

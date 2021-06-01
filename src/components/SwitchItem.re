@@ -25,28 +25,44 @@
 
 open ReactNative;
 
+let styles =
+  Style.(
+    StyleSheet.create({
+      "pressable":
+        style(
+          ~flexDirection=`row,
+          ~justifyContent=`spaceBetween,
+          ~alignItems=`center,
+          ~paddingVertical=8.->dp,
+          ~marginVertical=10.->dp,
+          (),
+        ),
+    })
+  );
+
 [@react.component]
-let make = (~style=?) => {
-  let setSeen = LogsContext.useSetSeen();
-  let seen = LogsContext.useSeen();
-
-  let (visibleModal, openAction, closeAction) =
-    ModalAction.useModalActionState();
-
-  let onPress = _ => {
-    openAction();
-    true->setSeen;
-  };
-
-  <>
-    <TouchableOpacity ?style onPress>
-      <Typography.ButtonPrimary
-        fontSize=12. colorStyle={!seen ? `error : `disabled}>
-        I18n.btn#logs->React.string
-      </Typography.ButtonPrimary>
-    </TouchableOpacity>
-    <ModalAction visible=visibleModal onRequestClose=closeAction>
-      <LogsView closeAction />
-    </ModalAction>
-  </>;
+let make =
+    (
+      ~label,
+      ~value,
+      ~setValue: ('a => 'a) => unit,
+      ~disabled=false,
+      ~style as styleFromProp: option(Style.t)=?,
+    ) => {
+  <Pressable_
+    style={_ =>
+      Style.arrayOption([|Some(styles##pressable), styleFromProp|])
+    }
+    onPress={_ => setValue(_ => !value)}
+    disabled
+    accessibilityRole=`checkbox>
+    {({hovered, pressed, focused}) => {
+       let hovered = hovered->Option.getWithDefault(false);
+       let focused = focused->Option.getWithDefault(false);
+       <>
+         <Typography.Overline2> label->React.string </Typography.Overline2>
+         <ThemedSwitch value hovered pressed focused disabled />
+       </>;
+     }}
+  </Pressable_>;
 };

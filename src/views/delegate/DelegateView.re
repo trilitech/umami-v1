@@ -29,16 +29,6 @@ open Delegate;
 let styles =
   Style.(
     StyleSheet.create({
-      "advancedOptionButton":
-        style(
-          ~flexDirection=`row,
-          ~justifyContent=`spaceBetween,
-          ~alignItems=`center,
-          ~paddingVertical=8.->dp,
-          ~marginVertical=10.->dp,
-          ~paddingRight=12.->dp,
-          (),
-        ),
       "switchCmp": style(~height=16.->dp, ~width=32.->dp, ()),
       "switchThumb": style(~transform=[|scale(~scale=0.65)|], ()),
       "operationSummary": style(~marginBottom=20.->dp, ()),
@@ -190,21 +180,15 @@ module Form = {
             }
             error={form.getFieldError(Field(Baker))}
           />
-          <TouchableOpacity
-            style=styles##advancedOptionButton
-            activeOpacity=1.
-            onPress={_ => setAdvancedOptionOpened(prev => !prev)}>
-            <Typography.Overline2>
-              I18n.btn#advanced_options->React.string
-            </Typography.Overline2>
-            <ThemedSwitch
-              disabled={
-                form.values.baker == ""
-                || Some(form.values.baker) == initDelegate
-              }
-              value=advancedOptionOpened
-            />
-          </TouchableOpacity>
+          <SwitchItem
+            label=I18n.btn#advanced_options
+            value=advancedOptionOpened
+            setValue=setAdvancedOptionOpened
+            disabled={
+              form.values.baker == ""
+              || Some(form.values.baker) == initDelegate
+            }
+          />
         </ReactFlipToolkit.FlippedView>
         <ReactFlipToolkit.FlippedView
           flipId="advancedOption"

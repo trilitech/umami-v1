@@ -177,21 +177,21 @@ module Transactions = {
     [@react.component]
     let make = () => {
       let theme = ThemeContext.useTheme();
-      <ThemedPressable
+
+      <ThemedPressable.Primary
         style=Style.(
           array([|
-            style(~color=theme.colors.textPrimary, ()),
             styles##csvFormat,
+            style(~color=theme.colors.textPrimary, ()),
           |])
         )
-        isPrimary=true
         onPress
         accessibilityRole=`button>
         <Typography.ButtonPrimary
           style=Style.(style(~color=theme.colors.textPrimary, ()))>
           I18n.btn#csv_format_link->React.string
         </Typography.ButtonPrimary>
-      </ThemedPressable>;
+      </ThemedPressable.Primary>;
     };
   };
 

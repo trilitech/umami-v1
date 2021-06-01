@@ -28,25 +28,61 @@ open ReactNative;
 let styles =
   Style.(
     StyleSheet.create({
+      "container": style(~height=16.->dp, ~width=32.->dp, ()),
+      "interactionState":
+        style(
+          ~position=`absolute,
+          ~left=(-12.)->dp,
+          ~top=(-12.)->dp,
+          ~height=40.->dp,
+          ~width=40.->dp,
+          ~borderRadius=20.,
+          (),
+        )
+        ->unsafeAddStyle({"transition": "transform 0.1s"}),
+      "interactionStateOpen":
+        style(~transform=[|translateX(~translateX=16.)|], ()),
       "switchCmp": style(~height=16.->dp, ~width=32.->dp, ()),
       "switchThumb": style(~transform=[|scale(~scale=0.65)|], ()),
     })
   );
 
 [@react.component]
-let make = (~value: bool=false, ~disabled=false) => {
+let make =
+    (
+      ~value: bool=false,
+      ~disabled=false,
+      ~hovered=false,
+      ~pressed=false,
+      ~focused=false,
+    ) => {
   let theme = ThemeContext.useTheme();
 
-  <SwitchNative
-    value
-    disabled
-    thumbColor={theme.colors.background}
-    trackColor={Switch.trackColor(
-      ~_true=theme.colors.iconPrimary,
-      ~_false=theme.colors.iconMediumEmphasis,
-      (),
-    )}
-    style=styles##switchCmp
-    thumbStyle=styles##switchThumb
-  />;
+  <View style=styles##container>
+    <ThemedPressable.ContainerInteractionState.Outline
+      hovered
+      pressed
+      focused
+      disabled
+      style=Style.(
+        arrayOption([|
+          Some(styles##interactionState),
+          value ? Some(styles##interactionStateOpen) : None,
+        |])
+      )
+    />
+    <SwitchNative
+      value
+      disabled
+      thumbColor={theme.colors.background}
+      trackColor={SwitchNative.trackColor(
+        ~_true=theme.colors.iconPrimary,
+        ~_false=theme.colors.iconMediumEmphasis,
+        ~disabled=theme.colors.iconDisabled,
+        (),
+      )}
+      style=styles##switchCmp
+      thumbStyle=styles##switchThumb
+    />
+  </View>;
 };

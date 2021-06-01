@@ -115,21 +115,20 @@ module UpdateNotice = {
                   styles##upgradeButton,
                 |])
               )>
-              <ThemedPressable
+              <ThemedPressable.Primary
                 style=Style.(
                   array([|
                     style(~color=theme.colors.textPrimary, ()),
                     styles##upgradePressable,
                   |])
                 )
-                isPrimary=true
                 onPress
                 accessibilityRole=`button>
                 <Typography.ButtonPrimary
                   style=Style.(style(~color=theme.colors.textPrimary, ()))>
                   I18n.btn#upgrade->React.string
                 </Typography.ButtonPrimary>
-              </ThemedPressable>
+              </ThemedPressable.Primary>
             </View>
           </View>
         </View>;
