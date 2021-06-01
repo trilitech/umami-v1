@@ -45,6 +45,7 @@ let make =
       ~beaconRespond,
       ~closeAction,
     ) => {
+  let getAccountPublicKey = AccountApiRequest.useGetPublicKey();
   let initAccount = StoreContext.SelectedAccount.useGet();
 
   let form =
@@ -58,20 +59,25 @@ let make =
       },
       ~onSubmit=
         ({state}) => {
-          Js.log(state.values.account);
+          switch (state.values.account) {
+          | Some(account) =>
+            getAccountPublicKey(account)
+            ->FutureEx.getOk(publicKey => {
+                let response: ReBeacon.Message.ResponseInput.permissionResponse = {
+                  id: permissionRequest.id,
+                  network: permissionRequest.network,
+                  scopes: permissionRequest.scopes,
+                  publicKey,
+                };
 
-          let response: ReBeacon.Message.ResponseInput.permissionResponse = {
-            id: permissionRequest.id,
-            network: permissionRequest.network,
-            scopes: permissionRequest.scopes,
-            publicKey: "3b92229274683b311cf8b040cf91ac0f8e19e410f06eda5537ef077e718e0024",
+                beaconRespond(
+                  response->ReBeacon.Message.ResponseInput.PermissionResponse,
+                )
+                ->Future.tapOk(_ => {closeAction()})
+                ->ignore;
+              })
+          | None => ()
           };
-
-          beaconRespond(
-            response->ReBeacon.Message.ResponseInput.PermissionResponse,
-          )
-          ->Future.tapOk(_ => {closeAction()})
-          ->ignore;
 
           None;
         },

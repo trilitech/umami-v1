@@ -1020,6 +1020,14 @@ module Accounts = (Getter: GetterAPI) => {
         Json.Encode.array(Secret.encoder, secrets)->Json.stringify
       )
     ->Future.mapOk(LocalStorage.setItem("secrets"));
+
+  let getPublicKey = (~settings: AppSettings.t, ~account: Account.t) => {
+    ReTaquito.pkFromAlias(
+      ~dirpath=settings->AppSettings.baseDir,
+      ~alias=account.alias,
+      (),
+    );
+  };
 };
 
 module Delegate = (Getter: GetterAPI) => {

@@ -57,3 +57,11 @@ let useUpdate =
 
 let useDelete =
   ApiRequest.useSetter(~set=AccountsAPI.delete, ~kind=Logs.Account);
+
+/* Other */
+
+let useGetPublicKey = () => {
+  let settings = SdkContext.useSettings();
+
+  (account: Account.t) => AccountsAPI.getPublicKey(~settings, ~account);
+};
