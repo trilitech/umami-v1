@@ -34,7 +34,7 @@
 
 <!-- METADATA for project management, please leave the following lines and edit as needed -->
 
-<!-- Uncomment /label quick actions as appropriate. The priority and severity assigned may be different to this !-->
+<!-- PRIORITY: Uncomment /label quick actions as appropriate. The priority and severity assigned may be different to this !-->
 <!--High : (This will bring a huge increase in performance/productivity/usability, or is a legislative requirement)-->
 <!-- /label ~"Priority::1-High" -->
 <!--Medium : (This will bring a good increase in performance/productivity/usability)-->
