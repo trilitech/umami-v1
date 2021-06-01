@@ -44,8 +44,8 @@
 - [ ] Validation from Development aspects
 - [ ] Validation from Operational aspects
 - [?]  (optional) Validation from Business aspects
-
 <!-- check the box [x], you may also add you @user handle at the end of the line -->
+
 /label ~"Change::Configuration"  <!-- Configuration change, to be approved by the CAB before applying. -->
 /label ~Change ~"CAB::to-approve" <!-- labels for gitlab CAB Change issues management -->
 <!-- METADATA - end -->
