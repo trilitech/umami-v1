@@ -59,6 +59,10 @@ type state = {
   balanceTokenRequestsState: apiRequestsState(Token.Unit.t, string),
   apiVersionRequestState: reactState(option(Network.apiVersion)),
   eulaSignatureRequestState: reactState(bool),
+  beaconPeersRequestState:
+    reactState(ApiRequest.t(array(ReBeacon.peerInfo), string)),
+  beaconPermissionsRequestState:
+    reactState(ApiRequest.t(array(ReBeacon.permissionInfo), string)),
 };
 
 // Context and Provider
@@ -81,6 +85,8 @@ let initialState = {
   balanceTokenRequestsState: initialApiRequestsState,
   apiVersionRequestState: (None, _ => ()),
   eulaSignatureRequestState: (false, _ => ()),
+  beaconPeersRequestState: (NotAsked, _ => ()),
+  beaconPermissionsRequestState: (NotAsked, _ => ()),
 };
 
 let context = React.createContext(initialState);
@@ -122,6 +128,9 @@ let make = (~children) => {
   let bakersRequestState = React.useState(() => ApiRequest.NotAsked);
   let tokensRequestState = React.useState(() => ApiRequest.NotAsked);
   let secretsRequestState = React.useState(() => ApiRequest.NotAsked);
+  let beaconPeersRequestState = React.useState(() => ApiRequest.NotAsked);
+  let beaconPermissionsRequestState =
+    React.useState(() => ApiRequest.NotAsked);
 
   let apiVersionRequestState = React.useState(() => None);
   let (_, setApiVersion) = apiVersionRequestState;
@@ -195,6 +204,8 @@ let make = (~children) => {
       balanceTokenRequestsState,
       apiVersionRequestState,
       eulaSignatureRequestState,
+      beaconPeersRequestState,
+      beaconPermissionsRequestState,
     }>
     children
   </Provider>;
@@ -804,5 +815,57 @@ module SelectedToken = {
     let (_, setSelectedToken) = store.selectedTokenState;
 
     newToken => setSelectedToken(_ => newToken);
+  };
+};
+
+module Beacon = {
+  module Peers = {
+    let useRequestState = () => {
+      let store = useStoreContext();
+      store.beaconPeersRequestState;
+    };
+
+    let useResetAll = () => {
+      let (_, setBeaconPeersRequest) = useRequestState();
+      () => setBeaconPeersRequest(ApiRequest.updateToResetState);
+    };
+
+    let useGetAll = () => {
+      let beaconPeersRequestState = useRequestState();
+      BeaconApiRequest.Peers.useLoad(beaconPeersRequestState);
+    };
+
+    let useDelete = () => {
+      let resetBeaconPeers = useResetAll();
+      BeaconApiRequest.Peers.useDelete(
+        ~sideEffect=_ => resetBeaconPeers(),
+        (),
+      );
+    };
+  };
+
+  module Permissions = {
+    let useRequestState = () => {
+      let store = useStoreContext();
+      store.beaconPermissionsRequestState;
+    };
+
+    let useResetAll = () => {
+      let (_, setBeaconPermissionsRequest) = useRequestState();
+      () => setBeaconPermissionsRequest(ApiRequest.updateToResetState);
+    };
+
+    let useGetAll = () => {
+      let beaconPermissionsRequestState = useRequestState();
+      BeaconApiRequest.Permissions.useLoad(beaconPermissionsRequestState);
+    };
+
+    let useDelete = () => {
+      let resetBeaconPermissions = useResetAll();
+      BeaconApiRequest.Permissions.useDelete(
+        ~sideEffect=_ => resetBeaconPermissions(),
+        (),
+      );
+    };
   };
 };

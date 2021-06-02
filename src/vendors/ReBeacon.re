@@ -1,31 +1,6 @@
-/*****************************************************************************/
-/*                                                                           */
-/* Open Source License                                                       */
-/* Copyright (c) 2019-2021 Nomadic Labs, <contact@nomadic-labs.com>          */
-/*                                                                           */
-/* Permission is hereby granted, free of charge, to any person obtaining a   */
-/* copy of this software and associated documentation files (the "Software"),*/
-/* to deal in the Software without restriction, including without limitation */
-/* the rights to use, copy, modify, merge, publish, distribute, sublicense,  */
-/* and/or sell copies of the Software, and to permit persons to whom the     */
-/* Software is furnished to do so, subject to the following conditions:      */
-/*                                                                           */
-/* The above copyright notice and this permission notice shall be included   */
-/* in all copies or substantial portions of the Software.                    */
-/*                                                                           */
-/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR*/
-/* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,  */
-/* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL   */
-/* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER*/
-/* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING   */
-/* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER       */
-/* DEALINGS IN THE SOFTWARE.                                                 */
-/*                                                                           */
-/*****************************************************************************/
-
 type id = string;
-type version = string;
-type senderId = string;
+type version;
+type senderId;
 type accountIdentifier = string;
 type appMetadata = {
   senderId: string,
@@ -34,10 +9,48 @@ type appMetadata = {
 type network = {
   [@bs.as "type"]
   type_: string,
-  id: id,
-  network: network,
-  scopes: Js.Array.t(permissionScope),
 };
+type scopes;
+type operationDetails;
+type sourceAddress;
+type publicKey = string;
+type transactionHash = string;
+
+module Message = {
+  module Request = {
+    module PartialOperation = {
+      /*
+        | TezosActivateAccountOperation
+         | TezosBallotOperation
+         | PartialTezosDelegationOperation
+         | TezosDoubleBakingEvidenceOperation
+         | TezosEndorsementOperation
+         | PartialTezosOriginationOperation
+         | TezosProposalOperation
+         | PartialTezosRevealOperation
+         | TezosSeedNonceRevelationOperation
+         | PartialTezosTransactionOperation
+       */
+      type partialOperationType = [ | `partial_tezos_transaction_operation];
+      type basePartialOperation = {
+        [@bs.as "type"]
+        type_: partialOperationType,
+      };
+
+      type partialTransactionOperation;
+
+      type t =
+        | PartialTransactionOperation(partialTransactionOperation);
+
+      let classify = (partialOperation: basePartialOperation): t => {
+        switch (partialOperation) {
+        | {type_: `partial_tezos_transaction_operation} =>
+          PartialTransactionOperation(partialOperation->Obj.magic)
+        };
+      };
+    };
+
+    type messageType = [ | `permission_request | `operation_request];
 
     type baseMessage = {
       [@bs.as "type"]
@@ -118,7 +131,24 @@ type network = {
   };
 };
 
-type peerInfo;
+type peerInfo = {
+  id: string,
+  name: string,
+  publicKey,
+  relayServer: string,
+  senderId,
+  version,
+};
+type permissionInfo = {
+  accountIdentifier,
+  address: string,
+  network,
+  appMetadata,
+  publicKey,
+  scopes,
+  senderId,
+};
+type transportType;
 
 module Serializer = {
   type t;
@@ -389,8 +419,6 @@ module Serializer = {
   [@bs.send]
   external deserialize: (t, string) => Js.Promise.t(peerInfo) = "deserialize";
 };
-
-type transportType;
 
 module WalletClient = {
   type t;

@@ -1,4 +1,4 @@
-let context = React.createContext(None);
+let client = BeaconApiRequest.client;
 
 module IPC = {
   type t;
@@ -11,23 +11,14 @@ let dataFromURL = url => {
   url->Js.String2.split("data=")[1];
 };
 
-module Provider = {
-  let makeProps = (~value, ~children, ()) => {
-    "value": value,
-    "children": children,
-  };
-
-  let make = React.Context.provider(context);
-};
-
 let handleOperationRequest =
     (request: ReBeacon.Message.Request.operationRequest) => {
-      //let _ = request.operationDetails->Array.map(partialOperation =>
-      //4
-      //)
+  //let _ = request.operationDetails->Array.map(partialOperation =>
+  //4
+  //)
   let partialOperation =
     request.operationDetails[0]
-    ->Option.map(ReBeacon.Message.PartialOperation.classify);
+    ->Option.map(ReBeacon.Message.Request.PartialOperation.classify);
   switch (partialOperation) {
   | Some(PartialTransactionOperation(partialTransactionOperation)) =>
     Js.log(partialTransactionOperation)
@@ -42,10 +33,7 @@ let handleOperationRequest =
 };
 
 [@react.component]
-let make = (~children) => {
-  let (client, _) =
-    React.useState(() => ReBeacon.WalletClient.make({name: "umami"}));
-
+let make = () => {
   let (permissionRequest, setPermissionRequest) = React.useState(_ => None);
   let (visibleModal, openAction, closeAction) =
     ModalAction.useModalActionState();
@@ -106,7 +94,6 @@ let make = (~children) => {
   };
 
   <>
-    <Provider value={Some(client)}> children </Provider>
     <ModalAction visible=visibleModal onRequestClose=closeAction>
       {permissionRequest->ReactUtils.mapOpt(permissionRequest => {
          <BeaconAccountView permissionRequest beaconRespond closeAction />
@@ -114,5 +101,3 @@ let make = (~children) => {
     </ModalAction>
   </>;
 };
-
-let useBeacon = () => React.useContext(context);

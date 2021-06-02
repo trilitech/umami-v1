@@ -23,13 +23,50 @@
 /*                                                                           */
 /*****************************************************************************/
 
-[@react.component]
-let make = () => {
-  <Page>
-    <VerificationSettingView />
-    <ThemeSettingView />
-    <ChainSettingView />
-    <BeaconSettingView />
-    <DangerSettingView />
-  </Page>;
+let client = ReBeacon.WalletClient.make({name: "umami"});
+
+/* PEERS */
+
+module Peers = {
+  let useLoad = requestState => {
+    let get = (~settings as _s, ()) =>
+      client
+      ->ReBeacon.WalletClient.getPeers
+      ->FutureJs.fromPromise(Js.String.make);
+
+    ApiRequest.useLoader(~get, ~kind=Logs.Settings, ~requestState, ());
+  };
+
+  let useDelete =
+    ApiRequest.useSetter(
+      ~set=
+        (~settings as _s, peer: ReBeacon.peerInfo) =>
+          client
+          ->ReBeacon.WalletClient.removePeer(peer)
+          ->FutureJs.fromPromise(Js.String.make),
+      ~kind=Logs.Settings,
+    );
+};
+
+/* PERMISSIONS */
+
+module Permissions = {
+  let useLoad = requestState => {
+    let get = (~settings as _s, ()) =>
+      client
+      ->ReBeacon.WalletClient.getPermissions
+      ->FutureJs.fromPromise(Js.String.make);
+
+    ApiRequest.useLoader(~get, ~kind=Logs.Settings, ~requestState, ());
+  };
+
+  let useDelete =
+    ApiRequest.useSetter(
+      ~set=
+        (~settings as _s, accountIdentifier: ReBeacon.accountIdentifier) =>
+          client
+          ->ReBeacon.WalletClient.removePermission(accountIdentifier)
+          ->FutureJs.fromPromise(Js.String.make),
+      ~kind=Logs.Settings,
+    );
 };
