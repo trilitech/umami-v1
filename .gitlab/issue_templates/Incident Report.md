@@ -31,10 +31,10 @@
 ### What is the evidence (i.e. screenshots, logs, etc)?
 
 
-
-
-
 <!-- METADATA for project management, please leave the following lines and edit as needed -->
+# Metadata
+!-- Severity : to be filed in the gitlab panel, right side of the screen -->
+
 /label ~INC ~incident  
 <!-- Labels and default review status for gitlab Change management process, uncomment as needed -->
 <!-- /label ~Change ~"CAB::to-review" ~"Change::Emergency" -->
