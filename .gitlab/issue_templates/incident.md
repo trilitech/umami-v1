@@ -1,20 +1,21 @@
+[[_TOC_]]
 ## Incident Report
 
 ### Checklist
 <!-- Before filing an incident report, if there are any doubt, follow the checklist to ensure you are in fact dealing with an incident: !-->
-
+<!-- 
  - [ ] 1. the situation impacts the live production environment
  - [ ] 2. the situation impacts the users access to mainnet chain services or assets
  - [ ] 3. the situation is severe or it carries a high risk; in that **any** of the following is true:
-   - [ ] it will/may lead to users being unable to view their assets
-   - [ ] it will/may lead to users being unable to access their assets
-   - [ ] it will/may lead to downtime of the system
-   - [ ] it will/may lead to downtime to a feature of the system (which is not purely informational)
+   -  [ ] it will/may lead to users being unable to view their assets 
+   -  [ ] it will/may lead to users being unable to access their assets
+   -  [ ] it will/may lead to downtime of the system
+   -  [ ] it will/may lead to downtime to a feature of the system (which is not purely informational)
  - [ ] 4. the adverse impact is urgent; in that **all** of the following is true:
    - [ ] is ongoing or is imminent
    - [ ] no straightforward workaround is possible
    - [ ] solution cannot wait for the next planned release
-
+-->
 <!-- If you can tick boxes 1, 2, 3, and 4--you have uncovered an Incident; otherwise, it may not be, please consult management or you may file it anyway if unsure. !-->
 
 ### What is the nature of the INC?
@@ -30,19 +31,18 @@
 ### What is the evidence (i.e. screenshots, logs, etc)?
 
 
-
-
-
 <!-- METADATA for project management, please leave the following lines and edit as needed -->
-/label ~INC ~incident
+# Metadata
+<!-- Severity : to be filed in the gitlab panel, right side of the screen -->
 
-<!-- Labels and default review status for gitlab Change management process, uncomment as needed --> 
-<!-- 
-/label ~Change ~"CAB::to-review" ~"Change::Emergency"
-Change reviewers (all required) :  (ping  @picdc @remyzorg @comeh @philippewang.info @SamREye )
-- [ ] Development
-- [ ] Operation
-- [ ] Business
--->
-<!-- Reviewers : fill with your gitlab user @handle -->
+/label ~INC ~incident  
+<!-- Labels and default review status for gitlab Change management process, uncomment as needed -->
+<!-- /label ~Change ~"CAB::to-review" ~"Change::Emergency" -->
+
+## Reviews (all required)
+ (ping  @picdc @remyzorg @comeh @philippewang.info @SamREye )
+- [ ] Incident Review from Development aspects 
+- [ ] Incident Review from Operational aspects 
+- [ ] Incident Review from Business    aspects 
+<!-- check the box [x], you may also add you @user handle at the end of the line -->
 <!-- METADATA - end -->
