@@ -49,6 +49,8 @@
 - [ ] Validation from Operational aspects 
 - [ ] Validation from Business    aspects 
 <!-- check the box [x], you may also add you @user handle at the end of the line -->
+<!-- /unlabel ~"CAB::to-approve" -->
+<!-- /label ~"CAB::to-perform"   -->
 
 /label ~"Change::Scheduled" <!-- Scheduled change, to be approved by the CAB before due date. -->
 /label ~Change ~"CAB::to-approve" <!-- labels for gitlab CAB Change issues management -->

@@ -45,6 +45,7 @@
 - [ ] Review from Operational aspects
 - [ ] Review from Business aspects 
 <!-- check the box [x], you may also add you @user handle at the end of the line -->
+<!-- /unlabel ~"CAB::to-review" -->
 
 /label ~"Change::Emergency"  <!-- Emergency change request, usually on incident, sent to the CAB for review after applying. -->
 /label ~Change ~"CAB::to-review" <!-- labels for gitlab CAB Change issues management -->
