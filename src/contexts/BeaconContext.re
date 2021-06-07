@@ -20,6 +20,27 @@ module Provider = {
   let make = React.Context.provider(context);
 };
 
+let handleOperationRequest =
+    (request: ReBeacon.Message.Request.operationRequest) => {
+      //let _ = request.operationDetails->Array.map(partialOperation =>
+      //4
+      //)
+  let partialOperation =
+    request.operationDetails[0]
+    ->Option.map(ReBeacon.Message.PartialOperation.classify);
+  switch (partialOperation) {
+  | Some(PartialTransactionOperation(partialTransactionOperation)) =>
+    Js.log(partialTransactionOperation)
+  | _ => Js.log("unknown")
+  };
+  Future.value(
+    ReBeacon.Message.ResponseInput.OperationResponse({
+      id: "",
+      transactionHash: "",
+    }),
+  );
+};
+
 [@react.component]
 let make = (~children) => {
   let (client, _) =
@@ -39,10 +60,19 @@ let make = (~children) => {
           ->ReBeacon.WalletClient.connect(message => {
               let request = message->ReBeacon.Message.Request.classify;
               switch (request) {
-              | PermissionRequest(permissionRequest) =>
-                setPermissionRequest(_ => Some(permissionRequest));
+              | PermissionRequest(request) =>
+                setPermissionRequest(_ => Some(request));
                 openAction();
-              | _ => Js.log("unknown")
+              | OperationRequest(request) =>
+                handleOperationRequest(request)
+                ->Future.flatMap(response =>
+                    client
+                    ->ReBeacon.WalletClient.respond(
+                        response->ReBeacon.Message.ResponseInput.toObj,
+                      )
+                    ->FutureJs.fromPromise(Js.String.make)
+                  )
+                ->Future.get(Js.log)
               };
             })
           ->FutureJs.fromPromise(Js.String.make)

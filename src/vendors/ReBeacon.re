@@ -58,7 +58,7 @@ type network = {
       version,
       senderId,
       network,
-      operationDetails,
+      operationDetails: array(PartialOperation.basePartialOperation),
       sourceAddress,
     };
 
