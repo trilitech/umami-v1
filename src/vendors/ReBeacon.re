@@ -12,7 +12,7 @@ type network = {
 };
 type scopes;
 type operationDetails;
-type sourceAddress;
+type sourceAddress = string;
 type publicKey = string;
 type transactionHash = string;
 type errorType = string;
@@ -25,25 +25,17 @@ module ErrorType = {
 module Message = {
   module Request = {
     module PartialOperation = {
-      /*
-        | TezosActivateAccountOperation
-         | TezosBallotOperation
-         | PartialTezosDelegationOperation
-         | TezosDoubleBakingEvidenceOperation
-         | TezosEndorsementOperation
-         | PartialTezosOriginationOperation
-         | TezosProposalOperation
-         | PartialTezosRevealOperation
-         | TezosSeedNonceRevelationOperation
-         | PartialTezosTransactionOperation
-       */
       type partialOperationType = [ | `partial_tezos_transaction_operation];
       type basePartialOperation = {
         [@bs.as "type"]
         type_: partialOperationType,
       };
 
-      type partialTransactionOperation;
+      type partialTransactionOperation = {
+        amount: string,
+        destination: string,
+        kind: string,
+      };
 
       type t =
         | PartialTransactionOperation(partialTransactionOperation);

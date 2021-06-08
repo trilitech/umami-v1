@@ -22,24 +22,50 @@ let handleOperationRequest =
           partialTransactions->Array.concat([|partialTransaction|])
         }
       );
-  Js.log(partialTransactions);
-  /*if (partialTransactions->Array.length
+  if (partialTransactions->Array.length
       == request.operationDetails->Array.length) {
+    Js.log(partialTransactions);
+    let transfer = {
+      Transfer.source: request.sourceAddress,
+      transfers:
+        partialTransactions
+        ->Array.map(partialTransaction =>
+            {
+              Transfer.destination: partialTransaction.destination,
+              amount:
+                XTZ(ProtocolXTZ.fromMutezString(partialTransaction.amount)),
+              tx_options: {
+                fee: None,
+                gasLimit: None,
+                storageLimit: None,
+                parameter: None,
+                entrypoint: None,
+              },
+            }
+          )
+        ->List.fromArray,
+      common_options: {
+        fee: None,
+        burnCap: None,
+        forceLowFee: None,
+      },
+    };
+    Js.log(transfer);
+    // TODO: open transfer modal
     Future.value(
       ReBeacon.Message.ResponseInput.OperationResponse({
         id: "",
         transactionHash: "",
       }),
     );
-  } else {*/
-  Js.log("error: " ++ ReBeacon.ErrorType.transactionInvalid);
+  } else {
     Future.value(
       ReBeacon.Message.ResponseInput.Error({
         id: request.id,
         errorType: ReBeacon.ErrorType.transactionInvalid,
       }),
     );
-  //};
+  };
 };
 
 [@react.component]
@@ -57,6 +83,7 @@ let make = () => {
           client
           ->ReBeacon.WalletClient.connect(message => {
               let request = message->ReBeacon.Message.Request.classify;
+              Js.log(request);
               switch (request) {
               | PermissionRequest(request) =>
                 setPermissionRequest(_ => Some(request));
