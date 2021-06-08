@@ -13,23 +13,33 @@ let dataFromURL = url => {
 
 let handleOperationRequest =
     (request: ReBeacon.Message.Request.operationRequest) => {
-  //let _ = request.operationDetails->Array.map(partialOperation =>
-  //4
-  //)
-  let partialOperation =
-    request.operationDetails[0]
-    ->Option.map(ReBeacon.Message.Request.PartialOperation.classify);
-  switch (partialOperation) {
-  | Some(PartialTransactionOperation(partialTransactionOperation)) =>
-    Js.log(partialTransactionOperation)
-  | _ => Js.log("unknown")
-  };
-  Future.value(
-    ReBeacon.Message.ResponseInput.OperationResponse({
-      id: "",
-      transactionHash: "",
-    }),
-  );
+  let partialTransactions =
+    request.operationDetails
+    ->Array.map(ReBeacon.Message.Request.PartialOperation.classify)
+    ->Array.reduce([||], (partialTransactions, partialOperation) =>
+        switch (partialOperation) {
+        | PartialTransactionOperation(partialTransaction) =>
+          partialTransactions->Array.concat([|partialTransaction|])
+        }
+      );
+  Js.log(partialTransactions);
+  /*if (partialTransactions->Array.length
+      == request.operationDetails->Array.length) {
+    Future.value(
+      ReBeacon.Message.ResponseInput.OperationResponse({
+        id: "",
+        transactionHash: "",
+      }),
+    );
+  } else {*/
+  Js.log("error: " ++ ReBeacon.ErrorType.transactionInvalid);
+    Future.value(
+      ReBeacon.Message.ResponseInput.Error({
+        id: request.id,
+        errorType: ReBeacon.ErrorType.transactionInvalid,
+      }),
+    );
+  //};
 };
 
 [@react.component]

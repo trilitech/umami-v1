@@ -15,6 +15,12 @@ type operationDetails;
 type sourceAddress;
 type publicKey = string;
 type transactionHash = string;
+type errorType = string;
+
+module ErrorType = {
+  [@bs.module "@airgap/beacon-sdk"] [@bs.scope "BeaconErrorType"] [@bs.val]
+  external transactionInvalid: string = "TRANSACTION_INVALID_ERROR";
+};
 
 module Message = {
   module Request = {
@@ -88,7 +94,11 @@ module Message = {
   };
 
   module ResponseInput = {
-    type messageType = [ | `permission_response | `operation_response];
+    type messageType = [
+      | `permission_response
+      | `operation_response
+      | `error
+    ];
 
     type baseMessage;
 
@@ -104,9 +114,15 @@ module Message = {
       transactionHash,
     };
 
+    type error = {
+      id,
+      errorType,
+    };
+
     type t =
       | PermissionResponse(permissionResponse)
-      | OperationResponse(operationResponse);
+      | OperationResponse(operationResponse)
+      | Error(error);
 
     let toObj = (responseInput: t): baseMessage => {
       switch (responseInput) {
@@ -126,6 +142,8 @@ module Message = {
           "transactionHash": transactionHash,
         }
         ->Obj.magic
+      | Error({id, errorType}) =>
+        {"type": `error, "id": id, "errorType": errorType}->Obj.magic
       };
     };
   };
