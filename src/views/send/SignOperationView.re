@@ -33,7 +33,7 @@ let styles =
 [@react.component]
 let make =
     (
-      ~title,
+      ~title=?,
       ~subtitle=?,
       ~source,
       ~destinations,
@@ -78,14 +78,16 @@ let make =
     FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
 
   <>
-    <View style=FormStyles.header>
-      <Typography.Headline> title->React.string </Typography.Headline>
-      {subtitle->ReactUtils.mapOpt(subtitle =>
-         <Typography.Overline1 style=FormStyles.subtitle>
-           subtitle->React.string
-         </Typography.Overline1>
-       )}
-    </View>
+    {title->ReactUtils.mapOpt(title =>
+       <View style=FormStyles.header>
+         <Typography.Headline> title->React.string </Typography.Headline>
+         {subtitle->ReactUtils.mapOpt(subtitle =>
+            <Typography.Overline1 style=FormStyles.subtitle>
+              subtitle->React.string
+            </Typography.Overline1>
+          )}
+       </View>
+     )}
     <OperationSummaryView
       style=styles##operationSummary
       source=(account.address, source->snd)

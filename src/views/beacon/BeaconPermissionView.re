@@ -49,9 +49,9 @@ let make =
   let initAccount = StoreContext.SelectedAccount.useGet();
 
   let form =
-    BeaconAccountForm.use(
+    BeaconPermissionForm.use(
       ~schema={
-        BeaconAccountForm.Validation.(
+        BeaconPermissionForm.Validation.(
           Schema(
             custom(values => values.account->FormUtils.notNone, Account),
           )
@@ -73,7 +73,7 @@ let make =
                 beaconRespond(
                   response->ReBeacon.Message.ResponseInput.PermissionResponse,
                 )
-                ->Future.tapOk(_ => {closeAction()})
+                ->Future.tapOk(_ => closeAction())
                 ->ignore;
               })
           | None => ()
@@ -85,6 +85,17 @@ let make =
       ~i18n=FormUtils.i18n,
       (),
     );
+
+  let onAbort = _ => {
+    beaconRespond(
+      ReBeacon.Message.ResponseInput.Error({
+        id: permissionRequest.id,
+        errorType: `ABORTED_ERROR,
+      }),
+    )
+    ->Future.tapOk(_ => closeAction())
+    ->ignore;
+  };
 
   <ModalTemplate.Form>
     <View>
@@ -111,7 +122,7 @@ let make =
         error={form.getFieldError(Field(Account))}
       />
       <View style=styles##formActionSpaceBetween>
-        <Buttons.SubmitSecondary text="DENY" onPress={_ => closeAction()} />
+        <Buttons.SubmitSecondary text="DENY" onPress=onAbort />
         <Buttons.SubmitPrimary text="ALLOW" onPress={_ => form.submit()} />
       </View>
     </View>

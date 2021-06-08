@@ -15,26 +15,16 @@ type operationDetails;
 type sourceAddress = string;
 type publicKey = string;
 type transactionHash = string;
-type errorType = string;
-
-module ErrorType = {
-  [@bs.module "@airgap/beacon-sdk"] [@bs.scope "BeaconErrorType"] [@bs.val]
-  external transactionInvalid: string = "TRANSACTION_INVALID_ERROR";
-};
 
 module Message = {
   module Request = {
     module PartialOperation = {
-      type partialOperationType = [ | `partial_tezos_transaction_operation];
-      type basePartialOperation = {
-        [@bs.as "type"]
-        type_: partialOperationType,
-      };
+      type partialOperationType = [ | `transaction];
+      type basePartialOperation = {kind: partialOperationType};
 
       type partialTransactionOperation = {
         amount: string,
         destination: string,
-        kind: string,
       };
 
       type t =
@@ -42,7 +32,7 @@ module Message = {
 
       let classify = (partialOperation: basePartialOperation): t => {
         switch (partialOperation) {
-        | {type_: `partial_tezos_transaction_operation} =>
+        | {kind: `transaction} =>
           PartialTransactionOperation(partialOperation->Obj.magic)
         };
       };
@@ -68,6 +58,7 @@ module Message = {
       id,
       version,
       senderId,
+      appMetadata,
       network,
       operationDetails: array(PartialOperation.basePartialOperation),
       sourceAddress,
@@ -105,6 +96,8 @@ module Message = {
       id,
       transactionHash,
     };
+
+    type errorType = [ | `TRANSACTION_INVALID_ERROR | `ABORTED_ERROR];
 
     type error = {
       id,

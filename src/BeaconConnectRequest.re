@@ -11,68 +11,49 @@ let dataFromURL = url => {
   url->Js.String2.split("data=")[1];
 };
 
-let handleOperationRequest =
+let checkOperationRequestHasOnlyTransaction =
     (request: ReBeacon.Message.Request.operationRequest) => {
-  let partialTransactions =
-    request.operationDetails
-    ->Array.map(ReBeacon.Message.Request.PartialOperation.classify)
-    ->Array.reduce([||], (partialTransactions, partialOperation) =>
-        switch (partialOperation) {
-        | PartialTransactionOperation(partialTransaction) =>
-          partialTransactions->Array.concat([|partialTransaction|])
-        }
-      );
-  if (partialTransactions->Array.length
-      == request.operationDetails->Array.length) {
-    Js.log(partialTransactions);
-    let transfer = {
-      Transfer.source: request.sourceAddress,
-      transfers:
-        partialTransactions
-        ->Array.map(partialTransaction =>
-            {
-              Transfer.destination: partialTransaction.destination,
-              amount:
-                XTZ(ProtocolXTZ.fromMutezString(partialTransaction.amount)),
-              tx_options: {
-                fee: None,
-                gasLimit: None,
-                storageLimit: None,
-                parameter: None,
-                entrypoint: None,
-              },
-            }
-          )
-        ->List.fromArray,
-      common_options: {
-        fee: None,
-        burnCap: None,
-        forceLowFee: None,
-      },
-    };
-    Js.log(transfer);
-    // TODO: open transfer modal
-    Future.value(
-      ReBeacon.Message.ResponseInput.OperationResponse({
-        id: "",
-        transactionHash: "",
-      }),
-    );
-  } else {
-    Future.value(
-      ReBeacon.Message.ResponseInput.Error({
-        id: request.id,
-        errorType: ReBeacon.ErrorType.transactionInvalid,
-      }),
-    );
+  request.operationDetails
+  ->Array.every(operationDetail => operationDetail.kind == `transaction);
+};
+
+let useBeaconPermissionRequestModalAction = () => {
+  let (permissionRequest, setPermissionRequest) = React.useState(_ => None);
+  let (visibleModal, openAction, closeAction) =
+    ModalAction.useModalActionState();
+
+  let openModal = permissionRequest => {
+    setPermissionRequest(_ => Some(permissionRequest));
+    openAction();
   };
+
+  (permissionRequest, visibleModal, openModal, closeAction);
+};
+
+let useBeaconOperationRequestModalAction = () => {
+  let (operationRequest, setOperationRequest) = React.useState(_ => None);
+  let (visibleModal, openAction, closeAction) =
+    ModalAction.useModalActionState();
+
+  let openModal = operationRequest => {
+    setOperationRequest(_ => Some(operationRequest));
+    openAction();
+  };
+
+  (operationRequest, visibleModal, openModal, closeAction);
 };
 
 [@react.component]
 let make = () => {
-  let (permissionRequest, setPermissionRequest) = React.useState(_ => None);
-  let (visibleModal, openAction, closeAction) =
-    ModalAction.useModalActionState();
+  let (
+    permissionRequest,
+    visibleModalPermission,
+    openPermission,
+    closePermission,
+  ) =
+    useBeaconPermissionRequestModalAction();
+  let (operationRequest, visibleModalOperation, openOperation, closeOperation) =
+    useBeaconOperationRequestModalAction();
 
   React.useEffect0(() => {
     {
@@ -83,21 +64,23 @@ let make = () => {
           client
           ->ReBeacon.WalletClient.connect(message => {
               let request = message->ReBeacon.Message.Request.classify;
-              Js.log(request);
               switch (request) {
-              | PermissionRequest(request) =>
-                setPermissionRequest(_ => Some(request));
-                openAction();
+              | PermissionRequest(request) => openPermission(request)
               | OperationRequest(request) =>
-                handleOperationRequest(request)
-                ->Future.flatMap(response =>
-                    client
-                    ->ReBeacon.WalletClient.respond(
-                        response->ReBeacon.Message.ResponseInput.toObj,
-                      )
-                    ->FutureJs.fromPromise(Js.String.make)
-                  )
-                ->Future.get(Js.log)
+                if (request->checkOperationRequestHasOnlyTransaction) {
+                  openOperation(request);
+                } else {
+                  client
+                  ->ReBeacon.WalletClient.respond(
+                      ReBeacon.Message.ResponseInput.Error({
+                        id: request.id,
+                        errorType: `TRANSACTION_INVALID_ERROR,
+                      })
+                      ->ReBeacon.Message.ResponseInput.toObj,
+                    )
+                  ->FutureJs.fromPromise(Js.String.make)
+                  ->Future.get(Js.log);
+                }
               };
             })
           ->FutureJs.fromPromise(Js.String.make)
@@ -131,9 +114,22 @@ let make = () => {
   };
 
   <>
-    <ModalAction visible=visibleModal onRequestClose=closeAction>
+    <ModalAction visible=visibleModalPermission onRequestClose=closePermission>
       {permissionRequest->ReactUtils.mapOpt(permissionRequest => {
-         <BeaconAccountView permissionRequest beaconRespond closeAction />
+         <BeaconPermissionView
+           permissionRequest
+           beaconRespond
+           closeAction=closePermission
+         />
+       })}
+    </ModalAction>
+    <ModalAction visible=visibleModalOperation onRequestClose=closeOperation>
+      {operationRequest->ReactUtils.mapOpt(operationRequest => {
+         <BeaconOperationView
+           operationRequest
+           beaconRespond
+           closeAction=closeOperation
+         />
        })}
     </ModalAction>
   </>;
