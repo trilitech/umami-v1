@@ -10,7 +10,7 @@ type network = {
   [@bs.as "type"]
   type_: string,
 };
-type scopes;
+type scopes = array(string);
 type operationDetails;
 type sourceAddress = string;
 type publicKey = string;

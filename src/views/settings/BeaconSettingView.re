@@ -7,13 +7,6 @@ module CellBase =
     ();
   });
 
-module CellAddress =
-  Table.MakeCell({
-    let style =
-      Style.(style(~flexBasis=304.->dp, ~flexGrow=3., ~flexShrink=1., ()));
-    ();
-  });
-
 module CellAction =
   Table.MakeCell({
     let style =
@@ -65,7 +58,7 @@ module PeersSection = {
             peer.relayServer->React.string
           </Typography.Body1>
         </CellBase>
-        <CellAddress />
+        <CellBase />
         <CellBase />
         <CellAction> <PeerDeleteButton peer /> </CellAction>
       </Table.Row>;
@@ -89,7 +82,7 @@ module PeersSection = {
             "RELAY SERVER"->React.string
           </Typography.Overline3>
         </CellBase>
-        <CellAddress />
+        <CellBase />
         <CellBase />
         <CellAction />
       </Table.Head>
@@ -115,6 +108,7 @@ module PermissionsSection = {
   module PermissionDeleteButton = {
     [@react.component]
     let make = (~permission: ReBeacon.permissionInfo) => {
+      Js.log(permission);
       let (permissionRequest, deletePermission) =
         StoreContext.Beacon.Permissions.useDelete();
       let onPressConfirmDelete = _e => {
@@ -147,11 +141,11 @@ module PermissionsSection = {
             {accountAlias->Option.mapWithDefault(React.null, React.string)}
           </Typography.Body1>
         </CellBase>
-        <CellAddress>
-          <Typography.Address numberOfLines=1>
-            permission.address->React.string
-          </Typography.Address>
-        </CellAddress>
+        <CellBase>
+          <Typography.Body1 numberOfLines=1>
+            {permission.scopes->Js.Array2.joinWith({js|, |js})->React.string}
+          </Typography.Body1>
+        </CellBase>
         <CellBase>
           <Typography.Body1 numberOfLines=1>
             permission.network.type_->React.string
@@ -179,11 +173,9 @@ module PermissionsSection = {
             "CONNECTED ACCOUNT"->React.string
           </Typography.Overline3>
         </CellBase>
-        <CellAddress>
-          <Typography.Overline3>
-            "ACCOUNT ADDRESS"->React.string
-          </Typography.Overline3>
-        </CellAddress>
+        <CellBase>
+          <Typography.Overline3> "SCOPES"->React.string </Typography.Overline3>
+        </CellBase>
         <CellBase>
           <Typography.Overline3>
             "NETWORK"->React.string
