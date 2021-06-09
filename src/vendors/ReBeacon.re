@@ -16,29 +16,109 @@ type sourceAddress = string;
 type publicKey = string;
 type transactionHash = string;
 
+type signingType = [ | `raw | `operation | `micheline];
+
 module Message = {
   module Request = {
     module PartialOperation = {
-      type partialOperationType = [ | `transaction];
+      module TransactionParameters = {
+        module MichelineMichelsonV1Expression = {
+          type t;
+        };
+
+        type t = {
+          entrypoint: string,
+          value: MichelineMichelsonV1Expression.t,
+        };
+      };
+
+      type partialOperationType = [
+        | `transaction
+        | `activate_account
+        | `ballot
+        | `delegation
+        | `endorsement
+        | `origination
+        | `proposals
+        | `reveal
+        | `seed_nonce_revelation
+      ];
       type basePartialOperation = {kind: partialOperationType};
 
-      type partialTransactionOperation = {
+      type transaction = {
         amount: string,
         destination: string,
+        parameters: option(TransactionParameters.t),
+      };
+
+      type activateAccount = {
+        pkh: string,
+        secret: string,
+      };
+
+      type ballot = {
+        period: string,
+        proposal: string,
+        ballot: [ | `nay | `yay | `pass],
+      };
+
+      type delegation = {delegate: option(string)};
+
+      type endorsement = {level: string};
+
+      type origination = {
+        balance: string,
+        delegate: option(string),
+        script: string,
+      };
+
+      type proposals = {
+        period: string,
+        proposals: array(string),
+      };
+
+      type reveal = {public_key: publicKey};
+
+      type seedNonceRevelation = {
+        level: string,
+        nonce: string,
       };
 
       type t =
-        | PartialTransactionOperation(partialTransactionOperation);
+        | TransactionOperation(transaction)
+        | ActivateAccount(activateAccount)
+        | Ballot(ballot)
+        | Delegation(delegation)
+        | Endorsement(endorsement)
+        | Origination(origination)
+        | Proposals(proposals)
+        | Reveal(reveal)
+        | SeedNonceRevelation(seedNonceRevelation);
 
       let classify = (partialOperation: basePartialOperation): t => {
         switch (partialOperation) {
         | {kind: `transaction} =>
-          PartialTransactionOperation(partialOperation->Obj.magic)
+          TransactionOperation(partialOperation->Obj.magic)
+        | {kind: `activate_account} =>
+          ActivateAccount(partialOperation->Obj.magic)
+        | {kind: `ballot} => Ballot(partialOperation->Obj.magic)
+        | {kind: `delegation} => Delegation(partialOperation->Obj.magic)
+        | {kind: `endorsement} => Endorsement(partialOperation->Obj.magic)
+        | {kind: `origination} => Origination(partialOperation->Obj.magic)
+        | {kind: `proposals} => Proposals(partialOperation->Obj.magic)
+        | {kind: `reveal} => Reveal(partialOperation->Obj.magic)
+        | {kind: `seed_nonce_revelation} =>
+          SeedNonceRevelation(partialOperation->Obj.magic)
         };
       };
     };
 
-    type messageType = [ | `permission_request | `operation_request];
+    type messageType = [
+      | `permission_request
+      | `operation_request
+      | `sign_payload_request
+      | `broadcast_request
+    ];
 
     type baseMessage = {
       [@bs.as "type"]
@@ -64,14 +144,30 @@ module Message = {
       sourceAddress,
     };
 
+    type signPayloadRequest = {
+      signingType,
+      payload: string,
+      sourceAddress: string,
+    };
+
+    type broadcastRequest = {
+      network,
+      signedTransaction: string,
+    };
+
     type t =
       | PermissionRequest(permissionRequest)
-      | OperationRequest(operationRequest);
+      | OperationRequest(operationRequest)
+      | SignPayloadRequest(signPayloadRequest)
+      | BroadcastRequest(broadcastRequest);
 
     let classify = (message: baseMessage): t => {
       switch (message) {
       | {type_: `permission_request} => PermissionRequest(message->Obj.magic)
       | {type_: `operation_request} => OperationRequest(message->Obj.magic)
+      | {type_: `sign_payload_request} =>
+        SignPayloadRequest(message->Obj.magic)
+      | {type_: `broadcast_request} => BroadcastRequest(message->Obj.magic)
       };
     };
   };
@@ -80,6 +176,9 @@ module Message = {
     type messageType = [
       | `permission_response
       | `operation_response
+      | `sign_payload_response
+      | `broadcast_response
+      | `acknowledge
       | `error
     ];
 
@@ -97,7 +196,32 @@ module Message = {
       transactionHash,
     };
 
-    type errorType = [ | `TRANSACTION_INVALID_ERROR | `ABORTED_ERROR];
+    type signPayloadResponse = {
+      id,
+      signingType,
+      signature: string,
+    };
+
+    type broadcastResponse = {
+      id,
+      transactionHash,
+    };
+
+    type acknowledge = {id};
+
+    type errorType = [
+      | `BROADCAST_ERROR
+      | `NETWORK_NOT_SUPPORTED
+      | `NO_ADDRESS_ERROR
+      | `NO_PRIVATE_KEY_FOUND_ERROR
+      | `NOT_GRANTED_ERROR
+      | `PARAMETERS_INVALID_ERROR
+      | `TOO_MANY_OPERATIONS
+      | `TRANSACTION_INVALID_ERROR
+      | `SIGNATURE_TYPE_NOT_SUPPORTED
+      | `ABORTED_ERROR
+      | `UNKNOWN_ERROR
+    ];
 
     type error = {
       id,
@@ -107,6 +231,9 @@ module Message = {
     type t =
       | PermissionResponse(permissionResponse)
       | OperationResponse(operationResponse)
+      | SignPayloadResponse(signPayloadResponse)
+      | BroadcastResponse(broadcastResponse)
+      | Acknowledge(acknowledge)
       | Error(error);
 
     let toObj = (responseInput: t): baseMessage => {
@@ -127,6 +254,22 @@ module Message = {
           "transactionHash": transactionHash,
         }
         ->Obj.magic
+      | SignPayloadResponse({id, signingType, signature}) =>
+        {
+          "type": `operation_response,
+          "id": id,
+          "signingType": signingType,
+          "signature": signature,
+        }
+        ->Obj.magic
+      | BroadcastResponse({id, transactionHash}) =>
+        {
+          "type": `broadcast_response,
+          "id": id,
+          "transactionHash": transactionHash,
+        }
+        ->Obj.magic
+      | Acknowledge({id}) => {"type": `acknowledge, "id": id}->Obj.magic
       | Error({id, errorType}) =>
         {"type": `error, "id": id, "errorType": errorType}->Obj.magic
       };

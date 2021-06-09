@@ -28,8 +28,8 @@ let make =
           ->Array.map(ReBeacon.Message.Request.PartialOperation.classify)
           ->Array.keepMap(partialOperation =>
               switch (partialOperation) {
-              | PartialTransactionOperation(partialTransaction) =>
-                Some(partialTransaction)
+              | TransactionOperation(transaction) => Some(transaction)
+              | _ => None
               }
             );
         {

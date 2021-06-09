@@ -81,6 +81,7 @@ let make = () => {
                   ->FutureJs.fromPromise(Js.String.make)
                   ->Future.get(Js.log);
                 }
+              | _ => ()
               };
             })
           ->FutureJs.fromPromise(Js.String.make)

@@ -109,6 +109,7 @@ let make =
       }
       textContentType=`password
       secureTextEntry=true
+      onSubmitEditing=onSubmit
     />
     <View style=FormStyles.verticalFormAction>
       <Buttons.SubmitPrimary
