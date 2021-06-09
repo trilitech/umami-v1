@@ -116,7 +116,7 @@ let make =
     Routes.(push(Operations));
   };
 
-  let closeButton = <Buttons.SubmitSecondary text="REJECT" onPress=onAbort />;
+  let closeButton = <Buttons.SubmitSecondary text=I18n.btn#reject onPress=onAbort />;
 
   <ModalTemplate.Form headerRight=closeButton>
     {switch (operationApiRequest) {
@@ -133,7 +133,7 @@ let make =
              operationBeaconRequest.appMetadata.name->React.string
            </Typography.Overline2>
            <Typography.Overline3 colorStyle=`highEmphasis style=styles##dapp>
-             "Requests Operation"->React.string
+             I18n.expl#beacon_operation->React.string
            </Typography.Overline3>
          </View>
          {switch (operationSimulateRequest) {

@@ -70,7 +70,10 @@ let btn = {
   pub upgrade = "Download";
   pub load_file = "LOAD FROM FILE";
   pub csv_format_link = "CSV specification and example";
-  pub disclaimer_agree = "CONTINUE"
+  pub disclaimer_agree = "CONTINUE";
+  pub deny = "DENY";
+  pub allow = "ALLOW";
+  pub reject = "REJECT";
 };
 
 let tooltip = {
@@ -125,7 +128,8 @@ let label = {
   pub token = "Token";
   pub account_cli = "Cli";
   pub account_default_path = "Default Path - m/44'/1729'/?'/0'";
-  pub account_custom_path = "Custom Path"
+  pub account_custom_path = "Custom Path";
+  pub beacon_account = "Account to connect to dApp";
 };
 
 let input_placeholder = {
@@ -199,6 +203,8 @@ let title = {
   pub deleted_contact = "Contact deleted";
   pub delete_token = "Delete token";
   pub deleted_token = "Token deleted";
+  pub delete_beacon_peer = "Delete peer";
+  pub delete_beacon_permission = "Delete permission";
   pub confirm_cancel = "Are you sure you want to cancel?";
   pub send = "Send";
   pub confirmation = "Confirmation";
@@ -213,7 +219,8 @@ let title = {
   pub delete_account_done = "Account deleted";
   pub batch = "Batch";
   pub scan = "Scan";
-  pub disclaimer = "User Agreement"
+  pub disclaimer = "User Agreement";
+  pub beacon_connection_request = "Connection Request";
 };
 
 let expl = {
@@ -226,7 +233,10 @@ let expl = {
   pub import_account_enter_phrase = {j|Please fill in the recovery phrase in sequence.|j};
   pub confirm_operation = "Please validate the details of the transaction and enter password to confirm";
   pub batch = "Review, edit or delete the transactions of the batch";
-  pub operation = "The operation will be processed and confirmed, you can see its progress in the Operations section."
+  pub operation = "The operation will be processed and confirmed, you can see its progress in the Operations section.";
+  pub beacon_dapp = "would like to connect to your wallet";
+  pub beacon_dapp_request = {js|This site is requesting access to view your account’s address.\nAlways make sure you trust the sites you interact with.|js};
+  pub beacon_operation = "Requests Operations";
 };
 
 let menu = {
@@ -278,7 +288,18 @@ let settings = {
   pub danger_offboard_form_text = {js|Offboarding will permanently delete any data from this computer. Please acknowledge that you have read and understood the disclaimer, then enter « wasabi » to confirm. The accounts are still available to be imported in the future ; in order to regain access to your accounts, please make sure that you keep the recovery phrase.|js};
   pub danger_offboard_form_checkbox_label = {js|I have read the warning and I am certain I want to delete my private keys locally. I also made sure to keep my recovery phrase.|js};
   pub danger_offboard_form_input_placeholder = "Enter code word to confirm";
-  pub danger_offboard_form_input_error = "Not the correct confirm code word"
+  pub danger_offboard_form_input_error = "Not the correct confirm code word";
+  pub beacon_title = "DAPPS";
+  pub beacon_peers_section = "Peers";
+  pub beacon_peers_name = "NAME";
+  pub beacon_peers_relay = "RELAY SERVER";
+  pub beacon_empty_peers = "No peer";
+  pub beacon_permissions_section = "Permissions";
+  pub beacon_permissions_dapp = "DAPP";
+  pub beacon_permissions_account = "CONNECTED ACCOUNT";
+  pub beacon_permissions_scopes = "SCOPES";
+  pub beacon_permissions_network = "NETWORK";
+  pub beacon_empty_permissions = "No permission"
 };
 
 let network = {

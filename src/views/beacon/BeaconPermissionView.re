@@ -101,29 +101,28 @@ let make =
     <View>
       <View style=FormStyles.header>
         <Typography.Headline style=styles##title>
-          "Connection Request"->React.string
+          I18n.title#beacon_connection_request->React.string
         </Typography.Headline>
         <Typography.Overline2
           colorStyle=`highEmphasis fontWeightStyle=`bold style=styles##dapp>
           permissionRequest.appMetadata.name->React.string
         </Typography.Overline2>
         <Typography.Overline3 colorStyle=`highEmphasis style=styles##dapp>
-          "would like to connect to your wallet"->React.string
+          I18n.expl#beacon_dapp->React.string
         </Typography.Overline3>
         <Typography.Body2 colorStyle=`mediumEmphasis style=styles##dapp>
-          {js|This site is requesting access to view your account’s address.\nAlways make sure you trust the sites you interact with.|js}
-          ->React.string
+          I18n.expl#beacon_dapp_request->React.string
         </Typography.Body2>
       </View>
       <FormGroupAccountSelector
-        label="Account to connect to dApp"
+        label=I18n.label#beacon_account
         value={form.values.account}
         handleChange={form.handleChange(Account)}
         error={form.getFieldError(Field(Account))}
       />
       <View style=styles##formActionSpaceBetween>
-        <Buttons.SubmitSecondary text="DENY" onPress=onAbort />
-        <Buttons.SubmitPrimary text="ALLOW" onPress={_ => form.submit()} />
+        <Buttons.SubmitSecondary text=I18n.btn#deny onPress=onAbort />
+        <Buttons.SubmitPrimary text=I18n.btn#allow onPress={_ => form.submit()} />
       </View>
     </View>
   </ModalTemplate.Form>;

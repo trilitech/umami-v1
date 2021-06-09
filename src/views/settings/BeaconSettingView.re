@@ -36,8 +36,8 @@ module PeersSection = {
         deletePeer(peer)->ignore;
       };
       <DeleteButton.IconButton
-        tooltip=("delete_peer_" ++ peer.id, I18n.btn#delete_token)
-        modalTitle=I18n.title#delete_token
+        tooltip=("delete_peer_" ++ peer.id, I18n.title#delete_beacon_peer)
+        modalTitle=I18n.title#delete_beacon_peer
         onPressConfirmDelete
         request=peerRequest
       />;
@@ -71,15 +71,15 @@ module PeersSection = {
 
     <View>
       <Typography.Body1 fontWeightStyle=`bold style=styles##section>
-        "Peers"->React.string
+        I18n.settings#beacon_peers_section->React.string
       </Typography.Body1>
       <Table.Head>
         <CellBase>
-          <Typography.Overline3> "NAME"->React.string </Typography.Overline3>
+          <Typography.Overline3> I18n.settings#beacon_peers_name->React.string </Typography.Overline3>
         </CellBase>
         <CellBase>
           <Typography.Overline3>
-            "RELAY SERVER"->React.string
+            I18n.settings#beacon_peers_relay->React.string
           </Typography.Overline3>
         </CellBase>
         <CellBase />
@@ -91,7 +91,7 @@ module PeersSection = {
          | NotAsked
          | Loading(_) => <LoadingView />
          | Done(Ok([||]), _) =>
-           <Table.Empty> I18n.t#empty_token->React.string </Table.Empty>
+           <Table.Empty> I18n.settings#beacon_empty_peers->React.string </Table.Empty>
          | Done(Ok(peers), _) =>
            peers->Array.map(peer => <Row key={peer.id} peer />)->React.array
          | Done(Error(error), _) =>
@@ -108,7 +108,6 @@ module PermissionsSection = {
   module PermissionDeleteButton = {
     [@react.component]
     let make = (~permission: ReBeacon.permissionInfo) => {
-      Js.log(permission);
       let (permissionRequest, deletePermission) =
         StoreContext.Beacon.Permissions.useDelete();
       let onPressConfirmDelete = _e => {
@@ -117,9 +116,9 @@ module PermissionsSection = {
       <DeleteButton.IconButton
         tooltip=(
           "delete_permission_" ++ permission.accountIdentifier,
-          I18n.btn#delete_token,
+          I18n.title#delete_beacon_permission,
         )
-        modalTitle=I18n.title#delete_token
+        modalTitle=I18n.title#delete_beacon_permission
         onPressConfirmDelete
         request=permissionRequest
       />;
@@ -162,23 +161,23 @@ module PermissionsSection = {
     let aliases = StoreContext.Aliases.useGetAll();
     <View>
       <Typography.Body1 fontWeightStyle=`bold style=styles##section>
-        "Permissions"->React.string
+        I18n.settings#beacon_permissions_section->React.string
       </Typography.Body1>
       <Table.Head>
         <CellBase>
-          <Typography.Overline3> "DAPP"->React.string </Typography.Overline3>
+          <Typography.Overline3> I18n.settings#beacon_permissions_dapp->React.string </Typography.Overline3>
         </CellBase>
         <CellBase>
           <Typography.Overline3>
-            "CONNECTED ACCOUNT"->React.string
+            I18n.settings#beacon_permissions_account->React.string
           </Typography.Overline3>
         </CellBase>
         <CellBase>
-          <Typography.Overline3> "SCOPES"->React.string </Typography.Overline3>
+          <Typography.Overline3> I18n.settings#beacon_permissions_scopes->React.string </Typography.Overline3>
         </CellBase>
         <CellBase>
           <Typography.Overline3>
-            "NETWORK"->React.string
+            I18n.settings#beacon_permissions_network->React.string
           </Typography.Overline3>
         </CellBase>
         <CellAction />
@@ -188,7 +187,7 @@ module PermissionsSection = {
          | NotAsked
          | Loading(_) => <LoadingView />
          | Done(Ok([||]), _) =>
-           <Table.Empty> I18n.t#empty_token->React.string </Table.Empty>
+           <Table.Empty> I18n.settings#beacon_empty_permissions->React.string </Table.Empty>
          | Done(Ok(permissions), _) =>
            permissions
            ->Array.map(permission => {
@@ -214,7 +213,7 @@ module PermissionsSection = {
 
 [@react.component]
 let make = () => {
-  <Block title="DAPPS">
+  <Block title=I18n.settings#beacon_title>
     <View style=styles##inner>
       <PeersSection />
       <View style=styles##spacer />
