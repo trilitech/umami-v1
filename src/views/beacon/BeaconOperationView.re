@@ -116,7 +116,10 @@ let make =
     Routes.(push(Operations));
   };
 
-  let closeButton = <Buttons.SubmitSecondary text=I18n.btn#reject onPress=onAbort />;
+  let closeButton =
+    operationApiRequest->ApiRequest.isDoneOk
+      ? <ModalTemplate.HeaderButtons.Close onPress={_ => closeAction()} />
+      : <Buttons.SubmitSecondary text=I18n.btn#reject onPress=onAbort />;
 
   <ModalTemplate.Form headerRight=closeButton>
     {switch (operationApiRequest) {
