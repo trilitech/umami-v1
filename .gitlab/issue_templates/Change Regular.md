@@ -25,8 +25,8 @@
 <!-- Include step by step description -->
 
 
-## Rollback plan ?
-<!-- describe how to rollback the change in case the expected change is not working -->
+## Rollback plan
+<!-- Describe how to rollback the change in case the expected change is not working -->
 
 
 <!-- METADATA for project management, please leave the following lines and edit as needed -->
@@ -39,11 +39,11 @@
 <!--Low : (anything else e.g., trivial, minor improvements) -->
 <!--  /label ~"Priority::3-Low" -->
 
-# Validations (all required) 
+# Approvals (all required) 
  (ping  @picdc @remyzorg @comeh @philippewang.info @SamREye )
-- [ ] Validation from Development aspects
-- [ ] Validation from Operational aspects
-- [ ] Validation from Business aspects 
+- [ ] Approval from Development
+- [ ] Approval from Operations
+- [ ] Approval from Business 
 <!-- check the box [x], you may also add you @user handle at the end of the line -->
 <!-- /unlabel ~"CAB::to-approve" -->
 <!-- /label ~"CAB::to-perform"   -->

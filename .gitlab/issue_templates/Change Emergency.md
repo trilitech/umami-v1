@@ -25,7 +25,7 @@
 <!--  Include step by step description of changes performed -->
 
 
-## Rollback plan ?
+## Rollback plan
 <!-- Describe how to rollback the change in case the expected change is not working -->
 
 
@@ -39,11 +39,12 @@
 <!--Low : (anything else e.g., trivial, minor improvements) -->
 <!--  /label ~"Priority::3-Low" -->
 
+
 # Reviews (all required)
   (ping  @picdc @remyzorg @comeh @philippewang.info @SamREye )
-- [ ] Review from Development aspects
-- [ ] Review from Operational aspects
-- [ ] Review from Business aspects 
+- [ ] Review from Development
+- [ ] Review from Operations
+- [ ] Review from Business  
 <!-- check the box [x], you may also add you @user handle at the end of the line -->
 <!-- /unlabel ~"CAB::to-review" -->
 

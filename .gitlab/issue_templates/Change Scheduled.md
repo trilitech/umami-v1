@@ -28,7 +28,7 @@
 
 <!-- Include step by step description -->
 
-## Rollback plan ?
+## Rollback plan
 <!-- Describe how to rollback the change in case the expected change is not working -->
 
 
@@ -43,11 +43,11 @@
 <!--  /label ~"Priority::3-Low" -->
 
 <!-- Reviewers : check the box [x], you may also add you @user handle  -->
-# Validations (all required)
+# Approvals (all required) 
  (ping  @picdc @remyzorg @comeh @philippewang.info @SamREye )
-- [ ] Validation from Development aspects 
-- [ ] Validation from Operational aspects 
-- [ ] Validation from Business    aspects 
+- [ ] Approval from Development
+- [ ] Approval from Operations
+- [ ] Approval from Business 
 <!-- check the box [x], you may also add you @user handle at the end of the line -->
 <!-- /unlabel ~"CAB::to-approve" -->
 <!-- /label ~"CAB::to-perform"   -->
