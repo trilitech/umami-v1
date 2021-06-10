@@ -15,14 +15,14 @@
 <!-- The current process, and any associated business rules !-->
 
 ### What is the desired way of working?
-<!-- after the change, what should the process be, and what should the business rules be !-->
+<!-- After the change, what should the process be, and what should the business rules be !-->
 
-<!--  When relevant, include how to test the success of change application -->
+<!-- Success criteria of change application (when relevant, include how to test) -->
 
 ### Change Procedure
 - [ ] Change procedure been tested successfully
 
-<!--  Include step by step description of changes performed -->
+<!-- Include step by step description of changes performed -->
 
 
 ## Rollback plan
@@ -39,13 +39,13 @@
 <!--Low : (anything else e.g., trivial, minor improvements) -->
 <!--  /label ~"Priority::3-Low" -->
 
-
 # Reviews (all required)
-  (ping  @picdc @remyzorg @comeh @philippewang.info @SamREye )
+( ping CAB members : @picdc @remyzorg @comeh @philippewang.info @SamREye )
 - [ ] Review from Development
 - [ ] Review from Operations
 - [ ] Review from Business  
 <!-- check the box [x], you may also add you @user handle at the end of the line -->
+<!-- Quick actions for last reviewer : -->
 <!-- /unlabel ~"CAB::to-review" -->
 
 /label ~"Change::Emergency"  <!-- Emergency change request, usually on incident, sent to the CAB for review after applying. -->

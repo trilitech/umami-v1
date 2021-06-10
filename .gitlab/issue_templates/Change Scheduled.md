@@ -21,7 +21,7 @@
 ### What is the desired way of working?
 <!-- After the change, what should the process be, and what should the business rules be !-->
 
-<!-- When relevant, include how to test the success of change application -->
+<!-- Success criteria of change application (when relevant, include how to test) -->
 
 ### Change Procedure
 - [ ] Change procedure been tested successfully
@@ -44,11 +44,12 @@
 
 <!-- Reviewers : check the box [x], you may also add you @user handle  -->
 # Approvals (all required) 
- (ping  @picdc @remyzorg @comeh @philippewang.info @SamREye )
+( ping CAB members : @picdc @remyzorg @comeh @philippewang.info @SamREye )
 - [ ] Approval from Development
 - [ ] Approval from Operations
 - [ ] Approval from Business 
 <!-- check the box [x], you may also add you @user handle at the end of the line -->
+<!-- Quick actions for last approver : -->
 <!-- /unlabel ~"CAB::to-approve" -->
 <!-- /label ~"CAB::to-perform"   -->
 
