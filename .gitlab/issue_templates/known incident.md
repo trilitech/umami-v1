@@ -1,7 +1,7 @@
 [[_TOC_]]
 ## Incident Report for a known / recuring situation
 <!-- Use if the incident is a recurring issue, with an already validated change procedure -->
-<!-- Add link to already validated related incident or Emergency change -->
+<!-- Add link to already validated related incident or Emergency change in the metadata -->
 
 ### What is the nature of the INC?
 <!-- Which parts of the system where affected ? -->
@@ -22,7 +22,9 @@
 
 /label ~INC ~incident  
 <!-- Labels and default review status for gitlab Change management process, comment if no change was performed-->
-/label ~Change ~"CAB::to-review" ~"Change::Emergency"
+/label ~Change ~"Change::Emergency"
+<!-- If you want to bring the attention to this incident during next CAB, uncomment the next line -->
+<!-- /label ~Change ~"CAB::to-review" -->
 
 ## Reviews (none required)
 <!-- No review required since this is a known incident with already validated change procedure -->
