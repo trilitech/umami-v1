@@ -1,7 +1,8 @@
 [[_TOC_]]
 ## Incident Report for a known / recuring situation
 <!-- Use if the incident is a recurring issue, with an already validated change procedure -->
-<!-- Add link to already validated related incident or Emergency change in the metadata -->
+<!-- Add reference to already validated related incident or Emergency change with /relate -->
+/relate nomadic-labs/umami-wallet/umami#xyz
 
 ### What is the nature of the INC?
 <!-- Which parts of the system where affected ? -->
@@ -23,19 +24,14 @@
 /label ~INC ~incident  
 <!-- Labels and default review status for gitlab Change management process, comment if no change was performed-->
 /label ~Change ~"Change::Emergency"
-<!-- If you want to bring the attention to this incident during next CAB, uncomment the next line -->
-<!-- /label ~Change ~"CAB::to-review" -->
 
 ## Reviews (none required)
 <!-- No review required since this is a known incident with already validated change procedure -->
 
-<!-- Indicate the reference of a similar issue : -->
-/relate nomadic-labs/umami-wallet/umami#xyz
-
+<!-- If you want to bring the attention to this incident during next CAB meeting, uncomment the next line -->
+<!-- /label ~Change ~"CAB::to-review" -->
 
 <!-- ( ping CAB members : @picdc @remyzorg @comeh @philippewang.info @SamREye ) -->
 <!-- /unlabel ~"CAB::to-review" -->
-
-
 
 <!-- METADATA - end -->
