@@ -44,7 +44,7 @@
 - [ ] Incident Review from Development 
 - [ ] Incident Review from Operations 
 - [ ] Incident Review from Business 
-<!-- check the box [x], you may also add you @user handle at the end of the line -->
+<!-- check the box [x], you may also add your @user handle at the end of the line -->
 <!-- Quick actions for last reviewer : -->
 <!-- /unlabel ~"CAB::to-review" -->
 
