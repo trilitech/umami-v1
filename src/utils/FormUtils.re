@@ -156,6 +156,12 @@ let formFieldsAreValids = (fieldsState, validateFields) => {
   });
 };
 
+let getFormStateError = (formState: ReForm.formState) =>
+  switch (formState) {
+  | SubmitFailed(error) => error
+  | _ => None
+  };
+
 let i18n = {
   ...ReSchemaI18n.default,
   stringNonEmpty: (~value as _) => I18n.form_input_error#mandatory,

@@ -29,8 +29,7 @@ module StateLenses = [%lenses type state = {password: string}];
 
 module PasswordForm = ReForm.Make(StateLenses);
 
-[@react.component]
-let make = (~loading=false, ~submitPassword) => {
+let usePasswordForm = submitPassword => {
   let form: PasswordForm.api =
     PasswordForm.use(
       ~schema={
@@ -45,15 +44,14 @@ let make = (~loading=false, ~submitPassword) => {
       ~i18n=FormUtils.i18n,
       (),
     );
-
-  let onSubmit = _ => {
-    form.submit();
-  };
-
   let formFieldsAreValids =
     FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
+  (form, formFieldsAreValids);
+};
 
-  <>
+module PasswordField = {
+  [@react.component]
+  let make = (~form: PasswordForm.api) => {
     <FormGroupTextInput
       label=I18n.label#password
       value={form.values.password}
@@ -62,11 +60,20 @@ let make = (~loading=false, ~submitPassword) => {
       textContentType=`password
       secureTextEntry=true
       onSubmitEditing={_event => {form.submit()}}
-    />
+    />;
+  };
+};
+
+[@react.component]
+let make = (~loading=false, ~submitPassword) => {
+  let (form, formFieldsAreValids) = usePasswordForm(submitPassword);
+
+  <>
+    <PasswordField form />
     <View style=FormStyles.verticalFormAction>
       <Buttons.SubmitPrimary
         text=I18n.btn#confirm
-        onPress=onSubmit
+        onPress={_event => {form.submit()}}
         loading
         disabledLook={!formFieldsAreValids}
       />

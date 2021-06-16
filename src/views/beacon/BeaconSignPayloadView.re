@@ -29,6 +29,7 @@ module Payload = {
   let styles =
     Style.(
       StyleSheet.create({
+        "container": style(~marginBottom=20.->dp, ()),
         "payloadBloc":
           style(
             ~minHeight=220.->dp,
@@ -53,7 +54,7 @@ module Payload = {
         colorStyle=`mediumEmphasis style=OperationSummaryView.styles##title>
         I18n.label#beacon_sign_payload->React.string
       </Typography.Overline2>
-      <View>
+      <View style=styles##container>
         <View
           style=Style.(
             array([|
@@ -85,6 +86,11 @@ let styles =
       "title": style(~marginBottom=8.->dp, ~textAlign=`center, ()),
       "dapp": style(~marginBottom=4.->dp, ~textAlign=`center, ()),
       "accountInfo": style(~marginBottom=24.->dp, ()),
+      "formActionSpaceBetween":
+        StyleSheet.flatten([|
+          FormStyles.formActionSpaceBetween,
+          style(~marginTop=12.->dp, ()),
+        |]),
     })
   );
 
@@ -95,10 +101,8 @@ let make =
       ~beaconRespond,
       ~closeAction,
     ) => {
-  Js.log(signPayloadRequest);
-
-  let onSign = _ => {
-    Js.log("onSign TODO");
+  let onSign = (~password) => {
+    Js.log("TODO onSign with password " ++ password);
 
     let signature = "TODO";
 
@@ -126,6 +130,8 @@ let make =
     ->ignore;
   };
 
+  let (form, formFieldsAreValids) = PasswordFormView.usePasswordForm(onSign);
+
   <ModalTemplate.Form>
     <View>
       <View style=FormStyles.header>
@@ -146,9 +152,14 @@ let make =
         address={signPayloadRequest.sourceAddress}
       />
       <Payload signPayloadRequest />
-      <View style=FormStyles.formActionSpaceBetween>
+      <PasswordFormView.PasswordField form />
+      <View style=styles##formActionSpaceBetween>
         <Buttons.SubmitSecondary text=I18n.btn#reject onPress=onAbort />
-        <Buttons.SubmitPrimary text=I18n.btn#sign onPress=onSign />
+        <Buttons.SubmitPrimary
+          text=I18n.btn#sign
+          onPress={_event => {form.submit()}}
+          disabledLook={!formFieldsAreValids}
+        />
       </View>
     </View>
   </ModalTemplate.Form>;

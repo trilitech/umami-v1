@@ -53,12 +53,12 @@ let make =
         SendForm.Password.Validation.(Schema(nonEmpty(Password)));
       },
       ~onSubmit=
-        ({state}) => {
+        ({state, raiseSubmitFailed}) => {
           sendOperation(state.values.password)
           ->Future.tapError(
               fun
               | API.Error.Taquito(WrongPassword) =>
-                setWrongPassword(_ => true)
+                raiseSubmitFailed(Some(I18n.form_input_error#wrong_password))
               | _ => (),
             )
           ->ignore;
@@ -98,14 +98,13 @@ let make =
     <FormGroupTextInput
       label=I18n.label#password
       value={form.values.password}
-      handleChange={v => {
-        setWrongPassword(_ => false);
-        form.handleChange(Password, v);
-      }}
+      handleChange={form.handleChange(Password)}
       error={
-        wrongPassword
-          ? Some(I18n.form_input_error#wrong_password)
-          : form.getFieldError(Field(Password))
+        [
+          form.formState->FormUtils.getFormStateError,
+          form.getFieldError(Field(Password)),
+        ]
+        ->UmamiCommon.Lib.Option.firstSome
       }
       textContentType=`password
       secureTextEntry=true
