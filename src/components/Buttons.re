@@ -32,6 +32,7 @@ let styles =
       "button": style(),
       "pressable":
         style(
+          ~minWidth=95.->dp,
           ~flex=1.,
           ~paddingVertical=8.->dp,
           ~paddingHorizontal=17.->dp,

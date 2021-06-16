@@ -74,6 +74,7 @@ let btn = {
   pub deny = "DENY";
   pub allow = "ALLOW";
   pub reject = "REJECT";
+  pub sign = "SIGN"
 };
 
 let tooltip = {
@@ -130,6 +131,7 @@ let label = {
   pub account_default_path = "Default Path - m/44'/1729'/?'/0'";
   pub account_custom_path = "Custom Path";
   pub beacon_account = "Account to connect to dApp";
+  pub beacon_sign_payload = "Payload to sign"
 };
 
 let input_placeholder = {
@@ -221,6 +223,7 @@ let title = {
   pub scan = "Scan";
   pub disclaimer = "User Agreement";
   pub beacon_connection_request = "Connection Request";
+  pub beacon_sign_request = "Sign"
 };
 
 let expl = {
@@ -237,6 +240,7 @@ let expl = {
   pub beacon_dapp = "would like to connect to your wallet";
   pub beacon_dapp_request = {js|This site is requesting access to view your account’s address.\nAlways make sure you trust the sites you interact with.|js};
   pub beacon_operation = "Requests Operations";
+  pub beacon_dapp_sign = "requests your signature"
 };
 
 let menu = {

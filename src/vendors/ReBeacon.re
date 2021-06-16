@@ -145,12 +145,20 @@ module Message = {
     };
 
     type signPayloadRequest = {
+      id,
+      version,
+      senderId,
+      appMetadata,
       signingType,
       payload: string,
-      sourceAddress: string,
+      sourceAddress,
     };
 
     type broadcastRequest = {
+      id,
+      version,
+      senderId,
+      appMetadata,
       network,
       signedTransaction: string,
     };

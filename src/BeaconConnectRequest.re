@@ -29,44 +29,38 @@ let checkOperationRequestHasOnlyTransaction =
   ->Array.every(operationDetail => operationDetail.kind == `transaction);
 };
 
-let useBeaconPermissionRequestModalAction = () => {
-  let (permissionRequest, setPermissionRequest) = React.useState(_ => None);
+let useBeaconRequestModalAction = () => {
+  let (request, setRequest) = React.useState(_ => None);
   let (visibleModal, openAction, closeAction) =
     ModalAction.useModalActionState();
 
-  let openModal = permissionRequest => {
-    setPermissionRequest(_ => Some(permissionRequest));
+  let openModal = request => {
+    setRequest(_ => Some(request));
     openAction();
   };
 
-  (permissionRequest, visibleModal, openModal, closeAction);
-};
-
-let useBeaconOperationRequestModalAction = () => {
-  let (operationRequest, setOperationRequest) = React.useState(_ => None);
-  let (visibleModal, openAction, closeAction) =
-    ModalAction.useModalActionState();
-
-  let openModal = operationRequest => {
-    setOperationRequest(_ => Some(operationRequest));
-    openAction();
-  };
-
-  (operationRequest, visibleModal, openModal, closeAction);
+  (request, visibleModal, openModal, closeAction);
 };
 
 [@react.component]
 let make = () => {
+  let settings = SdkContext.useSettings();
   let (
     permissionRequest,
     visibleModalPermission,
     openPermission,
     closePermission,
   ) =
-    useBeaconPermissionRequestModalAction();
+    useBeaconRequestModalAction();
   let (operationRequest, visibleModalOperation, openOperation, closeOperation) =
-    useBeaconOperationRequestModalAction();
-  let settings = SdkContext.useSettings();
+    useBeaconRequestModalAction();
+  let (
+    signPayloadRequest,
+    visibleModalSignPayload,
+    openSignPayload,
+    closeSignPayload,
+  ) =
+    useBeaconRequestModalAction();
 
   React.useEffect0(() => {
     {
@@ -96,6 +90,7 @@ let make = () => {
                   ->FutureJs.fromPromise(Js.String.make)
                   ->Future.get(Js.log);
                 }
+              | SignPayloadRequest(request) => openSignPayload(request)
               | OperationRequest(request) =>
                 let targetSettedNetwork =
                   request.network
@@ -169,6 +164,16 @@ let make = () => {
            operationRequest
            beaconRespond
            closeAction=closeOperation
+         />
+       })}
+    </ModalAction>
+    <ModalAction
+      visible=visibleModalSignPayload onRequestClose=closeSignPayload>
+      {signPayloadRequest->ReactUtils.mapOpt(signPayloadRequest => {
+         <BeaconSignPayloadView
+           signPayloadRequest
+           beaconRespond
+           closeAction=closeSignPayload
          />
        })}
     </ModalAction>
