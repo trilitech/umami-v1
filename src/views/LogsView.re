@@ -57,43 +57,34 @@ module ClearButton = {
 };
 
 [@react.component]
-let make = (~closeAction) => {
+let make = () => {
   let errors = LogsContext.useLogs();
   let deleteError = LogsContext.useDelete();
   let addLog = LogsContext.useAdd();
-
-  <ModalTemplate.Base
-    style=styles##modal
-    headerRight={
-      <ModalTemplate.HeaderButtons.Close onPress={_ => closeAction()} />
-    }>
-    <View style=styles##view>
-      <Typography.Headline style=ModalAction.styles##title>
-        I18n.title#error_logs->React.string
-      </Typography.Headline>
-      <View style=styles##content>
-        {ReactUtils.onlyWhen(<ClearButton />, errors != [])}
-        {switch (errors) {
-         | [] =>
-           <Typography.Body1 style=styles##empty>
-             I18n.t#logs_no_recent->React.string
-           </Typography.Body1>
-         | errors =>
-           errors
-           ->List.keep(({Logs.kind}) => kind == Logs.Error)
-           ->List.toArray
-           ->Array.mapWithIndex((i, log) =>
-               <LogItem
-                 key={i->string_of_int}
-                 indice=i
-                 log
-                 addToast={addLog(true)}
-                 handleDelete=deleteError
-               />
-             )
-           ->React.array
-         }}
-      </View>
+  ();
+  <Page>
+    <View style=styles##content>
+      {ReactUtils.onlyWhen(<ClearButton />, errors != [])}
+      {switch (errors) {
+       | [] =>
+         <Typography.Body1 style=styles##empty>
+           I18n.t#logs_no_recent->React.string
+         </Typography.Body1>
+       | errors =>
+         errors
+         ->List.keep(({Logs.kind}) => kind == Logs.Error)
+         ->List.toArray
+         ->Array.mapWithIndex((i, log) =>
+             <LogItem
+               key={i->string_of_int}
+               indice=i
+               log
+               addToast={addLog(true)}
+               handleDelete=deleteError
+             />
+           )
+         ->React.array
+       }}
     </View>
-  </ModalTemplate.Base>;
+  </Page>;
 };
