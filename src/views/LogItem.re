@@ -57,6 +57,13 @@ let styles =
           (),
         ),
       "button": style(~marginRight=4.->dp, ()),
+      "toggleOff":
+        style(
+          ~paddingLeft=52.->dp,
+          ~paddingVertical=10.->dp,
+          ~width=100.->pct,
+          (),
+        ),
     })
   );
 
@@ -70,10 +77,29 @@ module DeleteButton = {
   };
 };
 
+module OpenButton = {
+  [@react.component]
+  let make = (~isPrimary=?, ~style=?, ~opened, ~setOpened) => {
+    let onPress = _ => {
+      setOpened(_ => !opened);
+    };
+    <IconButton ?isPrimary ?style icon=Icons.ChevronDown.build onPress />;
+  };
+};
+
 [@react.component]
 let make =
-    (~indice, ~log: Logs.t, ~addToast, ~showTimestamp=true, ~handleDelete) => {
+    (
+      ~indice,
+      ~log: Logs.t,
+      ~addToast,
+      ~showTimestamp=true,
+      ~handleDelete,
+      ~isToast=false,
+    ) => {
   let theme = ThemeContext.useTheme();
+
+  let (opened, setOpened) = React.useState(_ => true);
 
   let kindStyle =
     switch (log.kind) {
@@ -87,65 +113,141 @@ let make =
     | Info => <Icons.CheckOutline size=16. color=Colors.valid />
     };
 
-  <View
-    style=Style.(
-      array([|
-        styles##container,
-        style(~backgroundColor=theme.colors.logBackground, ()),
-      |])
-    )>
-    <Hoverable
-      style=Style.(array([|styles##item, kindStyle|]))
-      hoveredStyle={Style.style(
-        ~backgroundColor=theme.colors.primaryStateHovered,
-        (),
-      )}>
-      {_ => {
-         <View style=styles##itemContent>
-           <View style=styles##kindIcon> icon </View>
-           {<Typography.Body2
-              style=Style.(
-                array([|
-                  styles##reqelt,
-                  style(~color=theme.colors.primaryTextMediumEmphasis, ()),
-                |])
-              )
-              fontSize=12.
-              fontWeightStyle=`regular
-              numberOfLines=1>
-              "["->React.string
-              Js.Date.(log.timestamp->fromFloat->toLocaleString)->React.string
-              "]  -"->React.string
-            </Typography.Body2>
-            ->ReactUtils.onlyWhen(showTimestamp)}
-           <Typography.Body1
-             style={Style.style(
-               ~color=theme.colors.primaryTextMediumEmphasis,
-               (),
-             )}
-             fontWeightStyle=`bold
-             ellipsizeMode=`tail
-             numberOfLines=1>
-             log.msg->React.string
-           </Typography.Body1>
-           <View style=styles##actionButtons>
-             {<ClipboardButton
-                isPrimary=true
-                data={log.msg}
-                copied=I18n.log#log_content
-                addToast
+  let firstline =
+    opened
+      ? <Typography.Body2
+          ellipsizeMode=`tail
+          numberOfLines=1
+          style={Style.style(~color=theme.colors.textMediumEmphasis, ())}>
+          log.msg->React.string
+        </Typography.Body2>
+      : React.null;
+
+  let secondline =
+    opened
+      ? React.null
+      : <Typography.Body2
+          style=Style.(
+            array([|
+              styles##toggleOff,
+              style(~color=theme.colors.textMediumEmphasis, ()),
+            |])
+          )>
+          log.msg->React.string
+        </Typography.Body2>;
+
+  let logsBackgroundColor =
+    opened ? theme.colors.background : theme.colors.stateActive;
+
+  isToast
+    ? <View
+        style=Style.(
+          array([|
+            styles##container,
+            style(~backgroundColor=theme.colors.logBackground, ()),
+          |])
+        )>
+        <Hoverable
+          style=Style.(array([|styles##item, kindStyle|]))
+          hoveredStyle={Style.style(
+            ~backgroundColor=theme.colors.primaryStateHovered,
+            (),
+          )}>
+          {_ => {
+             <View style=styles##itemContent>
+               <View style=styles##kindIcon> icon </View>
+               {<Typography.Body2
+                  style=Style.(
+                    array([|
+                      styles##reqelt,
+                      style(
+                        ~color=theme.colors.primaryTextMediumEmphasis,
+                        (),
+                      ),
+                    |])
+                  )
+                  fontSize=12.
+                  fontWeightStyle=`regular
+                  numberOfLines=1>
+                  "["->React.string
+                  Js.Date.(log.timestamp->fromFloat->toLocaleString)
+                  ->React.string
+                  "]  -"->React.string
+                </Typography.Body2>
+                ->ReactUtils.onlyWhen(showTimestamp)}
+               <Typography.Body1
+                 style={Style.style(
+                   ~color=theme.colors.primaryTextMediumEmphasis,
+                   (),
+                 )}
+                 fontWeightStyle=`bold
+                 ellipsizeMode=`tail
+                 numberOfLines=1>
+                 log.msg->React.string
+               </Typography.Body1>
+               <View style=styles##actionButtons>
+                 {<ClipboardButton
+                    isPrimary=true
+                    data={log.msg}
+                    copied=I18n.log#log_content
+                    addToast
+                    style=styles##button
+                  />
+                  ->ReactUtils.onlyWhen(log.kind == Error)}
+                 <DeleteButton
+                   isPrimary=true
+                   indice
+                   handleDelete
+                   style=styles##button
+                 />
+               </View>
+             </View>;
+           }}
+        </Hoverable>
+      </View>
+    : <View
+        style=Style.(
+          array([|style(~backgroundColor=logsBackgroundColor, ())|])
+        )>
+        <View>
+          <View style=styles##itemContent>
+            <OpenButton
+              isPrimary=false
+              style=styles##button
+              opened
+              setOpened
+            />
+            {<Typography.Body2
+               style=Style.(
+                 array([|
+                   styles##reqelt,
+                   style(~color=theme.colors.textMediumEmphasis, ()),
+                 |])
+               )
+               fontWeightStyle=`bold
+               numberOfLines=1>
+               Js.Date.(log.timestamp->fromFloat->toUTCString)->React.string
+             </Typography.Body2>
+             ->ReactUtils.onlyWhen(showTimestamp)}
+            firstline
+            <View style=styles##actionButtons>
+              {<ClipboardButton
+                 isPrimary=false
+                 data={log.msg}
+                 copied=I18n.log#log_content
+                 addToast
+                 style=styles##button
+               />
+               ->ReactUtils.onlyWhen(log.kind == Error)}
+              <DeleteButton
+                isPrimary=false
+                indice
+                handleDelete
                 style=styles##button
               />
-              ->ReactUtils.onlyWhen(log.kind == Error)}
-             <DeleteButton
-               isPrimary=true
-               indice
-               handleDelete
-               style=styles##button
-             />
-           </View>
-         </View>;
-       }}
-    </Hoverable>
-  </View>;
+            </View>
+          </View>
+          secondline
+        </View>
+      </View>;
 };
