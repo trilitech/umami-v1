@@ -95,7 +95,8 @@ let log = {
   pub _this = this;
   pub copied_to_clipboard = p("%s copied to clipboard");
   pub log_content = "Log content";
-  pub address = "Address"
+  pub address = "Address";
+  pub beacon_sign_payload = "Sign payload"
 };
 
 let label = {

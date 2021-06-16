@@ -32,10 +32,11 @@ let styles =
       "button": style(),
       "pressable":
         style(
-          ~minWidth=95.->dp,
           ~flex=1.,
-          ~paddingVertical=8.->dp,
           ~paddingHorizontal=17.->dp,
+          ~minWidth=95.->dp,
+          ~minHeight=34.->dp,
+          ~maxHeight=34.->dp,
           ~alignItems=`center,
           ~justifyContent=`center,
           ~borderRadius=4.,
@@ -201,18 +202,13 @@ module SubmitSecondary = {
       onPress
       disabled
       ?loading
-      vStyle=Style.(
-        arrayOption([|
-          styleArg,
-          Some(styles##primary),
-          Some(
-            style(
-              ~borderWidth=1.,
-              ~borderColor=theme.colors.borderHighEmphasis,
-              (),
-            ),
-          ),
-        |])
+      vStyle=?styleArg
+      style=Style.(
+        style(
+          ~borderWidth=1.,
+          ~borderColor=theme.colors.borderHighEmphasis,
+          (),
+        )
       )>
       <Typography.ButtonPrimary ?fontSize>
         text->React.string
@@ -238,18 +234,13 @@ module SubmitTertiary = {
       onPress
       disabled
       ?loading
-      vStyle=Style.(
-        arrayOption([|
-          styleArg,
-          Some(styles##primary),
-          Some(
-            style(
-              ~borderWidth=1.,
-              ~borderColor=theme.colors.borderMediumEmphasis,
-              (),
-            ),
-          ),
-        |])
+      vStyle=?styleArg
+      style=Style.(
+        style(
+          ~borderWidth=1.,
+          ~borderColor=theme.colors.borderMediumEmphasis,
+          (),
+        )
       )>
       <Typography.ButtonPrimary colorStyle=`mediumEmphasis ?fontSize>
         text->React.string

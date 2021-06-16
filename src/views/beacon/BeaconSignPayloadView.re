@@ -38,6 +38,8 @@ module Payload = {
             ~borderRadius=4.,
             (),
           ),
+        "clipboard":
+          style(~position=`absolute, ~right=8.->dp, ~bottom=8.->dp, ()),
       })
     );
 
@@ -45,21 +47,33 @@ module Payload = {
   let make =
       (~signPayloadRequest: ReBeacon.Message.Request.signPayloadRequest) => {
     let theme = ThemeContext.useTheme();
+    let addToast = LogsContext.useToast();
     <>
       <Typography.Overline2
         colorStyle=`mediumEmphasis style=OperationSummaryView.styles##title>
         I18n.label#beacon_sign_payload->React.string
       </Typography.Overline2>
-      <View
-        style=Style.(
-          array([|
-            styles##payloadBloc,
-            style(~borderColor=theme.colors.borderDisabled, ()),
-          |])
-        )>
-        <Typography.Address>
-          signPayloadRequest.payload->React.string
-        </Typography.Address>
+      <View>
+        <View
+          style=Style.(
+            array([|
+              styles##payloadBloc,
+              style(~borderColor=theme.colors.borderDisabled, ()),
+            |])
+          )>
+          <Typography.Address>
+            signPayloadRequest.payload->React.string
+          </Typography.Address>
+        </View>
+        <View style=styles##clipboard>
+          <ClipboardButton
+            copied=I18n.log#beacon_sign_payload
+            tooltipKey="beacon-sign-payload"
+            addToast
+            data={signPayloadRequest.payload}
+            size=40.
+          />
+        </View>
       </View>
     </>;
   };
@@ -88,14 +102,15 @@ let make =
 
     let signature = "TODO";
 
-    let _response: ReBeacon.Message.ResponseInput.signPayloadResponse = {
-      id: signPayloadRequest.id,
-      signingType: signPayloadRequest.signingType,
-      signature,
-    };
+    let _response =
+      ReBeacon.Message.ResponseInput.SignPayloadResponse({
+        id: signPayloadRequest.id,
+        signingType: signPayloadRequest.signingType,
+        signature,
+      });
 
     ();
-    // beaconRespond(response->ReBeacon.Message.ResponseInput.SignPayloadResponse)
+    // beaconRespond(response)
     // ->Future.tapOk(_ => closeAction())
     // ->ignore;
   };
