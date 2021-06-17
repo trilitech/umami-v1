@@ -216,7 +216,14 @@ let make =
       </View>
     : <View
         style=Style.(
-          array([|style(~backgroundColor=logsBackgroundColor, ())|])
+          array([|
+            style(
+              ~borderBottomColor=theme.colors.stateDisabled,
+              ~borderBottomWidth=1.,
+              (),
+            ),
+            style(~backgroundColor=logsBackgroundColor, ()),
+          |])
         )>
         <View>
           <View style=styles##itemContent>
