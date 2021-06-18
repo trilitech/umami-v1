@@ -24,7 +24,7 @@
 /*****************************************************************************/
 
 [@react.component]
-let make = () => {
+let make = (~style=?) => {
   let (visibleModal, openAction, closeAction) =
     ModalAction.useModalActionState();
 
@@ -35,6 +35,7 @@ let make = () => {
       title=I18n.btn#create_account_new
       icon=Icons.Add.build
       onPress
+      ?style
     />
     <ModalAction visible=visibleModal onRequestClose=closeAction>
       <CreateAccountOnboardingView closeAction />

@@ -24,7 +24,7 @@
 /*****************************************************************************/
 
 [@react.component]
-let make = () => {
+let make = (~style=?) => {
   let (visibleModal, openAction, closeAction) =
     ModalAction.useModalActionState();
 
@@ -35,6 +35,7 @@ let make = () => {
       title=I18n.btn#import_account
       icon=Icons.ArrowDown.build
       onPress
+      ?style
     />
     <ModalAction visible=visibleModal onRequestClose=closeAction>
       <ImportAccountOnboardingView closeAction />
