@@ -155,3 +155,4 @@ module Previous = Make(SVGIconPrevious);
 module Next = Make(SVGIconNext);
 module FirstPage = Make(SVGIconFirstPage);
 module LastPage = Make(SVGIconLastPage);
+module Ledger = Make(SVGIconLedger);
