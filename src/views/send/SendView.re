@@ -89,10 +89,7 @@ module FormGroupAmountWithTokenSelector = {
 
 let styles =
   Style.(
-    StyleSheet.create({
-      "addTransaction": style(~marginTop=10.->dp, ()),
-      "operationSummary": style(~marginBottom=20.->dp, ()),
-    })
+    StyleSheet.create({"operationSummary": style(~marginBottom=20.->dp, ())})
   );
 
 type step =
@@ -436,7 +433,7 @@ module Form = {
             />
             {onAddToBatch->ReactUtils.mapOpt(addToBatch =>
                <Buttons.FormSecondary
-                 style=styles##addTransaction
+                 style=FormStyles.formSecondary
                  text=I18n.btn#start_batch_transaction
                  onPress={_ => addToBatch()}
                />

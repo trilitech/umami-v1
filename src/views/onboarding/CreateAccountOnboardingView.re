@@ -25,21 +25,13 @@
 
 open ReactNative;
 
+let styles = FormStyles.onboarding;
+
 type step =
   | Step1
   | Step2
   | Step3
   | Step4;
-
-let styles =
-  Style.(
-    StyleSheet.create({
-      "title": style(~marginBottom=8.->dp, ~textAlign=`center, ()),
-      "stepPager": style(~marginBottom=4.->dp, ~textAlign=`center, ()),
-      "stepTitle": style(~marginBottom=10.->dp, ~textAlign=`center, ()),
-      "stepBody": style(~marginBottom=28.->dp, ~textAlign=`center, ()),
-    })
-  );
 
 [@react.component]
 let make = (~closeAction) => {
