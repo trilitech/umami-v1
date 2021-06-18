@@ -44,15 +44,29 @@ let styles =
   );
 
 module ClearButton = {
+  let styles =
+    Style.(
+      StyleSheet.create({
+        "button":
+          style(
+            ~alignSelf=`flexStart,
+            ~marginLeft=(-6.)->dp,
+            ~marginBottom=10.->dp,
+            (),
+          ),
+      })
+    );
+
   [@react.component]
   let make = () => {
     let clearLogs = LogsContext.useClear();
-    <Buttons.Form
-      style=styles##clear
-      fontSize=12.
-      text=I18n.t#logs_clearall
-      onPress={_ => clearLogs()}
-    />;
+    <View style=styles##button>
+      <ButtonAction
+        text=I18n.t#logs_clearall
+        onPress={_ => clearLogs()}
+        icon=Icons.Close.build
+      />
+    </View>;
   };
 };
 
