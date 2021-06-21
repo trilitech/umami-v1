@@ -308,7 +308,7 @@ module Form = {
             error={form.getFieldError(Field(Recipient))}
           />
           <SwitchItem
-            label=I18n.btn#advanced_options
+            label=I18n.label#advanced_options
             value=advancedOptionOpened
             setValue=setAdvancedOptionOpened
             disabled=advancedOptionsDisabled
