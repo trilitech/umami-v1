@@ -84,5 +84,5 @@ module Light = {
 };
 
 // for application state like form
-let error = "#BB3838";
-let valid = "#76E59B";
+let error = "#BB3838"; //red
+let valid = "#76E59B"; //green
