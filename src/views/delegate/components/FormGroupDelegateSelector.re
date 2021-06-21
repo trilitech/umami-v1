@@ -62,8 +62,8 @@ let make = (~label, ~value: string, ~handleChange, ~error, ~disabled) => {
         getItemKey={account => account.address}
         onValueChange=handleChange
         selectedValueKey=value
-        renderButton=AccountSelector.renderButton
-        renderItem=AccountSelector.renderItem
+        renderButton=AccountElements.Selector.renderButton
+        renderItem=AccountElements.Selector.renderItem
         disabled
         keyPopover="formGroupDelegateSelector"
       />

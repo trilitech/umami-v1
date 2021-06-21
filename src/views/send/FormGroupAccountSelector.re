@@ -28,9 +28,11 @@ open ReactNative;
 let styles =
   Style.(StyleSheet.create({"label": style(~marginBottom=6.->dp, ())}));
 
-let baseRenderButton = AccountSelector.baseRenderButton(~showAmount=Balance);
+let baseRenderButton =
+  AccountElements.Selector.baseRenderButton(~showAmount=Balance);
 
-let baseRenderItem = AccountSelector.baseRenderItem(~showAmount=Balance);
+let baseRenderItem =
+  AccountElements.Selector.baseRenderItem(~showAmount=Balance);
 
 [@react.component]
 let make =
