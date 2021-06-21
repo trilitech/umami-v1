@@ -178,6 +178,22 @@ module Message = {
       | {type_: `broadcast_request} => BroadcastRequest(message->Obj.magic)
       };
     };
+
+    let getId = (request: t) =>
+      switch (request) {
+      | PermissionRequest({id})
+      | OperationRequest({id})
+      | BroadcastRequest({id})
+      | SignPayloadRequest({id}) => id
+      };
+
+    let getNetwork = (request: t) =>
+      switch (request) {
+      | PermissionRequest({network})
+      | OperationRequest({network})
+      | BroadcastRequest({network}) => Some(network)
+      | SignPayloadRequest(_) => None
+      };
   };
 
   module ResponseInput = {

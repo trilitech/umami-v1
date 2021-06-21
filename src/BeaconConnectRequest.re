@@ -45,6 +45,7 @@ let useBeaconRequestModalAction = () => {
 [@react.component]
 let make = () => {
   let settings = SdkContext.useSettings();
+
   let (
     permissionRequest,
     visibleModalPermission,
@@ -71,51 +72,48 @@ let make = () => {
           client
           ->ReBeacon.WalletClient.connect(message => {
               let request = message->ReBeacon.Message.Request.classify;
-              switch (request) {
-              | PermissionRequest(request) =>
-                if (request.network
-                    ->checkOperationRequestTargetNetwork(
-                        settings->AppSettings.network,
-                      )) {
-                  openPermission(request);
-                } else {
-                  client
-                  ->ReBeacon.WalletClient.respond(
-                      ReBeacon.Message.ResponseInput.Error({
-                        id: request.id,
-                        errorType: `NETWORK_NOT_SUPPORTED,
-                      })
-                      ->ReBeacon.Message.ResponseInput.toObj,
-                    )
-                  ->FutureJs.fromPromise(Js.String.make)
-                  ->Future.get(Js.log);
-                }
-              | SignPayloadRequest(request) => openSignPayload(request)
-              | OperationRequest(request) =>
-                let targetSettedNetwork =
-                  request.network
-                  ->checkOperationRequestTargetNetwork(
+
+              let targetSettedNetwork =
+                request
+                ->ReBeacon.Message.Request.getNetwork
+                ->Option.mapWithDefault(true, network =>
+                    network->checkOperationRequestTargetNetwork(
                       settings->AppSettings.network,
-                    );
-                if (targetSettedNetwork
-                    && request->checkOperationRequestHasOnlyTransaction) {
-                  openOperation(request);
-                } else {
-                  client
-                  ->ReBeacon.WalletClient.respond(
-                      ReBeacon.Message.ResponseInput.Error({
-                        id: request.id,
-                        errorType:
-                          targetSettedNetwork
-                            ? `TRANSACTION_INVALID_ERROR
-                            : `NETWORK_NOT_SUPPORTED,
-                      })
-                      ->ReBeacon.Message.ResponseInput.toObj,
                     )
-                  ->FutureJs.fromPromise(Js.String.make)
-                  ->Future.get(Js.log);
+                  );
+
+              if (targetSettedNetwork) {
+                switch (request) {
+                | PermissionRequest(request) => openPermission(request)
+                | SignPayloadRequest(request) => openSignPayload(request)
+                | OperationRequest(request) =>
+                  if (request->checkOperationRequestHasOnlyTransaction) {
+                    openOperation(request);
+                  } else {
+                    client
+                    ->ReBeacon.WalletClient.respond(
+                        ReBeacon.Message.ResponseInput.Error({
+                          id: request.id,
+                          errorType: `TRANSACTION_INVALID_ERROR,
+                        })
+                        ->ReBeacon.Message.ResponseInput.toObj,
+                      )
+                    ->FutureJs.fromPromise(Js.String.make)
+                    ->Future.get(Js.log);
+                  }
+                | _ => ()
                 };
-              | _ => ()
+              } else {
+                client
+                ->ReBeacon.WalletClient.respond(
+                    ReBeacon.Message.ResponseInput.Error({
+                      id: request->ReBeacon.Message.Request.getId,
+                      errorType: `NETWORK_NOT_SUPPORTED,
+                    })
+                    ->ReBeacon.Message.ResponseInput.toObj,
+                  )
+                ->FutureJs.fromPromise(Js.String.make)
+                ->Future.get(Js.log);
               };
             })
           ->FutureJs.fromPromise(Js.String.make)
