@@ -64,6 +64,7 @@ let styles =
           ~width=100.->pct,
           (),
         ),
+      "reverseY": style(~transform=[|rotate(~rotate=180.->deg)|], ()),
     })
   );
 
@@ -79,11 +80,16 @@ module DeleteButton = {
 
 module OpenButton = {
   [@react.component]
-  let make = (~isPrimary=?, ~style=?, ~opened, ~setOpened) => {
+  let make = (~isPrimary=?, ~opened, ~setOpened, ~chevronStyle) => {
     let onPress = _ => {
       setOpened(_ => !opened);
     };
-    <IconButton ?isPrimary ?style icon=Icons.ChevronDown.build onPress />;
+    <IconButton
+      ?isPrimary
+      style=chevronStyle
+      icon=Icons.ChevronDown.build
+      onPress
+    />;
   };
 };
 
@@ -112,6 +118,9 @@ let make =
     | Error => <Icons.CloseOutline size=16. color=Colors.error />
     | Info => <Icons.CheckOutline size=16. color=Colors.valid />
     };
+
+  let chevronStyle = style_ =>
+    opened ? style_ : Style.(array([|style_, styles##reverseY|]));
 
   let firstline =
     opened
@@ -213,9 +222,9 @@ let make =
           <View style=styles##itemContent>
             <OpenButton
               isPrimary=false
-              style=styles##button
               opened
               setOpened
+              chevronStyle={chevronStyle(styles##button)}
             />
             {<Typography.Body2
                style=Style.(
