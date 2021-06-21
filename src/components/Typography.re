@@ -283,3 +283,40 @@ module Notice =
     let fontSize = 14.;
     let selectable = true;
   });
+
+/* LOGS */
+
+module InPageLog = {
+  let styles =
+    Style.(
+      StyleSheet.create({"log": style(~fontFamily="JetBrainsMono", ())})
+    );
+  [@react.component]
+  let make =
+      (
+        ~style as styleProp: option(ReactNative.Style.t)=?,
+        ~ellipsizeMode: option([ | `clip | `head | `middle | `tail])=?,
+        ~fontWeightStyle: fontWeightStyle,
+        ~numberOfLines: option(int)=?,
+        ~content,
+      ) => {
+    <Text
+      ?ellipsizeMode
+      ?numberOfLines
+      style=Style.(
+        arrayOption([|
+          Some(styles##log),
+          Some(
+            style(
+              ~fontWeight=fontWeightStyle->getFontWeight,
+              ~fontSize=14.,
+              (),
+            ),
+          ),
+          styleProp,
+        |])
+      )>
+      content
+    </Text>;
+  };
+};

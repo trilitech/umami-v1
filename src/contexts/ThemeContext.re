@@ -24,6 +24,7 @@
 /*****************************************************************************/
 
 type colors = {
+  textMaxEmphasis: string,
   textHighEmphasis: string,
   textMediumEmphasis: string,
   textDisabled: string,
@@ -78,6 +79,7 @@ type theme = {
 let lightTheme = {
   dark: false,
   colors: {
+    textMaxEmphasis: Colors.Light.maxEmphasis,
     textHighEmphasis: Colors.Light.highEmphasis,
     textMediumEmphasis: Colors.Light.mediumEmphasis,
     textDisabled: Colors.Light.disabled,
@@ -126,6 +128,7 @@ let lightTheme = {
 let darkTheme = {
   dark: true,
   colors: {
+    textMaxEmphasis: Colors.Dark.maxEmphasis,
     textHighEmphasis: Colors.Dark.highEmphasis,
     textMediumEmphasis: Colors.Dark.mediumEmphasis,
     textDisabled: Colors.Dark.disabled,

@@ -122,28 +122,33 @@ let make =
   let chevronStyle = style_ =>
     opened ? style_ : Style.(array([|style_, styles##reverseY|]));
 
+  let logDateContent =
+    Js.Date.(log.timestamp->fromFloat->toUTCString)->React.string;
+
   let firstline =
     opened
-      ? <Typography.Body2
+      ? <Typography.InPageLog
           ellipsizeMode=`tail
+          style={Style.style(~color=theme.colors.textMaxEmphasis, ())}
+          fontWeightStyle=`light
           numberOfLines=1
-          style={Style.style(~color=theme.colors.textMediumEmphasis, ())}>
-          log.msg->React.string
-        </Typography.Body2>
+          content={log.msg->React.string}
+        />
       : React.null;
 
   let secondline =
     opened
       ? React.null
-      : <Typography.Body2
+      : <Typography.InPageLog
+          fontWeightStyle=`light
           style=Style.(
             array([|
               styles##toggleOff,
-              style(~color=theme.colors.textMediumEmphasis, ()),
+              style(~color=theme.colors.textMaxEmphasis, ()),
             |])
-          )>
-          log.msg->React.string
-        </Typography.Body2>;
+          )
+          content={log.msg->React.string}
+        />;
 
   let logsBackgroundColor =
     opened ? theme.colors.background : theme.colors.stateActive;
@@ -233,17 +238,17 @@ let make =
               setOpened
               chevronStyle={chevronStyle(styles##button)}
             />
-            {<Typography.Body2
+            {<Typography.InPageLog
                style=Style.(
                  array([|
                    styles##reqelt,
-                   style(~color=theme.colors.textMediumEmphasis, ()),
+                   style(~color=theme.colors.textMaxEmphasis, ()),
                  |])
                )
+               numberOfLines=1
                fontWeightStyle=`bold
-               numberOfLines=1>
-               Js.Date.(log.timestamp->fromFloat->toUTCString)->React.string
-             </Typography.Body2>
+               content=logDateContent
+             />
              ->ReactUtils.onlyWhen(showTimestamp)}
             firstline
             <View style=styles##actionButtons>
