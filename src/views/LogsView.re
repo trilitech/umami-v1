@@ -28,7 +28,7 @@ open ReactNative;
 let styles =
   Style.(
     StyleSheet.create({
-      "content": style(~marginTop=20.->dp, ()),
+      "content": style(~marginTop=0.->dp, ()),
       "empty": style(~textAlign=`center, ()),
       "view": style(~minHeight=400.->dp, ()),
       "modal":

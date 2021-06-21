@@ -37,9 +37,20 @@ let styles =
           ~width=100.->pct,
           (),
         ),
+      "itemContentPage":
+        style(
+          ~display=`flex,
+          ~flexDirection=`row,
+          ~alignItems=`center,
+          ~paddingLeft=0.->dp,
+          ~width=100.->pct,
+          (),
+        ),
+      "logBlock":
+        style(~paddingVertical=12.->dp, ~marginHorizontal=8.->dp, ()),
       "actionButtons":
         style(~flexDirection=`row, ~flexShrink=0., ~marginLeft=auto, ()),
-      "reqelt": style(~flexShrink=0., ~marginRight=5.->dp, ()),
+      "reqelt": style(~flexShrink=0., ~marginRight=16.->dp, ()),
       "itemError": style(~borderColor=Colors.error, ()),
       "itemInfo": style(~borderColor=Colors.valid, ()),
       "kindIcon": style(~marginRight=10.->dp, ()),
@@ -58,12 +69,7 @@ let styles =
         ),
       "button": style(~marginRight=4.->dp, ()),
       "toggleOff":
-        style(
-          ~paddingLeft=52.->dp,
-          ~paddingVertical=10.->dp,
-          ~width=100.->pct,
-          (),
-        ),
+        style(~paddingLeft=32.->dp, ~width=100.->pct, ~paddingTop=0.->dp, ()),
       "reverseY": style(~transform=[|rotate(~rotate=180.->deg)|], ()),
     })
   );
@@ -143,6 +149,7 @@ let make =
           fontWeightStyle=`light
           style=Style.(
             array([|
+              styles##itemContentPage,
               styles##toggleOff,
               style(~color=theme.colors.textMaxEmphasis, ()),
             |])
@@ -222,6 +229,7 @@ let make =
     : <View
         style=Style.(
           array([|
+            styles##logBlock,
             style(
               ~borderBottomColor=theme.colors.stateDisabled,
               ~borderBottomWidth=1.,
@@ -231,7 +239,7 @@ let make =
           |])
         )>
         <View>
-          <View style=styles##itemContent>
+          <View style=styles##itemContentPage>
             <OpenButton
               isPrimary=false
               opened
