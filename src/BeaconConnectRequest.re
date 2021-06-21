@@ -11,6 +11,18 @@ let dataFromURL = url => {
   url->Js.String2.split("data=")[1];
 };
 
+let checkOperationRequestTargetNetwork =
+    (a: ReBeacon.network, b: ConfigFile.network) =>
+  a.type_
+  == (
+       switch (b) {
+       | `Mainnet => "mainnet"
+       | `Testnet(c) =>
+         c == Network.edo2netChain
+           ? "edonet" : c == Network.florencenetChain ? "florencenet" : ""
+       }
+     );
+
 let checkOperationRequestHasOnlyTransaction =
     (request: ReBeacon.Message.Request.operationRequest) => {
   request.operationDetails
@@ -54,6 +66,7 @@ let make = () => {
     useBeaconPermissionRequestModalAction();
   let (operationRequest, visibleModalOperation, openOperation, closeOperation) =
     useBeaconOperationRequestModalAction();
+  let settings = SdkContext.useSettings();
 
   React.useEffect0(() => {
     {
@@ -65,22 +78,48 @@ let make = () => {
           ->ReBeacon.WalletClient.connect(message => {
               let request = message->ReBeacon.Message.Request.classify;
               switch (request) {
-              | PermissionRequest(request) => openPermission(request)
-              | OperationRequest(request) =>
-                if (request->checkOperationRequestHasOnlyTransaction) {
-                  openOperation(request);
+              | PermissionRequest(request) =>
+                if (request.network
+                    ->checkOperationRequestTargetNetwork(
+                        settings->AppSettings.network,
+                      )) {
+                  openPermission(request);
                 } else {
                   client
                   ->ReBeacon.WalletClient.respond(
                       ReBeacon.Message.ResponseInput.Error({
                         id: request.id,
-                        errorType: `TRANSACTION_INVALID_ERROR,
+                        errorType: `NETWORK_NOT_SUPPORTED,
                       })
                       ->ReBeacon.Message.ResponseInput.toObj,
                     )
                   ->FutureJs.fromPromise(Js.String.make)
                   ->Future.get(Js.log);
                 }
+              | OperationRequest(request) =>
+                let targetSettedNetwork =
+                  request.network
+                  ->checkOperationRequestTargetNetwork(
+                      settings->AppSettings.network,
+                    );
+                if (targetSettedNetwork
+                    && request->checkOperationRequestHasOnlyTransaction) {
+                  openOperation(request);
+                } else {
+                  client
+                  ->ReBeacon.WalletClient.respond(
+                      ReBeacon.Message.ResponseInput.Error({
+                        id: request.id,
+                        errorType:
+                          targetSettedNetwork
+                            ? `TRANSACTION_INVALID_ERROR
+                            : `NETWORK_NOT_SUPPORTED,
+                      })
+                      ->ReBeacon.Message.ResponseInput.toObj,
+                    )
+                  ->FutureJs.fromPromise(Js.String.make)
+                  ->Future.get(Js.log);
+                };
               | _ => ()
               };
             })

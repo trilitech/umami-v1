@@ -52,8 +52,8 @@ let styles =
 let tezToken: Token.t = {
   address: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
   alias: I18n.t#tezos,
-  symbol: I18n.t#tez,
-  chain: Network.edo2netChain,
+  symbol: I18n.t#xtz,
+  chain: Network.florencenetChain,
 };
 
 module TokenItem = {
