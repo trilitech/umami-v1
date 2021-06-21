@@ -66,8 +66,6 @@ let leqVersion =
 let checkInBound = version =>
   leqVersion(apiLowestBound, version) && leqVersion(version, apiHighestBound);
 
-let mainnetChainId = "NetXdQprcVkpaWU";
-
 type monitorResult = {
   nodeLastBlock: int,
   nodeLastBlockTimestamp: string,
@@ -100,8 +98,16 @@ let errorMsg =
   | APINotSupported(v) => I18n.network#api_not_supported(versionToString(v));
 
 let mainnetChain = "NetXdQprcVkpaWU";
+let granadanetChain = "NetXz969SFaFn8k";
 let florencenetChain = "NetXxkAx4woPLyu";
 let edo2netChain = "NetXSgo1ZT2DRUG";
+
+let supportedChains = [
+  mainnetChain,
+  granadanetChain,
+  florencenetChain,
+  edo2netChain,
+];
 
 let parseVersion = version => {
   let parseInt = value =>
@@ -215,12 +221,10 @@ let isTestnet =
   | `Testnet(_) => true;
 
 let networkOfChain = c =>
-  c == mainnetChain
-    ? Ok(`Mainnet)
-    : c == edo2netChain
-        ? Ok(`Testnet(edo2netChain))
-        : c == florencenetChain
-            ? Ok(`Testnet(florencenetChain)) : Error(UnknownChainId(c));
+  switch (supportedChains->List.getBy(chain => c == chain)) {
+  | Some(c) => c == mainnetChain ? Ok(`Mainnet) : Ok(`Testnet(c))
+  | None => Error(UnknownChainId(c))
+  };
 
 let checkConfiguration = (~network, api_url, node_url) =>
   Future.map2(
