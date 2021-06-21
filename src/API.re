@@ -1253,3 +1253,14 @@ module Tokens = (Getter: GetterAPI) => {
       );
     };
 };
+
+module Signature = {
+  let signPayload = (settings, ~source, ~password, ~payload) => {
+    ReTaquito.Signature.signPayload(
+      ~baseDir=settings->AppSettings.baseDir,
+      ~source,
+      ~password,
+      ~payload,
+    );
+  };
+};

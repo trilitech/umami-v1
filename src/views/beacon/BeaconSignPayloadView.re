@@ -101,22 +101,25 @@ let make =
       ~beaconRespond,
       ~closeAction,
     ) => {
+  let signPayload = BeaconApiRequest.Signature.useSignPayload();
+
   let onSign = (~password) => {
-    Js.log("TODO onSign with password " ++ password);
+    signPayload(
+      ~source=signPayloadRequest.sourceAddress,
+      ~password,
+      ~payload=signPayloadRequest.payload,
+    )
+    ->Future.tapOk(signature => {
+        let response =
+          ReBeacon.Message.ResponseInput.SignPayloadResponse({
+            id: signPayloadRequest.id,
+            signingType: signPayloadRequest.signingType,
+            signature: signature.prefixSig,
+          });
 
-    let signature = "TODO";
-
-    let _response =
-      ReBeacon.Message.ResponseInput.SignPayloadResponse({
-        id: signPayloadRequest.id,
-        signingType: signPayloadRequest.signingType,
-        signature,
-      });
-
-    ();
-    // beaconRespond(response)
-    // ->Future.tapOk(_ => closeAction())
-    // ->ignore;
+        beaconRespond(response)->Future.tapOk(_ => closeAction())->ignore;
+      })
+    ->ignore;
   };
 
   let onAbort = _ => {

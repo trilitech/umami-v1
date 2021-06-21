@@ -101,6 +101,22 @@ let opKind = [%raw "OpKind"];
 let rpcClient = [%raw "RpcClient"];
 type rpcClient;
 
+[@bs.val] [@bs.scope "InMemorySigner"]
+external fromSecretKey:
+  (string, ~passphrase: string=?, unit) => Js.Promise.t(signer) =
+  "fromSecretKey";
+
+type signature = {
+  bytes: string,
+  prefixSig: string,
+  sbytes: string,
+  [@bs.as "sig"]
+  sig_: string,
+};
+
+[@bs.send]
+external sign: (signer, string) => Js.Promise.t(signature) = "sign";
+
 type endpoint = string;
 
 module RPCClient = {
@@ -697,5 +713,12 @@ module Transfer = {
         ->Toolkit.Batch.send
         ->Error.fromPromiseParsed;
       });
+  };
+};
+
+module Signature = {
+  let signPayload = (~baseDir, ~source, ~password, ~payload) => {
+    readSecretKey(source, password, baseDir)
+    ->Future.flatMapOk(signer => signer->sign(payload)->fromPromiseParsed);
   };
 };

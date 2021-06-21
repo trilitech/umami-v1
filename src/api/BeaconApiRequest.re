@@ -70,3 +70,14 @@ module Permissions = {
       ~kind=Logs.Settings,
     );
 };
+
+/* SIGNATURE */
+
+module Signature = {
+  let useSignPayload = () => {
+    let settings = SdkContext.useSettings();
+
+    (~source, ~password, ~payload) =>
+      API.Signature.signPayload(settings, ~source, ~password, ~payload);
+  };
+};
