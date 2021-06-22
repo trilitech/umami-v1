@@ -90,7 +90,7 @@ let make = () => {
          ->List.toArray
          ->Array.mapWithIndex((i, log) =>
              <LogItem
-               key={i->string_of_int}
+               key={log.timestamp->Float.toString}
                indice=i
                log
                addToast={addLog(true)}

@@ -111,7 +111,7 @@ let make =
     ) => {
   let theme = ThemeContext.useTheme();
 
-  let (opened, setOpened) = React.useState(_ => true);
+  let (opened, setOpened) = React.useState(_ => false);
 
   let kindStyle =
     switch (log.kind) {
@@ -125,27 +125,26 @@ let make =
     | Info => <Icons.CheckOutline size=16. color=Colors.valid />
     };
 
-  let chevronStyle = style_ =>
-    opened ? style_ : Style.(array([|style_, styles##reverseY|]));
+  let chevronStyle = styleProp =>
+    opened ? Style.(array([|styleProp, styles##reverseY|])) : styleProp;
 
   let logDateContent =
     Js.Date.(log.timestamp->fromFloat->toUTCString)->React.string;
 
   let firstline =
     opened
-      ? <Typography.InPageLog
+      ? React.null
+      : <Typography.InPageLog
           ellipsizeMode=`tail
           style={Style.style(~color=theme.colors.textMaxEmphasis, ())}
           fontWeightStyle=`light
           numberOfLines=1
           content={log.msg->React.string}
-        />
-      : React.null;
+        />;
 
   let secondline =
     opened
-      ? React.null
-      : <Typography.InPageLog
+      ? <Typography.InPageLog
           fontWeightStyle=`light
           style=Style.(
             array([|
@@ -155,10 +154,11 @@ let make =
             |])
           )
           content={log.msg->React.string}
-        />;
+        />
+      : React.null;
 
   let logsBackgroundColor =
-    opened ? theme.colors.background : theme.colors.stateActive;
+    opened ? theme.colors.stateActive : theme.colors.background;
 
   isToast
     ? <View
