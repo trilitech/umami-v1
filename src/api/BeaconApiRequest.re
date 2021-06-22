@@ -25,6 +25,12 @@
 
 let client = ReBeacon.WalletClient.make({name: "umami"});
 
+let respond = responseInput => {
+  client
+  ->ReBeacon.WalletClient.respond(responseInput)
+  ->FutureJs.fromPromise(Js.String.make);
+};
+
 /* PEERS */
 
 module Peers = {

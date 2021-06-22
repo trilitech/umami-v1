@@ -98,7 +98,6 @@ let styles =
 let make =
     (
       ~signPayloadRequest: ReBeacon.Message.Request.signPayloadRequest,
-      ~beaconRespond,
       ~closeAction,
     ) => {
   let signPayload = BeaconApiRequest.Signature.useSignPayload();
@@ -110,20 +109,23 @@ let make =
       ~payload=signPayloadRequest.payload,
     )
     ->Future.tapOk(signature => {
-        let response =
-          ReBeacon.Message.ResponseInput.SignPayloadResponse({
+        BeaconApiRequest.respond(
+          `SignPayloadResponse({
+            type_: `sign_payload_response,
             id: signPayloadRequest.id,
             signingType: signPayloadRequest.signingType,
             signature: signature.prefixSig,
-          });
-
-        beaconRespond(response)->Future.tapOk(_ => closeAction())->ignore;
+          }),
+        )
+        ->Future.tapOk(_ => closeAction())
+        ->ignore
       });
   };
 
   let onAbort = _ => {
-    beaconRespond(
-      ReBeacon.Message.ResponseInput.Error({
+    BeaconApiRequest.respond(
+      `Error({
+        type_: `error,
         id: signPayloadRequest.id,
         errorType: `ABORTED_ERROR,
       }),

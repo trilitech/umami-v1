@@ -226,30 +226,6 @@ module Form = {
   };
 };
 
-let buildSummaryContent = (dryRun: Protocol.simulationResults) => {
-  let revealFee =
-    dryRun.revealFee != Tez.zero
-      ? (I18n.label#implicit_reveal_fee, [Transfer.Tez(dryRun.revealFee)])
-        ->Some
-      : None;
-
-  let fee = (I18n.label#fee, [Transfer.Tez(dryRun.fee)]);
-
-  let total = (
-    I18n.label#summary_total,
-    [Transfer.Tez(Tez.Infix.(dryRun.fee + dryRun.revealFee))],
-  );
-
-  [fee, ...revealFee->Option.mapWithDefault([total], r => [r, total])];
-};
-
-let showAmount =
-  Transfer.(
-    fun
-    | Tez(v) => I18n.t#tez_amount(v->Tez.toString)
-    | Token(v, t) => I18n.t#amount(v->Token.Unit.toNatString, t.symbol)
-  );
-
 [@react.component]
 let make = (~closeAction, ~action) => {
   let (advancedOptionOpened, _) as advancedOptionState =
@@ -338,27 +314,18 @@ let make = (~closeAction, ~action) => {
                />
              }
            | PasswordStep(delegation, dryRun) =>
-             let (target, title) =
+             let title =
                switch (delegation.delegate) {
-               | None => (
-                   ("", I18n.title#withdraw_baker),
-                   I18n.title#delegate_delete,
-                 )
-               | Some(d) => (
-                   (d, I18n.title#baker_account),
-                   I18n.title#confirm_delegate,
-                 )
+               | None => I18n.title#delegate_delete
+               | Some(_d) => I18n.title#confirm_delegate
                };
              <SignOperationView
-               source=(delegation.source, I18n.title#delegated_account)
-               destinations={`One(target)}
                title
                subtitle=I18n.expl#confirm_operation
-               showCurrency=showAmount
-               content={buildSummaryContent(dryRun)}
                sendOperation={sendOperation(~delegation)}
-               loading
-             />;
+               loading>
+               <OperationSummaryView.Delegate delegation dryRun />
+             </SignOperationView>;
            }}
         </ReactFlipToolkit.FlippedView.Inverse>
       </ModalFormView>

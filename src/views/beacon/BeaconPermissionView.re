@@ -42,7 +42,6 @@ let styles =
 let make =
     (
       ~permissionRequest: ReBeacon.Message.Request.permissionRequest,
-      ~beaconRespond,
       ~closeAction,
     ) => {
   let getAccountPublicKey = AccountApiRequest.useGetPublicKey();
@@ -63,18 +62,17 @@ let make =
           | Some(account) =>
             getAccountPublicKey(account)
             ->FutureEx.getOk(publicKey => {
-                let response: ReBeacon.Message.ResponseInput.permissionResponse = {
-                  id: permissionRequest.id,
-                  network: permissionRequest.network,
-                  scopes: permissionRequest.scopes,
-                  publicKey,
-                };
-
-                beaconRespond(
-                  response->ReBeacon.Message.ResponseInput.PermissionResponse,
+                BeaconApiRequest.respond(
+                  `PermissionResponse({
+                    type_: `permission_response,
+                    id: permissionRequest.id,
+                    network: permissionRequest.network,
+                    scopes: permissionRequest.scopes,
+                    publicKey,
+                  }),
                 )
                 ->Future.tapOk(_ => closeAction())
-                ->ignore;
+                ->ignore
               })
           | None => ()
           };
@@ -87,8 +85,9 @@ let make =
     );
 
   let onAbort = _ => {
-    beaconRespond(
-      ReBeacon.Message.ResponseInput.Error({
+    BeaconApiRequest.respond(
+      `Error({
+        type_: `error,
         id: permissionRequest.id,
         errorType: `ABORTED_ERROR,
       }),
@@ -122,7 +121,10 @@ let make =
       />
       <View style=styles##formActionSpaceBetween>
         <Buttons.SubmitSecondary text=I18n.btn#deny onPress=onAbort />
-        <Buttons.SubmitPrimary text=I18n.btn#allow onPress={_ => form.submit()} />
+        <Buttons.SubmitPrimary
+          text=I18n.btn#allow
+          onPress={_ => form.submit()}
+        />
       </View>
     </View>
   </ModalTemplate.Form>;

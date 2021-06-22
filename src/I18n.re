@@ -132,7 +132,8 @@ let label = {
   pub account_default_path = "Default Path - m/44'/1729'/?'/0'";
   pub account_custom_path = "Custom Path";
   pub beacon_account = "Account to connect to dApp";
-  pub beacon_sign_payload = "Payload to sign"
+  pub beacon_sign_payload = "Payload to sign";
+  pub parameters = "Parameters"
 };
 
 let input_placeholder = {
@@ -224,7 +225,8 @@ let title = {
   pub scan = "Scan";
   pub disclaimer = "User Agreement";
   pub beacon_connection_request = "Connection Request";
-  pub beacon_sign_request = "Sign"
+  pub beacon_sign_request = "Sign";
+  pub interaction = "Interaction"
 };
 
 let expl = {

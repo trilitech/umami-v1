@@ -186,18 +186,9 @@ module Message = {
   };
 
   module ResponseInput = {
-    type messageType = [
-      | `permission_response
-      | `operation_response
-      | `sign_payload_response
-      | `broadcast_response
-      | `acknowledge
-      | `error
-    ];
-
-    type baseMessage;
-
     type permissionResponse = {
+      [@bs.as "type"]
+      type_: [ | `permission_response],
       id,
       network,
       scopes,
@@ -205,87 +196,50 @@ module Message = {
     };
 
     type operationResponse = {
+      [@bs.as "type"]
+      type_: [ | `operation_response],
       id,
       transactionHash,
     };
 
     type signPayloadResponse = {
+      [@bs.as "type"]
+      type_: [ | `sign_payload_response],
       id,
       signingType,
       signature: string,
     };
 
     type broadcastResponse = {
+      [@bs.as "type"]
+      type_: [ | `broadcast_response],
       id,
       transactionHash,
     };
 
-    type acknowledge = {id};
-
-    type errorType = [
-      | `BROADCAST_ERROR
-      | `NETWORK_NOT_SUPPORTED
-      | `NO_ADDRESS_ERROR
-      | `NO_PRIVATE_KEY_FOUND_ERROR
-      | `NOT_GRANTED_ERROR
-      | `PARAMETERS_INVALID_ERROR
-      | `TOO_MANY_OPERATIONS
-      | `TRANSACTION_INVALID_ERROR
-      | `SIGNATURE_TYPE_NOT_SUPPORTED
-      | `ABORTED_ERROR
-      | `UNKNOWN_ERROR
-    ];
-
-    type error = {
+    type acknowledge = {
+      [@bs.as "type"]
+      type_: [ | `acknowledge],
       id,
-      errorType,
     };
 
-    type t =
-      | PermissionResponse(permissionResponse)
-      | OperationResponse(operationResponse)
-      | SignPayloadResponse(signPayloadResponse)
-      | BroadcastResponse(broadcastResponse)
-      | Acknowledge(acknowledge)
-      | Error(error);
-
-    let toObj = (responseInput: t): baseMessage => {
-      switch (responseInput) {
-      | PermissionResponse({id, network, scopes, publicKey}) =>
-        {
-          "type": `permission_response,
-          "id": id,
-          "network": network,
-          "scopes": scopes,
-          "publicKey": publicKey,
-        }
-        ->Obj.magic
-      | OperationResponse({id, transactionHash}) =>
-        {
-          "type": `operation_response,
-          "id": id,
-          "transactionHash": transactionHash,
-        }
-        ->Obj.magic
-      | SignPayloadResponse({id, signingType, signature}) =>
-        {
-          "type": `operation_response,
-          "id": id,
-          "signingType": signingType,
-          "signature": signature,
-        }
-        ->Obj.magic
-      | BroadcastResponse({id, transactionHash}) =>
-        {
-          "type": `broadcast_response,
-          "id": id,
-          "transactionHash": transactionHash,
-        }
-        ->Obj.magic
-      | Acknowledge({id}) => {"type": `acknowledge, "id": id}->Obj.magic
-      | Error({id, errorType}) =>
-        {"type": `error, "id": id, "errorType": errorType}->Obj.magic
-      };
+    type error = {
+      [@bs.as "type"]
+      type_: [ | `error],
+      id,
+      errorType: [
+        | `BROADCAST_ERROR
+        | `NETWORK_NOT_SUPPORTED
+        | `NO_ADDRESS_ERROR
+        | `NO_PRIVATE_KEY_FOUND_ERROR
+        | `NOT_GRANTED_ERROR
+        | `PARAMETERS_INVALID_ERROR
+        | `TOO_MANY_OPERATIONS
+        | `TRANSACTION_INVALID_ERROR
+        | `SIGNATURE_TYPE_NOT_SUPPORTED
+        | `ABORTED_ERROR
+        | `UNKNOWN_ERROR
+      ],
     };
   };
 };

@@ -92,11 +92,11 @@ let make = () => {
                   } else {
                     client
                     ->ReBeacon.WalletClient.respond(
-                        ReBeacon.Message.ResponseInput.Error({
+                        `Error({
+                          type_: `error,
                           id: request.id,
                           errorType: `TRANSACTION_INVALID_ERROR,
-                        })
-                        ->ReBeacon.Message.ResponseInput.toObj,
+                        }),
                       )
                     ->FutureJs.fromPromise(Js.String.make)
                     ->Future.get(Js.log);
@@ -106,11 +106,11 @@ let make = () => {
               } else {
                 client
                 ->ReBeacon.WalletClient.respond(
-                    ReBeacon.Message.ResponseInput.Error({
+                    `Error({
+                      type_: `error,
                       id: request->ReBeacon.Message.Request.getId,
                       errorType: `NETWORK_NOT_SUPPORTED,
-                    })
-                    ->ReBeacon.Message.ResponseInput.toObj,
+                    }),
                   )
                 ->FutureJs.fromPromise(Js.String.make)
                 ->Future.get(Js.log);
@@ -138,31 +138,15 @@ let make = () => {
     None;
   });
 
-  let beaconRespond = (responseInput: ReBeacon.Message.ResponseInput.t) => {
-    client
-    ->ReBeacon.WalletClient.respond(
-        responseInput->ReBeacon.Message.ResponseInput.toObj,
-      )
-    ->FutureJs.fromPromise(Js.String.make);
-  };
-
   <>
     <ModalAction visible=visibleModalPermission onRequestClose=closePermission>
       {permissionRequest->ReactUtils.mapOpt(permissionRequest => {
-         <BeaconPermissionView
-           permissionRequest
-           beaconRespond
-           closeAction=closePermission
-         />
+         <BeaconPermissionView permissionRequest closeAction=closePermission />
        })}
     </ModalAction>
     <ModalAction visible=visibleModalOperation onRequestClose=closeOperation>
       {operationRequest->ReactUtils.mapOpt(operationRequest => {
-         <BeaconOperationView
-           operationRequest
-           beaconRespond
-           closeAction=closeOperation
-         />
+         <BeaconOperationView operationRequest closeAction=closeOperation />
        })}
     </ModalAction>
     <ModalAction
@@ -170,7 +154,6 @@ let make = () => {
       {signPayloadRequest->ReactUtils.mapOpt(signPayloadRequest => {
          <BeaconSignPayloadView
            signPayloadRequest
-           beaconRespond
            closeAction=closeSignPayload
          />
        })}

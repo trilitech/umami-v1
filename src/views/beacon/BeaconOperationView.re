@@ -19,7 +19,6 @@ let make =
     (
       ~operationRequest as
         operationBeaconRequest: ReBeacon.Message.Request.operationRequest,
-      ~beaconRespond,
       ~closeAction,
     ) => {
   let (operationSimulateRequest, sendOperationSimulate) =
@@ -52,8 +51,11 @@ let make =
                     fee: None,
                     gasLimit: None,
                     storageLimit: None,
-                    parameter: partialTransaction.parameters->Option.map(a => a.value),
-                    entrypoint: partialTransaction.parameters->Option.map(a => a.entrypoint),
+                    parameter:
+                      partialTransaction.parameters->Option.map(a => a.value),
+                    entrypoint:
+                      partialTransaction.parameters
+                      ->Option.map(a => a.entrypoint),
                   },
                 }
               )
@@ -77,8 +79,6 @@ let make =
     [|transfer|],
   );
 
-  let (source, destinations) = SendView.sourceDestination(transfer);
-
   let updateAccount = StoreContext.SelectedAccount.useSet();
   let (operationApiRequest, sendOperation) =
     StoreContext.Operations.useCreate();
@@ -87,24 +87,24 @@ let make =
   let sendTransfer = (~transfer, ~password) => {
     let operation = Operation.transfer(transfer);
 
-    let ((sourceAddress, _), _) = SendView.sourceDestination(transfer);
-
     sendOperation({operation, password})
     ->Future.tapOk(hash => {
-        beaconRespond(
-          ReBeacon.Message.ResponseInput.OperationResponse({
+        BeaconApiRequest.respond(
+          `OperationResponse({
+            type_: `operation_response,
             id: operationBeaconRequest.id,
             transactionHash: hash,
           }),
         )
         ->ignore
       })
-    ->Future.tapOk(_ => {updateAccount(sourceAddress)});
+    ->Future.tapOk(_ => {updateAccount(transfer.source)});
   };
 
   let onAbort = _ =>
-    beaconRespond(
-      ReBeacon.Message.ResponseInput.Error({
+    BeaconApiRequest.respond(
+      `Error({
+        type_: `error,
         id: operationBeaconRequest.id,
         errorType: `ABORTED_ERROR,
       }),
@@ -152,13 +152,7 @@ let make =
             <ErrorView error={error->API.Error.fromApiToString} />
           | Done(Ok(dryRun), _) =>
             <>
-              <OperationSummaryView
-                style=SignOperationView.styles##operationSummary
-                source
-                destinations
-                showCurrency=SendView.showAmount
-                content={SendView.buildSummaryContent(transfer, dryRun)}
-              />
+              <OperationSummaryView.Transactions transfer dryRun />
               <PasswordFormView.PasswordField form />
               <View style=styles##formActionSpaceBetween>
                 <Buttons.SubmitSecondary

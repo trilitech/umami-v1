@@ -25,21 +25,13 @@
 
 open ReactNative;
 
-let styles =
-  Style.(
-    StyleSheet.create({"operationSummary": style(~marginBottom=20.->dp, ())})
-  );
-
 [@react.component]
 let make =
     (
       ~title=?,
       ~subtitle=?,
-      ~source,
-      ~destinations,
-      ~showCurrency,
+      ~children,
       ~sendOperation: (~password: string) => Future.t(Result.t(_)),
-      ~content: list((string, Belt.List.t(TezosClient.Transfer.currency))),
       ~loading=false,
     ) => {
 
@@ -62,13 +54,7 @@ let make =
           )}
        </View>
      )}
-    <OperationSummaryView
-      style=styles##operationSummary
-      source=(account.address, source->snd)
-      destinations
-      showCurrency
-      content
-    />
+    children
     <PasswordFormView.PasswordField form />
     <View style=FormStyles.verticalFormAction>
       <Buttons.SubmitPrimary
