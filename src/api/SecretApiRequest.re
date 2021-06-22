@@ -37,8 +37,8 @@ let useLoad = requestState => {
       })
     ->Future.mapOk(secrets =>
         secrets->Array.mapWithIndex(
-          (index, {name, derivationScheme, addresses, legacyAddress}) =>
-          Secret.{index, name, derivationScheme, addresses, legacyAddress}
+          (index, {name, derivationPath, addresses, legacyAddress}) =>
+          Secret.{index, name, derivationPath, addresses, legacyAddress}
         )
       );
 
@@ -84,19 +84,19 @@ let useDerive =
 type createInput = {
   name: string,
   mnemonics: string,
-  derivationScheme: string,
+  derivationPath: string,
   password: string,
 };
 
 let useCreateWithMnemonics =
   ApiRequest.useSetter(
     ~set=
-      (~settings, {name, mnemonics, derivationScheme, password}) =>
+      (~settings, {name, mnemonics, derivationPath, password}) =>
         AccountsAPI.restore(
           ~settings,
           mnemonics,
           name,
-          ~derivationScheme,
+          ~derivationPath,
           ~password,
           (),
         ),
@@ -108,10 +108,10 @@ let useUpdate =
     ~set=
       (
         ~settings,
-        {index, name, derivationScheme, addresses, legacyAddress}: Secret.t,
+        {index, name, derivationPath, addresses, legacyAddress}: Secret.t,
       ) => {
         let secret =
-          API.Secret.{name, derivationScheme, addresses, legacyAddress};
+          API.Secret.{name, derivationPath, addresses, legacyAddress};
         AccountsAPI.updateSecretAt(secret, ~settings, index);
       },
     ~kind=Logs.Account,

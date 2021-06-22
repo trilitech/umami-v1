@@ -57,7 +57,7 @@ let make = (~closeAction, ~existingSecretsCount=0) => {
   let (mnemonic, setMnemonic) = React.useState(_ => Array.make(24, ""));
   let formatState =
     React.useState(_ => FillMnemonicView.FormatSelector.Words24);
-  let (derivationScheme, setDerivationScheme) =
+  let (derivationPath, setDerivationPath) =
     React.useState(_ => "m/44'/1729'/?'/0'");
 
   let loading = secretWithMnemonicRequest->ApiRequest.isLoading;
@@ -117,8 +117,8 @@ let make = (~closeAction, ~existingSecretsCount=0) => {
             I18n.expl#account_select_derivation_path->React.string
           </Typography.Body2>}
          <SelectDerivationPathView
-           derivationScheme
-           setDerivationScheme
+           derivationPath
+           setDerivationPath
            onPressCancel={_ => setFormStep(_ => MnemonicsStep)}
            goNextStep={_ => setFormStep(_ => PasswordStep(DerivationPath))}
          />
@@ -143,7 +143,7 @@ let make = (~closeAction, ~existingSecretsCount=0) => {
           ->ReactUtils.onlyWhen(displayConfirmPassword)}
          <CreatePasswordView
            mnemonic
-           derivationScheme
+           derivationPath
            onPressCancel={_ =>
              setFormStep(_ =>
                switch (fromStep) {

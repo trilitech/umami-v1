@@ -489,7 +489,7 @@ module Mnemonic = {
 module Secret = {
   type t = {
     name: string,
-    derivationScheme: string,
+    derivationPath: string,
     addresses: Js.Array.t(string),
     legacyAddress: option(string),
   };
@@ -497,7 +497,7 @@ module Secret = {
   let decoder = json =>
     Json.Decode.{
       name: json |> field("name", string),
-      derivationScheme: json |> field("derivationScheme", string),
+      derivationPath: json |> field("derivationScheme", string),
       addresses: json |> field("addresses", array(string)),
       legacyAddress: json |> optional(field("legacyAddress", string)),
     };
@@ -508,14 +508,14 @@ module Secret = {
       | Some(legacyAddress) =>
         object_([
           ("name", string(secret.name)),
-          ("derivationScheme", string(secret.derivationScheme)),
+          ("derivationScheme", string(secret.derivationPath)),
           ("addresses", stringArray(secret.addresses)),
           ("legacyAddress", string(legacyAddress)),
         ])
       | None =>
         object_([
           ("name", string(secret.name)),
-          ("derivationScheme", string(secret.derivationScheme)),
+          ("derivationScheme", string(secret.derivationPath)),
           ("addresses", stringArray(secret.addresses)),
         ])
       }
@@ -689,7 +689,7 @@ module Accounts = (Getter: GetterAPI) => {
       secretAt(~settings, index),
       recoveryPhraseAt(~settings, index, ~password),
       (secret, recoveryPhrase) => {
-      path(secret.derivationScheme, ~index=secret.addresses->Array.length)
+      path(secret.derivationPath, ~index=secret.addresses->Array.length)
       ->Future.flatMapOk(path =>
           path->HD.edesk(recoveryPhrase->HD.seed, ~password)
         )
@@ -802,13 +802,13 @@ module Accounts = (Getter: GetterAPI) => {
             ~settings: AppSettings.t,
             seed,
             baseName,
-            ~derivationScheme="m/44'/1729'/?'/0'",
+            ~derivationPath="m/44'/1729'/?'/0'",
             ~password,
             ~index=0,
             (),
           ) => {
     let name = baseName ++ " /" ++ index->Js.Int.toString;
-    path(derivationScheme, ~index)
+    path(derivationPath, ~index)
     ->Future.flatMapOk(path => path->HD.edesk(seed, ~password))
     ->Future.flatMapOk(edesk =>
         import(~settings, edesk, name, ~password)
@@ -825,7 +825,7 @@ module Accounts = (Getter: GetterAPI) => {
                       ~settings,
                       seed,
                       baseName,
-                      ~derivationScheme,
+                      ~derivationPath,
                       ~password,
                       ~index=index + 1,
                       (),
@@ -872,7 +872,7 @@ module Accounts = (Getter: GetterAPI) => {
         ~settings,
         recoveryPhrase,
         baseName,
-        ~derivationScheme="m/44'/1729'/?'/0'",
+        ~derivationPath="m/44'/1729'/?'/0'",
         ~password,
         ~index=0,
         (),
@@ -881,7 +881,7 @@ module Accounts = (Getter: GetterAPI) => {
       ~settings,
       recoveryPhrase->HD.seed,
       baseName,
-      ~derivationScheme,
+      ~derivationPath,
       ~password,
       ~index,
       (),
@@ -914,7 +914,7 @@ module Accounts = (Getter: GetterAPI) => {
         ~settings,
         backupPhrase,
         name,
-        ~derivationScheme="m/44'/1729'/?'/0'",
+        ~derivationPath="m/44'/1729'/?'/0'",
         ~password,
         (),
       ) => {
@@ -931,7 +931,7 @@ module Accounts = (Getter: GetterAPI) => {
           )
       )
     ->Future.flatMapOk(_ =>
-        scan(~settings, backupPhrase, name, ~derivationScheme, ~password, ())
+        scan(~settings, backupPhrase, name, ~derivationPath, ~password, ())
       )
     ->Future.tapOk(_ =>
         Future.mapOk2(
@@ -948,12 +948,7 @@ module Accounts = (Getter: GetterAPI) => {
           )
       )
     ->Future.tapOk(((addresses, legacyAddress)) => {
-        let secret = {
-          Secret.name,
-          derivationScheme,
-          addresses,
-          legacyAddress,
-        };
+        let secret = {Secret.name, derivationPath, addresses, legacyAddress};
         let secrets =
           secrets(~settings)
           ->Option.getWithDefault([||])
@@ -987,7 +982,7 @@ module Accounts = (Getter: GetterAPI) => {
                   ~settings,
                   recoveryPhrase,
                   secret.name,
-                  ~derivationScheme=secret.derivationScheme,
+                  ~derivationPath=secret.derivationPath,
                   ~password,
                   ~index=secret.addresses->Array.length,
                   (),

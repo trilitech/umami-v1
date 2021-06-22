@@ -349,7 +349,7 @@ module SecretRowItem = {
           secret.name->React.string
         </Typography.Subtitle1>
         <Typography.Address style=styles##derivation>
-          secret.derivationScheme->React.string
+          secret.derivationPath->React.string
         </Typography.Address>
       </View>
       <View style=styles##actionContainer>

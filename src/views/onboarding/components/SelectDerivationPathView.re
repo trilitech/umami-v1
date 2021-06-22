@@ -27,8 +27,8 @@ open ReactNative;
 
 module StateLenses = [%lenses
   type state = {
-    selectedDerivationScheme: string,
-    customDerivationScheme: string,
+    selectedDerivationPath: string,
+    customDerivationPath: string,
   }
 ];
 
@@ -55,9 +55,8 @@ let styles =
   );
 
 [@react.component]
-let make =
-    (~derivationScheme, ~setDerivationScheme, ~onPressCancel, ~goNextStep) => {
-  let defaultDerivationScheme = "m/44'/1729'/?'/0'";
+let make = (~derivationPath, ~setDerivationPath, ~onPressCancel, ~goNextStep) => {
+  let defaultDerivationPath = "m/44'/1729'/?'/0'";
 
   let form: SelectDerivationPathForm.api =
     SelectDerivationPathForm.use(
@@ -67,32 +66,32 @@ let make =
           Schema(
             custom(
               values =>
-                if (values.selectedDerivationScheme == defaultDerivationScheme) {
+                if (values.selectedDerivationPath == defaultDerivationPath) {
                   Valid;
                 } else if (Js.Re.test_(
                              Js.Re.fromString("^m(/[0-9?]+')+$"),
-                             values.customDerivationScheme,
+                             values.customDerivationPath,
                            )) {
                   Valid;
                 } else {
                   Error(I18n.form_input_error#derivation_path_error);
                 },
-              CustomDerivationScheme,
+              CustomDerivationPath,
             )
-            + nonEmpty(SelectedDerivationScheme),
+            + nonEmpty(SelectedDerivationPath),
           )
         );
       },
       ~onSubmit=
         ({state}) => {
-          setDerivationScheme(_ => state.values.selectedDerivationScheme);
+          setDerivationPath(_ => state.values.selectedDerivationPath);
           goNextStep();
           None;
         },
       ~initialState={
-        selectedDerivationScheme: derivationScheme,
-        customDerivationScheme:
-          derivationScheme == defaultDerivationScheme ? "" : derivationScheme,
+        selectedDerivationPath: derivationPath,
+        customDerivationPath:
+          derivationPath == defaultDerivationPath ? "" : derivationPath,
       },
       ~i18n=FormUtils.i18n,
       (),
@@ -106,38 +105,38 @@ let make =
     FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
 
   let error = {
-    form.getFieldError(Field(CustomDerivationScheme));
+    form.getFieldError(Field(CustomDerivationPath));
   };
 
   <>
     <FormGroup style=Style.(arrayOption([|Some(styles##formGroup)|]))>
       <RadioItem
         label=I18n.label#account_default_path
-        value=defaultDerivationScheme
+        value=defaultDerivationPath
         setValue={value =>
-          form.handleChange(SelectedDerivationScheme, value(""))
+          form.handleChange(SelectedDerivationPath, value(""))
         }
-        currentValue={form.values.selectedDerivationScheme}
+        currentValue={form.values.selectedDerivationPath}
       />
       <RadioItem
         label=I18n.label#account_custom_path
-        value={form.values.customDerivationScheme}
+        value={form.values.customDerivationPath}
         setValue={value =>
-          form.handleChange(SelectedDerivationScheme, value(""))
+          form.handleChange(SelectedDerivationPath, value(""))
         }
-        currentValue={form.values.selectedDerivationScheme}
+        currentValue={form.values.selectedDerivationPath}
       />
       <ThemedTextInput
-        value={form.values.customDerivationScheme}
+        value={form.values.customDerivationPath}
         onFocus={_ =>
           form.handleChange(
-            SelectedDerivationScheme,
-            form.values.customDerivationScheme,
+            SelectedDerivationPath,
+            form.values.customDerivationPath,
           )
         }
         onValueChange={value => {
-          form.handleChange(CustomDerivationScheme, value);
-          form.handleChange(SelectedDerivationScheme, value);
+          form.handleChange(CustomDerivationPath, value);
+          form.handleChange(SelectedDerivationPath, value);
         }}
         hasError={error->Option.isSome}
         placeholder=I18n.input_placeholder#enter_derivation_path

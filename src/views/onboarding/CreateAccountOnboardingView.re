@@ -58,7 +58,7 @@ let make = (~closeAction) => {
   // other value later, it's unecessary to be used
   let mnemonic =
     React.useRef(Bip39.generate(256)->Js.String2.split(" ")).current;
-  let (derivationScheme, setDerivationScheme) =
+  let (derivationPath, setDerivationPath) =
     React.useState(_ => "m/44'/1729'/?'/0'");
 
   let loading = secretWithMnemonicRequest->ApiRequest.isLoading;
@@ -124,8 +124,8 @@ let make = (~closeAction) => {
             I18n.expl#account_select_derivation_path->React.string
           </Typography.Body2>}
          <SelectDerivationPathView
-           derivationScheme
-           setDerivationScheme
+           derivationPath
+           setDerivationPath
            onPressCancel={_ => setFormStep(_ => Step2)}
            goNextStep={_ => setFormStep(_ => Step4)}
          />
@@ -144,7 +144,7 @@ let make = (~closeAction) => {
          </Typography.Body2>
          <CreatePasswordView
            mnemonic
-           derivationScheme
+           derivationPath
            onPressCancel={_ => setFormStep(_ => Step2)}
            createSecretWithMnemonic
            loading
