@@ -54,56 +54,80 @@ let styles =
     })
   );
 
-[@react.component]
-let make =
-    (
-      ~derivationPath: DerivationPath.Pattern.t,
-      ~setDerivationPath,
-      ~onPressCancel,
-      ~goNextStep,
-    ) => {
-  let form: SelectDerivationPathForm.api =
-    SelectDerivationPathForm.use(
-      ~validationStrategy=OnDemand,
-      ~schema={
-        SelectDerivationPathForm.Validation.(
-          Schema(
-            custom(
-              values =>
-                if (values.selectedDerivationPath
-                    == DerivationPath.Pattern.defaultString) {
-                  Valid;
-                } else {
-                  values.customDerivationPath->FormUtils.checkDerivationPath;
-                },
-              CustomDerivationPath,
-            )
-            + nonEmpty(SelectedDerivationPath),
+let form = (~setDerivationPath, ~next, ~derivationPath) =>
+  SelectDerivationPathForm.use(
+    ~validationStrategy=OnDemand,
+    ~schema={
+      SelectDerivationPathForm.Validation.(
+        Schema(
+          custom(
+            values =>
+              if (values.selectedDerivationPath
+                  == DerivationPath.Pattern.defaultString) {
+                Valid;
+              } else {
+                values.customDerivationPath->FormUtils.checkDerivationPath;
+              },
+            CustomDerivationPath,
           )
-        );
+          + nonEmpty(SelectedDerivationPath),
+        )
+      );
+    },
+    ~onSubmit=
+      ({state}) => {
+        setDerivationPath(_
+          // Errors should be filtered by form errors hence the getExn
+          =>
+            state.values.selectedDerivationPath
+            ->DerivationPath.Pattern.fromString
+            ->Result.getExn
+          );
+        next();
+        None;
       },
-      ~onSubmit=
-        ({state}) => {
-          setDerivationPath(_
-            // Errors should be filtered by form errors hence the getExn
-            =>
-              state.values.selectedDerivationPath
-              ->DerivationPath.Pattern.fromString
-              ->Result.getExn
-            );
-          goNextStep();
-          None;
-        },
-      ~initialState={
-        selectedDerivationPath:
-          derivationPath->DerivationPath.Pattern.toString,
-        customDerivationPath:
-          derivationPath->DerivationPath.Pattern.isDefault
-            ? "" : derivationPath->DerivationPath.Pattern.toString,
-      },
-      ~i18n=FormUtils.i18n,
-      (),
-    );
+    ~initialState={
+      selectedDerivationPath: derivationPath->DerivationPath.Pattern.toString,
+      customDerivationPath:
+        derivationPath->DerivationPath.Pattern.isDefault
+          ? "" : derivationPath->DerivationPath.Pattern.toString,
+    },
+    ~i18n=FormUtils.i18n,
+    (),
+  );
+
+module DerivationPathInput = {
+  [@react.component]
+  let make = (~form: SelectDerivationPathForm.api) => {
+    let error = {
+      form.getFieldError(Field(CustomDerivationPath));
+    };
+
+    <>
+      <ThemedTextInput
+        value={form.values.customDerivationPath}
+        onFocus={_ =>
+          form.handleChange(
+            SelectedDerivationPath,
+            form.values.customDerivationPath,
+          )
+        }
+        onValueChange={value => {
+          form.handleChange(CustomDerivationPath, value);
+          form.handleChange(SelectedDerivationPath, value);
+        }}
+        hasError={error->Option.isSome}
+        placeholder=I18n.input_placeholder#enter_derivation_path
+      />
+      <FormError ?error />
+    </>;
+  };
+};
+
+[@react.component]
+let make = (~derivationPath, ~setDerivationPath, ~onPressCancel, ~goNextStep) => {
+  let form: SelectDerivationPathForm.api =
+    form(~derivationPath, ~setDerivationPath, ~next=goNextStep);
 
   let onSubmit = _ => {
     form.submit();
@@ -111,10 +135,6 @@ let make =
 
   let formFieldsAreValids =
     FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
-
-  let error = {
-    form.getFieldError(Field(CustomDerivationPath));
-  };
 
   <>
     <FormGroup style=Style.(arrayOption([|Some(styles##formGroup)|]))>
@@ -134,22 +154,7 @@ let make =
         }
         currentValue={form.values.selectedDerivationPath}
       />
-      <ThemedTextInput
-        value={form.values.customDerivationPath}
-        onFocus={_ =>
-          form.handleChange(
-            SelectedDerivationPath,
-            form.values.customDerivationPath,
-          )
-        }
-        onValueChange={value => {
-          form.handleChange(CustomDerivationPath, value);
-          form.handleChange(SelectedDerivationPath, value);
-        }}
-        hasError={error->Option.isSome}
-        placeholder=I18n.input_placeholder#enter_derivation_path
-      />
-      <FormError ?error />
+      <DerivationPathInput form />
     </FormGroup>
     <View style=FormStyles.formActionSpaceBetween>
       <Buttons.Form text=I18n.btn#back onPress=onPressCancel />
