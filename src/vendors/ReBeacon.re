@@ -1,6 +1,6 @@
 type id = string;
-type version;
-type senderId;
+type version = string;
+type senderId = string;
 type accountIdentifier = string;
 type appMetadata = {
   senderId: string,
@@ -21,17 +21,6 @@ type signingType = [ | `raw | `operation | `micheline];
 module Message = {
   module Request = {
     module PartialOperation = {
-      module TransactionParameters = {
-        module MichelineMichelsonV1Expression = {
-          type t;
-        };
-
-        type t = {
-          entrypoint: string,
-          value: MichelineMichelsonV1Expression.t,
-        };
-      };
-
       type partialOperationType = [
         | `transaction
         | `activate_account
@@ -48,7 +37,7 @@ module Message = {
       type transaction = {
         amount: string,
         destination: string,
-        parameters: option(TransactionParameters.t),
+        parameters: option(ProtocolOptions.TransactionParameters.t),
       };
 
       type activateAccount = {

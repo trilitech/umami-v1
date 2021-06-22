@@ -52,8 +52,8 @@ let make =
                     fee: None,
                     gasLimit: None,
                     storageLimit: None,
-                    parameter: None,
-                    entrypoint: None,
+                    parameter: partialTransaction.parameters->Option.map(a => a.value),
+                    entrypoint: partialTransaction.parameters->Option.map(a => a.entrypoint),
                   },
                 }
               )
