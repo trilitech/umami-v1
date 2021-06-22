@@ -99,16 +99,67 @@ module OpenButton = {
   };
 };
 
+let actionButtons = (~indice, ~log: Logs.t, ~addToast, ~handleDelete) =>
+  <View style=styles##actionButtons>
+    {<ClipboardButton
+       isPrimary=false
+       data={log.msg}
+       copied=I18n.log#log_content
+       addToast
+       style=styles##button
+     />
+     ->ReactUtils.onlyWhen(log.kind == Error)}
+    <DeleteButton isPrimary=false indice handleDelete style=styles##button />
+  </View>;
+
+module LogToast = {
+  [@react.component]
+  let make =
+      (
+        ~kindStyle,
+        ~theme: ThemeContext.theme,
+        ~icon,
+        ~log: Logs.t,
+        ~addToast,
+        ~indice,
+        ~handleDelete,
+      ) => {
+    <View
+      style=Style.(
+        array([|
+          styles##container,
+          style(~backgroundColor=theme.colors.logBackground, ()),
+        |])
+      )>
+      <Hoverable
+        style=Style.(array([|styles##item, kindStyle|]))
+        hoveredStyle={Style.style(
+          ~backgroundColor=theme.colors.primaryStateHovered,
+          (),
+        )}>
+        {_ => {
+           <View style=styles##itemContent>
+             <View style=styles##kindIcon> icon </View>
+             <Typography.Body1
+               style={Style.style(
+                 ~color=theme.colors.primaryTextMediumEmphasis,
+                 (),
+               )}
+               fontWeightStyle=`bold
+               ellipsizeMode=`tail
+               numberOfLines=1>
+               log.msg->React.string
+             </Typography.Body1>
+             {actionButtons(~indice, ~log, ~addToast, ~handleDelete)}
+           </View>;
+         }}
+      </Hoverable>
+    </View>;
+  };
+};
+
 [@react.component]
-let make =
-    (
-      ~indice,
-      ~log: Logs.t,
-      ~addToast,
-      ~showTimestamp=true,
-      ~handleDelete,
-      ~isToast=false,
-    ) => {
+let make = (~indice, ~log: Logs.t, ~addToast, ~handleDelete, ~isToast=false) => {
   let theme = ThemeContext.useTheme();
 
   let (opened, setOpened) = React.useState(_ => false);
@@ -161,71 +212,7 @@ let make =
     opened ? theme.colors.stateActive : theme.colors.background;
 
   isToast
-    ? <View
-        style=Style.(
-          array([|
-            styles##container,
-            style(~backgroundColor=theme.colors.logBackground, ()),
-          |])
-        )>
-        <Hoverable
-          style=Style.(array([|styles##item, kindStyle|]))
-          hoveredStyle={Style.style(
-            ~backgroundColor=theme.colors.primaryStateHovered,
-            (),
-          )}>
-          {_ => {
-             <View style=styles##itemContent>
-               <View style=styles##kindIcon> icon </View>
-               {<Typography.Body2
-                  style=Style.(
-                    array([|
-                      styles##reqelt,
-                      style(
-                        ~color=theme.colors.primaryTextMediumEmphasis,
-                        (),
-                      ),
-                    |])
-                  )
-                  fontSize=12.
-                  fontWeightStyle=`regular
-                  numberOfLines=1>
-                  "["->React.string
-                  Js.Date.(log.timestamp->fromFloat->toLocaleString)
-                  ->React.string
-                  "]  -"->React.string
-                </Typography.Body2>
-                ->ReactUtils.onlyWhen(showTimestamp)}
-               <Typography.Body1
-                 style={Style.style(
-                   ~color=theme.colors.primaryTextMediumEmphasis,
-                   (),
-                 )}
-                 fontWeightStyle=`bold
-                 ellipsizeMode=`tail
-                 numberOfLines=1>
-                 log.msg->React.string
-               </Typography.Body1>
-               <View style=styles##actionButtons>
-                 {<ClipboardButton
-                    isPrimary=true
-                    data={log.msg}
-                    copied=I18n.log#log_content
-                    addToast
-                    style=styles##button
-                  />
-                  ->ReactUtils.onlyWhen(log.kind == Error)}
-                 <DeleteButton
-                   isPrimary=true
-                   indice
-                   handleDelete
-                   style=styles##button
-                 />
-               </View>
-             </View>;
-           }}
-        </Hoverable>
-      </View>
+    ? <LogToast kindStyle theme icon log addToast indice handleDelete />
     : <View
         style=Style.(
           array([|
@@ -246,35 +233,19 @@ let make =
               setOpened
               chevronStyle={chevronStyle(styles##button)}
             />
-            {<Typography.InPageLog
-               style=Style.(
-                 array([|
-                   styles##reqelt,
-                   style(~color=theme.colors.textMaxEmphasis, ()),
-                 |])
-               )
-               numberOfLines=1
-               fontWeightStyle=`bold
-               content=logDateContent
-             />
-             ->ReactUtils.onlyWhen(showTimestamp)}
+            <Typography.InPageLog
+              style=Style.(
+                array([|
+                  styles##reqelt,
+                  style(~color=theme.colors.textMaxEmphasis, ()),
+                |])
+              )
+              numberOfLines=1
+              fontWeightStyle=`bold
+              content=logDateContent
+            />
             firstline
-            <View style=styles##actionButtons>
-              {<ClipboardButton
-                 isPrimary=false
-                 data={log.msg}
-                 copied=I18n.log#log_content
-                 addToast
-                 style=styles##button
-               />
-               ->ReactUtils.onlyWhen(log.kind == Error)}
-              <DeleteButton
-                isPrimary=false
-                indice
-                handleDelete
-                style=styles##button
-              />
-            </View>
+            {actionButtons(~indice, ~log, ~addToast, ~handleDelete)}
           </View>
           secondline
         </View>
