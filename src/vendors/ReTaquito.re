@@ -28,7 +28,6 @@
 const { TezosToolkit, WalletOperation, OpKind, DEFAULT_FEE } =
    require('@taquito/taquito');
 const { RpcClient } = require ('@taquito/rpc');
-const { InMemorySigner, importKey } = require('@taquito/signer');
 ";
 
 module Error = ReTaquitoError;
@@ -100,15 +99,7 @@ let walletOperation = [%raw "WalletOperation"];
 let opKind = [%raw "OpKind"];
 
 let rpcClient = [%raw "RpcClient"];
-let inMemorySigner = [%raw "InMemorySigner"];
-
-type signer;
 type rpcClient;
-
-[@bs.val] [@bs.scope "InMemorySigner"]
-external fromSecretKey:
-  (string, ~passphrase: string=?, unit) => Js.Promise.t(signer) =
-  "fromSecretKey";
 
 type endpoint = string;
 
@@ -170,7 +161,7 @@ module Toolkit = {
     estimate,
   };
 
-  type provider = {signer};
+  type provider = {signer: ReTaquitoSigner.t};
 
   type transferParams = {
     kind: string,
@@ -334,13 +325,21 @@ let convertWalletError = res =>
     | e => Error(Error.WalletError(e)),
   );
 
+open ReTaquitoSigner;
+
 let readEncryptedKey = (key, passphrase) =>
-  fromSecretKey(key->Js.String2.substringToEnd(~from=10), ~passphrase, ())
-  ->Error.fromPromiseParsed;
+  MemorySigner.create(
+    ~secretKey=key->Js.String2.substringToEnd(~from=10),
+    ~passphrase,
+    (),
+  );
 
 let readUnencryptedKey = key =>
-  fromSecretKey(key->Js.String2.substringToEnd(~from=12), ~passphrase="", ())
-  ->Error.fromPromiseParsed;
+  MemorySigner.create(
+    ~secretKey=key->Js.String2.substringToEnd(~from=12),
+    ~passphrase="",
+    (),
+  );
 
 let readSecretKey = (address, passphrase, dirpath) => {
   Wallet.readSecretFromPkh(address, dirpath)
@@ -353,32 +352,6 @@ let readSecretKey = (address, passphrase, dirpath) => {
       }
     );
 };
-
-%raw
-"
-class NoopSigner {
-  constructor(pk, pkh) {
-    this.pk = pk;
-    this.pkh = pkh;
-  }
-  async publicKey() {
-    return this.pk;
-  }
-  async publicKeyHash() {
-    return this.pkh;
-  }
-  async secretKey() {
-    throw new UnconfiguredSignerError();
-  }
-  async sign(_bytes, _watermark) {
-    throw new UnconfiguredSignerError();
-  }
-}
-";
-
-[@bs.new]
-external makeDummySigner: (~pk: string, ~pkh: string, unit) => signer =
-  "NoopSigner";
 
 exception RejectError(string);
 
@@ -396,6 +369,8 @@ let getDelegate = (endpoint, address) => {
      )
   |> (v => FutureJs.fromPromise(v, Js.String.make));
 };
+
+open ReTaquitoSigner;
 
 module Operations = {
   let confirmation = (endpoint, hash, ~blocks=?, ()) => {
@@ -459,7 +434,8 @@ module Estimate = {
     ->Future.map(convertWalletError)
     ->Future.flatMapOk(pk => {
         let tk = Toolkit.create(endpoint);
-        let signer = makeDummySigner(~pk, ~pkh=source, ());
+        let signer =
+          EstimationSigner.create(~publicKey=pk, ~publicKeyHash=source, ());
         let provider = Toolkit.{signer: signer};
         tk->Toolkit.setProvider(provider);
 
@@ -660,7 +636,8 @@ module Transfer = {
       ->Future.map(convertWalletError)
       ->Future.mapOk(pk => {
           let tk = Toolkit.create(endpoint);
-          let signer = makeDummySigner(~pk, ~pkh=source, ());
+          let signer =
+            EstimationSigner.create(~publicKey=pk, ~publicKeyHash=source, ());
           let provider = Toolkit.{signer: signer};
           tk->Toolkit.setProvider(provider);
           tk;
