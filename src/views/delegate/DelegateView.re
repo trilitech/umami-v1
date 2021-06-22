@@ -259,7 +259,7 @@ let make = (~closeAction, ~action) => {
 
   let (operationRequest, sendOperation) = StoreContext.Operations.useCreate();
 
-  let sendOperation = (delegation, password) =>
+  let sendOperation = (~delegation, ~password) =>
     sendOperation(OperationApiRequest.delegate(delegation, password))
     ->Future.tapOk(hash => {setModalStep(_ => SubmittedStep(hash))});
 
@@ -356,7 +356,7 @@ let make = (~closeAction, ~action) => {
                subtitle=I18n.expl#confirm_operation
                showCurrency=showAmount
                content={buildSummaryContent(dryRun)}
-               sendOperation={sendOperation(delegation)}
+               sendOperation={sendOperation(~delegation)}
                loading
              />;
            }}

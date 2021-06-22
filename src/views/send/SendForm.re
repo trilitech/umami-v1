@@ -77,12 +77,6 @@ let toState = (vs: validState): StateLenses.state => {
 
 include ReForm.Make(StateLenses);
 
-module Password = {
-  module StateLenses = [%lenses type state = {password: string}];
-
-  include ReForm.Make(StateLenses);
-};
-
 type transaction = Transfer.t;
 
 let buildTransferElts = (transfers, build) => {

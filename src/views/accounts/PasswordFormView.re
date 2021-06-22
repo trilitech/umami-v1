@@ -36,8 +36,15 @@ let usePasswordForm = submitPassword => {
         PasswordForm.Validation.(Schema(nonEmpty(Password)));
       },
       ~onSubmit=
-        ({state}) => {
-          submitPassword(~password=state.values.password);
+        ({state, raiseSubmitFailed}) => {
+          submitPassword(~password=state.values.password)
+          ->Future.tapError(
+              fun
+              | API.Error.Taquito(WrongPassword) =>
+                raiseSubmitFailed(Some(I18n.form_input_error#wrong_password))
+              | _ => (),
+            )
+          ->ignore;
           None;
         },
       ~initialState={password: ""},
@@ -56,7 +63,13 @@ module PasswordField = {
       label=I18n.label#password
       value={form.values.password}
       handleChange={form.handleChange(Password)}
-      error={form.getFieldError(Field(Password))}
+      error={
+        [
+          form.formState->FormUtils.getFormStateError,
+          form.getFieldError(Field(Password)),
+        ]
+        ->UmamiCommon.Lib.Option.firstSome
+      }
       textContentType=`password
       secureTextEntry=true
       onSubmitEditing={_event => {form.submit()}}
@@ -65,7 +78,11 @@ module PasswordField = {
 };
 
 [@react.component]
-let make = (~loading=false, ~submitPassword) => {
+let make =
+    (
+      ~loading=false,
+      ~submitPassword: (~password: string) => Future.t(Result.t(_)),
+    ) => {
   let (form, formFieldsAreValids) = usePasswordForm(submitPassword);
 
   <>

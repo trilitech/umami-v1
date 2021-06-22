@@ -84,7 +84,7 @@ module ScanImportButton = {
       let (scanRequest, scan) = StoreContext.Secrets.useScanGlobal();
 
       let submitPassword = (~password) => {
-        scan(password)->Future.tapOk(_ => closeAction())->ignore;
+        scan(password)->Future.tapOk(_ => closeAction());
       };
 
       <ModalFormView closing={ModalFormView.Close(closeAction)}>

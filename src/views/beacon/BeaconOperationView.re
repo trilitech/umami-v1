@@ -6,6 +6,11 @@ let styles =
       "title": style(~marginBottom=8.->dp, ~textAlign=`center, ()),
       "dapp": style(~marginBottom=4.->dp, ~textAlign=`center, ()),
       "loading": style(~minHeight=400.->dp, ()),
+      "formActionSpaceBetween":
+        StyleSheet.flatten([|
+          FormStyles.formActionSpaceBetween,
+          style(~marginTop=12.->dp, ()),
+        |]),
     })
   );
 
@@ -79,7 +84,7 @@ let make =
     StoreContext.Operations.useCreate();
   let loading = operationApiRequest->ApiRequest.isLoading;
 
-  let sendTransfer = (transfer, password) => {
+  let sendTransfer = (~transfer, ~password) => {
     let operation = Operation.transfer(transfer);
 
     let ((sourceAddress, _), _) = SendView.sourceDestination(transfer);
@@ -98,18 +103,14 @@ let make =
   };
 
   let onAbort = _ =>
-    if (operationApiRequest->ApiRequest.isDoneOk) {
-      closeAction();
-    } else {
-      beaconRespond(
-        ReBeacon.Message.ResponseInput.Error({
-          id: operationBeaconRequest.id,
-          errorType: `ABORTED_ERROR,
-        }),
-      )
-      ->Future.tapOk(_ => closeAction())
-      ->ignore;
-    };
+    beaconRespond(
+      ReBeacon.Message.ResponseInput.Error({
+        id: operationBeaconRequest.id,
+        errorType: `ABORTED_ERROR,
+      }),
+    )
+    ->Future.tapOk(_ => closeAction())
+    ->ignore;
 
   let onPressCancel = _ => {
     closeAction();
@@ -118,10 +119,15 @@ let make =
 
   let closeButton =
     operationApiRequest->ApiRequest.isDoneOk
-      ? <ModalTemplate.HeaderButtons.Close onPress={_ => closeAction()} />
-      : <Buttons.SubmitSecondary text=I18n.btn#reject onPress=onAbort />;
+      ? Some(
+          <ModalTemplate.HeaderButtons.Close onPress={_ => closeAction()} />,
+        )
+      : None;
 
-  <ModalTemplate.Form headerRight=closeButton>
+  let (form, formFieldsAreValids) =
+    PasswordFormView.usePasswordForm(sendTransfer(~transfer));
+
+  <ModalTemplate.Form headerRight=?closeButton>
     {switch (operationApiRequest) {
      | Done(Ok(hash), _) =>
        <SubmittedView hash onPressCancel submitText=I18n.btn#go_operations />
@@ -145,14 +151,28 @@ let make =
           | Done(Error(error), _) =>
             <ErrorView error={error->API.Error.fromApiToString} />
           | Done(Ok(dryRun), _) =>
-            <SignOperationView
-              source
-              destinations
-              content={SendView.buildSummaryContent(transfer, dryRun)}
-              showCurrency=SendView.showAmount
-              sendOperation={sendTransfer(transfer)}
-              loading
-            />
+            <>
+              <OperationSummaryView
+                style=SignOperationView.styles##operationSummary
+                source
+                destinations
+                showCurrency=SendView.showAmount
+                content={SendView.buildSummaryContent(transfer, dryRun)}
+              />
+              <PasswordFormView.PasswordField form />
+              <View style=styles##formActionSpaceBetween>
+                <Buttons.SubmitSecondary
+                  text=I18n.btn#reject
+                  onPress=onAbort
+                />
+                <Buttons.SubmitPrimary
+                  text=I18n.btn#confirm
+                  onPress={_event => {form.submit()}}
+                  loading
+                  disabledLook={!formFieldsAreValids}
+                />
+              </View>
+            </>
           }}
        </>
      }}

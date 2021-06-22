@@ -38,44 +38,18 @@ let make =
       ~source,
       ~destinations,
       ~showCurrency,
-      ~sendOperation: _ => Future.t(Result.t(_)),
+      ~sendOperation: (~password: string) => Future.t(Result.t(_)),
       ~content: list((string, Belt.List.t(TezosClient.Transfer.currency))),
       ~loading=false,
     ) => {
+
   let (wrongPassword, setWrongPassword) = React.useState(() => false);
 
   let account =
     StoreContext.Accounts.useGetFromAddress(source->fst)->Option.getExn;
 
-  let form: SendForm.Password.api =
-    SendForm.Password.use(
-      ~schema={
-        SendForm.Password.Validation.(Schema(nonEmpty(Password)));
-      },
-      ~onSubmit=
-        ({state, raiseSubmitFailed}) => {
-          sendOperation(state.values.password)
-          ->Future.tapError(
-              fun
-              | API.Error.Taquito(WrongPassword) =>
-                raiseSubmitFailed(Some(I18n.form_input_error#wrong_password))
-              | _ => (),
-            )
-          ->ignore;
-
-          None;
-        },
-      ~initialState={password: ""},
-      ~i18n=FormUtils.i18n,
-      (),
-    );
-
-  let onSubmit = _ => {
-    form.submit();
-  };
-
-  let formFieldsAreValids =
-    FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
+  let (form, formFieldsAreValids) =
+    PasswordFormView.usePasswordForm(sendOperation);
 
   <>
     {title->ReactUtils.mapOpt(title =>
@@ -95,25 +69,11 @@ let make =
       showCurrency
       content
     />
-    <FormGroupTextInput
-      label=I18n.label#password
-      value={form.values.password}
-      handleChange={form.handleChange(Password)}
-      error={
-        [
-          form.formState->FormUtils.getFormStateError,
-          form.getFieldError(Field(Password)),
-        ]
-        ->UmamiCommon.Lib.Option.firstSome
-      }
-      textContentType=`password
-      secureTextEntry=true
-      onSubmitEditing=onSubmit
-    />
+    <PasswordFormView.PasswordField form />
     <View style=FormStyles.verticalFormAction>
       <Buttons.SubmitPrimary
         text=I18n.btn#confirm
-        onPress=onSubmit
+        onPress={_event => {form.submit()}}
         loading
         disabledLook={!formFieldsAreValids}
       />

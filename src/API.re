@@ -1261,6 +1261,7 @@ module Signature = {
       ~source,
       ~password,
       ~payload,
-    );
+    )
+    ->Future.mapError(taquitoError => Error.Taquito(taquitoError));
   };
 };

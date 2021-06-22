@@ -498,7 +498,7 @@ let make = (~closeAction) => {
 
   let (operationRequest, sendOperation) = StoreContext.Operations.useCreate();
 
-  let sendTransfer = (transfer, password) => {
+  let sendTransfer = (~transfer, ~password) => {
     let operation = Operation.transfer(transfer);
 
     let ((sourceAddress, _), _) = sourceDestination(transfer);
@@ -667,7 +667,7 @@ let make = (~closeAction) => {
                subtitle=I18n.expl#confirm_operation
                content={buildSummaryContent(transfer, dryRun)}
                showCurrency=showAmount
-               sendOperation={sendTransfer(transfer)}
+               sendOperation={sendTransfer(~transfer)}
                loading
              />;
            }}

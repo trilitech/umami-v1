@@ -118,8 +118,7 @@ let make =
           });
 
         beaconRespond(response)->Future.tapOk(_ => closeAction())->ignore;
-      })
-    ->ignore;
+      });
   };
 
   let onAbort = _ => {
