@@ -83,6 +83,7 @@ let fromTokenToString = err => Format.asprintf("%a", printError, err);
 let fromWalletToString =
   fun
   | Wallet.KeyNotFound => I18n.wallet#key_not_found
+  | LedgerParsingError(s)
   | Generic(s) => s;
 
 let fromWalletAPIToString =

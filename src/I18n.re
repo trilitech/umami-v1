@@ -385,7 +385,28 @@ let taquito = {
   pub unknown_error_code = n => p("Unknown error code %d", n)
 };
 
-let wallet = {pub _this = this; pub key_not_found = "Key not found"};
+let wallet = {
+  pub _this = this;
+  pub key_not_found = "Key not found";
+  pub invalid_path_size =
+    p("Path %s is not valid: it must be of at least of two indexes");
+  pub invalid_tezos_prefix_path = (prefix, index) =>
+    p(
+      "Prefix %s at index %d is not valid: a Tezos path must start with 44'/1729'",
+      prefix,
+      index,
+    );
+  pub invalid_index = (index, value) =>
+    p("Value %s at index %d is invalid for a derivation path", value, index);
+  pub invalid_prefix = prefix =>
+    p("%s is not a valid prefix for an encoded ledger key", prefix);
+  pub invalid_scheme = scheme =>
+    p("%s is not a valid scheme for an encoded ledger key", scheme);
+  pub invalid_encoding = enc =>
+    p("%s is not a valid an encoded ledger key", enc);
+  pub invalid_ledger =
+    p("The ledger connected has base key %s, which is not the one expected.")
+};
 
 let errors = {
   pub _this = this;

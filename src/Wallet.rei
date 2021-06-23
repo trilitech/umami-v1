@@ -25,7 +25,8 @@
 
 type error =
   | Generic(string)
-  | KeyNotFound;
+  | KeyNotFound
+  | LedgerParsingError(string);
 
 /** Value and file associated to a kind of alias. */
 module type AliasType = {
@@ -132,3 +133,48 @@ let pkFromAlias:
   Future.t(Result.t(string, error));
 
 let mnemonicPkValue: string => PkAlias.t;
+
+let ledgerPkValue: (string, string) => PkAlias.t;
+
+module Ledger: {
+  type error =
+    | InvalidPathSize(array(int))
+    | InvalidIndex(int, string)
+    | InvalidScheme(string)
+    | InvalidEncoding(string)
+    | InvalidLedger(string)
+    | DerivationPathError(DerivationPath.error);
+
+  type scheme =
+    | ED25519
+    | SECP256K1
+    | P256;
+
+  type t = {
+    path: DerivationPath.tezosBip44,
+    scheme,
+  };
+
+  /** The "master key" of a ledger is a way to give it an identity:
+     it's the public key at path `44'/1729'` and scheme ED25519. This
+     specific public key hash is used by `tezos-client` to give it its
+     "animal" prefix. The masterkey is required to encode the "private
+     key". */
+  type masterKey = PublicKeyHash.t;
+
+  let masterKeyPath: DerivationPath.t;
+  let masterKeyScheme: scheme;
+
+  let schemeToString: scheme => string;
+
+  module Decode: {
+    let fromSecretKey:
+      (SecretAlias.t, ~ledgerBasePkh: PublicKeyHash.t) => result(t, error);
+  };
+
+  module Encode: {
+    let toSecretKey: (t, ~ledgerBasePkh: PublicKeyHash.t) => SecretAlias.t;
+  };
+};
+
+let convertLedgerError: Ledger.error => error;

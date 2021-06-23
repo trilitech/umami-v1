@@ -74,3 +74,21 @@ let collect = (type err, l: list(result(_, err))) => {
   | Fail(err) => Error(err)
   };
 };
+
+let collectArray = (type err, arr: array(result(_, err))) => {
+  // let's quit the reduce as soon as e have an error
+  exception Fail(err);
+  try(
+    arr
+    // This uses reduce + reverse to always catch the first error in the list
+    ->Array.map(v =>
+        switch (v) {
+        | Ok(v) => v
+        | Error(e) => raise(Fail(e))
+        }
+      )
+    ->Ok
+  ) {
+  | Fail(err) => Error(err)
+  };
+};
