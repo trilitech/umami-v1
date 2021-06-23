@@ -68,6 +68,11 @@ module AliasesMaker =
   let write = (dirpath, aliases) =>
     System.File.write(~name=dirpath / Alias.filename, stringify(aliases))
     ->Future.mapError(e => Generic(e));
+
+  let find = (aliases, f, ~error=Generic("Key not found!"), ()) =>
+    aliases->Js.Array2.find(f)->FutureEx.fromOption(~error);
+
+  let filter = (aliases, f) => aliases->Js.Array2.filter(f);
 };
 
 module SecretAlias = {
@@ -110,8 +115,7 @@ let aliasFromPkh = (~dirpath, ~pkh, ()) => {
   ->PkhAliases.read
   ->Future.flatMapOk(pkhaliases =>
       pkhaliases
-      ->Js.Array2.find(a => a.value == pkh)
-      ->FutureEx.fromOption(~error=Generic("No key found !"))
+      ->PkhAliases.find(a => a.value == pkh)
       ->Future.mapOk(a => a.name)
     );
 };
@@ -121,10 +125,45 @@ let pkFromAlias = (~dirpath, ~alias, ()) => {
   ->PkAliases.read
   ->Future.flatMapOk(pkaliases =>
       pkaliases
-      ->Js.Array2.find(a => a.name == alias)
-      ->FutureEx.fromOption(~error=Generic("No key found !"))
-      ->Future.mapOk(a => a.value.PkAlias.key)
+      ->PkAliases.find(a => a.name == alias)
+      ->Future.mapOk(a => a.value.key)
     );
+};
+
+/* add or replace */
+let addAliasPkh = (~dirpath, ~alias, ~pkh, ()) => {
+  let alias = PkhAlias.{name: alias, value: pkh};
+  let aliases =
+    dirpath
+    ->PkhAliases.read
+    ->Future.mapOk(aliases => aliases->PkhAliases.filter(a => a.name != alias))
+    ->Future.mapOk(Js.Array.concat([|alias|]));
+  aliases->Future.flatMapOk(PkhAliases.write(dirpath));
+};
+
+let ledgerPkValue = (secretPath, pk) =>
+  PkAlias.{locator: secretPath, key: pk};
+
+let addAliasPk = (~dirpath, ~alias, ~pk, ()) => {
+  let alias = PkAlias.{name: alias, value: pk};
+  let aliases =
+    dirpath
+    ->PkAliases.read
+    ->Future.mapOk(aliases => aliases->PkAliases.filter(a => a.name != alias))
+    ->Future.mapOk(Js.Array.concat([|alias|]));
+  aliases->Future.flatMapOk(PkAliases.write(dirpath));
+};
+
+let addAliasSk = (~dirpath, ~alias, ~sk, ()) => {
+  let alias = SecretAlias.{name: alias, value: sk};
+  let aliases =
+    dirpath
+    ->SecretAliases.read
+    ->Future.mapOk(aliases =>
+        aliases->SecretAliases.filter(a => a.name != alias)
+      )
+    ->Future.mapOk(Js.Array.concat([|alias|]));
+  aliases->Future.flatMapOk(SecretAliases.write(dirpath));
 };
 
 type kind =
