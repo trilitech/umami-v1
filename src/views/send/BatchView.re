@@ -64,12 +64,12 @@ let styles =
     })
   );
 
-let listStyle = (theme: ThemeContext.theme) =>
+let listStyle = (theme: ThemeContext.theme, ledger) =>
   Style.(
     style(
       ~borderColor=theme.colors.borderDisabled,
-      ~minHeight=300.->dp,
-      ~maxHeight=400.->dp,
+      ~minHeight=(ledger ? 150. : 300.)->dp,
+      ~maxHeight=(ledger ? 200. : 400.)->dp,
       ~borderWidth=1.,
       ~borderRadius=4.,
       (),
@@ -207,7 +207,7 @@ module Transactions = {
   };
 
   [@react.component]
-  let make = (~recipients, ~onAddCSVList=?, ~onDelete=?) => {
+  let make = (~recipients, ~smallest=false, ~onAddCSVList=?, ~onDelete=?) => {
     let length = recipients->List.length;
     let theme = ThemeContext.useTheme();
 
@@ -222,7 +222,7 @@ module Transactions = {
       </View>
       {onAddCSVList->Option.mapWithDefault(React.null, _ => <CSVFormatLink />)}
       <DocumentContext.ScrollView
-        style={listStyle(theme)} alwaysBounceVertical=false>
+        style={listStyle(theme, smallest)} alwaysBounceVertical=false>
         {{
            recipients->List.mapWithIndex(
              (i, (onEdit, (recipient, amount, parameters))) => {

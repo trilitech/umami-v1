@@ -141,6 +141,7 @@ let make = (~children) => {
   let (_, setEulaSignature) as eulaSignatureRequestState =
     React.useState(() => false);
 
+  SecretApiRequest.useLoad(secretsRequestState)->ignore;
   AccountApiRequest.useLoad(accountsRequestState)->ignore;
   AliasApiRequest.useLoad(aliasesRequestState)->ignore;
   TokensApiRequest.useLoadTokens(tokensRequestState)->ignore;

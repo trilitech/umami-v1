@@ -56,6 +56,11 @@ let errorToString = ErrorHandler.toString;
 
 let filterOutFormError =
   fun
+  | ErrorHandler.Taquito(LedgerInitTimeout)
+  | ErrorHandler.Taquito(LedgerInit(_))
+  | ErrorHandler.Taquito(LedgerKeyRetrieval)
+  | ErrorHandler.Taquito(LedgerDenied)
+  | ErrorHandler.Taquito(LedgerNotReady)
   | ErrorHandler.Taquito(WrongPassword) => false
   | _ => true;
 

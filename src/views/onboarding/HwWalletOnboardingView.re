@@ -447,9 +447,8 @@ let make = (~closeAction) => {
 
   let importLedger = p =>
     System.Client.initDir(config->ConfigUtils.baseDir)
-    ->Future.flatMapOk(() =>
-        importLedger(p)->Future.mapError(e => e->ErrorHandler.toString)
-      )
+    ->Future.mapError(e => ErrorHandler.(e->File->Wallet))
+    ->Future.flatMapOk(() => importLedger(p))
     ->Future.tapOk(_ => {closeAction()})
     ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
         I18n.t#account_created

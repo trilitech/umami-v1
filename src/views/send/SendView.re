@@ -579,7 +579,11 @@ let make = (~closeAction) => {
            | PasswordStep(transfer, dryRun) =>
              <SignOperationView
                title=I18n.title#confirmation
-               subtitle=I18n.expl#confirm_operation
+               source={transfer.source}
+               subtitle=(
+                 I18n.expl#confirm_operation,
+                 I18n.expl#hardware_wallet_confirm_operation,
+               )
                sendOperation={sendTransfer(~transfer)}
                loading>
                <OperationSummaryView.Transactions transfer dryRun />

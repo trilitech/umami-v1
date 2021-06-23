@@ -319,7 +319,11 @@ let make = (~closeAction, ~action) => {
                };
              <SignOperationView
                title
-               subtitle=I18n.expl#confirm_operation
+               source={delegation.source}
+               subtitle=(
+                 I18n.expl#confirm_operation,
+                 I18n.expl#hardware_wallet_confirm_operation,
+               )
                sendOperation={sendOperation(~delegation)}
                loading>
                <OperationSummaryView.Delegate delegation dryRun />

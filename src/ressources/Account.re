@@ -26,7 +26,6 @@
 type t = {
   address: PublicKeyHash.t,
   name: string,
-  ledger: bool,
 };
 
 let toAlias = ({address, name}: t) => {

@@ -77,6 +77,8 @@ module Accounts: {
   let secrets:
     (~config: ConfigFile.t) => result(t, TezosClient.ErrorHandler.t);
 
+  let isLedger: (PublicKeyHash.t, array(Secret.Repr.derived)) => bool;
+
   let recoveryPhrases:
     (~config: ConfigFile.t) =>
     option(array(SecureStorage.Cipher.encryptedData));
