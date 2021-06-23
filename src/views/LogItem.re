@@ -159,7 +159,15 @@ module LogToast = {
 };
 
 [@react.component]
-let make = (~indice, ~log: Logs.t, ~addToast, ~handleDelete, ~isToast=false) => {
+let make =
+    (
+      ~indice,
+      ~log: Logs.t,
+      ~addToast,
+      ~handleDelete,
+      ~isToast=false,
+      ~isFirst=false,
+    ) => {
   let theme = ThemeContext.useTheme();
 
   let (opened, setOpened) = React.useState(_ => false);
@@ -223,11 +231,13 @@ let make = (~indice, ~log: Logs.t, ~addToast, ~handleDelete, ~isToast=false) => 
           array([|
             styles##logBlock,
             {
-              style(
-                ~borderTopColor=theme.colors.stateDisabled,
-                ~borderTopWidth=1.,
-                (),
-              );
+              isFirst
+                ? style()
+                : style(
+                    ~borderTopColor=theme.colors.stateDisabled,
+                    ~borderTopWidth=1.,
+                    (),
+                  );
             },
             style(~backgroundColor=logsBackgroundColor, ()),
           |])

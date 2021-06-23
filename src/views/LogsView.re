@@ -95,6 +95,7 @@ let make = () => {
                log
                addToast={addLog(true)}
                handleDelete=deleteError
+               isFirst={i == 0}
              />
            )
          ->React.array
