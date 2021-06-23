@@ -211,17 +211,24 @@ let make = (~indice, ~log: Logs.t, ~addToast, ~handleDelete, ~isToast=false) => 
   let logsBackgroundColor =
     opened ? theme.colors.stateActive : theme.colors.background;
 
+  let onPress = _ => {
+    setOpened(_ => !opened);
+  };
+
   isToast
     ? <LogToast kindStyle theme icon log addToast indice handleDelete />
-    : <View
+    : <TouchableOpacity
+        onPress
         style=Style.(
           array([|
             styles##logBlock,
-            style(
-              ~borderBottomColor=theme.colors.stateDisabled,
-              ~borderBottomWidth=1.,
-              (),
-            ),
+            {
+              style(
+                ~borderTopColor=theme.colors.stateDisabled,
+                ~borderTopWidth=1.,
+                (),
+              );
+            },
             style(~backgroundColor=logsBackgroundColor, ()),
           |])
         )>
@@ -249,5 +256,5 @@ let make = (~indice, ~log: Logs.t, ~addToast, ~handleDelete, ~isToast=false) => 
           </View>
           secondline
         </View>
-      </View>;
+      </TouchableOpacity>;
 };
