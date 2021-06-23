@@ -23,66 +23,108 @@
 /*                                                                           */
 /*****************************************************************************/
 
+open System.Path.Ops;
+
 type error =
   | Generic(string);
 
-module SecretAliases = {
-  type alias = {
-    name: string,
-    value: string,
-  };
-  type t = array(alias);
-
-  [@bs.val] [@bs.scope "JSON"] external parse: string => t = "parse";
+module type AliasType = {
+  type t;
+  let filename: System.Path.t;
 };
 
-module PkAliases = {
-  type value = {
-    locator: string,
-    key: string,
-  };
-
+module type AliasesMakerType = {
+  type key;
+  type value;
   type alias = {
-    name: string,
+    name: key,
     value,
   };
   type t = array(alias);
-
-  [@bs.val] [@bs.scope "JSON"] external parse: string => t = "parse";
+  let parse: string => t;
+  let stringify: t => string;
+  let read: System.Path.t => Future.t(Result.t(t, error));
+  let write: (System.Path.t, t) => Future.t(Result.t(unit, error));
 };
 
-module PkhAliases = {
+module AliasesMaker =
+       (Alias: AliasType)
+       : (AliasesMakerType with type key := string and type value := Alias.t) => {
   type alias = {
     name: string,
-    value: string,
+    value: Alias.t,
   };
+
   type t = array(alias);
 
   [@bs.val] [@bs.scope "JSON"] external parse: string => t = "parse";
+  [@bs.val] [@bs.scope "JSON"] external stringify: t => string = "stringify";
+
+  let read = dirpath =>
+    System.File.read(dirpath / Alias.filename)
+    ->Future.mapError(e => Generic(e))
+    ->Future.mapOk(parse);
+
+  let write = (dirpath, aliases) =>
+    System.File.write(~name=dirpath / Alias.filename, stringify(aliases))
+    ->Future.mapError(e => Generic(e));
 };
 
-open System.Path.Ops;
+module SecretAlias = {
+  type t = string;
+};
+
+module SecretAliases =
+  AliasesMaker({
+    type t = SecretAlias.t;
+    let filename = !"secret_keys";
+  });
+
+module PkAlias = {
+  type t = {
+    locator: string,
+    key: string,
+  };
+};
+
+module PkAliases =
+  AliasesMaker({
+    type t = PkAlias.t;
+
+    let filename = !"public_keys";
+  });
+
+module PkhAlias = {
+  type t = string;
+};
+
+module PkhAliases =
+  AliasesMaker({
+    type t = PkhAlias.t;
+
+    let filename = !"public_key_hashs";
+  });
 
 let aliasFromPkh = (~dirpath, ~pkh, ()) => {
-  System.File.read(dirpath / (!"public_key_hashs"))
-  ->Future.mapError(e => Generic(e))
-  ->Future.flatMapOk(file => {
-      PkhAliases.parse(file)
+  dirpath
+  ->PkhAliases.read
+  ->Future.flatMapOk(pkhaliases =>
+      pkhaliases
       ->Js.Array2.find(a => a.value == pkh)
       ->FutureEx.fromOption(~error=Generic("No key found !"))
-      ->Future.mapOk(a => a.PkhAliases.name)
-    });
+      ->Future.mapOk(a => a.name)
+    );
 };
 
 let pkFromAlias = (~dirpath, ~alias, ()) => {
-  System.File.read(dirpath / (!"public_keys"))
-  ->Future.mapError(e => Generic(e))
-  ->Future.flatMapOk(file => {
-      PkAliases.parse(file)
-      ->Js.Array2.find(a => a.PkAliases.name == alias)
+  dirpath
+  ->PkAliases.read
+  ->Future.flatMapOk(pkaliases =>
+      pkaliases
+      ->Js.Array2.find(a => a.name == alias)
       ->FutureEx.fromOption(~error=Generic("No key found !"))
-      ->Future.mapOk(a => a.PkAliases.value.key)
-    });
+      ->Future.mapOk(a => a.value.PkAlias.key)
+    );
 };
 
 type kind =
@@ -93,14 +135,14 @@ type kind =
 let readSecret = (address, dirpath) =>
   aliasFromPkh(~dirpath, ~pkh=address, ())
   ->Future.flatMapOk(alias => {
-      System.File.read(dirpath / (!"secret_keys"))
-      ->Future.mapError(e => Generic(e))
-      ->Future.flatMapOk(file => {
-          SecretAliases.parse(file)
-          ->Js.Array2.find(a => a.SecretAliases.name == alias)
+      dirpath
+      ->SecretAliases.read
+      ->Future.flatMapOk(secretAliases =>
+          secretAliases
+          ->Js.Array2.find(a => a.name == alias)
           ->FutureEx.fromOption(~error=Generic("No key found !"))
-          ->Future.mapOk(a => a.SecretAliases.value)
-        })
+          ->Future.mapOk(a => a.value)
+        )
     })
   ->Future.flatMapOk(key =>
       (
