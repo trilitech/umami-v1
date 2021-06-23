@@ -71,6 +71,7 @@ let styles =
       "toggleOff":
         style(~paddingLeft=32.->dp, ~width=100.->pct, ~paddingTop=0.->dp, ()),
       "reverseY": style(~transform=[|rotate(~rotate=180.->deg)|], ()),
+      "firstLine": style(~marginRight=49.->dp, ()),
     })
   );
 
@@ -195,7 +196,12 @@ let make =
       ? React.null
       : <Typography.InPageLog
           ellipsizeMode=`tail
-          style={Style.style(~color=theme.colors.textMaxEmphasis, ())}
+          style=Style.(
+            array([|
+              styles##firstLine,
+              style(~color=theme.colors.textMaxEmphasis, ()),
+            |])
+          )
           fontWeightStyle=`light
           numberOfLines=1
           content={log.msg->React.string}
