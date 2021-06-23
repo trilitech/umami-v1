@@ -199,6 +199,7 @@ module Error = {
          | BranchRefused => I18n.form_input_error#branch_refused_error
          | InvalidContract => I18n.form_input_error#invalid_contract
          | EmptyTransaction => I18n.form_input_error#empty_transaction
+         | WalletError(Generic(s)) => s
        );
 
   let printError = (fmt, err) => {
