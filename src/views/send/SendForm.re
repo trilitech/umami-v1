@@ -27,7 +27,7 @@ module StateLenses = [%lenses
   type state = {
     amount: string,
     sender: option(Account.t),
-    recipient: FormUtils.Account.any,
+    recipient: FormUtils.Alias.any,
     fee: string,
     gasLimit: string,
     storageLimit: string,
@@ -39,7 +39,7 @@ module StateLenses = [%lenses
 type validState = {
   amount: Transfer.currency,
   sender: Account.t,
-  recipient: FormUtils.Account.t,
+  recipient: FormUtils.Alias.t,
   fee: option(ProtocolXTZ.t),
   gasLimit: option(int),
   storageLimit: option(int),
@@ -66,7 +66,7 @@ let unsafeExtractValidState = (token, state: StateLenses.state): validState => {
 let toState = (vs: validState): StateLenses.state => {
   amount: vs.amount->Transfer.currencyToString,
   sender: vs.sender->Some,
-  recipient: vs.recipient->FormUtils.Account.Valid,
+  recipient: vs.recipient->FormUtils.Alias.Valid,
 
   fee: vs.fee->Option.mapWithDefault("", ProtocolXTZ.toString),
   gasLimit: vs.gasLimit->FormUtils.optToString(Int.toString),
@@ -87,7 +87,7 @@ type transaction = Transfer.t;
 
 let buildTransferElts = (transfers, build) => {
   transfers->List.map(((t: validState, advOpened)) => {
-    let destination = t.recipient->FormUtils.Account.address;
+    let destination = t.recipient->FormUtils.Alias.address;
 
     let gasLimit = advOpened ? t.gasLimit : None;
     let storageLimit = advOpened ? t.storageLimit : None;

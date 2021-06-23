@@ -65,10 +65,10 @@ let parseAmount = (v, token) =>
 
 let optToString = (v, f) => v->Option.mapWithDefault("", f);
 
-module Account = {
+module Alias = {
   type t =
     | Address(string)
-    | Account(Account.t);
+    | Alias(Alias.t);
 
   type any =
     | AnyString(string)
@@ -77,12 +77,12 @@ module Account = {
   let address =
     fun
     | Address(s) => s
-    | Account(a) => a.address;
+    | Alias(a) => a.address;
 
   let alias =
     fun
     | Address(_) => ""
-    | Account(a) => a.alias;
+    | Alias(a) => a.name;
 };
 
 module Unsafe = {
@@ -109,8 +109,8 @@ module Unsafe = {
 
   let account =
     fun
-    | Account.AnyString(_) => failwith("Should be an address or an alias")
-    | Account.Valid(a) => a;
+    | Alias.AnyString(_) => failwith("Should be an address or an alias")
+    | Alias.Valid(a) => a;
 };
 
 let emptyOr = (f, v): ReSchema.fieldState => v == "" ? Valid : f(v);

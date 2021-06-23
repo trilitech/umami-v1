@@ -51,7 +51,7 @@ let make =
   let items =
     accounts
     ->Map.String.valuesToArray
-    ->SortArray.stableSortBy((a, b) => Pervasives.compare(a.alias, b.alias));
+    ->SortArray.stableSortBy(Account.compareName);
 
   <FormGroup>
     <FormLabel label hasError style=styles##label />

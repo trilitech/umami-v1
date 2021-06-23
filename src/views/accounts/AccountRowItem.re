@@ -65,7 +65,11 @@ let make = (~account: Account.t, ~token: option(Token.t)=?) => {
         data={account.address}
         style=styles##button
       />
-      <QrButton tooltipKey={account.address} account style=styles##button />
+      <QrButton
+        tooltipKey={account.address}
+        account={account->Account.toAlias}
+        style=styles##button
+      />
     </View>
     {delegateRequest
      ->ApiRequest.mapWithDefault(React.null, delegate => {

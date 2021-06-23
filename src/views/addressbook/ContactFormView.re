@@ -33,14 +33,14 @@ module AccountCreateForm = ReForm.Make(StateLenses);
 
 type action =
   | Create
-  | Edit(Account.t);
+  | Edit(Alias.t);
 
 let addressExistsCheck =
     (aliases, values: StateLenses.state): ReSchema.fieldState => {
   switch (aliases->Map.String.get(values.address)) {
   | None => Valid
-  | Some((a: Account.t)) =>
-    Error(I18n.form_input_error#key_already_registered(a.alias))
+  | Some(a: Alias.t) =>
+    Error(I18n.form_input_error#key_already_registered(a.name))
   };
 };
 
@@ -93,10 +93,7 @@ let make = (~initAddress=?, ~action: action, ~closeAction) => {
               )
             ->ignore
           | Edit(account) =>
-            updateAlias({
-              new_name: state.values.name,
-              old_name: account.alias,
-            })
+            updateAlias({new_name: state.values.name, old_name: account.name})
             ->Future.tapOk(_ => closeAction())
             ->ApiRequest.logOk(addToast, Logs.Account, _ =>
                 I18n.t#account_updated
@@ -112,7 +109,7 @@ let make = (~initAddress=?, ~action: action, ~closeAction) => {
             name: "",
             address: initAddress->Option.getWithDefault(""),
           }
-        | Edit(account) => {name: account.alias, address: account.address}
+        | Edit(account) => {name: account.name, address: account.address}
         },
       ~i18n=FormUtils.i18n,
       (),

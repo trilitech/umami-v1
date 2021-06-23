@@ -44,11 +44,9 @@ module Item = {
     );
 
   [@react.component]
-  let make = (~account: Account.t) => {
+  let make = (~account: Alias.t) => {
     <View style=styles##itemContainer>
-      <Typography.Subtitle1>
-        account.alias->React.string
-      </Typography.Subtitle1>
+      <Typography.Subtitle1> account.name->React.string </Typography.Subtitle1>
       <Typography.Address> account.address->React.string </Typography.Address>
     </View>;
   };
@@ -63,9 +61,9 @@ let styles =
     })
   );
 
-let renderItem = (account: Account.t) => <Item account />;
+let renderItem = (account: Alias.t) => <Item account />;
 
-let keyExtractor = (account: Account.t) => account.address;
+let keyExtractor = (account: Alias.t) => account.address;
 
 let renderLabel = (label, hasError) => {
   <FormLabel label hasError style=styles##label />;
@@ -75,41 +73,41 @@ let renderLabel = (label, hasError) => {
 let make =
     (
       ~label,
-      ~filterOut: option(Account.t),
-      ~accounts,
-      ~value: FormUtils.Account.any,
-      ~handleChange: FormUtils.Account.any => unit,
+      ~filterOut: option(Alias.t),
+      ~aliases,
+      ~value: FormUtils.Alias.any,
+      ~handleChange: FormUtils.Alias.any => unit,
       ~error,
     ) => {
-  let accountsArray =
-    accounts
+  let aliasArray =
+    aliases
     ->Map.String.valuesToArray
-    ->Array.keep((v: Account.t) =>
+    ->Array.keep((v: Alias.t) =>
         Some(v.address) != filterOut->Option.map(a => a.address)
       );
 
   let items =
     switch (value) {
-    | AnyString("") => accountsArray->Array.slice(~offset=0, ~len=4)
+    | AnyString("") => aliasArray->Array.slice(~offset=0, ~len=4)
     | Valid(Address(v))
     | AnyString(v) =>
-      accountsArray->Array.keep(account =>
-        account.alias
+      aliasArray->Array.keep(a =>
+        a.name
         ->Js.String2.trim
         ->Js.String2.toLowerCase
         ->Js.String2.startsWith(v->Js.String2.trim->Js.String2.toLowerCase)
       )
-    | Valid(Account(_)) => [||]
+    | Valid(Alias(_)) => [||]
     };
 
-  let validAccount =
+  let validAlias =
     switch (value) {
-    | FormUtils.Account.Valid(_) => true
-    | FormUtils.Account.AnyString(_) => false
+    | FormUtils.Alias.Valid(_) => true
+    | FormUtils.Alias.AnyString(_) => false
     };
 
-  let styleValidAccount =
-    validAccount ? Style.(style(~fontWeight=`bold, ()))->Some : None;
+  let styleValidAlias =
+    validAlias ? Style.(style(~fontWeight=`bold, ()))->Some : None;
 
   <FormGroup style=styles##formGroup>
     <Autocomplete
@@ -117,20 +115,20 @@ let make =
       value={
         switch (value) {
         | Valid(Address(s)) =>
-          accounts->Map.String.get(s)->Option.mapWithDefault(s, a => a.alias)
-        | Valid(Account(a)) => a.alias
+          aliases->Map.String.get(s)->Option.mapWithDefault(s, a => a.name)
+        | Valid(Alias(a)) => a.name
         | AnyString(s) => s
         }
       }
       handleChange={s =>
-        accountsArray
-        ->Array.getBy(v => v.Account.alias == s)
+        aliasArray
+        ->Array.getBy(v => v.Alias.name == s)
         ->(
             fun
-            | Some(v) => v->Account->FormUtils.Account.Valid
+            | Some(v) => v->Alias->FormUtils.Alias.Valid
             | None when ReTaquito.Utils.validateAddress(s)->Result.isOk =>
-              s->FormUtils.Account.Address->FormUtils.Account.Valid
-            | None => s->FormUtils.Account.AnyString
+              s->FormUtils.Alias.Address->FormUtils.Alias.Valid
+            | None => s->FormUtils.Alias.AnyString
           )
         ->handleChange
       }
@@ -143,7 +141,7 @@ let make =
       renderLabel={renderLabel(label)}
       itemHeight
       numItemsToDisplay
-      style=Style.(arrayOption([|Some(styles##input), styleValidAccount|]))
+      style=Style.(arrayOption([|Some(styles##input), styleValidAlias|]))
     />
     <FormError ?error />
   </FormGroup>;

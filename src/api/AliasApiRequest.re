@@ -32,8 +32,8 @@ let useLoad = requestState => {
     API.Aliases.get(~settings)
     ->Future.mapOk(response => {
         response
-        ->Array.map(((alias, address)) => {
-            let account: Account.t = {alias, address};
+        ->Array.map(((name, address)) => {
+            let account: Alias.t = {name, address};
             (address, account);
           })
         ->Array.reverse

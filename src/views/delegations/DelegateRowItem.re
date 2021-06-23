@@ -97,7 +97,7 @@ let make =
       <Table.Row>
         <CellAddress>
           <Typography.Body1 numberOfLines=1>
-            account.alias->React.string
+            account.name->React.string
           </Typography.Body1>
         </CellAddress>
         <CellAmount>

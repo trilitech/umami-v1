@@ -103,7 +103,7 @@ module AccountNestedRowItem = {
       <RowItem.Bordered height=90. isNested=true isLast>
         <View style=styles##inner>
           <Typography.Subtitle1 style=styles##alias>
-            account.alias->React.string
+            account.name->React.string
           </Typography.Subtitle1>
           <AccountInfoBalance address={account.address} />
           <Typography.Address style=styles##derivation>
@@ -147,7 +147,7 @@ module AccountImportedRowItem = {
       let (accountRequest, deleteAccount) = StoreContext.Accounts.useDelete();
 
       let onPressConfirmDelete = _e => {
-        deleteAccount(account.alias)->ignore;
+        deleteAccount(account.name)->ignore;
       };
 
       <DeleteButton.MenuItem
@@ -194,7 +194,7 @@ module AccountImportedRowItem = {
           tag
           <View>
             <Typography.Subtitle1 style=styles##alias>
-              account.alias->React.string
+              account.name->React.string
             </Typography.Subtitle1>
             <AccountInfoBalance address={account.address} />
           </View>

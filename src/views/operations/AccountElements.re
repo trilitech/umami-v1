@@ -60,7 +60,7 @@ module Selector = {
     let make =
         (
           ~style as paramStyle=?,
-          ~account: Account.t,
+          ~account: Alias.t,
           ~token: option(Token.t)=?,
           ~showAmount=Balance,
         ) => {
@@ -68,7 +68,7 @@ module Selector = {
         style=Style.(arrayOption([|Some(itemStyles##inner), paramStyle|]))>
         <View style=itemStyles##info>
           <Typography.Subtitle2>
-            account.alias->React.string
+            account.name->React.string
           </Typography.Subtitle2>
           {switch (showAmount) {
            | Balance => <AccountInfoBalance address={account.address} ?token />
@@ -87,12 +87,22 @@ module Selector = {
       (~showAmount, ~token, selectedAccount: option(Account.t), _hasError) =>
     <View style=styles##selectorContent>
       {selectedAccount->Option.mapWithDefault(<LoadingView />, account =>
-         <Item style=itemStyles##itemInSelector account showAmount ?token />
+         <Item
+           style=itemStyles##itemInSelector
+           account={account->Account.toAlias}
+           showAmount
+           ?token
+         />
        )}
     </View>;
 
   let baseRenderItem = (~showAmount, ~token, account: Account.t) =>
-    <Item style=itemStyles##itemInSelector account showAmount ?token />;
+    <Item
+      style=itemStyles##itemInSelector
+      account={account->Account.toAlias}
+      showAmount
+      ?token
+    />;
 
   let renderButton = baseRenderButton(~showAmount=Balance, ~token=None);
 
@@ -109,9 +119,7 @@ module Selector = {
       let items =
         accounts
         ->Map.String.valuesToArray
-        ->SortArray.stableSortBy((a, b) =>
-            Pervasives.compare(a.alias, b.alias)
-          );
+        ->SortArray.stableSortBy(Account.compareName);
 
       <>
         <Typography.Overline2>

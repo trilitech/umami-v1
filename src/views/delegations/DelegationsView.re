@@ -68,9 +68,7 @@ let allNone = delegateRequests =>
 let accountsToShow = accounts =>
   accounts
   ->Map.String.valuesToArray
-  ->SortArray.stableSortBy((a, b) =>
-      Pervasives.compare(a.Account.alias, b.Account.alias)
-    );
+  ->SortArray.stableSortBy(Account.compareName);
 
 module DelegateItem = {
   [@react.component]

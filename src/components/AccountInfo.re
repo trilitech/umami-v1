@@ -44,7 +44,7 @@ let make =
     ) => {
   <View>
     {<Typography.Subtitle1 style=styles##alias>
-       account.alias->React.string
+       account.name->React.string
      </Typography.Subtitle1>
      ->ReactUtils.onlyWhen(showAlias)}
     {showBalance

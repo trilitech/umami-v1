@@ -52,7 +52,7 @@ type state = {
     apiRequestsState((array(Operation.Read.t), int), string),
   operationsConfirmations: reactState(Set.String.t),
   aliasesRequestState:
-    reactState(ApiRequest.t(Map.String.t(Account.t), string)),
+    reactState(ApiRequest.t(Map.String.t(Alias.t), string)),
   bakersRequestState: reactState(ApiRequest.t(array(Delegate.t), string)),
   tokensRequestState:
     reactState(ApiRequest.t(Map.String.t(Token.t), string)),

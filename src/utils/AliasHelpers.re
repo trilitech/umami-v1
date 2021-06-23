@@ -26,14 +26,14 @@
 let getAliasFromAddress = (address, aliases) => {
   aliases
   ->Map.String.get(address)
-  ->Option.map((account: Account.t) => account.alias);
+  ->Option.map((account: Alias.t) => account.name);
 };
 
 let getContractAliasFromAddress = (address, aliases, tokens) => {
   let r =
     aliases
     ->Map.String.get(address)
-    ->Option.map((account: Account.t) => account.alias);
+    ->Option.map((account: Alias.t) => account.name);
 
   switch (r) {
   | None =>
@@ -45,6 +45,6 @@ let getContractAliasFromAddress = (address, aliases, tokens) => {
 };
 
 let formCheckExists = (aliases, alias): ReSchema.fieldState => {
-  aliases->Map.String.some((_, v: Account.t) => v.alias == alias)
+  aliases->Map.String.some((_, v: Alias.t) => v.name == alias)
     ? Error(I18n.form_input_error#name_already_registered) : Valid;
 };
