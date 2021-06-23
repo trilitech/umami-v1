@@ -118,7 +118,7 @@ module LogsButton = {
         title
         ?icon
         isActive=isCurrent
-        colorStyle={!seen ? `error : `disabled}
+        colorStyle=?{!seen ? Some(`error) : None}
       />
     </>;
   };
