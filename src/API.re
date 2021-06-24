@@ -289,7 +289,7 @@ module CSV = {
     ->Tez.fromString
     ->ResultEx.fromOption(Error(CannotParseTezAmount(amount, index, 2)))
     ->Result.map(amount =>
-        Transfer.makeSingleXTZTransferElt(~destination, ~amount, ())
+        Transfer.makeSingleTezTransferElt(~destination, ~amount, ())
       );
 
   let handleTokenRow = (tokens, index, destination, amount, token) =>

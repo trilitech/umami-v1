@@ -86,7 +86,7 @@ let makeSingleTransaction =
       (),
     ) => {
   let transfers = [
-    Transfer.makeSingleXTZTransferElt(
+    Transfer.makeSingleTezTransferElt(
       ~amount,
       ~destination,
       ~fee?,

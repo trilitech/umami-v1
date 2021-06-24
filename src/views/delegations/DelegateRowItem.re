@@ -105,7 +105,7 @@ let make =
             {switch (delegateInfoRequest) {
              | Done(Ok(Some(delegateInfo)), _)
              | Loading(Some(Some(delegateInfo))) =>
-               I18n.t#xtz_amount(delegateInfo.initialBalance->Tez.toString)
+               I18n.t#tez_amount(delegateInfo.initialBalance->Tez.toString)
                ->React.string
              | Done(Ok(None), _)
              | Loading(Some(None))
@@ -125,7 +125,7 @@ let make =
             {switch (balanceRequest) {
              | Done(Ok(balance), _)
              | Loading(Some(balance)) =>
-               I18n.t#xtz_amount(balance->Tez.toString)->React.string
+               I18n.t#tez_amount(balance->Tez.toString)->React.string
              | Done(Error(_error), _) => React.null
              | NotAsked
              | Loading(None) =>
@@ -177,7 +177,7 @@ let make =
            | Done(Ok(Some({lastReward: Some(lastReward)})), _)
            | Loading(Some(Some({lastReward: Some(lastReward)}))) =>
              <Typography.Body1 colorStyle=`positive>
-               {I18n.t#xtz_op_amount("+", lastReward->Tez.toString)
+               {I18n.t#tez_op_amount("+", lastReward->Tez.toString)
                 ->React.string}
              </Typography.Body1>
            | Done(Ok(Some({lastReward: None})), _)

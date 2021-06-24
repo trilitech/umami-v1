@@ -39,10 +39,10 @@ type t = Int64.t; // represented as mutez internally
 
 let zero = Int64.zero;
 
-let oneXtz = Int64.of_int(1000000);
-let xtzExp10 = 6;
+let oneTez = Int64.of_int(1000000);
+let tezExp10 = 6;
 
-let toMutez = i => i * oneXtz;
+let toMutez = i => i * oneTez;
 
 let rec mulExp10 = (x, n) => {
   Int64.(n <= 0 ? x : mulExp10(x * of_int(10), Int.(n - 1)));
@@ -54,17 +54,17 @@ let int64OfString = s =>
   };
 
 // `fromString` tries to read a string, returns None if
-// it is not a formatted xtz
-let fromString = (xtzStr): option(t) => {
+// it is not a formatted tez
+let fromString = (tezStr): option(t) => {
   Int64.(
-    switch (Js.String.split(".", xtzStr)) {
+    switch (Js.String.split(".", tezStr)) {
     | [|v|] => v->int64OfString->Option.map(toMutez)
     | [|integer, floating|] =>
       switch (int64OfString(integer), int64OfString(floating)) {
       | (Some(integer64), Some(floating64)) =>
         let floating64 = {
           let floatingMult =
-            one->mulExp10(Int.(xtzExp10 - floating->Js.String.length));
+            one->mulExp10(Int.(tezExp10 - floating->Js.String.length));
           floating64 == zero ? zero : floating64 * floatingMult;
         };
         Some(integer64->toMutez + floating64);
@@ -83,16 +83,16 @@ let ofInt64 = x => x;
 
 let toBigNumber = x => x->toInt64->ReBigNumber.fromInt64;
 
-let toString = (xtz: t) => {
+let toString = (tez: t) => {
   open Int64;
-  let integer = to_string(xtz / oneXtz);
-  let floating = xtz mod oneXtz;
+  let integer = to_string(tez / oneTez);
+  let floating = tez mod oneTez;
   let floatingStr = to_string(floating);
   let fLen = Js.String.length(floatingStr);
 
   let leading0 =
-    fLen >= xtzExp10 && floating != zero
-      ? "" : Js.String.repeat(Int.(xtzExp10 - fLen), "0");
+    fLen >= tezExp10 && floating != zero
+      ? "" : Js.String.repeat(Int.(tezExp10 - fLen), "0");
   let floatingStr = leading0 ++ floatingStr;
   integer ++ "." ++ floatingStr;
 };

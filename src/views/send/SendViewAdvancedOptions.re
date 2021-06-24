@@ -42,8 +42,8 @@ let styles =
     })
   );
 
-let xtzDecoration = (~style) =>
-  <Typography.Body1 style> I18n.t#xtz->React.string </Typography.Body1>;
+let tezDecoration = (~style) =>
+  <Typography.Body1 style> I18n.t#tez->React.string </Typography.Body1>;
 
 [@react.component]
 let make = (~operation, ~token, ~form: SendForm.api) => {
@@ -69,13 +69,13 @@ let make = (~operation, ~token, ~form: SendForm.api) => {
 
   <View>
     <View style=styles##formRowInputs>
-      <FormGroupXTZInput
+      <FormGroupCurrencyInput
         label=I18n.label#fee
         value={form.values.fee}
         handleChange={fee => form.handleChange(Fee, fee)}
         error={form.getFieldError(Field(Fee))}
         style=styles##formRowInput
-        decoration=FormGroupXTZInput.xtzDecoration
+        decoration=FormGroupCurrencyInput.tezDecoration
       />
       {{
          <>

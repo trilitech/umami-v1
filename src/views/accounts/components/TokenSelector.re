@@ -49,10 +49,10 @@ let styles =
     })
   );
 
-let xtzToken: Token.t = {
+let tezToken: Token.t = {
   address: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
   alias: I18n.t#tezos,
-  symbol: I18n.t#xtz,
+  symbol: I18n.t#tez,
   chain: Network.edo2netChain,
 };
 
@@ -80,7 +80,7 @@ module TokenItem = {
     let theme = ThemeContext.useTheme();
     <View style=styles##inner>
       <View style=styles##titleContainer>
-        {token.symbol == xtzToken.symbol
+        {token.symbol == tezToken.symbol
            ? <Icons.Tezos
                size=20.
                color={theme.colors.iconMediumEmphasis}
@@ -127,7 +127,7 @@ let make =
 
   let onValueChange = (newValue: Token.t) =>
     setSelectedToken(
-      newValue.address == xtzToken.address ? None : newValue->Some,
+      newValue.address == tezToken.address ? None : newValue->Some,
     );
 
   items->Array.size > 0
@@ -140,7 +140,7 @@ let make =
         onValueChange
         renderItem
         selectedValueKey=?selectedToken
-        noneItem=xtzToken
+        noneItem=tezToken
         keyPopover="tokenSelector"
       />
     : React.null;

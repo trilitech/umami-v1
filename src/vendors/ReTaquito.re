@@ -590,7 +590,7 @@ module Transfer = {
     txs
     ->List.map((tx: Transfer.elt) =>
         switch (tx.amount) {
-        | XTZ(amount) =>
+        | Tez(amount) =>
           prepareTransfer(
             ~source,
             ~dest=tx.destination,

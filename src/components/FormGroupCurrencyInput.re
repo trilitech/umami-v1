@@ -33,10 +33,11 @@ let formatOnBlur = (token, handleChange, value) =>
     value->Tez.formatString->Option.getWithDefault("")->handleChange;
   };
 
-let xtzDecoration = (~style) =>
+let tezDecoration = (~style) =>
   <Typography.Body1 colorStyle=`mediumEmphasis style>
-    I18n.t#xtz->React.string
+    I18n.t#tez->React.string
   </Typography.Body1>;
+
 [@react.component]
 let make =
     (

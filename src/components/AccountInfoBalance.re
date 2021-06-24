@@ -45,7 +45,7 @@ module Balance = {
     switch (balanceRequest) {
     | Done(Ok(balance), _)
     | Loading(Some(balance)) =>
-      I18n.t#xtz_amount(balance->Tez.toString)->React.string
+      I18n.t#tez_amount(balance->Tez.toString)->React.string
     | Done(Error(_error), _) => React.null
     | NotAsked
     | Loading(None) => <BalanceActivityIndicator />

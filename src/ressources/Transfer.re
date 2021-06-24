@@ -26,7 +26,7 @@
 open ProtocolOptions;
 
 type currency =
-  | XTZ(Tez.t)
+  | Tez(Tez.t)
   | Token(TokenRepr.Unit.t, TokenRepr.t);
 
 type elt = {
@@ -41,27 +41,27 @@ type t = {
   common_options: commonOptions,
 };
 
-let makeXTZ = t => t->XTZ;
+let makeTez = t => t->Tez;
 let makeToken = (~amount, ~token) => Token(amount, token);
 
 let currencyToInt64 =
   fun
-  | XTZ(xtz) => xtz->Tez.toInt64
+  | Tez(tez) => tez->Tez.toInt64
   | Token(curr, _) => curr->TokenRepr.Unit.toBigNumber->ReBigNumber.toInt64;
 
 let currencyToBigNumber =
   fun
-  | XTZ(xtz) => xtz->Tez.toInt64->ReBigNumber.fromInt64
+  | Tez(tez) => tez->Tez.toInt64->ReBigNumber.fromInt64
   | Token(curr, _) => curr->TokenRepr.Unit.toBigNumber;
 
 let currencyToString =
   fun
-  | XTZ(xtz) => xtz->Tez.toString
+  | Tez(tez) => tez->Tez.toString
   | Token(curr, _) => curr->TokenRepr.Unit.toNatString;
 
-let getXTZ =
+let getTez =
   fun
-  | XTZ(xtz) => Some(xtz)
+  | Tez(tez) => Some(tez)
   | _ => None;
 
 let getToken =
@@ -95,7 +95,7 @@ let makeSingleTransferElt =
     ),
 };
 
-let makeSingleXTZTransferElt =
+let makeSingleTezTransferElt =
     (
       ~destination,
       ~amount,
@@ -108,7 +108,7 @@ let makeSingleXTZTransferElt =
     ) =>
   makeSingleTransferElt(
     ~destination,
-    ~amount=makeXTZ(amount),
+    ~amount=makeTez(amount),
     ~fee?,
     ~parameter?,
     ~entrypoint?,

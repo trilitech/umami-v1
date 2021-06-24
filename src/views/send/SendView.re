@@ -57,12 +57,12 @@ module FormGroupAmountWithTokenSelector = {
     let decoration =
       switch (displaySelector, token) {
       | (true, _) => None
-      | (false, None) => Some(FormGroupXTZInput.xtzDecoration)
+      | (false, None) => Some(FormGroupCurrencyInput.tezDecoration)
       | (false, Some(token)) => Some(tokenDecoration(~symbol=token.symbol))
       };
 
     <View style=styles##container>
-      <FormGroupXTZInput
+      <FormGroupCurrencyInput
         style=styles##amountGroup
         label
         value
@@ -126,8 +126,8 @@ let sourceDestination = (transfer: Transfer.t) => {
 let compareCurrencies = (v1, v2) => {
   Transfer.(
     switch (v1, v2) {
-    | (XTZ(_), Token(_)) => (-1)
-    | (Token(_), XTZ(_)) => 1
+    | (Tez(_), Token(_)) => (-1)
+    | (Token(_), Tez(_)) => 1
     | _ => 0
     }
   );
@@ -139,12 +139,12 @@ let reduceAmounts = l =>
     ->Lib.List.reduceGroupBy(
         ~group=
           fun
-          | Transfer.XTZ(_) => None
+          | Transfer.Tez(_) => None
           | Token(_, t) => Some(t),
         ~map=(acc, v) =>
         switch (acc, v) {
         | (None, v) => v
-        | (Some(XTZ(acc)), XTZ(v)) => XTZ(Tez.Infix.(acc + v))
+        | (Some(Tez(acc)), Tez(v)) => Tez(Tez.Infix.(acc + v))
         | (Some(Token(acc, t)), Token(v, _)) =>
           Token(Token.Unit.Infix.(acc + v), t)
         | (Some(acc), _) => acc
@@ -157,17 +157,17 @@ let reduceAmounts = l =>
 let showAmount =
   Transfer.(
     fun
-    | XTZ(v) => I18n.t#xtz_amount(v->Tez.toString)
+    | Tez(v) => I18n.t#tez_amount(v->Tez.toString)
     | Token(v, t) => I18n.t#amount(v->Token.Unit.toNatString, t.symbol)
   );
 
 let buildSummaryContent =
     (transaction: Transfer.t, dryRun: Protocol.simulationResults) => {
-  let fee = (I18n.label#fee, [Transfer.XTZ(dryRun.fee)]);
+  let fee = (I18n.label#fee, [Transfer.Tez(dryRun.fee)]);
 
   let revealFee =
     dryRun.revealFee != Tez.zero
-      ? (I18n.label#implicit_reveal_fee, [Transfer.XTZ(dryRun.revealFee)])
+      ? (I18n.label#implicit_reveal_fee, [Transfer.Tez(dryRun.revealFee)])
         ->Some
       : None;
 
@@ -178,13 +178,13 @@ let buildSummaryContent =
   let totalTez = {
     let (sub, noTokens) =
       switch (totals) {
-      | [XTZ(a), ...t] => (a, t == [])
+      | [Tez(a), ...t] => (a, t == [])
       | t => (Tez.zero, t == [])
       };
 
     (
       noTokens ? I18n.label#summary_total : I18n.label#summary_total_tez,
-      [Transfer.XTZ(Tez.Infix.(sub + dryRun.fee + dryRun.revealFee))],
+      [Transfer.Tez(Tez.Infix.(sub + dryRun.fee + dryRun.revealFee))],
     );
   };
 
@@ -224,12 +224,12 @@ module Form = {
                 values => {
                   token != None
                     ? FormUtils.isValidTokenAmount(values.amount)
-                    : FormUtils.isValidXtzAmount(values.amount)
+                    : FormUtils.isValidTezAmount(values.amount)
                 },
                 Amount,
               )
             + custom(
-                values => FormUtils.(emptyOr(isValidXtzAmount, values.fee)),
+                values => FormUtils.(emptyOr(isValidTezAmount, values.fee)),
                 Fee,
               )
             + custom(
@@ -449,7 +449,7 @@ module EditionView = {
     let (initValues, advancedOptionOpened) = initValues;
     let token =
       switch (initValues.SendForm.amount) {
-      | Transfer.XTZ(_) => None
+      | Transfer.Tez(_) => None
       | Token(_, t) => Some(t)
       };
     let initValues = initValues->SendForm.toState;
