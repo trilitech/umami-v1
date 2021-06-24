@@ -26,7 +26,8 @@
 open System.Path.Ops;
 
 type error =
-  | Generic(string);
+  | Generic(string)
+  | KeyNotFound;
 
 module type AliasType = {
   type t;
@@ -45,6 +46,10 @@ module type AliasesMakerType = {
   let stringify: t => string;
   let read: System.Path.t => Future.t(Result.t(t, error));
   let write: (System.Path.t, t) => Future.t(Result.t(unit, error));
+  let find: (t, alias => bool) => Result.t(alias, error);
+  let filter: (t, alias => bool) => t;
+  let remove: (t, key) => t;
+  let addOrReplace: (t, key, value) => t;
 };
 
 module AliasesMaker =
@@ -69,10 +74,19 @@ module AliasesMaker =
     System.File.write(~name=dirpath / Alias.filename, stringify(aliases))
     ->Future.mapError(e => Generic(e));
 
-  let find = (aliases, f, ~error=Generic("Key not found!"), ()) =>
-    aliases->Js.Array2.find(f)->FutureEx.fromOption(~error);
+  let find = (aliases: t, f) =>
+    aliases->Js.Array2.find(f)->ResultEx.fromOption(Error(KeyNotFound));
 
   let filter = (aliases, f) => aliases->Js.Array2.filter(f);
+
+  let remove = (aliases, aliasName) => {
+    aliases->filter(a => a.name != aliasName);
+  };
+
+  let addOrReplace = (aliases, alias, value) => {
+    let alias = {name: alias, value};
+    aliases->remove(alias.name)->Js.Array.concat([|alias|]);
+  };
 };
 
 module SecretAlias = {
@@ -116,7 +130,8 @@ let aliasFromPkh = (~dirpath, ~pkh, ()) => {
   ->Future.flatMapOk(pkhaliases =>
       pkhaliases
       ->PkhAliases.find(a => a.value == pkh)
-      ->Future.mapOk(a => a.name)
+      ->Result.map(a => a.name)
+      ->Future.value
     );
 };
 
@@ -126,44 +141,9 @@ let pkFromAlias = (~dirpath, ~alias, ()) => {
   ->Future.flatMapOk(pkaliases =>
       pkaliases
       ->PkAliases.find(a => a.name == alias)
-      ->Future.mapOk(a => a.value.key)
+      ->Result.map(a => a.value.PkAlias.key)
+      ->Future.value
     );
-};
-
-/* add or replace */
-let addAliasPkh = (~dirpath, ~alias, ~pkh, ()) => {
-  let alias = PkhAlias.{name: alias, value: pkh};
-  let aliases =
-    dirpath
-    ->PkhAliases.read
-    ->Future.mapOk(aliases => aliases->PkhAliases.filter(a => a.name != alias))
-    ->Future.mapOk(Js.Array.concat([|alias|]));
-  aliases->Future.flatMapOk(PkhAliases.write(dirpath));
-};
-
-let ledgerPkValue = (secretPath, pk) =>
-  PkAlias.{locator: secretPath, key: pk};
-
-let addAliasPk = (~dirpath, ~alias, ~pk, ()) => {
-  let alias = PkAlias.{name: alias, value: pk};
-  let aliases =
-    dirpath
-    ->PkAliases.read
-    ->Future.mapOk(aliases => aliases->PkAliases.filter(a => a.name != alias))
-    ->Future.mapOk(Js.Array.concat([|alias|]));
-  aliases->Future.flatMapOk(PkAliases.write(dirpath));
-};
-
-let addAliasSk = (~dirpath, ~alias, ~sk, ()) => {
-  let alias = SecretAlias.{name: alias, value: sk};
-  let aliases =
-    dirpath
-    ->SecretAliases.read
-    ->Future.mapOk(aliases =>
-        aliases->SecretAliases.filter(a => a.name != alias)
-      )
-    ->Future.mapOk(Js.Array.concat([|alias|]));
-  aliases->Future.flatMapOk(SecretAliases.write(dirpath));
 };
 
 type kind =
@@ -178,9 +158,9 @@ let readSecret = (address, dirpath) =>
       ->SecretAliases.read
       ->Future.flatMapOk(secretAliases =>
           secretAliases
-          ->Js.Array2.find(a => a.name == alias)
-          ->FutureEx.fromOption(~error=Generic("No key found !"))
-          ->Future.mapOk(a => a.value)
+          ->Js.Array2.find(a => a.SecretAliases.name == alias)
+          ->FutureEx.fromOption(~error=KeyNotFound)
+          ->Future.mapOk(a => a.SecretAliases.value)
         )
     })
   ->Future.flatMapOk(key =>

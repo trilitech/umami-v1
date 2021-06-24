@@ -374,7 +374,8 @@ module Balance = {
 let convertWalletError = res =>
   res->ResultEx.mapError(
     fun
-    | Wallet.Generic(e) => Error(Error.Generic(e)),
+    | Wallet.Generic(e) => Error(Error.Generic(e))
+    | e => Error(Error.WalletError(e)),
   );
 
 let readEncryptedKey = (key, passphrase) =>
