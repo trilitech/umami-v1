@@ -26,7 +26,7 @@
 open ProtocolOptions;
 
 type currency =
-  | XTZ(ProtocolXTZ.t)
+  | XTZ(Tez.t)
   | Token(TokenRepr.Unit.t, TokenRepr.t);
 
 type elt = {
@@ -46,17 +46,17 @@ let makeToken = (~amount, ~token) => Token(amount, token);
 
 let currencyToInt64 =
   fun
-  | XTZ(xtz) => xtz->ProtocolXTZ.toInt64
+  | XTZ(xtz) => xtz->Tez.toInt64
   | Token(curr, _) => curr->TokenRepr.Unit.toBigNumber->ReBigNumber.toInt64;
 
 let currencyToBigNumber =
   fun
-  | XTZ(xtz) => xtz->ProtocolXTZ.toInt64->ReBigNumber.fromInt64
+  | XTZ(xtz) => xtz->Tez.toInt64->ReBigNumber.fromInt64
   | Token(curr, _) => curr->TokenRepr.Unit.toBigNumber;
 
 let currencyToString =
   fun
-  | XTZ(xtz) => xtz->ProtocolXTZ.toString
+  | XTZ(xtz) => xtz->Tez.toString
   | Token(curr, _) => curr->TokenRepr.Unit.toNatString;
 
 let getXTZ =

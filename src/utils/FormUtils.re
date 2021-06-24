@@ -49,7 +49,7 @@ let parseAmount = (v, token) =>
   } else {
     token->Option.mapWithDefault(
       {
-        let vxtz = v->ProtocolXTZ.fromString;
+        let vxtz = v->Tez.fromString;
         vxtz == None
           ? v->Illformed->Some
           : vxtz->Option.map(v => v->Transfer.makeXTZ->Amount);
@@ -117,7 +117,7 @@ let emptyOr = (f, v): ReSchema.fieldState => v == "" ? Valid : f(v);
 
 let isValidXtzAmount: string => ReSchema.fieldState =
   fun
-  | s when ProtocolXTZ.fromString(s) != None => Valid
+  | s when Tez.fromString(s) != None => Valid
   | "" => Error(I18n.form_input_error#mandatory)
   | _ => Error(I18n.form_input_error#float);
 

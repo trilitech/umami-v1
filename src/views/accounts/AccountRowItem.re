@@ -52,7 +52,7 @@ let make = (~account: Account.t, ~token: option(Token.t)=?) => {
   let zeroTez =
     switch (balanceRequest->ApiRequest.getDoneOk) {
     | None => true
-    | Some(balance) => balance == ProtocolXTZ.zero
+    | Some(balance) => balance == Tez.zero
     };
 
   <RowItem.Bordered height=90.>

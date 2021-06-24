@@ -49,7 +49,7 @@ let make = (~form: DelegateForm.api) => {
       let operation = Operation.Simulation.delegation(operation);
       sendOperationSimulate(operation)
       ->Future.tapOk(dryRun => {
-          form.handleChange(Fee, dryRun.fee->ProtocolXTZ.toString)
+          form.handleChange(Fee, dryRun.fee->Tez.toString)
         })
       ->ignore;
     };

@@ -30,7 +30,7 @@ let formatOnBlur = (token, handleChange, value) =>
     ->Option.mapWithDefault("", Token.Unit.toNatString)
     ->handleChange;
   } else {
-    value->ProtocolXTZ.formatString->Option.getWithDefault("")->handleChange;
+    value->Tez.formatString->Option.getWithDefault("")->handleChange;
   };
 
 let xtzDecoration = (~style) =>

@@ -144,7 +144,7 @@ let reduceAmounts = l =>
         ~map=(acc, v) =>
         switch (acc, v) {
         | (None, v) => v
-        | (Some(XTZ(acc)), XTZ(v)) => XTZ(ProtocolXTZ.Infix.(acc + v))
+        | (Some(XTZ(acc)), XTZ(v)) => XTZ(Tez.Infix.(acc + v))
         | (Some(Token(acc, t)), Token(v, _)) =>
           Token(Token.Unit.Infix.(acc + v), t)
         | (Some(acc), _) => acc
@@ -157,7 +157,7 @@ let reduceAmounts = l =>
 let showAmount =
   Transfer.(
     fun
-    | XTZ(v) => I18n.t#xtz_amount(v->ProtocolXTZ.toString)
+    | XTZ(v) => I18n.t#xtz_amount(v->Tez.toString)
     | Token(v, t) => I18n.t#amount(v->Token.Unit.toNatString, t.symbol)
   );
 
@@ -166,7 +166,7 @@ let buildSummaryContent =
   let fee = (I18n.label#fee, [Transfer.XTZ(dryRun.fee)]);
 
   let revealFee =
-    dryRun.revealFee != ProtocolXTZ.zero
+    dryRun.revealFee != Tez.zero
       ? (I18n.label#implicit_reveal_fee, [Transfer.XTZ(dryRun.revealFee)])
         ->Some
       : None;
@@ -179,14 +179,12 @@ let buildSummaryContent =
     let (sub, noTokens) =
       switch (totals) {
       | [XTZ(a), ...t] => (a, t == [])
-      | t => (ProtocolXTZ.zero, t == [])
+      | t => (Tez.zero, t == [])
       };
 
     (
       noTokens ? I18n.label#summary_total : I18n.label#summary_total_tez,
-      [
-        Transfer.XTZ(ProtocolXTZ.Infix.(sub + dryRun.fee + dryRun.revealFee)),
-      ],
+      [Transfer.XTZ(Tez.Infix.(sub + dryRun.fee + dryRun.revealFee))],
     );
   };
 

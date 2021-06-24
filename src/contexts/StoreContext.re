@@ -41,7 +41,7 @@ type state = {
   accountsRequestState:
     reactState(ApiRequest.t(Map.String.t(Account.t), string)),
   secretsRequestState: reactState(ApiRequest.t(array(Secret.t), string)),
-  balanceRequestsState: apiRequestsState(ProtocolXTZ.t, string),
+  balanceRequestsState: apiRequestsState(Tez.t, string),
   delegateRequestsState: apiRequestsState(option(string), string),
   delegateInfoRequestsState:
     apiRequestsState(
@@ -293,12 +293,12 @@ module Balance = {
     accountsBalanceRequests->Array.size == accounts->Map.String.size
       ? Some(
           accountsBalanceRequests->Array.reduce(
-            ProtocolXTZ.zero, (acc, balanceRequest) => {
-            ProtocolXTZ.Infix.(
+            Tez.zero, (acc, balanceRequest) => {
+            Tez.Infix.(
               acc
               + balanceRequest
                 ->ApiRequest.getDoneOk
-                ->Option.getWithDefault(ProtocolXTZ.zero)
+                ->Option.getWithDefault(Tez.zero)
             )
           }),
         )

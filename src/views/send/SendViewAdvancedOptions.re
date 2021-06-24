@@ -54,7 +54,7 @@ let make = (~operation, ~token, ~form: SendForm.api) => {
     if (form.values.recipient != AnyString("") && form.values.amount != "") {
       sendOperationSimulate(operation)
       ->Future.tapOk(dryRun => {
-          form.handleChange(Fee, dryRun.fee->ProtocolXTZ.toString);
+          form.handleChange(Fee, dryRun.fee->Tez.toString);
           form.handleChange(GasLimit, dryRun.gasLimit->string_of_int);
           form.handleChange(StorageLimit, dryRun.storageLimit->string_of_int);
           form.setFieldValue(DryRun, Some(dryRun));

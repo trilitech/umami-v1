@@ -26,7 +26,7 @@ describe("API tests", ({testAsync}) => {
     module UnderTest = API.Balance;
     UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
-        expect.value(result).toEqual(Result.Ok(ProtocolXTZ.zero));
+        expect.value(result).toEqual(Result.Ok(Tez.zero));
         callback();
       });
     ();
@@ -121,7 +121,7 @@ describe("API tests", ({testAsync}) => {
         payload:
           Business({
             source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
-            fee: ProtocolXTZ.fromMutezInt(1258),
+            fee: Tez.fromMutezInt(1258),
             op_id: 0,
             payload:
               Delegation({
@@ -140,11 +140,11 @@ describe("API tests", ({testAsync}) => {
         payload:
           Business({
             source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
-            fee: ProtocolXTZ.fromMutezInt(1283),
+            fee: Tez.fromMutezInt(1283),
             op_id: 0,
             payload:
               Transaction({
-                amount: ProtocolXTZ.fromMutezInt(1000000),
+                amount: Tez.fromMutezInt(1000000),
                 destination: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
                 parameters: Some(Js.Dict.fromArray([|("prim", "Unit")|])),
               }),
@@ -229,7 +229,7 @@ describe("API tests", ({testAsync}) => {
         payload:
           Business({
             source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
-            fee: ProtocolXTZ.fromMutezInt(1269),
+            fee: Tez.fromMutezInt(1269),
             op_id: 0,
             payload:
               Reveal({
@@ -320,11 +320,11 @@ describe("API tests", ({testAsync}) => {
         payload:
           Business({
             source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
-            fee: ProtocolXTZ.fromMutezInt(1283),
+            fee: Tez.fromMutezInt(1283),
             op_id: 0,
             payload:
               Transaction({
-                amount: ProtocolXTZ.fromMutezInt(1000000),
+                amount: Tez.fromMutezInt(1000000),
                 destination: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
                 parameters: Some(Js.Dict.fromArray([|("prim", "Unit")|])),
               }),
@@ -413,7 +413,7 @@ describe("API tests", ({testAsync}) => {
         payload:
           Business({
             source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
-            fee: ProtocolXTZ.fromMutezInt(2065),
+            fee: Tez.fromMutezInt(2065),
             op_id: 0,
             payload:
               Origination({
@@ -501,7 +501,7 @@ describe("API tests", ({testAsync}) => {
         payload:
           Business({
             source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
-            fee: ProtocolXTZ.fromMutezInt(1258),
+            fee: Tez.fromMutezInt(1258),
             op_id: 0,
             payload: Delegation({delegate: None}),
           }),
@@ -551,7 +551,7 @@ describe("API tests", ({testAsync}) => {
         payload:
           Business({
             source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
-            fee: ProtocolXTZ.fromMutezInt(1258),
+            fee: Tez.fromMutezInt(1258),
             op_id: 0,
             payload:
               Delegation({
