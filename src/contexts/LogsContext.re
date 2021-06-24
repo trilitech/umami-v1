@@ -59,6 +59,9 @@ let make = (~children) => {
     (s, seen => set(_ => seen));
   };
 
+  let url = ReasonReactRouter.useUrl();
+  let route = Routes.match(url);
+
   let (toastState, setToastState) = React.useState(() => None);
 
   let fadeAnim = React.useRef(Animated.Value.create(1.)).current;
@@ -91,7 +94,9 @@ let make = (~children) => {
         });
       };
 
-      l.Logs.kind == Logs.Error ? (snd(seen))(false) : ();
+      if (l.Logs.kind == Logs.Error) {
+        route == Logs ? (snd(seen))(true) : (snd(seen))(false);
+      };
     };
 
     (logs, add, delete, clear);
