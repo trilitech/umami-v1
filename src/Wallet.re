@@ -46,6 +46,9 @@ module type AliasesMakerType = {
   let stringify: t => string;
   let read: System.Path.t => Future.t(Result.t(t, error));
   let write: (System.Path.t, t) => Future.t(Result.t(unit, error));
+  let protect:
+    (System.Path.t, unit => Future.t(Result.t(unit, error))) =>
+    Future.t(Result.t(unit, error));
   let find: (t, alias => bool) => Result.t(alias, error);
   let filter: (t, alias => bool) => t;
   let remove: (t, key) => t;
@@ -73,6 +76,43 @@ module AliasesMaker =
   let write = (dirpath, aliases) =>
     System.File.write(~name=dirpath / Alias.filename, stringify(aliases))
     ->Future.mapError(e => Generic(e));
+
+  let mkTmpCopy = dirpath => {
+    let tmpName = !(System.Path.toString(Alias.filename) ++ ".tmp");
+    System.File.copy(
+      ~name=dirpath / Alias.filename,
+      ~dest=dirpath / tmpName,
+      ~mode=System.File.CopyMode.copy_ficlone,
+    )
+    ->Future.mapError(e => Generic(e));
+  };
+
+  let restoreTmpCopy = dirpath => {
+    let tmpName = !(System.Path.toString(Alias.filename) ++ ".tmp");
+    System.File.copy(
+      ~name=dirpath / tmpName,
+      ~dest=dirpath / Alias.filename,
+      ~mode=System.File.CopyMode.copy_ficlone,
+    )
+    ->Future.mapError(e => Generic(e));
+  };
+
+  let rmTmpCopy = dirpath => {
+    let tmpName = !(System.Path.toString(Alias.filename) ++ ".tmp");
+    System.File.rm(~name=dirpath / tmpName)
+    ->Future.mapError(e => Generic(e));
+  };
+
+  let protect = (dirpath, f) => {
+    dirpath
+    ->mkTmpCopy
+    ->Future.flatMapOk(_ => f())
+    ->Future.flatMap(
+        fun
+        | Ok () => dirpath->rmTmpCopy
+        | Error(e) => dirpath->restoreTmpCopy->Future.map(_ => Error(e)),
+      );
+  };
 
   let find = (aliases: t, f) =>
     aliases->Js.Array2.find(f)->ResultEx.fromOption(Error(KeyNotFound));
