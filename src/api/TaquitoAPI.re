@@ -26,6 +26,9 @@
 open ReTaquito;
 open ReTaquitoSigner;
 
+let convertLedgerError = res =>
+  res->ResultEx.mapError(e => e->Wallet.convertLedgerError);
+
 let convertWalletError = res =>
   res->ResultEx.mapError(e => ErrorHandler.Wallet(e));
 
@@ -159,6 +162,41 @@ module Signer = {
     )
     ->Future.mapError(ErrorHandler.taquito);
 
+  let readLedgerKey = key => {
+    let keyData = ledgerBasePkh =>
+      key
+      ->Wallet.Ledger.Decode.fromSecretKey(~ledgerBasePkh)
+      ->convertLedgerError
+      ->convertWalletError;
+
+    ReLedger.Transport.create()
+    ->convertToErrorHandler
+    ->Future.flatMapOk(tr =>
+        LedgerSigner.create(
+          tr,
+          DerivationPath.build([|44, 1729|]),
+          Wallet.Ledger.ED25519,
+          ~prompt=true,
+        )
+        ->ReTaquitoSigner.publicKeyHash
+        ->Future.mapOk(pkh => (tr, pkh))
+        ->Future.mapError(e => e->ErrorHandler.Taquito)
+      )
+    ->Future.flatMapOk(((tr, ledgerBasePkh)) =>
+        ledgerBasePkh
+        ->keyData
+        ->Result.map((Wallet.Ledger.{path, scheme}) =>
+            LedgerSigner.create(
+              tr,
+              path->DerivationPath.fromTezosBip44,
+              scheme,
+              ~prompt=true,
+            )
+          )
+        ->Future.value
+      );
+  };
+
   let readSecretKey = (address, passphrase, dirpath) => {
     Wallet.readSecretFromPkh(address, dirpath)
     ->Future.map(convertWalletError)
@@ -166,14 +204,7 @@ module Signer = {
         switch (kind) {
         | Encrypted => readEncryptedKey(key, passphrase)
         | Unencrypted => readUnencryptedKey(key)
-        | Ledger =>
-          Future.value(
-            Error(
-              ErrorHandler.Taquito(
-                ReTaquitoError.Generic("Ledger not supported"),
-              ),
-            ),
-          )
+        | Ledger => readLedgerKey(key)
         }
       );
   };
