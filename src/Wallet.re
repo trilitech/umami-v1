@@ -226,6 +226,16 @@ let addOrReplaceAlias = (~dirpath, ~alias, ~pk, ~pkh, ~sk, ()) => {
   updateAlias(~dirpath, ~update, ());
 };
 
+let removeAlias = (~dirpath, ~alias, ()) => {
+  let update = ((pks, pkhs, sks)) => (
+    PkAliases.remove(pks, alias),
+    PkhAliases.remove(pkhs, alias),
+    SecretAliases.remove(sks, alias),
+  );
+
+  updateAlias(~dirpath, ~update, ());
+};
+
 type kind =
   | Encrypted
   | Unencrypted
