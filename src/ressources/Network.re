@@ -25,46 +25,20 @@
 
 type chain = string;
 
-// Major, minor, fixes, specific patch/branch of the API
-type versionNumber =
-  | Version(int, int, option(int), option(string));
-
 type apiVersion = {
-  api: versionNumber,
+  api: Version.t,
   indexer: string,
   node: string,
   chain,
   protocol: string,
 };
 
-let mkVersion = (~fix=?, ~patch=?, major, minor) =>
-  Version(major, minor, fix, patch);
+let apiLowestBound = Version.mk(~fix=0, 2, 0);
 
-let versionToString = (Version(major, minor, fix, patch)) =>
-  Int.toString(major)
-  ++ "."
-  ++ Int.toString(minor)
-  ++ fix
-     ->Option.map(fix => "." ++ Int.toString(fix))
-     ->Option.getWithDefault("")
-  ++ patch->Option.map(patch => "~" ++ patch)->Option.getWithDefault("");
-
-let apiLowestBound = mkVersion(~fix=0, 2, 0);
-
-let apiHighestBound = mkVersion(2, 0);
-
-let leqFix =
-  fun
-  | (_, None) => true
-  | (None, Some(_)) => false
-  | (Some(fix1), Some(fix2)) => fix1 <= fix2;
-
-let leqVersion =
-    (Version(major1, minor1, fix1, _), Version(major2, minor2, fix2, _)) =>
-  major1 <= major2 && minor1 <= minor2 && leqFix((fix1, fix2));
+let apiHighestBound = Version.mk(2, 0);
 
 let checkInBound = version =>
-  leqVersion(apiLowestBound, version) && leqVersion(version, apiHighestBound);
+  Version.checkInBound(version, apiLowestBound, apiHighestBound);
 
 type monitorResult = {
   nodeLastBlock: int,
@@ -82,7 +56,7 @@ type error =
   | NodeChainRPCError(string)
   | ChainInconsistency(string, string)
   | UnknownChainId(string)
-  | APINotSupported(versionNumber);
+  | APINotSupported(Version.t);
 
 let errorMsg =
   fun
@@ -95,7 +69,8 @@ let errorMsg =
   | ChainInconsistency(api, node) =>
     I18n.network#chain_inconsistency(api, node)
   | UnknownChainId(chain_id) => I18n.network#unknown_chain_id(chain_id)
-  | APINotSupported(v) => I18n.network#api_not_supported(versionToString(v));
+  | APINotSupported(v) =>
+    I18n.network#api_not_supported(Version.toString(v));
 
 let mainnetChain = "NetXdQprcVkpaWU";
 let granadanetChain = "NetXz969SFaFn8k";
@@ -108,39 +83,6 @@ let supportedChains = [
   florencenetChain,
   edo2netChain,
 ];
-
-let parseVersion = version => {
-  let parseInt = value =>
-    value
-    ->Int.fromString
-    ->ResultEx.fromOption(Error(APIVersionFormat(version)));
-
-  // parse a value of the form "<int>~patch", where ~patch is optional
-  let parseFixAndPatch = value =>
-    switch (value->Js.String2.splitAtMost(~limit=1, "~")) {
-    | [|fix|] => fix->parseInt->Result.map(fix => (fix, None))
-    | [|fix, patch|] => fix->parseInt->Result.map(fix => (fix, Some(patch)))
-    | _ => Error(APIVersionFormat(version))
-    };
-
-  switch (version->Js.String2.split(".")) {
-  | [|major, minor|] =>
-    ResultEx.map2(major->parseInt, minor->parseInt, mkVersion)
-
-  | [|major, minor, fixAndPatch|] =>
-    fixAndPatch
-    ->parseFixAndPatch
-    ->Result.flatMap(((fix, patch)) =>
-        ResultEx.map2(
-          major->parseInt,
-          minor->parseInt,
-          mkVersion(~fix, ~patch?),
-        )
-      )
-
-  | _ => Error(APIVersionFormat(version))
-  };
-};
 
 let fetchJson = (url, mkError) =>
   url
@@ -184,7 +126,10 @@ let getAPIVersion = url =>
       (
         try(
           Json.Decode.(field("api", string, json))
-          ->parseVersion
+          ->Version.parse
+          ->ResultEx.mapError((VersionFormat(e)) =>
+              Error(APIVersionFormat(e))
+            )
           ->Result.map(api =>
               Json.Decode.{
                 api,
