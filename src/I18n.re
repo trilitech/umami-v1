@@ -403,6 +403,7 @@ let t = {
   pub navbar_delegations = "DELEGATIONS";
   pub navbar_tokens = "TOKENS";
   pub navbar_settings = "SETTINGS";
+  pub navbar_logs = "LOGS";
   pub delegate_column_account = "ACCOUNT";
   pub delegate_column_initial_balance = "INITIAL BALANCE";
   pub delegate_column_current_balance = "CURRENT BALANCE";

@@ -142,6 +142,7 @@ module AppView = {
                  | Delegations => <DelegationsView />
                  | Tokens => <TokensView />
                  | Settings => <SettingsView />
+                 | Logs => <LogsView />
                  | NotFound =>
                    <View>
                      <Typography.Body1>

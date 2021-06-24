@@ -28,7 +28,7 @@ open ReactNative;
 let styles =
   Style.(
     StyleSheet.create({
-      "content": style(~marginTop=20.->dp, ()),
+      "content": style(~marginTop=0.->dp, ()),
       "empty": style(~textAlign=`center, ()),
       "view": style(~minHeight=400.->dp, ()),
       "modal":
@@ -44,56 +44,62 @@ let styles =
   );
 
 module ClearButton = {
+  let styles =
+    Style.(
+      StyleSheet.create({
+        "button":
+          style(
+            ~alignSelf=`flexStart,
+            ~marginLeft=(-6.)->dp,
+            ~marginBottom=10.->dp,
+            (),
+          ),
+      })
+    );
+
   [@react.component]
   let make = () => {
     let clearLogs = LogsContext.useClear();
-    <Buttons.Form
-      style=styles##clear
-      fontSize=12.
-      text=I18n.t#logs_clearall
-      onPress={_ => clearLogs()}
-    />;
+    <View style=styles##button>
+      <ButtonAction
+        text=I18n.t#logs_clearall
+        onPress={_ => clearLogs()}
+        icon=Icons.Close.build
+      />
+    </View>;
   };
 };
 
 [@react.component]
-let make = (~closeAction) => {
+let make = () => {
   let errors = LogsContext.useLogs();
   let deleteError = LogsContext.useDelete();
   let addLog = LogsContext.useAdd();
-
-  <ModalTemplate.Base
-    style=styles##modal
-    headerRight={
-      <ModalTemplate.HeaderButtons.Close onPress={_ => closeAction()} />
-    }>
-    <View style=styles##view>
-      <Typography.Headline style=ModalAction.styles##title>
-        I18n.title#error_logs->React.string
-      </Typography.Headline>
-      <View style=styles##content>
-        {ReactUtils.onlyWhen(<ClearButton />, errors != [])}
-        {switch (errors) {
-         | [] =>
-           <Typography.Body1 style=styles##empty>
-             I18n.t#logs_no_recent->React.string
-           </Typography.Body1>
-         | errors =>
-           errors
-           ->List.keep(({Logs.kind}) => kind == Logs.Error)
-           ->List.toArray
-           ->Array.mapWithIndex((i, log) =>
-               <LogItem
-                 key={i->string_of_int}
-                 indice=i
-                 log
-                 addToast={addLog(true)}
-                 handleDelete=deleteError
-               />
-             )
-           ->React.array
-         }}
-      </View>
+  ();
+  <Page>
+    <View style=styles##content>
+      {ReactUtils.onlyWhen(<ClearButton />, errors != [])}
+      {switch (errors) {
+       | [] =>
+         <Typography.Body1 style=styles##empty>
+           I18n.t#logs_no_recent->React.string
+         </Typography.Body1>
+       | errors =>
+         errors
+         ->List.keep(({Logs.kind}) => kind == Logs.Error)
+         ->List.toArray
+         ->Array.mapWithIndex((i, log) =>
+             <LogItem
+               key={log.timestamp->Float.toString}
+               indice=i
+               log
+               addToast={addLog(true)}
+               handleDelete=deleteError
+               isFirst={i == 0}
+             />
+           )
+         ->React.array
+       }}
     </View>
-  </ModalTemplate.Base>;
+  </Page>;
 };

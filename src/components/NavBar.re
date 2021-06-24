@@ -99,28 +99,27 @@ module NavBarItemRoute = {
 
 module LogsButton = {
   [@react.component]
-  let make = () => {
+  let make = (~currentRoute, ~route, ~title, ~icon: option(Icons.builder)=?) => {
     let setSeen = LogsContext.useSetSeen();
     let seen = LogsContext.useSeen();
+    let isCurrent = currentRoute == route;
+    let href = toHref(route);
 
-    let (visibleModal, openAction, closeAction) =
-      ModalAction.useModalActionState();
-
-    let onPress = _ => {
-      openAction();
+    let onPress = event => {
+      event->ReactNative.Event.PressEvent.preventDefault;
+      ReasonReactRouter.push(href);
       true->setSeen;
     };
 
     <>
       <NavBarItem
+        href
         onPress
-        title=I18n.btn#logs
-        icon=Icons.Logs.build
-        colorStyle={!seen ? `error : `disabled}
+        title
+        ?icon
+        isActive=isCurrent
+        colorStyle=?{!seen ? Some(`error) : None}
       />
-      <ModalAction visible=visibleModal onRequestClose=closeAction>
-        <LogsView closeAction />
-      </ModalAction>
     </>;
   };
 };
@@ -213,7 +212,12 @@ let make = (~route as currentRoute) => {
     />
     /* <NavBarItem currentRoute route=Debug title="DEBUG" /> */
     <View style=styles##bottomContainer>
-      <LogsButton />
+      <LogsButton
+        currentRoute
+        route=Logs
+        title=I18n.t#navbar_logs
+        icon=Icons.Logs.build
+      />
       <Typography.Overline3 style=styles##version>
         {("v." ++ System.getVersion())->React.string}
       </Typography.Overline3>
