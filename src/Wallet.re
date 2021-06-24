@@ -186,6 +186,46 @@ let pkFromAlias = (~dirpath, ~alias, ()) => {
     );
 };
 
+let protectAliases = (~dirpath, ~f, ()) => {
+  dirpath->PkAliases.protect(_ =>
+    dirpath->PkhAliases.protect(_ => dirpath->SecretAliases.protect(f))
+  );
+};
+
+let updateAlias = (~dirpath, ~update, ()) => {
+  let update = () => {
+    let aliases =
+      /* ensures the three are available */
+      PkAliases.read(dirpath)
+      ->Future.flatMapOk(pkAliases =>
+          PkhAliases.read(dirpath)
+          ->Future.flatMapOk(pkhAliases =>
+              SecretAliases.read(dirpath)
+              ->Future.mapOk(skAliases => (pkAliases, pkhAliases, skAliases))
+            )
+        );
+    let updatedAliases = aliases->Future.mapOk(update);
+    updatedAliases->Future.flatMapOk(((pks, pkhs, sks)) =>
+      PkAliases.write(dirpath, pks)
+      ->Future.flatMapOk(() =>
+          PkhAliases.write(dirpath, pkhs)
+          ->Future.flatMapOk(() => SecretAliases.write(dirpath, sks))
+        )
+    );
+  };
+  protectAliases(~dirpath, ~f=update, ());
+};
+
+let addOrReplaceAlias = (~dirpath, ~alias, ~pk, ~pkh, ~sk, ()) => {
+  let update = ((pks, pkhs, sks)) => (
+    PkAliases.addOrReplace(pks, alias, pk),
+    PkhAliases.addOrReplace(pkhs, alias, pkh),
+    SecretAliases.addOrReplace(sks, alias, sk),
+  );
+
+  updateAlias(~dirpath, ~update, ());
+};
+
 type kind =
   | Encrypted
   | Unencrypted
