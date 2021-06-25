@@ -94,6 +94,17 @@ let menu = {
   |]);
 };
 
+module DisclaimerModal = {
+  [@react.component]
+  let make = (~onSign) => {
+    <Page>
+      <View style=Style.(style(~paddingTop=27.->dp, ()))>
+        <DisclaimerView onSign />
+      </View>
+    </Page>;
+  };
+};
+
 module AppView = {
   [@react.component]
   let make = () => {
@@ -102,6 +113,10 @@ module AppView = {
 
     let accounts = StoreContext.Accounts.useGetAll();
     let accountsRequest = StoreContext.Accounts.useRequest();
+    let eulaSignature = StoreContext.useEulaSignature();
+    let setEulaSignature = StoreContext.setEulaSignature();
+
+    let onSign = needSign => setEulaSignature(_ => needSign);
 
     let (displayOnboarding, displayNavbar) = {
       switch (accountsRequest) {
@@ -129,30 +144,32 @@ module AppView = {
           |])
         )>
         <Header />
-        <View style=styles##main>
-          {displayNavbar ? <NavBar route /> : <NavBar.Empty />}
-          <View style=styles##content>
-            {displayOnboarding
-               ? <OnboardingView />
-               : (
-                 switch (route) {
-                 | Accounts => <AccountsView />
-                 | Operations => <OperationsView />
-                 | AddressBook => <AddressBookView />
-                 | Delegations => <DelegationsView />
-                 | Tokens => <TokensView />
-                 | Settings => <SettingsView />
-                 | Logs => <LogsView />
-                 | NotFound =>
-                   <View>
-                     <Typography.Body1>
-                       I18n.t#error404->React.string
-                     </Typography.Body1>
-                   </View>
-                 }
-               )}
-          </View>
-        </View>
+        {eulaSignature
+           ? <DisclaimerModal onSign />
+           : <View style=styles##main>
+               {displayNavbar ? <NavBar route /> : <NavBar.Empty />}
+               <View style=styles##content>
+                 {displayOnboarding
+                    ? <OnboardingView />
+                    : (
+                      switch (route) {
+                      | Accounts => <AccountsView />
+                      | Operations => <OperationsView />
+                      | AddressBook => <AddressBookView />
+                      | Delegations => <DelegationsView />
+                      | Tokens => <TokensView />
+                      | Settings => <SettingsView />
+                      | Logs => <LogsView />
+                      | NotFound =>
+                        <View>
+                          <Typography.Body1>
+                            I18n.t#error404->React.string
+                          </Typography.Body1>
+                        </View>
+                      }
+                    )}
+               </View>
+             </View>}
       </View>
     </DocumentContext>;
   };

@@ -58,6 +58,7 @@ type state = {
     reactState(ApiRequest.t(Map.String.t(Token.t), string)),
   balanceTokenRequestsState: apiRequestsState(Token.Unit.t, string),
   apiVersionRequestState: reactState(option(Network.apiVersion)),
+  eulaSignatureRequestState: reactState(bool),
 };
 
 // Context and Provider
@@ -79,6 +80,7 @@ let initialState = {
   tokensRequestState: (NotAsked, _ => ()),
   balanceTokenRequestsState: initialApiRequestsState,
   apiVersionRequestState: (None, _ => ()),
+  eulaSignatureRequestState: (false, _ => ()),
 };
 
 let context = React.createContext(initialState);
@@ -124,9 +126,17 @@ let make = (~children) => {
   let apiVersionRequestState = React.useState(() => None);
   let (_, setApiVersion) = apiVersionRequestState;
 
+  let (_, setEulaSignature) as eulaSignatureRequestState =
+    React.useState(() => false);
+
   AccountApiRequest.useLoad(accountsRequestState)->ignore;
   AliasApiRequest.useLoad(aliasesRequestState)->ignore;
   TokensApiRequest.useLoadTokens(tokensRequestState)->ignore;
+
+  React.useEffect0(() => {
+    setEulaSignature(_ => Disclaimer.needSigning());
+    None;
+  });
 
   React.useEffect1(
     () => {
@@ -184,6 +194,7 @@ let make = (~children) => {
       tokensRequestState,
       balanceTokenRequestsState,
       apiVersionRequestState,
+      eulaSignatureRequestState,
     }>
     children
   </Provider>;
@@ -242,6 +253,16 @@ let reloadRequests = requestsState =>
 let useApiVersion = () => {
   let store = useStoreContext();
   store.apiVersionRequestState->fst;
+};
+
+let useEulaSignature = () => {
+  let store = useStoreContext();
+  store.eulaSignatureRequestState->fst;
+};
+
+let setEulaSignature = () => {
+  let store = useStoreContext();
+  store.eulaSignatureRequestState->snd;
 };
 
 module Balance = {
