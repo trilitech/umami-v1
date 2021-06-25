@@ -1,7 +1,7 @@
 {
   "name": "umami",
   "productName": "umami",
-  "version": "0.3.8",
+  "version": "0.3.9",
   "author": "Nomadic Labs",
   "description": "React-TypeScript-Electron sample with Create React App and Electron Builder",
   "homepage": ".",
