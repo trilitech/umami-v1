@@ -41,11 +41,20 @@ let styles =
   );
 
 [@react.component]
-let make = () => {
+let make = (~onClose=?) => {
   let styleNotFirst =
     Style.(array([|styles##bigbutton, style(~marginLeft=60.->dp, ())|]));
-
   <Page>
+    <Page.Header
+      right={
+        // If onClose is present, then this is a modal
+        switch (onClose) {
+        | Some(onClose) => <CloseButton onClose />
+        | None => ReasonReact.null
+        }
+      }>
+      ReasonReact.null
+    </Page.Header>
     <View style=styles##container>
       <CreateAccountBigButton style=styles##bigbutton />
       <ImportAccountBigButton style=styleNotFirst />
