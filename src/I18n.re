@@ -74,6 +74,7 @@ let btn = {
 };
 
 let tooltip = {
+  pub close = "Close";
   pub _this = this;
   pub show_qr = "Show QR Code";
   pub copy_clipboard = "Copy to clipboard";
