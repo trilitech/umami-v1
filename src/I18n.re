@@ -26,6 +26,7 @@
 let p = Format.sprintf;
 
 let btn = {
+  pub create_or_import_account = "CREATE OR IMPORT ACCOUNT";
   pub _this = this;
   pub customize_derivation_path = "Customize derivation path";
   pub ok = "OK";

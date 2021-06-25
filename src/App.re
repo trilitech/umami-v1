@@ -193,7 +193,12 @@ module AppView = {
                     />
                   | Dashboard =>
                     switch (route) {
-                    | Accounts => <AccountsView />
+                    | Accounts =>
+                      <AccountsView
+                        showOnboarding={() =>
+                          setOnboardingState(_ => AddAccountModal)
+                        }
+                      />
                     | Operations => <OperationsView />
                     | AddressBook => <AddressBookView />
                     | Delegations => <DelegationsView />

@@ -42,7 +42,7 @@ module EditButton = {
   };
 };
 
-module AccountImportButton = {
+module CreateAccountButton = {
   let styles =
     Style.(
       StyleSheet.create({
@@ -51,28 +51,16 @@ module AccountImportButton = {
     );
 
   [@react.component]
-  let make = () => {
-    let secrets = StoreContext.Secrets.useGetAll();
-
-    let (visibleModal, openAction, closeAction) =
-      ModalAction.useModalActionState();
-
-    let onPress = _ => openAction();
+  let make = (~showOnboarding) => {
     <>
       <View style=styles##button>
         <ButtonAction
-          onPress
-          text=I18n.btn#import
-          icon=Icons.Import.build
+          onPress={_ => showOnboarding()}
+          text=I18n.btn#create_or_import_account
+          icon=Icons.Account.build
           primary=true
         />
       </View>
-      <ModalAction visible=visibleModal onRequestClose=closeAction>
-        <ImportAccountOnboardingView
-          closeAction
-          existingSecretsCount={secrets->Array.size}
-        />
-      </ModalAction>
     </>;
   };
 };
@@ -207,7 +195,7 @@ let styles =
   Style.(StyleSheet.create({"actionBar": style(~flexDirection=`row, ())}));
 
 [@react.component]
-let make = () => {
+let make = (~showOnboarding) => {
   let resetSecrets = StoreContext.Secrets.useResetAll();
   let accountsRequest = StoreContext.Accounts.useRequest();
   let token = StoreContext.SelectedToken.useGet();
@@ -230,7 +218,10 @@ let make = () => {
               ? <BalanceTotal /> : <BalanceTotal.WithTokenSelector ?token />}
            <View style=styles##actionBar>
              {editMode
-                ? <View> <AccountImportButton /> <ScanImportButton /> </View>
+                ? <View>
+                    <CreateAccountButton showOnboarding />
+                    <ScanImportButton />
+                  </View>
                 : React.null}
            </View>
          </Page.Header>
