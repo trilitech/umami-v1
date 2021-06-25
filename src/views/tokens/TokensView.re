@@ -105,7 +105,9 @@ let make = () => {
        | Done(Ok(tokens), _) =>
          tokens
          ->Map.String.valuesToArray
-         ->Array.map(token => <TokenRowItem key={token.address} token />)
+         ->Array.map(token =>
+             <TokenRowItem key=(token.address :> string) token />
+           )
          ->React.array
        | Done(Error(error), _) => <ErrorView error />
        }}

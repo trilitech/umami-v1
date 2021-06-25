@@ -71,9 +71,9 @@ module Content = {
   };
 };
 
-module AccountInfo = {
+module EntityInfo = {
   [@react.component]
-  let make = (~address, ~title, ~style=?) => {
+  let make = (~address: option(PublicKeyHash.t), ~title, ~style=?) => {
     let aliases = StoreContext.Aliases.useGetAll();
 
     <View ?style>
@@ -81,13 +81,19 @@ module AccountInfo = {
         title->React.string
       </Typography.Overline2>
       {address
-       ->AliasHelpers.getAliasFromAddress(aliases)
+       ->Option.flatMap(alias =>
+           alias->AliasHelpers.getAliasFromAddress(aliases)
+         )
        ->ReactUtils.mapOpt(alias =>
            <Typography.Subtitle2 fontSize=16. style=styles##subtitle>
              alias->React.string
            </Typography.Subtitle2>
          )}
-      <Typography.Address> address->React.string </Typography.Address>
+      {address->ReactUtils.mapOpt(address =>
+         <Typography.Address>
+           (address :> string)->React.string
+         </Typography.Address>
+       )}
     </View>;
   };
 };
@@ -97,10 +103,10 @@ module Base = {
     switch (destinations) {
     | `One(address, title, parameters) =>
       switch (parameters) {
-      | None => <AccountInfo style=styles##element address title />
+      | None => <EntityInfo style=styles##element address title />
       | Some(parameters) =>
         <>
-          <AccountInfo
+          <EntityInfo
             style=styles##element
             address
             title=I18n.title#interaction
@@ -135,7 +141,7 @@ module Base = {
         Some(styles##operationSummary),
         styleProp,
       |])}>
-      <AccountInfo address={source->fst} title={source->snd} />
+      <EntityInfo address={source->fst->Some} title={source->snd} />
       {content->ReactUtils.hideNil(content => <Content content />)}
       {buildDestinations(destinations)}
     </View>;
@@ -161,7 +167,7 @@ module Transactions = {
     | {source, transfers: [t]} => (
         (source, sourceLbl),
         `One((
-          t.destination,
+          Some(t.destination),
           recipientLbl,
           transactionParameters(
             ~entrypoint=t.tx_options.entrypoint,
@@ -231,7 +237,8 @@ module Transactions = {
   [@react.component]
   let make =
       (~style=?, ~transfer: Transfer.t, ~dryRun: Protocol.simulationResults) => {
-    let (source, destinations) = sourceDestination(transfer);
+    let (source: (PublicKeyHash.t, string), destinations) =
+      sourceDestination(transfer);
     let content = buildSummaryContent(transfer, dryRun);
 
     <Base ?style source destinations content />;
@@ -253,11 +260,7 @@ module Delegate = {
 
     let total = (
       I18n.label#summary_total,
-      [
-        Transfer.Currency.Tez(
-          Tez.Infix.(dryRun.fee + dryRun.revealFee),
-        ),
-      ],
+      [Transfer.Currency.Tez(Tez.Infix.(dryRun.fee + dryRun.revealFee))],
     );
 
     [fee, ...revealFee->Option.mapWithDefault([total], r => [r, total])];
@@ -272,8 +275,8 @@ module Delegate = {
       ) => {
     let (target, title) =
       switch (delegation.delegate) {
-      | None => ("", I18n.title#withdraw_baker)
-      | Some(d) => (d, I18n.title#baker_account)
+      | None => (None, I18n.title#withdraw_baker)
+      | Some(d) => (Some(d), I18n.title#baker_account)
       };
 
     <Base

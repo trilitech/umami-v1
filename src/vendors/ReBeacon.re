@@ -37,7 +37,7 @@ type network = {
 };
 type scopes = array(string);
 type operationDetails;
-type sourceAddress = string;
+type sourceAddress = PublicKeyHash.t;
 type publicKey = string;
 type transactionHash = string;
 
@@ -61,7 +61,7 @@ module Message = {
 
       type transaction = {
         amount: string,
-        destination: string,
+        destination: PublicKeyHash.t,
         parameters: option(ProtocolOptions.TransactionParameters.t),
       };
 
@@ -76,7 +76,7 @@ module Message = {
         ballot: [ | `nay | `yay | `pass],
       };
 
-      type delegation = {delegate: option(string)};
+      type delegation = {delegate: option(PublicKeyHash.t)};
 
       type endorsement = {level: string};
 
@@ -279,7 +279,7 @@ type peerInfo = {
 };
 type permissionInfo = {
   accountIdentifier,
-  address: string,
+  address: PublicKeyHash.t,
   network,
   appMetadata,
   publicKey,

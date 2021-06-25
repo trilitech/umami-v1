@@ -23,67 +23,45 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open ReactNative;
+type addressValidityError = [
+  | `No_prefix_matched
+  | `Invalid_checksum
+  | `Invalid_length
+  | `UnknownError(int)
+];
 
-module AddContactButton = {
-  let styles =
-    Style.(
-      StyleSheet.create({
-        "button":
-          style(
-            ~alignSelf=`flexStart,
-            ~marginLeft=(-6.)->dp,
-            ~marginBottom=10.->dp,
-            (),
-          ),
-      })
-    );
+[@bs.module "@taquito/utils"]
+external validateAddressRaw: string => int = "validateAddress";
 
-  [@react.component]
-  let make = () => {
-    let (visibleModal, openAction, closeAction) =
-      ModalAction.useModalActionState();
+[@bs.module "@taquito/utils"]
+external validateContractAddressRaw: string => int = "validateContractAddress";
 
-    let onPress = _e => openAction();
+let handleValidity =
+  fun
+  | 0 => `No_prefix_matched
+  | 1 => `Invalid_checksum
+  | 2 => `Invalid_length
+  | 3 => `Valid
+  | n => `UnknownError(n);
 
-    <>
-      <View style=styles##button>
-        <ButtonAction onPress text=I18n.btn#add_contact icon=Icons.Add.build />
-      </View>
-      <ModalAction visible=visibleModal onRequestClose=closeAction>
-        <ContactFormView action=Create closeAction />
-      </ModalAction>
-    </>;
+let validateAddress = s =>
+  switch (s->validateAddressRaw->handleValidity) {
+  | `Valid => Ok(`Address)
+  | #addressValidityError as err => Error(err)
   };
-};
 
-let styles = Style.(StyleSheet.create({"container": style(~flex=1., ())}));
+let validateContractAddress = s =>
+  switch (s->validateContractAddressRaw->handleValidity) {
+  | `Valid => Ok(`Contract)
+  | #addressValidityError as err => Error(err)
+  };
 
-[@react.component]
-let make = () => {
-  let aliasesRequest = StoreContext.Aliases.useRequestExceptAccounts();
-
-  <Page>
-    <AddContactButton />
-    {switch (aliasesRequest) {
-     | Done(Ok(aliases), _)
-     | Loading(Some(aliases)) =>
-       aliases->Map.String.size === 0
-         ? <Table.Empty>
-             I18n.t#empty_address_book->React.string
-           </Table.Empty>
-         : aliases
-           ->Map.String.valuesToArray
-           ->SortArray.stableSortBy((a, b) =>
-               Js.String.localeCompare(b.name, a.name)->int_of_float
-             )
-           ->Array.map(account =>
-               <AddressBookRowItem key=(account.address :> string) account />
-             )
-           ->React.array
-     | Done(Error(error), _) => <ErrorView error />
-     | NotAsked
-     | Loading(None) => <LoadingView />
-     }}
-  </Page>;
-};
+let validateAnyAddress = s =>
+  switch (s->validateContractAddress) {
+  | Ok(`Contract) => Ok(`Contract)
+  | Error(_) =>
+    switch (s->validateAddress) {
+    | Ok(`Address) => Ok(`Address)
+    | Error(#addressValidityError as err) => Error(err)
+    }
+  };

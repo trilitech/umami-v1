@@ -32,10 +32,9 @@ let useLoad = requestState => {
     WalletAPI.Aliases.get(~settings)
     ->Future.mapOk(response => {
         response
-        ->Array.map(((name, address)) => {
-            let account: Alias.t = {name, address};
-            (address, account);
-          })
+        ->Array.map(((name, address)) =>
+            ((address :> string), Alias.{name, address})
+          )
         ->Array.reverse
         ->Map.String.fromArray
       });

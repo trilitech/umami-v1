@@ -77,7 +77,7 @@ module Selector = {
            }}
         </View>
         <Typography.Address>
-          account.address->React.string
+          (account.address :> string)->React.string
         </Typography.Address>
       </View>;
     };
@@ -128,10 +128,14 @@ module Selector = {
         <View style=styles##spacer />
         <Selector
           items
-          getItemKey={account => account.address}
+          getItemKey={account => (account.address :> string)}
           ?style
           onValueChange={value => updateAccount(value.address)}
-          selectedValueKey=?{account->Option.map(account => account.address)}
+          selectedValueKey=?{
+            account->Option.map((account: Account.t) =>
+              (account.address :> string)
+            )
+          }
           renderButton
           renderItem
           keyPopover="accountSelector"

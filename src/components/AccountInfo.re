@@ -51,7 +51,7 @@ let make =
        ? <AccountInfoBalance address={account.address} ?token />
        : <View style=styles##balanceEmpty />}
     <Typography.Address style=styles##address>
-      account.address->React.string
+      (account.address :> string)->React.string
     </Typography.Address>
   </View>;
 };

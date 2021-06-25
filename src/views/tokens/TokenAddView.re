@@ -57,12 +57,18 @@ let make = (~chain, ~closeAction) => {
       },
       ~onSubmit=
         ({state, raiseSubmitFailed}) => {
-          checkToken(state.values.address)
+          state.values.address
+          ->PublicKeyHash.build
+          ->Future.value
+          ->Future.mapError(PublicKeyHash.handleValidationError)
+          ->Future.flatMapOk(address =>
+              checkToken(address)->Future.mapOk(res => (address, res))
+            )
           ->Future.get(result =>
               switch (result) {
-              | Ok(true) =>
+              | Ok((address, true)) =>
                 createToken({
-                  address: state.values.address,
+                  address,
                   alias: state.values.name,
                   symbol: state.values.symbol,
                   chain,
@@ -73,7 +79,7 @@ let make = (~chain, ~closeAction) => {
                   )
                 ->ignore
               | Error(_)
-              | Ok(false) =>
+              | Ok((_, false)) =>
                 let errorMsg = I18n.t#error_check_contract;
                 addToast(Logs.error(~origin=Tokens, errorMsg));
                 raiseSubmitFailed(Some(errorMsg));

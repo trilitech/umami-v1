@@ -24,7 +24,7 @@
 /*****************************************************************************/
 
 type t = {
-  address: string,
+  address: PublicKeyHash.t,
   name: string,
   ledger: bool,
 };

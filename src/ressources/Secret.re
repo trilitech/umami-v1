@@ -27,6 +27,6 @@ type t = {
   index: int,
   name: string,
   derivationPath: DerivationPath.Pattern.t,
-  addresses: Js.Array.t(string),
-  legacyAddress: option(string),
+  addresses: Js.Array.t(PublicKeyHash.t),
+  legacyAddress: option(PublicKeyHash.t),
 };

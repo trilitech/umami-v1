@@ -38,6 +38,7 @@ type origin =
 
 type kind =
   | Info
+  | Warning
   | Error;
 
 type timestamp = float;

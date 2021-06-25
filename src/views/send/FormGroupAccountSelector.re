@@ -59,12 +59,12 @@ let make =
       <Selector
         items
         ?disabled
-        getItemKey={account => account.address}
+        getItemKey={account => (account.address :> string)}
         onValueChange={account => {
-          accounts->Map.String.get(account.address)->handleChange
+          accounts->Map.String.get((account.address :> string))->handleChange
         }}
         selectedValueKey={
-          value->Option.mapWithDefault("", a => a.Account.address)
+          value->Option.mapWithDefault("", a => (a.Account.address :> string))
         }
         renderButton={baseRenderButton(~token)}
         renderItem={baseRenderItem(~token)}

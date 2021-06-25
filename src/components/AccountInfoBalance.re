@@ -39,7 +39,7 @@ module BalanceActivityIndicator = {
 
 module Balance = {
   [@react.component]
-  let make = (~address: string) => {
+  let make = (~address: PublicKeyHash.t) => {
     let balanceRequest = StoreContext.Balance.useLoad(address);
 
     switch (balanceRequest) {
@@ -55,7 +55,7 @@ module Balance = {
 
 module BalanceToken = {
   [@react.component]
-  let make = (~address: string, ~token: Token.t) => {
+  let make = (~address: PublicKeyHash.t, ~token: Token.t) => {
     let balanceTokenRequest =
       StoreContext.BalanceToken.useLoad(address, token.address);
 
@@ -79,7 +79,7 @@ let styles =
   );
 
 [@react.component]
-let make = (~address: string, ~token: option(Token.t)=?) => {
+let make = (~address: PublicKeyHash.t, ~token: option(Token.t)=?) => {
   <Typography.Subtitle1 fontWeightStyle=`black style=styles##balance>
     {switch (token) {
      | Some(token) => <BalanceToken address token />

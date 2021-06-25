@@ -42,7 +42,7 @@ let buildTransaction = (state: DelegateForm.state, advancedOptionOpened) => {
 
   Protocol.makeDelegate(
     ~source=state.values.sender,
-    ~delegate=Some(state.values.baker),
+    ~delegate=Some(state.values.baker->PublicKeyHash.build->Result.getExn),
     ~fee=?state.values.fee->mapIfAdvanced(Tez.fromString),
     ~forceLowFee=?
       advancedOptionOpened && state.values.forceLowFee ? Some(true) : None,
@@ -66,17 +66,16 @@ module Form = {
   let build = (action: action, advancedOptionOpened, onSubmit) => {
     let (initAccount, initDelegate) =
       switch (action) {
-      | Create(account) => (account, None)
+      | Create(account, _) => (account, None)
       | Edit(account, delegate)
-      | Delete(account, delegate) => (Some(account), Some(delegate))
+      | Delete(account, delegate) => (account, Some(delegate))
       };
 
     DelegateForm.use(
       ~schema={
         DelegateForm.Validation.(
           Schema(
-            nonEmpty(Sender)
-            + nonEmpty(Baker)
+            custom(values => values.baker->FormUtils.checkAddress, Baker)
             + custom(
                 values => FormUtils.(emptyOr(isValidTezAmount, values.fee)),
                 Fee,
@@ -85,7 +84,7 @@ module Form = {
                 values =>
                   switch (initDelegate) {
                   | Some(initDelegate) =>
-                    initDelegate == values.baker
+                    (initDelegate :> string) == values.baker
                       ? Error(I18n.form_input_error#change_baker) : Valid
                   | None => Valid
                   },
@@ -102,8 +101,8 @@ module Form = {
           None;
         },
       ~initialState={
-        sender: initAccount->Option.mapWithDefault("", a => a.address),
-        baker: initDelegate->Option.getWithDefault(""),
+        sender: initAccount.address,
+        baker: (initDelegate :> option(string))->Option.getWithDefault(""),
         fee: "",
         forceLowFee: false,
       },
@@ -165,8 +164,7 @@ module Form = {
             error={form.getFieldError(Field(Sender))}
             disabled={
               switch (action) {
-              | Create(None) => false
-              | Create(Some(_))
+              | Create(_, fixed) => fixed
               | Edit(_)
               | Delete(_) => true
               }
@@ -186,7 +184,7 @@ module Form = {
             setValue=setAdvancedOptionOpened
             disabled={
               form.values.baker == ""
-              || Some(form.values.baker) == initDelegate
+              || Some(form.values.baker) == (initDelegate :> option(string))
             }
           />
         </ReactFlipToolkit.FlippedView>

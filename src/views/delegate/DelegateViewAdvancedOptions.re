@@ -36,11 +36,12 @@ let make = (~form: DelegateForm.api) => {
     StoreContext.Operations.useSimulate();
 
   React.useEffect0(() => {
-    if (form.values.sender != "" && form.values.baker != "") {
+    switch (form.values.baker->PublicKeyHash.build) {
+    | Ok(baker) =>
       let operation =
         Protocol.makeDelegate(
           ~source=form.values.sender,
-          ~delegate=Some(form.values.baker),
+          ~delegate=Some(baker),
           (),
         );
       let operation = Operation.Simulation.delegation(operation);
@@ -49,6 +50,7 @@ let make = (~form: DelegateForm.api) => {
           form.handleChange(Fee, dryRun.fee->Tez.toString)
         })
       ->ignore;
+    | _ => ()
     };
 
     None;

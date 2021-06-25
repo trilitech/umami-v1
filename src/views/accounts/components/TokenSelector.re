@@ -49,12 +49,19 @@ let styles =
     })
   );
 
-let tezToken: Token.t = {
-  address: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-  alias: I18n.t#tezos,
-  symbol: I18n.t#tez,
-  chain: Network.florencenetChain,
-};
+type token =
+  | Tez
+  | Token(Token.t);
+
+let symbol =
+  fun
+  | Tez => I18n.t#tez
+  | Token(t) => t.symbol;
+
+let name =
+  fun
+  | Tez => I18n.t#tezos
+  | Token(t) => t.alias;
 
 module TokenItem = {
   let styles =
@@ -76,11 +83,12 @@ module TokenItem = {
     );
 
   [@react.component]
-  let make = (~token: Token.t) => {
+  let make = (~token: token) => {
     let theme = ThemeContext.useTheme();
+
     <View style=styles##inner>
       <View style=styles##titleContainer>
-        {token.symbol == tezToken.symbol
+        {token == Tez
            ? <Icons.Tezos
                size=20.
                color={theme.colors.iconMediumEmphasis}
@@ -92,55 +100,59 @@ module TokenItem = {
                style=styles##icon
              />}
         <Typography.Subtitle2>
-          token.alias->React.string
+          {token->name->React.string}
         </Typography.Subtitle2>
       </View>
       <Typography.Body1 colorStyle=`mediumEmphasis>
-        token.symbol->React.string
+        {token->symbol->React.string}
       </Typography.Body1>
     </View>;
   };
 };
 
-let renderButton = (selectedToken: option(Token.t), _hasError) =>
+let renderButton = (selectedToken: option(token), _hasError) =>
   <View style=styles##selectorContent>
     {selectedToken->Option.mapWithDefault(<LoadingView />, token =>
        <View style=TokenItem.styles##inner>
-         <Typography.Body1> token.symbol->React.string </Typography.Body1>
+         <Typography.Body1> {token->symbol->React.string} </Typography.Body1>
        </View>
      )}
   </View>;
 
-let renderItem = (token: Token.t) => <TokenItem token />;
+let renderItem = (token: token) => <TokenItem token />;
 
 [@react.component]
 let make =
     (
-      ~selectedToken,
+      ~selectedToken: option(PublicKeyHash.t),
       ~setSelectedToken: option(Token.t) => unit,
       ~style as styleProp=?,
       ~renderButton=renderButton,
     ) => {
   let tokens = StoreContext.Tokens.useGetAll();
 
-  let items = tokens->Map.String.valuesToArray;
+  let items = tokens->Map.String.valuesToArray->Array.map(v => v->Token);
 
-  let onValueChange = (newValue: Token.t) =>
-    setSelectedToken(
-      newValue.address == tezToken.address ? None : newValue->Some,
-    );
+  let onValueChange =
+    fun
+    | Tez => setSelectedToken(None)
+    | Token(t) => t->Some->setSelectedToken;
 
   items->Array.size > 0
     ? <Selector
         style=Style.(arrayOption([|Some(styles##selector), styleProp|]))
         dropdownStyle=styles##selectorDropdown
         items
-        getItemKey={token => token.address}
+        getItemKey={
+          fun
+          | Tez => "tez"
+          | Token(t: TokenRepr.t) => (t.address :> string)
+        }
         renderButton
         onValueChange
         renderItem
-        selectedValueKey=?selectedToken
-        noneItem=tezToken
+        selectedValueKey=?(selectedToken :> option(string))
+        noneItem=Tez
         keyPopover="tokenSelector"
       />
     : React.null;

@@ -154,7 +154,7 @@ module PkAliases =
   });
 
 module PkhAlias = {
-  type t = string;
+  type t = PublicKeyHash.t;
 };
 
 module PkhAliases =

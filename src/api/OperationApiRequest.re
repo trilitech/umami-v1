@@ -119,10 +119,10 @@ let waitForConfirmation = (settings, hash) => {
 /* Get list */
 
 let useLoad =
-    (~requestState, ~limit=?, ~types=?, ~address: option(string), ()) => {
+    (~requestState, ~limit=?, ~types=?, ~address: PublicKeyHash.t, ()) => {
   let get = (~settings, address) => {
     let operations =
-      settings->ServerAPI.Explorer.get(
+      settings->ServerAPI.Explorer.getOperations(
         address,
         ~limit?,
         ~types?,
@@ -145,11 +145,5 @@ let useLoad =
     Future.map2(operations, currentLevel, f);
   };
 
-  ApiRequest.useLoader(
-    ~get,
-    ~condition=addr => addr != "",
-    ~kind=Logs.Operation,
-    ~requestState,
-    address->Option.getWithDefault(""),
-  );
+  ApiRequest.useLoader(~get, ~kind=Logs.Operation, ~requestState, address);
 };

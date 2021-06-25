@@ -161,10 +161,10 @@ let make =
           I18n.expl#beacon_dapp_sign->React.string
         </Typography.Overline3>
       </View>
-      <OperationSummaryView.AccountInfo
+      <OperationSummaryView.EntityInfo
         style=styles##accountInfo
         title=I18n.title#sender_account
-        address={signPayloadRequest.sourceAddress}
+        address={signPayloadRequest.sourceAddress->Some}
       />
       <Payload signPayloadRequest />
       <PasswordFormView.PasswordField form />

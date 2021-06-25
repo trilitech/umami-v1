@@ -23,67 +23,59 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open ReactNative;
+type t = pri string;
 
-module AddContactButton = {
-  let styles =
-    Style.(
-      StyleSheet.create({
-        "button":
-          style(
-            ~alignSelf=`flexStart,
-            ~marginLeft=(-6.)->dp,
-            ~marginBottom=10.->dp,
-            (),
-          ),
-      })
-    );
+type addressValidityError = [
+  | `NotAnImplicit
+  | `NotAContract
+  | ReTaquitoUtils.addressValidityError
+];
 
-  [@react.component]
-  let make = () => {
-    let (visibleModal, openAction, closeAction) =
-      ModalAction.useModalActionState();
+type parsingError =
+  | CannotParseAddress(string, addressValidityError)
+  | CannotParseContract(string, addressValidityError);
 
-    let onPress = _e => openAction();
+let handleValidationError: addressValidityError => string;
+let handleParsingError: parsingError => string;
 
-    <>
-      <View style=styles##button>
-        <ButtonAction onPress text=I18n.btn#add_contact icon=Icons.Add.build />
-      </View>
-      <ModalAction visible=visibleModal onRequestClose=closeAction>
-        <ContactFormView action=Create closeAction />
-      </ModalAction>
-    </>;
-  };
+type parsedAddress =
+  | Contract(t)
+  | Implicit(t);
+
+let build: string => result(t, [> ReTaquitoUtils.addressValidityError]);
+let buildAny:
+  string => result(parsedAddress, [> ReTaquitoUtils.addressValidityError]);
+
+// Checks if given address is a smart contract address (KT1)
+let buildContract: string => result(t, parsingError);
+
+// Checks if given string is an implicit contract (tz*)
+let buildImplicit: string => result(t, parsingError);
+
+module Scheme: {
+  type t =
+    | ED25519
+    | SECP256K1
+    | P256;
+
+  let toString: t => string;
 };
 
-let styles = Style.(StyleSheet.create({"container": style(~flex=1., ())}));
+type implicit =
+  | TZ1
+  | TZ2
+  | TZ3;
 
-[@react.component]
-let make = () => {
-  let aliasesRequest = StoreContext.Aliases.useRequestExceptAccounts();
+type kind =
+  | Implicit(implicit)
+  | KT1;
 
-  <Page>
-    <AddContactButton />
-    {switch (aliasesRequest) {
-     | Done(Ok(aliases), _)
-     | Loading(Some(aliases)) =>
-       aliases->Map.String.size === 0
-         ? <Table.Empty>
-             I18n.t#empty_address_book->React.string
-           </Table.Empty>
-         : aliases
-           ->Map.String.valuesToArray
-           ->SortArray.stableSortBy((a, b) =>
-               Js.String.localeCompare(b.name, a.name)->int_of_float
-             )
-           ->Array.map(account =>
-               <AddressBookRowItem key=(account.address :> string) account />
-             )
-           ->React.array
-     | Done(Error(error), _) => <ErrorView error />
-     | NotAsked
-     | Loading(None) => <LoadingView />
-     }}
-  </Page>;
-};
+let implicitFromScheme: Scheme.t => implicit;
+
+let kindToString: kind => string;
+
+module DerivationPath: {let default: string;};
+
+type pkh = t;
+
+module Comparator: Belt.Id.Comparable with type t = pkh;

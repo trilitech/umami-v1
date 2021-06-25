@@ -61,18 +61,18 @@ let make = (~account: Alias.t, ~onPressCancel) => {
     </Typography.Headline>
     <View style=styles##qrContainer>
       <View style=styles##qr>
-        <QRCode value={account.address} size=200. />
+        <QRCode value=(account.address :> string) size=200. />
       </View>
     </View>
     <View style=styles##addressContainer>
       <Typography.Address style=styles##address>
-        account.address->React.string
+        (account.address :> string)->React.string
       </Typography.Address>
       <ClipboardButton
         copied=I18n.log#address
         tooltipKey="QrView"
         addToast
-        data={account.address}
+        data=(account.address :> string)
       />
     </View>
   </ModalTemplate.Form>;

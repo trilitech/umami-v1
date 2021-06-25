@@ -25,23 +25,24 @@
 
 type t = {
   name: string,
-  address: string,
+  address: PublicKeyHash.t,
 };
 
 let decode = json =>
   Json.Decode.{
     name: json |> field("name", string),
-    address: json |> field("address", string),
+    address:
+      (json |> field("address", string))->PublicKeyHash.build->Result.getExn,
   };
 
 type action =
-  | Create(option(Account.t))
-  | Edit(Account.t, string)
-  | Delete(Account.t, string);
+  | Create(Account.t, bool)
+  | Edit(Account.t, PublicKeyHash.t)
+  | Delete(Account.t, PublicKeyHash.t);
 
 let account = action =>
   switch (action) {
-  | Create(a) => a
+  | Create(a, _) => Some(a)
   | Edit(a, _) => Some(a)
   | Delete(a, _) => Some(a)
   };
