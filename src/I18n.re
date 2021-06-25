@@ -69,7 +69,8 @@ let btn = {
   pub scan = "SCAN";
   pub upgrade = "Download";
   pub load_file = "LOAD FROM FILE";
-  pub csv_format_link = "CSV specification and example"
+  pub csv_format_link = "CSV specification and example";
+  pub disclaimer_agree = "CONTINUE"
 };
 
 let tooltip = {
@@ -211,7 +212,8 @@ let title = {
   pub delete_load = "Deleting";
   pub delete_account_done = "Account deleted";
   pub batch = "Batch";
-  pub scan = "Scan"
+  pub scan = "Scan";
+  pub disclaimer = "User Agreement"
 };
 
 let expl = {
@@ -357,6 +359,14 @@ let csv = {
     p("%s in not a valid address: %s.", a, reason);
   pub cannot_parse_contract = (a, reason) =>
     p("%s in not a valid contract address: %s.", a, reason)
+};
+
+let disclaimer = {
+  pub _this = this;
+  pub last_updated = date => p("Last updated %s.", date);
+  pub please_sign = "In order to use Umami, \nyou must agree to the terms.";
+  pub agreement_checkbox = "Check here to indicate that you have read and \
+     agree to the terms of the User Agreement"
 };
 
 let t = {
