@@ -102,17 +102,15 @@ let make = (~closeAction, ~existingSecretsCount=0) => {
            mnemonic
            setMnemonic
            formatState
-           secondaryStepButton={(disabled, onPress) =>
+           secondaryButton={(disabled, onPress) =>
              <Buttons.FormSecondary
                disabled
                text=I18n.btn#customize_derivation_path
-               onPress={_ => {
-                 onPress();
-                 setFormStep(_ => DerivationPathStep);
-               }}
+               onPress={_ => {onPress()}}
              />
            }
-           goNextStep={_ => setFormStep(_ => PasswordStep(Mnemonics))}
+           next={_ => setFormStep(_ => PasswordStep(Mnemonics))}
+           nextSecondary={_ => setFormStep(_ => DerivationPathStep)}
          />
        </>
      | DerivationPathStep =>
