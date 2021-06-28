@@ -23,12 +23,27 @@
 /*                                                                           */
 /*****************************************************************************/
 
+module TransactionParameters = {
+  type entrypoint = string;
+
+  // This type cannot be build and destructed except from bindings modules
+  // ReBeacon and ReTaquito, hence its abstract nature.
+  module MichelineMichelsonV1Expression = {
+    type t;
+  };
+
+  type t = {
+    entrypoint,
+    value: MichelineMichelsonV1Expression.t,
+  };
+};
+
 type transferOptions = {
   fee: option(ProtocolXTZ.t),
   gasLimit: option(int),
   storageLimit: option(int),
-  parameter: option(string),
-  entrypoint: option(string),
+  parameter: option(TransactionParameters.MichelineMichelsonV1Expression.t),
+  entrypoint: option(TransactionParameters.entrypoint),
 };
 
 type commonOptions = {
