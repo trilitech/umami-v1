@@ -241,7 +241,7 @@ type kind =
   | Unencrypted
   | Ledger;
 
-let readSecret = (address, dirpath) =>
+let readSecretFromPkh = (address, dirpath) =>
   aliasFromPkh(~dirpath, ~pkh=address, ())
   ->Future.flatMapOk(alias => {
       dirpath

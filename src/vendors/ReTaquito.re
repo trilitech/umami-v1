@@ -393,7 +393,7 @@ let readUnencryptedKey = key =>
   ->fromPromiseParsed;
 
 let readSecretKey = (address, passphrase, dirpath) => {
-  Wallet.readSecret(address, dirpath)
+  Wallet.readSecretFromPkh(address, dirpath)
   ->Future.map(convertWalletError)
   ->Future.flatMapOk(((kind, key)) =>
       switch (kind) {
