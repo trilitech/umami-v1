@@ -31,9 +31,10 @@ module DisclaimerForm = ReForm.Make(StateLenses);
 let styles =
   Style.(
     StyleSheet.create({
+      "modal": style()->unsafeAddStyle({"boxShadow": "none"}),
       "title": style(~marginBottom=4.->dp, ~textAlign=`center, ()),
       "updateNotice": style(~textAlign=`center, ()),
-      "subtitle": style(~textAlign=`center, ()),
+      "subtitle": style(~textAlign=`center, ~marginTop=4.->dp, ()),
       "disclaimerText": style(~marginBottom=32.->dp, ~marginTop=24.->dp, ()),
       "checkboxLabel":
         style(
@@ -47,6 +48,8 @@ let styles =
 
 [@react.component]
 let make = (~onSign) => {
+  let theme = ThemeContext.useTheme();
+
   let onAgree = () => {
     Disclaimer.sign();
   };
@@ -71,7 +74,13 @@ let make = (~onSign) => {
   let formFieldsAreValids =
     FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
 
-  <ModalFormView>
+  <ModalFormView
+    style=Style.(
+      array([|
+        styles##modal,
+        style(~backgroundColor=theme.colors.barBackground, ()),
+      |])
+    )>
     <Typography.Headline style=styles##title>
       I18n.title#disclaimer->React.string
     </Typography.Headline>
@@ -91,6 +100,10 @@ let make = (~onSign) => {
           style=styles##checkboxLabel
           label=I18n.disclaimer#agreement_checkbox
           labelFontWeightStyle=`regular
+          labelStyle={Style.style(
+            ~color=Typography.getColor(`highEmphasis, theme),
+            (),
+          )}
           value={form.values.read}
           handleChange={form.handleChange(Read)}
         />

@@ -77,6 +77,7 @@ let make =
       ~disabled=false,
       ~labelFontWeightStyle=?,
       ~style as styleFromProp: option(Style.t)=?,
+      ~labelStyle=?,
     ) => {
   <Pressable_
     style={_ =>
@@ -93,7 +94,12 @@ let make =
            hovered pressed focused disabled style=styles##checkboxContainer>
            <Checkbox value />
          </ThemedPressable.ContainerInteractionState.Outline>
-         <FormLabel label hasError fontWeightStyle=?labelFontWeightStyle />
+         <FormLabel
+           label
+           hasError
+           fontWeightStyle=?labelFontWeightStyle
+           style=?labelStyle
+         />
        </>;
      }}
   </Pressable_>;
