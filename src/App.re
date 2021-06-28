@@ -98,7 +98,7 @@ module DisclaimerModal = {
   [@react.component]
   let make = (~onSign) => {
     <Page>
-      <View style=Style.(style(~paddingTop=27.->dp, ()))>
+      <View style=Style.(style(~paddingTop=27.->dp, ~flex=1., ()))>
         <DisclaimerView onSign />
       </View>
     </Page>;
