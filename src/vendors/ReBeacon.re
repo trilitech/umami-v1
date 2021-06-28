@@ -1,3 +1,28 @@
+/*****************************************************************************/
+/*                                                                           */
+/* Open Source License                                                       */
+/* Copyright (c) 2019-2021 Nomadic Labs, <contact@nomadic-labs.com>          */
+/*                                                                           */
+/* Permission is hereby granted, free of charge, to any person obtaining a   */
+/* copy of this software and associated documentation files (the "Software"),*/
+/* to deal in the Software without restriction, including without limitation */
+/* the rights to use, copy, modify, merge, publish, distribute, sublicense,  */
+/* and/or sell copies of the Software, and to permit persons to whom the     */
+/* Software is furnished to do so, subject to the following conditions:      */
+/*                                                                           */
+/* The above copyright notice and this permission notice shall be included   */
+/* in all copies or substantial portions of the Software.                    */
+/*                                                                           */
+/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR*/
+/* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,  */
+/* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL   */
+/* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER*/
+/* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING   */
+/* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER       */
+/* DEALINGS IN THE SOFTWARE.                                                 */
+/*                                                                           */
+/*****************************************************************************/
+
 type id = string;
 type version = string;
 type senderId = string;
@@ -186,18 +211,9 @@ module Message = {
   };
 
   module ResponseInput = {
-    type messageType = [
-      | `permission_response
-      | `operation_response
-      | `sign_payload_response
-      | `broadcast_response
-      | `acknowledge
-      | `error
-    ];
-
-    type baseMessage;
-
     type permissionResponse = {
+      [@bs.as "type"]
+      type_: [ | `permission_response],
       id,
       network,
       scopes,
@@ -205,87 +221,50 @@ module Message = {
     };
 
     type operationResponse = {
+      [@bs.as "type"]
+      type_: [ | `operation_response],
       id,
       transactionHash,
     };
 
     type signPayloadResponse = {
+      [@bs.as "type"]
+      type_: [ | `sign_payload_response],
       id,
       signingType,
       signature: string,
     };
 
     type broadcastResponse = {
+      [@bs.as "type"]
+      type_: [ | `broadcast_response],
       id,
       transactionHash,
     };
 
-    type acknowledge = {id};
-
-    type errorType = [
-      | `BROADCAST_ERROR
-      | `NETWORK_NOT_SUPPORTED
-      | `NO_ADDRESS_ERROR
-      | `NO_PRIVATE_KEY_FOUND_ERROR
-      | `NOT_GRANTED_ERROR
-      | `PARAMETERS_INVALID_ERROR
-      | `TOO_MANY_OPERATIONS
-      | `TRANSACTION_INVALID_ERROR
-      | `SIGNATURE_TYPE_NOT_SUPPORTED
-      | `ABORTED_ERROR
-      | `UNKNOWN_ERROR
-    ];
-
-    type error = {
+    type acknowledge = {
+      [@bs.as "type"]
+      type_: [ | `acknowledge],
       id,
-      errorType,
     };
 
-    type t =
-      | PermissionResponse(permissionResponse)
-      | OperationResponse(operationResponse)
-      | SignPayloadResponse(signPayloadResponse)
-      | BroadcastResponse(broadcastResponse)
-      | Acknowledge(acknowledge)
-      | Error(error);
-
-    let toObj = (responseInput: t): baseMessage => {
-      switch (responseInput) {
-      | PermissionResponse({id, network, scopes, publicKey}) =>
-        {
-          "type": `permission_response,
-          "id": id,
-          "network": network,
-          "scopes": scopes,
-          "publicKey": publicKey,
-        }
-        ->Obj.magic
-      | OperationResponse({id, transactionHash}) =>
-        {
-          "type": `operation_response,
-          "id": id,
-          "transactionHash": transactionHash,
-        }
-        ->Obj.magic
-      | SignPayloadResponse({id, signingType, signature}) =>
-        {
-          "type": `operation_response,
-          "id": id,
-          "signingType": signingType,
-          "signature": signature,
-        }
-        ->Obj.magic
-      | BroadcastResponse({id, transactionHash}) =>
-        {
-          "type": `broadcast_response,
-          "id": id,
-          "transactionHash": transactionHash,
-        }
-        ->Obj.magic
-      | Acknowledge({id}) => {"type": `acknowledge, "id": id}->Obj.magic
-      | Error({id, errorType}) =>
-        {"type": `error, "id": id, "errorType": errorType}->Obj.magic
-      };
+    type error = {
+      [@bs.as "type"]
+      type_: [ | `error],
+      id,
+      errorType: [
+        | `BROADCAST_ERROR
+        | `NETWORK_NOT_SUPPORTED
+        | `NO_ADDRESS_ERROR
+        | `NO_PRIVATE_KEY_FOUND_ERROR
+        | `NOT_GRANTED_ERROR
+        | `PARAMETERS_INVALID_ERROR
+        | `TOO_MANY_OPERATIONS
+        | `TRANSACTION_INVALID_ERROR
+        | `SIGNATURE_TYPE_NOT_SUPPORTED
+        | `ABORTED_ERROR
+        | `UNKNOWN_ERROR
+      ],
     };
   };
 };
@@ -352,7 +331,18 @@ module WalletClient = {
 
   [@bs.send]
   external respond:
-    (t, Message.ResponseInput.baseMessage) => Js.Promise.t(unit) =
+    (
+      t,
+      [@bs.unwrap] [
+        | `PermissionResponse(Message.ResponseInput.permissionResponse)
+        | `OperationResponse(Message.ResponseInput.operationResponse)
+        | `SignPayloadResponse(Message.ResponseInput.signPayloadResponse)
+        | `BroadcastResponse(Message.ResponseInput.broadcastResponse)
+        | `Acknowledge(Message.ResponseInput.acknowledge)
+        | `Error(Message.ResponseInput.error)
+      ]
+    ) =>
+    Js.Promise.t(unit) =
     "respond";
 
   [@bs.send] external destroy: t => Js.Promise.t(unit) = "destroy";
