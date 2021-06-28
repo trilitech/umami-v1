@@ -34,8 +34,7 @@ let styles =
       "title": style(~marginBottom=4.->dp, ~textAlign=`center, ()),
       "updateNotice": style(~textAlign=`center, ()),
       "subtitle": style(~textAlign=`center, ()),
-      "disclaimerText":
-        style(~paddingBottom=32.->dp, ~paddingTop=24.->dp, ()),
+      "disclaimerText": style(~marginBottom=32.->dp, ~marginTop=24.->dp, ()),
       "checkboxLabel":
         style(
           ~fontSize=16.,
@@ -84,9 +83,7 @@ let make = (~onSign) => {
     </Typography.Overline1>
     <DocumentContext.ScrollView
       showsVerticalScrollIndicator=true style=styles##disclaimerText>
-      <Typography.Body1 colorStyle=`highEmphasis>
-        {Disclaimer.getEula()->React.string}
-      </Typography.Body1>
+      <DisclaimerText />
     </DocumentContext.ScrollView>
     <View>
       <View>
