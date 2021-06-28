@@ -144,8 +144,19 @@ module Base = {
 
 module Form = {
   [@react.component]
-  let make = (~headerLeft=?, ~headerRight=?, ~loading=?, ~children) => {
-    <Base ?headerLeft ?headerRight ?loading style=styles##modalForm>
+  let make =
+      (
+        ~headerLeft=?,
+        ~headerRight=?,
+        ~loading=?,
+        ~style as styleFromProp=?,
+        ~children,
+      ) => {
+    <Base
+      ?headerLeft
+      ?headerRight
+      ?loading
+      style=Style.(arrayOption([|Some(styles##modalForm), styleFromProp|]))>
       children
     </Base>;
   };
