@@ -69,7 +69,8 @@ module Error = {
     | EmptyTransaction
     | InvalidContract
     | BranchRefused
-    | BadPkh;
+    | BadPkh
+    | WalletError(Wallet.error);
 
   let parse = e =>
     switch (e.message) {
@@ -370,101 +371,35 @@ module Balance = {
   };
 };
 
-module SecretAliases = {
-  type alias = {
-    name: string,
-    value: string,
-  };
-  type t = array(alias);
+let convertWalletError = res =>
+  res->ResultEx.mapError(
+    fun
+    | Wallet.Generic(e) => Error(Error.Generic(e))
+    | e => Error(Error.WalletError(e)),
+  );
 
-  [@bs.val] [@bs.scope "JSON"] external parse: string => t = "parse";
-};
+let readEncryptedKey = (key, passphrase) =>
+  fromSecretKey(key->Js.String2.substringToEnd(~from=10), ~passphrase, ())
+  ->FutureJs.fromPromise(e =>
+      if (Js.String.make(e)->Js.String2.includes("wrong secret key")) {
+        Error.WrongPassword;
+      } else {
+        Error.Generic(Js.String.make(e));
+      }
+    );
 
-module PkAliases = {
-  type value = {
-    locator: string,
-    key: string,
-  };
-
-  type alias = {
-    name: string,
-    value,
-  };
-  type t = array(alias);
-
-  [@bs.val] [@bs.scope "JSON"] external parse: string => t = "parse";
-};
-
-module PkhAliases = {
-  type alias = {
-    name: string,
-    value: string,
-  };
-  type t = array(alias);
-
-  [@bs.val] [@bs.scope "JSON"] external parse: string => t = "parse";
-};
-
-open System.Path.Ops;
-
-let aliasFromPkh = (~dirpath, ~pkh, ()) => {
-  System.File.read(dirpath / (!"public_key_hashs"))
-  ->Future.mapError(e => Error.Generic(e))
-  ->Future.flatMapOk(file => {
-      PkhAliases.parse(file)
-      ->Js.Array2.find(a => a.value == pkh)
-      ->FutureEx.fromOption(~error=Error.Generic("No key found !"))
-      ->Future.mapOk(a => a.PkhAliases.name)
-    });
-};
-
-let pkFromAlias = (~dirpath, ~alias, ()) => {
-  System.File.read(dirpath / (!"public_keys"))
-  ->Future.mapError(e => Error.Generic(e))
-  ->Future.flatMapOk(file => {
-      PkAliases.parse(file)
-      ->Js.Array2.find(a => a.PkAliases.name == alias)
-      ->FutureEx.fromOption(~error=Error.Generic("No key found !"))
-      ->Future.mapOk(a => a.PkAliases.value.key)
-    });
-};
+let readUnencryptedKey = key =>
+  fromSecretKey(key->Js.String2.substringToEnd(~from=12), ~passphrase="", ())
+  ->fromPromiseParsed;
 
 let readSecretKey = (address, passphrase, dirpath) => {
-  aliasFromPkh(~dirpath, ~pkh=address, ())
-  ->Future.flatMapOk(alias => {
-      System.File.read(dirpath / (!"secret_keys"))
-      ->Future.mapError(e => Error.Generic(e))
-      ->Future.flatMapOk(file => {
-          SecretAliases.parse(file)
-          ->Js.Array2.find(a => a.SecretAliases.name == alias)
-          ->FutureEx.fromOption(~error=Error.Generic("No key found !"))
-          ->Future.mapOk(a => a.SecretAliases.value)
-        })
-    })
-  ->Future.flatMapOk(key =>
-      if (key->Js.String2.startsWith("encrypted:")) {
-        fromSecretKey(
-          key->Js.String2.substringToEnd(~from=10),
-          ~passphrase,
-          (),
-        )
-        ->FutureJs.fromPromise(e =>
-            if (Js.String.make(e)->Js.String2.includes("wrong secret key")) {
-              Error.WrongPassword;
-            } else {
-              Error.Generic(Js.String.make(e));
-            }
-          );
-      } else if (key->Js.String2.startsWith("unencrypted:")) {
-        fromSecretKey(
-          key->Js.String2.substringToEnd(~from=12),
-          ~passphrase,
-          (),
-        )
-        ->fromPromiseParsed;
-      } else {
-        Error(Error.Generic("Can't readkey, bad format: " ++ key))
-        ->Future.value;
+  Wallet.readSecretFromPkh(address, dirpath)
+  ->Future.map(convertWalletError)
+  ->Future.flatMapOk(((kind, key)) =>
+      switch (kind) {
+      | Encrypted => readEncryptedKey(key, passphrase)
+      | Unencrypted => readUnencryptedKey(key)
+      | Ledger => Future.value(Error(Error.Generic("Ledger not supported")))
       }
     );
 };
@@ -567,8 +502,11 @@ let handleCustomOptions =
 
 module Estimate = {
   let setDelegate = (~endpoint, ~baseDir, ~source, ~delegate=?, ~fee=?, ()) =>
-    aliasFromPkh(~dirpath=baseDir, ~pkh=source, ())
-    ->Future.flatMapOk(alias => pkFromAlias(~dirpath=baseDir, ~alias, ()))
+    Wallet.aliasFromPkh(~dirpath=baseDir, ~pkh=source, ())
+    ->Future.flatMapOk(alias =>
+        Wallet.pkFromAlias(~dirpath=baseDir, ~alias, ())
+      )
+    ->Future.map(convertWalletError)
     ->Future.flatMapOk(pk => {
         let tk = Toolkit.create(endpoint);
         let signer = makeDummySigner(~pk, ~pkh=source, ());
@@ -763,8 +701,11 @@ module Transfer = {
              Future.t(list(Belt.Result.t(Toolkit.transferParams, Error.t))),
           (),
         ) => {
-      aliasFromPkh(~dirpath=baseDir, ~pkh=source, ())
-      ->Future.flatMapOk(alias => pkFromAlias(~dirpath=baseDir, ~alias, ()))
+      Wallet.aliasFromPkh(~dirpath=baseDir, ~pkh=source, ())
+      ->Future.flatMapOk(alias =>
+          Wallet.pkFromAlias(~dirpath=baseDir, ~alias, ())
+        )
+      ->Future.map(convertWalletError)
       ->Future.mapOk(pk => {
           let tk = Toolkit.create(endpoint);
           let signer = makeDummySigner(~pk, ~pkh=source, ());

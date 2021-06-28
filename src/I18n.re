@@ -323,6 +323,8 @@ let taquito = {
   pub unknown_error_code = n => p("Unknown error code %d", n)
 };
 
+let wallet = {pub _this = this; pub key_not_found = "Key not found"};
+
 let csv = {
   pub _this = this;
   pub cannot_parse_number = (row, col) =>
