@@ -137,9 +137,12 @@ let make =
       ~mnemonic,
       ~setMnemonic,
       ~formatState,
-      ~secondaryStepButton=?,
-      ~goNextStep,
+      ~next,
+      ~secondaryButton=?,
+      ~nextSecondary=_ => (),
     ) => {
+  let submitAction = React.useRef(`PrimarySubmit);
+
   let form: VerifyMnemonicForm.api =
     VerifyMnemonicForm.use(
       ~validationStrategy=OnDemand,
@@ -176,14 +179,19 @@ let make =
           setMnemonic(_ => state.values.words);
           formatState->snd(_ => state.values.format);
 
-          goNextStep();
+          switch (submitAction.current) {
+          | `PrimarySubmit => next()
+          | `SecondarySubmit => nextSecondary()
+          };
+
           None;
         },
       ~initialState={format: formatState->fst, words: mnemonic},
       (),
     );
 
-  let onSubmit = _ => {
+  let onSubmit = (submitPath, _) => {
+    submitAction.current = submitPath;
     form.submit();
   };
 
@@ -240,12 +248,14 @@ let make =
       )>
       <Buttons.SubmitPrimary
         text=I18n.btn#continue
-        onPress=onSubmit
+        onPress={onSubmit(`PrimarySubmit)}
         disabledLook={!formFieldsAreValids}
       />
       <View style=styles##secondaryBtn>
-        {secondaryStepButton
-         ->Option.map(f => f(!formFieldsAreValids, onSubmit))
+        {secondaryButton
+         ->Option.map(f =>
+             f(!formFieldsAreValids, onSubmit(`SecondarySubmit))
+           )
          ->ReactUtils.opt}
       </View>
     </View>
