@@ -182,14 +182,14 @@ module Error = {
     | RawError(string);
 
   type t =
-    | Taquito(ReTaquito.Error.t)
+    | Taquito(ReTaquitoError.t)
     | Token(token);
 
   let taquito = e => Taquito(e);
   let token = e => Token(e);
 
   let fromTaquitoToString = e =>
-    e->ReTaquito.Error.(
+    e->ReTaquitoError.(
          fun
          | Generic(s) => s
          | WrongPassword => I18n.form_input_error#wrong_password
