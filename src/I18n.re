@@ -243,6 +243,7 @@ let expl = {
   pub beacon_dapp = "would like to connect to your wallet";
   pub beacon_dapp_request = {js|This site is requesting access to view your account’s address.\nAlways make sure you trust the sites you interact with.|js};
   pub beacon_operation = "Requests Operations";
+  pub beacon_delegation = "Request Delegation";
   pub beacon_dapp_sign = "requests your signature"
 };
 

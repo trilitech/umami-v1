@@ -52,7 +52,7 @@ let parseAmount = (v, token) =>
         let vtez = v->Tez.fromString;
         vtez == None
           ? v->Illformed->Some
-          : vxtz->Option.map(v => v->Transfer.Currency.makeTez->Amount);
+          : vtez->Option.map(v => v->Transfer.Currency.makeTez->Amount);
       },
       t => {
         let vt = v->Token.Unit.fromNatString;

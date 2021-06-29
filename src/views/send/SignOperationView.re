@@ -35,11 +35,6 @@ let make =
       ~loading=false,
     ) => {
 
-  let (wrongPassword, setWrongPassword) = React.useState(() => false);
-
-  let account =
-    StoreContext.Accounts.useGetFromAddress(source->fst)->Option.getExn;
-
   let (form, formFieldsAreValids) =
     PasswordFormView.usePasswordForm(sendOperation);
 

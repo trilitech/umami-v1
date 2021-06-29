@@ -103,17 +103,17 @@ module Item = {
       {switch (parameters) {
        | Some(parameters) =>
          <View>
-           <AccountSelector.AccountItem
-             account={address: recipient, alias: I18n.title#interaction}
-             showAmount=AccountSelector.Nothing
+           <AccountElements.Selector.Item
+             account={address: recipient, name: I18n.title#interaction}
+             showAmount=AccountElements.Nothing
            />
            <TransactionContractParams parameters style=styles##parameters />
          </View>
        | None =>
-         <AccountSelector.AccountItem
+         <AccountElements.Selector.Item
            account={
              address: recipient,
-             alias:
+             name:
                recipient
                ->AliasHelpers.getAliasFromAddress(aliases)
                ->Option.getWithDefault(""),
@@ -263,7 +263,7 @@ let make =
     batch->List.mapWithIndex((i, (t: SendForm.validState, _) as v) =>
       (
         Some(() => onEdit(i, v)),
-        (t.recipient->FormUtils.Account.address, t.amount, None),
+        (t.recipient->FormUtils.Alias.address, t.amount, None),
       )
     );
 

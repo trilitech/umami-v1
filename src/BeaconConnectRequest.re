@@ -29,6 +29,14 @@ let checkOperationRequestHasOnlyTransaction =
   ->Array.every(operationDetail => operationDetail.kind == `transaction);
 };
 
+let checkOperationRequestHasOnlyOneDelegation =
+    ({operationDetails}: ReBeacon.Message.Request.operationRequest) => {
+  operationDetails->Array.size == 1
+  && operationDetails->Array.every(operationDetail =>
+       operationDetail.kind == `delegation
+     );
+};
+
 let useBeaconRequestModalAction = () => {
   let (request, setRequest) = React.useState(_ => None);
   let (visibleModal, openAction, closeAction) =
@@ -54,6 +62,13 @@ let make = () => {
   ) =
     useBeaconRequestModalAction();
   let (operationRequest, visibleModalOperation, openOperation, closeOperation) =
+    useBeaconRequestModalAction();
+  let (
+    delegationRequest,
+    visibleModalDelegation,
+    openDelegation,
+    closeDelegation,
+  ) =
     useBeaconRequestModalAction();
   let (
     signPayloadRequest,
@@ -89,6 +104,8 @@ let make = () => {
                 | OperationRequest(request) =>
                   if (request->checkOperationRequestHasOnlyTransaction) {
                     openOperation(request);
+                  } else if (request->checkOperationRequestHasOnlyOneDelegation) {
+                    openDelegation(request);
                   } else {
                     client
                     ->ReBeacon.WalletClient.respond(
@@ -147,6 +164,11 @@ let make = () => {
     <ModalAction visible=visibleModalOperation onRequestClose=closeOperation>
       {operationRequest->ReactUtils.mapOpt(operationRequest => {
          <BeaconOperationView operationRequest closeAction=closeOperation />
+       })}
+    </ModalAction>
+    <ModalAction visible=visibleModalDelegation onRequestClose=closeDelegation>
+      {delegationRequest->ReactUtils.mapOpt(delegationRequest => {
+         <BeaconDelegationView delegationRequest closeAction=closeDelegation />
        })}
     </ModalAction>
     <ModalAction

@@ -42,66 +42,41 @@ let styles =
 [@react.component]
 let make =
     (
-      ~operationRequest as
-        operationBeaconRequest: ReBeacon.Message.Request.operationRequest,
+      ~delegationRequest as
+        delegationBeaconRequest: ReBeacon.Message.Request.operationRequest,
       ~closeAction,
     ) => {
   let (operationSimulateRequest, sendOperationSimulate) =
     StoreContext.Operations.useSimulate();
 
-  let transfer =
+  let delegation =
     React.useMemo1(
       () => {
-        let partialTransactions =
-          operationBeaconRequest.operationDetails
-          ->Array.map(ReBeacon.Message.Request.PartialOperation.classify)
-          ->Array.keepMap(partialOperation =>
-              switch (partialOperation) {
-              | TransactionOperation(transaction) => Some(transaction)
-              | _ => None
-              }
-            );
-        {
-          Transfer.source: operationBeaconRequest.sourceAddress,
-          transfers:
-            partialTransactions
-            ->Array.map(partialTransaction =>
-                {
-                  Transfer.destination: partialTransaction.destination,
-                  amount:
-                    Tez(
-                      Tez.fromMutezString(partialTransaction.amount),
-                    ),
-                  tx_options: {
-                    fee: None,
-                    gasLimit: None,
-                    storageLimit: None,
-                    parameter:
-                      partialTransaction.parameters->Option.map(a => a.value),
-                    entrypoint:
-                      partialTransaction.parameters
-                      ->Option.map(a => a.entrypoint),
-                  },
+        Protocol.makeDelegate(
+          ~source=delegationBeaconRequest.sourceAddress,
+          ~delegate=
+            delegationBeaconRequest.operationDetails
+            ->Array.get(0)
+            ->Option.map(ReBeacon.Message.Request.PartialOperation.classify)
+            ->Option.flatMap(operationDetail =>
+                switch (operationDetail) {
+                | Delegation(delegation) => delegation.delegate
+                | _ => None
                 }
-              )
-            ->List.fromArray,
-          common_options: {
-            fee: None,
-            burnCap: None,
-            forceLowFee: None,
-          },
-        };
+              ),
+          (),
+        )
       },
-      [|operationBeaconRequest|],
+      [|delegationBeaconRequest|],
     );
 
   React.useEffect1(
     () => {
-      sendOperationSimulate(Operation.Simulation.transaction(transfer, None))
+      sendOperationSimulate(delegation->Operation.Simulation.delegation)
       ->ignore;
       None;
     },
-    [|transfer|],
+    [|delegation|],
   );
 
   let updateAccount = StoreContext.SelectedAccount.useSet();
@@ -109,28 +84,28 @@ let make =
     StoreContext.Operations.useCreate();
   let loading = operationApiRequest->ApiRequest.isLoading;
 
-  let sendTransfer = (~transfer, ~password) => {
-    let operation = Operation.transfer(transfer);
-
-    sendOperation({operation, password})
+  let sendDelegation = (~delegation, ~password) => {
+    sendOperation(OperationApiRequest.delegate(delegation, password))
     ->Future.tapOk(hash => {
         BeaconApiRequest.respond(
           `OperationResponse({
             type_: `operation_response,
-            id: operationBeaconRequest.id,
+            id: delegationBeaconRequest.id,
             transactionHash: hash,
           }),
         )
         ->ignore
       })
-    ->Future.tapOk(_ => {updateAccount(transfer.source)});
+    ->Future.tapOk(_ => {
+        updateAccount(delegationBeaconRequest.sourceAddress)
+      });
   };
 
   let onAbort = _ =>
     BeaconApiRequest.respond(
       `Error({
         type_: `error,
-        id: operationBeaconRequest.id,
+        id: delegationBeaconRequest.id,
         errorType: `ABORTED_ERROR,
       }),
     )
@@ -150,7 +125,7 @@ let make =
       : None;
 
   let (form, formFieldsAreValids) =
-    PasswordFormView.usePasswordForm(sendTransfer(~transfer));
+    PasswordFormView.usePasswordForm(sendDelegation(~delegation));
 
   <ModalTemplate.Form headerRight=?closeButton>
     {switch (operationApiRequest) {
@@ -164,10 +139,10 @@ let make =
            </Typography.Headline>
            <Typography.Overline2
              colorStyle=`highEmphasis fontWeightStyle=`bold style=styles##dapp>
-             operationBeaconRequest.appMetadata.name->React.string
+             delegationBeaconRequest.appMetadata.name->React.string
            </Typography.Overline2>
            <Typography.Overline3 colorStyle=`highEmphasis style=styles##dapp>
-             I18n.expl#beacon_operation->React.string
+             I18n.expl#beacon_delegation->React.string
            </Typography.Overline3>
          </View>
          {switch (operationSimulateRequest) {
@@ -177,7 +152,7 @@ let make =
             <ErrorView error={error->API.Error.fromApiToString} />
           | Done(Ok(dryRun), _) =>
             <>
-              <OperationSummaryView.Transactions transfer dryRun />
+              <OperationSummaryView.Delegate delegation dryRun />
               <PasswordFormView.PasswordField form />
               <View style=styles##formActionSpaceBetween>
                 <Buttons.SubmitSecondary

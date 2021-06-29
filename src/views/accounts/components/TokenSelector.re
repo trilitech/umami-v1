@@ -52,7 +52,7 @@ let styles =
 let tezToken: Token.t = {
   address: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
   alias: I18n.t#tezos,
-  symbol: I18n.t#xtz,
+  symbol: I18n.t#tez,
   chain: Network.florencenetChain,
 };
 

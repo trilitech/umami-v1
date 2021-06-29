@@ -190,13 +190,13 @@ module Transactions = {
 
   let buildSummaryContent =
       (transaction: Transfer.t, dryRun: Protocol.simulationResults) => {
-    let fee = (I18n.label#fee, [Transfer.Currency.XTZ(dryRun.fee)]);
+    let fee = (I18n.label#fee, [Transfer.Currency.Tez(dryRun.fee)]);
 
     let revealFee =
-      dryRun.revealFee != ProtocolXTZ.zero
+      dryRun.revealFee != Tez.zero
         ? (
             I18n.label#implicit_reveal_fee,
-            [Transfer.Currency.XTZ(dryRun.revealFee)],
+            [Transfer.Currency.Tez(dryRun.revealFee)],
           )
           ->Some
         : None;
@@ -211,15 +211,15 @@ module Transactions = {
     let totalTez = {
       let (sub, noTokens) =
         switch (totals) {
-        | [XTZ(a), ...t] => (a, t == [])
-        | t => (ProtocolXTZ.zero, t == [])
+        | [Tez(a), ...t] => (a, t == [])
+        | t => (Tez.zero, t == [])
         };
 
       (
         noTokens ? I18n.label#summary_total : I18n.label#summary_total_tez,
         [
-          Transfer.Currency.XTZ(
-            ProtocolXTZ.Infix.(sub + dryRun.fee + dryRun.revealFee),
+          Transfer.Currency.Tez(
+            Tez.Infix.(sub + dryRun.fee + dryRun.revealFee),
           ),
         ],
       );
@@ -241,21 +241,21 @@ module Transactions = {
 module Delegate = {
   let buildSummaryContent = (dryRun: Protocol.simulationResults) => {
     let revealFee =
-      dryRun.revealFee != ProtocolXTZ.zero
+      dryRun.revealFee != Tez.zero
         ? (
             I18n.label#implicit_reveal_fee,
-            [Transfer.Currency.XTZ(dryRun.revealFee)],
+            [Transfer.Currency.Tez(dryRun.revealFee)],
           )
           ->Some
         : None;
 
-    let fee = (I18n.label#fee, [Transfer.Currency.XTZ(dryRun.fee)]);
+    let fee = (I18n.label#fee, [Transfer.Currency.Tez(dryRun.fee)]);
 
     let total = (
       I18n.label#summary_total,
       [
-        Transfer.Currency.XTZ(
-          ProtocolXTZ.Infix.(dryRun.fee + dryRun.revealFee),
+        Transfer.Currency.Tez(
+          Tez.Infix.(dryRun.fee + dryRun.revealFee),
         ),
       ],
     );

@@ -101,6 +101,8 @@ let opKind = [%raw "OpKind"];
 let rpcClient = [%raw "RpcClient"];
 type rpcClient;
 
+type signer = TezosClient.ReTaquitoSigner.t;
+
 [@bs.val] [@bs.scope "InMemorySigner"]
 external fromSecretKey:
   (string, ~passphrase: string=?, unit) => Js.Promise.t(signer) =
@@ -743,6 +745,6 @@ module Transfer = {
 module Signature = {
   let signPayload = (~baseDir, ~source, ~password, ~payload) => {
     readSecretKey(source, password, baseDir)
-    ->Future.flatMapOk(signer => signer->sign(payload)->fromPromiseParsed);
+    ->Future.flatMapOk(signer => signer->sign(payload)->Error.fromPromiseParsed);
   };
 };
