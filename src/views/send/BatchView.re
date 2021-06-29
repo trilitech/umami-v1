@@ -77,7 +77,7 @@ let listStyle = (theme: ThemeContext.theme) =>
   );
 
 let buildAmount = amount => {
-  AccountSelector.Amount(
+  AccountElements.Amount(
     <Typography.Body1 fontWeightStyle=`bold style=styles##amount>
       amount->React.string
     </Typography.Body1>,
@@ -100,7 +100,7 @@ module Item = {
       <Typography.Subtitle1 colorStyle=`mediumEmphasis style=styles##num>
         {i->string_of_int->React.string}
       </Typography.Subtitle1>
-      <AccountSelector.AccountItem
+      <AccountElements.Selector.Item
         account={
           address: recipient,
           alias:

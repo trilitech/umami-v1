@@ -39,31 +39,6 @@ let itemStyles =
     })
   );
 
-module AccountItem = {
-  [@react.component]
-  let make =
-      (
-        ~style as paramStyle=?,
-        ~account: Account.t,
-        ~token: option(Token.t)=?,
-        ~showAmount=Balance,
-      ) => {
-    <View style=Style.(arrayOption([|Some(itemStyles##inner), paramStyle|]))>
-      <View style=itemStyles##info>
-        <Typography.Subtitle2>
-          account.alias->React.string
-        </Typography.Subtitle2>
-        {switch (showAmount) {
-         | Balance => <AccountInfoBalance address={account.address} ?token />
-         | Nothing => React.null
-         | Amount(e) => e
-         }}
-      </View>
-      <Typography.Address> account.address->React.string </Typography.Address>
-    </View>;
-  };
-};
-
 let styles =
   Style.(
     StyleSheet.create({
@@ -79,50 +54,81 @@ let styles =
     })
   );
 
-let baseRenderButton =
-    (~showAmount, ~token, selectedAccount: option(Account.t), _hasError) =>
-  <View style=styles##selectorContent>
-    {selectedAccount->Option.mapWithDefault(<LoadingView />, account =>
-       <AccountItem
-         style=itemStyles##itemInSelector
-         account
-         showAmount
-         ?token
-       />
-     )}
-  </View>;
+module Selector = {
+  module Item = {
+    [@react.component]
+    let make =
+        (
+          ~style as paramStyle=?,
+          ~account: Account.t,
+          ~token: option(Token.t)=?,
+          ~showAmount=Balance,
+        ) => {
+      <View
+        style=Style.(arrayOption([|Some(itemStyles##inner), paramStyle|]))>
+        <View style=itemStyles##info>
+          <Typography.Subtitle2>
+            account.alias->React.string
+          </Typography.Subtitle2>
+          {switch (showAmount) {
+           | Balance => <AccountInfoBalance address={account.address} ?token />
+           | Nothing => React.null
+           | Amount(e) => e
+           }}
+        </View>
+        <Typography.Address>
+          account.address->React.string
+        </Typography.Address>
+      </View>;
+    };
+  };
 
-let baseRenderItem = (~showAmount, ~token, account: Account.t) =>
-  <AccountItem style=itemStyles##itemInSelector account showAmount ?token />;
+  let baseRenderButton =
+      (~showAmount, ~token, selectedAccount: option(Account.t), _hasError) =>
+    <View style=styles##selectorContent>
+      {selectedAccount->Option.mapWithDefault(<LoadingView />, account =>
+         <Item style=itemStyles##itemInSelector account showAmount ?token />
+       )}
+    </View>;
 
-let renderButton = baseRenderButton(~showAmount=Balance, ~token=None);
+  let baseRenderItem = (~showAmount, ~token, account: Account.t) =>
+    <Item style=itemStyles##itemInSelector account showAmount ?token />;
 
-let renderItem = baseRenderItem(~showAmount=Balance, ~token=None);
+  let renderButton = baseRenderButton(~showAmount=Balance, ~token=None);
 
-[@react.component]
-let make = (~style=?) => {
-  let account = StoreContext.SelectedAccount.useGet();
-  let accounts = StoreContext.Accounts.useGetAll();
+  let renderItem = baseRenderItem(~showAmount=Balance, ~token=None);
 
-  let updateAccount = StoreContext.SelectedAccount.useSet();
+  module Simple = {
+    [@react.component]
+    let make = (~style=?) => {
+      let account = StoreContext.SelectedAccount.useGet();
+      let accounts = StoreContext.Accounts.useGetAll();
 
-  let items =
-    accounts
-    ->Map.String.valuesToArray
-    ->SortArray.stableSortBy((a, b) => Pervasives.compare(a.alias, b.alias));
+      let updateAccount = StoreContext.SelectedAccount.useSet();
 
-  <>
-    <Typography.Overline2> I18n.t#account->React.string </Typography.Overline2>
-    <View style=styles##spacer />
-    <Selector
-      items
-      getItemKey={account => account.address}
-      ?style
-      onValueChange={value => updateAccount(value.address)}
-      selectedValueKey=?{account->Option.map(account => account.address)}
-      renderButton
-      renderItem
-      keyPopover="accountSelector"
-    />
-  </>;
+      let items =
+        accounts
+        ->Map.String.valuesToArray
+        ->SortArray.stableSortBy((a, b) =>
+            Pervasives.compare(a.alias, b.alias)
+          );
+
+      <>
+        <Typography.Overline2>
+          I18n.t#account->React.string
+        </Typography.Overline2>
+        <View style=styles##spacer />
+        <Selector
+          items
+          getItemKey={account => account.address}
+          ?style
+          onValueChange={value => updateAccount(value.address)}
+          selectedValueKey=?{account->Option.map(account => account.address)}
+          renderButton
+          renderItem
+          keyPopover="accountSelector"
+        />
+      </>;
+    };
+  };
 };

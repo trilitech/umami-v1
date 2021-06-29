@@ -31,7 +31,7 @@ let styles =
       "button":
         style(
           ~height=203.->dp,
-          ~width=424.->dp,
+          ~maxWidth=424.->dp,
           ~justifyContent=`center,
           ~alignItems=`center,
           ~borderRadius=4.,
@@ -54,14 +54,15 @@ let styles =
   );
 
 [@react.component]
-let make = (~title, ~icon: Icons.builder, ~onPress) => {
+let make = (~style as styleFromProp=?, ~title, ~icon: Icons.builder, ~onPress) => {
   let theme = ThemeContext.useTheme();
 
   <TouchableOpacity
     style=Style.(
-      array([|
-        styles##button,
-        style(~backgroundColor=theme.colors.barBackground, ()),
+      arrayOption([|
+        styleFromProp,
+        Some(styles##button),
+        Some(style(~backgroundColor=theme.colors.barBackground, ())),
       |])
     )
     onPress>

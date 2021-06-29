@@ -36,15 +36,19 @@ let styles =
           ~paddingHorizontal=58.->dp,
           (),
         ),
+      "bigbutton": style(~flex=1., ()),
     })
   );
 
 [@react.component]
 let make = () => {
+  let styleNotFirst =
+    Style.(array([|styles##bigbutton, style(~marginLeft=60.->dp, ())|]));
+
   <Page>
     <View style=styles##container>
-      <CreateAccountBigButton />
-      <ImportAccountBigButton />
+      <CreateAccountBigButton style=styles##bigbutton />
+      <ImportAccountBigButton style=styleNotFirst />
     </View>
   </Page>;
 };

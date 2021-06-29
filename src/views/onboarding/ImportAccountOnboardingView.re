@@ -23,7 +23,7 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open ReactNative;
+let styles = FormStyles.onboarding;
 
 type fromStep =
   | Mnemonics
@@ -33,16 +33,6 @@ type step =
   | MnemonicsStep
   | DerivationPathStep
   | PasswordStep(fromStep);
-
-let styles =
-  Style.(
-    StyleSheet.create({
-      "title": style(~marginBottom=8.->dp, ~textAlign=`center, ()),
-      "stepPager": style(~marginBottom=4.->dp, ~textAlign=`center, ()),
-      "stepTitle": style(~marginBottom=10.->dp, ~textAlign=`center, ()),
-      "stepBody": style(~marginBottom=28.->dp, ~textAlign=`center, ()),
-    })
-  );
 
 [@react.component]
 let make = (~closeAction, ~existingSecretsCount=0) => {
