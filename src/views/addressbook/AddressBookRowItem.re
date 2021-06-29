@@ -27,11 +27,11 @@ open ReactNative;
 
 module AliasDeleteButton = {
   [@react.component]
-  let make = (~account: Account.t) => {
+  let make = (~account: Alias.t) => {
     let (aliasRequest, deleteAlias) = StoreContext.Aliases.useDelete();
 
     let onPressConfirmDelete = _e => {
-      deleteAlias(account.alias)->ignore;
+      deleteAlias(account.name)->ignore;
     };
 
     <DeleteButton.IconButton
@@ -48,7 +48,7 @@ module AliasDeleteButton = {
 
 module AliasEditButton = {
   [@react.component]
-  let make = (~account: Account.t) => {
+  let make = (~account: Alias.t) => {
     let (visibleModal, openAction, closeAction) =
       ModalAction.useModalActionState();
 
@@ -102,13 +102,13 @@ let memo = component =>
 
 [@react.component]
 let make =
-  memo((~account: Account.t) => {
+  memo((~account: Alias.t) => {
     let addToast = LogsContext.useToast();
 
     <RowItem.Bordered height=46.>
       <View style=styles##inner>
         <View style=styles##cellAlias>
-          <Typography.Body1> account.alias->React.string </Typography.Body1>
+          <Typography.Body1> account.name->React.string </Typography.Body1>
         </View>
         <View style=styles##cellAddress>
           <Typography.Address>

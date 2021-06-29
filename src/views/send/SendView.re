@@ -198,7 +198,7 @@ module Form = {
     SendForm.StateLenses.{
       amount: "",
       sender: account,
-      recipient: FormUtils.Account.AnyString(""),
+      recipient: FormUtils.Alias.AnyString(""),
       fee: "",
       gasLimit: "",
       storageLimit: "",
@@ -217,7 +217,7 @@ module Form = {
                   switch (values.recipient) {
                   | AnyString(_) =>
                     Error(I18n.form_input_error#invalid_contract)
-                  | Valid(Account(_)) => Valid
+                  | Valid(Alias(_)) => Valid
                   | Valid(Address(_)) => Valid
                   },
                 Recipient,
@@ -321,7 +321,7 @@ module Form = {
           ~token=?,
           ~mode,
           ~form,
-          ~accounts,
+          ~aliases,
           ~loading,
         ) => {
       let (advancedOptionOpened, setAdvancedOptionOpened) = advancedOptionState;
@@ -387,8 +387,8 @@ module Form = {
           />
           <FormGroupContactSelector
             label=I18n.label#send_recipient
-            filterOut={form.values.sender}
-            accounts
+            filterOut={form.values.sender->Option.map(Account.toAlias)}
+            aliases
             value={form.values.recipient}
             handleChange={form.handleChange(Recipient)}
             error={form.getFieldError(Field(Recipient))}
@@ -447,7 +447,7 @@ module Form = {
 
 module EditionView = {
   [@react.component]
-  let make = (~batch, ~accounts, ~initValues, ~onSubmit, ~index, ~loading) => {
+  let make = (~batch, ~aliases, ~initValues, ~onSubmit, ~index, ~loading) => {
     let (initValues, advancedOptionOpened) = initValues;
     let token =
       switch (initValues.SendForm.amount) {
@@ -469,7 +469,7 @@ module EditionView = {
       ?token
       form
       mode={Form.View.Edition(index)}
-      accounts
+      aliases
       loading
     />;
   };
@@ -481,7 +481,7 @@ let make = (~closeAction) => {
   let initToken = StoreContext.SelectedToken.useGet();
   let aliasesRequest = StoreContext.Aliases.useRequest();
 
-  let accounts =
+  let aliases =
     aliasesRequest
     ->ApiRequest.getDoneOk
     ->Option.getWithDefault(Map.String.empty);
@@ -560,7 +560,7 @@ let make = (~closeAction) => {
         let formStateValues: SendForm.validState = {
           amount,
           sender: form.values.sender->FormUtils.Unsafe.getValue,
-          recipient: FormUtils.Account.Address(destination),
+          recipient: FormUtils.Alias.Address(destination),
           fee: None,
           gasLimit: None,
           storageLimit: None,
@@ -645,7 +645,7 @@ let make = (~closeAction) => {
                onSubmit
                index
                loading=false
-               accounts
+               aliases
              />;
            | SendStep =>
              let onSubmit = batch != [] ? onAddToBatch : onSubmitAll;
@@ -658,7 +658,7 @@ let make = (~closeAction) => {
                form
                mode={Form.View.Creation(onAddToBatch, onSubmit)}
                loading=loadingSimulate
-               accounts
+               aliases
              />;
            | PasswordStep(transfer, dryRun) =>
              let (source, destinations) = sourceDestination(transfer);

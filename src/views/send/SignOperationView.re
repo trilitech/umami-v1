@@ -44,6 +44,9 @@ let make =
     ) => {
   let (wrongPassword, setWrongPassword) = React.useState(() => false);
 
+  let account =
+    StoreContext.Accounts.useGetFromAddress(source->fst)->Option.getExn;
+
   let form: SendForm.Password.api =
     SendForm.Password.use(
       ~schema={
@@ -85,7 +88,7 @@ let make =
     </View>
     <OperationSummaryView
       style=styles##operationSummary
-      source
+      source=(account.address, source->snd)
       destinations
       showCurrency
       content

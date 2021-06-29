@@ -34,8 +34,8 @@ let useLoad = requestState => {
     AccountsAPI.get(~settings)
     ->Future.mapOk(response => {
         response
-        ->Array.map(((alias, address)) => {
-            let account: Account.t = {alias, address};
+        ->Array.map(((name, address)) => {
+            let account: Account.t = {name, address, ledger: false};
             (address, account);
           })
         ->Array.reverse

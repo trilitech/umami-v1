@@ -103,7 +103,7 @@ module Item = {
       <AccountElements.Selector.Item
         account={
           address: recipient,
-          alias:
+          name:
             recipient
             ->AliasHelpers.getAliasFromAddress(aliases)
             ->Option.getWithDefault(""),
@@ -252,7 +252,7 @@ let make =
     batch->List.mapWithIndex((i, (t: SendForm.validState, _) as v) =>
       (
         Some(() => onEdit(i, v)),
-        (t.recipient->FormUtils.Account.address, t.amount),
+        (t.recipient->FormUtils.Alias.address, t.amount),
       )
     );
 

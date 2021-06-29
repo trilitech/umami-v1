@@ -54,12 +54,12 @@ let make = (~secret: Secret.t, ~closeAction) => {
       },
       ~onSubmit=
         ({state}) => {
-          let {index, derivationScheme, addresses, legacyAddress} = secret;
+          let {index, derivationPath, addresses, legacyAddress} = secret;
           action(
             Secret.{
               name: state.values.name,
               index,
-              derivationScheme,
+              derivationPath,
               addresses,
               legacyAddress,
             },

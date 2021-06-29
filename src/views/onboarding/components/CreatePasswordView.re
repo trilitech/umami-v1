@@ -68,7 +68,7 @@ let passwordLengthCheck = (values: StateLenses.state) => {
 let make =
     (
       ~mnemonic,
-      ~derivationScheme,
+      ~derivationPath,
       ~onPressCancel,
       ~createSecretWithMnemonic,
       ~loading,
@@ -100,7 +100,7 @@ let make =
             SecretApiRequest.{
               name: "Secret " ++ (existingSecretsCount + 1)->string_of_int,
               mnemonics,
-              derivationScheme,
+              derivationPath,
               password: state.values.password,
             },
           );

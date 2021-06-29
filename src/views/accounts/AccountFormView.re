@@ -135,7 +135,7 @@ module Update = {
     let addLog = LogsContext.useAdd();
 
     let action = (~name as new_name, ~secretIndex as _s) => {
-      updateAccount({old_name: account.alias, new_name})
+      updateAccount({old_name: account.name, new_name})
       ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
           I18n.t#account_updated
         )
@@ -148,7 +148,7 @@ module Update = {
         I18n.title#account_update->React.string
       </Typography.Headline>
       <Generic
-        init={account.alias}
+        init={account.name}
         buttonText=I18n.btn#update
         request=updateAccountRequest
         action

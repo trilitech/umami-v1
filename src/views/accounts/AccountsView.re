@@ -132,9 +132,7 @@ module AccountsFlatList = {
     <View>
       {accounts
        ->Map.String.valuesToArray
-       ->SortArray.stableSortBy((a, b) =>
-           Pervasives.compare(a.alias, b.alias)
-         )
+       ->SortArray.stableSortBy(Account.compareName)
        ->Array.map(account =>
            <AccountRowItem key={account.address} account ?token />
          )
