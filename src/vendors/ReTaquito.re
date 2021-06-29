@@ -31,6 +31,8 @@ const { RpcClient } = require ('@taquito/rpc');
 const { InMemorySigner, importKey } = require('@taquito/signer');
 ";
 
+module Error = ReTaquitoError;
+
 let opKindTransaction = [%raw "OpKind.TRANSACTION"];
 let default_fee_reveal = [%raw "DEFAULT_FEE.REVEAL"];
 
@@ -46,44 +48,6 @@ module BigNumber: {
 
   let fromInt64 = ReBigNumber.fromInt64;
   let toInt64 = ReBigNumber.toInt64;
-};
-
-module Error = {
-  type raw = {message: string};
-
-  let toRaw: Js.Promise.error => raw = Obj.magic;
-
-  let branchRefused = "branch refused";
-  let wrongSecretKey = "wrong secret key";
-  let badPkh = "Unexpected data (Signature.Public_key_hash)";
-  let unregisteredDelegate = "contract.manager.unregistered_delegate";
-  let unchangedDelegate = "contract.manager.delegate.unchanged";
-  let invalidContract = "Invalid contract notation";
-  let emptyTransaction = "contract.empty_transaction";
-
-  type t =
-    | Generic(string)
-    | WrongPassword
-    | UnregisteredDelegate
-    | UnchangedDelegate
-    | EmptyTransaction
-    | InvalidContract
-    | BranchRefused
-    | BadPkh
-    | WalletError(Wallet.error);
-
-  let parse = e =>
-    switch (e.message) {
-    | s when s->Js.String2.includes(wrongSecretKey) => WrongPassword
-    | s when s->Js.String2.includes(branchRefused) => BranchRefused
-    | s when s->Js.String2.includes(badPkh) => BadPkh
-    | s when s->Js.String2.includes(unregisteredDelegate) =>
-      UnregisteredDelegate
-    | s when s->Js.String2.includes(unchangedDelegate) => UnchangedDelegate
-    | s when s->Js.String2.includes(invalidContract) => InvalidContract
-    | s when s->Js.String2.includes(emptyTransaction) => EmptyTransaction
-    | s => Generic(Js.String.make(s))
-    };
 };
 
 module Utils = {
@@ -132,14 +96,6 @@ module Utils = {
     };
 };
 
-let fromPromiseParsed = p =>
-  p->FutureJs.fromPromise(e => {
-    let e = e->Error.toRaw;
-    Js.log(e.Error.message);
-
-    e->Error.parse;
-  });
-
 let walletOperation = [%raw "WalletOperation"];
 let opKind = [%raw "OpKind"];
 
@@ -178,7 +134,7 @@ let revealFee = (~endpoint, source) => {
   let client = RPCClient.create(endpoint);
 
   RPCClient.getManagerKey(client, source)
-  ->fromPromiseParsed
+  ->Error.fromPromiseParsed
   ->Future.mapOk(k => Js.Nullable.isNullable(k) ? default_fee_reveal : 0);
 };
 
@@ -380,17 +336,11 @@ let convertWalletError = res =>
 
 let readEncryptedKey = (key, passphrase) =>
   fromSecretKey(key->Js.String2.substringToEnd(~from=10), ~passphrase, ())
-  ->FutureJs.fromPromise(e =>
-      if (Js.String.make(e)->Js.String2.includes("wrong secret key")) {
-        Error.WrongPassword;
-      } else {
-        Error.Generic(Js.String.make(e));
-      }
-    );
+  ->Error.fromPromiseParsed;
 
 let readUnencryptedKey = key =>
   fromSecretKey(key->Js.String2.substringToEnd(~from=12), ~passphrase="", ())
-  ->fromPromiseParsed;
+  ->Error.fromPromiseParsed;
 
 let readSecretKey = (address, passphrase, dirpath) => {
   Wallet.readSecretFromPkh(address, dirpath)
@@ -479,7 +429,7 @@ module Operations = {
 
         let dg = Toolkit.prepareDelegate(~source, ~delegate, ~fee?, ());
 
-        tk.contract->Toolkit.setDelegate(dg)->fromPromiseParsed;
+        tk.contract->Toolkit.setDelegate(dg)->Error.fromPromiseParsed;
       });
   };
 };
@@ -517,7 +467,9 @@ module Estimate = {
         let sd = Toolkit.prepareDelegate(~source, ~delegate, ~fee?, ());
         Js.log(sd);
 
-        tk.estimate->Toolkit.Estimation.setDelegate(sd)->fromPromiseParsed;
+        tk.estimate
+        ->Toolkit.Estimation.setDelegate(sd)
+        ->Error.fromPromiseParsed;
       })
     ->Future.mapOk(res =>
         res->handleCustomOptions((
@@ -648,7 +600,7 @@ module Transfer = {
 
     contractCache
     ->ContractCache.findContract(token)
-    ->fromPromiseParsed
+    ->Error.fromPromiseParsed
     ->Future.mapOk(c =>
         c.methods
         ->Toolkit.FA12.transfer(source, dest, amount->BigNumber.toFixed)
@@ -724,7 +676,7 @@ module Transfer = {
                   ->List.map(tr => {...tr, kind: opKindTransaction})
                   ->List.toArray,
                 )
-              ->fromPromiseParsed
+              ->Error.fromPromiseParsed
             )
         )
       ->Future.flatMapOk(r =>
@@ -766,7 +718,7 @@ module Transfer = {
         txs
         ->List.reduce(batch, Toolkit.Batch.withTransfer)
         ->Toolkit.Batch.send
-        ->fromPromiseParsed;
+        ->Error.fromPromiseParsed;
       });
   };
 };
