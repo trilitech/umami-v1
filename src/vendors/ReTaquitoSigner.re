@@ -25,7 +25,6 @@
 
 %raw
 "
-const { LedgerSigner, DerivationType } = require('@taquito/ledger-signer');
 const { InMemorySigner, importKey } = require('@taquito/signer');
 ";
 
