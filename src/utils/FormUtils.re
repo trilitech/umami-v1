@@ -33,13 +33,13 @@ let keepToken = v =>
   v->Option.flatMap(
     fun
     | Illformed(_) => None
-    | Amount(v) => v->Transfer.getXTZ,
+    | Amount(v) => v->Transfer.getTez,
   );
 
-let keepXTZ = v =>
+let keepTez = v =>
   v->Option.flatMap(
     fun
-    | Amount(v) => v->Transfer.getXTZ
+    | Amount(v) => v->Transfer.getTez
     | Illformed(_) => None,
   );
 
@@ -49,10 +49,10 @@ let parseAmount = (v, token) =>
   } else {
     token->Option.mapWithDefault(
       {
-        let vxtz = v->ProtocolXTZ.fromString;
-        vxtz == None
+        let vtez = v->Tez.fromString;
+        vtez == None
           ? v->Illformed->Some
-          : vxtz->Option.map(v => v->Transfer.makeXTZ->Amount);
+          : vtez->Option.map(v => v->Transfer.makeTez->Amount);
       },
       t => {
         let vt = v->Token.Unit.fromNatString;
@@ -100,9 +100,9 @@ module Unsafe = {
     | Some(Amount(a)) => a
     };
 
-  let getXTZ = v =>
+  let getTez = v =>
     switch (v) {
-    | Amount(XTZ(a)) => a
+    | Amount(Tez(a)) => a
     | Illformed(_)
     | Amount(Token(_)) => failwith("Should not be malformed")
     };
@@ -115,9 +115,9 @@ module Unsafe = {
 
 let emptyOr = (f, v): ReSchema.fieldState => v == "" ? Valid : f(v);
 
-let isValidXtzAmount: string => ReSchema.fieldState =
+let isValidTezAmount: string => ReSchema.fieldState =
   fun
-  | s when ProtocolXTZ.fromString(s) != None => Valid
+  | s when Tez.fromString(s) != None => Valid
   | "" => Error(I18n.form_input_error#mandatory)
   | _ => Error(I18n.form_input_error#float);
 

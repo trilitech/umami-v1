@@ -43,7 +43,7 @@ let buildTransaction = (state: DelegateForm.state, advancedOptionOpened) => {
   Protocol.makeDelegate(
     ~source=state.values.sender,
     ~delegate=Some(state.values.baker),
-    ~fee=?state.values.fee->mapIfAdvanced(ProtocolXTZ.fromString),
+    ~fee=?state.values.fee->mapIfAdvanced(Tez.fromString),
     ~forceLowFee=?
       advancedOptionOpened && state.values.forceLowFee ? Some(true) : None,
     (),
@@ -78,7 +78,7 @@ module Form = {
             nonEmpty(Sender)
             + nonEmpty(Baker)
             + custom(
-                values => FormUtils.(emptyOr(isValidXtzAmount, values.fee)),
+                values => FormUtils.(emptyOr(isValidTezAmount, values.fee)),
                 Fee,
               )
             + custom(
@@ -228,16 +228,16 @@ module Form = {
 
 let buildSummaryContent = (dryRun: Protocol.simulationResults) => {
   let revealFee =
-    dryRun.revealFee != ProtocolXTZ.zero
-      ? (I18n.label#implicit_reveal_fee, [Transfer.XTZ(dryRun.revealFee)])
+    dryRun.revealFee != Tez.zero
+      ? (I18n.label#implicit_reveal_fee, [Transfer.Tez(dryRun.revealFee)])
         ->Some
       : None;
 
-  let fee = (I18n.label#fee, [Transfer.XTZ(dryRun.fee)]);
+  let fee = (I18n.label#fee, [Transfer.Tez(dryRun.fee)]);
 
   let total = (
     I18n.label#summary_total,
-    [Transfer.XTZ(ProtocolXTZ.Infix.(dryRun.fee + dryRun.revealFee))],
+    [Transfer.Tez(Tez.Infix.(dryRun.fee + dryRun.revealFee))],
   );
 
   [fee, ...revealFee->Option.mapWithDefault([total], r => [r, total])];
@@ -246,7 +246,7 @@ let buildSummaryContent = (dryRun: Protocol.simulationResults) => {
 let showAmount =
   Transfer.(
     fun
-    | XTZ(v) => I18n.t#xtz_amount(v->ProtocolXTZ.toString)
+    | Tez(v) => I18n.t#tez_amount(v->Tez.toString)
     | Token(v, t) => I18n.t#amount(v->Token.Unit.toNatString, t.symbol)
   );
 

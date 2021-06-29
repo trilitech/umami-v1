@@ -30,9 +30,6 @@ let styles =
     StyleSheet.create({"formRowInput": style(~marginVertical=5.->dp, ())})
   );
 
-let xtzDecoration = (~style) =>
-  <Typography.Body1 style> I18n.t#xtz->React.string </Typography.Body1>;
-
 [@react.component]
 let make = (~form: DelegateForm.api) => {
   let (operationSimulateRequest, sendOperationSimulate) =
@@ -49,7 +46,7 @@ let make = (~form: DelegateForm.api) => {
       let operation = Operation.Simulation.delegation(operation);
       sendOperationSimulate(operation)
       ->Future.tapOk(dryRun => {
-          form.handleChange(Fee, dryRun.fee->ProtocolXTZ.toString)
+          form.handleChange(Fee, dryRun.fee->Tez.toString)
         })
       ->ignore;
     };
@@ -60,13 +57,13 @@ let make = (~form: DelegateForm.api) => {
   let theme = ThemeContext.useTheme();
 
   <View>
-    <FormGroupXTZInput
+    <FormGroupCurrencyInput
       label=I18n.label#fee
       value={form.values.fee}
       handleChange={fee => form.handleChange(Fee, fee)}
       error={form.getFieldError(Field(Fee))}
       style=styles##formRowInput
-      decoration=FormGroupXTZInput.xtzDecoration
+      decoration=FormGroupCurrencyInput.tezDecoration
     />
     <FormGroupCheckbox
       label=I18n.label#force_low_fee

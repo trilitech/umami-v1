@@ -86,7 +86,7 @@ let makeSingleTransaction =
       (),
     ) => {
   let transfers = [
-    Transfer.makeSingleXTZTransferElt(
+    Transfer.makeSingleTezTransferElt(
       ~amount,
       ~destination,
       ~fee?,
@@ -111,15 +111,14 @@ module Business = {
 
   module Transaction = {
     type t = {
-      amount: ProtocolXTZ.t,
+      amount: Tez.t,
       destination: string,
       parameters: option(Js.Dict.t(string)),
     };
 
     let decode = json =>
       Json.Decode.{
-        amount:
-          json |> field("amount", string) |> ProtocolXTZ.fromMutezString,
+        amount: json |> field("amount", string) |> Tez.fromMutezString,
         destination: json |> field("destination", string),
         parameters: json |> optional(field("parameters", dict(string))),
       };
@@ -161,7 +160,7 @@ module Business = {
 
   type t = {
     source: string,
-    fee: ProtocolXTZ.t,
+    fee: Tez.t,
     op_id: int,
     payload,
   };
@@ -180,7 +179,7 @@ module Business = {
 
     let x = {
       source: json |> field("source", string),
-      fee: json |> field("fee", string) |> ProtocolXTZ.fromMutezString,
+      fee: json |> field("fee", string) |> Tez.fromMutezString,
       op_id,
       payload:
         switch (typ) {

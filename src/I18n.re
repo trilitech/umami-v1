@@ -377,11 +377,11 @@ let t = {
   pub logs_clearall = "CLEAR ALL";
   pub amount = (a, b) => p("%s %s", a, b);
   pub tezos = "Tez";
-  pub xtz = "tez";
+  pub tez = "tez";
   pub mainnet = "Mainnet";
   pub testnet = "Testnet";
-  pub xtz_amount = a => p("%s %s", a, this#xtz);
-  pub xtz_op_amount = op => p("%s %a", op, () => this#xtz_amount);
+  pub tez_amount = a => p("%s %s", a, this#tez);
+  pub tez_op_amount = op => p("%s %a", op, () => this#tez_amount);
   pub address = "Address";
   pub account = "Account";
   pub operation_reveal = "Reveal";
@@ -408,7 +408,7 @@ let t = {
   pub token_created = "Token created";
   pub operation_hash = "Operation Hash";
   pub account_imported = "Account imported";
-  pub operation_summary_fee = p("+ Fee %a", () => this#xtz_amount);
+  pub operation_summary_fee = p("+ Fee %a", () => this#tez_amount);
   pub navbar_accounts = "ACCOUNTS";
   pub navbar_operations = "OPERATIONS";
   pub navbar_addressbook = {j|ADDRESS BOOK|j};

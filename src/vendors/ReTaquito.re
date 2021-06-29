@@ -439,7 +439,7 @@ module Estimate = {
         let provider = Toolkit.{signer: signer};
         tk->Toolkit.setProvider(provider);
 
-        let fee = fee->Option.map(ProtocolXTZ.toBigNumber);
+        let fee = fee->Option.map(Tez.toBigNumber);
         let sd = Toolkit.prepareDelegate(~source, ~delegate, ~fee?, ());
         Js.log(sd);
 
@@ -449,7 +449,7 @@ module Estimate = {
       })
     ->Future.mapOk(res =>
         res->handleCustomOptions((
-          fee->Option.map(ProtocolXTZ.unsafeToMutezInt),
+          fee->Option.map(Tez.unsafeToMutezInt),
           None,
           None,
         ))
@@ -590,12 +590,12 @@ module Transfer = {
     txs
     ->List.map((tx: Transfer.elt) =>
         switch (tx.amount) {
-        | XTZ(amount) =>
+        | Tez(amount) =>
           prepareTransfer(
             ~source,
             ~dest=tx.destination,
-            ~amount=amount->ProtocolXTZ.toBigNumber,
-            ~fee=?tx.tx_options.fee->Option.map(ProtocolXTZ.toBigNumber),
+            ~amount=amount->Tez.toBigNumber,
+            ~fee=?tx.tx_options.fee->Option.map(Tez.toBigNumber),
             ~gasLimit=?tx.tx_options.gasLimit,
             ~storageLimit=?tx.tx_options.storageLimit,
             (),
@@ -609,7 +609,7 @@ module Transfer = {
             ~token=token.TokenRepr.address,
             ~dest=tx.destination,
             ~amount=amount->TokenRepr.Unit.toBigNumber,
-            ~fee=?tx.tx_options.fee->Option.map(ProtocolXTZ.toBigNumber),
+            ~fee=?tx.tx_options.fee->Option.map(Tez.toBigNumber),
             ~gasLimit=?tx.tx_options.gasLimit,
             ~storageLimit=?tx.tx_options.storageLimit,
             (),

@@ -169,7 +169,7 @@ let amount = (isToken, account, transaction: Operation.Business.Transaction.t) =
 
   <CellAmount>
     {<Typography.Body1 ?colorStyle>
-       {I18n.t#xtz_op_amount(op, transaction.amount->ProtocolXTZ.toString)
+       {I18n.t#tez_op_amount(op, transaction.amount->Tez.toString)
         ->React.string}
      </Typography.Body1>
      ->ReactUtils.onlyWhen(!isToken)}
@@ -199,8 +199,7 @@ let make =
              <CellAmount />
              <CellFee>
                <Typography.Body1>
-                 {I18n.t#xtz_amount(business.fee->ProtocolXTZ.toString)
-                  ->React.string}
+                 {I18n.t#tez_amount(business.fee->Tez.toString)->React.string}
                </Typography.Body1>
              </CellFee>
              <CellAddress />
@@ -217,8 +216,7 @@ let make =
              {amount(isToken, account, transaction)}
              <CellFee>
                <Typography.Body1>
-                 {I18n.t#xtz_amount(business.fee->ProtocolXTZ.toString)
-                  ->React.string}
+                 {I18n.t#tez_amount(business.fee->Tez.toString)->React.string}
                </Typography.Body1>
              </CellFee>
              <CellAddress>
@@ -263,8 +261,7 @@ let make =
              <CellAmount />
              <CellFee>
                <Typography.Body1>
-                 {I18n.t#xtz_amount(business.fee->ProtocolXTZ.toString)
-                  ->React.string}
+                 {I18n.t#tez_amount(business.fee->Tez.toString)->React.string}
                </Typography.Body1>
              </CellFee>
              <CellAddress>

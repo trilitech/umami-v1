@@ -107,7 +107,7 @@ module Balance = {
   let get = (settings, address, ~params=?, ()) => {
     AppSettings.endpoint(settings)
     ->ReTaquito.Balance.get(~address, ~params?, ())
-    ->Future.mapOk(ProtocolXTZ.ofInt64);
+    ->Future.mapOk(Tez.ofInt64);
   };
 };
 
@@ -286,10 +286,10 @@ module CSV = {
   let handleTezRow = (index, destination, amount) =>
     amount
     ->ReBigNumber.toString
-    ->ProtocolXTZ.fromString
+    ->Tez.fromString
     ->ResultEx.fromOption(Error(CannotParseTezAmount(amount, index, 2)))
     ->Result.map(amount =>
-        Transfer.makeSingleXTZTransferElt(~destination, ~amount, ())
+        Transfer.makeSingleTezTransferElt(~destination, ~amount, ())
       );
 
   let handleTokenRow = (tokens, index, destination, amount, token) =>
@@ -376,7 +376,7 @@ let handleCSVError = e =>
 
 module Simulation = {
   let extractCustomValues = (tx_options: ProtocolOptions.transferOptions) => (
-    tx_options.fee->Option.map(fee => fee->ProtocolXTZ.unsafeToMutezInt),
+    tx_options.fee->Option.map(fee => fee->Tez.unsafeToMutezInt),
     tx_options.storageLimit,
     tx_options.gasLimit,
   );
@@ -402,10 +402,10 @@ module Simulation = {
     ->Future.mapOk(
         ({customFeeMutez, burnFeeMutez, gasLimit, storageLimit, revealFee}) => {
         Protocol.{
-          fee: (customFeeMutez + burnFeeMutez)->ProtocolXTZ.fromMutezInt,
+          fee: (customFeeMutez + burnFeeMutez)->Tez.fromMutezInt,
           gasLimit,
           storageLimit,
-          revealFee: revealFee->ProtocolXTZ.fromMutezInt,
+          revealFee: revealFee->Tez.fromMutezInt,
         }
       });
   };
@@ -422,10 +422,10 @@ module Simulation = {
     ->Future.mapOk(
         ({customFeeMutez, burnFeeMutez, gasLimit, storageLimit, revealFee}) =>
         Protocol.{
-          fee: (customFeeMutez + burnFeeMutez)->ProtocolXTZ.fromMutezInt,
+          fee: (customFeeMutez + burnFeeMutez)->Tez.fromMutezInt,
           gasLimit,
           storageLimit,
-          revealFee: revealFee->ProtocolXTZ.fromMutezInt,
+          revealFee: revealFee->Tez.fromMutezInt,
         }
       );
   };
@@ -465,7 +465,7 @@ module Operation = {
       ~source,
       ~delegate,
       ~password,
-      ~fee=?options.fee->Option.map(ProtocolXTZ.toInt64),
+      ~fee=?options.fee->Option.map(Tez.toInt64),
       (),
     )
     ->Future.mapOk((op: ReTaquito.Toolkit.operationResult) => op.hash);
@@ -1064,10 +1064,10 @@ module Delegate = (Getter: GetterAPI) => {
     };
 
   type delegationInfo = {
-    initialBalance: ProtocolXTZ.t,
+    initialBalance: Tez.t,
     delegate: string,
     timestamp: Js.Date.t,
-    lastReward: option(ProtocolXTZ.t),
+    lastReward: option(Tez.t),
   };
 
   let getDelegationInfoForAccount =
@@ -1092,7 +1092,7 @@ module Delegate = (Getter: GetterAPI) => {
                   Future.value(
                     Ok(
                       {
-                        initialBalance: ProtocolXTZ.zero,
+                        initialBalance: Tez.zero,
                         delegate: "",
                         timestamp: Js.Date.make(),
                         lastReward: None,

@@ -55,7 +55,7 @@ module Base = {
            )
            ->React.string
          | (None, Some(balanceTotal), _) =>
-           I18n.t#xtz_amount(balanceTotal->ProtocolXTZ.toString)->React.string
+           I18n.t#tez_amount(balanceTotal->Tez.toString)->React.string
          | _ =>
            <ActivityIndicator
              animating=true

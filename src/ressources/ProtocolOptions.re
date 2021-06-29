@@ -39,7 +39,7 @@ module TransactionParameters = {
 };
 
 type transferOptions = {
-  fee: option(ProtocolXTZ.t),
+  fee: option(Tez.t),
   gasLimit: option(int),
   storageLimit: option(int),
   parameter: option(TransactionParameters.MichelineMichelsonV1Expression.t),
@@ -47,8 +47,8 @@ type transferOptions = {
 };
 
 type commonOptions = {
-  fee: option(ProtocolXTZ.t),
-  burnCap: option(ProtocolXTZ.t),
+  fee: option(Tez.t),
+  burnCap: option(Tez.t),
   forceLowFee: option(bool),
 };
 
@@ -76,8 +76,8 @@ let emptyTransferOptions = {
 };
 
 type simulationResults = {
-  fee: ProtocolXTZ.t,
+  fee: Tez.t,
   gasLimit: int,
   storageLimit: int,
-  revealFee: ProtocolXTZ.t,
+  revealFee: Tez.t,
 };
