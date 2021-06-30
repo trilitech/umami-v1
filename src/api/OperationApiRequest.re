@@ -34,7 +34,7 @@ type injection = {
   password: string,
 };
 
-let transfert = (operation, password) => {
+let transfer = (operation, password) => {
   operation: Operation.transaction(operation),
   password,
 };
