@@ -23,7 +23,6 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open UmamiCommon;
 include ApiRequest;
 module Explorer = API.Explorer(API.TezosExplorer);
 
@@ -121,13 +120,7 @@ let waitForConfirmation = (settings, hash) => {
 /* Get list */
 
 let useLoad =
-    (
-      ~requestState as (request, setRequest),
-      ~limit=?,
-      ~types=?,
-      ~address: option(string),
-      (),
-    ) => {
+    (~requestState, ~limit=?, ~types=?, ~address: option(string), ()) => {
   let get = (~settings, address) => {
     let operations =
       settings->Explorer.get(address, ~limit?, ~types?, ~mempool=true, ());
@@ -147,29 +140,11 @@ let useLoad =
     Future.map2(operations, currentLevel, f);
   };
 
-  let getRequest =
-    ApiRequest.useGetter(
-      ~get,
-      ~kind=Logs.Operation,
-      ~errorToString=x => x,
-      ~setRequest,
-      (),
-    );
-
-  let isMounted = ReactUtils.useIsMonted();
-  React.useEffect3(
-    () => {
-      address->Lib.Option.iter(address => {
-        let shouldReload = ApiRequest.conditionToLoad(request, isMounted);
-        if (address != "" && shouldReload) {
-          getRequest(address)->ignore;
-        };
-      });
-
-      None;
-    },
-    (isMounted, request, address),
+  ApiRequest.useLoader(
+    ~get,
+    ~condition=addr => addr != "",
+    ~kind=Logs.Operation,
+    ~requestState,
+    address->Option.getWithDefault(""),
   );
-
-  request;
 };

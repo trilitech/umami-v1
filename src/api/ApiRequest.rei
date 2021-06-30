@@ -154,45 +154,21 @@ let useGetter:
   ) =>
   Future.t(Belt.Result.t('response, string));
 
-/* Builds ressource from an asynchronous function */
+/* Builds an auto-reloaded ressource from an asynchronous function */
 let useLoader:
   (
-    ~get: (~settings: AppSettings.t, unit) =>
+    ~get: (~settings: AppSettings.t, 'input) =>
           Future.t(Belt.Result.t('value, string)),
+    ~condition: 'input => bool=?,
     ~kind: Logs.origin,
     ~errorToString: string => Js.String.t=?,
     ~requestState: requestState('value, string),
-    unit
+    'input
   ) =>
   t('value, string);
 
-/* Same as [useLoader] but with one parameter */
-let useLoader1:
-  (
-    ~get: (~settings: AppSettings.t, 'a) =>
-          Future.t(Belt.Result.t('value, string)),
-    ~kind: Logs.origin,
-    ~errorToString: string => Js.String.t=?,
-    ~requestState: requestState('value, string),
-    'a
-  ) =>
-  t('value, string);
-
-/* Same as [useLoader] but with two parameters */
-let useLoader2:
-  (
-    ~get: (~settings: AppSettings.t, ('a, 'b)) =>
-          Future.t(Belt.Result.t('value, string)),
-    ~kind: Logs.origin,
-    ~errorToString: string => Js.String.t=?,
-    ~requestState: requestState('value, string),
-    'a,
-    'b
-  ) =>
-  t('value, string);
-
-/* Builds a ressource that represent the modification of a distant value
-     defined trougr the [set] function.
+/* Builds a ressource that represents the modification of a distant value
+     defined through the [set] function.
    */
 let useSetter:
   (

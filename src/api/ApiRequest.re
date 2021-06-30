@@ -197,36 +197,11 @@ let useGetter =
 let useLoader =
     (
       ~get,
+      ~condition=?,
       ~kind,
       ~errorToString=?,
       ~requestState as (request, setRequest): requestState('value, 'error),
-      (),
-    ) => {
-  let getRequest = useGetter(~get, ~kind, ~errorToString?, ~setRequest, ());
-
-  let isMounted = ReactUtils.useIsMonted();
-  React.useEffect3(
-    () => {
-      let shouldReload = conditionToLoad(request, isMounted);
-      if (shouldReload) {
-        getRequest()->ignore;
-      };
-
-      None;
-    },
-    (isMounted, request, setRequest),
-  );
-
-  request;
-};
-
-let useLoader1 =
-    (
-      ~get,
-      ~kind,
-      ~errorToString=?,
-      ~requestState as (request, setRequest): requestState('value, 'error),
-      arg1,
+      arg1: 'input,
     ) => {
   let getRequest = useGetter(~get, ~kind, ~errorToString?, ~setRequest, ());
 
@@ -234,40 +209,15 @@ let useLoader1 =
   React.useEffect4(
     () => {
       let shouldReload = conditionToLoad(request, isMounted);
-      if (shouldReload) {
+      let condition = condition->Option.mapWithDefault(true, f => arg1->f);
+
+      if (shouldReload && condition) {
         getRequest(arg1)->ignore;
       };
 
       None;
     },
-    (isMounted, arg1, request, setRequest),
-  );
-
-  request;
-};
-
-let useLoader2 =
-    (
-      ~get,
-      ~kind,
-      ~errorToString=?,
-      ~requestState as (request, setRequest): requestState('value, 'error),
-      arg1,
-      arg2,
-    ) => {
-  let getRequest = useGetter(~get, ~kind, ~errorToString?, ~setRequest, ());
-
-  let isMounted = ReactUtils.useIsMonted();
-  React.useEffect5(
-    () => {
-      let shouldReload = conditionToLoad(request, isMounted);
-      if (shouldReload) {
-        getRequest((arg1, arg2))->ignore;
-      };
-
-      None;
-    },
-    (isMounted, arg1, arg2, request, setRequest),
+    (isMounted, request, arg1, setRequest),
   );
 
   request;
