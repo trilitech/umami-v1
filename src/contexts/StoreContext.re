@@ -243,7 +243,7 @@ let useRequestsState = (getRequestsState, key: option(string)) => {
 };
 
 let resetRequests = requestsState =>
-  requestsState->Map.String.map(ApiRequest.updateToResetState);
+  requestsState->Map.String.map(ApiRequest.expireCache);
 
 let reloadRequests = requestsState =>
   requestsState->Map.String.map(ApiRequest.updateToLoadingState);
@@ -543,7 +543,7 @@ module Tokens = {
 
   let useResetAll = () => {
     let (_, setTokensRequest) = useRequestState();
-    () => setTokensRequest(ApiRequest.updateToResetState);
+    () => setTokensRequest(ApiRequest.expireCache);
   };
 
   let useCreate = () => {
@@ -602,7 +602,7 @@ module Aliases = {
 
   let useResetAll = () => {
     let (_, setAliasesRequest) = useRequestState();
-    () => setAliasesRequest(ApiRequest.updateToResetState);
+    () => setAliasesRequest(ApiRequest.expireCache);
   };
 
   let useGetAll = () => {
@@ -664,7 +664,7 @@ module Accounts = {
     let resetOperations = Operations.useResetNames();
     let (_, setAccountsRequest) = useRequestState();
     () => {
-      setAccountsRequest(ApiRequest.updateToResetState);
+      setAccountsRequest(ApiRequest.expireCache);
       resetAliases();
       resetOperations();
     };
@@ -675,7 +675,7 @@ module Accounts = {
     let resetAliases = Aliases.useResetAll();
     let (_, setAccountsRequest) = useRequestState();
     () => {
-      setAccountsRequest(ApiRequest.updateToResetState);
+      setAccountsRequest(ApiRequest.expireCache);
       resetOperations();
       resetAliases();
     };
@@ -716,7 +716,7 @@ module Secrets = {
   let useResetNames = () => {
     let (_, setSecretsRequest) = useRequestState();
     () => {
-      setSecretsRequest(ApiRequest.updateToResetState);
+      setSecretsRequest(ApiRequest.expireCache);
     };
   };
 
@@ -724,7 +724,7 @@ module Secrets = {
     let resetAccounts = Accounts.useResetAll();
     let (_, setSecretsRequest) = useRequestState();
     () => {
-      setSecretsRequest(ApiRequest.updateToResetState);
+      setSecretsRequest(ApiRequest.expireCache);
       resetAccounts();
     };
   };

@@ -23,10 +23,16 @@
 /*                                                                           */
 /*****************************************************************************/
 
+type timestamp = float;
+
+type cacheValidity =
+  | Expired
+  | ValidSince(float);
+
 type t('value, 'error) =
   | NotAsked
   | Loading(option('value))
-  | Done(Result.t('value, 'error), float);
+  | Done(Result.t('value, 'error), cacheValidity);
 
 type setRequest('value, 'error) =
   (t('value, 'error) => t('value, 'error)) => unit;
@@ -110,7 +116,8 @@ let delay = 30. *. 1000.; // 30sec
 
 let isExpired = request =>
   switch (request) {
-  | Done(_, timestamp) => Js.Date.now() -. timestamp > delay
+  | Done(_, Expired) => true
+  | Done(_, ValidSince(timestamp)) => Js.Date.now() -. timestamp > delay
   | _ => false
   };
 
@@ -146,9 +153,9 @@ let updateToLoadingState = request =>
   | _ => Loading(None)
   };
 
-let updateToResetState = request =>
+let expireCache = request =>
   switch (request) {
-  | Done(result, _) => Done(result, 0.0)
+  | Done(result, _) => Done(result, Expired)
   | other => other
   };
 
@@ -179,7 +186,9 @@ let useGetter =
 
     get(~settings, input)
     ->logError(addLog(toast), ~toString=?errorToString, kind)
-    ->Future.tap(result => setRequest(_ => Done(result, Js.Date.now())));
+    ->Future.tap(result =>
+        setRequest(_ => Done(result, ValidSince(Js.Date.now())))
+      );
   };
 
   get;
@@ -287,7 +296,9 @@ let useSetter =
         ~toString=?errorToString,
         kind,
       )
-    ->Future.tap(result => {setRequest(_ => Done(result, Js.Date.now()))})
+    ->Future.tap(result => {
+        setRequest(_ => Done(result, Js.Date.now()->ValidSince))
+      })
     ->Future.tapOk(sideEffect->Option.getWithDefault(_ => ()));
   };
 
