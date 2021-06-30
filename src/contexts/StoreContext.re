@@ -48,7 +48,8 @@ type state = {
   delegateRequestsState: apiRequestsState(option(PublicKeyHash.t)),
   delegateInfoRequestsState:
     apiRequestsState(option(NodeAPI.Delegate.delegationInfo)),
-  operationsRequestsState: apiRequestsState((array(Operation.Read.t), int)),
+  operationsRequestsState:
+    apiRequestsState(OperationApiRequest.operationsResponse),
   operationsConfirmations: reactState(Set.String.t),
   aliasesRequestState:
     reactState(ApiRequest.t(Map.String.t(Alias.t), error)),

@@ -32,6 +32,11 @@ type injection = {
   password: string,
 };
 
+type operationsResponse = {
+  operations: array(Operation.Read.t),
+  currentLevel: int,
+};
+
 let transfer = (operation, password) => {
   operation: Operation.transaction(operation),
   password,
@@ -137,7 +142,7 @@ let useLoad =
     let f = (operations, currentLevel) =>
       switch (operations, currentLevel) {
       | (Ok(operations), Ok(currentLevel)) =>
-        Ok((operations, currentLevel))
+        Ok({operations, currentLevel})
       | (Error(_) as e, _)
       | (_, Error(_) as e) => e
       };

@@ -81,15 +81,15 @@ module Component = {
       </OperationsHeaderView>
       {ApiRequest.(
          switch (operationsRequest) {
-         | Done(Ok(operations), _)
-         | Loading(Some(operations)) =>
+         | Done(Ok(response), _)
+         | Loading(Some(response)) =>
            <DocumentContext.FlatList
              style=styles##list
              contentContainerStyle=styles##listContent
-             data={operations->fst->sort}
+             data={response.operations->sort}
              initialNumToRender=20
              keyExtractor
-             renderItem={renderItem(operations->snd)}
+             renderItem={renderItem(response.currentLevel)}
              _ListEmptyComponent
            />
          | Done(Error(error), _) => error->React.string
