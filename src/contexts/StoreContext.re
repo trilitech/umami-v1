@@ -313,28 +313,22 @@ module Balance = {
 };
 
 module BalanceToken = {
-  let getRequestKey = (address: string, tokenAddress: option(string)) =>
-    tokenAddress->Option.map(tokenAddress => address ++ tokenAddress);
-
   let useRequestState =
     useRequestsState(store => store.balanceTokenRequestsState);
 
-  let useLoad = (address: string, tokenAddress: option(string)) => {
-    let requestState = useRequestState(address->getRequestKey(tokenAddress));
+  let useLoad = (address: string, tokenAddress: string) => {
+    let requestState = useRequestState(Some(address ++ tokenAddress));
 
     let operation =
       React.useMemo2(
-        () =>
-          tokenAddress->Option.map(tokenAddress =>
-            Token.makeGetBalance(address, tokenAddress, ())
-          ),
+        () => Token.makeGetBalance(address, tokenAddress, ()),
         (address, tokenAddress),
       );
 
     TokensApiRequest.useLoadOperationOffline(~requestState, ~operation);
   };
 
-  let useGetTotal = (tokenAddress: option(string)) => {
+  let useGetTotal = (tokenAddress: string) => {
     let store = useStoreContext();
     let (balanceRequests, _) = store.balanceTokenRequestsState;
     let (accountsRequest, _) = store.accountsRequestState;
@@ -345,9 +339,7 @@ module BalanceToken = {
       accounts
       ->Map.String.valuesToArray
       ->Array.keepMap(account => {
-          account.address
-          ->getRequestKey(tokenAddress)
-          ->Option.flatMap(balanceRequests->Map.String.get)
+          balanceRequests->Map.String.get(account.address ++ tokenAddress)
         })
       ->Array.keep(ApiRequest.isDone);
 

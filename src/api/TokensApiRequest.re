@@ -23,7 +23,6 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open UmamiCommon;
 include ApiRequest;
 module Error = API.Error;
 module API = API.Tokens(API.TezosExplorer);
@@ -39,34 +38,13 @@ let useCheckTokenContract = () => {
   ApiRequest.useSetter(~set, ~kind=Logs.Tokens, ~toast=false, ());
 };
 
-let useLoadOperationOffline =
-    (
-      ~requestState as (request, setRequest),
-      ~operation: option(Token.operation),
-    ) => {
+let useLoadOperationOffline = (~requestState, ~operation: Token.operation) => {
   let get = (~settings, operation) =>
     settings
     ->API.callGetOperationOffline(operation)
     ->Future.mapError(Error.fromApiToString);
 
-  let getRequest =
-    ApiRequest.useGetter(~get, ~kind=Logs.Tokens, ~setRequest, ());
-
-  let isMounted = ReactUtils.useIsMonted();
-  React.useEffect3(
-    () => {
-      let shouldReload = ApiRequest.conditionToLoad(request, isMounted);
-      operation->Lib.Option.iter(operation =>
-        if (shouldReload) {
-          getRequest(operation)->ignore;
-        }
-      );
-      None;
-    },
-    (isMounted, request, operation),
-  );
-
-  request;
+  ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, operation);
 };
 
 let tokensStorageKey = "wallet-tokens";
