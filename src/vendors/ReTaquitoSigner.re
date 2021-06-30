@@ -26,6 +26,7 @@
 %raw
 "
 const { InMemorySigner, importKey } = require('@taquito/signer');
+const { LedgerSigner, DerivationType } = require('@taquito/ledger-signer');
 ";
 
 type t;
@@ -97,4 +98,35 @@ module EstimationSigner = {
   external create:
     (~publicKey: string, ~publicKeyHash: PublicKeyHash.t, unit) => t =
     "NoopSigner";
+};
+
+module LedgerSigner = {
+  open ReLedger;
+
+  type derivationTypeRaw;
+
+  [@bs.val] [@bs.scope "DerivationType"]
+  external ed25519: derivationTypeRaw = "ED25519";
+  [@bs.val] [@bs.scope "DerivationType"]
+  external secp256k1: derivationTypeRaw = "SECP256K1";
+  [@bs.val] [@bs.scope "DerivationType"]
+  external p256: derivationTypeRaw = "P256";
+
+  let toRawType =
+    fun
+    | Wallet.Ledger.ED25519 => ed25519
+    | SECP256K1 => secp256k1
+    | P256 => p256;
+
+  [@bs.new]
+  external createRaw: (Transport.t, string, bool, derivationTypeRaw) => t =
+    "LedgerSigner";
+
+  let create = (transport, path: DerivationPath.t, scheme, ~prompt) =>
+    createRaw(
+      transport,
+      path->DerivationPath.toStringNoPrefix,
+      prompt,
+      toRawType(scheme),
+    );
 };
