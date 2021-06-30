@@ -29,35 +29,39 @@ let styles =
   Style.(
     StyleSheet.create({
       "container":
-        style(
-          ~flexDirection=`row,
-          ~justifyContent=`spaceAround,
-          ~paddingVertical=78.->dp,
-          ~paddingHorizontal=58.->dp,
-          (),
-        ),
-      "bigbutton": style(~flex=1., ()),
+        StyleSheet.flatten([|
+          FormStyles.square(40.),
+          style(
+            ~alignItems=`center,
+            ~justifyContent=`center,
+            ~borderRadius=20.,
+            (),
+          ),
+          ShadowStyles.button,
+        |]),
     })
   );
 
 [@react.component]
-let make = (~onClose=?) => {
-  let styleNotFirst =
-    Style.(array([|styles##bigbutton, style(~marginLeft=60.->dp, ())|]));
-  <Page>
-    <Page.Header
-      right={
-        // If onClose is present, then this is a modal
-        switch (onClose) {
-        | Some(onClose) => <CloseButton onClose />
-        | None => ReasonReact.null
-        }
-      }>
-      ReasonReact.null
-    </Page.Header>
-    <View style=styles##container>
-      <CreateAccountBigButton style=styles##bigbutton />
-      <ImportAccountBigButton style=styleNotFirst />
-    </View>
-  </Page>;
+let make = (~onClose, ~style as styleArg=?) => {
+  let theme = ThemeContext.useTheme();
+
+  <View
+    style=Style.(
+      arrayOption([|
+        Some(styles##container),
+        Some(style(~backgroundColor=theme.colors.elevatedBackground, ())),
+        styleArg,
+      |])
+    )>
+    <Tooltip keyPopover="close_button" text=I18n.tooltip#close>
+      {(~pressableRef) =>
+         <IconButton
+           pressableRef
+           size=40.
+           icon=Icons.Close.build
+           onPress={_ => onClose()}
+         />}
+    </Tooltip>
+  </View>;
 };

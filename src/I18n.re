@@ -26,6 +26,7 @@
 let p = Format.sprintf;
 
 let btn = {
+  pub create_or_import_account = "CREATE OR IMPORT ACCOUNT";
   pub _this = this;
   pub customize_derivation_path = "Customize derivation path";
   pub ok = "OK";
@@ -74,6 +75,7 @@ let btn = {
 };
 
 let tooltip = {
+  pub close = "Close";
   pub _this = this;
   pub show_qr = "Show QR Code";
   pub copy_clipboard = "Copy to clipboard";
