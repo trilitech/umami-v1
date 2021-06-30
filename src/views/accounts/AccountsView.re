@@ -216,12 +216,10 @@ let styles =
   Style.(StyleSheet.create({"actionBar": style(~flexDirection=`row, ())}));
 
 [@react.component]
-let make = (~showOnboarding) => {
+let make = (~showOnboarding, ~mode, ~setMode) => {
   let resetSecrets = StoreContext.Secrets.useResetAll();
   let accountsRequest = StoreContext.Accounts.useRequest();
   let token = StoreContext.SelectedToken.useGet();
-
-  let (mode, setMode) = React.useState(_ => Mode.Simple);
 
   <Page>
     {accountsRequest->ApiRequest.mapOrEmpty(_ => {

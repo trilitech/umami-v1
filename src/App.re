@@ -124,6 +124,8 @@ module AppView = {
     let setEulaSignature = StoreContext.setEulaSignature();
 
     let onSign = needSign => setEulaSignature(_ => needSign);
+    let (accountsViewMode, setAccountsViewMode) =
+      React.useState(_ => AccountsView.Mode.Simple);
 
     let (onboardingState, setOnboardingState) =
       React.useState(_ =>
@@ -195,6 +197,8 @@ module AppView = {
                     switch (route) {
                     | Accounts =>
                       <AccountsView
+                        mode=accountsViewMode
+                        setMode=setAccountsViewMode
                         showOnboarding={() =>
                           setOnboardingState(_ => AddAccountModal)
                         }
