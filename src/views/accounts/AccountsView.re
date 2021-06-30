@@ -25,18 +25,39 @@
 
 open ReactNative;
 
+module Mode = {
+  type t =
+    | Simple
+    | Management;
+
+  let is_simple =
+    fun
+    | Simple => true
+    | Management => false;
+
+  let is_management =
+    fun
+    | Simple => false
+    | Management => true;
+
+  let invert =
+    fun
+    | Simple => Management
+    | Management => Simple;
+};
+
 module EditButton = {
   let styles =
     Style.(StyleSheet.create({"button": style(~marginTop=15.->dp, ())}));
 
   [@react.component]
-  let make = (~editMode, ~setEditMode) => {
-    let onPress = _ => setEditMode(editMode => !editMode);
+  let make = (~mode, ~setMode) => {
+    let onPress = _ => setMode(Mode.invert);
     <View style=styles##button>
       <ButtonAction
         onPress
-        text={editMode ? I18n.btn#done_ : I18n.btn#edit}
-        icon={editMode ? Icons.List.build : Icons.Edit.build}
+        text={mode->Mode.is_management ? I18n.btn#done_ : I18n.btn#edit}
+        icon={mode->Mode.is_management ? Icons.List.build : Icons.Edit.build}
       />
     </View>;
   };
@@ -200,7 +221,7 @@ let make = (~showOnboarding) => {
   let accountsRequest = StoreContext.Accounts.useRequest();
   let token = StoreContext.SelectedToken.useGet();
 
-  let (editMode, setEditMode) = React.useState(_ => false);
+  let (mode, setMode) = React.useState(_ => Mode.Simple);
 
   <Page>
     {accountsRequest->ApiRequest.mapOrEmpty(_ => {
@@ -212,12 +233,12 @@ let make = (~showOnboarding) => {
                   loading={accountsRequest->ApiRequest.isLoading}
                   onRefresh=resetSecrets
                 />
-                <EditButton editMode setEditMode />
+                <EditButton mode setMode />
               </>}>
-           {editMode
+           {mode->Mode.is_management
               ? <BalanceTotal /> : <BalanceTotal.WithTokenSelector ?token />}
            <View style=styles##actionBar>
-             {editMode
+             {mode->Mode.is_management
                 ? <View>
                     <CreateAccountButton showOnboarding />
                     <ScanImportButton />
@@ -225,7 +246,8 @@ let make = (~showOnboarding) => {
                 : React.null}
            </View>
          </Page.Header>
-         {editMode ? <AccountsTreeList /> : <AccountsFlatList ?token />}
+         {mode->Mode.is_management
+            ? <AccountsTreeList /> : <AccountsFlatList ?token />}
        </>
      })}
   </Page>;
