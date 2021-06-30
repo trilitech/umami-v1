@@ -69,9 +69,7 @@ let make =
                 {
                   Transfer.destination: partialTransaction.destination,
                   amount:
-                    Tez(
-                      Tez.fromMutezString(partialTransaction.amount),
-                    ),
+                    Tez(Tez.fromMutezString(partialTransaction.amount)),
                   tx_options: {
                     fee: None,
                     gasLimit: None,
@@ -137,6 +135,17 @@ let make =
     ->Future.tapOk(_ => closeAction())
     ->ignore;
 
+  let onSimulateError = _ =>
+    BeaconApiRequest.respond(
+      `Error({
+        type_: `error,
+        id: operationBeaconRequest.id,
+        errorType: `UNKNOWN_ERROR,
+      }),
+    )
+    ->Future.tapOk(_ => closeAction())
+    ->ignore;
+
   let onPressCancel = _ => {
     closeAction();
     Routes.(push(Operations));
@@ -174,7 +183,15 @@ let make =
           | NotAsked
           | Loading(_) => <LoadingView style=styles##loading />
           | Done(Error(error), _) =>
-            <ErrorView error={error->API.Error.fromApiToString} />
+            <>
+              <ErrorView error={error->API.Error.fromApiToString} />
+              <View style=styles##formActionSpaceBetween>
+                <Buttons.SubmitSecondary
+                  text=I18n.btn#close
+                  onPress=onSimulateError
+                />
+              </View>
+            </>
           | Done(Ok(dryRun), _) =>
             <>
               <OperationSummaryView.Transactions transfer dryRun />

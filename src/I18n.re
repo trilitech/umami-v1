@@ -74,7 +74,8 @@ let btn = {
   pub deny = "DENY";
   pub allow = "ALLOW";
   pub reject = "REJECT";
-  pub sign = "SIGN"
+  pub sign = "SIGN";
+  pub close = "CLOSE"
 };
 
 let tooltip = {
