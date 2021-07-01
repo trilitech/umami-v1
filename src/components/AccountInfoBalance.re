@@ -57,7 +57,7 @@ module BalanceToken = {
   [@react.component]
   let make = (~address: string, ~token: Token.t) => {
     let balanceTokenRequest =
-      StoreContext.BalanceToken.useLoad(address, Some(token.address));
+      StoreContext.BalanceToken.useLoad(address, token.address);
 
     switch (balanceTokenRequest) {
     | Done(Ok(balance), _)
