@@ -150,7 +150,7 @@ let make = () => {
   let (networkText, networkColor) =
     switch (settings->AppSettings.network) {
     | `Mainnet => (I18n.t#mainnet, Some(`primary))
-    | `Testnet(_) => (I18n.t#testnet, None)
+    | `Florencenet => (I18n.t#florencenet, Some(`primary))
     };
 
   <View

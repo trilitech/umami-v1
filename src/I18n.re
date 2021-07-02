@@ -426,7 +426,10 @@ let t = {
   pub tezos = "Tez";
   pub tez = "tez";
   pub mainnet = "Mainnet";
+  pub florencenet = "Florencenet";
+  pub granadanet = "Granadanet";
   pub testnet = "Testnet";
+  pub add_custom_network = "ADD CUSTOM NETWORK";
   pub tez_amount = a => p("%s %s", a, this#tez);
   pub tez_op_amount = op => p("%s %a", op, () => this#tez_amount);
   pub address = "Address";

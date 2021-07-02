@@ -77,6 +77,30 @@ let granadanetChain = "NetXz969SFaFn8k";
 let florencenetChain = "NetXxkAx4woPLyu";
 let edo2netChain = "NetXSgo1ZT2DRUG";
 
+type network = {
+  chain: string,
+  explorer: string,
+  endpoint: string,
+};
+
+let mainnet = {
+  chain: mainnetChain,
+  explorer: "https://api.umamiwallet.com/mainnet",
+  endpoint: "https://mainnet.smartpy.io/",
+};
+
+let florencenet = {
+  chain: florencenetChain,
+  explorer: "https://api.umamiwallet.com/florencenet",
+  endpoint: "https://florencenet.smartpy.io/",
+};
+
+let getChainHash = network =>
+  switch (network) {
+  | `Mainnet => mainnetChain
+  | `Florencenet => florencenetChain
+  };
+
 let supportedChains = [
   mainnetChain,
   granadanetChain,
@@ -174,10 +198,7 @@ let getNodeChain = url => {
 };
 
 let isMainnet = n => n == `Mainnet;
-let isTestnet =
-  fun
-  | `Mainnet => false
-  | `Testnet(_) => true;
+let isFlorencenet = n => n == `Florencenet;
 
 let networkOfChain = c =>
   switch (supportedChains->List.getBy(chain => c == chain)) {
@@ -195,9 +216,9 @@ let checkConfiguration = (~network, api_url, node_url) =>
       String.equal(apiVersion.chain, nodeChain)
       && (
         isMainnet(network)
-        && String.equal(nodeChain, mainnetChain)
-        || isTestnet(network)
-        && !String.equal(nodeChain, mainnetChain)
+        && String.equal(nodeChain, mainnet.chain)
+        || isFlorencenet(network)
+        && !String.equal(nodeChain, mainnet.chain)
       )
         ? Ok(apiVersion)
         : Error(ChainInconsistency(apiVersion.chain, nodeChain))

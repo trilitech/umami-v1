@@ -23,7 +23,7 @@
 /*                                                                           */
 /*****************************************************************************/
 
-type network = [ | `Mainnet | `Testnet(string)];
+type network = [ | `Mainnet | `Florencenet];
 
 type t = {
   network: option(network),
@@ -41,10 +41,6 @@ type t = {
 module Default = {
   /* let network = `Testnet(Network.edo2netChain); */
   let network = `Mainnet;
-  let endpointMain = "https://mainnet.smartpy.io/";
-  let endpointTest = "https://florencenet.smartpy.io/";
-  let explorerMain = "https://api.umamiwallet.com/mainnet";
-  let explorerTest = "https://api.umamiwallet.com/florencenet";
   let theme = `system;
   let sdkBaseDir = System.(Path.Ops.(appDir() / (!"tezos-client")));
   let confirmations = 5;
@@ -74,9 +70,3 @@ let write = s => LocalStorage.setItem(configKey, s);
 let read = () => LocalStorage.getItem(configKey);
 
 let reset = () => LocalStorage.removeItem(configKey);
-
-let getNetworkName = network =>
-  switch (network) {
-  | `Mainnet => Network.mainnetName
-  | `Testnet(c) => c->Network.getName
-  };
