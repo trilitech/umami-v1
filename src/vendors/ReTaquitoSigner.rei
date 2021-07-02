@@ -29,6 +29,16 @@ let publicKey: t => Future.t(Result.t(string, ReTaquitoError.t));
 let publicKeyHash: t => Future.t(Result.t(string, ReTaquitoError.t));
 let secretKey: t => Future.t(Result.t(option(string), ReTaquitoError.t));
 
+type signature = {
+  bytes: string,
+  prefixSig: string,
+  sbytes: string,
+  [@bs.as "sig"]
+  sig_: string,
+};
+
+let sign: (t, string) => Future.t(Result.t(signature, ReTaquitoError.t));
+
 module MemorySigner: {
   let create:
     (~secretKey: string, ~passphrase: string=?, unit) =>

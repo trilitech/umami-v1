@@ -101,24 +101,6 @@ let opKind = [%raw "OpKind"];
 let rpcClient = [%raw "RpcClient"];
 type rpcClient;
 
-type signer = TezosClient.ReTaquitoSigner.t;
-
-[@bs.val] [@bs.scope "InMemorySigner"]
-external fromSecretKey:
-  (string, ~passphrase: string=?, unit) => Js.Promise.t(signer) =
-  "fromSecretKey";
-
-type signature = {
-  bytes: string,
-  prefixSig: string,
-  sbytes: string,
-  [@bs.as "sig"]
-  sig_: string,
-};
-
-[@bs.send]
-external sign: (signer, string) => Js.Promise.t(signature) = "sign";
-
 type endpoint = string;
 
 module RPCClient = {
@@ -615,10 +597,8 @@ module Transfer = {
   let makeTransferMichelsonParameter = (~entrypoint, ~parameter) =>
     switch (entrypoint, parameter) {
     | (Some(a), Some(b)) =>
-      Js.log2("entrypoint: " ++ a ++ ", parameter: ", b);
       Some({ProtocolOptions.TransactionParameters.entrypoint: a, value: b});
     | _ =>
-      Js.log("yo nothing");
       None;
     };
 
@@ -745,6 +725,6 @@ module Transfer = {
 module Signature = {
   let signPayload = (~baseDir, ~source, ~password, ~payload) => {
     readSecretKey(source, password, baseDir)
-    ->Future.flatMapOk(signer => signer->sign(payload)->Error.fromPromiseParsed);
+    ->Future.flatMapOk(signer => signer->ReTaquitoSigner.sign(payload));
   };
 };
