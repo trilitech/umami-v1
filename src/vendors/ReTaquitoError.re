@@ -43,6 +43,8 @@ type t =
   | EmptyTransaction
   | InvalidContract
   | BranchRefused
+  | LedgerInit(string)
+  | LedgerMasterKeyRetrieval(string)
   | BadPkh;
 
 let parse = e =>

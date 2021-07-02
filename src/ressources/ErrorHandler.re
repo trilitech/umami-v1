@@ -62,6 +62,9 @@ let fromTaquitoToString = e =>
        | BranchRefused => I18n.form_input_error#branch_refused_error
        | InvalidContract => I18n.form_input_error#invalid_contract
        | EmptyTransaction => I18n.form_input_error#empty_transaction
+       | LedgerInit(_) => I18n.form_input_error#hardware_wallet_plug
+       | LedgerMasterKeyRetrieval(_) =>
+         I18n.form_input_error#hardware_wallet_check_app
      );
 
 let printError = (fmt, err) => {

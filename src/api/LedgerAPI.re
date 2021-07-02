@@ -35,6 +35,57 @@ let convertWalletError = res =>
 let convertTaquitoError = res =>
   res->ResultEx.mapError(e => ErrorHandler.Taquito(e));
 
+let mapError = (ft, constr) =>
+  ft->Future.mapError(
+    fun
+    | ReTaquitoError.Generic(s) => constr(s)
+    | e => e,
+  );
+
+let init = () => {
+  ReLedger.Transport.create()
+  ->ReTaquitoError.fromPromiseParsed
+  ->mapError(s => s->ReTaquitoError.LedgerInit);
+};
+
+/* This current function is a hack until there is a proper way to know if a
+   ledger is currently locked or not. */
+let isReady = tr => {
+  let signer =
+    LedgerSigner.create(
+      tr,
+      Wallet.Ledger.masterKeyPath,
+      Wallet.Ledger.masterKeyScheme,
+      ~prompt=false,
+    );
+  signer
+  ->ReTaquitoSigner.publicKey
+  ->Future.map(
+      fun
+      | Error(_) => false
+      | Ok(pk) =>
+        // a valid pk is at 54 characters long, and 55 for tz3
+        pk->Js.String.startsWith("edpk") && pk->Js.String.length >= 54,
+    );
+};
+
+let getKey = (~prompt=true, tr, url, path, schema) => {
+  let toolkit = ReTaquito.Toolkit.create(url);
+  let signer = LedgerSigner.create(tr, path, schema, ~prompt);
+  let provider = Toolkit.{signer: signer};
+  toolkit->Toolkit.setProvider(provider);
+  signer->ReTaquitoSigner.publicKeyHash->Future.map(convertTaquitoError);
+};
+
+let getMasterKey = (~prompt=?, tr, url) =>
+  getKey(
+    ~prompt?,
+    tr,
+    url,
+    Wallet.Ledger.masterKeyPath,
+    Wallet.Ledger.masterKeyScheme,
+  );
+
 /* This function depends on LedgerSigner to compute the pk and pkh, hence it
    cannot be defined directly into Wallet.re */
 let addOrReplaceAlias =
