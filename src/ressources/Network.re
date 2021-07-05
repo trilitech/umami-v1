@@ -203,7 +203,7 @@ let networkOfChain = c =>
   | None => Error(UnknownChainId(c))
   };
 
-let checkConfiguration = (~network, api_url, node_url) =>
+let checkConfiguration = (api_url, node_url) =>
   Future.map2(
     getAPIVersion(api_url), getNodeChain(node_url), (api_res, node_res) =>
     switch (api_res, node_res) {
@@ -211,13 +211,7 @@ let checkConfiguration = (~network, api_url, node_url) =>
     | (_, Error(err)) => Error(err)
     | (Ok(apiVersion), Ok(nodeChain)) =>
       String.equal(apiVersion.chain, nodeChain)
-      && (
-        isMainnet(network)
-        && String.equal(nodeChain, mainnet.chain)
-        || isFlorencenet(network)
-        && !String.equal(nodeChain, mainnet.chain)
-      )
-        ? Ok(apiVersion)
+        ? Ok((apiVersion, nodeChain))
         : Error(ChainInconsistency(apiVersion.chain, nodeChain))
     }
   );
