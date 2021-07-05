@@ -25,7 +25,10 @@ let make = (~style as styleProp=?, ~parameters) => {
       |])
     )>
     <Typography.Address>
-      {parameters->Obj.magic->Js.Json.stringifyWithSpace(4)->React.string}
+      {parameters
+       ->ProtocolOptions.TransactionParameters.MichelineMichelsonV1Expression.toString
+       ->Option.getWithDefault("")
+       ->React.string}
     </Typography.Address>
   </View>;
 };

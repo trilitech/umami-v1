@@ -30,6 +30,12 @@ module TransactionParameters = {
   // ReBeacon and ReTaquito, hence its abstract nature.
   module MichelineMichelsonV1Expression = {
     type t;
+
+    let toString = c =>
+      c
+      ->Js.Json.stringifyAny
+      ->Option.map(Js.Json.parseExn)
+      ->Option.map(j => Js.Json.stringifyWithSpace(j, 4));
   };
 
   type t = {
