@@ -31,6 +31,66 @@ module StateLenses = [%lenses
 ];
 module ChainForm = ReForm.Make(StateLenses);
 
+module AddCustomNetworkButton = {
+  let styles =
+    Style.(
+      StyleSheet.create({
+        "button":
+          style(
+            ~alignSelf=`flexStart,
+            ~marginLeft=(-6.)->dp,
+            ~marginBottom=10.->dp,
+            (),
+          ),
+      })
+    );
+
+  [@react.component]
+  let make = () => {
+    let (visibleModal, openAction, closeAction) =
+      ModalAction.useModalActionState();
+
+    let onPress = _e => openAction();
+
+    <>
+      <View style=styles##button>
+        <ButtonAction
+          onPress
+          text=I18n.btn#add_custom_network
+          icon=Icons.Add.build
+        />
+      </View>
+      <ModalAction visible=visibleModal onRequestClose=closeAction>
+        <NetworkFormView action=Create closeAction />
+      </ModalAction>
+    </>;
+  };
+};
+
+module CustomNetworkEditButton = {
+  [@react.component]
+  let make = (~network: Network.network) => {
+    let (visibleModal, openAction, closeAction) =
+      ModalAction.useModalActionState();
+
+    let onPress = _e => openAction();
+
+    <>
+      <IconButton
+        tooltip=(
+          "custom_network_edit" ++ network.name,
+          I18n.tooltip#custom_network_edit,
+        )
+        icon=Icons.Edit.build
+        onPress
+      />
+      <ModalAction visible=visibleModal onRequestClose=closeAction>
+        <NetworkFormView action={Edit(network)} closeAction />
+      </ModalAction>
+    </>;
+  };
+};
+
 let styles =
   Style.(
     StyleSheet.create({
@@ -66,10 +126,7 @@ module CustomNetworkItem = {
           setValue=writeNetwork
           currentValue={settings->AppSettings.network}
         />
-        <View style=styles##row>
-          <CustomNetworkEditButton network />
-          <CustomNetworkDeleteButton network />
-        </View>
+        <View style=styles##row> <CustomNetworkEditButton network /> </View>
       </View>
     </>;
   };

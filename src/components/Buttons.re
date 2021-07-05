@@ -194,6 +194,7 @@ module SubmitSecondary = {
         ~disabled=false,
         ~loading=?,
         ~fontSize=?,
+        ~borderWidth=1.,
         ~style as styleArg=?,
       ) => {
     let theme = ThemeContext.useTheme();
@@ -204,11 +205,7 @@ module SubmitSecondary = {
       ?loading
       vStyle=?styleArg
       style=Style.(
-        style(
-          ~borderWidth=1.,
-          ~borderColor=theme.colors.borderHighEmphasis,
-          (),
-        )
+        style(~borderWidth, ~borderColor=theme.colors.borderHighEmphasis, ())
       )>
       <Typography.ButtonPrimary ?fontSize>
         text->React.string

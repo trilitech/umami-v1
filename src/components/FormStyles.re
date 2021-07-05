@@ -54,6 +54,8 @@ let verticalFormAction =
   ]);
 
 let header = style(~marginBottom=20.->dp, ~textAlign=`center, ());
+let headerWithoutMarginBottom =
+  style(~marginBottom=4.->dp, ~textAlign=`center, ());
 let subtitle = style(~marginTop=10.->dp, ());
 let textAlignCenter = style(~textAlign=`center, ());
 
