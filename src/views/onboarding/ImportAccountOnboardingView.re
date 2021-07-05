@@ -58,7 +58,7 @@ let make = (~closeAction, ~existingSecretsCount=0) => {
   let formatState =
     React.useState(_ => FillMnemonicView.FormatSelector.Words24);
   let (derivationPath, setDerivationPath) =
-    React.useState(_ => "m/44'/1729'/?'/0'");
+    React.useState(_ => DerivationPath.Pattern.(default->fromTezosBip44));
 
   let loading = secretWithMnemonicRequest->ApiRequest.isLoading;
 

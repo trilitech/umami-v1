@@ -144,6 +144,12 @@ let isValidInt = value => {
   fieldState;
 };
 
+let checkDerivationPath = (s): ReSchema.fieldState =>
+  switch (s->DerivationPath.Pattern.fromString) {
+  | Ok(_) => Valid
+  | Error(e) => Error(DerivationPath.handleError(e))
+  };
+
 let formFieldsAreValids = (fieldsState, validateFields) => {
   let fields = fieldsState->Array.map(((field, _)) => field);
   let fieldsState = validateFields(fields);
