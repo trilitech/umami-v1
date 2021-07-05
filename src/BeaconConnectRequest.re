@@ -107,58 +107,53 @@ let make = () => {
     {
       client
       ->ReBeacon.WalletClient.init
-      ->FutureJs.fromPromise(Js.String.make)
       ->Future.flatMapOk(_ =>
-          client
-          ->ReBeacon.WalletClient.connect(message => {
-              let request = message->ReBeacon.Message.Request.classify;
+          client->ReBeacon.WalletClient.connect(message => {
+            let request = message->ReBeacon.Message.Request.classify;
 
-              let targetSettedNetwork =
-                request
-                ->ReBeacon.Message.Request.getNetwork
-                ->Option.mapWithDefault(true, network =>
-                    network->checkOperationRequestTargetNetwork(
-                      settings->AppSettings.network,
-                    )
-                  );
-
-              if (targetSettedNetwork) {
-                switch (request) {
-                | PermissionRequest(request) => openPermission(request)
-                | SignPayloadRequest(request) => openSignPayload(request)
-                | OperationRequest(request) =>
-                  if (request->checkOperationRequestHasOnlyTransaction) {
-                    openOperation(request);
-                  } else if (request->checkOperationRequestHasOnlyOneDelegation) {
-                    openDelegation(request);
-                  } else {
-                    client
-                    ->ReBeacon.WalletClient.respond(
-                        `Error({
-                          type_: `error,
-                          id: request.id,
-                          errorType: `TRANSACTION_INVALID_ERROR,
-                        }),
-                      )
-                    ->FutureJs.fromPromise(Js.String.make)
-                    ->Future.get(Js.log);
-                  }
-                | _ => ()
-                };
-              } else {
-                client
-                ->ReBeacon.WalletClient.respond(
-                    `Error({
-                      type_: `error,
-                      id: request->ReBeacon.Message.Request.getId,
-                      errorType: `NETWORK_NOT_SUPPORTED,
-                    }),
+            let targetSettedNetwork =
+              request
+              ->ReBeacon.Message.Request.getNetwork
+              ->Option.mapWithDefault(true, network =>
+                  network->checkOperationRequestTargetNetwork(
+                    settings->AppSettings.network,
                   )
-                ->FutureJs.fromPromise(Js.String.make)
-                ->Future.get(Js.log);
+                );
+
+            if (targetSettedNetwork) {
+              switch (request) {
+              | PermissionRequest(request) => openPermission(request)
+              | SignPayloadRequest(request) => openSignPayload(request)
+              | OperationRequest(request) =>
+                if (request->checkOperationRequestHasOnlyTransaction) {
+                  openOperation(request);
+                } else if (request->checkOperationRequestHasOnlyOneDelegation) {
+                  openDelegation(request);
+                } else {
+                  client
+                  ->ReBeacon.WalletClient.respond(
+                      `Error({
+                        type_: `error,
+                        id: request.id,
+                        errorType: `TRANSACTION_INVALID_ERROR,
+                      }),
+                    )
+                  ->Future.get(Js.log);
+                }
+              | _ => ()
               };
-            })
-          ->FutureJs.fromPromise(Js.String.make)
+            } else {
+              client
+              ->ReBeacon.WalletClient.respond(
+                  `Error({
+                    type_: `error,
+                    id: request->ReBeacon.Message.Request.getId,
+                    errorType: `NETWORK_NOT_SUPPORTED,
+                  }),
+                )
+              ->Future.get(Js.log);
+            };
+          })
         )
       ->Future.tapOk(_ => {
           IPC.renderer->IPC.on("deeplinkURL", (_, message) => {
@@ -166,11 +161,8 @@ let make = () => {
               make()
               ->deserialize(message->dataFromURL->Option.getWithDefault(""))
             )
-            ->FutureJs.fromPromise(Js.String.make)
             ->Future.flatMapOk(peer =>
-                client
-                ->ReBeacon.WalletClient.addPeer(peer)
-                ->FutureJs.fromPromise(Js.String.make)
+                client->ReBeacon.WalletClient.addPeer(peer)
               )
             ->Future.get(Js.log)
           })

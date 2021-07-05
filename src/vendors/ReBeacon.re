@@ -293,8 +293,14 @@ module Serializer = {
 
   [@bs.module "@airgap/beacon-sdk"] [@bs.new]
   external make: unit => t = "Serializer";
+
   [@bs.send]
-  external deserialize: (t, string) => Js.Promise.t(peerInfo) = "deserialize";
+  external deserializeRaw: (t, string) => Js.Promise.t(peerInfo) =
+    "deserialize";
+
+  let deserialize = (t, string) => {
+    t->deserializeRaw(string)->FutureJs.fromPromise(Js.String.make);
+  };
 };
 
 module WalletClient = {
@@ -305,32 +311,62 @@ module WalletClient = {
   [@bs.module "@airgap/beacon-sdk"] [@bs.new]
   external make: options => t = "WalletClient";
 
-  [@bs.send] external init: t => Js.Promise.t(transportType) = "init";
+  [@bs.send] external initRaw: t => Js.Promise.t(transportType) = "init";
+
+  let init = t => {
+    t->initRaw->FutureJs.fromPromise(Js.String.make);
+  };
 
   [@bs.send]
-  external connect:
+  external connectRaw:
     (t, Message.Request.baseMessage => unit) => Js.Promise.t(unit) =
     "connect";
 
-  [@bs.send]
-  external addPeer: (t, peerInfo) => Js.Promise.t(unit) = "addPeer";
+  let connect = (t, cb) => {
+    t->connectRaw(cb)->FutureJs.fromPromise(Js.String.make);
+  };
 
   [@bs.send]
-  external removePeer: (t, peerInfo) => Js.Promise.t(unit) = "removePeer";
+  external addPeerRaw: (t, peerInfo) => Js.Promise.t(unit) = "addPeer";
+
+  let addPeer = (t, peerInfo) => {
+    t->addPeerRaw(peerInfo)->FutureJs.fromPromise(Js.String.make);
+  };
 
   [@bs.send]
-  external getPeers: t => Js.Promise.t(array(peerInfo)) = "getPeers";
+  external removePeerRaw: (t, peerInfo) => Js.Promise.t(unit) = "removePeer";
+
+  let removePeer = (t, peerInfo) => {
+    t->removePeerRaw(peerInfo)->FutureJs.fromPromise(Js.String.make);
+  };
 
   [@bs.send]
-  external removePermission: (t, accountIdentifier) => Js.Promise.t(unit) =
+  external getPeersRaw: t => Js.Promise.t(array(peerInfo)) = "getPeers";
+
+  let getPeers = t => {
+    t->getPeersRaw->FutureJs.fromPromise(Js.String.make);
+  };
+
+  [@bs.send]
+  external removePermissionRaw: (t, accountIdentifier) => Js.Promise.t(unit) =
     "removePermission";
 
-  [@bs.send]
-  external getPermissions: t => Js.Promise.t(array(permissionInfo)) =
-    "getPermissions";
+  let removePermission = (t, accountIdentifier) => {
+    t
+    ->removePermissionRaw(accountIdentifier)
+    ->FutureJs.fromPromise(Js.String.make);
+  };
 
   [@bs.send]
-  external respond:
+  external getPermissionsRaw: t => Js.Promise.t(array(permissionInfo)) =
+    "getPermissions";
+
+  let getPermissions = t => {
+    t->getPermissionsRaw->FutureJs.fromPromise(Js.String.make);
+  };
+
+  [@bs.send]
+  external respondRaw:
     (
       t,
       [@bs.unwrap] [
@@ -345,5 +381,13 @@ module WalletClient = {
     Js.Promise.t(unit) =
     "respond";
 
-  [@bs.send] external destroy: t => Js.Promise.t(unit) = "destroy";
+  let respond = (t, responseInput) => {
+    t->respondRaw(responseInput)->FutureJs.fromPromise(Js.String.make);
+  };
+
+  [@bs.send] external destroyRaw: t => Js.Promise.t(unit) = "destroy";
+
+  let destroy = t => {
+    t->destroyRaw->FutureJs.fromPromise(Js.String.make);
+  };
 };

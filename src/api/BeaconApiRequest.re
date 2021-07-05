@@ -26,19 +26,14 @@
 let client = ReBeacon.WalletClient.make({name: "umami"});
 
 let respond = responseInput => {
-  client
-  ->ReBeacon.WalletClient.respond(responseInput)
-  ->FutureJs.fromPromise(Js.String.make);
+  client->ReBeacon.WalletClient.respond(responseInput);
 };
 
 /* PEERS */
 
 module Peers = {
   let useLoad = requestState => {
-    let get = (~settings as _s, ()) =>
-      client
-      ->ReBeacon.WalletClient.getPeers
-      ->FutureJs.fromPromise(Js.String.make);
+    let get = (~settings as _s, ()) => client->ReBeacon.WalletClient.getPeers;
 
     ApiRequest.useLoader(~get, ~kind=Logs.Settings, ~requestState, ());
   };
@@ -47,9 +42,7 @@ module Peers = {
     ApiRequest.useSetter(
       ~set=
         (~settings as _s, peer: ReBeacon.peerInfo) =>
-          client
-          ->ReBeacon.WalletClient.removePeer(peer)
-          ->FutureJs.fromPromise(Js.String.make),
+          client->ReBeacon.WalletClient.removePeer(peer),
       ~kind=Logs.Settings,
     );
 };
@@ -59,9 +52,7 @@ module Peers = {
 module Permissions = {
   let useLoad = requestState => {
     let get = (~settings as _s, ()) =>
-      client
-      ->ReBeacon.WalletClient.getPermissions
-      ->FutureJs.fromPromise(Js.String.make);
+      client->ReBeacon.WalletClient.getPermissions;
 
     ApiRequest.useLoader(~get, ~kind=Logs.Settings, ~requestState, ());
   };
@@ -70,9 +61,7 @@ module Permissions = {
     ApiRequest.useSetter(
       ~set=
         (~settings as _s, accountIdentifier: ReBeacon.accountIdentifier) =>
-          client
-          ->ReBeacon.WalletClient.removePermission(accountIdentifier)
-          ->FutureJs.fromPromise(Js.String.make),
+          client->ReBeacon.WalletClient.removePermission(accountIdentifier),
       ~kind=Logs.Settings,
     );
 };
