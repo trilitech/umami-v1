@@ -23,17 +23,14 @@
 /*                                                                           */
 /*****************************************************************************/
 
-type network = [ | `Mainnet | `Florencenet];
+type network = [ | `Mainnet | `Florencenet | `Custom(string)];
 
 type t = {
   network: option(network),
-  endpointMain: option(string),
-  endpointTest: option(string),
-  explorerMain: option(string),
-  explorerTest: option(string),
   theme: option([ | `system | `dark | `light]),
   confirmations: option(int),
   sdkBaseDir: option(System.Path.t),
+  customNetworks: list(Network.network),
 };
 
 [@bs.val] [@bs.scope "JSON"] external parse: string => t = "parse";
@@ -48,13 +45,10 @@ module Default = {
 
 let dummy = {
   network: None,
-  endpointMain: None,
-  endpointTest: None,
-  explorerMain: None,
-  explorerTest: None,
   theme: None,
   confirmations: None,
   sdkBaseDir: None,
+  customNetworks: [],
 };
 
 let toString = c =>

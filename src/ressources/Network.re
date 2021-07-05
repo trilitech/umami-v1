@@ -78,28 +78,25 @@ let florencenetChain = "NetXxkAx4woPLyu";
 let edo2netChain = "NetXSgo1ZT2DRUG";
 
 type network = {
+  name: string,
   chain: string,
   explorer: string,
   endpoint: string,
 };
 
 let mainnet = {
+  name: I18n.t#mainnet,
   chain: mainnetChain,
   explorer: "https://api.umamiwallet.com/mainnet",
   endpoint: "https://mainnet.smartpy.io/",
 };
 
 let florencenet = {
+  name: I18n.t#florencenet,
   chain: florencenetChain,
   explorer: "https://api.umamiwallet.com/florencenet",
   endpoint: "https://florencenet.smartpy.io/",
 };
-
-let getChainHash = network =>
-  switch (network) {
-  | `Mainnet => mainnetChain
-  | `Florencenet => florencenetChain
-  };
 
 let supportedChains = [
   mainnetChain,

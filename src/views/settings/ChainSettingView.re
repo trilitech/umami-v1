@@ -27,7 +27,7 @@ open ReactNative;
 open SettingsComponents;
 
 module StateLenses = [%lenses
-  type state = {network: [ | `Mainnet | `Florencenet]}
+  type state = {network: [ | `Mainnet | `Florencenet | `Custom(string)]}
 ];
 module ChainForm = ReForm.Make(StateLenses);
 

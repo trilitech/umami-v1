@@ -151,6 +151,7 @@ let make = () => {
     switch (settings->AppSettings.network) {
     | `Mainnet => (I18n.t#mainnet, Some(`primary))
     | `Florencenet => (I18n.t#florencenet, Some(`primary))
+    | `Custom(name) => (name, Some(`primary))
     };
 
   <View
