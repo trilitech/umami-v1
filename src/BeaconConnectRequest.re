@@ -33,7 +33,10 @@ module IPC = {
 };
 
 let dataFromURL = url => {
-  url->Js.String2.split("data=")[1];
+  URL.make(url)
+  |> URL.getSearchParams
+  |> URL.SearchParams.get("data")
+  |> Js.Nullable.toOption;
 };
 
 let checkOperationRequestTargetNetwork =
