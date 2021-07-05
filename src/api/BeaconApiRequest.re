@@ -33,7 +33,10 @@ let respond = responseInput => {
 
 module Peers = {
   let useLoad = requestState => {
-    let get = (~settings as _s, ()) => client->ReBeacon.WalletClient.getPeers;
+    let get = (~settings as _s, ()) =>
+      client
+      ->ReBeacon.WalletClient.getPeers
+      ->Future.mapError(ReBeacon.Error.toString);
 
     ApiRequest.useLoader(~get, ~kind=Logs.Settings, ~requestState, ());
   };
@@ -42,7 +45,9 @@ module Peers = {
     ApiRequest.useSetter(
       ~set=
         (~settings as _s, peer: ReBeacon.peerInfo) =>
-          client->ReBeacon.WalletClient.removePeer(peer),
+          client
+          ->ReBeacon.WalletClient.removePeer(peer)
+          ->Future.mapError(ReBeacon.Error.toString),
       ~kind=Logs.Settings,
     );
 };
@@ -52,7 +57,9 @@ module Peers = {
 module Permissions = {
   let useLoad = requestState => {
     let get = (~settings as _s, ()) =>
-      client->ReBeacon.WalletClient.getPermissions;
+      client
+      ->ReBeacon.WalletClient.getPermissions
+      ->Future.mapError(ReBeacon.Error.toString);
 
     ApiRequest.useLoader(~get, ~kind=Logs.Settings, ~requestState, ());
   };
@@ -61,7 +68,9 @@ module Permissions = {
     ApiRequest.useSetter(
       ~set=
         (~settings as _s, accountIdentifier: ReBeacon.accountIdentifier) =>
-          client->ReBeacon.WalletClient.removePermission(accountIdentifier),
+          client
+          ->ReBeacon.WalletClient.removePermission(accountIdentifier)
+          ->Future.mapError(ReBeacon.Error.toString),
       ~kind=Logs.Settings,
     );
 };
