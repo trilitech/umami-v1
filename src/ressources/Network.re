@@ -84,6 +84,20 @@ let supportedChains = [
   edo2netChain,
 ];
 
+let mainnetName = "mainnet";
+let granadanetName = "granadanet";
+let florencenetName = "florencenet";
+let edo2netName = "edonet";
+
+let getName = network =>
+  switch (network) {
+  | network when network == mainnetChain => mainnetName
+  | network when network == granadanetChain => granadanetName
+  | network when network == florencenetChain => florencenetName
+  | network when network == edo2netChain => edo2netName
+  | _ => ""
+  };
+
 let fetchJson = (url, mkError) =>
   url
   ->Fetch.fetch

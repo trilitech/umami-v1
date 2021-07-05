@@ -38,15 +38,7 @@ let dataFromURL = url => {
 
 let checkOperationRequestTargetNetwork =
     (a: ReBeacon.network, b: ConfigFile.network) =>
-  a.type_
-  == (
-       switch (b) {
-       | `Mainnet => "mainnet"
-       | `Testnet(c) =>
-         c == Network.edo2netChain
-           ? "edonet" : c == Network.florencenetChain ? "florencenet" : ""
-       }
-     );
+  a.type_ == b->ConfigFile.getNetworkName;
 
 let checkOperationRequestHasOnlyTransaction =
     (request: ReBeacon.Message.Request.operationRequest) => {
