@@ -26,9 +26,7 @@
 let client = ReBeacon.WalletClient.make({name: "umami"});
 
 let respond = responseInput => {
-  client
-  ->ReBeacon.WalletClient.respond(responseInput)
-  ->FutureJs.fromPromise(Js.String.make);
+  client->ReBeacon.WalletClient.respond(responseInput);
 };
 
 /* PEERS */
@@ -38,7 +36,7 @@ module Peers = {
     let get = (~settings as _s, ()) =>
       client
       ->ReBeacon.WalletClient.getPeers
-      ->FutureJs.fromPromise(Js.String.make);
+      ->Future.mapError(ReBeacon.Error.toString);
 
     ApiRequest.useLoader(~get, ~kind=Logs.Settings, ~requestState, ());
   };
@@ -49,7 +47,7 @@ module Peers = {
         (~settings as _s, peer: ReBeacon.peerInfo) =>
           client
           ->ReBeacon.WalletClient.removePeer(peer)
-          ->FutureJs.fromPromise(Js.String.make),
+          ->Future.mapError(ReBeacon.Error.toString),
       ~kind=Logs.Settings,
     );
 };
@@ -61,7 +59,7 @@ module Permissions = {
     let get = (~settings as _s, ()) =>
       client
       ->ReBeacon.WalletClient.getPermissions
-      ->FutureJs.fromPromise(Js.String.make);
+      ->Future.mapError(ReBeacon.Error.toString);
 
     ApiRequest.useLoader(~get, ~kind=Logs.Settings, ~requestState, ());
   };
@@ -72,7 +70,7 @@ module Permissions = {
         (~settings as _s, accountIdentifier: ReBeacon.accountIdentifier) =>
           client
           ->ReBeacon.WalletClient.removePermission(accountIdentifier)
-          ->FutureJs.fromPromise(Js.String.make),
+          ->Future.mapError(ReBeacon.Error.toString),
       ~kind=Logs.Settings,
     );
 };

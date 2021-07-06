@@ -288,13 +288,82 @@ type permissionInfo = {
 };
 type transportType;
 
+module Error = {
+  type raw = string;
+
+  let toRaw: Js.Promise.error => raw = Obj.magic;
+
+  let noMatchingRequest = "No matching request found!";
+  let encodedPayloadNeedString = "Encoded payload needs to be a string";
+  let messageNotHandled = "Message not handled'";
+  let couldNotDecryptMessage = "Could not decrypt message";
+  let appMetadataNotFound = "AppMetadata not found";
+  let shouldNotWork = "Should not work!";
+  let containerNotFound = "container not found";
+  let platformUnknown = "platform unknown";
+
+  type t =
+    | Generic(string)
+    | NoMatchingRequest
+    | EncodedPayloadNeedString
+    | MessageNotHandled
+    | CouldNotDecryptMessage
+    | AppMetadataNotFound
+    | ShouldNotWork
+    | ContainerNotFound
+    | PlatformUnknown;
+
+  let parse = e =>
+    switch (e) {
+    | s when s->Js.String2.includes(noMatchingRequest) => NoMatchingRequest
+    | s when s->Js.String2.includes(encodedPayloadNeedString) =>
+      EncodedPayloadNeedString
+    | s when s->Js.String2.includes(messageNotHandled) => MessageNotHandled
+    | s when s->Js.String2.includes(couldNotDecryptMessage) =>
+      CouldNotDecryptMessage
+    | s when s->Js.String2.includes(appMetadataNotFound) =>
+      AppMetadataNotFound
+    | s when s->Js.String2.includes(shouldNotWork) => ShouldNotWork
+    | s when s->Js.String2.includes(containerNotFound) => ContainerNotFound
+    | s when s->Js.String2.includes(platformUnknown) => PlatformUnknown
+    | s => Generic(Js.String.make(s))
+    };
+
+  let toString = e =>
+    switch (e) {
+    | Generic(string) => string
+    | NoMatchingRequest => noMatchingRequest
+    | EncodedPayloadNeedString => encodedPayloadNeedString
+    | MessageNotHandled => messageNotHandled
+    | CouldNotDecryptMessage => couldNotDecryptMessage
+    | AppMetadataNotFound => appMetadataNotFound
+    | ShouldNotWork => shouldNotWork
+    | ContainerNotFound => containerNotFound
+    | PlatformUnknown => platformUnknown
+    };
+
+  let fromPromiseParsed = p =>
+    p->FutureJs.fromPromise(e => {
+      let e = e->toRaw;
+      Js.log(e);
+
+      e->parse;
+    });
+};
+
 module Serializer = {
   type t;
 
   [@bs.module "@airgap/beacon-sdk"] [@bs.new]
   external make: unit => t = "Serializer";
+
   [@bs.send]
-  external deserialize: (t, string) => Js.Promise.t(peerInfo) = "deserialize";
+  external deserializeRaw: (t, string) => Js.Promise.t(peerInfo) =
+    "deserialize";
+
+  let deserialize = (t, string) => {
+    t->deserializeRaw(string)->Error.fromPromiseParsed;
+  };
 };
 
 module WalletClient = {
@@ -305,32 +374,60 @@ module WalletClient = {
   [@bs.module "@airgap/beacon-sdk"] [@bs.new]
   external make: options => t = "WalletClient";
 
-  [@bs.send] external init: t => Js.Promise.t(transportType) = "init";
+  [@bs.send] external initRaw: t => Js.Promise.t(transportType) = "init";
+
+  let init = t => {
+    t->initRaw->Error.fromPromiseParsed;
+  };
 
   [@bs.send]
-  external connect:
+  external connectRaw:
     (t, Message.Request.baseMessage => unit) => Js.Promise.t(unit) =
     "connect";
 
-  [@bs.send]
-  external addPeer: (t, peerInfo) => Js.Promise.t(unit) = "addPeer";
+  let connect = (t, cb) => {
+    t->connectRaw(cb)->Error.fromPromiseParsed;
+  };
 
   [@bs.send]
-  external removePeer: (t, peerInfo) => Js.Promise.t(unit) = "removePeer";
+  external addPeerRaw: (t, peerInfo) => Js.Promise.t(unit) = "addPeer";
+
+  let addPeer = (t, peerInfo) => {
+    t->addPeerRaw(peerInfo)->Error.fromPromiseParsed;
+  };
 
   [@bs.send]
-  external getPeers: t => Js.Promise.t(array(peerInfo)) = "getPeers";
+  external removePeerRaw: (t, peerInfo) => Js.Promise.t(unit) = "removePeer";
+
+  let removePeer = (t, peerInfo) => {
+    t->removePeerRaw(peerInfo)->Error.fromPromiseParsed;
+  };
 
   [@bs.send]
-  external removePermission: (t, accountIdentifier) => Js.Promise.t(unit) =
+  external getPeersRaw: t => Js.Promise.t(array(peerInfo)) = "getPeers";
+
+  let getPeers = t => {
+    t->getPeersRaw->Error.fromPromiseParsed;
+  };
+
+  [@bs.send]
+  external removePermissionRaw: (t, accountIdentifier) => Js.Promise.t(unit) =
     "removePermission";
 
-  [@bs.send]
-  external getPermissions: t => Js.Promise.t(array(permissionInfo)) =
-    "getPermissions";
+  let removePermission = (t, accountIdentifier) => {
+    t->removePermissionRaw(accountIdentifier)->Error.fromPromiseParsed;
+  };
 
   [@bs.send]
-  external respond:
+  external getPermissionsRaw: t => Js.Promise.t(array(permissionInfo)) =
+    "getPermissions";
+
+  let getPermissions = t => {
+    t->getPermissionsRaw->Error.fromPromiseParsed;
+  };
+
+  [@bs.send]
+  external respondRaw:
     (
       t,
       [@bs.unwrap] [
@@ -345,5 +442,13 @@ module WalletClient = {
     Js.Promise.t(unit) =
     "respond";
 
-  [@bs.send] external destroy: t => Js.Promise.t(unit) = "destroy";
+  let respond = (t, responseInput) => {
+    t->respondRaw(responseInput)->Error.fromPromiseParsed;
+  };
+
+  [@bs.send] external destroyRaw: t => Js.Promise.t(unit) = "destroy";
+
+  let destroy = t => {
+    t->destroyRaw->Error.fromPromiseParsed;
+  };
 };
