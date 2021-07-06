@@ -25,3 +25,4 @@
 
 let pagePaddingVertical = 20.;
 let pagePaddingHorizontal = 36.;
+let pagePaddingHorizontalWithScrollbar = 27.;
