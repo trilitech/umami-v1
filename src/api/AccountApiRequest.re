@@ -25,7 +25,7 @@
 
 /* ACCOUNT */
 
-module AccountsAPI = API.Accounts(API.TezosExplorer);
+module AccountsAPI = API.Accounts(APICommon.URL);
 
 /* Get */
 

@@ -23,85 +23,8 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open UmamiCommon;
+open ServerAPI;
 open Delegate;
-
-module Path = {
-  let delegates = "/chains/main/blocks/head/context/delegates\\?active=true";
-  let operations = "operations";
-  let mempool_operations = "mempool/accounts";
-  let tokenViewer = "tokens/viewer";
-};
-
-module URL = {
-  let arg_opt = (v, n, f) => v->Option.map(a => (n, f(a)));
-
-  let build_args = l =>
-    l->List.map(((a, v)) => a ++ "=" ++ v)->List.toArray
-    |> Js.Array.joinWith("&");
-
-  let build_url = (network, path, args) => {
-    AppSettings.explorer(network)
-    ++ "/"
-    ++ path
-    ++ (args == [] ? "" : "?" ++ args->build_args);
-  };
-
-  let operations =
-      (
-        settings: AppSettings.t,
-        account,
-        ~types: option(array(string))=?,
-        ~destination: option(string)=?,
-        ~limit: option(int)=?,
-        (),
-      ) => {
-    let operationsPath = "accounts/" ++ account ++ "/operations";
-    let args =
-      Lib.List.(
-        []
-        ->addOpt(destination->arg_opt("destination", dst => dst))
-        ->addOpt(limit->arg_opt("limit", lim => lim->Js.Int.toString))
-        ->addOpt(types->arg_opt("types", t => t->Js.Array2.joinWith(",")))
-      );
-    let url = build_url(settings, operationsPath, args);
-    url;
-  };
-
-  let mempool = (network, account) => {
-    let path = Path.mempool_operations ++ "/" ++ account ++ "/operations";
-    build_url(network, path, []);
-  };
-
-  let tokenViewer = network => build_url(network, Path.tokenViewer, []);
-
-  let delegates = settings =>
-    AppSettings.endpoint(settings) ++ Path.delegates;
-
-  let checkToken = (network, contract) => {
-    let path = "tokens/exists/" ++ contract;
-    build_url(network, path, []);
-  };
-
-  let getTokenBalance = (network, contract, addr) => {
-    let path = "accounts/" ++ addr ++ "/tokens/" ++ contract ++ "/balance";
-    build_url(network, path, []);
-  };
-};
-
-module type GetterAPI = {
-  let get: string => Future.t(Result.t(Js.Json.t, string));
-};
-
-module TezosExplorer = {
-  let get = url =>
-    url
-    ->Fetch.fetch
-    ->FutureJs.fromPromise(Js.String.make)
-    ->Future.flatMapOk(response =>
-        response->Fetch.Response.json->FutureJs.fromPromise(Js.String.make)
-      );
-};
 
 module Balance = {
   let get = (settings, address, ~params=?, ()) => {
@@ -109,68 +32,6 @@ module Balance = {
     ->ReTaquito.Balance.get(~address, ~params?, ())
     ->Future.mapOk(Tez.ofInt64);
   };
-};
-
-let tryMap = (result: Result.t('a, string), transform: 'a => 'b) =>
-  try(
-    switch (result) {
-    | Ok(value) => Ok(transform(value))
-    | Error(error) => Error(error)
-    }
-  ) {
-  | Json.ParseError(error) => Error(error)
-  | Json.Decode.DecodeError(error) => Error(error)
-  | _ => Error("Unknown error")
-  };
-
-module Explorer = (Getter: GetterAPI) => {
-  let getFromMempool = (account, network, operations) =>
-    network
-    ->URL.mempool(account)
-    ->Getter.get
-    ->Future.map(result =>
-        result->tryMap(x =>
-          (
-            operations,
-            x |> Json.Decode.(array(Operation.Read.decodeFromMempool)),
-          )
-        )
-      )
-    >>= (
-      ((operations, mempool)) => {
-        module Comparator = Operation.Read.Comparator;
-        let operations =
-          Set.fromArray(operations, ~id=(module Operation.Read.Comparator));
-
-        let operations =
-          mempool->Array.reduce(operations, Set.add)->Set.toArray;
-
-        Future.value(Ok(operations));
-      }
-    );
-
-  let get =
-      (
-        network,
-        account,
-        ~types: option(array(string))=?,
-        ~destination: option(string)=?,
-        ~limit: option(int)=?,
-        ~mempool: bool=false,
-        (),
-      ) =>
-    network
-    ->URL.operations(account, ~types?, ~destination?, ~limit?, ())
-    ->Getter.get
-    ->Future.map(result =>
-        result->tryMap(Json.Decode.(array(Operation.Read.decode)))
-      )
-    >>= (
-      operations =>
-        mempool
-          ? getFromMempool(account, network, operations)
-          : Future.value(Ok(operations))
-    );
 };
 
 module Error = {
@@ -235,144 +96,6 @@ module Error = {
          | BadPkh => I18n.form_input_error#bad_pkh
        );
 };
-
-module CSV = {
-  open CSVParser;
-
-  type addressValidityError = [
-    | `NotAnAccount
-    | `NotAContract
-    | ReTaquito.Utils.addressValidityError
-  ];
-
-  type customEncodingError =
-    | CannotParseAddress(string, addressValidityError)
-    | CannotParseContract(string, addressValidityError);
-
-  type error =
-    | Parser(CSVParser.error(customEncodingError))
-    | UnknownToken(string)
-    | NoRows
-    | CannotMixTokens(int)
-    | CannotParseTokenAmount(ReBigNumber.t, int, int)
-    | CannotParseTezAmount(ReBigNumber.t, int, int);
-
-  type t = list(Transfer.elt);
-
-  let checkAddress = a => {
-    switch (ReTaquito.Utils.validateAnyAddress(a)) {
-    | Ok(`Address) => Ok(a)
-    | Ok(`Contract) => Error(CannotParseAddress(a, `NotAnAccount))
-    | Error(#addressValidityError as err) =>
-      Error(CannotParseAddress(a, err))
-    };
-  };
-
-  let checkContract = a => {
-    switch (ReTaquito.Utils.validateAnyAddress(a)) {
-    | Ok(`Contract) => Ok(a)
-    | Ok(`Address) => Error(CannotParseContract(a, `NotAContract))
-    | Error(#addressValidityError as err) =>
-      Error(CannotParseContract(a, err))
-    };
-  };
-
-  let addr = Encodings.custom(~conv=checkAddress);
-  let token = Encodings.custom(~conv=checkContract);
-
-  let rowEncoding =
-    Encodings.(mkRow(tup4(addr, number, opt(token), opt(number))));
-
-  let handleTezRow = (index, destination, amount) =>
-    amount
-    ->ReBigNumber.toString
-    ->Tez.fromString
-    ->ResultEx.fromOption(Error(CannotParseTezAmount(amount, index, 2)))
-    ->Result.map(amount =>
-        Transfer.makeSingleTezTransferElt(~destination, ~amount, ())
-      );
-
-  let handleTokenRow = (tokens, index, destination, amount, token) =>
-    tokens
-    ->Map.String.get(token)
-    ->Option.mapWithDefault(Error(UnknownToken(token)), token =>
-        amount
-        ->Token.Unit.fromBigNumber
-        ->ResultEx.fromOption(
-            Error(CannotParseTokenAmount(amount, index, 2)),
-          )
-        ->Result.map(amount =>
-            Transfer.makeSingleTokenTransferElt(
-              ~destination,
-              ~amount,
-              ~token,
-              (),
-            )
-          )
-      );
-
-  let handleRow = (tokens, index, row) =>
-    switch (row) {
-    | (destination, amount, None, _) =>
-      handleTezRow(index, destination, amount)
-    | (destination, amount, Some(token), _) =>
-      handleTokenRow(tokens, index, destination, amount, token)
-    };
-
-  let handleCSV = (rows, tokens) =>
-    rows->List.mapWithIndex(handleRow(tokens))->ResultEx.collect;
-
-  let parseCSV = (content, tokens) => {
-    let rows =
-      parseCSV(content, rowEncoding)
-      ->ResultEx.mapError(e => Error(Parser(e)));
-    switch (rows) {
-    | Ok([]) => Error(NoRows)
-    | Ok(rows) => handleCSV(rows, tokens)
-    | Error(e) => Error(e)
-    };
-  };
-};
-
-let handleAddressValidationError: CSV.addressValidityError => string =
-  fun
-  | `NotAnAccount => I18n.taquito#not_an_account
-  | `NotAContract => I18n.taquito#not_a_contract
-  | `No_prefix_matched => I18n.taquito#no_prefix_matched
-  | `Invalid_checksum => I18n.taquito#invalid_checksum
-  | `Invalid_length => I18n.taquito#invalid_length
-  | `UnknownError(n) => I18n.taquito#unknown_error_code(n);
-
-let handleCustomError =
-  fun
-  | CSV.CannotParseAddress(a, r) =>
-    I18n.csv#cannot_parse_address(a, handleAddressValidationError(r))
-  | CannotParseContract(a, r) =>
-    I18n.csv#cannot_parse_contract(a, handleAddressValidationError(r));
-
-let handleCSVError = e =>
-  e->CSVParser.(
-       fun
-       | CSV.Parser(CannotParseNumber(row, col)) =>
-         I18n.csv#cannot_parse_number(row + 1, col + 1)
-       | Parser(CannotParseBool(row, col)) =>
-         I18n.csv#cannot_parse_boolean(row + 1, col + 1)
-       | Parser(CannotParseCustomValue(e, row, col)) =>
-         I18n.csv#cannot_parse_custom_value(
-           handleCustomError(e),
-           row + 1,
-           col + 1,
-         )
-       | Parser(CannotParseRow(row)) => I18n.csv#cannot_parse_row(row + 1)
-       | Parser(CannotParseCSV) => I18n.csv#cannot_parse_csv
-       | NoRows => I18n.csv#no_rows
-       | CannotMixTokens(row) => I18n.csv#cannot_mix_tokens(row + 1)
-       | CannotParseTokenAmount(v, row, col) =>
-         I18n.csv#cannot_parse_token_amount(v, row + 1, col + 1)
-       | CannotParseTezAmount(v, row, col) =>
-         I18n.csv#cannot_parse_tez_amount(v, row + 1, col + 1)
-       | UnknownToken(s) => I18n.csv#unknown_token(s)
-     );
 
 module Simulation = {
   let extractCustomValues = (tx_options: ProtocolOptions.transferOptions) => (
@@ -583,7 +306,8 @@ module Aliases = {
     ->Future.mapError(Error.fromSdkToString);
 };
 
-module Accounts = (Getter: GetterAPI) => {
+module Accounts =
+       (Getter: {let get: URL.t => Future.t(Result.t(Js.Json.t, string));}) => {
   let secrets = (~settings: AppSettings.t) => {
     let _ = settings;
     LocalStorage.getItem("secrets")
@@ -786,9 +510,8 @@ module Accounts = (Getter: GetterAPI) => {
       });
 
   let validate = (network, address) => {
-    module ExplorerAPI = Explorer(Getter);
     network
-    ->ExplorerAPI.get(address, ~limit=1, ())
+    ->APICommon.Explorer.get(address, ~limit=1, ())
     ->Future.mapOk(operations => {operations->Js.Array2.length != 0});
   };
 
@@ -1028,7 +751,8 @@ module Accounts = (Getter: GetterAPI) => {
   };
 };
 
-module Delegate = (Getter: GetterAPI) => {
+module DelegateMaker =
+       (Get: {let get: URL.t => Future.t(Result.t(Js.Json.t, string));}) => {
   let parse = content =>
     if (content == "none\n") {
       None;
@@ -1058,8 +782,8 @@ module Delegate = (Getter: GetterAPI) => {
   let getBakers = (settings: AppSettings.t) =>
     switch (settings->AppSettings.network) {
     | `Mainnet =>
-      "https://api.baking-bad.org/v2/bakers"
-      ->Getter.get
+      URL.External.bakingBadBakers
+      ->URL.get
       ->Future.mapOk(Json.Decode.(array(Delegate.decode)))
     | `Testnet(_) =>
       Future.value(
@@ -1079,7 +803,7 @@ module Delegate = (Getter: GetterAPI) => {
   let getDelegationInfoForAccount =
       (network, account: string)
       : Future.t(Belt.Result.t(option(delegationInfo), Js.String.t)) => {
-    module ExplorerAPI = Explorer(Getter);
+    module ExplorerAPI = ServerAPI.ExplorerMaker(Get);
     module BalanceAPI = Balance;
     network
     ->ExplorerAPI.get(account, ~types=[|"delegation"|], ~limit=1, ())
@@ -1159,12 +883,12 @@ module Delegate = (Getter: GetterAPI) => {
   };
 };
 
-module Tokens = (Getter: GetterAPI) => {
-  let getTokenViewer = settings => URL.tokenViewer(settings)->Getter.get;
+module Delegate = DelegateMaker(URL);
 
-  let checkTokenContract = (settings, addr) => {
-    URL.checkToken(settings, addr)
-    ->Getter.get
+module Tokens = {
+  let checkTokenContract = (settings, contract) => {
+    URL.Explorer.checkToken(settings, ~contract)
+    ->URL.get
     ->Future.map(result => {
         switch (result) {
         | Ok(json) =>
@@ -1224,8 +948,12 @@ module Tokens = (Getter: GetterAPI) => {
     if (offline(operation)) {
       switch (operation) {
       | GetBalance({token, address, _}) =>
-        URL.getTokenBalance(settings, token, address)
-        ->Getter.get
+        URL.Explorer.getTokenBalance(
+          settings,
+          ~contract=token,
+          ~account=address,
+        )
+        ->URL.get
         ->Future.flatMapOk(res => {
             switch (res->Js.Json.decodeString) {
             | None => Token.Unit.zero->Ok->Future.value

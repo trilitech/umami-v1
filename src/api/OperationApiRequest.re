@@ -24,7 +24,6 @@
 /*****************************************************************************/
 
 include ApiRequest;
-module Explorer = API.Explorer(API.TezosExplorer);
 
 /* Create */
 
@@ -66,7 +65,7 @@ let useCreate = (~sideEffect=?, ()) => {
 
     | Token(operation) =>
       settings
-      ->TokensApiRequest.API.inject(operation, ~password)
+      ->API.Tokens.inject(operation, ~password)
       ->Future.mapError(e => e)
 
     | Transfer(t) =>
@@ -97,7 +96,7 @@ let useSimulate = () => {
       ->API.Simulation.run(~index?, operation)
       ->Future.mapError(API.Error.taquito)
     | Operation.Simulation.Token(operation, index) =>
-      settings->TokensApiRequest.API.simulate(~index?, operation)
+      settings->API.Tokens.simulate(~index?, operation)
     | Operation.Simulation.Transfer(t, index) =>
       settings
       ->API.Simulation.batch(t.transfers, ~source=t.source, ~index?, ())
@@ -123,7 +122,13 @@ let useLoad =
     (~requestState, ~limit=?, ~types=?, ~address: option(string), ()) => {
   let get = (~settings, address) => {
     let operations =
-      settings->Explorer.get(address, ~limit?, ~types?, ~mempool=true, ());
+      settings->ServerAPI.Explorer.get(
+        address,
+        ~limit?,
+        ~types?,
+        ~mempool=true,
+        (),
+      );
     let currentLevel =
       Network.monitor(AppSettings.explorer(settings))
       ->Future.mapOk(monitor => monitor.nodeLastBlock)

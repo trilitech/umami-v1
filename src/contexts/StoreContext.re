@@ -44,10 +44,7 @@ type state = {
   balanceRequestsState: apiRequestsState(Tez.t, string),
   delegateRequestsState: apiRequestsState(option(string), string),
   delegateInfoRequestsState:
-    apiRequestsState(
-      option(DelegateApiRequest.DelegateAPI.delegationInfo),
-      string,
-    ),
+    apiRequestsState(option(API.Delegate.delegationInfo), string),
   operationsRequestsState:
     apiRequestsState((array(Operation.Read.t), int), string),
   operationsConfirmations: reactState(Set.String.t),

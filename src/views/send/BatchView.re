@@ -162,11 +162,11 @@ module Transactions = {
       let tokens = StoreContext.Tokens.useGetAll();
 
       let onChange = fileTextContent => {
-        let parsedCSV = fileTextContent->API.CSV.parseCSV(tokens);
+        let parsedCSV = fileTextContent->ServerAPI.CSV.parseCSV(~tokens);
         switch (parsedCSV) {
         | Result.Ok(parsedCSV) => onAddCSVList(parsedCSV)
         | Result.Error(error) =>
-          addLog(true, Logs.error(error->API.handleCSVError))
+          addLog(true, Logs.error(error->ServerAPI.CSV.handleCSVError))
         };
       };
 
