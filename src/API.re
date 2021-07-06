@@ -489,7 +489,7 @@ module Mnemonic = {
 module Secret = {
   type t = {
     name: string,
-    derivationPath: string,
+    derivationPath: DerivationPath.Pattern.t,
     addresses: Js.Array.t(string),
     legacyAddress: option(string),
   };
@@ -497,7 +497,12 @@ module Secret = {
   let decoder = json =>
     Json.Decode.{
       name: json |> field("name", string),
-      derivationPath: json |> field("derivationScheme", string),
+      derivationPath:
+        json
+        |> field("derivationScheme", string)
+        |> DerivationPath.Pattern.fromString
+        |> Result.getExn,
+
       addresses: json |> field("addresses", array(string)),
       legacyAddress: json |> optional(field("legacyAddress", string)),
     };
@@ -508,14 +513,20 @@ module Secret = {
       | Some(legacyAddress) =>
         object_([
           ("name", string(secret.name)),
-          ("derivationScheme", string(secret.derivationPath)),
+          (
+            "derivationScheme",
+            string(secret.derivationPath->DerivationPath.Pattern.toString),
+          ),
           ("addresses", stringArray(secret.addresses)),
           ("legacyAddress", string(legacyAddress)),
         ])
       | None =>
         object_([
           ("name", string(secret.name)),
-          ("derivationScheme", string(secret.derivationPath)),
+          (
+            "derivationScheme",
+            string(secret.derivationPath->DerivationPath.Pattern.toString),
+          ),
           ("addresses", stringArray(secret.addresses)),
         ])
       }
@@ -669,30 +680,14 @@ module Accounts = (Getter: GetterAPI) => {
     ->Future.tapOk(k => Js.log("key found : " ++ k));
   };
 
-  let path = (scheme, ~index) =>
-    Future.make(resolve => {
-      let suffix = index->Js.Int.toString;
-      if (scheme->Js.String2.includes("?")) {
-        resolve(Ok(scheme->Js.String2.replace("?", suffix)));
-      } else if (index == 0) {
-        resolve(Ok(scheme));
-      } else {
-        resolve(
-          Ok(scheme->Js.String2.replace("/0'", "/" ++ suffix ++ "'")),
-        );
-      };
-      resolve(Error("Invalid index!"));
-    });
-
   let derive = (~settings, ~index, ~name, ~password) =>
     Future.mapOk2(
       secretAt(~settings, index),
       recoveryPhraseAt(~settings, index, ~password),
       (secret, recoveryPhrase) => {
-      path(secret.derivationPath, ~index=secret.addresses->Array.length)
-      ->Future.flatMapOk(path =>
-          path->HD.edesk(recoveryPhrase->HD.seed, ~password)
-        )
+      secret.derivationPath
+      ->DerivationPath.Pattern.implement(secret.addresses->Array.length)
+      ->HD.edesk(recoveryPhrase->HD.seed, ~password)
       ->Future.flatMapOk(edesk => import(~settings, edesk, name, ~password))
       ->Future.tapOk(address =>
           {
@@ -802,14 +797,15 @@ module Accounts = (Getter: GetterAPI) => {
             ~settings: AppSettings.t,
             seed,
             baseName,
-            ~derivationPath="m/44'/1729'/?'/0'",
+            ~derivationPath=DerivationPath.Pattern.default->DerivationPath.Pattern.fromTezosBip44,
             ~password,
             ~index=0,
             (),
           ) => {
     let name = baseName ++ " /" ++ index->Js.Int.toString;
-    path(derivationPath, ~index)
-    ->Future.flatMapOk(path => path->HD.edesk(seed, ~password))
+    derivationPath
+    ->DerivationPath.Pattern.implement(index)
+    ->HD.edesk(seed, ~password)
     ->Future.flatMapOk(edesk =>
         import(~settings, edesk, name, ~password)
         ->Future.flatMapOk(address
@@ -872,7 +868,7 @@ module Accounts = (Getter: GetterAPI) => {
         ~settings,
         recoveryPhrase,
         baseName,
-        ~derivationPath="m/44'/1729'/?'/0'",
+        ~derivationPath=DerivationPath.Pattern.default->DerivationPath.Pattern.fromTezosBip44,
         ~password,
         ~index=0,
         (),
@@ -914,7 +910,9 @@ module Accounts = (Getter: GetterAPI) => {
         ~settings,
         backupPhrase,
         name,
-        ~derivationPath="m/44'/1729'/?'/0'",
+        ~derivationPath=DerivationPath.Pattern.fromTezosBip44(
+                          DerivationPath.Pattern.default,
+                        ),
         ~password,
         (),
       ) => {

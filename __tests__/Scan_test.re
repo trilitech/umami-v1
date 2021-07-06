@@ -9,7 +9,10 @@ describe("Scan tests", ({test: _, testAsync}) => {
   testAsync("foo", ({expect, callback})
     => {
       HD.edesk(
-        "m/44'/1729'/0'/0'",
+        "m/44'/1729'/0'/0'"
+        ->DerivationPath.Pattern.fromString
+        ->Result.getExn
+        ->DerivationPath.Pattern.implement(0),
         "zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra",
         ~password="blerot",
       )

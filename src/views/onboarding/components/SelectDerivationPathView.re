@@ -55,9 +55,13 @@ let styles =
   );
 
 [@react.component]
-let make = (~derivationPath, ~setDerivationPath, ~onPressCancel, ~goNextStep) => {
-  let defaultDerivationPath = "m/44'/1729'/?'/0'";
-
+let make =
+    (
+      ~derivationPath: DerivationPath.Pattern.t,
+      ~setDerivationPath,
+      ~onPressCancel,
+      ~goNextStep,
+    ) => {
   let form: SelectDerivationPathForm.api =
     SelectDerivationPathForm.use(
       ~validationStrategy=OnDemand,
@@ -66,15 +70,11 @@ let make = (~derivationPath, ~setDerivationPath, ~onPressCancel, ~goNextStep) =>
           Schema(
             custom(
               values =>
-                if (values.selectedDerivationPath == defaultDerivationPath) {
-                  Valid;
-                } else if (Js.Re.test_(
-                             Js.Re.fromString("^m(/[0-9?]+')+$"),
-                             values.customDerivationPath,
-                           )) {
+                if (values.selectedDerivationPath
+                    == DerivationPath.Pattern.defaultString) {
                   Valid;
                 } else {
-                  Error(I18n.form_input_error#derivation_path_error);
+                  values.customDerivationPath->FormUtils.checkDerivationPath;
                 },
               CustomDerivationPath,
             )
@@ -84,14 +84,22 @@ let make = (~derivationPath, ~setDerivationPath, ~onPressCancel, ~goNextStep) =>
       },
       ~onSubmit=
         ({state}) => {
-          setDerivationPath(_ => state.values.selectedDerivationPath);
+          setDerivationPath(_
+            // Errors should be filtered by form errors hence the getExn
+            =>
+              state.values.selectedDerivationPath
+              ->DerivationPath.Pattern.fromString
+              ->Result.getExn
+            );
           goNextStep();
           None;
         },
       ~initialState={
-        selectedDerivationPath: derivationPath,
+        selectedDerivationPath:
+          derivationPath->DerivationPath.Pattern.toString,
         customDerivationPath:
-          derivationPath == defaultDerivationPath ? "" : derivationPath,
+          derivationPath->DerivationPath.Pattern.isDefault
+            ? "" : derivationPath->DerivationPath.Pattern.toString,
       },
       ~i18n=FormUtils.i18n,
       (),
@@ -112,7 +120,7 @@ let make = (~derivationPath, ~setDerivationPath, ~onPressCancel, ~goNextStep) =>
     <FormGroup style=Style.(arrayOption([|Some(styles##formGroup)|]))>
       <RadioItem
         label=I18n.label#account_default_path
-        value=defaultDerivationPath
+        value=DerivationPath.Pattern.defaultString
         setValue={value =>
           form.handleChange(SelectedDerivationPath, value(""))
         }

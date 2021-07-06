@@ -84,7 +84,7 @@ let useDerive =
 type createInput = {
   name: string,
   mnemonics: string,
-  derivationPath: string,
+  derivationPath: DerivationPath.Pattern.t,
   password: string,
 };
 

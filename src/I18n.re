@@ -149,6 +149,10 @@ let input_placeholder = {
 
 let form_input_error = {
   pub _this = this;
+  pub dp_not_a_dp = "Not a derivation path";
+  pub dp_more_than_1_wildcard = "Cannot have more that one '?'";
+  pub dp_missing_wildcard = "Missing '?' or 0";
+  pub dp_not_tezos = "Not a BIP44 Tezos Path";
   pub empty_transaction = "Transaction is empty.";
   pub branch_refused_error = "Please retry. An error came up while communicating with the node";
   pub key_already_registered = a =>

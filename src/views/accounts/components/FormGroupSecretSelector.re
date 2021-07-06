@@ -44,7 +44,7 @@ module SecretItem = {
         </Typography.Subtitle2>
       </View>
       <Typography.Address>
-        secret.derivationPath->React.string
+        {secret.derivationPath->DerivationPath.Pattern.toString->React.string}
       </Typography.Address>
     </View>;
   };

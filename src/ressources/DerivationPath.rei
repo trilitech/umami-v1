@@ -23,10 +23,55 @@
 /*                                                                           */
 /*****************************************************************************/
 
-type t = {
-  index: int,
-  name: string,
-  derivationPath: DerivationPath.Pattern.t,
-  addresses: Js.Array.t(string),
-  legacyAddress: option(string),
+type error =
+  | ParsingFailed(string)
+  | MoreThan1Wildcard
+  | MissingWildcardOr0
+  | NotTezosBip44;
+
+exception IllFormedPath;
+
+let handleError: error => string;
+
+// A derivation path
+// see https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki
+type t;
+
+type derivationPath = t;
+
+let toString: t => string;
+
+module Pattern: {
+  /* A derivation path pattern
+     Building functions enforces the following invariants:
+     - Contains at most one wildcard: ?'
+     - If no wildcard, it contains at least a: 0' */
+  type t;
+
+  // A derivation path pattern following BIP44 standard
+  type tezosBip44;
+
+  // The default value for derivation path
+  let default: tezosBip44;
+
+  // The default value for derivation path as a string
+  let defaultString: string;
+
+  let convertToTezosBip44: t => Result.t(tezosBip44, error);
+
+  let fromTezosBip44: tezosBip44 => t;
+
+  let isDefault: t => bool;
+
+  let toString: t => string;
+
+  /* Implements a derivation path pattern
+     Search for the unique wildcard an replaces it with the
+     given index. If there is no wildcard, replaces the last 0.
+     By construction of a derivation path pattern, [implement] cannot fail. */
+  let implement: (t, int) => derivationPath;
+
+  /* Builds a derivation path pattern from a string enforcing previously defined
+     invariants */
+  let fromString: string => Result.t(t, error);
 };
