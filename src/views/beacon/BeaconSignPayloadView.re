@@ -119,6 +119,17 @@ let make =
         )
         ->Future.tapOk(_ => closeAction())
         ->ignore
+      })
+    ->Future.tapError(_error => {
+        BeaconApiRequest.respond(
+          `Error({
+            type_: `error,
+            id: signPayloadRequest.id,
+            errorType: `SIGNATURE_TYPE_NOT_SUPPORTED,
+          }),
+        )
+        ->Future.tapOk(_ => closeAction())
+        ->ignore
       });
   };
 
