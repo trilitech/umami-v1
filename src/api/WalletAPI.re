@@ -77,7 +77,7 @@ module Aliases = {
     settings
     ->AppSettings.sdk
     ->TezosSDK.listKnownAddresses
-    ->Future.mapError(API.Error.fromSdkToString)
+    ->Future.mapError(ErrorHandler.fromSdkToString)
     ->Future.mapOk(l => l->Array.map(({alias, pkh}) => (alias, pkh)));
 
   let getAliasMap = (~settings) =>
@@ -98,19 +98,19 @@ module Aliases = {
     settings
     ->AppSettings.sdk
     ->TezosSDK.addAddress(alias, address)
-    ->Future.mapError(API.Error.fromSdkToString);
+    ->Future.mapError(ErrorHandler.fromSdkToString);
 
   let delete = (~settings, ~alias) =>
     settings
     ->AppSettings.sdk
     ->TezosSDK.forgetAddress(alias)
-    ->Future.mapError(API.Error.fromSdkToString);
+    ->Future.mapError(ErrorHandler.fromSdkToString);
 
   let rename = (~settings, renaming) =>
     settings
     ->AppSettings.sdk
     ->TezosSDK.renameAliases(renaming)
-    ->Future.mapError(API.Error.fromSdkToString);
+    ->Future.mapError(ErrorHandler.fromSdkToString);
 };
 
 module Accounts = {
@@ -135,7 +135,7 @@ module Accounts = {
     settings
     ->AppSettings.sdk
     ->TezosSDK.listKnownAddresses
-    ->Future.mapError(API.Error.fromSdkToString)
+    ->Future.mapError(ErrorHandler.fromSdkToString)
     ->Future.mapOk(r =>
         r->Array.keepMap((TezosSDK.OutputAddress.{alias, pkh, sk_known}) =>
           sk_known ? Some((alias, pkh)) : None
@@ -190,7 +190,7 @@ module Accounts = {
     settings
     ->AppSettings.sdk
     ->TezosSDK.importSecretKey(~name=alias, ~skUri, ~password, ())
-    ->Future.mapError(API.Error.fromSdkToString)
+    ->Future.mapError(ErrorHandler.fromSdkToString)
     ->Future.tapOk(k => Js.log("key found : " ++ k));
   };
 
@@ -219,7 +219,7 @@ module Accounts = {
     settings
     ->AppSettings.sdk
     ->TezosSDK.forgetAddress(name)
-    ->Future.mapError(API.Error.fromSdkToString);
+    ->Future.mapError(ErrorHandler.fromSdkToString);
 
   let delete = (~settings, name) =>
     Aliases.getAddressForAlias(~settings, ~alias=name)
@@ -360,7 +360,7 @@ module Accounts = {
         ~password,
         (),
       )
-    ->Future.mapError(API.Error.fromSdkToString);
+    ->Future.mapError(ErrorHandler.fromSdkToString);
 
   let legacyScan = (~settings, recoveryPhrase, name, ~password) =>
     legacyImport(~settings, name, recoveryPhrase, ~password)

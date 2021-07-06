@@ -23,40 +23,59 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open ReactNative;
+type token =
+  | OperationNotRunnableOffchain(string)
+  | SimulationNotAvailable(string)
+  | InjectionNotImplemented(string)
+  | OffchainCallNotImplemented(string)
+  | RawError(string);
 
-[@react.component]
-let make =
-    (
-      ~title=?,
-      ~subtitle=?,
-      ~children,
-      ~sendOperation: (~password: string) => Future.t(Result.t(_)),
-      ~loading=false,
-    ) => {
-  let (form, formFieldsAreValids) =
-    PasswordFormView.usePasswordForm(sendOperation);
+type t =
+  | Taquito(ReTaquitoError.t)
+  | Token(token);
 
-  <>
-    {title->ReactUtils.mapOpt(title =>
-       <View style=FormStyles.header>
-         <Typography.Headline> title->React.string </Typography.Headline>
-         {subtitle->ReactUtils.mapOpt(subtitle =>
-            <Typography.Overline1 style=FormStyles.subtitle>
-              subtitle->React.string
-            </Typography.Overline1>
-          )}
-       </View>
-     )}
-    children
-    <PasswordFormView.PasswordField form />
-    <View style=FormStyles.verticalFormAction>
-      <Buttons.SubmitPrimary
-        text=I18n.btn#confirm
-        onPress={_event => {form.submit()}}
-        loading
-        disabledLook={!formFieldsAreValids}
-      />
-    </View>
-  </>;
+let taquito = e => Taquito(e);
+let token = e => Token(e);
+
+let fromTaquitoToString = e =>
+  e->ReTaquitoError.(
+       fun
+       | Generic(s) => s
+       | WrongPassword => I18n.form_input_error#wrong_password
+       | UnregisteredDelegate => I18n.form_input_error#unregistered_delegate
+       | UnchangedDelegate => I18n.form_input_error#change_baker
+       | BadPkh => I18n.form_input_error#bad_pkh
+       | BranchRefused => I18n.form_input_error#branch_refused_error
+       | InvalidContract => I18n.form_input_error#invalid_contract
+       | EmptyTransaction => I18n.form_input_error#empty_transaction
+       | WalletError(KeyNotFound) => I18n.wallet#key_not_found
+       | WalletError(Generic(s)) => s
+     );
+
+let printError = (fmt, err) => {
+  switch (err) {
+  | OperationNotRunnableOffchain(s) =>
+    Format.fprintf(fmt, "Operation '%s' cannot be run offchain.", s)
+  | SimulationNotAvailable(s) =>
+    Format.fprintf(fmt, "Operation '%s' is not simulable.", s)
+  | InjectionNotImplemented(s) =>
+    Format.fprintf(fmt, "Operation '%s' injection is not implemented", s)
+  | OffchainCallNotImplemented(s) =>
+    Format.fprintf(fmt, "Operation '%s' offchain call is not implemented", s)
+  | RawError(s) => Format.fprintf(fmt, "%s", s)
+  };
 };
+
+let fromTokenToString = err => Format.asprintf("%a", printError, err);
+
+let fromApiToString =
+  fun
+  | Token(e) => fromTokenToString(e)
+  | Taquito(e) => fromTaquitoToString(e);
+
+let fromSdkToString = e =>
+  e->TezosSDK.Error.(
+       fun
+       | Generic(s) => s
+       | BadPkh => I18n.form_input_error#bad_pkh
+     );

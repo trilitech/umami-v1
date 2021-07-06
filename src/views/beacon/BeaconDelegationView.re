@@ -161,7 +161,7 @@ let make =
           | Loading(_) => <LoadingView style=styles##loading />
           | Done(Error(error), _) =>
             <>
-              <ErrorView error={error->API.Error.fromApiToString} />
+              <ErrorView error={error->ErrorHandler.fromApiToString} />
               <View style=styles##formActionSpaceBetween>
                 <Buttons.SubmitSecondary
                   text=I18n.btn#close

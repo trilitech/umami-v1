@@ -24,7 +24,7 @@
 /*****************************************************************************/
 
 include ApiRequest;
-module Error = API.Error;
+module Error = ErrorHandler;
 
 type injection = {
   operation: Token.operation,

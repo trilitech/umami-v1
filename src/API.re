@@ -34,69 +34,6 @@ module Balance = {
   };
 };
 
-module Error = {
-  type token =
-    | OperationNotRunnableOffchain(string)
-    | SimulationNotAvailable(string)
-    | InjectionNotImplemented(string)
-    | OffchainCallNotImplemented(string)
-    | RawError(string);
-
-  type t =
-    | Taquito(ReTaquitoError.t)
-    | Token(token);
-
-  let taquito = e => Taquito(e);
-  let token = e => Token(e);
-
-  let fromTaquitoToString = e =>
-    e->ReTaquitoError.(
-         fun
-         | Generic(s) => s
-         | WrongPassword => I18n.form_input_error#wrong_password
-         | UnregisteredDelegate => I18n.form_input_error#unregistered_delegate
-         | UnchangedDelegate => I18n.form_input_error#change_baker
-         | BadPkh => I18n.form_input_error#bad_pkh
-         | BranchRefused => I18n.form_input_error#branch_refused_error
-         | InvalidContract => I18n.form_input_error#invalid_contract
-         | EmptyTransaction => I18n.form_input_error#empty_transaction
-         | WalletError(KeyNotFound) => I18n.wallet#key_not_found
-         | WalletError(Generic(s)) => s
-       );
-
-  let printError = (fmt, err) => {
-    switch (err) {
-    | OperationNotRunnableOffchain(s) =>
-      Format.fprintf(fmt, "Operation '%s' cannot be run offchain.", s)
-    | SimulationNotAvailable(s) =>
-      Format.fprintf(fmt, "Operation '%s' is not simulable.", s)
-    | InjectionNotImplemented(s) =>
-      Format.fprintf(fmt, "Operation '%s' injection is not implemented", s)
-    | OffchainCallNotImplemented(s) =>
-      Format.fprintf(
-        fmt,
-        "Operation '%s' offchain call is not implemented",
-        s,
-      )
-    | RawError(s) => Format.fprintf(fmt, "%s", s)
-    };
-  };
-
-  let fromTokenToString = err => Format.asprintf("%a", printError, err);
-
-  let fromApiToString =
-    fun
-    | Token(e) => fromTokenToString(e)
-    | Taquito(e) => fromTaquitoToString(e);
-
-  let fromSdkToString = e =>
-    e->TezosSDK.Error.(
-         fun
-         | Generic(s) => s
-         | BadPkh => I18n.form_input_error#bad_pkh
-       );
-};
-
 module Simulation = {
   let extractCustomValues = (tx_options: ProtocolOptions.transferOptions) => (
     tx_options.fee->Option.map(fee => fee->Tez.unsafeToMutezInt),
@@ -380,11 +317,11 @@ module Tokens = {
     switch (operation) {
     | Transfer({source, transfers, _}) =>
       batchEstimate(network, transfers, ~source, ~index?, ())
-      ->Future.mapError(e => e->Error.Taquito)
+      ->Future.mapError(e => e->ErrorHandler.Taquito)
     | _ =>
       Future.value(
         SimulationNotAvailable(Token.operationEntrypoint(operation))
-        ->Error.token
+        ->ErrorHandler.token
         ->Error,
       )
     };
@@ -393,11 +330,11 @@ module Tokens = {
     switch (operation) {
     | Transfer({source, transfers, _}) =>
       batch(network, transfers, ~source, ~password)
-      ->Future.mapError(Error.taquito)
+      ->Future.mapError(ErrorHandler.taquito)
     | _ =>
       Future.value(
         InjectionNotImplemented(Token.operationEntrypoint(operation))
-        ->Error.token
+        ->ErrorHandler.token
         ->Error,
       )
     };
@@ -421,18 +358,18 @@ module Tokens = {
               ->FutureEx.fromOption(~error="cannot read Token amount: " ++ v)
             }
           })
-        ->Future.mapError(s => s->RawError->Error.Token)
+        ->Future.mapError(s => s->RawError->ErrorHandler.Token)
       | _ =>
         Future.value(
           OffchainCallNotImplemented(Token.operationEntrypoint(operation))
-          ->Error.token
+          ->ErrorHandler.token
           ->Error,
         )
       };
     } else {
       Future.value(
         OperationNotRunnableOffchain(Token.operationEntrypoint(operation))
-        ->Error.token
+        ->ErrorHandler.token
         ->Error,
       );
     };
@@ -446,6 +383,6 @@ module Signature = {
       ~password,
       ~payload,
     )
-    ->Future.mapError(taquitoError => Error.Taquito(taquitoError));
+    ->Future.mapError(taquitoError => ErrorHandler.Taquito(taquitoError));
   };
 };

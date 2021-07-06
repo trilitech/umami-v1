@@ -23,40 +23,19 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open ReactNative;
+type token =
+  | OperationNotRunnableOffchain(string)
+  | SimulationNotAvailable(string)
+  | InjectionNotImplemented(string)
+  | OffchainCallNotImplemented(string)
+  | RawError(string);
 
-[@react.component]
-let make =
-    (
-      ~title=?,
-      ~subtitle=?,
-      ~children,
-      ~sendOperation: (~password: string) => Future.t(Result.t(_)),
-      ~loading=false,
-    ) => {
-  let (form, formFieldsAreValids) =
-    PasswordFormView.usePasswordForm(sendOperation);
+type t =
+  | Taquito(ReTaquitoError.t)
+  | Token(token);
 
-  <>
-    {title->ReactUtils.mapOpt(title =>
-       <View style=FormStyles.header>
-         <Typography.Headline> title->React.string </Typography.Headline>
-         {subtitle->ReactUtils.mapOpt(subtitle =>
-            <Typography.Overline1 style=FormStyles.subtitle>
-              subtitle->React.string
-            </Typography.Overline1>
-          )}
-       </View>
-     )}
-    children
-    <PasswordFormView.PasswordField form />
-    <View style=FormStyles.verticalFormAction>
-      <Buttons.SubmitPrimary
-        text=I18n.btn#confirm
-        onPress={_event => {form.submit()}}
-        loading
-        disabledLook={!formFieldsAreValids}
-      />
-    </View>
-  </>;
-};
+let taquito: ReTaquitoError.t => t;
+let token: token => t;
+
+let fromSdkToString: TezosSDK.Error.t => string;
+let fromApiToString: t => string;

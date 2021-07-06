@@ -48,11 +48,11 @@ let token = (operation, password) => {
   password,
 };
 
-let errorToString = API.Error.fromApiToString;
+let errorToString = ErrorHandler.fromApiToString;
 
 let filterOutFormError =
   fun
-  | API.Error.Taquito(WrongPassword) => false
+  | ErrorHandler.Taquito(WrongPassword) => false
   | _ => true;
 
 let useCreate = (~sideEffect=?, ()) => {
@@ -61,7 +61,7 @@ let useCreate = (~sideEffect=?, ()) => {
     | Protocol(operation) =>
       settings
       ->API.Operation.run(operation, ~password)
-      ->Future.mapError(API.Error.taquito)
+      ->Future.mapError(ErrorHandler.taquito)
 
     | Token(operation) =>
       settings
@@ -71,7 +71,7 @@ let useCreate = (~sideEffect=?, ()) => {
     | Transfer(t) =>
       settings
       ->API.Operation.batch(t.transfers, ~source=t.source, ~password)
-      ->Future.mapError(API.Error.taquito)
+      ->Future.mapError(ErrorHandler.taquito)
     };
   };
 
@@ -94,13 +94,13 @@ let useSimulate = () => {
     | Operation.Simulation.Protocol(operation, index) =>
       settings
       ->API.Simulation.run(~index?, operation)
-      ->Future.mapError(API.Error.taquito)
+      ->Future.mapError(ErrorHandler.taquito)
     | Operation.Simulation.Token(operation, index) =>
       settings->API.Tokens.simulate(~index?, operation)
     | Operation.Simulation.Transfer(t, index) =>
       settings
       ->API.Simulation.batch(t.transfers, ~source=t.source, ~index?, ())
-      ->Future.mapError(API.Error.taquito)
+      ->Future.mapError(ErrorHandler.taquito)
     };
 
   ApiRequest.useSetter(
