@@ -38,12 +38,11 @@ type action =
   | Create
   | Edit(Network.network);
 
-let nameExistsCheck = (name: string, customNetworks: list(Network.network)) => {
-  switch (List.some(customNetworks, n => n.name === name)) {
-  | false => Ok(name)
-  | true => Error(I18n.form_input_error#name_already_taken)
-  };
-};
+let nameExistsCheck =
+    (name: string, customNetworks: list(Network.network))
+    : ReSchema.fieldState =>
+  List.some(customNetworks, n => n.name === name)
+    ? Error(I18n.form_input_error#name_already_taken(name)) : Valid;
 
 let isEditMode =
   fun
@@ -69,6 +68,8 @@ let styles =
 let make = (~initNode=?, ~initMezos=?, ~action: action, ~closeAction) => {
   let writeConf = ConfigContext.useWrite();
 
+  let customNetworks = ConfigContext.useContent().customNetworks;
+
   let addToast = LogsContext.useToast();
 
   let addCustomNetwork = (network: Network.network) => {
@@ -93,18 +94,13 @@ let make = (~initNode=?, ~initMezos=?, ~action: action, ~closeAction) => {
       ~schema={
         NetworkCreateForm.Validation.(
           Schema(
-            nonEmpty(Name) + nonEmpty(Node) + nonEmpty(Mezos),
-            // + custom(
-            //     values =>
-            //       action->isEditMode
-            //         ? Valid
-            //         : nameExistsCheck(
-            //             ConfigContext.useContent().customNetworks,
-            //             name,
-            //           ),
-            //     Name,
-            //   ),
-            // + custom(formCheckExists(customNetworks), Name),
+            nonEmpty(Name)
+            + nonEmpty(Node)
+            + nonEmpty(Mezos)
+            + custom(
+                values => nameExistsCheck(values.name, customNetworks),
+                Name,
+              ),
           )
         );
       },
