@@ -76,7 +76,8 @@
       "category": "public.app-category.Reference"
     },
     "linux": {
-      "target": "AppImage"
+      "target": "AppImage",
+      "mimeTypes": ["x-scheme-handler/umami"]
     },
     "files": [
       "build/**/*",
