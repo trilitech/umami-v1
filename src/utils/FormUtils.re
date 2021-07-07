@@ -26,20 +26,20 @@
 open Transfer;
 
 type amount =
-  | Amount(Transfer.currency)
+  | Amount(Transfer.Currency.t)
   | Illformed(string);
 
 let keepToken = v =>
   v->Option.flatMap(
     fun
     | Illformed(_) => None
-    | Amount(v) => v->Transfer.getTez,
+    | Amount(v) => v->Transfer.Currency.getTez,
   );
 
 let keepTez = v =>
   v->Option.flatMap(
     fun
-    | Amount(v) => v->Transfer.getTez
+    | Amount(v) => v->Transfer.Currency.getTez
     | Illformed(_) => None,
   );
 
@@ -52,13 +52,15 @@ let parseAmount = (v, token) =>
         let vtez = v->Tez.fromString;
         vtez == None
           ? v->Illformed->Some
-          : vtez->Option.map(v => v->Transfer.makeTez->Amount);
+          : vtez->Option.map(v => v->Transfer.Currency.makeTez->Amount);
       },
       t => {
         let vt = v->Token.Unit.fromNatString;
         vt == None
           ? v->Illformed->Some
-          : vt->Option.map(amount => makeToken(~amount, ~token=t)->Amount);
+          : vt->Option.map(amount =>
+              Currency.makeToken(~amount, ~token=t)->Amount
+            );
       },
     );
   };
@@ -161,6 +163,12 @@ let formFieldsAreValids = (fieldsState, validateFields) => {
     }
   });
 };
+
+let getFormStateError = (formState: ReForm.formState) =>
+  switch (formState) {
+  | SubmitFailed(error) => error
+  | _ => None
+  };
 
 let i18n = {
   ...ReSchemaI18n.default,

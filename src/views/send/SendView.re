@@ -24,7 +24,6 @@
 /*****************************************************************************/
 
 open ReactNative;
-open UmamiCommon;
 
 module FormGroupAmountWithTokenSelector = {
   let styles =
@@ -107,89 +106,6 @@ let stepToString = step =>
   | BatchStep => "batchstep"
   | SubmittedStep(_) => "submittedstep"
   };
-
-let sourceDestination = (transfer: Transfer.t) => {
-  let recipientLbl = I18n.title#recipient_account;
-  let sourceLbl = I18n.title#sender_account;
-  switch (transfer) {
-  | {source, transfers: [t]} => (
-      (source, sourceLbl),
-      `One((t.destination, recipientLbl)),
-    )
-  | {source, transfers} =>
-    let destinations =
-      transfers->List.map(t => (None, (t.destination, t.amount)));
-    ((source, sourceLbl), `Many(destinations));
-  };
-};
-
-let compareCurrencies = (v1, v2) => {
-  Transfer.(
-    switch (v1, v2) {
-    | (Tez(_), Token(_)) => (-1)
-    | (Token(_), Tez(_)) => 1
-    | _ => 0
-    }
-  );
-};
-
-let reduceAmounts = l =>
-  Transfer.(
-    l
-    ->Lib.List.reduceGroupBy(
-        ~group=
-          fun
-          | Transfer.Tez(_) => None
-          | Token(_, t) => Some(t),
-        ~map=(acc, v) =>
-        switch (acc, v) {
-        | (None, v) => v
-        | (Some(Tez(acc)), Tez(v)) => Tez(Tez.Infix.(acc + v))
-        | (Some(Token(acc, t)), Token(v, _)) =>
-          Token(Token.Unit.Infix.(acc + v), t)
-        | (Some(acc), _) => acc
-        }
-      )
-    ->List.map(snd)
-    ->List.sort(compareCurrencies)
-  );
-
-let showAmount =
-  Transfer.(
-    fun
-    | Tez(v) => I18n.t#tez_amount(v->Tez.toString)
-    | Token(v, t) => I18n.t#amount(v->Token.Unit.toNatString, t.symbol)
-  );
-
-let buildSummaryContent =
-    (transaction: Transfer.t, dryRun: Protocol.simulationResults) => {
-  let fee = (I18n.label#fee, [Transfer.Tez(dryRun.fee)]);
-
-  let revealFee =
-    dryRun.revealFee != Tez.zero
-      ? (I18n.label#implicit_reveal_fee, [Transfer.Tez(dryRun.revealFee)])
-        ->Some
-      : None;
-
-  let totals = transaction.transfers->List.map(t => t.amount)->reduceAmounts;
-
-  let subtotals = (I18n.label#summary_subtotal, totals);
-
-  let totalTez = {
-    let (sub, noTokens) =
-      switch (totals) {
-      | [Tez(a), ...t] => (a, t == [])
-      | t => (Tez.zero, t == [])
-      };
-
-    (
-      noTokens ? I18n.label#summary_total : I18n.label#summary_total_tez,
-      [Transfer.Tez(Tez.Infix.(sub + dryRun.fee + dryRun.revealFee))],
-    );
-  };
-
-  Lib.List.([totalTez]->addOpt(revealFee)->add(fee)->add(subtotals));
-};
 
 module Form = {
   let defaultInit = (account: option(Account.t)) =>
@@ -449,7 +365,7 @@ module EditionView = {
     let (initValues, advancedOptionOpened) = initValues;
     let token =
       switch (initValues.SendForm.amount) {
-      | Transfer.Tez(_) => None
+      | Transfer.Currency.Tez(_) => None
       | Token(_, t) => Some(t)
       };
     let initValues = initValues->SendForm.toState;
@@ -498,14 +414,12 @@ let make = (~closeAction) => {
 
   let (operationRequest, sendOperation) = StoreContext.Operations.useCreate();
 
-  let sendTransfer = (transfer, password) => {
+  let sendTransfer = (~transfer, ~password) => {
     let operation = Operation.transfer(transfer);
-
-    let ((sourceAddress, _), _) = sourceDestination(transfer);
 
     sendOperation({operation, password})
     ->Future.tapOk(hash => {setModalStep(_ => SubmittedStep(hash))})
-    ->Future.tapOk(_ => {updateAccount(sourceAddress)});
+    ->Future.tapOk(_ => {updateAccount(transfer.source)});
   };
 
   let (batch, setBatch) = React.useState(_ => []);
@@ -625,8 +539,6 @@ let make = (~closeAction) => {
                onAddTransfer={_ => setModalStep(_ => SendStep)}
                onAddCSVList
                batch
-               showAmount
-               reduceAmounts
                onSubmitBatch
                onEdit={(i, (state, adv)) =>
                  setModalStep(_ => EditStep(i, (state, adv)))
@@ -659,17 +571,13 @@ let make = (~closeAction) => {
                aliases
              />;
            | PasswordStep(transfer, dryRun) =>
-             let (source, destinations) = sourceDestination(transfer);
              <SignOperationView
                title=I18n.title#confirmation
-               source
-               destinations
                subtitle=I18n.expl#confirm_operation
-               content={buildSummaryContent(transfer, dryRun)}
-               showCurrency=showAmount
-               sendOperation={sendTransfer(transfer)}
-               loading
-             />;
+               sendOperation={sendTransfer(~transfer)}
+               loading>
+               <OperationSummaryView.Transactions transfer dryRun />
+             </SignOperationView>
            }}
         </ReactFlipToolkit.FlippedView.Inverse>
       </ModalFormView>

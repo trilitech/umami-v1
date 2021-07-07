@@ -37,6 +37,17 @@ external publicKeyHashRaw: t => Js.Promise.t(string) = "publicKeyHash";
 external secretKeyRaw: t => Js.Promise.t(Js.Nullable.t(string)) =
   "secretKey";
 
+type signature = {
+  bytes: string,
+  prefixSig: string,
+  sbytes: string,
+  [@bs.as "sig"]
+  sig_: string,
+};
+
+[@bs.send]
+external signRaw: (t, string) => Js.Promise.t(signature) = "sign";
+
 let publicKey = t => t->publicKeyRaw->ReTaquitoError.fromPromiseParsed;
 let publicKeyHash = t => t->publicKeyHashRaw->ReTaquitoError.fromPromiseParsed;
 let secretKey = t =>
@@ -44,6 +55,8 @@ let secretKey = t =>
   ->secretKeyRaw
   ->ReTaquitoError.fromPromiseParsed
   ->Future.mapOk(Js.Nullable.toOption);
+
+let sign = (t, string) => t->signRaw(string)->ReTaquitoError.fromPromiseParsed;
 
 module MemorySigner = {
   [@bs.val] [@bs.scope "InMemorySigner"]

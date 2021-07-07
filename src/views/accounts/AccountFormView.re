@@ -174,8 +174,7 @@ module Create = {
       ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
           I18n.t#account_created
         )
-      ->Future.tapOk(() => closeAction())
-      ->ignore;
+      ->Future.tapOk(() => closeAction());
     };
 
     <ModalFormView closing={ModalFormView.Close(closeAction)}>

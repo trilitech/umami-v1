@@ -23,13 +23,6 @@
 /*                                                                           */
 /*****************************************************************************/
 
-[@react.component]
-let make = () => {
-  <Page>
-    <VerificationSettingView />
-    <ThemeSettingView />
-    <ChainSettingView />
-    <BeaconSettingView />
-    <DangerSettingView />
-  </Page>;
-};
+module StateLenses = [%lenses type state = {account: option(Account.t)}];
+
+include ReForm.Make(StateLenses);

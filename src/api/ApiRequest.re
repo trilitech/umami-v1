@@ -112,6 +112,8 @@ let isLoading = request =>
 
 let isDone = request => request->getDone->Option.isSome;
 
+let isDoneOk = request => request->getDoneOk->Option.isSome;
+
 let delay = 30. *. 1000.; // 30sec
 
 let isExpired = request =>

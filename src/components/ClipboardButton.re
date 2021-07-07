@@ -24,9 +24,21 @@
 /*****************************************************************************/
 
 [@react.component]
-let make = (~isPrimary=?, ~tooltipKey=?, ~copied, ~addToast, ~data, ~style=?) => {
+let make =
+    (
+      ~isPrimary=?,
+      ~tooltipKey=?,
+      ~copied,
+      ~addToast,
+      ~data,
+      ~style=?,
+      ~size=?,
+      ~iconSizeRatio=?,
+    ) => {
   <IconButton
     ?isPrimary
+    ?size
+    ?iconSizeRatio
     icon=Icons.Copy.build
     tooltip=?{
       tooltipKey->Option.map(k =>

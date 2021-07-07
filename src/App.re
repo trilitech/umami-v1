@@ -230,7 +230,7 @@ let make = () => {
     <ConfigContext>
       <ThemeContext>
         <SdkContext empty={() => <EmptyAppView />}>
-          <StoreContext> <AppView /> </StoreContext>
+          <StoreContext> <AppView /> <BeaconConnectRequest /> </StoreContext>
         </SdkContext>
       </ThemeContext>
     </ConfigContext>

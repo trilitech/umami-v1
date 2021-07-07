@@ -29,44 +29,68 @@ module StateLenses = [%lenses type state = {password: string}];
 
 module PasswordForm = ReForm.Make(StateLenses);
 
-[@react.component]
-let make = (~loading=false, ~submitPassword) => {
+let usePasswordForm = submitPassword => {
   let form: PasswordForm.api =
     PasswordForm.use(
       ~schema={
         PasswordForm.Validation.(Schema(nonEmpty(Password)));
       },
       ~onSubmit=
-        ({state}) => {
-          submitPassword(~password=state.values.password);
+        ({state, raiseSubmitFailed}) => {
+          submitPassword(~password=state.values.password)
+          ->Future.tapError(
+              fun
+              | API.Error.Taquito(WrongPassword) =>
+                raiseSubmitFailed(Some(I18n.form_input_error#wrong_password))
+              | _ => (),
+            )
+          ->ignore;
           None;
         },
       ~initialState={password: ""},
       ~i18n=FormUtils.i18n,
       (),
     );
-
-  let onSubmit = _ => {
-    form.submit();
-  };
-
   let formFieldsAreValids =
     FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
+  (form, formFieldsAreValids);
+};
 
-  <>
+module PasswordField = {
+  [@react.component]
+  let make = (~form: PasswordForm.api) => {
     <FormGroupTextInput
       label=I18n.label#password
       value={form.values.password}
       handleChange={form.handleChange(Password)}
-      error={form.getFieldError(Field(Password))}
+      error={
+        [
+          form.formState->FormUtils.getFormStateError,
+          form.getFieldError(Field(Password)),
+        ]
+        ->UmamiCommon.Lib.Option.firstSome
+      }
       textContentType=`password
       secureTextEntry=true
       onSubmitEditing={_event => {form.submit()}}
-    />
+    />;
+  };
+};
+
+[@react.component]
+let make =
+    (
+      ~loading=false,
+      ~submitPassword: (~password: string) => Future.t(Result.t(_)),
+    ) => {
+  let (form, formFieldsAreValids) = usePasswordForm(submitPassword);
+
+  <>
+    <PasswordField form />
     <View style=FormStyles.verticalFormAction>
       <Buttons.SubmitPrimary
         text=I18n.btn#confirm
-        onPress=onSubmit
+        onPress={_event => {form.submit()}}
         loading
         disabledLook={!formFieldsAreValids}
       />

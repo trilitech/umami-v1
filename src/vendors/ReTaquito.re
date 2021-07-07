@@ -135,7 +135,6 @@ module Toolkit = {
   type estimate;
 
   type operationResult = {hash: string};
-  type transferMichelsonParameter;
 
   module Operation = {
     type field;
@@ -173,11 +172,20 @@ module Toolkit = {
     gasLimit: option(int),
     storageLimit: option(int),
     mutez: option(bool),
-    parameter: option(transferMichelsonParameter),
+    parameter: option(ProtocolOptions.TransactionParameters.t),
   };
 
   let prepareTransfer =
-      (~source, ~dest, ~amount, ~fee=?, ~gasLimit=?, ~storageLimit=?, ()) => {
+      (
+        ~source,
+        ~dest,
+        ~amount,
+        ~fee=?,
+        ~gasLimit=?,
+        ~storageLimit=?,
+        ~parameter=?,
+        (),
+      ) => {
     {
       kind: opKindTransaction,
       to_: dest,
@@ -187,7 +195,7 @@ module Toolkit = {
       gasLimit,
       storageLimit,
       mutez: Some(true),
-      parameter: None,
+      parameter,
     };
   };
 
@@ -586,6 +594,14 @@ module Transfer = {
 
   let prepareTransfer = Toolkit.prepareTransfer;
 
+  let makeTransferMichelsonParameter = (~entrypoint, ~parameter) =>
+    switch (entrypoint, parameter) {
+    | (Some(a), Some(b)) =>
+      Some({ProtocolOptions.TransactionParameters.entrypoint: a, value: b});
+    | _ =>
+      None;
+    };
+
   let prepareTransfers = (txs, contractCache, source) =>
     txs
     ->List.map((tx: Transfer.elt) =>
@@ -598,10 +614,16 @@ module Transfer = {
             ~fee=?tx.tx_options.fee->Option.map(Tez.toBigNumber),
             ~gasLimit=?tx.tx_options.gasLimit,
             ~storageLimit=?tx.tx_options.storageLimit,
+            ~parameter=?
+              makeTransferMichelsonParameter(
+                ~entrypoint=tx.tx_options.entrypoint,
+                ~parameter=tx.tx_options.parameter,
+              ),
             (),
           )
           ->Ok
           ->Future.value
+          ->Future.tapOk(Js.log)
         | Token(amount, token) =>
           prepareFA12Transfer(
             contractCache,
@@ -697,5 +719,12 @@ module Transfer = {
         ->Toolkit.Batch.send
         ->Error.fromPromiseParsed;
       });
+  };
+};
+
+module Signature = {
+  let signPayload = (~baseDir, ~source, ~password, ~payload) => {
+    readSecretKey(source, password, baseDir)
+    ->Future.flatMapOk(signer => signer->ReTaquitoSigner.sign(payload));
   };
 };

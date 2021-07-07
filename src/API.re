@@ -1018,6 +1018,14 @@ module Accounts = (Getter: GetterAPI) => {
         Json.Encode.array(Secret.encoder, secrets)->Json.stringify
       )
     ->Future.mapOk(LocalStorage.setItem("secrets"));
+
+  let getPublicKey = (~settings: AppSettings.t, ~account: Account.t) => {
+    Wallet.pkFromAlias(
+      ~dirpath=settings->AppSettings.baseDir,
+      ~alias=account.name,
+      (),
+    );
+  };
 };
 
 module Delegate = (Getter: GetterAPI) => {
@@ -1242,4 +1250,16 @@ module Tokens = (Getter: GetterAPI) => {
         ->Error,
       );
     };
+};
+
+module Signature = {
+  let signPayload = (settings, ~source, ~password, ~payload) => {
+    ReTaquito.Signature.signPayload(
+      ~baseDir=settings->AppSettings.baseDir,
+      ~source,
+      ~password,
+      ~payload,
+    )
+    ->Future.mapError(taquitoError => Error.Taquito(taquitoError));
+  };
 };

@@ -37,7 +37,7 @@ module StateLenses = [%lenses
 ];
 
 type validState = {
-  amount: Transfer.currency,
+  amount: Transfer.Currency.t,
   sender: Account.t,
   recipient: FormUtils.Alias.t,
   fee: option(Tez.t),
@@ -64,7 +64,7 @@ let unsafeExtractValidState = (token, state: StateLenses.state): validState => {
 };
 
 let toState = (vs: validState): StateLenses.state => {
-  amount: vs.amount->Transfer.currencyToString,
+  amount: vs.amount->Transfer.Currency.toString,
   sender: vs.sender->Some,
   recipient: vs.recipient->FormUtils.Alias.Valid,
 
@@ -76,12 +76,6 @@ let toState = (vs: validState): StateLenses.state => {
 };
 
 include ReForm.Make(StateLenses);
-
-module Password = {
-  module StateLenses = [%lenses type state = {password: string}];
-
-  include ReForm.Make(StateLenses);
-};
 
 type transaction = Transfer.t;
 
