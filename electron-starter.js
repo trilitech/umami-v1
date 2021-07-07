@@ -21,6 +21,11 @@ if (process.env.NODE_ENV !== undefined && process.env.NODE_ENV === 'development'
   dev = true
 }
 
+if (!app.requestSingleInstanceLock()) {
+  app.quit()
+  return
+}
+
 // Temporary fix broken high-dpi scale factor on Windows (125% scaling)
 // info: https://github.com/electron/electron/issues/9691
 if (process.platform === 'win32') {
@@ -78,7 +83,7 @@ function createWindow() {
   })
 
   // Emitted when the window is closed.
-  mainWindow.on('closed', function() {
+  mainWindow.on('closed', function () {
     // Dereference the window object, usually you would store windows
     // in an array if your app supports multi windows, this is the time
     // when you should delete the corresponding element.
@@ -115,13 +120,34 @@ if (!app.isDefaultProtocolClient('umami')) {
   app.setAsDefaultProtocolClient('umami')
 }
 
-app.on('will-finish-launching', function() {
+app.on('second-instance', (event, argv, cwd) => {
+  if (mainWindow) {
+    if (mainWindow.isMinimized()) {
+      mainWindow.restore()
+    }
+    mainWindow.focus()
+  } else {
+    createWindow()
+  }
+  // Protocol handler for win32
+  // argv: An array of the second instance’s (command line / deep linked) arguments
+  if (process.platform === 'win32') {
+  }
+})
+
+app.on('will-finish-launching', () => {
   // Protocol handler for osx
-  app.on('open-url', function(event, url) {
+  app.on('open-url', function (event, url) {
     event.preventDefault()
     //logEverywhere('open-url# ' + url)
     mainWindow.webContents.send('deeplinkURL', url)
   })
+
+  // Protocol handler for windows & linux
+  const index = process.argv.findIndex(arg => /umami:\/\//.test(arg))
+  if (index !== -1) {
+    mainWindow.webContents.send('deeplinkURL', process.argv[index])
+  }
 })
 
 // Log both at dev console and at running node console instance
