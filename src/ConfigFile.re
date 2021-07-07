@@ -35,6 +35,16 @@ type t = {
 
 [@bs.val] [@bs.scope "JSON"] external parse: string => t = "parse";
 
+let parse = s => {
+  let parseNetwork: [> network] => option(network) =
+    fun
+    | (`Mainnet | `Florencenet | `Custom(_)) as v => Some(v)
+    | _ => None;
+  let c = s->parse;
+  let network = c.network->Option.flatMap(parseNetwork);
+  {...c, network};
+};
+
 module Default = {
   /* let network = `Testnet(Network.edo2netChain); */
   let network = `Mainnet;
