@@ -82,6 +82,6 @@ module Signature = {
     let settings = SdkContext.useSettings();
 
     (~source, ~password, ~payload) =>
-      API.Signature.signPayload(settings, ~source, ~password, ~payload);
+      NodeAPI.Signature.signPayload(settings, ~source, ~password, ~payload);
   };
 };

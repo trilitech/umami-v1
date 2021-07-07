@@ -23,7 +23,7 @@ describe("API tests", ({testAsync}) => {
           Future.value(Ok("0.00"));
         };
     };
-    module UnderTest = API.Balance;
+    module UnderTest = NodeAPI.Balance;
     UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(Result.Ok(Tez.zero));
@@ -40,7 +40,7 @@ describe("API tests", ({testAsync}) => {
           Future.value(Error("stub"));
         };
     };
-    module UnderTest = API.Balance;
+    module UnderTest = NodeAPI.Balance;
     UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
     ->Future.get(result => {
         expect.value(result).toEqual(Result.Error("stub"));
@@ -621,7 +621,7 @@ describe("API tests", ({testAsync}) => {
       {Delegate.name: "foo", address: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"},
       {Delegate.name: "bar", address: "tz1NF7b38uQ43N4nmTHvDKpr1Qo5LF9iYawk"},
     |];
-    module UnderTest = API.DelegateMaker(Stub);
+    module UnderTest = NodeAPI.DelegateMaker(Stub);
     UnderTest.getBakers(AppSettings.mainOnly(settings))
     ->Future.get(result => {
         expect.value(result).toEqual(Result.Ok(expected));
@@ -645,7 +645,7 @@ describe("API tests", ({testAsync}) => {
         Future.value(Ok(data->Json.parseOrRaise));
       };
     };
-    module UnderTest = API.DelegateMaker(Stub);
+    module UnderTest = NodeAPI.DelegateMaker(Stub);
     UnderTest.getBakers(AppSettings.mainOnly(settings))
     ->Future.tapError(Js.log)
     ->Future.get(result => {

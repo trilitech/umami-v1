@@ -23,13 +23,11 @@
 /*                                                                           */
 /*****************************************************************************/
 
-module BalanceAPI = API.Balance;
-
 type balanceApiRequest = ApiRequest.t(string, string);
 
 let useLoad = (~requestState, ~address: string) => {
   let get = (~settings, address) => {
-    settings->BalanceAPI.get(address, ());
+    settings->NodeAPI.Balance.get(address, ());
   };
 
   ApiRequest.useLoader(

@@ -60,17 +60,17 @@ let useCreate = (~sideEffect=?, ()) => {
     switch (operation) {
     | Protocol(operation) =>
       settings
-      ->API.Operation.run(operation, ~password)
+      ->NodeAPI.Operation.run(operation, ~password)
       ->Future.mapError(ErrorHandler.taquito)
 
     | Token(operation) =>
       settings
-      ->API.Tokens.inject(operation, ~password)
+      ->NodeAPI.Tokens.inject(operation, ~password)
       ->Future.mapError(e => e)
 
     | Transfer(t) =>
       settings
-      ->API.Operation.batch(t.transfers, ~source=t.source, ~password)
+      ->NodeAPI.Operation.batch(t.transfers, ~source=t.source, ~password)
       ->Future.mapError(ErrorHandler.taquito)
     };
   };
@@ -93,13 +93,13 @@ let useSimulate = () => {
     switch (operation) {
     | Operation.Simulation.Protocol(operation, index) =>
       settings
-      ->API.Simulation.run(~index?, operation)
+      ->NodeAPI.Simulation.run(~index?, operation)
       ->Future.mapError(ErrorHandler.taquito)
     | Operation.Simulation.Token(operation, index) =>
-      settings->API.Tokens.simulate(~index?, operation)
+      settings->NodeAPI.Tokens.simulate(~index?, operation)
     | Operation.Simulation.Transfer(t, index) =>
       settings
-      ->API.Simulation.batch(t.transfers, ~source=t.source, ~index?, ())
+      ->NodeAPI.Simulation.batch(t.transfers, ~source=t.source, ~index?, ())
       ->Future.mapError(ErrorHandler.taquito)
     };
 

@@ -29,7 +29,7 @@ include ApiRequest;
 
 let useLoad = (~requestState, ~address: string) => {
   let get = (~settings, address) =>
-    API.Delegate.getForAccount(settings, address);
+    NodeAPI.Delegate.getForAccount(settings, address);
 
   ApiRequest.useLoader(~get, ~kind=Logs.Delegate, ~requestState, address);
 };
@@ -38,7 +38,7 @@ let useLoad = (~requestState, ~address: string) => {
 
 let useLoadInfo = (~requestState, ~address: string) => {
   let get = (~settings, address) =>
-    API.Delegate.getDelegationInfoForAccount(settings, address);
+    NodeAPI.Delegate.getDelegationInfoForAccount(settings, address);
 
   ApiRequest.useLoader(~get, ~kind=Logs.Delegate, ~requestState, address);
 };
@@ -46,7 +46,7 @@ let useLoadInfo = (~requestState, ~address: string) => {
 /* Get Bakers */
 
 let useLoadBakers = (~requestState) => {
-  let get = (~settings, ()) => API.Delegate.getBakers(settings);
+  let get = (~settings, ()) => NodeAPI.Delegate.getBakers(settings);
 
   ApiRequest.useLoader(~get, ~kind=Logs.Delegate, ~requestState, ());
 };
