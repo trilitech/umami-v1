@@ -23,59 +23,36 @@
 /*                                                                           */
 /*****************************************************************************/
 
-/** URL generators to access data from the Node or API. */
-module URL: {
-  type t;
+type addressValidityError = [
+  | `NotAnAccount
+  | `NotAContract
+  | ReTaquito.Utils.addressValidityError
+];
 
-  let fromString: string => t;
+type customEncodingError =
+  | CannotParseAddress(string, addressValidityError)
+  | CannotParseContract(string, addressValidityError);
 
-  module Explorer: {
-    let operations:
-      (
-        AppSettings.t,
-        string,
-        ~types: array(string)=?,
-        ~destination: string=?,
-        ~limit: int=?,
-        unit
-      ) =>
-      t;
-    let mempool: (AppSettings.t, ~account: string) => t;
-    let checkToken: (AppSettings.t, ~contract: string) => t;
-    let getTokenBalance:
-      (AppSettings.t, ~contract: string, ~account: string) => t;
-  };
+type error =
+  | Parser(TezosClient.CSVParser.error(customEncodingError))
+  | UnknownToken(string)
+  | NoRows
+  | CannotParseTokenAmount(ReBigNumber.t, int, int)
+  | CannotParseTezAmount(ReBigNumber.t, int, int);
 
-  module Endpoint: {let delegates: AppSettings.t => t;};
+type t = list(Transfer.elt);
+/* Public key hash encoding */
+let addr: CSVParser.Encodings.element(string, customEncodingError);
+/* Contract hash encoding */
+let token: CSVParser.Encodings.element(string, customEncodingError);
+/* CSV row encoding */
+let rowEncoding:
+  CSVParser.Encodings.row(
+    (string, ReBigNumber.t, option(string), option(ReBigNumber.t)),
+    customEncodingError,
+  );
 
-  module External: {let bakingBadBakers: t;};
+let parseCSV:
+  (string, ~tokens: Map.String.t(TokenRepr.t)) => result(t, error);
 
-  /* Fetch URL as a JSON. */
-  let get: t => Future.t(Result.t(Js.Json.t, string));
-};
-
-/** Mezos requests for mempool operations and classical operations. */
-module type Explorer = {
-  let getFromMempool:
-    (string, AppSettings.t, array(Operation.Read.t)) =>
-    Future.t(Result.t(array(Operation.Read.t), string));
-
-  let get:
-    (
-      AppSettings.t,
-      string,
-      ~types: array(string)=?,
-      ~destination: string=?,
-      ~limit: int=?,
-      ~mempool: bool=?,
-      unit
-    ) =>
-    Future.t(Result.t(array(Operation.Read.t), string));
-};
-
-/** This generic version exists only for tests purpose */
-module ExplorerMaker:
-  (Get: {let get: URL.t => Future.t(Result.t(Js.Json.t, string));}) =>
-   Explorer;
-
-module Explorer: Explorer;
+let handleCSVError: error => string;
