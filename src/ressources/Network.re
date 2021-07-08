@@ -183,6 +183,16 @@ let getAPIVersion = url =>
       ->Future.value
     );
 
+let getChainName = chain => {
+  switch (chain) {
+  | chain when chain == mainnetChain => "Mainnet"
+  | chain when chain == florencenetChain => "Florencenet"
+  | chain when chain == granadanetChain => "GranadaNet"
+  | chain when chain == edo2netChain => "Edo2Net"
+  | _ => ""
+  };
+};
+
 let getNodeChain = url => {
   (url ++ "/chains/main/chain_id")
   ->fetchJson(e => NodeNotAvailable(e))

@@ -112,12 +112,26 @@ let styles =
       "button": style(~height=34.->dp, ()),
       "actionMenu": style(~marginRight=24.->dp, ~flexDirection=`row, ()),
       "button": style(~marginRight=4.->dp, ()),
+      // "over": style(~position=`absolute, ()),
     })
   );
 
 module CustomNetworkItem = {
   [@react.component]
   let make = (~network: Network.network, ~writeNetwork, ~settings) => {
+    let theme = ThemeContext.useTheme();
+    let (
+      tagBorderColor: option(string),
+      tagTextColor: option(Typography.colorStyle),
+    ) = {
+      switch (network.chain) {
+      | chain when chain == Network.mainnetChain => (
+          Some(theme.colors.iconPrimary),
+          Some(`primary),
+        )
+      | _ => (Some(theme.colors.iconMediumEmphasis), Some(`mediumEmphasis))
+      };
+    };
     <>
       <View style=styles##spaceBetweenRow>
         <RadioItem
@@ -125,6 +139,9 @@ module CustomNetworkItem = {
           value={`Custom(network.name)}
           setValue=writeNetwork
           currentValue={settings->AppSettings.network}
+          tag={network.chain->Network.getChainName}
+          tagTextColor
+          tagBorderColor
         />
         <View style=styles##row> <CustomNetworkEditButton network /> </View>
       </View>
