@@ -819,7 +819,7 @@ module Beacon = {
 
     let useResetAll = () => {
       let (_, setBeaconPeersRequest) = useRequestState();
-      () => setBeaconPeersRequest(ApiRequest.updateToResetState);
+      () => setBeaconPeersRequest(ApiRequest.expireCache);
     };
 
     let useGetAll = () => {
@@ -844,7 +844,7 @@ module Beacon = {
 
     let useResetAll = () => {
       let (_, setBeaconPermissionsRequest) = useRequestState();
-      () => setBeaconPermissionsRequest(ApiRequest.updateToResetState);
+      () => setBeaconPermissionsRequest(ApiRequest.expireCache);
     };
 
     let useGetAll = () => {

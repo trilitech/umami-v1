@@ -102,6 +102,9 @@ let isLoading: t('a, 'b) => bool;
 /* Returns [true] if the ressource is fetched */
 let isDone: t('a, 'b) => bool;
 
+/* Returns [true] if the ressource is fetched without error. */
+let isDoneOk: t('a, 'b) => bool;
+
 /* Returns [true] if the difference between last fetching and current time
    is higher than the delay */
 let isExpired: t('a, 'b) => bool;
