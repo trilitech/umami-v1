@@ -466,7 +466,7 @@ let make = (~closeAction) => {
     setModalStep(_ => BatchStep);
   };
 
-  let onAddCSVList = (csvRows: API.CSV.t) => {
+  let onAddCSVList = (csvRows: CSVEncoding.t) => {
     let transformTransfer =
       csvRows->List.mapReverse(({destination, amount}) => {
         let formStateValues: SendForm.validState = {

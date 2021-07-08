@@ -25,13 +25,11 @@
 
 /* ACCOUNT */
 
-module AccountsAPI = AccountApiRequest.AccountsAPI;
-
 /* Get */
 
 let useLoad = requestState => {
   let get = (~settings, ()) =>
-    AccountsAPI.secrets(~settings)
+    WalletAPI.Accounts.secrets(~settings)
     ->Option.mapWithDefault(Future.value(Result.Ok([||])), secrets => {
         Future.value(Result.Ok(secrets))
       })
@@ -47,7 +45,7 @@ let useLoad = requestState => {
 
 let useGetRecoveryPhrase = (~requestState as (request, setRequest), ~index) => {
   let get = (~settings, password) =>
-    AccountsAPI.recoveryPhraseAt(~settings, index, ~password);
+    WalletAPI.Accounts.recoveryPhraseAt(~settings, index, ~password);
 
   let getRequest =
     ApiRequest.useGetter(~get, ~kind=Logs.Account, ~setRequest, ());
@@ -57,7 +55,7 @@ let useGetRecoveryPhrase = (~requestState as (request, setRequest), ~index) => {
 
 let useScanGlobal = (~requestState as (request, setRequest), ()) => {
   let get = (~settings, password) =>
-    AccountsAPI.scanAll(~settings, ~password);
+    WalletAPI.Accounts.scanAll(~settings, ~password);
 
   let getRequest =
     ApiRequest.useGetter(~get, ~kind=Logs.Account, ~setRequest, ());
@@ -77,7 +75,7 @@ let useDerive =
   ApiRequest.useSetter(
     ~set=
       (~settings, {name, index, password}) =>
-        AccountsAPI.derive(~settings, ~index, ~name, ~password),
+        WalletAPI.Accounts.derive(~settings, ~index, ~alias=name, ~password),
     ~kind=Logs.Account,
   );
 
@@ -92,10 +90,10 @@ let useCreateWithMnemonics =
   ApiRequest.useSetter(
     ~set=
       (~settings, {name, mnemonics, derivationPath, password}) =>
-        AccountsAPI.restore(
+        WalletAPI.Accounts.restore(
           ~settings,
-          mnemonics,
-          name,
+          ~backupPhrase=mnemonics,
+          ~name,
           ~derivationPath,
           ~password,
           (),
@@ -111,11 +109,14 @@ let useUpdate =
         {index, name, derivationPath, addresses, legacyAddress}: Secret.t,
       ) => {
         let secret =
-          API.Secret.{name, derivationPath, addresses, legacyAddress};
-        AccountsAPI.updateSecretAt(secret, ~settings, index);
+          WalletAPI.Secret.{name, derivationPath, addresses, legacyAddress};
+        WalletAPI.Accounts.updateSecretAt(~settings, secret, index);
       },
     ~kind=Logs.Account,
   );
 
 let useDelete =
-  ApiRequest.useSetter(~set=AccountsAPI.deleteSecretAt, ~kind=Logs.Account);
+  ApiRequest.useSetter(
+    ~set=WalletAPI.Accounts.deleteSecretAt,
+    ~kind=Logs.Account,
+  );

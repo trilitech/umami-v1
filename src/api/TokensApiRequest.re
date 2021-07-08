@@ -24,8 +24,7 @@
 /*****************************************************************************/
 
 include ApiRequest;
-module Error = API.Error;
-module API = API.Tokens(API.TezosExplorer);
+module Error = ErrorHandler;
 
 type injection = {
   operation: Token.operation,
@@ -34,14 +33,14 @@ type injection = {
 
 let useCheckTokenContract = () => {
   let set = (~settings, address) =>
-    settings->API.checkTokenContract(address);
+    settings->NodeAPI.Tokens.checkTokenContract(address);
   ApiRequest.useSetter(~set, ~kind=Logs.Tokens, ~toast=false, ());
 };
 
 let useLoadOperationOffline = (~requestState, ~operation: Token.operation) => {
   let get = (~settings, operation) =>
     settings
-    ->API.callGetOperationOffline(operation)
+    ->NodeAPI.Tokens.callGetOperationOffline(operation)
     ->Future.mapError(Error.fromApiToString);
 
   ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, operation);

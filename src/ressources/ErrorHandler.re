@@ -23,65 +23,59 @@
 /*                                                                           */
 /*****************************************************************************/
 
-let client = ReBeacon.WalletClient.make({name: "umami"});
+type token =
+  | OperationNotRunnableOffchain(string)
+  | SimulationNotAvailable(string)
+  | InjectionNotImplemented(string)
+  | OffchainCallNotImplemented(string)
+  | RawError(string);
 
-let respond = responseInput => {
-  client->ReBeacon.WalletClient.respond(responseInput);
-};
+type t =
+  | Taquito(ReTaquitoError.t)
+  | Token(token);
 
-/* PEERS */
+let taquito = e => Taquito(e);
+let token = e => Token(e);
 
-module Peers = {
-  let useLoad = requestState => {
-    let get = (~settings as _s, ()) =>
-      client
-      ->ReBeacon.WalletClient.getPeers
-      ->Future.mapError(ReBeacon.Error.toString);
+let fromTaquitoToString = e =>
+  e->ReTaquitoError.(
+       fun
+       | Generic(s) => s
+       | WrongPassword => I18n.form_input_error#wrong_password
+       | UnregisteredDelegate => I18n.form_input_error#unregistered_delegate
+       | UnchangedDelegate => I18n.form_input_error#change_baker
+       | BadPkh => I18n.form_input_error#bad_pkh
+       | BranchRefused => I18n.form_input_error#branch_refused_error
+       | InvalidContract => I18n.form_input_error#invalid_contract
+       | EmptyTransaction => I18n.form_input_error#empty_transaction
+       | WalletError(KeyNotFound) => I18n.wallet#key_not_found
+       | WalletError(Generic(s)) => s
+     );
 
-    ApiRequest.useLoader(~get, ~kind=Logs.Settings, ~requestState, ());
-  };
-
-  let useDelete =
-    ApiRequest.useSetter(
-      ~set=
-        (~settings as _s, peer: ReBeacon.peerInfo) =>
-          client
-          ->ReBeacon.WalletClient.removePeer(peer)
-          ->Future.mapError(ReBeacon.Error.toString),
-      ~kind=Logs.Settings,
-    );
-};
-
-/* PERMISSIONS */
-
-module Permissions = {
-  let useLoad = requestState => {
-    let get = (~settings as _s, ()) =>
-      client
-      ->ReBeacon.WalletClient.getPermissions
-      ->Future.mapError(ReBeacon.Error.toString);
-
-    ApiRequest.useLoader(~get, ~kind=Logs.Settings, ~requestState, ());
-  };
-
-  let useDelete =
-    ApiRequest.useSetter(
-      ~set=
-        (~settings as _s, accountIdentifier: ReBeacon.accountIdentifier) =>
-          client
-          ->ReBeacon.WalletClient.removePermission(accountIdentifier)
-          ->Future.mapError(ReBeacon.Error.toString),
-      ~kind=Logs.Settings,
-    );
-};
-
-/* SIGNATURE */
-
-module Signature = {
-  let useSignPayload = () => {
-    let settings = SdkContext.useSettings();
-
-    (~source, ~password, ~payload) =>
-      NodeAPI.Signature.signPayload(settings, ~source, ~password, ~payload);
+let printError = (fmt, err) => {
+  switch (err) {
+  | OperationNotRunnableOffchain(s) =>
+    Format.fprintf(fmt, "Operation '%s' cannot be run offchain.", s)
+  | SimulationNotAvailable(s) =>
+    Format.fprintf(fmt, "Operation '%s' is not simulable.", s)
+  | InjectionNotImplemented(s) =>
+    Format.fprintf(fmt, "Operation '%s' injection is not implemented", s)
+  | OffchainCallNotImplemented(s) =>
+    Format.fprintf(fmt, "Operation '%s' offchain call is not implemented", s)
+  | RawError(s) => Format.fprintf(fmt, "%s", s)
   };
 };
+
+let fromTokenToString = err => Format.asprintf("%a", printError, err);
+
+let fromApiToString =
+  fun
+  | Token(e) => fromTokenToString(e)
+  | Taquito(e) => fromTaquitoToString(e);
+
+let fromSdkToString = e =>
+  e->TezosSDK.Error.(
+       fun
+       | Generic(s) => s
+       | BadPkh => I18n.form_input_error#bad_pkh
+     );

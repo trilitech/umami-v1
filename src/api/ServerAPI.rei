@@ -23,65 +23,59 @@
 /*                                                                           */
 /*****************************************************************************/
 
-let client = ReBeacon.WalletClient.make({name: "umami"});
+/** URL generators to access data from the Node or API. */
+module URL: {
+  type t;
 
-let respond = responseInput => {
-  client->ReBeacon.WalletClient.respond(responseInput);
-};
+  let fromString: string => t;
 
-/* PEERS */
-
-module Peers = {
-  let useLoad = requestState => {
-    let get = (~settings as _s, ()) =>
-      client
-      ->ReBeacon.WalletClient.getPeers
-      ->Future.mapError(ReBeacon.Error.toString);
-
-    ApiRequest.useLoader(~get, ~kind=Logs.Settings, ~requestState, ());
+  module Explorer: {
+    let operations:
+      (
+        AppSettings.t,
+        string,
+        ~types: array(string)=?,
+        ~destination: string=?,
+        ~limit: int=?,
+        unit
+      ) =>
+      t;
+    let mempool: (AppSettings.t, ~account: string) => t;
+    let checkToken: (AppSettings.t, ~contract: string) => t;
+    let getTokenBalance:
+      (AppSettings.t, ~contract: string, ~account: string) => t;
   };
 
-  let useDelete =
-    ApiRequest.useSetter(
-      ~set=
-        (~settings as _s, peer: ReBeacon.peerInfo) =>
-          client
-          ->ReBeacon.WalletClient.removePeer(peer)
-          ->Future.mapError(ReBeacon.Error.toString),
-      ~kind=Logs.Settings,
-    );
+  module Endpoint: {let delegates: AppSettings.t => t;};
+
+  module External: {let bakingBadBakers: t;};
+
+  /* Fetch URL as a JSON. */
+  let get: t => Future.t(Result.t(Js.Json.t, string));
 };
 
-/* PERMISSIONS */
+/** Mezos requests for mempool operations and classical operations. */
+module type Explorer = {
+  let getFromMempool:
+    (string, AppSettings.t, array(Operation.Read.t)) =>
+    Future.t(Result.t(array(Operation.Read.t), string));
 
-module Permissions = {
-  let useLoad = requestState => {
-    let get = (~settings as _s, ()) =>
-      client
-      ->ReBeacon.WalletClient.getPermissions
-      ->Future.mapError(ReBeacon.Error.toString);
-
-    ApiRequest.useLoader(~get, ~kind=Logs.Settings, ~requestState, ());
-  };
-
-  let useDelete =
-    ApiRequest.useSetter(
-      ~set=
-        (~settings as _s, accountIdentifier: ReBeacon.accountIdentifier) =>
-          client
-          ->ReBeacon.WalletClient.removePermission(accountIdentifier)
-          ->Future.mapError(ReBeacon.Error.toString),
-      ~kind=Logs.Settings,
-    );
+  let get:
+    (
+      AppSettings.t,
+      string,
+      ~types: array(string)=?,
+      ~destination: string=?,
+      ~limit: int=?,
+      ~mempool: bool=?,
+      unit
+    ) =>
+    Future.t(Result.t(array(Operation.Read.t), string));
 };
 
-/* SIGNATURE */
+/** This generic version exists only for tests purpose */
+module ExplorerMaker:
+  (Get: {let get: URL.t => Future.t(Result.t(Js.Json.t, string));}) =>
+   Explorer;
 
-module Signature = {
-  let useSignPayload = () => {
-    let settings = SdkContext.useSettings();
-
-    (~source, ~password, ~payload) =>
-      NodeAPI.Signature.signPayload(settings, ~source, ~password, ~payload);
-  };
-};
+module Explorer: Explorer;

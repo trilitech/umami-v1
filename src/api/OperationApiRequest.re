@@ -24,7 +24,6 @@
 /*****************************************************************************/
 
 include ApiRequest;
-module Explorer = API.Explorer(API.TezosExplorer);
 
 /* Create */
 
@@ -49,11 +48,11 @@ let token = (operation, password) => {
   password,
 };
 
-let errorToString = API.Error.fromApiToString;
+let errorToString = ErrorHandler.fromApiToString;
 
 let filterOutFormError =
   fun
-  | API.Error.Taquito(WrongPassword) => false
+  | ErrorHandler.Taquito(WrongPassword) => false
   | _ => true;
 
 let useCreate = (~sideEffect=?, ()) => {
@@ -61,18 +60,18 @@ let useCreate = (~sideEffect=?, ()) => {
     switch (operation) {
     | Protocol(operation) =>
       settings
-      ->API.Operation.run(operation, ~password)
-      ->Future.mapError(API.Error.taquito)
+      ->NodeAPI.Operation.run(operation, ~password)
+      ->Future.mapError(ErrorHandler.taquito)
 
     | Token(operation) =>
       settings
-      ->TokensApiRequest.API.inject(operation, ~password)
+      ->NodeAPI.Tokens.inject(operation, ~password)
       ->Future.mapError(e => e)
 
     | Transfer(t) =>
       settings
-      ->API.Operation.batch(t.transfers, ~source=t.source, ~password)
-      ->Future.mapError(API.Error.taquito)
+      ->NodeAPI.Operation.batch(t.transfers, ~source=t.source, ~password)
+      ->Future.mapError(ErrorHandler.taquito)
     };
   };
 
@@ -94,14 +93,14 @@ let useSimulate = () => {
     switch (operation) {
     | Operation.Simulation.Protocol(operation, index) =>
       settings
-      ->API.Simulation.run(~index?, operation)
-      ->Future.mapError(API.Error.taquito)
+      ->NodeAPI.Simulation.run(~index?, operation)
+      ->Future.mapError(ErrorHandler.taquito)
     | Operation.Simulation.Token(operation, index) =>
-      settings->TokensApiRequest.API.simulate(~index?, operation)
+      settings->NodeAPI.Tokens.simulate(~index?, operation)
     | Operation.Simulation.Transfer(t, index) =>
       settings
-      ->API.Simulation.batch(t.transfers, ~source=t.source, ~index?, ())
-      ->Future.mapError(API.Error.taquito)
+      ->NodeAPI.Simulation.batch(t.transfers, ~source=t.source, ~index?, ())
+      ->Future.mapError(ErrorHandler.taquito)
     };
 
   ApiRequest.useSetter(
@@ -123,7 +122,13 @@ let useLoad =
     (~requestState, ~limit=?, ~types=?, ~address: option(string), ()) => {
   let get = (~settings, address) => {
     let operations =
-      settings->Explorer.get(address, ~limit?, ~types?, ~mempool=true, ());
+      settings->ServerAPI.Explorer.get(
+        address,
+        ~limit?,
+        ~types?,
+        ~mempool=true,
+        (),
+      );
     let currentLevel =
       Network.monitor(AppSettings.explorer(settings))
       ->Future.mapOk(monitor => monitor.nodeLastBlock)

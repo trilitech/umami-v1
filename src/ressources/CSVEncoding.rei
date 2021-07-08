@@ -23,65 +23,36 @@
 /*                                                                           */
 /*****************************************************************************/
 
-let client = ReBeacon.WalletClient.make({name: "umami"});
+type addressValidityError = [
+  | `NotAnAccount
+  | `NotAContract
+  | ReTaquito.Utils.addressValidityError
+];
 
-let respond = responseInput => {
-  client->ReBeacon.WalletClient.respond(responseInput);
-};
+type customEncodingError =
+  | CannotParseAddress(string, addressValidityError)
+  | CannotParseContract(string, addressValidityError);
 
-/* PEERS */
+type error =
+  | Parser(TezosClient.CSVParser.error(customEncodingError))
+  | UnknownToken(string)
+  | NoRows
+  | CannotParseTokenAmount(ReBigNumber.t, int, int)
+  | CannotParseTezAmount(ReBigNumber.t, int, int);
 
-module Peers = {
-  let useLoad = requestState => {
-    let get = (~settings as _s, ()) =>
-      client
-      ->ReBeacon.WalletClient.getPeers
-      ->Future.mapError(ReBeacon.Error.toString);
+type t = list(Transfer.elt);
+/* Public key hash encoding */
+let addr: CSVParser.Encodings.element(string, customEncodingError);
+/* Contract hash encoding */
+let token: CSVParser.Encodings.element(string, customEncodingError);
+/* CSV row encoding */
+let rowEncoding:
+  CSVParser.Encodings.row(
+    (string, ReBigNumber.t, option(string), option(ReBigNumber.t)),
+    customEncodingError,
+  );
 
-    ApiRequest.useLoader(~get, ~kind=Logs.Settings, ~requestState, ());
-  };
+let parseCSV:
+  (string, ~tokens: Map.String.t(TokenRepr.t)) => result(t, error);
 
-  let useDelete =
-    ApiRequest.useSetter(
-      ~set=
-        (~settings as _s, peer: ReBeacon.peerInfo) =>
-          client
-          ->ReBeacon.WalletClient.removePeer(peer)
-          ->Future.mapError(ReBeacon.Error.toString),
-      ~kind=Logs.Settings,
-    );
-};
-
-/* PERMISSIONS */
-
-module Permissions = {
-  let useLoad = requestState => {
-    let get = (~settings as _s, ()) =>
-      client
-      ->ReBeacon.WalletClient.getPermissions
-      ->Future.mapError(ReBeacon.Error.toString);
-
-    ApiRequest.useLoader(~get, ~kind=Logs.Settings, ~requestState, ());
-  };
-
-  let useDelete =
-    ApiRequest.useSetter(
-      ~set=
-        (~settings as _s, accountIdentifier: ReBeacon.accountIdentifier) =>
-          client
-          ->ReBeacon.WalletClient.removePermission(accountIdentifier)
-          ->Future.mapError(ReBeacon.Error.toString),
-      ~kind=Logs.Settings,
-    );
-};
-
-/* SIGNATURE */
-
-module Signature = {
-  let useSignPayload = () => {
-    let settings = SdkContext.useSettings();
-
-    (~source, ~password, ~payload) =>
-      NodeAPI.Signature.signPayload(settings, ~source, ~password, ~payload);
-  };
-};
+let handleCSVError: error => string;

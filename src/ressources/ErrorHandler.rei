@@ -23,65 +23,19 @@
 /*                                                                           */
 /*****************************************************************************/
 
-let client = ReBeacon.WalletClient.make({name: "umami"});
+type token =
+  | OperationNotRunnableOffchain(string)
+  | SimulationNotAvailable(string)
+  | InjectionNotImplemented(string)
+  | OffchainCallNotImplemented(string)
+  | RawError(string);
 
-let respond = responseInput => {
-  client->ReBeacon.WalletClient.respond(responseInput);
-};
+type t =
+  | Taquito(ReTaquitoError.t)
+  | Token(token);
 
-/* PEERS */
+let taquito: ReTaquitoError.t => t;
+let token: token => t;
 
-module Peers = {
-  let useLoad = requestState => {
-    let get = (~settings as _s, ()) =>
-      client
-      ->ReBeacon.WalletClient.getPeers
-      ->Future.mapError(ReBeacon.Error.toString);
-
-    ApiRequest.useLoader(~get, ~kind=Logs.Settings, ~requestState, ());
-  };
-
-  let useDelete =
-    ApiRequest.useSetter(
-      ~set=
-        (~settings as _s, peer: ReBeacon.peerInfo) =>
-          client
-          ->ReBeacon.WalletClient.removePeer(peer)
-          ->Future.mapError(ReBeacon.Error.toString),
-      ~kind=Logs.Settings,
-    );
-};
-
-/* PERMISSIONS */
-
-module Permissions = {
-  let useLoad = requestState => {
-    let get = (~settings as _s, ()) =>
-      client
-      ->ReBeacon.WalletClient.getPermissions
-      ->Future.mapError(ReBeacon.Error.toString);
-
-    ApiRequest.useLoader(~get, ~kind=Logs.Settings, ~requestState, ());
-  };
-
-  let useDelete =
-    ApiRequest.useSetter(
-      ~set=
-        (~settings as _s, accountIdentifier: ReBeacon.accountIdentifier) =>
-          client
-          ->ReBeacon.WalletClient.removePermission(accountIdentifier)
-          ->Future.mapError(ReBeacon.Error.toString),
-      ~kind=Logs.Settings,
-    );
-};
-
-/* SIGNATURE */
-
-module Signature = {
-  let useSignPayload = () => {
-    let settings = SdkContext.useSettings();
-
-    (~source, ~password, ~payload) =>
-      NodeAPI.Signature.signPayload(settings, ~source, ~password, ~payload);
-  };
-};
+let fromSdkToString: TezosSDK.Error.t => string;
+let fromApiToString: t => string;

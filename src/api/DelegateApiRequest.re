@@ -24,13 +24,12 @@
 /*****************************************************************************/
 
 include ApiRequest;
-module DelegateAPI = API.Delegate(API.TezosExplorer);
 
 /* Get delegate */
 
 let useLoad = (~requestState, ~address: string) => {
   let get = (~settings, address) =>
-    DelegateAPI.getForAccount(settings, address);
+    NodeAPI.Delegate.getForAccount(settings, address);
 
   ApiRequest.useLoader(~get, ~kind=Logs.Delegate, ~requestState, address);
 };
@@ -39,7 +38,7 @@ let useLoad = (~requestState, ~address: string) => {
 
 let useLoadInfo = (~requestState, ~address: string) => {
   let get = (~settings, address) =>
-    DelegateAPI.getDelegationInfoForAccount(settings, address);
+    NodeAPI.Delegate.getDelegationInfoForAccount(settings, address);
 
   ApiRequest.useLoader(~get, ~kind=Logs.Delegate, ~requestState, address);
 };
@@ -47,7 +46,7 @@ let useLoadInfo = (~requestState, ~address: string) => {
 /* Get Bakers */
 
 let useLoadBakers = (~requestState) => {
-  let get = (~settings, ()) => DelegateAPI.getBakers(settings);
+  let get = (~settings, ()) => NodeAPI.Delegate.getBakers(settings);
 
   ApiRequest.useLoader(~get, ~kind=Logs.Delegate, ~requestState, ());
 };

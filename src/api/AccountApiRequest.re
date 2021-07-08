@@ -25,13 +25,11 @@
 
 /* ACCOUNT */
 
-module AccountsAPI = API.Accounts(API.TezosExplorer);
-
 /* Get */
 
 let useLoad = requestState => {
   let get = (~settings, ()) =>
-    AccountsAPI.get(~settings)
+    WalletAPI.Accounts.get(~settings)
     ->Future.mapOk(response => {
         response
         ->Array.map(((name, address)) => {
@@ -51,17 +49,18 @@ let useUpdate =
   ApiRequest.useSetter(
     ~set=
       (~settings, renaming: TezosSDK.renameParams) =>
-        API.Aliases.rename(~settings, renaming),
+        WalletAPI.Aliases.rename(~settings, renaming),
     ~kind=Logs.Account,
   );
 
 let useDelete =
-  ApiRequest.useSetter(~set=AccountsAPI.delete, ~kind=Logs.Account);
+  ApiRequest.useSetter(~set=WalletAPI.Accounts.delete, ~kind=Logs.Account);
 
 /* Other */
 
 let useGetPublicKey = () => {
   let settings = SdkContext.useSettings();
 
-  (account: Account.t) => AccountsAPI.getPublicKey(~settings, ~account);
+  (account: Account.t) =>
+    WalletAPI.Accounts.getPublicKey(~settings, ~account);
 };

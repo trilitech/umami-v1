@@ -34,7 +34,6 @@ let make =
       ~sendOperation: (~password: string) => Future.t(Result.t(_)),
       ~loading=false,
     ) => {
-
   let (form, formFieldsAreValids) =
     PasswordFormView.usePasswordForm(sendOperation);
 
