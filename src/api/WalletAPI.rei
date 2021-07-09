@@ -119,6 +119,29 @@ module Accounts: {
     (ConfigFile.t, PublicKeyHash.t) =>
     Future.t(Result.t(bool, ErrorHandler.t));
 
+  module Scan: {
+    type error =
+      | APIError(string)
+      | TaquitoError(ReTaquitoError.t);
+
+    let used:
+      (ConfigFile.t, PublicKeyHash.t) =>
+      Future.t(Result.t(bool, ErrorHandler.t));
+
+    let runStream:
+      (
+        ConfigFile.t,
+        (int, PublicKeyHash.t) => unit,
+        DerivationPath.Pattern.t,
+        Wallet.Ledger.scheme
+      ) =>
+      Future.t(Belt.Result.t(unit, ErrorHandler.t));
+
+    let runAll:
+      (~config: ConfigFile.t, ~password: string) =>
+      Future.t(Result.t(unit, ErrorHandler.t));
+  };
+
   let restore:
     (
       ~config: ConfigFile.t,
@@ -151,10 +174,6 @@ module Accounts: {
       unit
     ) =>
     Future.t(Result.t(array(PublicKeyHash.t), ErrorHandler.t));
-
-  let scanAll:
-    (~config: ConfigFile.t, ~password: string) =>
-    Future.t(Result.t(unit, ErrorHandler.t));
 
   let getPublicKey:
     (~config: ConfigFile.t, ~account: Account.t) =>

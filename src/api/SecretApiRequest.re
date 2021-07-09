@@ -60,7 +60,7 @@ let useGetRecoveryPhrase = (~requestState as (request, setRequest), ~index) => {
 
 let useScanGlobal = (~requestState as (request, setRequest), ()) => {
   let get = (~config, password) =>
-    WalletAPI.Accounts.scanAll(~config, ~password);
+    WalletAPI.Accounts.Scan.runAll(~config, ~password);
 
   let getRequest =
     ApiRequest.useGetter(
