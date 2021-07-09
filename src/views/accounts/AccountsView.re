@@ -192,7 +192,7 @@ module AccountsTreeList = {
            ->Array.map(((secret, legacyAddress)) =>
                <SecretRowTree.AccountImportedRowItem.Umami
                  key=(legacyAddress :> string)
-                 address=(legacyAddress :> string)
+                 address=legacyAddress
                  secret
                />
              )
