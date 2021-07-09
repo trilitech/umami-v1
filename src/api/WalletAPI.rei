@@ -125,6 +125,7 @@ module Accounts: {
       ~backupPhrase: array(string),
       ~name: name,
       ~derivationPath: TezosClient.DerivationPath.Pattern.t=?,
+      ~derivationScheme: Wallet.Ledger.scheme=?,
       ~password: string,
       unit
     ) =>

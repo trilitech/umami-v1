@@ -166,6 +166,7 @@ module Ledger: {
   let masterKeyScheme: scheme;
 
   let schemeToString: scheme => string;
+  let schemeFromString: string => Result.t(scheme, error);
 
   module Decode: {
     let fromSecretKey:

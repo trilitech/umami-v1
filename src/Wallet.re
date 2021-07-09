@@ -364,6 +364,13 @@ module Ledger = {
     | SECP256K1 => "secp256k1"
     | P256 => "P-256";
 
+  let schemeFromString =
+    fun
+    | "ed25519" => Ok(ED25519)
+    | "secp256k1" => Ok(SECP256K1)
+    | "P-256" => Ok(P256)
+    | s => Error(InvalidScheme(s));
+
   module Decode = {
     let decodePrefix = (prefix, ledgerBasePkh: PublicKeyHash.t) =>
       switch (PublicKeyHash.build(prefix)) {
@@ -375,13 +382,6 @@ module Ledger = {
          into its animal representation, and check it is the same. */
       | Error(_) => Ok(Animals(prefix))
       };
-
-    let decodeScheme =
-      fun
-      | "ed25519" => Ok(ED25519)
-      | "secp256k1" => Ok(SECP256K1)
-      | "P-256" => Ok(P256)
-      | s => Error(InvalidScheme(s));
 
     let decodeIndex = (index, i) =>
       switch (index->Js.String2.match(Js.Re.fromString("^[0-9]+h$"))) {
@@ -412,7 +412,7 @@ module Ledger = {
             elems[1]
             // The None case is actually impossible, hence the meaningless error
             ->ResultEx.fromOption(Error(InvalidEncoding(uri)))
-            ->Result.flatMap(decodeScheme);
+            ->Result.flatMap(schemeFromString);
           let indexes = elems->Js.Array2.sliceFrom(2)->decodeIndexes;
           prefix->Result.flatMap(_ =>
             scheme->Result.flatMap(scheme => {

@@ -30,11 +30,34 @@ module Secret = {
   module Decode = {
     include Json.Decode;
 
+    let kindFromString =
+      fun
+      | "mnemonics" => Ok(Secret.Mnemonics)
+      | "ledger" => Ok(Secret.Ledger)
+      | s => Error(s);
+
     let pathDecoder = json =>
       json
       |> field("derivationScheme", string)
       |> DerivationPath.Pattern.fromString
       |> Result.getExn;
+
+    /* for legacy reasons, the field may not be present. As such, the default
+       scheme is ED25519, the one used to derive "classical" accounts */
+    let schemeDecoder = json =>
+      // field is called derivationCurve for legacy reasons
+      (json |> optional(field("derivationCurve", string)))
+      ->Option.map(Wallet.Ledger.schemeFromString)
+      ->Option.getWithDefault(Ok(Wallet.Ledger.ED25519))
+      ->Result.getExn;
+
+    /* for legacy reasons, if the field is not present, this implies the account
+       is derived froma mnemonic */
+    let kindDecoder = json =>
+      (json |> optional(field("kind", string)))
+      ->Option.map(kindFromString)
+      ->Option.getWithDefault(Ok(Secret.Mnemonics))
+      ->Result.getExn;
 
     let addressesDecoder = json =>
       (json |> field("addresses", array(string)))
@@ -48,10 +71,17 @@ module Secret = {
   let decoder = json =>
     Decode.{
       Repr.name: json |> field("name", string),
+      kind: json |> kindDecoder,
       derivationPath: json |> pathDecoder,
+      derivationScheme: json |> schemeDecoder,
       addresses: json |> addressesDecoder,
       legacyAddress: json |> legacyAddressDecoder,
     };
+
+  let kindToString =
+    fun
+    | Secret.Mnemonics => "mnemonics"
+    | Ledger => "ledger";
 
   let encoder = secret =>
     Json.Encode.(
@@ -59,9 +89,14 @@ module Secret = {
       | Some(legacyAddress) =>
         object_([
           ("name", string(secret.name)),
+          ("kind", string(secret.kind->kindToString)),
           (
             "derivationScheme",
             string(secret.derivationPath->DerivationPath.Pattern.toString),
+          ),
+          (
+            "derivationCurve",
+            string(secret.derivationScheme->Wallet.Ledger.schemeToString),
           ),
           (
             "addresses",
@@ -484,6 +519,7 @@ module Accounts = {
         ~derivationPath=DerivationPath.Pattern.fromTezosBip44(
                           DerivationPath.Pattern.default,
                         ),
+        ~derivationScheme=Wallet.Ledger.ED25519,
         ~password,
         (),
       ) => {
@@ -552,7 +588,9 @@ module Accounts = {
     ->Future.tapOk(((addresses, legacyAddress)) => {
         let secret = {
           Secret.Repr.name,
+          kind: Secret.Repr.Mnemonics,
           derivationPath,
+          derivationScheme,
           addresses,
           legacyAddress,
         };
