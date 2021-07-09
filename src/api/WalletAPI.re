@@ -24,33 +24,38 @@
 /*****************************************************************************/
 
 module Secret = {
-  type t = {
-    name: string,
-    derivationPath: DerivationPath.Pattern.t,
-    addresses: Js.Array.t(PublicKeyHash.t),
-    legacyAddress: option(PublicKeyHash.t),
+  module Repr = Secret;
+  type t = Repr.t;
+
+  module Decode = {
+    include Json.Decode;
+
+    let pathDecoder = json =>
+      json
+      |> field("derivationScheme", string)
+      |> DerivationPath.Pattern.fromString
+      |> Result.getExn;
+
+    let addressesDecoder = json =>
+      (json |> field("addresses", array(string)))
+      ->Array.map(v => v->PublicKeyHash.build->Result.getExn);
+
+    let legacyAddressDecoder = json =>
+      (json |> optional(field("legacyAddress", string)))
+      ->Option.map(v => v->PublicKeyHash.build->Result.getExn);
   };
 
   let decoder = json =>
-    Json.Decode.{
-      name: json |> field("name", string),
-      derivationPath:
-        json
-        |> field("derivationScheme", string)
-        |> DerivationPath.Pattern.fromString
-        |> Result.getExn,
-      addresses:
-        (json |> field("addresses", array(string)))
-        ->Array.map(v => v->PublicKeyHash.build->Result.getExn),
-
-      legacyAddress:
-        (json |> optional(field("legacyAddress", string)))
-        ->Option.map(v => v->PublicKeyHash.build->Result.getExn),
+    Decode.{
+      Repr.name: json |> field("name", string),
+      derivationPath: json |> pathDecoder,
+      addresses: json |> addressesDecoder,
+      legacyAddress: json |> legacyAddressDecoder,
     };
 
   let encoder = secret =>
     Json.Encode.(
-      switch (secret.legacyAddress) {
+      switch (secret.Repr.legacyAddress) {
       | Some(legacyAddress) =>
         object_([
           ("name", string(secret.name)),
@@ -475,7 +480,12 @@ module Accounts = {
           )
       )
     ->Future.tapOk(((addresses, legacyAddress)) => {
-        let secret = {Secret.name, derivationPath, addresses, legacyAddress};
+        let secret = {
+          Secret.Repr.name,
+          derivationPath,
+          addresses,
+          legacyAddress,
+        };
         let secrets =
           secrets(~settings)
           ->Option.getWithDefault([||])

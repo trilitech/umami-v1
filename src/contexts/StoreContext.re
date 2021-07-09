@@ -42,7 +42,8 @@ type state = {
   selectedTokenState: reactState(option(PublicKeyHash.t)),
   accountsRequestState:
     reactState(ApiRequest.t(Map.String.t(Account.t), string)),
-  secretsRequestState: reactState(ApiRequest.t(array(Secret.t), string)),
+  secretsRequestState:
+    reactState(ApiRequest.t(array(Secret.derived), string)),
   balanceRequestsState: apiRequestsState(Tez.t),
   delegateRequestsState: apiRequestsState(option(PublicKeyHash.t)),
   delegateInfoRequestsState:
