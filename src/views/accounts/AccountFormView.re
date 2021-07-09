@@ -47,7 +47,7 @@ module Generic = {
         ~buttonText,
         ~action: (~name: string, ~secretIndex: int) => unit,
         ~request,
-        ~secret: option(Secret.t)=?,
+        ~secret: option(Secret.derived)=?,
         ~hideSecretSelector=false,
       ) => {
     let aliasesRequest = StoreContext.Aliases.useRequest();
@@ -160,7 +160,7 @@ module Update = {
 
 module Create = {
   [@react.component]
-  let make = (~closeAction, ~secret: option(Secret.t)=?) => {
+  let make = (~closeAction, ~secret: option(Secret.derived)=?) => {
     let (createDeriveRequest, deriveAccount) =
       StoreContext.Secrets.useDerive();
 

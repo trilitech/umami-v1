@@ -290,7 +290,7 @@ module AccountImportedRowItem = {
 module SecretRowItem = {
   module SecretDeleteButton = {
     [@react.component]
-    let make = (~secret: Secret.t) => {
+    let make = (~secret: Secret.derived) => {
       let (secretRequest, deleteSecret) = StoreContext.Secrets.useDelete();
 
       let onPressConfirmDelete = _e => {
@@ -345,14 +345,16 @@ module SecretRowItem = {
   };
 
   [@react.component]
-  let make = (~secret: Secret.t) => {
+  let make = (~secret: Secret.derived) => {
     <RowItem.Bordered height=66.>
       <View style=styles##inner>
         <Typography.Subtitle1 style=styles##alias>
-          secret.name->React.string
+          secret.secret.name->React.string
         </Typography.Subtitle1>
         <Typography.Address style=styles##derivation>
-          {secret.derivationPath->DerivationPath.Pattern.toString->React.string}
+          {secret.secret.derivationPath
+           ->DerivationPath.Pattern.toString
+           ->React.string}
         </Typography.Address>
       </View>
       <View style=styles##actionContainer>
@@ -373,16 +375,16 @@ module SecretRowItem = {
 };
 
 [@react.component]
-let make = (~secret: Secret.t) => {
+let make = (~secret: Secret.derived) => {
   <View>
     <SecretRowItem secret />
-    {secret.addresses
+    {secret.secret.addresses
      ->Array.mapWithIndex((index, addr) =>
          <AccountNestedRowItem
            key=(addr :> string)
            address=(addr :> string)
            index
-           isLast={secret.addresses->Array.size - 1 === index}
+           isLast={secret.secret.addresses->Array.size - 1 === index}
          />
        )
      ->React.array}

@@ -27,12 +27,8 @@
 
 /** Secret representation in LocalStorage */
 module Secret: {
-  type t = {
-    name: string,
-    derivationPath: DerivationPath.Pattern.t,
-    addresses: Js.Array.t(PublicKeyHash.t),
-    legacyAddress: option(PublicKeyHash.t),
-  };
+  module Repr = Secret;
+  type t = Repr.t;
 
   let decoder: Js.Json.t => t;
 
@@ -69,7 +65,7 @@ module Aliases: {
 /** Accounts management */
 module Accounts: {
   /** Representation of accounts list */
-  type t = array(Secret.t);
+  type t = array(Secret.Repr.t);
 
   type name = string;
 
@@ -84,7 +80,7 @@ module Accounts: {
     Future.t(Result.t(array((name, PublicKeyHash.t)), string));
 
   let updateSecretAt:
-    (~settings: AppSettings.t, Secret.t, int) =>
+    (~settings: AppSettings.t, Secret.Repr.t, int) =>
     Future.t(Result.t(unit, string));
 
   let recoveryPhraseAt:

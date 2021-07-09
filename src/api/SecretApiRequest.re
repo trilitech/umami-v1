@@ -34,9 +34,8 @@ let useLoad = requestState => {
         Future.value(Result.Ok(secrets))
       })
     ->Future.mapOk(secrets =>
-        secrets->Array.mapWithIndex(
-          (index, {name, derivationPath, addresses, legacyAddress}) =>
-          Secret.{index, name, derivationPath, addresses, legacyAddress}
+        secrets->Array.mapWithIndex((index, secret) =>
+          Secret.{index, secret}
         )
       );
 
@@ -104,13 +103,8 @@ let useCreateWithMnemonics =
 let useUpdate =
   ApiRequest.useSetter(
     ~set=
-      (
-        ~settings,
-        {index, name, derivationPath, addresses, legacyAddress}: Secret.t,
-      ) => {
-        let secret =
-          WalletAPI.Secret.{name, derivationPath, addresses, legacyAddress};
-        WalletAPI.Accounts.updateSecretAt(~settings, secret, index);
+      (~settings, {index, secret}: Secret.derived) => {
+        WalletAPI.Accounts.updateSecretAt(~settings, secret, index)
       },
     ~kind=Logs.Account,
   );
