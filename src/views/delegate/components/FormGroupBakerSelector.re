@@ -49,7 +49,9 @@ module BakerSelector = {
     let make = (~baker: Delegate.t) => {
       <View style=styles##inner>
         <Typography.Subtitle2> baker.name->React.string </Typography.Subtitle2>
-        <Typography.Address> baker.address->React.string </Typography.Address>
+        <Typography.Address>
+          (baker.address :> string)->React.string
+        </Typography.Address>
       </View>;
     };
   };
@@ -82,7 +84,7 @@ module BakerSelector = {
              colorStyle=?{hasError ? Some(`error) : None}
              numberOfLines=1
              style=styles##address>
-             baker.address->React.string
+             (baker.address :> string)->React.string
            </Typography.Address>
          </View>
        )}
@@ -169,12 +171,12 @@ let make = (~label, ~value: option(string), ~handleChange, ~error) => {
           // if input selector and no value, select first entry
           let firstItem = items->Array.get(0);
           firstItem->Lib.Option.iter(baker =>
-            baker.address->Some->handleChange
+            (baker.address :> string)->Some->handleChange
           );
         } else if (items->Array.size > 0
                    && !
                         items->Array.some(baker =>
-                          Some(baker.address) == value
+                          Some((baker.address :> string)) == value
                         )) {
           // if input selector and value isn't in the item list : switch to input text
           setInputType(_ =>
@@ -203,8 +205,8 @@ let make = (~label, ~value: option(string), ~handleChange, ~error) => {
        | Selector =>
          <Selector
            items
-           getItemKey={baker => baker.address}
-           onValueChange={b => b.address->Some->handleChange}
+           getItemKey={baker => (baker.address :> string)}
+           onValueChange={b => (b.address :> string)->Some->handleChange}
            selectedValueKey=?value
            hasError
            renderButton=BakerSelector.renderButton
@@ -214,9 +216,7 @@ let make = (~label, ~value: option(string), ~handleChange, ~error) => {
        | Text =>
          <ThemedTextInput
            value={value->Option.getWithDefault("")}
-           onValueChange={v =>
-             v == "" ? handleChange(None) : v->Some->handleChange
-           }
+           onValueChange={v => handleChange(v == "" ? None : v->Some)}
            hasError
            placeholder={js|Enter baker's tz1 address|js}
            onClear={() => handleChange(None)}

@@ -410,7 +410,9 @@ let make = (~closeAction) => {
   let (selectedToken, _) as tokenState =
     React.useState(_ => initToken->Option.map(initToken => initToken));
   let token =
-    StoreContext.Tokens.useGet(selectedToken->Option.map(t => t.address));
+    StoreContext.Tokens.useGet(
+      selectedToken->Option.map(t => (t.address :> string)),
+    );
 
   let (operationRequest, sendOperation) = StoreContext.Operations.useCreate();
 

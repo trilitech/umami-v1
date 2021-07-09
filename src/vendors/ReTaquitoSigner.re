@@ -32,7 +32,8 @@ type t;
 
 [@bs.send] external publicKeyRaw: t => Js.Promise.t(string) = "publicKey";
 [@bs.send]
-external publicKeyHashRaw: t => Js.Promise.t(string) = "publicKeyHash";
+external publicKeyHashRaw: t => Js.Promise.t(PublicKeyHash.t) =
+  "publicKeyHash";
 [@bs.send]
 external secretKeyRaw: t => Js.Promise.t(Js.Nullable.t(string)) =
   "secretKey";
@@ -93,6 +94,7 @@ module EstimationSigner = {
      ";
 
   [@bs.new]
-  external create: (~publicKey: string, ~publicKeyHash: string, unit) => t =
+  external create:
+    (~publicKey: string, ~publicKeyHash: PublicKeyHash.t, unit) => t =
     "NoopSigner";
 };

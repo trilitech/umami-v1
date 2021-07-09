@@ -27,8 +27,8 @@ module Secret = {
   type t = {
     name: string,
     derivationPath: DerivationPath.Pattern.t,
-    addresses: Js.Array.t(string),
-    legacyAddress: option(string),
+    addresses: Js.Array.t(PublicKeyHash.t),
+    legacyAddress: option(PublicKeyHash.t),
   };
 
   let decoder = json =>
@@ -39,9 +39,13 @@ module Secret = {
         |> field("derivationScheme", string)
         |> DerivationPath.Pattern.fromString
         |> Result.getExn,
+      addresses:
+        (json |> field("addresses", array(string)))
+        ->Array.map(v => v->PublicKeyHash.build->Result.getExn),
 
-      addresses: json |> field("addresses", array(string)),
-      legacyAddress: json |> optional(field("legacyAddress", string)),
+      legacyAddress:
+        (json |> optional(field("legacyAddress", string)))
+        ->Option.map(v => v->PublicKeyHash.build->Result.getExn),
     };
 
   let encoder = secret =>
@@ -54,8 +58,11 @@ module Secret = {
             "derivationScheme",
             string(secret.derivationPath->DerivationPath.Pattern.toString),
           ),
-          ("addresses", stringArray(secret.addresses)),
-          ("legacyAddress", string(legacyAddress)),
+          (
+            "addresses",
+            secret.addresses->Array.map(s => (s :> string))->stringArray,
+          ),
+          ("legacyAddress", (legacyAddress :> string)->string),
         ])
       | None =>
         object_([
@@ -64,14 +71,17 @@ module Secret = {
             "derivationScheme",
             string(secret.derivationPath->DerivationPath.Pattern.toString),
           ),
-          ("addresses", stringArray(secret.addresses)),
+          (
+            "addresses",
+            secret.addresses->Array.map(s => (s :> string))->stringArray,
+          ),
         ])
       }
     );
 };
 
 module Aliases = {
-  type t = array((string, string));
+  type t = array((string, PublicKeyHash.t));
 
   let get = (~settings) =>
     settings
@@ -82,12 +92,14 @@ module Aliases = {
 
   let getAliasMap = (~settings) =>
     get(~settings)
-    ->Future.mapOk(addresses => addresses->Array.map(((a, b)) => (b, a)))
+    ->Future.mapOk(addresses =>
+        addresses->Array.map(((alias, addr)) => ((addr :> string), alias))
+      )
     ->Future.mapOk(Map.String.fromArray);
 
-  let getAliasForAddress = (~settings, ~address) =>
+  let getAliasForAddress = (~settings, ~address: PublicKeyHash.t) =>
     getAliasMap(~settings)
-    ->Future.mapOk(aliases => aliases->Map.String.get(address));
+    ->Future.mapOk(aliases => aliases->Map.String.get((address :> string)));
 
   let getAddressForAlias = (~settings, ~alias) =>
     get(~settings)
@@ -115,6 +127,8 @@ module Aliases = {
 
 module Accounts = {
   type t = array(Secret.t);
+  type name = string;
+
   let secrets = (~settings: AppSettings.t) => {
     let _ = settings;
     LocalStorage.getItem("secrets")
@@ -191,7 +205,7 @@ module Accounts = {
     ->AppSettings.sdk
     ->TezosSDK.importSecretKey(~name=alias, ~skUri, ~password, ())
     ->Future.mapError(ErrorHandler.fromSdkToString)
-    ->Future.tapOk(k => Js.log("key found : " ++ k));
+    ->Future.tapOk(k => Js.log("key found : " ++ (k :> string)));
   };
 
   let derive = (~settings, ~index, ~alias, ~password) =>
@@ -247,7 +261,8 @@ module Accounts = {
       (secrets, aliases) => {
       secrets[index]
       ->Option.map(secret =>
-          secret.addresses->Array.keepMap(aliases->Map.String.get)
+          secret.addresses
+          ->Array.keepMap(v => aliases->Map.String.get((v :> string)))
         )
       ->FutureEx.fromOption(
           ~error="Secret at index " ++ index->Int.toString ++ " not found!",
@@ -303,7 +318,7 @@ module Accounts = {
 
   let used = (network, address) => {
     network
-    ->ServerAPI.Explorer.get(address, ~limit=1, ())
+    ->ServerAPI.Explorer.getOperations(address, ~limit=1, ())
     ->Future.mapOk(operations => {operations->Js.Array2.length != 0});
   };
 

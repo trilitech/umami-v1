@@ -68,7 +68,7 @@ module PkAliases:
   AliasesMakerType with type key := string and type value := PkAlias.t;
 
 /** Public key hash representation */
-module PkhAlias: {type t = string;};
+module PkhAlias: {type t = PublicKeyHash.t;};
 
 module PkhAliases:
   AliasesMakerType with type key := string and type value := PkhAlias.t;

@@ -47,7 +47,9 @@ module Item = {
   let make = (~account: Alias.t) => {
     <View style=styles##itemContainer>
       <Typography.Subtitle1> account.name->React.string </Typography.Subtitle1>
-      <Typography.Address> account.address->React.string </Typography.Address>
+      <Typography.Address>
+        (account.address :> string)->React.string
+      </Typography.Address>
     </View>;
   };
 };
@@ -63,18 +65,26 @@ let styles =
 
 let renderItem = (account: Alias.t) => <Item account />;
 
-let keyExtractor = (account: Alias.t) => account.address;
+let keyExtractor = (account: Alias.t) => (account.address :> string);
 
 let renderLabel = (label, hasError) => {
   <FormLabel label hasError style=styles##label />;
 };
+
+let findAllAliases = (aliases, v) =>
+  aliases->Array.keep((a: Alias.t) =>
+    a.name
+    ->Js.String2.trim
+    ->Js.String2.toLowerCase
+    ->Js.String2.startsWith(v->Js.String2.trim->Js.String2.toLowerCase)
+  );
 
 [@react.component]
 let make =
     (
       ~label,
       ~filterOut: option(Alias.t),
-      ~aliases,
+      ~aliases: Belt.Map.String.t(Alias.t),
       ~value: FormUtils.Alias.any,
       ~handleChange: FormUtils.Alias.any => unit,
       ~error,
@@ -89,14 +99,8 @@ let make =
   let items =
     switch (value) {
     | AnyString("") => aliasArray->Array.slice(~offset=0, ~len=4)
-    | Valid(Address(v))
-    | AnyString(v) =>
-      aliasArray->Array.keep(a =>
-        a.name
-        ->Js.String2.trim
-        ->Js.String2.toLowerCase
-        ->Js.String2.startsWith(v->Js.String2.trim->Js.String2.toLowerCase)
-      )
+    | Valid(Address(v)) => aliasArray->findAllAliases((v :> string))
+    | AnyString(v) => aliasArray->findAllAliases(v)
     | Valid(Alias(_)) => [||]
     };
 
@@ -114,10 +118,12 @@ let make =
       keyPopover="formGroupContactSelector"
       value={
         switch (value) {
-        | Valid(Address(s)) =>
-          aliases->Map.String.get(s)->Option.mapWithDefault(s, a => a.name)
         | Valid(Alias(a)) => a.name
         | AnyString(s) => s
+        | Valid(Address(s)) =>
+          aliases
+          ->Map.String.get((s :> string))
+          ->Option.mapWithDefault((s :> string), a => a.name)
         }
       }
       handleChange={s =>
@@ -126,9 +132,11 @@ let make =
         ->(
             fun
             | Some(v) => v->Alias->FormUtils.Alias.Valid
-            | None when ReTaquito.Utils.validateAddress(s)->Result.isOk =>
-              s->FormUtils.Alias.Address->FormUtils.Alias.Valid
-            | None => s->FormUtils.Alias.AnyString
+            | None =>
+              switch (s->PublicKeyHash.build) {
+              | Ok(s) => s->FormUtils.Alias.Address->FormUtils.Alias.Valid
+              | Error(_) => s->FormUtils.Alias.AnyString
+              }
           )
         ->handleChange
       }

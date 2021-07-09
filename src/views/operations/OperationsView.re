@@ -64,42 +64,61 @@ let sort = op =>
     )
   );
 
+module Component = {
+  [@react.component]
+  let make = (~account: Account.t) => {
+    let operationsRequest =
+      StoreContext.Operations.useLoad(~address=account.address, ());
+
+    let operationsReload = StoreContext.Operations.useResetAll();
+
+    <View style=styles##container>
+      <OperationsHeaderView>
+        <RefreshButton
+          onRefresh=operationsReload
+          loading={operationsRequest->ApiRequest.isLoading}
+        />
+      </OperationsHeaderView>
+      {ApiRequest.(
+         switch (operationsRequest) {
+         | Done(Ok(operations), _)
+         | Loading(Some(operations)) =>
+           <DocumentContext.FlatList
+             style=styles##list
+             contentContainerStyle=styles##listContent
+             data={operations->fst->sort}
+             initialNumToRender=20
+             keyExtractor
+             renderItem={renderItem(operations->snd)}
+             _ListEmptyComponent
+           />
+         | Done(Error(error), _) => error->React.string
+         | NotAsked
+         | Loading(None) => <LoadingView />
+         }
+       )}
+    </View>;
+  };
+};
+
+module Placeholder = {
+  [@react.component]
+  let make = () => {
+    <View style=styles##container>
+      <OperationsHeaderView>
+        <RefreshButton onRefresh={() => ()} loading=true />
+      </OperationsHeaderView>
+      <LoadingView />
+    </View>;
+  };
+};
+
 [@react.component]
 let make = () => {
   let account = StoreContext.SelectedAccount.useGet();
 
-  let operationsRequest =
-    StoreContext.Operations.useLoad(
-      ~address=account->Option.map(account => account.address),
-      (),
-    );
-
-  let operationsReload = StoreContext.Operations.useResetAll();
-
-  <View style=styles##container>
-    <OperationsHeaderView>
-      <RefreshButton
-        onRefresh=operationsReload
-        loading={operationsRequest->ApiRequest.isLoading}
-      />
-    </OperationsHeaderView>
-    {ApiRequest.(
-       switch (operationsRequest) {
-       | Done(Ok(operations), _)
-       | Loading(Some(operations)) =>
-         <DocumentContext.FlatList
-           style=styles##list
-           contentContainerStyle=styles##listContent
-           data={operations->fst->sort}
-           initialNumToRender=20
-           keyExtractor
-           renderItem={renderItem(operations->snd)}
-           _ListEmptyComponent
-         />
-       | Done(Error(error), _) => error->React.string
-       | NotAsked
-       | Loading(None) => <LoadingView />
-       }
-     )}
-  </View>;
+  switch (account) {
+  | Some(account) => <Component account />
+  | None => <Placeholder />
+  };
 };

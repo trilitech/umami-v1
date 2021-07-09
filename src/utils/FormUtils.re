@@ -69,7 +69,7 @@ let optToString = (v, f) => v->Option.mapWithDefault("", f);
 
 module Alias = {
   type t =
-    | Address(string)
+    | Address(PublicKeyHash.t)
     | Alias(Alias.t);
 
   type any =
@@ -168,6 +168,12 @@ let getFormStateError = (formState: ReForm.formState) =>
   switch (formState) {
   | SubmitFailed(error) => error
   | _ => None
+  };
+
+let checkAddress = (v): ReSchema.fieldState =>
+  switch (v->PublicKeyHash.build) {
+  | Ok(_) => Valid
+  | Error(e) => Error(PublicKeyHash.handleValidationError(e))
   };
 
 let i18n = {

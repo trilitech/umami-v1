@@ -48,7 +48,8 @@ let make = (~zeroTez, ~action: Delegate.action, ~style as styleFromProp=?) => {
 
   let tooltipId =
     "delegate_button_"
-    ++ Delegate.account(action)->Option.mapWithDefault("", a => a.address);
+    ++ Delegate.account(action)
+       ->Option.mapWithDefault("", a => (a.address :> string));
 
   let (textColor, backgroundColor, focusOutlineColor, text, tooltip) =
     switch (action) {

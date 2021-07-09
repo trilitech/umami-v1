@@ -233,7 +233,8 @@ module AccountImportedRowItem = {
                  icon=Icons.More.build
                  style=styles##actionIconButton
                  keyPopover={
-                   "accountImportRowItemMenuUmami" ++ account.address
+                   "accountImportRowItemMenuUmami"
+                   ++ (account.address :> string)
                  }>
                  [|
                    <AccountEditButton key="accountEditButton" account />,
@@ -271,7 +272,9 @@ module AccountImportedRowItem = {
              <Menu
                icon=Icons.More.build
                style=styles##actionIconButton
-               keyPopover={"accountImportRowItemMenuCli" ++ account.address}>
+               keyPopover={
+                 "accountImportRowItemMenuCli" ++ (account.address :> string)
+               }>
                [|
                  <AccountEditButton key="accountEditButton" account />,
                  /*<AccountDisplayButton />*/
@@ -374,10 +377,10 @@ let make = (~secret: Secret.t) => {
   <View>
     <SecretRowItem secret />
     {secret.addresses
-     ->Array.mapWithIndex((index, address) =>
+     ->Array.mapWithIndex((index, addr) =>
          <AccountNestedRowItem
-           key=address
-           address
+           key=(addr :> string)
+           address=(addr :> string)
            index
            isLast={secret.addresses->Array.size - 1 === index}
          />

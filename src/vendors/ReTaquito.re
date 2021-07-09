@@ -49,52 +49,6 @@ module BigNumber: {
   let toInt64 = ReBigNumber.toInt64;
 };
 
-module Utils = {
-  type addressValidityError = [
-    | `No_prefix_matched
-    | `Invalid_checksum
-    | `Invalid_length
-    | `UnknownError(int)
-  ];
-
-  [@bs.module "@taquito/utils"]
-  external validateAddressRaw: string => int = "validateAddress";
-
-  [@bs.module "@taquito/utils"]
-  external validateContractAddressRaw: string => int =
-    "validateContractAddress";
-
-  let handleValidity =
-    fun
-    | 0 => `No_prefix_matched
-    | 1 => `Invalid_checksum
-    | 2 => `Invalid_length
-    | 3 => `Valid
-    | n => `UnknownError(n);
-
-  let validateAddress = s =>
-    switch (s->validateAddressRaw->handleValidity) {
-    | `Valid => Ok(`Address)
-    | #addressValidityError as err => Error(err)
-    };
-
-  let validateContractAddress = s =>
-    switch (s->validateContractAddressRaw->handleValidity) {
-    | `Valid => Ok(`Contract)
-    | #addressValidityError as err => Error(err)
-    };
-
-  let validateAnyAddress = s =>
-    switch (s->validateContractAddress) {
-    | Ok(`Contract) => Ok(`Contract)
-    | Error(_) =>
-      switch (s->validateAddress) {
-      | Ok(`Address) => Ok(`Address)
-      | Error(#addressValidityError as err) => Error(err)
-      }
-    };
-};
-
 let walletOperation = [%raw "WalletOperation"];
 let opKind = [%raw "OpKind"];
 
@@ -111,13 +65,14 @@ module RPCClient = {
 
   [@bs.send]
   external getBalance:
-    (rpcClient, string, ~params: params=?, unit) =>
+    (rpcClient, PublicKeyHash.t, ~params: params=?, unit) =>
     Js.Promise.t(ReBigNumber.t) =
     "getBalance";
 
   [@bs.send]
   external getManagerKey:
-    (rpcClient, string) => Js.Promise.t(Js.Nullable.t(managerKeyResult)) =
+    (rpcClient, PublicKeyHash.t) =>
+    Js.Promise.t(Js.Nullable.t(managerKeyResult)) =
     "getManagerKey";
 };
 
@@ -165,8 +120,8 @@ module Toolkit = {
   type transferParams = {
     kind: string,
     [@bs.as "to"]
-    to_: string,
-    source: string,
+    to_: PublicKeyHash.t,
+    source: PublicKeyHash.t,
     amount: ReBigNumber.t,
     fee: option(ReBigNumber.t),
     gasLimit: option(int),
@@ -200,8 +155,8 @@ module Toolkit = {
   };
 
   type delegateParams = {
-    source: string,
-    delegate: option(string),
+    source: PublicKeyHash.t,
+    delegate: option(PublicKeyHash.t),
     fee: option(ReBigNumber.t),
   };
 
@@ -236,7 +191,8 @@ module Toolkit = {
     "setDelegate";
 
   [@bs.send]
-  external getDelegate: (tz, string) => Js.Promise.t(Js.Nullable.t(string)) =
+  external getDelegate:
+    (tz, PublicKeyHash.t) => Js.Promise.t(Js.Nullable.t(PublicKeyHash.t)) =
     "getDelegate";
 
   module type METHODS = {type t;};
@@ -247,7 +203,8 @@ module Toolkit = {
     type methodResult('meth);
 
     [@bs.send]
-    external at: (contract, string) => Js.Promise.t(contractAbstraction) =
+    external at:
+      (contract, PublicKeyHash.t) => Js.Promise.t(contractAbstraction) =
       "at";
 
     [@bs.send]
@@ -283,7 +240,8 @@ module Toolkit = {
 
     [@bs.send]
     external transfer:
-      (M.t, string, string, BigNumber.fixed) => methodResult(M.transfer) =
+      (M.t, PublicKeyHash.t, PublicKeyHash.t, BigNumber.fixed) =>
+      methodResult(M.transfer) =
       "transfer";
   };
 
@@ -363,7 +321,7 @@ let readSecretKey = (address, passphrase, dirpath) => {
 
 exception RejectError(string);
 
-let getDelegate = (endpoint, address) => {
+let getDelegate = (endpoint, address: PublicKeyHash.t) => {
   let tk = Toolkit.create(endpoint);
 
   Toolkit.getDelegate(tk.tz, address)
@@ -397,7 +355,7 @@ module Operations = {
         ~endpoint,
         ~baseDir,
         ~source,
-        ~delegate: option(string),
+        ~delegate: option(PublicKeyHash.t),
         ~password,
         ~fee=?,
         (),
@@ -434,7 +392,8 @@ let handleCustomOptions =
 };
 
 module Estimate = {
-  let setDelegate = (~endpoint, ~baseDir, ~source, ~delegate=?, ~fee=?, ()) =>
+  let setDelegate =
+      (~endpoint, ~baseDir, ~source: PublicKeyHash.t, ~delegate=?, ~fee=?, ()) =>
     Wallet.aliasFromPkh(~dirpath=baseDir, ~pkh=source, ())
     ->Future.flatMapOk(alias =>
         Wallet.pkFromAlias(~dirpath=baseDir, ~alias, ())
@@ -549,12 +508,12 @@ module Transfer = {
 
     let make = toolkit => {contracts: MutableMap.String.make(), toolkit};
 
-    let findContract = (cache, token) =>
-      switch (MutableMap.String.get(cache.contracts, token)) {
+    let findContract = (cache, token: PublicKeyHash.t) =>
+      switch (MutableMap.String.get(cache.contracts, (token :> string))) {
       | Some(c) => c
       | None =>
         let c = cache.toolkit.contract->Toolkit.FA12.at(token);
-        cache.contracts->MutableMap.String.set(token, c);
+        cache.contracts->MutableMap.String.set((token :> string), c);
         c;
       };
 
@@ -564,8 +523,8 @@ module Transfer = {
   let prepareFA12Transfer =
       (
         contractCache,
-        ~source,
-        ~token,
+        ~source: PublicKeyHash.t,
+        ~token: PublicKeyHash.t,
         ~dest,
         ~amount,
         ~fee=?,
@@ -597,12 +556,11 @@ module Transfer = {
   let makeTransferMichelsonParameter = (~entrypoint, ~parameter) =>
     switch (entrypoint, parameter) {
     | (Some(a), Some(b)) =>
-      Some({ProtocolOptions.TransactionParameters.entrypoint: a, value: b});
-    | _ =>
-      None;
+      Some({ProtocolOptions.TransactionParameters.entrypoint: a, value: b})
+    | _ => None
     };
 
-  let prepareTransfers = (txs, contractCache, source) =>
+  let prepareTransfers = (txs, contractCache, source: PublicKeyHash.t) =>
     txs
     ->List.map((tx: Transfer.elt) =>
         switch (tx.amount) {
@@ -645,9 +603,9 @@ module Transfer = {
         (
           ~endpoint,
           ~baseDir,
-          ~source,
+          ~source: PublicKeyHash.t,
           ~transfers:
-             (ContractCache.t, string) =>
+             (ContractCache.t, PublicKeyHash.t) =>
              Future.t(list(Belt.Result.t(Toolkit.transferParams, Error.t))),
           (),
         ) => {
@@ -691,7 +649,7 @@ module Transfer = {
         ~baseDir,
         ~source,
         ~transfers:
-           (ContractCache.t, string) =>
+           (ContractCache.t, PublicKeyHash.t) =>
            Future.t(list(Belt.Result.t(Toolkit.transferParams, Error.t))),
         ~password,
         (),

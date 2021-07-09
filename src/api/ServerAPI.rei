@@ -33,17 +33,18 @@ module URL: {
     let operations:
       (
         AppSettings.t,
-        string,
+        PublicKeyHash.t,
         ~types: array(string)=?,
-        ~destination: string=?,
+        ~destination: PublicKeyHash.t=?,
         ~limit: int=?,
         unit
       ) =>
       t;
-    let mempool: (AppSettings.t, ~account: string) => t;
-    let checkToken: (AppSettings.t, ~contract: string) => t;
+    let mempool: (AppSettings.t, ~account: PublicKeyHash.t) => t;
+    let checkToken: (AppSettings.t, ~contract: PublicKeyHash.t) => t;
     let getTokenBalance:
-      (AppSettings.t, ~contract: string, ~account: string) => t;
+      (AppSettings.t, ~contract: PublicKeyHash.t, ~account: PublicKeyHash.t) =>
+      t;
   };
 
   module Endpoint: {let delegates: AppSettings.t => t;};
@@ -57,15 +58,15 @@ module URL: {
 /** Mezos requests for mempool operations and classical operations. */
 module type Explorer = {
   let getFromMempool:
-    (string, AppSettings.t, array(Operation.Read.t)) =>
+    (PublicKeyHash.t, AppSettings.t, array(Operation.Read.t)) =>
     Future.t(Result.t(array(Operation.Read.t), string));
 
-  let get:
+  let getOperations:
     (
       AppSettings.t,
-      string,
+      PublicKeyHash.t,
       ~types: array(string)=?,
-      ~destination: string=?,
+      ~destination: PublicKeyHash.t=?,
       ~limit: int=?,
       ~mempool: bool=?,
       unit

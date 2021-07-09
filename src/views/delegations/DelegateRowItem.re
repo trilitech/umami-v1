@@ -142,7 +142,7 @@ let make =
            ->AliasHelpers.getAliasFromAddress(aliases)
            ->Option.mapWithDefault(
                <Typography.Address numberOfLines=1>
-                 delegate->React.string
+                 (delegate :> string)->React.string
                </Typography.Address>,
                alias =>
                <Typography.Body1 numberOfLines=1>
@@ -201,7 +201,7 @@ let make =
           <DelegateActionButton
             action={Delegate.Edit(account, delegate)}
             tooltip=(
-              "delegate_edit" ++ account.address,
+              "delegate_edit" ++ (account.address :> string),
               I18n.menu#delegate_edit,
             )
             icon=Icons.Change.build
@@ -209,7 +209,7 @@ let make =
           <DelegateActionButton
             action={Delegate.Delete(account, delegate)}
             tooltip=(
-              "delegate_delete" ++ account.address,
+              "delegate_delete" ++ (account.address :> string),
               I18n.menu#delegate_delete,
             )
             icon=Icons.Stop.build

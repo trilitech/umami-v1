@@ -23,18 +23,8 @@
 /*                                                                           */
 /*****************************************************************************/
 
-type addressValidityError = [
-  | `NotAnAccount
-  | `NotAContract
-  | ReTaquito.Utils.addressValidityError
-];
-
-type customEncodingError =
-  | CannotParseAddress(string, addressValidityError)
-  | CannotParseContract(string, addressValidityError);
-
 type error =
-  | Parser(TezosClient.CSVParser.error(customEncodingError))
+  | Parser(TezosClient.CSVParser.error(PublicKeyHash.parsingError))
   | UnknownToken(string)
   | NoRows
   | CannotParseTokenAmount(ReBigNumber.t, int, int)
@@ -42,14 +32,21 @@ type error =
 
 type t = list(Transfer.elt);
 /* Public key hash encoding */
-let addr: CSVParser.Encodings.element(string, customEncodingError);
+let addr:
+  CSVParser.Encodings.element(PublicKeyHash.t, PublicKeyHash.parsingError);
 /* Contract hash encoding */
-let token: CSVParser.Encodings.element(string, customEncodingError);
+let token:
+  CSVParser.Encodings.element(PublicKeyHash.t, PublicKeyHash.parsingError);
 /* CSV row encoding */
 let rowEncoding:
   CSVParser.Encodings.row(
-    (string, ReBigNumber.t, option(string), option(ReBigNumber.t)),
-    customEncodingError,
+    (
+      PublicKeyHash.t,
+      ReBigNumber.t,
+      option(PublicKeyHash.t),
+      option(ReBigNumber.t),
+    ),
+    PublicKeyHash.parsingError,
   );
 
 let parseCSV:

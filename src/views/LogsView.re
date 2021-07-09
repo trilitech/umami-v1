@@ -75,7 +75,6 @@ let make = () => {
   let errors = LogsContext.useLogs();
   let deleteError = LogsContext.useDelete();
   let addLog = LogsContext.useAdd();
-  ();
   <Page>
     <View style=styles##content>
       {ReactUtils.onlyWhen(<ClearButton />, errors != [])}

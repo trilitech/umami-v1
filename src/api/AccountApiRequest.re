@@ -32,10 +32,9 @@ let useLoad = requestState => {
     WalletAPI.Accounts.get(~settings)
     ->Future.mapOk(response => {
         response
-        ->Array.map(((name, address)) => {
-            let account: Account.t = {name, address, ledger: false};
-            (address, account);
-          })
+        ->Array.map(((name, address)) =>
+            ((address :> string), Account.{name, address, ledger: false})
+          )
         ->Array.reverse
         ->Map.String.fromArray
       });

@@ -112,14 +112,18 @@ module Business = {
   module Transaction = {
     type t = {
       amount: Tez.t,
-      destination: string,
+      destination: PublicKeyHash.t,
       parameters: option(Js.Dict.t(string)),
     };
 
     let decode = json =>
       Json.Decode.{
         amount: json |> field("amount", string) |> Tez.fromMutezString,
-        destination: json |> field("destination", string),
+        destination:
+          json
+          |> field("destination", string)
+          |> PublicKeyHash.build
+          |> Result.getExn,
         parameters: json |> optional(field("parameters", dict(string))),
       };
   };
@@ -138,14 +142,15 @@ module Business = {
   };
 
   module Delegation = {
-    type t = {delegate: option(string)};
+    type t = {delegate: option(PublicKeyHash.t)};
 
     let decode = json =>
       Json.Decode.{
         delegate:
           switch (json |> optional(field("delegate", string))) {
           | Some(delegate) =>
-            delegate->Js.String2.length == 0 ? None : Some(delegate)
+            delegate->Js.String2.length == 0
+              ? None : Some(delegate->PublicKeyHash.build->Result.getExn)
           | None => None
           },
       };
@@ -159,7 +164,7 @@ module Business = {
     | Unknown;
 
   type t = {
-    source: string,
+    source: PublicKeyHash.t,
     fee: Tez.t,
     op_id: int,
     payload,
@@ -178,7 +183,11 @@ module Business = {
     let op_id = op_id->def(() => json |> field("op_id", int));
 
     let x = {
-      source: json |> field("source", string),
+      source:
+        json
+        |> field("source", string)
+        |> PublicKeyHash.build
+        |> Result.getExn,
       fee: json |> field("fee", string) |> Tez.fromMutezString,
       op_id,
       payload:

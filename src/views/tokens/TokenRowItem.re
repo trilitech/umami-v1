@@ -83,7 +83,7 @@ let make = (~token: Token.t) => {
     </CellSymbol>
     <CellAddress>
       <Typography.Address numberOfLines=1>
-        token.address->React.string
+        (token.address :> string)->React.string
       </Typography.Address>
     </CellAddress>
     <CellAction> <TokenDeleteButton token /> </CellAction>

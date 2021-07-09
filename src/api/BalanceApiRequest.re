@@ -25,14 +25,14 @@
 
 type balanceApiRequest = ApiRequest.t(string, string);
 
-let useLoad = (~requestState, ~address: string) => {
+let useLoad = (~requestState, ~address: PublicKeyHash.t) => {
   let get = (~settings, address) => {
     settings->NodeAPI.Balance.get(address, ());
   };
 
   ApiRequest.useLoader(
     ~get,
-    ~condition=addr => addr != "",
+    ~condition=addr => (addr :> string) != "",
     ~kind=Logs.Balance,
     ~requestState,
     address,

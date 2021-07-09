@@ -18,7 +18,7 @@ module Unit: {
   module Infix: {let (+): (t, t) => t;};
 };
 
-type address = string;
+type address = PublicKeyHash.t;
 
 type t = {
   address,

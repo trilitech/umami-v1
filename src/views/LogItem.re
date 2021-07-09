@@ -177,11 +177,13 @@ let make =
     switch (log.kind) {
     | Error => styles##itemError
     | Info => styles##itemInfo
+    | Warning => styles##itemInfo
     };
 
   let icon =
     switch (log.kind) {
-    | Error => <Icons.CloseOutline size=16. color=Colors.error />
+    | Error
+    | Warning => <Icons.CloseOutline size=16. color=Colors.error />
     | Info => <Icons.CheckOutline size=16. color=Colors.valid />
     };
 

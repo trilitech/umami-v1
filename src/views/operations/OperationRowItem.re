@@ -81,7 +81,7 @@ let styles =
 
 module AddContactButton = {
   [@react.component]
-  let make = (~address, ~operation: Operation.Read.t) => {
+  let make = (~address: PublicKeyHash.t, ~operation: Operation.Read.t) => {
     let (visibleModal, openAction, closeAction) =
       ModalAction.useModalActionState();
 
@@ -101,10 +101,10 @@ module AddContactButton = {
   };
 };
 
-let rawUnknownAddress = (address, operation) => {
+let rawUnknownAddress = (address: PublicKeyHash.t, operation) => {
   <View style=styles##rawAddressContainer>
     <Typography.Address numberOfLines=1>
-      address->React.string
+      (address :> string)->React.string
     </Typography.Address>
     <AddContactButton address operation />
   </View>;
@@ -206,7 +206,8 @@ let make =
              <CellAddress />
            </>
          | Transaction(transaction) =>
-           let isToken = tokens->Map.String.has(transaction.destination);
+           let isToken =
+             tokens->Map.String.has((transaction.destination :> string));
            <>
              <CellType>
                <Typography.Body1>

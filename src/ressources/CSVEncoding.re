@@ -25,18 +25,8 @@
 
 open CSVParser;
 
-type addressValidityError = [
-  | `NotAnAccount
-  | `NotAContract
-  | ReTaquito.Utils.addressValidityError
-];
-
-type customEncodingError =
-  | CannotParseAddress(string, addressValidityError)
-  | CannotParseContract(string, addressValidityError);
-
 type error =
-  | Parser(CSVParser.error(customEncodingError))
+  | Parser(TezosClient.CSVParser.error(PublicKeyHash.parsingError))
   | UnknownToken(string)
   | NoRows
   | CannotParseTokenAmount(ReBigNumber.t, int, int)
@@ -44,25 +34,8 @@ type error =
 
 type t = list(Transfer.elt);
 
-let checkAddress = a => {
-  switch (ReTaquito.Utils.validateAnyAddress(a)) {
-  | Ok(`Address) => Ok(a)
-  | Ok(`Contract) => Error(CannotParseAddress(a, `NotAnAccount))
-  | Error(#addressValidityError as err) => Error(CannotParseAddress(a, err))
-  };
-};
-
-let checkContract = a => {
-  switch (ReTaquito.Utils.validateAnyAddress(a)) {
-  | Ok(`Contract) => Ok(a)
-  | Ok(`Address) => Error(CannotParseContract(a, `NotAContract))
-  | Error(#addressValidityError as err) =>
-    Error(CannotParseContract(a, err))
-  };
-};
-
-let addr = Encodings.custom(~conv=checkAddress);
-let token = Encodings.custom(~conv=checkContract);
+let addr = Encodings.custom(~conv=PublicKeyHash.buildImplicit);
+let token = Encodings.custom(~conv=PublicKeyHash.buildContract);
 
 let rowEncoding =
   Encodings.(mkRow(tup4(addr, number, opt(token), opt(number))));
@@ -76,10 +49,11 @@ let handleTezRow = (index, destination, amount) =>
       Transfer.makeSingleTezTransferElt(~destination, ~amount, ())
     );
 
-let handleTokenRow = (tokens, index, destination, amount, token) =>
+let handleTokenRow =
+    (tokens, index, destination, amount, token: PublicKeyHash.t) =>
   tokens
-  ->Map.String.get(token)
-  ->Option.mapWithDefault(Error(UnknownToken(token)), token =>
+  ->Map.String.get((token :> string))
+  ->Option.mapWithDefault(Error(UnknownToken((token :> string))), token =>
       amount
       ->Token.Unit.fromBigNumber
       ->ResultEx.fromOption(Error(CannotParseTokenAmount(amount, index, 2)))
@@ -115,22 +89,6 @@ let parseCSV = (content, ~tokens) => {
   };
 };
 
-let handleAddressValidationError: addressValidityError => string =
-  fun
-  | `NotAnAccount => I18n.taquito#not_an_account
-  | `NotAContract => I18n.taquito#not_a_contract
-  | `No_prefix_matched => I18n.taquito#no_prefix_matched
-  | `Invalid_checksum => I18n.taquito#invalid_checksum
-  | `Invalid_length => I18n.taquito#invalid_length
-  | `UnknownError(n) => I18n.taquito#unknown_error_code(n);
-
-let handleCustomError =
-  fun
-  | CannotParseAddress(a, r) =>
-    I18n.csv#cannot_parse_address(a, handleAddressValidationError(r))
-  | CannotParseContract(a, r) =>
-    I18n.csv#cannot_parse_contract(a, handleAddressValidationError(r));
-
 let handleCSVError = e =>
   e->CSVParser.(
        fun
@@ -140,7 +98,7 @@ let handleCSVError = e =>
          I18n.csv#cannot_parse_boolean(row + 1, col + 1)
        | Parser(CannotParseCustomValue(e, row, col)) =>
          I18n.csv#cannot_parse_custom_value(
-           handleCustomError(e),
+           PublicKeyHash.handleParsingError(e),
            row + 1,
            col + 1,
          )

@@ -53,7 +53,8 @@ let isEditMode =
   | _ => false;
 
 [@react.component]
-let make = (~initAddress=?, ~action: action, ~closeAction) => {
+let make =
+    (~initAddress: option(PublicKeyHash.t)=?, ~action: action, ~closeAction) => {
   let (createAliasRequest, createAlias) = StoreContext.Aliases.useCreate();
   let (updateAliasRequest, updateAlias) = StoreContext.Aliases.useUpdate();
 
@@ -71,7 +72,10 @@ let make = (~initAddress=?, ~action: action, ~closeAction) => {
         AccountCreateForm.Validation.(
           Schema(
             nonEmpty(Name)
-            + nonEmpty(Address)
+            + custom(
+                values => values.address->FormUtils.checkAddress,
+                Address,
+              )
             + custom(
                 values =>
                   action->isEditMode
@@ -86,7 +90,10 @@ let make = (~initAddress=?, ~action: action, ~closeAction) => {
         ({state}) => {
           switch (action) {
           | Create =>
-            createAlias((state.values.name, state.values.address))
+            createAlias((
+              state.values.name,
+              state.values.address->PublicKeyHash.build->Result.getExn,
+            ))
             ->Future.tapOk(_ => closeAction())
             ->ApiRequest.logOk(addToast, Logs.Account, _ =>
                 I18n.t#contact_added
@@ -107,9 +114,13 @@ let make = (~initAddress=?, ~action: action, ~closeAction) => {
         switch (action) {
         | Create => {
             name: "",
-            address: initAddress->Option.getWithDefault(""),
+            address:
+              (initAddress :> option(string))->Option.getWithDefault(""),
           }
-        | Edit(account) => {name: account.name, address: account.address}
+        | Edit(account) => {
+            name: account.name,
+            address: (account.address :> string),
+          }
         },
       ~i18n=FormUtils.i18n,
       (),

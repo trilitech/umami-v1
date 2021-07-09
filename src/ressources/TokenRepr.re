@@ -50,7 +50,7 @@ module Unit = {
   };
 };
 
-type address = string;
+type address = PublicKeyHash.t;
 
 type t = {
   address,

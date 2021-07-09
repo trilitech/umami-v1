@@ -26,9 +26,8 @@
 include ApiRequest;
 
 /* Get delegate */
-
-let useLoad = (~requestState, ~address: string) => {
-  let get = (~settings, address) =>
+let useLoad = (~requestState, ~address: PublicKeyHash.t) => {
+  let get = (~settings, address: PublicKeyHash.t) =>
     NodeAPI.Delegate.getForAccount(settings, address);
 
   ApiRequest.useLoader(~get, ~kind=Logs.Delegate, ~requestState, address);
@@ -36,7 +35,7 @@ let useLoad = (~requestState, ~address: string) => {
 
 /* Get delegate info */
 
-let useLoadInfo = (~requestState, ~address: string) => {
+let useLoadInfo = (~requestState, ~address: PublicKeyHash.t) => {
   let get = (~settings, address) =>
     NodeAPI.Delegate.getDelegationInfoForAccount(settings, address);
 

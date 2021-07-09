@@ -32,28 +32,29 @@ type reactState('state) = ('state, ('state => 'state) => unit);
 type requestsState('requestResponse, 'error) =
   Map.String.t(ApiRequest.t('requestResponse, 'error));
 
-type apiRequestsState('requestResponse, 'error) =
-  reactState(requestsState('requestResponse, 'error));
+type error = string;
+
+type apiRequestsState('requestResponse) =
+  reactState(requestsState('requestResponse, error));
 
 type state = {
-  selectedAccountState: reactState(option(string)),
-  selectedTokenState: reactState(option(string)),
+  selectedAccountState: reactState(option(PublicKeyHash.t)),
+  selectedTokenState: reactState(option(PublicKeyHash.t)),
   accountsRequestState:
     reactState(ApiRequest.t(Map.String.t(Account.t), string)),
   secretsRequestState: reactState(ApiRequest.t(array(Secret.t), string)),
-  balanceRequestsState: apiRequestsState(Tez.t, string),
-  delegateRequestsState: apiRequestsState(option(string), string),
+  balanceRequestsState: apiRequestsState(Tez.t),
+  delegateRequestsState: apiRequestsState(option(PublicKeyHash.t)),
   delegateInfoRequestsState:
-    apiRequestsState(option(NodeAPI.Delegate.delegationInfo), string),
-  operationsRequestsState:
-    apiRequestsState((array(Operation.Read.t), int), string),
+    apiRequestsState(option(NodeAPI.Delegate.delegationInfo)),
+  operationsRequestsState: apiRequestsState((array(Operation.Read.t), int)),
   operationsConfirmations: reactState(Set.String.t),
   aliasesRequestState:
-    reactState(ApiRequest.t(Map.String.t(Alias.t), string)),
-  bakersRequestState: reactState(ApiRequest.t(array(Delegate.t), string)),
+    reactState(ApiRequest.t(Map.String.t(Alias.t), error)),
+  bakersRequestState: reactState(ApiRequest.t(array(Delegate.t), error)),
   tokensRequestState:
     reactState(ApiRequest.t(Map.String.t(Token.t), string)),
-  balanceTokenRequestsState: apiRequestsState(Token.Unit.t, string),
+  balanceTokenRequestsState: apiRequestsState(Token.Unit.t),
   apiVersionRequestState: reactState(option(Network.apiVersion)),
   eulaSignatureRequestState: reactState(bool),
   beaconPeersRequestState:
@@ -276,8 +277,8 @@ let setEulaSignature = () => {
 module Balance = {
   let useRequestState = useRequestsState(store => store.balanceRequestsState);
 
-  let useLoad = (address: string) => {
-    let requestState = useRequestState(Some(address));
+  let useLoad = (address: PublicKeyHash.t) => {
+    let requestState = useRequestState(Some((address :> string)));
 
     BalanceApiRequest.useLoad(~requestState, ~address);
   };
@@ -293,7 +294,7 @@ module Balance = {
       accounts
       ->Map.String.valuesToArray
       ->Array.keepMap(account => {
-          balanceRequests->Map.String.get(account.address)
+          balanceRequests->Map.String.get((account.address :> string))
         })
       ->Array.keep(ApiRequest.isDone);
 
@@ -324,8 +325,13 @@ module BalanceToken = {
   let useRequestState =
     useRequestsState(store => store.balanceTokenRequestsState);
 
-  let useLoad = (address: string, tokenAddress: string) => {
-    let requestState = useRequestState(Some(address ++ tokenAddress));
+  let getRequestKey =
+      (address: PublicKeyHash.t, tokenAddress: PublicKeyHash.t) =>
+    (address :> string) ++ (tokenAddress :> string);
+
+  let useLoad = (address: PublicKeyHash.t, tokenAddress: PublicKeyHash.t) => {
+    let requestState =
+      useRequestState(address->getRequestKey(tokenAddress)->Some);
 
     let operation =
       React.useMemo2(
@@ -336,7 +342,7 @@ module BalanceToken = {
     TokensApiRequest.useLoadOperationOffline(~requestState, ~operation);
   };
 
-  let useGetTotal = (tokenAddress: string) => {
+  let useGetTotal = tokenAddress => {
     let store = useStoreContext();
     let (balanceRequests, _) = store.balanceTokenRequestsState;
     let (accountsRequest, _) = store.accountsRequestState;
@@ -347,7 +353,9 @@ module BalanceToken = {
       accounts
       ->Map.String.valuesToArray
       ->Array.keepMap(account => {
-          balanceRequests->Map.String.get(account.address ++ tokenAddress)
+          balanceRequests->Map.String.get(
+            getRequestKey(account.address, tokenAddress),
+          )
         })
       ->Array.keep(ApiRequest.isDone);
 
@@ -377,9 +385,9 @@ module BalanceToken = {
 module Delegate = {
   let useRequestState = useRequestsState(store => store.delegateRequestsState);
 
-  let useLoad = (address: string) => {
-    let requestState: ApiRequest.requestState(option(string), _) =
-      useRequestState(Some(address));
+  let useLoad = (address: PublicKeyHash.t) => {
+    let requestState: ApiRequest.requestState(option(PublicKeyHash.t), _) =
+      useRequestState(Some((address :> string)));
 
     DelegateApiRequest.useLoad(~requestState, ~address);
   };
@@ -408,8 +416,8 @@ module DelegateInfo = {
   let useRequestState =
     useRequestsState(store => store.delegateInfoRequestsState);
 
-  let useLoad = (address: string) => {
-    let requestState = useRequestState(Some(address));
+  let useLoad = (address: PublicKeyHash.t) => {
+    let requestState = useRequestState(Some((address :> string)));
 
     DelegateApiRequest.useLoadInfo(~requestState, ~address);
   };
@@ -429,8 +437,8 @@ module Operations = {
   let useRequestState =
     useRequestsState(store => store.operationsRequestsState);
 
-  let useLoad = (~limit=?, ~types=?, ~address: option(string), ()) => {
-    let requestState = useRequestState(address);
+  let useLoad = (~limit=?, ~types=?, ~address: PublicKeyHash.t, ()) => {
+    let requestState = useRequestState((address->Some :> option(string)));
 
     OperationApiRequest.useLoad(
       ~requestState,
@@ -649,7 +657,7 @@ module Accounts = {
     let delegates = Delegate.useGetAll();
 
     accounts->Map.String.map(account => {
-      let delegate = delegates->Map.String.get(account.address);
+      let delegate = delegates->Map.String.get((account.address :> string));
       (account, delegate);
     });
   };
@@ -774,7 +782,7 @@ module SelectedAccount = {
 
     switch (store.selectedAccountState, accounts) {
     | ((Some(selectedAccount), _), accounts) =>
-      accounts->Map.String.get(selectedAccount)
+      accounts->Map.String.get((selectedAccount :> string))
     | _ => None
     };
   };
@@ -794,7 +802,7 @@ module SelectedToken = {
 
     switch (store.selectedTokenState, tokens) {
     | ((Some(selectedToken), _), tokens) =>
-      tokens->Map.String.get(selectedToken)
+      tokens->Map.String.get((selectedToken :> string))
     | _ => None
     };
   };

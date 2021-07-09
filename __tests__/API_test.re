@@ -14,6 +14,8 @@ let settings =
     },
   };
 
+let pkh = s => s->PublicKeyHash.build->Result.getExn;
+
 describe("API tests", ({testAsync}) => {
   testAsync("runs valid balance test", ({expect, callback}) => {
     module Stub = {
@@ -24,7 +26,7 @@ describe("API tests", ({testAsync}) => {
         };
     };
     module UnderTest = NodeAPI.Balance;
-    UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh, ())
     ->Future.get(result => {
         expect.value(result).toEqual(Result.Ok(Tez.zero));
         callback();
@@ -41,7 +43,7 @@ describe("API tests", ({testAsync}) => {
         };
     };
     module UnderTest = NodeAPI.Balance;
-    UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh, ())
     ->Future.get(result => {
         expect.value(result).toEqual(Result.Error("stub"));
         callback();
@@ -58,7 +60,11 @@ describe("API tests", ({testAsync}) => {
     };
     let expected: array(Operation.Read.t) = [||];
     module UnderTest = ServerAPI.ExplorerMaker(Stub);
-    UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.getOperations(
+      settings,
+      "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
+      (),
+    )
     ->Future.get(result => {
         expect.value(result).toEqual(Result.Ok(expected));
         callback();
@@ -120,12 +126,12 @@ describe("API tests", ({testAsync}) => {
         status: Chain,
         payload:
           Business({
-            source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
+            source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
             fee: Tez.fromMutezInt(1258),
             op_id: 0,
             payload:
               Delegation({
-                delegate: Some("tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"),
+                delegate: Some("tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh),
               }),
           }),
       },
@@ -139,20 +145,24 @@ describe("API tests", ({testAsync}) => {
         op_id: 0,
         payload:
           Business({
-            source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
+            source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
             fee: Tez.fromMutezInt(1283),
             op_id: 0,
             payload:
               Transaction({
                 amount: Tez.fromMutezInt(1000000),
-                destination: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
+                destination: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
                 parameters: Some(Js.Dict.fromArray([|("prim", "Unit")|])),
               }),
           }),
       },
     |];
     module UnderTest = ServerAPI.ExplorerMaker(Stub);
-    UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.getOperations(
+      settings,
+      "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
+      (),
+    )
     ->Future.get(result => {
         expect.value(result).toEqual(Result.Ok(expected));
         callback();
@@ -183,7 +193,11 @@ describe("API tests", ({testAsync}) => {
       };
     };
     module UnderTest = ServerAPI.ExplorerMaker(Stub);
-    UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.getOperations(
+      settings,
+      "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
+      (),
+    )
     ->Future.tapError(Js.log)
     ->Future.get(result => {
         expect.value(result).toEqual(
@@ -228,7 +242,7 @@ describe("API tests", ({testAsync}) => {
         hash: "oonh7WBBK92yqFi56KENtpJouPuoLSHB3srWymv8WL6orKfo5P1",
         payload:
           Business({
-            source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
+            source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
             fee: Tez.fromMutezInt(1269),
             op_id: 0,
             payload:
@@ -239,7 +253,11 @@ describe("API tests", ({testAsync}) => {
       },
     |];
     module UnderTest = ServerAPI.ExplorerMaker(Stub);
-    UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.getOperations(
+      settings,
+      "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
+      (),
+    )
     ->Future.get(result => {
         expect.value(result).toEqual(Result.Ok(expected));
         callback();
@@ -270,7 +288,11 @@ describe("API tests", ({testAsync}) => {
       };
     };
     module UnderTest = ServerAPI.ExplorerMaker(Stub);
-    UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.getOperations(
+      settings,
+      "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
+      (),
+    )
     ->Future.get(result => {
         expect.value(result).toEqual(
           Result.Error("Expected field 'public_key'\n\tin array at index 0"),
@@ -319,20 +341,24 @@ describe("API tests", ({testAsync}) => {
         hash: "opQTxvSXMGuZ2rkox6q7ZNQhdp9a1j1ELoVdnHcvrh5ShyocEFD",
         payload:
           Business({
-            source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
+            source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
             fee: Tez.fromMutezInt(1283),
             op_id: 0,
             payload:
               Transaction({
                 amount: Tez.fromMutezInt(1000000),
-                destination: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
+                destination: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
                 parameters: Some(Js.Dict.fromArray([|("prim", "Unit")|])),
               }),
           }),
       },
     |];
     module UnderTest = ServerAPI.ExplorerMaker(Stub);
-    UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.getOperations(
+      settings,
+      "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
+      (),
+    )
     ->Future.get(result => {
         expect.value(result).toEqual(Result.Ok(expected));
         callback();
@@ -368,7 +394,11 @@ describe("API tests", ({testAsync}) => {
       };
     };
     module UnderTest = ServerAPI.ExplorerMaker(Stub);
-    UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.getOperations(
+      settings,
+      "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
+      (),
+    )
     ->Future.get(result => {
         expect.value(result).toEqual(
           Result.Error("Expected field 'destination'\n\tin array at index 0"),
@@ -412,7 +442,7 @@ describe("API tests", ({testAsync}) => {
         hash: "oou9e5pWQWZ4GDoT7fiJMwdH85TytZASJMC1VV8GbaDLNsHwoXw",
         payload:
           Business({
-            source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
+            source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
             fee: Tez.fromMutezInt(2065),
             op_id: 0,
             payload:
@@ -424,7 +454,11 @@ describe("API tests", ({testAsync}) => {
       },
     |];
     module UnderTest = ServerAPI.ExplorerMaker(Stub);
-    UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.getOperations(
+      settings,
+      "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
+      (),
+    )
     ->Future.get(result => {
         expect.value(result).toEqual(Result.Ok(expected));
         callback();
@@ -455,7 +489,11 @@ describe("API tests", ({testAsync}) => {
       };
     };
     module UnderTest = ServerAPI.ExplorerMaker(Stub);
-    UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.getOperations(
+      settings,
+      "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
+      (),
+    )
     ->Future.get(result => {
         expect.value(result).toEqual(
           Result.Error(
@@ -500,7 +538,7 @@ describe("API tests", ({testAsync}) => {
         hash: "opZj2yByVxxEg4YRsZcERMqiy9VgnJkzDGQBPdFNycxxsFBZYus",
         payload:
           Business({
-            source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
+            source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
             fee: Tez.fromMutezInt(1258),
             op_id: 0,
             payload: Delegation({delegate: None}),
@@ -508,7 +546,11 @@ describe("API tests", ({testAsync}) => {
       },
     |];
     module UnderTest = ServerAPI.ExplorerMaker(Stub);
-    UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.getOperations(
+      settings,
+      "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
+      (),
+    )
     ->Future.get(result => {
         expect.value(result).toEqual(Result.Ok(expected));
         callback();
@@ -550,18 +592,22 @@ describe("API tests", ({testAsync}) => {
         hash: "opZj2yByVxxEg4YRsZcERMqiy9VgnJkzDGQBPdFNycxxsFBZYus",
         payload:
           Business({
-            source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
+            source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
             fee: Tez.fromMutezInt(1258),
             op_id: 0,
             payload:
               Delegation({
-                delegate: Some("tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"),
+                delegate: Some("tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh),
               }),
           }),
       },
     |];
     module UnderTest = ServerAPI.ExplorerMaker(Stub);
-    UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.getOperations(
+      settings,
+      "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
+      (),
+    )
     ->Future.get(result => {
         expect.value(result).toEqual(Result.Ok(expected));
         callback();
@@ -591,7 +637,11 @@ describe("API tests", ({testAsync}) => {
       };
     };
     module UnderTest = ServerAPI.ExplorerMaker(Stub);
-    UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3", ())
+    UnderTest.getOperations(
+      settings,
+      "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
+      (),
+    )
     ->Future.get(result => {
         expect.value(result).toEqual(
           Result.Error("Expected field 'type'\n\tin array at index 0"),
@@ -618,8 +668,14 @@ describe("API tests", ({testAsync}) => {
       };
     };
     let expected = [|
-      {Delegate.name: "foo", address: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"},
-      {Delegate.name: "bar", address: "tz1NF7b38uQ43N4nmTHvDKpr1Qo5LF9iYawk"},
+      {
+        Delegate.name: "foo",
+        address: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
+      },
+      {
+        Delegate.name: "bar",
+        address: "tz1NF7b38uQ43N4nmTHvDKpr1Qo5LF9iYawk"->pkh,
+      },
     |];
     module UnderTest = NodeAPI.DelegateMaker(Stub);
     UnderTest.getBakers(AppSettings.mainOnly(settings))

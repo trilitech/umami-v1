@@ -23,22 +23,22 @@
 /*                                                                           */
 /*****************************************************************************/
 
-let getAliasFromAddress = (address, aliases) => {
+let getAliasFromAddress = (address: PublicKeyHash.t, aliases) => {
   aliases
-  ->Map.String.get(address)
+  ->Map.String.get((address :> string))
   ->Option.map((account: Alias.t) => account.name);
 };
 
-let getContractAliasFromAddress = (address, aliases, tokens) => {
+let getContractAliasFromAddress = (address: PublicKeyHash.t, aliases, tokens) => {
   let r =
     aliases
-    ->Map.String.get(address)
+    ->Map.String.get((address :> string))
     ->Option.map((account: Alias.t) => account.name);
 
   switch (r) {
   | None =>
     tokens
-    ->Map.String.get(address)
+    ->Map.String.get((address :> string))
     ->Option.map((token: Token.t) => I18n.t#token_contract(token.alias))
   | Some(r) => Some(r)
   };

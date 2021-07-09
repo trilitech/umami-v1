@@ -94,13 +94,13 @@ module Currency = {
 };
 
 type elt = {
-  destination: string,
+  destination: PublicKeyHash.t,
   amount: Currency.t,
   tx_options: transferOptions,
 };
 
 type t = {
-  source: string,
+  source: PublicKeyHash.t,
   transfers: list(elt),
   common_options: commonOptions,
 };

@@ -30,8 +30,8 @@ module Secret: {
   type t = {
     name: string,
     derivationPath: DerivationPath.Pattern.t,
-    addresses: array(string),
-    legacyAddress: option(string),
+    addresses: Js.Array.t(PublicKeyHash.t),
+    legacyAddress: option(PublicKeyHash.t),
   };
 
   let decoder: Js.Json.t => t;
@@ -41,20 +41,20 @@ module Secret: {
 
 /** Aliases management */
 module Aliases: {
-  type t = array((string, string));
+  type t = array((string, PublicKeyHash.t));
 
   let get: (~settings: AppSettings.t) => Future.t(Result.t(t, string));
 
   let getAliasForAddress:
-    (~settings: AppSettings.t, ~address: string) =>
+    (~settings: AppSettings.t, ~address: PublicKeyHash.t) =>
     Future.t(Result.t(option(string), string));
 
   let getAddressForAlias:
     (~settings: AppSettings.t, ~alias: string) =>
-    Future.t(Result.t(option(string), string));
+    Future.t(Result.t(option(PublicKeyHash.t), string));
 
   let add:
-    (~settings: AppSettings.t, ~alias: string, ~address: string) =>
+    (~settings: AppSettings.t, ~alias: string, ~address: PublicKeyHash.t) =>
     Future.t(Result.t(unit, string));
 
   let delete:
@@ -71,6 +71,8 @@ module Accounts: {
   /** Representation of accounts list */
   type t = array(Secret.t);
 
+  type name = string;
+
   let secrets: (~settings: AppSettings.t) => option(t);
 
   let recoveryPhrases:
@@ -79,7 +81,7 @@ module Accounts: {
 
   let get:
     (~settings: AppSettings.t) =>
-    Future.t(Result.t(array((string, string)), string));
+    Future.t(Result.t(array((name, PublicKeyHash.t)), string));
 
   let updateSecretAt:
     (~settings: AppSettings.t, Secret.t, int) =>
@@ -90,26 +92,21 @@ module Accounts: {
     Future.t(Result.t(string, string));
 
   let add:
-    (~settings: AppSettings.t, ~alias: string, ~address: string) =>
+    (~settings: AppSettings.t, ~alias: name, ~address: PublicKeyHash.t) =>
     Future.t(result(unit, TezosSDK.Error.t));
 
   let import:
     (
       ~settings: AppSettings.t,
-      ~alias: string,
+      ~alias: name,
       ~secretKey: string,
       ~password: string
     ) =>
-    Future.t(Result.t(string, string));
+    Future.t(Result.t(PublicKeyHash.t, string));
 
   let derive:
-    (
-      ~settings: AppSettings.t,
-      ~index: int,
-      ~alias: string,
-      ~password: string
-    ) =>
-    Future.t(Result.t(string, string));
+    (~settings: AppSettings.t, ~index: int, ~alias: name, ~password: string) =>
+    Future.t(Result.t(PublicKeyHash.t, string));
 
   /* Delete the given account */
   let delete:
@@ -120,18 +117,21 @@ module Accounts: {
     (~settings: AppSettings.t, int) =>
     Future.t(Result.t(array(unit), string));
 
-  let used: (AppSettings.t, string) => Future.t(Result.t(bool, string));
+  let used:
+    (AppSettings.t, PublicKeyHash.t) => Future.t(Result.t(bool, string));
 
   let restore:
     (
       ~settings: AppSettings.t,
       ~backupPhrase: string,
-      ~name: string,
+      ~name: name,
       ~derivationPath: TezosClient.DerivationPath.Pattern.t=?,
       ~password: string,
       unit
     ) =>
-    Future.t(Result.t((array(string), option(string)), string));
+    Future.t(
+      Result.t((array(PublicKeyHash.t), option(PublicKeyHash.t)), string),
+    );
 
   let scanAll:
     (~settings: AppSettings.t, ~password: string) =>

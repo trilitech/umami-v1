@@ -64,17 +64,19 @@ module URL = {
     let operations =
         (
           settings: AppSettings.t,
-          account,
+          account: PublicKeyHash.t,
           ~types: option(array(string))=?,
-          ~destination: option(string)=?,
+          ~destination: option(PublicKeyHash.t)=?,
           ~limit: option(int)=?,
           (),
         ) => {
-      let operationsPath = "accounts/" ++ account ++ "/operations";
+      let operationsPath = "accounts/" ++ (account :> string) ++ "/operations";
       let args =
         Lib.List.(
           []
-          ->addOpt(destination->arg_opt("destination", dst => dst))
+          ->addOpt(
+              destination->arg_opt("destination", dst => (dst :> string)),
+            )
           ->addOpt(limit->arg_opt("limit", lim => lim->Js.Int.toString))
           ->addOpt(types->arg_opt("types", t => t->Js.Array2.joinWith(",")))
         );
@@ -82,20 +84,28 @@ module URL = {
       url;
     };
 
-    let mempool = (network, ~account) => {
+    let mempool = (network, ~account: PublicKeyHash.t) => {
       let path =
-        Path.API.mempool_operations ++ "/" ++ account ++ "/operations";
+        Path.API.mempool_operations
+        ++ "/"
+        ++ (account :> string)
+        ++ "/operations";
       build_explorer_url(network, path, []);
     };
 
-    let checkToken = (network, ~contract) => {
-      let path = "tokens/exists/" ++ contract;
+    let checkToken = (network, ~contract: PublicKeyHash.t) => {
+      let path = "tokens/exists/" ++ (contract :> string);
       build_explorer_url(network, path, []);
     };
 
-    let getTokenBalance = (network, ~contract, ~account) => {
+    let getTokenBalance =
+        (network, ~contract: PublicKeyHash.t, ~account: PublicKeyHash.t) => {
       let path =
-        "accounts/" ++ account ++ "/tokens/" ++ contract ++ "/balance";
+        "accounts/"
+        ++ (account :> string)
+        ++ "/tokens/"
+        ++ (contract :> string)
+        ++ "/balance";
       build_explorer_url(network, path, []);
     };
   };
@@ -124,15 +134,15 @@ let tryMap = (result: Result.t('a, string), transform: 'a => 'b) =>
 
 module type Explorer = {
   let getFromMempool:
-    (string, AppSettings.t, array(Operation.Read.t)) =>
+    (PublicKeyHash.t, AppSettings.t, array(Operation.Read.t)) =>
     Future.t(Result.t(array(Operation.Read.t), string));
 
-  let get:
+  let getOperations:
     (
       AppSettings.t,
-      string,
+      PublicKeyHash.t,
       ~types: array(string)=?,
-      ~destination: string=?,
+      ~destination: PublicKeyHash.t=?,
       ~limit: int=?,
       ~mempool: bool=?,
       unit
@@ -142,7 +152,7 @@ module type Explorer = {
 
 module ExplorerMaker =
        (Get: {let get: string => Future.t(Result.t(Js.Json.t, string));}) => {
-  let getFromMempool = (account, network, operations) =>
+  let getFromMempool = (account: PublicKeyHash.t, network, operations) =>
     network
     ->URL.Explorer.mempool(~account)
     ->Get.get
@@ -167,12 +177,12 @@ module ExplorerMaker =
       }
     );
 
-  let get =
+  let getOperations =
       (
         network,
-        account,
+        account: PublicKeyHash.t,
         ~types: option(array(string))=?,
-        ~destination: option(string)=?,
+        ~destination: option(PublicKeyHash.t)=?,
         ~limit: option(int)=?,
         ~mempool: bool=false,
         (),

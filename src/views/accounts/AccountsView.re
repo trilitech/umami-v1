@@ -143,7 +143,7 @@ module AccountsFlatList = {
        ->Map.String.valuesToArray
        ->SortArray.stableSortBy(Account.compareName)
        ->Array.map(account =>
-           <AccountRowItem key={account.address} account ?token />
+           <AccountRowItem key=(account.address :> string) account ?token />
          )
        ->React.array}
     </View>;
@@ -160,17 +160,18 @@ module AccountsTreeList = {
       let addressesInSecrets =
         secrets
         ->Array.map(secret => {
+            let hdAddresses = secret.addresses->Array.map(k => (k :> string));
             secret.legacyAddress
-            ->Option.mapWithDefault(secret.addresses, legacyAddress => {
-                secret.addresses->Array.concat([|legacyAddress|])
-              })
+            ->Option.mapWithDefault(hdAddresses, legacyAddress => {
+                hdAddresses->Array.concat([|(legacyAddress :> string)|])
+              });
           })
         ->Array.reduce([||], (acc, arr) => acc->Array.concat(arr))
         ->Set.String.fromArray;
 
       let accountsNotInSecrets =
         accounts->Map.String.keep((address, _account) => {
-          !addressesInSecrets->Set.String.has(address)
+          !addressesInSecrets->Set.String.has((address :> string))
         });
 
       <>
@@ -189,8 +190,8 @@ module AccountsTreeList = {
              )
            ->Array.map(((secret, legacyAddress)) =>
                <SecretRowTree.AccountImportedRowItem.Umami
-                 key=legacyAddress
-                 address=legacyAddress
+                 key=(legacyAddress :> string)
+                 address=(legacyAddress :> string)
                  secret
                />
              )
@@ -201,7 +202,7 @@ module AccountsTreeList = {
            ->Map.String.valuesToArray
            ->Array.map(account =>
                <SecretRowTree.AccountImportedRowItem.Cli
-                 key={account.address}
+                 key=(account.address :> string)
                  account
                />
              )

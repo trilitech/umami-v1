@@ -183,25 +183,36 @@ module DelegateMaker =
     | `Testnet(_) =>
       Future.value(
         Ok([|
-          {name: "zebra", address: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"},
+          {
+            name: "zebra",
+            address:
+              "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"
+              ->PublicKeyHash.build
+              ->Result.getExn,
+          },
         |]),
       )
     };
 
   type delegationInfo = {
     initialBalance: Tez.t,
-    delegate: string,
+    delegate: option(PublicKeyHash.t),
     timestamp: Js.Date.t,
     lastReward: option(Tez.t),
   };
 
   let getDelegationInfoForAccount =
-      (network, account: string)
+      (network, account: PublicKeyHash.t)
       : Future.t(Belt.Result.t(option(delegationInfo), Js.String.t)) => {
     module ExplorerAPI = ServerAPI.ExplorerMaker(Get);
     module BalanceAPI = Balance;
     network
-    ->ExplorerAPI.get(account, ~types=[|"delegation"|], ~limit=1, ())
+    ->ExplorerAPI.getOperations(
+        account,
+        ~types=[|"delegation"|],
+        ~limit=1,
+        (),
+      )
     ->Future.flatMapOk(operations =>
         if (operations->Array.length == 0) {
           Future.value(Ok(None));
@@ -218,7 +229,7 @@ module DelegateMaker =
                     Ok(
                       {
                         initialBalance: Tez.zero,
-                        delegate: "",
+                        delegate: None,
                         timestamp: Js.Date.make(),
                         lastReward: None,
                       }
@@ -235,15 +246,15 @@ module DelegateMaker =
                   ->Future.mapOk(balance =>
                       {
                         initialBalance: balance,
-                        delegate,
+                        delegate: Some(delegate),
                         timestamp: firstOperation.timestamp,
                         lastReward: None,
                       }
                     )
                   ->Future.flatMapOk(info =>
                       network
-                      ->ExplorerAPI.get(
-                          info.delegate,
+                      ->ExplorerAPI.getOperations(
+                          delegate,
                           ~types=[|"transaction"|],
                           ~destination=account,
                           ~limit=1,
@@ -281,7 +292,7 @@ module DelegateMaker =
 module Delegate = DelegateMaker(URL);
 
 module Tokens = {
-  let checkTokenContract = (settings, contract) => {
+  let checkTokenContract = (settings, contract: PublicKeyHash.t) => {
     URL.Explorer.checkToken(settings, ~contract)
     ->URL.get
     ->Future.map(result => {

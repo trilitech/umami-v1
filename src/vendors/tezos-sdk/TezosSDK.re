@@ -61,7 +61,7 @@ let init: (string, string) => Js.Promise.t(t) =
 module OutputAddress = {
   type t = {
     alias: string,
-    pkh: string,
+    pkh: PublicKeyHash.t,
     pk_known: bool,
     sk_known: bool,
   };
@@ -70,7 +70,7 @@ module OutputAddress = {
 module InputAddress = {
   type t = {
     alias: string,
-    pkh: string,
+    pkh: PublicKeyHash.t,
     force: bool,
   };
 };
@@ -173,7 +173,7 @@ type importSecretKeyParams = {
 [@bs.send]
 external importSecretKey:
   (lib, cctxt, importSecretKeyParams, unit => string) =>
-  Js.Promise.t(result(string)) =
+  Js.Promise.t(result(PublicKeyHash.t)) =
   "importSecretKey";
 let importSecretKey = (sdk, ~name, ~skUri, ~password, ()) =>
   importSecretKey(sdk.lib, sdk.cctxt, {name, sk_uri: skUri, force: true}, () =>
@@ -192,11 +192,14 @@ type importKeysFromMnemonicsParams = {
 [@bs.send]
 external importKeysFromMnemonics:
   (lib, cctxt, importKeysFromMnemonicsParams, unit => string) =>
-  Js.Promise.t(result(string)) =
+  Js.Promise.t(result(PublicKeyHash.t)) =
   "importKeysFromMnemonics";
 let importKeysFromMnemonics = (sdk, ~name, ~mnemonics, ~password, ()) =>
   importKeysFromMnemonics(
-    sdk.lib, sdk.cctxt, {name, mnemonics, passphrase: "", encrypt: true, force: true}, () =>
+    sdk.lib,
+    sdk.cctxt,
+    {name, mnemonics, passphrase: "", encrypt: true, force: true},
+    () =>
     password
   )
   |> fromPromise;
