@@ -107,9 +107,14 @@ module Secret = {
       | None =>
         object_([
           ("name", string(secret.name)),
+          ("kind", string(secret.kind->kindToString)),
           (
             "derivationScheme",
             string(secret.derivationPath->DerivationPath.Pattern.toString),
+          ),
+          (
+            "derivationCurve",
+            string(secret.derivationScheme->Wallet.Ledger.schemeToString),
           ),
           (
             "addresses",
@@ -511,6 +516,34 @@ module Accounts = {
         )
       );
 
+  let registerSecret =
+      (
+        ~config,
+        ~name,
+        ~kind,
+        ~derivationPath,
+        ~derivationScheme,
+        ~addresses,
+        ~legacyAddress,
+      ) => {
+    let secret = {
+      Secret.Repr.name,
+      kind,
+      derivationPath,
+      derivationScheme,
+      addresses,
+      legacyAddress,
+    };
+    let secrets =
+      secrets(~config)
+      ->Result.getWithDefault([||])
+      ->Array.concat([|secret|]);
+    LocalStorage.setItem(
+      "secrets",
+      Json.Encode.array(Secret.encoder, secrets)->Json.stringify,
+    );
+  };
+
   let restore =
       (
         ~config,
@@ -585,24 +618,83 @@ module Accounts = {
             LocalStorage.setItem("recovery-phrases", recoveryPhrases)
           )
       )
-    ->Future.tapOk(((addresses, legacyAddress)) => {
-        let secret = {
-          Secret.Repr.name,
-          kind: Secret.Repr.Mnemonics,
-          derivationPath,
-          derivationScheme,
-          addresses,
-          legacyAddress,
-        };
-        let secrets =
-          secrets(~config)
-          ->Result.getWithDefault([||])
-          ->Array.concat([|secret|]);
-        LocalStorage.setItem(
-          "secrets",
-          Json.Encode.array(Secret.encoder, secrets)->Json.stringify,
-        );
-      });
+    ->Future.tapOk(((addresses, legacyAddress)) =>
+        registerSecret(
+          ~config,
+          ~name,
+          ~kind=Secret.Repr.Mnemonics,
+          ~derivationPath,
+          ~derivationScheme,
+          ~addresses,
+          ~legacyAddress,
+        )
+      );
+  };
+
+  let importLedgerKey =
+      (
+        ~config,
+        ~name,
+        ~index,
+        ~derivationPath,
+        ~derivationScheme,
+        ~ledgerTransport,
+        ~ledgerMasterKey,
+      ) => {
+    let path = derivationPath->DerivationPath.Pattern.implement(index);
+    LedgerAPI.addOrReplaceAlias(
+      ~ledgerTransport,
+      ~dirpath=config->ConfigUtils.baseDir,
+      ~alias=name,
+      ~path,
+      ~scheme=derivationScheme,
+      ~ledgerBasePkh=ledgerMasterKey,
+    );
+  };
+
+  let importLedger =
+      (
+        ~config,
+        ~name,
+        ~accountsNumber,
+        ~derivationPath=DerivationPath.Pattern.fromTezosBip44(
+                          DerivationPath.Pattern.default,
+                        ),
+        ~derivationScheme=Wallet.Ledger.ED25519,
+        ~ledgerMasterKey,
+        (),
+      ) => {
+    let rec importKeys = (tr, keys, index) => {
+      let name = name ++ " /" ++ Int.toString(index);
+      index < accountsNumber
+        ? importLedgerKey(
+            ~config,
+            ~name,
+            ~index,
+            ~derivationPath,
+            ~derivationScheme,
+            ~ledgerTransport=tr,
+            ~ledgerMasterKey,
+          )
+          ->Future.flatMapOk(key =>
+              importKeys(tr, [key, ...keys], index + 1)
+            )
+        : List.reverse(keys)->List.toArray->Ok->Future.value;
+    };
+    LedgerAPI.init()
+    ->Future.mapError(ErrorHandler.taquito)
+    ->Future.flatMapOk(tr => tr->importKeys([], 0))
+    ->Future.tapOk(addresses =>
+        registerSecret(
+          ~config,
+          ~name,
+          ~kind=Secret.Repr.Mnemonics,
+          ~derivationPath,
+          ~derivationScheme,
+          ~addresses,
+          ~legacyAddress=None,
+        )
+      );
   };
 
   let scanAll = (~config, ~password) =>
