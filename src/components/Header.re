@@ -38,7 +38,27 @@ let styles =
           (),
         ),
       "nameLogo": style(~flexDirection=`row, ~alignItems=`center, ()),
-      "networkInfo": style(~marginBottom=4.->dp, ~marginLeft=16.->dp, ()),
+      "networkInfo": style(),
+      "networkHeader":
+        style(
+          ~flexDirection=`row,
+          ~alignItems=`center,
+          ~marginLeft=16.->dp,
+          ~marginBottom=2.->dp,
+          (),
+        ),
+      "tag":
+        style(
+          ~height=26.->dp,
+          ~paddingHorizontal=16.->dp,
+          ~paddingVertical=4.->dp,
+          ~marginRight=8.->dp,
+          ~borderRadius=13.,
+          ~alignItems=`center,
+          ~justifyContent=`center,
+          ~borderWidth=1.,
+          (),
+        ),
     })
   );
 
@@ -150,9 +170,27 @@ let make = () => {
   let (networkText, networkColor) =
     switch (settings->AppSettings.network) {
     | `Mainnet => (I18n.t#mainnet, Some(`primary))
-    | `Florencenet => (I18n.t#florencenet, Some(`primary))
-    | `Custom(name) => (name, Some(`primary))
+    | `Florencenet => (I18n.t#florencenet, Some(`mediumEmphasis))
+    | `Custom(name) => (
+        name,
+        settings->AppSettings.chainId == Network.mainnetChain
+          ? Some(`primary) : Some(`mediumEmphasis),
+      )
     };
+
+  let tag = {
+    let network = settings->AppSettings.network;
+    switch (network) {
+    | `Mainnet => None
+    | `Florencenet => None
+    | `Custom(_) => Some(settings->AppSettings.chainId->Network.getChainName)
+    };
+  };
+
+  let tagBorderColor = {
+    settings->AppSettings.chainId == Network.mainnetChain
+      ? theme.colors.textPrimary : theme.colors.textMediumEmphasis;
+  };
 
   <View
     style=Style.(
@@ -167,12 +205,28 @@ let make = () => {
         height={20.->Style.dp}
         fill={theme.colors.textHighEmphasis}
       />
-      <Typography.Overline2
-        fontWeightStyle=`black
-        colorStyle=?networkColor
-        style={styles##networkInfo}>
-        networkText->React.string
-      </Typography.Overline2>
+      <View style=styles##networkHeader>
+        {<View
+           style=Style.(
+             array([|styles##tag, style(~borderColor=tagBorderColor, ())|])
+           )>
+           <Typography.Body2
+             fontSize=14. colorStyle={Option.getExn(networkColor)}>
+             {switch (tag) {
+              | Some(content) => "Custom " ++ content
+              | None => ""
+              }}
+             ->React.string
+           </Typography.Body2>
+         </View>
+         ->ReactUtils.onlyWhen(tag != None)}
+        <Typography.Overline2
+          fontWeightStyle=`black
+          colorStyle=?networkColor
+          style={styles##networkInfo}>
+          networkText->React.string
+        </Typography.Overline2>
+      </View>
     </View>
     <UpdateNotice displayNotice />
   </View>;
