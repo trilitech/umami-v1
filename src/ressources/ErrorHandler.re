@@ -30,9 +30,22 @@ type token =
   | OffchainCallNotImplemented(string)
   | RawError(string);
 
+type wallet = Wallet.error;
+
+type walletAPI =
+  | NoSecretFound
+  | SecretNotFound(int)
+  | CannotUpdateSecret(int)
+  | RecoveryPhraseNotFound(int)
+  | SecretAlreadyImported
+  | Generic(string);
+
 type t =
   | Taquito(ReTaquitoError.t)
-  | Token(token);
+  | Token(token)
+  | Wallet(wallet)
+  | WalletAPI(walletAPI)
+  | TezosSDK(TezosSDK.Error.t);
 
 let taquito = e => Taquito(e);
 let token = e => Token(e);
@@ -68,10 +81,19 @@ let printError = (fmt, err) => {
 
 let fromTokenToString = err => Format.asprintf("%a", printError, err);
 
-let toString =
+let fromWalletToString =
   fun
-  | Token(e) => fromTokenToString(e)
-  | Taquito(e) => fromTaquitoToString(e);
+  | Wallet.KeyNotFound => I18n.wallet#key_not_found
+  | Generic(s) => s;
+
+let fromWalletAPIToString =
+  fun
+  | NoSecretFound => I18n.errors#no_secret_found
+  | SecretNotFound(i) => I18n.errors#secret_not_found(i)
+  | CannotUpdateSecret(i) => I18n.errors#cannot_update_secret(i)
+  | RecoveryPhraseNotFound(i) => I18n.errors#recovery_phrase_not_found(i)
+  | SecretAlreadyImported => I18n.errors#secret_already_imported
+  | Generic(s) => s;
 
 let fromSdkToString = e =>
   e->TezosSDK.Error.(
@@ -79,3 +101,11 @@ let fromSdkToString = e =>
        | Generic(s) => s
        | BadPkh => I18n.form_input_error#bad_pkh
      );
+
+let toString =
+  fun
+  | Token(e) => fromTokenToString(e)
+  | Taquito(e) => fromTaquitoToString(e)
+  | Wallet(e) => fromWalletToString(e)
+  | WalletAPI(e) => fromWalletAPIToString(e)
+  | TezosSDK(e) => fromSdkToString(e);

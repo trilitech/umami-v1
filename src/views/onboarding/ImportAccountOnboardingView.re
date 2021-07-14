@@ -47,7 +47,9 @@ let make = (~closeAction, ~existingSecretsCount=0) => {
 
   let createSecretWithMnemonic = p =>
     System.Client.initDir(settings->AppSettings.baseDir)
-    ->Future.flatMapOk(() => createSecretWithMnemonic(p))
+    ->Future.flatMapOk(() =>
+        createSecretWithMnemonic(p)->Future.mapError(ErrorHandler.toString)
+      )
     ->Future.tapOk(_ => {closeAction()})
     ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
         I18n.t#account_created

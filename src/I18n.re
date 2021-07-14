@@ -361,6 +361,16 @@ let taquito = {
 
 let wallet = {pub _this = this; pub key_not_found = "Key not found"};
 
+let errors = {
+  pub _this = this;
+  pub no_secret_found = "No secrets found";
+  pub secret_not_found = i => p("Secret at index %d not found!", i);
+  pub cannot_update_secret = i => p("Can't update secret at index %d!", i);
+  pub recovery_phrase_not_found = i =>
+    p("Recovery phrase at index %d not found!", i);
+  pub secret_already_imported = "Secret already imported"
+};
+
 let csv = {
   pub _this = this;
   pub cannot_parse_number = (row, col) =>

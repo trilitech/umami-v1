@@ -174,12 +174,12 @@ let useGetter =
       ~errorToString=?,
       ~get:
          (~settings: TezosClient.AppSettings.t, 'input) =>
-         Future.t(Belt.Result.t('response, string)),
+         Future.t(Belt.Result.t('response, 'error)),
       ~kind,
       ~setRequest,
       (),
     )
-    : ('input => Future.t(Belt.Result.t('response, string))) => {
+    : ('input => Future.t(Belt.Result.t('response, 'error))) => {
   let addLog = LogsContext.useAdd();
   let settings = SdkContext.useSettings();
 

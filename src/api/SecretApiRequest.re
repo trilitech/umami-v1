@@ -30,7 +30,7 @@
 let useLoad = requestState => {
   let get = (~settings, ()) =>
     WalletAPI.Accounts.secrets(~settings)
-    ->Option.mapWithDefault(Future.value(Result.Ok([||])), secrets => {
+    ->Result.mapWithDefault(Future.value(Result.Ok([||])), secrets => {
         Future.value(Result.Ok(secrets))
       })
     ->Future.mapOk(secrets =>
