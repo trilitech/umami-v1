@@ -143,11 +143,18 @@ app.on('will-finish-launching', () => {
     mainWindow.webContents.send('deeplinkURL', url)
   })
 
-  // Protocol handler for windows & linux
-  const index = process.argv.findIndex(arg => /umami:\/\//.test(arg))
-  if (index !== -1) {
-    mainWindow.webContents.send('deeplinkURL', process.argv[index])
-  }
+    app.on("second-instance", (event, argv, workingDirectory) => {
+        // Protocol handler for win and linux
+        // argv: An array of the second instance’s (command line / deep linked) arguments
+        if (process.platform == 'win32' || process.platform === "linux") {
+            // Protocol handler for windows & linux
+            const index = argv.findIndex(arg => arg.startsWith("umami://"));
+            if (index !== -1) {
+                mainWindow.webContents.send('deeplinkURL', argv[index])
+            }
+       }
+    })
+
 })
 
 // Log both at dev console and at running node console instance

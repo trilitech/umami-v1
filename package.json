@@ -76,7 +76,7 @@
       "category": "public.app-category.Reference"
     },
     "linux": {
-      "target": "AppImage",
+        "target": "snap",
       "mimeTypes": ["x-scheme-handler/umami"]
     },
     "files": [
