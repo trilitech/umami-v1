@@ -38,4 +38,4 @@ let taquito: ReTaquitoError.t => t;
 let token: token => t;
 
 let fromSdkToString: TezosSDK.Error.t => string;
-let fromApiToString: t => string;
+let toString: t => string;

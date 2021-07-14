@@ -68,7 +68,7 @@ let printError = (fmt, err) => {
 
 let fromTokenToString = err => Format.asprintf("%a", printError, err);
 
-let fromApiToString =
+let toString =
   fun
   | Token(e) => fromTokenToString(e)
   | Taquito(e) => fromTaquitoToString(e);
