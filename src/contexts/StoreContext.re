@@ -162,7 +162,7 @@ let make = (~children) => {
             addToast(
               Logs.error(
                 ~origin=Settings,
-                Network.errorMsg(Network.APINotSupported(apiVersion.api)),
+                Network.errorMsg(`APINotSupported(apiVersion.api)),
               ),
             );
           }
