@@ -39,6 +39,7 @@ let make =
       ~size=28.,
       ~iconSizeRatio=4. /. 7.,
       ~isPrimary=false,
+      ~disabled=false,
       ~onPress=?,
       ~tooltip=?,
       ~isActive=?,
@@ -75,9 +76,11 @@ let make =
          ~style=?None,
          ~size=Js.Math.ceil_float(iconSizeRatio *. size),
          ~color=
-           isPrimary
-             ? theme.colors.primaryIconMediumEmphasis
-             : theme.colors.iconMediumEmphasis,
+           switch (disabled, isPrimary) {
+           | (true, _) => theme.colors.iconDisabled
+           | (false, true) => theme.colors.primaryIconMediumEmphasis
+           | (false, false) => theme.colors.iconMediumEmphasis
+           },
        )}
     </ThemedPressableComp>;
 
