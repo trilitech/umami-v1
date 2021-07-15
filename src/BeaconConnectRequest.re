@@ -30,6 +30,7 @@ module IPC = {
   type event;
   [@bs.module "electron"] external renderer: t = "ipcRenderer";
   [@bs.send] external on: (t, string, (event, string) => unit) => unit = "on";
+  [@bs.send] external send: (t, string) => unit = "send";
 };
 
 let dataFromURL = url => {
@@ -162,6 +163,10 @@ let make = () => {
             ->Future.get(Js.log)
           })
         })
+      ->Future.tapOk(_ => {
+        IPC.renderer->IPC.send("beacon-ready");
+        Js.log("beacon-ready (renderer)")
+      })
       ->Future.get(Js.log);
     };
     None;
