@@ -103,3 +103,17 @@ main {
   font-stretch: normal;
   font-display: swap;
 }
+
+*::-webkit-scrollbar-track-piece {
+  background-color: transparent;
+  color:transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color:rgb(166, 166, 166);
+  border-radius: 12px;
+}
+
+*::-webkit-scrollbar {
+  width: 9px;
+}
