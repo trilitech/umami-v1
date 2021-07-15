@@ -49,6 +49,22 @@ let isEditMode =
   | Edit(_) => true
   | _ => false;
 
+let rsf = (err, raiseSubmitFailed) =>
+  switch (err) {
+  | `APIVersionFormat(_) => raiseSubmitFailed(Some("APIError"))
+  | `APINotAvailable(_) => raiseSubmitFailed(Some("APIError"))
+  | `APIVersionRPCError(_) => raiseSubmitFailed(Some("APIError"))
+  | `APIMonitorRPCError(_) => raiseSubmitFailed(Some("APIError"))
+  | `APINotSupported(_) => raiseSubmitFailed(Some("APIError"))
+  | `NodeNotAvailable(_) => raiseSubmitFailed(Some("NodeError"))
+  | `NodeChainRPCError(_) => raiseSubmitFailed(Some("NodeError"))
+  | `NodeVersionRPCError(_) => raiseSubmitFailed(Some("NodeError"))
+  | `ChainInconsistency(_, _) =>
+    raiseSubmitFailed(Some("ChainInconsistency"))
+  | `APIAndNodeError(_, _) => raiseSubmitFailed(Some("TwoErrors"))
+  | `UnknownChainId(_) => raiseSubmitFailed(Some("UnknownChainId"))
+  };
+
 let styles =
   Style.(
     StyleSheet.create({
@@ -105,7 +121,7 @@ let make = (~initNode=?, ~initMezos=?, ~action: action, ~closeAction) => {
         );
       },
       ~onSubmit=
-        ({state}) => {
+        ({state, raiseSubmitFailed}) => {
           switch (action) {
           | Create =>
             Network.checkConfiguration(state.values.mezos, state.values.node)
@@ -117,6 +133,7 @@ let make = (~initNode=?, ~initMezos=?, ~action: action, ~closeAction) => {
                   endpoint: state.values.node,
                 })
               )
+            ->Future.tapError(err => err->toFormError->rsf(raiseSubmitFailed))
             ->Future.tapOk(_ => closeAction())
             ->ApiRequest.logOk(addToast, Logs.Account, _ =>
                 I18n.t#custom_network_created
@@ -135,6 +152,7 @@ let make = (~initNode=?, ~initMezos=?, ~action: action, ~closeAction) => {
                   },
                 )
               )
+            ->Future.tapError(err => err->toFormError->rsf(raiseSubmitFailed))
             ->Future.tapOk(_ => closeAction())
             ->ApiRequest.logOk(addToast, Logs.Account, _ =>
                 I18n.t#custom_network_updated
