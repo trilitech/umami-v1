@@ -28,20 +28,9 @@ open ReactNative;
 let styles =
   Style.(
     StyleSheet.create({
-      "inner": style(~marginLeft=14.->dp, ()),
+      "rowItem": style(~paddingLeft=14.->dp, ()),
       "tagContainer": style(~flexDirection=`row, ()),
-      "tag":
-        style(
-          ~width=40.->dp,
-          ~height=18.->dp,
-          ~marginRight=8.->dp,
-          ~marginLeft=2.->dp,
-          ~borderRadius=9.,
-          ~alignItems=`center,
-          ~justifyContent=`center,
-          ~borderWidth=1.,
-          (),
-        ),
+      "tag": style(~marginRight=14.->dp, ()),
       "alias": style(~height=20.->dp, ~marginBottom=4.->dp, ()),
       "derivation": style(~height=18.->dp, ()),
       "actionContainer":
@@ -100,8 +89,9 @@ module AccountNestedRowItem = {
     let account = StoreContext.Accounts.useGetFromAddress(address);
 
     account->ReactUtils.mapOpt(account =>
-      <RowItem.Bordered height=90. isNested=true isLast>
-        <View style=styles##inner>
+      <RowItem.Bordered
+        innerStyle=styles##rowItem height=90. isNested=true isLast>
+        <View>
           <Typography.Subtitle1 style=styles##alias>
             account.name->React.string
           </Typography.Subtitle1>
@@ -189,8 +179,8 @@ module AccountImportedRowItem = {
     [@react.component]
     let make =
         (~account: Account.t, ~tag: React.element, ~actions: React.element) => {
-      <RowItem.Bordered height=66.>
-        <View style={Style.array([|styles##inner, styles##tagContainer|])}>
+      <RowItem.Bordered innerStyle=styles##rowItem height=66.>
+        <View style=styles##tagContainer>
           tag
           <View>
             <Typography.Subtitle1 style=styles##alias>
@@ -208,24 +198,10 @@ module AccountImportedRowItem = {
     [@react.component]
     let make = (~address: PublicKeyHash.t, ~secret) => {
       let account = StoreContext.Accounts.useGetFromAddress(address);
-      let theme = ThemeContext.useTheme();
-
       account->ReactUtils.mapOpt(account =>
         <Base
           account
-          tag={
-            <View
-              style=Style.(
-                array([|
-                  styles##tag,
-                  style(~borderColor=theme.colors.borderMediumEmphasis, ()),
-                |])
-              )>
-              <Typography.Body2 fontSize=9.7 colorStyle=`mediumEmphasis>
-                I18n.label#account_umami->React.string
-              </Typography.Body2>
-            </View>
-          }
+          tag={<Tag style=styles##tag content=I18n.label#account_umami />}
           actions=
             {<>
                <SecretExportButton secret />
@@ -250,23 +226,9 @@ module AccountImportedRowItem = {
   module Cli = {
     [@react.component]
     let make = (~account: Account.t) => {
-      let theme = ThemeContext.useTheme();
-
       <Base
         account
-        tag={
-          <View
-            style=Style.(
-              array([|
-                styles##tag,
-                style(~backgroundColor=theme.colors.statePressed, ()),
-              |])
-            )>
-            <Typography.Body2 fontSize=9.7 colorStyle=`mediumEmphasis>
-              I18n.label#account_cli->React.string
-            </Typography.Body2>
-          </View>
-        }
+        tag={<Tag style=styles##tag content=I18n.label#account_cli />}
         actions=
           {<>
              <Menu
@@ -277,7 +239,6 @@ module AccountImportedRowItem = {
                }>
                [|
                  <AccountEditButton key="accountEditButton" account />,
-                 /*<AccountDisplayButton />*/
                  <AccountDeleteButton key="accountDeleteButton" account />,
                |]
              </Menu>
@@ -346,8 +307,10 @@ module SecretRowItem = {
 
   [@react.component]
   let make = (~secret: Secret.derived) => {
-    <RowItem.Bordered height=66.>
-      <View style=styles##inner>
+    <RowItem.Bordered innerStyle=styles##rowItem height=66.>
+      {<Tag style=styles##tag content=I18n.t#hw />
+       ->ReactUtils.onlyWhen(secret.secret.kind == Secret.Ledger)}
+      <View>
         <Typography.Subtitle1 style=styles##alias>
           secret.secret.name->React.string
         </Typography.Subtitle1>
@@ -359,7 +322,8 @@ module SecretRowItem = {
       </View>
       <View style=styles##actionContainer>
         <SecretAddAccountButton secret />
-        <SecretExportButton secret />
+        {<SecretExportButton secret />
+         ->ReactUtils.onlyWhen(secret.secret.kind != Secret.Ledger)}
         <Menu
           icon=Icons.More.build
           style=styles##actionIconButton

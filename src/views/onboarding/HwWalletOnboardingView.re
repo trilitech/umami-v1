@@ -389,9 +389,7 @@ module AccountsView = {
           <Typography.Overline2>
             I18n.label#accounts->React.string
           </Typography.Overline2>
-          {{
-             <LoadingView style=styles##loading />;
-           }
+          {<LoadingView style=styles##loading />
            ->ReactUtils.onlyWhen(scanState == `Loading)}
         </View>
         <View
