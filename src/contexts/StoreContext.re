@@ -32,7 +32,10 @@ type reactState('state) = ('state, ('state => 'state) => unit);
 type requestsState('requestResponse, 'error) =
   Map.String.t(ApiRequest.t('requestResponse, 'error));
 
-type error = string;
+type error = ErrorHandler.t;
+
+type apiRequestsStateLegacy('requestResponse) =
+  reactState(requestsState('requestResponse, string));
 
 type apiRequestsState('requestResponse) =
   reactState(requestsState('requestResponse, error));
@@ -49,11 +52,11 @@ type state = {
   delegateInfoRequestsState:
     apiRequestsState(option(NodeAPI.Delegate.delegationInfo)),
   operationsRequestsState:
-    apiRequestsState(OperationApiRequest.operationsResponse),
+    apiRequestsStateLegacy(OperationApiRequest.operationsResponse),
   operationsConfirmations: reactState(Set.String.t),
   aliasesRequestState:
     reactState(ApiRequest.t(Map.String.t(Alias.t), ErrorHandler.t)),
-  bakersRequestState: reactState(ApiRequest.t(array(Delegate.t), error)),
+  bakersRequestState: reactState(ApiRequest.t(array(Delegate.t), string)),
   tokensRequestState:
     reactState(ApiRequest.t(Map.String.t(Token.t), string)),
   balanceTokenRequestsState: apiRequestsState(Token.Unit.t),

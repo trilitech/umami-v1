@@ -45,7 +45,9 @@ describe("API tests", ({testAsync}) => {
     module UnderTest = NodeAPI.Balance;
     UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh, ())
     ->Future.get(result => {
-        expect.value(result).toEqual(Result.Error("stub"));
+        expect.value(result).toEqual(
+          Error(ErrorHandler.(Taquito(Generic("stub")))),
+        );
         callback();
       });
     ();
