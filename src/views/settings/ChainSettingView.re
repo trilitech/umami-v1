@@ -120,6 +120,26 @@ module CustomNetworkItem = {
   [@react.component]
   let make = (~network: Network.network, ~writeNetwork, ~settings) => {
     let theme = ThemeContext.useTheme();
+    let writeConf = ConfigContext.useWrite();
+
+    let addToast = LogsContext.useToast();
+
+    let deleteCustomNetwork = (networkToDelete: Network.network) => {
+      writeConf(c =>
+        {
+          ...c,
+          customNetworks:
+            List.keepMap(c.customNetworks, n =>
+              n === networkToDelete ? None : Some(n)
+            ),
+          network: {
+            c.network == Some(`Custom(networkToDelete.name))
+              ? None : c.network;
+          },
+        }
+      );
+    };
+
     let (
       tagBorderColor: option(string),
       tagTextColor: option(Typography.colorStyle),
@@ -132,6 +152,14 @@ module CustomNetworkItem = {
       | _ => (Some(theme.colors.iconMediumEmphasis), Some(`mediumEmphasis))
       };
     };
+
+    let onPressConfirmDelete = () => {
+      Future.make(_ => deleteCustomNetwork(network))
+      ->ApiRequest.logOk(addToast, Logs.Account, _ =>
+          I18n.t#custom_network_deleted
+        )
+      ->ignore;
+    };
     <>
       <View style=styles##spaceBetweenRow>
         <RadioItem
@@ -143,7 +171,18 @@ module CustomNetworkItem = {
           tagTextColor
           tagBorderColor
         />
-        <View style=styles##row> <CustomNetworkEditButton network /> </View>
+        <View style=styles##row>
+          <CustomNetworkEditButton network />
+          <DeleteButton.IconButton
+            tooltip=(
+              "custom_network_delete" ++ network.name,
+              I18n.tooltip#custom_network_delete,
+            )
+            modalTitle=I18n.title#delete_custom_network
+            onPressConfirmDelete
+            request=ApiRequest.NotAsked
+          />
+        </View>
       </View>
     </>;
   };
