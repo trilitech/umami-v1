@@ -65,6 +65,20 @@ let rsf = (err, raiseSubmitFailed) =>
   | `UnknownChainId(_) => raiseSubmitFailed(Some("UnknownChainId"))
   };
 
+let nodeErrorFilter =
+  fun
+  | Some("NodeError") => Some(I18n.form_input_error#node_not_available)
+  | Some("TwoErrors") => Some(I18n.form_input_error#node_not_available)
+  | Some("Inconsistency") => Some(I18n.form_input_error#different_chains)
+  | _ => None;
+
+let mezosErrorFilter =
+  fun
+  | Some("APIError") => Some(I18n.form_input_error#api_not_available)
+  | Some("TwoErrors") => Some(I18n.form_input_error#api_not_available)
+  | Some("Inconsistency") => Some(I18n.form_input_error#different_chains)
+  | _ => None;
+
 let styles =
   Style.(
     StyleSheet.create({
@@ -133,7 +147,7 @@ let make = (~initNode=?, ~initMezos=?, ~action: action, ~closeAction) => {
                   endpoint: state.values.node,
                 })
               )
-            ->Future.tapError(err => err->toFormError->rsf(raiseSubmitFailed))
+            ->Future.tapError(err => err->rsf(raiseSubmitFailed))
             ->Future.tapOk(_ => closeAction())
             ->ApiRequest.logOk(addToast, Logs.Account, _ =>
                 I18n.t#custom_network_created
@@ -152,7 +166,7 @@ let make = (~initNode=?, ~initMezos=?, ~action: action, ~closeAction) => {
                   },
                 )
               )
-            ->Future.tapError(err => err->toFormError->rsf(raiseSubmitFailed))
+            ->Future.tapError(err => err->rsf(raiseSubmitFailed))
             ->Future.tapOk(_ => closeAction())
             ->ApiRequest.logOk(addToast, Logs.Account, _ =>
                 I18n.t#custom_network_updated
@@ -213,7 +227,13 @@ let make = (~initNode=?, ~initMezos=?, ~action: action, ~closeAction) => {
         value={form.values.node}
         placeholder=I18n.input_placeholder#custom_network_node_url
         handleChange={form.handleChange(Node)}
-        error={form.getFieldError(Field(Node))}
+        error={
+          [
+            form.formState->FormUtils.getFormStateError->nodeErrorFilter,
+            form.getFieldError(Field(Node)),
+          ]
+          ->UmamiCommon.Lib.Option.firstSome
+        }
         disabled=?{
           switch (action) {
           | Create => None
@@ -227,7 +247,13 @@ let make = (~initNode=?, ~initMezos=?, ~action: action, ~closeAction) => {
         value={form.values.mezos}
         placeholder=I18n.input_placeholder#custom_network_mezos_url
         handleChange={form.handleChange(Mezos)}
-        error={form.getFieldError(Field(Mezos))}
+        error={
+          [
+            form.formState->FormUtils.getFormStateError->mezosErrorFilter,
+            form.getFieldError(Field(Mezos)),
+          ]
+          ->UmamiCommon.Lib.Option.firstSome
+        }
         disabled=?{
           switch (action) {
           | Create => None

@@ -187,7 +187,11 @@ let form_input_error = {
   pub invalid_contract = "The recipient is not a key or an alias";
   pub confirm_password = "It must be the same password";
   pub derivation_path_error = "Invalid derivation path";
-  pub name_already_taken = a => p("%s is already taken", a)
+  pub name_already_taken = a => p("%s is already taken", a);
+  pub api_not_available = "API not available";
+  pub node_not_available = "Node not available";
+  pub api_and_node_not_available = "API and node both not available";
+  pub different_chains = "API and Node are not running on the same network"
 };
 
 let title = {
