@@ -50,10 +50,15 @@ let useUpdate =
       (~settings, renaming: TezosSDK.renameParams) =>
         WalletAPI.Aliases.rename(~settings, renaming),
     ~kind=Logs.Account,
+    ~errorToString=ErrorHandler.toString,
   );
 
 let useDelete =
-  ApiRequest.useSetter(~set=WalletAPI.Accounts.delete, ~kind=Logs.Account);
+  ApiRequest.useSetter(
+    ~set=WalletAPI.Accounts.delete,
+    ~kind=Logs.Account,
+    ~errorToString=ErrorHandler.toString,
+  );
 
 /* Other */
 
