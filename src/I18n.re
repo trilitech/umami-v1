@@ -408,6 +408,7 @@ let disclaimer = {
 };
 
 let t = {
+  pub unknown_operation = "Unknown";
   pub error404 = "404 - Route Not Found :(";
   pub logs_no_recent = "No recent messages";
   pub logs_clearall = "CLEAR ALL";

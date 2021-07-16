@@ -24,73 +24,13 @@
 /*****************************************************************************/
 
 open ReactNative;
-
-let styles =
-  Style.(
-    StyleSheet.create({
-      "button": style(~alignItems=`center, ~justifyContent=`center, ()),
-    })
-  );
+open ReactNativeSvg;
 
 [@react.component]
 let make =
     (
-      ~icon: Icons.builder,
-      ~size=28.,
-      ~iconSizeRatio=4. /. 7.,
-      ~isPrimary=false,
-      ~disabled=false,
-      ~onPress=?,
-      ~tooltip=?,
-      ~isActive=?,
-      ~pressableRef=?,
-      ~style as styleFromProp: option(ReactNative.Style.t)=?,
-    ) => {
-  let theme = ThemeContext.useTheme();
-
-  let (module ThemedPressableComp): (module ThemedPressable.T) =
-    isPrimary
-      ? (module ThemedPressable.Primary) : (module ThemedPressable.Outline);
-
-  let pressableElement = (~pressableRef=?) =>
-    <ThemedPressableComp
-      ?pressableRef
-      ?onPress
-      ?isActive
-      style=Style.(
-        arrayOption([|
-          Some(styles##button),
-          Some(
-            style(
-              ~width=size->dp,
-              ~height=size->dp,
-              ~borderRadius=size /. 2.,
-              (),
-            ),
-          ),
-          styleFromProp,
-        |])
-      )
-      accessibilityRole=`button>
-      {icon(
-         ~style=?None,
-         ~size=Js.Math.ceil_float(iconSizeRatio *. size),
-         ~color=
-           switch (disabled, isPrimary) {
-           | (true, _) => theme.colors.iconDisabled
-           | (false, true) => theme.colors.primaryIconMediumEmphasis
-           | (false, false) => theme.colors.iconMediumEmphasis
-           },
-       )}
-    </ThemedPressableComp>;
-
-  <View>
-    {switch (tooltip) {
-     | Some((keyPopover, text)) =>
-       <Tooltip keyPopover text>
-         {((~pressableRef) => pressableElement(~pressableRef))}
-       </Tooltip>
-     | None => pressableElement(~pressableRef?)
-     }}
-  </View>;
-};
+      ~width: option(Style.size)=?,
+      ~height: option(Style.size)=?,
+      ~fill: option(string)=?,
+      ~stroke: option(string)=?,
+    ) => <Svg viewBox="0 0 24 24" ?width ?height ?fill ?stroke> <Path d="M11.190 8.990 L 8.200 11.980 11.201 14.982 L 14.201 17.983 14.900 17.282 L 15.599 16.580 13.310 14.290 L 11.020 12.000 13.320 9.700 L 15.619 7.400 14.920 6.700 C 14.536 6.315,14.212 6.000,14.200 6.000 C 14.189 6.000,12.834 7.345,11.190 8.990 " fillRule=`evenodd> </Path> </Svg>;

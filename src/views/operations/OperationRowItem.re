@@ -281,7 +281,17 @@ let make =
                   </CellAddress>
                 )}
            </>
-         | Unknown => React.null
+         | Unknown =>
+           <>
+             <CellType>
+               <Typography.Body1>
+                 I18n.t#unknown_operation->ReasonReact.string
+               </Typography.Body1>
+             </CellType>
+             <CellAmount />
+             <CellFee />
+             <CellAddress />
+           </>
          }
        }}
       <CellDate>
