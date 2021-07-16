@@ -115,7 +115,7 @@ let make = () => {
               ->ReBeacon.Message.Request.getNetwork
               ->Option.mapWithDefault(true, network =>
                   network->checkOperationRequestTargetNetwork(
-                    settingsRef.current->AppSettings.network, // bug: network changes not taken into account
+                    settingsRef.current->AppSettings.network,
                   )
                 );
 
