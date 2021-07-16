@@ -368,18 +368,26 @@ module EditionView = {
       | Transfer.Currency.Tez(_) => None
       | Token(_, t) => Some(t)
       };
+
+    let (token, _) as tokenState = React.useState(() => token);
+
     let initValues = initValues->SendForm.toState;
 
     let (advancedOptionOpened, _) as advancedOptionState =
       React.useState(_ => advancedOptionOpened);
 
     let form =
-      Form.use(~initValues, None, token, onSubmit(advancedOptionOpened));
+      Form.use(
+        ~initValues,
+        None,
+        token,
+        onSubmit(advancedOptionOpened, token),
+      );
 
     <Form.View
       batch
       advancedOptionState
-      tokenState=(token, _ => ())
+      tokenState
       ?token
       form
       mode={Form.View.Edition(index)}
@@ -407,12 +415,8 @@ let make = (~closeAction) => {
 
   let (modalStep, setModalStep) = React.useState(_ => SendStep);
 
-  let (selectedToken, _) as tokenState =
+  let (token, _) as tokenState =
     React.useState(_ => initToken->Option.map(initToken => initToken));
-  let token =
-    StoreContext.Tokens.useGet(
-      selectedToken->Option.map(t => (t.address :> string)),
-    );
 
   let (operationRequest, sendOperation) = StoreContext.Operations.useCreate();
 
@@ -486,7 +490,7 @@ let make = (~closeAction) => {
     setBatch(_ => transformTransfer);
   };
 
-  let onEdit = (i, advOpened, {state}: SendForm.onSubmitAPI) => {
+  let onEdit = (i, advOpened, token, {state}: SendForm.onSubmitAPI) => {
     let validState = SendForm.unsafeExtractValidState(token, state.values);
     setBatch(b =>
       b->List.mapWithIndex((j, v) => i == j ? (validState, advOpened) : v)

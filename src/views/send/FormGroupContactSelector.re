@@ -94,7 +94,8 @@ let make =
     ->Map.String.valuesToArray
     ->Array.keep((v: Alias.t) =>
         Some(v.address) != filterOut->Option.map(a => a.address)
-      );
+      )
+    ->SortArray.stableSortBy(Alias.compareName);
 
   let items =
     switch (value) {
