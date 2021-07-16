@@ -30,6 +30,7 @@ module IPC = {
   type event;
   [@bs.module "electron"] external renderer: t = "ipcRenderer";
   [@bs.send] external on: (t, string, (event, string) => unit) => unit = "on";
+  [@bs.send] external send: (t, string) => unit = "send";
 };
 
 let dataFromURL = url => {
@@ -73,6 +74,9 @@ let useBeaconRequestModalAction = () => {
 [@react.component]
 let make = () => {
   let settings = SdkContext.useSettings();
+  let settingsRef = React.useRef(settings)
+
+  settingsRef.current = settings
 
   let (
     permissionRequest,
@@ -111,7 +115,7 @@ let make = () => {
               ->ReBeacon.Message.Request.getNetwork
               ->Option.mapWithDefault(true, network =>
                   network->checkOperationRequestTargetNetwork(
-                    settings->AppSettings.network,
+                    settingsRef.current->AppSettings.network, // bug: network changes not taken into account
                   )
                 );
 
@@ -162,6 +166,10 @@ let make = () => {
             ->Future.get(Js.log)
           })
         })
+      ->Future.tapOk(_ => {
+        IPC.renderer->IPC.send("beacon-ready");
+        Js.log("beacon-ready (renderer)")
+      })
       ->Future.get(Js.log);
     };
     None;

@@ -1,14 +1,14 @@
 {
   "name": "umami",
   "productName": "umami",
-  "version": "0.3.9",
+  "version": "0.4.0",
   "author": "Nomadic Labs",
   "description": "React-TypeScript-Electron sample with Create React App and Electron Builder",
   "homepage": ".",
   "main": "electron-starter.js",
   "private": true,
   "dependencies": {
-    "@airgap/beacon-sdk": "^2.2.7",
+    "@airgap/beacon-sdk": "^2.2.10",
     "@glennsl/bs-json": "^5.0.2",
     "@gorhom/portal": "1.0.4",
     "@reason-react-native/svg": "12.1.5-0.63",
@@ -76,7 +76,8 @@
       "category": "public.app-category.Reference"
     },
     "linux": {
-      "target": "AppImage"
+        "target": "snap",
+      "mimeTypes": ["x-scheme-handler/umami"]
     },
     "files": [
       "build/**/*",

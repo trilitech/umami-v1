@@ -77,6 +77,6 @@ let reset = () => LocalStorage.removeItem(configKey);
 
 let getNetworkName = network =>
   switch (network) {
-  | `Mainnet => Network.mainnetChain
+  | `Mainnet => Network.mainnetName
   | `Testnet(c) => c->Network.getName
   };

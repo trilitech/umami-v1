@@ -1,7 +1,7 @@
 'use strict'
 
 // Import parts of electron to use
-const { app, BrowserWindow } = require('electron')
+const { app, BrowserWindow, ipcMain } = require('electron')
 const path = require('path')
 const url = require('url')
 
@@ -19,6 +19,11 @@ let dev = false
 
 if (process.env.NODE_ENV !== undefined && process.env.NODE_ENV === 'development') {
   dev = true
+}
+
+if (!app.requestSingleInstanceLock()) {
+  app.quit()
+  return
 }
 
 // Temporary fix broken high-dpi scale factor on Windows (125% scaling)
@@ -75,10 +80,22 @@ function createWindow() {
         .catch(err => console.log('Error loading React DevTools: ', err))
       mainWindow.webContents.openDevTools()
     }
+
+    if (process.platform == 'win32' || process.platform === "linux") {
+      // Protocol handler for windows & linux
+      ipcMain.on('beacon-ready', () => {
+        logEverywhere('beacon-ready')
+        const argv = process.argv;
+        const index = argv.findIndex(arg => arg.startsWith("umami://"));
+        if (index !== -1) {
+          mainWindow.webContents.send('deeplinkURL', argv[index])
+        }
+      })
+    }
   })
 
   // Emitted when the window is closed.
-  mainWindow.on('closed', function() {
+  mainWindow.on('closed', function () {
     // Dereference the window object, usually you would store windows
     // in an array if your app supports multi windows, this is the time
     // when you should delete the corresponding element.
@@ -87,6 +104,11 @@ function createWindow() {
 }
 
 app.commandLine.appendSwitch('disable-features', 'OutOfBlinkCors');
+
+if (!app.isDefaultProtocolClient('umami')) {
+  // Define custom protocol handler. Deep linking works on packaged versions of the application!
+  app.setAsDefaultProtocolClient('umami')
+}
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
@@ -110,14 +132,29 @@ app.on('activate', () => {
   }
 })
 
-if (!app.isDefaultProtocolClient('umami')) {
-  // Define custom protocol handler. Deep linking works on packaged versions of the application!
-  app.setAsDefaultProtocolClient('umami')
-}
+app.on('second-instance', (event, argv, cwd) => {
+  if (mainWindow) {
+    if (mainWindow.isMinimized()) {
+      mainWindow.restore()
+    }
+    mainWindow.focus()
+    // Protocol handler for win32
+    // argv: An array of the second instance’s (command line / deep linked) arguments
+    if (process.platform == 'win32' || process.platform === "linux") {
+      // Protocol handler for windows & linux
+      const index = argv.findIndex(arg => arg.startsWith("umami://"));
+      if (index !== -1) {
+        mainWindow.webContents.send('deeplinkURL', argv[index])
+      }
+    }
+  } else {
+    createWindow()
+  }
+})
 
-app.on('will-finish-launching', function() {
+app.on('will-finish-launching', () => {
   // Protocol handler for osx
-  app.on('open-url', function(event, url) {
+  app.on('open-url', function (event, url) {
     event.preventDefault()
     //logEverywhere('open-url# ' + url)
     mainWindow.webContents.send('deeplinkURL', url)
@@ -125,9 +162,9 @@ app.on('will-finish-launching', function() {
 })
 
 // Log both at dev console and at running node console instance
-//function logEverywhere(s) {
-//  console.log(s)
-//  if (mainWindow && mainWindow.webContents) {
-//    mainWindow.webContents.executeJavaScript(`console.log("${s}")`)
-//  }
-//}
+function logEverywhere(s) {
+  console.log(s)
+  if (mainWindow && mainWindow.webContents) {
+    mainWindow.webContents.executeJavaScript(`console.log("${s}")`)
+  }
+}
