@@ -27,3 +27,5 @@ type t = {
   address: PublicKeyHash.t,
   name: string,
 };
+
+let compareName = (a, b) => Pervasives.compare(a.name, b.name);
