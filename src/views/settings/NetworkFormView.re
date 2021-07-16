@@ -38,12 +38,6 @@ type action =
   | Create
   | Edit(Network.network);
 
-let nameExistsCheck =
-    (name: string, customNetworks: list(Network.network))
-    : ReSchema.fieldState =>
-  List.some(customNetworks, n => n.name === name)
-    ? Error(I18n.form_input_error#name_already_taken(name)) : Valid;
-
 let isEditMode =
   fun
   | Edit(_) => true
@@ -118,6 +112,18 @@ let make = (~initNode=?, ~initMezos=?, ~action: action, ~closeAction) => {
       }
     );
   };
+
+  let nameExistsCheck =
+      (name: string, customNetworks: list(Network.network))
+      : ReSchema.fieldState =>
+    List.some(customNetworks, n => n.name === name)
+    && (
+      switch (action) {
+      | Create => true
+      | Edit(network) => name !== network.name
+      }
+    )
+      ? Error(I18n.form_input_error#name_already_taken(name)) : Valid;
 
   let form: NetworkCreateForm.api =
     NetworkCreateForm.use(
