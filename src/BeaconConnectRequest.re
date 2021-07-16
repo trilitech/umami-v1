@@ -74,6 +74,9 @@ let useBeaconRequestModalAction = () => {
 [@react.component]
 let make = () => {
   let settings = SdkContext.useSettings();
+  let settingsRef = React.useRef(settings)
+
+  settingsRef.current = settings
 
   let (
     permissionRequest,
@@ -112,7 +115,7 @@ let make = () => {
               ->ReBeacon.Message.Request.getNetwork
               ->Option.mapWithDefault(true, network =>
                   network->checkOperationRequestTargetNetwork(
-                    settings->AppSettings.network,
+                    settingsRef.current->AppSettings.network, // bug: network changes not taken into account
                   )
                 );
 
