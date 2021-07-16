@@ -23,7 +23,7 @@
 /*                                                                           */
 /*****************************************************************************/
 
-let client = ReBeacon.WalletClient.make({name: "umami"});
+let client = ReBeacon.WalletClient.make({name: "Umami"});
 
 let respond = responseInput => {
   client->ReBeacon.WalletClient.respond(responseInput);
