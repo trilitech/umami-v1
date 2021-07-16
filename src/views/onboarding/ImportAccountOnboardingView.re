@@ -35,11 +35,15 @@ type step =
   | PasswordStep(fromStep);
 
 [@react.component]
-let make = (~closeAction, ~existingSecretsCount=0) => {
+let make = (~closeAction) => {
   let (formStep, setFormStep) = React.useState(_ => MnemonicsStep);
 
   let (secretWithMnemonicRequest, createSecretWithMnemonic) =
     StoreContext.Secrets.useCreateWithMnemonics();
+
+  let secrets = StoreContext.Secrets.useGetAll();
+  let existingSecretsCount = secrets->Array.length;
+  let noExistingPassword = existingSecretsCount < 1;
 
   let settings = SdkContext.useSettings();
 
@@ -61,8 +65,6 @@ let make = (~closeAction, ~existingSecretsCount=0) => {
     React.useState(_ => DerivationPath.Pattern.(default->fromTezosBip44));
 
   let loading = secretWithMnemonicRequest->ApiRequest.isLoading;
-
-  let displayConfirmPassword = existingSecretsCount < 1;
 
   let closing =
     switch (formStep) {
@@ -125,7 +127,7 @@ let make = (~closeAction, ~existingSecretsCount=0) => {
        </>;
      | PasswordStep(fromStep) =>
        let subtitle =
-         displayConfirmPassword
+         noExistingPassword
            ? I18n.title#account_create_password
            : I18n.title#account_enter_password;
 
@@ -140,7 +142,7 @@ let make = (~closeAction, ~existingSecretsCount=0) => {
          {<Typography.Body2 colorStyle=`mediumEmphasis style=styles##stepBody>
             I18n.expl#account_create_password_not_recorded->React.string
           </Typography.Body2>
-          ->ReactUtils.onlyWhen(displayConfirmPassword)}
+          ->ReactUtils.onlyWhen(noExistingPassword)}
          <CreatePasswordView
            mnemonic
            derivationPath
