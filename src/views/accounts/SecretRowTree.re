@@ -96,7 +96,7 @@ module AccountNestedRowItem = {
   };
 
   [@react.component]
-  let make = (~address: string, ~index: int, ~isLast=false) => {
+  let make = (~address: PublicKeyHash.t, ~index: int, ~isLast=false) => {
     let account = StoreContext.Accounts.useGetFromAddress(address);
 
     account->ReactUtils.mapOpt(account =>
@@ -206,7 +206,7 @@ module AccountImportedRowItem = {
 
   module Umami = {
     [@react.component]
-    let make = (~address: string, ~secret) => {
+    let make = (~address: PublicKeyHash.t, ~secret) => {
       let account = StoreContext.Accounts.useGetFromAddress(address);
       let theme = ThemeContext.useTheme();
 
@@ -379,10 +379,10 @@ let make = (~secret: Secret.derived) => {
   <View>
     <SecretRowItem secret />
     {secret.secret.addresses
-     ->Array.mapWithIndex((index, addr) =>
+     ->Array.mapWithIndex((index, address) =>
          <AccountNestedRowItem
-           key=(addr :> string)
-           address=(addr :> string)
+           key=(address :> string)
+           address
            index
            isLast={secret.secret.addresses->Array.size - 1 === index}
          />

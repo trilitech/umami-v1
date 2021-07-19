@@ -664,9 +664,9 @@ module Accounts = {
     });
   };
 
-  let useGetFromAddress = address => {
+  let useGetFromAddress = (address: PublicKeyHash.t) => {
     let accounts = useGetAll();
-    accounts->Map.String.get(address);
+    accounts->Map.String.get((address :> string));
   };
 
   let useResetNames = () => {
