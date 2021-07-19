@@ -27,6 +27,7 @@
     "ed25519-hd-key": "^1.2.0",
     "electron-devtools-installer": "^3.1.0",
     "electron-reload": "^1.5.0",
+    "is-ci": "^3.0.0",
     "jsqr": "1.4.0",
     "libsodium-wrappers-sumo": "^0.7.9",
     "pbkdf2": "^3.1.1",
@@ -51,8 +52,13 @@
     "bsb:build": "bsb -make-world",
     "bsb:clean": "bsb -clean-world",
     "postinstall": "electron-builder install-app-deps",
+    "snap:conf": "node -e 'require(\"./scripts/snap.js\").conf()'",
+    "snap:build": "yarn snap:conf && snapcraft --use-lxd",
     "electron:dev": "yarn start",
     "electron:build": "yarn bsb:build && yarn build && electron-builder",
+    "electron:rpm": "yarn bsb:build && yarn build && electron-builder --linux rpm",
+    "electron:deb": "yarn bsb:build && yarn build && electron-builder --linux deb",
+    "electron:pacman": "yarn bsb:build && yarn build && electron-builder --linux pacman",
     "svgo": "svgo --folder=src/svg/source --output=src/svg/optimized --disable=removeViewBox --enable=removeDimensions --pretty",
     "svgfixer": "oslllo-svg-fixer --source=src/svg/optimized --destination=src/svg/optimized2",
     "fromsvg": "react-from-svg src/svg/optimized2 src/svg/components --remove-stroke --remove-fill --with-native-for-reason",
@@ -60,7 +66,7 @@
   },
   "build": {
     "extends": null,
-    "afterSign": "scripts/notarize.js",
+    "afterSign": "scripts/afterSign.js",
     "dmg": {
       "sign": false
     },
@@ -78,9 +84,38 @@
       "category": "public.app-category.Reference"
     },
     "linux": {
-      "target": "snap",
+      "target": "AppImage",
       "mimeTypes": [
         "x-scheme-handler/umami"
+      ]
+    },
+    "snap": {
+      "plugs": [
+        "default",
+        "raw-usb",
+        "hidraw"
+      ],
+      "buildPackages": [
+        "libusb-1.0.0-dev",
+        "libudev-dev"
+      ],
+      "stagePackages": [
+        "libusb-1.0.0"
+      ]
+    },
+    "deb": {
+      "depends": [
+        "libusb-1.0.0"
+      ]
+    },
+    "rpm": {
+      "depends": [
+        "libusb"
+      ]
+    },
+    "pacman": {
+      "depends": [
+        "libusb"
       ]
     },
     "files": [
