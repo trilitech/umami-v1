@@ -3,6 +3,8 @@
 Umami Wallet
 ===========================================================================
 
+website: https://umamiwallet.com
+
 Cryptocurrency wallet to interact with Tezos Blockchain.
 Umami is a desktop electron based app with multiple features:
 
