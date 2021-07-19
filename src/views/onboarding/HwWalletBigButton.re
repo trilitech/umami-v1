@@ -23,71 +23,22 @@
 /*                                                                           */
 /*****************************************************************************/
 
-let getOk = (future, sink) =>
-  future->Future.get(result => result->ResultEx.getOk(sink));
+[@react.component]
+let make = (~style=?) => {
+  let (visibleModal, openAction, closeAction) =
+    ModalAction.useModalActionState();
 
-let getError = (future, sink) =>
-  future->Future.get(result => result->ResultEx.getError(sink));
+  let onPress = _ => openAction();
 
-let fromOption = (option, ~error) =>
-  Future.value(
-    switch (option) {
-    | Some(value) => Ok(value)
-    | None => Error(error)
-    },
-  );
-
-let fromOptionWithDefault = (option, ~default) =>
-  Future.value(
-    switch (option) {
-    | Some(value) => Ok(value)
-    | None => Ok(default)
-    },
-  );
-
-let flatMap2 = (fa, fb, f) =>
-  Future.flatMap(fa, a => Future.flatMap(fb, b => f(a, b)));
-
-let flatMapOk2 = (fa, fb, f) =>
-  flatMap2(fa, fb, (r1, r2) =>
-    switch (r1, r2) {
-    | (Ok(v1), Ok(v2)) => f(v1, v2)
-    | (Error(e), _)
-    | (_, Error(e)) => Future.value(Error(e))
-    }
-  );
-
-let all = array =>
-  array
-  ->List.fromArray
-  ->Future.all
-  ->Future.map(results => Ok(results->List.toArray));
-
-let fromCallback = (f, mapError) =>
-  Future.make(resolve =>
-    {
-      (e, v) =>
-        switch (Js.Nullable.toOption(e)) {
-        | Some(e) => Error(e->mapError)->resolve
-        | None => Ok(v)->resolve
-        };
-    }
-    ->f
-  );
-
-let fromUnitCallback = (f, mapError) =>
-  Future.make(resolve =>
-    {
-      e =>
-        switch (Js.Nullable.toOption(e)) {
-        | Some(e) => Error(e->mapError)->resolve
-        | None => Ok()->resolve
-        };
-    }
-    ->f
-  );
-
-let timeout = sec =>
-  Future.make(resolve => {
-    Js.Global.setTimeout(() => Ok()->resolve, sec)->ignore
-  });
+  <>
+    <BigButton
+      title=I18n.btn#connect_hardware_wallet
+      icon=Icons.Ledger.build
+      onPress
+      ?style
+    />
+    <ModalAction visible=visibleModal onRequestClose=closeAction>
+      <HwWalletOnboardingView closeAction />
+    </ModalAction>
+  </>;
+};

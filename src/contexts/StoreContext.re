@@ -763,6 +763,11 @@ module Secrets = {
     );
   };
 
+  let useLedgerImport = () => {
+    let resetSecrets = useResetAll();
+    SecretApiRequest.useLedgerImport(~sideEffect=_ => resetSecrets(), ());
+  };
+
   let useDerive = () => {
     let resetAccounts = useResetAll();
     SecretApiRequest.useDerive(~sideEffect=_ => resetAccounts(), ());

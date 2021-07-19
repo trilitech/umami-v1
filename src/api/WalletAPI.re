@@ -427,7 +427,6 @@ module Accounts = {
           )
         ->Future.flatMapOk(address => {
             let found = () => {
-              Js.log(address);
               onFoundKey(n, address);
               loop(n + 1);
             };
@@ -745,6 +744,7 @@ module Accounts = {
   let importLedger =
       (
         ~config,
+        ~timeout=?,
         ~name,
         ~accountsNumber,
         ~derivationPath=DerivationPath.Pattern.fromTezosBip44(
@@ -771,7 +771,7 @@ module Accounts = {
             )
         : List.reverse(keys)->List.toArray->Ok->Future.value;
     };
-    LedgerAPI.init()
+    LedgerAPI.init(~timeout?, ())
     ->Future.flatMapOk(tr => tr->importKeys([], 0))
     ->Future.tapOk(addresses =>
         registerSecret(

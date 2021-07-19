@@ -58,6 +58,7 @@ let make = (~onClose=?) => {
     <View style=styles##container>
       <CreateAccountBigButton style=styles##bigbutton />
       <ImportAccountBigButton style=styleNotFirst />
+      <HwWalletBigButton style=styleNotFirst />
     </View>
   </Page>;
 };

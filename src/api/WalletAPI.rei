@@ -166,6 +166,7 @@ module Accounts: {
   let importLedger:
     (
       ~config: ConfigUtils.t,
+      ~timeout: int=?,
       ~name: string,
       ~accountsNumber: int,
       ~derivationPath: DerivationPath.Pattern.t=?,

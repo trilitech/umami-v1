@@ -151,6 +151,19 @@ module Ledger: {
     | SECP256K1
     | P256;
 
+  type implicit =
+    | TZ1
+    | TZ2
+    | TZ3;
+
+  type kind =
+    | Implicit(implicit)
+    | KT1;
+
+  let implicitFromScheme: scheme => implicit;
+
+  let kindToString: kind => string;
+
   type t = {
     path: DerivationPath.tezosBip44,
     scheme,

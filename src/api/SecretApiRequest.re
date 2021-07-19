@@ -114,6 +114,43 @@ let useCreateWithMnemonics =
     ~errorToString=ErrorHandler.toString,
   );
 
+type ledgerImportInput = {
+  name: string,
+  derivationPath: DerivationPath.Pattern.t,
+  derivationScheme: Wallet.Ledger.scheme,
+  accountsNumber: int,
+  ledgerMasterKey: PublicKeyHash.t,
+  timeout: int,
+};
+
+let useLedgerImport =
+  ApiRequest.useSetter(
+    ~errorToString=ErrorHandler.toString,
+    ~set=
+      (
+        ~config,
+        {
+          name,
+          derivationPath,
+          derivationScheme,
+          accountsNumber,
+          ledgerMasterKey,
+          timeout,
+        },
+      ) =>
+        WalletAPI.Accounts.importLedger(
+          ~config,
+          ~name,
+          ~accountsNumber,
+          ~derivationPath,
+          ~derivationScheme,
+          ~ledgerMasterKey,
+          ~timeout,
+          (),
+        ),
+    ~kind=Logs.Account,
+  );
+
 let useUpdate =
   ApiRequest.useSetter(
     ~set=

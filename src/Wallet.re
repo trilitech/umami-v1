@@ -373,6 +373,28 @@ module Ledger = {
     | "P-256" => Ok(P256)
     | s => Error(InvalidScheme(s));
 
+  type implicit =
+    | TZ1
+    | TZ2
+    | TZ3;
+
+  type kind =
+    | Implicit(implicit)
+    | KT1;
+
+  let implicitFromScheme =
+    fun
+    | ED25519 => TZ1
+    | SECP256K1 => TZ2
+    | P256 => TZ3;
+
+  let kindToString =
+    fun
+    | Implicit(TZ1) => "tz1"
+    | Implicit(TZ2) => "tz2"
+    | Implicit(TZ3) => "tz3"
+    | KT1 => "kt1";
+
   module Decode = {
     let decodePrefix = (prefix, ledgerBasePkh: PublicKeyHash.t) =>
       switch (PublicKeyHash.build(prefix)) {

@@ -54,7 +54,7 @@ let styles =
     })
   );
 
-let form = (~setDerivationPath, ~next, ~derivationPath) =>
+let form = (~custom, ~setDerivationPath, ~next, ~derivationPath) =>
   SelectDerivationPathForm.use(
     ~validationStrategy=OnDemand,
     ~schema={
@@ -83,13 +83,13 @@ let form = (~setDerivationPath, ~next, ~derivationPath) =>
             ->DerivationPath.Pattern.fromString
             ->Result.getExn
           );
-        next();
+        next(state);
         None;
       },
     ~initialState={
       selectedDerivationPath: derivationPath->DerivationPath.Pattern.toString,
       customDerivationPath:
-        derivationPath->DerivationPath.Pattern.isDefault
+        derivationPath->DerivationPath.Pattern.isDefault && !custom
           ? "" : derivationPath->DerivationPath.Pattern.toString,
     },
     ~i18n=FormUtils.i18n,
@@ -127,7 +127,12 @@ module DerivationPathInput = {
 [@react.component]
 let make = (~derivationPath, ~setDerivationPath, ~onPressCancel, ~goNextStep) => {
   let form: SelectDerivationPathForm.api =
-    form(~derivationPath, ~setDerivationPath, ~next=goNextStep);
+    form(
+      ~custom=false,
+      ~derivationPath,
+      ~setDerivationPath,
+      ~next=goNextStep,
+    );
 
   let onSubmit = _ => {
     form.submit();
