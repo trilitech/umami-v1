@@ -96,37 +96,38 @@ module Simulation = {
 };
 
 module Operation = {
-  let batch = (config, transfers, ~source, ~password) => {
+  let batch = (config, transfers, ~source, ~signingIntent) => {
     TaquitoAPI.Transfer.batch(
       ~endpoint=config->ConfigUtils.endpoint,
       ~baseDir=config->ConfigUtils.baseDir,
       ~source,
       ~transfers=transfers->TaquitoAPI.Transfer.prepareTransfers,
-      ~password,
+      ~signingIntent,
       (),
     )
     ->Future.mapOk((op: ReTaquito.Toolkit.operationResult) => op.hash);
   };
 
-  let setDelegate = (config, Protocol.{delegate, source, options}, ~password) => {
+  let setDelegate =
+      (config, Protocol.{delegate, source, options}, ~signingIntent) => {
     TaquitoAPI.Delegate.set(
       ~endpoint=config->ConfigUtils.endpoint,
       ~baseDir=config->ConfigUtils.baseDir,
       ~source,
       ~delegate,
-      ~password,
+      ~signingIntent,
       ~fee=?options.fee,
       (),
     )
     ->Future.mapOk((op: ReTaquito.Toolkit.operationResult) => op.hash);
   };
 
-  let run = (config, operation: Protocol.t, ~password) =>
+  let run = (config, operation: Protocol.t, ~signingIntent) =>
     switch (operation) {
-    | Delegation(d) => setDelegate(config, d, ~password)
+    | Delegation(d) => setDelegate(config, d, ~signingIntent)
 
     | Transaction({transfers, source}) =>
-      batch(config, transfers, ~source, ~password)
+      batch(config, transfers, ~source, ~signingIntent)
     };
 };
 
@@ -299,8 +300,8 @@ module Tokens = {
   let batchEstimate = (config, transfers, ~source, ~index=?, ()) =>
     Simulation.batch(config, transfers, ~source, ~index?, ());
 
-  let batch = (config, transfers, ~source, ~password) =>
-    Operation.batch(config, transfers, ~source, ~password);
+  let batch = (config, transfers, ~source, ~signingIntent) =>
+    Operation.batch(config, transfers, ~source, ~signingIntent);
 
   let offline = (operation: Token.operation) => {
     switch (operation) {
@@ -324,10 +325,10 @@ module Tokens = {
       )
     };
 
-  let inject = (network, operation: Token.operation, ~password) =>
+  let inject = (network, operation: Token.operation, ~signingIntent) =>
     switch (operation) {
     | Transfer({source, transfers, _}) =>
-      batch(network, transfers, ~source, ~password)
+      batch(network, transfers, ~source, ~signingIntent)
     | _ =>
       Future.value(
         InjectionNotImplemented(Token.operationEntrypoint(operation))
@@ -373,11 +374,11 @@ module Tokens = {
 };
 
 module Signature = {
-  let signPayload = (config, ~source, ~password, ~payload) => {
+  let signPayload = (config, ~source, ~signingIntent, ~payload) => {
     TaquitoAPI.Signature.signPayload(
       ~baseDir=config->ConfigUtils.baseDir,
       ~source,
-      ~password,
+      ~signingIntent,
       ~payload,
     );
   };

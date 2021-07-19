@@ -81,7 +81,12 @@ module Signature = {
   let useSignPayload = () => {
     let config = ConfigContext.useContent();
 
-    (~source, ~password, ~payload) =>
-      NodeAPI.Signature.signPayload(config, ~source, ~password, ~payload);
+    (~source, ~signingIntent, ~payload) =>
+      NodeAPI.Signature.signPayload(
+        config,
+        ~source,
+        ~signingIntent,
+        ~payload,
+      );
   };
 };

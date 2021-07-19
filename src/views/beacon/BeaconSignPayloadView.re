@@ -102,10 +102,10 @@ let make =
     ) => {
   let signPayload = BeaconApiRequest.Signature.useSignPayload();
 
-  let onSign = (~password) => {
+  let onSign = (~signingIntent) => {
     signPayload(
       ~source=signPayloadRequest.sourceAddress,
-      ~password,
+      ~signingIntent,
       ~payload=signPayloadRequest.payload,
     )
     ->Future.tapOk(signature => {
@@ -145,7 +145,10 @@ let make =
     ->ignore;
   };
 
-  let (form, formFieldsAreValids) = PasswordFormView.usePasswordForm(onSign);
+  let (form, formFieldsAreValids) =
+    PasswordFormView.usePasswordForm((~password) =>
+      onSign(~signingIntent=Password(password))
+    );
 
   <ModalTemplate.Form>
     <View>

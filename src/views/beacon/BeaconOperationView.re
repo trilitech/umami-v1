@@ -107,10 +107,10 @@ let make =
     StoreContext.Operations.useCreate();
   let loading = operationApiRequest->ApiRequest.isLoading;
 
-  let sendTransfer = (~transfer, ~password) => {
+  let sendTransfer = (~transfer, signingIntent) => {
     let operation = Operation.transfer(transfer);
 
-    sendOperation({operation, password})
+    sendOperation({operation, signingIntent})
     ->Future.tapOk(hash => {
         BeaconApiRequest.respond(
           `OperationResponse({
@@ -159,7 +159,9 @@ let make =
       : None;
 
   let (form, formFieldsAreValids) =
-    PasswordFormView.usePasswordForm(sendTransfer(~transfer));
+    PasswordFormView.usePasswordForm((~password) =>
+      sendTransfer(~transfer, Password(password))
+    );
 
   <ModalTemplate.Form headerRight=?closeButton>
     {switch (operationApiRequest) {

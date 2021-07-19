@@ -420,10 +420,10 @@ let make = (~closeAction) => {
 
   let (operationRequest, sendOperation) = StoreContext.Operations.useCreate();
 
-  let sendTransfer = (~transfer, ~password) => {
+  let sendTransfer = (~transfer, signingIntent) => {
     let operation = Operation.transfer(transfer);
 
-    sendOperation({operation, password})
+    sendOperation({operation, signingIntent})
     ->Future.tapOk(hash => {setModalStep(_ => SubmittedStep(hash))})
     ->Future.tapOk(_ => {updateAccount(transfer.source)});
   };

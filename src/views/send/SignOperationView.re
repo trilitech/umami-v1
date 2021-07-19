@@ -31,11 +31,13 @@ let make =
       ~title=?,
       ~subtitle=?,
       ~children,
-      ~sendOperation: (~password: string) => Future.t(Result.t(_)),
+      ~sendOperation: TaquitoAPI.Signer.intent => Future.t(Result.t(_)),
       ~loading=false,
     ) => {
   let (form, formFieldsAreValids) =
-    PasswordFormView.usePasswordForm(sendOperation);
+    PasswordFormView.usePasswordForm((~password) =>
+      sendOperation(Password(password))
+    );
 
   <>
     {title->ReactUtils.mapOpt(title =>

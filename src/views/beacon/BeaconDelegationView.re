@@ -85,7 +85,9 @@ let make =
   let loading = operationApiRequest->ApiRequest.isLoading;
 
   let sendDelegation = (~delegation, ~password) => {
-    sendOperation(OperationApiRequest.delegate(delegation, password))
+    sendOperation(
+      OperationApiRequest.delegate(delegation, Password(password)),
+    )
     ->Future.tapOk(hash => {
         BeaconApiRequest.respond(
           `OperationResponse({
