@@ -41,9 +41,9 @@ type state = {
   selectedAccountState: reactState(option(PublicKeyHash.t)),
   selectedTokenState: reactState(option(PublicKeyHash.t)),
   accountsRequestState:
-    reactState(ApiRequest.t(Map.String.t(Account.t), string)),
+    reactState(ApiRequest.t(Map.String.t(Account.t), ErrorHandler.t)),
   secretsRequestState:
-    reactState(ApiRequest.t(array(Secret.derived), string)),
+    reactState(ApiRequest.t(array(Secret.derived), ErrorHandler.t)),
   balanceRequestsState: apiRequestsState(Tez.t),
   delegateRequestsState: apiRequestsState(option(PublicKeyHash.t)),
   delegateInfoRequestsState:
@@ -52,7 +52,7 @@ type state = {
     apiRequestsState(OperationApiRequest.operationsResponse),
   operationsConfirmations: reactState(Set.String.t),
   aliasesRequestState:
-    reactState(ApiRequest.t(Map.String.t(Alias.t), error)),
+    reactState(ApiRequest.t(Map.String.t(Alias.t), ErrorHandler.t)),
   bakersRequestState: reactState(ApiRequest.t(array(Delegate.t), error)),
   tokensRequestState:
     reactState(ApiRequest.t(Map.String.t(Token.t), string)),

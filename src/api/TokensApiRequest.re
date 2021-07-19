@@ -41,7 +41,7 @@ let useLoadOperationOffline = (~requestState, ~operation: Token.operation) => {
   let get = (~settings, operation) =>
     settings
     ->NodeAPI.Tokens.callGetOperationOffline(operation)
-    ->Future.mapError(Error.fromApiToString);
+    ->Future.mapError(Error.toString);
 
   ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, operation);
 };

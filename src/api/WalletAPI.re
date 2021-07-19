@@ -92,7 +92,7 @@ module Aliases = {
     settings
     ->AppSettings.sdk
     ->TezosSDK.listKnownAddresses
-    ->Future.mapError(ErrorHandler.fromSdkToString)
+    ->Future.mapError(e => e->ErrorHandler.TezosSDK)
     ->Future.mapOk(l => l->Array.map(({alias, pkh}) => (alias, pkh)));
 
   let getAliasMap = (~settings) =>
@@ -115,19 +115,19 @@ module Aliases = {
     settings
     ->AppSettings.sdk
     ->TezosSDK.addAddress(alias, address)
-    ->Future.mapError(ErrorHandler.fromSdkToString);
+    ->Future.mapError(e => e->ErrorHandler.TezosSDK);
 
   let delete = (~settings, ~alias) =>
     settings
     ->AppSettings.sdk
     ->TezosSDK.forgetAddress(alias)
-    ->Future.mapError(ErrorHandler.fromSdkToString);
+    ->Future.mapError(e => e->ErrorHandler.TezosSDK);
 
   let rename = (~settings, renaming) =>
     settings
     ->AppSettings.sdk
     ->TezosSDK.renameAliases(renaming)
-    ->Future.mapError(ErrorHandler.fromSdkToString);
+    ->Future.mapError(e => e->ErrorHandler.TezosSDK);
 };
 
 module Accounts = {
@@ -139,7 +139,8 @@ module Accounts = {
     LocalStorage.getItem("secrets")
     ->Js.Nullable.toOption
     ->Option.flatMap(Json.parse)
-    ->Option.map(Json.Decode.(array(Secret.decoder)));
+    ->Option.map(Json.Decode.(array(Secret.decoder)))
+    ->ResultEx.fromOption(Error(ErrorHandler.(WalletAPI(NoSecretFound))));
   };
 
   let recoveryPhrases = (~settings: AppSettings.t) => {
@@ -154,7 +155,7 @@ module Accounts = {
     settings
     ->AppSettings.sdk
     ->TezosSDK.listKnownAddresses
-    ->Future.mapError(ErrorHandler.fromSdkToString)
+    ->Future.mapError(e => e->ErrorHandler.TezosSDK)
     ->Future.mapOk(r =>
         r->Array.keepMap((TezosSDK.OutputAddress.{alias, pkh, sk_known}) =>
           sk_known ? Some((alias, pkh)) : None
@@ -163,17 +164,17 @@ module Accounts = {
 
   let secretAt = (~settings, index) =>
     secrets(~settings)
-    ->FutureEx.fromOption(~error="No secrets found!")
+    ->Future.value
     ->Future.flatMapOk(secrets =>
         secrets[index]
         ->FutureEx.fromOption(
-            ~error="Secret at index " ++ index->Int.toString ++ " not found!",
+            ~error=ErrorHandler.(WalletAPI(SecretNotFound(index))),
           )
       );
 
   let updateSecretAt = (~settings, secret, index) =>
     secrets(~settings)
-    ->FutureEx.fromOption(~error="No secrets found!")
+    ->Future.value
     ->Future.flatMapOk(secrets => {
         (secrets[index] = secret)
           ? Future.value(
@@ -185,9 +186,7 @@ module Accounts = {
               ),
             )
           : Future.value(
-              Error(
-                "Can't update secret at index " ++ index->Int.toString ++ "!",
-              ),
+              Error(ErrorHandler.(WalletAPI(CannotUpdateSecret(index)))),
             )
       });
 
@@ -195,11 +194,16 @@ module Accounts = {
     recoveryPhrases(~settings)
     ->Option.flatMap(recoveryPhrases => recoveryPhrases[index])
     ->FutureEx.fromOption(
-        ~error=
-          "Recovery phrase at index " ++ index->Int.toString ++ " not found!",
+        ~error=ErrorHandler.(WalletAPI(RecoveryPhraseNotFound(index))),
       )
-    ->Future.flatMapOk(SecureStorage.Cipher.decrypt2(password))
-    ->Future.mapError(_ => {I18n.form_input_error#wrong_password});
+    ->Future.flatMapOk(data =>
+        SecureStorage.Cipher.decrypt2(password, data)
+        ->Future.mapError(_ =>
+            ErrorHandler.(
+              WalletAPI(Generic(I18n.form_input_error#wrong_password))
+            )
+          )
+      );
 
   let add = (~settings, ~alias, ~address) =>
     settings->AppSettings.sdk->TezosSDK.addAddress(alias, address);
@@ -209,7 +213,7 @@ module Accounts = {
     settings
     ->AppSettings.sdk
     ->TezosSDK.importSecretKey(~name=alias, ~skUri, ~password, ())
-    ->Future.mapError(ErrorHandler.fromSdkToString)
+    ->Future.mapError(e => e->ErrorHandler.TezosSDK)
     ->Future.tapOk(k => Js.log("key found : " ++ (k :> string)));
   };
 
@@ -221,6 +225,7 @@ module Accounts = {
       secret.derivationPath
       ->DerivationPath.Pattern.implement(secret.addresses->Array.length)
       ->HD.edesk(recoveryPhrase->HD.seed, ~password)
+      ->Future.mapError(e => ErrorHandler.WalletAPI(Generic(e)))
       ->Future.flatMapOk(edesk =>
           import(~settings, ~secretKey=edesk, ~alias, ~password)
         )
@@ -238,30 +243,31 @@ module Accounts = {
     settings
     ->AppSettings.sdk
     ->TezosSDK.forgetAddress(name)
-    ->Future.mapError(ErrorHandler.fromSdkToString);
+    ->Future.mapError(e => e->ErrorHandler.TezosSDK);
 
   let delete = (~settings, name) =>
     Aliases.getAddressForAlias(~settings, ~alias=name)
     ->Future.flatMapOk(address =>
         unsafeDelete(~settings, name)
-        ->Future.mapOk(_ =>
+        ->Future.flatMapOk(_ =>
             secrets(~settings)
-            ->Option.map(secrets =>
+            ->Result.map(secrets =>
                 secrets->Array.map(secret =>
                   address == secret.legacyAddress
                     ? {...secret, legacyAddress: None} : secret
                 )
               )
-            ->Option.map(secrets =>
+            ->Result.map(secrets =>
                 Json.Encode.array(Secret.encoder, secrets)->Json.stringify
               )
-            ->Option.map("secrets"->LocalStorage.setItem)
+            ->Result.map("secrets"->LocalStorage.setItem)
+            ->Future.value
           )
       );
 
   let deleteSecretAt = (~settings, index) =>
     Future.mapOk2(
-      secrets(~settings)->FutureEx.fromOption(~error="No secrets found!"),
+      secrets(~settings)->Future.value,
       Aliases.getAliasMap(~settings),
       (secrets, aliases) => {
       secrets[index]
@@ -270,7 +276,7 @@ module Accounts = {
           ->Array.keepMap(v => aliases->Map.String.get((v :> string)))
         )
       ->FutureEx.fromOption(
-          ~error="Secret at index " ++ index->Int.toString ++ " not found!",
+          ~error=ErrorHandler.(WalletAPI(SecretNotFound(index))),
         )
       ->Future.flatMapOk(array =>
           array->Array.reduce(Future.value(Ok([||])), (a, b) =>
@@ -324,7 +330,8 @@ module Accounts = {
   let used = (network, address) => {
     network
     ->ServerAPI.Explorer.getOperations(address, ~limit=1, ())
-    ->Future.mapOk(operations => {operations->Js.Array2.length != 0});
+    ->Future.mapOk(operations => {operations->Js.Array2.length != 0})
+    ->Future.mapError(s => ErrorHandler.(WalletAPI(Generic(s))));
   };
 
   let rec scanSeed =
@@ -341,6 +348,7 @@ module Accounts = {
     derivationPath
     ->DerivationPath.Pattern.implement(index)
     ->HD.edesk(seed, ~password)
+    ->Future.mapError(e => ErrorHandler.WalletAPI(Generic(e)))
     ->Future.flatMapOk(edesk =>
         import(~settings, ~secretKey=edesk, ~alias=name, ~password)
         ->Future.flatMapOk(address
@@ -380,7 +388,7 @@ module Accounts = {
         ~password,
         (),
       )
-    ->Future.mapError(ErrorHandler.fromSdkToString);
+    ->Future.mapError(e => e->ErrorHandler.TezosSDK);
 
   let legacyScan = (~settings, recoveryPhrase, name, ~password) =>
     legacyImport(~settings, name, recoveryPhrase, ~password)
@@ -429,7 +437,10 @@ module Accounts = {
   let indexOfRecoveryPhrase = (~settings, recoveryPhrase, ~password) =>
     recoveryPhrases(~settings)
     ->Option.getWithDefault([||])
-    ->Array.map(SecureStorage.Cipher.decrypt2(password))
+    ->Array.map(data =>
+        SecureStorage.Cipher.decrypt2(password, data)
+        ->Future.mapError(e => ErrorHandler.(WalletAPI(Generic(e))))
+      )
     ->List.fromArray
     ->Future.all
     ->Future.map(List.toArray)
@@ -452,12 +463,17 @@ module Accounts = {
       ) => {
     password
     ->SecureStorage.validatePassword
-    ->Future.mapError(_ => I18n.form_input_error#wrong_password)
+    ->Future.mapError(_ =>
+        ErrorHandler.(
+          WalletAPI(Generic(I18n.form_input_error#wrong_password))
+        )
+      )
     ->Future.flatMapOk(_ =>
         indexOfRecoveryPhrase(~settings, backupPhrase, ~password)
         ->Future.map(index =>
             switch (index) {
-            | Some(_) => Error("Secret already imported!")
+            | Some(_) =>
+              Error(ErrorHandler.(WalletAPI(SecretAlreadyImported)))
             | None => Ok(index)
             }
           )
@@ -488,7 +504,7 @@ module Accounts = {
         };
         let secrets =
           secrets(~settings)
-          ->Option.getWithDefault([||])
+          ->Result.getWithDefault([||])
           ->Array.concat([|secret|]);
         LocalStorage.setItem(
           "secrets",
@@ -500,11 +516,12 @@ module Accounts = {
   let scanAll = (~settings, ~password) =>
     (
       switch (recoveryPhrases(~settings), secrets(~settings)) {
-      | (Some(recoveryPhrases), Some(secrets)) =>
+      | (Some(recoveryPhrases), Ok(secrets)) =>
         Array.zip(recoveryPhrases, secrets)
         ->Array.map(((recoveryPhrase, secret)) =>
             recoveryPhrase
             ->SecureStorage.Cipher.decrypt(password)
+            ->Future.mapError(e => ErrorHandler.(WalletAPI(Generic(e))))
             ->Future.flatMapOk(recoveryPhrase =>
                 scan(
                   ~settings,

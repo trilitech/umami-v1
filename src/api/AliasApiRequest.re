@@ -50,6 +50,7 @@ let useCreate =
       (~settings, (alias, address)) =>
         WalletAPI.Aliases.add(~settings, ~alias, ~address),
     ~kind=Logs.Aliases,
+    ~errorToString=ErrorHandler.toString,
   );
 
 /* Update */
@@ -60,6 +61,7 @@ let useUpdate =
       (~settings, renaming: TezosSDK.renameParams) =>
         WalletAPI.Aliases.rename(~settings, renaming),
     ~kind=Logs.Aliases,
+    ~errorToString=ErrorHandler.toString,
   );
 
 /* Delete */
@@ -67,5 +69,9 @@ let useUpdate =
 let useDelete = {
   let set = (~settings, alias) =>
     WalletAPI.Aliases.delete(~settings, ~alias);
-  ApiRequest.useSetter(~set, ~kind=Logs.Aliases);
+  ApiRequest.useSetter(
+    ~set,
+    ~kind=Logs.Aliases,
+    ~errorToString=ErrorHandler.toString,
+  );
 };

@@ -53,7 +53,7 @@ let token = (operation, password) => {
   password,
 };
 
-let errorToString = ErrorHandler.fromApiToString;
+let errorToString = ErrorHandler.toString;
 
 let filterOutFormError =
   fun

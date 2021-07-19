@@ -30,7 +30,7 @@
 let useLoad = requestState => {
   let get = (~settings, ()) =>
     WalletAPI.Accounts.secrets(~settings)
-    ->Option.mapWithDefault(Future.value(Result.Ok([||])), secrets => {
+    ->Result.mapWithDefault(Future.value(Result.Ok([||])), secrets => {
         Future.value(Result.Ok(secrets))
       })
     ->Future.mapOk(secrets =>
@@ -47,7 +47,13 @@ let useGetRecoveryPhrase = (~requestState as (request, setRequest), ~index) => {
     WalletAPI.Accounts.recoveryPhraseAt(~settings, index, ~password);
 
   let getRequest =
-    ApiRequest.useGetter(~get, ~kind=Logs.Account, ~setRequest, ());
+    ApiRequest.useGetter(
+      ~get,
+      ~kind=Logs.Account,
+      ~setRequest,
+      ~errorToString=ErrorHandler.toString,
+      (),
+    );
 
   (request, getRequest);
 };
@@ -57,7 +63,13 @@ let useScanGlobal = (~requestState as (request, setRequest), ()) => {
     WalletAPI.Accounts.scanAll(~settings, ~password);
 
   let getRequest =
-    ApiRequest.useGetter(~get, ~kind=Logs.Account, ~setRequest, ());
+    ApiRequest.useGetter(
+      ~get,
+      ~kind=Logs.Account,
+      ~setRequest,
+      ~errorToString=ErrorHandler.toString,
+      (),
+    );
 
   (request, getRequest);
 };
