@@ -25,51 +25,85 @@
 
 open ProtocolOptions;
 
-type currency =
-  | XTZ(ProtocolXTZ.t)
-  | Token(TokenRepr.Unit.t, TokenRepr.t);
+module Currency = {
+  type t =
+    | Tez(Tez.t)
+    | Token(TokenRepr.Unit.t, TokenRepr.t);
+
+  let makeTez = t => t->Tez;
+  let makeToken = (~amount, ~token) => Token(amount, token);
+
+  let toInt64 =
+    fun
+    | Tez(tez) => tez->Tez.toInt64
+    | Token(curr, _) => curr->TokenRepr.Unit.toBigNumber->ReBigNumber.toInt64;
+
+  let toBigNumber =
+    fun
+    | Tez(tez) => tez->Tez.toInt64->ReBigNumber.fromInt64
+    | Token(curr, _) => curr->TokenRepr.Unit.toBigNumber;
+
+  let toString =
+    fun
+    | Tez(tez) => tez->Tez.toString
+    | Token(curr, _) => curr->TokenRepr.Unit.toNatString;
+
+  let getTez =
+    fun
+    | Tez(tez) => Some(tez)
+    | _ => None;
+
+  let getToken =
+    fun
+    | Token(t, c) => Some((t, c))
+    | _ => None;
+
+  let getTokenExn = t => t->getToken->Option.getExn;
+
+  let showAmount =
+    fun
+    | Tez(v) => I18n.t#tez_amount(v->Tez.toString)
+    | Token(v, t) => I18n.t#amount(v->TokenRepr.Unit.toNatString, t.symbol);
+
+  let compareCurrencies = (v1, v2) => {
+    switch (v1, v2) {
+    | (Tez(_), Token(_)) => (-1)
+    | (Token(_), Tez(_)) => 1
+    | _ => 0
+    };
+  };
+
+  let reduceAmounts = l =>
+    l
+    ->UmamiCommon.Lib.List.reduceGroupBy(
+        ~group=
+          fun
+          | Tez(_) => None
+          | Token(_, t) => Some(t),
+        ~map=(acc, v) =>
+        switch (acc, v) {
+        | (None, v) => v
+        | (Some(Tez(acc)), Tez(v)) => Tez(Tez.Infix.(acc + v))
+        | (Some(Token(acc, t)), Token(v, _)) =>
+          Token(TokenRepr.Unit.Infix.(acc + v), t)
+        | (Some(acc), _) => acc
+        }
+      )
+    ->List.map(snd)
+    ->List.sort(compareCurrencies);
+};
 
 type elt = {
-  destination: string,
-  amount: currency,
+  destination: PublicKeyHash.t,
+  amount: Currency.t,
   tx_options: transferOptions,
 };
 
 type t = {
-  source: string,
+  source: PublicKeyHash.t,
   transfers: list(elt),
   common_options: commonOptions,
 };
-
-let makeXTZ = t => t->XTZ;
-let makeToken = (~amount, ~token) => Token(amount, token);
-
-let currencyToInt64 =
-  fun
-  | XTZ(xtz) => xtz->ProtocolXTZ.toInt64
-  | Token(curr, _) => curr->TokenRepr.Unit.toBigNumber->ReBigNumber.toInt64;
-
-let currencyToBigNumber =
-  fun
-  | XTZ(xtz) => xtz->ProtocolXTZ.toInt64->ReBigNumber.fromInt64
-  | Token(curr, _) => curr->TokenRepr.Unit.toBigNumber;
-
-let currencyToString =
-  fun
-  | XTZ(xtz) => xtz->ProtocolXTZ.toString
-  | Token(curr, _) => curr->TokenRepr.Unit.toNatString;
-
-let getXTZ =
-  fun
-  | XTZ(xtz) => Some(xtz)
-  | _ => None;
-
-let getToken =
-  fun
-  | Token(t, c) => Some((t, c))
-  | _ => None;
-
-let getTokenExn = t => t->getToken->Option.getExn;
 
 let makeSingleTransferElt =
     (
@@ -95,7 +129,7 @@ let makeSingleTransferElt =
     ),
 };
 
-let makeSingleXTZTransferElt =
+let makeSingleTezTransferElt =
     (
       ~destination,
       ~amount,
@@ -108,7 +142,7 @@ let makeSingleXTZTransferElt =
     ) =>
   makeSingleTransferElt(
     ~destination,
-    ~amount=makeXTZ(amount),
+    ~amount=Currency.makeTez(amount),
     ~fee?,
     ~parameter?,
     ~entrypoint?,
@@ -123,7 +157,7 @@ let makeSingleTokenTransferElt =
     (~destination, ~amount, ~token, ~fee=?, ~gasLimit=?, ~storageLimit=?, ()) =>
   makeSingleTransferElt(
     ~destination,
-    ~amount=makeToken(~amount, ~token),
+    ~amount=Currency.makeToken(~amount, ~token),
     ~fee?,
     ~gasLimit?,
     ~storageLimit?,

@@ -24,9 +24,13 @@
 /*****************************************************************************/
 
 type t = {
-  index: int,
   name: string,
-  derivationScheme: string,
-  addresses: Js.Array.t(string),
-  legacyAddress: option(string),
+  derivationPath: DerivationPath.Pattern.t,
+  addresses: Js.Array.t(PublicKeyHash.t),
+  legacyAddress: option(PublicKeyHash.t),
+};
+
+type derived = {
+  index: int,
+  secret: t,
 };

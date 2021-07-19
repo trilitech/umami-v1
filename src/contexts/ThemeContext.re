@@ -24,6 +24,7 @@
 /*****************************************************************************/
 
 type colors = {
+  textMaxEmphasis: string,
   textHighEmphasis: string,
   textMediumEmphasis: string,
   textDisabled: string,
@@ -46,11 +47,14 @@ type colors = {
   stateDisabled: string,
   stateHovered: string,
   stateActive: string,
+  stateFocusedOutline: string,
+  stateRowHovered: string,
   borderHighEmphasis: string,
   borderMediumEmphasis: string,
   borderDisabled: string,
   borderPrimary: string,
   primaryButtonBackground: string,
+  primaryButtonOutline: string,
   primaryTextHighEmphasis: string,
   primaryTextMediumEmphasis: string,
   primaryTextDisabled: string,
@@ -61,6 +65,8 @@ type colors = {
   primaryStateHovered: string,
   primaryStateActive: string,
   primaryStateDisabled: string,
+  surfaceButtonBackground: string,
+  surfaceButtonOutline: string,
 };
 
 type theme = {
@@ -73,6 +79,7 @@ type theme = {
 let lightTheme = {
   dark: false,
   colors: {
+    textMaxEmphasis: Colors.Light.maxEmphasis,
     textHighEmphasis: Colors.Light.highEmphasis,
     textMediumEmphasis: Colors.Light.mediumEmphasis,
     textDisabled: Colors.Light.disabled,
@@ -93,13 +100,16 @@ let lightTheme = {
     error: Colors.error,
     statePressed: Colors.Light.statePressed,
     stateHovered: Colors.Light.stateHovered,
+    stateFocusedOutline: Colors.Light.stateFocusedOutline,
     stateActive: Colors.Light.stateActive,
     stateDisabled: Colors.Light.stateDisabled,
+    stateRowHovered: Colors.Light.stateSmallHovered,
     borderHighEmphasis: Colors.Light.highEmphasis,
     borderMediumEmphasis: Colors.Light.mediumEmphasis,
     borderDisabled: Colors.Light.disabled,
     borderPrimary: Colors.Light.primary,
     primaryButtonBackground: Colors.Light.primary,
+    primaryButtonOutline: Colors.Light.primaryOutline,
     primaryTextHighEmphasis: Colors.Dark.maxEmphasis,
     primaryTextMediumEmphasis: Colors.Dark.mediumEmphasis,
     primaryTextDisabled: Colors.Dark.disabled,
@@ -110,12 +120,15 @@ let lightTheme = {
     primaryStateHovered: Colors.Dark.stateHovered,
     primaryStateActive: Colors.Dark.stateActive,
     primaryStateDisabled: Colors.Dark.stateDisabled,
+    surfaceButtonBackground: Colors.Light.surface,
+    surfaceButtonOutline: Colors.Light.surfaceOutline,
   },
 };
 
 let darkTheme = {
   dark: true,
   colors: {
+    textMaxEmphasis: Colors.Dark.maxEmphasis,
     textHighEmphasis: Colors.Dark.highEmphasis,
     textMediumEmphasis: Colors.Dark.mediumEmphasis,
     textDisabled: Colors.Dark.disabled,
@@ -136,23 +149,28 @@ let darkTheme = {
     error: Colors.error,
     statePressed: Colors.Dark.statePressed,
     stateHovered: Colors.Dark.stateHovered,
+    stateFocusedOutline: Colors.Dark.stateFocusedOutline,
     stateActive: Colors.Dark.stateActive,
     stateDisabled: Colors.Dark.stateDisabled,
+    stateRowHovered: Colors.Dark.stateSmallHovered,
     borderHighEmphasis: Colors.Dark.highEmphasis,
     borderMediumEmphasis: Colors.Dark.mediumEmphasis,
     borderDisabled: Colors.Dark.disabled,
     borderPrimary: Colors.Dark.primary,
     primaryButtonBackground: Colors.Dark.primary,
+    primaryButtonOutline: Colors.Dark.primaryOutline,
     primaryTextHighEmphasis: Colors.Light.maxEmphasis,
     primaryTextMediumEmphasis: Colors.Light.mediumEmphasis,
     primaryTextDisabled: Colors.Light.disabled,
     primaryIconHighEmphasis: Colors.Light.maxEmphasis,
     primaryIconMediumEmphasis: Colors.Light.mediumEmphasis,
     primaryIconDisabled: Colors.Light.disabled,
-    primaryStatePressed: Colors.Light.statePressed,
-    primaryStateHovered: Colors.Light.stateHovered,
-    primaryStateActive: Colors.Light.stateActive,
-    primaryStateDisabled: Colors.Light.stateActive,
+    primaryStatePressed: Colors.Dark.statePressed,
+    primaryStateHovered: Colors.Dark.stateHovered,
+    primaryStateActive: Colors.Dark.stateActive,
+    primaryStateDisabled: Colors.Dark.stateActive,
+    surfaceButtonBackground: Colors.Dark.surface,
+    surfaceButtonOutline: Colors.Dark.surfaceOutline,
   },
 };
 

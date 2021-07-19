@@ -103,7 +103,7 @@ module AccountNestedRowItem = {
       <RowItem.Bordered height=90. isNested=true isLast>
         <View style=styles##inner>
           <Typography.Subtitle1 style=styles##alias>
-            account.alias->React.string
+            account.name->React.string
           </Typography.Subtitle1>
           <AccountInfoBalance address={account.address} />
           <Typography.Address style=styles##derivation>
@@ -147,7 +147,7 @@ module AccountImportedRowItem = {
       let (accountRequest, deleteAccount) = StoreContext.Accounts.useDelete();
 
       let onPressConfirmDelete = _e => {
-        deleteAccount(account.alias)->ignore;
+        deleteAccount(account.name)->ignore;
       };
 
       <DeleteButton.MenuItem
@@ -194,7 +194,7 @@ module AccountImportedRowItem = {
           tag
           <View>
             <Typography.Subtitle1 style=styles##alias>
-              account.alias->React.string
+              account.name->React.string
             </Typography.Subtitle1>
             <AccountInfoBalance address={account.address} />
           </View>
@@ -233,11 +233,12 @@ module AccountImportedRowItem = {
                  icon=Icons.More.build
                  style=styles##actionIconButton
                  keyPopover={
-                   "accountImportRowItemMenuUmami" ++ account.address
+                   "accountImportRowItemMenuUmami"
+                   ++ (account.address :> string)
                  }>
                  [|
-                   <AccountEditButton account />,
-                   <AccountDeleteButton account />,
+                   <AccountEditButton key="accountEditButton" account />,
+                   <AccountDeleteButton key="accountDeleteButton" account />,
                  |]
                </Menu>
              </>}
@@ -271,11 +272,13 @@ module AccountImportedRowItem = {
              <Menu
                icon=Icons.More.build
                style=styles##actionIconButton
-               keyPopover={"accountImportRowItemMenuCli" ++ account.address}>
+               keyPopover={
+                 "accountImportRowItemMenuCli" ++ (account.address :> string)
+               }>
                [|
-                 <AccountEditButton account />,
+                 <AccountEditButton key="accountEditButton" account />,
                  /*<AccountDisplayButton />*/
-                 <AccountDeleteButton account />,
+                 <AccountDeleteButton key="accountDeleteButton" account />,
                |]
              </Menu>
            </>}
@@ -287,7 +290,7 @@ module AccountImportedRowItem = {
 module SecretRowItem = {
   module SecretDeleteButton = {
     [@react.component]
-    let make = (~secret: Secret.t) => {
+    let make = (~secret: Secret.derived) => {
       let (secretRequest, deleteSecret) = StoreContext.Secrets.useDelete();
 
       let onPressConfirmDelete = _e => {
@@ -342,14 +345,16 @@ module SecretRowItem = {
   };
 
   [@react.component]
-  let make = (~secret: Secret.t) => {
+  let make = (~secret: Secret.derived) => {
     <RowItem.Bordered height=66.>
       <View style=styles##inner>
         <Typography.Subtitle1 style=styles##alias>
-          secret.name->React.string
+          secret.secret.name->React.string
         </Typography.Subtitle1>
         <Typography.Address style=styles##derivation>
-          secret.derivationScheme->React.string
+          {secret.secret.derivationPath
+           ->DerivationPath.Pattern.toString
+           ->React.string}
         </Typography.Address>
       </View>
       <View style=styles##actionContainer>
@@ -359,7 +364,10 @@ module SecretRowItem = {
           icon=Icons.More.build
           style=styles##actionIconButton
           keyPopover={"secretRowItem" ++ secret.index->string_of_int}>
-          [|<SecretEditButton secret />, <SecretDeleteButton secret />|]
+          [|
+            <SecretEditButton key="secretEditButton" secret />,
+            <SecretDeleteButton key="secretDeleteButton" secret />,
+          |]
         </Menu>
       </View>
     </RowItem.Bordered>;
@@ -367,16 +375,16 @@ module SecretRowItem = {
 };
 
 [@react.component]
-let make = (~secret: Secret.t) => {
+let make = (~secret: Secret.derived) => {
   <View>
     <SecretRowItem secret />
-    {secret.addresses
-     ->Array.mapWithIndex((index, address) =>
+    {secret.secret.addresses
+     ->Array.mapWithIndex((index, addr) =>
          <AccountNestedRowItem
-           key=address
-           address
+           key=(addr :> string)
+           address=(addr :> string)
            index
-           isLast={secret.addresses->Array.size - 1 === index}
+           isLast={secret.secret.addresses->Array.size - 1 === index}
          />
        )
      ->React.array}

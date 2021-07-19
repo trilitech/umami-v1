@@ -52,7 +52,7 @@ let make = (~account: Account.t, ~token: option(Token.t)=?) => {
   let zeroTez =
     switch (balanceRequest->ApiRequest.getDoneOk) {
     | None => true
-    | Some(balance) => balance == ProtocolXTZ.zero
+    | Some(balance) => balance == Tez.zero
     };
 
   <RowItem.Bordered height=90.>
@@ -60,12 +60,16 @@ let make = (~account: Account.t, ~token: option(Token.t)=?) => {
     <View style=styles##actionButtons>
       <ClipboardButton
         copied=I18n.log#address
-        tooltipKey={account.address}
+        tooltipKey=(account.address :> string)
         addToast
-        data={account.address}
+        data=(account.address :> string)
         style=styles##button
       />
-      <QrButton tooltipKey={account.address} account style=styles##button />
+      <QrButton
+        tooltipKey=(account.address :> string)
+        account={account->Account.toAlias}
+        style=styles##button
+      />
     </View>
     {delegateRequest
      ->ApiRequest.mapWithDefault(React.null, delegate => {
@@ -74,7 +78,7 @@ let make = (~account: Account.t, ~token: option(Token.t)=?) => {
              zeroTez
              action={
                delegate->Option.mapWithDefault(
-                 Delegate.Create(Some(account)), delegate =>
+                 Delegate.Create(account, false), delegate =>
                  Delegate.Edit(account, delegate)
                )
              }

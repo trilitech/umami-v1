@@ -32,6 +32,7 @@ type t =
   | Delegations
   | Tokens
   | Settings
+  | Logs
   | NotFound;
 
 exception RouteToNotFound;
@@ -45,6 +46,7 @@ let match = (url: url) => {
   | "/delegations" => Delegations
   | "/tokens" => Tokens
   | "/settings" => Settings
+  | "/logs" => Logs
   | _ => NotFound
   };
 };
@@ -57,6 +59,7 @@ let toHref =
   | Delegations => "#/delegations"
   | Tokens => "#/tokens"
   | Settings => "#/settings"
+  | Logs => "#/logs"
   | NotFound => raise(RouteToNotFound);
 
 /* This lets us push a Routes.t instead of a string to transition to a new  screen */

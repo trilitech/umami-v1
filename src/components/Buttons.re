@@ -29,20 +29,14 @@ let styles =
   Style.(
     StyleSheet.create({
       "primary": style(~borderRadius=4., ()),
-      "button":
-        style(
-          ~display=`flex,
-          ~alignItems=`center,
-          ~justifyContent=`center,
-          ~flexDirection=`row,
-          (),
-        ),
-      "outer": style(~flex=1., ()),
+      "button": style(),
       "pressable":
         style(
           ~flex=1.,
-          ~paddingVertical=8.->dp,
           ~paddingHorizontal=17.->dp,
+          ~minWidth=95.->dp,
+          ~minHeight=34.->dp,
+          ~maxHeight=34.->dp,
           ~alignItems=`center,
           ~justifyContent=`center,
           ~borderRadius=4.,
@@ -65,11 +59,14 @@ module FormBase = {
         ~children,
       ) => {
     let theme = ThemeContext.useTheme();
+
+    let (module ThemedPressableComp): (module ThemedPressable.T) =
+      isPrimary
+        ? (module ThemedPressable.Primary) : (module ThemedPressable.Base);
+
     <View style=Style.(arrayOption([|Some(styles##button), vStyle|]))>
-      <ThemedPressable
+      <ThemedPressableComp
         style={Style.arrayOption([|Some(styles##pressable), style|])}
-        outerStyle=styles##outer
-        isPrimary
         onPress
         disabled={disabled || loading}
         accessibilityRole=`button>
@@ -86,7 +83,7 @@ module FormBase = {
              />
            : React.null}
         <View style={ReactUtils.visibleOn(!loading)}> children </View>
-      </ThemedPressable>
+      </ThemedPressableComp>
     </View>;
   };
 };
@@ -203,21 +200,15 @@ module SubmitSecondary = {
 
     <FormBase
       onPress
-      isPrimary=false
       disabled
       ?loading
-      vStyle=Style.(
-        arrayOption([|
-          styleArg,
-          Some(styles##primary),
-          Some(
-            style(
-              ~borderWidth=1.,
-              ~borderColor=theme.colors.borderHighEmphasis,
-              (),
-            ),
-          ),
-        |])
+      vStyle=?styleArg
+      style=Style.(
+        style(
+          ~borderWidth=1.,
+          ~borderColor=theme.colors.borderHighEmphasis,
+          (),
+        )
       )>
       <Typography.ButtonPrimary ?fontSize>
         text->React.string
@@ -241,21 +232,15 @@ module SubmitTertiary = {
 
     <FormBase
       onPress
-      isPrimary=false
       disabled
       ?loading
-      vStyle=Style.(
-        arrayOption([|
-          styleArg,
-          Some(styles##primary),
-          Some(
-            style(
-              ~borderWidth=1.,
-              ~borderColor=theme.colors.borderMediumEmphasis,
-              (),
-            ),
-          ),
-        |])
+      vStyle=?styleArg
+      style=Style.(
+        style(
+          ~borderWidth=1.,
+          ~borderColor=theme.colors.borderMediumEmphasis,
+          (),
+        )
       )>
       <Typography.ButtonPrimary colorStyle=`mediumEmphasis ?fontSize>
         text->React.string

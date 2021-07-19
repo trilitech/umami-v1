@@ -81,7 +81,7 @@ let styles =
 
 module AddContactButton = {
   [@react.component]
-  let make = (~address, ~operation: Operation.Read.t) => {
+  let make = (~address: PublicKeyHash.t, ~operation: Operation.Read.t) => {
     let (visibleModal, openAction, closeAction) =
       ModalAction.useModalActionState();
 
@@ -101,10 +101,10 @@ module AddContactButton = {
   };
 };
 
-let rawUnknownAddress = (address, operation) => {
+let rawUnknownAddress = (address: PublicKeyHash.t, operation) => {
   <View style=styles##rawAddressContainer>
     <Typography.Address numberOfLines=1>
-      address->React.string
+      (address :> string)->React.string
     </Typography.Address>
     <AddContactButton address operation />
   </View>;
@@ -169,7 +169,7 @@ let amount = (isToken, account, transaction: Operation.Business.Transaction.t) =
 
   <CellAmount>
     {<Typography.Body1 ?colorStyle>
-       {I18n.t#xtz_op_amount(op, transaction.amount->ProtocolXTZ.toString)
+       {I18n.t#tez_op_amount(op, transaction.amount->Tez.toString)
         ->React.string}
      </Typography.Body1>
      ->ReactUtils.onlyWhen(!isToken)}
@@ -199,15 +199,15 @@ let make =
              <CellAmount />
              <CellFee>
                <Typography.Body1>
-                 {I18n.t#xtz_amount(business.fee->ProtocolXTZ.toString)
-                  ->React.string}
+                 {I18n.t#tez_amount(business.fee->Tez.toString)->React.string}
                </Typography.Body1>
              </CellFee>
              <CellAddress />
              <CellAddress />
            </>
          | Transaction(transaction) =>
-           let isToken = tokens->Map.String.has(transaction.destination);
+           let isToken =
+             tokens->Map.String.has((transaction.destination :> string));
            <>
              <CellType>
                <Typography.Body1>
@@ -217,8 +217,7 @@ let make =
              {amount(isToken, account, transaction)}
              <CellFee>
                <Typography.Body1>
-                 {I18n.t#xtz_amount(business.fee->ProtocolXTZ.toString)
-                  ->React.string}
+                 {I18n.t#tez_amount(business.fee->Tez.toString)->React.string}
                </Typography.Body1>
              </CellFee>
              <CellAddress>
@@ -263,8 +262,7 @@ let make =
              <CellAmount />
              <CellFee>
                <Typography.Body1>
-                 {I18n.t#xtz_amount(business.fee->ProtocolXTZ.toString)
-                  ->React.string}
+                 {I18n.t#tez_amount(business.fee->Tez.toString)->React.string}
                </Typography.Body1>
              </CellFee>
              <CellAddress>
@@ -283,7 +281,17 @@ let make =
                   </CellAddress>
                 )}
            </>
-         | Unknown => React.null
+         | Unknown =>
+           <>
+             <CellType>
+               <Typography.Body1>
+                 I18n.t#unknown_operation->ReasonReact.string
+               </Typography.Body1>
+             </CellType>
+             <CellAmount />
+             <CellFee />
+             <CellAddress />
+           </>
          }
        }}
       <CellDate>

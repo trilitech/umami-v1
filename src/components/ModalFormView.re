@@ -98,12 +98,13 @@ module CloseButton = {
 };
 
 [@react.component]
-let make = (~closing=?, ~back=?, ~loading=?, ~children) => {
+let make = (~closing=?, ~back=?, ~loading=?, ~children, ~style=?) => {
   let closeButton = closing->Option.map(closing => <CloseButton closing />);
 
   let backButton = back->Option.map(back => <BackButton back />);
 
-  <ModalTemplate.Form headerRight=?closeButton headerLeft=?backButton ?loading>
+  <ModalTemplate.Form
+    headerRight=?closeButton headerLeft=?backButton ?loading ?style>
     children
   </ModalTemplate.Form>;
 };

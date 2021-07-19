@@ -85,9 +85,10 @@ let edesk = (path, seed, ~password) => {
   Sodium.ready
   ->FutureJs.fromPromise(Js.String.make)
   ->Future.flatMapOk(_ =>
-      switch (ED25519.derivePath(path, seed).key) {
+      switch (ED25519.derivePath(path->DerivationPath.toString, seed).key) {
       | key => Future.value(Ok(key))
-      | exception _ => Future.value(Error(I18n.form_input_error#derivation_path_error))
+      | exception _ =>
+        Future.value(Error(I18n.form_input_error#derivation_path_error))
       }
     )
   ->Future.mapOk(secretKey => {

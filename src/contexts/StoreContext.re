@@ -32,32 +32,37 @@ type reactState('state) = ('state, ('state => 'state) => unit);
 type requestsState('requestResponse, 'error) =
   Map.String.t(ApiRequest.t('requestResponse, 'error));
 
-type apiRequestsState('requestResponse, 'error) =
-  reactState(requestsState('requestResponse, 'error));
+type error = string;
+
+type apiRequestsState('requestResponse) =
+  reactState(requestsState('requestResponse, error));
 
 type state = {
-  selectedAccountState: reactState(option(string)),
-  selectedTokenState: reactState(option(string)),
+  selectedAccountState: reactState(option(PublicKeyHash.t)),
+  selectedTokenState: reactState(option(PublicKeyHash.t)),
   accountsRequestState:
     reactState(ApiRequest.t(Map.String.t(Account.t), string)),
-  secretsRequestState: reactState(ApiRequest.t(array(Secret.t), string)),
-  balanceRequestsState: apiRequestsState(ProtocolXTZ.t, string),
-  delegateRequestsState: apiRequestsState(option(string), string),
+  secretsRequestState:
+    reactState(ApiRequest.t(array(Secret.derived), string)),
+  balanceRequestsState: apiRequestsState(Tez.t),
+  delegateRequestsState: apiRequestsState(option(PublicKeyHash.t)),
   delegateInfoRequestsState:
-    apiRequestsState(
-      option(DelegateApiRequest.DelegateAPI.delegationInfo),
-      string,
-    ),
+    apiRequestsState(option(NodeAPI.Delegate.delegationInfo)),
   operationsRequestsState:
-    apiRequestsState((array(Operation.Read.t), int), string),
+    apiRequestsState(OperationApiRequest.operationsResponse),
   operationsConfirmations: reactState(Set.String.t),
   aliasesRequestState:
-    reactState(ApiRequest.t(Map.String.t(Account.t), string)),
-  bakersRequestState: reactState(ApiRequest.t(array(Delegate.t), string)),
+    reactState(ApiRequest.t(Map.String.t(Alias.t), error)),
+  bakersRequestState: reactState(ApiRequest.t(array(Delegate.t), error)),
   tokensRequestState:
     reactState(ApiRequest.t(Map.String.t(Token.t), string)),
-  balanceTokenRequestsState: apiRequestsState(Token.Unit.t, string),
+  balanceTokenRequestsState: apiRequestsState(Token.Unit.t),
   apiVersionRequestState: reactState(option(Network.apiVersion)),
+  eulaSignatureRequestState: reactState(bool),
+  beaconPeersRequestState:
+    reactState(ApiRequest.t(array(ReBeacon.peerInfo), string)),
+  beaconPermissionsRequestState:
+    reactState(ApiRequest.t(array(ReBeacon.permissionInfo), string)),
 };
 
 // Context and Provider
@@ -79,6 +84,9 @@ let initialState = {
   tokensRequestState: (NotAsked, _ => ()),
   balanceTokenRequestsState: initialApiRequestsState,
   apiVersionRequestState: (None, _ => ()),
+  eulaSignatureRequestState: (false, _ => ()),
+  beaconPeersRequestState: (NotAsked, _ => ()),
+  beaconPermissionsRequestState: (NotAsked, _ => ()),
 };
 
 let context = React.createContext(initialState);
@@ -120,13 +128,24 @@ let make = (~children) => {
   let bakersRequestState = React.useState(() => ApiRequest.NotAsked);
   let tokensRequestState = React.useState(() => ApiRequest.NotAsked);
   let secretsRequestState = React.useState(() => ApiRequest.NotAsked);
+  let beaconPeersRequestState = React.useState(() => ApiRequest.NotAsked);
+  let beaconPermissionsRequestState =
+    React.useState(() => ApiRequest.NotAsked);
 
   let apiVersionRequestState = React.useState(() => None);
   let (_, setApiVersion) = apiVersionRequestState;
 
+  let (_, setEulaSignature) as eulaSignatureRequestState =
+    React.useState(() => false);
+
   AccountApiRequest.useLoad(accountsRequestState)->ignore;
   AliasApiRequest.useLoad(aliasesRequestState)->ignore;
   TokensApiRequest.useLoadTokens(tokensRequestState)->ignore;
+
+  React.useEffect0(() => {
+    setEulaSignature(_ => Disclaimer.needSigning());
+    None;
+  });
 
   React.useEffect1(
     () => {
@@ -184,6 +203,9 @@ let make = (~children) => {
       tokensRequestState,
       balanceTokenRequestsState,
       apiVersionRequestState,
+      eulaSignatureRequestState,
+      beaconPeersRequestState,
+      beaconPermissionsRequestState,
     }>
     children
   </Provider>;
@@ -232,7 +254,7 @@ let useRequestsState = (getRequestsState, key: option(string)) => {
 };
 
 let resetRequests = requestsState =>
-  requestsState->Map.String.map(ApiRequest.updateToResetState);
+  requestsState->Map.String.map(ApiRequest.expireCache);
 
 let reloadRequests = requestsState =>
   requestsState->Map.String.map(ApiRequest.updateToLoadingState);
@@ -244,11 +266,21 @@ let useApiVersion = () => {
   store.apiVersionRequestState->fst;
 };
 
+let useEulaSignature = () => {
+  let store = useStoreContext();
+  store.eulaSignatureRequestState->fst;
+};
+
+let setEulaSignature = () => {
+  let store = useStoreContext();
+  store.eulaSignatureRequestState->snd;
+};
+
 module Balance = {
   let useRequestState = useRequestsState(store => store.balanceRequestsState);
 
-  let useLoad = (address: string) => {
-    let requestState = useRequestState(Some(address));
+  let useLoad = (address: PublicKeyHash.t) => {
+    let requestState = useRequestState(Some((address :> string)));
 
     BalanceApiRequest.useLoad(~requestState, ~address);
   };
@@ -264,7 +296,7 @@ module Balance = {
       accounts
       ->Map.String.valuesToArray
       ->Array.keepMap(account => {
-          balanceRequests->Map.String.get(account.address)
+          balanceRequests->Map.String.get((account.address :> string))
         })
       ->Array.keep(ApiRequest.isDone);
 
@@ -272,12 +304,12 @@ module Balance = {
     accountsBalanceRequests->Array.size == accounts->Map.String.size
       ? Some(
           accountsBalanceRequests->Array.reduce(
-            ProtocolXTZ.zero, (acc, balanceRequest) => {
-            ProtocolXTZ.Infix.(
+            Tez.zero, (acc, balanceRequest) => {
+            Tez.Infix.(
               acc
               + balanceRequest
                 ->ApiRequest.getDoneOk
-                ->Option.getWithDefault(ProtocolXTZ.zero)
+                ->Option.getWithDefault(Tez.zero)
             )
           }),
         )
@@ -292,28 +324,27 @@ module Balance = {
 };
 
 module BalanceToken = {
-  let getRequestKey = (address: string, tokenAddress: option(string)) =>
-    tokenAddress->Option.map(tokenAddress => address ++ tokenAddress);
-
   let useRequestState =
     useRequestsState(store => store.balanceTokenRequestsState);
 
-  let useLoad = (address: string, tokenAddress: option(string)) => {
-    let requestState = useRequestState(address->getRequestKey(tokenAddress));
+  let getRequestKey =
+      (address: PublicKeyHash.t, tokenAddress: PublicKeyHash.t) =>
+    (address :> string) ++ (tokenAddress :> string);
+
+  let useLoad = (address: PublicKeyHash.t, tokenAddress: PublicKeyHash.t) => {
+    let requestState =
+      useRequestState(address->getRequestKey(tokenAddress)->Some);
 
     let operation =
       React.useMemo2(
-        () =>
-          tokenAddress->Option.map(tokenAddress =>
-            Token.makeGetBalance(address, tokenAddress, ())
-          ),
+        () => Token.makeGetBalance(address, tokenAddress, ()),
         (address, tokenAddress),
       );
 
     TokensApiRequest.useLoadOperationOffline(~requestState, ~operation);
   };
 
-  let useGetTotal = (tokenAddress: option(string)) => {
+  let useGetTotal = tokenAddress => {
     let store = useStoreContext();
     let (balanceRequests, _) = store.balanceTokenRequestsState;
     let (accountsRequest, _) = store.accountsRequestState;
@@ -324,9 +355,9 @@ module BalanceToken = {
       accounts
       ->Map.String.valuesToArray
       ->Array.keepMap(account => {
-          account.address
-          ->getRequestKey(tokenAddress)
-          ->Option.flatMap(balanceRequests->Map.String.get)
+          balanceRequests->Map.String.get(
+            getRequestKey(account.address, tokenAddress),
+          )
         })
       ->Array.keep(ApiRequest.isDone);
 
@@ -356,9 +387,9 @@ module BalanceToken = {
 module Delegate = {
   let useRequestState = useRequestsState(store => store.delegateRequestsState);
 
-  let useLoad = (address: string) => {
-    let requestState: ApiRequest.requestState(option(string), _) =
-      useRequestState(Some(address));
+  let useLoad = (address: PublicKeyHash.t) => {
+    let requestState: ApiRequest.requestState(option(PublicKeyHash.t), _) =
+      useRequestState(Some((address :> string)));
 
     DelegateApiRequest.useLoad(~requestState, ~address);
   };
@@ -387,8 +418,8 @@ module DelegateInfo = {
   let useRequestState =
     useRequestsState(store => store.delegateInfoRequestsState);
 
-  let useLoad = (address: string) => {
-    let requestState = useRequestState(Some(address));
+  let useLoad = (address: PublicKeyHash.t) => {
+    let requestState = useRequestState(Some((address :> string)));
 
     DelegateApiRequest.useLoadInfo(~requestState, ~address);
   };
@@ -408,8 +439,8 @@ module Operations = {
   let useRequestState =
     useRequestsState(store => store.operationsRequestsState);
 
-  let useLoad = (~limit=?, ~types=?, ~address: option(string), ()) => {
-    let requestState = useRequestState(address);
+  let useLoad = (~limit=?, ~types=?, ~address: PublicKeyHash.t, ()) => {
+    let requestState = useRequestState((address->Some :> option(string)));
 
     OperationApiRequest.useLoad(
       ~requestState,
@@ -522,7 +553,7 @@ module Tokens = {
 
   let useResetAll = () => {
     let (_, setTokensRequest) = useRequestState();
-    () => setTokensRequest(ApiRequest.updateToResetState);
+    () => setTokensRequest(ApiRequest.expireCache);
   };
 
   let useCreate = () => {
@@ -581,7 +612,7 @@ module Aliases = {
 
   let useResetAll = () => {
     let (_, setAliasesRequest) = useRequestState();
-    () => setAliasesRequest(ApiRequest.updateToResetState);
+    () => setAliasesRequest(ApiRequest.expireCache);
   };
 
   let useGetAll = () => {
@@ -628,7 +659,7 @@ module Accounts = {
     let delegates = Delegate.useGetAll();
 
     accounts->Map.String.map(account => {
-      let delegate = delegates->Map.String.get(account.address);
+      let delegate = delegates->Map.String.get((account.address :> string));
       (account, delegate);
     });
   };
@@ -643,7 +674,7 @@ module Accounts = {
     let resetOperations = Operations.useResetNames();
     let (_, setAccountsRequest) = useRequestState();
     () => {
-      setAccountsRequest(ApiRequest.updateToResetState);
+      setAccountsRequest(ApiRequest.expireCache);
       resetAliases();
       resetOperations();
     };
@@ -654,7 +685,7 @@ module Accounts = {
     let resetAliases = Aliases.useResetAll();
     let (_, setAccountsRequest) = useRequestState();
     () => {
-      setAccountsRequest(ApiRequest.updateToResetState);
+      setAccountsRequest(ApiRequest.expireCache);
       resetOperations();
       resetAliases();
     };
@@ -695,7 +726,7 @@ module Secrets = {
   let useResetNames = () => {
     let (_, setSecretsRequest) = useRequestState();
     () => {
-      setSecretsRequest(ApiRequest.updateToResetState);
+      setSecretsRequest(ApiRequest.expireCache);
     };
   };
 
@@ -703,7 +734,7 @@ module Secrets = {
     let resetAccounts = Accounts.useResetAll();
     let (_, setSecretsRequest) = useRequestState();
     () => {
-      setSecretsRequest(ApiRequest.updateToResetState);
+      setSecretsRequest(ApiRequest.expireCache);
       resetAccounts();
     };
   };
@@ -753,7 +784,7 @@ module SelectedAccount = {
 
     switch (store.selectedAccountState, accounts) {
     | ((Some(selectedAccount), _), accounts) =>
-      accounts->Map.String.get(selectedAccount)
+      accounts->Map.String.get((selectedAccount :> string))
     | _ => None
     };
   };
@@ -773,7 +804,7 @@ module SelectedToken = {
 
     switch (store.selectedTokenState, tokens) {
     | ((Some(selectedToken), _), tokens) =>
-      tokens->Map.String.get(selectedToken)
+      tokens->Map.String.get((selectedToken :> string))
     | _ => None
     };
   };
@@ -783,5 +814,57 @@ module SelectedToken = {
     let (_, setSelectedToken) = store.selectedTokenState;
 
     newToken => setSelectedToken(_ => newToken);
+  };
+};
+
+module Beacon = {
+  module Peers = {
+    let useRequestState = () => {
+      let store = useStoreContext();
+      store.beaconPeersRequestState;
+    };
+
+    let useResetAll = () => {
+      let (_, setBeaconPeersRequest) = useRequestState();
+      () => setBeaconPeersRequest(ApiRequest.expireCache);
+    };
+
+    let useGetAll = () => {
+      let beaconPeersRequestState = useRequestState();
+      BeaconApiRequest.Peers.useLoad(beaconPeersRequestState);
+    };
+
+    let useDelete = () => {
+      let resetBeaconPeers = useResetAll();
+      BeaconApiRequest.Peers.useDelete(
+        ~sideEffect=_ => resetBeaconPeers(),
+        (),
+      );
+    };
+  };
+
+  module Permissions = {
+    let useRequestState = () => {
+      let store = useStoreContext();
+      store.beaconPermissionsRequestState;
+    };
+
+    let useResetAll = () => {
+      let (_, setBeaconPermissionsRequest) = useRequestState();
+      () => setBeaconPermissionsRequest(ApiRequest.expireCache);
+    };
+
+    let useGetAll = () => {
+      let beaconPermissionsRequestState = useRequestState();
+      BeaconApiRequest.Permissions.useLoad(beaconPermissionsRequestState);
+    };
+
+    let useDelete = () => {
+      let resetBeaconPermissions = useResetAll();
+      BeaconApiRequest.Permissions.useDelete(
+        ~sideEffect=_ => resetBeaconPermissions(),
+        (),
+      );
+    };
   };
 };

@@ -29,16 +29,6 @@ open Delegate;
 let styles =
   Style.(
     StyleSheet.create({
-      "advancedOptionButton":
-        style(
-          ~flexDirection=`row,
-          ~justifyContent=`spaceBetween,
-          ~alignItems=`center,
-          ~paddingVertical=8.->dp,
-          ~marginVertical=10.->dp,
-          ~paddingRight=12.->dp,
-          (),
-        ),
       "switchCmp": style(~height=16.->dp, ~width=32.->dp, ()),
       "switchThumb": style(~transform=[|scale(~scale=0.65)|], ()),
       "operationSummary": style(~marginBottom=20.->dp, ()),
@@ -52,8 +42,8 @@ let buildTransaction = (state: DelegateForm.state, advancedOptionOpened) => {
 
   Protocol.makeDelegate(
     ~source=state.values.sender,
-    ~delegate=Some(state.values.baker),
-    ~fee=?state.values.fee->mapIfAdvanced(ProtocolXTZ.fromString),
+    ~delegate=Some(state.values.baker->PublicKeyHash.build->Result.getExn),
+    ~fee=?state.values.fee->mapIfAdvanced(Tez.fromString),
     ~forceLowFee=?
       advancedOptionOpened && state.values.forceLowFee ? Some(true) : None,
     (),
@@ -76,26 +66,25 @@ module Form = {
   let build = (action: action, advancedOptionOpened, onSubmit) => {
     let (initAccount, initDelegate) =
       switch (action) {
-      | Create(account) => (account, None)
+      | Create(account, _) => (account, None)
       | Edit(account, delegate)
-      | Delete(account, delegate) => (Some(account), Some(delegate))
+      | Delete(account, delegate) => (account, Some(delegate))
       };
 
     DelegateForm.use(
       ~schema={
         DelegateForm.Validation.(
           Schema(
-            nonEmpty(Sender)
-            + nonEmpty(Baker)
+            custom(values => values.baker->FormUtils.checkAddress, Baker)
             + custom(
-                values => FormUtils.(emptyOr(isValidXtzAmount, values.fee)),
+                values => FormUtils.(emptyOr(isValidTezAmount, values.fee)),
                 Fee,
               )
             + custom(
                 values =>
                   switch (initDelegate) {
                   | Some(initDelegate) =>
-                    initDelegate == values.baker
+                    (initDelegate :> string) == values.baker
                       ? Error(I18n.form_input_error#change_baker) : Valid
                   | None => Valid
                   },
@@ -112,8 +101,8 @@ module Form = {
           None;
         },
       ~initialState={
-        sender: initAccount->Option.mapWithDefault("", a => a.address),
-        baker: initDelegate->Option.getWithDefault(""),
+        sender: initAccount.address,
+        baker: (initDelegate :> option(string))->Option.getWithDefault(""),
         fee: "",
         forceLowFee: false,
       },
@@ -175,8 +164,7 @@ module Form = {
             error={form.getFieldError(Field(Sender))}
             disabled={
               switch (action) {
-              | Create(None) => false
-              | Create(Some(_))
+              | Create(_, fixed) => fixed
               | Edit(_)
               | Delete(_) => true
               }
@@ -190,21 +178,15 @@ module Form = {
             }
             error={form.getFieldError(Field(Baker))}
           />
-          <TouchableOpacity
-            style=styles##advancedOptionButton
-            activeOpacity=1.
-            onPress={_ => setAdvancedOptionOpened(prev => !prev)}>
-            <Typography.Overline2>
-              I18n.btn#advanced_options->React.string
-            </Typography.Overline2>
-            <ThemedSwitch
-              disabled={
-                form.values.baker == ""
-                || Some(form.values.baker) == initDelegate
-              }
-              value=advancedOptionOpened
-            />
-          </TouchableOpacity>
+          <SwitchItem
+            label=I18n.btn#advanced_options
+            value=advancedOptionOpened
+            setValue=setAdvancedOptionOpened
+            disabled={
+              form.values.baker == ""
+              || Some(form.values.baker) == (initDelegate :> option(string))
+            }
+          />
         </ReactFlipToolkit.FlippedView>
         <ReactFlipToolkit.FlippedView
           flipId="advancedOption"
@@ -242,30 +224,6 @@ module Form = {
   };
 };
 
-let buildSummaryContent = (dryRun: Protocol.simulationResults) => {
-  let revealFee =
-    dryRun.revealFee != ProtocolXTZ.zero
-      ? (I18n.label#implicit_reveal_fee, [Transfer.XTZ(dryRun.revealFee)])
-        ->Some
-      : None;
-
-  let fee = (I18n.label#fee, [Transfer.XTZ(dryRun.fee)]);
-
-  let total = (
-    I18n.label#summary_total,
-    [Transfer.XTZ(ProtocolXTZ.Infix.(dryRun.fee + dryRun.revealFee))],
-  );
-
-  [fee, ...revealFee->Option.mapWithDefault([total], r => [r, total])];
-};
-
-let showAmount =
-  Transfer.(
-    fun
-    | XTZ(v) => I18n.t#xtz_amount(v->ProtocolXTZ.toString)
-    | Token(v, t) => I18n.t#amount(v->Token.Unit.toNatString, t.symbol)
-  );
-
 [@react.component]
 let make = (~closeAction, ~action) => {
   let (advancedOptionOpened, _) as advancedOptionState =
@@ -275,7 +233,7 @@ let make = (~closeAction, ~action) => {
 
   let (operationRequest, sendOperation) = StoreContext.Operations.useCreate();
 
-  let sendOperation = (delegation, password) =>
+  let sendOperation = (~delegation, ~password) =>
     sendOperation(OperationApiRequest.delegate(delegation, password))
     ->Future.tapOk(hash => {setModalStep(_ => SubmittedStep(hash))});
 
@@ -354,27 +312,18 @@ let make = (~closeAction, ~action) => {
                />
              }
            | PasswordStep(delegation, dryRun) =>
-             let (target, title) =
+             let title =
                switch (delegation.delegate) {
-               | None => (
-                   ("", I18n.title#withdraw_baker),
-                   I18n.title#delegate_delete,
-                 )
-               | Some(d) => (
-                   (d, I18n.title#baker_account),
-                   I18n.title#confirm_delegate,
-                 )
+               | None => I18n.title#delegate_delete
+               | Some(_d) => I18n.title#confirm_delegate
                };
              <SignOperationView
-               source=(delegation.source, I18n.title#delegated_account)
-               destinations={`One(target)}
                title
                subtitle=I18n.expl#confirm_operation
-               showCurrency=showAmount
-               content={buildSummaryContent(dryRun)}
-               sendOperation={sendOperation(delegation)}
-               loading
-             />;
+               sendOperation={sendOperation(~delegation)}
+               loading>
+               <OperationSummaryView.Delegate delegation dryRun />
+             </SignOperationView>;
            }}
         </ReactFlipToolkit.FlippedView.Inverse>
       </ModalFormView>

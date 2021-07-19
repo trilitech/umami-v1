@@ -26,20 +26,20 @@
 open Transfer;
 
 type amount =
-  | Amount(Transfer.currency)
+  | Amount(Transfer.Currency.t)
   | Illformed(string);
 
 let keepToken = v =>
   v->Option.flatMap(
     fun
     | Illformed(_) => None
-    | Amount(v) => v->Transfer.getXTZ,
+    | Amount(v) => v->Transfer.Currency.getTez,
   );
 
-let keepXTZ = v =>
+let keepTez = v =>
   v->Option.flatMap(
     fun
-    | Amount(v) => v->Transfer.getXTZ
+    | Amount(v) => v->Transfer.Currency.getTez
     | Illformed(_) => None,
   );
 
@@ -49,26 +49,28 @@ let parseAmount = (v, token) =>
   } else {
     token->Option.mapWithDefault(
       {
-        let vxtz = v->ProtocolXTZ.fromString;
-        vxtz == None
+        let vtez = v->Tez.fromString;
+        vtez == None
           ? v->Illformed->Some
-          : vxtz->Option.map(v => v->Transfer.makeXTZ->Amount);
+          : vtez->Option.map(v => v->Transfer.Currency.makeTez->Amount);
       },
       t => {
         let vt = v->Token.Unit.fromNatString;
         vt == None
           ? v->Illformed->Some
-          : vt->Option.map(amount => makeToken(~amount, ~token=t)->Amount);
+          : vt->Option.map(amount =>
+              Currency.makeToken(~amount, ~token=t)->Amount
+            );
       },
     );
   };
 
 let optToString = (v, f) => v->Option.mapWithDefault("", f);
 
-module Account = {
+module Alias = {
   type t =
-    | Address(string)
-    | Account(Account.t);
+    | Address(PublicKeyHash.t)
+    | Alias(Alias.t);
 
   type any =
     | AnyString(string)
@@ -77,12 +79,12 @@ module Account = {
   let address =
     fun
     | Address(s) => s
-    | Account(a) => a.address;
+    | Alias(a) => a.address;
 
   let alias =
     fun
     | Address(_) => ""
-    | Account(a) => a.alias;
+    | Alias(a) => a.name;
 };
 
 module Unsafe = {
@@ -100,24 +102,24 @@ module Unsafe = {
     | Some(Amount(a)) => a
     };
 
-  let getXTZ = v =>
+  let getTez = v =>
     switch (v) {
-    | Amount(XTZ(a)) => a
+    | Amount(Tez(a)) => a
     | Illformed(_)
     | Amount(Token(_)) => failwith("Should not be malformed")
     };
 
   let account =
     fun
-    | Account.AnyString(_) => failwith("Should be an address or an alias")
-    | Account.Valid(a) => a;
+    | Alias.AnyString(_) => failwith("Should be an address or an alias")
+    | Alias.Valid(a) => a;
 };
 
 let emptyOr = (f, v): ReSchema.fieldState => v == "" ? Valid : f(v);
 
-let isValidXtzAmount: string => ReSchema.fieldState =
+let isValidTezAmount: string => ReSchema.fieldState =
   fun
-  | s when ProtocolXTZ.fromString(s) != None => Valid
+  | s when Tez.fromString(s) != None => Valid
   | "" => Error(I18n.form_input_error#mandatory)
   | _ => Error(I18n.form_input_error#float);
 
@@ -144,6 +146,12 @@ let isValidInt = value => {
   fieldState;
 };
 
+let checkDerivationPath = (s): ReSchema.fieldState =>
+  switch (s->DerivationPath.Pattern.fromString) {
+  | Ok(_) => Valid
+  | Error(e) => Error(DerivationPath.handleError(e))
+  };
+
 let formFieldsAreValids = (fieldsState, validateFields) => {
   let fields = fieldsState->Array.map(((field, _)) => field);
   let fieldsState = validateFields(fields);
@@ -155,6 +163,18 @@ let formFieldsAreValids = (fieldsState, validateFields) => {
     }
   });
 };
+
+let getFormStateError = (formState: ReForm.formState) =>
+  switch (formState) {
+  | SubmitFailed(error) => error
+  | _ => None
+  };
+
+let checkAddress = (v): ReSchema.fieldState =>
+  switch (v->PublicKeyHash.build) {
+  | Ok(_) => Valid
+  | Error(e) => Error(PublicKeyHash.handleValidationError(e))
+  };
 
 let i18n = {
   ...ReSchemaI18n.default,

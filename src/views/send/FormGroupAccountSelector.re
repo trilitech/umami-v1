@@ -28,9 +28,11 @@ open ReactNative;
 let styles =
   Style.(StyleSheet.create({"label": style(~marginBottom=6.->dp, ())}));
 
-let baseRenderButton = AccountSelector.baseRenderButton(~showAmount=Balance);
+let baseRenderButton =
+  AccountElements.Selector.baseRenderButton(~showAmount=Balance);
 
-let baseRenderItem = AccountSelector.baseRenderItem(~showAmount=Balance);
+let baseRenderItem =
+  AccountElements.Selector.baseRenderItem(~showAmount=Balance);
 
 [@react.component]
 let make =
@@ -49,7 +51,7 @@ let make =
   let items =
     accounts
     ->Map.String.valuesToArray
-    ->SortArray.stableSortBy((a, b) => Pervasives.compare(a.alias, b.alias));
+    ->SortArray.stableSortBy(Account.compareName);
 
   <FormGroup>
     <FormLabel label hasError style=styles##label />
@@ -57,12 +59,12 @@ let make =
       <Selector
         items
         ?disabled
-        getItemKey={account => account.address}
+        getItemKey={account => (account.address :> string)}
         onValueChange={account => {
-          accounts->Map.String.get(account.address)->handleChange
+          accounts->Map.String.get((account.address :> string))->handleChange
         }}
         selectedValueKey={
-          value->Option.mapWithDefault("", a => a.Account.address)
+          value->Option.mapWithDefault("", a => (a.Account.address :> string))
         }
         renderButton={baseRenderButton(~token)}
         renderItem={baseRenderItem(~token)}

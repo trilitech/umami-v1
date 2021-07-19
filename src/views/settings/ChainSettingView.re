@@ -181,7 +181,7 @@ let make = () => {
         />
         <RadioItem
           label=I18n.t#testnet
-          value={`Testnet(Network.edo2netChain)}
+          value={`Testnet(Network.florencenetChain)}
           setValue=writeNetwork
           currentValue={settings->AppSettings.network}
         />

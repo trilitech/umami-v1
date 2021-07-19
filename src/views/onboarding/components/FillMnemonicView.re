@@ -43,23 +43,6 @@ let styles =
   );
 
 module FormatSelector = {
-  let styles =
-    Style.(
-      StyleSheet.create({
-        "item":
-          style(
-            ~marginLeft=16.->dp,
-            ~flexDirection=`row,
-            ~flexWrap=`wrap,
-            (),
-          ),
-        "label": style(~marginBottom=4.->dp, ()),
-        "selector": style(~marginBottom=24.->dp, ()),
-
-        "button": style(~flex=1., ~paddingVertical=11.->dp, ()),
-      })
-    );
-
   type format =
     | Words24
     | Words15
@@ -73,11 +56,11 @@ module FormatSelector = {
   let toString = ft => I18n.t#words(ft->toInt);
 
   let render = ft =>
-    <Typography.Body1 style=styles##item>
+    <Typography.Body1 style=FormStyles.selector##item>
       {ft->toString->React.string}
     </Typography.Body1>;
   let renderButton = (ft, _hasError) =>
-    <View style=styles##button>
+    <View style=FormStyles.selector##button>
       {switch (ft) {
        | Some(ft) => render(ft)
        | None => render(Words24)
@@ -104,9 +87,12 @@ module FormatSelector = {
   [@react.component]
   let make = (~value, ~onValueChange) => {
     <>
-      <FormLabel style=styles##label label=I18n.label#recovery_phrase_format />
+      <FormLabel
+        style=FormStyles.selector##label
+        label=I18n.label#recovery_phrase_format
+      />
       <Selector
-        style=styles##selector
+        style=FormStyles.selector##selector
         items=[|Words24, Words15, Words12|]
         getItemKey={ft => ft->toInt->Int.toString}
         renderItem=render
@@ -137,9 +123,12 @@ let make =
       ~mnemonic,
       ~setMnemonic,
       ~formatState,
-      ~secondaryStepButton=?,
-      ~goNextStep,
+      ~next,
+      ~secondaryButton=?,
+      ~nextSecondary=_ => (),
     ) => {
+  let submitAction = React.useRef(`PrimarySubmit);
+
   let form: VerifyMnemonicForm.api =
     VerifyMnemonicForm.use(
       ~validationStrategy=OnDemand,
@@ -176,14 +165,19 @@ let make =
           setMnemonic(_ => state.values.words);
           formatState->snd(_ => state.values.format);
 
-          goNextStep();
+          switch (submitAction.current) {
+          | `PrimarySubmit => next()
+          | `SecondarySubmit => nextSecondary()
+          };
+
           None;
         },
       ~initialState={format: formatState->fst, words: mnemonic},
       (),
     );
 
-  let onSubmit = _ => {
+  let onSubmit = (submitPath, _) => {
+    submitAction.current = submitPath;
     form.submit();
   };
 
@@ -240,12 +234,14 @@ let make =
       )>
       <Buttons.SubmitPrimary
         text=I18n.btn#continue
-        onPress=onSubmit
+        onPress={onSubmit(`PrimarySubmit)}
         disabledLook={!formFieldsAreValids}
       />
       <View style=styles##secondaryBtn>
-        {secondaryStepButton
-         ->Option.map(f => f(!formFieldsAreValids, onSubmit))
+        {secondaryButton
+         ->Option.map(f =>
+             f(!formFieldsAreValids, onSubmit(`SecondarySubmit))
+           )
          ->ReactUtils.opt}
       </View>
     </View>

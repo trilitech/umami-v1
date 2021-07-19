@@ -23,17 +23,38 @@
 /*                                                                           */
 /*****************************************************************************/
 
+module TransactionParameters = {
+  type entrypoint = string;
+
+  // This type cannot be build and destructed except from bindings modules
+  // ReBeacon and ReTaquito, hence its abstract nature.
+  module MichelineMichelsonV1Expression = {
+    type t;
+
+    let toString = c =>
+      c
+      ->Js.Json.stringifyAny
+      ->Option.map(Js.Json.parseExn)
+      ->Option.map(j => Js.Json.stringifyWithSpace(j, 4));
+  };
+
+  type t = {
+    entrypoint,
+    value: MichelineMichelsonV1Expression.t,
+  };
+};
+
 type transferOptions = {
-  fee: option(ProtocolXTZ.t),
+  fee: option(Tez.t),
   gasLimit: option(int),
   storageLimit: option(int),
-  parameter: option(string),
-  entrypoint: option(string),
+  parameter: option(TransactionParameters.MichelineMichelsonV1Expression.t),
+  entrypoint: option(TransactionParameters.entrypoint),
 };
 
 type commonOptions = {
-  fee: option(ProtocolXTZ.t),
-  burnCap: option(ProtocolXTZ.t),
+  fee: option(Tez.t),
+  burnCap: option(Tez.t),
   forceLowFee: option(bool),
 };
 
@@ -61,8 +82,8 @@ let emptyTransferOptions = {
 };
 
 type simulationResults = {
-  fee: ProtocolXTZ.t,
+  fee: Tez.t,
   gasLimit: int,
   storageLimit: int,
-  revealFee: ProtocolXTZ.t,
+  revealFee: Tez.t,
 };

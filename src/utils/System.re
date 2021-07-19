@@ -136,6 +136,46 @@ module File = {
     ->FutureEx.fromUnitCallback(mapError);
   };
 
+  module CopyMode: {
+    type t;
+    let copy_excl: t;
+    let copy_ficlone: t;
+    let copy_ficlone_force: t;
+
+    let assemble: (t, t) => t;
+  } = {
+    type t = int;
+
+    let copy_excl: t = [%raw "fs.constants.COPYFILE_EXCL"];
+    let copy_ficlone: t = [%raw "fs.constants.COPYFILE_FICLONE"];
+    let copy_ficlone_force: t = [%raw "fs.constants.COPYFILE_FICLONE_FORCE"];
+
+    let assemble = (c1, c2) => c1 lor c2;
+  };
+
+  [@bs.scope "fs"] [@bs.val]
+  external copyFile:
+    (
+      ~name: Path.t,
+      ~dest: Path.t,
+      ~mode: CopyMode.t,
+      Js.Nullable.t(error) => unit
+    ) =>
+    unit =
+    "copyFile";
+
+  let copy = (~name, ~dest, ~mode) => {
+    copyFile(~name, ~dest, ~mode)->FutureEx.fromUnitCallback(mapError);
+  };
+
+  [@bs.scope "fs"] [@bs.val]
+  external unlink: (~name: Path.t, Js.Nullable.t(error) => unit) => unit =
+    "unlink";
+
+  let rm = (~name) => {
+    unlink(~name)->FutureEx.fromUnitCallback(mapError);
+  };
+
   type rmdirOptions = {recursive: bool};
 
   [@bs.scope "fs"] [@bs.val]

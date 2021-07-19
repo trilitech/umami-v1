@@ -23,10 +23,16 @@
 /*                                                                           */
 /*****************************************************************************/
 
+type timestamp = float;
+
+type cacheValidity =
+  | Expired
+  | ValidSince(float);
+
 type t('value, 'error) =
   | NotAsked
   | Loading(option('value))
-  | Done(Result.t('value, 'error), float);
+  | Done(Result.t('value, 'error), cacheValidity);
 
 type setRequest('value, 'error) =
   (t('value, 'error) => t('value, 'error)) => unit;
@@ -106,11 +112,14 @@ let isLoading = request =>
 
 let isDone = request => request->getDone->Option.isSome;
 
+let isDoneOk = request => request->getDoneOk->Option.isSome;
+
 let delay = 30. *. 1000.; // 30sec
 
 let isExpired = request =>
   switch (request) {
-  | Done(_, timestamp) => Js.Date.now() -. timestamp > delay
+  | Done(_, Expired) => true
+  | Done(_, ValidSince(timestamp)) => Js.Date.now() -. timestamp > delay
   | _ => false
   };
 
@@ -146,9 +155,9 @@ let updateToLoadingState = request =>
   | _ => Loading(None)
   };
 
-let updateToResetState = request =>
+let expireCache = request =>
   switch (request) {
-  | Done(result, _) => Done(result, 0.0)
+  | Done(result, _) => Done(result, Expired)
   | other => other
   };
 
@@ -179,7 +188,9 @@ let useGetter =
 
     get(~settings, input)
     ->logError(addLog(toast), ~toString=?errorToString, kind)
-    ->Future.tap(result => setRequest(_ => Done(result, Js.Date.now())));
+    ->Future.tap(result =>
+        setRequest(_ => Done(result, ValidSince(Js.Date.now())))
+      );
   };
 
   get;
@@ -188,36 +199,11 @@ let useGetter =
 let useLoader =
     (
       ~get,
+      ~condition=?,
       ~kind,
       ~errorToString=?,
       ~requestState as (request, setRequest): requestState('value, 'error),
-      (),
-    ) => {
-  let getRequest = useGetter(~get, ~kind, ~errorToString?, ~setRequest, ());
-
-  let isMounted = ReactUtils.useIsMonted();
-  React.useEffect3(
-    () => {
-      let shouldReload = conditionToLoad(request, isMounted);
-      if (shouldReload) {
-        getRequest()->ignore;
-      };
-
-      None;
-    },
-    (isMounted, request, setRequest),
-  );
-
-  request;
-};
-
-let useLoader1 =
-    (
-      ~get,
-      ~kind,
-      ~errorToString=?,
-      ~requestState as (request, setRequest): requestState('value, 'error),
-      arg1,
+      arg1: 'input,
     ) => {
   let getRequest = useGetter(~get, ~kind, ~errorToString?, ~setRequest, ());
 
@@ -225,40 +211,15 @@ let useLoader1 =
   React.useEffect4(
     () => {
       let shouldReload = conditionToLoad(request, isMounted);
-      if (shouldReload) {
+      let condition = condition->Option.mapWithDefault(true, f => arg1->f);
+
+      if (shouldReload && condition) {
         getRequest(arg1)->ignore;
       };
 
       None;
     },
-    (isMounted, arg1, request, setRequest),
-  );
-
-  request;
-};
-
-let useLoader2 =
-    (
-      ~get,
-      ~kind,
-      ~errorToString=?,
-      ~requestState as (request, setRequest): requestState('value, 'error),
-      arg1,
-      arg2,
-    ) => {
-  let getRequest = useGetter(~get, ~kind, ~errorToString?, ~setRequest, ());
-
-  let isMounted = ReactUtils.useIsMonted();
-  React.useEffect5(
-    () => {
-      let shouldReload = conditionToLoad(request, isMounted);
-      if (shouldReload) {
-        getRequest((arg1, arg2))->ignore;
-      };
-
-      None;
-    },
-    (isMounted, arg1, arg2, request, setRequest),
+    (isMounted, request, arg1, setRequest),
   );
 
   request;
@@ -287,7 +248,9 @@ let useSetter =
         ~toString=?errorToString,
         kind,
       )
-    ->Future.tap(result => {setRequest(_ => Done(result, Js.Date.now()))})
+    ->Future.tap(result => {
+        setRequest(_ => Done(result, Js.Date.now()->ValidSince))
+      })
     ->Future.tapOk(sideEffect->Option.getWithDefault(_ => ()));
   };
 

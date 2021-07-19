@@ -109,8 +109,8 @@ let make =
 
   let theme = ThemeContext.useTheme();
 
-  let (borderColor, borderWidth, padding) =
-    isOpen
+  let borderStyles = (~focused) =>
+    isOpen || focused
       ? (theme.colors.borderPrimary, Some(2.), Some(0.->Style.dp))
       : hasError
           ? (theme.colors.error, Some(2.), Some(0.->Style.dp))
@@ -119,7 +119,9 @@ let make =
   <View ?style>
     <Pressable_
       ref={pressableRef->Ref.value} onPress={_ => togglePopover()} disabled>
-      {_ =>
+      {({focused}) => {
+         let focused = focused->Option.getWithDefault(false);
+         let (borderColor, borderWidth, padding) = borderStyles(~focused);
          <View
            style=Style.(
              array([|
@@ -164,7 +166,8 @@ let make =
                     style=styles##icon
                   />
                 </Animated.View>}
-         </View>}
+         </View>;
+       }}
     </Pressable_>
     <DropdownMenu
       keyPopover

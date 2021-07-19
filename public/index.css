@@ -80,8 +80,40 @@ main {
 @font-face {
   font-family: JetBrainsMono;
   src: url(fonts/JetBrains_Mono/JetBrainsMono-ExtraLight.ttf) format("truetype");
+  font-weight: 200;
+  font-style: normal;
+  font-stretch: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: JetBrainsMono;
+  src: url(/fonts/JetBrains_Mono/JetBrainsMono-Light.ttf) format("truetype");
   font-weight: 300;
   font-style: normal;
   font-stretch: normal;
   font-display: swap;
+}
+
+@font-face {
+  font-family: JetBrainsMono;
+  src: url(/fonts/JetBrains_Mono/JetBrainsMono-Bold.ttf) format("truetype");
+  font-weight: bold; 
+  font-style: normal;
+  font-stretch: normal;
+  font-display: swap;
+}
+
+*::-webkit-scrollbar-track-piece {
+  background-color: transparent;
+  color:transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color:rgb(166, 166, 166);
+  border-radius: 12px;
+}
+
+*::-webkit-scrollbar {
+  width: 9px;
 }

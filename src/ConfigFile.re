@@ -74,3 +74,9 @@ let write = s => LocalStorage.setItem(configKey, s);
 let read = () => LocalStorage.getItem(configKey);
 
 let reset = () => LocalStorage.removeItem(configKey);
+
+let getNetworkName = network =>
+  switch (network) {
+  | `Mainnet => Network.mainnetName
+  | `Testnet(c) => c->Network.getName
+  };

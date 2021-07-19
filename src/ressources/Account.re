@@ -24,6 +24,13 @@
 /*****************************************************************************/
 
 type t = {
-  address: string,
-  alias: string,
+  address: PublicKeyHash.t,
+  name: string,
+  ledger: bool,
 };
+
+let toAlias = ({address, name}: t) => {
+  Alias.{address, name};
+};
+
+let compareName = (a, b) => Pervasives.compare(a.name, b.name);

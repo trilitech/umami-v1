@@ -47,7 +47,7 @@ module Generic = {
         ~buttonText,
         ~action: (~name: string, ~secretIndex: int) => unit,
         ~request,
-        ~secret: option(Secret.t)=?,
+        ~secret: option(Secret.derived)=?,
         ~hideSecretSelector=false,
       ) => {
     let aliasesRequest = StoreContext.Aliases.useRequest();
@@ -135,7 +135,7 @@ module Update = {
     let addLog = LogsContext.useAdd();
 
     let action = (~name as new_name, ~secretIndex as _s) => {
-      updateAccount({old_name: account.alias, new_name})
+      updateAccount({old_name: account.name, new_name})
       ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
           I18n.t#account_updated
         )
@@ -148,7 +148,7 @@ module Update = {
         I18n.title#account_update->React.string
       </Typography.Headline>
       <Generic
-        init={account.alias}
+        init={account.name}
         buttonText=I18n.btn#update
         request=updateAccountRequest
         action
@@ -160,7 +160,7 @@ module Update = {
 
 module Create = {
   [@react.component]
-  let make = (~closeAction, ~secret: option(Secret.t)=?) => {
+  let make = (~closeAction, ~secret: option(Secret.derived)=?) => {
     let (createDeriveRequest, deriveAccount) =
       StoreContext.Secrets.useDerive();
 
@@ -174,8 +174,7 @@ module Create = {
       ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
           I18n.t#account_created
         )
-      ->Future.tapOk(() => closeAction())
-      ->ignore;
+      ->Future.tapOk(() => closeAction());
     };
 
     <ModalFormView closing={ModalFormView.Close(closeAction)}>

@@ -41,8 +41,7 @@ let styles =
       "listLabel": style(~marginBottom=4.->dp, ()),
       "amount": style(~height=19.->dp, ~marginBottom=2.->dp, ()),
       "summary": style(~marginTop=11.->dp, ()),
-      "row":
-        style(~height=68.->dp, ~flexDirection=`row, ~alignItems=`center, ()),
+      "row": style(~paddingVertical=12.->dp, ~flexDirection=`row, ()),
       "addTransaction": style(~marginBottom=10.->dp, ()),
       "notFirstRow": style(~borderTopWidth=1., ()),
       "num":
@@ -53,6 +52,7 @@ let styles =
           ~textAlign=`right,
           (),
         ),
+      "parameters": style(~marginTop=8.->dp, ()),
       "moreButton": style(~marginHorizontal=auto, ()),
       "csvFormat":
         style(
@@ -77,7 +77,7 @@ let listStyle = (theme: ThemeContext.theme) =>
   );
 
 let buildAmount = amount => {
-  AccountSelector.Amount(
+  AccountElements.Amount(
     <Typography.Body1 fontWeightStyle=`bold style=styles##amount>
       amount->React.string
     </Typography.Body1>,
@@ -86,7 +86,7 @@ let buildAmount = amount => {
 
 module Item = {
   [@react.component]
-  let make = (~i, ~recipient, ~amount, ~onDelete=?, ~onEdit=?) => {
+  let make = (~i, ~recipient, ~amount, ~parameters=?, ~onDelete=?, ~onEdit=?) => {
     let aliases = StoreContext.Aliases.useGetAll();
     let theme: ThemeContext.theme = ThemeContext.useTheme();
     <View
@@ -100,16 +100,27 @@ module Item = {
       <Typography.Subtitle1 colorStyle=`mediumEmphasis style=styles##num>
         {i->string_of_int->React.string}
       </Typography.Subtitle1>
-      <AccountSelector.AccountItem
-        account={
-          address: recipient,
-          alias:
-            recipient
-            ->AliasHelpers.getAliasFromAddress(aliases)
-            ->Option.getWithDefault(""),
-        }
-        showAmount={buildAmount(amount)}
-      />
+      {switch (parameters) {
+       | Some(parameters) =>
+         <View>
+           <AccountElements.Selector.Item
+             account={address: recipient, name: I18n.title#interaction}
+             showAmount=AccountElements.Nothing
+           />
+           <TransactionContractParams parameters style=styles##parameters />
+         </View>
+       | None =>
+         <AccountElements.Selector.Item
+           account={
+             address: recipient,
+             name:
+               recipient
+               ->AliasHelpers.getAliasFromAddress(aliases)
+               ->Option.getWithDefault(""),
+           }
+           showAmount={buildAmount(amount)}
+         />
+       }}
       {[]
        ->Lib.List.addOpt(
            onDelete->Option.map(delete => {
@@ -151,11 +162,11 @@ module Transactions = {
       let tokens = StoreContext.Tokens.useGetAll();
 
       let onChange = fileTextContent => {
-        let parsedCSV = fileTextContent->API.CSV.parseCSV(tokens);
+        let parsedCSV = fileTextContent->CSVEncoding.parseCSV(~tokens);
         switch (parsedCSV) {
         | Result.Ok(parsedCSV) => onAddCSVList(parsedCSV)
         | Result.Error(error) =>
-          addLog(true, Logs.error(error->API.handleCSVError))
+          addLog(true, Logs.error(error->CSVEncoding.handleCSVError))
         };
       };
 
@@ -177,26 +188,26 @@ module Transactions = {
     [@react.component]
     let make = () => {
       let theme = ThemeContext.useTheme();
-      <ThemedPressable
+
+      <ThemedPressable.Primary
         style=Style.(
           array([|
-            style(~color=theme.colors.textPrimary, ()),
             styles##csvFormat,
+            style(~color=theme.colors.textPrimary, ()),
           |])
         )
-        isPrimary=true
         onPress
         accessibilityRole=`button>
         <Typography.ButtonPrimary
           style=Style.(style(~color=theme.colors.textPrimary, ()))>
           I18n.btn#csv_format_link->React.string
         </Typography.ButtonPrimary>
-      </ThemedPressable>;
+      </ThemedPressable.Primary>;
     };
   };
 
   [@react.component]
-  let make = (~recipients, ~showAmount, ~onAddCSVList=?, ~onDelete=?) => {
+  let make = (~recipients, ~onAddCSVList=?, ~onDelete=?) => {
     let length = recipients->List.length;
     let theme = ThemeContext.useTheme();
 
@@ -213,13 +224,15 @@ module Transactions = {
       <DocumentContext.ScrollView
         style={listStyle(theme)} alwaysBounceVertical=false>
         {{
-           recipients->List.mapWithIndex((i, (onEdit, (recipient, amount))) => {
+           recipients->List.mapWithIndex(
+             (i, (onEdit, (recipient, amount, parameters))) => {
              let onDelete = onDelete->Option.map((delete, ()) => delete(i));
              <Item
                key={string_of_int(i)}
                i={length - i}
                recipient
-               amount={showAmount(amount)}
+               amount={Transfer.Currency.showAmount(amount)}
+               ?parameters
                ?onDelete
                ?onEdit
              />;
@@ -243,8 +256,6 @@ let make =
       ~onDelete,
       ~onEdit,
       ~batch,
-      ~showAmount,
-      ~reduceAmounts: _ => list(Transfer.currency),
       ~loading,
     ) => {
   let theme: ThemeContext.theme = ThemeContext.useTheme();
@@ -252,7 +263,7 @@ let make =
     batch->List.mapWithIndex((i, (t: SendForm.validState, _) as v) =>
       (
         Some(() => onEdit(i, v)),
-        (t.recipient->FormUtils.Account.address, t.amount),
+        (t.recipient->FormUtils.Alias.address, t.amount, None),
       )
     );
 
@@ -277,18 +288,18 @@ let make =
       <View>
         {batch
          ->List.map(((t, _)) => t.amount)
-         ->reduceAmounts
+         ->Transfer.Currency.reduceAmounts
          ->List.mapWithIndex((i, a) =>
              <Typography.Subtitle1
                style=styles##totalAmount key={i->Int.toString}>
-               {a->showAmount->React.string}
+               {a->Transfer.Currency.showAmount->React.string}
              </Typography.Subtitle1>
            )
          ->List.toArray
          ->React.array}
       </View>
     </View>
-    <Transactions recipients showAmount onAddCSVList onDelete />
+    <Transactions recipients onAddCSVList onDelete />
     <View style=FormStyles.verticalFormAction>
       <Buttons.SubmitSecondary
         style=styles##addTransaction

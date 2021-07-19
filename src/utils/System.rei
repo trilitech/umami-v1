@@ -41,6 +41,21 @@ module File: {
     (~encoding: encoding=?, ~name: Path.t, string) =>
     Future.t(Result.t(unit, string));
 
+  module CopyMode: {
+    type t;
+    let copy_excl: t;
+    let copy_ficlone: t;
+    let copy_ficlone_force: t;
+
+    let assemble: (t, t) => t;
+  };
+
+  let copy:
+    (~name: Path.t, ~dest: Path.t, ~mode: CopyMode.t) =>
+    Future.t(result(unit, string));
+
+  let rm: (~name: Path.t) => Future.t(result(unit, string));
+
   let initIfNotExists:
     (~encoding: encoding=?, ~path: Path.t, string) =>
     Future.t(Result.t(unit, string));

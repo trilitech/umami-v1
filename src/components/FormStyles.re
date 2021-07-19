@@ -45,6 +45,7 @@ let formActionSpaceBetween =
   );
 
 let formSubmit = style(~marginTop=12.->dp, ());
+let formSecondary = style(~marginTop=10.->dp, ());
 
 let verticalFormAction =
   ReactUtils.styles([
@@ -67,3 +68,40 @@ let amountRow =
   );
 
 let square = v => style(~width=v->dp, ~height=v->dp, ());
+
+let onboarding =
+  Style.(
+    StyleSheet.create({
+      "title": style(~marginBottom=8.->dp, ~textAlign=`center, ()),
+      "stepPager": style(~marginBottom=4.->dp, ~textAlign=`center, ()),
+      "stepTitle": style(~marginBottom=10.->dp, ~textAlign=`center, ()),
+      "stepBody": style(~marginBottom=28.->dp, ~textAlign=`center, ()),
+    })
+  );
+
+let section =
+  Style.(
+    StyleSheet.create({
+      "spacing": style(~marginTop=24.->dp, ()),
+      "submitSpacing": style(~marginTop=32.->dp, ()),
+    })
+  );
+
+let selector =
+  Style.(
+    StyleSheet.create({
+      "item":
+        style(
+          ~display=`flex,
+          ~alignItems=`center,
+          ~marginLeft=16.->dp,
+          ~flexDirection=`row,
+          ~flexWrap=`wrap,
+          (),
+        ),
+      "label": style(~marginBottom=4.->dp, ()),
+      "selector": style(~marginBottom=24.->dp, ()),
+
+      "button": style(~flex=1., ~paddingVertical=11.->dp, ()),
+    })
+  );

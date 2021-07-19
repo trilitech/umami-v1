@@ -23,7 +23,7 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open ReactNative;
+let styles = FormStyles.onboarding;
 
 type fromStep =
   | Mnemonics
@@ -34,22 +34,16 @@ type step =
   | DerivationPathStep
   | PasswordStep(fromStep);
 
-let styles =
-  Style.(
-    StyleSheet.create({
-      "title": style(~marginBottom=8.->dp, ~textAlign=`center, ()),
-      "stepPager": style(~marginBottom=4.->dp, ~textAlign=`center, ()),
-      "stepTitle": style(~marginBottom=10.->dp, ~textAlign=`center, ()),
-      "stepBody": style(~marginBottom=28.->dp, ~textAlign=`center, ()),
-    })
-  );
-
 [@react.component]
-let make = (~closeAction, ~existingSecretsCount=0) => {
+let make = (~closeAction) => {
   let (formStep, setFormStep) = React.useState(_ => MnemonicsStep);
 
   let (secretWithMnemonicRequest, createSecretWithMnemonic) =
     StoreContext.Secrets.useCreateWithMnemonics();
+
+  let secrets = StoreContext.Secrets.useGetAll();
+  let existingSecretsCount = secrets->Array.length;
+  let noExistingPassword = existingSecretsCount < 1;
 
   let settings = SdkContext.useSettings();
 
@@ -67,12 +61,10 @@ let make = (~closeAction, ~existingSecretsCount=0) => {
   let (mnemonic, setMnemonic) = React.useState(_ => Array.make(24, ""));
   let formatState =
     React.useState(_ => FillMnemonicView.FormatSelector.Words24);
-  let (derivationScheme, setDerivationScheme) =
-    React.useState(_ => "m/44'/1729'/?'/0'");
+  let (derivationPath, setDerivationPath) =
+    React.useState(_ => DerivationPath.Pattern.(default->fromTezosBip44));
 
   let loading = secretWithMnemonicRequest->ApiRequest.isLoading;
-
-  let displayConfirmPassword = existingSecretsCount < 1;
 
   let closing =
     switch (formStep) {
@@ -102,17 +94,15 @@ let make = (~closeAction, ~existingSecretsCount=0) => {
            mnemonic
            setMnemonic
            formatState
-           secondaryStepButton={(disabled, onPress) =>
+           secondaryButton={(disabled, onPress) =>
              <Buttons.FormSecondary
                disabled
                text=I18n.btn#customize_derivation_path
-               onPress={_ => {
-                 onPress();
-                 setFormStep(_ => DerivationPathStep);
-               }}
+               onPress={_ => {onPress()}}
              />
            }
-           goNextStep={_ => setFormStep(_ => PasswordStep(Mnemonics))}
+           next={_ => setFormStep(_ => PasswordStep(Mnemonics))}
+           nextSecondary={_ => setFormStep(_ => DerivationPathStep)}
          />
        </>
      | DerivationPathStep =>
@@ -129,15 +119,15 @@ let make = (~closeAction, ~existingSecretsCount=0) => {
             I18n.expl#account_select_derivation_path->React.string
           </Typography.Body2>}
          <SelectDerivationPathView
-           derivationScheme
-           setDerivationScheme
+           derivationPath
+           setDerivationPath
            onPressCancel={_ => setFormStep(_ => MnemonicsStep)}
            goNextStep={_ => setFormStep(_ => PasswordStep(DerivationPath))}
          />
        </>;
      | PasswordStep(fromStep) =>
        let subtitle =
-         displayConfirmPassword
+         noExistingPassword
            ? I18n.title#account_create_password
            : I18n.title#account_enter_password;
 
@@ -152,10 +142,10 @@ let make = (~closeAction, ~existingSecretsCount=0) => {
          {<Typography.Body2 colorStyle=`mediumEmphasis style=styles##stepBody>
             I18n.expl#account_create_password_not_recorded->React.string
           </Typography.Body2>
-          ->ReactUtils.onlyWhen(displayConfirmPassword)}
+          ->ReactUtils.onlyWhen(noExistingPassword)}
          <CreatePasswordView
            mnemonic
-           derivationScheme
+           derivationPath
            onPressCancel={_ =>
              setFormStep(_ =>
                switch (fromStep) {

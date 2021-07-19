@@ -23,30 +23,56 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open ReactNative;
-
-[@react.component]
-let make = (~style=?) => {
-  let setSeen = LogsContext.useSetSeen();
-  let seen = LogsContext.useSeen();
-
-  let (visibleModal, openAction, closeAction) =
-    ModalAction.useModalActionState();
-
-  let onPress = _ => {
-    openAction();
-    true->setSeen;
+let formatOnBlur = (token, handleChange, value) =>
+  if (token->Option.isSome) {
+    value
+    ->Token.Unit.forceFromString
+    ->Option.mapWithDefault("", Token.Unit.toNatString)
+    ->handleChange;
+  } else {
+    value->Tez.formatString->Option.getWithDefault("")->handleChange;
   };
 
-  <>
-    <TouchableOpacity ?style onPress>
-      <Typography.ButtonPrimary
-        fontSize=12. colorStyle={!seen ? `error : `disabled}>
-        I18n.btn#logs->React.string
-      </Typography.ButtonPrimary>
-    </TouchableOpacity>
-    <ModalAction visible=visibleModal onRequestClose=closeAction>
-      <LogsView closeAction />
-    </ModalAction>
-  </>;
+let tezDecoration = (~style) =>
+  <Typography.Body1 colorStyle=`mediumEmphasis style>
+    I18n.t#tez->React.string
+  </Typography.Body1>;
+
+[@react.component]
+let make =
+    (
+      ~label,
+      ~value: string,
+      ~handleChange,
+      ~error,
+      ~style: option(ReactNative.Style.t)=?,
+      ~decoration=?,
+      ~token: option(Token.t)=?,
+    ) => {
+  // reformat value if token change
+  React.useEffect1(
+    () => {
+      if (value != "") {
+        formatOnBlur(token, handleChange, value);
+      };
+      None;
+    },
+    [|token|],
+  );
+
+  let placeholder =
+    token == None
+      ? I18n.input_placeholder#tez_amount : I18n.input_placeholder#token_amount;
+
+  <FormGroupTextInput
+    label
+    ?style
+    placeholder
+    value
+    error
+    onBlur={_ => formatOnBlur(token, handleChange, value)}
+    ?decoration
+    handleChange
+    keyboardType=`numeric
+  />;
 };

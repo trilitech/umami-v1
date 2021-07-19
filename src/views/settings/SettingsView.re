@@ -29,6 +29,7 @@ let make = () => {
     <VerificationSettingView />
     <ThemeSettingView />
     <ChainSettingView />
+    <BeaconSettingView />
     <DangerSettingView />
   </Page>;
 };

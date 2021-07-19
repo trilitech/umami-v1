@@ -33,12 +33,12 @@ module RecoveryPhrase = {
 };
 
 [@react.component]
-let make = (~secret: Secret.t, ~closeAction) => {
+let make = (~secret: Secret.derived, ~closeAction) => {
   let (recoveryPhraseRequest, getRecoveryPhrase) =
     StoreContext.Secrets.useGetRecoveryPhrase(~index=secret.index);
 
   let submitPassword = (~password) => {
-    getRecoveryPhrase(password)->ignore;
+    getRecoveryPhrase(password);
   };
 
   <ModalFormView closing={ModalFormView.Close(closeAction)}>

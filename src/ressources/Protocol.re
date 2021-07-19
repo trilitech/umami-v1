@@ -27,8 +27,8 @@
 open ProtocolOptions;
 
 type delegation = {
-  source: string,
-  delegate: option(string),
+  source: PublicKeyHash.t,
+  delegate: option(PublicKeyHash.t),
   options: commonOptions,
 };
 
@@ -46,8 +46,8 @@ let makeDelegate =
 };
 
 type simulationResults = {
-  fee: ProtocolXTZ.t,
+  fee: Tez.t,
   gasLimit: int,
   storageLimit: int,
-  revealFee: ProtocolXTZ.t,
+  revealFee: Tez.t,
 };

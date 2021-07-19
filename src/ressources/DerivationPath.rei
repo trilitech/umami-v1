@@ -23,78 +23,55 @@
 /*                                                                           */
 /*****************************************************************************/
 
-module Infix = {
-  open Int64;
+type error =
+  | ParsingFailed(string)
+  | MoreThan1Wildcard
+  | MissingWildcardOr0
+  | NotTezosBip44;
 
-  let (+) = add;
-  let (-) = sub;
-  let ( * ) = mul;
-  let (/) = div;
-  let (mod) = rem;
+exception IllFormedPath;
+
+let handleError: error => string;
+
+// A derivation path
+// see https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki
+type t;
+
+type derivationPath = t;
+
+let toString: t => string;
+
+module Pattern: {
+  /* A derivation path pattern
+     Building functions enforces the following invariants:
+     - Contains at most one wildcard: ?'
+     - If no wildcard, it contains at least a: 0' */
+  type t;
+
+  // A derivation path pattern following BIP44 standard
+  type tezosBip44;
+
+  // The default value for derivation path
+  let default: tezosBip44;
+
+  // The default value for derivation path as a string
+  let defaultString: string;
+
+  let convertToTezosBip44: t => Result.t(tezosBip44, error);
+
+  let fromTezosBip44: tezosBip44 => t;
+
+  let isDefault: t => bool;
+
+  let toString: t => string;
+
+  /* Implements a derivation path pattern
+     Search for the unique wildcard an replaces it with the
+     given index. If there is no wildcard, replaces the last 0.
+     By construction of a derivation path pattern, [implement] cannot fail. */
+  let implement: (t, int) => derivationPath;
+
+  /* Builds a derivation path pattern from a string enforcing previously defined
+     invariants */
+  let fromString: string => Result.t(t, error);
 };
-
-open Infix;
-
-type t = Int64.t; // represented as mutez internally
-
-let zero = Int64.zero;
-
-let oneXtz = Int64.of_int(1000000);
-let xtzExp10 = 6;
-
-let toMutez = i => i * oneXtz;
-
-let rec mulExp10 = (x, n) => {
-  Int64.(n <= 0 ? x : mulExp10(x * of_int(10), Int.(n - 1)));
-};
-
-let int64OfString = s =>
-  try(Some(s->Int64.of_string)) {
-  | Failure(_) => None
-  };
-
-// `fromString` tries to read a string, returns None if
-// it is not a formatted xtz
-let fromString = (xtzStr): option(t) => {
-  Int64.(
-    switch (Js.String.split(".", xtzStr)) {
-    | [|v|] => v->int64OfString->Option.map(toMutez)
-    | [|integer, floating|] =>
-      switch (int64OfString(integer), int64OfString(floating)) {
-      | (Some(integer64), Some(floating64)) =>
-        let floating64 = {
-          let floatingMult =
-            one->mulExp10(Int.(xtzExp10 - floating->Js.String.length));
-          floating64 == zero ? zero : floating64 * floatingMult;
-        };
-        Some(integer64->toMutez + floating64);
-      | (_, _) => None
-      }
-    | _ => None
-    }
-  );
-};
-
-let fromMutezInt = Int64.of_int;
-let unsafeToMutezInt = Int64.to_int;
-let fromMutezString = Int64.of_string;
-let toInt64 = x => x;
-let ofInt64 = x => x;
-
-let toBigNumber = x => x->toInt64->ReBigNumber.fromInt64;
-
-let toString = (xtz: t) => {
-  open Int64;
-  let integer = to_string(xtz / oneXtz);
-  let floating = xtz mod oneXtz;
-  let floatingStr = to_string(floating);
-  let fLen = Js.String.length(floatingStr);
-
-  let leading0 =
-    fLen >= xtzExp10 && floating != zero
-      ? "" : Js.String.repeat(Int.(xtzExp10 - fLen), "0");
-  let floatingStr = leading0 ++ floatingStr;
-  integer ++ "." ++ floatingStr;
-};
-
-let formatString = s => s->fromString->Option.map(toString);

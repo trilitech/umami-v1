@@ -42,8 +42,6 @@ let styles =
     })
   );
 
-let tooltip = ("refresh_button", I18n.tooltip#refresh);
-
 [@react.component]
 let make = (~onRefresh, ~loading, ~style as styleArg=?) => {
   let theme = ThemeContext.useTheme();
@@ -62,11 +60,14 @@ let make = (~onRefresh, ~loading, ~style as styleArg=?) => {
            size=ActivityIndicator_Size.small
            color={theme.colors.iconHighEmphasis}
          />
-       : <IconButton
-           size=40.
-           icon=Icons.Refresh.build
-           tooltip
-           onPress={_ => onRefresh()}
-         />}
+       : <Tooltip keyPopover="refresh_button" text=I18n.tooltip#refresh>
+           {(~pressableRef) =>
+              <IconButton
+                pressableRef
+                size=40.
+                icon=Icons.Refresh.build
+                onPress={_ => onRefresh()}
+              />}
+         </Tooltip>}
   </View>;
 };

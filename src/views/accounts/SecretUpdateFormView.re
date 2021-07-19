@@ -27,11 +27,11 @@ module StateLenses = [%lenses type state = {name: string}];
 module SecretCreateForm = ReForm.Make(StateLenses);
 
 let checkExists = (secrets, values: StateLenses.state): ReSchema.fieldState =>
-  secrets->Array.some((v: Secret.t) => v.name == values.name)
+  secrets->Array.some((v: Secret.derived) => v.secret.name == values.name)
     ? Error(I18n.form_input_error#name_already_registered) : Valid;
 
 [@react.component]
-let make = (~secret: Secret.t, ~closeAction) => {
+let make = (~secret: Secret.derived, ~closeAction) => {
   let secretsRequest = StoreContext.Secrets.useLoad();
   let (updateSecretRequest, updateSecret) = StoreContext.Secrets.useUpdate();
   let secrets = secretsRequest->ApiRequest.getWithDefault([||]);
@@ -54,14 +54,14 @@ let make = (~secret: Secret.t, ~closeAction) => {
       },
       ~onSubmit=
         ({state}) => {
-          let {index, derivationScheme, addresses, legacyAddress} = secret;
+          let {index, secret} = secret;
           action(
             Secret.{
-              name: state.values.name,
               index,
-              derivationScheme,
-              addresses,
-              legacyAddress,
+              secret: {
+                ...secret,
+                name: state.values.name,
+              },
             },
           )
           ->Future.tapOk(() => closeAction())
@@ -69,7 +69,7 @@ let make = (~secret: Secret.t, ~closeAction) => {
 
           None;
         },
-      ~initialState={name: secret.name},
+      ~initialState={name: secret.secret.name},
       ~i18n=FormUtils.i18n,
       (),
     );

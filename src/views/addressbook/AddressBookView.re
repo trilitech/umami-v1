@@ -75,10 +75,10 @@ let make = () => {
          : aliases
            ->Map.String.valuesToArray
            ->SortArray.stableSortBy((a, b) =>
-               Js.String.localeCompare(b.alias, a.alias)->int_of_float
+               Js.String.localeCompare(b.name, a.name)->int_of_float
              )
            ->Array.map(account =>
-               <AddressBookRowItem key={account.address} account />
+               <AddressBookRowItem key=(account.address :> string) account />
              )
            ->React.array
      | Done(Error(error), _) => <ErrorView error />

@@ -64,6 +64,7 @@ let styles =
           ~top=0.->dp,
           ~bottom=0.->dp,
           ~justifyContent=`center,
+          ~zIndex=2,
           (),
         ),
       "wordItemIndex": style(~width=17.->dp, ~textAlign=`right, ()),

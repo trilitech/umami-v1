@@ -94,6 +94,24 @@ let menu = {
   |]);
 };
 
+module DisclaimerModal = {
+  [@react.component]
+  let make = (~onSign) => {
+    <Page>
+      <View style=Style.(style(~paddingTop=27.->dp, ~flex=1., ()))>
+        <DisclaimerView onSign />
+      </View>
+    </Page>;
+  };
+};
+
+module Homepage = {
+  type state =
+    | Onboarding
+    | AddAccountModal
+    | Dashboard;
+};
+
 module AppView = {
   [@react.component]
   let make = () => {
@@ -102,14 +120,49 @@ module AppView = {
 
     let accounts = StoreContext.Accounts.useGetAll();
     let accountsRequest = StoreContext.Accounts.useRequest();
+    let eulaSignature = StoreContext.useEulaSignature();
+    let setEulaSignature = StoreContext.setEulaSignature();
 
-    let (displayOnboarding, displayNavbar) = {
+    let onSign = needSign => setEulaSignature(_ => needSign);
+    let (accountsViewMode, setAccountsViewMode) =
+      React.useState(_ => AccountsView.Mode.Simple);
+
+    let (onboardingState, setOnboardingState) =
+      React.useState(_ =>
+        switch (accountsRequest) {
+        | Done(_) when accounts->Map.String.size <= 0 => Homepage.Onboarding
+        | NotAsked
+        | Loading(None)
+        | Loading(Some(_))
+        | Done(_) => Dashboard
+        }
+      );
+
+    React.useLayoutEffect1(
+      () =>
+        switch (accountsRequest) {
+        | Done(_) when accounts->Map.String.size <= 0 =>
+          setOnboardingState(_ => Onboarding);
+          None;
+        | _ =>
+          setOnboardingState(_ => Dashboard);
+          None;
+        },
+      [|accountsRequest|],
+    );
+
+    let displayNavbar = {
       switch (accountsRequest) {
-      | Done(_) when accounts->Map.String.size <= 0 => (true, false)
-      | NotAsked => (false, false)
-      | Loading(None) => (false, false)
-      | Loading(Some(_)) => (false, true)
-      | Done(_) => (false, true)
+      | Done(_) when accounts->Map.String.size <= 0 => false
+      | NotAsked => false
+      | Loading(None) => false
+      | Loading(Some(_)) => true
+      | Done(_) =>
+        switch (onboardingState) {
+        | Onboarding
+        | AddAccountModal => false
+        | Dashboard => true
+        }
       };
     };
 
@@ -129,29 +182,43 @@ module AppView = {
           |])
         )>
         <Header />
-        <View style=styles##main>
-          {displayNavbar ? <NavBar route /> : <NavBar.Empty />}
-          <View style=styles##content>
-            {displayOnboarding
-               ? <OnboardingView />
-               : (
-                 switch (route) {
-                 | Accounts => <AccountsView />
-                 | Operations => <OperationsView />
-                 | AddressBook => <AddressBookView />
-                 | Delegations => <DelegationsView />
-                 | Tokens => <TokensView />
-                 | Settings => <SettingsView />
-                 | NotFound =>
-                   <View>
-                     <Typography.Body1>
-                       I18n.t#error404->React.string
-                     </Typography.Body1>
-                   </View>
-                 }
-               )}
-          </View>
-        </View>
+        {eulaSignature
+           ? <DisclaimerModal onSign />
+           : <View style=styles##main>
+               {displayNavbar ? <NavBar route /> : <NavBar.Empty />}
+               <View style=styles##content>
+                 {switch (onboardingState) {
+                  | Onboarding => <OnboardingView />
+                  | AddAccountModal =>
+                    <OnboardingView
+                      onClose={_ => setOnboardingState(_ => Dashboard)}
+                    />
+                  | Dashboard =>
+                    switch (route) {
+                    | Accounts =>
+                      <AccountsView
+                        mode=accountsViewMode
+                        setMode=setAccountsViewMode
+                        showOnboarding={() =>
+                          setOnboardingState(_ => AddAccountModal)
+                        }
+                      />
+                    | Operations => <OperationsView />
+                    | AddressBook => <AddressBookView />
+                    | Delegations => <DelegationsView />
+                    | Tokens => <TokensView />
+                    | Settings => <SettingsView />
+                    | Logs => <LogsView />
+                    | NotFound =>
+                      <View>
+                        <Typography.Body1>
+                          I18n.t#error404->React.string
+                        </Typography.Body1>
+                      </View>
+                    }
+                  }}
+               </View>
+             </View>}
       </View>
     </DocumentContext>;
   };
@@ -163,7 +230,7 @@ let make = () => {
     <ConfigContext>
       <ThemeContext>
         <SdkContext empty={() => <EmptyAppView />}>
-          <StoreContext> <AppView /> </StoreContext>
+          <StoreContext> <AppView /> <BeaconConnectRequest /> </StoreContext>
         </SdkContext>
       </ThemeContext>
     </ConfigContext>

@@ -29,13 +29,12 @@
 
 let useLoad = requestState => {
   let get = (~settings, ()) =>
-    API.Aliases.get(~settings)
+    WalletAPI.Aliases.get(~settings)
     ->Future.mapOk(response => {
         response
-        ->Array.map(((alias, address)) => {
-            let account: Account.t = {alias, address};
-            (address, account);
-          })
+        ->Array.map(((name, address)) =>
+            ((address :> string), Alias.{name, address})
+          )
         ->Array.reverse
         ->Map.String.fromArray
       });
@@ -49,7 +48,7 @@ let useCreate =
   ApiRequest.useSetter(
     ~set=
       (~settings, (alias, address)) =>
-        API.Aliases.add(~settings, alias, address),
+        WalletAPI.Aliases.add(~settings, ~alias, ~address),
     ~kind=Logs.Aliases,
   );
 
@@ -59,11 +58,14 @@ let useUpdate =
   ApiRequest.useSetter(
     ~set=
       (~settings, renaming: TezosSDK.renameParams) =>
-        API.Aliases.rename(~settings, renaming),
+        WalletAPI.Aliases.rename(~settings, renaming),
     ~kind=Logs.Aliases,
   );
 
 /* Delete */
 
-let useDelete =
-  ApiRequest.useSetter(~set=API.Aliases.delete, ~kind=Logs.Aliases);
+let useDelete = {
+  let set = (~settings, alias) =>
+    WalletAPI.Aliases.delete(~settings, ~alias);
+  ApiRequest.useSetter(~set, ~kind=Logs.Aliases);
+};

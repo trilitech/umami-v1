@@ -35,33 +35,49 @@ module Base = {
       })
     );
 
+  module BalanceToken = {
+    [@react.component]
+    let make = (~token: Token.t, ~mapWithLoading) => {
+      let balanceTokenTotal =
+        StoreContext.BalanceToken.useGetTotal(token.address);
+
+      balanceTokenTotal->mapWithLoading(balance =>
+        I18n.t#amount(balance->Token.Unit.toNatString, token.symbol)
+        ->React.string
+      );
+    };
+  };
+
+  module BalanceTez = {
+    [@react.component]
+    let make = (~mapWithLoading) => {
+      let balanceTotal = StoreContext.Balance.useGetTotal();
+
+      balanceTotal->mapWithLoading(balance =>
+        I18n.t#tez_amount(balance->Tez.toString)->React.string
+      );
+    };
+  };
+
   [@react.component]
   let make = (~token: option(Token.t)=?, ~renderBalance=?) => {
-    let balanceTotal = StoreContext.Balance.useGetTotal();
-    let balanceTokenTotal =
-      StoreContext.BalanceToken.useGetTotal(
-        token->Option.map(token => token.address),
-      );
-
     let theme = ThemeContext.useTheme();
+
+    let mapWithLoading = (v, f) =>
+      v->Option.mapWithDefault(
+        <ActivityIndicator
+          animating=true
+          size={ActivityIndicator_Size.exact(22.)}
+          color={theme.colors.iconHighEmphasis}
+        />,
+        f,
+      );
 
     let balanceElement =
       <Typography.Headline fontWeightStyle=`black style=styles##balance>
-        {switch (token, balanceTotal, balanceTokenTotal) {
-         | (Some(token), _, Some(balanceTokenTotal)) =>
-           I18n.t#amount(
-             balanceTokenTotal->Token.Unit.toNatString,
-             token.symbol,
-           )
-           ->React.string
-         | (None, Some(balanceTotal), _) =>
-           I18n.t#xtz_amount(balanceTotal->ProtocolXTZ.toString)->React.string
-         | _ =>
-           <ActivityIndicator
-             animating=true
-             size={ActivityIndicator_Size.exact(22.)}
-             color={theme.colors.iconHighEmphasis}
-           />
+        {switch (token) {
+         | Some(token) => <BalanceToken mapWithLoading token />
+         | None => <BalanceTez mapWithLoading />
          }}
       </Typography.Headline>;
 

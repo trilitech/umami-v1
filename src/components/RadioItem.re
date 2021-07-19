@@ -25,10 +25,28 @@
 
 open ReactNative;
 
+module Radio = {
+  [@react.component]
+  let make = (~value: bool=false) => {
+    let theme = ThemeContext.useTheme();
+    let size = 16.;
+    let color = {
+      value ? theme.colors.iconPrimary : theme.colors.iconMediumEmphasis;
+    };
+    value
+      ? {
+        <Icons.RadioOn size color />;
+      }
+      : {
+        <Icons.RadioOff size color />;
+      };
+  };
+};
+
 let styles =
   Style.(
     StyleSheet.create({
-      "container":
+      "pressable":
         style(
           ~alignSelf=`flexStart,
           ~height=37.->dp,
@@ -36,15 +54,47 @@ let styles =
           ~alignItems=`center,
           (),
         ),
-      "radio": style(~marginRight=16.->dp, ()),
+      "radioContainer":
+        style(
+          ~marginRight=11.->dp,
+          ~marginLeft=(-5.)->dp,
+          ~height=30.->dp,
+          ~width=30.->dp,
+          ~borderRadius=15.,
+          ~alignItems=`center,
+          ~justifyContent=`center,
+          (),
+        ),
     })
   );
 
 [@react.component]
-let make = (~label, ~value, ~setValue: ('a => 'a) => unit, ~currentValue) => {
-  <TouchableOpacity
-    style=styles##container onPress={_ => setValue(_ => value)}>
-    <Radio value={currentValue == value} style=styles##radio />
-    <Typography.Body1> label->React.string </Typography.Body1>
-  </TouchableOpacity>;
+let make =
+    (
+      ~label,
+      ~value,
+      ~setValue: ('a => 'a) => unit,
+      ~currentValue,
+      ~disabled=false,
+      ~style as styleFromProp: option(Style.t)=?,
+    ) => {
+  <Pressable_
+    style={_ =>
+      Style.arrayOption([|Some(styles##pressable), styleFromProp|])
+    }
+    onPress={_ => setValue(_ => value)}
+    disabled
+    accessibilityRole=`checkbox>
+    {({hovered, pressed, focused}) => {
+       let hovered = hovered->Option.getWithDefault(false);
+       let focused = focused->Option.getWithDefault(false);
+       <>
+         <ThemedPressable.ContainerInteractionState.Outline
+           hovered pressed focused disabled style=styles##radioContainer>
+           <Radio value={currentValue == value} />
+         </ThemedPressable.ContainerInteractionState.Outline>
+         <Typography.Body1> label->React.string </Typography.Body1>
+       </>;
+     }}
+  </Pressable_>;
 };

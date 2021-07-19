@@ -23,10 +23,8 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open UmamiCommon;
 include ApiRequest;
-module Error = API.Error;
-module API = API.Tokens(API.TezosExplorer);
+module Error = ErrorHandler;
 
 type injection = {
   operation: Token.operation,
@@ -35,38 +33,17 @@ type injection = {
 
 let useCheckTokenContract = () => {
   let set = (~settings, address) =>
-    settings->API.checkTokenContract(address);
+    settings->NodeAPI.Tokens.checkTokenContract(address);
   ApiRequest.useSetter(~set, ~kind=Logs.Tokens, ~toast=false, ());
 };
 
-let useLoadOperationOffline =
-    (
-      ~requestState as (request, setRequest),
-      ~operation: option(Token.operation),
-    ) => {
+let useLoadOperationOffline = (~requestState, ~operation: Token.operation) => {
   let get = (~settings, operation) =>
     settings
-    ->API.callGetOperationOffline(operation)
+    ->NodeAPI.Tokens.callGetOperationOffline(operation)
     ->Future.mapError(Error.fromApiToString);
 
-  let getRequest =
-    ApiRequest.useGetter(~get, ~kind=Logs.Tokens, ~setRequest, ());
-
-  let isMounted = ReactUtils.useIsMonted();
-  React.useEffect3(
-    () => {
-      let shouldReload = ApiRequest.conditionToLoad(request, isMounted);
-      operation->Lib.Option.iter(operation =>
-        if (shouldReload) {
-          getRequest(operation)->ignore;
-        }
-      );
-      None;
-    },
-    (isMounted, request, operation),
-  );
-
-  request;
+  ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, operation);
 };
 
 let tokensStorageKey = "wallet-tokens";
@@ -78,7 +55,7 @@ let useLoadTokens = requestState => {
     ->Option.mapWithDefault([||], storageString =>
         storageString->Js.Json.parseExn->Token.Decode.array
       )
-    ->Array.map(token => {(token.address, token)})
+    ->Array.map(token => {((token.address :> string), token)})
     ->Map.String.fromArray
     ->Result.Ok
     ->Future.value;

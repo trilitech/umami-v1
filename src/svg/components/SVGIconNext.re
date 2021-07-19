@@ -23,55 +23,14 @@
 /*                                                                           */
 /*****************************************************************************/
 
-let formatOnBlur = (token, handleChange, value) =>
-  if (token->Option.isSome) {
-    value
-    ->Token.Unit.forceFromString
-    ->Option.mapWithDefault("", Token.Unit.toNatString)
-    ->handleChange;
-  } else {
-    value->ProtocolXTZ.formatString->Option.getWithDefault("")->handleChange;
-  };
+open ReactNative;
+open ReactNativeSvg;
 
-let xtzDecoration = (~style) =>
-  <Typography.Body1 colorStyle=`mediumEmphasis style>
-    I18n.t#xtz->React.string
-  </Typography.Body1>;
 [@react.component]
 let make =
     (
-      ~label,
-      ~value: string,
-      ~handleChange,
-      ~error,
-      ~style: option(ReactNative.Style.t)=?,
-      ~decoration=?,
-      ~token: option(Token.t)=?,
-    ) => {
-  // reformat value if token change
-  React.useEffect1(
-    () => {
-      if (value != "") {
-        formatOnBlur(token, handleChange, value);
-      };
-      None;
-    },
-    [|token|],
-  );
-
-  let placeholder =
-    token == None
-      ? I18n.input_placeholder#tez_amount : I18n.input_placeholder#token_amount;
-
-  <FormGroupTextInput
-    label
-    ?style
-    placeholder
-    value
-    error
-    onBlur={_ => formatOnBlur(token, handleChange, value)}
-    ?decoration
-    handleChange
-    keyboardType=`numeric
-  />;
-};
+      ~width: option(Style.size)=?,
+      ~height: option(Style.size)=?,
+      ~fill: option(string)=?,
+      ~stroke: option(string)=?,
+    ) => <Svg viewBox="0 0 24 24" ?width ?height ?fill ?stroke> <Path d="M9.280 6.700 L 8.581 7.400 10.880 9.700 L 13.180 12.000 10.890 14.290 L 8.601 16.580 9.300 17.282 L 9.999 17.983 12.999 14.982 L 16.000 11.980 13.010 8.990 C 11.366 7.345,10.011 6.000,10.000 6.000 C 9.988 6.000,9.664 6.315,9.280 6.700 " fillRule=`evenodd> </Path> </Svg>;

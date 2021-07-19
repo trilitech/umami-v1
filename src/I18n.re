@@ -26,6 +26,7 @@
 let p = Format.sprintf;
 
 let btn = {
+  pub create_or_import_account = "CREATE OR IMPORT ACCOUNT";
   pub _this = this;
   pub customize_derivation_path = "Customize derivation path";
   pub ok = "OK";
@@ -69,10 +70,17 @@ let btn = {
   pub scan = "SCAN";
   pub upgrade = "Download";
   pub load_file = "LOAD FROM FILE";
-  pub csv_format_link = "CSV specification and example"
+  pub csv_format_link = "CSV specification and example";
+  pub disclaimer_agree = "CONTINUE";
+  pub deny = "DENY";
+  pub allow = "ALLOW";
+  pub reject = "REJECT";
+  pub sign = "SIGN";
+  pub close = "CLOSE"
 };
 
 let tooltip = {
+  pub close = "Close";
   pub _this = this;
   pub show_qr = "Show QR Code";
   pub copy_clipboard = "Copy to clipboard";
@@ -90,7 +98,8 @@ let log = {
   pub _this = this;
   pub copied_to_clipboard = p("%s copied to clipboard");
   pub log_content = "Log content";
-  pub address = "Address"
+  pub address = "Address";
+  pub beacon_sign_payload = "Sign payload"
 };
 
 let label = {
@@ -124,7 +133,10 @@ let label = {
   pub token = "Token";
   pub account_cli = "Cli";
   pub account_default_path = "Default Path - m/44'/1729'/?'/0'";
-  pub account_custom_path = "Custom Path"
+  pub account_custom_path = "Custom Path";
+  pub beacon_account = "Account to connect to dApp";
+  pub beacon_sign_payload = "Payload to sign";
+  pub parameters = "Parameters"
 };
 
 let input_placeholder = {
@@ -146,6 +158,10 @@ let input_placeholder = {
 
 let form_input_error = {
   pub _this = this;
+  pub dp_not_a_dp = "Not a derivation path";
+  pub dp_more_than_1_wildcard = "Cannot have more that one '?'";
+  pub dp_missing_wildcard = "Missing '?' or 0";
+  pub dp_not_tezos = "Not a BIP44 Tezos Path";
   pub empty_transaction = "Transaction is empty.";
   pub branch_refused_error = "Please retry. An error came up while communicating with the node";
   pub key_already_registered = a =>
@@ -198,6 +214,8 @@ let title = {
   pub deleted_contact = "Contact deleted";
   pub delete_token = "Delete token";
   pub deleted_token = "Token deleted";
+  pub delete_beacon_peer = "Delete peer";
+  pub delete_beacon_permission = "Delete permission";
   pub confirm_cancel = "Are you sure you want to cancel?";
   pub send = "Send";
   pub confirmation = "Confirmation";
@@ -211,7 +229,11 @@ let title = {
   pub delete_load = "Deleting";
   pub delete_account_done = "Account deleted";
   pub batch = "Batch";
-  pub scan = "Scan"
+  pub scan = "Scan";
+  pub disclaimer = "User Agreement";
+  pub beacon_connection_request = "Connection Request";
+  pub beacon_sign_request = "Sign";
+  pub interaction = "Interaction"
 };
 
 let expl = {
@@ -224,7 +246,12 @@ let expl = {
   pub import_account_enter_phrase = {j|Please fill in the recovery phrase in sequence.|j};
   pub confirm_operation = "Please validate the details of the transaction and enter password to confirm";
   pub batch = "Review, edit or delete the transactions of the batch";
-  pub operation = "The operation will be processed and confirmed, you can see its progress in the Operations section."
+  pub operation = "The operation will be processed and confirmed, you can see its progress in the Operations section.";
+  pub beacon_dapp = "would like to connect to your wallet";
+  pub beacon_dapp_request = {js|This site is requesting access to view your account’s address.\nAlways make sure you trust the sites you interact with.|js};
+  pub beacon_operation = "Requests Operations";
+  pub beacon_delegation = "Request Delegation";
+  pub beacon_dapp_sign = "requests your signature"
 };
 
 let menu = {
@@ -276,7 +303,18 @@ let settings = {
   pub danger_offboard_form_text = {js|Offboarding will permanently delete any data from this computer. Please acknowledge that you have read and understood the disclaimer, then enter « wasabi » to confirm. The accounts are still available to be imported in the future ; in order to regain access to your accounts, please make sure that you keep the recovery phrase.|js};
   pub danger_offboard_form_checkbox_label = {js|I have read the warning and I am certain I want to delete my private keys locally. I also made sure to keep my recovery phrase.|js};
   pub danger_offboard_form_input_placeholder = "Enter code word to confirm";
-  pub danger_offboard_form_input_error = "Not the correct confirm code word"
+  pub danger_offboard_form_input_error = "Not the correct confirm code word";
+  pub beacon_title = "DAPPS";
+  pub beacon_peers_section = "Peers";
+  pub beacon_peers_name = "NAME";
+  pub beacon_peers_relay = "RELAY SERVER";
+  pub beacon_empty_peers = "No peer";
+  pub beacon_permissions_section = "Permissions";
+  pub beacon_permissions_dapp = "DAPP";
+  pub beacon_permissions_account = "CONNECTED ACCOUNT";
+  pub beacon_permissions_scopes = "SCOPES";
+  pub beacon_permissions_network = "NETWORK";
+  pub beacon_empty_permissions = "No permission"
 };
 
 let network = {
@@ -321,6 +359,8 @@ let taquito = {
   pub unknown_error_code = n => p("Unknown error code %d", n)
 };
 
+let wallet = {pub _this = this; pub key_not_found = "Key not found"};
+
 let csv = {
   pub _this = this;
   pub cannot_parse_number = (row, col) =>
@@ -359,17 +399,26 @@ let csv = {
     p("%s in not a valid contract address: %s.", a, reason)
 };
 
+let disclaimer = {
+  pub _this = this;
+  pub last_updated = date => p("Last updated %s.", date);
+  pub please_sign = "In order to use Umami, \nyou must agree to the terms.";
+  pub agreement_checkbox = "Check here to indicate that you have read and \
+     agree to the terms of the User Agreement"
+};
+
 let t = {
+  pub unknown_operation = "Unknown";
   pub error404 = "404 - Route Not Found :(";
   pub logs_no_recent = "No recent messages";
   pub logs_clearall = "CLEAR ALL";
   pub amount = (a, b) => p("%s %s", a, b);
   pub tezos = "Tez";
-  pub xtz = "tez";
+  pub tez = "tez";
   pub mainnet = "Mainnet";
   pub testnet = "Testnet";
-  pub xtz_amount = a => p("%s %s", a, this#xtz);
-  pub xtz_op_amount = op => p("%s %a", op, () => this#xtz_amount);
+  pub tez_amount = a => p("%s %s", a, this#tez);
+  pub tez_op_amount = op => p("%s %a", op, () => this#tez_amount);
   pub address = "Address";
   pub account = "Account";
   pub operation_reveal = "Reveal";
@@ -396,13 +445,14 @@ let t = {
   pub token_created = "Token created";
   pub operation_hash = "Operation Hash";
   pub account_imported = "Account imported";
-  pub operation_summary_fee = p("+ Fee %a", () => this#xtz_amount);
+  pub operation_summary_fee = p("+ Fee %a", () => this#tez_amount);
   pub navbar_accounts = "ACCOUNTS";
   pub navbar_operations = "OPERATIONS";
   pub navbar_addressbook = {j|ADDRESS BOOK|j};
   pub navbar_delegations = "DELEGATIONS";
   pub navbar_tokens = "TOKENS";
   pub navbar_settings = "SETTINGS";
+  pub navbar_logs = "LOGS";
   pub delegate_column_account = "ACCOUNT";
   pub delegate_column_initial_balance = "INITIAL BALANCE";
   pub delegate_column_current_balance = "CURRENT BALANCE";

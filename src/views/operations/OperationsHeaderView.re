@@ -50,7 +50,7 @@ let make = (~children as right) => {
   <View style=styles##header>
     <Page.Header right>
       <BalanceTotal />
-      <AccountSelector style=styles##selector />
+      <AccountElements.Selector.Simple style=styles##selector />
     </Page.Header>
     <Table.Head>
       <OperationRowItem.CellType>

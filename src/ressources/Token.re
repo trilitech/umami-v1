@@ -31,12 +31,16 @@ type t = TokenRepr.t;
 module Decode = {
   let record = json =>
     Json.Decode.{
-      address: json |> field("address", string),
+      address:
+        json
+        |> field("address", string)
+        |> PublicKeyHash.build
+        |> Result.getExn,
       alias: json |> field("alias", string),
       symbol: json |> field("symbol", string),
       chain:
         (json |> field("chain", optional(string)))
-        ->Option.getWithDefault(Network.edo2netChain),
+        ->Option.getWithDefault(Network.florencenetChain),
     };
 
   let array = json => json |> Json.Decode.array(record);
@@ -48,7 +52,7 @@ module Encode = {
   let record = record =>
     Json.Encode.(
       object_([
-        ("address", record.address |> string),
+        ("address", (record.address :> string) |> string),
         ("alias", record.alias |> string),
         ("symbol", record.symbol |> string),
         ("chain", record.chain |> string),
@@ -74,7 +78,7 @@ module Approve = {
 
 module GetBalance = {
   type t = {
-    address: string,
+    address: PublicKeyHash.t,
     callback: option(string),
     token: TokenRepr.address,
     options,
@@ -83,8 +87,8 @@ module GetBalance = {
 
 module GetAllowance = {
   type t = {
-    source: string,
-    destination: string,
+    source: PublicKeyHash.t,
+    destination: PublicKeyHash.t,
     callback: option(string),
     token: TokenRepr.address,
     options,
@@ -127,7 +131,7 @@ let setCallback = (op, callback) => {
 
 let makeGetBalance =
     (
-      address,
+      address: PublicKeyHash.t,
       contract: TokenRepr.address,
       ~fee=?,
       ~gasLimit=?,

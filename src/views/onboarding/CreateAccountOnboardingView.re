@@ -25,21 +25,13 @@
 
 open ReactNative;
 
+let styles = FormStyles.onboarding;
+
 type step =
   | Step1
   | Step2
   | Step3
   | Step4;
-
-let styles =
-  Style.(
-    StyleSheet.create({
-      "title": style(~marginBottom=8.->dp, ~textAlign=`center, ()),
-      "stepPager": style(~marginBottom=4.->dp, ~textAlign=`center, ()),
-      "stepTitle": style(~marginBottom=10.->dp, ~textAlign=`center, ()),
-      "stepBody": style(~marginBottom=28.->dp, ~textAlign=`center, ()),
-    })
-  );
 
 [@react.component]
 let make = (~closeAction) => {
@@ -47,6 +39,10 @@ let make = (~closeAction) => {
 
   let (secretWithMnemonicRequest, createSecretWithMnemonic) =
     StoreContext.Secrets.useCreateWithMnemonics();
+
+  let secrets = StoreContext.Secrets.useGetAll();
+  let existingSecretsCount = secrets->Array.length;
+  let noExistingPassword = existingSecretsCount < 1;
 
   let addLog = LogsContext.useAdd();
 
@@ -66,8 +62,8 @@ let make = (~closeAction) => {
   // other value later, it's unecessary to be used
   let mnemonic =
     React.useRef(Bip39.generate(256)->Js.String2.split(" ")).current;
-  let (derivationScheme, setDerivationScheme) =
-    React.useState(_ => "m/44'/1729'/?'/0'");
+  let (derivationPath, setDerivationPath) =
+    React.useState(_ => DerivationPath.Pattern.(default->fromTezosBip44));
 
   let loading = secretWithMnemonicRequest->ApiRequest.isLoading;
 
@@ -132,32 +128,39 @@ let make = (~closeAction) => {
             I18n.expl#account_select_derivation_path->React.string
           </Typography.Body2>}
          <SelectDerivationPathView
-           derivationScheme
-           setDerivationScheme
+           derivationPath
+           setDerivationPath
            onPressCancel={_ => setFormStep(_ => Step2)}
            goNextStep={_ => setFormStep(_ => Step4)}
          />
        </>;
      | Step4 =>
+       let subtitle =
+         noExistingPassword
+           ? I18n.title#account_create_password
+           : I18n.title#account_enter_password;
+
        <>
          <Typography.Overline3
            colorStyle=`highEmphasis style=styles##stepPager>
            {I18n.t#stepof(4, 4)->React.string}
          </Typography.Overline3>
          <Typography.Overline1 style=styles##stepTitle>
-           I18n.title#account_create_password->React.string
+           subtitle->React.string
          </Typography.Overline1>
-         <Typography.Body2 colorStyle=`mediumEmphasis style=styles##stepBody>
-           I18n.expl#account_create_password_not_recorded->React.string
-         </Typography.Body2>
+         {<Typography.Body2 colorStyle=`mediumEmphasis style=styles##stepBody>
+            I18n.expl#account_create_password_not_recorded->React.string
+          </Typography.Body2>
+          ->ReactUtils.onlyWhen(noExistingPassword)}
          <CreatePasswordView
            mnemonic
-           derivationScheme
+           derivationPath
            onPressCancel={_ => setFormStep(_ => Step2)}
            createSecretWithMnemonic
            loading
+           existingSecretsCount
          />
-       </>
+       </>;
      }}
   </ModalFormView>;
 };

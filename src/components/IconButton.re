@@ -29,9 +29,6 @@ let styles =
   Style.(
     StyleSheet.create({
       "button": style(~alignItems=`center, ~justifyContent=`center, ()),
-      "popover":
-        style(~top=(-100.)->dp, ~right=2.->dp, ~position=`absolute, ()),
-      "hoverable": style(~position=`relative, ()),
     })
   );
 
@@ -41,7 +38,8 @@ let make =
       ~icon: Icons.builder,
       ~size=28.,
       ~iconSizeRatio=4. /. 7.,
-      ~isPrimary=?,
+      ~isPrimary=false,
+      ~disabled=false,
       ~onPress=?,
       ~tooltip=?,
       ~isActive=?,
@@ -50,12 +48,14 @@ let make =
     ) => {
   let theme = ThemeContext.useTheme();
 
-  <View>
-    <ThemedPressable
+  let (module ThemedPressableComp): (module ThemedPressable.T) =
+    isPrimary
+      ? (module ThemedPressable.Primary) : (module ThemedPressable.Outline);
+
+  let pressableElement = (~pressableRef=?) =>
+    <ThemedPressableComp
       ?pressableRef
       ?onPress
-      ?isPrimary
-      ?tooltip
       ?isActive
       style=Style.(
         arrayOption([|
@@ -76,10 +76,21 @@ let make =
          ~style=?None,
          ~size=Js.Math.ceil_float(iconSizeRatio *. size),
          ~color=
-           isPrimary->Option.getWithDefault(false)
-             ? theme.colors.primaryIconMediumEmphasis
-             : theme.colors.iconMediumEmphasis,
+           switch (disabled, isPrimary) {
+           | (true, _) => theme.colors.iconDisabled
+           | (false, true) => theme.colors.primaryIconMediumEmphasis
+           | (false, false) => theme.colors.iconMediumEmphasis
+           },
        )}
-    </ThemedPressable>
+    </ThemedPressableComp>;
+
+  <View>
+    {switch (tooltip) {
+     | Some((keyPopover, text)) =>
+       <Tooltip keyPopover text>
+         {((~pressableRef) => pressableElement(~pressableRef))}
+       </Tooltip>
+     | None => pressableElement(~pressableRef?)
+     }}
   </View>;
 };

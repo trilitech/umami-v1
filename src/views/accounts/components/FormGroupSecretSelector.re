@@ -36,15 +36,17 @@ module SecretItem = {
     );
 
   [@react.component]
-  let make = (~style as paramStyle=?, ~secret: Secret.t) => {
+  let make = (~style as paramStyle=?, ~secret: Secret.derived) => {
     <View style=Style.(arrayOption([|Some(itemStyles##inner), paramStyle|]))>
       <View style=itemStyles##info>
         <Typography.Subtitle2>
-          secret.name->React.string
+          secret.secret.name->React.string
         </Typography.Subtitle2>
       </View>
       <Typography.Address>
-        secret.derivationScheme->React.string
+        {secret.secret.derivationPath
+         ->DerivationPath.Pattern.toString
+         ->React.string}
       </Typography.Address>
     </View>;
   };
@@ -67,14 +69,14 @@ let styles =
     })
   );
 
-let renderButton = (selectedSecret: option(Secret.t), _hasError) =>
+let renderButton = (selectedSecret: option(Secret.derived), _hasError) =>
   <View style=styles##selectorContent>
     {selectedSecret->Option.mapWithDefault(<LoadingView />, secret =>
        <SecretItem style=styles##itemInSelector secret />
      )}
   </View>;
 
-let renderItem = (secret: Secret.t) =>
+let renderItem = (secret: Secret.derived) =>
   <SecretItem style=styles##itemInSelector secret />;
 
 [@react.component]
@@ -87,7 +89,7 @@ let make = (~label, ~value: option(string), ~handleChange, ~error, ~disabled) =>
     secretsRequest
     ->ApiRequest.getWithDefault([||])
     ->SortArray.stableSortBy((a, b) =>
-        Js.String.localeCompare(b.name, a.name)->int_of_float
+        Js.String.localeCompare(b.secret.name, a.secret.name)->int_of_float
       );
 
   React.useEffect2(

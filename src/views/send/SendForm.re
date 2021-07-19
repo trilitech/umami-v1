@@ -27,7 +27,7 @@ module StateLenses = [%lenses
   type state = {
     amount: string,
     sender: option(Account.t),
-    recipient: FormUtils.Account.any,
+    recipient: FormUtils.Alias.any,
     fee: string,
     gasLimit: string,
     storageLimit: string,
@@ -37,10 +37,10 @@ module StateLenses = [%lenses
 ];
 
 type validState = {
-  amount: Transfer.currency,
+  amount: Transfer.Currency.t,
   sender: Account.t,
-  recipient: FormUtils.Account.t,
-  fee: option(ProtocolXTZ.t),
+  recipient: FormUtils.Alias.t,
+  fee: option(Tez.t),
   gasLimit: option(int),
   storageLimit: option(int),
   forceLowFee: bool,
@@ -55,7 +55,7 @@ let unsafeExtractValidState = (token, state: StateLenses.state): validState => {
       ->FormUtils.Unsafe.getCurrency,
     sender: state.sender->FormUtils.Unsafe.getValue,
     recipient: state.recipient->FormUtils.Unsafe.account,
-    fee: state.fee->ProtocolXTZ.fromString,
+    fee: state.fee->Tez.fromString,
     gasLimit: state.gasLimit->Int.fromString,
     storageLimit: state.storageLimit->Int.fromString,
     forceLowFee: state.forceLowFee,
@@ -64,11 +64,11 @@ let unsafeExtractValidState = (token, state: StateLenses.state): validState => {
 };
 
 let toState = (vs: validState): StateLenses.state => {
-  amount: vs.amount->Transfer.currencyToString,
+  amount: vs.amount->Transfer.Currency.toString,
   sender: vs.sender->Some,
-  recipient: vs.recipient->FormUtils.Account.Valid,
+  recipient: vs.recipient->FormUtils.Alias.Valid,
 
-  fee: vs.fee->Option.mapWithDefault("", ProtocolXTZ.toString),
+  fee: vs.fee->Option.mapWithDefault("", Tez.toString),
   gasLimit: vs.gasLimit->FormUtils.optToString(Int.toString),
   storageLimit: vs.storageLimit->FormUtils.optToString(Int.toString),
   forceLowFee: vs.forceLowFee,
@@ -77,17 +77,11 @@ let toState = (vs: validState): StateLenses.state => {
 
 include ReForm.Make(StateLenses);
 
-module Password = {
-  module StateLenses = [%lenses type state = {password: string}];
-
-  include ReForm.Make(StateLenses);
-};
-
 type transaction = Transfer.t;
 
 let buildTransferElts = (transfers, build) => {
   transfers->List.map(((t: validState, advOpened)) => {
-    let destination = t.recipient->FormUtils.Account.address;
+    let destination = t.recipient->FormUtils.Alias.address;
 
     let gasLimit = advOpened ? t.gasLimit : None;
     let storageLimit = advOpened ? t.storageLimit : None;

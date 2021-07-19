@@ -39,13 +39,13 @@ module BalanceActivityIndicator = {
 
 module Balance = {
   [@react.component]
-  let make = (~address: string) => {
+  let make = (~address: PublicKeyHash.t) => {
     let balanceRequest = StoreContext.Balance.useLoad(address);
 
     switch (balanceRequest) {
     | Done(Ok(balance), _)
     | Loading(Some(balance)) =>
-      I18n.t#xtz_amount(balance->ProtocolXTZ.toString)->React.string
+      I18n.t#tez_amount(balance->Tez.toString)->React.string
     | Done(Error(_error), _) => React.null
     | NotAsked
     | Loading(None) => <BalanceActivityIndicator />
@@ -55,13 +55,13 @@ module Balance = {
 
 module BalanceToken = {
   [@react.component]
-  let make = (~address: string, ~token: Token.t) => {
+  let make = (~address: PublicKeyHash.t, ~token: Token.t) => {
     let balanceTokenRequest =
-      StoreContext.BalanceToken.useLoad(address, Some(token.address));
+      StoreContext.BalanceToken.useLoad(address, token.address);
 
     switch (balanceTokenRequest) {
     | Done(Ok(balance), _)
-    | Loading(Some((balance: Token.Unit.t))) =>
+    | Loading(Some(balance: Token.Unit.t)) =>
       I18n.t#amount(balance->Token.Unit.toNatString, token.symbol)
       ->React.string
     | Done(Error(_error), _) => React.null
@@ -79,7 +79,7 @@ let styles =
   );
 
 [@react.component]
-let make = (~address: string, ~token: option(Token.t)=?) => {
+let make = (~address: PublicKeyHash.t, ~token: option(Token.t)=?) => {
   <Typography.Subtitle1 fontWeightStyle=`black style=styles##balance>
     {switch (token) {
      | Some(token) => <BalanceToken address token />

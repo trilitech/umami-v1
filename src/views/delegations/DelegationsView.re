@@ -68,9 +68,8 @@ let allNone = delegateRequests =>
 let accountsToShow = accounts =>
   accounts
   ->Map.String.valuesToArray
-  ->SortArray.stableSortBy((a, b) =>
-      Pervasives.compare(a.Account.alias, b.Account.alias)
-    );
+  ->Array.map(((a, _)) => a)
+  ->SortArray.stableSortBy(Account.compareName);
 
 module DelegateItem = {
   [@react.component]
@@ -81,27 +80,43 @@ module DelegateItem = {
     ->ApiRequest.getDoneOk
     ->Option.flatMap(x => x)
     ->ReactUtils.mapOpt(_ =>
-        <DelegateRowItem key={account.address} account delegateRequest />
+        <DelegateRowItem
+          key=(account.address :> string)
+          account
+          delegateRequest
+        />
       );
   };
 };
 
 [@react.component]
 let make = () => {
-  let accounts = StoreContext.Accounts.useGetAll();
+  let accounts = StoreContext.Accounts.useGetAllWithDelegates();
   let delegateRequests = StoreContext.Delegate.useGetAllRequests();
 
+  let items =
+    accounts
+    ->Map.String.valuesToArray
+    ->Array.keepMap(((account, delegate)) =>
+        delegate->Option.isNone ? Some(account) : None
+      )
+    ->SortArray.stableSortBy(Account.compareName);
+
+  let firstAccount = items->Array.get(0);
+
   <View style=styles##container>
-    {accounts->Map.String.size == 0
+    {accounts->Map.String.isEmpty
        ? <LoadingView />
        : <>
            <View style=styles##header>
              <BalanceTotal />
-             <DelegateButton
-               zeroTez=false
-               action={Delegate.Create(None)}
-               style=styles##button
-             />
+             {firstAccount->ReactUtils.mapOpt(firstAccount =>
+                <DelegateButton
+                  zeroTez=false
+                  action={Delegate.Create(firstAccount, false)}
+                  style=styles##button
+                />
+              )}
              <Table.Head>
                <DelegateRowItem.CellAddress>
                  <Typography.Overline3>
@@ -147,7 +162,7 @@ let make = () => {
              {let accountsToShow = accountsToShow(accounts);
               accountsToShow
               ->Array.map(account =>
-                  <DelegateItem key={account.address} account />
+                  <DelegateItem key=(account.address :> string) account />
                 )
               ->React.array}
            </DocumentContext.ScrollView>

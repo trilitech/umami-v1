@@ -25,24 +25,45 @@
 
 open ReactNative;
 
+module Mode = {
+  type t =
+    | Simple
+    | Management;
+
+  let is_simple =
+    fun
+    | Simple => true
+    | Management => false;
+
+  let is_management =
+    fun
+    | Simple => false
+    | Management => true;
+
+  let invert =
+    fun
+    | Simple => Management
+    | Management => Simple;
+};
+
 module EditButton = {
   let styles =
     Style.(StyleSheet.create({"button": style(~marginTop=15.->dp, ())}));
 
   [@react.component]
-  let make = (~editMode, ~setEditMode) => {
-    let onPress = _ => setEditMode(editMode => !editMode);
+  let make = (~mode, ~setMode) => {
+    let onPress = _ => setMode(Mode.invert);
     <View style=styles##button>
       <ButtonAction
         onPress
-        text={editMode ? I18n.btn#done_ : I18n.btn#edit}
-        icon={editMode ? Icons.List.build : Icons.Edit.build}
+        text={mode->Mode.is_management ? I18n.btn#done_ : I18n.btn#edit}
+        icon={mode->Mode.is_management ? Icons.List.build : Icons.Edit.build}
       />
     </View>;
   };
 };
 
-module AccountImportButton = {
+module CreateAccountButton = {
   let styles =
     Style.(
       StyleSheet.create({
@@ -51,28 +72,16 @@ module AccountImportButton = {
     );
 
   [@react.component]
-  let make = () => {
-    let secrets = StoreContext.Secrets.useGetAll();
-
-    let (visibleModal, openAction, closeAction) =
-      ModalAction.useModalActionState();
-
-    let onPress = _ => openAction();
+  let make = (~showOnboarding) => {
     <>
       <View style=styles##button>
         <ButtonAction
-          onPress
-          text=I18n.btn#import
-          icon=Icons.Import.build
+          onPress={_ => showOnboarding()}
+          text=I18n.btn#create_or_import_account
+          icon=Icons.Account.build
           primary=true
         />
       </View>
-      <ModalAction visible=visibleModal onRequestClose=closeAction>
-        <ImportAccountOnboardingView
-          closeAction
-          existingSecretsCount={secrets->Array.size}
-        />
-      </ModalAction>
     </>;
   };
 };
@@ -84,7 +93,7 @@ module ScanImportButton = {
       let (scanRequest, scan) = StoreContext.Secrets.useScanGlobal();
 
       let submitPassword = (~password) => {
-        scan(password)->Future.tapOk(_ => closeAction())->ignore;
+        scan(password)->Future.tapOk(_ => closeAction());
       };
 
       <ModalFormView closing={ModalFormView.Close(closeAction)}>
@@ -132,11 +141,9 @@ module AccountsFlatList = {
     <View>
       {accounts
        ->Map.String.valuesToArray
-       ->SortArray.stableSortBy((a, b) =>
-           Pervasives.compare(a.alias, b.alias)
-         )
+       ->SortArray.stableSortBy(Account.compareName)
        ->Array.map(account =>
-           <AccountRowItem key={account.address} account ?token />
+           <AccountRowItem key=(account.address :> string) account ?token />
          )
        ->React.array}
     </View>;
@@ -153,17 +160,19 @@ module AccountsTreeList = {
       let addressesInSecrets =
         secrets
         ->Array.map(secret => {
-            secret.legacyAddress
-            ->Option.mapWithDefault(secret.addresses, legacyAddress => {
-                secret.addresses->Array.concat([|legacyAddress|])
-              })
+            let hdAddresses =
+              secret.secret.addresses->Array.map(k => (k :> string));
+            secret.secret.legacyAddress
+            ->Option.mapWithDefault(hdAddresses, legacyAddress => {
+                hdAddresses->Array.concat([|(legacyAddress :> string)|])
+              });
           })
         ->Array.reduce([||], (acc, arr) => acc->Array.concat(arr))
         ->Set.String.fromArray;
 
       let accountsNotInSecrets =
         accounts->Map.String.keep((address, _account) => {
-          !addressesInSecrets->Set.String.has(address)
+          !addressesInSecrets->Set.String.has((address :> string))
         });
 
       <>
@@ -177,13 +186,13 @@ module AccountsTreeList = {
         <View>
           {secrets
            ->Array.keepMap(secret =>
-               secret.legacyAddress
+               secret.secret.legacyAddress
                ->Option.map(legacyAddress => (secret, legacyAddress))
              )
            ->Array.map(((secret, legacyAddress)) =>
                <SecretRowTree.AccountImportedRowItem.Umami
-                 key=legacyAddress
-                 address=legacyAddress
+                 key=(legacyAddress :> string)
+                 address=(legacyAddress :> string)
                  secret
                />
              )
@@ -194,7 +203,7 @@ module AccountsTreeList = {
            ->Map.String.valuesToArray
            ->Array.map(account =>
                <SecretRowTree.AccountImportedRowItem.Cli
-                 key={account.address}
+                 key=(account.address :> string)
                  account
                />
              )
@@ -209,12 +218,10 @@ let styles =
   Style.(StyleSheet.create({"actionBar": style(~flexDirection=`row, ())}));
 
 [@react.component]
-let make = () => {
+let make = (~showOnboarding, ~mode, ~setMode) => {
   let resetSecrets = StoreContext.Secrets.useResetAll();
   let accountsRequest = StoreContext.Accounts.useRequest();
   let token = StoreContext.SelectedToken.useGet();
-
-  let (editMode, setEditMode) = React.useState(_ => false);
 
   <Page>
     {accountsRequest->ApiRequest.mapOrEmpty(_ => {
@@ -226,17 +233,21 @@ let make = () => {
                   loading={accountsRequest->ApiRequest.isLoading}
                   onRefresh=resetSecrets
                 />
-                <EditButton editMode setEditMode />
+                <EditButton mode setMode />
               </>}>
-           {editMode
+           {mode->Mode.is_management
               ? <BalanceTotal /> : <BalanceTotal.WithTokenSelector ?token />}
            <View style=styles##actionBar>
-             {editMode
-                ? <View> <AccountImportButton /> <ScanImportButton /> </View>
+             {mode->Mode.is_management
+                ? <View>
+                    <CreateAccountButton showOnboarding />
+                    <ScanImportButton />
+                  </View>
                 : React.null}
            </View>
          </Page.Header>
-         {editMode ? <AccountsTreeList /> : <AccountsFlatList ?token />}
+         {mode->Mode.is_management
+            ? <AccountsTreeList /> : <AccountsFlatList ?token />}
        </>
      })}
   </Page>;
