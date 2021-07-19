@@ -30,6 +30,9 @@ let unregisteredDelegate = "contract.manager.unregistered_delegate";
 let unchangedDelegate = "contract.manager.delegate.unchanged";
 let invalidContract = "Invalid contract notation";
 let emptyTransaction = "contract.empty_transaction";
+let ledgerTimeout = "No Ledger device found (timeout)";
+let ledgerKey = "Unable to retrieve public key";
+let ledgerDenied = "0x6985";
 
 type t =
   | Generic(string)
@@ -39,10 +42,13 @@ type t =
   | EmptyTransaction
   | InvalidContract
   | BranchRefused
+  | BadPkh
+  | LedgerInitTimeout
   | LedgerInit(string)
   | LedgerNotReady
-  | LedgerMasterKeyRetrieval(string)
-  | BadPkh;
+  | LedgerKeyRetrieval
+  | LedgerDenied
+  | SignerIntentInconsistency;
 
 let parse = (e: RawJsError.t) =>
   switch (e.message) {
@@ -54,6 +60,9 @@ let parse = (e: RawJsError.t) =>
   | s when s->Js.String2.includes(unchangedDelegate) => UnchangedDelegate
   | s when s->Js.String2.includes(invalidContract) => InvalidContract
   | s when s->Js.String2.includes(emptyTransaction) => EmptyTransaction
+  | s when s->Js.String2.includes(ledgerTimeout) => LedgerInitTimeout
+  | s when s->Js.String2.includes(ledgerKey) => LedgerKeyRetrieval
+  | s when s->Js.String2.includes(ledgerDenied) => LedgerDenied
   | s => Generic(Js.String.make(s))
   };
 
