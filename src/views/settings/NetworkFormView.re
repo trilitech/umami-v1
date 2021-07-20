@@ -109,6 +109,9 @@ let make = (~initNode=?, ~initMezos=?, ~action: action, ~closeAction) => {
         ...c,
         customNetworks:
           List.map(c.customNetworks, n => n === network ? newNetwork : n),
+        network:
+          c.network == Some(`Custom(network.name))
+            ? Some(`Custom(newNetwork.name)) : c.network,
       }
     );
   };
