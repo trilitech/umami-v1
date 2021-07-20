@@ -23,15 +23,11 @@
 /*                                                                           */
 /*****************************************************************************/
 
-%raw
-"
-const { TezosToolkit, WalletOperation, OpKind, DEFAULT_FEE } =
-   require('@taquito/taquito');
-const { RpcClient } = require ('@taquito/rpc');
-";
+[@bs.module "@taquito/taquito"] [@bs.scope "OpKind"]
+external opKindTransaction: string = "TRANSACTION";
 
-let opKindTransaction = [%raw "OpKind.TRANSACTION"];
-let default_fee_reveal = [%raw "DEFAULT_FEE.REVEAL"];
+[@bs.module "@taquito/taquito"] [@bs.scope "DEFAULT_FEE"]
+external default_fee_reveal: int = "REVEAL";
 
 module BigNumber: {
   type fixed;
@@ -47,16 +43,13 @@ module BigNumber: {
   let toInt64 = ReBigNumber.toInt64;
 };
 
-let walletOperation = [%raw "WalletOperation"];
-let opKind = [%raw "OpKind"];
-
-let rpcClient = [%raw "RpcClient"];
 type rpcClient;
 
 type endpoint = string;
 
 module RPCClient = {
-  [@bs.new] external create: endpoint => rpcClient = "RpcClient";
+  [@bs.module "@taquito/rpc"] [@bs.new]
+  external create: endpoint => rpcClient = "RpcClient";
 
   type params = {block: string};
   type managerKeyResult = {key: string};
@@ -166,7 +159,8 @@ module Toolkit = {
     {amount, fee, gasLimit, storageLimit, mutez: Some(true)};
   };
 
-  [@bs.new] external create: endpoint => toolkit = "TezosToolkit";
+  [@bs.module "@taquito/taquito"] [@bs.new]
+  external create: endpoint => toolkit = "TezosToolkit";
 
   [@bs.send] external setProvider: (toolkit, provider) => unit = "setProvider";
 
