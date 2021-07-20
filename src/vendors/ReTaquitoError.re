@@ -43,8 +43,7 @@ type t =
   | EmptyTransaction
   | InvalidContract
   | BranchRefused
-  | BadPkh
-  | WalletError(Wallet.error);
+  | BadPkh;
 
 let parse = e =>
   switch (e.message) {
@@ -59,10 +58,12 @@ let parse = e =>
   | s => Generic(Js.String.make(s))
   };
 
-let fromPromiseParsed = p =>
+let fromPromiseParsedWrapper = (wrapError, p) =>
   p->FutureJs.fromPromise(e => {
     let e = e->toRaw;
     Js.log(e.message);
 
-    e->parse;
+    e->parse->wrapError;
   });
+
+let fromPromiseParsed = res => fromPromiseParsedWrapper(x => x, res);

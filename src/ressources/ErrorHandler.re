@@ -61,8 +61,6 @@ let fromTaquitoToString = e =>
        | BranchRefused => I18n.form_input_error#branch_refused_error
        | InvalidContract => I18n.form_input_error#invalid_contract
        | EmptyTransaction => I18n.form_input_error#empty_transaction
-       | WalletError(KeyNotFound) => I18n.wallet#key_not_found
-       | WalletError(Generic(s)) => s
      );
 
 let printError = (fmt, err) => {

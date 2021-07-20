@@ -39,11 +39,15 @@ let useCheckTokenContract = () => {
 
 let useLoadOperationOffline = (~requestState, ~operation: Token.operation) => {
   let get = (~settings, operation) =>
-    settings
-    ->NodeAPI.Tokens.callGetOperationOffline(operation)
-    ->Future.mapError(Error.toString);
+    settings->NodeAPI.Tokens.callGetOperationOffline(operation);
 
-  ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, operation);
+  ApiRequest.useLoader(
+    ~get,
+    ~kind=Logs.Tokens,
+    ~requestState,
+    ~errorToString=ErrorHandler.toString,
+    operation,
+  );
 };
 
 let tokensStorageKey = "wallet-tokens";
