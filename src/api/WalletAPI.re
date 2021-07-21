@@ -779,6 +779,20 @@ module Accounts = {
       );
   };
 
+  let deriveLedger = (~config, ~index, ~alias, ~ledgerMasterKey) =>
+    FutureEx.flatMapOk2(
+      secretAt(~config, index), LedgerAPI.init(), (secret, tr) => {
+      importLedgerKey(
+        ~config,
+        ~name=alias,
+        ~index,
+        ~derivationPath=secret.derivationPath,
+        ~derivationScheme=secret.derivationScheme,
+        ~ledgerTransport=tr,
+        ~ledgerMasterKey,
+      )
+    });
+
   let getPublicKey = (~config: ConfigFile.t, ~account: Account.t) => {
     Wallet.pkFromAlias(
       ~dirpath=config->ConfigUtils.baseDir,

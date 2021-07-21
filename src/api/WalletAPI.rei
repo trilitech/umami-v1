@@ -178,4 +178,13 @@ module Accounts: {
   let getPublicKey:
     (~config: ConfigFile.t, ~account: Account.t) =>
     Future.t(Result.t(string, Wallet.error));
+
+  let deriveLedger:
+    (
+      ~config: ConfigFile.t,
+      ~index: int,
+      ~alias: string,
+      ~ledgerMasterKey: PublicKeyHash.t
+    ) =>
+    Future.t(result(PublicKeyHash.t, ErrorHandler.t));
 };
