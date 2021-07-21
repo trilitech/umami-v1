@@ -132,8 +132,9 @@ module Accounts: {
 
     let runStream:
       (
-        ConfigFile.t,
-        (int, PublicKeyHash.t) => unit,
+        ~config: ConfigFile.t,
+        ~startIndex: int=?,
+        ~onFoundKey: (int, PublicKeyHash.t) => unit,
         DerivationPath.Pattern.t,
         Wallet.Ledger.scheme
       ) =>
@@ -178,16 +179,29 @@ module Accounts: {
     ) =>
     Future.t(Result.t(array(PublicKeyHash.t), ErrorHandler.t));
 
-  let getPublicKey:
-    (~config: ConfigFile.t, ~account: Account.t) =>
-    Future.t(Result.t(string, Wallet.error));
+  let deriveLedgerKeys:
+    (
+      ~config: ConfigFile.t,
+      ~timeout: int=?,
+      ~index: int,
+      ~accountsNumber: int,
+      ~ledgerMasterKey: PublicKeyHash.t,
+      unit
+    ) =>
+    Future.t(Result.t(array(PublicKeyHash.t), ErrorHandler.t));
 
   let deriveLedger:
     (
       ~config: ConfigFile.t,
+      ~timeout: int=?,
       ~index: int,
       ~alias: string,
-      ~ledgerMasterKey: PublicKeyHash.t
+      ~ledgerMasterKey: PublicKeyHash.t,
+      unit
     ) =>
-    Future.t(result(PublicKeyHash.t, ErrorHandler.t));
+    Future.t(Result.t(PublicKeyHash.t, ErrorHandler.t));
+
+  let getPublicKey:
+    (~config: ConfigFile.t, ~account: Account.t) =>
+    Future.t(Result.t(string, Wallet.error));
 };

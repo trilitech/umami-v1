@@ -453,7 +453,11 @@ let make = (~closeAction) => {
      | StepChecklist => <ChecklistView next=onEndChecklist />
      | StepAccounts(mk) =>
        <AccountsView
-         scan={WalletAPI.Accounts.Scan.runStream(config, onFoundKey)}
+         scan={WalletAPI.Accounts.Scan.runStream(
+           ~config,
+           ~onFoundKey,
+           ~startIndex=0,
+         )}
          derivationChangedState
          path
          scheme

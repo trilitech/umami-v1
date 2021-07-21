@@ -160,16 +160,23 @@ module Update = {
 
 module Create = {
   [@react.component]
-  let make = (~closeAction, ~secret: option(Secret.derived)=?) => {
+  let make = (~closeAction, ~secret: Secret.derived) => {
     let (createDeriveRequest, deriveAccount) =
       StoreContext.Secrets.useDerive();
 
     let addLog = LogsContext.useAdd();
 
+    let _isLedger = secret.Secret.secret.kind == Ledger;
+
     let (formValues, setFormValues) = React.useState(_ => None);
 
-    let action = (~name, ~secretIndex, ~password) => {
-      deriveAccount({name, index: secretIndex, password})
+    let actionMnemonics = (~name, ~secretIndex, ~password) => {
+      deriveAccount({
+        name,
+        index: secretIndex,
+        kind: Mnemonics(password),
+        timeout: None,
+      })
       ->Future.mapOk(_ => ())
       ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
           I18n.t#account_created
@@ -177,6 +184,19 @@ module Create = {
       ->Future.tapOk(() => closeAction());
     };
 
+    let _actionLedger = (~name, secretIndex, ~ledgerMasterKey) => {
+      deriveAccount({
+        name,
+        index: secretIndex,
+        kind: Ledger(ledgerMasterKey),
+        timeout: Some(1000),
+      })
+      ->Future.mapOk(_ => ())
+      ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
+          I18n.t#account_created
+        )
+      ->Future.tapOk(() => closeAction());
+    };
     <ModalFormView closing={ModalFormView.Close(closeAction)}>
       <Typography.Headline style=FormStyles.header>
         I18n.title#derive_account->React.string
@@ -190,12 +210,12 @@ module Create = {
            action={(~name, ~secretIndex) =>
              setFormValues(_ => Some((name, secretIndex)))
            }
-           ?secret
+           secret
          />
        | Some((name, secretIndex)) =>
          <PasswordFormView
            loading={createDeriveRequest->ApiRequest.isLoading}
-           submitPassword={action(~name, ~secretIndex)}
+           submitPassword={actionMnemonics(~name, ~secretIndex)}
          />
        }}
     </ModalFormView>;

@@ -424,7 +424,13 @@ module Accounts = {
     };
 
     let runStream =
-        (config, onFoundKey, path: DerivationPath.Pattern.t, schema) => {
+        (
+          ~config,
+          ~startIndex=0,
+          ~onFoundKey,
+          path: DerivationPath.Pattern.t,
+          schema,
+        ) => {
       let rec loop = n => {
         let path = path->DerivationPath.Pattern.implement(n);
         LedgerAPI.init()
@@ -446,7 +452,7 @@ module Accounts = {
               );
           });
       };
-      loop(0);
+      loop(startIndex);
     };
 
     let rec runOnSeed =
@@ -747,22 +753,21 @@ module Accounts = {
     );
   };
 
-  let importLedger =
+  let importLedgerKeys =
       (
         ~config,
-        ~timeout=?,
-        ~name,
         ~accountsNumber,
-        ~derivationPath=DerivationPath.Pattern.fromTezosBip44(
-                          DerivationPath.Pattern.default,
-                        ),
-        ~derivationScheme=Wallet.Ledger.ED25519,
+        ~startIndex,
+        ~basename,
+        ~derivationPath,
+        ~derivationScheme,
+        ~ledgerTransport,
         ~ledgerMasterKey,
         (),
       ) => {
     let rec importKeys = (tr, keys, index) => {
-      let name = name ++ " /" ++ Int.toString(index);
-      index < accountsNumber
+      let name = basename ++ " /" ++ Int.toString(index);
+      index < startIndex + accountsNumber
         ? importLedgerKey(
             ~config,
             ~name,
@@ -777,8 +782,36 @@ module Accounts = {
             )
         : List.reverse(keys)->List.toArray->Ok->Future.value;
     };
+    importKeys(ledgerTransport, [], startIndex);
+  };
+
+  let importLedger =
+      (
+        ~config,
+        ~timeout=?,
+        ~name,
+        ~accountsNumber,
+        ~derivationPath=DerivationPath.Pattern.fromTezosBip44(
+                          DerivationPath.Pattern.default,
+                        ),
+        ~derivationScheme=Wallet.Ledger.ED25519,
+        ~ledgerMasterKey,
+        (),
+      ) => {
     LedgerAPI.init(~timeout?, ())
-    ->Future.flatMapOk(tr => tr->importKeys([], 0))
+    ->Future.flatMapOk(tr =>
+        importLedgerKeys(
+          ~config,
+          ~accountsNumber,
+          ~startIndex=0,
+          ~basename=name,
+          ~derivationPath,
+          ~derivationScheme,
+          ~ledgerTransport=tr,
+          ~ledgerMasterKey,
+          (),
+        )
+      )
     ->Future.tapOk(addresses =>
         registerSecret(
           ~config,
@@ -797,18 +830,47 @@ module Accounts = {
       );
   };
 
-  let deriveLedger = (~config, ~index, ~alias, ~ledgerMasterKey) =>
+  let deriveLedger =
+      (~config, ~timeout=?, ~index, ~alias, ~ledgerMasterKey, ()) =>
     FutureEx.flatMapOk2(
-      secretAt(~config, index), LedgerAPI.init(), (secret, tr) => {
+      secretAt(~config, index), LedgerAPI.init(~timeout?, ()), (secret, tr) => {
       importLedgerKey(
         ~config,
         ~name=alias,
-        ~index,
+        ~index=secret.addresses->Array.length,
         ~derivationPath=secret.derivationPath,
         ~derivationScheme=secret.derivationScheme,
         ~ledgerTransport=tr,
         ~ledgerMasterKey,
       )
+      ->Future.tapOk(address =>
+          {
+            ...secret,
+            addresses: Array.concat(secret.addresses, [|address|]),
+          }
+          ->updateSecretAt(~config, index)
+        )
+    });
+
+  let deriveLedgerKeys =
+      (~config, ~timeout=?, ~index, ~accountsNumber, ~ledgerMasterKey, ()) =>
+    FutureEx.flatMapOk2(
+      secretAt(~config, index), LedgerAPI.init(~timeout?, ()), (secret, tr) => {
+      importLedgerKeys(
+        ~config,
+        ~basename=secret.Secret.Repr.name,
+        ~startIndex=secret.addresses->Array.length,
+        ~accountsNumber,
+        ~derivationPath=secret.derivationPath,
+        ~derivationScheme=secret.derivationScheme,
+        ~ledgerTransport=tr,
+        ~ledgerMasterKey,
+        (),
+      )
+      ->Future.tapOk(addresses =>
+          {...secret, addresses: Array.concat(secret.addresses, addresses)}
+          ->updateSecretAt(~config, index)
+        )
     });
 
   let getPublicKey = (~config: ConfigFile.t, ~account: Account.t) => {
