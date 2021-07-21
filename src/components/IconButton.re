@@ -57,6 +57,7 @@ let make =
       ?pressableRef
       ?onPress
       ?isActive
+      disabled
       style=Style.(
         arrayOption([|
           Some(styles##button),

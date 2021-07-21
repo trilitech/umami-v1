@@ -77,7 +77,7 @@ module LedgerBlock = {
             ~marginTop=20.->dp,
             ~borderRadius=4.,
             ~padding=32.->dp,
-            ~height=282.->dp,
+            ~minHeight=282.->dp,
             (),
           ),
       })
@@ -176,6 +176,7 @@ let make =
       ~title=?,
       ~subtitle=?,
       ~source: PublicKeyHash.t,
+      ~ledgerState as (ledgerState, setLedgerState),
       ~children,
       ~sendOperation: TaquitoAPI.Signer.intent => Future.t(Result.t(_)),
       ~loading=false,
@@ -190,8 +191,6 @@ let make =
     PasswordFormView.usePasswordForm((~password) =>
       sendOperation(TaquitoAPI.Signer.Password(password))
     );
-
-  let (ledgerState, setLedgerState) = React.useState(() => None);
 
   let onSubmit = () =>
     if (isLedger) {

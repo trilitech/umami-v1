@@ -33,6 +33,7 @@ type confirm = {
 
 type closing =
   | Close(unit => unit)
+  | Deny(string)
   | Confirm(confirm);
 
 let confirm =
@@ -79,21 +80,29 @@ module CloseButton = {
     let (visibleModal, openAction, closeAction) =
       ModalAction.useModalActionState();
 
-    let confirm =
+    let (confirm, disabled, tooltip) =
       switch (closing) {
-      | Close(_) => React.null
-      | Confirm(confirm) =>
-        <ConfirmCloseModal confirm visible=visibleModal closeAction />
+      | Deny(msg) => (React.null, true, Some(("close_button", msg)))
+      | Close(_) => (React.null, false, None)
+      | Confirm(confirm) => (
+          <ConfirmCloseModal confirm visible=visibleModal closeAction />,
+          false,
+          None,
+        )
       };
 
     let onPress = _ => {
       switch (closing) {
+      | Deny(_) => ()
       | Close(f) => f()
       | Confirm(_) => openAction()
       };
     };
 
-    <> <ModalTemplate.HeaderButtons.Close onPress /> confirm </>;
+    <>
+      <ModalTemplate.HeaderButtons.Close ?tooltip disabled onPress />
+      confirm
+    </>;
   };
 };
 

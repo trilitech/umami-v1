@@ -503,10 +503,19 @@ let make = (~closeAction) => {
     List.length(batch) == 1 ? setModalStep(_ => SendStep) : ();
   };
 
+  let (ledger, _) as ledgerState = React.useState(() => None);
+
   let closing =
-    switch (form.formState, modalStep) {
-    | (Pristine, _) when batch == [] => ModalFormView.Close(closeAction)
-    | (_, SubmittedStep(_)) => ModalFormView.Close(closeAction)
+    switch (
+      form.formState,
+      modalStep,
+      ledger: option(SignOperationView.LedgerBlock.state),
+    ) {
+    | (_, PasswordStep(_, _), Some(WaitForConfirm)) =>
+      ModalFormView.Deny(I18n.tooltip#reject_on_ledger)
+
+    | (Pristine, _, _) when batch == [] => ModalFormView.Close(closeAction)
+    | (_, SubmittedStep(_), _) => ModalFormView.Close(closeAction)
     | _ =>
       ModalFormView.confirm(~actionText=I18n.btn#send_cancel, closeAction)
     };
@@ -580,6 +589,7 @@ let make = (~closeAction) => {
              <SignOperationView
                title=I18n.title#confirmation
                source={transfer.source}
+               ledgerState
                subtitle=(
                  I18n.expl#confirm_operation,
                  I18n.expl#hardware_wallet_confirm_operation,

@@ -28,9 +28,11 @@ open ReactNative;
 module HeaderButtons = {
   module Close = {
     [@react.component]
-    let make = (~onPress) => {
+    let make = (~disabled=?, ~tooltip=?, ~onPress) => {
       <IconButton
         icon=Icons.Close.build
+        ?disabled
+        ?tooltip
         onPress
         size=48.
         iconSizeRatio={3. /. 4.}

@@ -269,7 +269,14 @@ let make = (~closeAction, ~action) => {
     | Delete(_) => I18n.title#delegate_delete
     };
 
-  let closing = ModalFormView.Close(closeAction);
+  let (ledger, _) as ledgerState = React.useState(() => None);
+
+  let closing =
+    switch (modalStep, ledger: option(SignOperationView.LedgerBlock.state)) {
+    | (PasswordStep(_, _), Some(WaitForConfirm)) =>
+      ModalFormView.Deny(I18n.tooltip#reject_on_ledger)
+    | _ => ModalFormView.Close(closeAction)
+    };
 
   let back =
     switch (modalStep, action) {
@@ -320,6 +327,7 @@ let make = (~closeAction, ~action) => {
              <SignOperationView
                title
                source={delegation.source}
+               ledgerState
                subtitle=(
                  I18n.expl#confirm_operation,
                  I18n.expl#hardware_wallet_confirm_operation,
