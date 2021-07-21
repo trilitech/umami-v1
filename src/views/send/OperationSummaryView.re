@@ -28,7 +28,7 @@ open ReactNative;
 let styles =
   Style.(
     StyleSheet.create({
-      "operationSummary": style(~marginBottom=20.->dp, ()),
+      "operationSummary": style(~marginBottom=20.->dp, ~flexShrink=1., ()),
       "title": style(~marginBottom=4.->dp, ()),
       "subtitle": style(~marginBottom=4.->dp, ()),
       "label": style(~marginTop=20.->dp, ~marginBottom=4.->dp, ()),
