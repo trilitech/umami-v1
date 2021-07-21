@@ -145,43 +145,47 @@ let make = (~initNode=?, ~initMezos=?, ~action: action, ~closeAction) => {
       },
       ~onSubmit=
         ({state, raiseSubmitFailed}) => {
-          switch (action) {
-          | Create =>
+          let networkChanged = (network: Network.network) =>
+            network.explorer != state.values.mezos
+            || network.endpoint != state.values.node;
+
+          let log =
+            switch (action) {
+            | Create => I18n.t#custom_network_created
+            | Edit(_) => I18n.t#custom_network_updated
+            };
+
+          let checkConfig = () =>
             Network.checkConfiguration(state.values.mezos, state.values.node)
-            ->Future.mapOk(((_, chain)) =>
-                addCustomNetwork({
+            ->Future.mapOk(snd);
+
+          let chain =
+            switch (action) {
+            | Create => checkConfig()
+            | Edit(network) =>
+              networkChanged(network)
+                ? checkConfig() : network.chain->Ok->Future.value
+            };
+
+          chain
+          ->Future.mapOk(chain => {
+              let newNetwork =
+                Network.{
                   name: state.values.name,
                   chain,
                   explorer: state.values.mezos,
                   endpoint: state.values.node,
-                })
-              )
-            ->Future.tapError(err => err->rsf(raiseSubmitFailed))
-            ->Future.tapOk(_ => closeAction())
-            ->ApiRequest.logOk(addToast, Logs.Account, _ =>
-                I18n.t#custom_network_created
-              )
-            ->ignore
-          | Edit(network) =>
-            Network.checkConfiguration(state.values.mezos, state.values.node)
-            ->Future.mapOk(((_, chain)) =>
-                editCustomNetwork(
-                  network,
-                  {
-                    name: state.values.name,
-                    chain,
-                    explorer: state.values.mezos,
-                    endpoint: state.values.node,
-                  },
-                )
-              )
-            ->Future.tapError(err => err->rsf(raiseSubmitFailed))
-            ->Future.tapOk(_ => closeAction())
-            ->ApiRequest.logOk(addToast, Logs.Account, _ =>
-                I18n.t#custom_network_updated
-              )
-            ->ignore
-          };
+                };
+
+              switch (action) {
+              | Create => addCustomNetwork(newNetwork)
+              | Edit(network) => editCustomNetwork(network, newNetwork)
+              };
+            })
+          ->Future.tapError(err => err->rsf(raiseSubmitFailed))
+          ->Future.tapOk(_ => closeAction())
+          ->ApiRequest.logOk(addToast, Logs.Account, _ => log)
+          ->ignore;
 
           None;
         },
