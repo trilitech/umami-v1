@@ -5,6 +5,8 @@ let styles =
     StyleSheet.create({
       "container":
         style(
+          ~flexShrink=1.,
+          ~minHeight=95.->dp,
           ~paddingVertical=10.->dp,
           ~paddingHorizontal=16.->dp,
           ~borderRadius=4.,
@@ -16,7 +18,8 @@ let styles =
 [@react.component]
 let make = (~style as styleProp=?, ~parameters) => {
   let theme = ThemeContext.useTheme();
-  <View
+  <ScrollView
+    alwaysBounceVertical=false
     style=Style.(
       arrayOption([|
         Some(styles##container),
@@ -30,5 +33,5 @@ let make = (~style as styleProp=?, ~parameters) => {
        ->Option.getWithDefault("")
        ->React.string}
     </Typography.Address>
-  </View>;
+  </ScrollView>;
 };
