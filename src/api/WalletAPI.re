@@ -63,7 +63,7 @@ module Secret = {
       (json |> field("addresses", array(string)))
       ->Array.map(v => v->PublicKeyHash.build->Result.getExn);
 
-    let legacyAddressDecoder = json =>
+    let masterPublicKeyDecoder = json =>
       (json |> optional(field("legacyAddress", string)))
       ->Option.map(v => v->PublicKeyHash.build->Result.getExn);
   };
@@ -75,7 +75,7 @@ module Secret = {
       derivationPath: json |> pathDecoder,
       derivationScheme: json |> schemeDecoder,
       addresses: json |> addressesDecoder,
-      legacyAddress: json |> legacyAddressDecoder,
+      masterPublicKey: json |> masterPublicKeyDecoder,
     };
 
   let kindToString =
@@ -85,43 +85,27 @@ module Secret = {
 
   let encoder = secret =>
     Json.Encode.(
-      switch (secret.Repr.legacyAddress) {
-      | Some(legacyAddress) =>
-        object_([
-          ("name", string(secret.name)),
-          ("kind", string(secret.kind->kindToString)),
-          (
-            "derivationScheme",
-            string(secret.derivationPath->DerivationPath.Pattern.toString),
-          ),
-          (
-            "derivationCurve",
-            string(secret.derivationScheme->Wallet.Ledger.schemeToString),
-          ),
-          (
-            "addresses",
-            secret.addresses->Array.map(s => (s :> string))->stringArray,
-          ),
-          ("legacyAddress", (legacyAddress :> string)->string),
-        ])
-      | None =>
-        object_([
-          ("name", string(secret.name)),
-          ("kind", string(secret.kind->kindToString)),
-          (
-            "derivationScheme",
-            string(secret.derivationPath->DerivationPath.Pattern.toString),
-          ),
-          (
-            "derivationCurve",
-            string(secret.derivationScheme->Wallet.Ledger.schemeToString),
-          ),
-          (
-            "addresses",
-            secret.addresses->Array.map(s => (s :> string))->stringArray,
-          ),
-        ])
-      }
+      object_([
+        ("name", string(secret.Repr.name)),
+        ("kind", string(secret.kind->kindToString)),
+        (
+          "derivationScheme",
+          string(secret.derivationPath->DerivationPath.Pattern.toString),
+        ),
+        (
+          "derivationCurve",
+          string(secret.derivationScheme->Wallet.Ledger.schemeToString),
+        ),
+        (
+          "addresses",
+          secret.addresses->Array.map(s => (s :> string))->stringArray,
+        ),
+        (
+          "legacyAddress",
+          secret.masterPublicKey->Option.map(pkh => (pkh :> string))
+          |> nullable(string),
+        ),
+      ])
     );
 };
 
@@ -330,8 +314,8 @@ module Accounts = {
             secrets(~config)
             ->Result.map(secrets =>
                 secrets->Array.map(secret =>
-                  address == secret.legacyAddress
-                    ? {...secret, legacyAddress: None} : secret
+                  address == secret.masterPublicKey
+                    ? {...secret, masterPublicKey: None} : secret
                 )
               )
             ->Result.map(secrets =>
@@ -569,7 +553,7 @@ module Accounts = {
                   {
                     ...secret,
                     addresses: secret.addresses->Array.concat(addresses),
-                    legacyAddress,
+                    masterPublicKey: legacyAddress,
                   }
                 )
             )
@@ -623,7 +607,7 @@ module Accounts = {
         ~derivationPath,
         ~derivationScheme,
         ~addresses,
-        ~legacyAddress,
+        ~masterPublicKey,
       ) => {
     let secret = {
       Secret.Repr.name,
@@ -631,7 +615,7 @@ module Accounts = {
       derivationPath,
       derivationScheme,
       addresses,
-      legacyAddress,
+      masterPublicKey,
     };
     let secrets =
       secrets(~config)
@@ -725,7 +709,7 @@ module Accounts = {
           ~derivationPath,
           ~derivationScheme,
           ~addresses,
-          ~legacyAddress,
+          ~masterPublicKey=legacyAddress,
         )
       );
   };
@@ -790,7 +774,7 @@ module Accounts = {
           ~derivationPath,
           ~derivationScheme,
           ~addresses,
-          ~legacyAddress=None,
+          ~masterPublicKey=None,
         )
       );
   };

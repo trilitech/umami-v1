@@ -162,7 +162,7 @@ module AccountsTreeList = {
         ->Array.map(secret => {
             let hdAddresses =
               secret.secret.addresses->Array.map(k => (k :> string));
-            secret.secret.legacyAddress
+            secret.secret.masterPublicKey
             ->Option.mapWithDefault(hdAddresses, legacyAddress => {
                 hdAddresses->Array.concat([|(legacyAddress :> string)|])
               });
@@ -186,7 +186,7 @@ module AccountsTreeList = {
         <View>
           {secrets
            ->Array.keepMap(secret =>
-               secret.secret.legacyAddress
+               secret.secret.masterPublicKey
                ->Option.map(legacyAddress => (secret, legacyAddress))
              )
            ->Array.map(((secret, legacyAddress)) =>
