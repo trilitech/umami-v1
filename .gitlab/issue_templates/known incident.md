@@ -4,6 +4,10 @@
 <!-- Add reference to already validated related incident or Emergency change with /relate -->
 /relate nomadic-labs/umami-wallet/umami#xyz
 
+
+<!-- (optional) To bring the attention to this incident during next CAB meeting, uncomment next line to add CAB::to-review label -->
+<!-- /label ~Change ~"CAB::to-review" -->
+
 ### What is the nature of the INC?
 <!-- Which parts of the system where affected ? -->
 
@@ -25,12 +29,13 @@
 <!-- Labels and default review status for gitlab Change management process, comment if no change was performed-->
 /label ~Change ~"Change::Emergency"
 
-## Reviews (none required)
+## Reviews checklist (none required)
 <!-- No review required since this is a known incident with already validated change procedure -->
 
-<!-- If you want to bring the attention to this incident during next CAB meeting, uncomment the next line -->
+<!-- To bring the attention to this incident during next CAB meeting, add CAB::to-review label -->
 <!-- /label ~Change ~"CAB::to-review" -->
 
+<!-- Other useful shortcuts -->
 <!-- ( ping CAB members : @picdc @remyzorg @comeh @philippewang.info @SamREye ) -->
 <!-- /unlabel ~"CAB::to-review" -->
 

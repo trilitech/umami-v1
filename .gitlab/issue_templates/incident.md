@@ -23,23 +23,26 @@
 
 
 ### How the INC was discovered?
+<!-- Mention which alert was triggered where, but report wrong or missing alerts when it's the case -->
 
 
-### What is the potential impact of the INC?
+### What is the potential impact of the incident?
+<!-- What is the user impact of the incident-->
 
 
 ### What is the evidence (i.e. screenshots, logs, etc)?
+<!-- Surround logs exctacts with ``` multiline logs```-->
 
 
 <!-- METADATA for project management, please leave the following lines and edit as needed -->
 # Metadata
-<!-- Severity : pick one the gitlab panel, right side of the window when viewing the incident after creation -->
+<!-- Severity : pick one the gitlab panel, right side of the window when viewing the incident (after creation) -->
 
 /label ~INC ~incident  
 <!-- Labels and default review status for gitlab Change management process, comment if no change was performed-->
 /label ~Change ~"CAB::to-review" ~"Change::Emergency" 
 
-## Reviews (all required)
+## Reviews checklist (all required)
 ( ping CAB members : @picdc @remyzorg @comeh @philippewang.info @SamREye )
 - [ ] Incident Review from Development 
 - [ ] Incident Review from Operations 

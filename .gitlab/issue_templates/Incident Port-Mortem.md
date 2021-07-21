@@ -2,13 +2,13 @@
 
 ### Checklist
 
- - [ ] Could the INC have been handled better?
+ - [ ] Could the ~incident have been handled better?
  - [ ] Are the alerts defined appropriately?
  - [ ] Is there an infrastructure change or a code change that would prevent the INC reoccurence?
  - [ ] Is there an infrastructure change or a code change that would enhance the ability to handle a similar INC?
 
-### What is the INC that was handled?
-
+### What is the ~INC that was handled?
+<!-- use /relate #xyz for explicit links with incident reference-->
 
 
 ### What is the timeline of the INC and its handling?
@@ -24,4 +24,5 @@
 
 
 ### Are there follow up recommendations?
+
 

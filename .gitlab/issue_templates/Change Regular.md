@@ -39,7 +39,7 @@
 <!--Low : (anything else e.g., trivial, minor improvements) -->
 <!--  /label ~"Priority::3-Low" -->
 
-# Approvals (all required) 
+## Approvals checklist (all required) 
 ( ping CAB members : @picdc @remyzorg @comeh @philippewang.info @SamREye )
 - [ ] Approval from Development
 - [ ] Approval from Operations
