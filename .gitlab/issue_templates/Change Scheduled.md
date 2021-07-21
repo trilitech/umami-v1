@@ -43,7 +43,7 @@
 <!--  /label ~"Priority::3-Low" -->
 
 <!-- Reviewers : check the box [x], you may also add you @user handle  -->
-# Approvals (all required) 
+## Approvals checklist(all required) 
 ( ping CAB members : @picdc @remyzorg @comeh @philippewang.info @SamREye )
 - [ ] Approval from Development
 - [ ] Approval from Operations

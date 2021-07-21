@@ -39,7 +39,7 @@
 <!--Low : (anything else e.g., trivial, minor improvements) -->
 <!--  /label ~"Priority::3-Low" -->
 
-# Reviews (all required)
+## Reviews checklist (all required)
 ( ping CAB members : @picdc @remyzorg @comeh @philippewang.info @SamREye )
 - [ ] Review from Development
 - [ ] Review from Operations
