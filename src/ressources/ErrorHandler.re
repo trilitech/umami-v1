@@ -63,6 +63,7 @@ let fromTaquitoToString = e =>
        | InvalidContract => I18n.form_input_error#invalid_contract
        | EmptyTransaction => I18n.form_input_error#empty_transaction
        | LedgerInit(_) => I18n.form_input_error#hardware_wallet_plug
+       | LedgerNotReady => I18n.form_input_error#hardware_wallet_not_ready
        | LedgerMasterKeyRetrieval(_) =>
          I18n.form_input_error#hardware_wallet_check_app
      );

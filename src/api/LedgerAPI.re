@@ -24,7 +24,6 @@
 /*****************************************************************************/
 
 open ReTaquitoSigner;
-open ReTaquito;
 
 let convertLedgerError = res =>
   res->ResultEx.mapError(e => e->Wallet.convertLedgerError);
@@ -45,7 +44,8 @@ let mapError = (ft, constr) =>
 let init = () => {
   ReLedger.Transport.create()
   ->ReTaquitoError.fromPromiseParsed
-  ->mapError(s => s->ReTaquitoError.LedgerInit);
+  ->mapError(s => s->ReTaquitoError.LedgerInit)
+  ->Future.map(convertTaquitoError);
 };
 
 /* This current function is a hack until there is a proper way to know if a
@@ -62,26 +62,38 @@ let isReady = tr => {
   ->ReTaquitoSigner.publicKey
   ->Future.map(
       fun
-      | Error(_) => false
+      | Error(_) => Error(ReTaquitoError.LedgerNotReady->ErrorHandler.Taquito)
       | Ok(pk) =>
         // a valid pk is at 54 characters long, and 55 for tz3
-        pk->Js.String.startsWith("edpk") && pk->Js.String.length >= 54,
+        pk->Js.String2.startsWith("edpk") && pk->Js.String.length >= 54
+          ? Ok() : Error(ReTaquitoError.LedgerNotReady->ErrorHandler.Taquito),
     );
 };
 
-let getKey = (~prompt=true, tr, url, path, schema) => {
-  let toolkit = ReTaquito.Toolkit.create(url);
-  let signer = LedgerSigner.create(tr, path, schema, ~prompt);
-  let provider = Toolkit.{signer: signer};
-  toolkit->Toolkit.setProvider(provider);
-  signer->ReTaquitoSigner.publicKeyHash->Future.map(convertTaquitoError);
+module Signer = {
+  type t = ReTaquitoSigner.t;
+
+  let create = (tr, path, scheme, ~prompt) =>
+    tr
+    ->isReady
+    ->Future.mapOk(() => tr->LedgerSigner.create(path, scheme, ~prompt));
+
+  let publicKeyHash = signer =>
+    signer->ReTaquitoSigner.publicKeyHash->Future.map(convertTaquitoError);
+
+  let publicKey = signer =>
+    signer->ReTaquitoSigner.publicKey->Future.map(convertTaquitoError);
 };
 
-let getMasterKey = (~prompt=?, tr, url) =>
+let getKey = (~prompt, tr, path, schema) => {
+  let signer = Signer.create(tr, path, schema, ~prompt);
+  signer->Future.flatMapOk(Signer.publicKeyHash);
+};
+
+let getMasterKey = (~prompt, tr) =>
   getKey(
-    ~prompt?,
+    ~prompt,
     tr,
-    url,
     Wallet.Ledger.masterKeyPath,
     Wallet.Ledger.masterKeyScheme,
   );
@@ -91,16 +103,13 @@ let getMasterKey = (~prompt=?, tr, url) =>
 let addOrReplaceAlias =
     (~ledgerTransport, ~dirpath, ~alias, ~path, ~scheme, ~ledgerBasePkh) => {
   let values = {
-    let signer =
-      LedgerSigner.create(ledgerTransport, path, ~prompt=false, scheme);
+    let signer = Signer.create(ledgerTransport, path, ~prompt=false, scheme);
     /* Ensures the three are available */
     signer
-    ->ReTaquitoSigner.publicKeyHash
-    ->Future.map(convertTaquitoError)
+    ->Future.flatMapOk(Signer.publicKeyHash)
     ->Future.flatMapOk(pkh => {
         signer
-        ->ReTaquitoSigner.publicKey
-        ->Future.map(res => res->ResultEx.mapError(ErrorHandler.taquito))
+        ->Future.flatMapOk(Signer.publicKey)
         ->Future.flatMapOk(pk => {
             let sk =
               path

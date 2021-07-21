@@ -176,6 +176,7 @@ let form_input_error = {
   pub dp_missing_wildcard = "Missing '?' or 0";
   pub dp_not_tezos = "Not a BIP44 Tezos Path";
   pub hardware_wallet_plug = "Ledger connection failed. Please make sure the ledger is properly plugged in and unlocked";
+  pub hardware_wallet_not_ready = "Connection to Tezos ledger application failed. Please make sure the Tezos app is opened and the ledger unlocked.";
   pub hardware_wallet_check_app = "Public key export failed. Please open the Tezos Wallet app and retry";
   pub empty_transaction = "Transaction is empty.";
   pub branch_refused_error = "Please retry. An error came up while communicating with the node";

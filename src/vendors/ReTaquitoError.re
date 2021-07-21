@@ -44,6 +44,7 @@ type t =
   | InvalidContract
   | BranchRefused
   | LedgerInit(string)
+  | LedgerNotReady
   | LedgerMasterKeyRetrieval(string)
   | BadPkh;
 

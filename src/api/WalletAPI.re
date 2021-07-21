@@ -431,14 +431,12 @@ module Accounts = {
     };
 
     let runStream =
-        (settings, onFoundKey, path: DerivationPath.Pattern.t, schema) => {
+        (config, onFoundKey, path: DerivationPath.Pattern.t, schema) => {
       let rec loop = n => {
-        let endpoint = settings->ConfigUtils.endpoint;
         let path = path->DerivationPath.Pattern.implement(n);
         LedgerAPI.init()
-        ->Future.mapError(e => e->ErrorHandler.taquito)
         ->Future.flatMapOk(tr =>
-            LedgerAPI.getKey(~prompt=false, tr, endpoint, path, schema)
+            LedgerAPI.getKey(~prompt=false, tr, path, schema)
           )
         ->Future.flatMapOk(address => {
             let found = () => {
@@ -447,7 +445,7 @@ module Accounts = {
               loop(n + 1);
             };
 
-            used(settings, address)
+            used(config, address)
             ->Future.flatMapOk(
                 fun
                 | true => found()
@@ -783,13 +781,12 @@ module Accounts = {
         : List.reverse(keys)->List.toArray->Ok->Future.value;
     };
     LedgerAPI.init()
-    ->Future.mapError(ErrorHandler.taquito)
     ->Future.flatMapOk(tr => tr->importKeys([], 0))
     ->Future.tapOk(addresses =>
         registerSecret(
           ~config,
           ~name,
-          ~kind=Secret.Repr.Mnemonics,
+          ~kind=Secret.Repr.Ledger,
           ~derivationPath,
           ~derivationScheme,
           ~addresses,

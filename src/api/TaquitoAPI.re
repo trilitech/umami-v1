@@ -169,31 +169,19 @@ module Signer = {
       ->convertLedgerError
       ->convertWalletError;
 
-    ReLedger.Transport.create()
-    ->convertToErrorHandler
+    LedgerAPI.init()
     ->Future.flatMapOk(tr =>
-        LedgerSigner.create(
-          tr,
-          DerivationPath.build([|44, 1729|]),
-          Wallet.Ledger.ED25519,
-          ~prompt=true,
-        )
-        ->ReTaquitoSigner.publicKeyHash
-        ->Future.mapOk(pkh => (tr, pkh))
-        ->Future.mapError(e => e->ErrorHandler.Taquito)
+        LedgerAPI.getMasterKey(~prompt=false, tr)
+        ->Future.map(pkh => pkh->Result.flatMap(keyData))
+        ->Future.mapOk(data => (tr, data))
       )
-    ->Future.flatMapOk(((tr, ledgerBasePkh)) =>
-        ledgerBasePkh
-        ->keyData
-        ->Result.map((Wallet.Ledger.{path, scheme}) =>
-            LedgerSigner.create(
-              tr,
-              path->DerivationPath.fromTezosBip44,
-              scheme,
-              ~prompt=true,
-            )
-          )
-        ->Future.value
+    ->Future.flatMapOk(((tr, data)) =>
+        LedgerAPI.Signer.create(
+          tr,
+          data.path->DerivationPath.fromTezosBip44,
+          data.scheme,
+          ~prompt=false,
+        )
       );
   };
 
