@@ -1,10 +1,11 @@
+[[_TOC_]]
 # Architecture & Tech Stack
 
 This is high-level only, serves for purposes of planning the tech-stack.
 
 For specifications, refer to [specs](/docs/specs/)
 
-## Front-End
+## Wallet  Front-End
 
 ```mermaid
 graph TD
@@ -24,7 +25,7 @@ graph TD
 | Future Proofing portability | |
 | Concept proven with Demo (see v0.1.0) | |
 
-## Back-End
+## Wallet tezos-client Back-end
 
 ### Current
 
@@ -41,3 +42,23 @@ graph TD
   W[Wallet] --> SDK[Tezos SDK];
   W --> Ix[Tezos Indexer];
 ```
+
+
+## Wallet indexer Back-end
+
+```mermaid
+graph TD
+u[umami-client]  
+t[tezos-node]
+i[tezos-indexer]  
+m[mezos]
+pg[PostgreSQL DB]
+
+  u --> m
+  m --> pg
+  m --> t
+  i --> t
+  i --> pg
+```
+
+
