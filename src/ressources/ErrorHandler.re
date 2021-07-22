@@ -107,3 +107,10 @@ let toString =
   | Wallet(e) => fromWalletToString(e)
   | WalletAPI(e) => fromWalletAPIToString(e)
   | TezosSDK(e) => fromSdkToString(e);
+
+type promiseError = {
+  message: string,
+  name: string,
+};
+
+external extractPromiseError: Js.Promise.error => promiseError = "%identity";

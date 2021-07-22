@@ -47,16 +47,20 @@ type monitorResult = {
   indexerLastBlockTimestamp: string,
 };
 
+type httpError = [ | `HttpError(string) | `AbortError];
+
+type jsonError = [ | `JsonError(string)];
+
 type apiError = [
   | `APIVersionFormat(string)
-  | `APINotAvailable(string)
+  | `APINotAvailable([ httpError | jsonError])
   | `APIVersionRPCError(string)
   | `APIMonitorRPCError(string)
   | `APINotSupported(Version.t)
 ];
 
 type nodeError = [
-  | `NodeNotAvailable(string)
+  | `NodeNotAvailable([ httpError | jsonError])
   | `NodeChainRPCError(string)
   | `NodeVersionRPCError(string)
 ];
@@ -133,14 +137,36 @@ let getName = network =>
   | _ => ""
   };
 
-let fetchJson = (url, mkError) =>
+type requestInit = {signal: Fetch.signal};
+
+[@bs.val]
+external fetch: (string, requestInit) => Js.Promise.t(Fetch.response) =
+  "fetch";
+let fetch = (url, ~timeout=?, ()) => {
+  open UmamiCommon;
+  let ctrl = Fetch.AbortController.make();
+  let signal = Fetch.AbortController.signal(ctrl);
+  let res = fetch(url, {signal: signal});
+  timeout->Lib.Option.iter(ms =>
+    Js.Global.setTimeout(() => Fetch.AbortController.abort(ctrl), ms)->ignore
+  );
+  res->FutureJs.fromPromise(err => {
+    let {name} = err->ErrorHandler.extractPromiseError;
+    switch (name) {
+    | "AbortError" => `AbortError
+    | e => `HttpError(e)
+    };
+  });
+};
+
+let fetchJson = (url, ~timeout=?, mkError) =>
   url
-  ->Fetch.fetch
-  ->FutureJs.fromPromise(err => mkError(Js.String.make(err)))
+  ->fetch(~timeout?, ())
+  ->Future.mapError(e => mkError(e))
   ->Future.flatMapOk(response =>
       response
       ->Fetch.Response.json
-      ->FutureJs.fromPromise(err => mkError(Js.String.make(err)))
+      ->FutureJs.fromPromise(err => mkError(Js.String.make(err)->`JsonError))
     );
 
 let monitor = url => {
@@ -169,9 +195,9 @@ let monitor = url => {
     });
 };
 
-let getAPIVersion = url =>
+let getAPIVersion = (~timeout=?, url) =>
   (url ++ "/version")
-  ->fetchJson(e => `APINotAvailable(e))
+  ->fetchJson(~timeout?, e => `APINotAvailable(e))
   ->Future.flatMapOk(json =>
       (
         try(
@@ -209,9 +235,9 @@ let getChainName = chain => {
   };
 };
 
-let getNodeChain = url => {
+let getNodeChain = (~timeout=?, url) => {
   (url ++ "/chains/main/chain_id")
-  ->fetchJson(e => `NodeNotAvailable(e))
+  ->fetchJson(~timeout?, e => `NodeNotAvailable(e))
   ->Future.flatMapOk(json => {
       switch (Js.Json.decodeString(json)) {
       | Some(v) => Future.value(Ok(v))
@@ -232,14 +258,14 @@ let networkOfChain = c =>
 let checkConfiguration =
     (api_url, node_url): Future.t(Result.t((apiVersion, string), error)) =>
   Future.map2(
-    getAPIVersion(api_url), getNodeChain(node_url), (api_res, node_res) =>
+    getAPIVersion(~timeout=5000, api_url),
+    getNodeChain(~timeout=5000, node_url),
+    (api_res, node_res) =>
     switch (api_res, node_res) {
     | (Error(api_err), Error(node_err)) =>
-      Error(
-        (
-          `APIAndNodeError(((api_err :> apiError), (node_err :> nodeError))) :> error
-        ),
-      )
+      let api_err = (api_err :> apiError);
+      let node_err = (node_err :> nodeError);
+      Error(`APIAndNodeError((api_err, node_err)));
     | (Error(err), _) => Error((err :> error))
     | (_, Error(err)) => Error((err :> error))
     | (Ok(apiVersion), Ok(nodeChain)) =>
