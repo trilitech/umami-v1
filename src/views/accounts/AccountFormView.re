@@ -23,6 +23,8 @@
 /*                                                                           */
 /*****************************************************************************/
 
+open ReactNative;
+
 module Generic = {
   module StateLenses = [%lenses
     type state = {
@@ -161,12 +163,16 @@ module Update = {
 module Create = {
   [@react.component]
   let make = (~closeAction, ~secret: Secret.derived) => {
+    let theme = ThemeContext.useTheme();
+
     let (createDeriveRequest, deriveAccount) =
       StoreContext.Secrets.useDerive();
 
+    let (status, setStatus) = React.useState(() => `Loading);
+
     let addLog = LogsContext.useAdd();
 
-    let _isLedger = secret.Secret.secret.kind == Ledger;
+    let isLedger = secret.Secret.secret.kind == Ledger;
 
     let (formValues, setFormValues) = React.useState(_ => None);
 
@@ -184,7 +190,7 @@ module Create = {
       ->Future.tapOk(() => closeAction());
     };
 
-    let _actionLedger = (~name, secretIndex, ~ledgerMasterKey) => {
+    let actionLedger = (~name, secretIndex, ~ledgerMasterKey) => {
       deriveAccount({
         name,
         index: secretIndex,
@@ -197,6 +203,48 @@ module Create = {
         )
       ->Future.tapOk(() => closeAction());
     };
+
+    let ledgerInteract = (~name, ~secretIndex, secret, ()) => {
+      setStatus(_ => `Loading);
+      LedgerAPI.init(~timeout=5000, ())
+      ->Future.flatMapOk(tr => {
+          setStatus(_ => `Found);
+          LedgerAPI.getKey(
+            ~prompt=true,
+            tr,
+            DerivationPath.Pattern.implement(
+              secret.Secret.derivationPath,
+              secret.addresses->Array.length,
+            ),
+            secret.Secret.derivationScheme,
+          )
+          ->Future.flatMapOk(_ => {
+              setStatus(_ => `Found);
+              LedgerAPI.getMasterKey(~prompt=false, tr);
+            });
+        })
+      ->Future.flatMapOk(ledgerMasterKey => {
+          setStatus(_ => `Confirmed);
+          FutureEx.timeout(1500)
+          ->Future.flatMapOk(() =>
+              actionLedger(~name, secretIndex, ~ledgerMasterKey)
+            );
+        })
+      ->FutureEx.getError(e => setStatus(_ => `Denied(e)));
+    };
+
+    let ledgerStyle =
+      Style.(
+        style(
+          ~backgroundColor=theme.colors.stateDisabled,
+          ~marginTop=20.->dp,
+          ~borderRadius=4.,
+          ~padding=32.->dp,
+          ~minHeight=282.->dp,
+          (),
+        )
+      );
+
     <ModalFormView closing={ModalFormView.Close(closeAction)}>
       <Typography.Headline style=FormStyles.header>
         I18n.title#derive_account->React.string
@@ -207,16 +255,31 @@ module Create = {
            init=""
            buttonText=I18n.btn#add
            request=createDeriveRequest
-           action={(~name, ~secretIndex) =>
-             setFormValues(_ => Some((name, secretIndex)))
-           }
+           action={(~name, ~secretIndex) => {
+             if (isLedger) {
+               ledgerInteract(~name, ~secretIndex, secret.Secret.secret, ());
+             };
+             setFormValues(_ => Some((name, secretIndex)));
+           }}
            secret
          />
-       | Some((name, secretIndex)) =>
+       | Some((name, secretIndex)) when !isLedger =>
          <PasswordFormView
            loading={createDeriveRequest->ApiRequest.isLoading}
            submitPassword={actionMnemonics(~name, ~secretIndex)}
          />
+       | Some((name, secretIndex)) =>
+         <>
+           <Typography.Overline1
+             fontSize=19. style=FormStyles.headerWithoutMarginBottom>
+             I18n.title#hardware_confirm_pkh->React.string
+           </Typography.Overline1>
+           <InitLedgerView
+             style=ledgerStyle
+             status
+             retry={ledgerInteract(~name, ~secretIndex, secret.Secret.secret)}
+           />
+         </>
        }}
     </ModalFormView>;
   };
