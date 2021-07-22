@@ -211,134 +211,6 @@ module AdvancedOptionsView = {
   };
 };
 
-module AccountsView = {
-  let styles =
-    Style.(
-      StyleSheet.create({
-        "content": style(~display=`flex, ()),
-        "labelContainer":
-          style(
-            ~flexDirection=`row,
-            ~justifyContent=`spaceBetween,
-            ~marginBottom=4.->dp,
-            (),
-          ),
-        "loading": style(~alignItems=`flexEnd, ()),
-        "itemContent":
-          style(
-            ~padding=16.->dp,
-            ~justifyContent=`spaceBetween,
-            ~display=`flex,
-            ~flexDirection=`row,
-            (),
-          ),
-        "itemBorder": style(~borderTopWidth=1., ()),
-        "itemsContent":
-          style(~height=250.->pt, ~borderWidth=1., ~borderRadius=4., ()),
-      })
-    );
-
-  module Item = {
-    [@react.component]
-    let make = (~id, ~address) => {
-      let theme = ThemeContext.useTheme();
-
-      <AccountElements.Slim
-        id
-        address
-        showAmount=AccountElements.Balance
-        style=Style.(
-          arrayOption([|
-            Style.(style(~borderColor=theme.colors.borderDisabled, ()))->Some,
-            Some(styles##itemContent),
-            id == 0 ? None : Some(styles##itemBorder),
-          |])
-        )
-      />;
-    };
-  };
-
-  [@react.component]
-  let make =
-      (
-        ~derivationChangedState as (derivationChanged, setDerivationChanged),
-        ~scan,
-        ~accounts,
-        ~nextAdvancedOptions,
-        ~next,
-        ~path,
-        ~scheme,
-      ) => {
-    let theme = ThemeContext.useTheme();
-
-    let (scanState, setScanState) = React.useState(() => `Done);
-
-    let (loading, setLoading) = React.useState(() => false);
-
-    React.useEffect3(
-      () => {
-        if (derivationChanged) {
-          setScanState(_ => `Loading);
-          scan(path, scheme)->FutureEx.getOk(_ => setScanState(_ => `Done));
-          setDerivationChanged(_ => false);
-        };
-
-        None;
-      },
-      (path, scheme, derivationChanged),
-    );
-
-    <>
-      <Typography.Headline style=onbStyles##title>
-        I18n.title#hardware_wallet_connect->React.string
-      </Typography.Headline>
-      <View style=FormStyles.section##spacing>
-        <View style=styles##labelContainer>
-          <Typography.Overline2>
-            I18n.label#accounts->React.string
-          </Typography.Overline2>
-          {<LoadingView style=styles##loading />
-           ->ReactUtils.onlyWhen(scanState == `Loading)}
-        </View>
-        <View
-          style=Style.(
-            array([|
-              style(~borderColor=theme.colors.borderMediumEmphasis, ()),
-              styles##itemsContent,
-            |])
-          )>
-          {let accounts = accounts->List.reverse->List.toArray;
-           accounts
-           ->Array.mapWithIndex((id, address) =>
-               <Item key={id->Int.toString} address id />
-             )
-           ->React.array}
-        </View>
-      </View>
-      <View
-        style={Style.array([|
-          FormStyles.verticalFormAction,
-          FormStyles.section##submitSpacing,
-        |])}>
-        <Buttons.SubmitPrimary
-          disabled={scanState == `Loading}
-          text=I18n.btn#import
-          loading
-          onPress={_ => {
-            setLoading(_ => true);
-            next();
-          }}
-        />
-        <Buttons.FormSecondary
-          style=FormStyles.formSecondary
-          text=I18n.btn#advanced_options
-          onPress={_ => nextAdvancedOptions()}
-        />
-      </View>
-    </>;
-  };
-};
-
 [@react.component]
 let make = (~closeAction) => {
   let config = ConfigContext.useContent();
@@ -452,7 +324,7 @@ let make = (~closeAction) => {
 
      | StepChecklist => <ChecklistView next=onEndChecklist />
      | StepAccounts(mk) =>
-       <AccountsView
+       <ScannedAccountsView
          scan={WalletAPI.Accounts.Scan.runStream(
            ~config,
            ~onFoundKey,
@@ -463,7 +335,9 @@ let make = (~closeAction) => {
          scheme
          accounts
          next={submitAccounts(mk)}
-         nextAdvancedOptions={() => setStep(_ => StepAdvancedOptions(mk))}
+         nextAdvancedOptions={
+           Some(() => setStep(_ => StepAdvancedOptions(mk)))
+         }
        />
      | StepAdvancedOptions(mk) =>
        <AdvancedOptionsView
