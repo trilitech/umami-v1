@@ -25,72 +25,79 @@
 
 open ReactNative;
 
+module StateLenses = [%lenses
+  type state = {
+    node: string,
+    mezos: string,
+  }
+];
+module NetworkInfoCreateForm = ReForm.Make(StateLenses);
+
 let styles =
   Style.(
     StyleSheet.create({
-      "formGroup": style(~marginBottom=0.->dp, ()),
-      "label": style(~marginVertical=4.->dp, ()),
-      "decoration":
+      "buttonsRow":
         style(
-          ~display=`flex,
+          ~flexDirection=`row,
           ~alignItems=`center,
-          ~position=`absolute,
-          ~marginTop=auto,
-          ~marginBottom=auto,
-          ~top=0.->dp,
-          ~bottom=0.->dp,
-          ~right=10.->dp,
+          ~justifyContent=`spaceBetween,
           (),
         ),
+      "container": style(~flexDirection=`column, ()),
+      "notFirstItem": style(~marginTop=24.->dp, ()),
+      "content":
+        style(
+          ~borderRadius=4.,
+          ~justifyContent=`spaceBetween,
+          ~flexDirection=`row,
+          ~alignItems=`center,
+          ~paddingVertical=2.->dp,
+          ~paddingLeft=16.->dp,
+          ~paddingRight=2.->dp,
+          (),
+        ),
+      "title": style(~marginBottom=6.->dp, ~textAlign=`center, ()),
+      "overline": style(~marginBottom=24.->dp, ~textAlign=`center, ()),
     })
   );
 
+module Item = {
+  [@react.component]
+  let make = (~style as styleArg=?, ~value, ~label) => {
+    let theme = ThemeContext.useTheme();
+    let addToast = LogsContext.useToast();
+
+    let backStyle =
+      Style.(
+        style(
+          ~color=theme.colors.textMediumEmphasis,
+          ~backgroundColor=theme.colors.stateDisabled,
+          ~borderWidth=0.,
+          (),
+        )
+      );
+
+    <View style={Style.arrayOption([|styleArg, styles##container->Some|])}>
+      <FormLabel label style=FormGroupTextInput.styles##label />
+      <View style={Style.array([|styles##content, backStyle|])}>
+        <Typography.Body1> value->React.string </Typography.Body1>
+        <ClipboardButton size=40. copied=label addToast data=value />
+      </View>
+    </View>;
+  };
+};
+
 [@react.component]
-let make =
-    (
-      ~label,
-      ~value,
-      ~handleChange,
-      ~error,
-      ~keyboardType=?,
-      ~onBlur=?,
-      ~onFocus=?,
-      ~textContentType=?,
-      ~secureTextEntry=?,
-      ~placeholder=?,
-      ~disabled=?,
-      ~multiline=?,
-      ~numberOfLines=?,
-      ~clearButton=false,
-      ~onSubmitEditing=?,
-      ~decoration: option((~style: Style.t) => React.element)=?,
-      ~style as styleFromProp: option(ReactNative.Style.t)=?,
-      ~fieldStyle=?,
-    ) => {
-  let hasError = error->Option.isSome;
-  <FormGroup
-    style=Style.(arrayOption([|Some(styles##formGroup), styleFromProp|]))>
-    <FormLabel label hasError style=styles##label />
-    <View>
-      <ThemedTextInput
-        value
-        onValueChange=handleChange
-        hasError
-        ?onBlur
-        ?onFocus
-        ?textContentType
-        ?secureTextEntry
-        ?keyboardType
-        ?placeholder
-        ?disabled
-        ?multiline
-        ?numberOfLines
-        ?onSubmitEditing
-        style=?fieldStyle
-        onClear=?{clearButton ? Some(() => handleChange("")) : None}
-      />
-      {decoration->ReactUtils.mapOpt(deco => deco(~style=styles##decoration))}
-    </View>
-    <FormError ?error />
-  </FormGroup>;
+let make = (~network: Network.network, ~closeAction) => {
+  <ModalFormView closing={ModalFormView.Close(closeAction)}>
+    <Typography.Headline style=FormStyles.headerWithoutMarginBottom>
+      {network.name}->React.string
+    </Typography.Headline>
+    <Item label=I18n.label#custom_network_node_url value={network.endpoint} />
+    <Item
+      style=styles##notFirstItem
+      label=I18n.label#custom_network_mezos_url
+      value={network.explorer}
+    />
+  </ModalFormView>;
 };
