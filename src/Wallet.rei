@@ -53,6 +53,7 @@ module type AliasesMakerType = {
   let filter: (t, alias => bool) => t;
   let remove: (t, key) => t;
   let addOrReplace: (t, key, value) => t;
+  let rename: (t, ~oldName: key, ~newName: key) => t;
 };
 
 /** Secret key representation */
@@ -73,6 +74,21 @@ module PkhAlias: {type t = PublicKeyHash.t;};
 module PkhAliases:
   AliasesMakerType with type key := string and type value := PkhAlias.t;
 
+/** Add or replace a public key hash alias. */
+let addOrReplacePkhAlias:
+  (~dirpath: System.Path.t, ~alias: string, ~pkh: PkhAlias.t, unit) =>
+  Future.t(Result.t(unit, error));
+
+/** Remove an alias with its associated pkh. */
+let removePkhAlias:
+  (~dirpath: System.Path.t, ~alias: string, unit) =>
+  Future.t(Result.t(unit, error));
+
+/** Rename an alias with its associated public, private and pkh. */
+let renamePkhAlias:
+  (~dirpath: System.Path.t, ~oldName: string, ~newName: string, unit) =>
+  Future.t(Result.t(unit, error));
+
 /** Add or replace an alias with its associated public, private and pkh. */
 let addOrReplaceAlias:
   (
@@ -88,6 +104,11 @@ let addOrReplaceAlias:
 /** Remove an alias from the filesystem. */
 let removeAlias:
   (~dirpath: System.Path.t, ~alias: string, unit) =>
+  Future.t(Result.t(unit, error));
+
+/** Rename an alias with its associated public, private and pkh. */
+let renameAlias:
+  (~dirpath: System.Path.t, ~oldName: string, ~newName: string, unit) =>
   Future.t(Result.t(unit, error));
 
 type kind =

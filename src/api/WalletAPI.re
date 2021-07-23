@@ -88,12 +88,22 @@ module Secret = {
 module Aliases = {
   type t = array((string, PublicKeyHash.t));
 
-  let get = (~settings) =>
+  let _getSDK = (~settings) =>
     settings
     ->AppSettings.sdk
     ->TezosSDK.listKnownAddresses
+    ->Future.tapError(e => e->Js.log)
     ->Future.mapError(e => e->ErrorHandler.TezosSDK)
     ->Future.mapOk(l => l->Array.map(({alias, pkh}) => (alias, pkh)));
+
+  let getNative = (~settings) =>
+    settings
+    ->AppSettings.baseDir
+    ->Wallet.PkhAliases.read
+    ->Future.mapError(e => e->ErrorHandler.Wallet)
+    ->Future.mapOk(l => l->Array.map(({name, value}) => (name, value)));
+
+  let get = getNative;
 
   let getAliasMap = (~settings) =>
     get(~settings)
@@ -111,23 +121,54 @@ module Aliases = {
     ->Future.mapOk(Map.String.fromArray)
     ->Future.mapOk(addresses => addresses->Map.String.get(alias));
 
-  let add = (~settings, ~alias, ~address) =>
+  let _addSDK = (~settings, ~alias, ~address) =>
     settings
     ->AppSettings.sdk
     ->TezosSDK.addAddress(alias, address)
+    ->Future.tapError(e => e->Js.log)
     ->Future.mapError(e => e->ErrorHandler.TezosSDK);
 
-  let delete = (~settings, ~alias) =>
+  let addNative = (~settings, ~alias, ~address) =>
+    Wallet.addOrReplacePkhAlias(
+      ~dirpath=settings->AppSettings.baseDir,
+      ~alias,
+      ~pkh=address,
+      (),
+    )
+    ->Future.mapError(e => e->ErrorHandler.Wallet);
+
+  let add = addNative;
+
+  let _deleteSDK = (~settings, ~alias) =>
     settings
     ->AppSettings.sdk
     ->TezosSDK.forgetAddress(alias)
+    ->Future.tapError(e => e->Js.log)
     ->Future.mapError(e => e->ErrorHandler.TezosSDK);
 
-  let rename = (~settings, renaming) =>
+  let deleteNative = (~settings, ~alias) =>
+    Wallet.removePkhAlias(~dirpath=settings->AppSettings.baseDir, ~alias, ())
+    ->Future.mapError(e => e->ErrorHandler.Wallet);
+
+  let delete = deleteNative;
+
+  let _renameSDK = (~settings, renaming) =>
     settings
     ->AppSettings.sdk
     ->TezosSDK.renameAliases(renaming)
+    ->Future.tapError(e => e->Js.log)
     ->Future.mapError(e => e->ErrorHandler.TezosSDK);
+
+  let renameNative = (~settings, renaming) =>
+    Wallet.renameAlias(
+      ~dirpath=settings->AppSettings.baseDir,
+      ~oldName=renaming.TezosSDK.old_name,
+      ~newName=renaming.new_name,
+      (),
+    )
+    ->Future.mapError(e => e->ErrorHandler.Wallet);
+
+  let rename = renameNative;
 };
 
 module Accounts = {
@@ -151,16 +192,40 @@ module Accounts = {
     ->Option.map(Json.Decode.(array(SecureStorage.Cipher.decoder)));
   };
 
-  let get = (~settings: AppSettings.t) =>
+  let _getSDK = (~settings: AppSettings.t) =>
     settings
     ->AppSettings.sdk
     ->TezosSDK.listKnownAddresses
+    ->Future.tapError(e => e->Js.log)
     ->Future.mapError(e => e->ErrorHandler.TezosSDK)
     ->Future.mapOk(r =>
         r->Array.keepMap((TezosSDK.OutputAddress.{alias, pkh, sk_known}) =>
           sk_known ? Some((alias, pkh)) : None
         )
       );
+
+  let getNative = (~settings) =>
+    settings
+    ->AppSettings.baseDir
+    ->Wallet.PkhAliases.read
+    ->Future.flatMapOk(pkhs => {
+        settings
+        ->AppSettings.baseDir
+        ->Wallet.SecretAliases.read
+        ->Future.mapOk(sks =>
+            pkhs->Array.keepMap(({name, value}) =>
+              switch (
+                sks->Wallet.SecretAliases.find(skAlias => name == skAlias.name)
+              ) {
+              | Ok(_) => Some((name, value))
+              | Error(_) => None
+              }
+            )
+          )
+      })
+    ->Future.mapError(e => e->ErrorHandler.Wallet);
+
+  let get = getNative;
 
   let secretAt = (~settings, index) =>
     secrets(~settings)
@@ -205,14 +270,12 @@ module Accounts = {
           )
       );
 
-  let add = (~settings, ~alias, ~address) =>
-    settings->AppSettings.sdk->TezosSDK.addAddress(alias, address);
-
   let import = (~settings, ~alias, ~secretKey, ~password) => {
     let skUri = "encrypted:" ++ secretKey;
     settings
     ->AppSettings.sdk
     ->TezosSDK.importSecretKey(~name=alias, ~skUri, ~password, ())
+    ->Future.tapError(e => e->Js.log)
     ->Future.mapError(e => e->ErrorHandler.TezosSDK)
     ->Future.tapOk(k => Js.log("key found : " ++ (k :> string)));
   };
@@ -239,11 +302,22 @@ module Accounts = {
     })
     ->Future.flatMapOk(update => update);
 
-  let unsafeDelete = (~settings, name) =>
+  let _unsafeDeleteSDK = (~settings, name) =>
     settings
     ->AppSettings.sdk
     ->TezosSDK.forgetAddress(name)
+    ->Future.tapError(e => e->Js.log)
     ->Future.mapError(e => e->ErrorHandler.TezosSDK);
+
+  let unsafeDeleteNative = (~settings, name) =>
+    Wallet.removeAlias(
+      ~dirpath=settings->AppSettings.baseDir,
+      ~alias=name,
+      (),
+    )
+    ->Future.mapError(e => e->ErrorHandler.Wallet);
+
+  let unsafeDelete = unsafeDeleteNative;
 
   let delete = (~settings, name) =>
     Aliases.getAddressForAlias(~settings, ~alias=name)
@@ -388,6 +462,7 @@ module Accounts = {
         ~password,
         (),
       )
+    ->Future.tapError(e => e->Js.log)
     ->Future.mapError(e => e->ErrorHandler.TezosSDK);
 
   let legacyScan = (~settings, recoveryPhrase, name, ~password) =>

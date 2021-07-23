@@ -53,6 +53,7 @@ module type AliasesMakerType = {
   let filter: (t, alias => bool) => t;
   let remove: (t, key) => t;
   let addOrReplace: (t, key, value) => t;
+  let rename: (t, ~oldName: key, ~newName: key) => t;
 };
 
 module AliasesMaker =
@@ -127,6 +128,12 @@ module AliasesMaker =
     let alias = {name: alias, value};
     aliases->remove(alias.name)->Js.Array.concat([|alias|]);
   };
+
+  let rename = (aliases, ~oldName, ~newName) => {
+    aliases->Js.Array2.map(alias =>
+      alias.name == oldName ? {...alias, name: newName} : alias
+    );
+  };
 };
 
 module SecretAlias = {
@@ -186,6 +193,38 @@ let pkFromAlias = (~dirpath, ~alias, ()) => {
     );
 };
 
+let updatePkhAlias = (~dirpath, ~update, ()) => {
+  dirpath->PkhAliases.protect(_ =>
+    PkhAliases.read(dirpath)
+    ->Future.mapOk(pkhAliases => update(pkhAliases))
+    ->Future.flatMapOk(pkhAliases => dirpath->PkhAliases.write(pkhAliases))
+  );
+};
+
+let addOrReplacePkhAlias = (~dirpath, ~alias, ~pkh, ()) => {
+  updatePkhAlias(
+    ~dirpath,
+    ~update=pkhs => PkhAliases.addOrReplace(pkhs, alias, pkh),
+    (),
+  );
+};
+
+let removePkhAlias = (~dirpath, ~alias, ()) => {
+  updatePkhAlias(
+    ~dirpath,
+    ~update=pkhs => PkhAliases.remove(pkhs, alias),
+    (),
+  );
+};
+
+let renamePkhAlias = (~dirpath, ~oldName, ~newName, ()) => {
+  updatePkhAlias(
+    ~dirpath,
+    ~update=pkhs => PkhAliases.rename(pkhs, ~oldName, ~newName),
+    (),
+  );
+};
+
 let protectAliases = (~dirpath, ~f, ()) => {
   dirpath->PkAliases.protect(_ =>
     dirpath->PkhAliases.protect(_ => dirpath->SecretAliases.protect(f))
@@ -231,6 +270,16 @@ let removeAlias = (~dirpath, ~alias, ()) => {
     PkAliases.remove(pks, alias),
     PkhAliases.remove(pkhs, alias),
     SecretAliases.remove(sks, alias),
+  );
+
+  updateAlias(~dirpath, ~update, ());
+};
+
+let renameAlias = (~dirpath, ~oldName, ~newName, ()) => {
+  let update = ((pks, pkhs, sks)) => (
+    PkAliases.rename(pks, ~oldName, ~newName),
+    PkhAliases.rename(pkhs, ~oldName, ~newName),
+    SecretAliases.rename(sks, ~oldName, ~newName),
   );
 
   updateAlias(~dirpath, ~update, ());

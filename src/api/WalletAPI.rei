@@ -89,10 +89,6 @@ module Accounts: {
     (~settings: AppSettings.t, int, ~password: string) =>
     Future.t(Result.t(string, ErrorHandler.t));
 
-  let add:
-    (~settings: AppSettings.t, ~alias: name, ~address: PublicKeyHash.t) =>
-    Future.t(result(unit, TezosSDK.Error.t));
-
   let import:
     (
       ~settings: AppSettings.t,
