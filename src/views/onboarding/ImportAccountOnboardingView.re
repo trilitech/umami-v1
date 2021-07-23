@@ -159,7 +159,6 @@ let make = (~closeAction) => {
            }
            createSecretWithMnemonic
            loading
-           existingSecretsCount
          />
        </>;
      }}

@@ -72,9 +72,13 @@ let make =
       ~onPressCancel,
       ~createSecretWithMnemonic,
       ~loading,
-      ~existingSecretsCount=0,
     ) => {
-  let displayConfirmPassword = existingSecretsCount < 1;
+  let secrets = StoreContext.Secrets.useGetAll();
+
+  let existingNonLedgerSecretsCount =
+    secrets->Array.keep(s => s.secret.kind != Ledger)->Array.length;
+
+  let displayConfirmPassword = existingNonLedgerSecretsCount < 1;
   let form: CreatePasswordForm.api =
     CreatePasswordForm.use(
       ~validationStrategy=OnDemand,
@@ -97,7 +101,8 @@ let make =
         ({state}) => {
           createSecretWithMnemonic(
             SecretApiRequest.{
-              name: "Secret " ++ (existingSecretsCount + 1)->string_of_int,
+              name:
+                "Secret " ++ (existingNonLedgerSecretsCount + 1)->string_of_int,
               mnemonic,
               derivationPath,
               password: state.values.password,
