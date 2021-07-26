@@ -491,7 +491,7 @@ module Accounts = {
       );
   };
 
-  let legacyImport = (~settings, name, recoveryPhrase, ~password) =>
+  let _legacyImportSDK = (~settings, name, recoveryPhrase, ~password) =>
     settings
     ->AppSettings.sdk
     ->TezosSDK.importKeysFromMnemonics(
@@ -502,6 +502,15 @@ module Accounts = {
       )
     ->Future.tapError(e => e->Js.log)
     ->Future.mapError(e => e->ErrorHandler.TezosSDK);
+
+  let legacyImportNative = (~settings, alias, recoveryPhrase, ~password) =>
+    HD.edeskLegacy(recoveryPhrase, ~password)
+    ->Future.mapError(e => e->ErrorHandler.Generic->ErrorHandler.WalletAPI)
+    ->Future.flatMapOk(secretKey =>
+        importNative(~settings, ~alias, ~secretKey, ~password)
+      );
+
+  let legacyImport = legacyImportNative;
 
   let legacyScan = (~settings, recoveryPhrase, name, ~password) =>
     legacyImport(~settings, name, recoveryPhrase, ~password)
