@@ -314,3 +314,5 @@ let readSecretFromPkh = (address, dirpath) =>
       )
       ->Future.value
     );
+
+let mnemonicPkValue = pk => PkAlias.{locator: "unencrypted:" ++ pk, key: pk};

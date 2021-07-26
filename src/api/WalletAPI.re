@@ -270,7 +270,7 @@ module Accounts = {
           )
       );
 
-  let import = (~settings, ~alias, ~secretKey, ~password) => {
+  let _importSDK = (~settings, ~alias, ~secretKey, ~password) => {
     let skUri = "encrypted:" ++ secretKey;
     settings
     ->AppSettings.sdk
@@ -279,6 +279,44 @@ module Accounts = {
     ->Future.mapError(e => e->ErrorHandler.TezosSDK)
     ->Future.tapOk(k => Js.log("key found : " ++ (k :> string)));
   };
+
+  let importNative = (~settings, ~alias, ~secretKey, ~password) => {
+    let skUri = "encrypted:" ++ secretKey;
+    let keys =
+      ReTaquitoSigner.MemorySigner.create(
+        ~secretKey,
+        ~passphrase=password,
+        (),
+      )
+      ->Future.flatMapOk(s =>
+          s
+          ->ReTaquitoSigner.publicKey
+          ->Future.flatMapOk(pk =>
+              s
+              ->ReTaquitoSigner.publicKeyHash
+              ->Future.mapOk(pkh => (Wallet.mnemonicPkValue(pk), pkh, skUri))
+            )
+        )
+      ->Future.mapError(e => e->ErrorHandler.Taquito);
+    keys->Future.flatMapOk(((pk, pkh, sk)) =>
+      Wallet.addOrReplaceAlias(
+        ~dirpath=settings->AppSettings.baseDir,
+        ~alias,
+        ~pk,
+        ~pkh,
+        ~sk,
+        (),
+      )
+      ->Future.tapError(e => e->Js.log)
+      ->Future.mapError(e => e->ErrorHandler.Wallet)
+      ->Future.mapOk(() => {
+          Js.log("key found : " ++ (pkh :> string));
+          pkh;
+        })
+    );
+  };
+
+  let import = importNative;
 
   let derive = (~settings, ~index, ~alias, ~password) =>
     Future.mapOk2(

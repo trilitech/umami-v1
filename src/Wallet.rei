@@ -130,3 +130,5 @@ let aliasFromPkh:
 let pkFromAlias:
   (~dirpath: System.Path.t, ~alias: string, unit) =>
   Future.t(Result.t(string, error));
+
+let mnemonicPkValue: string => PkAlias.t;
