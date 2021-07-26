@@ -92,6 +92,8 @@ let styles =
 let make = (~initNode=?, ~initMezos=?, ~action: action, ~closeAction) => {
   let writeConf = ConfigContext.useWrite();
 
+  let (loading, setLoading) = React.useState(_ => false);
+
   let customNetworks = ConfigContext.useContent().customNetworks;
 
   let addToast = LogsContext.useToast();
@@ -155,9 +157,12 @@ let make = (~initNode=?, ~initMezos=?, ~action: action, ~closeAction) => {
             | Edit(_) => I18n.t#custom_network_updated
             };
 
-          let checkConfig = () =>
+          let checkConfig = () => {
+            setLoading(_ => true);
             Network.checkConfiguration(state.values.mezos, state.values.node)
-            ->Future.mapOk(snd);
+            ->Future.mapOk(snd)
+            ->Future.tap(_ => setLoading(_ => false));
+          };
 
           let chain =
             switch (action) {
@@ -285,6 +290,7 @@ let make = (~initNode=?, ~initMezos=?, ~action: action, ~closeAction) => {
       }
       onPress=onSubmit
       style=FormStyles.formSubmit
+      loading
       disabledLook={!formFieldsAreValids}
     />
   </ModalFormView>;
