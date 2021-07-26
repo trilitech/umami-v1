@@ -1,21 +1,21 @@
 [[_TOC_]]
 ## Incident Report for a known / recuring situation
 <!-- Use if the incident is a recurring issue, with an already validated change procedure -->
-<!-- Add reference to already validated related incident or Emergency change with /relate -->
-/relate nomadic-labs/umami-wallet/umami#xyz
+<!-- Add reference to already validated related incident or Emergency change with /relate in the comments -->
+<!-- /relate nomadic-labs/umami-wallet/umami#xyz -->
 
 
 <!-- (optional) To bring the attention to this incident during next CAB meeting, uncomment next line to add CAB::to-review label -->
 <!-- /label ~Change ~"CAB::to-review" -->
 
-### What is the nature of the INC?
+### What is the nature of the ~incident?
 <!-- Which parts of the system where affected ? -->
 
 
-### How the INC was discovered?
+### How the incident was discovered?
 
 
-### What is the potential impact of the INC?
+### What is the potential impact of the incident?
 
 
 ### What is the evidence (i.e. screenshots, logs, etc)?
@@ -25,7 +25,7 @@
 # Metadata
 <!-- Severity : pick one the gitlab panel, right side of the window when viewing the incident after creation -->
 
-/label ~INC ~incident  
+/label ~incident ~"incident::known"
 <!-- Labels and default review status for gitlab Change management process, comment if no change was performed-->
 /label ~Change ~"Change::Emergency"
 

@@ -18,11 +18,11 @@
 -->
 <!-- If you can tick boxes 1, 2, 3, and 4--you have uncovered an Incident; otherwise, it may not be, please consult management or you may file it anyway if unsure. !-->
 
-### What is the nature of the INC?
+### What is the nature of the incident?
 <!-- Which parts of the system where affected ? -->
 
 
-### How the INC was discovered?
+### How the incident was discovered?
 <!-- Mention which alert was triggered where, but report wrong or missing alerts when it's the case -->
 
 
@@ -38,7 +38,7 @@
 # Metadata
 <!-- Severity : pick one the gitlab panel, right side of the window when viewing the incident (after creation) -->
 
-/label ~INC ~incident  
+/label ~incident  
 <!-- Labels and default review status for gitlab Change management process, comment if no change was performed-->
 /label ~Change ~"CAB::to-review" ~"Change::Emergency" 
 
