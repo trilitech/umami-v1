@@ -25,70 +25,68 @@
 
 open ReactNative;
 
+module Form = {
+  module StateLenses = [%lenses type state = {pairingRequest: string}];
+
+  include ReForm.Make(StateLenses);
+};
+
 let styles =
   Style.(
     StyleSheet.create({
-      "formGroup": style(~marginBottom=0.->dp, ()),
-      "label": style(~marginVertical=4.->dp, ()),
-      "decoration":
-        style(
-          ~display=`flex,
-          ~alignItems=`center,
-          ~position=`absolute,
-          ~marginTop=auto,
-          ~marginBottom=auto,
-          ~top=0.->dp,
-          ~bottom=0.->dp,
-          ~right=10.->dp,
-          (),
-        ),
+      "title": style(~marginBottom=8.->dp, ~textAlign=`center, ()),
+      "verticalFormAction":
+        StyleSheet.flatten([|
+          FormStyles.verticalFormAction,
+          style(~marginTop=12.->dp, ()),
+        |]),
     })
   );
 
 [@react.component]
-let make =
-    (
-      ~label,
-      ~value,
-      ~handleChange,
-      ~error,
-      ~keyboardType=?,
-      ~onBlur=?,
-      ~onFocus=?,
-      ~textContentType=?,
-      ~secureTextEntry=?,
-      ~placeholder=?,
-      ~disabled=?,
-      ~multiline=?,
-      ~numberOfLines=?,
-      ~clearButton=false,
-      ~onSubmitEditing=?,
-      ~decoration: option((~style: Style.t) => React.element)=?,
-      ~style as styleFromProp: option(ReactNative.Style.t)=?,
-    ) => {
-  let hasError = error->Option.isSome;
-  <FormGroup
-    style=Style.(arrayOption([|Some(styles##formGroup), styleFromProp|]))>
-    <FormLabel label hasError style=styles##label />
+let make = (~closeAction) => {
+  let form =
+    Form.use(
+      ~schema={
+        Form.Validation.(Schema(nonEmpty(PairingRequest)));
+      },
+      ~onSubmit=
+        ({state}) => {
+          Js.log(state.values.pairingRequest);
+
+          None;
+        },
+      ~initialState={pairingRequest: ""},
+      ~i18n=FormUtils.i18n,
+      (),
+    );
+
+  let formFieldsAreValids =
+    FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
+
+  <ModalFormView closing={ModalFormView.Close(closeAction)}>
     <View>
-      <ThemedTextInput
-        value
-        onValueChange=handleChange
-        hasError
-        ?onBlur
-        ?onFocus
-        ?textContentType
-        ?secureTextEntry
-        ?keyboardType
-        ?placeholder
-        ?disabled
-        ?multiline
-        ?numberOfLines
-        ?onSubmitEditing
-        onClear=?{clearButton ? Some(() => handleChange("")) : None}
+      <View style=FormStyles.header>
+        <Typography.Headline style=styles##title>
+          "Connect to DApp with pairing request"->React.string
+        </Typography.Headline>
+      </View>
+      <FormGroupTextInput
+        label="DApp pairing request"
+        value={form.values.pairingRequest}
+        placeholder={j|e.g. BSdNU2tFbvtHvFpWR7rjrHyna1VQkAFnz4CmDTqkohdCx4FS51WUpc5Z9YoNJqbtZpoDNJfencTaDp23fWQqcyL54F75puvwCfmC1RCn11RLyFHrCYKo7uJ7a9KR8txqb1712J78ZXpLEvjbALAacLPrrvcJxta6XpU8Cd6F8NUHqBGd2Y4oWD9iQnyXB7umC72djzJFJVEgN5Z37DdiXPscqCMs7mX6qpuhq8thyKCDVhkvT9sr9t5EU7LYMxUHJgDdBS8K2GfTf76NTrHNV9AqjWcbbGM4EpPtGjsB8g6DjoH3xTdAtb9GE1PB2pFvucUMWrdT|j}
+        handleChange={form.handleChange(PairingRequest)}
+        error={form.getFieldError(Field(PairingRequest))}
+        multiline=true
+        numberOfLines=9
       />
-      {decoration->ReactUtils.mapOpt(deco => deco(~style=styles##decoration))}
+      <View style=styles##verticalFormAction>
+        <Buttons.SubmitPrimary
+          text="CONNECT TO DAPP"
+          onPress={_ => form.submit()}
+          disabledLook={!formFieldsAreValids}
+        />
+      </View>
     </View>
-    <FormError ?error />
-  </FormGroup>;
+  </ModalFormView>;
 };
