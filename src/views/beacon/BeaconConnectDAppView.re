@@ -25,6 +25,23 @@
 
 open ReactNative;
 
+[@bs.scope "JSON"] [@bs.val]
+external parseJsonIntoPeerInfo: string => ReBeacon.peerInfo = "parse";
+
+let parsePairingRequest =
+    (pairingRequest: string): Result.t(ReBeacon.peerInfo, string) => {
+  switch (
+    pairingRequest->HD.BS58Check.decode->HD.toString->parseJsonIntoPeerInfo
+  ) {
+  | exception (Js.Exn.Error(obj)) =>
+    switch (Js.Exn.message(obj)) {
+    | Some(m) => Error(m)
+    | None => Error("Undefined Error")
+    }
+  | peerInfo => Ok(peerInfo)
+  };
+};
+
 module Form = {
   module StateLenses = [%lenses type state = {pairingRequest: string}];
 
@@ -51,8 +68,20 @@ let make = (~closeAction) => {
         Form.Validation.(Schema(nonEmpty(PairingRequest)));
       },
       ~onSubmit=
-        ({state}) => {
-          Js.log(state.values.pairingRequest);
+        ({state, raiseSubmitFailed}) => {
+          let pairingInfo = parsePairingRequest(state.values.pairingRequest);
+
+          switch (pairingInfo) {
+          | Ok(pairingInfo) =>
+            BeaconApiRequest.client
+            ->ReBeacon.WalletClient.addPeer(pairingInfo)
+            ->Future.tapError(error =>
+                raiseSubmitFailed(Some(error->ReBeacon.Error.toString))
+              )
+            ->Future.tapOk(_ => {closeAction()})
+            ->ignore
+          | Error(error) => raiseSubmitFailed(Some(error))
+          };
 
           None;
         },
@@ -76,7 +105,13 @@ let make = (~closeAction) => {
         value={form.values.pairingRequest}
         placeholder={j|e.g. BSdNU2tFbvtHvFpWR7rjrHyna1VQkAFnz4CmDTqkohdCx4FS51WUpc5Z9YoNJqbtZpoDNJfencTaDp23fWQqcyL54F75puvwCfmC1RCn11RLyFHrCYKo7uJ7a9KR8txqb1712J78ZXpLEvjbALAacLPrrvcJxta6XpU8Cd6F8NUHqBGd2Y4oWD9iQnyXB7umC72djzJFJVEgN5Z37DdiXPscqCMs7mX6qpuhq8thyKCDVhkvT9sr9t5EU7LYMxUHJgDdBS8K2GfTf76NTrHNV9AqjWcbbGM4EpPtGjsB8g6DjoH3xTdAtb9GE1PB2pFvucUMWrdT|j}
         handleChange={form.handleChange(PairingRequest)}
-        error={form.getFieldError(Field(PairingRequest))}
+        error={
+          [
+            form.formState->FormUtils.getFormStateError,
+            form.getFieldError(Field(PairingRequest)),
+          ]
+          ->UmamiCommon.Lib.Option.firstSome
+        }
         multiline=true
         numberOfLines=9
       />

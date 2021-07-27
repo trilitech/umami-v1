@@ -26,6 +26,7 @@
 module Buffer = Js.TypedArray2.Uint8Array;
 
 [@bs.send] external toHex: (Buffer.t, [@bs.as "hex"] _) => string = "toString";
+[@bs.send] external toString: Buffer.t => string = "toString";
 
 module ED25519 = {
   type t = {
@@ -44,6 +45,7 @@ module BIP39 = {
 
 module BS58Check = {
   [@bs.module "bs58check"] external encode: Buffer.t => string = "encode";
+  [@bs.module "bs58check"] external decode: string => Buffer.t = "decode";
 };
 
 let b58cencode = (data, prefix) => {
