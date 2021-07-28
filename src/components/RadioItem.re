@@ -65,6 +65,19 @@ let styles =
           ~justifyContent=`center,
           (),
         ),
+      "tag":
+        style(
+          ~height=20.->dp,
+          ~paddingHorizontal=12.->dp,
+          ~paddingVertical=3.->dp,
+          ~marginRight=8.->dp,
+          ~marginLeft=2.->dp,
+          ~borderRadius=9.,
+          ~alignItems=`center,
+          ~justifyContent=`center,
+          ~borderWidth=1.,
+          (),
+        ),
     })
   );
 
@@ -77,6 +90,9 @@ let make =
       ~currentValue,
       ~disabled=false,
       ~style as styleFromProp: option(Style.t)=?,
+      ~tag=?,
+      ~tagTextColor=?,
+      ~tagBorderColor=?,
     ) => {
   <Pressable_
     style={_ =>
@@ -93,6 +109,32 @@ let make =
            hovered pressed focused disabled style=styles##radioContainer>
            <Radio value={currentValue == value} />
          </ThemedPressable.ContainerInteractionState.Outline>
+         {<View
+            style=Style.(
+              array([|
+                styles##tag,
+                style(
+                  ~borderColor=?{
+                    tagBorderColor != None
+                      ? Option.getExn(tagBorderColor) : None;
+                  },
+                  (),
+                ),
+              |])
+            )>
+            <Typography.Body2
+              fontSize=10.8
+              colorStyle=?{
+                tagTextColor != None ? Option.getExn(tagTextColor) : None
+              }>
+              {switch (tag) {
+               | Some(content) => "Custom " ++ content
+               | None => ""
+               }}
+              ->React.string
+            </Typography.Body2>
+          </View>
+          ->ReactUtils.onlyWhen(tag != None)}
          <Typography.Body1> label->React.string </Typography.Body1>
        </>;
      }}

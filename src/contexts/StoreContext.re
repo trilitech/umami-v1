@@ -153,17 +153,16 @@ let make = (~children) => {
   React.useEffect1(
     () => {
       Network.checkConfiguration(
-        ~network=settings->AppSettings.network,
         settings->AppSettings.explorer,
         settings->AppSettings.endpoint,
       )
-      ->Future.tapOk(v => setApiVersion(_ => Some(v)))
-      ->FutureEx.getOk(apiVersion =>
+      ->Future.tapOk(((v, _)) => setApiVersion(_ => Some(v)))
+      ->FutureEx.getOk(((apiVersion, _)) =>
           if (!Network.checkInBound(apiVersion.Network.api)) {
             addToast(
               Logs.error(
                 ~origin=Settings,
-                Network.errorMsg(Network.APINotSupported(apiVersion.api)),
+                Network.errorMsg(`APINotSupported(apiVersion.api)),
               ),
             );
           }

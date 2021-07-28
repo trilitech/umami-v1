@@ -76,7 +76,8 @@ let btn = {
   pub allow = "ALLOW";
   pub reject = "REJECT";
   pub sign = "SIGN";
-  pub close = "CLOSE"
+  pub close = "CLOSE";
+  pub add_custom_network = "ADD CUSTOM NETWORK"
 };
 
 let tooltip = {
@@ -91,7 +92,9 @@ let tooltip = {
   pub refresh = "Refresh";
   pub open_in_explorer = "Open in explorer";
   pub update_delegation = "update delegation";
-  pub chain_not_connected = "Not connected to a chain"
+  pub chain_not_connected = "Not connected to a chain";
+  pub custom_network_edit = "Edit network";
+  pub custom_network_delete = "Delete network"
 };
 
 let log = {
@@ -136,7 +139,10 @@ let label = {
   pub account_custom_path = "Custom Path";
   pub beacon_account = "Account to connect to dApp";
   pub beacon_sign_payload = "Payload to sign";
-  pub parameters = "Parameters"
+  pub parameters = "Parameters";
+  pub custom_network_name = "Name";
+  pub custom_network_mezos_url = "Mezos URL";
+  pub custom_network_node_url = "Node URL"
 };
 
 let input_placeholder = {
@@ -153,7 +159,10 @@ let input_placeholder = {
   pub confirm_password = "Confirm your new password";
   pub enter_password = "Enter your password";
   pub add_token_symbol = "e.g. tez, KLD, ...";
-  pub enter_derivation_path = "Enter your derivation path"
+  pub enter_derivation_path = "Enter your derivation path";
+  pub custom_network_name = "e.g. Test Network";
+  pub custom_network_node_url = "e.g. https://testnet-tezos.giganode.io/";
+  pub custom_network_mezos_url = "e.g. https://api.umamiwallet.com/florencenet"
 };
 
 let form_input_error = {
@@ -177,7 +186,12 @@ let form_input_error = {
   pub bad_pkh = "Not a valid key";
   pub invalid_contract = "The recipient is not a key or an alias";
   pub confirm_password = "It must be the same password";
-  pub derivation_path_error = "Invalid derivation path"
+  pub derivation_path_error = "Invalid derivation path";
+  pub name_already_taken = a => p("%s is already taken", a);
+  pub api_not_available = "API not available";
+  pub node_not_available = "Node not available";
+  pub api_and_node_not_available = "API and node both not available";
+  pub different_chains = "API and Node are not running on the same network"
 };
 
 let title = {
@@ -233,7 +247,10 @@ let title = {
   pub disclaimer = "User Agreement";
   pub beacon_connection_request = "Connection Request";
   pub beacon_sign_request = "Sign";
-  pub interaction = "Interaction"
+  pub interaction = "Interaction";
+  pub add_custom_network = "Add Custom Network";
+  pub update_custom_network = "Edit Custom Network";
+  pub delete_custom_network = "Delete Network ?"
 };
 
 let expl = {
@@ -251,7 +268,8 @@ let expl = {
   pub beacon_dapp_request = {js|This site is requesting access to view your account’s address.\nAlways make sure you trust the sites you interact with.|js};
   pub beacon_operation = "Requests Operations";
   pub beacon_delegation = "Request Delegation";
-  pub beacon_dapp_sign = "requests your signature"
+  pub beacon_dapp_sign = "requests your signature";
+  pub custom_network = "Please specify the parameters of the network you want to connect to."
 };
 
 let menu = {
@@ -345,7 +363,8 @@ let network = {
       a,
     );
   pub api_not_supported = a =>
-    p("The API %s is not supported by this version of Umami.", a)
+    p("The API %s is not supported by this version of Umami.", a);
+  pub api_and_node_not_available = "API and Node are both not available"
 };
 
 let taquito = {
@@ -426,7 +445,10 @@ let t = {
   pub tezos = "Tez";
   pub tez = "tez";
   pub mainnet = "Mainnet";
+  pub florencenet = "Florencenet";
+  pub granadanet = "Granadanet";
   pub testnet = "Testnet";
+  pub add_custom_network = "ADD CUSTOM NETWORK";
   pub tez_amount = a => p("%s %s", a, this#tez);
   pub tez_op_amount = op => p("%s %a", op, () => this#tez_amount);
   pub address = "Address";
@@ -480,5 +502,8 @@ let t = {
   pub delegation_removal = "Delegation Removal";
   pub error_check_contract = "Address is not a valid token contract";
   pub words = p("%d words");
-  pub upgrade_notice = "We recommend you upgrade your version of Umami."
+  pub upgrade_notice = "We recommend you upgrade your version of Umami.";
+  pub custom_network_created = "Network created";
+  pub custom_network_updated = "Network updated";
+  pub custom_network_deleted = "Network deleted"
 };

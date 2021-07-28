@@ -55,26 +55,18 @@ let make = (~empty, ~children) => {
   let (loaded, setLoaded) = React.useState(() => false);
 
   let loadSdk = (conf: ConfigFile.t) => {
-    let endpointMain =
-      conf.endpointMain
-      ->Option.getWithDefault(ConfigFile.Default.endpointMain);
-
-    let endpointTest =
-      conf.endpointTest
-      ->Option.getWithDefault(ConfigFile.Default.endpointTest);
-
     let dir =
       ConfigFile.(conf.sdkBaseDir->Option.getWithDefault(Default.sdkBaseDir));
 
     let pMain =
-      TezosSDK.init(System.Path.toString(dir), endpointMain)
+      TezosSDK.init(System.Path.toString(dir), Network.mainnet.endpoint)
       |> Js.Promise.then_(sdk => {
            setSdkMain(_ => sdk);
            Js.Promise.resolve();
          });
 
     let pTest =
-      TezosSDK.init(System.Path.toString(dir), endpointTest)
+      TezosSDK.init(System.Path.toString(dir), Network.florencenet.endpoint)
       |> Js.Promise.then_(sdk => {
            setSdkTest(_ => sdk);
            Js.Promise.resolve();

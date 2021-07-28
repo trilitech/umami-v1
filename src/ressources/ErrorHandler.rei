@@ -52,3 +52,10 @@ let token: token => t;
 
 let fromSdkToString: TezosSDK.Error.t => string;
 let toString: t => string;
+
+type promiseError = {
+  message: string,
+  name: string,
+};
+
+let extractPromiseError: Js.Promise.error => promiseError;

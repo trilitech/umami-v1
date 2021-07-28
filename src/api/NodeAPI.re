@@ -24,7 +24,6 @@
 /*****************************************************************************/
 
 open ServerAPI;
-open Delegate;
 
 module Balance = {
   let get = (settings, address, ~params=?, ()) => {
@@ -168,23 +167,12 @@ module DelegateMaker =
       );
 
   let getBakers = (settings: AppSettings.t) =>
-    switch (settings->AppSettings.network) {
-    | `Mainnet =>
+    switch (settings->AppSettings.chainId) {
+    | chain when chain == Network.mainnetChain =>
       URL.External.bakingBadBakers
       ->URL.get
       ->Future.mapOk(Json.Decode.(array(Delegate.decode)))
-    | `Testnet(_) =>
-      Future.value(
-        Ok([|
-          {
-            name: "zebra",
-            address:
-              "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"
-              ->PublicKeyHash.build
-              ->Result.getExn,
-          },
-        |]),
-      )
+    | _ => Ok([||])->Future.value
     };
 
   type delegationInfo = {

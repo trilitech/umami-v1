@@ -41,8 +41,8 @@ let dataFromURL = url => {
 };
 
 let checkOperationRequestTargetNetwork =
-    (a: ReBeacon.network, b: ConfigFile.network) =>
-  a.type_ == b->ConfigFile.getNetworkName;
+    (settings: AppSettings.t, chain: ReBeacon.network) =>
+  chain.type_ == settings->AppSettings.chainId;
 
 let checkOperationRequestHasOnlyTransaction =
     (request: ReBeacon.Message.Request.operationRequest) => {
@@ -74,9 +74,9 @@ let useBeaconRequestModalAction = () => {
 [@react.component]
 let make = () => {
   let settings = SdkContext.useSettings();
-  let settingsRef = React.useRef(settings)
+  let settingsRef = React.useRef(settings);
 
-  settingsRef.current = settings
+  settingsRef.current = settings;
 
   let (
     permissionRequest,
@@ -114,9 +114,7 @@ let make = () => {
               request
               ->ReBeacon.Message.Request.getNetwork
               ->Option.mapWithDefault(true, network =>
-                  network->checkOperationRequestTargetNetwork(
-                    settingsRef.current->AppSettings.network,
-                  )
+                  settings->checkOperationRequestTargetNetwork(network)
                 );
 
             if (targetSettedNetwork) {
@@ -167,9 +165,9 @@ let make = () => {
           })
         })
       ->Future.tapOk(_ => {
-        IPC.renderer->IPC.send("beacon-ready");
-        Js.log("beacon-ready (renderer)")
-      })
+          IPC.renderer->IPC.send("beacon-ready");
+          Js.log("beacon-ready (renderer)");
+        })
       ->Future.get(Js.log);
     };
     None;
