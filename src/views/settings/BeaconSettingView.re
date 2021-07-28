@@ -50,6 +50,27 @@ module ConnectDAppPairingRequestButton = {
   };
 };
 
+module ConnectDAppPairingRequestWithQRButton = {
+  [@react.component]
+  let make = () => {
+    let (visibleModal, openAction, closeAction) =
+      ModalAction.useModalActionState();
+
+    <>
+      <View style=styles##buttonContainer>
+        <ButtonAction
+          onPress={_ => openAction()}
+          text="CONNECT TO DAPP WITH QR CODE"
+          icon=Icons.Qr.build
+        />
+      </View>
+      <ModalAction visible=visibleModal onRequestClose=closeAction>
+        <BeaconConnectDAppView.WithQR closeAction />
+      </ModalAction>
+    </>;
+  };
+};
+
 module PeersSection = {
   module PeerDeleteButton = {
     [@react.component]
@@ -248,6 +269,7 @@ module PermissionsSection = {
 let make = () => {
   <Block title=I18n.settings#beacon_title>
     <View style=styles##inner>
+      <ConnectDAppPairingRequestWithQRButton />
       <ConnectDAppPairingRequestButton />
       <View style=styles##spacer />
       <PeersSection />
