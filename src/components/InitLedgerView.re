@@ -46,7 +46,7 @@ let styles =
   );
 
 [@react.component]
-let make = (~status, ~retry) => {
+let make = (~style=?, ~status, ~retry) => {
   let expl = txt =>
     <Typography.Headline
       fontSize=16.
@@ -54,7 +54,7 @@ let make = (~status, ~retry) => {
       txt
     </Typography.Headline>;
 
-  <>
+  <View style={Style.arrayOption([|style|])}>
     <Typography.Headline style=onbStyles##title>
       {let title =
          switch (status) {
@@ -114,5 +114,5 @@ let make = (~status, ~retry) => {
          ->expl
        </View>
      }}
-  </>;
+  </View>;
 };

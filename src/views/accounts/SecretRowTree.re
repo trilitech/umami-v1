@@ -284,6 +284,31 @@ module SecretRowItem = {
     };
   };
 
+  module SecretScanButton = {
+    [@react.component]
+    let make = (~secret) => {
+      let (visibleModal, openAction, closeAction) =
+        ModalAction.useModalActionState();
+
+      let onPress = _e => openAction();
+
+      <>
+        <Buttons.SubmitTertiary
+          onPress
+          text=I18n.btn#scan
+          style=styles##actionButton
+        />
+        <ModalAction visible=visibleModal onRequestClose=closeAction>
+          <LedgerScan
+            secret={secret.Secret.secret}
+            closeAction
+            index={secret.Secret.index}
+          />
+        </ModalAction>
+      </>;
+    };
+  };
+
   module SecretAddAccountButton = {
     [@react.component]
     let make = (~secret) => {
@@ -321,6 +346,8 @@ module SecretRowItem = {
         </Typography.Address>
       </View>
       <View style=styles##actionContainer>
+        {<SecretScanButton secret />
+         ->ReactUtils.onlyWhen(secret.secret.kind == Secret.Ledger)}
         <SecretAddAccountButton secret />
         {<SecretExportButton secret />
          ->ReactUtils.onlyWhen(secret.secret.kind != Secret.Ledger)}
