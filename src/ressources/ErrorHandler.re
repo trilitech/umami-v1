@@ -38,6 +38,8 @@ type walletAPI =
   | CannotUpdateSecret(int)
   | RecoveryPhraseNotFound(int)
   | SecretAlreadyImported
+  | IncorrectNumberOfWords
+  | UnknownBip39Word(string, int)
   | Generic(string);
 
 type t =
@@ -91,6 +93,8 @@ let fromWalletAPIToString =
   | CannotUpdateSecret(i) => I18n.errors#cannot_update_secret(i)
   | RecoveryPhraseNotFound(i) => I18n.errors#recovery_phrase_not_found(i)
   | SecretAlreadyImported => I18n.errors#secret_already_imported
+  | IncorrectNumberOfWords => I18n.errors#incorrect_number_of_words
+  | UnknownBip39Word(w, i) => I18n.errors#unknown_bip39_word(w, i)
   | Generic(s) => s;
 
 let fromSdkToString = e =>

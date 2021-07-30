@@ -583,6 +583,7 @@ module Accounts = {
         ~password,
         (),
       ) => {
+    let backupPhraseConcat = backupPhrase->Js.Array2.joinWith(" ");
     password
     ->SecureStorage.validatePassword
     ->Future.mapError(_ =>
@@ -591,7 +592,27 @@ module Accounts = {
         )
       )
     ->Future.flatMapOk(_ =>
-        indexOfRecoveryPhrase(~settings, backupPhrase, ~password)
+        (
+          switch (backupPhrase->Array.length) {
+          | 24
+          | 15
+          | 12 =>
+            backupPhrase->Js.Array2.reducei(
+              (res, w, i) =>
+                res->Result.flatMap(() =>
+                  w->Bip39.included
+                    ? Ok()
+                    : ErrorHandler.(UnknownBip39Word(w, i)->WalletAPI->Error)
+                ),
+              Ok(),
+            )
+          | _ => ErrorHandler.(IncorrectNumberOfWords->WalletAPI->Error)
+          }
+        )
+        ->Future.value
+      )
+    ->Future.flatMapOk(_ =>
+        indexOfRecoveryPhrase(~settings, backupPhraseConcat, ~password)
         ->Future.map(index =>
             switch (index) {
             | Some(_) =>
@@ -601,13 +622,20 @@ module Accounts = {
           )
       )
     ->Future.flatMapOk(_ =>
-        scan(~settings, backupPhrase, name, ~derivationPath, ~password, ())
+        scan(
+          ~settings,
+          backupPhraseConcat,
+          name,
+          ~derivationPath,
+          ~password,
+          (),
+        )
       )
     ->Future.tapOk(_ =>
         Future.mapOk2(
           recoveryPhrases(~settings)
           ->FutureEx.fromOptionWithDefault(~default=[||]),
-          backupPhrase->SecureStorage.Cipher.encrypt(password),
+          backupPhraseConcat->SecureStorage.Cipher.encrypt(password),
           (recoveryPhrases, newRecoveryPhrase) => {
           Array.concat(recoveryPhrases, [|newRecoveryPhrase|])
         })

@@ -118,7 +118,7 @@ module Accounts: {
   let restore:
     (
       ~settings: AppSettings.t,
-      ~backupPhrase: string,
+      ~backupPhrase: array(string),
       ~name: name,
       ~derivationPath: TezosClient.DerivationPath.Pattern.t=?,
       ~password: string,

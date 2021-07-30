@@ -88,11 +88,12 @@ let useDerive =
       (~settings, {name, index, password}) =>
         WalletAPI.Accounts.derive(~settings, ~index, ~alias=name, ~password),
     ~kind=Logs.Account,
+    ~errorToString=ErrorHandler.toString,
   );
 
 type createInput = {
   name: string,
-  mnemonics: string,
+  mnemonic: array(string),
   derivationPath: DerivationPath.Pattern.t,
   password: string,
 };
@@ -100,16 +101,17 @@ type createInput = {
 let useCreateWithMnemonics =
   ApiRequest.useSetter(
     ~set=
-      (~settings, {name, mnemonics, derivationPath, password}) =>
+      (~settings, {name, mnemonic, derivationPath, password}) =>
         WalletAPI.Accounts.restore(
           ~settings,
-          ~backupPhrase=mnemonics,
+          ~backupPhrase=mnemonic,
           ~name,
           ~derivationPath,
           ~password,
           (),
         ),
     ~kind=Logs.Account,
+    ~errorToString=ErrorHandler.toString,
   );
 
 let useUpdate =
@@ -119,10 +121,12 @@ let useUpdate =
         WalletAPI.Accounts.updateSecretAt(~settings, secret, index)
       },
     ~kind=Logs.Account,
+    ~errorToString=ErrorHandler.toString,
   );
 
 let useDelete =
   ApiRequest.useSetter(
     ~set=WalletAPI.Accounts.deleteSecretAt,
     ~kind=Logs.Account,
+    ~errorToString=ErrorHandler.toString,
   );

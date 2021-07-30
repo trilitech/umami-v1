@@ -38,6 +38,8 @@ type walletAPI =
   | CannotUpdateSecret(int)
   | RecoveryPhraseNotFound(int)
   | SecretAlreadyImported
+  | IncorrectNumberOfWords
+  | UnknownBip39Word(string, int)
   | Generic(string);
 
 type t =
