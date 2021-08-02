@@ -46,13 +46,11 @@ type t =
   | Taquito(ReTaquitoError.t)
   | Token(token)
   | Wallet(wallet)
-  | WalletAPI(walletAPI)
-  | TezosSDK(TezosSDK.Error.t);
+  | WalletAPI(walletAPI);
 
 let taquito: ReTaquitoError.t => t;
 let token: token => t;
 
-let fromSdkToString: TezosSDK.Error.t => string;
 let toString: t => string;
 
 type promiseError = {

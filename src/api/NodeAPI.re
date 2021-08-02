@@ -26,8 +26,8 @@
 open ServerAPI;
 
 module Balance = {
-  let get = (settings, address, ~params=?, ()) => {
-    AppSettings.endpoint(settings)
+  let get = (config, address, ~params=?, ()) => {
+    ConfigUtils.endpoint(config)
     ->TaquitoAPI.Balance.get(~address, ~params?, ());
   };
 };
@@ -39,14 +39,14 @@ module Simulation = {
     tx_options.gasLimit,
   );
 
-  let batch = (settings, transfers, ~source, ~index=?, ()) => {
+  let batch = (config, transfers, ~source, ~index=?, ()) => {
     let customValues =
       List.map(transfers, tx => tx.Transfer.tx_options->extractCustomValues)
       ->List.toArray;
 
     TaquitoAPI.Transfer.Estimate.batch(
-      ~endpoint=settings->AppSettings.endpoint,
-      ~baseDir=settings->AppSettings.baseDir,
+      ~endpoint=config->ConfigUtils.endpoint,
+      ~baseDir=config->ConfigUtils.baseDir,
       ~source,
       ~transfers=transfers->TaquitoAPI.Transfer.prepareTransfers,
       (),
@@ -65,10 +65,10 @@ module Simulation = {
       });
   };
 
-  let setDelegate = (settings, delegation: Protocol.delegation) => {
+  let setDelegate = (config, delegation: Protocol.delegation) => {
     TaquitoAPI.Delegate.Estimate.set(
-      ~endpoint=settings->AppSettings.endpoint,
-      ~baseDir=settings->AppSettings.baseDir,
+      ~endpoint=config->ConfigUtils.endpoint,
+      ~baseDir=config->ConfigUtils.baseDir,
       ~source=delegation.Protocol.source,
       ~delegate=?delegation.Protocol.delegate,
       ~fee=?delegation.Protocol.options.fee,
@@ -85,22 +85,22 @@ module Simulation = {
       );
   };
 
-  let run = (settings, ~index=?, operation: Protocol.t) => {
+  let run = (config, ~index=?, operation: Protocol.t) => {
     switch (operation, index) {
-    | (Delegation(d), _) => setDelegate(settings, d)
+    | (Delegation(d), _) => setDelegate(config, d)
     | (Transaction({transfers, source}), None) =>
-      batch(settings, transfers, ~source, ())
+      batch(config, transfers, ~source, ())
     | (Transaction({transfers, source}), Some(index)) =>
-      batch(settings, transfers, ~source, ~index, ())
+      batch(config, transfers, ~source, ~index, ())
     };
   };
 };
 
 module Operation = {
-  let batch = (settings, transfers, ~source, ~password) => {
+  let batch = (config, transfers, ~source, ~password) => {
     TaquitoAPI.Transfer.batch(
-      ~endpoint=settings->AppSettings.endpoint,
-      ~baseDir=settings->AppSettings.baseDir,
+      ~endpoint=config->ConfigUtils.endpoint,
+      ~baseDir=config->ConfigUtils.baseDir,
       ~source,
       ~transfers=transfers->TaquitoAPI.Transfer.prepareTransfers,
       ~password,
@@ -109,11 +109,10 @@ module Operation = {
     ->Future.mapOk((op: ReTaquito.Toolkit.operationResult) => op.hash);
   };
 
-  let setDelegate =
-      (settings, Protocol.{delegate, source, options}, ~password) => {
+  let setDelegate = (config, Protocol.{delegate, source, options}, ~password) => {
     TaquitoAPI.Delegate.set(
-      ~endpoint=settings->AppSettings.endpoint,
-      ~baseDir=settings->AppSettings.baseDir,
+      ~endpoint=config->ConfigUtils.endpoint,
+      ~baseDir=config->ConfigUtils.baseDir,
       ~source,
       ~delegate,
       ~password,
@@ -123,12 +122,12 @@ module Operation = {
     ->Future.mapOk((op: ReTaquito.Toolkit.operationResult) => op.hash);
   };
 
-  let run = (settings, operation: Protocol.t, ~password) =>
+  let run = (config, operation: Protocol.t, ~password) =>
     switch (operation) {
-    | Delegation(d) => setDelegate(settings, d, ~password)
+    | Delegation(d) => setDelegate(config, d, ~password)
 
     | Transaction({transfers, source}) =>
-      batch(settings, transfers, ~source, ~password)
+      batch(config, transfers, ~source, ~password)
     };
 };
 
@@ -152,8 +151,8 @@ module DelegateMaker =
       };
     };
 
-  let getForAccount = (settings, account) =>
-    TaquitoAPI.Delegate.get(settings->AppSettings.endpoint, account)
+  let getForAccount = (config, account) =>
+    TaquitoAPI.Delegate.get(config->ConfigUtils.endpoint, account)
     ->Future.mapOk(result =>
         switch (result) {
         | Some(delegate) =>
@@ -166,8 +165,8 @@ module DelegateMaker =
         }
       );
 
-  let getBakers = (settings: AppSettings.t) =>
-    switch (settings->AppSettings.chainId) {
+  let getBakers = (config: ConfigFile.t) =>
+    switch (config->ConfigUtils.chainId) {
     | chain when chain == Network.mainnetChain =>
       URL.External.bakingBadBakers
       ->URL.get
@@ -282,8 +281,8 @@ module DelegateMaker =
 module Delegate = DelegateMaker(URL);
 
 module Tokens = {
-  let checkTokenContract = (settings, contract: PublicKeyHash.t) => {
-    URL.Explorer.checkToken(settings, ~contract)
+  let checkTokenContract = (config, contract: PublicKeyHash.t) => {
+    URL.Explorer.checkToken(config, ~contract)
     ->URL.get
     ->Future.map(result => {
         switch (result) {
@@ -298,11 +297,11 @@ module Tokens = {
       });
   };
 
-  let batchEstimate = (settings, transfers, ~source, ~index=?, ()) =>
-    Simulation.batch(settings, transfers, ~source, ~index?, ());
+  let batchEstimate = (config, transfers, ~source, ~index=?, ()) =>
+    Simulation.batch(config, transfers, ~source, ~index?, ());
 
-  let batch = (settings, transfers, ~source, ~password) =>
-    Operation.batch(settings, transfers, ~source, ~password);
+  let batch = (config, transfers, ~source, ~password) =>
+    Operation.batch(config, transfers, ~source, ~password);
 
   let offline = (operation: Token.operation) => {
     switch (operation) {
@@ -338,12 +337,12 @@ module Tokens = {
       )
     };
 
-  let callGetOperationOffline = (settings, operation: Token.operation) =>
+  let callGetOperationOffline = (config, operation: Token.operation) =>
     if (offline(operation)) {
       switch (operation) {
       | GetBalance({token, address, _}) =>
         URL.Explorer.getTokenBalance(
-          settings,
+          config,
           ~contract=token,
           ~account=address,
         )
@@ -375,9 +374,9 @@ module Tokens = {
 };
 
 module Signature = {
-  let signPayload = (settings, ~source, ~password, ~payload) => {
+  let signPayload = (config, ~source, ~password, ~payload) => {
     TaquitoAPI.Signature.signPayload(
-      ~baseDir=settings->AppSettings.baseDir,
+      ~baseDir=config->ConfigUtils.baseDir,
       ~source,
       ~password,
       ~payload,

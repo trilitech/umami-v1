@@ -23,81 +23,41 @@
 /*                                                                           */
 /*****************************************************************************/
 
-type sdks = {
-  main: TezosSDK.t,
-  test: TezosSDK.t,
-};
+type t = ConfigFile.t;
 
-type t = {
-  config: ConfigFile.t,
-  sdk: sdks,
-};
+let baseDir = (config: t) =>
+  config.sdkBaseDir->Option.getWithDefault(ConfigFile.Default.sdkBaseDir);
 
-let baseDir = settings =>
-  settings.config.sdkBaseDir
-  ->Option.getWithDefault(ConfigFile.Default.sdkBaseDir);
-
-let endpoint = s =>
-  switch (s.config.network->Option.getWithDefault(ConfigFile.Default.network)) {
+let endpoint = (c: t) =>
+  switch (c.network->Option.getWithDefault(ConfigFile.Default.network)) {
   | `Mainnet => Network.mainnet.endpoint
   | `Florencenet => Network.florencenet.endpoint
   | `Granadanet => Network.granadanet.endpoint
   | `Custom(name) =>
-    s.config.customNetworks->List.getBy(n => n.name === name)->Option.getExn.
-      endpoint
+    c.customNetworks->List.getBy(n => n.name === name)->Option.getExn.endpoint
   };
 
-let sdk = s =>
-  switch (s.config.network->Option.getWithDefault(ConfigFile.Default.network)) {
-  | `Mainnet => s.sdk.main
-  | `Florencenet => s.sdk.test
-  | `Granadanet => s.sdk.test
-  | `Custom(_) => s.sdk.test
-  };
+let withNetwork = (c: t, network) => {...c, network};
 
-let testOnly = s => {
-  ...s,
-  config: {
-    ...s.config,
-    network: Some(`Florencenet),
-  },
-};
-let mainOnly = s => {
-  ...s,
-  config: {
-    ...s.config,
-    network: Some(`Mainnet),
-  },
-};
-let withNetwork = (s, network) => {
-  ...s,
-  config: {
-    ...s.config,
-    network,
-  },
-};
+let network = (config: t): ConfigFile.network =>
+  config.network->Option.getWithDefault(ConfigFile.Default.network);
 
-let network = (settings: t): ConfigFile.network =>
-  settings.config.network->Option.getWithDefault(ConfigFile.Default.network);
-
-let chainId = (s: t) =>
-  switch (network(s)) {
+let chainId = (c: t) =>
+  switch (network(c)) {
   | `Mainnet => Network.mainnet.chain
   | `Florencenet => Network.florencenet.chain
   | `Granadanet => Network.granadanet.chain
   | `Custom(name) =>
-    s.config.customNetworks->List.getBy(n => n.name === name)->Option.getExn.
-      chain
+    c.customNetworks->List.getBy(n => n.name === name)->Option.getExn.chain
   };
 
-let explorer = (s: t) =>
-  switch (s.config.network->Option.getWithDefault(ConfigFile.Default.network)) {
+let explorer = (c: t) =>
+  switch (c.network->Option.getWithDefault(ConfigFile.Default.network)) {
   | `Mainnet => Network.mainnet.explorer
   | `Florencenet => Network.florencenet.explorer
   | `Granadanet => Network.granadanet.explorer
   | `Custom(name) =>
-    s.config.customNetworks->List.getBy(n => n.name === name)->Option.getExn.
-      explorer
+    c.customNetworks->List.getBy(n => n.name === name)->Option.getExn.explorer
   };
 
 let externalExplorers =
@@ -111,4 +71,4 @@ let findExternalExplorer = c =>
   ->Option.map(v => Ok(v))
   ->Option.getWithDefault(Error(`UnknownChainId(c)));
 
-let getExternalExplorer = settings => chainId(settings)->findExternalExplorer;
+let getExternalExplorer = config => chainId(config)->findExternalExplorer;

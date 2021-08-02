@@ -290,11 +290,6 @@
     "@babel/helper-validator-identifier" "^7.14.5"
     to-fast-properties "^2.0.0"
 
-"@dannywillems/rustc-bls12-381@0.8.1":
-  version "0.8.1"
-  resolved "https://gitlab.com/api/v4/projects/16564977/packages/npm/@dannywillems/rustc-bls12-381/-/@dannywillems/rustc-bls12-381-0.8.1.tgz#35dd3f81281432b2cfb92a2608a63b6eaf307b70"
-  integrity sha1-Nd0/gSgUMrLPuSomCKY7bq8we3A=
-
 "@develar/schema-utils@~2.6.5":
   version "2.6.5"
   resolved "https://registry.yarnpkg.com/@develar/schema-utils/-/schema-utils-2.6.5.tgz#3ece22c5838402419a6e0425f85742b961d9b6c6"
@@ -702,22 +697,6 @@
   dependencies:
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
-
-"@nomadic-labs/hacl-wasm@file:./src/vendors/tezos-sdk/deps/hacl-wasm":
-  version "1.0.6-nomadic"
-
-"@nomadic-labs/secp256k1-wasm-browser@*":
-  version "1.0.6"
-  resolved "https://gitlab.com/api/v4/projects/25020679/packages/npm/@nomadic-labs/secp256k1-wasm-browser/-/@nomadic-labs/secp256k1-wasm-browser-1.0.6.tgz#9ca8d217b85e0ebdbbda7ba02625c6105508688a"
-  integrity sha1-nKjSF7heDr272nugJiXGEFUIaIo=
-
-"@nomadic-labs/uecc-wasm@file:./src/vendors/tezos-sdk/deps/uecc-wasm":
-  version "1.0.6"
-
-"@nomadic-labs/xmlhttprequest@^1.8.0":
-  version "1.8.1"
-  resolved "https://gitlab.com/api/v4/projects/25020679/packages/npm/@nomadic-labs/xmlhttprequest/-/@nomadic-labs/xmlhttprequest-1.8.1.tgz#d607b73d38fda018348dc441b36f4d1d0fde1783"
-  integrity sha1-1ge3PTj9oBg0jcRBs29NHQ/eF4M=
 
 "@reason-react-native/svg@12.1.5-0.63":
   version "12.1.5-0.63"
@@ -7131,10 +7110,6 @@ terser@^5.7.0:
     commander "^2.20.0"
     source-map "~0.7.2"
     source-map-support "~0.5.19"
-
-"tezos-sdk@link:./src/vendors/tezos-sdk":
-  version "0.0.0"
-  uid ""
 
 thunky@^1.0.2:
   version "1.1.0"

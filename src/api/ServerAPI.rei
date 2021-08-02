@@ -32,7 +32,7 @@ module URL: {
   module Explorer: {
     let operations:
       (
-        AppSettings.t,
+        ConfigFile.t,
         PublicKeyHash.t,
         ~types: array(string)=?,
         ~destination: PublicKeyHash.t=?,
@@ -40,14 +40,14 @@ module URL: {
         unit
       ) =>
       t;
-    let mempool: (AppSettings.t, ~account: PublicKeyHash.t) => t;
-    let checkToken: (AppSettings.t, ~contract: PublicKeyHash.t) => t;
+    let mempool: (ConfigFile.t, ~account: PublicKeyHash.t) => t;
+    let checkToken: (ConfigFile.t, ~contract: PublicKeyHash.t) => t;
     let getTokenBalance:
-      (AppSettings.t, ~contract: PublicKeyHash.t, ~account: PublicKeyHash.t) =>
+      (ConfigFile.t, ~contract: PublicKeyHash.t, ~account: PublicKeyHash.t) =>
       t;
   };
 
-  module Endpoint: {let delegates: AppSettings.t => t;};
+  module Endpoint: {let delegates: ConfigFile.t => t;};
 
   module External: {let bakingBadBakers: t;};
 
@@ -58,12 +58,12 @@ module URL: {
 /** Mezos requests for mempool operations and classical operations. */
 module type Explorer = {
   let getFromMempool:
-    (PublicKeyHash.t, AppSettings.t, array(Operation.Read.t)) =>
+    (PublicKeyHash.t, ConfigFile.t, array(Operation.Read.t)) =>
     Future.t(Result.t(array(Operation.Read.t), string));
 
   let getOperations:
     (
-      AppSettings.t,
+      ConfigFile.t,
       PublicKeyHash.t,
       ~types: array(string)=?,
       ~destination: PublicKeyHash.t=?,

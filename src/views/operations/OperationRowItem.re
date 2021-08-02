@@ -182,7 +182,7 @@ let make =
     let account = StoreContext.SelectedAccount.useGet();
     let aliases = StoreContext.Aliases.useGetAll();
     let tokens = StoreContext.Tokens.useGetAll();
-    let settings = SdkContext.useSettings();
+    let config = ConfigContext.useContent();
     let addToast = LogsContext.useToast();
 
     <Table.Row>
@@ -299,9 +299,7 @@ let make =
           {operation.timestamp->DateFns.format("P pp")->React.string}
         </Typography.Body1>
       </CellDate>
-      <CellStatus>
-        {status(operation, currentLevel, settings.config)}
-      </CellStatus>
+      <CellStatus> {status(operation, currentLevel, config)} </CellStatus>
       <CellAction>
         <IconButton
           size=34.
@@ -313,7 +311,7 @@ let make =
             I18n.tooltip#open_in_explorer,
           )
           onPress={_ => {
-            switch (AppSettings.getExternalExplorer(settings)) {
+            switch (ConfigUtils.getExternalExplorer(config)) {
             | Ok(url) => System.openExternal(url ++ operation.hash)
             | Error(err) =>
               addToast(Logs.error(~origin=Settings, Network.errorMsg(err)))

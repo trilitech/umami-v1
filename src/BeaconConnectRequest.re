@@ -41,9 +41,9 @@ let dataFromURL = url => {
 };
 
 let checkOperationRequestTargetNetwork =
-    (settings: AppSettings.t, chain: ReBeacon.network) => {
-  chain.type_ == settings->AppSettings.chainId
-  || chain.type_ == settings->AppSettings.chainId->Network.getName;
+    (settings: ConfigFile.t, chain: ReBeacon.network) => {
+  chain.type_ == settings->ConfigUtils.chainId
+  || chain.type_ == settings->ConfigUtils.chainId->Network.getName;
 };
 
 let checkOperationRequestHasOnlyTransaction =
@@ -75,7 +75,7 @@ let useBeaconRequestModalAction = () => {
 
 [@react.component]
 let make = () => {
-  let settings = SdkContext.useSettings();
+  let settings = ConfigContext.useContent();
   let settingsRef = React.useRef(settings);
 
   settingsRef.current = settings;

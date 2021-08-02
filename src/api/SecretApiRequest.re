@@ -28,8 +28,8 @@
 /* Get */
 
 let useLoad = requestState => {
-  let get = (~settings, ()) =>
-    WalletAPI.Accounts.secrets(~settings)
+  let get = (~config, ()) =>
+    WalletAPI.Accounts.secrets(~config)
     ->Result.mapWithDefault(Future.value(Result.Ok([||])), secrets => {
         Future.value(Result.Ok(secrets))
       })
@@ -43,8 +43,8 @@ let useLoad = requestState => {
 };
 
 let useGetRecoveryPhrase = (~requestState as (request, setRequest), ~index) => {
-  let get = (~settings, password) =>
-    WalletAPI.Accounts.recoveryPhraseAt(~settings, index, ~password);
+  let get = (~config, password) =>
+    WalletAPI.Accounts.recoveryPhraseAt(~config, index, ~password);
 
   let getRequest =
     ApiRequest.useGetter(
@@ -59,8 +59,8 @@ let useGetRecoveryPhrase = (~requestState as (request, setRequest), ~index) => {
 };
 
 let useScanGlobal = (~requestState as (request, setRequest), ()) => {
-  let get = (~settings, password) =>
-    WalletAPI.Accounts.scanAll(~settings, ~password);
+  let get = (~config, password) =>
+    WalletAPI.Accounts.scanAll(~config, ~password);
 
   let getRequest =
     ApiRequest.useGetter(
@@ -85,8 +85,8 @@ type deriveInput = {
 let useDerive =
   ApiRequest.useSetter(
     ~set=
-      (~settings, {name, index, password}) =>
-        WalletAPI.Accounts.derive(~settings, ~index, ~alias=name, ~password),
+      (~config, {name, index, password}) =>
+        WalletAPI.Accounts.derive(~config, ~index, ~alias=name, ~password),
     ~kind=Logs.Account,
     ~errorToString=ErrorHandler.toString,
   );
@@ -101,9 +101,9 @@ type createInput = {
 let useCreateWithMnemonics =
   ApiRequest.useSetter(
     ~set=
-      (~settings, {name, mnemonic, derivationPath, password}) =>
+      (~config, {name, mnemonic, derivationPath, password}) =>
         WalletAPI.Accounts.restore(
-          ~settings,
+          ~config,
           ~backupPhrase=mnemonic,
           ~name,
           ~derivationPath,
@@ -117,8 +117,8 @@ let useCreateWithMnemonics =
 let useUpdate =
   ApiRequest.useSetter(
     ~set=
-      (~settings, {index, secret}: Secret.derived) => {
-        WalletAPI.Accounts.updateSecretAt(~settings, secret, index)
+      (~config, {index, secret}: Secret.derived) => {
+        WalletAPI.Accounts.updateSecretAt(~config, secret, index)
       },
     ~kind=Logs.Account,
     ~errorToString=ErrorHandler.toString,

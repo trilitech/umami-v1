@@ -39,8 +39,7 @@
     "reason-react": "^0.9.1",
     "reason-react-native": "^0.63.5",
     "reason-react-update": "^2.0.0",
-    "reschema": "2.0.2-alpha.0",
-    "tezos-sdk": "link:./src/vendors/tezos-sdk"
+    "reschema": "2.0.2-alpha.0"
   },
   "scripts": {
     "start": "cross-env NODE_ENV=development webpack serve --hot --host 0.0.0.0 --config=./webpack.dev.config.js --mode development",
@@ -114,9 +113,6 @@
       }
     ]
   },
-  "eslintIgnore": [
-    "src/vendors/tezos-sdk/TzSDK.js"
-  ],
   "browserslist": {
     "production": [
       ">0.2%",

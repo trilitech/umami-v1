@@ -5,14 +5,7 @@
 
 open TestFramework;
 
-let settings =
-  AppSettings.{
-    config: ConfigFile.dummy,
-    sdk: {
-      main: Obj.magic(""),
-      test: Obj.magic(""),
-    },
-  };
+let config = ConfigFile.dummy;
 
 let pkh = s => s->PublicKeyHash.build->Result.getExn;
 
@@ -26,7 +19,7 @@ describe("API tests", ({testAsync}) => {
         };
     };
     module UnderTest = NodeAPI.Balance;
-    UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh, ())
+    UnderTest.get(config, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh, ())
     ->Future.get(result => {
         expect.value(result).toEqual(Result.Ok(Tez.zero));
         callback();
@@ -43,7 +36,7 @@ describe("API tests", ({testAsync}) => {
         };
     };
     module UnderTest = NodeAPI.Balance;
-    UnderTest.get(settings, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh, ())
+    UnderTest.get(config, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh, ())
     ->Future.get(result => {
         expect.value(result).toEqual(
           Error(ErrorHandler.(Taquito(Generic("stub")))),
@@ -63,7 +56,7 @@ describe("API tests", ({testAsync}) => {
     let expected: array(Operation.Read.t) = [||];
     module UnderTest = ServerAPI.ExplorerMaker(Stub);
     UnderTest.getOperations(
-      settings,
+      config,
       "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
       (),
     )
@@ -161,7 +154,7 @@ describe("API tests", ({testAsync}) => {
     |];
     module UnderTest = ServerAPI.ExplorerMaker(Stub);
     UnderTest.getOperations(
-      settings,
+      config,
       "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
       (),
     )
@@ -196,7 +189,7 @@ describe("API tests", ({testAsync}) => {
     };
     module UnderTest = ServerAPI.ExplorerMaker(Stub);
     UnderTest.getOperations(
-      settings,
+      config,
       "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
       (),
     )
@@ -256,7 +249,7 @@ describe("API tests", ({testAsync}) => {
     |];
     module UnderTest = ServerAPI.ExplorerMaker(Stub);
     UnderTest.getOperations(
-      settings,
+      config,
       "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
       (),
     )
@@ -291,7 +284,7 @@ describe("API tests", ({testAsync}) => {
     };
     module UnderTest = ServerAPI.ExplorerMaker(Stub);
     UnderTest.getOperations(
-      settings,
+      config,
       "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
       (),
     )
@@ -357,7 +350,7 @@ describe("API tests", ({testAsync}) => {
     |];
     module UnderTest = ServerAPI.ExplorerMaker(Stub);
     UnderTest.getOperations(
-      settings,
+      config,
       "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
       (),
     )
@@ -397,7 +390,7 @@ describe("API tests", ({testAsync}) => {
     };
     module UnderTest = ServerAPI.ExplorerMaker(Stub);
     UnderTest.getOperations(
-      settings,
+      config,
       "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
       (),
     )
@@ -457,7 +450,7 @@ describe("API tests", ({testAsync}) => {
     |];
     module UnderTest = ServerAPI.ExplorerMaker(Stub);
     UnderTest.getOperations(
-      settings,
+      config,
       "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
       (),
     )
@@ -492,7 +485,7 @@ describe("API tests", ({testAsync}) => {
     };
     module UnderTest = ServerAPI.ExplorerMaker(Stub);
     UnderTest.getOperations(
-      settings,
+      config,
       "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
       (),
     )
@@ -549,7 +542,7 @@ describe("API tests", ({testAsync}) => {
     |];
     module UnderTest = ServerAPI.ExplorerMaker(Stub);
     UnderTest.getOperations(
-      settings,
+      config,
       "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
       (),
     )
@@ -606,7 +599,7 @@ describe("API tests", ({testAsync}) => {
     |];
     module UnderTest = ServerAPI.ExplorerMaker(Stub);
     UnderTest.getOperations(
-      settings,
+      config,
       "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
       (),
     )
@@ -640,7 +633,7 @@ describe("API tests", ({testAsync}) => {
     };
     module UnderTest = ServerAPI.ExplorerMaker(Stub);
     UnderTest.getOperations(
-      settings,
+      config,
       "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
       (),
     )
@@ -680,7 +673,7 @@ describe("API tests", ({testAsync}) => {
       },
     |];
     module UnderTest = NodeAPI.DelegateMaker(Stub);
-    UnderTest.getBakers(AppSettings.mainOnly(settings))
+    UnderTest.getBakers(config)
     ->Future.get(result => {
         expect.value(result).toEqual(Result.Ok(expected));
         callback();
@@ -704,7 +697,7 @@ describe("API tests", ({testAsync}) => {
       };
     };
     module UnderTest = NodeAPI.DelegateMaker(Stub);
-    UnderTest.getBakers(AppSettings.mainOnly(settings))
+    UnderTest.getBakers(config)
     ->Future.tapError(Js.log)
     ->Future.get(result => {
         expect.value(result).toEqual(

@@ -33,7 +33,7 @@ let respond = responseInput => {
 
 module Peers = {
   let useLoad = requestState => {
-    let get = (~settings as _s, ()) =>
+    let get = (~config as _s, ()) =>
       client
       ->ReBeacon.WalletClient.getPeers
       ->Future.mapError(ReBeacon.Error.toString);
@@ -44,7 +44,7 @@ module Peers = {
   let useDelete =
     ApiRequest.useSetter(
       ~set=
-        (~settings as _s, peer: ReBeacon.peerInfo) =>
+        (~config as _s, peer: ReBeacon.peerInfo) =>
           client
           ->ReBeacon.WalletClient.removePeer(peer)
           ->Future.mapError(ReBeacon.Error.toString),
@@ -56,7 +56,7 @@ module Peers = {
 
 module Permissions = {
   let useLoad = requestState => {
-    let get = (~settings as _s, ()) =>
+    let get = (~config as _s, ()) =>
       client
       ->ReBeacon.WalletClient.getPermissions
       ->Future.mapError(ReBeacon.Error.toString);
@@ -67,7 +67,7 @@ module Permissions = {
   let useDelete =
     ApiRequest.useSetter(
       ~set=
-        (~settings as _s, accountIdentifier: ReBeacon.accountIdentifier) =>
+        (~config as _s, accountIdentifier: ReBeacon.accountIdentifier) =>
           client
           ->ReBeacon.WalletClient.removePermission(accountIdentifier)
           ->Future.mapError(ReBeacon.Error.toString),
@@ -79,9 +79,9 @@ module Permissions = {
 
 module Signature = {
   let useSignPayload = () => {
-    let settings = SdkContext.useSettings();
+    let config = ConfigContext.useContent();
 
     (~source, ~password, ~payload) =>
-      NodeAPI.Signature.signPayload(settings, ~source, ~password, ~payload);
+      NodeAPI.Signature.signPayload(config, ~source, ~password, ~payload);
   };
 };
