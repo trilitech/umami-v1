@@ -26,7 +26,10 @@
 type t = ConfigFile.t;
 
 let baseDir = (config: t) =>
-  config.sdkBaseDir->Option.getWithDefault(ConfigFile.Default.sdkBaseDir);
+  switch (config.sdkBaseDir) {
+  | None => ConfigFile.Default.sdkBaseDir()
+  | Some(v) => v
+  };
 
 let endpoint = (c: t) =>
   switch (c.network->Option.getWithDefault(ConfigFile.Default.network)) {
