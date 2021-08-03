@@ -42,7 +42,8 @@ let dataFromURL = url => {
 
 let checkOperationRequestTargetNetwork =
     (settings: AppSettings.t, chain: ReBeacon.network) =>
-  chain.type_ == settings->AppSettings.chainId;
+  chain.type_ == settings->AppSettings.chainId
+  || chain.type_ == settings->AppSettings.chainId->Network.getName;
 
 let checkOperationRequestHasOnlyTransaction =
     (request: ReBeacon.Message.Request.operationRequest) => {
