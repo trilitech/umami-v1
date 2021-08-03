@@ -123,7 +123,7 @@ let make = () => {
 
             if (targetSettedNetwork) {
               switch (request) {
-              | PermissionRequest(request) => openPermission(request)
+              | PermissionRequest(request) => openPermission(request);
               | SignPayloadRequest(request) => openSignPayload(request)
               | OperationRequest(request) =>
                 if (request->checkOperationRequestHasOnlyTransaction) {
