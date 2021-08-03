@@ -135,6 +135,10 @@ module Accounts: {
       ),
     );
 
+  let legacyImport:
+    (~config: ConfigUtils.t, string, string, ~password: string) =>
+    Future.t(Belt.Result.t(PublicKeyHash.t, ErrorHandler.t));
+
   let scanAll:
     (~config: ConfigFile.t, ~password: string) =>
     Future.t(Result.t(unit, ErrorHandler.t));

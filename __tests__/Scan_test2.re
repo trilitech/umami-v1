@@ -1,10 +1,5 @@
 open TestFramework;
 
-%raw
-"
-   window.require = require;
-   ";
-
 describe("Scan tests", ({test: _, testAsync}) => {
   testAsync("foo", ({expect, callback})
     => {

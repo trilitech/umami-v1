@@ -50,6 +50,8 @@ module File: {
     let assemble: (t, t) => t;
   };
 
+  let access: Path.t => Future.t(bool);
+
   let copy:
     (~name: Path.t, ~dest: Path.t, ~mode: CopyMode.t) =>
     Future.t(result(unit, string));

@@ -1,8 +1,3 @@
-%raw
-"
-   jest.mock('../__mocks__/electron.js')
-   ";
-
 open TestFramework;
 
 let config = ConfigFile.dummy;
@@ -193,7 +188,6 @@ describe("API tests", ({testAsync}) => {
       "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
       (),
     )
-    ->Future.tapError(Js.log)
     ->Future.get(result => {
         expect.value(result).toEqual(
           Result.Error("Expected field 'block'\n\tin array at index 0"),
@@ -698,7 +692,6 @@ describe("API tests", ({testAsync}) => {
     };
     module UnderTest = NodeAPI.DelegateMaker(Stub);
     UnderTest.getBakers(config)
-    ->Future.tapError(Js.log)
     ->Future.get(result => {
         expect.value(result).toEqual(
           Result.Error("Expected field 'name'\n\tin array at index 1"),

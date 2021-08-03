@@ -136,6 +136,7 @@
     "electron-builder": "^22.7.0",
     "electron-notarize": "^1.0.0",
     "html-webpack-plugin": "^5.3.1",
+    "jest": "26.6.3",
     "lenses-ppx": "6.1.2",
     "oslllo-svg-fixer": "1.1.2",
     "react-from-svg": "4.0.6",
