@@ -41,6 +41,7 @@ let endpoint = s =>
   switch (s.config.network->Option.getWithDefault(ConfigFile.Default.network)) {
   | `Mainnet => Network.mainnet.endpoint
   | `Florencenet => Network.florencenet.endpoint
+  | `Granadanet => Network.granadanet.endpoint
   | `Custom(name) =>
     s.config.customNetworks->List.getBy(n => n.name === name)->Option.getExn.
       endpoint
@@ -50,6 +51,7 @@ let sdk = s =>
   switch (s.config.network->Option.getWithDefault(ConfigFile.Default.network)) {
   | `Mainnet => s.sdk.main
   | `Florencenet => s.sdk.test
+  | `Granadanet => s.sdk.test
   | `Custom(_) => s.sdk.test
   };
 
@@ -82,6 +84,7 @@ let chainId = (s: t) =>
   switch (network(s)) {
   | `Mainnet => Network.mainnet.chain
   | `Florencenet => Network.florencenet.chain
+  | `Granadanet => Network.granadanet.chain
   | `Custom(name) =>
     s.config.customNetworks->List.getBy(n => n.name === name)->Option.getExn.
       chain
@@ -91,6 +94,7 @@ let explorer = (s: t) =>
   switch (s.config.network->Option.getWithDefault(ConfigFile.Default.network)) {
   | `Mainnet => Network.mainnet.explorer
   | `Florencenet => Network.florencenet.explorer
+  | `Granadanet => Network.granadanet.explorer
   | `Custom(name) =>
     s.config.customNetworks->List.getBy(n => n.name === name)->Option.getExn.
       explorer
