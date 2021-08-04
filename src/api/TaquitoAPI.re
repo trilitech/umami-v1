@@ -27,7 +27,7 @@ open ReTaquito;
 open ReTaquitoSigner;
 
 let convertWalletError = res =>
-  res->ResultEx.mapError(e => Error(ErrorHandler.Wallet(e)));
+  res->ResultEx.mapError(e => ErrorHandler.Wallet(e));
 
 let convertToErrorHandler = res =>
   ReTaquitoError.fromPromiseParsedWrapper(ErrorHandler.taquito, res);

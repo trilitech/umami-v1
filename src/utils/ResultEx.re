@@ -51,7 +51,7 @@ let flatMap2 = (r1, r2, f) =>
 let mapError = (r, f) =>
   switch (r) {
   | Ok(v) => Ok(v)
-  | Error(e) => f(e)
+  | Error(e) => Error(f(e))
   };
 
 let map2 = (r1, r2, f) => flatMap2(r1, r2, (v1, v2) => Ok(f(v1, v2)));

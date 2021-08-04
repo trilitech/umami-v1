@@ -210,9 +210,7 @@ let getAPIVersion = (~timeout=?, url) =>
         try(
           Json.Decode.(field("api", string, json))
           ->Version.parse
-          ->ResultEx.mapError((VersionFormat(e)) =>
-              Error(`APIVersionFormat(e))
-            )
+          ->ResultEx.mapError((VersionFormat(e)) => `APIVersionFormat(e))
           ->Result.map(api =>
               Json.Decode.{
                 api,
