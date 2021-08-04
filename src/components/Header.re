@@ -171,6 +171,7 @@ let make = () => {
     switch (settings->AppSettings.network) {
     | `Mainnet => (I18n.t#mainnet, Some(`primary))
     | `Florencenet => (I18n.t#florencenet, Some(`mediumEmphasis))
+    | `Granadanet => (I18n.t#granadanet, Some(`mediumEmphasis))
     | `Custom(name) => (
         name,
         settings->AppSettings.chainId == Network.mainnetChain
@@ -183,6 +184,7 @@ let make = () => {
     switch (network) {
     | `Mainnet => None
     | `Florencenet => None
+    | `Granadanet => None
     | `Custom(_) => Some(settings->AppSettings.chainId->Network.getChainName)
     };
   };

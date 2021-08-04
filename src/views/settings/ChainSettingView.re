@@ -27,7 +27,9 @@ open ReactNative;
 open SettingsComponents;
 
 module StateLenses = [%lenses
-  type state = {network: [ | `Mainnet | `Florencenet | `Custom(string)]}
+  type state = {
+    network: [ | `Mainnet | `Florencenet | `Granadanet | `Custom(string)],
+  }
 ];
 module ChainForm = ReForm.Make(StateLenses);
 
@@ -217,6 +219,12 @@ let make = () => {
           <RadioItem
             label=I18n.t#florencenet
             value=`Florencenet
+            setValue=writeNetwork
+            currentValue={settings->AppSettings.network}
+          />
+          <RadioItem
+            label=I18n.t#granadanet
+            value=`Granadanet
             setValue=writeNetwork
             currentValue={settings->AppSettings.network}
           />
