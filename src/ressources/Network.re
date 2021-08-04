@@ -116,6 +116,13 @@ let florencenet = {
   endpoint: "https://florencenet.smartpy.io/",
 };
 
+let granadanet = {
+  name: I18n.t#granadanet,
+  chain: granadanetChain,
+  explorer: "https://api.umamiwallet.com/granadanet",
+  endpoint: "https://granadanet.smartpy.io/",
+};
+
 let supportedChains = [
   mainnetChain,
   granadanetChain,
