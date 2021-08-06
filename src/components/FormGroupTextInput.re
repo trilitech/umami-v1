@@ -59,6 +59,8 @@ let make =
       ~secureTextEntry=?,
       ~placeholder=?,
       ~disabled=?,
+      ~multiline=?,
+      ~numberOfLines=?,
       ~clearButton=false,
       ~onSubmitEditing=?,
       ~decoration: option((~style: Style.t) => React.element)=?,
@@ -80,6 +82,8 @@ let make =
         ?keyboardType
         ?placeholder
         ?disabled
+        ?multiline
+        ?numberOfLines
         ?onSubmitEditing
         onClear=?{clearButton ? Some(() => handleChange("")) : None}
       />

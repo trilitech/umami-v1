@@ -77,7 +77,8 @@ let btn = {
   pub reject = "REJECT";
   pub sign = "SIGN";
   pub close = "CLOSE";
-  pub add_custom_network = "ADD CUSTOM NETWORK"
+  pub add_custom_network = "ADD CUSTOM NETWORK";
+  pub beacon_connect_dapp = "CONNECT TO DAPP"
 };
 
 let tooltip = {
@@ -139,6 +140,7 @@ let label = {
   pub account_custom_path = "Custom Path";
   pub beacon_account = "Account to connect to dApp";
   pub beacon_sign_payload = "Payload to sign";
+  pub beacon_dapp_pairing = "DApp pairing request";
   pub parameters = "Parameters";
   pub custom_network_name = "Name";
   pub custom_network_mezos_url = "Mezos URL";
@@ -247,10 +249,13 @@ let title = {
   pub disclaimer = "User Agreement";
   pub beacon_connection_request = "Connection Request";
   pub beacon_sign_request = "Sign";
+  pub beacon_pairing = "Connect to DApp with pairing request";
+  pub beacon_pairing_qr = "Connect to DApp with QR code";
+  pub beacon_scan_qr = "Scan QR code from dApp";
   pub interaction = "Interaction";
   pub add_custom_network = "Add Custom Network";
   pub update_custom_network = "Edit Custom Network";
-  pub delete_custom_network = "Delete Network ?"
+  pub delete_custom_network = "Delete Network ?";
 };
 
 let expl = {
@@ -387,7 +392,9 @@ let errors = {
   pub cannot_update_secret = i => p("Can't update secret at index %d!", i);
   pub recovery_phrase_not_found = i =>
     p("Recovery phrase at index %d not found!", i);
-  pub secret_already_imported = "Secret already imported"
+  pub secret_already_imported = "Secret already imported";
+  pub beacon_transaction_not_supported = "Beacon transaction not supported";
+  pub beacon_request_network_missmatch = "Beacon request network not supported";
 };
 
 let csv = {
