@@ -43,7 +43,6 @@ let dataFromURL = url => {
 let checkOperationRequestTargetNetwork =
     (settings: AppSettings.t, chain: ReBeacon.network) =>
     {
-      Js.log(chain.type_ ++ ", " ++ settings->AppSettings.chainId ++ ", " ++ settings->AppSettings.chainId->Network.getName)
   chain.type_ == settings->AppSettings.chainId
   || chain.type_ == settings->AppSettings.chainId->Network.getName;
   }
