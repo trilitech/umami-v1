@@ -392,7 +392,9 @@ let errors = {
   pub cannot_update_secret = i => p("Can't update secret at index %d!", i);
   pub recovery_phrase_not_found = i =>
     p("Recovery phrase at index %d not found!", i);
-  pub secret_already_imported = "Secret already imported"
+  pub secret_already_imported = "Secret already imported";
+  pub beacon_transaction_not_supported = "Beacon transaction not supported";
+  pub beacon_request_network_missmatch = "Beacon request network not supported";
 };
 
 let csv = {
