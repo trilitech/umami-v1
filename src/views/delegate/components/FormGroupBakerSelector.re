@@ -118,7 +118,7 @@ module BakerInputTypeToogle = {
                  style(~color=theme.colors.textPrimary, ()),
                |])
              )>
-             "CUSTOM"->React.string
+             I18n.btn#custom->React.string
            </Typography.ButtonSecondary>
          </>
        | Text =>
@@ -131,7 +131,7 @@ module BakerInputTypeToogle = {
                  style(~color=theme.colors.textPrimary, ()),
                |])
              )>
-             "SEE LIST"->React.string
+             I18n.btn#see_list->React.string
            </Typography.ButtonSecondary>
          </>
        }}
@@ -167,23 +167,23 @@ let make = (~label, ~value: option(string), ~handleChange, ~error) => {
   React.useEffect4(
     () => {
       if (inputType == Selector) {
-        if (value == None) {
+        if (value == None && items->Array.size > 0) {
           // if input selector and no value, select first entry
           let firstItem = items->Array.get(0);
           firstItem->Lib.Option.iter(baker =>
             (baker.address :> string)->Some->handleChange
           );
-        } else if (items->Array.size > 0
-                   && !
-                        items->Array.some(baker =>
-                          Some((baker.address :> string)) == value
-                        )) {
+        } else if (!
+                     items->Array.some(baker =>
+                       Some((baker.address :> string)) == value
+                     )) {
           // if input selector and value isn't in the item list : switch to input text
           setInputType(_ =>
             Text
           );
         };
       };
+
       None;
     },
     (value, items, inputType, setInputType),
