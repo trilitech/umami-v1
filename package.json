@@ -25,6 +25,7 @@
     "ed25519-hd-key": "^1.2.0",
     "electron-devtools-installer": "^3.1.0",
     "electron-reload": "^1.5.0",
+    "jsqr": "1.4.0",
     "libsodium-wrappers-sumo": "^0.7.9",
     "pbkdf2": "^3.1.1",
     "proper-lockfile": "^4.1.1",
@@ -76,8 +77,10 @@
       "category": "public.app-category.Reference"
     },
     "linux": {
-        "target": "snap",
-      "mimeTypes": ["x-scheme-handler/umami"]
+      "target": "snap",
+      "mimeTypes": [
+        "x-scheme-handler/umami"
+      ]
     },
     "files": [
       "build/**/*",

@@ -39,27 +39,28 @@ module Secret: {
 module Aliases: {
   type t = array((string, PublicKeyHash.t));
 
-  let get: (~settings: AppSettings.t) => Future.t(Result.t(t, string));
+  let get:
+    (~settings: AppSettings.t) => Future.t(Result.t(t, ErrorHandler.t));
 
   let getAliasForAddress:
     (~settings: AppSettings.t, ~address: PublicKeyHash.t) =>
-    Future.t(Result.t(option(string), string));
+    Future.t(Result.t(option(string), ErrorHandler.t));
 
   let getAddressForAlias:
     (~settings: AppSettings.t, ~alias: string) =>
-    Future.t(Result.t(option(PublicKeyHash.t), string));
+    Future.t(Result.t(option(PublicKeyHash.t), ErrorHandler.t));
 
   let add:
     (~settings: AppSettings.t, ~alias: string, ~address: PublicKeyHash.t) =>
-    Future.t(Result.t(unit, string));
+    Future.t(Result.t(unit, ErrorHandler.t));
 
   let delete:
     (~settings: AppSettings.t, ~alias: string) =>
-    Future.t(Result.t(unit, string));
+    Future.t(Result.t(unit, ErrorHandler.t));
 
   let rename:
     (~settings: AppSettings.t, TezosSDK.renameParams) =>
-    Future.t(Result.t(unit, string));
+    Future.t(Result.t(unit, ErrorHandler.t));
 };
 
 /** Accounts management */
@@ -69,7 +70,8 @@ module Accounts: {
 
   type name = string;
 
-  let secrets: (~settings: AppSettings.t) => option(t);
+  let secrets:
+    (~settings: AppSettings.t) => result(t, TezosClient.ErrorHandler.t);
 
   let recoveryPhrases:
     (~settings: AppSettings.t) =>
@@ -77,15 +79,15 @@ module Accounts: {
 
   let get:
     (~settings: AppSettings.t) =>
-    Future.t(Result.t(array((name, PublicKeyHash.t)), string));
+    Future.t(Result.t(array((name, PublicKeyHash.t)), ErrorHandler.t));
 
   let updateSecretAt:
     (~settings: AppSettings.t, Secret.Repr.t, int) =>
-    Future.t(Result.t(unit, string));
+    Future.t(Result.t(unit, ErrorHandler.t));
 
   let recoveryPhraseAt:
     (~settings: AppSettings.t, int, ~password: string) =>
-    Future.t(Result.t(string, string));
+    Future.t(Result.t(string, ErrorHandler.t));
 
   let add:
     (~settings: AppSettings.t, ~alias: name, ~address: PublicKeyHash.t) =>
@@ -98,23 +100,24 @@ module Accounts: {
       ~secretKey: string,
       ~password: string
     ) =>
-    Future.t(Result.t(PublicKeyHash.t, string));
+    Future.t(Result.t(PublicKeyHash.t, ErrorHandler.t));
 
   let derive:
     (~settings: AppSettings.t, ~index: int, ~alias: name, ~password: string) =>
-    Future.t(Result.t(PublicKeyHash.t, string));
+    Future.t(Result.t(PublicKeyHash.t, ErrorHandler.t));
 
   /* Delete the given account */
   let delete:
     (~settings: AppSettings.t, string) =>
-    Future.t(Result.t(option(unit), string));
+    Future.t(Result.t(unit, ErrorHandler.t));
 
   let deleteSecretAt:
     (~settings: AppSettings.t, int) =>
-    Future.t(Result.t(array(unit), string));
+    Future.t(Result.t(array(unit), ErrorHandler.t));
 
   let used:
-    (AppSettings.t, PublicKeyHash.t) => Future.t(Result.t(bool, string));
+    (AppSettings.t, PublicKeyHash.t) =>
+    Future.t(Result.t(bool, ErrorHandler.t));
 
   let restore:
     (
@@ -126,12 +129,15 @@ module Accounts: {
       unit
     ) =>
     Future.t(
-      Result.t((array(PublicKeyHash.t), option(PublicKeyHash.t)), string),
+      Result.t(
+        (array(PublicKeyHash.t), option(PublicKeyHash.t)),
+        ErrorHandler.t,
+      ),
     );
 
   let scanAll:
     (~settings: AppSettings.t, ~password: string) =>
-    Future.t(Result.t(unit, string));
+    Future.t(Result.t(unit, ErrorHandler.t));
 
   let getPublicKey:
     (~settings: AppSettings.t, ~account: Account.t) =>

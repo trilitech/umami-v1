@@ -23,28 +23,31 @@
 /*                                                                           */
 /*****************************************************************************/
 
-type network = [ | `Mainnet | `Testnet(string)];
+type network = [ | `Mainnet | `Florencenet | `Granadanet | `Custom(string)];
 
 type t = {
   network: option(network),
-  endpointMain: option(string),
-  endpointTest: option(string),
-  explorerMain: option(string),
-  explorerTest: option(string),
   theme: option([ | `system | `dark | `light]),
   confirmations: option(int),
   sdkBaseDir: option(System.Path.t),
+  customNetworks: list(Network.network),
 };
 
 [@bs.val] [@bs.scope "JSON"] external parse: string => t = "parse";
 
+let parse = s => {
+  let parseNetwork: [> network] => option(network) =
+    fun
+    | (`Mainnet | `Florencenet | `Granadanet | `Custom(_)) as v => Some(v)
+    | _ => None;
+  let c = s->parse;
+  let network = c.network->Option.flatMap(parseNetwork);
+  {...c, network};
+};
+
 module Default = {
   /* let network = `Testnet(Network.edo2netChain); */
   let network = `Mainnet;
-  let endpointMain = "https://mainnet.smartpy.io/";
-  let endpointTest = "https://florencenet.smartpy.io/";
-  let explorerMain = "https://api.umamiwallet.com/mainnet";
-  let explorerTest = "https://api.umamiwallet.com/florencenet";
   let theme = `system;
   let sdkBaseDir = System.(Path.Ops.(appDir() / (!"tezos-client")));
   let confirmations = 5;
@@ -52,13 +55,10 @@ module Default = {
 
 let dummy = {
   network: None,
-  endpointMain: None,
-  endpointTest: None,
-  explorerMain: None,
-  explorerTest: None,
   theme: None,
   confirmations: None,
   sdkBaseDir: None,
+  customNetworks: [],
 };
 
 let toString = c =>
@@ -74,9 +74,3 @@ let write = s => LocalStorage.setItem(configKey, s);
 let read = () => LocalStorage.getItem(configKey);
 
 let reset = () => LocalStorage.removeItem(configKey);
-
-let getNetworkName = network =>
-  switch (network) {
-  | `Mainnet => Network.mainnetName
-  | `Testnet(c) => c->Network.getName
-  };

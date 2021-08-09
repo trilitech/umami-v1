@@ -54,6 +54,7 @@ let styles =
           ~borderRadius=4.,
           (),
         ),
+      "multiline": style(~height=auto, ()),
     })
   );
 
@@ -74,6 +75,8 @@ let make =
       ~placeholder=?,
       ~onSubmitEditing=?,
       ~disabled=false,
+      ~multiline=false,
+      ~numberOfLines=?,
       ~paddingVertical=paddingVertical,
       ~paddingLeft=paddingLeft,
       ~paddingRight=paddingRight,
@@ -99,6 +102,7 @@ let make =
       style=Style.(
         arrayOption([|
           Some(styles##input),
+          multiline ? Some(styles##multiline) : None,
           Some(
             style(
               ~color=theme.colors.textHighEmphasis,
@@ -162,6 +166,8 @@ let make =
       autoFocus=false
       ?keyboardType
       ?placeholder
+      multiline
+      ?numberOfLines
       ?onSubmitEditing
       editable={!disabled}
     />

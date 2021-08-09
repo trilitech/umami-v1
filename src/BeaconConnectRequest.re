@@ -41,8 +41,10 @@ let dataFromURL = url => {
 };
 
 let checkOperationRequestTargetNetwork =
-    (a: ReBeacon.network, b: ConfigFile.network) =>
-  a.type_ == b->ConfigFile.getNetworkName;
+    (settings: AppSettings.t, chain: ReBeacon.network) => {
+  chain.type_ == settings->AppSettings.chainId
+  || chain.type_ == settings->AppSettings.chainId->Network.getName;
+};
 
 let checkOperationRequestHasOnlyTransaction =
     (request: ReBeacon.Message.Request.operationRequest) => {
@@ -74,9 +76,9 @@ let useBeaconRequestModalAction = () => {
 [@react.component]
 let make = () => {
   let settings = SdkContext.useSettings();
-  let settingsRef = React.useRef(settings)
+  let settingsRef = React.useRef(settings);
 
-  settingsRef.current = settings
+  settingsRef.current = settings;
 
   let (
     permissionRequest,
@@ -102,6 +104,8 @@ let make = () => {
   ) =
     useBeaconRequestModalAction();
 
+  let addToast = LogsContext.useToast();
+
   React.useEffect0(() => {
     {
       client
@@ -114,9 +118,8 @@ let make = () => {
               request
               ->ReBeacon.Message.Request.getNetwork
               ->Option.mapWithDefault(true, network =>
-                  network->checkOperationRequestTargetNetwork(
-                    settingsRef.current->AppSettings.network,
-                  )
+                  settingsRef.current
+                  ->checkOperationRequestTargetNetwork(network)
                 );
 
             if (targetSettedNetwork) {
@@ -137,7 +140,17 @@ let make = () => {
                         errorType: `TRANSACTION_INVALID_ERROR,
                       }),
                     )
-                  ->Future.get(Js.log);
+                  ->Future.tapOk(_ =>
+                      addToast(
+                        Logs.error(
+                          Generic(
+                            I18n.errors#beacon_transaction_not_supported,
+                          )
+                          ->ReBeacon.Error.toString,
+                        ),
+                      )
+                    )
+                  ->ignore;
                 }
               | _ => ()
               };
@@ -150,7 +163,15 @@ let make = () => {
                     errorType: `NETWORK_NOT_SUPPORTED,
                   }),
                 )
-              ->Future.get(Js.log);
+              ->Future.tapOk(_ =>
+                  addToast(
+                    Logs.error(
+                      Generic(I18n.errors#beacon_request_network_missmatch)
+                      ->ReBeacon.Error.toString,
+                    ),
+                  )
+                )
+              ->ignore;
             };
           })
         )
@@ -167,10 +188,10 @@ let make = () => {
           })
         })
       ->Future.tapOk(_ => {
-        IPC.renderer->IPC.send("beacon-ready");
-        Js.log("beacon-ready (renderer)")
-      })
-      ->Future.get(Js.log);
+          IPC.renderer->IPC.send("beacon-ready");
+          Js.log("beacon-ready (renderer)");
+        })
+      ->ignore;
     };
     None;
   });

@@ -32,7 +32,10 @@ type reactState('state) = ('state, ('state => 'state) => unit);
 type requestsState('requestResponse, 'error) =
   Map.String.t(ApiRequest.t('requestResponse, 'error));
 
-type error = string;
+type error = ErrorHandler.t;
+
+type apiRequestsStateLegacy('requestResponse) =
+  reactState(requestsState('requestResponse, string));
 
 type apiRequestsState('requestResponse) =
   reactState(requestsState('requestResponse, error));
@@ -41,19 +44,19 @@ type state = {
   selectedAccountState: reactState(option(PublicKeyHash.t)),
   selectedTokenState: reactState(option(PublicKeyHash.t)),
   accountsRequestState:
-    reactState(ApiRequest.t(Map.String.t(Account.t), string)),
+    reactState(ApiRequest.t(Map.String.t(Account.t), ErrorHandler.t)),
   secretsRequestState:
-    reactState(ApiRequest.t(array(Secret.derived), string)),
+    reactState(ApiRequest.t(array(Secret.derived), ErrorHandler.t)),
   balanceRequestsState: apiRequestsState(Tez.t),
   delegateRequestsState: apiRequestsState(option(PublicKeyHash.t)),
   delegateInfoRequestsState:
     apiRequestsState(option(NodeAPI.Delegate.delegationInfo)),
   operationsRequestsState:
-    apiRequestsState(OperationApiRequest.operationsResponse),
+    apiRequestsStateLegacy(OperationApiRequest.operationsResponse),
   operationsConfirmations: reactState(Set.String.t),
   aliasesRequestState:
-    reactState(ApiRequest.t(Map.String.t(Alias.t), error)),
-  bakersRequestState: reactState(ApiRequest.t(array(Delegate.t), error)),
+    reactState(ApiRequest.t(Map.String.t(Alias.t), ErrorHandler.t)),
+  bakersRequestState: reactState(ApiRequest.t(array(Delegate.t), string)),
   tokensRequestState:
     reactState(ApiRequest.t(Map.String.t(Token.t), string)),
   balanceTokenRequestsState: apiRequestsState(Token.Unit.t),
@@ -150,17 +153,16 @@ let make = (~children) => {
   React.useEffect1(
     () => {
       Network.checkConfiguration(
-        ~network=settings->AppSettings.network,
         settings->AppSettings.explorer,
         settings->AppSettings.endpoint,
       )
-      ->Future.tapOk(v => setApiVersion(_ => Some(v)))
-      ->FutureEx.getOk(apiVersion =>
+      ->Future.tapOk(((v, _)) => setApiVersion(_ => Some(v)))
+      ->FutureEx.getOk(((apiVersion, _)) =>
           if (!Network.checkInBound(apiVersion.Network.api)) {
             addToast(
               Logs.error(
                 ~origin=Settings,
-                Network.errorMsg(Network.APINotSupported(apiVersion.api)),
+                Network.errorMsg(`APINotSupported(apiVersion.api)),
               ),
             );
           }
@@ -664,9 +666,9 @@ module Accounts = {
     });
   };
 
-  let useGetFromAddress = address => {
+  let useGetFromAddress = (address: PublicKeyHash.t) => {
     let accounts = useGetAll();
-    accounts->Map.String.get(address);
+    accounts->Map.String.get((address :> string));
   };
 
   let useResetNames = () => {

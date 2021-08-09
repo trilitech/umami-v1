@@ -24,8 +24,52 @@ let styles =
       "section": style(~marginBottom=8.->dp, ()),
       "loadingContainer": style(~height=44.->dp, ~minHeight=44.->dp, ()),
       "list": style(~minHeight=44.->dp, ()),
+      "buttonContainer":
+        style(~alignSelf=`flexStart, ~marginBottom=4.->dp, ()),
     })
   );
+
+module ConnectDAppPairingRequestButton = {
+  [@react.component]
+  let make = () => {
+    let (visibleModal, openAction, closeAction) =
+      ModalAction.useModalActionState();
+
+    <>
+      <View style=styles##buttonContainer>
+        <ButtonAction
+          onPress={_ => openAction()}
+          text="CONNECT TO DAPP WITH PAIRING REQUEST"
+          icon=Icons.Copy.build
+        />
+      </View>
+      <ModalAction visible=visibleModal onRequestClose=closeAction>
+        <BeaconConnectDAppView closeAction />
+      </ModalAction>
+    </>;
+  };
+};
+
+module ConnectDAppPairingRequestWithQRButton = {
+  [@react.component]
+  let make = () => {
+    let (visibleModal, openAction, closeAction) =
+      ModalAction.useModalActionState();
+
+    <>
+      <View style=styles##buttonContainer>
+        <ButtonAction
+          onPress={_ => openAction()}
+          text="CONNECT TO DAPP WITH QR CODE"
+          icon=Icons.Qr.build
+        />
+      </View>
+      <ModalAction visible=visibleModal onRequestClose=closeAction>
+        <BeaconConnectDAppView.WithQR closeAction />
+      </ModalAction>
+    </>;
+  };
+};
 
 module PeersSection = {
   module PeerDeleteButton = {
@@ -75,7 +119,9 @@ module PeersSection = {
       </Typography.Body1>
       <Table.Head>
         <CellBase>
-          <Typography.Overline3> I18n.settings#beacon_peers_name->React.string </Typography.Overline3>
+          <Typography.Overline3>
+            I18n.settings#beacon_peers_name->React.string
+          </Typography.Overline3>
         </CellBase>
         <CellBase>
           <Typography.Overline3>
@@ -91,7 +137,9 @@ module PeersSection = {
          | NotAsked
          | Loading(_) => <LoadingView />
          | Done(Ok([||]), _) =>
-           <Table.Empty> I18n.settings#beacon_empty_peers->React.string </Table.Empty>
+           <Table.Empty>
+             I18n.settings#beacon_empty_peers->React.string
+           </Table.Empty>
          | Done(Ok(peers), _) =>
            peers->Array.map(peer => <Row key={peer.id} peer />)->React.array
          | Done(Error(error), _) =>
@@ -165,7 +213,9 @@ module PermissionsSection = {
       </Typography.Body1>
       <Table.Head>
         <CellBase>
-          <Typography.Overline3> I18n.settings#beacon_permissions_dapp->React.string </Typography.Overline3>
+          <Typography.Overline3>
+            I18n.settings#beacon_permissions_dapp->React.string
+          </Typography.Overline3>
         </CellBase>
         <CellBase>
           <Typography.Overline3>
@@ -173,7 +223,9 @@ module PermissionsSection = {
           </Typography.Overline3>
         </CellBase>
         <CellBase>
-          <Typography.Overline3> I18n.settings#beacon_permissions_scopes->React.string </Typography.Overline3>
+          <Typography.Overline3>
+            I18n.settings#beacon_permissions_scopes->React.string
+          </Typography.Overline3>
         </CellBase>
         <CellBase>
           <Typography.Overline3>
@@ -187,7 +239,9 @@ module PermissionsSection = {
          | NotAsked
          | Loading(_) => <LoadingView />
          | Done(Ok([||]), _) =>
-           <Table.Empty> I18n.settings#beacon_empty_permissions->React.string </Table.Empty>
+           <Table.Empty>
+             I18n.settings#beacon_empty_permissions->React.string
+           </Table.Empty>
          | Done(Ok(permissions), _) =>
            permissions
            ->Array.map(permission => {
@@ -215,6 +269,9 @@ module PermissionsSection = {
 let make = () => {
   <Block title=I18n.settings#beacon_title>
     <View style=styles##inner>
+      <ConnectDAppPairingRequestWithQRButton />
+      <ConnectDAppPairingRequestButton />
+      <View style=styles##spacer />
       <PeersSection />
       <View style=styles##spacer />
       <PermissionsSection />

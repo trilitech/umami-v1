@@ -24,13 +24,11 @@
 /*****************************************************************************/
 
 open ServerAPI;
-open Delegate;
 
 module Balance = {
   let get = (settings, address, ~params=?, ()) => {
     AppSettings.endpoint(settings)
-    ->ReTaquito.Balance.get(~address, ~params?, ())
-    ->Future.mapOk(Tez.ofInt64);
+    ->TaquitoAPI.Balance.get(~address, ~params?, ());
   };
 };
 
@@ -46,18 +44,15 @@ module Simulation = {
       List.map(transfers, tx => tx.Transfer.tx_options->extractCustomValues)
       ->List.toArray;
 
-    let transfers = (cache, source) =>
-      transfers->ReTaquito.Transfer.prepareTransfers(cache, source);
-
-    ReTaquito.Transfer.Estimate.batch(
+    TaquitoAPI.Transfer.Estimate.batch(
       ~endpoint=settings->AppSettings.endpoint,
       ~baseDir=settings->AppSettings.baseDir,
       ~source,
-      ~transfers,
+      ~transfers=transfers->TaquitoAPI.Transfer.prepareTransfers,
       (),
     )
     ->Future.flatMapOk(r =>
-        ReTaquito.Estimate.handleEstimationResults(r, customValues, index)
+        TaquitoAPI.handleEstimationResults(r, customValues, index)
       )
     ->Future.mapOk(
         ({customFeeMutez, burnFeeMutez, gasLimit, storageLimit, revealFee}) => {
@@ -71,7 +66,7 @@ module Simulation = {
   };
 
   let setDelegate = (settings, delegation: Protocol.delegation) => {
-    ReTaquito.Estimate.setDelegate(
+    TaquitoAPI.Delegate.Estimate.set(
       ~endpoint=settings->AppSettings.endpoint,
       ~baseDir=settings->AppSettings.baseDir,
       ~source=delegation.Protocol.source,
@@ -103,14 +98,11 @@ module Simulation = {
 
 module Operation = {
   let batch = (settings, transfers, ~source, ~password) => {
-    let transfers = (cache, source) =>
-      transfers->ReTaquito.Transfer.prepareTransfers(cache, source);
-
-    ReTaquito.Transfer.batch(
+    TaquitoAPI.Transfer.batch(
       ~endpoint=settings->AppSettings.endpoint,
       ~baseDir=settings->AppSettings.baseDir,
       ~source,
-      ~transfers,
+      ~transfers=transfers->TaquitoAPI.Transfer.prepareTransfers,
       ~password,
       (),
     )
@@ -119,13 +111,13 @@ module Operation = {
 
   let setDelegate =
       (settings, Protocol.{delegate, source, options}, ~password) => {
-    ReTaquito.Operations.setDelegate(
+    TaquitoAPI.Delegate.set(
       ~endpoint=settings->AppSettings.endpoint,
       ~baseDir=settings->AppSettings.baseDir,
       ~source,
       ~delegate,
       ~password,
-      ~fee=?options.fee->Option.map(Tez.toInt64),
+      ~fee=?options.fee,
       (),
     )
     ->Future.mapOk((op: ReTaquito.Toolkit.operationResult) => op.hash);
@@ -161,7 +153,7 @@ module DelegateMaker =
     };
 
   let getForAccount = (settings, account) =>
-    ReTaquito.getDelegate(settings->AppSettings.endpoint, account)
+    TaquitoAPI.Delegate.get(settings->AppSettings.endpoint, account)
     ->Future.mapOk(result =>
         switch (result) {
         | Some(delegate) =>
@@ -175,23 +167,12 @@ module DelegateMaker =
       );
 
   let getBakers = (settings: AppSettings.t) =>
-    switch (settings->AppSettings.network) {
-    | `Mainnet =>
+    switch (settings->AppSettings.chainId) {
+    | chain when chain == Network.mainnetChain =>
       URL.External.bakingBadBakers
       ->URL.get
       ->Future.mapOk(Json.Decode.(array(Delegate.decode)))
-    | `Testnet(_) =>
-      Future.value(
-        Ok([|
-          {
-            name: "zebra",
-            address:
-              "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"
-              ->PublicKeyHash.build
-              ->Result.getExn,
-          },
-        |]),
-      )
+    | _ => Ok([||])->Future.value
     };
 
   type delegationInfo = {
@@ -203,7 +184,7 @@ module DelegateMaker =
 
   let getDelegationInfoForAccount =
       (network, account: PublicKeyHash.t)
-      : Future.t(Belt.Result.t(option(delegationInfo), Js.String.t)) => {
+      : Future.t(Belt.Result.t(option(delegationInfo), ErrorHandler.t)) => {
     module ExplorerAPI = ServerAPI.ExplorerMaker(Get);
     module BalanceAPI = Balance;
     network
@@ -213,6 +194,7 @@ module DelegateMaker =
         ~limit=1,
         (),
       )
+    ->Future.mapError(e => ErrorHandler.(Taquito(Generic(e))))
     ->Future.flatMapOk(operations =>
         if (operations->Array.length == 0) {
           Future.value(Ok(None));
@@ -275,13 +257,21 @@ module DelegateMaker =
                             };
                           }
                         )
+                      ->Future.mapError(e =>
+                          ErrorHandler.(Taquito(Generic(e)))
+                        )
                     );
                 }
               | None =>
                 Js.log("No delegation set");
                 Future.value(Ok(None));
               }
-            | _ => Future.value(Error("Invalid operation type!"))
+            | _ =>
+              Future.value(
+                Error(
+                  ErrorHandler.(Taquito(Generic("Invalid operation type!"))),
+                ),
+              )
             }
           };
         }
@@ -328,7 +318,6 @@ module Tokens = {
     switch (operation) {
     | Transfer({source, transfers, _}) =>
       batchEstimate(network, transfers, ~source, ~index?, ())
-      ->Future.mapError(e => e->ErrorHandler.Taquito)
     | _ =>
       Future.value(
         SimulationNotAvailable(Token.operationEntrypoint(operation))
@@ -341,7 +330,6 @@ module Tokens = {
     switch (operation) {
     | Transfer({source, transfers, _}) =>
       batch(network, transfers, ~source, ~password)
-      ->Future.mapError(ErrorHandler.taquito)
     | _ =>
       Future.value(
         InjectionNotImplemented(Token.operationEntrypoint(operation))
@@ -388,12 +376,11 @@ module Tokens = {
 
 module Signature = {
   let signPayload = (settings, ~source, ~password, ~payload) => {
-    ReTaquito.Signature.signPayload(
+    TaquitoAPI.Signature.signPayload(
       ~baseDir=settings->AppSettings.baseDir,
       ~source,
       ~password,
       ~payload,
-    )
-    ->Future.mapError(taquitoError => ErrorHandler.Taquito(taquitoError));
+    );
   };
 };

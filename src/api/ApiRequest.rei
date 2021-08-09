@@ -147,28 +147,28 @@ let conditionToLoad: (t('a, 'b), bool) => bool;
 let useGetter:
   (
     ~toast: bool=?,
-    ~errorToString: string => Js.String.t=?,
+    ~errorToString: 'error => Js.String.t=?,
     ~get: (~settings: AppSettings.t, 'input) =>
-          Future.t(Belt.Result.t('response, string)),
+          Future.t(Belt.Result.t('response, 'error)),
     ~kind: Logs.origin,
-    ~setRequest: (t('response, 'a) => t('response, string)) => unit,
+    ~setRequest: (t('response, 'a) => t('response, 'error)) => unit,
     unit,
     'input
   ) =>
-  Future.t(Belt.Result.t('response, string));
+  Future.t(Belt.Result.t('response, 'error));
 
 /* Builds an auto-reloaded ressource from an asynchronous function */
 let useLoader:
   (
     ~get: (~settings: AppSettings.t, 'input) =>
-          Future.t(Belt.Result.t('value, string)),
+          Future.t(Belt.Result.t('value, 'error)),
     ~condition: 'input => bool=?,
     ~kind: Logs.origin,
-    ~errorToString: string => Js.String.t=?,
-    ~requestState: requestState('value, string),
+    ~errorToString: 'error => Js.String.t=?,
+    ~requestState: requestState('value, 'error),
     'input
   ) =>
-  t('value, string);
+  t('value, 'error);
 
 /* Builds a ressource that represents the modification of a distant value
      defined through the [set] function.

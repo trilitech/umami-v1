@@ -53,7 +53,7 @@ let token = (operation, password) => {
   password,
 };
 
-let errorToString = ErrorHandler.fromApiToString;
+let errorToString = ErrorHandler.toString;
 
 let filterOutFormError =
   fun
@@ -64,19 +64,17 @@ let useCreate = (~sideEffect=?, ()) => {
   let set = (~settings, {operation, password}) => {
     switch (operation) {
     | Protocol(operation) =>
-      settings
-      ->NodeAPI.Operation.run(operation, ~password)
-      ->Future.mapError(ErrorHandler.taquito)
+      settings->NodeAPI.Operation.run(operation, ~password)
 
     | Token(operation) =>
-      settings
-      ->NodeAPI.Tokens.inject(operation, ~password)
-      ->Future.mapError(e => e)
+      settings->NodeAPI.Tokens.inject(operation, ~password)
 
     | Transfer(t) =>
-      settings
-      ->NodeAPI.Operation.batch(t.transfers, ~source=t.source, ~password)
-      ->Future.mapError(ErrorHandler.taquito)
+      settings->NodeAPI.Operation.batch(
+        t.transfers,
+        ~source=t.source,
+        ~password,
+      )
     };
   };
 
@@ -97,15 +95,16 @@ let useSimulate = () => {
   let set = (~settings, operation) =>
     switch (operation) {
     | Operation.Simulation.Protocol(operation, index) =>
-      settings
-      ->NodeAPI.Simulation.run(~index?, operation)
-      ->Future.mapError(ErrorHandler.taquito)
+      settings->NodeAPI.Simulation.run(~index?, operation)
     | Operation.Simulation.Token(operation, index) =>
       settings->NodeAPI.Tokens.simulate(~index?, operation)
     | Operation.Simulation.Transfer(t, index) =>
-      settings
-      ->NodeAPI.Simulation.batch(t.transfers, ~source=t.source, ~index?, ())
-      ->Future.mapError(ErrorHandler.taquito)
+      settings->NodeAPI.Simulation.batch(
+        t.transfers,
+        ~source=t.source,
+        ~index?,
+        (),
+      )
     };
 
   ApiRequest.useSetter(
@@ -118,7 +117,9 @@ let useSimulate = () => {
 };
 
 let waitForConfirmation = (settings, hash) => {
-  settings->AppSettings.endpoint->ReTaquito.Operations.confirmation(hash, ());
+  settings
+  ->AppSettings.endpoint
+  ->TaquitoAPI.Operations.confirmation(~hash, ());
 };
 
 /* Get list */

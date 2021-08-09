@@ -140,12 +140,14 @@ module Block = {
       StyleSheet.create({
         "bloc": style(~paddingBottom=32.->dp, ~marginBottom=16.->dp, ()),
         "title": style(~marginLeft=16.->dp, ~marginBottom=18.->dp, ()),
+        "titleaction":
+          style(~flexDirection=`row, ~justifyContent=`spaceBetween, ()),
         "content": style(~flexDirection=`row, ~paddingHorizontal=30.->dp, ()),
       })
     );
 
   [@react.component]
-  let make = (~title, ~children, ~isLast=false) => {
+  let make = (~title, ~children, ~isLast=false, ~actionButton=?) => {
     let theme = ThemeContext.useTheme();
 
     <View
@@ -159,9 +161,12 @@ module Block = {
           ),
         |])
       )>
-      <Typography.Headline fontSize=16. style=styles##title>
-        title->React.string
-      </Typography.Headline>
+      <View style=styles##titleaction>
+        <Typography.Headline fontSize=16. style=styles##title>
+          title->React.string
+        </Typography.Headline>
+        actionButton->ReactUtils.opt
+      </View>
       <View style=styles##content> children </View>
     </View>;
   };

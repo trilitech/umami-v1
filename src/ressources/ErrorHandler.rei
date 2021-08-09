@@ -30,12 +30,32 @@ type token =
   | OffchainCallNotImplemented(string)
   | RawError(string);
 
+type wallet = Wallet.error;
+
+type walletAPI =
+  | NoSecretFound
+  | SecretNotFound(int)
+  | CannotUpdateSecret(int)
+  | RecoveryPhraseNotFound(int)
+  | SecretAlreadyImported
+  | Generic(string);
+
 type t =
   | Taquito(ReTaquitoError.t)
-  | Token(token);
+  | Token(token)
+  | Wallet(wallet)
+  | WalletAPI(walletAPI)
+  | TezosSDK(TezosSDK.Error.t);
 
 let taquito: ReTaquitoError.t => t;
 let token: token => t;
 
 let fromSdkToString: TezosSDK.Error.t => string;
-let fromApiToString: t => string;
+let toString: t => string;
+
+type promiseError = {
+  message: string,
+  name: string,
+};
+
+let extractPromiseError: Js.Promise.error => promiseError;
