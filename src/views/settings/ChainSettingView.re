@@ -205,9 +205,9 @@ let make = () => {
     writeConf(c => {...c, network});
   };
 
-  <Block title=I18n.settings#chain_title>
+  <Block
+    title=I18n.settings#chain_title actionButton={<AddCustomNetworkButton />}>
     <View style=styles##column>
-      <View style=styles##selfEnd> <AddCustomNetworkButton /> </View>
       <View accessibilityRole=`form style=styles##row>
         <ColumnLeft style=styles##leftcolumntitles>
           <RadioItem
