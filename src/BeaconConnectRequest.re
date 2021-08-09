@@ -150,7 +150,7 @@ let make = () => {
                         ),
                       )
                     )
-                  ->Future.get(Js.log);
+                  ->ignore;
                 }
               | _ => ()
               };
@@ -171,7 +171,7 @@ let make = () => {
                     ),
                   )
                 )
-              ->Future.get(Js.log);
+              ->ignore;
             };
           })
         )
@@ -191,7 +191,7 @@ let make = () => {
           IPC.renderer->IPC.send("beacon-ready");
           Js.log("beacon-ready (renderer)");
         })
-      ->Future.get(Js.log);
+      ->ignore;
     };
     None;
   });
