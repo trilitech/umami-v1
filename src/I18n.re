@@ -78,7 +78,9 @@ let btn = {
   pub sign = "SIGN";
   pub close = "CLOSE";
   pub add_custom_network = "ADD CUSTOM NETWORK";
-  pub beacon_connect_dapp = "CONNECT TO DAPP"
+  pub beacon_connect_dapp = "CONNECT TO DAPP";
+  pub custom = "CUSTOM";
+  pub see_list = "SEE LIST"
 };
 
 let tooltip = {
@@ -255,7 +257,7 @@ let title = {
   pub interaction = "Interaction";
   pub add_custom_network = "Add Custom Network";
   pub update_custom_network = "Edit Custom Network";
-  pub delete_custom_network = "Delete Network ?";
+  pub delete_custom_network = "Delete Network?"
 };
 
 let expl = {
@@ -394,7 +396,7 @@ let errors = {
     p("Recovery phrase at index %d not found!", i);
   pub secret_already_imported = "Secret already imported";
   pub beacon_transaction_not_supported = "Beacon transaction not supported";
-  pub beacon_request_network_missmatch = "Beacon request network not supported";
+  pub beacon_request_network_missmatch = "Beacon request network not supported"
 };
 
 let csv = {
