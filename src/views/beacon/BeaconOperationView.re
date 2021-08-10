@@ -107,10 +107,10 @@ let make =
     StoreContext.Operations.useCreate();
   let loading = operationApiRequest->ApiRequest.isLoading;
 
-  let sendTransfer = (~transfer, signingIntent) => {
+  let sendTransfer = (~transfer, ~intent) => {
     let operation = Operation.transfer(transfer);
 
-    sendOperation({operation, signingIntent})
+    sendOperation({operation, signingIntent: intent})
     ->Future.tapOk(hash => {
         BeaconApiRequest.respond(
           `OperationResponse({
@@ -158,10 +158,11 @@ let make =
         )
       : None;
 
-  let (form, formFieldsAreValids) =
-    PasswordFormView.usePasswordForm((~password) =>
-      sendTransfer(~transfer, Password(password))
-    );
+  let sendOperation = intent => sendTransfer(~transfer, ~intent);
+
+  let ledgerState = React.useState(() => None);
+  let isLedger =
+    StoreContext.Accounts.useIsLedger(operationBeaconRequest.sourceAddress);
 
   <ModalTemplate.Form headerRight=?closeButton>
     {switch (operationApiRequest) {
@@ -195,22 +196,18 @@ let make =
               </View>
             </>
           | Done(Ok(dryRun), _) =>
+            let secondaryButton =
+              <Buttons.SubmitSecondary text=I18n.btn#reject onPress=onAbort />;
             <>
               <OperationSummaryView.Transactions transfer dryRun />
-              <PasswordFormView.PasswordField form />
-              <View style=styles##formActionSpaceBetween>
-                <Buttons.SubmitSecondary
-                  text=I18n.btn#reject
-                  onPress=onAbort
-                />
-                <Buttons.SubmitPrimary
-                  text=I18n.btn#confirm
-                  onPress={_event => {form.submit()}}
-                  loading
-                  disabledLook={!formFieldsAreValids}
-                />
-              </View>
-            </>
+              <SigningBlock
+                isLedger
+                ledgerState
+                sendOperation
+                loading
+                secondaryButton
+              />
+            </>;
           }}
        </>
      }}

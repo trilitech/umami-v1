@@ -38,181 +38,18 @@ let styles =
     })
   );
 
-module LedgerBlock = {
-  type state =
-    | WaitForConfirm
-    | Searching
-    | Confirmed
-    | Error(ErrorHandler.t);
-
-  let errorTitleExpl =
-    fun
-    | ErrorHandler.Taquito(LedgerNotReady) as e => (
-        I18n.title#hardware_wallet_not_ready,
-        e->ErrorHandler.toString,
-      )
-
-    | ErrorHandler.Taquito(LedgerInitTimeout) => (
-        I18n.title#hardware_wallet_not_found,
-        I18n.form_input_error#hardware_wallet_timeout,
-      )
-    | ErrorHandler.Taquito(LedgerKeyRetrieval) => (
-        I18n.title#hardware_wallet_error_app,
-        I18n.form_input_error#hardware_wallet_check_app,
-      )
-    | ErrorHandler.Taquito(LedgerDenied) => (
-        I18n.title#hardware_wallet_denied,
-        I18n.expl#hardware_wallet_denied,
-      )
-    | e => (
-        I18n.title#hardware_wallet_error_unknown,
-        e->ErrorHandler.toString,
-      );
-
-  let styles =
-    Style.(
-      StyleSheet.create({
-        "container":
-          style(
-            ~marginTop=20.->dp,
-            ~borderRadius=4.,
-            ~padding=32.->dp,
-            ~minHeight=282.->dp,
-            (),
-          ),
-      })
-    );
-
-  module Content = {
-    let onbStyles = FormStyles.onboarding;
-
-    let styles =
-      Style.(
-        StyleSheet.create({
-          "loading": style(~height=50.->dp, ()),
-          "content":
-            style(
-              ~textAlign=`center,
-              ~display=`flex,
-              ~alignItems=`center,
-              (),
-            ),
-        })
-      );
-
-    [@react.component]
-    let make = (~title, ~expl, ~error=false) => {
-      <>
-        <Typography.Subtitle2 style=onbStyles##title>
-          title->React.string
-        </Typography.Subtitle2>
-        <View style=styles##content>
-          {error
-             ? <Icons.CloseOutline
-                 color=Colors.error
-                 size=50.
-                 style=FormStyles.section##spacing
-               />
-             : <View
-                 style=Style.(
-                   array([|FormStyles.section##spacing, styles##loading|])
-                 )>
-                 <LoadingView size=ActivityIndicator_Size.large />
-               </View>}
-          <Typography.Body1 fontSize=16. style=FormStyles.section##spacing>
-            expl->React.string
-          </Typography.Body1>
-        </View>
-      </>;
-    };
-  };
-
-  [@react.component]
-  let make = (~st, ~retry) => {
-    let theme = ThemeContext.useTheme();
-
-    <View
-      style=Style.(
-        array([|
-          style(~backgroundColor=theme.colors.stateDisabled, ()),
-          styles##container,
-        |])
-      )>
-      {switch (st) {
-       | WaitForConfirm =>
-         <Content
-           title=I18n.title#hardware_wallet_op_confirm
-           expl=I18n.expl#hardware_wallet_op_confirm
-         />
-       | Searching =>
-         <Content
-           title=I18n.title#hardware_wallet_search
-           expl=I18n.expl#hardware_wallet_search
-         />
-       | Confirmed =>
-         <Content
-           title=I18n.title#hardware_wallet_op_confirmed
-           expl=I18n.expl#hardware_wallet_op_confirmed
-         />
-       | Error(e) =>
-         let (title, expl) = e->errorTitleExpl;
-         <>
-           <Content title expl error=true />
-           <View style=FormStyles.verticalFormAction>
-             <Buttons.SubmitPrimary
-               text=I18n.btn#retry
-               onPress={_ => retry()}
-             />
-           </View>
-         </>;
-       }}
-    </View>;
-  };
-};
-
 [@react.component]
 let make =
     (
       ~title=?,
       ~subtitle=?,
       ~source: PublicKeyHash.t,
-      ~ledgerState as (ledgerState, setLedgerState),
+      ~ledgerState,
       ~children,
       ~sendOperation: TaquitoAPI.Signer.intent => Future.t(Result.t(_)),
-      ~loading=false,
+      ~loading,
     ) => {
-  let account: Account.t =
-    StoreContext.Accounts.useGetFromAddress(source)->Option.getExn;
-
-  let secrets = StoreContext.Secrets.useGetAll();
-  let isLedger = account.address->WalletAPI.Accounts.isLedger(secrets);
-
-  let (form, formFieldsAreValids) =
-    PasswordFormView.usePasswordForm((~password) =>
-      sendOperation(TaquitoAPI.Signer.Password(password))
-    );
-
-  let onSubmit = () =>
-    if (isLedger) {
-      setLedgerState(_ => LedgerBlock.Searching->Some);
-      sendOperation(
-        TaquitoAPI.Signer.LedgerCallback(
-          () => setLedgerState(_ => LedgerBlock.WaitForConfirm->Some),
-        ),
-      )
-      ->Future.tapError(e => setLedgerState(_ => Error(e)->Some))
-      ->ignore;
-    } else {
-      form.submit();
-    };
-
-  React.useEffect0(() => {
-    if (isLedger) {
-      onSubmit();
-    };
-    None;
-  });
-
+  let isLedger = StoreContext.Accounts.useIsLedger(source);
   <>
     {title->ReactUtils.mapOpt(title =>
        <View style=FormStyles.header>
@@ -225,20 +62,6 @@ let make =
        </View>
      )}
     children
-    {{
-       <>
-         <PasswordFormView.PasswordField form />
-         <View style=FormStyles.verticalFormAction>
-           <Buttons.SubmitPrimary
-             text=I18n.btn#confirm
-             onPress={_ => onSubmit()}
-             loading
-             disabledLook={!isLedger && !formFieldsAreValids}
-           />
-         </View>
-       </>;
-     }
-     ->ReactUtils.onlyWhen(!isLedger)}
-    {ledgerState->ReactUtils.mapOpt(st => <LedgerBlock st retry=onSubmit />)}
+    <SigningBlock isLedger ledgerState loading sendOperation />
   </>;
 };

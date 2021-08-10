@@ -509,7 +509,7 @@ let make = (~closeAction) => {
     switch (
       form.formState,
       modalStep,
-      ledger: option(SignOperationView.LedgerBlock.state),
+      ledger: option(SigningBlock.LedgerView.state),
     ) {
     | (_, PasswordStep(_, _), Some(WaitForConfirm)) =>
       ModalFormView.Deny(I18n.tooltip#reject_on_ledger)

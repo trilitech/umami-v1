@@ -272,7 +272,7 @@ let make = (~closeAction, ~action) => {
   let (ledger, _) as ledgerState = React.useState(() => None);
 
   let closing =
-    switch (modalStep, ledger: option(SignOperationView.LedgerBlock.state)) {
+    switch (modalStep, ledger: option(SigningBlock.LedgerView.state)) {
     | (PasswordStep(_, _), Some(WaitForConfirm)) =>
       ModalFormView.Deny(I18n.tooltip#reject_on_ledger)
     | _ => ModalFormView.Close(closeAction)

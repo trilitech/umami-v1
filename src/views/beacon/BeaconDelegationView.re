@@ -84,10 +84,8 @@ let make =
     StoreContext.Operations.useCreate();
   let loading = operationApiRequest->ApiRequest.isLoading;
 
-  let sendDelegation = (~delegation, ~password) => {
-    sendOperation(
-      OperationApiRequest.delegate(delegation, Password(password)),
-    )
+  let sendDelegation = (~delegation, ~intent) => {
+    sendOperation(OperationApiRequest.delegate(delegation, intent))
     ->Future.tapOk(hash => {
         BeaconApiRequest.respond(
           `OperationResponse({
@@ -137,8 +135,11 @@ let make =
         )
       : None;
 
-  let (form, formFieldsAreValids) =
-    PasswordFormView.usePasswordForm(sendDelegation(~delegation));
+  let sendOperation = intent => sendDelegation(~delegation, ~intent);
+
+  let ledgerState = React.useState(() => None);
+  let isLedger =
+    StoreContext.Accounts.useIsLedger(delegationBeaconRequest.sourceAddress);
 
   <ModalTemplate.Form headerRight=?closeButton>
     {switch (operationApiRequest) {
@@ -172,22 +173,18 @@ let make =
               </View>
             </>
           | Done(Ok(dryRun), _) =>
+            let secondaryButton =
+              <Buttons.SubmitSecondary text=I18n.btn#reject onPress=onAbort />;
             <>
               <OperationSummaryView.Delegate delegation dryRun />
-              <PasswordFormView.PasswordField form />
-              <View style=styles##formActionSpaceBetween>
-                <Buttons.SubmitSecondary
-                  text=I18n.btn#reject
-                  onPress=onAbort
-                />
-                <Buttons.SubmitPrimary
-                  text=I18n.btn#confirm
-                  onPress={_event => {form.submit()}}
-                  loading
-                  disabledLook={!formFieldsAreValids}
-                />
-              </View>
-            </>
+              <SigningBlock
+                isLedger
+                ledgerState
+                sendOperation
+                loading
+                secondaryButton
+              />
+            </>;
           }}
        </>
      }}

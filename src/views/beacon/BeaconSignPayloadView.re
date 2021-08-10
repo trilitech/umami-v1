@@ -102,13 +102,17 @@ let make =
     ) => {
   let signPayload = BeaconApiRequest.Signature.useSignPayload();
 
+  let (loading, setLoading) = React.useState(() => false);
+
   let onSign = (~signingIntent) => {
+    setLoading(_ => true);
     signPayload(
       ~source=signPayloadRequest.sourceAddress,
       ~signingIntent,
       ~payload=signPayloadRequest.payload,
     )
     ->Future.tapOk(signature => {
+        setLoading(_ => false);
         BeaconApiRequest.respond(
           `SignPayloadResponse({
             type_: `sign_payload_response,
@@ -118,9 +122,10 @@ let make =
           }),
         )
         ->Future.tapOk(_ => closeAction())
-        ->ignore
+        ->ignore;
       })
     ->Future.tapError(_error => {
+        setLoading(_ => false);
         BeaconApiRequest.respond(
           `Error({
             type_: `error,
@@ -129,11 +134,12 @@ let make =
           }),
         )
         ->Future.tapOk(_ => closeAction())
-        ->ignore
+        ->ignore;
       });
   };
 
   let onAbort = _ => {
+    setLoading(_ => false);
     BeaconApiRequest.respond(
       `Error({
         type_: `error,
@@ -145,10 +151,14 @@ let make =
     ->ignore;
   };
 
-  let (form, formFieldsAreValids) =
-    PasswordFormView.usePasswordForm((~password) =>
-      onSign(~signingIntent=Password(password))
-    );
+  let ledgerState = React.useState(() => None);
+  let isLedger =
+    StoreContext.Accounts.useIsLedger(signPayloadRequest.sourceAddress);
+
+  let sendOperation = intent => onSign(~signingIntent=intent);
+
+  let secondaryButton =
+    <Buttons.SubmitSecondary text=I18n.btn#reject onPress=onAbort />;
 
   <ModalTemplate.Form>
     <View>
@@ -170,15 +180,13 @@ let make =
         address={signPayloadRequest.sourceAddress->Some}
       />
       <Payload signPayloadRequest />
-      <PasswordFormView.PasswordField form />
-      <View style=styles##formActionSpaceBetween>
-        <Buttons.SubmitSecondary text=I18n.btn#reject onPress=onAbort />
-        <Buttons.SubmitPrimary
-          text=I18n.btn#sign
-          onPress={_event => {form.submit()}}
-          disabledLook={!formFieldsAreValids}
-        />
-      </View>
+      <SigningBlock
+        isLedger
+        ledgerState
+        sendOperation
+        loading
+        secondaryButton
+      />
     </View>
   </ModalTemplate.Form>;
 };
