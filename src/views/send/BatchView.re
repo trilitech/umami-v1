@@ -274,9 +274,6 @@ let make =
        </TouchableOpacity>
      })}
     <View style=FormStyles.header>
-      <Typography.Headline>
-        I18n.title#batch->React.string
-      </Typography.Headline>
       <Typography.Overline1>
         I18n.expl#batch->React.string
       </Typography.Overline1>

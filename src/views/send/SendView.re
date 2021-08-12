@@ -272,10 +272,7 @@ module Form = {
       <>
         <ReactFlipToolkit.FlippedView flipId="form">
           <View style=FormStyles.header>
-            <Typography.Headline>
-              I18n.title#send->React.string
-            </Typography.Headline>
-            <Typography.Overline1 style=FormStyles.subtitle>
+            <Typography.Overline1>
               I18n.title#send_many_transactions->React.string
             </Typography.Overline1>
             <Typography.Body2 style=FormStyles.subtitle>
@@ -537,10 +534,19 @@ let make = (~closeAction) => {
   let loadingSimulate = operationSimulateRequest->ApiRequest.isLoading;
   let loading = operationRequest->ApiRequest.isLoading;
 
+  let title =
+    switch (modalStep) {
+    | SendStep
+    | EditStep(_) => Some(I18n.title#send)
+    | BatchStep => Some(I18n.title#batch)
+    | PasswordStep(_, _) => Some(I18n.title#confirmation)
+    | SubmittedStep(_) => None
+    };
+
   <ReactFlipToolkit.Flipper
     flipKey={advancedOptionsOpened->string_of_bool ++ modalStep->stepToString}>
     <ReactFlipToolkit.FlippedView flipId="modal">
-      <ModalFormView back closing>
+      <ModalFormView ?title back closing>
         <ReactFlipToolkit.FlippedView.Inverse inverseFlipId="modal">
           {switch (modalStep) {
            | SubmittedStep(hash) =>
@@ -587,7 +593,6 @@ let make = (~closeAction) => {
              />;
            | PasswordStep(transfer, dryRun) =>
              <SignOperationView
-               title=I18n.title#confirmation
                source={transfer.source}
                ledgerState
                subtitle=(

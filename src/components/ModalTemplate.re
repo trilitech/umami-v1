@@ -97,10 +97,12 @@ module Base = {
         ~children,
         ~headerLeft=?,
         ~headerRight=?,
+        ~headerCenter=?,
         ~loading as (loadingState, loadingTitle)=(false, None),
         ~style as styleFromProp=?,
       ) => {
     let theme = ThemeContext.useTheme();
+
     <View
       style=Style.(
         arrayOption([|
@@ -109,6 +111,7 @@ module Base = {
           styleFromProp,
         |])
       )>
+      headerCenter->ReactUtils.opt
       <DocumentContext.ScrollView showsVerticalScrollIndicator=true>
         children
         {loadingState
@@ -152,14 +155,17 @@ module Form = {
       (
         ~headerLeft=?,
         ~headerRight=?,
+        ~headerCenter=?,
         ~loading=?,
         ~style as styleFromProp=?,
         ~children,
       ) => {
     let {height} = Dimensions.useWindowDimensions();
+
     <Base
       ?headerLeft
       ?headerRight
+      ?headerCenter
       ?loading
       style=Style.(
         arrayOption([|

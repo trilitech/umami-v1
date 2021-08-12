@@ -160,33 +160,22 @@ let make =
   let secondaryButton =
     <Buttons.SubmitSecondary text=I18n.btn#reject onPress=onAbort />;
 
-  <ModalTemplate.Form>
-    <View>
-      <View style=FormStyles.header>
-        <Typography.Headline style=styles##title>
-          I18n.title#beacon_sign_request->React.string
-        </Typography.Headline>
-        <Typography.Overline2
-          colorStyle=`highEmphasis fontWeightStyle=`bold style=styles##dapp>
-          signPayloadRequest.appMetadata.name->React.string
-        </Typography.Overline2>
-        <Typography.Overline3 colorStyle=`highEmphasis style=styles##dapp>
-          I18n.expl#beacon_dapp_sign->React.string
-        </Typography.Overline3>
-      </View>
-      <OperationSummaryView.EntityInfo
-        style=styles##accountInfo
-        title=I18n.title#sender_account
-        address={signPayloadRequest.sourceAddress->Some}
-      />
-      <Payload signPayloadRequest />
-      <SigningBlock
-        isLedger
-        ledgerState
-        sendOperation
-        loading
-        secondaryButton
-      />
+  <ModalFormView title=I18n.title#beacon_sign_request>
+    <View style=FormStyles.header>
+      <Typography.Overline2
+        colorStyle=`highEmphasis fontWeightStyle=`bold style=styles##dapp>
+        signPayloadRequest.appMetadata.name->React.string
+      </Typography.Overline2>
+      <Typography.Overline3 colorStyle=`highEmphasis style=styles##dapp>
+        I18n.expl#beacon_dapp_sign->React.string
+      </Typography.Overline3>
     </View>
-  </ModalTemplate.Form>;
+    <OperationSummaryView.EntityInfo
+      style=styles##accountInfo
+      title=I18n.title#sender_account
+      address={signPayloadRequest.sourceAddress->Some}
+    />
+    <Payload signPayloadRequest />
+    <SigningBlock isLedger ledgerState sendOperation loading secondaryButton />
+  </ModalFormView>;
 };

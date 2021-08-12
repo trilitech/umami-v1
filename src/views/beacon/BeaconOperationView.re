@@ -151,12 +151,9 @@ let make =
     Routes.(push(Operations));
   };
 
-  let closeButton =
+  let closing =
     operationApiRequest->ApiRequest.isDoneOk
-      ? Some(
-          <ModalTemplate.HeaderButtons.Close onPress={_ => closeAction()} />,
-        )
-      : None;
+      ? Some(ModalFormView.Close(_ => closeAction())) : None;
 
   let sendOperation = intent => sendTransfer(~transfer, ~intent);
 
@@ -164,16 +161,13 @@ let make =
   let isLedger =
     StoreContext.Accounts.useIsLedger(operationBeaconRequest.sourceAddress);
 
-  <ModalTemplate.Form headerRight=?closeButton>
+  <ModalFormView title=I18n.title#confirmation ?closing>
     {switch (operationApiRequest) {
      | Done(Ok(hash), _) =>
        <SubmittedView hash onPressCancel submitText=I18n.btn#go_operations />
      | _ =>
        <>
          <View style=FormStyles.header>
-           <Typography.Headline style=styles##title>
-             I18n.title#confirmation->React.string
-           </Typography.Headline>
            <Typography.Overline2
              colorStyle=`highEmphasis fontWeightStyle=`bold style=styles##dapp>
              operationBeaconRequest.appMetadata.name->React.string
@@ -211,5 +205,5 @@ let make =
           }}
        </>
      }}
-  </ModalTemplate.Form>;
+  </ModalFormView>;
 };

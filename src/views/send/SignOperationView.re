@@ -41,7 +41,6 @@ let styles =
 [@react.component]
 let make =
     (
-      ~title=?,
       ~subtitle=?,
       ~source: PublicKeyHash.t,
       ~ledgerState,
@@ -51,14 +50,11 @@ let make =
     ) => {
   let isLedger = StoreContext.Accounts.useIsLedger(source);
   <>
-    {title->ReactUtils.mapOpt(title =>
+    {subtitle->ReactUtils.mapOpt(((subtitle, hw_subtitle)) =>
        <View style=FormStyles.header>
-         <Typography.Headline> title->React.string </Typography.Headline>
-         {subtitle->ReactUtils.mapOpt(((subtitle, hw_subtitle)) =>
-            <Typography.Overline1 style=FormStyles.subtitle>
-              {isLedger ? hw_subtitle : subtitle}->React.string
-            </Typography.Overline1>
-          )}
+         <Typography.Overline1>
+           {isLedger ? hw_subtitle : subtitle}->React.string
+         </Typography.Overline1>
        </View>
      )}
     children
