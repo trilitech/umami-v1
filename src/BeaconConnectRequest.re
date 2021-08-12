@@ -239,12 +239,18 @@ let make = () => {
     </ModalAction>
     <ModalAction visible=visibleModalOperation onRequestClose=closeOperation>
       {operationRequest->ReactUtils.mapOpt(operationRequest => {
-         <BeaconOperationView operationRequest closeAction=closeOperation />
+         <BeaconOperationView.Transfer
+           beaconRequest=operationRequest
+           closeAction=closeOperation
+         />
        })}
     </ModalAction>
     <ModalAction visible=visibleModalDelegation onRequestClose=closeDelegation>
       {delegationRequest->ReactUtils.mapOpt(delegationRequest => {
-         <BeaconDelegationView delegationRequest closeAction=closeDelegation />
+         <BeaconOperationView.Delegate
+           beaconRequest=delegationRequest
+           closeAction=closeDelegation
+         />
        })}
     </ModalAction>
     <ModalAction
