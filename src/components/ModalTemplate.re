@@ -73,10 +73,10 @@ let styles =
       "modalForm":
         style(
           ~width=642.->dp,
-          ~maxHeight=100.->pct,
           ~paddingTop=40.->dp,
           ~paddingBottom=40.->dp,
-          ~paddingHorizontal=135.->dp,
+          ~paddingRight=125.->dp,
+          ~paddingLeft=135.->dp,
           (),
         ),
       "modalDialog":
@@ -109,31 +109,33 @@ module Base = {
           styleFromProp,
         |])
       )>
-      children
-      {loadingState
-         ? <View
-             style=Style.(
-               array([|
-                 styles##loadingView,
-                 style(
-                   ~backgroundColor=theme.colors.background,
-                   ~opacity=0.87,
-                   (),
-                 ),
-               |])
-             )>
-             {loadingTitle->ReactUtils.mapOpt(loadingTitle =>
-                <Typography.Headline style=FormStyles.header>
-                  loadingTitle->React.string
-                </Typography.Headline>
-              )}
-             <ActivityIndicator
-               animating=true
-               size=ActivityIndicator_Size.large
-               color={theme.colors.iconMediumEmphasis}
-             />
-           </View>
-         : React.null}
+      <DocumentContext.ScrollView showsVerticalScrollIndicator=true>
+        children
+        {loadingState
+           ? <View
+               style=Style.(
+                 array([|
+                   styles##loadingView,
+                   style(
+                     ~backgroundColor=theme.colors.background,
+                     ~opacity=0.87,
+                     (),
+                   ),
+                 |])
+               )>
+               {loadingTitle->ReactUtils.mapOpt(loadingTitle =>
+                  <Typography.Headline style=FormStyles.header>
+                    loadingTitle->React.string
+                  </Typography.Headline>
+                )}
+               <ActivityIndicator
+                 animating=true
+                 size=ActivityIndicator_Size.large
+                 color={theme.colors.iconMediumEmphasis}
+               />
+             </View>
+           : React.null}
+      </DocumentContext.ScrollView>
       {headerLeft->ReactUtils.mapOpt(headerLeft =>
          <View style=styles##headerLeft> headerLeft </View>
        )}
@@ -154,11 +156,18 @@ module Form = {
         ~style as styleFromProp=?,
         ~children,
       ) => {
+    let {height} = Dimensions.useWindowDimensions();
     <Base
       ?headerLeft
       ?headerRight
       ?loading
-      style=Style.(arrayOption([|Some(styles##modalForm), styleFromProp|]))>
+      style=Style.(
+        arrayOption([|
+          Some(style(~maxHeight=(height *. 0.9)->dp, ())),
+          Some(styles##modalForm),
+          styleFromProp,
+        |])
+      )>
       children
     </Base>;
   };
