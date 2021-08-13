@@ -1,64 +1,55 @@
-[![Codecov Coverage](https://img.shields.io/codecov/c/gitlab/nomadic-labs/ref-wallet/coverage.svg?style=flat-square)](https://codecov.io/gl/nomadic-labs/ref-wallet/)
+[![Codecov Coverage](https://img.shields.io/codecov/c/gitlab/nomadic-labs/ref-wallet/coverage.svg?style=flat-square)](https://codecov.io/gl/nomadic-labs/ref-wallet)
 
-Umami Wallet
+![umami logo](img/umami-logo.svg "umami-screenshot")
+
+
+[A powerful new Tezos wallet](https://umamiwallet.com)
 ===========================================================================
 
-website: https://umamiwallet.com
+Umami is a cryptocurrency wallet developed by [Nomadic
+ Labs](https://www.nomadic-labs.com/) to interact with the [Tezos
+ Blockchain](https://tezos.com/). It runs as a desktop electron based app with
+ multiple features: dApp interaction, HD Wallet, batch transfer, delegation,
+ FA1.2, last operations, etc.
 
-Cryptocurrency wallet to interact with Tezos Blockchain.
-Umami is a desktop electron based app with multiple features:
+__Umami is in Beta version.__
 
-- Manage multiple accounts using HD Wallet features
-- Register your contacts in you address book
-- Tranfers, delegates and batch transfers
-- Token (FA1.2) transactions : balance, transfers, batch, etc
-- See your last operations
+![umami screenshot](img/screenshot.png "umami-screenshot")
 
-__Umami is still in Beta version.__
+## 📦 Install
 
-## Support
+Install now from our [release page](https://gitlab.com/nomadic-labs/umami-wallet/umami/-/releases)
 
-- open an issue
-- `#umami` channel on [tezos slack](https://tezos-dev.slack.com)
-- [email](mailto:incoming+nomadic-labs-umami-wallet-umami-20392089-issue-@incoming.gitlab.com)
+## 💻 Quick start
 
-## Install
+### 1) Clone the repository
 
-### binary
+```
+git clone https://gitlab.com/nomadic-labs/umami-wallet/umami/ && cd umami
+```
 
-- pick your system binary on our [release page](https://gitlab.com/nomadic-labs/umami-wallet/umami/-/releases)
+### 2) Requirements:
 
-### from sources
+* [node](https://nodejs.org) installed.
+* [yarn](https://yarnpkg.com) installed.
 
-#### Requirements
-
-* [node](https://nodejs.org)
-* [yarn](https://yarnpkg.com)
-
-#### Scripts
-
-##### install Js dependancies
+### 3) Build:
 
 ```
 yarn install
-```
-
-##### build
-
-```
 yarn bsb:build
+yarn electron:build
 ```
+The Electron binary is located in the `dist` folder.
 
-* start the electron server with hot refresh
+### 4) (Optional) Run for development
 
 ```
 yarn electron:dev
 ```
 
-* Production script
+## ℹ️ Support 
 
-```
-yarn run electron:build
-```
-
-Builds the Electron app package for production to the `dist` folder.
+- [open an issue](https://gitlab.com/nomadic-labs/umami-wallet/testruns/-/issues/new?issuable_template=support)
+- `#umami` channel on [tezos slack](https://tezos-dev.slack.com)
+- [email](mailto:incoming+nomadic-labs-umami-wallet-umami-20392089-issue-@incoming.gitlab.com)
