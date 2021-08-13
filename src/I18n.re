@@ -396,7 +396,8 @@ let errors = {
     p("Recovery phrase at index %d not found!", i);
   pub secret_already_imported = "Secret already imported";
   pub beacon_transaction_not_supported = "Beacon transaction not supported";
-  pub beacon_request_network_missmatch = "Beacon request network not supported"
+  pub beacon_request_network_missmatch = "Beacon request network not supported";
+  pub video_stream_access_denied = "Unable to access video stream\n(please make sure you have a webcam enabled)"
 };
 
 let csv = {

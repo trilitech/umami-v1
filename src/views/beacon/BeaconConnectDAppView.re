@@ -139,34 +139,54 @@ module WithQR = {
 
     module Image = {
       type t;
-      [@bs.get] external data : t => Js.Typed_array.Uint8ClampedArray.t = "data";
-      [@bs.get] external height : t => float = "height";
-      [@bs.get] external width : t => float = "width";
-    }
+      [@bs.get]
+      external data: t => Js.Typed_array.Uint8ClampedArray.t = "data";
+      [@bs.get] external height: t => float = "height";
+      [@bs.get] external width: t => float = "width";
+    };
 
     module Canvas2d = {
       type t;
-      [@bs.send] external drawElement : (t, ~element: Dom.element, ~dx: float, ~dy: float, ~dWidth: float, ~dHeight: float) => unit = "drawImage";
-      [@bs.send] external getImageData : (t, ~sx: float, ~sy: float, ~sw: float, ~sh: float) => Image.t = "getImageData";
+      [@bs.send]
+      external drawElement:
+        (
+          t,
+          ~element: Dom.element,
+          ~dx: float,
+          ~dy: float,
+          ~dWidth: float,
+          ~dHeight: float
+        ) =>
+        unit =
+        "drawImage";
+      [@bs.send]
+      external getImageData:
+        (t, ~sx: float, ~sy: float, ~sw: float, ~sh: float) => Image.t =
+        "getImageData";
     };
 
     module CanvasElement = {
-      [@bs.send] external getContext2d : (Dom.element, [@bs.as "2d"] _) => Canvas2d.t = "getContext";
-      [@bs.get] external height : Dom.element => int = "height";
-      [@bs.set] external setHeight : (Dom.element, int) => unit = "height";
-      [@bs.get] external width : Dom.element => int = "width";
-      [@bs.set] external setWidth : (Dom.element, int) => unit = "width";
+      [@bs.send]
+      external getContext2d: (Dom.element, [@bs.as "2d"] _) => Canvas2d.t =
+        "getContext";
+      [@bs.get] external height: Dom.element => int = "height";
+      [@bs.set] external setHeight: (Dom.element, int) => unit = "height";
+      [@bs.get] external width: Dom.element => int = "width";
+      [@bs.set] external setWidth: (Dom.element, int) => unit = "width";
     };
 
     module VideoElement = {
       type state;
-      [@bs.get] external readyState : Dom.element => state = "readyState";
-      [@bs.get] external haveEnoughData : Dom.element => state = "HAVE_ENOUGH_DATA";
-      [@bs.get] external videoHeight : Dom.element => int = "videoHeight";
-      [@bs.get] external videoWidth : Dom.element => int = "videoWidth";
-      [@bs.set] external setSrcObject : (Dom.element, 'a) => unit = "srcObject";
-      [@bs.send] external setAttribute : (Dom.element, string, bool) => unit = "setAttribute";
-      [@bs.send] external play : (Dom.element) => unit = "play";
+      [@bs.get] external readyState: Dom.element => state = "readyState";
+      [@bs.get]
+      external haveEnoughData: Dom.element => state = "HAVE_ENOUGH_DATA";
+      [@bs.get] external videoHeight: Dom.element => int = "videoHeight";
+      [@bs.get] external videoWidth: Dom.element => int = "videoWidth";
+      [@bs.set] external setSrcObject: (Dom.element, 'a) => unit = "srcObject";
+      [@bs.send]
+      external setAttribute: (Dom.element, string, bool) => unit =
+        "setAttribute";
+      [@bs.send] external play: Dom.element => unit = "play";
     };
 
     [@react.component]
@@ -175,14 +195,21 @@ module WithQR = {
       let canvasRef = React.useRef(Js.Nullable.null);
       let rafRef = React.useRef(Js.Nullable.null);
 
+      let (hasStream, setHasStream) = React.useState(_ => false);
+
       let rec tick = () => {
         let videoElement = videoRef.current;
         switch (canvasRef.current->Js.Nullable.toOption) {
         | Some(canvasElement) =>
           let canvas = canvasElement->CanvasElement.getContext2d;
-          if (videoElement->VideoElement.readyState == videoElement->VideoElement.haveEnoughData) {
-            canvasElement->CanvasElement.setHeight(videoElement->VideoElement.videoHeight);
-            canvasElement->CanvasElement.setWidth(videoElement->VideoElement.videoWidth);
+          if (videoElement->VideoElement.readyState
+              == videoElement->VideoElement.haveEnoughData) {
+            canvasElement->CanvasElement.setHeight(
+              videoElement->VideoElement.videoHeight,
+            );
+            canvasElement->CanvasElement.setWidth(
+              videoElement->VideoElement.videoWidth,
+            );
             canvas->Canvas2d.drawElement(
               ~element=videoElement,
               ~dx=0.,
@@ -229,6 +256,7 @@ module WithQR = {
         })
         ->FutureJs.fromPromise(Js.String.make)
         ->Future.tapOk(stream => {
+            setHasStream(_ => true);
             streamRef := Some(stream);
             videoRef.current->VideoElement.setSrcObject(stream);
             videoRef.current->VideoElement.setAttribute("playsinline", true);
@@ -258,17 +286,21 @@ module WithQR = {
       });
 
       <View>
-        <canvas
-          ref={canvasRef->ReactDOM.Ref.domRef}
-          style={ReactDOM.Style.make(
-            ~objectFit="cover",
-            ~width="372px",
-            ~height="372px",
-            ~borderRadius="4px",
-            ~transform="scaleX(-1)",
-            (),
-          )}
-        />
+        {hasStream
+           ? <canvas
+               ref={canvasRef->ReactDOM.Ref.domRef}
+               style={ReactDOM.Style.make(
+                 ~objectFit="cover",
+                 ~width="372px",
+                 ~height="372px",
+                 ~borderRadius="4px",
+                 ~transform="scaleX(-1)",
+                 (),
+               )}
+             />
+           : <Typography.Overline2 style=FormStyles.textAlignCenter>
+               I18n.errors#video_stream_access_denied->React.string
+             </Typography.Overline2>}
       </View>;
     };
   };
