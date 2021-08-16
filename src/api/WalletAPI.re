@@ -23,6 +23,8 @@
 /*                                                                           */
 /*****************************************************************************/
 
+open Let;
+
 module Secret = {
   module Repr = Secret;
   type t = Repr.t;
@@ -112,28 +114,33 @@ module Secret = {
 module Aliases = {
   type t = array((string, PublicKeyHash.t));
 
-  let get = (~config) =>
-    config
-    ->ConfigUtils.baseDir
-    ->Wallet.PkhAliases.read
-    ->Future.mapError(e => e->ErrorHandler.Wallet)
-    ->Future.mapOk(l => l->Array.map(({name, value}) => (name, value)));
+  let get = (~config) => {
+    let%FResMap addresses =
+      config
+      ->ConfigUtils.baseDir
+      ->Wallet.PkhAliases.read
+      ->Future.mapError(e => e->ErrorHandler.Wallet);
 
-  let getAliasMap = (~config) =>
-    get(~config)
-    ->Future.mapOk(addresses =>
-        addresses->Array.map(((alias, addr)) => ((addr :> string), alias))
-      )
-    ->Future.mapOk(Map.String.fromArray);
+    addresses->Array.map(({name, value}) => (name, value));
+  };
 
-  let getAliasForAddress = (~config, ~address: PublicKeyHash.t) =>
-    getAliasMap(~config)
-    ->Future.mapOk(aliases => aliases->Map.String.get((address :> string)));
+  let getAliasMap = (~config) => {
+    let%FResMap addresses = get(~config);
 
-  let getAddressForAlias = (~config, ~alias) =>
-    get(~config)
-    ->Future.mapOk(Map.String.fromArray)
-    ->Future.mapOk(addresses => addresses->Map.String.get(alias));
+    addresses
+    ->Array.map(((alias, addr)) => ((addr :> string), alias))
+    ->Map.String.fromArray;
+  };
+
+  let getAliasForAddress = (~config, ~address: PublicKeyHash.t) => {
+    let%FResMap aliases = getAliasMap(~config);
+    aliases->Map.String.get((address :> string));
+  };
+
+  let getAddressForAlias = (~config, ~alias) => {
+    let%FResMap addresses = get(~config);
+    addresses->Map.String.fromArray->Map.String.get(alias);
+  };
 
   let add = (~config, ~alias, ~address) =>
     Wallet.addOrReplacePkhAlias(
@@ -189,238 +196,219 @@ module Accounts = {
     ->Option.map(Json.Decode.(array(SecureStorage.Cipher.decoder)));
   };
 
-  let get = (~config) =>
-    config
-    ->ConfigUtils.baseDir
-    ->Wallet.PkhAliases.read
-    ->Future.flatMapOk(pkhs => {
-        config
-        ->ConfigUtils.baseDir
-        ->Wallet.SecretAliases.read
-        ->Future.mapOk(sks =>
-            pkhs->Array.keepMap(({name, value}) =>
-              switch (
-                sks->Wallet.SecretAliases.find(skAlias => name == skAlias.name)
-              ) {
-              | Ok(_) => Some((name, value))
-              | Error(_) => None
-              }
-            )
-          )
-      })
-    ->Future.mapError(e => e->ErrorHandler.Wallet);
+  let get = (~config) => {
+    let%FRes pkhs =
+      config
+      ->ConfigUtils.baseDir
+      ->Wallet.PkhAliases.read
+      ->Future.mapError(e => e->ErrorHandler.Wallet);
 
-  let secretAt = (~config, index) =>
-    secrets(~config)
-    ->Result.flatMap(secrets =>
-        secrets[index]
-        ->ResultEx.fromOption(
-            ErrorHandler.(WalletAPI(SecretNotFound(index))),
-          )
-      );
+    let%FResMap sks =
+      config
+      ->ConfigUtils.baseDir
+      ->Wallet.SecretAliases.read
+      ->Future.mapError(e => e->ErrorHandler.Wallet);
 
-  let updateSecretAt = (~config, secret, index) =>
-    secrets(~config)
-    ->Future.value
-    ->Future.flatMapOk(secrets => {
-        (secrets[index] = secret)
-          ? Future.value(
-              Ok(
-                LocalStorage.setItem(
-                  "secrets",
-                  Json.Encode.array(Secret.encoder, secrets)->Json.stringify,
-                ),
-              ),
-            )
-          : Future.value(
-              Error(ErrorHandler.(WalletAPI(CannotUpdateSecret(index)))),
-            )
-      });
+    pkhs->Array.keepMap(({name, value}) =>
+      switch (sks->Wallet.SecretAliases.find(skAlias => name == skAlias.name)) {
+      | Ok(_) => Some((name, value))
+      | Error(_) => None
+      }
+    );
+  };
 
-  let recoveryPhraseAt = (~config, index, ~password) =>
-    recoveryPhrases(~config)
-    ->Option.flatMap(recoveryPhrases => recoveryPhrases[index])
-    ->FutureEx.fromOption(
-        ~error=ErrorHandler.(WalletAPI(RecoveryPhraseNotFound(index))),
+  let secretAt = (~config, index) => {
+    let%Res secrets = secrets(~config);
+
+    ResultEx.fromOption(
+      secrets[index],
+      ErrorHandler.(WalletAPI(SecretNotFound(index))),
+    );
+  };
+
+  let updateSecretAt = (~config, secret, index) => {
+    let%Res secrets = secrets(~config);
+
+    if (secrets[index] = secret) {
+      LocalStorage.setItem(
+        "secrets",
+        Json.Encode.array(Secret.encoder, secrets)->Json.stringify,
       )
-    ->Future.flatMapOk(data =>
-        SecureStorage.Cipher.decrypt2(password, data)
-        ->Future.mapError(_ =>
-            ErrorHandler.(
-              WalletAPI(Generic(I18n.form_input_error#wrong_password))
-            )
-          )
+      ->Ok;
+    } else {
+      Error(ErrorHandler.(WalletAPI(CannotUpdateSecret(index))));
+    };
+  };
+
+  let recoveryPhraseAt = (~config, index, ~password) => {
+    let%FRes data =
+      recoveryPhrases(~config)
+      ->Option.flatMap(recoveryPhrases => recoveryPhrases[index])
+      ->FutureEx.fromOption(
+          ~error=ErrorHandler.(WalletAPI(RecoveryPhraseNotFound(index))),
+        );
+
+    SecureStorage.Cipher.decrypt2(password, data)
+    ->Future.mapError(_ =>
+        ErrorHandler.(
+          WalletAPI(Generic(I18n.form_input_error#wrong_password))
+        )
       );
+  };
 
   let import = (~config, ~alias, ~secretKey, ~password) => {
     let skUri = "encrypted:" ++ secretKey;
-    let keys =
+
+    let%FRes signer =
       ReTaquitoSigner.MemorySigner.create(
         ~secretKey,
         ~passphrase=password,
         (),
       )
-      ->Future.flatMapOk(s =>
-          s
-          ->ReTaquitoSigner.publicKey
-          ->Future.flatMapOk(pk =>
-              s
-              ->ReTaquitoSigner.publicKeyHash
-              ->Future.mapOk(pkh => (Wallet.mnemonicPkValue(pk), pkh, skUri))
-            )
-        )
       ->Future.mapError(e => e->ErrorHandler.Taquito);
-    keys->Future.flatMapOk(((pk, pkh, sk)) =>
+    let%FRes pk =
+      signer
+      ->ReTaquitoSigner.publicKey
+      ->Future.mapError(e => e->ErrorHandler.Taquito);
+    let pk = Wallet.mnemonicPkValue(pk);
+    let%FRes pkh =
+      signer
+      ->ReTaquitoSigner.publicKeyHash
+      ->Future.mapError(e => e->ErrorHandler.Taquito);
+
+    let%FRes () =
       Wallet.addOrReplaceAlias(
         ~dirpath=config->ConfigUtils.baseDir,
         ~alias,
         ~pk,
         ~pkh,
-        ~sk,
+        ~sk=skUri,
         (),
       )
       ->Future.tapError(e => e->Js.log)
-      ->Future.mapError(e => e->ErrorHandler.Wallet)
-      ->Future.mapOk(() => pkh)
-    );
+      ->Future.mapError(e => e->ErrorHandler.Wallet);
+
+    pkh->FutureEx.ok;
   };
 
-  let derive = (~config, ~index, ~alias, ~password) =>
-    Future.mapOk2(
-      secretAt(~config, index)->Future.value,
-      recoveryPhraseAt(~config, index, ~password),
-      (secret, recoveryPhrase) => {
+  let derive = (~config, ~index, ~alias, ~password) => {
+    let%FRes secret = secretAt(~config, index)->Future.value;
+
+    let%FRes recoveryPhrase = recoveryPhraseAt(~config, index, ~password);
+
+    let%FRes edesk =
       secret.derivationPath
       ->DerivationPath.Pattern.implement(secret.addresses->Array.length)
       ->HD.edesk(recoveryPhrase->HD.seed, ~password)
-      ->Future.mapError(e => ErrorHandler.WalletAPI(Generic(e)))
-      ->Future.flatMapOk(edesk =>
-          import(~config, ~secretKey=edesk, ~alias, ~password)
-        )
-      ->Future.tapOk(address =>
-          {
-            ...secret,
-            addresses: Array.concat(secret.addresses, [|address|]),
-          }
-          ->updateSecretAt(~config, index)
-        )
-    })
-    ->Future.flatMapOk(update => update);
+      ->Future.mapError(e => ErrorHandler.WalletAPI(Generic(e)));
+
+    let%FRes address = import(~config, ~secretKey=edesk, ~alias, ~password);
+
+    let%FRes () =
+      {...secret, addresses: Array.concat(secret.addresses, [|address|])}
+      ->updateSecretAt(~config, index)
+      ->Future.value;
+
+    address->FutureEx.ok;
+  };
 
   let unsafeDelete = (~config, name) =>
     Wallet.removeAlias(~dirpath=config->ConfigUtils.baseDir, ~alias=name, ())
     ->Future.mapError(e => e->ErrorHandler.Wallet);
 
-  let delete = (~config, name) =>
-    Aliases.getAddressForAlias(~config, ~alias=name)
-    ->Future.flatMapOk(address =>
-        unsafeDelete(~config, name)
-        ->Future.flatMapOk(_ =>
-            secrets(~config)
-            ->Result.map(secrets =>
-                secrets->Array.map(secret =>
-                  address == secret.masterPublicKey
-                    ? {...secret, masterPublicKey: None} : secret
-                )
-              )
-            ->Result.map(secrets =>
-                Json.Encode.array(Secret.encoder, secrets)->Json.stringify
-              )
-            ->Result.map("secrets"->LocalStorage.setItem)
-            ->Future.value
-          )
-      );
+  let delete = (~config, name) => {
+    let%FRes address = Aliases.getAddressForAlias(~config, ~alias=name);
+    let%FRes () = unsafeDelete(~config, name);
 
-  let deleteSecretAt = (~config, index) =>
-    Future.mapOk2(
-      secrets(~config)->Future.value,
-      Aliases.getAliasMap(~config),
-      (secrets, aliases) => {
-      secrets[index]
+    let%FRes secrets = secrets(~config)->Future.value;
+    let secrets =
+      secrets->Array.map(secret =>
+        address == secret.masterPublicKey
+          ? {...secret, masterPublicKey: None} : secret
+      );
+    let secrets = Json.Encode.array(Secret.encoder, secrets)->Json.stringify;
+
+    LocalStorage.setItem("secrets", secrets)->FutureEx.ok;
+  };
+
+  let deleteSecretAt = (~config, index) => {
+    let%FRes secretsBefore = secrets(~config)->Future.value;
+    let%FRes aliases = Aliases.getAliasMap(~config);
+
+    let%FRes deletedAddresses =
+      secretsBefore[index]
       ->Option.map(secret =>
           secret.addresses
           ->Array.keepMap(v => aliases->Map.String.get((v :> string)))
         )
       ->FutureEx.fromOption(
           ~error=ErrorHandler.(WalletAPI(SecretNotFound(index))),
-        )
-      ->Future.flatMapOk(array =>
-          array->Array.reduce(Future.value(Ok([||])), (a, b) =>
-            a->Future.flatMapOk(a =>
-              b
-              ->unsafeDelete(~config)
-              ->Future.mapOk(b => a->Array.concat([|b|]))
-            )
-          )
-        )
-      ->Future.tapOk(_ => {
-          let _ =
-            secrets->Js.Array2.spliceInPlace(
-              ~pos=index,
-              ~remove=1,
-              ~add=[||],
-            );
-          LocalStorage.setItem(
-            "secrets",
-            Json.Encode.array(Secret.encoder, secrets)->Json.stringify,
-          );
-        })
-      ->Future.tapOk(_ =>
-          switch (recoveryPhrases(~config)) {
-          | Some(recoveryPhrases) =>
-            let _ =
-              recoveryPhrases->Js.Array2.spliceInPlace(
-                ~pos=index,
-                ~remove=1,
-                ~add=[||],
-              );
-            LocalStorage.setItem(
-              "recovery-phrases",
-              Json.Encode.array(SecureStorage.Cipher.encoder, recoveryPhrases)
-              ->Json.stringify,
-            );
-          | None => ()
-          }
-        )
-    })
-    ->Future.flatMapOk(update => update)
-    ->Future.tapOk(_ => {
-        let secrets = secrets(~config);
-        switch (secrets) {
-        | Ok([||])
-        | Error(ErrorHandler.(WalletAPI(NoSecretFound))) =>
-          "lock"->LocalStorage.removeItem;
-          "recovery-phrases"->LocalStorage.removeItem;
-          "secrets"->LocalStorage.removeItem;
-        | _ => ()
-        };
-      });
+        );
 
-  let used = (network, address) => {
-    network
-    ->ServerAPI.Explorer.getOperations(address, ~limit=1, ())
-    ->Future.mapOk(operations => {operations->Js.Array2.length != 0})
-    ->Future.mapError(s => ErrorHandler.(WalletAPI(Generic(s))));
+    let%FResMap () =
+      deletedAddresses->Array.reduce(Future.value(Ok()), (acc, addr) =>
+        acc->Future.flatMapOk(() => addr->unsafeDelete(~config))
+      );
+
+    let _ =
+      secretsBefore->Js.Array2.spliceInPlace(
+        ~pos=index,
+        ~remove=1,
+        ~add=[||],
+      );
+    LocalStorage.setItem(
+      "secrets",
+      Json.Encode.array(Secret.encoder, secretsBefore)->Json.stringify,
+    );
+
+    switch (recoveryPhrases(~config)) {
+    | Some(recoveryPhrases) =>
+      let _ =
+        recoveryPhrases->Js.Array2.spliceInPlace(
+          ~pos=index,
+          ~remove=1,
+          ~add=[||],
+        );
+      LocalStorage.setItem(
+        "recovery-phrases",
+        Json.Encode.array(SecureStorage.Cipher.encoder, recoveryPhrases)
+        ->Json.stringify,
+      );
+    | None => ()
+    };
+
+    let secretsAfter = secrets(~config);
+    switch (secretsAfter) {
+    | Ok([||])
+    | Error(ErrorHandler.(WalletAPI(NoSecretFound))) =>
+      "lock"->LocalStorage.removeItem;
+      "recovery-phrases"->LocalStorage.removeItem;
+      "secrets"->LocalStorage.removeItem;
+    | _ => ()
+    };
   };
 
-  let legacyImport = (~config, alias, recoveryPhrase, ~password) =>
-    HD.edeskLegacy(recoveryPhrase, ~password)
-    ->Future.mapError(e => e->ErrorHandler.Generic->ErrorHandler.WalletAPI)
-    ->Future.flatMapOk(secretKey =>
-        import(~config, ~alias, ~secretKey, ~password)
-      );
+  let used = (network, address) => {
+    let%FResMap operations =
+      network
+      ->ServerAPI.Explorer.getOperations(address, ~limit=1, ())
+      ->Future.mapError(s => ErrorHandler.(WalletAPI(Generic(s))));
+
+    operations->Js.Array2.length != 0;
+  };
+
+  let legacyImport = (~config, alias, recoveryPhrase, ~password) => {
+    let%FRes secretKey =
+      HD.edeskLegacy(recoveryPhrase, ~password)
+      ->Future.mapError(e => e->ErrorHandler.Generic->ErrorHandler.WalletAPI);
+
+    import(~config, ~alias, ~secretKey, ~password);
+  };
 
   module Scan = {
     type error =
       | APIError(string)
       | TaquitoError(ReTaquitoError.t);
-
-    let used = (network, address) => {
-      network
-      ->ServerAPI.Explorer.getOperations(address, ~limit=1, ())
-      ->Future.mapOk(operations => {operations->Js.Array2.length != 0})
-      ->Future.mapError(s => ErrorHandler.(WalletAPI(Generic(s))));
-    };
 
     let runStream =
         (
@@ -433,21 +421,14 @@ module Accounts = {
         ) => {
       let rec loop = n => {
         let path = path->DerivationPath.Pattern.implement(n);
-        getKey(path, schema)
-        ->Future.flatMapOk(address => {
-            let found = () => {
-              onFoundKey(n, address);
-              loop(n + 1);
-            };
 
-            used(config, address)
-            ->Future.flatMapOk(
-                fun
-                | true => found()
-                | false when n == 0 => found()
-                | false => Future.value(Ok()),
-              );
-          });
+        let%FRes address = getKey(path, schema);
+        let found = () => {
+          onFoundKey(n, address);
+          loop(n + 1);
+        };
+        let%FRes used = used(config, address);
+        used ? found() : n == 0 ? found() : Future.value(Ok());
       };
       loop(startIndex);
     };
@@ -461,26 +442,35 @@ module Accounts = {
           schema,
         ) =>
       runStream(
-        ~config, ~startIndex, ~onFoundKey, path, schema, (path, schema) =>
-        LedgerAPI.init()
-        ->Future.flatMapOk(tr =>
-            LedgerAPI.getKey(~prompt=false, tr, path, schema)
-          )
+        ~config,
+        ~startIndex,
+        ~onFoundKey,
+        path,
+        schema,
+        (path, schema) => {
+          let%FRes tr = LedgerAPI.init();
+          LedgerAPI.getKey(~prompt=false, tr, path, schema);
+        },
       );
 
-    let getSeedKey = (~recoveryPhrase, ~password, path, _) =>
-      path
-      ->HD.edesk(recoveryPhrase->HD.seed, ~password)
-      ->Future.mapError(e => ErrorHandler.WalletAPI(Generic(e)))
-      ->Future.flatMapOk(secretKey =>
-          ReTaquitoSigner.MemorySigner.create(
-            ~secretKey,
-            ~passphrase=password,
-            (),
-          )
-          ->Future.flatMapOk(s => s->ReTaquitoSigner.publicKeyHash)
-          ->Future.mapError(e => e->ErrorHandler.Taquito)
-        );
+    let getSeedKey = (~recoveryPhrase, ~password, path, _) => {
+      let%FRes secretKey =
+        path
+        ->HD.edesk(recoveryPhrase->HD.seed, ~password)
+        ->Future.mapError(e => ErrorHandler.WalletAPI(Generic(e)));
+
+      let%FRes signer =
+        ReTaquitoSigner.MemorySigner.create(
+          ~secretKey,
+          ~passphrase=password,
+          (),
+        )
+        ->Future.mapError(e => e->ErrorHandler.Taquito);
+
+      signer
+      ->ReTaquitoSigner.publicKeyHash
+      ->Future.mapError(e => e->ErrorHandler.Taquito);
+    };
 
     let runStreamSeed =
         (
@@ -496,19 +486,18 @@ module Accounts = {
         ->Option.flatMap(r => r[secret.Secret.Repr.index])
       ) {
       | Some(recoveryPhrase) =>
-        recoveryPhrase
-        ->SecureStorage.Cipher.decrypt(password)
-        ->Future.mapError(e => ErrorHandler.(WalletAPI(Generic(e))))
-        ->Future.flatMapOk(recoveryPhrase =>
-            runStream(
-              ~config,
-              ~startIndex,
-              ~onFoundKey,
-              path,
-              Wallet.Ledger.ED25519,
-              getSeedKey(~recoveryPhrase, ~password),
-            )
-          )
+        let%FRes recoveryPhrase =
+          recoveryPhrase
+          ->SecureStorage.Cipher.decrypt(password)
+          ->Future.mapError(e => ErrorHandler.(WalletAPI(Generic(e))));
+        runStream(
+          ~config,
+          ~startIndex,
+          ~onFoundKey,
+          path,
+          Wallet.Ledger.ED25519,
+          getSeedKey(~recoveryPhrase, ~password),
+        );
       | None => Future.value(Ok())
       };
     };
@@ -526,54 +515,46 @@ module Accounts = {
               (),
             ) => {
       let name = baseName ++ " /" ++ index->Js.Int.toString;
-      derivationPath
-      ->DerivationPath.Pattern.implement(index)
-      ->HD.edesk(seed, ~password)
-      ->Future.mapError(e => ErrorHandler.WalletAPI(Generic(e)))
-      ->Future.flatMapOk(edesk =>
-          import(~config, ~secretKey=edesk, ~alias=name, ~password)
-          ->Future.flatMapOk(address
-              // always include 0'
-              =>
-                (
-                  index == 0 ? Future.value(Ok(true)) : config->used(address)
-                )
-                ->Future.flatMapOk(isValidated =>
-                    if (isValidated) {
-                      runOnSeed(
-                        ~config,
-                        seed,
-                        baseName,
-                        ~derivationPath,
-                        ~password,
-                        ~index=index + 1,
-                        (),
-                      )
-                      ->Future.mapOk(addresses =>
-                          Array.concat([|address|], addresses)
-                        );
-                    } else {
-                      unsafeDelete(~config, name)->Future.map(_ => Ok([||]));
-                    }
-                  )
-              )
-        );
+      let%FRes edesk =
+        derivationPath
+        ->DerivationPath.Pattern.implement(index)
+        ->HD.edesk(seed, ~password)
+        ->Future.mapError(e => ErrorHandler.WalletAPI(Generic(e)));
+
+      let%FRes address =
+        import(~config, ~secretKey=edesk, ~alias=name, ~password);
+
+      let%FRes isValidated =
+        // always include 0'
+        index == 0 ? Future.value(Ok(true)) : config->used(address);
+
+      if (isValidated) {
+        let%FResMap addresses =
+          runOnSeed(
+            ~config,
+            seed,
+            baseName,
+            ~derivationPath,
+            ~password,
+            ~index=index + 1,
+            (),
+          );
+        Array.concat([|address|], addresses);
+      } else {
+        unsafeDelete(~config, name)->Future.map(_ => Ok([||]));
+      };
     };
 
-    let runLegacy = (~config, recoveryPhrase, name, ~password) =>
-      legacyImport(~config, name, recoveryPhrase, ~password)
-      ->Future.flatMapOk(legacyAddress =>
-          config
-          ->used(legacyAddress)
-          ->Future.mapOk(isValidated =>
-              isValidated ? Some(legacyAddress) : None
-            )
-        )
-      ->Future.flatMapOk(legacyAddress =>
-          legacyAddress == None
-            ? unsafeDelete(~config, name)->Future.map(_ => Ok(None))
-            : Future.value(Ok(legacyAddress))
-        );
+    let runLegacy = (~config, recoveryPhrase, name, ~password) => {
+      let%FRes legacyAddress =
+        legacyImport(~config, name, recoveryPhrase, ~password);
+
+      let%FRes isValidated = config->used(legacyAddress);
+
+      isValidated
+        ? Some(legacyAddress)->FutureEx.ok
+        : unsafeDelete(~config, name)->Future.map(_ => Ok(None));
+    };
 
     let run =
         (
@@ -586,20 +567,21 @@ module Accounts = {
           ~password,
           ~index=0,
           (),
-        ) =>
-      runOnSeed(
-        ~config,
-        recoveryPhrase->HD.seed,
-        baseName,
-        ~derivationPath,
-        ~password,
-        ~index,
-        (),
-      )
-      ->Future.flatMapOk(addresses => {
-          runLegacy(~config, recoveryPhrase, baseName ++ " legacy", ~password)
-          ->Future.mapOk(legacyAddresses => (addresses, legacyAddresses))
-        });
+        ) => {
+      let%FRes addresses =
+        runOnSeed(
+          ~config,
+          recoveryPhrase->HD.seed,
+          baseName,
+          ~derivationPath,
+          ~password,
+          ~index,
+          (),
+        );
+      let%FResMap legacyAddresses =
+        runLegacy(~config, recoveryPhrase, baseName ++ " legacy", ~password);
+      (addresses, legacyAddresses);
+    };
   };
 
   let indexOfRecoveryPhrase = (~config, recoveryPhrase, ~password) =>
@@ -672,76 +654,77 @@ module Accounts = {
         (),
       ) => {
     let backupPhraseConcat = backupPhrase->Js.Array2.joinWith(" ");
-    password
-    ->SecureStorage.validatePassword
-    ->Future.mapError(_ =>
-        ErrorHandler.(
-          WalletAPI(Generic(I18n.form_input_error#wrong_password))
-        )
-      )
-    ->Future.flatMapOk(_ =>
-        (
-          switch (backupPhrase->Array.length) {
-          | 24
-          | 15
-          | 12 =>
-            backupPhrase->Js.Array2.reducei(
-              (res, w, i) =>
-                res->Result.flatMap(() =>
-                  w->Bip39.included
-                    ? Ok()
-                    : ErrorHandler.(UnknownBip39Word(w, i)->WalletAPI->Error)
-                ),
-              Ok(),
-            )
-          | _ => ErrorHandler.(IncorrectNumberOfWords->WalletAPI->Error)
-          }
-        )
-        ->Future.value
-      )
-    ->Future.flatMapOk(_ =>
-        indexOfRecoveryPhrase(~config, backupPhraseConcat, ~password)
-        ->Future.map(index =>
-            switch (index) {
-            | Some(_) =>
-              Error(ErrorHandler.(WalletAPI(SecretAlreadyImported)))
-            | None => Ok(index)
-            }
+
+    let%FRes () =
+      password
+      ->SecureStorage.validatePassword
+      ->Future.mapError(_ =>
+          ErrorHandler.(
+            WalletAPI(Generic(I18n.form_input_error#wrong_password))
           )
+        );
+
+    let bp = backupPhrase->Array.length;
+
+    let%FRes () =
+      (
+        if (bp == 24 || bp == 15 || bp == 12) {
+          backupPhrase->Js.Array2.reducei(
+            (res, w, i) =>
+              res->Result.flatMap(() =>
+                w->Bip39.included
+                  ? Ok()
+                  : ErrorHandler.(UnknownBip39Word(w, i)->WalletAPI->Error)
+              ),
+            Ok(),
+          );
+        } else {
+          ErrorHandler.(IncorrectNumberOfWords->WalletAPI->Error);
+        }
       )
-    ->Future.flatMapOk(_ =>
-        Scan.run(
-          ~config,
-          ~recoveryPhrase=backupPhraseConcat,
-          ~baseName=name,
-          ~derivationPath,
-          ~password,
-          (),
-        )
-      )
-    ->Future.tapOk(_ =>
-        backupPhraseConcat
-        ->SecureStorage.Cipher.encrypt(password)
-        ->Future.mapOk(registerRecoveryPhrase(~config))
-      )
-    ->Future.tapOk(((addresses, legacyAddress)) =>
-        registerSecret(
-          ~config,
-          ~name,
-          ~kind=Secret.Repr.Mnemonics,
-          ~derivationPath,
-          ~derivationScheme,
-          ~addresses,
-          ~masterPublicKey=legacyAddress,
-        )
+      ->Future.value;
+
+    let%FRes () =
+      indexOfRecoveryPhrase(~config, backupPhraseConcat, ~password)
+      ->Future.map(index =>
+          switch (index) {
+          | Some(_) => ErrorHandler.(WalletAPI(SecretAlreadyImported))->Error
+          | None => Ok()
+          }
+        );
+
+    let%FRes (addresses, legacyAddress) =
+      Scan.run(
+        ~config,
+        ~recoveryPhrase=backupPhraseConcat,
+        ~baseName=name,
+        ~derivationPath,
+        ~password,
+        (),
       );
+
+    let%FResMap () =
+      backupPhraseConcat
+      ->SecureStorage.Cipher.encrypt(password)
+      ->Future.mapError(e => ErrorHandler.(WalletAPI(Generic(e))))
+      ->Future.mapOk(registerRecoveryPhrase(~config));
+
+    registerSecret(
+      ~config,
+      ~name,
+      ~kind=Secret.Repr.Mnemonics,
+      ~derivationPath,
+      ~derivationScheme,
+      ~addresses,
+      ~masterPublicKey=legacyAddress,
+    );
   };
 
   let importRemainingMnemonicKeys = (~config, ~password, ~index, ()) => {
-    FutureEx.flatMapOk2(
-      recoveryPhraseAt(~config, index, ~password),
-      secretAt(~config, index)->Future.value,
-      (recoveryPhrase, secret) =>
+    let%FRes secret = secretAt(~config, index)->Future.value;
+    let%FRes recoveryPhrase = recoveryPhraseAt(~config, index, ~password);
+
+    let%FlatRes (addresses, masterPublicKey) =
       Scan.run(
         ~config,
         ~recoveryPhrase,
@@ -750,16 +733,16 @@ module Accounts = {
         ~password,
         ~index=secret.addresses->Array.length,
         (),
-      )
-      ->Future.tapOk(((addresses, masterPublicKey)) =>
-          {
-            ...secret,
-            addresses: Array.concat(secret.addresses, addresses),
-            masterPublicKey,
-          }
-          ->updateSecretAt(~config, index)
-        )
-    );
+      );
+
+    let secret = {
+      ...secret,
+      addresses: Array.concat(secret.addresses, addresses),
+      masterPublicKey,
+    };
+
+    let%ResMap () = updateSecretAt(secret, ~config, index);
+    (addresses, masterPublicKey);
   };
 
   let importLedgerKey =
@@ -828,44 +811,45 @@ module Accounts = {
         ~ledgerMasterKey,
         (),
       ) => {
-    LedgerAPI.init(~timeout?, ())
-    ->Future.flatMapOk(tr =>
-        importLedgerKeys(
-          ~config,
-          ~accountsNumber,
-          ~startIndex=0,
-          ~basename=name,
-          ~derivationPath,
-          ~derivationScheme,
-          ~ledgerTransport=tr,
-          ~ledgerMasterKey,
-          (),
-        )
-      )
-    ->Future.tapOk(addresses =>
-        registerSecret(
-          ~config,
-          ~name,
-          ~kind=Secret.Repr.Ledger,
-          ~derivationPath,
-          ~derivationScheme,
-          ~addresses,
-          ~masterPublicKey=None,
-        )
-      )
-    ->Future.tapOk(_ =>
-        name
-        ->SecureStorage.Cipher.encrypt("")
-        ->Future.mapOk(registerRecoveryPhrase(~config))
+    let%FRes tr = LedgerAPI.init(~timeout?, ());
+    let%FRes addresses =
+      importLedgerKeys(
+        ~config,
+        ~accountsNumber,
+        ~startIndex=0,
+        ~basename=name,
+        ~derivationPath,
+        ~derivationScheme,
+        ~ledgerTransport=tr,
+        ~ledgerMasterKey,
+        (),
       );
+
+    registerSecret(
+      ~config,
+      ~name,
+      ~kind=Secret.Repr.Ledger,
+      ~derivationPath,
+      ~derivationScheme,
+      ~addresses,
+      ~masterPublicKey=None,
+    );
+
+    let%FResMap () =
+      name
+      ->SecureStorage.Cipher.encrypt("")
+      ->Future.mapError(e => ErrorHandler.(WalletAPI(Generic(e))))
+      ->Future.mapOk(registerRecoveryPhrase(~config));
+
+    addresses;
   };
 
   let deriveLedger =
-      (~config, ~timeout=?, ~index, ~alias, ~ledgerMasterKey, ()) =>
-    FutureEx.flatMapOk2(
-      secretAt(~config, index)->Future.value,
-      LedgerAPI.init(~timeout?, ()),
-      (secret, tr) => {
+      (~config, ~timeout=?, ~index, ~alias, ~ledgerMasterKey, ()) => {
+    let%FRes secret = secretAt(~config, index)->Future.value;
+    let%FRes tr = LedgerAPI.init(~timeout?, ());
+
+    let%FRes address =
       importLedgerKey(
         ~config,
         ~name=alias,
@@ -874,22 +858,22 @@ module Accounts = {
         ~derivationScheme=secret.derivationScheme,
         ~ledgerTransport=tr,
         ~ledgerMasterKey,
-      )
-      ->Future.tapOk(address =>
-          {
-            ...secret,
-            addresses: Array.concat(secret.addresses, [|address|]),
-          }
-          ->updateSecretAt(~config, index)
-        )
-    });
+      );
+
+    let%FRes () =
+      {...secret, addresses: Array.concat(secret.addresses, [|address|])}
+      ->updateSecretAt(~config, index)
+      ->Future.value;
+
+    address->FutureEx.ok;
+  };
 
   let deriveLedgerKeys =
-      (~config, ~timeout=?, ~index, ~accountsNumber, ~ledgerMasterKey, ()) =>
-    FutureEx.flatMapOk2(
-      secretAt(~config, index)->Future.value,
-      LedgerAPI.init(~timeout?, ()),
-      (secret, tr) => {
+      (~config, ~timeout=?, ~index, ~accountsNumber, ~ledgerMasterKey, ()) => {
+    let%FRes secret = secretAt(~config, index)->Future.value;
+    let%FRes tr = LedgerAPI.init(~timeout?, ());
+
+    let%FRes addresses =
       importLedgerKeys(
         ~config,
         ~basename=secret.Secret.Repr.name,
@@ -900,12 +884,15 @@ module Accounts = {
         ~ledgerTransport=tr,
         ~ledgerMasterKey,
         (),
-      )
-      ->Future.tapOk(addresses =>
-          {...secret, addresses: Array.concat(secret.addresses, addresses)}
-          ->updateSecretAt(~config, index)
-        )
-    });
+      );
+
+    let%FRes () =
+      {...secret, addresses: Array.concat(secret.addresses, addresses)}
+      ->updateSecretAt(~config, index)
+      ->Future.value;
+
+    addresses->FutureEx.ok;
+  };
 
   let getPublicKey = (~config: ConfigFile.t, ~account: Account.t) => {
     Wallet.pkFromAlias(

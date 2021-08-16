@@ -200,6 +200,7 @@ let useUpdate =
     ~set=
       (~config, {index, secret}: Secret.derived) => {
         WalletAPI.Accounts.updateSecretAt(~config, secret, index)
+        ->Future.value
       },
     ~kind=Logs.Account,
     ~errorToString=ErrorHandler.toString,

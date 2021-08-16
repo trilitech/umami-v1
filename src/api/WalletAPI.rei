@@ -89,7 +89,7 @@ module Accounts: {
 
   let updateSecretAt:
     (~config: ConfigFile.t, Secret.Repr.t, int) =>
-    Future.t(Result.t(unit, ErrorHandler.t));
+    Result.t(unit, ErrorHandler.t);
 
   let recoveryPhraseAt:
     (~config: ConfigFile.t, int, ~password: string) =>
@@ -114,8 +114,7 @@ module Accounts: {
     Future.t(Result.t(unit, ErrorHandler.t));
 
   let deleteSecretAt:
-    (~config: ConfigFile.t, int) =>
-    Future.t(Result.t(array(unit), ErrorHandler.t));
+    (~config: ConfigFile.t, int) => Future.t(Result.t(unit, ErrorHandler.t));
 
   let used:
     (ConfigFile.t, PublicKeyHash.t) =>
@@ -125,10 +124,6 @@ module Accounts: {
     type error =
       | APIError(string)
       | TaquitoError(ReTaquitoError.t);
-
-    let used:
-      (ConfigFile.t, PublicKeyHash.t) =>
-      Future.t(Result.t(bool, ErrorHandler.t));
 
     let runStreamLedger:
       (
@@ -162,12 +157,7 @@ module Accounts: {
       ~password: string,
       unit
     ) =>
-    Future.t(
-      Result.t(
-        (array(PublicKeyHash.t), option(PublicKeyHash.t)),
-        ErrorHandler.t,
-      ),
-    );
+    Future.t(Result.t(unit, ErrorHandler.t));
 
   let importRemainingMnemonicKeys:
     (~config: ConfigFile.t, ~password: string, ~index: int, unit) =>

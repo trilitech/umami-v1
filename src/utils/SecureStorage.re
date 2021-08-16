@@ -227,4 +227,4 @@ let validatePassword = password =>
       )
     )
   ->Future.flatMapOk(data => data->store(~key="lock", ~password))
-  ->Future.mapOk(_ => true);
+  ->Future.mapOk(_ => ());

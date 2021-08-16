@@ -55,7 +55,7 @@ let make = (~closeAction) => {
     ->Future.flatMapOk(() =>
         createSecretWithMnemonic(p)->Future.mapError(ErrorHandler.toString)
       )
-    ->Future.tapOk(_ => {closeAction()})
+    ->Future.tapOk(() => {closeAction()})
     ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
         I18n.t#account_created
       )
