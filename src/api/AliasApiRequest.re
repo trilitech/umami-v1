@@ -28,8 +28,8 @@
 /* Get list */
 
 let useLoad = requestState => {
-  let get = (~settings, ()) =>
-    WalletAPI.Aliases.get(~settings)
+  let get = (~config, ()) =>
+    WalletAPI.Aliases.get(~config)
     ->Future.mapOk(response => {
         response
         ->Array.map(((name, address)) =>
@@ -47,8 +47,8 @@ let useLoad = requestState => {
 let useCreate =
   ApiRequest.useSetter(
     ~set=
-      (~settings, (alias, address)) =>
-        WalletAPI.Aliases.add(~settings, ~alias, ~address),
+      (~config, (alias, address)) =>
+        WalletAPI.Aliases.add(~config, ~alias, ~address),
     ~kind=Logs.Aliases,
     ~errorToString=ErrorHandler.toString,
   );
@@ -58,8 +58,8 @@ let useCreate =
 let useUpdate =
   ApiRequest.useSetter(
     ~set=
-      (~settings, renaming: TezosSDK.renameParams) =>
-        WalletAPI.Aliases.rename(~settings, renaming),
+      (~config, renaming: WalletAPI.Aliases.renameParams) =>
+        WalletAPI.Aliases.rename(~config, renaming),
     ~kind=Logs.Aliases,
     ~errorToString=ErrorHandler.toString,
   );
@@ -67,8 +67,7 @@ let useUpdate =
 /* Delete */
 
 let useDelete = {
-  let set = (~settings, alias) =>
-    WalletAPI.Aliases.delete(~settings, ~alias);
+  let set = (~config, alias) => WalletAPI.Aliases.delete(~config, ~alias);
   ApiRequest.useSetter(
     ~set,
     ~kind=Logs.Aliases,

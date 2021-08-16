@@ -46,10 +46,10 @@ let make = (~closeAction) => {
 
   let addLog = LogsContext.useAdd();
 
-  let settings = SdkContext.useSettings();
+  let config = ConfigContext.useContent();
 
   let createSecretWithMnemonic = p =>
-    System.Client.initDir(settings->AppSettings.baseDir)
+    System.Client.initDir(config->ConfigUtils.baseDir)
     ->Future.flatMapOk(() =>
         createSecretWithMnemonic(p)->Future.mapError(ErrorHandler.toString)
       )

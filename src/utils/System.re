@@ -25,13 +25,13 @@
 
 %raw
 "
-var electron = window.require('electron');
+var electron = require('electron');
 var { app, Menu } = electron.remote;
 var shell = electron.shell;
-var process = window.require('process');
-var OS = window.require('os');
-var fs = window.require('fs');
-var path = window.require('path');
+var process = require('process');
+var OS = require('os');
+var fs = require('fs');
+var path = require('path');
 
 ";
 

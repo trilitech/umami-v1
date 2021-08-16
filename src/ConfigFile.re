@@ -49,7 +49,7 @@ module Default = {
   /* let network = `Testnet(Network.edo2netChain); */
   let network = `Mainnet;
   let theme = `system;
-  let sdkBaseDir = System.(Path.Ops.(appDir() / (!"tezos-client")));
+  let sdkBaseDir = () => System.(Path.Ops.(appDir() / (!"tezos-client")));
   let confirmations = 5;
 };
 

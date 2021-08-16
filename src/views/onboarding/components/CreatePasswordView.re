@@ -67,7 +67,7 @@ let passwordLengthCheck = (values: StateLenses.state) => {
 [@react.component]
 let make =
     (
-      ~mnemonic,
+      ~mnemonic: array(string),
       ~derivationPath,
       ~onPressCancel,
       ~createSecretWithMnemonic,
@@ -95,11 +95,10 @@ let make =
       },
       ~onSubmit=
         ({state}) => {
-          let mnemonics = mnemonic->Js.Array2.joinWith(" ");
           createSecretWithMnemonic(
             SecretApiRequest.{
               name: "Secret " ++ (existingSecretsCount + 1)->string_of_int,
-              mnemonics,
+              mnemonic,
               derivationPath,
               password: state.values.password,
             },

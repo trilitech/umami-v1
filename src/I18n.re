@@ -394,10 +394,17 @@ let errors = {
   pub cannot_update_secret = i => p("Can't update secret at index %d!", i);
   pub recovery_phrase_not_found = i =>
     p("Recovery phrase at index %d not found!", i);
-  pub secret_already_imported = "Secret already imported";
   pub beacon_transaction_not_supported = "Beacon transaction not supported";
   pub beacon_request_network_missmatch = "Beacon request network not supported";
-  pub video_stream_access_denied = "Unable to access video stream\n(please make sure you have a webcam enabled)"
+  pub video_stream_access_denied = "Unable to access video stream\n(please make sure you have a webcam enabled)";
+  pub incorrect_number_of_words = "Mnemonic must have 12, 15 or 24 words.";
+  pub unknown_bip39_word = (w, i) =>
+    p(
+      "Word %d ('%s') is not a valid BIP39 word, please refer to the standard.",
+      i,
+      w,
+    );
+  pub secret_already_imported = "Secret already imported"
 };
 
 let csv = {

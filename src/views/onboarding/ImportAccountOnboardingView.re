@@ -45,12 +45,12 @@ let make = (~closeAction) => {
   let existingSecretsCount = secrets->Array.length;
   let noExistingPassword = existingSecretsCount < 1;
 
-  let settings = SdkContext.useSettings();
+  let config = ConfigContext.useContent();
 
   let addLog = LogsContext.useAdd();
 
   let createSecretWithMnemonic = p =>
-    System.Client.initDir(settings->AppSettings.baseDir)
+    System.Client.initDir(config->ConfigUtils.baseDir)
     ->Future.flatMapOk(() =>
         createSecretWithMnemonic(p)->Future.mapError(ErrorHandler.toString)
       )

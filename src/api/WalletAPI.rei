@@ -23,7 +23,7 @@
 /*                                                                           */
 /*****************************************************************************/
 
-/** Wallet API layer with TezosSDK/Wallet backend */
+/** Wallet API layer with Wallet backend */
 
 /** Secret representation in LocalStorage */
 module Secret: {
@@ -39,27 +39,31 @@ module Secret: {
 module Aliases: {
   type t = array((string, PublicKeyHash.t));
 
-  let get:
-    (~settings: AppSettings.t) => Future.t(Result.t(t, ErrorHandler.t));
+  let get: (~config: ConfigFile.t) => Future.t(Result.t(t, ErrorHandler.t));
 
   let getAliasForAddress:
-    (~settings: AppSettings.t, ~address: PublicKeyHash.t) =>
+    (~config: ConfigFile.t, ~address: PublicKeyHash.t) =>
     Future.t(Result.t(option(string), ErrorHandler.t));
 
   let getAddressForAlias:
-    (~settings: AppSettings.t, ~alias: string) =>
+    (~config: ConfigFile.t, ~alias: string) =>
     Future.t(Result.t(option(PublicKeyHash.t), ErrorHandler.t));
 
   let add:
-    (~settings: AppSettings.t, ~alias: string, ~address: PublicKeyHash.t) =>
+    (~config: ConfigFile.t, ~alias: string, ~address: PublicKeyHash.t) =>
     Future.t(Result.t(unit, ErrorHandler.t));
 
   let delete:
-    (~settings: AppSettings.t, ~alias: string) =>
+    (~config: ConfigFile.t, ~alias: string) =>
     Future.t(Result.t(unit, ErrorHandler.t));
 
+  type renameParams = {
+    old_name: string,
+    new_name: string,
+  };
+
   let rename:
-    (~settings: AppSettings.t, TezosSDK.renameParams) =>
+    (~config: ConfigFile.t, renameParams) =>
     Future.t(Result.t(unit, ErrorHandler.t));
 };
 
@@ -71,31 +75,27 @@ module Accounts: {
   type name = string;
 
   let secrets:
-    (~settings: AppSettings.t) => result(t, TezosClient.ErrorHandler.t);
+    (~config: ConfigFile.t) => result(t, TezosClient.ErrorHandler.t);
 
   let recoveryPhrases:
-    (~settings: AppSettings.t) =>
+    (~config: ConfigFile.t) =>
     option(array(SecureStorage.Cipher.encryptedData));
 
   let get:
-    (~settings: AppSettings.t) =>
+    (~config: ConfigFile.t) =>
     Future.t(Result.t(array((name, PublicKeyHash.t)), ErrorHandler.t));
 
   let updateSecretAt:
-    (~settings: AppSettings.t, Secret.Repr.t, int) =>
+    (~config: ConfigFile.t, Secret.Repr.t, int) =>
     Future.t(Result.t(unit, ErrorHandler.t));
 
   let recoveryPhraseAt:
-    (~settings: AppSettings.t, int, ~password: string) =>
+    (~config: ConfigFile.t, int, ~password: string) =>
     Future.t(Result.t(string, ErrorHandler.t));
-
-  let add:
-    (~settings: AppSettings.t, ~alias: name, ~address: PublicKeyHash.t) =>
-    Future.t(result(unit, TezosSDK.Error.t));
 
   let import:
     (
-      ~settings: AppSettings.t,
+      ~config: ConfigFile.t,
       ~alias: name,
       ~secretKey: string,
       ~password: string
@@ -103,26 +103,26 @@ module Accounts: {
     Future.t(Result.t(PublicKeyHash.t, ErrorHandler.t));
 
   let derive:
-    (~settings: AppSettings.t, ~index: int, ~alias: name, ~password: string) =>
+    (~config: ConfigFile.t, ~index: int, ~alias: name, ~password: string) =>
     Future.t(Result.t(PublicKeyHash.t, ErrorHandler.t));
 
   /* Delete the given account */
   let delete:
-    (~settings: AppSettings.t, string) =>
+    (~config: ConfigFile.t, string) =>
     Future.t(Result.t(unit, ErrorHandler.t));
 
   let deleteSecretAt:
-    (~settings: AppSettings.t, int) =>
+    (~config: ConfigFile.t, int) =>
     Future.t(Result.t(array(unit), ErrorHandler.t));
 
   let used:
-    (AppSettings.t, PublicKeyHash.t) =>
+    (ConfigFile.t, PublicKeyHash.t) =>
     Future.t(Result.t(bool, ErrorHandler.t));
 
   let restore:
     (
-      ~settings: AppSettings.t,
-      ~backupPhrase: string,
+      ~config: ConfigFile.t,
+      ~backupPhrase: array(string),
       ~name: name,
       ~derivationPath: TezosClient.DerivationPath.Pattern.t=?,
       ~password: string,
@@ -135,11 +135,15 @@ module Accounts: {
       ),
     );
 
+  let legacyImport:
+    (~config: ConfigUtils.t, string, string, ~password: string) =>
+    Future.t(Belt.Result.t(PublicKeyHash.t, ErrorHandler.t));
+
   let scanAll:
-    (~settings: AppSettings.t, ~password: string) =>
+    (~config: ConfigFile.t, ~password: string) =>
     Future.t(Result.t(unit, ErrorHandler.t));
 
   let getPublicKey:
-    (~settings: AppSettings.t, ~account: Account.t) =>
+    (~config: ConfigFile.t, ~account: Account.t) =>
     Future.t(Result.t(string, Wallet.error));
 };

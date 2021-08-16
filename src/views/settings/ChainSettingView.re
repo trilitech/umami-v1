@@ -168,7 +168,7 @@ module CustomNetworkItem = {
           label={network.name}
           value={`Custom(network.name)}
           setValue=writeNetwork
-          currentValue={settings->AppSettings.network}
+          currentValue={settings->ConfigUtils.network}
           tag={network.chain->Network.getChainName}
           tagTextColor
           tagBorderColor
@@ -193,12 +193,12 @@ module CustomNetworkItem = {
 [@react.component]
 let make = () => {
   let writeConf = ConfigContext.useWrite();
-  let settings = SdkContext.useSettings();
+  let settings = ConfigContext.useContent();
 
   let customNetworks = ConfigContext.useContent().customNetworks;
 
   let writeNetwork = f => {
-    let network = f(settings->AppSettings.network);
+    let network = f(settings->ConfigUtils.network);
     let network =
       network == ConfigFile.Default.network ? None : Some(network);
 
@@ -214,19 +214,19 @@ let make = () => {
             label=I18n.t#mainnet
             value=`Mainnet
             setValue=writeNetwork
-            currentValue={settings->AppSettings.network}
+            currentValue={settings->ConfigUtils.network}
           />
           <RadioItem
             label=I18n.t#florencenet
             value=`Florencenet
             setValue=writeNetwork
-            currentValue={settings->AppSettings.network}
+            currentValue={settings->ConfigUtils.network}
           />
           <RadioItem
             label=I18n.t#granadanet
             value=`Granadanet
             setValue=writeNetwork
-            currentValue={settings->AppSettings.network}
+            currentValue={settings->ConfigUtils.network}
           />
           {switch (customNetworks) {
            | [] => React.null

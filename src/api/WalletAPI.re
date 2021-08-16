@@ -88,54 +88,62 @@ module Secret = {
 module Aliases = {
   type t = array((string, PublicKeyHash.t));
 
-  let get = (~settings) =>
-    settings
-    ->AppSettings.sdk
-    ->TezosSDK.listKnownAddresses
-    ->Future.mapError(e => e->ErrorHandler.TezosSDK)
-    ->Future.mapOk(l => l->Array.map(({alias, pkh}) => (alias, pkh)));
+  let get = (~config) =>
+    config
+    ->ConfigUtils.baseDir
+    ->Wallet.PkhAliases.read
+    ->Future.mapError(e => e->ErrorHandler.Wallet)
+    ->Future.mapOk(l => l->Array.map(({name, value}) => (name, value)));
 
-  let getAliasMap = (~settings) =>
-    get(~settings)
+  let getAliasMap = (~config) =>
+    get(~config)
     ->Future.mapOk(addresses =>
         addresses->Array.map(((alias, addr)) => ((addr :> string), alias))
       )
     ->Future.mapOk(Map.String.fromArray);
 
-  let getAliasForAddress = (~settings, ~address: PublicKeyHash.t) =>
-    getAliasMap(~settings)
+  let getAliasForAddress = (~config, ~address: PublicKeyHash.t) =>
+    getAliasMap(~config)
     ->Future.mapOk(aliases => aliases->Map.String.get((address :> string)));
 
-  let getAddressForAlias = (~settings, ~alias) =>
-    get(~settings)
+  let getAddressForAlias = (~config, ~alias) =>
+    get(~config)
     ->Future.mapOk(Map.String.fromArray)
     ->Future.mapOk(addresses => addresses->Map.String.get(alias));
 
-  let add = (~settings, ~alias, ~address) =>
-    settings
-    ->AppSettings.sdk
-    ->TezosSDK.addAddress(alias, address)
-    ->Future.mapError(e => e->ErrorHandler.TezosSDK);
+  let add = (~config, ~alias, ~address) =>
+    Wallet.addOrReplacePkhAlias(
+      ~dirpath=config->ConfigUtils.baseDir,
+      ~alias,
+      ~pkh=address,
+      (),
+    )
+    ->Future.mapError(e => e->ErrorHandler.Wallet);
 
-  let delete = (~settings, ~alias) =>
-    settings
-    ->AppSettings.sdk
-    ->TezosSDK.forgetAddress(alias)
-    ->Future.mapError(e => e->ErrorHandler.TezosSDK);
+  let delete = (~config, ~alias) =>
+    Wallet.removePkhAlias(~dirpath=config->ConfigUtils.baseDir, ~alias, ())
+    ->Future.mapError(e => e->ErrorHandler.Wallet);
 
-  let rename = (~settings, renaming) =>
-    settings
-    ->AppSettings.sdk
-    ->TezosSDK.renameAliases(renaming)
-    ->Future.mapError(e => e->ErrorHandler.TezosSDK);
+  type renameParams = {
+    old_name: string,
+    new_name: string,
+  };
+
+  let rename = (~config, renaming) =>
+    Wallet.renameAlias(
+      ~dirpath=config->ConfigUtils.baseDir,
+      ~oldName=renaming.old_name,
+      ~newName=renaming.new_name,
+      (),
+    )
+    ->Future.mapError(e => e->ErrorHandler.Wallet);
 };
 
 module Accounts = {
   type t = array(Secret.t);
   type name = string;
 
-  let secrets = (~settings: AppSettings.t) => {
-    let _ = settings;
+  let secrets = (~config as _: ConfigFile.t) => {
     LocalStorage.getItem("secrets")
     ->Js.Nullable.toOption
     ->Option.flatMap(Json.parse)
@@ -143,27 +151,37 @@ module Accounts = {
     ->ResultEx.fromOption(Error(ErrorHandler.(WalletAPI(NoSecretFound))));
   };
 
-  let recoveryPhrases = (~settings: AppSettings.t) => {
-    let _ = settings;
+  let recoveryPhrases = (~config: ConfigFile.t) => {
+    let _ = config;
     LocalStorage.getItem("recovery-phrases")
     ->Js.Nullable.toOption
     ->Option.flatMap(Json.parse)
     ->Option.map(Json.Decode.(array(SecureStorage.Cipher.decoder)));
   };
 
-  let get = (~settings: AppSettings.t) =>
-    settings
-    ->AppSettings.sdk
-    ->TezosSDK.listKnownAddresses
-    ->Future.mapError(e => e->ErrorHandler.TezosSDK)
-    ->Future.mapOk(r =>
-        r->Array.keepMap((TezosSDK.OutputAddress.{alias, pkh, sk_known}) =>
-          sk_known ? Some((alias, pkh)) : None
-        )
-      );
+  let get = (~config) =>
+    config
+    ->ConfigUtils.baseDir
+    ->Wallet.PkhAliases.read
+    ->Future.flatMapOk(pkhs => {
+        config
+        ->ConfigUtils.baseDir
+        ->Wallet.SecretAliases.read
+        ->Future.mapOk(sks =>
+            pkhs->Array.keepMap(({name, value}) =>
+              switch (
+                sks->Wallet.SecretAliases.find(skAlias => name == skAlias.name)
+              ) {
+              | Ok(_) => Some((name, value))
+              | Error(_) => None
+              }
+            )
+          )
+      })
+    ->Future.mapError(e => e->ErrorHandler.Wallet);
 
-  let secretAt = (~settings, index) =>
-    secrets(~settings)
+  let secretAt = (~config, index) =>
+    secrets(~config)
     ->Future.value
     ->Future.flatMapOk(secrets =>
         secrets[index]
@@ -172,8 +190,8 @@ module Accounts = {
           )
       );
 
-  let updateSecretAt = (~settings, secret, index) =>
-    secrets(~settings)
+  let updateSecretAt = (~config, secret, index) =>
+    secrets(~config)
     ->Future.value
     ->Future.flatMapOk(secrets => {
         (secrets[index] = secret)
@@ -190,8 +208,8 @@ module Accounts = {
             )
       });
 
-  let recoveryPhraseAt = (~settings, index, ~password) =>
-    recoveryPhrases(~settings)
+  let recoveryPhraseAt = (~config, index, ~password) =>
+    recoveryPhrases(~config)
     ->Option.flatMap(recoveryPhrases => recoveryPhrases[index])
     ->FutureEx.fromOption(
         ~error=ErrorHandler.(WalletAPI(RecoveryPhraseNotFound(index))),
@@ -205,52 +223,71 @@ module Accounts = {
           )
       );
 
-  let add = (~settings, ~alias, ~address) =>
-    settings->AppSettings.sdk->TezosSDK.addAddress(alias, address);
-
-  let import = (~settings, ~alias, ~secretKey, ~password) => {
+  let import = (~config, ~alias, ~secretKey, ~password) => {
     let skUri = "encrypted:" ++ secretKey;
-    settings
-    ->AppSettings.sdk
-    ->TezosSDK.importSecretKey(~name=alias, ~skUri, ~password, ())
-    ->Future.mapError(e => e->ErrorHandler.TezosSDK)
-    ->Future.tapOk(k => Js.log("key found : " ++ (k :> string)));
+    let keys =
+      ReTaquitoSigner.MemorySigner.create(
+        ~secretKey,
+        ~passphrase=password,
+        (),
+      )
+      ->Future.flatMapOk(s =>
+          s
+          ->ReTaquitoSigner.publicKey
+          ->Future.flatMapOk(pk =>
+              s
+              ->ReTaquitoSigner.publicKeyHash
+              ->Future.mapOk(pkh => (Wallet.mnemonicPkValue(pk), pkh, skUri))
+            )
+        )
+      ->Future.mapError(e => e->ErrorHandler.Taquito);
+    keys->Future.flatMapOk(((pk, pkh, sk)) =>
+      Wallet.addOrReplaceAlias(
+        ~dirpath=config->ConfigUtils.baseDir,
+        ~alias,
+        ~pk,
+        ~pkh,
+        ~sk,
+        (),
+      )
+      ->Future.tapError(e => e->Js.log)
+      ->Future.mapError(e => e->ErrorHandler.Wallet)
+      ->Future.mapOk(() => pkh)
+    );
   };
 
-  let derive = (~settings, ~index, ~alias, ~password) =>
+  let derive = (~config, ~index, ~alias, ~password) =>
     Future.mapOk2(
-      secretAt(~settings, index),
-      recoveryPhraseAt(~settings, index, ~password),
+      secretAt(~config, index),
+      recoveryPhraseAt(~config, index, ~password),
       (secret, recoveryPhrase) => {
       secret.derivationPath
       ->DerivationPath.Pattern.implement(secret.addresses->Array.length)
       ->HD.edesk(recoveryPhrase->HD.seed, ~password)
       ->Future.mapError(e => ErrorHandler.WalletAPI(Generic(e)))
       ->Future.flatMapOk(edesk =>
-          import(~settings, ~secretKey=edesk, ~alias, ~password)
+          import(~config, ~secretKey=edesk, ~alias, ~password)
         )
       ->Future.tapOk(address =>
           {
             ...secret,
             addresses: Array.concat(secret.addresses, [|address|]),
           }
-          ->updateSecretAt(~settings, index)
+          ->updateSecretAt(~config, index)
         )
     })
     ->Future.flatMapOk(update => update);
 
-  let unsafeDelete = (~settings, name) =>
-    settings
-    ->AppSettings.sdk
-    ->TezosSDK.forgetAddress(name)
-    ->Future.mapError(e => e->ErrorHandler.TezosSDK);
+  let unsafeDelete = (~config, name) =>
+    Wallet.removeAlias(~dirpath=config->ConfigUtils.baseDir, ~alias=name, ())
+    ->Future.mapError(e => e->ErrorHandler.Wallet);
 
-  let delete = (~settings, name) =>
-    Aliases.getAddressForAlias(~settings, ~alias=name)
+  let delete = (~config, name) =>
+    Aliases.getAddressForAlias(~config, ~alias=name)
     ->Future.flatMapOk(address =>
-        unsafeDelete(~settings, name)
+        unsafeDelete(~config, name)
         ->Future.flatMapOk(_ =>
-            secrets(~settings)
+            secrets(~config)
             ->Result.map(secrets =>
                 secrets->Array.map(secret =>
                   address == secret.legacyAddress
@@ -265,10 +302,10 @@ module Accounts = {
           )
       );
 
-  let deleteSecretAt = (~settings, index) =>
+  let deleteSecretAt = (~config, index) =>
     Future.mapOk2(
-      secrets(~settings)->Future.value,
-      Aliases.getAliasMap(~settings),
+      secrets(~config)->Future.value,
+      Aliases.getAliasMap(~config),
       (secrets, aliases) => {
       secrets[index]
       ->Option.map(secret =>
@@ -282,7 +319,7 @@ module Accounts = {
           array->Array.reduce(Future.value(Ok([||])), (a, b) =>
             a->Future.flatMapOk(a =>
               b
-              ->unsafeDelete(~settings)
+              ->unsafeDelete(~config)
               ->Future.mapOk(b => a->Array.concat([|b|]))
             )
           )
@@ -300,7 +337,7 @@ module Accounts = {
           );
         })
       ->Future.tapOk(_ =>
-          switch (recoveryPhrases(~settings)) {
+          switch (recoveryPhrases(~config)) {
           | Some(recoveryPhrases) =>
             let _ =
               recoveryPhrases->Js.Array2.spliceInPlace(
@@ -319,7 +356,7 @@ module Accounts = {
     })
     ->Future.flatMapOk(update => update)
     ->Future.tapOk(_ => {
-        let recoveryPhrases = recoveryPhrases(~settings);
+        let recoveryPhrases = recoveryPhrases(~config);
         if (recoveryPhrases == Some([||]) || recoveryPhrases == None) {
           "lock"->LocalStorage.removeItem;
           "recovery-phrases"->LocalStorage.removeItem;
@@ -336,7 +373,7 @@ module Accounts = {
 
   let rec scanSeed =
           (
-            ~settings: AppSettings.t,
+            ~config: ConfigFile.t,
             seed,
             baseName,
             ~derivationPath=DerivationPath.Pattern.default->DerivationPath.Pattern.fromTezosBip44,
@@ -350,17 +387,15 @@ module Accounts = {
     ->HD.edesk(seed, ~password)
     ->Future.mapError(e => ErrorHandler.WalletAPI(Generic(e)))
     ->Future.flatMapOk(edesk =>
-        import(~settings, ~secretKey=edesk, ~alias=name, ~password)
+        import(~config, ~secretKey=edesk, ~alias=name, ~password)
         ->Future.flatMapOk(address
             // always include 0'
             =>
-              (
-                index == 0 ? Future.value(Ok(true)) : settings->used(address)
-              )
+              (index == 0 ? Future.value(Ok(true)) : config->used(address))
               ->Future.flatMapOk(isValidated =>
                   if (isValidated) {
                     scanSeed(
-                      ~settings,
+                      ~config,
                       seed,
                       baseName,
                       ~derivationPath,
@@ -372,28 +407,24 @@ module Accounts = {
                         Array.concat([|address|], addresses)
                       );
                   } else {
-                    unsafeDelete(~settings, name)->Future.map(_ => Ok([||]));
+                    unsafeDelete(~config, name)->Future.map(_ => Ok([||]));
                   }
                 )
             )
       );
   };
 
-  let legacyImport = (~settings, name, recoveryPhrase, ~password) =>
-    settings
-    ->AppSettings.sdk
-    ->TezosSDK.importKeysFromMnemonics(
-        ~name,
-        ~mnemonics=recoveryPhrase,
-        ~password,
-        (),
-      )
-    ->Future.mapError(e => e->ErrorHandler.TezosSDK);
+  let legacyImport = (~config, alias, recoveryPhrase, ~password) =>
+    HD.edeskLegacy(recoveryPhrase, ~password)
+    ->Future.mapError(e => e->ErrorHandler.Generic->ErrorHandler.WalletAPI)
+    ->Future.flatMapOk(secretKey =>
+        import(~config, ~alias, ~secretKey, ~password)
+      );
 
-  let legacyScan = (~settings, recoveryPhrase, name, ~password) =>
-    legacyImport(~settings, name, recoveryPhrase, ~password)
+  let legacyScan = (~config, recoveryPhrase, name, ~password) =>
+    legacyImport(~config, name, recoveryPhrase, ~password)
     ->Future.flatMapOk(legacyAddress =>
-        settings
+        config
         ->used(legacyAddress)
         ->Future.mapOk(isValidated =>
             isValidated ? Some(legacyAddress) : None
@@ -401,13 +432,13 @@ module Accounts = {
       )
     ->Future.flatMapOk(legacyAddress =>
         legacyAddress == None
-          ? unsafeDelete(~settings, name)->Future.map(_ => Ok(None))
+          ? unsafeDelete(~config, name)->Future.map(_ => Ok(None))
           : Future.value(Ok(legacyAddress))
       );
 
   let scan =
       (
-        ~settings,
+        ~config,
         recoveryPhrase,
         baseName,
         ~derivationPath=DerivationPath.Pattern.default->DerivationPath.Pattern.fromTezosBip44,
@@ -416,7 +447,7 @@ module Accounts = {
         (),
       ) =>
     scanSeed(
-      ~settings,
+      ~config,
       recoveryPhrase->HD.seed,
       baseName,
       ~derivationPath,
@@ -425,17 +456,12 @@ module Accounts = {
       (),
     )
     ->Future.flatMapOk(addresses => {
-        legacyScan(
-          ~settings,
-          recoveryPhrase,
-          baseName ++ " legacy",
-          ~password,
-        )
+        legacyScan(~config, recoveryPhrase, baseName ++ " legacy", ~password)
         ->Future.mapOk(legacyAddresses => (addresses, legacyAddresses))
       });
 
-  let indexOfRecoveryPhrase = (~settings, recoveryPhrase, ~password) =>
-    recoveryPhrases(~settings)
+  let indexOfRecoveryPhrase = (~config, recoveryPhrase, ~password) =>
+    recoveryPhrases(~config)
     ->Option.getWithDefault([||])
     ->Array.map(data =>
         SecureStorage.Cipher.decrypt2(password, data)
@@ -452,7 +478,7 @@ module Accounts = {
 
   let restore =
       (
-        ~settings,
+        ~config,
         ~backupPhrase,
         ~name,
         ~derivationPath=DerivationPath.Pattern.fromTezosBip44(
@@ -461,6 +487,7 @@ module Accounts = {
         ~password,
         (),
       ) => {
+    let backupPhraseConcat = backupPhrase->Js.Array2.joinWith(" ");
     password
     ->SecureStorage.validatePassword
     ->Future.mapError(_ =>
@@ -469,7 +496,27 @@ module Accounts = {
         )
       )
     ->Future.flatMapOk(_ =>
-        indexOfRecoveryPhrase(~settings, backupPhrase, ~password)
+        (
+          switch (backupPhrase->Array.length) {
+          | 24
+          | 15
+          | 12 =>
+            backupPhrase->Js.Array2.reducei(
+              (res, w, i) =>
+                res->Result.flatMap(() =>
+                  w->Bip39.included
+                    ? Ok()
+                    : ErrorHandler.(UnknownBip39Word(w, i)->WalletAPI->Error)
+                ),
+              Ok(),
+            )
+          | _ => ErrorHandler.(IncorrectNumberOfWords->WalletAPI->Error)
+          }
+        )
+        ->Future.value
+      )
+    ->Future.flatMapOk(_ =>
+        indexOfRecoveryPhrase(~config, backupPhraseConcat, ~password)
         ->Future.map(index =>
             switch (index) {
             | Some(_) =>
@@ -479,13 +526,20 @@ module Accounts = {
           )
       )
     ->Future.flatMapOk(_ =>
-        scan(~settings, backupPhrase, name, ~derivationPath, ~password, ())
+        scan(
+          ~config,
+          backupPhraseConcat,
+          name,
+          ~derivationPath,
+          ~password,
+          (),
+        )
       )
     ->Future.tapOk(_ =>
         Future.mapOk2(
-          recoveryPhrases(~settings)
+          recoveryPhrases(~config)
           ->FutureEx.fromOptionWithDefault(~default=[||]),
-          backupPhrase->SecureStorage.Cipher.encrypt(password),
+          backupPhraseConcat->SecureStorage.Cipher.encrypt(password),
           (recoveryPhrases, newRecoveryPhrase) => {
           Array.concat(recoveryPhrases, [|newRecoveryPhrase|])
         })
@@ -503,7 +557,7 @@ module Accounts = {
           legacyAddress,
         };
         let secrets =
-          secrets(~settings)
+          secrets(~config)
           ->Result.getWithDefault([||])
           ->Array.concat([|secret|]);
         LocalStorage.setItem(
@@ -513,9 +567,9 @@ module Accounts = {
       });
   };
 
-  let scanAll = (~settings, ~password) =>
+  let scanAll = (~config, ~password) =>
     (
-      switch (recoveryPhrases(~settings), secrets(~settings)) {
+      switch (recoveryPhrases(~config), secrets(~config)) {
       | (Some(recoveryPhrases), Ok(secrets)) =>
         Array.zip(recoveryPhrases, secrets)
         ->Array.map(((recoveryPhrase, secret)) =>
@@ -524,7 +578,7 @@ module Accounts = {
             ->Future.mapError(e => ErrorHandler.(WalletAPI(Generic(e))))
             ->Future.flatMapOk(recoveryPhrase =>
                 scan(
-                  ~settings,
+                  ~config,
                   recoveryPhrase,
                   secret.name,
                   ~derivationPath=secret.derivationPath,
@@ -566,9 +620,9 @@ module Accounts = {
       )
     ->Future.mapOk(LocalStorage.setItem("secrets"));
 
-  let getPublicKey = (~settings: AppSettings.t, ~account: Account.t) => {
+  let getPublicKey = (~config: ConfigFile.t, ~account: Account.t) => {
     Wallet.pkFromAlias(
-      ~dirpath=settings->AppSettings.baseDir,
+      ~dirpath=config->ConfigUtils.baseDir,
       ~alias=account.name,
       (),
     );

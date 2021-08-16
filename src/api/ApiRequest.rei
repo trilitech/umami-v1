@@ -148,7 +148,7 @@ let useGetter:
   (
     ~toast: bool=?,
     ~errorToString: 'error => Js.String.t=?,
-    ~get: (~settings: AppSettings.t, 'input) =>
+    ~get: (~config: ConfigFile.t, 'input) =>
           Future.t(Belt.Result.t('response, 'error)),
     ~kind: Logs.origin,
     ~setRequest: (t('response, 'a) => t('response, 'error)) => unit,
@@ -160,7 +160,7 @@ let useGetter:
 /* Builds an auto-reloaded ressource from an asynchronous function */
 let useLoader:
   (
-    ~get: (~settings: AppSettings.t, 'input) =>
+    ~get: (~config: ConfigFile.t, 'input) =>
           Future.t(Belt.Result.t('value, 'error)),
     ~condition: 'input => bool=?,
     ~kind: Logs.origin,
@@ -177,7 +177,7 @@ let useSetter:
   (
     ~toast: bool=?,
     ~sideEffect: 'a => unit=?,
-    ~set: (~settings: AppSettings.t, 'c) => Future.t(Belt.Result.t('a, 'b)),
+    ~set: (~config: ConfigFile.t, 'c) => Future.t(Belt.Result.t('a, 'b)),
     ~kind: Logs.origin,
     ~keepError: 'b => bool=?,
     ~errorToString: 'b => Js.String.t=?,

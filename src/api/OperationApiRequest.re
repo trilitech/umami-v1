@@ -61,16 +61,15 @@ let filterOutFormError =
   | _ => true;
 
 let useCreate = (~sideEffect=?, ()) => {
-  let set = (~settings, {operation, password}) => {
+  let set = (~config, {operation, password}) => {
     switch (operation) {
     | Protocol(operation) =>
-      settings->NodeAPI.Operation.run(operation, ~password)
+      config->NodeAPI.Operation.run(operation, ~password)
 
-    | Token(operation) =>
-      settings->NodeAPI.Tokens.inject(operation, ~password)
+    | Token(operation) => config->NodeAPI.Tokens.inject(operation, ~password)
 
     | Transfer(t) =>
-      settings->NodeAPI.Operation.batch(
+      config->NodeAPI.Operation.batch(
         t.transfers,
         ~source=t.source,
         ~password,
@@ -92,14 +91,14 @@ let useCreate = (~sideEffect=?, ()) => {
 /* Simulate */
 
 let useSimulate = () => {
-  let set = (~settings, operation) =>
+  let set = (~config, operation) =>
     switch (operation) {
     | Operation.Simulation.Protocol(operation, index) =>
-      settings->NodeAPI.Simulation.run(~index?, operation)
+      config->NodeAPI.Simulation.run(~index?, operation)
     | Operation.Simulation.Token(operation, index) =>
-      settings->NodeAPI.Tokens.simulate(~index?, operation)
+      config->NodeAPI.Tokens.simulate(~index?, operation)
     | Operation.Simulation.Transfer(t, index) =>
-      settings->NodeAPI.Simulation.batch(
+      config->NodeAPI.Simulation.batch(
         t.transfers,
         ~source=t.source,
         ~index?,
@@ -116,19 +115,17 @@ let useSimulate = () => {
   );
 };
 
-let waitForConfirmation = (settings, hash) => {
-  settings
-  ->AppSettings.endpoint
-  ->TaquitoAPI.Operations.confirmation(~hash, ());
+let waitForConfirmation = (config, hash) => {
+  config->ConfigUtils.endpoint->TaquitoAPI.Operations.confirmation(~hash, ());
 };
 
 /* Get list */
 
 let useLoad =
     (~requestState, ~limit=?, ~types=?, ~address: PublicKeyHash.t, ()) => {
-  let get = (~settings, address) => {
+  let get = (~config, address) => {
     let operations =
-      settings->ServerAPI.Explorer.getOperations(
+      config->ServerAPI.Explorer.getOperations(
         address,
         ~limit?,
         ~types?,
@@ -136,7 +133,7 @@ let useLoad =
         (),
       );
     let currentLevel =
-      Network.monitor(AppSettings.explorer(settings))
+      Network.monitor(ConfigUtils.explorer(config))
       ->Future.mapOk(monitor => monitor.nodeLastBlock)
       ->Future.mapError(Network.errorMsg);
 

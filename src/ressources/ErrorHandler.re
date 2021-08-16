@@ -38,14 +38,15 @@ type walletAPI =
   | CannotUpdateSecret(int)
   | RecoveryPhraseNotFound(int)
   | SecretAlreadyImported
+  | IncorrectNumberOfWords
+  | UnknownBip39Word(string, int)
   | Generic(string);
 
 type t =
   | Taquito(ReTaquitoError.t)
   | Token(token)
   | Wallet(wallet)
-  | WalletAPI(walletAPI)
-  | TezosSDK(TezosSDK.Error.t);
+  | WalletAPI(walletAPI);
 
 let taquito = e => Taquito(e);
 let token = e => Token(e);
@@ -91,22 +92,16 @@ let fromWalletAPIToString =
   | CannotUpdateSecret(i) => I18n.errors#cannot_update_secret(i)
   | RecoveryPhraseNotFound(i) => I18n.errors#recovery_phrase_not_found(i)
   | SecretAlreadyImported => I18n.errors#secret_already_imported
+  | IncorrectNumberOfWords => I18n.errors#incorrect_number_of_words
+  | UnknownBip39Word(w, i) => I18n.errors#unknown_bip39_word(w, i)
   | Generic(s) => s;
-
-let fromSdkToString = e =>
-  e->TezosSDK.Error.(
-       fun
-       | Generic(s) => s
-       | BadPkh => I18n.form_input_error#bad_pkh
-     );
 
 let toString =
   fun
   | Token(e) => fromTokenToString(e)
   | Taquito(e) => fromTaquitoToString(e)
   | Wallet(e) => fromWalletToString(e)
-  | WalletAPI(e) => fromWalletAPIToString(e)
-  | TezosSDK(e) => fromSdkToString(e);
+  | WalletAPI(e) => fromWalletAPIToString(e);
 
 type promiseError = {
   message: string,

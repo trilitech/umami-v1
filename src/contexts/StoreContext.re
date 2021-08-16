@@ -107,10 +107,10 @@ module Provider = {
 
 [@react.component]
 let make = (~children) => {
-  let settings = SdkContext.useSettings();
+  let settings = ConfigContext.useContent();
   let addToast = LogsContext.useToast();
 
-  let network = settings->AppSettings.network;
+  let network = settings->ConfigUtils.network;
 
   let selectedAccountState = React.useState(() => None);
   let (selectedAccount, setSelectedAccount) = selectedAccountState;
@@ -153,8 +153,8 @@ let make = (~children) => {
   React.useEffect1(
     () => {
       Network.checkConfiguration(
-        settings->AppSettings.explorer,
-        settings->AppSettings.endpoint,
+        settings->ConfigUtils.explorer,
+        settings->ConfigUtils.endpoint,
       )
       ->Future.tapOk(((v, _)) => setApiVersion(_ => Some(v)))
       ->FutureEx.getOk(((apiVersion, _)) =>
@@ -492,7 +492,7 @@ module Operations = {
 
   let useCreate = () => {
     let resetOperations = useResetAll();
-    let settings = SdkContext.useSettings();
+    let settings = ConfigContext.useContent();
     OperationApiRequest.useCreate(
       ~sideEffect=
         hash => {
