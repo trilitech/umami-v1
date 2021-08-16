@@ -48,6 +48,11 @@ let flatMap2 = (r1, r2, f) =>
   | (_, Error(err)) => Error(err)
   };
 
+let fromExn = (v, f) =>
+  try(f(v)->Ok) {
+  | e => Error(e)
+  };
+
 let mapError = (r, f) =>
   switch (r) {
   | Ok(v) => Ok(v)
