@@ -53,6 +53,7 @@ module Simulation = {
     )
     ->Future.flatMapOk(r =>
         TaquitoAPI.handleEstimationResults(r, customValues, index)
+        ->Future.value
       )
     ->Future.mapOk(({customFeeMutez, gasLimit, storageLimit, revealFee}) => {
         Protocol.{
