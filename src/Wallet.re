@@ -24,6 +24,7 @@
 /*****************************************************************************/
 
 open System.Path.Ops;
+open Let;
 
 type error =
   | Generic(string)
@@ -108,14 +109,13 @@ module AliasesMaker =
   };
 
   let protect = (dirpath, f) => {
-    dirpath
-    ->mkTmpCopy
-    ->Future.flatMapOk(_ => f())
-    ->Future.flatMap(
-        fun
-        | Ok () => dirpath->rmTmpCopy
-        | Error(e) => dirpath->restoreTmpCopy->Future.map(_ => Error(e)),
-      );
+    let%FRes _ = dirpath->mkTmpCopy;
+    let%Ft r = f();
+
+    switch (r) {
+    | Ok () => dirpath->rmTmpCopy
+    | Error(e) => dirpath->restoreTmpCopy->Future.map(_ => Error(e))
+    };
   };
 
   let find = (aliases: t, f) =>
@@ -186,23 +186,17 @@ let aliasFromPkh = (~dirpath, ~pkh, ()) => {
 };
 
 let pkFromAlias = (~dirpath, ~alias, ()) => {
-  dirpath
-  ->PkAliases.read
-  ->Future.flatMapOk(pkaliases =>
-      pkaliases
-      ->PkAliases.find(a => a.name == alias)
-      ->Result.map(a => a.value.PkAlias.key)
-      ->Future.value
-    );
+  let%FlatRes pkaliases = dirpath->PkAliases.read;
+  let%ResMap a = pkaliases->PkAliases.find(a => a.name == alias);
+  a.value.PkAlias.key;
 };
 
-let updatePkhAlias = (~dirpath, ~update, ()) => {
-  dirpath->PkhAliases.protect(_ =>
-    PkhAliases.read(dirpath)
-    ->Future.mapOk(pkhAliases => update(pkhAliases))
-    ->Future.flatMapOk(pkhAliases => dirpath->PkhAliases.write(pkhAliases))
-  );
-};
+let updatePkhAlias = (~dirpath, ~update, ()) =>
+  dirpath->PkhAliases.protect(_ => {
+    let%FRes pkhAliases = PkhAliases.read(dirpath);
+    let pkhAliases = update(pkhAliases);
+    dirpath->PkhAliases.write(pkhAliases);
+  });
 
 let addOrReplacePkhAlias = (~dirpath, ~alias, ~pkh, ()) => {
   updatePkhAlias(
@@ -236,30 +230,19 @@ let protectAliases = (~dirpath, ~f, ()) => {
 
 let updateAlias = (~dirpath, ~update, ()) => {
   let update = () => {
-    let aliases =
-      /* ensures the three are available */
-      PkAliases.read(dirpath)
-      ->Future.flatMapOk(pkAliases =>
-          PkhAliases.read(dirpath)
-          ->Future.flatMapOk(pkhAliases =>
-              SecretAliases.read(dirpath)
-              ->Future.mapOk(skAliases => (pkAliases, pkhAliases, skAliases))
-            )
-        );
-    let updatedAliases = aliases->Future.mapOk(update);
-    updatedAliases->Future.flatMapOk(((pks, pkhs, sks)) =>
-      PkAliases.write(dirpath, pks)
-      ->Future.flatMapOk(() =>
-          PkhAliases.write(dirpath, pkhs)
-          ->Future.flatMapOk(() => SecretAliases.write(dirpath, sks))
-        )
-    );
+    let%FRes pkAliases = PkAliases.read(dirpath);
+    let%FRes pkhAliases = PkhAliases.read(dirpath);
+    let%FRes skAliases = SecretAliases.read(dirpath);
+    let (pks, pkhs, sks) = update(pkAliases, pkhAliases, skAliases);
+    let%FRes () = PkAliases.write(dirpath, pks);
+    let%FRes () = PkhAliases.write(dirpath, pkhs);
+    SecretAliases.write(dirpath, sks);
   };
   protectAliases(~dirpath, ~f=update, ());
 };
 
 let addOrReplaceAlias = (~dirpath, ~alias, ~pk, ~pkh, ~sk, ()) => {
-  let update = ((pks, pkhs, sks)) => (
+  let update = (pks, pkhs, sks) => (
     PkAliases.addOrReplace(pks, alias, pk),
     PkhAliases.addOrReplace(pkhs, alias, pkh),
     SecretAliases.addOrReplace(sks, alias, sk),
@@ -269,7 +252,7 @@ let addOrReplaceAlias = (~dirpath, ~alias, ~pk, ~pkh, ~sk, ()) => {
 };
 
 let removeAlias = (~dirpath, ~alias, ()) => {
-  let update = ((pks, pkhs, sks)) => (
+  let update = (pks, pkhs, sks) => (
     PkAliases.remove(pks, alias),
     PkhAliases.remove(pkhs, alias),
     SecretAliases.remove(sks, alias),
@@ -279,7 +262,7 @@ let removeAlias = (~dirpath, ~alias, ()) => {
 };
 
 let renameAlias = (~dirpath, ~oldName, ~newName, ()) => {
-  let update = ((pks, pkhs, sks)) => (
+  let update = (pks, pkhs, sks) => (
     PkAliases.rename(pks, ~oldName, ~newName),
     PkhAliases.rename(pkhs, ~oldName, ~newName),
     SecretAliases.rename(sks, ~oldName, ~newName),
@@ -293,30 +276,22 @@ type kind =
   | Unencrypted
   | Ledger;
 
-let readSecretFromPkh = (address, dirpath) =>
-  aliasFromPkh(~dirpath, ~pkh=address, ())
-  ->Future.flatMapOk(alias => {
-      dirpath
-      ->SecretAliases.read
-      ->Future.flatMapOk(secretAliases =>
-          secretAliases
-          ->Js.Array2.find(a => a.SecretAliases.name == alias)
-          ->FutureEx.fromOption(~error=KeyNotFound)
-          ->Future.mapOk(a => a.SecretAliases.value)
-        )
-    })
-  ->Future.flatMapOk(key =>
-      (
-        key->Js.String2.startsWith("encrypted:")
-          ? Ok((Encrypted, key))
-          : key->Js.String2.startsWith("unencrypted:")
-              ? Ok((Unencrypted, key))
-              : key->Js.String2.startsWith("ledger://")
-                  ? Ok((Ledger, key))
-                  : Error(Generic("Can't readkey, bad format: " ++ key))
-      )
-      ->Future.value
-    );
+let readSecretFromPkh = (address, dirpath) => {
+  let%FRes alias = aliasFromPkh(~dirpath, ~pkh=address, ());
+  let%FRes secretAliases = dirpath->SecretAliases.read;
+
+  let%FlatRes {value: k} =
+    secretAliases
+    ->Js.Array2.find(a => a.SecretAliases.name == alias)
+    ->FutureEx.fromOption(~error=KeyNotFound);
+
+  switch (k) {
+  | k when k->Js.String2.startsWith("encrypted:") => Ok((Encrypted, k))
+  | k when k->Js.String2.startsWith("unencrypted:") => Ok((Unencrypted, k))
+  | k when k->Js.String2.startsWith("ledger://") => Ok((Ledger, k))
+  | k => Error(Generic("Can't readkey, bad format: " ++ k))
+  };
+};
 
 let mnemonicPkValue = pk => PkAlias.{locator: "unencrypted:" ++ pk, key: pk};
 
@@ -424,34 +399,29 @@ module Ledger = {
         (uri: secretKeyEncoding, ~ledgerBasePkh: PublicKeyHash.t) => {
       let elems =
         uri->Js.String2.substringToEnd(~from=9)->Js.String2.split("/");
-      elems->Js.Array2.length < 2
-        ? Error(InvalidEncoding(uri))
-        : {
-          let prefix =
-            elems[0]
-            // The None case is actually impossible, hence the meaningless error
-            ->ResultEx.fromOption(InvalidEncoding(uri))
-            ->Result.map(prefix => prefix->decodePrefix(ledgerBasePkh));
-          let scheme =
-            elems[1]
-            // The None case is actually impossible, hence the meaningless error
-            ->ResultEx.fromOption(InvalidEncoding(uri))
-            ->Result.flatMap(schemeFromString);
-          let indexes = elems->Js.Array2.sliceFrom(2)->decodeIndexes;
-          prefix->Result.flatMap(_ =>
-            scheme->Result.flatMap(scheme => {
-              indexes
-              ->ResultEx.collectArray
-              ->Result.flatMap(
-                  fun
-                  | [|i1, i2|] =>
-                    DerivationPath.buildTezosBip44((i1, i2))->Ok
-                  | p => Error(InvalidPathSize(p)),
-                )
-              ->Result.map(indexes => {path: indexes, scheme})
-            })
-          );
+
+      let%Res () =
+        elems->Js.Array2.length < 2 ? Error(InvalidEncoding(uri)) : Ok();
+
+      let%Res prefix =
+        // The None case is actually impossible, hence the meaningless error
+        elems[0]->ResultEx.fromOption(InvalidEncoding(uri));
+      let%Res _prefix = prefix->decodePrefix(ledgerBasePkh);
+
+      let%Res scheme =
+        // The None case is actually impossible, hence the meaningless error
+        elems[1]->ResultEx.fromOption(InvalidEncoding(uri));
+      let%Res scheme = scheme->schemeFromString;
+
+      let indexes = elems->Js.Array2.sliceFrom(2)->decodeIndexes;
+      let%Res indexes = indexes->ResultEx.collectArray;
+
+      let%ResMap indexes =
+        switch (indexes) {
+        | [|i1, i2|] => DerivationPath.buildTezosBip44((i1, i2))->Ok
+        | p => Error(InvalidPathSize(p))
         };
+      {path: indexes, scheme};
     };
   };
 
