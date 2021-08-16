@@ -178,7 +178,7 @@ module Accounts = {
     ->Js.Nullable.toOption
     ->Option.flatMap(Json.parse)
     ->Option.map(Json.Decode.(array(Secret.decoder)))
-    ->ResultEx.fromOption(Error(ErrorHandler.(WalletAPI(NoSecretFound))));
+    ->ResultEx.fromOption(ErrorHandler.(WalletAPI(NoSecretFound)));
   };
 
   let recoveryPhrases = (~config: ConfigFile.t) => {

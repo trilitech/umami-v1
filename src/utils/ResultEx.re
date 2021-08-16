@@ -38,7 +38,7 @@ let getError = (result, sink) =>
 let fromOption = (v, error) =>
   switch (v) {
   | Some(v) => Ok(v)
-  | None => error
+  | None => error->Error
   };
 
 let flatMap2 = (r1, r2, f) =>

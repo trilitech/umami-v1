@@ -56,9 +56,7 @@ let checkInBound = (version, lowestBound, highestBound) =>
 
 let parse = version => {
   let parseInt = value =>
-    value
-    ->Int.fromString
-    ->ResultEx.fromOption(Error(VersionFormat(version)));
+    value->Int.fromString->ResultEx.fromOption(VersionFormat(version));
 
   // parse a value of the form "<int>~patch", where ~patch is optional
   let parseFixAndPatch = value =>

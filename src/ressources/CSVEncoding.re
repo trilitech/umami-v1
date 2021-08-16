@@ -44,7 +44,7 @@ let handleTezRow = (index, destination, amount) =>
   amount
   ->ReBigNumber.toString
   ->Tez.fromString
-  ->ResultEx.fromOption(Error(CannotParseTezAmount(amount, index, 2)))
+  ->ResultEx.fromOption(CannotParseTezAmount(amount, index, 2))
   ->Result.map(amount =>
       Transfer.makeSingleTezTransferElt(~destination, ~amount, ())
     );
@@ -56,7 +56,7 @@ let handleTokenRow =
   ->Option.mapWithDefault(Error(UnknownToken((token :> string))), token =>
       amount
       ->Token.Unit.fromBigNumber
-      ->ResultEx.fromOption(Error(CannotParseTokenAmount(amount, index, 2)))
+      ->ResultEx.fromOption(CannotParseTokenAmount(amount, index, 2))
       ->Result.map(amount =>
           Transfer.makeSingleTokenTransferElt(
             ~destination,

@@ -119,7 +119,7 @@ module AliasesMaker =
   };
 
   let find = (aliases: t, f) =>
-    aliases->Js.Array2.find(f)->ResultEx.fromOption(Error(KeyNotFound));
+    aliases->Js.Array2.find(f)->ResultEx.fromOption(KeyNotFound);
 
   let filter = (aliases, f) => aliases->Js.Array2.filter(f);
 
@@ -413,7 +413,7 @@ module Ledger = {
         index
         ->Js.String.substring(~from=0, ~to_=index->Js.String.length - 1)
         ->int_of_string_opt
-        ->ResultEx.fromOption(Error(InvalidIndex(i, index)))
+        ->ResultEx.fromOption(InvalidIndex(i, index))
       | Some(_)
       | None => Error(InvalidIndex(i, index))
       };
@@ -430,12 +430,12 @@ module Ledger = {
           let prefix =
             elems[0]
             // The None case is actually impossible, hence the meaningless error
-            ->ResultEx.fromOption(Error(InvalidEncoding(uri)))
+            ->ResultEx.fromOption(InvalidEncoding(uri))
             ->Result.map(prefix => prefix->decodePrefix(ledgerBasePkh));
           let scheme =
             elems[1]
             // The None case is actually impossible, hence the meaningless error
-            ->ResultEx.fromOption(Error(InvalidEncoding(uri)))
+            ->ResultEx.fromOption(InvalidEncoding(uri))
             ->Result.flatMap(schemeFromString);
           let indexes = elems->Js.Array2.sliceFrom(2)->decodeIndexes;
           prefix->Result.flatMap(_ =>
