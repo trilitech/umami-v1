@@ -215,7 +215,7 @@ module Accounts = {
     ->Result.flatMap(secrets =>
         secrets[index]
         ->ResultEx.fromOption(
-            Error(ErrorHandler.(WalletAPI(SecretNotFound(index)))),
+            ErrorHandler.(WalletAPI(SecretNotFound(index))),
           )
       );
 

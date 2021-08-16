@@ -25,6 +25,8 @@
 
 open ServerAPI;
 
+open Let;
+
 module Balance = {
   let get = (config, address, ~params=?, ()) => {
     ConfigUtils.endpoint(config)
@@ -44,45 +46,50 @@ module Simulation = {
       List.map(transfers, tx => tx.Transfer.tx_options->extractCustomValues)
       ->List.toArray;
 
-    TaquitoAPI.Transfer.Estimate.batch(
-      ~endpoint=config->ConfigUtils.endpoint,
-      ~baseDir=config->ConfigUtils.baseDir,
-      ~source,
-      ~transfers=transfers->TaquitoAPI.Transfer.prepareTransfers,
-      (),
-    )
-    ->Future.flatMapOk(r =>
-        TaquitoAPI.handleEstimationResults(r, customValues, index)
-        ->Future.value
-      )
-    ->Future.mapOk(({customFeeMutez, gasLimit, storageLimit, revealFee}) => {
-        Protocol.{
-          fee: customFeeMutez->Tez.fromMutezInt,
-          gasLimit,
-          storageLimit,
-          revealFee: revealFee->Tez.fromMutezInt,
-        }
-      });
+    let%FRes r =
+      TaquitoAPI.Transfer.Estimate.batch(
+        ~endpoint=config->ConfigUtils.endpoint,
+        ~baseDir=config->ConfigUtils.baseDir,
+        ~source,
+        ~transfers=transfers->TaquitoAPI.Transfer.prepareTransfers,
+        (),
+      );
+    open ReTaquito.Toolkit.Estimation;
+
+    let%FResMap {customFeeMutez, gasLimit, storageLimit, revealFee} =
+      TaquitoAPI.handleEstimationResults(r, customValues, index)
+      ->Future.value;
+
+    Protocol.{
+      fee: customFeeMutez->Tez.fromMutezInt,
+      gasLimit,
+      storageLimit,
+      revealFee: revealFee->Tez.fromMutezInt,
+    };
   };
 
   let setDelegate = (config, delegation: Protocol.delegation) => {
-    TaquitoAPI.Delegate.Estimate.set(
-      ~endpoint=config->ConfigUtils.endpoint,
-      ~baseDir=config->ConfigUtils.baseDir,
-      ~source=delegation.Protocol.source,
-      ~delegate=?delegation.Protocol.delegate,
-      ~fee=?delegation.Protocol.options.fee,
-      (),
-    )
-    ->Future.mapOk(
-        ({customFeeMutez, burnFeeMutez, gasLimit, storageLimit, revealFee}) =>
-        Protocol.{
-          fee: (customFeeMutez + burnFeeMutez)->Tez.fromMutezInt,
-          gasLimit,
-          storageLimit,
-          revealFee: revealFee->Tez.fromMutezInt,
-        }
+    let%FResMap {
+      customFeeMutez,
+      burnFeeMutez,
+      gasLimit,
+      storageLimit,
+      revealFee,
+    } =
+      TaquitoAPI.Delegate.Estimate.set(
+        ~endpoint=config->ConfigUtils.endpoint,
+        ~baseDir=config->ConfigUtils.baseDir,
+        ~source=delegation.Protocol.source,
+        ~delegate=?delegation.Protocol.delegate,
+        ~fee=?delegation.Protocol.options.fee,
+        (),
       );
+    Protocol.{
+      fee: (customFeeMutez + burnFeeMutez)->Tez.fromMutezInt,
+      gasLimit,
+      storageLimit,
+      revealFee: revealFee->Tez.fromMutezInt,
+    };
   };
 
   let run = (config, ~index=?, operation: Protocol.t) => {
@@ -94,42 +101,6 @@ module Simulation = {
       batch(config, transfers, ~source, ~index, ())
     };
   };
-};
-
-module Operation = {
-  let batch = (config, transfers, ~source, ~signingIntent) => {
-    TaquitoAPI.Transfer.batch(
-      ~endpoint=config->ConfigUtils.endpoint,
-      ~baseDir=config->ConfigUtils.baseDir,
-      ~source,
-      ~transfers=transfers->TaquitoAPI.Transfer.prepareTransfers,
-      ~signingIntent,
-      (),
-    )
-    ->Future.mapOk((op: ReTaquito.Toolkit.operationResult) => op.hash);
-  };
-
-  let setDelegate =
-      (config, Protocol.{delegate, source, options}, ~signingIntent) => {
-    TaquitoAPI.Delegate.set(
-      ~endpoint=config->ConfigUtils.endpoint,
-      ~baseDir=config->ConfigUtils.baseDir,
-      ~source,
-      ~delegate,
-      ~signingIntent,
-      ~fee=?options.fee,
-      (),
-    )
-    ->Future.mapOk((op: ReTaquito.Toolkit.operationResult) => op.hash);
-  };
-
-  let run = (config, operation: Protocol.t, ~signingIntent) =>
-    switch (operation) {
-    | Delegation(d) => setDelegate(config, d, ~signingIntent)
-
-    | Transaction({transfers, source}) =>
-      batch(config, transfers, ~source, ~signingIntent)
-    };
 };
 
 module MapString = Map.String;
@@ -152,19 +123,12 @@ module DelegateMaker =
       };
     };
 
-  let getForAccount = (config, account) =>
-    TaquitoAPI.Delegate.get(config->ConfigUtils.endpoint, account)
-    ->Future.mapOk(result =>
-        switch (result) {
-        | Some(delegate) =>
-          if (account == delegate) {
-            None;
-          } else {
-            result;
-          }
-        | None => None
-        }
-      );
+  let getForAccount = (config, account) => {
+    let%FResMap res =
+      TaquitoAPI.Delegate.get(config->ConfigUtils.endpoint, account);
+
+    res->Option.flatMap(delegate => account == delegate ? None : res);
+  };
 
   let getBakers = (config: ConfigFile.t) =>
     switch (config->ConfigUtils.chainId) {
@@ -172,7 +136,7 @@ module DelegateMaker =
       URL.External.bakingBadBakers
       ->URL.get
       ->Future.mapOk(Json.Decode.(array(Delegate.decode)))
-    | _ => Ok([||])->Future.value
+    | _ => [||]->FutureEx.ok
     };
 
   type delegationInfo = {
@@ -182,120 +146,137 @@ module DelegateMaker =
     lastReward: option(Tez.t),
   };
 
+  module ExplorerAPI = ServerAPI.ExplorerMaker(Get);
+  module BalanceAPI = Balance;
+
+  let extractInfoFromDelegate =
+      (network, delegate, account, firstOperation: Operation.Read.t) => {
+    let%FRes balance =
+      network->BalanceAPI.get(
+        account,
+        ~params={block: firstOperation.level->string_of_int},
+        (),
+      );
+    let info = {
+      initialBalance: balance,
+      delegate: Some(delegate),
+      timestamp: firstOperation.timestamp,
+      lastReward: None,
+    };
+
+    let%FResMap operations =
+      network
+      ->ExplorerAPI.getOperations(
+          delegate,
+          ~types=[|"transaction"|],
+          ~destination=account,
+          ~limit=1,
+          (),
+        )
+      ->Future.mapError(e => ErrorHandler.(Taquito(Generic(e))));
+
+    if (operations->Array.length == 0) {
+      info->Some;
+    } else {
+      switch ((firstOperation.payload: Operation.Read.payload)) {
+      | Business({payload: Transaction(payload)}) =>
+        {...info, lastReward: Some(payload.amount)}->Some
+      | _ => info->Some
+      };
+    };
+  };
+
   let getDelegationInfoForAccount =
       (network, account: PublicKeyHash.t)
       : Future.t(Belt.Result.t(option(delegationInfo), ErrorHandler.t)) => {
-    module ExplorerAPI = ServerAPI.ExplorerMaker(Get);
-    module BalanceAPI = Balance;
-    network
-    ->ExplorerAPI.getOperations(
-        account,
-        ~types=[|"delegation"|],
-        ~limit=1,
-        (),
-      )
-    ->Future.mapError(e => ErrorHandler.(Taquito(Generic(e))))
-    ->Future.flatMapOk(operations =>
-        if (operations->Array.length == 0) {
-          Future.value(Ok(None));
-        } else {
-          let firstOperation = operations->Array.getUnsafe(0);
-          switch (firstOperation.payload) {
-          | Business(payload) =>
-            switch (payload.payload) {
-            | Delegation(payload) =>
-              switch (payload.delegate) {
-              | Some(delegate) =>
-                if (account == delegate) {
-                  Future.value(
-                    Ok(
-                      {
-                        initialBalance: Tez.zero,
-                        delegate: None,
-                        timestamp: Js.Date.make(),
-                        lastReward: None,
-                      }
-                      ->Some,
-                    ),
-                  );
-                } else {
-                  network
-                  ->BalanceAPI.get(
-                      account,
-                      ~params={block: firstOperation.level->string_of_int},
-                      (),
-                    )
-                  ->Future.mapOk(balance =>
-                      {
-                        initialBalance: balance,
-                        delegate: Some(delegate),
-                        timestamp: firstOperation.timestamp,
-                        lastReward: None,
-                      }
-                    )
-                  ->Future.flatMapOk(info =>
-                      network
-                      ->ExplorerAPI.getOperations(
-                          delegate,
-                          ~types=[|"transaction"|],
-                          ~destination=account,
-                          ~limit=1,
-                          (),
-                        )
-                      ->Future.mapOk(operations =>
-                          if (operations->Array.length == 0) {
-                            info->Some;
-                          } else {
-                            switch (firstOperation.payload) {
-                            | Business(payload) =>
-                              switch (payload.payload) {
-                              | Transaction(payload) =>
-                                {...info, lastReward: Some(payload.amount)}
-                                ->Some
-                              | _ => info->Some
-                              }
-                            };
-                          }
-                        )
-                      ->Future.mapError(e =>
-                          ErrorHandler.(Taquito(Generic(e)))
-                        )
-                    );
-                }
-              | None =>
-                Js.log("No delegation set");
-                Future.value(Ok(None));
-              }
-            | _ =>
-              Future.value(
-                Error(
-                  ErrorHandler.(Taquito(Generic("Invalid operation type!"))),
-                ),
-              )
-            }
-          };
+    let%FRes operations =
+      network
+      ->ExplorerAPI.getOperations(
+          account,
+          ~types=[|"delegation"|],
+          ~limit=1,
+          (),
+        )
+      ->Future.mapError(e => ErrorHandler.(Taquito(Generic(e))));
+
+    if (operations->Array.length == 0) {
+      Future.value(Ok(None));
+    } else {
+      let firstOperation = operations->Array.getUnsafe(0);
+
+      let%FRes payload =
+        switch (firstOperation.payload) {
+        | Business({payload: Delegation(payload)}) => payload->FutureEx.ok
+        | _ =>
+          ErrorHandler.(Taquito(Generic("Invalid operation type!")))
+          ->FutureEx.err
+        };
+
+      switch (payload.delegate) {
+      | None => FutureEx.none()
+      | Some(delegate) when account == delegate =>
+        {
+          initialBalance: Tez.zero,
+          delegate: None,
+          timestamp: Js.Date.make(),
+          lastReward: None,
         }
-      );
+        ->FutureEx.some
+      | Some(delegate) =>
+        extractInfoFromDelegate(network, delegate, account, firstOperation)
+      };
+    };
   };
+};
+
+module Operation = {
+  let batch = (config, transfers, ~source, ~signingIntent) => {
+    let%FResMap op =
+      TaquitoAPI.Transfer.batch(
+        ~endpoint=config->ConfigUtils.endpoint,
+        ~baseDir=config->ConfigUtils.baseDir,
+        ~source,
+        ~transfers=transfers->TaquitoAPI.Transfer.prepareTransfers,
+        ~signingIntent,
+        (),
+      );
+    op.hash;
+  };
+
+  let setDelegate =
+      (config, Protocol.{delegate, source, options}, ~signingIntent) => {
+    let%FResMap op =
+      TaquitoAPI.Delegate.set(
+        ~endpoint=config->ConfigUtils.endpoint,
+        ~baseDir=config->ConfigUtils.baseDir,
+        ~source,
+        ~delegate,
+        ~signingIntent,
+        ~fee=?options.fee,
+        (),
+      );
+    op.hash;
+  };
+
+  let run = (config, operation: Protocol.t, ~signingIntent) =>
+    switch (operation) {
+    | Delegation(d) => setDelegate(config, d, ~signingIntent)
+
+    | Transaction({transfers, source}) =>
+      batch(config, transfers, ~source, ~signingIntent)
+    };
 };
 
 module Delegate = DelegateMaker(URL);
 
 module Tokens = {
   let checkTokenContract = (config, contract: PublicKeyHash.t) => {
-    URL.Explorer.checkToken(config, ~contract)
-    ->URL.get
-    ->Future.map(result => {
-        switch (result) {
-        | Ok(json) =>
-          switch (Js.Json.classify(json)) {
-          | Js.Json.JSONTrue => Ok(true)
-          | JSONFalse => Ok(false)
-          | _ => Error("Error")
-          }
-        | Error(e) => Error(e)
-        }
-      });
+    let%FlatRes json = URL.Explorer.checkToken(config, ~contract)->URL.get;
+    switch (Js.Json.classify(json)) {
+    | Js.Json.JSONTrue => Ok(true)
+    | JSONFalse => Ok(false)
+    | _ => Error("Error")
+    };
   };
 
   let batchEstimate = (config, transfers, ~source, ~index=?, ()) =>
@@ -338,40 +319,37 @@ module Tokens = {
       )
     };
 
-  let callGetOperationOffline = (config, operation: Token.operation) =>
-    if (offline(operation)) {
-      switch (operation) {
-      | GetBalance({token, address, _}) =>
-        URL.Explorer.getTokenBalance(
-          config,
-          ~contract=token,
-          ~account=address,
-        )
-        ->URL.get
-        ->Future.flatMapOk(res => {
-            switch (res->Js.Json.decodeString) {
-            | None => Token.Unit.zero->Ok->Future.value
-            | Some(v) =>
-              v
-              ->Token.Unit.fromNatString
-              ->FutureEx.fromOption(~error="cannot read Token amount: " ++ v)
-            }
-          })
-        ->Future.mapError(s => s->RawError->ErrorHandler.Token)
-      | _ =>
-        Future.value(
-          OffchainCallNotImplemented(Token.operationEntrypoint(operation))
+  let callGetOperationOffline = (config, operation: Token.operation) => {
+    let%FRes () =
+      offline(operation)
+        ? FutureEx.ok()
+        : OperationNotRunnableOffchain(Token.operationEntrypoint(operation))
           ->ErrorHandler.token
-          ->Error,
-        )
-      };
-    } else {
-      Future.value(
-        OperationNotRunnableOffchain(Token.operationEntrypoint(operation))
+          ->FutureEx.err;
+
+    let%FRes {token, address} =
+      switch (operation) {
+      | GetBalance(gb) => gb->FutureEx.ok
+      | _ =>
+        OffchainCallNotImplemented(Token.operationEntrypoint(operation))
         ->ErrorHandler.token
-        ->Error,
-      );
+        ->FutureEx.err
+      };
+
+    let%FRes res =
+      URL.Explorer.getTokenBalance(config, ~contract=token, ~account=address)
+      ->URL.get
+      ->Future.mapError(s => s->RawError->ErrorHandler.Token);
+
+    switch (res->Js.Json.decodeString) {
+    | None => Token.Unit.zero->FutureEx.ok
+    | Some(v) =>
+      v
+      ->Token.Unit.fromNatString
+      ->FutureEx.fromOption(~error="cannot read Token amount: " ++ v)
+      ->Future.mapError(s => s->RawError->ErrorHandler.Token)
     };
+  };
 };
 
 module Signature = {
