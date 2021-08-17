@@ -46,7 +46,7 @@
   "scripts": {
     "start": "cross-env NODE_ENV=development webpack serve --hot --host 0.0.0.0 --config=./webpack.dev.config.js --mode development",
     "build": "cross-env NODE_ENV=production webpack --config webpack.build.config.js --mode production",
-    "test": "yarn bsb:build && jest --coverage",
+    "test": " npm rebuild usb-detection && yarn bsb:build && jest --coverage",
     "bsb:start": "bsb -make-world -w",
     "bsb:build": "bsb -make-world",
     "bsb:clean": "bsb -clean-world",
