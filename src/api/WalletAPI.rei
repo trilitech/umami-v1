@@ -150,10 +150,6 @@ module Accounts: {
         DerivationPath.Pattern.t
       ) =>
       Future.t(Belt.Result.t(unit, ErrorHandler.t));
-
-    let runAll:
-      (~config: ConfigFile.t, ~password: string) =>
-      Future.t(Result.t(unit, ErrorHandler.t));
   };
 
   let restore:

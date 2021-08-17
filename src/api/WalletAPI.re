@@ -600,59 +600,6 @@ module Accounts = {
           runLegacy(~config, recoveryPhrase, baseName ++ " legacy", ~password)
           ->Future.mapOk(legacyAddresses => (addresses, legacyAddresses))
         });
-
-    let runAll = (~config, ~password) =>
-      (
-        switch (recoveryPhrases(~config), secrets(~config)) {
-        | (Some(recoveryPhrases), Ok(secrets)) =>
-          Array.zip(recoveryPhrases, secrets)
-          ->Array.map(((recoveryPhrase, secret)) =>
-              recoveryPhrase
-              ->SecureStorage.Cipher.decrypt(password)
-              ->Future.mapError(e => ErrorHandler.(WalletAPI(Generic(e))))
-              ->Future.flatMapOk(recoveryPhrase =>
-                  run(
-                    ~config,
-                    ~recoveryPhrase,
-                    ~baseName=secret.name,
-                    ~derivationPath=secret.derivationPath,
-                    ~password,
-                    ~index=secret.addresses->Array.length,
-                    (),
-                  )
-                )
-              ->Future.mapOk(((addresses, legacyAddress)) =>
-                  {
-                    ...secret,
-                    addresses: secret.addresses->Array.concat(addresses),
-                    masterPublicKey: legacyAddress,
-                  }
-                )
-            )
-          ->List.fromArray
-        | _ => []
-        }
-      )
-      ->Future.all
-      ->Future.map(results => {
-          let error = results->List.getBy(Result.isError);
-          switch (error) {
-          | Some(Error(error)) => Error(error)
-          | _ => Ok(results->List.toArray)
-          };
-        })
-      ->Future.mapOk(secrets =>
-          secrets->Array.keepMap(secret =>
-            switch (secret) {
-            | Ok(secret) => Some(secret)
-            | _ => None
-            }
-          )
-        )
-      ->Future.mapOk(secrets =>
-          Json.Encode.array(Secret.encoder, secrets)->Json.stringify
-        )
-      ->Future.mapOk(LocalStorage.setItem("secrets"));
   };
 
   let indexOfRecoveryPhrase = (~config, recoveryPhrase, ~password) =>

@@ -58,22 +58,6 @@ let useGetRecoveryPhrase = (~requestState as (request, setRequest), ~index) => {
   (request, getRequest);
 };
 
-let useScanGlobal = (~requestState as (request, setRequest), ()) => {
-  let get = (~config, password) =>
-    WalletAPI.Accounts.Scan.runAll(~config, ~password);
-
-  let getRequest =
-    ApiRequest.useGetter(
-      ~get,
-      ~kind=Logs.Account,
-      ~setRequest,
-      ~errorToString=ErrorHandler.toString,
-      (),
-    );
-
-  (request, getRequest);
-};
-
 /* Set */
 
 type deriveKind =
