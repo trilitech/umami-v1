@@ -123,5 +123,4 @@ main {
 ::-webkit-scrollbar {
     width: 1.3em;  /* Total width including `border-width` of scrollbar thumb */
     height: 0;
-    overflow: hidden;
 }

@@ -40,39 +40,43 @@ let styles =
       "retry": style(~width=100.->pct, ~marginTop=20.->pt, ()),
       "content":
         style(~textAlign=`center, ~display=`flex, ~alignItems=`center, ()),
-      "expl": style(~height=40.->dp, ()),
+      "expl": style(~height=60.->dp, ()),
       "loading": style(~height=50.->dp, ()),
     })
   );
 
-[@react.component]
-let make = (~style=?, ~status, ~retry) => {
-  let expl = txt =>
-    <Typography.Headline
-      fontSize=16.
-      style=Style.(array([|styles##expl, FormStyles.section##spacing|]))>
-      txt
-    </Typography.Headline>;
+let computeTitle =
+  fun
+  | `Found => I18n.title#hardware_wallet_confirm
+  | `Loading => I18n.title#hardware_wallet_search
+  | `Confirmed => I18n.title#hardware_wallet_confirmed
+  | `Denied(ErrorHandler.Taquito(ReTaquitoError.LedgerInitTimeout)) =>
+    I18n.title#hardware_wallet_not_found
+  | `Denied(ErrorHandler.Taquito(LedgerKeyRetrieval)) =>
+    I18n.title#hardware_wallet_error_app
+  | `Denied(Taquito(LedgerDenied)) => I18n.title#hardware_wallet_denied
+  | `Denied(Taquito(LedgerNotReady)) => I18n.title#hardware_wallet_not_ready
+  | _ => I18n.title#hardware_wallet_error_unknown;
 
+let titleComponent = (t, inline, style) =>
+  inline
+    ? <Typography.Subtitle2 style> t </Typography.Subtitle2>
+    : <Typography.Headline style> t </Typography.Headline>;
+
+let expl = txt =>
+  <Typography.Headline
+    fontSize=16.
+    style=Style.(array([|styles##expl, FormStyles.section##spacing|]))>
+    txt
+  </Typography.Headline>;
+
+[@react.component]
+let make = (~style=?, ~status, ~retry, ~inline=false) => {
   <View style={Style.arrayOption([|style|])}>
-    <Typography.Headline style=onbStyles##title>
-      {let title =
-         switch (status) {
-         | `Found => I18n.title#hardware_wallet_confirm
-         | `Loading => I18n.title#hardware_wallet_search
-         | `Confirmed => I18n.title#hardware_wallet_confirmed
-         | `Denied(ErrorHandler.Taquito(ReTaquitoError.LedgerInitTimeout)) =>
-           I18n.title#hardware_wallet_not_found
-         | `Denied(ErrorHandler.Taquito(LedgerKeyRetrieval)) =>
-           I18n.title#hardware_wallet_error_app
-         | `Denied(Taquito(LedgerDenied)) =>
-           I18n.title#hardware_wallet_denied
-         | `Denied(Taquito(LedgerNotReady)) =>
-           I18n.title#hardware_wallet_not_ready
-         | _ => I18n.title#hardware_wallet_error_unknown
-         };
-       title->React.string}
-    </Typography.Headline>
+    {status
+     ->computeTitle
+     ->React.string
+     ->titleComponent(inline, onbStyles##title)}
     {switch (status) {
      | `Denied(err) =>
        <View style=styles##content>

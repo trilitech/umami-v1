@@ -118,7 +118,7 @@ let make = (~closeAction, ~index, ~secret) => {
            fontSize=14. style=FormStyles.headerWithoutMarginBottom>
            I18n.expl#scan->React.string
          </Typography.Body2>
-         <InitLedgerView style status retry=ledgerInteract />
+         <InitLedgerView style status retry=ledgerInteract inline=true />
        </>
      | StepAccounts(mk) =>
        <ScannedAccountsView

@@ -73,12 +73,13 @@ let styles =
       "modalForm":
         style(
           ~width=642.->dp,
-          ~paddingTop=40.->dp,
-          ~paddingBottom=40.->dp,
-          ~paddingRight=125.->dp,
-          ~paddingLeft=135.->dp,
+          ~paddingTop=35.->dp,
+          ~paddingBottom=35.->dp,
+          ~paddingRight=120.->dp,
+          ~paddingLeft=130.->dp,
           (),
         ),
+      "innerScroll": style(~margin=5.->dp, ()),
       "modalDialog":
         style(
           ~width=522.->dp,
@@ -113,7 +114,7 @@ module Base = {
       )>
       headerCenter->ReactUtils.opt
       <DocumentContext.ScrollView showsVerticalScrollIndicator=true>
-        children
+        <View style=styles##innerScroll> children </View>
         {loadingState
            ? <View
                style=Style.(
