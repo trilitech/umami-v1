@@ -339,7 +339,8 @@ let menu = {
   pub batch_delete = "Delete Transfer";
   pub delete_account = "Delete";
   pub delete_secret = "Delete";
-  pub edit = "Edit"
+  pub edit = "Edit";
+  pub scan = "Scan"
 };
 
 let settings = {

@@ -292,6 +292,7 @@ module SecretRowItem = {
 
       let onPress = _e => openAction();
 
+      let isLedger = secret.Secret.secret.kind == Ledger;
       <>
         <Buttons.SubmitTertiary
           onPress
@@ -299,13 +300,45 @@ module SecretRowItem = {
           style=styles##actionButton
         />
         <ModalAction visible=visibleModal onRequestClose=closeAction>
-          <LedgerScan
-            secret={secret.Secret.secret}
-            closeAction
-            index={secret.Secret.index}
-          />
+          {isLedger
+             ? <LedgerScan
+                 secret={secret.Secret.secret}
+                 closeAction
+                 index={secret.Secret.index}
+               />
+             // MnemonicScan is not used actually here, but the action exists
+             // nonetheless
+             : <MnemonicScan
+                 secret={secret.Secret.secret}
+                 closeAction
+                 index={secret.Secret.index}
+               />}
         </ModalAction>
       </>;
+    };
+  };
+
+  module SecretScanMenuItem = {
+    [@react.component]
+    let make = (~secret) => {
+      let (visibleModal, openAction, closeAction) =
+        ModalAction.useModalActionState();
+
+      let onPress = _e => openAction();
+
+      let isLedger = secret.Secret.secret.kind == Ledger;
+      !isLedger
+        ? <>
+            <Menu.Item text=I18n.menu#scan icon=Icons.Scan.build onPress />
+            <ModalAction visible=visibleModal onRequestClose=closeAction>
+              <MnemonicScan
+                secret={secret.Secret.secret}
+                closeAction
+                index={secret.Secret.index}
+              />
+            </ModalAction>
+          </>
+        : <> </>;
     };
   };
 
@@ -357,6 +390,7 @@ module SecretRowItem = {
           keyPopover={"secretRowItem" ++ secret.index->string_of_int}>
           [|
             <SecretEditButton key="secretEditButton" secret />,
+            <SecretScanMenuItem key="secretScanMenuItem" secret />,
             <SecretDeleteButton key="secretDeleteButton" secret />,
           |]
         </Menu>
