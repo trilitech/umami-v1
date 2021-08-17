@@ -380,11 +380,14 @@ module Accounts = {
     })
     ->Future.flatMapOk(update => update)
     ->Future.tapOk(_ => {
-        let recoveryPhrases = recoveryPhrases(~config);
-        if (recoveryPhrases == Some([||]) || recoveryPhrases == None) {
+        let secrets = secrets(~config);
+        switch (secrets) {
+        | Ok([||])
+        | Error(ErrorHandler.(WalletAPI(NoSecretFound))) =>
           "lock"->LocalStorage.removeItem;
           "recovery-phrases"->LocalStorage.removeItem;
           "secrets"->LocalStorage.removeItem;
+        | _ => ()
         };
       });
 
@@ -627,6 +630,19 @@ module Accounts = {
     );
   };
 
+  let registerRecoveryPhrase = (~config, recoveryPhrase) =>
+    recoveryPhrases(~config)
+    ->Option.getWithDefault([||])
+    ->(
+        recoveryPhrases => {
+          let recoveryPhrases =
+            Array.concat(recoveryPhrases, [|recoveryPhrase|]);
+          Json.Encode.(array(SecureStorage.Cipher.encoder, recoveryPhrases))
+          |> Json.stringify
+          |> LocalStorage.setItem("recovery-phrases");
+        }
+      );
+
   let restore =
       (
         ~config,
@@ -688,18 +704,9 @@ module Accounts = {
         )
       )
     ->Future.tapOk(_ =>
-        Future.mapOk2(
-          recoveryPhrases(~config)
-          ->FutureEx.fromOptionWithDefault(~default=[||]),
-          backupPhraseConcat->SecureStorage.Cipher.encrypt(password),
-          (recoveryPhrases, newRecoveryPhrase) => {
-          Array.concat(recoveryPhrases, [|newRecoveryPhrase|])
-        })
-        ->Future.mapOk(Json.Encode.(array(SecureStorage.Cipher.encoder)))
-        ->Future.mapOk(json => json->Json.stringify)
-        ->FutureEx.getOk(recoveryPhrases =>
-            LocalStorage.setItem("recovery-phrases", recoveryPhrases)
-          )
+        backupPhraseConcat
+        ->SecureStorage.Cipher.encrypt(password)
+        ->Future.mapOk(registerRecoveryPhrase(~config))
       )
     ->Future.tapOk(((addresses, legacyAddress)) =>
         registerSecret(
@@ -776,6 +783,11 @@ module Accounts = {
           ~addresses,
           ~masterPublicKey=None,
         )
+      )
+    ->Future.tapOk(_ =>
+        name
+        ->SecureStorage.Cipher.encrypt("")
+        ->Future.mapOk(registerRecoveryPhrase(~config))
       );
   };
 
