@@ -109,13 +109,6 @@ let mainnet = {
   endpoint: "https://mainnet.smartpy.io/",
 };
 
-let florencenet = {
-  name: I18n.t#florencenet,
-  chain: florencenetChain,
-  explorer: "https://api.umamiwallet.com/florencenet",
-  endpoint: "https://florencenet.smartpy.io/",
-};
-
 let granadanet = {
   name: I18n.t#granadanet,
   chain: granadanetChain,
@@ -252,7 +245,6 @@ let getNodeChain = (~timeout=?, url) => {
 };
 
 let isMainnet = n => n == `Mainnet;
-let isFlorencenet = n => n == `Florencenet;
 
 let networkOfChain = c =>
   switch (supportedChains->List.getBy(chain => c == chain)) {

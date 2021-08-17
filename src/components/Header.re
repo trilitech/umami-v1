@@ -170,7 +170,6 @@ let make = () => {
   let (networkText, networkColor) =
     switch (config->ConfigUtils.network) {
     | `Mainnet => (I18n.t#mainnet, Some(`primary))
-    | `Florencenet => (I18n.t#florencenet, Some(`mediumEmphasis))
     | `Granadanet => (I18n.t#granadanet, Some(`mediumEmphasis))
     | `Custom(name) => (
         name,
@@ -183,7 +182,6 @@ let make = () => {
     let network = config->ConfigUtils.network;
     switch (network) {
     | `Mainnet => None
-    | `Florencenet => None
     | `Granadanet => None
     | `Custom(_) => Some(config->ConfigUtils.chainId->Network.getChainName)
     };
