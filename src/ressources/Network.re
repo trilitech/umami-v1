@@ -126,7 +126,7 @@ let supportedChains = [
 let mainnetName = "mainnet";
 let granadanetName = "granadanet";
 let florencenetName = "florencenet";
-let edo2netName = "edonet";
+let edo2netName = "edo2net";
 
 let getName = network =>
   switch (network) {
