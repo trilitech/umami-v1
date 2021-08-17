@@ -257,7 +257,8 @@ let title = {
   pub interaction = "Interaction";
   pub add_custom_network = "Add Custom Network";
   pub update_custom_network = "Edit Custom Network";
-  pub delete_custom_network = "Delete Network?"
+  pub delete_custom_network = "Delete Network?";
+  pub beacon_error = "Beacon Error"
 };
 
 let expl = {
