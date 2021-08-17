@@ -130,13 +130,24 @@ module Accounts: {
       (ConfigFile.t, PublicKeyHash.t) =>
       Future.t(Result.t(bool, ErrorHandler.t));
 
-    let runStream:
+    let runStreamLedger:
       (
         ~config: ConfigFile.t,
         ~startIndex: int=?,
         ~onFoundKey: (int, PublicKeyHash.t) => unit,
         DerivationPath.Pattern.t,
         Wallet.Ledger.scheme
+      ) =>
+      Future.t(Belt.Result.t(unit, ErrorHandler.t));
+
+    let runStreamSeed:
+      (
+        ~config: ConfigFile.t,
+        ~startIndex: int=?,
+        ~onFoundKey: (int, PublicKeyHash.t) => unit,
+        ~password: string,
+        Secret.Repr.derived,
+        DerivationPath.Pattern.t
       ) =>
       Future.t(Belt.Result.t(unit, ErrorHandler.t));
 
@@ -155,6 +166,15 @@ module Accounts: {
       ~password: string,
       unit
     ) =>
+    Future.t(
+      Result.t(
+        (array(PublicKeyHash.t), option(PublicKeyHash.t)),
+        ErrorHandler.t,
+      ),
+    );
+
+  let importRemainingMnemonicKeys:
+    (~config: ConfigFile.t, ~password: string, ~index: int, unit) =>
     Future.t(
       Result.t(
         (array(PublicKeyHash.t), option(PublicKeyHash.t)),

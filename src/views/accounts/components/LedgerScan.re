@@ -122,7 +122,7 @@ let make = (~closeAction, ~index, ~secret) => {
        </>
      | StepAccounts(mk) =>
        <ScannedAccountsView
-         scan={WalletAPI.Accounts.Scan.runStream(
+         scan={WalletAPI.Accounts.Scan.runStreamLedger(
            ~config,
            ~startIndex=secret.Secret.addresses->Js.Array.length,
            ~onFoundKey=

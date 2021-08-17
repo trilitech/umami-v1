@@ -325,7 +325,7 @@ let make = (~closeAction) => {
      | StepChecklist => <ChecklistView next=onEndChecklist />
      | StepAccounts(mk) =>
        <ScannedAccountsView
-         scan={WalletAPI.Accounts.Scan.runStream(
+         scan={WalletAPI.Accounts.Scan.runStreamLedger(
            ~config,
            ~onFoundKey,
            ~startIndex=0,

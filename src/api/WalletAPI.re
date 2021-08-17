@@ -212,11 +212,10 @@ module Accounts = {
 
   let secretAt = (~config, index) =>
     secrets(~config)
-    ->Future.value
-    ->Future.flatMapOk(secrets =>
+    ->Result.flatMap(secrets =>
         secrets[index]
-        ->FutureEx.fromOption(
-            ~error=ErrorHandler.(WalletAPI(SecretNotFound(index))),
+        ->ResultEx.fromOption(
+            Error(ErrorHandler.(WalletAPI(SecretNotFound(index)))),
           )
       );
 
@@ -288,7 +287,7 @@ module Accounts = {
 
   let derive = (~config, ~index, ~alias, ~password) =>
     Future.mapOk2(
-      secretAt(~config, index),
+      secretAt(~config, index)->Future.value,
       recoveryPhraseAt(~config, index, ~password),
       (secret, recoveryPhrase) => {
       secret.derivationPath
@@ -430,13 +429,11 @@ module Accounts = {
           ~onFoundKey,
           path: DerivationPath.Pattern.t,
           schema,
+          getKey,
         ) => {
       let rec loop = n => {
         let path = path->DerivationPath.Pattern.implement(n);
-        LedgerAPI.init()
-        ->Future.flatMapOk(tr =>
-            LedgerAPI.getKey(~prompt=false, tr, path, schema)
-          )
+        getKey(path, schema)
         ->Future.flatMapOk(address => {
             let found = () => {
               onFoundKey(n, address);
@@ -453,6 +450,67 @@ module Accounts = {
           });
       };
       loop(startIndex);
+    };
+
+    let runStreamLedger =
+        (
+          ~config,
+          ~startIndex=0,
+          ~onFoundKey,
+          path: DerivationPath.Pattern.t,
+          schema,
+        ) =>
+      runStream(
+        ~config, ~startIndex, ~onFoundKey, path, schema, (path, schema) =>
+        LedgerAPI.init()
+        ->Future.flatMapOk(tr =>
+            LedgerAPI.getKey(~prompt=false, tr, path, schema)
+          )
+      );
+
+    let getSeedKey = (~recoveryPhrase, ~password, path, _) =>
+      path
+      ->HD.edesk(recoveryPhrase->HD.seed, ~password)
+      ->Future.mapError(e => ErrorHandler.WalletAPI(Generic(e)))
+      ->Future.flatMapOk(secretKey =>
+          ReTaquitoSigner.MemorySigner.create(
+            ~secretKey,
+            ~passphrase=password,
+            (),
+          )
+          ->Future.flatMapOk(s => s->ReTaquitoSigner.publicKeyHash)
+          ->Future.mapError(e => e->ErrorHandler.Taquito)
+        );
+
+    let runStreamSeed =
+        (
+          ~config,
+          ~startIndex=0,
+          ~onFoundKey,
+          ~password,
+          secret,
+          path: DerivationPath.Pattern.t,
+        ) => {
+      switch (
+        recoveryPhrases(~config)
+        ->Option.flatMap(r => r[secret.Secret.Repr.index])
+      ) {
+      | Some(recoveryPhrase) =>
+        recoveryPhrase
+        ->SecureStorage.Cipher.decrypt(password)
+        ->Future.mapError(e => ErrorHandler.(WalletAPI(Generic(e))))
+        ->Future.flatMapOk(recoveryPhrase =>
+            runStream(
+              ~config,
+              ~startIndex,
+              ~onFoundKey,
+              path,
+              Wallet.Ledger.ED25519,
+              getSeedKey(~recoveryPhrase, ~password),
+            )
+          )
+      | None => Future.value(Ok())
+      };
     };
 
     let rec runOnSeed =
@@ -520,8 +578,8 @@ module Accounts = {
     let run =
         (
           ~config,
-          recoveryPhrase,
-          baseName,
+          ~recoveryPhrase,
+          ~baseName,
           ~derivationPath=DerivationPath.Pattern.fromTezosBip44(
                             DerivationPath.Pattern.default,
                           ),
@@ -555,8 +613,8 @@ module Accounts = {
               ->Future.flatMapOk(recoveryPhrase =>
                   run(
                     ~config,
-                    recoveryPhrase,
-                    secret.name,
+                    ~recoveryPhrase,
+                    ~baseName=secret.name,
                     ~derivationPath=secret.derivationPath,
                     ~password,
                     ~index=secret.addresses->Array.length,
@@ -707,8 +765,8 @@ module Accounts = {
     ->Future.flatMapOk(_ =>
         Scan.run(
           ~config,
-          backupPhraseConcat,
-          name,
+          ~recoveryPhrase=backupPhraseConcat,
+          ~baseName=name,
           ~derivationPath,
           ~password,
           (),
@@ -730,6 +788,31 @@ module Accounts = {
           ~masterPublicKey=legacyAddress,
         )
       );
+  };
+
+  let importRemainingMnemonicKeys = (~config, ~password, ~index, ()) => {
+    FutureEx.flatMapOk2(
+      recoveryPhraseAt(~config, index, ~password),
+      secretAt(~config, index)->Future.value,
+      (recoveryPhrase, secret) =>
+      Scan.run(
+        ~config,
+        ~recoveryPhrase,
+        ~baseName=secret.name,
+        ~derivationPath=secret.derivationPath,
+        ~password,
+        ~index=secret.addresses->Array.length,
+        (),
+      )
+      ->Future.tapOk(((addresses, masterPublicKey)) =>
+          {
+            ...secret,
+            addresses: Array.concat(secret.addresses, addresses),
+            masterPublicKey,
+          }
+          ->updateSecretAt(~config, index)
+        )
+    );
   };
 
   let importLedgerKey =
@@ -833,7 +916,9 @@ module Accounts = {
   let deriveLedger =
       (~config, ~timeout=?, ~index, ~alias, ~ledgerMasterKey, ()) =>
     FutureEx.flatMapOk2(
-      secretAt(~config, index), LedgerAPI.init(~timeout?, ()), (secret, tr) => {
+      secretAt(~config, index)->Future.value,
+      LedgerAPI.init(~timeout?, ()),
+      (secret, tr) => {
       importLedgerKey(
         ~config,
         ~name=alias,
@@ -855,7 +940,9 @@ module Accounts = {
   let deriveLedgerKeys =
       (~config, ~timeout=?, ~index, ~accountsNumber, ~ledgerMasterKey, ()) =>
     FutureEx.flatMapOk2(
-      secretAt(~config, index), LedgerAPI.init(~timeout?, ()), (secret, tr) => {
+      secretAt(~config, index)->Future.value,
+      LedgerAPI.init(~timeout?, ()),
+      (secret, tr) => {
       importLedgerKeys(
         ~config,
         ~basename=secret.Secret.Repr.name,
