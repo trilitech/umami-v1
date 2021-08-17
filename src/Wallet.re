@@ -174,7 +174,7 @@ module PkhAliases =
     let filename = !"public_key_hashs";
   });
 
-let aliasFromPkh = (~dirpath, ~pkh, ()) => {
+let aliasFromPkh = (~dirpath, ~pkh) => {
   dirpath
   ->PkhAliases.read
   ->Future.flatMapOk(pkhaliases =>
@@ -185,50 +185,42 @@ let aliasFromPkh = (~dirpath, ~pkh, ()) => {
     );
 };
 
-let pkFromAlias = (~dirpath, ~alias, ()) => {
+let pkFromAlias = (~dirpath, ~alias) => {
   let%FlatRes pkaliases = dirpath->PkAliases.read;
   let%ResMap a = pkaliases->PkAliases.find(a => a.name == alias);
   a.value.PkAlias.key;
 };
 
-let updatePkhAlias = (~dirpath, ~update, ()) =>
+let updatePkhAlias = (~dirpath, ~update) =>
   dirpath->PkhAliases.protect(_ => {
     let%FRes pkhAliases = PkhAliases.read(dirpath);
     let pkhAliases = update(pkhAliases);
     dirpath->PkhAliases.write(pkhAliases);
   });
 
-let addOrReplacePkhAlias = (~dirpath, ~alias, ~pkh, ()) => {
-  updatePkhAlias(
-    ~dirpath,
-    ~update=pkhs => PkhAliases.addOrReplace(pkhs, alias, pkh),
-    (),
+let addOrReplacePkhAlias = (~dirpath, ~alias, ~pkh) => {
+  updatePkhAlias(~dirpath, ~update=pkhs =>
+    PkhAliases.addOrReplace(pkhs, alias, pkh)
   );
 };
 
-let removePkhAlias = (~dirpath, ~alias, ()) => {
-  updatePkhAlias(
-    ~dirpath,
-    ~update=pkhs => PkhAliases.remove(pkhs, alias),
-    (),
+let removePkhAlias = (~dirpath, ~alias) => {
+  updatePkhAlias(~dirpath, ~update=pkhs => PkhAliases.remove(pkhs, alias));
+};
+
+let renamePkhAlias = (~dirpath, ~oldName, ~newName) => {
+  updatePkhAlias(~dirpath, ~update=pkhs =>
+    PkhAliases.rename(pkhs, ~oldName, ~newName)
   );
 };
 
-let renamePkhAlias = (~dirpath, ~oldName, ~newName, ()) => {
-  updatePkhAlias(
-    ~dirpath,
-    ~update=pkhs => PkhAliases.rename(pkhs, ~oldName, ~newName),
-    (),
-  );
-};
-
-let protectAliases = (~dirpath, ~f, ()) => {
+let protectAliases = (~dirpath, ~f) => {
   dirpath->PkAliases.protect(_ =>
     dirpath->PkhAliases.protect(_ => dirpath->SecretAliases.protect(f))
   );
 };
 
-let updateAlias = (~dirpath, ~update, ()) => {
+let updateAlias = (~dirpath, ~update) => {
   let update = () => {
     let%FRes pkAliases = PkAliases.read(dirpath);
     let%FRes pkhAliases = PkhAliases.read(dirpath);
@@ -238,37 +230,37 @@ let updateAlias = (~dirpath, ~update, ()) => {
     let%FRes () = PkhAliases.write(dirpath, pkhs);
     SecretAliases.write(dirpath, sks);
   };
-  protectAliases(~dirpath, ~f=update, ());
+  protectAliases(~dirpath, ~f=update);
 };
 
-let addOrReplaceAlias = (~dirpath, ~alias, ~pk, ~pkh, ~sk, ()) => {
+let addOrReplaceAlias = (~dirpath, ~alias, ~pk, ~pkh, ~sk) => {
   let update = (pks, pkhs, sks) => (
     PkAliases.addOrReplace(pks, alias, pk),
     PkhAliases.addOrReplace(pkhs, alias, pkh),
     SecretAliases.addOrReplace(sks, alias, sk),
   );
 
-  updateAlias(~dirpath, ~update, ());
+  updateAlias(~dirpath, ~update);
 };
 
-let removeAlias = (~dirpath, ~alias, ()) => {
+let removeAlias = (~dirpath, ~alias) => {
   let update = (pks, pkhs, sks) => (
     PkAliases.remove(pks, alias),
     PkhAliases.remove(pkhs, alias),
     SecretAliases.remove(sks, alias),
   );
 
-  updateAlias(~dirpath, ~update, ());
+  updateAlias(~dirpath, ~update);
 };
 
-let renameAlias = (~dirpath, ~oldName, ~newName, ()) => {
+let renameAlias = (~dirpath, ~oldName, ~newName) => {
   let update = (pks, pkhs, sks) => (
     PkAliases.rename(pks, ~oldName, ~newName),
     PkhAliases.rename(pkhs, ~oldName, ~newName),
     SecretAliases.rename(sks, ~oldName, ~newName),
   );
 
-  updateAlias(~dirpath, ~update, ());
+  updateAlias(~dirpath, ~update);
 };
 
 type kind =
@@ -277,7 +269,7 @@ type kind =
   | Ledger;
 
 let readSecretFromPkh = (address, dirpath) => {
-  let%FRes alias = aliasFromPkh(~dirpath, ~pkh=address, ());
+  let%FRes alias = aliasFromPkh(~dirpath, ~pkh=address);
   let%FRes secretAliases = dirpath->SecretAliases.read;
 
   let%FlatRes {value: k} =

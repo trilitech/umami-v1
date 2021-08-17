@@ -136,7 +136,7 @@ let addOrReplaceAlias =
   let pk = Wallet.ledgerPkValue(sk, pk);
 
   let%FResMap () =
-    Wallet.addOrReplaceAlias(~dirpath, ~alias, ~pk, ~pkh, ~sk, ())
+    Wallet.addOrReplaceAlias(~dirpath, ~alias, ~pk, ~pkh, ~sk)
     ->Future.map(convertWalletError);
 
   pkh;

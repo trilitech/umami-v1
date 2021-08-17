@@ -78,17 +78,17 @@ module PkhAliases:
 
 /** Add or replace a public key hash alias. */
 let addOrReplacePkhAlias:
-  (~dirpath: System.Path.t, ~alias: string, ~pkh: PkhAlias.t, unit) =>
+  (~dirpath: System.Path.t, ~alias: string, ~pkh: PkhAlias.t) =>
   Future.t(Result.t(unit, error));
 
 /** Remove an alias with its associated pkh. */
 let removePkhAlias:
-  (~dirpath: System.Path.t, ~alias: string, unit) =>
+  (~dirpath: System.Path.t, ~alias: string) =>
   Future.t(Result.t(unit, error));
 
 /** Rename an alias with its associated public, private and pkh. */
 let renamePkhAlias:
-  (~dirpath: System.Path.t, ~oldName: string, ~newName: string, unit) =>
+  (~dirpath: System.Path.t, ~oldName: string, ~newName: string) =>
   Future.t(Result.t(unit, error));
 
 /** Add or replace an alias with its associated public, private and pkh. */
@@ -98,19 +98,18 @@ let addOrReplaceAlias:
     ~alias: string,
     ~pk: PkAlias.t,
     ~pkh: PkhAlias.t,
-    ~sk: SecretAlias.t,
-    unit
+    ~sk: SecretAlias.t
   ) =>
   Future.t(Result.t(unit, error));
 
 /** Remove an alias from the filesystem. */
 let removeAlias:
-  (~dirpath: System.Path.t, ~alias: string, unit) =>
+  (~dirpath: System.Path.t, ~alias: string) =>
   Future.t(Result.t(unit, error));
 
 /** Rename an alias with its associated public, private and pkh. */
 let renameAlias:
-  (~dirpath: System.Path.t, ~oldName: string, ~newName: string, unit) =>
+  (~dirpath: System.Path.t, ~oldName: string, ~newName: string) =>
   Future.t(Result.t(unit, error));
 
 type kind =
@@ -125,12 +124,12 @@ let readSecretFromPkh:
 
 /** Returns the alias associated to a public key hash */
 let aliasFromPkh:
-  (~dirpath: System.Path.t, ~pkh: PkhAlias.t, unit) =>
+  (~dirpath: System.Path.t, ~pkh: PkhAlias.t) =>
   Future.t(Result.t(string, error));
 
 /** Returns the public key associated to an alias */
 let pkFromAlias:
-  (~dirpath: System.Path.t, ~alias: string, unit) =>
+  (~dirpath: System.Path.t, ~alias: string) =>
   Future.t(Result.t(string, error));
 
 let mnemonicPkValue: string => PkAlias.t;
