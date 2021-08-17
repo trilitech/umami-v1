@@ -23,7 +23,16 @@
 /*                                                                           */
 /*****************************************************************************/
 
+open ReactNative;
+
 let client = BeaconApiRequest.client;
+
+let styles =
+  Style.(
+    StyleSheet.create({
+      "container": style(~marginVertical=10.->dp, ~maxHeight=400.->dp, ()),
+    })
+  );
 
 module IPC = {
   type t;
@@ -103,8 +112,32 @@ let make = () => {
     closeSignPayload,
   ) =
     useBeaconRequestModalAction();
+  let (visibleModalError, openError, closeError) =
+    ModalAction.useModalActionState();
+
+  let updatePeers = StoreContext.Beacon.Peers.useResetAll();
 
   let addToast = LogsContext.useToast();
+  let (error, setError) = React.useState(_ => None);
+  let (errorMessage, setErrorMessage) = React.useState(_ => None);
+  let setErrorRef = React.useRef(setError);
+
+  setErrorRef.current = setError;
+
+  React.useEffect1(
+    () => {
+      Js.log(error);
+      switch (error) {
+      | Some(error) =>
+        setErrorMessage(_ => Some(error));
+        addToast(Logs.error(error));
+        openError();
+      | None => closeError()
+      };
+      None;
+    },
+    [|error|],
+  );
 
   React.useEffect0(() => {
     {
@@ -141,13 +174,13 @@ let make = () => {
                       }),
                     )
                   ->Future.tapOk(_ =>
-                      addToast(
-                        Logs.error(
+                      setErrorRef.current(_ =>
+                        Some(
                           Generic(
                             I18n.errors#beacon_transaction_not_supported,
                           )
                           ->ReBeacon.Error.toString,
-                        ),
+                        )
                       )
                     )
                   ->ignore;
@@ -164,11 +197,11 @@ let make = () => {
                   }),
                 )
               ->Future.tapOk(_ =>
-                  addToast(
-                    Logs.error(
+                  setErrorRef.current(_ =>
+                    Some(
                       Generic(I18n.errors#beacon_request_network_missmatch)
                       ->ReBeacon.Error.toString,
-                    ),
+                    )
                   )
                 )
               ->ignore;
@@ -182,9 +215,11 @@ let make = () => {
               ->deserialize(message->dataFromURL->Option.getWithDefault(""))
             )
             ->Future.flatMapOk(peer =>
-                client->ReBeacon.WalletClient.addPeer(peer)
+                client
+                ->ReBeacon.WalletClient.addPeer(peer)
+                ->Future.tapOk(_ => updatePeers())
               )
-            ->Future.get(Js.log)
+            ->ignore
           })
         })
       ->Future.tapOk(_ => {
@@ -220,6 +255,25 @@ let make = () => {
            closeAction=closeSignPayload
          />
        })}
+    </ModalAction>
+    <ModalAction
+      visible=visibleModalError onRequestClose={_ => setError(_ => None)}>
+      <ModalTemplate.Dialog>
+        <Typography.Headline style=FormStyles.header>
+          I18n.title#beacon_error->React.string
+        </Typography.Headline>
+        {errorMessage->ReactUtils.mapOpt(errorMessage =>
+           <ScrollView style=styles##container alwaysBounceVertical=false>
+             <Typography.Body1
+               colorStyle=`error style=FormStyles.textAlignCenter>
+               errorMessage->React.string
+             </Typography.Body1>
+           </ScrollView>
+         )}
+        <View style=FormStyles.formAction>
+          <Buttons.Form onPress={_ => setError(_ => None)} text=I18n.btn#ok />
+        </View>
+      </ModalTemplate.Dialog>
     </ModalAction>
   </>;
 };

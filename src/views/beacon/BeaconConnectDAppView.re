@@ -62,6 +62,8 @@ let styles =
 
 [@react.component]
 let make = (~closeAction) => {
+  let updatePeers = StoreContext.Beacon.Peers.useResetAll();
+
   let form =
     Form.use(
       ~schema={
@@ -78,7 +80,10 @@ let make = (~closeAction) => {
             ->Future.tapError(error =>
                 raiseSubmitFailed(Some(error->ReBeacon.Error.toString))
               )
-            ->Future.tapOk(_ => {closeAction()})
+            ->Future.tapOk(_ => {
+                updatePeers();
+                closeAction();
+              })
             ->ignore
           | Error(error) => raiseSubmitFailed(Some(error))
           };
@@ -309,6 +314,7 @@ module WithQR = {
   let make = (~closeAction) => {
     let addToast = LogsContext.useToast();
     let (webcamScanning, setWebcamScanning) = React.useState(_ => true);
+    let updatePeers = StoreContext.Beacon.Peers.useResetAll();
 
     let onQRCodeData = dataUrl => {
       setWebcamScanning(_ => false);
@@ -325,7 +331,10 @@ module WithQR = {
             addToast(Logs.error(error->ReBeacon.Error.toString));
             setWebcamScanning(_ => true);
           })
-        ->Future.tapOk(_ => {closeAction()})
+        ->Future.tapOk(_ => {
+            updatePeers();
+            closeAction();
+          })
         ->ignore
       | Error(error) =>
         addToast(Logs.error(error));
