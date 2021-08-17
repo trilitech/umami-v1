@@ -104,9 +104,6 @@ let make =
   );
 
   <>
-    <Typography.Headline style=onbStyles##title>
-      I18n.title#hardware_wallet_connect->React.string
-    </Typography.Headline>
     <View style=FormStyles.section##spacing>
       <View style=styles##labelContainer>
         <Typography.Overline2>

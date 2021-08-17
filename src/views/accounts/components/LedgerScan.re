@@ -103,10 +103,8 @@ let make = (~closeAction, ~index, ~secret) => {
       )
     );
 
-  <ModalFormView closing={ModalFormView.Close(closeAction)}>
-    <Typography.Headline style=FormStyles.textAlignCenter>
-      I18n.title#scan->React.string
-    </Typography.Headline>
+  <ModalFormView
+    title=I18n.title#scan closing={ModalFormView.Close(closeAction)}>
     {switch (status) {
      | StepInit(status) =>
        <>

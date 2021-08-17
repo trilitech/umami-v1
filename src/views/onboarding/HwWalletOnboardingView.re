@@ -317,7 +317,13 @@ let make = (~closeAction) => {
     );
   };
 
-  <ModalFormView back ?closing>
+  let titleScanned =
+    switch (step) {
+    | StepAccounts(_) => I18n.title#hardware_wallet_connect->Some
+    | _ => None
+    };
+
+  <ModalFormView title=?titleScanned back ?closing>
     {switch (step) {
      | StepInitLedger(status) =>
        <InitLedgerView status retry=onEndChecklist />
