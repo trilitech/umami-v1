@@ -55,7 +55,9 @@ let handleCustomOptions =
     (results: Toolkit.Estimation.result, (fee, storageLimit, gasLimit)) => {
   ...results,
   Toolkit.Estimation.customFeeMutez:
-    fee->Option.getWithDefault(results.Toolkit.Estimation.suggestedFeeMutez),
+    fee->Option.getWithDefault(
+      results.Toolkit.Estimation.suggestedFeeMutez + results.burnFeeMutez,
+    ),
   storageLimit: storageLimit->Option.getWithDefault(results.storageLimit),
   gasLimit: gasLimit->Option.getWithDefault(results.gasLimit),
 };

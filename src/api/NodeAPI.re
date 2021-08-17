@@ -57,11 +57,11 @@ module Simulation = {
     ->Future.mapOk(
         ({customFeeMutez, burnFeeMutez, gasLimit, storageLimit, revealFee}) => {
         Protocol.{
-          fee: (customFeeMutez + burnFeeMutez)->Tez.fromMutezInt,
+          fee: customFeeMutez->Tez.fromMutezInt,
           gasLimit,
           storageLimit,
           revealFee: revealFee->Tez.fromMutezInt,
-        }
+        };
       });
   };
 
