@@ -175,6 +175,9 @@ let form_input_error = {
   pub dp_more_than_1_wildcard = "Cannot have more that one '?'";
   pub dp_missing_wildcard = "Missing '?' or 0";
   pub dp_not_tezos = "Not a BIP44 Tezos Path";
+  pub hardware_wallet_plug = "Ledger connection failed. Please make sure the ledger is properly plugged in and unlocked";
+  pub hardware_wallet_not_ready = "Connection to Tezos ledger application failed. Please make sure the Tezos app is opened and the ledger unlocked.";
+  pub hardware_wallet_check_app = "Public key export failed. Please open the Tezos Wallet app and retry";
   pub empty_transaction = "Transaction is empty.";
   pub branch_refused_error = "Please retry. An error came up while communicating with the node";
   pub key_already_registered = a =>
@@ -386,7 +389,28 @@ let taquito = {
   pub unknown_error_code = n => p("Unknown error code %d", n)
 };
 
-let wallet = {pub _this = this; pub key_not_found = "Key not found"};
+let wallet = {
+  pub _this = this;
+  pub key_not_found = "Key not found";
+  pub invalid_path_size =
+    p("Path %s is not valid: it must be of at least of two indexes");
+  pub invalid_tezos_prefix_path = (prefix, index) =>
+    p(
+      "Prefix %s at index %d is not valid: a Tezos path must start with 44'/1729'",
+      prefix,
+      index,
+    );
+  pub invalid_index = (index, value) =>
+    p("Value %s at index %d is invalid for a derivation path", value, index);
+  pub invalid_prefix = prefix =>
+    p("%s is not a valid prefix for an encoded ledger key", prefix);
+  pub invalid_scheme = scheme =>
+    p("%s is not a valid scheme for an encoded ledger key", scheme);
+  pub invalid_encoding = enc =>
+    p("%s is not a valid an encoded ledger key", enc);
+  pub invalid_ledger =
+    p("The ledger connected has base key %s, which is not the one expected.")
+};
 
 let errors = {
   pub _this = this;

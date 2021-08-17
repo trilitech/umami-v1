@@ -23,50 +23,17 @@
 /*                                                                           */
 /*****************************************************************************/
 
-type raw = {message: string};
+module Transport = {
+  type descriptor;
+  type t;
 
-let toRaw: Js.Promise.error => raw = Obj.magic;
+  [@bs.module "@ledgerhq/hw-transport-node-hid-singleton"]
+  [@bs.scope "default"]
+  external create:
+    (~openTimeout: int=?, ~listenTimeout: int=?, unit) => Js.Promise.t(t) =
+    "create";
 
-let branchRefused = "branch refused";
-let wrongSecretKey = "wrong secret key";
-let badPkh = "Unexpected data (Signature.Public_key_hash)";
-let unregisteredDelegate = "contract.manager.unregistered_delegate";
-let unchangedDelegate = "contract.manager.delegate.unchanged";
-let invalidContract = "Invalid contract notation";
-let emptyTransaction = "contract.empty_transaction";
-
-type t =
-  | Generic(string)
-  | WrongPassword
-  | UnregisteredDelegate
-  | UnchangedDelegate
-  | EmptyTransaction
-  | InvalidContract
-  | BranchRefused
-  | LedgerInit(string)
-  | LedgerNotReady
-  | LedgerMasterKeyRetrieval(string)
-  | BadPkh;
-
-let parse = e =>
-  switch (e.message) {
-  | s when s->Js.String2.includes(wrongSecretKey) => WrongPassword
-  | s when s->Js.String2.includes(branchRefused) => BranchRefused
-  | s when s->Js.String2.includes(badPkh) => BadPkh
-  | s when s->Js.String2.includes(unregisteredDelegate) =>
-    UnregisteredDelegate
-  | s when s->Js.String2.includes(unchangedDelegate) => UnchangedDelegate
-  | s when s->Js.String2.includes(invalidContract) => InvalidContract
-  | s when s->Js.String2.includes(emptyTransaction) => EmptyTransaction
-  | s => Generic(Js.String.make(s))
-  };
-
-let fromPromiseParsedWrapper = (wrapError, p) =>
-  p->FutureJs.fromPromise(e => {
-    let e = e->toRaw;
-    Js.log(e.message);
-
-    e->parse->wrapError;
-  });
-
-let fromPromiseParsed = res => fromPromiseParsedWrapper(x => x, res);
+  [@bs.module "@ledgerhq/hw-transport-node-hid-singleton"]
+  [@bs.scope "default"]
+  external list: unit => Js.Promise.t(array(descriptor)) = "list";
+};

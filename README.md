@@ -29,9 +29,9 @@ git clone https://gitlab.com/nomadic-labs/umami-wallet/umami/ && cd umami
 ```
 
 ### 2) Requirements:
-
 * [node](https://nodejs.org) installed.
 * [yarn](https://yarnpkg.com) installed.
+* [`node-hid` dependencies](https://github.com/node-hid/node-hid) dependencies installed.
 
 ### 3) Build:
 
@@ -48,7 +48,7 @@ The Electron binary is located in the `dist` folder.
 yarn electron:dev
 ```
 
-## ℹ️ Support 
+## ℹ️ Support
 
 - [open an issue](https://gitlab.com/nomadic-labs/umami-wallet/testruns/-/issues/new?issuable_template=support)
 - `#umami` channel on [tezos slack](https://tezos-dev.slack.com)

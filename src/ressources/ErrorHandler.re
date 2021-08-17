@@ -62,6 +62,10 @@ let fromTaquitoToString = e =>
        | BranchRefused => I18n.form_input_error#branch_refused_error
        | InvalidContract => I18n.form_input_error#invalid_contract
        | EmptyTransaction => I18n.form_input_error#empty_transaction
+       | LedgerInit(_) => I18n.form_input_error#hardware_wallet_plug
+       | LedgerNotReady => I18n.form_input_error#hardware_wallet_not_ready
+       | LedgerMasterKeyRetrieval(_) =>
+         I18n.form_input_error#hardware_wallet_check_app
      );
 
 let printError = (fmt, err) => {
@@ -83,6 +87,7 @@ let fromTokenToString = err => Format.asprintf("%a", printError, err);
 let fromWalletToString =
   fun
   | Wallet.KeyNotFound => I18n.wallet#key_not_found
+  | LedgerParsingError(s)
   | Generic(s) => s;
 
 let fromWalletAPIToString =

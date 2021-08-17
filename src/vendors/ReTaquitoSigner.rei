@@ -49,3 +49,14 @@ module MemorySigner: {
 module EstimationSigner: {
   let create: (~publicKey: string, ~publicKeyHash: PublicKeyHash.t, unit) => t;
 };
+
+module LedgerSigner: {
+  let create:
+    (
+      ReLedger.Transport.t,
+      DerivationPath.t,
+      Wallet.Ledger.scheme,
+      ~prompt: bool
+    ) =>
+    t;
+};

@@ -51,7 +51,7 @@ let flatMap2 = (r1, r2, f) =>
 let mapError = (r, f) =>
   switch (r) {
   | Ok(v) => Ok(v)
-  | Error(e) => f(e)
+  | Error(e) => Error(f(e))
   };
 
 let map2 = (r1, r2, f) => flatMap2(r1, r2, (v1, v2) => Ok(f(v1, v2)));
@@ -69,6 +69,24 @@ let collect = (type err, l: list(result(_, err))) => {
         }
       )
     ->List.reverse
+    ->Ok
+  ) {
+  | Fail(err) => Error(err)
+  };
+};
+
+let collectArray = (type err, arr: array(result(_, err))) => {
+  // let's quit the reduce as soon as e have an error
+  exception Fail(err);
+  try(
+    arr
+    // This uses reduce + reverse to always catch the first error in the list
+    ->Array.map(v =>
+        switch (v) {
+        | Ok(v) => v
+        | Error(e) => raise(Fail(e))
+        }
+      )
     ->Ok
   ) {
   | Fail(err) => Error(err)

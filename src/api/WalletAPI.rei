@@ -119,12 +119,36 @@ module Accounts: {
     (ConfigFile.t, PublicKeyHash.t) =>
     Future.t(Result.t(bool, ErrorHandler.t));
 
+  module Scan: {
+    type error =
+      | APIError(string)
+      | TaquitoError(ReTaquitoError.t);
+
+    let used:
+      (ConfigFile.t, PublicKeyHash.t) =>
+      Future.t(Result.t(bool, ErrorHandler.t));
+
+    let runStream:
+      (
+        ConfigFile.t,
+        (int, PublicKeyHash.t) => unit,
+        DerivationPath.Pattern.t,
+        Wallet.Ledger.scheme
+      ) =>
+      Future.t(Belt.Result.t(unit, ErrorHandler.t));
+
+    let runAll:
+      (~config: ConfigFile.t, ~password: string) =>
+      Future.t(Result.t(unit, ErrorHandler.t));
+  };
+
   let restore:
     (
       ~config: ConfigFile.t,
       ~backupPhrase: array(string),
       ~name: name,
       ~derivationPath: TezosClient.DerivationPath.Pattern.t=?,
+      ~derivationScheme: Wallet.Ledger.scheme=?,
       ~password: string,
       unit
     ) =>
@@ -139,11 +163,28 @@ module Accounts: {
     (~config: ConfigUtils.t, string, string, ~password: string) =>
     Future.t(Belt.Result.t(PublicKeyHash.t, ErrorHandler.t));
 
-  let scanAll:
-    (~config: ConfigFile.t, ~password: string) =>
-    Future.t(Result.t(unit, ErrorHandler.t));
+  let importLedger:
+    (
+      ~config: ConfigUtils.t,
+      ~name: string,
+      ~accountsNumber: int,
+      ~derivationPath: DerivationPath.Pattern.t=?,
+      ~derivationScheme: Wallet.Ledger.scheme=?,
+      ~ledgerMasterKey: PublicKeyHash.t,
+      unit
+    ) =>
+    Future.t(Result.t(array(PublicKeyHash.t), ErrorHandler.t));
 
   let getPublicKey:
     (~config: ConfigFile.t, ~account: Account.t) =>
     Future.t(Result.t(string, Wallet.error));
+
+  let deriveLedger:
+    (
+      ~config: ConfigFile.t,
+      ~index: int,
+      ~alias: string,
+      ~ledgerMasterKey: PublicKeyHash.t
+    ) =>
+    Future.t(result(PublicKeyHash.t, ErrorHandler.t));
 };

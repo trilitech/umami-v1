@@ -45,6 +45,18 @@ let fromOptionWithDefault = (option, ~default) =>
     },
   );
 
+let flatMap2 = (fa, fb, f) =>
+  Future.flatMap(fa, a => Future.flatMap(fb, b => f(a, b)));
+
+let flatMapOk2 = (fa, fb, f) =>
+  flatMap2(fa, fb, (r1, r2) =>
+    switch (r1, r2) {
+    | (Ok(v1), Ok(v2)) => f(v1, v2)
+    | (Error(e), _)
+    | (_, Error(e)) => Future.value(Error(e))
+    }
+  );
+
 let all = array =>
   array
   ->List.fromArray

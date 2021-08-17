@@ -133,9 +133,7 @@ let parseBool = (v, row, col) => {
     : b == "false" ? Ok(false) : Error(CannotParseBool(row, col));
 };
 let parseCustom = (v, conv, row, col) => {
-  v
-  ->conv
-  ->ResultEx.mapError(e => Error(CannotParseCustomValue(e, row, col)));
+  v->conv->ResultEx.mapError(e => CannotParseCustomValue(e, row, col));
 };
 
 let rec parseElementRaw:
