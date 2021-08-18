@@ -44,11 +44,13 @@
 
 <!-- Reviewers : check the box [x], you may also add you @user handle  -->
 ## Approvals checklist(all required) 
-( ping CAB members : @picdc @remyzorg @comeh @philippewang.info @SamREye )
 - [ ] Approval from Development
 - [ ] Approval from Operations
 - [ ] Approval from Business 
-<!-- check the box [x], you may also add your @user handle at the end of the line -->
+<!-- tick the box [x], you may also add your @user handle at the end of the line -->
+/todo @picdc (cc: @remyzorg )    Please approve this _scheduled change_ on development aspects
+/todo @comeh (cc: @philippewang) Please approve this _scheduled change_ on operations  aspects
+/todo @SamREye                   Please approve this _scheduled change_ on business    aspects
 <!-- Quick actions for last approver : -->
 <!-- /unlabel ~"CAB::to-approve" -->
 <!-- /label ~"CAB::to-perform"   -->

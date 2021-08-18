@@ -40,11 +40,13 @@
 <!--  /label ~"Priority::3-Low" -->
 
 ## Approvals checklist (all required) 
-( ping CAB members : @picdc @remyzorg @comeh @philippewang.info @SamREye )
 - [ ] Approval from Development
 - [ ] Approval from Operations
-- [ ] Approval from Business 
-<!-- check the box [x], you may also add your @user handle at the end of the line -->
+- [ ] Approval from Business
+<!-- tick the corresponding checkbox [x], you may also add your @user handle at the end of the line -->
+/todo @picdc (cc: @remyzorg )    Please approve this _regular change_ on development aspects
+/todo @comeh (cc: @philippewang) Please approve this _regular change_ on operations  aspects
+/todo @SamREye                   Please approve this _regular change_ on business    aspects
 <!-- Quick actions for last approver : -->
 <!-- /unlabel ~"CAB::to-approve" -->
 <!-- /label ~"CAB::to-perform"   -->
