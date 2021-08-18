@@ -49,8 +49,16 @@ let make = (~closeAction, ~index, ~secret) => {
     );
 
   let submitPassword = (~password) => {
-    setStatus(_ => StepAccounts(password));
-    Future.value(Ok());
+    password
+    ->SecureStorage.validatePassword
+    ->Future.map(
+        fun
+        | Ok(true) => {
+            setStatus(_ => StepAccounts(password));
+            Ok();
+          }
+        | _ => Error(ErrorHandler.(Taquito(ReTaquitoError.WrongPassword))),
+      );
   };
 
   let submitAccounts = (~password, ()) => {
