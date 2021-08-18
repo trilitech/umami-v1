@@ -27,6 +27,7 @@ open System.Path.Ops;
 
 type error =
   | Generic(string)
+  | File(System.File.Error.t)
   | KeyNotFound
   | LedgerParsingError(string);
 
@@ -67,17 +68,19 @@ module AliasesMaker =
 
   type t = array(alias);
 
+  let fileError = f => f->Future.mapError(e => File(e));
+
   [@bs.val] [@bs.scope "JSON"] external parse: string => t = "parse";
   [@bs.val] [@bs.scope "JSON"] external stringify: t => string = "stringify";
 
   let read = dirpath =>
     System.File.read(dirpath / Alias.filename)
-    ->Future.mapError(e => Generic(e))
+    ->fileError
     ->Future.mapOk(parse);
 
   let write = (dirpath, aliases) =>
     System.File.write(~name=dirpath / Alias.filename, stringify(aliases))
-    ->Future.mapError(e => Generic(e));
+    ->fileError;
 
   let mkTmpCopy = dirpath => {
     let tmpName = !(System.Path.toString(Alias.filename) ++ ".tmp");
@@ -86,7 +89,7 @@ module AliasesMaker =
       ~dest=dirpath / tmpName,
       ~mode=System.File.CopyMode.copy_ficlone,
     )
-    ->Future.mapError(e => Generic(e));
+    ->fileError;
   };
 
   let restoreTmpCopy = dirpath => {
@@ -96,13 +99,12 @@ module AliasesMaker =
       ~dest=dirpath / Alias.filename,
       ~mode=System.File.CopyMode.copy_ficlone,
     )
-    ->Future.mapError(e => Generic(e));
+    ->fileError;
   };
 
   let rmTmpCopy = dirpath => {
     let tmpName = !(System.Path.toString(Alias.filename) ++ ".tmp");
-    System.File.rm(~name=dirpath / tmpName)
-    ->Future.mapError(e => Generic(e));
+    System.File.rm(~name=dirpath / tmpName)->fileError;
   };
 
   let protect = (dirpath, f) => {

@@ -25,6 +25,7 @@
 
 type error =
   | Generic(string)
+  | File(System.File.Error.t)
   | KeyNotFound
   | LedgerParsingError(string);
 
