@@ -39,7 +39,13 @@ let useLoad = requestState => {
         ->Map.String.fromArray
       });
 
-  ApiRequest.useLoader(~get, ~kind=Logs.Account, ~requestState, ());
+  ApiRequest.useLoader(
+    ~get,
+    ~kind=Logs.Account,
+    ~errorToString=ErrorHandler.toString,
+    ~requestState,
+    (),
+  );
 };
 
 /* Set */
