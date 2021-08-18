@@ -33,7 +33,11 @@ let convertWalletError = res =>
   res->ResultEx.mapError(e => ErrorHandler.Wallet(e));
 
 let convertToErrorHandler = res =>
-  ReTaquitoError.fromPromiseParsedWrapper(ErrorHandler.taquito, res);
+  RawJsError.fromPromiseParsedWrapper(
+    ReTaquitoError.parse,
+    ErrorHandler.taquito,
+    res,
+  );
 
 let revealFee = (~endpoint, source) => {
   let client = RPCClient.create(endpoint);
