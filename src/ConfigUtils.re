@@ -34,7 +34,6 @@ let baseDir = (config: t) =>
 let endpoint = (c: t) =>
   switch (c.network->Option.getWithDefault(ConfigFile.Default.network)) {
   | `Mainnet => Network.mainnet.endpoint
-  | `Florencenet => Network.florencenet.endpoint
   | `Granadanet => Network.granadanet.endpoint
   | `Custom(name) =>
     c.customNetworks->List.getBy(n => n.name === name)->Option.getExn.endpoint
@@ -48,7 +47,6 @@ let network = (config: t): ConfigFile.network =>
 let chainId = (c: t) =>
   switch (network(c)) {
   | `Mainnet => Network.mainnet.chain
-  | `Florencenet => Network.florencenet.chain
   | `Granadanet => Network.granadanet.chain
   | `Custom(name) =>
     c.customNetworks->List.getBy(n => n.name === name)->Option.getExn.chain
@@ -57,7 +55,6 @@ let chainId = (c: t) =>
 let explorer = (c: t) =>
   switch (c.network->Option.getWithDefault(ConfigFile.Default.network)) {
   | `Mainnet => Network.mainnet.explorer
-  | `Florencenet => Network.florencenet.explorer
   | `Granadanet => Network.granadanet.explorer
   | `Custom(name) =>
     c.customNetworks->List.getBy(n => n.name === name)->Option.getExn.explorer
@@ -66,7 +63,9 @@ let explorer = (c: t) =>
 let externalExplorers =
   Map.String.empty
   ->Map.String.set(Network.mainnet.chain, "https://tzkt.io/")
-  ->Map.String.set(Network.florencenet.chain, "https://florencenet.tzkt.io/");
+  ->Map.String.set(Network.edo2netChain, "https://edo2net.tzkt.io/")
+  ->Map.String.set(Network.florencenetChain, "https://florencenet.tzkt.io/")
+  ->Map.String.set(Network.granadanet.chain, "https://granadanet.tzkt.io/");
 
 let findExternalExplorer = c =>
   externalExplorers

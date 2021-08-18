@@ -166,7 +166,7 @@ let input_placeholder = {
   pub enter_derivation_path = "Enter your derivation path";
   pub custom_network_name = "e.g. Test Network";
   pub custom_network_node_url = "e.g. https://testnet-tezos.giganode.io/";
-  pub custom_network_mezos_url = "e.g. https://api.umamiwallet.com/florencenet"
+  pub custom_network_mezos_url = "e.g. https://api.umamiwallet.com/granadanet"
 };
 
 let form_input_error = {

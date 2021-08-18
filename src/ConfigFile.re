@@ -23,7 +23,7 @@
 /*                                                                           */
 /*****************************************************************************/
 
-type network = [ | `Mainnet | `Florencenet | `Granadanet | `Custom(string)];
+type network = [ | `Mainnet | `Granadanet | `Custom(string)];
 
 type t = {
   network: option(network),
@@ -38,7 +38,7 @@ type t = {
 let parse = s => {
   let parseNetwork: [> network] => option(network) =
     fun
-    | (`Mainnet | `Florencenet | `Granadanet | `Custom(_)) as v => Some(v)
+    | (`Mainnet | `Granadanet | `Custom(_)) as v => Some(v)
     | _ => None;
   let c = s->parse;
   let network = c.network->Option.flatMap(parseNetwork);
