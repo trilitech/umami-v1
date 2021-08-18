@@ -23,39 +23,14 @@
 /*                                                                           */
 /*****************************************************************************/
 
-let branchRefused = "branch refused";
-let wrongSecretKey = "wrong secret key";
-let badPkh = "Unexpected data (Signature.Public_key_hash)";
-let unregisteredDelegate = "contract.manager.unregistered_delegate";
-let unchangedDelegate = "contract.manager.delegate.unchanged";
-let invalidContract = "Invalid contract notation";
-let emptyTransaction = "contract.empty_transaction";
+type t = {message: string};
 
-type t =
-  | Generic(string)
-  | WrongPassword
-  | UnregisteredDelegate
-  | UnchangedDelegate
-  | EmptyTransaction
-  | InvalidContract
-  | BranchRefused
-  | LedgerInit(string)
-  | LedgerNotReady
-  | LedgerMasterKeyRetrieval(string)
-  | BadPkh;
+let fromPromiseError: Js.Promise.error => t = Obj.magic;
 
-let parse = (e: RawJsError.t) =>
-  switch (e.message) {
-  | s when s->Js.String2.includes(wrongSecretKey) => WrongPassword
-  | s when s->Js.String2.includes(branchRefused) => BranchRefused
-  | s when s->Js.String2.includes(badPkh) => BadPkh
-  | s when s->Js.String2.includes(unregisteredDelegate) =>
-    UnregisteredDelegate
-  | s when s->Js.String2.includes(unchangedDelegate) => UnchangedDelegate
-  | s when s->Js.String2.includes(invalidContract) => InvalidContract
-  | s when s->Js.String2.includes(emptyTransaction) => EmptyTransaction
-  | s => Generic(Js.String.make(s))
-  };
+let fromPromiseParsedWrapper = (parse, wrapError, p) =>
+  p->FutureJs.fromPromise(e => {
+    let e = e->fromPromiseError;
+    Js.log(e.message);
 
-let fromPromiseParsed = res =>
-  RawJsError.fromPromiseParsedWrapper(parse, x => x, res);
+    e->parse->wrapError;
+  });

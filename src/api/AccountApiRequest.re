@@ -30,16 +30,27 @@
 let useLoad = requestState => {
   let get = (~config, ()) =>
     WalletAPI.Accounts.get(~config)
-    ->Future.mapOk(response => {
-        response
-        ->Array.map(((name, address)) =>
-            ((address :> string), Account.{name, address, ledger: false})
-          )
-        ->Array.reverse
-        ->Map.String.fromArray
-      });
+    ->Future.map(
+        fun
+        | Ok(response) =>
+          response
+          ->Array.map(((name, address)) =>
+              ((address :> string), Account.{name, address, ledger: false})
+            )
+          ->Array.reverse
+          ->Map.String.fromArray
+          ->Ok
+        | Error(Wallet(File(NoSuchFile(_)))) => Map.String.empty->Ok
+        | Error(_) as e => e,
+      );
 
-  ApiRequest.useLoader(~get, ~kind=Logs.Account, ~requestState, ());
+  ApiRequest.useLoader(
+    ~get,
+    ~kind=Logs.Account,
+    ~errorToString=ErrorHandler.toString,
+    ~requestState,
+    (),
+  );
 };
 
 /* Set */

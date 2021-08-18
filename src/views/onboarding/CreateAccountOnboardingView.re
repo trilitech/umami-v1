@@ -50,6 +50,7 @@ let make = (~closeAction) => {
 
   let createSecretWithMnemonic = p =>
     System.Client.initDir(config->ConfigUtils.baseDir)
+    ->Future.mapError(System.File.Error.toString)
     ->Future.flatMapOk(() =>
         createSecretWithMnemonic(p)->Future.mapError(ErrorHandler.toString)
       )

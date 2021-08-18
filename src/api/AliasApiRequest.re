@@ -30,16 +30,27 @@
 let useLoad = requestState => {
   let get = (~config, ()) =>
     WalletAPI.Aliases.get(~config)
-    ->Future.mapOk(response => {
-        response
-        ->Array.map(((name, address)) =>
-            ((address :> string), Alias.{name, address})
-          )
-        ->Array.reverse
-        ->Map.String.fromArray
-      });
+    ->Future.map(
+        fun
+        | Ok(response) =>
+          response
+          ->Array.map(((name, address)) =>
+              ((address :> string), Alias.{name, address})
+            )
+          ->Array.reverse
+          ->Map.String.fromArray
+          ->Ok
+        | Error(Wallet(File(NoSuchFile(_)))) => Map.String.empty->Ok
+        | Error(_) as e => e,
+      );
 
-  ApiRequest.useLoader(~get, ~kind=Logs.Aliases, ~requestState, ());
+  ApiRequest.useLoader(
+    ~get,
+    ~errorToString=ErrorHandler.toString,
+    ~kind=Logs.Aliases,
+    ~requestState,
+    (),
+  );
 };
 
 /* Create */

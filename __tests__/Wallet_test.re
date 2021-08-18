@@ -30,11 +30,11 @@ let map = Future.mapOk;
 
 let before = () =>
   Client.initDir(testDir)
-  ->Future.mapError(e => ErrorHandler.(e->Generic->Wallet));
+  ->Future.mapError(e => ErrorHandler.(e->File->Wallet));
 
 let after = () =>
   Client.resetDir(testDir)
-  ->Future.mapError(e => ErrorHandler.(e->Generic->Wallet));
+  ->Future.mapError(e => ErrorHandler.(e->File->Wallet));
 
 let futureEqual =
     ({expectEqual, callback}: Types.testAsyncUtils(_), eqcomp, fn) => {
