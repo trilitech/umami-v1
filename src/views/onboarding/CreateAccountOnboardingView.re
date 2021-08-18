@@ -161,7 +161,6 @@ let make = (~closeAction) => {
            onPressCancel={_ => setFormStep(_ => Step2)}
            createSecretWithMnemonic
            loading
-           existingSecretsCount
          />
        </>;
      }}

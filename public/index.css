@@ -104,16 +104,23 @@ main {
   font-display: swap;
 }
 
+
 *::-webkit-scrollbar-track-piece {
-  background-color: transparent;
-  color:transparent;
+    background-color: transparent;
+    color:transparent;
 }
 
-*::-webkit-scrollbar-thumb {
-  background-color:rgb(166, 166, 166);
-  border-radius: 12px;
+::-webkit-scrollbar-thumb {
+    height: 1em;
+    border: 0.5em solid rgba(0, 0, 0, 0);
+    background-clip: padding-box;
+    -webkit-border-radius: 1em;
+    -webkit-box-shadow: inset 0 0 0 10px rgb(166, 166, 166);
+    /* the inset is what the user sees on screen. the thumb is hidden by
+     its own border */
 }
 
-*::-webkit-scrollbar {
-  width: 9px;
+::-webkit-scrollbar {
+    width: 1.3em;  /* Total width including `border-width` of scrollbar thumb */
+    height: 0;
 }

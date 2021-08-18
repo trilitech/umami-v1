@@ -64,8 +64,11 @@ let fromTaquitoToString = e =>
        | EmptyTransaction => I18n.form_input_error#empty_transaction
        | LedgerInit(_) => I18n.form_input_error#hardware_wallet_plug
        | LedgerNotReady => I18n.form_input_error#hardware_wallet_not_ready
-       | LedgerMasterKeyRetrieval(_) =>
-         I18n.form_input_error#hardware_wallet_check_app
+       | LedgerInitTimeout => I18n.form_input_error#hardware_wallet_plug
+       | LedgerKeyRetrieval => I18n.form_input_error#hardware_wallet_check_app
+       | LedgerDenied => I18n.title#hardware_wallet_denied
+       | SignerIntentInconsistency =>
+         I18n.form_input_error#hardware_wallet_signer_inconsistent
      );
 
 let printError = (fmt, err) => {

@@ -141,6 +141,7 @@ let make = (~children) => {
   let (_, setEulaSignature) as eulaSignatureRequestState =
     React.useState(() => false);
 
+  SecretApiRequest.useLoad(secretsRequestState)->ignore;
   AccountApiRequest.useLoad(accountsRequestState)->ignore;
   AliasApiRequest.useLoad(aliasesRequestState)->ignore;
   TokensApiRequest.useLoadTokens(tokensRequestState)->ignore;
@@ -671,6 +672,16 @@ module Accounts = {
     accounts->Map.String.get((address :> string));
   };
 
+  let useIsLedger = pkh => {
+    let account: Account.t = useGetFromAddress(pkh)->Option.getExn;
+
+    let store = useStoreContext();
+    let (secretsRequest, _) = store.secretsRequestState;
+    let secrets = secretsRequest->ApiRequest.getWithDefault([||]);
+
+    account.address->WalletAPI.Accounts.isLedger(secrets);
+  };
+
   let useResetNames = () => {
     let resetAliases = Aliases.useResetAll();
     let resetOperations = Operations.useResetNames();
@@ -741,26 +752,27 @@ module Secrets = {
     };
   };
 
-  let useScanGlobal = () => {
-    let resetSecrets = useResetAll();
-
-    let requestState = React.useState(() => ApiRequest.NotAsked);
-    let (scanRequest, scanGet) =
-      SecretApiRequest.useScanGlobal(~requestState, ());
-
-    let scan = input => {
-      scanGet(input)->Future.tapOk(_ => resetSecrets());
-    };
-
-    (scanRequest, scan);
-  };
-
   let useCreateWithMnemonics = () => {
     let resetSecrets = useResetAll();
     SecretApiRequest.useCreateWithMnemonics(
       ~sideEffect=_ => resetSecrets(),
       (),
     );
+  };
+
+  let useMnemonicScan = () => {
+    let resetSecrets = useResetAll();
+    SecretApiRequest.useMnemonicScan(~sideEffect=_ => resetSecrets(), ());
+  };
+
+  let useLedgerImport = () => {
+    let resetSecrets = useResetAll();
+    SecretApiRequest.useLedgerImport(~sideEffect=_ => resetSecrets(), ());
+  };
+
+  let useLedgerScan = () => {
+    let resetSecrets = useResetAll();
+    SecretApiRequest.useLedgerScan(~sideEffect=_ => resetSecrets(), ());
   };
 
   let useDerive = () => {

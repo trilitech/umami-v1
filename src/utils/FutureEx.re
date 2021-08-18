@@ -86,3 +86,8 @@ let fromUnitCallback = (f, mapError) =>
     }
     ->f
   );
+
+let timeout = sec =>
+  Future.make(resolve => {
+    Js.Global.setTimeout(() => Ok()->resolve, sec)->ignore
+  });

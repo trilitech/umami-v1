@@ -29,7 +29,7 @@ include ApiRequest;
 
 type injection = {
   operation: Operation.t,
-  password: string,
+  signingIntent: TaquitoAPI.Signer.intent,
 };
 
 type operationsResponse = {
@@ -37,42 +37,47 @@ type operationsResponse = {
   currentLevel: int,
 };
 
-let transfer = (operation, password) => {
+let transfer = (operation, signingIntent) => {
   operation: Operation.transaction(operation),
-  password,
+  signingIntent,
 };
 
-let delegate = (d, password) => {
+let delegate = (d, signingIntent) => {
   operation: Operation.delegation(d),
-
-  password,
+  signingIntent,
 };
 
-let token = (operation, password) => {
+let token = (operation, signingIntent) => {
   operation: Token(operation),
-  password,
+  signingIntent,
 };
 
 let errorToString = ErrorHandler.toString;
 
 let filterOutFormError =
   fun
+  | ErrorHandler.Taquito(LedgerInitTimeout)
+  | ErrorHandler.Taquito(LedgerInit(_))
+  | ErrorHandler.Taquito(LedgerKeyRetrieval)
+  | ErrorHandler.Taquito(LedgerDenied)
+  | ErrorHandler.Taquito(LedgerNotReady)
   | ErrorHandler.Taquito(WrongPassword) => false
   | _ => true;
 
 let useCreate = (~sideEffect=?, ()) => {
-  let set = (~config, {operation, password}) => {
+  let set = (~config, {operation, signingIntent}) => {
     switch (operation) {
     | Protocol(operation) =>
-      config->NodeAPI.Operation.run(operation, ~password)
+      config->NodeAPI.Operation.run(operation, ~signingIntent)
 
-    | Token(operation) => config->NodeAPI.Tokens.inject(operation, ~password)
+    | Token(operation) =>
+      config->NodeAPI.Tokens.inject(operation, ~signingIntent)
 
     | Transfer(t) =>
       config->NodeAPI.Operation.batch(
         t.transfers,
         ~source=t.source,
-        ~password,
+        ~signingIntent,
       )
     };
   };

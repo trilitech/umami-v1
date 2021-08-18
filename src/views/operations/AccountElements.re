@@ -54,6 +54,64 @@ let styles =
     })
   );
 
+module ShrinkedAddress = {
+  [@react.component]
+  let make = (~style as styleProp=?, ~address: PublicKeyHash.t, ~n=6) => {
+    let address = (address :> string);
+    let l = address->String.length;
+    let startSlice = address->Js.String2.slice(~from=0, ~to_=n - 1);
+    let endSlice = address->Js.String2.slice(~from=l - n - 1, ~to_=l - 1);
+
+    let res = Format.sprintf("%s...%s", startSlice, endSlice);
+
+    <Typography.Address style=?styleProp>
+      res->React.string
+    </Typography.Address>;
+  };
+};
+
+module Slim = {
+  let styles =
+    Style.(
+      StyleSheet.create({
+        "address": style(~marginLeft=8.->dp, ()),
+        "id_address":
+          style(
+            ~display=`flex,
+            ~flexDirection=`row,
+            ~alignItems=`baseline,
+            (),
+          ),
+      })
+    );
+
+  [@react.component]
+  let make =
+      (
+        ~style as styleProp=?,
+        ~id=?,
+        ~address: PublicKeyHash.t,
+        ~token=?,
+        ~showAmount,
+      ) => {
+    <View style=?styleProp>
+      <View style=styles##id_address>
+        {id->ReactUtils.mapOpt(id => {
+           <Typography.Subtitle2>
+             {id->Int.toString->React.string}
+           </Typography.Subtitle2>
+         })}
+        <ShrinkedAddress address style=styles##address />
+      </View>
+      {switch (showAmount) {
+       | Balance => <AccountInfoBalance address ?token />
+       | Nothing => React.null
+       | Amount(e) => e
+       }}
+    </View>;
+  };
+};
+
 module Selector = {
   module Item = {
     [@react.component]

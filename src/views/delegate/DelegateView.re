@@ -136,7 +136,7 @@ module Form = {
     };
 
     [@react.component]
-    let make = (~title, ~advancedOptionState, ~form, ~action, ~loading) => {
+    let make = (~advancedOptionState, ~form, ~action, ~loading) => {
       let onSubmitDelegateForm = _ => {
         form.submit();
       };
@@ -154,9 +154,6 @@ module Form = {
 
       <>
         <ReactFlipToolkit.FlippedView flipId="form">
-          <Typography.Headline style=FormStyles.header>
-            title->React.string
-          </Typography.Headline>
           <FormGroupDelegateSelector
             label=I18n.label#account_delegate
             value={form.values.sender}
@@ -179,7 +176,7 @@ module Form = {
             error={form.getFieldError(Field(Baker))}
           />
           <SwitchItem
-            label=I18n.btn#advanced_options
+            label=I18n.label#advanced_options
             value=advancedOptionOpened
             setValue=setAdvancedOptionOpened
             disabled={
@@ -233,8 +230,8 @@ let make = (~closeAction, ~action) => {
 
   let (operationRequest, sendOperation) = StoreContext.Operations.useCreate();
 
-  let sendOperation = (~delegation, ~password) =>
-    sendOperation(OperationApiRequest.delegate(delegation, password))
+  let sendOperation = (~delegation, signingIntent) =>
+    sendOperation(OperationApiRequest.delegate(delegation, signingIntent))
     ->Future.tapOk(hash => {setModalStep(_ => SubmittedStep(hash))});
 
   let (operationSimulateRequest, sendOperationSimulate) =
@@ -263,13 +260,25 @@ let make = (~closeAction, ~action) => {
     );
 
   let title =
-    switch (action) {
-    | Create(_) => I18n.title#delegate
-    | Edit(_) => I18n.title#delegate_update
-    | Delete(_) => I18n.title#delegate_delete
+    switch (modalStep, action) {
+    | (PasswordStep({delegate: None}, _), _) =>
+      I18n.title#delegate_delete->Some
+    | (PasswordStep({delegate: Some(_)}, _), _) =>
+      I18n.title#confirm_delegate->Some
+    | (SendStep, Create(_)) => I18n.title#delegate->Some
+    | (SendStep, Edit(_)) => I18n.title#delegate_update->Some
+    | (SendStep, Delete(_)) => I18n.title#delegate_delete->Some
+    | (SubmittedStep(_), _) => None
     };
 
-  let closing = ModalFormView.Close(closeAction);
+  let (ledger, _) as ledgerState = React.useState(() => None);
+
+  let closing =
+    switch (modalStep, ledger: option(SigningBlock.LedgerView.state)) {
+    | (PasswordStep(_, _), Some(WaitForConfirm)) =>
+      ModalFormView.Deny(I18n.tooltip#reject_on_ledger)
+    | _ => ModalFormView.Close(closeAction)
+    };
 
   let back =
     switch (modalStep, action) {
@@ -287,24 +296,15 @@ let make = (~closeAction, ~action) => {
   <ReactFlipToolkit.Flipper
     flipKey={advancedOptionOpened->string_of_bool ++ modalStep->stepToString}>
     <ReactFlipToolkit.FlippedView flipId="modal">
-      <ModalFormView back closing>
+      <ModalFormView back closing ?title>
         <ReactFlipToolkit.FlippedView.Inverse inverseFlipId="modal">
           {switch (modalStep) {
            | SubmittedStep(hash) => <SubmittedView hash onPressCancel />
            | SendStep =>
              switch (action) {
-             | Delete(_) =>
-               <View>
-                 <View style=FormStyles.header>
-                   <Typography.Headline>
-                     I18n.title#delegate_delete->React.string
-                   </Typography.Headline>
-                 </View>
-                 <LoadingView style=styles##deleteLoading />
-               </View>
+             | Delete(_) => <LoadingView style=styles##deleteLoading />
              | _ =>
                <Form.View
-                 title
                  advancedOptionState
                  form
                  action
@@ -312,18 +312,17 @@ let make = (~closeAction, ~action) => {
                />
              }
            | PasswordStep(delegation, dryRun) =>
-             let title =
-               switch (delegation.delegate) {
-               | None => I18n.title#delegate_delete
-               | Some(_d) => I18n.title#confirm_delegate
-               };
              <SignOperationView
-               title
-               subtitle=I18n.expl#confirm_operation
+               source={delegation.source}
+               ledgerState
+               subtitle=(
+                 I18n.expl#confirm_operation,
+                 I18n.expl#hardware_wallet_confirm_operation,
+               )
                sendOperation={sendOperation(~delegation)}
                loading>
                <OperationSummaryView.Delegate delegation dryRun />
-             </SignOperationView>;
+             </SignOperationView>
            }}
         </ReactFlipToolkit.FlippedView.Inverse>
       </ModalFormView>

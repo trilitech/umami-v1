@@ -77,6 +77,8 @@ module Accounts: {
   let secrets:
     (~config: ConfigFile.t) => result(t, TezosClient.ErrorHandler.t);
 
+  let isLedger: (PublicKeyHash.t, array(Secret.Repr.derived)) => bool;
+
   let recoveryPhrases:
     (~config: ConfigFile.t) =>
     option(array(SecureStorage.Cipher.encryptedData));
@@ -128,18 +130,26 @@ module Accounts: {
       (ConfigFile.t, PublicKeyHash.t) =>
       Future.t(Result.t(bool, ErrorHandler.t));
 
-    let runStream:
+    let runStreamLedger:
       (
-        ConfigFile.t,
-        (int, PublicKeyHash.t) => unit,
+        ~config: ConfigFile.t,
+        ~startIndex: int=?,
+        ~onFoundKey: (int, PublicKeyHash.t) => unit,
         DerivationPath.Pattern.t,
         Wallet.Ledger.scheme
       ) =>
       Future.t(Belt.Result.t(unit, ErrorHandler.t));
 
-    let runAll:
-      (~config: ConfigFile.t, ~password: string) =>
-      Future.t(Result.t(unit, ErrorHandler.t));
+    let runStreamSeed:
+      (
+        ~config: ConfigFile.t,
+        ~startIndex: int=?,
+        ~onFoundKey: (int, PublicKeyHash.t) => unit,
+        ~password: string,
+        Secret.Repr.derived,
+        DerivationPath.Pattern.t
+      ) =>
+      Future.t(Belt.Result.t(unit, ErrorHandler.t));
   };
 
   let restore:
@@ -159,6 +169,15 @@ module Accounts: {
       ),
     );
 
+  let importRemainingMnemonicKeys:
+    (~config: ConfigFile.t, ~password: string, ~index: int, unit) =>
+    Future.t(
+      Result.t(
+        (array(PublicKeyHash.t), option(PublicKeyHash.t)),
+        ErrorHandler.t,
+      ),
+    );
+
   let legacyImport:
     (~config: ConfigUtils.t, string, string, ~password: string) =>
     Future.t(Belt.Result.t(PublicKeyHash.t, ErrorHandler.t));
@@ -166,6 +185,7 @@ module Accounts: {
   let importLedger:
     (
       ~config: ConfigUtils.t,
+      ~timeout: int=?,
       ~name: string,
       ~accountsNumber: int,
       ~derivationPath: DerivationPath.Pattern.t=?,
@@ -175,16 +195,29 @@ module Accounts: {
     ) =>
     Future.t(Result.t(array(PublicKeyHash.t), ErrorHandler.t));
 
-  let getPublicKey:
-    (~config: ConfigFile.t, ~account: Account.t) =>
-    Future.t(Result.t(string, Wallet.error));
+  let deriveLedgerKeys:
+    (
+      ~config: ConfigFile.t,
+      ~timeout: int=?,
+      ~index: int,
+      ~accountsNumber: int,
+      ~ledgerMasterKey: PublicKeyHash.t,
+      unit
+    ) =>
+    Future.t(Result.t(array(PublicKeyHash.t), ErrorHandler.t));
 
   let deriveLedger:
     (
       ~config: ConfigFile.t,
+      ~timeout: int=?,
       ~index: int,
       ~alias: string,
-      ~ledgerMasterKey: PublicKeyHash.t
+      ~ledgerMasterKey: PublicKeyHash.t,
+      unit
     ) =>
-    Future.t(result(PublicKeyHash.t, ErrorHandler.t));
+    Future.t(Result.t(PublicKeyHash.t, ErrorHandler.t));
+
+  let getPublicKey:
+    (~config: ConfigFile.t, ~account: Account.t) =>
+    Future.t(Result.t(string, Wallet.error));
 };

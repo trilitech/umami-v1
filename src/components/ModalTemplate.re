@@ -28,9 +28,11 @@ open ReactNative;
 module HeaderButtons = {
   module Close = {
     [@react.component]
-    let make = (~onPress) => {
+    let make = (~disabled=?, ~tooltip=?, ~onPress) => {
       <IconButton
         icon=Icons.Close.build
+        ?disabled
+        ?tooltip
         onPress
         size=48.
         iconSizeRatio={3. /. 4.}
@@ -71,12 +73,13 @@ let styles =
       "modalForm":
         style(
           ~width=642.->dp,
-          ~maxHeight=100.->pct,
-          ~paddingTop=40.->dp,
-          ~paddingBottom=40.->dp,
-          ~paddingHorizontal=135.->dp,
+          ~paddingTop=35.->dp,
+          ~paddingBottom=35.->dp,
+          ~paddingRight=120.->dp,
+          ~paddingLeft=130.->dp,
           (),
         ),
+      "innerScroll": style(~margin=5.->dp, ()),
       "modalDialog":
         style(
           ~width=522.->dp,
@@ -95,10 +98,12 @@ module Base = {
         ~children,
         ~headerLeft=?,
         ~headerRight=?,
+        ~headerCenter=?,
         ~loading as (loadingState, loadingTitle)=(false, None),
         ~style as styleFromProp=?,
       ) => {
     let theme = ThemeContext.useTheme();
+
     <View
       style=Style.(
         arrayOption([|
@@ -107,31 +112,34 @@ module Base = {
           styleFromProp,
         |])
       )>
-      children
-      {loadingState
-         ? <View
-             style=Style.(
-               array([|
-                 styles##loadingView,
-                 style(
-                   ~backgroundColor=theme.colors.background,
-                   ~opacity=0.87,
-                   (),
-                 ),
-               |])
-             )>
-             {loadingTitle->ReactUtils.mapOpt(loadingTitle =>
-                <Typography.Headline style=FormStyles.header>
-                  loadingTitle->React.string
-                </Typography.Headline>
-              )}
-             <ActivityIndicator
-               animating=true
-               size=ActivityIndicator_Size.large
-               color={theme.colors.iconMediumEmphasis}
-             />
-           </View>
-         : React.null}
+      headerCenter->ReactUtils.opt
+      <DocumentContext.ScrollView showsVerticalScrollIndicator=true>
+        <View style=styles##innerScroll> children </View>
+        {loadingState
+           ? <View
+               style=Style.(
+                 array([|
+                   styles##loadingView,
+                   style(
+                     ~backgroundColor=theme.colors.background,
+                     ~opacity=0.87,
+                     (),
+                   ),
+                 |])
+               )>
+               {loadingTitle->ReactUtils.mapOpt(loadingTitle =>
+                  <Typography.Headline style=FormStyles.header>
+                    loadingTitle->React.string
+                  </Typography.Headline>
+                )}
+               <ActivityIndicator
+                 animating=true
+                 size=ActivityIndicator_Size.large
+                 color={theme.colors.iconMediumEmphasis}
+               />
+             </View>
+           : React.null}
+      </DocumentContext.ScrollView>
       {headerLeft->ReactUtils.mapOpt(headerLeft =>
          <View style=styles##headerLeft> headerLeft </View>
        )}
@@ -148,15 +156,25 @@ module Form = {
       (
         ~headerLeft=?,
         ~headerRight=?,
+        ~headerCenter=?,
         ~loading=?,
         ~style as styleFromProp=?,
         ~children,
       ) => {
+    let {height} = Dimensions.useWindowDimensions();
+
     <Base
       ?headerLeft
       ?headerRight
+      ?headerCenter
       ?loading
-      style=Style.(arrayOption([|Some(styles##modalForm), styleFromProp|]))>
+      style=Style.(
+        arrayOption([|
+          Some(style(~maxHeight=(height *. 0.9)->dp, ())),
+          Some(styles##modalForm),
+          styleFromProp,
+        |])
+      )>
       children
     </Base>;
   };

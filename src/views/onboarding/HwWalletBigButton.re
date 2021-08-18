@@ -23,48 +23,22 @@
 /*                                                                           */
 /*****************************************************************************/
 
-let branchRefused = "branch refused";
-let wrongSecretKey = "wrong secret key";
-let badPkh = "Unexpected data (Signature.Public_key_hash)";
-let unregisteredDelegate = "contract.manager.unregistered_delegate";
-let unchangedDelegate = "contract.manager.delegate.unchanged";
-let invalidContract = "Invalid contract notation";
-let emptyTransaction = "contract.empty_transaction";
-let ledgerTimeout = "No Ledger device found (timeout)";
-let ledgerKey = "Unable to retrieve public key";
-let ledgerDenied = "0x6985";
+[@react.component]
+let make = (~style=?) => {
+  let (visibleModal, openAction, closeAction) =
+    ModalAction.useModalActionState();
 
-type t =
-  | Generic(string)
-  | WrongPassword
-  | UnregisteredDelegate
-  | UnchangedDelegate
-  | EmptyTransaction
-  | InvalidContract
-  | BranchRefused
-  | BadPkh
-  | LedgerInitTimeout
-  | LedgerInit(string)
-  | LedgerNotReady
-  | LedgerKeyRetrieval
-  | LedgerDenied
-  | SignerIntentInconsistency;
+  let onPress = _ => openAction();
 
-let parse = (e: RawJsError.t) =>
-  switch (e.message) {
-  | s when s->Js.String2.includes(wrongSecretKey) => WrongPassword
-  | s when s->Js.String2.includes(branchRefused) => BranchRefused
-  | s when s->Js.String2.includes(badPkh) => BadPkh
-  | s when s->Js.String2.includes(unregisteredDelegate) =>
-    UnregisteredDelegate
-  | s when s->Js.String2.includes(unchangedDelegate) => UnchangedDelegate
-  | s when s->Js.String2.includes(invalidContract) => InvalidContract
-  | s when s->Js.String2.includes(emptyTransaction) => EmptyTransaction
-  | s when s->Js.String2.includes(ledgerTimeout) => LedgerInitTimeout
-  | s when s->Js.String2.includes(ledgerKey) => LedgerKeyRetrieval
-  | s when s->Js.String2.includes(ledgerDenied) => LedgerDenied
-  | s => Generic(Js.String.make(s))
-  };
-
-let fromPromiseParsed = res =>
-  RawJsError.fromPromiseParsedWrapper(parse, x => x, res);
+  <>
+    <BigButton
+      title=I18n.btn#connect_hardware_wallet
+      icon=Icons.Ledger.build
+      onPress
+      ?style
+    />
+    <ModalAction visible=visibleModal onRequestClose=closeAction>
+      <HwWalletOnboardingView closeAction />
+    </ModalAction>
+  </>;
+};

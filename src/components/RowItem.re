@@ -131,7 +131,15 @@ module Base = {
 
 module Bordered = {
   [@react.component]
-  let make = (~height, ~style=?, ~isNested=false, ~isLast=false, ~children) => {
+  let make =
+      (
+        ~height,
+        ~style=?,
+        ~innerStyle=?,
+        ~isNested=false,
+        ~isLast=false,
+        ~children,
+      ) => {
     let theme = ThemeContext.useTheme();
     <Base height ?style>
       {_ =>
@@ -145,7 +153,10 @@ module Bordered = {
                |])
              )
            />
-           <View style=styles##inner> children </View>
+           <View
+             style=Style.(arrayOption([|innerStyle, styles##inner->Some|]))>
+             children
+           </View>
          </>}
     </Base>;
   };

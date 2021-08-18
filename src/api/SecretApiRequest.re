@@ -58,35 +58,36 @@ let useGetRecoveryPhrase = (~requestState as (request, setRequest), ~index) => {
   (request, getRequest);
 };
 
-let useScanGlobal = (~requestState as (request, setRequest), ()) => {
-  let get = (~config, password) =>
-    WalletAPI.Accounts.Scan.runAll(~config, ~password);
-
-  let getRequest =
-    ApiRequest.useGetter(
-      ~get,
-      ~kind=Logs.Account,
-      ~setRequest,
-      ~errorToString=ErrorHandler.toString,
-      (),
-    );
-
-  (request, getRequest);
-};
-
 /* Set */
+
+type deriveKind =
+  | Mnemonics(string) // password
+  | Ledger(PublicKeyHash.t); // Ledger Master Key;
 
 type deriveInput = {
   name: string,
   index: int,
-  password: string,
+  kind: deriveKind,
+  timeout: option(int),
 };
 
 let useDerive =
   ApiRequest.useSetter(
     ~set=
-      (~config, {name, index, password}) =>
-        WalletAPI.Accounts.derive(~config, ~index, ~alias=name, ~password),
+      (~config, {name, index, kind, timeout}) =>
+        switch (kind) {
+        | Mnemonics(password) =>
+          WalletAPI.Accounts.derive(~config, ~index, ~alias=name, ~password)
+        | Ledger(ledgerMasterKey) =>
+          WalletAPI.Accounts.deriveLedger(
+            ~config,
+            ~timeout?,
+            ~index,
+            ~alias=name,
+            ~ledgerMasterKey,
+            (),
+          )
+        },
     ~kind=Logs.Account,
     ~errorToString=ErrorHandler.toString,
   );
@@ -112,6 +113,86 @@ let useCreateWithMnemonics =
         ),
     ~kind=Logs.Account,
     ~errorToString=ErrorHandler.toString,
+  );
+
+type ledgerImportInput = {
+  name: string,
+  derivationPath: DerivationPath.Pattern.t,
+  derivationScheme: Wallet.Ledger.scheme,
+  accountsNumber: int,
+  ledgerMasterKey: PublicKeyHash.t,
+  timeout: int,
+};
+
+let useLedgerImport =
+  ApiRequest.useSetter(
+    ~errorToString=ErrorHandler.toString,
+    ~set=
+      (
+        ~config,
+        {
+          name,
+          derivationPath,
+          derivationScheme,
+          accountsNumber,
+          ledgerMasterKey,
+          timeout,
+        },
+      ) =>
+        WalletAPI.Accounts.importLedger(
+          ~config,
+          ~name,
+          ~accountsNumber,
+          ~derivationPath,
+          ~derivationScheme,
+          ~ledgerMasterKey,
+          ~timeout,
+          (),
+        ),
+    ~kind=Logs.Account,
+  );
+
+type ledgerScanInput = {
+  index: int,
+  accountsNumber: int,
+  ledgerMasterKey: PublicKeyHash.t,
+  timeout: int,
+};
+
+let useLedgerScan =
+  ApiRequest.useSetter(
+    ~errorToString=ErrorHandler.toString,
+    ~set=
+      (~config, {index, accountsNumber, ledgerMasterKey, timeout}) =>
+        WalletAPI.Accounts.deriveLedgerKeys(
+          ~config,
+          ~index,
+          ~accountsNumber,
+          ~ledgerMasterKey,
+          ~timeout,
+          (),
+        ),
+    ~kind=Logs.Account,
+  );
+
+type mnemonicScanInput = {
+  index: int,
+  accountsNumber: int,
+  password: string,
+};
+
+let useMnemonicScan =
+  ApiRequest.useSetter(
+    ~errorToString=ErrorHandler.toString,
+    ~set=
+      (~config, {index, password}) =>
+        WalletAPI.Accounts.importRemainingMnemonicKeys(
+          ~config,
+          ~index,
+          ~password,
+          (),
+        ),
+    ~kind=Logs.Account,
   );
 
 let useUpdate =

@@ -35,7 +35,7 @@ let useLoad = requestState => {
         | Ok(response) =>
           response
           ->Array.map(((name, address)) =>
-              ((address :> string), Account.{name, address, ledger: false})
+              ((address :> string), Account.{name, address})
             )
           ->Array.reverse
           ->Map.String.fromArray

@@ -168,7 +168,7 @@ module Signer = {
     )
     ->Future.mapError(ErrorHandler.taquito);
 
-  let readLedgerKey = key => {
+  let readLedgerKey = (callback, key) => {
     let keyData = ledgerBasePkh =>
       key
       ->Wallet.Ledger.Decode.fromSecretKey(~ledgerBasePkh)
@@ -181,24 +181,34 @@ module Signer = {
         ->Future.map(pkh => pkh->Result.flatMap(keyData))
         ->Future.mapOk(data => (tr, data))
       )
-    ->Future.flatMapOk(((tr, data)) =>
+    ->Future.flatMapOk(((tr, data)) => {
+        callback();
         LedgerAPI.Signer.create(
           tr,
           data.path->DerivationPath.fromTezosBip44,
           data.scheme,
           ~prompt=false,
-        )
-      );
+        );
+      });
   };
 
-  let readSecretKey = (address, passphrase, dirpath) => {
+  type intent =
+    | LedgerCallback(unit => unit)
+    | Password(string);
+
+  let readSecretKey = (address, signingIntent, dirpath) => {
     Wallet.readSecretFromPkh(address, dirpath)
     ->Future.map(convertWalletError)
     ->Future.flatMapOk(((kind, key)) =>
-        switch (kind) {
-        | Encrypted => readEncryptedKey(key, passphrase)
-        | Unencrypted => readUnencryptedKey(key)
-        | Ledger => readLedgerKey(key)
+        switch (kind, signingIntent) {
+        | (Encrypted, Password(s)) => readEncryptedKey(key, s)
+        | (Unencrypted, _) => readUnencryptedKey(key)
+        | (Ledger, LedgerCallback(callback)) => readLedgerKey(callback, key)
+        | _ =>
+          ReTaquitoError.SignerIntentInconsistency
+          ->ErrorHandler.taquito
+          ->Error
+          ->Future.value
         }
       );
   };
@@ -228,14 +238,14 @@ module Delegate = {
         ~baseDir,
         ~source,
         ~delegate: option(PublicKeyHash.t),
-        ~password,
+        ~signingIntent: Signer.intent,
         ~fee=?,
         (),
       ) => {
     let tk = Toolkit.create(endpoint);
     let fee = fee->Option.map(v => v->Tez.toInt64->BigNumber.fromInt64);
 
-    Signer.readSecretKey(source, password, baseDir)
+    Signer.readSecretKey(source, signingIntent, baseDir)
     ->Future.flatMapOk(signer => {
         let provider = Toolkit.{signer: signer};
         tk->Toolkit.setProvider(provider);
@@ -410,12 +420,12 @@ module Transfer = {
            Future.t(
              list(Belt.Result.t(Toolkit.transferParams, ErrorHandler.t)),
            ),
-        ~password,
+        ~signingIntent,
         (),
       ) => {
     let tk = Toolkit.create(endpoint);
 
-    Signer.readSecretKey(source, password, baseDir)
+    Signer.readSecretKey(source, signingIntent, baseDir)
     ->Future.mapOk(signer => {
         let provider = Toolkit.{signer: signer};
         tk->Toolkit.setProvider(provider);
@@ -436,6 +446,7 @@ module Transfer = {
         ->convertToErrorHandler;
       });
   };
+
   module Estimate = {
     let batch =
         (
@@ -485,8 +496,8 @@ module Transfer = {
 };
 
 module Signature = {
-  let signPayload = (~baseDir, ~source, ~password, ~payload) => {
-    Signer.readSecretKey(source, password, baseDir)
+  let signPayload = (~baseDir, ~source, ~signingIntent, ~payload) => {
+    Signer.readSecretKey(source, signingIntent, baseDir)
     ->Future.flatMapOk(signer =>
         signer
         ->ReTaquitoSigner.sign(payload)

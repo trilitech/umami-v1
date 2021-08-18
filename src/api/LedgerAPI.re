@@ -41,8 +41,8 @@ let mapError = (ft, constr) =>
     | e => e,
   );
 
-let init = () => {
-  ReLedger.Transport.create()
+let init = (~timeout=?, ()) => {
+  ReLedger.Transport.create(~listenTimeout=?timeout, ())
   ->ReTaquitoError.fromPromiseParsed
   ->mapError(s => s->ReTaquitoError.LedgerInit)
   ->Future.map(convertTaquitoError);
@@ -88,6 +88,11 @@ module Signer = {
 let getKey = (~prompt, tr, path, schema) => {
   let signer = Signer.create(tr, path, schema, ~prompt);
   signer->Future.flatMapOk(Signer.publicKeyHash);
+};
+
+let getFirstKey = (~prompt, tr) => {
+  let path = DerivationPath.Pattern.(default->fromTezosBip44->implement(0));
+  getKey(~prompt, tr, path, Wallet.Ledger.masterKeyScheme);
 };
 
 let getMasterKey = (~prompt, tr) =>
