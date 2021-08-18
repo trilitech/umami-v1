@@ -64,6 +64,7 @@ module OffBoardView = {
       ->Future.tapOk(() => {
           resetSecrets();
           resetTokens();
+          Routes.(push(Accounts));
           BeaconApiRequest.client->ReBeacon.WalletClient.destroy->ignore;
         });
     };
