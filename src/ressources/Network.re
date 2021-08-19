@@ -23,6 +23,8 @@
 /*                                                                           */
 /*****************************************************************************/
 
+open Let;
+
 type chain = string;
 
 type apiVersion = {
@@ -169,59 +171,53 @@ let fetchJson = (url, ~timeout=?, mkError) =>
       ->FutureJs.fromPromise(err => mkError(Js.String.make(err)->`JsonError))
     );
 
+let mapAPIError: _ => apiError =
+  fun
+  | Json.ParseError(error) => `APIMonitorRPCError(error)
+  | Json.Decode.DecodeError(error) => `APIMonitorRPCError(error)
+  | _ => `APIMonitorRPCError("Unknown error");
+
 let monitor = url => {
-  (url ++ "/monitor/blocks")
-  ->fetchJson(e => `APINotAvailable(e))
-  ->Future.flatMapOk(json => {
-      (
-        try(
-          Json.Decode.{
-            nodeLastBlock: json |> field("node_last_block", int),
-            nodeLastBlockTimestamp:
-              json |> field("node_last_block_timestamp", string),
-            indexerLastBlock: json |> field("indexer_last_block", int),
-            indexerLastBlockTimestamp:
-              json |> field("indexer_last_block_timestamp", string),
-          }
-          ->Ok
-        ) {
-        | Json.ParseError(error) => Error(`APIMonitorRPCError(error))
-        | Json.Decode.DecodeError(error) =>
-          Error(`APIMonitorRPCError(error))
-        | _ => Error(`APIMonitorRPCError("Unknown error"))
-        }
-      )
-      ->Future.value
-    });
+  let%FlatRes json =
+    (url ++ "/monitor/blocks")
+    ->fetchJson(e => (`APINotAvailable(e) :> apiError));
+
+  ResultEx.fromExn((), () =>
+    Json.Decode.{
+      nodeLastBlock: json |> field("node_last_block", int),
+      nodeLastBlockTimestamp:
+        json |> field("node_last_block_timestamp", string),
+      indexerLastBlock: json |> field("indexer_last_block", int),
+      indexerLastBlockTimestamp:
+        json |> field("indexer_last_block_timestamp", string),
+    }
+  )
+  ->ResultEx.mapError(mapAPIError);
 };
 
-let getAPIVersion = (~timeout=?, url) =>
-  (url ++ "/version")
-  ->fetchJson(~timeout?, e => `APINotAvailable(e))
-  ->Future.flatMapOk(json =>
-      (
-        try(
-          Json.Decode.(field("api", string, json))
-          ->Version.parse
-          ->ResultEx.mapError((VersionFormat(e)) => `APIVersionFormat(e))
-          ->Result.map(api =>
-              Json.Decode.{
-                api,
-                indexer: json |> field("indexer", string),
-                node: json |> field("node", string),
-                chain: json |> field("chain", string),
-                protocol: json |> field("protocol", string),
-              }
-            )
-        ) {
-        | Json.ParseError(error) => Error(`APIVersionRPCError(error))
-        | Json.Decode.DecodeError(error) =>
-          Error(`APIVersionRPCError(error))
-        | _ => Error(`APIMonitorRPCError("Unknown error"))
-        }
-      )
-      ->Future.value
-    );
+let getAPIVersion = (~timeout=?, url) => {
+  let%FlatRes json =
+    (url ++ "/version")->fetchJson(~timeout?, e => `APINotAvailable(e));
+
+  let%Res api =
+    ResultEx.fromExn((), () => Json.Decode.(field("api", string, json)))
+    ->ResultEx.mapError(mapAPIError);
+
+  let%Res api =
+    Version.parse(api)
+    ->ResultEx.mapError((VersionFormat(e)) => `APIVersionFormat(e));
+
+  ResultEx.fromExn((), () =>
+    Json.Decode.{
+      api,
+      indexer: json |> field("indexer", string),
+      node: json |> field("node", string),
+      chain: json |> field("chain", string),
+      protocol: json |> field("protocol", string),
+    }
+  )
+  ->ResultEx.mapError(mapAPIError);
+};
 
 let getChainName = chain => {
   switch (chain) {
