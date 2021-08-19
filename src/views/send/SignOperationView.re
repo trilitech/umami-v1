@@ -25,38 +25,39 @@
 
 open ReactNative;
 
+let styles =
+  Style.(
+    StyleSheet.create({
+      "timeoutError":
+        style(
+          ~alignItems=`flexStart,
+          ~marginTop=20.->dp,
+          ~marginBottom=20.->dp,
+          (),
+        ),
+    })
+  );
+
 [@react.component]
 let make =
     (
-      ~title=?,
       ~subtitle=?,
+      ~source: PublicKeyHash.t,
+      ~ledgerState,
       ~children,
-      ~sendOperation: (~password: string) => Future.t(Result.t(_)),
-      ~loading=false,
+      ~sendOperation: TaquitoAPI.Signer.intent => Future.t(Result.t(_)),
+      ~loading,
     ) => {
-  let (form, formFieldsAreValids) =
-    PasswordFormView.usePasswordForm(sendOperation);
-
+  let isLedger = StoreContext.Accounts.useIsLedger(source);
   <>
-    {title->ReactUtils.mapOpt(title =>
+    {subtitle->ReactUtils.mapOpt(((subtitle, hw_subtitle)) =>
        <View style=FormStyles.header>
-         <Typography.Headline> title->React.string </Typography.Headline>
-         {subtitle->ReactUtils.mapOpt(subtitle =>
-            <Typography.Overline1 style=FormStyles.subtitle>
-              subtitle->React.string
-            </Typography.Overline1>
-          )}
+         <Typography.Overline1>
+           {isLedger ? hw_subtitle : subtitle}->React.string
+         </Typography.Overline1>
        </View>
      )}
     children
-    <PasswordFormView.PasswordField form />
-    <View style=FormStyles.verticalFormAction>
-      <Buttons.SubmitPrimary
-        text=I18n.btn#confirm
-        onPress={_event => {form.submit()}}
-        loading
-        disabledLook={!formFieldsAreValids}
-      />
-    </View>
+    <SigningBlock isLedger ledgerState loading sendOperation />
   </>;
 };

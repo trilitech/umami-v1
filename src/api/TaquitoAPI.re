@@ -26,11 +26,18 @@
 open ReTaquito;
 open ReTaquitoSigner;
 
+let convertLedgerError = res =>
+  res->ResultEx.mapError(e => e->Wallet.convertLedgerError);
+
 let convertWalletError = res =>
-  res->ResultEx.mapError(e => Error(ErrorHandler.Wallet(e)));
+  res->ResultEx.mapError(e => ErrorHandler.Wallet(e));
 
 let convertToErrorHandler = res =>
-  ReTaquitoError.fromPromiseParsedWrapper(ErrorHandler.taquito, res);
+  RawJsError.fromPromiseParsedWrapper(
+    ReTaquitoError.parse,
+    ErrorHandler.taquito,
+    res,
+  );
 
 let revealFee = (~endpoint, source) => {
   let client = RPCClient.create(endpoint);
@@ -52,7 +59,9 @@ let handleCustomOptions =
     (results: Toolkit.Estimation.result, (fee, storageLimit, gasLimit)) => {
   ...results,
   Toolkit.Estimation.customFeeMutez:
-    fee->Option.getWithDefault(results.Toolkit.Estimation.suggestedFeeMutez),
+    fee->Option.getWithDefault(
+      results.Toolkit.Estimation.suggestedFeeMutez + results.burnFeeMutez,
+    ),
   storageLimit: storageLimit->Option.getWithDefault(results.storageLimit),
   gasLimit: gasLimit->Option.getWithDefault(results.gasLimit),
 };
@@ -159,21 +168,47 @@ module Signer = {
     )
     ->Future.mapError(ErrorHandler.taquito);
 
-  let readSecretKey = (address, passphrase, dirpath) => {
+  let readLedgerKey = (callback, key) => {
+    let keyData = ledgerBasePkh =>
+      key
+      ->Wallet.Ledger.Decode.fromSecretKey(~ledgerBasePkh)
+      ->convertLedgerError
+      ->convertWalletError;
+
+    LedgerAPI.init()
+    ->Future.flatMapOk(tr =>
+        LedgerAPI.getMasterKey(~prompt=false, tr)
+        ->Future.map(pkh => pkh->Result.flatMap(keyData))
+        ->Future.mapOk(data => (tr, data))
+      )
+    ->Future.flatMapOk(((tr, data)) => {
+        callback();
+        LedgerAPI.Signer.create(
+          tr,
+          data.path->DerivationPath.fromTezosBip44,
+          data.scheme,
+          ~prompt=false,
+        );
+      });
+  };
+
+  type intent =
+    | LedgerCallback(unit => unit)
+    | Password(string);
+
+  let readSecretKey = (address, signingIntent, dirpath) => {
     Wallet.readSecretFromPkh(address, dirpath)
     ->Future.map(convertWalletError)
     ->Future.flatMapOk(((kind, key)) =>
-        switch (kind) {
-        | Encrypted => readEncryptedKey(key, passphrase)
-        | Unencrypted => readUnencryptedKey(key)
-        | Ledger =>
-          Future.value(
-            Error(
-              ErrorHandler.Taquito(
-                ReTaquitoError.Generic("Ledger not supported"),
-              ),
-            ),
-          )
+        switch (kind, signingIntent) {
+        | (Encrypted, Password(s)) => readEncryptedKey(key, s)
+        | (Unencrypted, _) => readUnencryptedKey(key)
+        | (Ledger, LedgerCallback(callback)) => readLedgerKey(callback, key)
+        | _ =>
+          ReTaquitoError.SignerIntentInconsistency
+          ->ErrorHandler.taquito
+          ->Error
+          ->Future.value
         }
       );
   };
@@ -203,14 +238,14 @@ module Delegate = {
         ~baseDir,
         ~source,
         ~delegate: option(PublicKeyHash.t),
-        ~password,
+        ~signingIntent: Signer.intent,
         ~fee=?,
         (),
       ) => {
     let tk = Toolkit.create(endpoint);
     let fee = fee->Option.map(v => v->Tez.toInt64->BigNumber.fromInt64);
 
-    Signer.readSecretKey(source, password, baseDir)
+    Signer.readSecretKey(source, signingIntent, baseDir)
     ->Future.flatMapOk(signer => {
         let provider = Toolkit.{signer: signer};
         tk->Toolkit.setProvider(provider);
@@ -385,12 +420,12 @@ module Transfer = {
            Future.t(
              list(Belt.Result.t(Toolkit.transferParams, ErrorHandler.t)),
            ),
-        ~password,
+        ~signingIntent,
         (),
       ) => {
     let tk = Toolkit.create(endpoint);
 
-    Signer.readSecretKey(source, password, baseDir)
+    Signer.readSecretKey(source, signingIntent, baseDir)
     ->Future.mapOk(signer => {
         let provider = Toolkit.{signer: signer};
         tk->Toolkit.setProvider(provider);
@@ -411,6 +446,7 @@ module Transfer = {
         ->convertToErrorHandler;
       });
   };
+
   module Estimate = {
     let batch =
         (
@@ -460,8 +496,8 @@ module Transfer = {
 };
 
 module Signature = {
-  let signPayload = (~baseDir, ~source, ~password, ~payload) => {
-    Signer.readSecretKey(source, password, baseDir)
+  let signPayload = (~baseDir, ~source, ~signingIntent, ~payload) => {
+    Signer.readSecretKey(source, signingIntent, baseDir)
     ->Future.flatMapOk(signer =>
         signer
         ->ReTaquitoSigner.sign(payload)

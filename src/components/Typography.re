@@ -221,6 +221,14 @@ module Body2 =
     let selectable = true;
   });
 
+module Contract =
+  Make({
+    let colorStyle = `mediumEmphasis;
+    let fontWeightStyle = `medium;
+    let fontSize = 14.;
+    let selectable = true;
+  });
+
 /* BUTTON */
 
 module ButtonPrimary =

@@ -26,8 +26,8 @@
 type balanceApiRequest = ApiRequest.t(string, string);
 
 let useLoad = (~requestState, ~address: PublicKeyHash.t) => {
-  let get = (~settings, address) => {
-    settings->NodeAPI.Balance.get(address, ());
+  let get = (~config, address) => {
+    config->NodeAPI.Balance.get(address, ());
   };
 
   ApiRequest.useLoader(

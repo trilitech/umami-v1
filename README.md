@@ -32,6 +32,7 @@ git clone https://gitlab.com/nomadic-labs/umami-wallet/umami/ && cd umami
 
 * [node](https://nodejs.org) installed, version 14 or later.
 * [yarn](https://yarnpkg.com) installed.
+* [`node-hid` dependencies](https://github.com/node-hid/node-hid) dependencies installed.
 
 ### 3) Build:
 

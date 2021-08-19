@@ -99,7 +99,7 @@ module EntityInfo = {
 };
 
 module Base = {
-  let buildDestinations = destinations => {
+  let buildDestinations = (smallest, destinations) => {
     switch (destinations) {
     | `One(address, title, parameters) =>
       switch (parameters) {
@@ -119,7 +119,7 @@ module Base = {
       }
 
     | `Many(recipients) =>
-      <BatchView.Transactions recipients={recipients->List.reverse} />
+      <BatchView.Transactions smallest recipients={recipients->List.reverse} />
     };
   };
 
@@ -129,6 +129,7 @@ module Base = {
         ~style as styleProp=?,
         ~source,
         ~destinations,
+        ~smallest=false,
         ~content:
            list((string, Belt.List.t(TezosClient.Transfer.Currency.t))),
       ) => {
@@ -143,7 +144,7 @@ module Base = {
       |])}>
       <EntityInfo address={source->fst->Some} title={source->snd} />
       {content->ReactUtils.hideNil(content => <Content content />)}
-      {buildDestinations(destinations)}
+      {buildDestinations(smallest, destinations)}
     </View>;
   };
 };
@@ -241,7 +242,10 @@ module Transactions = {
       sourceDestination(transfer);
     let content = buildSummaryContent(transfer, dryRun);
 
-    <Base ?style source destinations content />;
+    let secrets = StoreContext.Secrets.useGetAll();
+    let isLedger = source->fst->WalletAPI.Accounts.isLedger(secrets);
+
+    <Base ?style smallest=isLedger source destinations content />;
   };
 };
 

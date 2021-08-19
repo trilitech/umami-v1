@@ -32,14 +32,14 @@ type injection = {
 };
 
 let useCheckTokenContract = () => {
-  let set = (~settings, address) =>
-    settings->NodeAPI.Tokens.checkTokenContract(address);
+  let set = (~config, address) =>
+    config->NodeAPI.Tokens.checkTokenContract(address);
   ApiRequest.useSetter(~set, ~kind=Logs.Tokens, ~toast=false, ());
 };
 
 let useLoadOperationOffline = (~requestState, ~operation: Token.operation) => {
-  let get = (~settings, operation) =>
-    settings->NodeAPI.Tokens.callGetOperationOffline(operation);
+  let get = (~config, operation) =>
+    config->NodeAPI.Tokens.callGetOperationOffline(operation);
 
   ApiRequest.useLoader(
     ~get,
@@ -53,7 +53,7 @@ let useLoadOperationOffline = (~requestState, ~operation: Token.operation) => {
 let tokensStorageKey = "wallet-tokens";
 
 let useLoadTokens = requestState => {
-  let get = (~settings as _, ()) =>
+  let get = (~config as _, ()) =>
     LocalStorage.getItem(tokensStorageKey)
     ->Js.Nullable.toOption
     ->Option.mapWithDefault([||], storageString =>
@@ -68,7 +68,7 @@ let useLoadTokens = requestState => {
 };
 
 let useDelete = (~sideEffect=?, ()) => {
-  let set = (~settings as _, token) => {
+  let set = (~config as _, token) => {
     let tokens =
       LocalStorage.getItem(tokensStorageKey)
       ->Js.Nullable.toOption
@@ -97,7 +97,7 @@ let useDelete = (~sideEffect=?, ()) => {
 };
 
 let useCreate = (~sideEffect=?, ()) => {
-  let set = (~settings as _, token) => {
+  let set = (~config as _, token) => {
     let tokens =
       LocalStorage.getItem(tokensStorageKey)
       ->Js.Nullable.toOption

@@ -86,54 +86,6 @@ module CreateAccountButton = {
   };
 };
 
-module ScanImportButton = {
-  module ScanView = {
-    [@react.component]
-    let make = (~closeAction) => {
-      let (scanRequest, scan) = StoreContext.Secrets.useScanGlobal();
-
-      let submitPassword = (~password) => {
-        scan(password)->Future.tapOk(_ => closeAction());
-      };
-
-      <ModalFormView closing={ModalFormView.Close(closeAction)}>
-        <Typography.Headline style=FormStyles.header>
-          I18n.title#scan->React.string
-        </Typography.Headline>
-        <PasswordFormView
-          loading={scanRequest->ApiRequest.isLoading}
-          submitPassword
-        />
-      </ModalFormView>;
-    };
-  };
-
-  let styles =
-    Style.(StyleSheet.create({"button": style(~marginLeft=(-6.)->dp, ())}));
-
-  [@react.component]
-  let make = () => {
-    let (visibleModal, openAction, closeAction) =
-      ModalAction.useModalActionState();
-
-    let onPress = _e => openAction();
-
-    <>
-      <View style=styles##button>
-        <ButtonAction
-          onPress
-          text=I18n.btn#scan
-          icon=Icons.Scan.build
-          primary=true
-        />
-      </View>
-      <ModalAction visible=visibleModal onRequestClose=closeAction>
-        <ScanView closeAction />
-      </ModalAction>
-    </>;
-  };
-};
-
 module AccountsFlatList = {
   [@react.component]
   let make = (~token=?) => {
@@ -162,7 +114,7 @@ module AccountsTreeList = {
         ->Array.map(secret => {
             let hdAddresses =
               secret.secret.addresses->Array.map(k => (k :> string));
-            secret.secret.legacyAddress
+            secret.secret.masterPublicKey
             ->Option.mapWithDefault(hdAddresses, legacyAddress => {
                 hdAddresses->Array.concat([|(legacyAddress :> string)|])
               });
@@ -186,7 +138,7 @@ module AccountsTreeList = {
         <View>
           {secrets
            ->Array.keepMap(secret =>
-               secret.secret.legacyAddress
+               secret.secret.masterPublicKey
                ->Option.map(legacyAddress => (secret, legacyAddress))
              )
            ->Array.map(((secret, legacyAddress)) =>
@@ -239,11 +191,7 @@ let make = (~showOnboarding, ~mode, ~setMode) => {
               ? <BalanceTotal /> : <BalanceTotal.WithTokenSelector ?token />}
            <View style=styles##actionBar>
              {mode->Mode.is_management
-                ? <View>
-                    <CreateAccountButton showOnboarding />
-                    <ScanImportButton />
-                  </View>
-                : React.null}
+                ? <CreateAccountButton showOnboarding /> : React.null}
            </View>
          </Page.Header>
          {mode->Mode.is_management

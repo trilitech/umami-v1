@@ -30,16 +30,24 @@ let homeDir: unit => Path.t;
 let appDir: unit => Path.t;
 
 module File: {
+  module Error: {
+    type t =
+      | NoSuchFile(string)
+      | Generic(string);
+
+    let toString: t => string;
+  };
+
   type encoding =
     | Utf8
     | Raw(string);
 
   let read:
-    (~encoding: encoding=?, Path.t) => Future.t(Result.t(string, string));
+    (~encoding: encoding=?, Path.t) => Future.t(Result.t(string, Error.t));
 
   let write:
     (~encoding: encoding=?, ~name: Path.t, string) =>
-    Future.t(Result.t(unit, string));
+    Future.t(Result.t(unit, Error.t));
 
   module CopyMode: {
     type t;
@@ -50,22 +58,24 @@ module File: {
     let assemble: (t, t) => t;
   };
 
+  let access: Path.t => Future.t(bool);
+
   let copy:
     (~name: Path.t, ~dest: Path.t, ~mode: CopyMode.t) =>
-    Future.t(result(unit, string));
+    Future.t(result(unit, Error.t));
 
-  let rm: (~name: Path.t) => Future.t(result(unit, string));
+  let rm: (~name: Path.t) => Future.t(result(unit, Error.t));
 
   let initIfNotExists:
     (~encoding: encoding=?, ~path: Path.t, string) =>
-    Future.t(Result.t(unit, string));
-  let initDirIfNotExists: Path.t => Future.t(Result.t(unit, string));
+    Future.t(Result.t(unit, Error.t));
+  let initDirIfNotExists: Path.t => Future.t(Result.t(unit, Error.t));
 };
 
 module Client: {
-  let resetDir: Path.t => Future.t(Result.t(unit, string));
+  let resetDir: Path.t => Future.t(Result.t(unit, File.Error.t));
 
-  let initDir: Path.t => Future.t(Result.t(unit, string));
+  let initDir: Path.t => Future.t(Result.t(unit, File.Error.t));
 };
 
 module Menu: {

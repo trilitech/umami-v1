@@ -36,6 +36,9 @@ module ED25519 = {
 
   [@bs.module "ed25519-hd-key"]
   external derivePath: (string, string) => t = "derivePath";
+
+  [@bs.module "ed25519-hd-key"]
+  external publicKey: string => t = "getPublicKey";
 };
 
 module BIP39 = {
@@ -66,11 +69,22 @@ module Sodium = {
   [@bs.module "libsodium-wrappers-sumo"]
   external crypto_secretbox_easy: (Buffer.t, Buffer.t, Buffer.t) => Buffer.t =
     "crypto_secretbox_easy";
+
+  [@bs.module "libsodium-wrappers-sumo"]
+  external crypto_sign_ed25519_sk_to_pk: Buffer.t => Buffer.t =
+    "crypto_sign_ed25519_sk_to_pk";
 };
 
 [@bs.module "pbkdf2"]
 external pbkdf2Sync:
   (string, Buffer.t, [@bs.as 32768] _, [@bs.as 32] _, [@bs.as "sha512"] _) =>
+  Buffer.t =
+  "pbkdf2Sync";
+
+/** Emulates tezos-client `import from mnemonic` seed generation */
+[@bs.module "pbkdf2"]
+external pbkdf2MnemonicLegacy:
+  (string, string, [@bs.as 2048] _, [@bs.as 64] _, [@bs.as "sha512"] _) =>
   Buffer.t =
   "pbkdf2Sync";
 
@@ -108,3 +122,27 @@ let edesk = (path, seed, ~password) => {
       ); // edesk
     });
 };
+
+/** Generates an encrypted secret key from a mnemonic. */
+let edeskLegacy = (~passphrase="", recoveryPhrase, ~password) => {
+  Sodium.ready
+  ->FutureJs.fromPromise(Js.String.make)
+  ->Future.mapOk(() => {
+      let secretKey =
+        pbkdf2MnemonicLegacy(recoveryPhrase, "mnemonic" ++ passphrase)
+        ->Buffer.slice(~start=0, ~end_=32);
+      let salt = Sodium.randombytes_buf(8);
+      let encryptionKey = pbkdf2Sync(password, salt);
+      let encryptedSecretkey =
+        Sodium.crypto_secretbox_easy(
+          secretKey,
+          Buffer.fromLength(24),
+          encryptionKey,
+        );
+      b58cencode(
+        mergebuf(salt, encryptedSecretkey),
+        [|7, 90, 60, 179, 41|],
+      ); // edesk;
+    });
+};
+

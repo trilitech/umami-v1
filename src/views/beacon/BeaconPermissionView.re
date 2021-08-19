@@ -47,7 +47,6 @@ let make =
   let getAccountPublicKey = AccountApiRequest.useGetPublicKey();
   let initAccount = StoreContext.SelectedAccount.useGet();
 
-  let updatePeers = StoreContext.Beacon.Peers.useResetAll();
   let updatePermissions = StoreContext.Beacon.Permissions.useResetAll();
 
   let form =
@@ -75,7 +74,6 @@ let make =
                   }),
                 )
                 ->Future.tapOk(_ => {
-                    updatePeers();
                     updatePermissions();
                     closeAction();
                   })

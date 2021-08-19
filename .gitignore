@@ -9,6 +9,7 @@
 # testing
 /coverage
 /__tests__/__snapshots__
+.test_cache
 
 # production
 /build

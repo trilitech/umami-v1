@@ -80,8 +80,7 @@ let handleCSV = (rows, tokens) =>
 
 let parseCSV = (content, ~tokens) => {
   let rows =
-    parseCSV(content, rowEncoding)
-    ->ResultEx.mapError(e => Error(Parser(e)));
+    parseCSV(content, rowEncoding)->ResultEx.mapError(e => Parser(e));
   switch (rows) {
   | Ok([]) => Error(NoRows)
   | Ok(rows) => handleCSV(rows, tokens)

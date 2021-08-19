@@ -102,13 +102,17 @@ let make =
     ) => {
   let signPayload = BeaconApiRequest.Signature.useSignPayload();
 
-  let onSign = (~password) => {
+  let (loading, setLoading) = React.useState(() => false);
+
+  let onSign = (~signingIntent) => {
+    setLoading(_ => true);
     signPayload(
       ~source=signPayloadRequest.sourceAddress,
-      ~password,
+      ~signingIntent,
       ~payload=signPayloadRequest.payload,
     )
     ->Future.tapOk(signature => {
+        setLoading(_ => false);
         BeaconApiRequest.respond(
           `SignPayloadResponse({
             type_: `sign_payload_response,
@@ -118,9 +122,10 @@ let make =
           }),
         )
         ->Future.tapOk(_ => closeAction())
-        ->ignore
+        ->ignore;
       })
     ->Future.tapError(_error => {
+        setLoading(_ => false);
         BeaconApiRequest.respond(
           `Error({
             type_: `error,
@@ -129,11 +134,12 @@ let make =
           }),
         )
         ->Future.tapOk(_ => closeAction())
-        ->ignore
+        ->ignore;
       });
   };
 
   let onAbort = _ => {
+    setLoading(_ => false);
     BeaconApiRequest.respond(
       `Error({
         type_: `error,
@@ -145,37 +151,31 @@ let make =
     ->ignore;
   };
 
-  let (form, formFieldsAreValids) = PasswordFormView.usePasswordForm(onSign);
+  let ledgerState = React.useState(() => None);
+  let isLedger =
+    StoreContext.Accounts.useIsLedger(signPayloadRequest.sourceAddress);
 
-  <ModalTemplate.Form>
-    <View>
-      <View style=FormStyles.header>
-        <Typography.Headline style=styles##title>
-          I18n.title#beacon_sign_request->React.string
-        </Typography.Headline>
-        <Typography.Overline2
-          colorStyle=`highEmphasis fontWeightStyle=`bold style=styles##dapp>
-          signPayloadRequest.appMetadata.name->React.string
-        </Typography.Overline2>
-        <Typography.Overline3 colorStyle=`highEmphasis style=styles##dapp>
-          I18n.expl#beacon_dapp_sign->React.string
-        </Typography.Overline3>
-      </View>
-      <OperationSummaryView.EntityInfo
-        style=styles##accountInfo
-        title=I18n.title#sender_account
-        address={signPayloadRequest.sourceAddress->Some}
-      />
-      <Payload signPayloadRequest />
-      <PasswordFormView.PasswordField form />
-      <View style=styles##formActionSpaceBetween>
-        <Buttons.SubmitSecondary text=I18n.btn#reject onPress=onAbort />
-        <Buttons.SubmitPrimary
-          text=I18n.btn#sign
-          onPress={_event => {form.submit()}}
-          disabledLook={!formFieldsAreValids}
-        />
-      </View>
+  let sendOperation = intent => onSign(~signingIntent=intent);
+
+  let secondaryButton =
+    <Buttons.SubmitSecondary text=I18n.btn#reject onPress=onAbort />;
+
+  <ModalFormView title=I18n.title#beacon_sign_request>
+    <View style=FormStyles.header>
+      <Typography.Overline2
+        colorStyle=`highEmphasis fontWeightStyle=`bold style=styles##dapp>
+        signPayloadRequest.appMetadata.name->React.string
+      </Typography.Overline2>
+      <Typography.Overline3 colorStyle=`highEmphasis style=styles##dapp>
+        I18n.expl#beacon_dapp_sign->React.string
+      </Typography.Overline3>
     </View>
-  </ModalTemplate.Form>;
+    <OperationSummaryView.EntityInfo
+      style=styles##accountInfo
+      title=I18n.title#sender_account
+      address={signPayloadRequest.sourceAddress->Some}
+    />
+    <Payload signPayloadRequest />
+    <SigningBlock isLedger ledgerState sendOperation loading secondaryButton />
+  </ModalFormView>;
 };

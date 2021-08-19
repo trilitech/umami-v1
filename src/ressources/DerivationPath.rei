@@ -36,10 +36,29 @@ let handleError: error => string;
 // A derivation path
 // see https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki
 type t;
-
 type derivationPath = t;
 
+/* Specific tezos bip-44 derivation path */
+type tezosBip44 = pri (int, int);
+
+/* Converts to string with the 'm/' prefix */
 let toString: t => string;
+
+/* Converts to string ommiting the 'm/' prefix */
+let toStringNoPrefix: t => string;
+
+/* Converts a specific bip44 Tezos path to a more general one */
+let fromTezosBip44: tezosBip44 => t;
+
+/* Converts a general path to specific bip44 Tezos path */
+let convertToTezosBip44: t => Result.t(tezosBip44, error);
+
+let buildTezosBip44: ((int, int)) => tezosBip44;
+
+let build: array(int) => t;
+
+/* Build a path by reading a non-prefixed path string */
+let fromStringNoPrefix: string => Result.t(t, error);
 
 module Pattern: {
   /* A derivation path pattern

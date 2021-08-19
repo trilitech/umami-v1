@@ -88,7 +88,7 @@ let useCleanSdkBaseDir = () => {
   let {content: {sdkBaseDir}} = useContext();
   () => {
     System.Client.resetDir(
-      sdkBaseDir->Option.getWithDefault(ConfigFile.Default.sdkBaseDir),
+      sdkBaseDir->Option.getWithDefault(ConfigFile.Default.sdkBaseDir()),
     )
     ->Future.tapOk(_ => LocalStorage.clear());
   };

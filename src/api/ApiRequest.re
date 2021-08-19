@@ -173,7 +173,7 @@ let useGetter =
       ~toast=true,
       ~errorToString=?,
       ~get:
-         (~settings: TezosClient.AppSettings.t, 'input) =>
+         (~config: ConfigFile.t, 'input) =>
          Future.t(Belt.Result.t('response, 'error)),
       ~kind,
       ~setRequest,
@@ -181,12 +181,12 @@ let useGetter =
     )
     : ('input => Future.t(Belt.Result.t('response, 'error))) => {
   let addLog = LogsContext.useAdd();
-  let settings = SdkContext.useSettings();
+  let config = ConfigContext.useContent();
 
   let get = input => {
     setRequest(updateToLoadingState);
 
-    get(~settings, input)
+    get(~config, input)
     ->logError(addLog(toast), ~toString=?errorToString, kind)
     ->Future.tap(result =>
         setRequest(_ => Done(result, ValidSince(Js.Date.now())))
@@ -229,7 +229,7 @@ let useSetter =
     (
       ~toast=true,
       ~sideEffect=?,
-      ~set: (~settings: _, _) => Future.t(Result.t(_, 'b)),
+      ~set: (~config: _, _) => Future.t(Result.t(_, 'b)),
       ~kind,
       ~keepError=?,
       ~errorToString=?,
@@ -237,11 +237,11 @@ let useSetter =
     ) => {
   let addLog = LogsContext.useAdd();
   let (request, setRequest) = React.useState(_ => NotAsked);
-  let settings = SdkContext.useSettings();
+  let config = ConfigContext.useContent();
 
   let sendRequest = input => {
     setRequest(_ => Loading(None));
-    set(~settings, input)
+    set(~config, input)
     ->logError(
         addLog(toast),
         ~keep=?keepError,

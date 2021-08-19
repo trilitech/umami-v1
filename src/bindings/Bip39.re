@@ -27,3 +27,5 @@
 
 [@bs.module "bip39"] [@bs.scope "wordlists"]
 external wordlistsEnglish: array(string) = "english";
+
+let included = w => wordlistsEnglish->Js.Array2.includes(w);

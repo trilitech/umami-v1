@@ -41,7 +41,7 @@ let styles =
 [@react.component]
 let make = () => {
   let writeConf = ConfigContext.useWrite();
-  let settings = SdkContext.useSettings();
+  let config = ConfigContext.useContent();
   let addToast = LogsContext.useToast();
 
   let form: VerificationForm.api =
@@ -77,8 +77,7 @@ let make = () => {
         },
       ~initialState={
         confirmations:
-          settings.config.confirmations
-          ->Option.mapWithDefault("", Int.toString),
+          config.confirmations->Option.mapWithDefault("", Int.toString),
       },
       ~i18n=FormUtils.i18n,
       (),
