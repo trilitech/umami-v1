@@ -44,7 +44,7 @@ module URL = {
     |> Js.Array.joinWith("&");
 
   let build_explorer_url = (network, path, args) => {
-    AppSettings.explorer(network)
+    ConfigUtils.explorer(network)
     ++ "/"
     ++ path
     ++ (args == [] ? "" : "?" ++ args->build_args);
@@ -63,7 +63,7 @@ module URL = {
   module Explorer = {
     let operations =
         (
-          settings: AppSettings.t,
+          settings: ConfigFile.t,
           account: PublicKeyHash.t,
           ~types: option(array(string))=?,
           ~destination: option(PublicKeyHash.t)=?,
@@ -112,7 +112,7 @@ module URL = {
 
   module Endpoint = {
     let delegates = settings =>
-      AppSettings.endpoint(settings) ++ Path.Endpoint.delegates;
+      ConfigUtils.endpoint(settings) ++ Path.Endpoint.delegates;
   };
 
   module External = {
@@ -134,12 +134,12 @@ let tryMap = (result: Result.t('a, string), transform: 'a => 'b) =>
 
 module type Explorer = {
   let getFromMempool:
-    (PublicKeyHash.t, AppSettings.t, array(Operation.Read.t)) =>
+    (PublicKeyHash.t, ConfigFile.t, array(Operation.Read.t)) =>
     Future.t(Result.t(array(Operation.Read.t), string));
 
   let getOperations:
     (
-      AppSettings.t,
+      ConfigFile.t,
       PublicKeyHash.t,
       ~types: array(string)=?,
       ~destination: PublicKeyHash.t=?,

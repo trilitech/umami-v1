@@ -23,10 +23,6 @@
 /*                                                                           */
 /*****************************************************************************/
 
-type raw = {message: string};
-
-let toRaw: Js.Promise.error => raw = Obj.magic;
-
 let branchRefused = "branch refused";
 let wrongSecretKey = "wrong secret key";
 let badPkh = "Unexpected data (Signature.Public_key_hash)";
@@ -34,6 +30,9 @@ let unregisteredDelegate = "contract.manager.unregistered_delegate";
 let unchangedDelegate = "contract.manager.delegate.unchanged";
 let invalidContract = "Invalid contract notation";
 let emptyTransaction = "contract.empty_transaction";
+let ledgerTimeout = "No Ledger device found (timeout)";
+let ledgerKey = "Unable to retrieve public key";
+let ledgerDenied = "0x6985";
 
 type t =
   | Generic(string)
@@ -43,9 +42,15 @@ type t =
   | EmptyTransaction
   | InvalidContract
   | BranchRefused
-  | BadPkh;
+  | BadPkh
+  | LedgerInitTimeout
+  | LedgerInit(string)
+  | LedgerNotReady
+  | LedgerKeyRetrieval
+  | LedgerDenied
+  | SignerIntentInconsistency;
 
-let parse = e =>
+let parse = (e: RawJsError.t) =>
   switch (e.message) {
   | s when s->Js.String2.includes(wrongSecretKey) => WrongPassword
   | s when s->Js.String2.includes(branchRefused) => BranchRefused
@@ -55,15 +60,11 @@ let parse = e =>
   | s when s->Js.String2.includes(unchangedDelegate) => UnchangedDelegate
   | s when s->Js.String2.includes(invalidContract) => InvalidContract
   | s when s->Js.String2.includes(emptyTransaction) => EmptyTransaction
+  | s when s->Js.String2.includes(ledgerTimeout) => LedgerInitTimeout
+  | s when s->Js.String2.includes(ledgerKey) => LedgerKeyRetrieval
+  | s when s->Js.String2.includes(ledgerDenied) => LedgerDenied
   | s => Generic(Js.String.make(s))
   };
 
-let fromPromiseParsedWrapper = (wrapError, p) =>
-  p->FutureJs.fromPromise(e => {
-    let e = e->toRaw;
-    Js.log(e.message);
-
-    e->parse->wrapError;
-  });
-
-let fromPromiseParsed = res => fromPromiseParsedWrapper(x => x, res);
+let fromPromiseParsed = res =>
+  RawJsError.fromPromiseParsedWrapper(parse, x => x, res);

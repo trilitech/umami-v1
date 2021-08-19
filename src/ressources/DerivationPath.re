@@ -44,10 +44,41 @@ type item =
 
 type t = array(int);
 
+type tezosBip44 = (int, int);
+
 type derivationPath = t;
 
-let toString = impl =>
-  impl->Array.map(i => Format.sprintf("/%d'", i))->Js.String.concatMany("m");
+let toStringNoPrefix = (impl: t): string =>
+  impl->Array.joinWith("/", i => Format.sprintf("%d'", i));
+
+let toString = impl => "m/" ++ impl->toStringNoPrefix;
+
+let fromTezosBip44 = ((i1, i2): tezosBip44) => [|44, 1729, i1, i2|];
+
+let buildTezosBip44 = x => x;
+
+let build = x => x;
+
+let regNoPrefixPath = [%re "/^(\\d+|\\?)'(\\/(\\d+|\\?)')*$/g"];
+let regItem = [%re "/\\d+/g"];
+
+let fromStringNoPrefix = s => {
+  switch (Js.String.match(regNoPrefixPath, s)) {
+  | Some(_) =>
+    Js.String.match(regItem, s)
+    ->Option.getExn // We already matched this pattern above
+    ->Array.map(i
+        // We already matched the int above
+        => i->Int.fromString->Option.getExn)
+    ->Ok
+  | None => Error(ParsingFailed(s))
+  };
+};
+
+let convertToTezosBip44 =
+  fun
+  | [|44, 1729, i1, i2|] => Ok((i1, i2))
+  | _ => Error(NotTezosBip44);
 
 module Pattern = {
   type t = array(item);

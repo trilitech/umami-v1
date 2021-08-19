@@ -229,9 +229,7 @@ let make = () => {
   <LogsContext>
     <ConfigContext>
       <ThemeContext>
-        <SdkContext empty={() => <EmptyAppView />}>
-          <StoreContext> <AppView /> <BeaconConnectRequest /> </StoreContext>
-        </SdkContext>
+        <StoreContext> <AppView /> <BeaconConnectRequest /> </StoreContext>
       </ThemeContext>
     </ConfigContext>
   </LogsContext>;

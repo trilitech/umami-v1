@@ -160,7 +160,7 @@ let make = () => {
   let theme = ThemeContext.useTheme();
   let apiVersion = StoreContext.useApiVersion();
 
-  let settings = SdkContext.useSettings();
+  let config = ConfigContext.useContent();
 
   let displayNotice =
     apiVersion
@@ -168,29 +168,27 @@ let make = () => {
     ->Option.getWithDefault(false);
 
   let (networkText, networkColor) =
-    switch (settings->AppSettings.network) {
+    switch (config->ConfigUtils.network) {
     | `Mainnet => (I18n.t#mainnet, Some(`primary))
-    | `Florencenet => (I18n.t#florencenet, Some(`mediumEmphasis))
     | `Granadanet => (I18n.t#granadanet, Some(`mediumEmphasis))
     | `Custom(name) => (
         name,
-        settings->AppSettings.chainId == Network.mainnetChain
+        config->ConfigUtils.chainId == Network.mainnetChain
           ? Some(`primary) : Some(`mediumEmphasis),
       )
     };
 
   let tag = {
-    let network = settings->AppSettings.network;
+    let network = config->ConfigUtils.network;
     switch (network) {
     | `Mainnet => None
-    | `Florencenet => None
     | `Granadanet => None
-    | `Custom(_) => Some(settings->AppSettings.chainId->Network.getChainName)
+    | `Custom(_) => Some(config->ConfigUtils.chainId->Network.getChainName)
     };
   };
 
   let tagBorderColor = {
-    settings->AppSettings.chainId == Network.mainnetChain
+    config->ConfigUtils.chainId == Network.mainnetChain
       ? theme.colors.textPrimary : theme.colors.textMediumEmphasis;
   };
 

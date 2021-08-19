@@ -46,10 +46,11 @@ let make = (~closeAction) => {
 
   let addLog = LogsContext.useAdd();
 
-  let settings = SdkContext.useSettings();
+  let config = ConfigContext.useContent();
 
   let createSecretWithMnemonic = p =>
-    System.Client.initDir(settings->AppSettings.baseDir)
+    System.Client.initDir(config->ConfigUtils.baseDir)
+    ->Future.mapError(System.File.Error.toString)
     ->Future.flatMapOk(() =>
         createSecretWithMnemonic(p)->Future.mapError(ErrorHandler.toString)
       )
@@ -160,7 +161,6 @@ let make = (~closeAction) => {
            onPressCancel={_ => setFormStep(_ => Step2)}
            createSecretWithMnemonic
            loading
-           existingSecretsCount
          />
        </>;
      }}

@@ -39,178 +39,227 @@ let styles =
     })
   );
 
-[@react.component]
-let make =
-    (
-      ~operationRequest as
-        operationBeaconRequest: ReBeacon.Message.Request.operationRequest,
-      ~closeAction,
-    ) => {
-  let (operationSimulateRequest, sendOperationSimulate) =
-    StoreContext.Operations.useSimulate();
+module type OP = {
+  type t;
+  let make: ReBeacon.Message.Request.operationRequest => t;
+  let makeOperation: t => Operation.t;
+  let makeSimulated: t => Operation.Simulation.t;
+  let makeSummary: (Protocol.simulationResults, t) => React.element;
+};
 
-  let transfer =
-    React.useMemo1(
+module Make = (Op: OP) => {
+  [@react.component]
+  let make =
+      (
+        ~beaconRequest: ReBeacon.Message.Request.operationRequest,
+        ~closeAction,
+      ) => {
+    let (operationApiRequest, sendOperation) =
+      StoreContext.Operations.useCreate();
+
+    let operation =
+      React.useMemo1(() => Op.make(beaconRequest), [|beaconRequest|]);
+
+    let loading = operationApiRequest->ApiRequest.isLoading;
+    let sendOperation = intent =>
+      sendOperation({
+        operation: operation->Op.makeOperation,
+        signingIntent: intent,
+      });
+
+    let (operationSimulateRequest, sendOperationSimulate) =
+      StoreContext.Operations.useSimulate();
+
+    let updateAccount = StoreContext.SelectedAccount.useSet();
+
+    let onAbort = _ =>
+      BeaconApiRequest.respond(
+        `Error({
+          type_: `error,
+          id: beaconRequest.id,
+          errorType: `ABORTED_ERROR,
+        }),
+      )
+      ->Future.tapOk(_ => closeAction())
+      ->ignore;
+
+    let onSimulateError = _ =>
+      BeaconApiRequest.respond(
+        `Error({
+          type_: `error,
+          id: beaconRequest.id,
+          errorType: `UNKNOWN_ERROR,
+        }),
+      )
+      ->Future.tapOk(_ => closeAction())
+      ->ignore;
+
+    let onPressCancel = _ => {
+      closeAction();
+      Routes.(push(Operations));
+    };
+
+    let closing =
+      operationApiRequest->ApiRequest.isDoneOk
+        ? Some(ModalFormView.Close(_ => closeAction())) : None;
+
+    let ledgerState = React.useState(() => None);
+    let isLedger =
+      StoreContext.Accounts.useIsLedger(beaconRequest.sourceAddress);
+
+    let simulatedOperation = Op.makeSimulated(operation);
+
+    React.useEffect1(
       () => {
-        let partialTransactions =
-          operationBeaconRequest.operationDetails
-          ->Array.map(ReBeacon.Message.Request.PartialOperation.classify)
-          ->Array.keepMap(partialOperation =>
-              switch (partialOperation) {
-              | TransactionOperation(transaction) => Some(transaction)
-              | _ => None
-              }
-            );
-        {
-          Transfer.source: operationBeaconRequest.sourceAddress,
-          transfers:
-            partialTransactions
-            ->Array.map(partialTransaction =>
-                {
-                  Transfer.destination: partialTransaction.destination,
-                  amount:
-                    Tez(Tez.fromMutezString(partialTransaction.amount)),
-                  tx_options: {
-                    fee: None,
-                    gasLimit: None,
-                    storageLimit: None,
-                    parameter:
-                      partialTransaction.parameters->Option.map(a => a.value),
-                    entrypoint:
-                      partialTransaction.parameters
-                      ->Option.map(a => a.entrypoint),
-                  },
-                }
-              )
-            ->List.fromArray,
-          common_options: {
-            fee: None,
-            burnCap: None,
-            forceLowFee: None,
-          },
-        };
+        sendOperationSimulate(simulatedOperation)->ignore;
+        None;
       },
-      [|operationBeaconRequest|],
+      [|operation|],
     );
 
-  React.useEffect1(
-    () => {
-      sendOperationSimulate(Operation.Simulation.transaction(transfer, None))
-      ->ignore;
-      None;
-    },
-    [|transfer|],
-  );
+    let sendOperation = i =>
+      sendOperation(i)
+      ->Future.tapOk(hash => {
+          BeaconApiRequest.respond(
+            `OperationResponse({
+              type_: `operation_response,
+              id: beaconRequest.id,
+              transactionHash: hash,
+            }),
+          )
+          ->ignore
+        })
+      ->Future.tapOk(_ => {updateAccount(beaconRequest.sourceAddress)});
 
-  let updateAccount = StoreContext.SelectedAccount.useSet();
-  let (operationApiRequest, sendOperation) =
-    StoreContext.Operations.useCreate();
-  let loading = operationApiRequest->ApiRequest.isLoading;
-
-  let sendTransfer = (~transfer, ~password) => {
-    let operation = Operation.transfer(transfer);
-
-    sendOperation({operation, password})
-    ->Future.tapOk(hash => {
-        BeaconApiRequest.respond(
-          `OperationResponse({
-            type_: `operation_response,
-            id: operationBeaconRequest.id,
-            transactionHash: hash,
-          }),
-        )
-        ->ignore
-      })
-    ->Future.tapOk(_ => {updateAccount(transfer.source)});
-  };
-
-  let onAbort = _ =>
-    BeaconApiRequest.respond(
-      `Error({
-        type_: `error,
-        id: operationBeaconRequest.id,
-        errorType: `ABORTED_ERROR,
-      }),
-    )
-    ->Future.tapOk(_ => closeAction())
-    ->ignore;
-
-  let onSimulateError = _ =>
-    BeaconApiRequest.respond(
-      `Error({
-        type_: `error,
-        id: operationBeaconRequest.id,
-        errorType: `UNKNOWN_ERROR,
-      }),
-    )
-    ->Future.tapOk(_ => closeAction())
-    ->ignore;
-
-  let onPressCancel = _ => {
-    closeAction();
-    Routes.(push(Operations));
-  };
-
-  let closeButton =
-    operationApiRequest->ApiRequest.isDoneOk
-      ? Some(
-          <ModalTemplate.HeaderButtons.Close onPress={_ => closeAction()} />,
-        )
-      : None;
-
-  let (form, formFieldsAreValids) =
-    PasswordFormView.usePasswordForm(sendTransfer(~transfer));
-
-  <ModalTemplate.Form headerRight=?closeButton>
-    {switch (operationApiRequest) {
-     | Done(Ok(hash), _) =>
-       <SubmittedView hash onPressCancel submitText=I18n.btn#go_operations />
-     | _ =>
-       <>
-         <View style=FormStyles.header>
-           <Typography.Headline style=styles##title>
-             I18n.title#confirmation->React.string
-           </Typography.Headline>
-           <Typography.Overline2
-             colorStyle=`highEmphasis fontWeightStyle=`bold style=styles##dapp>
-             operationBeaconRequest.appMetadata.name->React.string
-           </Typography.Overline2>
-           <Typography.Overline3 colorStyle=`highEmphasis style=styles##dapp>
-             I18n.expl#beacon_operation->React.string
-           </Typography.Overline3>
-         </View>
-         {switch (operationSimulateRequest) {
-          | NotAsked
-          | Loading(_) => <LoadingView style=styles##loading />
-          | Done(Error(error), _) =>
-            <>
-              <ErrorView error={error->ErrorHandler.toString} />
-              <View style=styles##formActionSpaceBetween>
-                <Buttons.SubmitSecondary
-                  text=I18n.btn#close
-                  onPress=onSimulateError
-                />
-              </View>
-            </>
-          | Done(Ok(dryRun), _) =>
-            <>
-              <OperationSummaryView.Transactions transfer dryRun />
-              <PasswordFormView.PasswordField form />
-              <View style=styles##formActionSpaceBetween>
+    <ModalFormView title=I18n.title#confirmation ?closing>
+      {switch (operationApiRequest) {
+       | Done(Ok(hash), _) =>
+         <SubmittedView hash onPressCancel submitText=I18n.btn#go_operations />
+       | _ =>
+         <>
+           <View style=FormStyles.header>
+             <Typography.Overline2
+               colorStyle=`highEmphasis
+               fontWeightStyle=`bold
+               style=styles##dapp>
+               beaconRequest.appMetadata.name->React.string
+             </Typography.Overline2>
+             <Typography.Overline3 colorStyle=`highEmphasis style=styles##dapp>
+               I18n.expl#beacon_operation->React.string
+             </Typography.Overline3>
+           </View>
+           {switch (operationSimulateRequest) {
+            | ApiRequest.NotAsked
+            | Loading(_) => <LoadingView style=styles##loading />
+            | Done(Error(error), _) =>
+              <>
+                <ErrorView error={error->ErrorHandler.toString} />
+                <View style=styles##formActionSpaceBetween>
+                  <Buttons.SubmitSecondary
+                    text=I18n.btn#close
+                    onPress=onSimulateError
+                  />
+                </View>
+              </>
+            | Done(Ok(dryRun), _) =>
+              let secondaryButton =
                 <Buttons.SubmitSecondary
                   text=I18n.btn#reject
                   onPress=onAbort
-                />
-                <Buttons.SubmitPrimary
-                  text=I18n.btn#confirm
-                  onPress={_event => {form.submit()}}
+                />;
+              <>
+                {Op.makeSummary(dryRun, operation)}
+                <SigningBlock
+                  isLedger
+                  ledgerState
+                  sendOperation
                   loading
-                  disabledLook={!formFieldsAreValids}
+                  secondaryButton
                 />
-              </View>
-            </>
-          }}
-       </>
-     }}
-  </ModalTemplate.Form>;
+              </>;
+            }}
+         </>
+       }}
+    </ModalFormView>;
+  };
 };
+
+module Delegate =
+  Make({
+    type t = Protocol.delegation;
+
+    let make = (beaconRequest: ReBeacon.Message.Request.operationRequest) => {
+      Protocol.makeDelegate(
+        ~source=beaconRequest.sourceAddress,
+        ~delegate=
+          beaconRequest.operationDetails
+          ->Array.get(0)
+          ->Option.map(ReBeacon.Message.Request.PartialOperation.classify)
+          ->Option.flatMap(operationDetail =>
+              switch (operationDetail) {
+              | Delegation(delegation) => delegation.delegate
+              | _ => None
+              }
+            ),
+        (),
+      );
+    };
+
+    let makeSimulated = o => o->Operation.Simulation.delegation;
+
+    let makeOperation = Operation.delegation;
+
+    let makeSummary = (dryRun, o) =>
+      <OperationSummaryView.Delegate delegation=o dryRun />;
+  });
+
+module Transfer =
+  Make({
+    type t = Transfer.t;
+
+    let make = (beaconRequest: ReBeacon.Message.Request.operationRequest) => {
+      let partialTransactions =
+        beaconRequest.operationDetails
+        ->Array.map(ReBeacon.Message.Request.PartialOperation.classify)
+        ->Array.keepMap(partialOperation =>
+            switch (partialOperation) {
+            | TransactionOperation(transaction) => Some(transaction)
+            | _ => None
+            }
+          );
+      {
+        Transfer.source: beaconRequest.sourceAddress,
+        transfers:
+          partialTransactions
+          ->Array.map(partialTransaction =>
+              {
+                Transfer.destination: partialTransaction.destination,
+                amount: Tez(Tez.fromMutezString(partialTransaction.amount)),
+                tx_options: {
+                  fee: None,
+                  gasLimit: None,
+                  storageLimit: None,
+                  parameter:
+                    partialTransaction.parameters->Option.map(a => a.value),
+                  entrypoint:
+                    partialTransaction.parameters
+                    ->Option.map(a => a.entrypoint),
+                },
+              }
+            )
+          ->List.fromArray,
+        common_options: {
+          fee: None,
+          burnCap: None,
+          forceLowFee: None,
+        },
+      };
+    };
+
+    let makeOperation = Operation.transfer;
+
+    let makeSimulated = o => o->Operation.Simulation.transaction(None);
+
+    let makeSummary = (dryRun, o) =>
+      <OperationSummaryView.Transactions transfer=o dryRun />;
+  });

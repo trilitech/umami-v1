@@ -67,14 +67,18 @@ let passwordLengthCheck = (values: StateLenses.state) => {
 [@react.component]
 let make =
     (
-      ~mnemonic,
+      ~mnemonic: array(string),
       ~derivationPath,
       ~onPressCancel,
       ~createSecretWithMnemonic,
       ~loading,
-      ~existingSecretsCount=0,
     ) => {
-  let displayConfirmPassword = existingSecretsCount < 1;
+  let secrets = StoreContext.Secrets.useGetAll();
+
+  let existingNonLedgerSecretsCount =
+    secrets->Array.keep(s => s.secret.kind != Ledger)->Array.length;
+
+  let displayConfirmPassword = existingNonLedgerSecretsCount < 1;
   let form: CreatePasswordForm.api =
     CreatePasswordForm.use(
       ~validationStrategy=OnDemand,
@@ -95,11 +99,11 @@ let make =
       },
       ~onSubmit=
         ({state}) => {
-          let mnemonics = mnemonic->Js.Array2.joinWith(" ");
           createSecretWithMnemonic(
             SecretApiRequest.{
-              name: "Secret " ++ (existingSecretsCount + 1)->string_of_int,
-              mnemonics,
+              name:
+                "Secret " ++ (existingNonLedgerSecretsCount + 1)->string_of_int,
+              mnemonic,
               derivationPath,
               password: state.values.password,
             },

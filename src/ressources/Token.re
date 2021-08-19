@@ -40,7 +40,7 @@ module Decode = {
       symbol: json |> field("symbol", string),
       chain:
         (json |> field("chain", optional(string)))
-        ->Option.getWithDefault(Network.florencenetChain),
+        ->Option.getWithDefault(Network.granadanetChain),
     };
 
   let array = json => json |> Json.Decode.array(record);

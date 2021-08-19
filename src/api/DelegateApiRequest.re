@@ -27,8 +27,8 @@ include ApiRequest;
 
 /* Get delegate */
 let useLoad = (~requestState, ~address: PublicKeyHash.t) => {
-  let get = (~settings, address: PublicKeyHash.t) =>
-    NodeAPI.Delegate.getForAccount(settings, address);
+  let get = (~config, address: PublicKeyHash.t) =>
+    NodeAPI.Delegate.getForAccount(config, address);
 
   ApiRequest.useLoader(~get, ~kind=Logs.Delegate, ~requestState, address);
 };
@@ -36,8 +36,8 @@ let useLoad = (~requestState, ~address: PublicKeyHash.t) => {
 /* Get delegate info */
 
 let useLoadInfo = (~requestState, ~address: PublicKeyHash.t) => {
-  let get = (~settings, address) =>
-    NodeAPI.Delegate.getDelegationInfoForAccount(settings, address);
+  let get = (~config, address) =>
+    NodeAPI.Delegate.getDelegationInfoForAccount(config, address);
 
   ApiRequest.useLoader(~get, ~kind=Logs.Delegate, ~requestState, address);
 };
@@ -45,7 +45,7 @@ let useLoadInfo = (~requestState, ~address: PublicKeyHash.t) => {
 /* Get Bakers */
 
 let useLoadBakers = (~requestState) => {
-  let get = (~settings, ()) => NodeAPI.Delegate.getBakers(settings);
+  let get = (~config, ()) => NodeAPI.Delegate.getBakers(config);
 
   ApiRequest.useLoader(~get, ~kind=Logs.Delegate, ~requestState, ());
 };

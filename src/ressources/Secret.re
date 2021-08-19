@@ -23,11 +23,17 @@
 /*                                                                           */
 /*****************************************************************************/
 
+type kind =
+  | Mnemonics
+  | Ledger;
+
 type t = {
   name: string,
+  kind,
   derivationPath: DerivationPath.Pattern.t,
+  derivationScheme: Wallet.Ledger.scheme,
   addresses: Js.Array.t(PublicKeyHash.t),
-  legacyAddress: option(PublicKeyHash.t),
+  masterPublicKey: option(PublicKeyHash.t),
 };
 
 type derived = {

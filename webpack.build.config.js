@@ -62,4 +62,7 @@ module.exports = smp.wrap({
   output: {
     path: path.resolve(__dirname, 'build'),
   },
+  externals: {
+    '@ledgerhq/hw-transport-node-hid-singleton': 'commonjs @ledgerhq/hw-transport-node-hid-singleton'
+  }
 });

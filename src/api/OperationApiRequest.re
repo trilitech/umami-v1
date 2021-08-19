@@ -29,7 +29,7 @@ include ApiRequest;
 
 type injection = {
   operation: Operation.t,
-  password: string,
+  signingIntent: TaquitoAPI.Signer.intent,
 };
 
 type operationsResponse = {
@@ -37,43 +37,47 @@ type operationsResponse = {
   currentLevel: int,
 };
 
-let transfer = (operation, password) => {
+let transfer = (operation, signingIntent) => {
   operation: Operation.transaction(operation),
-  password,
+  signingIntent,
 };
 
-let delegate = (d, password) => {
+let delegate = (d, signingIntent) => {
   operation: Operation.delegation(d),
-
-  password,
+  signingIntent,
 };
 
-let token = (operation, password) => {
+let token = (operation, signingIntent) => {
   operation: Token(operation),
-  password,
+  signingIntent,
 };
 
 let errorToString = ErrorHandler.toString;
 
 let filterOutFormError =
   fun
+  | ErrorHandler.Taquito(LedgerInitTimeout)
+  | ErrorHandler.Taquito(LedgerInit(_))
+  | ErrorHandler.Taquito(LedgerKeyRetrieval)
+  | ErrorHandler.Taquito(LedgerDenied)
+  | ErrorHandler.Taquito(LedgerNotReady)
   | ErrorHandler.Taquito(WrongPassword) => false
   | _ => true;
 
 let useCreate = (~sideEffect=?, ()) => {
-  let set = (~settings, {operation, password}) => {
+  let set = (~config, {operation, signingIntent}) => {
     switch (operation) {
     | Protocol(operation) =>
-      settings->NodeAPI.Operation.run(operation, ~password)
+      config->NodeAPI.Operation.run(operation, ~signingIntent)
 
     | Token(operation) =>
-      settings->NodeAPI.Tokens.inject(operation, ~password)
+      config->NodeAPI.Tokens.inject(operation, ~signingIntent)
 
     | Transfer(t) =>
-      settings->NodeAPI.Operation.batch(
+      config->NodeAPI.Operation.batch(
         t.transfers,
         ~source=t.source,
-        ~password,
+        ~signingIntent,
       )
     };
   };
@@ -92,14 +96,14 @@ let useCreate = (~sideEffect=?, ()) => {
 /* Simulate */
 
 let useSimulate = () => {
-  let set = (~settings, operation) =>
+  let set = (~config, operation) =>
     switch (operation) {
     | Operation.Simulation.Protocol(operation, index) =>
-      settings->NodeAPI.Simulation.run(~index?, operation)
+      config->NodeAPI.Simulation.run(~index?, operation)
     | Operation.Simulation.Token(operation, index) =>
-      settings->NodeAPI.Tokens.simulate(~index?, operation)
+      config->NodeAPI.Tokens.simulate(~index?, operation)
     | Operation.Simulation.Transfer(t, index) =>
-      settings->NodeAPI.Simulation.batch(
+      config->NodeAPI.Simulation.batch(
         t.transfers,
         ~source=t.source,
         ~index?,
@@ -116,19 +120,17 @@ let useSimulate = () => {
   );
 };
 
-let waitForConfirmation = (settings, hash) => {
-  settings
-  ->AppSettings.endpoint
-  ->TaquitoAPI.Operations.confirmation(~hash, ());
+let waitForConfirmation = (config, hash) => {
+  config->ConfigUtils.endpoint->TaquitoAPI.Operations.confirmation(~hash, ());
 };
 
 /* Get list */
 
 let useLoad =
     (~requestState, ~limit=?, ~types=?, ~address: PublicKeyHash.t, ()) => {
-  let get = (~settings, address) => {
+  let get = (~config, address) => {
     let operations =
-      settings->ServerAPI.Explorer.getOperations(
+      config->ServerAPI.Explorer.getOperations(
         address,
         ~limit?,
         ~types?,
@@ -136,7 +138,7 @@ let useLoad =
         (),
       );
     let currentLevel =
-      Network.monitor(AppSettings.explorer(settings))
+      Network.monitor(ConfigUtils.explorer(config))
       ->Future.mapOk(monitor => monitor.nodeLastBlock)
       ->Future.mapError(Network.errorMsg);
 

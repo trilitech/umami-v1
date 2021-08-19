@@ -25,13 +25,13 @@
 
 %raw
 "
-var electron = window.require('electron');
+var electron = require('electron');
 var { app, Menu } = electron.remote;
 var shell = electron.shell;
-var process = window.require('process');
-var OS = window.require('os');
-var fs = window.require('fs');
-var path = window.require('path');
+var process = require('process');
+var OS = require('os');
+var fs = require('fs');
+var path = require('path');
 
 ";
 
@@ -91,8 +91,24 @@ let appDir = () => Path.Ops.(Path.getAppData() / (!getName()));
 let homeDir = () => os##homedir();
 
 module File = {
-  type error = {message: string};
-  let mapError = e => e.message;
+  module Error = {
+    type t =
+      | NoSuchFile(string)
+      | Generic(string);
+
+    let no_such_file = "no such file";
+
+    let parse = (e: RawJsError.t) =>
+      switch (e.message) {
+      | s when s->Js.String2.includes(no_such_file) => NoSuchFile(s)
+      | s => Generic(s)
+      };
+
+    let toString =
+      fun
+      | NoSuchFile(s)
+      | Generic(s) => s;
+  };
 
   type encoding =
     | Utf8
@@ -109,14 +125,14 @@ module File = {
     (
       ~name: Path.t,
       ~encoding: string,
-      (Js.Nullable.t(error), string) => unit
+      (Js.Nullable.t(RawJsError.t), string) => unit
     ) =>
     unit =
     "readFile";
 
   let read = (~encoding=Utf8, name) => {
     let encoding = string_of_encoding(encoding);
-    readFile(~name, ~encoding)->FutureEx.fromCallback(mapError);
+    readFile(~name, ~encoding)->FutureEx.fromCallback(Error.parse);
   };
 
   [@bs.scope "fs"] [@bs.val]
@@ -125,7 +141,7 @@ module File = {
       ~name: Path.t,
       ~content: string,
       ~encoding: string,
-      Js.Nullable.t(error) => unit
+      Js.Nullable.t(RawJsError.t) => unit
     ) =>
     unit =
     "writeFile";
@@ -133,7 +149,7 @@ module File = {
   let write = (~encoding=Utf8, ~name, content) => {
     let encoding = string_of_encoding(encoding);
     writeFile(~name, ~content, ~encoding)
-    ->FutureEx.fromUnitCallback(mapError);
+    ->FutureEx.fromUnitCallback(Error.parse);
   };
 
   module CopyMode: {
@@ -159,34 +175,39 @@ module File = {
       ~name: Path.t,
       ~dest: Path.t,
       ~mode: CopyMode.t,
-      Js.Nullable.t(error) => unit
+      Js.Nullable.t(RawJsError.t) => unit
     ) =>
     unit =
     "copyFile";
 
   let copy = (~name, ~dest, ~mode) => {
-    copyFile(~name, ~dest, ~mode)->FutureEx.fromUnitCallback(mapError);
+    copyFile(~name, ~dest, ~mode)->FutureEx.fromUnitCallback(Error.parse);
   };
 
   [@bs.scope "fs"] [@bs.val]
-  external unlink: (~name: Path.t, Js.Nullable.t(error) => unit) => unit =
+  external unlink:
+    (~name: Path.t, Js.Nullable.t(RawJsError.t) => unit) => unit =
     "unlink";
 
   let rm = (~name) => {
-    unlink(~name)->FutureEx.fromUnitCallback(mapError);
+    unlink(~name)->FutureEx.fromUnitCallback(Error.parse);
   };
 
   type rmdirOptions = {recursive: bool};
 
   [@bs.scope "fs"] [@bs.val]
   external rmdir:
-    (~path: Path.t, ~options: rmdirOptions, Js.Nullable.t(error) => unit) =>
+    (
+      ~path: Path.t,
+      ~options: rmdirOptions,
+      Js.Nullable.t(RawJsError.t) => unit
+    ) =>
     unit =
     "rmdir";
 
   let rmdir = path => {
     rmdir(~path, ~options={recursive: true})
-    ->FutureEx.fromUnitCallback(mapError);
+    ->FutureEx.fromUnitCallback(Error.parse);
   };
 
   type constant;
@@ -200,12 +221,17 @@ module File = {
 
   [@bs.scope "fs"] [@bs.val]
   external access:
-    (~path: Path.t, ~constant: constant, Js.Nullable.t(error) => unit) => unit =
+    (
+      ~path: Path.t,
+      ~constant: constant,
+      Js.Nullable.t(RawJsError.t) => unit
+    ) =>
+    unit =
     "access";
 
   let access = path =>
     access(~path, ~constant=constants.wOk)
-    ->FutureEx.fromUnitCallback(mapError)
+    ->FutureEx.fromUnitCallback(Error.parse)
     ->Future.map(r => r->Result.isOk);
 
   let initIfNotExists = (~encoding=?, ~path, content) => {
@@ -216,9 +242,10 @@ module File = {
   };
 
   [@bs.scope "fs"] [@bs.val]
-  external mkdir: (Path.t, Js.Nullable.t(error) => unit) => unit = "mkdir";
+  external mkdir: (Path.t, Js.Nullable.t(RawJsError.t) => unit) => unit =
+    "mkdir";
 
-  let mkdir = path => mkdir(path)->FutureEx.fromUnitCallback(mapError);
+  let mkdir = path => mkdir(path)->FutureEx.fromUnitCallback(Error.parse);
 
   let initDirIfNotExists = (path: Path.t) => {
     access(path)

@@ -43,6 +43,12 @@ module Balance: {
     Future.t(Result.t(Tez.t, ErrorHandler.t));
 };
 
+module Signer: {
+  type intent =
+    | LedgerCallback(unit => unit)
+    | Password(string);
+};
+
 module Delegate: {
   /* Retrieve the delegate of a given public key hash, returns None if the
      account is not delegated */
@@ -57,7 +63,7 @@ module Delegate: {
       ~baseDir: System.Path.t,
       ~source: PublicKeyHash.t,
       ~delegate: option(PublicKeyHash.t),
-      ~password: string,
+      ~signingIntent: Signer.intent,
       ~fee: Tez.t=?,
       unit
     ) =>
@@ -115,7 +121,7 @@ module Transfer: {
                       ),
                     ),
                   ),
-      ~password: string,
+      ~signingIntent: Signer.intent,
       unit
     ) =>
     Future.t(Result.t(ReTaquito.Toolkit.operationResult, ErrorHandler.t));
@@ -151,7 +157,7 @@ module Signature: {
     (
       ~baseDir: System.Path.t,
       ~source: Wallet.PkhAlias.t,
-      ~password: string,
+      ~signingIntent: Signer.intent,
       ~payload: string
     ) =>
     Future.t(Result.t(ReTaquitoSigner.signature, ErrorHandler.t));

@@ -28,18 +28,29 @@
 /* Get */
 
 let useLoad = requestState => {
-  let get = (~settings, ()) =>
-    WalletAPI.Accounts.get(~settings)
-    ->Future.mapOk(response => {
-        response
-        ->Array.map(((name, address)) =>
-            ((address :> string), Account.{name, address, ledger: false})
-          )
-        ->Array.reverse
-        ->Map.String.fromArray
-      });
+  let get = (~config, ()) =>
+    WalletAPI.Accounts.get(~config)
+    ->Future.map(
+        fun
+        | Ok(response) =>
+          response
+          ->Array.map(((name, address)) =>
+              ((address :> string), Account.{name, address})
+            )
+          ->Array.reverse
+          ->Map.String.fromArray
+          ->Ok
+        | Error(Wallet(File(NoSuchFile(_)))) => Map.String.empty->Ok
+        | Error(_) as e => e,
+      );
 
-  ApiRequest.useLoader(~get, ~kind=Logs.Account, ~requestState, ());
+  ApiRequest.useLoader(
+    ~get,
+    ~kind=Logs.Account,
+    ~errorToString=ErrorHandler.toString,
+    ~requestState,
+    (),
+  );
 };
 
 /* Set */
@@ -47,8 +58,8 @@ let useLoad = requestState => {
 let useUpdate =
   ApiRequest.useSetter(
     ~set=
-      (~settings, renaming: TezosSDK.renameParams) =>
-        WalletAPI.Aliases.rename(~settings, renaming),
+      (~config, renaming: WalletAPI.Aliases.renameParams) =>
+        WalletAPI.Aliases.rename(~config, renaming),
     ~kind=Logs.Account,
     ~errorToString=ErrorHandler.toString,
   );
@@ -63,8 +74,7 @@ let useDelete =
 /* Other */
 
 let useGetPublicKey = () => {
-  let settings = SdkContext.useSettings();
+  let config = ConfigContext.useContent();
 
-  (account: Account.t) =>
-    WalletAPI.Accounts.getPublicKey(~settings, ~account);
+  (account: Account.t) => WalletAPI.Accounts.getPublicKey(~config, ~account);
 };

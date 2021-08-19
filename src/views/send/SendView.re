@@ -272,10 +272,7 @@ module Form = {
       <>
         <ReactFlipToolkit.FlippedView flipId="form">
           <View style=FormStyles.header>
-            <Typography.Headline>
-              I18n.title#send->React.string
-            </Typography.Headline>
-            <Typography.Overline1 style=FormStyles.subtitle>
+            <Typography.Overline1>
               I18n.title#send_many_transactions->React.string
             </Typography.Overline1>
             <Typography.Body2 style=FormStyles.subtitle>
@@ -308,7 +305,7 @@ module Form = {
             error={form.getFieldError(Field(Recipient))}
           />
           <SwitchItem
-            label=I18n.btn#advanced_options
+            label=I18n.label#advanced_options
             value=advancedOptionOpened
             setValue=setAdvancedOptionOpened
             disabled=advancedOptionsDisabled
@@ -420,10 +417,10 @@ let make = (~closeAction) => {
 
   let (operationRequest, sendOperation) = StoreContext.Operations.useCreate();
 
-  let sendTransfer = (~transfer, ~password) => {
+  let sendTransfer = (~transfer, signingIntent) => {
     let operation = Operation.transfer(transfer);
 
-    sendOperation({operation, password})
+    sendOperation({operation, signingIntent})
     ->Future.tapOk(hash => {setModalStep(_ => SubmittedStep(hash))})
     ->Future.tapOk(_ => {updateAccount(transfer.source)});
   };
@@ -503,10 +500,19 @@ let make = (~closeAction) => {
     List.length(batch) == 1 ? setModalStep(_ => SendStep) : ();
   };
 
+  let (ledger, _) as ledgerState = React.useState(() => None);
+
   let closing =
-    switch (form.formState, modalStep) {
-    | (Pristine, _) when batch == [] => ModalFormView.Close(closeAction)
-    | (_, SubmittedStep(_)) => ModalFormView.Close(closeAction)
+    switch (
+      form.formState,
+      modalStep,
+      ledger: option(SigningBlock.LedgerView.state),
+    ) {
+    | (_, PasswordStep(_, _), Some(WaitForConfirm)) =>
+      ModalFormView.Deny(I18n.tooltip#reject_on_ledger)
+
+    | (Pristine, _, _) when batch == [] => ModalFormView.Close(closeAction)
+    | (_, SubmittedStep(_), _) => ModalFormView.Close(closeAction)
     | _ =>
       ModalFormView.confirm(~actionText=I18n.btn#send_cancel, closeAction)
     };
@@ -528,10 +534,19 @@ let make = (~closeAction) => {
   let loadingSimulate = operationSimulateRequest->ApiRequest.isLoading;
   let loading = operationRequest->ApiRequest.isLoading;
 
+  let title =
+    switch (modalStep) {
+    | SendStep
+    | EditStep(_) => Some(I18n.title#send)
+    | BatchStep => Some(I18n.title#batch)
+    | PasswordStep(_, _) => Some(I18n.title#confirmation)
+    | SubmittedStep(_) => None
+    };
+
   <ReactFlipToolkit.Flipper
     flipKey={advancedOptionsOpened->string_of_bool ++ modalStep->stepToString}>
     <ReactFlipToolkit.FlippedView flipId="modal">
-      <ModalFormView back closing>
+      <ModalFormView ?title back closing>
         <ReactFlipToolkit.FlippedView.Inverse inverseFlipId="modal">
           {switch (modalStep) {
            | SubmittedStep(hash) =>
@@ -578,8 +593,12 @@ let make = (~closeAction) => {
              />;
            | PasswordStep(transfer, dryRun) =>
              <SignOperationView
-               title=I18n.title#confirmation
-               subtitle=I18n.expl#confirm_operation
+               source={transfer.source}
+               ledgerState
+               subtitle=(
+                 I18n.expl#confirm_operation,
+                 I18n.expl#hardware_wallet_confirm_operation,
+               )
                sendOperation={sendTransfer(~transfer)}
                loading>
                <OperationSummaryView.Transactions transfer dryRun />

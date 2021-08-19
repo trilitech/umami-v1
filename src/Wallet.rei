@@ -25,7 +25,9 @@
 
 type error =
   | Generic(string)
-  | KeyNotFound;
+  | File(System.File.Error.t)
+  | KeyNotFound
+  | LedgerParsingError(string);
 
 /** Value and file associated to a kind of alias. */
 module type AliasType = {
@@ -53,6 +55,7 @@ module type AliasesMakerType = {
   let filter: (t, alias => bool) => t;
   let remove: (t, key) => t;
   let addOrReplace: (t, key, value) => t;
+  let rename: (t, ~oldName: key, ~newName: key) => t;
 };
 
 /** Secret key representation */
@@ -73,6 +76,21 @@ module PkhAlias: {type t = PublicKeyHash.t;};
 module PkhAliases:
   AliasesMakerType with type key := string and type value := PkhAlias.t;
 
+/** Add or replace a public key hash alias. */
+let addOrReplacePkhAlias:
+  (~dirpath: System.Path.t, ~alias: string, ~pkh: PkhAlias.t, unit) =>
+  Future.t(Result.t(unit, error));
+
+/** Remove an alias with its associated pkh. */
+let removePkhAlias:
+  (~dirpath: System.Path.t, ~alias: string, unit) =>
+  Future.t(Result.t(unit, error));
+
+/** Rename an alias with its associated public, private and pkh. */
+let renamePkhAlias:
+  (~dirpath: System.Path.t, ~oldName: string, ~newName: string, unit) =>
+  Future.t(Result.t(unit, error));
+
 /** Add or replace an alias with its associated public, private and pkh. */
 let addOrReplaceAlias:
   (
@@ -88,6 +106,11 @@ let addOrReplaceAlias:
 /** Remove an alias from the filesystem. */
 let removeAlias:
   (~dirpath: System.Path.t, ~alias: string, unit) =>
+  Future.t(Result.t(unit, error));
+
+/** Rename an alias with its associated public, private and pkh. */
+let renameAlias:
+  (~dirpath: System.Path.t, ~oldName: string, ~newName: string, unit) =>
   Future.t(Result.t(unit, error));
 
 type kind =
@@ -109,3 +132,64 @@ let aliasFromPkh:
 let pkFromAlias:
   (~dirpath: System.Path.t, ~alias: string, unit) =>
   Future.t(Result.t(string, error));
+
+let mnemonicPkValue: string => PkAlias.t;
+
+let ledgerPkValue: (string, string) => PkAlias.t;
+
+module Ledger: {
+  type error =
+    | InvalidPathSize(array(int))
+    | InvalidIndex(int, string)
+    | InvalidScheme(string)
+    | InvalidEncoding(string)
+    | InvalidLedger(string)
+    | DerivationPathError(DerivationPath.error);
+
+  type scheme =
+    | ED25519
+    | SECP256K1
+    | P256;
+
+  type implicit =
+    | TZ1
+    | TZ2
+    | TZ3;
+
+  type kind =
+    | Implicit(implicit)
+    | KT1;
+
+  let implicitFromScheme: scheme => implicit;
+
+  let kindToString: kind => string;
+
+  type t = {
+    path: DerivationPath.tezosBip44,
+    scheme,
+  };
+
+  /** The "master key" of a ledger is a way to give it an identity:
+     it's the public key at path `44'/1729'` and scheme ED25519. This
+     specific public key hash is used by `tezos-client` to give it its
+     "animal" prefix. The masterkey is required to encode the "private
+     key". */
+  type masterKey = PublicKeyHash.t;
+
+  let masterKeyPath: DerivationPath.t;
+  let masterKeyScheme: scheme;
+
+  let schemeToString: scheme => string;
+  let schemeFromString: string => Result.t(scheme, error);
+
+  module Decode: {
+    let fromSecretKey:
+      (SecretAlias.t, ~ledgerBasePkh: PublicKeyHash.t) => result(t, error);
+  };
+
+  module Encode: {
+    let toSecretKey: (t, ~ledgerBasePkh: PublicKeyHash.t) => SecretAlias.t;
+  };
+};
+
+let convertLedgerError: Ledger.error => error;
