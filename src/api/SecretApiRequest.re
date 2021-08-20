@@ -177,7 +177,7 @@ let useLedgerScan =
 
 type mnemonicScanInput = {
   index: int,
-  accountsNumber: int,
+  accounts: list(string),
   password: string,
 };
 

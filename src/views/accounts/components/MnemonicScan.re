@@ -37,14 +37,14 @@ let make = (~closeAction, ~index, ~secret) => {
 
   let (scanRequest, scan) = StoreContext.Secrets.useMnemonicScan();
 
-  let onFoundKey = (~start, i, address) =>
+  let onFoundKey = (~start, i, address, encryptedSk) =>
     setAccounts(accounts =>
-      if (accounts->List.has(address, (==))) {
+      if (accounts->List.hasAssoc(address, (==))) {
         accounts;
       } else {
         let accounts = i == start ? [] : accounts;
 
-        [address, ...accounts];
+        [(address, encryptedSk), ...accounts];
       }
     );
 
@@ -63,11 +63,7 @@ let make = (~closeAction, ~index, ~secret) => {
 
   let submitAccounts = (~password, ()) => {
     scan(
-      SecretApiRequest.{
-        index,
-        accountsNumber: List.length(accounts),
-        password,
-      },
+      SecretApiRequest.{index, accounts: List.map(accounts, snd), password},
     )
     ->Future.tapOk(_ => {closeAction()})
     ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
@@ -102,7 +98,7 @@ let make = (~closeAction, ~index, ~secret) => {
          derivationChangedState
          path={secret.Secret.derivationPath}
          scheme={secret.Secret.derivationScheme}
-         accounts
+         accounts={accounts->List.map(fst)}
          next={submitAccounts(~password)}
          nextAdvancedOptions=None
        />

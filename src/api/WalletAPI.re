@@ -419,9 +419,9 @@ module Accounts = {
       let rec loop = n => {
         let path = path->DerivationPath.Pattern.implement(n);
 
-        let%FRes address = getKey(path, schema);
+        let%FRes (address, encryptedSk) = getKey(path, schema);
         let found = () => {
-          onFoundKey(n, address);
+          onFoundKey(n, address, encryptedSk);
           loop(n + 1);
         };
         let%FRes used = used(config, address);
@@ -441,32 +441,36 @@ module Accounts = {
       runStream(
         ~config,
         ~startIndex,
-        ~onFoundKey,
+        ~onFoundKey=(i, pkh, _) => onFoundKey(i, pkh),
         path,
         schema,
         (path, schema) => {
           let%FRes tr = LedgerAPI.init();
-          LedgerAPI.getKey(~prompt=false, tr, path, schema);
+          let%FResMap pkh = LedgerAPI.getKey(~prompt=false, tr, path, schema);
+          (pkh, ());
         },
       );
 
     let getSeedKey = (~recoveryPhrase, ~password, path, _) => {
-      let%FRes secretKey =
+      let%FRes encryptedSecretKey =
         path
         ->HD.edesk(recoveryPhrase->HD.seed, ~password)
         ->Future.mapError(e => ErrorHandler.WalletAPI(Generic(e)));
 
       let%FRes signer =
         ReTaquitoSigner.MemorySigner.create(
-          ~secretKey,
+          ~secretKey=encryptedSecretKey,
           ~passphrase=password,
           (),
         )
         ->Future.mapError(e => e->ErrorHandler.Taquito);
 
-      signer
-      ->ReTaquitoSigner.publicKeyHash
-      ->Future.mapError(e => e->ErrorHandler.Taquito);
+      let%FResMap pkh =
+        signer
+        ->ReTaquitoSigner.publicKeyHash
+        ->Future.mapError(e => e->ErrorHandler.Taquito);
+
+      (pkh, encryptedSecretKey);
     };
 
     let runStreamSeed =

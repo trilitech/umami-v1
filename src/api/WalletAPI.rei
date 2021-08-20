@@ -139,7 +139,7 @@ module Accounts: {
       (
         ~config: ConfigFile.t,
         ~startIndex: int=?,
-        ~onFoundKey: (int, PublicKeyHash.t) => unit,
+        ~onFoundKey: (int, PublicKeyHash.t, string) => unit,
         ~password: string,
         Secret.Repr.derived,
         DerivationPath.Pattern.t
