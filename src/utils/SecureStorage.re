@@ -114,6 +114,25 @@ module Crypto = {
 };
 
 module Cipher = {
+  type Errors.t +=
+    | KeyFromPasswordError(string)
+    | DeriveKeyError(string)
+    | DecryptError(string)
+    | WrongPassword
+    | EncryptError(string);
+
+  let () =
+    Errors.registerHandler(
+      "SecureStorage",
+      fun
+      | KeyFromPasswordError(s) => s->Some
+      | DeriveKeyError(s) => s->Some
+      | DecryptError(s) => s->Some
+      | WrongPassword => I18n.form_input_error#wrong_password->Some
+      | EncryptError(s) => s->Some
+      | _ => None,
+    );
+
   type encryptedData = {
     salt: string,
     iv: string,
@@ -139,7 +158,7 @@ module Cipher = {
   let keyFromPassword = password => {
     let buffer = Buffer.allocWithString(32, password);
     Crypto.Subtle.importKey(buffer, false, [|"deriveBits", "deriveKey"|])
-    ->FutureJs.fromPromise(Js.String.make);
+    ->RawJsError.fromPromiseParsed(e => KeyFromPasswordError(e.message));
   };
 
   let deriveKey = (key, salt) =>
@@ -150,7 +169,7 @@ module Cipher = {
       false,
       [|"encrypt", "decrypt"|],
     )
-    ->FutureJs.fromPromise(Js.String.make);
+    ->RawJsError.fromPromiseParsed(e => DeriveKeyError(e.message));
 
   let encrypt = (data, password) => {
     let%FRes key = keyFromPassword(password);
@@ -165,7 +184,7 @@ module Cipher = {
         derivedKey,
         Buffer.fromString(data, `utf8),
       )
-      ->FutureJs.fromPromise(Js.String.make);
+      ->RawJsError.fromPromiseParsed(e => EncryptError(e.message));
 
     {
       salt: salt->Buffer.toString(`hex),
@@ -188,7 +207,7 @@ module Cipher = {
         derivedKey,
         Buffer.fromString(encryptedData.data, `hex),
       )
-      ->FutureJs.fromPromise(Js.String.make);
+      ->RawJsError.fromPromiseParsed(e => DecryptError(e.message));
 
     Buffer.fromBytes(data)->Buffer.toString(`utf8);
   };
@@ -224,7 +243,7 @@ let validatePassword = password => {
   let%FRes data = "lock"->fetch(~password);
   let%FRes () =
     data == Some("lock") || data == None
-      ? FutureEx.ok() : FutureEx.err("Invalid lock!");
+      ? FutureEx.ok() : FutureEx.err(Cipher.WrongPassword);
   let%FResMap () = store("lock", ~key="lock", ~password);
   ();
 };

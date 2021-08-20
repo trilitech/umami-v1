@@ -60,7 +60,7 @@ module Component = {
              renderItem={renderItem(response.currentLevel)}
              emptyComponent={I18n.t#empty_operations->React.string}
            />
-         | Done(Error(error), _) => error->React.string
+         | Done(Error(error), _) => error->Errors.toString->React.string
          | NotAsked
          | Loading(None) => <LoadingView />
          }

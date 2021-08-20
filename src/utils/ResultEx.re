@@ -59,6 +59,12 @@ let mapError = (r, f) =>
   | Error(e) => Error(f(e))
   };
 
+let flatMapError = (r, f) =>
+  switch (r) {
+  | Ok(v) => Ok(v)
+  | Error(e) => f(e)
+  };
+
 let map2 = (r1, r2, f) => flatMap2(r1, r2, (v1, v2) => Ok(f(v1, v2)));
 
 let collect = (type err, l: list(result(_, err))) => {

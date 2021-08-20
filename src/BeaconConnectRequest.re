@@ -175,12 +175,7 @@ let make = () => {
                     )
                   ->Future.tapOk(_ =>
                       setErrorRef.current(_ =>
-                        Some(
-                          Generic(
-                            I18n.errors#beacon_transaction_not_supported,
-                          )
-                          ->ReBeacon.Error.toString,
-                        )
+                        Some(I18n.errors#beacon_transaction_not_supported)
                       )
                     )
                   ->ignore;
@@ -198,10 +193,7 @@ let make = () => {
                 )
               ->Future.tapOk(_ =>
                   setErrorRef.current(_ =>
-                    Some(
-                      Generic(I18n.errors#beacon_request_network_missmatch)
-                      ->ReBeacon.Error.toString,
-                    )
+                    Some(I18n.errors#beacon_request_network_missmatch)
                   )
                 )
               ->ignore;

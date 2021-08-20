@@ -78,7 +78,7 @@ let make = (~closeAction) => {
             BeaconApiRequest.client
             ->ReBeacon.WalletClient.addPeer(pairingInfo)
             ->Future.tapError(error =>
-                raiseSubmitFailed(Some(error->ReBeacon.Error.toString))
+                raiseSubmitFailed(Some(error->Errors.toString))
               )
             ->Future.tapOk(_ => {
                 updatePeers();
@@ -328,7 +328,7 @@ module WithQR = {
         BeaconApiRequest.client
         ->ReBeacon.WalletClient.addPeer(pairingInfo)
         ->Future.tapError(error => {
-            addToast(Logs.error(error->ReBeacon.Error.toString));
+            addToast(Logs.error(error->Errors.toString));
             setWebcamScanning(_ => true);
           })
         ->Future.tapOk(_ => {

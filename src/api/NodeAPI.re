@@ -27,6 +27,29 @@ open ServerAPI;
 
 open Let;
 
+type Errors.t +=
+  | OperationNotRunnableOffchain(string)
+  | SimulationNotAvailable(string)
+  | InjectionNotImplemented(string)
+  | CheckContractJson
+  | OffchainCallNotImplemented(string);
+
+let () =
+  Errors.registerHandler(
+    "Node",
+    fun
+    | OperationNotRunnableOffchain(s) =>
+      Format.sprintf("Operation '%s' cannot be run offchain.", s)->Some
+    | SimulationNotAvailable(s) =>
+      Format.sprintf("Operation '%s' is not simulable.", s)->Some
+    | InjectionNotImplemented(s) =>
+      Format.sprintf("Operation '%s' injection is not implemented", s)->Some
+    | OffchainCallNotImplemented(s) =>
+      Format.sprintf("Operation '%s' offchain call is not implemented", s)
+      ->Some
+    | _ => None,
+  );
+
 module Balance = {
   let get = (config, address, ~params=?, ()) => {
     ConfigUtils.endpoint(config)
@@ -110,7 +133,7 @@ module Mnemonic = {
 };
 
 module DelegateMaker =
-       (Get: {let get: URL.t => Future.t(Result.t(Js.Json.t, string));}) => {
+       (Get: {let get: URL.t => Future.t(Result.t(Js.Json.t, Errors.t));}) => {
   let parse = content =>
     if (content == "none\n") {
       None;
@@ -165,15 +188,13 @@ module DelegateMaker =
     };
 
     let%FResMap operations =
-      network
-      ->ExplorerAPI.getOperations(
-          delegate,
-          ~types=[|"transaction"|],
-          ~destination=account,
-          ~limit=1,
-          (),
-        )
-      ->Future.mapError(e => ErrorHandler.(Taquito(Generic(e))));
+      network->ExplorerAPI.getOperations(
+        delegate,
+        ~types=[|"transaction"|],
+        ~destination=account,
+        ~limit=1,
+        (),
+      );
 
     if (operations->Array.length == 0) {
       info->Some;
@@ -189,16 +210,14 @@ module DelegateMaker =
 
   let getDelegationInfoForAccount =
       (network, account: PublicKeyHash.t)
-      : Future.t(Belt.Result.t(option(delegationInfo), ErrorHandler.t)) => {
+      : Future.t(Belt.Result.t(option(delegationInfo), Errors.t)) => {
     let%FRes operations =
-      network
-      ->ExplorerAPI.getOperations(
-          account,
-          ~types=[|"delegation"|],
-          ~limit=1,
-          (),
-        )
-      ->Future.mapError(e => ErrorHandler.(Taquito(Generic(e))));
+      network->ExplorerAPI.getOperations(
+        account,
+        ~types=[|"delegation"|],
+        ~limit=1,
+        (),
+      );
 
     if (operations->Array.length == 0) {
       Future.value(Ok(None));
@@ -208,9 +227,7 @@ module DelegateMaker =
       let%FRes payload =
         switch (firstOperation.payload) {
         | Delegation(payload) => payload->FutureEx.ok
-        | _ =>
-          ErrorHandler.(Taquito(Generic("Invalid operation type!")))
-          ->FutureEx.err
+        | _ => Errors.Generic("Invalid operation type!")->FutureEx.err
         };
 
       switch (payload.delegate) {
@@ -276,7 +293,7 @@ module Tokens = {
     switch (Js.Json.classify(json)) {
     | Js.Json.JSONTrue => Ok(true)
     | JSONFalse => Ok(false)
-    | _ => Error("Error")
+    | _ => Error(CheckContractJson)
     };
   };
 
@@ -302,9 +319,7 @@ module Tokens = {
       batchEstimate(network, transfers, ~source, ~index?, ())
     | _ =>
       Future.value(
-        SimulationNotAvailable(Token.operationEntrypoint(operation))
-        ->ErrorHandler.token
-        ->Error,
+        SimulationNotAvailable(Token.operationEntrypoint(operation))->Error,
       )
     };
 
@@ -314,9 +329,7 @@ module Tokens = {
       batch(network, transfers, ~source, ~signingIntent)
     | _ =>
       Future.value(
-        InjectionNotImplemented(Token.operationEntrypoint(operation))
-        ->ErrorHandler.token
-        ->Error,
+        InjectionNotImplemented(Token.operationEntrypoint(operation))->Error,
       )
     };
 
@@ -325,7 +338,6 @@ module Tokens = {
       offline(operation)
         ? FutureEx.ok()
         : OperationNotRunnableOffchain(Token.operationEntrypoint(operation))
-          ->ErrorHandler.token
           ->FutureEx.err;
 
     let%FRes {token, address} =
@@ -333,14 +345,12 @@ module Tokens = {
       | GetBalance(gb) => gb->FutureEx.ok
       | _ =>
         OffchainCallNotImplemented(Token.operationEntrypoint(operation))
-        ->ErrorHandler.token
         ->FutureEx.err
       };
 
     let%FRes res =
       URL.Explorer.getTokenBalance(config, ~contract=token, ~account=address)
-      ->URL.get
-      ->Future.mapError(s => s->RawError->ErrorHandler.Token);
+      ->URL.get;
 
     switch (res->Js.Json.decodeString) {
     | None => Token.Unit.zero->FutureEx.ok
@@ -348,7 +358,7 @@ module Tokens = {
       v
       ->Token.Unit.fromNatString
       ->FutureEx.fromOption(~error="cannot read Token amount: " ++ v)
-      ->Future.mapError(s => s->RawError->ErrorHandler.Token)
+      ->Future.mapError(s => s->Errors.Generic)
     };
   };
 };

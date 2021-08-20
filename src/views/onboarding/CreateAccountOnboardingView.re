@@ -50,9 +50,9 @@ let make = (~closeAction) => {
 
   let createSecretWithMnemonic = p =>
     System.Client.initDir(config->ConfigUtils.baseDir)
-    ->Future.mapError(System.File.Error.toString)
+    ->Future.mapError(Errors.toString)
     ->Future.flatMapOk(() =>
-        createSecretWithMnemonic(p)->Future.mapError(ErrorHandler.toString)
+        createSecretWithMnemonic(p)->Future.mapError(Errors.toString)
       )
     ->Future.tapOk(_ => {closeAction()})
     ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>

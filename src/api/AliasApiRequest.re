@@ -40,13 +40,13 @@ let useLoad = requestState => {
           ->Array.reverse
           ->Map.String.fromArray
           ->Ok
-        | Error(Wallet(File(NoSuchFile(_)))) => Map.String.empty->Ok
+        | Error(System.NoSuchFileError(_)) => Map.String.empty->Ok
         | Error(_) as e => e,
       );
 
   ApiRequest.useLoader(
     ~get,
-    ~errorToString=ErrorHandler.toString,
+    ~errorToString=Errors.toString,
     ~kind=Logs.Aliases,
     ~requestState,
     (),
@@ -61,7 +61,7 @@ let useCreate =
       (~config, (alias, address)) =>
         WalletAPI.Aliases.add(~config, ~alias, ~address),
     ~kind=Logs.Aliases,
-    ~errorToString=ErrorHandler.toString,
+    ~errorToString=Errors.toString,
   );
 
 /* Update */
@@ -72,7 +72,7 @@ let useUpdate =
       (~config, renaming: WalletAPI.Aliases.renameParams) =>
         WalletAPI.Aliases.rename(~config, renaming),
     ~kind=Logs.Aliases,
-    ~errorToString=ErrorHandler.toString,
+    ~errorToString=Errors.toString,
   );
 
 /* Delete */
@@ -82,6 +82,6 @@ let useDelete = {
   ApiRequest.useSetter(
     ~set,
     ~kind=Logs.Aliases,
-    ~errorToString=ErrorHandler.toString,
+    ~errorToString=Errors.toString,
   );
 };

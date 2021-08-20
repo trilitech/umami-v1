@@ -30,31 +30,28 @@ module LedgerView = {
     | WaitForConfirm
     | Searching
     | Confirmed
-    | Error(ErrorHandler.t);
+    | Error(Errors.t);
 
   let errorTitleExpl =
     fun
-    | ErrorHandler.Taquito(LedgerNotReady) as e => (
+    | ReTaquitoError.LedgerNotReady as e => (
         I18n.title#hardware_wallet_not_ready,
-        e->ErrorHandler.toString,
+        e->Errors.toString,
       )
 
-    | ErrorHandler.Taquito(LedgerInitTimeout) => (
+    | ReTaquitoError.LedgerInitTimeout => (
         I18n.title#hardware_wallet_not_found,
         I18n.form_input_error#hardware_wallet_timeout,
       )
-    | ErrorHandler.Taquito(LedgerKeyRetrieval) => (
+    | ReTaquitoError.LedgerKeyRetrieval => (
         I18n.title#hardware_wallet_error_app,
         I18n.form_input_error#hardware_wallet_check_app,
       )
-    | ErrorHandler.Taquito(LedgerDenied) => (
+    | ReTaquitoError.LedgerDenied => (
         I18n.title#hardware_wallet_denied,
         I18n.expl#hardware_wallet_denied,
       )
-    | e => (
-        I18n.title#hardware_wallet_error_unknown,
-        e->ErrorHandler.toString,
-      );
+    | e => (I18n.title#hardware_wallet_error_unknown, e->Errors.toString);
 
   let styles =
     Style.(

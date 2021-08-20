@@ -323,7 +323,7 @@ let make =
             switch (ConfigUtils.getExternalExplorer(config)) {
             | Ok(url) => System.openExternal(url ++ operation.hash)
             | Error(err) =>
-              addToast(Logs.error(~origin=Settings, Network.errorMsg(err)))
+              addToast(Logs.error(~origin=Settings, Errors.toString(err)))
             }
           }}
         />

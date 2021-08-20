@@ -32,6 +32,21 @@ module Path = {
   };
 };
 
+type Errors.t +=
+  | FetchError(string)
+  | JsonResponseError(string)
+  | JsonError(string);
+
+let () =
+  Errors.registerHandler(
+    "Server",
+    fun
+    | FetchError(s) => s->Some
+    | JsonResponseError(s) => s->Some
+    | JsonError(s) => s->Some
+    | _ => None,
+  );
+
 module URL = {
   type t = string;
 
@@ -52,9 +67,17 @@ module URL = {
 
   let get = url => {
     let%FRes response =
-      url->Fetch.fetch->FutureJs.fromPromise(Js.String.make);
+      url
+      ->Fetch.fetch
+      ->FutureJs.fromPromise(e =>
+          e->RawJsError.fromPromiseError.message->FetchError
+        );
 
-    response->Fetch.Response.json->FutureJs.fromPromise(Js.String.make);
+    response
+    ->Fetch.Response.json
+    ->FutureJs.fromPromise(e =>
+        e->RawJsError.fromPromiseError.message->FetchError
+      );
   };
 
   module Explorer = {
@@ -119,11 +142,11 @@ module type Explorer = {
       ~limit: int=?,
       unit
     ) =>
-    Future.t(Result.t(array(Operation.Read.t), string));
+    Future.t(Result.t(array(Operation.Read.t), Errors.t));
 };
 
 module ExplorerMaker =
-       (Get: {let get: string => Future.t(Result.t(Js.Json.t, string));}) => {
+       (Get: {let get: string => Future.t(Result.t(Js.Json.t, Errors.t));}) => {
   let getOperations =
       (
         network,
@@ -141,7 +164,7 @@ module ExplorerMaker =
     let%FRes operations =
       res
       ->ResultEx.fromExn(Json.Decode.(array(Operation.Read.Decode.t)))
-      ->ResultEx.mapError(Operation.Read.filterJsonExn)
+      ->ResultEx.mapError(e => e->Operation.Read.filterJsonExn->JsonError)
       ->Future.value;
 
     operations->FutureEx.ok;

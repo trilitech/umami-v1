@@ -33,21 +33,22 @@ let respond = responseInput => {
 
 module Peers = {
   let useLoad = requestState => {
-    let get = (~config as _s, ()) =>
-      client
-      ->ReBeacon.WalletClient.getPeers
-      ->Future.mapError(ReBeacon.Error.toString);
+    let get = (~config as _s, ()) => client->ReBeacon.WalletClient.getPeers;
 
-    ApiRequest.useLoader(~get, ~kind=Logs.Settings, ~requestState, ());
+    ApiRequest.useLoader(
+      ~get,
+      ~errorToString=Errors.toString,
+      ~kind=Logs.Settings,
+      ~requestState,
+      (),
+    );
   };
 
   let useDelete =
     ApiRequest.useSetter(
       ~set=
         (~config as _s, peer: ReBeacon.peerInfo) =>
-          client
-          ->ReBeacon.WalletClient.removePeer(peer)
-          ->Future.mapError(ReBeacon.Error.toString),
+          client->ReBeacon.WalletClient.removePeer(peer),
       ~kind=Logs.Settings,
     );
 };
@@ -57,9 +58,7 @@ module Peers = {
 module Permissions = {
   let useLoad = requestState => {
     let get = (~config as _s, ()) =>
-      client
-      ->ReBeacon.WalletClient.getPermissions
-      ->Future.mapError(ReBeacon.Error.toString);
+      client->ReBeacon.WalletClient.getPermissions;
 
     ApiRequest.useLoader(~get, ~kind=Logs.Settings, ~requestState, ());
   };
@@ -68,9 +67,7 @@ module Permissions = {
     ApiRequest.useSetter(
       ~set=
         (~config as _s, accountIdentifier: ReBeacon.accountIdentifier) =>
-          client
-          ->ReBeacon.WalletClient.removePermission(accountIdentifier)
-          ->Future.mapError(ReBeacon.Error.toString),
+          client->ReBeacon.WalletClient.removePermission(accountIdentifier),
       ~kind=Logs.Settings,
     );
 };

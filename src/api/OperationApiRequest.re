@@ -52,16 +52,16 @@ let token = (operation, signingIntent) => {
   signingIntent,
 };
 
-let errorToString = ErrorHandler.toString;
+let errorToString = Errors.toString;
 
 let filterOutFormError =
   fun
-  | ErrorHandler.Taquito(LedgerInitTimeout)
-  | ErrorHandler.Taquito(LedgerInit(_))
-  | ErrorHandler.Taquito(LedgerKeyRetrieval)
-  | ErrorHandler.Taquito(LedgerDenied)
-  | ErrorHandler.Taquito(LedgerNotReady)
-  | ErrorHandler.Taquito(WrongPassword) => false
+  | ReTaquitoError.LedgerInitTimeout
+  | ReTaquitoError.LedgerInit(_)
+  | ReTaquitoError.LedgerKeyRetrieval
+  | ReTaquitoError.LedgerDenied
+  | ReTaquitoError.LedgerNotReady
+  | ReTaquitoError.WrongPassword => false
   | _ => true;
 
 let useCreate = (~sideEffect=?, ()) => {
@@ -133,8 +133,7 @@ let useLoad =
       config->ServerAPI.Explorer.getOperations(address, ~limit?, ~types?, ());
     let currentLevel =
       Network.monitor(ConfigUtils.explorer(config))
-      ->Future.mapOk(monitor => monitor.nodeLastBlock)
-      ->Future.mapError(Network.errorMsg);
+      ->Future.mapOk(monitor => monitor.nodeLastBlock);
 
     let f = (operations, currentLevel) =>
       switch (operations, currentLevel) {

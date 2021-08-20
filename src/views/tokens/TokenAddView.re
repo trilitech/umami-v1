@@ -60,7 +60,6 @@ let make = (~chain, ~closeAction) => {
           state.values.address
           ->PublicKeyHash.build
           ->Future.value
-          ->Future.mapError(PublicKeyHash.handleValidationError)
           ->Future.flatMapOk(address =>
               checkToken(address)->Future.mapOk(res => (address, res))
             )

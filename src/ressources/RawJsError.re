@@ -23,14 +23,15 @@
 /*                                                                           */
 /*****************************************************************************/
 
-type t = {message: string};
+type t = {
+  message: string,
+  name: string,
+};
 
 let fromPromiseError: Js.Promise.error => t = Obj.magic;
 
-let fromPromiseParsedWrapper = (parse, wrapError, p) =>
+let fromPromiseParsed = (p, parse) =>
   p->FutureJs.fromPromise(e => {
     let e = e->fromPromiseError;
-    Js.log(e.message);
-
-    e->parse->wrapError;
+    e->parse;
   });

@@ -153,7 +153,7 @@ module Make = (Op: OP) => {
             | Loading(_) => <LoadingView style=styles##loading />
             | Done(Error(error), _) =>
               <>
-                <ErrorView error={error->ErrorHandler.toString} />
+                <ErrorView error />
                 <View style=styles##formActionSpaceBetween>
                   <Buttons.SubmitSecondary
                     text=I18n.btn#close

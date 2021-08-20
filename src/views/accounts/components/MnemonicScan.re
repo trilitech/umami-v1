@@ -60,7 +60,7 @@ let make = (~closeAction, ~index, ~secret) => {
             setStatus(_ => StepAccounts(password));
             Ok();
           }
-        | _ => Error(ErrorHandler.(Taquito(ReTaquitoError.WrongPassword))),
+        | _ => Error(ReTaquitoError.WrongPassword),
       );
   };
 

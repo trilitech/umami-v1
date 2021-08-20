@@ -40,14 +40,14 @@ let useLoad = requestState => {
           ->Array.reverse
           ->Map.String.fromArray
           ->Ok
-        | Error(Wallet(File(NoSuchFile(_)))) => Map.String.empty->Ok
+        | Error(System.NoSuchFileError(_)) => Map.String.empty->Ok
         | Error(_) as e => e,
       );
 
   ApiRequest.useLoader(
     ~get,
     ~kind=Logs.Account,
-    ~errorToString=ErrorHandler.toString,
+    ~errorToString=Errors.toString,
     ~requestState,
     (),
   );
@@ -61,14 +61,14 @@ let useUpdate =
       (~config, renaming: WalletAPI.Aliases.renameParams) =>
         WalletAPI.Aliases.rename(~config, renaming),
     ~kind=Logs.Account,
-    ~errorToString=ErrorHandler.toString,
+    ~errorToString=Errors.toString,
   );
 
 let useDelete =
   ApiRequest.useSetter(
     ~set=WalletAPI.Accounts.delete,
     ~kind=Logs.Account,
-    ~errorToString=ErrorHandler.toString,
+    ~errorToString=Errors.toString,
   );
 
 /* Other */

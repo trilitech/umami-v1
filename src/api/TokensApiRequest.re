@@ -24,7 +24,6 @@
 /*****************************************************************************/
 
 include ApiRequest;
-module Error = ErrorHandler;
 
 type injection = {
   operation: Token.operation,
@@ -45,7 +44,7 @@ let useLoadOperationOffline = (~requestState, ~operation: Token.operation) => {
     ~get,
     ~kind=Logs.Tokens,
     ~requestState,
-    ~errorToString=ErrorHandler.toString,
+    ~errorToString=Errors.toString,
     operation,
   );
 };

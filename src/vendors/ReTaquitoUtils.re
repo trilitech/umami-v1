@@ -23,12 +23,20 @@
 /*                                                                           */
 /*****************************************************************************/
 
-type addressValidityError = [
-  | `No_prefix_matched
-  | `Invalid_checksum
-  | `Invalid_length
-  | `UnknownError(int)
-];
+type Errors.t +=
+  | No_prefix_matched
+  | Invalid_checksum
+  | Invalid_length;
+
+let () =
+  Errors.registerHandler(
+    "Taquito",
+    fun
+    | No_prefix_matched => I18n.taquito#no_prefix_matched->Some
+    | Invalid_checksum => I18n.taquito#invalid_checksum->Some
+    | Invalid_length => I18n.taquito#invalid_length->Some
+    | _ => None,
+  );
 
 [@bs.module "@taquito/utils"]
 external validateAddressRaw: string => int = "validateAddress";
@@ -38,30 +46,17 @@ external validateContractAddressRaw: string => int = "validateContractAddress";
 
 let handleValidity =
   fun
-  | 0 => `No_prefix_matched
-  | 1 => `Invalid_checksum
-  | 2 => `Invalid_length
-  | 3 => `Valid
-  | n => `UnknownError(n);
+  | 0 => Error(No_prefix_matched)
+  | 1 => Error(Invalid_checksum)
+  | 2 => Error(Invalid_length)
+  | 3 => Ok()
+  | n => Error(Errors.Generic(n->Int.toString));
 
 let validateAddress = s =>
-  switch (s->validateAddressRaw->handleValidity) {
-  | `Valid => Ok(`Address)
-  | #addressValidityError as err => Error(err)
-  };
+  s->validateAddressRaw->handleValidity->Result.map(() => `Address);
 
 let validateContractAddress = s =>
-  switch (s->validateContractAddressRaw->handleValidity) {
-  | `Valid => Ok(`Contract)
-  | #addressValidityError as err => Error(err)
-  };
+  s->validateContractAddressRaw->handleValidity->Result.map(() => `Contract);
 
 let validateAnyAddress = s =>
-  switch (s->validateContractAddress) {
-  | Ok(`Contract) => Ok(`Contract)
-  | Error(_) =>
-    switch (s->validateAddress) {
-    | Ok(`Address) => Ok(`Address)
-    | Error(#addressValidityError as err) => Error(err)
-    }
-  };
+  s->validateContractAddress->ResultEx.flatMapError(_ => s->validateAddress);

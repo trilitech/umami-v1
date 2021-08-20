@@ -123,7 +123,7 @@ let isExpired = request =>
   | _ => false
   };
 
-let logError = (r, addLog, ~keep=_ => true, ~toString=Js.String.make, origin) =>
+let logError = (r, addLog, ~keep=_ => true, ~toString=Errors.toString, origin) =>
   r->Future.tapError(msg =>
     msg->keep
       ? addLog(
@@ -168,18 +168,7 @@ let conditionToLoad = (request, isMounted) => {
   requestNotAskedAndMounted || requestDoneButReloadOnMount || requestExpired;
 };
 
-let useGetter =
-    (
-      ~toast=true,
-      ~errorToString=?,
-      ~get:
-         (~config: ConfigFile.t, 'input) =>
-         Future.t(Belt.Result.t('response, 'error)),
-      ~kind,
-      ~setRequest,
-      (),
-    )
-    : ('input => Future.t(Belt.Result.t('response, 'error))) => {
+let useGetter = (~toast=true, ~errorToString=?, ~get, ~kind, ~setRequest, ()) => {
   let addLog = LogsContext.useAdd();
   let config = ConfigContext.useContent();
 

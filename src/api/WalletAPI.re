@@ -25,6 +25,31 @@
 
 open Let;
 
+type Errors.t +=
+  | NoSecretFound
+  | SecretNotFound(int)
+  | CannotUpdateSecret(int)
+  | RecoveryPhraseNotFound(int)
+  | SecretAlreadyImported
+  | IncorrectNumberOfWords
+  | UnknownBip39Word(string, int)
+  | Generic(string);
+
+let () =
+  Errors.registerHandler(
+    "Wallet",
+    fun
+    | NoSecretFound => I18n.errors#no_secret_found->Some
+    | SecretNotFound(i) => I18n.errors#secret_not_found(i)->Some
+    | CannotUpdateSecret(i) => I18n.errors#cannot_update_secret(i)->Some
+    | RecoveryPhraseNotFound(i) =>
+      I18n.errors#recovery_phrase_not_found(i)->Some
+    | SecretAlreadyImported => I18n.errors#secret_already_imported->Some
+    | IncorrectNumberOfWords => I18n.errors#incorrect_number_of_words->Some
+    | UnknownBip39Word(w, i) => I18n.errors#unknown_bip39_word(w, i)->Some
+    | _ => None,
+  );
+
 module Secret = {
   module Repr = Secret;
   type t = Repr.t;
@@ -116,10 +141,7 @@ module Aliases = {
 
   let get = (~config) => {
     let%FResMap addresses =
-      config
-      ->ConfigUtils.baseDir
-      ->Wallet.PkhAliases.read
-      ->Future.mapError(e => e->ErrorHandler.Wallet);
+      config->ConfigUtils.baseDir->Wallet.PkhAliases.read;
 
     addresses->Array.map(({name, value}) => (name, value));
   };
@@ -147,12 +169,10 @@ module Aliases = {
       ~dirpath=config->ConfigUtils.baseDir,
       ~alias,
       ~pkh=address,
-    )
-    ->Future.mapError(e => e->ErrorHandler.Wallet);
+    );
 
   let delete = (~config, ~alias) =>
-    Wallet.removePkhAlias(~dirpath=config->ConfigUtils.baseDir, ~alias)
-    ->Future.mapError(e => e->ErrorHandler.Wallet);
+    Wallet.removePkhAlias(~dirpath=config->ConfigUtils.baseDir, ~alias);
 
   type renameParams = {
     old_name: string,
@@ -164,8 +184,7 @@ module Aliases = {
       ~dirpath=config->ConfigUtils.baseDir,
       ~oldName=renaming.old_name,
       ~newName=renaming.new_name,
-    )
-    ->Future.mapError(e => e->ErrorHandler.Wallet);
+    );
 };
 
 module Accounts = {
@@ -183,7 +202,7 @@ module Accounts = {
     ->Js.Nullable.toOption
     ->Option.flatMap(Json.parse)
     ->Option.map(Json.Decode.(array(Secret.decoder)))
-    ->ResultEx.fromOption(ErrorHandler.(WalletAPI(NoSecretFound)));
+    ->ResultEx.fromOption(NoSecretFound);
   };
 
   let recoveryPhrases = (~config: ConfigFile.t) => {
@@ -195,17 +214,9 @@ module Accounts = {
   };
 
   let get = (~config) => {
-    let%FRes pkhs =
-      config
-      ->ConfigUtils.baseDir
-      ->Wallet.PkhAliases.read
-      ->Future.mapError(e => e->ErrorHandler.Wallet);
+    let%FRes pkhs = config->ConfigUtils.baseDir->Wallet.PkhAliases.read;
 
-    let%FResMap sks =
-      config
-      ->ConfigUtils.baseDir
-      ->Wallet.SecretAliases.read
-      ->Future.mapError(e => e->ErrorHandler.Wallet);
+    let%FResMap sks = config->ConfigUtils.baseDir->Wallet.SecretAliases.read;
 
     pkhs->Array.keepMap(({name, value}) =>
       switch (sks->Wallet.SecretAliases.find(skAlias => name == skAlias.name)) {
@@ -218,10 +229,7 @@ module Accounts = {
   let secretAt = (~config, index) => {
     let%Res secrets = secrets(~config);
 
-    ResultEx.fromOption(
-      secrets[index],
-      ErrorHandler.(WalletAPI(SecretNotFound(index))),
-    );
+    ResultEx.fromOption(secrets[index], SecretNotFound(index));
   };
 
   let updateSecretAt = (~config, secret, index) => {
@@ -234,7 +242,7 @@ module Accounts = {
       )
       ->Ok;
     } else {
-      Error(ErrorHandler.(WalletAPI(CannotUpdateSecret(index))));
+      Error(CannotUpdateSecret(index));
     };
   };
 
@@ -242,15 +250,11 @@ module Accounts = {
     let%FRes data =
       recoveryPhrases(~config)
       ->Option.flatMap(recoveryPhrases => recoveryPhrases[index])
-      ->FutureEx.fromOption(
-          ~error=ErrorHandler.(WalletAPI(RecoveryPhraseNotFound(index))),
-        );
+      ->FutureEx.fromOption(~error=RecoveryPhraseNotFound(index));
 
     SecureStorage.Cipher.decrypt2(password, data)
     ->Future.mapError(_ =>
-        ErrorHandler.(
-          WalletAPI(Generic(I18n.form_input_error#wrong_password))
-        )
+        Errors.Generic(I18n.form_input_error#wrong_password)
       );
   };
 
@@ -262,17 +266,12 @@ module Accounts = {
         ~secretKey,
         ~passphrase=password,
         (),
-      )
-      ->Future.mapError(e => e->ErrorHandler.Taquito);
-    let%FRes pk =
-      signer
-      ->ReTaquitoSigner.publicKey
-      ->Future.mapError(e => e->ErrorHandler.Taquito);
+      );
+
+    let%FRes pk = signer->ReTaquitoSigner.publicKey;
+
     let pk = Wallet.mnemonicPkValue(pk);
-    let%FRes pkh =
-      signer
-      ->ReTaquitoSigner.publicKeyHash
-      ->Future.mapError(e => e->ErrorHandler.Taquito);
+    let%FRes pkh = signer->ReTaquitoSigner.publicKeyHash;
 
     let%FRes () =
       Wallet.addOrReplaceAlias(
@@ -282,8 +281,7 @@ module Accounts = {
         ~pkh,
         ~sk=skUri,
       )
-      ->Future.tapError(e => e->Js.log)
-      ->Future.mapError(e => e->ErrorHandler.Wallet);
+      ->Future.tapError(e => e->Js.log);
 
     pkh->FutureEx.ok;
   };
@@ -296,8 +294,7 @@ module Accounts = {
     let%FRes edesk =
       secret.derivationPath
       ->DerivationPath.Pattern.implement(secret.addresses->Array.length)
-      ->HD.edesk(recoveryPhrase->HD.seed, ~password)
-      ->Future.mapError(e => ErrorHandler.WalletAPI(Generic(e)));
+      ->HD.edesk(recoveryPhrase->HD.seed, ~password);
 
     let%FRes address = import(~config, ~secretKey=edesk, ~alias, ~password);
 
@@ -310,8 +307,7 @@ module Accounts = {
   };
 
   let unsafeDelete = (~config, name) =>
-    Wallet.removeAlias(~dirpath=config->ConfigUtils.baseDir, ~alias=name)
-    ->Future.mapError(e => e->ErrorHandler.Wallet);
+    Wallet.removeAlias(~dirpath=config->ConfigUtils.baseDir, ~alias=name);
 
   let delete = (~config, name) => {
     let%FRes address = Aliases.getAddressForAlias(~config, ~alias=name);
@@ -342,9 +338,7 @@ module Accounts = {
             )
           ->Array.keepMap(v => aliases->Map.String.get((v :> string)))
         )
-      ->FutureEx.fromOption(
-          ~error=ErrorHandler.(WalletAPI(SecretNotFound(index))),
-        );
+      ->FutureEx.fromOption(~error=SecretNotFound(index));
 
     let%FResMap () =
       deletedAddresses->Array.reduce(Future.value(Ok()), (acc, addr) =>
@@ -381,7 +375,7 @@ module Accounts = {
     let secretsAfter = secrets(~config);
     switch (secretsAfter) {
     | Ok([||])
-    | Error(ErrorHandler.(WalletAPI(NoSecretFound))) =>
+    | Error(NoSecretFound) =>
       "lock"->LocalStorage.removeItem;
       "recovery-phrases"->LocalStorage.removeItem;
       "secrets"->LocalStorage.removeItem;
@@ -390,17 +384,14 @@ module Accounts = {
   };
 
   let legacyImport = (~config, alias, recoveryPhrase, ~password) => {
-    let%FRes secretKey =
-      HD.edeskLegacy(recoveryPhrase, ~password)
-      ->Future.mapError(e => e->ErrorHandler.Generic->ErrorHandler.WalletAPI);
+    let%FRes secretKey = HD.edeskLegacy(recoveryPhrase, ~password);
 
     import(~config, ~alias, ~secretKey, ~password);
   };
 
   module Scan = {
-    type error =
-      | APIError(string)
-      | TaquitoError(ReTaquitoError.t);
+    type Errors.t +=
+      | APIError(string);
 
     type kind =
       | Regular
@@ -414,32 +405,22 @@ module Accounts = {
 
     let used = (network, address) => {
       let%FResMap operations =
-        network
-        ->ServerAPI.Explorer.getOperations(address, ~limit=1, ())
-        ->Future.mapError(s => ErrorHandler.(WalletAPI(Generic(s))));
+        network->ServerAPI.Explorer.getOperations(address, ~limit=1, ());
 
       operations->Js.Array2.length != 0;
     };
 
     let runLegacy = (~recoveryPhrase, ~password) => {
-      let%FRes encryptedSecretKey =
-        HD.edeskLegacy(recoveryPhrase, ~password)
-        ->Future.mapError(e =>
-            e->ErrorHandler.Generic->ErrorHandler.WalletAPI
-          );
+      let%FRes encryptedSecretKey = HD.edeskLegacy(recoveryPhrase, ~password);
 
       let%FRes signer =
         ReTaquitoSigner.MemorySigner.create(
           ~secretKey=encryptedSecretKey,
           ~passphrase=password,
           (),
-        )
-        ->Future.mapError(e => e->ErrorHandler.Taquito);
+        );
 
-      let%FRes publicKeyHash =
-        signer
-        ->ReTaquitoSigner.publicKeyHash
-        ->Future.mapError(e => e->ErrorHandler.Taquito);
+      let%FRes publicKeyHash = signer->ReTaquitoSigner.publicKeyHash;
 
       Future.value(Ok({kind: Legacy, publicKeyHash, encryptedSecretKey}));
     };
@@ -504,22 +485,16 @@ module Accounts = {
 
     let getSeedKey = (~recoveryPhrase, ~password, path, _) => {
       let%FRes encryptedSecretKey =
-        path
-        ->HD.edesk(recoveryPhrase->HD.seed, ~password)
-        ->Future.mapError(e => ErrorHandler.WalletAPI(Generic(e)));
+        path->HD.edesk(recoveryPhrase->HD.seed, ~password);
 
       let%FRes signer =
         ReTaquitoSigner.MemorySigner.create(
           ~secretKey=encryptedSecretKey,
           ~passphrase=password,
           (),
-        )
-        ->Future.mapError(e => e->ErrorHandler.Taquito);
+        );
 
-      let%FResMap publicKeyHash =
-        signer
-        ->ReTaquitoSigner.publicKeyHash
-        ->Future.mapError(e => e->ErrorHandler.Taquito);
+      let%FResMap publicKeyHash = signer->ReTaquitoSigner.publicKeyHash;
 
       {publicKeyHash, encryptedSecretKey, kind: Regular};
     };
@@ -541,9 +516,7 @@ module Accounts = {
         let onFoundKey = (n, acc) => onFoundKey(n, acc);
 
         let%FRes recoveryPhrase =
-          recoveryPhrase
-          ->SecureStorage.Cipher.decrypt(password)
-          ->Future.mapError(e => ErrorHandler.(WalletAPI(Generic(e))));
+          recoveryPhrase->SecureStorage.Cipher.decrypt(password);
 
         let%FRes () =
           runStream(
@@ -578,8 +551,7 @@ module Accounts = {
       let%FRes edesk =
         derivationPath
         ->DerivationPath.Pattern.implement(index)
-        ->HD.edesk(seed, ~password)
-        ->Future.mapError(e => ErrorHandler.WalletAPI(Generic(e)));
+        ->HD.edesk(seed, ~password);
 
       let%FRes address =
         import(~config, ~secretKey=edesk, ~alias=name, ~password);
@@ -647,10 +619,7 @@ module Accounts = {
   let indexOfRecoveryPhrase = (~config, recoveryPhrase, ~password) =>
     recoveryPhrases(~config)
     ->Option.getWithDefault([||])
-    ->Array.map(data =>
-        SecureStorage.Cipher.decrypt2(password, data)
-        ->Future.mapError(e => ErrorHandler.(WalletAPI(Generic(e))))
-      )
+    ->Array.map(data => SecureStorage.Cipher.decrypt2(password, data))
     ->List.fromArray
     ->Future.all
     ->Future.map(List.toArray)
@@ -718,11 +687,7 @@ module Accounts = {
     let%FRes () =
       password
       ->SecureStorage.validatePassword
-      ->Future.mapError(_ =>
-          ErrorHandler.(
-            WalletAPI(Generic(I18n.form_input_error#wrong_password))
-          )
-        );
+      ->Future.mapError(_ => Generic(I18n.form_input_error#wrong_password));
 
     let bp = backupPhrase->Array.length;
 
@@ -732,14 +697,12 @@ module Accounts = {
           backupPhrase->Js.Array2.reducei(
             (res, w, i) =>
               res->Result.flatMap(() =>
-                w->Bip39.included
-                  ? Ok()
-                  : ErrorHandler.(UnknownBip39Word(w, i)->WalletAPI->Error)
+                w->Bip39.included ? Ok() : UnknownBip39Word(w, i)->Error
               ),
             Ok(),
           );
         } else {
-          ErrorHandler.(IncorrectNumberOfWords->WalletAPI->Error);
+          IncorrectNumberOfWords->Error;
         }
       )
       ->Future.value;
@@ -748,7 +711,7 @@ module Accounts = {
       indexOfRecoveryPhrase(~config, backupPhraseConcat, ~password)
       ->Future.map(index =>
           switch (index) {
-          | Some(_) => ErrorHandler.(WalletAPI(SecretAlreadyImported))->Error
+          | Some(_) => SecretAlreadyImported->Error
           | None => Ok()
           }
         );
@@ -766,7 +729,6 @@ module Accounts = {
     let%FResMap () =
       backupPhraseConcat
       ->SecureStorage.Cipher.encrypt(password)
-      ->Future.mapError(e => ErrorHandler.(WalletAPI(Generic(e))))
       ->Future.mapOk(registerRecoveryPhrase(~config));
 
     registerSecret(
@@ -920,7 +882,6 @@ module Accounts = {
     let%FResMap () =
       name
       ->SecureStorage.Cipher.encrypt("")
-      ->Future.mapError(e => ErrorHandler.(WalletAPI(Generic(e))))
       ->Future.mapOk(registerRecoveryPhrase(~config));
 
     addresses;
