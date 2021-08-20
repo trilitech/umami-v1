@@ -116,14 +116,24 @@ module Accounts: {
   let deleteSecretAt:
     (~config: ConfigFile.t, int) => Future.t(Result.t(unit, ErrorHandler.t));
 
-  let used:
-    (ConfigFile.t, PublicKeyHash.t) =>
-    Future.t(Result.t(bool, ErrorHandler.t));
-
   module Scan: {
     type error =
       | APIError(string)
       | TaquitoError(ReTaquitoError.t);
+
+    type kind =
+      | Regular
+      | Legacy;
+
+    type account('a) = {
+      kind,
+      publicKeyHash: PublicKeyHash.t,
+      encryptedSecretKey: 'a,
+    };
+
+    let used:
+      (ConfigFile.t, PublicKeyHash.t) =>
+      Future.t(Result.t(bool, ErrorHandler.t));
 
     let runStreamLedger:
       (
@@ -139,7 +149,7 @@ module Accounts: {
       (
         ~config: ConfigFile.t,
         ~startIndex: int=?,
-        ~onFoundKey: (int, PublicKeyHash.t, string) => unit,
+        ~onFoundKey: (int, account(string)) => unit,
         ~password: string,
         Secret.Repr.derived,
         DerivationPath.Pattern.t
@@ -159,8 +169,14 @@ module Accounts: {
     ) =>
     Future.t(Result.t(unit, ErrorHandler.t));
 
-  let importRemainingMnemonicKeys:
-    (~config: ConfigFile.t, ~password: string, ~index: int, unit) =>
+  let importMnemonicKeys:
+    (
+      ~config: ConfigFile.t,
+      ~accounts: list(Scan.account(string)),
+      ~password: string,
+      ~index: int,
+      unit
+    ) =>
     Future.t(
       Result.t(
         (array(PublicKeyHash.t), option(PublicKeyHash.t)),
