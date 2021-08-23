@@ -455,6 +455,7 @@ let wallet = {
 
 let errors = {
   pub _this = this;
+  pub unhandled_error = e => p("Unhandled error %s", e);
   pub no_secret_found = "No secrets found";
   pub secret_not_found = i => p("Secret at index %d not found!", i);
   pub cannot_update_secret = i => p("Can't update secret at index %d!", i);
