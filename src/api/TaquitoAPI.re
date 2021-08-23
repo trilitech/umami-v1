@@ -242,11 +242,11 @@ module Delegate = {
           (),
         ) => {
       let%FRes alias =
-        Wallet.aliasFromPkh(~dirpath=baseDir, ~pkh=source, ())
+        Wallet.aliasFromPkh(~dirpath=baseDir, ~pkh=source)
         ->Future.map(convertWalletError);
 
       let%FRes pk =
-        Wallet.pkFromAlias(~dirpath=baseDir, ~alias, ())
+        Wallet.pkFromAlias(~dirpath=baseDir, ~alias)
         ->Future.map(convertWalletError);
 
       let tk = Toolkit.create(endpoint);
@@ -425,11 +425,11 @@ module Transfer = {
           (),
         ) => {
       let%FRes alias =
-        Wallet.aliasFromPkh(~dirpath=baseDir, ~pkh=source, ())
+        Wallet.aliasFromPkh(~dirpath=baseDir, ~pkh=source)
         ->Future.map(convertWalletError);
 
       let%FRes pk =
-        Wallet.pkFromAlias(~dirpath=baseDir, ~alias, ())
+        Wallet.pkFromAlias(~dirpath=baseDir, ~alias)
         ->Future.map(convertWalletError);
       let tk = Toolkit.create(endpoint);
       let signer =

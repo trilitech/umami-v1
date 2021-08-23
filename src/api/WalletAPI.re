@@ -147,12 +147,11 @@ module Aliases = {
       ~dirpath=config->ConfigUtils.baseDir,
       ~alias,
       ~pkh=address,
-      (),
     )
     ->Future.mapError(e => e->ErrorHandler.Wallet);
 
   let delete = (~config, ~alias) =>
-    Wallet.removePkhAlias(~dirpath=config->ConfigUtils.baseDir, ~alias, ())
+    Wallet.removePkhAlias(~dirpath=config->ConfigUtils.baseDir, ~alias)
     ->Future.mapError(e => e->ErrorHandler.Wallet);
 
   type renameParams = {
@@ -165,7 +164,6 @@ module Aliases = {
       ~dirpath=config->ConfigUtils.baseDir,
       ~oldName=renaming.old_name,
       ~newName=renaming.new_name,
-      (),
     )
     ->Future.mapError(e => e->ErrorHandler.Wallet);
 };
@@ -283,7 +281,6 @@ module Accounts = {
         ~pk,
         ~pkh,
         ~sk=skUri,
-        (),
       )
       ->Future.tapError(e => e->Js.log)
       ->Future.mapError(e => e->ErrorHandler.Wallet);
@@ -313,7 +310,7 @@ module Accounts = {
   };
 
   let unsafeDelete = (~config, name) =>
-    Wallet.removeAlias(~dirpath=config->ConfigUtils.baseDir, ~alias=name, ())
+    Wallet.removeAlias(~dirpath=config->ConfigUtils.baseDir, ~alias=name)
     ->Future.mapError(e => e->ErrorHandler.Wallet);
 
   let delete = (~config, name) => {
@@ -776,7 +773,6 @@ module Accounts = {
         ~derivationScheme,
         ~ledgerTransport,
         ~ledgerMasterKey,
-        (),
       ) => {
     let rec importKeys = (tr, keys, index) => {
       let name = basename ++ " /" ++ Int.toString(index);
@@ -822,7 +818,6 @@ module Accounts = {
         ~derivationScheme,
         ~ledgerTransport=tr,
         ~ledgerMasterKey,
-        (),
       );
 
     registerSecret(
@@ -883,7 +878,6 @@ module Accounts = {
         ~derivationScheme=secret.derivationScheme,
         ~ledgerTransport=tr,
         ~ledgerMasterKey,
-        (),
       );
 
     let%FRes () =
@@ -898,7 +892,6 @@ module Accounts = {
     Wallet.pkFromAlias(
       ~dirpath=config->ConfigUtils.baseDir,
       ~alias=account.name,
-      (),
     );
   };
 };
