@@ -24,6 +24,7 @@
 /*****************************************************************************/
 
 open ReTaquitoSigner;
+open Let;
 
 let convertLedgerError = res =>
   res->ResultEx.mapError(e => e->Wallet.convertLedgerError);
@@ -106,36 +107,37 @@ let getMasterKey = (~prompt, tr) =>
 /* This function depends on LedgerSigner to compute the pk and pkh, hence it
    cannot be defined directly into Wallet.re */
 let addOrReplaceAlias =
-    (~ledgerTransport, ~dirpath, ~alias, ~path, ~scheme, ~ledgerBasePkh) => {
-  let values = {
-    let signer = Signer.create(ledgerTransport, path, ~prompt=false, scheme);
-    /* Ensures the three are available */
-    signer
-    ->Future.flatMapOk(Signer.publicKeyHash)
-    ->Future.flatMapOk(pkh => {
-        signer
-        ->Future.flatMapOk(Signer.publicKey)
-        ->Future.flatMapOk(pk => {
-            let sk =
-              path
-              ->DerivationPath.convertToTezosBip44
-              ->Result.map(path => Wallet.Ledger.{path, scheme})
-              ->Result.map(t =>
-                  Wallet.Ledger.Encode.toSecretKey(t, ~ledgerBasePkh)
-                )
-              ->ResultEx.mapError(e => e->Wallet.Ledger.DerivationPathError)
-              ->convertLedgerError
-              ->convertWalletError;
-            sk
-            ->Result.map(sk => (sk, Wallet.ledgerPkValue(sk, pk), pkh))
-            ->Future.value;
-          })
-      });
-    /* sk->Future.tapOk(sk => Wallet.addAliasSk(~dirpath, ~alias, ~sk, ())); */
-  };
-  values->Future.flatMapOk(((sk, pk, pkh)) => {
+    (~ledgerTransport, ~dirpath, ~alias, ~path, ~scheme, ~ledgerBasePkh)
+    : Future.t(
+        Belt.Result.t(
+          TezosClient.PublicKeyHash.t,
+          TezosClient.ErrorHandler.t,
+        ),
+      ) => {
+  let%FRes signer =
+    Signer.create(ledgerTransport, path, ~prompt=false, scheme);
+  /* Ensures the three are available */
+
+  let%FRes pkh = signer->Signer.publicKeyHash;
+
+  let%FRes pk = signer->Signer.publicKey;
+
+  let%FRes path =
+    path
+    ->DerivationPath.convertToTezosBip44
+    ->ResultEx.mapError(e => e->Wallet.Ledger.DerivationPathError)
+    ->convertLedgerError
+    ->convertWalletError
+    ->Future.value;
+
+  let t = Wallet.Ledger.{path, scheme};
+  let sk = Wallet.Ledger.Encode.toSecretKey(t, ~ledgerBasePkh);
+
+  let pk = Wallet.ledgerPkValue(sk, pk);
+
+  let%FResMap () =
     Wallet.addOrReplaceAlias(~dirpath, ~alias, ~pk, ~pkh, ~sk, ())
-    ->Future.map(convertWalletError)
-    ->Future.mapOk(() => pkh)
-  });
+    ->Future.map(convertWalletError);
+
+  pkh;
 };

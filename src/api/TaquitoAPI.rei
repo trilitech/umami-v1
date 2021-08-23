@@ -29,7 +29,7 @@ let handleEstimationResults:
     array((option(int), option(int), option(int))),
     option(int)
   ) =>
-  Future.t(Result.t(ReTaquito.Toolkit.Estimation.result, ErrorHandler.t));
+  Result.t(ReTaquito.Toolkit.Estimation.result, ErrorHandler.t);
 
 module Balance: {
   /* Retrieve the balance of given public key hash */

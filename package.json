@@ -20,6 +20,7 @@
     "bignumber.js": "^9.0.1",
     "bip39": "^3.0.3",
     "bs-fetch": "^0.6.2",
+    "bs-let": "^0.1.16",
     "bs-reform": "10.0.2-alpha.0",
     "bs58check": "^2.1.2",
     "child-reprocess": "^0.1.2",

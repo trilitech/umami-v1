@@ -222,6 +222,13 @@ module Read = {
     payload,
   };
 
+  let filterJsonExn = ex =>
+    switch (ex) {
+    | Json.ParseError(error) => error
+    | Json.Decode.DecodeError(error) => error
+    | _ => "Unknown error"
+    };
+
   type operation = t;
 
   let decode = json => {

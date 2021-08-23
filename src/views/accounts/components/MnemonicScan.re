@@ -53,7 +53,7 @@ let make = (~closeAction, ~index, ~secret) => {
     ->SecureStorage.validatePassword
     ->Future.map(
         fun
-        | Ok(true) => {
+        | Ok () => {
             setStatus(_ => StepAccounts(password));
             Ok();
           }

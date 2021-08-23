@@ -24,6 +24,7 @@
 /*****************************************************************************/
 
 open UmamiCommon;
+open Let;
 
 module Path = {
   module Endpoint = {
@@ -52,13 +53,12 @@ module URL = {
 
   let fromString = s => s;
 
-  let get = url =>
-    url
-    ->Fetch.fetch
-    ->FutureJs.fromPromise(Js.String.make)
-    ->Future.flatMapOk(response =>
-        response->Fetch.Response.json->FutureJs.fromPromise(Js.String.make)
-      );
+  let get = url => {
+    let%FRes response =
+      url->Fetch.fetch->FutureJs.fromPromise(Js.String.make);
+
+    response->Fetch.Response.json->FutureJs.fromPromise(Js.String.make);
+  };
 
   module Explorer = {
     let operations =
@@ -120,18 +120,6 @@ module URL = {
   };
 };
 
-let tryMap = (result: Result.t('a, string), transform: 'a => 'b) =>
-  try(
-    switch (result) {
-    | Ok(value) => Ok(transform(value))
-    | Error(error) => Error(error)
-    }
-  ) {
-  | Json.ParseError(error) => Error(error)
-  | Json.Decode.DecodeError(error) => Error(error)
-  | _ => Error("Unknown error")
-  };
-
 module type Explorer = {
   let getFromMempool:
     (PublicKeyHash.t, ConfigFile.t, array(Operation.Read.t)) =>
@@ -152,30 +140,22 @@ module type Explorer = {
 
 module ExplorerMaker =
        (Get: {let get: string => Future.t(Result.t(Js.Json.t, string));}) => {
-  let getFromMempool = (account: PublicKeyHash.t, network, operations) =>
-    network
-    ->URL.Explorer.mempool(~account)
-    ->Get.get
-    ->Future.map(result =>
-        result->tryMap(x =>
-          (
-            operations,
-            x |> Json.Decode.(array(Operation.Read.decodeFromMempool)),
-          )
+  let getFromMempool = (account: PublicKeyHash.t, network, operations) => {
+    let%FtMap res = network->URL.Explorer.mempool(~account)->Get.get;
+    let%Res res = res;
+    let%ResMap mempool =
+      res
+      ->ResultEx.fromExn(
+          Json.Decode.(array(Operation.Read.decodeFromMempool)),
         )
-      )
-    >>= (
-      ((operations, mempool)) => {
-        module Comparator = Operation.Read.Comparator;
-        let operations =
-          Set.fromArray(operations, ~id=(module Operation.Read.Comparator));
+      ->ResultEx.mapError(Operation.Read.filterJsonExn);
 
-        let operations =
-          mempool->Array.reduce(operations, Set.add)->Set.toArray;
-
-        Future.value(Ok(operations));
-      }
-    );
+    module Comparator = Operation.Read.Comparator;
+    let operations =
+      Set.fromArray(operations, ~id=(module Operation.Read.Comparator));
+    let operations = mempool->Array.reduce(operations, Set.add)->Set.toArray;
+    operations;
+  };
 
   let getOperations =
       (
@@ -186,19 +166,21 @@ module ExplorerMaker =
         ~limit: option(int)=?,
         ~mempool: bool=false,
         (),
-      ) =>
-    network
-    ->URL.Explorer.operations(account, ~types?, ~destination?, ~limit?, ())
-    ->Get.get
-    ->Future.map(result =>
-        result->tryMap(Json.Decode.(array(Operation.Read.decode)))
-      )
-    >>= (
-      operations =>
-        mempool
-          ? getFromMempool(account, network, operations)
-          : Future.value(Ok(operations))
-    );
+      ) => {
+    let%FRes res =
+      network
+      ->URL.Explorer.operations(account, ~types?, ~destination?, ~limit?, ())
+      ->Get.get;
+
+    let%FRes operations =
+      res
+      ->ResultEx.fromExn(Json.Decode.(array(Operation.Read.decode)))
+      ->ResultEx.mapError(Operation.Read.filterJsonExn)
+      ->Future.value;
+
+    mempool
+      ? getFromMempool(account, network, operations) : operations->FutureEx.ok;
+  };
 };
 
 module Explorer = ExplorerMaker(URL);
