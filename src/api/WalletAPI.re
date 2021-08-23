@@ -336,6 +336,10 @@ module Accounts = {
       secretsBefore[index]
       ->Option.map(secret =>
           secret.addresses
+          ->Array.concat(
+              secret.masterPublicKey
+              ->Option.mapWithDefault([||], pkh => [|pkh|]),
+            )
           ->Array.keepMap(v => aliases->Map.String.get((v :> string)))
         )
       ->FutureEx.fromOption(
