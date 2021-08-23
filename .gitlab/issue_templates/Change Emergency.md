@@ -40,11 +40,14 @@
 <!--  /label ~"Priority::3-Low" -->
 
 ## Reviews checklist (all required)
-( ping CAB members : @picdc @remyzorg @comeh @philippewang.info @SamREye )
 - [ ] Review from Development
 - [ ] Review from Operations
-- [ ] Review from Business  
-<!-- check the box [x], you may also add your @user handle at the end of the line -->
+- [ ] Review from Business
+<!-- tick the corresponding checkbox [x], you may also add your @user handle at the end of the line -->
+/todo @picdc (cc: @remyzorg )    Please review this _emergency change_ on development aspects
+/todo @comeh (cc: @philippewang) Please review this _emergency change_ on operations aspects
+/todo @SamREye                   Please review this _emergency change_ on business aspects
+
 <!-- Quick actions for last reviewer : -->
 <!-- /unlabel ~"CAB::to-review" -->
 

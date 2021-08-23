@@ -24,6 +24,7 @@
 
 ### How the incident was discovered?
 <!-- Mention which alert was triggered where, but report wrong or missing alerts when it's the case -->
+<!-- slack ? manual check ? user notification ? other -->
 
 
 ### What is the potential impact of the incident?
@@ -32,6 +33,7 @@
 
 ### What is the evidence (i.e. screenshots, logs, etc)?
 <!-- Surround logs exctacts with ``` multiline logs```-->
+
 
 
 <!-- METADATA for project management, please leave the following lines and edit as needed -->
@@ -43,11 +45,14 @@
 /label ~Change ~"CAB::to-review" ~"Change::Emergency" 
 
 ## Reviews checklist (all required)
-( ping CAB members : @picdc @remyzorg @comeh @philippewang.info @SamREye )
 - [ ] Incident Review from Development 
 - [ ] Incident Review from Operations 
 - [ ] Incident Review from Business 
-<!-- check the box [x], you may also add your @user handle at the end of the line -->
+<!-- tick the corresponding checkbox [x], you may also add your @user handle at the end of the line -->
+/todo @picdc (cc: @remyzorg )    Please review this _emergency change_ on development aspects
+/todo @comeh (cc: @philippewang) Please review this _emergency change_ on operations aspects
+/todo @SamREye                   Please review this _emergency change_ on business aspects
+
 <!-- Quick actions for last reviewer : -->
 <!-- /unlabel ~"CAB::to-review" -->
 
