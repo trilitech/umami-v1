@@ -29,6 +29,13 @@ type t = ..;
 /* A string info on where the error is defined */
 type scope = string;
 
+/* Error information where the message is the applycation of the handler and
+   the scope is the scope of the handler */
+type errorInfos = {
+  msg: string,
+  scope: string,
+};
+
 /* Common errors */
 type t +=
   /* The most basic error. It should be used as little as possible */
@@ -37,6 +44,9 @@ type t +=
 
 /* Adds an errors handler in the registry */
 let registerHandler: (scope, t => option(string)) => unit;
+
+/* Gets infos of an error */
+let getInfos: t => errorInfos;
 
 /* Converts an error value to a string message by looking up the handlers
    registry */

@@ -29,6 +29,11 @@ type t = ..;
 
 type scope = string;
 
+type errorInfos = {
+  msg: string,
+  scope: string,
+};
+
 type t +=
   | Generic(string)
   | WrongPassword;
@@ -48,16 +53,24 @@ let () =
     | _ => None,
   );
 
-let toString = e => {
+let getInfos = e => {
   let infos =
     handlers.contents
-    ->Lib.List.findMap(((sc, h)) => e->h->Option.map(msg => (sc, msg)));
+    ->Lib.List.findMap(((scope, h)) =>
+        e->h->Option.map(msg => {scope, msg})
+      );
 
   switch (infos) {
-  | Some((_scope, msg)) => msg
+  | Some(i) => i
   | None =>
     /* We know by construction that [e] is an object as it is of type [t]. It
        must be convertible to json by [stringifyAny] */
-    I18n.errors#unhandled_error(e->Js.Json.stringifyAny->Option.getExn)
+    {
+      scope: "Generic",
+      msg:
+        I18n.errors#unhandled_error(e->Js.Json.stringifyAny->Option.getExn),
+    }
   };
 };
+
+let toString = e => getInfos(e).msg;
