@@ -146,7 +146,7 @@ module ExplorerMaker =
     let%ResMap mempool =
       res
       ->ResultEx.fromExn(
-          Json.Decode.(array(Operation.Read.decodeFromMempool)),
+          Json.Decode.(array(Operation.Read.Decode.fromMempool)),
         )
       ->ResultEx.mapError(Operation.Read.filterJsonExn);
 
@@ -174,7 +174,7 @@ module ExplorerMaker =
 
     let%FRes operations =
       res
-      ->ResultEx.fromExn(Json.Decode.(array(Operation.Read.decode)))
+      ->ResultEx.fromExn(Json.Decode.(array(Operation.Read.Decode.t)))
       ->ResultEx.mapError(Operation.Read.filterJsonExn)
       ->Future.value;
 

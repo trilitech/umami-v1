@@ -100,62 +100,61 @@ let makeSingleTransaction =
 
   makeTransaction(~source, ~transfers, ~fee?, ~burnCap?, ~forceLowFee?, ());
 };
+module Reveal = {
+  type t = {public_key: string};
 
-module Business = {
-  module Reveal = {
-    type t = {public_key: string};
+  let decode = json =>
+    Json.Decode.{public_key: json |> field("public_key", string)};
+};
 
-    let decode = json =>
-      Json.Decode.{public_key: json |> field("public_key", string)};
+module Transaction = {
+  type t = {
+    amount: Tez.t,
+    destination: PublicKeyHash.t,
+    parameters: option(Js.Dict.t(string)),
   };
 
-  module Transaction = {
-    type t = {
-      amount: Tez.t,
-      destination: PublicKeyHash.t,
-      parameters: option(Js.Dict.t(string)),
+  let decode = json =>
+    Json.Decode.{
+      amount: json |> field("amount", string) |> Tez.fromMutezString,
+      destination:
+        json
+        |> field("destination", string)
+        |> PublicKeyHash.build
+        |> Result.getExn,
+      parameters: json |> optional(field("parameters", dict(string))),
     };
+};
 
-    let decode = json =>
-      Json.Decode.{
-        amount: json |> field("amount", string) |> Tez.fromMutezString,
-        destination:
-          json
-          |> field("destination", string)
-          |> PublicKeyHash.build
-          |> Result.getExn,
-        parameters: json |> optional(field("parameters", dict(string))),
-      };
+module Origination = {
+  type t = {
+    delegate: option(string),
+    contract_address: string,
   };
 
-  module Origination = {
-    type t = {
-      delegate: option(string),
-      contract_address: string,
+  let decode = json =>
+    Json.Decode.{
+      delegate: json |> optional(field("delegate", string)),
+      contract_address: json |> field("contract_address", string),
     };
+};
 
-    let decode = json =>
-      Json.Decode.{
-        delegate: json |> optional(field("delegate", string)),
-        contract_address: json |> field("contract_address", string),
-      };
-  };
+module Delegation = {
+  type t = {delegate: option(PublicKeyHash.t)};
 
-  module Delegation = {
-    type t = {delegate: option(PublicKeyHash.t)};
+  let decode = json =>
+    Json.Decode.{
+      delegate:
+        switch (json |> optional(field("delegate", string))) {
+        | Some(delegate) =>
+          delegate->Js.String2.length == 0
+            ? None : Some(delegate->PublicKeyHash.build->Result.getExn)
+        | None => None
+        },
+    };
+};
 
-    let decode = json =>
-      Json.Decode.{
-        delegate:
-          switch (json |> optional(field("delegate", string))) {
-          | Some(delegate) =>
-            delegate->Js.String2.length == 0
-              ? None : Some(delegate->PublicKeyHash.build->Result.getExn)
-          | None => None
-          },
-      };
-  };
-
+module Read = {
   type payload =
     | Reveal(Reveal.t)
     | Transaction(Transaction.t)
@@ -163,63 +162,21 @@ module Business = {
     | Delegation(Delegation.t)
     | Unknown;
 
-  type t = {
-    source: PublicKeyHash.t,
-    fee: Tez.t,
-    op_id: int,
-    payload,
-  };
-
-  let decode = (~typ=?, ~op_id=?, json) => {
-    open Json.Decode;
-
-    let def = (v, f) =>
-      switch (v) {
-      | None => f()
-      | Some(v) => v
-      };
-
-    let typ = typ->def(() => json |> field("type", string));
-    let op_id = op_id->def(() => json |> field("op_id", int));
-
-    let x = {
-      source:
-        json
-        |> field("source", string)
-        |> PublicKeyHash.build
-        |> Result.getExn,
-      fee: json |> field("fee", string) |> Tez.fromMutezString,
-      op_id,
-      payload:
-        switch (typ) {
-        | "reveal" => Reveal(json->Reveal.decode)
-        | "transaction" => Transaction(json->Transaction.decode)
-        | "origination" => Origination(json->Origination.decode)
-        | "delegation" => Delegation(json->Delegation.decode)
-        | _ => Unknown
-        },
-    };
-    x;
-  };
-};
-
-module Read = {
-  type payload =
-    | Business(Business.t);
-
   type status =
     | Mempool
     | Chain;
 
   type t = {
-    id: string,
-    op_id: int,
-    level: int,
-    timestamp: Js.Date.t,
     block: option(string),
+    fee: Tez.t,
     hash: string,
-    status,
+    id: string,
+    level: int,
+    op_id: int,
     payload,
+    source: PublicKeyHash.t,
+    status,
+    timestamp: Js.Date.t,
   };
 
   let filterJsonExn = ex =>
@@ -231,38 +188,57 @@ module Read = {
 
   type operation = t;
 
-  let decode = json => {
-    Json.Decode.{
-      id: json |> field("id", string),
-      op_id: json |> field("op_id", int),
-      level: json |> field("level", string) |> int_of_string,
-      timestamp: json |> field("timestamp", date),
-      block: json |> field("block", optional(string)),
-      hash: json |> field("hash", string),
-      payload: Business(Business.decode(json)),
-      status: Chain,
-    };
-  };
-
-  let decodeFromMempool = json => {
+  module Decode = {
     open Json.Decode;
-    let typ = json |> field("operation_kind", string);
-    let op_id = json |> field("id", string) |> int_of_string;
-    let op =
-      json |> field("operation", Js.Json.stringify) |> Json.parseOrRaise;
-    {
-      id: "",
-      op_id,
-      level: json |> field("last_seen_level", int),
-      timestamp:
-        json
-        |> field("first_seen_timestamp", float)
-        |> ( *. )(1000.)
-        |> Js.Date.fromFloat,
-      block: json |> optional(field("block", string)),
-      hash: json |> field("ophash", string),
-      payload: Business(Business.decode(~typ, ~op_id, op)),
-      status: Mempool,
+
+    let payload = (ty, json) =>
+      switch (ty) {
+      | "reveal" => Reveal(json->Reveal.decode)
+      | "transaction" => Transaction(json->Transaction.decode)
+      | "origination" => Origination(json->Origination.decode)
+      | "delegation" => Delegation(json->Delegation.decode)
+      | _ => Unknown
+      };
+
+    let source = json =>
+      json |> field("source", string) |> PublicKeyHash.build |> Result.getExn;
+
+    let t = json => {
+      {
+        block: json |> field("block", optional(string)),
+        fee: json |> field("fee", string) |> Tez.fromMutezString,
+        hash: json |> field("hash", string),
+        id: json |> field("id", string),
+        level: json |> field("level", string) |> int_of_string,
+        op_id: json |> field("op_id", int),
+        payload: json |> payload(json |> field("type", string)),
+        source: json |> source,
+        status: Chain,
+        timestamp: json |> field("timestamp", date),
+      };
+    };
+
+    let fromMempool = json => {
+      Js.log(json);
+      let typ = json |> field("operation_kind", string);
+      let op =
+        json |> field("operation", Js.Json.stringify) |> Json.parseOrRaise;
+      {
+        block: json |> optional(field("block", string)),
+        fee: op |> field("fee", string) |> Tez.fromMutezString,
+        hash: json |> field("ophash", string),
+        id: json |> field("id", string),
+        level: json |> field("last_seen_level", int),
+        op_id: json |> field("id", string) |> int_of_string,
+        payload: op |> payload(typ),
+        source: json |> source,
+        status: Mempool,
+        timestamp:
+          json
+          |> field("first_seen_timestamp", float)
+          |> ( *. )(1000.)
+          |> Js.Date.fromFloat,
+      };
     };
   };
 
