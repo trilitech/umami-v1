@@ -30,7 +30,8 @@ type t = ..;
 type scope = string;
 
 type t +=
-  | Generic(string);
+  | Generic(string)
+  | WrongPassword;
 
 let handlers = ref([]);
 
@@ -43,6 +44,7 @@ let () =
     "Generic",
     fun
     | Generic(s) => s->Some
+    | WrongPassword => I18n.form_input_error#wrong_password->Some
     | _ => None,
   );
 

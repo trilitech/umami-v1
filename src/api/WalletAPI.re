@@ -32,8 +32,7 @@ type Errors.t +=
   | RecoveryPhraseNotFound(int)
   | SecretAlreadyImported
   | IncorrectNumberOfWords
-  | UnknownBip39Word(string, int)
-  | Generic(string);
+  | UnknownBip39Word(string, int);
 
 let () =
   Errors.registerHandler(
@@ -252,10 +251,7 @@ module Accounts = {
       ->Option.flatMap(recoveryPhrases => recoveryPhrases[index])
       ->FutureEx.fromOption(~error=RecoveryPhraseNotFound(index));
 
-    SecureStorage.Cipher.decrypt2(password, data)
-    ->Future.mapError(_ =>
-        Errors.Generic(I18n.form_input_error#wrong_password)
-      );
+    SecureStorage.Cipher.decrypt2(password, data);
   };
 
   let import = (~config, ~alias, ~secretKey, ~password) => {
@@ -684,10 +680,7 @@ module Accounts = {
       ) => {
     let backupPhraseConcat = backupPhrase->Js.Array2.joinWith(" ");
 
-    let%FRes () =
-      password
-      ->SecureStorage.validatePassword
-      ->Future.mapError(_ => Generic(I18n.form_input_error#wrong_password));
+    let%FRes () = password->SecureStorage.validatePassword;
 
     let bp = backupPhrase->Array.length;
 

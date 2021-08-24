@@ -61,7 +61,7 @@ let filterOutFormError =
   | ReTaquitoError.LedgerKeyRetrieval
   | ReTaquitoError.LedgerDenied
   | ReTaquitoError.LedgerNotReady
-  | ReTaquitoError.WrongPassword => false
+  | Errors.WrongPassword => false
   | _ => true;
 
 let useCreate = (~sideEffect=?, ()) => {

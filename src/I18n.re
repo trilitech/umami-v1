@@ -424,6 +424,7 @@ let taquito = {
   pub not_an_account = "Not a tz address";
   pub not_a_contract = "Not a contract address";
   pub no_prefix_matched = "Unknown address prefix";
+  pub api_error = n => p("API error: received %d", n);
   pub invalid_checksum = "Invalid checksum";
   pub invalid_length = "Invalid length";
   pub valid = "Valid";
@@ -433,6 +434,7 @@ let taquito = {
 let wallet = {
   pub _this = this;
   pub key_not_found = "Key not found";
+  pub key_bad_format = s => p("Can't readkey, bad format: %s", s);
   pub invalid_path_size =
     p("Path %s is not valid: it must be of at least of two indexes");
   pub invalid_tezos_prefix_path = (prefix, index) =>
@@ -455,6 +457,16 @@ let wallet = {
 
 let errors = {
   pub _this = this;
+  pub illformed_token_contract = "Illformed Token Contract";
+  pub cannot_read_token = s => p("Cannot read token amount: %s", s);
+  pub invalid_operation_type = "Invalid operation type!";
+  pub operation_cannot_be_run_offchain = s =>
+    p("Operation '%s' cannot be run offchain.", s);
+  pub operation_not_simulable = s => p("Operation '%s' is not simulable.", s);
+  pub operation_injection_not_implemented = s =>
+    p("Operation '%s' injection is not implemented", s);
+  pub operation_not_implemented = s =>
+    p("Operation '%s' offchain call is not implemented", s);
   pub unhandled_error = e => p("Unhandled error %s", e);
   pub no_secret_found = "No secrets found";
   pub secret_not_found = i => p("Secret at index %d not found!", i);

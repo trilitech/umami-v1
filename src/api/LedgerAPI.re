@@ -26,17 +26,8 @@
 open ReTaquitoSigner;
 open Let;
 
-let mapError = (ft, constr) =>
-  ft->Future.mapError(
-    fun
-    | Errors.Generic(s) => constr(s)
-    | e => e,
-  );
-
 let init = (~timeout=?, ()) => {
-  ReLedger.Transport.create(~listenTimeout=?timeout, ())
-  ->ReTaquitoError.fromPromiseParsed
-  ->mapError(s => s->ReTaquitoError.LedgerInit);
+  ReLedger.Transport.create(~listenTimeout=?timeout, ());
 };
 
 /* This current function is a hack until there is a proper way to know if a

@@ -31,22 +31,26 @@ type Errors.t +=
   | OperationNotRunnableOffchain(string)
   | SimulationNotAvailable(string)
   | InjectionNotImplemented(string)
-  | CheckContractJson
+  | IllformedTokenContract
+  | InvalidOperationType
+  | UnreadableTokenAmount(string)
   | OffchainCallNotImplemented(string);
 
 let () =
   Errors.registerHandler(
     "Node",
     fun
+    | UnreadableTokenAmount(s) => I18n.errors#cannot_read_token(s)->Some
+    | InvalidOperationType => I18n.errors#invalid_operation_type->Some
     | OperationNotRunnableOffchain(s) =>
-      Format.sprintf("Operation '%s' cannot be run offchain.", s)->Some
+      I18n.errors#operation_cannot_be_run_offchain(s)->Some
+    | IllformedTokenContract => I18n.errors#illformed_token_contract->Some
     | SimulationNotAvailable(s) =>
-      Format.sprintf("Operation '%s' is not simulable.", s)->Some
+      I18n.errors#operation_not_simulable(s)->Some
     | InjectionNotImplemented(s) =>
-      Format.sprintf("Operation '%s' injection is not implemented", s)->Some
+      I18n.errors#operation_injection_not_implemented(s)->Some
     | OffchainCallNotImplemented(s) =>
-      Format.sprintf("Operation '%s' offchain call is not implemented", s)
-      ->Some
+      I18n.errors#operation_not_implemented(s)->Some
     | _ => None,
   );
 
@@ -227,7 +231,7 @@ module DelegateMaker =
       let%FRes payload =
         switch (firstOperation.payload) {
         | Delegation(payload) => payload->FutureEx.ok
-        | _ => Errors.Generic("Invalid operation type!")->FutureEx.err
+        | _ => InvalidOperationType->FutureEx.err
         };
 
       switch (payload.delegate) {
@@ -293,7 +297,7 @@ module Tokens = {
     switch (Js.Json.classify(json)) {
     | Js.Json.JSONTrue => Ok(true)
     | JSONFalse => Ok(false)
-    | _ => Error(CheckContractJson)
+    | _ => Error(IllformedTokenContract)
     };
   };
 
@@ -357,8 +361,7 @@ module Tokens = {
     | Some(v) =>
       v
       ->Token.Unit.fromNatString
-      ->FutureEx.fromOption(~error="cannot read Token amount: " ++ v)
-      ->Future.mapError(s => s->Errors.Generic)
+      ->FutureEx.fromOption(~error=UnreadableTokenAmount(v))
     };
   };
 };

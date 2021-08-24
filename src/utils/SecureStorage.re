@@ -118,7 +118,6 @@ module Cipher = {
     | KeyFromPasswordError(string)
     | DeriveKeyError(string)
     | DecryptError(string)
-    | WrongPassword
     | EncryptError(string);
 
   let () =
@@ -128,7 +127,6 @@ module Cipher = {
       | KeyFromPasswordError(s) => s->Some
       | DeriveKeyError(s) => s->Some
       | DecryptError(s) => s->Some
-      | WrongPassword => I18n.form_input_error#wrong_password->Some
       | EncryptError(s) => s->Some
       | _ => None,
     );
@@ -243,7 +241,7 @@ let validatePassword = password => {
   let%FRes data = "lock"->fetch(~password);
   let%FRes () =
     data == Some("lock") || data == None
-      ? FutureEx.ok() : FutureEx.err(Cipher.WrongPassword);
+      ? FutureEx.ok() : FutureEx.err(Errors.WrongPassword);
   let%FResMap () = store("lock", ~key="lock", ~password);
   ();
 };

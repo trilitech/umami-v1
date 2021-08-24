@@ -54,14 +54,7 @@ let make = (~closeAction, ~index, ~secret) => {
   let submitPassword = (~password) => {
     password
     ->SecureStorage.validatePassword
-    ->Future.map(
-        fun
-        | Ok () => {
-            setStatus(_ => StepAccounts(password));
-            Ok();
-          }
-        | _ => Error(ReTaquitoError.WrongPassword),
-      );
+    ->Future.mapOk(() => setStatus(_ => StepAccounts(password)));
   };
 
   let submitAccounts = (~password, ()) => {

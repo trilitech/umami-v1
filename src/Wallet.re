@@ -27,13 +27,15 @@ open System.Path.Ops;
 open Let;
 
 type Errors.t +=
-  | KeyNotFound;
+  | KeyNotFound
+  | KeyBadFormat(string);
 
 let () =
   Errors.registerHandler(
     "Wallet",
     fun
     | KeyNotFound => I18n.wallet#key_not_found->Some
+    | KeyBadFormat(s) => I18n.wallet#key_bad_format(s)->Some
     | _ => None,
   );
 
@@ -279,7 +281,7 @@ let readSecretFromPkh = (address, dirpath) => {
   | k when k->Js.String2.startsWith("encrypted:") => Ok((Encrypted, k))
   | k when k->Js.String2.startsWith("unencrypted:") => Ok((Unencrypted, k))
   | k when k->Js.String2.startsWith("ledger://") => Ok((Ledger, k))
-  | k => Error(Errors.Generic("Can't readkey, bad format: " ++ k))
+  | k => Error(KeyBadFormat(k))
   };
 };
 

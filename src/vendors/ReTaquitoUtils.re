@@ -26,7 +26,8 @@
 type Errors.t +=
   | No_prefix_matched
   | Invalid_checksum
-  | Invalid_length;
+  | Invalid_length
+  | ValidateAPIError(int);
 
 let () =
   Errors.registerHandler(
@@ -35,6 +36,7 @@ let () =
     | No_prefix_matched => I18n.taquito#no_prefix_matched->Some
     | Invalid_checksum => I18n.taquito#invalid_checksum->Some
     | Invalid_length => I18n.taquito#invalid_length->Some
+    | ValidateAPIError(n) => I18n.taquito#api_error(n)->Some
     | _ => None,
   );
 
@@ -50,7 +52,7 @@ let handleValidity =
   | 1 => Error(Invalid_checksum)
   | 2 => Error(Invalid_length)
   | 3 => Ok()
-  | n => Error(Errors.Generic(n->Int.toString));
+  | n => Error(ValidateAPIError(n));
 
 let validateAddress = s =>
   s->validateAddressRaw->handleValidity->Result.map(() => `Address);

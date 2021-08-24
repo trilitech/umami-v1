@@ -35,7 +35,6 @@ let ledgerKey = "Unable to retrieve public key";
 let ledgerDenied = "0x6985";
 
 type Errors.t +=
-  | WrongPassword
   | UnregisteredDelegate
   | UnchangedDelegate
   | EmptyTransaction
@@ -51,7 +50,7 @@ type Errors.t +=
 
 let parse = (e: RawJsError.t) =>
   switch (e.message) {
-  | s when s->Js.String2.includes(wrongSecretKey) => WrongPassword
+  | s when s->Js.String2.includes(wrongSecretKey) => Errors.WrongPassword
   | s when s->Js.String2.includes(branchRefused) => BranchRefused
   | s when s->Js.String2.includes(badPkh) => BadPkh
   | s when s->Js.String2.includes(unregisteredDelegate) =>
@@ -69,7 +68,6 @@ let () =
   Errors.registerHandler(
     "Taquito",
     fun
-    | WrongPassword => I18n.form_input_error#wrong_password->Some
     | UnregisteredDelegate => I18n.form_input_error#unregistered_delegate->Some
     | UnchangedDelegate => I18n.form_input_error#change_baker->Some
     | BadPkh => I18n.form_input_error#bad_pkh->Some

@@ -29,9 +29,11 @@ type t = ..;
 /* A string info on where the error is defined */
 type scope = string;
 
-/* The most basic error. It should be used as little as possible */
+/* Common errors */
 type t +=
-  | Generic(string);
+  /* The most basic error. It should be used as little as possible */
+  | Generic(string)
+  | WrongPassword;
 
 /* Adds an errors handler in the registry */
 let registerHandler: (scope, t => option(string)) => unit;
