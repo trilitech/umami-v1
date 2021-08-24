@@ -336,6 +336,10 @@ module Accounts = {
       secretsBefore[index]
       ->Option.map(secret =>
           secret.addresses
+          ->Array.concat(
+              secret.masterPublicKey
+              ->Option.mapWithDefault([||], pkh => [|pkh|]),
+            )
           ->Array.keepMap(v => aliases->Map.String.get((v :> string)))
         )
       ->FutureEx.fromOption(
@@ -385,15 +389,6 @@ module Accounts = {
     };
   };
 
-  let used = (network, address) => {
-    let%FResMap operations =
-      network
-      ->ServerAPI.Explorer.getOperations(address, ~limit=1, ())
-      ->Future.mapError(s => ErrorHandler.(WalletAPI(Generic(s))));
-
-    operations->Js.Array2.length != 0;
-  };
-
   let legacyImport = (~config, alias, recoveryPhrase, ~password) => {
     let%FRes secretKey =
       HD.edeskLegacy(recoveryPhrase, ~password)
@@ -407,6 +402,56 @@ module Accounts = {
       | APIError(string)
       | TaquitoError(ReTaquitoError.t);
 
+    type kind =
+      | Regular
+      | Legacy;
+
+    type account('sk) = {
+      kind,
+      publicKeyHash: PublicKeyHash.t,
+      encryptedSecretKey: 'sk,
+    };
+
+    let used = (network, address) => {
+      let%FResMap operations =
+        network
+        ->ServerAPI.Explorer.getOperations(address, ~limit=1, ())
+        ->Future.mapError(s => ErrorHandler.(WalletAPI(Generic(s))));
+
+      operations->Js.Array2.length != 0;
+    };
+
+    let runLegacy = (~recoveryPhrase, ~password) => {
+      let%FRes encryptedSecretKey =
+        HD.edeskLegacy(recoveryPhrase, ~password)
+        ->Future.mapError(e =>
+            e->ErrorHandler.Generic->ErrorHandler.WalletAPI
+          );
+
+      let%FRes signer =
+        ReTaquitoSigner.MemorySigner.create(
+          ~secretKey=encryptedSecretKey,
+          ~passphrase=password,
+          (),
+        )
+        ->Future.mapError(e => e->ErrorHandler.Taquito);
+
+      let%FRes publicKeyHash =
+        signer
+        ->ReTaquitoSigner.publicKeyHash
+        ->Future.mapError(e => e->ErrorHandler.Taquito);
+
+      Future.value(Ok({kind: Legacy, publicKeyHash, encryptedSecretKey}));
+    };
+
+    let usedAccount = (~config, ~account, ~onFoundKey, ~index) => {
+      let%FRes used = used(config, account.publicKeyHash);
+
+      used
+        ? onFoundKey(index, account)
+        : index == 0 ? onFoundKey(index, account) : FutureEx.ok();
+    };
+
     let runStream =
         (
           ~config,
@@ -419,13 +464,12 @@ module Accounts = {
       let rec loop = n => {
         let path = path->DerivationPath.Pattern.implement(n);
 
-        let%FRes address = getKey(path, schema);
-        let found = () => {
-          onFoundKey(n, address);
+        let%FRes account = getKey(path, schema);
+        let onFoundKey = (n, account) => {
+          onFoundKey(n, account);
           loop(n + 1);
         };
-        let%FRes used = used(config, address);
-        used ? found() : n == 0 ? found() : Future.value(Ok());
+        usedAccount(~config, ~account, ~onFoundKey, ~index=n);
       };
       loop(startIndex);
     };
@@ -441,32 +485,43 @@ module Accounts = {
       runStream(
         ~config,
         ~startIndex,
-        ~onFoundKey,
+        ~onFoundKey=(i, account) => onFoundKey(i, account.publicKeyHash),
         path,
         schema,
         (path, schema) => {
           let%FRes tr = LedgerAPI.init();
-          LedgerAPI.getKey(~prompt=false, tr, path, schema);
+          let%FResMap publicKeyHash =
+            LedgerAPI.getKey(~prompt=false, tr, path, schema);
+          {publicKeyHash, encryptedSecretKey: (), kind: Regular};
         },
       );
 
+    let runStreamLegacy = (~config, ~recoveryPhrase, ~password, ~onFoundKey) => {
+      let onFoundKey = (n, acc) => onFoundKey(n, acc)->FutureEx.ok;
+      let%FRes account = runLegacy(~recoveryPhrase, ~password);
+      usedAccount(~config, ~account, ~onFoundKey, ~index=-1);
+    };
+
     let getSeedKey = (~recoveryPhrase, ~password, path, _) => {
-      let%FRes secretKey =
+      let%FRes encryptedSecretKey =
         path
         ->HD.edesk(recoveryPhrase->HD.seed, ~password)
         ->Future.mapError(e => ErrorHandler.WalletAPI(Generic(e)));
 
       let%FRes signer =
         ReTaquitoSigner.MemorySigner.create(
-          ~secretKey,
+          ~secretKey=encryptedSecretKey,
           ~passphrase=password,
           (),
         )
         ->Future.mapError(e => e->ErrorHandler.Taquito);
 
-      signer
-      ->ReTaquitoSigner.publicKeyHash
-      ->Future.mapError(e => e->ErrorHandler.Taquito);
+      let%FResMap publicKeyHash =
+        signer
+        ->ReTaquitoSigner.publicKeyHash
+        ->Future.mapError(e => e->ErrorHandler.Taquito);
+
+      {publicKeyHash, encryptedSecretKey, kind: Regular};
     };
 
     let runStreamSeed =
@@ -483,18 +538,26 @@ module Accounts = {
         ->Option.flatMap(r => r[secret.Secret.Repr.index])
       ) {
       | Some(recoveryPhrase) =>
+        let onFoundKey = (n, acc) => onFoundKey(n, acc);
+
         let%FRes recoveryPhrase =
           recoveryPhrase
           ->SecureStorage.Cipher.decrypt(password)
           ->Future.mapError(e => ErrorHandler.(WalletAPI(Generic(e))));
-        runStream(
-          ~config,
-          ~startIndex,
-          ~onFoundKey,
-          path,
-          Wallet.Ledger.ED25519,
-          getSeedKey(~recoveryPhrase, ~password),
-        );
+
+        let%FRes () =
+          runStream(
+            ~config,
+            ~startIndex,
+            ~onFoundKey,
+            path,
+            Wallet.Ledger.ED25519,
+            getSeedKey(~recoveryPhrase, ~password),
+          );
+
+        secret.Secret.Repr.secret.masterPublicKey == None
+          ? runStreamLegacy(~config, ~recoveryPhrase, ~password, ~onFoundKey)
+          : Future.value(Ok());
       | None => Future.value(Ok())
       };
     };
@@ -717,19 +780,43 @@ module Accounts = {
     );
   };
 
-  let importRemainingMnemonicKeys = (~config, ~password, ~index, ()) => {
+  let importMnemonicKeys = (~config, ~accounts, ~password, ~index, ()) => {
+    let importLegacyKey = (basename, encryptedSecret) => {
+      let%FResMap pkh =
+        import(
+          ~config,
+          ~alias=basename ++ " legacy",
+          ~secretKey=encryptedSecret,
+          ~password,
+        );
+      Some(pkh);
+    };
+
+    let rec importKeys = (basename, index, (accounts, legacy), pkhs) => {
+      let alias = basename ++ " /" ++ index->Js.Int.toString;
+      switch (accounts) {
+      | [] => (pkhs->List.reverse->List.toArray, legacy)->Ok->Future.value
+
+      // by construction, there should be only one legacy
+      | [Scan.{encryptedSecretKey, kind: Legacy}, ...rem] =>
+        let%FRes legacy = importLegacyKey(basename, encryptedSecretKey);
+        importKeys(basename, index + 1, (rem, legacy), pkhs);
+
+      | [{encryptedSecretKey, kind: Regular}, ...rem] =>
+        let%FRes pkh =
+          import(~config, ~alias, ~secretKey=encryptedSecretKey, ~password);
+        importKeys(basename, index + 1, (rem, legacy), [pkh, ...pkhs]);
+      };
+    };
+
     let%FRes secret = secretAt(~config, index)->Future.value;
-    let%FRes recoveryPhrase = recoveryPhraseAt(~config, index, ~password);
 
     let%FlatRes (addresses, masterPublicKey) =
-      Scan.run(
-        ~config,
-        ~recoveryPhrase,
-        ~baseName=secret.name,
-        ~derivationPath=secret.derivationPath,
-        ~password,
-        ~index=secret.addresses->Array.length,
-        (),
+      importKeys(
+        secret.name,
+        secret.addresses->Array.length,
+        (accounts, None),
+        [],
       );
 
     let secret = {
