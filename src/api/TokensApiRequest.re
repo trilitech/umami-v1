@@ -40,13 +40,7 @@ let useLoadOperationOffline = (~requestState, ~operation: Token.operation) => {
   let get = (~config, operation) =>
     config->NodeAPI.Tokens.callGetOperationOffline(operation);
 
-  ApiRequest.useLoader(
-    ~get,
-    ~kind=Logs.Tokens,
-    ~requestState,
-    ~errorToString=Errors.toString,
-    operation,
-  );
+  ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, operation);
 };
 
 let tokensStorageKey = "wallet-tokens";

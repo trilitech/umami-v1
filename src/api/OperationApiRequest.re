@@ -52,8 +52,6 @@ let token = (operation, signingIntent) => {
   signingIntent,
 };
 
-let errorToString = Errors.toString;
-
 let filterOutFormError =
   fun
   | ReTaquitoError.LedgerInitTimeout
@@ -87,7 +85,6 @@ let useCreate = (~sideEffect=?, ()) => {
     ~set,
     ~kind=Logs.Operation,
     ~keepError=filterOutFormError,
-    ~errorToString,
     ~sideEffect?,
     (),
   );
@@ -114,7 +111,6 @@ let useSimulate = () => {
   ApiRequest.useSetter(
     ~set,
     ~kind=Logs.Operation,
-    ~errorToString,
     ~keepError=filterOutFormError,
     (),
   );

@@ -44,13 +44,7 @@ let useLoad = requestState => {
         | Error(_) as e => e,
       );
 
-  ApiRequest.useLoader(
-    ~get,
-    ~kind=Logs.Account,
-    ~errorToString=Errors.toString,
-    ~requestState,
-    (),
-  );
+  ApiRequest.useLoader(~get, ~kind=Logs.Account, ~requestState, ());
 };
 
 /* Set */
@@ -61,15 +55,10 @@ let useUpdate =
       (~config, renaming: WalletAPI.Aliases.renameParams) =>
         WalletAPI.Aliases.rename(~config, renaming),
     ~kind=Logs.Account,
-    ~errorToString=Errors.toString,
   );
 
 let useDelete =
-  ApiRequest.useSetter(
-    ~set=WalletAPI.Accounts.delete,
-    ~kind=Logs.Account,
-    ~errorToString=Errors.toString,
-  );
+  ApiRequest.useSetter(~set=WalletAPI.Accounts.delete, ~kind=Logs.Account);
 
 /* Other */
 

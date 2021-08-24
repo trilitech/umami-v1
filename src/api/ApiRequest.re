@@ -123,13 +123,13 @@ let isExpired = request =>
   | _ => false
   };
 
-let logError = (r, addLog, ~keep=_ => true, ~toString=Errors.toString, origin) =>
-  r->Future.tapError(msg =>
-    msg->keep
+let logError = (r, addLog, ~keep=_ => true, origin) =>
+  r->Future.tapError(e =>
+    e->keep
       ? addLog(
           Logs.{
             kind: Logs.Error,
-            msg: msg->toString,
+            msg: e->Errors.toString,
             origin,
             timestamp: Js.Date.now(),
           },
@@ -168,7 +168,7 @@ let conditionToLoad = (request, isMounted) => {
   requestNotAskedAndMounted || requestDoneButReloadOnMount || requestExpired;
 };
 
-let useGetter = (~toast=true, ~errorToString=?, ~get, ~kind, ~setRequest, ()) => {
+let useGetter = (~toast=true, ~get, ~kind, ~setRequest, ()) => {
   let addLog = LogsContext.useAdd();
   let config = ConfigContext.useContent();
 
@@ -176,7 +176,7 @@ let useGetter = (~toast=true, ~errorToString=?, ~get, ~kind, ~setRequest, ()) =>
     setRequest(updateToLoadingState);
 
     get(~config, input)
-    ->logError(addLog(toast), ~toString=?errorToString, kind)
+    ->logError(addLog(toast), kind)
     ->Future.tap(result =>
         setRequest(_ => Done(result, ValidSince(Js.Date.now())))
       );
@@ -190,11 +190,10 @@ let useLoader =
       ~get,
       ~condition=?,
       ~kind,
-      ~errorToString=?,
       ~requestState as (request, setRequest): requestState('value, 'error),
       arg1: 'input,
     ) => {
-  let getRequest = useGetter(~get, ~kind, ~errorToString?, ~setRequest, ());
+  let getRequest = useGetter(~get, ~kind, ~setRequest, ());
 
   let isMounted = ReactUtils.useIsMonted();
   React.useEffect4(
@@ -221,7 +220,6 @@ let useSetter =
       ~set: (~config: _, _) => Future.t(Result.t(_, 'b)),
       ~kind,
       ~keepError=?,
-      ~errorToString=?,
       (),
     ) => {
   let addLog = LogsContext.useAdd();
@@ -231,12 +229,7 @@ let useSetter =
   let sendRequest = input => {
     setRequest(_ => Loading(None));
     set(~config, input)
-    ->logError(
-        addLog(toast),
-        ~keep=?keepError,
-        ~toString=?errorToString,
-        kind,
-      )
+    ->logError(addLog(toast), ~keep=?keepError, kind)
     ->Future.tap(result => {
         setRequest(_ => Done(result, Js.Date.now()->ValidSince))
       })

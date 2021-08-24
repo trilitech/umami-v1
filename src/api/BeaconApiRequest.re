@@ -35,13 +35,7 @@ module Peers = {
   let useLoad = requestState => {
     let get = (~config as _s, ()) => client->ReBeacon.WalletClient.getPeers;
 
-    ApiRequest.useLoader(
-      ~get,
-      ~errorToString=Errors.toString,
-      ~kind=Logs.Settings,
-      ~requestState,
-      (),
-    );
+    ApiRequest.useLoader(~get, ~kind=Logs.Settings, ~requestState, ());
   };
 
   let useDelete =

@@ -113,13 +113,7 @@ let isExpired: t('a, 'b) => bool;
    [keep] aims at filtering some errors based on the error value. No error is
    filtered by default */
 let logError:
-  (
-    Let.future('a),
-    Logs.t => unit,
-    ~keep: Errors.t => bool=?,
-    ~toString: Errors.t => Js.String.t=?,
-    Logs.origin
-  ) =>
+  (Let.future('a), Logs.t => unit, ~keep: Errors.t => bool=?, Logs.origin) =>
   Let.future('a);
 
 /* Same as [logError] but for [Ok] result values */
@@ -147,7 +141,6 @@ let conditionToLoad: (t('a, 'b), bool) => bool;
 let useGetter:
   (
     ~toast: bool=?,
-    ~errorToString: Errors.t => string=?,
     ~get: (~config: ConfigFile.t, 'a) => Let.future('response),
     ~kind: Logs.origin,
     ~setRequest: (t('response, 'c) => t('response, Errors.t)) => unit,
@@ -162,7 +155,6 @@ let useLoader:
     ~get: (~config: ConfigFile.t, 'input) => Let.future('value),
     ~condition: 'input => bool=?,
     ~kind: Logs.origin,
-    ~errorToString: Errors.t => string=?,
     ~requestState: requestState('value, Errors.t),
     'input
   ) =>
@@ -178,7 +170,6 @@ let useSetter:
     ~set: (~config: ConfigFile.t, 'c) => Let.future('a),
     ~kind: Logs.origin,
     ~keepError: Errors.t => bool=?,
-    ~errorToString: Errors.t => Js.String.t=?,
     unit
   ) =>
   (t('a, Errors.t), 'c => Let.future('a));
