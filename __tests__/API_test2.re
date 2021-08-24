@@ -114,15 +114,11 @@ describe("API tests", ({testAsync}) => {
         hash: "opZj2yByVxxEg4YRsZcERMqiy9VgnJkzDGQBPdFNycxxsFBZYus",
         op_id: 0,
         status: Chain,
+        source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
+        fee: Tez.fromMutezInt(1258),
         payload:
-          Business({
-            source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
-            fee: Tez.fromMutezInt(1258),
-            op_id: 0,
-            payload:
-              Delegation({
-                delegate: Some("tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh),
-              }),
+          Delegation({
+            delegate: Some("tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh),
           }),
       },
       {
@@ -133,17 +129,13 @@ describe("API tests", ({testAsync}) => {
         hash: "opQTxvSXMGuZ2rkox6q7ZNQhdp9a1j1ELoVdnHcvrh5ShyocEFD",
         status: Chain,
         op_id: 0,
+        source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
+        fee: Tez.fromMutezInt(1283),
         payload:
-          Business({
-            source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
-            fee: Tez.fromMutezInt(1283),
-            op_id: 0,
-            payload:
-              Transaction({
-                amount: Tez.fromMutezInt(1000000),
-                destination: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
-                parameters: Some(Js.Dict.fromArray([|("prim", "Unit")|])),
-              }),
+          Transaction({
+            amount: Tez.fromMutezInt(1000000),
+            destination: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
+            parameters: Some(Js.Dict.fromArray([|("prim", "Unit")|])),
           }),
       },
     |];
@@ -229,15 +221,11 @@ describe("API tests", ({testAsync}) => {
         block: Some("BMKrQdWfmYtsGVPR7kp2HohJbWRFSB7tWZdRCARVLcNnZTQhJMR"),
         status: Chain,
         hash: "oonh7WBBK92yqFi56KENtpJouPuoLSHB3srWymv8WL6orKfo5P1",
+        source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
+        fee: Tez.fromMutezInt(1269),
         payload:
-          Business({
-            source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
-            fee: Tez.fromMutezInt(1269),
-            op_id: 0,
-            payload:
-              Reveal({
-                public_key: "edpkuAjG6hyZ86JJ8TWBZ5j8txMX6ySsBFBcRRgmkKVBFDf3RJXfdx",
-              }),
+          Reveal({
+            public_key: "edpkuAjG6hyZ86JJ8TWBZ5j8txMX6ySsBFBcRRgmkKVBFDf3RJXfdx",
           }),
       },
     |];
@@ -328,17 +316,13 @@ describe("API tests", ({testAsync}) => {
         block: Some("BLK27pNneaexvbE4QwgEqdsSA5NM8f8XMxbYu1ufbhWD7Dhh3eG"),
         status: Chain,
         hash: "opQTxvSXMGuZ2rkox6q7ZNQhdp9a1j1ELoVdnHcvrh5ShyocEFD",
+        source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
+        fee: Tez.fromMutezInt(1283),
         payload:
-          Business({
-            source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
-            fee: Tez.fromMutezInt(1283),
-            op_id: 0,
-            payload:
-              Transaction({
-                amount: Tez.fromMutezInt(1000000),
-                destination: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
-                parameters: Some(Js.Dict.fromArray([|("prim", "Unit")|])),
-              }),
+          Transaction({
+            amount: Tez.fromMutezInt(1000000),
+            destination: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
+            parameters: Some(Js.Dict.fromArray([|("prim", "Unit")|])),
           }),
       },
     |];
@@ -429,16 +413,12 @@ describe("API tests", ({testAsync}) => {
         block: Some("BLvjLexwMByGckFEqn6rAwFMwdN89vZ5L4YZ6UG43w2j2JX7tDG"),
         status: Chain,
         hash: "oou9e5pWQWZ4GDoT7fiJMwdH85TytZASJMC1VV8GbaDLNsHwoXw",
+        source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
+        fee: Tez.fromMutezInt(2065),
         payload:
-          Business({
-            source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
-            fee: Tez.fromMutezInt(2065),
-            op_id: 0,
-            payload:
-              Origination({
-                delegate: None,
-                contract_address: "KT1EVkzesmiNL2GLzCn73WwiiwZf4R6AVW9x",
-              }),
+          Origination({
+            delegate: None,
+            contract_address: "KT1EVkzesmiNL2GLzCn73WwiiwZf4R6AVW9x",
           }),
       },
     |];
@@ -525,13 +505,9 @@ describe("API tests", ({testAsync}) => {
         block: Some("BLmmAGRe4JkyT2aD2vWoFYS6NF4e49XoXvMfcCdvbUmjve8uRkh"),
         status: Chain,
         hash: "opZj2yByVxxEg4YRsZcERMqiy9VgnJkzDGQBPdFNycxxsFBZYus",
-        payload:
-          Business({
-            source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
-            fee: Tez.fromMutezInt(1258),
-            op_id: 0,
-            payload: Delegation({delegate: None}),
-          }),
+        source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
+        fee: Tez.fromMutezInt(1258),
+        payload: Delegation({delegate: None}),
       },
     |];
     module UnderTest = ServerAPI.ExplorerMaker(Stub);
@@ -579,15 +555,11 @@ describe("API tests", ({testAsync}) => {
         block: Some("BLmmAGRe4JkyT2aD2vWoFYS6NF4e49XoXvMfcCdvbUmjve8uRkh"),
         status: Chain,
         hash: "opZj2yByVxxEg4YRsZcERMqiy9VgnJkzDGQBPdFNycxxsFBZYus",
+        source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
+        fee: Tez.fromMutezInt(1258),
         payload:
-          Business({
-            source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
-            fee: Tez.fromMutezInt(1258),
-            op_id: 0,
-            payload:
-              Delegation({
-                delegate: Some("tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh),
-              }),
+          Delegation({
+            delegate: Some("tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh),
           }),
       },
     |];

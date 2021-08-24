@@ -179,7 +179,7 @@ module DelegateMaker =
       info->Some;
     } else {
       switch ((firstOperation.payload: Operation.Read.payload)) {
-      | Business({payload: Transaction(payload)}) =>
+      | Transaction(payload) =>
         {...info, lastReward: Some(payload.amount)}->Some
       | _ => info->Some
       };
@@ -206,7 +206,7 @@ module DelegateMaker =
 
       let%FRes payload =
         switch (firstOperation.payload) {
-        | Business({payload: Delegation(payload)}) => payload->FutureEx.ok
+        | Delegation(payload) => payload->FutureEx.ok
         | _ =>
           ErrorHandler.(Taquito(Generic("Invalid operation type!")))
           ->FutureEx.err
