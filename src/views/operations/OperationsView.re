@@ -41,6 +41,8 @@ module Component = {
       StoreContext.Operations.useLoad(~address=account.address, ());
 
     let operationsReload = StoreContext.Operations.useResetAll();
+    let renderItem = (currentLevel, operation: Operation.Read.t) =>
+      <OperationRowItem operation currentLevel />;
 
     <View style=styles##container>
       <OperationsHeaderView>
@@ -53,9 +55,10 @@ module Component = {
          switch (operationsRequest) {
          | Done(Ok(response), _)
          | Loading(Some(response)) =>
-           <OperationPagination
+           <Pagination
              elements={response.operations->sort}
-             currentLevel={response.currentLevel}
+             renderItem={renderItem(response.currentLevel)}
+             emptyComponent={I18n.t#empty_operations->React.string}
            />
          | Done(Error(error), _) => error->React.string
          | NotAsked
