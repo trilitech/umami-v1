@@ -40,7 +40,6 @@ module URL: {
         unit
       ) =>
       t;
-    let mempool: (ConfigFile.t, ~account: PublicKeyHash.t) => t;
     let checkToken: (ConfigFile.t, ~contract: PublicKeyHash.t) => t;
     let getTokenBalance:
       (ConfigFile.t, ~contract: PublicKeyHash.t, ~account: PublicKeyHash.t) =>
@@ -57,10 +56,6 @@ module URL: {
 
 /** Mezos requests for mempool operations and classical operations. */
 module type Explorer = {
-  let getFromMempool:
-    (PublicKeyHash.t, ConfigFile.t, array(Operation.Read.t)) =>
-    Future.t(Result.t(array(Operation.Read.t), string));
-
   let getOperations:
     (
       ConfigFile.t,
@@ -68,7 +63,6 @@ module type Explorer = {
       ~types: array(string)=?,
       ~destination: PublicKeyHash.t=?,
       ~limit: int=?,
-      ~mempool: bool=?,
       unit
     ) =>
     Future.t(Result.t(array(Operation.Read.t), string));

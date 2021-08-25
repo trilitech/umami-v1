@@ -104,7 +104,9 @@ module Reveal = {
   type t = {public_key: string};
 
   let decode = json =>
-    Json.Decode.{public_key: json |> field("public_key", string)};
+    Json.Decode.{
+      public_key: json |> field("data", field("public_key", string)),
+    };
 };
 
 module Transaction = {
@@ -116,10 +118,11 @@ module Transaction = {
 
   let decode = json =>
     Json.Decode.{
-      amount: json |> field("amount", string) |> Tez.fromMutezString,
+      amount:
+        json |> field("data", field("amount", string)) |> Tez.fromMutezString,
       destination:
         json
-        |> field("destination", string)
+        |> field("data", field("destination", string))
         |> PublicKeyHash.build
         |> Result.getExn,
       parameters: json |> optional(field("parameters", dict(string))),
@@ -201,43 +204,20 @@ module Read = {
       };
 
     let source = json =>
-      json |> field("source", string) |> PublicKeyHash.build |> Result.getExn;
+      json |> field("src", string) |> PublicKeyHash.build |> Result.getExn;
 
     let t = json => {
       {
-        block: json |> field("block", optional(string)),
+        block: json |> field("block_hash", optional(string)),
         fee: json |> field("fee", string) |> Tez.fromMutezString,
         hash: json |> field("hash", string),
         id: json |> field("id", string),
         level: json |> field("level", string) |> int_of_string,
-        op_id: json |> field("op_id", int),
-        payload: json |> payload(json |> field("type", string)),
+        op_id: json |> field("id", string) |> int_of_string,
+        payload: json |> payload(json |> field("kind", string)),
         source: json |> source,
         status: Chain,
-        timestamp: json |> field("timestamp", date),
-      };
-    };
-
-    let fromMempool = json => {
-      Js.log(json);
-      let typ = json |> field("operation_kind", string);
-      let op =
-        json |> field("operation", Js.Json.stringify) |> Json.parseOrRaise;
-      {
-        block: json |> optional(field("block", string)),
-        fee: op |> field("fee", string) |> Tez.fromMutezString,
-        hash: json |> field("ophash", string),
-        id: json |> field("id", string),
-        level: json |> field("last_seen_level", int),
-        op_id: json |> field("id", string) |> int_of_string,
-        payload: op |> payload(typ),
-        source: json |> source,
-        status: Mempool,
-        timestamp:
-          json
-          |> field("first_seen_timestamp", float)
-          |> ( *. )(1000.)
-          |> Js.Date.fromFloat,
+        timestamp: json |> field("op_timestamp", date),
       };
     };
   };
