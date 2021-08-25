@@ -126,6 +126,16 @@ module Entry = {
     let logDateContent =
       Js.Date.(log.timestamp->fromFloat->toUTCString)->React.string;
 
+    let scopeText = log.errorScope->Option.mapWithDefault("", sc => sc ++ "/");
+
+    let message =
+      Format.sprintf(
+        "(%s%s): %s",
+        scopeText,
+        log.origin->Logs.originToString,
+        log.msg,
+      );
+
     let logsBackgroundColor =
       opened ? theme.colors.stateActive : theme.colors.background;
 
@@ -142,7 +152,7 @@ module Entry = {
             )
             fontWeightStyle=`light
             numberOfLines=1
-            content={log.msg->React.string}
+            content={message->React.string}
           />;
 
     let secondline =
@@ -156,7 +166,7 @@ module Entry = {
                 style(~color=theme.colors.textMaxEmphasis, ()),
               |])
             )
-            content={log.msg->React.string}
+            content={message->React.string}
           />
         : React.null;
 
