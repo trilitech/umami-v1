@@ -107,18 +107,22 @@ let handleEstimationResults = ((results, revealFee), options, index) => {
 
     results
     ->Array.zip(options)
-    ->Array.reduce(init, (acc, (est, customValues)) => {
-        {
-          ...handleCustomOptions(est, customValues),
-          totalCost: acc.totalCost + est.totalCost,
-          storageLimit: acc.storageLimit + est.storageLimit,
-          gasLimit: acc.gasLimit + est.gasLimit,
-          minimalFeeMutez: acc.minimalFeeMutez + est.minimalFeeMutez,
-          suggestedFeeMutez: acc.suggestedFeeMutez + est.suggestedFeeMutez,
-          burnFeeMutez: acc.burnFeeMutez + est.burnFeeMutez,
-          customFeeMutez: acc.customFeeMutez + est.customFeeMutez,
-        }
-      })
+    ->Array.reduce(
+        init,
+        (acc, (est, customValues)) => {
+          let est = handleCustomOptions(est, customValues);
+          {
+            ...est,
+            totalCost: acc.totalCost + est.totalCost,
+            storageLimit: acc.storageLimit + est.storageLimit,
+            gasLimit: acc.gasLimit + est.gasLimit,
+            minimalFeeMutez: acc.minimalFeeMutez + est.minimalFeeMutez,
+            suggestedFeeMutez: acc.suggestedFeeMutez + est.suggestedFeeMutez,
+            burnFeeMutez: acc.burnFeeMutez + est.burnFeeMutez,
+            customFeeMutez: acc.customFeeMutez + est.customFeeMutez,
+          };
+        },
+      )
     ->addFeesSecurity
     ->Ok;
   };
