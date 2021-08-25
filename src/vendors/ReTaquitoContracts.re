@@ -27,64 +27,62 @@ module Types = ReTaquitoTypes;
 
 module BigNumber = Types.BigNumber;
 
-/* A bare contract is represented by three methods:
-       - `at`, which fetch the contract and builds its abstraction;
-       - `send`, that sends the result of an entrypoint to the contract
-       - `toTransferParams`, that generates the transferParam from an entrypoint
-     call
-   */
-module Contract = (ContractAbstraction: Types.ContractAbstraction) => {
-  module Abstraction = ContractAbstraction;
-  include Types.Contract;
+/** Bindings of contracts metadata extensions */
+module Extension = {
+  include Types.Extension;
+
+  [@bs.module "@taquito/tzip12"] [@bs.new]
+  external tzip12Module: unit => t = "Tzip12Module";
+
+  [@bs.module "@taquito/tzip16"] [@bs.new]
+  external tzip16Module: unit => t = "Tzip16Module";
+
+  [@bs.module "@taquito/tzip12"] external tzip12: abstraction = "tzip12";
+
+  [@bs.module "@taquito/tzip16"] external tzip16: abstraction = "tzip16";
+
+  [@bs.module "@taquito/taquito"]
+  external compose: (abstraction, abstraction) => abstraction = "compose";
+};
+
+module Contract = (Abstraction: Types.ContractAbstraction) => {
+  include Abstraction;
 
   [@bs.send]
   external at:
-    (Types.Toolkit.contract, PublicKeyHash.t) => Js.Promise.t(Abstraction.t) =
+    (
+      Types.Toolkit.contract,
+      PublicKeyHash.t,
+      option(Extension.abstraction)
+    ) =>
+    Js.Promise.t(t) =
     "at";
 
-  [@bs.send]
-  external send:
-    (methodResult(_), Types.Transfer.sendParams) =>
-    Js.Promise.t(Types.Operation.result) =
-    "send";
-
-  [@bs.send]
-  external toTransferParams:
-    (methodResult(_), Types.Transfer.sendParams) =>
-    Types.Transfer.transferParams =
-    "toTransferParams";
+  let at = (~extension=?, contract, pkh) => at(contract, pkh, extension);
 };
 
-module rec AnyAbstraction: Types.ContractAbstraction = AnyAbstraction;
+module Tzip16Contract = {
+  include Contract(Types.Tzip16Contract);
 
-module FA12Abstraction = {
-  type transfer;
-
-  type methods = {
-    /* Calling it doesn't work since it need to be an external */
-    transfer:
-      (PublicKeyHash.t, PublicKeyHash.t, BigNumber.fixed) =>
-      Types.Contract.methodResult(transfer),
-  };
-  type storage;
-  type entrypoints;
-  type t = {
-    address: PublicKeyHash.t,
-    entrypoints,
-    methods,
-  };
+  let at = (contract, pkh) => at(contract, pkh, ~extension=Extension.tzip16);
 };
 
+/** Generic token contract, with Tzip12 metadata and Tzip16 metadata */
+module Tzip12Tzip16Contract = {
+  include Contract(Types.Tzip12Tzip16Contract);
+
+  let at = (contract, pkh) =>
+    at(contract, pkh, ~extension=Extension.(compose(tzip12, tzip16)));
+};
+
+/** FA12 contracts specific interface */
 module FA12 = {
-  include Contract(FA12Abstraction);
+  include Contract(Types.FA12);
 
-  [@bs.send]
-  external transfer:
-    (Abstraction.methods, PublicKeyHash.t, PublicKeyHash.t, BigNumber.fixed) =>
-    methodResult(FA12Abstraction.transfer) =
-    "transfer";
+  let at = (contract, pkh) =>
+    at(contract, pkh, ~extension=Extension.(compose(tzip12, tzip16)));
 
-  let transfer = (c: Abstraction.t, src, dst, amount) => {
-    transfer(c.methods, src, dst, amount);
+  let transfer = (c: t, src, dst, amount) => {
+    c##methods.transfer(. src, dst, amount);
   };
 };

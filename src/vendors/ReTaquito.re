@@ -109,6 +109,9 @@ module Toolkit = {
   [@bs.send] external setProvider: (toolkit, provider) => unit = "setProvider";
 
   [@bs.send]
+  external addExtension: (toolkit, Types.Extension.t) => unit = "addExtension";
+
+  [@bs.send]
   external transfer:
     (contract, transferParams) => Js.Promise.t(Types.Operation.result) =
     "transfer";

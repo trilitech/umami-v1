@@ -118,8 +118,32 @@ module Batch = {
   type t;
 };
 
+module Tzip12 = {
+  type metadata = {
+    token_id: int,
+    decimals: int,
+    name: string,
+    symbol: string,
+  };
+
+  type t = {getTokenMetadata: (. int) => Js.Promise.t(metadata)};
+};
+
+module Tzip16 = {
+  type metadata;
+
+  type t = {getMetadata: (. unit) => Js.Promise.t(metadata)};
+};
+
 module Contract = {
-  type methodResult('meth);
+  /** Method results, which are generated functions from entrypoints:
+     - `send`, that sends the result of an entrypoint to the contract
+     - `toTransferParams`, that generates the transferParam from an entrypoint
+   */
+  type methodResult('meth) = {
+    send: (. Transfer.sendParams) => Js.Promise.t(Operation.result),
+    toTransferParams: (. Transfer.sendParams) => Transfer.transferParams,
+  };
 };
 
 /* Abstraction of a kind of contract, see `ReTaquitoContracts.FA12Abstraction`
@@ -134,10 +158,65 @@ module type ContractAbstraction = {
   /* Concrete entrypoints calls  */
   type methods;
 
-  /* Taquito's `ContractAbstraction` object, with only the necessary parts. */
+  /* Taquito's `ContractAbstraction` object. */
+  type t;
+};
+
+module Extension = {
+  type t;
+
+  type abstraction;
+};
+
+module Tzip16Contract = {
+  type methods;
+  type storage;
+  type entrypoints;
+
   type t = {
-    address: PublicKeyHash.t,
-    entrypoints,
-    methods,
+    .
+    "address": PublicKeyHash.t,
+    "entrypoints": entrypoints,
+    "methods": methods,
+    [@bs.meth] "storage": unit => Js.Promise.t(storage),
+    [@bs.meth] "tzip16": unit => Tzip16.t,
+  };
+};
+
+module Tzip12Tzip16Contract = {
+  type methods;
+  type storage;
+  type entrypoints;
+
+  type t = {
+    .
+    "address": PublicKeyHash.t,
+    "entrypoints": entrypoints,
+    "methods": methods,
+    [@bs.meth] "storage": unit => Js.Promise.t(storage),
+    [@bs.meth] "tzip12": unit => Tzip12.t,
+    [@bs.meth] "tzip16": unit => Tzip16.t,
+  };
+};
+
+module FA12 = {
+  type transfer;
+
+  type methods = {
+    transfer:
+      (. PublicKeyHash.t, PublicKeyHash.t, BigNumber.fixed) =>
+      Contract.methodResult(transfer),
+  };
+  type storage;
+  type entrypoints;
+
+  type t = {
+    .
+    "address": PublicKeyHash.t,
+    "entrypoints": entrypoints,
+    "methods": methods,
+    [@bs.meth] "storage": unit => Js.Promise.t(storage),
+    [@bs.meth] "tzip12": unit => Tzip12.t,
+    [@bs.meth] "tzip16": unit => Tzip16.t,
   };
 };

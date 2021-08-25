@@ -261,8 +261,7 @@ module Operations = {
 module Transfer = {
   module ContractCache = {
     type t = {
-      contracts:
-        MutableMap.String.t(Js.Promise.t(Contracts.FA12.Abstraction.t)),
+      contracts: MutableMap.String.t(Js.Promise.t(Contracts.FA12.t)),
       toolkit: Toolkit.toolkit,
     };
 
@@ -306,9 +305,9 @@ module Transfer = {
       contractCache
       ->ContractCache.findContract(token)
       ->ReTaquitoError.fromPromiseParsed;
-    c
-    ->Contracts.FA12.transfer(source, dest, amount->BigNumber.toFixed)
-    ->Contracts.FA12.toTransferParams(sendParams);
+    let transfer =
+      c->Contracts.FA12.transfer(source, dest, amount->BigNumber.toFixed);
+    transfer.toTransferParams(. sendParams);
   };
 
   let prepareTransfer = Toolkit.prepareTransfer;
