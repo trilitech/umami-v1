@@ -27,6 +27,8 @@ open ReTaquito;
 open ReTaquitoSigner;
 open Let;
 
+module Contracts = ReTaquitoContracts;
+
 let revealFee = (~endpoint, source) => {
   let client = RPCClient.create(endpoint);
 
@@ -260,7 +262,7 @@ module Transfer = {
   module ContractCache = {
     type t = {
       contracts:
-        MutableMap.String.t(Js.Promise.t(Toolkit.FA12.contractAbstraction)),
+        MutableMap.String.t(Js.Promise.t(Contracts.FA12.Abstraction.t)),
       toolkit: Toolkit.toolkit,
     };
 
@@ -270,7 +272,7 @@ module Transfer = {
       switch (MutableMap.String.get(cache.contracts, (token :> string))) {
       | Some(c) => c
       | None =>
-        let c = cache.toolkit.contract->Toolkit.FA12.at(token);
+        let c = cache.toolkit.contract->(ReTaquitoContracts.FA12.at(token));
         cache.contracts->MutableMap.String.set((token :> string), c);
         c;
       };
@@ -304,9 +306,9 @@ module Transfer = {
       contractCache
       ->ContractCache.findContract(token)
       ->ReTaquitoError.fromPromiseParsed;
-    c.methods
-    ->Toolkit.FA12.transfer(source, dest, amount->BigNumber.toFixed)
-    ->Toolkit.FA12.toTransferParams(sendParams);
+    c
+    ->Contracts.FA12.transfer(source, dest, amount->BigNumber.toFixed)
+    ->Contracts.FA12.toTransferParams(sendParams);
   };
 
   let prepareTransfer = Toolkit.prepareTransfer;
