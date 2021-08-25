@@ -159,20 +159,38 @@ let memo = component =>
     },
   );
 
-let amount = (isToken, account, transaction: Operation.Transaction.t) => {
+let amount = (account, transaction: Operation.Transaction.t, tokens) => {
   let colorStyle =
     account->Option.map((account: Account.t) =>
-      account.address == transaction.destination ? `positive : `negative
+      account.address
+      == transaction->Operation.Transaction.Accessor.destination
+        ? `positive : `negative
     );
 
   let op = colorStyle == Some(`positive) ? "+" : "-";
 
   <CellAmount>
     {<Typography.Body1 ?colorStyle>
-       {I18n.t#tez_op_amount(op, transaction.amount->Tez.toString)
-        ->React.string}
-     </Typography.Body1>
-     ->ReactUtils.onlyWhen(!isToken)}
+       {switch (transaction) {
+        | Tez(transaction) =>
+          I18n.t#tez_op_amount(op, transaction.amount->Tez.toString)
+          ->React.string
+        | Token(_, token_trans) =>
+          let token: option(Token.t) =
+            Belt.Map.String.get(tokens, (token_trans.contract :> string));
+          switch (token) {
+          | None => I18n.t#unregistered_token->React.string
+          | Some({symbol, _}) =>
+            Format.asprintf(
+              "%s %s %s",
+              op,
+              token_trans.amount->TokenRepr.Unit.toNatString,
+              symbol,
+            )
+            ->React.string
+          };
+        }}
+     </Typography.Body1>}
   </CellAmount>;
 };
 
@@ -203,16 +221,15 @@ let make =
            <CellAddress />
            <CellAddress />
          </>
-       | Transaction(transaction) =>
-         let isToken =
-           tokens->Map.String.has((transaction.destination :> string));
+       | Transaction(Token(common, _) as transaction)
+       | Transaction(Tez(common) as transaction) =>
          <>
            <CellType>
              <Typography.Body1>
                I18n.t#operation_transaction->React.string
              </Typography.Body1>
            </CellType>
-           {amount(isToken, account, transaction)}
+           {amount(account, transaction, tokens)}
            <CellFee>
              <Typography.Body1>
                {I18n.t#tez_amount(operation.fee->Tez.toString)->React.string}
@@ -229,14 +246,9 @@ let make =
                 )}
            </CellAddress>
            <CellAddress>
-             {getContactOrRaw(
-                aliases,
-                tokens,
-                transaction.destination,
-                operation,
-              )}
+             {getContactOrRaw(aliases, tokens, common.destination, operation)}
            </CellAddress>
-         </>;
+         </>
        | Origination(_origination) =>
          <>
            <CellType>

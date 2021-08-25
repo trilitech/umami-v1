@@ -132,11 +132,13 @@ describe("API tests", ({testAsync}) => {
         source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
         fee: Tez.fromMutezInt(1283),
         payload:
-          Transaction({
-            amount: Tez.fromMutezInt(1000000),
-            destination: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
-            parameters: Some(Js.Dict.fromArray([|("prim", "Unit")|])),
-          }),
+          Transaction(
+            Tez({
+              amount: Tez.fromMutezInt(1000000),
+              destination: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
+              parameters: Some(Js.Dict.fromArray([|("prim", "Unit")|])),
+            }),
+          ),
       },
     |];
     module UnderTest = ServerAPI.ExplorerMaker(Stub);
@@ -319,11 +321,13 @@ describe("API tests", ({testAsync}) => {
         source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
         fee: Tez.fromMutezInt(1283),
         payload:
-          Transaction({
-            amount: Tez.fromMutezInt(1000000),
-            destination: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
-            parameters: Some(Js.Dict.fromArray([|("prim", "Unit")|])),
-          }),
+          Transaction(
+            Tez({
+              amount: Tez.fromMutezInt(1000000),
+              destination: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
+              parameters: Some(Js.Dict.fromArray([|("prim", "Unit")|])),
+            }),
+          ),
       },
     |];
     module UnderTest = ServerAPI.ExplorerMaker(Stub);
