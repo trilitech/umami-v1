@@ -95,35 +95,34 @@ let handleEstimationResults = ((results, revealFee), options, index) => {
 
     /* Same behavior as tezos-client, adding 100 milligas as fees just in case */
     /* also adds default revealFees */
-    let addFeesSecurity =
-        ({gasLimit, storageLimit, totalCost, customFeeMutez} as est) => {
+    let {gasLimit, storageLimit, totalCost, customFeeMutez} as est =
+      results
+      ->Array.zip(options)
+      ->Array.reduce(
+          init,
+          (acc, (est, customValues)) => {
+            let est = handleCustomOptions(est, customValues);
+            {
+              ...est,
+              totalCost: acc.totalCost + est.totalCost,
+              storageLimit: acc.storageLimit + est.storageLimit,
+              gasLimit: acc.gasLimit + est.gasLimit,
+              minimalFeeMutez: acc.minimalFeeMutez + est.minimalFeeMutez,
+              suggestedFeeMutez: acc.suggestedFeeMutez + est.suggestedFeeMutez,
+              burnFeeMutez: acc.burnFeeMutez + est.burnFeeMutez,
+              customFeeMutez: acc.customFeeMutez + est.customFeeMutez,
+            };
+          },
+        );
+
+    {
       ...est,
       gasLimit: gasLimit + 100,
       totalCost: totalCost + revealFee,
       customFeeMutez,
       storageLimit: storageLimit + 100,
       revealFee,
-    };
-
-    results
-    ->Array.zip(options)
-    ->Array.reduce(
-        init,
-        (acc, (est, customValues)) => {
-          let est = handleCustomOptions(est, customValues);
-          {
-            ...est,
-            totalCost: acc.totalCost + est.totalCost,
-            storageLimit: acc.storageLimit + est.storageLimit,
-            gasLimit: acc.gasLimit + est.gasLimit,
-            minimalFeeMutez: acc.minimalFeeMutez + est.minimalFeeMutez,
-            suggestedFeeMutez: acc.suggestedFeeMutez + est.suggestedFeeMutez,
-            burnFeeMutez: acc.burnFeeMutez + est.burnFeeMutez,
-            customFeeMutez: acc.customFeeMutez + est.customFeeMutez,
-          };
-        },
-      )
-    ->addFeesSecurity
+    }
     ->Ok;
   };
 };
