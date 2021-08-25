@@ -23,11 +23,18 @@
 /*                                                                           */
 /*****************************************************************************/
 
-let client = ReBeacon.WalletClient.make({name: "Umami"});
-
-let respond = responseInput => {
-  client->ReBeacon.WalletClient.respond(responseInput);
-};
+let useClient = client => {
+  let (client, setClient) = client;
+    let destroy = () =>
+      client
+      ->ReBeacon.WalletClient.destroy
+      // after a call to destroy client is no more usable we need to create a new one
+      ->Future.tapOk(_ =>
+          setClient(_ => ReBeacon.WalletClient.make({name: "Umami"}))
+        )
+      ->ignore;
+    (client, destroy);
+}
 
 /* PEERS */
 
@@ -38,32 +45,34 @@ module Peers = {
     ApiRequest.useLoader(~get, ~kind=Logs.Beacon, ~requestState, ());
   };
 
-  let useDelete =
+  let useDelete = (~client) => {
     ApiRequest.useSetter(
       ~set=
         (~config as _s, peer: ReBeacon.peerInfo) =>
           client->ReBeacon.WalletClient.removePeer(peer),
       ~kind=Logs.Beacon,
     );
+  };
 };
 
 /* PERMISSIONS */
 
 module Permissions = {
-  let useLoad = requestState => {
+  let useLoad = (client, requestState) => {
     let get = (~config as _s, ()) =>
       client->ReBeacon.WalletClient.getPermissions;
 
     ApiRequest.useLoader(~get, ~kind=Logs.Beacon, ~requestState, ());
   };
 
-  let useDelete =
+  let useDelete = (~client) => {
     ApiRequest.useSetter(
       ~set=
         (~config as _s, accountIdentifier: ReBeacon.accountIdentifier) =>
           client->ReBeacon.WalletClient.removePermission(accountIdentifier),
       ~kind=Logs.Beacon,
     );
+  };
 };
 
 /* SIGNATURE */

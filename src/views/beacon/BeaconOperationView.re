@@ -72,8 +72,10 @@ module Make = (Op: OP) => {
 
     let updateAccount = StoreContext.SelectedAccount.useSet();
 
+    let (client, _) = StoreContext.Beacon.useClient();
+
     let onAbort = _ =>
-      BeaconApiRequest.respond(
+      client->ReBeacon.WalletClient.respond(
         `Error({
           type_: `error,
           id: beaconRequest.id,
@@ -84,7 +86,7 @@ module Make = (Op: OP) => {
       ->ignore;
 
     let onSimulateError = _ =>
-      BeaconApiRequest.respond(
+      client->ReBeacon.WalletClient.respond(
         `Error({
           type_: `error,
           id: beaconRequest.id,
@@ -120,7 +122,7 @@ module Make = (Op: OP) => {
     let sendOperation = i =>
       sendOperation(i)
       ->Future.tapOk(hash => {
-          BeaconApiRequest.respond(
+          client->ReBeacon.WalletClient.respond(
             `OperationResponse({
               type_: `operation_response,
               id: beaconRequest.id,

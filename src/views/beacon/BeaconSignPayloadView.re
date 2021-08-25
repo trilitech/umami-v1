@@ -104,6 +104,8 @@ let make =
 
   let (loading, setLoading) = React.useState(() => false);
 
+  let (client, _) = StoreContext.Beacon.useClient();
+
   let onSign = (~signingIntent) => {
     setLoading(_ => true);
     signPayload(
@@ -113,26 +115,28 @@ let make =
     )
     ->Future.tapOk(signature => {
         setLoading(_ => false);
-        BeaconApiRequest.respond(
-          `SignPayloadResponse({
-            type_: `sign_payload_response,
-            id: signPayloadRequest.id,
-            signingType: signPayloadRequest.signingType,
-            signature: signature.prefixSig,
-          }),
-        )
+        client
+        ->ReBeacon.WalletClient.respond(
+            `SignPayloadResponse({
+              type_: `sign_payload_response,
+              id: signPayloadRequest.id,
+              signingType: signPayloadRequest.signingType,
+              signature: signature.prefixSig,
+            }),
+          )
         ->Future.tapOk(_ => closeAction())
         ->ignore;
       })
     ->Future.tapError(_error => {
         setLoading(_ => false);
-        BeaconApiRequest.respond(
-          `Error({
-            type_: `error,
-            id: signPayloadRequest.id,
-            errorType: `SIGNATURE_TYPE_NOT_SUPPORTED,
-          }),
-        )
+        client
+        ->ReBeacon.WalletClient.respond(
+            `Error({
+              type_: `error,
+              id: signPayloadRequest.id,
+              errorType: `SIGNATURE_TYPE_NOT_SUPPORTED,
+            }),
+          )
         ->Future.tapOk(_ => closeAction())
         ->ignore;
       });
@@ -140,13 +144,14 @@ let make =
 
   let onAbort = _ => {
     setLoading(_ => false);
-    BeaconApiRequest.respond(
-      `Error({
-        type_: `error,
-        id: signPayloadRequest.id,
-        errorType: `ABORTED_ERROR,
-      }),
-    )
+    client
+    ->ReBeacon.WalletClient.respond(
+        `Error({
+          type_: `error,
+          id: signPayloadRequest.id,
+          errorType: `ABORTED_ERROR,
+        }),
+      )
     ->Future.tapOk(_ => closeAction())
     ->ignore;
   };

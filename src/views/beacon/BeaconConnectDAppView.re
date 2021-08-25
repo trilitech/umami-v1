@@ -47,6 +47,8 @@ let styles =
 let make = (~closeAction) => {
   let updatePeers = StoreContext.Beacon.Peers.useResetAll();
 
+  let (client, _) = StoreContext.Beacon.useClient();
+
   let form =
     Form.use(
       ~schema={
@@ -59,7 +61,7 @@ let make = (~closeAction) => {
 
           switch (pairingInfo) {
           | Ok(pairingInfo) =>
-            BeaconApiRequest.client
+            client
             ->ReBeacon.WalletClient.addPeer(pairingInfo)
             ->Future.tapError(error =>
                 raiseSubmitFailed(Some(error->Errors.toString))
@@ -299,6 +301,7 @@ module WithQR = {
     let addToast = LogsContext.useToast();
     let (webcamScanning, setWebcamScanning) = React.useState(_ => true);
     let updatePeers = StoreContext.Beacon.Peers.useResetAll();
+    let (client, _) = StoreContext.Beacon.useClient();
 
     let onQRCodeData = dataUrl => {
       setWebcamScanning(_ => false);
@@ -309,7 +312,7 @@ module WithQR = {
 
       switch (pairingInfo) {
       | Ok(pairingInfo) =>
-        BeaconApiRequest.client
+        client
         ->ReBeacon.WalletClient.addPeer(pairingInfo)
         ->Future.tapError(error => {
             addToast(Logs.error(~origin=Beacon, error));

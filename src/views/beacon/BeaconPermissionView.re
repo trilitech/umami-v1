@@ -49,6 +49,8 @@ let make =
 
   let updatePermissions = StoreContext.Beacon.Permissions.useResetAll();
 
+  let (client, _) = StoreContext.Beacon.useClient();
+
   let form =
     BeaconPermissionForm.use(
       ~schema={
@@ -64,7 +66,7 @@ let make =
           | Some(account) =>
             getAccountPublicKey(account)
             ->FutureEx.getOk(publicKey => {
-                BeaconApiRequest.respond(
+                client->ReBeacon.WalletClient.respond(
                   `PermissionResponse({
                     type_: `permission_response,
                     id: permissionRequest.id,
@@ -90,7 +92,7 @@ let make =
     );
 
   let onAbort = _ => {
-    BeaconApiRequest.respond(
+    client->ReBeacon.WalletClient.respond(
       `Error({
         type_: `error,
         id: permissionRequest.id,

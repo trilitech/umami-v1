@@ -25,8 +25,6 @@
 
 open ReactNative;
 
-let client = BeaconApiRequest.client;
-
 let styles =
   Style.(
     StyleSheet.create({
@@ -122,6 +120,8 @@ let make = () => {
   let (errorMessage, setErrorMessage) = React.useState(_ => None);
   let setErrorRef = React.useRef(setError);
 
+  let (client, _) = StoreContext.Beacon.useClient();
+
   setErrorRef.current = setError;
 
   React.useEffect1(
@@ -139,21 +139,22 @@ let make = () => {
     [|error|],
   );
 
-  React.useEffect0(() => {
-    {
-      client
-      ->ReBeacon.WalletClient.init
-      ->Future.flatMapOk(_ =>
-          client->ReBeacon.WalletClient.connect(message => {
-            let request = message->ReBeacon.Message.Request.classify;
+  React.useEffect1(
+    () => {
+      {
+        client
+        ->ReBeacon.WalletClient.init
+        ->Future.flatMapOk(_ =>
+            client->ReBeacon.WalletClient.connect(message => {
+              let request = message->ReBeacon.Message.Request.classify;
 
-            let targetSettedNetwork =
-              request
-              ->ReBeacon.Message.Request.getNetwork
-              ->Option.mapWithDefault(true, network =>
-                  settingsRef.current
-                  ->checkOperationRequestTargetNetwork(network)
-                );
+              let targetSettedNetwork =
+                request
+                ->ReBeacon.Message.Request.getNetwork
+                ->Option.mapWithDefault(true, network =>
+                    settingsRef.current
+                    ->checkOperationRequestTargetNetwork(network)
+                  );
 
             if (targetSettedNetwork) {
               switch (request) {
@@ -177,51 +178,57 @@ let make = () => {
                       setErrorRef.current(_ =>
                         Some(I18n.errors#beacon_transaction_not_supported)
                       )
-                    )
-                  ->ignore;
-                }
-              | _ => ()
-              };
-            } else {
-              client
-              ->ReBeacon.WalletClient.respond(
-                  `Error({
-                    type_: `error,
-                    id: request->ReBeacon.Message.Request.getId,
-                    errorType: `NETWORK_NOT_SUPPORTED,
-                  }),
-                )
-              ->Future.tapOk(_ =>
-                  setErrorRef.current(_ =>
-                    Some(I18n.errors#beacon_request_network_missmatch)
-                  )
-                )
-              ->ignore;
-            };
-          })
-        )
-      ->Future.tapOk(_ => {
-          IPC.renderer->IPC.on("deeplinkURL", (_, message) => {
-            ReBeacon.Serializer.(
-              make()
-              ->deserialize(message->dataFromURL->Option.getWithDefault(""))
-            )
-            ->Future.flatMapOk(peer =>
+                    ->ignore;
+                  }
+                | _ => ()
+                };
+              } else {
                 client
-                ->ReBeacon.WalletClient.addPeer(peer)
-                ->Future.tapOk(_ => updatePeers())
+                ->ReBeacon.WalletClient.respond(
+                    `Error({
+                      type_: `error,
+                      id: request->ReBeacon.Message.Request.getId,
+                      errorType: `NETWORK_NOT_SUPPORTED,
+                    }),
+                  )
+                ->Future.tapOk(_ =>
+                    setErrorRef.current(_ =>
+                      Some(
+                        Generic(I18n.errors#beacon_request_network_missmatch)
+                        ->ReBeacon.Error.toString,
+                      )
+                    )
+                  )
+                ->ignore;
+              };
+            })
+          )
+        ->Future.tapOk(_ => {
+            IPC.renderer->IPC.on("deeplinkURL", (_, message) => {
+              ReBeacon.Serializer.(
+                make()
+                ->deserialize(
+                    message->dataFromURL->Option.getWithDefault(""),
+                  )
               )
-            ->ignore
+              ->Future.flatMapOk(peer =>
+                  client
+                  ->ReBeacon.WalletClient.addPeer(peer)
+                  ->Future.tapOk(_ => updatePeers())
+                )
+              ->ignore
+            })
           })
-        })
-      ->Future.tapOk(_ => {
-          IPC.renderer->IPC.send("beacon-ready");
-          Js.log("beacon-ready (renderer)");
-        })
-      ->ignore;
-    };
-    None;
-  });
+        ->Future.tapOk(_ => {
+            IPC.renderer->IPC.send("beacon-ready");
+            Js.log("beacon-ready (renderer)");
+          })
+        ->ignore;
+      };
+      None;
+    },
+    [|client|],
+  );
 
   <>
     <ModalAction visible=visibleModalPermission onRequestClose=closePermission>

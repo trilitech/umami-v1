@@ -62,6 +62,7 @@ type state = {
   apiVersionRequestState: reactState(option(Network.apiVersion)),
   eulaSignatureRequestState: reactState(bool),
   beaconPeersRequestState: requestState(array(ReBeacon.peerInfo)),
+  beaconClient: reactState(ReBeacon.WalletClient.t),
   beaconPermissionsRequestState:
     reactState(ApiRequest.t(array(ReBeacon.permissionInfo), error)),
 };
@@ -86,6 +87,7 @@ let initialState = {
   balanceTokenRequestsState: initialApiRequestsState,
   apiVersionRequestState: (None, _ => ()),
   eulaSignatureRequestState: (false, _ => ()),
+  beaconClient: ([%raw "{}"], _ => ()),
   beaconPeersRequestState: (NotAsked, _ => ()),
   beaconPermissionsRequestState: (NotAsked, _ => ()),
 };
@@ -129,6 +131,8 @@ let make = (~children) => {
   let bakersRequestState = React.useState(() => ApiRequest.NotAsked);
   let tokensRequestState = React.useState(() => ApiRequest.NotAsked);
   let secretsRequestState = React.useState(() => ApiRequest.NotAsked);
+  let beaconClient =
+    React.useState(() => ReBeacon.WalletClient.make({name: "Umami"}));
   let beaconPeersRequestState = React.useState(() => ApiRequest.NotAsked);
   let beaconPermissionsRequestState =
     React.useState(() => ApiRequest.NotAsked);
@@ -203,6 +207,7 @@ let make = (~children) => {
       balanceTokenRequestsState,
       apiVersionRequestState,
       eulaSignatureRequestState,
+      beaconClient,
       beaconPeersRequestState,
       beaconPermissionsRequestState,
     }>
@@ -822,12 +827,16 @@ module SelectedToken = {
   let useSet = () => {
     let store = useStoreContext();
     let (_, setSelectedToken) = store.selectedTokenState;
-
     newToken => setSelectedToken(_ => newToken);
   };
 };
 
 module Beacon = {
+  let useClient = () => {
+    let store = useStoreContext();
+    BeaconApiRequest.useClient(store.beaconClient);
+  };
+
   module Peers = {
     let useRequestState = () => {
       let store = useStoreContext();
@@ -840,13 +849,16 @@ module Beacon = {
     };
 
     let useGetAll = () => {
+      let (client, _) = useClient();
       let beaconPeersRequestState = useRequestState();
-      BeaconApiRequest.Peers.useLoad(beaconPeersRequestState);
+      BeaconApiRequest.Peers.useLoad(client, beaconPeersRequestState);
     };
 
     let useDelete = () => {
+      let (client, _) = useClient();
       let resetBeaconPeers = useResetAll();
       BeaconApiRequest.Peers.useDelete(
+        ~client,
         ~sideEffect=_ => resetBeaconPeers(),
         (),
       );
@@ -865,13 +877,19 @@ module Beacon = {
     };
 
     let useGetAll = () => {
+      let (client, _) = useClient();
       let beaconPermissionsRequestState = useRequestState();
-      BeaconApiRequest.Permissions.useLoad(beaconPermissionsRequestState);
+      BeaconApiRequest.Permissions.useLoad(
+        client,
+        beaconPermissionsRequestState,
+      );
     };
 
     let useDelete = () => {
+      let (client, _) = useClient();
       let resetBeaconPermissions = useResetAll();
       BeaconApiRequest.Permissions.useDelete(
+        ~client,
         ~sideEffect=_ => resetBeaconPermissions(),
         (),
       );
