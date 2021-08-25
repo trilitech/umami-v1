@@ -113,18 +113,121 @@ let actionButtons = (~indice, ~log: Logs.t, ~addToast, ~handleDelete) =>
     <DeleteButton isPrimary=false indice handleDelete style=styles##button />
   </View>;
 
-module LogToast = {
+module Entry = {
   [@react.component]
-  let make =
-      (
-        ~kindStyle,
-        ~theme: ThemeContext.theme,
-        ~icon,
-        ~log: Logs.t,
-        ~addToast,
-        ~indice,
-        ~handleDelete,
-      ) => {
+  let make = (~isFirst=false, ~log: Logs.t, ~addToast, ~indice, ~handleDelete) => {
+    let theme = ThemeContext.useTheme();
+
+    let (opened, setOpened) = React.useState(_ => false);
+
+    let chevronStyle = styleProp =>
+      opened ? Style.(array([|styleProp, styles##reverseY|])) : styleProp;
+
+    let logDateContent =
+      Js.Date.(log.timestamp->fromFloat->toUTCString)->React.string;
+
+    let logsBackgroundColor =
+      opened ? theme.colors.stateActive : theme.colors.background;
+
+    let firstline =
+      opened
+        ? React.null
+        : <Typography.InPageLog
+            ellipsizeMode=`tail
+            style=Style.(
+              array([|
+                styles##firstLine,
+                style(~color=theme.colors.textMaxEmphasis, ()),
+              |])
+            )
+            fontWeightStyle=`light
+            numberOfLines=1
+            content={log.msg->React.string}
+          />;
+
+    let secondline =
+      opened
+        ? <Typography.InPageLog
+            fontWeightStyle=`light
+            style=Style.(
+              array([|
+                styles##itemContentPage,
+                styles##toggleOff,
+                style(~color=theme.colors.textMaxEmphasis, ()),
+              |])
+            )
+            content={log.msg->React.string}
+          />
+        : React.null;
+
+    let onPress = _ => {
+      setOpened(_ => !opened);
+    };
+
+    <TouchableOpacity
+      onPress
+      style=Style.(
+        array([|
+          styles##logBlock,
+          {
+            isFirst
+              ? style()
+              : style(
+                  ~borderTopColor=theme.colors.stateDisabled,
+                  ~borderTopWidth=1.,
+                  (),
+                );
+          },
+          style(~backgroundColor=logsBackgroundColor, ()),
+        |])
+      )>
+      <View>
+        <View style=styles##itemContentPage>
+          <OpenButton
+            isPrimary=false
+            opened
+            setOpened
+            chevronStyle={chevronStyle(styles##button)}
+          />
+          <Typography.InPageLog
+            style=Style.(
+              array([|
+                styles##reqelt,
+                style(~color=theme.colors.textMaxEmphasis, ()),
+              |])
+            )
+            numberOfLines=1
+            fontWeightStyle=`bold
+            content=logDateContent
+          />
+          firstline
+          {actionButtons(~indice, ~log, ~addToast, ~handleDelete)}
+        </View>
+        secondline
+      </View>
+    </TouchableOpacity>;
+  };
+};
+
+module Toast = {
+  [@react.component]
+  let make = (~log: Logs.t, ~addToast, ~indice, ~handleDelete) => {
+    let theme = ThemeContext.useTheme();
+
+    let kindStyle =
+      switch (log.kind) {
+      | Error => styles##itemError
+      | Info => styles##itemInfo
+      | Warning => styles##itemInfo
+      };
+
+    let icon =
+      switch (log.kind) {
+      | Error
+      | Warning => <Icons.CloseOutline size=16. color=Colors.error />
+      | Info => <Icons.CheckOutline size=16. color=Colors.valid />
+      };
+
     <View
       style=Style.(
         array([|
@@ -157,122 +260,4 @@ module LogToast = {
       </Hoverable>
     </View>;
   };
-};
-
-[@react.component]
-let make =
-    (
-      ~indice,
-      ~log: Logs.t,
-      ~addToast,
-      ~handleDelete,
-      ~isToast=false,
-      ~isFirst=false,
-    ) => {
-  let theme = ThemeContext.useTheme();
-
-  let (opened, setOpened) = React.useState(_ => false);
-
-  let kindStyle =
-    switch (log.kind) {
-    | Error => styles##itemError
-    | Info => styles##itemInfo
-    | Warning => styles##itemInfo
-    };
-
-  let icon =
-    switch (log.kind) {
-    | Error
-    | Warning => <Icons.CloseOutline size=16. color=Colors.error />
-    | Info => <Icons.CheckOutline size=16. color=Colors.valid />
-    };
-
-  let chevronStyle = styleProp =>
-    opened ? Style.(array([|styleProp, styles##reverseY|])) : styleProp;
-
-  let logDateContent =
-    Js.Date.(log.timestamp->fromFloat->toUTCString)->React.string;
-
-  let firstline =
-    opened
-      ? React.null
-      : <Typography.InPageLog
-          ellipsizeMode=`tail
-          style=Style.(
-            array([|
-              styles##firstLine,
-              style(~color=theme.colors.textMaxEmphasis, ()),
-            |])
-          )
-          fontWeightStyle=`light
-          numberOfLines=1
-          content={log.msg->React.string}
-        />;
-
-  let secondline =
-    opened
-      ? <Typography.InPageLog
-          fontWeightStyle=`light
-          style=Style.(
-            array([|
-              styles##itemContentPage,
-              styles##toggleOff,
-              style(~color=theme.colors.textMaxEmphasis, ()),
-            |])
-          )
-          content={log.msg->React.string}
-        />
-      : React.null;
-
-  let logsBackgroundColor =
-    opened ? theme.colors.stateActive : theme.colors.background;
-
-  let onPress = _ => {
-    setOpened(_ => !opened);
-  };
-
-  isToast
-    ? <LogToast kindStyle theme icon log addToast indice handleDelete />
-    : <TouchableOpacity
-        onPress
-        style=Style.(
-          array([|
-            styles##logBlock,
-            {
-              isFirst
-                ? style()
-                : style(
-                    ~borderTopColor=theme.colors.stateDisabled,
-                    ~borderTopWidth=1.,
-                    (),
-                  );
-            },
-            style(~backgroundColor=logsBackgroundColor, ()),
-          |])
-        )>
-        <View>
-          <View style=styles##itemContentPage>
-            <OpenButton
-              isPrimary=false
-              opened
-              setOpened
-              chevronStyle={chevronStyle(styles##button)}
-            />
-            <Typography.InPageLog
-              style=Style.(
-                array([|
-                  styles##reqelt,
-                  style(~color=theme.colors.textMaxEmphasis, ()),
-                |])
-              )
-              numberOfLines=1
-              fontWeightStyle=`bold
-              content=logDateContent
-            />
-            firstline
-            {actionButtons(~indice, ~log, ~addToast, ~handleDelete)}
-          </View>
-          secondline
-        </View>
-      </TouchableOpacity>;
 };

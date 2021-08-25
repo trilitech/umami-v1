@@ -58,7 +58,7 @@ module Item = {
 
     <Animated.View
       style=Style.(style(~opacity=fadeAnim->Animated.StyleProp.float, ()))>
-      <LogItem indice log addToast handleDelete isToast=true />
+      <LogItem.Toast indice log addToast handleDelete />
     </Animated.View>;
   };
 };
