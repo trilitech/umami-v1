@@ -179,7 +179,8 @@ module DelegateMaker =
       info->Some;
     } else {
       switch ((firstOperation.payload: Operation.Read.payload)) {
-      | Transaction(payload) =>
+      | Transaction(Token(payload, _))
+      | Transaction(Tez(payload)) =>
         {...info, lastReward: Some(payload.amount)}->Some
       | _ => info->Some
       };

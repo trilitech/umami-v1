@@ -589,5 +589,6 @@ let t = {
   pub custom_network_created = "Network created";
   pub custom_network_updated = "Network updated";
   pub custom_network_deleted = "Network deleted";
+  pub unregistered_token = "unregistered token";
   pub hw = "H/W"
 };

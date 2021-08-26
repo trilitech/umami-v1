@@ -30,9 +30,6 @@ module Path = {
   module Endpoint = {
     let delegates = "/chains/main/blocks/head/context/delegates\\?active=true";
   };
-  module API = {
-    let mempool_operations = "mempool/accounts";
-  };
 };
 
 module URL = {
@@ -70,7 +67,8 @@ module URL = {
           ~limit: option(int)=?,
           (),
         ) => {
-      let operationsPath = "accounts/" ++ (account :> string) ++ "/operations";
+      let operationsPath =
+        "accounts/" ++ (account :> string) ++ "/operations/next";
       let args =
         Lib.List.(
           []
@@ -82,15 +80,6 @@ module URL = {
         );
       let url = build_explorer_url(settings, operationsPath, args);
       url;
-    };
-
-    let mempool = (network, ~account: PublicKeyHash.t) => {
-      let path =
-        Path.API.mempool_operations
-        ++ "/"
-        ++ (account :> string)
-        ++ "/operations";
-      build_explorer_url(network, path, []);
     };
 
     let checkToken = (network, ~contract: PublicKeyHash.t) => {
@@ -121,10 +110,6 @@ module URL = {
 };
 
 module type Explorer = {
-  let getFromMempool:
-    (PublicKeyHash.t, ConfigFile.t, array(Operation.Read.t)) =>
-    Future.t(Result.t(array(Operation.Read.t), string));
-
   let getOperations:
     (
       ConfigFile.t,
@@ -132,7 +117,6 @@ module type Explorer = {
       ~types: array(string)=?,
       ~destination: PublicKeyHash.t=?,
       ~limit: int=?,
-      ~mempool: bool=?,
       unit
     ) =>
     Future.t(Result.t(array(Operation.Read.t), string));
@@ -140,23 +124,6 @@ module type Explorer = {
 
 module ExplorerMaker =
        (Get: {let get: string => Future.t(Result.t(Js.Json.t, string));}) => {
-  let getFromMempool = (account: PublicKeyHash.t, network, operations) => {
-    let%FtMap res = network->URL.Explorer.mempool(~account)->Get.get;
-    let%Res res = res;
-    let%ResMap mempool =
-      res
-      ->ResultEx.fromExn(
-          Json.Decode.(array(Operation.Read.Decode.fromMempool)),
-        )
-      ->ResultEx.mapError(Operation.Read.filterJsonExn);
-
-    module Comparator = Operation.Read.Comparator;
-    let operations =
-      Set.fromArray(operations, ~id=(module Operation.Read.Comparator));
-    let operations = mempool->Array.reduce(operations, Set.add)->Set.toArray;
-    operations;
-  };
-
   let getOperations =
       (
         network,
@@ -164,7 +131,6 @@ module ExplorerMaker =
         ~types: option(array(string))=?,
         ~destination: option(PublicKeyHash.t)=?,
         ~limit: option(int)=?,
-        ~mempool: bool=false,
         (),
       ) => {
     let%FRes res =
@@ -178,8 +144,7 @@ module ExplorerMaker =
       ->ResultEx.mapError(Operation.Read.filterJsonExn)
       ->Future.value;
 
-    mempool
-      ? getFromMempool(account, network, operations) : operations->FutureEx.ok;
+    operations->FutureEx.ok;
   };
 };
 

@@ -130,13 +130,7 @@ let useLoad =
     (~requestState, ~limit=?, ~types=?, ~address: PublicKeyHash.t, ()) => {
   let get = (~config, address) => {
     let operations =
-      config->ServerAPI.Explorer.getOperations(
-        address,
-        ~limit?,
-        ~types?,
-        ~mempool=true,
-        (),
-      );
+      config->ServerAPI.Explorer.getOperations(address, ~limit?, ~types?, ());
     let currentLevel =
       Network.monitor(ConfigUtils.explorer(config))
       ->Future.mapOk(monitor => monitor.nodeLastBlock)

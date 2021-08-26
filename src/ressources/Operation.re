@@ -104,26 +104,91 @@ module Reveal = {
   type t = {public_key: string};
 
   let decode = json =>
-    Json.Decode.{public_key: json |> field("public_key", string)};
+    Json.Decode.{
+      public_key: json |> field("data", field("public_key", string)),
+    };
 };
 
 module Transaction = {
-  type t = {
+  type common = {
     amount: Tez.t,
     destination: PublicKeyHash.t,
     parameters: option(Js.Dict.t(string)),
   };
+  type token_info = {
+    amount: TokenRepr.Unit.t,
+    contract: PublicKeyHash.t,
+  };
+  type t =
+    | Tez(common)
+    | Token(common, token_info);
 
-  let decode = json =>
-    Json.Decode.{
-      amount: json |> field("amount", string) |> Tez.fromMutezString,
+  module Accessor = {
+    let amount =
+      fun
+      | Token({amount, _}, _)
+      | Tez({amount, _}) => amount;
+
+    let destination =
+      fun
+      | Token({destination, _}, _)
+      | Tez({destination, _}) => destination;
+  };
+
+  module Decode = {
+    open Json.Decode;
+
+    let token_info = json => {
+      amount:
+        json
+        |> field("data", field("token_amount", string))
+        |> TokenRepr.Unit.fromNatString
+        |> Option.getExn,
+      contract:
+        json
+        |> field("data", field("contract", string))
+        |> PublicKeyHash.build
+        |> Result.getExn,
+    };
+
+    let common = json => {
+      amount:
+        json |> field("data", field("amount", string)) |> Tez.fromMutezString,
       destination:
         json
-        |> field("destination", string)
+        |> field("data", field("destination", string))
         |> PublicKeyHash.build
         |> Result.getExn,
       parameters: json |> optional(field("parameters", dict(string))),
     };
+
+    // FIXME: This exists due to a bug in mezos, where fa1.2 operations
+    // are badly queried when they're in the mempool. Thus, we simply
+    // print them as a normal contract call
+    let fa12_mempool = json => {
+      amount:
+        json |> field("data", field("amount", string)) |> Tez.fromMutezString,
+      destination:
+        json
+        |> field("data", field("contract", string))
+        |> PublicKeyHash.build
+        |> Result.getExn,
+      parameters: json |> optional(field("parameters", dict(string))),
+    };
+
+    let t = json => {
+      let token = json |> field("data", field("token", bool));
+      let is_fa12_mempool =
+        json
+        |> field("data", optional(field("destination", string)))
+        |> Option.isNone;
+      switch (token, is_fa12_mempool) {
+      | (true, true) => Tez(fa12_mempool(json))
+      | (true, _) => Token(common(json), token_info(json))
+      | (_, _) => Tez(common(json))
+      };
+    };
+  };
 };
 
 module Origination = {
@@ -194,50 +259,32 @@ module Read = {
     let payload = (ty, json) =>
       switch (ty) {
       | "reveal" => Reveal(json->Reveal.decode)
-      | "transaction" => Transaction(json->Transaction.decode)
+      | "transaction" => Transaction(json->Transaction.Decode.t)
       | "origination" => Origination(json->Origination.decode)
       | "delegation" => Delegation(json->Delegation.decode)
       | _ => Unknown
       };
 
     let source = json =>
-      json |> field("source", string) |> PublicKeyHash.build |> Result.getExn;
+      json |> field("src", string) |> PublicKeyHash.build |> Result.getExn;
+
+    let status = json => {
+      let block_hash = json |> field("block_hash", optional(string));
+      Option.isNone(block_hash) ? Mempool : Chain;
+    };
 
     let t = json => {
       {
-        block: json |> field("block", optional(string)),
+        block: json |> field("block_hash", optional(string)),
         fee: json |> field("fee", string) |> Tez.fromMutezString,
         hash: json |> field("hash", string),
         id: json |> field("id", string),
         level: json |> field("level", string) |> int_of_string,
-        op_id: json |> field("op_id", int),
-        payload: json |> payload(json |> field("type", string)),
-        source: json |> source,
-        status: Chain,
-        timestamp: json |> field("timestamp", date),
-      };
-    };
-
-    let fromMempool = json => {
-      Js.log(json);
-      let typ = json |> field("operation_kind", string);
-      let op =
-        json |> field("operation", Js.Json.stringify) |> Json.parseOrRaise;
-      {
-        block: json |> optional(field("block", string)),
-        fee: op |> field("fee", string) |> Tez.fromMutezString,
-        hash: json |> field("ophash", string),
-        id: json |> field("id", string),
-        level: json |> field("last_seen_level", int),
         op_id: json |> field("id", string) |> int_of_string,
-        payload: op |> payload(typ),
+        payload: json |> payload(json |> field("kind", string)),
         source: json |> source,
-        status: Mempool,
-        timestamp:
-          json
-          |> field("first_seen_timestamp", float)
-          |> ( *. )(1000.)
-          |> Js.Date.fromFloat,
+        status: status(json),
+        timestamp: json |> field("op_timestamp", date),
       };
     };
   };
