@@ -94,3 +94,39 @@ let () =
       ->Some
     | _ => None,
   );
+
+module Debug = {
+  open Let;
+  let init = () => ();
+
+  let fetchTokenMetadata = (address, tokenId) => {
+    let toolkit = Toolkit.create("https://granadanet.smartpy.io");
+    let%FRes contract = Tzip12.makeContract(toolkit, address);
+    Tzip12.read(contract, tokenId);
+  };
+
+  let readTokenMetadata = (address, tokenId) => {
+    fetchTokenMetadata(address, tokenId)
+    ->Future.get(metadata => Js.log(metadata));
+  };
+
+  let fetchMetadata = address => {
+    let toolkit = Toolkit.create("https://granadanet.smartpy.io");
+    let%FRes contract = Tzip16.makeContract(toolkit, address);
+    Tzip16.read(contract);
+  };
+
+  let readMetadata = address => {
+    fetchMetadata(address)->Future.get(metadata => Js.log(metadata));
+  };
+
+  type window = {
+    mutable readTokenMetadata: (PublicKeyHash.t, int) => unit,
+    mutable readMetadata: PublicKeyHash.t => unit,
+  };
+
+  [@bs.val] external window: window = "window";
+
+  window.readTokenMetadata = readTokenMetadata;
+  window.readMetadata = readMetadata;
+};
