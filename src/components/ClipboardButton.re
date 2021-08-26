@@ -47,7 +47,9 @@ let make =
     }
     onPress={_ => {
       Navigator.Clipboard.write(data);
-      addToast(Logs.info(I18n.log#copied_to_clipboard(copied)));
+      addToast(
+        Logs.info(~origin=Logs, I18n.log#copied_to_clipboard(copied)),
+      );
     }}
     ?style
   />;

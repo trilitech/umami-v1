@@ -160,10 +160,7 @@ let make = (~children) => {
         setApiVersion(_ => Some(v));
         if (!Network.checkInBound(v.api)) {
           addToast(
-            Logs.error(
-              ~origin=Settings,
-              Errors.toString(Network.API(NotSupported(v.api))),
-            ),
+            Logs.error(~origin=Settings, Network.API(NotSupported(v.api))),
           );
         };
       };

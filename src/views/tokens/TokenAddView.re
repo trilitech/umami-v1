@@ -80,7 +80,7 @@ let make = (~chain, ~closeAction) => {
               | Error(_)
               | Ok((_, false)) =>
                 let errorMsg = I18n.t#error_check_contract;
-                addToast(Logs.error(~origin=Tokens, errorMsg));
+                addToast(Logs.log(~kind=Error, ~origin=Tokens, errorMsg));
                 raiseSubmitFailed(Some(errorMsg));
               }
             );

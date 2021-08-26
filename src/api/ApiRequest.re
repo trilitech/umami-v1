@@ -124,30 +124,10 @@ let isExpired = request =>
   };
 
 let logError = (r, addLog, ~keep=_ => true, origin) =>
-  r->Future.tapError(e =>
-    e->keep
-      ? addLog(
-          Logs.{
-            kind: Logs.Error,
-            msg: e->Errors.toString,
-            origin,
-            timestamp: Js.Date.now(),
-          },
-        )
-      : ()
-  );
+  r->Future.tapError(e => {e->keep ? addLog(Logs.error(~origin, e)) : ()});
 
 let logOk = (r, addLog, origin, makeMsg) =>
-  r->Future.tapOk(r => {
-    addLog(
-      Logs.{
-        kind: Logs.Info,
-        msg: makeMsg(r),
-        origin,
-        timestamp: Js.Date.now(),
-      },
-    )
-  });
+  r->Future.tapOk(r => {addLog(Logs.info(~origin, makeMsg(r)))});
 
 let updateToLoadingState = request =>
   switch (request) {

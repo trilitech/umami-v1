@@ -306,7 +306,8 @@ module Error = {
     | AppMetadataNotFound
     | ShouldNotWork
     | ContainerNotFound
-    | PlatformUnknown;
+    | PlatformUnknown
+    | PairingRequestParsing;
 
   let parse = e =>
     switch (e.RawJsError.message) {
@@ -326,6 +327,7 @@ module Error = {
 
   let toString =
     fun
+    | PairingRequestParsing => I18n.errors#pairing_request_parsing->Some
     | NoMatchingRequest => noMatchingRequest->Some
     | EncodedPayloadNeedString => encodedPayloadNeedString->Some
     | MessageNotHandled => messageNotHandled->Some
@@ -438,5 +440,22 @@ module WalletClient = {
 
   let destroy = t => {
     t->destroyRaw->Error.fromPromiseParsed;
+  };
+};
+
+[@bs.scope "JSON"] [@bs.val]
+external parseJsonIntoPeerInfo: string => peerInfo = "parse";
+
+let parsePairingRequest =
+    (pairingRequest: string): Result.t(peerInfo, Errors.t) => {
+  switch (
+    pairingRequest->HD.BS58Check.decode->HD.toString->parseJsonIntoPeerInfo
+  ) {
+  | exception (Js.Exn.Error(obj)) =>
+    switch (Js.Exn.message(obj)) {
+    | Some(_) => Error(Error.PairingRequestParsing)
+    | None => Error(Error.PairingRequestParsing)
+    }
+  | peerInfo => Ok(peerInfo)
   };
 };

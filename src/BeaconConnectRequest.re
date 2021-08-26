@@ -130,7 +130,7 @@ let make = () => {
       switch (error) {
       | Some(error) =>
         setErrorMessage(_ => Some(error));
-        addToast(Logs.error(error));
+        addToast(Logs.log(~kind=Logs.Error, ~origin=Beacon, error));
         openError();
       | None => closeError()
       };

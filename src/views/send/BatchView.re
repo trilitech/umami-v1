@@ -166,7 +166,7 @@ module Transactions = {
         switch (parsedCSV) {
         | Result.Ok(parsedCSV) => onAddCSVList(parsedCSV)
         | Result.Error(error) =>
-          addLog(true, Logs.error(error->Errors.toString))
+          addLog(true, Logs.error(~origin=Logs.Batch, error))
         };
       };
 

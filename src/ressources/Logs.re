@@ -30,11 +30,14 @@ type origin =
   | Connection
   | Account
   | Aliases
-  | Global
   | Delegate
   | Balance
   | Tokens
-  | Settings;
+  | Settings
+  | Beacon
+  | Secret
+  | Batch
+  | Logs;
 
 type kind =
   | Info
@@ -46,23 +49,27 @@ type timestamp = float;
 type t = {
   kind,
   origin,
+  errorScope: option(string),
   timestamp,
   msg: string,
 };
 
-let log = (~kind, ~origin=Global, msg) => {
+let log = (~kind, ~origin, ~errorScope=?, msg) => {
   kind,
   timestamp: Js.Date.now(),
+  errorScope,
   origin,
   msg,
 };
 
 let info = log(~kind=Info);
-let error = log(~kind=Error);
+let error = (~origin, error) => {
+  let Errors.{scope, msg} = error->Errors.getInfos;
+  log(~kind=Error, ~origin, ~errorScope=scope, msg);
+};
 
 let originToString = e => {
   switch (e) {
-  | Global => "Global"
   | Operation => "Operation"
   | Connection => "Connection"
   | Balance => "Balance"
@@ -71,5 +78,9 @@ let originToString = e => {
   | Delegate => "Delegate"
   | Tokens => "Tokens"
   | Settings => "Settings"
+  | Beacon => "Beacon"
+  | Secret => "Secret"
+  | Logs => "Logs"
+  | Batch => "Batch"
   };
 };

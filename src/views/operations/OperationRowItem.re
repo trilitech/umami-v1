@@ -322,8 +322,7 @@ let make =
           onPress={_ => {
             switch (ConfigUtils.getExternalExplorer(config)) {
             | Ok(url) => System.openExternal(url ++ operation.hash)
-            | Error(err) =>
-              addToast(Logs.error(~origin=Settings, Errors.toString(err)))
+            | Error(err) => addToast(Logs.error(~origin=Operation, err))
             }
           }}
         />

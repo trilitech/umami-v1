@@ -477,6 +477,7 @@ let errors = {
   pub beacon_request_network_missmatch = "Beacon request network not supported";
   pub video_stream_access_denied = "Unable to access video stream\n(please make sure you have a webcam enabled)";
   pub incorrect_number_of_words = "Mnemonic must have 12, 15 or 24 words.";
+  pub pairing_request_parsing = "Illformed pairing request";
   pub unknown_bip39_word = (w, i) =>
     p(
       "Word %d ('%s') is not a valid BIP39 word, please refer to the standard.",

@@ -35,7 +35,7 @@ module Peers = {
   let useLoad = requestState => {
     let get = (~config as _s, ()) => client->ReBeacon.WalletClient.getPeers;
 
-    ApiRequest.useLoader(~get, ~kind=Logs.Settings, ~requestState, ());
+    ApiRequest.useLoader(~get, ~kind=Logs.Beacon, ~requestState, ());
   };
 
   let useDelete =
@@ -43,7 +43,7 @@ module Peers = {
       ~set=
         (~config as _s, peer: ReBeacon.peerInfo) =>
           client->ReBeacon.WalletClient.removePeer(peer),
-      ~kind=Logs.Settings,
+      ~kind=Logs.Beacon,
     );
 };
 
@@ -54,7 +54,7 @@ module Permissions = {
     let get = (~config as _s, ()) =>
       client->ReBeacon.WalletClient.getPermissions;
 
-    ApiRequest.useLoader(~get, ~kind=Logs.Settings, ~requestState, ());
+    ApiRequest.useLoader(~get, ~kind=Logs.Beacon, ~requestState, ());
   };
 
   let useDelete =
@@ -62,7 +62,7 @@ module Permissions = {
       ~set=
         (~config as _s, accountIdentifier: ReBeacon.accountIdentifier) =>
           client->ReBeacon.WalletClient.removePermission(accountIdentifier),
-      ~kind=Logs.Settings,
+      ~kind=Logs.Beacon,
     );
 };
 
