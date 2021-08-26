@@ -214,7 +214,22 @@ let form_input_error = {
   pub api_not_available = "API not available";
   pub node_not_available = "Node not available";
   pub api_and_node_not_available = "API and node both not available";
-  pub different_chains = "API and Node are not running on the same network"
+  pub different_chains = "API and Node are not running on the same network";
+  pub no_metadata = pkh =>
+    p(
+      "No metadata was found for the contract%s.",
+      pkh->Option.mapWithDefault("", p(": %s")),
+    );
+  pub no_token_metadata = pkh =>
+    p(
+      "No token metadata was found for the contract%s.",
+      pkh->Option.mapWithDefault("", p(": %s")),
+    );
+  pub token_id_not_found =
+    fun
+    | None => "Requested token id was not found"
+    | Some((pkh, tokenId)) =>
+      p("Token id %d not found for contract %s", tokenId, pkh)
 };
 
 let title = {
