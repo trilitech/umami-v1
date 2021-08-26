@@ -25,14 +25,10 @@
 
 let styles = FormStyles.onboarding;
 
-type fromStep =
-  | Mnemonics
-  | DerivationPath;
-
 type step =
   | MnemonicsStep
   | DerivationPathStep
-  | PasswordStep(fromStep);
+  | PasswordStep(step);
 
 [@react.component]
 let make = (~closeAction) => {
@@ -40,6 +36,8 @@ let make = (~closeAction) => {
 
   let (secretWithMnemonicRequest, createSecretWithMnemonic) =
     StoreContext.Secrets.useCreateWithMnemonics();
+
+  let (totalPages, setTotalPages) = React.useState(_ => 2);
 
   let secrets = StoreContext.Secrets.useGetAll();
   let existingSecretsCount = secrets->Array.length;
@@ -70,13 +68,16 @@ let make = (~closeAction) => {
   let loading = secretWithMnemonicRequest->ApiRequest.isLoading;
 
   let closing =
+    ModalFormView.confirm(~actionText=I18n.btn#cancel, closeAction);
+
+  let back =
     switch (formStep) {
-    | MnemonicsStep =>
-      ModalFormView.confirm(~actionText=I18n.btn#cancel, closeAction)->Some
-    | _ => None
+    | MnemonicsStep => None
+    | DerivationPathStep => Some(_ => setFormStep(_ => MnemonicsStep))
+    | PasswordStep(prevStep) => Some(_ => setFormStep(_ => prevStep))
     };
 
-  <ModalFormView ?closing>
+  <ModalFormView closing back>
     <Typography.Headline style=styles##title>
       I18n.title#import_account->React.string
     </Typography.Headline>
@@ -104,8 +105,11 @@ let make = (~closeAction) => {
                onPress={_ => {onPress()}}
              />
            }
-           next={_ => setFormStep(_ => PasswordStep(Mnemonics))}
-           nextSecondary={_ => setFormStep(_ => DerivationPathStep)}
+           next={_ => setFormStep(_ => PasswordStep(MnemonicsStep))}
+           nextSecondary={_ => {
+             setFormStep(_ => DerivationPathStep);
+             setTotalPages(_ => 3);
+           }}
          />
        </>
      | DerivationPathStep =>
@@ -113,7 +117,7 @@ let make = (~closeAction) => {
        <>
          <Typography.Overline3
            colorStyle=`highEmphasis style=styles##stepPager>
-           {I18n.t#stepof(1, 2)->React.string}
+           {I18n.t#stepof(2, 3)->React.string}
          </Typography.Overline3>
          <Typography.Overline1 style=styles##stepTitle>
            subtitle->React.string
@@ -124,11 +128,12 @@ let make = (~closeAction) => {
          <SelectDerivationPathView
            derivationPath
            setDerivationPath
-           onPressCancel={_ => setFormStep(_ => MnemonicsStep)}
-           goNextStep={_ => setFormStep(_ => PasswordStep(DerivationPath))}
+           goNextStep={_ =>
+             setFormStep(_ => PasswordStep(DerivationPathStep))
+           }
          />
        </>;
-     | PasswordStep(fromStep) =>
+     | PasswordStep(_) =>
        let subtitle =
          noExistingPassword
            ? I18n.title#account_create_password
@@ -137,7 +142,7 @@ let make = (~closeAction) => {
        <>
          <Typography.Overline3
            colorStyle=`highEmphasis style=styles##stepPager>
-           {I18n.t#stepof(2, 2)->React.string}
+           {I18n.t#stepof(totalPages, totalPages)->React.string}
          </Typography.Overline3>
          <Typography.Overline1 style=styles##stepTitle>
            subtitle->React.string
@@ -149,14 +154,6 @@ let make = (~closeAction) => {
          <CreatePasswordView
            mnemonic
            derivationPath
-           onPressCancel={_ =>
-             setFormStep(_ =>
-               switch (fromStep) {
-               | Mnemonics => MnemonicsStep
-               | DerivationPath => DerivationPathStep
-               }
-             )
-           }
            createSecretWithMnemonic
            loading
          />

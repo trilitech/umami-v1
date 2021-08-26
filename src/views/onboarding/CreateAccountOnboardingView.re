@@ -70,7 +70,18 @@ let make = (~closeAction) => {
 
   let loading = secretWithMnemonicRequest->ApiRequest.isLoading;
 
-  <ModalFormView>
+  let closing =
+    ModalFormView.confirm(~actionText=I18n.btn#cancel, closeAction);
+
+  let back =
+    switch (formStep) {
+    | Step1 => None
+    | Step2 => Some(_ => setFormStep(_ => Step1))
+    | Step3 => Some(_ => setFormStep(_ => Step2))
+    | Step4 => Some(_ => setFormStep(_ => Step3))
+    };
+
+  <ModalFormView closing back>
     <Typography.Headline style=styles##title>
       I18n.title#account_create->React.string
     </Typography.Headline>
@@ -90,8 +101,7 @@ let make = (~closeAction) => {
            </Typography.Body2>
            <MnemonicListView mnemonic />
          </DocumentContext.ScrollView>
-         <View style=FormStyles.formActionSpaceBetween>
-           <Buttons.Form text=I18n.btn#back onPress={_ => closeAction()} />
+         <View style=FormStyles.verticalFormAction>
            <Buttons.SubmitPrimary
              text=I18n.btn#create_account_record_ok
              onPress={_ => setFormStep(_ => Step2)}
@@ -112,7 +122,6 @@ let make = (~closeAction) => {
          </Typography.Body2>
          <VerifyMnemonicView
            mnemonic
-           onPressCancel={_ => setFormStep(_ => Step1)}
            goNextStep={_ => setFormStep(_ => Step3)}
          />
        </>
@@ -122,7 +131,7 @@ let make = (~closeAction) => {
        <>
          <Typography.Overline3
            colorStyle=`highEmphasis style=styles##stepPager>
-           {I18n.t#stepof(2, 3)->React.string}
+           {I18n.t#stepof(3, 4)->React.string}
          </Typography.Overline3>
          <Typography.Overline1 style=styles##stepTitle>
            subtitle->React.string
@@ -133,7 +142,6 @@ let make = (~closeAction) => {
          <SelectDerivationPathView
            derivationPath
            setDerivationPath
-           onPressCancel={_ => setFormStep(_ => Step2)}
            goNextStep={_ => setFormStep(_ => Step4)}
          />
        </>;
@@ -158,7 +166,6 @@ let make = (~closeAction) => {
          <CreatePasswordView
            mnemonic
            derivationPath
-           onPressCancel={_ => setFormStep(_ => Step2)}
            createSecretWithMnemonic
            loading
          />

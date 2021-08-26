@@ -69,7 +69,6 @@ let make =
     (
       ~mnemonic: array(string),
       ~derivationPath,
-      ~onPressCancel,
       ~createSecretWithMnemonic,
       ~loading,
     ) => {
@@ -149,12 +148,7 @@ let make =
            secureTextEntry=true
          />
        : React.null}
-    <View style=FormStyles.formActionSpaceBetween>
-      <Buttons.Form
-        text=I18n.btn#back
-        onPress=onPressCancel
-        disabled=loading
-      />
+    <View style=FormStyles.verticalFormAction>
       <Buttons.SubmitPrimary
         text=I18n.btn#finish
         onPress=onSubmit

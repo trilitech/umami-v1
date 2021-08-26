@@ -66,7 +66,7 @@ let isEqualMnemonicWord = (value, mnemonic, verifyMnemonicIndexes, index) => {
 };
 
 [@react.component]
-let make = (~mnemonic, ~onPressCancel, ~goNextStep) => {
+let make = (~mnemonic, ~goNextStep) => {
   let verifyMnemonicIndexes =
     React.useRef(
       createUniquesRandomInts(
@@ -149,8 +149,7 @@ let make = (~mnemonic, ~onPressCancel, ~goNextStep) => {
          )
        ->React.array}
     </View>
-    <View style=FormStyles.formActionSpaceBetween>
-      <Buttons.Form text=I18n.btn#back onPress=onPressCancel />
+    <View style=FormStyles.verticalFormAction>
       <Buttons.SubmitPrimary
         text=I18n.btn#continue
         onPress=onSubmit

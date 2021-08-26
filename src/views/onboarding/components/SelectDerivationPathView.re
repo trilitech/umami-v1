@@ -125,7 +125,7 @@ module DerivationPathInput = {
 };
 
 [@react.component]
-let make = (~derivationPath, ~setDerivationPath, ~onPressCancel, ~goNextStep) => {
+let make = (~derivationPath, ~setDerivationPath, ~goNextStep) => {
   let form: SelectDerivationPathForm.api =
     form(
       ~custom=false,
@@ -161,8 +161,7 @@ let make = (~derivationPath, ~setDerivationPath, ~onPressCancel, ~goNextStep) =>
       />
       <DerivationPathInput form />
     </FormGroup>
-    <View style=FormStyles.formActionSpaceBetween>
-      <Buttons.Form text=I18n.btn#back onPress=onPressCancel />
+    <View style=FormStyles.verticalFormAction>
       <Buttons.SubmitPrimary
         text=I18n.btn#continue
         onPress=onSubmit
