@@ -23,49 +23,47 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open Belt;
+open Let;
 
 open UmamiCommon;
 
 type reactState('state) = ('state, ('state => 'state) => unit);
 
-type requestsState('requestResponse, 'error) =
-  Map.String.t(ApiRequest.t('requestResponse, 'error));
+type error = Errors.t;
 
-type error = ErrorHandler.t;
+type requestsState('requestResponse) =
+  Map.String.t(ApiRequest.t('requestResponse, error));
 
-type apiRequestsStateLegacy('requestResponse) =
-  reactState(requestsState('requestResponse, string));
+type requestState('requestResponse) =
+  reactState(ApiRequest.t('requestResponse, error));
 
 type apiRequestsState('requestResponse) =
-  reactState(requestsState('requestResponse, error));
+  reactState(requestsState('requestResponse));
 
 type state = {
   selectedAccountState: reactState(option(PublicKeyHash.t)),
   selectedTokenState: reactState(option(PublicKeyHash.t)),
-  accountsRequestState:
-    reactState(ApiRequest.t(Map.String.t(Account.t), ErrorHandler.t)),
+  accountsRequestState: requestState(Map.String.t(Account.t)),
   secretsRequestState:
-    reactState(ApiRequest.t(array(Secret.derived), ErrorHandler.t)),
+    reactState(ApiRequest.t(array(Secret.derived), error)),
   balanceRequestsState: apiRequestsState(Tez.t),
   delegateRequestsState: apiRequestsState(option(PublicKeyHash.t)),
   delegateInfoRequestsState:
     apiRequestsState(option(NodeAPI.Delegate.delegationInfo)),
   operationsRequestsState:
-    apiRequestsStateLegacy(OperationApiRequest.operationsResponse),
+    apiRequestsState(OperationApiRequest.operationsResponse),
   operationsConfirmations: reactState(Set.String.t),
   aliasesRequestState:
-    reactState(ApiRequest.t(Map.String.t(Alias.t), ErrorHandler.t)),
-  bakersRequestState: reactState(ApiRequest.t(array(Delegate.t), string)),
+    reactState(ApiRequest.t(Map.String.t(Alias.t), error)),
+  bakersRequestState: reactState(ApiRequest.t(array(Delegate.t), error)),
   tokensRequestState:
-    reactState(ApiRequest.t(Map.String.t(Token.t), string)),
+    reactState(ApiRequest.t(Map.String.t(Token.t), error)),
   balanceTokenRequestsState: apiRequestsState(Token.Unit.t),
   apiVersionRequestState: reactState(option(Network.apiVersion)),
   eulaSignatureRequestState: reactState(bool),
-  beaconPeersRequestState:
-    reactState(ApiRequest.t(array(ReBeacon.peerInfo), string)),
+  beaconPeersRequestState: requestState(array(ReBeacon.peerInfo)),
   beaconPermissionsRequestState:
-    reactState(ApiRequest.t(array(ReBeacon.permissionInfo), string)),
+    reactState(ApiRequest.t(array(ReBeacon.permissionInfo), error)),
 };
 
 // Context and Provider
@@ -153,21 +151,19 @@ let make = (~children) => {
 
   React.useEffect1(
     () => {
-      Network.checkConfiguration(
-        settings->ConfigUtils.explorer,
-        settings->ConfigUtils.endpoint,
-      )
-      ->Future.tapOk(((v, _)) => setApiVersion(_ => Some(v)))
-      ->FutureEx.getOk(((apiVersion, _)) =>
-          if (!Network.checkInBound(apiVersion.Network.api)) {
-            addToast(
-              Logs.error(
-                ~origin=Settings,
-                Network.errorMsg(`APINotSupported(apiVersion.api)),
-              ),
-            );
-          }
-        );
+      let _: Let.future(_) = {
+        let%FResMap (v: Network.apiVersion, _) =
+          Network.checkConfiguration(
+            settings->ConfigUtils.explorer,
+            settings->ConfigUtils.endpoint,
+          );
+        setApiVersion(_ => Some(v));
+        if (!Network.checkInBound(v.api)) {
+          addToast(
+            Logs.error(~origin=Settings, Network.API(NotSupported(v.api))),
+          );
+        };
+      };
       None;
     },
     [|network|],
@@ -239,7 +235,7 @@ let useRequestsState = (getRequestsState, key: option(string)) => {
     React.useCallback2(
       newRequestSetter =>
         key->Lib.Option.iter(key =>
-          setRequests((request: requestsState('requestResponse, _)) =>
+          setRequests((request: requestsState('requestResponse)) =>
             request->Map.String.update(
               key, (oldRequest: option(ApiRequest.t('requestResponse, _))) =>
               Some(

@@ -49,16 +49,15 @@ module Encodings: {
 type row = int;
 type col = int;
 
-type error('error) =
+type Errors.t +=
   | CannotParseNumber(row, col)
   | CannotParseBool(row, col)
-  | CannotParseCustomValue('error, row, col)
+  | CannotParseCustomValue(Errors.t, row, col)
   | CannotParseRow(row)
   | CannotParseCSV;
 
 let parseRow:
-  (~row: int=?, string, Encodings.row('a, 'error)) =>
-  result('a, error('error));
+  (~row: int=?, string, Encodings.row('a, Errors.t)) => result('a, Errors.t);
 
 let parseCSV:
-  (string, Encodings.row('a, 'error)) => result(list('a), error('error));
+  (string, Encodings.row('a, Errors.t)) => result(list('a), Errors.t);

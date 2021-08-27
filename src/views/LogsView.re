@@ -88,7 +88,7 @@ let make = () => {
          ->List.keep(({Logs.kind}) => kind == Logs.Error)
          ->List.toArray
          ->Array.mapWithIndex((i, log) =>
-             <LogItem
+             <LogItem.Entry
                key={log.timestamp->Float.toString}
                indice=i
                log

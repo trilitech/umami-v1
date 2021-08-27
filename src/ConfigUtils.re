@@ -71,6 +71,6 @@ let findExternalExplorer = c =>
   externalExplorers
   ->Map.String.get(c)
   ->Option.map(v => Ok(v))
-  ->Option.getWithDefault(Error(`UnknownChainId(c)));
+  ->Option.getWithDefault(Error(Network.UnknownChainId(c)));
 
 let getExternalExplorer = config => chainId(config)->findExternalExplorer;

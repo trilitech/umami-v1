@@ -27,12 +27,7 @@ open ReactNative;
 
 let onbStyles = FormStyles.onboarding;
 
-type ledgerState = [
-  | `Found
-  | `Confirmed
-  | `Denied(ErrorHandler.t)
-  | `Loading
-];
+type ledgerState = [ | `Found | `Confirmed | `Denied(Errors.t) | `Loading];
 
 let styles =
   Style.(
@@ -50,12 +45,13 @@ let computeTitle =
   | `Found => I18n.title#hardware_wallet_confirm
   | `Loading => I18n.title#hardware_wallet_search
   | `Confirmed => I18n.title#hardware_wallet_confirmed
-  | `Denied(ErrorHandler.Taquito(ReTaquitoError.LedgerInitTimeout)) =>
+  | `Denied(ReTaquitoError.LedgerInitTimeout) =>
     I18n.title#hardware_wallet_not_found
-  | `Denied(ErrorHandler.Taquito(LedgerKeyRetrieval)) =>
+  | `Denied(ReTaquitoError.LedgerKeyRetrieval) =>
     I18n.title#hardware_wallet_error_app
-  | `Denied(Taquito(LedgerDenied)) => I18n.title#hardware_wallet_denied
-  | `Denied(Taquito(LedgerNotReady)) => I18n.title#hardware_wallet_not_ready
+  | `Denied(ReTaquitoError.LedgerDenied) => I18n.title#hardware_wallet_denied
+  | `Denied(ReTaquitoError.LedgerNotReady) =>
+    I18n.title#hardware_wallet_not_ready
   | _ => I18n.title#hardware_wallet_error_unknown;
 
 let titleComponent = (t, inline, style) =>
@@ -85,7 +81,7 @@ let make = (~style=?, ~status, ~retry, ~inline=false) => {
            size=50.
            style=FormStyles.section##spacing
          />
-         {err->ErrorHandler.toString->React.string->expl}
+         {err->Errors.toString->React.string->expl}
          <Buttons.SubmitPrimary
            text=I18n.btn#retry
            style=styles##retry

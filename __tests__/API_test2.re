@@ -33,9 +33,7 @@ describe("API tests", ({testAsync}) => {
     module UnderTest = NodeAPI.Balance;
     UnderTest.get(config, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh, ())
     ->Future.get(result => {
-        expect.value(result).toEqual(
-          Error(ErrorHandler.(Taquito(Generic("stub")))),
-        );
+        expect.value(result).toEqual(Error(Errors.Generic("stub")));
         callback();
       });
     ();
@@ -184,7 +182,9 @@ describe("API tests", ({testAsync}) => {
     )
     ->Future.get(result => {
         expect.value(result).toEqual(
-          Result.Error("Expected field 'block'\n\tin array at index 0"),
+          Result.Error(
+            Errors.Generic("Expected field 'block'\n\tin array at index 0"),
+          ),
         );
         callback();
       });
@@ -274,7 +274,11 @@ describe("API tests", ({testAsync}) => {
     )
     ->Future.get(result => {
         expect.value(result).toEqual(
-          Result.Error("Expected field 'public_key'\n\tin array at index 0"),
+          Result.Error(
+            Errors.Generic(
+              "Expected field 'public_key'\n\tin array at index 0",
+            ),
+          ),
         );
         callback();
       });
@@ -378,7 +382,10 @@ describe("API tests", ({testAsync}) => {
     )
     ->Future.get(result => {
         expect.value(result).toEqual(
-          Result.Error("Expected field 'destination'\n\tin array at index 0"),
+          Result.Error(
+            "Expected field 'destination'\n\tin array at index 0"
+            ->Errors.Generic,
+          ),
         );
         callback();
       });
@@ -470,7 +477,8 @@ describe("API tests", ({testAsync}) => {
     ->Future.get(result => {
         expect.value(result).toEqual(
           Result.Error(
-            "Expected field 'contract_address'\n\tin array at index 0",
+            "Expected field 'contract_address'\n\tin array at index 0"
+            ->Errors.Generic,
           ),
         );
         callback();
@@ -609,7 +617,9 @@ describe("API tests", ({testAsync}) => {
     )
     ->Future.get(result => {
         expect.value(result).toEqual(
-          Result.Error("Expected field 'type'\n\tin array at index 0"),
+          Result.Error(
+            "Expected field 'type'\n\tin array at index 0"->Errors.Generic,
+          ),
         );
         callback();
       });
@@ -670,7 +680,9 @@ describe("API tests", ({testAsync}) => {
     UnderTest.getBakers(config)
     ->Future.get(result => {
         expect.value(result).toEqual(
-          Result.Error("Expected field 'name'\n\tin array at index 1"),
+          Result.Error(
+            "Expected field 'name'\n\tin array at index 1"->Errors.Generic,
+          ),
         );
         callback();
       });

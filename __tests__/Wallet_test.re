@@ -28,13 +28,9 @@ let testkey5 =
 let bind = Future.flatMapOk;
 let map = Future.mapOk;
 
-let before = () =>
-  Client.initDir(testDir)
-  ->Future.mapError(e => ErrorHandler.(e->File->Wallet));
+let before = () => Client.initDir(testDir);
 
-let after = () =>
-  Client.resetDir(testDir)
-  ->Future.mapError(e => ErrorHandler.(e->File->Wallet));
+let after = () => Client.resetDir(testDir);
 
 let futureEqual =
     ({expectEqual, callback}: Types.testAsyncUtils(_), eqcomp, fn) => {

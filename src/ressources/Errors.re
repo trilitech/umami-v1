@@ -23,39 +23,54 @@
 /*                                                                           */
 /*****************************************************************************/
 
-type token =
-  | OperationNotRunnableOffchain(string)
-  | SimulationNotAvailable(string)
-  | InjectionNotImplemented(string)
-  | OffchainCallNotImplemented(string)
-  | RawError(string);
+open UmamiCommon;
 
-type wallet = Wallet.error;
+type t = ..;
 
-type walletAPI =
-  | NoSecretFound
-  | SecretNotFound(int)
-  | CannotUpdateSecret(int)
-  | RecoveryPhraseNotFound(int)
-  | SecretAlreadyImported
-  | IncorrectNumberOfWords
-  | UnknownBip39Word(string, int)
-  | Generic(string);
+type scope = string;
 
-type t =
-  | Taquito(ReTaquitoError.t)
-  | Token(token)
-  | Wallet(wallet)
-  | WalletAPI(walletAPI);
-
-let taquito: ReTaquitoError.t => t;
-let token: token => t;
-
-let toString: t => string;
-
-type promiseError = {
-  message: string,
-  name: string,
+type errorInfos = {
+  msg: string,
+  scope: string,
 };
 
-let extractPromiseError: Js.Promise.error => promiseError;
+type t +=
+  | Generic(string)
+  | WrongPassword;
+
+let handlers = ref([]);
+
+let registerHandler = (scope, f) => {
+  handlers := [(scope, f), ...handlers.contents];
+};
+
+let () =
+  registerHandler(
+    "Generic",
+    fun
+    | Generic(s) => s->Some
+    | WrongPassword => I18n.form_input_error#wrong_password->Some
+    | _ => None,
+  );
+
+let getInfos = e => {
+  let infos =
+    handlers.contents
+    ->Lib.List.findMap(((scope, h)) =>
+        e->h->Option.map(msg => {scope, msg})
+      );
+
+  switch (infos) {
+  | Some(i) => i
+  | None =>
+    /* We know by construction that [e] is an object as it is of type [t]. It
+       must be convertible to json by [stringifyAny] */
+    {
+      scope: "Generic",
+      msg:
+        I18n.errors#unhandled_error(e->Js.Json.stringifyAny->Option.getExn),
+    }
+  };
+};
+
+let toString = e => getInfos(e).msg;

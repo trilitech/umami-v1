@@ -26,11 +26,18 @@
 open System.Path.Ops;
 open Let;
 
-type error =
-  | Generic(string)
-  | File(System.File.Error.t)
+type Errors.t +=
   | KeyNotFound
-  | LedgerParsingError(string);
+  | KeyBadFormat(string);
+
+let () =
+  Errors.registerHandler(
+    "Wallet",
+    fun
+    | KeyNotFound => I18n.wallet#key_not_found->Some
+    | KeyBadFormat(s) => I18n.wallet#key_bad_format(s)->Some
+    | _ => None,
+  );
 
 module type AliasType = {
   type t;
@@ -47,12 +54,12 @@ module type AliasesMakerType = {
   type t = array(alias);
   let parse: string => t;
   let stringify: t => string;
-  let read: System.Path.t => Future.t(Result.t(t, error));
-  let write: (System.Path.t, t) => Future.t(Result.t(unit, error));
+  let read: System.Path.t => Future.t(Result.t(t, Errors.t));
+  let write: (System.Path.t, t) => Future.t(Result.t(unit, Errors.t));
   let protect:
-    (System.Path.t, unit => Future.t(Result.t(unit, error))) =>
-    Future.t(Result.t(unit, error));
-  let find: (t, alias => bool) => Result.t(alias, error);
+    (System.Path.t, unit => Future.t(Result.t(unit, Errors.t))) =>
+    Future.t(Result.t(unit, Errors.t));
+  let find: (t, alias => bool) => Result.t(alias, Errors.t);
   let filter: (t, alias => bool) => t;
   let remove: (t, key) => t;
   let addOrReplace: (t, key, value) => t;
@@ -69,19 +76,14 @@ module AliasesMaker =
 
   type t = array(alias);
 
-  let fileError = f => f->Future.mapError(e => File(e));
-
   [@bs.val] [@bs.scope "JSON"] external parse: string => t = "parse";
   [@bs.val] [@bs.scope "JSON"] external stringify: t => string = "stringify";
 
   let read = dirpath =>
-    System.File.read(dirpath / Alias.filename)
-    ->fileError
-    ->Future.mapOk(parse);
+    System.File.read(dirpath / Alias.filename)->Future.mapOk(parse);
 
   let write = (dirpath, aliases) =>
-    System.File.write(~name=dirpath / Alias.filename, stringify(aliases))
-    ->fileError;
+    System.File.write(~name=dirpath / Alias.filename, stringify(aliases));
 
   let mkTmpCopy = dirpath => {
     let tmpName = !(System.Path.toString(Alias.filename) ++ ".tmp");
@@ -89,8 +91,7 @@ module AliasesMaker =
       ~name=dirpath / Alias.filename,
       ~dest=dirpath / tmpName,
       ~mode=System.File.CopyMode.copy_ficlone,
-    )
-    ->fileError;
+    );
   };
 
   let restoreTmpCopy = dirpath => {
@@ -99,13 +100,12 @@ module AliasesMaker =
       ~name=dirpath / tmpName,
       ~dest=dirpath / Alias.filename,
       ~mode=System.File.CopyMode.copy_ficlone,
-    )
-    ->fileError;
+    );
   };
 
   let rmTmpCopy = dirpath => {
     let tmpName = !(System.Path.toString(Alias.filename) ++ ".tmp");
-    System.File.rm(~name=dirpath / tmpName)->fileError;
+    System.File.rm(~name=dirpath / tmpName);
   };
 
   let protect = (dirpath, f) => {
@@ -281,7 +281,7 @@ let readSecretFromPkh = (address, dirpath) => {
   | k when k->Js.String2.startsWith("encrypted:") => Ok((Encrypted, k))
   | k when k->Js.String2.startsWith("unencrypted:") => Ok((Unencrypted, k))
   | k when k->Js.String2.startsWith("ledger://") => Ok((Ledger, k))
-  | k => Error(Generic("Can't readkey, bad format: " ++ k))
+  | k => Error(KeyBadFormat(k))
   };
 };
 
@@ -291,13 +291,28 @@ let ledgerPkValue = (secretPath, pk) =>
   PkAlias.{locator: secretPath, key: pk};
 
 module Ledger = {
-  type error =
+  type Errors.t +=
     | InvalidPathSize(array(int))
     | InvalidIndex(int, string)
     | InvalidScheme(string)
     | InvalidEncoding(string)
     | InvalidLedger(string)
     | DerivationPathError(DerivationPath.error);
+
+  let () =
+    Errors.registerHandler(
+      "Ledger",
+      fun
+      | InvalidPathSize(p) =>
+        I18n.wallet#invalid_path_size(p->Js.String.make)->Some
+      | InvalidIndex(index, value) =>
+        I18n.wallet#invalid_index(index, value)->Some
+      | InvalidScheme(s) => I18n.wallet#invalid_scheme(s)->Some
+      | InvalidEncoding(e) => I18n.wallet#invalid_encoding(e)->Some
+      | InvalidLedger(p) => I18n.wallet#invalid_ledger(p)->Some
+      | DerivationPathError(_) => I18n.form_input_error#dp_not_a_dp->Some
+      | _ => None,
+    );
 
   /** Format of a ledger encoded secret key: `ledger://prefix/scheme/path`, where:
     - prefix is the public key derivated from the path `44'/1729'` and scheme
@@ -429,18 +444,4 @@ module Ledger = {
       );
     };
   };
-};
-
-let convertLedgerError = err => {
-  let msg =
-    switch (err) {
-    | Ledger.InvalidPathSize(p) =>
-      I18n.wallet#invalid_path_size(p->Js.String.make)
-    | InvalidIndex(index, value) => I18n.wallet#invalid_index(index, value)
-    | InvalidScheme(s) => I18n.wallet#invalid_scheme(s)
-    | InvalidEncoding(e) => I18n.wallet#invalid_encoding(e)
-    | InvalidLedger(p) => I18n.wallet#invalid_ledger(p)
-    | DerivationPathError(_) => I18n.form_input_error#dp_not_a_dp
-    };
-  LedgerParsingError(msg);
 };

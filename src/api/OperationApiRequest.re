@@ -52,16 +52,14 @@ let token = (operation, signingIntent) => {
   signingIntent,
 };
 
-let errorToString = ErrorHandler.toString;
-
 let filterOutFormError =
   fun
-  | ErrorHandler.Taquito(LedgerInitTimeout)
-  | ErrorHandler.Taquito(LedgerInit(_))
-  | ErrorHandler.Taquito(LedgerKeyRetrieval)
-  | ErrorHandler.Taquito(LedgerDenied)
-  | ErrorHandler.Taquito(LedgerNotReady)
-  | ErrorHandler.Taquito(WrongPassword) => false
+  | ReTaquitoError.LedgerInitTimeout
+  | ReTaquitoError.LedgerInit(_)
+  | ReTaquitoError.LedgerKeyRetrieval
+  | ReTaquitoError.LedgerDenied
+  | ReTaquitoError.LedgerNotReady
+  | Errors.WrongPassword => false
   | _ => true;
 
 let useCreate = (~sideEffect=?, ()) => {
@@ -87,7 +85,6 @@ let useCreate = (~sideEffect=?, ()) => {
     ~set,
     ~kind=Logs.Operation,
     ~keepError=filterOutFormError,
-    ~errorToString,
     ~sideEffect?,
     (),
   );
@@ -114,7 +111,6 @@ let useSimulate = () => {
   ApiRequest.useSetter(
     ~set,
     ~kind=Logs.Operation,
-    ~errorToString,
     ~keepError=filterOutFormError,
     (),
   );
@@ -133,8 +129,7 @@ let useLoad =
       config->ServerAPI.Explorer.getOperations(address, ~limit?, ~types?, ());
     let currentLevel =
       Network.monitor(ConfigUtils.explorer(config))
-      ->Future.mapOk(monitor => monitor.nodeLastBlock)
-      ->Future.mapError(Network.errorMsg);
+      ->Future.mapOk(monitor => monitor.nodeLastBlock);
 
     let f = (operations, currentLevel) =>
       switch (operations, currentLevel) {

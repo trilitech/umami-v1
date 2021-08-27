@@ -25,12 +25,24 @@
 
 open CSVParser;
 
-type error =
-  | Parser(TezosClient.CSVParser.error(PublicKeyHash.parsingError))
+type Errors.t +=
   | UnknownToken(string)
   | NoRows
   | CannotParseTokenAmount(ReBigNumber.t, int, int)
   | CannotParseTezAmount(ReBigNumber.t, int, int);
+
+let () =
+  Errors.registerHandler(
+    "CSVEncoding",
+    fun
+    | NoRows => I18n.csv#no_rows->Some
+    | CannotParseTokenAmount(v, row, col) =>
+      I18n.csv#cannot_parse_token_amount(v, row + 1, col + 1)->Some
+    | CannotParseTezAmount(v, row, col) =>
+      I18n.csv#cannot_parse_tez_amount(v, row + 1, col + 1)->Some
+    | UnknownToken(s) => I18n.csv#unknown_token(s)->Some
+    | _ => None,
+  );
 
 type t = list(Transfer.elt);
 
@@ -79,34 +91,10 @@ let handleCSV = (rows, tokens) =>
   rows->List.mapWithIndex(handleRow(tokens))->ResultEx.collect;
 
 let parseCSV = (content, ~tokens) => {
-  let rows =
-    parseCSV(content, rowEncoding)->ResultEx.mapError(e => Parser(e));
+  let rows = parseCSV(content, rowEncoding);
   switch (rows) {
   | Ok([]) => Error(NoRows)
   | Ok(rows) => handleCSV(rows, tokens)
   | Error(e) => Error(e)
   };
 };
-
-let handleCSVError = e =>
-  e->CSVParser.(
-       fun
-       | Parser(CannotParseNumber(row, col)) =>
-         I18n.csv#cannot_parse_number(row + 1, col + 1)
-       | Parser(CannotParseBool(row, col)) =>
-         I18n.csv#cannot_parse_boolean(row + 1, col + 1)
-       | Parser(CannotParseCustomValue(e, row, col)) =>
-         I18n.csv#cannot_parse_custom_value(
-           PublicKeyHash.handleParsingError(e),
-           row + 1,
-           col + 1,
-         )
-       | Parser(CannotParseRow(row)) => I18n.csv#cannot_parse_row(row + 1)
-       | Parser(CannotParseCSV) => I18n.csv#cannot_parse_csv
-       | NoRows => I18n.csv#no_rows
-       | CannotParseTokenAmount(v, row, col) =>
-         I18n.csv#cannot_parse_token_amount(v, row + 1, col + 1)
-       | CannotParseTezAmount(v, row, col) =>
-         I18n.csv#cannot_parse_tez_amount(v, row + 1, col + 1)
-       | UnknownToken(s) => I18n.csv#unknown_token(s)
-     );

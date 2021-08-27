@@ -33,6 +33,10 @@ module Transport = {
     (~openTimeout: int=?, ~listenTimeout: int=?, unit) => Js.Promise.t(t) =
     "create";
 
+  let create = (~openTimeout=?, ~listenTimeout=?, ()) =>
+    create(~openTimeout?, ~listenTimeout?, ())
+    ->ReTaquitoError.fromPromiseParsed;
+
   [@bs.module "@ledgerhq/hw-transport-node-hid-singleton"]
   [@bs.scope "default"]
   external list: unit => Js.Promise.t(array(descriptor)) = "list";

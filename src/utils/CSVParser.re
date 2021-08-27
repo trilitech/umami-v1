@@ -113,12 +113,28 @@ module Encodings = {
 type row = int;
 type col = int;
 
-type error('custom) =
+type Errors.t +=
   | CannotParseNumber(row, col)
   | CannotParseBool(row, col)
-  | CannotParseCustomValue('custom, row, col)
+  | CannotParseCustomValue(Errors.t, row, col)
   | CannotParseRow(row)
   | CannotParseCSV;
+
+let () =
+  Errors.registerHandler(
+    "CSVParser",
+    fun
+    | CannotParseNumber(row, col) =>
+      I18n.csv#cannot_parse_number(row + 1, col + 1)->Some
+    | CannotParseBool(row, col) =>
+      I18n.csv#cannot_parse_boolean(row + 1, col + 1)->Some
+    | CannotParseCustomValue(e, row, col) =>
+      I18n.csv#cannot_parse_custom_value(e->Errors.toString, row + 1, col + 1)
+      ->Some
+    | CannotParseRow(row) => I18n.csv#cannot_parse_row(row + 1)->Some
+    | CannotParseCSV => I18n.csv#cannot_parse_csv->Some
+    | _ => None,
+  );
 
 let parseNumber = (v, row, col) => {
   let n = ReBigNumber.fromString(v);
@@ -138,8 +154,7 @@ let parseCustom = (v, conv, row, col) => {
 
 let rec parseElementRaw:
   type t.
-    (string, Encodings.element(t, 'error), row, col) =>
-    result(t, error('error)) =
+    (string, Encodings.element(t, 'error), row, col) => result(t, Errors.t) =
   (value, enc, row, col) =>
     switch (enc) {
     | Encodings.Number => parseNumber(value, row, col)
@@ -163,7 +178,7 @@ let parseNullableElement = (v, enc, row, col) =>
 let rec parseRowRec:
   type t.
     (array(string), Encodings.row(t, 'error), row, col) =>
-    result(t, error('error)) =
+    result(t, Errors.t) =
   (values, enc, row, col) =>
     Encodings.(
       switch (enc) {

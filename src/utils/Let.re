@@ -26,6 +26,11 @@
 /* The goal of this module is to define custom let-binding to ease
    promise-oriented code integration. */
 
+type result('a) = Result.t('a, Errors.t);
+type future('a) = Future.t(result('a));
+
+type error = Errors.t;
+
 module Res = {
   /* [let%Res x = m; n] means:
      - [m] has type `Result.t('a, 'err)`
@@ -36,7 +41,7 @@ module Res = {
      It is strictly equivalent to `m->Result.flatMap(x => n)`
      */
 
-  let let_ = Result.flatMap;
+  let let_: (result(_), _) => result(_) = Result.flatMap;
 };
 
 module ResMap = {
@@ -49,7 +54,7 @@ module ResMap = {
      It is strictly equivalent to `m->Result.map(x => n)`
      */
 
-  let let_ = Result.map;
+  let let_: (result(_), _) => result(_) = Result.map;
 };
 
 module Ft = {
@@ -62,7 +67,7 @@ module Ft = {
      It is strictly equivalent to `m->Future.flatMap(x => n)`
      */
 
-  let let_ = Future.flatMap;
+  let let_: (future(_), _) => future(_) = Future.flatMap;
 };
 
 module FtMap = {
@@ -75,7 +80,7 @@ module FtMap = {
      It is strictly equivalent to `m->Future.map(x => n)`
      */
 
-  let let_ = Future.map;
+  let let_: (future(_), _) => future(_) = Future.map;
 };
 
 module FRes = {
@@ -88,7 +93,7 @@ module FRes = {
      It is strictly equivalent to `m->Future.flatMapOk(x => n)`
      */
 
-  let let_ = Future.flatMapOk;
+  let let_: (future(_), _) => future(_) = Future.flatMapOk;
 };
 
 module FResMap = {
@@ -101,7 +106,7 @@ module FResMap = {
      It is strictly equivalent to `m->Future.mapOk(x => n)`
      */
 
-  let let_ = Future.mapOk;
+  let let_: (future(_), _) => future(_) = Future.mapOk;
 };
 
 module FlatRes = {
@@ -114,5 +119,6 @@ module FlatRes = {
      It is strictly equivalent to `m->Future.flatMapOk(x => n->Future.value)`
      */
 
-  let let_ = (fut, fn) => fut->Future.flatMapOk(v => v->fn->Future.value);
+  let let_: (future(_), _) => future(_) =
+    (fut, fn) => fut->Future.flatMapOk(v => v->fn->Future.value);
 };

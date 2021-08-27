@@ -35,6 +35,9 @@ var path = require('path');
 
 ";
 
+type Errors.t +=
+  | NoSuchFileError(string);
+
 let os = [%raw "OS"];
 
 [@bs.scope "app"] [@bs.val] external getVersion: unit => string = "getVersion";
@@ -91,24 +94,21 @@ let appDir = () => Path.Ops.(Path.getAppData() / (!getName()));
 let homeDir = () => os##homedir();
 
 module File = {
-  module Error = {
-    type t =
-      | NoSuchFile(string)
-      | Generic(string);
+  let no_such_file = "no such file";
 
-    let no_such_file = "no such file";
+  let parseError = (e: RawJsError.t) =>
+    switch (e.message) {
+    | s when s->Js.String2.includes(no_such_file) => NoSuchFileError(s)
+    | s => Errors.Generic(s)
+    };
 
-    let parse = (e: RawJsError.t) =>
-      switch (e.message) {
-      | s when s->Js.String2.includes(no_such_file) => NoSuchFile(s)
-      | s => Generic(s)
-      };
-
-    let toString =
+  let () =
+    Errors.registerHandler(
+      "System",
       fun
-      | NoSuchFile(s)
-      | Generic(s) => s;
-  };
+      | NoSuchFileError(s) => s->Some
+      | _ => None,
+    );
 
   type encoding =
     | Utf8
@@ -132,7 +132,7 @@ module File = {
 
   let read = (~encoding=Utf8, name) => {
     let encoding = string_of_encoding(encoding);
-    readFile(~name, ~encoding)->FutureEx.fromCallback(Error.parse);
+    readFile(~name, ~encoding)->FutureEx.fromCallback(parseError);
   };
 
   [@bs.scope "fs"] [@bs.val]
@@ -149,7 +149,7 @@ module File = {
   let write = (~encoding=Utf8, ~name, content) => {
     let encoding = string_of_encoding(encoding);
     writeFile(~name, ~content, ~encoding)
-    ->FutureEx.fromUnitCallback(Error.parse);
+    ->FutureEx.fromUnitCallback(parseError);
   };
 
   module CopyMode: {
@@ -181,7 +181,7 @@ module File = {
     "copyFile";
 
   let copy = (~name, ~dest, ~mode) => {
-    copyFile(~name, ~dest, ~mode)->FutureEx.fromUnitCallback(Error.parse);
+    copyFile(~name, ~dest, ~mode)->FutureEx.fromUnitCallback(parseError);
   };
 
   [@bs.scope "fs"] [@bs.val]
@@ -190,7 +190,7 @@ module File = {
     "unlink";
 
   let rm = (~name) => {
-    unlink(~name)->FutureEx.fromUnitCallback(Error.parse);
+    unlink(~name)->FutureEx.fromUnitCallback(parseError);
   };
 
   type rmdirOptions = {recursive: bool};
@@ -207,7 +207,7 @@ module File = {
 
   let rmdir = path => {
     rmdir(~path, ~options={recursive: true})
-    ->FutureEx.fromUnitCallback(Error.parse);
+    ->FutureEx.fromUnitCallback(parseError);
   };
 
   type constant;
@@ -231,7 +231,7 @@ module File = {
 
   let access = path =>
     access(~path, ~constant=constants.wOk)
-    ->FutureEx.fromUnitCallback(Error.parse)
+    ->FutureEx.fromUnitCallback(parseError)
     ->Future.map(r => r->Result.isOk);
 
   let initIfNotExists = (~encoding=?, ~path, content) => {
@@ -245,7 +245,7 @@ module File = {
   external mkdir: (Path.t, Js.Nullable.t(RawJsError.t) => unit) => unit =
     "mkdir";
 
-  let mkdir = path => mkdir(path)->FutureEx.fromUnitCallback(Error.parse);
+  let mkdir = path => mkdir(path)->FutureEx.fromUnitCallback(parseError);
 
   let initDirIfNotExists = (path: Path.t) => {
     access(path)

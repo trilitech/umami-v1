@@ -144,7 +144,7 @@ module PeersSection = {
            peers->Array.map(peer => <Row key={peer.id} peer />)->React.array
          | Done(Error(error), _) =>
            <Typography.Body2 colorStyle=`error>
-             error->React.string
+             {error->Errors.toString->React.string}
            </Typography.Body2>
          }}
       </View>
@@ -257,7 +257,7 @@ module PermissionsSection = {
            ->React.array
          | Done(Error(error), _) =>
            <Typography.Body2 colorStyle=`error>
-             error->React.string
+             {error->Errors.toString->React.string}
            </Typography.Body2>
          }}
       </View>

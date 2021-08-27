@@ -53,44 +53,49 @@ type httpError = [ | `HttpError(string) | `AbortError];
 
 type jsonError = [ | `JsonError(string)];
 
-type apiError = [
-  | `APIVersionFormat(string)
-  | `APINotAvailable([ httpError | jsonError])
-  | `APIVersionRPCError(string)
-  | `APIMonitorRPCError(string)
-  | `APINotSupported(Version.t)
-];
+type apiError =
+  | VersionFormat(string)
+  | NotAvailable([ httpError | jsonError])
+  | VersionRPCError(string)
+  | MonitorRPCError(string)
+  | NotSupported(Version.t);
 
-type nodeError = [
-  | `NodeNotAvailable([ httpError | jsonError])
-  | `NodeChainRPCError(string)
-  | `NodeVersionRPCError(string)
-];
+type nodeError =
+  | NotAvailable([ httpError | jsonError])
+  | ChainRPCError(string)
+  | VersionRPCError(string);
 
-type error = [
-  | `UnknownChainId(string)
-  | `ChainInconsistency(string, string)
-  | `APIAndNodeError(apiError, nodeError)
-  | apiError
-  | nodeError
-];
+type Errors.t +=
+  | UnknownChainId(string)
+  | ChainInconsistency(string, string)
+  | APIAndNodeError(apiError, nodeError)
+  | API(apiError)
+  | Node(nodeError);
 
-let errorMsg = e =>
-  switch (e) {
-  | `APINotAvailable(_) => I18n.network#api_not_available
-  | `APIVersionRPCError(err) => I18n.network#api_version_rpc_error(err)
-  | `APIVersionFormat(v) => I18n.network#api_version_format_error(v)
-  | `APIMonitorRPCError(err) => I18n.network#api_monitor_rpc_error(err)
-  | `NodeNotAvailable(_) => I18n.network#node_not_available
-  | `NodeChainRPCError(err) => I18n.network#node_version_rpc_error(err)
-  | `NodeVersionRPCError(err) => I18n.network#node_version_rpc_error(err)
-  | `ChainInconsistency(api, node) =>
-    I18n.network#chain_inconsistency(api, node)
-  | `UnknownChainId(chain_id) => I18n.network#unknown_chain_id(chain_id)
-  | `APINotSupported(v) =>
-    I18n.network#api_not_supported(Version.toString(v))
-  | `APIAndNodeError(_, _) => I18n.network#api_and_node_not_available
-  };
+let () =
+  Errors.registerHandler(
+    "Network",
+    fun
+    | API(NotAvailable(_)) => I18n.network#api_not_available->Some
+    | API(VersionRPCError(err)) =>
+      I18n.network#api_version_rpc_error(err)->Some
+    | API(VersionFormat(v)) => I18n.network#api_version_format_error(v)->Some
+    | API(MonitorRPCError(err)) =>
+      I18n.network#api_monitor_rpc_error(err)->Some
+    | Node(NotAvailable(_)) => I18n.network#node_not_available->Some
+    | Node(ChainRPCError(err)) =>
+      I18n.network#node_version_rpc_error(err)->Some
+    | Node(VersionRPCError(err)) =>
+      I18n.network#node_version_rpc_error(err)->Some
+    | ChainInconsistency(api, node) =>
+      I18n.network#chain_inconsistency(api, node)->Some
+    | UnknownChainId(chain_id) =>
+      I18n.network#unknown_chain_id(chain_id)->Some
+    | API(NotSupported(v)) =>
+      I18n.network#api_not_supported(Version.toString(v))->Some
+    | APIAndNodeError(_, _) => I18n.network#api_and_node_not_available->Some
+    | _ => None,
+  );
 
 let mainnetChain = "NetXdQprcVkpaWU";
 let granadanetChain = "NetXz969SFaFn8k";
@@ -153,7 +158,7 @@ let fetch = (url, ~timeout=?, ()) => {
     Js.Global.setTimeout(() => Fetch.AbortController.abort(ctrl), ms)->ignore
   );
   res->FutureJs.fromPromise(err => {
-    let {name} = err->ErrorHandler.extractPromiseError;
+    let {name} = err->RawJsError.fromPromiseError;
     switch (name) {
     | "AbortError" => `AbortError
     | e => `HttpError(e)
@@ -171,16 +176,15 @@ let fetchJson = (url, ~timeout=?, mkError) =>
       ->FutureJs.fromPromise(err => mkError(Js.String.make(err)->`JsonError))
     );
 
-let mapAPIError: _ => apiError =
+let mapAPIError: _ => Errors.t =
   fun
-  | Json.ParseError(error) => `APIMonitorRPCError(error)
-  | Json.Decode.DecodeError(error) => `APIMonitorRPCError(error)
-  | _ => `APIMonitorRPCError("Unknown error");
+  | Json.ParseError(error) => API(MonitorRPCError(error))
+  | Json.Decode.DecodeError(error) => API(MonitorRPCError(error))
+  | _ => API(MonitorRPCError("Unknown error"));
 
 let monitor = url => {
   let%FlatRes json =
-    (url ++ "/monitor/blocks")
-    ->fetchJson(e => (`APINotAvailable(e) :> apiError));
+    (url ++ "/monitor/blocks")->fetchJson(e => API(NotAvailable(e)));
 
   ResultEx.fromExn((), () =>
     Json.Decode.{
@@ -197,7 +201,7 @@ let monitor = url => {
 
 let getAPIVersion = (~timeout=?, url) => {
   let%FlatRes json =
-    (url ++ "/version")->fetchJson(~timeout?, e => `APINotAvailable(e));
+    (url ++ "/version")->fetchJson(~timeout?, e => API(NotAvailable(e)));
 
   let%Res api =
     ResultEx.fromExn((), () => Json.Decode.(field("api", string, json)))
@@ -205,7 +209,7 @@ let getAPIVersion = (~timeout=?, url) => {
 
   let%Res api =
     Version.parse(api)
-    ->ResultEx.mapError((VersionFormat(e)) => `APIVersionFormat(e));
+    ->ResultEx.mapError((VersionFormat(e)) => API(VersionFormat(e)));
 
   ResultEx.fromExn((), () =>
     Json.Decode.{
@@ -230,14 +234,13 @@ let getChainName = chain => {
 };
 
 let getNodeChain = (~timeout=?, url) => {
-  (url ++ "/chains/main/chain_id")
-  ->fetchJson(~timeout?, e => `NodeNotAvailable(e))
-  ->Future.flatMapOk(json => {
-      switch (Js.Json.decodeString(json)) {
-      | Some(v) => Future.value(Ok(v))
-      | _ => Future.value(Error(`NodeVersionRPCError("not a Json string")))
-      }
-    });
+  let%FlatRes json =
+    (url ++ "/chains/main/chain_id")
+    ->fetchJson(~timeout?, e => Node(NotAvailable(e)));
+  switch (Js.Json.decodeString(json)) {
+  | Some(v) => Ok(v)
+  | _ => VersionRPCError("not a Json string")->Node->Error
+  };
 };
 
 let isMainnet = n => n == `Mainnet;
@@ -245,27 +248,23 @@ let isMainnet = n => n == `Mainnet;
 let networkOfChain = c =>
   switch (supportedChains->List.getBy(chain => c == chain)) {
   | Some(c) => c == mainnetChain ? Ok(`Mainnet) : Ok(`Testnet(c))
-  | None => Error(`UnknownChainId(c))
+  | None => Error(UnknownChainId(c))
   };
 
 let checkConfiguration =
-    (api_url, node_url): Future.t(Result.t((apiVersion, string), error)) =>
+    (api_url, node_url): Future.t(Result.t((apiVersion, string), Errors.t)) =>
   Future.map2(
     getAPIVersion(~timeout=5000, api_url),
     getNodeChain(~timeout=5000, node_url),
     (api_res, node_res) =>
     switch (api_res, node_res) {
-    | (Error(api_err), Error(node_err)) =>
-      let api_err = (api_err :> apiError);
-      let node_err = (node_err :> nodeError);
-      Error(`APIAndNodeError((api_err, node_err)));
-    | (Error(err), _) => Error((err :> error))
-    | (_, Error(err)) => Error((err :> error))
+    | (Error(API(api_err)), Error(Node(node_err))) =>
+      Error(APIAndNodeError(api_err, node_err))
+    | (Error(err), _)
+    | (_, Error(err)) => Error(err)
     | (Ok(apiVersion), Ok(nodeChain)) =>
       String.equal(apiVersion.chain, nodeChain)
         ? Ok((apiVersion, nodeChain))
-        : Error(
-            (`ChainInconsistency((apiVersion.chain, nodeChain)) :> error),
-          )
+        : Error(ChainInconsistency(apiVersion.chain, nodeChain))
     }
   );

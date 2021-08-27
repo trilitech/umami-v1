@@ -27,26 +27,11 @@ open ReTaquito;
 open ReTaquitoSigner;
 open Let;
 
-let convertLedgerError = res =>
-  res->ResultEx.mapError(e => e->Wallet.convertLedgerError);
-
-let convertWalletError = res =>
-  res->ResultEx.mapError(e => ErrorHandler.Wallet(e));
-
-let convertToErrorHandler = res =>
-  RawJsError.fromPromiseParsedWrapper(
-    ReTaquitoError.parse,
-    ErrorHandler.taquito,
-    res,
-  );
-
 let revealFee = (~endpoint, source) => {
   let client = RPCClient.create(endpoint);
 
   let%FResMap k =
-    RPCClient.getManagerKey(client, source)
-    ->ReTaquitoError.fromPromiseParsed
-    ->Future.mapError(ErrorHandler.taquito);
+    RPCClient.getManagerKey(client, source)->ReTaquitoError.fromPromiseParsed;
 
   Js.Nullable.isNullable(k) ? default_fee_reveal : 0;
 };
@@ -74,11 +59,7 @@ let handleEstimationResults = ((results, revealFee), options, index) => {
     let%Res res =
       results
       ->Array.get(index)
-      ->ResultEx.fromOption(
-          ErrorHandler.taquito(
-            ReTaquitoError.Generic("No transfer with such index"),
-          ),
-        );
+      ->ResultEx.fromOption(Errors.Generic("No transfer with such index"));
     res->handleCustomOptions(customOptions)->Ok;
   | None =>
     open Toolkit.Estimation;
@@ -132,7 +113,7 @@ module Balance = {
     let%FResMap balance =
       RPCClient.create(endpoint)
       ->RPCClient.getBalance(address, ~params?, ())
-      ->convertToErrorHandler;
+      ->ReTaquitoError.fromPromiseParsed;
     balance->BigNumber.toInt64->Tez.ofInt64;
   };
 };
@@ -143,23 +124,18 @@ module Signer = {
       ~secretKey=key->Js.String2.substringToEnd(~from=10),
       ~passphrase,
       (),
-    )
-    ->Future.mapError(ErrorHandler.taquito);
+    );
 
   let readUnencryptedKey = key =>
     MemorySigner.create(
       ~secretKey=key->Js.String2.substringToEnd(~from=12),
       ~passphrase="",
       (),
-    )
-    ->Future.mapError(ErrorHandler.taquito);
+    );
 
   let readLedgerKey = (callback, key) => {
     let keyData = ledgerBasePkh =>
-      key
-      ->Wallet.Ledger.Decode.fromSecretKey(~ledgerBasePkh)
-      ->convertLedgerError
-      ->convertWalletError;
+      key->Wallet.Ledger.Decode.fromSecretKey(~ledgerBasePkh);
 
     let%FRes tr = LedgerAPI.init();
 
@@ -181,18 +157,13 @@ module Signer = {
     | Password(string);
 
   let readSecretKey = (address, signingIntent, dirpath) => {
-    let%FRes (kind, key) =
-      Wallet.readSecretFromPkh(address, dirpath)
-      ->Future.map(convertWalletError);
+    let%FRes (kind, key) = Wallet.readSecretFromPkh(address, dirpath);
 
     switch (kind, signingIntent) {
     | (Encrypted, Password(s)) => readEncryptedKey(key, s)
     | (Unencrypted, _) => readUnencryptedKey(key)
     | (Ledger, LedgerCallback(callback)) => readLedgerKey(callback, key)
-    | _ =>
-      ReTaquitoError.SignerIntentInconsistency
-      ->ErrorHandler.taquito
-      ->FutureEx.err
+    | _ => ReTaquitoError.SignerIntentInconsistency->FutureEx.err
     };
   };
 };
@@ -212,7 +183,7 @@ module Delegate = {
            Js.Promise.reject(RejectError(e->Js.String.make));
          }
        )
-    |> (v => convertToErrorHandler(v));
+    |> ReTaquitoError.fromPromiseParsed;
   };
 
   let set =
@@ -231,7 +202,7 @@ module Delegate = {
     let provider = Toolkit.{signer: signer};
     tk->Toolkit.setProvider(provider);
     let dg = Toolkit.prepareDelegate(~source, ~delegate, ~fee?, ());
-    tk.contract->Toolkit.setDelegate(dg)->convertToErrorHandler;
+    tk.contract->Toolkit.setDelegate(dg)->ReTaquitoError.fromPromiseParsed;
   };
 
   module Estimate = {
@@ -244,13 +215,9 @@ module Delegate = {
           ~fee=?,
           (),
         ) => {
-      let%FRes alias =
-        Wallet.aliasFromPkh(~dirpath=baseDir, ~pkh=source)
-        ->Future.map(convertWalletError);
+      let%FRes alias = Wallet.aliasFromPkh(~dirpath=baseDir, ~pkh=source);
 
-      let%FRes pk =
-        Wallet.pkFromAlias(~dirpath=baseDir, ~alias)
-        ->Future.map(convertWalletError);
+      let%FRes pk = Wallet.pkFromAlias(~dirpath=baseDir, ~alias);
 
       let tk = Toolkit.create(endpoint);
       let signer =
@@ -266,7 +233,7 @@ module Delegate = {
       let%FRes res =
         tk.estimate
         ->Toolkit.Estimation.setDelegate(sd)
-        ->convertToErrorHandler;
+        ->ReTaquitoError.fromPromiseParsed;
 
       res
       ->handleCustomOptions((
@@ -285,7 +252,7 @@ module Operations = {
     let res =
       tk.operation->Toolkit.Operation.create(hash)
       |> Js.Promise.then_(op => op->Toolkit.Operation.confirmation(~blocks?));
-    res->convertToErrorHandler;
+    res->ReTaquitoError.fromPromiseParsed;
   };
 };
 
@@ -334,7 +301,9 @@ module Transfer = {
       );
 
     let%FResMap c =
-      contractCache->ContractCache.findContract(token)->convertToErrorHandler;
+      contractCache
+      ->ContractCache.findContract(token)
+      ->ReTaquitoError.fromPromiseParsed;
     c.methods
     ->Toolkit.FA12.transfer(source, dest, amount->BigNumber.toFixed)
     ->Toolkit.FA12.toTransferParams(sendParams);
@@ -395,9 +364,7 @@ module Transfer = {
         ~source,
         ~transfers:
            (ReTaquito.endpoint, PublicKeyHash.t) =>
-           Future.t(
-             list(Belt.Result.t(Toolkit.transferParams, ErrorHandler.t)),
-           ),
+           Future.t(list(Belt.Result.t(Toolkit.transferParams, Errors.t))),
         ~signingIntent,
         (),
       ) => {
@@ -411,7 +378,7 @@ module Transfer = {
     txs
     ->List.reduce(batch, Toolkit.Batch.withTransfer)
     ->Toolkit.Batch.send
-    ->convertToErrorHandler;
+    ->ReTaquitoError.fromPromiseParsed;
   };
 
   module Estimate = {
@@ -422,18 +389,13 @@ module Transfer = {
           ~source: PublicKeyHash.t,
           ~transfers:
              (ReTaquito.endpoint, PublicKeyHash.t) =>
-             Future.t(
-               list(Belt.Result.t(Toolkit.transferParams, ErrorHandler.t)),
-             ),
+             Future.t(list(Belt.Result.t(Toolkit.transferParams, Errors.t))),
           (),
         ) => {
-      let%FRes alias =
-        Wallet.aliasFromPkh(~dirpath=baseDir, ~pkh=source)
-        ->Future.map(convertWalletError);
+      let%FRes alias = Wallet.aliasFromPkh(~dirpath=baseDir, ~pkh=source);
 
-      let%FRes pk =
-        Wallet.pkFromAlias(~dirpath=baseDir, ~alias)
-        ->Future.map(convertWalletError);
+      let%FRes pk = Wallet.pkFromAlias(~dirpath=baseDir, ~alias);
+
       let tk = Toolkit.create(endpoint);
       let signer =
         EstimationSigner.create(~publicKey=pk, ~publicKeyHash=source, ());
@@ -450,7 +412,7 @@ module Transfer = {
             ->List.map(tr => {...tr, kind: opKindTransaction})
             ->List.toArray,
           )
-        ->convertToErrorHandler;
+        ->ReTaquitoError.fromPromiseParsed;
 
       let%FResMap revealFee = revealFee(~endpoint, source);
       (res, revealFee);
@@ -462,8 +424,6 @@ module Signature = {
   let signPayload = (~baseDir, ~source, ~signingIntent, ~payload) => {
     let%FRes signer = Signer.readSecretKey(source, signingIntent, baseDir);
 
-    signer
-    ->ReTaquitoSigner.sign(payload)
-    ->Future.mapError(ErrorHandler.taquito);
+    signer->ReTaquitoSigner.sign(payload);
   };
 };

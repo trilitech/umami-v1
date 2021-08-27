@@ -36,7 +36,7 @@ let styles =
 let make = (~error) => {
   <ScrollView style=styles##container alwaysBounceVertical=false>
     <Typography.Body2 colorStyle=`error>
-      error->React.string
+      {error->Errors.toString->React.string}
     </Typography.Body2>
   </ScrollView>;
 };

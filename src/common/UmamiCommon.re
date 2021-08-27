@@ -109,6 +109,17 @@ module Lib = {
       | [h, ...t] => n == 0 ? [] : t->firsts(n - 1)->List.add(h)
       };
     };
+
+    let rec findMap = (l, f) => {
+      switch (l) {
+      | [] => None
+      | [h, ...t] =>
+        switch (f(h)) {
+        | Some(v) => Some(v)
+        | None => findMap(t, f)
+        }
+      };
+    };
   };
 
   let tap = (x, f) => {

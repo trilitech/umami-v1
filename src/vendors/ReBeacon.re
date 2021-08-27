@@ -289,10 +289,6 @@ type permissionInfo = {
 type transportType;
 
 module Error = {
-  type raw = string;
-
-  let toRaw: Js.Promise.error => raw = Obj.magic;
-
   let noMatchingRequest = "No matching request found!";
   let encodedPayloadNeedString = "Encoded payload needs to be a string";
   let messageNotHandled = "Message not handled'";
@@ -302,8 +298,7 @@ module Error = {
   let containerNotFound = "container not found";
   let platformUnknown = "platform unknown";
 
-  type t =
-    | Generic(string)
+  type Errors.t +=
     | NoMatchingRequest
     | EncodedPayloadNeedString
     | MessageNotHandled
@@ -311,10 +306,11 @@ module Error = {
     | AppMetadataNotFound
     | ShouldNotWork
     | ContainerNotFound
-    | PlatformUnknown;
+    | PlatformUnknown
+    | PairingRequestParsing;
 
   let parse = e =>
-    switch (e) {
+    switch (e.RawJsError.message) {
     | s when s->Js.String2.includes(noMatchingRequest) => NoMatchingRequest
     | s when s->Js.String2.includes(encodedPayloadNeedString) =>
       EncodedPayloadNeedString
@@ -326,29 +322,23 @@ module Error = {
     | s when s->Js.String2.includes(shouldNotWork) => ShouldNotWork
     | s when s->Js.String2.includes(containerNotFound) => ContainerNotFound
     | s when s->Js.String2.includes(platformUnknown) => PlatformUnknown
-    | s => Generic(Js.String.make(s))
+    | s => Errors.Generic(Js.String.make(s))
     };
 
-  let toString = e =>
-    switch (e) {
-    | Generic(string) => string
-    | NoMatchingRequest => noMatchingRequest
-    | EncodedPayloadNeedString => encodedPayloadNeedString
-    | MessageNotHandled => messageNotHandled
-    | CouldNotDecryptMessage => couldNotDecryptMessage
-    | AppMetadataNotFound => appMetadataNotFound
-    | ShouldNotWork => shouldNotWork
-    | ContainerNotFound => containerNotFound
-    | PlatformUnknown => platformUnknown
-    };
+  let toString =
+    fun
+    | PairingRequestParsing => I18n.errors#pairing_request_parsing->Some
+    | NoMatchingRequest => noMatchingRequest->Some
+    | EncodedPayloadNeedString => encodedPayloadNeedString->Some
+    | MessageNotHandled => messageNotHandled->Some
+    | CouldNotDecryptMessage => couldNotDecryptMessage->Some
+    | AppMetadataNotFound => appMetadataNotFound->Some
+    | ShouldNotWork => shouldNotWork->Some
+    | ContainerNotFound => containerNotFound->Some
+    | PlatformUnknown => platformUnknown->Some
+    | _ => None;
 
-  let fromPromiseParsed = p =>
-    p->FutureJs.fromPromise(e => {
-      let e = e->toRaw;
-      Js.log(e);
-
-      e->parse;
-    });
+  let fromPromiseParsed = p => p->RawJsError.fromPromiseParsed(parse);
 };
 
 module Serializer = {
@@ -450,5 +440,22 @@ module WalletClient = {
 
   let destroy = t => {
     t->destroyRaw->Error.fromPromiseParsed;
+  };
+};
+
+[@bs.scope "JSON"] [@bs.val]
+external parseJsonIntoPeerInfo: string => peerInfo = "parse";
+
+let parsePairingRequest =
+    (pairingRequest: string): Result.t(peerInfo, Errors.t) => {
+  switch (
+    pairingRequest->HD.BS58Check.decode->HD.toString->parseJsonIntoPeerInfo
+  ) {
+  | exception (Js.Exn.Error(obj)) =>
+    switch (Js.Exn.message(obj)) {
+    | Some(_) => Error(Error.PairingRequestParsing)
+    | None => Error(Error.PairingRequestParsing)
+    }
+  | peerInfo => Ok(peerInfo)
   };
 };

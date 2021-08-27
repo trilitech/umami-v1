@@ -23,67 +23,31 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open ReactNative;
+/* The type of Umami errors */
+type t = ..;
 
-module AddContactButton = {
-  let styles =
-    Style.(
-      StyleSheet.create({
-        "button":
-          style(
-            ~alignSelf=`flexStart,
-            ~marginLeft=(-6.)->dp,
-            ~marginBottom=10.->dp,
-            (),
-          ),
-      })
-    );
+/* A string info on where the error is defined */
+type scope = string;
 
-  [@react.component]
-  let make = () => {
-    let (visibleModal, openAction, closeAction) =
-      ModalAction.useModalActionState();
-
-    let onPress = _e => openAction();
-
-    <>
-      <View style=styles##button>
-        <ButtonAction onPress text=I18n.btn#add_contact icon=Icons.Add.build />
-      </View>
-      <ModalAction visible=visibleModal onRequestClose=closeAction>
-        <ContactFormView action=Create closeAction />
-      </ModalAction>
-    </>;
-  };
+/* Error information where the message is the applycation of the handler and
+   the scope is the scope of the handler */
+type errorInfos = {
+  msg: string,
+  scope: string,
 };
 
-let styles = Style.(StyleSheet.create({"container": style(~flex=1., ())}));
+/* Common errors */
+type t +=
+  /* The most basic error. It should be used as little as possible */
+  | Generic(string)
+  | WrongPassword;
 
-[@react.component]
-let make = () => {
-  let aliasesRequest = StoreContext.Aliases.useRequestExceptAccounts();
+/* Adds an errors handler in the registry */
+let registerHandler: (scope, t => option(string)) => unit;
 
-  <Page>
-    <AddContactButton />
-    {switch (aliasesRequest) {
-     | Done(Ok(aliases), _)
-     | Loading(Some(aliases)) =>
-       aliases->Map.String.size === 0
-         ? <Table.Empty>
-             I18n.t#empty_address_book->React.string
-           </Table.Empty>
-         : aliases
-           ->Map.String.valuesToArray
-           ->SortArray.stableSortBy((a, b) =>
-               Js.String.localeCompare(b.name, a.name)->int_of_float
-             )
-           ->Array.map(account =>
-               <AddressBookRowItem key=(account.address :> string) account />
-             )
-           ->React.array
-     | Done(Error(error), _) => <ErrorView error />
-     | NotAsked
-     | Loading(None) => <LoadingView />
-     }}
-  </Page>;
-};
+/* Gets infos of an error */
+let getInfos: t => errorInfos;
+
+/* Converts an error value to a string message by looking up the handlers
+   registry */
+let toString: t => string;

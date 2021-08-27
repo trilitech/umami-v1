@@ -24,7 +24,6 @@
 /*****************************************************************************/
 
 include ApiRequest;
-module Error = ErrorHandler;
 
 type injection = {
   operation: Token.operation,
@@ -41,13 +40,7 @@ let useLoadOperationOffline = (~requestState, ~operation: Token.operation) => {
   let get = (~config, operation) =>
     config->NodeAPI.Tokens.callGetOperationOffline(operation);
 
-  ApiRequest.useLoader(
-    ~get,
-    ~kind=Logs.Tokens,
-    ~requestState,
-    ~errorToString=ErrorHandler.toString,
-    operation,
-  );
+  ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, operation);
 };
 
 let tokensStorageKey = "wallet-tokens";

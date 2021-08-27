@@ -43,21 +43,17 @@ let isEditMode =
   | Edit(_) => true
   | _ => false;
 
-let rsf = (err, raiseSubmitFailed) =>
+let rsf = (err: Errors.t, raiseSubmitFailed) => {
   switch (err) {
-  | `APIVersionFormat(_) => raiseSubmitFailed(Some("APIError"))
-  | `APINotAvailable(_) => raiseSubmitFailed(Some("APIError"))
-  | `APIVersionRPCError(_) => raiseSubmitFailed(Some("APIError"))
-  | `APIMonitorRPCError(_) => raiseSubmitFailed(Some("APIError"))
-  | `APINotSupported(_) => raiseSubmitFailed(Some("APIError"))
-  | `NodeNotAvailable(_) => raiseSubmitFailed(Some("NodeError"))
-  | `NodeChainRPCError(_) => raiseSubmitFailed(Some("NodeError"))
-  | `NodeVersionRPCError(_) => raiseSubmitFailed(Some("NodeError"))
-  | `ChainInconsistency(_, _) =>
+  | Network.API(_) => raiseSubmitFailed(Some("APIError"))
+  | Network.Node(_) => raiseSubmitFailed(Some("NodeError"))
+  | Network.ChainInconsistency(_, _) =>
     raiseSubmitFailed(Some("ChainInconsistency"))
-  | `APIAndNodeError(_, _) => raiseSubmitFailed(Some("TwoErrors"))
-  | `UnknownChainId(_) => raiseSubmitFailed(Some("UnknownChainId"))
+  | Network.APIAndNodeError(_, _) => raiseSubmitFailed(Some("TwoErrors"))
+  | Network.UnknownChainId(_) => raiseSubmitFailed(Some("UnknownChainId"))
+  | _ => ()
   };
+};
 
 let nodeErrorFilter =
   fun
