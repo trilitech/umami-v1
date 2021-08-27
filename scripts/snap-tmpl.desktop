@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=%%NAME%%
+Exec=%%NAME%% %U
+Terminal=false
+Type=Application
+Icon=${SNAP}/meta/gui/icon.png
+StartupWMClass=umami
+Comment=%%COMMENT%%
+MimeType=%%MIMETYPES%%
+Categories=Utility;
