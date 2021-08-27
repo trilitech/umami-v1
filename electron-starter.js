@@ -83,14 +83,11 @@ function createWindow() {
 
     if (process.platform == 'win32' || process.platform === "linux") {
       // Protocol handler for windows & linux
-      ipcMain.on('beacon-ready', () => {
-        logEverywhere('beacon-ready')
-        const argv = process.argv;
-        const index = argv.findIndex(arg => arg.startsWith("umami://"));
-        if (index !== -1) {
-          mainWindow.webContents.send('deeplinkURL', argv[index])
-        }
-      })
+      const argv = process.argv;
+      const index = argv.findIndex(arg => arg.startsWith("umami://"));
+      if (index !== -1) {
+        mainWindow.webContents.send('deeplinkURL', argv[index])
+      }
     }
   })
 

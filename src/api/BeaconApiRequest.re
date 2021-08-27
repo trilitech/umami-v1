@@ -23,23 +23,71 @@
 /*                                                                           */
 /*****************************************************************************/
 
-let useClient = client => {
-  let (client, setClient) = client;
-    let destroy = () =>
+open UmamiCommon;
+
+let makeClient = () => ReBeacon.WalletClient.make({name: "Umami"});
+
+let dataFromURL = url => {
+  URL.make(url)
+  |> URL.getSearchParams
+  |> URL.SearchParams.get("data")
+  |> Js.Nullable.toOption;
+};
+
+let useNextRequestState = (client, peersRequestState) => {
+  let (client, _) = client;
+  let (_, setPeersRequest) = peersRequestState;
+
+  let (nextRequest, doneResponding, yield) = ReactUtils.useNextState();
+  let (isConnected, setIsConnected) = React.useState(() => false);
+
+  let (nextDeeplink, doneDeeplinking) = IPC.useNextDeeplinkState();
+
+  React.useEffect1(
+    () => {
       client
-      ->ReBeacon.WalletClient.destroy
-      // after a call to destroy client is no more usable we need to create a new one
-      ->Future.tapOk(_ =>
-          setClient(_ => ReBeacon.WalletClient.make({name: "Umami"}))
+      ->ReBeacon.WalletClient.init
+      ->Future.flatMapOk(_ =>
+          client->ReBeacon.WalletClient.connect(message => {
+            let request = message->ReBeacon.Message.Request.classify;
+            yield(request);
+          })
         )
-      ->ignore;
-    (client, destroy);
-}
+      ->FutureEx.getOk(_ => setIsConnected(_ => true)); // what is the expected behavior when beacon fails to connect?
+      None;
+    },
+    [|client|],
+  );
+
+  React.useEffect2(
+    () => {
+      if (isConnected) {
+        nextDeeplink()
+        ->Lib.Option.iter(deeplink =>
+            ReBeacon.Serializer.(
+              make()
+              ->deserialize(deeplink->dataFromURL->Option.getWithDefault(""))
+            )
+            ->Future.flatMapOk(peer =>
+                client
+                ->ReBeacon.WalletClient.addPeer(peer)
+                ->Future.tapOk(_ => setPeersRequest(ApiRequest.expireCache))
+              )
+            ->Future.get(_ => doneDeeplinking())
+          );
+      };
+      None;
+    },
+    (isConnected, nextDeeplink),
+  );
+
+  (nextRequest, doneResponding);
+};
 
 /* PEERS */
 
 module Peers = {
-  let useLoad = requestState => {
+  let useLoad = (client, requestState) => {
     let get = (~config as _s, ()) => client->ReBeacon.WalletClient.getPeers;
 
     ApiRequest.useLoader(~get, ~kind=Logs.Beacon, ~requestState, ());

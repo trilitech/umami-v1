@@ -113,33 +113,34 @@ let make =
       ~signingIntent,
       ~payload=signPayloadRequest.payload,
     )
-    ->Future.tapOk(signature => {
-        setLoading(_ => false);
-        client
-        ->ReBeacon.WalletClient.respond(
-            `SignPayloadResponse({
-              type_: `sign_payload_response,
-              id: signPayloadRequest.id,
-              signingType: signPayloadRequest.signingType,
-              signature: signature.prefixSig,
-            }),
-          )
-        ->Future.tapOk(_ => closeAction())
-        ->ignore;
-      })
-    ->Future.tapError(_error => {
-        setLoading(_ => false);
-        client
-        ->ReBeacon.WalletClient.respond(
-            `Error({
-              type_: `error,
-              id: signPayloadRequest.id,
-              errorType: `SIGNATURE_TYPE_NOT_SUPPORTED,
-            }),
-          )
-        ->Future.tapOk(_ => closeAction())
-        ->ignore;
-      });
+    ->Future.tap(
+        fun
+        | Ok(signature) => {
+            setLoading(_ => false);
+            client
+            ->ReBeacon.WalletClient.respond(
+                `SignPayloadResponse({
+                  type_: `sign_payload_response,
+                  id: signPayloadRequest.id,
+                  signingType: signPayloadRequest.signingType,
+                  signature: signature.prefixSig,
+                }),
+              )
+            ->FutureEx.getOk(_ => closeAction());
+          }
+        | Error(_) => {
+            setLoading(_ => false);
+            client
+            ->ReBeacon.WalletClient.respond(
+                `Error({
+                  type_: `error,
+                  id: signPayloadRequest.id,
+                  errorType: `SIGNATURE_TYPE_NOT_SUPPORTED,
+                }),
+              )
+            ->FutureEx.getOk(_ => closeAction());
+          },
+      );
   };
 
   let onAbort = _ => {
@@ -152,8 +153,7 @@ let make =
           errorType: `ABORTED_ERROR,
         }),
       )
-    ->Future.tapOk(_ => closeAction())
-    ->ignore;
+    ->FutureEx.getOk(_ => closeAction());
   };
 
   let ledgerState = React.useState(() => None);

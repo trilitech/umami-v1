@@ -40,6 +40,8 @@ type requestState('requestResponse) =
 type apiRequestsState('requestResponse) =
   reactState(requestsState('requestResponse));
 
+type nextState('value) = (unit => option('value), unit => unit);
+
 type state = {
   selectedAccountState: reactState(option(PublicKeyHash.t)),
   selectedTokenState: reactState(option(PublicKeyHash.t)),
@@ -65,6 +67,7 @@ type state = {
   beaconClient: reactState(ReBeacon.WalletClient.t),
   beaconPermissionsRequestState:
     reactState(ApiRequest.t(array(ReBeacon.permissionInfo), error)),
+  beaconNextRequestState: nextState(ReBeacon.Message.Request.t),
 };
 
 // Context and Provider
@@ -90,6 +93,7 @@ let initialState = {
   beaconClient: ([%raw "{}"], _ => ()),
   beaconPeersRequestState: (NotAsked, _ => ()),
   beaconPermissionsRequestState: (NotAsked, _ => ()),
+  beaconNextRequestState: (() => None, () => ()),
 };
 
 let context = React.createContext(initialState);
@@ -131,11 +135,16 @@ let make = (~children) => {
   let bakersRequestState = React.useState(() => ApiRequest.NotAsked);
   let tokensRequestState = React.useState(() => ApiRequest.NotAsked);
   let secretsRequestState = React.useState(() => ApiRequest.NotAsked);
-  let beaconClient =
-    React.useState(() => ReBeacon.WalletClient.make({name: "Umami"}));
+
+  let beaconClient = React.useState(BeaconApiRequest.makeClient);
   let beaconPeersRequestState = React.useState(() => ApiRequest.NotAsked);
   let beaconPermissionsRequestState =
     React.useState(() => ApiRequest.NotAsked);
+  let beaconNextRequestState =
+    BeaconApiRequest.useNextRequestState(
+      beaconClient,
+      beaconPeersRequestState,
+    );
 
   let apiVersionRequestState = React.useState(() => None);
   let (_, setApiVersion) = apiVersionRequestState;
@@ -208,6 +217,7 @@ let make = (~children) => {
       apiVersionRequestState,
       eulaSignatureRequestState,
       beaconClient,
+      beaconNextRequestState,
       beaconPeersRequestState,
       beaconPermissionsRequestState,
     }>
@@ -834,7 +844,19 @@ module SelectedToken = {
 module Beacon = {
   let useClient = () => {
     let store = useStoreContext();
-    BeaconApiRequest.useClient(store.beaconClient);
+    let (client, setClient) = store.beaconClient;
+    let destroy = () =>
+      client
+      ->ReBeacon.WalletClient.destroy
+      // after a call to destroy client is no more usable we need to create a new one
+      ->FutureEx.getOk(_ => setClient(_ => BeaconApiRequest.makeClient()));
+
+    (client, destroy);
+  };
+
+  let useNextRequestState = () => {
+    let store = useStoreContext();
+    store.beaconNextRequestState;
   };
 
   module Peers = {
