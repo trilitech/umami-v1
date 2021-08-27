@@ -1,5 +1,5 @@
 (function (global, factory) {
-    typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('libsodium-wrappers'), require('@taquito/utils'), require('typedarray-to-buffer'), require('elliptic'), require('pbkdf2'), require('bip39')) :
+    typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('libsodium-wrappers'), require('@taquito/utils'), require('typedarray-to-buffer'), require('elliptic'), require('crypto'), require('bip39')) :
     typeof define === 'function' && define.amd ? define(['exports', 'libsodium-wrappers', '@taquito/utils', 'typedarray-to-buffer', 'elliptic', 'pbkdf2', 'bip39'], factory) :
     (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.taquitoSigner = {}, global.sodium, global.utils, global.toBuffer, global.elliptic, global.pbkdf2, global.bip39));
 }(this, (function (exports, sodium, utils, toBuffer, elliptic, pbkdf2, bip39) { 'use strict';

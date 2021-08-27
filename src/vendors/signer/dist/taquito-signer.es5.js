@@ -2,7 +2,7 @@ import sodium from 'libsodium-wrappers';
 import { isValidPrefix, b58cdecode, prefix, buf2hex, b58cencode, hex2buf, mergebuf } from '@taquito/utils';
 import toBuffer from 'typedarray-to-buffer';
 import elliptic from 'elliptic';
-import pbkdf2 from 'pbkdf2';
+import pbkdf2 from 'crypto';
 import { mnemonicToSeedSync } from 'bip39';
 
 /*! *****************************************************************************

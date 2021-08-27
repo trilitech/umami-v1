@@ -56,7 +56,7 @@ var utils_1 = require("@taquito/utils");
 var typedarray_to_buffer_1 = require("typedarray-to-buffer");
 var ed_key_1 = require("./ed-key");
 var ec_key_1 = require("./ec-key");
-var pbkdf2_1 = require("pbkdf2");
+var pbkdf2_1 = require("crypto");
 var bip39_1 = require("bip39");
 __exportStar(require("./import-key"), exports);
 var version_1 = require("./version");

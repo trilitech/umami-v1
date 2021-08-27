@@ -25,7 +25,7 @@
 
 %raw
 "
-const { InMemorySigner, importKey } = require('@taquito/signer');
+const { InMemorySigner, importKey } = require('customsigner');
 const { LedgerSigner, DerivationType } = require('@taquito/ledger-signer');
 ";
 
@@ -47,8 +47,7 @@ type signature = {
   sig_: string,
 };
 
-[@bs.send]
-external signRaw: (t, string) => Js.Promise.t(signature) = "sign";
+[@bs.send] external signRaw: (t, string) => Js.Promise.t(signature) = "sign";
 
 let publicKey = t => t->publicKeyRaw->ReTaquitoError.fromPromiseParsed;
 let publicKeyHash = t => t->publicKeyHashRaw->ReTaquitoError.fromPromiseParsed;
@@ -58,7 +57,8 @@ let secretKey = t =>
   ->ReTaquitoError.fromPromiseParsed
   ->Future.mapOk(Js.Nullable.toOption);
 
-let sign = (t, string) => t->signRaw(string)->ReTaquitoError.fromPromiseParsed;
+let sign = (t, string) =>
+  t->signRaw(string)->ReTaquitoError.fromPromiseParsed;
 
 module MemorySigner = {
   [@bs.val] [@bs.scope "InMemorySigner"]
