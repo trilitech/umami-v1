@@ -33,3 +33,5 @@ yarn-error.log*
 
 /src/svg/optimized
 /src/svg/optimized2
+
+/src/vendors/signer/node_modules
