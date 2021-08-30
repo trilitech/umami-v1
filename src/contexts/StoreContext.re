@@ -792,10 +792,23 @@ module SelectedAccount = {
     let store = useStoreContext();
     let accounts = Accounts.useGetAll();
 
-    switch (store.selectedAccountState, accounts) {
-    | ((Some(selectedAccount), _), accounts) =>
-      accounts->Map.String.get((selectedAccount :> string))
-    | _ => None
+    let (selected, set) = store.selectedAccountState;
+    let selected =
+      selected->Option.flatMap(pkh =>
+        accounts->Map.String.get((pkh :> string))
+      );
+
+    switch (selected) {
+    | Some(selectedAccount) => Some(selectedAccount)
+    | None =>
+      accounts
+      ->Map.String.valuesToArray
+      ->SortArray.stableSortBy(Account.compareName)
+      ->Array.get(0)
+      ->Option.map(v => {
+          set(_ => v.Account.address->Some);
+          v;
+        })
     };
   };
 
