@@ -174,7 +174,7 @@ let make =
         ->ignore;
       };
     | ("Enter", _)
-    | ("Tab", _) =>
+    | ("Tab", _) when value != "" =>
       list
       ->Array.get(selectedItemIndex)
       ->Option.map(item => onChangeItem(item->keyExtractor))
