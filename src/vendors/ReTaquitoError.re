@@ -27,12 +27,15 @@ let branchRefused = "branch refused";
 let wrongSecretKey = "wrong secret key";
 let badPkh = "Unexpected data (Signature.Public_key_hash)";
 let unregisteredDelegate = "contract.manager.unregistered_delegate";
+let balanceTooLow = "contract.balance_too_low";
 let unchangedDelegate = "contract.manager.delegate.unchanged";
 let invalidContract = "Invalid contract notation";
 let emptyTransaction = "contract.empty_transaction";
 let ledgerTimeout = "No Ledger device found (timeout)";
 let ledgerKey = "Unable to retrieve public key";
 let ledgerDenied = "0x6985";
+let emptyContract = "implicit.empty_implicit_contract";
+let scriptRejected = "script_rejected";
 
 type Errors.t +=
   | UnregisteredDelegate
@@ -46,6 +49,9 @@ type Errors.t +=
   | LedgerNotReady
   | LedgerKeyRetrieval
   | LedgerDenied
+  | BalanceTooLow
+  | EmptyContract
+  | ScriptRejected
   | SignerIntentInconsistency;
 
 let parse = (e: RawJsError.t) =>
@@ -56,6 +62,9 @@ let parse = (e: RawJsError.t) =>
   | s when s->Js.String2.includes(unregisteredDelegate) =>
     UnregisteredDelegate
   | s when s->Js.String2.includes(unchangedDelegate) => UnchangedDelegate
+  | s when s->Js.String2.includes(balanceTooLow) => BalanceTooLow
+  | s when s->Js.String2.includes(emptyContract) => EmptyContract
+  | s when s->Js.String2.includes(scriptRejected) => ScriptRejected
   | s when s->Js.String2.includes(invalidContract) => InvalidContract
   | s when s->Js.String2.includes(emptyTransaction) => EmptyTransaction
   | s when s->Js.String2.includes(ledgerTimeout) => LedgerInitTimeout
@@ -73,6 +82,9 @@ let () =
     | BadPkh => I18n.form_input_error#bad_pkh->Some
     | BranchRefused => I18n.form_input_error#branch_refused_error->Some
     | InvalidContract => I18n.form_input_error#invalid_contract->Some
+    | BalanceTooLow => I18n.form_input_error#balance_too_low->Some
+    | ScriptRejected => I18n.form_input_error#balance_too_low->Some
+    | EmptyContract => I18n.form_input_error#account_balance_empty->Some
     | EmptyTransaction => I18n.form_input_error#empty_transaction->Some
     | LedgerInit(_) => I18n.form_input_error#hardware_wallet_plug->Some
     | LedgerNotReady => I18n.form_input_error#hardware_wallet_not_ready->Some
