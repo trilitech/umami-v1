@@ -92,7 +92,7 @@ let make = (~closeAction) => {
            I18n.title#import_account_enter_phrase->React.string
          </Typography.Overline1>
          <Typography.Body2 colorStyle=`mediumEmphasis style=styles##stepBody>
-           I18n.expl#import_account_enter_phrase->React.string
+           I18n.expl#import_secret_enter_phrase->React.string
          </Typography.Body2>
          <FillMnemonicView
            mnemonic
@@ -123,7 +123,7 @@ let make = (~closeAction) => {
            subtitle->React.string
          </Typography.Overline1>
          {<Typography.Body2 colorStyle=`mediumEmphasis style=styles##stepBody>
-            I18n.expl#account_select_derivation_path->React.string
+            I18n.expl#secret_select_derivation_path->React.string
           </Typography.Body2>}
          <SelectDerivationPathView
            derivationPath
@@ -148,7 +148,7 @@ let make = (~closeAction) => {
            subtitle->React.string
          </Typography.Overline1>
          {<Typography.Body2 colorStyle=`mediumEmphasis style=styles##stepBody>
-            I18n.expl#account_create_password_not_recorded->React.string
+            I18n.expl#secret_create_password_not_recorded->React.string
           </Typography.Body2>
           ->ReactUtils.onlyWhen(noExistingPassword)}
          <CreatePasswordView
