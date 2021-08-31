@@ -44,7 +44,7 @@ let styles =
   );
 
 [@react.component]
-let make = (~chain, ~closeAction) => {
+let make = (~chain, ~address="", ~closeAction) => {
   let (tokenCreateRequest, createToken) = StoreContext.Tokens.useCreate();
 
   let form: TokenCreateForm.api =
@@ -72,7 +72,7 @@ let make = (~chain, ~closeAction) => {
 
           None;
         },
-      ~initialState={name: "", address: "", symbol: ""},
+      ~initialState={name: "", address, symbol: ""},
       ~i18n=FormUtils.i18n,
       (),
     );
