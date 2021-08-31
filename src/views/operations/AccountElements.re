@@ -36,6 +36,7 @@ let itemStyles =
       "itemInSelector": style(~marginHorizontal=20.->dp, ()),
       "inner": style(~height=44.->dp, ~justifyContent=`spaceBetween, ()),
       "info": style(~flexDirection=`row, ~justifyContent=`spaceBetween, ()),
+      "name": style(~width=150.->dp, ()),
     })
   );
 
@@ -125,7 +126,7 @@ module Selector = {
       <View
         style=Style.(arrayOption([|Some(itemStyles##inner), paramStyle|]))>
         <View style=itemStyles##info>
-          <Typography.Subtitle2>
+          <Typography.Subtitle2 numberOfLines=1 style=itemStyles##name>
             account.name->React.string
           </Typography.Subtitle2>
           {switch (showAmount) {
