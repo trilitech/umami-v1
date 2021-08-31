@@ -204,6 +204,9 @@ let form_input_error = {
   pub unregistered_delegate = "This key is not registered as a baker";
   pub bad_pkh = "Not a valid key";
   pub invalid_contract = "The recipient is not a key or an alias";
+  pub balance_too_low = "Balance is too low";
+  pub script_rejected = "Script rejected";
+  pub account_balance_empty = "Account is empty";
   pub confirm_password = "It must be the same password";
   pub derivation_path_error = "Invalid derivation path";
   pub name_already_taken = a => p("%s is already taken", a);
