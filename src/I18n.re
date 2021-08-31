@@ -96,6 +96,7 @@ let tooltip = {
   pub addressbook_edit = "Edit Contact";
   pub addressbook_delete = "Delete Contact";
   pub add_contact = "Add to Contacts";
+  pub add_token = "Add to Tokens";
   pub no_tez_no_delegation = "Delegation requires tez";
   pub refresh = "Refresh";
   pub open_in_explorer = "Open in explorer";

@@ -159,7 +159,43 @@ let memo = component =>
     },
   );
 
-let amount = (account, transaction: Operation.Transaction.t, tokens) => {
+module AddToken = {
+  [@react.component]
+  let make = (~address, ~op: Operation.Read.t) => {
+    let (visibleModal, openAction, closeAction) =
+      ModalAction.useModalActionState();
+    let closeAction = () => {
+      closeAction();
+    };
+
+    let apiVersion: option(Network.apiVersion) = StoreContext.useApiVersion();
+
+    let chain = {
+      apiVersion->Option.map(v => v.chain)->Option.getWithDefault("");
+    };
+
+    let tooltip = (
+      "add_token_from_op" ++ op.hash ++ op.op_id->string_of_int,
+      I18n.tooltip#add_token,
+    );
+    let onPress = _ => openAction();
+
+    <>
+      <ModalAction visible=visibleModal onRequestClose=closeAction>
+        <TokenAddView chain address closeAction />
+      </ModalAction>
+      <IconButton icon=Icons.Add.build onPress tooltip />
+    </>;
+  };
+};
+
+let amount =
+    (
+      account,
+      transaction: Operation.Transaction.t,
+      tokens,
+      op: Operation.Read.t,
+    ) => {
   let colorStyle =
     account->Option.map((account: Account.t) =>
       account.address
@@ -167,23 +203,26 @@ let amount = (account, transaction: Operation.Transaction.t, tokens) => {
         ? `positive : `negative
     );
 
-  let op = colorStyle == Some(`positive) ? "+" : "-";
-
+  let sign = colorStyle == Some(`positive) ? "+" : "-";
   <CellAmount>
     {<Typography.Body1 ?colorStyle>
        {switch (transaction) {
         | Tez(transaction) =>
-          I18n.t#tez_op_amount(op, transaction.amount->Tez.toString)
+          I18n.t#tez_op_amount(sign, transaction.amount->Tez.toString)
           ->React.string
         | Token(_, token_trans) =>
-          let token: option(Token.t) =
-            Belt.Map.String.get(tokens, (token_trans.contract :> string));
+          let address = (token_trans.contract :> string);
+          let token: option(Token.t) = Belt.Map.String.get(tokens, address);
           switch (token) {
-          | None => I18n.t#unregistered_token->React.string
+          | None =>
+            <View style=styles##rawAddressContainer>
+              <Text> {j|¿ token ?|j}->ReasonReact.string </Text>
+              <AddToken address op />
+            </View>
           | Some({symbol, _}) =>
             Format.asprintf(
               "%s %s %s",
-              op,
+              sign,
               token_trans.amount->TokenRepr.Unit.toNatString,
               symbol,
             )
@@ -229,7 +268,7 @@ let make =
                I18n.t#operation_transaction->React.string
              </Typography.Body1>
            </CellType>
-           {amount(account, transaction, tokens)}
+           {amount(account, transaction, tokens, operation)}
            <CellFee>
              <Typography.Body1>
                {I18n.t#tez_amount(operation.fee->Tez.toString)->React.string}
