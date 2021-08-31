@@ -32,7 +32,7 @@ let make = (~style=?) => {
 
   <>
     <BigButton
-      title=I18n.btn#create_account_new
+      title=I18n.btn#create_secret_new
       icon=Icons.Add.build
       onPress
       ?style
