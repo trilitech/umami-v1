@@ -28,4 +28,8 @@
 [@bs.module "bip39"] [@bs.scope "wordlists"]
 external wordlistsEnglish: array(string) = "english";
 
-let included = w => wordlistsEnglish->Js.Array2.includes(w);
+let set = HashSet.String.fromArray(wordlistsEnglish);
+
+let included = w => {
+  HashSet.String.has(set, w);
+};

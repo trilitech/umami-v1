@@ -140,7 +140,7 @@ let make =
                 let errors =
                   words
                   ->Array.mapWithIndex((index, word) => {
-                      Js.String.length(word) == 0
+                      Js.String.length(word) == 0 || !word->Bip39.included
                         ? Some({
                             ReSchema.error: "Invalid word",
                             index,
