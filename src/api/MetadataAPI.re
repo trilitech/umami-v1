@@ -245,13 +245,51 @@ module Debug = {
     fetchMetadata(address)->Future.get(metadata => Js.log(metadata));
   };
 
+  let getStorage = address => {
+    let toolkit = Toolkit.create("https://granadanet.smartpy.io");
+    let%FRes contract = Tzip12.makeContract(toolkit, address);
+    contract->Tzip12.Storage.read;
+  };
+
+  let showStorage = address => {
+    getStorage(address)
+    ->Future.get(
+        fun
+        | Ok(storage) => {
+            Js.log(storage.Types.Tzip12Storage.token_metadata);
+          }
+        | Error(error) => Js.log(error),
+      );
+  };
+
+  let getTokenFromStorage = (address, i) => {
+    Js.log("getTokenFromStorage");
+    let toolkit = Toolkit.create("https://granadanet.smartpy.io");
+    let%FRes contract = Tzip12.makeContract(toolkit, address);
+    Tzip12.readFromStorage(contract, i);
+  };
+
+  let showTokenFromStorage = (address, i) => {
+    Js.log("showTokenFromStorage");
+    getTokenFromStorage(address, i)
+    ->Future.get(
+        fun
+        | Ok(token) => Js.log(token)
+        | Error(error) => Js.log(error),
+      );
+  };
+
   type window = {
     mutable readTokenMetadata: (PublicKeyHash.t, int) => unit,
     mutable readMetadata: PublicKeyHash.t => unit,
+    mutable showStorage: PublicKeyHash.t => unit,
+    mutable showTokenFromStorage: (PublicKeyHash.t, int) => unit,
   };
 
   [@bs.val] external window: window = "window";
 
   window.readTokenMetadata = readTokenMetadata;
   window.readMetadata = readMetadata;
+  window.showStorage = showStorage;
+  window.showTokenFromStorage = showTokenFromStorage;
 };
