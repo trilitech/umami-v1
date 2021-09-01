@@ -25,7 +25,7 @@
 
 open UmamiCommon;
 
-let makeClient = () => ReBeacon.WalletClient.make({name: "Umami"});
+let makeClient = () => ReBeacon.WalletClient.make({name: I18n.label#beacon_client_name});
 
 let dataFromURL = url => {
   URL.make(url)
