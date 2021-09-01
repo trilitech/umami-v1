@@ -219,7 +219,7 @@ module NetworkItem = {
       <View style=styles##spaceBetweenRow>
         <RadioItem
           label={
-            network == Network.mainnet ? I18n.t#mainnet : I18n.t#florencenet
+            network == Network.mainnet ? I18n.t#mainnet : I18n.t#granadanet
           }
           value={network == Network.mainnet ? `Mainnet : `Granadanet}
           setValue=writeNetwork
