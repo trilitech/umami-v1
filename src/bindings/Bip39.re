@@ -41,7 +41,7 @@ module Mnemonic = {
 
   let () =
     Errors.registerHandler(
-      "Wallet",
+      "Bip39",
       fun
       | IncorrectNumberOfWords => I18n.errors#incorrect_number_of_words->Some
       | UnknownWord(w, i) => I18n.errors#unknown_bip39_word(w, i)->Some
