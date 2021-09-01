@@ -23,14 +23,18 @@
 /*                                                                           */
 /*****************************************************************************/
 
+open Let;
+
 open ReTaquitoTypes;
 open ReTaquitoContracts;
 open ReTaquito;
+open ReTaquitoUtils;
 
 type Errors.t +=
   | NoTzip16Metadata(PublicKeyHash.t)
   | NoTzip12Metadata(PublicKeyHash.t)
-  | TokenIdNotFound(PublicKeyHash.t, int);
+  | TokenIdNotFound(PublicKeyHash.t, int)
+  | IllformedToken(PublicKeyHash.t, int, string);
 
 module Tzip16 = {
   open Tzip16;
@@ -57,6 +61,110 @@ module Tzip16 = {
 module Tzip12 = {
   open Tzip12;
 
+  /* Read TZIP12 Metadata directly from the storage, should be used only if
+     Taquito's embedded API cannot read them. */
+  module Storage = {
+    let read = contract => {
+      contract##storage()->ReTaquitoError.fromPromiseParsed;
+    };
+
+    /* Parse the `token_info` field */
+    let parseTokenInfo = (address, tokenId, token_info) => {
+      let illformed = (res, fieldName) =>
+        res->ResultEx.fromOption(
+          IllformedToken(address, tokenId, fieldName),
+        );
+
+      let%Res name =
+        token_info.Tzip12Storage.Fields.get(. "name")
+        ->Option.map(bytes2Char)
+        ->illformed("name");
+
+      let%Res decimals =
+        token_info.get(. "decimals")
+        ->Option.flatMap(v => v->bytes2Char->int_of_string_opt)
+        ->illformed("decimals");
+
+      let%ResMap symbol =
+        token_info.get(. "symbol")
+        ->Option.map(bytes2Char)
+        ->illformed("symbol");
+
+      (name, decimals, symbol);
+    };
+
+    /* Parse a value of the `token_metadata` big map */
+    let parseMetadata = (address, tokenId, token) => {
+      let illformed = (res, fieldName) =>
+        res->ResultEx.fromOption(
+          IllformedToken(address, tokenId, fieldName),
+        );
+
+      let%Res token_id =
+        token.Tzip12Storage.token_id
+        ->Option.map(ReBigNumber.toInt)
+        ->illformed("token_id");
+
+      let%Res token_info =
+        token.Tzip12Storage.token_info->illformed("token_info");
+      let%ResMap (name, decimals, symbol) =
+        parseTokenInfo(address, tokenId, token_info);
+
+      Tzip12.{token_id, name, symbol, decimals};
+    };
+
+    /* A token_metadata value is illformed if its components are not annotated,
+       hence their field in the Taquito generated object is undefined. */
+    let isIllformed = metadata =>
+      metadata.Tzip12Storage.token_id->Option.isNone
+      || metadata.token_info->Option.isNone;
+
+    let fromUnannotated = unt => {
+      Tzip12Storage.{
+        token_id: unt.un_token_id,
+        token_info: unt.un_token_info,
+      };
+    };
+
+    /* Read the `token_metadata` big map, generates the metadata from the
+       annotated value, and fallback to the unannotated one if it is not
+       available */
+    let elaborateFromTokenMetadata =
+        (address, tokenId, metadataMap: Tzip12Storage.Tokens.t(_)) => {
+      let key = tokenId->Int64.of_int->BigNumber.fromInt64;
+
+      let%FRes metadata =
+        metadataMap.get(. key)->ReTaquitoError.fromPromiseParsed;
+
+      let isIllformed = metadata->Option.mapWithDefault(false, isIllformed);
+
+      let%FRes metadata =
+        isIllformed
+          ? metadataMap
+            ->Tzip12Storage.Tokens.getUnannotated(key)
+            ->ReTaquitoError.fromPromiseParsed
+            ->Future.mapOk(m => m->Option.map(fromUnannotated))
+          : FutureEx.ok(metadata);
+
+      metadata
+      ->ResultEx.fromOption(TokenIdNotFound(address, tokenId))
+      ->Future.value;
+    };
+
+    /* Retrieve a token from the storage */
+    let getToken = (address, storage, tokenId) => {
+      let%FRes metadataMap =
+        storage.Tzip12Storage.token_metadata
+        ->ResultEx.fromOption(NoTzip12Metadata(address))
+        ->Future.value;
+
+      let%FRes metadata =
+        elaborateFromTokenMetadata(address, tokenId, metadataMap);
+
+      parseMetadata(address, tokenId, metadata)->Future.value;
+    };
+  };
+
   let makeContract = (toolkit, address) => {
     toolkit->Toolkit.addExtension(Extension.tzip12Module());
 
@@ -65,17 +173,27 @@ module Tzip12 = {
     ->ReTaquitoError.fromPromiseParsed;
   };
 
+  let readFromStorage = (contract, tokenId) => {
+    let%FRes storage = Storage.read(contract);
+    Storage.getToken(contract##address, storage, tokenId);
+  };
+
   let read = (contract, tokenId) => {
-    contract##tzip12().getTokenMetadata(. tokenId)
-    ->ReTaquitoError.fromPromiseParsed
-    ->Future.mapError(
-        fun
-        | ReTaquitoError.TokenIdNotFound =>
-          TokenIdNotFound(contract##address, tokenId)
-        | ReTaquitoError.NoTokenMetadata =>
-          NoTzip12Metadata(contract##address)
-        | e => e,
-      );
+    let%Ft metadata =
+      contract##tzip12().getTokenMetadata(. tokenId)
+      ->ReTaquitoError.fromPromiseParsed
+      ->Future.mapError(
+          fun
+          | ReTaquitoError.TokenIdNotFound =>
+            TokenIdNotFound(contract##address, tokenId)
+          | ReTaquitoError.NoTokenMetadata =>
+            NoTzip12Metadata(contract##address)
+          | e => e,
+        );
+    switch (metadata) {
+    | Error(NoTzip12Metadata(_)) => readFromStorage(contract, tokenId)
+    | r => Future.value(r)
+    };
   };
 };
 
@@ -90,6 +208,13 @@ let () =
     | TokenIdNotFound(pkh, tokenId) =>
       I18n.form_input_error#token_id_not_found(
         Some(((pkh :> string), tokenId)),
+      )
+      ->Some
+    | IllformedToken(pkh, tokenId, field) =>
+      I18n.form_input_error#illformed_token_metadata(
+        (pkh :> string),
+        tokenId,
+        field,
       )
       ->Some
     | _ => None,
