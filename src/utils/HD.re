@@ -92,14 +92,14 @@ module Sodium = {
     "crypto_sign_ed25519_sk_to_pk";
 };
 
-[@bs.module "pbkdf2"]
+[@bs.module "crypto"]
 external pbkdf2Sync:
   (string, Buffer.t, [@bs.as 32768] _, [@bs.as 32] _, [@bs.as "sha512"] _) =>
   Buffer.t =
   "pbkdf2Sync";
 
 /** Emulates tezos-client `import from mnemonic` seed generation */
-[@bs.module "pbkdf2"]
+[@bs.module "crypto"]
 external pbkdf2MnemonicLegacy:
   (string, string, [@bs.as 2048] _, [@bs.as 64] _, [@bs.as "sha512"] _) =>
   Buffer.t =
