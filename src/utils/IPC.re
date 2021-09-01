@@ -23,98 +23,26 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open ReactNative;
+type t;
 
-let mapOpt = (v, f) => {
-  v->Option.mapWithDefault(React.null, f);
-};
+type event;
 
-let hideNil = (v, f) =>
-  switch (v) {
-  | [] => React.null
-  | v => f(v)
-  };
+[@bs.module "electron"] external renderer: t = "ipcRenderer";
 
-let opt = e =>
-  switch (e) {
-  | Some(e) => e
-  | None => React.null
-  };
+[@bs.send] external on: (t, string, (event, string) => unit) => unit = "on";
+[@bs.send]
+external removeListener: (t, string, (event, string) => unit) => unit =
+  "removeListener";
+[@bs.send] external send: (t, string) => unit = "send";
 
-let displayOn = b => Style.(style(~display=b ? `flex : `none, ()));
-
-let visibleOn = b => Style.(style(~opacity=b ? 1. : 0., ()));
-
-let onlyWhen = (elt, b) => b ? elt : React.null;
-
-let startFade = (refval, endval, duration, endCallback) => {
-  Animated.(
-    Value.Timing.(
-      timing(
-        refval,
-        config(
-          ~toValue=fromRawValue(endval),
-          ~duration,
-          ~useNativeDriver=true,
-          (),
-        ),
-      )
-      ->start(~endCallback?, ())
-    )
-  );
-};
-
-let useIsMonted = () => {
-  let (isMounted, setIsMounted) = React.useState(_ => false);
-  React.useEffect1(
-    () => {
-      setIsMounted(_ => true);
-      None;
-    },
-    [|setIsMounted|],
-  );
-  isMounted;
-};
-
-let styles = l => Style.array(List.toArray(l));
-
-module Next = {
-  type t('value) =
-    | Empty
-    | Pending('value)
-    | Processing;
-
-  type action('value) =
-    | Next
-    | Done
-    | Send('value);
-
-  let reducer = (state, action) => {
-    switch (state, action) {
-    | (Pending(_), Next) => Processing
-    | (Processing, Done) => Empty
-    | (Empty | Pending(_), Send(value)) => Pending(value)
-    | _ => state
+let useNextDeeplinkState = () => {
+  let (next, done_, send) = ReactUtils.useNextState();
+  React.useEffect0(() => {
+    let listener = (_, message) => {
+      send(message);
     };
-  };
-
-  let value = state =>
-    switch (state) {
-    | Pending(value) => Some(value)
-    | _ => None
-    };
-};
-
-let useNextState = () => {
-  let (state, dispatch) = React.useReducer(Next.reducer, Empty);
-  let sender = React.useRef(_ => ());
-
-  let next = () => {
-    dispatch(Next);
-    state->Next.value;
-  };
-
-  sender.current = (value => dispatch(Send(value)));
-
-  (next, () => dispatch(Done), value => sender.current(value));
+    renderer->on("deeplinkURL", listener);
+    Some(_ => renderer->removeListener("deeplinkURL", listener));
+  });
+  (next, done_);
 };

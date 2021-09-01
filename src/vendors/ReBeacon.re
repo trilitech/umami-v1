@@ -361,6 +361,8 @@ module WalletClient = {
 
   type options = {name: string};
 
+  type transportStatus = [ | `NOT_CONNECTED | `CONNECTING | `CONNECTED];
+
   [@bs.module "@airgap/beacon-sdk"] [@bs.new]
   external make: options => t = "WalletClient";
 
@@ -369,6 +371,9 @@ module WalletClient = {
   let init = t => {
     t->initRaw->Error.fromPromiseParsed;
   };
+
+  [@bs.send]
+  external connectionStatus: t => transportStatus = "connectionStatus";
 
   [@bs.send]
   external connectRaw:

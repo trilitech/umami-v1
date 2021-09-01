@@ -40,6 +40,8 @@ type requestState('requestResponse) =
 type apiRequestsState('requestResponse) =
   reactState(requestsState('requestResponse));
 
+type nextState('value) = (unit => option('value), unit => unit);
+
 type state = {
   selectedAccountState: reactState(option(PublicKeyHash.t)),
   selectedTokenState: reactState(option(PublicKeyHash.t)),
@@ -62,8 +64,10 @@ type state = {
   apiVersionRequestState: reactState(option(Network.apiVersion)),
   eulaSignatureRequestState: reactState(bool),
   beaconPeersRequestState: requestState(array(ReBeacon.peerInfo)),
+  beaconClient: reactState(option(ReBeacon.WalletClient.t)),
   beaconPermissionsRequestState:
     reactState(ApiRequest.t(array(ReBeacon.permissionInfo), error)),
+  beaconNextRequestState: nextState(ReBeacon.Message.Request.t),
 };
 
 // Context and Provider
@@ -86,8 +90,10 @@ let initialState = {
   balanceTokenRequestsState: initialApiRequestsState,
   apiVersionRequestState: (None, _ => ()),
   eulaSignatureRequestState: (false, _ => ()),
+  beaconClient: (None, _ => ()),
   beaconPeersRequestState: (NotAsked, _ => ()),
   beaconPermissionsRequestState: (NotAsked, _ => ()),
+  beaconNextRequestState: (() => None, () => ()),
 };
 
 let context = React.createContext(initialState);
@@ -129,9 +135,17 @@ let make = (~children) => {
   let bakersRequestState = React.useState(() => ApiRequest.NotAsked);
   let tokensRequestState = React.useState(() => ApiRequest.NotAsked);
   let secretsRequestState = React.useState(() => ApiRequest.NotAsked);
+
+  let beaconClient =
+    React.useState(() => Some(BeaconApiRequest.makeClient()));
   let beaconPeersRequestState = React.useState(() => ApiRequest.NotAsked);
   let beaconPermissionsRequestState =
     React.useState(() => ApiRequest.NotAsked);
+  let beaconNextRequestState =
+    BeaconApiRequest.useNextRequestState(
+      beaconClient,
+      beaconPeersRequestState,
+    );
 
   let apiVersionRequestState = React.useState(() => None);
   let (_, setApiVersion) = apiVersionRequestState;
@@ -203,6 +217,8 @@ let make = (~children) => {
       balanceTokenRequestsState,
       apiVersionRequestState,
       eulaSignatureRequestState,
+      beaconClient,
+      beaconNextRequestState,
       beaconPeersRequestState,
       beaconPermissionsRequestState,
     }>
@@ -835,12 +851,34 @@ module SelectedToken = {
   let useSet = () => {
     let store = useStoreContext();
     let (_, setSelectedToken) = store.selectedTokenState;
-
     newToken => setSelectedToken(_ => newToken);
   };
 };
 
 module Beacon = {
+  let useClient = () => {
+    let store = useStoreContext();
+    let (client, setClient) = store.beaconClient;
+    let destroy = () =>
+      switch (client) {
+      | Some(client) =>
+        client
+        ->ReBeacon.WalletClient.destroy
+        // after a call to destroy client is no more usable we need to create a new one
+        ->FutureEx.getOk(_ =>
+            setClient(_ => Some(BeaconApiRequest.makeClient()))
+          )
+      | None => ()
+      };
+
+    (client, destroy);
+  };
+
+  let useNextRequestState = () => {
+    let store = useStoreContext();
+    store.beaconNextRequestState;
+  };
+
   module Peers = {
     let useRequestState = () => {
       let store = useStoreContext();
@@ -853,13 +891,16 @@ module Beacon = {
     };
 
     let useGetAll = () => {
+      let (client, _) = useClient();
       let beaconPeersRequestState = useRequestState();
-      BeaconApiRequest.Peers.useLoad(beaconPeersRequestState);
+      BeaconApiRequest.Peers.useLoad(client, beaconPeersRequestState);
     };
 
     let useDelete = () => {
+      let (client, _) = useClient();
       let resetBeaconPeers = useResetAll();
       BeaconApiRequest.Peers.useDelete(
+        ~client,
         ~sideEffect=_ => resetBeaconPeers(),
         (),
       );
@@ -878,13 +919,19 @@ module Beacon = {
     };
 
     let useGetAll = () => {
+      let (client, _) = useClient();
       let beaconPermissionsRequestState = useRequestState();
-      BeaconApiRequest.Permissions.useLoad(beaconPermissionsRequestState);
+      BeaconApiRequest.Permissions.useLoad(
+        client,
+        beaconPermissionsRequestState,
+      );
     };
 
     let useDelete = () => {
+      let (client, _) = useClient();
       let resetBeaconPermissions = useResetAll();
       BeaconApiRequest.Permissions.useDelete(
+        ~client,
         ~sideEffect=_ => resetBeaconPermissions(),
         (),
       );

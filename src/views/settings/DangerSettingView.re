@@ -58,6 +58,7 @@ module OffBoardView = {
     let cleanSdkBaseDir = ConfigContext.useCleanSdkBaseDir();
     let resetSecrets = StoreContext.Secrets.useResetAll();
     let resetTokens = StoreContext.Tokens.useResetAll();
+    let (_, destroy) = StoreContext.Beacon.useClient();
 
     () => {
       cleanSdkBaseDir()
@@ -65,7 +66,7 @@ module OffBoardView = {
           resetSecrets();
           resetTokens();
           Routes.(push(Accounts));
-          BeaconApiRequest.client->ReBeacon.WalletClient.destroy->ignore;
+          destroy()->ignore;
         });
     };
   };
