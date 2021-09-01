@@ -64,7 +64,7 @@ type state = {
   apiVersionRequestState: reactState(option(Network.apiVersion)),
   eulaSignatureRequestState: reactState(bool),
   beaconPeersRequestState: requestState(array(ReBeacon.peerInfo)),
-  beaconClient: reactState(ReBeacon.WalletClient.t),
+  beaconClient: reactState(option(ReBeacon.WalletClient.t)),
   beaconPermissionsRequestState:
     reactState(ApiRequest.t(array(ReBeacon.permissionInfo), error)),
   beaconNextRequestState: nextState(ReBeacon.Message.Request.t),
@@ -90,7 +90,7 @@ let initialState = {
   balanceTokenRequestsState: initialApiRequestsState,
   apiVersionRequestState: (None, _ => ()),
   eulaSignatureRequestState: (false, _ => ()),
-  beaconClient: ([%raw "{}"], _ => ()),
+  beaconClient: (None, _ => ()),
   beaconPeersRequestState: (NotAsked, _ => ()),
   beaconPermissionsRequestState: (NotAsked, _ => ()),
   beaconNextRequestState: (() => None, () => ()),
@@ -136,7 +136,8 @@ let make = (~children) => {
   let tokensRequestState = React.useState(() => ApiRequest.NotAsked);
   let secretsRequestState = React.useState(() => ApiRequest.NotAsked);
 
-  let beaconClient = React.useState(BeaconApiRequest.makeClient);
+  let beaconClient =
+    React.useState(() => Some(BeaconApiRequest.makeClient()));
   let beaconPeersRequestState = React.useState(() => ApiRequest.NotAsked);
   let beaconPermissionsRequestState =
     React.useState(() => ApiRequest.NotAsked);
@@ -846,10 +847,16 @@ module Beacon = {
     let store = useStoreContext();
     let (client, setClient) = store.beaconClient;
     let destroy = () =>
-      client
-      ->ReBeacon.WalletClient.destroy
-      // after a call to destroy client is no more usable we need to create a new one
-      ->FutureEx.getOk(_ => setClient(_ => BeaconApiRequest.makeClient()));
+      switch (client) {
+      | Some(client) =>
+        client
+        ->ReBeacon.WalletClient.destroy
+        // after a call to destroy client is no more usable we need to create a new one
+        ->FutureEx.getOk(_ =>
+            setClient(_ => Some(BeaconApiRequest.makeClient()))
+          )
+      | None => ()
+      };
 
     (client, destroy);
   };

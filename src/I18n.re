@@ -475,6 +475,7 @@ let errors = {
     p("Recovery phrase at index %d not found!", i);
   pub beacon_transaction_not_supported = "Beacon transaction not supported";
   pub beacon_request_network_missmatch = "Beacon request network not supported";
+  pub beacon_client_not_created = "Beacon client not created";
   pub video_stream_access_denied = "Unable to access video stream\n(please make sure you have a webcam enabled)";
   pub incorrect_number_of_words = "Mnemonic must have 12, 15 or 24 words.";
   pub pairing_request_parsing = "Illformed pairing request";

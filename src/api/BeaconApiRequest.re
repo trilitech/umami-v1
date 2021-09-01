@@ -45,15 +45,19 @@ let useNextRequestState = (client, peersRequestState) => {
 
   React.useEffect1(
     () => {
-      client
-      ->ReBeacon.WalletClient.init
-      ->Future.flatMapOk(_ =>
-          client->ReBeacon.WalletClient.connect(message => {
-            let request = message->ReBeacon.Message.Request.classify;
-            yield(request);
-          })
-        )
-      ->FutureEx.getOk(_ => setIsConnected(_ => true)); // what is the expected behavior when beacon fails to connect?
+      switch (client) {
+      | Some(client) =>
+        client
+        ->ReBeacon.WalletClient.init
+        ->Future.flatMapOk(_ =>
+            client->ReBeacon.WalletClient.connect(message => {
+              let request = message->ReBeacon.Message.Request.classify;
+              yield(request);
+            })
+          )
+        ->FutureEx.getOk(_ => setIsConnected(_ => true)) // what is the expected behavior when beacon fails to connect?;
+      | None => ()
+      };
       None;
     },
     [|client|],
@@ -70,7 +74,13 @@ let useNextRequestState = (client, peersRequestState) => {
             )
             ->Future.flatMapOk(peer =>
                 client
-                ->ReBeacon.WalletClient.addPeer(peer)
+                ->FutureEx.fromOption(
+                    ~error=
+                      Errors.Generic(I18n.errors#beacon_client_not_created),
+                  )
+                ->Future.flatMapOk(client =>
+                    client->ReBeacon.WalletClient.addPeer(peer)
+                  )
                 ->Future.tapOk(_ => setPeersRequest(ApiRequest.expireCache))
               )
             ->Future.get(_ => doneDeeplinking())
@@ -88,7 +98,12 @@ let useNextRequestState = (client, peersRequestState) => {
 
 module Peers = {
   let useLoad = (client, requestState) => {
-    let get = (~config as _s, ()) => client->ReBeacon.WalletClient.getPeers;
+    let get = (~config as _s, ()) =>
+      client
+      ->FutureEx.fromOption(
+          ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
+        )
+      ->Future.flatMapOk(ReBeacon.WalletClient.getPeers);
 
     ApiRequest.useLoader(~get, ~kind=Logs.Beacon, ~requestState, ());
   };
@@ -97,7 +112,13 @@ module Peers = {
     ApiRequest.useSetter(
       ~set=
         (~config as _s, peer: ReBeacon.peerInfo) =>
-          client->ReBeacon.WalletClient.removePeer(peer),
+          client
+          ->FutureEx.fromOption(
+              ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
+            )
+          ->Future.flatMapOk(client =>
+              client->ReBeacon.WalletClient.removePeer(peer)
+            ),
       ~kind=Logs.Beacon,
     );
   };
@@ -108,7 +129,11 @@ module Peers = {
 module Permissions = {
   let useLoad = (client, requestState) => {
     let get = (~config as _s, ()) =>
-      client->ReBeacon.WalletClient.getPermissions;
+      client
+      ->FutureEx.fromOption(
+          ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
+        )
+      ->Future.flatMapOk(ReBeacon.WalletClient.getPermissions);
 
     ApiRequest.useLoader(~get, ~kind=Logs.Beacon, ~requestState, ());
   };
@@ -117,7 +142,15 @@ module Permissions = {
     ApiRequest.useSetter(
       ~set=
         (~config as _s, accountIdentifier: ReBeacon.accountIdentifier) =>
-          client->ReBeacon.WalletClient.removePermission(accountIdentifier),
+          client
+          ->FutureEx.fromOption(
+              ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
+            )
+          ->Future.flatMapOk(client =>
+              client->ReBeacon.WalletClient.removePermission(
+                accountIdentifier,
+              )
+            ),
       ~kind=Logs.Beacon,
     );
   };

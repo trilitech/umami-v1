@@ -118,25 +118,35 @@ let make =
         | Ok(signature) => {
             setLoading(_ => false);
             client
-            ->ReBeacon.WalletClient.respond(
-                `SignPayloadResponse({
-                  type_: `sign_payload_response,
-                  id: signPayloadRequest.id,
-                  signingType: signPayloadRequest.signingType,
-                  signature: signature.prefixSig,
-                }),
+            ->FutureEx.fromOption(
+                ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
+              )
+            ->Future.flatMapOk(client =>
+                client->ReBeacon.WalletClient.respond(
+                  `SignPayloadResponse({
+                    type_: `sign_payload_response,
+                    id: signPayloadRequest.id,
+                    signingType: signPayloadRequest.signingType,
+                    signature: signature.prefixSig,
+                  }),
+                )
               )
             ->FutureEx.getOk(_ => closeAction());
           }
         | Error(_) => {
             setLoading(_ => false);
             client
-            ->ReBeacon.WalletClient.respond(
-                `Error({
-                  type_: `error,
-                  id: signPayloadRequest.id,
-                  errorType: `SIGNATURE_TYPE_NOT_SUPPORTED,
-                }),
+            ->FutureEx.fromOption(
+                ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
+              )
+            ->Future.flatMapOk(client =>
+                client->ReBeacon.WalletClient.respond(
+                  `Error({
+                    type_: `error,
+                    id: signPayloadRequest.id,
+                    errorType: `SIGNATURE_TYPE_NOT_SUPPORTED,
+                  }),
+                )
               )
             ->FutureEx.getOk(_ => closeAction());
           },
@@ -146,12 +156,17 @@ let make =
   let onAbort = _ => {
     setLoading(_ => false);
     client
-    ->ReBeacon.WalletClient.respond(
-        `Error({
-          type_: `error,
-          id: signPayloadRequest.id,
-          errorType: `ABORTED_ERROR,
-        }),
+    ->FutureEx.fromOption(
+        ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
+      )
+    ->Future.flatMapOk(client =>
+        client->ReBeacon.WalletClient.respond(
+          `Error({
+            type_: `error,
+            id: signPayloadRequest.id,
+            errorType: `ABORTED_ERROR,
+          }),
+        )
       )
     ->FutureEx.getOk(_ => closeAction());
   };

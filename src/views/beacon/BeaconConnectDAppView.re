@@ -62,7 +62,12 @@ let make = (~closeAction) => {
           switch (pairingInfo) {
           | Ok(pairingInfo) =>
             client
-            ->ReBeacon.WalletClient.addPeer(pairingInfo)
+            ->FutureEx.fromOption(
+                ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
+              )
+            ->Future.flatMapOk(client =>
+                client->ReBeacon.WalletClient.addPeer(pairingInfo)
+              )
             ->Future.tapError(error =>
                 raiseSubmitFailed(Some(error->Errors.toString))
               )
@@ -313,7 +318,12 @@ module WithQR = {
       switch (pairingInfo) {
       | Ok(pairingInfo) =>
         client
-        ->ReBeacon.WalletClient.addPeer(pairingInfo)
+        ->FutureEx.fromOption(
+            ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
+          )
+        ->Future.flatMapOk(client =>
+            client->ReBeacon.WalletClient.addPeer(pairingInfo)
+          )
         ->Future.tapError(error => {
             addToast(Logs.error(~origin=Beacon, error));
             setWebcamScanning(_ => true);

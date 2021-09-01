@@ -163,12 +163,18 @@ let make = () => {
               openDelegation(request);
             } else {
               client
-              ->ReBeacon.WalletClient.respond(
-                  `Error({
-                    type_: `error,
-                    id: request.id,
-                    errorType: `TRANSACTION_INVALID_ERROR,
-                  }),
+              ->FutureEx.fromOption(
+                  ~error=
+                    Errors.Generic(I18n.errors#beacon_client_not_created),
+                )
+              ->Future.flatMapOk(client =>
+                  client->ReBeacon.WalletClient.respond(
+                    `Error({
+                      type_: `error,
+                      id: request.id,
+                      errorType: `TRANSACTION_INVALID_ERROR,
+                    }),
+                  )
                 )
               ->FutureEx.getOk(_ =>
                   setError(_ =>
@@ -180,12 +186,17 @@ let make = () => {
           };
         } else {
           client
-          ->ReBeacon.WalletClient.respond(
-              `Error({
-                type_: `error,
-                id: request->ReBeacon.Message.Request.getId,
-                errorType: `NETWORK_NOT_SUPPORTED,
-              }),
+          ->FutureEx.fromOption(
+              ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
+            )
+          ->Future.flatMapOk(client =>
+              client->ReBeacon.WalletClient.respond(
+                `Error({
+                  type_: `error,
+                  id: request->ReBeacon.Message.Request.getId,
+                  errorType: `NETWORK_NOT_SUPPORTED,
+                }),
+              )
             )
           ->FutureEx.getOk(_ =>
               setError(_ =>

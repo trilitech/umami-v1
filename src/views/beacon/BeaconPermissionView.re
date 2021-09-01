@@ -66,15 +66,22 @@ let make =
           | Some(account) =>
             getAccountPublicKey(account)
             ->FutureEx.getOk(publicKey => {
-                client->ReBeacon.WalletClient.respond(
-                  `PermissionResponse({
-                    type_: `permission_response,
-                    id: permissionRequest.id,
-                    network: permissionRequest.network,
-                    scopes: permissionRequest.scopes,
-                    publicKey,
-                  }),
-                )
+                client
+                ->FutureEx.fromOption(
+                    ~error=
+                      Errors.Generic(I18n.errors#beacon_client_not_created),
+                  )
+                ->Future.flatMapOk(client =>
+                    client->ReBeacon.WalletClient.respond(
+                      `PermissionResponse({
+                        type_: `permission_response,
+                        id: permissionRequest.id,
+                        network: permissionRequest.network,
+                        scopes: permissionRequest.scopes,
+                        publicKey,
+                      }),
+                    )
+                  )
                 ->Future.tapOk(_ => {
                     updatePermissions();
                     closeAction();
@@ -92,13 +99,19 @@ let make =
     );
 
   let onAbort = _ => {
-    client->ReBeacon.WalletClient.respond(
-      `Error({
-        type_: `error,
-        id: permissionRequest.id,
-        errorType: `ABORTED_ERROR,
-      }),
-    )
+    client
+    ->FutureEx.fromOption(
+        ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
+      )
+    ->Future.flatMapOk(client =>
+        client->ReBeacon.WalletClient.respond(
+          `Error({
+            type_: `error,
+            id: permissionRequest.id,
+            errorType: `ABORTED_ERROR,
+          }),
+        )
+      )
     ->Future.tapOk(_ => closeAction())
     ->ignore;
   };

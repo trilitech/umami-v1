@@ -24,6 +24,7 @@
 /*****************************************************************************/
 
 open ReactNative;
+open UmamiCommon;
 
 let styles =
   Style.(
@@ -75,26 +76,36 @@ module Make = (Op: OP) => {
     let (client, _) = StoreContext.Beacon.useClient();
 
     let onAbort = _ =>
-      client->ReBeacon.WalletClient.respond(
-        `Error({
-          type_: `error,
-          id: beaconRequest.id,
-          errorType: `ABORTED_ERROR,
-        }),
-      )
-      ->Future.tapOk(_ => closeAction())
-      ->ignore;
+      client
+      ->FutureEx.fromOption(
+          ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
+        )
+      ->Future.flatMapOk(client =>
+          client->ReBeacon.WalletClient.respond(
+            `Error({
+              type_: `error,
+              id: beaconRequest.id,
+              errorType: `ABORTED_ERROR,
+            }),
+          )
+        )
+      ->FutureEx.getOk(_ => closeAction());
 
     let onSimulateError = _ =>
-      client->ReBeacon.WalletClient.respond(
-        `Error({
-          type_: `error,
-          id: beaconRequest.id,
-          errorType: `UNKNOWN_ERROR,
-        }),
-      )
-      ->Future.tapOk(_ => closeAction())
-      ->ignore;
+      client
+      ->FutureEx.fromOption(
+          ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
+        )
+      ->Future.flatMapOk(client =>
+          client->ReBeacon.WalletClient.respond(
+            `Error({
+              type_: `error,
+              id: beaconRequest.id,
+              errorType: `UNKNOWN_ERROR,
+            }),
+          )
+        )
+      ->FutureEx.getOk(_ => closeAction());
 
     let onPressCancel = _ => {
       closeAction();
@@ -122,14 +133,17 @@ module Make = (Op: OP) => {
     let sendOperation = i =>
       sendOperation(i)
       ->Future.tapOk(hash => {
-          client->ReBeacon.WalletClient.respond(
-            `OperationResponse({
-              type_: `operation_response,
-              id: beaconRequest.id,
-              transactionHash: hash,
-            }),
+          client->Lib.Option.iter(client =>
+            client
+            ->ReBeacon.WalletClient.respond(
+                `OperationResponse({
+                  type_: `operation_response,
+                  id: beaconRequest.id,
+                  transactionHash: hash,
+                }),
+              )
+            ->ignore
           )
-          ->ignore
         })
       ->Future.tapOk(_ => {updateAccount(beaconRequest.sourceAddress)});
 
