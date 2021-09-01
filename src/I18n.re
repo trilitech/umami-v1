@@ -103,7 +103,8 @@ let tooltip = {
   pub chain_not_connected = "Not connected to a chain";
   pub custom_network_edit = "Edit network";
   pub custom_network_delete = "Delete network";
-  pub reject_on_ledger = "Reject on ledger to cancel operation"
+  pub reject_on_ledger = "Reject on ledger to cancel operation";
+  pub see_network_info = "See network info"
 };
 
 let log = {
