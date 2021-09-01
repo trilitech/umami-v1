@@ -30,9 +30,7 @@ type Errors.t +=
   | SecretNotFound(int)
   | CannotUpdateSecret(int)
   | RecoveryPhraseNotFound(int)
-  | SecretAlreadyImported
-  | IncorrectNumberOfWords
-  | UnknownBip39Word(string, int);
+  | SecretAlreadyImported;
 
 let () =
   Errors.registerHandler(
@@ -44,8 +42,6 @@ let () =
     | RecoveryPhraseNotFound(i) =>
       I18n.errors#recovery_phrase_not_found(i)->Some
     | SecretAlreadyImported => I18n.errors#secret_already_imported->Some
-    | IncorrectNumberOfWords => I18n.errors#incorrect_number_of_words->Some
-    | UnknownBip39Word(w, i) => I18n.errors#unknown_bip39_word(w, i)->Some
     | _ => None,
   );
 
@@ -682,20 +678,21 @@ module Accounts = {
 
     let%FRes () = password->SecureStorage.validatePassword;
 
-    let bp = backupPhrase->Array.length;
+    let bpLen = backupPhrase->Array.length;
 
     let%FRes () =
       (
-        if (bp == 24 || bp == 15 || bp == 12) {
+        if (bpLen->Bip39.Mnemonic.isStandardLength) {
           backupPhrase->Js.Array2.reducei(
             (res, w, i) =>
               res->Result.flatMap(() =>
-                w->Bip39.included ? Ok() : UnknownBip39Word(w, i)->Error
+                w->Bip39.included
+                  ? Ok() : Bip39.Mnemonic.UnknownWord(w, i)->Error
               ),
             Ok(),
           );
         } else {
-          IncorrectNumberOfWords->Error;
+          Bip39.Mnemonic.IncorrectNumberOfWords->Error;
         }
       )
       ->Future.value;

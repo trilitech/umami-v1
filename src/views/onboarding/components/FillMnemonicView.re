@@ -43,21 +43,9 @@ let styles =
   );
 
 module FormatSelector = {
-  type format =
-    | Words24
-    | Words15
-    | Words12;
-  let toInt =
-    fun
-    | Words24 => 24
-    | Words15 => 15
-    | Words12 => 12;
-
-  let toString = ft => I18n.t#words(ft->toInt);
-
   let render = ft =>
     <Typography.Body1 style=FormStyles.selector##item>
-      {ft->toString->React.string}
+      {ft->Bip39.Mnemonic.formatToString->React.string}
     </Typography.Body1>;
   let renderButton = (ft, _hasError) =>
     <View style=FormStyles.selector##button>
@@ -68,7 +56,7 @@ module FormatSelector = {
     </View>;
 
   let onValueChange = (setMnemonics, mnemonics, format) => {
-    let vInt = format->toInt;
+    let vInt = format->Bip39.Mnemonic.formatToInt;
 
     let len = mnemonics->Array.length;
 
@@ -93,10 +81,10 @@ module FormatSelector = {
       />
       <Selector
         style=FormStyles.selector##selector
-        items=[|Words24, Words15, Words12|]
-        getItemKey={ft => ft->toInt->Int.toString}
+        items=Bip39.Mnemonic.([|Words24, Words21, Words18, Words15, Words12|])
+        getItemKey={ft => ft->Bip39.Mnemonic.formatToInt->Int.toString}
         renderItem=render
-        selectedValueKey={value->toInt->Int.toString}
+        selectedValueKey={value->Bip39.Mnemonic.formatToInt->Int.toString}
         onValueChange
         renderButton
         keyPopover="MnemonicsFormatSelector"
@@ -107,7 +95,7 @@ module FormatSelector = {
 
 module StateLenses = [%lenses
   type state = {
-    format: FormatSelector.format,
+    format: Bip39.Mnemonic.format,
     words: array(string),
   }
 ];

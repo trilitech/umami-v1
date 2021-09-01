@@ -60,8 +60,7 @@ let make = (~closeAction) => {
     ->ignore;
 
   let (mnemonic, setMnemonic) = React.useState(_ => Array.make(24, ""));
-  let formatState =
-    React.useState(_ => FillMnemonicView.FormatSelector.Words24);
+  let formatState = React.useState(_ => Bip39.Mnemonic.Words24);
   let (derivationPath, setDerivationPath) =
     React.useState(_ => DerivationPath.Pattern.(default->fromTezosBip44));
 
