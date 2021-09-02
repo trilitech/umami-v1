@@ -86,3 +86,15 @@ module FA12 = {
     c##methods.transfer(. src, dst, amount);
   };
 };
+
+/** FA12 contracts specific interface */
+module FA2 = {
+  include Contract(Types.FA2);
+
+  let at = (contract, pkh) =>
+    at(contract, pkh, ~extension=Extension.(compose(tzip12, tzip16)));
+
+  let transfer = (c: t, txs) => {
+    c##methods.transfer(. txs);
+  };
+};
