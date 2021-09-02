@@ -50,15 +50,11 @@ let make = (~closeAction) => {
 
   let createSecretWithMnemonic = p =>
     System.Client.initDir(config->ConfigUtils.baseDir)
-    ->Future.mapError(Errors.toString)
-    ->Future.flatMapOk(() =>
-        createSecretWithMnemonic(p)->Future.mapError(Errors.toString)
-      )
+    ->Future.flatMapOk(() => createSecretWithMnemonic(p))
     ->Future.tapOk(_ => {closeAction()})
     ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
         I18n.t#account_created
-      )
-    ->ignore;
+      );
 
   // using a react ref prevent from genereting other mnemonic at other render
   // a useState can also be used, but because we don't need to set
@@ -166,7 +162,7 @@ let make = (~closeAction) => {
          <CreatePasswordView
            mnemonic
            derivationPath
-           createSecretWithMnemonic
+           submitPassword=createSecretWithMnemonic
            loading
          />
        </>;

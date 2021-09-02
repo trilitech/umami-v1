@@ -64,97 +64,93 @@ let passwordLengthCheck = (values: StateLenses.state) => {
   fieldState;
 };
 
+module CreatePasswordView = {
+  [@react.component]
+  let make = (~submitPassword, ~loading) => {
+    let form: CreatePasswordForm.api =
+      CreatePasswordForm.use(
+        ~validationStrategy=OnDemand,
+        ~schema={
+          CreatePasswordForm.Validation.(
+            Schema(
+              nonEmpty(Password)
+              + custom(passwordLengthCheck, Password)
+              + custom(isConfirmPassword, ConfirmPassword),
+            )
+          );
+        },
+        ~onSubmit=
+          ({state}) => {
+            submitPassword(~password=state.values.password)->ignore;
+            None;
+          },
+        ~initialState={password: "", confirmPassword: ""},
+        ~i18n=FormUtils.i18n,
+        (),
+      );
+
+    let onSubmit = _ => {
+      form.submit();
+    };
+
+    let formFieldsAreValids =
+      FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
+
+    let passwordPlaceholder = I18n.input_placeholder#enter_new_password;
+
+    <>
+      <FormGroupTextInput
+        label=I18n.label#password
+        value={form.values.password}
+        handleChange={form.handleChange(Password)}
+        error={form.getFieldError(Field(Password))}
+        placeholder=passwordPlaceholder
+        textContentType=`password
+        secureTextEntry=true
+      />
+      {<FormGroupTextInput
+         label=I18n.label#confirm_password
+         value={form.values.confirmPassword}
+         handleChange={form.handleChange(ConfirmPassword)}
+         error={form.getFieldError(Field(ConfirmPassword))}
+         placeholder=I18n.input_placeholder#confirm_password
+         textContentType=`password
+         secureTextEntry=true
+       />}
+      <View style=FormStyles.verticalFormAction>
+        <Buttons.SubmitPrimary
+          text=I18n.btn#finish
+          onPress=onSubmit
+          loading
+          disabledLook={!formFieldsAreValids}
+        />
+      </View>
+    </>;
+  };
+};
+
 [@react.component]
 let make =
-    (
-      ~mnemonic: array(string),
-      ~derivationPath,
-      ~createSecretWithMnemonic,
-      ~loading,
-    ) => {
+    (~mnemonic: array(string), ~derivationPath, ~submitPassword, ~loading) => {
   let secrets = StoreContext.Secrets.useGetAll();
 
   let existingNonLedgerSecretsCount =
     secrets->Array.keep(s => s.secret.kind != Ledger)->Array.length;
 
   let displayConfirmPassword = existingNonLedgerSecretsCount < 1;
-  let form: CreatePasswordForm.api =
-    CreatePasswordForm.use(
-      ~validationStrategy=OnDemand,
-      ~schema={
-        CreatePasswordForm.Validation.(
-          Schema(
-            nonEmpty(Password)
-            + (
-              displayConfirmPassword
-                ? custom(passwordLengthCheck, Password) : [||]
-            )
-            + (
-              displayConfirmPassword
-                ? custom(isConfirmPassword, ConfirmPassword) : [||]
-            ),
-          )
-        );
+
+  let submitPassword = (~password) => {
+    submitPassword(
+      SecretApiRequest.{
+        name: "Secret " ++ (existingNonLedgerSecretsCount + 1)->string_of_int,
+        mnemonic,
+        derivationPath,
+        password,
       },
-      ~onSubmit=
-        ({state}) => {
-          createSecretWithMnemonic(
-            SecretApiRequest.{
-              name:
-                "Secret " ++ (existingNonLedgerSecretsCount + 1)->string_of_int,
-              mnemonic,
-              derivationPath,
-              password: state.values.password,
-            },
-          );
-
-          None;
-        },
-      ~initialState={password: "", confirmPassword: ""},
-      ~i18n=FormUtils.i18n,
-      (),
     );
-
-  let onSubmit = _ => {
-    form.submit();
   };
 
-  let formFieldsAreValids =
-    FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
-
-  let passwordPlaceholder =
-    displayConfirmPassword
-      ? I18n.input_placeholder#enter_new_password
-      : I18n.input_placeholder#enter_password;
-
-  <>
-    <FormGroupTextInput
-      label=I18n.label#password
-      value={form.values.password}
-      handleChange={form.handleChange(Password)}
-      error={form.getFieldError(Field(Password))}
-      placeholder=passwordPlaceholder
-      textContentType=`password
-      secureTextEntry=true
-    />
-    {displayConfirmPassword
-       ? <FormGroupTextInput
-           label=I18n.label#confirm_password
-           value={form.values.confirmPassword}
-           handleChange={form.handleChange(ConfirmPassword)}
-           error={form.getFieldError(Field(ConfirmPassword))}
-           placeholder=I18n.input_placeholder#confirm_password
-           textContentType=`password
-           secureTextEntry=true
-         />
-       : React.null}
-    <View style=FormStyles.verticalFormAction>
-      <Buttons.SubmitPrimary
-        text=I18n.btn#finish
-        onPress=onSubmit
-        loading
-        disabledLook={!formFieldsAreValids}
-      />
-    </View>
-  </>;
+  displayConfirmPassword
+    ? <CreatePasswordView submitPassword loading />
+    : <PasswordFormView loading submitPassword />;
 };
