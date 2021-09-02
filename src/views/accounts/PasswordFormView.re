@@ -40,7 +40,8 @@ let usePasswordForm = submitPassword => {
           submitPassword(~password=state.values.password)
           ->Future.tapError(
               fun
-              | Errors.WrongPassword =>
+              | Errors.WrongPassword
+              | SecureStorage.Cipher.DecryptError =>
                 raiseSubmitFailed(Some(I18n.form_input_error#wrong_password))
               | _ => (),
             )
