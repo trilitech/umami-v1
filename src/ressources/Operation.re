@@ -210,7 +210,7 @@ module Delegation = {
   let decode = json =>
     Json.Decode.{
       delegate:
-        switch (json |> optional(field("delegate", string))) {
+        switch (json |> optional(field("data", field("delegate", string)))) {
         | Some(delegate) =>
           delegate->Js.String2.length == 0
             ? None : Some(delegate->PublicKeyHash.build->Result.getExn)
