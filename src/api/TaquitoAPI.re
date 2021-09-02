@@ -259,9 +259,14 @@ module Operations = {
 };
 
 module Transfer = {
-  module ContractCache = {
+  module type Contract = {
+    type t;
+    let at: (Toolkit.contract, PublicKeyHash.t) => Js.Promise.t(t);
+  };
+
+  module ContractCache = (Contract: Contract) => {
     type t = {
-      contracts: MutableMap.String.t(Js.Promise.t(Contracts.FA12.t)),
+      contracts: MutableMap.String.t(Js.Promise.t(Contract.t)),
       toolkit: Toolkit.toolkit,
     };
 
@@ -271,7 +276,7 @@ module Transfer = {
       switch (MutableMap.String.get(cache.contracts, (token :> string))) {
       | Some(c) => c
       | None =>
-        let c = cache.toolkit.contract->(ReTaquitoContracts.FA12.at(token));
+        let c = cache.toolkit.contract->(Contract.at(token));
         cache.contracts->MutableMap.String.set((token :> string), c);
         c;
       };
@@ -280,6 +285,7 @@ module Transfer = {
     let _clear = cache => cache.contracts->MutableMap.String.clear;
   };
 
+  module FA12Cache = ContractCache(Contracts.FA12);
   let prepareFA12Transfer =
       (
         contractCache,
@@ -303,7 +309,7 @@ module Transfer = {
 
     let%FResMap c =
       contractCache
-      ->ContractCache.findContract(token)
+      ->FA12Cache.findContract(token)
       ->ReTaquitoError.fromPromiseParsed;
     let transfer =
       c->Contracts.FA12.transfer(source, dest, amount->BigNumber.toFixed);
@@ -320,7 +326,7 @@ module Transfer = {
     };
 
   let prepareTransfers = (txs, endpoint, source: PublicKeyHash.t) => {
-    let contractCache = endpoint->Toolkit.create->ContractCache.make;
+    let fa12Cache = endpoint->Toolkit.create->FA12Cache.make;
     txs
     ->List.map((tx: Transfer.elt) =>
         switch (tx.amount) {
@@ -343,7 +349,7 @@ module Transfer = {
           ->Future.value
         | Token(amount, token) =>
           prepareFA12Transfer(
-            contractCache,
+            fa12Cache,
             ~source,
             ~token=token.TokenRepr.address,
             ~dest=tx.destination,
