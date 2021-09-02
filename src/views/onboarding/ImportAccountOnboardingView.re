@@ -49,15 +49,11 @@ let make = (~closeAction) => {
 
   let createSecretWithMnemonic = p =>
     System.Client.initDir(config->ConfigUtils.baseDir)
-    ->Future.mapError(Errors.toString)
-    ->Future.flatMapOk(() =>
-        createSecretWithMnemonic(p)->Future.mapError(Errors.toString)
-      )
+    ->Future.flatMapOk(() => createSecretWithMnemonic(p))
     ->Future.tapOk(() => {closeAction()})
     ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
         I18n.t#account_created
-      )
-    ->ignore;
+      );
 
   let (mnemonic, setMnemonic) = React.useState(_ => Array.make(24, ""));
   let formatState = React.useState(_ => Bip39.Mnemonic.Words24);
@@ -153,7 +149,7 @@ let make = (~closeAction) => {
          <CreatePasswordView
            mnemonic
            derivationPath
-           createSecretWithMnemonic
+           submitPassword=createSecretWithMnemonic
            loading
          />
        </>;

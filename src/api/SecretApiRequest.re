@@ -65,8 +65,14 @@ type deriveInput = {
   timeout: option(int),
 };
 
+let keepNonFormErrors =
+  fun
+  | SecureStorage.Cipher.DecryptError => false
+  | _ => true;
+
 let useDerive =
   ApiRequest.useSetter(
+    ~keepError=keepNonFormErrors,
     ~set=
       (~config, {name, index, kind, timeout}) =>
         switch (kind) {
@@ -94,6 +100,7 @@ type createInput = {
 
 let useCreateWithMnemonics =
   ApiRequest.useSetter(
+    ~keepError=keepNonFormErrors,
     ~set=
       (~config, {name, mnemonic, derivationPath, password}) =>
         WalletAPI.Accounts.restore(
