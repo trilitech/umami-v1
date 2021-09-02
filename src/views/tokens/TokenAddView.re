@@ -60,10 +60,12 @@ let make = (~chain, ~closeAction) => {
             let%FResMap address =
               state.values.address->PublicKeyHash.build->Future.value;
             createToken({
+              kind: FA1_2,
               address,
               alias: state.values.name,
               symbol: state.values.symbol,
               chain,
+              decimals: 0,
             })
             ->FutureEx.getOk(_ => closeAction());
           });

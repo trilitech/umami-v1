@@ -114,6 +114,7 @@ module Transaction = {
     parameters: option(Js.Dict.t(string)),
   };
   type token_info = {
+    kind: TokenRepr.kind,
     amount: TokenRepr.Unit.t,
     contract: PublicKeyHash.t,
   };
@@ -137,6 +138,7 @@ module Transaction = {
     open Json.Decode;
 
     let token_info = json => {
+      kind: TokenRepr.FA1_2,
       amount:
         json
         |> field("data", field("token_amount", string))
