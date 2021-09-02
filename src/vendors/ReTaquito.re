@@ -29,58 +29,35 @@ external opKindTransaction: string = "TRANSACTION";
 [@bs.module "@taquito/taquito"] [@bs.scope "DEFAULT_FEE"]
 external default_fee_reveal: int = "REVEAL";
 
-module BigNumber: {
-  type fixed;
-  let toFixed: ReBigNumber.t => fixed;
-  let fromInt64: Int64.t => ReBigNumber.t;
-  let toInt64: ReBigNumber.t => Int64.t;
-} = {
-  type fixed = string;
+module Types = ReTaquitoTypes;
 
-  let toFixed = ReBigNumber.toFixed;
-
-  let fromInt64 = ReBigNumber.fromInt64;
-  let toInt64 = ReBigNumber.toInt64;
-};
-
-type rpcClient;
+module BigNumber = Types.BigNumber;
 
 type endpoint = string;
 
 module RPCClient = {
-  [@bs.module "@taquito/rpc"] [@bs.new]
-  external create: endpoint => rpcClient = "RpcClient";
+  include Types.RPCClient;
 
-  type params = {block: string};
-  type managerKeyResult = {key: string};
+  [@bs.module "@taquito/rpc"] [@bs.new]
+  external create: endpoint => t = "RpcClient";
 
   [@bs.send]
   external getBalance:
-    (rpcClient, PublicKeyHash.t, ~params: params=?, unit) =>
+    (t, PublicKeyHash.t, ~params: params=?, unit) =>
     Js.Promise.t(ReBigNumber.t) =
     "getBalance";
 
   [@bs.send]
   external getManagerKey:
-    (rpcClient, PublicKeyHash.t) =>
-    Js.Promise.t(Js.Nullable.t(managerKeyResult)) =
+    (t, PublicKeyHash.t) => Js.Promise.t(Js.Nullable.t(managerKeyResult)) =
     "getManagerKey";
 };
 
 module Toolkit = {
-  type tz;
-  type contract;
-  type estimate;
-
-  type operationResult = {hash: string};
+  include Types.Toolkit;
 
   module Operation = {
-    type field;
-    type t;
-
-    type block = {hash: string};
-
-    type confirmationResult = {block};
+    include Types.Operation;
 
     [@bs.send]
     external create: (field, string) => Js.Promise.t(t) = "createOperation";
@@ -91,27 +68,8 @@ module Toolkit = {
       "confirmation";
   };
 
-  type toolkit = {
-    tz,
-    contract,
-    operation: Operation.field,
-    estimate,
-  };
-
-  type provider = {signer: ReTaquitoSigner.t};
-
-  type transferParams = {
-    kind: string,
-    [@bs.as "to"]
-    to_: PublicKeyHash.t,
-    source: PublicKeyHash.t,
-    amount: ReBigNumber.t,
-    fee: option(ReBigNumber.t),
-    gasLimit: option(int),
-    storageLimit: option(int),
-    mutez: option(bool),
-    parameter: option(ProtocolOptions.TransactionParameters.t),
-  };
+  include Types.Transfer;
+  include Types.Delegate;
 
   let prepareTransfer =
       (
@@ -137,26 +95,12 @@ module Toolkit = {
     };
   };
 
-  type delegateParams = {
-    source: PublicKeyHash.t,
-    delegate: option(PublicKeyHash.t),
-    fee: option(ReBigNumber.t),
-  };
-
   let prepareDelegate = (~source, ~delegate, ~fee=?, ()) => {
-    {source, delegate, fee};
-  };
-
-  type sendParams = {
-    amount: ReBigNumber.t,
-    fee: option(ReBigNumber.t),
-    gasLimit: option(int),
-    storageLimit: option(int),
-    mutez: option(bool),
+    Types.Delegate.{source, delegate, fee};
   };
 
   let makeSendParams = (~amount, ~fee=?, ~gasLimit=?, ~storageLimit=?, ()) => {
-    {amount, fee, gasLimit, storageLimit, mutez: Some(true)};
+    Types.Transfer.{amount, fee, gasLimit, storageLimit, mutez: Some(true)};
   };
 
   [@bs.module "@taquito/taquito"] [@bs.new]
@@ -165,13 +109,16 @@ module Toolkit = {
   [@bs.send] external setProvider: (toolkit, provider) => unit = "setProvider";
 
   [@bs.send]
+  external addExtension: (toolkit, Types.Extension.t) => unit = "addExtension";
+
+  [@bs.send]
   external transfer:
-    (contract, transferParams) => Js.Promise.t(operationResult) =
+    (contract, transferParams) => Js.Promise.t(Types.Operation.result) =
     "transfer";
 
   [@bs.send]
   external setDelegate:
-    (contract, delegateParams) => Js.Promise.t(operationResult) =
+    (contract, delegateParams) => Js.Promise.t(Types.Operation.result) =
     "setDelegate";
 
   [@bs.send]
@@ -179,32 +126,11 @@ module Toolkit = {
     (tz, PublicKeyHash.t) => Js.Promise.t(Js.Nullable.t(PublicKeyHash.t)) =
     "getDelegate";
 
-  module type METHODS = {type t;};
-
-  module Contract = (M: METHODS) => {
-    type contractAbstraction = {methods: M.t};
-
-    type methodResult('meth);
-
-    [@bs.send]
-    external at:
-      (contract, PublicKeyHash.t) => Js.Promise.t(contractAbstraction) =
-      "at";
-
-    [@bs.send]
-    external send:
-      (methodResult(_), sendParams) => Js.Promise.t(operationResult) =
-      "send";
-
-    [@bs.send]
-    external toTransferParams: (methodResult(_), sendParams) => transferParams =
-      "toTransferParams";
-  };
-
   module Batch = {
-    type t;
+    include Types.Batch;
 
-    [@bs.send] external send: t => Js.Promise.t(operationResult) = "send";
+    [@bs.send]
+    external send: t => Js.Promise.t(Types.Operation.result) = "send";
 
     [@bs.send] external make: contract => t = "batch";
 
@@ -212,34 +138,8 @@ module Toolkit = {
     external withTransfer: (t, transferParams) => t = "withTransfer";
   };
 
-  module FA12Methods = {
-    type t;
-
-    type transfer;
-  };
-
-  module FA12 = {
-    module M = FA12Methods;
-    include Contract(M);
-
-    [@bs.send]
-    external transfer:
-      (M.t, PublicKeyHash.t, PublicKeyHash.t, BigNumber.fixed) =>
-      methodResult(M.transfer) =
-      "transfer";
-  };
-
   module Estimation = {
-    type result = {
-      totalCost: int,
-      storageLimit: int,
-      gasLimit: int,
-      revealFee: int,
-      minimalFeeMutez: int,
-      suggestedFeeMutez: int,
-      burnFeeMutez: int,
-      customFeeMutez: int,
-    };
+    include Types.Estimation;
 
     [@bs.send]
     external batch:

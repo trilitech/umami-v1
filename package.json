@@ -15,6 +15,7 @@
     "@reason-react-native/svg": "12.1.5-0.63",
     "@taquito/ledger-signer": "10.1.0",
     "@taquito/rpc": "10.1.0",
+    "@taquito/tzip12": "^10.1.0",
     "@taquito/tzip16": "^10.1.0",
     "@taquito/utils": "10.1.0",
     "customsigner": "link:./src/vendors/signer",

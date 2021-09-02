@@ -1264,6 +1264,16 @@
     rx-sandbox "^1.0.4"
     rxjs "^6.6.3"
 
+"@taquito/tzip12@^10.1.0":
+  version "10.1.0"
+  resolved "https://registry.yarnpkg.com/@taquito/tzip12/-/tzip12-10.1.0.tgz#ab3b2bc6c26a5f41f744b2447ca7be23c4638887"
+  integrity sha512-7m0obPUzjQ7f0yF8ezghan4+Y1AQyLG3i4w2c+VYSYRhTq/lvyzBHKsNv23ShUOSZTVjCNRgWnrX4G3lbDBIcA==
+  dependencies:
+    "@taquito/michelson-encoder" "^10.1.0"
+    "@taquito/taquito" "^10.1.0"
+    "@taquito/tzip16" "^10.1.0"
+    bignumber.js "^9.0.1"
+
 "@taquito/tzip16@^10.1.0":
   version "10.1.0"
   resolved "https://registry.yarnpkg.com/@taquito/tzip16/-/tzip16-10.1.0.tgz#63b451e05a9baf0e816751c79c0d14504b22244f"

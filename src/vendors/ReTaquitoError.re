@@ -36,6 +36,9 @@ let ledgerKey = "Unable to retrieve public key";
 let ledgerDenied = "0x6985";
 let emptyContract = "implicit.empty_implicit_contract";
 let scriptRejected = "script_rejected";
+let noMetadata = "Non-compliance with the TZIP-016 standard.";
+let noTokenMetadata = "No token metadata";
+let tokenIdNotFound = "Could not find token metadata for the token ID";
 
 type Errors.t +=
   | UnregisteredDelegate
@@ -52,7 +55,10 @@ type Errors.t +=
   | BalanceTooLow
   | EmptyContract
   | ScriptRejected
-  | SignerIntentInconsistency;
+  | SignerIntentInconsistency
+  | NoMetadata
+  | NoTokenMetadata
+  | TokenIdNotFound;
 
 let parse = (e: RawJsError.t) =>
   switch (e.message) {
@@ -70,6 +76,9 @@ let parse = (e: RawJsError.t) =>
   | s when s->Js.String2.includes(ledgerTimeout) => LedgerInitTimeout
   | s when s->Js.String2.includes(ledgerKey) => LedgerKeyRetrieval
   | s when s->Js.String2.includes(ledgerDenied) => LedgerDenied
+  | s when s->Js.String2.includes(noMetadata) => NoMetadata
+  | s when s->Js.String2.includes(noTokenMetadata) => NoTokenMetadata
+  | s when s->Js.String2.includes(tokenIdNotFound) => TokenIdNotFound
   | s => Errors.Generic(Js.String.make(s))
   };
 
@@ -94,6 +103,9 @@ let () =
     | LedgerDenied => I18n.title#hardware_wallet_denied->Some
     | SignerIntentInconsistency =>
       I18n.form_input_error#hardware_wallet_signer_inconsistent->Some
+    | NoMetadata => I18n.form_input_error#no_metadata(None)->Some
+    | NoTokenMetadata => I18n.form_input_error#no_token_metadata(None)->Some
+    | TokenIdNotFound => I18n.form_input_error#token_id_not_found(None)->Some
     | _ => None,
   );
 
