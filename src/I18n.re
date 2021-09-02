@@ -460,6 +460,9 @@ let wallet = {
 
 let errors = {
   pub _this = this;
+  pub decryption = "Storage decryption failed";
+  pub encryption = "Storage encryption failed";
+  pub key_derivation = "Key derivation failed";
   pub illformed_token_contract = "Illformed Token Contract";
   pub cannot_read_token = s => p("Cannot read token amount: %s", s);
   pub invalid_operation_type = "Invalid operation type!";

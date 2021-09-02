@@ -116,18 +116,18 @@ module Crypto = {
 module Cipher = {
   type Errors.t +=
     | KeyFromPasswordError(string)
-    | DeriveKeyError(string)
-    | DecryptError(string)
-    | EncryptError(string);
+    | DeriveKeyError
+    | DecryptError
+    | EncryptError;
 
   let () =
     Errors.registerHandler(
       "SecureStorage",
       fun
       | KeyFromPasswordError(s) => s->Some
-      | DeriveKeyError(s) => s->Some
-      | DecryptError(s) => s->Some
-      | EncryptError(s) => s->Some
+      | DeriveKeyError => I18n.errors#key_derivation->Some
+      | DecryptError => I18n.errors#decryption->Some
+      | EncryptError => I18n.errors#encryption->Some
       | _ => None,
     );
 
@@ -167,7 +167,7 @@ module Cipher = {
       false,
       [|"encrypt", "decrypt"|],
     )
-    ->RawJsError.fromPromiseParsed(e => DeriveKeyError(e.message));
+    ->RawJsError.fromPromiseParsed(_ => DeriveKeyError);
 
   let encrypt = (data, password) => {
     let%FRes key = keyFromPassword(password);
@@ -182,7 +182,7 @@ module Cipher = {
         derivedKey,
         Buffer.fromString(data, `utf8),
       )
-      ->RawJsError.fromPromiseParsed(e => EncryptError(e.message));
+      ->RawJsError.fromPromiseParsed(_ => EncryptError);
 
     {
       salt: salt->Buffer.toString(`hex),
@@ -205,7 +205,7 @@ module Cipher = {
         derivedKey,
         Buffer.fromString(encryptedData.data, `hex),
       )
-      ->RawJsError.fromPromiseParsed(e => DecryptError(e.message));
+      ->RawJsError.fromPromiseParsed(_ => DecryptError);
 
     Buffer.fromBytes(data)->Buffer.toString(`utf8);
   };
