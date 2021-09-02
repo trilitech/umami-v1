@@ -50,9 +50,9 @@ let make = (~closeAction) => {
 
   let createSecretWithMnemonic = p =>
     System.Client.initDir(config->ConfigUtils.baseDir)
-    ->Future.mapError(System.File.Error.toString)
+    ->Future.mapError(Errors.toString)
     ->Future.flatMapOk(() =>
-        createSecretWithMnemonic(p)->Future.mapError(ErrorHandler.toString)
+        createSecretWithMnemonic(p)->Future.mapError(Errors.toString)
       )
     ->Future.tapOk(_ => {closeAction()})
     ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
@@ -70,9 +70,20 @@ let make = (~closeAction) => {
 
   let loading = secretWithMnemonicRequest->ApiRequest.isLoading;
 
-  <ModalFormView>
+  let closing =
+    ModalFormView.confirm(~actionText=I18n.btn#cancel, closeAction);
+
+  let back =
+    switch (formStep) {
+    | Step1 => None
+    | Step2 => Some(_ => setFormStep(_ => Step1))
+    | Step3 => Some(_ => setFormStep(_ => Step2))
+    | Step4 => Some(_ => setFormStep(_ => Step3))
+    };
+
+  <ModalFormView closing back>
     <Typography.Headline style=styles##title>
-      I18n.title#account_create->React.string
+      I18n.title#secret_create->React.string
     </Typography.Headline>
     {switch (formStep) {
      | Step1 =>
@@ -86,12 +97,11 @@ let make = (~closeAction) => {
          </Typography.Overline1>
          <DocumentContext.ScrollView showsVerticalScrollIndicator=true>
            <Typography.Body2 colorStyle=`mediumEmphasis style=styles##stepBody>
-             I18n.expl#account_create_record_recovery->React.string
+             I18n.expl#secret_create_record_recovery->React.string
            </Typography.Body2>
            <MnemonicListView mnemonic />
          </DocumentContext.ScrollView>
-         <View style=FormStyles.formActionSpaceBetween>
-           <Buttons.Form text=I18n.btn#back onPress={_ => closeAction()} />
+         <View style=FormStyles.verticalFormAction>
            <Buttons.SubmitPrimary
              text=I18n.btn#create_account_record_ok
              onPress={_ => setFormStep(_ => Step2)}
@@ -108,11 +118,10 @@ let make = (~closeAction) => {
            I18n.title#account_create_verify_phrase->React.string
          </Typography.Overline1>
          <Typography.Body2 colorStyle=`mediumEmphasis style=styles##stepBody>
-           I18n.expl#account_create_record_verify->React.string
+           I18n.expl#secret_create_record_verify->React.string
          </Typography.Body2>
          <VerifyMnemonicView
            mnemonic
-           onPressCancel={_ => setFormStep(_ => Step1)}
            goNextStep={_ => setFormStep(_ => Step3)}
          />
        </>
@@ -122,18 +131,17 @@ let make = (~closeAction) => {
        <>
          <Typography.Overline3
            colorStyle=`highEmphasis style=styles##stepPager>
-           {I18n.t#stepof(2, 3)->React.string}
+           {I18n.t#stepof(3, 4)->React.string}
          </Typography.Overline3>
          <Typography.Overline1 style=styles##stepTitle>
            subtitle->React.string
          </Typography.Overline1>
          {<Typography.Body2 colorStyle=`mediumEmphasis style=styles##stepBody>
-            I18n.expl#account_select_derivation_path->React.string
+            I18n.expl#secret_select_derivation_path->React.string
           </Typography.Body2>}
          <SelectDerivationPathView
            derivationPath
            setDerivationPath
-           onPressCancel={_ => setFormStep(_ => Step2)}
            goNextStep={_ => setFormStep(_ => Step4)}
          />
        </>;
@@ -152,13 +160,12 @@ let make = (~closeAction) => {
            subtitle->React.string
          </Typography.Overline1>
          {<Typography.Body2 colorStyle=`mediumEmphasis style=styles##stepBody>
-            I18n.expl#account_create_password_not_recorded->React.string
+            I18n.expl#secret_create_password_not_recorded->React.string
           </Typography.Body2>
           ->ReactUtils.onlyWhen(noExistingPassword)}
          <CreatePasswordView
            mnemonic
            derivationPath
-           onPressCancel={_ => setFormStep(_ => Step2)}
            createSecretWithMnemonic
            loading
          />

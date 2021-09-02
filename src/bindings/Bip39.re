@@ -28,4 +28,50 @@
 [@bs.module "bip39"] [@bs.scope "wordlists"]
 external wordlistsEnglish: array(string) = "english";
 
-let included = w => wordlistsEnglish->Js.Array2.includes(w);
+let set = HashSet.String.fromArray(wordlistsEnglish);
+
+let included = w => {
+  HashSet.String.has(set, w);
+};
+
+module Mnemonic = {
+  type Errors.t +=
+    | IncorrectNumberOfWords
+    | UnknownWord(string, int);
+
+  let () =
+    Errors.registerHandler(
+      "Bip39",
+      fun
+      | IncorrectNumberOfWords => I18n.errors#incorrect_number_of_words->Some
+      | UnknownWord(w, i) => I18n.errors#unknown_bip39_word(w, i)->Some
+      | _ => None,
+    );
+
+  type format =
+    | Words24
+    | Words21
+    | Words18
+    | Words15
+    | Words12;
+  let formatToInt =
+    fun
+    | Words24 => 24
+    | Words21 => 21
+    | Words18 => 18
+    | Words15 => 15
+    | Words12 => 12;
+
+  let formatOfInt =
+    fun
+    | 24 => Words24->Ok
+    | 21 => Words21->Ok
+    | 18 => Words18->Ok
+    | 15 => Words15->Ok
+    | 12 => Words12->Ok
+    | _ => Error(IncorrectNumberOfWords);
+
+  let formatToString = ft => I18n.t#words(ft->formatToInt);
+
+  let isStandardLength = i => i->formatOfInt->Result.isOk;
+};

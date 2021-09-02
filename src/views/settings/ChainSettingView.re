@@ -91,6 +91,30 @@ module CustomNetworkEditButton = {
   };
 };
 
+module NetworkInfoButton = {
+  [@react.component]
+  let make = (~network: Network.network) => {
+    let (visibleModal, openAction, closeAction) =
+      ModalAction.useModalActionState();
+
+    let onPress = _e => openAction();
+
+    <>
+      <IconButton
+        tooltip=(
+          "network_info" ++ network.name,
+          I18n.tooltip#see_network_info,
+        )
+        icon=Icons.Show.build
+        onPress
+      />
+      <ModalAction visible=visibleModal onRequestClose=closeAction>
+        <NetworkInfoView network closeAction />
+      </ModalAction>
+    </>;
+  };
+};
+
 let styles =
   Style.(
     StyleSheet.create({
@@ -188,6 +212,25 @@ module CustomNetworkItem = {
   };
 };
 
+module NetworkItem = {
+  [@react.component]
+  let make = (~network: Network.network, ~writeNetwork, ~settings) => {
+    <>
+      <View style=styles##spaceBetweenRow>
+        <RadioItem
+          label={
+            network == Network.mainnet ? I18n.t#mainnet : I18n.t#granadanet
+          }
+          value={network == Network.mainnet ? `Mainnet : `Granadanet}
+          setValue=writeNetwork
+          currentValue={settings->ConfigUtils.network}
+        />
+        <View style=styles##row> <NetworkInfoButton network /> </View>
+      </View>
+    </>;
+  };
+};
+
 [@react.component]
 let make = () => {
   let writeConf = ConfigContext.useWrite();
@@ -208,18 +251,8 @@ let make = () => {
     <View style=styles##column>
       <View accessibilityRole=`form style=styles##row>
         <ColumnLeft style=styles##leftcolumntitles>
-          <RadioItem
-            label=I18n.t#mainnet
-            value=`Mainnet
-            setValue=writeNetwork
-            currentValue={settings->ConfigUtils.network}
-          />
-          <RadioItem
-            label=I18n.t#granadanet
-            value=`Granadanet
-            setValue=writeNetwork
-            currentValue={settings->ConfigUtils.network}
-          />
+          <NetworkItem network=Network.mainnet settings writeNetwork />
+          <NetworkItem network=Network.granadanet settings writeNetwork />
           {switch (customNetworks) {
            | [] => React.null
            | customNetworks =>

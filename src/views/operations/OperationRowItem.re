@@ -159,20 +159,38 @@ let memo = component =>
     },
   );
 
-let amount = (isToken, account, transaction: Operation.Business.Transaction.t) => {
+let amount = (account, transaction: Operation.Transaction.t, tokens) => {
   let colorStyle =
     account->Option.map((account: Account.t) =>
-      account.address == transaction.destination ? `positive : `negative
+      account.address
+      == transaction->Operation.Transaction.Accessor.destination
+        ? `positive : `negative
     );
 
   let op = colorStyle == Some(`positive) ? "+" : "-";
 
   <CellAmount>
     {<Typography.Body1 ?colorStyle>
-       {I18n.t#tez_op_amount(op, transaction.amount->Tez.toString)
-        ->React.string}
-     </Typography.Body1>
-     ->ReactUtils.onlyWhen(!isToken)}
+       {switch (transaction) {
+        | Tez(transaction) =>
+          I18n.t#tez_op_amount(op, transaction.amount->Tez.toString)
+          ->React.string
+        | Token(_, token_trans) =>
+          let token: option(Token.t) =
+            Belt.Map.String.get(tokens, (token_trans.contract :> string));
+          switch (token) {
+          | None => I18n.t#unregistered_token->React.string
+          | Some({symbol, _}) =>
+            Format.asprintf(
+              "%s %s %s",
+              op,
+              token_trans.amount->TokenRepr.Unit.toNatString,
+              symbol,
+            )
+            ->React.string
+          };
+        }}
+     </Typography.Body1>}
   </CellAmount>;
 };
 
@@ -187,112 +205,103 @@ let make =
 
     <Table.Row>
       {switch (operation.payload) {
-       | Business(business) =>
-         switch (business.payload) {
-         | Reveal(_reveal) =>
-           <>
-             <CellType>
-               <Typography.Body1>
-                 I18n.t#operation_reveal->React.string
-               </Typography.Body1>
-             </CellType>
-             <CellAmount />
-             <CellFee>
-               <Typography.Body1>
-                 {I18n.t#tez_amount(business.fee->Tez.toString)->React.string}
-               </Typography.Body1>
-             </CellFee>
-             <CellAddress />
-             <CellAddress />
-           </>
-         | Transaction(transaction) =>
-           let isToken =
-             tokens->Map.String.has((transaction.destination :> string));
-           <>
-             <CellType>
-               <Typography.Body1>
-                 I18n.t#operation_transaction->React.string
-               </Typography.Body1>
-             </CellType>
-             {amount(isToken, account, transaction)}
-             <CellFee>
-               <Typography.Body1>
-                 {I18n.t#tez_amount(business.fee->Tez.toString)->React.string}
-               </Typography.Body1>
-             </CellFee>
-             <CellAddress>
-               {business.source
-                ->AliasHelpers.getContractAliasFromAddress(aliases, tokens)
-                ->Option.mapWithDefault(
-                    rawUnknownAddress(business.source, operation), alias =>
-                    <Typography.Body1 numberOfLines=1>
-                      alias->React.string
-                    </Typography.Body1>
-                  )}
-             </CellAddress>
-             <CellAddress>
-               {getContactOrRaw(
-                  aliases,
-                  tokens,
-                  transaction.destination,
-                  operation,
-                )}
-             </CellAddress>
-           </>;
-         | Origination(_origination) =>
-           <>
-             <CellType>
-               <Typography.Body1>
-                 I18n.t#operation_origination->React.string
-               </Typography.Body1>
-             </CellType>
-             <CellAmount />
-             <CellFee />
-             <CellAddress />
-             <CellAddress />
-             <View />
-           </>
-         | Delegation(delegation) =>
-           <>
-             <CellType>
-               <Typography.Body1>
-                 I18n.t#operation_delegation->React.string
-               </Typography.Body1>
-             </CellType>
-             <CellAmount />
-             <CellFee>
-               <Typography.Body1>
-                 {I18n.t#tez_amount(business.fee->Tez.toString)->React.string}
-               </Typography.Body1>
-             </CellFee>
-             <CellAddress>
-               {getContactOrRaw(aliases, tokens, business.source, operation)}
-             </CellAddress>
-             {delegation.delegate
+       | Reveal(_reveal) =>
+         <>
+           <CellType>
+             <Typography.Body1>
+               I18n.t#operation_reveal->React.string
+             </Typography.Body1>
+           </CellType>
+           <CellAmount />
+           <CellFee>
+             <Typography.Body1>
+               {I18n.t#tez_amount(operation.fee->Tez.toString)->React.string}
+             </Typography.Body1>
+           </CellFee>
+           <CellAddress />
+           <CellAddress />
+         </>
+       | Transaction(Token(common, _) as transaction)
+       | Transaction(Tez(common) as transaction) =>
+         <>
+           <CellType>
+             <Typography.Body1>
+               I18n.t#operation_transaction->React.string
+             </Typography.Body1>
+           </CellType>
+           {amount(account, transaction, tokens)}
+           <CellFee>
+             <Typography.Body1>
+               {I18n.t#tez_amount(operation.fee->Tez.toString)->React.string}
+             </Typography.Body1>
+           </CellFee>
+           <CellAddress>
+             {operation.source
+              ->AliasHelpers.getContractAliasFromAddress(aliases, tokens)
               ->Option.mapWithDefault(
-                  <CellAddress>
-                    <Typography.Body1 numberOfLines=1>
-                      I18n.t#delegation_removal->React.string
-                    </Typography.Body1>
-                  </CellAddress>,
-                  d =>
-                  <CellAddress>
-                    {getContactOrRaw(aliases, tokens, d, operation)}
-                  </CellAddress>
+                  rawUnknownAddress(operation.source, operation), alias =>
+                  <Typography.Body1 numberOfLines=1>
+                    alias->React.string
+                  </Typography.Body1>
                 )}
-           </>
-         | Unknown =>
-           <>
-             <CellType>
-               <Typography.Body1>
-                 I18n.t#unknown_operation->ReasonReact.string
-               </Typography.Body1>
-             </CellType>
-             <CellAmount />
-             <CellFee />
-             <CellAddress />
-           </>
-         }
+           </CellAddress>
+           <CellAddress>
+             {getContactOrRaw(aliases, tokens, common.destination, operation)}
+           </CellAddress>
+         </>
+       | Origination(_origination) =>
+         <>
+           <CellType>
+             <Typography.Body1>
+               I18n.t#operation_origination->React.string
+             </Typography.Body1>
+           </CellType>
+           <CellAmount />
+           <CellFee />
+           <CellAddress />
+           <CellAddress />
+           <View />
+         </>
+       | Delegation(delegation) =>
+         <>
+           <CellType>
+             <Typography.Body1>
+               I18n.t#operation_delegation->React.string
+             </Typography.Body1>
+           </CellType>
+           <CellAmount />
+           <CellFee>
+             <Typography.Body1>
+               {I18n.t#tez_amount(operation.fee->Tez.toString)->React.string}
+             </Typography.Body1>
+           </CellFee>
+           <CellAddress>
+             {getContactOrRaw(aliases, tokens, operation.source, operation)}
+           </CellAddress>
+           {delegation.delegate
+            ->Option.mapWithDefault(
+                <CellAddress>
+                  <Typography.Body1 numberOfLines=1>
+                    I18n.t#delegation_removal->React.string
+                  </Typography.Body1>
+                </CellAddress>,
+                d =>
+                <CellAddress>
+                  {getContactOrRaw(aliases, tokens, d, operation)}
+                </CellAddress>
+              )}
+         </>
+       | Unknown =>
+         <>
+           <CellType>
+             <Typography.Body1>
+               I18n.t#unknown_operation->ReasonReact.string
+             </Typography.Body1>
+           </CellType>
+           <CellAmount />
+           <CellFee />
+           <CellAddress />
+         </>
        }}
       <CellDate>
         <Typography.Body1>
@@ -313,8 +322,7 @@ let make =
           onPress={_ => {
             switch (ConfigUtils.getExternalExplorer(config)) {
             | Ok(url) => System.openExternal(url ++ operation.hash)
-            | Error(err) =>
-              addToast(Logs.error(~origin=Settings, Network.errorMsg(err)))
+            | Error(err) => addToast(Logs.error(~origin=Operation, err))
             }
           }}
         />

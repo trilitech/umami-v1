@@ -23,18 +23,14 @@
 /*                                                                           */
 /*****************************************************************************/
 
-type addressValidityError = [
-  | `No_prefix_matched
-  | `Invalid_checksum
-  | `Invalid_length
-  | `UnknownError(int)
-];
+type Errors.t +=
+  | No_prefix_matched
+  | Invalid_checksum
+  | Invalid_length;
 
-let validateAddress:
-  string => result([> | `Address], [> addressValidityError]);
+let validateAddress: string => result([> | `Address], Errors.t);
 
-let validateContractAddress:
-  string => result([> | `Contract], [> addressValidityError]);
+let validateContractAddress: string => result([> | `Contract], Errors.t);
 
 let validateAnyAddress:
-  string => result([> | `Address | `Contract], [> addressValidityError]);
+  string => result([> | `Address | `Contract], Errors.t);

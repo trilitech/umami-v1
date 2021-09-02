@@ -25,31 +25,20 @@
 
 type t = string;
 
-type addressValidityError = [
-  | `NotAnImplicit
-  | `NotAContract
-  | ReTaquitoUtils.addressValidityError
-];
+type Errors.t +=
+  | NotAnImplicit(string)
+  | NotAContract(string);
 
-type parsingError =
-  | CannotParseAddress(string, addressValidityError)
-  | CannotParseContract(string, addressValidityError);
-
-let handleValidationError: addressValidityError => string =
-  fun
-  | `NotAnImplicit => I18n.taquito#not_an_account
-  | `NotAContract => I18n.taquito#not_a_contract
-  | `No_prefix_matched => I18n.taquito#no_prefix_matched
-  | `Invalid_checksum => I18n.taquito#invalid_checksum
-  | `Invalid_length => I18n.taquito#invalid_length
-  | `UnknownError(n) => I18n.taquito#unknown_error_code(n);
-
-let handleParsingError =
-  fun
-  | CannotParseAddress(a, r) =>
-    I18n.csv#cannot_parse_address(a, handleValidationError(r))
-  | CannotParseContract(a, r) =>
-    I18n.csv#cannot_parse_contract(a, handleValidationError(r));
+let () =
+  Errors.registerHandler(
+    "PublicKeyHash",
+    fun
+    | NotAnImplicit(a) =>
+      I18n.csv#cannot_parse_address(a, I18n.taquito#not_an_account)->Some
+    | NotAContract(a) =>
+      I18n.csv#cannot_parse_address(a, I18n.taquito#not_a_contract)->Some
+    | _ => None,
+  );
 
 type parsedAddress =
   | Contract(t)
@@ -58,32 +47,29 @@ type parsedAddress =
 let build = s =>
   switch (ReTaquitoUtils.validateAddress(s)) {
   | Ok(`Address) => Ok(s)
-  | Error(#ReTaquitoUtils.addressValidityError as e) => Error(e)
+  | Error(e) => Error(e)
   };
 
 let buildAny = s =>
   switch (ReTaquitoUtils.validateAnyAddress(s)) {
   | Ok(`Contract) => Ok(Contract(s))
   | Ok(`Address) => Ok(Implicit(s))
-  | Error(#ReTaquitoUtils.addressValidityError as e) => Error(e)
+  | Error(e) => Error(e)
   };
 
 let buildContract = (a: string) => {
   switch (buildAny(a)) {
   | Ok(Contract(a)) => Ok(a)
-  | Ok(Implicit(a)) =>
-    Error(CannotParseContract((a :> string), `NotAContract))
-  | Error(#addressValidityError as err) =>
-    Error(CannotParseContract(a, err))
+  | Ok(Implicit(a)) => Error(NotAContract(a))
+  | Error(e) => Error(e)
   };
 };
 
 let buildImplicit = (a: string) => {
   switch (buildAny(a)) {
   | Ok(Implicit(a)) => Ok(a)
-  | Ok(Contract(a)) =>
-    Error(CannotParseAddress((a :> string), `NotAnImplicit))
-  | Error(#addressValidityError as err) => Error(CannotParseAddress(a, err))
+  | Ok(Contract(a)) => Error(NotAnImplicit(a))
+  | Error(e) => Error(e)
   };
 };
 

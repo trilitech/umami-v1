@@ -77,7 +77,7 @@ module CreateAccountButton = {
       <View style=styles##button>
         <ButtonAction
           onPress={_ => showOnboarding()}
-          text=I18n.btn#create_or_import_account
+          text=I18n.btn#create_or_import_secret
           icon=Icons.Account.build
           primary=true
         />

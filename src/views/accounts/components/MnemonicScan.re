@@ -37,38 +37,28 @@ let make = (~closeAction, ~index, ~secret) => {
 
   let (scanRequest, scan) = StoreContext.Secrets.useMnemonicScan();
 
-  let onFoundKey = (~start, i, address) =>
+  let onFoundKey = (~start, i, account) =>
     setAccounts(accounts =>
-      if (accounts->List.has(address, (==))) {
+      if (accounts->List.some(acc =>
+            account.WalletAPI.Accounts.Scan.publicKeyHash
+            == acc.WalletAPI.Accounts.Scan.publicKeyHash
+          )) {
         accounts;
       } else {
         let accounts = i == start ? [] : accounts;
 
-        [address, ...accounts];
+        [account, ...accounts];
       }
     );
 
   let submitPassword = (~password) => {
     password
     ->SecureStorage.validatePassword
-    ->Future.map(
-        fun
-        | Ok(true) => {
-            setStatus(_ => StepAccounts(password));
-            Ok();
-          }
-        | _ => Error(ErrorHandler.(Taquito(ReTaquitoError.WrongPassword))),
-      );
+    ->Future.mapOk(() => setStatus(_ => StepAccounts(password)));
   };
 
   let submitAccounts = (~password, ()) => {
-    scan(
-      SecretApiRequest.{
-        index,
-        accountsNumber: List.length(accounts),
-        password,
-      },
-    )
+    scan(SecretApiRequest.{index, accounts, password})
     ->Future.tapOk(_ => {closeAction()})
     ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
         I18n.t#account_created
@@ -102,7 +92,11 @@ let make = (~closeAction, ~index, ~secret) => {
          derivationChangedState
          path={secret.Secret.derivationPath}
          scheme={secret.Secret.derivationScheme}
-         accounts
+         accounts={
+           accounts->List.map(account =>
+             account.WalletAPI.Accounts.Scan.publicKeyHash
+           )
+         }
          next={submitAccounts(~password)}
          nextAdvancedOptions=None
        />

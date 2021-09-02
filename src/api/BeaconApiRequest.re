@@ -23,56 +23,137 @@
 /*                                                                           */
 /*****************************************************************************/
 
-let client = ReBeacon.WalletClient.make({name: "Umami"});
+open UmamiCommon;
 
-let respond = responseInput => {
-  client->ReBeacon.WalletClient.respond(responseInput);
+let makeClient = () => ReBeacon.WalletClient.make({name: I18n.label#beacon_client_name});
+
+let dataFromURL = url => {
+  URL.make(url)
+  |> URL.getSearchParams
+  |> URL.SearchParams.get("data")
+  |> Js.Nullable.toOption;
+};
+
+let useNextRequestState = (client, peersRequestState) => {
+  let (client, _) = client;
+  let (_, setPeersRequest) = peersRequestState;
+
+  let (nextRequest, doneResponding, yield) = ReactUtils.useNextState();
+  let (isConnected, setIsConnected) = React.useState(() => false);
+
+  let (nextDeeplink, doneDeeplinking) = IPC.useNextDeeplinkState();
+
+  React.useEffect1(
+    () => {
+      switch (client) {
+      | Some(client) =>
+        client
+        ->ReBeacon.WalletClient.init
+        ->Future.flatMapOk(_ =>
+            client->ReBeacon.WalletClient.connect(message => {
+              let request = message->ReBeacon.Message.Request.classify;
+              yield(request);
+            })
+          )
+        ->FutureEx.getOk(_ => setIsConnected(_ => true)) // what is the expected behavior when beacon fails to connect?;
+      | None => ()
+      };
+      None;
+    },
+    [|client|],
+  );
+
+  React.useEffect2(
+    () => {
+      if (isConnected) {
+        nextDeeplink()
+        ->Lib.Option.iter(deeplink =>
+            ReBeacon.Serializer.(
+              make()
+              ->deserialize(deeplink->dataFromURL->Option.getWithDefault(""))
+            )
+            ->Future.flatMapOk(peer =>
+                client
+                ->FutureEx.fromOption(
+                    ~error=
+                      Errors.Generic(I18n.errors#beacon_client_not_created),
+                  )
+                ->Future.flatMapOk(client =>
+                    client->ReBeacon.WalletClient.addPeer(peer)
+                  )
+                ->Future.tapOk(_ => setPeersRequest(ApiRequest.expireCache))
+              )
+            ->Future.get(_ => doneDeeplinking())
+          );
+      };
+      None;
+    },
+    (isConnected, nextDeeplink),
+  );
+
+  (nextRequest, doneResponding);
 };
 
 /* PEERS */
 
 module Peers = {
-  let useLoad = requestState => {
+  let useLoad = (client, requestState) => {
     let get = (~config as _s, ()) =>
       client
-      ->ReBeacon.WalletClient.getPeers
-      ->Future.mapError(ReBeacon.Error.toString);
+      ->FutureEx.fromOption(
+          ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
+        )
+      ->Future.flatMapOk(ReBeacon.WalletClient.getPeers);
 
-    ApiRequest.useLoader(~get, ~kind=Logs.Settings, ~requestState, ());
+    ApiRequest.useLoader(~get, ~kind=Logs.Beacon, ~requestState, ());
   };
 
-  let useDelete =
+  let useDelete = (~client) => {
     ApiRequest.useSetter(
       ~set=
         (~config as _s, peer: ReBeacon.peerInfo) =>
           client
-          ->ReBeacon.WalletClient.removePeer(peer)
-          ->Future.mapError(ReBeacon.Error.toString),
-      ~kind=Logs.Settings,
+          ->FutureEx.fromOption(
+              ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
+            )
+          ->Future.flatMapOk(client =>
+              client->ReBeacon.WalletClient.removePeer(peer)
+            ),
+      ~kind=Logs.Beacon,
     );
+  };
 };
 
 /* PERMISSIONS */
 
 module Permissions = {
-  let useLoad = requestState => {
+  let useLoad = (client, requestState) => {
     let get = (~config as _s, ()) =>
       client
-      ->ReBeacon.WalletClient.getPermissions
-      ->Future.mapError(ReBeacon.Error.toString);
+      ->FutureEx.fromOption(
+          ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
+        )
+      ->Future.flatMapOk(ReBeacon.WalletClient.getPermissions);
 
-    ApiRequest.useLoader(~get, ~kind=Logs.Settings, ~requestState, ());
+    ApiRequest.useLoader(~get, ~kind=Logs.Beacon, ~requestState, ());
   };
 
-  let useDelete =
+  let useDelete = (~client) => {
     ApiRequest.useSetter(
       ~set=
         (~config as _s, accountIdentifier: ReBeacon.accountIdentifier) =>
           client
-          ->ReBeacon.WalletClient.removePermission(accountIdentifier)
-          ->Future.mapError(ReBeacon.Error.toString),
-      ~kind=Logs.Settings,
+          ->FutureEx.fromOption(
+              ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
+            )
+          ->Future.flatMapOk(client =>
+              client->ReBeacon.WalletClient.removePermission(
+                accountIdentifier,
+              )
+            ),
+      ~kind=Logs.Beacon,
     );
+  };
 };
 
 /* SIGNATURE */

@@ -28,15 +28,6 @@ let styles =
     })
   );
 
-let renderItem = (currentLevel, operation: Operation.Read.t) => {
-  <OperationRowItem operation currentLevel />;
-};
-
-let listEmptyComponent =
-  <View style=styles##listContent>
-    <Table.Empty> I18n.t#empty_operations->React.string </Table.Empty>
-  </View>;
-
 module PaginationFooter = {
   [@react.component]
   let make =
@@ -114,12 +105,13 @@ module PaginationFooter = {
   };
 };
 
-let opsPerPage = 20;
-
 [@react.component]
-let make = (~elements, ~currentLevel) => {
+let make = (~elements, ~renderItem, ~emptyComponent, ~eltsPerPage=20) => {
   switch (elements->Array.length) {
-  | 0 => listEmptyComponent
+  | 0 =>
+    <View style=styles##listContent>
+      <Table.Empty> emptyComponent </Table.Empty>
+    </View>
   | _ =>
     let scrollViewRef = React.useRef(Js.Nullable.null);
     let scrollToTop = (scrollRef: React.ref(_)) =>
@@ -132,7 +124,7 @@ let make = (~elements, ~currentLevel) => {
                       )
                     )
       };
-    let maxPageIndex = (elements->Array.length - 1) / opsPerPage;
+    let maxPageIndex = (elements->Array.length - 1) / eltsPerPage;
     let (pageCounter, setPageCounter) = React.useState(_ => 0);
     // We shadow page counter to disallow out-of-bounds changes.
     let setPageCounter = f =>
@@ -146,14 +138,14 @@ let make = (~elements, ~currentLevel) => {
       });
     let data =
       elements->Array.slice(
-        ~offset=pageCounter * opsPerPage,
-        ~len=opsPerPage,
+        ~offset=pageCounter * eltsPerPage,
+        ~len=eltsPerPage,
       );
     <>
       <ScrollView
         ref={scrollViewRef->Ref.value}
         style={Style.array([|styles##listContent|])}>
-        {data->Array.map(renderItem(currentLevel))->ReasonReact.array}
+        {data->Array.map(renderItem)->ReasonReact.array}
       </ScrollView>
       <PaginationFooter
         pageCounter

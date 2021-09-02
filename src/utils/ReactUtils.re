@@ -77,3 +77,44 @@ let useIsMonted = () => {
 };
 
 let styles = l => Style.array(List.toArray(l));
+
+module Next = {
+  type t('value) =
+    | Empty
+    | Pending('value)
+    | Processing;
+
+  type action('value) =
+    | Next
+    | Done
+    | Send('value);
+
+  let reducer = (state, action) => {
+    switch (state, action) {
+    | (Pending(_), Next) => Processing
+    | (Processing, Done) => Empty
+    | (Empty | Pending(_), Send(value)) => Pending(value)
+    | _ => state
+    };
+  };
+
+  let value = state =>
+    switch (state) {
+    | Pending(value) => Some(value)
+    | _ => None
+    };
+};
+
+let useNextState = () => {
+  let (state, dispatch) = React.useReducer(Next.reducer, Empty);
+  let sender = React.useRef(_ => ());
+
+  let next = () => {
+    dispatch(Next);
+    state->Next.value;
+  };
+
+  sender.current = (value => dispatch(Send(value)));
+
+  (next, () => dispatch(Done), value => sender.current(value));
+};

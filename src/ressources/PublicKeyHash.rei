@@ -25,32 +25,22 @@
 
 type t = pri string;
 
-type addressValidityError = [
-  | `NotAnImplicit
-  | `NotAContract
-  | ReTaquitoUtils.addressValidityError
-];
-
-type parsingError =
-  | CannotParseAddress(string, addressValidityError)
-  | CannotParseContract(string, addressValidityError);
-
-let handleValidationError: addressValidityError => string;
-let handleParsingError: parsingError => string;
+type Errors.t +=
+  | NotAnImplicit(string)
+  | NotAContract(string);
 
 type parsedAddress =
   | Contract(t)
   | Implicit(t);
 
-let build: string => result(t, [> ReTaquitoUtils.addressValidityError]);
-let buildAny:
-  string => result(parsedAddress, [> ReTaquitoUtils.addressValidityError]);
+let build: string => result(t, Errors.t);
+let buildAny: string => result(parsedAddress, Errors.t);
 
 // Checks if given address is a smart contract address (KT1)
-let buildContract: string => result(t, parsingError);
+let buildContract: string => result(t, Errors.t);
 
 // Checks if given string is an implicit contract (tz*)
-let buildImplicit: string => result(t, parsingError);
+let buildImplicit: string => result(t, Errors.t);
 
 module Scheme: {
   type t =

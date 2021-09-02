@@ -29,7 +29,7 @@ let handleEstimationResults:
     array((option(int), option(int), option(int))),
     option(int)
   ) =>
-  Future.t(Result.t(ReTaquito.Toolkit.Estimation.result, ErrorHandler.t));
+  Result.t(ReTaquito.Toolkit.Estimation.result, Errors.t);
 
 module Balance: {
   /* Retrieve the balance of given public key hash */
@@ -40,7 +40,7 @@ module Balance: {
       ~params: ReTaquito.RPCClient.params=?,
       unit
     ) =>
-    Future.t(Result.t(Tez.t, ErrorHandler.t));
+    Future.t(Result.t(Tez.t, Errors.t));
 };
 
 module Signer: {
@@ -54,7 +54,7 @@ module Delegate: {
      account is not delegated */
   let get:
     (ReTaquito.endpoint, PublicKeyHash.t) =>
-    Future.t(Result.t(option(PublicKeyHash.t), ErrorHandler.t));
+    Future.t(Result.t(option(PublicKeyHash.t), Errors.t));
 
   /* Set the delegate for a given account */
   let set:
@@ -67,7 +67,7 @@ module Delegate: {
       ~fee: Tez.t=?,
       unit
     ) =>
-    Future.t(Result.t(ReTaquito.Toolkit.operationResult, ErrorHandler.t));
+    Future.t(Result.t(ReTaquito.Toolkit.operationResult, Errors.t));
 
   module Estimate: {
     let set:
@@ -79,7 +79,7 @@ module Delegate: {
         ~fee: Tez.t=?,
         unit
       ) =>
-      Future.t(Result.t(ReTaquito.Toolkit.Estimation.result, ErrorHandler.t));
+      Future.t(Result.t(ReTaquito.Toolkit.Estimation.result, Errors.t));
   };
 };
 
@@ -89,10 +89,7 @@ module Operations: {
   let confirmation:
     (ReTaquito.endpoint, ~hash: string, ~blocks: int=?, unit) =>
     Future.t(
-      Result.t(
-        ReTaquito.Toolkit.Operation.confirmationResult,
-        ErrorHandler.t,
-      ),
+      Result.t(ReTaquito.Toolkit.Operation.confirmationResult, Errors.t),
     );
 };
 
@@ -102,9 +99,7 @@ module Transfer: {
      be repeated multiple times. */
   let prepareTransfers:
     (list(Transfer.elt), ReTaquito.endpoint, PublicKeyHash.t) =>
-    Future.t(
-      list(Result.t(ReTaquito.Toolkit.transferParams, ErrorHandler.t)),
-    );
+    Future.t(list(Result.t(ReTaquito.Toolkit.transferParams, Errors.t)));
 
   /* Multi asset batch */
   let batch:
@@ -115,16 +110,13 @@ module Transfer: {
       ~transfers: (ReTaquito.endpoint, PublicKeyHash.t) =>
                   Future.t(
                     list(
-                      Result.t(
-                        ReTaquito.Toolkit.transferParams,
-                        ErrorHandler.t,
-                      ),
+                      Result.t(ReTaquito.Toolkit.transferParams, Errors.t),
                     ),
                   ),
       ~signingIntent: Signer.intent,
       unit
     ) =>
-    Future.t(Result.t(ReTaquito.Toolkit.operationResult, ErrorHandler.t));
+    Future.t(Result.t(ReTaquito.Toolkit.operationResult, Errors.t));
 
   module Estimate: {
     let batch:
@@ -135,10 +127,7 @@ module Transfer: {
         ~transfers: (ReTaquito.endpoint, PublicKeyHash.t) =>
                     Future.t(
                       list(
-                        Result.t(
-                          ReTaquito.Toolkit.transferParams,
-                          ErrorHandler.t,
-                        ),
+                        Result.t(ReTaquito.Toolkit.transferParams, Errors.t),
                       ),
                     ),
         unit
@@ -146,7 +135,7 @@ module Transfer: {
       Future.t(
         Result.t(
           (array(ReTaquito.Toolkit.Estimation.result), int),
-          ErrorHandler.t,
+          Errors.t,
         ),
       );
   };
@@ -160,5 +149,5 @@ module Signature: {
       ~signingIntent: Signer.intent,
       ~payload: string
     ) =>
-    Future.t(Result.t(ReTaquitoSigner.signature, ErrorHandler.t));
+    Future.t(Result.t(ReTaquitoSigner.signature, Errors.t));
 };

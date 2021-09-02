@@ -227,7 +227,6 @@ let make = (~closeAction) => {
 
   let importLedger = p =>
     System.Client.initDir(config->ConfigUtils.baseDir)
-    ->Future.mapError(e => ErrorHandler.(e->File->Wallet))
     ->Future.flatMapOk(() => importLedger(p))
     ->Future.tapOk(_ => {closeAction()})
     ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>

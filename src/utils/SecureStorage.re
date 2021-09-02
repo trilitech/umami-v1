@@ -23,6 +23,8 @@
 /*                                                                           */
 /*****************************************************************************/
 
+open Let;
+
 module Buffer = {
   type t = Node_buffer.t;
 
@@ -112,6 +114,23 @@ module Crypto = {
 };
 
 module Cipher = {
+  type Errors.t +=
+    | KeyFromPasswordError(string)
+    | DeriveKeyError(string)
+    | DecryptError(string)
+    | EncryptError(string);
+
+  let () =
+    Errors.registerHandler(
+      "SecureStorage",
+      fun
+      | KeyFromPasswordError(s) => s->Some
+      | DeriveKeyError(s) => s->Some
+      | DecryptError(s) => s->Some
+      | EncryptError(s) => s->Some
+      | _ => None,
+    );
+
   type encryptedData = {
     salt: string,
     iv: string,
@@ -137,7 +156,7 @@ module Cipher = {
   let keyFromPassword = password => {
     let buffer = Buffer.allocWithString(32, password);
     Crypto.Subtle.importKey(buffer, false, [|"deriveBits", "deriveKey"|])
-    ->FutureJs.fromPromise(Js.String.make);
+    ->RawJsError.fromPromiseParsed(e => KeyFromPasswordError(e.message));
   };
 
   let deriveKey = (key, salt) =>
@@ -148,47 +167,48 @@ module Cipher = {
       false,
       [|"encrypt", "decrypt"|],
     )
-    ->FutureJs.fromPromise(Js.String.make);
+    ->RawJsError.fromPromiseParsed(e => DeriveKeyError(e.message));
 
-  let encrypt = (data, password) =>
-    keyFromPassword(password)
-    ->Future.flatMapOk(key => {
-        let salt = Buffer.fromBytes(Crypto.allocAndFillWithRandomValues(32));
-        deriveKey(key, salt)->Future.mapOk(derivedKey => (salt, derivedKey));
-      })
-    ->Future.flatMapOk(((salt, derivedKey)) => {
-        let iv = Crypto.allocAndFillWithRandomValues(16);
-        Crypto.Subtle.encrypt(
-          {name: "AES-GCM", iv},
-          derivedKey,
-          Buffer.fromString(data, `utf8),
-        )
-        ->FutureJs.fromPromise(Js.String.make)
-        ->Future.mapOk(encryptedData =>
-            {
-              salt: salt->Buffer.toString(`hex),
-              iv: Buffer.fromBytes(iv)->Buffer.toString(`hex),
-              data: Buffer.fromBytes(encryptedData)->Buffer.toString(`hex),
-            }
-          );
-      });
+  let encrypt = (data, password) => {
+    let%FRes key = keyFromPassword(password);
+    let salt = Buffer.fromBytes(Crypto.allocAndFillWithRandomValues(32));
+
+    let%FRes derivedKey = deriveKey(key, salt);
+    let iv = Crypto.allocAndFillWithRandomValues(16);
+
+    let%FResMap encryptedData =
+      Crypto.Subtle.encrypt(
+        {name: "AES-GCM", iv},
+        derivedKey,
+        Buffer.fromString(data, `utf8),
+      )
+      ->RawJsError.fromPromiseParsed(e => EncryptError(e.message));
+
+    {
+      salt: salt->Buffer.toString(`hex),
+      iv: Buffer.fromBytes(iv)->Buffer.toString(`hex),
+      data: Buffer.fromBytes(encryptedData)->Buffer.toString(`hex),
+    };
+  };
 
   let encrypt2 = (password, data) => encrypt(data, password);
 
-  let decrypt = (encryptedData, password) =>
-    keyFromPassword(password)
-    ->Future.flatMapOk(key => {
-        deriveKey(key, Buffer.fromString(encryptedData.salt, `hex))
-      })
-    ->Future.flatMapOk(derivedKey =>
-        Crypto.Subtle.decrypt(
-          {name: "AES-GCM", iv: Buffer.fromString(encryptedData.iv, `hex)},
-          derivedKey,
-          Buffer.fromString(encryptedData.data, `hex),
-        )
-        ->FutureJs.fromPromise(Js.String.make)
+  let decrypt = (encryptedData, password) => {
+    let%FRes key = keyFromPassword(password);
+
+    let%FRes derivedKey =
+      deriveKey(key, Buffer.fromString(encryptedData.salt, `hex));
+
+    let%FResMap data =
+      Crypto.Subtle.decrypt(
+        {name: "AES-GCM", iv: Buffer.fromString(encryptedData.iv, `hex)},
+        derivedKey,
+        Buffer.fromString(encryptedData.data, `hex),
       )
-    ->Future.mapOk(data => Buffer.fromBytes(data)->Buffer.toString(`utf8));
+      ->RawJsError.fromPromiseParsed(e => DecryptError(e.message));
+
+    Buffer.fromBytes(data)->Buffer.toString(`utf8);
+  };
 
   let decrypt2 = (password, encryptedData) =>
     decrypt(encryptedData, password);
@@ -217,14 +237,11 @@ let store = (data, ~key, ~password) =>
   ->Cipher.encrypt(password)
   ->Future.mapOk(encryptedData => encryptedData->storeEncryptedData(~key));
 
-let validatePassword = password =>
-  "lock"
-  ->fetch(~password)
-  ->Future.flatMapOk(data =>
-      Future.value(
-        data == Some("lock") || data == None
-          ? Ok("lock") : Error("Invalid lock!"),
-      )
-    )
-  ->Future.flatMapOk(data => data->store(~key="lock", ~password))
-  ->Future.mapOk(_ => true);
+let validatePassword = password => {
+  let%FRes data = "lock"->fetch(~password);
+  let%FRes () =
+    data == Some("lock") || data == None
+      ? FutureEx.ok() : FutureEx.err(Errors.WrongPassword);
+  let%FResMap () = store("lock", ~key="lock", ~password);
+  ();
+};

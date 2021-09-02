@@ -65,6 +65,7 @@ let make =
       ~onSubmitEditing=?,
       ~decoration: option((~style: Style.t) => React.element)=?,
       ~style as styleFromProp: option(ReactNative.Style.t)=?,
+      ~fieldStyle=?,
     ) => {
   let hasError = error->Option.isSome;
   <FormGroup
@@ -85,6 +86,7 @@ let make =
         ?multiline
         ?numberOfLines
         ?onSubmitEditing
+        style=?fieldStyle
         onClear=?{clearButton ? Some(() => handleChange("")) : None}
       />
       {decoration->ReactUtils.mapOpt(deco => deco(~style=styles##decoration))}

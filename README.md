@@ -34,6 +34,10 @@ git clone https://gitlab.com/nomadic-labs/umami-wallet/umami/ && cd umami
 * [yarn](https://yarnpkg.com) installed.
 * [`node-hid` dependencies](https://github.com/node-hid/node-hid) dependencies installed.
 
+Linux binaries are distributed as snaps, hence it needs `snapcraft` and `LXD`:
+* [snapcraft](https://snapcraft.io/docs/snapcraft-overview) installed.
+* [LXD](https://snapcraft.io/docs/build-on-lxd) installed and initialized.
+
 ### 3) Build:
 
 ```
@@ -41,7 +45,15 @@ yarn
 yarn bsb:build
 yarn electron:build
 ```
-The Electron binary is located in the `dist` folder.
+
+The Electron binary is located in the `dist` folder. It will build an AppImage
+on linux (which is not compatible with Beacon's DeepLink), but you can build the snap file using:
+
+```
+yarn snap:build
+```
+
+It will be located in the root of umami's folder.
 
 ### 4) (Optional) Run for development
 

@@ -23,8 +23,7 @@
 /*                                                                           */
 /*****************************************************************************/
 
-type error =
-  | Parser(TezosClient.CSVParser.error(PublicKeyHash.parsingError))
+type Errors.t +=
   | UnknownToken(string)
   | NoRows
   | CannotParseTokenAmount(ReBigNumber.t, int, int)
@@ -32,11 +31,9 @@ type error =
 
 type t = list(Transfer.elt);
 /* Public key hash encoding */
-let addr:
-  CSVParser.Encodings.element(PublicKeyHash.t, PublicKeyHash.parsingError);
+let addr: CSVParser.Encodings.element(PublicKeyHash.t, Errors.t);
 /* Contract hash encoding */
-let token:
-  CSVParser.Encodings.element(PublicKeyHash.t, PublicKeyHash.parsingError);
+let token: CSVParser.Encodings.element(PublicKeyHash.t, Errors.t);
 /* CSV row encoding */
 let rowEncoding:
   CSVParser.Encodings.row(
@@ -46,10 +43,8 @@ let rowEncoding:
       option(PublicKeyHash.t),
       option(ReBigNumber.t),
     ),
-    PublicKeyHash.parsingError,
+    Errors.t,
   );
 
 let parseCSV:
-  (string, ~tokens: Map.String.t(TokenRepr.t)) => result(t, error);
-
-let handleCSVError: error => string;
+  (string, ~tokens: Map.String.t(TokenRepr.t)) => result(t, Errors.t);

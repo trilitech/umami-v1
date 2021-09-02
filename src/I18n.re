@@ -28,7 +28,7 @@ let p = Format.sprintf;
 let btn = {
   pub _this = this;
   pub retry = "RETRY";
-  pub create_or_import_account = "CREATE OR IMPORT ACCOUNT";
+  pub create_or_import_secret = "CREATE OR IMPORT SECRET";
   pub verify_accounts = "VERIFY ACCOUNTS";
   pub customize_derivation_path = "Customize Derivation Path";
   pub ardware_wallet_export = "Export Public Key";
@@ -51,8 +51,8 @@ let btn = {
   pub update = "UPDATE";
   pub register = "REGISTER";
   pub logs = "LOGS";
-  pub import_account = "IMPORT EXISTING ACCOUNT";
-  pub create_account_new = "CREATE NEW ACCOUNT";
+  pub import_secret = "IMPORT EXISTING SECRET";
+  pub create_secret_new = "CREATE NEW SECRET";
   pub connect_hardware_wallet = "CONNECT LEDGER";
   pub create_account_record_ok = {js|OK, I’VE RECORDED IT|js};
   pub add_account = "ADD ACCOUNT";
@@ -103,7 +103,8 @@ let tooltip = {
   pub chain_not_connected = "Not connected to a chain";
   pub custom_network_edit = "Edit network";
   pub custom_network_delete = "Delete network";
-  pub reject_on_ledger = "Reject on ledger to cancel operation"
+  pub reject_on_ledger = "Reject on ledger to cancel operation";
+  pub see_network_info = "See network info"
 };
 
 let log = {
@@ -150,6 +151,7 @@ let label = {
   pub account_cli = "Cli";
   pub account_default_path = "Default Path - m/44'/1729'/?'/0'";
   pub account_custom_path = "Custom Path";
+  pub beacon_client_name = "Umami";
   pub beacon_account = "Account to connect to dApp";
   pub beacon_sign_payload = "Payload to sign";
   pub beacon_dapp_pairing = "DApp pairing request";
@@ -204,6 +206,9 @@ let form_input_error = {
   pub unregistered_delegate = "This key is not registered as a baker";
   pub bad_pkh = "Not a valid key";
   pub invalid_contract = "The recipient is not a key or an alias";
+  pub balance_too_low = "Balance is too low";
+  pub script_rejected = "Script rejected";
+  pub account_balance_empty = "Account is empty";
   pub confirm_password = "It must be the same password";
   pub derivation_path_error = "Invalid derivation path";
   pub name_already_taken = a => p("%s is already taken", a);
@@ -216,7 +221,7 @@ let form_input_error = {
 let title = {
   pub _this = this;
   pub error_logs = "Logs";
-  pub account_create = "Create New Account";
+  pub secret_create = "Create New Secret";
   pub derive_account = "Add Account";
   pub account_update = "Edit Account";
   pub import_account = "Import Account";
@@ -266,8 +271,6 @@ let title = {
   pub send = "Send";
   pub confirmation = "Confirmation";
   pub simulation = "Simulation";
-  pub creating_account = "Creating Account";
-  pub importing_account = "Importing Account";
   pub submitting = "Submitting Operation";
   pub send_many_transactions = "Send one or many transactions";
   pub delete_account = "Delete Account?";
@@ -307,11 +310,11 @@ let expl = {
   pub hardware_wallet_search = "Please make sure to unlock your Ledger and open the Tezos Wallet app.";
   pub send_many_transactions = "You have the ability to submit a batch of transactions, but please note that the batch will be confirmed as a whole: should one transaction in the batch fail then the whole batch will not be completed.";
   pub scan = "A scan will check the Tezos chain for other accounts from your secrets that may have been revealed outside of this wallet.";
-  pub account_create_record_recovery = {j|Please record the following 24 words in sequence in order to restore it in the future. Ensure to back it up, keeping it securely offline.|j};
-  pub account_create_record_verify = {j|We will now verify that you’ve properly recorded your recovery phrase. To demonstrate this, please type in the word that corresponds to each sequence number.|j};
-  pub account_create_password_not_recorded = {j|Please note that this password is not recorded anywhere and only applies to this machine.|j};
-  pub account_select_derivation_path = {j|Umami wallet supports custom derivation path to select new addresses. You may also select the default derivation path and use the default key.|j};
-  pub import_account_enter_phrase = {j|Please fill in the recovery phrase in sequence.|j};
+  pub secret_create_record_recovery = {j|Please record the following 24 words in sequence in order to restore it in the future. Ensure to back it up, keeping it securely offline.|j};
+  pub secret_create_record_verify = {j|We will now verify that you’ve properly recorded your recovery phrase. To demonstrate this, please type in the word that corresponds to each sequence number.|j};
+  pub secret_create_password_not_recorded = {j|Please note that this password is not recorded anywhere and only applies to this machine.|j};
+  pub secret_select_derivation_path = {j|Umami wallet supports custom derivation path to select new addresses. You may also select the default derivation path and use the default key.|j};
+  pub import_secret_enter_phrase = {j|Please fill in the recovery phrase in sequence.|j};
   pub confirm_operation = "Please validate the details of the transaction and enter password to confirm";
   pub batch = "Review, edit or delete the transactions of the batch";
   pub operation = "The operation will be processed and confirmed, you can see its progress in the Operations section.";
@@ -424,6 +427,7 @@ let taquito = {
   pub not_an_account = "Not a tz address";
   pub not_a_contract = "Not a contract address";
   pub no_prefix_matched = "Unknown address prefix";
+  pub api_error = n => p("API error: received %d", n);
   pub invalid_checksum = "Invalid checksum";
   pub invalid_length = "Invalid length";
   pub valid = "Valid";
@@ -433,6 +437,7 @@ let taquito = {
 let wallet = {
   pub _this = this;
   pub key_not_found = "Key not found";
+  pub key_bad_format = s => p("Can't readkey, bad format: %s", s);
   pub invalid_path_size =
     p("Path %s is not valid: it must be of at least of two indexes");
   pub invalid_tezos_prefix_path = (prefix, index) =>
@@ -455,6 +460,17 @@ let wallet = {
 
 let errors = {
   pub _this = this;
+  pub illformed_token_contract = "Illformed Token Contract";
+  pub cannot_read_token = s => p("Cannot read token amount: %s", s);
+  pub invalid_operation_type = "Invalid operation type!";
+  pub operation_cannot_be_run_offchain = s =>
+    p("Operation '%s' cannot be run offchain.", s);
+  pub operation_not_simulable = s => p("Operation '%s' is not simulable.", s);
+  pub operation_injection_not_implemented = s =>
+    p("Operation '%s' injection is not implemented", s);
+  pub operation_not_implemented = s =>
+    p("Operation '%s' offchain call is not implemented", s);
+  pub unhandled_error = e => p("Unhandled error %s", e);
   pub no_secret_found = "No secrets found";
   pub secret_not_found = i => p("Secret at index %d not found!", i);
   pub cannot_update_secret = i => p("Can't update secret at index %d!", i);
@@ -462,8 +478,10 @@ let errors = {
     p("Recovery phrase at index %d not found!", i);
   pub beacon_transaction_not_supported = "Beacon transaction not supported";
   pub beacon_request_network_missmatch = "Beacon request network not supported";
+  pub beacon_client_not_created = "Beacon client not created";
   pub video_stream_access_denied = "Unable to access video stream\n(please make sure you have a webcam enabled)";
   pub incorrect_number_of_words = "Mnemonic must have 12, 15 or 24 words.";
+  pub pairing_request_parsing = "Illformed pairing request";
   pub unknown_bip39_word = (w, i) =>
     p(
       "Word %d ('%s') is not a valid BIP39 word, please refer to the standard.",
@@ -559,7 +577,6 @@ let t = {
   pub token_contract = p("%s Token Contract");
   pub token_created = "Token Created";
   pub operation_hash = "Operation Hash";
-  pub account_imported = "Account Imported";
   pub operation_summary_fee = p("+ Fee %a", () => this#tez_amount);
   pub navbar_accounts = "ACCOUNTS";
   pub navbar_operations = "OPERATIONS";
@@ -589,5 +606,6 @@ let t = {
   pub custom_network_created = "Network created";
   pub custom_network_updated = "Network updated";
   pub custom_network_deleted = "Network deleted";
+  pub unregistered_token = "unregistered token";
   pub hw = "H/W"
 };

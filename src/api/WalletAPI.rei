@@ -39,23 +39,23 @@ module Secret: {
 module Aliases: {
   type t = array((string, PublicKeyHash.t));
 
-  let get: (~config: ConfigFile.t) => Future.t(Result.t(t, ErrorHandler.t));
+  let get: (~config: ConfigFile.t) => Future.t(Result.t(t, Errors.t));
 
   let getAliasForAddress:
     (~config: ConfigFile.t, ~address: PublicKeyHash.t) =>
-    Future.t(Result.t(option(string), ErrorHandler.t));
+    Future.t(Result.t(option(string), Errors.t));
 
   let getAddressForAlias:
     (~config: ConfigFile.t, ~alias: string) =>
-    Future.t(Result.t(option(PublicKeyHash.t), ErrorHandler.t));
+    Future.t(Result.t(option(PublicKeyHash.t), Errors.t));
 
   let add:
     (~config: ConfigFile.t, ~alias: string, ~address: PublicKeyHash.t) =>
-    Future.t(Result.t(unit, ErrorHandler.t));
+    Future.t(Result.t(unit, Errors.t));
 
   let delete:
     (~config: ConfigFile.t, ~alias: string) =>
-    Future.t(Result.t(unit, ErrorHandler.t));
+    Future.t(Result.t(unit, Errors.t));
 
   type renameParams = {
     old_name: string,
@@ -64,7 +64,7 @@ module Aliases: {
 
   let rename:
     (~config: ConfigFile.t, renameParams) =>
-    Future.t(Result.t(unit, ErrorHandler.t));
+    Future.t(Result.t(unit, Errors.t));
 };
 
 /** Accounts management */
@@ -74,8 +74,7 @@ module Accounts: {
 
   type name = string;
 
-  let secrets:
-    (~config: ConfigFile.t) => result(t, TezosClient.ErrorHandler.t);
+  let secrets: (~config: ConfigFile.t) => result(t, TezosClient.Errors.t);
 
   let isLedger: (PublicKeyHash.t, array(Secret.Repr.derived)) => bool;
 
@@ -85,15 +84,14 @@ module Accounts: {
 
   let get:
     (~config: ConfigFile.t) =>
-    Future.t(Result.t(array((name, PublicKeyHash.t)), ErrorHandler.t));
+    Future.t(Result.t(array((name, PublicKeyHash.t)), Errors.t));
 
   let updateSecretAt:
-    (~config: ConfigFile.t, Secret.Repr.t, int) =>
-    Future.t(Result.t(unit, ErrorHandler.t));
+    (~config: ConfigFile.t, Secret.Repr.t, int) => Result.t(unit, Errors.t);
 
   let recoveryPhraseAt:
     (~config: ConfigFile.t, int, ~password: string) =>
-    Future.t(Result.t(string, ErrorHandler.t));
+    Future.t(Result.t(string, Errors.t));
 
   let import:
     (
@@ -102,33 +100,35 @@ module Accounts: {
       ~secretKey: string,
       ~password: string
     ) =>
-    Future.t(Result.t(PublicKeyHash.t, ErrorHandler.t));
+    Future.t(Result.t(PublicKeyHash.t, Errors.t));
 
   let derive:
     (~config: ConfigFile.t, ~index: int, ~alias: name, ~password: string) =>
-    Future.t(Result.t(PublicKeyHash.t, ErrorHandler.t));
+    Future.t(Result.t(PublicKeyHash.t, Errors.t));
 
   /* Delete the given account */
   let delete:
-    (~config: ConfigFile.t, string) =>
-    Future.t(Result.t(unit, ErrorHandler.t));
+    (~config: ConfigFile.t, string) => Future.t(Result.t(unit, Errors.t));
 
   let deleteSecretAt:
-    (~config: ConfigFile.t, int) =>
-    Future.t(Result.t(array(unit), ErrorHandler.t));
-
-  let used:
-    (ConfigFile.t, PublicKeyHash.t) =>
-    Future.t(Result.t(bool, ErrorHandler.t));
+    (~config: ConfigFile.t, int) => Future.t(Result.t(unit, Errors.t));
 
   module Scan: {
-    type error =
-      | APIError(string)
-      | TaquitoError(ReTaquitoError.t);
+    type Errors.t +=
+      | APIError(string);
+
+    type kind =
+      | Regular
+      | Legacy;
+
+    type account('a) = {
+      kind,
+      publicKeyHash: PublicKeyHash.t,
+      encryptedSecretKey: 'a,
+    };
 
     let used:
-      (ConfigFile.t, PublicKeyHash.t) =>
-      Future.t(Result.t(bool, ErrorHandler.t));
+      (ConfigFile.t, PublicKeyHash.t) => Future.t(Result.t(bool, Errors.t));
 
     let runStreamLedger:
       (
@@ -138,18 +138,18 @@ module Accounts: {
         DerivationPath.Pattern.t,
         Wallet.Ledger.scheme
       ) =>
-      Future.t(Belt.Result.t(unit, ErrorHandler.t));
+      Future.t(Belt.Result.t(unit, Errors.t));
 
     let runStreamSeed:
       (
         ~config: ConfigFile.t,
         ~startIndex: int=?,
-        ~onFoundKey: (int, PublicKeyHash.t) => unit,
+        ~onFoundKey: (int, account(string)) => unit,
         ~password: string,
         Secret.Repr.derived,
         DerivationPath.Pattern.t
       ) =>
-      Future.t(Belt.Result.t(unit, ErrorHandler.t));
+      Future.t(Belt.Result.t(unit, Errors.t));
   };
 
   let restore:
@@ -162,25 +162,26 @@ module Accounts: {
       ~password: string,
       unit
     ) =>
-    Future.t(
-      Result.t(
-        (array(PublicKeyHash.t), option(PublicKeyHash.t)),
-        ErrorHandler.t,
-      ),
-    );
+    Future.t(Result.t(unit, Errors.t));
 
-  let importRemainingMnemonicKeys:
-    (~config: ConfigFile.t, ~password: string, ~index: int, unit) =>
+  let importMnemonicKeys:
+    (
+      ~config: ConfigFile.t,
+      ~accounts: list(Scan.account(string)),
+      ~password: string,
+      ~index: int,
+      unit
+    ) =>
     Future.t(
       Result.t(
         (array(PublicKeyHash.t), option(PublicKeyHash.t)),
-        ErrorHandler.t,
+        Errors.t,
       ),
     );
 
   let legacyImport:
     (~config: ConfigUtils.t, string, string, ~password: string) =>
-    Future.t(Belt.Result.t(PublicKeyHash.t, ErrorHandler.t));
+    Future.t(Belt.Result.t(PublicKeyHash.t, Errors.t));
 
   let importLedger:
     (
@@ -193,7 +194,7 @@ module Accounts: {
       ~ledgerMasterKey: PublicKeyHash.t,
       unit
     ) =>
-    Future.t(Result.t(array(PublicKeyHash.t), ErrorHandler.t));
+    Future.t(Result.t(array(PublicKeyHash.t), Errors.t));
 
   let deriveLedgerKeys:
     (
@@ -204,7 +205,7 @@ module Accounts: {
       ~ledgerMasterKey: PublicKeyHash.t,
       unit
     ) =>
-    Future.t(Result.t(array(PublicKeyHash.t), ErrorHandler.t));
+    Future.t(Result.t(array(PublicKeyHash.t), Errors.t));
 
   let deriveLedger:
     (
@@ -215,9 +216,9 @@ module Accounts: {
       ~ledgerMasterKey: PublicKeyHash.t,
       unit
     ) =>
-    Future.t(Result.t(PublicKeyHash.t, ErrorHandler.t));
+    Future.t(Result.t(PublicKeyHash.t, Errors.t));
 
   let getPublicKey:
     (~config: ConfigFile.t, ~account: Account.t) =>
-    Future.t(Result.t(string, Wallet.error));
+    Future.t(Result.t(string, Errors.t));
 };

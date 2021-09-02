@@ -15,6 +15,7 @@ update:
 .PHONY: clean
 clean:
 	@rm -rf node_modules
+	@rm -rf snap
 
 .PHONY: run
 run:
@@ -26,4 +27,4 @@ update-and-run: update
 
 .PHONY: dist
 dist: update
-	yarn electron:build
+	bash scripts/build.sh

@@ -24,12 +24,20 @@
 /*****************************************************************************/
 
 open System.Path.Ops;
+open Let;
 
-type error =
-  | Generic(string)
-  | File(System.File.Error.t)
+type Errors.t +=
   | KeyNotFound
-  | LedgerParsingError(string);
+  | KeyBadFormat(string);
+
+let () =
+  Errors.registerHandler(
+    "Wallet",
+    fun
+    | KeyNotFound => I18n.wallet#key_not_found->Some
+    | KeyBadFormat(s) => I18n.wallet#key_bad_format(s)->Some
+    | _ => None,
+  );
 
 module type AliasType = {
   type t;
@@ -46,12 +54,12 @@ module type AliasesMakerType = {
   type t = array(alias);
   let parse: string => t;
   let stringify: t => string;
-  let read: System.Path.t => Future.t(Result.t(t, error));
-  let write: (System.Path.t, t) => Future.t(Result.t(unit, error));
+  let read: System.Path.t => Future.t(Result.t(t, Errors.t));
+  let write: (System.Path.t, t) => Future.t(Result.t(unit, Errors.t));
   let protect:
-    (System.Path.t, unit => Future.t(Result.t(unit, error))) =>
-    Future.t(Result.t(unit, error));
-  let find: (t, alias => bool) => Result.t(alias, error);
+    (System.Path.t, unit => Future.t(Result.t(unit, Errors.t))) =>
+    Future.t(Result.t(unit, Errors.t));
+  let find: (t, alias => bool) => Result.t(alias, Errors.t);
   let filter: (t, alias => bool) => t;
   let remove: (t, key) => t;
   let addOrReplace: (t, key, value) => t;
@@ -68,19 +76,14 @@ module AliasesMaker =
 
   type t = array(alias);
 
-  let fileError = f => f->Future.mapError(e => File(e));
-
   [@bs.val] [@bs.scope "JSON"] external parse: string => t = "parse";
   [@bs.val] [@bs.scope "JSON"] external stringify: t => string = "stringify";
 
   let read = dirpath =>
-    System.File.read(dirpath / Alias.filename)
-    ->fileError
-    ->Future.mapOk(parse);
+    System.File.read(dirpath / Alias.filename)->Future.mapOk(parse);
 
   let write = (dirpath, aliases) =>
-    System.File.write(~name=dirpath / Alias.filename, stringify(aliases))
-    ->fileError;
+    System.File.write(~name=dirpath / Alias.filename, stringify(aliases));
 
   let mkTmpCopy = dirpath => {
     let tmpName = !(System.Path.toString(Alias.filename) ++ ".tmp");
@@ -88,8 +91,7 @@ module AliasesMaker =
       ~name=dirpath / Alias.filename,
       ~dest=dirpath / tmpName,
       ~mode=System.File.CopyMode.copy_ficlone,
-    )
-    ->fileError;
+    );
   };
 
   let restoreTmpCopy = dirpath => {
@@ -98,28 +100,26 @@ module AliasesMaker =
       ~name=dirpath / tmpName,
       ~dest=dirpath / Alias.filename,
       ~mode=System.File.CopyMode.copy_ficlone,
-    )
-    ->fileError;
+    );
   };
 
   let rmTmpCopy = dirpath => {
     let tmpName = !(System.Path.toString(Alias.filename) ++ ".tmp");
-    System.File.rm(~name=dirpath / tmpName)->fileError;
+    System.File.rm(~name=dirpath / tmpName);
   };
 
   let protect = (dirpath, f) => {
-    dirpath
-    ->mkTmpCopy
-    ->Future.flatMapOk(_ => f())
-    ->Future.flatMap(
-        fun
-        | Ok () => dirpath->rmTmpCopy
-        | Error(e) => dirpath->restoreTmpCopy->Future.map(_ => Error(e)),
-      );
+    let%FRes _ = dirpath->mkTmpCopy;
+    let%Ft r = f();
+
+    switch (r) {
+    | Ok () => dirpath->rmTmpCopy
+    | Error(e) => dirpath->restoreTmpCopy->Future.map(_ => Error(e))
+    };
   };
 
   let find = (aliases: t, f) =>
-    aliases->Js.Array2.find(f)->ResultEx.fromOption(Error(KeyNotFound));
+    aliases->Js.Array2.find(f)->ResultEx.fromOption(KeyNotFound);
 
   let filter = (aliases, f) => aliases->Js.Array2.filter(f);
 
@@ -174,7 +174,7 @@ module PkhAliases =
     let filename = !"public_key_hashs";
   });
 
-let aliasFromPkh = (~dirpath, ~pkh, ()) => {
+let aliasFromPkh = (~dirpath, ~pkh) => {
   dirpath
   ->PkhAliases.read
   ->Future.flatMapOk(pkhaliases =>
@@ -185,107 +185,82 @@ let aliasFromPkh = (~dirpath, ~pkh, ()) => {
     );
 };
 
-let pkFromAlias = (~dirpath, ~alias, ()) => {
-  dirpath
-  ->PkAliases.read
-  ->Future.flatMapOk(pkaliases =>
-      pkaliases
-      ->PkAliases.find(a => a.name == alias)
-      ->Result.map(a => a.value.PkAlias.key)
-      ->Future.value
-    );
+let pkFromAlias = (~dirpath, ~alias) => {
+  let%FlatRes pkaliases = dirpath->PkAliases.read;
+  let%ResMap a = pkaliases->PkAliases.find(a => a.name == alias);
+  a.value.PkAlias.key;
 };
 
-let updatePkhAlias = (~dirpath, ~update, ()) => {
-  dirpath->PkhAliases.protect(_ =>
-    PkhAliases.read(dirpath)
-    ->Future.mapOk(pkhAliases => update(pkhAliases))
-    ->Future.flatMapOk(pkhAliases => dirpath->PkhAliases.write(pkhAliases))
+let updatePkhAlias = (~dirpath, ~update) =>
+  dirpath->PkhAliases.protect(_ => {
+    let%FRes pkhAliases = PkhAliases.read(dirpath);
+    let pkhAliases = update(pkhAliases);
+    dirpath->PkhAliases.write(pkhAliases);
+  });
+
+let addOrReplacePkhAlias = (~dirpath, ~alias, ~pkh) => {
+  updatePkhAlias(~dirpath, ~update=pkhs =>
+    PkhAliases.addOrReplace(pkhs, alias, pkh)
   );
 };
 
-let addOrReplacePkhAlias = (~dirpath, ~alias, ~pkh, ()) => {
-  updatePkhAlias(
-    ~dirpath,
-    ~update=pkhs => PkhAliases.addOrReplace(pkhs, alias, pkh),
-    (),
+let removePkhAlias = (~dirpath, ~alias) => {
+  updatePkhAlias(~dirpath, ~update=pkhs => PkhAliases.remove(pkhs, alias));
+};
+
+let renamePkhAlias = (~dirpath, ~oldName, ~newName) => {
+  updatePkhAlias(~dirpath, ~update=pkhs =>
+    PkhAliases.rename(pkhs, ~oldName, ~newName)
   );
 };
 
-let removePkhAlias = (~dirpath, ~alias, ()) => {
-  updatePkhAlias(
-    ~dirpath,
-    ~update=pkhs => PkhAliases.remove(pkhs, alias),
-    (),
-  );
-};
-
-let renamePkhAlias = (~dirpath, ~oldName, ~newName, ()) => {
-  updatePkhAlias(
-    ~dirpath,
-    ~update=pkhs => PkhAliases.rename(pkhs, ~oldName, ~newName),
-    (),
-  );
-};
-
-let protectAliases = (~dirpath, ~f, ()) => {
+let protectAliases = (~dirpath, ~f) => {
   dirpath->PkAliases.protect(_ =>
     dirpath->PkhAliases.protect(_ => dirpath->SecretAliases.protect(f))
   );
 };
 
-let updateAlias = (~dirpath, ~update, ()) => {
+let updateAlias = (~dirpath, ~update) => {
   let update = () => {
-    let aliases =
-      /* ensures the three are available */
-      PkAliases.read(dirpath)
-      ->Future.flatMapOk(pkAliases =>
-          PkhAliases.read(dirpath)
-          ->Future.flatMapOk(pkhAliases =>
-              SecretAliases.read(dirpath)
-              ->Future.mapOk(skAliases => (pkAliases, pkhAliases, skAliases))
-            )
-        );
-    let updatedAliases = aliases->Future.mapOk(update);
-    updatedAliases->Future.flatMapOk(((pks, pkhs, sks)) =>
-      PkAliases.write(dirpath, pks)
-      ->Future.flatMapOk(() =>
-          PkhAliases.write(dirpath, pkhs)
-          ->Future.flatMapOk(() => SecretAliases.write(dirpath, sks))
-        )
-    );
+    let%FRes pkAliases = PkAliases.read(dirpath);
+    let%FRes pkhAliases = PkhAliases.read(dirpath);
+    let%FRes skAliases = SecretAliases.read(dirpath);
+    let (pks, pkhs, sks) = update(pkAliases, pkhAliases, skAliases);
+    let%FRes () = PkAliases.write(dirpath, pks);
+    let%FRes () = PkhAliases.write(dirpath, pkhs);
+    SecretAliases.write(dirpath, sks);
   };
-  protectAliases(~dirpath, ~f=update, ());
+  protectAliases(~dirpath, ~f=update);
 };
 
-let addOrReplaceAlias = (~dirpath, ~alias, ~pk, ~pkh, ~sk, ()) => {
-  let update = ((pks, pkhs, sks)) => (
+let addOrReplaceAlias = (~dirpath, ~alias, ~pk, ~pkh, ~sk) => {
+  let update = (pks, pkhs, sks) => (
     PkAliases.addOrReplace(pks, alias, pk),
     PkhAliases.addOrReplace(pkhs, alias, pkh),
     SecretAliases.addOrReplace(sks, alias, sk),
   );
 
-  updateAlias(~dirpath, ~update, ());
+  updateAlias(~dirpath, ~update);
 };
 
-let removeAlias = (~dirpath, ~alias, ()) => {
-  let update = ((pks, pkhs, sks)) => (
+let removeAlias = (~dirpath, ~alias) => {
+  let update = (pks, pkhs, sks) => (
     PkAliases.remove(pks, alias),
     PkhAliases.remove(pkhs, alias),
     SecretAliases.remove(sks, alias),
   );
 
-  updateAlias(~dirpath, ~update, ());
+  updateAlias(~dirpath, ~update);
 };
 
-let renameAlias = (~dirpath, ~oldName, ~newName, ()) => {
-  let update = ((pks, pkhs, sks)) => (
+let renameAlias = (~dirpath, ~oldName, ~newName) => {
+  let update = (pks, pkhs, sks) => (
     PkAliases.rename(pks, ~oldName, ~newName),
     PkhAliases.rename(pkhs, ~oldName, ~newName),
     SecretAliases.rename(sks, ~oldName, ~newName),
   );
 
-  updateAlias(~dirpath, ~update, ());
+  updateAlias(~dirpath, ~update);
 };
 
 type kind =
@@ -293,30 +268,22 @@ type kind =
   | Unencrypted
   | Ledger;
 
-let readSecretFromPkh = (address, dirpath) =>
-  aliasFromPkh(~dirpath, ~pkh=address, ())
-  ->Future.flatMapOk(alias => {
-      dirpath
-      ->SecretAliases.read
-      ->Future.flatMapOk(secretAliases =>
-          secretAliases
-          ->Js.Array2.find(a => a.SecretAliases.name == alias)
-          ->FutureEx.fromOption(~error=KeyNotFound)
-          ->Future.mapOk(a => a.SecretAliases.value)
-        )
-    })
-  ->Future.flatMapOk(key =>
-      (
-        key->Js.String2.startsWith("encrypted:")
-          ? Ok((Encrypted, key))
-          : key->Js.String2.startsWith("unencrypted:")
-              ? Ok((Unencrypted, key))
-              : key->Js.String2.startsWith("ledger://")
-                  ? Ok((Ledger, key))
-                  : Error(Generic("Can't readkey, bad format: " ++ key))
-      )
-      ->Future.value
-    );
+let readSecretFromPkh = (address, dirpath) => {
+  let%FRes alias = aliasFromPkh(~dirpath, ~pkh=address);
+  let%FRes secretAliases = dirpath->SecretAliases.read;
+
+  let%FlatRes {value: k} =
+    secretAliases
+    ->Js.Array2.find(a => a.SecretAliases.name == alias)
+    ->FutureEx.fromOption(~error=KeyNotFound);
+
+  switch (k) {
+  | k when k->Js.String2.startsWith("encrypted:") => Ok((Encrypted, k))
+  | k when k->Js.String2.startsWith("unencrypted:") => Ok((Unencrypted, k))
+  | k when k->Js.String2.startsWith("ledger://") => Ok((Ledger, k))
+  | k => Error(KeyBadFormat(k))
+  };
+};
 
 let mnemonicPkValue = pk => PkAlias.{locator: "unencrypted:" ++ pk, key: pk};
 
@@ -324,13 +291,28 @@ let ledgerPkValue = (secretPath, pk) =>
   PkAlias.{locator: secretPath, key: pk};
 
 module Ledger = {
-  type error =
+  type Errors.t +=
     | InvalidPathSize(array(int))
     | InvalidIndex(int, string)
     | InvalidScheme(string)
     | InvalidEncoding(string)
     | InvalidLedger(string)
     | DerivationPathError(DerivationPath.error);
+
+  let () =
+    Errors.registerHandler(
+      "Ledger",
+      fun
+      | InvalidPathSize(p) =>
+        I18n.wallet#invalid_path_size(p->Js.String.make)->Some
+      | InvalidIndex(index, value) =>
+        I18n.wallet#invalid_index(index, value)->Some
+      | InvalidScheme(s) => I18n.wallet#invalid_scheme(s)->Some
+      | InvalidEncoding(e) => I18n.wallet#invalid_encoding(e)->Some
+      | InvalidLedger(p) => I18n.wallet#invalid_ledger(p)->Some
+      | DerivationPathError(_) => I18n.form_input_error#dp_not_a_dp->Some
+      | _ => None,
+    );
 
   /** Format of a ledger encoded secret key: `ledger://prefix/scheme/path`, where:
     - prefix is the public key derivated from the path `44'/1729'` and scheme
@@ -413,7 +395,7 @@ module Ledger = {
         index
         ->Js.String.substring(~from=0, ~to_=index->Js.String.length - 1)
         ->int_of_string_opt
-        ->ResultEx.fromOption(Error(InvalidIndex(i, index)))
+        ->ResultEx.fromOption(InvalidIndex(i, index))
       | Some(_)
       | None => Error(InvalidIndex(i, index))
       };
@@ -424,34 +406,29 @@ module Ledger = {
         (uri: secretKeyEncoding, ~ledgerBasePkh: PublicKeyHash.t) => {
       let elems =
         uri->Js.String2.substringToEnd(~from=9)->Js.String2.split("/");
-      elems->Js.Array2.length < 2
-        ? Error(InvalidEncoding(uri))
-        : {
-          let prefix =
-            elems[0]
-            // The None case is actually impossible, hence the meaningless error
-            ->ResultEx.fromOption(Error(InvalidEncoding(uri)))
-            ->Result.map(prefix => prefix->decodePrefix(ledgerBasePkh));
-          let scheme =
-            elems[1]
-            // The None case is actually impossible, hence the meaningless error
-            ->ResultEx.fromOption(Error(InvalidEncoding(uri)))
-            ->Result.flatMap(schemeFromString);
-          let indexes = elems->Js.Array2.sliceFrom(2)->decodeIndexes;
-          prefix->Result.flatMap(_ =>
-            scheme->Result.flatMap(scheme => {
-              indexes
-              ->ResultEx.collectArray
-              ->Result.flatMap(
-                  fun
-                  | [|i1, i2|] =>
-                    DerivationPath.buildTezosBip44((i1, i2))->Ok
-                  | p => Error(InvalidPathSize(p)),
-                )
-              ->Result.map(indexes => {path: indexes, scheme})
-            })
-          );
+
+      let%Res () =
+        elems->Js.Array2.length < 2 ? Error(InvalidEncoding(uri)) : Ok();
+
+      let%Res prefix =
+        // The None case is actually impossible, hence the meaningless error
+        elems[0]->ResultEx.fromOption(InvalidEncoding(uri));
+      let%Res _prefix = prefix->decodePrefix(ledgerBasePkh);
+
+      let%Res scheme =
+        // The None case is actually impossible, hence the meaningless error
+        elems[1]->ResultEx.fromOption(InvalidEncoding(uri));
+      let%Res scheme = scheme->schemeFromString;
+
+      let indexes = elems->Js.Array2.sliceFrom(2)->decodeIndexes;
+      let%Res indexes = indexes->ResultEx.collectArray;
+
+      let%ResMap indexes =
+        switch (indexes) {
+        | [|i1, i2|] => DerivationPath.buildTezosBip44((i1, i2))->Ok
+        | p => Error(InvalidPathSize(p))
         };
+      {path: indexes, scheme};
     };
   };
 
@@ -467,18 +444,4 @@ module Ledger = {
       );
     };
   };
-};
-
-let convertLedgerError = err => {
-  let msg =
-    switch (err) {
-    | Ledger.InvalidPathSize(p) =>
-      I18n.wallet#invalid_path_size(p->Js.String.make)
-    | InvalidIndex(index, value) => I18n.wallet#invalid_index(index, value)
-    | InvalidScheme(s) => I18n.wallet#invalid_scheme(s)
-    | InvalidEncoding(e) => I18n.wallet#invalid_encoding(e)
-    | InvalidLedger(p) => I18n.wallet#invalid_ledger(p)
-    | DerivationPathError(_) => I18n.form_input_error#dp_not_a_dp
-    };
-  LedgerParsingError(msg);
 };

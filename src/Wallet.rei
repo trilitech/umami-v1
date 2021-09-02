@@ -23,11 +23,8 @@
 /*                                                                           */
 /*****************************************************************************/
 
-type error =
-  | Generic(string)
-  | File(System.File.Error.t)
-  | KeyNotFound
-  | LedgerParsingError(string);
+type Errors.t +=
+  | KeyNotFound;
 
 /** Value and file associated to a kind of alias. */
 module type AliasType = {
@@ -46,12 +43,12 @@ module type AliasesMakerType = {
   type t = array(alias);
   let parse: string => t;
   let stringify: t => string;
-  let read: System.Path.t => Future.t(Result.t(t, error));
-  let write: (System.Path.t, t) => Future.t(Result.t(unit, error));
+  let read: System.Path.t => Future.t(Result.t(t, Errors.t));
+  let write: (System.Path.t, t) => Future.t(Result.t(unit, Errors.t));
   let protect:
-    (System.Path.t, unit => Future.t(Result.t(unit, error))) =>
-    Future.t(Result.t(unit, error));
-  let find: (t, alias => bool) => Result.t(alias, error);
+    (System.Path.t, unit => Future.t(Result.t(unit, Errors.t))) =>
+    Future.t(Result.t(unit, Errors.t));
+  let find: (t, alias => bool) => Result.t(alias, Errors.t);
   let filter: (t, alias => bool) => t;
   let remove: (t, key) => t;
   let addOrReplace: (t, key, value) => t;
@@ -78,18 +75,17 @@ module PkhAliases:
 
 /** Add or replace a public key hash alias. */
 let addOrReplacePkhAlias:
-  (~dirpath: System.Path.t, ~alias: string, ~pkh: PkhAlias.t, unit) =>
-  Future.t(Result.t(unit, error));
+  (~dirpath: System.Path.t, ~alias: string, ~pkh: PkhAlias.t) =>
+  Let.future(unit);
 
 /** Remove an alias with its associated pkh. */
 let removePkhAlias:
-  (~dirpath: System.Path.t, ~alias: string, unit) =>
-  Future.t(Result.t(unit, error));
+  (~dirpath: System.Path.t, ~alias: string) => Let.future(unit);
 
 /** Rename an alias with its associated public, private and pkh. */
 let renamePkhAlias:
-  (~dirpath: System.Path.t, ~oldName: string, ~newName: string, unit) =>
-  Future.t(Result.t(unit, error));
+  (~dirpath: System.Path.t, ~oldName: string, ~newName: string) =>
+  Let.future(unit);
 
 /** Add or replace an alias with its associated public, private and pkh. */
 let addOrReplaceAlias:
@@ -98,20 +94,18 @@ let addOrReplaceAlias:
     ~alias: string,
     ~pk: PkAlias.t,
     ~pkh: PkhAlias.t,
-    ~sk: SecretAlias.t,
-    unit
+    ~sk: SecretAlias.t
   ) =>
-  Future.t(Result.t(unit, error));
+  Future.t(Result.t(unit, Errors.t));
 
 /** Remove an alias from the filesystem. */
 let removeAlias:
-  (~dirpath: System.Path.t, ~alias: string, unit) =>
-  Future.t(Result.t(unit, error));
+  (~dirpath: System.Path.t, ~alias: string) => Let.future(unit);
 
 /** Rename an alias with its associated public, private and pkh. */
 let renameAlias:
-  (~dirpath: System.Path.t, ~oldName: string, ~newName: string, unit) =>
-  Future.t(Result.t(unit, error));
+  (~dirpath: System.Path.t, ~oldName: string, ~newName: string) =>
+  Let.future(unit);
 
 type kind =
   | Encrypted
@@ -121,24 +115,22 @@ type kind =
 /** Returns the secret key associated to a public key hash. */
 let readSecretFromPkh:
   (PkhAlias.t, System.Path.t) =>
-  Future.t(Result.t((kind, SecretAlias.t), error));
+  Future.t(Result.t((kind, SecretAlias.t), Errors.t));
 
 /** Returns the alias associated to a public key hash */
 let aliasFromPkh:
-  (~dirpath: System.Path.t, ~pkh: PkhAlias.t, unit) =>
-  Future.t(Result.t(string, error));
+  (~dirpath: System.Path.t, ~pkh: PkhAlias.t) => Let.future(string);
 
 /** Returns the public key associated to an alias */
 let pkFromAlias:
-  (~dirpath: System.Path.t, ~alias: string, unit) =>
-  Future.t(Result.t(string, error));
+  (~dirpath: System.Path.t, ~alias: string) => Let.future(string);
 
 let mnemonicPkValue: string => PkAlias.t;
 
 let ledgerPkValue: (string, string) => PkAlias.t;
 
 module Ledger: {
-  type error =
+  type Errors.t +=
     | InvalidPathSize(array(int))
     | InvalidIndex(int, string)
     | InvalidScheme(string)
@@ -180,16 +172,14 @@ module Ledger: {
   let masterKeyScheme: scheme;
 
   let schemeToString: scheme => string;
-  let schemeFromString: string => Result.t(scheme, error);
+  let schemeFromString: string => Result.t(scheme, Errors.t);
 
   module Decode: {
     let fromSecretKey:
-      (SecretAlias.t, ~ledgerBasePkh: PublicKeyHash.t) => result(t, error);
+      (SecretAlias.t, ~ledgerBasePkh: PublicKeyHash.t) => result(t, Errors.t);
   };
 
   module Encode: {
     let toSecretKey: (t, ~ledgerBasePkh: PublicKeyHash.t) => SecretAlias.t;
   };
 };
-
-let convertLedgerError: Ledger.error => error;

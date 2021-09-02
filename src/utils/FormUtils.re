@@ -173,7 +173,7 @@ let getFormStateError = (formState: ReForm.formState) =>
 let checkAddress = (v): ReSchema.fieldState =>
   switch (v->PublicKeyHash.build) {
   | Ok(_) => Valid
-  | Error(e) => Error(PublicKeyHash.handleValidationError(e))
+  | Error(e) => Error(Errors.toString(e))
   };
 
 let i18n = {

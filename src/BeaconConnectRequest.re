@@ -25,29 +25,12 @@
 
 open ReactNative;
 
-let client = BeaconApiRequest.client;
-
 let styles =
   Style.(
     StyleSheet.create({
       "container": style(~marginVertical=10.->dp, ~maxHeight=400.->dp, ()),
     })
   );
-
-module IPC = {
-  type t;
-  type event;
-  [@bs.module "electron"] external renderer: t = "ipcRenderer";
-  [@bs.send] external on: (t, string, (event, string) => unit) => unit = "on";
-  [@bs.send] external send: (t, string) => unit = "send";
-};
-
-let dataFromURL = url => {
-  URL.make(url)
-  |> URL.getSearchParams
-  |> URL.SearchParams.get("data")
-  |> Js.Nullable.toOption;
-};
 
 let checkOperationRequestTargetNetwork =
     (settings: ConfigFile.t, chain: ReBeacon.network) => {
@@ -115,22 +98,41 @@ let make = () => {
   let (visibleModalError, openError, closeError) =
     ModalAction.useModalActionState();
 
-  let updatePeers = StoreContext.Beacon.Peers.useResetAll();
-
   let addToast = LogsContext.useToast();
   let (error, setError) = React.useState(_ => None);
   let (errorMessage, setErrorMessage) = React.useState(_ => None);
-  let setErrorRef = React.useRef(setError);
 
-  setErrorRef.current = setError;
+  let (client, _) = StoreContext.Beacon.useClient();
+  let (nextRequest, doneResponding) =
+    StoreContext.Beacon.useNextRequestState();
+
+  let closePermission = () => {
+    closePermission();
+    doneResponding();
+  };
+  let closeOperation = () => {
+    closeOperation();
+    doneResponding();
+  };
+  let closeDelegation = () => {
+    closeDelegation();
+    doneResponding();
+  };
+  let closeSignPayload = () => {
+    closeSignPayload();
+    doneResponding();
+  };
+  let closeError = () => {
+    closeError();
+    doneResponding();
+  };
 
   React.useEffect1(
     () => {
-      Js.log(error);
       switch (error) {
       | Some(error) =>
         setErrorMessage(_ => Some(error));
-        addToast(Logs.error(error));
+        addToast(Logs.log(~kind=Logs.Error, ~origin=Beacon, error));
         openError();
       | None => closeError()
       };
@@ -139,97 +141,75 @@ let make = () => {
     [|error|],
   );
 
-  React.useEffect0(() => {
-    {
-      client
-      ->ReBeacon.WalletClient.init
-      ->Future.flatMapOk(_ =>
-          client->ReBeacon.WalletClient.connect(message => {
-            let request = message->ReBeacon.Message.Request.classify;
+  React.useEffect1(
+    () => {
+      switch (nextRequest()) {
+      | Some(request) =>
+        let targetSettedNetwork =
+          request
+          ->ReBeacon.Message.Request.getNetwork
+          ->Option.mapWithDefault(true, network =>
+              settingsRef.current->checkOperationRequestTargetNetwork(network)
+            );
 
-            let targetSettedNetwork =
-              request
-              ->ReBeacon.Message.Request.getNetwork
-              ->Option.mapWithDefault(true, network =>
-                  settingsRef.current
-                  ->checkOperationRequestTargetNetwork(network)
-                );
-
-            if (targetSettedNetwork) {
-              switch (request) {
-              | PermissionRequest(request) => openPermission(request)
-              | SignPayloadRequest(request) => openSignPayload(request)
-              | OperationRequest(request) =>
-                if (request->checkOperationRequestHasOnlyTransaction) {
-                  openOperation(request);
-                } else if (request->checkOperationRequestHasOnlyOneDelegation) {
-                  openDelegation(request);
-                } else {
-                  client
-                  ->ReBeacon.WalletClient.respond(
-                      `Error({
-                        type_: `error,
-                        id: request.id,
-                        errorType: `TRANSACTION_INVALID_ERROR,
-                      }),
-                    )
-                  ->Future.tapOk(_ =>
-                      setErrorRef.current(_ =>
-                        Some(
-                          Generic(
-                            I18n.errors#beacon_transaction_not_supported,
-                          )
-                          ->ReBeacon.Error.toString,
-                        )
-                      )
-                    )
-                  ->ignore;
-                }
-              | _ => ()
-              };
+        if (targetSettedNetwork) {
+          switch (request) {
+          | PermissionRequest(request) => openPermission(request)
+          | SignPayloadRequest(request) => openSignPayload(request)
+          | OperationRequest(request) =>
+            if (request->checkOperationRequestHasOnlyTransaction) {
+              openOperation(request);
+            } else if (request->checkOperationRequestHasOnlyOneDelegation) {
+              openDelegation(request);
             } else {
               client
-              ->ReBeacon.WalletClient.respond(
-                  `Error({
-                    type_: `error,
-                    id: request->ReBeacon.Message.Request.getId,
-                    errorType: `NETWORK_NOT_SUPPORTED,
-                  }),
+              ->FutureEx.fromOption(
+                  ~error=
+                    Errors.Generic(I18n.errors#beacon_client_not_created),
                 )
-              ->Future.tapOk(_ =>
-                  setErrorRef.current(_ =>
-                    Some(
-                      Generic(I18n.errors#beacon_request_network_missmatch)
-                      ->ReBeacon.Error.toString,
-                    )
+              ->Future.flatMapOk(client =>
+                  client->ReBeacon.WalletClient.respond(
+                    `Error({
+                      type_: `error,
+                      id: request.id,
+                      errorType: `TRANSACTION_INVALID_ERROR,
+                    }),
                   )
                 )
-              ->ignore;
-            };
-          })
-        )
-      ->Future.tapOk(_ => {
-          IPC.renderer->IPC.on("deeplinkURL", (_, message) => {
-            ReBeacon.Serializer.(
-              make()
-              ->deserialize(message->dataFromURL->Option.getWithDefault(""))
+              ->FutureEx.getOk(_ =>
+                  setError(_ =>
+                    Some(I18n.errors#beacon_transaction_not_supported)
+                  )
+                );
+            }
+          | _ => ()
+          };
+        } else {
+          client
+          ->FutureEx.fromOption(
+              ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
             )
-            ->Future.flatMapOk(peer =>
-                client
-                ->ReBeacon.WalletClient.addPeer(peer)
-                ->Future.tapOk(_ => updatePeers())
+          ->Future.flatMapOk(client =>
+              client->ReBeacon.WalletClient.respond(
+                `Error({
+                  type_: `error,
+                  id: request->ReBeacon.Message.Request.getId,
+                  errorType: `NETWORK_NOT_SUPPORTED,
+                }),
               )
-            ->ignore
-          })
-        })
-      ->Future.tapOk(_ => {
-          IPC.renderer->IPC.send("beacon-ready");
-          Js.log("beacon-ready (renderer)");
-        })
-      ->ignore;
-    };
-    None;
-  });
+            )
+          ->FutureEx.getOk(_ =>
+              setError(_ =>
+                Some(I18n.errors#beacon_request_network_missmatch)
+              )
+            );
+        };
+      | None => ()
+      };
+      None;
+    },
+    [|nextRequest|],
+  );
 
   <>
     <ModalAction visible=visibleModalPermission onRequestClose=closePermission>

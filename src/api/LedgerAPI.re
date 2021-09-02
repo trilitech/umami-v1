@@ -24,28 +24,10 @@
 /*****************************************************************************/
 
 open ReTaquitoSigner;
-
-let convertLedgerError = res =>
-  res->ResultEx.mapError(e => e->Wallet.convertLedgerError);
-
-let convertWalletError = res =>
-  res->ResultEx.mapError(e => ErrorHandler.Wallet(e));
-
-let convertTaquitoError = res =>
-  res->ResultEx.mapError(e => ErrorHandler.Taquito(e));
-
-let mapError = (ft, constr) =>
-  ft->Future.mapError(
-    fun
-    | ReTaquitoError.Generic(s) => constr(s)
-    | e => e,
-  );
+open Let;
 
 let init = (~timeout=?, ()) => {
-  ReLedger.Transport.create(~listenTimeout=?timeout, ())
-  ->ReTaquitoError.fromPromiseParsed
-  ->mapError(s => s->ReTaquitoError.LedgerInit)
-  ->Future.map(convertTaquitoError);
+  ReLedger.Transport.create(~listenTimeout=?timeout, ());
 };
 
 /* This current function is a hack until there is a proper way to know if a
@@ -62,11 +44,11 @@ let isReady = tr => {
   ->ReTaquitoSigner.publicKey
   ->Future.map(
       fun
-      | Error(_) => Error(ReTaquitoError.LedgerNotReady->ErrorHandler.Taquito)
+      | Error(_) => Error(ReTaquitoError.LedgerNotReady)
       | Ok(pk) =>
         // a valid pk is at 54 characters long, and 55 for tz3
         pk->Js.String2.startsWith("edpk") && pk->Js.String.length >= 54
-          ? Ok() : Error(ReTaquitoError.LedgerNotReady->ErrorHandler.Taquito),
+          ? Ok() : Error(ReTaquitoError.LedgerNotReady),
     );
 };
 
@@ -78,11 +60,9 @@ module Signer = {
     ->isReady
     ->Future.mapOk(() => tr->LedgerSigner.create(path, scheme, ~prompt));
 
-  let publicKeyHash = signer =>
-    signer->ReTaquitoSigner.publicKeyHash->Future.map(convertTaquitoError);
+  let publicKeyHash = signer => signer->ReTaquitoSigner.publicKeyHash;
 
-  let publicKey = signer =>
-    signer->ReTaquitoSigner.publicKey->Future.map(convertTaquitoError);
+  let publicKey = signer => signer->ReTaquitoSigner.publicKey;
 };
 
 let getKey = (~prompt, tr, path, schema) => {
@@ -106,36 +86,28 @@ let getMasterKey = (~prompt, tr) =>
 /* This function depends on LedgerSigner to compute the pk and pkh, hence it
    cannot be defined directly into Wallet.re */
 let addOrReplaceAlias =
-    (~ledgerTransport, ~dirpath, ~alias, ~path, ~scheme, ~ledgerBasePkh) => {
-  let values = {
-    let signer = Signer.create(ledgerTransport, path, ~prompt=false, scheme);
-    /* Ensures the three are available */
-    signer
-    ->Future.flatMapOk(Signer.publicKeyHash)
-    ->Future.flatMapOk(pkh => {
-        signer
-        ->Future.flatMapOk(Signer.publicKey)
-        ->Future.flatMapOk(pk => {
-            let sk =
-              path
-              ->DerivationPath.convertToTezosBip44
-              ->Result.map(path => Wallet.Ledger.{path, scheme})
-              ->Result.map(t =>
-                  Wallet.Ledger.Encode.toSecretKey(t, ~ledgerBasePkh)
-                )
-              ->ResultEx.mapError(e => e->Wallet.Ledger.DerivationPathError)
-              ->convertLedgerError
-              ->convertWalletError;
-            sk
-            ->Result.map(sk => (sk, Wallet.ledgerPkValue(sk, pk), pkh))
-            ->Future.value;
-          })
-      });
-    /* sk->Future.tapOk(sk => Wallet.addAliasSk(~dirpath, ~alias, ~sk, ())); */
-  };
-  values->Future.flatMapOk(((sk, pk, pkh)) => {
-    Wallet.addOrReplaceAlias(~dirpath, ~alias, ~pk, ~pkh, ~sk, ())
-    ->Future.map(convertWalletError)
-    ->Future.mapOk(() => pkh)
-  });
+    (~ledgerTransport, ~dirpath, ~alias, ~path, ~scheme, ~ledgerBasePkh)
+    : Future.t(Belt.Result.t(PublicKeyHash.t, Errors.t)) => {
+  let%FRes signer =
+    Signer.create(ledgerTransport, path, ~prompt=false, scheme);
+  /* Ensures the three are available */
+
+  let%FRes pkh = signer->Signer.publicKeyHash;
+
+  let%FRes pk = signer->Signer.publicKey;
+
+  let%FRes path =
+    path
+    ->DerivationPath.convertToTezosBip44
+    ->ResultEx.mapError(e => e->Wallet.Ledger.DerivationPathError)
+    ->Future.value;
+
+  let t = Wallet.Ledger.{path, scheme};
+  let sk = Wallet.Ledger.Encode.toSecretKey(t, ~ledgerBasePkh);
+
+  let pk = Wallet.ledgerPkValue(sk, pk);
+
+  let%FResMap () = Wallet.addOrReplaceAlias(~dirpath, ~alias, ~pk, ~pkh, ~sk);
+
+  pkh;
 };

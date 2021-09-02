@@ -85,6 +85,13 @@ let renderLabel = (displayIndex, displayError) => {
   </View>;
 };
 
+let buildCompletion = value =>
+  Bip39.wordlistsEnglish
+  ->Array.keep(v => {
+      Js.String.startsWith(value->Js.String2.trim->Js.String2.toLowerCase, v)
+    })
+  ->Array.slice(~offset=0, ~len=12);
+
 module Base = {
   [@react.component]
   let make =
@@ -95,14 +102,7 @@ module Base = {
         ~handleChange: string => unit,
         ~error: option(string),
       ) => {
-      let wordlists =
-        Bip39.wordlistsEnglish
-        ->Array.keep(
-            Js.String.startsWith(
-              value->Js.String2.trim->Js.String2.toLowerCase,
-            ),
-          )
-        ->Array.slice(~offset=0, ~len=12);
+      let wordlists = value == "" ? [||] : buildCompletion(value);
 
       <Autocomplete
         keyPopover={"inputMnemonicWord" ++ displayIndex->string_of_int}

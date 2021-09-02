@@ -25,23 +25,6 @@
 
 open ReactNative;
 
-[@bs.scope "JSON"] [@bs.val]
-external parseJsonIntoPeerInfo: string => ReBeacon.peerInfo = "parse";
-
-let parsePairingRequest =
-    (pairingRequest: string): Result.t(ReBeacon.peerInfo, string) => {
-  switch (
-    pairingRequest->HD.BS58Check.decode->HD.toString->parseJsonIntoPeerInfo
-  ) {
-  | exception (Js.Exn.Error(obj)) =>
-    switch (Js.Exn.message(obj)) {
-    | Some(m) => Error(m)
-    | None => Error("Undefined Error")
-    }
-  | peerInfo => Ok(peerInfo)
-  };
-};
-
 module Form = {
   module StateLenses = [%lenses type state = {pairingRequest: string}];
 
@@ -64,6 +47,8 @@ let styles =
 let make = (~closeAction) => {
   let updatePeers = StoreContext.Beacon.Peers.useResetAll();
 
+  let (client, _) = StoreContext.Beacon.useClient();
+
   let form =
     Form.use(
       ~schema={
@@ -71,21 +56,27 @@ let make = (~closeAction) => {
       },
       ~onSubmit=
         ({state, raiseSubmitFailed}) => {
-          let pairingInfo = parsePairingRequest(state.values.pairingRequest);
+          let pairingInfo =
+            ReBeacon.parsePairingRequest(state.values.pairingRequest);
 
           switch (pairingInfo) {
           | Ok(pairingInfo) =>
-            BeaconApiRequest.client
-            ->ReBeacon.WalletClient.addPeer(pairingInfo)
+            client
+            ->FutureEx.fromOption(
+                ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
+              )
+            ->Future.flatMapOk(client =>
+                client->ReBeacon.WalletClient.addPeer(pairingInfo)
+              )
             ->Future.tapError(error =>
-                raiseSubmitFailed(Some(error->ReBeacon.Error.toString))
+                raiseSubmitFailed(Some(error->Errors.toString))
               )
             ->Future.tapOk(_ => {
                 updatePeers();
                 closeAction();
               })
             ->ignore
-          | Error(error) => raiseSubmitFailed(Some(error))
+          | Error(error) => raiseSubmitFailed(Some(error->Errors.toString))
           };
 
           None;
@@ -315,20 +306,26 @@ module WithQR = {
     let addToast = LogsContext.useToast();
     let (webcamScanning, setWebcamScanning) = React.useState(_ => true);
     let updatePeers = StoreContext.Beacon.Peers.useResetAll();
+    let (client, _) = StoreContext.Beacon.useClient();
 
     let onQRCodeData = dataUrl => {
       setWebcamScanning(_ => false);
       let data =
         dataUrl->Js.String2.replace("tezos://?type=tzip10&data=", "");
 
-      let pairingInfo = parsePairingRequest(data);
+      let pairingInfo = ReBeacon.parsePairingRequest(data);
 
       switch (pairingInfo) {
       | Ok(pairingInfo) =>
-        BeaconApiRequest.client
-        ->ReBeacon.WalletClient.addPeer(pairingInfo)
+        client
+        ->FutureEx.fromOption(
+            ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
+          )
+        ->Future.flatMapOk(client =>
+            client->ReBeacon.WalletClient.addPeer(pairingInfo)
+          )
         ->Future.tapError(error => {
-            addToast(Logs.error(error->ReBeacon.Error.toString));
+            addToast(Logs.error(~origin=Beacon, error));
             setWebcamScanning(_ => true);
           })
         ->Future.tapOk(_ => {
@@ -337,7 +334,7 @@ module WithQR = {
           })
         ->ignore
       | Error(error) =>
-        addToast(Logs.error(error));
+        addToast(Logs.error(~origin=Beacon, error));
         setWebcamScanning(_ => true);
       };
 

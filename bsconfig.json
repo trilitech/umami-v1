@@ -27,7 +27,7 @@
   ],
   "suffix": ".bs.js",
   "namespace": true,
-  "ppx-flags": ["lenses-ppx/ppx"],
+  "ppx-flags": ["lenses-ppx/ppx", "bs-let/ppx"],
   "bs-dependencies": [
     "bs-fetch",
     "@glennsl/bs-json",

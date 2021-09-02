@@ -39,7 +39,7 @@ let useLoad = requestState => {
         )
       );
 
-  ApiRequest.useLoader(~get, ~kind=Logs.Account, ~requestState, ());
+  ApiRequest.useLoader(~get, ~kind=Logs.Secret, ~requestState, ());
 };
 
 let useGetRecoveryPhrase = (~requestState as (request, setRequest), ~index) => {
@@ -47,13 +47,7 @@ let useGetRecoveryPhrase = (~requestState as (request, setRequest), ~index) => {
     WalletAPI.Accounts.recoveryPhraseAt(~config, index, ~password);
 
   let getRequest =
-    ApiRequest.useGetter(
-      ~get,
-      ~kind=Logs.Account,
-      ~setRequest,
-      ~errorToString=ErrorHandler.toString,
-      (),
-    );
+    ApiRequest.useGetter(~get, ~kind=Logs.Secret, ~setRequest, ());
 
   (request, getRequest);
 };
@@ -88,8 +82,7 @@ let useDerive =
             (),
           )
         },
-    ~kind=Logs.Account,
-    ~errorToString=ErrorHandler.toString,
+    ~kind=Logs.Secret,
   );
 
 type createInput = {
@@ -111,8 +104,7 @@ let useCreateWithMnemonics =
           ~password,
           (),
         ),
-    ~kind=Logs.Account,
-    ~errorToString=ErrorHandler.toString,
+    ~kind=Logs.Secret,
   );
 
 type ledgerImportInput = {
@@ -126,7 +118,6 @@ type ledgerImportInput = {
 
 let useLedgerImport =
   ApiRequest.useSetter(
-    ~errorToString=ErrorHandler.toString,
     ~set=
       (
         ~config,
@@ -149,7 +140,7 @@ let useLedgerImport =
           ~timeout,
           (),
         ),
-    ~kind=Logs.Account,
+    ~kind=Logs.Secret,
   );
 
 type ledgerScanInput = {
@@ -161,7 +152,6 @@ type ledgerScanInput = {
 
 let useLedgerScan =
   ApiRequest.useSetter(
-    ~errorToString=ErrorHandler.toString,
     ~set=
       (~config, {index, accountsNumber, ledgerMasterKey, timeout}) =>
         WalletAPI.Accounts.deriveLedgerKeys(
@@ -172,27 +162,29 @@ let useLedgerScan =
           ~timeout,
           (),
         ),
-    ~kind=Logs.Account,
+    ~kind=Logs.Secret,
   );
+
+type account = WalletAPI.Accounts.Scan.account(string);
 
 type mnemonicScanInput = {
   index: int,
-  accountsNumber: int,
+  accounts: list(account),
   password: string,
 };
 
 let useMnemonicScan =
   ApiRequest.useSetter(
-    ~errorToString=ErrorHandler.toString,
     ~set=
-      (~config, {index, password}) =>
-        WalletAPI.Accounts.importRemainingMnemonicKeys(
+      (~config, {index, accounts, password}) =>
+        WalletAPI.Accounts.importMnemonicKeys(
           ~config,
           ~index,
+          ~accounts,
           ~password,
           (),
         ),
-    ~kind=Logs.Account,
+    ~kind=Logs.Secret,
   );
 
 let useUpdate =
@@ -200,14 +192,13 @@ let useUpdate =
     ~set=
       (~config, {index, secret}: Secret.derived) => {
         WalletAPI.Accounts.updateSecretAt(~config, secret, index)
+        ->Future.value
       },
-    ~kind=Logs.Account,
-    ~errorToString=ErrorHandler.toString,
+    ~kind=Logs.Secret,
   );
 
 let useDelete =
   ApiRequest.useSetter(
     ~set=WalletAPI.Accounts.deleteSecretAt,
-    ~kind=Logs.Account,
-    ~errorToString=ErrorHandler.toString,
+    ~kind=Logs.Secret,
   );

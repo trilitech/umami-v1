@@ -91,3 +91,8 @@ let timeout = sec =>
   Future.make(resolve => {
     Js.Global.setTimeout(() => Ok()->resolve, sec)->ignore
   });
+
+let ok = v => v->Ok->Future.value;
+let err = v => v->Error->Future.value;
+let some = v => v->Some->Ok->Future.value;
+let none = () => None->Ok->Future.value;

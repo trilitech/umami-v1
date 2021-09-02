@@ -113,14 +113,8 @@ let isExpired: t('a, 'b) => bool;
    [keep] aims at filtering some errors based on the error value. No error is
    filtered by default */
 let logError:
-  (
-    Future.t(Belt.Result.t('a, 'b)),
-    Logs.t => unit,
-    ~keep: 'b => bool=?,
-    ~toString: 'b => Js.String.t=?,
-    Logs.origin
-  ) =>
-  Future.t(Belt.Result.t('a, 'b));
+  (Let.future('a), Logs.t => unit, ~keep: Errors.t => bool=?, Logs.origin) =>
+  Let.future('a);
 
 /* Same as [logError] but for [Ok] result values */
 let logOk:
@@ -147,28 +141,24 @@ let conditionToLoad: (t('a, 'b), bool) => bool;
 let useGetter:
   (
     ~toast: bool=?,
-    ~errorToString: 'error => Js.String.t=?,
-    ~get: (~config: ConfigFile.t, 'input) =>
-          Future.t(Belt.Result.t('response, 'error)),
+    ~get: (~config: ConfigFile.t, 'a) => Let.future('response),
     ~kind: Logs.origin,
-    ~setRequest: (t('response, 'a) => t('response, 'error)) => unit,
+    ~setRequest: (t('response, 'c) => t('response, Errors.t)) => unit,
     unit,
-    'input
+    'a
   ) =>
-  Future.t(Belt.Result.t('response, 'error));
+  Let.future('response);
 
 /* Builds an auto-reloaded ressource from an asynchronous function */
 let useLoader:
   (
-    ~get: (~config: ConfigFile.t, 'input) =>
-          Future.t(Belt.Result.t('value, 'error)),
+    ~get: (~config: ConfigFile.t, 'input) => Let.future('value),
     ~condition: 'input => bool=?,
     ~kind: Logs.origin,
-    ~errorToString: 'error => Js.String.t=?,
-    ~requestState: requestState('value, 'error),
+    ~requestState: requestState('value, Errors.t),
     'input
   ) =>
-  t('value, 'error);
+  t('value, Errors.t);
 
 /* Builds a ressource that represents the modification of a distant value
      defined through the [set] function.
@@ -177,10 +167,9 @@ let useSetter:
   (
     ~toast: bool=?,
     ~sideEffect: 'a => unit=?,
-    ~set: (~config: ConfigFile.t, 'c) => Future.t(Belt.Result.t('a, 'b)),
+    ~set: (~config: ConfigFile.t, 'c) => Let.future('a),
     ~kind: Logs.origin,
-    ~keepError: 'b => bool=?,
-    ~errorToString: 'b => Js.String.t=?,
+    ~keepError: Errors.t => bool=?,
     unit
   ) =>
-  (t('a, 'b), 'c => Future.t(Belt.Result.t('a, 'b)));
+  (t('a, Errors.t), 'c => Let.future('a));
