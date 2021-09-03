@@ -46,17 +46,29 @@ module URL: {
       ) =>
       t;
     let checkToken: (ConfigFile.t, ~contract: PublicKeyHash.t) => t;
-    let getTokenBalance:
-      (ConfigFile.t, ~contract: PublicKeyHash.t, ~account: PublicKeyHash.t) =>
-      t;
   };
 
-  module Endpoint: {let delegates: ConfigFile.t => t;};
+  module Endpoint: {
+    let delegates: ConfigFile.t => t;
+
+    let runView: ConfigFile.t => t;
+
+    let fa12GetBalanceInput:
+      (
+        ~settings: ConfigFile.t,
+        ~contract: PublicKeyHash.t,
+        ~account: PublicKeyHash.t
+      ) =>
+      Js.Json.t;
+  };
 
   module External: {let bakingBadBakers: t;};
 
   /* Fetch URL as a JSON. */
   let get: t => Future.t(Result.t(Js.Json.t, Errors.t));
+
+  /* Fetch URL with a JSON payload, as a JSON. */
+  let postJson: (t, Js.Json.t) => Let.future(Js.Json.t);
 };
 
 /** Mezos requests for mempool operations and classical operations. */

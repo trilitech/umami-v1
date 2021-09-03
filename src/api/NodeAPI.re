@@ -352,11 +352,24 @@ module Tokens = {
         ->FutureEx.err
       };
 
-    let%FRes res =
-      URL.Explorer.getTokenBalance(config, ~contract=token, ~account=address)
-      ->URL.get;
+    let%FRes json =
+      config
+      ->URL.Endpoint.runView
+      ->URL.postJson(
+          URL.Endpoint.fa12GetBalanceInput(
+            ~settings=config,
+            ~contract=token,
+            ~account=address,
+          ),
+        );
 
-    switch (res->Js.Json.decodeString) {
+    /* bs-json raises exceptions instead of returning options */
+    let res =
+      try(Json.Decode.(json |> field("data", field("int", string)))->Some) {
+      | Json.Decode.DecodeError(_) => None
+      };
+
+    switch (res) {
     | None => Token.Unit.zero->FutureEx.ok
     | Some(v) =>
       v
