@@ -72,11 +72,10 @@ let make = (~chain, ~closeAction) => {
                   symbol: state.values.symbol,
                   chain,
                 })
-                ->Future.tapOk(_ => closeAction())
                 ->ApiRequest.logOk(addToast, Logs.Tokens, _ =>
                     I18n.t#token_created
                   )
-                ->ignore
+                ->FutureEx.getOk(_ => closeAction())
               | Error(_)
               | Ok((_, false)) =>
                 let errorMsg = I18n.t#error_check_contract;

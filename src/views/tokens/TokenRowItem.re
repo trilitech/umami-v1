@@ -56,7 +56,7 @@ module TokenDeleteButton = {
     let (tokenRequest, deleteToken) = StoreContext.Tokens.useDelete();
 
     let onPressConfirmDelete = _e => {
-      deleteToken(token)->ignore;
+      deleteToken(token)->FutureEx.ignore;
     };
 
     <DeleteButton.IconButton

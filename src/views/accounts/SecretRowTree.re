@@ -137,7 +137,8 @@ module AccountImportedRowItem = {
       let (accountRequest, deleteAccount) = StoreContext.Accounts.useDelete();
 
       let onPressConfirmDelete = _e => {
-        deleteAccount(account.name)->ignore;
+        let _: Let.future(_) = deleteAccount(account.name);
+        ();
       };
 
       <DeleteButton.MenuItem
@@ -255,7 +256,7 @@ module SecretRowItem = {
       let (secretRequest, deleteSecret) = StoreContext.Secrets.useDelete();
 
       let onPressConfirmDelete = _e => {
-        deleteSecret(secret.index)->ignore;
+        deleteSecret(secret.index)->FutureEx.ignore;
       };
 
       <DeleteButton.MenuItem

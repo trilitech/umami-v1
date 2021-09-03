@@ -178,11 +178,10 @@ module CustomNetworkItem = {
     };
 
     let onPressConfirmDelete = () => {
-      Future.make(_ => deleteCustomNetwork(network))
-      ->ApiRequest.logOk(addToast, Logs.Account, _ =>
-          I18n.t#custom_network_deleted
-        )
-      ->ignore;
+      deleteCustomNetwork(network);
+      addToast(
+        Logs.info(~origin=Logs.Account, I18n.t#custom_network_deleted),
+      );
     };
     <>
       <View style=styles##spaceBetweenRow>

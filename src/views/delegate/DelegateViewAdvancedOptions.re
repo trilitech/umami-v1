@@ -46,10 +46,9 @@ let make = (~form: DelegateForm.api) => {
         );
       let operation = Operation.Simulation.delegation(operation);
       sendOperationSimulate(operation)
-      ->Future.tapOk(dryRun => {
+      ->FutureEx.getOk(dryRun => {
           form.handleChange(Fee, dryRun.fee->Tez.toString)
-        })
-      ->ignore;
+        });
     | _ => ()
     };
 

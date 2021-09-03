@@ -181,8 +181,7 @@ let make =
           () => setLedgerState(_ => LedgerView.WaitForConfirm->Some),
         ),
       )
-      ->Future.tapError(e => setLedgerState(_ => Error(e)->Some))
-      ->ignore;
+      ->FutureEx.getError(e => setLedgerState(_ => Error(e)->Some));
     } else {
       form.submit();
     };

@@ -68,14 +68,15 @@ let make = (~closeAction) => {
             ->Future.flatMapOk(client =>
                 client->ReBeacon.WalletClient.addPeer(pairingInfo)
               )
-            ->Future.tapError(error =>
-                raiseSubmitFailed(Some(error->Errors.toString))
+            ->Future.get(
+                fun
+                | Error(e) => raiseSubmitFailed(Some(e->Errors.toString))
+                | Ok(_) => {
+                    updatePeers();
+                    closeAction();
+                  },
               )
-            ->Future.tapOk(_ => {
-                updatePeers();
-                closeAction();
-              })
-            ->ignore
+
           | Error(error) => raiseSubmitFailed(Some(error->Errors.toString))
           };
 
@@ -251,7 +252,7 @@ module WithQR = {
           },
         })
         ->FutureJs.fromPromise(Js.String.make)
-        ->Future.tapOk(stream => {
+        ->FutureEx.getOk(stream => {
             setHasStream(_ => true);
             streamRef := Some(stream);
             videoRef.current->VideoElement.setSrcObject(stream);
@@ -260,8 +261,8 @@ module WithQR = {
             let raf = requestAnimationFrame(tick);
             rafRef.current = Js.Nullable.return(raf);
             ();
-          })
-        ->ignore;
+          });
+
         Some(
           () => {
             // stop the camera streaming
@@ -328,11 +329,11 @@ module WithQR = {
             addToast(Logs.error(~origin=Beacon, error));
             setWebcamScanning(_ => true);
           })
-        ->Future.tapOk(_ => {
+        ->FutureEx.getOk(_ => {
             updatePeers();
             closeAction();
           })
-        ->ignore
+
       | Error(error) =>
         addToast(Logs.error(~origin=Beacon, error));
         setWebcamScanning(_ => true);

@@ -150,10 +150,11 @@ let make = (~children) => {
   let (_, setEulaSignature) as eulaSignatureRequestState =
     React.useState(() => false);
 
-  SecretApiRequest.useLoad(secretsRequestState)->ignore;
-  AccountApiRequest.useLoad(accountsRequestState)->ignore;
-  AliasApiRequest.useLoad(aliasesRequestState)->ignore;
-  TokensApiRequest.useLoadTokens(tokensRequestState)->ignore;
+  let _: ApiRequest.t(_) = SecretApiRequest.useLoad(secretsRequestState);
+  let _: ApiRequest.t(_) = AccountApiRequest.useLoad(accountsRequestState);
+  let _: ApiRequest.t(_) = AliasApiRequest.useLoad(aliasesRequestState);
+  let _: ApiRequest.t(_) =
+    TokensApiRequest.useLoadTokens(tokensRequestState);
 
   React.useEffect0(() => {
     setEulaSignature(_ => Disclaimer.needSigning());

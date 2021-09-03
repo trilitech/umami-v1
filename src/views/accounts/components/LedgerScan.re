@@ -79,11 +79,10 @@ let make = (~closeAction, ~index, ~secret) => {
         ledgerMasterKey,
       },
     )
-    ->Future.tapOk(_ => {closeAction()})
     ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
         I18n.t#account_created
       )
-    ->ignore;
+    ->FutureEx.getOk(_ => {closeAction()});
   };
 
   React.useEffect0(() => {

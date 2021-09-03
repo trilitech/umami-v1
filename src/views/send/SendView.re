@@ -437,10 +437,9 @@ let make = (~closeAction) => {
     sendOperationSimulate(
       Operation.Simulation.transaction(transaction, None),
     )
-    ->Future.tapOk(dryRun => {
+    ->FutureEx.getOk(dryRun => {
         setModalStep(_ => PasswordStep(transaction, dryRun))
-      })
-    ->ignore;
+      });
   };
 
   let onSubmit = ({state, send}: SendForm.onSubmitAPI) => {

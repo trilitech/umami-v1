@@ -64,8 +64,7 @@ let make = (~secret: Secret.derived, ~closeAction) => {
               },
             },
           )
-          ->Future.tapOk(() => closeAction())
-          ->ignore;
+          ->FutureEx.getOk(() => closeAction());
 
           None;
         },

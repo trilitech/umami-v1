@@ -59,11 +59,10 @@ let make = (~closeAction, ~index, ~secret) => {
 
   let submitAccounts = (~password, ()) => {
     scan(SecretApiRequest.{index, accounts, password})
-    ->Future.tapOk(_ => {closeAction()})
     ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
         I18n.t#account_created
       )
-    ->ignore;
+    ->FutureEx.getOk(_ => {closeAction()});
   };
 
   let scan = (~password, path, _) =>

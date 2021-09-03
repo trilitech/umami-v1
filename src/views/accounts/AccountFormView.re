@@ -141,8 +141,7 @@ module Update = {
       ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
           I18n.t#account_updated
         )
-      ->Future.tapOk(() => closeAction())
-      ->ignore;
+      ->FutureEx.getOk(() => closeAction());
     };
 
     <ModalFormView closing={ModalFormView.Close(closeAction)}>
