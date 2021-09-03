@@ -230,7 +230,14 @@ let form_input_error = {
     fun
     | None => "Requested token id was not found"
     | Some((pkh, tokenId)) =>
-      p("Token id %d not found for contract %s", tokenId, pkh)
+      p("Token id %d not found for contract %s", tokenId, pkh);
+  pub illformed_token_metadata = (pkh, tokenId, field) =>
+    p(
+      "Field %s for token id %d illformed for contract %s",
+      field,
+      tokenId,
+      pkh,
+    )
 };
 
 let title = {

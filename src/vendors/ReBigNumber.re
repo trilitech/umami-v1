@@ -27,6 +27,8 @@ type t;
 
 [@bs.module] [@bs.new] external fromString: string => t = "bignumber.js";
 
+[@bs.send] external toInt: t => int = "toNumber";
+[@bs.send] external toFloat: t => float = "toNumber";
 [@bs.send] external toString: t => string = "toString";
 [@bs.send] external toFixed: t => string = "toFixed";
 [@bs.send] external plus: (t, t) => t = "plus";

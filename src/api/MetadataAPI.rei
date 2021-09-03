@@ -39,6 +39,16 @@ module Tzip16: {
 };
 
 module Tzip12: {
+  module Storage: {
+    let read:
+      ReTaquitoContracts.Tzip12Tzip16Contract.t =>
+      Let.future(ReTaquitoTypes.Tzip12Storage.storage);
+
+    let getToken:
+      (PublicKeyHash.t, ReTaquitoTypes.Tzip12Storage.storage, int) =>
+      Let.future(ReTaquitoTypes.Tzip12.metadata);
+  };
+
   let makeContract:
     (ReTaquito.Toolkit.toolkit, PublicKeyHash.t) =>
     Let.future(ReTaquitoContracts.Tzip12Tzip16Contract.t);

@@ -162,6 +162,52 @@ module type ContractAbstraction = {
   type t;
 };
 
+module MapAbstraction = (Key: {type t;}) => {
+  type key = Key.t;
+  type t('a) = {get: (. key) => option('a)};
+};
+
+module BigMapAbstraction = (Key: {type t;}) => {
+  type key = Key.t;
+  type t('a) = {get: (. key) => Js.Promise.t(option('a))};
+};
+
+module Tzip12Storage = {
+  module Fields =
+    MapAbstraction({
+      type t = string;
+    });
+
+  /* optional fields: undefined in the JS object */
+  type token = {
+    token_id: option(ReBigNumber.t),
+    token_info: option(Fields.t(bytes)),
+  };
+
+  /* An unannotated michelson value is returned as a polymorphic array */
+  type unannoted_token = {
+    [@bs.as "0"]
+    un_token_id: option(ReBigNumber.t),
+    [@bs.as "1"]
+    un_token_info: option(Fields.t(bytes)),
+  };
+
+  module Tokens = {
+    include BigMapAbstraction({
+      type t = ReBigNumber.t;
+    });
+
+    /* This ugly trick is unfortunately the only way to get an unannoted token
+       when the storage is illformed, as we cannot give it another type. */
+    [@bs.send]
+    external getUnannotated:
+      (t(token), key) => Js.Promise.t(option(unannoted_token)) =
+      "get";
+  };
+
+  type storage = {token_metadata: option(Tokens.t(token))};
+};
+
 module Extension = {
   type t;
 
@@ -185,7 +231,7 @@ module Tzip16Contract = {
 
 module Tzip12Tzip16Contract = {
   type methods;
-  type storage;
+  type storage = Tzip12Storage.storage;
   type entrypoints;
 
   type t = {
@@ -207,7 +253,7 @@ module FA12 = {
       (. PublicKeyHash.t, PublicKeyHash.t, BigNumber.fixed) =>
       Contract.methodResult(transfer),
   };
-  type storage;
+  type storage = Tzip12Storage.storage;
   type entrypoints;
 
   type t = {
