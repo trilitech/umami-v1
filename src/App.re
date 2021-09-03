@@ -25,8 +25,6 @@
 
 open ReactNative;
 
-let _ = MetadataAPI.Debug.init;
-
 let styles =
   Style.(
     StyleSheet.create({

@@ -57,5 +57,3 @@ module Tzip12: {
     (ReTaquitoContracts.Tzip12Tzip16Contract.t, int) =>
     Let.future(ReTaquitoTypes.Tzip12.metadata);
 };
-
-module Debug: {let init: unit => unit;};
