@@ -81,6 +81,7 @@ let useDelete = (~sideEffect=?, ()) => {
   };
 
   ApiRequest.useSetter(
+    ~logOk=_ => I18n.t#token_deleted,
     ~toast=false,
     ~set,
     ~kind=Logs.Tokens,
@@ -107,6 +108,7 @@ let useCreate = (~sideEffect=?, ()) => {
   };
 
   ApiRequest.useSetter(
+    ~logOk=_ => I18n.t#token_created,
     ~toast=false,
     ~set,
     ~kind=Logs.Tokens,

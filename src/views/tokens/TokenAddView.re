@@ -72,9 +72,6 @@ let make = (~chain, ~closeAction) => {
                   symbol: state.values.symbol,
                   chain,
                 })
-                ->ApiRequest.logOk(addToast, Logs.Tokens, _ =>
-                    I18n.t#token_created
-                  )
                 ->FutureEx.getOk(_ => closeAction())
               | Error(_)
               | Ok((_, false)) =>

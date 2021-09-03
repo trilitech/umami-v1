@@ -591,11 +591,15 @@ let t = {
   pub stepof = p("Step %d of %d");
   pub account_create_record_recovery = "Record your recovery phrase";
   pub contact_added = "Contact Added";
+  pub contact_updated = "Contact Updated";
+  pub contact_deleted = "Contact Deleted";
   pub account_created = "Account Created";
   pub account_updated = "Account Updated";
   pub secret_updated = "Secret Updated";
+  pub secret_deleted = "Secret Deleted";
   pub token_contract = p("%s Token Contract");
   pub token_created = "Token Created";
+  pub token_deleted = "Token Deleted";
   pub operation_hash = "Operation Hash";
   pub operation_summary_fee = p("+ Fee %a", () => this#tez_amount);
   pub navbar_accounts = "ACCOUNTS";

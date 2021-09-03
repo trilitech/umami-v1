@@ -134,13 +134,8 @@ module Update = {
     let (updateAccountRequest, updateAccount) =
       StoreContext.Accounts.useUpdate();
 
-    let addLog = LogsContext.useAdd();
-
     let action = (~name as new_name, ~secretIndex as _s) => {
       updateAccount({old_name: account.name, new_name})
-      ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
-          I18n.t#account_updated
-        )
       ->FutureEx.getOk(() => closeAction());
     };
 
@@ -169,8 +164,6 @@ module Create = {
 
     let (status, setStatus) = React.useState(() => `Loading);
 
-    let addLog = LogsContext.useAdd();
-
     let isLedger = secret.Secret.secret.kind == Ledger;
 
     let (formValues, setFormValues) = React.useState(_ => None);
@@ -182,11 +175,7 @@ module Create = {
         kind: Mnemonics(password),
         timeout: None,
       })
-      ->Future.mapOk(_ => ())
-      ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
-          I18n.t#account_created
-        )
-      ->Future.tapOk(() => closeAction());
+      ->Future.tapOk(_ => closeAction());
     };
 
     let actionLedger = (~name, secretIndex, ~ledgerMasterKey) => {
@@ -196,11 +185,7 @@ module Create = {
         kind: Ledger(ledgerMasterKey),
         timeout: Some(1000),
       })
-      ->Future.mapOk(_ => ())
-      ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
-          I18n.t#account_created
-        )
-      ->Future.tapOk(() => closeAction());
+      ->Future.tapOk(_ => closeAction());
     };
 
     let ledgerInteract = (~name, ~secretIndex, secret, ()) => {

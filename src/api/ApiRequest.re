@@ -23,6 +23,8 @@
 /*                                                                           */
 /*****************************************************************************/
 
+open UmamiCommon;
+
 type timestamp = float;
 
 type cacheValidity =
@@ -189,7 +191,8 @@ let useLoader =
   request;
 };
 
-let useSetter = (~toast=true, ~sideEffect=?, ~set, ~kind, ~keepError=?, ()) => {
+let useSetter =
+    (~logOk=?, ~toast=true, ~sideEffect=?, ~set, ~kind, ~keepError=?, ()) => {
   let addLog = LogsContext.useAdd();
   let (request, setRequest) = React.useState(_ => NotAsked);
   let config = ConfigContext.useContent();
@@ -197,6 +200,11 @@ let useSetter = (~toast=true, ~sideEffect=?, ~set, ~kind, ~keepError=?, ()) => {
   let sendRequest = input => {
     setRequest(_ => Loading(None));
     set(~config, input)
+    ->Future.tapOk(v =>
+        logOk->Lib.Option.iter(f =>
+          addLog(true, Logs.info(~origin=kind, f(v)))
+        )
+      )
     ->logError(addLog(toast), ~keep=?keepError, kind)
     ->Future.tap(result => {
         setRequest(_ => Done(result, Js.Date.now()->ValidSince))

@@ -141,8 +141,6 @@ let make = (~mnemonic: array(string), ~derivationPath, ~onSubmit) => {
   let (secretWithMnemonicRequest, createSecretWithMnemonic) =
     StoreContext.Secrets.useCreateWithMnemonics();
 
-  let addLog = LogsContext.useAdd();
-
   let loading = secretWithMnemonicRequest->ApiRequest.isLoading;
 
   let submitPassword = (~password) => {
@@ -154,11 +152,7 @@ let make = (~mnemonic: array(string), ~derivationPath, ~onSubmit) => {
         password,
       };
 
-    createSecretWithMnemonic(secret)
-    ->Future.tapOk(_ => {onSubmit()})
-    ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
-        I18n.t#account_created
-      );
+    createSecretWithMnemonic(secret)->Future.tapOk(_ => {onSubmit()});
   };
 
   displayConfirmPassword
