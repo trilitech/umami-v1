@@ -161,22 +161,19 @@ let make = (~children) => {
     None;
   });
 
-  React.useEffect1(
+  ReactUtils.useAsyncEffect1(
     () => {
-      let _: Let.future(_) = {
-        let%FResMap (v: Network.apiVersion, _) =
-          Network.checkConfiguration(
-            settings->ConfigUtils.explorer,
-            settings->ConfigUtils.endpoint,
-          );
-        setApiVersion(_ => Some(v));
-        if (!Network.checkInBound(v.api)) {
-          addToast(
-            Logs.error(~origin=Settings, Network.API(NotSupported(v.api))),
-          );
-        };
+      let%FResMap (v: Network.apiVersion, _) =
+        Network.checkConfiguration(
+          settings->ConfigUtils.explorer,
+          settings->ConfigUtils.endpoint,
+        );
+      setApiVersion(_ => Some(v));
+      if (!Network.checkInBound(v.api)) {
+        addToast(
+          Logs.error(~origin=Settings, Network.API(NotSupported(v.api))),
+        );
       };
-      None;
     },
     [|network|],
   );

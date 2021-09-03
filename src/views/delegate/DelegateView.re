@@ -25,6 +25,7 @@
 
 open ReactNative;
 open Delegate;
+open Let;
 
 let styles =
   Style.(
@@ -254,12 +255,13 @@ let make = (~closeAction, ~action) => {
   });
 
   let form =
-    Form.build(action, advancedOptionOpened, op =>
-      sendOperationSimulate(op->Operation.Simulation.delegation)
-      ->FutureEx.getOk(dryRun => {
-          setModalStep(_ => PasswordStep(op, dryRun))
-        })
-    );
+    Form.build(action, advancedOptionOpened, op => {
+      FutureEx.async(() => {
+        let%FResMap dryRun =
+          sendOperationSimulate(op->Operation.Simulation.delegation);
+        setModalStep(_ => PasswordStep(op, dryRun));
+      })
+    });
 
   let title =
     switch (modalStep, action) {

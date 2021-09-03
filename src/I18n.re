@@ -475,6 +475,8 @@ let wallet = {
 
 let errors = {
   pub _this = this;
+  pub deeplinking_not_connected = "Deep linking required but not connected";
+  pub stream = "Acquiering media failed";
   pub decryption = "Storage decryption failed";
   pub encryption = "Storage encryption failed";
   pub key_derivation = "Key derivation failed";

@@ -81,8 +81,7 @@ module CreatePasswordView = {
         },
         ~onSubmit=
           ({state}) => {
-            let _: Let.future(_) =
-              submitPassword(~password=state.values.password);
+            submitPassword(~password=state.values.password)->FutureEx.ignore;
             None;
           },
         ~initialState={password: "", confirmPassword: ""},

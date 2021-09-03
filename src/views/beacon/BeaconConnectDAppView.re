@@ -24,6 +24,7 @@
 /*****************************************************************************/
 
 open ReactNative;
+open Let;
 
 module Form = {
   module StateLenses = [%lenses type state = {pairingRequest: string}];
@@ -172,6 +173,17 @@ module WithQR = {
       [@bs.set] external setWidth: (Dom.element, int) => unit = "width";
     };
 
+    type Errors.t +=
+      | StreamError;
+
+    let () =
+      Errors.registerHandler(
+        "Media",
+        fun
+        | StreamError => I18n.errors#stream->Some
+        | _ => None,
+      );
+
     module VideoElement = {
       type state;
       [@bs.get] external readyState: Dom.element => state = "readyState";
@@ -246,22 +258,24 @@ module WithQR = {
 
       React.useEffect0(() => {
         let streamRef = ref(None);
-        window##navigator##mediaDevices##getUserMedia({
-          "video": {
-            "facingMode": "environment",
-          },
-        })
-        ->FutureJs.fromPromise(Js.String.make)
-        ->FutureEx.getOk(stream => {
-            setHasStream(_ => true);
-            streamRef := Some(stream);
-            videoRef.current->VideoElement.setSrcObject(stream);
-            videoRef.current->VideoElement.setAttribute("playsinline", true);
-            videoRef.current->VideoElement.play;
-            let raf = requestAnimationFrame(tick);
-            rafRef.current = Js.Nullable.return(raf);
-            ();
-          });
+
+        FutureEx.async(() => {
+          let%FResMap stream =
+            window##navigator##mediaDevices##getUserMedia({
+              "video": {
+                "facingMode": "environment",
+              },
+            })
+            ->FutureJs.fromPromise(_ => StreamError);
+
+          setHasStream(_ => true);
+          streamRef := Some(stream);
+          videoRef.current->VideoElement.setSrcObject(stream);
+          videoRef.current->VideoElement.setAttribute("playsinline", true);
+          videoRef.current->VideoElement.play;
+          let raf = requestAnimationFrame(tick);
+          rafRef.current = Js.Nullable.return(raf);
+        });
 
         Some(
           () => {
@@ -318,22 +332,23 @@ module WithQR = {
 
       switch (pairingInfo) {
       | Ok(pairingInfo) =>
-        client
-        ->FutureEx.fromOption(
-            ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
-          )
-        ->Future.flatMapOk(client =>
-            client->ReBeacon.WalletClient.addPeer(pairingInfo)
-          )
-        ->Future.tapError(error => {
-            addToast(Logs.error(~origin=Beacon, error));
-            setWebcamScanning(_ => true);
-          })
-        ->FutureEx.getOk(_ => {
-            updatePeers();
-            closeAction();
-          })
+        FutureEx.async(() => {
+          let%FRes client =
+            client->FutureEx.fromOption(
+              ~error=BeaconApiRequest.ClientNotConnected,
+            );
 
+          let%FResMap () =
+            client
+            ->ReBeacon.WalletClient.addPeer(pairingInfo)
+            ->Future.tapError(error => {
+                addToast(Logs.error(~origin=Beacon, error));
+                setWebcamScanning(_ => true);
+              });
+
+          updatePeers();
+          closeAction();
+        })
       | Error(error) =>
         addToast(Logs.error(~origin=Beacon, error));
         setWebcamScanning(_ => true);

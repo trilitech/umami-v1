@@ -100,3 +100,5 @@ let none = () => None->Ok->Future.value;
 let ignore = (ft: Future.t(Result.t(_, _))) => {
   ft->ignore;
 };
+
+let async = (f: unit => Future.t(Result.t(_, _))) => f()->ignore;
