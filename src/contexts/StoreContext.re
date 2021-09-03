@@ -32,10 +32,10 @@ type reactState('state) = ('state, ('state => 'state) => unit);
 type error = Errors.t;
 
 type requestsState('requestResponse) =
-  Map.String.t(ApiRequest.t('requestResponse, error));
+  Map.String.t(ApiRequest.t('requestResponse));
 
 type requestState('requestResponse) =
-  reactState(ApiRequest.t('requestResponse, error));
+  reactState(ApiRequest.t('requestResponse));
 
 type apiRequestsState('requestResponse) =
   reactState(requestsState('requestResponse));
@@ -46,8 +46,7 @@ type state = {
   selectedAccountState: reactState(option(PublicKeyHash.t)),
   selectedTokenState: reactState(option(PublicKeyHash.t)),
   accountsRequestState: requestState(Map.String.t(Account.t)),
-  secretsRequestState:
-    reactState(ApiRequest.t(array(Secret.derived), error)),
+  secretsRequestState: reactState(ApiRequest.t(array(Secret.derived))),
   balanceRequestsState: apiRequestsState(Tez.t),
   delegateRequestsState: apiRequestsState(option(PublicKeyHash.t)),
   delegateInfoRequestsState:
@@ -55,18 +54,16 @@ type state = {
   operationsRequestsState:
     apiRequestsState(OperationApiRequest.operationsResponse),
   operationsConfirmations: reactState(Set.String.t),
-  aliasesRequestState:
-    reactState(ApiRequest.t(Map.String.t(Alias.t), error)),
-  bakersRequestState: reactState(ApiRequest.t(array(Delegate.t), error)),
-  tokensRequestState:
-    reactState(ApiRequest.t(Map.String.t(Token.t), error)),
+  aliasesRequestState: reactState(ApiRequest.t(Map.String.t(Alias.t))),
+  bakersRequestState: reactState(ApiRequest.t(array(Delegate.t))),
+  tokensRequestState: reactState(ApiRequest.t(Map.String.t(Token.t))),
   balanceTokenRequestsState: apiRequestsState(Token.Unit.t),
   apiVersionRequestState: reactState(option(Network.apiVersion)),
   eulaSignatureRequestState: reactState(bool),
   beaconPeersRequestState: requestState(array(ReBeacon.peerInfo)),
   beaconClient: reactState(option(ReBeacon.WalletClient.t)),
   beaconPermissionsRequestState:
-    reactState(ApiRequest.t(array(ReBeacon.permissionInfo), error)),
+    reactState(ApiRequest.t(array(ReBeacon.permissionInfo))),
   beaconNextRequestState: nextState(ReBeacon.Message.Request.t),
 };
 
@@ -251,9 +248,9 @@ let useRequestsState = (getRequestsState, key: option(string)) => {
     React.useCallback2(
       newRequestSetter =>
         key->Lib.Option.iter(key =>
-          setRequests((request: requestsState('requestResponse)) =>
+          setRequests((request: requestsState(_)) =>
             request->Map.String.update(
-              key, (oldRequest: option(ApiRequest.t('requestResponse, _))) =>
+              key, (oldRequest: option(ApiRequest.t(_))) =>
               Some(
                 newRequestSetter(
                   oldRequest->Option.getWithDefault(NotAsked),
@@ -403,8 +400,7 @@ module Delegate = {
   let useRequestState = useRequestsState(store => store.delegateRequestsState);
 
   let useLoad = (address: PublicKeyHash.t) => {
-    let requestState: ApiRequest.requestState(option(PublicKeyHash.t), _) =
-      useRequestState(Some((address :> string)));
+    let requestState = useRequestState(Some((address :> string)));
 
     DelegateApiRequest.useLoad(~requestState, ~address);
   };

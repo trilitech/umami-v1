@@ -30,7 +30,7 @@ let make =
       ~visible,
       ~closeAction,
       ~onPressConfirmDelete,
-      ~request: ApiRequest.t('a, 'error),
+      ~request: ApiRequest.t(_),
     ) => {
   let loading = request->ApiRequest.isLoading;
 

@@ -29,18 +29,14 @@ type cacheValidity =
   | Expired
   | ValidSince(float);
 
-type t('value, 'error) =
+type t('value) =
   | NotAsked
   | Loading(option('value))
-  | Done(Result.t('value, 'error), cacheValidity);
+  | Done(Result.t('value, Errors.t), cacheValidity);
 
-type setRequest('value, 'error) =
-  (t('value, 'error) => t('value, 'error)) => unit;
+type setRequest('value) = (t('value) => t('value)) => unit;
 
-type requestState('value, 'error) = (
-  t('value, 'error),
-  setRequest('value, 'error),
-);
+type requestState('value) = (t('value), setRequest('value));
 
 let getDone = request =>
   switch (request) {
@@ -170,8 +166,8 @@ let useLoader =
       ~get,
       ~condition=?,
       ~kind,
-      ~requestState as (request, setRequest): requestState('value, 'error),
-      arg1: 'input,
+      ~requestState as (request, setRequest),
+      input,
     ) => {
   let getRequest = useGetter(~get, ~kind, ~setRequest, ());
 
@@ -179,29 +175,21 @@ let useLoader =
   React.useEffect4(
     () => {
       let shouldReload = conditionToLoad(request, isMounted);
-      let condition = condition->Option.mapWithDefault(true, f => arg1->f);
+      let condition = condition->Option.mapWithDefault(true, f => input->f);
 
       if (shouldReload && condition) {
-        getRequest(arg1)->ignore;
+        getRequest(input)->ignore;
       };
 
       None;
     },
-    (isMounted, request, arg1, setRequest),
+    (isMounted, request, input, setRequest),
   );
 
   request;
 };
 
-let useSetter =
-    (
-      ~toast=true,
-      ~sideEffect=?,
-      ~set: (~config: _, _) => Future.t(Result.t(_, 'b)),
-      ~kind,
-      ~keepError=?,
-      (),
-    ) => {
+let useSetter = (~toast=true, ~sideEffect=?, ~set, ~kind, ~keepError=?, ()) => {
   let addLog = LogsContext.useAdd();
   let (request, setRequest) = React.useState(_ => NotAsked);
   let config = ConfigContext.useContent();
