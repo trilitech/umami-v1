@@ -674,6 +674,7 @@ module Accounts = {
         ~password,
         (),
       ) => {
+    let%FRes () = System.Client.initDir(config->ConfigUtils.baseDir);
     let backupPhraseConcat = backupPhrase->Js.Array2.joinWith(" ");
 
     let%FRes () = password->SecureStorage.validatePassword;

@@ -102,7 +102,7 @@ let useCreateWithMnemonics =
   ApiRequest.useSetter(
     ~keepError=keepNonFormErrors,
     ~set=
-      (~config, {name, mnemonic, derivationPath, password}) =>
+      (~config, {name, mnemonic, derivationPath, password}) => {
         WalletAPI.Accounts.restore(
           ~config,
           ~backupPhrase=mnemonic,
@@ -110,7 +110,8 @@ let useCreateWithMnemonics =
           ~derivationPath,
           ~password,
           (),
-        ),
+        )
+      },
     ~kind=Logs.Secret,
   );
 

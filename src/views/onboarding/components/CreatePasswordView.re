@@ -131,8 +131,7 @@ module CreatePasswordView = {
 };
 
 [@react.component]
-let make =
-    (~mnemonic: array(string), ~derivationPath, ~submitPassword, ~loading) => {
+let make = (~mnemonic: array(string), ~derivationPath, ~onSubmit) => {
   let secrets = StoreContext.Secrets.useGetAll();
 
   let existingNonLedgerSecretsCount =
@@ -140,15 +139,27 @@ let make =
 
   let displayConfirmPassword = existingNonLedgerSecretsCount < 1;
 
+  let (secretWithMnemonicRequest, createSecretWithMnemonic) =
+    StoreContext.Secrets.useCreateWithMnemonics();
+
+  let addLog = LogsContext.useAdd();
+
+  let loading = secretWithMnemonicRequest->ApiRequest.isLoading;
+
   let submitPassword = (~password) => {
-    submitPassword(
+    let secret =
       SecretApiRequest.{
         name: "Secret " ++ (existingNonLedgerSecretsCount + 1)->string_of_int,
         mnemonic,
         derivationPath,
         password,
-      },
-    );
+      };
+
+    createSecretWithMnemonic(secret)
+    ->Future.tapOk(_ => {onSubmit()})
+    ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
+        I18n.t#account_created
+      );
   };
 
   displayConfirmPassword
