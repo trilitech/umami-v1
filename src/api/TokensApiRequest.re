@@ -24,6 +24,18 @@
 /*****************************************************************************/
 
 include ApiRequest;
+open Let;
+
+type Errors.t +=
+  | NotFA12Contract(string);
+
+let () =
+  Errors.registerHandler(
+    "Tokens",
+    fun
+    | NotFA12Contract(_) => I18n.t#error_check_contract->Some
+    | _ => None,
+  );
 
 type injection = {
   operation: Token.operation,
@@ -91,7 +103,15 @@ let useDelete = (~sideEffect=?, ()) => {
 };
 
 let useCreate = (~sideEffect=?, ()) => {
+  let (_checkTokenRequest, checkToken) = useCheckTokenContract();
   let set = (~config as _, token) => {
+    let%FRes isTokenContract = checkToken(token.TokenRepr.address);
+
+    let%FResMap () =
+      isTokenContract
+        ? FutureEx.ok()
+        : FutureEx.err(NotFA12Contract((token.TokenRepr.address :> string)));
+
     let tokens =
       LocalStorage.getItem(tokensStorageKey)
       ->Js.Nullable.toOption
