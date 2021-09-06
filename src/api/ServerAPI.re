@@ -29,6 +29,7 @@ open Let;
 module Path = {
   module Endpoint = {
     let delegates = "/chains/main/blocks/head/context/delegates\\?active=true";
+    let runView = "/chains/main/blocks/head/helpers/scripts/run_view";
   };
 };
 
@@ -80,6 +81,29 @@ module URL = {
       );
   };
 
+  let postJson = (url, json) => {
+    let init =
+      Fetch.RequestInit.make(
+        ~method_=Fetch.Post,
+        ~body=Fetch.BodyInit.make(Js.Json.stringify(json)),
+        ~headers=Fetch.HeadersInit.make({"Content-Type": "application/json"}),
+        (),
+      );
+
+    let%FRes response =
+      url
+      ->Fetch.fetchWithInit(init)
+      ->FutureJs.fromPromise(e =>
+          e->RawJsError.fromPromiseError.message->FetchError
+        );
+
+    response
+    ->Fetch.Response.json
+    ->FutureJs.fromPromise(e =>
+        e->RawJsError.fromPromiseError.message->FetchError
+      );
+  };
+
   module Explorer = {
     let operations =
         (
@@ -109,22 +133,28 @@ module URL = {
       let path = "tokens/exists/" ++ (contract :> string);
       build_explorer_url(network, path, []);
     };
-
-    let getTokenBalance =
-        (network, ~contract: PublicKeyHash.t, ~account: PublicKeyHash.t) => {
-      let path =
-        "accounts/"
-        ++ (account :> string)
-        ++ "/tokens/"
-        ++ (contract :> string)
-        ++ "/balance";
-      build_explorer_url(network, path, []);
-    };
   };
 
   module Endpoint = {
     let delegates = settings =>
       ConfigUtils.endpoint(settings) ++ Path.Endpoint.delegates;
+
+    let runView = settings =>
+      ConfigUtils.endpoint(settings) ++ Path.Endpoint.runView;
+
+    /* Generates a valid JSON for the run_view RPC */
+    let fa12GetBalanceInput =
+        (~settings, ~contract: PublicKeyHash.t, ~account: PublicKeyHash.t) => {
+      Json.Encode.(
+        object_([
+          ("contract", string((contract :> string))),
+          ("entrypoint", string("getBalance")),
+          ("chain_id", string(settings->ConfigUtils.chainId)),
+          ("input", object_([("string", string((account :> string)))])),
+          ("unparsing_mode", string("Readable")),
+        ])
+      );
+    };
   };
 
   module External = {
