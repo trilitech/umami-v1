@@ -23,89 +23,34 @@
 /*                                                                           */
 /*****************************************************************************/
 
-let getOk = (result, sink) =>
-  switch (result) {
-  | Ok(value) => sink(value)
-  | Error(_) => ()
-  };
+type Errors.t +=
+  | DecodeError(string);
 
-let getError = (result, sink) =>
-  switch (result) {
-  | Ok(_) => ()
-  | Error(value) => sink(value)
-  };
+// Propagates Errors.t during decoding, should be caught by the decode function
+exception InternalError(Errors.t);
 
-let fromOption = (v, error) =>
-  switch (v) {
-  | Some(v) => Ok(v)
-  | None => error->Error
-  };
+let decode:
+  (Js.Json.t, Json.Decode.decoder('a)) => result('a, TezosClient.Errors.t);
 
-let flatMap2 = (r1, r2, f) =>
-  switch (r1, r2) {
-  | (Ok(v1), Ok(v2)) => f(v1, v2)
-  | (Error(err), _)
-  | (_, Error(err)) => Error(err)
-  };
+module MichelsonDecode: {
+  type address =
+    | Packed(bytes)
+    | Pkh(PublicKeyHash.t);
 
-let fromExn = (v, f) =>
-  try(f(v)->Ok) {
-  | e => Error(e)
-  };
+  let dataDecoder:
+    Json.Decode.decoder('a) => Json.Decode.decoder(array('a));
 
-let getWithExn = (v, f) =>
-  switch (v) {
-  | Ok(v) => v
-  | Error(e) => raise(f(e))
-  };
+  let pairDecoder:
+    (Json.Decode.decoder('a), Json.Decode.decoder('b)) =>
+    Json.Decode.decoder(('a, 'b));
 
-let mapError = (r, f) =>
-  switch (r) {
-  | Ok(v) => Ok(v)
-  | Error(e) => Error(f(e))
-  };
+  let intDecoder: Json.Decode.decoder(string);
 
-let flatMapError = (r, f) =>
-  switch (r) {
-  | Ok(v) => Ok(v)
-  | Error(e) => f(e)
-  };
+  let bytesDecoder: Json.Decode.decoder(bytes);
 
-let map2 = (r1, r2, f) => flatMap2(r1, r2, (v1, v2) => Ok(f(v1, v2)));
+  let stringDecoder: Json.Decode.decoder(string);
 
-let collect = (type err, l: list(result(_, err))) => {
-  // let's quit the reduce as soon as e have an error
-  exception Fail(err);
-  try(
-    l
-    // This uses reduce + reverse to always catch the first error in the list
-    ->List.reduce([], (l, v) =>
-        switch (v) {
-        | Ok(v) => [v, ...l]
-        | Error(e) => raise(Fail(e))
-        }
-      )
-    ->List.reverse
-    ->Ok
-  ) {
-  | Fail(err) => Error(err)
-  };
-};
+  let addressDecoder: Json.Decode.decoder(address);
 
-let collectArray = (type err, arr: array(result(_, err))) => {
-  // let's quit the reduce as soon as e have an error
-  exception Fail(err);
-  try(
-    arr
-    // This uses reduce + reverse to always catch the first error in the list
-    ->Array.map(v =>
-        switch (v) {
-        | Ok(v) => v
-        | Error(e) => raise(Fail(e))
-        }
-      )
-    ->Ok
-  ) {
-  | Fail(err) => Error(err)
-  };
+  let fa2BalanceOfDecoder: Js.Json.t => array(((address, string), string));
 };
