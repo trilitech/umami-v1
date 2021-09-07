@@ -42,7 +42,11 @@ module Component = {
 
     let operationsReload = StoreContext.Operations.useResetAll();
     let renderItem = (currentLevel, operation: Operation.Read.t) =>
-      <OperationRowItem operation currentLevel />;
+      <OperationRowItem
+        key={operation.hash ++ operation.id}
+        operation
+        currentLevel
+      />;
 
     <View style=styles##container>
       <OperationsHeaderView>
@@ -53,8 +57,7 @@ module Component = {
       </OperationsHeaderView>
       {ApiRequest.(
          switch (operationsRequest) {
-         | Done(Ok(response), _)
-         | Loading(Some(response)) =>
+         | Done(Ok(response), _) =>
            <Pagination
              elements={response.operations->sort}
              renderItem={renderItem(response.currentLevel)}
@@ -62,6 +65,7 @@ module Component = {
            />
          | Done(Error(error), _) => error->Errors.toString->React.string
          | NotAsked
+         | Loading(Some(_))
          | Loading(None) => <LoadingView />
          }
        )}
