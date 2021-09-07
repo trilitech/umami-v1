@@ -62,7 +62,7 @@ let make = (~onSign) => {
       },
       ~onSubmit=
         _ => {
-          onAgree()->ignore;
+          onAgree();
           onSign(false);
           None;
         },

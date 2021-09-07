@@ -53,13 +53,12 @@ let make = (~operation, ~token, ~form: SendForm.api) => {
   React.useEffect0(() => {
     if (form.values.recipient != AnyString("") && form.values.amount != "") {
       sendOperationSimulate(operation)
-      ->Future.tapOk(dryRun => {
+      ->FutureEx.getOk(dryRun => {
           form.handleChange(Fee, dryRun.fee->Tez.toString);
           form.handleChange(GasLimit, dryRun.gasLimit->string_of_int);
           form.handleChange(StorageLimit, dryRun.storageLimit->string_of_int);
-          form.setFieldValue(DryRun, Some(dryRun));
-        })
-      ->ignore;
+          form.setFieldValue(DryRun, Some(dryRun), ());
+        });
     };
 
     None;

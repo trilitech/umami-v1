@@ -96,3 +96,9 @@ let ok = v => v->Ok->Future.value;
 let err = v => v->Error->Future.value;
 let some = v => v->Some->Ok->Future.value;
 let none = () => None->Ok->Future.value;
+
+let ignore = (ft: Future.t(Result.t(_, _))) => {
+  ft->ignore;
+};
+
+let async = (f: unit => Future.t(Result.t(_, _))) => f()->ignore;

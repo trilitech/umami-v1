@@ -73,6 +73,7 @@ let keepNonFormErrors =
 let useDerive =
   ApiRequest.useSetter(
     ~keepError=keepNonFormErrors,
+    ~logOk=_ => I18n.t#account_created,
     ~set=
       (~config, {name, index, kind, timeout}) =>
         switch (kind) {
@@ -100,9 +101,10 @@ type createInput = {
 
 let useCreateWithMnemonics =
   ApiRequest.useSetter(
+    ~logOk=_ => I18n.t#account_created,
     ~keepError=keepNonFormErrors,
     ~set=
-      (~config, {name, mnemonic, derivationPath, password}) =>
+      (~config, {name, mnemonic, derivationPath, password}) => {
         WalletAPI.Accounts.restore(
           ~config,
           ~backupPhrase=mnemonic,
@@ -110,7 +112,8 @@ let useCreateWithMnemonics =
           ~derivationPath,
           ~password,
           (),
-        ),
+        )
+      },
     ~kind=Logs.Secret,
   );
 
@@ -196,6 +199,7 @@ let useMnemonicScan =
 
 let useUpdate =
   ApiRequest.useSetter(
+    ~logOk=_ => I18n.t#secret_updated,
     ~set=
       (~config, {index, secret}: Secret.derived) => {
         WalletAPI.Accounts.updateSecretAt(~config, secret, index)
@@ -206,6 +210,7 @@ let useUpdate =
 
 let useDelete =
   ApiRequest.useSetter(
+    ~logOk=_ => I18n.t#secret_deleted,
     ~set=WalletAPI.Accounts.deleteSecretAt,
     ~kind=Logs.Secret,
   );

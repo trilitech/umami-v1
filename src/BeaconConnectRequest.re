@@ -24,6 +24,7 @@
 /*****************************************************************************/
 
 open ReactNative;
+open Let;
 
 let styles =
   Style.(
@@ -162,47 +163,43 @@ let make = () => {
             } else if (request->checkOperationRequestHasOnlyOneDelegation) {
               openDelegation(request);
             } else {
-              client
-              ->FutureEx.fromOption(
-                  ~error=
-                    Errors.Generic(I18n.errors#beacon_client_not_created),
-                )
-              ->Future.flatMapOk(client =>
+              FutureEx.async(() => {
+                let%FRes client =
+                  client->FutureEx.fromOption(
+                    ~error=
+                      Errors.Generic(I18n.errors#beacon_client_not_created),
+                  );
+                let%FResMap () =
                   client->ReBeacon.WalletClient.respond(
                     `Error({
                       type_: `error,
                       id: request.id,
                       errorType: `TRANSACTION_INVALID_ERROR,
                     }),
-                  )
-                )
-              ->FutureEx.getOk(_ =>
-                  setError(_ =>
-                    Some(I18n.errors#beacon_transaction_not_supported)
-                  )
+                  );
+                setError(_ =>
+                  Some(I18n.errors#beacon_transaction_not_supported)
                 );
+              });
             }
           | _ => ()
           };
         } else {
-          client
-          ->FutureEx.fromOption(
-              ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
-            )
-          ->Future.flatMapOk(client =>
+          FutureEx.async(() => {
+            let%FRes client =
+              client->FutureEx.fromOption(
+                ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
+              );
+            let%FResMap () =
               client->ReBeacon.WalletClient.respond(
                 `Error({
                   type_: `error,
                   id: request->ReBeacon.Message.Request.getId,
                   errorType: `NETWORK_NOT_SUPPORTED,
                 }),
-              )
-            )
-          ->FutureEx.getOk(_ =>
-              setError(_ =>
-                Some(I18n.errors#beacon_request_network_missmatch)
-              )
-            );
+              );
+            setError(_ => Some(I18n.errors#beacon_request_network_missmatch));
+          });
         };
       | None => ()
       };

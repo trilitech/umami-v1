@@ -25,6 +25,7 @@
 
 open ReactNative;
 open Delegate;
+open Let;
 
 let styles =
   Style.(
@@ -243,8 +244,9 @@ let make = (~closeAction, ~action) => {
       let op =
         Protocol.makeDelegate(~source=account.address, ~delegate=None, ());
       sendOperationSimulate(op->Operation.Simulation.delegation)
-      ->Future.tapOk(dryRun => {setModalStep(_ => PasswordStep(op, dryRun))})
-      ->ignore;
+      ->FutureEx.getOk(dryRun => {
+          setModalStep(_ => PasswordStep(op, dryRun))
+        });
 
     | _ => ()
     };
@@ -253,11 +255,13 @@ let make = (~closeAction, ~action) => {
   });
 
   let form =
-    Form.build(action, advancedOptionOpened, op =>
-      sendOperationSimulate(op->Operation.Simulation.delegation)
-      ->Future.tapOk(dryRun => {setModalStep(_ => PasswordStep(op, dryRun))})
-      ->ignore
-    );
+    Form.build(action, advancedOptionOpened, op => {
+      FutureEx.async(() => {
+        let%FResMap dryRun =
+          sendOperationSimulate(op->Operation.Simulation.delegation);
+        setModalStep(_ => PasswordStep(op, dryRun));
+      })
+    });
 
   let title =
     switch (modalStep, action) {

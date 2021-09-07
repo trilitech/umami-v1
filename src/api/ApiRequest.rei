@@ -161,6 +161,7 @@ let useLoader:
    */
 let useSetter:
   (
+    ~logOk: 'a => string=?,
     ~toast: bool=?,
     ~sideEffect: 'a => unit=?,
     ~set: (~config: ConfigFile.t, 'c) => Let.future('a),

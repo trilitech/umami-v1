@@ -58,8 +58,6 @@ let make =
   let (createAliasRequest, createAlias) = StoreContext.Aliases.useCreate();
   let (updateAliasRequest, updateAlias) = StoreContext.Aliases.useUpdate();
 
-  let addToast = LogsContext.useToast();
-
   let aliasesRequest = StoreContext.Aliases.useRequest();
   let aliases =
     aliasesRequest
@@ -94,18 +92,10 @@ let make =
               state.values.name,
               state.values.address->PublicKeyHash.build->Result.getExn,
             ))
-            ->Future.tapOk(_ => closeAction())
-            ->ApiRequest.logOk(addToast, Logs.Account, _ =>
-                I18n.t#contact_added
-              )
-            ->ignore
+            ->FutureEx.getOk(_ => closeAction())
           | Edit(account) =>
             updateAlias({new_name: state.values.name, old_name: account.name})
-            ->Future.tapOk(_ => closeAction())
-            ->ApiRequest.logOk(addToast, Logs.Account, _ =>
-                I18n.t#account_updated
-              )
-            ->ignore
+            ->FutureEx.getOk(_ => closeAction())
           };
 
           None;

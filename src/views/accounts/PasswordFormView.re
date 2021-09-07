@@ -38,14 +38,14 @@ let usePasswordForm = submitPassword => {
       ~onSubmit=
         ({state, raiseSubmitFailed}) => {
           submitPassword(~password=state.values.password)
-          ->Future.tapError(
+          ->FutureEx.getError(
               fun
               | Errors.WrongPassword
               | SecureStorage.Cipher.DecryptError =>
                 raiseSubmitFailed(Some(I18n.form_input_error#wrong_password))
               | _ => (),
-            )
-          ->ignore;
+            );
+
           None;
         },
       ~initialState={password: ""},

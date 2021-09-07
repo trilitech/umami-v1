@@ -36,14 +36,7 @@ let make = (~secret: Secret.derived, ~closeAction) => {
   let (updateSecretRequest, updateSecret) = StoreContext.Secrets.useUpdate();
   let secrets = secretsRequest->ApiRequest.getWithDefault([||]);
 
-  let addLog = LogsContext.useAdd();
-
-  let action = secret => {
-    updateSecret(secret)
-    ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
-        I18n.t#secret_updated
-      );
-  };
+  let action = secret => updateSecret(secret);
 
   let form: SecretCreateForm.api =
     SecretCreateForm.use(
@@ -64,8 +57,7 @@ let make = (~secret: Secret.derived, ~closeAction) => {
               },
             },
           )
-          ->Future.tapOk(() => closeAction())
-          ->ignore;
+          ->FutureEx.getOk(() => closeAction());
 
           None;
         },

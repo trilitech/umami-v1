@@ -154,9 +154,11 @@ let fetch = (url, ~timeout=?, ()) => {
   let ctrl = Fetch.AbortController.make();
   let signal = Fetch.AbortController.signal(ctrl);
   let res = fetch(url, {signal: signal});
-  timeout->Lib.Option.iter(ms =>
-    Js.Global.setTimeout(() => Fetch.AbortController.abort(ctrl), ms)->ignore
-  );
+  timeout->Lib.Option.iter(ms => {
+    let _: Js_global.timeoutId =
+      Js.Global.setTimeout(() => Fetch.AbortController.abort(ctrl), ms);
+    ();
+  });
   res->FutureJs.fromPromise(err => {
     let {name} = err->RawJsError.fromPromiseError;
     switch (name) {

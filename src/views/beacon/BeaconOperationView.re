@@ -24,7 +24,7 @@
 /*****************************************************************************/
 
 open ReactNative;
-open UmamiCommon;
+open Let;
 
 let styles =
   Style.(
@@ -124,28 +124,30 @@ module Make = (Op: OP) => {
 
     React.useEffect1(
       () => {
-        sendOperationSimulate(simulatedOperation)->ignore;
+        sendOperationSimulate(simulatedOperation)->FutureEx.ignore;
         None;
       },
       [|operation|],
     );
 
-    let sendOperation = i =>
-      sendOperation(i)
-      ->Future.tapOk(hash => {
-          client->Lib.Option.iter(client =>
-            client
-            ->ReBeacon.WalletClient.respond(
-                `OperationResponse({
-                  type_: `operation_response,
-                  id: beaconRequest.id,
-                  transactionHash: hash,
-                }),
-              )
-            ->ignore
+    let sendOperation = i => {
+      let%FRes hash = sendOperation(i);
+
+      let%FResMap () =
+        switch (client) {
+        | Some(client) =>
+          client->ReBeacon.WalletClient.respond(
+            `OperationResponse({
+              type_: `operation_response,
+              id: beaconRequest.id,
+              transactionHash: hash,
+            }),
           )
-        })
-      ->Future.tapOk(_ => {updateAccount(beaconRequest.sourceAddress)});
+        | None => FutureEx.ok()
+        };
+
+      updateAccount(beaconRequest.sourceAddress);
+    };
 
     <ModalFormView title=I18n.title#confirmation ?closing>
       {switch (operationApiRequest) {

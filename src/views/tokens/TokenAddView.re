@@ -24,6 +24,7 @@
 /*****************************************************************************/
 
 open ReactNative;
+open Let;
 
 module StateLenses = [%lenses
   type state = {
@@ -45,8 +46,6 @@ let styles =
 [@react.component]
 let make = (~chain, ~closeAction) => {
   let (tokenCreateRequest, createToken) = StoreContext.Tokens.useCreate();
-  let (_checkTokenRequest, checkToken) = StoreContext.Tokens.useCheck();
-  let addToast = LogsContext.useToast();
 
   let form: TokenCreateForm.api =
     TokenCreateForm.use(
@@ -56,34 +55,18 @@ let make = (~chain, ~closeAction) => {
         );
       },
       ~onSubmit=
-        ({state, raiseSubmitFailed}) => {
-          state.values.address
-          ->PublicKeyHash.build
-          ->Future.value
-          ->Future.flatMapOk(address =>
-              checkToken(address)->Future.mapOk(res => (address, res))
-            )
-          ->Future.get(result =>
-              switch (result) {
-              | Ok((address, true)) =>
-                createToken({
-                  address,
-                  alias: state.values.name,
-                  symbol: state.values.symbol,
-                  chain,
-                })
-                ->Future.tapOk(_ => closeAction())
-                ->ApiRequest.logOk(addToast, Logs.Tokens, _ =>
-                    I18n.t#token_created
-                  )
-                ->ignore
-              | Error(_)
-              | Ok((_, false)) =>
-                let errorMsg = I18n.t#error_check_contract;
-                addToast(Logs.log(~kind=Error, ~origin=Tokens, errorMsg));
-                raiseSubmitFailed(Some(errorMsg));
-              }
-            );
+        ({state}) => {
+          FutureEx.async(() => {
+            let%FResMap address =
+              state.values.address->PublicKeyHash.build->Future.value;
+            createToken({
+              address,
+              alias: state.values.name,
+              symbol: state.values.symbol,
+              chain,
+            })
+            ->FutureEx.getOk(_ => closeAction());
+          });
 
           None;
         },

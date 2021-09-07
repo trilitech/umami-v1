@@ -183,10 +183,12 @@ let make = (~initNode=?, ~initMezos=?, ~action: action, ~closeAction) => {
               | Edit(network) => editCustomNetwork(network, newNetwork)
               };
             })
-          ->Future.tapError(err => err->rsf(raiseSubmitFailed))
-          ->Future.tapOk(_ => closeAction())
           ->ApiRequest.logOk(addToast, Logs.Account, _ => log)
-          ->ignore;
+          ->Future.get(
+              fun
+              | Ok () => closeAction()
+              | Error(e) => e->rsf(raiseSubmitFailed),
+            );
 
           None;
         },

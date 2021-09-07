@@ -150,32 +150,30 @@ let make = (~children) => {
   let (_, setEulaSignature) as eulaSignatureRequestState =
     React.useState(() => false);
 
-  SecretApiRequest.useLoad(secretsRequestState)->ignore;
-  AccountApiRequest.useLoad(accountsRequestState)->ignore;
-  AliasApiRequest.useLoad(aliasesRequestState)->ignore;
-  TokensApiRequest.useLoadTokens(tokensRequestState)->ignore;
+  let _: ApiRequest.t(_) = SecretApiRequest.useLoad(secretsRequestState);
+  let _: ApiRequest.t(_) = AccountApiRequest.useLoad(accountsRequestState);
+  let _: ApiRequest.t(_) = AliasApiRequest.useLoad(aliasesRequestState);
+  let _: ApiRequest.t(_) =
+    TokensApiRequest.useLoadTokens(tokensRequestState);
 
   React.useEffect0(() => {
     setEulaSignature(_ => Disclaimer.needSigning());
     None;
   });
 
-  React.useEffect1(
+  ReactUtils.useAsyncEffect1(
     () => {
-      let _: Let.future(_) = {
-        let%FResMap (v: Network.apiVersion, _) =
-          Network.checkConfiguration(
-            settings->ConfigUtils.explorer,
-            settings->ConfigUtils.endpoint,
-          );
-        setApiVersion(_ => Some(v));
-        if (!Network.checkInBound(v.api)) {
-          addToast(
-            Logs.error(~origin=Settings, Network.API(NotSupported(v.api))),
-          );
-        };
+      let%FResMap (v: Network.apiVersion, _) =
+        Network.checkConfiguration(
+          settings->ConfigUtils.explorer,
+          settings->ConfigUtils.endpoint,
+        );
+      setApiVersion(_ => Some(v));
+      if (!Network.checkInBound(v.api)) {
+        addToast(
+          Logs.error(~origin=Settings, Network.API(NotSupported(v.api))),
+        );
       };
-      None;
     },
     [|network|],
   );
