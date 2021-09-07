@@ -67,6 +67,9 @@ type options = (
   ProtocolOptions.commonOptions,
 );
 
+/* These types are for the standard FA1.2 operations, however they are not used
+   for now in Umami. */
+
 module Approve = {
   type t = {
     address: string,
@@ -117,47 +120,3 @@ let operationEntrypoint =
   | GetBalance(_) => "getBalance"
   | GetAllowance(_) => "getAllowance"
   | GetTotalSupply(_) => "getTotalSupply";
-
-let setCallback = (op, callback) => {
-  let callback = Some(callback);
-  switch (op) {
-  | Transfer(_) as t => t
-  | Approve(_) as a => a
-  | GetBalance(gb) => GetBalance({...gb, callback})
-  | GetAllowance(ga) => GetAllowance({...ga, callback})
-  | GetTotalSupply(gts) => GetTotalSupply({...gts, callback})
-  };
-};
-
-let makeGetBalance =
-    (
-      address: PublicKeyHash.t,
-      contract: TokenRepr.address,
-      ~fee=?,
-      ~gasLimit=?,
-      ~storageLimit=?,
-      ~burnCap=?,
-      ~forceLowFee=?,
-      ~callback=?,
-      (),
-    ) => {
-  let tx_options =
-    ProtocolOptions.makeTransferOptions(
-      ~fee,
-      ~gasLimit,
-      ~storageLimit,
-      ~parameter=None,
-      ~entrypoint=None,
-      (),
-    );
-  let common_options =
-    ProtocolOptions.makeCommonOptions(~fee, ~burnCap, ~forceLowFee, ());
-  GetBalance(
-    GetBalance.{
-      address,
-      callback,
-      token: contract,
-      options: (tx_options, common_options),
-    },
-  );
-};

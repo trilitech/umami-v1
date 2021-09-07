@@ -48,11 +48,17 @@ let useCheckTokenContract = () => {
   ApiRequest.useSetter(~set, ~kind=Logs.Tokens, ~toast=false, ());
 };
 
-let useLoadOperationOffline = (~requestState, ~operation: Token.operation) => {
-  let get = (~config, operation) =>
-    config->NodeAPI.Tokens.callGetOperationOffline(operation);
+let useLoadFA12Balance =
+    (~requestState, ~address: PublicKeyHash.t, ~token: PublicKeyHash.t) => {
+  let get = (~config, (address, token)) =>
+    config->NodeAPI.Tokens.runFA12GetBalance(~address, ~token);
 
-  ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, operation);
+  ApiRequest.useLoader(
+    ~get,
+    ~kind=Logs.Tokens,
+    ~requestState,
+    (address, token),
+  );
 };
 
 let tokensStorageKey = "wallet-tokens";

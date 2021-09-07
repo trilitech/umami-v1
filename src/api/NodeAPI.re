@@ -337,21 +337,7 @@ module Tokens = {
       )
     };
 
-  let callGetOperationOffline = (config, operation: Token.operation) => {
-    let%FRes () =
-      offline(operation)
-        ? FutureEx.ok()
-        : OperationNotRunnableOffchain(Token.operationEntrypoint(operation))
-          ->FutureEx.err;
-
-    let%FRes {token, address} =
-      switch (operation) {
-      | GetBalance(gb) => gb->FutureEx.ok
-      | _ =>
-        OffchainCallNotImplemented(Token.operationEntrypoint(operation))
-        ->FutureEx.err
-      };
-
+  let runFA12GetBalance = (config, ~address, ~token) => {
     let%FRes json =
       config
       ->URL.Endpoint.runView
