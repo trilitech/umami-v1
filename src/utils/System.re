@@ -26,7 +26,7 @@
 %raw
 "
 var electron = require('electron');
-var { app, Menu } = electron.remote;
+var { app, Menu, MenuItem } = electron.remote;
 var shell = electron.shell;
 var process = require('process');
 var OS = require('os');
@@ -321,17 +321,22 @@ module Menu = {
     | `shareMenu
   ];
 
-  type item = {
-    role: option(role),
-    [@bs.as "type"]
-    kind: option(kind),
-    label: option(string),
-    click: option(ReactNative.Event.pressEvent => unit),
-    submenu: option(array(item)),
+  module Item = {
+    type t = {role: option(role)};
+    type options = {
+      role: option(role),
+      [@bs.as "type"]
+      kind: option(kind),
+      label: option(string),
+      click: option(ReactNative.Event.pressEvent => unit),
+      submenu: option(array(options)),
+    };
+
+    [@bs.new] external make: options => t = "MenuItem";
   };
 
   let mkItem = (~role=?, ~kind=?, ~label=?, ~click=?, ~submenu=?, ()) => {
-    role,
+    Item.role,
     kind,
     click,
     label,
@@ -339,20 +344,29 @@ module Menu = {
   };
 
   let mkSubmenu = (~role=?, ~label=?, ~submenu, ()) => {
-    role,
+    Item.role,
     kind: Some(`submenu),
     click: None,
     label,
     submenu: Some(submenu),
   };
 
-  type template = array(item);
+  type template = array(Item.options);
 
-  type menu;
+  type t = {items: array(Item.t)};
+
+  [@bs.new] external make: unit => t = "Menu";
+  [@bs.scope "Menu"] [@bs.val]
+  external buildFromTemplate: template => t = "buildFromTemplate";
 
   [@bs.scope "Menu"] [@bs.val]
-  external buildFromTemplate: template => menu = "buildFromTemplate";
+  external getApplicationMenuRaw: unit => Js.Nullable.t(t) =
+    "getApplicationMenu";
+  let getApplicationMenu: unit => option(t) =
+    () => getApplicationMenuRaw()->Js.Nullable.toOption;
 
   [@bs.scope "Menu"] [@bs.val]
-  external setApplicationMenu: menu => unit = "setApplicationMenu";
+  external setApplicationMenu: t => unit = "setApplicationMenu";
+
+  [@bs.send] external append: (t, Item.t) => unit = "append";
 };

@@ -57,7 +57,7 @@ module EmptyAppView = {
 
 let menu = {
   open System.Menu;
-  let appMenuRole = System.isMac ? `appMenu : `fileMenu;
+  open UmamiCommon;
 
   let supportUrl = "https://umamiwallet.com/#support";
   let downloadUrl = "https://umamiwallet.com/#download";
@@ -82,16 +82,26 @@ let menu = {
       (),
     );
 
-  buildFromTemplate([|
-    mkItem(~role=appMenuRole, ()),
-    mkItem(~role=`editMenu, ()),
-    mkItem(~role=`viewMenu, ()),
-    mkSubmenu(
-      ~label=I18n.menu#app_menu_help,
-      ~submenu=[|supportItem, downloadItem, websiteItem|],
-      (),
+  let currentAppMenu = System.Menu.getApplicationMenu();
+  let newAppMenu = System.Menu.make();
+  currentAppMenu
+  ->Option.map(menu =>
+      menu.items->Js.Array2.filter(item => item.role != Some(`help))
+    )
+  ->Lib.Option.iter(items =>
+      items->Array.forEach(item => newAppMenu->System.Menu.append(item))
+    );
+  newAppMenu->append(
+    Item.make(
+      mkSubmenu(
+        ~role=`help,
+        ~label=I18n.menu#app_menu_help,
+        ~submenu=[|supportItem, downloadItem, websiteItem|],
+        (),
+      ),
     ),
-  |]);
+  );
+  newAppMenu;
 };
 
 module DisclaimerModal = {

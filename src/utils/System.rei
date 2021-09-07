@@ -147,13 +147,18 @@ module Menu: {
     | `shareMenu
   ];
 
-  type item = {
-    role: option(role),
-    [@bs.as "type"]
-    kind: option(kind),
-    label: option(string),
-    click: option(ReactNative.Event.pressEvent => unit),
-    submenu: option(array(item)),
+  module Item: {
+    type t = {role: option(role)};
+    type options = {
+      role: option(role),
+      [@bs.as "type"]
+      kind: option(kind),
+      label: option(string),
+      click: option(ReactNative.Event.pressEvent => unit),
+      submenu: option(array(options)),
+    };
+
+    let make: options => t;
   };
 
   let mkItem:
@@ -162,17 +167,21 @@ module Menu: {
       ~kind: kind=?,
       ~label: string=?,
       ~click: ReactNative.Event.pressEvent => unit=?,
-      ~submenu: array(item)=?,
+      ~submenu: array(Item.options)=?,
       unit
     ) =>
-    item;
+    Item.options;
 
   let mkSubmenu:
-    (~role: role=?, ~label: string=?, ~submenu: array(item), unit) => item;
+    (~role: role=?, ~label: string=?, ~submenu: array(Item.options), unit) => Item.options;
 
-  type template = array(item);
-  type menu;
+  type template = array(Item.options);
+  type t = {items: array(Item.t)};
 
-  let buildFromTemplate: template => menu;
-  let setApplicationMenu: menu => unit;
+  let make: unit => t;
+  let buildFromTemplate: template => t;
+  let getApplicationMenu: unit => option(t);
+  let setApplicationMenu: t => unit;
+
+  let append: (t, Item.t) => unit;
 };
