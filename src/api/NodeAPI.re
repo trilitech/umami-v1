@@ -301,42 +301,6 @@ module Tokens = {
     };
   };
 
-  let batchEstimate = (config, transfers, ~source, ~index=?, ()) =>
-    Simulation.batch(config, transfers, ~source, ~index?, ());
-
-  let batch = (config, transfers, ~source, ~signingIntent) =>
-    Operation.batch(config, transfers, ~source, ~signingIntent);
-
-  let offline = (operation: Token.operation) => {
-    switch (operation) {
-    | Transfer(_)
-    | Approve(_) => false
-    | GetBalance(_)
-    | GetAllowance(_)
-    | GetTotalSupply(_) => true
-    };
-  };
-
-  let simulate = (network, ~index=?, operation: Token.operation) =>
-    switch (operation) {
-    | Transfer({source, transfers, _}) =>
-      batchEstimate(network, transfers, ~source, ~index?, ())
-    | _ =>
-      Future.value(
-        SimulationNotAvailable(Token.operationEntrypoint(operation))->Error,
-      )
-    };
-
-  let inject = (network, operation: Token.operation, ~signingIntent) =>
-    switch (operation) {
-    | Transfer({source, transfers, _}) =>
-      batch(network, transfers, ~source, ~signingIntent)
-    | _ =>
-      Future.value(
-        InjectionNotImplemented(Token.operationEntrypoint(operation))->Error,
-      )
-    };
-
   let runFA12GetBalance = (config, ~address, ~token) => {
     let%FRes json =
       config

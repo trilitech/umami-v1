@@ -47,11 +47,6 @@ let delegate = (d, signingIntent) => {
   signingIntent,
 };
 
-let token = (operation, signingIntent) => {
-  operation: Token(operation),
-  signingIntent,
-};
-
 let keepNonFormErrors =
   fun
   | ReTaquitoError.LedgerInitTimeout
@@ -67,9 +62,6 @@ let useCreate = (~sideEffect=?, ()) => {
     switch (operation) {
     | Protocol(operation) =>
       config->NodeAPI.Operation.run(operation, ~signingIntent)
-
-    | Token(operation) =>
-      config->NodeAPI.Tokens.inject(operation, ~signingIntent)
 
     | Transfer(t) =>
       config->NodeAPI.Operation.batch(
@@ -97,8 +89,6 @@ let useSimulate = () => {
     switch (operation) {
     | Operation.Simulation.Protocol(operation, index) =>
       config->NodeAPI.Simulation.run(~index?, operation)
-    | Operation.Simulation.Token(operation, index) =>
-      config->NodeAPI.Tokens.simulate(~index?, operation)
     | Operation.Simulation.Transfer(t, index) =>
       config->NodeAPI.Simulation.batch(
         t.transfers,

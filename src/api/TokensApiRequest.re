@@ -37,11 +37,6 @@ let () =
     | _ => None,
   );
 
-type injection = {
-  operation: Token.operation,
-  password: string,
-};
-
 let useCheckTokenContract = () => {
   let set = (~config, address) =>
     config->NodeAPI.Tokens.checkTokenContract(address);
