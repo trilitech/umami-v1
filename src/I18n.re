@@ -490,13 +490,6 @@ let errors = {
   pub illformed_token_contract = "Illformed Token Contract";
   pub cannot_read_token = s => p("Cannot read token amount: %s", s);
   pub invalid_operation_type = "Invalid operation type!";
-  pub operation_cannot_be_run_offchain = s =>
-    p("Operation '%s' cannot be run offchain.", s);
-  pub operation_not_simulable = s => p("Operation '%s' is not simulable.", s);
-  pub operation_injection_not_implemented = s =>
-    p("Operation '%s' injection is not implemented", s);
-  pub operation_not_implemented = s =>
-    p("Operation '%s' offchain call is not implemented", s);
   pub unhandled_error = e => p("Unhandled error %s", e);
   pub no_secret_found = "No secrets found";
   pub secret_not_found = i => p("Secret at index %d not found!", i);

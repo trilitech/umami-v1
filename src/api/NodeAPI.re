@@ -28,13 +28,9 @@ open ServerAPI;
 open Let;
 
 type Errors.t +=
-  | OperationNotRunnableOffchain(string)
-  | SimulationNotAvailable(string)
-  | InjectionNotImplemented(string)
   | IllformedTokenContract
   | InvalidOperationType
-  | UnreadableTokenAmount(string)
-  | OffchainCallNotImplemented(string);
+  | UnreadableTokenAmount(string);
 
 let () =
   Errors.registerHandler(
@@ -42,15 +38,7 @@ let () =
     fun
     | UnreadableTokenAmount(s) => I18n.errors#cannot_read_token(s)->Some
     | InvalidOperationType => I18n.errors#invalid_operation_type->Some
-    | OperationNotRunnableOffchain(s) =>
-      I18n.errors#operation_cannot_be_run_offchain(s)->Some
     | IllformedTokenContract => I18n.errors#illformed_token_contract->Some
-    | SimulationNotAvailable(s) =>
-      I18n.errors#operation_not_simulable(s)->Some
-    | InjectionNotImplemented(s) =>
-      I18n.errors#operation_injection_not_implemented(s)->Some
-    | OffchainCallNotImplemented(s) =>
-      I18n.errors#operation_not_implemented(s)->Some
     | _ => None,
   );
 
