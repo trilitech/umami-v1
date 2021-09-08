@@ -296,6 +296,8 @@ module Form_input_error = {
 };
 
 module Title = {
+  let custom_auth_sign_in_up = "Waiting for authentification";
+  let provider_authentification = pr => p("%s authentification", pr);
   let nft_specs = "View Specs";
   let error_logs = "Logs";
   let secret_create = "Create New Secret";
@@ -390,6 +392,7 @@ module Title = {
 };
 
 module Expl = {
+  let provider_authentification = p("Please log into %s to import your key");
   let nft_empty_state = "Umami should automatically discover any NFT you possess.";
   let network_disconnect = "The Tezos network is currently unreachable. Your internet connection might be unstable. If it is not the case, you should check your configuration and update it by following the documentation";
   let hardware_wallet_confirm_operation = "Please validate the details of the transaction and press Confirm to sign it on your Ledger.";
