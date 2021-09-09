@@ -122,18 +122,10 @@ module Balance = {
 
 module Signer = {
   let readEncryptedKey = (key, passphrase) =>
-    MemorySigner.create(
-      ~secretKey=key->Js.String2.substringToEnd(~from=10),
-      ~passphrase,
-      (),
-    );
+    MemorySigner.create(~secretKey=key, ~passphrase, ());
 
   let readUnencryptedKey = key =>
-    MemorySigner.create(
-      ~secretKey=key->Js.String2.substringToEnd(~from=12),
-      ~passphrase="",
-      (),
-    );
+    MemorySigner.create(~secretKey=key, ~passphrase="", ());
 
   let readLedgerKey = (callback, key) => {
     let keyData = ledgerBasePkh =>

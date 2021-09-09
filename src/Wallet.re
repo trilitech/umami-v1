@@ -268,6 +268,12 @@ type kind =
   | Unencrypted
   | Ledger;
 
+module Prefixes = {
+  let encrypted = "encrypted:";
+  let unencrypted = "unencrypted:";
+  let ledger = "ledger://";
+};
+
 let readSecretFromPkh = (address, dirpath) => {
   let%FRes alias = aliasFromPkh(~dirpath, ~pkh=address);
   let%FRes secretAliases = dirpath->SecretAliases.read;
@@ -277,10 +283,16 @@ let readSecretFromPkh = (address, dirpath) => {
     ->Js.Array2.find(a => a.SecretAliases.name == alias)
     ->FutureEx.fromOption(~error=KeyNotFound);
 
+  let sub = (k, pref) =>
+    k->Js.String2.substringToEnd(~from=String.length(pref) + 1);
+
   switch (k) {
-  | k when k->Js.String2.startsWith("encrypted:") => Ok((Encrypted, k))
-  | k when k->Js.String2.startsWith("unencrypted:") => Ok((Unencrypted, k))
-  | k when k->Js.String2.startsWith("ledger://") => Ok((Ledger, k))
+  | k when k->Js.String2.startsWith(Prefixes.encrypted) =>
+    Ok((Encrypted, k->sub(Prefixes.encrypted)))
+  | k when k->Js.String2.startsWith(Prefixes.unencrypted) =>
+    Ok((Unencrypted, k->sub(Prefixes.unencrypted)))
+  | k when k->Js.String2.startsWith(Prefixes.ledger) =>
+    Ok((Ledger, k->sub(Prefixes.ledger)))
   | k => Error(KeyBadFormat(k))
   };
 };
@@ -404,8 +416,7 @@ module Ledger = {
 
     let fromSecretKey =
         (uri: secretKeyEncoding, ~ledgerBasePkh: PublicKeyHash.t) => {
-      let elems =
-        uri->Js.String2.substringToEnd(~from=9)->Js.String2.split("/");
+      let elems = uri->Js.String2.split("/");
 
       let%Res () =
         elems->Js.Array2.length < 2 ? Error(InvalidEncoding(uri)) : Ok();
