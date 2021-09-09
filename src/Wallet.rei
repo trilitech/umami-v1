@@ -108,10 +108,7 @@ let renameAlias:
   (~dirpath: System.Path.t, ~oldName: string, ~newName: string) =>
   Let.future(unit);
 
-type kind =
-  | Encrypted
-  | Unencrypted
-  | Ledger;
+type kind = Account.kind = | Encrypted | Unencrypted | Ledger;
 
 /** Returns the prefix kind from the secret key and the secret key without the
    prefix */

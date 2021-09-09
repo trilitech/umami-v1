@@ -263,10 +263,7 @@ let renameAlias = (~dirpath, ~oldName, ~newName) => {
   updateAlias(~dirpath, ~update);
 };
 
-type kind =
-  | Encrypted
-  | Unencrypted
-  | Ledger;
+type kind = Account.kind = | Encrypted | Unencrypted | Ledger;
 
 module Prefixes = {
   let encrypted = "encrypted:";

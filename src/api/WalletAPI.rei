@@ -84,7 +84,9 @@ module Accounts: {
 
   let get:
     (~config: ConfigFile.t) =>
-    Future.t(Result.t(array((name, PublicKeyHash.t)), Errors.t));
+    Future.t(
+      Result.t(array((name, PublicKeyHash.t, Wallet.kind)), Errors.t),
+    );
 
   let updateSecretAt:
     (~config: ConfigFile.t, Secret.Repr.t, int) => Result.t(unit, Errors.t);
