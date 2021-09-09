@@ -274,17 +274,9 @@ module Prefixes = {
   let ledger = "ledger://";
 };
 
-let readSecretFromPkh = (address, dirpath) => {
-  let%FRes alias = aliasFromPkh(~dirpath, ~pkh=address);
-  let%FRes secretAliases = dirpath->SecretAliases.read;
-
-  let%FlatRes {value: k} =
-    secretAliases
-    ->Js.Array2.find(a => a.SecretAliases.name == alias)
-    ->FutureEx.fromOption(~error=KeyNotFound);
-
+let extractPrefixFromSecretKey = k => {
   let sub = (k, pref) =>
-    k->Js.String2.substringToEnd(~from=String.length(pref) + 1);
+    k->Js.String2.substringToEnd(~from=String.length(pref));
 
   switch (k) {
   | k when k->Js.String2.startsWith(Prefixes.encrypted) =>
@@ -295,6 +287,18 @@ let readSecretFromPkh = (address, dirpath) => {
     Ok((Ledger, k->sub(Prefixes.ledger)))
   | k => Error(KeyBadFormat(k))
   };
+};
+
+let readSecretFromPkh = (address, dirpath) => {
+  let%FRes alias = aliasFromPkh(~dirpath, ~pkh=address);
+  let%FRes secretAliases = dirpath->SecretAliases.read;
+
+  let%FlatRes {value: k} =
+    secretAliases
+    ->Js.Array2.find(a => a.SecretAliases.name == alias)
+    ->FutureEx.fromOption(~error=KeyNotFound);
+
+  extractPrefixFromSecretKey(k);
 };
 
 let mnemonicPkValue = pk => PkAlias.{locator: "unencrypted:" ++ pk, key: pk};

@@ -24,6 +24,7 @@
 /*****************************************************************************/
 
 type Errors.t +=
+  | KeyBadFormat(string)
   | KeyNotFound;
 
 /** Value and file associated to a kind of alias. */
@@ -112,10 +113,13 @@ type kind =
   | Unencrypted
   | Ledger;
 
+/** Returns the prefix kind from the secret key and the secret key without the
+   prefix */
+let extractPrefixFromSecretKey: string => Let.result((kind, string));
+
 /** Returns the secret key associated to a public key hash. */
 let readSecretFromPkh:
-  (PkhAlias.t, System.Path.t) =>
-  Future.t(Result.t((kind, SecretAlias.t), Errors.t));
+  (PkhAlias.t, System.Path.t) => Let.future((kind, SecretAlias.t));
 
 /** Returns the alias associated to a public key hash */
 let aliasFromPkh:
