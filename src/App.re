@@ -55,55 +55,6 @@ module EmptyAppView = {
   };
 };
 
-let menu = {
-  open System.Menu;
-  open UmamiCommon;
-
-  let supportUrl = "https://umamiwallet.com/#support";
-  let downloadUrl = "https://umamiwallet.com/#download";
-  let websiteUrl = "https://umamiwallet.com";
-
-  let supportItem =
-    mkItem(
-      ~label=I18n.menu#app_menu_support,
-      ~click=_ => System.openExternal(supportUrl),
-      (),
-    );
-  let downloadItem =
-    mkItem(
-      ~label=I18n.menu#app_menu_new_version,
-      ~click=_ => System.openExternal(downloadUrl),
-      (),
-    );
-  let websiteItem =
-    mkItem(
-      ~label=I18n.menu#app_menu_website,
-      ~click=_ => System.openExternal(websiteUrl),
-      (),
-    );
-
-  let currentAppMenu = System.Menu.getApplicationMenu();
-  let newAppMenu = System.Menu.make();
-  currentAppMenu
-  ->Option.map(menu =>
-      menu.items->Js.Array2.filter(item => item.role != Some(`help))
-    )
-  ->Lib.Option.iter(items =>
-      items->Array.forEach(item => newAppMenu->System.Menu.append(item))
-    );
-  newAppMenu->append(
-    Item.make(
-      mkSubmenu(
-        ~role=`help,
-        ~label=I18n.menu#app_menu_help,
-        ~submenu=[|supportItem, downloadItem, websiteItem|],
-        (),
-      ),
-    ),
-  );
-  newAppMenu;
-};
-
 module DisclaimerModal = {
   [@react.component]
   let make = (~onSign) => {
@@ -177,11 +128,6 @@ module AppView = {
     };
 
     let theme = ThemeContext.useTheme();
-
-    React.useEffect0(() => {
-      System.Menu.setApplicationMenu(menu);
-      None;
-    });
 
     <DocumentContext>
       <View
