@@ -36,3 +36,8 @@ let validateAnyAddress:
   string => result([> | `Address | `Contract], Errors.t);
 
 let bytes2Char: bytes => string;
+
+type prefix;
+type prefixes = {spsk: prefix};
+let prefix: prefixes;
+let b58cencode: (string, prefix) => string;
