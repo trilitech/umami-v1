@@ -28,7 +28,6 @@ open Protocol;
 
 type t =
   | Protocol(Protocol.t)
-  | Token(Token.operation)
   | Transfer(Transfer.t);
 
 let transaction = t => t->Transaction->Protocol;
@@ -40,7 +39,6 @@ module Simulation = {
 
   type t =
     | Protocol(Protocol.t, index)
-    | Token(Token.operation, index)
     | Transfer(Transfer.t, index);
 
   let delegation = d => Protocol(d->Delegation, None);

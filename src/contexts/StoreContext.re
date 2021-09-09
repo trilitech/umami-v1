@@ -341,17 +341,10 @@ module BalanceToken = {
       (address: PublicKeyHash.t, tokenAddress: PublicKeyHash.t) =>
     (address :> string) ++ (tokenAddress :> string);
 
-  let useLoad = (address: PublicKeyHash.t, tokenAddress: PublicKeyHash.t) => {
-    let requestState =
-      useRequestState(address->getRequestKey(tokenAddress)->Some);
+  let useLoad = (address: PublicKeyHash.t, token: PublicKeyHash.t) => {
+    let requestState = useRequestState(address->getRequestKey(token)->Some);
 
-    let operation =
-      React.useMemo2(
-        () => Token.makeGetBalance(address, tokenAddress, ()),
-        (address, tokenAddress),
-      );
-
-    TokensApiRequest.useLoadOperationOffline(~requestState, ~operation);
+    TokensApiRequest.useLoadFA12Balance(~requestState, ~address, ~token);
   };
 
   let useGetTotal = tokenAddress => {
