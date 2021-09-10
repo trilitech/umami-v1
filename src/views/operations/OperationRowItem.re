@@ -184,7 +184,12 @@ module AddToken = {
       <ModalAction visible=visibleModal onRequestClose=closeAction>
         <TokenAddView chain address closeAction />
       </ModalAction>
-      <IconButton icon=Icons.Add.build onPress tooltip />
+      <IconButton
+        icon=Icons.AddToken.build
+        iconSizeRatio={5. /. 7.}
+        onPress
+        tooltip
+      />
     </>;
   };
 };
@@ -215,10 +220,29 @@ let amount =
           let token: option(Token.t) = Belt.Map.String.get(tokens, address);
           switch (token) {
           | None =>
+            let tooltip = (
+              "unknown_token" ++ op.hash ++ op.op_id->string_of_int,
+              I18n.tooltip#unregistered_token_transaction,
+            );
             <View style=styles##rawAddressContainer>
-              <Text> {j|¿ token ?|j}->ReasonReact.string </Text>
+              <Text>
+                {Format.asprintf(
+                   "%s %s",
+                   sign,
+                   token_trans.amount->TokenRepr.Unit.toNatString,
+                 )
+                 ->React.string}
+              </Text>
+              <IconButton
+                icon=Icons.QuestionMark.build
+                size=19.
+                iconSizeRatio=1.
+                tooltip
+                disabled=true
+                style=Style.(style(~borderRadius=0., ~marginLeft="4px", ()))
+              />
               <AddToken address op />
-            </View>
+            </View>;
           | Some({symbol, _}) =>
             Format.asprintf(
               "%s %s %s",
