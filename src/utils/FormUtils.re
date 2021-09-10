@@ -149,7 +149,7 @@ let isValidInt = value => {
 let checkDerivationPath = (s): ReSchema.fieldState =>
   switch (s->DerivationPath.Pattern.fromString) {
   | Ok(_) => Valid
-  | Error(e) => Error(DerivationPath.handleError(e))
+  | Error(e) => Error(Errors.toString(e))
   };
 
 let formFieldsAreValids = (fieldsState, validateFields) => {

@@ -23,7 +23,7 @@
 /*                                                                           */
 /*****************************************************************************/
 
-type error =
+type Errors.t +=
   | ParsingFailed(string)
   | MoreThan1Wildcard
   | MissingWildcardOr0
@@ -31,12 +31,16 @@ type error =
 
 exception IllFormedPath;
 
-let handleError =
-  fun
-  | ParsingFailed(_) => I18n.form_input_error#dp_not_a_dp
-  | MoreThan1Wildcard => I18n.form_input_error#dp_more_than_1_wildcard
-  | MissingWildcardOr0 => I18n.form_input_error#dp_missing_wildcard
-  | NotTezosBip44 => I18n.form_input_error#dp_not_tezos;
+let () =
+  Errors.registerHandler(
+    "DerivationPath",
+    fun
+    | ParsingFailed(_) => I18n.form_input_error#dp_not_a_dp->Some
+    | MoreThan1Wildcard => I18n.form_input_error#dp_more_than_1_wildcard->Some
+    | MissingWildcardOr0 => I18n.form_input_error#dp_missing_wildcard->Some
+    | NotTezosBip44 => I18n.form_input_error#dp_not_tezos->Some
+    | _ => None,
+  );
 
 type item =
   | Wildcard
