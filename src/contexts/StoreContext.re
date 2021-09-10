@@ -671,16 +671,6 @@ module Accounts = {
     accounts->Map.String.get((address :> string));
   };
 
-  let useIsLedger = pkh => {
-    let account: Account.t = useGetFromAddress(pkh)->Option.getExn;
-
-    let store = useStoreContext();
-    let (secretsRequest, _) = store.secretsRequestState;
-    let secrets = secretsRequest->ApiRequest.getWithDefault([||]);
-
-    account.address->WalletAPI.Accounts.isLedger(secrets);
-  };
-
   let useResetNames = () => {
     let resetAliases = Aliases.useResetAll();
     let resetOperations = Operations.useResetNames();

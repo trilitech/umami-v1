@@ -186,12 +186,6 @@ module Accounts = {
   type t = array(Secret.t);
   type name = string;
 
-  let isLedger = (pkh, secrets) => {
-    secrets->Array.some((s: Secret.Repr.derived) =>
-      s.secret.kind == Ledger && s.secret.addresses->Array.some((==)(pkh))
-    );
-  };
-
   let secrets = (~config as _) => {
     LocalStorage.getItem("secrets")
     ->Js.Nullable.toOption

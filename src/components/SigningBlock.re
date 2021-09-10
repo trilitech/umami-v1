@@ -159,59 +159,93 @@ module LedgerView = {
   };
 };
 
+module Block = {
+  [@react.component]
+  let make =
+      (
+        ~ledgerState as (ledgerState, setLedgerState),
+        ~accountKind: Account.kind,
+        ~sendOperation: TaquitoAPI.Signer.intent => Future.t(Result.t(_)),
+        ~secondaryButton=?,
+        ~loading=false,
+      ) => {
+    let (form, formFieldsAreValids) =
+      PasswordFormView.usePasswordForm((~password) =>
+        sendOperation(TaquitoAPI.Signer.Password(password))
+      );
+
+    let onSubmit = () =>
+      switch (accountKind) {
+      | Ledger =>
+        setLedgerState(_ => LedgerView.Searching->Some);
+        sendOperation(
+          TaquitoAPI.Signer.LedgerCallback(
+            () => setLedgerState(_ => LedgerView.WaitForConfirm->Some),
+          ),
+        )
+        ->FutureEx.getError(e => setLedgerState(_ => Error(e)->Some));
+      | Encrypted
+      | Unencrypted => form.submit()
+      };
+
+    React.useEffect0(() => {
+      switch (accountKind) {
+      | Ledger => onSubmit()
+      | Encrypted
+      | Unencrypted => ()
+      };
+
+      None;
+    });
+
+    let showPasswordForm =
+      switch (accountKind) {
+      | Ledger => false
+      | Encrypted
+      | Unencrypted => true
+      };
+
+    <>
+      {<>
+         <PasswordFormView.PasswordField form />
+         <View style=FormStyles.verticalFormAction>
+           secondaryButton->ReactUtils.opt
+           <Buttons.SubmitPrimary
+             style=?{
+               secondaryButton->Option.map(_ =>
+                 LedgerView.styles##withSecondary
+               )
+             }
+             text=I18n.btn#confirm
+             onPress={_ => onSubmit()}
+             loading
+             disabledLook={!formFieldsAreValids}
+           />
+         </View>
+       </>
+       ->ReactUtils.onlyWhen(showPasswordForm)}
+      {ledgerState->ReactUtils.mapOpt(st =>
+         <LedgerView st ?secondaryButton retry=onSubmit />
+       )}
+    </>;
+  };
+};
+
 [@react.component]
 let make =
     (
-      ~ledgerState as (ledgerState, setLedgerState),
-      ~isLedger,
-      ~sendOperation: TaquitoAPI.Signer.intent => Future.t(Result.t(_)),
+      ~ledgerState,
+      ~accountKind: option(Account.kind),
+      ~sendOperation,
       ~secondaryButton=?,
       ~loading=false,
     ) => {
-  let (form, formFieldsAreValids) =
-    PasswordFormView.usePasswordForm((~password) =>
-      sendOperation(TaquitoAPI.Signer.Password(password))
-    );
-
-  let onSubmit = () =>
-    if (isLedger) {
-      setLedgerState(_ => LedgerView.Searching->Some);
-      sendOperation(
-        TaquitoAPI.Signer.LedgerCallback(
-          () => setLedgerState(_ => LedgerView.WaitForConfirm->Some),
-        ),
-      )
-      ->FutureEx.getError(e => setLedgerState(_ => Error(e)->Some));
-    } else {
-      form.submit();
-    };
-
-  React.useEffect0(() => {
-    if (isLedger) {
-      onSubmit();
-    };
-    None;
-  });
-
-  <>
-    {<>
-       <PasswordFormView.PasswordField form />
-       <View style=FormStyles.verticalFormAction>
-         secondaryButton->ReactUtils.opt
-         <Buttons.SubmitPrimary
-           style=?{
-             secondaryButton->Option.map(_ => LedgerView.styles##withSecondary)
-           }
-           text=I18n.btn#confirm
-           onPress={_ => onSubmit()}
-           loading
-           disabledLook={!isLedger && !formFieldsAreValids}
-         />
-       </View>
-     </>
-     ->ReactUtils.onlyWhen(!isLedger)}
-    {ledgerState->ReactUtils.mapOpt(st =>
-       <LedgerView st ?secondaryButton retry=onSubmit />
-     )}
-  </>;
+  switch (accountKind) {
+  | Some(accountKind) =>
+    <Block ledgerState accountKind sendOperation ?secondaryButton loading />
+  | None =>
+    <Typography.Body1>
+      I18n.errors#cannot_retrieve_account->React.string
+    </Typography.Body1>
+  };
 };

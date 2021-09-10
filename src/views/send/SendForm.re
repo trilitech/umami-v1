@@ -82,7 +82,6 @@ type transaction = Transfer.t;
 let buildTransferElts = (transfers, build) => {
   transfers->List.map(((t: validState, advOpened)) => {
     let destination = t.recipient->FormUtils.Alias.address;
-
     let gasLimit = advOpened ? t.gasLimit : None;
     let storageLimit = advOpened ? t.storageLimit : None;
     let fee = advOpened ? t.fee : None;
@@ -100,7 +99,7 @@ let buildTransferElts = (transfers, build) => {
 
 let buildTransfer = (inputTransfers, source, forceLowFee) =>
   Transfer.makeTransfers(
-    ~source=source.Account.address,
+    ~source,
     ~transfers=
       buildTransferElts(
         inputTransfers,

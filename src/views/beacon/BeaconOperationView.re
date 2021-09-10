@@ -42,7 +42,7 @@ let styles =
 
 module type OP = {
   type t;
-  let make: ReBeacon.Message.Request.operationRequest => t;
+  let make: (Account.t, ReBeacon.Message.Request.operationRequest) => t;
   let makeOperation: t => Operation.t;
   let makeSimulated: t => Operation.Simulation.t;
   let makeSummary: (Protocol.simulationResults, t) => React.element;
@@ -58,8 +58,15 @@ module Make = (Op: OP) => {
     let (operationApiRequest, sendOperation) =
       StoreContext.Operations.useCreate();
 
+    let sourceAccount =
+      StoreContext.Accounts.useGetFromAddress(beaconRequest.sourceAddress);
+
     let operation =
-      React.useMemo1(() => Op.make(beaconRequest), [|beaconRequest|]);
+      React.useMemo1(
+        // temporary Option.getExn utile I find a better way
+        () => Op.make(sourceAccount->Option.getExn, beaconRequest),
+        [|beaconRequest|],
+      );
 
     let loading = operationApiRequest->ApiRequest.isLoading;
     let sendOperation = intent =>
@@ -117,8 +124,6 @@ module Make = (Op: OP) => {
         ? Some(ModalFormView.Close(_ => closeAction())) : None;
 
     let ledgerState = React.useState(() => None);
-    let isLedger =
-      StoreContext.Accounts.useIsLedger(beaconRequest.sourceAddress);
 
     let simulatedOperation = Op.makeSimulated(operation);
 
@@ -188,7 +193,7 @@ module Make = (Op: OP) => {
               <>
                 {Op.makeSummary(dryRun, operation)}
                 <SigningBlock
-                  isLedger
+                  accountKind={sourceAccount->Option.map(a => a.kind)}
                   ledgerState
                   sendOperation
                   loading
@@ -206,9 +211,10 @@ module Delegate =
   Make({
     type t = Protocol.delegation;
 
-    let make = (beaconRequest: ReBeacon.Message.Request.operationRequest) => {
+    let make =
+        (account, beaconRequest: ReBeacon.Message.Request.operationRequest) => {
       Protocol.makeDelegate(
-        ~source=beaconRequest.sourceAddress,
+        ~source=account,
         ~delegate=
           beaconRequest.operationDetails
           ->Array.get(0)
@@ -235,7 +241,8 @@ module Transfer =
   Make({
     type t = Transfer.t;
 
-    let make = (beaconRequest: ReBeacon.Message.Request.operationRequest) => {
+    let make =
+        (account, beaconRequest: ReBeacon.Message.Request.operationRequest) => {
       let partialTransactions =
         beaconRequest.operationDetails
         ->Array.map(ReBeacon.Message.Request.PartialOperation.classify)
@@ -246,7 +253,7 @@ module Transfer =
             }
           );
       {
-        Transfer.source: beaconRequest.sourceAddress,
+        Transfer.source: account,
         transfers:
           partialTransactions
           ->Array.map(partialTransaction =>
