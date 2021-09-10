@@ -39,9 +39,58 @@ let styles =
   Style.(
     StyleSheet.create({
       "title": style(~marginBottom=6.->dp, ~textAlign=`center, ()),
-      "overline": style(~marginBottom=2.->dp, ~textAlign=`center, ()),
+      "overline": style(~marginBottom=24.->dp, ~textAlign=`center, ()),
     })
   );
+
+module FormNameSymbol = {
+  [@react.component]
+  let make = (~form: TokenCreateForm.api) => {
+    <>
+      <FormGroupTextInput
+        label=I18n.label#add_token_name
+        value={form.values.name}
+        handleChange={form.handleChange(Name)}
+        error={form.getFieldError(Field(Name))}
+        placeholder=I18n.input_placeholder#add_token_name
+      />
+      <FormGroupTextInput
+        label=I18n.label#add_token_symbol
+        value={form.values.symbol}
+        handleChange={form.handleChange(Symbol)}
+        error={form.getFieldError(Field(Symbol))}
+        placeholder=I18n.input_placeholder#add_token_symbol
+      />
+    </>;
+  };
+};
+
+module MetadataForm = {
+  [@react.component]
+  let make = (~form: TokenCreateForm.api, ~pkh) => {
+    let metadata = StoreContext.Metadata.useLoad(pkh);
+    React.useEffect1(
+      () => {
+        switch (metadata) {
+        | Loading(Some(metadata))
+        | Done(Ok(metadata), _) =>
+          form.handleChange(Name, metadata.name);
+          form.handleChange(Symbol, metadata.symbol);
+        | Done(Error(_), _) => ()
+        | _ => ()
+        };
+        None;
+      },
+      [|metadata|],
+    );
+    switch (metadata) {
+    | Done(Ok(_), _) => <FormNameSymbol form />
+    | Done(Error(_err), _) => <FormNameSymbol form />
+    | NotAsked => React.null
+    | Loading(_) => <LoadingView />
+    };
+  };
+};
 
 [@react.component]
 let make = (~chain, ~address="", ~closeAction) => {
@@ -86,6 +135,8 @@ let make = (~chain, ~address="", ~closeAction) => {
   let formFieldsAreValids =
     FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
 
+  let pkh = PublicKeyHash.build(form.values.address);
+
   <ModalFormView closing={ModalFormView.Close(closeAction)}>
     <Typography.Headline style=styles##title>
       I18n.title#add_token->React.string
@@ -101,20 +152,13 @@ let make = (~chain, ~address="", ~closeAction) => {
       placeholder=I18n.input_placeholder#add_token_address
       clearButton=true
     />
-    <FormGroupTextInput
-      label=I18n.label#add_token_name
-      value={form.values.name}
-      handleChange={form.handleChange(Name)}
-      error={form.getFieldError(Field(Name))}
-      placeholder=I18n.input_placeholder#add_token_name
-    />
-    <FormGroupTextInput
-      label=I18n.label#add_token_symbol
-      value={form.values.symbol}
-      handleChange={form.handleChange(Symbol)}
-      error={form.getFieldError(Field(Symbol))}
-      placeholder=I18n.input_placeholder#add_token_symbol
-    />
+    {switch (pkh) {
+     | Ok(pkh) => <MetadataForm form pkh />
+     | Error(_) =>
+       <Typography.Body1>
+         "Could not parse pkh"->React.string
+       </Typography.Body1>
+     }}
     <Buttons.SubmitPrimary
       text=I18n.btn#register
       onPress=onSubmit
