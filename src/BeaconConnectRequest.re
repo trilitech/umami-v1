@@ -73,31 +73,8 @@ let make = () => {
 
   settingsRef.current = settings;
 
-  let (
-    permissionRequest,
-    visibleModalPermission,
-    openPermission,
-    closePermission,
-  ) =
+  let (request, visibleModal, openModal, closeModal) =
     useBeaconRequestModalAction();
-  let (operationRequest, visibleModalOperation, openOperation, closeOperation) =
-    useBeaconRequestModalAction();
-  let (
-    delegationRequest,
-    visibleModalDelegation,
-    openDelegation,
-    closeDelegation,
-  ) =
-    useBeaconRequestModalAction();
-  let (
-    signPayloadRequest,
-    visibleModalSignPayload,
-    openSignPayload,
-    closeSignPayload,
-  ) =
-    useBeaconRequestModalAction();
-  let (visibleModalError, openError, closeError) =
-    ModalAction.useModalActionState();
 
   let addToast = LogsContext.useToast();
   let (error, setError) = React.useState(_ => None);
@@ -107,24 +84,9 @@ let make = () => {
   let (nextRequest, doneResponding) =
     StoreContext.Beacon.useNextRequestState();
 
-  let closePermission = () => {
-    closePermission();
-    doneResponding();
-  };
-  let closeOperation = () => {
-    closeOperation();
-    doneResponding();
-  };
-  let closeDelegation = () => {
-    closeDelegation();
-    doneResponding();
-  };
-  let closeSignPayload = () => {
-    closeSignPayload();
-    doneResponding();
-  };
-  let closeError = () => {
-    closeError();
+  let close = () => {
+    closeModal();
+    setError(_ => None);
     doneResponding();
   };
 
@@ -134,8 +96,8 @@ let make = () => {
       | Some(error) =>
         setErrorMessage(_ => Some(error));
         addToast(Logs.log(~kind=Logs.Error, ~origin=Beacon, error));
-        openError();
-      | None => closeError()
+        openModal(Error(Errors.Generic(error)));
+      | None => closeModal()
       };
       None;
     },
@@ -155,13 +117,13 @@ let make = () => {
 
         if (targetSettedNetwork) {
           switch (request) {
-          | PermissionRequest(request) => openPermission(request)
-          | SignPayloadRequest(request) => openSignPayload(request)
-          | OperationRequest(request) =>
-            if (request->checkOperationRequestHasOnlyTransaction) {
-              openOperation(request);
-            } else if (request->checkOperationRequestHasOnlyOneDelegation) {
-              openDelegation(request);
+          | PermissionRequest(_) => openModal(Ok(request))
+          | SignPayloadRequest(_) => openModal(Ok(request))
+          | OperationRequest(r) =>
+            if (r->checkOperationRequestHasOnlyTransaction) {
+              openModal(request->Ok);
+            } else if (r->checkOperationRequestHasOnlyOneDelegation) {
+              openModal(request->Ok);
             } else {
               FutureEx.async(() => {
                 let%FRes client =
@@ -173,7 +135,7 @@ let make = () => {
                   client->ReBeacon.WalletClient.respond(
                     `Error({
                       type_: `error,
-                      id: request.id,
+                      id: r.id,
                       errorType: `TRANSACTION_INVALID_ERROR,
                     }),
                   );
@@ -209,54 +171,50 @@ let make = () => {
   );
 
   <>
-    <ModalAction visible=visibleModalPermission onRequestClose=closePermission>
-      {permissionRequest->ReactUtils.mapOpt(permissionRequest => {
-         <BeaconPermissionView permissionRequest closeAction=closePermission />
-       })}
-    </ModalAction>
-    <ModalAction visible=visibleModalOperation onRequestClose=closeOperation>
-      {operationRequest->ReactUtils.mapOpt(operationRequest => {
-         <BeaconOperationView.Transfer
-           beaconRequest=operationRequest
-           closeAction=closeOperation
-         />
-       })}
-    </ModalAction>
-    <ModalAction visible=visibleModalDelegation onRequestClose=closeDelegation>
-      {delegationRequest->ReactUtils.mapOpt(delegationRequest => {
-         <BeaconOperationView.Delegate
-           beaconRequest=delegationRequest
-           closeAction=closeDelegation
-         />
-       })}
-    </ModalAction>
-    <ModalAction
-      visible=visibleModalSignPayload onRequestClose=closeSignPayload>
-      {signPayloadRequest->ReactUtils.mapOpt(signPayloadRequest => {
-         <BeaconSignPayloadView
-           signPayloadRequest
-           closeAction=closeSignPayload
-         />
-       })}
-    </ModalAction>
-    <ModalAction
-      visible=visibleModalError onRequestClose={_ => setError(_ => None)}>
-      <ModalTemplate.Dialog>
-        <Typography.Headline style=FormStyles.header>
-          I18n.title#beacon_error->React.string
-        </Typography.Headline>
-        {errorMessage->ReactUtils.mapOpt(errorMessage =>
-           <ScrollView style=styles##container alwaysBounceVertical=false>
-             <Typography.Body1
-               colorStyle=`error style=FormStyles.textAlignCenter>
-               errorMessage->React.string
-             </Typography.Body1>
-           </ScrollView>
-         )}
-        <View style=FormStyles.formAction>
-          <Buttons.Form onPress={_ => setError(_ => None)} text=I18n.btn#ok />
-        </View>
-      </ModalTemplate.Dialog>
+    <ModalAction visible=visibleModal onRequestClose=close>
+      {request->ReactUtils.mapOpt(
+         fun
+         | Ok(PermissionRequest(r)) =>
+           <BeaconPermissionView permissionRequest=r closeAction=closeModal />
+         | Ok(OperationRequest(r))
+             when r->checkOperationRequestHasOnlyTransaction =>
+           <BeaconOperationView.Transfer
+             beaconRequest=r
+             closeAction=closeModal
+           />
+         | Ok(OperationRequest(r))
+             when r->checkOperationRequestHasOnlyOneDelegation =>
+           <BeaconOperationView.Delegate
+             beaconRequest=r
+             closeAction=closeModal
+           />
+         | Ok(SignPayloadRequest(r)) =>
+           <BeaconSignPayloadView
+             signPayloadRequest=r
+             closeAction=closeModal
+           />
+         | Ok(BroadcastRequest(_) | OperationRequest(_))
+         | Error(_) =>
+           <ModalTemplate.Dialog>
+             <Typography.Headline style=FormStyles.header>
+               I18n.title#beacon_error->React.string
+             </Typography.Headline>
+             {errorMessage->ReactUtils.mapOpt(errorMessage =>
+                <ScrollView style=styles##container alwaysBounceVertical=false>
+                  <Typography.Body1
+                    colorStyle=`error style=FormStyles.textAlignCenter>
+                    errorMessage->React.string
+                  </Typography.Body1>
+                </ScrollView>
+              )}
+             <View style=FormStyles.formAction>
+               <Buttons.Form
+                 onPress={_ => setError(_ => None)}
+                 text=I18n.btn#ok
+               />
+             </View>
+           </ModalTemplate.Dialog>,
+       )}
     </ModalAction>
   </>;
 };
