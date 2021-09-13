@@ -671,6 +671,13 @@ module Accounts = {
     accounts->Map.String.get((address :> string));
   };
 
+  let useGetFromOptAddress = (address: option(PublicKeyHash.t)) => {
+    let accounts = useGetAll();
+    address->Option.flatMap(address =>
+      accounts->Map.String.get((address :> string))
+    );
+  };
+
   let useResetNames = () => {
     let resetAliases = Aliases.useResetAll();
     let resetOperations = Operations.useResetNames();

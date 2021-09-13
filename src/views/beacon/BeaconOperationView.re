@@ -52,19 +52,16 @@ module Make = (Op: OP) => {
   [@react.component]
   let make =
       (
+        ~sourceAccount,
         ~beaconRequest: ReBeacon.Message.Request.operationRequest,
         ~closeAction,
       ) => {
     let (operationApiRequest, sendOperation) =
       StoreContext.Operations.useCreate();
 
-    let sourceAccount =
-      StoreContext.Accounts.useGetFromAddress(beaconRequest.sourceAddress);
-
     let operation =
       React.useMemo1(
-        // temporary Option.getExn utile I find a better way
-        () => Op.make(sourceAccount->Option.getExn, beaconRequest),
+        () => Op.make(sourceAccount, beaconRequest),
         [|beaconRequest|],
       );
 
@@ -193,7 +190,7 @@ module Make = (Op: OP) => {
               <>
                 {Op.makeSummary(dryRun, operation)}
                 <SigningBlock
-                  accountKind={sourceAccount->Option.map(a => a.kind)}
+                  accountKind={sourceAccount.kind->Some}
                   ledgerState
                   sendOperation
                   loading

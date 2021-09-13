@@ -66,6 +66,21 @@ let useBeaconRequestModalAction = () => {
   (request, visibleModal, openModal, closeAction);
 };
 
+let useSourceAccount = request => {
+  open ReBeacon.Message.Request;
+  let address =
+    switch (request) {
+    | Some(Ok(OperationRequest(r))) => r.sourceAddress->Some
+    | Some(Ok(BroadcastRequest(_)))
+    | Some(Ok(PermissionRequest(_)))
+    | Some(Ok(SignPayloadRequest(_)))
+    | Some(Error(_))
+    | None => None
+    };
+
+  StoreContext.Accounts.useGetFromOptAddress(address);
+};
+
 [@react.component]
 let make = () => {
   let settings = ConfigContext.useContent();
@@ -75,6 +90,13 @@ let make = () => {
 
   let (request, visibleModal, openModal, closeModal) =
     useBeaconRequestModalAction();
+
+  let sourceAccount = useSourceAccount(request);
+  let requestData =
+    switch (sourceAccount, request) {
+    | (Some(account), Some(request)) => Some((account, request))
+    | _ => None
+    };
 
   let addToast = LogsContext.useToast();
   let (error, setError) = React.useState(_ => None);
@@ -172,29 +194,31 @@ let make = () => {
 
   <>
     <ModalAction visible=visibleModal onRequestClose=close>
-      {request->ReactUtils.mapOpt(
+      {requestData->ReactUtils.mapOpt(
          fun
-         | Ok(PermissionRequest(r)) =>
+         | (_, Ok(PermissionRequest(r))) =>
            <BeaconPermissionView permissionRequest=r closeAction=closeModal />
-         | Ok(OperationRequest(r))
+         | (sourceAccount, Ok(OperationRequest(r)))
              when r->checkOperationRequestHasOnlyTransaction =>
            <BeaconOperationView.Transfer
+             sourceAccount
              beaconRequest=r
              closeAction=closeModal
            />
-         | Ok(OperationRequest(r))
+         | (sourceAccount, Ok(OperationRequest(r)))
              when r->checkOperationRequestHasOnlyOneDelegation =>
            <BeaconOperationView.Delegate
              beaconRequest=r
+             sourceAccount
              closeAction=closeModal
            />
-         | Ok(SignPayloadRequest(r)) =>
+         | (_, Ok(SignPayloadRequest(r))) =>
            <BeaconSignPayloadView
              signPayloadRequest=r
              closeAction=closeModal
            />
-         | Ok(BroadcastRequest(_) | OperationRequest(_))
-         | Error(_) =>
+         | (_, Ok(BroadcastRequest(_) | OperationRequest(_)))
+         | (_, Error(_)) =>
            <ModalTemplate.Dialog>
              <Typography.Headline style=FormStyles.header>
                I18n.title#beacon_error->React.string
