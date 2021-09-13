@@ -482,6 +482,7 @@ let wallet = {
 
 let errors = {
   pub _this = this;
+  pub beacon_cant_handle = "Cannot handle this operation";
   pub cannot_retrieve_account = "Cannot retrieve account informations";
   pub deeplinking_not_connected = "Deep linking required but not connected";
   pub stream = "Acquiering media failed";

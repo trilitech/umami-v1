@@ -97,6 +97,7 @@ let styles =
 [@react.component]
 let make =
     (
+      ~sourceAccount,
       ~signPayloadRequest: ReBeacon.Message.Request.signPayloadRequest,
       ~closeAction,
     ) => {
@@ -173,9 +174,6 @@ let make =
 
   let ledgerState = React.useState(() => None);
 
-  let sourceAccount =
-    StoreContext.Accounts.useGetFromAddress(signPayloadRequest.sourceAddress);
-
   let sendOperation = intent => onSign(~signingIntent=intent);
 
   let secondaryButton =
@@ -198,7 +196,7 @@ let make =
     />
     <Payload signPayloadRequest />
     <SigningBlock
-      accountKind={sourceAccount->Option.map(a => a.kind)}
+      accountKind={sourceAccount.Account.kind}
       ledgerState
       sendOperation
       loading

@@ -64,7 +64,7 @@ let make =
        </View>
      )}
     children
-    <SigningBlock.Block
+    <SigningBlock
       accountKind={source.Account.kind}
       ledgerState
       loading

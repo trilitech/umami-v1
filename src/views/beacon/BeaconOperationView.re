@@ -190,7 +190,7 @@ module Make = (Op: OP) => {
               <>
                 {Op.makeSummary(dryRun, operation)}
                 <SigningBlock
-                  accountKind={sourceAccount.kind->Some}
+                  accountKind={sourceAccount.kind}
                   ledgerState
                   sendOperation
                   loading
