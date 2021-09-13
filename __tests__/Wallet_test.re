@@ -135,3 +135,56 @@ describe("Wallet", ({testAsync}) => {
     )
   );
 });
+
+describe("Signer detection", ({test}) => {
+  open Wallet;
+
+  let skl1 = "ledger://tz1gr5TA8waD7LcrXNRaSz7Bys2Y14AWZnGH/ed25519/1h/0h";
+  let skl1NoPref = "tz1gr5TA8waD7LcrXNRaSz7Bys2Y14AWZnGH/ed25519/1h/0h";
+
+  let skl2 = "ledger://tz1gr5TA8waD7LcrXNRaSz7Bys2Y14AWZnGH/ed25519/0h/0h";
+  let skl2NoPref = "tz1gr5TA8waD7LcrXNRaSz7Bys2Y14AWZnGH/ed25519/0h/0h";
+
+  let ske = "ledge://test";
+  let errbad = k => Error(Wallet.KeyBadFormat(k));
+
+  let sken1 = "encrypted:edesk1eYwyEH1ofeBGC1HLNTAkhw2kM87FRvFg82Pkbi779evnVcW87Dx4VEtCw3dnhNSxsbWitpx6r7DRRLp4jY";
+  let sken1NoPref = "edesk1eYwyEH1ofeBGC1HLNTAkhw2kM87FRvFg82Pkbi779evnVcW87Dx4VEtCw3dnhNSxsbWitpx6r7DRRLp4jY";
+  let sken2 = "encrypted:edesk1K62pC53j338dwVGXdfgetvfjqBnQBvcaBsqMeSZzrqmfzGshDmMRZk7zfgbqvBPzvoC4dG9CZV6FXTGp9c";
+
+  let sken2NoPref = "edesk1K62pC53j338dwVGXdfgetvfjqBnQBvcaBsqMeSZzrqmfzGshDmMRZk7zfgbqvBPzvoC4dG9CZV6FXTGp9c";
+
+  let sks = [
+    (skl1, Ok((Ledger, skl1NoPref))),
+    (skl2, Ok((Ledger, skl2NoPref))),
+    (ske, errbad(ske)),
+    (sken1, Ok((Encrypted, sken1NoPref))),
+    (sken2, Ok((Encrypted, sken2NoPref))),
+  ];
+
+  sks->List.forEachWithIndex((i, (inp, out)) => {
+    test(
+      "Parsing prefix n" ++ i->Int.toString,
+      ({expectEqual}) => {
+        let r = inp->Wallet.extractPrefixFromSecretKey;
+        expectEqual(r, out);
+      },
+    )
+  });
+  open Wallet.Ledger;
+
+  let skl1Res = {
+    path: DerivationPath.buildTezosBip44((1, 0)),
+    scheme: ED25519,
+  };
+
+  let sk1pkh =
+    "tz1gr5TA8waD7LcrXNRaSz7Bys2Y14AWZnGH"->PublicKeyHash.build->Result.getExn;
+
+  test("Parsing SK Ledger", ({expectEqual}) => {
+    expectEqual(
+      Ok(skl1Res),
+      Decode.fromSecretKey(skl1NoPref, ~ledgerBasePkh=sk1pkh),
+    )
+  });
+});
