@@ -23,44 +23,22 @@
 /*                                                                           */
 /*****************************************************************************/
 
-module Unit = {
-  type t = ReBigNumber.t;
-  open ReBigNumber;
-
-  let toBigNumber = x => x;
-  let fromBigNumber = x =>
-    x->isNaN || !x->isInteger || x->isNegative ? None : x->Some;
-
-  let toNatString = toFixed;
-  let fromNatString = s => s->fromString->fromBigNumber;
-  let forceFromString = s => {
-    let v = s->fromString;
-    v->isNaN ? None : v->isInteger ? v->integerValue->Some : None;
+let map2 = (opt1, opt2, f) =>
+  switch (opt1, opt2) {
+  | (Some(v1), Some(v2)) => Some(f(v1, v2))
+  | _ => None
   };
 
-  let isValid = v =>
-    v->fromNatString->Option.mapWithDefault(false, isInteger);
-
-  let zero = fromString("0");
-
-  let add = plus;
-
-  module Infix = {
-    let (+) = plus;
+let keep = (opt1, opt2) =>
+  switch (opt1, opt2) {
+  | (Some(v), _)
+  | (_, Some(v)) => Some(v)
+  | _ => None
   };
-};
 
-type address = PublicKeyHash.t;
-
-type kind =
-  | FA1_2
-  | FA2(int);
-
-type t = {
-  kind,
-  address,
-  alias: string,
-  symbol: string,
-  chain: string,
-  decimals: int,
+/* Specialized version where the result of map is always of the same type of the
+   option's value */
+let mapOrKeep = (opt1, opt2, f) => {
+  let res = map2(opt1, opt2, f);
+  res->Option.isNone ? keep(opt1, opt2) : res;
 };

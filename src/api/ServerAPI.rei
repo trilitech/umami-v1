@@ -60,6 +60,15 @@ module URL: {
         ~account: PublicKeyHash.t
       ) =>
       Js.Json.t;
+
+    let fa2BalanceOfInput:
+      (
+        ~settings: ConfigFile.t,
+        ~contract: PublicKeyHash.t,
+        ~account: PublicKeyHash.t,
+        ~tokenId: int
+      ) =>
+      Js.Json.t;
   };
 
   module External: {let bakingBadBakers: t;};

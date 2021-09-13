@@ -266,3 +266,45 @@ module FA12 = {
     [@bs.meth] "tzip16": unit => Tzip16.t,
   };
 };
+
+module FA2 = {
+  type transaction = {
+    to_: PublicKeyHash.t,
+    token_id: BigNumber.fixed,
+    amount: BigNumber.fixed,
+  };
+  type transferParam = {
+    from_: PublicKeyHash.t,
+    txs: array(transaction),
+  };
+
+  type transfer;
+
+  /* Balance_of is never called directly, however it could be used in the future
+     to generate the input for `run_view`. */
+  type balanceOfRequest = {
+    owner: PublicKeyHash.t,
+    token_id: BigNumber.fixed,
+  };
+
+  type balanceOf;
+
+  type methods = {
+    transfer: (. array(transferParam)) => Contract.methodResult(transfer),
+    balance_of:
+      (. array(balanceOfRequest), PublicKeyHash.t) =>
+      Contract.methodResult(balanceOf),
+  };
+  type storage = Tzip12Storage.storage;
+  type entrypoints;
+
+  type t = {
+    .
+    "address": PublicKeyHash.t,
+    "entrypoints": entrypoints,
+    "methods": methods,
+    [@bs.meth] "storage": unit => Js.Promise.t(storage),
+    [@bs.meth] "tzip12": unit => Tzip12.t,
+    [@bs.meth] "tzip16": unit => Tzip16.t,
+  };
+};

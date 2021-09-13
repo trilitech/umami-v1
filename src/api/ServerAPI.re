@@ -155,6 +155,62 @@ module URL = {
         ])
       );
     };
+
+    /*
+       Generates a valid JSON for the run_view RPC.
+
+       Example of an expected input for run_view of `balance_of` on an FA2
+       contract, for a single address:
+       { "contract": "KT1Wx7pXgstiZCas5SvFFUEmBZbnAoacSCxo",
+         "entrypoint": "balance_of",
+         "input":
+           [ { "prim": "Pair",
+               "args":
+                 [ { "bytes": "0000721765c758aacce0986e781ddc9a40f5b6b9d9c3" },
+                   { "int": "0" } ] } ],
+         "chain_id": "NetXz969SFaFn8k",
+         "source": "tz1W3HkgNtCvZkLcxPbLpR9mf8vuw4k3atvB",
+         "unparsing_mode": "Readable" }
+
+       In the input, `bytes` is the encoded address as bytes, but the
+       Michelson typer is also able to type `string` as address. The input of
+       the entrypoint is actually a Michelson list of `(pkh * tokenId)`: the
+       entrypoint can retrieve the balance for multiple address at once. This
+       version only calls the contract for one address.
+     */
+
+    let fa2BalanceOfInput =
+        (
+          ~settings,
+          ~contract: PublicKeyHash.t,
+          ~account: PublicKeyHash.t,
+          ~tokenId: int,
+        ) => {
+      Json.Encode.(
+        object_([
+          ("contract", string((contract :> string))),
+          ("entrypoint", string("balance_of")),
+          ("chain_id", string(settings->ConfigUtils.chainId)),
+          (
+            "input",
+            jsonArray([|
+              object_([
+                ("prim", string("Pair")),
+                (
+                  "args",
+                  jsonArray([|
+                    object_([("string", string((account :> string)))]),
+                    object_([("int", string(string_of_int(tokenId)))]),
+                  |]),
+                ),
+              ]),
+            |]),
+          ),
+          ("source", string((account :> string))),
+          ("unparsing_mode", string("Readable")),
+        ])
+      );
+    };
   };
 
   module External = {

@@ -20,9 +20,15 @@ module Unit: {
 
 type address = PublicKeyHash.t;
 
+type kind =
+  | FA1_2
+  | FA2(int);
+
 type t = {
+  kind,
   address,
   alias: string,
   symbol: string,
   chain: string,
+  decimals: int,
 };

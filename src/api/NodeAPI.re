@@ -315,6 +315,29 @@ module Tokens = {
       ->FutureEx.fromOption(~error=UnreadableTokenAmount(v))
     };
   };
+
+  let callFA2BalanceOf = (config, address, token, tokenId) => {
+    let input =
+      URL.Endpoint.fa2BalanceOfInput(
+        ~settings=config,
+        ~contract=token,
+        ~account=address,
+        ~tokenId,
+      );
+
+    let%FRes json = config->URL.Endpoint.runView->URL.postJson(input);
+
+    let res = JsonEx.(decode(json, MichelsonDecode.fa2BalanceOfDecoder));
+
+    switch (res) {
+    | Ok([|((_pkh, _tokenId), v)|]) =>
+      v
+      ->Token.Unit.fromNatString
+      ->FutureEx.fromOption(~error=UnreadableTokenAmount(v))
+    | Error(_)
+    | Ok(_) => Token.Unit.zero->FutureEx.ok
+    };
+  };
 };
 
 module Signature = {

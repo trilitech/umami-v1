@@ -23,44 +23,34 @@
 /*                                                                           */
 /*****************************************************************************/
 
-module Unit = {
-  type t = ReBigNumber.t;
-  open ReBigNumber;
+type Errors.t +=
+  | DecodeError(string);
 
-  let toBigNumber = x => x;
-  let fromBigNumber = x =>
-    x->isNaN || !x->isInteger || x->isNegative ? None : x->Some;
+// Propagates Errors.t during decoding, should be caught by the decode function
+exception InternalError(Errors.t);
 
-  let toNatString = toFixed;
-  let fromNatString = s => s->fromString->fromBigNumber;
-  let forceFromString = s => {
-    let v = s->fromString;
-    v->isNaN ? None : v->isInteger ? v->integerValue->Some : None;
-  };
+let decode:
+  (Js.Json.t, Json.Decode.decoder('a)) => result('a, TezosClient.Errors.t);
 
-  let isValid = v =>
-    v->fromNatString->Option.mapWithDefault(false, isInteger);
+module MichelsonDecode: {
+  type address =
+    | Packed(bytes)
+    | Pkh(PublicKeyHash.t);
 
-  let zero = fromString("0");
+  let dataDecoder:
+    Json.Decode.decoder('a) => Json.Decode.decoder(array('a));
 
-  let add = plus;
+  let pairDecoder:
+    (Json.Decode.decoder('a), Json.Decode.decoder('b)) =>
+    Json.Decode.decoder(('a, 'b));
 
-  module Infix = {
-    let (+) = plus;
-  };
-};
+  let intDecoder: Json.Decode.decoder(string);
 
-type address = PublicKeyHash.t;
+  let bytesDecoder: Json.Decode.decoder(bytes);
 
-type kind =
-  | FA1_2
-  | FA2(int);
+  let stringDecoder: Json.Decode.decoder(string);
 
-type t = {
-  kind,
-  address,
-  alias: string,
-  symbol: string,
-  chain: string,
-  decimals: int,
+  let addressDecoder: Json.Decode.decoder(address);
+
+  let fa2BalanceOfDecoder: Js.Json.t => array(((address, string), string));
 };
