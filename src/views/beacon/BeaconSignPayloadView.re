@@ -172,8 +172,9 @@ let make =
   };
 
   let ledgerState = React.useState(() => None);
-  let isLedger =
-    StoreContext.Accounts.useIsLedger(signPayloadRequest.sourceAddress);
+
+  let sourceAccount =
+    StoreContext.Accounts.useGetFromAddress(signPayloadRequest.sourceAddress);
 
   let sendOperation = intent => onSign(~signingIntent=intent);
 
@@ -196,6 +197,12 @@ let make =
       address={signPayloadRequest.sourceAddress->Some}
     />
     <Payload signPayloadRequest />
-    <SigningBlock isLedger ledgerState sendOperation loading secondaryButton />
+    <SigningBlock
+      accountKind={sourceAccount->Option.map(a => a.kind)}
+      ledgerState
+      sendOperation
+      loading
+      secondaryButton
+    />
   </ModalFormView>;
 };

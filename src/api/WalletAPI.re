@@ -186,12 +186,6 @@ module Accounts = {
   type t = array(Secret.t);
   type name = string;
 
-  let isLedger = (pkh, secrets) => {
-    secrets->Array.some((s: Secret.Repr.derived) =>
-      s.secret.kind == Ledger && s.secret.addresses->Array.some((==)(pkh))
-    );
-  };
-
   let secrets = (~config as _) => {
     LocalStorage.getItem("secrets")
     ->Js.Nullable.toOption
@@ -213,12 +207,18 @@ module Accounts = {
 
     let%FResMap sks = config->ConfigUtils.baseDir->Wallet.SecretAliases.read;
 
-    pkhs->Array.keepMap(({name, value}) =>
-      switch (sks->Wallet.SecretAliases.find(skAlias => name == skAlias.name)) {
-      | Ok(_) => Some((name, value))
+    pkhs->Array.keepMap(({name, value}) => {
+      let res = {
+        let%Res sk =
+          sks->Wallet.SecretAliases.find(skAlias => name == skAlias.name);
+        sk.value->Wallet.extractPrefixFromSecretKey;
+      };
+
+      switch (res) {
+      | Ok((kind, _)) => Some((name, value, kind))
       | Error(_) => None
-      }
-    );
+      };
+    });
   };
 
   let secretAt = (~config, index) => {

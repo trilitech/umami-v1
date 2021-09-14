@@ -25,7 +25,7 @@
 
 module StateLenses = [%lenses
   type state = {
-    sender: PublicKeyHash.t,
+    sender: Account.t,
     baker: string,
     fee: string,
     forceLowFee: bool,

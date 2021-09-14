@@ -65,7 +65,7 @@ module Simulation = {
       TaquitoAPI.Transfer.Estimate.batch(
         ~endpoint=config->ConfigUtils.endpoint,
         ~baseDir=config->ConfigUtils.baseDir,
-        ~source,
+        ~source=source.Account.address,
         ~transfers=transfers->TaquitoAPI.Transfer.prepareTransfers,
         (),
       );
@@ -94,7 +94,7 @@ module Simulation = {
       TaquitoAPI.Delegate.Estimate.set(
         ~endpoint=config->ConfigUtils.endpoint,
         ~baseDir=config->ConfigUtils.baseDir,
-        ~source=delegation.Protocol.source,
+        ~source=delegation.Protocol.source.address,
         ~delegate=?delegation.Protocol.delegate,
         ~fee=?delegation.Protocol.options.fee,
         (),
@@ -245,7 +245,7 @@ module Operation = {
       TaquitoAPI.Transfer.batch(
         ~endpoint=config->ConfigUtils.endpoint,
         ~baseDir=config->ConfigUtils.baseDir,
-        ~source,
+        ~source=source.Account.address,
         ~transfers=transfers->TaquitoAPI.Transfer.prepareTransfers,
         ~signingIntent,
         (),
@@ -259,7 +259,7 @@ module Operation = {
       TaquitoAPI.Delegate.set(
         ~endpoint=config->ConfigUtils.endpoint,
         ~baseDir=config->ConfigUtils.baseDir,
-        ~source,
+        ~source=source.address,
         ~delegate,
         ~signingIntent,
         ~fee=?options.fee,

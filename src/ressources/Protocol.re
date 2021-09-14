@@ -27,7 +27,7 @@
 open ProtocolOptions;
 
 type delegation = {
-  source: PublicKeyHash.t,
+  source: Account.t,
   delegate: option(PublicKeyHash.t),
   options: commonOptions,
 };

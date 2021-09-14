@@ -100,7 +100,7 @@ type elt = {
 };
 
 type t = {
-  source: PublicKeyHash.t,
+  source: Account.t,
   transfers: list(elt),
   common_options: commonOptions,
 };
