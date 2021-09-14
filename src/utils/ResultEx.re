@@ -109,3 +109,5 @@ let collectArray = (type err, arr: array(result(_, err))) => {
   | Fail(err) => Error(err)
   };
 };
+
+let async = (f: unit => Result.t(_, _)) => f()->ignore;

@@ -296,8 +296,7 @@ module Ledger = {
     | InvalidIndex(int, string)
     | InvalidScheme(string)
     | InvalidEncoding(string)
-    | InvalidLedger(string)
-    | DerivationPathError(DerivationPath.error);
+    | InvalidLedger(string);
 
   let () =
     Errors.registerHandler(
@@ -310,7 +309,6 @@ module Ledger = {
       | InvalidScheme(s) => I18n.wallet#invalid_scheme(s)->Some
       | InvalidEncoding(e) => I18n.wallet#invalid_encoding(e)->Some
       | InvalidLedger(p) => I18n.wallet#invalid_ledger(p)->Some
-      | DerivationPathError(_) => I18n.form_input_error#dp_not_a_dp->Some
       | _ => None,
     );
 

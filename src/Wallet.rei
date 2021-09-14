@@ -135,8 +135,7 @@ module Ledger: {
     | InvalidIndex(int, string)
     | InvalidScheme(string)
     | InvalidEncoding(string)
-    | InvalidLedger(string)
-    | DerivationPathError(DerivationPath.error);
+    | InvalidLedger(string);
 
   type scheme =
     | ED25519
