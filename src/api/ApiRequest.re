@@ -146,7 +146,7 @@ let conditionToLoad = (request, isMounted) => {
   requestNotAskedAndMounted || requestDoneButReloadOnMount || requestExpired;
 };
 
-let useGetter = (~toast=true, ~get, ~kind, ~setRequest, ()) => {
+let useGetter = (~toast=true, ~get, ~kind, ~setRequest, ~keepError=?, ()) => {
   let addLog = LogsContext.useAdd();
   let config = ConfigContext.useContent();
 
@@ -154,7 +154,7 @@ let useGetter = (~toast=true, ~get, ~kind, ~setRequest, ()) => {
     setRequest(updateToLoadingState);
 
     get(~config, input)
-    ->logError(addLog(toast), kind)
+    ->logError(addLog(toast), kind, ~keep=?keepError)
     ->Future.tap(result =>
         setRequest(_ => Done(result, ValidSince(Js.Date.now())))
       );
@@ -167,11 +167,12 @@ let useLoader =
     (
       ~get,
       ~condition=?,
+      ~keepError=?,
       ~kind,
       ~requestState as (request, setRequest),
       input,
     ) => {
-  let getRequest = useGetter(~get, ~kind, ~setRequest, ());
+  let getRequest = useGetter(~get, ~kind, ~setRequest, ~keepError?, ());
 
   let isMounted = ReactUtils.useIsMonted();
   React.useEffect4(

@@ -140,6 +140,7 @@ let useGetter:
     ~get: (~config: ConfigFile.t, 'a) => Let.future('response),
     ~kind: Logs.origin,
     ~setRequest: (t('response) => t('response)) => unit,
+    ~keepError: Errors.t => bool=?,
     unit,
     'a
   ) =>
@@ -150,6 +151,7 @@ let useLoader:
   (
     ~get: (~config: ConfigFile.t, 'input) => Let.future('value),
     ~condition: 'input => bool=?,
+    ~keepError: Errors.t => bool=?,
     ~kind: Logs.origin,
     ~requestState: requestState('value),
     'input
