@@ -574,6 +574,7 @@ module Errors = {
   let beacon_cant_handle = "Cannot handle this operation";
   let customauth_unable_to_retrieve_handle = "Unable to retrieve user handle";
   let customauth_popup_closed = "User closed popup during authentification";
+  let customauth_handle_mismatch = p("Signing handle mismatch: %s & %s");
   let invalid_provider = s => p("%s is not a valid provider", s);
   let cannot_retrieve_account = "Cannot retrieve account informations";
   let deeplinking_not_connected = "Deep linking required but not connected";
