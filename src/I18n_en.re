@@ -572,6 +572,9 @@ module Errors = {
   let no_valid_endpoint = "No valid endpoint found among letlic nodes";
   let not_an_fa12_contract = "Not an FA1.2 standard contract";
   let beacon_cant_handle = "Cannot handle this operation";
+  let customauth_unable_to_retrieve_handle = "Unable to retrieve user handle";
+  let customauth_popup_closed = "User closed popup during authentification";
+  let invalid_provider = s => p("%s is not a valid provider", s);
   let cannot_retrieve_account = "Cannot retrieve account informations";
   let deeplinking_not_connected = "Deep linking required but not connected";
   let stream = "Acquiering media failed";
