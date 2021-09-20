@@ -756,9 +756,12 @@ module Secrets = {
     );
   };
 
-  let useMnemonicScan = () => {
+  let useMnemonicImportKeys = () => {
     let resetSecrets = useResetAll();
-    SecretApiRequest.useMnemonicScan(~sideEffect=_ => resetSecrets(), ());
+    SecretApiRequest.useMnemonicImportKeys(
+      ~sideEffect=_ => resetSecrets(),
+      (),
+    );
   };
 
   let useLedgerImport = () => {

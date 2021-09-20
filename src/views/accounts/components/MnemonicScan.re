@@ -35,7 +35,7 @@ let make = (~closeAction, ~index, ~secret) => {
   let (accounts, setAccounts) = React.useState(() => []);
   let derivationChangedState = React.useState(() => true);
 
-  let (scanRequest, scan) = StoreContext.Secrets.useMnemonicScan();
+  let (importRequest, import) = StoreContext.Secrets.useMnemonicImportKeys();
 
   let onFoundKey = (~start, i, account) =>
     setAccounts(accounts =>
@@ -58,7 +58,7 @@ let make = (~closeAction, ~index, ~secret) => {
   };
 
   let submitAccounts = (~password, ()) => {
-    scan(SecretApiRequest.{index, accounts, password})
+    import(SecretApiRequest.{index, accounts, password})
     ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
         I18n.t#account_created
       )
@@ -82,7 +82,7 @@ let make = (~closeAction, ~index, ~secret) => {
     {switch (status) {
      | StepPassword =>
        <PasswordFormView
-         loading={scanRequest->ApiRequest.isLoading}
+         loading={importRequest->ApiRequest.isLoading}
          submitPassword
        />
      | StepAccounts(password) =>
