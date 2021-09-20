@@ -26,20 +26,36 @@
 module Unit = {
   type t = ReBigNumber.t;
   open ReBigNumber;
-
   let toBigNumber = x => x;
   let fromBigNumber = x =>
     x->isNaN || !x->isInteger || x->isNegative ? None : x->Some;
 
+  let isNat = v => v->isInteger && !v->isNegative && !v->isNaN;
+
   let toNatString = toFixed;
+  let toStringDecimals = (x, decimals) =>
+    if (decimals == 0) {
+      x->toNatString;
+    } else {
+      let shift = fromInt(10)->powInt(decimals);
+      x->div(shift)->toNatString;
+    };
   let fromNatString = s => s->fromString->fromBigNumber;
+  let fromStringDecimals = (s, decimals) => {
+    let shift = fromInt(10)->powInt(decimals);
+    let x = s->fromString->times(shift);
+    x->fromBigNumber;
+  };
+
+  let formatString = (s, decimals) => {
+    let x = fromStringDecimals(s, decimals);
+    x->Option.map(x => toStringDecimals(x, decimals));
+  };
+
   let forceFromString = s => {
     let v = s->fromString;
     v->isNaN ? None : v->isInteger ? v->integerValue->Some : None;
   };
-
-  let isValid = v =>
-    v->fromNatString->Option.mapWithDefault(false, isInteger);
 
   let zero = fromString("0");
 

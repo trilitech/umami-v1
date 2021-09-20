@@ -1,16 +1,20 @@
 module Unit: {
   type t = pri ReBigNumber.t;
 
+  let isNat: t => bool;
+
   let fromBigNumber: ReBigNumber.t => option(t);
   let toBigNumber: t => ReBigNumber.t;
 
   let toNatString: t => string;
   let fromNatString: string => option(t);
 
-  let isValid: string => bool;
+  let toStringDecimals: (t, int) => string;
+  let fromStringDecimals: (string, int) => option(t);
+
+  let formatString: (string, int) => option(string);
 
   let zero: t;
-
   let forceFromString: string => option(t);
 
   let add: (t, t) => t;
