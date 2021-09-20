@@ -42,7 +42,10 @@ module Base = {
         StoreContext.BalanceToken.useGetTotal(token.address);
 
       balanceTokenTotal->mapWithLoading(balance =>
-        I18n.t#amount(balance->Token.Unit.toNatString, token.symbol)
+        I18n.t#amount(
+          balance->Token.Unit.toStringDecimals(token.decimals),
+          token.symbol,
+        )
         ->React.string
       );
     };
