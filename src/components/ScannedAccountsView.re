@@ -120,7 +120,7 @@ let make =
             styles##itemsContent,
           |])
         )>
-        {let accounts = accounts->List.reverse->List.toArray;
+        {let accounts = accounts->List.toArray;
          accounts
          ->Array.mapWithIndex((id, address) =>
              <Item

@@ -58,7 +58,9 @@ let make = (~closeAction, ~index, ~secret) => {
   };
 
   let submitAccounts = (~password, ()) => {
-    import(SecretApiRequest.{index, accounts, password})
+    import(
+      SecretApiRequest.{index, accounts: accounts->List.reverse, password},
+    )
     ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
         I18n.t#account_created
       )
@@ -92,9 +94,9 @@ let make = (~closeAction, ~index, ~secret) => {
          path={secret.Secret.derivationPath}
          scheme={secret.Secret.derivationScheme}
          accounts={
-           accounts->List.map(account =>
-             account.WalletAPI.Accounts.Scan.publicKeyHash
-           )
+           accounts
+           ->List.reverse
+           ->List.map(account => account.WalletAPI.Accounts.Scan.publicKeyHash)
          }
          next={submitAccounts(~password)}
          nextAdvancedOptions=None
