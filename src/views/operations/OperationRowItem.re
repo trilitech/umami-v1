@@ -243,11 +243,11 @@ let amount =
               />
               <AddToken address op />
             </View>;
-          | Some({symbol, _}) =>
+          | Some({symbol, decimals, _}) =>
             Format.asprintf(
               "%s %s %s",
               sign,
-              token_trans.amount->TokenRepr.Unit.toNatString,
+              token_trans.amount->TokenRepr.Unit.toStringDecimals(decimals),
               symbol,
             )
             ->React.string
