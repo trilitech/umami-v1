@@ -98,6 +98,7 @@ let make = (~closeAction, ~index, ~secret) => {
          }
          next={submitAccounts(~password)}
          nextAdvancedOptions=None
+         startIndex={secret.Secret.addresses->Array.length}
        />
      }}
   </ModalFormView>;
