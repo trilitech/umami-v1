@@ -196,6 +196,7 @@ let form_input_error = {
   pub hardware_wallet_signer_inconsistent = "Inconsistency between signing intent and key";
   pub empty_transaction = "Transaction is empty.";
   pub branch_refused_error = "Please retry. An error came up while communicating with the node";
+  pub invalid_key_hash = "Invalid Key Hash";
   pub key_already_registered = a =>
     p("Address already registered under: %s", a);
   pub name_already_registered = "Name already registered";

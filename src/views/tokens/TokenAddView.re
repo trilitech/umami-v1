@@ -68,7 +68,7 @@ module FormNameSymbol = {
 module MetadataForm = {
   [@react.component]
   let make = (~form: TokenCreateForm.api, ~pkh) => {
-    let metadata = StoreContext.Metadata.useLoad(pkh);
+    let metadata = MetadataApiRequest.useLoadMetadata(pkh);
     React.useEffect1(
       () => {
         switch (metadata) {
@@ -100,7 +100,18 @@ let make = (~chain, ~address="", ~closeAction) => {
     TokenCreateForm.use(
       ~schema={
         TokenCreateForm.Validation.(
-          Schema(nonEmpty(Name) + nonEmpty(Address) + nonEmpty(Symbol))
+          Schema(
+            nonEmpty(Name)
+            + custom(
+                state =>
+                  switch (PublicKeyHash.build(state.address)) {
+                  | Error(_) => Error(I18n.form_input_error#invalid_key_hash)
+                  | Ok(_) => Valid
+                  },
+                Address,
+              )
+            + nonEmpty(Symbol),
+          )
         );
       },
       ~onSubmit=
@@ -154,10 +165,7 @@ let make = (~chain, ~address="", ~closeAction) => {
     />
     {switch (pkh) {
      | Ok(pkh) => <MetadataForm form pkh />
-     | Error(_) =>
-       <Typography.Body1>
-         "Could not parse pkh"->React.string
-       </Typography.Body1>
+     | Error(_) => React.null
      }}
     <Buttons.SubmitPrimary
       text=I18n.btn#register
