@@ -39,19 +39,79 @@ let styles =
   Style.(
     StyleSheet.create({
       "title": style(~marginBottom=6.->dp, ~textAlign=`center, ()),
-      "overline": style(~marginBottom=2.->dp, ~textAlign=`center, ()),
+      "overline": style(~marginBottom=24.->dp, ~textAlign=`center, ()),
     })
   );
 
+module FormNameSymbol = {
+  [@react.component]
+  let make = (~form: TokenCreateForm.api) => {
+    <>
+      <FormGroupTextInput
+        label=I18n.label#add_token_name
+        value={form.values.name}
+        handleChange={form.handleChange(Name)}
+        error={form.getFieldError(Field(Name))}
+        placeholder=I18n.input_placeholder#add_token_name
+      />
+      <FormGroupTextInput
+        label=I18n.label#add_token_symbol
+        value={form.values.symbol}
+        handleChange={form.handleChange(Symbol)}
+        error={form.getFieldError(Field(Symbol))}
+        placeholder=I18n.input_placeholder#add_token_symbol
+      />
+    </>;
+  };
+};
+
+module MetadataForm = {
+  [@react.component]
+  let make = (~form: TokenCreateForm.api, ~pkh) => {
+    let metadata = MetadataApiRequest.useLoadMetadata(pkh);
+    React.useEffect1(
+      () => {
+        switch (metadata) {
+        | Loading(Some(metadata))
+        | Done(Ok(metadata), _) =>
+          form.handleChange(Name, metadata.name);
+          form.handleChange(Symbol, metadata.symbol);
+        | Done(Error(_), _) => ()
+        | _ => ()
+        };
+        None;
+      },
+      [|metadata|],
+    );
+    switch (metadata) {
+    | Done(Ok(_), _) => <FormNameSymbol form />
+    | Done(Error(_err), _) => <FormNameSymbol form />
+    | NotAsked => React.null
+    | Loading(_) => <LoadingView />
+    };
+  };
+};
+
 [@react.component]
-let make = (~chain, ~closeAction) => {
+let make = (~chain, ~address="", ~closeAction) => {
   let (tokenCreateRequest, createToken) = StoreContext.Tokens.useCreate();
 
   let form: TokenCreateForm.api =
     TokenCreateForm.use(
       ~schema={
         TokenCreateForm.Validation.(
-          Schema(nonEmpty(Name) + nonEmpty(Address) + nonEmpty(Symbol))
+          Schema(
+            nonEmpty(Name)
+            + custom(
+                state =>
+                  switch (PublicKeyHash.build(state.address)) {
+                  | Error(_) => Error(I18n.form_input_error#invalid_key_hash)
+                  | Ok(_) => Valid
+                  },
+                Address,
+              )
+            + nonEmpty(Symbol),
+          )
         );
       },
       ~onSubmit=
@@ -72,7 +132,7 @@ let make = (~chain, ~closeAction) => {
 
           None;
         },
-      ~initialState={name: "", address: "", symbol: ""},
+      ~initialState={name: "", address, symbol: ""},
       ~i18n=FormUtils.i18n,
       (),
     );
@@ -85,6 +145,8 @@ let make = (~chain, ~closeAction) => {
 
   let formFieldsAreValids =
     FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
+
+  let pkh = PublicKeyHash.build(form.values.address);
 
   <ModalFormView closing={ModalFormView.Close(closeAction)}>
     <Typography.Headline style=styles##title>
@@ -101,20 +163,10 @@ let make = (~chain, ~closeAction) => {
       placeholder=I18n.input_placeholder#add_token_address
       clearButton=true
     />
-    <FormGroupTextInput
-      label=I18n.label#add_token_name
-      value={form.values.name}
-      handleChange={form.handleChange(Name)}
-      error={form.getFieldError(Field(Name))}
-      placeholder=I18n.input_placeholder#add_token_name
-    />
-    <FormGroupTextInput
-      label=I18n.label#add_token_symbol
-      value={form.values.symbol}
-      handleChange={form.handleChange(Symbol)}
-      error={form.getFieldError(Field(Symbol))}
-      placeholder=I18n.input_placeholder#add_token_symbol
-    />
+    {switch (pkh) {
+     | Ok(pkh) => <MetadataForm form pkh />
+     | Error(_) => React.null
+     }}
     <Buttons.SubmitPrimary
       text=I18n.btn#register
       onPress=onSubmit

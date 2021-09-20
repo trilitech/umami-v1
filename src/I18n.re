@@ -96,6 +96,8 @@ let tooltip = {
   pub addressbook_edit = "Edit Contact";
   pub addressbook_delete = "Delete Contact";
   pub add_contact = "Add to Contacts";
+  pub add_token = "Register token";
+  pub unregistered_token_transaction = "This transaction was made using an unregistered token.";
   pub no_tez_no_delegation = "Delegation requires tez";
   pub refresh = "Refresh";
   pub open_in_explorer = "Open in explorer";
@@ -194,6 +196,7 @@ let form_input_error = {
   pub hardware_wallet_signer_inconsistent = "Inconsistency between signing intent and key";
   pub empty_transaction = "Transaction is empty.";
   pub branch_refused_error = "Please retry. An error came up while communicating with the node";
+  pub invalid_key_hash = "Invalid Key Hash";
   pub key_already_registered = a =>
     p("Address already registered under: %s", a);
   pub name_already_registered = "Name already registered";
@@ -624,7 +627,7 @@ let t = {
   pub empty_delegations = "No Delegation";
   pub empty_operations = "No Operation";
   pub empty_address_book = "No Contact";
-  pub add_token_format_contract_sentence = {js|Please specify the address of a FA1.2 token contract for which you would like to view balances as well as to perform operations.|js};
+  pub add_token_format_contract_sentence = {j|Please specify the address, name, and symbol of a FA1.2 token contract for which you would like to view balances as well as to perform operations. Umami will prefill the fields if any metadata is available.|j};
   pub delegation_removal = "Delegation Removal";
   pub error_check_contract = "Address is not a valid token contract";
   pub words = p("%d words");
