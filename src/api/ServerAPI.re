@@ -114,8 +114,7 @@ module URL = {
           ~limit: option(int)=?,
           (),
         ) => {
-      let operationsPath =
-        "accounts/" ++ (account :> string) ++ "/operations/next";
+      let operationsPath = "accounts/" ++ (account :> string) ++ "/operations";
       let args =
         Lib.List.(
           []

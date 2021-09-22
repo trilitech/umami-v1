@@ -240,6 +240,8 @@ module DelegateMaker =
   };
 };
 
+module OperationRepr = Operation;
+
 module Operation = {
   let batch = (config: ConfigContext.env, transfers, ~source, ~signingIntent) => {
     let%FResMap op =
@@ -285,11 +287,14 @@ module Operation = {
 module Delegate = DelegateMaker(URL);
 
 module Tokens = {
+  type tokenKind = [ OperationRepr.Transaction.tokenKind | `NotAToken];
+
   let checkTokenContract = (config, contract: PublicKeyHash.t) => {
     let%FlatRes json = URL.Explorer.checkToken(config, ~contract)->URL.get;
     switch (Js.Json.classify(json)) {
-    | Js.Json.JSONTrue => Ok(true)
-    | JSONFalse => Ok(false)
+    | Js.Json.JSONString("fa1-2") => Ok(`KFA1_2)
+    | Js.Json.JSONString("fa2") => Ok(`KFA2)
+    | Js.Json.JSONNull => Ok(`NotAToken)
     | _ => Error(IllformedTokenContract)
     };
   };

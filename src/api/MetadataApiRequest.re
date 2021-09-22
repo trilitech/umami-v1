@@ -11,9 +11,9 @@ let useLoadMetadata = (~onErrorNotATokenContract, pkh) => {
     | _ => true;
 
   let buildContract = (config: ConfigContext.env) => {
-    let%FRes isToken = checkToken(pkh);
+    let%FRes token = checkToken(pkh);
     let%FRes () =
-      if (isToken) {
+      if (token == `KFA1_2) {
         FutureEx.ok();
       } else {
         onErrorNotATokenContract();
