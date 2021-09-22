@@ -31,6 +31,7 @@ module StateLenses = [%lenses
     name: string,
     address: string,
     symbol: string,
+    decimals: string,
   }
 ];
 module TokenCreateForm = ReForm.Make(StateLenses);
@@ -43,7 +44,7 @@ let styles =
     })
   );
 
-module FormNameSymbol = {
+module FormMetadata = {
   [@react.component]
   let make = (~form: TokenCreateForm.api) => {
     <>
@@ -60,6 +61,13 @@ module FormNameSymbol = {
         handleChange={form.handleChange(Symbol)}
         error={form.getFieldError(Field(Symbol))}
         placeholder=I18n.input_placeholder#add_token_symbol
+      />
+      <FormGroupTextInput
+        label=I18n.label#add_token_decimals
+        value={form.values.decimals}
+        handleChange={form.handleChange(Decimals)}
+        error={form.getFieldError(Field(Name))}
+        placeholder=I18n.input_placeholder#add_token_decimals
       />
     </>;
   };
@@ -84,8 +92,8 @@ module MetadataForm = {
       [|metadata|],
     );
     switch (metadata) {
-    | Done(Ok(_), _) => <FormNameSymbol form />
-    | Done(Error(_err), _) => <FormNameSymbol form />
+    | Done(Ok(_), _) => <FormMetadata form />
+    | Done(Error(_err), _) => <FormMetadata form />
     | NotAsked => React.null
     | Loading(_) => <LoadingView />
     };
@@ -102,6 +110,16 @@ let make = (~chain, ~address="", ~closeAction) => {
         TokenCreateForm.Validation.(
           Schema(
             nonEmpty(Name)
+            + custom(
+                state =>
+                  switch (state.decimals->Int.fromString) {
+                  | None => Error(I18n.form_input_error#not_an_int)
+                  | Some(i) when i < 0 =>
+                    Error(I18n.form_input_error#negative_int)
+                  | Some(_) => Valid
+                  },
+                Decimals,
+              )
             + custom(
                 state =>
                   switch (PublicKeyHash.build(state.address)) {
@@ -125,14 +143,15 @@ let make = (~chain, ~address="", ~closeAction) => {
               alias: state.values.name,
               symbol: state.values.symbol,
               chain,
-              decimals: 0,
+              decimals:
+                state.values.decimals |> Int.fromString |> Option.getExn,
             })
             ->FutureEx.getOk(_ => closeAction());
           });
 
           None;
         },
-      ~initialState={name: "", address, symbol: ""},
+      ~initialState={name: "", address, symbol: "", decimals: ""},
       ~i18n=FormUtils.i18n,
       (),
     );
