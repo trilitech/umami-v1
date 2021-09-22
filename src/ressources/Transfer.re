@@ -63,7 +63,11 @@ module Currency = {
   let showAmount =
     fun
     | Tez(v) => I18n.t#tez_amount(v->Tez.toString)
-    | Token(v, t) => I18n.t#amount(v->TokenRepr.Unit.toNatString, t.symbol);
+    | Token(v, t) =>
+      I18n.t#amount(
+        v->TokenRepr.Unit.toStringDecimals(t.decimals),
+        t.symbol,
+      );
 
   let compareCurrencies = (v1, v2) => {
     switch (v1, v2) {

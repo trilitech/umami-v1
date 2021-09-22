@@ -23,14 +23,15 @@
 /*                                                                           */
 /*****************************************************************************/
 
-let formatOnBlur = (token, handleChange, value) =>
-  if (token->Option.isSome) {
+let formatOnBlur = (token: option(TokenRepr.t), handleChange, value) =>
+  switch (token) {
+  | None =>
+    value->Tez.formatString->Option.getWithDefault(value)->handleChange
+  | Some({decimals, _}) =>
     value
-    ->Token.Unit.forceFromString
-    ->Option.mapWithDefault("", Token.Unit.toNatString)
-    ->handleChange;
-  } else {
-    value->Tez.formatString->Option.getWithDefault("")->handleChange;
+    ->Token.Unit.formatString(decimals)
+    ->Option.getWithDefault(value)
+    ->handleChange
   };
 
 let tezDecoration = (~style) =>
@@ -70,9 +71,9 @@ let make =
     placeholder
     value
     error
-    onBlur={_ => formatOnBlur(token, handleChange, value)}
     ?decoration
     handleChange
+    onBlur={_ => formatOnBlur(token, handleChange, value)}
     keyboardType=`numeric
   />;
 };

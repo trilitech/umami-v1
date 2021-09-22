@@ -43,7 +43,7 @@ let keepTez = v =>
     | Illformed(_) => None,
   );
 
-let parseAmount = (v, token) =>
+let parseAmount = (v, token: option(TokenRepr.t)) =>
   if (v == "") {
     None;
   } else {
@@ -55,7 +55,7 @@ let parseAmount = (v, token) =>
           : vtez->Option.map(v => v->Transfer.Currency.makeTez->Amount);
       },
       t => {
-        let vt = v->Token.Unit.fromNatString;
+        let vt = v->Token.Unit.fromStringDecimals(t.decimals);
         vt == None
           ? v->Illformed->Some
           : vt->Option.map(amount =>
@@ -123,11 +123,16 @@ let isValidTezAmount: string => ReSchema.fieldState =
   | "" => Error(I18n.form_input_error#mandatory)
   | _ => Error(I18n.form_input_error#float);
 
-let isValidTokenAmount: string => ReSchema.fieldState =
-  fun
-  | s when Token.Unit.forceFromString(s) != None => Valid
-  | "" => Error(I18n.form_input_error#mandatory)
-  | _ => Error(I18n.form_input_error#int);
+let isValidTokenAmount: (string, int) => ReSchema.fieldState =
+  (s, decimals) =>
+    switch (s) {
+    | "" => Error(I18n.form_input_error#mandatory)
+    | s =>
+      switch (Token.Unit.fromStringDecimals(s, decimals)) {
+      | Some(v) when v->Token.Unit.isNat => Valid
+      | _ => Error(I18n.form_input_error#expected_decimals(decimals))
+      }
+    };
 
 let notNone = (v): ReSchema.fieldState =>
   v != None ? Valid : Error(I18n.form_input_error#mandatory);

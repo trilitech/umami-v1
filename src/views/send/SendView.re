@@ -120,7 +120,8 @@ module Form = {
       dryRun: None,
     };
 
-  let use = (~initValues=?, initAccount, token, onSubmit) => {
+  let use =
+      (~initValues=?, initAccount, token: option(TokenRepr.t), onSubmit) => {
     SendForm.use(
       ~schema={
         SendForm.Validation.(
@@ -138,9 +139,11 @@ module Form = {
               )
             + custom(
                 values => {
-                  token != None
-                    ? FormUtils.isValidTokenAmount(values.amount)
-                    : FormUtils.isValidTezAmount(values.amount)
+                  switch (token) {
+                  | None => FormUtils.isValidTezAmount(values.amount)
+                  | Some({decimals, _}) =>
+                    FormUtils.isValidTokenAmount(values.amount, decimals)
+                  }
                 },
                 Amount,
               )

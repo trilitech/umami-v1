@@ -191,6 +191,10 @@ let form_input_error = {
   pub dp_more_than_1_wildcard = "Cannot have more than one '?'";
   pub dp_missing_wildcard = "Missing '?' or 0";
   pub dp_not_tezos = "Not a BIP44 Tezos Path";
+  pub not_an_int = "This needs to be a number";
+  pub negative_int = "This needs to be a natural number";
+  pub nat = "must be a natural number";
+  pub expected_decimals = n => p("allows at most %d decimals", n);
   pub hardware_wallet_not_ready = "Connection to Tezos ledger application failed. Please make sure the Tezos app is opened and the ledger unlocked.";
   pub hardware_wallet_plug = "The connection took too long.\nPlease make sure the Ledger is properly plugged in and unlocked";
   pub hardware_wallet_check_app = "Public key export failed. Please open the Tezos Wallet app and retry.";
