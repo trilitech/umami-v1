@@ -337,7 +337,7 @@ let make = (~closeAction) => {
          derivationChangedState
          path
          scheme
-         accounts
+         accounts={accounts->List.reverse}
          next={submitAccounts(mk)}
          nextAdvancedOptions={
            Some(() => setStep(_ => StepAdvancedOptions(mk)))

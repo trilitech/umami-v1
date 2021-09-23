@@ -177,13 +177,13 @@ let useLedgerScan =
 
 type account = WalletAPI.Accounts.Scan.account(string);
 
-type mnemonicScanInput = {
+type mnemonicImportKeysInput = {
   index: int,
   accounts: list(account),
   password: string,
 };
 
-let useMnemonicScan =
+let useMnemonicImportKeys =
   ApiRequest.useSetter(
     ~set=
       (~config, {index, accounts, password}) =>

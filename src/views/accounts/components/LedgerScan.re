@@ -128,7 +128,7 @@ let make = (~closeAction, ~index, ~secret) => {
          derivationChangedState
          path={secret.Secret.derivationPath}
          scheme={secret.Secret.derivationScheme}
-         accounts
+         accounts={accounts->List.reverse}
          next={submitAccounts(mk)}
          nextAdvancedOptions=None
        />

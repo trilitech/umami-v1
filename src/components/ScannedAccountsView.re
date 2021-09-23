@@ -78,6 +78,7 @@ let make =
     (
       ~derivationChangedState as (derivationChanged, setDerivationChanged),
       ~scan,
+      ~startIndex=0,
       ~accounts,
       ~nextAdvancedOptions,
       ~next,
@@ -119,10 +120,14 @@ let make =
             styles##itemsContent,
           |])
         )>
-        {let accounts = accounts->List.reverse->List.toArray;
+        {let accounts = accounts->List.toArray;
          accounts
          ->Array.mapWithIndex((id, address) =>
-             <Item key={id->Int.toString} address id />
+             <Item
+               key={(startIndex + id)->Int.toString}
+               address
+               id={startIndex + id}
+             />
            )
          ->React.array}
       </View>
