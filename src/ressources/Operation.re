@@ -193,31 +193,11 @@ module Transaction = {
       parameters: json |> optional(field("parameters", dict(string))),
     };
 
-    // FIXME: This exists due to a bug in mezos, where fa1.2 operations
-    // are badly queried when they're in the mempool. Thus, we simply
-    // print them as a normal contract call
-    let fa12_mempool = json => {
-      amount:
-        json |> field("data", field("amount", string)) |> Tez.fromMutezString,
-      destination:
-        json
-        |> field("data", field("contract", string))
-        |> PublicKeyHash.build
-        |> Result.getExn,
-      parameters: json |> optional(field("parameters", dict(string))),
-    };
-
     let t = json => {
       let token = json->token_kind;
-      let is_fa12_mempool =
-        json
-        |> field("data", optional(field("destination", string)))
-        |> Option.isNone;
-      switch (token, is_fa12_mempool) {
-      | (#tokenKind, true) => Tez(fa12_mempool(json))
-      | (#tokenKind as kind, _) =>
-        Token(common(json), token_info(json, kind))
-      | (`KTez, _) => Tez(common(json))
+      switch (token) {
+      | #tokenKind as kind => Token(common(json), token_info(json, kind))
+      | `KTez => Tez(common(json))
       };
     };
   };
