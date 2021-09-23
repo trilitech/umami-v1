@@ -71,7 +71,9 @@
     "svgo:icons": "svgo --folder=src/svg/source/icons --output=src/svg/optimized_icons --disable=removeViewBox --enable=removeDimensions --pretty",
     "svgfixer:icons": "oslllo-svg-fixer --source=src/svg/optimized_icons --destination=src/svg/fixed_icons",
     "fromsvg:icons": "react-from-svg src/svg/fixed_icons src/svg/components --remove-stroke --remove-fill --with-native-for-reason",
-    "svg": "yarn svgo:icons && yarn svgfixer:icons && yarn fromsvg:icons"
+    "svgo:providers": "svgo --folder=src/svg/source/providers --output=src/svg/optimized_providers --disable=removeViewBox --enable=removeDimensions --pretty",
+    "fromsvg:providers": "react-from-svg src/svg/optimized_providers src/svg/components --with-native-for-reason",
+    "svg": "yarn svgo:icons && yarn svgfixer:icons && yarn fromsvg:icons && yarn svgo:providers && yarn fromsvg:providers"
   },
   "build": {
     "extends": null,
