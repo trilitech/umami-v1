@@ -312,7 +312,8 @@ module Tokens = {
     | Some(v) =>
       v
       ->Token.Unit.fromNatString
-      ->FutureEx.fromOption(~error=UnreadableTokenAmount(v))
+      ->ResultEx.mapError(_ => UnreadableTokenAmount(v))
+      ->Future.value
     };
   };
 
@@ -333,7 +334,8 @@ module Tokens = {
     | Ok([|((_pkh, _tokenId), v)|]) =>
       v
       ->Token.Unit.fromNatString
-      ->FutureEx.fromOption(~error=UnreadableTokenAmount(v))
+      ->ResultEx.mapError(_ => UnreadableTokenAmount(v))
+      ->Future.value
     | Error(_)
     | Ok(_) => Token.Unit.zero->FutureEx.ok
     };

@@ -25,10 +25,24 @@
 
 module Unit = {
   type t = ReBigNumber.t;
+
+  type illformed =
+    | NaN
+    | Float
+    | Negative;
+
   open ReBigNumber;
   let toBigNumber = x => x;
   let fromBigNumber = x =>
-    x->isNaN || !x->isInteger || x->isNegative ? None : x->Some;
+    if (x->isNaN) {
+      Error(NaN);
+    } else if (!x->isInteger) {
+      Error(Float);
+    } else if (x->isNegative) {
+      Error(Negative);
+    } else {
+      x->Ok;
+    };
 
   let isNat = v => v->isInteger && !v->isNegative && !v->isNaN;
 
@@ -49,7 +63,7 @@ module Unit = {
 
   let formatString = (s, decimals) => {
     let x = fromStringDecimals(s, decimals);
-    x->Option.map(x => toStringDecimals(x, decimals));
+    x->Result.map(x => toStringDecimals(x, decimals));
   };
 
   let forceFromString = s => {

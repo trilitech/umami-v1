@@ -3,16 +3,21 @@ module Unit: {
 
   let isNat: t => bool;
 
-  let fromBigNumber: ReBigNumber.t => option(t);
+  type illformed =
+    | NaN
+    | Float
+    | Negative;
+
+  let fromBigNumber: ReBigNumber.t => result(t, illformed);
   let toBigNumber: t => ReBigNumber.t;
 
   let toNatString: t => string;
-  let fromNatString: string => option(t);
+  let fromNatString: string => result(t, illformed);
 
   let toStringDecimals: (t, int) => string;
-  let fromStringDecimals: (string, int) => option(t);
+  let fromStringDecimals: (string, int) => result(t, illformed);
 
-  let formatString: (string, int) => option(string);
+  let formatString: (string, int) => Belt.Result.t(string, illformed);
 
   let zero: t;
   let forceFromString: string => option(t);

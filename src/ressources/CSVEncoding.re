@@ -68,7 +68,7 @@ let handleTokenRow =
   ->Option.mapWithDefault(Error(UnknownToken((token :> string))), token =>
       amount
       ->Token.Unit.fromBigNumber
-      ->ResultEx.fromOption(CannotParseTokenAmount(amount, index, 2))
+      ->ResultEx.mapError(_ => CannotParseTokenAmount(amount, index, 2))
       ->Result.map(amount =>
           Transfer.makeSingleTokenTransferElt(
             ~destination,

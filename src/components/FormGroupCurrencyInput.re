@@ -30,7 +30,7 @@ let formatOnBlur = (token: option(TokenRepr.t), handleChange, value) =>
   | Some({decimals, _}) =>
     value
     ->Token.Unit.formatString(decimals)
-    ->Option.getWithDefault(value)
+    ->Result.getWithDefault(value)
     ->handleChange
   };
 
