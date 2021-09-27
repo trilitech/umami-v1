@@ -26,7 +26,10 @@
 let formatOnBlur = (token: option(TokenRepr.t), handleChange, value) =>
   switch (token) {
   | None =>
-    value->Tez.formatString->Option.getWithDefault(value)->handleChange
+    value
+    ->Token.Unit.formatString(6)
+    ->Result.getWithDefault(value)
+    ->handleChange
   | Some({decimals, _}) =>
     value
     ->Token.Unit.formatString(decimals)

@@ -116,12 +116,6 @@ module Unsafe = {
 
 let emptyOr = (f, v): ReSchema.fieldState => v == "" ? Valid : f(v);
 
-let isValidTezAmount: string => ReSchema.fieldState =
-  fun
-  | s when Tez.fromString(s) != None => Valid
-  | "" => Error(I18n.form_input_error#mandatory)
-  | _ => Error(I18n.form_input_error#float);
-
 let isValidTokenAmount: (string, int) => ReSchema.fieldState =
   (s, decimals) =>
     switch (s) {
@@ -135,6 +129,9 @@ let isValidTokenAmount: (string, int) => ReSchema.fieldState =
         Error(I18n.form_input_error#expected_decimals(decimals))
       }
     };
+
+let isValidTezAmount: string => ReSchema.fieldState =
+  s => isValidTokenAmount(s, 6);
 
 let notNone = (v): ReSchema.fieldState =>
   v != None ? Valid : Error(I18n.form_input_error#mandatory);
