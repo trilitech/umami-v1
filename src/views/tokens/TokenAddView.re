@@ -76,7 +76,13 @@ module FormMetadata = {
 module MetadataForm = {
   [@react.component]
   let make = (~form: TokenCreateForm.api, ~pkh) => {
-    let metadata = MetadataApiRequest.useLoadMetadata(pkh);
+    let onErrorNotATokenContract = () =>
+      form.raiseSubmitFailed(
+        I18n.form_input_error#not_a_token_contract->Some,
+      );
+
+    let metadata =
+      MetadataApiRequest.useLoadMetadata(~onErrorNotATokenContract, pkh);
     React.useEffect1(
       () => {
         switch (metadata) {
@@ -93,7 +99,9 @@ module MetadataForm = {
     );
     switch (metadata) {
     | Done(Ok(_), _) => <FormMetadata form />
-    | Done(Error(_err), _) => <FormMetadata form />
+    | Done(Error(MetadataAPI.NoTzip12Metadata(_)), _) =>
+      <FormMetadata form />
+    | Done(Error(_), _)
     | NotAsked => React.null
     | Loading(_) => <LoadingView />
     };
@@ -122,7 +130,7 @@ let make = (~chain, ~address="", ~closeAction) => {
               )
             + custom(
                 state =>
-                  switch (PublicKeyHash.build(state.address)) {
+                  switch (PublicKeyHash.buildContract(state.address)) {
                   | Error(_) => Error(I18n.form_input_error#invalid_key_hash)
                   | Ok(_) => Valid
                   },
@@ -136,7 +144,7 @@ let make = (~chain, ~address="", ~closeAction) => {
         ({state}) => {
           FutureEx.async(() => {
             let%FResMap address =
-              state.values.address->PublicKeyHash.build->Future.value;
+              state.values.address->PublicKeyHash.buildContract->Future.value;
             createToken({
               kind: FA1_2,
               address,
@@ -165,7 +173,7 @@ let make = (~chain, ~address="", ~closeAction) => {
   let formFieldsAreValids =
     FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
 
-  let pkh = PublicKeyHash.build(form.values.address);
+  let pkh = PublicKeyHash.buildContract(form.values.address);
 
   <ModalFormView closing={ModalFormView.Close(closeAction)}>
     <Typography.Headline style=styles##title>
@@ -178,7 +186,13 @@ let make = (~chain, ~address="", ~closeAction) => {
       label=I18n.label#add_token_address
       value={form.values.address}
       handleChange={form.handleChange(Address)}
-      error={form.getFieldError(Field(Address))}
+      error={
+        [
+          form.formState->FormUtils.getFormStateError,
+          form.getFieldError(Field(Address)),
+        ]
+        ->UmamiCommon.Lib.Option.firstSome
+      }
       placeholder=I18n.input_placeholder#add_token_address
       clearButton=true
     />

@@ -202,7 +202,7 @@ let form_input_error = {
   pub hardware_wallet_signer_inconsistent = "Inconsistency between signing intent and key";
   pub empty_transaction = "Transaction is empty.";
   pub branch_refused_error = "Please retry. An error came up while communicating with the node";
-  pub invalid_key_hash = "Invalid Key Hash";
+  pub invalid_key_hash = "Invalid contract address";
   pub key_already_registered = a =>
     p("Address already registered under: %s", a);
   pub name_already_registered = "Name already registered";
@@ -225,6 +225,7 @@ let form_input_error = {
   pub node_not_available = "Node not available";
   pub api_and_node_not_available = "API and node both not available";
   pub different_chains = "API and Node are not running on the same network";
+  pub not_a_token_contract = "Not a standard token contract";
   pub no_metadata = pkh =>
     p(
       "No metadata was found for the contract%s.",
@@ -491,6 +492,7 @@ let wallet = {
 
 let errors = {
   pub _this = this;
+  pub not_an_fa12_contract = "Not an FA1.2 standard contract";
   pub beacon_cant_handle = "Cannot handle this operation";
   pub cannot_retrieve_account = "Cannot retrieve account informations";
   pub deeplinking_not_connected = "Deep linking required but not connected";
