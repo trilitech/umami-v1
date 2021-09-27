@@ -47,13 +47,11 @@ module Unit = {
   let isNat = v => v->isInteger && !v->isNegative && !v->isNaN;
 
   let toNatString = toFixed;
-  let toStringDecimals = (x, decimals) =>
-    if (decimals == 0) {
-      x->toNatString;
-    } else {
-      let shift = fromInt(10)->powInt(decimals);
-      x->div(shift)->toNatString;
-    };
+  let toStringDecimals = (x, decimals) => {
+    let shift = fromInt(10)->powInt(decimals);
+    let x = x->div(shift);
+    toFixed(~decimals, x);
+  };
   let fromNatString = s => s->fromString->fromBigNumber;
   let fromStringDecimals = (s, decimals) => {
     let shift = fromInt(10)->powInt(decimals);

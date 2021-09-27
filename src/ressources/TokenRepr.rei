@@ -11,7 +11,7 @@ module Unit: {
   let fromBigNumber: ReBigNumber.t => result(t, illformed);
   let toBigNumber: t => ReBigNumber.t;
 
-  let toNatString: t => string;
+  let toNatString: (~decimals: int=?, t) => string;
   let fromNatString: string => result(t, illformed);
 
   let toStringDecimals: (t, int) => string;
