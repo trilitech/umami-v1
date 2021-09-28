@@ -44,7 +44,8 @@
     "reason-react": "^0.9.1",
     "reason-react-native": "^0.63.5",
     "reason-react-update": "^2.0.0",
-    "reschema": "2.0.2-alpha.0"
+    "reschema": "2.0.2-alpha.0",
+    "bs-platform": "^9.0.2"
   },
   "scripts": {
     "start": "cross-env NODE_ENV=development webpack serve --hot --host 0.0.0.0 --config=./webpack.dev.config.js --mode development",
@@ -121,6 +122,7 @@
       ]
     },
     "files": [
+      "src/**/*",
       "build/**/*",
       "./electron-starter.js"
     ],
@@ -168,7 +170,6 @@
     "@babel/core": "^7.12.10",
     "@babel/preset-react": "^7.12.10",
     "babel-loader": "^8.2.2",
-    "bs-platform": "^9.0.2",
     "copy-webpack-plugin": "8.0.0",
     "cross-env": "^7.0.2",
     "electron": "11.2.3",
