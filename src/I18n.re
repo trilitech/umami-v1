@@ -143,6 +143,7 @@ let label = {
   pub add_token_address = "Address";
   pub add_token_name = "Name";
   pub add_token_symbol = "Symbol";
+  pub add_token_decimals = "Decimals";
   pub summary_subtotal = "Subtotal";
   pub summary_total = "Total";
   pub summary_total_tez = "Total tez";
@@ -173,6 +174,7 @@ let input_placeholder = {
   pub add_contact_or_tz = "Paste a tz address or type in a contact's name";
   pub add_token_address = "Enter KT1 address of a contract";
   pub add_token_name = "e.g. Tezos";
+  pub add_token_decimals = "e.g. 0";
   pub enter_new_password = "Enter new password, at least 8 characters";
   pub confirm_password = "Confirm your new password";
   pub enter_password = "Enter your password";
@@ -189,6 +191,10 @@ let form_input_error = {
   pub dp_more_than_1_wildcard = "Cannot have more than one '?'";
   pub dp_missing_wildcard = "Missing '?' or 0";
   pub dp_not_tezos = "Not a BIP44 Tezos Path";
+  pub not_an_int = "This needs to be a number";
+  pub negative_int = "This needs to be a natural number";
+  pub nat = "must be a natural number";
+  pub expected_decimals = n => p("allows at most %d decimals", n);
   pub hardware_wallet_not_ready = "Connection to Tezos ledger application failed. Please make sure the Tezos app is opened and the ledger unlocked.";
   pub hardware_wallet_plug = "The connection took too long.\nPlease make sure the Ledger is properly plugged in and unlocked";
   pub hardware_wallet_check_app = "Public key export failed. Please open the Tezos Wallet app and retry.";
@@ -196,7 +202,7 @@ let form_input_error = {
   pub hardware_wallet_signer_inconsistent = "Inconsistency between signing intent and key";
   pub empty_transaction = "Transaction is empty.";
   pub branch_refused_error = "Please retry. An error came up while communicating with the node";
-  pub invalid_key_hash = "Invalid Key Hash";
+  pub invalid_key_hash = "Invalid contract address";
   pub key_already_registered = a =>
     p("Address already registered under: %s", a);
   pub name_already_registered = "Name already registered";
@@ -219,6 +225,7 @@ let form_input_error = {
   pub node_not_available = "Node not available";
   pub api_and_node_not_available = "API and node both not available";
   pub different_chains = "API and Node are not running on the same network";
+  pub not_a_token_contract = "Not a standard token contract";
   pub no_metadata = pkh =>
     p(
       "No metadata was found for the contract%s.",
@@ -485,6 +492,7 @@ let wallet = {
 
 let errors = {
   pub _this = this;
+  pub not_an_fa12_contract = "Not an FA1.2 standard contract";
   pub beacon_cant_handle = "Cannot handle this operation";
   pub cannot_retrieve_account = "Cannot retrieve account informations";
   pub deeplinking_not_connected = "Deep linking required but not connected";

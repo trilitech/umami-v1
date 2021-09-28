@@ -143,7 +143,7 @@ module Transaction = {
         json
         |> field("data", field("token_amount", string))
         |> TokenRepr.Unit.fromNatString
-        |> Option.getExn,
+        |> Result.getExn,
       contract:
         json
         |> field("data", field("contract", string))

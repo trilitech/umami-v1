@@ -26,16 +26,22 @@
 type t;
 
 [@bs.module] [@bs.new] external fromString: string => t = "bignumber.js";
+[@bs.module] [@bs.new] external fromInt: int => t = "bignumber.js";
 
 [@bs.send] external toInt: t => int = "toNumber";
 [@bs.send] external toFloat: t => float = "toNumber";
 [@bs.send] external toString: t => string = "toString";
-[@bs.send] external toFixed: t => string = "toFixed";
+[@bs.send] external toFixed: (t, option(int)) => string = "toFixed";
 [@bs.send] external plus: (t, t) => t = "plus";
 [@bs.send] external isNaN: t => bool = "isNaN";
 [@bs.send] external integerValue: t => t = "integerValue";
 [@bs.send] external isInteger: t => bool = "isInteger";
 [@bs.send] external isNegative: t => bool = "isNegative";
+[@bs.send] external div: (t, t) => t = "div";
+[@bs.send] external times: (t, t) => t = "times";
+[@bs.send] external powInt: (t, int) => t = "pow";
+
+let toFixed = (~decimals=?, t) => toFixed(t, decimals);
 
 let fromInt64 = i => i->Int64.to_string->fromString;
 let toInt64 = i => i->toFixed->Int64.of_string;

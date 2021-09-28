@@ -25,7 +25,7 @@
 
 module BigNumber: {
   type fixed;
-  let toFixed: ReBigNumber.t => fixed;
+  let toFixed: (~decimals: int=?, ReBigNumber.t) => fixed;
   let fromInt64: Int64.t => ReBigNumber.t;
   let toInt64: ReBigNumber.t => Int64.t;
 } = {

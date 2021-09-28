@@ -31,6 +31,7 @@ module StateLenses = [%lenses
     name: string,
     address: string,
     symbol: string,
+    decimals: string,
   }
 ];
 module TokenCreateForm = ReForm.Make(StateLenses);
@@ -43,7 +44,7 @@ let styles =
     })
   );
 
-module FormNameSymbol = {
+module FormMetadata = {
   [@react.component]
   let make = (~form: TokenCreateForm.api) => {
     <>
@@ -61,6 +62,13 @@ module FormNameSymbol = {
         error={form.getFieldError(Field(Symbol))}
         placeholder=I18n.input_placeholder#add_token_symbol
       />
+      <FormGroupTextInput
+        label=I18n.label#add_token_decimals
+        value={form.values.decimals}
+        handleChange={form.handleChange(Decimals)}
+        error={form.getFieldError(Field(Name))}
+        placeholder=I18n.input_placeholder#add_token_decimals
+      />
     </>;
   };
 };
@@ -68,7 +76,13 @@ module FormNameSymbol = {
 module MetadataForm = {
   [@react.component]
   let make = (~form: TokenCreateForm.api, ~pkh) => {
-    let metadata = MetadataApiRequest.useLoadMetadata(pkh);
+    let onErrorNotATokenContract = () =>
+      form.raiseSubmitFailed(
+        I18n.form_input_error#not_a_token_contract->Some,
+      );
+
+    let metadata =
+      MetadataApiRequest.useLoadMetadata(~onErrorNotATokenContract, pkh);
     React.useEffect1(
       () => {
         switch (metadata) {
@@ -84,8 +98,10 @@ module MetadataForm = {
       [|metadata|],
     );
     switch (metadata) {
-    | Done(Ok(_), _) => <FormNameSymbol form />
-    | Done(Error(_err), _) => <FormNameSymbol form />
+    | Done(Ok(_), _) => <FormMetadata form />
+    | Done(Error(MetadataAPI.NoTzip12Metadata(_)), _) =>
+      <FormMetadata form />
+    | Done(Error(_), _)
     | NotAsked => React.null
     | Loading(_) => <LoadingView />
     };
@@ -104,7 +120,17 @@ let make = (~chain, ~address="", ~closeAction) => {
             nonEmpty(Name)
             + custom(
                 state =>
-                  switch (PublicKeyHash.build(state.address)) {
+                  switch (state.decimals->Int.fromString) {
+                  | None => Error(I18n.form_input_error#not_an_int)
+                  | Some(i) when i < 0 =>
+                    Error(I18n.form_input_error#negative_int)
+                  | Some(_) => Valid
+                  },
+                Decimals,
+              )
+            + custom(
+                state =>
+                  switch (PublicKeyHash.buildContract(state.address)) {
                   | Error(_) => Error(I18n.form_input_error#invalid_key_hash)
                   | Ok(_) => Valid
                   },
@@ -118,21 +144,22 @@ let make = (~chain, ~address="", ~closeAction) => {
         ({state}) => {
           FutureEx.async(() => {
             let%FResMap address =
-              state.values.address->PublicKeyHash.build->Future.value;
+              state.values.address->PublicKeyHash.buildContract->Future.value;
             createToken({
               kind: FA1_2,
               address,
               alias: state.values.name,
               symbol: state.values.symbol,
               chain,
-              decimals: 0,
+              decimals:
+                state.values.decimals |> Int.fromString |> Option.getExn,
             })
             ->FutureEx.getOk(_ => closeAction());
           });
 
           None;
         },
-      ~initialState={name: "", address, symbol: ""},
+      ~initialState={name: "", address, symbol: "", decimals: ""},
       ~i18n=FormUtils.i18n,
       (),
     );
@@ -146,7 +173,7 @@ let make = (~chain, ~address="", ~closeAction) => {
   let formFieldsAreValids =
     FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
 
-  let pkh = PublicKeyHash.build(form.values.address);
+  let pkh = PublicKeyHash.buildContract(form.values.address);
 
   <ModalFormView closing={ModalFormView.Close(closeAction)}>
     <Typography.Headline style=styles##title>
@@ -159,7 +186,13 @@ let make = (~chain, ~address="", ~closeAction) => {
       label=I18n.label#add_token_address
       value={form.values.address}
       handleChange={form.handleChange(Address)}
-      error={form.getFieldError(Field(Address))}
+      error={
+        [
+          form.formState->FormUtils.getFormStateError,
+          form.getFieldError(Field(Address)),
+        ]
+        ->UmamiCommon.Lib.Option.firstSome
+      }
       placeholder=I18n.input_placeholder#add_token_address
       clearButton=true
     />
