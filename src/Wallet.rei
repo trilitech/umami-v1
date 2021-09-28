@@ -110,6 +110,12 @@ let renameAlias:
 
 type kind = Account.kind = | Encrypted | Unencrypted | Ledger;
 
+module Prefixes: {
+  let encrypted: string;
+  let unencrypted: string;
+  let ledger: string;
+};
+
 /** Returns the prefix kind from the secret key and the secret key without the
    prefix */
 let extractPrefixFromSecretKey: string => Let.result((kind, string));
