@@ -226,9 +226,12 @@ describe("API tests", ({testAsync}) => {
         source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
         fee: Tez.fromMutezInt(1269),
         payload:
-          Reveal({
-            public_key: "edpkuAjG6hyZ86JJ8TWBZ5j8txMX6ySsBFBcRRgmkKVBFDf3RJXfdx",
-          }),
+          Reveal(
+            {
+              public_key: "edpkuAjG6hyZ86JJ8TWBZ5j8txMX6ySsBFBcRRgmkKVBFDf3RJXfdx",
+            }
+            ->Some,
+          ),
       },
     |];
     module UnderTest = ServerAPI.ExplorerMaker(Stub);
@@ -427,10 +430,9 @@ describe("API tests", ({testAsync}) => {
         source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
         fee: Tez.fromMutezInt(2065),
         payload:
-          Origination({
-            delegate: None,
-            contract_address: "KT1EVkzesmiNL2GLzCn73WwiiwZf4R6AVW9x",
-          }),
+          Origination(
+            {contract: "KT1EVkzesmiNL2GLzCn73WwiiwZf4R6AVW9x"}->Some,
+          ),
       },
     |];
     module UnderTest = ServerAPI.ExplorerMaker(Stub);

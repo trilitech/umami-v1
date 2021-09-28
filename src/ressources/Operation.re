@@ -101,10 +101,12 @@ let makeSingleTransaction =
 module Reveal = {
   type t = {public_key: string};
 
-  let decode = json =>
-    Json.Decode.{
-      public_key: json |> field("data", field("public_key", string)),
-    };
+  open Json.Decode;
+
+  let decode = json => {
+    let pk = json |> optional(field("data", field("public_key", string)));
+    pk->Option.map(public_key => {public_key: public_key});
+  };
 };
 
 module Transaction = {
@@ -192,16 +194,15 @@ module Transaction = {
 };
 
 module Origination = {
-  type t = {
-    delegate: option(string),
-    contract_address: string,
-  };
+  type t = {contract: string};
 
-  let decode = json =>
-    Json.Decode.{
-      delegate: json |> optional(field("delegate", string)),
-      contract_address: json |> field("contract_address", string),
-    };
+  open Json.Decode;
+
+  let decode = json => {
+    let ca = json |> optional(field("data", field("contract", string)));
+
+    ca->Option.map(contract => {contract: contract});
+  };
 };
 
 module Delegation = {
@@ -221,9 +222,9 @@ module Delegation = {
 
 module Read = {
   type payload =
-    | Reveal(Reveal.t)
+    | Reveal(option(Reveal.t))
     | Transaction(Transaction.t)
-    | Origination(Origination.t)
+    | Origination(option(Origination.t))
     | Delegation(Delegation.t)
     | Unknown;
 
