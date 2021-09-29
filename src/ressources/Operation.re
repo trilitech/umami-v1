@@ -109,7 +109,7 @@ module Transaction = {
     | Tez(common)
     | Token(common, token_info);
 
-  type tokenKind = [ | `KFA1_2 | `KFA2];
+  type tokenKind = TokenContract.kind;
 
   type kind = [ tokenKind | `KTez];
 
@@ -128,12 +128,14 @@ module Transaction = {
   module Decode = {
     open Json.Decode;
 
-    let kindFromString =
-      fun
-      | "fa1-2" => Ok(`KFA1_2)
-      | "fa2" => Ok(`KFA2)
-      | "tez" => Ok(`KTez)
-      | s => Error(s);
+    let kindFromString = k =>
+      switch (TokenContract.Decode.kindFromString(k)) {
+      | Error(TokenContract.UnknownKind("tez")) => Ok(`KTez)
+      // Ok(k) must be destructed and rebuilt to allow the unification of
+      // TokenContract.kind with `KTez
+      | Ok(k) => Ok((k :> kind))
+      | Error(e) => Error(e)
+      };
 
     let token_kind = json =>
       (json |> field("data", field("token", string)))

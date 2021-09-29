@@ -518,6 +518,8 @@ let errors = {
   pub key_derivation = "Key derivation failed";
   pub illformed_token_contract = "Illformed Token Contract";
   pub cannot_read_token = s => p("Cannot read token amount: %s", s);
+  pub unknown_kind = k =>
+    p("Internal error: unknown kind `%s` for token contract", k);
   pub invalid_operation_type = "Invalid operation type!";
   pub unhandled_error = e => p("Unhandled error %s", e);
   pub no_secret_found = "No secrets found";
