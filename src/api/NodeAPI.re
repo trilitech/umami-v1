@@ -42,6 +42,16 @@ let () =
     | _ => None,
   );
 
+module Accounts = {
+  let exists = (config, account) => {
+    let%FResMap json = URL.Explorer.accountExists(config, ~account)->URL.get;
+    switch (Js.Json.classify(json)) {
+    | Js.Json.JSONTrue => true
+    | _ => false
+    };
+  };
+};
+
 module Balance = {
   let get = (config: ConfigContext.env, address, ~params=?, ()) => {
     config.network.endpoint

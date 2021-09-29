@@ -393,10 +393,7 @@ module Accounts = {
     };
 
     let used = (config, address) => {
-      let%FResMap operations =
-        config->ServerAPI.Explorer.getOperations(address, ~limit=1, ());
-
-      operations->Js.Array2.length != 0;
+      config->NodeAPI.Accounts.exists(address);
     };
 
     let runLegacy = (~recoveryPhrase, ~password) => {
