@@ -135,6 +135,37 @@ module URL = {
       let path = "accounts/" ++ (account :> string) ++ "/exists/";
       build_explorer_url(config, path, []);
     };
+
+    let tokenRegistry =
+        (
+          network,
+          ~accountsFilter: option(list(PublicKeyHash.t))=?,
+          ~kinds=?,
+          ~limit=?,
+          ~index=?,
+          (),
+        ) => {
+      let concatOpt = (l1, l2) =>
+        l2->Option.mapWithDefault(l1, List.concat(l1));
+      let args =
+        List.(
+          []
+          ->concatOpt(
+              accountsFilter->Option.map(l =>
+                l->List.map(a => ("accounts", (a :> string)))
+              ),
+            )
+          ->addOpt(
+              kinds->arg_opt("kinds", kinds =>
+                List.map(kinds, TokenContract.Encode.kindEncoder)
+                |> String.concat(",")
+              ),
+            )
+          ->addOpt(limit->arg_opt("limit", Int64.to_string))
+          ->addOpt(index->arg_opt("index", Int64.to_string))
+        );
+      build_explorer_url(network, "tokens/registry", args);
+    };
   };
 
   module Endpoint = {

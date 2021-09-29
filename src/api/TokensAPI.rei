@@ -31,3 +31,22 @@ let registeredTokens: unit => Promise.t(PublicKeyHash.Map.map(TokenRepr.t));
 let addToken: (ConfigContext.env, TokenRepr.t) => Promise.t(unit);
 
 let removeToken: TokenRepr.t => Promise.t(unit);
+
+let fetchTokens:
+  (
+    ConfigContext.env,
+    ~accounts: list(PublicKeyHash.t),
+    ~kinds: list(TokenContract.kind),
+    ~limit: int64,
+    ~index: int64
+  ) =>
+  Promise.t(array(TokenContract.t));
+
+let fetchTokenRegistry:
+  (
+    ConfigContext.env,
+    ~kinds: list(TokenContract.kind),
+    ~limit: int64,
+    ~index: int64
+  ) =>
+  Promise.t(array(TokenContract.t));

@@ -146,3 +146,23 @@ let removeToken = token => {
   ->Result.Ok
   ->Promise.value;
 };
+
+let fetchTokens = (settings, ~accounts, ~kinds, ~limit, ~index) => {
+  open ServerAPI;
+
+  let%Await tokens =
+    URL.Explorer.tokenRegistry(
+      settings,
+      ~accountsFilter=accounts,
+      ~kinds,
+      ~limit,
+      ~index,
+      (),
+    )
+    ->URL.get;
+
+  tokens->JsonEx.decode(TokenContract.Decode.array)->Promise.value;
+};
+
+let fetchTokenRegistry = (settings, ~kinds, ~limit, ~index) =>
+  fetchTokens(settings, ~accounts=[], ~kinds, ~limit, ~index);

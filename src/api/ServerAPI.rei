@@ -48,6 +48,17 @@ module URL: {
       t;
     let checkToken: (ConfigContext.env, ~contract: PublicKeyHash.t) => t;
     let accountExists: (ConfigContext.env, ~account: PublicKeyHash.t) => t;
+
+    let tokenRegistry:
+      (
+        ConfigContext.env,
+        ~accountsFilter: list(PublicKeyHash.t)=?,
+        ~kinds: list(TokenContract.kind)=?,
+        ~limit: int64=?,
+        ~index: int64=?,
+        unit
+      ) =>
+      t;
   };
 
   module Endpoint: {
