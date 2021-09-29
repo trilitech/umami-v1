@@ -34,8 +34,8 @@ let useLoad = requestState => {
         fun
         | Ok(response) =>
           response
-          ->Array.map(((name, address)) =>
-              ((address :> string), Account.{name, address})
+          ->Array.map(((name, address, kind)) =>
+              ((address :> string), Account.{name, address, kind})
             )
           ->Array.reverse
           ->Map.String.fromArray
@@ -51,6 +51,7 @@ let useLoad = requestState => {
 
 let useUpdate =
   ApiRequest.useSetter(
+    ~logOk=_ => I18n.t#account_updated,
     ~set=
       (~config, renaming: WalletAPI.Aliases.renameParams) =>
         WalletAPI.Aliases.rename(~config, renaming),

@@ -23,7 +23,7 @@
 /*                                                                           */
 /*****************************************************************************/
 
-type error =
+type Errors.t +=
   | ParsingFailed(string)
   | MoreThan1Wildcard
   | MissingWildcardOr0
@@ -31,12 +31,16 @@ type error =
 
 exception IllFormedPath;
 
-let handleError =
-  fun
-  | ParsingFailed(_) => I18n.form_input_error#dp_not_a_dp
-  | MoreThan1Wildcard => I18n.form_input_error#dp_more_than_1_wildcard
-  | MissingWildcardOr0 => I18n.form_input_error#dp_missing_wildcard
-  | NotTezosBip44 => I18n.form_input_error#dp_not_tezos;
+let () =
+  Errors.registerHandler(
+    "DerivationPath",
+    fun
+    | ParsingFailed(_) => I18n.form_input_error#dp_not_a_dp->Some
+    | MoreThan1Wildcard => I18n.form_input_error#dp_more_than_1_wildcard->Some
+    | MissingWildcardOr0 => I18n.form_input_error#dp_missing_wildcard->Some
+    | NotTezosBip44 => I18n.form_input_error#dp_not_tezos->Some
+    | _ => None,
+  );
 
 type item =
   | Wildcard
@@ -118,7 +122,9 @@ module Pattern = {
     } else {
       let a = dp->replwc;
       let id = a->Js.Array2.indexOf(0);
-      id == (-1) ? raise(IllFormedPath) : a->Array.set(id, index)->(_ => a);
+      id == (-1)
+        ? a  /* this should never happens */
+        : a->Array.set(id, index)->(_ => a);
     };
   };
 
@@ -126,10 +132,13 @@ module Pattern = {
   let regItem = [%re "/\\d+|\\?/g"];
 
   let checkWildcard = dp => {
-    Array.(dp->keep((==)(Wildcard))->length) <= 1
-      ? Array.(dp->keep((==)(Int(0)))->length) <= 1
-          ? Ok(dp) : Error(MissingWildcardOr0)
-      : Error(MoreThan1Wildcard);
+    let nbwc = Array.(dp->keep((==)(Wildcard))->length);
+
+    if (nbwc == 1 || dp->Array.some((==)(Int(0)))) {
+      Ok(dp);
+    } else {
+      Error(MissingWildcardOr0);
+    };
   };
 
   let fromString = s => {

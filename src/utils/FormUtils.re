@@ -43,7 +43,7 @@ let keepTez = v =>
     | Illformed(_) => None,
   );
 
-let parseAmount = (v, token) =>
+let parseAmount = (v, token: option(TokenRepr.t)) =>
   if (v == "") {
     None;
   } else {
@@ -55,12 +55,11 @@ let parseAmount = (v, token) =>
           : vtez->Option.map(v => v->Transfer.Currency.makeTez->Amount);
       },
       t => {
-        let vt = v->Token.Unit.fromNatString;
-        vt == None
-          ? v->Illformed->Some
-          : vt->Option.map(amount =>
-              Currency.makeToken(~amount, ~token=t)->Amount
-            );
+        let vt = v->Token.Unit.fromStringDecimals(t.decimals);
+        switch (vt) {
+        | Error(_) => v->Illformed->Some
+        | Ok(amount) => Currency.makeToken(~amount, ~token=t)->Amount->Some
+        };
       },
     );
   };
@@ -117,17 +116,22 @@ module Unsafe = {
 
 let emptyOr = (f, v): ReSchema.fieldState => v == "" ? Valid : f(v);
 
-let isValidTezAmount: string => ReSchema.fieldState =
-  fun
-  | s when Tez.fromString(s) != None => Valid
-  | "" => Error(I18n.form_input_error#mandatory)
-  | _ => Error(I18n.form_input_error#float);
+let isValidTokenAmount: (string, int) => ReSchema.fieldState =
+  (s, decimals) =>
+    switch (s) {
+    | "" => Error(I18n.form_input_error#mandatory)
+    | s =>
+      switch (Token.Unit.fromStringDecimals(s, decimals)) {
+      | Ok(_) => Valid
+      | Error(NaN) => Error(I18n.form_input_error#float)
+      | Error(Negative) => Error(I18n.form_input_error#float)
+      | Error(Float) =>
+        Error(I18n.form_input_error#expected_decimals(decimals))
+      }
+    };
 
-let isValidTokenAmount: string => ReSchema.fieldState =
-  fun
-  | s when Token.Unit.forceFromString(s) != None => Valid
-  | "" => Error(I18n.form_input_error#mandatory)
-  | _ => Error(I18n.form_input_error#int);
+let isValidTezAmount: string => ReSchema.fieldState =
+  s => isValidTokenAmount(s, 6);
 
 let notNone = (v): ReSchema.fieldState =>
   v != None ? Valid : Error(I18n.form_input_error#mandatory);
@@ -149,7 +153,7 @@ let isValidInt = value => {
 let checkDerivationPath = (s): ReSchema.fieldState =>
   switch (s->DerivationPath.Pattern.fromString) {
   | Ok(_) => Valid
-  | Error(e) => Error(DerivationPath.handleError(e))
+  | Error(e) => Error(Errors.toString(e))
   };
 
 let formFieldsAreValids = (fieldsState, validateFields) => {

@@ -23,9 +23,15 @@
 /*                                                                           */
 /*****************************************************************************/
 
+type kind =
+  | Encrypted
+  | Unencrypted
+  | Ledger;
+
 type t = {
   address: PublicKeyHash.t,
   name: string,
+  kind,
 };
 
 let toAlias = ({address, name}: t) => {

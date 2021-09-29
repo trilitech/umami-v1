@@ -120,7 +120,8 @@ module Form = {
       dryRun: None,
     };
 
-  let use = (~initValues=?, initAccount, token, onSubmit) => {
+  let use =
+      (~initValues=?, initAccount, token: option(TokenRepr.t), onSubmit) => {
     SendForm.use(
       ~schema={
         SendForm.Validation.(
@@ -138,9 +139,11 @@ module Form = {
               )
             + custom(
                 values => {
-                  token != None
-                    ? FormUtils.isValidTokenAmount(values.amount)
-                    : FormUtils.isValidTezAmount(values.amount)
+                  switch (token) {
+                  | None => FormUtils.isValidTezAmount(values.amount)
+                  | Some({decimals, _}) =>
+                    FormUtils.isValidTokenAmount(values.amount, decimals)
+                  }
                 },
                 Amount,
               )
@@ -422,7 +425,7 @@ let make = (~closeAction) => {
 
     sendOperation({operation, signingIntent})
     ->Future.tapOk(hash => {setModalStep(_ => SubmittedStep(hash))})
-    ->Future.tapOk(_ => {updateAccount(transfer.source)});
+    ->Future.tapOk(_ => {updateAccount(transfer.source.address)});
   };
 
   let (batch, setBatch) = React.useState(_ => []);
@@ -437,10 +440,9 @@ let make = (~closeAction) => {
     sendOperationSimulate(
       Operation.Simulation.transaction(transaction, None),
     )
-    ->Future.tapOk(dryRun => {
+    ->FutureEx.getOk(dryRun => {
         setModalStep(_ => PasswordStep(transaction, dryRun))
-      })
-    ->ignore;
+      });
   };
 
   let onSubmit = ({state, send}: SendForm.onSubmitAPI) => {

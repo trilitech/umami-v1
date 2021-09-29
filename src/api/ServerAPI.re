@@ -29,6 +29,7 @@ open Let;
 module Path = {
   module Endpoint = {
     let delegates = "/chains/main/blocks/head/context/delegates\\?active=true";
+    let runView = "/chains/main/blocks/head/helpers/scripts/run_view";
   };
 };
 
@@ -80,6 +81,29 @@ module URL = {
       );
   };
 
+  let postJson = (url, json) => {
+    let init =
+      Fetch.RequestInit.make(
+        ~method_=Fetch.Post,
+        ~body=Fetch.BodyInit.make(Js.Json.stringify(json)),
+        ~headers=Fetch.HeadersInit.make({"Content-Type": "application/json"}),
+        (),
+      );
+
+    let%FRes response =
+      url
+      ->Fetch.fetchWithInit(init)
+      ->FutureJs.fromPromise(e =>
+          e->RawJsError.fromPromiseError.message->FetchError
+        );
+
+    response
+    ->Fetch.Response.json
+    ->FutureJs.fromPromise(e =>
+        e->RawJsError.fromPromiseError.message->FetchError
+      );
+  };
+
   module Explorer = {
     let operations =
         (
@@ -109,22 +133,84 @@ module URL = {
       let path = "tokens/exists/" ++ (contract :> string);
       build_explorer_url(network, path, []);
     };
-
-    let getTokenBalance =
-        (network, ~contract: PublicKeyHash.t, ~account: PublicKeyHash.t) => {
-      let path =
-        "accounts/"
-        ++ (account :> string)
-        ++ "/tokens/"
-        ++ (contract :> string)
-        ++ "/balance";
-      build_explorer_url(network, path, []);
-    };
   };
 
   module Endpoint = {
     let delegates = settings =>
       ConfigUtils.endpoint(settings) ++ Path.Endpoint.delegates;
+
+    let runView = settings =>
+      ConfigUtils.endpoint(settings) ++ Path.Endpoint.runView;
+
+    /* Generates a valid JSON for the run_view RPC */
+    let fa12GetBalanceInput =
+        (~settings, ~contract: PublicKeyHash.t, ~account: PublicKeyHash.t) => {
+      Json.Encode.(
+        object_([
+          ("contract", string((contract :> string))),
+          ("entrypoint", string("getBalance")),
+          ("chain_id", string(settings->ConfigUtils.chainId)),
+          ("input", object_([("string", string((account :> string)))])),
+          ("unparsing_mode", string("Readable")),
+        ])
+      );
+    };
+
+    /*
+       Generates a valid JSON for the run_view RPC.
+
+       Example of an expected input for run_view of `balance_of` on an FA2
+       contract, for a single address:
+       { "contract": "KT1Wx7pXgstiZCas5SvFFUEmBZbnAoacSCxo",
+         "entrypoint": "balance_of",
+         "input":
+           [ { "prim": "Pair",
+               "args":
+                 [ { "bytes": "0000721765c758aacce0986e781ddc9a40f5b6b9d9c3" },
+                   { "int": "0" } ] } ],
+         "chain_id": "NetXz969SFaFn8k",
+         "source": "tz1W3HkgNtCvZkLcxPbLpR9mf8vuw4k3atvB",
+         "unparsing_mode": "Readable" }
+
+       In the input, `bytes` is the encoded address as bytes, but the
+       Michelson typer is also able to type `string` as address. The input of
+       the entrypoint is actually a Michelson list of `(pkh * tokenId)`: the
+       entrypoint can retrieve the balance for multiple address at once. This
+       version only calls the contract for one address.
+     */
+
+    let fa2BalanceOfInput =
+        (
+          ~settings,
+          ~contract: PublicKeyHash.t,
+          ~account: PublicKeyHash.t,
+          ~tokenId: int,
+        ) => {
+      Json.Encode.(
+        object_([
+          ("contract", string((contract :> string))),
+          ("entrypoint", string("balance_of")),
+          ("chain_id", string(settings->ConfigUtils.chainId)),
+          (
+            "input",
+            jsonArray([|
+              object_([
+                ("prim", string("Pair")),
+                (
+                  "args",
+                  jsonArray([|
+                    object_([("string", string((account :> string)))]),
+                    object_([("int", string(string_of_int(tokenId)))]),
+                  |]),
+                ),
+              ]),
+            |]),
+          ),
+          ("source", string((account :> string))),
+          ("unparsing_mode", string("Readable")),
+        ])
+      );
+    };
   };
 
   module External = {

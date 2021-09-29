@@ -34,3 +34,5 @@ let validateContractAddress: string => result([> | `Contract], Errors.t);
 
 let validateAnyAddress:
   string => result([> | `Address | `Contract], Errors.t);
+
+let bytes2Char: bytes => string;

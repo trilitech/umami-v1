@@ -67,7 +67,7 @@ module Delegate: {
       ~fee: Tez.t=?,
       unit
     ) =>
-    Future.t(Result.t(ReTaquito.Toolkit.operationResult, Errors.t));
+    Future.t(Result.t(ReTaquito.Toolkit.Operation.result, Errors.t));
 
   module Estimate: {
     let set:
@@ -116,7 +116,7 @@ module Transfer: {
       ~signingIntent: Signer.intent,
       unit
     ) =>
-    Future.t(Result.t(ReTaquito.Toolkit.operationResult, Errors.t));
+    Future.t(Result.t(ReTaquito.Toolkit.Operation.result, Errors.t));
 
   module Estimate: {
     let batch:

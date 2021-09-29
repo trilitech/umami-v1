@@ -32,10 +32,10 @@ type reactState('state) = ('state, ('state => 'state) => unit);
 type error = Errors.t;
 
 type requestsState('requestResponse) =
-  Map.String.t(ApiRequest.t('requestResponse, error));
+  Map.String.t(ApiRequest.t('requestResponse));
 
 type requestState('requestResponse) =
-  reactState(ApiRequest.t('requestResponse, error));
+  reactState(ApiRequest.t('requestResponse));
 
 type apiRequestsState('requestResponse) =
   reactState(requestsState('requestResponse));
@@ -46,8 +46,7 @@ type state = {
   selectedAccountState: reactState(option(PublicKeyHash.t)),
   selectedTokenState: reactState(option(PublicKeyHash.t)),
   accountsRequestState: requestState(Map.String.t(Account.t)),
-  secretsRequestState:
-    reactState(ApiRequest.t(array(Secret.derived), error)),
+  secretsRequestState: reactState(ApiRequest.t(array(Secret.derived))),
   balanceRequestsState: apiRequestsState(Tez.t),
   delegateRequestsState: apiRequestsState(option(PublicKeyHash.t)),
   delegateInfoRequestsState:
@@ -55,18 +54,16 @@ type state = {
   operationsRequestsState:
     apiRequestsState(OperationApiRequest.operationsResponse),
   operationsConfirmations: reactState(Set.String.t),
-  aliasesRequestState:
-    reactState(ApiRequest.t(Map.String.t(Alias.t), error)),
-  bakersRequestState: reactState(ApiRequest.t(array(Delegate.t), error)),
-  tokensRequestState:
-    reactState(ApiRequest.t(Map.String.t(Token.t), error)),
+  aliasesRequestState: reactState(ApiRequest.t(Map.String.t(Alias.t))),
+  bakersRequestState: reactState(ApiRequest.t(array(Delegate.t))),
+  tokensRequestState: reactState(ApiRequest.t(Map.String.t(Token.t))),
   balanceTokenRequestsState: apiRequestsState(Token.Unit.t),
   apiVersionRequestState: reactState(option(Network.apiVersion)),
   eulaSignatureRequestState: reactState(bool),
   beaconPeersRequestState: requestState(array(ReBeacon.peerInfo)),
   beaconClient: reactState(option(ReBeacon.WalletClient.t)),
   beaconPermissionsRequestState:
-    reactState(ApiRequest.t(array(ReBeacon.permissionInfo), error)),
+    reactState(ApiRequest.t(array(ReBeacon.permissionInfo))),
   beaconNextRequestState: nextState(ReBeacon.Message.Request.t),
 };
 
@@ -153,32 +150,30 @@ let make = (~children) => {
   let (_, setEulaSignature) as eulaSignatureRequestState =
     React.useState(() => false);
 
-  SecretApiRequest.useLoad(secretsRequestState)->ignore;
-  AccountApiRequest.useLoad(accountsRequestState)->ignore;
-  AliasApiRequest.useLoad(aliasesRequestState)->ignore;
-  TokensApiRequest.useLoadTokens(tokensRequestState)->ignore;
+  let _: ApiRequest.t(_) = SecretApiRequest.useLoad(secretsRequestState);
+  let _: ApiRequest.t(_) = AccountApiRequest.useLoad(accountsRequestState);
+  let _: ApiRequest.t(_) = AliasApiRequest.useLoad(aliasesRequestState);
+  let _: ApiRequest.t(_) =
+    TokensApiRequest.useLoadTokens(tokensRequestState);
 
   React.useEffect0(() => {
     setEulaSignature(_ => Disclaimer.needSigning());
     None;
   });
 
-  React.useEffect1(
+  ReactUtils.useAsyncEffect1(
     () => {
-      let _: Let.future(_) = {
-        let%FResMap (v: Network.apiVersion, _) =
-          Network.checkConfiguration(
-            settings->ConfigUtils.explorer,
-            settings->ConfigUtils.endpoint,
-          );
-        setApiVersion(_ => Some(v));
-        if (!Network.checkInBound(v.api)) {
-          addToast(
-            Logs.error(~origin=Settings, Network.API(NotSupported(v.api))),
-          );
-        };
+      let%FResMap (v: Network.apiVersion, _) =
+        Network.checkConfiguration(
+          settings->ConfigUtils.explorer,
+          settings->ConfigUtils.endpoint,
+        );
+      setApiVersion(_ => Some(v));
+      if (!Network.checkInBound(v.api)) {
+        addToast(
+          Logs.error(~origin=Settings, Network.API(NotSupported(v.api))),
+        );
       };
-      None;
     },
     [|network|],
   );
@@ -251,9 +246,9 @@ let useRequestsState = (getRequestsState, key: option(string)) => {
     React.useCallback2(
       newRequestSetter =>
         key->Lib.Option.iter(key =>
-          setRequests((request: requestsState('requestResponse)) =>
+          setRequests((request: requestsState(_)) =>
             request->Map.String.update(
-              key, (oldRequest: option(ApiRequest.t('requestResponse, _))) =>
+              key, (oldRequest: option(ApiRequest.t(_))) =>
               Some(
                 newRequestSetter(
                   oldRequest->Option.getWithDefault(NotAsked),
@@ -346,17 +341,10 @@ module BalanceToken = {
       (address: PublicKeyHash.t, tokenAddress: PublicKeyHash.t) =>
     (address :> string) ++ (tokenAddress :> string);
 
-  let useLoad = (address: PublicKeyHash.t, tokenAddress: PublicKeyHash.t) => {
-    let requestState =
-      useRequestState(address->getRequestKey(tokenAddress)->Some);
+  let useLoad = (address: PublicKeyHash.t, token: PublicKeyHash.t) => {
+    let requestState = useRequestState(address->getRequestKey(token)->Some);
 
-    let operation =
-      React.useMemo2(
-        () => Token.makeGetBalance(address, tokenAddress, ()),
-        (address, tokenAddress),
-      );
-
-    TokensApiRequest.useLoadOperationOffline(~requestState, ~operation);
+    TokensApiRequest.useLoadFA12Balance(~requestState, ~address, ~token);
   };
 
   let useGetTotal = tokenAddress => {
@@ -403,8 +391,7 @@ module Delegate = {
   let useRequestState = useRequestsState(store => store.delegateRequestsState);
 
   let useLoad = (address: PublicKeyHash.t) => {
-    let requestState: ApiRequest.requestState(option(PublicKeyHash.t), _) =
-      useRequestState(Some((address :> string)));
+    let requestState = useRequestState(Some((address :> string)));
 
     DelegateApiRequest.useLoad(~requestState, ~address);
   };
@@ -684,14 +671,11 @@ module Accounts = {
     accounts->Map.String.get((address :> string));
   };
 
-  let useIsLedger = pkh => {
-    let account: Account.t = useGetFromAddress(pkh)->Option.getExn;
-
-    let store = useStoreContext();
-    let (secretsRequest, _) = store.secretsRequestState;
-    let secrets = secretsRequest->ApiRequest.getWithDefault([||]);
-
-    account.address->WalletAPI.Accounts.isLedger(secrets);
+  let useGetFromOptAddress = (address: option(PublicKeyHash.t)) => {
+    let accounts = useGetAll();
+    address->Option.flatMap(address =>
+      accounts->Map.String.get((address :> string))
+    );
   };
 
   let useResetNames = () => {
@@ -772,9 +756,12 @@ module Secrets = {
     );
   };
 
-  let useMnemonicScan = () => {
+  let useMnemonicImportKeys = () => {
     let resetSecrets = useResetAll();
-    SecretApiRequest.useMnemonicScan(~sideEffect=_ => resetSecrets(), ());
+    SecretApiRequest.useMnemonicImportKeys(
+      ~sideEffect=_ => resetSecrets(),
+      (),
+    );
   };
 
   let useLedgerImport = () => {

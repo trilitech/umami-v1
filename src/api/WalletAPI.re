@@ -186,12 +186,6 @@ module Accounts = {
   type t = array(Secret.t);
   type name = string;
 
-  let isLedger = (pkh, secrets) => {
-    secrets->Array.some((s: Secret.Repr.derived) =>
-      s.secret.kind == Ledger && s.secret.addresses->Array.some((==)(pkh))
-    );
-  };
-
   let secrets = (~config as _) => {
     LocalStorage.getItem("secrets")
     ->Js.Nullable.toOption
@@ -213,12 +207,18 @@ module Accounts = {
 
     let%FResMap sks = config->ConfigUtils.baseDir->Wallet.SecretAliases.read;
 
-    pkhs->Array.keepMap(({name, value}) =>
-      switch (sks->Wallet.SecretAliases.find(skAlias => name == skAlias.name)) {
-      | Ok(_) => Some((name, value))
+    pkhs->Array.keepMap(({name, value}) => {
+      let res = {
+        let%Res sk =
+          sks->Wallet.SecretAliases.find(skAlias => name == skAlias.name);
+        sk.value->Wallet.extractPrefixFromSecretKey;
+      };
+
+      switch (res) {
+      | Ok((kind, _)) => Some((name, value, kind))
       | Error(_) => None
-      }
-    );
+      };
+    });
   };
 
   let secretAt = (~config, index) => {
@@ -250,32 +250,30 @@ module Accounts = {
     SecureStorage.Cipher.decrypt2(password, data);
   };
 
-  let import = (~config, ~alias, ~secretKey, ~password) => {
-    let skUri = "encrypted:" ++ secretKey;
+  let importFromSigner = (~config, ~alias, ~secretKey, signer) => {
+    let%FRes pk = signer->ReTaquitoSigner.publicKey;
+    let pk = Wallet.mnemonicPkValue(pk);
+    let%FRes pkh = signer->ReTaquitoSigner.publicKeyHash;
+    let skUri = Wallet.Prefixes.encrypted ++ secretKey;
+    Wallet.addOrReplaceAlias(
+      ~dirpath=config->ConfigUtils.baseDir,
+      ~alias,
+      ~pk,
+      ~pkh,
+      ~sk=skUri,
+    );
+  };
 
+  let import = (~config, ~alias, ~secretKey, ~password) => {
     let%FRes signer =
       ReTaquitoSigner.MemorySigner.create(
         ~secretKey,
         ~passphrase=password,
         (),
       );
-
-    let%FRes pk = signer->ReTaquitoSigner.publicKey;
-
-    let pk = Wallet.mnemonicPkValue(pk);
     let%FRes pkh = signer->ReTaquitoSigner.publicKeyHash;
-
-    let%FRes () =
-      Wallet.addOrReplaceAlias(
-        ~dirpath=config->ConfigUtils.baseDir,
-        ~alias,
-        ~pk,
-        ~pkh,
-        ~sk=skUri,
-      )
-      ->Future.tapError(e => e->Js.log);
-
-    pkh->FutureEx.ok;
+    let%FResMap () = importFromSigner(~config, ~alias, ~secretKey, signer);
+    pkh;
   };
 
   let derive = (~config, ~index, ~alias, ~password) => {
@@ -545,14 +543,23 @@ module Accounts = {
         ->DerivationPath.Pattern.implement(index)
         ->HD.edesk(seed, ~password);
 
-      let%FRes address =
-        import(~config, ~secretKey=edesk, ~alias=name, ~password);
+      let%FRes signer =
+        ReTaquitoSigner.MemorySigner.create(
+          ~secretKey=edesk,
+          ~passphrase=password,
+          (),
+        );
+
+      let%FRes address = signer->ReTaquitoSigner.publicKeyHash;
 
       let%FRes isValidated =
         // always include 0'
         index == 0 ? Future.value(Ok(true)) : config->used(address);
 
       if (isValidated) {
+        let%FRes () =
+          importFromSigner(~config, ~secretKey=edesk, ~alias=name, signer);
+
         let%FResMap addresses =
           runOnSeed(
             ~config,
@@ -674,6 +681,7 @@ module Accounts = {
         ~password,
         (),
       ) => {
+    let%FRes () = System.Client.initDir(config->ConfigUtils.baseDir);
     let backupPhraseConcat = backupPhrase->Js.Array2.joinWith(" ");
 
     let%FRes () = password->SecureStorage.validatePassword;

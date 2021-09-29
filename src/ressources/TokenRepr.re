@@ -25,21 +25,49 @@
 
 module Unit = {
   type t = ReBigNumber.t;
-  open ReBigNumber;
 
+  type illformed =
+    | NaN
+    | Float
+    | Negative;
+
+  open ReBigNumber;
   let toBigNumber = x => x;
   let fromBigNumber = x =>
-    x->isNaN || !x->isInteger || x->isNegative ? None : x->Some;
+    if (x->isNaN) {
+      Error(NaN);
+    } else if (!x->isInteger) {
+      Error(Float);
+    } else if (x->isNegative) {
+      Error(Negative);
+    } else {
+      x->Ok;
+    };
+
+  let isNat = v => v->isInteger && !v->isNegative && !v->isNaN;
 
   let toNatString = toFixed;
+  let toStringDecimals = (x, decimals) => {
+    let shift = fromInt(10)->powInt(decimals);
+    let x = x->div(shift);
+    toFixed(~decimals, x);
+  };
   let fromNatString = s => s->fromString->fromBigNumber;
+  let fromStringDecimals = (s, decimals) => {
+    let shift = fromInt(10)->powInt(decimals);
+    let x = s->fromString->times(shift);
+    x->fromBigNumber;
+  };
+
+  let formatString = (s, decimals) => {
+    let x = fromStringDecimals(s, decimals);
+    x->Result.map(x => toStringDecimals(x, decimals));
+  };
+
   let forceFromString = s => {
     let v = s->fromString;
     v->isNaN ? None : v->isInteger ? v->integerValue->Some : None;
   };
-
-  let isValid = v =>
-    v->fromNatString->Option.mapWithDefault(false, isInteger);
 
   let zero = fromString("0");
 
@@ -52,9 +80,15 @@ module Unit = {
 
 type address = PublicKeyHash.t;
 
+type kind =
+  | FA1_2
+  | FA2(int);
+
 type t = {
+  kind,
   address,
   alias: string,
   symbol: string,
   chain: string,
+  decimals: int,
 };

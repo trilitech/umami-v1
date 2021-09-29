@@ -53,6 +53,12 @@ let fromExn = (v, f) =>
   | e => Error(e)
   };
 
+let getWithExn = (v, f) =>
+  switch (v) {
+  | Ok(v) => v
+  | Error(e) => raise(f(e))
+  };
+
 let mapError = (r, f) =>
   switch (r) {
   | Ok(v) => Ok(v)
@@ -103,3 +109,5 @@ let collectArray = (type err, arr: array(result(_, err))) => {
   | Fail(err) => Error(err)
   };
 };
+
+let async = (f: unit => Result.t(_, _)) => f()->ignore;

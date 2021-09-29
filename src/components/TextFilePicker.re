@@ -23,6 +23,8 @@
 /*                                                                           */
 /*****************************************************************************/
 
+open UmamiCommon;
+
 module FileReader = {
   type t;
   [@bs.new] external createFileReader: unit => t = "FileReader";
@@ -40,7 +42,7 @@ let make = (~text, ~primary=?, ~onChange as onChangeResult, ~accept=?) => {
   let inputRef = React.useRef(Js.Nullable.null);
 
   let onPress = _ => {
-    inputRef.current->Js.Nullable.toOption->Option.map(click)->ignore;
+    inputRef.current->Js.Nullable.toOption->Lib.Option.iter(click);
   };
 
   let onChange = event => {

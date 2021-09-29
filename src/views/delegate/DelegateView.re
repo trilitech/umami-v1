@@ -25,6 +25,7 @@
 
 open ReactNative;
 open Delegate;
+open Let;
 
 let styles =
   Style.(
@@ -101,7 +102,7 @@ module Form = {
           None;
         },
       ~initialState={
-        sender: initAccount.address,
+        sender: initAccount,
         baker: (initDelegate :> option(string))->Option.getWithDefault(""),
         fee: "",
         forceLowFee: false,
@@ -156,8 +157,8 @@ module Form = {
         <ReactFlipToolkit.FlippedView flipId="form">
           <FormGroupDelegateSelector
             label=I18n.label#account_delegate
-            value={form.values.sender}
-            handleChange={d => form.handleChange(Sender, d.Account.address)}
+            value={form.values.sender.address}
+            handleChange={d => form.handleChange(Sender, d)}
             error={form.getFieldError(Field(Sender))}
             disabled={
               switch (action) {
@@ -240,11 +241,11 @@ let make = (~closeAction, ~action) => {
   React.useEffect0(() => {
     switch (action) {
     | Delete(account, _) =>
-      let op =
-        Protocol.makeDelegate(~source=account.address, ~delegate=None, ());
+      let op = Protocol.makeDelegate(~source=account, ~delegate=None, ());
       sendOperationSimulate(op->Operation.Simulation.delegation)
-      ->Future.tapOk(dryRun => {setModalStep(_ => PasswordStep(op, dryRun))})
-      ->ignore;
+      ->FutureEx.getOk(dryRun => {
+          setModalStep(_ => PasswordStep(op, dryRun))
+        });
 
     | _ => ()
     };
@@ -253,11 +254,13 @@ let make = (~closeAction, ~action) => {
   });
 
   let form =
-    Form.build(action, advancedOptionOpened, op =>
-      sendOperationSimulate(op->Operation.Simulation.delegation)
-      ->Future.tapOk(dryRun => {setModalStep(_ => PasswordStep(op, dryRun))})
-      ->ignore
-    );
+    Form.build(action, advancedOptionOpened, op => {
+      FutureEx.async(() => {
+        let%FResMap dryRun =
+          sendOperationSimulate(op->Operation.Simulation.delegation);
+        setModalStep(_ => PasswordStep(op, dryRun));
+      })
+    });
 
   let title =
     switch (modalStep, action) {

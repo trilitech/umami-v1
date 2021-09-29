@@ -24,7 +24,7 @@
 /*****************************************************************************/
 
 open ReactNative;
-open UmamiCommon;
+open Let;
 
 let styles =
   Style.(
@@ -42,7 +42,7 @@ let styles =
 
 module type OP = {
   type t;
-  let make: ReBeacon.Message.Request.operationRequest => t;
+  let make: (Account.t, ReBeacon.Message.Request.operationRequest) => t;
   let makeOperation: t => Operation.t;
   let makeSimulated: t => Operation.Simulation.t;
   let makeSummary: (Protocol.simulationResults, t) => React.element;
@@ -52,6 +52,7 @@ module Make = (Op: OP) => {
   [@react.component]
   let make =
       (
+        ~sourceAccount,
         ~beaconRequest: ReBeacon.Message.Request.operationRequest,
         ~closeAction,
       ) => {
@@ -59,7 +60,10 @@ module Make = (Op: OP) => {
       StoreContext.Operations.useCreate();
 
     let operation =
-      React.useMemo1(() => Op.make(beaconRequest), [|beaconRequest|]);
+      React.useMemo1(
+        () => Op.make(sourceAccount, beaconRequest),
+        [|beaconRequest|],
+      );
 
     let loading = operationApiRequest->ApiRequest.isLoading;
     let sendOperation = intent =>
@@ -117,35 +121,35 @@ module Make = (Op: OP) => {
         ? Some(ModalFormView.Close(_ => closeAction())) : None;
 
     let ledgerState = React.useState(() => None);
-    let isLedger =
-      StoreContext.Accounts.useIsLedger(beaconRequest.sourceAddress);
 
     let simulatedOperation = Op.makeSimulated(operation);
 
     React.useEffect1(
       () => {
-        sendOperationSimulate(simulatedOperation)->ignore;
+        sendOperationSimulate(simulatedOperation)->FutureEx.ignore;
         None;
       },
       [|operation|],
     );
 
-    let sendOperation = i =>
-      sendOperation(i)
-      ->Future.tapOk(hash => {
-          client->Lib.Option.iter(client =>
-            client
-            ->ReBeacon.WalletClient.respond(
-                `OperationResponse({
-                  type_: `operation_response,
-                  id: beaconRequest.id,
-                  transactionHash: hash,
-                }),
-              )
-            ->ignore
+    let sendOperation = i => {
+      let%FRes hash = sendOperation(i);
+
+      let%FResMap () =
+        switch (client) {
+        | Some(client) =>
+          client->ReBeacon.WalletClient.respond(
+            `OperationResponse({
+              type_: `operation_response,
+              id: beaconRequest.id,
+              transactionHash: hash,
+            }),
           )
-        })
-      ->Future.tapOk(_ => {updateAccount(beaconRequest.sourceAddress)});
+        | None => FutureEx.ok()
+        };
+
+      updateAccount(beaconRequest.sourceAddress);
+    };
 
     <ModalFormView title=I18n.title#confirmation ?closing>
       {switch (operationApiRequest) {
@@ -186,7 +190,7 @@ module Make = (Op: OP) => {
               <>
                 {Op.makeSummary(dryRun, operation)}
                 <SigningBlock
-                  isLedger
+                  accountKind={sourceAccount.kind}
                   ledgerState
                   sendOperation
                   loading
@@ -204,9 +208,10 @@ module Delegate =
   Make({
     type t = Protocol.delegation;
 
-    let make = (beaconRequest: ReBeacon.Message.Request.operationRequest) => {
+    let make =
+        (account, beaconRequest: ReBeacon.Message.Request.operationRequest) => {
       Protocol.makeDelegate(
-        ~source=beaconRequest.sourceAddress,
+        ~source=account,
         ~delegate=
           beaconRequest.operationDetails
           ->Array.get(0)
@@ -233,7 +238,8 @@ module Transfer =
   Make({
     type t = Transfer.t;
 
-    let make = (beaconRequest: ReBeacon.Message.Request.operationRequest) => {
+    let make =
+        (account, beaconRequest: ReBeacon.Message.Request.operationRequest) => {
       let partialTransactions =
         beaconRequest.operationDetails
         ->Array.map(ReBeacon.Message.Request.PartialOperation.classify)
@@ -244,7 +250,7 @@ module Transfer =
             }
           );
       {
-        Transfer.source: beaconRequest.sourceAddress,
+        Transfer.source: account,
         transfers:
           partialTransactions
           ->Array.map(partialTransaction =>

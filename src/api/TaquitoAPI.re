@@ -27,6 +27,8 @@ open ReTaquito;
 open ReTaquitoSigner;
 open Let;
 
+module Contracts = ReTaquitoContracts;
+
 let revealFee = (~endpoint, source) => {
   let client = RPCClient.create(endpoint);
 
@@ -120,18 +122,10 @@ module Balance = {
 
 module Signer = {
   let readEncryptedKey = (key, passphrase) =>
-    MemorySigner.create(
-      ~secretKey=key->Js.String2.substringToEnd(~from=10),
-      ~passphrase,
-      (),
-    );
+    MemorySigner.create(~secretKey=key, ~passphrase, ());
 
   let readUnencryptedKey = key =>
-    MemorySigner.create(
-      ~secretKey=key->Js.String2.substringToEnd(~from=12),
-      ~passphrase="",
-      (),
-    );
+    MemorySigner.create(~secretKey=key, ~passphrase="", ());
 
   let readLedgerKey = (callback, key) => {
     let keyData = ledgerBasePkh =>
@@ -257,10 +251,14 @@ module Operations = {
 };
 
 module Transfer = {
-  module ContractCache = {
+  module type Contract = {
+    type t;
+    let at: (Toolkit.contract, PublicKeyHash.t) => Js.Promise.t(t);
+  };
+
+  module ContractCache = (Contract: Contract) => {
     type t = {
-      contracts:
-        MutableMap.String.t(Js.Promise.t(Toolkit.FA12.contractAbstraction)),
+      contracts: MutableMap.String.t(Js.Promise.t(Contract.t)),
       toolkit: Toolkit.toolkit,
     };
 
@@ -270,7 +268,7 @@ module Transfer = {
       switch (MutableMap.String.get(cache.contracts, (token :> string))) {
       | Some(c) => c
       | None =>
-        let c = cache.toolkit.contract->Toolkit.FA12.at(token);
+        let c = cache.toolkit.contract->(Contract.at(token));
         cache.contracts->MutableMap.String.set((token :> string), c);
         c;
       };
@@ -278,6 +276,9 @@ module Transfer = {
     /* Technically never used for now */
     let _clear = cache => cache.contracts->MutableMap.String.clear;
   };
+
+  module FA12Cache = ContractCache(Contracts.FA12);
+  module FA2Cache = ContractCache(Contracts.FA2);
 
   let prepareFA12Transfer =
       (
@@ -302,11 +303,39 @@ module Transfer = {
 
     let%FResMap c =
       contractCache
-      ->ContractCache.findContract(token)
+      ->FA12Cache.findContract(token)
       ->ReTaquitoError.fromPromiseParsed;
-    c.methods
-    ->Toolkit.FA12.transfer(source, dest, amount->BigNumber.toFixed)
-    ->Toolkit.FA12.toTransferParams(sendParams);
+    let transfer =
+      c->Contracts.FA12.transfer(source, dest, amount->BigNumber.toFixed);
+    transfer.toTransferParams(. sendParams);
+  };
+
+  let prepareFA2Transfer =
+      (
+        contractCache,
+        ~token,
+        ~transferParams,
+        ~fee=?,
+        ~gasLimit=?,
+        ~storageLimit=?,
+        (),
+      ) => {
+    let sendParams =
+      Toolkit.makeSendParams(
+        ~amount=BigNumber.fromInt64(0L),
+        ~fee?,
+        ~gasLimit?,
+        ~storageLimit?,
+        (),
+      );
+
+    let%FResMap c =
+      contractCache
+      ->FA2Cache.findContract(token)
+      ->ReTaquitoError.fromPromiseParsed;
+    c##methods.Types.FA2.transfer(. transferParams).toTransferParams(.
+      sendParams,
+    );
   };
 
   let prepareTransfer = Toolkit.prepareTransfer;
@@ -318,43 +347,141 @@ module Transfer = {
     | _ => None
     };
 
-  let prepareTransfers = (txs, endpoint, source: PublicKeyHash.t) => {
-    let contractCache = endpoint->Toolkit.create->ContractCache.make;
-    txs
-    ->List.map((tx: Transfer.elt) =>
-        switch (tx.amount) {
-        | Tez(amount) =>
-          prepareTransfer(
-            ~source,
-            ~dest=tx.destination,
-            ~amount=amount->Tez.toBigNumber,
-            ~fee=?tx.tx_options.fee->Option.map(Tez.toBigNumber),
-            ~gasLimit=?tx.tx_options.gasLimit,
-            ~storageLimit=?tx.tx_options.storageLimit,
-            ~parameter=?
-              makeTransferMichelsonParameter(
-                ~entrypoint=tx.tx_options.entrypoint,
-                ~parameter=tx.tx_options.parameter,
-              ),
-            (),
-          )
-          ->Ok
-          ->Future.value
-        | Token(amount, token) =>
-          prepareFA12Transfer(
-            contractCache,
-            ~source,
-            ~token=token.TokenRepr.address,
-            ~dest=tx.destination,
-            ~amount=amount->TokenRepr.Unit.toBigNumber,
-            ~fee=?tx.tx_options.fee->Option.map(Tez.toBigNumber),
-            ~gasLimit=?tx.tx_options.gasLimit,
-            ~storageLimit=?tx.tx_options.storageLimit,
-            (),
-          )
-        }
+  let consolidateTransferOptions =
+      (
+        batch: ProtocolOptions.transferOptions,
+        tx: ProtocolOptions.transferOptions,
+      ) =>
+    ProtocolOptions.{
+      fee: OptionEx.mapOrKeep(batch.fee, tx.fee, max),
+      gasLimit: OptionEx.mapOrKeep(batch.gasLimit, tx.gasLimit, (+)),
+      storageLimit:
+        OptionEx.mapOrKeep(batch.storageLimit, tx.storageLimit, (+)),
+      // parameter and entrypoint are irrelevant for tokens, which are already
+      // translated as a parameter and an entrypoint
+      parameter: None,
+      entrypoint: None,
+    };
+
+  /* FA2 implements batchs directly into the transfer entrypoint. As such, we
+     can take multiple consecutive transactions into the same contract and generate
+     the respective FA2 batch */
+  let rec consolidateFA2Transfers =
+          (contractAddress, batch, options, txs)
+          : (
+              array(Types.FA2.transaction),
+              ProtocolOptions.transferOptions,
+              list(Transfer.elt),
+            ) => {
+    switch (txs) {
+    | [Transfer.{amount: Tez(_)}, ..._]
+    | [{amount: Token(_, {kind: FA1_2})}, ..._]
+    | [] => (batch, options, txs)
+
+    | [{amount: Token(_, token)}, ..._]
+        when token.address != contractAddress => (
+        batch,
+        options,
+        txs,
       )
-    ->Future.all;
+
+    | [
+        {amount: Token(amount, {kind: FA2(id)}), destination, tx_options},
+        ...txs,
+      ] =>
+      consolidateFA2Transfers(
+        contractAddress,
+        Array.concat(
+          batch,
+          [|
+            {
+              to_: destination,
+              token_id:
+                id->Int64.of_int->BigNumber.fromInt64->BigNumber.toFixed,
+              amount: amount->TokenRepr.Unit.toBigNumber->BigNumber.toFixed,
+            },
+          |],
+        ),
+        consolidateTransferOptions(options, tx_options),
+        txs,
+      )
+    };
+  };
+
+  let rec prepareTransfers =
+          (fa12Cache, fa2Cache, source: PublicKeyHash.t, txs, prepared) => {
+    switch (txs) {
+    | [] => prepared->List.reverse
+    | [Transfer.{amount: Tez(amount), destination, tx_options}, ...txs] =>
+      let tx =
+        prepareTransfer(
+          ~source,
+          ~dest=destination,
+          ~amount=amount->Tez.toBigNumber,
+          ~fee=?tx_options.fee->Option.map(Tez.toBigNumber),
+          ~gasLimit=?tx_options.gasLimit,
+          ~storageLimit=?tx_options.storageLimit,
+          ~parameter=?
+            makeTransferMichelsonParameter(
+              ~entrypoint=tx_options.entrypoint,
+              ~parameter=tx_options.parameter,
+            ),
+          (),
+        )
+        ->Ok
+        ->Future.value;
+      prepareTransfers(fa12Cache, fa2Cache, source, txs, [tx, ...prepared]);
+
+    | [
+        {
+          amount: Token(amount, {kind: FA1_2, address}),
+          destination,
+          tx_options,
+        },
+        ...txs,
+      ] =>
+      let tx =
+        prepareFA12Transfer(
+          fa12Cache,
+          ~source,
+          ~token=address,
+          ~dest=destination,
+          ~amount=amount->TokenRepr.Unit.toBigNumber,
+          ~fee=?tx_options.fee->Option.map(Tez.toBigNumber),
+          ~gasLimit=?tx_options.gasLimit,
+          ~storageLimit=?tx_options.storageLimit,
+          (),
+        );
+      prepareTransfers(fa12Cache, fa2Cache, source, txs, [tx, ...prepared]);
+    | [{amount: Token(_, {kind: FA2(_), address})}, ..._] =>
+      let (batch, options, txs) =
+        consolidateFA2Transfers(
+          address,
+          [||],
+          ProtocolOptions.emptyTransferOptions,
+          txs,
+        );
+      let transferParams = [|
+        ReTaquitoTypes.FA2.{from_: source, txs: batch},
+      |];
+      let tx =
+        prepareFA2Transfer(
+          fa2Cache,
+          ~token=address,
+          ~transferParams,
+          ~fee=?options.fee->Option.map(Tez.toBigNumber),
+          ~gasLimit=?options.gasLimit,
+          ~storageLimit=?options.storageLimit,
+          (),
+        );
+      prepareTransfers(fa12Cache, fa2Cache, source, txs, [tx, ...prepared]);
+    };
+  };
+
+  let prepareTransfers = (txs, endpoint, source) => {
+    let fa12Cache = endpoint->Toolkit.create->FA12Cache.make;
+    let fa2Cache = endpoint->Toolkit.create->FA2Cache.make;
+    prepareTransfers(fa12Cache, fa2Cache, source, txs, [])->Future.all;
   };
 
   let batch =

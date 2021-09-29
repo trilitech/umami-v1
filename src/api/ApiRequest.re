@@ -23,24 +23,22 @@
 /*                                                                           */
 /*****************************************************************************/
 
+open UmamiCommon;
+
 type timestamp = float;
 
 type cacheValidity =
   | Expired
   | ValidSince(float);
 
-type t('value, 'error) =
+type t('value) =
   | NotAsked
   | Loading(option('value))
-  | Done(Result.t('value, 'error), cacheValidity);
+  | Done(Result.t('value, Errors.t), cacheValidity);
 
-type setRequest('value, 'error) =
-  (t('value, 'error) => t('value, 'error)) => unit;
+type setRequest('value) = (t('value) => t('value)) => unit;
 
-type requestState('value, 'error) = (
-  t('value, 'error),
-  setRequest('value, 'error),
-);
+type requestState('value) = (t('value), setRequest('value));
 
 let getDone = request =>
   switch (request) {
@@ -148,7 +146,7 @@ let conditionToLoad = (request, isMounted) => {
   requestNotAskedAndMounted || requestDoneButReloadOnMount || requestExpired;
 };
 
-let useGetter = (~toast=true, ~get, ~kind, ~setRequest, ()) => {
+let useGetter = (~toast=true, ~get, ~kind, ~setRequest, ~keepError=?, ()) => {
   let addLog = LogsContext.useAdd();
   let config = ConfigContext.useContent();
 
@@ -156,7 +154,7 @@ let useGetter = (~toast=true, ~get, ~kind, ~setRequest, ()) => {
     setRequest(updateToLoadingState);
 
     get(~config, input)
-    ->logError(addLog(toast), kind)
+    ->logError(addLog(toast), kind, ~keep=?keepError)
     ->Future.tap(result =>
         setRequest(_ => Done(result, ValidSince(Js.Date.now())))
       );
@@ -169,39 +167,33 @@ let useLoader =
     (
       ~get,
       ~condition=?,
+      ~keepError=?,
       ~kind,
-      ~requestState as (request, setRequest): requestState('value, 'error),
-      arg1: 'input,
+      ~requestState as (request, setRequest),
+      input,
     ) => {
-  let getRequest = useGetter(~get, ~kind, ~setRequest, ());
+  let getRequest = useGetter(~get, ~kind, ~setRequest, ~keepError?, ());
 
   let isMounted = ReactUtils.useIsMonted();
   React.useEffect4(
     () => {
       let shouldReload = conditionToLoad(request, isMounted);
-      let condition = condition->Option.mapWithDefault(true, f => arg1->f);
+      let condition = condition->Option.mapWithDefault(true, f => input->f);
 
       if (shouldReload && condition) {
-        getRequest(arg1)->ignore;
+        getRequest(input)->ignore;
       };
 
       None;
     },
-    (isMounted, request, arg1, setRequest),
+    (isMounted, request, input, setRequest),
   );
 
   request;
 };
 
 let useSetter =
-    (
-      ~toast=true,
-      ~sideEffect=?,
-      ~set: (~config: _, _) => Future.t(Result.t(_, 'b)),
-      ~kind,
-      ~keepError=?,
-      (),
-    ) => {
+    (~logOk=?, ~toast=true, ~sideEffect=?, ~set, ~kind, ~keepError=?, ()) => {
   let addLog = LogsContext.useAdd();
   let (request, setRequest) = React.useState(_ => NotAsked);
   let config = ConfigContext.useContent();
@@ -209,6 +201,11 @@ let useSetter =
   let sendRequest = input => {
     setRequest(_ => Loading(None));
     set(~config, input)
+    ->Future.tapOk(v =>
+        logOk->Lib.Option.iter(f =>
+          addLog(true, Logs.info(~origin=kind, f(v)))
+        )
+      )
     ->logError(addLog(toast), ~keep=?keepError, kind)
     ->Future.tap(result => {
         setRequest(_ => Done(result, Js.Date.now()->ValidSince))

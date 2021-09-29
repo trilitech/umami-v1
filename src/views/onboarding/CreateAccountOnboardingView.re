@@ -37,28 +37,9 @@ type step =
 let make = (~closeAction) => {
   let (formStep, setFormStep) = React.useState(_ => Step1);
 
-  let (secretWithMnemonicRequest, createSecretWithMnemonic) =
-    StoreContext.Secrets.useCreateWithMnemonics();
-
   let secrets = StoreContext.Secrets.useGetAll();
   let existingSecretsCount = secrets->Array.length;
   let noExistingPassword = existingSecretsCount < 1;
-
-  let addLog = LogsContext.useAdd();
-
-  let config = ConfigContext.useContent();
-
-  let createSecretWithMnemonic = p =>
-    System.Client.initDir(config->ConfigUtils.baseDir)
-    ->Future.mapError(Errors.toString)
-    ->Future.flatMapOk(() =>
-        createSecretWithMnemonic(p)->Future.mapError(Errors.toString)
-      )
-    ->Future.tapOk(_ => {closeAction()})
-    ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
-        I18n.t#account_created
-      )
-    ->ignore;
 
   // using a react ref prevent from genereting other mnemonic at other render
   // a useState can also be used, but because we don't need to set
@@ -67,8 +48,6 @@ let make = (~closeAction) => {
     React.useRef(Bip39.generate(256)->Js.String2.split(" ")).current;
   let (derivationPath, setDerivationPath) =
     React.useState(_ => DerivationPath.Pattern.(default->fromTezosBip44));
-
-  let loading = secretWithMnemonicRequest->ApiRequest.isLoading;
 
   let closing =
     ModalFormView.confirm(~actionText=I18n.btn#cancel, closeAction);
@@ -163,12 +142,7 @@ let make = (~closeAction) => {
             I18n.expl#secret_create_password_not_recorded->React.string
           </Typography.Body2>
           ->ReactUtils.onlyWhen(noExistingPassword)}
-         <CreatePasswordView
-           mnemonic
-           derivationPath
-           createSecretWithMnemonic
-           loading
-         />
+         <CreatePasswordView mnemonic derivationPath onSubmit=closeAction />
        </>;
      }}
   </ModalFormView>;

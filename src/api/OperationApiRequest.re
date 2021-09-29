@@ -47,12 +47,7 @@ let delegate = (d, signingIntent) => {
   signingIntent,
 };
 
-let token = (operation, signingIntent) => {
-  operation: Token(operation),
-  signingIntent,
-};
-
-let filterOutFormError =
+let keepNonFormErrors =
   fun
   | ReTaquitoError.LedgerInitTimeout
   | ReTaquitoError.LedgerInit(_)
@@ -68,9 +63,6 @@ let useCreate = (~sideEffect=?, ()) => {
     | Protocol(operation) =>
       config->NodeAPI.Operation.run(operation, ~signingIntent)
 
-    | Token(operation) =>
-      config->NodeAPI.Tokens.inject(operation, ~signingIntent)
-
     | Transfer(t) =>
       config->NodeAPI.Operation.batch(
         t.transfers,
@@ -84,7 +76,7 @@ let useCreate = (~sideEffect=?, ()) => {
     ~toast=true,
     ~set,
     ~kind=Logs.Operation,
-    ~keepError=filterOutFormError,
+    ~keepError=keepNonFormErrors,
     ~sideEffect?,
     (),
   );
@@ -97,8 +89,6 @@ let useSimulate = () => {
     switch (operation) {
     | Operation.Simulation.Protocol(operation, index) =>
       config->NodeAPI.Simulation.run(~index?, operation)
-    | Operation.Simulation.Token(operation, index) =>
-      config->NodeAPI.Tokens.simulate(~index?, operation)
     | Operation.Simulation.Transfer(t, index) =>
       config->NodeAPI.Simulation.batch(
         t.transfers,
@@ -111,7 +101,7 @@ let useSimulate = () => {
   ApiRequest.useSetter(
     ~set,
     ~kind=Logs.Operation,
-    ~keepError=filterOutFormError,
+    ~keepError=keepNonFormErrors,
     (),
   );
 };

@@ -56,11 +56,11 @@ module TokenDeleteButton = {
     let (tokenRequest, deleteToken) = StoreContext.Tokens.useDelete();
 
     let onPressConfirmDelete = _e => {
-      deleteToken(token)->ignore;
+      deleteToken(token)->FutureEx.ignore;
     };
 
     <DeleteButton.IconButton
-      tooltip=("delete_token", I18n.btn#delete_token)
+      tooltip=("delete_token" ++ token.alias, I18n.btn#delete_token)
       modalTitle=I18n.title#delete_token
       onPressConfirmDelete
       request=tokenRequest

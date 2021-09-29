@@ -65,8 +65,15 @@ type deriveInput = {
   timeout: option(int),
 };
 
+let keepNonFormErrors =
+  fun
+  | SecureStorage.Cipher.DecryptError => false
+  | _ => true;
+
 let useDerive =
   ApiRequest.useSetter(
+    ~keepError=keepNonFormErrors,
+    ~logOk=_ => I18n.t#account_created,
     ~set=
       (~config, {name, index, kind, timeout}) =>
         switch (kind) {
@@ -94,8 +101,10 @@ type createInput = {
 
 let useCreateWithMnemonics =
   ApiRequest.useSetter(
+    ~logOk=_ => I18n.t#account_created,
+    ~keepError=keepNonFormErrors,
     ~set=
-      (~config, {name, mnemonic, derivationPath, password}) =>
+      (~config, {name, mnemonic, derivationPath, password}) => {
         WalletAPI.Accounts.restore(
           ~config,
           ~backupPhrase=mnemonic,
@@ -103,7 +112,8 @@ let useCreateWithMnemonics =
           ~derivationPath,
           ~password,
           (),
-        ),
+        )
+      },
     ~kind=Logs.Secret,
   );
 
@@ -167,13 +177,13 @@ let useLedgerScan =
 
 type account = WalletAPI.Accounts.Scan.account(string);
 
-type mnemonicScanInput = {
+type mnemonicImportKeysInput = {
   index: int,
   accounts: list(account),
   password: string,
 };
 
-let useMnemonicScan =
+let useMnemonicImportKeys =
   ApiRequest.useSetter(
     ~set=
       (~config, {index, accounts, password}) =>
@@ -189,6 +199,7 @@ let useMnemonicScan =
 
 let useUpdate =
   ApiRequest.useSetter(
+    ~logOk=_ => I18n.t#secret_updated,
     ~set=
       (~config, {index, secret}: Secret.derived) => {
         WalletAPI.Accounts.updateSecretAt(~config, secret, index)
@@ -199,6 +210,7 @@ let useUpdate =
 
 let useDelete =
   ApiRequest.useSetter(
+    ~logOk=_ => I18n.t#secret_deleted,
     ~set=WalletAPI.Accounts.deleteSecretAt,
     ~kind=Logs.Secret,
   );

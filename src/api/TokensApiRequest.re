@@ -24,11 +24,18 @@
 /*****************************************************************************/
 
 include ApiRequest;
+open Let;
 
-type injection = {
-  operation: Token.operation,
-  password: string,
-};
+type Errors.t +=
+  | NotFA12Contract(string);
+
+let () =
+  Errors.registerHandler(
+    "Tokens",
+    fun
+    | NotFA12Contract(_) => I18n.t#error_check_contract->Some
+    | _ => None,
+  );
 
 let useCheckTokenContract = () => {
   let set = (~config, address) =>
@@ -36,11 +43,17 @@ let useCheckTokenContract = () => {
   ApiRequest.useSetter(~set, ~kind=Logs.Tokens, ~toast=false, ());
 };
 
-let useLoadOperationOffline = (~requestState, ~operation: Token.operation) => {
-  let get = (~config, operation) =>
-    config->NodeAPI.Tokens.callGetOperationOffline(operation);
+let useLoadFA12Balance =
+    (~requestState, ~address: PublicKeyHash.t, ~token: PublicKeyHash.t) => {
+  let get = (~config, (address, token)) =>
+    config->NodeAPI.Tokens.runFA12GetBalance(~address, ~token);
 
-  ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, operation);
+  ApiRequest.useLoader(
+    ~get,
+    ~kind=Logs.Tokens,
+    ~requestState,
+    (address, token),
+  );
 };
 
 let tokensStorageKey = "wallet-tokens";
@@ -81,6 +94,7 @@ let useDelete = (~sideEffect=?, ()) => {
   };
 
   ApiRequest.useSetter(
+    ~logOk=_ => I18n.t#token_deleted,
     ~toast=false,
     ~set,
     ~kind=Logs.Tokens,
@@ -90,7 +104,15 @@ let useDelete = (~sideEffect=?, ()) => {
 };
 
 let useCreate = (~sideEffect=?, ()) => {
+  let (_checkTokenRequest, checkToken) = useCheckTokenContract();
   let set = (~config as _, token) => {
+    let%FRes isTokenContract = checkToken(token.TokenRepr.address);
+
+    let%FResMap () =
+      isTokenContract
+        ? FutureEx.ok()
+        : FutureEx.err(NotFA12Contract((token.TokenRepr.address :> string)));
+
     let tokens =
       LocalStorage.getItem(tokensStorageKey)
       ->Js.Nullable.toOption
@@ -107,6 +129,7 @@ let useCreate = (~sideEffect=?, ()) => {
   };
 
   ApiRequest.useSetter(
+    ~logOk=_ => I18n.t#token_created,
     ~toast=false,
     ~set,
     ~kind=Logs.Tokens,

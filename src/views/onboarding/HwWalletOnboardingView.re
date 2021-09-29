@@ -228,11 +228,10 @@ let make = (~closeAction) => {
   let importLedger = p =>
     System.Client.initDir(config->ConfigUtils.baseDir)
     ->Future.flatMapOk(() => importLedger(p))
-    ->Future.tapOk(_ => {closeAction()})
     ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
         I18n.t#account_created
       )
-    ->ignore;
+    ->FutureEx.getOk(_ => {closeAction()});
 
   let closing =
     switch (step) {
@@ -338,7 +337,7 @@ let make = (~closeAction) => {
          derivationChangedState
          path
          scheme
-         accounts
+         accounts={accounts->List.reverse}
          next={submitAccounts(mk)}
          nextAdvancedOptions={
            Some(() => setStep(_ => StepAdvancedOptions(mk)))

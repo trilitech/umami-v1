@@ -26,7 +26,7 @@
 %raw
 "
 var electron = require('electron');
-var { app, Menu } = electron.remote;
+var { app, Menu, MenuItem } = electron.remote;
 var shell = electron.shell;
 var process = require('process');
 var OS = require('os');
@@ -270,89 +270,4 @@ module Client = {
         Future.mapOk3(secret, public, pkh, (_, _, _) => ());
       });
   };
-};
-
-module Menu = {
-  type kind = [ | `normal | `separator | `submenu | `checkbox | `radio];
-
-  type role = [
-    | `undo
-    | `about
-    | `redo
-    | `cut
-    | `copy
-    | `paste
-    | `pasteAndMatchStyle
-    | `selectAll
-    | `delete
-    | `minimize
-    | `close
-    | `quit
-    | `reload
-    | `forceReload
-    | `toggleDevTools
-    | `togglefullscreen
-    | `resetZoom
-    | `zoomIn
-    | `zoomOut
-    | `toggleSpellChecker
-    | `fileMenu
-    | `editMenu
-    | `viewMenu
-    | `windowMenu
-    | `appMenu
-    | `hide
-    | `hideOthers
-    | `unhide
-    | `startSpeaking
-    | `stopSpeaking
-    | `front
-    | `zoom
-    | `toggleTabBar
-    | `selectNextTab
-    | `selectPreviousTab
-    | `mergeAllWindows
-    | `moveTabToNewWindow
-    | `window
-    | `help
-    | `services
-    | `recentDocuments
-    | `clearRecentDocuments
-    | `shareMenu
-  ];
-
-  type item = {
-    role: option(role),
-    [@bs.as "type"]
-    kind: option(kind),
-    label: option(string),
-    click: option(ReactNative.Event.pressEvent => unit),
-    submenu: option(array(item)),
-  };
-
-  let mkItem = (~role=?, ~kind=?, ~label=?, ~click=?, ~submenu=?, ()) => {
-    role,
-    kind,
-    click,
-    label,
-    submenu,
-  };
-
-  let mkSubmenu = (~role=?, ~label=?, ~submenu, ()) => {
-    role,
-    kind: Some(`submenu),
-    click: None,
-    label,
-    submenu: Some(submenu),
-  };
-
-  type template = array(item);
-
-  type menu;
-
-  [@bs.scope "Menu"] [@bs.val]
-  external buildFromTemplate: template => menu = "buildFromTemplate";
-
-  [@bs.scope "Menu"] [@bs.val]
-  external setApplicationMenu: menu => unit = "setApplicationMenu";
 };

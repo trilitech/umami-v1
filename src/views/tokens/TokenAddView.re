@@ -24,12 +24,14 @@
 /*****************************************************************************/
 
 open ReactNative;
+open Let;
 
 module StateLenses = [%lenses
   type state = {
     name: string,
     address: string,
     symbol: string,
+    decimals: string,
   }
 ];
 module TokenCreateForm = ReForm.Make(StateLenses);
@@ -38,56 +40,126 @@ let styles =
   Style.(
     StyleSheet.create({
       "title": style(~marginBottom=6.->dp, ~textAlign=`center, ()),
-      "overline": style(~marginBottom=2.->dp, ~textAlign=`center, ()),
+      "overline": style(~marginBottom=24.->dp, ~textAlign=`center, ()),
     })
   );
 
+module FormMetadata = {
+  [@react.component]
+  let make = (~form: TokenCreateForm.api) => {
+    <>
+      <FormGroupTextInput
+        label=I18n.label#add_token_name
+        value={form.values.name}
+        handleChange={form.handleChange(Name)}
+        error={form.getFieldError(Field(Name))}
+        placeholder=I18n.input_placeholder#add_token_name
+      />
+      <FormGroupTextInput
+        label=I18n.label#add_token_symbol
+        value={form.values.symbol}
+        handleChange={form.handleChange(Symbol)}
+        error={form.getFieldError(Field(Symbol))}
+        placeholder=I18n.input_placeholder#add_token_symbol
+      />
+      <FormGroupTextInput
+        label=I18n.label#add_token_decimals
+        value={form.values.decimals}
+        handleChange={form.handleChange(Decimals)}
+        error={form.getFieldError(Field(Name))}
+        placeholder=I18n.input_placeholder#add_token_decimals
+      />
+    </>;
+  };
+};
+
+module MetadataForm = {
+  [@react.component]
+  let make = (~form: TokenCreateForm.api, ~pkh) => {
+    let onErrorNotATokenContract = () =>
+      form.raiseSubmitFailed(
+        I18n.form_input_error#not_a_token_contract->Some,
+      );
+
+    let metadata =
+      MetadataApiRequest.useLoadMetadata(~onErrorNotATokenContract, pkh);
+    React.useEffect1(
+      () => {
+        switch (metadata) {
+        | Loading(Some(metadata))
+        | Done(Ok(metadata), _) =>
+          form.handleChange(Name, metadata.name);
+          form.handleChange(Symbol, metadata.symbol);
+        | Done(Error(_), _) => ()
+        | _ => ()
+        };
+        None;
+      },
+      [|metadata|],
+    );
+    switch (metadata) {
+    | Done(Ok(_), _) => <FormMetadata form />
+    | Done(Error(MetadataAPI.NoTzip12Metadata(_)), _) =>
+      <FormMetadata form />
+    | Done(Error(_), _)
+    | NotAsked => React.null
+    | Loading(_) => <LoadingView />
+    };
+  };
+};
+
 [@react.component]
-let make = (~chain, ~closeAction) => {
+let make = (~chain, ~address="", ~closeAction) => {
   let (tokenCreateRequest, createToken) = StoreContext.Tokens.useCreate();
-  let (_checkTokenRequest, checkToken) = StoreContext.Tokens.useCheck();
-  let addToast = LogsContext.useToast();
 
   let form: TokenCreateForm.api =
     TokenCreateForm.use(
       ~schema={
         TokenCreateForm.Validation.(
-          Schema(nonEmpty(Name) + nonEmpty(Address) + nonEmpty(Symbol))
+          Schema(
+            nonEmpty(Name)
+            + custom(
+                state =>
+                  switch (state.decimals->Int.fromString) {
+                  | None => Error(I18n.form_input_error#not_an_int)
+                  | Some(i) when i < 0 =>
+                    Error(I18n.form_input_error#negative_int)
+                  | Some(_) => Valid
+                  },
+                Decimals,
+              )
+            + custom(
+                state =>
+                  switch (PublicKeyHash.buildContract(state.address)) {
+                  | Error(_) => Error(I18n.form_input_error#invalid_key_hash)
+                  | Ok(_) => Valid
+                  },
+                Address,
+              )
+            + nonEmpty(Symbol),
+          )
         );
       },
       ~onSubmit=
-        ({state, raiseSubmitFailed}) => {
-          state.values.address
-          ->PublicKeyHash.build
-          ->Future.value
-          ->Future.flatMapOk(address =>
-              checkToken(address)->Future.mapOk(res => (address, res))
-            )
-          ->Future.get(result =>
-              switch (result) {
-              | Ok((address, true)) =>
-                createToken({
-                  address,
-                  alias: state.values.name,
-                  symbol: state.values.symbol,
-                  chain,
-                })
-                ->Future.tapOk(_ => closeAction())
-                ->ApiRequest.logOk(addToast, Logs.Tokens, _ =>
-                    I18n.t#token_created
-                  )
-                ->ignore
-              | Error(_)
-              | Ok((_, false)) =>
-                let errorMsg = I18n.t#error_check_contract;
-                addToast(Logs.log(~kind=Error, ~origin=Tokens, errorMsg));
-                raiseSubmitFailed(Some(errorMsg));
-              }
-            );
+        ({state}) => {
+          FutureEx.async(() => {
+            let%FResMap address =
+              state.values.address->PublicKeyHash.buildContract->Future.value;
+            createToken({
+              kind: FA1_2,
+              address,
+              alias: state.values.name,
+              symbol: state.values.symbol,
+              chain,
+              decimals:
+                state.values.decimals |> Int.fromString |> Option.getExn,
+            })
+            ->FutureEx.getOk(_ => closeAction());
+          });
 
           None;
         },
-      ~initialState={name: "", address: "", symbol: ""},
+      ~initialState={name: "", address, symbol: "", decimals: ""},
       ~i18n=FormUtils.i18n,
       (),
     );
@@ -101,6 +173,8 @@ let make = (~chain, ~closeAction) => {
   let formFieldsAreValids =
     FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
 
+  let pkh = PublicKeyHash.buildContract(form.values.address);
+
   <ModalFormView closing={ModalFormView.Close(closeAction)}>
     <Typography.Headline style=styles##title>
       I18n.title#add_token->React.string
@@ -112,24 +186,20 @@ let make = (~chain, ~closeAction) => {
       label=I18n.label#add_token_address
       value={form.values.address}
       handleChange={form.handleChange(Address)}
-      error={form.getFieldError(Field(Address))}
+      error={
+        [
+          form.formState->FormUtils.getFormStateError,
+          form.getFieldError(Field(Address)),
+        ]
+        ->UmamiCommon.Lib.Option.firstSome
+      }
       placeholder=I18n.input_placeholder#add_token_address
       clearButton=true
     />
-    <FormGroupTextInput
-      label=I18n.label#add_token_name
-      value={form.values.name}
-      handleChange={form.handleChange(Name)}
-      error={form.getFieldError(Field(Name))}
-      placeholder=I18n.input_placeholder#add_token_name
-    />
-    <FormGroupTextInput
-      label=I18n.label#add_token_symbol
-      value={form.values.symbol}
-      handleChange={form.handleChange(Symbol)}
-      error={form.getFieldError(Field(Symbol))}
-      placeholder=I18n.input_placeholder#add_token_symbol
-    />
+    {switch (pkh) {
+     | Ok(pkh) => <MetadataForm form pkh />
+     | Error(_) => React.null
+     }}
     <Buttons.SubmitPrimary
       text=I18n.btn#register
       onPress=onSubmit

@@ -82,11 +82,10 @@ let make =
                       }),
                     )
                   )
-                ->Future.tapOk(_ => {
+                ->FutureEx.getOk(_ => {
                     updatePermissions();
                     closeAction();
                   })
-                ->ignore
               })
           | None => ()
           };
@@ -112,8 +111,7 @@ let make =
           }),
         )
       )
-    ->Future.tapOk(_ => closeAction())
-    ->ignore;
+    ->FutureEx.getOk(_ => closeAction());
   };
 
   <ModalTemplate.Form>

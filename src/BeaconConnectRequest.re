@@ -24,6 +24,7 @@
 /*****************************************************************************/
 
 open ReactNative;
+open Let;
 
 let styles =
   Style.(
@@ -38,13 +39,13 @@ let checkOperationRequestTargetNetwork =
   || chain.type_ == settings->ConfigUtils.chainId->Network.getName;
 };
 
-let checkOperationRequestHasOnlyTransaction =
+let checkOnlyTransaction =
     (request: ReBeacon.Message.Request.operationRequest) => {
   request.operationDetails
   ->Array.every(operationDetail => operationDetail.kind == `transaction);
 };
 
-let checkOperationRequestHasOnlyOneDelegation =
+let checkOnlyOneDelegation =
     ({operationDetails}: ReBeacon.Message.Request.operationRequest) => {
   operationDetails->Array.size == 1
   && operationDetails->Array.every(operationDetail =>
@@ -65,6 +66,53 @@ let useBeaconRequestModalAction = () => {
   (request, visibleModal, openModal, closeAction);
 };
 
+let useSourceAccount = request => {
+  open ReBeacon.Message.Request;
+  let address =
+    switch (request) {
+    | Some(Ok(SignPayloadRequest(r))) => r.sourceAddress->Some
+    | Some(Ok(OperationRequest(r))) => r.sourceAddress->Some
+    | Some(Ok(BroadcastRequest(_)))
+    | Some(Ok(PermissionRequest(_)))
+    | Some(Error(_))
+    | None => None
+    };
+
+  StoreContext.Accounts.useGetFromOptAddress(address);
+};
+
+let respondWithError = (client, id, errorType) =>
+  FutureEx.async(() => {
+    let%FRes client =
+      client->FutureEx.fromOption(
+        ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
+      );
+    let%FResMap () =
+      client->ReBeacon.WalletClient.respond(
+        `Error({type_: `error, id, errorType}),
+      );
+    ();
+  });
+
+module ErrorView = {
+  [@react.component]
+  let make = (~msg, ~closeModal) => {
+    <ModalTemplate.Dialog>
+      <Typography.Headline style=FormStyles.header>
+        I18n.title#beacon_error->React.string
+      </Typography.Headline>
+      <ScrollView style=styles##container alwaysBounceVertical=false>
+        <Typography.Body1 colorStyle=`error style=FormStyles.textAlignCenter>
+          msg->React.string
+        </Typography.Body1>
+      </ScrollView>
+      <View style=FormStyles.formAction>
+        <Buttons.Form onPress={_ => closeModal()} text=I18n.btn#ok />
+      </View>
+    </ModalTemplate.Dialog>;
+  };
+};
+
 [@react.component]
 let make = () => {
   let settings = ConfigContext.useContent();
@@ -72,74 +120,29 @@ let make = () => {
 
   settingsRef.current = settings;
 
-  let (
-    permissionRequest,
-    visibleModalPermission,
-    openPermission,
-    closePermission,
-  ) =
+  let (request, visibleModal, openModal, closeModal) =
     useBeaconRequestModalAction();
-  let (operationRequest, visibleModalOperation, openOperation, closeOperation) =
-    useBeaconRequestModalAction();
-  let (
-    delegationRequest,
-    visibleModalDelegation,
-    openDelegation,
-    closeDelegation,
-  ) =
-    useBeaconRequestModalAction();
-  let (
-    signPayloadRequest,
-    visibleModalSignPayload,
-    openSignPayload,
-    closeSignPayload,
-  ) =
-    useBeaconRequestModalAction();
-  let (visibleModalError, openError, closeError) =
-    ModalAction.useModalActionState();
 
-  let addToast = LogsContext.useToast();
-  let (error, setError) = React.useState(_ => None);
-  let (errorMessage, setErrorMessage) = React.useState(_ => None);
+  let sourceAccount = useSourceAccount(request);
+  let requestData =
+    switch (sourceAccount, request) {
+    | (account, Some(request)) => Some((account, request))
+    | _ => None
+    };
 
   let (client, _) = StoreContext.Beacon.useClient();
   let (nextRequest, doneResponding) =
     StoreContext.Beacon.useNextRequestState();
 
-  let closePermission = () => {
-    closePermission();
-    doneResponding();
-  };
-  let closeOperation = () => {
-    closeOperation();
-    doneResponding();
-  };
-  let closeDelegation = () => {
-    closeDelegation();
-    doneResponding();
-  };
-  let closeSignPayload = () => {
-    closeSignPayload();
-    doneResponding();
-  };
-  let closeError = () => {
-    closeError();
+  let close = () => {
+    closeModal();
     doneResponding();
   };
 
-  React.useEffect1(
-    () => {
-      switch (error) {
-      | Some(error) =>
-        setErrorMessage(_ => Some(error));
-        addToast(Logs.log(~kind=Logs.Error, ~origin=Beacon, error));
-        openError();
-      | None => closeError()
-      };
-      None;
-    },
-    [|error|],
-  );
+  let setError = (client, id, errorType, msg) => {
+    respondWithError(client, id, errorType);
+    openModal(Error(msg));
+  };
 
   React.useEffect1(
     () => {
@@ -154,55 +157,30 @@ let make = () => {
 
         if (targetSettedNetwork) {
           switch (request) {
-          | PermissionRequest(request) => openPermission(request)
-          | SignPayloadRequest(request) => openSignPayload(request)
-          | OperationRequest(request) =>
-            if (request->checkOperationRequestHasOnlyTransaction) {
-              openOperation(request);
-            } else if (request->checkOperationRequestHasOnlyOneDelegation) {
-              openDelegation(request);
+          | PermissionRequest(_) => openModal(Ok(request))
+          | SignPayloadRequest(_) => openModal(Ok(request))
+          | OperationRequest(r) =>
+            if (r->checkOnlyTransaction) {
+              openModal(request->Ok);
+            } else if (r->checkOnlyOneDelegation) {
+              openModal(request->Ok);
             } else {
-              client
-              ->FutureEx.fromOption(
-                  ~error=
-                    Errors.Generic(I18n.errors#beacon_client_not_created),
-                )
-              ->Future.flatMapOk(client =>
-                  client->ReBeacon.WalletClient.respond(
-                    `Error({
-                      type_: `error,
-                      id: request.id,
-                      errorType: `TRANSACTION_INVALID_ERROR,
-                    }),
-                  )
-                )
-              ->FutureEx.getOk(_ =>
-                  setError(_ =>
-                    Some(I18n.errors#beacon_transaction_not_supported)
-                  )
-                );
+              setError(
+                client,
+                r.id,
+                `TRANSACTION_INVALID_ERROR,
+                I18n.errors#beacon_transaction_not_supported,
+              );
             }
           | _ => ()
           };
         } else {
-          client
-          ->FutureEx.fromOption(
-              ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
-            )
-          ->Future.flatMapOk(client =>
-              client->ReBeacon.WalletClient.respond(
-                `Error({
-                  type_: `error,
-                  id: request->ReBeacon.Message.Request.getId,
-                  errorType: `NETWORK_NOT_SUPPORTED,
-                }),
-              )
-            )
-          ->FutureEx.getOk(_ =>
-              setError(_ =>
-                Some(I18n.errors#beacon_request_network_missmatch)
-              )
-            );
+          setError(
+            client,
+            request->ReBeacon.Message.Request.getId,
+            `NETWORK_NOT_SUPPORTED,
+            I18n.errors#beacon_request_network_missmatch,
+          );
         };
       | None => ()
       };
@@ -212,54 +190,39 @@ let make = () => {
   );
 
   <>
-    <ModalAction visible=visibleModalPermission onRequestClose=closePermission>
-      {permissionRequest->ReactUtils.mapOpt(permissionRequest => {
-         <BeaconPermissionView permissionRequest closeAction=closePermission />
-       })}
-    </ModalAction>
-    <ModalAction visible=visibleModalOperation onRequestClose=closeOperation>
-      {operationRequest->ReactUtils.mapOpt(operationRequest => {
-         <BeaconOperationView.Transfer
-           beaconRequest=operationRequest
-           closeAction=closeOperation
-         />
-       })}
-    </ModalAction>
-    <ModalAction visible=visibleModalDelegation onRequestClose=closeDelegation>
-      {delegationRequest->ReactUtils.mapOpt(delegationRequest => {
-         <BeaconOperationView.Delegate
-           beaconRequest=delegationRequest
-           closeAction=closeDelegation
-         />
-       })}
-    </ModalAction>
-    <ModalAction
-      visible=visibleModalSignPayload onRequestClose=closeSignPayload>
-      {signPayloadRequest->ReactUtils.mapOpt(signPayloadRequest => {
-         <BeaconSignPayloadView
-           signPayloadRequest
-           closeAction=closeSignPayload
-         />
-       })}
-    </ModalAction>
-    <ModalAction
-      visible=visibleModalError onRequestClose={_ => setError(_ => None)}>
-      <ModalTemplate.Dialog>
-        <Typography.Headline style=FormStyles.header>
-          I18n.title#beacon_error->React.string
-        </Typography.Headline>
-        {errorMessage->ReactUtils.mapOpt(errorMessage =>
-           <ScrollView style=styles##container alwaysBounceVertical=false>
-             <Typography.Body1
-               colorStyle=`error style=FormStyles.textAlignCenter>
-               errorMessage->React.string
-             </Typography.Body1>
-           </ScrollView>
-         )}
-        <View style=FormStyles.formAction>
-          <Buttons.Form onPress={_ => setError(_ => None)} text=I18n.btn#ok />
-        </View>
-      </ModalTemplate.Dialog>
+    <ModalAction visible=visibleModal onRequestClose=close>
+      {requestData->ReactUtils.mapOpt(
+         fun
+         | (_, Ok(PermissionRequest(r))) =>
+           <BeaconPermissionView permissionRequest=r closeAction=closeModal />
+
+         | (Some(sourceAccount), Ok(OperationRequest(r)))
+             when r->checkOnlyTransaction =>
+           <BeaconOperationView.Transfer
+             sourceAccount
+             beaconRequest=r
+             closeAction=closeModal
+           />
+         | (Some(sourceAccount), Ok(OperationRequest(r)))
+             when r->checkOnlyOneDelegation =>
+           <BeaconOperationView.Delegate
+             beaconRequest=r
+             sourceAccount
+             closeAction=closeModal
+           />
+         | (Some(sourceAccount), Ok(SignPayloadRequest(r))) =>
+           <BeaconSignPayloadView
+             sourceAccount
+             signPayloadRequest=r
+             closeAction=closeModal
+           />
+
+         | (None, Ok(OperationRequest(_) | SignPayloadRequest(_))) =>
+           <ErrorView msg=I18n.errors#beacon_cant_handle closeModal />
+         | (_, Ok(BroadcastRequest(_) | OperationRequest(_))) =>
+           <ErrorView msg=I18n.errors#beacon_cant_handle closeModal />
+         | (_, Error(msg)) => <ErrorView msg closeModal />,
+       )}
     </ModalAction>
   </>;
 };

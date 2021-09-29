@@ -96,6 +96,8 @@ let tooltip = {
   pub addressbook_edit = "Edit Contact";
   pub addressbook_delete = "Delete Contact";
   pub add_contact = "Add to Contacts";
+  pub add_token = "Register token";
+  pub unregistered_token_transaction = "This transaction was made using an unregistered token.";
   pub no_tez_no_delegation = "Delegation requires tez";
   pub refresh = "Refresh";
   pub open_in_explorer = "Open in explorer";
@@ -141,6 +143,7 @@ let label = {
   pub add_token_address = "Address";
   pub add_token_name = "Name";
   pub add_token_symbol = "Symbol";
+  pub add_token_decimals = "Decimals";
   pub summary_subtotal = "Subtotal";
   pub summary_total = "Total";
   pub summary_total_tez = "Total tez";
@@ -171,6 +174,7 @@ let input_placeholder = {
   pub add_contact_or_tz = "Paste a tz address or type in a contact's name";
   pub add_token_address = "Enter KT1 address of a contract";
   pub add_token_name = "e.g. Tezos";
+  pub add_token_decimals = "e.g. 0";
   pub enter_new_password = "Enter new password, at least 8 characters";
   pub confirm_password = "Confirm your new password";
   pub enter_password = "Enter your password";
@@ -187,6 +191,10 @@ let form_input_error = {
   pub dp_more_than_1_wildcard = "Cannot have more than one '?'";
   pub dp_missing_wildcard = "Missing '?' or 0";
   pub dp_not_tezos = "Not a BIP44 Tezos Path";
+  pub not_an_int = "This needs to be a number";
+  pub negative_int = "This needs to be a natural number";
+  pub nat = "must be a natural number";
+  pub expected_decimals = n => p("allows at most %d decimals", n);
   pub hardware_wallet_not_ready = "Connection to Tezos ledger application failed. Please make sure the Tezos app is opened and the ledger unlocked.";
   pub hardware_wallet_plug = "The connection took too long.\nPlease make sure the Ledger is properly plugged in and unlocked";
   pub hardware_wallet_check_app = "Public key export failed. Please open the Tezos Wallet app and retry.";
@@ -194,6 +202,7 @@ let form_input_error = {
   pub hardware_wallet_signer_inconsistent = "Inconsistency between signing intent and key";
   pub empty_transaction = "Transaction is empty.";
   pub branch_refused_error = "Please retry. An error came up while communicating with the node";
+  pub invalid_key_hash = "Invalid contract address";
   pub key_already_registered = a =>
     p("Address already registered under: %s", a);
   pub name_already_registered = "Name already registered";
@@ -215,7 +224,30 @@ let form_input_error = {
   pub api_not_available = "API not available";
   pub node_not_available = "Node not available";
   pub api_and_node_not_available = "API and node both not available";
-  pub different_chains = "API and Node are not running on the same network"
+  pub different_chains = "API and Node are not running on the same network";
+  pub not_a_token_contract = "Not a standard token contract";
+  pub no_metadata = pkh =>
+    p(
+      "No metadata was found for the contract%s.",
+      pkh->Option.mapWithDefault("", p(": %s")),
+    );
+  pub no_token_metadata = pkh =>
+    p(
+      "No token metadata was found for the contract%s.",
+      pkh->Option.mapWithDefault("", p(": %s")),
+    );
+  pub token_id_not_found =
+    fun
+    | None => "Requested token id was not found"
+    | Some((pkh, tokenId)) =>
+      p("Token id %d not found for contract %s", tokenId, pkh);
+  pub illformed_token_metadata = (pkh, tokenId, field) =>
+    p(
+      "Field %s for token id %d illformed for contract %s",
+      field,
+      tokenId,
+      pkh,
+    )
 };
 
 let title = {
@@ -460,16 +492,17 @@ let wallet = {
 
 let errors = {
   pub _this = this;
+  pub not_an_fa12_contract = "Not an FA1.2 standard contract";
+  pub beacon_cant_handle = "Cannot handle this operation";
+  pub cannot_retrieve_account = "Cannot retrieve account informations";
+  pub deeplinking_not_connected = "Deep linking required but not connected";
+  pub stream = "Acquiering media failed";
+  pub decryption = "Storage decryption failed";
+  pub encryption = "Storage encryption failed";
+  pub key_derivation = "Key derivation failed";
   pub illformed_token_contract = "Illformed Token Contract";
   pub cannot_read_token = s => p("Cannot read token amount: %s", s);
   pub invalid_operation_type = "Invalid operation type!";
-  pub operation_cannot_be_run_offchain = s =>
-    p("Operation '%s' cannot be run offchain.", s);
-  pub operation_not_simulable = s => p("Operation '%s' is not simulable.", s);
-  pub operation_injection_not_implemented = s =>
-    p("Operation '%s' injection is not implemented", s);
-  pub operation_not_implemented = s =>
-    p("Operation '%s' offchain call is not implemented", s);
   pub unhandled_error = e => p("Unhandled error %s", e);
   pub no_secret_found = "No secrets found";
   pub secret_not_found = i => p("Secret at index %d not found!", i);
@@ -571,11 +604,15 @@ let t = {
   pub stepof = p("Step %d of %d");
   pub account_create_record_recovery = "Record your recovery phrase";
   pub contact_added = "Contact Added";
+  pub contact_updated = "Contact Updated";
+  pub contact_deleted = "Contact Deleted";
   pub account_created = "Account Created";
   pub account_updated = "Account Updated";
   pub secret_updated = "Secret Updated";
+  pub secret_deleted = "Secret Deleted";
   pub token_contract = p("%s Token Contract");
   pub token_created = "Token Created";
+  pub token_deleted = "Token Deleted";
   pub operation_hash = "Operation Hash";
   pub operation_summary_fee = p("+ Fee %a", () => this#tez_amount);
   pub navbar_accounts = "ACCOUNTS";
@@ -598,7 +635,7 @@ let t = {
   pub empty_delegations = "No Delegation";
   pub empty_operations = "No Operation";
   pub empty_address_book = "No Contact";
-  pub add_token_format_contract_sentence = {js|Please specify the address of a FA1.2 token contract for which you would like to view balances as well as to perform operations.|js};
+  pub add_token_format_contract_sentence = {j|Please specify the address, name, and symbol of a FA1.2 token contract for which you would like to view balances as well as to perform operations. Umami will prefill the fields if any metadata is available.|j};
   pub delegation_removal = "Delegation Removal";
   pub error_check_contract = "Address is not a valid token contract";
   pub words = p("%d words");

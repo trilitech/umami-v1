@@ -66,7 +66,7 @@ module OffBoardView = {
           resetSecrets();
           resetTokens();
           Routes.(push(Accounts));
-          destroy()->ignore;
+          destroy();
         });
     };
   };
@@ -100,7 +100,7 @@ module OffBoardView = {
         },
         ~onSubmit=
           _ => {
-            offboardWallet()->ignore;
+            offboardWallet()->FutureEx.ignore;
             None;
           },
         ~initialState={confirm: false, word: ""},

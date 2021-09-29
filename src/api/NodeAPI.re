@@ -28,13 +28,9 @@ open ServerAPI;
 open Let;
 
 type Errors.t +=
-  | OperationNotRunnableOffchain(string)
-  | SimulationNotAvailable(string)
-  | InjectionNotImplemented(string)
   | IllformedTokenContract
   | InvalidOperationType
-  | UnreadableTokenAmount(string)
-  | OffchainCallNotImplemented(string);
+  | UnreadableTokenAmount(string);
 
 let () =
   Errors.registerHandler(
@@ -42,15 +38,7 @@ let () =
     fun
     | UnreadableTokenAmount(s) => I18n.errors#cannot_read_token(s)->Some
     | InvalidOperationType => I18n.errors#invalid_operation_type->Some
-    | OperationNotRunnableOffchain(s) =>
-      I18n.errors#operation_cannot_be_run_offchain(s)->Some
     | IllformedTokenContract => I18n.errors#illformed_token_contract->Some
-    | SimulationNotAvailable(s) =>
-      I18n.errors#operation_not_simulable(s)->Some
-    | InjectionNotImplemented(s) =>
-      I18n.errors#operation_injection_not_implemented(s)->Some
-    | OffchainCallNotImplemented(s) =>
-      I18n.errors#operation_not_implemented(s)->Some
     | _ => None,
   );
 
@@ -77,7 +65,7 @@ module Simulation = {
       TaquitoAPI.Transfer.Estimate.batch(
         ~endpoint=config->ConfigUtils.endpoint,
         ~baseDir=config->ConfigUtils.baseDir,
-        ~source,
+        ~source=source.Account.address,
         ~transfers=transfers->TaquitoAPI.Transfer.prepareTransfers,
         (),
       );
@@ -106,7 +94,7 @@ module Simulation = {
       TaquitoAPI.Delegate.Estimate.set(
         ~endpoint=config->ConfigUtils.endpoint,
         ~baseDir=config->ConfigUtils.baseDir,
-        ~source=delegation.Protocol.source,
+        ~source=delegation.Protocol.source.address,
         ~delegate=?delegation.Protocol.delegate,
         ~fee=?delegation.Protocol.options.fee,
         (),
@@ -257,7 +245,7 @@ module Operation = {
       TaquitoAPI.Transfer.batch(
         ~endpoint=config->ConfigUtils.endpoint,
         ~baseDir=config->ConfigUtils.baseDir,
-        ~source,
+        ~source=source.Account.address,
         ~transfers=transfers->TaquitoAPI.Transfer.prepareTransfers,
         ~signingIntent,
         (),
@@ -271,7 +259,7 @@ module Operation = {
       TaquitoAPI.Delegate.set(
         ~endpoint=config->ConfigUtils.endpoint,
         ~baseDir=config->ConfigUtils.baseDir,
-        ~source,
+        ~source=source.address,
         ~delegate,
         ~signingIntent,
         ~fee=?options.fee,
@@ -301,67 +289,55 @@ module Tokens = {
     };
   };
 
-  let batchEstimate = (config, transfers, ~source, ~index=?, ()) =>
-    Simulation.batch(config, transfers, ~source, ~index?, ());
+  let runFA12GetBalance = (config, ~address, ~token) => {
+    let%FRes json =
+      config
+      ->URL.Endpoint.runView
+      ->URL.postJson(
+          URL.Endpoint.fa12GetBalanceInput(
+            ~settings=config,
+            ~contract=token,
+            ~account=address,
+          ),
+        );
 
-  let batch = (config, transfers, ~source, ~signingIntent) =>
-    Operation.batch(config, transfers, ~source, ~signingIntent);
-
-  let offline = (operation: Token.operation) => {
-    switch (operation) {
-    | Transfer(_)
-    | Approve(_) => false
-    | GetBalance(_)
-    | GetAllowance(_)
-    | GetTotalSupply(_) => true
-    };
-  };
-
-  let simulate = (network, ~index=?, operation: Token.operation) =>
-    switch (operation) {
-    | Transfer({source, transfers, _}) =>
-      batchEstimate(network, transfers, ~source, ~index?, ())
-    | _ =>
-      Future.value(
-        SimulationNotAvailable(Token.operationEntrypoint(operation))->Error,
-      )
-    };
-
-  let inject = (network, operation: Token.operation, ~signingIntent) =>
-    switch (operation) {
-    | Transfer({source, transfers, _}) =>
-      batch(network, transfers, ~source, ~signingIntent)
-    | _ =>
-      Future.value(
-        InjectionNotImplemented(Token.operationEntrypoint(operation))->Error,
-      )
-    };
-
-  let callGetOperationOffline = (config, operation: Token.operation) => {
-    let%FRes () =
-      offline(operation)
-        ? FutureEx.ok()
-        : OperationNotRunnableOffchain(Token.operationEntrypoint(operation))
-          ->FutureEx.err;
-
-    let%FRes {token, address} =
-      switch (operation) {
-      | GetBalance(gb) => gb->FutureEx.ok
-      | _ =>
-        OffchainCallNotImplemented(Token.operationEntrypoint(operation))
-        ->FutureEx.err
+    /* bs-json raises exceptions instead of returning options */
+    let res =
+      try(Json.Decode.(json |> field("data", field("int", string)))->Some) {
+      | Json.Decode.DecodeError(_) => None
       };
 
-    let%FRes res =
-      URL.Explorer.getTokenBalance(config, ~contract=token, ~account=address)
-      ->URL.get;
-
-    switch (res->Js.Json.decodeString) {
+    switch (res) {
     | None => Token.Unit.zero->FutureEx.ok
     | Some(v) =>
       v
       ->Token.Unit.fromNatString
-      ->FutureEx.fromOption(~error=UnreadableTokenAmount(v))
+      ->ResultEx.mapError(_ => UnreadableTokenAmount(v))
+      ->Future.value
+    };
+  };
+
+  let callFA2BalanceOf = (config, address, token, tokenId) => {
+    let input =
+      URL.Endpoint.fa2BalanceOfInput(
+        ~settings=config,
+        ~contract=token,
+        ~account=address,
+        ~tokenId,
+      );
+
+    let%FRes json = config->URL.Endpoint.runView->URL.postJson(input);
+
+    let res = JsonEx.(decode(json, MichelsonDecode.fa2BalanceOfDecoder));
+
+    switch (res) {
+    | Ok([|((_pkh, _tokenId), v)|]) =>
+      v
+      ->Token.Unit.fromNatString
+      ->ResultEx.mapError(_ => UnreadableTokenAmount(v))
+      ->Future.value
+    | Error(_)
+    | Ok(_) => Token.Unit.zero->FutureEx.ok
     };
   };
 };

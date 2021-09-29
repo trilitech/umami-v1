@@ -28,7 +28,6 @@ open Protocol;
 
 type t =
   | Protocol(Protocol.t)
-  | Token(Token.operation)
   | Transfer(Transfer.t);
 
 let transaction = t => t->Transaction->Protocol;
@@ -40,7 +39,6 @@ module Simulation = {
 
   type t =
     | Protocol(Protocol.t, index)
-    | Token(Token.operation, index)
     | Transfer(Transfer.t, index);
 
   let delegation = d => Protocol(d->Delegation, None);
@@ -103,10 +101,12 @@ let makeSingleTransaction =
 module Reveal = {
   type t = {public_key: string};
 
-  let decode = json =>
-    Json.Decode.{
-      public_key: json |> field("data", field("public_key", string)),
-    };
+  open Json.Decode;
+
+  let decode = json => {
+    let pk = json |> optional(field("data", field("public_key", string)));
+    pk->Option.map(public_key => {public_key: public_key});
+  };
 };
 
 module Transaction = {
@@ -116,6 +116,7 @@ module Transaction = {
     parameters: option(Js.Dict.t(string)),
   };
   type token_info = {
+    kind: TokenRepr.kind,
     amount: TokenRepr.Unit.t,
     contract: PublicKeyHash.t,
   };
@@ -139,11 +140,12 @@ module Transaction = {
     open Json.Decode;
 
     let token_info = json => {
+      kind: TokenRepr.FA1_2,
       amount:
         json
         |> field("data", field("token_amount", string))
         |> TokenRepr.Unit.fromNatString
-        |> Option.getExn,
+        |> Result.getExn,
       contract:
         json
         |> field("data", field("contract", string))
@@ -192,16 +194,15 @@ module Transaction = {
 };
 
 module Origination = {
-  type t = {
-    delegate: option(string),
-    contract_address: string,
-  };
+  type t = {contract: string};
 
-  let decode = json =>
-    Json.Decode.{
-      delegate: json |> optional(field("delegate", string)),
-      contract_address: json |> field("contract_address", string),
-    };
+  open Json.Decode;
+
+  let decode = json => {
+    let ca = json |> optional(field("data", field("contract", string)));
+
+    ca->Option.map(contract => {contract: contract});
+  };
 };
 
 module Delegation = {
@@ -221,9 +222,9 @@ module Delegation = {
 
 module Read = {
   type payload =
-    | Reveal(Reveal.t)
+    | Reveal(option(Reveal.t))
     | Transaction(Transaction.t)
-    | Origination(Origination.t)
+    | Origination(option(Origination.t))
     | Delegation(Delegation.t)
     | Unknown;
 

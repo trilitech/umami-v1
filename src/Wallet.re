@@ -263,10 +263,28 @@ let renameAlias = (~dirpath, ~oldName, ~newName) => {
   updateAlias(~dirpath, ~update);
 };
 
-type kind =
-  | Encrypted
-  | Unencrypted
-  | Ledger;
+type kind = Account.kind = | Encrypted | Unencrypted | Ledger;
+
+module Prefixes = {
+  let encrypted = "encrypted:";
+  let unencrypted = "unencrypted:";
+  let ledger = "ledger://";
+};
+
+let extractPrefixFromSecretKey = k => {
+  let sub = (k, pref) =>
+    k->Js.String2.substringToEnd(~from=String.length(pref));
+
+  switch (k) {
+  | k when k->Js.String2.startsWith(Prefixes.encrypted) =>
+    Ok((Encrypted, k->sub(Prefixes.encrypted)))
+  | k when k->Js.String2.startsWith(Prefixes.unencrypted) =>
+    Ok((Unencrypted, k->sub(Prefixes.unencrypted)))
+  | k when k->Js.String2.startsWith(Prefixes.ledger) =>
+    Ok((Ledger, k->sub(Prefixes.ledger)))
+  | k => Error(KeyBadFormat(k))
+  };
+};
 
 let readSecretFromPkh = (address, dirpath) => {
   let%FRes alias = aliasFromPkh(~dirpath, ~pkh=address);
@@ -277,12 +295,7 @@ let readSecretFromPkh = (address, dirpath) => {
     ->Js.Array2.find(a => a.SecretAliases.name == alias)
     ->FutureEx.fromOption(~error=KeyNotFound);
 
-  switch (k) {
-  | k when k->Js.String2.startsWith("encrypted:") => Ok((Encrypted, k))
-  | k when k->Js.String2.startsWith("unencrypted:") => Ok((Unencrypted, k))
-  | k when k->Js.String2.startsWith("ledger://") => Ok((Ledger, k))
-  | k => Error(KeyBadFormat(k))
-  };
+  extractPrefixFromSecretKey(k);
 };
 
 let mnemonicPkValue = pk => PkAlias.{locator: "unencrypted:" ++ pk, key: pk};
@@ -296,8 +309,7 @@ module Ledger = {
     | InvalidIndex(int, string)
     | InvalidScheme(string)
     | InvalidEncoding(string)
-    | InvalidLedger(string)
-    | DerivationPathError(DerivationPath.error);
+    | InvalidLedger(string);
 
   let () =
     Errors.registerHandler(
@@ -310,7 +322,6 @@ module Ledger = {
       | InvalidScheme(s) => I18n.wallet#invalid_scheme(s)->Some
       | InvalidEncoding(e) => I18n.wallet#invalid_encoding(e)->Some
       | InvalidLedger(p) => I18n.wallet#invalid_ledger(p)->Some
-      | DerivationPathError(_) => I18n.form_input_error#dp_not_a_dp->Some
       | _ => None,
     );
 
@@ -404,8 +415,7 @@ module Ledger = {
 
     let fromSecretKey =
         (uri: secretKeyEncoding, ~ledgerBasePkh: PublicKeyHash.t) => {
-      let elems =
-        uri->Js.String2.substringToEnd(~from=9)->Js.String2.split("/");
+      let elems = uri->Js.String2.split("/");
 
       let%Res () =
         elems->Js.Array2.length < 2 ? Error(InvalidEncoding(uri)) : Ok();

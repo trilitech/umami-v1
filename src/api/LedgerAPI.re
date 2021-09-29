@@ -96,11 +96,7 @@ let addOrReplaceAlias =
 
   let%FRes pk = signer->Signer.publicKey;
 
-  let%FRes path =
-    path
-    ->DerivationPath.convertToTezosBip44
-    ->ResultEx.mapError(e => e->Wallet.Ledger.DerivationPathError)
-    ->Future.value;
+  let%FRes path = path->DerivationPath.convertToTezosBip44->Future.value;
 
   let t = Wallet.Ledger.{path, scheme};
   let sk = Wallet.Ledger.Encode.toSecretKey(t, ~ledgerBasePkh);

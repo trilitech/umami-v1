@@ -42,22 +42,33 @@ let styles =
 let make =
     (
       ~subtitle=?,
-      ~source: PublicKeyHash.t,
+      ~source: Account.t,
       ~ledgerState,
       ~children,
       ~sendOperation: TaquitoAPI.Signer.intent => Future.t(Result.t(_)),
       ~loading,
     ) => {
-  let isLedger = StoreContext.Accounts.useIsLedger(source);
+  let subtitle =
+    subtitle->Option.map(((s, hs)) =>
+      switch (source.Account.kind) {
+      | Ledger => hs
+      | Encrypted
+      | Unencrypted => s
+      }
+    );
+
   <>
-    {subtitle->ReactUtils.mapOpt(((subtitle, hw_subtitle)) =>
+    {subtitle->ReactUtils.mapOpt(s =>
        <View style=FormStyles.header>
-         <Typography.Overline1>
-           {isLedger ? hw_subtitle : subtitle}->React.string
-         </Typography.Overline1>
+         <Typography.Overline1> s->React.string </Typography.Overline1>
        </View>
      )}
     children
-    <SigningBlock isLedger ledgerState loading sendOperation />
+    <SigningBlock
+      accountKind={source.Account.kind}
+      ledgerState
+      loading
+      sendOperation
+    />
   </>;
 };

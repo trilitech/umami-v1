@@ -76,15 +76,15 @@ module Accounts: {
 
   let secrets: (~config: ConfigFile.t) => result(t, TezosClient.Errors.t);
 
-  let isLedger: (PublicKeyHash.t, array(Secret.Repr.derived)) => bool;
-
   let recoveryPhrases:
     (~config: ConfigFile.t) =>
     option(array(SecureStorage.Cipher.encryptedData));
 
   let get:
     (~config: ConfigFile.t) =>
-    Future.t(Result.t(array((name, PublicKeyHash.t)), Errors.t));
+    Future.t(
+      Result.t(array((name, PublicKeyHash.t, Wallet.kind)), Errors.t),
+    );
 
   let updateSecretAt:
     (~config: ConfigFile.t, Secret.Repr.t, int) => Result.t(unit, Errors.t);

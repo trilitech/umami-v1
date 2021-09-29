@@ -163,7 +163,7 @@ module LedgerView = {
 let make =
     (
       ~ledgerState as (ledgerState, setLedgerState),
-      ~isLedger,
+      ~accountKind: Account.kind,
       ~sendOperation: TaquitoAPI.Signer.intent => Future.t(Result.t(_)),
       ~secondaryButton=?,
       ~loading=false,
@@ -174,25 +174,35 @@ let make =
     );
 
   let onSubmit = () =>
-    if (isLedger) {
+    switch (accountKind) {
+    | Ledger =>
       setLedgerState(_ => LedgerView.Searching->Some);
       sendOperation(
         TaquitoAPI.Signer.LedgerCallback(
           () => setLedgerState(_ => LedgerView.WaitForConfirm->Some),
         ),
       )
-      ->Future.tapError(e => setLedgerState(_ => Error(e)->Some))
-      ->ignore;
-    } else {
-      form.submit();
+      ->FutureEx.getError(e => setLedgerState(_ => Error(e)->Some));
+    | Encrypted
+    | Unencrypted => form.submit()
     };
 
   React.useEffect0(() => {
-    if (isLedger) {
-      onSubmit();
+    switch (accountKind) {
+    | Ledger => onSubmit()
+    | Encrypted
+    | Unencrypted => ()
     };
+
     None;
   });
+
+  let showPasswordForm =
+    switch (accountKind) {
+    | Ledger => false
+    | Encrypted
+    | Unencrypted => true
+    };
 
   <>
     {<>
@@ -206,11 +216,11 @@ let make =
            text=I18n.btn#confirm
            onPress={_ => onSubmit()}
            loading
-           disabledLook={!isLedger && !formFieldsAreValids}
+           disabledLook={!formFieldsAreValids}
          />
        </View>
      </>
-     ->ReactUtils.onlyWhen(!isLedger)}
+     ->ReactUtils.onlyWhen(showPasswordForm)}
     {ledgerState->ReactUtils.mapOpt(st =>
        <LedgerView st ?secondaryButton retry=onSubmit />
      )}

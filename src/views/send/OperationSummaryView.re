@@ -142,7 +142,10 @@ module Base = {
         Some(styles##operationSummary),
         styleProp,
       |])}>
-      <EntityInfo address={source->fst->Some} title={source->snd} />
+      <EntityInfo
+        address={source->fst.Account.address->Some}
+        title={source->snd}
+      />
       {content->ReactUtils.hideNil(content => <Content content />)}
       {buildDestinations(smallest, destinations)}
     </View>;
@@ -238,14 +241,18 @@ module Transactions = {
   [@react.component]
   let make =
       (~style=?, ~transfer: Transfer.t, ~dryRun: Protocol.simulationResults) => {
-    let (source: (PublicKeyHash.t, string), destinations) =
+    let (source: (Account.t, string), destinations) =
       sourceDestination(transfer);
     let content = buildSummaryContent(transfer, dryRun);
 
-    let secrets = StoreContext.Secrets.useGetAll();
-    let isLedger = source->fst->WalletAPI.Accounts.isLedger(secrets);
+    let smallest =
+      switch (source->fst.kind) {
+      | Ledger => true
+      | Encrypted
+      | Unencrypted => false
+      };
 
-    <Base ?style smallest=isLedger source destinations content />;
+    <Base ?style smallest source destinations content />;
   };
 };
 

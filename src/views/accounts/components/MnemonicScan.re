@@ -35,7 +35,7 @@ let make = (~closeAction, ~index, ~secret) => {
   let (accounts, setAccounts) = React.useState(() => []);
   let derivationChangedState = React.useState(() => true);
 
-  let (scanRequest, scan) = StoreContext.Secrets.useMnemonicScan();
+  let (importRequest, import) = StoreContext.Secrets.useMnemonicImportKeys();
 
   let onFoundKey = (~start, i, account) =>
     setAccounts(accounts =>
@@ -58,12 +58,13 @@ let make = (~closeAction, ~index, ~secret) => {
   };
 
   let submitAccounts = (~password, ()) => {
-    scan(SecretApiRequest.{index, accounts, password})
-    ->Future.tapOk(_ => {closeAction()})
+    import(
+      SecretApiRequest.{index, accounts: accounts->List.reverse, password},
+    )
     ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
         I18n.t#account_created
       )
-    ->ignore;
+    ->FutureEx.getOk(_ => {closeAction()});
   };
 
   let scan = (~password, path, _) =>
@@ -83,7 +84,7 @@ let make = (~closeAction, ~index, ~secret) => {
     {switch (status) {
      | StepPassword =>
        <PasswordFormView
-         loading={scanRequest->ApiRequest.isLoading}
+         loading={importRequest->ApiRequest.isLoading}
          submitPassword
        />
      | StepAccounts(password) =>
@@ -93,12 +94,13 @@ let make = (~closeAction, ~index, ~secret) => {
          path={secret.Secret.derivationPath}
          scheme={secret.Secret.derivationScheme}
          accounts={
-           accounts->List.map(account =>
-             account.WalletAPI.Accounts.Scan.publicKeyHash
-           )
+           accounts
+           ->List.reverse
+           ->List.map(account => account.WalletAPI.Accounts.Scan.publicKeyHash)
          }
          next={submitAccounts(~password)}
          nextAdvancedOptions=None
+         startIndex={secret.Secret.addresses->Array.length}
        />
      }}
   </ModalFormView>;

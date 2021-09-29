@@ -98,6 +98,7 @@ let () =
   );
 
 let mainnetChain = "NetXdQprcVkpaWU";
+let hangzhounetChain = "NetXuXoGoLxNK6o";
 let granadanetChain = "NetXz969SFaFn8k";
 let florencenetChain = "NetXxkAx4woPLyu";
 let edo2netChain = "NetXSgo1ZT2DRUG";
@@ -125,12 +126,14 @@ let granadanet = {
 
 let supportedChains = [
   mainnetChain,
+  hangzhounetChain,
   granadanetChain,
   florencenetChain,
   edo2netChain,
 ];
 
 let mainnetName = "mainnet";
+let hangzhounetName = "hangzhounet";
 let granadanetName = "granadanet";
 let florencenetName = "florencenet";
 let edo2netName = "edo2net";
@@ -139,6 +142,7 @@ let getName = network =>
   switch (network) {
   | network when network == mainnetChain => mainnetName
   | network when network == granadanetChain => granadanetName
+  | network when network == hangzhounetChain => hangzhounetName
   | network when network == florencenetChain => florencenetName
   | network when network == edo2netChain => edo2netName
   | _ => ""
@@ -154,9 +158,11 @@ let fetch = (url, ~timeout=?, ()) => {
   let ctrl = Fetch.AbortController.make();
   let signal = Fetch.AbortController.signal(ctrl);
   let res = fetch(url, {signal: signal});
-  timeout->Lib.Option.iter(ms =>
-    Js.Global.setTimeout(() => Fetch.AbortController.abort(ctrl), ms)->ignore
-  );
+  timeout->Lib.Option.iter(ms => {
+    let _: Js_global.timeoutId =
+      Js.Global.setTimeout(() => Fetch.AbortController.abort(ctrl), ms);
+    ();
+  });
   res->FutureJs.fromPromise(err => {
     let {name} = err->RawJsError.fromPromiseError;
     switch (name) {
@@ -226,8 +232,9 @@ let getAPIVersion = (~timeout=?, url) => {
 let getChainName = chain => {
   switch (chain) {
   | chain when chain == mainnetChain => "Mainnet"
-  | chain when chain == florencenetChain => "Florencenet"
+  | chain when chain == hangzhounetChain => "HangzhouNet"
   | chain when chain == granadanetChain => "GranadaNet"
+  | chain when chain == florencenetChain => "Florencenet"
   | chain when chain == edo2netChain => "Edo2Net"
   | _ => ""
   };
