@@ -2,8 +2,8 @@
   "name": "umami",
   "productName": "umami",
   "version": "0.5.2",
-  "author": "Nomadic Labs",
-  "description": "React-TypeScript-Electron sample with Create React App and Electron Builder",
+  "author": { "name": "Nomadic Labs", "email": "umami@nomadic-labs.com" },
+  "description": "Umami is a cryptocurrency wallet to interact with the Tezos Blockchain. It runs as a desktop electron based app with multiple features: dApp interaction, HD Wallet, batch transfer, delegation, FA1.2, last operations, etc.",
   "homepage": ".",
   "main": "electron-starter.js",
   "private": true,
@@ -99,19 +99,21 @@
         "hidraw"
       ],
       "buildPackages": [
-        "libusb-1.0.0-dev",
+        "libusb-1.0-0-dev",
         "libudev-dev"
       ],
       "stagePackages": [
-        "libusb-1.0.0"
+        "libusb-1.0-0"
       ]
     },
     "deb": {
+      "icon": "./assets/icon.png",
       "depends": [
-        "libusb-1.0.0"
+        "libusb-1.0-0"
       ]
     },
     "rpm": {
+      "icon": "./assets/icon.png",
       "depends": [
         "libusb"
       ]
