@@ -23,55 +23,67 @@
 /*                                                                           */
 /*****************************************************************************/
 
-include ApiRequest;
+/* open UmamiCommon; */
+open Let;
 
-let useCheckTokenContract = () => {
-  let set = (~config, address) =>
-    config->NodeAPI.Tokens.checkTokenContract(address);
-  ApiRequest.useSetter(~set, ~kind=Logs.Tokens, ~toast=false, ());
-};
+type Errors.t +=
+  | NotFA12Contract(string);
 
-let useLoadFA12Balance =
-    (~requestState, ~address: PublicKeyHash.t, ~token: PublicKeyHash.t) => {
-  let get = (~config, (address, token)) =>
-    config->NodeAPI.Tokens.runFA12GetBalance(~address, ~token);
+let () =
+  Errors.registerHandler(
+    "Tokens",
+    fun
+    | NotFA12Contract(_) => I18n.t#error_check_contract->Some
+    | _ => None,
+  );
 
-  ApiRequest.useLoader(
-    ~get,
-    ~kind=Logs.Tokens,
-    ~requestState,
-    (address, token),
+let tokensStorageKey = "wallet-tokens";
+
+let registeredTokens = () =>
+  LocalStorage.getItem(tokensStorageKey)
+  ->Js.Nullable.toOption
+  ->Option.mapWithDefault([||], storageString =>
+      storageString->Js.Json.parseExn->Token.Decode.array
+    )
+  ->Array.map(token => {(token.address, token)})
+  ->PublicKeyHash.Map.fromArray
+  ->Result.Ok
+  ->Promise.value;
+
+let addToken = (config, token) => {
+  let%Await tokenKind =
+    config->NodeAPI.Tokens.checkTokenContract(token.TokenRepr.address);
+
+  let%AwaitMap () =
+    tokenKind == `KFA1_2
+      ? Promise.ok()
+      : Promise.err(NotFA12Contract((token.TokenRepr.address :> string)));
+
+  let tokens =
+    LocalStorage.getItem(tokensStorageKey)
+    ->Js.Nullable.toOption
+    ->Option.mapWithDefault([||], storageString =>
+        storageString->Js.Json.parseExn->Token.Decode.array
+      );
+
+  LocalStorage.setItem(
+    tokensStorageKey,
+    tokens->Array.concat([|token|])->Token.Encode.array->Js.Json.stringify,
   );
 };
 
-let useLoadTokens = requestState => {
-  let get = (~config as _, ()) => TokensAPI.registeredTokens();
+let removeToken = token => {
+  let tokens =
+    LocalStorage.getItem(tokensStorageKey)
+    ->Js.Nullable.toOption
+    ->Option.mapWithDefault([||], storageString =>
+        storageString->Js.Json.parseExn->Token.Decode.array
+      );
 
-  ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, ());
-};
-
-let useDelete = (~sideEffect=?, ()) => {
-  let set = (~config as _, token) => TokensAPI.removeToken(token);
-
-  ApiRequest.useSetter(
-    ~logOk=_ => I18n.t#token_deleted,
-    ~toast=false,
-    ~set,
-    ~kind=Logs.Tokens,
-    ~sideEffect?,
-    (),
-  );
-};
-
-let useCreate = (~sideEffect=?, ()) => {
-  let set = (~config, token) => TokensAPI.addToken(config, token);
-
-  ApiRequest.useSetter(
-    ~logOk=_ => I18n.t#token_created,
-    ~toast=false,
-    ~set,
-    ~kind=Logs.Tokens,
-    ~sideEffect?,
-    (),
-  );
+  LocalStorage.setItem(
+    tokensStorageKey,
+    tokens->Array.keep(t => t != token)->Token.Encode.array->Js.Json.stringify,
+  )
+  ->Result.Ok
+  ->Promise.value;
 };

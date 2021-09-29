@@ -23,55 +23,11 @@
 /*                                                                           */
 /*****************************************************************************/
 
-include ApiRequest;
+type Errors.t +=
+  | NotFA12Contract(string);
 
-let useCheckTokenContract = () => {
-  let set = (~config, address) =>
-    config->NodeAPI.Tokens.checkTokenContract(address);
-  ApiRequest.useSetter(~set, ~kind=Logs.Tokens, ~toast=false, ());
-};
+let registeredTokens: unit => Promise.t(PublicKeyHash.Map.map(TokenRepr.t));
 
-let useLoadFA12Balance =
-    (~requestState, ~address: PublicKeyHash.t, ~token: PublicKeyHash.t) => {
-  let get = (~config, (address, token)) =>
-    config->NodeAPI.Tokens.runFA12GetBalance(~address, ~token);
+let addToken: (ConfigContext.env, TokenRepr.t) => Promise.t(unit);
 
-  ApiRequest.useLoader(
-    ~get,
-    ~kind=Logs.Tokens,
-    ~requestState,
-    (address, token),
-  );
-};
-
-let useLoadTokens = requestState => {
-  let get = (~config as _, ()) => TokensAPI.registeredTokens();
-
-  ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, ());
-};
-
-let useDelete = (~sideEffect=?, ()) => {
-  let set = (~config as _, token) => TokensAPI.removeToken(token);
-
-  ApiRequest.useSetter(
-    ~logOk=_ => I18n.t#token_deleted,
-    ~toast=false,
-    ~set,
-    ~kind=Logs.Tokens,
-    ~sideEffect?,
-    (),
-  );
-};
-
-let useCreate = (~sideEffect=?, ()) => {
-  let set = (~config, token) => TokensAPI.addToken(config, token);
-
-  ApiRequest.useSetter(
-    ~logOk=_ => I18n.t#token_created,
-    ~toast=false,
-    ~set,
-    ~kind=Logs.Tokens,
-    ~sideEffect?,
-    (),
-  );
-};
+let removeToken: TokenRepr.t => Promise.t(unit);

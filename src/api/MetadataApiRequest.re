@@ -6,7 +6,7 @@ let useLoadMetadata = (~onErrorNotATokenContract, pkh) => {
 
   let keepTaquitoErrors =
     fun
-    | TokensApiRequest.NotFA12Contract(_)
+    | TokensAPI.NotFA12Contract(_)
     | MetadataAPI.NoTzip12Metadata(_) => false
     | _ => true;
 
@@ -17,7 +17,7 @@ let useLoadMetadata = (~onErrorNotATokenContract, pkh) => {
         Promise.ok();
       } else {
         onErrorNotATokenContract();
-        TokensApiRequest.NotFA12Contract((pkh :> string))->Promise.err;
+        TokensAPI.NotFA12Contract((pkh :> string))->Promise.err;
       };
 
     let toolkit = ReTaquito.Toolkit.create(config.network.endpoint);
