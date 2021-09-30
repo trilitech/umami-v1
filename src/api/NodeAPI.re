@@ -60,7 +60,7 @@ module Balance = {
 };
 
 module Simulation = {
-  let extractCustomValues = (tx_options: ProtocolOptions.transferOptions) => (
+  let extractCustomValues = (tx_options: ProtocolOptions.transferEltOptions) => (
     tx_options.fee->Option.map(fee => fee->Tez.unsafeToMutezInt),
     tx_options.storageLimit,
     tx_options.gasLimit,

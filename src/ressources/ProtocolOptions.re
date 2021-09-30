@@ -44,7 +44,7 @@ module TransactionParameters = {
   };
 };
 
-type transferOptions = {
+type transferEltOptions = {
   fee: option(Tez.t),
   gasLimit: option(int),
   storageLimit: option(int),
@@ -52,13 +52,18 @@ type transferOptions = {
   entrypoint: option(TransactionParameters.entrypoint),
 };
 
-type commonOptions = {
+type delegationOptions = {
   fee: option(Tez.t),
   burnCap: option(Tez.t),
   forceLowFee: option(bool),
 };
 
-let makeTransferOptions =
+type transferOptions = {
+  burnCap: option(Tez.t),
+  forceLowFee: option(bool),
+};
+
+let makeTransferEltOptions =
     (~fee, ~gasLimit, ~storageLimit, ~parameter, ~entrypoint, ()) => {
   fee,
   gasLimit,
@@ -67,8 +72,13 @@ let makeTransferOptions =
   entrypoint,
 };
 
-let makeCommonOptions = (~fee, ~burnCap, ~forceLowFee, ()) => {
+let makeDelegationOptions = (~fee, ~burnCap, ~forceLowFee, ()) => {
   fee,
+  burnCap,
+  forceLowFee,
+};
+
+let makeTransferOptions = (~burnCap, ~forceLowFee, ()) => {
   burnCap,
   forceLowFee,
 };

@@ -29,7 +29,7 @@ open ProtocolOptions;
 type delegation = {
   source: Account.t,
   delegate: option(PublicKeyHash.t),
-  options: commonOptions,
+  options: delegationOptions,
 };
 
 type t =
@@ -41,7 +41,7 @@ let makeDelegate =
   {
     source,
     delegate,
-    options: makeCommonOptions(~fee, ~burnCap, ~forceLowFee, ()),
+    options: makeDelegationOptions(~fee, ~burnCap, ~forceLowFee, ()),
   };
 };
 

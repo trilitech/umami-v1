@@ -270,15 +270,14 @@ module Transfer =
               }
             )
           ->List.fromArray,
-        common_options: {
-          fee: None,
+        options: {
           burnCap: None,
           forceLowFee: None,
         },
       };
     };
 
-    let makeOperation = Operation.transfer;
+    let makeOperation = Operation.transaction;
 
     let makeSimulated = o => o->Operation.Simulation.transaction(None);
 

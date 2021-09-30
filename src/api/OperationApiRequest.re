@@ -60,10 +60,10 @@ let keepNonFormErrors =
 let useCreate = (~sideEffect=?, ()) => {
   let set = (~config, {operation, signingIntent}) => {
     switch (operation) {
-    | Protocol(operation) =>
+    | Delegation(_) as operation =>
       config->NodeAPI.Operation.run(operation, ~signingIntent)
 
-    | Transfer(t) =>
+    | Transaction(t) =>
       config->NodeAPI.Operation.batch(
         t.transfers,
         ~source=t.source,
@@ -85,18 +85,8 @@ let useCreate = (~sideEffect=?, ()) => {
 /* Simulate */
 
 let useSimulate = () => {
-  let set = (~config, operation) =>
-    switch (operation) {
-    | Operation.Simulation.Protocol(operation, index) =>
-      config->NodeAPI.Simulation.run(~index?, operation)
-    | Operation.Simulation.Transfer(t, index) =>
-      config->NodeAPI.Simulation.batch(
-        t.transfers,
-        ~source=t.source,
-        ~index?,
-        (),
-      )
-    };
+  let set = (~config, (operation, index)) =>
+    config->NodeAPI.Simulation.run(~index?, operation);
 
   ApiRequest.useSetter(
     ~set,

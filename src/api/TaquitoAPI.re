@@ -379,8 +379,8 @@ module Transfer = {
 
   let consolidateTransferOptions =
       (
-        batch: ProtocolOptions.transferOptions,
-        tx: ProtocolOptions.transferOptions,
+        batch: ProtocolOptions.transferEltOptions,
+        tx: ProtocolOptions.transferEltOptions,
       ) =>
     ProtocolOptions.{
       fee: OptionEx.mapOrKeep(batch.fee, tx.fee, max),
@@ -400,7 +400,7 @@ module Transfer = {
           (contractAddress, batch, options, txs)
           : (
               array(Types.FA2.transaction),
-              ProtocolOptions.transferOptions,
+              ProtocolOptions.transferEltOptions,
               list(Transfer.elt),
             ) => {
     switch (txs) {
