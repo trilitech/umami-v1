@@ -529,7 +529,8 @@ let errors = {
       i,
       w,
     );
-  pub secret_already_imported = "Secret already imported"
+  pub secret_already_imported = "Secret already imported";
+  pub json_parsing_error = _ => "JSON parsing error"
 };
 
 let csv = {

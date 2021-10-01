@@ -24,10 +24,13 @@
 /*****************************************************************************/
 
 type Errors.t +=
+  | ParsingError(string)
   | DecodeError(string);
 
 // Propagates Errors.t during decoding, should be caught by the decode function
 exception InternalError(Errors.t);
+
+let parse: string => Let.result(Js.Json.t);
 
 let decode:
   (Js.Json.t, Json.Decode.decoder('a)) => result('a, TezosClient.Errors.t);

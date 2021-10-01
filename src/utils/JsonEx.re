@@ -26,6 +26,7 @@
 open Json;
 
 type Errors.t +=
+  | ParsingError(string)
   | DecodeError(string);
 
 let () =
@@ -33,6 +34,7 @@ let () =
     "Json",
     fun
     | DecodeError(s) => Some(s)
+    | ParsingError(s) => I18n.errors#json_parsing_error(s)->Some
     | _ => None,
   );
 
@@ -50,6 +52,11 @@ let decode = (json, decoder) =>
   | e =>
     Js.log(e);
     Error(Errors.Generic("Unknown decoding error"));
+  };
+
+let parse = s =>
+  try(s->Js.Json.parseExn->Ok) {
+  | _ => Error(ParsingError(s))
   };
 
 module MichelsonDecode = {
