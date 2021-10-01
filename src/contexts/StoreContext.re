@@ -294,35 +294,48 @@ module Balance = {
     BalanceApiRequest.useLoad(~requestState, ~address);
   };
 
+  type Errors.t +=
+    | EveryBalancesFail;
+
+  let () =
+    Errors.registerHandler(
+      "Context",
+      fun
+      | EveryBalancesFail => I18n.errors#every_balances_fail->Some
+      | _ => None,
+    );
+
+  let handleBalances = (accountsSize, requests, reduce) => {
+    let allErrors = () => requests->Array.every(ApiRequest.isError);
+    let getAllDoneOk = () => requests->Array.keepMap(ApiRequest.getDoneOk);
+
+    if (allErrors()) {
+      ApiRequest.Done(Error(EveryBalancesFail), Expired);
+    } else {
+      let allDone = getAllDoneOk();
+      if (allDone->Array.size == accountsSize) {
+        let total = allDone->reduce;
+
+        Done(Ok(total), ApiRequest.initCache());
+      } else {
+        Loading(None);
+      };
+    };
+  };
+
   let useGetTotal = () => {
     let store = useStoreContext();
     let (balanceRequests, _) = store.balanceRequestsState;
     let (accountsRequest, _) = store.accountsRequestState;
+    let requests = balanceRequests->Map.String.valuesToArray;
     let accounts =
       accountsRequest->ApiRequest.getWithDefault(Map.String.empty);
 
-    let accountsBalanceRequests =
-      accounts
-      ->Map.String.valuesToArray
-      ->Array.keepMap(account => {
-          balanceRequests->Map.String.get((account.address :> string))
-        })
-      ->Array.keep(ApiRequest.isDone);
-
-    // check if balance requests for each accounts are done
-    accountsBalanceRequests->Array.size == accounts->Map.String.size
-      ? Some(
-          accountsBalanceRequests->Array.reduce(
-            Tez.zero, (acc, balanceRequest) => {
-            Tez.Infix.(
-              acc
-              + balanceRequest
-                ->ApiRequest.getDoneOk
-                ->Option.getWithDefault(Tez.zero)
-            )
-          }),
-        )
-      : None;
+    handleBalances(accounts->Map.String.size, requests, a =>
+      a->Array.reduce(Tez.zero, (acc, balanceRequest) => {
+        Tez.Infix.(acc + balanceRequest)
+      })
+    );
   };
 
   let useResetAll = () => {
@@ -353,30 +366,20 @@ module BalanceToken = {
     let accounts =
       accountsRequest->ApiRequest.getWithDefault(Map.String.empty);
 
-    let accountsBalanceRequests =
+    let requests =
       accounts
       ->Map.String.valuesToArray
       ->Array.keepMap(account => {
           balanceRequests->Map.String.get(
             getRequestKey(account.address, tokenAddress),
           )
-        })
-      ->Array.keep(ApiRequest.isDone);
+        });
 
-    // check if balance requests for each accounts are done
-    accountsBalanceRequests->Array.size == accounts->Map.String.size
-      ? Some(
-          accountsBalanceRequests->Array.reduce(
-            Token.Unit.zero, (acc, balanceRequest) => {
-            Token.Unit.Infix.(
-              acc
-              + balanceRequest
-                ->ApiRequest.getDoneOk
-                ->Option.getWithDefault(Token.Unit.zero)
-            )
-          }),
-        )
-      : None;
+    Balance.handleBalances(accounts->Map.String.size, requests, a =>
+      a->Array.reduce(Token.Unit.zero, (acc, balanceRequest) => {
+        Token.Unit.Infix.(acc + balanceRequest)
+      })
+    );
   };
 
   let useResetAll = () => {

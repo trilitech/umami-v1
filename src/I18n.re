@@ -494,6 +494,7 @@ let wallet = {
 
 let errors = {
   pub _this = this;
+  pub every_balances_fail = "Every balances fail to load";
   pub network_unreachable = "Tezos network unreachable.";
   pub no_valid_endpoint = "No valid endpoint found among public nodes";
   pub not_an_fa12_contract = "Not an FA1.2 standard contract";

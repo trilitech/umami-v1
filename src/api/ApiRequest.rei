@@ -44,6 +44,8 @@ type cacheValidity =
   | Expired
   | ValidSince(timestamp);
 
+let initCache: unit => cacheValidity;
+
 type t('value) =
   /* The ressource fetching has never been triggered */
   | NotAsked
@@ -94,6 +96,9 @@ let isNotAsked: t('a) => bool;
 
 /* Returns [true] if the ressource fetching has started and is not over */
 let isLoading: t('a) => bool;
+
+/* Returns [true] if the ressource fetching is over and resolves as an error */
+let isError: t('a) => bool;
 
 /* Returns [true] if the ressource is fetched */
 let isDone: t('a) => bool;

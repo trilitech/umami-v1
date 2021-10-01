@@ -31,6 +31,8 @@ type cacheValidity =
   | Expired
   | ValidSince(float);
 
+let initCache = () => ValidSince(Js.Date.now());
+
 type t('value) =
   | NotAsked
   | Loading(option('value))
@@ -105,6 +107,12 @@ let isNotAsked = request => request == NotAsked;
 let isLoading = request =>
   switch (request) {
   | Loading(_) => true
+  | _ => false
+  };
+
+let isError = request =>
+  switch (request) {
+  | Done(Error(_), _) => true
   | _ => false
   };
 

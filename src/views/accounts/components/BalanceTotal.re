@@ -67,14 +67,17 @@ module Base = {
     let theme = ThemeContext.useTheme();
 
     let mapWithLoading = (v, f) =>
-      v->Option.mapWithDefault(
+      switch ((v: ApiRequest.t(_))) {
+      | Loading(_)
+      | NotAsked =>
         <ActivityIndicator
           animating=true
           size={ActivityIndicator_Size.exact(22.)}
           color={theme.colors.iconHighEmphasis}
-        />,
-        f,
-      );
+        />
+      | Done(Ok(v), _) => f(v)
+      | Done(Error(_), _) => React.null
+      };
 
     let balanceElement =
       <Typography.Headline fontWeightStyle=`black style=styles##balance>
