@@ -131,6 +131,26 @@ module Secret = {
     );
 };
 
+module SecretStorage =
+  LocalStorage.Make({
+    type t = array(Secret.t);
+
+    let key = "secrets";
+
+    let encoder = Json.Encode.(array(Secret.encoder));
+    let decoder = Json.Decode.(array(Secret.decoder));
+  });
+
+module RecoveryPhrasesStorage =
+  LocalStorage.Make({
+    type t = array(SecureStorage.Cipher.encryptedData);
+
+    let key = "recovery-phrases";
+
+    let encoder = Json.Encode.(array(SecureStorage.Cipher.encoder));
+    let decoder = Json.Decode.(array(SecureStorage.Cipher.decoder));
+  });
+
 module Aliases = {
   type t = array((string, PublicKeyHash.t));
 
@@ -186,18 +206,11 @@ module Accounts = {
   type name = string;
 
   let secrets = (~config as _) => {
-    LocalStorage.getItem("secrets")
-    ->Js.Nullable.toOption
-    ->Option.flatMap(Json.parse)
-    ->Option.map(Json.Decode.(array(Secret.decoder)))
-    ->ResultEx.fromOption(NoSecretFound);
+    SecretStorage.get()->ResultEx.mapError(_ => NoSecretFound);
   };
 
   let recoveryPhrases = () => {
-    LocalStorage.getItem("recovery-phrases")
-    ->Js.Nullable.toOption
-    ->Option.flatMap(Json.parse)
-    ->Option.map(Json.Decode.(array(SecureStorage.Cipher.decoder)));
+    RecoveryPhrasesStorage.get();
   };
 
   let get = (~config: ConfigContext.env) => {
@@ -229,20 +242,16 @@ module Accounts = {
     let%Res secrets = secrets(~config);
 
     if (secrets[index] = secret) {
-      LocalStorage.setItem(
-        "secrets",
-        Json.Encode.array(Secret.encoder, secrets)->Json.stringify,
-      )
-      ->Ok;
+      SecretStorage.set(secrets)->Ok;
     } else {
       Error(CannotUpdateSecret(index));
     };
   };
 
   let recoveryPhraseAt = (index, ~password) => {
+    let%FRes recoveryPhrases = recoveryPhrases()->Future.value;
     let%FRes data =
-      recoveryPhrases()
-      ->Option.flatMap(recoveryPhrases => recoveryPhrases[index])
+      recoveryPhrases[index]
       ->FutureEx.fromOption(~error=RecoveryPhraseNotFound(index));
 
     SecureStorage.Cipher.decrypt2(password, data);
@@ -308,9 +317,8 @@ module Accounts = {
         address == secret.masterPublicKey
           ? {...secret, masterPublicKey: None} : secret
       );
-    let secrets = Json.Encode.array(Secret.encoder, secrets)->Json.stringify;
 
-    LocalStorage.setItem("secrets", secrets)->FutureEx.ok;
+    SecretStorage.set(secrets)->FutureEx.ok;
   };
 
   let deleteSecretAt = (~config, index) => {
@@ -340,34 +348,27 @@ module Accounts = {
         ~remove=1,
         ~add=[||],
       );
-    LocalStorage.setItem(
-      "secrets",
-      Json.Encode.array(Secret.encoder, secretsBefore)->Json.stringify,
-    );
+    SecretStorage.set(secretsBefore);
 
     switch (recoveryPhrases()) {
-    | Some(recoveryPhrases) =>
+    | Ok(recoveryPhrases) =>
       let _ =
         recoveryPhrases->Js.Array2.spliceInPlace(
           ~pos=index,
           ~remove=1,
           ~add=[||],
         );
-      LocalStorage.setItem(
-        "recovery-phrases",
-        Json.Encode.array(SecureStorage.Cipher.encoder, recoveryPhrases)
-        ->Json.stringify,
-      );
-    | None => ()
+      RecoveryPhrasesStorage.set(recoveryPhrases);
+    | Error(_) => ()
     };
 
     let secretsAfter = secrets(~config);
     switch (secretsAfter) {
     | Ok([||])
     | Error(NoSecretFound) =>
-      "lock"->LocalStorage.removeItem;
-      "recovery-phrases"->LocalStorage.removeItem;
-      "secrets"->LocalStorage.removeItem;
+      SecureStorage.LockStorage.remove();
+      RecoveryPhrasesStorage.remove();
+      SecretStorage.remove();
     | _ => ()
     };
   };
@@ -494,9 +495,9 @@ module Accounts = {
           secret,
           path: DerivationPath.Pattern.t,
         ) => {
-      switch (
-        recoveryPhrases()->Option.flatMap(r => r[secret.Secret.Repr.index])
-      ) {
+      let%FRes r = recoveryPhrases()->Future.value;
+
+      switch (r[secret.Secret.Repr.index]) {
       | Some(recoveryPhrase) =>
         let onFoundKey = (n, acc) => onFoundKey(n, acc);
 
@@ -515,8 +516,8 @@ module Accounts = {
 
         secret.Secret.Repr.secret.masterPublicKey == None
           ? runStreamLegacy(~config, ~recoveryPhrase, ~password, ~onFoundKey)
-          : Future.value(Ok());
-      | None => Future.value(Ok())
+          : FutureEx.ok();
+      | None => FutureEx.ok()
       };
     };
 
@@ -612,7 +613,7 @@ module Accounts = {
 
   let indexOfRecoveryPhrase = (recoveryPhrase, ~password) =>
     recoveryPhrases()
-    ->Option.getWithDefault([||])
+    ->Result.getWithDefault([||])
     ->Array.map(data => SecureStorage.Cipher.decrypt2(password, data))
     ->List.fromArray
     ->Future.all
@@ -645,22 +646,17 @@ module Accounts = {
       secrets(~config)
       ->Result.getWithDefault([||])
       ->Array.concat([|secret|]);
-    LocalStorage.setItem(
-      "secrets",
-      Json.Encode.array(Secret.encoder, secrets)->Json.stringify,
-    );
+    SecretStorage.set(secrets);
   };
 
   let registerRecoveryPhrase = recoveryPhrase =>
     recoveryPhrases()
-    ->Option.getWithDefault([||])
+    ->Result.getWithDefault([||])
     ->(
         recoveryPhrases => {
           let recoveryPhrases =
             Array.concat(recoveryPhrases, [|recoveryPhrase|]);
-          Json.Encode.(array(SecureStorage.Cipher.encoder, recoveryPhrases))
-          |> Json.stringify
-          |> LocalStorage.setItem("recovery-phrases");
+          RecoveryPhrasesStorage.set(recoveryPhrases);
         }
       );
 
