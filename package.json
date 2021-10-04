@@ -1,8 +1,11 @@
 {
   "name": "umami",
   "productName": "umami",
-  "version": "0.5.2",
-  "author": { "name": "Nomadic Labs", "email": "umami@nomadic-labs.com" },
+  "version": "0.5.3",
+  "author": {
+    "name": "Nomadic Labs",
+    "email": "umami@nomadic-labs.com"
+  },
   "description": "Umami is a cryptocurrency wallet to interact with the Tezos Blockchain. It runs as a desktop electron based app with multiple features: dApp interaction, HD Wallet, batch transfer, delegation, FA1.2, last operations, etc.",
   "homepage": ".",
   "main": "electron-starter.js",
@@ -18,14 +21,15 @@
     "@taquito/tzip12": "^10.1.0",
     "@taquito/tzip16": "^10.1.0",
     "@taquito/utils": "10.1.0",
-    "customsigner": "link:./src/vendors/signer",
     "bignumber.js": "^9.0.1",
     "bip39": "^3.0.3",
     "bs-fetch": "^0.6.2",
     "bs-let": "^0.1.16",
+    "bs-platform": "^9.0.2",
     "bs-reform": "10.0.2-alpha.0",
     "bs58check": "^2.1.2",
     "child-reprocess": "^0.1.2",
+    "customsigner": "link:./src/vendors/signer",
     "date-fns": "2.19.0",
     "ed25519-hd-key": "^1.2.0",
     "electron-devtools-installer": "^3.1.0",
@@ -44,8 +48,7 @@
     "reason-react": "^0.9.1",
     "reason-react-native": "^0.63.5",
     "reason-react-update": "^2.0.0",
-    "reschema": "2.0.2-alpha.0",
-    "bs-platform": "^9.0.2"
+    "reschema": "2.0.2-alpha.0"
   },
   "scripts": {
     "start": "cross-env NODE_ENV=development webpack serve --hot --host 0.0.0.0 --config=./webpack.dev.config.js --mode development",
@@ -174,7 +177,7 @@
     "babel-loader": "^8.2.2",
     "copy-webpack-plugin": "8.0.0",
     "cross-env": "^7.0.2",
-    "electron": "11.2.3",
+    "electron": "12.2.1",
     "electron-builder": "^22.9.1",
     "electron-notarize": "^1.0.0",
     "html-webpack-plugin": "^5.3.1",
