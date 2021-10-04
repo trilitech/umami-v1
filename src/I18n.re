@@ -27,6 +27,8 @@ let p = Format.sprintf;
 
 let btn = {
   pub _this = this;
+  pub goto_settings = "Go to settings";
+  pub retry_network = "Retry";
   pub retry = "RETRY";
   pub create_or_import_secret = "CREATE OR IMPORT SECRET";
   pub verify_accounts = "VERIFY ACCOUNTS";
@@ -492,6 +494,7 @@ let wallet = {
 
 let errors = {
   pub _this = this;
+  pub network_unreachable = "Tezos network unreachable.";
   pub no_valid_endpoint = "No valid endpoint found among public nodes";
   pub not_an_fa12_contract = "Not an FA1.2 standard contract";
   pub beacon_cant_handle = "Cannot handle this operation";

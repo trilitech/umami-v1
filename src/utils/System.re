@@ -53,6 +53,10 @@ type plateform = [ | `darwin | `win32 | `linux];
 
 let isMac = plateform == `darwin;
 
+[@bs.val] external window: 'a = "window";
+
+let reload = () => window##location##reload();
+
 module Path: {
   type t = pri string;
 
