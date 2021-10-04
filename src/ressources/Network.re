@@ -297,7 +297,11 @@ let getAPIVersion = (~timeout=?, url) => {
 
   let%Res api =
     Version.parse(api)
-    ->ResultEx.mapError((VersionFormat(e)) => API(VersionFormat(e)));
+    ->ResultEx.mapError(
+        fun
+        | Version.VersionFormat(e) => API(VersionFormat(e))
+        | _ => API(VersionRPCError("Unknown error")),
+      );
 
   ResultEx.fromExn((), () =>
     Json.Decode.{

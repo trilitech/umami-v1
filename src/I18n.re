@@ -530,7 +530,11 @@ let errors = {
       w,
     );
   pub secret_already_imported = "Secret already imported";
-  pub json_parsing_error = _ => "JSON parsing error"
+  pub json_parsing_error = _ => "JSON parsing error";
+  pub local_storage_key_not_found = k =>
+    p("Internal error: key `%s` not found", k);
+  pub version_format = v =>
+    p("Internal error: invalid version format `%s`", v)
 };
 
 let csv = {

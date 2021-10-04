@@ -32,8 +32,7 @@ exception InternalError(Errors.t);
 
 let parse: string => Let.result(Js.Json.t);
 
-let decode:
-  (Js.Json.t, Json.Decode.decoder('a)) => result('a, TezosClient.Errors.t);
+let decode: (Js.Json.t, Json.Decode.decoder('a)) => Let.result('a);
 
 module MichelsonDecode: {
   type address =

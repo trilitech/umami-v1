@@ -26,8 +26,16 @@
 type t =
   | Version(int, int, option(int), option(string));
 
-type error =
+type Errors.t +=
   | VersionFormat(string);
+
+let () =
+  Errors.registerHandler(
+    "Version",
+    fun
+    | VersionFormat(s) => I18n.errors#version_format(s)->Some
+    | _ => None,
+  );
 
 let mk = (~fix=?, ~patch=?, major, minor) =>
   Version(major, minor, fix, patch);
