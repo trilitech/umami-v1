@@ -59,5 +59,7 @@ let applyMigration = (migrations, currentVersion) => {
 };
 
 let init = version => {
-  Map.make(~id=(module Version.Comparable))->applyMigration(version);
+  Map.make(~id=(module Version.Comparable))
+  ->addMigration(Disclaimer.Legacy.V1_1.version, Disclaimer.Legacy.V1_1.mk)
+  ->applyMigration(version);
 };

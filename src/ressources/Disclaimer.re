@@ -23,8 +23,6 @@
 /*                                                                           */
 /*****************************************************************************/
 
-type disclaimerVersion = Version.t;
-
 let version = Version.mk(1, 0);
 
 let updateTime = "June 25, 2021";
@@ -36,16 +34,29 @@ let highestBound = Version.mk(1, max_int);
 let checkInBound = version =>
   Version.checkInBound(version, lowestBound, highestBound);
 
-let itemName = "eula-version";
+module Value = {
+  type t = Version.t;
+  let key = "eula-version";
+
+  let encoder = v => Json.Encode.(v->Version.toString->string);
+  let decoder = json => {
+    switch (json->Json.Decode.string->Version.parse) {
+    | Ok(v) => v
+    | Error(e) => JsonEx.(raise(InternalError(e)))
+    };
+  };
+};
+
+module Storage = LocalStorage.Make(Value);
 
 let getAgreedVersion = () =>
-  switch (LocalStorage.getItem(itemName)->Js.Nullable.toOption) {
-  | Some(v) => v->Version.parse->Result.mapWithDefault(None, v => Some(v))
-  | None => None
+  switch (Storage.get()) {
+  | Ok(v) => Some(v)
+  | Error(_) => None
   };
 
 let sign = () => {
-  LocalStorage.setItem(itemName, version->Version.toString);
+  Storage.set(version);
 };
 
 let needSigning = () =>
@@ -55,3 +66,16 @@ let needSigning = () =>
   };
 
 let getEula = () => "License agreement placeholder";
+
+module Legacy = {
+  /* Storage 1.0 -> 1.1 */
+  module V1_1 = {
+    let version = Version.mk(1, 1);
+    let mk = () =>
+      Storage.migrate(
+        ~mapValue=Version.parse,
+        ~default=Version.mk(0, 0), // will simply force to sign the EULA again
+        (),
+      );
+  };
+};
