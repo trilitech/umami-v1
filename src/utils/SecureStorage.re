@@ -214,34 +214,31 @@ module Cipher = {
     decrypt(encryptedData, password);
 };
 
-type json = Js.Json.t;
+module LockStorage =
+  LocalStorage.Make({
+    let key = "lock";
+    type t = Cipher.encryptedData;
+    let encoder = Cipher.encoder;
+    let decoder = Cipher.decoder;
+  });
 
-let fetchEncryptedData = key =>
-  LocalStorage.getItem(key)
-  ->Js.Nullable.toOption
-  ->Option.flatMap(Json.parse)
-  ->Option.map(Cipher.decoder);
-
-let storeEncryptedData = (data, ~key) =>
-  data->Cipher.encoder->Json.stringify |> LocalStorage.setItem(key);
-
-let fetch = (key, ~password) =>
-  switch (fetchEncryptedData(key)) {
-  | Some(encryptedData) =>
+let fetch = (~password) =>
+  switch (LockStorage.get()) {
+  | Ok(encryptedData) =>
     encryptedData->Cipher.decrypt(password)->Future.mapOk(data => Some(data))
-  | None => Future.value(Ok(None))
+  | Error(_) => Future.value(Ok(None))
   };
 
-let store = (data, ~key, ~password) =>
+let store = (data, ~password) =>
   data
   ->Cipher.encrypt(password)
-  ->Future.mapOk(encryptedData => encryptedData->storeEncryptedData(~key));
+  ->Future.mapOk(encryptedData => encryptedData->LockStorage.set);
 
 let validatePassword = password => {
-  let%FRes data = "lock"->fetch(~password);
+  let%FRes data = fetch(~password);
   let%FRes () =
     data == Some("lock") || data == None
       ? FutureEx.ok() : FutureEx.err(Errors.WrongPassword);
-  let%FResMap () = store("lock", ~key="lock", ~password);
+  let%FResMap () = store("lock", ~password);
   ();
 };
