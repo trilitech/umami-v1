@@ -69,7 +69,6 @@ type networkStatus = {
   current: Network.status,
 };
 
-open UmamiCommon;
 type configState = {
   content: env,
   configFile: ConfigFile.t,
@@ -121,9 +120,9 @@ let initMigration = () => {
 let load = () => {
   initMigration();
 
-  switch (ConfigFile.read()->Js.Nullable.toOption) {
-  | Some(conf) => ConfigFile.parse(conf)
-  | None =>
+  switch (ConfigFile.read()) {
+  | Ok(conf) => conf
+  | Error(_) =>
     Js.log("No config to load. Using default config");
     ConfigFile.dummy;
   };
@@ -250,7 +249,7 @@ let make = (~children) => {
   let write = f =>
     setConfig(c => {
       let c = f(c);
-      c->ConfigFile.toString->Lib.Option.iter(c => c->ConfigFile.write);
+      c->ConfigFile.Storage.set;
       c;
     });
 

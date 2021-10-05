@@ -56,3 +56,15 @@ module MichelsonDecode: {
 
   let fa2BalanceOfDecoder: Js.Json.t => array(((address, string), string));
 };
+
+module Encode: {
+  include (module type of Json.Encode);
+
+  let bsListEncoder: encoder('a) => encoder(list('a));
+};
+
+module Decode: {
+  include (module type of Json.Decode);
+
+  let bsListDecoder: decoder('a) => decoder(list('a));
+};

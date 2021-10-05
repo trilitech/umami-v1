@@ -169,6 +169,87 @@ let mk = (~name, ~explorer, ~endpoint, chain) => {
   endpoint,
 };
 
+module Encode = {
+  let chainToString =
+    fun
+    | `Mainnet => "Mainnet"
+    | `Granadanet => "Granadanet"
+    | `Florencenet => "Florencenet"
+    | `Edo2net => "Edo2net"
+    | `Hangzhounet => "Hangzhounet"
+    | `Custom(n) => n;
+
+  let chainKind =
+    fun
+    | `Mainnet
+    | `Granadanet
+    | `Florencenet
+    | `Edo2net
+    | `Hangzhounet => "default"
+    | `Custom(_) => "custom";
+
+  let chainEncoder = n =>
+    Json.Encode.(
+      object_([
+        ("kind", string(chainKind(n))),
+        ("name", string(chainToString(n))),
+      ])
+    );
+
+  let encoder = c =>
+    Json.Encode.(
+      object_([
+        ("name", string(c.name)),
+        ("chain", chainEncoder(c.chain)),
+        ("explorer", string(c.explorer)),
+        ("endpoint", string(c.endpoint)),
+      ])
+    );
+};
+
+module Decode = {
+  let nativeChainFromString =
+    fun
+    | "Mainnet" => `Mainnet
+    | "Granadanet" => `Granadanet
+    | n =>
+      JsonEx.(raise(InternalError(DecodeError("Unknown network " ++ n))));
+
+  let chainFromString =
+    fun
+    | "Florencenet" => `Florencenet
+    | "Edo2net" => `Edo2net
+    | "Hangzhounet" => `Hangzhounet
+    | n => nativeChainFromString(n);
+
+  let chainDecoder = (chainFromString, json) => {
+    open Json.Decode;
+    let defaultNetworkDecoder = json => json->string->chainFromString;
+    let customNetworkDecoder = json => json->string->`Custom;
+    json
+    |> (
+      field("kind", string)
+      |> andThen(
+           fun
+           | "default" => field("name", defaultNetworkDecoder)
+           | "custom" => field("name", customNetworkDecoder)
+           | v =>
+             JsonEx.(
+               raise(InternalError(DecodeError("Unknown kind" ++ v)))
+             ),
+         )
+    );
+  };
+
+  let decoder = json =>
+    Json.Decode.{
+      name: json |> field("name", string),
+      chain: json |> field("chain", chainDecoder(nativeChainFromString)),
+      explorer: json |> field("explorer", string),
+      endpoint: json |> field("endpoint", string),
+    };
+};
+
 let mainnet =
   mk(
     ~name=getDisplayedName(`Mainnet),

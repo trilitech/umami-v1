@@ -35,7 +35,7 @@ let () =
     | _ => None,
   );
 
-let currentVersion = Version.mk(1, 1);
+let currentVersion = Version.mk(1, 2);
 
 let addMigration = (migrations, version, migration) => {
   migrations->Map.update(
@@ -61,5 +61,6 @@ let applyMigration = (migrations, currentVersion) => {
 let init = version => {
   Map.make(~id=(module Version.Comparable))
   ->addMigration(Disclaimer.Legacy.V1_1.version, Disclaimer.Legacy.V1_1.mk)
+  ->addMigration(ConfigFile.Legacy.V1_2.version, ConfigFile.Legacy.V1_2.mk)
   ->applyMigration(version);
 };
