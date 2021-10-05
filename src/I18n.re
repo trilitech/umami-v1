@@ -163,7 +163,7 @@ let label = {
   pub parameters = "Parameters";
   pub custom_network_name = "Name";
   pub custom_network_mezos_url = "Mezos URL";
-  pub custom_network_node_url = "Node URL"
+  pub custom_network_node_url = plural => p("Node URL%s", plural ? "s" : "")
 };
 
 let input_placeholder = {

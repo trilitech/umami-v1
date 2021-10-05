@@ -239,7 +239,7 @@ let make = (~initNode=?, ~initMezos=?, ~action: action, ~closeAction) => {
         error={form.getFieldError(Field(Name))}
       />
       <FormGroupTextInput
-        label=I18n.label#custom_network_node_url
+        label={I18n.label#custom_network_node_url(false)}
         value={form.values.node}
         placeholder=I18n.input_placeholder#custom_network_node_url
         handleChange={form.handleChange(Node)}

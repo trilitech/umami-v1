@@ -48,12 +48,16 @@ let styles =
       "content":
         style(
           ~borderRadius=4.,
-          ~justifyContent=`spaceBetween,
-          ~flexDirection=`row,
-          ~alignItems=`center,
           ~paddingVertical=2.->dp,
           ~paddingLeft=16.->dp,
           ~paddingRight=2.->dp,
+          (),
+        ),
+      "innerItem":
+        style(
+          ~justifyContent=`spaceBetween,
+          ~flexDirection=`row,
+          ~alignItems=`center,
           (),
         ),
       "title": style(~marginBottom=6.->dp, ~textAlign=`center, ()),
@@ -63,7 +67,7 @@ let styles =
 
 module Item = {
   [@react.component]
-  let make = (~style as styleArg=?, ~value, ~label) => {
+  let make = (~style as styleArg=?, ~current=?, ~values, ~label) => {
     let theme = ThemeContext.useTheme();
     let addToast = LogsContext.useToast();
 
@@ -80,8 +84,18 @@ module Item = {
     <View style={Style.arrayOption([|styleArg, styles##container->Some|])}>
       <FormLabel label style=FormGroupTextInput.styles##label />
       <View style={Style.array([|styles##content, backStyle|])}>
-        <Typography.Body1> value->React.string </Typography.Body1>
-        <ClipboardButton size=40. copied=label addToast data=value />
+        {values
+         ->Array.map(v => {
+             let fontWeightStyle = current == Some(v) ? Some(`bold) : None;
+
+             <View key=v style=styles##innerItem>
+               <Typography.Body1 ?fontWeightStyle>
+                 v->React.string
+               </Typography.Body1>
+               <ClipboardButton size=40. copied=label addToast data=v />
+             </View>;
+           })
+         ->React.array}
       </View>
     </View>;
   };
@@ -89,15 +103,26 @@ module Item = {
 
 [@react.component]
 let make = (~network: Network.network, ~closeAction) => {
+  let endpoints =
+    switch (network.chain) {
+    | #Network.nativeChains as n =>
+      Network.getNetworks(n)->List.map(n => n.endpoint)->List.toArray
+    | _ => [|network.endpoint|]
+    };
+
   <ModalFormView closing={ModalFormView.Close(closeAction)}>
     <Typography.Headline style=FormStyles.headerWithoutMarginBottom>
       {network.name}->React.string
     </Typography.Headline>
-    <Item label=I18n.label#custom_network_node_url value={network.endpoint} />
+    <Item
+      current={network.endpoint}
+      label={I18n.label#custom_network_node_url(endpoints->Array.length > 0)}
+      values=endpoints
+    />
     <Item
       style=styles##notFirstItem
       label=I18n.label#custom_network_mezos_url
-      value={network.explorer}
+      values=[|network.explorer|]
     />
   </ModalFormView>;
 };

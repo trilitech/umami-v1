@@ -218,19 +218,18 @@ module CustomNetworkItem = {
 module NetworkItem = {
   [@react.component]
   let make =
-      (~network: Network.network, ~writeNetwork, ~configFile: ConfigFile.t) => {
+      (
+        ~network: Network.network,
+        ~writeNetwork,
+        ~currentChain: Network.configurableChains,
+      ) => {
     <>
       <View style=styles##spaceBetweenRow>
         <RadioItem
-          label={
-            network == Network.mainnet ? I18n.t#mainnet : I18n.t#granadanet
-          }
-          value={network == Network.mainnet ? `Mainnet : `Granadanet}
+          label={network.chain->Network.getDisplayedName}
+          value={network.chain}
           setValue=writeNetwork
-          currentValue={
-            configFile.network
-            ->Option.getWithDefault(ConfigContext.defaultNetwork)
-          }
+          currentValue=currentChain
         />
         <View style=styles##row> <NetworkInfoButton network /> </View>
       </View>
@@ -255,13 +254,15 @@ let make = () => {
     writeConf(c => {...c, network});
   };
 
+  let currentChain = ConfigContext.useContent().network.chain;
+
   <Block
     title=I18n.settings#chain_title actionButton={<AddCustomNetworkButton />}>
     <View style=styles##column>
       <View accessibilityRole=`form style=styles##row>
         <ColumnLeft style=styles##leftcolumntitles>
-          <NetworkItem network=Network.mainnet configFile writeNetwork />
-          <NetworkItem network=Network.granadanet configFile writeNetwork />
+          <NetworkItem network=Network.mainnet currentChain writeNetwork />
+          <NetworkItem network=Network.granadanet currentChain writeNetwork />
           {switch (customNetworks) {
            | [] => React.null
            | customNetworks =>
