@@ -31,7 +31,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-/src/svg/optimized
-/src/svg/optimized2
+/src/svg/optimized_icons
+/src/svg/fixed_icons
+/src/svg/optimized_providers
 
 /src/vendors/signer/node_modules

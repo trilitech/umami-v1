@@ -1,9 +1,12 @@
 {
   "name": "umami",
   "productName": "umami",
-  "version": "0.5.1",
-  "author": "Nomadic Labs",
-  "description": "React-TypeScript-Electron sample with Create React App and Electron Builder",
+  "version": "0.5.3",
+  "author": {
+    "name": "Nomadic Labs",
+    "email": "umami@nomadic-labs.com"
+  },
+  "description": "Umami is a cryptocurrency wallet to interact with the Tezos Blockchain. It runs as a desktop electron based app with multiple features: dApp interaction, HD Wallet, batch transfer, delegation, FA1.2, last operations, etc.",
   "homepage": ".",
   "main": "electron-starter.js",
   "private": true,
@@ -18,14 +21,15 @@
     "@taquito/tzip12": "^10.1.0",
     "@taquito/tzip16": "^10.1.0",
     "@taquito/utils": "10.1.0",
-    "customsigner": "link:./src/vendors/signer",
     "bignumber.js": "^9.0.1",
     "bip39": "^3.0.3",
     "bs-fetch": "^0.6.2",
     "bs-let": "^0.1.16",
+    "bs-platform": "^9.0.2",
     "bs-reform": "10.0.2-alpha.0",
     "bs58check": "^2.1.2",
     "child-reprocess": "^0.1.2",
+    "customsigner": "link:./src/vendors/signer",
     "date-fns": "2.19.0",
     "ed25519-hd-key": "^1.2.0",
     "electron-devtools-installer": "^3.1.0",
@@ -44,8 +48,7 @@
     "reason-react": "^0.9.1",
     "reason-react-native": "^0.63.5",
     "reason-react-update": "^2.0.0",
-    "reschema": "2.0.2-alpha.0",
-    "bs-platform": "^9.0.2"
+    "reschema": "2.0.2-alpha.0"
   },
   "scripts": {
     "start": "cross-env NODE_ENV=development webpack serve --hot --host 0.0.0.0 --config=./webpack.dev.config.js --mode development",
@@ -62,10 +65,10 @@
     "electron:rpm": "yarn bsb:build && yarn build && electron-builder --linux rpm",
     "electron:deb": "yarn bsb:build && yarn build && electron-builder --linux deb",
     "electron:pacman": "yarn bsb:build && yarn build && electron-builder --linux pacman",
-    "svgo": "svgo --folder=src/svg/source --output=src/svg/optimized --disable=removeViewBox --enable=removeDimensions --pretty",
-    "svgfixer": "oslllo-svg-fixer --source=src/svg/optimized --destination=src/svg/optimized2",
-    "fromsvg": "react-from-svg src/svg/optimized2 src/svg/components --remove-stroke --remove-fill --with-native-for-reason",
-    "svg": "yarn svgo && yarn svgfixer && yarn fromsvg"
+    "svgo:icons": "svgo --folder=src/svg/source/icons --output=src/svg/optimized_icons --disable=removeViewBox --enable=removeDimensions --pretty",
+    "svgfixer:icons": "oslllo-svg-fixer --source=src/svg/optimized_icons --destination=src/svg/fixed_icons",
+    "fromsvg:icons": "react-from-svg src/svg/fixed_icons src/svg/components --remove-stroke --remove-fill --with-native-for-reason",
+    "svg": "yarn svgo:icons && yarn svgfixer:icons && yarn fromsvg:icons"
   },
   "build": {
     "extends": null,
@@ -99,19 +102,21 @@
         "hidraw"
       ],
       "buildPackages": [
-        "libusb-1.0.0-dev",
+        "libusb-1.0-0-dev",
         "libudev-dev"
       ],
       "stagePackages": [
-        "libusb-1.0.0"
+        "libusb-1.0-0"
       ]
     },
     "deb": {
+      "icon": "./assets/icon.png",
       "depends": [
-        "libusb-1.0.0"
+        "libusb-1.0-0"
       ]
     },
     "rpm": {
+      "icon": "./assets/icon.png",
       "depends": [
         "libusb"
       ]
@@ -172,7 +177,7 @@
     "babel-loader": "^8.2.2",
     "copy-webpack-plugin": "8.0.0",
     "cross-env": "^7.0.2",
-    "electron": "11.2.3",
+    "electron": "12.2.1",
     "electron-builder": "^22.9.1",
     "electron-notarize": "^1.0.0",
     "html-webpack-plugin": "^5.3.1",

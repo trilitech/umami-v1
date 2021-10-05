@@ -35,9 +35,9 @@ type apiVersion = {
   protocol: string,
 };
 
-let apiLowestBound = Version.mk(~fix=0, 2, 0);
+let apiLowestBound = Version.mk(~fix=0, 2, 1);
 
-let apiHighestBound = Version.mk(2, 0);
+let apiHighestBound = Version.mk(2, 1);
 
 let checkInBound = version =>
   Version.checkInBound(version, apiLowestBound, apiHighestBound);
