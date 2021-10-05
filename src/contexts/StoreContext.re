@@ -111,9 +111,8 @@ let make = (~children) => {
   let settings = ConfigContext.useContent();
   let addToast = LogsContext.useToast();
 
-  let network = settings->ConfigUtils.network;
-
   let selectedAccountState = React.useState(() => None);
+
   let (selectedAccount, setSelectedAccount) = selectedAccountState;
 
   let selectedTokenState = React.useState(() => None);
@@ -175,7 +174,7 @@ let make = (~children) => {
         );
       };
     },
-    [|network|],
+    [|settings|],
   );
 
   // Select a default account if no one selected
