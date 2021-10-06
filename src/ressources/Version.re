@@ -49,6 +49,27 @@ let toString = (Version(major, minor, fix, patch)) =>
      ->Option.getWithDefault("")
   ++ patch->Option.map(patch => "~" ++ patch)->Option.getWithDefault("");
 
+let compareFix =
+  fun
+  | (None, None) => 0
+  | (Some(_), None) => (-1)
+  | (None, Some(_)) => 1
+  | (Some(fix1), Some(fix2)) => compare(fix1, fix2);
+
+let compare =
+    (Version(major1, minor1, fix1, _), Version(major2, minor2, fix2, _)) => {
+  let major = compare(major1, major2);
+  let minor = compare(minor1, minor2);
+  let fix = compareFix((fix1, fix2));
+  major != 0 ? major : minor != 0 ? minor : fix;
+};
+
+module Comparable =
+  Id.MakeComparable({
+    type nonrec t = t;
+    let cmp = compare;
+  });
+
 let leqFix =
   fun
   | (_, None) => true
