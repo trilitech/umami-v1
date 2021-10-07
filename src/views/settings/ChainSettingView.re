@@ -138,7 +138,7 @@ let styles =
       "button": style(~height=34.->dp, ()),
       "actionMenu": style(~marginRight=24.->dp, ~flexDirection=`row, ()),
       "button": style(~marginRight=4.->dp, ()),
-      // "over": style(~position=`absolute, ()),
+      "notice": style(~marginBottom=24.->dp, ~borderRadius=4., ()),
     })
   );
 
@@ -273,6 +273,7 @@ let make = () => {
   let configFile = ConfigContext.useFile();
 
   let networkStatus = ConfigContext.useNetworkStatus().current;
+  let offline = ConfigContext.useNetworkOffline();
 
   let customNetworks = configFile.customNetworks;
 
@@ -295,6 +296,17 @@ let make = () => {
   <Block
     title=I18n.settings#chain_title actionButton={<AddCustomNetworkButton />}>
     <View style=styles##column>
+      {<Header.Notice style=styles##notice text=I18n.expl#network_disconnect>
+         <Header.Notice.Button
+           text=I18n.btn#goto_doc
+           onPress={_ =>
+             System.openExternal(
+               "https://gitlab.com/nomadic-labs/umami-wallet/umami/-/wikis/Custom%20Network%20Creation",
+             )
+           }
+         />
+       </Header.Notice>
+       ->ReactUtils.onlyWhen(offline)}
       <View accessibilityRole=`form style=styles##row>
         <ColumnLeft style=styles##leftcolumntitles>
           <NetworkItem

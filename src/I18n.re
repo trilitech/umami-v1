@@ -27,6 +27,7 @@ let p = Format.sprintf;
 
 let btn = {
   pub _this = this;
+  pub goto_doc = "See help";
   pub goto_settings = "Go to settings";
   pub retry_network = "Retry";
   pub retry = "RETRY";
@@ -328,6 +329,7 @@ let title = {
 
 let expl = {
   pub _this = this;
+  pub network_disconnect = "The Tezos network is currently unreachable. Your internet connection might be unstable. If it is not the case, you should check your configuration and update it by following the documentation";
   pub hardware_wallet_confirm_operation = "Please validate the details of the transaction and press Confirm to sign it on your Ledger.";
   pub hardware_wallet_advopt = "Umami wallet supports three derivation schemes as well as custom derivation path to select new addresses. You may also use the default derivation scheme & path by leaving the preselected values.";
   pub hardware_wallet_check_complete_steps = "Complete the steps in order to connect.";
