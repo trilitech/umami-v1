@@ -103,6 +103,8 @@ module Item = {
 
 [@react.component]
 let make = (~network: Network.network, ~closeAction) => {
+  let currentEndpoint = ConfigContext.useContent().network.endpoint;
+
   let endpoints =
     switch (network.chain) {
     | #Network.nativeChains as n =>
@@ -115,7 +117,7 @@ let make = (~network: Network.network, ~closeAction) => {
       {network.name}->React.string
     </Typography.Headline>
     <Item
-      current={network.endpoint}
+      current=currentEndpoint
       label={I18n.label#custom_network_node_url(endpoints->Array.length > 0)}
       values=endpoints
     />

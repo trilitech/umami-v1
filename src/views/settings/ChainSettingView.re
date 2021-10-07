@@ -120,6 +120,8 @@ let styles =
     StyleSheet.create({
       "row": style(~flexDirection=`row, ~alignItems=`center, ()),
       "column": style(~flex=1., ~flexDirection=`column, ()),
+      "nameStatus": style(~display=`flex, ~flexDirection=`row, ()),
+      "activityIndicator": style(~marginLeft=10.->dp, ()),
       "spaceBetweenRow":
         style(
           ~display=`flex,
@@ -143,7 +145,12 @@ let styles =
 module CustomNetworkItem = {
   [@react.component]
   let make =
-      (~network: Network.network, ~writeNetwork, ~configFile: ConfigFile.t) => {
+      (
+        ~network: Network.network,
+        ~writeNetwork,
+        ~configFile: ConfigFile.t,
+        ~networkStatus,
+      ) => {
     let theme = ThemeContext.useTheme();
     let writeConf = ConfigContext.useWrite();
 
@@ -186,18 +193,28 @@ module CustomNetworkItem = {
     };
     <>
       <View style=styles##spaceBetweenRow>
-        <RadioItem
-          label={network.name}
-          value={`Custom(network.name)}
-          setValue=writeNetwork
-          currentValue={
-            configFile.network
-            ->Option.getWithDefault(ConfigContext.defaultNetwork)
-          }
-          tag={network.chain->Network.getDisplayedName}
-          tagTextColor
-          tagBorderColor
-        />
+        <View style=styles##nameStatus>
+          <RadioItem
+            label={network.name}
+            value={`Custom(network.name)}
+            setValue=writeNetwork
+            currentValue={
+              configFile.network
+              ->Option.getWithDefault(ConfigContext.defaultNetwork)
+            }
+            tag={network.chain->Network.getDisplayedName}
+            tagTextColor
+            tagBorderColor
+          />
+          {networkStatus == Some(Network.Pending)
+             ? <ActivityIndicator
+                 style=styles##activityIndicator
+                 animating=true
+                 size={ActivityIndicator_Size.exact(20.)}
+                 color={theme.colors.iconHighEmphasis}
+               />
+             : React.null}
+        </View>
         <View style=styles##row>
           <CustomNetworkEditButton network />
           <DeleteButton.IconButton
@@ -220,17 +237,30 @@ module NetworkItem = {
   let make =
       (
         ~network: Network.network,
+        ~networkStatus,
         ~writeNetwork,
-        ~currentChain: Network.configurableChains,
+        ~currentConfig: Network.configurableChains,
       ) => {
+    let theme = ThemeContext.useTheme();
+
     <>
       <View style=styles##spaceBetweenRow>
-        <RadioItem
-          label={network.chain->Network.getDisplayedName}
-          value={network.chain}
-          setValue=writeNetwork
-          currentValue=currentChain
-        />
+        <View style=styles##nameStatus>
+          <RadioItem
+            label={network.chain->Network.getDisplayedName}
+            value={network.chain}
+            setValue=writeNetwork
+            currentValue=currentConfig
+          />
+          {networkStatus == Some(Network.Pending)
+             ? <ActivityIndicator
+                 style=styles##activityIndicator
+                 animating=true
+                 size={ActivityIndicator_Size.exact(20.)}
+                 color={theme.colors.iconHighEmphasis}
+               />
+             : React.null}
+        </View>
         <View style=styles##row> <NetworkInfoButton network /> </View>
       </View>
     </>;
@@ -242,27 +272,43 @@ let make = () => {
   let writeConf = ConfigContext.useWrite();
   let configFile = ConfigContext.useFile();
 
+  let networkStatus = ConfigContext.useNetworkStatus().current;
+
   let customNetworks = configFile.customNetworks;
+
+  let (last, setLast) =
+    React.useState(_ =>
+      configFile.network->Option.getWithDefault(ConfigContext.defaultNetwork)
+    );
 
   let writeNetwork = f => {
     let network =
       configFile.network->Option.getWithDefault(ConfigContext.defaultNetwork);
     let network = f(network);
+    setLast(_ => network);
     let network =
       network == ConfigContext.defaultNetwork ? None : Some(network);
 
     writeConf(c => {...c, network});
   };
 
-  let currentChain = ConfigContext.useContent().network.chain;
-
   <Block
     title=I18n.settings#chain_title actionButton={<AddCustomNetworkButton />}>
     <View style=styles##column>
       <View accessibilityRole=`form style=styles##row>
         <ColumnLeft style=styles##leftcolumntitles>
-          <NetworkItem network=Network.mainnet currentChain writeNetwork />
-          <NetworkItem network=Network.granadanet currentChain writeNetwork />
+          <NetworkItem
+            networkStatus={last == `Mainnet ? Some(networkStatus) : None}
+            network=Network.mainnet
+            currentConfig=last
+            writeNetwork
+          />
+          <NetworkItem
+            networkStatus={last == `Granadanet ? Some(networkStatus) : None}
+            network=Network.granadanet
+            currentConfig=last
+            writeNetwork
+          />
           {switch (customNetworks) {
            | [] => React.null
            | customNetworks =>
@@ -271,6 +317,10 @@ let make = () => {
              ->List.toArray
              ->Array.map(network =>
                  <CustomNetworkItem
+                   networkStatus={
+                     last == `Custom(network.name)
+                       ? Some(networkStatus) : None
+                   }
                    key={network.name}
                    network
                    writeNetwork
