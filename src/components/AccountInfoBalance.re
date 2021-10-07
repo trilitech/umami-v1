@@ -46,7 +46,8 @@ module Balance = {
     | Done(Ok(balance), _)
     | Loading(Some(balance)) =>
       I18n.t#tez_amount(balance->Tez.toString)->React.string
-    | Done(Error(_error), _) => React.null
+    | Done(Error(_error), _) =>
+      I18n.t#tez_amount(I18n.t#no_balance_amount)->React.string
     | NotAsked
     | Loading(None) => <BalanceActivityIndicator />
     };
@@ -67,7 +68,9 @@ module BalanceToken = {
         token.symbol,
       )
       ->React.string
-    | Done(Error(_error), _) => React.null
+    | Done(Error(_error), _) =>
+      I18n.t#amount(I18n.t#no_balance_amount, token.symbol)->React.string
+
     | NotAsked
     | Loading(None) => <BalanceActivityIndicator />
     };

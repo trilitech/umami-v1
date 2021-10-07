@@ -581,6 +581,7 @@ let disclaimer = {
 let t = {
   pub unknown_operation = "Unknown";
   pub error404 = "404 - Route Not Found :(";
+  pub no_balance_amount = "---- ";
   pub logs_no_recent = "No Recent Message";
   pub logs_clearall = "CLEAR ALL";
   pub amount = (a, b) => p("%s %s", a, b);
