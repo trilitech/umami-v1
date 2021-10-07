@@ -137,7 +137,7 @@ let conditionToLoad: (t('a), bool) => bool;
 let useGetter:
   (
     ~toast: bool=?,
-    ~get: (~config: ConfigFile.t, 'a) => Let.future('response),
+    ~get: (~config: ConfigContext.env, 'a) => Let.future('response),
     ~kind: Logs.origin,
     ~setRequest: (t('response) => t('response)) => unit,
     ~keepError: Errors.t => bool=?,
@@ -149,7 +149,7 @@ let useGetter:
 /* Builds an auto-reloaded ressource from an asynchronous function */
 let useLoader:
   (
-    ~get: (~config: ConfigFile.t, 'input) => Let.future('value),
+    ~get: (~config: ConfigContext.env, 'input) => Let.future('value),
     ~condition: 'input => bool=?,
     ~keepError: Errors.t => bool=?,
     ~kind: Logs.origin,
@@ -166,7 +166,7 @@ let useSetter:
     ~logOk: 'a => string=?,
     ~toast: bool=?,
     ~sideEffect: 'a => unit=?,
-    ~set: (~config: ConfigFile.t, 'c) => Let.future('a),
+    ~set: (~config: ConfigContext.env, 'c) => Let.future('a),
     ~kind: Logs.origin,
     ~keepError: Errors.t => bool=?,
     unit

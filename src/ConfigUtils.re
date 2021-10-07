@@ -23,43 +23,6 @@
 /*                                                                           */
 /*****************************************************************************/
 
-type t = ConfigFile.t;
-
-let baseDir = (config: t) =>
-  switch (config.sdkBaseDir) {
-  | None => ConfigFile.Default.sdkBaseDir()
-  | Some(v) => v
-  };
-
-let endpoint = (c: t) =>
-  switch (c.network->Option.getWithDefault(ConfigFile.Default.network)) {
-  | `Mainnet => Network.mainnet.endpoint
-  | `Granadanet => Network.granadanet.endpoint
-  | `Custom(name) =>
-    c.customNetworks->List.getBy(n => n.name === name)->Option.getExn.endpoint
-  };
-
-let withNetwork = (c: t, network) => {...c, network};
-
-let network = (config: t): ConfigFile.network =>
-  config.network->Option.getWithDefault(ConfigFile.Default.network);
-
-let chainId = (c: t) =>
-  switch (network(c)) {
-  | `Mainnet => Network.mainnet.chain
-  | `Granadanet => Network.granadanet.chain
-  | `Custom(name) =>
-    c.customNetworks->List.getBy(n => n.name === name)->Option.getExn.chain
-  };
-
-let explorer = (c: t) =>
-  switch (c.network->Option.getWithDefault(ConfigFile.Default.network)) {
-  | `Mainnet => Network.mainnet.explorer
-  | `Granadanet => Network.granadanet.explorer
-  | `Custom(name) =>
-    c.customNetworks->List.getBy(n => n.name === name)->Option.getExn.explorer
-  };
-
 let externalExplorers =
   Map.String.empty
   ->Map.String.set(Network.mainnet.chain, "https://tzkt.io/")
@@ -73,4 +36,5 @@ let findExternalExplorer = c =>
   ->Option.map(v => Ok(v))
   ->Option.getWithDefault(Error(Network.UnknownChainId(c)));
 
-let getExternalExplorer = config => chainId(config)->findExternalExplorer;
+let getExternalExplorer = (config: ConfigContext.env) =>
+  config.network.chain->findExternalExplorer;

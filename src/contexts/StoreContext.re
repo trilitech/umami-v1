@@ -108,7 +108,7 @@ module Provider = {
 
 [@react.component]
 let make = (~children) => {
-  let settings = ConfigContext.useContent();
+  let config = ConfigContext.useContent();
   let addToast = LogsContext.useToast();
 
   let selectedAccountState = React.useState(() => None);
@@ -164,8 +164,8 @@ let make = (~children) => {
     () => {
       let%FResMap (v: Network.apiVersion, _) =
         Network.checkConfiguration(
-          settings->ConfigUtils.explorer,
-          settings->ConfigUtils.endpoint,
+          config.network.explorer,
+          config.network.endpoint,
         );
       setApiVersion(_ => Some(v));
       if (!Network.checkInBound(v.api)) {
@@ -174,7 +174,7 @@ let make = (~children) => {
         );
       };
     },
-    [|settings|],
+    [|config|],
   );
 
   // Select a default account if no one selected

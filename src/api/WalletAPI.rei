@@ -39,22 +39,22 @@ module Secret: {
 module Aliases: {
   type t = array((string, PublicKeyHash.t));
 
-  let get: (~config: ConfigFile.t) => Future.t(Result.t(t, Errors.t));
+  let get: (~config: ConfigContext.env) => Future.t(Result.t(t, Errors.t));
 
   let getAliasForAddress:
-    (~config: ConfigFile.t, ~address: PublicKeyHash.t) =>
+    (~config: ConfigContext.env, ~address: PublicKeyHash.t) =>
     Future.t(Result.t(option(string), Errors.t));
 
   let getAddressForAlias:
-    (~config: ConfigFile.t, ~alias: string) =>
+    (~config: ConfigContext.env, ~alias: string) =>
     Future.t(Result.t(option(PublicKeyHash.t), Errors.t));
 
   let add:
-    (~config: ConfigFile.t, ~alias: string, ~address: PublicKeyHash.t) =>
+    (~config: ConfigContext.env, ~alias: string, ~address: PublicKeyHash.t) =>
     Future.t(Result.t(unit, Errors.t));
 
   let delete:
-    (~config: ConfigFile.t, ~alias: string) =>
+    (~config: ConfigContext.env, ~alias: string) =>
     Future.t(Result.t(unit, Errors.t));
 
   type renameParams = {
@@ -63,7 +63,7 @@ module Aliases: {
   };
 
   let rename:
-    (~config: ConfigFile.t, renameParams) =>
+    (~config: ConfigContext.env, renameParams) =>
     Future.t(Result.t(unit, Errors.t));
 };
 
@@ -74,28 +74,28 @@ module Accounts: {
 
   type name = string;
 
-  let secrets: (~config: ConfigFile.t) => result(t, TezosClient.Errors.t);
+  let secrets:
+    (~config: ConfigContext.env) => result(t, TezosClient.Errors.t);
 
   let recoveryPhrases:
-    (~config: ConfigFile.t) =>
-    option(array(SecureStorage.Cipher.encryptedData));
+    unit => option(array(SecureStorage.Cipher.encryptedData));
 
   let get:
-    (~config: ConfigFile.t) =>
+    (~config: ConfigContext.env) =>
     Future.t(
       Result.t(array((name, PublicKeyHash.t, Wallet.kind)), Errors.t),
     );
 
   let updateSecretAt:
-    (~config: ConfigFile.t, Secret.Repr.t, int) => Result.t(unit, Errors.t);
+    (~config: ConfigContext.env, Secret.Repr.t, int) =>
+    Result.t(unit, Errors.t);
 
   let recoveryPhraseAt:
-    (~config: ConfigFile.t, int, ~password: string) =>
-    Future.t(Result.t(string, Errors.t));
+    (int, ~password: string) => Future.t(Result.t(string, Errors.t));
 
   let import:
     (
-      ~config: ConfigFile.t,
+      ~config: ConfigContext.env,
       ~alias: name,
       ~secretKey: string,
       ~password: string
@@ -103,15 +103,21 @@ module Accounts: {
     Future.t(Result.t(PublicKeyHash.t, Errors.t));
 
   let derive:
-    (~config: ConfigFile.t, ~index: int, ~alias: name, ~password: string) =>
+    (
+      ~config: ConfigContext.env,
+      ~index: int,
+      ~alias: name,
+      ~password: string
+    ) =>
     Future.t(Result.t(PublicKeyHash.t, Errors.t));
 
   /* Delete the given account */
   let delete:
-    (~config: ConfigFile.t, string) => Future.t(Result.t(unit, Errors.t));
+    (~config: ConfigContext.env, string) =>
+    Future.t(Result.t(unit, Errors.t));
 
   let deleteSecretAt:
-    (~config: ConfigFile.t, int) => Future.t(Result.t(unit, Errors.t));
+    (~config: ConfigContext.env, int) => Future.t(Result.t(unit, Errors.t));
 
   module Scan: {
     type Errors.t +=
@@ -128,11 +134,12 @@ module Accounts: {
     };
 
     let used:
-      (ConfigFile.t, PublicKeyHash.t) => Future.t(Result.t(bool, Errors.t));
+      (ConfigContext.env, PublicKeyHash.t) =>
+      Future.t(Result.t(bool, Errors.t));
 
     let runStreamLedger:
       (
-        ~config: ConfigFile.t,
+        ~config: ConfigContext.env,
         ~startIndex: int=?,
         ~onFoundKey: (int, PublicKeyHash.t) => unit,
         DerivationPath.Pattern.t,
@@ -142,7 +149,7 @@ module Accounts: {
 
     let runStreamSeed:
       (
-        ~config: ConfigFile.t,
+        ~config: ConfigContext.env,
         ~startIndex: int=?,
         ~onFoundKey: (int, account(string)) => unit,
         ~password: string,
@@ -154,7 +161,7 @@ module Accounts: {
 
   let restore:
     (
-      ~config: ConfigFile.t,
+      ~config: ConfigContext.env,
       ~backupPhrase: array(string),
       ~name: name,
       ~derivationPath: TezosClient.DerivationPath.Pattern.t=?,
@@ -166,7 +173,7 @@ module Accounts: {
 
   let importMnemonicKeys:
     (
-      ~config: ConfigFile.t,
+      ~config: ConfigContext.env,
       ~accounts: list(Scan.account(string)),
       ~password: string,
       ~index: int,
@@ -180,12 +187,12 @@ module Accounts: {
     );
 
   let legacyImport:
-    (~config: ConfigUtils.t, string, string, ~password: string) =>
+    (~config: ConfigContext.env, string, string, ~password: string) =>
     Future.t(Belt.Result.t(PublicKeyHash.t, Errors.t));
 
   let importLedger:
     (
-      ~config: ConfigUtils.t,
+      ~config: ConfigContext.env,
       ~timeout: int=?,
       ~name: string,
       ~accountsNumber: int,
@@ -198,7 +205,7 @@ module Accounts: {
 
   let deriveLedgerKeys:
     (
-      ~config: ConfigFile.t,
+      ~config: ConfigContext.env,
       ~timeout: int=?,
       ~index: int,
       ~accountsNumber: int,
@@ -209,7 +216,7 @@ module Accounts: {
 
   let deriveLedger:
     (
-      ~config: ConfigFile.t,
+      ~config: ConfigContext.env,
       ~timeout: int=?,
       ~index: int,
       ~alias: string,
@@ -219,6 +226,6 @@ module Accounts: {
     Future.t(Result.t(PublicKeyHash.t, Errors.t));
 
   let getPublicKey:
-    (~config: ConfigFile.t, ~account: Account.t) =>
+    (~config: ConfigContext.env, ~account: Account.t) =>
     Future.t(Result.t(string, Errors.t));
 };

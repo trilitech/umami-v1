@@ -34,9 +34,9 @@ let styles =
   );
 
 let checkOperationRequestTargetNetwork =
-    (settings: ConfigFile.t, chain: ReBeacon.network) => {
-  chain.type_ == settings->ConfigUtils.chainId
-  || chain.type_ == settings->ConfigUtils.chainId->Network.getName;
+    (config: ConfigContext.env, chain: ReBeacon.network) => {
+  chain.type_ == config.network.chain
+  || chain.type_ == config.network.chain->Network.getName;
 };
 
 let checkOnlyTransaction =

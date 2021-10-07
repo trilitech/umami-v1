@@ -134,9 +134,8 @@ module Secret = {
 module Aliases = {
   type t = array((string, PublicKeyHash.t));
 
-  let get = (~config) => {
-    let%FResMap addresses =
-      config->ConfigUtils.baseDir->Wallet.PkhAliases.read;
+  let get = (~config: ConfigContext.env) => {
+    let%FResMap addresses = config.baseDir()->Wallet.PkhAliases.read;
 
     addresses->Array.map(({name, value}) => (name, value));
   };
@@ -159,24 +158,24 @@ module Aliases = {
     addresses->Map.String.fromArray->Map.String.get(alias);
   };
 
-  let add = (~config, ~alias, ~address) =>
+  let add = (~config: ConfigContext.env, ~alias, ~address) =>
     Wallet.addOrReplacePkhAlias(
-      ~dirpath=config->ConfigUtils.baseDir,
+      ~dirpath=config.baseDir(),
       ~alias,
       ~pkh=address,
     );
 
-  let delete = (~config, ~alias) =>
-    Wallet.removePkhAlias(~dirpath=config->ConfigUtils.baseDir, ~alias);
+  let delete = (~config: ConfigContext.env, ~alias) =>
+    Wallet.removePkhAlias(~dirpath=config.baseDir(), ~alias);
 
   type renameParams = {
     old_name: string,
     new_name: string,
   };
 
-  let rename = (~config, renaming) =>
+  let rename = (~config: ConfigContext.env, renaming) =>
     Wallet.renameAlias(
-      ~dirpath=config->ConfigUtils.baseDir,
+      ~dirpath=config.baseDir(),
       ~oldName=renaming.old_name,
       ~newName=renaming.new_name,
     );
@@ -194,18 +193,17 @@ module Accounts = {
     ->ResultEx.fromOption(NoSecretFound);
   };
 
-  let recoveryPhrases = (~config: ConfigFile.t) => {
-    let _ = config;
+  let recoveryPhrases = () => {
     LocalStorage.getItem("recovery-phrases")
     ->Js.Nullable.toOption
     ->Option.flatMap(Json.parse)
     ->Option.map(Json.Decode.(array(SecureStorage.Cipher.decoder)));
   };
 
-  let get = (~config) => {
-    let%FRes pkhs = config->ConfigUtils.baseDir->Wallet.PkhAliases.read;
+  let get = (~config: ConfigContext.env) => {
+    let%FRes pkhs = config.baseDir()->Wallet.PkhAliases.read;
 
-    let%FResMap sks = config->ConfigUtils.baseDir->Wallet.SecretAliases.read;
+    let%FResMap sks = config.baseDir()->Wallet.SecretAliases.read;
 
     pkhs->Array.keepMap(({name, value}) => {
       let res = {
@@ -241,22 +239,23 @@ module Accounts = {
     };
   };
 
-  let recoveryPhraseAt = (~config, index, ~password) => {
+  let recoveryPhraseAt = (index, ~password) => {
     let%FRes data =
-      recoveryPhrases(~config)
+      recoveryPhrases()
       ->Option.flatMap(recoveryPhrases => recoveryPhrases[index])
       ->FutureEx.fromOption(~error=RecoveryPhraseNotFound(index));
 
     SecureStorage.Cipher.decrypt2(password, data);
   };
 
-  let importFromSigner = (~config, ~alias, ~secretKey, signer) => {
+  let importFromSigner =
+      (~config: ConfigContext.env, ~alias, ~secretKey, signer) => {
     let%FRes pk = signer->ReTaquitoSigner.publicKey;
     let pk = Wallet.mnemonicPkValue(pk);
     let%FRes pkh = signer->ReTaquitoSigner.publicKeyHash;
     let skUri = Wallet.Prefixes.encrypted ++ secretKey;
     Wallet.addOrReplaceAlias(
-      ~dirpath=config->ConfigUtils.baseDir,
+      ~dirpath=config.baseDir(),
       ~alias,
       ~pk,
       ~pkh,
@@ -276,10 +275,10 @@ module Accounts = {
     pkh;
   };
 
-  let derive = (~config, ~index, ~alias, ~password) => {
+  let derive = (~config: ConfigContext.env, ~index, ~alias, ~password) => {
     let%FRes secret = secretAt(~config, index)->Future.value;
 
-    let%FRes recoveryPhrase = recoveryPhraseAt(~config, index, ~password);
+    let%FRes recoveryPhrase = recoveryPhraseAt(index, ~password);
 
     let%FRes edesk =
       secret.derivationPath
@@ -296,8 +295,8 @@ module Accounts = {
     address->FutureEx.ok;
   };
 
-  let unsafeDelete = (~config, name) =>
-    Wallet.removeAlias(~dirpath=config->ConfigUtils.baseDir, ~alias=name);
+  let unsafeDelete = (~config: ConfigContext.env, name) =>
+    Wallet.removeAlias(~dirpath=config.baseDir(), ~alias=name);
 
   let delete = (~config, name) => {
     let%FRes address = Aliases.getAddressForAlias(~config, ~alias=name);
@@ -346,7 +345,7 @@ module Accounts = {
       Json.Encode.array(Secret.encoder, secretsBefore)->Json.stringify,
     );
 
-    switch (recoveryPhrases(~config)) {
+    switch (recoveryPhrases()) {
     | Some(recoveryPhrases) =>
       let _ =
         recoveryPhrases->Js.Array2.spliceInPlace(
@@ -393,9 +392,9 @@ module Accounts = {
       encryptedSecretKey: 'sk,
     };
 
-    let used = (network, address) => {
+    let used = (config, address) => {
       let%FResMap operations =
-        network->ServerAPI.Explorer.getOperations(address, ~limit=1, ());
+        config->ServerAPI.Explorer.getOperations(address, ~limit=1, ());
 
       operations->Js.Array2.length != 0;
     };
@@ -499,8 +498,7 @@ module Accounts = {
           path: DerivationPath.Pattern.t,
         ) => {
       switch (
-        recoveryPhrases(~config)
-        ->Option.flatMap(r => r[secret.Secret.Repr.index])
+        recoveryPhrases()->Option.flatMap(r => r[secret.Secret.Repr.index])
       ) {
       | Some(recoveryPhrase) =>
         let onFoundKey = (n, acc) => onFoundKey(n, acc);
@@ -527,7 +525,7 @@ module Accounts = {
 
     let rec runOnSeed =
             (
-              ~config: ConfigFile.t,
+              ~config: ConfigContext.env,
               seed,
               baseName,
               ~derivationPath=DerivationPath.Pattern.fromTezosBip44(
@@ -615,8 +613,8 @@ module Accounts = {
     };
   };
 
-  let indexOfRecoveryPhrase = (~config, recoveryPhrase, ~password) =>
-    recoveryPhrases(~config)
+  let indexOfRecoveryPhrase = (recoveryPhrase, ~password) =>
+    recoveryPhrases()
     ->Option.getWithDefault([||])
     ->Array.map(data => SecureStorage.Cipher.decrypt2(password, data))
     ->List.fromArray
@@ -656,8 +654,8 @@ module Accounts = {
     );
   };
 
-  let registerRecoveryPhrase = (~config, recoveryPhrase) =>
-    recoveryPhrases(~config)
+  let registerRecoveryPhrase = recoveryPhrase =>
+    recoveryPhrases()
     ->Option.getWithDefault([||])
     ->(
         recoveryPhrases => {
@@ -671,7 +669,7 @@ module Accounts = {
 
   let restore =
       (
-        ~config,
+        ~config: ConfigContext.env,
         ~backupPhrase,
         ~name,
         ~derivationPath=DerivationPath.Pattern.fromTezosBip44(
@@ -681,7 +679,7 @@ module Accounts = {
         ~password,
         (),
       ) => {
-    let%FRes () = System.Client.initDir(config->ConfigUtils.baseDir);
+    let%FRes () = System.Client.initDir(config.baseDir());
     let backupPhraseConcat = backupPhrase->Js.Array2.joinWith(" ");
 
     let%FRes () = password->SecureStorage.validatePassword;
@@ -706,7 +704,7 @@ module Accounts = {
       ->Future.value;
 
     let%FRes () =
-      indexOfRecoveryPhrase(~config, backupPhraseConcat, ~password)
+      indexOfRecoveryPhrase(backupPhraseConcat, ~password)
       ->Future.map(index =>
           switch (index) {
           | Some(_) => SecretAlreadyImported->Error
@@ -727,7 +725,7 @@ module Accounts = {
     let%FResMap () =
       backupPhraseConcat
       ->SecureStorage.Cipher.encrypt(password)
-      ->Future.mapOk(registerRecoveryPhrase(~config));
+      ->Future.mapOk(registerRecoveryPhrase);
 
     registerSecret(
       ~config,
@@ -791,7 +789,7 @@ module Accounts = {
 
   let importLedgerKey =
       (
-        ~config,
+        ~config: ConfigContext.env,
         ~name,
         ~index,
         ~derivationPath,
@@ -802,7 +800,7 @@ module Accounts = {
     let path = derivationPath->DerivationPath.Pattern.implement(index);
     LedgerAPI.addOrReplaceAlias(
       ~ledgerTransport,
-      ~dirpath=config->ConfigUtils.baseDir,
+      ~dirpath=config.baseDir(),
       ~alias=name,
       ~path,
       ~scheme=derivationScheme,
@@ -880,7 +878,7 @@ module Accounts = {
     let%FResMap () =
       name
       ->SecureStorage.Cipher.encrypt("")
-      ->Future.mapOk(registerRecoveryPhrase(~config));
+      ->Future.mapOk(registerRecoveryPhrase);
 
     addresses;
   };
@@ -934,10 +932,7 @@ module Accounts = {
     addresses->FutureEx.ok;
   };
 
-  let getPublicKey = (~config: ConfigFile.t, ~account: Account.t) => {
-    Wallet.pkFromAlias(
-      ~dirpath=config->ConfigUtils.baseDir,
-      ~alias=account.name,
-    );
+  let getPublicKey = (~config: ConfigContext.env, ~account: Account.t) => {
+    Wallet.pkFromAlias(~dirpath=config.baseDir(), ~alias=account.name);
   };
 };

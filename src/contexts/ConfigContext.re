@@ -23,13 +23,59 @@
 /*                                                                           */
 /*****************************************************************************/
 
+type env = {
+  network: Network.network,
+  defaultNetwork: bool,
+  theme: [ | `system | `dark | `light],
+  confirmations: int,
+  baseDir: unit => System.Path.t,
+};
+
+let defaultNetwork = `Mainnet;
+
+let default = {
+  network: Network.mainnet,
+  defaultNetwork: true,
+  theme: `system,
+  baseDir: () => System.(Path.Ops.(appDir() / (!"tezos-client"))),
+  confirmations: 5,
+};
+
+let fromFile = f => {
+  theme: f.theme->Option.getWithDefault(`system),
+  defaultNetwork:
+    switch (f.ConfigFile.network) {
+    | Some(`Custom(_)) => false
+    | _ => true
+    },
+  confirmations:
+    f.confirmations->Option.getWithDefault(default.confirmations),
+  baseDir:
+    f.sdkBaseDir->Option.mapWithDefault(default.baseDir, (bd, ()) => bd),
+  network:
+    switch (f.ConfigFile.network) {
+    | None
+    | Some(`Mainnet) => Network.mainnet
+    | Some(`Granadanet) => Network.granadanet
+    | Some(`Custom(name)) =>
+      f.customNetworks
+      ->List.getBy(n => n.name === name)
+      ->Option.getWithDefault(Network.mainnet)
+    },
+};
+
 open UmamiCommon;
-type config = {
-  content: ConfigFile.t,
+type configState = {
+  content: env,
+  configFile: ConfigFile.t,
   write: (ConfigFile.t => ConfigFile.t) => unit,
 };
 
-let initialState = {content: ConfigFile.dummy, write: _ => ()};
+let initialState = {
+  configFile: ConfigFile.dummy,
+  content: default,
+  write: _ => (),
+};
 
 let context = React.createContext(initialState);
 
@@ -53,7 +99,9 @@ let load = () => {
 
 [@react.component]
 let make = (~children) => {
-  let (content, setConfig) = React.useState(() => load());
+  let (configFile, setConfig) = React.useState(() => load());
+
+  let content = React.useMemo1(() => {configFile->fromFile}, [|configFile|]);
 
   let write = f =>
     setConfig(c => {
@@ -62,7 +110,7 @@ let make = (~children) => {
       c;
     });
 
-  <Provider value={content, write}> children </Provider>;
+  <Provider value={content, configFile, write}> children </Provider>;
 };
 
 let useContext = () => React.useContext(context);
@@ -77,6 +125,11 @@ let useContent = () => {
   store.content;
 };
 
+let useFile = () => {
+  let store = useContext();
+  store.configFile;
+};
+
 let useResetConfig = () => {
   let {write} = useContext();
   () => {
@@ -85,11 +138,9 @@ let useResetConfig = () => {
 };
 
 let useCleanSdkBaseDir = () => {
-  let {content: {sdkBaseDir}} = useContext();
+  let {content: {baseDir}} = useContext();
   () => {
-    System.Client.resetDir(
-      sdkBaseDir->Option.getWithDefault(ConfigFile.Default.sdkBaseDir()),
-    )
+    System.Client.resetDir(baseDir())
     ->Future.tapOk(_ => LocalStorage.clear());
   };
 };

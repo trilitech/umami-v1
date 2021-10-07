@@ -90,7 +90,7 @@ let make = (~initNode=?, ~initMezos=?, ~action: action, ~closeAction) => {
 
   let (loading, setLoading) = React.useState(_ => false);
 
-  let customNetworks = ConfigContext.useContent().customNetworks;
+  let customNetworks = ConfigContext.useFile().customNetworks;
 
   let addToast = LogsContext.useToast();
 

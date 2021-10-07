@@ -167,28 +167,19 @@ let make = () => {
     ->Option.map(apiVersion => !Network.checkInBound(apiVersion.Network.api))
     ->Option.getWithDefault(false);
 
-  let (networkText, networkColor) =
-    switch (config->ConfigUtils.network) {
-    | `Mainnet => (I18n.t#mainnet, Some(`primary))
-    | `Granadanet => (I18n.t#granadanet, Some(`mediumEmphasis))
-    | `Custom(name) => (
-        name,
-        config->ConfigUtils.chainId == Network.mainnetChain
-          ? Some(`primary) : Some(`mediumEmphasis),
-      )
-    };
+  let (networkText, networkColor) = (
+    config.network.name,
+    config.network.chain == Network.mainnetChain
+      ? Some(`primary) : Some(`mediumEmphasis),
+  );
 
   let tag = {
-    let network = config->ConfigUtils.network;
-    switch (network) {
-    | `Mainnet => None
-    | `Granadanet => None
-    | `Custom(_) => Some(config->ConfigUtils.chainId->Network.getChainName)
-    };
+    config.defaultNetwork
+      ? None : config.network.chain->Network.getChainName->Some;
   };
 
   let tagBorderColor = {
-    config->ConfigUtils.chainId == Network.mainnetChain
+    config.network.chain == Network.mainnetChain
       ? theme.colors.textPrimary : theme.colors.textMediumEmphasis;
   };
 

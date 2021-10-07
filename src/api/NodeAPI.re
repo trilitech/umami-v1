@@ -43,9 +43,8 @@ let () =
   );
 
 module Balance = {
-  let get = (config, address, ~params=?, ()) => {
-    ConfigUtils.endpoint(config)
-    ->TaquitoAPI.Balance.get(~address, ~params?, ());
+  let get = (config: ConfigContext.env, address, ~params=?, ()) => {
+    config.network.endpoint->TaquitoAPI.Balance.get(~address, ~params?, ());
   };
 };
 
@@ -56,15 +55,15 @@ module Simulation = {
     tx_options.gasLimit,
   );
 
-  let batch = (config, transfers, ~source, ~index=?, ()) => {
+  let batch = (config: ConfigContext.env, transfers, ~source, ~index=?, ()) => {
     let customValues =
       List.map(transfers, tx => tx.Transfer.tx_options->extractCustomValues)
       ->List.toArray;
 
     let%FRes r =
       TaquitoAPI.Transfer.Estimate.batch(
-        ~endpoint=config->ConfigUtils.endpoint,
-        ~baseDir=config->ConfigUtils.baseDir,
+        ~endpoint=config.network.endpoint,
+        ~baseDir=config.baseDir(),
         ~source=source.Account.address,
         ~transfers=transfers->TaquitoAPI.Transfer.prepareTransfers,
         (),
@@ -83,7 +82,8 @@ module Simulation = {
     };
   };
 
-  let setDelegate = (config, delegation: Protocol.delegation) => {
+  let setDelegate =
+      (config: ConfigContext.env, delegation: Protocol.delegation) => {
     let%FResMap {
       customFeeMutez,
       burnFeeMutez,
@@ -92,8 +92,8 @@ module Simulation = {
       revealFee,
     } =
       TaquitoAPI.Delegate.Estimate.set(
-        ~endpoint=config->ConfigUtils.endpoint,
-        ~baseDir=config->ConfigUtils.baseDir,
+        ~endpoint=config.network.endpoint,
+        ~baseDir=config.baseDir(),
         ~source=delegation.Protocol.source.address,
         ~delegate=?delegation.Protocol.delegate,
         ~fee=?delegation.Protocol.options.fee,
@@ -138,15 +138,15 @@ module DelegateMaker =
       };
     };
 
-  let getForAccount = (config, account) => {
+  let getForAccount = (config: ConfigContext.env, account) => {
     let%FResMap res =
-      TaquitoAPI.Delegate.get(config->ConfigUtils.endpoint, account);
+      TaquitoAPI.Delegate.get(config.network.endpoint, account);
 
     res->Option.flatMap(delegate => account == delegate ? None : res);
   };
 
-  let getBakers = (config: ConfigFile.t) =>
-    switch (config->ConfigUtils.chainId) {
+  let getBakers = (config: ConfigContext.env) =>
+    switch (config.network.chain) {
     | chain when chain == Network.mainnetChain =>
       URL.External.bakingBadBakers
       ->URL.get
@@ -240,11 +240,11 @@ module DelegateMaker =
 };
 
 module Operation = {
-  let batch = (config, transfers, ~source, ~signingIntent) => {
+  let batch = (config: ConfigContext.env, transfers, ~source, ~signingIntent) => {
     let%FResMap op =
       TaquitoAPI.Transfer.batch(
-        ~endpoint=config->ConfigUtils.endpoint,
-        ~baseDir=config->ConfigUtils.baseDir,
+        ~endpoint=config.network.endpoint,
+        ~baseDir=config.baseDir(),
         ~source=source.Account.address,
         ~transfers=transfers->TaquitoAPI.Transfer.prepareTransfers,
         ~signingIntent,
@@ -254,11 +254,15 @@ module Operation = {
   };
 
   let setDelegate =
-      (config, Protocol.{delegate, source, options}, ~signingIntent) => {
+      (
+        config: ConfigContext.env,
+        Protocol.{delegate, source, options},
+        ~signingIntent,
+      ) => {
     let%FResMap op =
       TaquitoAPI.Delegate.set(
-        ~endpoint=config->ConfigUtils.endpoint,
-        ~baseDir=config->ConfigUtils.baseDir,
+        ~endpoint=config.network.endpoint,
+        ~baseDir=config.baseDir(),
         ~source=source.address,
         ~delegate,
         ~signingIntent,
@@ -295,7 +299,7 @@ module Tokens = {
       ->URL.Endpoint.runView
       ->URL.postJson(
           URL.Endpoint.fa12GetBalanceInput(
-            ~settings=config,
+            ~config,
             ~contract=token,
             ~account=address,
           ),
@@ -320,7 +324,7 @@ module Tokens = {
   let callFA2BalanceOf = (config, address, token, tokenId) => {
     let input =
       URL.Endpoint.fa2BalanceOfInput(
-        ~settings=config,
+        ~config,
         ~contract=token,
         ~account=address,
         ~tokenId,
@@ -343,9 +347,10 @@ module Tokens = {
 };
 
 module Signature = {
-  let signPayload = (config, ~source, ~signingIntent, ~payload) => {
+  let signPayload =
+      (config: ConfigContext.env, ~source, ~signingIntent, ~payload) => {
     TaquitoAPI.Signature.signPayload(
-      ~baseDir=config->ConfigUtils.baseDir,
+      ~baseDir=config.baseDir(),
       ~source,
       ~signingIntent,
       ~payload,

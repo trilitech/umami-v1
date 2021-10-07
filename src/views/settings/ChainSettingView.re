@@ -142,7 +142,8 @@ let styles =
 
 module CustomNetworkItem = {
   [@react.component]
-  let make = (~network: Network.network, ~writeNetwork, ~settings) => {
+  let make =
+      (~network: Network.network, ~writeNetwork, ~configFile: ConfigFile.t) => {
     let theme = ThemeContext.useTheme();
     let writeConf = ConfigContext.useWrite();
 
@@ -189,7 +190,10 @@ module CustomNetworkItem = {
           label={network.name}
           value={`Custom(network.name)}
           setValue=writeNetwork
-          currentValue={settings->ConfigUtils.network}
+          currentValue={
+            configFile.network
+            ->Option.getWithDefault(ConfigContext.defaultNetwork)
+          }
           tag={network.chain->Network.getChainName}
           tagTextColor
           tagBorderColor
@@ -213,7 +217,8 @@ module CustomNetworkItem = {
 
 module NetworkItem = {
   [@react.component]
-  let make = (~network: Network.network, ~writeNetwork, ~settings) => {
+  let make =
+      (~network: Network.network, ~writeNetwork, ~configFile: ConfigFile.t) => {
     <>
       <View style=styles##spaceBetweenRow>
         <RadioItem
@@ -222,7 +227,10 @@ module NetworkItem = {
           }
           value={network == Network.mainnet ? `Mainnet : `Granadanet}
           setValue=writeNetwork
-          currentValue={settings->ConfigUtils.network}
+          currentValue={
+            configFile.network
+            ->Option.getWithDefault(ConfigContext.defaultNetwork)
+          }
         />
         <View style=styles##row> <NetworkInfoButton network /> </View>
       </View>
@@ -233,14 +241,16 @@ module NetworkItem = {
 [@react.component]
 let make = () => {
   let writeConf = ConfigContext.useWrite();
-  let settings = ConfigContext.useContent();
+  let configFile = ConfigContext.useFile();
 
-  let customNetworks = ConfigContext.useContent().customNetworks;
+  let customNetworks = configFile.customNetworks;
 
   let writeNetwork = f => {
-    let network = f(settings->ConfigUtils.network);
     let network =
-      network == ConfigFile.Default.network ? None : Some(network);
+      configFile.network->Option.getWithDefault(ConfigContext.defaultNetwork);
+    let network = f(network);
+    let network =
+      network == ConfigContext.defaultNetwork ? None : Some(network);
 
     writeConf(c => {...c, network});
   };
@@ -250,8 +260,8 @@ let make = () => {
     <View style=styles##column>
       <View accessibilityRole=`form style=styles##row>
         <ColumnLeft style=styles##leftcolumntitles>
-          <NetworkItem network=Network.mainnet settings writeNetwork />
-          <NetworkItem network=Network.granadanet settings writeNetwork />
+          <NetworkItem network=Network.mainnet configFile writeNetwork />
+          <NetworkItem network=Network.granadanet configFile writeNetwork />
           {switch (customNetworks) {
            | [] => React.null
            | customNetworks =>
@@ -263,7 +273,7 @@ let make = () => {
                    key={network.name}
                    network
                    writeNetwork
-                   settings
+                   configFile
                  />
                )
              ->React.array

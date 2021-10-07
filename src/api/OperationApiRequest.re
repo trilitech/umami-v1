@@ -106,19 +106,19 @@ let useSimulate = () => {
   );
 };
 
-let waitForConfirmation = (config, hash) => {
-  config->ConfigUtils.endpoint->TaquitoAPI.Operations.confirmation(~hash, ());
+let waitForConfirmation = (config: ConfigContext.env, hash) => {
+  config.network.endpoint->TaquitoAPI.Operations.confirmation(~hash, ());
 };
 
 /* Get list */
 
 let useLoad =
     (~requestState, ~limit=?, ~types=?, ~address: PublicKeyHash.t, ()) => {
-  let get = (~config, address) => {
+  let get = (~config: ConfigContext.env, address) => {
     let operations =
       config->ServerAPI.Explorer.getOperations(address, ~limit?, ~types?, ());
     let currentLevel =
-      Network.monitor(ConfigUtils.explorer(config))
+      Network.monitor(config.network.explorer)
       ->Future.mapOk(monitor => monitor.nodeLastBlock);
 
     let f = (operations, currentLevel) =>
