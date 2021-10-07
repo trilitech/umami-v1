@@ -23,7 +23,7 @@
 /*                                                                           */
 /*****************************************************************************/
 
-type network = [ | `Mainnet | `Granadanet | `Custom(string)];
+type network = [ Network.nativeChains | `Custom(string)];
 
 type t = {
   network: option(network),

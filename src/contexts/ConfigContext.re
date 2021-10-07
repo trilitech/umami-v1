@@ -64,17 +64,30 @@ let fromFile = f => {
     },
 };
 
+type networkStatus = {
+  previous: option(Network.status),
+  current: Network.status,
+};
+
 open UmamiCommon;
 type configState = {
   content: env,
   configFile: ConfigFile.t,
   write: (ConfigFile.t => ConfigFile.t) => unit,
+  networkStatus,
+  retryNetwork:
+    (~onlyOn: Network.status=?, ~onlyAfter: Network.status=?, unit) => unit,
 };
 
 let initialState = {
   configFile: ConfigFile.dummy,
   content: default,
   write: _ => (),
+  networkStatus: {
+    previous: None,
+    current: Pending,
+  },
+  retryNetwork: (~onlyOn as _=?, ~onlyAfter as _=?, ()) => (),
 };
 
 let context = React.createContext(initialState);
@@ -101,7 +114,59 @@ let load = () => {
 let make = (~children) => {
   let (configFile, setConfig) = React.useState(() => load());
 
-  let content = React.useMemo1(() => {configFile->fromFile}, [|configFile|]);
+  let (content, setContent) = React.useState(() => load()->fromFile);
+
+  let (networkStatus, setNetworkStatus) =
+    React.useState(() => {previous: None, current: Network.Pending});
+
+  let updateNetwork = n =>
+    setNetworkStatus(prev => {
+      let previous =
+        prev.current == Pending ? prev.previous : Some(prev.current);
+
+      {current: n, previous};
+    });
+
+  let pickNetwork = () => {
+    updateNetwork(Network.Pending);
+    let config = configFile->fromFile;
+
+    let network =
+      switch (configFile.network->Option.getWithDefault(defaultNetwork)) {
+      | `Custom(_) =>
+        Network.testNetwork(config.network)->Future.mapOk(_ => config.network)
+      | #Network.nativeChains as net => Network.findValidEndpoint(net)
+      };
+
+    network->Future.get(
+      fun
+      | Ok(network) => {
+          updateNetwork(Online);
+          setContent(_ => {...config, network});
+        }
+      | Error(_) => updateNetwork(Offline),
+    );
+  };
+
+  let retryNetwork = (~onlyOn=?, ~onlyAfter=?, ()) => {
+    switch (onlyOn, onlyAfter) {
+    | (None, None) => pickNetwork()
+    | (Some(on), Some(_) as after) =>
+      after == networkStatus.previous && on == networkStatus.current
+        ? pickNetwork() : ()
+    | (Some(on), None) => on == networkStatus.current ? pickNetwork() : ()
+    | (None, Some(_) as after) =>
+      after == networkStatus.previous ? pickNetwork() : ()
+    };
+  };
+
+  React.useEffect1(
+    () => {
+      pickNetwork();
+      None;
+    },
+    [|configFile|],
+  );
 
   let write = f =>
     setConfig(c => {
@@ -110,7 +175,9 @@ let make = (~children) => {
       c;
     });
 
-  <Provider value={content, configFile, write}> children </Provider>;
+  <Provider value={content, configFile, write, networkStatus, retryNetwork}>
+    children
+  </Provider>;
 };
 
 let useContext = () => React.useContext(context);
@@ -136,6 +203,11 @@ let useResetConfig = () => {
     write(_ => ConfigFile.dummy);
   };
 };
+
+let useNetworkStatus = () => useContext().networkStatus;
+let useNetworkOffline = () => useContext().networkStatus.current == Offline;
+
+let useRetryNetwork = () => useContext().retryNetwork;
 
 let useCleanSdkBaseDir = () => {
   let {content: {baseDir}} = useContext();
