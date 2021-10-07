@@ -39,6 +39,8 @@ let scriptRejected = "script_rejected";
 let noMetadata = "Non-compliance with the TZIP-016 standard.";
 let noTokenMetadata = "No token metadata";
 let tokenIdNotFound = "Could not find token metadata for the token ID";
+let requestFailed1 = "Request to";
+let requestFailed2 = "failed";
 
 type Errors.t +=
   | UnregisteredDelegate
@@ -58,6 +60,7 @@ type Errors.t +=
   | SignerIntentInconsistency
   | NoMetadata
   | NoTokenMetadata
+  | NodeRequestFailed
   | TokenIdNotFound;
 
 let parse = (e: RawJsError.t) =>
@@ -79,6 +82,12 @@ let parse = (e: RawJsError.t) =>
   | s when s->Js.String2.includes(noMetadata) => NoMetadata
   | s when s->Js.String2.includes(noTokenMetadata) => NoTokenMetadata
   | s when s->Js.String2.includes(tokenIdNotFound) => TokenIdNotFound
+  | s
+      when
+        s->Js.String2.startsWith(requestFailed1)
+        && s->Js.String2.endsWith(requestFailed2) =>
+    NodeRequestFailed
+
   | s => Errors.Generic(Js.String.make(s))
   };
 
@@ -106,6 +115,7 @@ let () =
     | NoMetadata => I18n.form_input_error#no_metadata(None)->Some
     | NoTokenMetadata => I18n.form_input_error#no_token_metadata(None)->Some
     | TokenIdNotFound => I18n.form_input_error#token_id_not_found(None)->Some
+    | NodeRequestFailed => I18n.errors#request_to_node_failed->Some
     | _ => None,
   );
 
