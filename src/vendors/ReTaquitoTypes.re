@@ -42,6 +42,12 @@ module RPCClient = {
 
   type params = {block: string};
   type managerKeyResult = {key: string};
+
+  type blockHeader = {
+    protocol: string,
+    chain_id: string,
+    level: int,
+  };
 };
 
 module Operation = {

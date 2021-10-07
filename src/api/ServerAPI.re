@@ -153,7 +153,7 @@ module URL = {
         object_([
           ("contract", string((contract :> string))),
           ("entrypoint", string("getBalance")),
-          ("chain_id", string(config.network.chain)),
+          ("chain_id", string(config.network.chain->Network.getChainId)),
           ("input", object_([("string", string((account :> string)))])),
           ("unparsing_mode", string("Readable")),
         ])
@@ -194,7 +194,7 @@ module URL = {
         object_([
           ("contract", string((contract :> string))),
           ("entrypoint", string("balance_of")),
-          ("chain_id", string(config.network.chain)),
+          ("chain_id", string(config.network.chain->Network.getChainId)),
           (
             "input",
             jsonArray([|

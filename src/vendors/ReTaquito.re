@@ -42,6 +42,13 @@ module RPCClient = {
   external create: endpoint => t = "RpcClient";
 
   [@bs.send]
+  external getBlockHeader: (t, unit) => Js.Promise.t(blockHeader) =
+    "getBlockHeader";
+
+  [@bs.send]
+  external getChainId: (t, unit) => Js.Promise.t(string) = "getChainId";
+
+  [@bs.send]
   external getBalance:
     (t, PublicKeyHash.t, ~params: params=?, unit) =>
     Js.Promise.t(ReBigNumber.t) =

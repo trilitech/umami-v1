@@ -31,9 +31,9 @@ let handleEstimationResults:
   ) =>
   Result.t(ReTaquito.Toolkit.Estimation.result, Errors.t);
 
-module Balance: {
+module Rpc: {
   /* Retrieve the balance of given public key hash */
-  let get:
+  let getBalance:
     (
       ReTaquito.endpoint,
       ~address: PublicKeyHash.t,
@@ -41,6 +41,11 @@ module Balance: {
       unit
     ) =>
     Future.t(Result.t(Tez.t, Errors.t));
+
+  let getBlockHeader:
+    ReTaquito.endpoint => Let.future(ReTaquito.RPCClient.blockHeader);
+
+  let getChainId: ReTaquito.endpoint => Let.future(string);
 };
 
 module Signer: {

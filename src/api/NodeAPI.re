@@ -44,7 +44,8 @@ let () =
 
 module Balance = {
   let get = (config: ConfigContext.env, address, ~params=?, ()) => {
-    config.network.endpoint->TaquitoAPI.Balance.get(~address, ~params?, ());
+    config.network.endpoint
+    ->TaquitoAPI.Rpc.getBalance(~address, ~params?, ());
   };
 };
 
@@ -147,7 +148,7 @@ module DelegateMaker =
 
   let getBakers = (config: ConfigContext.env) =>
     switch (config.network.chain) {
-    | chain when chain == Network.mainnetChain =>
+    | chain when chain == `Mainnet =>
       URL.External.bakingBadBakers
       ->URL.get
       ->Future.mapOk(Json.Decode.(array(Delegate.decode)))

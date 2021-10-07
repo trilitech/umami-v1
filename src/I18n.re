@@ -492,6 +492,7 @@ let wallet = {
 
 let errors = {
   pub _this = this;
+  pub no_valid_endpoint = "No valid endpoint found among public nodes";
   pub not_an_fa12_contract = "Not an FA1.2 standard contract";
   pub beacon_cant_handle = "Cannot handle this operation";
   pub cannot_retrieve_account = "Cannot retrieve account informations";

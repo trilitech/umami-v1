@@ -169,17 +169,17 @@ let make = () => {
 
   let (networkText, networkColor) = (
     config.network.name,
-    config.network.chain == Network.mainnetChain
+    config.network.chain == `Mainnet
       ? Some(`primary) : Some(`mediumEmphasis),
   );
 
   let tag = {
     config.defaultNetwork
-      ? None : config.network.chain->Network.getChainName->Some;
+      ? None : config.network.chain->Network.getDisplayedName->Some;
   };
 
   let tagBorderColor = {
-    config.network.chain == Network.mainnetChain
+    config.network.chain == `Mainnet
       ? theme.colors.textPrimary : theme.colors.textMediumEmphasis;
   };
 

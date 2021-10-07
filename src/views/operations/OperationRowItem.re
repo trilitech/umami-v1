@@ -380,7 +380,7 @@ let make =
             I18n.tooltip#open_in_explorer,
           )
           onPress={_ => {
-            switch (ConfigUtils.getExternalExplorer(config)) {
+            switch (Network.externalExplorer(config.network.chain)) {
             | Ok(url) => System.openExternal(url ++ operation.hash)
             | Error(err) => addToast(Logs.error(~origin=Operation, err))
             }

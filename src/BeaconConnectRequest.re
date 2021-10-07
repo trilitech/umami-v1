@@ -33,10 +33,15 @@ let styles =
     })
   );
 
+let getName =
+  fun
+  | `Custom(_) => None
+  | ch => ch->Network.getDisplayedName->Js.String.toLowerCase->Some;
+
 let checkOperationRequestTargetNetwork =
     (config: ConfigContext.env, chain: ReBeacon.network) => {
-  chain.type_ == config.network.chain
-  || chain.type_ == config.network.chain->Network.getName;
+  chain.type_ == config.network.chain->Network.getChainId
+  || Some(chain.type_) == config.network.chain->getName;
 };
 
 let checkOnlyTransaction =

@@ -60,7 +60,7 @@ module Decode = {
       symbol: json |> field("symbol", string),
       chain:
         (json |> field("chain", optional(string)))
-        ->Option.getWithDefault(Network.granadanetChain),
+        ->Option.getWithDefault(Network.getChainId(`Granadanet)),
       decimals:
         (json |> optional(field("decimals", int)))
         ->Option.getWithDefault(0),

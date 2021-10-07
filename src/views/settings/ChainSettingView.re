@@ -170,7 +170,7 @@ module CustomNetworkItem = {
       tagTextColor: option(Typography.colorStyle),
     ) = {
       switch (network.chain) {
-      | chain when chain == Network.mainnetChain => (
+      | chain when chain == `Mainnet => (
           Some(theme.colors.iconPrimary),
           Some(`primary),
         )
@@ -194,7 +194,7 @@ module CustomNetworkItem = {
             configFile.network
             ->Option.getWithDefault(ConfigContext.defaultNetwork)
           }
-          tag={network.chain->Network.getChainName}
+          tag={network.chain->Network.getDisplayedName}
           tagTextColor
           tagBorderColor
         />
