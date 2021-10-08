@@ -168,6 +168,56 @@ let make = (~children) => {
     [|configFile|],
   );
 
+  let (lastCheck, setLastCheck) = React.useState(() => None);
+
+  let checkNetwork = timeout => {
+    FutureEx.async(() => {
+      FutureEx.timeout(timeout)
+      ->Future.mapOk(() => {
+          setLastCheck(
+            fun
+            | None => None
+            | Some(n) => Some(n + 1),
+          );
+          pickNetwork();
+        })
+    });
+  };
+
+  React.useEffect1(
+    () => {
+      switch (lastCheck) {
+      | Some(0) => checkNetwork(15000)
+      | Some(1) => checkNetwork(30000)
+      | Some(_n) => checkNetwork(60000)
+      | None => ()
+      };
+
+      None;
+    },
+    [|lastCheck|],
+  );
+
+  React.useEffect1(
+    () => {
+      if (networkStatus.current == Offline
+          && (
+            networkStatus.previous == Some(Online)
+            || networkStatus.previous == None
+          )) {
+        setLastCheck(_ => Some(0));
+      } else if (networkStatus.current == Online
+                 && networkStatus.previous == Some(Offline)) {
+        setLastCheck(_ => None);
+      } else {
+        ();
+      };
+
+      None;
+    },
+    [|networkStatus|],
+  );
+
   let write = f =>
     setConfig(c => {
       let c = f(c);
