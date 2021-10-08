@@ -111,6 +111,9 @@ let make = (~children) => {
   let config = ConfigContext.useContent();
   let addToast = LogsContext.useToast();
 
+  let network = React.useMemo1(() => {config.network}, [|config|]);
+  let networkStatus = ConfigContext.useNetworkStatus();
+
   let selectedAccountState = React.useState(() => None);
 
   let (selectedAccount, setSelectedAccount) = selectedAccountState;
@@ -174,7 +177,31 @@ let make = (~children) => {
         );
       };
     },
-    [|config|],
+    [|network|],
+  );
+
+  let reset = () => {
+    let setAccounts = snd(accountsRequestState);
+    setAccounts(ApiRequest.expireCache);
+    let setSecrets = snd(secretsRequestState);
+    setSecrets(ApiRequest.expireCache);
+    let setBalances = snd(balanceRequestsState);
+    setBalances(balances => balances->Map.String.map(ApiRequest.expireCache));
+    let setBalancesToken = snd(balanceTokenRequestsState);
+    setBalancesToken(balances =>
+      balances->Map.String.map(ApiRequest.expireCache)
+    );
+  };
+
+  React.useEffect1(
+    () => {
+      networkStatus.previous == Some(Offline)
+      && networkStatus.current == Online
+        ? reset() : ();
+
+      None;
+    },
+    [|networkStatus|],
   );
 
   // Select a default account if no one selected
