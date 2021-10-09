@@ -69,3 +69,5 @@ module DerivationPath: {let default: string;};
 type pkh = t;
 
 module Comparator: Belt.Id.Comparable with type t = pkh;
+
+module Map: MapEx.S with module Key := Comparator;
