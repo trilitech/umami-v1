@@ -175,6 +175,8 @@ let make = (~showOnboarding, ~mode, ~setMode) => {
   let accountsRequest = StoreContext.Accounts.useRequest();
   let token = StoreContext.SelectedToken.useGet();
 
+  let retryNetwork = ConfigContext.useRetryNetwork();
+
   <Page>
     {accountsRequest->ApiRequest.mapOrEmpty(_ => {
        <>
@@ -183,7 +185,10 @@ let make = (~showOnboarding, ~mode, ~setMode) => {
              {<>
                 <RefreshButton
                   loading={accountsRequest->ApiRequest.isLoading}
-                  onRefresh=resetSecrets
+                  onRefresh={() => {
+                    resetSecrets();
+                    retryNetwork();
+                  }}
                 />
                 <EditButton mode setMode />
               </>}>

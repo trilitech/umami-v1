@@ -185,7 +185,7 @@ type state = {
 
 let initialState = {
   theme: lightTheme,
-  themeSetting: (ConfigFile.Default.theme, _ => ()),
+  themeSetting: (ConfigContext.default.theme, _ => ()),
 };
 let context = React.createContext(initialState);
 
@@ -209,10 +209,7 @@ let make = (~children) => {
   let writeConf = ConfigContext.useWrite();
   let config = ConfigContext.useContent();
 
-  let (themeConfig, setThemeConfig) =
-    React.useState(_ =>
-      config.theme->Option.getWithDefault(ConfigFile.Default.theme)
-    );
+  let (themeConfig, setThemeConfig) = React.useState(_ => config.theme);
 
   let (prefersColorSchemeDark, setPrefersColorSchemeDark) =
     React.useState(_ => mediaQueryColorSchemeDark##matches);
@@ -243,7 +240,7 @@ let make = (~children) => {
         {
           ...c,
           theme:
-            newThemeConfig != ConfigFile.Default.theme
+            newThemeConfig != ConfigContext.default.theme
               ? Some(newThemeConfig) : None,
         }
       );

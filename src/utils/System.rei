@@ -97,3 +97,5 @@ module Client: {
 
   let initDir: Path.t => Future.t(Result.t(unit, Errors.t));
 };
+
+let reload: unit => unit;

@@ -210,7 +210,7 @@ module ResetView = {
 
     let onPress = _ => {
       resetConfig();
-      window##location##reload();
+      System.reload();
     };
 
     let closeButton =

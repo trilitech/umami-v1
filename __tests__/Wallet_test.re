@@ -2,7 +2,7 @@ open TestFramework;
 open System;
 
 let testDir = Path.mk(".test_cache");
-let config = {...ConfigFile.dummy, sdkBaseDir: Some(testDir)};
+let config = {...ConfigContext.default, baseDir: () => testDir};
 
 %raw
 "

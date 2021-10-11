@@ -43,8 +43,8 @@ let useLoad = requestState => {
 };
 
 let useGetRecoveryPhrase = (~requestState as (request, setRequest), ~index) => {
-  let get = (~config, password) =>
-    WalletAPI.Accounts.recoveryPhraseAt(~config, index, ~password);
+  let get = (~config as _, password) =>
+    WalletAPI.Accounts.recoveryPhraseAt(index, ~password);
 
   let getRequest =
     ApiRequest.useGetter(~get, ~kind=Logs.Secret, ~setRequest, ());

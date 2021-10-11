@@ -90,7 +90,7 @@ let make = (~initNode=?, ~initMezos=?, ~action: action, ~closeAction) => {
 
   let (loading, setLoading) = React.useState(_ => false);
 
-  let customNetworks = ConfigContext.useContent().customNetworks;
+  let customNetworks = ConfigContext.useFile().customNetworks;
 
   let addToast = LogsContext.useToast();
 
@@ -117,11 +117,18 @@ let make = (~initNode=?, ~initMezos=?, ~action: action, ~closeAction) => {
   let nameExistsCheck =
       (name: string, customNetworks: list(Network.network))
       : ReSchema.fieldState =>
-    List.some(customNetworks, n => n.name === name)
+    List.some(
+      Network.nativeChains
+      ->List.map(fst)
+      ->List.map(Network.getDisplayedName),
+      n =>
+      n == name
+    )
+    || List.some(customNetworks, n => n.name == name)
     && (
       switch (action) {
       | Create => true
-      | Edit(network) => name !== network.name
+      | Edit(network) => name != network.name
       }
     )
       ? Error(I18n.form_input_error#name_already_taken(name)) : Valid;
@@ -239,7 +246,7 @@ let make = (~initNode=?, ~initMezos=?, ~action: action, ~closeAction) => {
         error={form.getFieldError(Field(Name))}
       />
       <FormGroupTextInput
-        label=I18n.label#custom_network_node_url
+        label={I18n.label#custom_network_node_url(false)}
         value={form.values.node}
         placeholder=I18n.input_placeholder#custom_network_node_url
         handleChange={form.handleChange(Node)}

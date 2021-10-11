@@ -44,6 +44,8 @@ type cacheValidity =
   | Expired
   | ValidSince(timestamp);
 
+let initCache: unit => cacheValidity;
+
 type t('value) =
   /* The ressource fetching has never been triggered */
   | NotAsked
@@ -95,6 +97,9 @@ let isNotAsked: t('a) => bool;
 /* Returns [true] if the ressource fetching has started and is not over */
 let isLoading: t('a) => bool;
 
+/* Returns [true] if the ressource fetching is over and resolves as an error */
+let isError: t('a) => bool;
+
 /* Returns [true] if the ressource is fetched */
 let isDone: t('a) => bool;
 
@@ -137,7 +142,7 @@ let conditionToLoad: (t('a), bool) => bool;
 let useGetter:
   (
     ~toast: bool=?,
-    ~get: (~config: ConfigFile.t, 'a) => Let.future('response),
+    ~get: (~config: ConfigContext.env, 'a) => Let.future('response),
     ~kind: Logs.origin,
     ~setRequest: (t('response) => t('response)) => unit,
     ~keepError: Errors.t => bool=?,
@@ -149,7 +154,7 @@ let useGetter:
 /* Builds an auto-reloaded ressource from an asynchronous function */
 let useLoader:
   (
-    ~get: (~config: ConfigFile.t, 'input) => Let.future('value),
+    ~get: (~config: ConfigContext.env, 'input) => Let.future('value),
     ~condition: 'input => bool=?,
     ~keepError: Errors.t => bool=?,
     ~kind: Logs.origin,
@@ -166,7 +171,7 @@ let useSetter:
     ~logOk: 'a => string=?,
     ~toast: bool=?,
     ~sideEffect: 'a => unit=?,
-    ~set: (~config: ConfigFile.t, 'c) => Let.future('a),
+    ~set: (~config: ConfigContext.env, 'c) => Let.future('a),
     ~kind: Logs.origin,
     ~keepError: Errors.t => bool=?,
     unit

@@ -1,6 +1,13 @@
 open TestFramework;
 
-let config = ConfigFile.dummy;
+let config =
+  ConfigContext.{
+    defaultNetwork: true,
+    network: Network.granadanet,
+    theme: `system,
+    baseDir: () => System.(Path.Ops.(appDir() / (!"tezos-client"))),
+    confirmations: 5,
+  };
 
 let pkh = s => s->PublicKeyHash.build->Result.getExn;
 

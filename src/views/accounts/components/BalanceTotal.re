@@ -41,12 +41,16 @@ module Base = {
       let balanceTokenTotal =
         StoreContext.BalanceToken.useGetTotal(token.address);
 
-      balanceTokenTotal->mapWithLoading(balance =>
-        I18n.t#amount(
-          balance->Token.Unit.toStringDecimals(token.decimals),
-          token.symbol,
-        )
-        ->React.string
+      balanceTokenTotal->mapWithLoading(
+        fun
+        | Ok(b) =>
+          I18n.t#amount(
+            b->Token.Unit.toStringDecimals(token.decimals),
+            token.symbol,
+          )
+          ->React.string
+        | Error(_) =>
+          I18n.t#amount(I18n.t#no_balance_amount, token.symbol)->React.string,
       );
     };
   };
@@ -56,8 +60,11 @@ module Base = {
     let make = (~mapWithLoading) => {
       let balanceTotal = StoreContext.Balance.useGetTotal();
 
-      balanceTotal->mapWithLoading(balance =>
-        I18n.t#tez_amount(balance->Tez.toString)->React.string
+      balanceTotal->mapWithLoading(
+        fun
+        | Ok(b) => I18n.t#tez_amount(b->Tez.toString)->React.string
+        | Error(_) =>
+          I18n.t#tez_amount(I18n.t#no_balance_amount)->React.string,
       );
     };
   };
@@ -67,14 +74,16 @@ module Base = {
     let theme = ThemeContext.useTheme();
 
     let mapWithLoading = (v, f) =>
-      v->Option.mapWithDefault(
+      switch ((v: ApiRequest.t(_))) {
+      | Loading(_)
+      | NotAsked =>
         <ActivityIndicator
           animating=true
           size={ActivityIndicator_Size.exact(22.)}
           color={theme.colors.iconHighEmphasis}
-        />,
-        f,
-      );
+        />
+      | Done(v, _) => f(v)
+      };
 
     let balanceElement =
       <Typography.Headline fontWeightStyle=`black style=styles##balance>

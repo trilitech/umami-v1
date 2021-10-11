@@ -23,7 +23,7 @@
 /*                                                                           */
 /*****************************************************************************/
 
-type network = [ | `Mainnet | `Granadanet | `Custom(string)];
+type network = [ Network.nativeChains | `Custom(string)];
 
 type t = {
   network: option(network),
@@ -43,14 +43,6 @@ let parse = s => {
   let c = s->parse;
   let network = c.network->Option.flatMap(parseNetwork);
   {...c, network};
-};
-
-module Default = {
-  /* let network = `Testnet(Network.edo2netChain); */
-  let network = `Mainnet;
-  let theme = `system;
-  let sdkBaseDir = () => System.(Path.Ops.(appDir() / (!"tezos-client")));
-  let confirmations = 5;
 };
 
 let dummy = {

@@ -226,7 +226,7 @@ let make = (~closeAction) => {
     secrets->Array.keep(s => s.secret.kind == Ledger)->Array.length;
 
   let importLedger = p =>
-    System.Client.initDir(config->ConfigUtils.baseDir)
+    System.Client.initDir(config.baseDir())
     ->Future.flatMapOk(() => importLedger(p))
     ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
         I18n.t#account_created

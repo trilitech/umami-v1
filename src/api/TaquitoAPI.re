@@ -110,14 +110,24 @@ let handleEstimationResults = ((results, revealFee), options, index) => {
   };
 };
 
-module Balance = {
-  let get = (endpoint, ~address, ~params=?, ()) => {
+module Rpc = {
+  let getBalance = (endpoint, ~address, ~params=?, ()) => {
     let%FResMap balance =
       RPCClient.create(endpoint)
       ->RPCClient.getBalance(address, ~params?, ())
       ->ReTaquitoError.fromPromiseParsed;
     balance->BigNumber.toInt64->Tez.ofInt64;
   };
+
+  let getChainId = endpoint =>
+    RPCClient.create(endpoint)
+    ->RPCClient.getChainId()
+    ->ReTaquitoError.fromPromiseParsed;
+
+  let getBlockHeader = endpoint =>
+    RPCClient.create(endpoint)
+    ->RPCClient.getBlockHeader()
+    ->ReTaquitoError.fromPromiseParsed;
 };
 
 module Signer = {

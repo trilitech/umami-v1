@@ -37,7 +37,7 @@ module URL: {
   module Explorer: {
     let operations:
       (
-        ConfigFile.t,
+        ConfigContext.env,
         PublicKeyHash.t,
         ~types: array(string)=?,
         ~destination: PublicKeyHash.t=?,
@@ -45,17 +45,17 @@ module URL: {
         unit
       ) =>
       t;
-    let checkToken: (ConfigFile.t, ~contract: PublicKeyHash.t) => t;
+    let checkToken: (ConfigContext.env, ~contract: PublicKeyHash.t) => t;
   };
 
   module Endpoint: {
-    let delegates: ConfigFile.t => t;
+    let delegates: ConfigContext.env => t;
 
-    let runView: ConfigFile.t => t;
+    let runView: ConfigContext.env => t;
 
     let fa12GetBalanceInput:
       (
-        ~settings: ConfigFile.t,
+        ~config: ConfigContext.env,
         ~contract: PublicKeyHash.t,
         ~account: PublicKeyHash.t
       ) =>
@@ -63,7 +63,7 @@ module URL: {
 
     let fa2BalanceOfInput:
       (
-        ~settings: ConfigFile.t,
+        ~config: ConfigContext.env,
         ~contract: PublicKeyHash.t,
         ~account: PublicKeyHash.t,
         ~tokenId: int
@@ -84,7 +84,7 @@ module URL: {
 module type Explorer = {
   let getOperations:
     (
-      ConfigFile.t,
+      ConfigContext.env,
       PublicKeyHash.t,
       ~types: array(string)=?,
       ~destination: PublicKeyHash.t=?,

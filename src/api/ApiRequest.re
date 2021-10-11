@@ -31,6 +31,8 @@ type cacheValidity =
   | Expired
   | ValidSince(float);
 
+let initCache = () => ValidSince(Js.Date.now());
+
 type t('value) =
   | NotAsked
   | Loading(option('value))
@@ -108,6 +110,12 @@ let isLoading = request =>
   | _ => false
   };
 
+let isError = request =>
+  switch (request) {
+  | Done(Error(_), _) => true
+  | _ => false
+  };
+
 let isDone = request => request->getDone->Option.isSome;
 
 let isDoneOk = request => request->getDoneOk->Option.isSome;
@@ -149,12 +157,19 @@ let conditionToLoad = (request, isMounted) => {
 let useGetter = (~toast=true, ~get, ~kind, ~setRequest, ~keepError=?, ()) => {
   let addLog = LogsContext.useAdd();
   let config = ConfigContext.useContent();
+  let retryNetwork = ConfigContext.useRetryNetwork();
 
   let get = input => {
     setRequest(updateToLoadingState);
 
     get(~config, input)
     ->logError(addLog(toast), kind, ~keep=?keepError)
+    ->Future.tapError(
+        fun
+        | ReTaquitoError.NodeRequestFailed =>
+          retryNetwork(~onlyOn=Network.Online, ())
+        | _ => (),
+      )
     ->Future.tap(result =>
         setRequest(_ => Done(result, ValidSince(Js.Date.now())))
       );

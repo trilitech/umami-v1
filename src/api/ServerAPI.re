@@ -57,8 +57,8 @@ module URL = {
     l->List.map(((a, v)) => a ++ "=" ++ v)->List.toArray
     |> Js.Array.joinWith("&");
 
-  let build_explorer_url = (network, path, args) => {
-    ConfigUtils.explorer(network)
+  let build_explorer_url = (config: ConfigContext.env, path, args) => {
+    config.network.explorer
     ++ "/"
     ++ path
     ++ (args == [] ? "" : "?" ++ args->build_args);
@@ -107,7 +107,7 @@ module URL = {
   module Explorer = {
     let operations =
         (
-          settings: ConfigFile.t,
+          config: ConfigContext.env,
           account: PublicKeyHash.t,
           ~types: option(array(string))=?,
           ~destination: option(PublicKeyHash.t)=?,
@@ -125,7 +125,7 @@ module URL = {
           ->addOpt(limit->arg_opt("limit", lim => lim->Js.Int.toString))
           ->addOpt(types->arg_opt("types", t => t->Js.Array2.joinWith(",")))
         );
-      let url = build_explorer_url(settings, operationsPath, args);
+      let url = build_explorer_url(config, operationsPath, args);
       url;
     };
 
@@ -136,20 +136,24 @@ module URL = {
   };
 
   module Endpoint = {
-    let delegates = settings =>
-      ConfigUtils.endpoint(settings) ++ Path.Endpoint.delegates;
+    let delegates = (c: ConfigContext.env) =>
+      c.network.endpoint ++ Path.Endpoint.delegates;
 
-    let runView = settings =>
-      ConfigUtils.endpoint(settings) ++ Path.Endpoint.runView;
+    let runView = (c: ConfigContext.env) =>
+      c.network.endpoint ++ Path.Endpoint.runView;
 
     /* Generates a valid JSON for the run_view RPC */
     let fa12GetBalanceInput =
-        (~settings, ~contract: PublicKeyHash.t, ~account: PublicKeyHash.t) => {
+        (
+          ~config: ConfigContext.env,
+          ~contract: PublicKeyHash.t,
+          ~account: PublicKeyHash.t,
+        ) => {
       Json.Encode.(
         object_([
           ("contract", string((contract :> string))),
           ("entrypoint", string("getBalance")),
-          ("chain_id", string(settings->ConfigUtils.chainId)),
+          ("chain_id", string(config.network.chain->Network.getChainId)),
           ("input", object_([("string", string((account :> string)))])),
           ("unparsing_mode", string("Readable")),
         ])
@@ -181,7 +185,7 @@ module URL = {
 
     let fa2BalanceOfInput =
         (
-          ~settings,
+          ~config: ConfigContext.env,
           ~contract: PublicKeyHash.t,
           ~account: PublicKeyHash.t,
           ~tokenId: int,
@@ -190,7 +194,7 @@ module URL = {
         object_([
           ("contract", string((contract :> string))),
           ("entrypoint", string("balance_of")),
-          ("chain_id", string(settings->ConfigUtils.chainId)),
+          ("chain_id", string(config.network.chain->Network.getChainId)),
           (
             "input",
             jsonArray([|
@@ -221,7 +225,7 @@ module URL = {
 module type Explorer = {
   let getOperations:
     (
-      ConfigFile.t,
+      ConfigContext.env,
       PublicKeyHash.t,
       ~types: array(string)=?,
       ~destination: PublicKeyHash.t=?,

@@ -25,13 +25,13 @@
 
 open Let;
 
-type chain = string;
+type chainId = string;
 
 type apiVersion = {
   api: Version.t,
   indexer: string,
   node: string,
-  chain,
+  chain: chainId,
   protocol: string,
 };
 
@@ -48,6 +48,11 @@ type monitorResult = {
   indexerLastBlock: int,
   indexerLastBlockTimestamp: string,
 };
+
+type status =
+  | Online
+  | Pending
+  | Offline;
 
 type httpError = [ | `HttpError(string) | `AbortError];
 
@@ -66,6 +71,7 @@ type nodeError =
   | VersionRPCError(string);
 
 type Errors.t +=
+  | EndpointError
   | UnknownChainId(string)
   | ChainInconsistency(string, string)
   | APIAndNodeError(apiError, nodeError)
@@ -94,59 +100,135 @@ let () =
     | API(NotSupported(v)) =>
       I18n.network#api_not_supported(Version.toString(v))->Some
     | APIAndNodeError(_, _) => I18n.network#api_and_node_not_available->Some
+    | EndpointError => I18n.errors#no_valid_endpoint->Some
     | _ => None,
   );
 
-let mainnetChain = "NetXdQprcVkpaWU";
-let hangzhounetChain = "NetXuXoGoLxNK6o";
-let granadanetChain = "NetXz969SFaFn8k";
-let florencenetChain = "NetXxkAx4woPLyu";
-let edo2netChain = "NetXSgo1ZT2DRUG";
+type nativeChains = [ | `Granadanet | `Mainnet];
+
+type supportedChains = [
+  nativeChains
+  | `Florencenet
+  | `Edo2net
+  | `Hangzhounet
+];
+
+let getChainId =
+  fun
+  | `Granadanet => "NetXz969SFaFn8k"
+  | `Mainnet => "NetXdQprcVkpaWU"
+  | `Florencenet => "NetXxkAx4woPLyu"
+  | `Edo2net => "NetXSgo1ZT2DRUG"
+  | `Hangzhounet => "NetXuXoGoLxNK6o"
+  | `Custom(s) => s;
+
+let nativeChains = [
+  (`Mainnet, getChainId(`Mainnet)),
+  (`Granadanet, getChainId(`Granadanet)),
+];
+
+let supportedChains = [
+  (`Florencenet, getChainId(`Florencenet)),
+  (`Edo2net, getChainId(`Edo2net)),
+  (`Hangzhounet, getChainId(`Hangzhounet)),
+  ...nativeChains,
+];
+
+let getDisplayedName =
+  fun
+  | `Granadanet => "Granadanet"
+  | `Mainnet => "Mainnet"
+  | `Florencenet => "Florencenet"
+  | `Edo2net => "Edo2net"
+  | `Hangzhounet => "Hangzhounet"
+  | `Custom(s) => s;
+
+let externalExplorer =
+  fun
+  | `Mainnet => "https://tzkt.io/"->Ok
+  | `Edo2net => "https://edo2net.tzkt.io/"->Ok
+  | `Florencenet => "https://florencenet.tzkt.io/"->Ok
+  | `Granadanet => "https://granadanet.tzkt.io/"->Ok
+  | (`Hangzhounet | `Custom(_)) as net =>
+    Error(UnknownChainId(getChainId(net)));
+
+type chain = [ supportedChains | `Custom(chainId)];
+type configurableChains = [ nativeChains | `Custom(chainId)];
 
 type network = {
   name: string,
-  chain: string,
+  chain: configurableChains,
   explorer: string,
   endpoint: string,
 };
 
-let mainnet = {
-  name: I18n.t#mainnet,
-  chain: mainnetChain,
-  explorer: "https://api.umamiwallet.com/mainnet",
-  endpoint: "https://mainnet.smartpy.io/",
+let mk = (~name, ~explorer, ~endpoint, chain) => {
+  name,
+  chain,
+  explorer,
+  endpoint,
 };
 
-let granadanet = {
-  name: I18n.t#granadanet,
-  chain: granadanetChain,
-  explorer: "https://api.umamiwallet.com/granadanet",
-  endpoint: "https://granadanet.smartpy.io/",
-};
+let mainnet =
+  mk(
+    ~name=getDisplayedName(`Mainnet),
+    ~explorer="https://api.umamiwallet.com/mainnet",
+    ~endpoint="https://mainnet.smartpy.io/",
+    `Mainnet,
+  );
 
-let supportedChains = [
-  mainnetChain,
-  hangzhounetChain,
-  granadanetChain,
-  florencenetChain,
-  edo2netChain,
+let granadanet =
+  mk(
+    ~name=getDisplayedName(`Granadanet),
+    ~explorer="https://api.umamiwallet.com/granadanet",
+    ~endpoint="https://granadanet.smartpy.io/",
+    `Granadanet,
+  );
+
+let withEP = (n, url) => {...n, endpoint: url};
+
+let mainnetNetworks = [
+  mainnet->withEP("https://mainnet.smartpy.io/"),
+  mainnet->withEP("https://mainnet-tezos.giganode.io"),
+  mainnet->withEP("https://api.tez.ie/rpc/mainnet/"),
+  mainnet->withEP("https://teznode.letzbake.com"),
+  mainnet->withEP("https://mainnet.tezrpc.me/"),
 ];
 
-let mainnetName = "mainnet";
-let hangzhounetName = "hangzhounet";
-let granadanetName = "granadanet";
-let florencenetName = "florencenet";
-let edo2netName = "edo2net";
+let granadanetNetworks = [
+  granadanet->withEP("https://granadanet.smartpy.io/"),
+  granadanet->withEP("https://api.tez.ie/rpc/granadanet"),
+];
 
-let getName = network =>
-  switch (network) {
-  | network when network == mainnetChain => mainnetName
-  | network when network == granadanetChain => granadanetName
-  | network when network == hangzhounetChain => hangzhounetName
-  | network when network == florencenetChain => florencenetName
-  | network when network == edo2netChain => edo2netName
-  | _ => ""
+let getNetworks = (c: nativeChains) =>
+  switch (c) {
+  | `Granadanet => granadanetNetworks
+  | `Mainnet => mainnetNetworks
   };
+
+let testNetwork = n =>
+  TaquitoAPI.Rpc.getBlockHeader(n.endpoint)->UmamiFuture.timeoutAfter(2000);
+
+let testNetworks = eps => {
+  let eps = eps->List.shuffle;
+  let rec loop = l => {
+    switch (l) {
+    | [] => FutureEx.err(EndpointError)
+    | [h, ...tl] =>
+      h
+      ->testNetwork
+      ->Future.flatMap(
+          fun
+          | Ok(_) => h->FutureEx.ok
+          | Error(_) => loop(tl),
+        )
+    };
+  };
+
+  loop(eps);
+};
+
+let findValidEndpoint = chain => chain->getNetworks->testNetworks;
 
 type requestInit = {signal: Fetch.signal};
 
@@ -229,37 +311,28 @@ let getAPIVersion = (~timeout=?, url) => {
   ->ResultEx.mapError(mapAPIError);
 };
 
-let getChainName = chain => {
-  switch (chain) {
-  | chain when chain == mainnetChain => "Mainnet"
-  | chain when chain == hangzhounetChain => "HangzhouNet"
-  | chain when chain == granadanetChain => "GranadaNet"
-  | chain when chain == florencenetChain => "Florencenet"
-  | chain when chain == edo2netChain => "Edo2Net"
-  | _ => ""
-  };
-};
-
 let getNodeChain = (~timeout=?, url) => {
   let%FlatRes json =
     (url ++ "/chains/main/chain_id")
     ->fetchJson(~timeout?, e => Node(NotAvailable(e)));
   switch (Js.Json.decodeString(json)) {
-  | Some(v) => Ok(v)
+  | Some(v) =>
+    let chain =
+      nativeChains
+      ->List.getBy(((_, id)) => id == v)
+      ->Option.map(fst)
+      ->Option.getWithDefault(`Custom(v));
+
+    Ok(chain);
   | _ => VersionRPCError("not a Json string")->Node->Error
   };
 };
 
 let isMainnet = n => n == `Mainnet;
 
-let networkOfChain = c =>
-  switch (supportedChains->List.getBy(chain => c == chain)) {
-  | Some(c) => c == mainnetChain ? Ok(`Mainnet) : Ok(`Testnet(c))
-  | None => Error(UnknownChainId(c))
-  };
-
 let checkConfiguration =
-    (api_url, node_url): Future.t(Result.t((apiVersion, string), Errors.t)) =>
+    (api_url, node_url)
+    : Future.t(Result.t((apiVersion, configurableChains), Errors.t)) =>
   Future.map2(
     getAPIVersion(~timeout=5000, api_url),
     getNodeChain(~timeout=5000, node_url),
@@ -270,8 +343,8 @@ let checkConfiguration =
     | (Error(err), _)
     | (_, Error(err)) => Error(err)
     | (Ok(apiVersion), Ok(nodeChain)) =>
-      String.equal(apiVersion.chain, nodeChain)
+      String.equal(apiVersion.chain, nodeChain->getChainId)
         ? Ok((apiVersion, nodeChain))
-        : Error(ChainInconsistency(apiVersion.chain, nodeChain))
+        : Error(ChainInconsistency(apiVersion.chain, nodeChain->getChainId))
     }
   );
