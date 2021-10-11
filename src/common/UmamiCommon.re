@@ -30,6 +30,8 @@ module Infix = {
 include Infix;
 
 module Lib = {
+  let floatAbs = v => v < 0. ? -. v : v;
+
   module Future = {
     let fromPromise = p =>
       Future.make(resolve => {
