@@ -496,6 +496,7 @@ let wallet = {
 
 let errors = {
   pub _this = this;
+  pub invalid_estimation_results = "Invalid estimation results";
   pub request_to_node_failed = "Request to node failed";
   pub every_balances_fail = "Every balances fail to load";
   pub network_unreachable = "Tezos network unreachable.";

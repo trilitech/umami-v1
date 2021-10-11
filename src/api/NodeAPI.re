@@ -95,13 +95,7 @@ module Simulation = {
 
   let setDelegate =
       (config: ConfigContext.env, delegation: Protocol.delegation) => {
-    let%FResMap {
-      customFeeMutez,
-      burnFeeMutez,
-      gasLimit,
-      storageLimit,
-      revealFee,
-    } =
+    let%FResMap {customFeeMutez, gasLimit, storageLimit, revealFee} =
       TaquitoAPI.Delegate.Estimate.set(
         ~endpoint=config.network.endpoint,
         ~baseDir=config.baseDir(),
@@ -110,8 +104,9 @@ module Simulation = {
         ~fee=?delegation.Protocol.options.fee,
         (),
       );
+
     Protocol.{
-      fee: (customFeeMutez + burnFeeMutez)->Tez.fromMutezInt,
+      fee: customFeeMutez->Tez.fromMutezInt,
       gasLimit,
       storageLimit,
       revealFee: revealFee->Tez.fromMutezInt,
