@@ -35,12 +35,12 @@ let useLoad = requestState => {
         | Ok(response) =>
           response
           ->Array.map(((name, address, kind)) =>
-              ((address :> string), Account.{name, address, kind})
+              (address, Account.{name, address, kind})
             )
           ->Array.reverse
-          ->Map.String.fromArray
+          ->PublicKeyHash.Map.fromArray
           ->Ok
-        | Error(System.NoSuchFileError(_)) => Map.String.empty->Ok
+        | Error(System.NoSuchFileError(_)) => PublicKeyHash.Map.empty->Ok
         | Error(_) as e => e,
       );
 

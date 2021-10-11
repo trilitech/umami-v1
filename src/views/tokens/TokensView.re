@@ -99,12 +99,12 @@ let make = () => {
        | NotAsked
        | Loading(None) => <LoadingView />
        | Loading(Some(tokens))
-       | Done(Ok(tokens), _) when tokens->Map.String.size == 0 =>
+       | Done(Ok(tokens), _) when tokens->PublicKeyHash.Map.size == 0 =>
          <Table.Empty> I18n.t#empty_token->React.string </Table.Empty>
        | Loading(Some(tokens))
        | Done(Ok(tokens), _) =>
          tokens
-         ->Map.String.valuesToArray
+         ->PublicKeyHash.Map.valuesToArray
          ->Array.map(token =>
              <TokenRowItem key=(token.address :> string) token />
            )

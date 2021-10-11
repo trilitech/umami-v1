@@ -50,7 +50,7 @@ let make =
 
   let items =
     accounts
-    ->Map.String.valuesToArray
+    ->PublicKeyHash.Map.valuesToArray
     ->SortArray.stableSortBy(Account.compareName);
 
   <FormGroup>
@@ -61,7 +61,7 @@ let make =
         ?disabled
         getItemKey={account => (account.address :> string)}
         onValueChange={account => {
-          accounts->Map.String.get((account.address :> string))->handleChange
+          accounts->PublicKeyHash.Map.get(account.address)->handleChange
         }}
         selectedValueKey={
           value->Option.mapWithDefault("", a => (a.Account.address :> string))

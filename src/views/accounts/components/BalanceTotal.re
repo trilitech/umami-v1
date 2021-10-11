@@ -123,7 +123,7 @@ module WithTokenSelector = {
 
     let tokens = StoreContext.Tokens.useGetAll();
 
-    let displaySelector = tokens->Map.String.size > 0;
+    let displaySelector = tokens->PublicKeyHash.Map.size > 0;
 
     <Base
       ?token

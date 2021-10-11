@@ -92,7 +92,7 @@ module AccountsFlatList = {
     let accounts = StoreContext.Accounts.useGetAll();
     <View>
       {accounts
-       ->Map.String.valuesToArray
+       ->PublicKeyHash.Map.valuesToArray
        ->SortArray.stableSortBy(Account.compareName)
        ->Array.map(account =>
            <AccountRowItem key=(account.address :> string) account ?token />
@@ -123,7 +123,7 @@ module AccountsTreeList = {
         ->Set.String.fromArray;
 
       let accountsNotInSecrets =
-        accounts->Map.String.keep((address, _account) => {
+        accounts->PublicKeyHash.Map.keep((address, _account) => {
           !addressesInSecrets->Set.String.has((address :> string))
         });
 
@@ -152,7 +152,7 @@ module AccountsTreeList = {
         </View>
         <View>
           {accountsNotInSecrets
-           ->Map.String.valuesToArray
+           ->PublicKeyHash.Map.valuesToArray
            ->Array.map(account =>
                <SecretRowTree.AccountImportedRowItem.Cli
                  key=(account.address :> string)

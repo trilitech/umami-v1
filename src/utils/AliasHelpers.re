@@ -25,26 +25,26 @@
 
 let getAliasFromAddress = (address: PublicKeyHash.t, aliases) => {
   aliases
-  ->Map.String.get((address :> string))
+  ->PublicKeyHash.Map.get(address)
   ->Option.map((account: Alias.t) => account.name);
 };
 
 let getContractAliasFromAddress = (address: PublicKeyHash.t, aliases, tokens) => {
   let r =
     aliases
-    ->Map.String.get((address :> string))
+    ->PublicKeyHash.Map.get(address)
     ->Option.map((account: Alias.t) => account.name);
 
   switch (r) {
   | None =>
     tokens
-    ->Map.String.get((address :> string))
+    ->PublicKeyHash.Map.get(address)
     ->Option.map((token: Token.t) => I18n.t#token_contract(token.alias))
   | Some(r) => Some(r)
   };
 };
 
 let formCheckExists = (aliases, alias): ReSchema.fieldState => {
-  aliases->Map.String.some((_, v: Alias.t) => v.name == alias)
+  aliases->PublicKeyHash.Map.some((_, v: Alias.t) => v.name == alias)
     ? Error(I18n.form_input_error#name_already_registered) : Valid;
 };

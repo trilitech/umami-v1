@@ -65,8 +65,8 @@ let useLoadTokens = requestState => {
     ->Option.mapWithDefault([||], storageString =>
         storageString->Js.Json.parseExn->Token.Decode.array
       )
-    ->Array.map(token => {((token.address :> string), token)})
-    ->Map.String.fromArray
+    ->Array.map(token => {(token.address, token)})
+    ->PublicKeyHash.Map.fromArray
     ->Result.Ok
     ->Future.value;
 

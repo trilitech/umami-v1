@@ -64,7 +64,7 @@ let handleTezRow = (index, destination, amount) =>
 let handleTokenRow =
     (tokens, index, destination, amount, token: PublicKeyHash.t) =>
   tokens
-  ->Map.String.get((token :> string))
+  ->PublicKeyHash.Map.get(token)
   ->Option.mapWithDefault(Error(UnknownToken((token :> string))), token =>
       amount
       ->Token.Unit.fromBigNumber
