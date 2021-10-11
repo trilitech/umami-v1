@@ -120,9 +120,14 @@ module Transaction = {
     amount: TokenRepr.Unit.t,
     contract: PublicKeyHash.t,
   };
+
   type t =
     | Tez(common)
     | Token(common, token_info);
+
+  type tokenKind = [ | `KFA1_2 | `KFA2];
+
+  type kind = [ tokenKind | `KTez];
 
   module Accessor = {
     let amount =
@@ -139,18 +144,42 @@ module Transaction = {
   module Decode = {
     open Json.Decode;
 
-    let token_info = json => {
-      kind: TokenRepr.FA1_2,
-      amount:
-        json
-        |> field("data", field("token_amount", string))
-        |> TokenRepr.Unit.fromNatString
-        |> Result.getExn,
-      contract:
-        json
-        |> field("data", field("contract", string))
-        |> PublicKeyHash.build
-        |> Result.getExn,
+    let kindFromString =
+      fun
+      | "fa1-2" => Ok(`KFA1_2)
+      | "fa2" => Ok(`KFA2)
+      | "tez" => Ok(`KTez)
+      | s => Error(s);
+
+    let token_kind = json =>
+      (json |> field("data", field("token", string)))
+      ->kindFromString
+      ->Result.getExn;
+
+    let token_id = json =>
+      (json |> field("data", field("token_id", string)))
+      ->int_of_string_opt
+      ->Option.getExn;
+
+    let token_info = (json, kind) => {
+      let kind =
+        switch (kind) {
+        | `KFA1_2 => TokenRepr.FA1_2
+        | `KFA2 => TokenRepr.FA2(token_id(json))
+        };
+      {
+        kind,
+        amount:
+          json
+          |> field("data", field("token_amount", string))
+          |> TokenRepr.Unit.fromNatString
+          |> Result.getExn,
+        contract:
+          json
+          |> field("data", field("contract", string))
+          |> PublicKeyHash.build
+          |> Result.getExn,
+      };
     };
 
     let common = json => {
@@ -164,30 +193,11 @@ module Transaction = {
       parameters: json |> optional(field("parameters", dict(string))),
     };
 
-    // FIXME: This exists due to a bug in mezos, where fa1.2 operations
-    // are badly queried when they're in the mempool. Thus, we simply
-    // print them as a normal contract call
-    let fa12_mempool = json => {
-      amount:
-        json |> field("data", field("amount", string)) |> Tez.fromMutezString,
-      destination:
-        json
-        |> field("data", field("contract", string))
-        |> PublicKeyHash.build
-        |> Result.getExn,
-      parameters: json |> optional(field("parameters", dict(string))),
-    };
-
     let t = json => {
-      let token = json |> field("data", field("token", bool));
-      let is_fa12_mempool =
-        json
-        |> field("data", optional(field("destination", string)))
-        |> Option.isNone;
-      switch (token, is_fa12_mempool) {
-      | (true, true) => Tez(fa12_mempool(json))
-      | (true, _) => Token(common(json), token_info(json))
-      | (_, _) => Tez(common(json))
+      let token = json->token_kind;
+      switch (token) {
+      | #tokenKind as kind => Token(common(json), token_info(json, kind))
+      | `KTez => Tez(common(json))
       };
     };
   };

@@ -114,8 +114,7 @@ module URL = {
           ~limit: option(int)=?,
           (),
         ) => {
-      let operationsPath =
-        "accounts/" ++ (account :> string) ++ "/operations/next";
+      let operationsPath = "accounts/" ++ (account :> string) ++ "/operations";
       let args =
         Lib.List.(
           []
@@ -129,9 +128,14 @@ module URL = {
       url;
     };
 
-    let checkToken = (network, ~contract: PublicKeyHash.t) => {
+    let checkToken = (config, ~contract: PublicKeyHash.t) => {
       let path = "tokens/exists/" ++ (contract :> string);
-      build_explorer_url(network, path, []);
+      build_explorer_url(config, path, []);
+    };
+
+    let accountExists = (config, ~account: PublicKeyHash.t) => {
+      let path = "accounts/" ++ (account :> string) ++ "/exists/";
+      build_explorer_url(config, path, []);
     };
   };
 

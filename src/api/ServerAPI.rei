@@ -46,6 +46,7 @@ module URL: {
       ) =>
       t;
     let checkToken: (ConfigContext.env, ~contract: PublicKeyHash.t) => t;
+    let accountExists: (ConfigContext.env, ~account: PublicKeyHash.t) => t;
   };
 
   module Endpoint: {

@@ -106,10 +106,10 @@ let useDelete = (~sideEffect=?, ()) => {
 let useCreate = (~sideEffect=?, ()) => {
   let (_checkTokenRequest, checkToken) = useCheckTokenContract();
   let set = (~config as _, token) => {
-    let%FRes isTokenContract = checkToken(token.TokenRepr.address);
+    let%FRes tokenKind = checkToken(token.TokenRepr.address);
 
     let%FResMap () =
-      isTokenContract
+      tokenKind == `KFA1_2
         ? FutureEx.ok()
         : FutureEx.err(NotFA12Contract((token.TokenRepr.address :> string)));
 
