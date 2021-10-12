@@ -177,7 +177,7 @@ module Selector = {
 
       let items =
         accounts
-        ->Map.String.valuesToArray
+        ->PublicKeyHash.Map.valuesToArray
         ->SortArray.stableSortBy(Account.compareName);
 
       <>

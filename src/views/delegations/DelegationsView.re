@@ -67,7 +67,7 @@ let allNone = delegateRequests =>
 
 let accountsToShow = accounts =>
   accounts
-  ->Map.String.valuesToArray
+  ->PublicKeyHash.Map.valuesToArray
   ->Array.map(((a, _)) => a)
   ->SortArray.stableSortBy(Account.compareName);
 
@@ -96,7 +96,7 @@ let make = () => {
 
   let items =
     accounts
-    ->Map.String.valuesToArray
+    ->PublicKeyHash.Map.valuesToArray
     ->Array.keepMap(((account, delegate)) =>
         delegate->Option.isNone ? Some(account) : None
       )
@@ -105,7 +105,7 @@ let make = () => {
   let firstAccount = items->Array.get(0);
 
   <View style=styles##container>
-    {accounts->Map.String.isEmpty
+    {accounts->PublicKeyHash.Map.isEmpty
        ? <LoadingView />
        : <>
            <View style=styles##header>

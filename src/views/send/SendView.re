@@ -51,7 +51,7 @@ module FormGroupAmountWithTokenSelector = {
       ) => {
     let tokens = StoreContext.Tokens.useGetAll();
 
-    let displaySelector = tokens->Map.String.size > 0;
+    let displaySelector = tokens->PublicKeyHash.Map.size > 0;
 
     let decoration =
       switch (displaySelector, token) {
@@ -406,7 +406,7 @@ let make = (~closeAction) => {
   let aliases =
     aliasesRequest
     ->ApiRequest.getDoneOk
-    ->Option.getWithDefault(Map.String.empty);
+    ->Option.getWithDefault(PublicKeyHash.Map.empty);
 
   let updateAccount = StoreContext.SelectedAccount.useSet();
 

@@ -213,8 +213,9 @@ let amount =
           I18n.t#tez_op_amount(sign, transaction.amount->Tez.toString)
           ->React.string
         | Token(_, token_trans) =>
-          let address = (token_trans.contract :> string);
-          let token: option(Token.t) = Belt.Map.String.get(tokens, address);
+          let address = token_trans.contract;
+          let token: option(Token.t) =
+            PublicKeyHash.Map.get(tokens, address);
           switch (token) {
           | None =>
             let tooltip = (
@@ -238,7 +239,7 @@ let amount =
                 disabled=true
                 style=Style.(style(~borderRadius=0., ~marginLeft="4px", ()))
               />
-              <AddToken address op />
+              <AddToken address=(address :> string) op />
             </View>;
           | Some({symbol, decimals, _}) =>
             Format.asprintf(

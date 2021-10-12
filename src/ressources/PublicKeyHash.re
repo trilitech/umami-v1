@@ -119,3 +119,5 @@ module Comparator =
     type t = pkh;
     let cmp = compare;
   });
+
+module Map = MapEx.Make(Comparator);

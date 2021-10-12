@@ -23,29 +23,60 @@
 /*                                                                           */
 /*****************************************************************************/
 
-type Errors.t +=
-  | UnknownToken(string)
-  | NoRows
-  | CannotParseTokenAmount(ReBigNumber.t, int, int)
-  | CannotParseTezAmount(ReBigNumber.t, int, int);
+/** Real OCaml maps functor */
+module type S = {
+  include (module type of Belt.Map.Dict);
 
-type t = list(Transfer.elt);
-/* Public key hash encoding */
-let addr: CSVParser.Encodings.element(PublicKeyHash.t, Errors.t);
-/* Contract hash encoding */
-let token: CSVParser.Encodings.element(PublicKeyHash.t, Errors.t);
-/* CSV row encoding */
-let rowEncoding:
-  CSVParser.Encodings.row(
+  module Key: Id.Comparable;
+  type key = Key.t;
+  type id = Key.identity;
+  type map('value) = t(key, 'value, id);
+
+  let kcmp: cmp(key, id);
+  let cmp: (t(key, 'a, id), t(key, 'a, id), ~vcmp: ('a, 'a) => int) => int;
+  let has: (t(key, 'a, id), key) => bool;
+  let eq: (t(key, 'a, id), t(key, 'a, id), ~veq: ('a, 'a) => bool) => bool;
+  let fromArray: array((key, 'a)) => t(key, 'a, id);
+  let get: (t(key, 'a, id), key) => option('a);
+  let getWithDefault: (t(key, 'a, id), key, 'a) => 'a;
+  let remove: (t(key, 'a, id), key) => t(key, 'a, id);
+  let removeMany: (t(key, 'a, id), array(key)) => t(key, 'a, id);
+  let set: (t(key, 'a, id), key, 'a) => t(key, 'a, id);
+  let update:
+    (t(key, 'a, id), key, option('a) => option('a)) => t(key, 'a, id);
+  let merge:
     (
-      PublicKeyHash.t,
-      ReBigNumber.t,
-      option(PublicKeyHash.t),
-      option(ReBigNumber.t),
-    ),
-    Errors.t,
-  );
+      t(key, 'a, id),
+      t(key, 'b, id),
+      (key, option('a), option('b)) => option('c)
+    ) =>
+    t(key, 'c, id);
+  let mergeMany: (t(key, 'a, id), array((key, 'a))) => t(key, 'a, id);
+  let split:
+    (t(key, 'a, id), key) =>
+    ((t(key, 'a, id), t(key, 'a, id)), option('a));
+};
 
-let parseCSV:
-  (string, ~tokens: PublicKeyHash.Map.map(TokenRepr.t)) =>
-  result(t, Errors.t);
+module Make = (Key: Id.Comparable) : (S with module Key := Key) => {
+  include Belt.Map.Dict;
+
+  type key = Key.t;
+  type id = Key.identity;
+  type map('value) = t(key, 'value, id);
+
+  let kcmp: cmp(key, id) = Key.cmp;
+
+  let cmp = cmp(~kcmp);
+  let has = has(~cmp=kcmp);
+  let eq = eq(~kcmp);
+  let fromArray = fromArray(~cmp=kcmp);
+  let get = get(~cmp=kcmp);
+  let getWithDefault = getWithDefault(~cmp=kcmp);
+  let remove = remove(~cmp=kcmp);
+  let removeMany = removeMany(~cmp=kcmp);
+  let set = set(~cmp=kcmp);
+  let update = update(~cmp=kcmp);
+  let merge = merge(~cmp=kcmp);
+  let mergeMany = mergeMany(~cmp=kcmp);
+  let split = split(~cmp=kcmp);
+};

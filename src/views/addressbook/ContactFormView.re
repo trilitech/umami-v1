@@ -37,7 +37,13 @@ type action =
 
 let addressExistsCheck =
     (aliases, values: StateLenses.state): ReSchema.fieldState => {
-  switch (aliases->Map.String.get(values.address)) {
+  let alias =
+    values.address
+    ->PublicKeyHash.build
+    ->Result.mapWithDefault(None, address =>
+        aliases->PublicKeyHash.Map.get(address)
+      );
+  switch (alias) {
   | None => Valid
   | Some(a: Alias.t) =>
     Error(I18n.form_input_error#key_already_registered(a.name))
@@ -62,7 +68,7 @@ let make =
   let aliases =
     aliasesRequest
     ->ApiRequest.getDoneOk
-    ->Option.getWithDefault(Map.String.empty);
+    ->Option.getWithDefault(PublicKeyHash.Map.empty);
 
   let form: AccountCreateForm.api =
     AccountCreateForm.use(

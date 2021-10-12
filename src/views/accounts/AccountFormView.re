@@ -56,7 +56,7 @@ module Generic = {
     let aliases =
       aliasesRequest
       ->ApiRequest.getDoneOk
-      ->Option.getWithDefault(Map.String.empty);
+      ->Option.getWithDefault(PublicKeyHash.Map.empty);
 
     let form: AccountCreateForm.api =
       AccountCreateForm.use(

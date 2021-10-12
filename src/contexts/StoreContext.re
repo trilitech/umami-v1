@@ -45,7 +45,7 @@ type nextState('value) = (unit => option('value), unit => unit);
 type state = {
   selectedAccountState: reactState(option(PublicKeyHash.t)),
   selectedTokenState: reactState(option(PublicKeyHash.t)),
-  accountsRequestState: requestState(Map.String.t(Account.t)),
+  accountsRequestState: requestState(PublicKeyHash.Map.map(Account.t)),
   secretsRequestState: reactState(ApiRequest.t(array(Secret.derived))),
   balanceRequestsState: apiRequestsState(Tez.t),
   delegateRequestsState: apiRequestsState(option(PublicKeyHash.t)),
@@ -54,9 +54,11 @@ type state = {
   operationsRequestsState:
     apiRequestsState(OperationApiRequest.operationsResponse),
   operationsConfirmations: reactState(Set.String.t),
-  aliasesRequestState: reactState(ApiRequest.t(Map.String.t(Alias.t))),
+  aliasesRequestState:
+    reactState(ApiRequest.t(PublicKeyHash.Map.map(Alias.t))),
   bakersRequestState: reactState(ApiRequest.t(array(Delegate.t))),
-  tokensRequestState: reactState(ApiRequest.t(Map.String.t(Token.t))),
+  tokensRequestState:
+    reactState(ApiRequest.t(PublicKeyHash.Map.map(Token.t))),
   balanceTokenRequestsState: apiRequestsState(Token.Unit.t),
   apiVersionRequestState: reactState(option(Network.apiVersion)),
   eulaSignatureRequestState: reactState(bool),
@@ -121,7 +123,10 @@ let make = (~children) => {
   let selectedTokenState = React.useState(() => None);
 
   let accountsRequestState = React.useState(() => ApiRequest.NotAsked);
-  let (accountsRequest, _setAccountsRequest) = accountsRequestState;
+  let (
+    accountsRequest: ApiRequest.t(PublicKeyHash.Map.map(_)),
+    _setAccountsRequest,
+  ) = accountsRequestState;
 
   let balanceRequestsState = React.useState(() => Map.String.empty);
   let delegateRequestsState = React.useState(() => Map.String.empty);
@@ -209,8 +214,8 @@ let make = (~children) => {
     () => {
       if (selectedAccount->Option.isNone) {
         accountsRequest
-        ->ApiRequest.getWithDefault(Map.String.empty)
-        ->Map.String.valuesToArray
+        ->ApiRequest.getWithDefault(PublicKeyHash.Map.empty)
+        ->PublicKeyHash.Map.valuesToArray
         ->Array.get(0)
         ->Lib.Option.iter((account: Account.t) =>
             setSelectedAccount(_ => Some(account.address))
@@ -356,9 +361,9 @@ module Balance = {
     let (accountsRequest, _) = store.accountsRequestState;
     let requests = balanceRequests->Map.String.valuesToArray;
     let accounts =
-      accountsRequest->ApiRequest.getWithDefault(Map.String.empty);
+      accountsRequest->ApiRequest.getWithDefault(PublicKeyHash.Map.empty);
 
-    handleBalances(accounts->Map.String.size, requests, a =>
+    handleBalances(accounts->PublicKeyHash.Map.size, requests, a =>
       a->Array.reduce(Tez.zero, (acc, balanceRequest) => {
         Tez.Infix.(acc + balanceRequest)
       })
@@ -391,18 +396,18 @@ module BalanceToken = {
     let (balanceRequests, _) = store.balanceTokenRequestsState;
     let (accountsRequest, _) = store.accountsRequestState;
     let accounts =
-      accountsRequest->ApiRequest.getWithDefault(Map.String.empty);
+      accountsRequest->ApiRequest.getWithDefault(PublicKeyHash.Map.empty);
 
     let requests =
       accounts
-      ->Map.String.valuesToArray
+      ->PublicKeyHash.Map.valuesToArray
       ->Array.keepMap(account => {
           balanceRequests->Map.String.get(
             getRequestKey(account.address, tokenAddress),
           )
         });
 
-    Balance.handleBalances(accounts->Map.String.size, requests, a =>
+    Balance.handleBalances(accounts->PublicKeyHash.Map.size, requests, a =>
       a->Array.reduce(Token.Unit.zero, (acc, balanceRequest) => {
         Token.Unit.Infix.(acc + balanceRequest)
       })
@@ -560,8 +565,8 @@ module Tokens = {
     let (tokensRequest, _) = useRequestState();
     let apiVersion = useApiVersion();
     tokensRequest->ApiRequest.map(tokens =>
-      apiVersion->Option.mapWithDefault(Map.String.empty, v =>
-        tokens->Map.String.keep((_, t) =>
+      apiVersion->Option.mapWithDefault(PublicKeyHash.Map.empty, v =>
+        tokens->PublicKeyHash.Map.keep((_, t) =>
           t.TokenRepr.chain == v.Network.chain
         )
       )
@@ -570,14 +575,15 @@ module Tokens = {
 
   let useGetAll = () => {
     let accountsRequest = useRequest();
-    accountsRequest->ApiRequest.getWithDefault(Map.String.empty);
+    accountsRequest->ApiRequest.getWithDefault(PublicKeyHash.Map.empty);
   };
 
-  let useGet = (tokenAddress: option(string)) => {
+  let useGet = (tokenAddress: option(PublicKeyHash.t)) => {
     let tokens = useGetAll();
 
     switch (tokenAddress, tokens) {
-    | (Some(tokenAddress), tokens) => tokens->Map.String.get(tokenAddress)
+    | (Some(tokenAddress), tokens) =>
+      tokens->PublicKeyHash.Map.get(tokenAddress)
     | _ => None
     };
   };
@@ -614,7 +620,9 @@ module Aliases = {
   };
 
   let filterAccounts = (~aliases, ~accounts) =>
-    aliases->Map.String.keep((k, _) => !accounts->Map.String.has(k));
+    aliases->PublicKeyHash.Map.keep((k, _) =>
+      !accounts->PublicKeyHash.Map.has(k)
+    );
 
   let useRequestExceptAccounts = () => {
     let store = useStoreContext();
@@ -650,7 +658,7 @@ module Aliases = {
     let aliasesRequest = useRequest();
     aliasesRequest
     ->ApiRequest.getDoneOk
-    ->Option.getWithDefault(Map.String.empty);
+    ->Option.getWithDefault(PublicKeyHash.Map.empty);
   };
 
   let useCreate = () => {
@@ -682,28 +690,28 @@ module Accounts = {
 
   let useGetAll = () => {
     let accountsRequest = useRequest();
-    accountsRequest->ApiRequest.getWithDefault(Map.String.empty);
+    accountsRequest->ApiRequest.getWithDefault(PublicKeyHash.Map.empty);
   };
 
   let useGetAllWithDelegates = () => {
     let accounts = useGetAll();
     let delegates = Delegate.useGetAll();
 
-    accounts->Map.String.map(account => {
-      let delegate = delegates->Map.String.get((account.address :> string));
+    accounts->PublicKeyHash.Map.map(account => {
+      let delegate = delegates->(Map.String.get((account.address :> string)));
       (account, delegate);
     });
   };
 
   let useGetFromAddress = (address: PublicKeyHash.t) => {
     let accounts = useGetAll();
-    accounts->Map.String.get((address :> string));
+    accounts->PublicKeyHash.Map.get(address);
   };
 
   let useGetFromOptAddress = (address: option(PublicKeyHash.t)) => {
     let accounts = useGetAll();
     address->Option.flatMap(address =>
-      accounts->Map.String.get((address :> string))
+      accounts->PublicKeyHash.Map.get(address)
     );
   };
 
@@ -826,15 +834,13 @@ module SelectedAccount = {
 
     let (selected, set) = store.selectedAccountState;
     let selected =
-      selected->Option.flatMap(pkh =>
-        accounts->Map.String.get((pkh :> string))
-      );
+      selected->Option.flatMap(pkh => accounts->PublicKeyHash.Map.get(pkh));
 
     switch (selected) {
     | Some(selectedAccount) => Some(selectedAccount)
     | None =>
       accounts
-      ->Map.String.valuesToArray
+      ->PublicKeyHash.Map.valuesToArray
       ->SortArray.stableSortBy(Account.compareName)
       ->Array.get(0)
       ->Option.map(v => {
@@ -859,7 +865,7 @@ module SelectedToken = {
 
     switch (store.selectedTokenState, tokens) {
     | ((Some(selectedToken), _), tokens) =>
-      tokens->Map.String.get((selectedToken :> string))
+      tokens->PublicKeyHash.Map.get(selectedToken)
     | _ => None
     };
   };
