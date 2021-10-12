@@ -78,7 +78,7 @@ module Accounts: {
     (~config: ConfigContext.env) => result(t, TezosClient.Errors.t);
 
   let recoveryPhrases:
-    unit => option(array(SecureStorage.Cipher.encryptedData));
+    unit => Let.result(array(SecureStorage.Cipher.encryptedData));
 
   let get:
     (~config: ConfigContext.env) =>

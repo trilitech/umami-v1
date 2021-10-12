@@ -69,7 +69,6 @@ type networkStatus = {
   current: Network.status,
 };
 
-open UmamiCommon;
 type configState = {
   content: env,
   configFile: ConfigFile.t,
@@ -77,6 +76,7 @@ type configState = {
   networkStatus,
   retryNetwork:
     (~onlyOn: Network.status=?, ~onlyAfter: Network.status=?, unit) => unit,
+  storageVersion: Version.t,
 };
 
 let initialState = {
@@ -88,6 +88,7 @@ let initialState = {
     current: Pending,
   },
   retryNetwork: (~onlyOn as _=?, ~onlyAfter as _=?, ()) => (),
+  storageVersion: Version.mk(1, 0),
 };
 
 let context = React.createContext(initialState);
@@ -101,18 +102,45 @@ module Provider = {
   let make = React.Context.provider(context);
 };
 
+let initMigration = () => {
+  let version =
+    switch (LocalStorage.Version.get()) {
+    | Ok(v) => v
+    | Error(_) =>
+      Js.log("Storage version not found, using 1.0 as base");
+      Version.mk(1, 0);
+    };
+
+  switch (Migration.init(version)) {
+  | Ok () => LocalStorage.Version.set(Migration.currentVersion)
+  | Error(_) => ()
+  };
+};
+
 let load = () => {
-  switch (ConfigFile.read()->Js.Nullable.toOption) {
-  | Some(conf) => ConfigFile.parse(conf)
-  | None =>
+  initMigration();
+
+  switch (ConfigFile.read()) {
+  | Ok(conf) => conf
+  | Error(_) =>
     Js.log("No config to load. Using default config");
     ConfigFile.dummy;
+  };
+};
+
+let version = () => {
+  switch (LocalStorage.Version.get()) {
+  | Ok(v) => v
+  | Error(_) =>
+    Js.log("Storage version not found, using 1.0 as base");
+    Version.mk(1, 0);
   };
 };
 
 [@react.component]
 let make = (~children) => {
   let (configFile, setConfig) = React.useState(() => load());
+  let (storageVersion, _) = React.useState(() => version());
 
   let (content, setContent) = React.useState(() => load()->fromFile);
 
@@ -221,11 +249,19 @@ let make = (~children) => {
   let write = f =>
     setConfig(c => {
       let c = f(c);
-      c->ConfigFile.toString->Lib.Option.iter(c => c->ConfigFile.write);
+      c->ConfigFile.Storage.set;
       c;
     });
 
-  <Provider value={content, configFile, write, networkStatus, retryNetwork}>
+  <Provider
+    value={
+      content,
+      configFile,
+      write,
+      networkStatus,
+      retryNetwork,
+      storageVersion,
+    }>
     children
   </Provider>;
 };

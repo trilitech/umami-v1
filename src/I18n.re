@@ -529,7 +529,14 @@ let errors = {
       i,
       w,
     );
-  pub secret_already_imported = "Secret already imported"
+  pub secret_already_imported = "Secret already imported";
+  pub json_parsing_error = _ => "JSON parsing error";
+  pub local_storage_key_not_found = k =>
+    p("Internal error: key `%s` not found", k);
+  pub version_format = v =>
+    p("Internal error: invalid version format `%s`", v);
+  pub storage_migration_failed = v =>
+    p("Internal error: storage migration failed at version %s", v)
 };
 
 let csv = {

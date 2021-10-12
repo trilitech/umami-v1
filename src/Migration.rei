@@ -24,47 +24,9 @@
 /*****************************************************************************/
 
 type Errors.t +=
-  | ParsingError(string)
-  | DecodeError(string);
+  | MigrationFailed(Version.t);
 
-// Propagates Errors.t during decoding, should be caught by the decode function
-exception InternalError(Errors.t);
+let currentVersion: Version.t;
 
-let parse: string => Let.result(Js.Json.t);
-
-let decode: (Js.Json.t, Json.Decode.decoder('a)) => Let.result('a);
-
-module MichelsonDecode: {
-  type address =
-    | Packed(bytes)
-    | Pkh(PublicKeyHash.t);
-
-  let dataDecoder:
-    Json.Decode.decoder('a) => Json.Decode.decoder(array('a));
-
-  let pairDecoder:
-    (Json.Decode.decoder('a), Json.Decode.decoder('b)) =>
-    Json.Decode.decoder(('a, 'b));
-
-  let intDecoder: Json.Decode.decoder(string);
-
-  let bytesDecoder: Json.Decode.decoder(bytes);
-
-  let stringDecoder: Json.Decode.decoder(string);
-
-  let addressDecoder: Json.Decode.decoder(address);
-
-  let fa2BalanceOfDecoder: Js.Json.t => array(((address, string), string));
-};
-
-module Encode: {
-  include (module type of Json.Encode);
-
-  let bsListEncoder: encoder('a) => encoder(list('a));
-};
-
-module Decode: {
-  include (module type of Json.Decode);
-
-  let bsListDecoder: decoder('a) => decoder(list('a));
-};
+/** From a storage version, applies migrations */
+let init: Version.t => Result.t(unit, Errors.t);

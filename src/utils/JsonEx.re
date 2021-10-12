@@ -26,6 +26,7 @@
 open Json;
 
 type Errors.t +=
+  | ParsingError(string)
   | DecodeError(string);
 
 let () =
@@ -33,6 +34,7 @@ let () =
     "Json",
     fun
     | DecodeError(s) => Some(s)
+    | ParsingError(s) => I18n.errors#json_parsing_error(s)->Some
     | _ => None,
   );
 
@@ -50,6 +52,11 @@ let decode = (json, decoder) =>
   | e =>
     Js.log(e);
     Error(Errors.Generic("Unknown decoding error"));
+  };
+
+let parse = s =>
+  try(s->Js.Json.parseExn->Ok) {
+  | _ => Error(ParsingError(s))
   };
 
 module MichelsonDecode = {
@@ -99,4 +106,34 @@ module MichelsonDecode = {
     |> dataDecoder(
          pairDecoder(pairDecoder(addressDecoder, intDecoder), intDecoder),
        );
+};
+
+module Encode = {
+  include Json.Encode;
+
+  let rec bsListEncoder = (valueEncoder, l) =>
+    switch (l) {
+    | [] => int(0)
+    | [hd, ...tl] =>
+      object_([
+        ("hd", valueEncoder(hd)),
+        ("tl", bsListEncoder(valueEncoder, tl)),
+      ])
+    };
+};
+
+module Decode = {
+  include Json.Decode;
+
+  let nilDecoder = json =>
+    json->int == 0 ? [] : raise(DecodeError("invalid int for nil"));
+
+  let rec consDecoder = (valueDecoder, json) => {
+    let v = json |> field("hd", valueDecoder);
+    let tl = json |> field("tl", bsListDecoder(valueDecoder));
+    [v, ...tl];
+  }
+
+  and bsListDecoder = (valueDecoder, json) =>
+    json |> either(consDecoder(valueDecoder), nilDecoder);
 };

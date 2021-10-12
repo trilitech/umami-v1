@@ -26,8 +26,16 @@
 type t =
   | Version(int, int, option(int), option(string));
 
-type error =
+type Errors.t +=
   | VersionFormat(string);
+
+let () =
+  Errors.registerHandler(
+    "Version",
+    fun
+    | VersionFormat(s) => I18n.errors#version_format(s)->Some
+    | _ => None,
+  );
 
 let mk = (~fix=?, ~patch=?, major, minor) =>
   Version(major, minor, fix, patch);
@@ -40,6 +48,27 @@ let toString = (Version(major, minor, fix, patch)) =>
      ->Option.map(fix => "." ++ Int.toString(fix))
      ->Option.getWithDefault("")
   ++ patch->Option.map(patch => "~" ++ patch)->Option.getWithDefault("");
+
+let compareFix =
+  fun
+  | (None, None) => 0
+  | (Some(_), None) => (-1)
+  | (None, Some(_)) => 1
+  | (Some(fix1), Some(fix2)) => compare(fix1, fix2);
+
+let compare =
+    (Version(major1, minor1, fix1, _), Version(major2, minor2, fix2, _)) => {
+  let major = compare(major1, major2);
+  let minor = compare(minor1, minor2);
+  let fix = compareFix((fix1, fix2));
+  major != 0 ? major : minor != 0 ? minor : fix;
+};
+
+module Comparable =
+  Id.MakeComparable({
+    type nonrec t = t;
+    let cmp = compare;
+  });
 
 let leqFix =
   fun

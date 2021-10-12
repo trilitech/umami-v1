@@ -24,47 +24,43 @@
 /*****************************************************************************/
 
 type Errors.t +=
-  | ParsingError(string)
-  | DecodeError(string);
+  | MigrationFailed(Version.t);
 
-// Propagates Errors.t during decoding, should be caught by the decode function
-exception InternalError(Errors.t);
+let () =
+  Errors.registerHandler(
+    "LocalStorage",
+    fun
+    | MigrationFailed(v) =>
+      I18n.errors#storage_migration_failed(Version.toString(v))->Some
+    | _ => None,
+  );
 
-let parse: string => Let.result(Js.Json.t);
+let currentVersion = Version.mk(1, 2);
 
-let decode: (Js.Json.t, Json.Decode.decoder('a)) => Let.result('a);
-
-module MichelsonDecode: {
-  type address =
-    | Packed(bytes)
-    | Pkh(PublicKeyHash.t);
-
-  let dataDecoder:
-    Json.Decode.decoder('a) => Json.Decode.decoder(array('a));
-
-  let pairDecoder:
-    (Json.Decode.decoder('a), Json.Decode.decoder('b)) =>
-    Json.Decode.decoder(('a, 'b));
-
-  let intDecoder: Json.Decode.decoder(string);
-
-  let bytesDecoder: Json.Decode.decoder(bytes);
-
-  let stringDecoder: Json.Decode.decoder(string);
-
-  let addressDecoder: Json.Decode.decoder(address);
-
-  let fa2BalanceOfDecoder: Js.Json.t => array(((address, string), string));
+let addMigration = (migrations, version, migration) => {
+  migrations->Map.update(
+    version,
+    fun
+    | None => [migration]->Some
+    | Some(m) => [migration, ...m]->Some,
+  );
 };
 
-module Encode: {
-  include (module type of Json.Encode);
-
-  let bsListEncoder: encoder('a) => encoder(list('a));
+let applyMigration = (migrations, currentVersion) => {
+  migrations->Map.reduce(Ok(), (res, version, migrations) =>
+    Version.compare(currentVersion, version) >= 0
+      ? res
+      : migrations
+        ->List.reduce(res, (res, migration) =>
+            res->Result.flatMap(_ => migration())
+          )
+        ->ResultEx.mapError(_ => MigrationFailed(version))
+  );
 };
 
-module Decode: {
-  include (module type of Json.Decode);
-
-  let bsListDecoder: decoder('a) => decoder(list('a));
+let init = version => {
+  Map.make(~id=(module Version.Comparable))
+  ->addMigration(Disclaimer.Legacy.V1_1.version, Disclaimer.Legacy.V1_1.mk)
+  ->addMigration(ConfigFile.Legacy.V1_2.version, ConfigFile.Legacy.V1_2.mk)
+  ->applyMigration(version);
 };
