@@ -28,6 +28,7 @@ open ReactNative;
 let styles =
   Style.(
     StyleSheet.create({
+      "advancedOptions": style(~marginBottom=12.->dp, ()),
       "timeoutError":
         style(
           ~alignItems=`flexStart,
@@ -94,7 +95,8 @@ let make =
            editAdvancedOptions={i => setAdvancedOptions(Some(i))}
          />
        }}
-      <Buttons.FormSecondary
+      <Buttons.RightArrowButton
+        style=styles##advancedOptions
         text=I18n.label#advanced_options
         onPress={_ => setAdvancedOptions(None)}
       />

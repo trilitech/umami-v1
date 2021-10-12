@@ -29,7 +29,14 @@ let styles =
   Style.(
     StyleSheet.create({
       "primary": style(~borderRadius=4., ()),
-      "button": style(),
+      "content":
+        style(
+          ~display=`flex,
+          ~flexDirection=`row,
+          ~flex=1.,
+          ~alignItems=`center,
+          (),
+        ),
       "pressable":
         style(
           ~flex=1.,
@@ -64,7 +71,7 @@ module FormBase = {
       isPrimary
         ? (module ThemedPressable.Primary) : (module ThemedPressable.Base);
 
-    <View style=Style.(arrayOption([|Some(styles##button), vStyle|]))>
+    <View style=?vStyle>
       <ThemedPressableComp
         style={Style.arrayOption([|Some(styles##pressable), style|])}
         onPress
@@ -82,7 +89,12 @@ module FormBase = {
                style=styles##loader
              />
            : React.null}
-        <View style={ReactUtils.visibleOn(!loading)}> children </View>
+        <View
+          style=Style.(
+            array([|ReactUtils.visibleOn(!loading), styles##content|])
+          )>
+          children
+        </View>
       </ThemedPressableComp>
     </View>;
   };
@@ -118,6 +130,51 @@ module FormPrimary = {
         }>
         text->React.string
       </Typography.ButtonPrimary>
+    </FormBase>;
+  };
+};
+
+module RightArrowButton = {
+  let styles =
+    Style.(
+      StyleSheet.create({
+        "chevron": style(~transform=[|rotate(~rotate=270.->deg)|], ()),
+        "content":
+          style(
+            ~display=`flex,
+            ~justifyContent=`spaceBetween,
+            ~alignItems=`center,
+            ~flexDirection=`row,
+            ~flex=1.,
+            (),
+          ),
+        "button":
+          style(
+            ~display=`flex,
+            ~justifyContent=`spaceBetween,
+            ~flexDirection=`row,
+            ~paddingHorizontal=0.->dp,
+            (),
+          ),
+      })
+    );
+
+  [@react.component]
+  let make = (~text, ~onPress, ~style as styleArg=?) => {
+    let theme = ThemeContext.useTheme();
+
+    <FormBase
+      onPress style=Style.(arrayOption([|styleArg, styles##button->Some|]))>
+      <View style=styles##content>
+        <Typography.ButtonSecondary fontSize=14.>
+          text->React.string
+        </Typography.ButtonSecondary>
+        <Icons.ChevronDown
+          color={theme.colors.iconMediumEmphasis}
+          style={styles##chevron}
+          size=28.
+        />
+      </View>
     </FormBase>;
   };
 };
