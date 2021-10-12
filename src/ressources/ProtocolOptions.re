@@ -90,10 +90,3 @@ let emptyTransferOptions = {
   parameter: None,
   entrypoint: None,
 };
-
-type simulationResults = {
-  fee: Tez.t,
-  gasLimit: int,
-  storageLimit: int,
-  revealFee: Tez.t,
-};
