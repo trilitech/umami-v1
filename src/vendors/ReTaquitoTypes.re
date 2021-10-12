@@ -101,6 +101,7 @@ module Transfer = {
 
 module Delegate = {
   type delegateParams = {
+    kind: string,
     source: PublicKeyHash.t,
     delegate: option(PublicKeyHash.t),
     fee: option(ReBigNumber.t),

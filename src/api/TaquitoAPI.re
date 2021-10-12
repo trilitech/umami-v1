@@ -29,18 +29,25 @@ open Let;
 
 module Contracts = ReTaquitoContracts;
 
-let revealFee = (~endpoint, source) => {
-  let client = RPCClient.create(endpoint);
+type Errors.t +=
+  | InvalidEstimationResults;
 
-  let%FResMap k =
-    RPCClient.getManagerKey(client, source)->ReTaquitoError.fromPromiseParsed;
+let () =
+  Errors.registerHandler(
+    "Taquito",
+    fun
+    | InvalidEstimationResults => I18n.errors#invalid_estimation_results->Some
+    | _ => None,
+  );
 
-  Js.Nullable.isNullable(k) ? default_fee_reveal : 0;
-};
-
-let addRevealFee = (~source, ~endpoint, r) => {
-  let%FResMap fee = revealFee(~endpoint, source);
-  Toolkit.Estimation.{...r, totalCost: fee + r.totalCost, revealFee: fee};
+let extractBatchRevealFee = (xs, estimations) => {
+  switch (estimations->Array.get(0)) {
+  | Some((res: ReTaquitoTypes.Estimation.result))
+      when estimations->Array.length == xs->Array.length + 1 =>
+    Ok((estimations->Array.sliceToEnd(1), res.suggestedFeeMutez))
+  | Some(_) => Ok((estimations, 0))
+  | None => Error(InvalidEstimationResults)
+  };
 };
 
 let handleCustomOptions =
@@ -53,6 +60,7 @@ let handleCustomOptions =
   storageLimit: storageLimit->Option.getWithDefault(results.storageLimit),
   gasLimit: gasLimit->Option.getWithDefault(results.gasLimit),
 };
+
 let handleEstimationResults = ((results, revealFee), options, index) => {
   switch (index) {
   | Some(index) =>
@@ -79,8 +87,7 @@ let handleEstimationResults = ((results, revealFee), options, index) => {
     /* Same behavior as tezos-client, adding 100 milligas as fees just in case */
     /* also adds default revealFees */
     let {gasLimit, storageLimit, totalCost, customFeeMutez} as est =
-      results
-      ->Array.zip(options)
+      Array.zip(results, options)
       ->Array.reduce(
           init,
           (acc, (est, customValues)) => {
@@ -232,20 +239,33 @@ module Delegate = {
       let feeBignum = fee->Option.map(Tez.toBigNumber);
       let sd =
         Toolkit.prepareDelegate(~source, ~delegate, ~fee=?feeBignum, ());
-      Js.log(sd);
 
       let%FRes res =
         tk.estimate
-        ->Toolkit.Estimation.setDelegate(sd)
+        ->Toolkit.Estimation.batchDelegation([|sd|])
         ->ReTaquitoError.fromPromiseParsed;
 
-      res
-      ->handleCustomOptions((
+      let%FRes (res, revealFee) =
+        extractBatchRevealFee([|sd|], res)->Future.value;
+
+      let%FResMap res =
+        switch (res) {
+        | [|res|] => FutureEx.ok(res)
+        | _ => FutureEx.err(InvalidEstimationResults)
+        };
+
+      let res =
+        res->handleCustomOptions((
           fee->Option.map(Tez.unsafeToMutezInt),
           None,
           None,
-        ))
-      ->addRevealFee(~source, ~endpoint);
+        ));
+
+      Toolkit.Estimation.{
+        ...res,
+        totalCost: revealFee + res.totalCost,
+        revealFee,
+      };
     };
   };
 };
@@ -542,17 +562,15 @@ module Transfer = {
       let%FRes txs =
         endpoint->transfers(source)->Future.map(ResultEx.collect);
 
+      let txs =
+        txs->List.map(tr => {...tr, kind: opKindTransaction})->List.toArray;
+
       let%FRes res =
         tk.estimate
-        ->Toolkit.Estimation.batch(
-            txs
-            ->List.map(tr => {...tr, kind: opKindTransaction})
-            ->List.toArray,
-          )
+        ->Toolkit.Estimation.batch(txs)
         ->ReTaquitoError.fromPromiseParsed;
 
-      let%FResMap revealFee = revealFee(~endpoint, source);
-      (res, revealFee);
+      extractBatchRevealFee(txs, res)->Future.value;
     };
   };
 };
