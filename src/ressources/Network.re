@@ -157,7 +157,7 @@ type configurableChains = [ nativeChains | `Custom(chainId)];
 
 type network = {
   name: string,
-  chain: configurableChains,
+  chain,
   explorer: string,
   endpoint: string,
 };
@@ -403,7 +403,7 @@ let getNodeChain = (~timeout=?, url) => {
   switch (Js.Json.decodeString(json)) {
   | Some(v) =>
     let chain =
-      nativeChains
+      supportedChains
       ->List.getBy(((_, id)) => id == v)
       ->Option.map(fst)
       ->Option.getWithDefault(`Custom(v));
@@ -416,8 +416,7 @@ let getNodeChain = (~timeout=?, url) => {
 let isMainnet = n => n == `Mainnet;
 
 let checkConfiguration =
-    (api_url, node_url)
-    : Future.t(Result.t((apiVersion, configurableChains), Errors.t)) =>
+    (api_url, node_url): Future.t(Result.t((apiVersion, chain), Errors.t)) =>
   Future.map2(
     getAPIVersion(~timeout=5000, api_url),
     getNodeChain(~timeout=5000, node_url),
