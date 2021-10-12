@@ -38,16 +38,27 @@ let styles =
     })
   );
 
+type step =
+  | AdvancedOptStep(option(int))
+  | SummaryStep;
+
 [@react.component]
 let make =
     (
       ~subtitle=?,
       ~source: Account.t,
       ~ledgerState,
-      ~children,
-      ~sendOperation: TaquitoAPI.Signer.intent => Future.t(Result.t(_)),
+      ~signOpStep as (step, setStep),
+      ~dryRun,
+      ~operation,
+      ~sendOperation:
+         (~operation: Operation.t, TaquitoAPI.Signer.intent) =>
+         Future.t(Result.t(_)),
       ~loading,
     ) => {
+  let ((operation: Operation.t, dryRun), setOp) =
+    React.useState(() => (operation, dryRun));
+
   let subtitle =
     subtitle->Option.map(((s, hs)) =>
       switch (source.Account.kind) {
@@ -57,18 +68,45 @@ let make =
       }
     );
 
-  <>
-    {subtitle->ReactUtils.mapOpt(s =>
-       <View style=FormStyles.header>
-         <Typography.Overline1> s->React.string </Typography.Overline1>
-       </View>
-     )}
-    children
-    <SigningBlock
-      accountKind={source.Account.kind}
-      ledgerState
-      loading
-      sendOperation
+  let onAdvOptSubmit = (op, dryRun) => {
+    setOp(_ => (op, dryRun));
+
+    setStep(_ => SummaryStep);
+  };
+
+  switch (step) {
+  | SummaryStep =>
+    <>
+      {subtitle->ReactUtils.mapOpt(s =>
+         <View style=FormStyles.header>
+           <Typography.Overline1> s->React.string </Typography.Overline1>
+         </View>
+       )}
+      {switch (operation) {
+       | Delegation(delegation) =>
+         <OperationSummaryView.Delegate delegation dryRun />
+       | Transaction(transfer) =>
+         <OperationSummaryView.Transactions transfer dryRun />
+       }}
+      <Buttons.FormSecondary
+        text=I18n.label#advanced_options
+        onPress={_ => {setStep(_ => AdvancedOptStep(None))}}
+      />
+      <SigningBlock
+        accountKind={source.Account.kind}
+        ledgerState
+        loading
+        sendOperation={sendOperation(~operation)}
+      />
+    </>
+
+  | AdvancedOptStep(index) =>
+    <AdvancedOptionsView
+      operation
+      dryRun
+      index
+      onSubmit=onAdvOptSubmit
+      token=None
     />
-  </>;
+  };
 };

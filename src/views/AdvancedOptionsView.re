@@ -24,6 +24,73 @@
 /*****************************************************************************/
 
 open ReactNative;
+open UmamiCommon;
+
+module StateLenses = [%lenses
+  type state = {
+    fee: string,
+    gasLimit: string,
+    storageLimit: string,
+    forceLowFee: bool,
+  }
+];
+
+type validState = {
+  fee: option(Tez.t),
+  gasLimit: option(int),
+  storageLimit: option(int),
+  forceLowFee: bool,
+};
+
+let extractValidState = (state: StateLenses.state): validState => {
+  fee: state.fee->Tez.fromString,
+  gasLimit: state.gasLimit->Int.fromString,
+  storageLimit: state.storageLimit->Int.fromString,
+  forceLowFee: state.forceLowFee,
+};
+
+module Form = {
+  include ReForm.Make(StateLenses);
+
+  let fromDryRun = (dr: Protocol.simulationResults) =>
+    StateLenses.{
+      fee: dr.fee->Tez.toString,
+      gasLimit: "",
+      storageLimit: "",
+      forceLowFee: false,
+    };
+
+  let use = (dryRun, onSubmit) => {
+    use(
+      ~schema={
+        Validation.(
+          Schema(
+            custom(
+              values => FormUtils.(emptyOr(isValidTezAmount, values.fee)),
+              Fee,
+            )
+            + custom(
+                values => FormUtils.isValidInt(values.gasLimit),
+                GasLimit,
+              )
+            + custom(
+                values => FormUtils.isValidInt(values.storageLimit),
+                StorageLimit,
+              ),
+          )
+        );
+      },
+      ~onSubmit=
+        f => {
+          onSubmit(f);
+          None;
+        },
+      ~initialState=dryRun->fromDryRun,
+      ~i18n=FormUtils.i18n,
+      (),
+    );
+  };
+};
 
 let styles =
   Style.(
@@ -42,29 +109,76 @@ let styles =
     })
   );
 
+let updateOperation = (index, values: StateLenses.state, o: Operation.t) => {
+  let values = values->extractValidState;
+  let fallback = (o1, o2) => Lib.Option.firstSome([o1, o2]);
+
+  switch (o) {
+  | Transaction(t) =>
+    let transfers =
+      t.transfers
+      ->List.mapWithIndex((i, t) =>
+          if (index == None || index == Some(i)) {
+            let tx_options = {
+              ...t.tx_options,
+              gasLimit: fallback(values.gasLimit, t.tx_options.gasLimit),
+              fee: fallback(values.fee, t.tx_options.fee),
+              storageLimit:
+                fallback(values.storageLimit, t.tx_options.storageLimit),
+            };
+
+            {...t, tx_options};
+          } else {
+            t;
+          }
+        );
+
+    let options = {
+      ...t.options,
+      forceLowFee:
+        (values.forceLowFee || t.options.forceLowFee == Some(true))->Some,
+    };
+
+    {...t, options, transfers}->Protocol.Transaction;
+  | Delegation(d) =>
+    let options = {
+      ...d.options,
+      fee: fallback(values.fee, d.options.fee),
+      forceLowFee:
+        (values.forceLowFee || d.options.forceLowFee == Some(true))->Some,
+    };
+    {...d, options}->Protocol.Delegation;
+  };
+};
+
 let tezDecoration = (~style) =>
   <Typography.Body1 style> I18n.t#tez->React.string </Typography.Body1>;
 
 [@react.component]
-let make = (~operation, ~token, ~form: SendForm.api) => {
+let make = (~operation, ~dryRun, ~index, ~token, ~onSubmit) => {
   let (operationSimulateRequest, sendOperationSimulate) =
     StoreContext.Operations.useSimulate();
 
-  React.useEffect0(() => {
-    if (form.values.recipient != AnyString("") && form.values.amount != "") {
-      sendOperationSimulate(operation)
-      ->FutureEx.getOk(dryRun => {
-          form.handleChange(Fee, dryRun.fee->Tez.toString);
-          form.handleChange(GasLimit, dryRun.gasLimit->string_of_int);
-          form.handleChange(StorageLimit, dryRun.storageLimit->string_of_int);
-          form.setFieldValue(DryRun, Some(dryRun), ());
-        });
-    };
+  let form =
+    Form.use(
+      dryRun,
+      ({state}) => {
+        let op = updateOperation(index, state.values, operation);
 
-    None;
-  });
+        sendOperationSimulate((op, index))
+        ->Future.get(
+            fun
+            | Ok(dr) => {
+                let op = updateOperation(index, dr->Form.fromDryRun, op);
+                onSubmit(op, dr);
+              }
+            | Error(_) => (),
+          );
+      },
+    );
 
-  let theme = ThemeContext.useTheme();
+  let formFieldsAreValids =
+    FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
 
   <View>
     <View style=styles##formRowInputs>
@@ -109,21 +223,11 @@ let make = (~operation, ~token, ~form: SendForm.api) => {
       handleChange={form.handleChange(ForceLowFee)}
       error={form.getFieldError(Field(ForceLowFee))}
     />
-    {ReactUtils.onlyWhen(
-       <View
-         style=Style.(
-           array([|
-             StyleSheet.absoluteFillObject,
-             style(
-               ~backgroundColor=theme.colors.background,
-               ~opacity=0.87,
-               (),
-             ),
-           |])
-         )>
-         <LoadingView />
-       </View>,
-       operationSimulateRequest->ApiRequest.isLoading,
-     )}
+    <Buttons.SubmitPrimary
+      text=I18n.btn#update
+      loading={operationSimulateRequest->ApiRequest.isLoading}
+      onPress={_ => form.submit()}
+      disabledLook={!formFieldsAreValids}
+    />
   </View>;
 };

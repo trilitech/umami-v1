@@ -260,7 +260,7 @@ let make =
     ) => {
   let theme: ThemeContext.theme = ThemeContext.useTheme();
   let recipients =
-    batch->List.mapWithIndex((i, (t: SendForm.validState, _) as v) =>
+    batch->List.mapWithIndex((i, (t: SendForm.validState) as v) =>
       (
         Some(() => onEdit(i, v)),
         (t.recipient->FormUtils.Alias.address, t.amount, None),
@@ -284,7 +284,7 @@ let make =
       </Typography.Overline2>
       <View>
         {batch
-         ->List.map(((t, _)) => t.amount)
+         ->List.map(t => t.amount)
          ->Transfer.Currency.reduceAmounts
          ->List.mapWithIndex((i, a) =>
              <Typography.Subtitle1

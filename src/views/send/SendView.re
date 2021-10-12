@@ -93,8 +93,8 @@ let styles =
 
 type step =
   | SendStep
-  | PasswordStep(SendForm.transaction, Protocol.simulationResults)
-  | EditStep(int, (SendForm.validState, bool))
+  | PasswordStep(Transfer.t, Protocol.simulationResults)
+  | EditStep(int, SendForm.validState)
   | BatchStep
   | SubmittedStep(string);
 
@@ -113,11 +113,6 @@ module Form = {
       amount: "",
       sender: account,
       recipient: FormUtils.Alias.AnyString(""),
-      fee: "",
-      gasLimit: "",
-      storageLimit: "",
-      forceLowFee: false,
-      dryRun: None,
     };
 
   let use =
@@ -146,18 +141,6 @@ module Form = {
                   }
                 },
                 Amount,
-              )
-            + custom(
-                values => FormUtils.(emptyOr(isValidTezAmount, values.fee)),
-                Fee,
-              )
-            + custom(
-                values => FormUtils.isValidInt(values.gasLimit),
-                GasLimit,
-              )
-            + custom(
-                values => FormUtils.isValidInt(values.storageLimit),
-                StorageLimit,
               ),
           )
         );
@@ -208,28 +191,26 @@ module Form = {
         | Edition(index) =>
           let batch =
             batch
-            ->List.mapWithIndex((id, elt) =>
-                id == index ? (state, true) : elt
-              )
+            ->List.mapWithIndex((id, elt) => id == index ? state : elt)
             ->List.reverse;
           (batch, Some(batch->List.length - (index + 1)));
 
         | Creation(_) =>
-          let batch = [(state, true), ...batch]->List.reverse;
+          let batch = [state, ...batch]->List.reverse;
           let length = batch->List.length;
 
           (batch, Some(length - 1));
         };
 
-      SendForm.buildTransaction(batch)
-      ->Operation.Simulation.transaction(index);
+      Operation.Simulation.transaction(
+        SendForm.buildTransaction(batch),
+        index,
+      );
     };
 
     [@react.component]
     let make =
         (
-          ~batch,
-          ~advancedOptionState,
           ~tokenState: (
              option(TezosClient.Token.t),
              (option(TezosClient.Token.t) => option(TezosClient.Token.t)) =>
@@ -241,7 +222,6 @@ module Form = {
           ~aliases,
           ~loading,
         ) => {
-      let (advancedOptionOpened, setAdvancedOptionOpened) = advancedOptionState;
       let (selectedToken, setSelectedToken) = tokenState;
 
       let (editing, onAddToBatch, onSubmitAll, batchMode) =
@@ -265,12 +245,6 @@ module Form = {
 
       let formFieldsAreValids =
         FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
-
-      let advancedOptionsDisabled =
-        form.getFieldState(Field(Amount)) != Valid
-        || form.getFieldState(Field(Sender)) != Valid
-        && form.getFieldState(Field(Sender)) != Pristine
-        || form.getFieldState(Field(Recipient)) != Valid;
 
       <>
         <ReactFlipToolkit.FlippedView flipId="form">
@@ -307,35 +281,6 @@ module Form = {
             handleChange={form.handleChange(Recipient)}
             error={form.getFieldError(Field(Recipient))}
           />
-          <SwitchItem
-            label=I18n.label#advanced_options
-            value=advancedOptionOpened
-            setValue=setAdvancedOptionOpened
-            disabled=advancedOptionsDisabled
-          />
-        </ReactFlipToolkit.FlippedView>
-        <ReactFlipToolkit.FlippedView
-          flipId="advancedOption"
-          scale=false
-          translate=advancedOptionOpened
-          opacity=true>
-          <ReactFlipToolkit.Flipper
-            flipKey={advancedOptionOpened->string_of_bool}>
-            {advancedOptionOpened
-               ? <ReactFlipToolkit.FlippedView
-                   flipId="innerAdvancedOption" onAppear onExit>
-                   <SendViewAdvancedOptions
-                     token
-                     operation={simulatedTransaction(
-                       mode,
-                       batch,
-                       SendForm.unsafeExtractValidState(token, form.values),
-                     )}
-                     form
-                   />
-                 </ReactFlipToolkit.FlippedView>
-               : React.null}
-          </ReactFlipToolkit.Flipper>
         </ReactFlipToolkit.FlippedView>
         <ReactFlipToolkit.FlippedView flipId="submit">
           <View style=FormStyles.verticalFormAction>
@@ -361,8 +306,7 @@ module Form = {
 
 module EditionView = {
   [@react.component]
-  let make = (~batch, ~aliases, ~initValues, ~onSubmit, ~index, ~loading) => {
-    let (initValues, advancedOptionOpened) = initValues;
+  let make = (~aliases, ~initValues, ~onSubmit, ~index, ~loading) => {
     let token =
       switch (initValues.SendForm.amount) {
       | Transfer.Currency.Tez(_) => None
@@ -373,20 +317,9 @@ module EditionView = {
 
     let initValues = initValues->SendForm.toState;
 
-    let (advancedOptionOpened, _) as advancedOptionState =
-      React.useState(_ => advancedOptionOpened);
-
-    let form =
-      Form.use(
-        ~initValues,
-        None,
-        token,
-        onSubmit(advancedOptionOpened, token),
-      );
+    let form = Form.use(~initValues, None, token, onSubmit(token));
 
     <Form.View
-      batch
-      advancedOptionState
       tokenState
       ?token
       form
@@ -410,9 +343,6 @@ let make = (~closeAction) => {
 
   let updateAccount = StoreContext.SelectedAccount.useSet();
 
-  let (advancedOptionsOpened, setAdvancedOptions) as advancedOptionState =
-    React.useState(_ => false);
-
   let (modalStep, setModalStep) = React.useState(_ => SendStep);
 
   let (token, _) as tokenState =
@@ -420,9 +350,8 @@ let make = (~closeAction) => {
 
   let (operationRequest, sendOperation) = StoreContext.Operations.useCreate();
 
-  let sendTransfer = (~transfer: Transfer.t, signingIntent) => {
-    let operation = Operation.transaction(transfer);
-
+  let sendTransfer =
+      (~transfer: Transfer.t, ~operation: Operation.t, signingIntent) => {
     sendOperation({operation, signingIntent})
     ->Future.tapOk(hash => {setModalStep(_ => SubmittedStep(hash))})
     ->Future.tapOk(_ => {updateAccount(transfer.source.address)});
@@ -448,11 +377,9 @@ let make = (~closeAction) => {
   let onSubmit = ({state, send}: SendForm.onSubmitAPI) => {
     let validState = SendForm.unsafeExtractValidState(token, state.values);
     switch (submitAction.current) {
-    | `SubmitAll =>
-      onSubmitBatch([(validState, advancedOptionsOpened), ...batch])
+    | `SubmitAll => onSubmitBatch([validState, ...batch])
     | `AddToBatch =>
-      setBatch(l => [(validState, advancedOptionsOpened), ...l]);
-      setAdvancedOptions(_ => false);
+      setBatch(l => [validState, ...l]);
       send(ResetForm);
       send(SetFieldValue(Sender, state.values.sender));
     };
@@ -478,22 +405,15 @@ let make = (~closeAction) => {
           amount,
           sender: form.values.sender->FormUtils.Unsafe.getValue,
           recipient: FormUtils.Alias.Address(destination),
-          fee: None,
-          gasLimit: None,
-          storageLimit: None,
-          forceLowFee: false,
-          dryRun: None,
         };
-        (formStateValues, false);
+        formStateValues;
       });
     setBatch(_ => transformTransfer);
   };
 
-  let onEdit = (i, advOpened, token, {state}: SendForm.onSubmitAPI) => {
+  let onEdit = (i, token, {state}: SendForm.onSubmitAPI) => {
     let validState = SendForm.unsafeExtractValidState(token, state.values);
-    setBatch(b =>
-      b->List.mapWithIndex((j, v) => i == j ? (validState, advOpened) : v)
-    );
+    setBatch(b => b->List.mapWithIndex((j, v) => i == j ? validState : v));
     setModalStep(_ => BatchStep);
   };
 
@@ -504,28 +424,42 @@ let make = (~closeAction) => {
 
   let (ledger, _) as ledgerState = React.useState(() => None);
 
-  let closing =
-    switch (
-      form.formState,
-      modalStep,
-      ledger: option(SigningBlock.LedgerView.state),
-    ) {
-    | (_, PasswordStep(_, _), Some(WaitForConfirm)) =>
-      ModalFormView.Deny(I18n.tooltip#reject_on_ledger)
+  let (sign, setSign) as signOpStep =
+    React.useState(() => SignOperationView.SummaryStep);
 
-    | (Pristine, _, _) when batch == [] => ModalFormView.Close(closeAction)
-    | (_, SubmittedStep(_), _) => ModalFormView.Close(closeAction)
-    | _ =>
-      ModalFormView.confirm(~actionText=I18n.btn#send_cancel, closeAction)
+  let closing =
+    switch (sign) {
+    | AdvancedOptStep(_) => None
+    | SummaryStep =>
+      switch (
+        form.formState,
+        modalStep,
+        ledger: option(SigningBlock.LedgerView.state),
+      ) {
+      | (_, PasswordStep(_, _), Some(WaitForConfirm)) =>
+        ModalFormView.Deny(I18n.tooltip#reject_on_ledger)->Some
+
+      | (Pristine, _, _) when batch == [] =>
+        ModalFormView.Close(closeAction)->Some
+      | (_, SubmittedStep(_), _) => ModalFormView.Close(closeAction)->Some
+      | _ =>
+        ModalFormView.confirm(~actionText=I18n.btn#send_cancel, closeAction)
+        ->Some
+      }
     };
 
   let back =
-    switch (modalStep) {
-    | PasswordStep(_, _) =>
-      Some(() => setModalStep(_ => batch == [] ? SendStep : BatchStep))
-    | EditStep(_, _) => Some(() => setModalStep(_ => BatchStep))
-    | SendStep => batch != [] ? Some(_ => setModalStep(_ => BatchStep)) : None
-    | _ => None
+    switch (sign) {
+    | AdvancedOptStep(_) => Some(() => setSign(_ => SummaryStep))
+    | SummaryStep =>
+      switch (modalStep) {
+      | PasswordStep(_, _) =>
+        Some(() => setModalStep(_ => batch == [] ? SendStep : BatchStep))
+      | EditStep(_, _) => Some(() => setModalStep(_ => BatchStep))
+      | SendStep =>
+        batch != [] ? Some(_ => setModalStep(_ => BatchStep)) : None
+      | _ => None
+      }
     };
 
   let onPressCancel = _ => {
@@ -537,18 +471,21 @@ let make = (~closeAction) => {
   let loading = operationRequest->ApiRequest.isLoading;
 
   let title =
-    switch (modalStep) {
-    | SendStep
-    | EditStep(_) => Some(I18n.title#send)
-    | BatchStep => Some(I18n.title#batch)
-    | PasswordStep(_, _) => Some(I18n.title#confirmation)
-    | SubmittedStep(_) => None
+    switch (sign) {
+    | AdvancedOptStep(_) => Some(I18n.label#advanced_options)
+    | SummaryStep =>
+      switch (modalStep) {
+      | SendStep
+      | EditStep(_) => Some(I18n.title#send)
+      | BatchStep => Some(I18n.title#batch)
+      | PasswordStep(_, _) => Some(I18n.title#confirmation)
+      | SubmittedStep(_) => None
+      }
     };
 
-  <ReactFlipToolkit.Flipper
-    flipKey={advancedOptionsOpened->string_of_bool ++ modalStep->stepToString}>
+  <ReactFlipToolkit.Flipper flipKey={modalStep->stepToString}>
     <ReactFlipToolkit.FlippedView flipId="modal">
-      <ModalFormView ?title back closing>
+      <ModalFormView ?title back ?closing>
         <ReactFlipToolkit.FlippedView.Inverse inverseFlipId="modal">
           {switch (modalStep) {
            | SubmittedStep(hash) =>
@@ -563,29 +500,17 @@ let make = (~closeAction) => {
                onAddCSVList
                batch
                onSubmitBatch
-               onEdit={(i, (state, adv)) =>
-                 setModalStep(_ => EditStep(i, (state, adv)))
-               }
+               onEdit={(i, state) => setModalStep(_ => EditStep(i, state))}
                onDelete
                loading=loadingSimulate
              />
            | EditStep(index, initValues) =>
-             let onSubmit = (advOpened, form) =>
-               onEdit(index, advOpened, form);
-             <EditionView
-               batch
-               initValues
-               onSubmit
-               index
-               loading=false
-               aliases
-             />;
+             let onSubmit = form => onEdit(index, form);
+             <EditionView initValues onSubmit index loading=false aliases />;
            | SendStep =>
              let onSubmit = batch != [] ? onAddToBatch : onSubmitAll;
              let onAddToBatch = batch != [] ? None : Some(onAddToBatch);
              <Form.View
-               batch
-               advancedOptionState
                tokenState
                ?token
                form
@@ -597,14 +522,16 @@ let make = (~closeAction) => {
              <SignOperationView
                source={transfer.source}
                ledgerState
+               signOpStep
+               dryRun
                subtitle=(
                  I18n.expl#confirm_operation,
                  I18n.expl#hardware_wallet_confirm_operation,
                )
+               operation={Operation.transaction(transfer)}
                sendOperation={sendTransfer(~transfer)}
-               loading>
-               <OperationSummaryView.Transactions transfer dryRun />
-             </SignOperationView>
+               loading
+             />
            }}
         </ReactFlipToolkit.FlippedView.Inverse>
       </ModalFormView>

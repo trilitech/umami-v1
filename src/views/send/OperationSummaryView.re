@@ -137,6 +137,7 @@ module Base = {
       content->List.map(((field, amounts)) =>
         (field, amounts->List.map(Transfer.Currency.showAmount))
       );
+
     <View
       style={Style.arrayOption([|
         Some(styles##operationSummary),

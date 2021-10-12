@@ -37,16 +37,10 @@ let styles =
     })
   );
 
-let buildTransaction = (state: DelegateForm.state, advancedOptionOpened) => {
-  let mapIfAdvanced = (v, flatMap) =>
-    advancedOptionOpened && v->Js.String2.length > 0 ? v->flatMap : None;
-
+let buildTransaction = (state: DelegateForm.state) => {
   Protocol.makeDelegate(
     ~source=state.values.sender,
     ~delegate=Some(state.values.baker->PublicKeyHash.build->Result.getExn),
-    ~fee=?state.values.fee->mapIfAdvanced(Tez.fromString),
-    ~forceLowFee=?
-      advancedOptionOpened && state.values.forceLowFee ? Some(true) : None,
     (),
   );
 };
@@ -64,7 +58,7 @@ let stepToString = step =>
   };
 
 module Form = {
-  let build = (action: action, advancedOptionOpened, onSubmit) => {
+  let build = (action: action, onSubmit) => {
     let (initAccount, initDelegate) =
       switch (action) {
       | Create(account, _) => (account, None)
@@ -96,7 +90,7 @@ module Form = {
       },
       ~onSubmit=
         ({state}) => {
-          let operation = buildTransaction(state, advancedOptionOpened);
+          let operation = buildTransaction(state);
           onSubmit(operation);
 
           None;
@@ -137,21 +131,13 @@ module Form = {
     };
 
     [@react.component]
-    let make = (~advancedOptionState, ~form, ~action, ~loading) => {
+    let make = (~form, ~action, ~loading) => {
       let onSubmitDelegateForm = _ => {
         form.submit();
       };
-      let (advancedOptionOpened, setAdvancedOptionOpened) = advancedOptionState;
 
       let formFieldsAreValids =
         FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
-
-      let initDelegate =
-        switch (action) {
-        | Create(_) => None
-        | Edit(_, delegate)
-        | Delete(_, delegate) => Some(delegate)
-        };
 
       <>
         <ReactFlipToolkit.FlippedView flipId="form">
@@ -176,30 +162,6 @@ module Form = {
             }
             error={form.getFieldError(Field(Baker))}
           />
-          <SwitchItem
-            label=I18n.label#advanced_options
-            value=advancedOptionOpened
-            setValue=setAdvancedOptionOpened
-            disabled={
-              form.values.baker == ""
-              || Some(form.values.baker) == (initDelegate :> option(string))
-            }
-          />
-        </ReactFlipToolkit.FlippedView>
-        <ReactFlipToolkit.FlippedView
-          flipId="advancedOption"
-          scale=false
-          translate=advancedOptionOpened
-          opacity=true>
-          <ReactFlipToolkit.Flipper
-            flipKey={advancedOptionOpened->string_of_bool}>
-            {advancedOptionOpened
-               ? <ReactFlipToolkit.FlippedView
-                   flipId="innerAdvancedOption" onAppear onExit>
-                   <DelegateViewAdvancedOptions form />
-                 </ReactFlipToolkit.FlippedView>
-               : React.null}
-          </ReactFlipToolkit.Flipper>
         </ReactFlipToolkit.FlippedView>
         <ReactFlipToolkit.FlippedView flipId="submit">
           <View style=FormStyles.verticalFormAction>
@@ -224,15 +186,12 @@ module Form = {
 
 [@react.component]
 let make = (~closeAction, ~action) => {
-  let (advancedOptionOpened, _) as advancedOptionState =
-    React.useState(_ => false);
-
   let (modalStep, setModalStep) = React.useState(_ => SendStep);
 
   let (operationRequest, sendOperation) = StoreContext.Operations.useCreate();
 
-  let sendOperation = (~delegation, signingIntent) =>
-    sendOperation(OperationApiRequest.delegate(delegation, signingIntent))
+  let sendOperation = (~operation, signingIntent) =>
+    sendOperation({operation, signingIntent})
     ->Future.tapOk(hash => {setModalStep(_ => SubmittedStep(hash))});
 
   let (operationSimulateRequest, sendOperationSimulate) =
@@ -254,7 +213,7 @@ let make = (~closeAction, ~action) => {
   });
 
   let form =
-    Form.build(action, advancedOptionOpened, op => {
+    Form.build(action, (op: Protocol.delegation) => {
       FutureEx.async(() => {
         let%FResMap dryRun =
           sendOperationSimulate(op->Operation.Simulation.delegation);
@@ -262,16 +221,23 @@ let make = (~closeAction, ~action) => {
       })
     });
 
+  let (signStep, _) as signOpStep =
+    React.useState(() => SignOperationView.SummaryStep);
+
   let title =
-    switch (modalStep, action) {
-    | (PasswordStep({delegate: None}, _), _) =>
-      I18n.title#delegate_delete->Some
-    | (PasswordStep({delegate: Some(_)}, _), _) =>
-      I18n.title#confirm_delegate->Some
-    | (SendStep, Create(_)) => I18n.title#delegate->Some
-    | (SendStep, Edit(_)) => I18n.title#delegate_update->Some
-    | (SendStep, Delete(_)) => I18n.title#delegate_delete->Some
-    | (SubmittedStep(_), _) => None
+    switch (signStep) {
+    | AdvancedOptStep(_) => I18n.label#advanced_options->Some
+    | SummaryStep =>
+      switch (modalStep, action) {
+      | (PasswordStep({delegate: None}, _), _) =>
+        I18n.title#delegate_delete->Some
+      | (PasswordStep({delegate: Some(_)}, _), _) =>
+        I18n.title#confirm_delegate->Some
+      | (SendStep, Create(_)) => I18n.title#delegate->Some
+      | (SendStep, Edit(_)) => I18n.title#delegate_update->Some
+      | (SendStep, Delete(_)) => I18n.title#delegate_delete->Some
+      | (SubmittedStep(_), _) => None
+      }
     };
 
   let (ledger, _) as ledgerState = React.useState(() => None);
@@ -296,8 +262,7 @@ let make = (~closeAction, ~action) => {
 
   let onPressCancel = _ => closeAction();
 
-  <ReactFlipToolkit.Flipper
-    flipKey={advancedOptionOpened->string_of_bool ++ modalStep->stepToString}>
+  <ReactFlipToolkit.Flipper flipKey={modalStep->stepToString}>
     <ReactFlipToolkit.FlippedView flipId="modal">
       <ModalFormView back closing ?title>
         <ReactFlipToolkit.FlippedView.Inverse inverseFlipId="modal">
@@ -306,26 +271,22 @@ let make = (~closeAction, ~action) => {
            | SendStep =>
              switch (action) {
              | Delete(_) => <LoadingView style=styles##deleteLoading />
-             | _ =>
-               <Form.View
-                 advancedOptionState
-                 form
-                 action
-                 loading=loadingSimulate
-               />
+             | _ => <Form.View form action loading=loadingSimulate />
              }
            | PasswordStep(delegation, dryRun) =>
              <SignOperationView
                source={delegation.source}
                ledgerState
+               signOpStep
+               dryRun
                subtitle=(
                  I18n.expl#confirm_operation,
                  I18n.expl#hardware_wallet_confirm_operation,
                )
-               sendOperation={sendOperation(~delegation)}
-               loading>
-               <OperationSummaryView.Delegate delegation dryRun />
-             </SignOperationView>
+               operation={Operation.delegation(delegation)}
+               sendOperation
+               loading
+             />
            }}
         </ReactFlipToolkit.FlippedView.Inverse>
       </ModalFormView>
