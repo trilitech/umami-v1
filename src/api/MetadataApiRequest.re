@@ -6,18 +6,18 @@ let useLoadMetadata = (~onErrorNotATokenContract, pkh) => {
 
   let keepTaquitoErrors =
     fun
-    | TokensAPI.NotFA12Contract(_)
+    | TokensAPI.NotFAContract(_)
     | MetadataAPI.NoTzip12Metadata(_) => false
     | _ => true;
 
   let buildContract = (config: ConfigContext.env) => {
     let%Await token = checkToken(pkh);
     let%Await () =
-      if (token == `KFA1_2) {
-        Promise.ok();
-      } else {
+      switch (token) {
+      | #TokenContract.kind => Promise.ok()
+      | _ =>
         onErrorNotATokenContract();
-        TokensAPI.NotFA12Contract((pkh :> string))->Promise.err;
+        TokensAPI.NotFAContract((pkh :> string))->Promise.err;
       };
 
     let toolkit = ReTaquito.Toolkit.create(config.network.endpoint);

@@ -45,13 +45,14 @@ let useLoadFA12Balance =
 };
 
 let useLoadTokens = requestState => {
-  let get = (~config as _, ()) => TokensAPI.registeredTokens();
+  let get = (~config as _, ()) => TokensAPI.registeredTokens()->Promise.value;
 
   ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, ());
 };
 
 let useDelete = (~sideEffect=?, ()) => {
-  let set = (~config as _, token) => TokensAPI.removeToken(token);
+  let set = (~config as _, token) =>
+    TokensAPI.removeToken(token, ~pruneCache=true)->Promise.value;
 
   ApiRequest.useSetter(
     ~logOk=_ => I18n.t#token_deleted,

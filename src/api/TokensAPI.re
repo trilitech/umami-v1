@@ -25,19 +25,18 @@
 
 /* open UmamiCommon; */
 open Let;
+open TokenRegistry;
 
 type Errors.t +=
-  | NotFA12Contract(string);
+  | NotFAContract(string);
 
 let () =
   Errors.registerHandler(
     "Tokens",
     fun
-    | NotFA12Contract(_) => I18n.t#error_check_contract->Some
+    | NotFAContract(_) => I18n.t#error_check_contract->Some
     | _ => None,
   );
-
-let tokensStorageKey = "wallet-tokens";
 
 module BetterCallDev = {
   open BCD;
@@ -98,61 +97,87 @@ module BetterCallDev = {
   };
 };
 
-let registeredTokens = () =>
-  LocalStorage.getItem(tokensStorageKey)
-  ->Js.Nullable.toOption
-  ->Option.mapWithDefault([||], storageString =>
-      storageString->Js.Json.parseExn->Token.Decode.array
-    )
-  ->Array.map(token => {(token.address, token)})
-  ->PublicKeyHash.Map.fromArray
-  ->Result.Ok
-  ->Promise.value;
+/* From a list of tokens and the cache, reconstructs the list of tokens with
+   their metadata the user has registered */
+let unfoldRegistered = (tokens, cache: Cache.t) => {
+  let merge = (_, registered, tokens) => {
+    switch (registered, tokens) {
+    | (None, _)
+    // What should we do if the token is not in cache?
+    | (_, None) => None
+    | (Some(registered), Some(contract)) =>
+      let tokens =
+        contract.Cache.tokens
+        ->Map.Int.keep((id, _) =>
+            registered.Registered.tokens->Set.Int.has(id)
+          );
+      Some({...contract, tokens});
+    };
+  };
+  PublicKeyHash.Map.merge(tokens, cache, merge);
+};
 
-let addToken = (config, token) => {
-  let%Await tokenKind =
-    config->NodeAPI.Tokens.checkTokenContract(token.TokenRepr.address);
+let registeredTokens = () => {
+  let%Res tokens = Registered.get();
+  let%ResMap cache = Cache.get();
+  tokens->unfoldRegistered(cache);
+};
+
+let addTokenToCache = (config, token: Token.t) => {
+  let address = token.address;
+  let%Await tokenKind = config->NodeAPI.Tokens.checkTokenContract(address);
 
   let%AwaitMap () =
-    tokenKind == `KFA1_2
-      ? Promise.ok()
-      : Promise.err(NotFA12Contract((token.TokenRepr.address :> string)));
+    switch (tokenKind) {
+    | #TokenContract.kind => Promise.ok()
+    | _ => Promise.err(NotFAContract((address :> string)))
+    };
 
   let tokens =
-    LocalStorage.getItem(tokensStorageKey)
-    ->Js.Nullable.toOption
-    ->Option.mapWithDefault([||], storageString =>
-        storageString->Js.Json.parseExn->Token.Decode.array
-      );
+    Cache.get()
+    ->Result.getWithDefault(PublicKeyHash.Map.empty)
+    ->Cache.addToken(Full(token));
 
-  LocalStorage.setItem(
-    tokensStorageKey,
-    tokens->Array.concat([|token|])->Token.Encode.array->Js.Json.stringify,
+  Cache.set(tokens);
+};
+
+let addTokenToRegistered = (token: Token.t) => {
+  let tokens =
+    Registered.get()
+    ->Result.getWithDefault(PublicKeyHash.Map.empty)
+    ->Registered.registerToken(token);
+
+  Registered.set(tokens);
+};
+
+let addToken = (config, token: Token.t) => {
+  let%AwaitMap () = addTokenToCache(config, token);
+  addTokenToRegistered(token);
+};
+
+let removeFromCache = token => {
+  let%ResMap tokens = Cache.get();
+  tokens->Cache.removeToken(token)->Cache.set;
+};
+
+let removeFromRegistered = (token: Token.t) => {
+  let%ResMap tokens = Registered.get();
+  Registered.set(
+    tokens->Registered.removeToken(token.address, TokenRepr.id(token)),
   );
 };
 
-let removeToken = token => {
-  let tokens =
-    LocalStorage.getItem(tokensStorageKey)
-    ->Js.Nullable.toOption
-    ->Option.mapWithDefault([||], storageString =>
-        storageString->Js.Json.parseExn->Token.Decode.array
-      );
-
-  LocalStorage.setItem(
-    tokensStorageKey,
-    tokens->Array.keep(t => t != token)->Token.Encode.array->Js.Json.stringify,
-  )
-  ->Result.Ok
-  ->Promise.value;
+let removeToken = (token, ~pruneCache) => {
+  let%Res () = pruneCache ? removeFromCache(Full(token)) : Ok();
+  removeFromRegistered(token);
 };
 
-let fetchTokens = (settings, ~accounts, ~kinds, ~limit, ~index) => {
+let fetchTokenContracts = (config, ~accounts, ~kinds, ~limit, ~index) => {
   open ServerAPI;
 
   let%Await tokens =
     URL.Explorer.tokenRegistry(
-      settings,
+      config,
       ~accountsFilter=accounts,
       ~kinds,
       ~limit,
@@ -164,5 +189,5 @@ let fetchTokens = (settings, ~accounts, ~kinds, ~limit, ~index) => {
   tokens->JsonEx.decode(TokenContract.Decode.array)->Promise.value;
 };
 
-let fetchTokenRegistry = (settings, ~kinds, ~limit, ~index) =>
-  fetchTokens(settings, ~accounts=[], ~kinds, ~limit, ~index);
+let fetchTokenRegistry = (config, ~kinds, ~limit, ~index) =>
+  fetchTokenContracts(config, ~accounts=[], ~kinds, ~limit, ~index);

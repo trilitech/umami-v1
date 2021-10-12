@@ -24,15 +24,15 @@
 /*****************************************************************************/
 
 type Errors.t +=
-  | NotFA12Contract(string);
+  | NotFAContract(string);
 
-let registeredTokens: unit => Promise.t(PublicKeyHash.Map.map(TokenRepr.t));
+let registeredTokens: unit => Let.result(TokenRegistry.Cache.t);
 
-let addToken: (ConfigContext.env, TokenRepr.t) => Promise.t(unit);
+let addToken: (ConfigContext.env, Token.t) => Promise.t(unit);
 
-let removeToken: TokenRepr.t => Promise.t(unit);
+let removeToken: (Token.t, ~pruneCache: bool) => Let.result(unit);
 
-let fetchTokens:
+let fetchTokenContracts:
   (
     ConfigContext.env,
     ~accounts: list(PublicKeyHash.t),

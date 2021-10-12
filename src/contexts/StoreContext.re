@@ -55,8 +55,7 @@ type state = {
   aliasesRequestState:
     reactState(ApiRequest.t(PublicKeyHash.Map.map(Alias.t))),
   bakersRequestState: reactState(ApiRequest.t(array(Delegate.t))),
-  tokensRequestState:
-    reactState(ApiRequest.t(PublicKeyHash.Map.map(Token.t))),
+  tokensRequestState: reactState(ApiRequest.t(TokenRegistry.Cache.t)),
   balanceTokenRequestsState: apiRequestsState(Token.Unit.t),
   apiVersionRequestState: reactState(option(Network.apiVersion)),
   eulaSignatureRequestState: reactState(bool),
@@ -564,8 +563,20 @@ module Tokens = {
     let apiVersion = useApiVersion();
     tokensRequest->ApiRequest.map(tokens =>
       apiVersion->Option.mapWithDefault(PublicKeyHash.Map.empty, v =>
-        tokens->PublicKeyHash.Map.keep((_, t) =>
-          t.TokenRepr.chain == v.Network.chain
+        tokens->PublicKeyHash.Map.reduce(
+          PublicKeyHash.Map.empty,
+          (filteredTokens, k, c: TokenRegistry.Cache.contract) => {
+            let tokens =
+              c.tokens
+              ->Map.Int.keep((_, t) =>
+                  TokenRegistry.Cache.isFull(t)
+                  && TokenRegistry.Cache.tokenChain(t)
+                  == Some(v.Network.chain)
+                );
+            tokens->Map.Int.isEmpty
+              ? filteredTokens
+              : filteredTokens->PublicKeyHash.Map.set(k, {...c, tokens});
+          },
         )
       )
     );
@@ -581,7 +592,7 @@ module Tokens = {
 
     switch (tokenAddress, tokens) {
     | (Some(tokenAddress), tokens) =>
-      tokens->PublicKeyHash.Map.get(tokenAddress)
+      tokens->TokenRegistry.Cache.getToken(tokenAddress, 0)
     | _ => None
     };
   };
@@ -863,7 +874,7 @@ module SelectedToken = {
 
     switch (store.selectedTokenState, tokens) {
     | ((Some(selectedToken), _), tokens) =>
-      tokens->PublicKeyHash.Map.get(selectedToken)
+      tokens->TokenRegistry.Cache.getFullToken(selectedToken, 0)
     | _ => None
     };
   };
