@@ -236,10 +236,11 @@ module NetworkItem = {
   [@react.component]
   let make =
       (
+        ~chain,
         ~network: Network.network,
         ~networkStatus,
         ~writeNetwork,
-        ~currentConfig: Network.configurableChains,
+        ~currentConfig: ConfigFile.network,
       ) => {
     let theme = ThemeContext.useTheme();
 
@@ -247,8 +248,8 @@ module NetworkItem = {
       <View style=styles##spaceBetweenRow>
         <View style=styles##nameStatus>
           <RadioItem
-            label={network.chain->Network.getDisplayedName}
-            value={network.chain}
+            label={chain->Network.getDisplayedName}
+            value=chain
             setValue=writeNetwork
             currentValue=currentConfig
           />
@@ -310,12 +311,14 @@ let make = () => {
       <View accessibilityRole=`form style=styles##row>
         <ColumnLeft style=styles##leftcolumntitles>
           <NetworkItem
+            chain=`Mainnet
             networkStatus={last == `Mainnet ? Some(networkStatus) : None}
             network=Network.mainnet
             currentConfig=last
             writeNetwork
           />
           <NetworkItem
+            chain=`Granadanet
             networkStatus={last == `Granadanet ? Some(networkStatus) : None}
             network=Network.granadanet
             currentConfig=last

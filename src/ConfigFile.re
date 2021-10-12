@@ -141,7 +141,7 @@ module Legacy = {
 
     let networkVariantLegacyDecoder = json => {
       let embeddedNetworkDecoder = json =>
-        json->string->Network.Decode.chainFromString->removeNonNativeNetwork;
+        json->string->Network.Decode.chainFromString;
       let customNetworkDecoder = json =>
         json
         |> (
@@ -163,7 +163,8 @@ module Legacy = {
     };
 
     let networkLegacyDecoder = json =>
-      json |> optional(field("network", networkVariantLegacyDecoder));
+      (json |> optional(field("network", networkVariantLegacyDecoder)))
+      ->Option.map(removeNonNativeNetwork);
 
     let legacyChainDecoder = json =>
       Network.{
