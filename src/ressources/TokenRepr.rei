@@ -98,3 +98,5 @@ type t = {
   decimals: int,
   asset: Metadata.asset,
 };
+
+let id: t => int;

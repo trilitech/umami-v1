@@ -173,3 +173,9 @@ type t = {
   decimals: int,
   asset: Metadata.asset,
 };
+
+let id = token =>
+  switch (token.kind) {
+  | FA1_2 => 0
+  | FA2(n) => n
+  };
