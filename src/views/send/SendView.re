@@ -93,7 +93,7 @@ let styles =
 
 type step =
   | SendStep
-  | PasswordStep(Transfer.t, Protocol.simulationResults)
+  | PasswordStep(Transfer.t, Protocol.Simulation.results)
   | EditStep(int, SendForm.validState)
   | BatchStep
   | SubmittedStep(string);
@@ -184,29 +184,6 @@ module Form = {
     type mode =
       | Edition(int)
       | Creation(option(unit => unit), unit => unit);
-
-    let simulatedTransaction = (mode, batch, state: SendForm.validState) => {
-      let (batch, index) =
-        switch (mode) {
-        | Edition(index) =>
-          let batch =
-            batch
-            ->List.mapWithIndex((id, elt) => id == index ? state : elt)
-            ->List.reverse;
-          (batch, Some(batch->List.length - (index + 1)));
-
-        | Creation(_) =>
-          let batch = [state, ...batch]->List.reverse;
-          let length = batch->List.length;
-
-          (batch, Some(length - 1));
-        };
-
-      Operation.Simulation.transaction(
-        SendForm.buildTransaction(batch),
-        index,
-      );
-    };
 
     [@react.component]
     let make =
@@ -366,10 +343,7 @@ let make = (~closeAction) => {
 
   let onSubmitBatch = batch => {
     let transaction = SendForm.buildTransaction(batch);
-
-    sendOperationSimulate(
-      Operation.Simulation.transaction(transaction, None),
-    )
+    sendOperationSimulate(Operation.Simulation.transaction(transaction))
     ->FutureEx.getOk(dryRun => {
         setModalStep(_ => PasswordStep(transaction, dryRun))
       });

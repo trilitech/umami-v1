@@ -40,81 +40,47 @@ let () =
     | _ => None,
   );
 
-let extractBatchRevealFee = (xs, estimations) => {
+let extractBatchRevealEstimation = (xs, estimations) => {
   switch (estimations->Array.get(0)) {
   | Some((res: ReTaquitoTypes.Estimation.result))
       when estimations->Array.length == xs->Array.length + 1 =>
-    Ok((estimations->Array.sliceToEnd(1), res.suggestedFeeMutez))
-  | Some(_) => Ok((estimations, 0))
+    Ok((estimations->Array.sliceToEnd(1), Some(res)))
+  | Some(_) => Ok((estimations, None))
   | None => Error(InvalidEstimationResults)
   };
 };
 
 let handleCustomOptions =
-    (results: Toolkit.Estimation.result, (fee, storageLimit, gasLimit)) => {
-  ...results,
-  Toolkit.Estimation.customFeeMutez:
-    fee->Option.getWithDefault(
-      results.Toolkit.Estimation.suggestedFeeMutez + results.burnFeeMutez,
-    ),
-  storageLimit: storageLimit->Option.getWithDefault(results.storageLimit),
-  gasLimit: gasLimit->Option.getWithDefault(results.gasLimit),
-};
-
-let handleEstimationResults = ((results, revealFee), options, index) => {
-  switch (index) {
-  | Some(index) =>
-    let customOptions =
-      options[index]->Option.getWithDefault((None, None, None));
-    let%Res res =
-      results
-      ->Array.get(index)
-      ->ResultEx.fromOption(Errors.Generic("No transfer with such index"));
-    res->handleCustomOptions(customOptions)->Ok;
-  | None =>
-    open Toolkit.Estimation;
-    let init = {
-      totalCost: 0,
-      gasLimit: 0,
-      storageLimit: 0,
-      revealFee: 0,
-      minimalFeeMutez: 0,
-      suggestedFeeMutez: 0,
-      burnFeeMutez: 0,
-      customFeeMutez: 0,
-    };
-
-    /* Same behavior as tezos-client, adding 100 milligas as fees just in case */
-    /* also adds default revealFees */
-    let {gasLimit, storageLimit, totalCost, customFeeMutez} as est =
-      Array.zip(results, options)
-      ->Array.reduce(
-          init,
-          (acc, (est, customValues)) => {
-            let est = handleCustomOptions(est, customValues);
-            {
-              ...est,
-              totalCost: acc.totalCost + est.totalCost,
-              storageLimit: acc.storageLimit + est.storageLimit,
-              gasLimit: acc.gasLimit + est.gasLimit,
-              minimalFeeMutez: acc.minimalFeeMutez + est.minimalFeeMutez,
-              suggestedFeeMutez: acc.suggestedFeeMutez + est.suggestedFeeMutez,
-              burnFeeMutez: acc.burnFeeMutez + est.burnFeeMutez,
-              customFeeMutez: acc.customFeeMutez + est.customFeeMutez,
-            };
-          },
-        );
-
-    {
-      ...est,
-      gasLimit: gasLimit + 100,
-      totalCost: totalCost + revealFee,
-      customFeeMutez,
-      storageLimit: storageLimit + 100,
-      revealFee,
-    }
-    ->Ok;
+    (results: Toolkit.Estimation.result, (fee, storageLimit, gasLimit)) =>
+  Protocol.Simulation.{
+    fee:
+      fee
+      ->Option.getWithDefault(
+          results.Toolkit.Estimation.suggestedFeeMutez + results.burnFeeMutez,
+        )
+      ->Tez.fromMutezInt,
+    storageLimit:
+      storageLimit->Option.getWithDefault(results.storageLimit) + 100,
+    gasLimit: gasLimit->Option.getWithDefault(results.gasLimit) + 100,
   };
+
+let handleReveal = (r: ReTaquitoTypes.Estimation.result) =>
+  Protocol.Simulation.{
+    fee: r.suggestedFeeMutez->Tez.fromMutezInt,
+    storageLimit: r.storageLimit,
+    gasLimit: r.gasLimit,
+  };
+
+let handleEstimationResults = (results, reveal, options) => {
+  let simulations =
+    Array.zip(results, options)
+    ->Array.map(((est, customValues)) => {
+        handleCustomOptions(est, customValues)
+      });
+
+  let revealSimulation = reveal->Option.map(handleReveal);
+
+  Protocol.Simulation.{simulations, revealSimulation};
 };
 
 module Rpc = {
@@ -245,8 +211,8 @@ module Delegate = {
         ->Toolkit.Estimation.batchDelegation([|sd|])
         ->ReTaquitoError.fromPromiseParsed;
 
-      let%FRes (res, revealFee) =
-        extractBatchRevealFee([|sd|], res)->Future.value;
+      let%FRes (res, reveal) =
+        extractBatchRevealEstimation([|sd|], res)->Future.value;
 
       let%FResMap res =
         switch (res) {
@@ -254,17 +220,16 @@ module Delegate = {
         | _ => FutureEx.err(InvalidEstimationResults)
         };
 
-      let res =
+      let simulation =
         res->handleCustomOptions((
           fee->Option.map(Tez.unsafeToMutezInt),
           None,
           None,
         ));
 
-      Toolkit.Estimation.{
-        ...res,
-        totalCost: revealFee + res.totalCost,
-        revealFee,
+      Protocol.Simulation.{
+        simulations: [|simulation|],
+        revealSimulation: reveal->Option.map(handleReveal),
       };
     };
   };
@@ -544,6 +509,7 @@ module Transfer = {
           ~endpoint,
           ~baseDir,
           ~source: PublicKeyHash.t,
+          ~customValues,
           ~transfers:
              (ReTaquito.endpoint, PublicKeyHash.t) =>
              Future.t(list(Belt.Result.t(Toolkit.transferParams, Errors.t))),
@@ -570,7 +536,10 @@ module Transfer = {
         ->Toolkit.Estimation.batch(txs)
         ->ReTaquitoError.fromPromiseParsed;
 
-      extractBatchRevealFee(txs, res)->Future.value;
+      let%FResMap (simulations, reveal) =
+        extractBatchRevealEstimation(txs, res)->Future.value;
+
+      handleEstimationResults(simulations, reveal, customValues);
     };
   };
 };

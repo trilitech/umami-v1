@@ -200,17 +200,16 @@ module Transactions = {
   };
 
   let buildSummaryContent =
-      (transaction: Transfer.t, dryRun: Protocol.simulationResults) => {
-    let fee = (I18n.label#fee, [Transfer.Currency.Tez(dryRun.fee)]);
+      (transaction: Transfer.t, dryRun: Protocol.Simulation.results) => {
+    let feeSum = dryRun.simulations->Protocol.Simulation.sumFees;
+
+    let partialFee = (I18n.label#fee, [Transfer.Currency.Tez(feeSum)]);
 
     let revealFee =
-      dryRun.revealFee != Tez.zero
-        ? (
-            I18n.label#implicit_reveal_fee,
-            [Transfer.Currency.Tez(dryRun.revealFee)],
-          )
-          ->Some
-        : None;
+      dryRun.revealSimulation
+      ->Option.map(({fee}) =>
+          (I18n.label#implicit_reveal_fee, [Transfer.Currency.Tez(fee)])
+        );
 
     let totals =
       transaction.transfers
@@ -230,13 +229,15 @@ module Transactions = {
         noTokens ? I18n.label#summary_total : I18n.label#summary_total_tez,
         [
           Transfer.Currency.Tez(
-            Tez.Infix.(sub + dryRun.fee + dryRun.revealFee),
+            Tez.Infix.(sub + dryRun->Protocol.Simulation.getTotalFees),
           ),
         ],
       );
     };
 
-    Lib.List.([totalTez]->addOpt(revealFee)->add(fee)->add(subtotals));
+    Lib.List.(
+      [totalTez]->addOpt(revealFee)->add(partialFee)->add(subtotals)
+    );
   };
 
   [@react.component]
@@ -244,7 +245,7 @@ module Transactions = {
       (
         ~style=?,
         ~transfer: Transfer.t,
-        ~dryRun: Protocol.simulationResults,
+        ~dryRun: Protocol.Simulation.results,
         ~editAdvancedOptions,
       ) => {
     let (source: (Account.t, string), destinations) =
@@ -284,21 +285,23 @@ module Transactions = {
 };
 
 module Delegate = {
-  let buildSummaryContent = (dryRun: Protocol.simulationResults) => {
+  let buildSummaryContent = (dryRun: Protocol.Simulation.results) => {
     let revealFee =
-      dryRun.revealFee != Tez.zero
-        ? (
-            I18n.label#implicit_reveal_fee,
-            [Transfer.Currency.Tez(dryRun.revealFee)],
-          )
-          ->Some
-        : None;
+      dryRun.revealSimulation
+      ->Option.map(({fee}) =>
+          (I18n.label#implicit_reveal_fee, [Transfer.Currency.Tez(fee)])
+        );
 
-    let fee = (I18n.label#fee, [Transfer.Currency.Tez(dryRun.fee)]);
+    let fee = (
+      I18n.label#fee,
+      [
+        Transfer.Currency.Tez(dryRun.simulations->Protocol.Simulation.sumFees),
+      ],
+    );
 
     let total = (
       I18n.label#summary_total,
-      [Transfer.Currency.Tez(Tez.Infix.(dryRun.fee + dryRun.revealFee))],
+      [Transfer.Currency.Tez(dryRun->Protocol.Simulation.getTotalFees)],
     );
 
     [fee, ...revealFee->Option.mapWithDefault([total], r => [r, total])];
@@ -309,7 +312,7 @@ module Delegate = {
       (
         ~style=?,
         ~delegation: Protocol.delegation,
-        ~dryRun: Protocol.simulationResults,
+        ~dryRun: Protocol.Simulation.results,
       ) => {
     let (target, title) =
       switch (delegation.delegate) {

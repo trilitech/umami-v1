@@ -45,7 +45,7 @@ module type OP = {
   let make: (Account.t, ReBeacon.Message.Request.operationRequest) => t;
   let makeOperation: t => Operation.t;
   let makeSimulated: t => Operation.Simulation.t;
-  let makeSummary: (Protocol.simulationResults, t) => React.element;
+  let makeSummary: (Protocol.Simulation.results, t) => React.element;
 };
 
 module Make = (Op: OP) => {
@@ -279,7 +279,7 @@ module Transfer =
 
     let makeOperation = Operation.transaction;
 
-    let makeSimulated = o => o->Operation.Simulation.transaction(None);
+    let makeSimulated = o => o->Operation.Simulation.transaction;
 
     let editAdvancedOptions = _ => ();
 

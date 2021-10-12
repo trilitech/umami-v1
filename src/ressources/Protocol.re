@@ -45,9 +45,24 @@ let makeDelegate =
   };
 };
 
-type simulationResults = {
-  fee: Tez.t,
-  gasLimit: int,
-  storageLimit: int,
-  revealFee: Tez.t,
+module Simulation = {
+  type resultElt = {
+    fee: Tez.t,
+    gasLimit: int,
+    storageLimit: int,
+  };
+
+  type results = {
+    simulations: array(resultElt),
+    revealSimulation: option(resultElt),
+  };
+
+  let sumFees = a =>
+    a->Array.reduce(Tez.zero, (acc, sim) => Tez.Infix.(acc + sim.fee));
+
+  let computeRevealFees = sim =>
+    sim.revealSimulation->Option.mapWithDefault(Tez.zero, ({fee}) => fee);
+
+  let getTotalFees = sim =>
+    Tez.Infix.(sim->computeRevealFees + sim.simulations->sumFees);
 };

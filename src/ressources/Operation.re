@@ -32,12 +32,10 @@ let transaction = t => t->Transaction;
 let delegation = d => d->Delegation;
 
 module Simulation = {
-  type index = option(int);
+  type t = Protocol.t;
 
-  type t = (Protocol.t, index);
-
-  let delegation = d => (d->Delegation, None);
-  let transaction = (t, index) => (t->Transaction, index);
+  let delegation = d => d->Delegation;
+  let transaction = t => t->Transaction;
 };
 
 let makeDelegate =

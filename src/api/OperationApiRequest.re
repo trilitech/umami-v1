@@ -85,8 +85,8 @@ let useCreate = (~sideEffect=?, ()) => {
 /* Simulate */
 
 let useSimulate = () => {
-  let set = (~config, (operation, index)) =>
-    config->NodeAPI.Simulation.run(~index?, operation);
+  let set = (~config, operation) =>
+    config->NodeAPI.Simulation.run(operation);
 
   ApiRequest.useSetter(
     ~set,

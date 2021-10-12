@@ -47,7 +47,7 @@ let buildTransaction = (state: DelegateForm.state) => {
 
 type step =
   | SendStep
-  | PasswordStep(Protocol.delegation, Protocol.simulationResults)
+  | PasswordStep(Protocol.delegation, Protocol.Simulation.results)
   | SubmittedStep(string);
 
 let stepToString = step =>

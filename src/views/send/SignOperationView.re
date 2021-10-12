@@ -110,7 +110,7 @@ let make =
     <AdvancedOptionsView
       operation
       dryRun
-      index
+      ?index
       onSubmit=onAdvOptSubmit
       token=None
     />

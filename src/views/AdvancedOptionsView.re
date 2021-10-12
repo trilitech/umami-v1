@@ -52,15 +52,18 @@ let extractValidState = (state: StateLenses.state): validState => {
 module Form = {
   include ReForm.Make(StateLenses);
 
-  let fromDryRun = (dr: Protocol.simulationResults) =>
+  let fromDryRun = (dr: Protocol.Simulation.results, index) =>
     StateLenses.{
-      fee: dr.fee->Tez.toString,
+      fee:
+        dr.simulations
+        ->Array.get(index)
+        ->Option.mapWithDefault("", sim => sim.fee->Tez.toString),
       gasLimit: "",
       storageLimit: "",
       forceLowFee: false,
     };
 
-  let use = (dryRun, onSubmit) => {
+  let use = (dryRun, index, onSubmit) => {
     use(
       ~schema={
         Validation.(
@@ -85,7 +88,7 @@ module Form = {
           onSubmit(f);
           None;
         },
-      ~initialState=dryRun->fromDryRun,
+      ~initialState=dryRun->fromDryRun(index),
       ~i18n=FormUtils.i18n,
       (),
     );
@@ -118,7 +121,7 @@ let updateOperation = (index, values: StateLenses.state, o: Operation.t) => {
     let transfers =
       t.transfers
       ->List.mapWithIndex((i, t) =>
-          if (index == None || index == Some(i)) {
+          if (index == i) {
             let tx_options = {
               ...t.tx_options,
               gasLimit: fallback(values.gasLimit, t.tx_options.gasLimit),
@@ -155,21 +158,23 @@ let tezDecoration = (~style) =>
   <Typography.Body1 style> I18n.t#tez->React.string </Typography.Body1>;
 
 [@react.component]
-let make = (~operation, ~dryRun, ~index, ~token, ~onSubmit) => {
+let make = (~operation, ~dryRun, ~index=0, ~token, ~onSubmit) => {
   let (operationSimulateRequest, sendOperationSimulate) =
     StoreContext.Operations.useSimulate();
 
   let form =
     Form.use(
       dryRun,
+      index,
       ({state}) => {
         let op = updateOperation(index, state.values, operation);
 
-        sendOperationSimulate((op, index))
+        sendOperationSimulate(op)
         ->Future.get(
             fun
             | Ok(dr) => {
-                let op = updateOperation(index, dr->Form.fromDryRun, op);
+                let op =
+                  updateOperation(index, dr->Form.fromDryRun(index), op);
                 onSubmit(op, dr);
               }
             | Error(_) => (),
