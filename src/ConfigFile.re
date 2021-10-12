@@ -89,21 +89,19 @@ module Decode = {
 
   let networkDecoder = json =>
     json
-    |> optional(
-         field(
-           "network",
-           Network.Decode.(chainDecoder(nativeChainFromString)),
-         ),
+    |> field(
+         "network",
+         optional(Network.Decode.(chainDecoder(nativeChainFromString))),
        );
 
   let themeDecoder = json =>
-    (json |> optional(field("theme", string)))
+    (json |> field("theme", optional(string)))
     ->Option.map(t => t->themeFromString->Result.getWithDefault(`system));
 
-  let confirmationsDecoder = optional(field("confirmations", int));
+  let confirmationsDecoder = field("confirmations", optional(int));
 
   let sdkBaseDirDecoder = json =>
-    (json |> optional(field("sdkBaseDir", string)))
+    (json |> field("sdkBaseDir", optional(string)))
     ->Option.map(System.Path.mk);
 
   let customNetworksDecoder = json =>
