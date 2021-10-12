@@ -86,9 +86,10 @@ let buildAmount = amount => {
 
 module Item = {
   [@react.component]
-  let make = (~i, ~recipient, ~amount, ~parameters=?, ~onDelete=?, ~onEdit=?) => {
+  let make = (~i, ~recipient, ~amount, ~parameters=?, ~button=?) => {
     let aliases = StoreContext.Aliases.useGetAll();
     let theme: ThemeContext.theme = ThemeContext.useTheme();
+
     <View
       style=Style.(
         arrayOption([|
@@ -121,35 +122,7 @@ module Item = {
            showAmount={buildAmount(amount)}
          />
        }}
-      {[]
-       ->Lib.List.addOpt(
-           onDelete->Option.map(delete => {
-             <Menu.Item
-               key=I18n.menu#batch_delete
-               text=I18n.menu#batch_delete
-               icon=Icons.Delete.build
-               onPress={_ => delete()}
-             />
-           }),
-         )
-       ->Lib.List.addOpt(
-           onEdit->Option.map(edit => {
-             <Menu.Item
-               key=I18n.menu#batch_edit
-               text=I18n.menu#batch_edit
-               icon=Icons.Edit.build
-               onPress={_ => edit()}
-             />
-           }),
-         )
-       ->ReactUtils.hideNil(l =>
-           <Menu
-             style=styles##moreButton
-             icon=Icons.More.build
-             keyPopover={"batchItem" ++ i->string_of_int}>
-             l->List.toArray
-           </Menu>
-         )}
+      button->ReactUtils.opt
     </View>;
   };
 };
@@ -207,7 +180,21 @@ module Transactions = {
   };
 
   [@react.component]
-  let make = (~recipients, ~smallest=false, ~onAddCSVList=?, ~onDelete=?) => {
+  let make =
+      (
+        ~recipients:
+           Belt.List.t(
+             (
+               TezosClient.PublicKeyHash.t,
+               TezosClient.Transfer.Currency.t,
+               option('a),
+               'b,
+             ),
+           ),
+        ~smallest=false,
+        ~onAddCSVList=?,
+        ~button: option((int, 'b) => React.element)=?,
+      ) => {
     let length = recipients->List.length;
     let theme = ThemeContext.useTheme();
 
@@ -225,17 +212,15 @@ module Transactions = {
         style={listStyle(theme, smallest)} alwaysBounceVertical=false>
         {{
            recipients->List.mapWithIndex(
-             (i, (onEdit, (recipient, amount, parameters))) => {
-             let onDelete = onDelete->Option.map((delete, ()) => delete(i));
+             (i, (recipient, amount, parameters, v)) => {
              <Item
                key={string_of_int(i)}
                i={length - i}
                recipient
                amount={Transfer.Currency.showAmount(amount)}
                ?parameters
-               ?onDelete
-               ?onEdit
-             />;
+               button=?{button->Option.map(b => b(i, v))}
+             />
            });
          }
          ->List.reverse
@@ -243,6 +228,34 @@ module Transactions = {
          ->React.array}
       </DocumentContext.ScrollView>
     </View>;
+  };
+};
+
+module BuildingBatchMenu = {
+  [@react.component]
+  let make = (~i, ~onEdit, ~onDelete) => {
+    let delete = _ => onDelete(i);
+    let edit = _ => onEdit(i);
+
+    <Menu
+      style=styles##moreButton
+      icon=Icons.More.build
+      keyPopover={"batchItem" ++ i->string_of_int}>
+      [|
+        <Menu.Item
+          key=I18n.menu#batch_delete
+          text=I18n.menu#batch_delete
+          icon=Icons.Delete.build
+          onPress=delete
+        />,
+        <Menu.Item
+          key=I18n.menu#batch_edit
+          text=I18n.menu#batch_edit
+          icon=Icons.Edit.build
+          onPress=edit
+        />,
+      |]
+    </Menu>;
   };
 };
 
@@ -259,13 +272,18 @@ let make =
       ~loading,
     ) => {
   let theme: ThemeContext.theme = ThemeContext.useTheme();
+
   let recipients =
-    batch->List.mapWithIndex((i, (t: SendForm.validState) as v) =>
-      (
-        Some(() => onEdit(i, v)),
-        (t.recipient->FormUtils.Alias.address, t.amount, None),
-      )
+    batch->List.map((t: SendForm.validState) =>
+      (t.recipient->FormUtils.Alias.address, t.amount, None, t)
     );
+
+  let itemButton = (i, v) =>
+    <BuildingBatchMenu
+      i
+      onDelete={_ => onDelete(i)}
+      onEdit={_ => onEdit(i, v)}
+    />;
 
   <>
     {back->ReactUtils.mapOpt(back => {
@@ -296,7 +314,7 @@ let make =
          ->React.array}
       </View>
     </View>
-    <Transactions recipients onAddCSVList onDelete />
+    <Transactions recipients onAddCSVList button=itemButton />
     <View style=FormStyles.verticalFormAction>
       <Buttons.SubmitSecondary
         style=styles##addTransaction

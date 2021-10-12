@@ -184,15 +184,13 @@ module Transactions = {
       let destinations =
         transfers->List.map(t =>
           (
-            None,
-            (
-              t.destination,
-              t.amount,
-              transactionParameters(
-                ~entrypoint=t.tx_options.entrypoint,
-                ~parameter=t.tx_options.parameter,
-              ),
+            t.destination,
+            t.amount,
+            transactionParameters(
+              ~entrypoint=t.tx_options.entrypoint,
+              ~parameter=t.tx_options.parameter,
             ),
+            (),
           )
         );
       ((source, sourceLbl), `Many(destinations));
