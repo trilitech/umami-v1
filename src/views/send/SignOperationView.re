@@ -51,6 +51,7 @@ let make =
       ~ledgerState,
       ~signOpStep as (step, setStep),
       ~dryRun,
+      ~secondaryButton=?,
       ~operation,
       ~sendOperation:
          (~operation: Operation.t, TaquitoAPI.Signer.intent) =>
@@ -95,14 +96,16 @@ let make =
            editAdvancedOptions={i => setAdvancedOptions(Some(i))}
          />
        }}
-      <Buttons.RightArrowButton
-        style=styles##advancedOptions
-        text=I18n.label#advanced_options
-        onPress={_ => setAdvancedOptions(None)}
-      />
+      {<Buttons.RightArrowButton
+         style=styles##advancedOptions
+         text=I18n.label#advanced_options
+         onPress={_ => setAdvancedOptions(None)}
+       />
+       ->ReactUtils.onlyWhen(dryRun.simulations->Array.length == 1)}
       <SigningBlock
         accountKind={source.Account.kind}
         ledgerState
+        ?secondaryButton
         loading
         sendOperation={sendOperation(~operation)}
       />
