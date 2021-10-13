@@ -88,6 +88,7 @@ module LedgerView = {
 
     [@react.component]
     let make = (~title, ~expl, ~error=false) => {
+      let theme = ThemeContext.useTheme();
       <>
         <Typography.Subtitle2
           style=Style.([|onbStyles##title, styles##title|]->array)>
@@ -96,7 +97,7 @@ module LedgerView = {
         <View style=styles##content>
           {error
              ? <Icons.CloseOutline
-                 color=Colors.error
+                 color=theme.colors.error
                  size=50.
                  style=FormStyles.section##spacing
                />

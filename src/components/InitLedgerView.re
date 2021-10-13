@@ -66,8 +66,12 @@ let expl = txt =>
     txt
   </Typography.Headline>;
 
+
 [@react.component]
 let make = (~style=?, ~status, ~retry, ~inline=false) => {
+
+  let theme = ThemeContext.useTheme();
+  
   <View style={Style.arrayOption([|style|])}>
     {status
      ->computeTitle
@@ -77,7 +81,7 @@ let make = (~style=?, ~status, ~retry, ~inline=false) => {
      | `Denied(err) =>
        <View style=styles##content>
          <Icons.CloseOutline
-           color=Colors.error
+           color=theme.colors.error
            size=50.
            style=FormStyles.section##spacing
          />
@@ -91,7 +95,7 @@ let make = (~style=?, ~status, ~retry, ~inline=false) => {
      | `Confirmed =>
        <View style=styles##content>
          <Icons.CheckOutline
-           color=Colors.valid
+           color=theme.colors.valid
            size=50.
            style=FormStyles.section##spacing
          />
