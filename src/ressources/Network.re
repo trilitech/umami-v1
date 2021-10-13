@@ -244,7 +244,7 @@ module Decode = {
   let decoder = json =>
     Json.Decode.{
       name: json |> field("name", string),
-      chain: json |> field("chain", chainDecoder(nativeChainFromString)),
+      chain: json |> field("chain", chainDecoder(chainFromString)),
       explorer: json |> field("explorer", string),
       endpoint: json |> field("endpoint", string),
     };
