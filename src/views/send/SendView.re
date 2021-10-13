@@ -365,7 +365,8 @@ let make = (~closeAction) => {
   let submitAction = React.useRef(`SubmitAll);
 
   let onSubmitBatch = batch => {
-    let transaction = SendForm.buildTransaction(batch->List.reverse);
+    let transaction = SendForm.buildTransaction(batch);
+
     sendOperationSimulate(
       Operation.Simulation.transaction(transaction, None),
     )
@@ -498,10 +499,14 @@ let make = (~closeAction) => {
              <BatchView
                onAddTransfer={_ => setModalStep(_ => SendStep)}
                onAddCSVList
-               batch
+               batch={batch->List.reverse}
                onSubmitBatch
-               onEdit={(i, state) => setModalStep(_ => EditStep(i, state))}
-               onDelete
+               onEdit={(i, state) =>
+                 setModalStep(_ =>
+                   EditStep(batch->List.length - i - 1, state)
+                 )
+               }
+               onDelete={i => onDelete(batch->List.length - i - 1)}
                loading=loadingSimulate
              />
            | EditStep(index, initValues) =>

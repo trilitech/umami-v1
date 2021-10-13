@@ -118,8 +118,7 @@ module Base = {
         </>
       }
 
-    | `Many(recipients) =>
-      <BatchView.Transactions smallest recipients={recipients->List.reverse} />
+    | `Many(recipients) => <BatchView.Transactions smallest recipients />
     };
   };
 

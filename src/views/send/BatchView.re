@@ -95,11 +95,11 @@ module Item = {
         arrayOption([|
           Some(styles##row),
           Some(style(~borderColor=theme.colors.borderDisabled, ())),
-          Lib.Option.onlyIf(i > 1, () => styles##notFirstRow),
+          Lib.Option.onlyIf(i > 0, () => styles##notFirstRow),
         |])
       )>
       <Typography.Subtitle1 colorStyle=`mediumEmphasis style=styles##num>
-        {i->string_of_int->React.string}
+        {(i + 1)->string_of_int->React.string}
       </Typography.Subtitle1>
       {switch (parameters) {
        | Some(parameters) =>
@@ -195,7 +195,6 @@ module Transactions = {
         ~onAddCSVList=?,
         ~button: option((int, 'b) => React.element)=?,
       ) => {
-    let length = recipients->List.length;
     let theme = ThemeContext.useTheme();
 
     <View style=styles##container>
@@ -215,7 +214,7 @@ module Transactions = {
              (i, (recipient, amount, parameters, v)) => {
              <Item
                key={string_of_int(i)}
-               i={length - i}
+               i
                recipient
                amount={Transfer.Currency.showAmount(amount)}
                ?parameters
@@ -223,7 +222,6 @@ module Transactions = {
              />
            });
          }
-         ->List.reverse
          ->List.toArray
          ->React.array}
       </DocumentContext.ScrollView>
