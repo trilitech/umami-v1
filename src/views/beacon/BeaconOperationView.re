@@ -281,6 +281,12 @@ module Transfer =
 
     let makeSimulated = o => o->Operation.Simulation.transaction(None);
 
+    let editAdvancedOptions = _ => ();
+
     let makeSummary = (dryRun, o) =>
-      <OperationSummaryView.Transactions transfer=o dryRun />;
+      <OperationSummaryView.Transactions
+        transfer=o
+        dryRun
+        editAdvancedOptions
+      />;
   });

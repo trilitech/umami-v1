@@ -99,7 +99,7 @@ module EntityInfo = {
 };
 
 module Base = {
-  let buildDestinations = (smallest, destinations) => {
+  let buildDestinations = (smallest, destinations, button) => {
     switch (destinations) {
     | `One(address, title, parameters) =>
       switch (parameters) {
@@ -118,7 +118,8 @@ module Base = {
         </>
       }
 
-    | `Many(recipients) => <BatchView.Transactions smallest recipients />
+    | `Many(recipients) =>
+      <BatchView.Transactions smallest recipients ?button />
     };
   };
 
@@ -131,6 +132,7 @@ module Base = {
         ~smallest=false,
         ~content:
            list((string, Belt.List.t(TezosClient.Transfer.Currency.t))),
+        ~button=?,
       ) => {
     let content: list((string, Belt.List.t(string))) =
       content->List.map(((field, amounts)) =>
@@ -147,7 +149,7 @@ module Base = {
         title={source->snd}
       />
       {content->ReactUtils.hideNil(content => <Content content />)}
-      {buildDestinations(smallest, destinations)}
+      {buildDestinations(smallest, destinations, button)}
     </View>;
   };
 };
@@ -167,6 +169,7 @@ module Transactions = {
   let sourceDestination = (transfer: Transfer.t) => {
     let recipientLbl = I18n.title#recipient_account;
     let sourceLbl = I18n.title#sender_account;
+
     switch (transfer) {
     | {source, transfers: [t]} => (
         (source, sourceLbl),
@@ -189,7 +192,7 @@ module Transactions = {
               ~entrypoint=t.tx_options.entrypoint,
               ~parameter=t.tx_options.parameter,
             ),
-            (),
+            ProtocolOptions.optionsSet(t.tx_options),
           )
         );
       ((source, sourceLbl), `Many(destinations));
@@ -238,10 +241,29 @@ module Transactions = {
 
   [@react.component]
   let make =
-      (~style=?, ~transfer: Transfer.t, ~dryRun: Protocol.simulationResults) => {
+      (
+        ~style=?,
+        ~transfer: Transfer.t,
+        ~dryRun: Protocol.simulationResults,
+        ~editAdvancedOptions,
+      ) => {
     let (source: (Account.t, string), destinations) =
       sourceDestination(transfer);
     let content = buildSummaryContent(transfer, dryRun);
+
+    let theme = ThemeContext.useTheme();
+
+    let batchAdvancedOptions = (i, optionsSet) => {
+      let color =
+        optionsSet
+          ? theme.colors.iconPrimary : theme.colors.iconMediumEmphasis;
+
+      <IconButton
+        size=40.
+        icon={(~color as _=?) => Icons.Options.build(~color)}
+        onPress={_ => editAdvancedOptions(i)}
+      />;
+    };
 
     let smallest =
       switch (source->fst.kind) {
@@ -250,7 +272,14 @@ module Transactions = {
       | Unencrypted => false
       };
 
-    <Base ?style smallest source destinations content />;
+    <Base
+      ?style
+      smallest
+      source
+      destinations
+      content
+      button=batchAdvancedOptions
+    />;
   };
 };
 

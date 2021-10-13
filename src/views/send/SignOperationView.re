@@ -74,6 +74,8 @@ let make =
     setStep(_ => SummaryStep);
   };
 
+  let setAdvancedOptions = i => setStep(_ => AdvancedOptStep(i));
+
   switch (step) {
   | SummaryStep =>
     <>
@@ -86,11 +88,15 @@ let make =
        | Delegation(delegation) =>
          <OperationSummaryView.Delegate delegation dryRun />
        | Transaction(transfer) =>
-         <OperationSummaryView.Transactions transfer dryRun />
+         <OperationSummaryView.Transactions
+           transfer
+           dryRun
+           editAdvancedOptions={i => setAdvancedOptions(Some(i))}
+         />
        }}
       <Buttons.FormSecondary
         text=I18n.label#advanced_options
-        onPress={_ => {setStep(_ => AdvancedOptStep(None))}}
+        onPress={_ => setAdvancedOptions(None)}
       />
       <SigningBlock
         accountKind={source.Account.kind}

@@ -41,7 +41,8 @@ let styles =
       "listLabel": style(~marginBottom=4.->dp, ()),
       "amount": style(~height=19.->dp, ~marginBottom=2.->dp, ()),
       "summary": style(~marginTop=11.->dp, ()),
-      "row": style(~paddingVertical=12.->dp, ~flexDirection=`row, ()),
+      "row":
+        style(~flex=1., ~paddingVertical=12.->dp, ~flexDirection=`row, ()),
       "addTransaction": style(~marginBottom=10.->dp, ()),
       "notFirstRow": style(~borderTopWidth=1., ()),
       "num":
@@ -53,7 +54,9 @@ let styles =
           (),
         ),
       "parameters": style(~marginTop=8.->dp, ()),
+      "parametersContainer": style(~flex=1., ()),
       "moreButton": style(~marginHorizontal=auto, ()),
+      "account": style(~flex=1., ()),
       "csvFormat":
         style(
           ~alignItems=`flexEnd,
@@ -103,7 +106,7 @@ module Item = {
       </Typography.Subtitle1>
       {switch (parameters) {
        | Some(parameters) =>
-         <View>
+         <View style=styles##parametersContainer>
            <AccountElements.Selector.Item
              account={address: recipient, name: I18n.title#interaction}
              showAmount=AccountElements.Nothing
@@ -112,6 +115,7 @@ module Item = {
          </View>
        | None =>
          <AccountElements.Selector.Item
+           style=styles##account
            account={
              address: recipient,
              name:

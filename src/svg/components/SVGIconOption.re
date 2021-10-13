@@ -23,73 +23,20 @@
 /*                                                                           */
 /*****************************************************************************/
 
-module TransactionParameters = {
-  type entrypoint = string;
+open ReactNative;
+open ReactNativeSvg;
 
-  // This type cannot be build and destructed except from bindings modules
-  // ReBeacon and ReTaquito, hence its abstract nature.
-  module MichelineMichelsonV1Expression = {
-    type t;
-
-    let toString = c =>
-      c
-      ->Js.Json.stringifyAny
-      ->Option.map(Js.Json.parseExn)
-      ->Option.map(j => Js.Json.stringifyWithSpace(j, 4));
-  };
-
-  type t = {
-    entrypoint,
-    value: MichelineMichelsonV1Expression.t,
-  };
-};
-
-type transferEltOptions = {
-  fee: option(Tez.t),
-  gasLimit: option(int),
-  storageLimit: option(int),
-  parameter: option(TransactionParameters.MichelineMichelsonV1Expression.t),
-  entrypoint: option(TransactionParameters.entrypoint),
-};
-
-let optionsSet = telt =>
-  telt.fee != None || telt.gasLimit != None || telt.storageLimit != None;
-
-type delegationOptions = {
-  fee: option(Tez.t),
-  burnCap: option(Tez.t),
-  forceLowFee: option(bool),
-};
-
-type transferOptions = {
-  burnCap: option(Tez.t),
-  forceLowFee: option(bool),
-};
-
-let makeTransferEltOptions =
-    (~fee, ~gasLimit, ~storageLimit, ~parameter, ~entrypoint, ()) => {
-  fee,
-  gasLimit,
-  storageLimit,
-  parameter,
-  entrypoint,
-};
-
-let makeDelegationOptions = (~fee, ~burnCap, ~forceLowFee, ()) => {
-  fee,
-  burnCap,
-  forceLowFee,
-};
-
-let makeTransferOptions = (~burnCap, ~forceLowFee, ()) => {
-  burnCap,
-  forceLowFee,
-};
-
-let emptyTransferOptions = {
-  fee: None,
-  gasLimit: None,
-  storageLimit: None,
-  parameter: None,
-  entrypoint: None,
-};
+[@react.component]
+let make =
+    (
+      ~width: option(Style.size)=?,
+      ~height: option(Style.size)=?,
+      ~fill: option(string)=?,
+      ~stroke: option(string)=?,
+    ) =>
+  <Svg viewBox="0 0 24 24" ?width ?height ?fill ?stroke>
+    <Path
+      d="M15.000 6.000 L 15.000 9.000 16.000 9.000 L 17.000 9.000 17.000 8.000 L 17.000 7.000 19.000 7.000 L 21.000 7.000 21.000 6.000 L 21.000 5.000 19.000 5.000 L 17.000 5.000 17.000 4.000 L 17.000 3.000 16.000 3.000 L 15.000 3.000 15.000 6.000 M3.000 6.000 L 3.000 7.000 8.000 7.000 L 13.000 7.000 13.000 6.000 L 13.000 5.000 8.000 5.000 L 3.000 5.000 3.000 6.000 M7.000 10.000 L 7.000 11.000 5.000 11.000 L 3.000 11.000 3.000 12.000 L 3.000 13.000 5.000 13.000 L 7.000 13.000 7.000 14.000 L 7.000 15.000 8.000 15.000 L 9.000 15.000 9.000 12.000 L 9.000 9.000 8.000 9.000 L 7.000 9.000 7.000 10.000 M11.000 12.000 L 11.000 13.000 16.000 13.000 L 21.000 13.000 21.000 12.000 L 21.000 11.000 16.000 11.000 L 11.000 11.000 11.000 12.000 M11.000 18.000 L 11.000 21.000 12.000 21.000 L 13.000 21.000 13.000 20.000 L 13.000 19.000 17.000 19.000 L 21.000 19.000 21.000 18.000 L 21.000 17.000 17.000 17.000 L 13.000 17.000 13.000 16.000 L 13.000 15.000 12.000 15.000 L 11.000 15.000 11.000 18.000 M3.000 18.000 L 3.000 19.000 6.000 19.000 L 9.000 19.000 9.000 18.000 L 9.000 17.000 6.000 17.000 L 3.000 17.000 3.000 18.000 "
+      fillRule=`evenodd
+    />
+  </Svg>;
