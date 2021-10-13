@@ -66,3 +66,15 @@ module Simulation = {
   let getTotalFees = sim =>
     Tez.Infix.(sim->computeRevealFees + sim.simulations->sumFees);
 };
+
+let isContractCall = (o, index) =>
+  switch (o) {
+  | Delegation(_) => false
+  | Transaction((t: Transfer.t)) =>
+    t.transfers
+    ->List.get(index)
+    ->Option.mapWithDefault(false, t =>
+        t.amount->Transfer.Currency.getToken != None
+        || t.destination->PublicKeyHash.isContract
+      )
+  };

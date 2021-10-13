@@ -52,18 +52,29 @@ let extractValidState = (state: StateLenses.state): validState => {
 module Form = {
   include ReForm.Make(StateLenses);
 
-  let fromDryRun = (dr: Protocol.Simulation.results, index) =>
+  let fromDryRun = (dr: Protocol.Simulation.results, showLimits, index) =>
     StateLenses.{
       fee:
         dr.simulations
         ->Array.get(index)
         ->Option.mapWithDefault("", sim => sim.fee->Tez.toString),
-      gasLimit: "",
-      storageLimit: "",
+      gasLimit:
+        showLimits
+          ? dr.simulations
+            ->Array.get(index)
+            ->Option.mapWithDefault("", sim => sim.gasLimit->Int.toString)
+          : "",
+      storageLimit:
+        showLimits
+          ? dr.simulations
+            ->Array.get(index)
+            ->Option.mapWithDefault("", sim => sim.storageLimit->Int.toString)
+          : "",
+
       forceLowFee: false,
     };
 
-  let use = (dryRun, index, onSubmit) => {
+  let use = (showLimits, dryRun, index, onSubmit) => {
     use(
       ~schema={
         Validation.(
@@ -88,7 +99,7 @@ module Form = {
           onSubmit(f);
           None;
         },
-      ~initialState=dryRun->fromDryRun(index),
+      ~initialState=dryRun->fromDryRun(showLimits, index),
       ~i18n=FormUtils.i18n,
       (),
     );
@@ -162,8 +173,11 @@ let make = (~operation, ~dryRun, ~index=0, ~token, ~onSubmit) => {
   let (operationSimulateRequest, sendOperationSimulate) =
     StoreContext.Operations.useSimulate();
 
+  let showLimits = token != None || Protocol.isContractCall(operation, index);
+
   let form =
     Form.use(
+      showLimits,
       dryRun,
       index,
       ({state}) => {
@@ -174,7 +188,11 @@ let make = (~operation, ~dryRun, ~index=0, ~token, ~onSubmit) => {
             fun
             | Ok(dr) => {
                 let op =
-                  updateOperation(index, dr->Form.fromDryRun(index), op);
+                  updateOperation(
+                    index,
+                    dr->Form.fromDryRun(showLimits, index),
+                    op,
+                  );
                 onSubmit(op, dr);
               }
             | Error(_) => (),
@@ -207,7 +225,7 @@ let make = (~operation, ~dryRun, ~index=0, ~token, ~onSubmit) => {
            />
          </>;
        }
-       ->ReactUtils.onlyWhen(token != None)}
+       ->ReactUtils.onlyWhen(showLimits)}
       {{
          <>
            <View style=styles##formRowInputsSeparator />
@@ -220,7 +238,7 @@ let make = (~operation, ~dryRun, ~index=0, ~token, ~onSubmit) => {
            />
          </>;
        }
-       ->ReactUtils.onlyWhen(token != None)}
+       ->ReactUtils.onlyWhen(showLimits)}
     </View>
     <FormGroupCheckbox
       label=I18n.label#force_low_fee

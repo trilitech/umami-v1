@@ -42,6 +42,8 @@ let buildContract: string => result(t, Errors.t);
 // Checks if given string is an implicit contract (tz*)
 let buildImplicit: string => result(t, Errors.t);
 
+let isContract: t => bool;
+
 module Scheme: {
   type t =
     | ED25519

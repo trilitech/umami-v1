@@ -50,6 +50,14 @@ let build = s =>
   | Error(e) => Error(e)
   };
 
+let isContract = (k: t) =>
+  switch (ReTaquitoUtils.validateAnyAddress(k)) {
+  | Ok(`Contract) => true
+  | Ok(`Address) => false
+  | Error(_) => false
+  //no need to handle the error case. k is already a pkh
+  };
+
 let buildAny = s =>
   switch (ReTaquitoUtils.validateAnyAddress(s)) {
   | Ok(`Contract) => Ok(Contract(s))
