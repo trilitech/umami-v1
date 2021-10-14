@@ -324,7 +324,14 @@ let title = {
   pub add_custom_network = "Add Custom Network";
   pub update_custom_network = "Edit Custom Network";
   pub delete_custom_network = "Delete Network?";
-  pub beacon_error = "Beacon Error"
+  pub beacon_error = "Beacon Error"; 
+  pub accounts = "Accounts"; 
+  pub operations = "Operations"; 
+  pub addressbook = "Address Book"; 
+  pub delegations = "Delegations"; 
+  pub tokens = "Tokens"; 
+  pub settings = "Settings"; 
+  pub logs = "Logs"
 };
 
 let expl = {
