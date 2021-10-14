@@ -247,6 +247,7 @@ module Transactions = {
         ~transfer: Transfer.t,
         ~dryRun: Protocol.Simulation.results,
         ~editAdvancedOptions,
+        ~advancedOptionsDisabled,
       ) => {
     let (source: (Account.t, string), destinations) =
       sourceDestination(transfer);
@@ -256,10 +257,13 @@ module Transactions = {
 
     let batchAdvancedOptions = (i, optionsSet) => {
       let color =
-        optionsSet
-          ? theme.colors.iconPrimary : theme.colors.iconMediumEmphasis;
+        advancedOptionsDisabled
+          ? theme.colors.iconDisabled
+          : optionsSet
+              ? theme.colors.iconPrimary : theme.colors.iconMediumEmphasis;
 
       <IconButton
+        disabled=advancedOptionsDisabled
         size=40.
         icon={(~color as _=?) => Icons.Options.build(~color)}
         onPress={_ => editAdvancedOptions(i)}

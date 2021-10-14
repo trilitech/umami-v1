@@ -160,17 +160,23 @@ module RightArrowButton = {
     );
 
   [@react.component]
-  let make = (~text, ~onPress, ~style as styleArg=?) => {
+  let make = (~text, ~onPress, ~disabled=false, ~style as styleArg=?) => {
     let theme = ThemeContext.useTheme();
 
     <FormBase
-      onPress style=Style.(arrayOption([|styleArg, styles##button->Some|]))>
+      disabled
+      onPress
+      style=Style.(arrayOption([|styleArg, styles##button->Some|]))>
       <View style=styles##content>
-        <Typography.ButtonSecondary fontSize=14.>
+        <Typography.ButtonSecondary
+          colorStyle=?{disabled ? Some(`disabled) : None} fontSize=14.>
           text->React.string
         </Typography.ButtonSecondary>
         <Icons.ChevronDown
-          color={theme.colors.iconMediumEmphasis}
+          color={
+            disabled
+              ? theme.colors.iconDisabled : theme.colors.iconMediumEmphasis
+          }
           style={styles##chevron}
           size=28.
         />

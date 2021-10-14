@@ -48,7 +48,7 @@ let make =
     (
       ~subtitle=?,
       ~source: Account.t,
-      ~ledgerState,
+      ~ledgerState: (option(SigningBlock.LedgerView.state), _),
       ~signOpStep as (step, setStep),
       ~dryRun,
       ~secondaryButton=?,
@@ -78,6 +78,16 @@ let make =
 
   let setAdvancedOptions = i => setStep(_ => AdvancedOptStep(i));
 
+  let advancedOptionsDisabled =
+    (
+      switch (fst(ledgerState)) {
+      | None
+      | Some(Error(_)) => false
+      | Some(WaitForConfirm | Searching | Confirmed) => true
+      }
+    )
+    || loading;
+
   switch (step) {
   | SummaryStep =>
     <>
@@ -94,10 +104,12 @@ let make =
            transfer
            dryRun
            editAdvancedOptions={i => setAdvancedOptions(Some(i))}
+           advancedOptionsDisabled
          />
        }}
       {<Buttons.RightArrowButton
          style=styles##advancedOptions
+         disabled=advancedOptionsDisabled
          text=I18n.label#advanced_options
          onPress={_ => setAdvancedOptions(None)}
        />
