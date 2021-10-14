@@ -417,8 +417,24 @@ let make = (~account, ~closeAction) => {
         modalStep,
         signerState: option(SigningBlock.state),
       ) {
-      | (_, SigningStep(_, _), Some(WaitForConfirm)) =>
+      | (
+          _,
+          SigningStep({source: {kind: Ledger}}, _),
+          Some(WaitForConfirm),
+        ) =>
         ModalFormView.Deny(I18n.Tooltip.reject_on_ledger)->Some
+
+      | (
+          _,
+          SigningStep({source: {kind: CustomAuth({provider})}}, _),
+          Some(WaitForConfirm),
+        ) =>
+        ModalFormView.Deny(
+          I18n.Tooltip.reject_on_provider(
+            provider->CustomAuthVerifiers.getProviderName,
+          ),
+        )
+        ->Some
 
       | (Pristine, _, _) when batch == [] =>
         ModalFormView.Close(closeAction)->Some

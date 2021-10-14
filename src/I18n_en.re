@@ -128,6 +128,7 @@ module Tooltip = {
   let tokenid = {j|A non-negative number that identifies the asset inside a FA2 contract|j};
   let add_to_wallet = "Add to wallet";
   let see_metadata = "See metadata";
+  let reject_on_provider = p("Reject on %s popup to cancel operation");
 };
 
 module Log = {

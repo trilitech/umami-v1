@@ -241,8 +241,17 @@ let make = (~closeAction, ~action) => {
 
   let closing =
     switch (modalStep, signingState: option(SigningBlock.state)) {
-    | (PasswordStep(_, _), Some(WaitForConfirm)) =>
+    | (PasswordStep({source: {kind: Ledger}}, _), Some(WaitForConfirm)) =>
       ModalFormView.Deny(I18n.Tooltip.reject_on_ledger)
+    | (
+        PasswordStep({source: {kind: CustomAuth({provider})}}, _),
+        Some(WaitForConfirm),
+      ) =>
+      ModalFormView.Deny(
+        I18n.Tooltip.reject_on_provider(
+          provider->CustomAuthVerifiers.getProviderName,
+        ),
+      )
     | _ => ModalFormView.Close(closeAction)
     };
 
