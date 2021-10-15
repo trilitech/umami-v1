@@ -30,7 +30,7 @@ module Dark = {
   let disabled = "rgba(255,255,255,0.38)";
 
   // for amount data
-  let positive = "#76E59B";
+  let positive = "#7cd6ae";
   let negative = "#f97977";
 
   let primary = "#f74f18";
@@ -52,6 +52,10 @@ module Dark = {
   let stateActive = "rgba(255, 255, 255, 0.08)";
   let stateDisabled = "rgba(255, 255, 255, 0.12)";
   let stateSmallHovered = "rgba(255, 255, 255, 0.04)";
+
+  // for application state like form
+  let error = "#d35050"; //red
+  let valid = "#7cd6ae"; //green
 };
 
 module Light = {
@@ -81,8 +85,8 @@ module Light = {
   let stateActive = "rgba(0, 0, 0, 0.08)";
   let stateDisabled = "rgba(0, 0, 0, 0.12)";
   let stateSmallHovered = "rgba(0, 0, 0, 0.04)";
-};
 
-// for application state like form
-let error = "#BB3838"; //red
-let valid = "#76E59B"; //green
+  // for application state like form
+  let error = "#bb3838"; //red
+  let valid = "#55a388"; //green
+};

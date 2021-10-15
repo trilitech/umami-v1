@@ -24,6 +24,7 @@
 /*****************************************************************************/
 
 open ReactNative;
+
 let styles =
   Style.(
     StyleSheet.create({
@@ -51,8 +52,6 @@ let styles =
       "actionButtons":
         style(~flexDirection=`row, ~flexShrink=0., ~marginLeft=auto, ()),
       "reqelt": style(~flexShrink=0., ~marginRight=16.->dp, ()),
-      "itemError": style(~borderColor=Colors.error, ()),
-      "itemInfo": style(~borderColor=Colors.valid, ()),
       "kindIcon": style(~marginRight=10.->dp, ()),
       "container": style(~borderRadius=3., ~marginTop=10.->dp, ()),
       "item":
@@ -224,18 +223,21 @@ module Toast = {
   let make = (~log: Logs.t, ~addToast, ~indice, ~handleDelete) => {
     let theme = ThemeContext.useTheme();
 
+    let itemErrorStyle = Style.(style(~borderColor=theme.colors.error, ()));
+    let itemInfoStyle = Style.(style(~borderColor=theme.colors.valid, ()));
+
     let kindStyle =
       switch (log.kind) {
-      | Error => styles##itemError
-      | Info => styles##itemInfo
-      | Warning => styles##itemInfo
+      | Error => itemErrorStyle
+      | Info => itemInfoStyle
+      | Warning => itemErrorStyle
       };
 
     let icon =
       switch (log.kind) {
       | Error
-      | Warning => <Icons.CloseOutline size=16. color=Colors.error />
-      | Info => <Icons.CheckOutline size=16. color=Colors.valid />
+      | Warning => <Icons.CloseOutline size=16. color=theme.colors.error />
+      | Info => <Icons.CheckOutline size=16. color=theme.colors.valid />
       };
 
     <View
