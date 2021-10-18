@@ -225,19 +225,16 @@ let make = (~closeAction, ~action) => {
     React.useState(() => SignOperationView.SummaryStep);
 
   let title =
-    switch (signStep) {
-    | AdvancedOptStep(_) => I18n.label#advanced_options->Some
-    | SummaryStep =>
-      switch (modalStep, action) {
-      | (PasswordStep({delegate: None}, _), _) =>
-        I18n.title#delegate_delete->Some
-      | (PasswordStep({delegate: Some(_)}, _), _) =>
-        I18n.title#confirm_delegate->Some
-      | (SendStep, Create(_)) => I18n.title#delegate->Some
-      | (SendStep, Edit(_)) => I18n.title#delegate_update->Some
-      | (SendStep, Delete(_)) => I18n.title#delegate_delete->Some
-      | (SubmittedStep(_), _) => None
-      }
+    switch (modalStep, action) {
+    | (PasswordStep({delegate}, _), _) =>
+      let summaryTitle =
+        delegate == None
+          ? I18n.title#delegate_delete : I18n.title#confirm_delegate;
+      SignOperationView.makeTitle(~custom=summaryTitle, signStep)->Some;
+    | (SendStep, Create(_)) => I18n.title#delegate->Some
+    | (SendStep, Edit(_)) => I18n.title#delegate_update->Some
+    | (SendStep, Delete(_)) => I18n.title#delegate_delete->Some
+    | (SubmittedStep(_), _) => None
     };
 
   let (ledger, _) as ledgerState = React.useState(() => None);

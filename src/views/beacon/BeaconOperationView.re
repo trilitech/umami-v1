@@ -155,29 +155,33 @@ module Make = (Op: OP) => {
     let (signStep, setSign) as signOpStep =
       React.useState(() => SignOperationView.SummaryStep);
 
+    let title = SignOperationView.makeTitle(signStep);
+
     let back =
       switch (signStep) {
       | AdvancedOptStep(_) => Some(() => setSign(_ => SummaryStep))
       | SummaryStep => None
       };
 
-    <ModalFormView title=I18n.title#confirmation ?closing back>
+    <ModalFormView title ?closing back>
       {switch (operationApiRequest) {
        | Done(Ok(hash), _) =>
          <SubmittedView hash onPressCancel submitText=I18n.btn#go_operations />
        | _ =>
          <>
-           <View style=FormStyles.header>
-             <Typography.Overline2
-               colorStyle=`highEmphasis
-               fontWeightStyle=`bold
-               style=styles##dapp>
-               beaconRequest.appMetadata.name->React.string
-             </Typography.Overline2>
-             <Typography.Overline3 colorStyle=`highEmphasis style=styles##dapp>
-               I18n.expl#beacon_operation->React.string
-             </Typography.Overline3>
-           </View>
+           {<View style=FormStyles.header>
+              <Typography.Overline2
+                colorStyle=`highEmphasis
+                fontWeightStyle=`bold
+                style=styles##dapp>
+                beaconRequest.appMetadata.name->React.string
+              </Typography.Overline2>
+              <Typography.Overline3
+                colorStyle=`highEmphasis style=styles##dapp>
+                I18n.expl#beacon_operation->React.string
+              </Typography.Overline3>
+            </View>
+            ->ReactUtils.onlyWhen(signStep == SummaryStep)}
            {switch (operationSimulateRequest) {
             | ApiRequest.NotAsked
             | Loading(_) => <LoadingView style=styles##loading />

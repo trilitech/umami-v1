@@ -43,6 +43,11 @@ type step =
   | AdvancedOptStep(option(int))
   | SummaryStep;
 
+let makeTitle = (~custom=?) =>
+  fun
+  | AdvancedOptStep(_) => I18n.label#advanced_options
+  | SummaryStep => custom->Option.getWithDefault(I18n.title#confirmation);
+
 [@react.component]
 let make =
     (

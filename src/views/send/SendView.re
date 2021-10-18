@@ -93,7 +93,7 @@ let styles =
 
 type step =
   | SendStep
-  | PasswordStep(Transfer.t, Protocol.Simulation.results)
+  | SigningStep(Transfer.t, Protocol.Simulation.results)
   | EditStep(int, SendForm.validState)
   | BatchStep
   | SubmittedStep(string);
@@ -101,7 +101,7 @@ type step =
 let stepToString = step =>
   switch (step) {
   | SendStep => "sendstep"
-  | PasswordStep(_, _) => "passwordstep"
+  | SigningStep(_, _) => "signingstep"
   | EditStep(_, _) => "editstep"
   | BatchStep => "batchstep"
   | SubmittedStep(_) => "submittedstep"
@@ -345,7 +345,7 @@ let make = (~closeAction) => {
     let transaction = SendForm.buildTransaction(batch);
     sendOperationSimulate(Operation.Simulation.transaction(transaction))
     ->FutureEx.getOk(dryRun => {
-        setModalStep(_ => PasswordStep(transaction, dryRun))
+        setModalStep(_ => SigningStep(transaction, dryRun))
       });
   };
 
@@ -411,7 +411,7 @@ let make = (~closeAction) => {
         modalStep,
         ledger: option(SigningBlock.LedgerView.state),
       ) {
-      | (_, PasswordStep(_, _), Some(WaitForConfirm)) =>
+      | (_, SigningStep(_, _), Some(WaitForConfirm)) =>
         ModalFormView.Deny(I18n.tooltip#reject_on_ledger)->Some
 
       | (Pristine, _, _) when batch == [] =>
@@ -428,7 +428,7 @@ let make = (~closeAction) => {
     | AdvancedOptStep(_) => Some(() => setSign(_ => SummaryStep))
     | SummaryStep =>
       switch (modalStep) {
-      | PasswordStep(_, _) =>
+      | SigningStep(_, _) =>
         Some(() => setModalStep(_ => batch == [] ? SendStep : BatchStep))
       | EditStep(_, _) => Some(() => setModalStep(_ => BatchStep))
       | SendStep =>
@@ -446,16 +446,12 @@ let make = (~closeAction) => {
   let loading = operationRequest->ApiRequest.isLoading;
 
   let title =
-    switch (sign) {
-    | AdvancedOptStep(_) => Some(I18n.label#advanced_options)
-    | SummaryStep =>
-      switch (modalStep) {
-      | SendStep
-      | EditStep(_) => Some(I18n.title#send)
-      | BatchStep => Some(I18n.title#batch)
-      | PasswordStep(_, _) => Some(I18n.title#confirmation)
-      | SubmittedStep(_) => None
-      }
+    switch (modalStep) {
+    | SendStep
+    | EditStep(_) => Some(I18n.title#send)
+    | BatchStep => Some(I18n.title#batch)
+    | SigningStep(_, _) => SignOperationView.makeTitle(sign)->Some
+    | SubmittedStep(_) => None
     };
 
   <ReactFlipToolkit.Flipper flipKey={modalStep->stepToString}>
@@ -497,7 +493,7 @@ let make = (~closeAction) => {
                loading=loadingSimulate
                aliases
              />;
-           | PasswordStep(transfer, dryRun) =>
+           | SigningStep(transfer, dryRun) =>
              <SignOperationView
                source={transfer.source}
                ledgerState
