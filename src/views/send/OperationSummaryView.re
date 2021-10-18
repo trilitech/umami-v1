@@ -192,7 +192,7 @@ module Transactions = {
               ~entrypoint=t.tx_options.entrypoint,
               ~parameter=t.tx_options.parameter,
             ),
-            ProtocolOptions.optionsSet(t.tx_options),
+            ProtocolOptions.txOptionsSet(t.tx_options),
           )
         );
       ((source, sourceLbl), `Many(destinations));

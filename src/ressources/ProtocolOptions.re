@@ -52,7 +52,7 @@ type transferEltOptions = {
   entrypoint: option(TransactionParameters.entrypoint),
 };
 
-let optionsSet = telt =>
+let txOptionsSet = telt =>
   telt.fee != None || telt.gasLimit != None || telt.storageLimit != None;
 
 type delegationOptions = {
@@ -60,6 +60,8 @@ type delegationOptions = {
   burnCap: option(Tez.t),
   forceLowFee: option(bool),
 };
+
+let delegationOptionsSet = (dopt: delegationOptions) => dopt.fee != None;
 
 type transferOptions = {
   burnCap: option(Tez.t),

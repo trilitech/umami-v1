@@ -67,6 +67,13 @@ module Simulation = {
     Tez.Infix.(sim->computeRevealFees + sim.simulations->sumFees);
 };
 
+let optionsSet =
+  fun
+  | Transaction({transfers: [t]}) =>
+    ProtocolOptions.txOptionsSet(t.tx_options)->Some
+  | Transaction({transfers: _}) => None
+  | Delegation(d) => ProtocolOptions.delegationOptionsSet(d.options)->Some;
+
 let isContractCall = (o, index) =>
   switch (o) {
   | Delegation(_) => false

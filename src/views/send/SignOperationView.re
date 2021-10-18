@@ -29,6 +29,7 @@ let styles =
   Style.(
     StyleSheet.create({
       "advancedOptions": style(~marginBottom=12.->dp, ()),
+      "edited": style(~marginRight=5.->dp, ()),
       "timeoutError":
         style(
           ~alignItems=`flexStart,
@@ -65,6 +66,8 @@ let make =
     ) => {
   let ((operation: Operation.t, dryRun), setOp) =
     React.useState(() => (operation, dryRun));
+
+  let theme = ThemeContext.useTheme();
 
   let subtitle =
     subtitle->Option.map(((s, hs)) =>
@@ -116,6 +119,15 @@ let make =
          style=styles##advancedOptions
          disabled=advancedOptionsDisabled
          text=I18n.label#advanced_options
+         stateIcon={
+           Protocol.optionsSet(operation) == Some(true)
+             ? <Icons.Edit
+                 style=styles##edited
+                 size=25.
+                 color={theme.colors.iconPrimary}
+               />
+             : React.null
+         }
          onPress={_ => setAdvancedOptions(None)}
        />
        ->ReactUtils.onlyWhen(dryRun.simulations->Array.length == 1)}

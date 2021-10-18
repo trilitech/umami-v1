@@ -29,14 +29,7 @@ let styles =
   Style.(
     StyleSheet.create({
       "primary": style(~borderRadius=4., ()),
-      "content":
-        style(
-          ~display=`flex,
-          ~flexDirection=`row,
-          ~flex=1.,
-          ~alignItems=`center,
-          (),
-        ),
+      "content": FormStyles.flexAlignedRow(~flex=1., ()),
       "pressable":
         style(
           ~flex=1.,
@@ -140,11 +133,8 @@ module RightArrowButton = {
       StyleSheet.create({
         "chevron": style(~transform=[|rotate(~rotate=270.->deg)|], ()),
         "content":
-          style(
-            ~display=`flex,
+          FormStyles.flexAlignedRow(
             ~justifyContent=`spaceBetween,
-            ~alignItems=`center,
-            ~flexDirection=`row,
             ~flex=1.,
             (),
           ),
@@ -160,7 +150,8 @@ module RightArrowButton = {
     );
 
   [@react.component]
-  let make = (~text, ~onPress, ~disabled=false, ~style as styleArg=?) => {
+  let make =
+      (~text, ~onPress, ~disabled=false, ~stateIcon=?, ~style as styleArg=?) => {
     let theme = ThemeContext.useTheme();
 
     <FormBase
@@ -172,14 +163,17 @@ module RightArrowButton = {
           colorStyle=?{disabled ? Some(`disabled) : None} fontSize=14.>
           text->React.string
         </Typography.ButtonSecondary>
-        <Icons.ChevronDown
-          color={
-            disabled
-              ? theme.colors.iconDisabled : theme.colors.iconMediumEmphasis
-          }
-          style={styles##chevron}
-          size=28.
-        />
+        <View style={FormStyles.flexAlignedRow()}>
+          stateIcon->ReactUtils.opt
+          <Icons.ChevronDown
+            color={
+              disabled
+                ? theme.colors.iconDisabled : theme.colors.iconMediumEmphasis
+            }
+            style={styles##chevron}
+            size=28.
+          />
+        </View>
       </View>
     </FormBase>;
   };
