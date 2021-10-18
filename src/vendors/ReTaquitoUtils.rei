@@ -37,7 +37,15 @@ let validateAnyAddress:
 
 let bytes2Char: bytes => string;
 
-type prefix;
-type prefixes = {spsk: prefix};
+type prefix = Js.TypedArray2.Uint8Array.t;
+type prefixes = {
+  spsk: prefix,
+  sppk: prefix,
+  edpk: prefix,
+  tz1: prefix,
+  tz2: prefix,
+};
 let prefix: prefixes;
 let b58cencode: (string, prefix) => string;
+let b58cdecode: (string, prefix) => Js.TypedArray2.Uint8Array.t;
+let b58cencodeArray: (Js.TypedArray2.Uint8Array.t, prefix) => string;
