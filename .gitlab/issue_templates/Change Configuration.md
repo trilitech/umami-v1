@@ -44,8 +44,13 @@
 - [ ] Approval from Operations
 - [?] (optional) Approval from Business 
 <!-- tick the corresponding checkbox [x], you may also add your @user handle at the end of the line -->
-/todo @picdc (cc: @remyzorg ) Please approve this _configuration change_ on development aspects
-/todo @comeh (cc: @philippewang) Please approve this _configuration change_ on operations aspects
+
+<!-- Trigger gitlab todo tasks --> 
+
+@picdc (cc: @remyzorg ) Please approve this _configuration change_ on development aspects
+
+@comeh (cc: @philippewang) Please approve this _configuration change_ on operations aspects
+
 <!-- Quick actions for last approver : -->
 <!-- /unlabel ~"CAB::to-approve" -->
 <!-- /label ~"CAB::to-perform"   -->
