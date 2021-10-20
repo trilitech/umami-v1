@@ -23,14 +23,6 @@
 /*                                                                           */
 /*****************************************************************************/
 
-let handleEstimationResults:
-  (
-    (array(ReTaquito.Toolkit.Estimation.result), int),
-    array((option(int), option(int), option(int))),
-    option(int)
-  ) =>
-  Result.t(ReTaquito.Toolkit.Estimation.result, Errors.t);
-
 module Rpc: {
   /* Retrieve the balance of given public key hash */
   let getBalance:
@@ -84,7 +76,7 @@ module Delegate: {
         ~fee: Tez.t=?,
         unit
       ) =>
-      Future.t(Result.t(ReTaquito.Toolkit.Estimation.result, Errors.t));
+      Future.t(Result.t(Protocol.Simulation.results, Errors.t));
   };
 };
 
@@ -129,20 +121,14 @@ module Transfer: {
         ~endpoint: ReTaquito.endpoint,
         ~baseDir: System.Path.t,
         ~source: PublicKeyHash.t,
+        ~customValues: array((option(int), option(int), option(int))),
         ~transfers: (ReTaquito.endpoint, PublicKeyHash.t) =>
                     Future.t(
-                      list(
-                        Result.t(ReTaquito.Toolkit.transferParams, Errors.t),
-                      ),
+                      list(Let.result(ReTaquito.Toolkit.transferParams)),
                     ),
         unit
       ) =>
-      Future.t(
-        Result.t(
-          (array(ReTaquito.Toolkit.Estimation.result), int),
-          Errors.t,
-        ),
-      );
+      Let.future(Protocol.Simulation.results);
   };
 };
 

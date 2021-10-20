@@ -188,16 +188,6 @@ let make =
     | Unencrypted => form.submit()
     };
 
-  React.useEffect0(() => {
-    switch (accountKind) {
-    | Ledger => onSubmit()
-    | Encrypted
-    | Unencrypted => ()
-    };
-
-    None;
-  });
-
   let showPasswordForm =
     switch (accountKind) {
     | Ledger => false
@@ -205,23 +195,37 @@ let make =
     | Unencrypted => true
     };
 
+  let submitText =
+    switch (accountKind) {
+    | Ledger => I18n.btn#continue
+    | Encrypted
+    | Unencrypted => I18n.btn#confirm
+    };
+
+  let submitDisabled = {
+    !formFieldsAreValids && accountKind != Ledger;
+  };
+
   <>
-    {<>
-       <PasswordFormView.PasswordField form />
+    {<PasswordFormView.PasswordField form />
+     ->ReactUtils.onlyWhen(showPasswordForm)}
+    {switch (ledgerState) {
+     | Some(_) => React.null
+     | None =>
        <View style=FormStyles.verticalFormAction>
          secondaryButton->ReactUtils.opt
          <Buttons.SubmitPrimary
            style=?{
              secondaryButton->Option.map(_ => LedgerView.styles##withSecondary)
            }
-           text=I18n.btn#confirm
+           text=submitText
            onPress={_ => onSubmit()}
            loading
-           disabledLook={!formFieldsAreValids}
+           disabled=submitDisabled
+           disabledLook=submitDisabled
          />
        </View>
-     </>
-     ->ReactUtils.onlyWhen(showPasswordForm)}
+     }}
     {ledgerState->ReactUtils.mapOpt(st =>
        <LedgerView st ?secondaryButton retry=onSubmit />
      )}

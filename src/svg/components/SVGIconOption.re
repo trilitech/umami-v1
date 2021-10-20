@@ -24,68 +24,19 @@
 /*****************************************************************************/
 
 open ReactNative;
-
-let styles =
-  Style.(
-    StyleSheet.create({"formRowInput": style(~marginVertical=5.->dp, ())})
-  );
+open ReactNativeSvg;
 
 [@react.component]
-let make = (~form: DelegateForm.api) => {
-  let (operationSimulateRequest, sendOperationSimulate) =
-    StoreContext.Operations.useSimulate();
-
-  React.useEffect0(() => {
-    switch (form.values.baker->PublicKeyHash.build) {
-    | Ok(baker) =>
-      let operation =
-        Protocol.makeDelegate(
-          ~source=form.values.sender,
-          ~delegate=Some(baker),
-          (),
-        );
-      let operation = Operation.Simulation.delegation(operation);
-      sendOperationSimulate(operation)
-      ->FutureEx.getOk(dryRun => {
-          form.handleChange(Fee, dryRun.fee->Tez.toString)
-        });
-    | _ => ()
-    };
-
-    None;
-  });
-
-  let theme = ThemeContext.useTheme();
-
-  <View>
-    <FormGroupCurrencyInput
-      label=I18n.label#fee
-      value={form.values.fee}
-      handleChange={fee => form.handleChange(Fee, fee)}
-      error={form.getFieldError(Field(Fee))}
-      style=styles##formRowInput
-      decoration=FormGroupCurrencyInput.tezDecoration
+let make =
+    (
+      ~width: option(Style.size)=?,
+      ~height: option(Style.size)=?,
+      ~fill: option(string)=?,
+      ~stroke: option(string)=?,
+    ) =>
+  <Svg viewBox="0 0 24 24" ?width ?height ?fill ?stroke>
+    <Path
+      d="M15.000 6.000 L 15.000 9.000 16.000 9.000 L 17.000 9.000 17.000 8.000 L 17.000 7.000 19.000 7.000 L 21.000 7.000 21.000 6.000 L 21.000 5.000 19.000 5.000 L 17.000 5.000 17.000 4.000 L 17.000 3.000 16.000 3.000 L 15.000 3.000 15.000 6.000 M3.000 6.000 L 3.000 7.000 8.000 7.000 L 13.000 7.000 13.000 6.000 L 13.000 5.000 8.000 5.000 L 3.000 5.000 3.000 6.000 M7.000 10.000 L 7.000 11.000 5.000 11.000 L 3.000 11.000 3.000 12.000 L 3.000 13.000 5.000 13.000 L 7.000 13.000 7.000 14.000 L 7.000 15.000 8.000 15.000 L 9.000 15.000 9.000 12.000 L 9.000 9.000 8.000 9.000 L 7.000 9.000 7.000 10.000 M11.000 12.000 L 11.000 13.000 16.000 13.000 L 21.000 13.000 21.000 12.000 L 21.000 11.000 16.000 11.000 L 11.000 11.000 11.000 12.000 M11.000 18.000 L 11.000 21.000 12.000 21.000 L 13.000 21.000 13.000 20.000 L 13.000 19.000 17.000 19.000 L 21.000 19.000 21.000 18.000 L 21.000 17.000 17.000 17.000 L 13.000 17.000 13.000 16.000 L 13.000 15.000 12.000 15.000 L 11.000 15.000 11.000 18.000 M3.000 18.000 L 3.000 19.000 6.000 19.000 L 9.000 19.000 9.000 18.000 L 9.000 17.000 6.000 17.000 L 3.000 17.000 3.000 18.000 "
+      fillRule=`evenodd
     />
-    <FormGroupCheckbox
-      label=I18n.label#force_low_fee
-      value={form.values.forceLowFee}
-      handleChange={form.handleChange(ForceLowFee)}
-      error={form.getFieldError(Field(ForceLowFee))}
-    />
-    {operationSimulateRequest->ApiRequest.isLoading
-       ? <View
-           style=Style.(
-             array([|
-               StyleSheet.absoluteFillObject,
-               style(
-                 ~backgroundColor=theme.colors.background,
-                 ~opacity=0.87,
-                 (),
-               ),
-             |])
-           )>
-           <LoadingView />
-         </View>
-       : React.null}
-  </View>;
-};
+  </Svg>;

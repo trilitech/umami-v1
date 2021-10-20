@@ -81,6 +81,9 @@ let onboarding =
     })
   );
 
+let flexAlignedRow =
+  style(~display=`flex, ~flexDirection=`row, ~alignItems=`center);
+
 let section =
   Style.(
     StyleSheet.create({

@@ -60,66 +60,44 @@ module Balance = {
 };
 
 module Simulation = {
-  let extractCustomValues = (tx_options: ProtocolOptions.transferOptions) => (
+  let extractCustomValues = (tx_options: ProtocolOptions.transferEltOptions) => (
     tx_options.fee->Option.map(fee => fee->Tez.unsafeToMutezInt),
     tx_options.storageLimit,
     tx_options.gasLimit,
   );
 
-  let batch = (config: ConfigContext.env, transfers, ~source, ~index=?, ()) => {
+  let batch = (config: ConfigContext.env, transfers, ~source, ()) => {
     let customValues =
       List.map(transfers, tx => tx.Transfer.tx_options->extractCustomValues)
       ->List.toArray;
 
-    let%FRes r =
-      TaquitoAPI.Transfer.Estimate.batch(
-        ~endpoint=config.network.endpoint,
-        ~baseDir=config.baseDir(),
-        ~source=source.Account.address,
-        ~transfers=transfers->TaquitoAPI.Transfer.prepareTransfers,
-        (),
-      );
-    open ReTaquito.Toolkit.Estimation;
-
-    let%FResMap {customFeeMutez, gasLimit, storageLimit, revealFee} =
-      TaquitoAPI.handleEstimationResults(r, customValues, index)
-      ->Future.value;
-
-    Protocol.{
-      fee: customFeeMutez->Tez.fromMutezInt,
-      gasLimit,
-      storageLimit,
-      revealFee: revealFee->Tez.fromMutezInt,
-    };
+    TaquitoAPI.Transfer.Estimate.batch(
+      ~endpoint=config.network.endpoint,
+      ~baseDir=config.baseDir(),
+      ~source=source.Account.address,
+      ~customValues,
+      ~transfers=transfers->TaquitoAPI.Transfer.prepareTransfers,
+      (),
+    );
   };
 
   let setDelegate =
       (config: ConfigContext.env, delegation: Protocol.delegation) => {
-    let%FResMap {customFeeMutez, gasLimit, storageLimit, revealFee} =
-      TaquitoAPI.Delegate.Estimate.set(
-        ~endpoint=config.network.endpoint,
-        ~baseDir=config.baseDir(),
-        ~source=delegation.Protocol.source.address,
-        ~delegate=?delegation.Protocol.delegate,
-        ~fee=?delegation.Protocol.options.fee,
-        (),
-      );
-
-    Protocol.{
-      fee: customFeeMutez->Tez.fromMutezInt,
-      gasLimit,
-      storageLimit,
-      revealFee: revealFee->Tez.fromMutezInt,
-    };
+    TaquitoAPI.Delegate.Estimate.set(
+      ~endpoint=config.network.endpoint,
+      ~baseDir=config.baseDir(),
+      ~source=delegation.Protocol.source.address,
+      ~delegate=?delegation.Protocol.delegate,
+      ~fee=?delegation.Protocol.options.fee,
+      (),
+    );
   };
 
-  let run = (config, ~index=?, operation: Protocol.t) => {
-    switch (operation, index) {
-    | (Delegation(d), _) => setDelegate(config, d)
-    | (Transaction({transfers, source}), None) =>
+  let run = (config, operation: Protocol.t) => {
+    switch (operation) {
+    | Delegation(d) => setDelegate(config, d)
+    | Transaction({transfers, source}) =>
       batch(config, transfers, ~source, ())
-    | (Transaction({transfers, source}), Some(index)) =>
-      batch(config, transfers, ~source, ~index, ())
     };
   };
 };

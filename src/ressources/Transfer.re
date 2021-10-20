@@ -100,13 +100,13 @@ module Currency = {
 type elt = {
   destination: PublicKeyHash.t,
   amount: Currency.t,
-  tx_options: transferOptions,
+  tx_options: transferEltOptions,
 };
 
 type t = {
   source: Account.t,
   transfers: list(elt),
-  common_options: commonOptions,
+  options: transferOptions,
 };
 
 let makeSingleTransferElt =
@@ -123,7 +123,7 @@ let makeSingleTransferElt =
   destination,
   amount,
   tx_options:
-    makeTransferOptions(
+    makeTransferEltOptions(
       ~fee,
       ~gasLimit,
       ~storageLimit,
@@ -168,8 +168,7 @@ let makeSingleTokenTransferElt =
     (),
   );
 
-let makeTransfers =
-    (~source, ~transfers, ~fee=?, ~burnCap=?, ~forceLowFee=?, ()) => {
-  let common_options = makeCommonOptions(~fee, ~burnCap, ~forceLowFee, ());
-  {source, transfers, common_options};
+let makeTransfers = (~source, ~transfers, ~burnCap=?, ~forceLowFee=?, ()) => {
+  let options = makeTransferOptions(~burnCap, ~forceLowFee, ());
+  {source, transfers, options};
 };

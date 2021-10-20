@@ -45,7 +45,6 @@ module type OP = {
   let make: (Account.t, ReBeacon.Message.Request.operationRequest) => t;
   let makeOperation: t => Operation.t;
   let makeSimulated: t => Operation.Simulation.t;
-  let makeSummary: (Protocol.simulationResults, t) => React.element;
 };
 
 module Make = (Op: OP) => {
@@ -66,11 +65,8 @@ module Make = (Op: OP) => {
       );
 
     let loading = operationApiRequest->ApiRequest.isLoading;
-    let sendOperation = intent =>
-      sendOperation({
-        operation: operation->Op.makeOperation,
-        signingIntent: intent,
-      });
+    let sendOperation = (~operation, intent) =>
+      sendOperation({operation, signingIntent: intent});
 
     let (operationSimulateRequest, sendOperationSimulate) =
       StoreContext.Operations.useSimulate();
@@ -80,36 +76,41 @@ module Make = (Op: OP) => {
     let (client, _) = StoreContext.Beacon.useClient();
 
     let onAbort = _ =>
-      client
-      ->FutureEx.fromOption(
-          ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
-        )
-      ->Future.flatMapOk(client =>
+      FutureEx.async(() => {
+        let%FRes client =
+          client->FutureEx.fromOption(
+            ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
+          );
+
+        let%FResMap () =
           client->ReBeacon.WalletClient.respond(
             `Error({
               type_: `error,
               id: beaconRequest.id,
               errorType: `ABORTED_ERROR,
             }),
-          )
-        )
-      ->FutureEx.getOk(_ => closeAction());
+          );
+
+        closeAction();
+      });
 
     let onSimulateError = _ =>
-      client
-      ->FutureEx.fromOption(
-          ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
-        )
-      ->Future.flatMapOk(client =>
+      FutureEx.async(() => {
+        let%FRes client =
+          client->FutureEx.fromOption(
+            ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
+          );
+
+        let%FResMap () =
           client->ReBeacon.WalletClient.respond(
             `Error({
               type_: `error,
               id: beaconRequest.id,
               errorType: `UNKNOWN_ERROR,
             }),
-          )
-        )
-      ->FutureEx.getOk(_ => closeAction());
+          );
+        closeAction();
+      });
 
     let onPressCancel = _ => {
       closeAction();
@@ -132,8 +133,8 @@ module Make = (Op: OP) => {
       [|operation|],
     );
 
-    let sendOperation = i => {
-      let%FRes hash = sendOperation(i);
+    let sendOperation = (~operation, i) => {
+      let%FRes hash = sendOperation(~operation, i);
 
       let%FResMap () =
         switch (client) {
@@ -151,23 +152,36 @@ module Make = (Op: OP) => {
       updateAccount(beaconRequest.sourceAddress);
     };
 
-    <ModalFormView title=I18n.title#confirmation ?closing>
+    let (signStep, setSign) as signOpStep =
+      React.useState(() => SignOperationView.SummaryStep);
+
+    let title = SignOperationView.makeTitle(signStep);
+
+    let back =
+      switch (signStep) {
+      | AdvancedOptStep(_) => Some(() => setSign(_ => SummaryStep))
+      | SummaryStep => None
+      };
+
+    <ModalFormView title ?closing back>
       {switch (operationApiRequest) {
        | Done(Ok(hash), _) =>
          <SubmittedView hash onPressCancel submitText=I18n.btn#go_operations />
        | _ =>
          <>
-           <View style=FormStyles.header>
-             <Typography.Overline2
-               colorStyle=`highEmphasis
-               fontWeightStyle=`bold
-               style=styles##dapp>
-               beaconRequest.appMetadata.name->React.string
-             </Typography.Overline2>
-             <Typography.Overline3 colorStyle=`highEmphasis style=styles##dapp>
-               I18n.expl#beacon_operation->React.string
-             </Typography.Overline3>
-           </View>
+           {<View style=FormStyles.header>
+              <Typography.Overline2
+                colorStyle=`highEmphasis
+                fontWeightStyle=`bold
+                style=styles##dapp>
+                beaconRequest.appMetadata.name->React.string
+              </Typography.Overline2>
+              <Typography.Overline3
+                colorStyle=`highEmphasis style=styles##dapp>
+                I18n.expl#beacon_operation->React.string
+              </Typography.Overline3>
+            </View>
+            ->ReactUtils.onlyWhen(signStep == SummaryStep)}
            {switch (operationSimulateRequest) {
             | ApiRequest.NotAsked
             | Loading(_) => <LoadingView style=styles##loading />
@@ -187,16 +201,16 @@ module Make = (Op: OP) => {
                   text=I18n.btn#reject
                   onPress=onAbort
                 />;
-              <>
-                {Op.makeSummary(dryRun, operation)}
-                <SigningBlock
-                  accountKind={sourceAccount.kind}
-                  ledgerState
-                  sendOperation
-                  loading
-                  secondaryButton
-                />
-              </>;
+              <SignOperationView
+                source=sourceAccount
+                dryRun
+                signOpStep
+                ledgerState
+                operation={Op.makeOperation(operation)}
+                loading
+                secondaryButton
+                sendOperation
+              />;
             }}
          </>
        }}
@@ -229,9 +243,6 @@ module Delegate =
     let makeSimulated = o => o->Operation.Simulation.delegation;
 
     let makeOperation = Operation.delegation;
-
-    let makeSummary = (dryRun, o) =>
-      <OperationSummaryView.Delegate delegation=o dryRun />;
   });
 
 module Transfer =
@@ -270,18 +281,14 @@ module Transfer =
               }
             )
           ->List.fromArray,
-        common_options: {
-          fee: None,
+        options: {
           burnCap: None,
           forceLowFee: None,
         },
       };
     };
 
-    let makeOperation = Operation.transfer;
+    let makeOperation = Operation.transaction;
 
-    let makeSimulated = o => o->Operation.Simulation.transaction(None);
-
-    let makeSummary = (dryRun, o) =>
-      <OperationSummaryView.Transactions transfer=o dryRun />;
+    let makeSimulated = o => o->Operation.Simulation.transaction;
   });

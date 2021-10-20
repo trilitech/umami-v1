@@ -26,24 +26,16 @@
 open ProtocolOptions;
 open Protocol;
 
-type t =
-  | Protocol(Protocol.t)
-  | Transfer(Transfer.t);
+type t = Protocol.t;
 
-let transaction = t => t->Transaction->Protocol;
-let delegation = d => d->Delegation->Protocol;
-let transfer = b => b->Transfer;
+let transaction = t => t->Transaction;
+let delegation = d => d->Delegation;
 
 module Simulation = {
-  type index = option(int);
+  type t = Protocol.t;
 
-  type t =
-    | Protocol(Protocol.t, index)
-    | Transfer(Transfer.t, index);
-
-  let delegation = d => Protocol(d->Delegation, None);
-  let transaction = (t, index) => Protocol(t->Transaction, index);
-  let batch = (b, index) => Transfer(b, index);
+  let delegation = d => d->Delegation;
+  let transaction = t => t->Transaction;
 };
 
 let makeDelegate =
@@ -51,22 +43,14 @@ let makeDelegate =
   {
     source,
     delegate,
-    options: makeCommonOptions(~fee, ~burnCap, ~forceLowFee, ()),
+    options: makeDelegationOptions(~fee, ~burnCap, ~forceLowFee, ()),
   }
   ->delegation;
 };
 
-let makeTransaction =
-    (~source, ~transfers, ~fee=?, ~burnCap=?, ~forceLowFee=?, ()) =>
+let makeTransaction = (~source, ~transfers, ~burnCap=?, ~forceLowFee=?, ()) =>
   transaction(
-    Transfer.makeTransfers(
-      ~source,
-      ~transfers,
-      ~fee?,
-      ~burnCap?,
-      ~forceLowFee?,
-      (),
-    ),
+    Transfer.makeTransfers(~source, ~transfers, ~burnCap?, ~forceLowFee?, ()),
   );
 
 let makeSingleTransaction =
@@ -96,7 +80,7 @@ let makeSingleTransaction =
     ),
   ];
 
-  makeTransaction(~source, ~transfers, ~fee?, ~burnCap?, ~forceLowFee?, ());
+  makeTransaction(~source, ~transfers, ~burnCap?, ~forceLowFee?, ());
 };
 module Reveal = {
   type t = {public_key: string};
