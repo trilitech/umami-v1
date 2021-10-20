@@ -153,10 +153,20 @@ module Tzip12 = {
 
     /* Retrieve a token from the storage */
     let getToken = (address, storage, tokenId) => {
-      let%FRes metadataMap =
+      let getTokenMetadata = storage =>
         storage.Tzip12Storage.token_metadata
         ->ResultEx.fromOption(NoTzip12Metadata(address))
         ->Future.value;
+
+      let%Ft metadataMap = getTokenMetadata(storage);
+
+      let%FRes metadataMap =
+        switch (metadataMap) {
+        | Ok(m) => FutureEx.ok(m)
+        | Error(e) =>
+          storage.assets
+          ->Option.mapWithDefault(FutureEx.err(e), getTokenMetadata)
+        };
 
       let%FRes metadata =
         elaborateFromTokenMetadata(address, tokenId, metadataMap);
@@ -191,7 +201,8 @@ module Tzip12 = {
           | e => e,
         );
     switch (metadata) {
-    | Error(NoTzip12Metadata(_)) => readFromStorage(contract, tokenId)
+    | Error(NoTzip12Metadata(_) | TokenIdNotFound(_)) =>
+      readFromStorage(contract, tokenId)
     | r => Future.value(r)
     };
   };

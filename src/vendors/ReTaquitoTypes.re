@@ -212,7 +212,11 @@ module Tzip12Storage = {
       "get";
   };
 
-  type storage = {token_metadata: option(Tokens.t(token))};
+  type storage = {
+    // Many contracts put their metadata into a pair at toplevel called `assets`
+    assets: option(storage),
+    token_metadata: option(Tokens.t(token)),
+  };
 };
 
 module Extension = {
