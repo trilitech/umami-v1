@@ -2,7 +2,7 @@
 ## Incident Report for a known / recuring situation
 <!-- Use if the incident is a recurring issue, with an already validated change procedure -->
 <!-- Add reference to already validated related incident or Emergency change with /relate in the comments -->
-<!-- /relate nomadic-labs/umami-wallet/umami#xyz -->
+/relate nomadic-labs/umami-wallet/umami#xyz 
 
 
 <!-- (optional) To bring the attention to this incident during next CAB meeting, uncomment next line to add CAB::to-review label -->
@@ -13,12 +13,15 @@
 
 
 ### How the incident was discovered?
+<!-- Mention which alert was triggered where, but report wrong or missing alerts when it's the case -->
+<!-- slack ? manual check ? user notification ? other -->
 
 
 ### What is the potential impact of the incident?
 
 
 ### What is the evidence (i.e. screenshots, logs, etc)?
+
 
 
 <!-- METADATA for project management, please leave the following lines and edit as needed -->
@@ -30,13 +33,17 @@
 /label ~Change ~"Change::Emergency"
 
 ## Reviews checklist (none required)
-<!-- No review required since this is a known incident with already validated change procedure -->
+<!-- No review required since this is a known incident with already validated change procedure to be linked -->
 
-<!-- To bring the attention to this incident during next CAB meeting, add CAB::to-review label -->
+<!-- (optional) To bring the attention to this incident during next CAB meeting, add CAB::to-review label -->
 <!-- /label ~Change ~"CAB::to-review" -->
+
+
+<!-- METADATA - end -->
 
 <!-- Other useful shortcuts -->
 <!-- ( ping CAB members : @picdc @remyzorg @comeh @philippewang.info @SamREye ) -->
+<!-- /todo @picdc (cc: @remyzorg )    Please review this _emergency change_ on development aspects -->
+<!-- /todo @comeh (cc: @philippewang) Please review this _emergency change_ on operations aspects  -->
+<!-- /todo @SamREye                   Please review this _emergency change_ on business aspects    -->
 <!-- /unlabel ~"CAB::to-review" -->
-
-<!-- METADATA - end -->

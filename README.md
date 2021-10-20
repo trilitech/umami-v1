@@ -29,7 +29,8 @@ git clone https://gitlab.com/nomadic-labs/umami-wallet/umami/ && cd umami
 ```
 
 ### 2) Requirements:
-* [node](https://nodejs.org) installed.
+
+* [node](https://nodejs.org) installed, version 14 or later.
 * [yarn](https://yarnpkg.com) installed.
 * [`node-hid` dependencies](https://github.com/node-hid/node-hid) dependencies installed.
 
@@ -40,7 +41,7 @@ Linux binaries are distributed as snaps, hence it needs `snapcraft` and `LXD`:
 ### 3) Build:
 
 ```
-yarn install
+yarn
 yarn bsb:build
 yarn electron:build
 ```
