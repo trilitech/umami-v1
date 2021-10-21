@@ -48,9 +48,15 @@
 - [ ] Approval from Operations
 - [ ] Approval from Business 
 <!-- tick the box [x], you may also add your @user handle at the end of the line -->
-/todo @picdc (cc: @remyzorg )    Please approve this _scheduled change_ on development aspects
-/todo @comeh (cc: @philippewang) Please approve this _scheduled change_ on operations  aspects
-/todo @SamREye                   Please approve this _scheduled change_ on business    aspects
+
+<!-- Trigger gitlab todo tasks --> 
+
+@picdc (cc: @remyzorg )    Please approve this _scheduled change_ on development aspects
+
+@comeh (cc: @philippewang) Please approve this _scheduled change_ on operations  aspects
+
+@SamREye                   Please approve this _scheduled change_ on business    aspects
+
 <!-- Quick actions for last approver : -->
 <!-- /unlabel ~"CAB::to-approve" -->
 <!-- /label ~"CAB::to-perform"   -->
