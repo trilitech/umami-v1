@@ -131,6 +131,30 @@ module Tzip12 = {
     decimals: int,
     name: string,
     symbol: string,
+    // TZIP21 Asset fields
+    description: option(string),
+    minter: option(PublicKeyHash.t),
+    creators: option(array(string)),
+    contributors: option(array(string)),
+    publishers: option(array(string)),
+    date: option(string),
+    blocklevel: option(int),
+    [@bs.as "type"]
+    type_: option(string),
+    tags: option(array(string)),
+    genres: option(array(string)),
+    language: option(string),
+    identifier: option(string),
+    rights: option(string),
+    rightUri: option(string),
+    artifactUri: option(string),
+    displayUri: option(string),
+    thumbnailUri: option(string),
+    isTransferable: option(bool), // default: true
+    isBooleanAmount: option(bool), // default: false
+    shouldPreferSymbol: option(bool), //default: false
+    formats: option(array(TokenRepr.Metadata.format)),
+    attributes: option(array(TokenRepr.Metadata.attribute)),
   };
 
   type t = {getTokenMetadata: (. int) => Js.Promise.t(metadata)};
