@@ -23,50 +23,34 @@
 /*                                                                           */
 /*****************************************************************************/
 
-type Errors.t +=
-  | ParsingError(string)
-  | DecodeError(string);
-
-// Propagates Errors.t during decoding, should be caught by the decode function
-exception InternalError(Errors.t);
-
-let parse: string => Promise.result(Js.Json.t);
-
-let decode: (Js.Json.t, Json.Decode.decoder('a)) => Promise.result('a);
-
-module MichelsonDecode: {
-  type address =
-    | Packed(bytes)
-    | Pkh(PublicKeyHash.t);
-
-  let dataDecoder:
-    Json.Decode.decoder('a) => Json.Decode.decoder(array('a));
-
-  let pairDecoder:
-    (Json.Decode.decoder('a), Json.Decode.decoder('b)) =>
-    Json.Decode.decoder(('a, 'b));
-
-  let intDecoder: Json.Decode.decoder(string);
-
-  let bytesDecoder: Json.Decode.decoder(bytes);
-
-  let stringDecoder: Json.Decode.decoder(string);
-
-  let addressDecoder: Json.Decode.decoder(address);
-
-  let fa2BalanceOfDecoder: Js.Json.t => array(((address, string), string));
+type tokenBalance = {
+  balance: ReBigNumber.t,
+  contract: PublicKeyHash.t,
+  token_id: int,
+  network: string,
+  name: option(string),
+  symbol: option(string),
+  decimals: option(int), //default: 0
+  description: option(string),
+  artifact_uri: option(string),
+  display_uri: option(string),
+  thumbnail_uri: option(string),
+  external_uri: option(string),
+  is_transferable: option(bool), // default: true
+  is_boolean_amount: option(bool), // default: false
+  should_prefer_symbol: option(bool) //default: false
 };
 
-module Encode: {
-  include (module type of Json.Encode);
-
-  let bsListEncoder: encoder('a) => encoder(list('a));
+type t = {
+  balances: array(tokenBalance),
+  total: int,
 };
+
+let toTokenRepr: (TokenContract.t, tokenBalance) => option(TokenRepr.t);
 
 module Decode: {
-  include (module type of Json.Decode);
-
-  let optionalOrNull: (string, decoder('a)) => decoder(option('a));
-
-  let bsListDecoder: decoder('a) => decoder(list('a));
+  let tokenBalanceDecoder: Json.Decode.decoder(tokenBalance);
+  let decoder: Json.Decode.decoder(t);
 };
+
+module Encode: {let tokenBalanceEncoder: Json.Encode.encoder(tokenBalance);};

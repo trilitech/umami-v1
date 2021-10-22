@@ -546,7 +546,8 @@ let errors = {
   pub version_format = v =>
     p("Internal error: invalid version format `%s`", v);
   pub storage_migration_failed = v =>
-    p("Internal error: storage migration failed at version %s", v)
+    p("Internal error: storage migration failed at version %s", v);
+  pub unknown_network = c => p("No public network exists for chain %s", c)
 };
 
 let csv = {

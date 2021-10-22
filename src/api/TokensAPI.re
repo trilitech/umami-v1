@@ -39,6 +39,65 @@ let () =
 
 let tokensStorageKey = "wallet-tokens";
 
+module BetterCallDev = {
+  open BCD;
+
+  // Returns a list of arrays: this will be treated later, so we return it as raw as possible for now
+  let fetchTokens = (config, alreadyFetched, account) => {
+    let rec fetch = (alreadyFetched, index, account) => {
+      let%Await url =
+        ServerAPI.URL.External.betterCallDevAccountTokens(
+          ~config,
+          ~account,
+          ~sortBy=`TokenId,
+          ~limit=20,
+          ~index,
+          (),
+        )
+        ->Promise.value;
+      let%Await json = url->ServerAPI.URL.get;
+      let%Await tokens = json->JsonEx.decode(Decode.decoder)->Promise.value;
+      let alreadyFetched = [tokens.balances, ...alreadyFetched];
+      index * 20 < tokens.total
+        ? fetch(alreadyFetched, index + 1, account)
+        : alreadyFetched->Promise.ok;
+    };
+    fetch(alreadyFetched, 0, account);
+  };
+
+  let fetchAccountsTokens = (config, accounts) => {
+    let rec fetch = (alreadyFetched, accounts) => {
+      switch (accounts) {
+      | [] => alreadyFetched->Promise.ok
+      | [account, ...accounts] =>
+        let%Await fetched = fetchTokens(config, alreadyFetched, account);
+        fetch(fetched, accounts);
+      };
+    };
+    fetch([], accounts);
+  };
+
+  // Returns a list of arrays: this will be treated later, so we return it as raw as possible for now
+  let _fetchTokensBatchAccounts = (config, accounts) => {
+    // The request accepts 10 accounts at most
+    let rec fetch = (alreadyFetched, offset) =>
+      if (offset >= accounts->Array.length) {
+        alreadyFetched->Promise.ok;
+      } else {
+        let%Await url =
+          ServerAPI.URL.External.betterCallDevBatchAccounts(
+            ~config,
+            ~accounts=accounts->Array.slice(~offset, ~len=10),
+          )
+          ->Promise.value;
+        let%Await json = url->ServerAPI.URL.get;
+        let%Await tokens = json->JsonEx.decode(Decode.decoder)->Promise.value;
+        fetch([tokens.balances, ...alreadyFetched], offset + 10);
+      };
+    fetch([], 0);
+  };
+};
+
 let registeredTokens = () =>
   LocalStorage.getItem(tokensStorageKey)
   ->Js.Nullable.toOption

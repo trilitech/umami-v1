@@ -125,6 +125,10 @@ module Encode = {
 module Decode = {
   include Json.Decode;
 
+  let optionalOrNull = (fieldName, decoder, json) =>
+    (json |> optional(field(fieldName, optional(decoder))))
+    ->Option.getWithDefault(None);
+
   let nilDecoder = json =>
     json->int == 0 ? [] : raise(DecodeError("invalid int for nil"));
 
