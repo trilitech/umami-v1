@@ -88,11 +88,11 @@ let useSourceAccount = request => {
 
 let respondWithError = (client, id, errorType) =>
   Promise.async(() => {
-    let%FRes client =
+    let%Await client =
       client->Promise.fromOption(
         ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
       );
-    let%FResMap () =
+    let%AwaitMap () =
       client->ReBeacon.WalletClient.respond(
         `Error({type_: `error, id, errorType}),
       );

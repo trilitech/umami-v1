@@ -88,22 +88,22 @@ let getMasterKey = (~prompt, tr) =>
 let addOrReplaceAlias =
     (~ledgerTransport, ~dirpath, ~alias, ~path, ~scheme, ~ledgerBasePkh)
     : Promise.t(PublicKeyHash.t) => {
-  let%FRes signer =
+  let%Await signer =
     Signer.create(ledgerTransport, path, ~prompt=false, scheme);
   /* Ensures the three are available */
 
-  let%FRes pkh = signer->Signer.publicKeyHash;
+  let%Await pkh = signer->Signer.publicKeyHash;
 
-  let%FRes pk = signer->Signer.publicKey;
+  let%Await pk = signer->Signer.publicKey;
 
-  let%FRes path = path->DerivationPath.convertToTezosBip44->Promise.value;
+  let%Await path = path->DerivationPath.convertToTezosBip44->Promise.value;
 
   let t = Wallet.Ledger.{path, scheme};
   let sk = Wallet.Ledger.Encode.toSecretKey(t, ~ledgerBasePkh);
 
   let pk = Wallet.ledgerPkValue(sk, pk);
 
-  let%FResMap () = Wallet.addOrReplaceAlias(~dirpath, ~alias, ~pk, ~pkh, ~sk);
+  let%AwaitMap () = Wallet.addOrReplaceAlias(~dirpath, ~alias, ~pk, ~pkh, ~sk);
 
   pkh;
 };

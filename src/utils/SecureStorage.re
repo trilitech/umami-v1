@@ -170,13 +170,13 @@ module Cipher = {
     ->RawJsError.fromPromiseParsed(_ => DeriveKeyError);
 
   let encrypt = (data, password) => {
-    let%FRes key = keyFromPassword(password);
+    let%Await key = keyFromPassword(password);
     let salt = Buffer.fromBytes(Crypto.allocAndFillWithRandomValues(32));
 
-    let%FRes derivedKey = deriveKey(key, salt);
+    let%Await derivedKey = deriveKey(key, salt);
     let iv = Crypto.allocAndFillWithRandomValues(16);
 
-    let%FResMap encryptedData =
+    let%AwaitMap encryptedData =
       Crypto.Subtle.encrypt(
         {name: "AES-GCM", iv},
         derivedKey,
@@ -194,12 +194,12 @@ module Cipher = {
   let encrypt2 = (password, data) => encrypt(data, password);
 
   let decrypt = (encryptedData, password) => {
-    let%FRes key = keyFromPassword(password);
+    let%Await key = keyFromPassword(password);
 
-    let%FRes derivedKey =
+    let%Await derivedKey =
       deriveKey(key, Buffer.fromString(encryptedData.salt, `hex));
 
-    let%FResMap data =
+    let%AwaitMap data =
       Crypto.Subtle.decrypt(
         {name: "AES-GCM", iv: Buffer.fromString(encryptedData.iv, `hex)},
         derivedKey,
@@ -237,10 +237,10 @@ let store = (data, ~password) =>
   ->Promise.mapOk(encryptedData => encryptedData->LockStorage.set);
 
 let validatePassword = password => {
-  let%FRes data = fetch(~password);
-  let%FRes () =
+  let%Await data = fetch(~password);
+  let%Await () =
     data == Some("lock") || data == None
       ? Promise.ok() : Promise.err(Errors.WrongPassword);
-  let%FResMap () = store("lock", ~password);
+  let%AwaitMap () = store("lock", ~password);
   ();
 };

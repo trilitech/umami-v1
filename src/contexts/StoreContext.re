@@ -168,7 +168,7 @@ let make = (~children) => {
 
   ReactUtils.useAsyncEffect1(
     () => {
-      let%FResMap (v: Network.apiVersion, _) =
+      let%AwaitMap (v: Network.apiVersion, _) =
         Network.checkConfiguration(
           config.network.explorer,
           config.network.endpoint,

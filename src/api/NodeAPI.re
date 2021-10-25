@@ -44,7 +44,7 @@ let () =
 
 module Accounts = {
   let exists = (config, account) => {
-    let%FResMap json = URL.Explorer.accountExists(config, ~account)->URL.get;
+    let%AwaitMap json = URL.Explorer.accountExists(config, ~account)->URL.get;
     switch (Js.Json.classify(json)) {
     | Js.Json.JSONTrue => true
     | _ => false
@@ -122,8 +122,7 @@ module DelegateMaker = (Get: {let get: URL.t => Promise.t(Js.Json.t);}) => {
     };
 
   let getForAccount = (config: ConfigContext.env, account) => {
-    let%FResMap res =
-      TaquitoAPI.Delegate.get(config.network.endpoint, account);
+    let%AwaitMap res = TaquitoAPI.Delegate.get(config.network.endpoint, account);
 
     res->Option.flatMap(delegate => account == delegate ? None : res);
   };
@@ -149,7 +148,7 @@ module DelegateMaker = (Get: {let get: URL.t => Promise.t(Js.Json.t);}) => {
 
   let extractInfoFromDelegate =
       (network, delegate, account, firstOperation: Operation.Read.t) => {
-    let%FRes balance =
+    let%Await balance =
       network->BalanceAPI.get(
         account,
         ~params={block: firstOperation.level->string_of_int},
@@ -162,7 +161,7 @@ module DelegateMaker = (Get: {let get: URL.t => Promise.t(Js.Json.t);}) => {
       lastReward: None,
     };
 
-    let%FResMap operations =
+    let%AwaitMap operations =
       network->ExplorerAPI.getOperations(
         delegate,
         ~types=[|"transaction"|],
@@ -185,7 +184,7 @@ module DelegateMaker = (Get: {let get: URL.t => Promise.t(Js.Json.t);}) => {
 
   let getDelegationInfoForAccount =
       (network, account: PublicKeyHash.t): Promise.t(option(delegationInfo)) => {
-    let%FRes operations =
+    let%Await operations =
       network->ExplorerAPI.getOperations(
         account,
         ~types=[|"delegation"|],
@@ -198,7 +197,7 @@ module DelegateMaker = (Get: {let get: URL.t => Promise.t(Js.Json.t);}) => {
     } else {
       let firstOperation = operations->Array.getUnsafe(0);
 
-      let%FRes payload =
+      let%Await payload =
         switch (firstOperation.payload) {
         | Delegation(payload) => payload->Promise.ok
         | _ => InvalidOperationType->Promise.err
@@ -225,7 +224,7 @@ module OperationRepr = Operation;
 
 module Operation = {
   let batch = (config: ConfigContext.env, transfers, ~source, ~signingIntent) => {
-    let%FResMap op =
+    let%AwaitMap op =
       TaquitoAPI.Transfer.batch(
         ~endpoint=config.network.endpoint,
         ~baseDir=config.baseDir(),
@@ -243,7 +242,7 @@ module Operation = {
         Protocol.{delegate, source, options},
         ~signingIntent,
       ) => {
-    let%FResMap op =
+    let%AwaitMap op =
       TaquitoAPI.Delegate.set(
         ~endpoint=config.network.endpoint,
         ~baseDir=config.baseDir(),
@@ -271,7 +270,7 @@ module Tokens = {
   type tokenKind = [ OperationRepr.Transaction.tokenKind | `NotAToken];
 
   let checkTokenContract = (config, contract: PublicKeyHash.t) => {
-    let%FlatRes json = URL.Explorer.checkToken(config, ~contract)->URL.get;
+    let%AwaitRes json = URL.Explorer.checkToken(config, ~contract)->URL.get;
     switch (Js.Json.classify(json)) {
     | Js.Json.JSONString("fa1-2") => Ok(`KFA1_2)
     | Js.Json.JSONString("fa2") => Ok(`KFA2)
@@ -281,7 +280,7 @@ module Tokens = {
   };
 
   let runFA12GetBalance = (config, ~address, ~token) => {
-    let%FRes json =
+    let%Await json =
       config
       ->URL.Endpoint.runView
       ->URL.postJson(
@@ -317,7 +316,7 @@ module Tokens = {
         ~tokenId,
       );
 
-    let%FRes json = config->URL.Endpoint.runView->URL.postJson(input);
+    let%Await json = config->URL.Endpoint.runView->URL.postJson(input);
 
     let res = JsonEx.(decode(json, MichelsonDecode.fa2BalanceOfDecoder));
 

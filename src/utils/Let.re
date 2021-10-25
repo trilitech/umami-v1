@@ -26,6 +26,8 @@
 /* The goal of this module is to define custom let-binding to ease
    promise-oriented code integration. */
 
+type result('a) = Promise.result('a);
+
 module Res = {
   /* [let%Res x = m; n] means:
      - [m] has type `Result.t('a, 'err)`
@@ -41,7 +43,7 @@ module Res = {
 
 module ResMap = {
   /* [let%ResMap x = m; n] means:
-     - [m] has type `Result.t('a, 'err)`
+     - [m] has type `result('a)`
      - [x] is an identifier of type `'a`
      - [n] has type `'b`
      - the whole expression has then type `Result.t('b, 'err)`
@@ -62,28 +64,15 @@ module Ft = {
      It is strictly equivalent to `m->Promise.flatMap(x => n)`
      */
 
-  let let_: (Promise.t(_), _) => Promise.t(_) = Promise.flatMap;
+  let let_: (FutureBase.t(_), _) => FutureBase.t(_) = FutureBase.flatMap;
 };
 
-module FtMap = {
-  /* [let%FtMap x = m; n] means:
+module Await = {
+  /* [let%AwaitMap x = m; n] means:
      - [m] has type `Promise.t('a)`
      - [x] is an identifier of type `'a`
-     - [n] has type `'b`
+     - [n] has type `Promise.t('b)`
      - the whole expression has then type `Promise.t('b)`
-
-     It is strictly equivalent to `m->Promise.map(x => n)`
-     */
-
-  let let_: (Promise.t(_), _) => Promise.t(_) = Promise.map;
-};
-
-module FRes = {
-  /* [let%FRes x = m; n] means:
-     - [m] has type `Promise.t(Result.t('a, 'err))`
-     - [x] is an identifier of type `'a`
-     - [n] has type `Promise.t(Result.t('b, 'err))`
-     - the whole expression has then type `Promise.t(Result.t('b, 'err))`
 
      It is strictly equivalent to `m->Promise.flatMapOk(x => n)`
      */
@@ -91,12 +80,12 @@ module FRes = {
   let let_: (Promise.t(_), _) => Promise.t(_) = Promise.flatMapOk;
 };
 
-module FResMap = {
-  /* [let%FResMap x = m; n] means:
-     - [m] has type `Promise.t(Result.t('a, 'err))`
+module AwaitMap = {
+  /* [let%AwaitMap x = m; n] means:
+     - [m] has type `Promise.t('a)`
      - [x] is an identifier of type `'a`
      - [n] has type `'b`
-     - the whole expression has then type `Promise.t(Result.t('b, 'err))`
+     - the whole expression has then type `Promise.t('b)`
 
      It is strictly equivalent to `m->Promise.mapOk(x => n)`
      */
@@ -104,12 +93,12 @@ module FResMap = {
   let let_: (Promise.t(_), _) => Promise.t(_) = Promise.mapOk;
 };
 
-module FlatRes = {
-  /* [let%FlatRes x = m; n] means:
-     - [m] has type `Promise.t(Result.t('a, 'err))`
+module AwaitRes = {
+  /* [let%AwaitRes x = m; n] means:
+     - [m] has type `Promise.t('a)`
      - [x] is an identifier of type `'a`
-     - [n] has type `Result.t('b, 'err)`
-     - the whole expression has then type `result('b, 'err)`
+     - [n] has type `result('b)`
+     - the whole expression has then type `Promise.t('b)`
 
      It is strictly equivalent to `m->Promise.flatMapOk(x => n->Promise.value)`
      */

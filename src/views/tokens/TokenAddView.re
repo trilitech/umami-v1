@@ -143,7 +143,7 @@ let make = (~chain, ~address="", ~closeAction) => {
       ~onSubmit=
         ({state}) => {
           Promise.async(() => {
-            let%FResMap address =
+            let%AwaitMap address =
               state.values.address->PublicKeyHash.buildContract->Promise.value;
             createToken({
               kind: FA1_2,

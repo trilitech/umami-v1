@@ -260,7 +260,7 @@ module WithQR = {
         let streamRef = ref(None);
 
         Promise.async(() => {
-          let%FResMap stream =
+          let%AwaitMap stream =
             window##navigator##mediaDevices##getUserMedia({
               "video": {
                 "facingMode": "environment",
@@ -333,12 +333,12 @@ module WithQR = {
       switch (pairingInfo) {
       | Ok(pairingInfo) =>
         Promise.async(() => {
-          let%FRes client =
+          let%Await client =
             client->Promise.fromOption(
               ~error=BeaconApiRequest.ClientNotConnected,
             );
 
-          let%FResMap () =
+          let%AwaitMap () =
             client
             ->ReBeacon.WalletClient.addPeer(pairingInfo)
             ->Promise.tapError(error => {

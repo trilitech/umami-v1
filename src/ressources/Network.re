@@ -351,7 +351,7 @@ let mapAPIError: _ => Errors.t =
   | _ => API(MonitorRPCError("Unknown error"));
 
 let monitor = url => {
-  let%FlatRes json =
+  let%AwaitRes json =
     (url ++ "/monitor/blocks")->fetchJson(e => API(NotAvailable(e)));
 
   Result.fromExn((), () =>
@@ -368,7 +368,7 @@ let monitor = url => {
 };
 
 let getAPIVersion = (~timeout=?, url) => {
-  let%FlatRes json =
+  let%AwaitRes json =
     (url ++ "/version")->fetchJson(~timeout?, e => API(NotAvailable(e)));
 
   let%Res api =
@@ -396,7 +396,7 @@ let getAPIVersion = (~timeout=?, url) => {
 };
 
 let getNodeChain = (~timeout=?, url) => {
-  let%FlatRes json =
+  let%AwaitRes json =
     (url ++ "/chains/main/chain_id")
     ->fetchJson(~timeout?, e => Node(NotAvailable(e)));
   switch (Js.Json.decodeString(json)) {

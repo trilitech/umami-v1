@@ -107,7 +107,7 @@ module AliasesMaker =
   };
 
   let protect = (dirpath, f) => {
-    let%FRes _ = dirpath->mkTmpCopy;
+    let%Await _ = dirpath->mkTmpCopy;
     let%Ft r = f();
 
     switch (r) {
@@ -184,14 +184,14 @@ let aliasFromPkh = (~dirpath, ~pkh) => {
 };
 
 let pkFromAlias = (~dirpath, ~alias) => {
-  let%FlatRes pkaliases = dirpath->PkAliases.read;
+  let%AwaitRes pkaliases = dirpath->PkAliases.read;
   let%ResMap a = pkaliases->PkAliases.find(a => a.name == alias);
   a.value.PkAlias.key;
 };
 
 let updatePkhAlias = (~dirpath, ~update) =>
   dirpath->PkhAliases.protect(_ => {
-    let%FRes pkhAliases = PkhAliases.read(dirpath);
+    let%Await pkhAliases = PkhAliases.read(dirpath);
     let pkhAliases = update(pkhAliases);
     dirpath->PkhAliases.write(pkhAliases);
   });
@@ -220,12 +220,12 @@ let protectAliases = (~dirpath, ~f) => {
 
 let updateAlias = (~dirpath, ~update) => {
   let update = () => {
-    let%FRes pkAliases = PkAliases.read(dirpath);
-    let%FRes pkhAliases = PkhAliases.read(dirpath);
-    let%FRes skAliases = SecretAliases.read(dirpath);
+    let%Await pkAliases = PkAliases.read(dirpath);
+    let%Await pkhAliases = PkhAliases.read(dirpath);
+    let%Await skAliases = SecretAliases.read(dirpath);
     let (pks, pkhs, sks) = update(pkAliases, pkhAliases, skAliases);
-    let%FRes () = PkAliases.write(dirpath, pks);
-    let%FRes () = PkhAliases.write(dirpath, pkhs);
+    let%Await () = PkAliases.write(dirpath, pks);
+    let%Await () = PkhAliases.write(dirpath, pkhs);
     SecretAliases.write(dirpath, sks);
   };
   protectAliases(~dirpath, ~f=update);
@@ -285,10 +285,10 @@ let extractPrefixFromSecretKey = k => {
 };
 
 let readSecretFromPkh = (address, dirpath) => {
-  let%FRes alias = aliasFromPkh(~dirpath, ~pkh=address);
-  let%FRes secretAliases = dirpath->SecretAliases.read;
+  let%Await alias = aliasFromPkh(~dirpath, ~pkh=address);
+  let%Await secretAliases = dirpath->SecretAliases.read;
 
-  let%FlatRes {value: k} =
+  let%AwaitRes {value: k} =
     secretAliases
     ->Js.Array2.find(a => a.SecretAliases.name == alias)
     ->Promise.fromOption(~error=KeyNotFound);

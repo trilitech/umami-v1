@@ -66,7 +66,7 @@ module URL = {
   let fromString = s => s;
 
   let get = url => {
-    let%FRes response =
+    let%Await response =
       url
       ->Fetch.fetch
       ->Promise.fromJs(e =>
@@ -87,7 +87,7 @@ module URL = {
         (),
       );
 
-    let%FRes response =
+    let%Await response =
       url
       ->Fetch.fetchWithInit(init)
       ->Promise.fromJs(e =>
@@ -244,12 +244,12 @@ module ExplorerMaker = (Get: {let get: string => Promise.t(Js.Json.t);}) => {
         ~limit: option(int)=?,
         (),
       ) => {
-    let%FRes res =
+    let%Await res =
       network
       ->URL.Explorer.operations(account, ~types?, ~destination?, ~limit?, ())
       ->Get.get;
 
-    let%FRes operations =
+    let%Await operations =
       res
       ->Result.fromExn(Json.Decode.(array(Operation.Read.Decode.t)))
       ->Result.mapError(e => e->Operation.Read.filterJsonExn->JsonError)

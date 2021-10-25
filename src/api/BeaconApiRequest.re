@@ -59,10 +59,10 @@ let useNextRequestState = (client, peersRequestState) => {
 
   ReactUtils.useAsyncEffect1(
     () => {
-      let%FRes client =
+      let%Await client =
         client->Promise.fromOption(~error=ClientNotConnected);
-      let%FRes _: ReBeacon.transportType = client->ReBeacon.WalletClient.init;
-      let%FResMap () =
+      let%Await _: ReBeacon.transportType = client->ReBeacon.WalletClient.init;
+      let%AwaitMap () =
         client->ReBeacon.WalletClient.connect(message => {
           let request = message->ReBeacon.Message.Request.classify;
           yield(request);
@@ -76,16 +76,16 @@ let useNextRequestState = (client, peersRequestState) => {
     () => {
       if (isConnected) {
         Promise.async(() => {
-          let%FRes deeplink =
+          let%Await deeplink =
             nextDeeplink()->Promise.fromOption(~error=NoDeeplink);
-          let%FRes peer =
+          let%Await peer =
             ReBeacon.Serializer.(
               make()
               ->deserialize(deeplink->dataFromURL->Option.getWithDefault(""))
             );
-          let%FRes client =
+          let%Await client =
             client->Promise.fromOption(~error=ClientNotConnected);
-          let%FResMap () = client->ReBeacon.WalletClient.addPeer(peer);
+          let%AwaitMap () = client->ReBeacon.WalletClient.addPeer(peer);
 
           setPeersRequest(ApiRequest.expireCache);
           doneDeeplinking();
@@ -104,7 +104,7 @@ let useNextRequestState = (client, peersRequestState) => {
 module Peers = {
   let useLoad = (client, requestState) => {
     let get = (~config as _s, ()) => {
-      let%FRes client =
+      let%Await client =
         client->Promise.fromOption(~error=ClientNotConnected);
       client->ReBeacon.WalletClient.getPeers;
     };
@@ -116,7 +116,7 @@ module Peers = {
     ApiRequest.useSetter(
       ~set=
         (~config as _, peer: ReBeacon.peerInfo) => {
-          let%FRes client =
+          let%Await client =
             client->Promise.fromOption(~error=ClientNotConnected);
           client->ReBeacon.WalletClient.removePeer(peer);
         },
@@ -130,7 +130,7 @@ module Peers = {
 module Permissions = {
   let useLoad = (client, requestState) => {
     let get = (~config as _s, ()) => {
-      let%FRes client =
+      let%Await client =
         client->Promise.fromOption(~error=ClientNotConnected);
 
       client->ReBeacon.WalletClient.getPermissions;
@@ -143,7 +143,7 @@ module Permissions = {
     ApiRequest.useSetter(
       ~set=
         (~config as _s, accountIdentifier: ReBeacon.accountIdentifier) => {
-          let%FRes client =
+          let%Await client =
             client->Promise.fromOption(~error=ClientNotConnected);
 
           client->ReBeacon.WalletClient.removePermission(accountIdentifier);

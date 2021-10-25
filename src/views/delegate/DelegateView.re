@@ -215,7 +215,7 @@ let make = (~closeAction, ~action) => {
   let form =
     Form.build(action, (op: Protocol.delegation) => {
       Promise.async(() => {
-        let%FResMap dryRun =
+        let%AwaitMap dryRun =
           sendOperationSimulate(op->Operation.Simulation.delegation);
         setModalStep(_ => PasswordStep(op, dryRun));
       })

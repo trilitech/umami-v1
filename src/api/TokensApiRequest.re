@@ -104,9 +104,9 @@ let useDelete = (~sideEffect=?, ()) => {
 let useCreate = (~sideEffect=?, ()) => {
   let (_checkTokenRequest, checkToken) = useCheckTokenContract();
   let set = (~config as _, token) => {
-    let%FRes tokenKind = checkToken(token.TokenRepr.address);
+    let%Await tokenKind = checkToken(token.TokenRepr.address);
 
-    let%FResMap () =
+    let%AwaitMap () =
       tokenKind == `KFA1_2
         ? Promise.ok()
         : Promise.err(NotFA12Contract((token.TokenRepr.address :> string)));

@@ -212,12 +212,12 @@ module Tzip12 = {
         (address, tokenId, metadataMap: Tzip12Storage.Tokens.t(_)) => {
       let key = tokenId->Int64.of_int->BigNumber.fromInt64;
 
-      let%FRes metadata =
+      let%Await metadata =
         metadataMap.get(. key)->ReTaquitoError.fromPromiseParsed;
 
       let isIllformed = metadata->Option.mapWithDefault(false, isIllformed);
 
-      let%FRes metadata =
+      let%Await metadata =
         isIllformed
           ? metadataMap
             ->Tzip12Storage.Tokens.getUnannotated(key)
@@ -239,7 +239,7 @@ module Tzip12 = {
 
       let%Ft metadataMap = getTokenMetadata(storage);
 
-      let%FRes metadataMap =
+      let%Await metadataMap =
         switch (metadataMap) {
         | Ok(m) => Promise.ok(m)
         | Error(e) =>
@@ -247,7 +247,7 @@ module Tzip12 = {
           ->Option.mapWithDefault(Promise.err(e), getTokenMetadata)
         };
 
-      let%FRes metadata =
+      let%Await metadata =
         elaborateFromTokenMetadata(address, tokenId, metadataMap);
 
       parseMetadata(address, tokenId, metadata)->Promise.value;
@@ -263,7 +263,7 @@ module Tzip12 = {
   };
 
   let readFromStorage = (contract, tokenId) => {
-    let%FRes storage = Storage.read(contract);
+    let%Await storage = Storage.read(contract);
     Storage.getToken(contract##address, storage, tokenId);
   };
 

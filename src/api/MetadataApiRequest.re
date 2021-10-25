@@ -11,8 +11,8 @@ let useLoadMetadata = (~onErrorNotATokenContract, pkh) => {
     | _ => true;
 
   let buildContract = (config: ConfigContext.env) => {
-    let%FRes token = checkToken(pkh);
-    let%FRes () =
+    let%Await token = checkToken(pkh);
+    let%Await () =
       if (token == `KFA1_2) {
         Promise.ok();
       } else {
@@ -21,7 +21,7 @@ let useLoadMetadata = (~onErrorNotATokenContract, pkh) => {
       };
 
     let toolkit = ReTaquito.Toolkit.create(config.network.endpoint);
-    let%FRes contract = MetadataAPI.Tzip12.makeContract(toolkit, pkh);
+    let%Await contract = MetadataAPI.Tzip12.makeContract(toolkit, pkh);
     MetadataAPI.Tzip12.read(contract, 0);
   };
 

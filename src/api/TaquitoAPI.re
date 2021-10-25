@@ -85,7 +85,7 @@ let handleEstimationResults = (results, reveal, options) => {
 
 module Rpc = {
   let getBalance = (endpoint, ~address, ~params=?, ()) => {
-    let%FResMap balance =
+    let%AwaitMap balance =
       RPCClient.create(endpoint)
       ->RPCClient.getBalance(address, ~params?, ())
       ->ReTaquitoError.fromPromiseParsed;
@@ -114,9 +114,9 @@ module Signer = {
     let keyData = ledgerBasePkh =>
       key->Wallet.Ledger.Decode.fromSecretKey(~ledgerBasePkh);
 
-    let%FRes tr = LedgerAPI.init();
+    let%Await tr = LedgerAPI.init();
 
-    let%FRes data =
+    let%Await data =
       LedgerAPI.getMasterKey(~prompt=false, tr)
       ->Promise.map(pkh => pkh->Result.flatMap(keyData));
 
@@ -134,7 +134,7 @@ module Signer = {
     | Password(string);
 
   let readSecretKey = (address, signingIntent, dirpath) => {
-    let%FRes (kind, key) = Wallet.readSecretFromPkh(address, dirpath);
+    let%Await (kind, key) = Wallet.readSecretFromPkh(address, dirpath);
 
     switch (kind, signingIntent) {
     | (Encrypted, Password(s)) => readEncryptedKey(key, s)
@@ -175,7 +175,7 @@ module Delegate = {
       ) => {
     let tk = Toolkit.create(endpoint);
     let fee = fee->Option.map(v => v->Tez.toInt64->BigNumber.fromInt64);
-    let%FRes signer = Signer.readSecretKey(source, signingIntent, baseDir);
+    let%Await signer = Signer.readSecretKey(source, signingIntent, baseDir);
     let provider = Toolkit.{signer: signer};
     tk->Toolkit.setProvider(provider);
     let dg = Toolkit.prepareDelegate(~source, ~delegate, ~fee?, ());
@@ -192,9 +192,9 @@ module Delegate = {
           ~fee=?,
           (),
         ) => {
-      let%FRes alias = Wallet.aliasFromPkh(~dirpath=baseDir, ~pkh=source);
+      let%Await alias = Wallet.aliasFromPkh(~dirpath=baseDir, ~pkh=source);
 
-      let%FRes pk = Wallet.pkFromAlias(~dirpath=baseDir, ~alias);
+      let%Await pk = Wallet.pkFromAlias(~dirpath=baseDir, ~alias);
 
       let tk = Toolkit.create(endpoint);
       let signer =
@@ -206,15 +206,15 @@ module Delegate = {
       let sd =
         Toolkit.prepareDelegate(~source, ~delegate, ~fee=?feeBignum, ());
 
-      let%FRes res =
+      let%Await res =
         tk.estimate
         ->Toolkit.Estimation.batchDelegation([|sd|])
         ->ReTaquitoError.fromPromiseParsed;
 
-      let%FRes (res, reveal) =
+      let%Await (res, reveal) =
         extractBatchRevealEstimation([|sd|], res)->Promise.value;
 
-      let%FResMap res =
+      let%AwaitMap res =
         switch (res) {
         | [|res|] => Promise.ok(res)
         | _ => Promise.err(InvalidEstimationResults)
@@ -296,7 +296,7 @@ module Transfer = {
         (),
       );
 
-    let%FResMap c =
+    let%AwaitMap c =
       contractCache
       ->FA12Cache.findContract(token)
       ->ReTaquitoError.fromPromiseParsed;
@@ -324,7 +324,7 @@ module Transfer = {
         (),
       );
 
-    let%FResMap c =
+    let%AwaitMap c =
       contractCache
       ->FA2Cache.findContract(token)
       ->ReTaquitoError.fromPromiseParsed;
@@ -491,10 +491,10 @@ module Transfer = {
         (),
       ) => {
     let tk = Toolkit.create(endpoint);
-    let%FRes signer = Signer.readSecretKey(source, signingIntent, baseDir);
+    let%Await signer = Signer.readSecretKey(source, signingIntent, baseDir);
     let provider = Toolkit.{signer: signer};
     tk->Toolkit.setProvider(provider);
-    let%FRes txs = endpoint->transfers(source)->Promise.map(Result.collect);
+    let%Await txs = endpoint->transfers(source)->Promise.map(Result.collect);
     let txs = txs->List.map(tr => {...tr, kind: opKindTransaction});
     let batch = tk.contract->Toolkit.Batch.make;
     txs
@@ -515,9 +515,9 @@ module Transfer = {
              FutureBase.t(list(Promise.result(Toolkit.transferParams))),
           (),
         ) => {
-      let%FRes alias = Wallet.aliasFromPkh(~dirpath=baseDir, ~pkh=source);
+      let%Await alias = Wallet.aliasFromPkh(~dirpath=baseDir, ~pkh=source);
 
-      let%FRes pk = Wallet.pkFromAlias(~dirpath=baseDir, ~alias);
+      let%Await pk = Wallet.pkFromAlias(~dirpath=baseDir, ~alias);
 
       let tk = Toolkit.create(endpoint);
       let signer =
@@ -525,18 +525,18 @@ module Transfer = {
       let provider = Toolkit.{signer: signer};
       tk->Toolkit.setProvider(provider);
 
-      let%FRes txs =
+      let%Await txs =
         endpoint->transfers(source)->Promise.map(Result.collect);
 
       let txs =
         txs->List.map(tr => {...tr, kind: opKindTransaction})->List.toArray;
 
-      let%FRes res =
+      let%Await res =
         tk.estimate
         ->Toolkit.Estimation.batch(txs)
         ->ReTaquitoError.fromPromiseParsed;
 
-      let%FResMap (simulations, reveal) =
+      let%AwaitMap (simulations, reveal) =
         extractBatchRevealEstimation(txs, res)->Promise.value;
 
       handleEstimationResults(simulations, reveal, customValues);
@@ -546,7 +546,7 @@ module Transfer = {
 
 module Signature = {
   let signPayload = (~baseDir, ~source, ~signingIntent, ~payload) => {
-    let%FRes signer = Signer.readSecretKey(source, signingIntent, baseDir);
+    let%Await signer = Signer.readSecretKey(source, signingIntent, baseDir);
 
     signer->ReTaquitoSigner.sign(payload);
   };

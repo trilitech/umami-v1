@@ -77,12 +77,12 @@ module Make = (Op: OP) => {
 
     let onAbort = _ =>
       Promise.async(() => {
-        let%FRes client =
+        let%Await client =
           client->Promise.fromOption(
             ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
           );
 
-        let%FResMap () =
+        let%AwaitMap () =
           client->ReBeacon.WalletClient.respond(
             `Error({
               type_: `error,
@@ -96,12 +96,12 @@ module Make = (Op: OP) => {
 
     let onSimulateError = _ =>
       Promise.async(() => {
-        let%FRes client =
+        let%Await client =
           client->Promise.fromOption(
             ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
           );
 
-        let%FResMap () =
+        let%AwaitMap () =
           client->ReBeacon.WalletClient.respond(
             `Error({
               type_: `error,
@@ -134,9 +134,9 @@ module Make = (Op: OP) => {
     );
 
     let sendOperation = (~operation, i) => {
-      let%FRes hash = sendOperation(~operation, i);
+      let%Await hash = sendOperation(~operation, i);
 
-      let%FResMap () =
+      let%AwaitMap () =
         switch (client) {
         | Some(client) =>
           client->ReBeacon.WalletClient.respond(
