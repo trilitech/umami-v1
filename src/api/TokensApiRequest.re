@@ -67,8 +67,7 @@ let useLoadTokens = requestState => {
       )
     ->Array.map(token => {(token.address, token)})
     ->PublicKeyHash.Map.fromArray
-    ->Result.Ok
-    ->Future.value;
+    ->Promise.ok;
 
   ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, ());
 };
@@ -89,8 +88,7 @@ let useDelete = (~sideEffect=?, ()) => {
       ->Token.Encode.array
       ->Js.Json.stringify,
     )
-    ->Result.Ok
-    ->Future.value;
+    ->Promise.ok;
   };
 
   ApiRequest.useSetter(
@@ -110,8 +108,8 @@ let useCreate = (~sideEffect=?, ()) => {
 
     let%FResMap () =
       tokenKind == `KFA1_2
-        ? FutureEx.ok()
-        : FutureEx.err(NotFA12Contract((token.TokenRepr.address :> string)));
+        ? Promise.ok()
+        : Promise.err(NotFA12Contract((token.TokenRepr.address :> string)));
 
     let tokens =
       LocalStorage.getItem(tokensStorageKey)
@@ -124,8 +122,7 @@ let useCreate = (~sideEffect=?, ()) => {
       tokensStorageKey,
       tokens->Array.concat([|token|])->Token.Encode.array->Js.Json.stringify,
     )
-    ->Result.Ok
-    ->Future.value;
+    ->Promise.ok;
   };
 
   ApiRequest.useSetter(

@@ -39,32 +39,28 @@ module Secret: {
 module Aliases: {
   type t = array((string, PublicKeyHash.t));
 
-  let get: (~config: ConfigContext.env) => Future.t(Result.t(t, Errors.t));
+  let get: (~config: ConfigContext.env) => Promise.t(t);
 
   let getAliasForAddress:
     (~config: ConfigContext.env, ~address: PublicKeyHash.t) =>
-    Future.t(Result.t(option(string), Errors.t));
+    Promise.t(option(string));
 
   let getAddressForAlias:
     (~config: ConfigContext.env, ~alias: string) =>
-    Future.t(Result.t(option(PublicKeyHash.t), Errors.t));
+    Promise.t(option(PublicKeyHash.t));
 
   let add:
     (~config: ConfigContext.env, ~alias: string, ~address: PublicKeyHash.t) =>
-    Future.t(Result.t(unit, Errors.t));
+    Promise.t(unit);
 
-  let delete:
-    (~config: ConfigContext.env, ~alias: string) =>
-    Future.t(Result.t(unit, Errors.t));
+  let delete: (~config: ConfigContext.env, ~alias: string) => Promise.t(unit);
 
   type renameParams = {
     old_name: string,
     new_name: string,
   };
 
-  let rename:
-    (~config: ConfigContext.env, renameParams) =>
-    Future.t(Result.t(unit, Errors.t));
+  let rename: (~config: ConfigContext.env, renameParams) => Promise.t(unit);
 };
 
 /** Accounts management */
@@ -74,24 +70,19 @@ module Accounts: {
 
   type name = string;
 
-  let secrets:
-    (~config: ConfigContext.env) => result(t, TezosClient.Errors.t);
+  let secrets: (~config: ConfigContext.env) => Promise.result(t);
 
   let recoveryPhrases:
-    unit => Let.result(array(SecureStorage.Cipher.encryptedData));
+    unit => Promise.result(array(SecureStorage.Cipher.encryptedData));
 
   let get:
     (~config: ConfigContext.env) =>
-    Future.t(
-      Result.t(array((name, PublicKeyHash.t, Wallet.kind)), Errors.t),
-    );
+    Promise.t(array((name, PublicKeyHash.t, Wallet.kind)));
 
   let updateSecretAt:
-    (~config: ConfigContext.env, Secret.Repr.t, int) =>
-    Result.t(unit, Errors.t);
+    (~config: ConfigContext.env, Secret.Repr.t, int) => Promise.result(unit);
 
-  let recoveryPhraseAt:
-    (int, ~password: string) => Future.t(Result.t(string, Errors.t));
+  let recoveryPhraseAt: (int, ~password: string) => Promise.t(string);
 
   let import:
     (
@@ -100,7 +91,7 @@ module Accounts: {
       ~secretKey: string,
       ~password: string
     ) =>
-    Future.t(Result.t(PublicKeyHash.t, Errors.t));
+    Promise.t(PublicKeyHash.t);
 
   let derive:
     (
@@ -109,15 +100,12 @@ module Accounts: {
       ~alias: name,
       ~password: string
     ) =>
-    Future.t(Result.t(PublicKeyHash.t, Errors.t));
+    Promise.t(PublicKeyHash.t);
 
   /* Delete the given account */
-  let delete:
-    (~config: ConfigContext.env, string) =>
-    Future.t(Result.t(unit, Errors.t));
+  let delete: (~config: ConfigContext.env, string) => Promise.t(unit);
 
-  let deleteSecretAt:
-    (~config: ConfigContext.env, int) => Future.t(Result.t(unit, Errors.t));
+  let deleteSecretAt: (~config: ConfigContext.env, int) => Promise.t(unit);
 
   module Scan: {
     type Errors.t +=
@@ -133,9 +121,7 @@ module Accounts: {
       encryptedSecretKey: 'a,
     };
 
-    let used:
-      (ConfigContext.env, PublicKeyHash.t) =>
-      Future.t(Result.t(bool, Errors.t));
+    let used: (ConfigContext.env, PublicKeyHash.t) => Promise.t(bool);
 
     let runStreamLedger:
       (
@@ -145,7 +131,7 @@ module Accounts: {
         DerivationPath.Pattern.t,
         Wallet.Ledger.scheme
       ) =>
-      Future.t(Belt.Result.t(unit, Errors.t));
+      Promise.t(unit);
 
     let runStreamSeed:
       (
@@ -156,7 +142,7 @@ module Accounts: {
         Secret.Repr.derived,
         DerivationPath.Pattern.t
       ) =>
-      Future.t(Belt.Result.t(unit, Errors.t));
+      Promise.t(unit);
   };
 
   let restore:
@@ -164,12 +150,12 @@ module Accounts: {
       ~config: ConfigContext.env,
       ~backupPhrase: array(string),
       ~name: name,
-      ~derivationPath: TezosClient.DerivationPath.Pattern.t=?,
+      ~derivationPath: DerivationPath.Pattern.t=?,
       ~derivationScheme: Wallet.Ledger.scheme=?,
       ~password: string,
       unit
     ) =>
-    Future.t(Result.t(unit, Errors.t));
+    Promise.t(unit);
 
   let importMnemonicKeys:
     (
@@ -179,16 +165,11 @@ module Accounts: {
       ~index: int,
       unit
     ) =>
-    Future.t(
-      Result.t(
-        (array(PublicKeyHash.t), option(PublicKeyHash.t)),
-        Errors.t,
-      ),
-    );
+    Promise.t((array(PublicKeyHash.t), option(PublicKeyHash.t)));
 
   let legacyImport:
     (~config: ConfigContext.env, string, string, ~password: string) =>
-    Future.t(Belt.Result.t(PublicKeyHash.t, Errors.t));
+    Promise.t(PublicKeyHash.t);
 
   let importLedger:
     (
@@ -201,7 +182,7 @@ module Accounts: {
       ~ledgerMasterKey: PublicKeyHash.t,
       unit
     ) =>
-    Future.t(Result.t(array(PublicKeyHash.t), Errors.t));
+    Promise.t(array(PublicKeyHash.t));
 
   let deriveLedgerKeys:
     (
@@ -212,7 +193,7 @@ module Accounts: {
       ~ledgerMasterKey: PublicKeyHash.t,
       unit
     ) =>
-    Future.t(Result.t(array(PublicKeyHash.t), Errors.t));
+    Promise.t(array(PublicKeyHash.t));
 
   let deriveLedger:
     (
@@ -223,9 +204,8 @@ module Accounts: {
       ~ledgerMasterKey: PublicKeyHash.t,
       unit
     ) =>
-    Future.t(Result.t(PublicKeyHash.t, Errors.t));
+    Promise.t(PublicKeyHash.t);
 
   let getPublicKey:
-    (~config: ConfigContext.env, ~account: Account.t) =>
-    Future.t(Result.t(string, Errors.t));
+    (~config: ConfigContext.env, ~account: Account.t) => Promise.t(string);
 };

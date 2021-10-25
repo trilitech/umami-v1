@@ -31,7 +31,7 @@ module MenuItem = {
       ModalAction.useModalActionState();
 
     let icon = (~color as colorin=?) => {
-      let color = [color, colorin]->UmamiCommon.Lib.Option.firstSome;
+      let color = [color, colorin]->Option.firstSome;
       Icons.Delete.build(~color?);
     };
 
@@ -60,7 +60,7 @@ module IconButton = {
       ModalAction.useModalActionState();
 
     let icon = (~color as colorin=?) => {
-      let color = [color, colorin]->UmamiCommon.Lib.Option.firstSome;
+      let color = [color, colorin]->Option.firstSome;
       Icons.Delete.build(~color?);
     };
 

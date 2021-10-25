@@ -56,7 +56,7 @@ let handleTezRow = (index, destination, amount) =>
   amount
   ->ReBigNumber.toString
   ->Tez.fromString
-  ->ResultEx.fromOption(CannotParseTezAmount(amount, index, 2))
+  ->Result.fromOption(CannotParseTezAmount(amount, index, 2))
   ->Result.map(amount =>
       Transfer.makeSingleTezTransferElt(~destination, ~amount, ())
     );
@@ -68,7 +68,7 @@ let handleTokenRow =
   ->Option.mapWithDefault(Error(UnknownToken((token :> string))), token =>
       amount
       ->Token.Unit.fromBigNumber
-      ->ResultEx.mapError(_ => CannotParseTokenAmount(amount, index, 2))
+      ->Result.mapError(_ => CannotParseTokenAmount(amount, index, 2))
       ->Result.map(amount =>
           Transfer.makeSingleTokenTransferElt(
             ~destination,
@@ -88,7 +88,7 @@ let handleRow = (tokens, index, row) =>
   };
 
 let handleCSV = (rows, tokens) =>
-  rows->List.mapWithIndex(handleRow(tokens))->ResultEx.collect;
+  rows->List.mapWithIndex(handleRow(tokens))->Result.collect;
 
 let parseCSV = (content, ~tokens) => {
   let rows = parseCSV(content, rowEncoding);

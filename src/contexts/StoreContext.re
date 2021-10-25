@@ -25,8 +25,6 @@
 
 open Let;
 
-open UmamiCommon;
-
 type reactState('state) = ('state, ('state => 'state) => unit);
 
 type error = Errors.t;
@@ -217,7 +215,7 @@ let make = (~children) => {
         ->ApiRequest.getWithDefault(PublicKeyHash.Map.empty)
         ->PublicKeyHash.Map.valuesToArray
         ->Array.get(0)
-        ->Lib.Option.iter((account: Account.t) =>
+        ->Option.iter((account: Account.t) =>
             setSelectedAccount(_ => Some(account.address))
           );
       };
@@ -276,7 +274,7 @@ let useRequestsState = (getRequestsState, key: option(string)) => {
   let setRequest =
     React.useCallback2(
       newRequestSetter =>
-        key->Lib.Option.iter(key =>
+        key->Option.iter(key =>
           setRequests((request: requestsState(_)) =>
             request->Map.String.update(
               key, (oldRequest: option(ApiRequest.t(_))) =>
@@ -531,7 +529,7 @@ module Operations = {
       ~sideEffect=
         hash => {
           OperationApiRequest.waitForConfirmation(settings, hash)
-          ->Future.get(_ => resetOperations())
+          ->Promise.get(_ => resetOperations())
         },
       (),
     );
@@ -887,7 +885,7 @@ module Beacon = {
         client
         ->ReBeacon.WalletClient.destroy
         // after a call to destroy client is no more usable we need to create a new one
-        ->FutureEx.getOk(_ =>
+        ->Promise.getOk(_ =>
             setClient(_ => Some(BeaconApiRequest.makeClient()))
           )
       | None => ()

@@ -30,9 +30,9 @@ type Errors.t +=
 // Propagates Errors.t during decoding, should be caught by the decode function
 exception InternalError(Errors.t);
 
-let parse: string => Let.result(Js.Json.t);
+let parse: string => Promise.result(Js.Json.t);
 
-let decode: (Js.Json.t, Json.Decode.decoder('a)) => Let.result('a);
+let decode: (Js.Json.t, Json.Decode.decoder('a)) => Promise.result('a);
 
 module MichelsonDecode: {
   type address =

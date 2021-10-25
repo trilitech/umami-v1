@@ -87,9 +87,9 @@ let useSourceAccount = request => {
 };
 
 let respondWithError = (client, id, errorType) =>
-  FutureEx.async(() => {
+  Promise.async(() => {
     let%FRes client =
-      client->FutureEx.fromOption(
+      client->Promise.fromOption(
         ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
       );
     let%FResMap () =

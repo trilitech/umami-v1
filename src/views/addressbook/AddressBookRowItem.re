@@ -31,7 +31,7 @@ module AliasDeleteButton = {
     let (aliasRequest, deleteAlias) = StoreContext.Aliases.useDelete();
 
     let onPressConfirmDelete = _e => {
-      deleteAlias(account.name)->FutureEx.ignore;
+      deleteAlias(account.name)->Promise.ignore;
     };
 
     <DeleteButton.IconButton

@@ -57,7 +57,7 @@ let make = (~secret: Secret.derived, ~closeAction) => {
               },
             },
           )
-          ->FutureEx.getOk(() => closeAction());
+          ->Promise.getOk(() => closeAction());
 
           None;
         },

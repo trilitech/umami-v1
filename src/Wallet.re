@@ -54,12 +54,10 @@ module type AliasesMakerType = {
   type t = array(alias);
   let parse: string => t;
   let stringify: t => string;
-  let read: System.Path.t => Future.t(Result.t(t, Errors.t));
-  let write: (System.Path.t, t) => Future.t(Result.t(unit, Errors.t));
-  let protect:
-    (System.Path.t, unit => Future.t(Result.t(unit, Errors.t))) =>
-    Future.t(Result.t(unit, Errors.t));
-  let find: (t, alias => bool) => Result.t(alias, Errors.t);
+  let read: System.Path.t => Promise.t(t);
+  let write: (System.Path.t, t) => Promise.t(unit);
+  let protect: (System.Path.t, unit => Promise.t(unit)) => Promise.t(unit);
+  let find: (t, alias => bool) => Promise.result(alias);
   let filter: (t, alias => bool) => t;
   let remove: (t, key) => t;
   let addOrReplace: (t, key, value) => t;
@@ -80,7 +78,7 @@ module AliasesMaker =
   [@bs.val] [@bs.scope "JSON"] external stringify: t => string = "stringify";
 
   let read = dirpath =>
-    System.File.read(dirpath / Alias.filename)->Future.mapOk(parse);
+    System.File.read(dirpath / Alias.filename)->Promise.mapOk(parse);
 
   let write = (dirpath, aliases) =>
     System.File.write(~name=dirpath / Alias.filename, stringify(aliases));
@@ -114,12 +112,12 @@ module AliasesMaker =
 
     switch (r) {
     | Ok () => dirpath->rmTmpCopy
-    | Error(e) => dirpath->restoreTmpCopy->Future.map(_ => Error(e))
+    | Error(e) => dirpath->restoreTmpCopy->Promise.map(_ => Error(e))
     };
   };
 
   let find = (aliases: t, f) =>
-    aliases->Js.Array2.find(f)->ResultEx.fromOption(KeyNotFound);
+    aliases->Js.Array2.find(f)->Result.fromOption(KeyNotFound);
 
   let filter = (aliases, f) => aliases->Js.Array2.filter(f);
 
@@ -177,11 +175,11 @@ module PkhAliases =
 let aliasFromPkh = (~dirpath, ~pkh) => {
   dirpath
   ->PkhAliases.read
-  ->Future.flatMapOk(pkhaliases =>
+  ->Promise.flatMapOk(pkhaliases =>
       pkhaliases
       ->PkhAliases.find(a => a.value == pkh)
       ->Result.map(a => a.name)
-      ->Future.value
+      ->Promise.value
     );
 };
 
@@ -293,7 +291,7 @@ let readSecretFromPkh = (address, dirpath) => {
   let%FlatRes {value: k} =
     secretAliases
     ->Js.Array2.find(a => a.SecretAliases.name == alias)
-    ->FutureEx.fromOption(~error=KeyNotFound);
+    ->Promise.fromOption(~error=KeyNotFound);
 
   extractPrefixFromSecretKey(k);
 };
@@ -406,7 +404,7 @@ module Ledger = {
         index
         ->Js.String.substring(~from=0, ~to_=index->Js.String.length - 1)
         ->int_of_string_opt
-        ->ResultEx.fromOption(InvalidIndex(i, index))
+        ->Result.fromOption(InvalidIndex(i, index))
       | Some(_)
       | None => Error(InvalidIndex(i, index))
       };
@@ -422,16 +420,16 @@ module Ledger = {
 
       let%Res prefix =
         // The None case is actually impossible, hence the meaningless error
-        elems[0]->ResultEx.fromOption(InvalidEncoding(uri));
+        elems[0]->Result.fromOption(InvalidEncoding(uri));
       let%Res _prefix = prefix->decodePrefix(ledgerBasePkh);
 
       let%Res scheme =
         // The None case is actually impossible, hence the meaningless error
-        elems[1]->ResultEx.fromOption(InvalidEncoding(uri));
+        elems[1]->Result.fromOption(InvalidEncoding(uri));
       let%Res scheme = scheme->schemeFromString;
 
       let indexes = elems->Js.Array2.sliceFrom(2)->decodeIndexes;
-      let%Res indexes = indexes->ResultEx.collectArray;
+      let%Res indexes = indexes->Result.collectArray;
 
       let%ResMap indexes =
         switch (indexes) {

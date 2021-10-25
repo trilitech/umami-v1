@@ -98,10 +98,10 @@ let make =
               state.values.name,
               state.values.address->PublicKeyHash.build->Result.getExn,
             ))
-            ->FutureEx.getOk(_ => closeAction())
+            ->Promise.getOk(_ => closeAction())
           | Edit(account) =>
             updateAlias({new_name: state.values.name, old_name: account.name})
-            ->FutureEx.getOk(_ => closeAction())
+            ->Promise.getOk(_ => closeAction())
           };
 
           None;

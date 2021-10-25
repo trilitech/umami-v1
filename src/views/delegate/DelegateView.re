@@ -192,7 +192,7 @@ let make = (~closeAction, ~action) => {
 
   let sendOperation = (~operation, signingIntent) =>
     sendOperation({operation, signingIntent})
-    ->Future.tapOk(hash => {setModalStep(_ => SubmittedStep(hash))});
+    ->Promise.tapOk(hash => {setModalStep(_ => SubmittedStep(hash))});
 
   let (operationSimulateRequest, sendOperationSimulate) =
     StoreContext.Operations.useSimulate();
@@ -202,7 +202,7 @@ let make = (~closeAction, ~action) => {
     | Delete(account, _) =>
       let op = Protocol.makeDelegate(~source=account, ~delegate=None, ());
       sendOperationSimulate(op->Operation.Simulation.delegation)
-      ->FutureEx.getOk(dryRun => {
+      ->Promise.getOk(dryRun => {
           setModalStep(_ => PasswordStep(op, dryRun))
         });
 
@@ -214,7 +214,7 @@ let make = (~closeAction, ~action) => {
 
   let form =
     Form.build(action, (op: Protocol.delegation) => {
-      FutureEx.async(() => {
+      Promise.async(() => {
         let%FResMap dryRun =
           sendOperationSimulate(op->Operation.Simulation.delegation);
         setModalStep(_ => PasswordStep(op, dryRun));

@@ -24,7 +24,6 @@
 /*****************************************************************************/
 
 open ReactNative;
-open UmamiCommon;
 
 let styles =
   Style.(
@@ -98,7 +97,7 @@ module Item = {
         arrayOption([|
           Some(styles##row),
           Some(style(~borderColor=theme.colors.borderDisabled, ())),
-          Lib.Option.onlyIf(i > 0, () => styles##notFirstRow),
+          Option.onlyIf(i > 0, () => styles##notFirstRow),
         |])
       )>
       <Typography.Subtitle1 colorStyle=`mediumEmphasis style=styles##num>
@@ -188,12 +187,7 @@ module Transactions = {
       (
         ~recipients:
            Belt.List.t(
-             (
-               TezosClient.PublicKeyHash.t,
-               TezosClient.Transfer.Currency.t,
-               option('a),
-               'b,
-             ),
+             (PublicKeyHash.t, Transfer.Currency.t, option('a), 'b),
            ),
         ~smallest=false,
         ~onAddCSVList=?,

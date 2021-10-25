@@ -136,7 +136,7 @@ module File = {
 
   let read = (~encoding=Utf8, name) => {
     let encoding = string_of_encoding(encoding);
-    readFile(~name, ~encoding)->FutureEx.fromCallback(parseError);
+    readFile(~name, ~encoding)->Promise.fromCallback(parseError);
   };
 
   [@bs.scope "fs"] [@bs.val]
@@ -153,7 +153,7 @@ module File = {
   let write = (~encoding=Utf8, ~name, content) => {
     let encoding = string_of_encoding(encoding);
     writeFile(~name, ~content, ~encoding)
-    ->FutureEx.fromUnitCallback(parseError);
+    ->Promise.fromUnitCallback(parseError);
   };
 
   module CopyMode: {
@@ -185,7 +185,7 @@ module File = {
     "copyFile";
 
   let copy = (~name, ~dest, ~mode) => {
-    copyFile(~name, ~dest, ~mode)->FutureEx.fromUnitCallback(parseError);
+    copyFile(~name, ~dest, ~mode)->Promise.fromUnitCallback(parseError);
   };
 
   [@bs.scope "fs"] [@bs.val]
@@ -194,7 +194,7 @@ module File = {
     "unlink";
 
   let rm = (~name) => {
-    unlink(~name)->FutureEx.fromUnitCallback(parseError);
+    unlink(~name)->Promise.fromUnitCallback(parseError);
   };
 
   type rmdirOptions = {recursive: bool};
@@ -211,7 +211,7 @@ module File = {
 
   let rmdir = path => {
     rmdir(~path, ~options={recursive: true})
-    ->FutureEx.fromUnitCallback(parseError);
+    ->Promise.fromUnitCallback(parseError);
   };
 
   type constant;
@@ -235,13 +235,13 @@ module File = {
 
   let access = path =>
     access(~path, ~constant=constants.wOk)
-    ->FutureEx.fromUnitCallback(parseError)
-    ->Future.map(r => r->Result.isOk);
+    ->Promise.fromUnitCallback(parseError)
+    ->Promise.map(r => r->Result.isOk);
 
   let initIfNotExists = (~encoding=?, ~path, content) => {
     access(path)
-    ->Future.flatMap(access =>
-        access ? Future.value(Ok()) : write(~encoding?, ~name=path, content)
+    ->Promise.flatMap(access =>
+        access ? Promise.value(Ok()) : write(~encoding?, ~name=path, content)
       );
   };
 
@@ -249,11 +249,11 @@ module File = {
   external mkdir: (Path.t, Js.Nullable.t(RawJsError.t) => unit) => unit =
     "mkdir";
 
-  let mkdir = path => mkdir(path)->FutureEx.fromUnitCallback(parseError);
+  let mkdir = path => mkdir(path)->Promise.fromUnitCallback(parseError);
 
   let initDirIfNotExists = (path: Path.t) => {
     access(path)
-    ->Future.flatMap(access => access ? Future.value(Ok()) : mkdir(path));
+    ->Promise.flatMap(access => access ? Promise.value(Ok()) : mkdir(path));
   };
 };
 
@@ -264,14 +264,14 @@ module Client = {
 
   let initDir = baseDir => {
     File.initDirIfNotExists(baseDir)
-    ->Future.flatMapOk(() => {
+    ->Promise.flatMapOk(() => {
         let secret =
           File.initIfNotExists(~path=baseDir / (!"secret_keys"), "[]");
         let public =
           File.initIfNotExists(~path=baseDir / (!"public_keys"), "[]");
         let pkh =
           File.initIfNotExists(~path=baseDir / (!"public_key_hashs"), "[]");
-        Future.mapOk3(secret, public, pkh, (_, _, _) => ());
+        Promise.mapOk3(secret, public, pkh, (_, _, _) => ());
       });
   };
 };

@@ -24,7 +24,6 @@
 /*****************************************************************************/
 
 open ReactNative;
-open UmamiCommon;
 
 type targetLayout = {
   x: float,
@@ -206,7 +205,7 @@ let usePopoverState = (~elementRef=?, ()) => {
   let togglePopover = () => {
     pressableRef.current
     ->Js.Nullable.toOption
-    ->Lib.Option.iter(pressableElement => {
+    ->Option.iter(pressableElement => {
         pressableElement->Pressable_.measureInWindow(
           (~x, ~y, ~width, ~height) => {
           setPopoverConfig(_ => Some({x, y, width, height}))

@@ -11,7 +11,7 @@ describe("Scan tests", ({test: _, testAsync}) => {
         "zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra",
         ~password="blerot",
       )
-      ->Future.get(_ => {
+      ->Promise.get(_ => {
           Js.log("got something");
           expect.value("foo").toEqual("foo");
           callback();

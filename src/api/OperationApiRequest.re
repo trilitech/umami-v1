@@ -109,7 +109,7 @@ let useLoad =
       config->ServerAPI.Explorer.getOperations(address, ~limit?, ~types?, ());
     let currentLevel =
       Network.monitor(config.network.explorer)
-      ->Future.mapOk(monitor => monitor.nodeLastBlock);
+      ->Promise.mapOk(monitor => monitor.nodeLastBlock);
 
     let f = (operations, currentLevel) =>
       switch (operations, currentLevel) {
@@ -119,7 +119,7 @@ let useLoad =
       | (_, Error(_) as e) => e
       };
 
-    Future.map2(operations, currentLevel, f);
+    Promise.map2(operations, currentLevel, f);
   };
 
   ApiRequest.useLoader(~get, ~kind=Logs.Operation, ~requestState, address);

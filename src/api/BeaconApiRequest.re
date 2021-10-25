@@ -60,7 +60,7 @@ let useNextRequestState = (client, peersRequestState) => {
   ReactUtils.useAsyncEffect1(
     () => {
       let%FRes client =
-        client->FutureEx.fromOption(~error=ClientNotConnected);
+        client->Promise.fromOption(~error=ClientNotConnected);
       let%FRes _: ReBeacon.transportType = client->ReBeacon.WalletClient.init;
       let%FResMap () =
         client->ReBeacon.WalletClient.connect(message => {
@@ -75,16 +75,16 @@ let useNextRequestState = (client, peersRequestState) => {
   React.useEffect2(
     () => {
       if (isConnected) {
-        FutureEx.async(() => {
+        Promise.async(() => {
           let%FRes deeplink =
-            nextDeeplink()->FutureEx.fromOption(~error=NoDeeplink);
+            nextDeeplink()->Promise.fromOption(~error=NoDeeplink);
           let%FRes peer =
             ReBeacon.Serializer.(
               make()
               ->deserialize(deeplink->dataFromURL->Option.getWithDefault(""))
             );
           let%FRes client =
-            client->FutureEx.fromOption(~error=ClientNotConnected);
+            client->Promise.fromOption(~error=ClientNotConnected);
           let%FResMap () = client->ReBeacon.WalletClient.addPeer(peer);
 
           setPeersRequest(ApiRequest.expireCache);
@@ -105,7 +105,7 @@ module Peers = {
   let useLoad = (client, requestState) => {
     let get = (~config as _s, ()) => {
       let%FRes client =
-        client->FutureEx.fromOption(~error=ClientNotConnected);
+        client->Promise.fromOption(~error=ClientNotConnected);
       client->ReBeacon.WalletClient.getPeers;
     };
 
@@ -117,7 +117,7 @@ module Peers = {
       ~set=
         (~config as _, peer: ReBeacon.peerInfo) => {
           let%FRes client =
-            client->FutureEx.fromOption(~error=ClientNotConnected);
+            client->Promise.fromOption(~error=ClientNotConnected);
           client->ReBeacon.WalletClient.removePeer(peer);
         },
       ~kind=Logs.Beacon,
@@ -131,7 +131,7 @@ module Permissions = {
   let useLoad = (client, requestState) => {
     let get = (~config as _s, ()) => {
       let%FRes client =
-        client->FutureEx.fromOption(~error=ClientNotConnected);
+        client->Promise.fromOption(~error=ClientNotConnected);
 
       client->ReBeacon.WalletClient.getPermissions;
     };
@@ -144,7 +144,7 @@ module Permissions = {
       ~set=
         (~config as _s, accountIdentifier: ReBeacon.accountIdentifier) => {
           let%FRes client =
-            client->FutureEx.fromOption(~error=ClientNotConnected);
+            client->Promise.fromOption(~error=ClientNotConnected);
 
           client->ReBeacon.WalletClient.removePermission(accountIdentifier);
         },

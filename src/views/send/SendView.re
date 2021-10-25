@@ -189,9 +189,8 @@ module Form = {
     let make =
         (
           ~tokenState: (
-             option(TezosClient.Token.t),
-             (option(TezosClient.Token.t) => option(TezosClient.Token.t)) =>
-             unit,
+             option(Token.t),
+             (option(Token.t) => option(Token.t)) => unit,
            ),
           ~token=?,
           ~mode,
@@ -330,8 +329,8 @@ let make = (~closeAction) => {
   let sendTransfer =
       (~transfer: Transfer.t, ~operation: Operation.t, signingIntent) => {
     sendOperation({operation, signingIntent})
-    ->Future.tapOk(hash => {setModalStep(_ => SubmittedStep(hash))})
-    ->Future.tapOk(_ => {updateAccount(transfer.source.address)});
+    ->Promise.tapOk(hash => {setModalStep(_ => SubmittedStep(hash))})
+    ->Promise.tapOk(_ => {updateAccount(transfer.source.address)});
   };
 
   let (batch, setBatch) = React.useState(_ => []);
@@ -344,7 +343,7 @@ let make = (~closeAction) => {
   let onSubmitBatch = batch => {
     let transaction = SendForm.buildTransaction(batch);
     sendOperationSimulate(Operation.Simulation.transaction(transaction))
-    ->FutureEx.getOk(dryRun => {
+    ->Promise.getOk(dryRun => {
         setModalStep(_ => SigningStep(transaction, dryRun))
       });
   };

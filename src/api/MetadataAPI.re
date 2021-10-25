@@ -50,7 +50,7 @@ module Tzip16 = {
   let read = contract => {
     contract##tzip16().getMetadata(.)
     ->ReTaquitoError.fromPromiseParsed
-    ->Future.mapError(
+    ->Promise.mapError(
         fun
         | ReTaquitoError.NoMetadata => NoTzip16Metadata(contract##address)
         | e => e,
@@ -111,9 +111,7 @@ module Tzip12 = {
     let parseTokenInfo = (address, token_id, token_info) => {
       open Decode;
       let onError = (res, fieldName) =>
-        res->ResultEx.fromOption(
-          IllformedToken(address, token_id, fieldName),
-        );
+        res->Result.fromOption(IllformedToken(address, token_id, fieldName));
 
       let%Res name = token_info->getString("name", ~onError);
       let%Res decimals = token_info->getInt("decimals", ~onError);
@@ -182,9 +180,7 @@ module Tzip12 = {
     /* Parse a value of the `token_metadata` big map */
     let parseMetadata = (address, tokenId, token) => {
       let illformed = (res, fieldName) =>
-        res->ResultEx.fromOption(
-          IllformedToken(address, tokenId, fieldName),
-        );
+        res->Result.fromOption(IllformedToken(address, tokenId, fieldName));
 
       let%Res token_id =
         token.Tzip12Storage.token_id
@@ -226,35 +222,35 @@ module Tzip12 = {
           ? metadataMap
             ->Tzip12Storage.Tokens.getUnannotated(key)
             ->ReTaquitoError.fromPromiseParsed
-            ->Future.mapOk(m => m->Option.map(fromUnannotated))
-          : FutureEx.ok(metadata);
+            ->Promise.mapOk(m => m->Option.map(fromUnannotated))
+          : Promise.ok(metadata);
 
       metadata
-      ->ResultEx.fromOption(TokenIdNotFound(address, tokenId))
-      ->Future.value;
+      ->Result.fromOption(TokenIdNotFound(address, tokenId))
+      ->Promise.value;
     };
 
     /* Retrieve a token from the storage */
     let getToken = (address, storage, tokenId) => {
       let getTokenMetadata = storage =>
         storage.Tzip12Storage.token_metadata
-        ->ResultEx.fromOption(NoTzip12Metadata(address))
-        ->Future.value;
+        ->Result.fromOption(NoTzip12Metadata(address))
+        ->Promise.value;
 
       let%Ft metadataMap = getTokenMetadata(storage);
 
       let%FRes metadataMap =
         switch (metadataMap) {
-        | Ok(m) => FutureEx.ok(m)
+        | Ok(m) => Promise.ok(m)
         | Error(e) =>
           storage.assets
-          ->Option.mapWithDefault(FutureEx.err(e), getTokenMetadata)
+          ->Option.mapWithDefault(Promise.err(e), getTokenMetadata)
         };
 
       let%FRes metadata =
         elaborateFromTokenMetadata(address, tokenId, metadataMap);
 
-      parseMetadata(address, tokenId, metadata)->Future.value;
+      parseMetadata(address, tokenId, metadata)->Promise.value;
     };
   };
 
@@ -275,7 +271,7 @@ module Tzip12 = {
     let%Ft metadata =
       contract##tzip12().getTokenMetadata(. tokenId)
       ->ReTaquitoError.fromPromiseParsed
-      ->Future.mapError(
+      ->Promise.mapError(
           fun
           | ReTaquitoError.TokenIdNotFound =>
             TokenIdNotFound(contract##address, tokenId)
@@ -286,7 +282,7 @@ module Tzip12 = {
     switch (metadata) {
     | Error(NoTzip12Metadata(_) | TokenIdNotFound(_)) =>
       readFromStorage(contract, tokenId)
-    | r => Future.value(r)
+    | r => Promise.value(r)
     };
   };
 };

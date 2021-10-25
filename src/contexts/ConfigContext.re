@@ -162,11 +162,12 @@ let make = (~children) => {
     let network =
       switch (configFile.network->Option.getWithDefault(defaultNetwork)) {
       | `Custom(_) =>
-        Network.testNetwork(config.network)->Future.mapOk(_ => config.network)
+        Network.testNetwork(config.network)
+        ->Promise.mapOk(_ => config.network)
       | #Network.nativeChains as net => Network.findValidEndpoint(net)
       };
 
-    network->Future.get(
+    network->Promise.get(
       fun
       | Ok(network) => {
           updateNetwork(Online);
@@ -199,9 +200,9 @@ let make = (~children) => {
   let (lastCheck, setLastCheck) = React.useState(() => None);
 
   let checkNetwork = timeout => {
-    FutureEx.async(() => {
-      FutureEx.timeout(timeout)
-      ->Future.mapOk(() => {
+    Promise.async(() => {
+      Promise.timeout(timeout)
+      ->Promise.mapOk(() => {
           setLastCheck(
             fun
             | None => None
@@ -299,6 +300,6 @@ let useCleanSdkBaseDir = () => {
   let {content: {baseDir}} = useContext();
   () => {
     System.Client.resetDir(baseDir())
-    ->Future.tapOk(_ => LocalStorage.clear());
+    ->Promise.tapOk(_ => LocalStorage.clear());
   };
 };

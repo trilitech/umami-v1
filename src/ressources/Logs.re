@@ -24,7 +24,6 @@
 /*****************************************************************************/
 
 // Global errors description
-open UmamiCommon;
 
 type origin =
   | Operation
@@ -92,7 +91,7 @@ let similar = (l1, l2) => {
   && l1.errorScope == l2.errorScope
   && l1.origin == l2.origin
   && similarMessages(l1.msg, l2.msg)
-  && Lib.floatAbs(l1.timestamp -. l2.timestamp) < 2000.;
+  && Float.abs(l1.timestamp -. l2.timestamp) < 2000.;
 };
 
 let originToString = e => {

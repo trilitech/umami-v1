@@ -122,14 +122,14 @@ let useNextState = () => {
 let mkAsyncEffect = (reactf, f, dp) =>
   reactf(
     () => {
-      f->FutureEx.async;
+      f->Promise.async;
       None;
     },
     dp,
   );
 
-let useAsyncEffect1 = (f: unit => Future.t(Result.t(_, _)), dp) =>
+let useAsyncEffect1 = (f: unit => Promise.t(_), dp) =>
   mkAsyncEffect(React.useEffect1, f, dp);
 
-let useAsyncEffect2 = (f: unit => Future.t(Result.t(_, _)), dp) =>
+let useAsyncEffect2 = (f: unit => Promise.t(_), dp) =>
   mkAsyncEffect(React.useEffect2, f, dp);

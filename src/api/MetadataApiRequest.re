@@ -14,10 +14,10 @@ let useLoadMetadata = (~onErrorNotATokenContract, pkh) => {
     let%FRes token = checkToken(pkh);
     let%FRes () =
       if (token == `KFA1_2) {
-        FutureEx.ok();
+        Promise.ok();
       } else {
         onErrorNotATokenContract();
-        TokensApiRequest.NotFA12Contract((pkh :> string))->FutureEx.err;
+        TokensApiRequest.NotFA12Contract((pkh :> string))->Promise.err;
       };
 
     let toolkit = ReTaquito.Toolkit.create(config.network.endpoint);

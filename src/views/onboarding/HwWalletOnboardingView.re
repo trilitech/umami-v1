@@ -227,11 +227,11 @@ let make = (~closeAction) => {
 
   let importLedger = p =>
     System.Client.initDir(config.baseDir())
-    ->Future.flatMapOk(() => importLedger(p))
+    ->Promise.flatMapOk(() => importLedger(p))
     ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
         I18n.t#account_created
       )
-    ->FutureEx.getOk(_ => {closeAction()});
+    ->Promise.getOk(_ => {closeAction()});
 
   let closing =
     switch (step) {
@@ -270,20 +270,20 @@ let make = (~closeAction) => {
   let onEndChecklist = () => {
     setStep(_ => StepInitLedger(`Loading));
     LedgerAPI.init(~timeout=5000, ())
-    ->Future.flatMapOk(tr => {
+    ->Promise.flatMapOk(tr => {
         setStep(_ => StepInitLedger(`Found));
         LedgerAPI.getFirstKey(~prompt=true, tr)
-        ->Future.flatMapOk(_ => {
+        ->Promise.flatMapOk(_ => {
             setStep(_ => StepInitLedger(`Found));
             LedgerAPI.getMasterKey(~prompt=false, tr);
           });
       })
-    ->Future.flatMapOk(masterKey => {
+    ->Promise.flatMapOk(masterKey => {
         setStep(_ => StepInitLedger(`Confirmed));
-        FutureEx.timeout(1500)
-        ->Future.mapOk(() => setStep(_ => StepAccounts(masterKey)));
+        Promise.timeout(1500)
+        ->Promise.mapOk(() => setStep(_ => StepAccounts(masterKey)));
       })
-    ->FutureEx.getError(e => setStep(_ => StepInitLedger(`Denied(e))));
+    ->Promise.getError(e => setStep(_ => StepInitLedger(`Denied(e))));
   };
 
   let (accounts, setAccounts) = React.useState(() => []);

@@ -79,7 +79,7 @@ module Currency = {
 
   let reduceAmounts = l =>
     l
-    ->UmamiCommon.Lib.List.reduceGroupBy(
+    ->List.reduceGroupBy(
         ~group=
           fun
           | Tez(_) => None

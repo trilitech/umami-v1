@@ -288,19 +288,19 @@ let getNetworks = (c: nativeChains) =>
   };
 
 let testNetwork = n =>
-  TaquitoAPI.Rpc.getBlockHeader(n.endpoint)->UmamiFuture.timeoutAfter(2000);
+  TaquitoAPI.Rpc.getBlockHeader(n.endpoint)->Promise.timeoutAfter(2000);
 
 let testNetworks = eps => {
   let eps = eps->List.shuffle;
   let rec loop = l => {
     switch (l) {
-    | [] => FutureEx.err(EndpointError)
+    | [] => Promise.err(EndpointError)
     | [h, ...tl] =>
       h
       ->testNetwork
-      ->Future.flatMap(
+      ->Promise.flatMap(
           fun
-          | Ok(_) => h->FutureEx.ok
+          | Ok(_) => h->Promise.ok
           | Error(_) => loop(tl),
         )
     };
@@ -317,16 +317,15 @@ type requestInit = {signal: Fetch.signal};
 external fetch: (string, requestInit) => Js.Promise.t(Fetch.response) =
   "fetch";
 let fetch = (url, ~timeout=?, ()) => {
-  open UmamiCommon;
   let ctrl = Fetch.AbortController.make();
   let signal = Fetch.AbortController.signal(ctrl);
   let res = fetch(url, {signal: signal});
-  timeout->Lib.Option.iter(ms => {
+  timeout->Option.iter(ms => {
     let _: Js_global.timeoutId =
       Js.Global.setTimeout(() => Fetch.AbortController.abort(ctrl), ms);
     ();
   });
-  res->FutureJs.fromPromise(err => {
+  res->Promise.fromJs(err => {
     let {name} = err->RawJsError.fromPromiseError;
     switch (name) {
     | "AbortError" => `AbortError
@@ -338,11 +337,11 @@ let fetch = (url, ~timeout=?, ()) => {
 let fetchJson = (url, ~timeout=?, mkError) =>
   url
   ->fetch(~timeout?, ())
-  ->Future.mapError(e => mkError(e))
-  ->Future.flatMapOk(response =>
+  ->Promise.mapError(e => mkError(e))
+  ->Promise.flatMapOk(response =>
       response
       ->Fetch.Response.json
-      ->FutureJs.fromPromise(err => mkError(Js.String.make(err)->`JsonError))
+      ->Promise.fromJs(err => mkError(Js.String.make(err)->`JsonError))
     );
 
 let mapAPIError: _ => Errors.t =
@@ -355,7 +354,7 @@ let monitor = url => {
   let%FlatRes json =
     (url ++ "/monitor/blocks")->fetchJson(e => API(NotAvailable(e)));
 
-  ResultEx.fromExn((), () =>
+  Result.fromExn((), () =>
     Json.Decode.{
       nodeLastBlock: json |> field("node_last_block", int),
       nodeLastBlockTimestamp:
@@ -365,7 +364,7 @@ let monitor = url => {
         json |> field("indexer_last_block_timestamp", string),
     }
   )
-  ->ResultEx.mapError(mapAPIError);
+  ->Result.mapError(mapAPIError);
 };
 
 let getAPIVersion = (~timeout=?, url) => {
@@ -373,18 +372,18 @@ let getAPIVersion = (~timeout=?, url) => {
     (url ++ "/version")->fetchJson(~timeout?, e => API(NotAvailable(e)));
 
   let%Res api =
-    ResultEx.fromExn((), () => Json.Decode.(field("api", string, json)))
-    ->ResultEx.mapError(mapAPIError);
+    Result.fromExn((), () => Json.Decode.(field("api", string, json)))
+    ->Result.mapError(mapAPIError);
 
   let%Res api =
     Version.parse(api)
-    ->ResultEx.mapError(
+    ->Result.mapError(
         fun
         | Version.VersionFormat(e) => API(VersionFormat(e))
         | _ => API(VersionRPCError("Unknown error")),
       );
 
-  ResultEx.fromExn((), () =>
+  Result.fromExn((), () =>
     Json.Decode.{
       api,
       indexer: json |> field("indexer", string),
@@ -393,7 +392,7 @@ let getAPIVersion = (~timeout=?, url) => {
       protocol: json |> field("protocol", string),
     }
   )
-  ->ResultEx.mapError(mapAPIError);
+  ->Result.mapError(mapAPIError);
 };
 
 let getNodeChain = (~timeout=?, url) => {
@@ -415,9 +414,8 @@ let getNodeChain = (~timeout=?, url) => {
 
 let isMainnet = n => n == `Mainnet;
 
-let checkConfiguration =
-    (api_url, node_url): Future.t(Result.t((apiVersion, chain), Errors.t)) =>
-  Future.map2(
+let checkConfiguration = (api_url, node_url): Promise.t((apiVersion, chain)) =>
+  Promise.map2(
     getAPIVersion(~timeout=5000, api_url),
     getNodeChain(~timeout=5000, node_url),
     (api_res, node_res) =>

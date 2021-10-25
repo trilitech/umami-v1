@@ -76,9 +76,9 @@ module Make = (Op: OP) => {
     let (client, _) = StoreContext.Beacon.useClient();
 
     let onAbort = _ =>
-      FutureEx.async(() => {
+      Promise.async(() => {
         let%FRes client =
-          client->FutureEx.fromOption(
+          client->Promise.fromOption(
             ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
           );
 
@@ -95,9 +95,9 @@ module Make = (Op: OP) => {
       });
 
     let onSimulateError = _ =>
-      FutureEx.async(() => {
+      Promise.async(() => {
         let%FRes client =
-          client->FutureEx.fromOption(
+          client->Promise.fromOption(
             ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
           );
 
@@ -127,7 +127,7 @@ module Make = (Op: OP) => {
 
     React.useEffect1(
       () => {
-        sendOperationSimulate(simulatedOperation)->FutureEx.ignore;
+        sendOperationSimulate(simulatedOperation)->Promise.ignore;
         None;
       },
       [|operation|],
@@ -146,7 +146,7 @@ module Make = (Op: OP) => {
               transactionHash: hash,
             }),
           )
-        | None => FutureEx.ok()
+        | None => Promise.ok()
         };
 
       updateAccount(beaconRequest.sourceAddress);

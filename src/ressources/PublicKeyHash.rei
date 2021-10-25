@@ -72,7 +72,6 @@ type pkh = t;
 
 module Comparator: Belt.Id.Comparable with type t = pkh;
 
-module Map: MapEx.S with module Key := Comparator;
-
 let encoder: Json.Encode.encoder(t);
 let decoder: Json.Decode.decoder(t);
+module Map: Map.S with module Key := Comparator;

@@ -82,7 +82,7 @@ module MichelsonDecode = {
       bytesDecoder |> map(b => Packed(b)),
       stringDecoder
       |> map(s =>
-           Pkh(s->PublicKeyHash.build->ResultEx.getWithExn(internalError))
+           Pkh(s->PublicKeyHash.build->Result.getWithExn(internalError))
          ),
     );
 

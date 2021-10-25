@@ -24,7 +24,6 @@
 /*****************************************************************************/
 
 open ReactNative;
-open UmamiCommon;
 
 module Item = {
   let styles =
@@ -125,9 +124,7 @@ let make =
 
   let onChangeItem = newValue => {
     handleChange(newValue);
-    textInputRef.current
-    ->Js.Nullable.toOption
-    ->Lib.Option.iter(TextInput.blur);
+    textInputRef.current->Js.Nullable.toOption->Option.iter(TextInput.blur);
   };
 
   let onKeyPress = keyPressEvent => {
@@ -146,7 +143,7 @@ let make =
       if (itemScrollPosition < scrollYRef.current) {
         scrollViewRef.current
         ->Js.Nullable.toOption
-        ->Lib.Option.iter(scrollElement =>
+        ->Option.iter(scrollElement =>
             scrollElement->ScrollView.scrollTo(
               ScrollView.scrollToParams(~x=0., ~y=itemScrollPosition, ()),
             )
@@ -165,7 +162,7 @@ let make =
       if (itemScrollPosition > scrollYRef.current) {
         scrollViewRef.current
         ->Js.Nullable.toOption
-        ->Lib.Option.iter(scrollElement =>
+        ->Option.iter(scrollElement =>
             scrollElement->ScrollView.scrollTo(
               ScrollView.scrollToParams(~x=0., ~y=itemScrollPosition, ()),
             )
@@ -175,7 +172,7 @@ let make =
     | ("Tab", _) when value != "" =>
       list
       ->Array.get(selectedItemIndex)
-      ->Lib.Option.iter(item => onChangeItem(item->keyExtractor))
+      ->Option.iter(item => onChangeItem(item->keyExtractor))
     | _ => ()
     };
   };
@@ -208,7 +205,7 @@ let make =
       onFocus={_ => {
         textInputRef.current
         ->Js.Nullable.toOption
-        ->Lib.Option.iter(textInputElement => {
+        ->Option.iter(textInputElement => {
             textInputElement->ThemedTextInput.measureInWindow(
               (~x, ~y, ~width, ~height) => {
               setPopoverConfig(_ => Some(Popover.{x, y, width, height}))

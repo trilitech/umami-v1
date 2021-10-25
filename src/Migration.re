@@ -54,7 +54,7 @@ let applyMigration = (migrations, currentVersion) => {
         ->List.reduce(res, (res, migration) =>
             res->Result.flatMap(_ => migration())
           )
-        ->ResultEx.mapError(_ => MigrationFailed(version))
+        ->Result.mapError(_ => MigrationFailed(version))
   );
 };
 

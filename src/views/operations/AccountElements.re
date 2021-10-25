@@ -24,7 +24,6 @@
 /*****************************************************************************/
 
 open ReactNative;
-open UmamiCommon;
 
 type amountDisplay =
   | Balance
@@ -147,7 +146,7 @@ module Selector = {
         style=Style.(
           arrayOption([|
             Some(itemStyles##inner),
-            fixed->Lib.Option.onlyIf(() => itemStyles##fixed),
+            fixed->Option.onlyIf(() => itemStyles##fixed),
             paramStyle,
           |])
         )>

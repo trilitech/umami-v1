@@ -225,20 +225,22 @@ module LockStorage =
 let fetch = (~password) =>
   switch (LockStorage.get()) {
   | Ok(encryptedData) =>
-    encryptedData->Cipher.decrypt(password)->Future.mapOk(data => Some(data))
-  | Error(_) => Future.value(Ok(None))
+    encryptedData
+    ->Cipher.decrypt(password)
+    ->Promise.mapOk(data => Some(data))
+  | Error(_) => Promise.value(Ok(None))
   };
 
 let store = (data, ~password) =>
   data
   ->Cipher.encrypt(password)
-  ->Future.mapOk(encryptedData => encryptedData->LockStorage.set);
+  ->Promise.mapOk(encryptedData => encryptedData->LockStorage.set);
 
 let validatePassword = password => {
   let%FRes data = fetch(~password);
   let%FRes () =
     data == Some("lock") || data == None
-      ? FutureEx.ok() : FutureEx.err(Errors.WrongPassword);
+      ? Promise.ok() : Promise.err(Errors.WrongPassword);
   let%FResMap () = store("lock", ~password);
   ();
 };

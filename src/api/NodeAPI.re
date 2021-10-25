@@ -108,8 +108,7 @@ module Mnemonic = {
   [@bs.module "bip39"] external generate: unit => string = "generateMnemonic";
 };
 
-module DelegateMaker =
-       (Get: {let get: URL.t => Future.t(Result.t(Js.Json.t, Errors.t));}) => {
+module DelegateMaker = (Get: {let get: URL.t => Promise.t(Js.Json.t);}) => {
   let parse = content =>
     if (content == "none\n") {
       None;
@@ -134,8 +133,8 @@ module DelegateMaker =
     | chain when chain == `Mainnet =>
       URL.External.bakingBadBakers
       ->URL.get
-      ->Future.mapOk(Json.Decode.(array(Delegate.decode)))
-    | _ => [||]->FutureEx.ok
+      ->Promise.mapOk(Json.Decode.(array(Delegate.decode)))
+    | _ => [||]->Promise.ok
     };
 
   type delegationInfo = {
@@ -185,8 +184,7 @@ module DelegateMaker =
   };
 
   let getDelegationInfoForAccount =
-      (network, account: PublicKeyHash.t)
-      : Future.t(Belt.Result.t(option(delegationInfo), Errors.t)) => {
+      (network, account: PublicKeyHash.t): Promise.t(option(delegationInfo)) => {
     let%FRes operations =
       network->ExplorerAPI.getOperations(
         account,
@@ -196,18 +194,18 @@ module DelegateMaker =
       );
 
     if (operations->Array.length == 0) {
-      Future.value(Ok(None));
+      Promise.ok(None);
     } else {
       let firstOperation = operations->Array.getUnsafe(0);
 
       let%FRes payload =
         switch (firstOperation.payload) {
-        | Delegation(payload) => payload->FutureEx.ok
-        | _ => InvalidOperationType->FutureEx.err
+        | Delegation(payload) => payload->Promise.ok
+        | _ => InvalidOperationType->Promise.err
         };
 
       switch (payload.delegate) {
-      | None => FutureEx.none()
+      | None => Promise.none()
       | Some(delegate) when account == delegate =>
         {
           initialBalance: Tez.zero,
@@ -215,7 +213,7 @@ module DelegateMaker =
           timestamp: Js.Date.make(),
           lastReward: None,
         }
-        ->FutureEx.some
+        ->Promise.some
       | Some(delegate) =>
         extractInfoFromDelegate(network, delegate, account, firstOperation)
       };
@@ -301,12 +299,12 @@ module Tokens = {
       };
 
     switch (res) {
-    | None => Token.Unit.zero->FutureEx.ok
+    | None => Token.Unit.zero->Promise.ok
     | Some(v) =>
       v
       ->Token.Unit.fromNatString
-      ->ResultEx.mapError(_ => UnreadableTokenAmount(v))
-      ->Future.value
+      ->Result.mapError(_ => UnreadableTokenAmount(v))
+      ->Promise.value
     };
   };
 
@@ -327,10 +325,10 @@ module Tokens = {
     | Ok([|((_pkh, _tokenId), v)|]) =>
       v
       ->Token.Unit.fromNatString
-      ->ResultEx.mapError(_ => UnreadableTokenAmount(v))
-      ->Future.value
+      ->Result.mapError(_ => UnreadableTokenAmount(v))
+      ->Promise.value
     | Error(_)
-    | Ok(_) => Token.Unit.zero->FutureEx.ok
+    | Ok(_) => Token.Unit.zero->Promise.ok
     };
   };
 };
