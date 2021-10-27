@@ -192,6 +192,9 @@ let make = (~showOnboarding, ~mode, ~setMode) => {
                 />
                 <EditButton mode setMode />
               </>}>
+           <Typography.Headline style=Styles.title>
+             I18n.title#accounts->React.string
+           </Typography.Headline>
            {mode->Mode.is_management
               ? <BalanceTotal /> : <BalanceTotal.WithTokenSelector ?token />}
            <View style=styles##actionBar>

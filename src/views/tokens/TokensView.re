@@ -76,6 +76,9 @@ let make = () => {
   let apiVersion: option(Network.apiVersion) = StoreContext.useApiVersion();
 
   <Page>
+    <Typography.Headline style=Styles.title>
+      I18n.title#tokens->React.string
+    </Typography.Headline>
     <AddTokenButton chain=?{apiVersion->Option.map(v => v.chain)} />
     <Table.Head>
       <TokenRowItem.CellName>

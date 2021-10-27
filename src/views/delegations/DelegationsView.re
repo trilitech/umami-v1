@@ -109,6 +109,9 @@ let make = () => {
        ? <LoadingView />
        : <>
            <View style=styles##header>
+             <Typography.Headline style=Styles.title>
+               I18n.title#delegations->React.string
+             </Typography.Headline>
              <BalanceTotal />
              {firstAccount->ReactUtils.mapOpt(firstAccount =>
                 <DelegateButton
