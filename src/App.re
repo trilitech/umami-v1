@@ -31,12 +31,6 @@ let styles =
       "layout": style(~flex=1., ~flexDirection=`column, ()),
       "main": style(~flex=1., ~flexDirection=`row, ()),
       "content": style(~flex=1., ()),
-      "title":
-        style(
-          ~paddingLeft=LayoutConst.pagePaddingHorizontal->dp,
-          ~paddingTop=LayoutConst.pagePaddingVertical->dp,
-          (),
-        ),
     })
   );
 
@@ -77,19 +71,6 @@ module Homepage = {
     | Onboarding
     | AddAccountModal
     | Dashboard;
-};
-
-let buildTitle = (route: Routes.t) => {
-  switch (route) {
-  | Accounts => I18n.title#accounts
-  | Operations => I18n.title#operations
-  | AddressBook => I18n.title#addressbook
-  | Delegations => I18n.title#delegations
-  | Tokens => I18n.title#tokens
-  | Settings => I18n.title#settings
-  | Logs => I18n.title#logs
-  | NotFound => ""
-  };
 };
 
 module AppView = {
@@ -170,9 +151,6 @@ module AppView = {
                     />
                   | Dashboard =>
                     <>
-                      <Typography.Headline style=styles##title>
-                        {buildTitle(route)->React.string}
-                      </Typography.Headline>
                       {switch (route) {
                        | Accounts =>
                          <AccountsView
