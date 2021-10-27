@@ -49,6 +49,9 @@ let styles =
 let make = (~children as right) => {
   <View style=styles##header>
     <Page.Header right>
+      <Typography.Headline style=Styles.title>
+        I18n.title#operations->React.string
+      </Typography.Headline>
       <BalanceTotal />
       <AccountElements.Selector.Simple style=styles##selector />
     </Page.Header>

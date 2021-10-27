@@ -64,6 +64,9 @@ let make = () => {
   let aliasesRequest = StoreContext.Aliases.useRequestExceptAccounts();
 
   <Page>
+    <Typography.Headline style=Styles.title>
+      I18n.title#addressbook->React.string
+    </Typography.Headline>
     <AddContactButton />
     {switch (aliasesRequest) {
      | Done(Ok(aliases), _)
