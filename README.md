@@ -38,6 +38,9 @@ Linux binaries are distributed as snaps, hence it needs `snapcraft` and `LXD`:
 * [snapcraft](https://snapcraft.io/docs/snapcraft-overview) installed.
 * [LXD](https://snapcraft.io/docs/build-on-lxd) installed and initialized.
 
+On windows, a patch is needed on the `bsconfig.json`
+- `git cherry-pick de5fb98079b85c41e8bc0727b8ae17e06a75a8ad`
+
 ### 3) Build:
 
 ```
