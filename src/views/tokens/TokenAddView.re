@@ -153,6 +153,7 @@ let make = (~chain, ~address="", ~closeAction) => {
               chain,
               decimals:
                 state.values.decimals |> Int.fromString |> Option.getExn,
+              asset: TokenRepr.defaultAsset,
             })
             ->FutureEx.getOk(_ => closeAction());
           });

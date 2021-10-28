@@ -129,3 +129,6 @@ module Comparator =
   });
 
 module Map = MapEx.Make(Comparator);
+
+let encoder = address => Json.Encode.string(address);
+let decoder = json => json |> Json.Decode.string |> build |> Result.getExn;

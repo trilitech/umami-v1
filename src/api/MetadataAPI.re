@@ -68,29 +68,115 @@ module Tzip12 = {
       contract##storage()->ReTaquitoError.fromPromiseParsed;
     };
 
+    module Decode = {
+      let getOptString = (storage, f) =>
+        storage.Tzip12Storage.Fields.get(. f)->Option.map(bytes2Char);
+
+      let getOptArray = (storage, f, decoder) =>
+        storage.Tzip12Storage.Fields.get(. f)
+        ->Option.flatMap(v => {
+            v
+            ->bytes2Char
+            ->JsonEx.parse
+            ->Result.flatMap(json =>
+                JsonEx.decode(json, Json.Decode.(array(decoder)))
+              )
+            ->ResultEx.toOption
+          });
+
+      let getOptArrayString = (storage, f) =>
+        getOptArray(storage, f, Json.Decode.string);
+
+      let getString = (storage, f, ~onError) =>
+        storage->getOptString(f)->onError(f);
+
+      let getOptPkh = (storage, f) =>
+        storage
+        ->getOptString(f)
+        ->Option.flatMap(s => s->PublicKeyHash.build->ResultEx.toOption);
+
+      let getOptInt = (storage, f) =>
+        storage.Tzip12Storage.Fields.get(. f)
+        ->Option.flatMap(v => v->bytes2Char->int_of_string_opt);
+
+      let getInt = (storage, f, ~onError) =>
+        storage->getOptInt(f)->onError(f);
+
+      let getOptBool = (storage, f) =>
+        storage.Tzip12Storage.Fields.get(. f)
+        ->Option.flatMap(v => v->bytes2Char->bool_of_string_opt);
+    };
+
     /* Parse the `token_info` field */
-    let parseTokenInfo = (address, tokenId, token_info) => {
-      let illformed = (res, fieldName) =>
+    let parseTokenInfo = (address, token_id, token_info) => {
+      open Decode;
+      let onError = (res, fieldName) =>
         res->ResultEx.fromOption(
-          IllformedToken(address, tokenId, fieldName),
+          IllformedToken(address, token_id, fieldName),
         );
 
-      let%Res name =
-        token_info.Tzip12Storage.Fields.get(. "name")
-        ->Option.map(bytes2Char)
-        ->illformed("name");
+      let%Res name = token_info->getString("name", ~onError);
+      let%Res decimals = token_info->getInt("decimals", ~onError);
+      let%ResMap symbol = token_info->getString("symbol", ~onError);
+      let description = token_info->getOptString("description");
+      let minter = token_info->getOptPkh("minter");
+      let creators = token_info->getOptArrayString("creators");
+      let contributors = token_info->getOptArrayString("contributors");
+      let publishers = token_info->getOptArrayString("publishers");
+      let date = token_info->getOptString("date");
+      let blocklevel = token_info->getOptInt("blocklevel");
+      let type_ = token_info->getOptString("type");
+      let tags = token_info->getOptArrayString("tags");
+      let genres = token_info->getOptArrayString("genres");
+      let language = token_info->getOptString("language");
+      let identifier = token_info->getOptString("identifier");
+      let rights = token_info->getOptString("rights");
+      let rightUri = token_info->getOptString("rightUri");
+      let artifactUri = token_info->getOptString("artifactUri");
+      let displayUri = token_info->getOptString("displayUri");
+      let thumbnailUri = token_info->getOptString("thumbnailUri");
+      let isTransferable = token_info->getOptBool("isBooleanAmount");
+      let isBooleanAmount = token_info->getOptBool("isBooleanAmount");
+      let shouldPreferSymbol = token_info->getOptBool("shouldPreferSymbol");
+      let formats =
+        token_info->getOptArray(
+          "formats",
+          Token.Decode.Metadata.formatDecoder,
+        );
+      let attributes =
+        token_info->getOptArray(
+          "attributes",
+          Token.Decode.Metadata.attributeDecoder,
+        );
 
-      let%Res decimals =
-        token_info.get(. "decimals")
-        ->Option.flatMap(v => v->bytes2Char->int_of_string_opt)
-        ->illformed("decimals");
-
-      let%ResMap symbol =
-        token_info.get(. "symbol")
-        ->Option.map(bytes2Char)
-        ->illformed("symbol");
-
-      (name, decimals, symbol);
+      {
+        token_id,
+        name,
+        decimals,
+        symbol,
+        description,
+        minter,
+        creators,
+        contributors,
+        publishers,
+        date,
+        blocklevel,
+        type_,
+        tags,
+        genres,
+        language,
+        identifier,
+        rights,
+        rightUri,
+        artifactUri,
+        displayUri,
+        thumbnailUri,
+        isTransferable,
+        isBooleanAmount,
+        shouldPreferSymbol,
+        formats,
+        attributes,
+      };
     };
 
     /* Parse a value of the `token_metadata` big map */
@@ -107,10 +193,7 @@ module Tzip12 = {
 
       let%Res token_info =
         token.Tzip12Storage.token_info->illformed("token_info");
-      let%ResMap (name, decimals, symbol) =
-        parseTokenInfo(address, tokenId, token_info);
-
-      Tzip12.{token_id, name, symbol, decimals};
+      parseTokenInfo(address, token_id, token_info);
     };
 
     /* A token_metadata value is illformed if its components are not annotated,
@@ -153,10 +236,20 @@ module Tzip12 = {
 
     /* Retrieve a token from the storage */
     let getToken = (address, storage, tokenId) => {
-      let%FRes metadataMap =
+      let getTokenMetadata = storage =>
         storage.Tzip12Storage.token_metadata
         ->ResultEx.fromOption(NoTzip12Metadata(address))
         ->Future.value;
+
+      let%Ft metadataMap = getTokenMetadata(storage);
+
+      let%FRes metadataMap =
+        switch (metadataMap) {
+        | Ok(m) => FutureEx.ok(m)
+        | Error(e) =>
+          storage.assets
+          ->Option.mapWithDefault(FutureEx.err(e), getTokenMetadata)
+        };
 
       let%FRes metadata =
         elaborateFromTokenMetadata(address, tokenId, metadataMap);
@@ -191,7 +284,8 @@ module Tzip12 = {
           | e => e,
         );
     switch (metadata) {
-    | Error(NoTzip12Metadata(_)) => readFromStorage(contract, tokenId)
+    | Error(NoTzip12Metadata(_) | TokenIdNotFound(_)) =>
+      readFromStorage(contract, tokenId)
     | r => Future.value(r)
     };
   };
@@ -219,3 +313,28 @@ let () =
       ->Some
     | _ => None,
   );
+
+module Debug = {
+  let getConfig = () => {
+    let%FResMap c = ConfigFile.read()->Future.value;
+    c->ConfigContext.fromFile;
+  };
+
+  let fetchTokenMetadata = (address, tokenId) => {
+    let%FRes config: Let.future(ConfigContext.env) = getConfig();
+    let toolkit = ReTaquito.Toolkit.create(config.network.endpoint);
+    let%FRes contract = Tzip12.makeContract(toolkit, address);
+    Tzip12.read(contract, tokenId);
+  };
+
+  let readTokenMetadata = (address, tokenId) => {
+    fetchTokenMetadata(address, tokenId)
+    ->Future.get(metadata => Js.log(metadata));
+  };
+
+  type window = {mutable readTokenMetadata: (PublicKeyHash.t, int) => unit};
+
+  [@bs.val] external window: window = "window";
+
+  window.readTokenMetadata = readTokenMetadata;
+};
