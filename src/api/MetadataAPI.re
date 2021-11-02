@@ -313,28 +313,3 @@ let () =
       ->Some
     | _ => None,
   );
-
-module Debug = {
-  let getConfig = () => {
-    let%FResMap c = ConfigFile.read()->Future.value;
-    c->ConfigContext.fromFile;
-  };
-
-  let fetchTokenMetadata = (address, tokenId) => {
-    let%FRes config: Let.future(ConfigContext.env) = getConfig();
-    let toolkit = ReTaquito.Toolkit.create(config.network.endpoint);
-    let%FRes contract = Tzip12.makeContract(toolkit, address);
-    Tzip12.read(contract, tokenId);
-  };
-
-  let readTokenMetadata = (address, tokenId) => {
-    fetchTokenMetadata(address, tokenId)
-    ->Future.get(metadata => Js.log(metadata));
-  };
-
-  type window = {mutable readTokenMetadata: (PublicKeyHash.t, int) => unit};
-
-  [@bs.val] external window: window = "window";
-
-  window.readTokenMetadata = readTokenMetadata;
-};
