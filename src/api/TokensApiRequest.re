@@ -25,6 +25,8 @@
 
 include ApiRequest;
 
+open Let;
+
 let useCheckTokenContract = () => {
   let set = (~config, address) =>
     config->NodeAPI.Tokens.checkTokenContract(address);
@@ -48,6 +50,54 @@ let useLoadTokens = requestState => {
   let get = (~config as _, ()) => TokensAPI.registeredTokens()->Promise.value;
 
   ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, ());
+};
+
+type request = {
+  accounts: list(PublicKeyHash.t),
+  index: int,
+  numberByAccount: int,
+};
+
+type registry = {
+  registered: array(TokenRegistry.Cache.token),
+  toRegister: array(TokenRegistry.Cache.token),
+  nextIndex: int,
+};
+
+let useLoadTokensRegistry = (requestState, request) => {
+  let get = (~config, request) => {
+    let%AwaitMap (registered, toRegister, nextIndex) =
+      TokensAPI.fetchAccountsTokensRegistry(
+        config,
+        ~accounts=request.accounts,
+        ~index=request.index,
+        ~numberByAccount=request.numberByAccount,
+      );
+    {registered, toRegister, nextIndex};
+  };
+
+  ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, request);
+};
+
+type tokens = {
+  sorted: TokenRegistry.Cache.t,
+  nextIndex: int,
+};
+
+let useLoadAccountsTokens = (requestState, request) => {
+  let get = (~config, request) => {
+    let%AwaitMap (sorted, nextIndex) =
+      TokensAPI.fetchAccountsTokens(
+        config,
+        ~accounts=request.accounts,
+        ~index=request.index,
+        ~numberByAccount=request.numberByAccount,
+        ~withFullCache=false,
+      );
+    {sorted, nextIndex};
+  };
+
+  ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, request);
 };
 
 let useDelete = (~sideEffect=?, ()) => {

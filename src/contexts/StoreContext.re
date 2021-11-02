@@ -56,6 +56,10 @@ type state = {
     reactState(ApiRequest.t(PublicKeyHash.Map.map(Alias.t))),
   bakersRequestState: reactState(ApiRequest.t(array(Delegate.t))),
   tokensRequestState: reactState(ApiRequest.t(TokenRegistry.Cache.t)),
+  tokensRegistryRequestState:
+    reactState(ApiRequest.t(TokensApiRequest.registry)),
+  accountsTokensRequestState:
+    reactState(ApiRequest.t(TokensApiRequest.tokens)),
   balanceTokenRequestsState: apiRequestsState(Token.Unit.t),
   apiVersionRequestState: reactState(option(Network.apiVersion)),
   eulaSignatureRequestState: reactState(bool),
@@ -83,6 +87,8 @@ let initialState = {
   aliasesRequestState: (NotAsked, _ => ()),
   bakersRequestState: (NotAsked, _ => ()),
   tokensRequestState: (NotAsked, _ => ()),
+  tokensRegistryRequestState: (NotAsked, _ => ()),
+  accountsTokensRequestState: (NotAsked, _ => ()),
   balanceTokenRequestsState: initialApiRequestsState,
   apiVersionRequestState: (None, _ => ()),
   eulaSignatureRequestState: (false, _ => ()),
@@ -135,6 +141,8 @@ let make = (~children) => {
   let aliasesRequestState = React.useState(() => ApiRequest.NotAsked);
   let bakersRequestState = React.useState(() => ApiRequest.NotAsked);
   let tokensRequestState = React.useState(() => ApiRequest.NotAsked);
+  let tokensRegistryRequestState = React.useState(() => ApiRequest.NotAsked);
+  let accountsTokensRequestState = React.useState(() => ApiRequest.NotAsked);
   let secretsRequestState = React.useState(() => ApiRequest.NotAsked);
 
   let beaconClient =
@@ -237,6 +245,8 @@ let make = (~children) => {
       aliasesRequestState,
       bakersRequestState,
       tokensRequestState,
+      tokensRegistryRequestState,
+      accountsTokensRequestState,
       balanceTokenRequestsState,
       apiVersionRequestState,
       eulaSignatureRequestState,
@@ -585,6 +595,29 @@ module Tokens = {
   let useGetAll = () => {
     let accountsRequest = useRequest();
     accountsRequest->ApiRequest.getWithDefault(PublicKeyHash.Map.empty);
+  };
+
+  let useRegistryRequestState = () => {
+    let store = useStoreContext();
+    store.tokensRegistryRequestState;
+  };
+
+  let useRegistry = request => {
+    let registryRequestState = useRegistryRequestState();
+    TokensApiRequest.useLoadTokensRegistry(registryRequestState, request);
+  };
+
+  let useAccountsTokensRequestState = () => {
+    let store = useStoreContext();
+    store.accountsTokensRequestState;
+  };
+
+  let useAccountsTokens = request => {
+    let accountsTokensRequestState = useAccountsTokensRequestState();
+    TokensApiRequest.useLoadAccountsTokens(
+      accountsTokensRequestState,
+      request,
+    );
   };
 
   let useGet = (tokenAddress: option(PublicKeyHash.t)) => {
