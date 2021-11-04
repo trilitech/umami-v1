@@ -100,3 +100,5 @@ type t = {
 };
 
 let id: t => int;
+
+let isNFT: t => bool;
