@@ -163,8 +163,8 @@ let make = (~initNode=?, ~initMezos=?, ~action: action, ~closeAction) => {
           let checkConfig = () => {
             setLoading(_ => true);
             Network.checkConfiguration(state.values.mezos, state.values.node)
-            ->Future.mapOk(snd)
-            ->Future.tap(_ => setLoading(_ => false));
+            ->Promise.mapOk(snd)
+            ->Promise.tap(_ => setLoading(_ => false));
           };
 
           let chain =
@@ -172,11 +172,11 @@ let make = (~initNode=?, ~initMezos=?, ~action: action, ~closeAction) => {
             | Create => checkConfig()
             | Edit(network) =>
               networkChanged(network)
-                ? checkConfig() : network.chain->Ok->Future.value
+                ? checkConfig() : network.chain->Ok->Promise.value
             };
 
           chain
-          ->Future.mapOk(chain => {
+          ->Promise.mapOk(chain => {
               let newNetwork =
                 Network.{
                   name: state.values.name,
@@ -191,7 +191,7 @@ let make = (~initNode=?, ~initMezos=?, ~action: action, ~closeAction) => {
               };
             })
           ->ApiRequest.logOk(addToast, Logs.Account, _ => log)
-          ->Future.get(
+          ->Promise.get(
               fun
               | Ok () => closeAction()
               | Error(e) => e->rsf(raiseSubmitFailed),
@@ -255,7 +255,7 @@ let make = (~initNode=?, ~initMezos=?, ~action: action, ~closeAction) => {
             form.formState->FormUtils.getFormStateError->nodeErrorFilter,
             form.getFieldError(Field(Node)),
           ]
-          ->UmamiCommon.Lib.Option.firstSome
+          ->Option.firstSome
         }
         disabled=?{
           switch (action) {
@@ -275,7 +275,7 @@ let make = (~initNode=?, ~initMezos=?, ~action: action, ~closeAction) => {
             form.formState->FormUtils.getFormStateError->mezosErrorFilter,
             form.getFieldError(Field(Mezos)),
           ]
-          ->UmamiCommon.Lib.Option.firstSome
+          ->Option.firstSome
         }
         disabled=?{
           switch (action) {

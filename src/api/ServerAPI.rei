@@ -75,10 +75,10 @@ module URL: {
   module External: {let bakingBadBakers: t;};
 
   /* Fetch URL as a JSON. */
-  let get: t => Future.t(Result.t(Js.Json.t, Errors.t));
+  let get: t => Promise.t(Js.Json.t);
 
   /* Fetch URL with a JSON payload, as a JSON. */
-  let postJson: (t, Js.Json.t) => Let.future(Js.Json.t);
+  let postJson: (t, Js.Json.t) => Promise.t(Js.Json.t);
 };
 
 /** Mezos requests for mempool operations and classical operations. */
@@ -92,12 +92,11 @@ module type Explorer = {
       ~limit: int=?,
       unit
     ) =>
-    Future.t(Result.t(array(Operation.Read.t), Errors.t));
+    Promise.t(array(Operation.Read.t));
 };
 
 /** This generic version exists only for tests purpose */
 module ExplorerMaker:
-  (Get: {let get: URL.t => Future.t(Result.t(Js.Json.t, Errors.t));}) =>
-   Explorer;
+  (Get: {let get: URL.t => Promise.t(Js.Json.t);}) => Explorer;
 
 module Explorer: Explorer;

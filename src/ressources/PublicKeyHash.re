@@ -128,7 +128,7 @@ module Comparator =
     let cmp = compare;
   });
 
-module Map = MapEx.Make(Comparator);
+module Map = Map.Make(Comparator);
 
 let encoder = address => Json.Encode.string(address);
 let decoder = json => json |> Json.Decode.string |> build |> Result.getExn;

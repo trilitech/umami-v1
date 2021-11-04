@@ -44,11 +44,9 @@ module type AliasesMakerType = {
   type t = array(alias);
   let parse: string => t;
   let stringify: t => string;
-  let read: System.Path.t => Future.t(Result.t(t, Errors.t));
-  let write: (System.Path.t, t) => Future.t(Result.t(unit, Errors.t));
-  let protect:
-    (System.Path.t, unit => Future.t(Result.t(unit, Errors.t))) =>
-    Future.t(Result.t(unit, Errors.t));
+  let read: System.Path.t => Promise.t(t);
+  let write: (System.Path.t, t) => Promise.t(unit);
+  let protect: (System.Path.t, unit => Promise.t(unit)) => Promise.t(unit);
   let find: (t, alias => bool) => Result.t(alias, Errors.t);
   let filter: (t, alias => bool) => t;
   let remove: (t, key) => t;
@@ -77,16 +75,16 @@ module PkhAliases:
 /** Add or replace a public key hash alias. */
 let addOrReplacePkhAlias:
   (~dirpath: System.Path.t, ~alias: string, ~pkh: PkhAlias.t) =>
-  Let.future(unit);
+  Promise.t(unit);
 
 /** Remove an alias with its associated pkh. */
 let removePkhAlias:
-  (~dirpath: System.Path.t, ~alias: string) => Let.future(unit);
+  (~dirpath: System.Path.t, ~alias: string) => Promise.t(unit);
 
 /** Rename an alias with its associated public, private and pkh. */
 let renamePkhAlias:
   (~dirpath: System.Path.t, ~oldName: string, ~newName: string) =>
-  Let.future(unit);
+  Promise.t(unit);
 
 /** Add or replace an alias with its associated public, private and pkh. */
 let addOrReplaceAlias:
@@ -97,16 +95,15 @@ let addOrReplaceAlias:
     ~pkh: PkhAlias.t,
     ~sk: SecretAlias.t
   ) =>
-  Future.t(Result.t(unit, Errors.t));
+  Promise.t(unit);
 
 /** Remove an alias from the filesystem. */
-let removeAlias:
-  (~dirpath: System.Path.t, ~alias: string) => Let.future(unit);
+let removeAlias: (~dirpath: System.Path.t, ~alias: string) => Promise.t(unit);
 
 /** Rename an alias with its associated public, private and pkh. */
 let renameAlias:
   (~dirpath: System.Path.t, ~oldName: string, ~newName: string) =>
-  Let.future(unit);
+  Promise.t(unit);
 
 type kind = Account.kind = | Encrypted | Unencrypted | Ledger;
 
@@ -118,19 +115,19 @@ module Prefixes: {
 
 /** Returns the prefix kind from the secret key and the secret key without the
    prefix */
-let extractPrefixFromSecretKey: string => Let.result((kind, string));
+let extractPrefixFromSecretKey: string => Promise.result((kind, string));
 
 /** Returns the secret key associated to a public key hash. */
 let readSecretFromPkh:
-  (PkhAlias.t, System.Path.t) => Let.future((kind, SecretAlias.t));
+  (PkhAlias.t, System.Path.t) => Promise.t((kind, SecretAlias.t));
 
 /** Returns the alias associated to a public key hash */
 let aliasFromPkh:
-  (~dirpath: System.Path.t, ~pkh: PkhAlias.t) => Let.future(string);
+  (~dirpath: System.Path.t, ~pkh: PkhAlias.t) => Promise.t(string);
 
 /** Returns the public key associated to an alias */
 let pkFromAlias:
-  (~dirpath: System.Path.t, ~alias: string) => Let.future(string);
+  (~dirpath: System.Path.t, ~alias: string) => Promise.t(string);
 
 let mnemonicPkValue: string => PkAlias.t;
 

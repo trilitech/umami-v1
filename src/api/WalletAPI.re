@@ -155,13 +155,13 @@ module Aliases = {
   type t = array((string, PublicKeyHash.t));
 
   let get = (~config: ConfigContext.env) => {
-    let%FResMap addresses = config.baseDir()->Wallet.PkhAliases.read;
+    let%AwaitMap addresses = config.baseDir()->Wallet.PkhAliases.read;
 
     addresses->Array.map(({name, value}) => (name, value));
   };
 
   let getAliasMap = (~config) => {
-    let%FResMap addresses = get(~config);
+    let%AwaitMap addresses = get(~config);
 
     addresses
     ->Array.map(((alias, addr)) => ((addr :> string), alias))
@@ -169,12 +169,12 @@ module Aliases = {
   };
 
   let getAliasForAddress = (~config, ~address: PublicKeyHash.t) => {
-    let%FResMap aliases = getAliasMap(~config);
+    let%AwaitMap aliases = getAliasMap(~config);
     aliases->Map.String.get((address :> string));
   };
 
   let getAddressForAlias = (~config, ~alias) => {
-    let%FResMap addresses = get(~config);
+    let%AwaitMap addresses = get(~config);
     addresses->Map.String.fromArray->Map.String.get(alias);
   };
 
@@ -206,7 +206,7 @@ module Accounts = {
   type name = string;
 
   let secrets = (~config as _) => {
-    SecretStorage.get()->ResultEx.mapError(_ => NoSecretFound);
+    SecretStorage.get()->Result.mapError(_ => NoSecretFound);
   };
 
   let recoveryPhrases = () => {
@@ -214,9 +214,9 @@ module Accounts = {
   };
 
   let get = (~config: ConfigContext.env) => {
-    let%FRes pkhs = config.baseDir()->Wallet.PkhAliases.read;
+    let%Await pkhs = config.baseDir()->Wallet.PkhAliases.read;
 
-    let%FResMap sks = config.baseDir()->Wallet.SecretAliases.read;
+    let%AwaitMap sks = config.baseDir()->Wallet.SecretAliases.read;
 
     pkhs->Array.keepMap(({name, value}) => {
       let res = {
@@ -235,7 +235,7 @@ module Accounts = {
   let secretAt = (~config, index) => {
     let%Res secrets = secrets(~config);
 
-    ResultEx.fromOption(secrets[index], SecretNotFound(index));
+    Result.fromOption(secrets[index], SecretNotFound(index));
   };
 
   let updateSecretAt = (~config, secret, index) => {
@@ -249,19 +249,19 @@ module Accounts = {
   };
 
   let recoveryPhraseAt = (index, ~password) => {
-    let%FRes recoveryPhrases = recoveryPhrases()->Future.value;
-    let%FRes data =
+    let%Await recoveryPhrases = recoveryPhrases()->Promise.value;
+    let%Await data =
       recoveryPhrases[index]
-      ->FutureEx.fromOption(~error=RecoveryPhraseNotFound(index));
+      ->Promise.fromOption(~error=RecoveryPhraseNotFound(index));
 
     SecureStorage.Cipher.decrypt2(password, data);
   };
 
   let importFromSigner =
       (~config: ConfigContext.env, ~alias, ~secretKey, signer) => {
-    let%FRes pk = signer->ReTaquitoSigner.publicKey;
+    let%Await pk = signer->ReTaquitoSigner.publicKey;
     let pk = Wallet.mnemonicPkValue(pk);
-    let%FRes pkh = signer->ReTaquitoSigner.publicKeyHash;
+    let%Await pkh = signer->ReTaquitoSigner.publicKeyHash;
     let skUri = Wallet.Prefixes.encrypted ++ secretKey;
     Wallet.addOrReplaceAlias(
       ~dirpath=config.baseDir(),
@@ -273,59 +273,59 @@ module Accounts = {
   };
 
   let import = (~config, ~alias, ~secretKey, ~password) => {
-    let%FRes signer =
+    let%Await signer =
       ReTaquitoSigner.MemorySigner.create(
         ~secretKey,
         ~passphrase=password,
         (),
       );
-    let%FRes pkh = signer->ReTaquitoSigner.publicKeyHash;
-    let%FResMap () = importFromSigner(~config, ~alias, ~secretKey, signer);
+    let%Await pkh = signer->ReTaquitoSigner.publicKeyHash;
+    let%AwaitMap () = importFromSigner(~config, ~alias, ~secretKey, signer);
     pkh;
   };
 
   let derive = (~config: ConfigContext.env, ~index, ~alias, ~password) => {
-    let%FRes secret = secretAt(~config, index)->Future.value;
+    let%Await secret = secretAt(~config, index)->Promise.value;
 
-    let%FRes recoveryPhrase = recoveryPhraseAt(index, ~password);
+    let%Await recoveryPhrase = recoveryPhraseAt(index, ~password);
 
-    let%FRes edesk =
+    let%Await edesk =
       secret.derivationPath
       ->DerivationPath.Pattern.implement(secret.addresses->Array.length)
       ->HD.edesk(recoveryPhrase->HD.seed, ~password);
 
-    let%FRes address = import(~config, ~secretKey=edesk, ~alias, ~password);
+    let%Await address = import(~config, ~secretKey=edesk, ~alias, ~password);
 
-    let%FRes () =
+    let%Await () =
       {...secret, addresses: Array.concat(secret.addresses, [|address|])}
       ->updateSecretAt(~config, index)
-      ->Future.value;
+      ->Promise.value;
 
-    address->FutureEx.ok;
+    address->Promise.ok;
   };
 
   let unsafeDelete = (~config: ConfigContext.env, name) =>
     Wallet.removeAlias(~dirpath=config.baseDir(), ~alias=name);
 
   let delete = (~config, name) => {
-    let%FRes address = Aliases.getAddressForAlias(~config, ~alias=name);
-    let%FRes () = unsafeDelete(~config, name);
+    let%Await address = Aliases.getAddressForAlias(~config, ~alias=name);
+    let%Await () = unsafeDelete(~config, name);
 
-    let%FRes secrets = secrets(~config)->Future.value;
+    let%Await secrets = secrets(~config)->Promise.value;
     let secrets =
       secrets->Array.map(secret =>
         address == secret.masterPublicKey
           ? {...secret, masterPublicKey: None} : secret
       );
 
-    SecretStorage.set(secrets)->FutureEx.ok;
+    SecretStorage.set(secrets)->Promise.ok;
   };
 
   let deleteSecretAt = (~config, index) => {
-    let%FRes secretsBefore = secrets(~config)->Future.value;
-    let%FRes aliases = Aliases.getAliasMap(~config);
+    let%Await secretsBefore = secrets(~config)->Promise.value;
+    let%Await aliases = Aliases.getAliasMap(~config);
 
-    let%FRes deletedAddresses =
+    let%Await deletedAddresses =
       secretsBefore[index]
       ->Option.map(secret =>
           secret.addresses
@@ -335,11 +335,11 @@ module Accounts = {
             )
           ->Array.keepMap(v => aliases->Map.String.get((v :> string)))
         )
-      ->FutureEx.fromOption(~error=SecretNotFound(index));
+      ->Promise.fromOption(~error=SecretNotFound(index));
 
-    let%FResMap () =
-      deletedAddresses->Array.reduce(Future.value(Ok()), (acc, addr) =>
-        acc->Future.flatMapOk(() => addr->unsafeDelete(~config))
+    let%AwaitMap () =
+      deletedAddresses->Array.reduce(Promise.ok(), (acc, addr) =>
+        acc->Promise.flatMapOk(() => addr->unsafeDelete(~config))
       );
 
     let _ =
@@ -374,7 +374,7 @@ module Accounts = {
   };
 
   let legacyImport = (~config, alias, recoveryPhrase, ~password) => {
-    let%FRes secretKey = HD.edeskLegacy(recoveryPhrase, ~password);
+    let%Await secretKey = HD.edeskLegacy(recoveryPhrase, ~password);
 
     import(~config, ~alias, ~secretKey, ~password);
   };
@@ -398,26 +398,26 @@ module Accounts = {
     };
 
     let runLegacy = (~recoveryPhrase, ~password) => {
-      let%FRes encryptedSecretKey = HD.edeskLegacy(recoveryPhrase, ~password);
+      let%Await encryptedSecretKey = HD.edeskLegacy(recoveryPhrase, ~password);
 
-      let%FRes signer =
+      let%Await signer =
         ReTaquitoSigner.MemorySigner.create(
           ~secretKey=encryptedSecretKey,
           ~passphrase=password,
           (),
         );
 
-      let%FRes publicKeyHash = signer->ReTaquitoSigner.publicKeyHash;
+      let%Await publicKeyHash = signer->ReTaquitoSigner.publicKeyHash;
 
-      Future.value(Ok({kind: Legacy, publicKeyHash, encryptedSecretKey}));
+      Promise.ok({kind: Legacy, publicKeyHash, encryptedSecretKey});
     };
 
     let usedAccount = (~config, ~account, ~onFoundKey, ~index) => {
-      let%FRes used = used(config, account.publicKeyHash);
+      let%Await used = used(config, account.publicKeyHash);
 
       used
         ? onFoundKey(index, account)
-        : index == 0 ? onFoundKey(index, account) : FutureEx.ok();
+        : index == 0 ? onFoundKey(index, account) : Promise.ok();
     };
 
     let runStream =
@@ -432,7 +432,7 @@ module Accounts = {
       let rec loop = n => {
         let path = path->DerivationPath.Pattern.implement(n);
 
-        let%FRes account = getKey(path, schema);
+        let%Await account = getKey(path, schema);
         let onFoundKey = (n, account) => {
           onFoundKey(n, account);
           loop(n + 1);
@@ -457,31 +457,31 @@ module Accounts = {
         path,
         schema,
         (path, schema) => {
-          let%FRes tr = LedgerAPI.init();
-          let%FResMap publicKeyHash =
+          let%Await tr = LedgerAPI.init();
+          let%AwaitMap publicKeyHash =
             LedgerAPI.getKey(~prompt=false, tr, path, schema);
           {publicKeyHash, encryptedSecretKey: (), kind: Regular};
         },
       );
 
     let runStreamLegacy = (~config, ~recoveryPhrase, ~password, ~onFoundKey) => {
-      let onFoundKey = (n, acc) => onFoundKey(n, acc)->FutureEx.ok;
-      let%FRes account = runLegacy(~recoveryPhrase, ~password);
+      let onFoundKey = (n, acc) => onFoundKey(n, acc)->Promise.ok;
+      let%Await account = runLegacy(~recoveryPhrase, ~password);
       usedAccount(~config, ~account, ~onFoundKey, ~index=-1);
     };
 
     let getSeedKey = (~recoveryPhrase, ~password, path, _) => {
-      let%FRes encryptedSecretKey =
+      let%Await encryptedSecretKey =
         path->HD.edesk(recoveryPhrase->HD.seed, ~password);
 
-      let%FRes signer =
+      let%Await signer =
         ReTaquitoSigner.MemorySigner.create(
           ~secretKey=encryptedSecretKey,
           ~passphrase=password,
           (),
         );
 
-      let%FResMap publicKeyHash = signer->ReTaquitoSigner.publicKeyHash;
+      let%AwaitMap publicKeyHash = signer->ReTaquitoSigner.publicKeyHash;
 
       {publicKeyHash, encryptedSecretKey, kind: Regular};
     };
@@ -495,16 +495,16 @@ module Accounts = {
           secret,
           path: DerivationPath.Pattern.t,
         ) => {
-      let%FRes r = recoveryPhrases()->Future.value;
+      let%Await r = recoveryPhrases()->Promise.value;
 
       switch (r[secret.Secret.Repr.index]) {
       | Some(recoveryPhrase) =>
         let onFoundKey = (n, acc) => onFoundKey(n, acc);
 
-        let%FRes recoveryPhrase =
+        let%Await recoveryPhrase =
           recoveryPhrase->SecureStorage.Cipher.decrypt(password);
 
-        let%FRes () =
+        let%Await () =
           runStream(
             ~config,
             ~startIndex,
@@ -516,8 +516,8 @@ module Accounts = {
 
         secret.Secret.Repr.secret.masterPublicKey == None
           ? runStreamLegacy(~config, ~recoveryPhrase, ~password, ~onFoundKey)
-          : FutureEx.ok();
-      | None => FutureEx.ok()
+          : Promise.ok();
+      | None => Promise.ok()
       };
     };
 
@@ -534,29 +534,29 @@ module Accounts = {
               (),
             ) => {
       let name = baseName ++ " /" ++ index->Js.Int.toString;
-      let%FRes edesk =
+      let%Await edesk =
         derivationPath
         ->DerivationPath.Pattern.implement(index)
         ->HD.edesk(seed, ~password);
 
-      let%FRes signer =
+      let%Await signer =
         ReTaquitoSigner.MemorySigner.create(
           ~secretKey=edesk,
           ~passphrase=password,
           (),
         );
 
-      let%FRes address = signer->ReTaquitoSigner.publicKeyHash;
+      let%Await address = signer->ReTaquitoSigner.publicKeyHash;
 
-      let%FRes isValidated =
+      let%Await isValidated =
         // always include 0'
-        index == 0 ? Future.value(Ok(true)) : config->used(address);
+        index == 0 ? Promise.ok(true) : config->used(address);
 
       if (isValidated) {
-        let%FRes () =
+        let%Await () =
           importFromSigner(~config, ~secretKey=edesk, ~alias=name, signer);
 
-        let%FResMap addresses =
+        let%AwaitMap addresses =
           runOnSeed(
             ~config,
             seed,
@@ -568,19 +568,19 @@ module Accounts = {
           );
         Array.concat([|address|], addresses);
       } else {
-        unsafeDelete(~config, name)->Future.map(_ => Ok([||]));
+        unsafeDelete(~config, name)->Promise.map(_ => Ok([||]));
       };
     };
 
     let runLegacy = (~config, recoveryPhrase, name, ~password) => {
-      let%FRes legacyAddress =
+      let%Await legacyAddress =
         legacyImport(~config, name, recoveryPhrase, ~password);
 
-      let%FRes isValidated = config->used(legacyAddress);
+      let%Await isValidated = config->used(legacyAddress);
 
       isValidated
-        ? Some(legacyAddress)->FutureEx.ok
-        : unsafeDelete(~config, name)->Future.map(_ => Ok(None));
+        ? Some(legacyAddress)->Promise.ok
+        : unsafeDelete(~config, name)->Promise.map(_ => Ok(None));
     };
 
     let run =
@@ -595,7 +595,7 @@ module Accounts = {
           ~index=0,
           (),
         ) => {
-      let%FRes addresses =
+      let%Await addresses =
         runOnSeed(
           ~config,
           recoveryPhrase->HD.seed,
@@ -605,7 +605,7 @@ module Accounts = {
           ~index,
           (),
         );
-      let%FResMap legacyAddresses =
+      let%AwaitMap legacyAddresses =
         runLegacy(~config, recoveryPhrase, baseName ++ " legacy", ~password);
       (addresses, legacyAddresses);
     };
@@ -616,9 +616,9 @@ module Accounts = {
     ->Result.getWithDefault([||])
     ->Array.map(data => SecureStorage.Cipher.decrypt2(password, data))
     ->List.fromArray
-    ->Future.all
-    ->Future.map(List.toArray)
-    ->Future.map(decryptedRecoveryPhrases =>
+    ->Promise.all
+    ->Promise.map(List.toArray)
+    ->Promise.map(decryptedRecoveryPhrases =>
         decryptedRecoveryPhrases->Array.getBy(decryptedRecoveryPhrase =>
           decryptedRecoveryPhrase == Ok(recoveryPhrase)
         )
@@ -672,14 +672,14 @@ module Accounts = {
         ~password,
         (),
       ) => {
-    let%FRes () = System.Client.initDir(config.baseDir());
+    let%Await () = System.Client.initDir(config.baseDir());
     let backupPhraseConcat = backupPhrase->Js.Array2.joinWith(" ");
 
-    let%FRes () = password->SecureStorage.validatePassword;
+    let%Await () = password->SecureStorage.validatePassword;
 
     let bpLen = backupPhrase->Array.length;
 
-    let%FRes () =
+    let%Await () =
       (
         if (bpLen->Bip39.Mnemonic.isStandardLength) {
           backupPhrase->Js.Array2.reducei(
@@ -694,18 +694,18 @@ module Accounts = {
           Bip39.Mnemonic.IncorrectNumberOfWords->Error;
         }
       )
-      ->Future.value;
+      ->Promise.value;
 
-    let%FRes () =
+    let%Await () =
       indexOfRecoveryPhrase(backupPhraseConcat, ~password)
-      ->Future.map(index =>
+      ->Promise.map(index =>
           switch (index) {
           | Some(_) => SecretAlreadyImported->Error
           | None => Ok()
           }
         );
 
-    let%FRes (addresses, legacyAddress) =
+    let%Await (addresses, legacyAddress) =
       Scan.run(
         ~config,
         ~recoveryPhrase=backupPhraseConcat,
@@ -715,10 +715,10 @@ module Accounts = {
         (),
       );
 
-    let%FResMap () =
+    let%AwaitMap () =
       backupPhraseConcat
       ->SecureStorage.Cipher.encrypt(password)
-      ->Future.mapOk(registerRecoveryPhrase);
+      ->Promise.mapOk(registerRecoveryPhrase);
 
     registerSecret(
       ~config,
@@ -733,7 +733,7 @@ module Accounts = {
 
   let importMnemonicKeys = (~config, ~accounts, ~password, ~index, ()) => {
     let importLegacyKey = (basename, encryptedSecret) => {
-      let%FResMap pkh =
+      let%AwaitMap pkh =
         import(
           ~config,
           ~alias=basename ++ " legacy",
@@ -746,23 +746,23 @@ module Accounts = {
     let rec importKeys = (basename, index, (accounts, legacy), pkhs) => {
       let alias = basename ++ " /" ++ index->Js.Int.toString;
       switch (accounts) {
-      | [] => (pkhs->List.reverse->List.toArray, legacy)->Ok->Future.value
+      | [] => (pkhs->List.reverse->List.toArray, legacy)->Promise.ok
 
       // by construction, there should be only one legacy
       | [Scan.{encryptedSecretKey, kind: Legacy}, ...rem] =>
-        let%FRes legacy = importLegacyKey(basename, encryptedSecretKey);
+        let%Await legacy = importLegacyKey(basename, encryptedSecretKey);
         importKeys(basename, index + 1, (rem, legacy), pkhs);
 
       | [{encryptedSecretKey, kind: Regular}, ...rem] =>
-        let%FRes pkh =
+        let%Await pkh =
           import(~config, ~alias, ~secretKey=encryptedSecretKey, ~password);
         importKeys(basename, index + 1, (rem, legacy), [pkh, ...pkhs]);
       };
     };
 
-    let%FRes secret = secretAt(~config, index)->Future.value;
+    let%Await secret = secretAt(~config, index)->Promise.value;
 
-    let%FlatRes (addresses, masterPublicKey) =
+    let%AwaitRes (addresses, masterPublicKey) =
       importKeys(
         secret.name,
         secret.addresses->Array.length,
@@ -824,10 +824,10 @@ module Accounts = {
             ~ledgerTransport=tr,
             ~ledgerMasterKey,
           )
-          ->Future.flatMapOk(key =>
+          ->Promise.flatMapOk(key =>
               importKeys(tr, [key, ...keys], index + 1)
             )
-        : List.reverse(keys)->List.toArray->Ok->Future.value;
+        : List.reverse(keys)->List.toArray->Promise.ok;
     };
     importKeys(ledgerTransport, [], startIndex);
   };
@@ -845,8 +845,8 @@ module Accounts = {
         ~ledgerMasterKey,
         (),
       ) => {
-    let%FRes tr = LedgerAPI.init(~timeout?, ());
-    let%FRes addresses =
+    let%Await tr = LedgerAPI.init(~timeout?, ());
+    let%Await addresses =
       importLedgerKeys(
         ~config,
         ~accountsNumber,
@@ -868,20 +868,20 @@ module Accounts = {
       ~masterPublicKey=None,
     );
 
-    let%FResMap () =
+    let%AwaitMap () =
       name
       ->SecureStorage.Cipher.encrypt("")
-      ->Future.mapOk(registerRecoveryPhrase);
+      ->Promise.mapOk(registerRecoveryPhrase);
 
     addresses;
   };
 
   let deriveLedger =
       (~config, ~timeout=?, ~index, ~alias, ~ledgerMasterKey, ()) => {
-    let%FRes secret = secretAt(~config, index)->Future.value;
-    let%FRes tr = LedgerAPI.init(~timeout?, ());
+    let%Await secret = secretAt(~config, index)->Promise.value;
+    let%Await tr = LedgerAPI.init(~timeout?, ());
 
-    let%FRes address =
+    let%Await address =
       importLedgerKey(
         ~config,
         ~name=alias,
@@ -892,20 +892,20 @@ module Accounts = {
         ~ledgerMasterKey,
       );
 
-    let%FRes () =
+    let%Await () =
       {...secret, addresses: Array.concat(secret.addresses, [|address|])}
       ->updateSecretAt(~config, index)
-      ->Future.value;
+      ->Promise.value;
 
-    address->FutureEx.ok;
+    address->Promise.ok;
   };
 
   let deriveLedgerKeys =
       (~config, ~timeout=?, ~index, ~accountsNumber, ~ledgerMasterKey, ()) => {
-    let%FRes secret = secretAt(~config, index)->Future.value;
-    let%FRes tr = LedgerAPI.init(~timeout?, ());
+    let%Await secret = secretAt(~config, index)->Promise.value;
+    let%Await tr = LedgerAPI.init(~timeout?, ());
 
-    let%FRes addresses =
+    let%Await addresses =
       importLedgerKeys(
         ~config,
         ~basename=secret.Secret.Repr.name,
@@ -917,12 +917,12 @@ module Accounts = {
         ~ledgerMasterKey,
       );
 
-    let%FRes () =
+    let%Await () =
       {...secret, addresses: Array.concat(secret.addresses, addresses)}
       ->updateSecretAt(~config, index)
-      ->Future.value;
+      ->Promise.value;
 
-    addresses->FutureEx.ok;
+    addresses->Promise.ok;
   };
 
   let getPublicKey = (~config: ConfigContext.env, ~account: Account.t) => {

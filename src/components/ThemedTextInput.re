@@ -24,7 +24,6 @@
 /*****************************************************************************/
 
 open ReactNative;
-open UmamiCommon;
 
 let borderWidth = 1.;
 let paddingVertical = 12.;
@@ -152,11 +151,11 @@ let make =
       }
       onFocus={event => {
         setIsFocused(_ => true);
-        onFocus->Lib.Option.iter(onFocus => onFocus(event));
+        onFocus->Option.iter(onFocus => onFocus(event));
       }}
       onBlur={event => {
         setIsFocused(_ => false);
-        onBlur->Lib.Option.iter(onBlur => onBlur(event));
+        onBlur->Option.iter(onBlur => onBlur(event));
       }}
       ?onKeyPress
       ?textContentType

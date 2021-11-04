@@ -30,7 +30,7 @@
 let useLoad = requestState => {
   let get = (~config, ()) =>
     WalletAPI.Aliases.get(~config)
-    ->Future.map(
+    ->Promise.map(
         fun
         | Ok(response) =>
           response

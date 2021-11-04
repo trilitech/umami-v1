@@ -85,7 +85,7 @@ let checkInBound = (version, lowestBound, highestBound) =>
 
 let parse = version => {
   let parseInt = value =>
-    value->Int.fromString->ResultEx.fromOption(VersionFormat(version));
+    value->Int.fromString->Result.fromOption(VersionFormat(version));
 
   // parse a value of the form "<int>~patch", where ~patch is optional
   let parseFixAndPatch = value =>
@@ -96,13 +96,13 @@ let parse = version => {
     };
 
   switch (version->Js.String2.split(".")) {
-  | [|major, minor|] => ResultEx.map2(major->parseInt, minor->parseInt, mk)
+  | [|major, minor|] => Result.map2(major->parseInt, minor->parseInt, mk)
 
   | [|major, minor, fixAndPatch|] =>
     fixAndPatch
     ->parseFixAndPatch
     ->Result.flatMap(((fix, patch)) =>
-        ResultEx.map2(major->parseInt, minor->parseInt, mk(~fix, ~patch?))
+        Result.map2(major->parseInt, minor->parseInt, mk(~fix, ~patch?))
       )
 
   | _ => Error(VersionFormat(version))

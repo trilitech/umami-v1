@@ -17,12 +17,12 @@ describe("API tests", ({testAsync}) => {
       let _ =
         (_, ~inputs=?, ()) => {
           ignore(inputs);
-          Future.value(Ok("0.00"));
+          Promise.value(Ok("0.00"));
         };
     };
     module UnderTest = NodeAPI.Balance;
     UnderTest.get(config, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh, ())
-    ->Future.get(result => {
+    ->Promise.get(result => {
         expect.value(result).toEqual(Result.Ok(Tez.zero));
         callback();
       });
@@ -34,12 +34,12 @@ describe("API tests", ({testAsync}) => {
       let _ =
         (_, ~inputs=?, ()) => {
           ignore(inputs);
-          Future.value(Error("stub"));
+          Promise.err(Errors.Generic("stub"));
         };
     };
     module UnderTest = NodeAPI.Balance;
     UnderTest.get(config, "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh, ())
-    ->Future.get(result => {
+    ->Promise.get(result => {
         expect.value(result).toEqual(Error(Errors.Generic("stub")));
         callback();
       });
@@ -50,7 +50,7 @@ describe("API tests", ({testAsync}) => {
     module Stub = {
       let get = _ => {
         let data = {|[]|};
-        Future.value(Ok(data->Json.parseOrRaise));
+        Promise.ok(data->Json.parseOrRaise);
       };
     };
     let expected: array(Operation.Read.t) = [||];
@@ -60,7 +60,7 @@ describe("API tests", ({testAsync}) => {
       "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
       (),
     )
-    ->Future.get(result => {
+    ->Promise.get(result => {
         expect.value(result).toEqual(Result.Ok(expected));
         callback();
       });
@@ -107,7 +107,7 @@ describe("API tests", ({testAsync}) => {
             "entrypoint": "default"
           }
         ]|};
-        Future.value(Ok(data->Json.parseOrRaise));
+        Promise.value(Ok(data->Json.parseOrRaise));
       };
     };
     let expected: array(Operation.Read.t) = [|
@@ -152,7 +152,7 @@ describe("API tests", ({testAsync}) => {
       "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
       (),
     )
-    ->Future.get(result => {
+    ->Promise.get(result => {
         expect.value(result).toEqual(Result.Ok(expected));
         callback();
       });
@@ -178,7 +178,7 @@ describe("API tests", ({testAsync}) => {
             "delegate": "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"
           }
         ]|};
-        Future.value(Ok(data->Json.parseOrRaise));
+        Promise.value(Ok(data->Json.parseOrRaise));
       };
     };
     module UnderTest = ServerAPI.ExplorerMaker(Stub);
@@ -187,7 +187,7 @@ describe("API tests", ({testAsync}) => {
       "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
       (),
     )
-    ->Future.get(result => {
+    ->Promise.get(result => {
         expect.value(result).toEqual(
           Result.Error(
             Errors.Generic("Expected field 'block'\n\tin array at index 0"),
@@ -218,7 +218,7 @@ describe("API tests", ({testAsync}) => {
             "public_key": "edpkuAjG6hyZ86JJ8TWBZ5j8txMX6ySsBFBcRRgmkKVBFDf3RJXfdx"
           }
         ]|};
-        Future.value(Ok(data->Json.parseOrRaise));
+        Promise.value(Ok(data->Json.parseOrRaise));
       };
     };
     let expected: array(Operation.Read.t) = [|
@@ -247,7 +247,7 @@ describe("API tests", ({testAsync}) => {
       "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
       (),
     )
-    ->Future.get(result => {
+    ->Promise.get(result => {
         expect.value(result).toEqual(Result.Ok(expected));
         callback();
       });
@@ -273,7 +273,7 @@ describe("API tests", ({testAsync}) => {
             "op_id": 0
           }
         ]|};
-        Future.value(Ok(data->Json.parseOrRaise));
+        Promise.value(Ok(data->Json.parseOrRaise));
       };
     };
     module UnderTest = ServerAPI.ExplorerMaker(Stub);
@@ -282,7 +282,7 @@ describe("API tests", ({testAsync}) => {
       "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
       (),
     )
-    ->Future.get(result => {
+    ->Promise.get(result => {
         expect.value(result).toEqual(
           Result.Error(
             Errors.Generic(
@@ -320,7 +320,7 @@ describe("API tests", ({testAsync}) => {
             "entrypoint": "default"
           }
         ]|};
-        Future.value(Ok(data->Json.parseOrRaise));
+        Promise.value(Ok(data->Json.parseOrRaise));
       };
     };
     let expected: array(Operation.Read.t) = [|
@@ -350,7 +350,7 @@ describe("API tests", ({testAsync}) => {
       "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
       (),
     )
-    ->Future.get(result => {
+    ->Promise.get(result => {
         expect.value(result).toEqual(Result.Ok(expected));
         callback();
       });
@@ -381,7 +381,7 @@ describe("API tests", ({testAsync}) => {
             "entrypoint": "default"
           }
         ]|};
-        Future.value(Ok(data->Json.parseOrRaise));
+        Promise.value(Ok(data->Json.parseOrRaise));
       };
     };
     module UnderTest = ServerAPI.ExplorerMaker(Stub);
@@ -390,7 +390,7 @@ describe("API tests", ({testAsync}) => {
       "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
       (),
     )
-    ->Future.get(result => {
+    ->Promise.get(result => {
         expect.value(result).toEqual(
           Result.Error(
             "Expected field 'destination'\n\tin array at index 0"
@@ -422,7 +422,7 @@ describe("API tests", ({testAsync}) => {
             "contract_address": "KT1EVkzesmiNL2GLzCn73WwiiwZf4R6AVW9x"
           }
         ]|};
-        Future.value(Ok(data->Json.parseOrRaise));
+        Promise.value(Ok(data->Json.parseOrRaise));
       };
     };
     let expected: array(Operation.Read.t) = [|
@@ -448,7 +448,7 @@ describe("API tests", ({testAsync}) => {
       "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
       (),
     )
-    ->Future.get(result => {
+    ->Promise.get(result => {
         expect.value(result).toEqual(Result.Ok(expected));
         callback();
       });
@@ -474,7 +474,7 @@ describe("API tests", ({testAsync}) => {
             "op_id": 0
           }
         ]|};
-        Future.value(Ok(data->Json.parseOrRaise));
+        Promise.value(Ok(data->Json.parseOrRaise));
       };
     };
     module UnderTest = ServerAPI.ExplorerMaker(Stub);
@@ -483,7 +483,7 @@ describe("API tests", ({testAsync}) => {
       "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
       (),
     )
-    ->Future.get(result => {
+    ->Promise.get(result => {
         expect.value(result).toEqual(
           Result.Error(
             "Expected field 'contract_address'\n\tin array at index 0"
@@ -514,7 +514,7 @@ describe("API tests", ({testAsync}) => {
             "op_id": 0
           }
         ]|};
-        Future.value(Ok(data->Json.parseOrRaise));
+        Promise.value(Ok(data->Json.parseOrRaise));
       };
     };
     let expected: array(Operation.Read.t) = [|
@@ -537,7 +537,7 @@ describe("API tests", ({testAsync}) => {
       "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
       (),
     )
-    ->Future.get(result => {
+    ->Promise.get(result => {
         expect.value(result).toEqual(Result.Ok(expected));
         callback();
       });
@@ -564,7 +564,7 @@ describe("API tests", ({testAsync}) => {
             "delegate": "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"
           }
         ]|};
-        Future.value(Ok(data->Json.parseOrRaise));
+        Promise.value(Ok(data->Json.parseOrRaise));
       };
     };
     let expected: array(Operation.Read.t) = [|
@@ -590,7 +590,7 @@ describe("API tests", ({testAsync}) => {
       "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
       (),
     )
-    ->Future.get(result => {
+    ->Promise.get(result => {
         expect.value(result).toEqual(Result.Ok(expected));
         callback();
       });
@@ -615,7 +615,7 @@ describe("API tests", ({testAsync}) => {
             "op_id": 0
           }
         ]|};
-        Future.value(Ok(data->Json.parseOrRaise));
+        Promise.value(Ok(data->Json.parseOrRaise));
       };
     };
     module UnderTest = ServerAPI.ExplorerMaker(Stub);
@@ -624,7 +624,7 @@ describe("API tests", ({testAsync}) => {
       "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
       (),
     )
-    ->Future.get(result => {
+    ->Promise.get(result => {
         expect.value(result).toEqual(
           Result.Error(
             "Expected field 'type'\n\tin array at index 0"->Errors.Generic,
@@ -648,7 +648,7 @@ describe("API tests", ({testAsync}) => {
             "address": "tz1NF7b38uQ43N4nmTHvDKpr1Qo5LF9iYawk"
           }
         ]|};
-        Future.value(Ok(data->Json.parseOrRaise));
+        Promise.value(Ok(data->Json.parseOrRaise));
       };
     };
     let expected = [|
@@ -663,7 +663,7 @@ describe("API tests", ({testAsync}) => {
     |];
     module UnderTest = NodeAPI.DelegateMaker(Stub);
     UnderTest.getBakers(config)
-    ->Future.get(result => {
+    ->Promise.get(result => {
         expect.value(result).toEqual(Result.Ok(expected));
         callback();
       });
@@ -682,12 +682,12 @@ describe("API tests", ({testAsync}) => {
             "address": "tz1NF7b38uQ43N4nmTHvDKpr1Qo5LF9iYawk"
           }
         ]|};
-        Future.value(Ok(data->Json.parseOrRaise));
+        Promise.value(Ok(data->Json.parseOrRaise));
       };
     };
     module UnderTest = NodeAPI.DelegateMaker(Stub);
     UnderTest.getBakers(config)
-    ->Future.get(result => {
+    ->Promise.get(result => {
         expect.value(result).toEqual(
           Result.Error(
             "Expected field 'name'\n\tin array at index 1"->Errors.Generic,

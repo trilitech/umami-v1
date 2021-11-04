@@ -142,9 +142,9 @@ let make = (~chain, ~address="", ~closeAction) => {
       },
       ~onSubmit=
         ({state}) => {
-          FutureEx.async(() => {
-            let%FResMap address =
-              state.values.address->PublicKeyHash.buildContract->Future.value;
+          Promise.async(() => {
+            let%AwaitMap address =
+              state.values.address->PublicKeyHash.buildContract->Promise.value;
             createToken({
               kind: FA1_2,
               address,
@@ -155,7 +155,7 @@ let make = (~chain, ~address="", ~closeAction) => {
                 state.values.decimals |> Int.fromString |> Option.getExn,
               asset: TokenRepr.defaultAsset,
             })
-            ->FutureEx.getOk(_ => closeAction());
+            ->Promise.getOk(_ => closeAction());
           });
 
           None;
@@ -192,7 +192,7 @@ let make = (~chain, ~address="", ~closeAction) => {
           form.formState->FormUtils.getFormStateError,
           form.getFieldError(Field(Address)),
         ]
-        ->UmamiCommon.Lib.Option.firstSome
+        ->Option.firstSome
       }
       placeholder=I18n.input_placeholder#add_token_address
       clearButton=true

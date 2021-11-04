@@ -23,8 +23,6 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open UmamiCommon;
-
 type t = ..;
 
 type scope = string;
@@ -56,9 +54,7 @@ let () =
 let getInfos = e => {
   let infos =
     handlers.contents
-    ->Lib.List.findMap(((scope, h)) =>
-        e->h->Option.map(msg => {scope, msg})
-      );
+    ->List.findMap(((scope, h)) => e->h->Option.map(msg => {scope, msg}));
 
   switch (infos) {
   | Some(i) => i

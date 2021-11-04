@@ -136,7 +136,7 @@ module Update = {
 
     let action = (~name as new_name, ~secretIndex as _s) => {
       updateAccount({old_name: account.name, new_name})
-      ->FutureEx.getOk(() => closeAction());
+      ->Promise.getOk(() => closeAction());
     };
 
     <ModalFormView closing={ModalFormView.Close(closeAction)}>
@@ -175,7 +175,7 @@ module Create = {
         kind: Mnemonics(password),
         timeout: None,
       })
-      ->Future.tapOk(_ => closeAction());
+      ->Promise.tapOk(_ => closeAction());
     };
 
     let actionLedger = (~name, secretIndex, ~ledgerMasterKey) => {
@@ -185,13 +185,13 @@ module Create = {
         kind: Ledger(ledgerMasterKey),
         timeout: Some(1000),
       })
-      ->Future.tapOk(_ => closeAction());
+      ->Promise.tapOk(_ => closeAction());
     };
 
     let ledgerInteract = (~name, ~secretIndex, secret, ()) => {
       setStatus(_ => `Loading);
       LedgerAPI.init(~timeout=5000, ())
-      ->Future.flatMapOk(tr => {
+      ->Promise.flatMapOk(tr => {
           setStatus(_ => `Found);
           LedgerAPI.getKey(
             ~prompt=true,
@@ -202,19 +202,19 @@ module Create = {
             ),
             secret.Secret.derivationScheme,
           )
-          ->Future.flatMapOk(_ => {
+          ->Promise.flatMapOk(_ => {
               setStatus(_ => `Found);
               LedgerAPI.getMasterKey(~prompt=false, tr);
             });
         })
-      ->Future.flatMapOk(ledgerMasterKey => {
+      ->Promise.flatMapOk(ledgerMasterKey => {
           setStatus(_ => `Confirmed);
-          FutureEx.timeout(1500)
-          ->Future.flatMapOk(() =>
+          Promise.timeout(1500)
+          ->Promise.flatMapOk(() =>
               actionLedger(~name, secretIndex, ~ledgerMasterKey)
             );
         })
-      ->FutureEx.getError(e => setStatus(_ => `Denied(e)));
+      ->Promise.getError(e => setStatus(_ => `Denied(e)));
     };
 
     let ledgerStyle =

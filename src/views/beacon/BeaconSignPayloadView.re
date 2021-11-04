@@ -114,15 +114,15 @@ let make =
       ~signingIntent,
       ~payload=signPayloadRequest.payload,
     )
-    ->Future.tap(
+    ->Promise.tap(
         fun
         | Ok(signature) => {
             setLoading(_ => false);
             client
-            ->FutureEx.fromOption(
+            ->Promise.fromOption(
                 ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
               )
-            ->Future.flatMapOk(client =>
+            ->Promise.flatMapOk(client =>
                 client->ReBeacon.WalletClient.respond(
                   `SignPayloadResponse({
                     type_: `sign_payload_response,
@@ -132,15 +132,15 @@ let make =
                   }),
                 )
               )
-            ->FutureEx.getOk(_ => closeAction());
+            ->Promise.getOk(_ => closeAction());
           }
         | Error(_) => {
             setLoading(_ => false);
             client
-            ->FutureEx.fromOption(
+            ->Promise.fromOption(
                 ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
               )
-            ->Future.flatMapOk(client =>
+            ->Promise.flatMapOk(client =>
                 client->ReBeacon.WalletClient.respond(
                   `Error({
                     type_: `error,
@@ -149,7 +149,7 @@ let make =
                   }),
                 )
               )
-            ->FutureEx.getOk(_ => closeAction());
+            ->Promise.getOk(_ => closeAction());
           },
       );
   };
@@ -157,10 +157,10 @@ let make =
   let onAbort = _ => {
     setLoading(_ => false);
     client
-    ->FutureEx.fromOption(
+    ->Promise.fromOption(
         ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
       )
-    ->Future.flatMapOk(client =>
+    ->Promise.flatMapOk(client =>
         client->ReBeacon.WalletClient.respond(
           `Error({
             type_: `error,
@@ -169,7 +169,7 @@ let make =
           }),
         )
       )
-    ->FutureEx.getOk(_ => closeAction());
+    ->Promise.getOk(_ => closeAction());
   };
 
   let ledgerState = React.useState(() => None);

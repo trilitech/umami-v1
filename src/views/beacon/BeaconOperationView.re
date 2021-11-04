@@ -76,13 +76,13 @@ module Make = (Op: OP) => {
     let (client, _) = StoreContext.Beacon.useClient();
 
     let onAbort = _ =>
-      FutureEx.async(() => {
-        let%FRes client =
-          client->FutureEx.fromOption(
+      Promise.async(() => {
+        let%Await client =
+          client->Promise.fromOption(
             ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
           );
 
-        let%FResMap () =
+        let%AwaitMap () =
           client->ReBeacon.WalletClient.respond(
             `Error({
               type_: `error,
@@ -95,13 +95,13 @@ module Make = (Op: OP) => {
       });
 
     let onSimulateError = _ =>
-      FutureEx.async(() => {
-        let%FRes client =
-          client->FutureEx.fromOption(
+      Promise.async(() => {
+        let%Await client =
+          client->Promise.fromOption(
             ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
           );
 
-        let%FResMap () =
+        let%AwaitMap () =
           client->ReBeacon.WalletClient.respond(
             `Error({
               type_: `error,
@@ -127,16 +127,16 @@ module Make = (Op: OP) => {
 
     React.useEffect1(
       () => {
-        sendOperationSimulate(simulatedOperation)->FutureEx.ignore;
+        sendOperationSimulate(simulatedOperation)->Promise.ignore;
         None;
       },
       [|operation|],
     );
 
     let sendOperation = (~operation, i) => {
-      let%FRes hash = sendOperation(~operation, i);
+      let%Await hash = sendOperation(~operation, i);
 
-      let%FResMap () =
+      let%AwaitMap () =
         switch (client) {
         | Some(client) =>
           client->ReBeacon.WalletClient.respond(
@@ -146,7 +146,7 @@ module Make = (Op: OP) => {
               transactionHash: hash,
             }),
           )
-        | None => FutureEx.ok()
+        | None => Promise.ok()
         };
 
       updateAccount(beaconRequest.sourceAddress);

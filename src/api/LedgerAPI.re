@@ -42,7 +42,7 @@ let isReady = tr => {
     );
   signer
   ->ReTaquitoSigner.publicKey
-  ->Future.map(
+  ->Promise.map(
       fun
       | Error(_) => Error(ReTaquitoError.LedgerNotReady)
       | Ok(pk) =>
@@ -58,7 +58,7 @@ module Signer = {
   let create = (tr, path, scheme, ~prompt) =>
     tr
     ->isReady
-    ->Future.mapOk(() => tr->LedgerSigner.create(path, scheme, ~prompt));
+    ->Promise.mapOk(() => tr->LedgerSigner.create(path, scheme, ~prompt));
 
   let publicKeyHash = signer => signer->ReTaquitoSigner.publicKeyHash;
 
@@ -67,7 +67,7 @@ module Signer = {
 
 let getKey = (~prompt, tr, path, schema) => {
   let signer = Signer.create(tr, path, schema, ~prompt);
-  signer->Future.flatMapOk(Signer.publicKeyHash);
+  signer->Promise.flatMapOk(Signer.publicKeyHash);
 };
 
 let getFirstKey = (~prompt, tr) => {
@@ -87,23 +87,23 @@ let getMasterKey = (~prompt, tr) =>
    cannot be defined directly into Wallet.re */
 let addOrReplaceAlias =
     (~ledgerTransport, ~dirpath, ~alias, ~path, ~scheme, ~ledgerBasePkh)
-    : Future.t(Belt.Result.t(PublicKeyHash.t, Errors.t)) => {
-  let%FRes signer =
+    : Promise.t(PublicKeyHash.t) => {
+  let%Await signer =
     Signer.create(ledgerTransport, path, ~prompt=false, scheme);
   /* Ensures the three are available */
 
-  let%FRes pkh = signer->Signer.publicKeyHash;
+  let%Await pkh = signer->Signer.publicKeyHash;
 
-  let%FRes pk = signer->Signer.publicKey;
+  let%Await pk = signer->Signer.publicKey;
 
-  let%FRes path = path->DerivationPath.convertToTezosBip44->Future.value;
+  let%Await path = path->DerivationPath.convertToTezosBip44->Promise.value;
 
   let t = Wallet.Ledger.{path, scheme};
   let sk = Wallet.Ledger.Encode.toSecretKey(t, ~ledgerBasePkh);
 
   let pk = Wallet.ledgerPkValue(sk, pk);
 
-  let%FResMap () = Wallet.addOrReplaceAlias(~dirpath, ~alias, ~pk, ~pkh, ~sk);
+  let%AwaitMap () = Wallet.addOrReplaceAlias(~dirpath, ~alias, ~pk, ~pkh, ~sk);
 
   pkh;
 };

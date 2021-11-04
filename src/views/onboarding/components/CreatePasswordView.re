@@ -81,7 +81,7 @@ module CreatePasswordView = {
         },
         ~onSubmit=
           ({state}) => {
-            submitPassword(~password=state.values.password)->FutureEx.ignore;
+            submitPassword(~password=state.values.password)->Promise.ignore;
             None;
           },
         ~initialState={password: "", confirmPassword: ""},
@@ -152,7 +152,7 @@ let make = (~mnemonic: array(string), ~derivationPath, ~onSubmit) => {
         password,
       };
 
-    createSecretWithMnemonic(secret)->Future.tapOk(_ => {onSubmit()});
+    createSecretWithMnemonic(secret)->Promise.tapOk(_ => {onSubmit()});
   };
 
   displayConfirmPassword

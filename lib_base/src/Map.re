@@ -23,82 +23,62 @@
 /*                                                                           */
 /*****************************************************************************/
 
-let getOk = (future, sink) =>
-  future->Future.get(result => result->ResultEx.getOk(sink));
+include Belt.Map;
 
-let getError = (future, sink) =>
-  future->Future.get(result => result->ResultEx.getError(sink));
+/** Real OCaml maps functor */
+module type S = {
+  include (module type of Belt.Map.Dict);
 
-let fromOption = (option, ~error) =>
-  Future.value(
-    switch (option) {
-    | Some(value) => Ok(value)
-    | None => Error(error)
-    },
-  );
+  module Key: Belt.Id.Comparable;
+  type key = Key.t;
+  type id = Key.identity;
+  type map('value) = t(key, 'value, id);
 
-let fromOptionWithDefault = (option, ~default) =>
-  Future.value(
-    switch (option) {
-    | Some(value) => Ok(value)
-    | None => Ok(default)
-    },
-  );
-
-let flatMap2 = (fa, fb, f) =>
-  Future.flatMap(fa, a => Future.flatMap(fb, b => f(a, b)));
-
-let flatMapOk2 = (fa, fb, f) =>
-  flatMap2(fa, fb, (r1, r2) =>
-    switch (r1, r2) {
-    | (Ok(v1), Ok(v2)) => f(v1, v2)
-    | (Error(e), _)
-    | (_, Error(e)) => Future.value(Error(e))
-    }
-  );
-
-let all = array =>
-  array
-  ->List.fromArray
-  ->Future.all
-  ->Future.map(results => Ok(results->List.toArray));
-
-let fromCallback = (f, mapError) =>
-  Future.make(resolve =>
-    {
-      (e, v) =>
-        switch (Js.Nullable.toOption(e)) {
-        | Some(e) => Error(e->mapError)->resolve
-        | None => Ok(v)->resolve
-        };
-    }
-    ->f
-  );
-
-let fromUnitCallback = (f, mapError) =>
-  Future.make(resolve =>
-    {
-      e =>
-        switch (Js.Nullable.toOption(e)) {
-        | Some(e) => Error(e->mapError)->resolve
-        | None => Ok()->resolve
-        };
-    }
-    ->f
-  );
-
-let timeout = sec =>
-  Future.make(resolve => {
-    Js.Global.setTimeout(() => Ok()->resolve, sec)->ignore
-  });
-
-let ok = v => v->Ok->Future.value;
-let err = v => v->Error->Future.value;
-let some = v => v->Some->Ok->Future.value;
-let none = () => None->Ok->Future.value;
-
-let ignore = (ft: Future.t(Result.t(_, _))) => {
-  ft->ignore;
+  let kcmp: cmp(key, id);
+  let cmp: (t(key, 'a, id), t(key, 'a, id), ~vcmp: ('a, 'a) => int) => int;
+  let has: (t(key, 'a, id), key) => bool;
+  let eq: (t(key, 'a, id), t(key, 'a, id), ~veq: ('a, 'a) => bool) => bool;
+  let fromArray: array((key, 'a)) => t(key, 'a, id);
+  let get: (t(key, 'a, id), key) => option('a);
+  let getWithDefault: (t(key, 'a, id), key, 'a) => 'a;
+  let remove: (t(key, 'a, id), key) => t(key, 'a, id);
+  let removeMany: (t(key, 'a, id), array(key)) => t(key, 'a, id);
+  let set: (t(key, 'a, id), key, 'a) => t(key, 'a, id);
+  let update:
+    (t(key, 'a, id), key, option('a) => option('a)) => t(key, 'a, id);
+  let merge:
+    (
+      t(key, 'a, id),
+      t(key, 'b, id),
+      (key, option('a), option('b)) => option('c)
+    ) =>
+    t(key, 'c, id);
+  let mergeMany: (t(key, 'a, id), array((key, 'a))) => t(key, 'a, id);
+  let split:
+    (t(key, 'a, id), key) =>
+    ((t(key, 'a, id), t(key, 'a, id)), option('a));
 };
 
-let async = (f: unit => Future.t(Result.t(_, _))) => f()->ignore;
+module Make = (Key: Belt.Id.Comparable) : (S with module Key := Key) => {
+  include Belt.Map.Dict;
+
+  type key = Key.t;
+  type id = Key.identity;
+  type map('value) = t(key, 'value, id);
+
+  let kcmp: cmp(key, id) = Key.cmp;
+
+  let cmp = cmp(~kcmp);
+  let has = has(~cmp=kcmp);
+  let eq = eq(~kcmp);
+  let fromArray = fromArray(~cmp=kcmp);
+  let get = get(~cmp=kcmp);
+  let getWithDefault = getWithDefault(~cmp=kcmp);
+  let remove = remove(~cmp=kcmp);
+  let removeMany = removeMany(~cmp=kcmp);
+  let set = set(~cmp=kcmp);
+  let update = update(~cmp=kcmp);
+  let merge = merge(~cmp=kcmp);
+  let mergeMany = mergeMany(~cmp=kcmp);
+  let split = split(~cmp=kcmp);
+};

@@ -23,7 +23,6 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open UmamiCommon;
 open Let;
 
 module Path = {
@@ -67,18 +66,16 @@ module URL = {
   let fromString = s => s;
 
   let get = url => {
-    let%FRes response =
+    let%Await response =
       url
       ->Fetch.fetch
-      ->FutureJs.fromPromise(e =>
+      ->Promise.fromJs(e =>
           e->RawJsError.fromPromiseError.message->FetchError
         );
 
     response
     ->Fetch.Response.json
-    ->FutureJs.fromPromise(e =>
-        e->RawJsError.fromPromiseError.message->FetchError
-      );
+    ->Promise.fromJs(e => e->RawJsError.fromPromiseError.message->FetchError);
   };
 
   let postJson = (url, json) => {
@@ -90,18 +87,16 @@ module URL = {
         (),
       );
 
-    let%FRes response =
+    let%Await response =
       url
       ->Fetch.fetchWithInit(init)
-      ->FutureJs.fromPromise(e =>
+      ->Promise.fromJs(e =>
           e->RawJsError.fromPromiseError.message->FetchError
         );
 
     response
     ->Fetch.Response.json
-    ->FutureJs.fromPromise(e =>
-        e->RawJsError.fromPromiseError.message->FetchError
-      );
+    ->Promise.fromJs(e => e->RawJsError.fromPromiseError.message->FetchError);
   };
 
   module Explorer = {
@@ -116,7 +111,7 @@ module URL = {
         ) => {
       let operationsPath = "accounts/" ++ (account :> string) ++ "/operations";
       let args =
-        Lib.List.(
+        List.(
           []
           ->addOpt(
               destination->arg_opt("destination", dst => (dst :> string)),
@@ -236,11 +231,10 @@ module type Explorer = {
       ~limit: int=?,
       unit
     ) =>
-    Future.t(Result.t(array(Operation.Read.t), Errors.t));
+    Promise.t(array(Operation.Read.t));
 };
 
-module ExplorerMaker =
-       (Get: {let get: string => Future.t(Result.t(Js.Json.t, Errors.t));}) => {
+module ExplorerMaker = (Get: {let get: string => Promise.t(Js.Json.t);}) => {
   let getOperations =
       (
         network,
@@ -250,18 +244,18 @@ module ExplorerMaker =
         ~limit: option(int)=?,
         (),
       ) => {
-    let%FRes res =
+    let%Await res =
       network
       ->URL.Explorer.operations(account, ~types?, ~destination?, ~limit?, ())
       ->Get.get;
 
-    let%FRes operations =
+    let%Await operations =
       res
-      ->ResultEx.fromExn(Json.Decode.(array(Operation.Read.Decode.t)))
-      ->ResultEx.mapError(e => e->Operation.Read.filterJsonExn->JsonError)
-      ->Future.value;
+      ->Result.fromExn(Json.Decode.(array(Operation.Read.Decode.t)))
+      ->Result.mapError(e => e->Operation.Read.filterJsonExn->JsonError)
+      ->Promise.value;
 
-    operations->FutureEx.ok;
+    operations->Promise.ok;
   };
 };
 

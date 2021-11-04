@@ -24,7 +24,6 @@
 /*****************************************************************************/
 
 open ReactNative;
-open UmamiCommon;
 
 type state = {
   logs: list(Logs.t),
@@ -95,11 +94,9 @@ let make = (~children) => {
     () => {
       logs
       ->List.head
-      ->Lib.Option.iter(((l, toast)) => {
+      ->Option.iter(((l, toast)) => {
           if (toast) {
-            toastState
-            ->Option.map(fst)
-            ->Lib.Option.iter(Js.Global.clearTimeout);
+            toastState->Option.map(fst)->Option.iter(Js.Global.clearTimeout);
             setToastState(prev => {
               let firsts = prev->Option.mapWithDefault(0, snd) + 1;
               let animCallback = _ => {

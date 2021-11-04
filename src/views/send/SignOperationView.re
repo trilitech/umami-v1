@@ -60,8 +60,7 @@ let make =
       ~secondaryButton=?,
       ~operation,
       ~sendOperation:
-         (~operation: Operation.t, TaquitoAPI.Signer.intent) =>
-         Future.t(Result.t(_)),
+         (~operation: Operation.t, TaquitoAPI.Signer.intent) => Promise.t(_),
       ~loading,
     ) => {
   let ((operation: Operation.t, dryRun), setOp) =

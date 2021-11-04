@@ -44,7 +44,7 @@ let () =
 
 module Accounts = {
   let exists = (config, account) => {
-    let%FResMap json = URL.Explorer.accountExists(config, ~account)->URL.get;
+    let%AwaitMap json = URL.Explorer.accountExists(config, ~account)->URL.get;
     switch (Js.Json.classify(json)) {
     | Js.Json.JSONTrue => true
     | _ => false
@@ -108,8 +108,7 @@ module Mnemonic = {
   [@bs.module "bip39"] external generate: unit => string = "generateMnemonic";
 };
 
-module DelegateMaker =
-       (Get: {let get: URL.t => Future.t(Result.t(Js.Json.t, Errors.t));}) => {
+module DelegateMaker = (Get: {let get: URL.t => Promise.t(Js.Json.t);}) => {
   let parse = content =>
     if (content == "none\n") {
       None;
@@ -123,8 +122,7 @@ module DelegateMaker =
     };
 
   let getForAccount = (config: ConfigContext.env, account) => {
-    let%FResMap res =
-      TaquitoAPI.Delegate.get(config.network.endpoint, account);
+    let%AwaitMap res = TaquitoAPI.Delegate.get(config.network.endpoint, account);
 
     res->Option.flatMap(delegate => account == delegate ? None : res);
   };
@@ -134,8 +132,8 @@ module DelegateMaker =
     | chain when chain == `Mainnet =>
       URL.External.bakingBadBakers
       ->URL.get
-      ->Future.mapOk(Json.Decode.(array(Delegate.decode)))
-    | _ => [||]->FutureEx.ok
+      ->Promise.mapOk(Json.Decode.(array(Delegate.decode)))
+    | _ => [||]->Promise.ok
     };
 
   type delegationInfo = {
@@ -150,7 +148,7 @@ module DelegateMaker =
 
   let extractInfoFromDelegate =
       (network, delegate, account, firstOperation: Operation.Read.t) => {
-    let%FRes balance =
+    let%Await balance =
       network->BalanceAPI.get(
         account,
         ~params={block: firstOperation.level->string_of_int},
@@ -163,7 +161,7 @@ module DelegateMaker =
       lastReward: None,
     };
 
-    let%FResMap operations =
+    let%AwaitMap operations =
       network->ExplorerAPI.getOperations(
         delegate,
         ~types=[|"transaction"|],
@@ -185,9 +183,8 @@ module DelegateMaker =
   };
 
   let getDelegationInfoForAccount =
-      (network, account: PublicKeyHash.t)
-      : Future.t(Belt.Result.t(option(delegationInfo), Errors.t)) => {
-    let%FRes operations =
+      (network, account: PublicKeyHash.t): Promise.t(option(delegationInfo)) => {
+    let%Await operations =
       network->ExplorerAPI.getOperations(
         account,
         ~types=[|"delegation"|],
@@ -196,18 +193,18 @@ module DelegateMaker =
       );
 
     if (operations->Array.length == 0) {
-      Future.value(Ok(None));
+      Promise.ok(None);
     } else {
       let firstOperation = operations->Array.getUnsafe(0);
 
-      let%FRes payload =
+      let%Await payload =
         switch (firstOperation.payload) {
-        | Delegation(payload) => payload->FutureEx.ok
-        | _ => InvalidOperationType->FutureEx.err
+        | Delegation(payload) => payload->Promise.ok
+        | _ => InvalidOperationType->Promise.err
         };
 
       switch (payload.delegate) {
-      | None => FutureEx.none()
+      | None => Promise.none()
       | Some(delegate) when account == delegate =>
         {
           initialBalance: Tez.zero,
@@ -215,7 +212,7 @@ module DelegateMaker =
           timestamp: Js.Date.make(),
           lastReward: None,
         }
-        ->FutureEx.some
+        ->Promise.some
       | Some(delegate) =>
         extractInfoFromDelegate(network, delegate, account, firstOperation)
       };
@@ -227,7 +224,7 @@ module OperationRepr = Operation;
 
 module Operation = {
   let batch = (config: ConfigContext.env, transfers, ~source, ~signingIntent) => {
-    let%FResMap op =
+    let%AwaitMap op =
       TaquitoAPI.Transfer.batch(
         ~endpoint=config.network.endpoint,
         ~baseDir=config.baseDir(),
@@ -245,7 +242,7 @@ module Operation = {
         Protocol.{delegate, source, options},
         ~signingIntent,
       ) => {
-    let%FResMap op =
+    let%AwaitMap op =
       TaquitoAPI.Delegate.set(
         ~endpoint=config.network.endpoint,
         ~baseDir=config.baseDir(),
@@ -273,7 +270,7 @@ module Tokens = {
   type tokenKind = [ OperationRepr.Transaction.tokenKind | `NotAToken];
 
   let checkTokenContract = (config, contract: PublicKeyHash.t) => {
-    let%FlatRes json = URL.Explorer.checkToken(config, ~contract)->URL.get;
+    let%AwaitRes json = URL.Explorer.checkToken(config, ~contract)->URL.get;
     switch (Js.Json.classify(json)) {
     | Js.Json.JSONString("fa1-2") => Ok(`KFA1_2)
     | Js.Json.JSONString("fa2") => Ok(`KFA2)
@@ -283,7 +280,7 @@ module Tokens = {
   };
 
   let runFA12GetBalance = (config, ~address, ~token) => {
-    let%FRes json =
+    let%Await json =
       config
       ->URL.Endpoint.runView
       ->URL.postJson(
@@ -301,12 +298,12 @@ module Tokens = {
       };
 
     switch (res) {
-    | None => Token.Unit.zero->FutureEx.ok
+    | None => Token.Unit.zero->Promise.ok
     | Some(v) =>
       v
       ->Token.Unit.fromNatString
-      ->ResultEx.mapError(_ => UnreadableTokenAmount(v))
-      ->Future.value
+      ->Result.mapError(_ => UnreadableTokenAmount(v))
+      ->Promise.value
     };
   };
 
@@ -319,7 +316,7 @@ module Tokens = {
         ~tokenId,
       );
 
-    let%FRes json = config->URL.Endpoint.runView->URL.postJson(input);
+    let%Await json = config->URL.Endpoint.runView->URL.postJson(input);
 
     let res = JsonEx.(decode(json, MichelsonDecode.fa2BalanceOfDecoder));
 
@@ -327,10 +324,10 @@ module Tokens = {
     | Ok([|((_pkh, _tokenId), v)|]) =>
       v
       ->Token.Unit.fromNatString
-      ->ResultEx.mapError(_ => UnreadableTokenAmount(v))
-      ->Future.value
+      ->Result.mapError(_ => UnreadableTokenAmount(v))
+      ->Promise.value
     | Error(_)
-    | Ok(_) => Token.Unit.zero->FutureEx.ok
+    | Ok(_) => Token.Unit.zero->Promise.ok
     };
   };
 };

@@ -130,8 +130,7 @@ module Base = {
         ~source,
         ~destinations,
         ~smallest=false,
-        ~content:
-           list((string, Belt.List.t(TezosClient.Transfer.Currency.t))),
+        ~content: list((string, Belt.List.t(Transfer.Currency.t))),
         ~button=?,
       ) => {
     let content: list((string, Belt.List.t(string))) =
@@ -155,8 +154,6 @@ module Base = {
 };
 
 module Transactions = {
-  open UmamiCommon;
-
   let transactionParameters = (~entrypoint, ~parameter) =>
     switch (entrypoint, parameter) {
     | (Some(entrypoint), Some(parameter)) =>
@@ -235,7 +232,7 @@ module Transactions = {
       );
     };
 
-    Lib.List.(
+    List.(
       [totalTez]->addOpt(revealFee)->add(partialFee)->add(subtotals)
     );
   };

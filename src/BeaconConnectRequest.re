@@ -87,12 +87,12 @@ let useSourceAccount = request => {
 };
 
 let respondWithError = (client, id, errorType) =>
-  FutureEx.async(() => {
-    let%FRes client =
-      client->FutureEx.fromOption(
+  Promise.async(() => {
+    let%Await client =
+      client->Promise.fromOption(
         ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
       );
-    let%FResMap () =
+    let%AwaitMap () =
       client->ReBeacon.WalletClient.respond(
         `Error({type_: `error, id, errorType}),
       );

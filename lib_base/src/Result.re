@@ -23,48 +23,95 @@
 /*                                                                           */
 /*****************************************************************************/
 
-module FileReader = {
-  type t;
-  [@bs.new] external createFileReader: unit => t = "FileReader";
+open Belt;
 
-  [@bs.send] external readAsText: (t, Js.t('a)) => unit = "readAsText";
+include Belt.Result;
 
-  [@bs.set]
-  external onload: (t, ReactEvent.Media.t => unit) => unit = "onload";
-};
-
-[@bs.send] external click: Dom.element => unit = "click";
-
-[@react.component]
-let make = (~text, ~primary=?, ~onChange as onChangeResult, ~accept=?) => {
-  let inputRef = React.useRef(Js.Nullable.null);
-
-  let onPress = _ => {
-    inputRef.current->Js.Nullable.toOption->Option.iter(click);
+let getOk = (result, sink) =>
+  switch (result) {
+  | Ok(value) => sink(value)
+  | Error(_) => ()
   };
 
-  let onChange = event => {
-    let file = event->ReactEvent.Form.target##files->Array.get(0);
-    switch (file) {
-    | Some(file) =>
-      let fileReader = FileReader.createFileReader();
-      fileReader->FileReader.onload(event => {
-        onChangeResult(event->ReactEvent.Media.target##result)
-      });
-      fileReader->FileReader.readAsText(file);
-    | None => ()
-    };
+let getError = (result, sink) =>
+  switch (result) {
+  | Ok(_) => ()
+  | Error(value) => sink(value)
   };
 
-  <>
-    <ButtonAction onPress text ?primary icon=Icons.ArrowDown.build />
-    <input
-      ref={inputRef->ReactDOM.Ref.domRef}
-      type_="file"
-      multiple=false
-      ?accept
-      style={ReactDOM.Style.make(~display="none", ())}
-      onChange
-    />
-  </>;
+let fromOption = (v, error) =>
+  switch (v) {
+  | Some(v) => Ok(v)
+  | None => error->Error
+  };
+
+let flatMap2 = (r1, r2, f) =>
+  switch (r1, r2) {
+  | (Ok(v1), Ok(v2)) => f(v1, v2)
+  | (Error(err), _)
+  | (_, Error(err)) => Error(err)
+  };
+
+let fromExn = (v, f) =>
+  try(f(v)->Ok) {
+  | e => Error(e)
+  };
+
+let getWithExn = (v, f) =>
+  switch (v) {
+  | Ok(v) => v
+  | Error(e) => raise(f(e))
+  };
+
+let mapError = (r, f) =>
+  switch (r) {
+  | Ok(v) => Ok(v)
+  | Error(e) => Error(f(e))
+  };
+
+let flatMapError = (r, f) =>
+  switch (r) {
+  | Ok(v) => Ok(v)
+  | Error(e) => f(e)
+  };
+
+let map2 = (r1, r2, f) => flatMap2(r1, r2, (v1, v2) => Ok(f(v1, v2)));
+
+let collect = (type err, l: list(result(_, err))) => {
+  // let's quit the reduce as soon as e have an error
+  exception Fail(err);
+  try(
+    l
+    // This uses reduce + reverse to always catch the first error in the list
+    ->List.reduce([], (l, v) =>
+        switch (v) {
+        | Ok(v) => [v, ...l]
+        | Error(e) => raise(Fail(e))
+        }
+      )
+    ->List.reverse
+    ->Ok
+  ) {
+  | Fail(err) => Error(err)
+  };
 };
+
+let collectArray = (type err, arr: array(result(_, err))) => {
+  // let's quit the reduce as soon as e have an error
+  exception Fail(err);
+  try(
+    arr
+    // This uses reduce + reverse to always catch the first error in the list
+    ->Array.map(v =>
+        switch (v) {
+        | Ok(v) => v
+        | Error(e) => raise(Fail(e))
+        }
+      )
+    ->Ok
+  ) {
+  | Fail(err) => Error(err)
+  };
+};
+
+let async = (f: unit => t(_, _)) => f()->ignore;

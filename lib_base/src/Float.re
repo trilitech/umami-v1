@@ -23,39 +23,6 @@
 /*                                                                           */
 /*****************************************************************************/
 
-/** Real OCaml maps functor */
+include Belt.Float;
 
-module type S = {
-  include (module type of Belt.Map.Dict);
-
-  module Key: Id.Comparable;
-  type key = Key.t;
-  type id = Key.identity;
-  type map('value) = t(key, 'value, id);
-
-  let kcmp: cmp(key, id);
-  let cmp: (t(key, 'a, id), t(key, 'a, id), ~vcmp: ('a, 'a) => int) => int;
-  let has: (t(key, 'a, id), key) => bool;
-  let eq: (t(key, 'a, id), t(key, 'a, id), ~veq: ('a, 'a) => bool) => bool;
-  let fromArray: array((key, 'a)) => t(key, 'a, id);
-  let get: (t(key, 'a, id), key) => option('a);
-  let getWithDefault: (t(key, 'a, id), key, 'a) => 'a;
-  let remove: (t(key, 'a, id), key) => t(key, 'a, id);
-  let removeMany: (t(key, 'a, id), array(key)) => t(key, 'a, id);
-  let set: (t(key, 'a, id), key, 'a) => t(key, 'a, id);
-  let update:
-    (t(key, 'a, id), key, option('a) => option('a)) => t(key, 'a, id);
-  let merge:
-    (
-      t(key, 'a, id),
-      t(key, 'b, id),
-      (key, option('a), option('b)) => option('c)
-    ) =>
-    t(key, 'c, id);
-  let mergeMany: (t(key, 'a, id), array((key, 'a))) => t(key, 'a, id);
-  let split:
-    (t(key, 'a, id), key) =>
-    ((t(key, 'a, id), t(key, 'a, id)), option('a));
-};
-
-module Make: (Key: Id.Comparable) => S with module Key := Key;
+let abs = v => v < 0. ? -. v : v;

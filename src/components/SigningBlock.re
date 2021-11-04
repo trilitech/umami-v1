@@ -97,7 +97,7 @@ module LedgerView = {
         <View style=styles##content>
           {error
              ? <Icons.CloseOutline
-                 color=theme.colors.error
+                 color={theme.colors.error}
                  size=50.
                  style=FormStyles.section##spacing
                />
@@ -165,7 +165,7 @@ let make =
     (
       ~ledgerState as (ledgerState, setLedgerState),
       ~accountKind: Account.kind,
-      ~sendOperation: TaquitoAPI.Signer.intent => Future.t(Result.t(_)),
+      ~sendOperation: TaquitoAPI.Signer.intent => Promise.t(_),
       ~secondaryButton=?,
       ~loading=false,
     ) => {
@@ -183,7 +183,7 @@ let make =
           () => setLedgerState(_ => LedgerView.WaitForConfirm->Some),
         ),
       )
-      ->FutureEx.getError(e => setLedgerState(_ => Error(e)->Some));
+      ->Promise.getError(e => setLedgerState(_ => Error(e)->Some));
     | Encrypted
     | Unencrypted => form.submit()
     };

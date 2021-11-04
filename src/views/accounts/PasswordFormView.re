@@ -38,7 +38,7 @@ let usePasswordForm = submitPassword => {
       ~onSubmit=
         ({state, raiseSubmitFailed}) => {
           submitPassword(~password=state.values.password)
-          ->FutureEx.getError(
+          ->Promise.getError(
               fun
               | Errors.WrongPassword
               | SecureStorage.Cipher.DecryptError =>
@@ -69,7 +69,7 @@ module PasswordField = {
           form.formState->FormUtils.getFormStateError,
           form.getFieldError(Field(Password)),
         ]
-        ->UmamiCommon.Lib.Option.firstSome
+        ->Option.firstSome
       }
       textContentType=`password
       secureTextEntry=true
@@ -80,10 +80,7 @@ module PasswordField = {
 
 [@react.component]
 let make =
-    (
-      ~loading=false,
-      ~submitPassword: (~password: string) => Future.t(Result.t(_)),
-    ) => {
+    (~loading=false, ~submitPassword: (~password: string) => Promise.t(_)) => {
   let (form, formFieldsAreValids) = usePasswordForm(submitPassword);
 
   <>

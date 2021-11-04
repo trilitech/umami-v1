@@ -57,17 +57,17 @@ module type ValueType = {
 module type StorageType = {
   include ValueType;
 
-  let get: unit => Let.result(t);
+  let get: unit => Promise.result(t);
   let set: t => unit;
   let remove: unit => unit;
   let migrate:
     (
       ~previousKey: string=?,
-      ~mapValue: string => Let.result(t)=?,
+      ~mapValue: string => Promise.result(t)=?,
       ~default: t=?,
       unit
     ) =>
-    Let.result(unit);
+    Promise.result(unit);
 };
 
 module Make = (Value: ValueType) : (StorageType with type t = Value.t) => {
@@ -77,7 +77,7 @@ module Make = (Value: ValueType) : (StorageType with type t = Value.t) => {
     let%Res value =
       getItem(key)
       ->Js.Nullable.toOption
-      ->ResultEx.fromOption(NotFound(key));
+      ->Result.fromOption(NotFound(key));
     let%Res json = value->JsonEx.parse;
     json->JsonEx.decode(decoder);
   };
@@ -101,7 +101,7 @@ module Make = (Value: ValueType) : (StorageType with type t = Value.t) => {
         let%Res value =
           getItem(key)
           ->Js.Nullable.toOption
-          ->ResultEx.fromOption(NotFound(key));
+          ->Result.fromOption(NotFound(key));
         migrate(value);
       };
 

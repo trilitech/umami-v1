@@ -24,7 +24,6 @@
 /*****************************************************************************/
 
 open ReactNative;
-open UmamiCommon;
 
 module StateLenses = [%lenses
   type state = {
@@ -125,7 +124,7 @@ let styles =
 
 let updateOperation = (index, values: StateLenses.state, o: Operation.t) => {
   let values = values->extractValidState;
-  let fallback = (o1, o2) => Lib.Option.firstSome([o1, o2]);
+  let fallback = (o1, o2) => Option.firstSome([o1, o2]);
 
   switch (o) {
   | Transaction(t) =>
@@ -184,7 +183,7 @@ let make = (~operation, ~dryRun, ~index=0, ~token, ~onSubmit) => {
         let op = updateOperation(index, state.values, operation);
 
         sendOperationSimulate(op)
-        ->Future.get(
+        ->Promise.get(
             fun
             | Ok(dr) => {
                 let op =
