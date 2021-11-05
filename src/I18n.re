@@ -134,6 +134,7 @@ let label = {
   pub send_amount = "Amount";
   pub send_sender = "Sender Account";
   pub send_recipient = "Recipient Account";
+  pub send_nft = "NFT";
   pub password = "Password";
   pub fee = "Fee";
   pub implicit_reveal_fee = "Implicit Reveal Fee";

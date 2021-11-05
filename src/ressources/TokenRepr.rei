@@ -20,6 +20,7 @@ module Unit: {
   let formatString: (string, int) => Belt.Result.t(string, illformed);
 
   let zero: t;
+  let one: t;
   let forceFromString: string => option(t);
 
   let add: (t, t) => t;

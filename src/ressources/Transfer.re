@@ -124,11 +124,11 @@ let makeSingleTransferElt =
   amount,
   tx_options:
     makeTransferEltOptions(
-      ~fee,
-      ~gasLimit,
-      ~storageLimit,
-      ~parameter,
-      ~entrypoint,
+      ~fee?,
+      ~gasLimit?,
+      ~storageLimit?,
+      ~parameter?,
+      ~entrypoint?,
       (),
     ),
 };
@@ -169,6 +169,6 @@ let makeSingleTokenTransferElt =
   );
 
 let makeTransfers = (~source, ~transfers, ~burnCap=?, ~forceLowFee=?, ()) => {
-  let options = makeTransferOptions(~burnCap, ~forceLowFee, ());
+  let options = makeTransferOptions(~burnCap?, ~forceLowFee?, ());
   {source, transfers, options};
 };

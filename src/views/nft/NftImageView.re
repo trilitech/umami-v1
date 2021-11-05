@@ -73,8 +73,11 @@ let styles =
   );
 
 [@react.component]
-let make = (~closeAction, ~nft: Nft.t) => {
+let make = (~closeAction, ~account, ~nft: Nft.t) => {
   let source = NftElements.useNftSource(nft, NftFilesManager.getDisplayURL);
+
+  let (visibleSendModal, openSendModal, closeSendModal) =
+    ModalAction.useModalActionState();
 
   let (_, animatedOpenValue) =
     AnimationHooks.useAnimationOpen(true, () => ());
@@ -112,10 +115,16 @@ let make = (~closeAction, ~nft: Nft.t) => {
               disabled=true
               text=I18n.btn#view_specs
             />
-            <Buttons.SubmitPrimary onPress={_ => ()} text=I18n.btn#send />
+            <Buttons.SubmitPrimary
+              onPress={_ => openSendModal()}
+              text=I18n.btn#send
+            />
           </View>
         </View>
       </View>
     </View>
+    <ModalAction visible=visibleSendModal onRequestClose=closeSendModal>
+      <SendNFTView source=account nft closeAction=closeSendModal />
+    </ModalAction>
   </ModalFormView.Large>;
 };

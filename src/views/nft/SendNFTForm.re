@@ -23,75 +23,24 @@
 /*                                                                           */
 /*****************************************************************************/
 
-module TransactionParameters = {
-  type entrypoint = string;
+module StateLenses = [%lenses
+  type state = {
+    recipient: FormUtils.Alias.any,
+  }
+];
 
-  // This type cannot be build and destructed except from bindings modules
-  // ReBeacon and ReTaquito, hence its abstract nature.
-  module MichelineMichelsonV1Expression = {
-    type t;
+type validState = {
+  recipient: FormUtils.Alias.t,
+};
 
-    let toString = c =>
-      c
-      ->Js.Json.stringifyAny
-      ->Option.map(Js.Json.parseExn)
-      ->Option.map(j => Js.Json.stringifyWithSpace(j, 4));
-  };
-
-  type t = {
-    entrypoint,
-    value: MichelineMichelsonV1Expression.t,
+let unsafeExtractValidState = (state: StateLenses.state): validState => {
+  {
+    recipient: state.recipient->FormUtils.Unsafe.account,
   };
 };
 
-type transferEltOptions = {
-  fee: option(Tez.t),
-  gasLimit: option(int),
-  storageLimit: option(int),
-  parameter: option(TransactionParameters.MichelineMichelsonV1Expression.t),
-  entrypoint: option(TransactionParameters.entrypoint),
+let toState = (vs: validState): StateLenses.state => {
+  recipient: vs.recipient->FormUtils.Alias.Valid,
 };
 
-let txOptionsSet = telt =>
-  telt.fee != None || telt.gasLimit != None || telt.storageLimit != None;
-
-type delegationOptions = {
-  fee: option(Tez.t),
-  burnCap: option(Tez.t),
-  forceLowFee: option(bool),
-};
-
-let delegationOptionsSet = (dopt: delegationOptions) => dopt.fee != None;
-
-type transferOptions = {
-  burnCap: option(Tez.t),
-  forceLowFee: option(bool),
-};
-
-let makeTransferEltOptions =
-    (~fee=?, ~gasLimit=?, ~storageLimit=?, ~parameter=?, ~entrypoint=?, ()) => {
-  fee,
-  gasLimit,
-  storageLimit,
-  parameter,
-  entrypoint,
-};
-
-let makeDelegationOptions = (~fee, ~burnCap, ~forceLowFee, ()) => {
-  fee,
-  burnCap,
-  forceLowFee,
-};
-
-let makeTransferOptions = (~burnCap=?, ~forceLowFee=?, ()) => {
-  burnCap,
-  forceLowFee,
-};
-
-let emptyTransferOptions = {
-  fee: None,
-  gasLimit: None,
-  storageLimit: None,
-  parameter: None,
-  entrypoint: None,
-};
+include ReForm.Make(StateLenses);

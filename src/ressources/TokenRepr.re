@@ -69,6 +69,7 @@ module Unit = {
     v->isNaN ? None : v->isInteger ? v->integerValue->Some : None;
   };
 
+  let one = fromString("1");
   let zero = fromString("0");
 
   let add = plus;
