@@ -103,6 +103,11 @@ let isError: t('a) => bool;
 /* Returns [true] if the ressource is fetched */
 let isDone: t('a) => bool;
 
+/* Returns [true] if the ressource is fetched */
+let doneOk: 'a => t('a);
+
+let doneErr: Errors.t => t('a);
+
 /* Returns [true] if the ressource is fetched without error. */
 let isDoneOk: t('a) => bool;
 

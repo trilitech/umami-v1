@@ -324,13 +324,13 @@ let title = {
   pub add_custom_network = "Add Custom Network";
   pub update_custom_network = "Edit Custom Network";
   pub delete_custom_network = "Delete Network?";
-  pub beacon_error = "Beacon Error"; 
-  pub accounts = "Accounts"; 
-  pub operations = "Operations"; 
-  pub addressbook = "Address Book"; 
-  pub delegations = "Delegations"; 
-  pub tokens = "Tokens"; 
-  pub settings = "Settings"; 
+  pub beacon_error = "Beacon Error";
+  pub accounts = "Accounts";
+  pub operations = "Operations";
+  pub addressbook = "Address Book";
+  pub delegations = "Delegations";
+  pub tokens = "Tokens";
+  pub settings = "Settings";
   pub logs = "Logs"
 };
 
@@ -503,6 +503,7 @@ let wallet = {
 
 let errors = {
   pub _this = this;
+  pub download_error = "Error during file download";
   pub invalid_estimation_results = "Invalid estimation results";
   pub request_to_node_failed = "Request to node failed";
   pub every_balances_fail = "Every balances fail to load";

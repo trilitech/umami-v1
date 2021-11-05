@@ -23,43 +23,21 @@
 /*                                                                           */
 /*****************************************************************************/
 
-include Belt.Option;
+open Nft;
 
-let map2 = (opt1, opt2, f) =>
-  switch (opt1, opt2) {
-  | (Some(v1), Some(v2)) => Some(f(v1, v2))
-  | _ => None
+let ipfsService = "https://ipfs.io/ipfs/";
+
+let ressourceToURL = r =>
+  switch (r) {
+  | IPFS(ipfsHash) => ipfsService ++ ipfsHash
+  | HTTP(url) => url
   };
 
-let keep = (opt1, opt2) =>
-  switch (opt1, opt2) {
-  | (Some(v), _)
-  | (_, Some(v)) => Some(v)
-  | _ => None
+let getDisplayURL = nft =>
+  nft.images.display->Option.map(d => {ressourceToURL(d)});
+
+let getThumbnailURL = token =>
+  switch (token.images.thumbnail) {
+  | Some(thl) => ressourceToURL(thl)->Some
+  | None => getDisplayURL(token)
   };
-
-/* Specialized version where the result of map is always of the same type of the
-   option's value */
-let mapOrKeep = (opt1, opt2, f) => {
-  let res = map2(opt1, opt2, f);
-  res->isNone ? keep(opt1, opt2) : res;
-};
-
-let iter = (o, f) => {
-  switch (o) {
-  | Some(v) => f(v)
-  | None => ()
-  };
-};
-
-let onlyIf = (b, f) => b ? Some(f()) : None;
-
-let rec firstSome = l => {
-  switch (l) {
-  | [] => None
-  | [Some(_) as h, ..._] => h
-  | [None, ...t] => firstSome(t)
-  };
-};
-
-let default = Belt.Option.getWithDefault;
