@@ -27,6 +27,7 @@ let p = Format.sprintf;
 
 let btn = {
   pub _this = this;
+  pub view_specs = "VIEW SPECS";
   pub goto_doc = "See help";
   pub goto_settings = "Go to settings";
   pub retry_network = "Retry";
@@ -503,6 +504,7 @@ let wallet = {
 
 let errors = {
   pub _this = this;
+  pub download_error_status = p("Request failed with status code %d");
   pub download_error = "Error during file download";
   pub invalid_estimation_results = "Invalid estimation results";
   pub request_to_node_failed = "Request to node failed";

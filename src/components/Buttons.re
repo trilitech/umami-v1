@@ -271,6 +271,34 @@ module SubmitSecondary = {
   };
 };
 
+module SubmitTertiaryHighEmphasis = {
+  [@react.component]
+  let make =
+      (
+        ~text,
+        ~onPress,
+        ~disabled=false,
+        ~loading=?,
+        ~fontSize=?,
+        ~style as styleArg=?,
+      ) => {
+    let theme = ThemeContext.useTheme();
+
+    <FormBase
+      onPress
+      disabled
+      ?loading
+      vStyle=?styleArg
+      style=Style.(
+        style(~borderWidth=1., ~borderColor=theme.colors.borderPrimary, ())
+      )>
+      <Typography.ButtonPrimary colorStyle=`primary ?fontSize>
+        text->React.string
+      </Typography.ButtonPrimary>
+    </FormBase>;
+  };
+};
+
 module SubmitTertiary = {
   [@react.component]
   let make =
