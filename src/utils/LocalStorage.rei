@@ -23,11 +23,37 @@
 /*                                                                           */
 /*****************************************************************************/
 
-/* Different version from Js.List.filterMap */
-let filterMap = (l, f) =>
-  l->List.reduceReverse([], (acc, v) =>
-    switch (f(v)) {
-    | None => acc
-    | Some(v) => [v, ...acc]
-    }
-  );
+let getItem: string => Js.Nullable.t(string);
+let setItem: (string, string) => unit;
+let removeItem: string => unit;
+let clear: unit => unit;
+
+type Errors.t +=
+  | NotFound(string);
+
+module type ValueType = {
+  let key: string;
+  type t;
+  let encoder: Json.Encode.encoder(t);
+  let decoder: Json.Decode.decoder(t);
+};
+
+module type StorageType = {
+  include ValueType;
+
+  let get: unit => Promise.result(t);
+  let set: t => unit;
+  let remove: unit => unit;
+  let migrate:
+    (
+      ~previousKey: string=?,
+      ~mapValue: string => Promise.result(t)=?,
+      ~default: t=?,
+      unit
+    ) =>
+    Promise.result(unit);
+};
+
+module Make: (Value: ValueType) => StorageType with type t = Value.t;
+
+module Version: StorageType with type t = Version.t;

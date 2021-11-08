@@ -1,0 +1,18 @@
+{
+  "name": "@umami/lib-base",
+  "productName": "umami-lib-base",
+  "version": "0.5.3",
+  "author": {
+    "name": "Nomadic Labs",
+    "email": "umami@nomadic-labs.com"
+  },
+  "description": "Umami's lib base",
+  "homepage": ".",
+  "dependencies": {
+    "@glennsl/bs-json": "^5.0.2",
+    "reason-future": "^2.6.0"
+  },
+  "scripts": {
+    "build": "bsb -make-world"
+  }
+}

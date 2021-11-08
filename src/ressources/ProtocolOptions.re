@@ -44,7 +44,7 @@ module TransactionParameters = {
   };
 };
 
-type transferOptions = {
+type transferEltOptions = {
   fee: option(Tez.t),
   gasLimit: option(int),
   storageLimit: option(int),
@@ -52,13 +52,23 @@ type transferOptions = {
   entrypoint: option(TransactionParameters.entrypoint),
 };
 
-type commonOptions = {
+let txOptionsSet = telt =>
+  telt.fee != None || telt.gasLimit != None || telt.storageLimit != None;
+
+type delegationOptions = {
   fee: option(Tez.t),
   burnCap: option(Tez.t),
   forceLowFee: option(bool),
 };
 
-let makeTransferOptions =
+let delegationOptionsSet = (dopt: delegationOptions) => dopt.fee != None;
+
+type transferOptions = {
+  burnCap: option(Tez.t),
+  forceLowFee: option(bool),
+};
+
+let makeTransferEltOptions =
     (~fee, ~gasLimit, ~storageLimit, ~parameter, ~entrypoint, ()) => {
   fee,
   gasLimit,
@@ -67,8 +77,13 @@ let makeTransferOptions =
   entrypoint,
 };
 
-let makeCommonOptions = (~fee, ~burnCap, ~forceLowFee, ()) => {
+let makeDelegationOptions = (~fee, ~burnCap, ~forceLowFee, ()) => {
   fee,
+  burnCap,
+  forceLowFee,
+};
+
+let makeTransferOptions = (~burnCap, ~forceLowFee, ()) => {
   burnCap,
   forceLowFee,
 };
@@ -79,11 +94,4 @@ let emptyTransferOptions = {
   storageLimit: None,
   parameter: None,
   entrypoint: None,
-};
-
-type simulationResults = {
-  fee: Tez.t,
-  gasLimit: int,
-  storageLimit: int,
-  revealFee: Tez.t,
 };

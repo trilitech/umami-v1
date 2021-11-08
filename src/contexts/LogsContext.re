@@ -24,7 +24,7 @@
 /*****************************************************************************/
 
 open ReactNative;
-open UmamiCommon;
+
 type state = {
   logs: list(Logs.t),
   add: (bool, Logs.t) => unit,
@@ -66,9 +66,9 @@ let make = (~children) => {
 
   let fadeAnim = React.useRef(Animated.Value.create(1.)).current;
 
-  let (logs, add, delete, clear) = {
-    let (logs, setLogs) = React.useState(() => []);
+  let (logs, setLogs) = React.useState(() => []);
 
+  let (logs, add, delete, clear) = {
     let delete = (i: int) => {
       setLogs(es => es->List.keepWithIndex((_, i') => i != i'));
     };
@@ -76,37 +76,56 @@ let make = (~children) => {
     let clear = () => setLogs(_ => []);
 
     let add = (toast, l) => {
-      setLogs(es => es->List.add(l));
-
-      if (toast) {
-        toastState->Option.map(fst)->Lib.Option.iter(Js.Global.clearTimeout);
-        setToastState(prev => {
-          let firsts = prev->Option.mapWithDefault(0, snd) + 1;
-          let animCallback = _ => {
-            setToastState(_ => None);
-            fadeAnim->Animated.Value.setValue(1.);
+      setLogs(es => {
+        let isSimilar =
+          switch (List.head(es)->Option.map(fst)) {
+          | Some(lastLog) when Logs.similar(lastLog, l) => true
+          | _ => false
           };
-          let timeoutCallback = () => {
-            ReactUtils.startFade(fadeAnim, 0., 600., Some(animCallback));
-          };
-          let timeoutid = Js.Global.setTimeout(timeoutCallback, 4500);
-          (timeoutid, firsts)->Some;
-        });
-      };
 
-      if (l.Logs.kind == Logs.Error) {
-        route == Logs ? (snd(seen))(true) : (snd(seen))(false);
-      };
+        isSimilar ? es : [(l, toast), ...es];
+      });
     };
 
     (logs, add, delete, clear);
   };
 
-  <Provider value={logs, add, clear, delete, seen}>
+  React.useEffect1(
+    () => {
+      logs
+      ->List.head
+      ->Option.iter(((l, toast)) => {
+          if (toast) {
+            toastState->Option.map(fst)->Option.iter(Js.Global.clearTimeout);
+            setToastState(prev => {
+              let firsts = prev->Option.mapWithDefault(0, snd) + 1;
+              let animCallback = _ => {
+                setToastState(_ => None);
+                fadeAnim->Animated.Value.setValue(1.);
+              };
+              let timeoutCallback = () => {
+                ReactUtils.startFade(fadeAnim, 0., 600., Some(animCallback));
+              };
+              let timeoutid = Js.Global.setTimeout(timeoutCallback, 4500);
+              (timeoutid, firsts)->Some;
+            });
+          };
+
+          if (l.Logs.kind == Logs.Error) {
+            route == Logs ? (snd(seen))(true) : (snd(seen))(false);
+          };
+        });
+
+      None;
+    },
+    [|logs|],
+  );
+
+  <Provider value={logs: logs->List.map(fst), add, clear, delete, seen}>
     {toastState->ReactUtils.mapOpt(((_, firsts)) =>
        <ToastBox
          opacity={fadeAnim->Animated.StyleProp.float}
-         logs
+         logs={logs->List.map(fst)}
          addToast={add(false)}
          handleDelete=delete
          firsts

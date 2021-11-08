@@ -60,10 +60,10 @@ let keepNonFormErrors =
 let useCreate = (~sideEffect=?, ()) => {
   let set = (~config, {operation, signingIntent}) => {
     switch (operation) {
-    | Protocol(operation) =>
+    | Delegation(_) as operation =>
       config->NodeAPI.Operation.run(operation, ~signingIntent)
 
-    | Transfer(t) =>
+    | Transaction(t) =>
       config->NodeAPI.Operation.batch(
         t.transfers,
         ~source=t.source,
@@ -86,17 +86,7 @@ let useCreate = (~sideEffect=?, ()) => {
 
 let useSimulate = () => {
   let set = (~config, operation) =>
-    switch (operation) {
-    | Operation.Simulation.Protocol(operation, index) =>
-      config->NodeAPI.Simulation.run(~index?, operation)
-    | Operation.Simulation.Transfer(t, index) =>
-      config->NodeAPI.Simulation.batch(
-        t.transfers,
-        ~source=t.source,
-        ~index?,
-        (),
-      )
-    };
+    config->NodeAPI.Simulation.run(operation);
 
   ApiRequest.useSetter(
     ~set,
@@ -106,20 +96,20 @@ let useSimulate = () => {
   );
 };
 
-let waitForConfirmation = (config, hash) => {
-  config->ConfigUtils.endpoint->TaquitoAPI.Operations.confirmation(~hash, ());
+let waitForConfirmation = (config: ConfigContext.env, hash) => {
+  config.network.endpoint->TaquitoAPI.Operations.confirmation(~hash, ());
 };
 
 /* Get list */
 
 let useLoad =
     (~requestState, ~limit=?, ~types=?, ~address: PublicKeyHash.t, ()) => {
-  let get = (~config, address) => {
+  let get = (~config: ConfigContext.env, address) => {
     let operations =
       config->ServerAPI.Explorer.getOperations(address, ~limit?, ~types?, ());
     let currentLevel =
-      Network.monitor(ConfigUtils.explorer(config))
-      ->Future.mapOk(monitor => monitor.nodeLastBlock);
+      Network.monitor(config.network.explorer)
+      ->Promise.mapOk(monitor => monitor.nodeLastBlock);
 
     let f = (operations, currentLevel) =>
       switch (operations, currentLevel) {
@@ -129,7 +119,7 @@ let useLoad =
       | (_, Error(_) as e) => e
       };
 
-    Future.map2(operations, currentLevel, f);
+    Promise.map2(operations, currentLevel, f);
   };
 
   ApiRequest.useLoader(~get, ~kind=Logs.Operation, ~requestState, address);

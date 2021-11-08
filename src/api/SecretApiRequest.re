@@ -30,10 +30,10 @@
 let useLoad = requestState => {
   let get = (~config, ()) =>
     WalletAPI.Accounts.secrets(~config)
-    ->Result.mapWithDefault(Future.value(Result.Ok([||])), secrets => {
-        Future.value(Result.Ok(secrets))
+    ->Result.mapWithDefault(Promise.ok([||]), secrets => {
+        Promise.value(Result.Ok(secrets))
       })
-    ->Future.mapOk(secrets =>
+    ->Promise.mapOk(secrets =>
         secrets->Array.mapWithIndex((index, secret) =>
           Secret.{index, secret}
         )
@@ -43,8 +43,8 @@ let useLoad = requestState => {
 };
 
 let useGetRecoveryPhrase = (~requestState as (request, setRequest), ~index) => {
-  let get = (~config, password) =>
-    WalletAPI.Accounts.recoveryPhraseAt(~config, index, ~password);
+  let get = (~config as _, password) =>
+    WalletAPI.Accounts.recoveryPhraseAt(index, ~password);
 
   let getRequest =
     ApiRequest.useGetter(~get, ~kind=Logs.Secret, ~setRequest, ());
@@ -203,7 +203,7 @@ let useUpdate =
     ~set=
       (~config, {index, secret}: Secret.derived) => {
         WalletAPI.Accounts.updateSecretAt(~config, secret, index)
-        ->Future.value
+        ->Promise.value
       },
     ~kind=Logs.Secret,
   );

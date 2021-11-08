@@ -10,18 +10,18 @@ let useLoadMetadata = (~onErrorNotATokenContract, pkh) => {
     | MetadataAPI.NoTzip12Metadata(_) => false
     | _ => true;
 
-  let buildContract = config => {
-    let%FRes isToken = checkToken(pkh);
-    let%FRes () =
-      if (isToken) {
-        FutureEx.ok();
+  let buildContract = (config: ConfigContext.env) => {
+    let%Await token = checkToken(pkh);
+    let%Await () =
+      if (token == `KFA1_2) {
+        Promise.ok();
       } else {
         onErrorNotATokenContract();
-        TokensApiRequest.NotFA12Contract((pkh :> string))->FutureEx.err;
+        TokensApiRequest.NotFA12Contract((pkh :> string))->Promise.err;
       };
 
-    let toolkit = ReTaquito.Toolkit.create(config->ConfigUtils.endpoint);
-    let%FRes contract = MetadataAPI.Tzip12.makeContract(toolkit, pkh);
+    let toolkit = ReTaquito.Toolkit.create(config.network.endpoint);
+    let%Await contract = MetadataAPI.Tzip12.makeContract(toolkit, pkh);
     MetadataAPI.Tzip12.read(contract, 0);
   };
 

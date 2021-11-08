@@ -47,4 +47,5 @@ let rowEncoding:
   );
 
 let parseCSV:
-  (string, ~tokens: Map.String.t(TokenRepr.t)) => result(t, Errors.t);
+  (string, ~tokens: PublicKeyHash.Map.map(TokenRepr.t)) =>
+  result(t, Errors.t);

@@ -158,3 +158,4 @@ module LastPage = Make(SVGIconLastPage);
 module Ledger = Make(SVGIconLedger);
 module QuestionMark = Make(SVGIconQuestionMark);
 module AddToken = Make(SVGIconTokenAdd);
+module Options = Make(SVGIconOption);

@@ -2,7 +2,7 @@ open TestFramework;
 open System;
 
 let testDir = Path.mk(".test_cache");
-let config = {...ConfigFile.dummy, sdkBaseDir: Some(testDir)};
+let config = {...ConfigContext.default, baseDir: () => testDir};
 
 %raw
 "
@@ -25,8 +25,8 @@ let recoveryPhrase5 = "update movie output save cream shoe word company never li
 let testkey5 =
   "tz1UBwnNSFrvbPmtVT4vHCsba3mjMGtKhpu2"->PublicKeyHash.build->Result.getExn;
 
-let bind = Future.flatMapOk;
-let map = Future.mapOk;
+let bind = Promise.flatMapOk;
+let map = Promise.mapOk;
 
 let before = () => Client.initDir(testDir);
 
@@ -37,7 +37,7 @@ let futureEqual =
   before()
   ->bind(fn)
   ->bind(v => after()->map(() => v))
-  ->Future.get(v => {
+  ->Promise.get(v => {
       expectEqual(v, eqcomp);
       callback();
     });

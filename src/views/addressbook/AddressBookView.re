@@ -64,16 +64,19 @@ let make = () => {
   let aliasesRequest = StoreContext.Aliases.useRequestExceptAccounts();
 
   <Page>
+    <Typography.Headline style=Styles.title>
+      I18n.title#addressbook->React.string
+    </Typography.Headline>
     <AddContactButton />
     {switch (aliasesRequest) {
      | Done(Ok(aliases), _)
      | Loading(Some(aliases)) =>
-       aliases->Map.String.size === 0
+       aliases->PublicKeyHash.Map.size === 0
          ? <Table.Empty>
              I18n.t#empty_address_book->React.string
            </Table.Empty>
          : aliases
-           ->Map.String.valuesToArray
+           ->PublicKeyHash.Map.valuesToArray
            ->SortArray.stableSortBy((a, b) =>
                Js.String.localeCompare(b.name, a.name)->int_of_float
              )

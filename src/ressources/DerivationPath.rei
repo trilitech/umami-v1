@@ -49,14 +49,14 @@ let toStringNoPrefix: t => string;
 let fromTezosBip44: tezosBip44 => t;
 
 /* Converts a general path to specific bip44 Tezos path */
-let convertToTezosBip44: t => Let.result(tezosBip44);
+let convertToTezosBip44: t => Promise.result(tezosBip44);
 
 let buildTezosBip44: ((int, int)) => tezosBip44;
 
 let build: array(int) => t;
 
 /* Build a path by reading a non-prefixed path string */
-let fromStringNoPrefix: string => Let.result(t);
+let fromStringNoPrefix: string => Promise.result(t);
 
 module Pattern: {
   /* A derivation path pattern
@@ -74,7 +74,7 @@ module Pattern: {
   // The default value for derivation path as a string
   let defaultString: string;
 
-  let convertToTezosBip44: t => Let.result(tezosBip44);
+  let convertToTezosBip44: t => Promise.result(tezosBip44);
 
   let fromTezosBip44: tezosBip44 => t;
 
@@ -90,5 +90,5 @@ module Pattern: {
 
   /* Builds a derivation path pattern from a string enforcing previously defined
      invariants */
-  let fromString: string => Let.result(t);
+  let fromString: string => Promise.result(t);
 };

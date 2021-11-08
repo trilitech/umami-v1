@@ -29,7 +29,7 @@ open ProtocolOptions;
 type delegation = {
   source: Account.t,
   delegate: option(PublicKeyHash.t),
-  options: commonOptions,
+  options: delegationOptions,
 };
 
 type t =
@@ -41,13 +41,47 @@ let makeDelegate =
   {
     source,
     delegate,
-    options: makeCommonOptions(~fee, ~burnCap, ~forceLowFee, ()),
+    options: makeDelegationOptions(~fee, ~burnCap, ~forceLowFee, ()),
   };
 };
 
-type simulationResults = {
-  fee: Tez.t,
-  gasLimit: int,
-  storageLimit: int,
-  revealFee: Tez.t,
+module Simulation = {
+  type resultElt = {
+    fee: Tez.t,
+    gasLimit: int,
+    storageLimit: int,
+  };
+
+  type results = {
+    simulations: array(resultElt),
+    revealSimulation: option(resultElt),
+  };
+
+  let sumFees = a =>
+    a->Array.reduce(Tez.zero, (acc, sim) => Tez.Infix.(acc + sim.fee));
+
+  let computeRevealFees = sim =>
+    sim.revealSimulation->Option.mapWithDefault(Tez.zero, ({fee}) => fee);
+
+  let getTotalFees = sim =>
+    Tez.Infix.(sim->computeRevealFees + sim.simulations->sumFees);
 };
+
+let optionsSet =
+  fun
+  | Transaction({transfers: [t]}) =>
+    ProtocolOptions.txOptionsSet(t.tx_options)->Some
+  | Transaction({transfers: _}) => None
+  | Delegation(d) => ProtocolOptions.delegationOptionsSet(d.options)->Some;
+
+let isContractCall = (o, index) =>
+  switch (o) {
+  | Delegation(_) => false
+  | Transaction((t: Transfer.t)) =>
+    t.transfers
+    ->List.get(index)
+    ->Option.mapWithDefault(false, t =>
+        t.amount->Transfer.Currency.getToken != None
+        || t.destination->PublicKeyHash.isContract
+      )
+  };

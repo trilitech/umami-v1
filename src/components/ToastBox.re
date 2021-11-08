@@ -24,7 +24,6 @@
 /*****************************************************************************/
 
 open ReactNative;
-open UmamiCommon;
 
 let styles =
   Style.(
@@ -68,7 +67,7 @@ let make = (~opacity, ~logs, ~addToast, ~handleDelete, ~firsts) =>
   <Animated.View
     style=Style.([|styles##container, style(~opacity, ())|]->array)>
     {logs
-     ->Lib.List.firsts(firsts)
+     ->List.firsts(firsts)
      ->List.reverse
      ->List.toArray
      ->Array.mapWithIndex((i, log) =>

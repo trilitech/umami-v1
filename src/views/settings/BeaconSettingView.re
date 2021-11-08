@@ -77,7 +77,7 @@ module PeersSection = {
     let make = (~peer: ReBeacon.peerInfo) => {
       let (peerRequest, deletePeer) = StoreContext.Beacon.Peers.useDelete();
       let onPressConfirmDelete = _e => {
-        deletePeer(peer)->FutureEx.ignore;
+        deletePeer(peer)->Promise.ignore;
       };
       <DeleteButton.IconButton
         tooltip=("delete_peer_" ++ peer.id, I18n.title#delete_beacon_peer)
@@ -159,7 +159,7 @@ module PermissionsSection = {
       let (permissionRequest, deletePermission) =
         StoreContext.Beacon.Permissions.useDelete();
       let onPressConfirmDelete = _e =>
-        deletePermission(permission.accountIdentifier)->FutureEx.ignore;
+        deletePermission(permission.accountIdentifier)->Promise.ignore;
 
       <DeleteButton.IconButton
         tooltip=(

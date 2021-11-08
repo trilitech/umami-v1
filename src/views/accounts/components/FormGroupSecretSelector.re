@@ -24,7 +24,6 @@
 /*****************************************************************************/
 
 open ReactNative;
-open UmamiCommon;
 
 module SecretItem = {
   let itemStyles =
@@ -96,7 +95,7 @@ let make = (~label, ~value: option(string), ~handleChange, ~error, ~disabled) =>
     () => {
       if (value == None) {
         let firstItem = items->Array.get(0);
-        firstItem->Lib.Option.iter(secret => secret->handleChange);
+        firstItem->Option.iter(secret => secret->handleChange);
       };
       None;
     },

@@ -126,8 +126,6 @@ external setApplicationMenu: t => unit = "setApplicationMenu";
 [@bs.send] external append: (t, Item.t) => unit = "append";
 
 let setAppMenu = () => {
-  open UmamiCommon;
-
   let supportUrl = "https://umamiwallet.com/#support";
   let downloadUrl = "https://umamiwallet.com/#download";
   let websiteUrl = "https://umamiwallet.com";
@@ -158,7 +156,7 @@ let setAppMenu = () => {
   ->Option.map(menu =>
       menu.items->Js.Array2.filter(item => item.role != Some(`help))
     )
-  ->Lib.Option.iter(items =>
+  ->Option.iter(items =>
       items->Array.forEach(item => newAppMenu->append(item))
     );
   newAppMenu->append(

@@ -55,6 +55,16 @@ let make = () => {
 
   let onPress = _ => openAction();
 
+  let networkOffline = ConfigContext.useNetworkOffline();
+
+  let iconColor =
+    networkOffline
+      ? theme.colors.primaryIconDisabled : theme.colors.primaryIconHighEmphasis;
+
+  let textColor =
+    networkOffline
+      ? theme.colors.primaryTextDisabled : theme.colors.primaryTextHighEmphasis;
+
   <>
     <View
       style=Style.(
@@ -64,15 +74,15 @@ let make = () => {
         |])
       )>
       <ThemedPressable.Primary
-        style=styles##iconContainer onPress accessibilityRole=`button>
-        <Icons.Send size=24. color={theme.colors.primaryIconHighEmphasis} />
+        disabled=networkOffline
+        style=styles##iconContainer
+        onPress
+        accessibilityRole=`button>
+        <Icons.Send size=24. color=iconColor />
         <Typography.ButtonSecondary
           fontSize=13.
           style=Style.(
-            array([|
-              styles##textButton,
-              style(~color=theme.colors.primaryTextHighEmphasis, ()),
-            |])
+            array([|styles##textButton, style(~color=textColor, ())|])
           )>
           I18n.btn#send->React.string
         </Typography.ButtonSecondary>

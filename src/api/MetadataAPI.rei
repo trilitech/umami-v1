@@ -31,29 +31,29 @@ type Errors.t +=
 module Tzip16: {
   let makeContract:
     (ReTaquito.Toolkit.toolkit, PublicKeyHash.t) =>
-    Let.future(ReTaquitoContracts.Tzip16Contract.t);
+    Promise.t(ReTaquitoContracts.Tzip16Contract.t);
 
   let read:
     ReTaquitoContracts.Tzip16Contract.t =>
-    Let.future(ReTaquitoTypes.Tzip16.metadata);
+    Promise.t(ReTaquitoTypes.Tzip16.metadata);
 };
 
 module Tzip12: {
   module Storage: {
     let read:
       ReTaquitoContracts.Tzip12Tzip16Contract.t =>
-      Let.future(ReTaquitoTypes.Tzip12Storage.storage);
+      Promise.t(ReTaquitoTypes.Tzip12Storage.storage);
 
     let getToken:
       (PublicKeyHash.t, ReTaquitoTypes.Tzip12Storage.storage, int) =>
-      Let.future(ReTaquitoTypes.Tzip12.metadata);
+      Promise.t(ReTaquitoTypes.Tzip12.metadata);
   };
 
   let makeContract:
     (ReTaquito.Toolkit.toolkit, PublicKeyHash.t) =>
-    Let.future(ReTaquitoContracts.Tzip12Tzip16Contract.t);
+    Promise.t(ReTaquitoContracts.Tzip12Tzip16Contract.t);
 
   let read:
     (ReTaquitoContracts.Tzip12Tzip16Contract.t, int) =>
-    Let.future(ReTaquitoTypes.Tzip12.metadata);
+    Promise.t(ReTaquitoTypes.Tzip12.metadata);
 };

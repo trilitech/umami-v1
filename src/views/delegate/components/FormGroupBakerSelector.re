@@ -23,7 +23,6 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open UmamiCommon;
 open ReactNative;
 
 type inputType =
@@ -170,7 +169,7 @@ let make = (~label, ~value: option(string), ~handleChange, ~error) => {
         if (value == None && items->Array.size > 0) {
           // if input selector and no value, select first entry
           let firstItem = items->Array.get(0);
-          firstItem->Lib.Option.iter(baker =>
+          firstItem->Option.iter(baker =>
             (baker.address :> string)->Some->handleChange
           );
         } else if (!

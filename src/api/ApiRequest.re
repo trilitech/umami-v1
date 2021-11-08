@@ -23,13 +23,13 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open UmamiCommon;
-
 type timestamp = float;
 
 type cacheValidity =
   | Expired
   | ValidSince(float);
+
+let initCache = () => ValidSince(Js.Date.now());
 
 type t('value) =
   | NotAsked
@@ -108,6 +108,12 @@ let isLoading = request =>
   | _ => false
   };
 
+let isError = request =>
+  switch (request) {
+  | Done(Error(_), _) => true
+  | _ => false
+  };
+
 let isDone = request => request->getDone->Option.isSome;
 
 let isDoneOk = request => request->getDoneOk->Option.isSome;
@@ -122,10 +128,10 @@ let isExpired = request =>
   };
 
 let logError = (r, addLog, ~keep=_ => true, origin) =>
-  r->Future.tapError(e => {e->keep ? addLog(Logs.error(~origin, e)) : ()});
+  r->Promise.tapError(e => {e->keep ? addLog(Logs.error(~origin, e)) : ()});
 
 let logOk = (r, addLog, origin, makeMsg) =>
-  r->Future.tapOk(r => {addLog(Logs.info(~origin, makeMsg(r)))});
+  r->Promise.tapOk(r => {addLog(Logs.info(~origin, makeMsg(r)))});
 
 let updateToLoadingState = request =>
   switch (request) {
@@ -149,13 +155,20 @@ let conditionToLoad = (request, isMounted) => {
 let useGetter = (~toast=true, ~get, ~kind, ~setRequest, ~keepError=?, ()) => {
   let addLog = LogsContext.useAdd();
   let config = ConfigContext.useContent();
+  let retryNetwork = ConfigContext.useRetryNetwork();
 
   let get = input => {
     setRequest(updateToLoadingState);
 
     get(~config, input)
     ->logError(addLog(toast), kind, ~keep=?keepError)
-    ->Future.tap(result =>
+    ->Promise.tapError(
+        fun
+        | ReTaquitoError.NodeRequestFailed =>
+          retryNetwork(~onlyOn=Network.Online, ())
+        | _ => (),
+      )
+    ->Promise.tap(result =>
         setRequest(_ => Done(result, ValidSince(Js.Date.now())))
       );
   };
@@ -201,16 +214,14 @@ let useSetter =
   let sendRequest = input => {
     setRequest(_ => Loading(None));
     set(~config, input)
-    ->Future.tapOk(v =>
-        logOk->Lib.Option.iter(f =>
-          addLog(true, Logs.info(~origin=kind, f(v)))
-        )
+    ->Promise.tapOk(v =>
+        logOk->Option.iter(f => addLog(true, Logs.info(~origin=kind, f(v))))
       )
     ->logError(addLog(toast), ~keep=?keepError, kind)
-    ->Future.tap(result => {
+    ->Promise.tap(result => {
         setRequest(_ => Done(result, Js.Date.now()->ValidSince))
       })
-    ->Future.tapOk(sideEffect->Option.getWithDefault(_ => ()));
+    ->Promise.tapOk(sideEffect->Option.getWithDefault(_ => ()));
   };
 
   (request, sendRequest);

@@ -43,6 +43,7 @@ type colors = {
   elevatedBackground: string,
   scrim: string,
   error: string,
+  valid: string,
   statePressed: string,
   stateDisabled: string,
   stateHovered: string,
@@ -97,7 +98,8 @@ let lightTheme = {
     logBackground: Colors.Dark.background,
     elevatedBackground: Colors.Light.background,
     scrim: Colors.Light.scrim,
-    error: Colors.error,
+    error: Colors.Light.error,
+    valid: Colors.Light.valid,
     statePressed: Colors.Light.statePressed,
     stateHovered: Colors.Light.stateHovered,
     stateFocusedOutline: Colors.Light.stateFocusedOutline,
@@ -146,7 +148,8 @@ let darkTheme = {
     logBackground: Colors.Light.background,
     elevatedBackground: Colors.Dark.elevatedBackground,
     scrim: Colors.Dark.scrim,
-    error: Colors.error,
+    error: Colors.Dark.error,
+    valid: Colors.Dark.valid,
     statePressed: Colors.Dark.statePressed,
     stateHovered: Colors.Dark.stateHovered,
     stateFocusedOutline: Colors.Dark.stateFocusedOutline,
@@ -185,7 +188,7 @@ type state = {
 
 let initialState = {
   theme: lightTheme,
-  themeSetting: (ConfigFile.Default.theme, _ => ()),
+  themeSetting: (ConfigContext.default.theme, _ => ()),
 };
 let context = React.createContext(initialState);
 
@@ -209,10 +212,7 @@ let make = (~children) => {
   let writeConf = ConfigContext.useWrite();
   let config = ConfigContext.useContent();
 
-  let (themeConfig, setThemeConfig) =
-    React.useState(_ =>
-      config.theme->Option.getWithDefault(ConfigFile.Default.theme)
-    );
+  let (themeConfig, setThemeConfig) = React.useState(_ => config.theme);
 
   let (prefersColorSchemeDark, setPrefersColorSchemeDark) =
     React.useState(_ => mediaQueryColorSchemeDark##matches);
@@ -243,7 +243,7 @@ let make = (~children) => {
         {
           ...c,
           theme:
-            newThemeConfig != ConfigFile.Default.theme
+            newThemeConfig != ConfigContext.default.theme
               ? Some(newThemeConfig) : None,
         }
       );

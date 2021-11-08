@@ -23,69 +23,44 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open ReactNative;
+type Errors.t +=
+  | MigrationFailed(Version.t);
 
-let styles =
-  Style.(
-    StyleSheet.create({"formRowInput": style(~marginVertical=5.->dp, ())})
+let () =
+  Errors.registerHandler(
+    "LocalStorage",
+    fun
+    | MigrationFailed(v) =>
+      I18n.errors#storage_migration_failed(Version.toString(v))->Some
+    | _ => None,
   );
 
-[@react.component]
-let make = (~form: DelegateForm.api) => {
-  let (operationSimulateRequest, sendOperationSimulate) =
-    StoreContext.Operations.useSimulate();
+let currentVersion = Version.mk(1, 2);
 
-  React.useEffect0(() => {
-    switch (form.values.baker->PublicKeyHash.build) {
-    | Ok(baker) =>
-      let operation =
-        Protocol.makeDelegate(
-          ~source=form.values.sender,
-          ~delegate=Some(baker),
-          (),
-        );
-      let operation = Operation.Simulation.delegation(operation);
-      sendOperationSimulate(operation)
-      ->FutureEx.getOk(dryRun => {
-          form.handleChange(Fee, dryRun.fee->Tez.toString)
-        });
-    | _ => ()
-    };
+let addMigration = (migrations, version, migration) => {
+  migrations->Map.update(
+    version,
+    fun
+    | None => [migration]->Some
+    | Some(m) => [migration, ...m]->Some,
+  );
+};
 
-    None;
-  });
+let applyMigration = (migrations, currentVersion) => {
+  migrations->Map.reduce(Ok(), (res, version, migrations) =>
+    Version.compare(currentVersion, version) >= 0
+      ? res
+      : migrations
+        ->List.reduce(res, (res, migration) =>
+            res->Result.flatMap(_ => migration())
+          )
+        ->Result.mapError(_ => MigrationFailed(version))
+  );
+};
 
-  let theme = ThemeContext.useTheme();
-
-  <View>
-    <FormGroupCurrencyInput
-      label=I18n.label#fee
-      value={form.values.fee}
-      handleChange={fee => form.handleChange(Fee, fee)}
-      error={form.getFieldError(Field(Fee))}
-      style=styles##formRowInput
-      decoration=FormGroupCurrencyInput.tezDecoration
-    />
-    <FormGroupCheckbox
-      label=I18n.label#force_low_fee
-      value={form.values.forceLowFee}
-      handleChange={form.handleChange(ForceLowFee)}
-      error={form.getFieldError(Field(ForceLowFee))}
-    />
-    {operationSimulateRequest->ApiRequest.isLoading
-       ? <View
-           style=Style.(
-             array([|
-               StyleSheet.absoluteFillObject,
-               style(
-                 ~backgroundColor=theme.colors.background,
-                 ~opacity=0.87,
-                 (),
-               ),
-             |])
-           )>
-           <LoadingView />
-         </View>
-       : React.null}
-  </View>;
+let init = version => {
+  Map.make(~id=(module Version.Comparable))
+  ->addMigration(Disclaimer.Legacy.V1_1.version, Disclaimer.Legacy.V1_1.mk)
+  ->addMigration(ConfigFile.Legacy.V1_2.version, ConfigFile.Legacy.V1_2.mk)
+  ->applyMigration(version);
 };

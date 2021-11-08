@@ -26,6 +26,9 @@
 [@bs.module "@taquito/taquito"] [@bs.scope "OpKind"]
 external opKindTransaction: string = "TRANSACTION";
 
+[@bs.module "@taquito/taquito"] [@bs.scope "OpKind"]
+external opKindDelegation: string = "DELEGATION";
+
 [@bs.module "@taquito/taquito"] [@bs.scope "DEFAULT_FEE"]
 external default_fee_reveal: int = "REVEAL";
 
@@ -40,6 +43,13 @@ module RPCClient = {
 
   [@bs.module "@taquito/rpc"] [@bs.new]
   external create: endpoint => t = "RpcClient";
+
+  [@bs.send]
+  external getBlockHeader: (t, unit) => Js.Promise.t(blockHeader) =
+    "getBlockHeader";
+
+  [@bs.send]
+  external getChainId: (t, unit) => Js.Promise.t(string) = "getChainId";
 
   [@bs.send]
   external getBalance:
@@ -96,7 +106,7 @@ module Toolkit = {
   };
 
   let prepareDelegate = (~source, ~delegate, ~fee=?, ()) => {
-    Types.Delegate.{source, delegate, fee};
+    Types.Delegate.{kind: opKindDelegation, source, delegate, fee};
   };
 
   let makeSendParams = (~amount, ~fee=?, ~gasLimit=?, ~storageLimit=?, ()) => {
@@ -144,6 +154,11 @@ module Toolkit = {
     [@bs.send]
     external batch:
       (estimate, array(transferParams)) => Js.Promise.t(array(result)) =
+      "batch";
+
+    [@bs.send]
+    external batchDelegation:
+      (estimate, array(delegateParams)) => Js.Promise.t(array(result)) =
       "batch";
 
     [@bs.send]

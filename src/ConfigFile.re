@@ -23,7 +23,9 @@
 /*                                                                           */
 /*****************************************************************************/
 
-type network = [ | `Mainnet | `Granadanet | `Custom(string)];
+open Let;
+
+type network = Network.configurableChains;
 
 type t = {
   network: option(network),
@@ -45,14 +47,6 @@ let parse = s => {
   {...c, network};
 };
 
-module Default = {
-  /* let network = `Testnet(Network.edo2netChain); */
-  let network = `Mainnet;
-  let theme = `system;
-  let sdkBaseDir = () => System.(Path.Ops.(appDir() / (!"tezos-client")));
-  let confirmations = 5;
-};
-
 let dummy = {
   network: None,
   theme: None,
@@ -61,16 +55,154 @@ let dummy = {
   customNetworks: [],
 };
 
-let toString = c =>
-  c
-  ->Js.Json.stringifyAny
-  ->Option.map(Js.Json.parseExn)
-  ->Option.map(j => Js.Json.stringifyWithSpace(j, 1));
+module Encode = {
+  open JsonEx.Encode;
 
-let configKey = "Config";
+  let themeToString =
+    fun
+    | `system => "system"
+    | `dark => "dark"
+    | `light => "light";
 
-let write = s => LocalStorage.setItem(configKey, s);
+  let encoder = c =>
+    object_([
+      ("network", nullable(Network.Encode.chainEncoder, c.network)),
+      ("theme", nullable(string, c.theme->Option.map(themeToString))),
+      ("confirmations", nullable(int, c.confirmations)),
+      (
+        "sdkBaseDir",
+        nullable(string, c.sdkBaseDir->Option.map(System.Path.toString)),
+      ),
+      ("customNetworks", list(Network.Encode.encoder, c.customNetworks)),
+    ]);
+};
 
-let read = () => LocalStorage.getItem(configKey);
+module Decode = {
+  open JsonEx.Decode;
 
-let reset = () => LocalStorage.removeItem(configKey);
+  let themeFromString =
+    fun
+    | "light" => Ok(`light)
+    | "dark" => Ok(`dark)
+    | "system" => Ok(`system)
+    | s => Error(s);
+
+  let networkDecoder = json =>
+    json
+    |> field(
+         "network",
+         optional(Network.Decode.(chainDecoder(nativeChainFromString))),
+       );
+
+  let themeDecoder = json =>
+    (json |> field("theme", optional(string)))
+    ->Option.map(t => t->themeFromString->Result.getWithDefault(`system));
+
+  let confirmationsDecoder = field("confirmations", optional(int));
+
+  let sdkBaseDirDecoder = json =>
+    (json |> field("sdkBaseDir", optional(string)))
+    ->Option.map(System.Path.mk);
+
+  let customNetworksDecoder = json =>
+    (
+      json |> optional(field("customNetworks", list(Network.Decode.decoder)))
+    )
+    ->Option.getWithDefault([]);
+
+  let decoder = json => {
+    network: json |> networkDecoder,
+    theme: json |> themeDecoder,
+    confirmations: json |> confirmationsDecoder,
+    sdkBaseDir: json |> sdkBaseDirDecoder,
+    customNetworks: json |> customNetworksDecoder,
+  };
+};
+
+module Storage =
+  LocalStorage.Make({
+    let key = "Config";
+    type nonrec t = t;
+
+    let encoder = Encode.encoder;
+    let decoder = Decode.decoder;
+  });
+
+module Legacy = {
+  module V1_2 = {
+    open JsonEx.Decode;
+
+    let removeNonNativeNetwork: [> network] => [ network] =
+      fun
+      | #Network.nativeChains as c => c
+      | _ => `Mainnet;
+
+    let networkVariantLegacyDecoder = json => {
+      let embeddedNetworkDecoder = json =>
+        json->string->Network.Decode.chainFromString;
+      let customNetworkDecoder = json =>
+        json
+        |> (
+          field("NAME", string)
+          |> andThen(
+               fun
+               | "Custom" => field("VAL", string)
+               | v =>
+                 JsonEx.(
+                   raise(
+                     InternalError(DecodeError("Unknown variant " ++ v)),
+                   )
+                 ),
+             )
+        )
+        |> (n => `Custom(n));
+
+      json |> either(embeddedNetworkDecoder, customNetworkDecoder);
+    };
+
+    let networkLegacyDecoder = json =>
+      (json |> optional(field("network", networkVariantLegacyDecoder)))
+      ->Option.map(removeNonNativeNetwork);
+
+    let legacyChainDecoder = json =>
+      Network.{
+        name: json |> field("name", string),
+        chain: json |> field("chain", networkVariantLegacyDecoder),
+        explorer: json |> field("explorer", string),
+        endpoint: json |> field("endpoint", string),
+      };
+
+    let customNetworksLegacyDecoder = json =>
+      (
+        json
+        |> optional(
+             field("customNetworks", bsListDecoder(legacyChainDecoder)),
+           )
+      )
+      ->Option.getWithDefault([]);
+
+    let legacyDecoder = json =>
+      Decode.{
+        network: json |> networkLegacyDecoder,
+        theme: json |> themeDecoder,
+        confirmations: json |> confirmationsDecoder,
+        sdkBaseDir: json |> sdkBaseDirDecoder,
+        customNetworks: json |> customNetworksLegacyDecoder,
+      };
+
+    let version = Version.mk(1, 2);
+    let mk = () => {
+      let mapValue = s => {
+        let%Res json = JsonEx.parse(s);
+        json->JsonEx.decode(legacyDecoder);
+      };
+      Storage.migrate(~mapValue, ~default=dummy, ());
+    };
+  };
+};
+
+let write = s => Storage.set(s);
+
+let read = () => Storage.get();
+
+let reset = () => Storage.remove();

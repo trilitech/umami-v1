@@ -1,5 +1,5 @@
 {
-  "name": "tezos-client",
+  "name": "umami",
   "reason": {
     "react-jsx": 3
   },
@@ -15,9 +15,10 @@
     }
   ],
   "bsc-flags":
-  ["-bs-super-errors", "-bs-no-version-header", "-open Belt"],
+  ["-bs-super-errors", "-bs-no-version-header", "-open Belt"
+   , "-open UmamiLibBase"],
   "warnings": {
-    "number": "-44-48-9-45",
+    "number": "-44-48-9-45"
   },
   "package-specs": [
     {
@@ -26,20 +27,20 @@
     }
   ],
   "suffix": ".bs.js",
-  "namespace": true,
+  "namespace": false,
   "ppx-flags": ["lenses-ppx/ppx", "bs-let/ppx"],
   "bs-dependencies": [
+    "@umami/lib-base",
     "bs-fetch",
     "@glennsl/bs-json",
     "reason-react",
     "reason-react-native",
     "child-reprocess",
     "reason-react-update",
-    "reason-future",
     "reason-test-framework",
     "bs-reform",
     "reschema",
-    "@reason-react-native/svg",
+    "@reason-react-native/svg"
   ],
   "refmt": 3
 }

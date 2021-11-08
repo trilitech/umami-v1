@@ -34,7 +34,8 @@ let itemStyles =
   Style.(
     StyleSheet.create({
       "itemInSelector": style(~marginHorizontal=20.->dp, ()),
-      "inner": style(~height=44.->dp, ~justifyContent=`spaceBetween, ()),
+      "fixed": style(~height=44.->dp, ()),
+      "inner": style(~justifyContent=`spaceBetween, ()),
       "info": style(~flexDirection=`row, ~justifyContent=`spaceBetween, ()),
       "name": style(~width=150.->dp, ()),
     })
@@ -43,6 +44,8 @@ let itemStyles =
 let styles =
   Style.(
     StyleSheet.create({
+      "shrinkContainer":
+        style(~display=`flex, ~alignItems=`center, ~flexDirection=`row, ()),
       "selectorContent":
         style(
           ~height=66.->dp,
@@ -57,7 +60,8 @@ let styles =
 
 module ShrinkedAddress = {
   [@react.component]
-  let make = (~style as styleProp=?, ~address: PublicKeyHash.t, ~n=6) => {
+  let make =
+      (~style as styleProp=?, ~address: PublicKeyHash.t, ~n=6, ~clipboardId=?) => {
     let address = (address :> string);
     let l = address->String.length;
     let startSlice = address->Js.String2.slice(~from=0, ~to_=n - 1);
@@ -65,9 +69,21 @@ module ShrinkedAddress = {
 
     let res = Format.sprintf("%s...%s", startSlice, endSlice);
 
-    <Typography.Address style=?styleProp>
-      res->React.string
-    </Typography.Address>;
+    let addToast = LogsContext.useToast();
+
+    <View
+      style=Style.(arrayOption([|styleProp, styles##shrinkContainer->Some|]))>
+      <Typography.Address> res->React.string </Typography.Address>
+      {clipboardId->ReactUtils.mapOpt(clipboardId =>
+         <ClipboardButton
+           copied=I18n.log#beacon_sign_payload
+           tooltipKey={"shrinked-address-" ++ clipboardId->Int.toString}
+           addToast
+           data=address
+           size=40.
+         />
+       )}
+    </View>;
   };
 };
 
@@ -122,9 +138,18 @@ module Selector = {
           ~account: Alias.t,
           ~token: option(Token.t)=?,
           ~showAmount=Balance,
+          ~shrinkId=?,
         ) => {
+      let fixed = shrinkId == None;
+
       <View
-        style=Style.(arrayOption([|Some(itemStyles##inner), paramStyle|]))>
+        style=Style.(
+          arrayOption([|
+            Some(itemStyles##inner),
+            fixed->Option.onlyIf(() => itemStyles##fixed),
+            paramStyle,
+          |])
+        )>
         <View style=itemStyles##info>
           <Typography.Subtitle2 numberOfLines=1 style=itemStyles##name>
             account.name->React.string
@@ -135,9 +160,14 @@ module Selector = {
            | Amount(e) => e
            }}
         </View>
-        <Typography.Address>
-          (account.address :> string)->React.string
-        </Typography.Address>
+        {switch (shrinkId) {
+         | Some(shrinkId) =>
+           <ShrinkedAddress clipboardId=shrinkId address={account.address} />
+         | None =>
+           <Typography.Address>
+             (account.address :> string)->React.string
+           </Typography.Address>
+         }}
       </View>;
     };
   };
@@ -177,7 +207,7 @@ module Selector = {
 
       let items =
         accounts
-        ->Map.String.valuesToArray
+        ->PublicKeyHash.Map.valuesToArray
         ->SortArray.stableSortBy(Account.compareName);
 
       <>

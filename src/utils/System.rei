@@ -62,12 +62,10 @@ module File: {
     | Utf8
     | Raw(string);
 
-  let read:
-    (~encoding: encoding=?, Path.t) => Future.t(Result.t(string, Errors.t));
+  let read: (~encoding: encoding=?, Path.t) => Promise.t(string);
 
   let write:
-    (~encoding: encoding=?, ~name: Path.t, string) =>
-    Future.t(Result.t(unit, Errors.t));
+    (~encoding: encoding=?, ~name: Path.t, string) => Promise.t(unit);
 
   module CopyMode: {
     type t;
@@ -78,22 +76,22 @@ module File: {
     let assemble: (t, t) => t;
   };
 
-  let access: Path.t => Future.t(bool);
+  let access: Path.t => FutureBase.t(bool);
 
   let copy:
-    (~name: Path.t, ~dest: Path.t, ~mode: CopyMode.t) =>
-    Future.t(result(unit, Errors.t));
+    (~name: Path.t, ~dest: Path.t, ~mode: CopyMode.t) => Promise.t(unit);
 
-  let rm: (~name: Path.t) => Future.t(result(unit, Errors.t));
+  let rm: (~name: Path.t) => Promise.t(unit);
 
   let initIfNotExists:
-    (~encoding: encoding=?, ~path: Path.t, string) =>
-    Future.t(Result.t(unit, Errors.t));
-  let initDirIfNotExists: Path.t => Future.t(Result.t(unit, Errors.t));
+    (~encoding: encoding=?, ~path: Path.t, string) => Promise.t(unit);
+  let initDirIfNotExists: Path.t => Promise.t(unit);
 };
 
 module Client: {
-  let resetDir: Path.t => Future.t(Result.t(unit, Errors.t));
+  let resetDir: Path.t => Promise.t(unit);
 
-  let initDir: Path.t => Future.t(Result.t(unit, Errors.t));
+  let initDir: Path.t => Promise.t(unit);
 };
+
+let reload: unit => unit;

@@ -37,7 +37,7 @@ module URL: {
   module Explorer: {
     let operations:
       (
-        ConfigFile.t,
+        ConfigContext.env,
         PublicKeyHash.t,
         ~types: array(string)=?,
         ~destination: PublicKeyHash.t=?,
@@ -45,17 +45,18 @@ module URL: {
         unit
       ) =>
       t;
-    let checkToken: (ConfigFile.t, ~contract: PublicKeyHash.t) => t;
+    let checkToken: (ConfigContext.env, ~contract: PublicKeyHash.t) => t;
+    let accountExists: (ConfigContext.env, ~account: PublicKeyHash.t) => t;
   };
 
   module Endpoint: {
-    let delegates: ConfigFile.t => t;
+    let delegates: ConfigContext.env => t;
 
-    let runView: ConfigFile.t => t;
+    let runView: ConfigContext.env => t;
 
     let fa12GetBalanceInput:
       (
-        ~settings: ConfigFile.t,
+        ~config: ConfigContext.env,
         ~contract: PublicKeyHash.t,
         ~account: PublicKeyHash.t
       ) =>
@@ -63,7 +64,7 @@ module URL: {
 
     let fa2BalanceOfInput:
       (
-        ~settings: ConfigFile.t,
+        ~config: ConfigContext.env,
         ~contract: PublicKeyHash.t,
         ~account: PublicKeyHash.t,
         ~tokenId: int
@@ -74,29 +75,28 @@ module URL: {
   module External: {let bakingBadBakers: t;};
 
   /* Fetch URL as a JSON. */
-  let get: t => Future.t(Result.t(Js.Json.t, Errors.t));
+  let get: t => Promise.t(Js.Json.t);
 
   /* Fetch URL with a JSON payload, as a JSON. */
-  let postJson: (t, Js.Json.t) => Let.future(Js.Json.t);
+  let postJson: (t, Js.Json.t) => Promise.t(Js.Json.t);
 };
 
 /** Mezos requests for mempool operations and classical operations. */
 module type Explorer = {
   let getOperations:
     (
-      ConfigFile.t,
+      ConfigContext.env,
       PublicKeyHash.t,
       ~types: array(string)=?,
       ~destination: PublicKeyHash.t=?,
       ~limit: int=?,
       unit
     ) =>
-    Future.t(Result.t(array(Operation.Read.t), Errors.t));
+    Promise.t(array(Operation.Read.t));
 };
 
 /** This generic version exists only for tests purpose */
 module ExplorerMaker:
-  (Get: {let get: URL.t => Future.t(Result.t(Js.Json.t, Errors.t));}) =>
-   Explorer;
+  (Get: {let get: URL.t => Promise.t(Js.Json.t);}) => Explorer;
 
 module Explorer: Explorer;
