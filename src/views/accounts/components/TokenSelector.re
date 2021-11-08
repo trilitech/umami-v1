@@ -131,7 +131,8 @@ let make =
     ) => {
   let tokens = StoreContext.Tokens.useGetAll();
 
-  let items = tokens->Map.String.valuesToArray->Array.map(v => v->Token);
+  let items =
+    tokens->PublicKeyHash.Map.valuesToArray->Array.map(v => v->Token);
 
   let onValueChange =
     fun

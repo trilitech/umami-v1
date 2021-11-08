@@ -55,7 +55,7 @@ let secretKey = t =>
   t
   ->secretKeyRaw
   ->ReTaquitoError.fromPromiseParsed
-  ->Future.mapOk(Js.Nullable.toOption);
+  ->Promise.mapOk(Js.Nullable.toOption);
 
 let sign = (t, string) =>
   t->signRaw(string)->ReTaquitoError.fromPromiseParsed;

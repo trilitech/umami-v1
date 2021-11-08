@@ -63,13 +63,13 @@ let make = (~closeAction) => {
           switch (pairingInfo) {
           | Ok(pairingInfo) =>
             client
-            ->FutureEx.fromOption(
+            ->Promise.fromOption(
                 ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
               )
-            ->Future.flatMapOk(client =>
+            ->Promise.flatMapOk(client =>
                 client->ReBeacon.WalletClient.addPeer(pairingInfo)
               )
-            ->Future.get(
+            ->Promise.get(
                 fun
                 | Error(e) => raiseSubmitFailed(Some(e->Errors.toString))
                 | Ok(_) => {
@@ -108,7 +108,7 @@ let make = (~closeAction) => {
             form.formState->FormUtils.getFormStateError,
             form.getFieldError(Field(PairingRequest)),
           ]
-          ->UmamiCommon.Lib.Option.firstSome
+          ->Option.firstSome
         }
         multiline=true
         numberOfLines=9
@@ -259,14 +259,14 @@ module WithQR = {
       React.useEffect0(() => {
         let streamRef = ref(None);
 
-        FutureEx.async(() => {
-          let%FResMap stream =
+        Promise.async(() => {
+          let%AwaitMap stream =
             window##navigator##mediaDevices##getUserMedia({
               "video": {
                 "facingMode": "environment",
               },
             })
-            ->FutureJs.fromPromise(_ => StreamError);
+            ->Promise.fromJs(_ => StreamError);
 
           setHasStream(_ => true);
           streamRef := Some(stream);
@@ -332,16 +332,16 @@ module WithQR = {
 
       switch (pairingInfo) {
       | Ok(pairingInfo) =>
-        FutureEx.async(() => {
-          let%FRes client =
-            client->FutureEx.fromOption(
+        Promise.async(() => {
+          let%Await client =
+            client->Promise.fromOption(
               ~error=BeaconApiRequest.ClientNotConnected,
             );
 
-          let%FResMap () =
+          let%AwaitMap () =
             client
             ->ReBeacon.WalletClient.addPeer(pairingInfo)
-            ->Future.tapError(error => {
+            ->Promise.tapError(error => {
                 addToast(Logs.error(~origin=Beacon, error));
                 setWebcamScanning(_ => true);
               });

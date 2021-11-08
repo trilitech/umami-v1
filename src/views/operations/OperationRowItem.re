@@ -120,17 +120,14 @@ let getContactOrRaw = (aliases, tokens, address, operation) => {
     );
 };
 
-let status = (operation: Operation.Read.t, currentLevel, config: ConfigFile.t) => {
+let status =
+    (operation: Operation.Read.t, currentLevel, config: ConfigContext.env) => {
   let (txt, colorStyle) =
     switch (operation.status) {
     | Mempool => (I18n.t#state_mempool, Some(`negative))
     | Chain =>
-      let minConfirmations =
-        config.confirmations
-        ->Option.getWithDefault(ConfigFile.Default.confirmations);
-
+      let minConfirmations = config.confirmations;
       let currentConfirmations = currentLevel - operation.level;
-
       currentConfirmations > minConfirmations
         ? (I18n.t#state_confirmed, None)
         : (
@@ -216,8 +213,9 @@ let amount =
           I18n.t#tez_op_amount(sign, transaction.amount->Tez.toString)
           ->React.string
         | Token(_, token_trans) =>
-          let address = (token_trans.contract :> string);
-          let token: option(Token.t) = Belt.Map.String.get(tokens, address);
+          let address = token_trans.contract;
+          let token: option(Token.t) =
+            PublicKeyHash.Map.get(tokens, address);
           switch (token) {
           | None =>
             let tooltip = (
@@ -241,7 +239,7 @@ let amount =
                 disabled=true
                 style=Style.(style(~borderRadius=0., ~marginLeft="4px", ()))
               />
-              <AddToken address op />
+              <AddToken address=(address :> string) op />
             </View>;
           | Some({symbol, decimals, _}) =>
             Format.asprintf(
@@ -383,7 +381,7 @@ let make =
             I18n.tooltip#open_in_explorer,
           )
           onPress={_ => {
-            switch (ConfigUtils.getExternalExplorer(config)) {
+            switch (Network.externalExplorer(config.network.chain)) {
             | Ok(url) => System.openExternal(url ++ operation.hash)
             | Error(err) => addToast(Logs.error(~origin=Operation, err))
             }

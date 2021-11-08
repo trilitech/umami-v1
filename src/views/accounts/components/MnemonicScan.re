@@ -54,7 +54,7 @@ let make = (~closeAction, ~index, ~secret) => {
   let submitPassword = (~password) => {
     password
     ->SecureStorage.validatePassword
-    ->Future.mapOk(() => setStatus(_ => StepAccounts(password)));
+    ->Promise.mapOk(() => setStatus(_ => StepAccounts(password)));
   };
 
   let submitAccounts = (~password, ()) => {
@@ -64,7 +64,7 @@ let make = (~closeAction, ~index, ~secret) => {
     ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
         I18n.t#account_created
       )
-    ->FutureEx.getOk(_ => {closeAction()});
+    ->Promise.getOk(_ => {closeAction()});
   };
 
   let scan = (~password, path, _) =>

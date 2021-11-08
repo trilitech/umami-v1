@@ -28,11 +28,6 @@ module StateLenses = [%lenses
     amount: string,
     sender: option(Account.t),
     recipient: FormUtils.Alias.any,
-    fee: string,
-    gasLimit: string,
-    storageLimit: string,
-    forceLowFee: bool,
-    dryRun: option(Protocol.simulationResults),
   }
 ];
 
@@ -40,11 +35,6 @@ type validState = {
   amount: Transfer.Currency.t,
   sender: Account.t,
   recipient: FormUtils.Alias.t,
-  fee: option(Tez.t),
-  gasLimit: option(int),
-  storageLimit: option(int),
-  forceLowFee: bool,
-  dryRun: option(Protocol.simulationResults),
 };
 
 let unsafeExtractValidState = (token, state: StateLenses.state): validState => {
@@ -55,11 +45,6 @@ let unsafeExtractValidState = (token, state: StateLenses.state): validState => {
       ->FormUtils.Unsafe.getCurrency,
     sender: state.sender->FormUtils.Unsafe.getValue,
     recipient: state.recipient->FormUtils.Unsafe.account,
-    fee: state.fee->Tez.fromString,
-    gasLimit: state.gasLimit->Int.fromString,
-    storageLimit: state.storageLimit->Int.fromString,
-    forceLowFee: state.forceLowFee,
-    dryRun: state.dryRun,
   };
 };
 
@@ -67,55 +52,34 @@ let toState = (vs: validState): StateLenses.state => {
   amount: vs.amount->Transfer.Currency.toString,
   sender: vs.sender->Some,
   recipient: vs.recipient->FormUtils.Alias.Valid,
-
-  fee: vs.fee->Option.mapWithDefault("", Tez.toString),
-  gasLimit: vs.gasLimit->FormUtils.optToString(Int.toString),
-  storageLimit: vs.storageLimit->FormUtils.optToString(Int.toString),
-  forceLowFee: vs.forceLowFee,
-  dryRun: vs.dryRun,
 };
 
 include ReForm.Make(StateLenses);
 
-type transaction = Transfer.t;
-
 let buildTransferElts = (transfers, build) => {
-  transfers->List.map(((t: validState, advOpened)) => {
+  transfers->List.map((t: validState) => {
     let destination = t.recipient->FormUtils.Alias.address;
-    let gasLimit = advOpened ? t.gasLimit : None;
-    let storageLimit = advOpened ? t.storageLimit : None;
-    let fee = advOpened ? t.fee : None;
 
-    build(
-      ~destination,
-      ~amount=t.amount,
-      ~fee?,
-      ~gasLimit?,
-      ~storageLimit?,
-      (),
-    );
+    build(~destination, ~amount=t.amount, ());
   });
 };
 
-let buildTransfer = (inputTransfers, source, forceLowFee) =>
+let buildTransfer = (inputTransfers, source) =>
   Transfer.makeTransfers(
     ~source,
     ~transfers=
-      buildTransferElts(
-        inputTransfers,
-        Transfer.makeSingleTransferElt(~parameter=?None, ~entrypoint=?None),
+      buildTransferElts(inputTransfers, (~destination, ~amount, ()) =>
+        Transfer.makeSingleTransferElt(~destination, ~amount, ())
       ),
-    ~forceLowFee?,
     (),
   );
 
-let buildTransaction = (batch: list((validState, bool))) => {
+let buildTransaction = (batch: list(validState)) => {
   switch (batch) {
   | [] => assert(false)
-  | [(first, _), ..._] as inputTransfers =>
+  | [first, ..._] as inputTransfers =>
     let source = first.sender;
-    let forceLowFee = first.forceLowFee ? Some(true) : None;
 
-    buildTransfer(inputTransfers, source, forceLowFee);
+    buildTransfer(inputTransfers, source);
   };
 };

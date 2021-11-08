@@ -25,9 +25,9 @@
 
 type t;
 
-let publicKey: t => Future.t(Result.t(string, Errors.t));
-let publicKeyHash: t => Future.t(Result.t(PublicKeyHash.t, Errors.t));
-let secretKey: t => Future.t(Result.t(option(string), Errors.t));
+let publicKey: t => Promise.t(string);
+let publicKeyHash: t => Promise.t(PublicKeyHash.t);
+let secretKey: t => Promise.t(option(string));
 
 type signature = {
   bytes: string,
@@ -37,12 +37,11 @@ type signature = {
   sig_: string,
 };
 
-let sign: (t, string) => Future.t(Result.t(signature, Errors.t));
+let sign: (t, string) => Promise.t(signature);
 
 module MemorySigner: {
   let create:
-    (~secretKey: string, ~passphrase: string=?, unit) =>
-    Future.t(Result.t(t, Errors.t));
+    (~secretKey: string, ~passphrase: string=?, unit) => Promise.t(t);
 };
 
 module EstimationSigner: {

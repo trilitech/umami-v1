@@ -28,6 +28,8 @@ open ReactNative;
 let styles =
   Style.(
     StyleSheet.create({
+      "advancedOptions": style(~marginBottom=12.->dp, ()),
+      "edited": style(~marginRight=5.->dp, ()),
       "timeoutError":
         style(
           ~alignItems=`flexStart,
@@ -38,16 +40,34 @@ let styles =
     })
   );
 
+type step =
+  | AdvancedOptStep(option(int))
+  | SummaryStep;
+
+let makeTitle = (~custom=?) =>
+  fun
+  | AdvancedOptStep(_) => I18n.label#advanced_options
+  | SummaryStep => custom->Option.getWithDefault(I18n.title#confirmation);
+
 [@react.component]
 let make =
     (
       ~subtitle=?,
       ~source: Account.t,
-      ~ledgerState,
-      ~children,
-      ~sendOperation: TaquitoAPI.Signer.intent => Future.t(Result.t(_)),
+      ~ledgerState: (option(SigningBlock.LedgerView.state), _),
+      ~signOpStep as (step, setStep),
+      ~dryRun,
+      ~secondaryButton=?,
+      ~operation,
+      ~sendOperation:
+         (~operation: Operation.t, TaquitoAPI.Signer.intent) => Promise.t(_),
       ~loading,
     ) => {
+  let ((operation: Operation.t, dryRun), setOp) =
+    React.useState(() => (operation, dryRun));
+
+  let theme = ThemeContext.useTheme();
+
   let subtitle =
     subtitle->Option.map(((s, hs)) =>
       switch (source.Account.kind) {
@@ -57,18 +77,75 @@ let make =
       }
     );
 
-  <>
-    {subtitle->ReactUtils.mapOpt(s =>
-       <View style=FormStyles.header>
-         <Typography.Overline1> s->React.string </Typography.Overline1>
-       </View>
-     )}
-    children
-    <SigningBlock
-      accountKind={source.Account.kind}
-      ledgerState
-      loading
-      sendOperation
+  let onAdvOptSubmit = (op, dryRun) => {
+    setOp(_ => (op, dryRun));
+
+    setStep(_ => SummaryStep);
+  };
+
+  let setAdvancedOptions = i => setStep(_ => AdvancedOptStep(i));
+
+  let advancedOptionsDisabled =
+    (
+      switch (fst(ledgerState)) {
+      | None
+      | Some(Error(_)) => false
+      | Some(WaitForConfirm | Searching | Confirmed) => true
+      }
+    )
+    || loading;
+
+  switch (step) {
+  | SummaryStep =>
+    <>
+      {subtitle->ReactUtils.mapOpt(s =>
+         <View style=FormStyles.header>
+           <Typography.Overline1> s->React.string </Typography.Overline1>
+         </View>
+       )}
+      {switch (operation) {
+       | Delegation(delegation) =>
+         <OperationSummaryView.Delegate delegation dryRun />
+       | Transaction(transfer) =>
+         <OperationSummaryView.Transactions
+           transfer
+           dryRun
+           editAdvancedOptions={i => setAdvancedOptions(Some(i))}
+           advancedOptionsDisabled
+         />
+       }}
+      {<Buttons.RightArrowButton
+         style=styles##advancedOptions
+         disabled=advancedOptionsDisabled
+         text=I18n.label#advanced_options
+         stateIcon={
+           Protocol.optionsSet(operation) == Some(true)
+             ? <Icons.Edit
+                 style=styles##edited
+                 size=25.
+                 color={theme.colors.iconPrimary}
+               />
+             : React.null
+         }
+         onPress={_ => setAdvancedOptions(None)}
+       />
+       ->ReactUtils.onlyWhen(dryRun.simulations->Array.length == 1)}
+      <SigningBlock
+        accountKind={source.Account.kind}
+        ledgerState
+        ?secondaryButton
+        loading
+        sendOperation={sendOperation(~operation)}
+      />
+    </>
+
+  | AdvancedOptStep(index) =>
+    <AdvancedOptionsView
+      operation
+      dryRun
+      ?index
+      onSubmit=onAdvOptSubmit
+      token=None
     />
-  </>;
+  };
 };

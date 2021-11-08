@@ -23,7 +23,6 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open UmamiCommon;
 open Let;
 
 module Path = {
@@ -57,8 +56,8 @@ module URL = {
     l->List.map(((a, v)) => a ++ "=" ++ v)->List.toArray
     |> Js.Array.joinWith("&");
 
-  let build_explorer_url = (network, path, args) => {
-    ConfigUtils.explorer(network)
+  let build_explorer_url = (config: ConfigContext.env, path, args) => {
+    config.network.explorer
     ++ "/"
     ++ path
     ++ (args == [] ? "" : "?" ++ args->build_args);
@@ -67,18 +66,16 @@ module URL = {
   let fromString = s => s;
 
   let get = url => {
-    let%FRes response =
+    let%Await response =
       url
       ->Fetch.fetch
-      ->FutureJs.fromPromise(e =>
+      ->Promise.fromJs(e =>
           e->RawJsError.fromPromiseError.message->FetchError
         );
 
     response
     ->Fetch.Response.json
-    ->FutureJs.fromPromise(e =>
-        e->RawJsError.fromPromiseError.message->FetchError
-      );
+    ->Promise.fromJs(e => e->RawJsError.fromPromiseError.message->FetchError);
   };
 
   let postJson = (url, json) => {
@@ -90,34 +87,31 @@ module URL = {
         (),
       );
 
-    let%FRes response =
+    let%Await response =
       url
       ->Fetch.fetchWithInit(init)
-      ->FutureJs.fromPromise(e =>
+      ->Promise.fromJs(e =>
           e->RawJsError.fromPromiseError.message->FetchError
         );
 
     response
     ->Fetch.Response.json
-    ->FutureJs.fromPromise(e =>
-        e->RawJsError.fromPromiseError.message->FetchError
-      );
+    ->Promise.fromJs(e => e->RawJsError.fromPromiseError.message->FetchError);
   };
 
   module Explorer = {
     let operations =
         (
-          settings: ConfigFile.t,
+          config: ConfigContext.env,
           account: PublicKeyHash.t,
           ~types: option(array(string))=?,
           ~destination: option(PublicKeyHash.t)=?,
           ~limit: option(int)=?,
           (),
         ) => {
-      let operationsPath =
-        "accounts/" ++ (account :> string) ++ "/operations/next";
+      let operationsPath = "accounts/" ++ (account :> string) ++ "/operations";
       let args =
-        Lib.List.(
+        List.(
           []
           ->addOpt(
               destination->arg_opt("destination", dst => (dst :> string)),
@@ -125,31 +119,40 @@ module URL = {
           ->addOpt(limit->arg_opt("limit", lim => lim->Js.Int.toString))
           ->addOpt(types->arg_opt("types", t => t->Js.Array2.joinWith(",")))
         );
-      let url = build_explorer_url(settings, operationsPath, args);
+      let url = build_explorer_url(config, operationsPath, args);
       url;
     };
 
-    let checkToken = (network, ~contract: PublicKeyHash.t) => {
+    let checkToken = (config, ~contract: PublicKeyHash.t) => {
       let path = "tokens/exists/" ++ (contract :> string);
-      build_explorer_url(network, path, []);
+      build_explorer_url(config, path, []);
+    };
+
+    let accountExists = (config, ~account: PublicKeyHash.t) => {
+      let path = "accounts/" ++ (account :> string) ++ "/exists/";
+      build_explorer_url(config, path, []);
     };
   };
 
   module Endpoint = {
-    let delegates = settings =>
-      ConfigUtils.endpoint(settings) ++ Path.Endpoint.delegates;
+    let delegates = (c: ConfigContext.env) =>
+      c.network.endpoint ++ Path.Endpoint.delegates;
 
-    let runView = settings =>
-      ConfigUtils.endpoint(settings) ++ Path.Endpoint.runView;
+    let runView = (c: ConfigContext.env) =>
+      c.network.endpoint ++ Path.Endpoint.runView;
 
     /* Generates a valid JSON for the run_view RPC */
     let fa12GetBalanceInput =
-        (~settings, ~contract: PublicKeyHash.t, ~account: PublicKeyHash.t) => {
+        (
+          ~config: ConfigContext.env,
+          ~contract: PublicKeyHash.t,
+          ~account: PublicKeyHash.t,
+        ) => {
       Json.Encode.(
         object_([
           ("contract", string((contract :> string))),
           ("entrypoint", string("getBalance")),
-          ("chain_id", string(settings->ConfigUtils.chainId)),
+          ("chain_id", string(config.network.chain->Network.getChainId)),
           ("input", object_([("string", string((account :> string)))])),
           ("unparsing_mode", string("Readable")),
         ])
@@ -181,7 +184,7 @@ module URL = {
 
     let fa2BalanceOfInput =
         (
-          ~settings,
+          ~config: ConfigContext.env,
           ~contract: PublicKeyHash.t,
           ~account: PublicKeyHash.t,
           ~tokenId: int,
@@ -190,7 +193,7 @@ module URL = {
         object_([
           ("contract", string((contract :> string))),
           ("entrypoint", string("balance_of")),
-          ("chain_id", string(settings->ConfigUtils.chainId)),
+          ("chain_id", string(config.network.chain->Network.getChainId)),
           (
             "input",
             jsonArray([|
@@ -221,18 +224,17 @@ module URL = {
 module type Explorer = {
   let getOperations:
     (
-      ConfigFile.t,
+      ConfigContext.env,
       PublicKeyHash.t,
       ~types: array(string)=?,
       ~destination: PublicKeyHash.t=?,
       ~limit: int=?,
       unit
     ) =>
-    Future.t(Result.t(array(Operation.Read.t), Errors.t));
+    Promise.t(array(Operation.Read.t));
 };
 
-module ExplorerMaker =
-       (Get: {let get: string => Future.t(Result.t(Js.Json.t, Errors.t));}) => {
+module ExplorerMaker = (Get: {let get: string => Promise.t(Js.Json.t);}) => {
   let getOperations =
       (
         network,
@@ -242,18 +244,18 @@ module ExplorerMaker =
         ~limit: option(int)=?,
         (),
       ) => {
-    let%FRes res =
+    let%Await res =
       network
       ->URL.Explorer.operations(account, ~types?, ~destination?, ~limit?, ())
       ->Get.get;
 
-    let%FRes operations =
+    let%Await operations =
       res
-      ->ResultEx.fromExn(Json.Decode.(array(Operation.Read.Decode.t)))
-      ->ResultEx.mapError(e => e->Operation.Read.filterJsonExn->JsonError)
-      ->Future.value;
+      ->Result.fromExn(Json.Decode.(array(Operation.Read.Decode.t)))
+      ->Result.mapError(e => e->Operation.Read.filterJsonExn->JsonError)
+      ->Promise.value;
 
-    operations->FutureEx.ok;
+    operations->Promise.ok;
   };
 };
 

@@ -149,7 +149,7 @@ let parseBool = (v, row, col) => {
     : b == "false" ? Ok(false) : Error(CannotParseBool(row, col));
 };
 let parseCustom = (v, conv, row, col) => {
-  v->conv->ResultEx.mapError(e => CannotParseCustomValue(e, row, col));
+  v->conv->Result.mapError(e => CannotParseCustomValue(e, row, col));
 };
 
 let rec parseElementRaw:
@@ -197,7 +197,7 @@ let rec parseRowRec:
       | Tup2(r1, r2) =>
         let v1 = parseRowRec(values, r1, row, col);
         let v2 = parseRowRec(values, r2, row, col + length(r1));
-        ResultEx.map2(v1, v2, (v1, v2) => (v1, v2));
+        Result.map2(v1, v2, (v1, v2) => (v1, v2));
 
       /* These last three simply reuse Tup2 parsing and return a tuple of the correct type */
       | Tup3(r1, r2, r3) =>
@@ -240,5 +240,5 @@ let parseCSV = (value, encoding) => {
   Js.String.split("\n", value)
   ->Js.Array2.map(removeComments)
   ->parseRows(encoding)
-  ->ResultEx.collect;
+  ->Result.collect;
 };

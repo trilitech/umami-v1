@@ -38,7 +38,8 @@ let styles =
           (),
         ),
       "nameLogo": style(~flexDirection=`row, ~alignItems=`center, ()),
-      "networkInfo": style(),
+      "buttonMargin": style(~marginLeft=10.->dp, ()),
+      "noticeSpace": style(~marginLeft=24.->dp, ()),
       "networkHeader":
         style(
           ~flexDirection=`row,
@@ -62,11 +63,11 @@ let styles =
     })
   );
 
-module UpdateNotice = {
+module Notice = {
   let styles =
     Style.(
       StyleSheet.create({
-        "updateNotice":
+        "notice":
           style(
             ~flexDirection=`row,
             ~height=60.->dp,
@@ -75,7 +76,7 @@ module UpdateNotice = {
             ~fontSize=14.,
             (),
           ),
-        "upgradeButton":
+        "button":
           style(
             ~overflow=`hidden,
             ~borderRadius=4.,
@@ -83,7 +84,7 @@ module UpdateNotice = {
             ~borderWidth=1.,
             (),
           ),
-        "upgradePressable":
+        "pressable":
           style(
             ~height=26.->dp,
             ~minWidth=69.->dp,
@@ -95,100 +96,127 @@ module UpdateNotice = {
       })
     );
 
+  module Button = {
+    [@react.component]
+    let make = (~style as styleArg=?, ~text, ~onPress) => {
+      let theme = ThemeContext.useTheme();
+      <View
+        style=Style.(
+          arrayOption([|
+            style(~borderColor=theme.colors.borderPrimary, ())->Some,
+            styles##button->Some,
+            styleArg,
+          |])
+        )>
+        <ThemedPressable.Primary
+          style=Style.(
+            array([|
+              style(~color=theme.colors.textPrimary, ()),
+              styles##pressable,
+            |])
+          )
+          onPress
+          accessibilityRole=`button>
+          <Typography.ButtonPrimary
+            style=Style.(style(~color=theme.colors.textPrimary, ()))>
+            text->React.string
+          </Typography.ButtonPrimary>
+        </ThemedPressable.Primary>
+      </View>;
+    };
+  };
+
   [@react.component]
-  let make = (~displayNotice) => {
+  let make = (~style as styleArg=?, ~children, ~text) => {
     let theme = ThemeContext.useTheme();
 
-    let onPress = _ =>
-      System.openExternal(
-        "https://gitlab.com/nomadic-labs/umami-wallet/umami/-/releases",
-      );
+    <View
+      style=Style.(
+        arrayOption([|
+          style(~backgroundColor=theme.colors.textPrimary, ())->Some,
+          styleArg,
+        |])
+      )>
+      <View
+        style=Style.(
+          array([|
+            style(~backgroundColor=theme.colors.backgroundMediumEmphasis, ()),
+            styles##notice,
+          |])
+        )>
+        <Typography.Notice
+          style=Style.(
+            style(~color=theme.colors.textPrimary, ~paddingRight=8.->dp, ())
+          )>
+          text->React.string
+        </Typography.Notice>
+        children
+      </View>
+    </View>;
+  };
+};
 
-    !displayNotice
-      ? React.null
-      : <View
-          style=Style.(style(~backgroundColor=theme.colors.textPrimary, ()))>
-          <View
-            style=Style.(
-              array([|
-                style(
-                  ~backgroundColor=theme.colors.backgroundMediumEmphasis,
-                  (),
-                ),
-                styles##updateNotice,
-              |])
-            )>
-            <Typography.Notice
-              style=Style.(
-                style(
-                  ~color=theme.colors.textPrimary,
-                  ~paddingRight=8.->dp,
-                  (),
-                )
-              )>
-              I18n.t#upgrade_notice->React.string
-            </Typography.Notice>
-            <View
-              style=Style.(
-                array([|
-                  style(~borderColor=theme.colors.borderPrimary, ()),
-                  styles##upgradeButton,
-                |])
-              )>
-              <ThemedPressable.Primary
-                style=Style.(
-                  array([|
-                    style(~color=theme.colors.textPrimary, ()),
-                    styles##upgradePressable,
-                  |])
-                )
-                onPress
-                accessibilityRole=`button>
-                <Typography.ButtonPrimary
-                  style=Style.(style(~color=theme.colors.textPrimary, ()))>
-                  I18n.btn#upgrade->React.string
-                </Typography.ButtonPrimary>
-              </ThemedPressable.Primary>
-            </View>
-          </View>
-        </View>;
+module Notices = {
+  [@react.component]
+  let make = () => {
+    let apiVersion = StoreContext.useApiVersion();
+    let retryNetwork = ConfigContext.useRetryNetwork();
+
+    let displayUpdateNotice =
+      apiVersion
+      ->Option.map(apiVersion =>
+          !Network.checkInBound(apiVersion.Network.api)
+        )
+      ->Option.getWithDefault(false);
+
+    let networkOffline = ConfigContext.useNetworkOffline();
+
+    if (displayUpdateNotice) {
+      let onPress = _ =>
+        System.openExternal(
+          "https://gitlab.com/nomadic-labs/umami-wallet/umami/-/releases",
+        );
+      <Notice text=I18n.t#upgrade_notice>
+        <Notice.Button onPress text=I18n.btn#upgrade />
+      </Notice>;
+    } else if (networkOffline) {
+      <Notice text=I18n.errors#network_unreachable>
+        <Notice.Button
+          style=styles##noticeSpace
+          onPress={_ => Routes.push(Settings)}
+          text=I18n.btn#goto_settings
+        />
+        <Notice.Button
+          style=styles##buttonMargin
+          onPress={_ => {retryNetwork()}}
+          text=I18n.btn#retry_network
+        />
+      </Notice>;
+    } else {
+      React.null;
+    };
   };
 };
 
 [@react.component]
 let make = () => {
   let theme = ThemeContext.useTheme();
-  let apiVersion = StoreContext.useApiVersion();
 
   let config = ConfigContext.useContent();
 
-  let displayNotice =
-    apiVersion
-    ->Option.map(apiVersion => !Network.checkInBound(apiVersion.Network.api))
-    ->Option.getWithDefault(false);
-
-  let (networkText, networkColor) =
-    switch (config->ConfigUtils.network) {
-    | `Mainnet => (I18n.t#mainnet, Some(`primary))
-    | `Granadanet => (I18n.t#granadanet, Some(`mediumEmphasis))
-    | `Custom(name) => (
-        name,
-        config->ConfigUtils.chainId == Network.mainnetChain
-          ? Some(`primary) : Some(`mediumEmphasis),
-      )
-    };
+  let (networkText, networkColor) = (
+    config.network.name,
+    config.network.chain == `Mainnet
+      ? Some(`primary) : Some(`mediumEmphasis),
+  );
 
   let tag = {
-    let network = config->ConfigUtils.network;
-    switch (network) {
-    | `Mainnet => None
-    | `Granadanet => None
-    | `Custom(_) => Some(config->ConfigUtils.chainId->Network.getChainName)
-    };
+    config.defaultNetwork
+      ? None : config.network.chain->Network.getDisplayedName->Some;
   };
 
   let tagBorderColor = {
-    config->ConfigUtils.chainId == Network.mainnetChain
+    config.network.chain == `Mainnet
       ? theme.colors.textPrimary : theme.colors.textMediumEmphasis;
   };
 
@@ -220,14 +248,11 @@ let make = () => {
            </Typography.Body2>
          </View>
          ->ReactUtils.onlyWhen(tag != None)}
-        <Typography.Overline2
-          fontWeightStyle=`black
-          colorStyle=?networkColor
-          style={styles##networkInfo}>
+        <Typography.Overline2 fontWeightStyle=`black colorStyle=?networkColor>
           networkText->React.string
         </Typography.Overline2>
       </View>
     </View>
-    <UpdateNotice displayNotice />
+    <Notices />
   </View>;
 };

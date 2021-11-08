@@ -24,13 +24,15 @@
 /*****************************************************************************/
 
 type Errors.t +=
+  | ParsingError(string)
   | DecodeError(string);
 
 // Propagates Errors.t during decoding, should be caught by the decode function
 exception InternalError(Errors.t);
 
-let decode:
-  (Js.Json.t, Json.Decode.decoder('a)) => result('a, TezosClient.Errors.t);
+let parse: string => Promise.result(Js.Json.t);
+
+let decode: (Js.Json.t, Json.Decode.decoder('a)) => Promise.result('a);
 
 module MichelsonDecode: {
   type address =
@@ -53,4 +55,16 @@ module MichelsonDecode: {
   let addressDecoder: Json.Decode.decoder(address);
 
   let fa2BalanceOfDecoder: Js.Json.t => array(((address, string), string));
+};
+
+module Encode: {
+  include (module type of Json.Encode);
+
+  let bsListEncoder: encoder('a) => encoder(list('a));
+};
+
+module Decode: {
+  include (module type of Json.Decode);
+
+  let bsListDecoder: decoder('a) => decoder(list('a));
 };

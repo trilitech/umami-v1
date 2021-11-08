@@ -92,7 +92,7 @@ module AccountsFlatList = {
     let accounts = StoreContext.Accounts.useGetAll();
     <View>
       {accounts
-       ->Map.String.valuesToArray
+       ->PublicKeyHash.Map.valuesToArray
        ->SortArray.stableSortBy(Account.compareName)
        ->Array.map(account =>
            <AccountRowItem key=(account.address :> string) account ?token />
@@ -123,7 +123,7 @@ module AccountsTreeList = {
         ->Set.String.fromArray;
 
       let accountsNotInSecrets =
-        accounts->Map.String.keep((address, _account) => {
+        accounts->PublicKeyHash.Map.keep((address, _account) => {
           !addressesInSecrets->Set.String.has((address :> string))
         });
 
@@ -152,7 +152,7 @@ module AccountsTreeList = {
         </View>
         <View>
           {accountsNotInSecrets
-           ->Map.String.valuesToArray
+           ->PublicKeyHash.Map.valuesToArray
            ->Array.map(account =>
                <SecretRowTree.AccountImportedRowItem.Cli
                  key=(account.address :> string)
@@ -175,6 +175,8 @@ let make = (~showOnboarding, ~mode, ~setMode) => {
   let accountsRequest = StoreContext.Accounts.useRequest();
   let token = StoreContext.SelectedToken.useGet();
 
+  let retryNetwork = ConfigContext.useRetryNetwork();
+
   <Page>
     {accountsRequest->ApiRequest.mapOrEmpty(_ => {
        <>
@@ -183,10 +185,16 @@ let make = (~showOnboarding, ~mode, ~setMode) => {
              {<>
                 <RefreshButton
                   loading={accountsRequest->ApiRequest.isLoading}
-                  onRefresh=resetSecrets
+                  onRefresh={() => {
+                    resetSecrets();
+                    retryNetwork();
+                  }}
                 />
                 <EditButton mode setMode />
               </>}>
+           <Typography.Headline style=Styles.title>
+             I18n.title#accounts->React.string
+           </Typography.Headline>
            {mode->Mode.is_management
               ? <BalanceTotal /> : <BalanceTotal.WithTokenSelector ?token />}
            <View style=styles##actionBar>

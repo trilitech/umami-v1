@@ -36,7 +36,7 @@ let make = (~label, ~value: PublicKeyHash.t, ~handleChange, ~error, ~disabled) =
 
   let items =
     accounts
-    ->Map.String.valuesToArray
+    ->PublicKeyHash.Map.valuesToArray
     ->Array.keepMap(((account, delegate)) =>
         delegate->Option.isNone || disabled ? Some(account) : None
       )

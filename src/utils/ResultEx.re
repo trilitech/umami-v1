@@ -41,6 +41,8 @@ let fromOption = (v, error) =>
   | None => error->Error
   };
 
+let toOption = v => v->Result.mapWithDefault(None, v => Some(v));
+
 let flatMap2 = (r1, r2, f) =>
   switch (r1, r2) {
   | (Ok(v1), Ok(v2)) => f(v1, v2)

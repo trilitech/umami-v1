@@ -115,7 +115,7 @@ let mergebuf = (b1: Buffer.t, b2: Buffer.t) => {
 let seed = recoveryPhrase => recoveryPhrase->BIP39.seed->toHex;
 
 let edesk = (path, seed, ~password) => {
-  let%FlatRes () = Sodium.ready;
+  let%AwaitRes () = Sodium.ready;
 
   let%ResMap secretKey =
     switch (ED25519.derivePath(path->DerivationPath.toString, seed).key) {
@@ -136,7 +136,7 @@ let edesk = (path, seed, ~password) => {
 
 /** Generates an encrypted secret key from a mnemonic. */
 let edeskLegacy = (~passphrase="", recoveryPhrase, ~password) => {
-  let%FResMap () = Sodium.ready;
+  let%AwaitMap () = Sodium.ready;
 
   let secretKey =
     pbkdf2MnemonicLegacy(recoveryPhrase, "mnemonic" ++ passphrase)

@@ -25,8 +25,6 @@
 
 open Let;
 
-open UmamiCommon;
-
 type reactState('state) = ('state, ('state => 'state) => unit);
 
 type error = Errors.t;
@@ -45,7 +43,7 @@ type nextState('value) = (unit => option('value), unit => unit);
 type state = {
   selectedAccountState: reactState(option(PublicKeyHash.t)),
   selectedTokenState: reactState(option(PublicKeyHash.t)),
-  accountsRequestState: requestState(Map.String.t(Account.t)),
+  accountsRequestState: requestState(PublicKeyHash.Map.map(Account.t)),
   secretsRequestState: reactState(ApiRequest.t(array(Secret.derived))),
   balanceRequestsState: apiRequestsState(Tez.t),
   delegateRequestsState: apiRequestsState(option(PublicKeyHash.t)),
@@ -54,9 +52,11 @@ type state = {
   operationsRequestsState:
     apiRequestsState(OperationApiRequest.operationsResponse),
   operationsConfirmations: reactState(Set.String.t),
-  aliasesRequestState: reactState(ApiRequest.t(Map.String.t(Alias.t))),
+  aliasesRequestState:
+    reactState(ApiRequest.t(PublicKeyHash.Map.map(Alias.t))),
   bakersRequestState: reactState(ApiRequest.t(array(Delegate.t))),
-  tokensRequestState: reactState(ApiRequest.t(Map.String.t(Token.t))),
+  tokensRequestState:
+    reactState(ApiRequest.t(PublicKeyHash.Map.map(Token.t))),
   balanceTokenRequestsState: apiRequestsState(Token.Unit.t),
   apiVersionRequestState: reactState(option(Network.apiVersion)),
   eulaSignatureRequestState: reactState(bool),
@@ -108,18 +108,23 @@ module Provider = {
 
 [@react.component]
 let make = (~children) => {
-  let settings = ConfigContext.useContent();
+  let config = ConfigContext.useContent();
   let addToast = LogsContext.useToast();
 
-  let network = settings->ConfigUtils.network;
+  let network = React.useMemo1(() => {config.network}, [|config|]);
+  let networkStatus = ConfigContext.useNetworkStatus();
 
   let selectedAccountState = React.useState(() => None);
+
   let (selectedAccount, setSelectedAccount) = selectedAccountState;
 
   let selectedTokenState = React.useState(() => None);
 
   let accountsRequestState = React.useState(() => ApiRequest.NotAsked);
-  let (accountsRequest, _setAccountsRequest) = accountsRequestState;
+  let (
+    accountsRequest: ApiRequest.t(PublicKeyHash.Map.map(_)),
+    _setAccountsRequest,
+  ) = accountsRequestState;
 
   let balanceRequestsState = React.useState(() => Map.String.empty);
   let delegateRequestsState = React.useState(() => Map.String.empty);
@@ -163,10 +168,10 @@ let make = (~children) => {
 
   ReactUtils.useAsyncEffect1(
     () => {
-      let%FResMap (v: Network.apiVersion, _) =
+      let%AwaitMap (v: Network.apiVersion, _) =
         Network.checkConfiguration(
-          settings->ConfigUtils.explorer,
-          settings->ConfigUtils.endpoint,
+          config.network.explorer,
+          config.network.endpoint,
         );
       setApiVersion(_ => Some(v));
       if (!Network.checkInBound(v.api)) {
@@ -178,15 +183,39 @@ let make = (~children) => {
     [|network|],
   );
 
+  let reset = () => {
+    let setAccounts = snd(accountsRequestState);
+    setAccounts(ApiRequest.expireCache);
+    let setSecrets = snd(secretsRequestState);
+    setSecrets(ApiRequest.expireCache);
+    let setBalances = snd(balanceRequestsState);
+    setBalances(balances => balances->Map.String.map(ApiRequest.expireCache));
+    let setBalancesToken = snd(balanceTokenRequestsState);
+    setBalancesToken(balances =>
+      balances->Map.String.map(ApiRequest.expireCache)
+    );
+  };
+
+  React.useEffect1(
+    () => {
+      networkStatus.previous == Some(Offline)
+      && networkStatus.current == Online
+        ? reset() : ();
+
+      None;
+    },
+    [|networkStatus|],
+  );
+
   // Select a default account if no one selected
   React.useEffect2(
     () => {
       if (selectedAccount->Option.isNone) {
         accountsRequest
-        ->ApiRequest.getWithDefault(Map.String.empty)
-        ->Map.String.valuesToArray
+        ->ApiRequest.getWithDefault(PublicKeyHash.Map.empty)
+        ->PublicKeyHash.Map.valuesToArray
         ->Array.get(0)
-        ->Lib.Option.iter((account: Account.t) =>
+        ->Option.iter((account: Account.t) =>
             setSelectedAccount(_ => Some(account.address))
           );
       };
@@ -245,7 +274,7 @@ let useRequestsState = (getRequestsState, key: option(string)) => {
   let setRequest =
     React.useCallback2(
       newRequestSetter =>
-        key->Lib.Option.iter(key =>
+        key->Option.iter(key =>
           setRequests((request: requestsState(_)) =>
             request->Map.String.update(
               key, (oldRequest: option(ApiRequest.t(_))) =>
@@ -295,35 +324,48 @@ module Balance = {
     BalanceApiRequest.useLoad(~requestState, ~address);
   };
 
+  type Errors.t +=
+    | EveryBalancesFail;
+
+  let () =
+    Errors.registerHandler(
+      "Context",
+      fun
+      | EveryBalancesFail => I18n.errors#every_balances_fail->Some
+      | _ => None,
+    );
+
+  let handleBalances = (accountsSize, requests, reduce) => {
+    let allErrors = () => requests->Array.every(ApiRequest.isError);
+    let getAllDoneOk = () => requests->Array.keepMap(ApiRequest.getDoneOk);
+
+    if (allErrors()) {
+      ApiRequest.Done(Error(EveryBalancesFail), Expired);
+    } else {
+      let allDone = getAllDoneOk();
+      if (allDone->Array.size == accountsSize) {
+        let total = allDone->reduce;
+
+        Done(Ok(total), ApiRequest.initCache());
+      } else {
+        Loading(None);
+      };
+    };
+  };
+
   let useGetTotal = () => {
     let store = useStoreContext();
     let (balanceRequests, _) = store.balanceRequestsState;
     let (accountsRequest, _) = store.accountsRequestState;
+    let requests = balanceRequests->Map.String.valuesToArray;
     let accounts =
-      accountsRequest->ApiRequest.getWithDefault(Map.String.empty);
+      accountsRequest->ApiRequest.getWithDefault(PublicKeyHash.Map.empty);
 
-    let accountsBalanceRequests =
-      accounts
-      ->Map.String.valuesToArray
-      ->Array.keepMap(account => {
-          balanceRequests->Map.String.get((account.address :> string))
-        })
-      ->Array.keep(ApiRequest.isDone);
-
-    // check if balance requests for each accounts are done
-    accountsBalanceRequests->Array.size == accounts->Map.String.size
-      ? Some(
-          accountsBalanceRequests->Array.reduce(
-            Tez.zero, (acc, balanceRequest) => {
-            Tez.Infix.(
-              acc
-              + balanceRequest
-                ->ApiRequest.getDoneOk
-                ->Option.getWithDefault(Tez.zero)
-            )
-          }),
-        )
-      : None;
+    handleBalances(accounts->PublicKeyHash.Map.size, requests, a =>
+      a->Array.reduce(Tez.zero, (acc, balanceRequest) => {
+        Tez.Infix.(acc + balanceRequest)
+      })
+    );
   };
 
   let useResetAll = () => {
@@ -352,32 +394,22 @@ module BalanceToken = {
     let (balanceRequests, _) = store.balanceTokenRequestsState;
     let (accountsRequest, _) = store.accountsRequestState;
     let accounts =
-      accountsRequest->ApiRequest.getWithDefault(Map.String.empty);
+      accountsRequest->ApiRequest.getWithDefault(PublicKeyHash.Map.empty);
 
-    let accountsBalanceRequests =
+    let requests =
       accounts
-      ->Map.String.valuesToArray
+      ->PublicKeyHash.Map.valuesToArray
       ->Array.keepMap(account => {
           balanceRequests->Map.String.get(
             getRequestKey(account.address, tokenAddress),
           )
-        })
-      ->Array.keep(ApiRequest.isDone);
+        });
 
-    // check if balance requests for each accounts are done
-    accountsBalanceRequests->Array.size == accounts->Map.String.size
-      ? Some(
-          accountsBalanceRequests->Array.reduce(
-            Token.Unit.zero, (acc, balanceRequest) => {
-            Token.Unit.Infix.(
-              acc
-              + balanceRequest
-                ->ApiRequest.getDoneOk
-                ->Option.getWithDefault(Token.Unit.zero)
-            )
-          }),
-        )
-      : None;
+    Balance.handleBalances(accounts->PublicKeyHash.Map.size, requests, a =>
+      a->Array.reduce(Token.Unit.zero, (acc, balanceRequest) => {
+        Token.Unit.Infix.(acc + balanceRequest)
+      })
+    );
   };
 
   let useResetAll = () => {
@@ -497,7 +529,7 @@ module Operations = {
       ~sideEffect=
         hash => {
           OperationApiRequest.waitForConfirmation(settings, hash)
-          ->Future.get(_ => resetOperations())
+          ->Promise.get(_ => resetOperations())
         },
       (),
     );
@@ -531,8 +563,8 @@ module Tokens = {
     let (tokensRequest, _) = useRequestState();
     let apiVersion = useApiVersion();
     tokensRequest->ApiRequest.map(tokens =>
-      apiVersion->Option.mapWithDefault(Map.String.empty, v =>
-        tokens->Map.String.keep((_, t) =>
+      apiVersion->Option.mapWithDefault(PublicKeyHash.Map.empty, v =>
+        tokens->PublicKeyHash.Map.keep((_, t) =>
           t.TokenRepr.chain == v.Network.chain
         )
       )
@@ -541,14 +573,15 @@ module Tokens = {
 
   let useGetAll = () => {
     let accountsRequest = useRequest();
-    accountsRequest->ApiRequest.getWithDefault(Map.String.empty);
+    accountsRequest->ApiRequest.getWithDefault(PublicKeyHash.Map.empty);
   };
 
-  let useGet = (tokenAddress: option(string)) => {
+  let useGet = (tokenAddress: option(PublicKeyHash.t)) => {
     let tokens = useGetAll();
 
     switch (tokenAddress, tokens) {
-    | (Some(tokenAddress), tokens) => tokens->Map.String.get(tokenAddress)
+    | (Some(tokenAddress), tokens) =>
+      tokens->PublicKeyHash.Map.get(tokenAddress)
     | _ => None
     };
   };
@@ -585,7 +618,9 @@ module Aliases = {
   };
 
   let filterAccounts = (~aliases, ~accounts) =>
-    aliases->Map.String.keep((k, _) => !accounts->Map.String.has(k));
+    aliases->PublicKeyHash.Map.keep((k, _) =>
+      !accounts->PublicKeyHash.Map.has(k)
+    );
 
   let useRequestExceptAccounts = () => {
     let store = useStoreContext();
@@ -621,7 +656,7 @@ module Aliases = {
     let aliasesRequest = useRequest();
     aliasesRequest
     ->ApiRequest.getDoneOk
-    ->Option.getWithDefault(Map.String.empty);
+    ->Option.getWithDefault(PublicKeyHash.Map.empty);
   };
 
   let useCreate = () => {
@@ -653,28 +688,28 @@ module Accounts = {
 
   let useGetAll = () => {
     let accountsRequest = useRequest();
-    accountsRequest->ApiRequest.getWithDefault(Map.String.empty);
+    accountsRequest->ApiRequest.getWithDefault(PublicKeyHash.Map.empty);
   };
 
   let useGetAllWithDelegates = () => {
     let accounts = useGetAll();
     let delegates = Delegate.useGetAll();
 
-    accounts->Map.String.map(account => {
-      let delegate = delegates->Map.String.get((account.address :> string));
+    accounts->PublicKeyHash.Map.map(account => {
+      let delegate = delegates->(Map.String.get((account.address :> string)));
       (account, delegate);
     });
   };
 
   let useGetFromAddress = (address: PublicKeyHash.t) => {
     let accounts = useGetAll();
-    accounts->Map.String.get((address :> string));
+    accounts->PublicKeyHash.Map.get(address);
   };
 
   let useGetFromOptAddress = (address: option(PublicKeyHash.t)) => {
     let accounts = useGetAll();
     address->Option.flatMap(address =>
-      accounts->Map.String.get((address :> string))
+      accounts->PublicKeyHash.Map.get(address)
     );
   };
 
@@ -797,15 +832,13 @@ module SelectedAccount = {
 
     let (selected, set) = store.selectedAccountState;
     let selected =
-      selected->Option.flatMap(pkh =>
-        accounts->Map.String.get((pkh :> string))
-      );
+      selected->Option.flatMap(pkh => accounts->PublicKeyHash.Map.get(pkh));
 
     switch (selected) {
     | Some(selectedAccount) => Some(selectedAccount)
     | None =>
       accounts
-      ->Map.String.valuesToArray
+      ->PublicKeyHash.Map.valuesToArray
       ->SortArray.stableSortBy(Account.compareName)
       ->Array.get(0)
       ->Option.map(v => {
@@ -830,7 +863,7 @@ module SelectedToken = {
 
     switch (store.selectedTokenState, tokens) {
     | ((Some(selectedToken), _), tokens) =>
-      tokens->Map.String.get((selectedToken :> string))
+      tokens->PublicKeyHash.Map.get(selectedToken)
     | _ => None
     };
   };
@@ -852,7 +885,7 @@ module Beacon = {
         client
         ->ReBeacon.WalletClient.destroy
         // after a call to destroy client is no more usable we need to create a new one
-        ->FutureEx.getOk(_ =>
+        ->Promise.getOk(_ =>
             setClient(_ => Some(BeaconApiRequest.makeClient()))
           )
       | None => ()

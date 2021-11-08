@@ -54,20 +54,20 @@ let make = (~closeAction, ~index, ~secret) => {
   let ledgerInteract = () => {
     setStatus(_ => StepInit(`Loading));
     LedgerAPI.init(~timeout=5000, ())
-    ->Future.flatMapOk(tr => {
+    ->Promise.flatMapOk(tr => {
         setStatus(_ => StepInit(`Found));
         LedgerAPI.getFirstKey(~prompt=true, tr)
-        ->Future.flatMapOk(_ => {
+        ->Promise.flatMapOk(_ => {
             setStatus(_ => StepInit(`Found));
             LedgerAPI.getMasterKey(~prompt=false, tr);
           });
       })
-    ->Future.flatMapOk(masterKey => {
+    ->Promise.flatMapOk(masterKey => {
         setStatus(_ => StepInit(`Confirmed));
-        FutureEx.timeout(1500)
-        ->Future.mapOk(() => setStatus(_ => StepAccounts(masterKey)));
+        Promise.timeout(1500)
+        ->Promise.mapOk(() => setStatus(_ => StepAccounts(masterKey)));
       })
-    ->FutureEx.getError(e => setStatus(_ => StepInit(`Denied(e))));
+    ->Promise.getError(e => setStatus(_ => StepInit(`Denied(e))));
   };
 
   let submitAccounts = (ledgerMasterKey, ()) => {
@@ -82,7 +82,7 @@ let make = (~closeAction, ~index, ~secret) => {
     ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
         I18n.t#account_created
       )
-    ->FutureEx.getOk(_ => {closeAction()});
+    ->Promise.getOk(_ => {closeAction()});
   };
 
   React.useEffect0(() => {

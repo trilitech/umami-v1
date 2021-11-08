@@ -65,10 +65,9 @@ let useLoadTokens = requestState => {
     ->Option.mapWithDefault([||], storageString =>
         storageString->Js.Json.parseExn->Token.Decode.array
       )
-    ->Array.map(token => {((token.address :> string), token)})
-    ->Map.String.fromArray
-    ->Result.Ok
-    ->Future.value;
+    ->Array.map(token => {(token.address, token)})
+    ->PublicKeyHash.Map.fromArray
+    ->Promise.ok;
 
   ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, ());
 };
@@ -89,8 +88,7 @@ let useDelete = (~sideEffect=?, ()) => {
       ->Token.Encode.array
       ->Js.Json.stringify,
     )
-    ->Result.Ok
-    ->Future.value;
+    ->Promise.ok;
   };
 
   ApiRequest.useSetter(
@@ -106,12 +104,12 @@ let useDelete = (~sideEffect=?, ()) => {
 let useCreate = (~sideEffect=?, ()) => {
   let (_checkTokenRequest, checkToken) = useCheckTokenContract();
   let set = (~config as _, token) => {
-    let%FRes isTokenContract = checkToken(token.TokenRepr.address);
+    let%Await tokenKind = checkToken(token.TokenRepr.address);
 
-    let%FResMap () =
-      isTokenContract
-        ? FutureEx.ok()
-        : FutureEx.err(NotFA12Contract((token.TokenRepr.address :> string)));
+    let%AwaitMap () =
+      tokenKind == `KFA1_2
+        ? Promise.ok()
+        : Promise.err(NotFA12Contract((token.TokenRepr.address :> string)));
 
     let tokens =
       LocalStorage.getItem(tokensStorageKey)
@@ -124,8 +122,7 @@ let useCreate = (~sideEffect=?, ()) => {
       tokensStorageKey,
       tokens->Array.concat([|token|])->Token.Encode.array->Js.Json.stringify,
     )
-    ->Result.Ok
-    ->Future.value;
+    ->Promise.ok;
   };
 
   ApiRequest.useSetter(

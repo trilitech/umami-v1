@@ -65,7 +65,7 @@ let make = () => {
             {
               ...c,
               confirmations:
-                confirmations != ConfigFile.Default.confirmations
+                confirmations != ConfigContext.default.confirmations
                   ? Some(confirmations) : None,
             }
           );
@@ -75,10 +75,7 @@ let make = () => {
 
           None;
         },
-      ~initialState={
-        confirmations:
-          config.confirmations->Option.mapWithDefault("", Int.toString),
-      },
+      ~initialState={confirmations: config.confirmations->Int.toString},
       ~i18n=FormUtils.i18n,
       (),
     );
@@ -102,7 +99,7 @@ let make = () => {
           value={form.values.confirmations}
           onValueChange={form.handleChange(Confirmations)}
           error={form.getFieldError(Field(Confirmations))}
-          placeholder={ConfigFile.Default.confirmations->Int.toString}
+          placeholder={ConfigContext.default.confirmations->Int.toString}
           keyboardType=`numeric
           onSubmitEditing=onSubmit
         />

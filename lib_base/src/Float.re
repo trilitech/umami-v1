@@ -23,22 +23,6 @@
 /*                                                                           */
 /*****************************************************************************/
 
-let map2 = (opt1, opt2, f) =>
-  switch (opt1, opt2) {
-  | (Some(v1), Some(v2)) => Some(f(v1, v2))
-  | _ => None
-  };
+include Belt.Float;
 
-let keep = (opt1, opt2) =>
-  switch (opt1, opt2) {
-  | (Some(v), _)
-  | (_, Some(v)) => Some(v)
-  | _ => None
-  };
-
-/* Specialized version where the result of map is always of the same type of the
-   option's value */
-let mapOrKeep = (opt1, opt2, f) => {
-  let res = map2(opt1, opt2, f);
-  res->Option.isNone ? keep(opt1, opt2) : res;
-};
+let abs = v => v < 0. ? -. v : v;

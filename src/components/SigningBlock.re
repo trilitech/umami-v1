@@ -88,6 +88,7 @@ module LedgerView = {
 
     [@react.component]
     let make = (~title, ~expl, ~error=false) => {
+      let theme = ThemeContext.useTheme();
       <>
         <Typography.Subtitle2
           style=Style.([|onbStyles##title, styles##title|]->array)>
@@ -96,7 +97,7 @@ module LedgerView = {
         <View style=styles##content>
           {error
              ? <Icons.CloseOutline
-                 color=Colors.error
+                 color={theme.colors.error}
                  size=50.
                  style=FormStyles.section##spacing
                />
@@ -164,7 +165,7 @@ let make =
     (
       ~ledgerState as (ledgerState, setLedgerState),
       ~accountKind: Account.kind,
-      ~sendOperation: TaquitoAPI.Signer.intent => Future.t(Result.t(_)),
+      ~sendOperation: TaquitoAPI.Signer.intent => Promise.t(_),
       ~secondaryButton=?,
       ~loading=false,
     ) => {
@@ -182,20 +183,10 @@ let make =
           () => setLedgerState(_ => LedgerView.WaitForConfirm->Some),
         ),
       )
-      ->FutureEx.getError(e => setLedgerState(_ => Error(e)->Some));
+      ->Promise.getError(e => setLedgerState(_ => Error(e)->Some));
     | Encrypted
     | Unencrypted => form.submit()
     };
-
-  React.useEffect0(() => {
-    switch (accountKind) {
-    | Ledger => onSubmit()
-    | Encrypted
-    | Unencrypted => ()
-    };
-
-    None;
-  });
 
   let showPasswordForm =
     switch (accountKind) {
@@ -204,23 +195,37 @@ let make =
     | Unencrypted => true
     };
 
+  let submitText =
+    switch (accountKind) {
+    | Ledger => I18n.btn#continue
+    | Encrypted
+    | Unencrypted => I18n.btn#confirm
+    };
+
+  let submitDisabled = {
+    !formFieldsAreValids && accountKind != Ledger;
+  };
+
   <>
-    {<>
-       <PasswordFormView.PasswordField form />
+    {<PasswordFormView.PasswordField form />
+     ->ReactUtils.onlyWhen(showPasswordForm)}
+    {switch (ledgerState) {
+     | Some(_) => React.null
+     | None =>
        <View style=FormStyles.verticalFormAction>
          secondaryButton->ReactUtils.opt
          <Buttons.SubmitPrimary
            style=?{
              secondaryButton->Option.map(_ => LedgerView.styles##withSecondary)
            }
-           text=I18n.btn#confirm
+           text=submitText
            onPress={_ => onSubmit()}
            loading
-           disabledLook={!formFieldsAreValids}
+           disabled=submitDisabled
+           disabledLook=submitDisabled
          />
        </View>
-     </>
-     ->ReactUtils.onlyWhen(showPasswordForm)}
+     }}
     {ledgerState->ReactUtils.mapOpt(st =>
        <LedgerView st ?secondaryButton retry=onSubmit />
      )}

@@ -42,6 +42,8 @@ let buildContract: string => result(t, Errors.t);
 // Checks if given string is an implicit contract (tz*)
 let buildImplicit: string => result(t, Errors.t);
 
+let isContract: t => bool;
+
 module Scheme: {
   type t =
     | ED25519
@@ -69,3 +71,7 @@ module DerivationPath: {let default: string;};
 type pkh = t;
 
 module Comparator: Belt.Id.Comparable with type t = pkh;
+
+let encoder: Json.Encode.encoder(t);
+let decoder: Json.Decode.decoder(t);
+module Map: Map.S with module Key := Comparator;

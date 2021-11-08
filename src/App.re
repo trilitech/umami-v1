@@ -91,7 +91,7 @@ module AppView = {
     let (onboardingState, setOnboardingState) =
       React.useState(_ =>
         switch (accountsRequest) {
-        | Done(_) when accounts->Map.String.size <= 0 => Homepage.Onboarding
+        | Done(_) when accounts->PublicKeyHash.Map.size <= 0 => Homepage.Onboarding
         | NotAsked
         | Loading(None)
         | Loading(Some(_))
@@ -102,7 +102,7 @@ module AppView = {
     React.useLayoutEffect1(
       () =>
         switch (accountsRequest) {
-        | Done(_) when accounts->Map.String.size <= 0 =>
+        | Done(_) when accounts->PublicKeyHash.Map.size <= 0 =>
           setOnboardingState(_ => Onboarding);
           None;
         | _ =>
@@ -114,7 +114,7 @@ module AppView = {
 
     let displayNavbar = {
       switch (accountsRequest) {
-      | Done(_) when accounts->Map.String.size <= 0 => false
+      | Done(_) when accounts->PublicKeyHash.Map.size <= 0 => false
       | NotAsked => false
       | Loading(None) => false
       | Loading(Some(_)) => true
@@ -150,28 +150,30 @@ module AppView = {
                       onClose={_ => setOnboardingState(_ => Dashboard)}
                     />
                   | Dashboard =>
-                    switch (route) {
-                    | Accounts =>
-                      <AccountsView
-                        mode=accountsViewMode
-                        setMode=setAccountsViewMode
-                        showOnboarding={() =>
-                          setOnboardingState(_ => AddAccountModal)
-                        }
-                      />
-                    | Operations => <OperationsView />
-                    | AddressBook => <AddressBookView />
-                    | Delegations => <DelegationsView />
-                    | Tokens => <TokensView />
-                    | Settings => <SettingsView />
-                    | Logs => <LogsView />
-                    | NotFound =>
-                      <View>
-                        <Typography.Body1>
-                          I18n.t#error404->React.string
-                        </Typography.Body1>
-                      </View>
-                    }
+                    <>
+                      {switch (route) {
+                       | Accounts =>
+                         <AccountsView
+                           mode=accountsViewMode
+                           setMode=setAccountsViewMode
+                           showOnboarding={() =>
+                             setOnboardingState(_ => AddAccountModal)
+                           }
+                         />
+                       | Operations => <OperationsView />
+                       | AddressBook => <AddressBookView />
+                       | Delegations => <DelegationsView />
+                       | Tokens => <TokensView />
+                       | Settings => <SettingsView />
+                       | Logs => <LogsView />
+                       | NotFound =>
+                         <View>
+                           <Typography.Body1>
+                             I18n.t#error404->React.string
+                           </Typography.Body1>
+                         </View>
+                       }}
+                    </>
                   }}
                </View>
              </View>}

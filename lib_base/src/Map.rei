@@ -23,54 +23,41 @@
 /*                                                                           */
 /*****************************************************************************/
 
-type t = ConfigFile.t;
+/** Real OCaml maps functor */
 
-let baseDir = (config: t) =>
-  switch (config.sdkBaseDir) {
-  | None => ConfigFile.Default.sdkBaseDir()
-  | Some(v) => v
-  };
+include (module type of Belt.Map);
 
-let endpoint = (c: t) =>
-  switch (c.network->Option.getWithDefault(ConfigFile.Default.network)) {
-  | `Mainnet => Network.mainnet.endpoint
-  | `Granadanet => Network.granadanet.endpoint
-  | `Custom(name) =>
-    c.customNetworks->List.getBy(n => n.name === name)->Option.getExn.endpoint
-  };
+module type S = {
+  include (module type of Belt.Map.Dict);
 
-let withNetwork = (c: t, network) => {...c, network};
+  module Key: Belt.Id.Comparable;
+  type key = Key.t;
+  type id = Key.identity;
+  type map('value) = t(key, 'value, id);
 
-let network = (config: t): ConfigFile.network =>
-  config.network->Option.getWithDefault(ConfigFile.Default.network);
+  let kcmp: cmp(key, id);
+  let cmp: (t(key, 'a, id), t(key, 'a, id), ~vcmp: ('a, 'a) => int) => int;
+  let has: (t(key, 'a, id), key) => bool;
+  let eq: (t(key, 'a, id), t(key, 'a, id), ~veq: ('a, 'a) => bool) => bool;
+  let fromArray: array((key, 'a)) => t(key, 'a, id);
+  let get: (t(key, 'a, id), key) => option('a);
+  let getWithDefault: (t(key, 'a, id), key, 'a) => 'a;
+  let remove: (t(key, 'a, id), key) => t(key, 'a, id);
+  let removeMany: (t(key, 'a, id), array(key)) => t(key, 'a, id);
+  let set: (t(key, 'a, id), key, 'a) => t(key, 'a, id);
+  let update:
+    (t(key, 'a, id), key, option('a) => option('a)) => t(key, 'a, id);
+  let merge:
+    (
+      t(key, 'a, id),
+      t(key, 'b, id),
+      (key, option('a), option('b)) => option('c)
+    ) =>
+    t(key, 'c, id);
+  let mergeMany: (t(key, 'a, id), array((key, 'a))) => t(key, 'a, id);
+  let split:
+    (t(key, 'a, id), key) =>
+    ((t(key, 'a, id), t(key, 'a, id)), option('a));
+};
 
-let chainId = (c: t) =>
-  switch (network(c)) {
-  | `Mainnet => Network.mainnet.chain
-  | `Granadanet => Network.granadanet.chain
-  | `Custom(name) =>
-    c.customNetworks->List.getBy(n => n.name === name)->Option.getExn.chain
-  };
-
-let explorer = (c: t) =>
-  switch (c.network->Option.getWithDefault(ConfigFile.Default.network)) {
-  | `Mainnet => Network.mainnet.explorer
-  | `Granadanet => Network.granadanet.explorer
-  | `Custom(name) =>
-    c.customNetworks->List.getBy(n => n.name === name)->Option.getExn.explorer
-  };
-
-let externalExplorers =
-  Map.String.empty
-  ->Map.String.set(Network.mainnet.chain, "https://tzkt.io/")
-  ->Map.String.set(Network.edo2netChain, "https://edo2net.tzkt.io/")
-  ->Map.String.set(Network.florencenetChain, "https://florencenet.tzkt.io/")
-  ->Map.String.set(Network.granadanet.chain, "https://granadanet.tzkt.io/");
-
-let findExternalExplorer = c =>
-  externalExplorers
-  ->Map.String.get(c)
-  ->Option.map(v => Ok(v))
-  ->Option.getWithDefault(Error(Network.UnknownChainId(c)));
-
-let getExternalExplorer = config => chainId(config)->findExternalExplorer;
+module Make: (Key: Belt.Id.Comparable) => S with module Key := Key;

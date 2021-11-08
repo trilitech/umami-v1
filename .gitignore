@@ -14,7 +14,8 @@
 # production
 /build
 /dist
-/lib/bs
+/lib
+/lib_base/lib
 
 # misc
 .DS_Store

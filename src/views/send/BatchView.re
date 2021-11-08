@@ -24,7 +24,6 @@
 /*****************************************************************************/
 
 open ReactNative;
-open UmamiCommon;
 
 let styles =
   Style.(
@@ -41,7 +40,8 @@ let styles =
       "listLabel": style(~marginBottom=4.->dp, ()),
       "amount": style(~height=19.->dp, ~marginBottom=2.->dp, ()),
       "summary": style(~marginTop=11.->dp, ()),
-      "row": style(~paddingVertical=12.->dp, ~flexDirection=`row, ()),
+      "row":
+        style(~flex=1., ~paddingVertical=12.->dp, ~flexDirection=`row, ()),
       "addTransaction": style(~marginBottom=10.->dp, ()),
       "notFirstRow": style(~borderTopWidth=1., ()),
       "num":
@@ -53,7 +53,9 @@ let styles =
           (),
         ),
       "parameters": style(~marginTop=8.->dp, ()),
+      "parametersContainer": style(~flex=1., ()),
       "moreButton": style(~marginHorizontal=auto, ()),
+      "account": style(~flex=1., ()),
       "csvFormat":
         style(
           ~alignItems=`flexEnd,
@@ -86,23 +88,24 @@ let buildAmount = amount => {
 
 module Item = {
   [@react.component]
-  let make = (~i, ~recipient, ~amount, ~parameters=?, ~onDelete=?, ~onEdit=?) => {
+  let make = (~i, ~recipient, ~amount, ~parameters=?, ~button=?) => {
     let aliases = StoreContext.Aliases.useGetAll();
     let theme: ThemeContext.theme = ThemeContext.useTheme();
+
     <View
       style=Style.(
         arrayOption([|
           Some(styles##row),
           Some(style(~borderColor=theme.colors.borderDisabled, ())),
-          Lib.Option.onlyIf(i > 1, () => styles##notFirstRow),
+          Option.onlyIf(i > 0, () => styles##notFirstRow),
         |])
       )>
       <Typography.Subtitle1 colorStyle=`mediumEmphasis style=styles##num>
-        {i->string_of_int->React.string}
+        {(i + 1)->string_of_int->React.string}
       </Typography.Subtitle1>
       {switch (parameters) {
        | Some(parameters) =>
-         <View>
+         <View style=styles##parametersContainer>
            <AccountElements.Selector.Item
              account={address: recipient, name: I18n.title#interaction}
              showAmount=AccountElements.Nothing
@@ -111,6 +114,7 @@ module Item = {
          </View>
        | None =>
          <AccountElements.Selector.Item
+           style=styles##account
            account={
              address: recipient,
              name:
@@ -121,35 +125,7 @@ module Item = {
            showAmount={buildAmount(amount)}
          />
        }}
-      {[]
-       ->Lib.List.addOpt(
-           onDelete->Option.map(delete => {
-             <Menu.Item
-               key=I18n.menu#batch_delete
-               text=I18n.menu#batch_delete
-               icon=Icons.Delete.build
-               onPress={_ => delete()}
-             />
-           }),
-         )
-       ->Lib.List.addOpt(
-           onEdit->Option.map(edit => {
-             <Menu.Item
-               key=I18n.menu#batch_edit
-               text=I18n.menu#batch_edit
-               icon=Icons.Edit.build
-               onPress={_ => edit()}
-             />
-           }),
-         )
-       ->ReactUtils.hideNil(l =>
-           <Menu
-             style=styles##moreButton
-             icon=Icons.More.build
-             keyPopover={"batchItem" ++ i->string_of_int}>
-             l->List.toArray
-           </Menu>
-         )}
+      button->ReactUtils.opt
     </View>;
   };
 };
@@ -207,8 +183,16 @@ module Transactions = {
   };
 
   [@react.component]
-  let make = (~recipients, ~smallest=false, ~onAddCSVList=?, ~onDelete=?) => {
-    let length = recipients->List.length;
+  let make =
+      (
+        ~recipients:
+           Belt.List.t(
+             (PublicKeyHash.t, Transfer.Currency.t, option('a), 'b),
+           ),
+        ~smallest=false,
+        ~onAddCSVList=?,
+        ~button: option((int, 'b) => React.element)=?,
+      ) => {
     let theme = ThemeContext.useTheme();
 
     <View style=styles##container>
@@ -225,24 +209,49 @@ module Transactions = {
         style={listStyle(theme, smallest)} alwaysBounceVertical=false>
         {{
            recipients->List.mapWithIndex(
-             (i, (onEdit, (recipient, amount, parameters))) => {
-             let onDelete = onDelete->Option.map((delete, ()) => delete(i));
+             (i, (recipient, amount, parameters, v)) => {
              <Item
                key={string_of_int(i)}
-               i={length - i}
+               i
                recipient
                amount={Transfer.Currency.showAmount(amount)}
                ?parameters
-               ?onDelete
-               ?onEdit
-             />;
+               button=?{button->Option.map(b => b(i, v))}
+             />
            });
          }
-         ->List.reverse
          ->List.toArray
          ->React.array}
       </DocumentContext.ScrollView>
     </View>;
+  };
+};
+
+module BuildingBatchMenu = {
+  [@react.component]
+  let make = (~i, ~onEdit, ~onDelete) => {
+    let delete = _ => onDelete(i);
+    let edit = _ => onEdit(i);
+
+    <Menu
+      style=styles##moreButton
+      icon=Icons.More.build
+      keyPopover={"batchItem" ++ i->string_of_int}>
+      [|
+        <Menu.Item
+          key=I18n.menu#batch_delete
+          text=I18n.menu#batch_delete
+          icon=Icons.Delete.build
+          onPress=delete
+        />,
+        <Menu.Item
+          key=I18n.menu#batch_edit
+          text=I18n.menu#batch_edit
+          icon=Icons.Edit.build
+          onPress=edit
+        />,
+      |]
+    </Menu>;
   };
 };
 
@@ -259,13 +268,18 @@ let make =
       ~loading,
     ) => {
   let theme: ThemeContext.theme = ThemeContext.useTheme();
+
   let recipients =
-    batch->List.mapWithIndex((i, (t: SendForm.validState, _) as v) =>
-      (
-        Some(() => onEdit(i, v)),
-        (t.recipient->FormUtils.Alias.address, t.amount, None),
-      )
+    batch->List.map((t: SendForm.validState) =>
+      (t.recipient->FormUtils.Alias.address, t.amount, None, t)
     );
+
+  let itemButton = (i, v) =>
+    <BuildingBatchMenu
+      i
+      onDelete={_ => onDelete(i)}
+      onEdit={_ => onEdit(i, v)}
+    />;
 
   <>
     {back->ReactUtils.mapOpt(back => {
@@ -284,7 +298,7 @@ let make =
       </Typography.Overline2>
       <View>
         {batch
-         ->List.map(((t, _)) => t.amount)
+         ->List.map(t => t.amount)
          ->Transfer.Currency.reduceAmounts
          ->List.mapWithIndex((i, a) =>
              <Typography.Subtitle1
@@ -296,7 +310,7 @@ let make =
          ->React.array}
       </View>
     </View>
-    <Transactions recipients onAddCSVList onDelete />
+    <Transactions recipients onAddCSVList button=itemButton />
     <View style=FormStyles.verticalFormAction>
       <Buttons.SubmitSecondary
         style=styles##addTransaction

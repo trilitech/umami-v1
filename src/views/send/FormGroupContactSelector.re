@@ -84,14 +84,14 @@ let make =
     (
       ~label,
       ~filterOut: option(Alias.t),
-      ~aliases: Belt.Map.String.t(Alias.t),
+      ~aliases: PublicKeyHash.Map.map(Alias.t),
       ~value: FormUtils.Alias.any,
       ~handleChange: FormUtils.Alias.any => unit,
       ~error,
     ) => {
   let aliasArray =
     aliases
-    ->Map.String.valuesToArray
+    ->PublicKeyHash.Map.valuesToArray
     ->Array.keep((v: Alias.t) =>
         Some(v.address) != filterOut->Option.map(a => a.address)
       )
@@ -123,7 +123,7 @@ let make =
         | AnyString(s) => s
         | Valid(Address(s)) =>
           aliases
-          ->Map.String.get((s :> string))
+          ->PublicKeyHash.Map.get(s)
           ->Option.mapWithDefault((s :> string), a => a.name)
         }
       }

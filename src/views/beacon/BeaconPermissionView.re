@@ -65,13 +65,13 @@ let make =
           switch (state.values.account) {
           | Some(account) =>
             getAccountPublicKey(account)
-            ->FutureEx.getOk(publicKey => {
+            ->Promise.getOk(publicKey => {
                 client
-                ->FutureEx.fromOption(
+                ->Promise.fromOption(
                     ~error=
                       Errors.Generic(I18n.errors#beacon_client_not_created),
                   )
-                ->Future.flatMapOk(client =>
+                ->Promise.flatMapOk(client =>
                     client->ReBeacon.WalletClient.respond(
                       `PermissionResponse({
                         type_: `permission_response,
@@ -82,7 +82,7 @@ let make =
                       }),
                     )
                   )
-                ->FutureEx.getOk(_ => {
+                ->Promise.getOk(_ => {
                     updatePermissions();
                     closeAction();
                   })
@@ -99,10 +99,10 @@ let make =
 
   let onAbort = _ => {
     client
-    ->FutureEx.fromOption(
+    ->Promise.fromOption(
         ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
       )
-    ->Future.flatMapOk(client =>
+    ->Promise.flatMapOk(client =>
         client->ReBeacon.WalletClient.respond(
           `Error({
             type_: `error,
@@ -111,7 +111,7 @@ let make =
           }),
         )
       )
-    ->FutureEx.getOk(_ => closeAction());
+    ->Promise.getOk(_ => closeAction());
   };
 
   <ModalTemplate.Form>

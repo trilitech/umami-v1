@@ -61,7 +61,7 @@ let validateContractAddress = s =>
   s->validateContractAddressRaw->handleValidity->Result.map(() => `Contract);
 
 let validateAnyAddress = s =>
-  s->validateContractAddress->ResultEx.flatMapError(_ => s->validateAddress);
+  s->validateContractAddress->Result.flatMapError(_ => s->validateAddress);
 
 [@bs.module "@taquito/utils"]
 external bytes2Char: bytes => string = "bytes2Char";

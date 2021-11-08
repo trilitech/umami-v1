@@ -62,7 +62,7 @@ module OffBoardView = {
 
     () => {
       cleanSdkBaseDir()
-      ->Future.tapOk(() => {
+      ->Promise.tapOk(() => {
           resetSecrets();
           resetTokens();
           Routes.(push(Accounts));
@@ -100,7 +100,7 @@ module OffBoardView = {
         },
         ~onSubmit=
           _ => {
-            offboardWallet()->FutureEx.ignore;
+            offboardWallet()->Promise.ignore;
             None;
           },
         ~initialState={confirm: false, word: ""},
@@ -210,7 +210,7 @@ module ResetView = {
 
     let onPress = _ => {
       resetConfig();
-      window##location##reload();
+      System.reload();
     };
 
     let closeButton =

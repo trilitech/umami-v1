@@ -68,6 +68,32 @@ let error = (~origin, error) => {
   log(~kind=Error, ~origin, ~errorScope=scope, msg);
 };
 
+let similarMessages = (m1, m2) => {
+  let arr1 = Js.Array2.fromMap(Js.String2.castToArrayLike(m1), x => x);
+  let arr2 = Js.Array2.fromMap(Js.String2.castToArrayLike(m2), x => x);
+
+  let rec sameLetters = (acc, i) => {
+    switch (arr1->Array.get(i), arr2->Array.get(i)) {
+    | (Some(s1), Some(s2)) => sameLetters(s1 == s2 ? acc + 1 : acc, i + 1)
+    | _ => acc
+    };
+  };
+
+  let similarityRatio = 50. /. 100.;
+
+  m1->Js.String.length == m2->Js.String.length
+  && sameLetters(0, 0)->Float.fromInt
+  /. arr1->Array.length->Float.fromInt > similarityRatio;
+};
+
+let similar = (l1, l2) => {
+  l1.kind == l2.kind
+  && l1.errorScope == l2.errorScope
+  && l1.origin == l2.origin
+  && similarMessages(l1.msg, l2.msg)
+  && Float.abs(l1.timestamp -. l2.timestamp) < 2000.;
+};
+
 let originToString = e => {
   switch (e) {
   | Operation => "Operation"

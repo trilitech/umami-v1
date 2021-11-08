@@ -95,7 +95,7 @@ let make =
     () => {
       if (derivationChanged) {
         setScanState(_ => `Loading);
-        scan(path, scheme)->FutureEx.getOk(_ => setScanState(_ => `Done));
+        scan(path, scheme)->Promise.getOk(_ => setScanState(_ => `Done));
         setDerivationChanged(_ => false);
       };
 

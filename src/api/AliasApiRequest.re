@@ -30,17 +30,17 @@
 let useLoad = requestState => {
   let get = (~config, ()) =>
     WalletAPI.Aliases.get(~config)
-    ->Future.map(
+    ->Promise.map(
         fun
         | Ok(response) =>
           response
           ->Array.map(((name, address)) =>
-              ((address :> string), Alias.{name, address})
+              (address, Alias.{name, address})
             )
           ->Array.reverse
-          ->Map.String.fromArray
+          ->PublicKeyHash.Map.fromArray
           ->Ok
-        | Error(System.NoSuchFileError(_)) => Map.String.empty->Ok
+        | Error(System.NoSuchFileError(_)) => PublicKeyHash.Map.empty->Ok
         | Error(_) as e => e,
       );
 

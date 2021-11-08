@@ -44,6 +44,8 @@ type cacheValidity =
   | Expired
   | ValidSince(timestamp);
 
+let initCache: unit => cacheValidity;
+
 type t('value) =
   /* The ressource fetching has never been triggered */
   | NotAsked
@@ -61,7 +63,7 @@ type requestState('value) = (t('value), setRequest('value));
 
 /* Returns an optional result which value is [Some] if the ressource has
    been fetched */
-let getDone: t('a) => option(Let.result('a));
+let getDone: t('a) => option(Promise.result('a));
 
 /* Returns an optional value which value is [Some] if the ressource has
    been fetched with no error. */
@@ -72,7 +74,7 @@ let getDoneOk: t('a) => option('a);
 let getWithDefault: (t('a), 'a) => 'a;
 
 /* Applies a side effect to the given ressource value if it has been fetched */
-let iterDone: (t('a), Let.result('a) => unit) => unit;
+let iterDone: (t('a), Promise.result('a) => unit) => unit;
 
 /* Maps the value of the ressource  */
 let map: (t('a), 'a => 'a) => t('a);
@@ -95,6 +97,9 @@ let isNotAsked: t('a) => bool;
 /* Returns [true] if the ressource fetching has started and is not over */
 let isLoading: t('a) => bool;
 
+/* Returns [true] if the ressource fetching is over and resolves as an error */
+let isError: t('a) => bool;
+
 /* Returns [true] if the ressource is fetched */
 let isDone: t('a) => bool;
 
@@ -109,18 +114,12 @@ let isExpired: t('a) => bool;
    [keep] aims at filtering some errors based on the error value. No error is
    filtered by default */
 let logError:
-  (Let.future('a), Logs.t => unit, ~keep: Errors.t => bool=?, Logs.origin) =>
-  Let.future('a);
+  (Promise.t('a), Logs.t => unit, ~keep: Errors.t => bool=?, Logs.origin) =>
+  Promise.t('a);
 
 /* Same as [logError] but for [Ok] result values */
 let logOk:
-  (
-    Future.t(Belt.Result.t('a, 'b)),
-    Logs.t => 'c,
-    Logs.origin,
-    'a => string
-  ) =>
-  Future.t(Belt.Result.t('a, 'b));
+  (Promise.t('a), Logs.t => 'c, Logs.origin, 'a => string) => Promise.t('a);
 
 /* Sets the ressource status as [Loading] */
 let updateToLoadingState: t('a) => t('a);
@@ -137,19 +136,19 @@ let conditionToLoad: (t('a), bool) => bool;
 let useGetter:
   (
     ~toast: bool=?,
-    ~get: (~config: ConfigFile.t, 'a) => Let.future('response),
+    ~get: (~config: ConfigContext.env, 'a) => Promise.t('response),
     ~kind: Logs.origin,
     ~setRequest: (t('response) => t('response)) => unit,
     ~keepError: Errors.t => bool=?,
     unit,
     'a
   ) =>
-  Let.future('response);
+  Promise.t('response);
 
 /* Builds an auto-reloaded ressource from an asynchronous function */
 let useLoader:
   (
-    ~get: (~config: ConfigFile.t, 'input) => Let.future('value),
+    ~get: (~config: ConfigContext.env, 'input) => Promise.t('value),
     ~condition: 'input => bool=?,
     ~keepError: Errors.t => bool=?,
     ~kind: Logs.origin,
@@ -166,9 +165,9 @@ let useSetter:
     ~logOk: 'a => string=?,
     ~toast: bool=?,
     ~sideEffect: 'a => unit=?,
-    ~set: (~config: ConfigFile.t, 'c) => Let.future('a),
+    ~set: (~config: ConfigContext.env, 'c) => Promise.t('a),
     ~kind: Logs.origin,
     ~keepError: Errors.t => bool=?,
     unit
   ) =>
-  (t('a), 'c => Let.future('a));
+  (t('a), 'c => Promise.t('a));

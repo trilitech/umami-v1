@@ -23,6 +23,8 @@
 /*                                                                           */
 /*****************************************************************************/
 
+open Let;
+
 [@bs.val] [@bs.scope "localStorage"]
 external getItem: string => Js.Nullable.t(string) = "getItem";
 [@bs.val] [@bs.scope "localStorage"]
@@ -31,3 +33,102 @@ external setItem: (string, string) => unit = "setItem";
 external removeItem: string => unit = "removeItem";
 
 [@bs.val] [@bs.scope "localStorage"] external clear: unit => unit = "clear";
+
+type Errors.t +=
+  | NotFound(string);
+
+let () =
+  Errors.registerHandler(
+    "LocalStorage",
+    fun
+    | NotFound(s) => I18n.errors#local_storage_key_not_found(s)->Some
+    | _ => None,
+  );
+
+module type ValueType = {
+  let key: string;
+
+  type t;
+
+  let encoder: Json.Encode.encoder(t);
+  let decoder: Json.Decode.decoder(t);
+};
+
+module type StorageType = {
+  include ValueType;
+
+  let get: unit => Promise.result(t);
+  let set: t => unit;
+  let remove: unit => unit;
+  let migrate:
+    (
+      ~previousKey: string=?,
+      ~mapValue: string => Promise.result(t)=?,
+      ~default: t=?,
+      unit
+    ) =>
+    Promise.result(unit);
+};
+
+module Make = (Value: ValueType) : (StorageType with type t = Value.t) => {
+  include Value;
+
+  let getRaw = key => {
+    let%Res value =
+      getItem(key)
+      ->Js.Nullable.toOption
+      ->Result.fromOption(NotFound(key));
+    let%Res json = value->JsonEx.parse;
+    json->JsonEx.decode(decoder);
+  };
+
+  let setRaw = (key, storage) =>
+    setItem(key, encoder(storage)->Json.stringify);
+
+  let get = () => getRaw(key);
+
+  let set = storage => setRaw(key, storage);
+
+  let remove = () => removeItem(key);
+
+  let migrate = (~previousKey=?, ~mapValue=?, ~default=?, ()) => {
+    let migrateValue = key =>
+      switch (mapValue) {
+      // ensures the previous value is compatible if we simply change the key
+      | None => getRaw(key)
+
+      | Some(migrate) =>
+        let%Res value =
+          getItem(key)
+          ->Js.Nullable.toOption
+          ->Result.fromOption(NotFound(key));
+        migrate(value);
+      };
+
+    let useDefault = res =>
+      switch (res, default) {
+      | (Ok(_), _)
+      | (_, None) => res
+      | (Error(_), Some(v)) => Ok(v)
+      };
+
+    previousKey
+    ->Option.getWithDefault(key)
+    ->migrateValue
+    ->useDefault
+    ->Result.map(set);
+  };
+};
+
+module Version =
+  Make({
+    let key = "storage-version";
+    type t = Version.t;
+    let encoder = v => Json.Encode.(v->Version.toString->string);
+    let decoder = json => {
+      switch (json->Json.Decode.string->Version.parse) {
+      | Ok(v) => v
+      | Error(e) => JsonEx.(raise(InternalError(e)))
+      };
+    };
+  });

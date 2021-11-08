@@ -31,7 +31,7 @@ type t = {
 let fromPromiseError: Js.Promise.error => t = Obj.magic;
 
 let fromPromiseParsed = (p, parse) =>
-  p->FutureJs.fromPromise(e => {
+  p->Promise.fromJs(e => {
     let e = e->fromPromiseError;
     e->parse;
   });
