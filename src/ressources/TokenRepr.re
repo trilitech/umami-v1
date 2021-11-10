@@ -175,11 +175,12 @@ type t = {
   asset: Metadata.asset,
 };
 
-let id = token =>
-  switch (token.kind) {
+let kindId =
+  fun
   | FA1_2 => 0
-  | FA2(n) => n
-  };
+  | FA2(n) => n;
+
+let id = ({kind}) => kind->kindId;
 
 let isNFT = t =>
   t.asset.artifactUri != None

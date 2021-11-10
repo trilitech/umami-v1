@@ -100,6 +100,7 @@ type t = {
   asset: Metadata.asset,
 };
 
+let kindId: kind => int;
 let id: t => int;
 
 let isNFT: t => bool;

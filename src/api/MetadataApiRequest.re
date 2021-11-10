@@ -1,7 +1,7 @@
 open Let;
 include ApiRequest;
 
-let useLoadMetadata = (~onErrorNotATokenContract, pkh) => {
+let useLoadMetadata = (~onErrorNotATokenContract, pkh, id) => {
   let (_, checkToken) = TokensApiRequest.useCheckTokenContract();
 
   let keepTaquitoErrors =
@@ -22,7 +22,7 @@ let useLoadMetadata = (~onErrorNotATokenContract, pkh) => {
 
     let toolkit = ReTaquito.Toolkit.create(config.network.endpoint);
     let%Await contract = MetadataAPI.Tzip12.makeContract(toolkit, pkh);
-    MetadataAPI.Tzip12.read(contract, 0);
+    MetadataAPI.Tzip12.read(contract, id);
   };
 
   let get = (~config, ()) => {

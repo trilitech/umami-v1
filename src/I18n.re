@@ -154,6 +154,7 @@ let label = {
   pub add_token_name = "Name";
   pub add_token_symbol = "Symbol";
   pub add_token_decimals = "Decimals";
+  pub add_token_id = "Token Id";
   pub summary_subtotal = "Subtotal";
   pub summary_total = "Total";
   pub summary_total_tez = "Total tez";
@@ -187,6 +188,7 @@ let input_placeholder = {
   pub add_token_address = "Enter KT1 address of a contract";
   pub add_token_name = "e.g. Tezos";
   pub add_token_decimals = "e.g. 0";
+  pub add_token_id = "e.g. 0";
   pub enter_new_password = "Enter new password, at least 8 characters";
   pub confirm_password = "Confirm your new password";
   pub enter_password = "Enter your password";
@@ -260,7 +262,8 @@ let form_input_error = {
       field,
       tokenId,
       pkh,
-    )
+    );
+  pub token_id_expected = "FA2 contracts expects a token id"
 };
 
 let title = {

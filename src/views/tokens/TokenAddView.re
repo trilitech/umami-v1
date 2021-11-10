@@ -24,7 +24,6 @@
 /*****************************************************************************/
 
 open ReactNative;
-open Let;
 
 module StateLenses = [%lenses
   type state = {
@@ -32,9 +31,26 @@ module StateLenses = [%lenses
     address: string,
     symbol: string,
     decimals: string,
+    tokenId: string,
   }
 ];
 module TokenCreateForm = ReForm.Make(StateLenses);
+
+let emptyState: StateLenses.state = {
+  name: "",
+  address: "",
+  symbol: "",
+  decimals: "",
+  tokenId: "",
+};
+
+let resetMetadataFields = (~form: TokenCreateForm.api, ~resetTokenId) => {
+  form.setValues({
+    ...emptyState,
+    name: form.values.name,
+    tokenId: resetTokenId ? "" : form.values.tokenId,
+  });
+};
 
 let styles =
   Style.(
@@ -43,6 +59,39 @@ let styles =
       "overline": style(~marginBottom=24.->dp, ~textAlign=`center, ()),
     })
   );
+
+module FormAddress = {
+  [@react.component]
+  let make = (~form: TokenCreateForm.api) => {
+    <FormGroupTextInput
+      label=I18n.label#add_token_address
+      value={form.values.address}
+      handleChange={form.handleChange(Address)}
+      error={
+        [
+          form.formState->FormUtils.getFormStateError,
+          form.getFieldError(Field(Address)),
+        ]
+        ->Option.firstSome
+      }
+      placeholder=I18n.input_placeholder#add_token_address
+      clearButton=true
+    />;
+  };
+};
+
+module FormTokenId = {
+  [@react.component]
+  let make = (~form: TokenCreateForm.api) => {
+    <FormGroupTextInput
+      label=I18n.label#add_token_id
+      value={form.values.tokenId}
+      handleChange={form.handleChange(TokenId)}
+      error={form.getFieldError(Field(TokenId))}
+      placeholder=I18n.input_placeholder#add_token_id
+    />;
+  };
+};
 
 module FormMetadata = {
   [@react.component]
@@ -66,7 +115,7 @@ module FormMetadata = {
         label=I18n.label#add_token_decimals
         value={form.values.decimals}
         handleChange={form.handleChange(Decimals)}
-        error={form.getFieldError(Field(Name))}
+        error={form.getFieldError(Field(Decimals))}
         placeholder=I18n.input_placeholder#add_token_decimals
       />
     </>;
@@ -75,14 +124,18 @@ module FormMetadata = {
 
 module MetadataForm = {
   [@react.component]
-  let make = (~form: TokenCreateForm.api, ~pkh) => {
+  let make = (~form: TokenCreateForm.api, ~pkh, ~kind) => {
     let onErrorNotATokenContract = () =>
       form.raiseSubmitFailed(
         I18n.form_input_error#not_a_token_contract->Some,
       );
 
     let metadata =
-      MetadataApiRequest.useLoadMetadata(~onErrorNotATokenContract, pkh);
+      MetadataApiRequest.useLoadMetadata(
+        ~onErrorNotATokenContract,
+        pkh,
+        kind->TokenRepr.kindId,
+      );
     React.useEffect1(
       () => {
         switch (metadata) {
@@ -90,6 +143,7 @@ module MetadataForm = {
         | Done(Ok(metadata), _) =>
           form.handleChange(Name, metadata.name);
           form.handleChange(Symbol, metadata.symbol);
+          form.handleChange(Decimals, metadata.decimals->Int.toString);
         | Done(Error(_), _) => ()
         | _ => ()
         };
@@ -108,9 +162,51 @@ module MetadataForm = {
   };
 };
 
+type step =
+  | Address
+  | TokenId(PublicKeyHash.t)
+  | Metadata(PublicKeyHash.t, TokenRepr.kind);
+
 [@react.component]
 let make = (~chain, ~address="", ~closeAction) => {
   let (tokenCreateRequest, createToken) = StoreContext.Tokens.useCreate();
+  let (_tokenKind, checkToken) = TokensApiRequest.useCheckTokenContract();
+  let (step, setStep) = React.useState(_ => Address);
+
+  let onValidPkh = pkh => {
+    pkh
+    ->checkToken
+    ->Promise.getOk(
+        fun
+        | `KFA1_2 => setStep(_ => Metadata(pkh, TokenRepr.FA1_2))
+        | `KFA2 => setStep(_ => TokenId(pkh))
+        | `NotAToken => (),
+      );
+  };
+
+  let onValidTokenId = (pkh, tokenId) => {
+    setStep(_ => Metadata(pkh, TokenRepr.FA2(tokenId)));
+  };
+
+  let onSubmit = ({state}: TokenCreateForm.onSubmitAPI) => {
+    TokenCreateForm.(
+      switch (step) {
+      | Metadata(address, kind) =>
+        createToken({
+          kind,
+          address,
+          alias: state.values.name,
+          symbol: state.values.symbol,
+          chain,
+          decimals: state.values.decimals |> Int.fromString |> Option.getExn,
+          asset: TokenRepr.defaultAsset,
+        })
+        ->Promise.getOk(_ => closeAction());
+        None;
+      | _ => None
+      }
+    );
+  };
 
   let form: TokenCreateForm.api =
     TokenCreateForm.use(
@@ -130,6 +226,18 @@ let make = (~chain, ~address="", ~closeAction) => {
               )
             + custom(
                 state =>
+                  switch (state.tokenId->Int.fromString) {
+                  | None when state.tokenId == "" => Valid
+                  | None => Error(I18n.form_input_error#not_an_int)
+                  | Some(i) when i < 0 =>
+                    Error(I18n.form_input_error#negative_int)
+                  // mouif
+                  | Some(_) => Valid
+                  },
+                Decimals,
+              )
+            + custom(
+                state =>
                   switch (PublicKeyHash.buildContract(state.address)) {
                   | Error(_) => Error(I18n.form_input_error#invalid_key_hash)
                   | Ok(_) => Valid
@@ -140,27 +248,14 @@ let make = (~chain, ~address="", ~closeAction) => {
           )
         );
       },
-      ~onSubmit=
-        ({state}) => {
-          Promise.async(() => {
-            let%AwaitMap address =
-              state.values.address->PublicKeyHash.buildContract->Promise.value;
-            createToken({
-              kind: FA1_2,
-              address,
-              alias: state.values.name,
-              symbol: state.values.symbol,
-              chain,
-              decimals:
-                state.values.decimals |> Int.fromString |> Option.getExn,
-              asset: TokenRepr.defaultAsset,
-            })
-            ->Promise.getOk(_ => closeAction());
-          });
-
-          None;
-        },
-      ~initialState={name: "", address, symbol: "", decimals: ""},
+      ~onSubmit,
+      ~initialState={
+        name: "",
+        address,
+        symbol: "",
+        decimals: "",
+        tokenId: "",
+      },
       ~i18n=FormUtils.i18n,
       (),
     );
@@ -169,12 +264,37 @@ let make = (~chain, ~address="", ~closeAction) => {
     form.submit();
   };
 
+  let pkh = PublicKeyHash.buildContract(form.values.address);
+  let tokenId = form.values.tokenId->Int.fromString;
+
+  React.useEffect2(
+    () => {
+      switch (pkh, tokenId, step) {
+      // Error case: the address becomes invalid
+      | (Error(_), _, TokenId(_) | Metadata(_, _)) =>
+        step != Address ? resetMetadataFields(~form, ~resetTokenId=true) : ();
+        setStep(_ => Address);
+
+      // Error case: the tokenId becomes invalid
+      | (Ok(address), None, Metadata(_, TokenRepr.FA2(_))) =>
+        resetMetadataFields(~form, ~resetTokenId=false);
+        setStep(_ => TokenId(address));
+
+      | (Ok(address), _, Address) => onValidPkh(address)
+
+      | (_, Some(id), TokenId(pkh)) => onValidTokenId(pkh, id)
+
+      | _ => ()
+      };
+      None;
+    },
+    (pkh, tokenId),
+  );
+
   let loading = tokenCreateRequest->ApiRequest.isLoading;
 
   let formFieldsAreValids =
     FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
-
-  let pkh = PublicKeyHash.buildContract(form.values.address);
 
   <ModalFormView closing={ModalFormView.Close(closeAction)}>
     <Typography.Headline style=styles##title>
@@ -183,23 +303,15 @@ let make = (~chain, ~address="", ~closeAction) => {
     <Typography.Overline3 style=styles##overline>
       I18n.t#add_token_format_contract_sentence->React.string
     </Typography.Overline3>
-    <FormGroupTextInput
-      label=I18n.label#add_token_address
-      value={form.values.address}
-      handleChange={form.handleChange(Address)}
-      error={
-        [
-          form.formState->FormUtils.getFormStateError,
-          form.getFieldError(Field(Address)),
-        ]
-        ->Option.firstSome
-      }
-      placeholder=I18n.input_placeholder#add_token_address
-      clearButton=true
-    />
-    {switch (pkh) {
-     | Ok(pkh) => <MetadataForm form pkh />
-     | Error(_) => React.null
+    <FormAddress form />
+    {switch (step) {
+     | Address => React.null
+     | TokenId(_) => <FormTokenId form />
+     | Metadata(pkh, kind) =>
+       <>
+         {kind != TokenRepr.FA1_2 ? <FormTokenId form /> : React.null}
+         <MetadataForm form pkh kind />
+       </>
      }}
     <Buttons.SubmitPrimary
       text=I18n.btn#register
