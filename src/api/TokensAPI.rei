@@ -36,17 +36,44 @@ let fetchTokenContracts:
   (
     ConfigContext.env,
     ~accounts: list(PublicKeyHash.t),
-    ~kinds: list(TokenContract.kind),
-    ~limit: int64,
-    ~index: int64
+    ~kinds: list(TokenContract.kind)=?,
+    ~limit: int64=?,
+    ~index: int64=?,
+    unit
   ) =>
-  Promise.t(array(TokenContract.t));
+  Promise.t(PublicKeyHash.Map.map(TokenContract.t));
 
 let fetchTokenRegistry:
   (
     ConfigContext.env,
     ~kinds: list(TokenContract.kind),
     ~limit: int64,
-    ~index: int64
+    ~index: int64,
+    unit
   ) =>
-  Promise.t(array(TokenContract.t));
+  Promise.t(PublicKeyHash.Map.map(TokenContract.t));
+
+let fetchAccountsTokens:
+  (
+    ConfigContext.env,
+    ~accounts: list(PublicKeyHash.t),
+    ~index: int,
+    ~numberByAccount: int,
+    ~withFullCache: bool
+  ) =>
+  Promise.t((TokenRegistry.Cache.t, int));
+
+let fetchAccountsTokensRegistry:
+  (
+    ConfigContext.env,
+    ~accounts: list(PublicKeyHash.t),
+    ~index: int,
+    ~numberByAccount: int
+  ) =>
+  Promise.t(
+    (
+      array(TokenRegistry.Cache.token),
+      array(TokenRegistry.Cache.token),
+      int,
+    ),
+  );

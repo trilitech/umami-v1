@@ -67,6 +67,19 @@ module Ft = {
   let let_: (FutureBase.t(_), _) => FutureBase.t(_) = FutureBase.flatMap;
 };
 
+module FtMap = {
+  /* [let%Ft x = m; n] means:
+       - [m] has type `Promise.t('a)`
+       - [x] is an identifier of type `'a`
+       - [n] has type `'b`
+       - the whole expression has then type `Promise.t('b)`
+
+       It is strictly equivalent to `m->FutureBase.promise(x => n)`
+     */
+
+  let let_: (FutureBase.t(_), _) => FutureBase.t(_) = FutureBase.map;
+};
+
 module Await = {
   /* [let%AwaitMap x = m; n] means:
      - [m] has type `Promise.t('a)`
