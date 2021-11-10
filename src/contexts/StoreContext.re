@@ -390,16 +390,20 @@ module BalanceToken = {
     useRequestsState(store => store.balanceTokenRequestsState);
 
   let getRequestKey =
-      (address: PublicKeyHash.t, tokenAddress: PublicKeyHash.t) =>
-    (address :> string) ++ (tokenAddress :> string);
+      (address: PublicKeyHash.t, tokenAddress: PublicKeyHash.t, tokenKind) =>
+    (address :> string)
+    ++ (tokenAddress :> string)
+    ++ tokenKind->TokenRepr.kindId->Int.toString;
 
-  let useLoad = (address: PublicKeyHash.t, token: PublicKeyHash.t) => {
-    let requestState = useRequestState(address->getRequestKey(token)->Some);
+  let useLoad =
+      (address: PublicKeyHash.t, token: PublicKeyHash.t, kind: TokenRepr.kind) => {
+    let requestState =
+      useRequestState(address->getRequestKey(token, kind)->Some);
 
-    TokensApiRequest.useLoadFA12Balance(~requestState, ~address, ~token);
+    TokensApiRequest.useLoadBalance(~requestState, ~address, ~token, ~kind);
   };
 
-  let useGetTotal = tokenAddress => {
+  let useGetTotal = (tokenAddress, tokenKind) => {
     let store = useStoreContext();
     let (balanceRequests, _) = store.balanceTokenRequestsState;
     let (accountsRequest, _) = store.accountsRequestState;
@@ -411,7 +415,7 @@ module BalanceToken = {
       ->PublicKeyHash.Map.valuesToArray
       ->Array.keepMap(account => {
           balanceRequests->Map.String.get(
-            getRequestKey(account.address, tokenAddress),
+            getRequestKey(account.address, tokenAddress, tokenKind),
           )
         });
 
