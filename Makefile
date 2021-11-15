@@ -14,7 +14,7 @@ update:
 
 .PHONY: clean
 clean:
-  yarn bsb:clean
+	yarn bsb:clean
 	@rm -rf node_modules
 	@rm -rf snap
 
