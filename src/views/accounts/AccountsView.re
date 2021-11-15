@@ -25,6 +25,16 @@
 
 open ReactNative;
 
+module Window = {
+  type t;
+
+  [@bs.val] [@bs.scope "window"]
+  external open_: (~url: string, ~name: string, ~features: string=?, unit) => t =
+    "open";
+
+  [@bs.send] external close: t => unit = "close";
+};
+
 module Mode = {
   type t =
     | Simple
@@ -79,6 +89,29 @@ module CreateAccountButton = {
           onPress={_ => showOnboarding()}
           text=I18n.btn#create_or_import_secret
           icon=Icons.Account.build
+          primary=true
+        />
+      </View>
+    </>;
+  };
+};
+
+module BuyTezButton = {
+  let styles =
+    Style.(
+      StyleSheet.create({
+        "button": style(~marginLeft=(-6.)->dp, ~marginBottom=2.->dp, ()),
+      })
+    );
+
+  [@react.component]
+  let make = (~showOnboarding) => {
+    <>
+      <View style=styles##button>
+        <ButtonAction
+          onPress={_ => showOnboarding()}
+          text=I18n.btn#buy_tez
+          icon=Icons.OpenExternal.build
           primary=true
         />
       </View>
@@ -177,6 +210,24 @@ let make = (~showOnboarding, ~mode, ~setMode) => {
 
   let retryNetwork = ConfigContext.useRetryNetwork();
 
+  let buyTez = () => {
+    let widget =
+      ReWert.Widget.make({
+        container_id: "wert-widget",
+        partner_id: "01F8DFQRA460MG8EMEP6E0RQQT",
+        origin: "https://sandbox.wert.io",
+        commodities: "XTZ",
+      });
+    let _ =
+      Window.open_(
+        ~url=widget->ReWert.Widget.getRedirectUrl,
+        ~name="",
+        ~features="titlebar=0,toolbar=0,status=0,location=0,menubar=0,width=800,height=800",
+        (),
+      );
+    ();
+  };
+
   <Page>
     {accountsRequest->ApiRequest.mapOrEmpty(_ => {
        <>
@@ -199,7 +250,8 @@ let make = (~showOnboarding, ~mode, ~setMode) => {
               ? <BalanceTotal /> : <BalanceTotal.WithTokenSelector ?token />}
            <View style=styles##actionBar>
              {mode->Mode.is_management
-                ? <CreateAccountButton showOnboarding /> : React.null}
+                ? <CreateAccountButton showOnboarding />
+                : <BuyTezButton showOnboarding=buyTez />}
            </View>
          </Page.Header>
          {mode->Mode.is_management

@@ -38,6 +38,7 @@ let btn = {
   pub retry = "RETRY";
   pub view_nft = "View NFT";
   pub create_or_import_secret = "CREATE OR IMPORT SECRET";
+  pub buy_tez = "BUY TEZ";
   pub verify_accounts = "VERIFY ACCOUNTS";
   pub customize_derivation_path = "Customize Derivation Path";
   pub ardware_wallet_export = "Export Public Key";

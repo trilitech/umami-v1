@@ -23,6 +23,7 @@
     "@taquito/tzip16": "11.0.1",
     "@taquito/utils": "11.0.1",
     "@umami/lib-base": "link:./lib_base",
+    "@wert-io/widget-initializer": "^0.1.2",
     "bignumber.js": "^9.0.1",
     "bip39": "^3.0.3",
     "bs-fetch": "^0.6.2",
