@@ -26,7 +26,7 @@
 open CSVParser;
 
 type Errors.t +=
-  | UnknownToken(string)
+  | UnknownToken(PublicKeyHash.t)
   | NoRows
   | CannotParseTokenAmount(ReBigNumber.t, int, int)
   | CannotParseTezAmount(ReBigNumber.t, int, int);
@@ -40,7 +40,7 @@ let () =
       I18n.csv#cannot_parse_token_amount(v, row + 1, col + 1)->Some
     | CannotParseTezAmount(v, row, col) =>
       I18n.csv#cannot_parse_tez_amount(v, row + 1, col + 1)->Some
-    | UnknownToken(s) => I18n.csv#unknown_token(s)->Some
+    | UnknownToken(s) => I18n.csv#unknown_token((s :> string))->Some
     | _ => None,
   );
 
@@ -62,10 +62,13 @@ let handleTezRow = (index, destination, amount) =>
     );
 
 let handleTokenRow =
-    (tokens, index, destination, amount, token: PublicKeyHash.t) =>
+    (tokens, index, destination, amount, token: PublicKeyHash.t, tokenId) =>
   tokens
-  ->PublicKeyHash.Map.get(token)
-  ->Option.mapWithDefault(Error(UnknownToken((token :> string))), token =>
+  ->TokenRegistry.Cache.getFullToken(
+      token,
+      tokenId->Option.map(ReBigNumber.toInt)->Option.getWithDefault(0),
+    )
+  ->Option.mapWithDefault(Error(UnknownToken(token)), token =>
       amount
       ->Token.Unit.fromBigNumber
       ->Result.mapError(_ => CannotParseTokenAmount(amount, index, 2))
@@ -83,8 +86,8 @@ let handleRow = (tokens, index, row) =>
   switch (row) {
   | (destination, amount, None, _) =>
     handleTezRow(index, destination, amount)
-  | (destination, amount, Some(token), _) =>
-    handleTokenRow(tokens, index, destination, amount, token)
+  | (destination, amount, Some(token), tokenId) =>
+    handleTokenRow(tokens, index, destination, amount, token, tokenId)
   };
 
 let handleCSV = (rows, tokens) =>

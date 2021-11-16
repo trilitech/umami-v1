@@ -132,7 +132,13 @@ let make =
   let tokens = StoreContext.Tokens.useGetAll();
 
   let items =
-    tokens->PublicKeyHash.Map.valuesToArray->Array.map(v => v->Token);
+    tokens
+    ->TokenRegistry.Cache.valuesToArray
+    ->Array.keepMap(
+        fun
+        | TokenRegistry.Cache.Full(t) => t->Token->Some
+        | Partial(_) => None,
+      );
 
   let onValueChange =
     fun

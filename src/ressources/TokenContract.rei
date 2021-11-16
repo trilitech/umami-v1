@@ -23,48 +23,31 @@
 /*                                                                           */
 /*****************************************************************************/
 
+open TokenRepr;
+
 type Errors.t +=
-  | MigrationFailed(Version.t);
+  | UnknownKind(string);
 
-let () =
-  Errors.registerHandler(
-    "LocalStorage",
-    fun
-    | MigrationFailed(v) =>
-      I18n.errors#storage_migration_failed(Version.toString(v))->Some
-    | _ => None,
-  );
+type kind = [ | `KFA1_2 | `KFA2];
 
-let currentVersion = Version.mk(1, 3);
-
-let addMigration = (migrations, version, migration) => {
-  migrations->Map.update(
-    version,
-    fun
-    | None => [migration]->Some
-    | Some(m) => [migration, ...m]->Some,
-  );
+type t = {
+  address,
+  kind,
 };
 
-let applyMigration = (migrations, currentVersion) => {
-  migrations->Map.reduce(Ok(), (res, version, migrations) =>
-    Version.compare(currentVersion, version) >= 0
-      ? res
-      : migrations
-        ->List.reduce(res, (res, migration) =>
-            res->Result.flatMap(_ => migration())
-          )
-        ->Result.mapError(_ => MigrationFailed(version))
-  );
+let fromTokenKind: TokenRepr.kind => kind;
+let toTokenKind: (kind, int) => TokenRepr.kind;
+
+module Decode: {
+  let kindFromString: string => Let.result(kind);
+  let kindDecoder: Js.Json.t => kind;
+  let record: Js.Json.t => t;
+  let array: Js.Json.t => array(t);
+  let map: Js.Json.t => PublicKeyHash.Map.map(t);
 };
 
-let init = version => {
-  Map.make(~id=(module Version.Comparable))
-  ->addMigration(Disclaimer.Legacy.V1_1.version, Disclaimer.Legacy.V1_1.mk)
-  ->addMigration(ConfigFile.Legacy.V1_2.version, ConfigFile.Legacy.V1_2.mk)
-  ->addMigration(
-      TokenRegistry.Legacy.V1_3.version,
-      TokenRegistry.Legacy.V1_3.mk,
-    )
-  ->applyMigration(version);
+module Encode: {
+  let kindEncoder: kind => string;
+  let record: t => Js.Json.t;
+  let array: array(t) => Js.Json.t;
 };

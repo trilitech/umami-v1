@@ -169,6 +169,24 @@ let mk = (~name, ~explorer, ~endpoint, chain) => {
   endpoint,
 };
 
+let chainNetwork: chain => option(string) =
+  fun
+  | `Mainnet => Some("mainnet")
+  | `Granadanet => Some("granadanet")
+  | `Florencenet => Some("florencenet")
+  | `Edo2net => Some("edo2net")
+  | `Hangzhounet => Some("hangzhounet")
+  | `Custom(_) => None;
+
+let networkChain: string => option(chain) =
+  fun
+  | "mainnet" => Some(`Mainnet)
+  | "granadanet" => Some(`Granadanet)
+  | "florencenet" => Some(`Florencenet)
+  | "edo2net" => Some(`Edo2net)
+  | "hangzhounet" => Some(`Hangzhounet)
+  | _ => None;
+
 module Encode = {
   let chainToString =
     fun

@@ -173,3 +173,14 @@ type t = {
   decimals: int,
   asset: Metadata.asset,
 };
+
+let id = token =>
+  switch (token.kind) {
+  | FA1_2 => 0
+  | FA2(n) => n
+  };
+
+let isNFT = t =>
+  t.asset.artifactUri != None
+  || t.asset.displayUri != None
+  || t.asset.isBooleanAmount == true;

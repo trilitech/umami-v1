@@ -88,6 +88,23 @@ module Operations: {
     Promise.t(ReTaquito.Toolkit.Operation.confirmationResult);
 };
 
+module type ContractCache = {
+  type t;
+  type contract;
+  let make: ReTaquito.Toolkit.toolkit => t;
+  let findContract: (t, PublicKeyHash.t) => Promise.t(contract);
+  let clear: t => unit;
+};
+
+module FA12Cache:
+  ContractCache with type contract := ReTaquitoContracts.FA12.t;
+
+module FA2Cache: ContractCache with type contract := ReTaquitoContracts.FA2.t;
+
+module Tzip12Cache:
+  ContractCache with
+    type contract := ReTaquitoContracts.Tzip12Tzip16Contract.t;
+
 module Transfer: {
   /* Generates a list of Taquito-compatible transfers from a list of
      Transfer.elt. The endpoint is necessary to prefetch some contracts that can

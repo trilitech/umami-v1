@@ -23,48 +23,84 @@
 /*                                                                           */
 /*****************************************************************************/
 
+open TokenRepr;
+
 type Errors.t +=
-  | MigrationFailed(Version.t);
+  | UnknownKind(string);
 
 let () =
   Errors.registerHandler(
-    "LocalStorage",
+    "Wallet",
     fun
-    | MigrationFailed(v) =>
-      I18n.errors#storage_migration_failed(Version.toString(v))->Some
+    | UnknownKind(k) => I18n.errors#unknown_kind(k)->Some
     | _ => None,
   );
 
-let currentVersion = Version.mk(1, 3);
+type kind = [ | `KFA1_2 | `KFA2];
 
-let addMigration = (migrations, version, migration) => {
-  migrations->Map.update(
-    version,
+type t = {
+  address,
+  kind,
+};
+
+let fromTokenKind =
+  fun
+  | TokenRepr.FA1_2 => `KFA1_2
+  | FA2(_) => `KFA2;
+
+let toTokenKind = (kind, id) =>
+  switch (kind) {
+  | `KFA1_2 => TokenRepr.FA1_2
+  | `KFA2 => FA2(id)
+  };
+
+module Decode = {
+  let kindFromString =
     fun
-    | None => [migration]->Some
-    | Some(m) => [migration, ...m]->Some,
-  );
+    | "fa1-2" => Ok(`KFA1_2)
+    | "fa2" => Ok(`KFA2)
+    | k => Error(UnknownKind(k));
+
+  let kindDecoder = json => {
+    Json.Decode.(json |> field("kind", string))
+    ->kindFromString
+    ->Result.getExn;
+  };
+
+  let record = json =>
+    Json.Decode.{
+      kind: kindDecoder(json),
+      address:
+        json
+        |> either(
+             field("address", PublicKeyHash.decoder),
+             field("k", PublicKeyHash.decoder),
+           ),
+    };
+
+  let array = json => json |> Json.Decode.array(record);
+  let map = json =>
+    json
+    ->array
+    ->Array.reduce(PublicKeyHash.Map.empty, (contracts, t) =>
+        contracts->PublicKeyHash.Map.set(t.address, t)
+      );
 };
 
-let applyMigration = (migrations, currentVersion) => {
-  migrations->Map.reduce(Ok(), (res, version, migrations) =>
-    Version.compare(currentVersion, version) >= 0
-      ? res
-      : migrations
-        ->List.reduce(res, (res, migration) =>
-            res->Result.flatMap(_ => migration())
-          )
-        ->Result.mapError(_ => MigrationFailed(version))
-  );
-};
+module Encode = {
+  let kindEncoder =
+    fun
+    | `KFA1_2 => "fa1-2"
+    | `KFA2 => "fa2";
 
-let init = version => {
-  Map.make(~id=(module Version.Comparable))
-  ->addMigration(Disclaimer.Legacy.V1_1.version, Disclaimer.Legacy.V1_1.mk)
-  ->addMigration(ConfigFile.Legacy.V1_2.version, ConfigFile.Legacy.V1_2.mk)
-  ->addMigration(
-      TokenRegistry.Legacy.V1_3.version,
-      TokenRegistry.Legacy.V1_3.mk,
-    )
-  ->applyMigration(version);
+  let record = record => {
+    Json.Encode.(
+      object_([
+        ("kind", record.kind |> kindEncoder |> string),
+        ("address", record.address |> PublicKeyHash.encoder),
+      ])
+    );
+  };
+
+  let array = arrayRecord => arrayRecord |> Json.Encode.array(record);
 };

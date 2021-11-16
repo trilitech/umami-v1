@@ -107,9 +107,15 @@ let make = () => {
        | Loading(Some(tokens))
        | Done(Ok(tokens), _) =>
          tokens
-         ->PublicKeyHash.Map.valuesToArray
-         ->Array.map(token =>
-             <TokenRowItem key=(token.address :> string) token />
+         ->TokenRegistry.Cache.valuesToArray
+         ->Array.keepMap(
+             fun
+             | Full(token) =>
+               {
+                 <TokenRowItem key=(token.address :> string) token />;
+               }
+               ->Some
+             | Partial(_, _) => None,
            )
          ->React.array
        | Done(Error(error), _) => <ErrorView error />

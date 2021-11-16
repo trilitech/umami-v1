@@ -24,7 +24,7 @@
 /*****************************************************************************/
 
 type Errors.t +=
-  | UnknownToken(string)
+  | UnknownToken(PublicKeyHash.t)
   | NoRows
   | CannotParseTokenAmount(ReBigNumber.t, int, int)
   | CannotParseTezAmount(ReBigNumber.t, int, int);
@@ -46,6 +46,4 @@ let rowEncoding:
     Errors.t,
   );
 
-let parseCSV:
-  (string, ~tokens: PublicKeyHash.Map.map(TokenRepr.t)) =>
-  result(t, Errors.t);
+let parseCSV: (string, ~tokens: TokenRegistry.Cache.t) => result(t, Errors.t);

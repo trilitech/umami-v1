@@ -24,18 +24,8 @@
 /*****************************************************************************/
 
 include ApiRequest;
+
 open Let;
-
-type Errors.t +=
-  | NotFA12Contract(string);
-
-let () =
-  Errors.registerHandler(
-    "Tokens",
-    fun
-    | NotFA12Contract(_) => I18n.t#error_check_contract->Some
-    | _ => None,
-  );
 
 let useCheckTokenContract = () => {
   let set = (~config, address) =>
@@ -56,40 +46,63 @@ let useLoadFA12Balance =
   );
 };
 
-let tokensStorageKey = "wallet-tokens";
-
 let useLoadTokens = requestState => {
-  let get = (~config as _, ()) =>
-    LocalStorage.getItem(tokensStorageKey)
-    ->Js.Nullable.toOption
-    ->Option.mapWithDefault([||], storageString =>
-        storageString->Js.Json.parseExn->Token.Decode.array
-      )
-    ->Array.map(token => {(token.address, token)})
-    ->PublicKeyHash.Map.fromArray
-    ->Promise.ok;
+  let get = (~config as _, ()) => TokensAPI.registeredTokens()->Promise.value;
 
   ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, ());
 };
 
-let useDelete = (~sideEffect=?, ()) => {
-  let set = (~config as _, token) => {
-    let tokens =
-      LocalStorage.getItem(tokensStorageKey)
-      ->Js.Nullable.toOption
-      ->Option.mapWithDefault([||], storageString =>
-          storageString->Js.Json.parseExn->Token.Decode.array
-        );
+type request = {
+  accounts: list(PublicKeyHash.t),
+  index: int,
+  numberByAccount: int,
+};
 
-    LocalStorage.setItem(
-      tokensStorageKey,
-      tokens
-      ->Array.keep(t => t != token)
-      ->Token.Encode.array
-      ->Js.Json.stringify,
-    )
-    ->Promise.ok;
+type registry = {
+  registered: array(TokenRegistry.Cache.token),
+  toRegister: array(TokenRegistry.Cache.token),
+  nextIndex: int,
+};
+
+let useLoadTokensRegistry = (requestState, request) => {
+  let get = (~config, request) => {
+    let%AwaitMap (registered, toRegister, nextIndex) =
+      TokensAPI.fetchAccountsTokensRegistry(
+        config,
+        ~accounts=request.accounts,
+        ~index=request.index,
+        ~numberByAccount=request.numberByAccount,
+      );
+    {registered, toRegister, nextIndex};
   };
+
+  ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, request);
+};
+
+type tokens = {
+  sorted: TokenRegistry.Cache.t,
+  nextIndex: int,
+};
+
+let useLoadAccountsTokens = (requestState, request) => {
+  let get = (~config, request) => {
+    let%AwaitMap (sorted, nextIndex) =
+      TokensAPI.fetchAccountsTokens(
+        config,
+        ~accounts=request.accounts,
+        ~index=request.index,
+        ~numberByAccount=request.numberByAccount,
+        ~withFullCache=false,
+      );
+    {sorted, nextIndex};
+  };
+
+  ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, request);
+};
+
+let useDelete = (~sideEffect=?, ()) => {
+  let set = (~config as _, token) =>
+    TokensAPI.removeToken(token, ~pruneCache=true)->Promise.value;
 
   ApiRequest.useSetter(
     ~logOk=_ => I18n.t#token_deleted,
@@ -102,28 +115,7 @@ let useDelete = (~sideEffect=?, ()) => {
 };
 
 let useCreate = (~sideEffect=?, ()) => {
-  let (_checkTokenRequest, checkToken) = useCheckTokenContract();
-  let set = (~config as _, token) => {
-    let%Await tokenKind = checkToken(token.TokenRepr.address);
-
-    let%AwaitMap () =
-      tokenKind == `KFA1_2
-        ? Promise.ok()
-        : Promise.err(NotFA12Contract((token.TokenRepr.address :> string)));
-
-    let tokens =
-      LocalStorage.getItem(tokensStorageKey)
-      ->Js.Nullable.toOption
-      ->Option.mapWithDefault([||], storageString =>
-          storageString->Js.Json.parseExn->Token.Decode.array
-        );
-
-    LocalStorage.setItem(
-      tokensStorageKey,
-      tokens->Array.concat([|token|])->Token.Encode.array->Js.Json.stringify,
-    )
-    ->Promise.ok;
-  };
+  let set = (~config, token) => TokensAPI.addToken(config, token);
 
   ApiRequest.useSetter(
     ~logOk=_ => I18n.t#token_created,

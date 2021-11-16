@@ -24,47 +24,56 @@
 /*****************************************************************************/
 
 type Errors.t +=
-  | MigrationFailed(Version.t);
+  | NotFAContract(string);
 
-let () =
-  Errors.registerHandler(
-    "LocalStorage",
-    fun
-    | MigrationFailed(v) =>
-      I18n.errors#storage_migration_failed(Version.toString(v))->Some
-    | _ => None,
+let registeredTokens: unit => Let.result(TokenRegistry.Cache.t);
+
+let addToken: (ConfigContext.env, Token.t) => Promise.t(unit);
+
+let removeToken: (Token.t, ~pruneCache: bool) => Let.result(unit);
+
+let fetchTokenContracts:
+  (
+    ConfigContext.env,
+    ~accounts: list(PublicKeyHash.t),
+    ~kinds: list(TokenContract.kind)=?,
+    ~limit: int64=?,
+    ~index: int64=?,
+    unit
+  ) =>
+  Promise.t(PublicKeyHash.Map.map(TokenContract.t));
+
+let fetchTokenRegistry:
+  (
+    ConfigContext.env,
+    ~kinds: list(TokenContract.kind),
+    ~limit: int64,
+    ~index: int64,
+    unit
+  ) =>
+  Promise.t(PublicKeyHash.Map.map(TokenContract.t));
+
+let fetchAccountsTokens:
+  (
+    ConfigContext.env,
+    ~accounts: list(PublicKeyHash.t),
+    ~index: int,
+    ~numberByAccount: int,
+    ~withFullCache: bool
+  ) =>
+  Promise.t((TokenRegistry.Cache.t, int));
+
+let fetchAccountsTokensRegistry:
+  (
+    ConfigContext.env,
+    ~accounts: list(PublicKeyHash.t),
+    ~index: int,
+    ~numberByAccount: int
+  ) =>
+  Promise.t(
+    (
+      array(TokenRegistry.Cache.token),
+      array(TokenRegistry.Cache.token),
+      int,
+    ),
   );
-
-let currentVersion = Version.mk(1, 3);
-
-let addMigration = (migrations, version, migration) => {
-  migrations->Map.update(
-    version,
-    fun
-    | None => [migration]->Some
-    | Some(m) => [migration, ...m]->Some,
-  );
-};
-
-let applyMigration = (migrations, currentVersion) => {
-  migrations->Map.reduce(Ok(), (res, version, migrations) =>
-    Version.compare(currentVersion, version) >= 0
-      ? res
-      : migrations
-        ->List.reduce(res, (res, migration) =>
-            res->Result.flatMap(_ => migration())
-          )
-        ->Result.mapError(_ => MigrationFailed(version))
-  );
-};
-
-let init = version => {
-  Map.make(~id=(module Version.Comparable))
-  ->addMigration(Disclaimer.Legacy.V1_1.version, Disclaimer.Legacy.V1_1.mk)
-  ->addMigration(ConfigFile.Legacy.V1_2.version, ConfigFile.Legacy.V1_2.mk)
-  ->addMigration(
-      TokenRegistry.Legacy.V1_3.version,
-      TokenRegistry.Legacy.V1_3.mk,
-    )
-  ->applyMigration(version);
-};

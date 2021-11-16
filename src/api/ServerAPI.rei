@@ -24,6 +24,7 @@
 /*****************************************************************************/
 
 type Errors.t +=
+  | UnknownNetwork(string)
   | FetchError(string)
   | JsonResponseError(string)
   | JsonError(string);
@@ -47,6 +48,17 @@ module URL: {
       t;
     let checkToken: (ConfigContext.env, ~contract: PublicKeyHash.t) => t;
     let accountExists: (ConfigContext.env, ~account: PublicKeyHash.t) => t;
+
+    let tokenRegistry:
+      (
+        ConfigContext.env,
+        ~accountsFilter: list(PublicKeyHash.t)=?,
+        ~kinds: list(TokenContract.kind)=?,
+        ~limit: int64=?,
+        ~index: int64=?,
+        unit
+      ) =>
+      t;
   };
 
   module Endpoint: {
@@ -72,7 +84,27 @@ module URL: {
       Js.Json.t;
   };
 
-  module External: {let bakingBadBakers: t;};
+  module External: {
+    let bakingBadBakers: t;
+    // The API might not be available on custom network, or old networks
+    let betterCallDevAccountTokens:
+      (
+        ~config: ConfigContext.env,
+        ~account: PublicKeyHash.t,
+        ~contract: PublicKeyHash.t=?,
+        ~limit: int=?,
+        ~index: int=?,
+        ~hideEmpty: bool=?,
+        ~sortBy: [ | `Balance | `TokenId]=?,
+        unit
+      ) =>
+      Let.result(t);
+
+    // The request does not return the metadata for now
+    let betterCallDevBatchAccounts:
+      (~config: ConfigContext.env, ~accounts: array(PublicKeyHash.t)) =>
+      Let.result(t);
+  };
 
   /* Fetch URL as a JSON. */
   let get: t => Promise.t(Js.Json.t);
