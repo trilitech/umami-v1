@@ -37,6 +37,7 @@ type t = {
 
 let fromTokenKind: TokenRepr.kind => kind;
 let toTokenKind: (kind, int) => TokenRepr.kind;
+let kindToString: kind => string;
 
 module Decode: {
   let kindFromString: string => Let.result(kind);

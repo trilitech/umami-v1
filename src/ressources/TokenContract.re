@@ -54,6 +54,11 @@ let toTokenKind = (kind, id) =>
   | `KFA2 => FA2(id)
   };
 
+let kindToString =
+  fun
+  | `KFA1_2 => "FA1.2"
+  | `KFA2 => "FA2";
+
 module Decode = {
   let kindFromString =
     fun
