@@ -56,15 +56,13 @@ module BetterCallDev = {
 
   // Returns a list of arrays: this will be treated later, so we return it as raw as possible for now
   let fetchTokens = (config, alreadyFetched, account, index, number) => {
-    let pageSize = 50; // [10..50]
-
     let rec fetch = (alreadyFetched, index, number) => {
       let%Await url =
         ServerAPI.URL.External.betterCallDevAccountTokens(
           ~config,
           ~account,
           ~sortBy=`TokenId,
-          ~limit=min(pageSize, number),
+          ~limit=min(requestPageSize, number),
           ~index,
           ~hideEmpty=true,
           (),
@@ -75,7 +73,7 @@ module BetterCallDev = {
 
       // corresponds to the number of tokens to fetch according to
       // the number we ask, not the total remaining
-      let remaining = max(number - pageSize, 0);
+      let remaining = max(number - requestPageSize, 0);
 
       // index for the next fetch
       let index = index + tokens.balances->Array.size;

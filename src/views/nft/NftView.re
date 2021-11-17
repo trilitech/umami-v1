@@ -60,7 +60,11 @@ module Component = {
     let tokensRequest =
       StoreContext.Tokens.useAccountsTokensStream(
         onTokens,
-        TokensApiRequest.{account, index: 0, numberByAccount: 1},
+        TokensApiRequest.{
+          account,
+          index: 0,
+          numberByAccount: BCD.requestPageSize,
+        },
       );
 
     let (switchButtonText, icon) =
