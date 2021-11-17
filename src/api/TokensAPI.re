@@ -142,18 +142,28 @@ module BetterCallDev = {
 
 /* From a list of tokens and the cache, reconstructs the list of tokens with
    their metadata the user has registered */
-let unfoldRegistered = (tokens, cache: Cache.t) => {
+let unfoldRegistered = (tokens, cache: Cache.t, kind) => {
+  let keep = (registered, id, _) =>
+    Registered.(
+      registered.tokens
+      ->Map.Int.get(id)
+      ->Option.mapWithDefault(false, t =>
+          switch (t, kind) {
+          | (FT, `FT) => true
+          | (NFT(info), `NFT(holder)) => info.holder == holder
+          | _ => false
+          }
+        )
+    );
+
   let merge = (_, registered, tokens) => {
     switch (registered, tokens) {
     | (None, _)
     // What should we do if the token is not in cache?
     | (_, None) => None
     | (Some(registered), Some(contract)) =>
-      let tokens =
-        contract.Cache.tokens
-        ->Map.Int.keep((id, _) =>
-            registered.Registered.tokens->Set.Int.has(id)
-          );
+      let tokens = contract.Cache.tokens->Map.Int.keep(keep(registered));
+
       Some({...contract, tokens});
     };
   };
@@ -163,7 +173,13 @@ let unfoldRegistered = (tokens, cache: Cache.t) => {
 let registeredTokens = () => {
   let%Res tokens = Registered.get();
   let%ResMap cache = Cache.get();
-  tokens->unfoldRegistered(cache);
+  tokens->unfoldRegistered(cache, `FT);
+};
+
+let holdNFTs = holder => {
+  let%Res tokens = Registered.get();
+  let%ResMap cache = Cache.get();
+  tokens->unfoldRegistered(cache, `NFT(holder));
 };
 
 // used for registration of custom tokens
@@ -185,18 +201,29 @@ let addTokenToCache = (config, token) => {
   Cache.set(tokens);
 };
 
-let addTokenToRegistered = token => {
+let addTokenToRegistered = (token, kind) => {
   let tokens =
     Registered.get()
     ->Result.getWithDefault(PublicKeyHash.Map.empty)
-    ->Registered.registerToken(token);
+    ->Registered.registerToken(token, kind);
 
   Registered.set(tokens);
 };
 
-let addToken = (config, token) => {
+let registerNFTs = (tokens, holder) => {
+  open Registered;
+  let%ResMap registered = get();
+  registered->TokenRegistry.mergeAccountNFTs(tokens, holder)->set;
+};
+
+let addFungibleToken = (config, token) => {
   let%AwaitMap () = addTokenToCache(config, Full(token));
-  addTokenToRegistered(token);
+  addTokenToRegistered(token, Registered.FT);
+};
+
+let addNonFungibleToken = (config, token, holder) => {
+  let%AwaitMap () = addTokenToCache(config, Full(token));
+  addTokenToRegistered(token, Registered.(NFT({holder, hidden: false})));
 };
 
 let removeFromCache = token => {

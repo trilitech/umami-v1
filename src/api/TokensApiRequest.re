@@ -153,7 +153,7 @@ let useDelete = (~sideEffect=?, ()) => {
 };
 
 let useCreate = (~sideEffect=?, ()) => {
-  let set = (~config, token) => TokensAPI.addToken(config, token);
+  let set = (~config, token) => TokensAPI.addFungibleToken(config, token);
 
   ApiRequest.useSetter(
     ~logOk=_ => I18n.t#token_created,

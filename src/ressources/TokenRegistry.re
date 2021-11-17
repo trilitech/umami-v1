@@ -27,20 +27,29 @@ open Let;
 
 module Registered = {
   /** Representation of registered tokens for a user */
+  type nftInfo = {
+    holder: PublicKeyHash.t,
+    hidden: bool,
+  };
+
+  type kind =
+    | FT
+    | NFT(nftInfo);
+
   type contract = {
     contract: TokenContract.t,
     chain: string,
-    tokens: Set.Int.t // effectively registered tokens by the user
+    tokens: Map.Int.t(kind) // effectively registered tokens by the user
   };
 
   let isRegistered = (registered, pkh, tokenId) => {
     registered
     ->PublicKeyHash.Map.get(pkh)
-    ->Option.map(t => t.tokens->Set.Int.has(tokenId))
+    ->Option.map(t => t.tokens->Map.Int.has(tokenId))
     != None;
   };
 
-  let registerToken = (registered, token: Token.t) => {
+  let registerToken = (registered, token: Token.t, kind) => {
     registered->PublicKeyHash.Map.update(
       token.address,
       fun
@@ -52,10 +61,13 @@ module Registered = {
               kind: TokenContract.fromTokenKind(token.kind),
             },
           chain: token.chain,
-          tokens: Set.Int.empty->Set.Int.add(TokenRepr.id(token)),
+          tokens: Map.Int.empty->Map.Int.set(TokenRepr.id(token), kind),
         })
       | Some(t) =>
-        Some({...t, tokens: t.tokens->Set.Int.add(TokenRepr.id(token))}),
+        Some({
+          ...t,
+          tokens: t.tokens->Map.Int.set(TokenRepr.id(token), kind),
+        }),
     );
   };
 
@@ -65,8 +77,8 @@ module Registered = {
       fun
       | None => None
       | Some(t) => {
-          let tokens = t.tokens->Set.Int.remove(tokenId);
-          tokens->Set.Int.isEmpty ? None : Some({...t, tokens});
+          let tokens = t.tokens->Map.Int.remove(tokenId);
+          tokens->Map.Int.isEmpty ? None : Some({...t, tokens});
         },
     );
 
@@ -80,8 +92,49 @@ module Registered = {
 
     let chainDecoder = Json.Decode.(field("chain", string));
 
+    let holderDecoder = Json.Decode.(field("holder", PublicKeyHash.decoder));
+    let hiddenDecoder = Json.Decode.(field("hidden", bool));
+
+    let nftInfoDecoder = json => {
+      holder: holderDecoder(json),
+      hidden: hiddenDecoder(json),
+    };
+
+    let ftDecoder = _ => FT;
+    let nftDecoder = json =>
+      NFT(json |> Json.Decode.field("value", nftInfoDecoder));
+
+    let kindDecoder = json =>
+      Json.Decode.(
+        json
+        |> (
+          field("kind", string)
+          |> andThen(
+               fun
+               | "ft" => ftDecoder
+               | "nft" => nftDecoder
+               | v =>
+                 JsonEx.(
+                   raise(
+                     InternalError(
+                       DecodeError("Registered: Unknown kind " ++ v),
+                     ),
+                   )
+                 ),
+             )
+        )
+      );
+
+    let tokensDecoder = json =>
+      json
+      |> Json.Decode.(
+           either(int |> map(i => (i, FT)), tuple2(int, kindDecoder))
+         );
+
     let registeredDecoder = json =>
-      json |> Json.Decode.(field("tokens", array(int))) |> Set.Int.fromArray;
+      json
+      |> Json.Decode.(field("tokens", array(tokensDecoder)))
+      |> Map.Int.fromArray;
 
     module Decode = {
       let contract = json => {
@@ -94,12 +147,32 @@ module Registered = {
     };
 
     module Encode = {
+      let kindEncoder =
+        Json.Encode.(
+          fun
+          | FT => object_([("kind", string("ft"))])
+          | NFT(info) =>
+            object_([
+              ("kind", string("nft")),
+              (
+                "value",
+                object_([
+                  ("holder", info.holder |> PublicKeyHash.encoder),
+                  ("hidden", info.hidden |> bool),
+                ]),
+              ),
+            ])
+        );
+
       let contract = c =>
         Json.Encode.(
           object_([
             ("contract", c.contract |> TokenContract.Encode.record),
             ("chain", c.chain |> string),
-            ("tokens", c.tokens->Set.Int.toArray |> array(int)),
+            (
+              "tokens",
+              c.tokens->Map.Int.toArray |> array(tuple2(int, kindEncoder)),
+            ),
           ])
         );
 
@@ -156,6 +229,11 @@ module Cache = {
     | Full(t) => Some(t.TokenRepr.chain)
     | Partial(_, bcd) =>
       bcd.BCD.network->Network.networkChain->Option.map(Network.getChainId);
+
+  let isNFT =
+    fun
+    | Full(t) => t->TokenRepr.isNFT
+    | Partial(_, _) => false;
 
   let getToken = (cache, pkh, tokenId) => {
     cache
@@ -374,7 +452,7 @@ module Legacy = {
               Registered.{
                 contract: TokenContract.{address, kind: `KFA1_2},
                 chain: token.chain,
-                tokens: Set.Int.empty->Set.Int.add(0),
+                tokens: Map.Int.empty->Map.Int.set(0, FT),
               },
             )
           // there is no FA2 contract registration possible at this point
@@ -411,4 +489,85 @@ module Legacy = {
       /* Storage.remove(); */
     };
   };
+};
+
+let mergeAccountNFTs =
+    (registered: Registered.t, nfts: Cache.t, holder): Registered.t => {
+  open Registered;
+
+  let newNFT = Registered.(NFT({holder, hidden: false}));
+
+  let findChain = tokens =>
+    tokens
+    ->Map.Int.findFirstBy((_, _) => true)
+    ->Option.flatMap(((_, t)) =>
+        switch (t) {
+        | Cache.Full(t) => t.TokenRepr.chain->Some
+        | _ => None
+        }
+      );
+
+  let mergeTokens = (_tokenId, kind, token) =>
+    Registered.(
+      switch (kind, token) {
+      | (None, None)
+      | (Some(FT), None) => Some(FT)
+
+      // An NFT is no longer hold by the account
+      | (Some(NFT(info)), None) =>
+        info.Registered.holder == holder ? None : kind
+
+      // Newly added NFT
+      | (None, Some(t)) => t->Cache.isNFT ? Some(newNFT) : None
+
+      // NFT already exists: we keep its hidden status
+      | (Some(NFT(info)), Some(_)) => {...info, holder}->NFT->Some
+      | _ => kind
+      }
+    );
+
+  let mergeContracts = (address, registeredContract, cachedContract) =>
+    switch (registeredContract, cachedContract) {
+    | (None, None) => None
+
+    | (None, Some(contract)) =>
+      let tokens =
+        contract.Cache.tokens
+        ->Map.Int.reduce(Map.Int.empty, (tokens, key, t) =>
+            t->Cache.isNFT ? tokens->Map.Int.set(key, newNFT) : tokens
+          );
+      contract.tokens
+      ->findChain
+      ->Option.map(chain =>
+          Registered.{
+            contract: TokenContract.{address, kind: `KFA2},
+            chain,
+            tokens,
+          }
+        );
+
+    // prune NFTs
+    | (Some(contract), None) =>
+      let tokens =
+        contract.Registered.tokens
+        ->Map.Int.keep((_, kind) =>
+            switch (kind) {
+            | FT => true
+            | NFT(info) => holder != info.holder
+            }
+          );
+      tokens->Map.Int.isEmpty ? None : Registered.{...contract, tokens}->Some;
+
+    // prune no longer possessed NFTs, adds the new ones
+    | (Some(registeredContract), Some(cachedContract)) =>
+      let tokens =
+        Map.Int.merge(
+          registeredContract.Registered.tokens,
+          cachedContract.Cache.tokens,
+          mergeTokens,
+        );
+      Registered.{...registeredContract, tokens}->Some;
+    };
+
+  PublicKeyHash.Map.merge(registered, nfts, mergeContracts);
 };

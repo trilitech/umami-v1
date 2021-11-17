@@ -28,7 +28,12 @@ type Errors.t +=
 
 let registeredTokens: unit => Let.result(TokenRegistry.Cache.t);
 
-let addToken: (ConfigContext.env, Token.t) => Promise.t(unit);
+let holdNFTs: PublicKeyHash.t => Let.result(TokenRegistry.Cache.t);
+
+let addFungibleToken: (ConfigContext.env, Token.t) => Promise.t(unit);
+
+let addNonFungibleToken:
+  (ConfigContext.env, Token.t, PublicKeyHash.t) => Promise.t(unit);
 
 let removeToken: (Token.t, ~pruneCache: bool) => Let.result(unit);
 
