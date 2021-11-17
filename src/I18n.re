@@ -367,6 +367,9 @@ let title = {
   pub collected = "Collected";
   pub gallery = "Gallery";
   pub logs = "Logs"
+  pub notice = "Notice";
+  pub buy_tez = "Buy tez";
+  pub wert_recipient = "Please select which account will receive";
 };
 
 let expl = {
@@ -402,7 +405,7 @@ let expl = {
   pub beacon_operation = "Requests Operations";
   pub beacon_delegation = "Request Delegation";
   pub beacon_dapp_sign = "requests your signature";
-  pub custom_network = "Please specify the parameters of the network you want to connect to."
+  pub custom_network = "Please specify the parameters of the network you want to connect to.";
 };
 
 let menu = {
