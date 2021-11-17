@@ -627,6 +627,22 @@ module Tokens = {
     );
   };
 
+  let useAccountsTokensStream = (onTokens, request) => {
+    let useRequestsState =
+      useGetRequestStateFromMap(store => store.accountsTokensRequestState);
+
+    let accountsTokensRequestState =
+      useRequestsState(
+        (Some(request.TokensApiRequest.account) :> option(string)),
+      );
+
+    TokensApiRequest.useLoadAccountsTokensStream(
+      onTokens,
+      accountsTokensRequestState,
+      request,
+    );
+  };
+
   let useGet = (tokenAddress: option(PublicKeyHash.t)) => {
     let tokens = useGetAll();
 

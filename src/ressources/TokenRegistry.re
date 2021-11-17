@@ -134,6 +134,8 @@ module Cache = {
     tokens,
   };
 
+  let empty = PublicKeyHash.Map.empty;
+
   let tokenId =
     fun
     | Full(t) => TokenRepr.id(t)
@@ -209,6 +211,38 @@ module Cache = {
     ->PublicKeyHash.Map.valuesToArray
     ->Array.map(c => c.tokens->Map.Int.valuesToArray)
     ->Array.concatMany;
+  };
+
+  let merge = (cache1, cache2) => {
+    let pickToken = (t1, t2) =>
+      switch (t1, t2) {
+      | (Full(_), Full(_)) => t1
+      | (Full(_) as t, Partial(_, _))
+      | (Partial(_, _), Full(_) as t) => t
+      | _ => t1
+      };
+    let mergeTokens = (_, t1, t2) =>
+      switch (t1, t2) {
+      | (None, None) => None
+      | (Some(_) as t, None)
+      | (None, Some(_) as t) => t
+      | (Some(t1), Some(t2)) => pickToken(t1, t2)->Some
+      };
+    let mergeContracts = (key, c1, c2) =>
+      switch (c1, c2) {
+      | (None, None) => None
+      | (Some(_) as c, None)
+      | (None, Some(_) as c) => c
+      | (Some(c1), Some(c2)) =>
+        {
+          address: key,
+          name: Option.keep(c1.name, c2.name),
+          tokens: Map.Int.merge(c1.tokens, c2.tokens, mergeTokens),
+        }
+        ->Some
+      };
+    ();
+    PublicKeyHash.Map.merge(cache1, cache2, mergeContracts);
   };
 
   include LocalStorage.Make({

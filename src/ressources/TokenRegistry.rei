@@ -62,6 +62,8 @@ module Cache: {
   include
     LocalStorage.StorageType with type t = PublicKeyHash.Map.map(contract);
 
+  let empty: t;
+
   let getToken: (t, PublicKeyHash.t, int) => option(token);
   let getFullToken: (t, PublicKeyHash.t, int) => option(Token.t);
   let addToken: (t, token) => t;
@@ -75,6 +77,8 @@ module Cache: {
     t;
   let removeToken: (t, token) => t;
   let valuesToArray: t => array(token);
+
+  let merge: (t, t) => t;
 };
 
 module Legacy: {

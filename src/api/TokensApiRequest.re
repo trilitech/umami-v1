@@ -110,6 +110,34 @@ let useLoadAccountsTokens = (requestState, request) => {
   ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, request);
 };
 
+let useLoadAccountsTokensStream = (onTokens, requestState, request) => {
+  let rec get = (accumulatedTokens, ~config, request) => {
+    Js.log("Requesting tokens:");
+    Js.log(request);
+    let%Await (sorted, nextIndex) =
+      TokensAPI.fetchAccountsTokens(
+        config,
+        ~accounts=[request.account],
+        ~index=request.index,
+        ~numberByAccount=request.numberByAccount,
+        ~withFullCache=false,
+      );
+    let accumulatedTokens =
+      accumulatedTokens->TokenRegistry.Cache.merge(sorted);
+    onTokens(sorted);
+    nextIndex <= request.index
+      ? Promise.ok({sorted: accumulatedTokens, nextIndex})
+      : get(~config, accumulatedTokens, {...request, index: nextIndex});
+  };
+
+  ApiRequest.useLoader(
+    ~get=get(TokenRegistry.Cache.empty),
+    ~kind=Logs.Tokens,
+    ~requestState,
+    request,
+  );
+};
+
 let useDelete = (~sideEffect=?, ()) => {
   let set = (~config as _, token) =>
     TokensAPI.removeToken(token, ~pruneCache=true)->Promise.value;
