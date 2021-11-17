@@ -23,30 +23,78 @@
 /*                                                                           */
 /*****************************************************************************/
 
-module Widget {
-    type t;
+open ReactNative;
 
-    type options = {
-        container_id: string,
-        partner_id: string,
-        origin: string,
-        commodity: string,
-        commodities: string,
-        address: string,
-    };
+module StateLenses = [%lenses type state = {read: bool}];
+module DisclaimerForm = ReForm.Make(StateLenses);
 
-    [@bs.module] [@bs.new]
-    external make: options => t = "@wert-io/widget-initializer";
+let styles =
+  Style.(
+    StyleSheet.create({
+      "disclaimerText": style(~marginBottom=32.->dp, ~marginTop=24.->dp, ()),
+      "checkboxLabel":
+        style(
+          ~fontSize=16.,
+          ~alignItems=`flexStart,
+          ~paddingBottom=20.->dp,
+          (),
+        ),
+    })
+  );
 
-    [@bs.send]
-    external mount: t => unit = "mount";
+[@react.component]
+let make = (~onSign) => {
+  let theme = ThemeContext.useTheme();
 
-    [@bs.send]
-    external getEmbedCode: t => string = "getEmbedCode";
+  let onAgree = () => {
+    Disclaimer.sign();
+  };
 
-    [@bs.send]
-    external getEmbedUrl: t => string = "getEmbedUrl";
+  let form: DisclaimerForm.api =
+    DisclaimerForm.use(
+      ~validationStrategy=OnDemand,
+      ~schema={
+        DisclaimerForm.Validation.(Schema(true_(Read)));
+      },
+      ~onSubmit=
+        _ => {
+          onAgree();
+          onSign(false);
+          None;
+        },
+      ~initialState={read: false},
+      ~i18n=FormUtils.i18n,
+      (),
+    );
 
-    [@bs.send]
-    external getRedirectUrl: t => string = "getRedirectUrl";
+  let formFieldsAreValids =
+    FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
+
+  <>
+    <DocumentContext.ScrollView
+      showsVerticalScrollIndicator=true style=styles##disclaimerText>
+      <WertDisclaimerText />
+    </DocumentContext.ScrollView>
+    <View>
+      <View>
+        <CheckboxItem
+          style=styles##checkboxLabel
+          label=I18n.disclaimer#agreement_checkbox
+          labelFontWeightStyle=`regular
+          labelStyle={Style.style(
+            ~color=Typography.getColor(`highEmphasis, theme),
+            (),
+          )}
+          value={form.values.read}
+          handleChange={form.handleChange(Read)}
+        />
+      </View>
+      <Buttons.SubmitPrimary
+        text=I18n.btn#disclaimer_agree
+        onPress={_ => form.submit()}
+        disabledLook={!formFieldsAreValids}
+        style=FormStyles.formSubmit
+      />
+    </View>
+  </>;
 };

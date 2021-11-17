@@ -101,20 +101,39 @@ module BuyTezButton = {
     Style.(
       StyleSheet.create({
         "button": style(~marginLeft=(-6.)->dp, ~marginBottom=2.->dp, ()),
+        "modal": style()->unsafeAddStyle({"boxShadow": "none"}),
       })
     );
 
   [@react.component]
   let make = (~showOnboarding) => {
+    let (visibleModal, openAction, closeAction) =
+      ModalAction.useModalActionState();
+
+    //let theme = ThemeContext.useTheme();
+
     <>
       <View style=styles##button>
         <ButtonAction
-          onPress={_ => showOnboarding()}
+          onPress={_ => openAction() /*showOnboarding()*/}
           text=I18n.btn#buy_tez
           icon=Icons.OpenExternal.build
           primary=true
         />
       </View>
+      <ModalAction visible=visibleModal onRequestClose=closeAction>
+        <ModalFormView
+          title="Notice" closing={ModalFormView.Close(closeAction)}>
+          <WertDisclaimerView
+            onSign={unsigned => {
+              closeAction();
+              if (!unsigned) {
+                showOnboarding();
+              };
+            }}
+          />
+        </ModalFormView>
+      </ModalAction>
     </>;
   };
 };
@@ -216,13 +235,17 @@ let make = (~showOnboarding, ~mode, ~setMode) => {
         container_id: "wert-widget",
         partner_id: "01F8DFQRA460MG8EMEP6E0RQQT",
         origin: "https://sandbox.wert.io",
+        commodity: "XTZ",
         commodities: "XTZ",
+        address: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
       });
+    Js.log(widget->ReWert.Widget.getEmbedUrl);
     let _ =
       Window.open_(
-        ~url=widget->ReWert.Widget.getRedirectUrl,
+        ~url=widget->ReWert.Widget.getEmbedUrl,
         ~name="",
-        ~features="titlebar=0,toolbar=0,status=0,location=0,menubar=0,width=800,height=800",
+        ~features=
+          "titlebar=0,toolbar=0,status=0,location=0,menubar=0,width=800,height=800",
         (),
       );
     ();
