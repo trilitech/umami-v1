@@ -22,8 +22,8 @@
 
 name: %%NAME%%
 version: %%VERSION%%
-summary: %%SUMMARY%%
-description: %%DESCRIPTION%%
+summary: "Umami is a cryptocurrency wallet to interact with the Tezos Blockchain."
+description: "%%DESCRIPTION%%"
 base: core20
 confinement: strict
 grade: stable
