@@ -42,12 +42,12 @@ let icon = "snap/gui/icon.png"
 
 function replaceAll (v) {
     return v
-        .replaceAll("%%NAME%%", name)
-        .replaceAll("%%VERSION%%", version)
-        .replaceAll("%%SUMMARY%%", description)
-        .replaceAll("%%DESCRIPTION%%", description)
-        .replaceAll("%%COMMENT%%", description)
-        .replaceAll("%%MIMETYPES%%", mimeTypes.join(";") + ";");
+        .replace(/%%NAME%%/g, name)
+        .replace(/%%VERSION%%/g, version)
+        .replace(/%%SUMMARY%%/g, description)
+        .replace(/%%DESCRIPTION%%/g, description)
+        .replace(/%%COMMENT%%/g, description)
+        .replace(/%%MIMETYPES%%/g, mimeTypes.join(";") + ";");
 }
 
 async function mkdirs() {
