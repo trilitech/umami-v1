@@ -292,6 +292,24 @@ module Notice =
     let selectable = true;
   });
 
+/* NFT */
+
+module BigText =
+  Make({
+    let colorStyle = `highEmphasis;
+    let fontWeightStyle = `medium;
+    let fontSize = 34.;
+    let selectable = true;
+  });
+
+module MediumText =
+  Make({
+    let colorStyle = `highEmphasis;
+    let fontWeightStyle = `medium;
+    let fontSize = 24.;
+    let selectable = true;
+  });
+
 /* LOGS */
 
 module InPageLog = {

@@ -53,7 +53,7 @@ let useLoadTokens = requestState => {
 };
 
 type request = {
-  accounts: list(PublicKeyHash.t),
+  account: PublicKeyHash.t,
   index: int,
   numberByAccount: int,
 };
@@ -69,7 +69,7 @@ let useLoadTokensRegistry = (requestState, request) => {
     let%AwaitMap (registered, toRegister, nextIndex) =
       TokensAPI.fetchAccountsTokensRegistry(
         config,
-        ~accounts=request.accounts,
+        ~accounts=[request.account],
         ~index=request.index,
         ~numberByAccount=request.numberByAccount,
       );
@@ -89,7 +89,7 @@ let useLoadAccountsTokens = (requestState, request) => {
     let%AwaitMap (sorted, nextIndex) =
       TokensAPI.fetchAccountsTokens(
         config,
-        ~accounts=request.accounts,
+        ~accounts=[request.account],
         ~index=request.index,
         ~numberByAccount=request.numberByAccount,
         ~withFullCache=false,

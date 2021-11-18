@@ -63,3 +63,4 @@ let rec firstSome = l => {
 };
 
 let default = Belt.Option.getWithDefault;
+let mapDefault = Belt.Option.mapWithDefault;

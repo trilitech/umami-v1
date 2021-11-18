@@ -51,6 +51,7 @@ module NavBarItem = {
         ~onPress,
         ~title,
         ~icon: option(Icons.builder)=?,
+        ~iconSize: option(float)=?,
         ~isActive=false,
         ~colorStyle=?,
       ) => {
@@ -73,7 +74,7 @@ module NavBarItem = {
            ~style={
              styles##icon;
            },
-           ~size=24.,
+           ~size=iconSize->Option.getWithDefault(24.),
            ~color=iconColor,
          )
        })}
@@ -89,11 +90,18 @@ module NavBarItem = {
 
 module NavBarItemRoute = {
   [@react.component]
-  let make = (~currentRoute, ~route, ~title, ~icon: option(Icons.builder)=?) => {
+  let make =
+      (
+        ~currentRoute,
+        ~route,
+        ~title,
+        ~icon: option(Icons.builder)=?,
+        ~iconSize: option(float)=?,
+      ) => {
     let (href, onPress) = useHrefAndOnPress(route);
     let isCurrent = currentRoute == route;
 
-    <NavBarItem href onPress title ?icon isActive=isCurrent />;
+    <NavBarItem href onPress title ?icon ?iconSize isActive=isCurrent />;
   };
 };
 
@@ -179,6 +187,13 @@ let make = (~route as currentRoute) => {
       route=Accounts
       title=I18n.t#navbar_accounts
       icon=Icons.Account.build
+    />
+    <NavBarItemRoute
+      currentRoute
+      route=Nft
+      iconSize=28.
+      title=I18n.t#navbar_nft
+      icon=Icons.Nft.build
     />
     <NavBarItemRoute
       currentRoute

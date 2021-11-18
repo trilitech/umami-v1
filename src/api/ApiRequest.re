@@ -189,7 +189,8 @@ let useLoader =
     ) => {
   let getRequest = useGetter(~get, ~kind, ~setRequest, ~keepError?, ());
 
-  let isMounted = ReactUtils.useIsMonted();
+  let isMounted = ReactUtils.useIsMounted();
+
   React.useEffect4(
     () => {
       let shouldReload = conditionToLoad(request, isMounted);

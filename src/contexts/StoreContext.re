@@ -58,8 +58,7 @@ type state = {
   tokensRequestState: reactState(ApiRequest.t(TokenRegistry.Cache.t)),
   tokensRegistryRequestState:
     reactState(ApiRequest.t(TokensApiRequest.registry)),
-  accountsTokensRequestState:
-    reactState(ApiRequest.t(TokensApiRequest.tokens)),
+  accountsTokensRequestState: apiRequestsState(TokensApiRequest.tokens),
   balanceTokenRequestsState: apiRequestsState(Token.Unit.t),
   apiVersionRequestState: reactState(option(Network.apiVersion)),
   eulaSignatureRequestState: reactState(bool),
@@ -88,7 +87,7 @@ let initialState = {
   bakersRequestState: (NotAsked, _ => ()),
   tokensRequestState: (NotAsked, _ => ()),
   tokensRegistryRequestState: (NotAsked, _ => ()),
-  accountsTokensRequestState: (NotAsked, _ => ()),
+  accountsTokensRequestState: initialApiRequestsState,
   balanceTokenRequestsState: initialApiRequestsState,
   apiVersionRequestState: (None, _ => ()),
   eulaSignatureRequestState: (false, _ => ()),
@@ -135,6 +134,7 @@ let make = (~children) => {
   let delegateRequestsState = React.useState(() => Map.String.empty);
   let delegateInfoRequestsState = React.useState(() => Map.String.empty);
   let operationsRequestsState = React.useState(() => Map.String.empty);
+  let accountsTokensRequestState = React.useState(() => Map.String.empty);
   let balanceTokenRequestsState = React.useState(() => Map.String.empty);
   let operationsConfirmations = React.useState(() => Set.String.empty);
 
@@ -142,7 +142,6 @@ let make = (~children) => {
   let bakersRequestState = React.useState(() => ApiRequest.NotAsked);
   let tokensRequestState = React.useState(() => ApiRequest.NotAsked);
   let tokensRegistryRequestState = React.useState(() => ApiRequest.NotAsked);
-  let accountsTokensRequestState = React.useState(() => ApiRequest.NotAsked);
   let secretsRequestState = React.useState(() => ApiRequest.NotAsked);
 
   let beaconClient =
@@ -300,6 +299,8 @@ let useRequestsState = (getRequestsState, key: option(string)) => {
 
   (request, setRequest);
 };
+
+let useGetRequestStateFromMap = useRequestsState;
 
 let resetRequests = requestsState =>
   requestsState->Map.String.map(ApiRequest.expireCache);
@@ -607,13 +608,15 @@ module Tokens = {
     TokensApiRequest.useLoadTokensRegistry(registryRequestState, request);
   };
 
-  let useAccountsTokensRequestState = () => {
-    let store = useStoreContext();
-    store.accountsTokensRequestState;
-  };
-
   let useAccountsTokens = request => {
-    let accountsTokensRequestState = useAccountsTokensRequestState();
+    let useRequestsState =
+      useGetRequestStateFromMap(store => store.accountsTokensRequestState);
+
+    let accountsTokensRequestState =
+      useRequestsState(
+        (Some(request.TokensApiRequest.account) :> option(string)),
+      );
+
     TokensApiRequest.useLoadAccountsTokens(
       accountsTokensRequestState,
       request,
@@ -633,6 +636,13 @@ module Tokens = {
   let useResetAll = () => {
     let (_, setTokensRequest) = useRequestState();
     () => setTokensRequest(ApiRequest.expireCache);
+  };
+
+  let useResetAllAccountsTokens = () => {
+    let store = useStoreContext();
+    let (tokensRequests, setTokensRequests) =
+      store.accountsTokensRequestState;
+    () => setTokensRequests(_ => resetRequests(tokensRequests));
   };
 
   let useCreate = () => {

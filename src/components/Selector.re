@@ -110,11 +110,13 @@ let make =
   let theme = ThemeContext.useTheme();
 
   let borderStyles = (~focused) =>
-    isOpen || focused
-      ? (theme.colors.borderPrimary, Some(2.), Some(0.->Style.dp))
-      : hasError
-          ? (theme.colors.error, Some(2.), Some(0.->Style.dp))
-          : (theme.colors.borderMediumEmphasis, None, None);
+    disabled
+      ? (theme.colors.borderMediumEmphasis, Some(0.), Some(0.->Style.dp))
+      : isOpen || focused
+          ? (theme.colors.borderPrimary, Some(2.), Some(0.->Style.dp))
+          : hasError
+              ? (theme.colors.error, Some(2.), Some(0.->Style.dp))
+              : (theme.colors.borderMediumEmphasis, None, None);
 
   <View ?style>
     <Pressable_
@@ -126,7 +128,12 @@ let make =
            style=Style.(
              array([|
                styles##button,
-               style(~backgroundColor=theme.colors.background, ()),
+               style(
+                 ~backgroundColor=
+                   disabled
+                     ? theme.colors.stateDisabled : theme.colors.background,
+                 (),
+               ),
                style(~borderColor, ~borderWidth?, ~padding?, ()),
              |])
            )

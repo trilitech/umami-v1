@@ -28,66 +28,27 @@ open ReactNative;
 let styles =
   Style.(
     StyleSheet.create({
-      "pressable":
+      "header": style(~marginTop=LayoutConst.pagePaddingVertical->dp, ()),
+      "selector":
         style(
-          ~flexDirection=`row,
-          ~alignItems=`center,
-          ~paddingVertical=6.->dp,
-          ~paddingLeft=6.->dp,
-          ~paddingRight=9.->dp,
-          ~borderRadius=5.,
+          ~alignSelf=`flexStart,
+          ~minWidth=390.->dp,
+          ~marginTop=0.->dp,
+          ~marginBottom=30.->dp,
           (),
         ),
-      "icon": style(~marginRight=4.->dp, ()),
+      "alignRight": style(~alignSelf=`flexEnd, ()),
     })
   );
 
 [@react.component]
-let make =
-    (
-      ~text,
-      ~onPress,
-      ~tooltip=?,
-      ~disabled=?,
-      ~style=?,
-      ~icon: Icons.builder,
-      ~primary=false,
-    ) => {
-  let theme = ThemeContext.useTheme();
-
-  let style = Style.arrayOption([|styles##pressable->Some, style|]);
-
-  let pressableElement = (~pressableRef) =>
-    <ThemedPressable
-      ?pressableRef style ?disabled onPress accessibilityRole=`button>
-      {icon(
-         ~style=styles##icon,
-         ~size=15.5,
-         ~color=
-           primary
-             ? theme.colors.iconPrimary : theme.colors.iconMediumEmphasis,
-       )}
-      <Typography.ButtonSecondary
-        style=Style.(
-          style(
-            ~color=?{
-              primary ? Some(theme.colors.iconPrimary) : None;
-            },
-            (),
-          )
-        )>
-        text->React.string
-      </Typography.ButtonSecondary>
-    </ThemedPressable>;
-
-  switch (tooltip) {
-  | Some((keyPopover, text)) =>
-    <Tooltip keyPopover text>
-      {(
-         (~pressableRef) =>
-           pressableElement(~pressableRef=Some(pressableRef))
-       )}
-    </Tooltip>
-  | None => pressableElement(~pressableRef=None)
-  };
+let make = (~children as right, ~headline) => {
+  <View style=styles##header>
+    <Page.Header right>
+      <Typography.Headline style=Styles.title>
+        headline->React.string
+      </Typography.Headline>
+      <AccountElements.Selector.Simple style=styles##selector />
+    </Page.Header>
+  </View>;
 };

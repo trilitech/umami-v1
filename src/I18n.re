@@ -27,11 +27,14 @@ let p = Format.sprintf;
 
 let btn = {
   pub _this = this;
+  pub collected = "COLLECTED";
+  pub gallery = "GALLERY";
   pub view_specs = "VIEW SPECS";
   pub goto_doc = "See help";
   pub goto_settings = "Go to settings";
   pub retry_network = "Retry";
   pub retry = "RETRY";
+  pub view_nft = "View NFT";
   pub create_or_import_secret = "CREATE OR IMPORT SECRET";
   pub verify_accounts = "VERIFY ACCOUNTS";
   pub customize_derivation_path = "Customize Derivation Path";
@@ -89,6 +92,7 @@ let btn = {
   pub add_custom_network = "ADD CUSTOM NETWORK";
   pub beacon_connect_dapp = "CONNECT TO DAPP";
   pub custom = "CUSTOM";
+  pub register_nft_contract = "Register NFT contract";
   pub see_list = "SEE LIST"
 };
 
@@ -126,6 +130,7 @@ let label = {
   pub derivation_scheme = "Derivation Scheme";
   pub derivation_path = "Derivation Path";
   pub accounts = "Accounts";
+  pub contract_address = "Contract address";
   pub advanced_options = "Advanced Options";
   pub recovery_phrase_format = "Recovery Phrase Format";
   pub account_create_name = "Name";
@@ -156,6 +161,8 @@ let label = {
   pub account_secret = "Root";
   pub account_umami = "Umami";
   pub token = "Token";
+  pub token_id = id => "Token ID: " ++ id;
+  pub search_nft_by_name = "What are your wildest fears?";
   pub account_cli = "Cli";
   pub account_default_path = "Default Path - m/44'/1729'/?'/0'";
   pub account_custom_path = "Custom Path";
@@ -186,6 +193,7 @@ let input_placeholder = {
   pub add_token_symbol = "e.g. tez, KLD, ...";
   pub enter_derivation_path = "Enter your derivation path";
   pub custom_network_name = "e.g. Test Network";
+  pub search_for_nft = "Search for NFT by name";
   pub custom_network_node_url = "e.g. https://testnet-tezos.giganode.io/";
   pub custom_network_mezos_url = "e.g. https://api.umamiwallet.com/granadanet"
 };
@@ -333,11 +341,14 @@ let title = {
   pub delegations = "Delegations";
   pub tokens = "Tokens";
   pub settings = "Settings";
+  pub collected = "Collected";
+  pub gallery = "Gallery";
   pub logs = "Logs"
 };
 
 let expl = {
   pub _this = this;
+  pub nft_empty_state = "Umami should automatically discover any NFT you possess.";
   pub network_disconnect = "The Tezos network is currently unreachable. Your internet connection might be unstable. If it is not the case, you should check your configuration and update it by following the documentation";
   pub hardware_wallet_confirm_operation = "Please validate the details of the transaction and press Confirm to sign it on your Ledger.";
   pub hardware_wallet_advopt = "Umami wallet supports three derivation schemes as well as custom derivation path to select new addresses. You may also use the default derivation scheme & path by leaving the preselected values.";
@@ -609,6 +620,7 @@ let t = {
   pub amount = (a, b) => p("%s %s", a, b);
   pub tezos = "Tez";
   pub tez = "tez";
+  pub you_dont_have_nft = "You don't have any NFT yet";
   pub mainnet = "Mainnet";
   pub florencenet = "Florencenet";
   pub granadanet = "Granadanet";
@@ -647,6 +659,7 @@ let t = {
   pub operation_hash = "Operation Hash";
   pub operation_summary_fee = p("+ Fee %a", () => this#tez_amount);
   pub navbar_accounts = "ACCOUNTS";
+  pub navbar_nft = "NFT";
   pub navbar_operations = "OPERATIONS";
   pub navbar_addressbook = {j|ADDRESS BOOK|j};
   pub navbar_delegations = "DELEGATIONS";

@@ -45,16 +45,29 @@ let styles =
         ),
       "input":
         style(
-          ~height=44.->dp,
           ~fontFamily="SourceSansPro",
           ~fontSize=16.,
           ~fontWeight=`normal,
-          ~borderWidth,
-          ~borderRadius=4.,
+          ~flex=1.,
           (),
         ),
       "multiline": style(~height=auto, ()),
+      "icon": style(~paddingRight=6.->dp, ~paddingLeft=6.->dp, ()),
     })
+  );
+
+let searchSection =
+  Style.(
+    style(
+      ~flex=1.,
+      ~height=44.->dp,
+      ~maxHeight=44.->dp,
+      ~borderWidth,
+      ~borderRadius=4.,
+      ~flexDirection=`row,
+      ~alignItems=`center,
+      (),
+    )
   );
 
 [@react.component]
@@ -74,6 +87,7 @@ let make =
       ~placeholder=?,
       ~onSubmitEditing=?,
       ~disabled=false,
+      ~icon=?,
       ~multiline=false,
       ~numberOfLines=?,
       ~paddingVertical=paddingVertical,
@@ -84,7 +98,63 @@ let make =
   let theme = ThemeContext.useTheme();
   let (isFocused, setIsFocused) = React.useState(_ => false);
 
-  <View>
+  <View
+    style=Style.(
+      arrayOption([|
+        multiline ? Some(styles##multiline) : None,
+        Some(
+          style(
+            ~backgroundColor=theme.colors.background,
+            ~borderColor=theme.colors.borderMediumEmphasis,
+            ~paddingVertical=(paddingVertical -. borderWidth)->dp,
+            //
+            ~paddingRight=(paddingRight -. borderWidth)->dp,
+            (),
+          ),
+        ),
+        switch (icon) {
+        | Some(_) => None
+        | None =>
+          Some(style(~paddingLeft=(paddingLeft -. borderWidth)->dp, ()))
+        },
+        isFocused && !disabled
+          ? Some(
+              style(
+                ~borderColor=theme.colors.borderPrimary,
+                ~borderWidth=2.,
+                ~paddingVertical=paddingVertical->dp,
+                ~paddingRight=(paddingRight -. 2.)->dp,
+                (),
+              ),
+            )
+          : None,
+        hasError
+          ? Some(
+              style(
+                ~borderColor=theme.colors.error,
+                ~borderWidth=2.,
+                ~paddingVertical=(paddingVertical -. 2.)->dp,
+                ~paddingRight=(paddingRight -. 2.)->dp,
+                (),
+              ),
+            )
+          : None,
+        disabled ? Some(style(~color=theme.colors.textDisabled, ())) : None,
+        value != "" && onClear != None ? Some(styles##clearMargin) : None,
+        styleFromProp,
+        Some(searchSection),
+        disabled
+          ? Some(
+              style(
+                ~backgroundColor=theme.colors.stateDisabled,
+                ~borderWidth=0.,
+                ~paddingVertical=paddingVertical->dp,
+                (),
+              ),
+            )
+          : None,
+      |])
+    )>
     {onClear
      ->ReactUtils.mapOpt(onClear => {
          <View style=styles##clearBtn>
@@ -96,52 +166,26 @@ let make =
          </View>
        })
      ->ReactUtils.onlyWhen(value != "")}
+    {switch (icon) {
+     | Some(build) =>
+       build(
+         ~color=?Some(theme.colors.textMediumEmphasis),
+         ~style=?Some(styles##icon),
+         ~size=24.,
+       )
+     | None => React.null
+     }}
     <TextInput
       ref=?inputRef
       style=Style.(
-        arrayOption([|
-          Some(styles##input),
-          multiline ? Some(styles##multiline) : None,
-          Some(
-            style(
-              ~color=theme.colors.textHighEmphasis,
-              ~backgroundColor=theme.colors.background,
-              ~borderColor=theme.colors.borderMediumEmphasis,
-              ~paddingVertical=(paddingVertical -. borderWidth)->dp,
-              ~paddingLeft=(paddingLeft -. borderWidth)->dp,
-              ~paddingRight=(paddingRight -. borderWidth)->dp,
-              (),
-            ),
+        array([|
+          styles##input,
+          style(
+            ~color=
+              hasError ? theme.colors.error : theme.colors.textHighEmphasis,
+            ~fontWeight=disabled ? `bold : `normal,
+            (),
           ),
-          isFocused && !disabled
-            ? Some(
-                style(
-                  ~borderColor=theme.colors.borderPrimary,
-                  ~borderWidth=2.,
-                  ~paddingVertical=(paddingVertical -. 2.)->dp,
-                  ~paddingLeft=(paddingLeft -. 2.)->dp,
-                  ~paddingRight=(paddingRight -. 2.)->dp,
-                  (),
-                ),
-              )
-            : None,
-          hasError
-            ? Some(
-                style(
-                  ~color=theme.colors.error,
-                  ~borderColor=theme.colors.error,
-                  ~borderWidth=2.,
-                  ~paddingVertical=(paddingVertical -. 2.)->dp,
-                  ~paddingLeft=(paddingLeft -. 2.)->dp,
-                  ~paddingRight=(paddingRight -. 2.)->dp,
-                  (),
-                ),
-              )
-            : None,
-          disabled
-            ? Some(style(~color=theme.colors.textDisabled, ())) : None,
-          value != "" && onClear != None ? Some(styles##clearMargin) : None,
-          styleFromProp,
         |])
       )
       placeholderTextColor={theme.colors.textDisabled}

@@ -92,11 +92,13 @@ let make = (~closeAction, ~account, ~nft: Nft.t) => {
               styles##image,
             |])
           )>
-          <Image
-            style=Style.(style(~width=100.->pct, ~height=100.->pct, ()))
-            source
-            resizeMode=`contain
-          />
+          {source->Option.mapDefault(<SVGIconNoImg />, source =>
+             <Image
+               style=Style.(style(~width=100.->pct, ~height=100.->pct, ()))
+               source
+               resizeMode=`contain
+             />
+           )}
         </View>
         <View style=styles##actions>
           <View style=styles##infos>

@@ -28,14 +28,13 @@ open ReactNative;
 let useNftSource = (~height=?, ~width=?, nft, getUri) => {
   React.useMemo1(
     () => {
-      Image.Source.fromUriSource(
-        Image.uriSource(
-          ~uri=nft->getUri->Option.default(""),
-          ~height?,
-          ~width?,
-          (),
-        ),
-      )
+      nft
+      ->getUri
+      ->Option.map(uri =>
+          Image.Source.fromUriSource(
+            Image.uriSource(~uri, ~height?, ~width?, ()),
+          )
+        )
     },
     [|nft|],
   );

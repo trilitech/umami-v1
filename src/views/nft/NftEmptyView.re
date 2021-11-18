@@ -24,70 +24,34 @@
 /*****************************************************************************/
 
 open ReactNative;
+open Style;
 
-let styles =
-  Style.(
-    StyleSheet.create({
-      "pressable":
-        style(
-          ~flexDirection=`row,
-          ~alignItems=`center,
-          ~paddingVertical=6.->dp,
-          ~paddingLeft=6.->dp,
-          ~paddingRight=9.->dp,
-          ~borderRadius=5.,
-          (),
-        ),
-      "icon": style(~marginRight=4.->dp, ()),
-    })
-  );
+let paddingTop = 100.->dp;
+
+let iconStyle = style(~paddingTop, ~paddingLeft=50.->dp, ~flex=1., ());
+
+let textStyle = style(~textAlign=`left, ~paddingBottom=30.->dp, ());
 
 [@react.component]
-let make =
-    (
-      ~text,
-      ~onPress,
-      ~tooltip=?,
-      ~disabled=?,
-      ~style=?,
-      ~icon: Icons.builder,
-      ~primary=false,
-    ) => {
+let make = () => {
   let theme = ThemeContext.useTheme();
 
-  let style = Style.arrayOption([|styles##pressable->Some, style|]);
-
-  let pressableElement = (~pressableRef) =>
-    <ThemedPressable
-      ?pressableRef style ?disabled onPress accessibilityRole=`button>
-      {icon(
-         ~style=styles##icon,
-         ~size=15.5,
-         ~color=
-           primary
-             ? theme.colors.iconPrimary : theme.colors.iconMediumEmphasis,
-       )}
-      <Typography.ButtonSecondary
-        style=Style.(
-          style(
-            ~color=?{
-              primary ? Some(theme.colors.iconPrimary) : None;
-            },
-            (),
-          )
-        )>
-        text->React.string
-      </Typography.ButtonSecondary>
-    </ThemedPressable>;
-
-  switch (tooltip) {
-  | Some((keyPopover, text)) =>
-    <Tooltip keyPopover text>
-      {(
-         (~pressableRef) =>
-           pressableElement(~pressableRef=Some(pressableRef))
-       )}
-    </Tooltip>
-  | None => pressableElement(~pressableRef=None)
-  };
+  <View
+    style={style(
+      ~display=`flex,
+      ~flexDirection=`row,
+      ~justifyContent=`flexStart,
+      ~alignItems=`center,
+      (),
+    )}>
+    <Icons.Nft.I size=267. color={theme.colors.textDisabled} style=iconStyle />
+    <View style={style(~flex=1., ~paddingTop=150.->dp, ())}>
+      <Typography.BigText style=textStyle>
+        I18n.t#you_dont_have_nft->React.string
+      </Typography.BigText>
+      <Typography.MediumText style=textStyle>
+        I18n.expl#nft_empty_state->React.string
+      </Typography.MediumText>
+    </View>
+  </View>;
 };
