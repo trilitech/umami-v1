@@ -97,7 +97,10 @@ let stepToString = step =>
 let make = (~closeAction) => {
   let account = StoreContext.SelectedAccount.useGet();
 
-  let (modalStep, setModalStep) = React.useState(_ => Disclaimer);
+  let (modalStep, setModalStep) =
+    React.useState(_ =>
+      WertDisclaimer.needSigning() ? Disclaimer : SelectRecipient
+    );
 
   let buyTez = address => {
     let widget =
@@ -146,6 +149,7 @@ let make = (~closeAction) => {
        <WertDisclaimerView
          onSign={unsigned =>
            if (!unsigned) {
+             WertDisclaimer.sign();
              setModalStep(_ => SelectRecipient);
            }
          }
