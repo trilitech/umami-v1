@@ -57,9 +57,23 @@ let useLoadBalance =
 };
 
 let useLoadTokens = requestState => {
-  let get = (~config as _, ()) => TokensAPI.registeredTokens()->Promise.value;
+  let get = (~config as _, ()) =>
+    TokensAPI.registeredTokens(`FT)->Promise.value;
 
   ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, ());
+};
+
+type nftRequest = {
+  holder: PublicKeyHash.t,
+  allowHidden: bool,
+};
+
+let useLoadNFTs = (requestState, request) => {
+  let get = (~config as _, request) =>
+    TokensAPI.registeredTokens(`NFT((request.holder, request.allowHidden)))
+    ->Promise.value;
+
+  ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, request);
 };
 
 type request = {
@@ -157,6 +171,24 @@ let useCreate = (~sideEffect=?, ()) => {
 
   ApiRequest.useSetter(
     ~logOk=_ => I18n.t#token_created,
+    ~toast=false,
+    ~set,
+    ~kind=Logs.Tokens,
+    ~sideEffect?,
+    (),
+  );
+};
+
+type nfts = {
+  tokens: TokenRegistry.Cache.t,
+  holder: PublicKeyHash.t,
+};
+
+let useRegisterNFTs = (~sideEffect=?, ()) => {
+  let set = (~config as _, nfts) =>
+    TokensAPI.registerNFTs(nfts.tokens, nfts.holder)->Promise.value;
+
+  ApiRequest.useSetter(
     ~toast=false,
     ~set,
     ~kind=Logs.Tokens,

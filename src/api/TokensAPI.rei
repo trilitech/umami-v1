@@ -26,14 +26,17 @@
 type Errors.t +=
   | NotFAContract(string);
 
-let registeredTokens: unit => Let.result(TokenRegistry.Cache.t);
+type filter = [ | `Any | `FT | `NFT(PublicKeyHash.t, bool)];
 
-let holdNFTs: PublicKeyHash.t => Let.result(TokenRegistry.Cache.t);
+let registeredTokens: filter => Let.result(TokenRegistry.Cache.t);
 
 let addFungibleToken: (ConfigContext.env, Token.t) => Promise.t(unit);
 
 let addNonFungibleToken:
   (ConfigContext.env, Token.t, PublicKeyHash.t) => Promise.t(unit);
+
+let registerNFTs:
+  (TokenRegistry.Cache.t, PublicKeyHash.t) => Let.result(unit);
 
 let removeToken: (Token.t, ~pruneCache: bool) => Let.result(unit);
 

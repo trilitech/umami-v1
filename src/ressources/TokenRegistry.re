@@ -82,6 +82,24 @@ module Registered = {
         },
     );
 
+  let updateNFT = (registered, pkh, tokenId, nftInfo) =>
+    registered->PublicKeyHash.Map.update(
+      pkh,
+      fun
+      | None => None
+      | Some(t) => {
+          let tokens =
+            t.tokens
+            ->Map.Int.update(
+                tokenId,
+                fun
+                | Some(NFT(_)) => Some(NFT(nftInfo))
+                | k => k,
+              );
+          Some({...t, tokens});
+        },
+    );
+
   include LocalStorage.Make({
     type t = PublicKeyHash.Map.map(contract);
 

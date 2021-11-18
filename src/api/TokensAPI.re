@@ -140,17 +140,21 @@ module BetterCallDev = {
   };
 };
 
+type filter = [ | `Any | `FT | `NFT(PublicKeyHash.t, bool)];
+
 /* From a list of tokens and the cache, reconstructs the list of tokens with
    their metadata the user has registered */
-let unfoldRegistered = (tokens, cache: Cache.t, kind) => {
+let unfoldRegistered = (tokens, cache: Cache.t, filter) => {
   let keep = (registered, id, _) =>
     Registered.(
       registered.tokens
       ->Map.Int.get(id)
       ->Option.mapWithDefault(false, t =>
-          switch (t, kind) {
+          switch (t, filter) {
+          | (_, `Any) => true
           | (FT, `FT) => true
-          | (NFT(info), `NFT(holder)) => info.holder == holder
+          | (NFT(info), `NFT(holder, allowHidden)) =>
+            (!allowHidden ? !info.hidden : true) && info.holder == holder
           | _ => false
           }
         )
@@ -170,16 +174,10 @@ let unfoldRegistered = (tokens, cache: Cache.t, kind) => {
   PublicKeyHash.Map.merge(tokens, cache, merge);
 };
 
-let registeredTokens = () => {
+let registeredTokens = filter => {
   let%Res tokens = Registered.get();
   let%ResMap cache = Cache.get();
-  tokens->unfoldRegistered(cache, `FT);
-};
-
-let holdNFTs = holder => {
-  let%Res tokens = Registered.get();
-  let%ResMap cache = Cache.get();
-  tokens->unfoldRegistered(cache, `NFT(holder));
+  tokens->unfoldRegistered(cache, filter);
 };
 
 // used for registration of custom tokens

@@ -46,6 +46,8 @@ module Registered: {
   let isRegistered: (t, PublicKeyHash.t, int) => bool;
   let registerToken: (t, Token.t, kind) => t;
   let removeToken: (t, PublicKeyHash.t, int) => t;
+
+  let updateNFT: (t, PublicKeyHash.t, int, nftInfo) => t;
 };
 
 /** The cache is a representation of the already fetched tokens from the chain */
