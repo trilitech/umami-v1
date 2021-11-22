@@ -63,12 +63,12 @@ let useLoadTokens = requestState => {
   ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, ());
 };
 
-type nftRequest = {
+type nftCacheRequest = {
   holder: PublicKeyHash.t,
   allowHidden: bool,
 };
 
-let useLoadNFTs = (requestState, request) => {
+let useLoadCachedNFTs = (requestState, request) => {
   let get = (~config as _, request) =>
     TokensAPI.registeredTokens(`NFT((request.holder, request.allowHidden)))
     ->Promise.value;
@@ -76,7 +76,7 @@ let useLoadNFTs = (requestState, request) => {
   ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, request);
 };
 
-type request = {
+type tokensRequest = {
   account: PublicKeyHash.t,
   index: int,
   numberByAccount: int,
@@ -103,53 +103,49 @@ let useLoadTokensRegistry = (requestState, request) => {
   ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, request);
 };
 
-type tokens = {
-  sorted: TokenRegistry.Cache.t,
-  nextIndex: int,
+type tokens = TokensAPI.fetched;
+
+type nftRequest = {
+  account: PublicKeyHash.t,
+  allowHidden: bool,
+  numberByAccount: int,
+  fromCache: bool,
 };
 
-let useLoadAccountsTokens = (requestState, request) => {
-  let get = (~config, request) => {
-    let%AwaitMap (sorted, nextIndex) =
-      TokensAPI.fetchAccountsTokens(
-        config,
-        ~accounts=[request.account],
-        ~index=request.index,
-        ~numberByAccount=request.numberByAccount,
-        ~withFullCache=false,
-      );
-    {sorted, nextIndex};
+let useLoadAccountNFTs = (onTokens, (apiRequest, setRequest), nftRequest) => {
+  let get = (~config, {account, allowHidden, numberByAccount, fromCache}) => {
+    TokensAPI.fetchAccountNFTs(
+      config,
+      ~account,
+      ~numberByAccount,
+      ~onTokens,
+      ~allowHidden,
+      ~fromCache,
+    );
   };
 
-  ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, request);
-};
+  let getRequest =
+    ApiRequest.useGetter(~get, ~kind=Logs.Tokens, ~setRequest, ());
 
-let useLoadAccountsTokensStream = (onTokens, requestState, request) => {
-  let rec get = (accumulatedTokens, ~config, request) => {
-    Js.log("Requesting tokens:");
-    Js.log(request);
-    let%Await (sorted, nextIndex) =
-      TokensAPI.fetchAccountsTokens(
-        config,
-        ~accounts=[request.account],
-        ~index=request.index,
-        ~numberByAccount=request.numberByAccount,
-        ~withFullCache=false,
-      );
-    let accumulatedTokens =
-      accumulatedTokens->TokenRegistry.Cache.merge(sorted);
-    onTokens(sorted);
-    nextIndex <= request.index
-      ? Promise.ok({sorted: accumulatedTokens, nextIndex})
-      : get(~config, accumulatedTokens, {...request, index: nextIndex});
+  let isMounted = ReactUtils.useIsMounted();
+
+  let conditionToLoad = (request, isMounted) => {
+    let requestNotAskedAndMounted = request->isNotAsked && isMounted;
+    let requestDoneButReloadOnMount = request->isDone && !isMounted;
+    requestNotAskedAndMounted || requestDoneButReloadOnMount;
   };
 
-  ApiRequest.useLoader(
-    ~get=get(TokenRegistry.Cache.empty),
-    ~kind=Logs.Tokens,
-    ~requestState,
-    request,
+  React.useEffect4(
+    () => {
+      if (conditionToLoad(apiRequest, isMounted)) {
+        getRequest(nftRequest)->ignore;
+      };
+      None;
+    },
+    (isMounted, apiRequest, nftRequest, setRequest),
   );
+
+  (apiRequest, getRequest);
 };
 
 let useDelete = (~sideEffect=?, ()) => {

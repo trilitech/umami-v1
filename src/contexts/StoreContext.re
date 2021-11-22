@@ -607,20 +607,6 @@ module Tokens = {
     accountsRequest->ApiRequest.getWithDefault(PublicKeyHash.Map.empty);
   };
 
-  let useGetNFTs = (request: TokensApiRequest.nftRequest) => {
-    let useRequestsState =
-      useGetRequestStateFromMap(store => store.nftsRequestsState);
-
-    let nftsRequestState =
-      useRequestsState(
-        Some(
-          (request.holder :> string) ++ request.allowHidden->string_of_bool,
-        ),
-      );
-
-    TokensApiRequest.useLoadNFTs(nftsRequestState, request);
-  };
-
   let useRegistryRequestState = () => {
     let store = useStoreContext();
     store.tokensRegistryRequestState;
@@ -631,35 +617,14 @@ module Tokens = {
     TokensApiRequest.useLoadTokensRegistry(registryRequestState, request);
   };
 
-  let useAccountsTokens = request => {
+  let useAccountNFTs = (onTokens, account: PublicKeyHash.t) => {
     let useRequestsState =
       useGetRequestStateFromMap(store => store.accountsTokensRequestState);
 
     let accountsTokensRequestState =
-      useRequestsState(
-        (Some(request.TokensApiRequest.account) :> option(string)),
-      );
+      useRequestsState((Some(account) :> option(string)));
 
-    TokensApiRequest.useLoadAccountsTokens(
-      accountsTokensRequestState,
-      request,
-    );
-  };
-
-  let useAccountsTokensStream = (onTokens, request) => {
-    let useRequestsState =
-      useGetRequestStateFromMap(store => store.accountsTokensRequestState);
-
-    let accountsTokensRequestState =
-      useRequestsState(
-        (Some(request.TokensApiRequest.account) :> option(string)),
-      );
-
-    TokensApiRequest.useLoadAccountsTokensStream(
-      onTokens,
-      accountsTokensRequestState,
-      request,
-    );
+    TokensApiRequest.useLoadAccountNFTs(onTokens, accountsTokensRequestState);
   };
 
   let useGet = (tokenAddress: option(PublicKeyHash.t)) => {

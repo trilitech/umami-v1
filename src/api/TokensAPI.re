@@ -577,5 +577,58 @@ let fetchAccountsTokensRegistry =
   (registered, toRegister, nextIndex);
 };
 
+let fetchAccountTokensStreamed =
+    (config, ~account, ~index, ~numberByAccount, ~onTokens, ~withFullCache) => {
+  let onceFinished = (tokens, number) => {
+    let%Await () = tokens->registerNFTs(account)->FutureBase.value;
+    Promise.ok((tokens, number));
+  };
+  let rec get = (accumulatedTokens, index) => {
+    let%Await (fetchedTokens, nextIndex) =
+      fetchAccountsTokens(
+        config,
+        ~accounts=[account],
+        ~index,
+        ~numberByAccount,
+        ~withFullCache,
+      );
+    let accumulatedTokens =
+      accumulatedTokens->TokenRegistry.Cache.merge(fetchedTokens);
+    onTokens(~fetchedTokens, ~nextIndex);
+    nextIndex <= index
+      ? onceFinished(accumulatedTokens, nextIndex)
+      : get(accumulatedTokens, nextIndex);
+  };
+  get(Cache.empty, index);
+};
+
 let fetchTokenRegistry = (config, ~kinds, ~limit, ~index, ()) =>
   fetchTokenContracts(config, ~accounts=[], ~kinds, ~limit, ~index, ());
+
+type fetched = [
+  | `Cached(TokenRegistry.Cache.t)
+  | `Fetched(TokenRegistry.Cache.t, int)
+];
+
+let fetchAccountNFTs =
+    (config, ~account, ~numberByAccount, ~onTokens, ~allowHidden, ~fromCache) => {
+  let getFromCache = () => {
+    let%AwaitMap tokens =
+      registeredTokens(`NFT((account, allowHidden)))->Promise.value;
+    `Cached(tokens);
+  };
+
+  let getFromNetwork = () => {
+    let%AwaitMap (tokens, number) =
+      fetchAccountTokensStreamed(
+        config,
+        ~account,
+        ~index=0,
+        ~numberByAccount,
+        ~onTokens,
+        ~withFullCache=false,
+      );
+    `Fetched((tokens, number));
+  };
+  fromCache ? getFromCache() : getFromNetwork();
+};

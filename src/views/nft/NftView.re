@@ -47,24 +47,23 @@ module Component = {
   [@react.component]
   let make = (~account) => {
     let (mode, setMode) = React.useState(_ => Gallery);
-    let (tokens, setTokens) = React.useState(_ => []);
-    let onRefresh = StoreContext.Tokens.useResetAllAccountsTokens();
 
-    let account = account.Account.address;
+    let request = fromCache =>
+      TokensApiRequest.{
+        account: account.Account.address,
+        allowHidden: mode == Collection,
+        numberByAccount: BCD.requestPageSize,
+        fromCache,
+      };
 
-    let onTokens = tokens =>
-      setTokens(currentTokens =>
-        currentTokens->List.concat(tokens->Nft.fromCache)
-      );
+    // will be used to indicate a percentage of NFTs loaded
+    let onTokens = (~fetchedTokens as _, ~nextIndex as _) => ();
 
-    let tokensRequest =
-      StoreContext.Tokens.useAccountsTokensStream(
+    let (tokensRequest, getTokens) =
+      StoreContext.Tokens.useAccountNFTs(
         onTokens,
-        TokensApiRequest.{
-          account,
-          index: 0,
-          numberByAccount: BCD.requestPageSize,
-        },
+        account.Account.address,
+        request(true),
       );
 
     let (switchButtonText, icon) =
@@ -79,13 +78,19 @@ module Component = {
       | Collection => I18n.title#collected
       };
 
-    let loading = !tokensRequest->ApiRequest.isDone;
-
     let tokens =
       switch (tokensRequest) {
-      | Done(Ok(finalTokens), _) => finalTokens.sorted->Nft.fromCache
-      | _ => tokens
+      | Done(Ok(`Cached(tokens) | `Fetched(tokens, _)), _)
+      | Loading(Some(`Cached(tokens) | `Fetched(tokens, _))) =>
+        tokens->Nft.fromCache
+      | _ => []
       };
+
+    let onRefresh = () => {
+      getTokens(request(false))->ignore;
+    };
+
+    let loading = tokensRequest->ApiRequest.isLoading;
 
     <View style={styles##listContent}>
       <NftHeaderView headline>
