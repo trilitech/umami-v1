@@ -25,14 +25,35 @@
 
 open ReactNative;
 
+module ImageProxy = {
+  let buildUrl = url => {
+    let encodedURL = Js.Global.encodeURI(url);
+
+    ServerAPI.URL.build_url(
+      "https://dev-api.umamiwallet.com/mainnet-graphic-proxy",
+      [("url", encodedURL)],
+    );
+  };
+
+  let makeSource = (~url, ~height=?, ~width=?, ()) => {
+    ReactNative.Image.uriSource(
+      ~uri=buildUrl(url),
+      ~height?,
+      ~width?,
+      ~cache=`default,
+      (),
+    );
+  };
+};
+
 let useNftSource = (~height=?, ~width=?, nft, getUri) => {
   React.useMemo1(
     () => {
       nft
       ->getUri
-      ->Option.map(uri =>
+      ->Option.map(url =>
           Image.Source.fromUriSource(
-            Image.uriSource(~uri, ~height?, ~width?, ()),
+            ImageProxy.makeSource(~url, ~height?, ~width?, ()),
           )
         )
     },
