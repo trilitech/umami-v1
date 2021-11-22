@@ -369,7 +369,7 @@ let title = {
   pub logs = "Logs"
   pub notice = "Notice";
   pub buy_tez = "Buy tez";
-  pub wert_recipient = "Please select which account will receive";
+  pub wert_recipient = "Please select the recipient account";
 };
 
 let expl = {
