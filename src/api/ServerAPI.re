@@ -335,6 +335,33 @@ module type Explorer = {
 };
 
 module ExplorerMaker = (Get: {let get: string => Promise.t(Js.Json.t);}) => {
+  let isMalformedTokenTransfer = (op: Operation.Read.t) =>
+    switch (op.payload) {
+    | Operation.Transaction.(Transaction(Tez({destination}))) =>
+      destination->PublicKeyHash.isContract
+    | _ => false
+    };
+
+  let filterMalformedDuplicates = ops => {
+    open Operation.Read;
+    let l = ops->List.fromArray;
+
+    let rec loop = (acc, l) =>
+      switch (l) {
+      | [] => acc
+      | [h] => [h, ...acc]
+      | [h1, h2, ...t] =>
+        if (h1.hash == h2.hash && h1.id == h2.id) {
+          h1->isMalformedTokenTransfer
+            ? loop([h2, ...acc], t) : loop([h1, ...acc], t);
+        } else {
+          loop([h1, ...acc], [h2, ...t]);
+        }
+      };
+
+    loop([], l)->List.reverse->List.toArray;
+  };
+
   let getOperations =
       (
         network,
@@ -349,13 +376,12 @@ module ExplorerMaker = (Get: {let get: string => Promise.t(Js.Json.t);}) => {
       ->URL.Explorer.operations(account, ~types?, ~destination?, ~limit?, ())
       ->Get.get;
 
-    let%Await operations =
+    let%AwaitMap operations =
       res
       ->Result.fromExn(Json.Decode.(array(Operation.Read.Decode.t)))
       ->Result.mapError(e => e->Operation.Read.filterJsonExn->JsonError)
       ->Promise.value;
-
-    operations->Promise.ok;
+    operations->filterMalformedDuplicates;
   };
 };
 
