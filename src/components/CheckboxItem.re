@@ -46,16 +46,10 @@ module Checkbox = {
 let styles =
   Style.(
     StyleSheet.create({
-      "pressable":
-        style(
-          ~alignSelf=`flexStart,
-          ~flexDirection=`row,
-          ~alignItems=`center,
-          (),
-        ),
+      "pressable": style(~flexDirection=`row, ~alignItems=`center, ()),
+      "label": style(~marginRight=11.->dp, ()),
       "checkboxContainer":
         style(
-          ~marginRight=11.->dp,
           ~marginLeft=(-5.)->dp,
           ~height=30.->dp,
           ~width=30.->dp,
@@ -70,7 +64,7 @@ let styles =
 [@react.component]
 let make =
     (
-      ~label,
+      ~label=?,
       ~value,
       ~handleChange,
       ~hasError=false,
@@ -94,12 +88,14 @@ let make =
            hovered pressed focused disabled style=styles##checkboxContainer>
            <Checkbox value />
          </ThemedPressable.ContainerInteractionState.Outline>
-         <FormLabel
-           label
-           hasError
-           fontWeightStyle=?labelFontWeightStyle
-           style=?labelStyle
-         />
+         {label->ReactUtils.mapOpt(label =>
+            <FormLabel
+              label
+              hasError
+              fontWeightStyle=?labelFontWeightStyle
+              style=Style.(arrayOption([|Some(styles##label), labelStyle|]))
+            />
+          )}
        </>;
      }}
   </Pressable_>;

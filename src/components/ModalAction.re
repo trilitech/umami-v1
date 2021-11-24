@@ -40,7 +40,6 @@ let styles =
         style(
           ~marginTop=auto,
           ~marginBottom=auto, // fix android bug : marginVertical doesn't work with auto
-          ~maxHeight=90.->pct,
           ~backgroundColor="transparent", // fix android bug : no animation without it
           ~opacity=1.,
           ~transform=[|scale(~scale=1.)|],

@@ -30,6 +30,8 @@ let styles =
     StyleSheet.create({
       "primary": style(~borderRadius=4., ()),
       "content": FormStyles.flexAlignedRow(~flex=1., ()),
+      "chevronRight": style(~transform=[|rotate(~rotate=270.->deg)|], ()),
+      "chevronUp": style(~transform=[|rotate(~rotate=180.->deg)|], ()),
       "pressable":
         style(
           ~flex=1.,
@@ -43,6 +45,13 @@ let styles =
           (),
         ),
       "loader": style(~position=`absolute, ()),
+      "thin":
+        style(
+          ~maxHeight=27.->dp,
+          ~minHeight=27.->dp,
+          ~justifyContent=`center,
+          (),
+        ),
     })
   );
 
@@ -131,7 +140,7 @@ module RightArrowButton = {
   let styles =
     Style.(
       StyleSheet.create({
-        "chevron": style(~transform=[|rotate(~rotate=270.->deg)|], ()),
+        "chevron": styles##chevronRight,
         "content":
           FormStyles.flexAlignedRow(
             ~justifyContent=`spaceBetween,
@@ -265,6 +274,34 @@ module SubmitSecondary = {
         style(~borderWidth, ~borderColor=theme.colors.borderHighEmphasis, ())
       )>
       <Typography.ButtonPrimary ?fontSize>
+        text->React.string
+      </Typography.ButtonPrimary>
+    </FormBase>;
+  };
+};
+
+module SubmitTertiaryHighEmphasis = {
+  [@react.component]
+  let make =
+      (
+        ~text,
+        ~onPress,
+        ~disabled=false,
+        ~loading=?,
+        ~fontSize=?,
+        ~style as styleArg=?,
+      ) => {
+    let theme = ThemeContext.useTheme();
+
+    <FormBase
+      onPress
+      disabled
+      ?loading
+      vStyle=?styleArg
+      style=Style.(
+        style(~borderWidth=1., ~borderColor=theme.colors.borderPrimary, ())
+      )>
+      <Typography.ButtonPrimary colorStyle=`primary ?fontSize>
         text->React.string
       </Typography.ButtonPrimary>
     </FormBase>;

@@ -69,7 +69,7 @@ type transferOptions = {
 };
 
 let makeTransferEltOptions =
-    (~fee, ~gasLimit, ~storageLimit, ~parameter, ~entrypoint, ()) => {
+    (~fee=?, ~gasLimit=?, ~storageLimit=?, ~parameter=?, ~entrypoint=?, ()) => {
   fee,
   gasLimit,
   storageLimit,
@@ -83,7 +83,7 @@ let makeDelegationOptions = (~fee, ~burnCap, ~forceLowFee, ()) => {
   forceLowFee,
 };
 
-let makeTransferOptions = (~burnCap, ~forceLowFee, ()) => {
+let makeTransferOptions = (~burnCap=?, ~forceLowFee=?, ()) => {
   burnCap,
   forceLowFee,
 };

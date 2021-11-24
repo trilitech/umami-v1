@@ -23,71 +23,21 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open ReactNative;
+open Nft;
 
-let styles =
-  Style.(
-    StyleSheet.create({
-      "pressable":
-        style(
-          ~flexDirection=`row,
-          ~alignItems=`center,
-          ~paddingVertical=6.->dp,
-          ~paddingLeft=6.->dp,
-          ~paddingRight=9.->dp,
-          ~borderRadius=5.,
-          (),
-        ),
-      "icon": style(~marginRight=4.->dp, ()),
-    })
-  );
+let ipfsService = "https://ipfs.io/ipfs/";
 
-[@react.component]
-let make =
-    (
-      ~text,
-      ~onPress,
-      ~tooltip=?,
-      ~disabled=?,
-      ~style=?,
-      ~icon: Icons.builder,
-      ~primary=false,
-    ) => {
-  let theme = ThemeContext.useTheme();
-
-  let style = Style.arrayOption([|styles##pressable->Some, style|]);
-
-  let pressableElement = (~pressableRef) =>
-    <ThemedPressable
-      ?pressableRef style ?disabled onPress accessibilityRole=`button>
-      {icon(
-         ~style=styles##icon,
-         ~size=15.5,
-         ~color=
-           primary
-             ? theme.colors.iconPrimary : theme.colors.iconMediumEmphasis,
-       )}
-      <Typography.ButtonSecondary
-        style=Style.(
-          style(
-            ~color=?{
-              primary ? Some(theme.colors.iconPrimary) : None;
-            },
-            (),
-          )
-        )>
-        text->React.string
-      </Typography.ButtonSecondary>
-    </ThemedPressable>;
-
-  switch (tooltip) {
-  | Some((keyPopover, text)) =>
-    <Tooltip keyPopover text>
-      {(
-         (~pressableRef) =>
-           pressableElement(~pressableRef=Some(pressableRef))
-       )}
-    </Tooltip>
-  | None => pressableElement(~pressableRef=None)
+let ressourceToURL = r =>
+  switch (r) {
+  | IPFS(ipfsHash) => ipfsService ++ ipfsHash
+  | HTTP(url) => url
   };
-};
+
+let getDisplayURL = nft =>
+  nft.images.display->Option.map(d => {ressourceToURL(d)});
+
+let getThumbnailURL = token =>
+  switch (token.images.thumbnail) {
+  | Some(thl) => ressourceToURL(thl)->Some
+  | None => getDisplayURL(token)
+  };

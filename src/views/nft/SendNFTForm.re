@@ -23,71 +23,24 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open ReactNative;
+module StateLenses = [%lenses
+  type state = {
+    recipient: FormUtils.Alias.any,
+  }
+];
 
-let styles =
-  Style.(
-    StyleSheet.create({
-      "pressable":
-        style(
-          ~flexDirection=`row,
-          ~alignItems=`center,
-          ~paddingVertical=6.->dp,
-          ~paddingLeft=6.->dp,
-          ~paddingRight=9.->dp,
-          ~borderRadius=5.,
-          (),
-        ),
-      "icon": style(~marginRight=4.->dp, ()),
-    })
-  );
+type validState = {
+  recipient: FormUtils.Alias.t,
+};
 
-[@react.component]
-let make =
-    (
-      ~text,
-      ~onPress,
-      ~tooltip=?,
-      ~disabled=?,
-      ~style=?,
-      ~icon: Icons.builder,
-      ~primary=false,
-    ) => {
-  let theme = ThemeContext.useTheme();
-
-  let style = Style.arrayOption([|styles##pressable->Some, style|]);
-
-  let pressableElement = (~pressableRef) =>
-    <ThemedPressable
-      ?pressableRef style ?disabled onPress accessibilityRole=`button>
-      {icon(
-         ~style=styles##icon,
-         ~size=15.5,
-         ~color=
-           primary
-             ? theme.colors.iconPrimary : theme.colors.iconMediumEmphasis,
-       )}
-      <Typography.ButtonSecondary
-        style=Style.(
-          style(
-            ~color=?{
-              primary ? Some(theme.colors.iconPrimary) : None;
-            },
-            (),
-          )
-        )>
-        text->React.string
-      </Typography.ButtonSecondary>
-    </ThemedPressable>;
-
-  switch (tooltip) {
-  | Some((keyPopover, text)) =>
-    <Tooltip keyPopover text>
-      {(
-         (~pressableRef) =>
-           pressableElement(~pressableRef=Some(pressableRef))
-       )}
-    </Tooltip>
-  | None => pressableElement(~pressableRef=None)
+let unsafeExtractValidState = (state: StateLenses.state): validState => {
+  {
+    recipient: state.recipient->FormUtils.Unsafe.account,
   };
 };
+
+let toState = (vs: validState): StateLenses.state => {
+  recipient: vs.recipient->FormUtils.Alias.Valid,
+};
+
+include ReForm.Make(StateLenses);
