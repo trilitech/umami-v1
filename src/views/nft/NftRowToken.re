@@ -24,7 +24,6 @@
 /*****************************************************************************/
 
 open ReactNative;
-open Nft;
 
 let styles =
   Style.(
@@ -53,7 +52,7 @@ let styles =
 [@react.component]
 let make =
     (
-      ~nft: Nft.t,
+      ~nft: Token.t,
       ~account,
       ~address,
       ~selected,
@@ -68,8 +67,8 @@ let make =
 
   let theme = ThemeContext.useTheme();
 
-  let tooltip = (nft.name, I18n.btn#view_nft);
-  let id = (address, nft.id);
+  let tooltip = (nft.alias, I18n.btn#view_nft);
+  let id = (address, TokenRepr.id(nft));
   let hidden = Set.has(hidden, id);
   <View
     style=Style.(
@@ -103,12 +102,12 @@ let make =
          <Image style=styles##image source resizeMode=`stretch />
        )}
       <Typography.Body1 style=styles##marginLeft10>
-        nft.name->React.string
+        nft.alias->React.string
       </Typography.Body1>
     </View>
     <View style=styles##itemsGroup>
       <Typography.Body1>
-        {I18n.label#token_id(nft.id |> Int.toString)->React.string}
+        {I18n.label#token_id(TokenRepr.id(nft) |> Int.toString)->React.string}
       </Typography.Body1>
       <IconButton
         onPress={_ => openAction()}

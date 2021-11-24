@@ -73,7 +73,7 @@ let styles =
   );
 
 [@react.component]
-let make = (~closeAction, ~account, ~nft: Nft.t) => {
+let make = (~closeAction, ~account, ~nft: Token.t) => {
   let source = NftElements.useNftSource(nft, NftFilesManager.getDisplayURL);
 
   let (visibleSendModal, openSendModal, closeSendModal) =
@@ -102,8 +102,10 @@ let make = (~closeAction, ~account, ~nft: Nft.t) => {
         </View>
         <View style=styles##actions>
           <View style=styles##infos>
-            <Typography.Headline> nft.name->React.string </Typography.Headline>
-            {nft.description
+            <Typography.Headline>
+              nft.alias->React.string
+            </Typography.Headline>
+            {nft.asset.description
              ->ReactUtils.mapOpt(d =>
                  <Typography.Body1 style=styles##descr>
                    d->React.string

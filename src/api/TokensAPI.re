@@ -628,7 +628,10 @@ let fetchAccountNFTs =
         ~onTokens,
         ~withFullCache=false,
       );
-    `Fetched((tokens, number));
+    `Fetched((
+      tokens->Cache.keepTokens((_, _, token) => Cache.isNFT(token)),
+      number,
+    ));
   };
   fromCache ? getFromCache() : getFromNetwork();
 };

@@ -68,6 +68,7 @@ module Cache: {
   let tokenAddress: token => PublicKeyHash.t;
   let tokenKind: token => TokenContract.kind;
   let tokenChain: token => option(string);
+  let tokenName: token => option(string);
   let isFull: token => bool;
 
   let isNFT: token => bool;
@@ -90,6 +91,7 @@ module Cache: {
     t;
   let removeToken: (t, token) => t;
   let valuesToArray: t => array(token);
+  let keepTokens: (t, (PublicKeyHash.t, int, token) => bool) => t;
 
   let merge: (t, t) => t;
 };

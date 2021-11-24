@@ -237,6 +237,11 @@ module Cache = {
     | Full(t) => t.TokenRepr.address
     | Partial(_, bcd) => bcd.BCD.contract;
 
+  let tokenName =
+    fun
+    | Full(t) => t.TokenRepr.alias->Some
+    | Partial(_, bcd) => bcd.BCD.name;
+
   let tokenKind =
     fun
     | Full(t) => TokenContract.fromTokenKind(t.TokenRepr.kind)
@@ -340,6 +345,17 @@ module Cache = {
     ();
     PublicKeyHash.Map.merge(cache1, cache2, mergeContracts);
   };
+
+  let keepTokens = (cache, f) =>
+    cache->PublicKeyHash.Map.reduce(
+      PublicKeyHash.Map.empty,
+      (cache, pkh, c) => {
+        let tokens =
+          c.tokens->Map.Int.keep((id, token) => f(pkh, id, token));
+        tokens->Map.Int.isEmpty
+          ? cache : cache->PublicKeyHash.Map.set(pkh, {...c, tokens});
+      },
+    );
 
   include LocalStorage.Make({
     type t = PublicKeyHash.Map.map(contract);

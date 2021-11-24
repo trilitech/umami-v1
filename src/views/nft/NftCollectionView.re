@@ -24,7 +24,6 @@
 /*****************************************************************************/
 
 open ReactNative;
-open Nft;
 
 let controlView =
   Style.(
@@ -49,7 +48,7 @@ let styles =
   );
 
 [@react.component]
-let make = (~nfts, ~account) => {
+let make = (~nfts: TokenRegistry.Cache.t, ~account) => {
   let (search, setSearch) = React.useState(_ => "");
   let (selected, setSelected) =
     React.useState(_ => Set.make(~id=(module Nft.KeyCompare)));
@@ -76,14 +75,12 @@ let make = (~nfts, ~account) => {
     React.useMemo1(
       () => {
         nfts
-        ->List.reduce(
+        ->PublicKeyHash.Map.reduce(
             [],
-            (acc, c) => {
+            (acc, pkh, c) => {
               let ids =
                 c.tokens
-                ->List.reduce([], (acc, token) =>
-                    [(c.address, token.id), ...acc]
-                  );
+                ->Map.Int.reduce([], (acc, id, _) => [(pkh, id), ...acc]);
               List.concat(acc, ids);
             },
           )
@@ -100,16 +97,14 @@ let make = (~nfts, ~account) => {
 
   let filteredNfts =
     React.useMemo2(
-      () => {
-        nfts->List.keepMap((c: Nft.contract) => {
-          let tokens =
-            c.tokens
-            ->List.keep((tok: Nft.t) =>
-                Js.String2.includes(tok.name, search)
-              );
-          tokens != [] ? Some({...c, tokens}) : None;
-        })
-      },
+      () =>
+        nfts->TokenRegistry.Cache.keepTokens((_, _, token) =>
+          token
+          ->TokenRegistry.Cache.tokenName
+          ->Option.mapWithDefault(false, name =>
+              Js.String2.includes(name, search)
+            )
+        ),
       (search, allTokensId),
     );
 
@@ -129,10 +124,10 @@ let make = (~nfts, ~account) => {
   };
 
   let contracts =
-    filteredNfts->List.map(contract =>
+    filteredNfts->PublicKeyHash.Map.map(contract =>
       <NftRowContract contract account selected setSelected hidden setHidden />
     )
-    |> List.toArray
+    |> PublicKeyHash.Map.valuesToArray
     |> React.array;
 
   <>
