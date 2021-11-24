@@ -139,12 +139,15 @@ let uniqueKey = (contract: PublicKeyHash.t, id) =>
 let make = (~nfts: TokenRegistry.Cache.t) => {
   let account = StoreContext.SelectedAccount.useGet();
   let (search, setSearch) = React.useState(_ => "");
-  let hidden = HiddenNftStorage.get()->Result.getWithDefault([]);
+  let hidden =
+    TokenRegistry.Registered.get()
+    ->Result.getWithDefault(PublicKeyHash.Map.empty);
+
   let nfts =
     React.useMemo1(
       () =>
         nfts->TokenRegistry.Cache.keepTokens((pkh, id, _) =>
-          !hidden->List.has((pkh, id), (a, b) => a == b)
+          !hidden->TokenRegistry.Registered.isHidden(pkh, id)
         ),
       [|nfts|],
     );

@@ -51,7 +51,7 @@ module Component = {
     let request = fromCache =>
       TokensApiRequest.{
         account: account.Account.address,
-        allowHidden: mode == Collection,
+        allowHidden: true,
         numberByAccount: BCD.requestPageSize,
         fromCache,
       };

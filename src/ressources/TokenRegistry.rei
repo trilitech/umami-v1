@@ -46,7 +46,12 @@ module Registered: {
   let isRegistered: (t, PublicKeyHash.t, int) => bool;
   let registerToken: (t, Token.t, kind) => t;
   let removeToken: (t, PublicKeyHash.t, int) => t;
+  let isHidden: (t, PublicKeyHash.t, int) => bool;
 
+  let keepTokens: (t, (PublicKeyHash.t, int, kind) => bool) => t;
+
+  let updateNFTsVisibility:
+    (t, PublicKeyHash.Map.map(Map.Int.t(unit)), bool) => t;
   let updateNFT: (t, PublicKeyHash.t, int, nftInfo) => t;
 };
 
