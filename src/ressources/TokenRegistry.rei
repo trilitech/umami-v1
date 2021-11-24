@@ -25,18 +25,29 @@
 
 module Registered: {
   /** Representation of registered tokens for a user */
+  type nftInfo = {
+    holder: PublicKeyHash.t,
+    hidden: bool,
+  };
+
+  type kind =
+    | FT
+    | NFT(nftInfo);
+
   type contract = {
     contract: TokenContract.t,
     chain: string,
-    tokens: Set.Int.t // effectively registered tokens by the user
+    tokens: Map.Int.t(kind) // effectively registered tokens by the user
   };
 
   include
     LocalStorage.StorageType with type t = PublicKeyHash.Map.map(contract);
 
   let isRegistered: (t, PublicKeyHash.t, int) => bool;
-  let registerToken: (t, Token.t) => t;
+  let registerToken: (t, Token.t, kind) => t;
   let removeToken: (t, PublicKeyHash.t, int) => t;
+
+  let updateNFT: (t, PublicKeyHash.t, int, nftInfo) => t;
 };
 
 /** The cache is a representation of the already fetched tokens from the chain */
@@ -59,8 +70,12 @@ module Cache: {
   let tokenChain: token => option(string);
   let isFull: token => bool;
 
+  let isNFT: token => bool;
+
   include
     LocalStorage.StorageType with type t = PublicKeyHash.Map.map(contract);
+
+  let empty: t;
 
   let getToken: (t, PublicKeyHash.t, int) => option(token);
   let getFullToken: (t, PublicKeyHash.t, int) => option(Token.t);
@@ -75,7 +90,11 @@ module Cache: {
     t;
   let removeToken: (t, token) => t;
   let valuesToArray: t => array(token);
+
+  let merge: (t, t) => t;
 };
+
+let mergeAccountNFTs: (Registered.t, Cache.t, PublicKeyHash.t) => Registered.t;
 
 module Legacy: {
   module V1_3: {

@@ -56,15 +56,13 @@ module BetterCallDev = {
 
   // Returns a list of arrays: this will be treated later, so we return it as raw as possible for now
   let fetchTokens = (config, alreadyFetched, account, index, number) => {
-    let pageSize = 50; // [10..50]
-
     let rec fetch = (alreadyFetched, index, number) => {
       let%Await url =
         ServerAPI.URL.External.betterCallDevAccountTokens(
           ~config,
           ~account,
           ~sortBy=`TokenId,
-          ~limit=min(pageSize, number),
+          ~limit=min(requestPageSize, number),
           ~index,
           ~hideEmpty=true,
           (),
@@ -75,7 +73,7 @@ module BetterCallDev = {
 
       // corresponds to the number of tokens to fetch according to
       // the number we ask, not the total remaining
-      let remaining = max(number - pageSize, 0);
+      let remaining = max(number - requestPageSize, 0);
 
       // index for the next fetch
       let index = index + tokens.balances->Array.size;
@@ -142,30 +140,44 @@ module BetterCallDev = {
   };
 };
 
+type filter = [ | `Any | `FT | `NFT(PublicKeyHash.t, bool)];
+
 /* From a list of tokens and the cache, reconstructs the list of tokens with
    their metadata the user has registered */
-let unfoldRegistered = (tokens, cache: Cache.t) => {
+let unfoldRegistered = (tokens, cache: Cache.t, filter) => {
+  let keep = (registered, id, _) =>
+    Registered.(
+      registered.tokens
+      ->Map.Int.get(id)
+      ->Option.mapWithDefault(false, t =>
+          switch (t, filter) {
+          | (_, `Any) => true
+          | (FT, `FT) => true
+          | (NFT(info), `NFT(holder, allowHidden)) =>
+            (!allowHidden ? !info.hidden : true) && info.holder == holder
+          | _ => false
+          }
+        )
+    );
+
   let merge = (_, registered, tokens) => {
     switch (registered, tokens) {
     | (None, _)
     // What should we do if the token is not in cache?
     | (_, None) => None
     | (Some(registered), Some(contract)) =>
-      let tokens =
-        contract.Cache.tokens
-        ->Map.Int.keep((id, _) =>
-            registered.Registered.tokens->Set.Int.has(id)
-          );
+      let tokens = contract.Cache.tokens->Map.Int.keep(keep(registered));
+
       Some({...contract, tokens});
     };
   };
   PublicKeyHash.Map.merge(tokens, cache, merge);
 };
 
-let registeredTokens = () => {
+let registeredTokens = filter => {
   let%Res tokens = Registered.get();
   let%ResMap cache = Cache.get();
-  tokens->unfoldRegistered(cache);
+  tokens->unfoldRegistered(cache, filter);
 };
 
 // used for registration of custom tokens
@@ -187,18 +199,29 @@ let addTokenToCache = (config, token) => {
   Cache.set(tokens);
 };
 
-let addTokenToRegistered = token => {
+let addTokenToRegistered = (token, kind) => {
   let tokens =
     Registered.get()
     ->Result.getWithDefault(PublicKeyHash.Map.empty)
-    ->Registered.registerToken(token);
+    ->Registered.registerToken(token, kind);
 
   Registered.set(tokens);
 };
 
-let addToken = (config, token) => {
+let registerNFTs = (tokens, holder) => {
+  open Registered;
+  let%ResMap registered = get();
+  registered->TokenRegistry.mergeAccountNFTs(tokens, holder)->set;
+};
+
+let addFungibleToken = (config, token) => {
   let%AwaitMap () = addTokenToCache(config, Full(token));
-  addTokenToRegistered(token);
+  addTokenToRegistered(token, Registered.FT);
+};
+
+let addNonFungibleToken = (config, token, holder) => {
+  let%AwaitMap () = addTokenToCache(config, Full(token));
+  addTokenToRegistered(token, Registered.(NFT({holder, hidden: false})));
 };
 
 let removeFromCache = token => {
@@ -554,5 +577,58 @@ let fetchAccountsTokensRegistry =
   (registered, toRegister, nextIndex);
 };
 
+let fetchAccountTokensStreamed =
+    (config, ~account, ~index, ~numberByAccount, ~onTokens, ~withFullCache) => {
+  let onceFinished = (tokens, number) => {
+    let%Await () = tokens->registerNFTs(account)->FutureBase.value;
+    Promise.ok((tokens, number));
+  };
+  let rec get = (accumulatedTokens, index) => {
+    let%Await (fetchedTokens, nextIndex) =
+      fetchAccountsTokens(
+        config,
+        ~accounts=[account],
+        ~index,
+        ~numberByAccount,
+        ~withFullCache,
+      );
+    let accumulatedTokens =
+      accumulatedTokens->TokenRegistry.Cache.merge(fetchedTokens);
+    onTokens(~fetchedTokens, ~nextIndex);
+    nextIndex <= index
+      ? onceFinished(accumulatedTokens, nextIndex)
+      : get(accumulatedTokens, nextIndex);
+  };
+  get(Cache.empty, index);
+};
+
 let fetchTokenRegistry = (config, ~kinds, ~limit, ~index, ()) =>
   fetchTokenContracts(config, ~accounts=[], ~kinds, ~limit, ~index, ());
+
+type fetched = [
+  | `Cached(TokenRegistry.Cache.t)
+  | `Fetched(TokenRegistry.Cache.t, int)
+];
+
+let fetchAccountNFTs =
+    (config, ~account, ~numberByAccount, ~onTokens, ~allowHidden, ~fromCache) => {
+  let getFromCache = () => {
+    let%AwaitMap tokens =
+      registeredTokens(`NFT((account, allowHidden)))->Promise.value;
+    `Cached(tokens);
+  };
+
+  let getFromNetwork = () => {
+    let%AwaitMap (tokens, number) =
+      fetchAccountTokensStreamed(
+        config,
+        ~account,
+        ~index=0,
+        ~numberByAccount,
+        ~onTokens,
+        ~withFullCache=false,
+      );
+    `Fetched((tokens, number));
+  };
+  fromCache ? getFromCache() : getFromNetwork();
+};

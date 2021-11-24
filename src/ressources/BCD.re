@@ -76,6 +76,8 @@ let toTokenRepr = (tokenContract: TokenContract.t, token) => {
   };
 };
 
+let requestPageSize = 50;
+
 module Decode = {
   open JsonEx.Decode;
 

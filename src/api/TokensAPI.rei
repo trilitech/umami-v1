@@ -26,9 +26,17 @@
 type Errors.t +=
   | NotFAContract(string);
 
-let registeredTokens: unit => Let.result(TokenRegistry.Cache.t);
+type filter = [ | `Any | `FT | `NFT(PublicKeyHash.t, bool)];
 
-let addToken: (ConfigContext.env, Token.t) => Promise.t(unit);
+let registeredTokens: filter => Let.result(TokenRegistry.Cache.t);
+
+let addFungibleToken: (ConfigContext.env, Token.t) => Promise.t(unit);
+
+let addNonFungibleToken:
+  (ConfigContext.env, Token.t, PublicKeyHash.t) => Promise.t(unit);
+
+let registerNFTs:
+  (TokenRegistry.Cache.t, PublicKeyHash.t) => Let.result(unit);
 
 let removeToken: (Token.t, ~pruneCache: bool) => Let.result(unit);
 
@@ -63,6 +71,17 @@ let fetchAccountsTokens:
   ) =>
   Promise.t((TokenRegistry.Cache.t, int));
 
+let fetchAccountTokensStreamed:
+  (
+    ConfigContext.env,
+    ~account: PublicKeyHash.t,
+    ~index: int,
+    ~numberByAccount: int,
+    ~onTokens: (~fetchedTokens: TokenRegistry.Cache.t, ~nextIndex: int) => unit,
+    ~withFullCache: bool
+  ) =>
+  Promise.t((TokenRegistry.Cache.t, int));
+
 let fetchAccountsTokensRegistry:
   (
     ConfigContext.env,
@@ -77,3 +96,19 @@ let fetchAccountsTokensRegistry:
       int,
     ),
   );
+
+type fetched = [
+  | `Cached(TokenRegistry.Cache.t)
+  | `Fetched(TokenRegistry.Cache.t, int)
+];
+
+let fetchAccountNFTs:
+  (
+    ConfigContext.env,
+    ~account: PublicKeyHash.t,
+    ~numberByAccount: int,
+    ~onTokens: (~fetchedTokens: TokenRegistry.Cache.t, ~nextIndex: int) => unit,
+    ~allowHidden: bool,
+    ~fromCache: bool
+  ) =>
+  Promise.t(fetched);

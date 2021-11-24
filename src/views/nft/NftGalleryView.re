@@ -134,7 +134,7 @@ module Card = {
 };
 
 [@react.component]
-let make = (~nfts, ~loading) => {
+let make = (~nfts) => {
   let account = StoreContext.SelectedAccount.useGet();
   let (search, setSearch) = React.useState(_ => "");
   let hidden = HiddenNftStorage.get()->Result.getWithDefault([]);
@@ -177,10 +177,8 @@ let make = (~nfts, ~loading) => {
       placeholder=I18n.input_placeholder#search_for_nft
     />
     <DocumentContext.ScrollView>
-      {loading
-         ? React.null
-         : nfts->Map.isEmpty
-             ? <NftEmptyView /> : <View style=styles##view> cards </View>}
+      {nfts->Map.isEmpty
+         ? <NftEmptyView /> : <View style=styles##view> cards </View>}
     </DocumentContext.ScrollView>
   </>;
 };

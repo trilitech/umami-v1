@@ -57,12 +57,26 @@ let useLoadBalance =
 };
 
 let useLoadTokens = requestState => {
-  let get = (~config as _, ()) => TokensAPI.registeredTokens()->Promise.value;
+  let get = (~config as _, ()) =>
+    TokensAPI.registeredTokens(`FT)->Promise.value;
 
   ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, ());
 };
 
-type request = {
+type nftCacheRequest = {
+  holder: PublicKeyHash.t,
+  allowHidden: bool,
+};
+
+let useLoadCachedNFTs = (requestState, request) => {
+  let get = (~config as _, request) =>
+    TokensAPI.registeredTokens(`NFT((request.holder, request.allowHidden)))
+    ->Promise.value;
+
+  ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, request);
+};
+
+type tokensRequest = {
   account: PublicKeyHash.t,
   index: int,
   numberByAccount: int,
@@ -89,25 +103,49 @@ let useLoadTokensRegistry = (requestState, request) => {
   ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, request);
 };
 
-type tokens = {
-  sorted: TokenRegistry.Cache.t,
-  nextIndex: int,
+type tokens = TokensAPI.fetched;
+
+type nftRequest = {
+  account: PublicKeyHash.t,
+  allowHidden: bool,
+  numberByAccount: int,
+  fromCache: bool,
 };
 
-let useLoadAccountsTokens = (requestState, request) => {
-  let get = (~config, request) => {
-    let%AwaitMap (sorted, nextIndex) =
-      TokensAPI.fetchAccountsTokens(
-        config,
-        ~accounts=[request.account],
-        ~index=request.index,
-        ~numberByAccount=request.numberByAccount,
-        ~withFullCache=false,
-      );
-    {sorted, nextIndex};
+let useLoadAccountNFTs = (onTokens, (apiRequest, setRequest), nftRequest) => {
+  let get = (~config, {account, allowHidden, numberByAccount, fromCache}) => {
+    TokensAPI.fetchAccountNFTs(
+      config,
+      ~account,
+      ~numberByAccount,
+      ~onTokens,
+      ~allowHidden,
+      ~fromCache,
+    );
   };
 
-  ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, request);
+  let getRequest =
+    ApiRequest.useGetter(~get, ~kind=Logs.Tokens, ~setRequest, ());
+
+  let isMounted = ReactUtils.useIsMounted();
+
+  let conditionToLoad = (request, isMounted) => {
+    let requestNotAskedAndMounted = request->isNotAsked && isMounted;
+    let requestDoneButReloadOnMount = request->isDone && !isMounted;
+    requestNotAskedAndMounted || requestDoneButReloadOnMount;
+  };
+
+  React.useEffect4(
+    () => {
+      if (conditionToLoad(apiRequest, isMounted)) {
+        getRequest(nftRequest)->ignore;
+      };
+      None;
+    },
+    (isMounted, apiRequest, nftRequest, setRequest),
+  );
+
+  (apiRequest, getRequest);
 };
 
 let useDelete = (~sideEffect=?, ()) => {
@@ -125,10 +163,28 @@ let useDelete = (~sideEffect=?, ()) => {
 };
 
 let useCreate = (~sideEffect=?, ()) => {
-  let set = (~config, token) => TokensAPI.addToken(config, token);
+  let set = (~config, token) => TokensAPI.addFungibleToken(config, token);
 
   ApiRequest.useSetter(
     ~logOk=_ => I18n.t#token_created,
+    ~toast=false,
+    ~set,
+    ~kind=Logs.Tokens,
+    ~sideEffect?,
+    (),
+  );
+};
+
+type nfts = {
+  tokens: TokenRegistry.Cache.t,
+  holder: PublicKeyHash.t,
+};
+
+let useRegisterNFTs = (~sideEffect=?, ()) => {
+  let set = (~config as _, nfts) =>
+    TokensAPI.registerNFTs(nfts.tokens, nfts.holder)->Promise.value;
+
+  ApiRequest.useSetter(
     ~toast=false,
     ~set,
     ~kind=Logs.Tokens,

@@ -47,27 +47,23 @@ module Component = {
   [@react.component]
   let make = (~account) => {
     let (mode, setMode) = React.useState(_ => Gallery);
-    let onRefresh = StoreContext.Tokens.useResetAllAccountsTokens();
 
-    let tokensRequest =
-      StoreContext.Tokens.useAccountsTokens(
-        TokensApiRequest.{
-          account: account.Account.address,
-          index: 0,
-          numberByAccount: 10,
-        },
-      );
+    let request = fromCache =>
+      TokensApiRequest.{
+        account: account.Account.address,
+        allowHidden: mode == Collection,
+        numberByAccount: BCD.requestPageSize,
+        fromCache,
+      };
 
-    let tokens =
-      React.useMemo1(
-        () =>
-          switch (tokensRequest) {
-          | Done(Ok(tokens), _)
-          | Loading(Some(tokens)) =>
-            tokens.TokensApiRequest.sorted->Nft.fromCache
-          | _ => []
-          },
-        [|tokensRequest|],
+    // will be used to indicate a percentage of NFTs loaded
+    let onTokens = (~fetchedTokens as _, ~nextIndex as _) => ();
+
+    let (tokensRequest, getTokens) =
+      StoreContext.Tokens.useAccountNFTs(
+        onTokens,
+        account.Account.address,
+        request(true),
       );
 
     let (switchButtonText, icon) =
@@ -82,7 +78,19 @@ module Component = {
       | Collection => I18n.title#collected
       };
 
-    let loading = !tokensRequest->ApiRequest.isDone;
+    let tokens =
+      switch (tokensRequest) {
+      | Done(Ok(`Cached(tokens) | `Fetched(tokens, _)), _)
+      | Loading(Some(`Cached(tokens) | `Fetched(tokens, _))) =>
+        tokens->Nft.fromCache
+      | _ => []
+      };
+
+    let onRefresh = () => {
+      getTokens(request(false))->ignore;
+    };
+
+    let loading = tokensRequest->ApiRequest.isLoading;
 
     <View style={styles##listContent}>
       <NftHeaderView headline>
@@ -101,9 +109,10 @@ module Component = {
         />
       </NftHeaderView>
       {switch (mode) {
-       | Gallery => <NftGalleryView loading nfts={tokens->Nft.flatten} />
+       | Gallery => <NftGalleryView nfts={tokens->Nft.flatten} />
        | Collection => <NftCollectionView account nfts=tokens />
        }}
+      {loading ? <LoadingView /> : React.null}
     </View>;
   };
 };

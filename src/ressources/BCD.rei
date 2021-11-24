@@ -48,6 +48,9 @@ type t = {
 
 let toTokenRepr: (TokenContract.t, tokenBalance) => option(TokenRepr.t);
 
+/* Maximum tokens by request, which is 50 in the current API */
+let requestPageSize: int;
+
 module Decode: {
   let tokenBalanceDecoder: Json.Decode.decoder(tokenBalance);
   let decoder: Json.Decode.decoder(t);
