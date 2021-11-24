@@ -25,6 +25,12 @@
 
 open ReactNative;
 
+module CellStandard =
+  Table.MakeCell({
+    let style = Style.(style(~flexBasis=60.->dp, ()));
+    ();
+  });
+
 module CellName =
   Table.MakeCell({
     let style = Style.(style(~flexBasis=132.->dp, ()));
@@ -41,6 +47,12 @@ module CellAddress =
   Table.MakeCell({
     let style =
       Style.(style(~flexBasis=180.->dp, ~flexGrow=1., ~flexShrink=1., ()));
+  });
+
+module CellTokenId =
+  Table.MakeCell({
+    let style =
+      Style.(style(~flexBasis=100.->dp, ~alignItems=`flexStart, ()));
     ();
   });
 
@@ -70,7 +82,19 @@ module TokenDeleteButton = {
 
 [@react.component]
 let make = (~token: Token.t) => {
+  let tokenId =
+    switch (token.kind) {
+    | FA1_2 => I18n.t#na
+    | FA2(id) => Int.toString(id)
+    };
   <Table.Row>
+    <CellStandard>
+      <Tag
+        content={
+          token.kind->TokenContract.fromTokenKind->TokenContract.kindToString
+        }
+      />
+    </CellStandard>
     <CellName>
       <Typography.Body1 numberOfLines=1>
         token.alias->React.string
@@ -86,6 +110,11 @@ let make = (~token: Token.t) => {
         (token.address :> string)->React.string
       </Typography.Address>
     </CellAddress>
+    <CellTokenId>
+      <Typography.Body1 numberOfLines=1>
+        tokenId->React.string
+      </Typography.Body1>
+    </CellTokenId>
     <CellAction> <TokenDeleteButton token /> </CellAction>
   </Table.Row>;
 };

@@ -58,11 +58,11 @@ module BalanceToken = {
   [@react.component]
   let make = (~address: PublicKeyHash.t, ~token: Token.t) => {
     let balanceTokenRequest =
-      StoreContext.BalanceToken.useLoad(address, token.address);
+      StoreContext.BalanceToken.useLoad(address, token.address, token.kind);
 
     switch (balanceTokenRequest) {
     | Done(Ok(balance), _)
-    | Loading(Some((balance: Token.Unit.t))) =>
+    | Loading(Some(balance: Token.Unit.t)) =>
       I18n.t#amount(
         balance->Token.Unit.toStringDecimals(token.decimals),
         token.symbol,

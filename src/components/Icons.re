@@ -167,3 +167,4 @@ module NoImg = Make(SVGIconNoImg);
 module MagnifierPlus = Make(SVGIconMagnifierPlus);
 module Gallery = Make(SVGIconGallery);
 module Collection = Make(SVGIconCollection);
+module Info = Make(SVGIconInfo);

@@ -33,16 +33,26 @@ let useCheckTokenContract = () => {
   ApiRequest.useSetter(~set, ~kind=Logs.Tokens, ~toast=false, ());
 };
 
-let useLoadFA12Balance =
-    (~requestState, ~address: PublicKeyHash.t, ~token: PublicKeyHash.t) => {
-  let get = (~config, (address, token)) =>
-    config->NodeAPI.Tokens.runFA12GetBalance(~address, ~token);
+let useLoadBalance =
+    (
+      ~requestState,
+      ~address: PublicKeyHash.t,
+      ~token: PublicKeyHash.t,
+      ~kind: TokenRepr.kind,
+    ) => {
+  let get = (~config, (address, token, kind)) =>
+    switch (kind) {
+    | TokenRepr.FA1_2 =>
+      config->NodeAPI.Tokens.runFA12GetBalance(~address, ~token)
+    | FA2(tokenId) =>
+      config->NodeAPI.Tokens.callFA2BalanceOf(address, token, tokenId)
+    };
 
   ApiRequest.useLoader(
     ~get,
     ~kind=Logs.Tokens,
     ~requestState,
-    (address, token),
+    (address, token, kind),
   );
 };
 

@@ -22,6 +22,7 @@
 /* DEALINGS IN THE SOFTWARE.                                                 */
 /*                                                                           */
 /*****************************************************************************/
+open ReactNative;
 
 [@react.component]
 let make =
@@ -29,10 +30,17 @@ let make =
       ~label,
       ~hasError=false,
       ~fontWeightStyle=?,
-      ~style: option(ReactNative.Style.t)=?,
+      ~style: option(Style.t)=?,
+      ~tooltipIcon=?,
     ) => {
-  <Typography.Overline2
-    colorStyle=?{hasError ? Some(`error) : None} ?fontWeightStyle ?style>
-    label->React.string
-  </Typography.Overline2>;
+  <View style={Style.style(~flexDirection=`row, ())}>
+    <Typography.Overline2
+      colorStyle=?{hasError ? Some(`error) : None} ?fontWeightStyle ?style>
+      label->React.string
+    </Typography.Overline2>
+    {switch (tooltipIcon) {
+     | None => React.null
+     | Some(tooltipIcon) => tooltipIcon
+     }}
+  </View>;
 };

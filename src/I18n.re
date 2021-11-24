@@ -114,7 +114,8 @@ let tooltip = {
   pub custom_network_edit = "Edit network";
   pub custom_network_delete = "Delete network";
   pub reject_on_ledger = "Reject on ledger to cancel operation";
-  pub see_network_info = "See network info"
+  pub see_network_info = "See network info";
+  pub tokenid = {j|A non-negative number that identifies the asset inside a FA2 contract|j}
 };
 
 let log = {
@@ -154,6 +155,7 @@ let label = {
   pub add_token_name = "Name";
   pub add_token_symbol = "Symbol";
   pub add_token_decimals = "Decimals";
+  pub add_token_id = "Token ID";
   pub summary_subtotal = "Subtotal";
   pub summary_total = "Total";
   pub summary_total_tez = "Total tez";
@@ -187,6 +189,7 @@ let input_placeholder = {
   pub add_token_address = "Enter KT1 address of a contract";
   pub add_token_name = "e.g. Tezos";
   pub add_token_decimals = "e.g. 0";
+  pub add_token_id = "e.g. 0";
   pub enter_new_password = "Enter new password, at least 8 characters";
   pub confirm_password = "Confirm your new password";
   pub enter_password = "Enter your password";
@@ -260,7 +263,8 @@ let form_input_error = {
       field,
       tokenId,
       pkh,
-    )
+    );
+  pub token_id_expected = "FA2 contracts expects a token id"
 };
 
 let title = {
@@ -672,14 +676,20 @@ let t = {
   pub delegate_column_duration = "DURATION";
   pub delegate_column_last_reward = "LAST REWARD";
   pub delegate_column_baker = "BAKER";
+  pub token_column_standard = "STANDARD";
   pub token_column_name = "NAME";
   pub token_column_symbol = "SYMBOL";
   pub token_column_address = "ADDRESS";
+  pub token_column_tokenid = "TOKEN ID";
+  pub na = "N/A";
   pub empty_token = "No token registered on the current chain";
   pub empty_delegations = "No Delegation";
   pub empty_operations = "No Operation";
   pub empty_address_book = "No Contact";
-  pub add_token_format_contract_sentence = {j|Please specify the address, name, and symbol of a FA1.2 token contract for which you would like to view balances as well as to perform operations. Umami will prefill the fields if any metadata is available.|j};
+  pub add_token_format_contract_sentence = {j|Please enter the address of a deployed token contract for which you would like to view balances as well as to perform operations.|j};
+  pub add_token_contract_metadata_fa1_2 = {j|Please specify the name, symbol, and decimals of a token contract for which you would like to view balances as well as to perform operations. Umami will prefill the fields if any metadata is available.|j};
+  pub add_token_contract_tokenid_fa2 = {j|Please specify the token ID of the token you would like to perform operations on. Umami will prefill the fields if any metadata is available.|j};
+  pub add_token_contract_metadata_fa2 = {j|Please specify the token ID of the token you would like to perform operations on. Umami will prefill the fields if any metadata is available|j};
   pub delegation_removal = "Delegation Removal";
   pub error_check_contract = "Address is not a valid token contract";
   pub words = p("%d words");
