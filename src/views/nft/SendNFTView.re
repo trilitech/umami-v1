@@ -69,7 +69,7 @@ module Form = {
       );
 
     [@react.component]
-    let make = (~nft: Nft.t) => {
+    let make = (~nft: Token.t) => {
       <FormGroup style=styles##formGroup>
         <FormLabel
           label=I18n.label#send_nft
@@ -79,7 +79,7 @@ module Form = {
         <View>
           <ThemedTextInput
             style=styles##input
-            value={nft.name}
+            value={nft.alias}
             hasError=false
             onValueChange={_ => ()}
             onFocus={_ => ()}
@@ -147,7 +147,7 @@ let stepToString = step =>
   };
 
 [@react.component]
-let make = (~source: Account.t, ~nft: Nft.t, ~closeAction) => {
+let make = (~source: Account.t, ~nft: Token.t, ~closeAction) => {
   let (modalStep, setModalStep) = React.useState(_ => SendStep);
 
   let (operationRequest, sendOperation) = StoreContext.Operations.useCreate();
@@ -172,7 +172,7 @@ let make = (~source: Account.t, ~nft: Nft.t, ~closeAction) => {
             ->FormUtils.Unsafe.account
             ->FormUtils.Alias.address,
           tx_options: ProtocolOptions.makeTransferEltOptions(),
-          amount: Token(TokenRepr.Unit.one, Nft.toTokenRepr(nft)),
+          amount: Token(TokenRepr.Unit.one, nft),
         },
       ],
       options: ProtocolOptions.makeTransferOptions(),

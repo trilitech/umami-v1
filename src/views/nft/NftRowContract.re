@@ -1,5 +1,4 @@
 open ReactNative;
-open Nft;
 
 let styles =
   Style.(
@@ -12,24 +11,35 @@ let styles =
   );
 
 [@react.component]
-let make = (~contract, ~account, ~selected, ~setSelected, ~hidden, ~setHidden) => {
+let make =
+    (
+      ~contract: TokenRegistry.Cache.contract,
+      ~account,
+      ~selected,
+      ~setSelected,
+      ~hidden,
+      ~setHidden,
+    ) => {
   let config = ConfigContext.useContent();
 
   let (expanded, setExpanded) = React.useState(_ => true);
   let data = {
     contract.tokens
-    ->List.map(nft =>
-        <NftRowToken
-          account
-          address={contract.address}
-          nft
-          selected
-          setSelected
-          hidden
-          setHidden
-        />
+    ->Map.Int.map(
+        fun
+        | Partial(_, _) => React.null
+        | Full(nft) =>
+          <NftRowToken
+            account
+            address={contract.address}
+            nft
+            selected
+            setSelected
+            hidden
+            setHidden
+          />,
       )
-    |> List.toArray
+    |> Map.Int.valuesToArray
     |> React.array;
   };
   let addToast = LogsContext.useToast();
@@ -58,7 +68,9 @@ let make = (~contract, ~account, ~selected, ~setSelected, ~hidden, ~setHidden) =
         style=styles##iconButton
       />
       <Typography.Notice style=styles##iconButton>
-        contract.name->React.string
+        {contract.name
+         ->Option.getWithDefault((contract.address :> string))
+         ->React.string}
       </Typography.Notice>
       <Typography.Address style=styles##address>
         (contract.address :> string)->React.string

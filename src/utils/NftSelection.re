@@ -23,24 +23,38 @@
 /*                                                                           */
 /*****************************************************************************/
 
-module Value = {
-  let key = "hiddenNftList";
+// internally, Map.Int is better than Set if we want to merge it with a
+// Registered Map. See TokenRegistry.Registered.updateNFTsVisility
+type t = PublicKeyHash.Map.map(Map.Int.t(unit));
 
-  type t = list(Nft.uniqueKey);
-  open Json.Encode;
-
-  let id_encoder = ((k, id)) => {
-    object_([("contract", k |> PublicKeyHash.encoder), ("id", id |> int)]);
-  };
-  let encoder = Json.Encode.list(id_encoder);
-
-  open Json.Decode;
-  let id_decoder = json => (
-    json |> field("contract", PublicKeyHash.decoder),
-    json |> field("id", int),
+let size = selected =>
+  selected->PublicKeyHash.Map.reduce(0, (size, _, c) =>
+    size + c->Map.Int.size
   );
 
-  let decoder = list(id_decoder);
-};
+let isSelected = (selected, pkh, tokenId) =>
+  selected
+  ->PublicKeyHash.Map.get(pkh)
+  ->Option.map(ids => ids->Map.Int.has(tokenId))
+  != None;
 
-include LocalStorage.Make(Value);
+let updateSelection = (selected, pkh, id, checked) =>
+  selected->PublicKeyHash.Map.update(
+    pkh,
+    fun
+    | None => checked ? Some(Map.Int.empty->Map.Int.set(id, ())) : None
+    | Some(ids) =>
+      checked
+        ? Some(ids->Map.Int.set(id, ())) : Some(ids->Map.Int.remove(id)),
+  );
+
+let singleton = (pkh, id) =>
+  PublicKeyHash.Map.empty->PublicKeyHash.Map.set(
+    pkh,
+    Map.Int.empty->Map.Int.set(id, ()),
+  );
+
+let isEmpty = selected =>
+  selected->PublicKeyHash.Map.reduce(true, (isEmpty, _, ids) =>
+    isEmpty && ids->Map.Int.isEmpty
+  );

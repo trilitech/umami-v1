@@ -24,7 +24,6 @@
 /*****************************************************************************/
 
 open ReactNative;
-open Nft;
 
 let controlView =
   Style.(
@@ -49,24 +48,29 @@ let styles =
   );
 
 [@react.component]
-let make = (~nfts, ~account) => {
+let make = (~nfts: TokenRegistry.Cache.t, ~account) => {
   let (search, setSearch) = React.useState(_ => "");
-  let (selected, setSelected) =
-    React.useState(_ => Set.make(~id=(module Nft.KeyCompare)));
+  let (selected, setSelected) = React.useState(_ => PublicKeyHash.Map.empty);
+
+  let setSelectedToken = (pkh, id, checked) => {
+    setSelected(map => map->NftSelection.updateSelection(pkh, id, checked));
+  };
 
   let (hidden, setHidden) =
     // here we load, and at each set, we write.
     React.useState(_ =>
-      switch (HiddenNftStorage.get()) {
-      | Ok(l) => Set.fromArray(List.toArray(l), ~id=(module Nft.KeyCompare))
-      | Error(_) => Set.make(~id=(module Nft.KeyCompare))
+      switch (TokenRegistry.Registered.get()) {
+      | Ok(map) => map
+      | Error(_) => PublicKeyHash.Map.empty
       }
     );
-  let setHidden = f => {
-    setHidden(set => {
-      let set = f(set);
-      HiddenNftStorage.set(set->Set.toList);
-      set;
+
+  let setHidden = (selected, hidden) => {
+    setHidden(_ => {
+      switch (TokensAPI.updateNFTsVisibility(selected, ~hidden)) {
+      | Ok(r) => r
+      | Error(_) => PublicKeyHash.Map.empty
+      }
     });
   };
 
@@ -75,53 +79,45 @@ let make = (~nfts, ~account) => {
   let allTokensId =
     React.useMemo1(
       () => {
-        nfts
-        ->List.reduce(
-            [],
-            (acc, c) => {
-              let ids =
-                c.tokens
-                ->List.reduce([], (acc, token) =>
-                    [(c.address, token.id), ...acc]
-                  );
-              List.concat(acc, ids);
-            },
-          )
-        ->List.toArray
+        nfts->PublicKeyHash.Map.map(c =>
+          c.TokenRegistry.Cache.tokens->Map.Int.map(_ => ())
+        )
       },
       [|nfts|],
     );
 
   let checked =
     React.useMemo2(
-      () => allTokensId->Array.size == Set.size(selected),
+      () => allTokensId->NftSelection.size == selected->NftSelection.size,
       (selected, allTokensId),
     );
 
   let filteredNfts =
     React.useMemo2(
-      () => {
-        nfts->List.keepMap((c: Nft.contract) => {
-          let tokens =
-            c.tokens
-            ->List.keep((tok: Nft.t) =>
-                Js.String2.includes(tok.name, search)
-              );
-          tokens != [] ? Some({...c, tokens}) : None;
-        })
-      },
+      () =>
+        nfts->TokenRegistry.Cache.keepTokens((_, _, token) =>
+          token
+          ->TokenRegistry.Cache.tokenName
+          ->Option.mapWithDefault(false, name =>
+              Js.String2.includes(name, search)
+            )
+        ),
       (search, allTokensId),
     );
 
   let (allSelectedHidden, noSelectedHidden) = {
     React.useMemo2(
       () => {
-        selected->Set.reduce(
-          (true, true),
-          ((all, none), v) => {
-            let currentHidden = hidden->Set.has(v);
-            (all && currentHidden, none && !currentHidden);
-          },
+        selected->PublicKeyHash.Map.reduce(
+          (true, true), ((all, none), address, ids) =>
+          ids->Map.Int.reduce(
+            (all, none),
+            ((all, none), id, _) => {
+              let currentHidden =
+                TokenRegistry.Registered.isHidden(hidden, address, id);
+              (all && currentHidden, none && !currentHidden);
+            },
+          )
         )
       },
       (selected, hidden),
@@ -129,10 +125,17 @@ let make = (~nfts, ~account) => {
   };
 
   let contracts =
-    filteredNfts->List.map(contract =>
-      <NftRowContract contract account selected setSelected hidden setHidden />
+    filteredNfts->PublicKeyHash.Map.map(contract =>
+      <NftRowContract
+        contract
+        account
+        selected
+        setSelected=setSelectedToken
+        hidden
+        setHidden
+      />
     )
-    |> List.toArray
+    |> PublicKeyHash.Map.valuesToArray
     |> React.array;
 
   <>
@@ -160,10 +163,8 @@ let make = (~nfts, ~account) => {
         value=checked
         handleChange={checked => {
           checked
-            ? setSelected(_ =>
-                Set.fromArray(allTokensId, ~id=(module Nft.KeyCompare))
-              )
-            : setSelected(_ => Set.make(~id=(module Nft.KeyCompare)))
+            ? setSelected(_ => allTokensId)
+            : setSelected(_ => PublicKeyHash.Map.empty)
         }}
       />
       {ReactUtils.onlyWhen(
@@ -173,13 +174,10 @@ let make = (~nfts, ~account) => {
              array([|NftRowToken.styles##marginLeft10, styles##ctrlButton|])
            )
            icon=Icons.Eye.build
-           onPress={_ => {
-             let ids = Set.toArray(selected);
-             setHidden(set => Set.removeMany(set, ids));
-           }}
+           onPress={_ => {setHidden(selected, false)}}
          />,
          allSelectedHidden
-         && !selected->Set.isEmpty
+         && !selected->PublicKeyHash.Map.isEmpty
          || !allSelectedHidden
          && !noSelectedHidden,
        )}
@@ -190,15 +188,10 @@ let make = (~nfts, ~account) => {
            )
            iconSizeRatio={5. /. 7.}
            icon=Icons.EyeStrike.build
-           onPress={_ =>
-             setHidden(set => {
-               let ids = Set.toArray(selected);
-               Set.mergeMany(set, ids);
-             })
-           }
+           onPress={_ => {setHidden(selected, true)}}
          />,
          noSelectedHidden
-         && !selected->Set.isEmpty
+         && !selected->NftSelection.isEmpty
          || !allSelectedHidden
          && !noSelectedHidden,
        )}

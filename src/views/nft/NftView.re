@@ -51,7 +51,7 @@ module Component = {
     let request = fromCache =>
       TokensApiRequest.{
         account: account.Account.address,
-        allowHidden: mode == Collection,
+        allowHidden: true,
         numberByAccount: BCD.requestPageSize,
         fromCache,
       };
@@ -81,9 +81,8 @@ module Component = {
     let tokens =
       switch (tokensRequest) {
       | Done(Ok(`Cached(tokens) | `Fetched(tokens, _)), _)
-      | Loading(Some(`Cached(tokens) | `Fetched(tokens, _))) =>
-        tokens->Nft.fromCache
-      | _ => []
+      | Loading(Some(`Cached(tokens) | `Fetched(tokens, _))) => tokens
+      | _ => PublicKeyHash.Map.empty
       };
 
     let onRefresh = () => {
@@ -109,7 +108,7 @@ module Component = {
         />
       </NftHeaderView>
       {switch (mode) {
-       | Gallery => <NftGalleryView nfts={tokens->Nft.flatten} />
+       | Gallery => <NftGalleryView nfts=tokens />
        | Collection => <NftCollectionView account nfts=tokens />
        }}
       {loading ? <LoadingView /> : React.null}

@@ -24,7 +24,6 @@
 /*****************************************************************************/
 
 open ReactNative;
-open Nft;
 
 let styles =
   Style.(
@@ -53,7 +52,7 @@ let styles =
 [@react.component]
 let make =
     (
-      ~nft: Nft.t,
+      ~nft: Token.t,
       ~account,
       ~address,
       ~selected,
@@ -68,9 +67,10 @@ let make =
 
   let theme = ThemeContext.useTheme();
 
-  let tooltip = (nft.name, I18n.btn#view_nft);
-  let id = (address, nft.id);
-  let hidden = Set.has(hidden, id);
+  let tooltip = (nft.alias, I18n.btn#view_nft);
+  let id = TokenRepr.id(nft);
+  let hidden = TokenRegistry.Registered.isHidden(hidden, address, id);
+
   <View
     style=Style.(
       array([|
@@ -82,11 +82,11 @@ let make =
     <View style=styles##itemsGroup>
       <CheckboxItem
         style=styles##checkboxMargin
-        value={Set.has(selected, id)}
+        value={NftSelection.isSelected(selected, address, id)}
         handleChange={checked => {
           checked
-            ? setSelected(map => Set.add(map, id))
-            : setSelected(map => Set.remove(map, id))
+            ? setSelected(address, id, true)
+            : setSelected(address, id, false)
         }}
       />
       <IconButton
@@ -94,8 +94,8 @@ let make =
         iconSizeRatio={5. /. 7.}
         onPress={_ =>
           hidden
-            ? setHidden(map => Set.remove(map, id))
-            : setHidden(map => Set.add(map, id))
+            ? setHidden(NftSelection.singleton(address, id), false)
+            : setHidden(NftSelection.singleton(address, id), true)
         }
         style=styles##marginLeft10
       />
@@ -103,12 +103,12 @@ let make =
          <Image style=styles##image source resizeMode=`stretch />
        )}
       <Typography.Body1 style=styles##marginLeft10>
-        nft.name->React.string
+        nft.alias->React.string
       </Typography.Body1>
     </View>
     <View style=styles##itemsGroup>
       <Typography.Body1>
-        {I18n.label#token_id(nft.id |> Int.toString)->React.string}
+        {I18n.label#token_id(id |> Int.toString)->React.string}
       </Typography.Body1>
       <IconButton
         onPress={_ => openAction()}

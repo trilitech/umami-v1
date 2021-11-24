@@ -24,7 +24,6 @@
 /*****************************************************************************/
 
 open ReactNative;
-open Nft;
 
 let styles =
   Style.(
@@ -78,7 +77,7 @@ let styles =
 
 module Card = {
   [@react.component]
-  let make = (~nft: Nft.t, ~account: Account.t) => {
+  let make = (~nft: Token.t, ~account: Account.t) => {
     let (visibleModal, openAction, closeAction) =
       ModalAction.useModalActionState();
 
@@ -123,7 +122,7 @@ module Card = {
               style(~backgroundColor=theme.colors.cardBackground, ()),
             |])
           )>
-          <Typography.Notice> nft.name->React.string </Typography.Notice>
+          <Typography.Notice> nft.alias->React.string </Typography.Notice>
         </View>
       </ThemedPressable.Base>
       <ModalAction visible=visibleModal onRequestClose=closeAction>
@@ -133,23 +132,35 @@ module Card = {
   };
 };
 
+let uniqueKey = (contract: PublicKeyHash.t, id) =>
+  (contract :> string) ++ "-" ++ Int.toString(id);
+
 [@react.component]
-let make = (~nfts) => {
+let make = (~nfts: TokenRegistry.Cache.t) => {
   let account = StoreContext.SelectedAccount.useGet();
   let (search, setSearch) = React.useState(_ => "");
-  let hidden = HiddenNftStorage.get()->Result.getWithDefault([]);
+  let hidden =
+    TokenRegistry.Registered.get()
+    ->Result.getWithDefault(PublicKeyHash.Map.empty);
+
   let nfts =
     React.useMemo1(
       () =>
-        nfts->Map.keep((key, _) => !hidden->List.has(key, (a, b) => a == b)),
+        nfts->TokenRegistry.Cache.keepTokens((pkh, id, _) =>
+          !hidden->TokenRegistry.Registered.isHidden(pkh, id)
+        ),
       [|nfts|],
     );
 
   let nfts =
     React.useMemo1(
       () =>
-        nfts->Map.keep((_, tok: Nft.t) =>
-          Js.String2.includes(tok.name, search)
+        nfts->TokenRegistry.Cache.keepTokens((_, _, token) =>
+          token
+          ->TokenRegistry.Cache.tokenName
+          ->Option.mapWithDefault(false, name =>
+              Js.String2.includes(name, search)
+            )
         ),
       [|nfts|],
     );
@@ -158,11 +169,18 @@ let make = (~nfts) => {
     React.useMemo1(
       () =>
         nfts
-        ->Map.valuesToArray
-        ->Array.keepMap(nft =>
-            account->Option.map(account =>
-              <Card key={Nft.uniqueKey(nft.contract, nft.id)} nft account />
-            )
+        ->TokenRegistry.Cache.valuesToArray
+        ->Array.keepMap(
+            fun
+            | Partial(_, _) => None
+            | Full(nft) =>
+              account->Option.map(account =>
+                <Card
+                  key={uniqueKey(nft.address, TokenRepr.id(nft))}
+                  nft
+                  account
+                />
+              ),
           )
         ->React.array,
       [|nfts|],
@@ -177,7 +195,7 @@ let make = (~nfts) => {
       placeholder=I18n.input_placeholder#search_for_nft
     />
     <DocumentContext.ScrollView>
-      {nfts->Map.isEmpty
+      {nfts->PublicKeyHash.Map.isEmpty
          ? <NftEmptyView /> : <View style=styles##view> cards </View>}
     </DocumentContext.ScrollView>
   </>;

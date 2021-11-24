@@ -30,6 +30,8 @@ type filter = [ | `Any | `FT | `NFT(PublicKeyHash.t, bool)];
 
 let registeredTokens: filter => Let.result(TokenRegistry.Cache.t);
 
+let hiddenTokens: unit => Let.result(TokenRegistry.Registered.t);
+
 let addFungibleToken: (ConfigContext.env, Token.t) => Promise.t(unit);
 
 let addNonFungibleToken:
@@ -37,6 +39,10 @@ let addNonFungibleToken:
 
 let registerNFTs:
   (TokenRegistry.Cache.t, PublicKeyHash.t) => Let.result(unit);
+
+let updateNFTsVisibility:
+  (PublicKeyHash.Map.map(Map.Int.t(unit)), ~hidden: bool) =>
+  Let.result(TokenRegistry.Registered.t);
 
 let removeToken: (Token.t, ~pruneCache: bool) => Let.result(unit);
 

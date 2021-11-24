@@ -23,9 +23,17 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open Nft;
+open TokenRepr;
 
 let ipfsService = "https://ipfs.io/ipfs/";
+
+type ressource =
+  | IPFS(string)
+  | HTTP(string);
+
+let toRessource = uri =>
+  uri->Js.String2.startsWith("ipfs://")
+    ? uri->Js.String2.substringToEnd(~from=7)->IPFS : HTTP(uri);
 
 let ressourceToURL = r =>
   switch (r) {
@@ -33,11 +41,13 @@ let ressourceToURL = r =>
   | HTTP(url) => url
   };
 
-let getDisplayURL = nft =>
-  nft.images.display->Option.map(d => {ressourceToURL(d)});
+let getDisplayURL = token =>
+  token.asset.displayUri
+  ->Option.map(toRessource)
+  ->Option.map(d => {ressourceToURL(d)});
 
 let getThumbnailURL = token =>
-  switch (token.images.thumbnail) {
+  switch (token.asset.thumbnailUri->Option.map(toRessource)) {
   | Some(thl) => ressourceToURL(thl)->Some
   | None => getDisplayURL(token)
   };

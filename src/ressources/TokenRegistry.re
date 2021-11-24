@@ -82,6 +82,42 @@ module Registered = {
         },
     );
 
+  let isHidden = (registered, pkh, tokenId) =>
+    registered
+    ->PublicKeyHash.Map.get(pkh)
+    ->Option.flatMap(t => t.tokens->Map.Int.get(tokenId))
+    ->Option.mapWithDefault(
+        false,
+        fun
+        | FT => false
+        | NFT({hidden}) => hidden,
+      );
+
+  let updateNFTsVisibility = (registered, tokens, hidden) => {
+    let mergeTokens = (_, t, updatedId) =>
+      switch (t, updatedId) {
+      | (None, _) => None
+      | (Some(_), None)
+      | (Some(FT), _) => t
+      | (Some(NFT(infos)), Some ()) => Some(NFT({...infos, hidden}))
+      };
+
+    let mergeContracts = (_, c, ids) =>
+      switch (c, ids) {
+      | (None, _) => None
+      | (Some(_), None) => c
+      | (Some(regContract), Some(updatedTokens)) =>
+        {
+          ...regContract,
+          tokens:
+            Map.Int.merge(regContract.tokens, updatedTokens, mergeTokens),
+        }
+        ->Some
+      };
+
+    PublicKeyHash.Map.merge(registered, tokens, mergeContracts);
+  };
+
   let updateNFT = (registered, pkh, tokenId, nftInfo) =>
     registered->PublicKeyHash.Map.update(
       pkh,
@@ -98,6 +134,18 @@ module Registered = {
               );
           Some({...t, tokens});
         },
+    );
+
+  let keepTokens = (registered, f) =>
+    registered->PublicKeyHash.Map.reduce(
+      PublicKeyHash.Map.empty,
+      (registered, pkh, c) => {
+        let tokens =
+          c.tokens->Map.Int.keep((id, token) => f(pkh, id, token));
+        tokens->Map.Int.isEmpty
+          ? registered
+          : registered->PublicKeyHash.Map.set(pkh, {...c, tokens});
+      },
     );
 
   include LocalStorage.Make({
@@ -237,6 +285,11 @@ module Cache = {
     | Full(t) => t.TokenRepr.address
     | Partial(_, bcd) => bcd.BCD.contract;
 
+  let tokenName =
+    fun
+    | Full(t) => t.TokenRepr.alias->Some
+    | Partial(_, bcd) => bcd.BCD.name;
+
   let tokenKind =
     fun
     | Full(t) => TokenContract.fromTokenKind(t.TokenRepr.kind)
@@ -340,6 +393,17 @@ module Cache = {
     ();
     PublicKeyHash.Map.merge(cache1, cache2, mergeContracts);
   };
+
+  let keepTokens = (cache, f) =>
+    cache->PublicKeyHash.Map.reduce(
+      PublicKeyHash.Map.empty,
+      (cache, pkh, c) => {
+        let tokens =
+          c.tokens->Map.Int.keep((id, token) => f(pkh, id, token));
+        tokens->Map.Int.isEmpty
+          ? cache : cache->PublicKeyHash.Map.set(pkh, {...c, tokens});
+      },
+    );
 
   include LocalStorage.Make({
     type t = PublicKeyHash.Map.map(contract);

@@ -46,7 +46,12 @@ module Registered: {
   let isRegistered: (t, PublicKeyHash.t, int) => bool;
   let registerToken: (t, Token.t, kind) => t;
   let removeToken: (t, PublicKeyHash.t, int) => t;
+  let isHidden: (t, PublicKeyHash.t, int) => bool;
 
+  let keepTokens: (t, (PublicKeyHash.t, int, kind) => bool) => t;
+
+  let updateNFTsVisibility:
+    (t, PublicKeyHash.Map.map(Map.Int.t(unit)), bool) => t;
   let updateNFT: (t, PublicKeyHash.t, int, nftInfo) => t;
 };
 
@@ -68,6 +73,7 @@ module Cache: {
   let tokenAddress: token => PublicKeyHash.t;
   let tokenKind: token => TokenContract.kind;
   let tokenChain: token => option(string);
+  let tokenName: token => option(string);
   let isFull: token => bool;
 
   let isNFT: token => bool;
@@ -90,6 +96,7 @@ module Cache: {
     t;
   let removeToken: (t, token) => t;
   let valuesToArray: t => array(token);
+  let keepTokens: (t, (PublicKeyHash.t, int, token) => bool) => t;
 
   let merge: (t, t) => t;
 };

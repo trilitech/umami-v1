@@ -180,6 +180,16 @@ let registeredTokens = filter => {
   tokens->unfoldRegistered(cache, filter);
 };
 
+let hiddenTokens = () => {
+  open Registered;
+  let%ResMap tokens = get();
+  tokens->keepTokens((_, _) =>
+    fun
+    | FT => false
+    | NFT({hidden}) => hidden
+  );
+};
+
 // used for registration of custom tokens
 let addTokenToCache = (config, token) => {
   let address = Cache.tokenAddress(token);
@@ -212,6 +222,14 @@ let registerNFTs = (tokens, holder) => {
   open Registered;
   let%ResMap registered = get();
   registered->TokenRegistry.mergeAccountNFTs(tokens, holder)->set;
+};
+
+let updateNFTsVisibility = (updatedTokens, ~hidden) => {
+  open Registered;
+  let%ResMap registered = get();
+  let registered = registered->updateNFTsVisibility(updatedTokens, hidden);
+  registered->set;
+  registered;
 };
 
 let addFungibleToken = (config, token) => {
@@ -628,7 +646,10 @@ let fetchAccountNFTs =
         ~onTokens,
         ~withFullCache=false,
       );
-    `Fetched((tokens, number));
+    `Fetched((
+      tokens->Cache.keepTokens((_, _, token) => Cache.isNFT(token)),
+      number,
+    ));
   };
   fromCache ? getFromCache() : getFromNetwork();
 };
