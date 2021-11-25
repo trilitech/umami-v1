@@ -169,3 +169,4 @@ module Gallery = Make(SVGIconGallery);
 module Collection = Make(SVGIconCollection);
 module Info = Make(SVGIconInfo);
 module SyncNFT = Make(SVGIconSyncNft);
+module Ok = Make(SVGIconOk);

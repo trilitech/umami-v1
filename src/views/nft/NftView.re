@@ -47,6 +47,9 @@ module Component = {
   [@react.component]
   let make = (~account) => {
     let (mode, setMode) = React.useState(_ => Gallery);
+    let (syncState, setSyncState) =
+      React.useState(_ => NftSync.Loading(50.));
+    let stop = React.useRef(false);
 
     let request = fromCache =>
       TokensApiRequest.{
@@ -59,7 +62,7 @@ module Component = {
     // will be used to indicate a percentage of NFTs loaded
     let onTokens = (~total, ~lastToken) =>
       Js.log(Format.sprintf("Loaded token %d on %d", lastToken, total));
-    let onStop = () => false;
+    let onStop = () => stop.current;
 
     let (tokensRequest, getTokens) =
       StoreContext.Tokens.useAccountNFTs(
@@ -88,15 +91,36 @@ module Component = {
       | _ => PublicKeyHash.Map.empty
       };
 
+    React.useEffect1(
+      () =>
+        switch (tokensRequest) {
+        | Done(Ok(`Fetched(_, _)), _) =>
+          setSyncState(_ => Done);
+          stop.current = false;
+          None;
+
+        | Done(Ok(`Cached(_)), _)
+        | Done(Error(_), _) =>
+          setSyncState(_ => NotInitiated);
+          None;
+
+        | _ => None
+        },
+      [|tokensRequest|],
+    );
+
     let onRefresh = () => {
+      setSyncState(_ => Loading(50.));
       getTokens(request(false))->ignore;
     };
 
-    let loading = tokensRequest->ApiRequest.isLoading;
+    let onStop = () => {
+      stop.current = true;
+    };
 
     <View style={styles##listContent}>
       <NftHeaderView headline>
-        <RefreshButton onRefresh loading=false />
+        <NftSync onRefresh onStop state=syncState />
         <ButtonAction
           style={Style.style(~marginTop="10px", ())}
           icon
@@ -114,7 +138,6 @@ module Component = {
        | Gallery => <NftGalleryView nfts=tokens />
        | Collection => <NftCollectionView account nfts=tokens />
        }}
-      {loading ? <LoadingView /> : React.null}
     </View>;
   };
 };
