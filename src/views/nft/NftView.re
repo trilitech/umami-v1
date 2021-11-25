@@ -57,11 +57,14 @@ module Component = {
       };
 
     // will be used to indicate a percentage of NFTs loaded
-    let onTokens = (~fetchedTokens as _, ~nextIndex as _) => ();
+    let onTokens = (~total, ~lastToken) =>
+      Js.log(Format.sprintf("Loaded token %d on %d", lastToken, total));
+    let onStop = () => false;
 
     let (tokensRequest, getTokens) =
       StoreContext.Tokens.useAccountNFTs(
         onTokens,
+        onStop,
         account.Account.address,
         request(true),
       );

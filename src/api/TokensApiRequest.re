@@ -112,13 +112,15 @@ type nftRequest = {
   fromCache: bool,
 };
 
-let useLoadAccountNFTs = (onTokens, (apiRequest, setRequest), nftRequest) => {
+let useLoadAccountNFTs =
+    (onTokens, onStop, (apiRequest, setRequest), nftRequest) => {
   let get = (~config, {account, allowHidden, numberByAccount, fromCache}) => {
     TokensAPI.fetchAccountNFTs(
       config,
       ~account,
       ~numberByAccount,
       ~onTokens,
+      ~onStop,
       ~allowHidden,
       ~fromCache,
     );

@@ -617,14 +617,18 @@ module Tokens = {
     TokensApiRequest.useLoadTokensRegistry(registryRequestState, request);
   };
 
-  let useAccountNFTs = (onTokens, account: PublicKeyHash.t) => {
+  let useAccountNFTs = (onTokens, onStop, account: PublicKeyHash.t) => {
     let useRequestsState =
       useGetRequestStateFromMap(store => store.accountsTokensRequestState);
 
     let accountsTokensRequestState =
       useRequestsState((Some(account) :> option(string)));
 
-    TokensApiRequest.useLoadAccountNFTs(onTokens, accountsTokensRequestState);
+    TokensApiRequest.useLoadAccountNFTs(
+      onTokens,
+      onStop,
+      accountsTokensRequestState,
+    );
   };
 
   let useGet = (tokenAddress: option(PublicKeyHash.t)) => {
