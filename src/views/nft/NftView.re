@@ -113,14 +113,18 @@ module Component = {
 
     let tokens =
       React.useMemo2(
-        () =>
+        () => {
+          let searched = search->Js.String.toLocaleLowerCase;
           tokens->TokenRegistry.Cache.keepTokens((_, _, token) =>
             token
             ->TokenRegistry.Cache.tokenName
             ->Option.mapWithDefault(false, name =>
-                Js.String2.includes(name, search)
+                name
+                ->Js.String.toLocaleLowerCase
+                ->Js.String2.includes(searched)
               )
-          ),
+          );
+        },
         (search, tokens),
       );
 
