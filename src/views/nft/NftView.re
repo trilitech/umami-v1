@@ -48,8 +48,7 @@ module Component = {
   [@react.component]
   let make = (~account) => {
     let (mode, setMode) = React.useState(_ => Gallery);
-    let (syncState, setSyncState) =
-      React.useState(_ => NftSync.Loading(50.));
+    let (syncState, setSyncState) = React.useState(_ => NftSync.NotInitiated);
     let (search, setSearch) = React.useState(_ => "");
     let stop = React.useRef(false);
 
@@ -62,8 +61,15 @@ module Component = {
       };
 
     // will be used to indicate a percentage of NFTs loaded
-    let onTokens = (~total, ~lastToken) =>
-      Js.log(Format.sprintf("Loaded token %d on %d", lastToken, total));
+    let onTokens = (~total, ~lastToken) => {
+      let percentage =
+        Int.toFloat(lastToken + 1) /. Int.toFloat(total) *. 100.;
+      setSyncState(
+        fun
+        | Canceled(_) => Canceled(percentage)
+        | _ => Loading(percentage),
+      );
+    };
     let onStop = () => stop.current;
 
     let (tokensRequest, getTokens) =
@@ -97,13 +103,21 @@ module Component = {
       () =>
         switch (tokensRequest) {
         | Done(Ok(`Fetched(_, _)), _) =>
-          setSyncState(_ => Done);
+          setSyncState(
+            fun
+            | Loading(_) => Done
+            | state => state,
+          );
           stop.current = false;
           None;
 
         | Done(Ok(`Cached(_)), _)
         | Done(Error(_), _) =>
-          setSyncState(_ => NotInitiated);
+          setSyncState(
+            fun
+            | Loading(percentage) => Canceled(percentage)
+            | _ => NotInitiated,
+          );
           None;
 
         | _ => None
@@ -129,11 +143,18 @@ module Component = {
       );
 
     let onRefresh = () => {
-      setSyncState(_ => Loading(50.));
+      setSyncState(_ => Loading(0.));
       getTokens(request(false))->ignore;
     };
 
     let onStop = () => {
+      setSyncState(
+        fun
+        | Loading(percentage) => {
+            Canceled(percentage);
+          }
+        | state => state,
+      );
       stop.current = true;
     };
 

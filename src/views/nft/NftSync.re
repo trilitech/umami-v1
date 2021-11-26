@@ -52,6 +52,7 @@ let styles =
 type state =
   | NotInitiated
   | Loading(float)
+  | Canceled(float)
   | Done;
 
 module SyncButton = {
@@ -67,7 +68,8 @@ module SyncButton = {
           (_ => onStop()),
         )
       | Done
-      | NotInitiated => (
+      | NotInitiated
+      | Canceled(_) => (
           I18n.tooltip#sync,
           Icons.SyncNFT.build,
           (_ => onRefresh()),
@@ -103,7 +105,7 @@ module SyncStatus = {
              color={theme.colors.textPositive}
              style=Style.(style(~padding=8.->dp, ()))
            />
-           <Typography.Body1 colorStyle=`positive>
+           <Typography.Body1>
              {Format.sprintf("%.0f%%", percentage)->React.string}
            </Typography.Body1>
          </>
@@ -116,6 +118,17 @@ module SyncStatus = {
            />
            <Typography.Body1 colorStyle=`positive>
              "100%"->React.string
+           </Typography.Body1>
+         </>
+       | Canceled(percentage) =>
+         <>
+           <Icons.Close.I
+             size=20.
+             color={theme.colors.textNegative}
+             style=Style.(style(~padding=8.->dp, ~paddingRight=8.->dp, ()))
+           />
+           <Typography.Body1 colorStyle=`negative>
+             {Format.sprintf("%.0f%%", percentage)->React.string}
            </Typography.Body1>
          </>
        | _ => React.null
