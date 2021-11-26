@@ -113,7 +113,13 @@ type nftRequest = {
 };
 
 let useLoadAccountNFTs =
-    (onTokens, onStop, (apiRequest, setRequest), nftRequest) => {
+    (
+      onTokens,
+      onStop,
+      (apiRequest, setRequest),
+      tokensNumberRequest,
+      nftRequest,
+    ) => {
   let get = (~config, {account, allowHidden, numberByAccount, fromCache}) => {
     TokensAPI.fetchAccountNFTs(
       config,
@@ -137,17 +143,34 @@ let useLoadAccountNFTs =
     requestNotAskedAndMounted || requestDoneButReloadOnMount;
   };
 
-  React.useEffect4(
-    () => {
+  React.useEffect5(
+    () =>
       if (conditionToLoad(apiRequest, isMounted)) {
         getRequest(nftRequest)->ignore;
-      };
-      None;
-    },
-    (isMounted, apiRequest, nftRequest, setRequest),
+        None;
+      } else {
+        switch (apiRequest, tokensNumberRequest) {
+        | (Done(Ok(`Cached(tokens)), _), Done(Ok(tokensNumber), _)) =>
+          if (tokens->PublicKeyHash.Map.isEmpty
+              && tokensNumber > 0
+              && tokensNumber <= 50) {
+            getRequest({...nftRequest, fromCache: false})->ignore;
+          };
+          None;
+        | _ => None
+        };
+      },
+    (isMounted, apiRequest, nftRequest, setRequest, tokensNumberRequest),
   );
 
   (apiRequest, getRequest);
+};
+
+let useAccountTokensNumber = (requestState, account) => {
+  let get = (~config, account) =>
+    TokensAPI.fetchAccountTokensNumber(config, ~account);
+
+  ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, account);
 };
 
 let useDelete = (~sideEffect=?, ()) => {

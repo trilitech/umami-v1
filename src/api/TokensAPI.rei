@@ -123,3 +123,6 @@ let fetchAccountNFTs:
     ~fromCache: bool
   ) =>
   Promise.t(fetched);
+
+let fetchAccountTokensNumber:
+  (ConfigContext.env, ~account: PublicKeyHash.t) => Promise.t(int);

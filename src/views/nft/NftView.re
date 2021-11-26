@@ -99,25 +99,33 @@ module Component = {
       | _ => PublicKeyHash.Map.empty
       };
 
+    let loadToCanceled = () =>
+      setSyncState(
+        fun
+        | Loading(percentage) => Canceled(percentage)
+        | _ => NotInitiated,
+      );
+    let loadToDone = () =>
+      setSyncState(
+        fun
+        | Loading(_) => Done
+        | state => state,
+      );
+
     React.useEffect1(
       () =>
         switch (tokensRequest) {
         | Done(Ok(`Fetched(_, _)), _) =>
-          setSyncState(
-            fun
-            | Loading(_) => Done
-            | state => state,
-          );
+          loadToDone();
           stop.current = false;
           None;
 
-        | Done(Ok(`Cached(_)), _)
+        | Done(Ok(`Cached(_)), _) =>
+          setSyncState(_ => NotInitiated);
+          None;
+
         | Done(Error(_), _) =>
-          setSyncState(
-            fun
-            | Loading(percentage) => Canceled(percentage)
-            | _ => NotInitiated,
-          );
+          loadToCanceled();
           None;
 
         | _ => None

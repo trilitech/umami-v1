@@ -173,7 +173,7 @@ let unfoldRegistered = (tokens, cache: Cache.t, filter) => {
     | (Some(registered), Some(contract)) =>
       let tokens = contract.Cache.tokens->Map.Int.keep(keep(registered));
 
-      Some({...contract, tokens});
+      tokens->Map.Int.isEmpty ? None : Some({...contract, tokens});
     };
   };
   PublicKeyHash.Map.merge(tokens, cache, merge);
@@ -700,4 +700,11 @@ let fetchAccountNFTs =
     ));
   };
   fromCache ? getFromCache() : getFromNetwork();
+};
+
+let fetchAccountTokensNumber = (config, ~account) => {
+  let%AwaitMap (_, _, total) =
+    BetterCallDev.fetchAccountsTokens(config, [account], 0, 1);
+
+  total;
 };
