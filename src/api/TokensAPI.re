@@ -175,14 +175,14 @@ let unfoldRegistered = (tokens, cache: Cache.t, filter) => {
 };
 
 let registeredTokens = filter => {
-  let%Res tokens = Registered.get();
-  let%ResMap cache = Cache.get();
+  let%Res tokens = Registered.getWithFallback();
+  let%ResMap cache = Cache.getWithFallback();
   tokens->unfoldRegistered(cache, filter);
 };
 
 let hiddenTokens = () => {
   open Registered;
-  let%ResMap tokens = get();
+  let%ResMap tokens = getWithFallback();
   tokens->keepTokens((_, _) =>
     fun
     | FT => false
@@ -202,7 +202,7 @@ let addTokenToCache = (config, token) => {
     };
 
   let tokens =
-    Cache.get()
+    Cache.getWithFallback()
     ->Result.getWithDefault(PublicKeyHash.Map.empty)
     ->Cache.addToken(token);
 
@@ -211,7 +211,7 @@ let addTokenToCache = (config, token) => {
 
 let addTokenToRegistered = (token, kind) => {
   let tokens =
-    Registered.get()
+    Registered.getWithFallback()
     ->Result.getWithDefault(PublicKeyHash.Map.empty)
     ->Registered.registerToken(token, kind);
 
@@ -220,13 +220,13 @@ let addTokenToRegistered = (token, kind) => {
 
 let registerNFTs = (tokens, holder) => {
   open Registered;
-  let%ResMap registered = get();
+  let%ResMap registered = getWithFallback();
   registered->TokenRegistry.mergeAccountNFTs(tokens, holder)->set;
 };
 
 let updateNFTsVisibility = (updatedTokens, ~hidden) => {
   open Registered;
-  let%ResMap registered = get();
+  let%ResMap registered = getWithFallback();
   let registered = registered->updateNFTsVisibility(updatedTokens, hidden);
   registered->set;
   registered;
@@ -243,12 +243,12 @@ let addNonFungibleToken = (config, token, holder) => {
 };
 
 let removeFromCache = token => {
-  let%ResMap tokens = Cache.get();
+  let%ResMap tokens = Cache.getWithFallback();
   tokens->Cache.removeToken(token)->Cache.set;
 };
 
 let removeFromRegistered = (token: Token.t) => {
-  let%ResMap tokens = Registered.get();
+  let%ResMap tokens = Registered.getWithFallback();
   Registered.set(
     tokens->Registered.removeToken(token.address, TokenRepr.id(token)),
   );
@@ -546,7 +546,7 @@ let fetchAccountsTokens =
       ~numberByAccount,
       ~withFullCache,
     ) => {
-  let%Await cache = Cache.get()->Promise.value;
+  let%Await cache = Cache.getWithFallback()->Promise.value;
 
   let toolkit = MetadataAPI.toolkit(config);
   let tzip12Cache = TaquitoAPI.Tzip12Cache.make(toolkit);
@@ -589,7 +589,7 @@ let fetchAccountsTokensRegistry =
       ~numberByAccount,
       ~withFullCache=true,
     );
-  let%ResMap registered = Registered.get();
+  let%ResMap registered = Registered.getWithFallback();
   let (registered, toRegister) =
     cache->Cache.valuesToArray->partitionByRegistration(registered);
   (registered, toRegister, nextIndex);
