@@ -119,17 +119,43 @@ module BulletPoint = {
 let make = () =>
   <>
     <Body
-      text={|You are being directed to a Wert service ("Wert") that is separate from the Umami Wallet ("Umami"). Umami and its parent company, Nomadic Labs, do not make any guarantee for the Wert service.|}
+      text={|You are now being redirected to wert.io ("Wert").|}
     />
     <Body
-      text={|Wert is a service for purchasing tez cryptocurrency ("tez"). Wert will request collection of personal data in order to complete a purchase whilst complying with relevant law and regulations.
-Here is the relevant data policy for this service integration between Umami and Wert:|}
+      text={|Please read this disclaimer carefully before using the Wert website operated by SHA2 Solutions OU (Reg. code 14952299).|}
+    />
+    <Body
+      text={|Please note that SHA2 Solutions OU which operates Wert is a company separated from the Umami wallet, Nomadic Labs and its affiliates.|}
+    />
+    <Body
+      text={|By continuing on Wert webpage, you acknowledge that you understand and expressely agree to the following terms and conditions:|}
     />
     <BulletPoint
-      text={js|any data submitted to Wert is not recorded by Umami|js}
+      text={js|Wert is a virtual currency provider.|js}
+    />
+    <BulletPoint
+      text={js|Umami wallet, Nomadic Labs and its affiliates do not make any guarantees for the Wert material, product or service offerings.|js}
+    />
+    <BulletPoint
+      text={js|Umami wallet, Nomadic Labs and its affiliates cannot be held responsible for any information provided on the Wert website and their affiliates. The material and information contained on this website is for general information purposes only. You should not rely upon the material or information on the website as a basis for making any business, legal or any other decision.|js}
+    />
+    <BulletPoint
+      text={js|Umami wallet, Nomadic Labs and its affiliates cannot be held responsible for the content and hyperlinks contained on the Wert website, for any damages or loss caused by the performance of the Wert website and their affiliates.|js}
+    />
+    <BulletPoint
+      text={js|Wert may collect your personnal data in order for you to complete the purchase of virtual currency in compliance with the relevant laws and regulations.|js}
+    />
+    <BulletPoint
+      text={js|Any personal data that might be collected by Wert is not collected or recorded by the Umami wallet, Nomadic Labs or its affiliates.|js}
+    />
+    <BulletPoint
+      text={js|Umami wallet, Nomadic Labs and its affiliates cannot be held responsible for any breach of personal data, loss or damage on the Wert website and their affiliates.|js}
+    />
+    <BulletPoint
+      text={js|By continuing with Wert services, you expressely consent to the fact that the Umami wallet will submit your public key for your account to Wert, in order for you to receive your purchased cryptocurrency.|js}
     />
     <BulletPoint
       lastParagraph=true
-      text={js|Umami submits your selected public key for your account, in order for you to receive your purchased tez|js}
+      text={js|Umami wallet, Nomadic Labs and its affiliates cannot be held responsible for any loss, damage or loss of profit related to the purchase of the virtual currency.|js}
     />
   </>;
