@@ -49,7 +49,6 @@ let styles =
 
 [@react.component]
 let make = (~nfts: TokenRegistry.Cache.t, ~account) => {
-  let (search, setSearch) = React.useState(_ => "");
   let (selected, setSelected) = React.useState(_ => PublicKeyHash.Map.empty);
 
   let setSelectedToken = (pkh, id, checked) => {
@@ -92,19 +91,6 @@ let make = (~nfts: TokenRegistry.Cache.t, ~account) => {
       (selected, allTokensId),
     );
 
-  let filteredNfts =
-    React.useMemo2(
-      () =>
-        nfts->TokenRegistry.Cache.keepTokens((_, _, token) =>
-          token
-          ->TokenRegistry.Cache.tokenName
-          ->Option.mapWithDefault(false, name =>
-              Js.String2.includes(name, search)
-            )
-        ),
-      (search, allTokensId),
-    );
-
   let (allSelectedHidden, noSelectedHidden) = {
     React.useMemo2(
       () => {
@@ -125,7 +111,7 @@ let make = (~nfts: TokenRegistry.Cache.t, ~account) => {
   };
 
   let contracts =
-    filteredNfts->PublicKeyHash.Map.map(contract =>
+    nfts->PublicKeyHash.Map.map(contract =>
       <NftRowContract
         contract
         account
@@ -139,13 +125,6 @@ let make = (~nfts: TokenRegistry.Cache.t, ~account) => {
     |> React.array;
 
   <>
-    <ThemedTextInput
-      style={Style.style(~flex=1., ())}
-      icon=Icons.Search.build
-      value=search
-      onValueChange={value => setSearch(_ => value)}
-      placeholder=I18n.input_placeholder#search_for_nft
-    />
     <View
       style=Style.(
         array([|

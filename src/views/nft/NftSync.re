@@ -126,7 +126,7 @@ module SyncStatus = {
 
 [@react.component]
 let make = (~state, ~onRefresh, ~onStop) => {
-  <View style={Style.style(~flexDirection=`row, ())}>
+  <View style=Style.(style(~flexDirection=`row, ~marginLeft=13.->dp, ()))>
     <SyncButton state onRefresh onStop />
     <SyncStatus state />
   </View>;
