@@ -35,7 +35,7 @@ let () =
     | _ => None,
   );
 
-let currentVersion = Version.mk(1, 3);
+let currentVersion = Version.mk(1, 4);
 
 let addMigration = (migrations, version, migration) => {
   migrations->Map.update(

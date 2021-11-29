@@ -199,6 +199,45 @@ module Legacy = {
       Storage.migrate(~mapValue, ~default=dummy, ());
     };
   };
+
+  // This migration should be initiated the moment Granadanet is no longer available
+  module VX_X = {
+    open JsonEx.Decode;
+    open Decode;
+
+    let legacyNativeChainFromString =
+      fun
+      | "Mainnet" => `Mainnet
+      | "Granadanet" => `Hangzhounet
+      | n =>
+        JsonEx.(raise(InternalError(DecodeError("Unknown network " ++ n))));
+
+    let legacyNetworkDecoder = json =>
+      json
+      |> field(
+           "network",
+           optional(
+             Network.Decode.chainDecoder(legacyNativeChainFromString),
+           ),
+         );
+
+    let legacyDecoder = json => {
+      network: json |> legacyNetworkDecoder,
+      theme: json |> themeDecoder,
+      confirmations: json |> confirmationsDecoder,
+      sdkBaseDir: json |> sdkBaseDirDecoder,
+      customNetworks: json |> customNetworksDecoder,
+    };
+
+    let version = Version.mk(1, 4);
+    let mk = () => {
+      let mapValue = s => {
+        let%Res json = JsonEx.parse(s);
+        json->JsonEx.decode(legacyDecoder);
+      };
+      Storage.migrate(~mapValue, ~default=dummy, ());
+    };
+  };
 };
 
 let write = s => Storage.set(s);
