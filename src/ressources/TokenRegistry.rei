@@ -43,6 +43,8 @@ module Registered: {
   include
     LocalStorage.StorageType with type t = PublicKeyHash.Map.map(contract);
 
+  let getWithFallback: unit => Let.result(t);
+
   let isRegistered: (t, PublicKeyHash.t, int) => bool;
   let registerToken: (t, Token.t, kind) => t;
   let removeToken: (t, PublicKeyHash.t, int) => t;
@@ -82,6 +84,8 @@ module Cache: {
     LocalStorage.StorageType with type t = PublicKeyHash.Map.map(contract);
 
   let empty: t;
+
+  let getWithFallback: unit => Let.result(t);
 
   let getToken: (t, PublicKeyHash.t, int) => option(token);
   let getFullToken: (t, PublicKeyHash.t, int) => option(Token.t);

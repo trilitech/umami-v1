@@ -257,6 +257,12 @@ module Registered = {
         );
     };
   });
+
+  let getWithFallback = () =>
+    switch (get()) {
+    | Error(LocalStorage.NotFound(_)) => Ok(PublicKeyHash.Map.empty)
+    | res => res
+    };
 };
 
 /** The cache is a representation of the already fetched tokens from the chain */
@@ -510,6 +516,12 @@ module Cache = {
         });
     };
   });
+
+  let getWithFallback = () =>
+    switch (get()) {
+    | Error(LocalStorage.NotFound(_)) => Ok(PublicKeyHash.Map.empty)
+    | res => res
+    };
 };
 
 module Legacy = {
