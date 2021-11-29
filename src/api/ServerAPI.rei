@@ -35,6 +35,8 @@ module URL: {
 
   let fromString: string => t;
 
+  let build_url: (string, list((string, string))) => string;
+
   module Explorer: {
     let operations:
       (
