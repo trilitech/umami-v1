@@ -69,9 +69,20 @@ module URL = {
   let fromString = s => s;
 
   let get = url => {
+    let init =
+      Fetch.RequestInit.make(
+        ~method_=Fetch.Get,
+        ~headers=
+          Fetch.HeadersInit.make({
+            "Mezos-Version": Network.apiHighestBound->Version.toString,
+            "Umami-Version": System.getVersion(),
+          }),
+        (),
+      );
+
     let%Await response =
       url
-      ->Fetch.fetch
+      ->Fetch.fetchWithInit(init)
       ->Promise.fromJs(e =>
           e->RawJsError.fromPromiseError.message->FetchError
         );
