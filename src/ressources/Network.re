@@ -104,14 +104,9 @@ let () =
     | _ => None,
   );
 
-type nativeChains = [ | `Granadanet | `Mainnet];
+type nativeChains = [ | `Hangzhounet | `Mainnet | `Granadanet];
 
-type supportedChains = [
-  nativeChains
-  | `Florencenet
-  | `Edo2net
-  | `Hangzhounet
-];
+type supportedChains = [ nativeChains | `Florencenet | `Edo2net];
 
 let getChainId =
   fun
@@ -124,13 +119,13 @@ let getChainId =
 
 let nativeChains = [
   (`Mainnet, getChainId(`Mainnet)),
+  (`Hangzhounet, getChainId(`Hangzhounet)),
   (`Granadanet, getChainId(`Granadanet)),
 ];
 
 let supportedChains = [
   (`Florencenet, getChainId(`Florencenet)),
   (`Edo2net, getChainId(`Edo2net)),
-  (`Hangzhounet, getChainId(`Hangzhounet)),
   ...nativeChains,
 ];
 
@@ -149,8 +144,8 @@ let externalExplorer =
   | `Edo2net => "https://edo2net.tzkt.io/"->Ok
   | `Florencenet => "https://florencenet.tzkt.io/"->Ok
   | `Granadanet => "https://granadanet.tzkt.io/"->Ok
-  | (`Hangzhounet | `Custom(_)) as net =>
-    Error(UnknownChainId(getChainId(net)));
+  | `Hangzhounet => "https://hangzhounet.tzkt.io/"->Ok
+  | `Custom(_) as net => Error(UnknownChainId(getChainId(net)));
 
 type chain = [ supportedChains | `Custom(chainId)];
 type configurableChains = [ nativeChains | `Custom(chainId)];
@@ -230,6 +225,7 @@ module Decode = {
     fun
     | "Mainnet" => `Mainnet
     | "Granadanet" => `Granadanet
+    | "Hangzhounet" => `Hangzhounet
     | n =>
       JsonEx.(raise(InternalError(DecodeError("Unknown network " ++ n))));
 
@@ -237,7 +233,6 @@ module Decode = {
     fun
     | "Florencenet" => `Florencenet
     | "Edo2net" => `Edo2net
-    | "Hangzhounet" => `Hangzhounet
     | n => nativeChainFromString(n);
 
   let chainDecoder = (chainFromString, json) => {
@@ -276,6 +271,14 @@ let mainnet =
     `Mainnet,
   );
 
+let hangzhounet =
+  mk(
+    ~name=getDisplayedName(`Hangzhounet),
+    ~explorer="https://api.umamiwallet.com/hangzhounet",
+    ~endpoint="https://hangzhounet.smartpy.io/",
+    `Hangzhounet,
+  );
+
 let granadanet =
   mk(
     ~name=getDisplayedName(`Granadanet),
@@ -294,6 +297,11 @@ let mainnetNetworks = [
   mainnet->withEP("https://mainnet.tezrpc.me/"),
 ];
 
+let hangzhounetNetworks = [
+  hangzhounet->withEP("https://hangzhounet.smartpy.io/"),
+  hangzhounet->withEP("https://api.tez.ie/rpc/hangzhounet"),
+];
+
 let granadanetNetworks = [
   granadanet->withEP("https://granadanet.smartpy.io/"),
   granadanet->withEP("https://api.tez.ie/rpc/granadanet"),
@@ -302,6 +310,7 @@ let granadanetNetworks = [
 let getNetworks = (c: nativeChains) =>
   switch (c) {
   | `Granadanet => granadanetNetworks
+  | `Hangzhounet => hangzhounetNetworks
   | `Mainnet => mainnetNetworks
   };
 

@@ -324,6 +324,13 @@ let make = () => {
             currentConfig=last
             writeNetwork
           />
+          <NetworkItem
+            chain=`Hangzhounet
+            networkStatus={last == `Hangzhounet ? Some(networkStatus) : None}
+            network=Network.hangzhounet
+            currentConfig=last
+            writeNetwork
+          />
           {switch (customNetworks) {
            | [] => React.null
            | customNetworks =>
