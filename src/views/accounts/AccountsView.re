@@ -96,24 +96,16 @@ module BuyTezButton = {
     );
 
   [@react.component]
-  let make = () => {
-    let (visibleModal, openAction, closeAction) =
-      ModalAction.useModalActionState();
-
-    //let theme = ThemeContext.useTheme();
-
+  let make = (~showOnboarding) => {
     <>
       <View style=styles##button>
         <ButtonAction
-          onPress={_ => openAction() }
+          onPress={_ => showOnboarding()}
           text=I18n.btn#buy_tez
           icon=Icons.OpenExternal.build
           primary=true
         />
       </View>
-      <ModalAction visible=visibleModal onRequestClose=closeAction>
-         <WertView closeAction />
-      </ModalAction>
     </>;
   };
 };
@@ -232,7 +224,7 @@ let make = (~showOnboarding, ~mode, ~setMode) => {
            <View style=styles##actionBar>
              {mode->Mode.is_management
                 ? <CreateAccountButton showOnboarding />
-                : <BuyTezButton />}
+                : <BuyTezButton showOnboarding />}
            </View>
          </Page.Header>
          {mode->Mode.is_management

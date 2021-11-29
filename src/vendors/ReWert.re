@@ -33,6 +33,7 @@ module Widget {
         commodity: string,
         commodities: string,
         address: string,
+        theme: string,
     };
 
     [@bs.module] [@bs.new]
@@ -40,9 +41,6 @@ module Widget {
 
     [@bs.send]
     external mount: t => unit = "mount";
-
-    [@bs.send]
-    external getEmbedCode: t => string = "getEmbedCode";
 
     [@bs.send]
     external getEmbedUrl: t => string = "getEmbedUrl";

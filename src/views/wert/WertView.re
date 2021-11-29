@@ -94,7 +94,7 @@ let stepToString = step =>
   };
 
 [@react.component]
-let make = (~closeAction) => {
+let make = (~submit, ~closeAction) => {
   let account = StoreContext.SelectedAccount.useGet();
 
   let (modalStep, setModalStep) =
@@ -102,33 +102,10 @@ let make = (~closeAction) => {
       WertDisclaimer.needSigning() ? Disclaimer : SelectRecipient
     );
 
-  let buyTez = address => {
-    let widget =
-      ReWert.Widget.make({
-        container_id: "wert-widget",
-        partner_id: "01F8DFQRA460MG8EMEP6E0RQQT",
-        origin: "https://sandbox.wert.io",
-        commodity: "XTZ",
-        commodities: "XTZ",
-        address,
-      });
-    Js.log(widget->ReWert.Widget.getEmbedUrl);
-    let _ =
-      Window.open_(
-        ~url=widget->ReWert.Widget.getEmbedUrl,
-        ~name="",
-        ~features=
-          "titlebar=0,toolbar=0,status=0,location=0,menubar=0,width=800,height=800",
-        (),
-      );
-    ();
-  };
-
   let onSubmit = ({state, _}: WertForm.onSubmitAPI) =>
     switch (state.values.recipient) {
     | Some(account) =>
-      closeAction();
-      buyTez((account.address :> string));
+      submit(account.address);
     | None => ()
     };
 
