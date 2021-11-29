@@ -470,11 +470,6 @@ let handleUniqueToken =
   if (onStop->Option.mapWithDefault(false, f => f())) {
     indexCacheTokens;
   } else {
-    let%Ft () =
-      FutureBase.make(resolve => {
-        Js.Global.setTimeout(() => ()->resolve, 1000)->ignore
-      });
-
     let%Ft (index, cache, finalTokens) = indexCacheTokens;
     let inCache = cache->Cache.getToken(token.contract, token.token_id);
 
