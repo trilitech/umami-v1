@@ -73,7 +73,10 @@ let fetchAccountsTokens:
     ~accounts: list(PublicKeyHash.t),
     ~index: int,
     ~numberByAccount: int,
-    ~withFullCache: bool
+    ~withFullCache: bool,
+    ~onTokens: (~total: int, ~lastToken: int) => unit=?,
+    ~onStop: unit => bool=?,
+    unit
   ) =>
   Promise.t((TokenRegistry.Cache.t, int));
 
@@ -83,7 +86,8 @@ let fetchAccountTokensStreamed:
     ~account: PublicKeyHash.t,
     ~index: int,
     ~numberByAccount: int,
-    ~onTokens: (~fetchedTokens: TokenRegistry.Cache.t, ~nextIndex: int) => unit,
+    ~onTokens: (~total: int, ~lastToken: int) => unit,
+    ~onStop: unit => bool,
     ~withFullCache: bool
   ) =>
   Promise.t((TokenRegistry.Cache.t, int));
@@ -113,8 +117,12 @@ let fetchAccountNFTs:
     ConfigContext.env,
     ~account: PublicKeyHash.t,
     ~numberByAccount: int,
-    ~onTokens: (~fetchedTokens: TokenRegistry.Cache.t, ~nextIndex: int) => unit,
+    ~onTokens: (~total: int, ~lastToken: int) => unit,
+    ~onStop: unit => bool,
     ~allowHidden: bool,
     ~fromCache: bool
   ) =>
   Promise.t(fetched);
+
+let fetchAccountTokensNumber:
+  (ConfigContext.env, ~account: PublicKeyHash.t) => Promise.t(int);

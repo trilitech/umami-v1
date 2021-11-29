@@ -88,7 +88,7 @@ module BetterCallDev = {
         alreadyFetched->(mergeBalanceArray(tokens.balances));
 
       remaining <= 0 || remainingOnTotal <= 0
-        ? (alreadyFetched, finalIndex)->Promise.ok
+        ? (alreadyFetched, finalIndex, tokens.total)->Promise.ok
         : fetch(alreadyFetched, index, remaining);
     };
     fetch(alreadyFetched, index, number);
@@ -96,15 +96,15 @@ module BetterCallDev = {
 
   // fetch a certain number of token for each account
   let fetchAccountsTokens = (config, accounts, index, numberByAccount) => {
-    let rec fetch = (alreadyFetched, accounts, highestIndex) => {
+    let rec fetch = (alreadyFetched, accounts, highestIndex, totalAccumulated) => {
       switch (accounts) {
       // the highest index corresponds to the accounts that has the most of
       // tokens. This is useful to know if this is the last page to fetch
       // (highestIndex < index) or if there are more tokens on at least one
       // account
-      | [] => (alreadyFetched, highestIndex)->Promise.ok
+      | [] => (alreadyFetched, highestIndex, totalAccumulated)->Promise.ok
       | [account, ...accounts] =>
-        let%Await (fetched, index) =
+        let%Await (fetched, index, total) =
           fetchTokens(
             config,
             alreadyFetched,
@@ -112,11 +112,16 @@ module BetterCallDev = {
             index,
             numberByAccount,
           );
-        fetch(fetched, accounts, max(index, highestIndex));
+        fetch(
+          fetched,
+          accounts,
+          max(index, highestIndex),
+          total + totalAccumulated,
+        );
       };
     };
 
-    fetch(PublicKeyHash.Map.empty, accounts, index);
+    fetch(PublicKeyHash.Map.empty, accounts, index, 0);
   };
 
   // Returns a list of arrays: this will be treated later, so we return it as raw as possible for now
@@ -168,7 +173,7 @@ let unfoldRegistered = (tokens, cache: Cache.t, filter) => {
     | (Some(registered), Some(contract)) =>
       let tokens = contract.Cache.tokens->Map.Int.keep(keep(registered));
 
-      Some({...contract, tokens});
+      tokens->Map.Int.isEmpty ? None : Some({...contract, tokens});
     };
   };
   PublicKeyHash.Map.merge(tokens, cache, merge);
@@ -456,36 +461,55 @@ let handleUniqueToken =
       config: ConfigContext.env,
       tzip12Cache,
       tokenContract: TokenContract.t,
-      cacheAndTokens: FutureBase.t((Cache.t, list(Cache.token))),
+      ~onTokens=?,
+      ~onStop=?,
+      indexCacheTokens: FutureBase.t((int, Cache.t, list(Cache.token))),
       _tokenId: int,
       token: BCD.tokenBalance,
-    ) => {
-  let%Ft (cache, finalTokens) = cacheAndTokens;
+    ) =>
+  if (onStop->Option.mapWithDefault(false, f => f())) {
+    indexCacheTokens;
+  } else {
+    let%Ft () =
+      FutureBase.make(resolve => {
+        Js.Global.setTimeout(() => ()->resolve, 1000)->ignore
+      });
 
-  let inCache = cache->Cache.getToken(token.contract, token.token_id);
+    let%Ft (index, cache, finalTokens) = indexCacheTokens;
+    let inCache = cache->Cache.getToken(token.contract, token.token_id);
 
-  let%FtMap tokenRepr =
-    getTokenRepr(config, tokenContract, token, tzip12Cache, inCache);
+    let%FtMap tokenRepr =
+      getTokenRepr(config, tokenContract, token, tzip12Cache, inCache);
 
-  (cache->updateCache(tokenRepr), [tokenRepr, ...finalTokens]);
-};
+    onTokens->Option.mapWithDefault((), f => f(~lastToken=index));
+
+    (index + 1, cache->updateCache(tokenRepr), [tokenRepr, ...finalTokens]);
+  };
 
 let handleTokens =
     (
       config: ConfigContext.env,
       tzip12Cache,
-      cacheAndTokens: FutureBase.t((Cache.t, list(Cache.token))),
+      ~onTokens=?,
+      ~onStop=?,
+      indexCacheTokens: FutureBase.t((int, Cache.t, list(Cache.token))),
       _,
       (tokenContract: TokenContract.t, tokens: Map.Int.t(BCD.tokenBalance)),
     ) => {
-  let%Ft (cache, finalTokens) = cacheAndTokens;
+  let%Ft (index, cache, finalTokens) = indexCacheTokens;
 
   let%Ft updatedCache =
     cache->addContractIfNecessary(tzip12Cache, tokenContract.address);
 
   tokens->Map.Int.reduce(
-    (updatedCache, finalTokens)->FutureBase.value,
-    handleUniqueToken(config, tzip12Cache, tokenContract),
+    (index, updatedCache, finalTokens)->FutureBase.value,
+    handleUniqueToken(
+      config,
+      tzip12Cache,
+      tokenContract,
+      ~onTokens?,
+      ~onStop?,
+    ),
   );
 };
 
@@ -495,10 +519,12 @@ let fetchAccountsTokensRaw =
       ~accounts,
       tzip12Cache,
       cache: Cache.t,
+      ~onTokens=?,
+      ~onStop=?,
       ~index,
       ~numberByAccount,
     ) => {
-  let%Await (tokens, nextIndex) =
+  let%Await (tokens, nextIndex, total) =
     BetterCallDev.fetchAccountsTokens(
       config,
       accounts,
@@ -506,15 +532,17 @@ let fetchAccountsTokensRaw =
       numberByAccount,
     );
 
+  let onTokens = onTokens->Option.map(f => f(~total));
+
   let%Await tokenContracts = fetchTokenContracts(config, ~accounts, ());
 
   let%Ft tokens =
     tokens->pruneMissingContracts(config, tokenContracts, cache);
 
-  let%Ft (cache, tokensWithMetadata) =
+  let%Ft (_, cache, tokensWithMetadata) =
     tokens->PublicKeyHash.Map.reduce(
-      (cache, [])->Promise.value,
-      handleTokens(config, tzip12Cache),
+      (index, cache, [])->Promise.value,
+      handleTokens(config, tzip12Cache, ~onTokens?, ~onStop?),
     );
 
   (cache, tokensWithMetadata, nextIndex)->Promise.ok;
@@ -545,6 +573,9 @@ let fetchAccountsTokens =
       ~index,
       ~numberByAccount,
       ~withFullCache,
+      ~onTokens=?,
+      ~onStop=?,
+      (),
     ) => {
   let%Await cache = Cache.getWithFallback()->Promise.value;
 
@@ -559,6 +590,8 @@ let fetchAccountsTokens =
       cache,
       ~index,
       ~numberByAccount,
+      ~onTokens?,
+      ~onStop?,
     );
 
   updatedCache->Cache.set;
@@ -588,6 +621,7 @@ let fetchAccountsTokensRegistry =
       ~index,
       ~numberByAccount,
       ~withFullCache=true,
+      (),
     );
   let%ResMap registered = Registered.getWithFallback();
   let (registered, toRegister) =
@@ -596,7 +630,15 @@ let fetchAccountsTokensRegistry =
 };
 
 let fetchAccountTokensStreamed =
-    (config, ~account, ~index, ~numberByAccount, ~onTokens, ~withFullCache) => {
+    (
+      config,
+      ~account,
+      ~index,
+      ~numberByAccount,
+      ~onTokens,
+      ~onStop,
+      ~withFullCache,
+    ) => {
   let onceFinished = (tokens, number) => {
     let%Await () = tokens->registerNFTs(account)->FutureBase.value;
     Promise.ok((tokens, number));
@@ -609,11 +651,13 @@ let fetchAccountTokensStreamed =
         ~index,
         ~numberByAccount,
         ~withFullCache,
+        ~onTokens,
+        ~onStop,
+        (),
       );
     let accumulatedTokens =
       accumulatedTokens->TokenRegistry.Cache.merge(fetchedTokens);
-    onTokens(~fetchedTokens, ~nextIndex);
-    nextIndex <= index
+    nextIndex <= index || onStop()
       ? onceFinished(accumulatedTokens, nextIndex)
       : get(accumulatedTokens, nextIndex);
   };
@@ -629,7 +673,15 @@ type fetched = [
 ];
 
 let fetchAccountNFTs =
-    (config, ~account, ~numberByAccount, ~onTokens, ~allowHidden, ~fromCache) => {
+    (
+      config,
+      ~account,
+      ~numberByAccount,
+      ~onTokens,
+      ~onStop,
+      ~allowHidden,
+      ~fromCache,
+    ) => {
   let getFromCache = () => {
     let%AwaitMap tokens =
       registeredTokens(`NFT((account, allowHidden)))->Promise.value;
@@ -644,6 +696,7 @@ let fetchAccountNFTs =
         ~index=0,
         ~numberByAccount,
         ~onTokens,
+        ~onStop,
         ~withFullCache=false,
       );
     `Fetched((
@@ -652,4 +705,11 @@ let fetchAccountNFTs =
     ));
   };
   fromCache ? getFromCache() : getFromNetwork();
+};
+
+let fetchAccountTokensNumber = (config, ~account) => {
+  let%AwaitMap (_, _, total) =
+    BetterCallDev.fetchAccountsTokens(config, [account], 0, 1);
+
+  total;
 };

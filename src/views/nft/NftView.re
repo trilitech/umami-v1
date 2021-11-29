@@ -36,6 +36,7 @@ let styles =
           ~paddingHorizontal=LayoutConst.pagePaddingHorizontal->dp,
           (),
         ),
+      "searchAndSync": style(~flexDirection=`row, ()),
     })
   );
 
@@ -47,6 +48,9 @@ module Component = {
   [@react.component]
   let make = (~account) => {
     let (mode, setMode) = React.useState(_ => Gallery);
+    let (syncState, setSyncState) = React.useState(_ => NftSync.NotInitiated);
+    let (search, setSearch) = React.useState(_ => "");
+    let stop = React.useRef(false);
 
     let request = fromCache =>
       TokensApiRequest.{
@@ -57,11 +61,21 @@ module Component = {
       };
 
     // will be used to indicate a percentage of NFTs loaded
-    let onTokens = (~fetchedTokens as _, ~nextIndex as _) => ();
+    let onTokens = (~total, ~lastToken) => {
+      let percentage =
+        Int.toFloat(lastToken + 1) /. Int.toFloat(total) *. 100.;
+      setSyncState(
+        fun
+        | Canceled(_) => Canceled(percentage)
+        | _ => Loading(percentage),
+      );
+    };
+    let onStop = () => stop.current;
 
     let (tokensRequest, getTokens) =
       StoreContext.Tokens.useAccountNFTs(
         onTokens,
+        onStop,
         account.Account.address,
         request(true),
       );
@@ -85,15 +99,75 @@ module Component = {
       | _ => PublicKeyHash.Map.empty
       };
 
+    let loadToCanceled = () =>
+      setSyncState(
+        fun
+        | Loading(percentage) => Canceled(percentage)
+        | _ => NotInitiated,
+      );
+    let loadToDone = () =>
+      setSyncState(
+        fun
+        | Loading(_) => Done
+        | state => state,
+      );
+
+    React.useEffect1(
+      () =>
+        switch (tokensRequest) {
+        | Done(Ok(`Fetched(_, _)), _) =>
+          loadToDone();
+          stop.current = false;
+          None;
+
+        | Done(Ok(`Cached(_)), _) =>
+          setSyncState(_ => NotInitiated);
+          None;
+
+        | Done(Error(_), _) =>
+          loadToCanceled();
+          None;
+
+        | _ => None
+        },
+      [|tokensRequest|],
+    );
+
+    let tokens =
+      React.useMemo2(
+        () => {
+          let searched = search->Js.String.toLocaleLowerCase;
+          tokens->TokenRegistry.Cache.keepTokens((_, _, token) =>
+            token
+            ->TokenRegistry.Cache.tokenName
+            ->Option.mapWithDefault(false, name =>
+                name
+                ->Js.String.toLocaleLowerCase
+                ->Js.String2.includes(searched)
+              )
+          );
+        },
+        (search, tokens),
+      );
+
     let onRefresh = () => {
+      setSyncState(_ => Loading(0.));
       getTokens(request(false))->ignore;
     };
 
-    let loading = tokensRequest->ApiRequest.isLoading;
+    let onStop = () => {
+      setSyncState(
+        fun
+        | Loading(percentage) => {
+            Canceled(percentage);
+          }
+        | state => state,
+      );
+      stop.current = true;
+    };
 
     <View style={styles##listContent}>
       <NftHeaderView headline>
-        <RefreshButton onRefresh loading=false />
         <ButtonAction
           style={Style.style(~marginTop="10px", ())}
           icon
@@ -107,11 +181,20 @@ module Component = {
           }
         />
       </NftHeaderView>
+      <View style={styles##searchAndSync}>
+        <ThemedTextInput
+          style=Style.(style(~flexBasis=48.->dp, ()))
+          icon=Icons.Search.build
+          value=search
+          onValueChange={value => setSearch(_ => value)}
+          placeholder=I18n.input_placeholder#search_for_nft
+        />
+        <NftSync onRefresh onStop state=syncState />
+      </View>
       {switch (mode) {
        | Gallery => <NftGalleryView nfts=tokens />
        | Collection => <NftCollectionView account nfts=tokens />
        }}
-      {loading ? <LoadingView /> : React.null}
     </View>;
   };
 };
@@ -122,6 +205,6 @@ let make = () => {
 
   switch (account) {
   | Some(account) => <Component account />
-  | None => <OperationsView.Placeholder />
+  | None => <NftEmptyView />
   };
 };

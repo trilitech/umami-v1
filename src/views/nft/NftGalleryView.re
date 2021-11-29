@@ -138,7 +138,6 @@ let uniqueKey = (contract: PublicKeyHash.t, id) =>
 [@react.component]
 let make = (~nfts: TokenRegistry.Cache.t) => {
   let account = StoreContext.SelectedAccount.useGet();
-  let (search, setSearch) = React.useState(_ => "");
   let hidden =
     TokenRegistry.Registered.get()
     ->Result.getWithDefault(PublicKeyHash.Map.empty);
@@ -148,19 +147,6 @@ let make = (~nfts: TokenRegistry.Cache.t) => {
       () =>
         nfts->TokenRegistry.Cache.keepTokens((pkh, id, _) =>
           !hidden->TokenRegistry.Registered.isHidden(pkh, id)
-        ),
-      [|nfts|],
-    );
-
-  let nfts =
-    React.useMemo1(
-      () =>
-        nfts->TokenRegistry.Cache.keepTokens((_, _, token) =>
-          token
-          ->TokenRegistry.Cache.tokenName
-          ->Option.mapWithDefault(false, name =>
-              Js.String2.includes(name, search)
-            )
         ),
       [|nfts|],
     );
@@ -187,13 +173,6 @@ let make = (~nfts: TokenRegistry.Cache.t) => {
     );
 
   <>
-    <ThemedTextInput
-      style=Style.(style(~flexBasis=48.->dp, ()))
-      icon=Icons.Search.build
-      value=search
-      onValueChange={value => setSearch(_ => value)}
-      placeholder=I18n.input_placeholder#search_for_nft
-    />
     <DocumentContext.ScrollView>
       {nfts->PublicKeyHash.Map.isEmpty
          ? <NftEmptyView /> : <View style=styles##view> cards </View>}

@@ -60,6 +60,7 @@ type state = {
   tokensRegistryRequestState:
     reactState(ApiRequest.t(TokensApiRequest.registry)),
   accountsTokensRequestState: apiRequestsState(TokensApiRequest.tokens),
+  accountsTokensNumberRequestState: apiRequestsState(int),
   balanceTokenRequestsState: apiRequestsState(Token.Unit.t),
   apiVersionRequestState: reactState(option(Network.apiVersion)),
   eulaSignatureRequestState: reactState(bool),
@@ -91,6 +92,7 @@ let initialState = {
   nftsRequestsState: initialNFTRequestsState,
   tokensRegistryRequestState: (NotAsked, _ => ()),
   accountsTokensRequestState: initialApiRequestsState,
+  accountsTokensNumberRequestState: initialApiRequestsState,
   balanceTokenRequestsState: initialApiRequestsState,
   apiVersionRequestState: (None, _ => ()),
   eulaSignatureRequestState: (false, _ => ()),
@@ -138,6 +140,8 @@ let make = (~children) => {
   let delegateInfoRequestsState = React.useState(() => Map.String.empty);
   let operationsRequestsState = React.useState(() => Map.String.empty);
   let accountsTokensRequestState = React.useState(() => Map.String.empty);
+  let accountsTokensNumberRequestState =
+    React.useState(() => Map.String.empty);
   let balanceTokenRequestsState = React.useState(() => Map.String.empty);
   let operationsConfirmations = React.useState(() => Set.String.empty);
 
@@ -251,6 +255,7 @@ let make = (~children) => {
       nftsRequestsState,
       tokensRegistryRequestState,
       accountsTokensRequestState,
+      accountsTokensNumberRequestState,
       balanceTokenRequestsState,
       apiVersionRequestState,
       eulaSignatureRequestState,
@@ -617,14 +622,36 @@ module Tokens = {
     TokensApiRequest.useLoadTokensRegistry(registryRequestState, request);
   };
 
-  let useAccountNFTs = (onTokens, account: PublicKeyHash.t) => {
+  let useAccountTokensNumber = (account: PublicKeyHash.t) => {
+    let useRequestsState =
+      useGetRequestStateFromMap(store =>
+        store.accountsTokensNumberRequestState
+      );
+
+    let accountsTokensRequestState =
+      useRequestsState((Some(account) :> option(string)));
+
+    TokensApiRequest.useAccountTokensNumber(
+      accountsTokensRequestState,
+      account,
+    );
+  };
+
+  let useAccountNFTs = (onTokens, onStop, account: PublicKeyHash.t) => {
     let useRequestsState =
       useGetRequestStateFromMap(store => store.accountsTokensRequestState);
 
     let accountsTokensRequestState =
       useRequestsState((Some(account) :> option(string)));
 
-    TokensApiRequest.useLoadAccountNFTs(onTokens, accountsTokensRequestState);
+    let tokensNumberRequest = useAccountTokensNumber(account);
+
+    TokensApiRequest.useLoadAccountNFTs(
+      onTokens,
+      onStop,
+      accountsTokensRequestState,
+      tokensNumberRequest,
+    );
   };
 
   let useGet = (tokenAddress: option(PublicKeyHash.t)) => {
