@@ -602,11 +602,20 @@ let csv = {
       row,
       col,
     );
-  pub unknown_token = p("Unknown token %s");
+  pub unknown_token = (pkh, id) =>
+    p(
+      "Unknown token %s%s",
+      pkh,
+      id->Option.mapWithDefault("", p(" and tokenId %d")),
+    );
   pub cannot_parse_address = (a, reason) =>
     p("%s in not a valid address: %s.", a, reason);
   pub cannot_parse_contract = (a, reason) =>
-    p("%s in not a valid contract address: %s.", a, reason)
+    p("%s in not a valid contract address: %s.", a, reason);
+  pub fa1_2_invalid_token_id = pkh =>
+    p("Contract %s is an FA1.2 token, it cannot have a token id", pkh);
+  pub fa2_invalid_token_id = pkh =>
+    p("Contract %s is an FA2 token, it must have a token id", pkh)
 };
 
 let disclaimer = {
