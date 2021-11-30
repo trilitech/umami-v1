@@ -97,7 +97,7 @@ let btn = {
   pub custom = "CUSTOM";
   pub register_nft_contract = "Register NFT contract";
   pub see_list = "SEE LIST";
-  pub select_account = "SELECT ACCOUNT"
+  pub change_account = "CHANGE ACCOUNT"
 };
 
 let tooltip = {

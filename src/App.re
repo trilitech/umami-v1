@@ -75,34 +75,10 @@ module Homepage = {
 };
 
 module BuyTezView = {
-  module SelectAccountButton = {
-    let styles =
-      Style.(
-        StyleSheet.create({
-          "button": style(~marginTop=6.->dp, ()),
-        })
-      );
-
-    [@react.component]
-    let make = (~showAccountSelector) => {
-      <>
-        <View style=styles##button>
-          <ButtonAction
-            onPress={_ => showAccountSelector()}
-            text=I18n.btn#select_account
-            icon=Icons.Account.build
-            primary=true
-          />
-        </View>
-      </>;
-    };
-  };
-
   [@react.component]
-  let make = (~src, ~showAccountSelector, ~onClose) => {
+  let make = (~src, ~onClose) => {
     <Page>
       <Page.Header
-        left={<SelectAccountButton showAccountSelector />}
         right={<CloseButton onClose />}>
         ReasonReact.null
       </Page.Header>
@@ -252,7 +228,6 @@ module AppView = {
                          src =>
                          <BuyTezView
                            src
-                           showAccountSelector=openAction
                            onClose={_ => {
                              setWertURL(_ => None);
                              setOnboardingState(_ => Dashboard);
