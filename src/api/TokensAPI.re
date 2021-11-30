@@ -28,13 +28,18 @@ open Let;
 open TokenRegistry;
 
 type Errors.t +=
-  | NotFAContract(string);
+  | NotFAContract(string)
+  | RegisterNotAFungibleToken(PublicKeyHash.t, TokenRepr.kind)
+  | RegisterNotANonFungibleToken(PublicKeyHash.t, TokenRepr.kind);
 
 let () =
   Errors.registerHandler(
     "Tokens",
     fun
     | NotFAContract(_) => I18n.t#error_check_contract->Some
+    | RegisterNotAFungibleToken(_) => I18n.t#error_register_not_fungible->Some
+    | RegisterNotANonFungibleToken(_) =>
+      I18n.t#error_register_not_non_fungible->Some
     | _ => None,
   );
 
@@ -238,11 +243,19 @@ let updateNFTsVisibility = (updatedTokens, ~hidden) => {
 };
 
 let addFungibleToken = (config, token) => {
+  let%Await () =
+    token->TokenRepr.isNFT
+      ? Promise.err(RegisterNotAFungibleToken(token.address, token.kind))
+      : Promise.ok();
   let%AwaitMap () = addTokenToCache(config, Full(token));
   addTokenToRegistered(token, Registered.FT);
 };
 
 let addNonFungibleToken = (config, token, holder) => {
+  let%Await () =
+    token->TokenRepr.isNFT
+      ? Promise.ok()
+      : Promise.err(RegisterNotANonFungibleToken(token.address, token.kind));
   let%AwaitMap () = addTokenToCache(config, Full(token));
   addTokenToRegistered(token, Registered.(NFT({holder, hidden: false})));
 };

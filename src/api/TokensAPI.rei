@@ -24,9 +24,14 @@
 /*****************************************************************************/
 
 type Errors.t +=
-  | NotFAContract(string);
+  | NotFAContract(string)
+  | RegisterNotAFungibleToken(PublicKeyHash.t, TokenRepr.kind)
+  | RegisterNotANonFungibleToken(PublicKeyHash.t, TokenRepr.kind);
 
 type filter = [ | `Any | `FT | `NFT(PublicKeyHash.t, bool)];
+
+let metadataToToken:
+  (string, TokenContract.t, ReTaquitoTypes.Tzip12.metadata) => TokenRepr.t;
 
 let registeredTokens: filter => Let.result(TokenRegistry.Cache.t);
 

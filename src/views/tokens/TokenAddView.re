@@ -32,6 +32,7 @@ module StateLenses = [%lenses
     symbol: string,
     decimals: string,
     tokenId: string,
+    token: option(TokenRepr.t),
   }
 ];
 module TokenCreateForm = ReForm.Make(StateLenses);
@@ -42,6 +43,7 @@ let emptyState: StateLenses.state = {
   symbol: "",
   decimals: "",
   tokenId: "",
+  token: None,
 };
 
 let styles =
@@ -130,7 +132,7 @@ module FormMetadata = {
 
 module MetadataForm = {
   [@react.component]
-  let make = (~form: TokenCreateForm.api, ~pkh, ~kind) => {
+  let make = (~form: TokenCreateForm.api, ~pkh, ~kind, ~chain) => {
     let metadata =
       MetadataApiRequest.useLoadMetadata(pkh, kind->TokenRepr.kindId);
     React.useEffect1(
@@ -138,11 +140,20 @@ module MetadataForm = {
         switch (metadata) {
         | Loading(Some(metadata))
         | Done(Ok(metadata), _) =>
+          form.handleChange(
+            Token,
+            TokensAPI.metadataToToken(
+              chain,
+              TokenContract.{address: pkh, kind: kind->fromTokenKind},
+              metadata,
+            )
+            ->Some,
+          );
           form.handleChange(Name, metadata.name);
           form.handleChange(Symbol, metadata.symbol);
           form.handleChange(Decimals, metadata.decimals->Int.toString);
-        | Done(Error(_), _) => ()
-        | _ => ()
+        | Done(Error(_), _)
+        | _ => form.handleChange(Token, None)
         };
         None;
       },
@@ -180,15 +191,25 @@ let make = (~chain, ~address="", ~closeAction) => {
     TokenCreateForm.(
       switch (step) {
       | Metadata(address, kind) =>
-        createToken({
-          kind,
-          address,
-          alias: state.values.name,
-          symbol: state.values.symbol,
-          chain,
-          decimals: state.values.decimals |> Int.fromString |> Option.getExn,
-          asset: TokenRepr.defaultAsset,
-        })
+        let alias = state.values.name;
+        let symbol = state.values.symbol;
+        let decimals =
+          state.values.decimals |> Int.fromString |> Option.getExn;
+        state.values.token
+        ->Option.mapWithDefault(
+            TokenRepr.{
+              kind,
+              address,
+              alias,
+              symbol,
+              chain,
+              decimals,
+              asset: TokenRepr.defaultAsset,
+            },
+            token =>
+            {...token, alias, symbol, decimals}
+          )
+        ->createToken
         ->Promise.getOk(_ => closeAction());
         None;
       | _ => None
@@ -232,6 +253,15 @@ let make = (~chain, ~address="", ~closeAction) => {
                   },
                 Address,
               )
+            + custom(
+                state =>
+                  switch (state.token) {
+                  | Some(t) when t->TokenRepr.isNFT =>
+                    Error(I18n.t#error_register_not_fungible)
+                  | _ => Valid
+                  },
+                TokenId,
+              )
             + nonEmpty(Symbol),
           )
         );
@@ -243,6 +273,7 @@ let make = (~chain, ~address="", ~closeAction) => {
         symbol: "",
         decimals: "",
         tokenId: "",
+        token: None,
       },
       ~i18n=FormUtils.i18n,
       (),
@@ -337,7 +368,7 @@ let make = (~chain, ~address="", ~closeAction) => {
      | Metadata(pkh, kind) =>
        <>
          {kind != TokenRepr.FA1_2 ? <FormTokenId form /> : React.null}
-         <MetadataForm form pkh kind />
+         <MetadataForm form pkh kind chain />
        </>
      }}
     <Buttons.SubmitPrimary
