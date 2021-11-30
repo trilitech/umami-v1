@@ -69,7 +69,17 @@ let make =
 
   let tooltip = (nft.alias, I18n.btn#view_nft);
   let id = TokenRepr.id(nft);
-  let hidden = TokenRegistry.Registered.isHidden(hidden, address, id);
+  let hidden =
+    React.useMemo1(
+      () => TokenRegistry.Registered.isHidden(hidden, address, id),
+      [|hidden|],
+    );
+
+  let isSelected =
+    React.useMemo1(
+      () => {NftSelection.isSelected(selected, address, id)},
+      [|selected|],
+    );
 
   <View
     style=Style.(
@@ -82,7 +92,7 @@ let make =
     <View style=styles##itemsGroup>
       <CheckboxItem
         style=styles##checkboxMargin
-        value={NftSelection.isSelected(selected, address, id)}
+        value=isSelected
         handleChange={checked => {
           checked
             ? setSelected(address, id, true)
