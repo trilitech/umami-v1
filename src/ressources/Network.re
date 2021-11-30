@@ -291,10 +291,10 @@ let withEP = (n, url) => {...n, endpoint: url};
 
 let mainnetNetworks = [
   mainnet->withEP("https://mainnet.smartpy.io/"),
-  mainnet->withEP("https://mainnet-tezos.giganode.io"),
   mainnet->withEP("https://api.tez.ie/rpc/mainnet/"),
   mainnet->withEP("https://teznode.letzbake.com"),
   mainnet->withEP("https://mainnet.tezrpc.me/"),
+  mainnet->withEP("https://rpc.tzbeta.net/"),
 ];
 
 let hangzhounetNetworks = [
