@@ -75,9 +75,7 @@ module Make = (Value: ValueType) : (StorageType with type t = Value.t) => {
 
   let getRaw = key => {
     let%Res value =
-      getItem(key)
-      ->Js.Nullable.toOption
-      ->Result.fromOption(NotFound(key));
+      getItem(key)->Js.Nullable.toOption->Result.fromOption(NotFound(key));
     let%Res json = value->JsonEx.parse;
     json->JsonEx.decode(decoder);
   };
