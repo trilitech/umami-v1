@@ -43,6 +43,14 @@ let styles =
           ~position=`absolute,
           (),
         ),
+      "container":
+        style(
+          ~height=44.->dp,
+          ~maxHeight=44.->dp,
+          ~borderWidth,
+          ~borderRadius=4.,
+          (),
+        ),
       "input":
         style(
           ~fontFamily="SourceSansPro",
@@ -107,7 +115,6 @@ let make =
             ~backgroundColor=theme.colors.background,
             ~borderColor=theme.colors.borderMediumEmphasis,
             ~paddingVertical=(paddingVertical -. borderWidth)->dp,
-            //
             ~paddingRight=(paddingRight -. borderWidth)->dp,
             (),
           ),
@@ -142,7 +149,7 @@ let make =
         disabled ? Some(style(~color=theme.colors.textDisabled, ())) : None,
         value != "" && onClear != None ? Some(styles##clearMargin) : None,
         styleFromProp,
-        Some(searchSection),
+        styles##container->Some,
         disabled
           ? Some(
               style(
