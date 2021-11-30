@@ -558,22 +558,33 @@ module Legacy = {
     let version = Version.mk(1, 3);
 
     let migrateRegistered = () => {
-      let mapValue = _ => {
-        let%ResMap storage = Storage.get();
+      let mapValue = storageString => {
+        let%Res json = storageString->JsonEx.parse;
+        let%ResMap storage = json->JsonEx.decode(Storage.decoder);
         storage->makeRegisteredStorage;
       };
-      Registered.migrate(~mapValue, ~default=PublicKeyHash.Map.empty, ());
+      Registered.migrate(
+        ~previousKey=Storage.key,
+        ~mapValue,
+        ~default=PublicKeyHash.Map.empty,
+        (),
+      );
     };
 
     let migrateCache = () => {
-      let mapValue = _ => {
-        let%ResMap storage = Storage.get();
-        Js.log(storage);
+      let mapValue = storageString => {
+        let%Res json = storageString->JsonEx.parse;
+        let%ResMap storage = json->JsonEx.decode(Storage.decoder);
         storage->Array.reduce(PublicKeyHash.Map.empty, (cache, token) =>
           cache->Cache.addToken(Full(token))
         );
       };
-      Cache.migrate(~mapValue, ~default=PublicKeyHash.Map.empty, ());
+      Cache.migrate(
+        ~previousKey=Storage.key,
+        ~mapValue,
+        ~default=PublicKeyHash.Map.empty,
+        (),
+      );
     };
 
     let mk = () => {
