@@ -113,12 +113,6 @@ let make = (~closeAction, ~account, ~nft: Token.t) => {
                )}
           </View>
           <View style=styles##buttons>
-            <Buttons.SubmitTertiary
-              style=styles##specs
-              onPress={_ => ()}
-              disabled=true
-              text=I18n.btn#view_specs
-            />
             <Buttons.SubmitPrimary
               onPress={_ => openSendModal()}
               text=I18n.btn#send
