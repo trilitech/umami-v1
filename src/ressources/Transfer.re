@@ -46,7 +46,7 @@ module Currency = {
   let toString =
     fun
     | Tez(tez) => tez->Tez.toString
-    | Token(curr, _) => curr->TokenRepr.Unit.toNatString;
+    | Token(curr, t) => curr->TokenRepr.Unit.toStringDecimals(t.decimals);
 
   let getTez =
     fun
