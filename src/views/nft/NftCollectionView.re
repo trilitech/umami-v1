@@ -87,7 +87,9 @@ let make = (~nfts: TokenRegistry.Cache.t, ~account) => {
 
   let checked =
     React.useMemo2(
-      () => allTokensId->NftSelection.size == selected->NftSelection.size,
+      () =>
+        !allTokensId->NftSelection.isEmpty
+        && allTokensId->NftSelection.size == selected->NftSelection.size,
       (selected, allTokensId),
     );
 
