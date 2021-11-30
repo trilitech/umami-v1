@@ -199,8 +199,8 @@ let input_placeholder = {
   pub enter_derivation_path = "Enter your derivation path";
   pub custom_network_name = "e.g. Test Network";
   pub search_for_nft = "Search for NFT by name";
-  pub custom_network_node_url = "e.g. https://testnet-tezos.giganode.io/";
-  pub custom_network_mezos_url = "e.g. https://api.umamiwallet.com/granadanet"
+  pub custom_network_node_url = "e.g. https://rpc.tzbeta.net";
+  pub custom_network_mezos_url = "e.g. https://api.umamiwallet.com/mainnet"
 };
 
 let form_input_error = {
