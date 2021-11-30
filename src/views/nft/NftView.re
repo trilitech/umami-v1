@@ -28,6 +28,16 @@ open ReactNative;
 let styles =
   Style.(
     StyleSheet.create({
+      "searchSection":
+        Style.(
+          style(
+            ~flexBasis=48.->dp,
+            ~flex=1.,
+            ~flexDirection=`row,
+            ~alignItems=`center,
+            (),
+          )
+        ),
       "listContent":
         style(
           ~flex=1.,
@@ -183,7 +193,7 @@ module Component = {
       </NftHeaderView>
       <View style={styles##searchAndSync}>
         <ThemedTextInput
-          style=Style.(style(~flexBasis=48.->dp, ()))
+          style=styles##searchSection
           icon=Icons.Search.build
           value=search
           onValueChange={value => setSearch(_ => value)}
