@@ -193,7 +193,14 @@ let make = (~source: Account.t, ~nft: Token.t, ~closeAction) => {
     | SubmittedStep(_) => None
     };
 
-  let back = None;
+  let back =
+    SignOperationView.back(signOpStep, () =>
+      switch (modalStep) {
+      | SigningStep(_, _) => Some(() => setModalStep(_ => SendStep))
+      | _ => None
+      }
+    );
+
   let closing = Some(ModalFormView.Close(closeAction));
 
   let ledgerState = React.useState(() => None);
