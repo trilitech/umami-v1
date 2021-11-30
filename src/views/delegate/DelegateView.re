@@ -247,12 +247,14 @@ let make = (~closeAction, ~action) => {
     };
 
   let back =
-    switch (modalStep, action) {
-    | (PasswordStep(_, _), Create(_))
-    | (PasswordStep(_, _), Edit(_)) =>
-      Some(() => setModalStep(_ => SendStep))
-    | _ => None
-    };
+    SignOperationView.back(signOpStep, () =>
+      switch (modalStep, action) {
+      | (PasswordStep(_, _), Create(_))
+      | (PasswordStep(_, _), Edit(_)) =>
+        Some(() => setModalStep(_ => SendStep))
+      | _ => None
+      }
+    );
 
   let loadingSimulate = operationSimulateRequest->ApiRequest.isLoading;
   let loading = operationRequest->ApiRequest.isLoading;

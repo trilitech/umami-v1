@@ -49,6 +49,12 @@ let makeTitle = (~custom=?) =>
   | AdvancedOptStep(_) => I18n.label#advanced_options
   | SummaryStep => custom->Option.getWithDefault(I18n.title#confirmation);
 
+let back = ((step, set), f) =>
+  switch (step) {
+  | AdvancedOptStep(_) => Some(() => set(_ => SummaryStep))
+  | SummaryStep => f()
+  };
+
 [@react.component]
 let make =
     (
