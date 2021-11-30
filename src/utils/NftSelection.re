@@ -35,7 +35,7 @@ let size = selected =>
 let isSelected = (selected, pkh, tokenId) =>
   selected
   ->PublicKeyHash.Map.get(pkh)
-  ->Option.map(ids => ids->Map.Int.has(tokenId))
+  ->Option.flatMap(ids => ids->Map.Int.get(tokenId))
   != None;
 
 let updateSelection = (selected, pkh, id, checked) =>
