@@ -75,10 +75,35 @@ module Homepage = {
 };
 
 module BuyTezView = {
+  module SelectAccountButton = {
+    let styles =
+      Style.(
+        StyleSheet.create({
+          "button": style(~marginTop=6.->dp, ()),
+        })
+      );
+
+    [@react.component]
+    let make = (~showAccountSelector) => {
+      <>
+        <View style=styles##button>
+          <ButtonAction
+            onPress={_ => showAccountSelector()}
+            text=I18n.btn#select_account
+            icon=Icons.Account.build
+            primary=true
+          />
+        </View>
+      </>;
+    };
+  };
+
   [@react.component]
-  let make = (~src, ~onClose) => {
+  let make = (~src, ~showAccountSelector, ~onClose) => {
     <Page>
-      <Page.Header right={<CloseButton onClose />}>
+      <Page.Header
+        left={<SelectAccountButton showAccountSelector />}
+        right={<CloseButton onClose />}>
         ReasonReact.null
       </Page.Header>
       <iframe width="100%" height="100%" src />
@@ -227,6 +252,7 @@ module AppView = {
                          src =>
                          <BuyTezView
                            src
+                           showAccountSelector=openAction
                            onClose={_ => {
                              setWertURL(_ => None);
                              setOnboardingState(_ => Dashboard);
@@ -241,7 +267,9 @@ module AppView = {
                    submit=buyTez
                    closeAction={_ => {
                      closeAction();
-                     setOnboardingState(_ => Dashboard);
+                     if (wertURL == None) {
+                      setOnboardingState(_ => Dashboard);
+                     }
                    }}
                  />
                </ModalAction>

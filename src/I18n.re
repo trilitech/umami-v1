@@ -96,7 +96,8 @@ let btn = {
   pub beacon_connect_dapp = "CONNECT TO DAPP";
   pub custom = "CUSTOM";
   pub register_nft_contract = "Register NFT contract";
-  pub see_list = "SEE LIST"
+  pub see_list = "SEE LIST";
+  pub select_account = "SELECT ACCOUNT"
 };
 
 let tooltip = {
