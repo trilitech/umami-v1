@@ -43,14 +43,8 @@ let styles =
           ~position=`absolute,
           (),
         ),
-      "container":
-        style(
-          ~height=44.->dp,
-          ~maxHeight=44.->dp,
-          ~borderWidth,
-          ~borderRadius=4.,
-          (),
-        ),
+      "container": style(~borderWidth, ~borderRadius=4., ()),
+      "containerHeight": style(~height=44.->dp, ()),
       "input":
         style(
           ~fontFamily="SourceSansPro",
@@ -62,20 +56,6 @@ let styles =
       "multiline": style(~height=auto, ()),
       "icon": style(~paddingRight=6.->dp, ~paddingLeft=6.->dp, ()),
     })
-  );
-
-let searchSection =
-  Style.(
-    style(
-      ~flex=1.,
-      ~height=44.->dp,
-      ~maxHeight=44.->dp,
-      ~borderWidth,
-      ~borderRadius=4.,
-      ~flexDirection=`row,
-      ~alignItems=`center,
-      (),
-    )
   );
 
 [@react.component]
@@ -148,8 +128,9 @@ let make =
           : None,
         disabled ? Some(style(~color=theme.colors.textDisabled, ())) : None,
         value != "" && onClear != None ? Some(styles##clearMargin) : None,
-        styleFromProp,
         styles##container->Some,
+        numberOfLines == None ? styles##containerHeight->Some : None,
+        styleFromProp,
         disabled
           ? Some(
               style(
