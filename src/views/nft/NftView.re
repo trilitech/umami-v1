@@ -31,6 +31,7 @@ let styles =
       "searchSection":
         Style.(
           style(
+            ~maxHeight=44.->dp,
             ~flexBasis=48.->dp,
             ~flex=1.,
             ~flexDirection=`row,
