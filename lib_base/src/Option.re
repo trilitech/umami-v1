@@ -61,3 +61,6 @@ let rec firstSome = l => {
   | [None, ...t] => firstSome(t)
   };
 };
+
+let default = Belt.Option.getWithDefault;
+let mapDefault = Belt.Option.mapWithDefault;

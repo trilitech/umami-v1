@@ -302,7 +302,7 @@ let make = () => {
            text=I18n.btn#goto_doc
            onPress={_ =>
              System.openExternal(
-               "https://gitlab.com/nomadic-labs/umami-wallet/umami/-/wikis/Custom%20Network%20Creation",
+               "https://gitlab.com/nomadic-labs/umami-wallet/umami/-/wikis/doc/Custom%20Network%20Creation",
              )
            }
          />
@@ -321,6 +321,13 @@ let make = () => {
             chain=`Granadanet
             networkStatus={last == `Granadanet ? Some(networkStatus) : None}
             network=Network.granadanet
+            currentConfig=last
+            writeNetwork
+          />
+          <NetworkItem
+            chain=`Hangzhounet
+            networkStatus={last == `Hangzhounet ? Some(networkStatus) : None}
+            network=Network.hangzhounet
             currentConfig=last
             writeNetwork
           />

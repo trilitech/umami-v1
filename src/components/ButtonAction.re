@@ -49,18 +49,17 @@ let make =
       ~onPress,
       ~tooltip=?,
       ~disabled=?,
+      ~style=?,
       ~icon: Icons.builder,
       ~primary=false,
     ) => {
   let theme = ThemeContext.useTheme();
 
+  let style = Style.arrayOption([|styles##pressable->Some, style|]);
+
   let pressableElement = (~pressableRef) =>
     <ThemedPressable
-      ?pressableRef
-      style=styles##pressable
-      ?disabled
-      onPress
-      accessibilityRole=`button>
+      ?pressableRef style ?disabled onPress accessibilityRole=`button>
       {icon(
          ~style=styles##icon,
          ~size=15.5,

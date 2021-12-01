@@ -206,6 +206,7 @@ module Make = (ContainerInteractionState: ContainerInteractionState.T) => {
         ~onPress=?,
         ~href=?,
         ~style as styleFromProp=?,
+        ~extStyle=?,
         ~focusedSize=?,
         ~focusedColor=?,
         ~isActive=false,
@@ -216,6 +217,7 @@ module Make = (ContainerInteractionState: ContainerInteractionState.T) => {
     <Pressable_
       ref=?{pressableRef->Option.map(Ref.value)}
       ?onPress
+      style=?extStyle
       disabled
       ?href
       ?accessibilityRole>

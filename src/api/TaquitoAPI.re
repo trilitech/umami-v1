@@ -245,36 +245,50 @@ module Operations = {
   };
 };
 
-module Transfer = {
-  module type Contract = {
-    type t;
-    let at: (Toolkit.contract, PublicKeyHash.t) => Js.Promise.t(t);
+module type Contract = {
+  type t;
+  let at: (Toolkit.contract, PublicKeyHash.t) => Js.Promise.t(t);
+};
+
+module type ContractCache = {
+  type t;
+  type contract;
+  let make: ReTaquito.Toolkit.toolkit => t;
+  let findContract: (t, PublicKeyHash.t) => Promise.t(contract);
+  let clear: t => unit;
+};
+
+module ContractCache =
+       (Contract: Contract)
+       : (ContractCache with type contract := Contract.t) => {
+  type t = {
+    contracts: MutableMap.String.t(Promise.t(Contract.t)),
+    toolkit: Toolkit.toolkit,
   };
 
-  module ContractCache = (Contract: Contract) => {
-    type t = {
-      contracts: MutableMap.String.t(Js.Promise.t(Contract.t)),
-      toolkit: Toolkit.toolkit,
+  let make = toolkit => {contracts: MutableMap.String.make(), toolkit};
+
+  let findContract = (cache, token: PublicKeyHash.t) =>
+    switch (MutableMap.String.get(cache.contracts, (token :> string))) {
+    | Some(c) => c
+    | None =>
+      let c =
+        cache.toolkit.contract
+        ->(Contract.at(token))
+        ->ReTaquitoError.fromPromiseParsed;
+      cache.contracts->MutableMap.String.set((token :> string), c);
+      c;
     };
 
-    let make = toolkit => {contracts: MutableMap.String.make(), toolkit};
+  /* Technically never used for now */
+  let clear = cache => cache.contracts->MutableMap.String.clear;
+};
 
-    let findContract = (cache, token: PublicKeyHash.t) =>
-      switch (MutableMap.String.get(cache.contracts, (token :> string))) {
-      | Some(c) => c
-      | None =>
-        let c = cache.toolkit.contract->(Contract.at(token));
-        cache.contracts->MutableMap.String.set((token :> string), c);
-        c;
-      };
+module FA12Cache = ContractCache(Contracts.FA12);
+module FA2Cache = ContractCache(Contracts.FA2);
+module Tzip12Cache = ContractCache(Contracts.Tzip12Tzip16Contract);
 
-    /* Technically never used for now */
-    let _clear = cache => cache.contracts->MutableMap.String.clear;
-  };
-
-  module FA12Cache = ContractCache(Contracts.FA12);
-  module FA2Cache = ContractCache(Contracts.FA2);
-
+module Transfer = {
   let prepareFA12Transfer =
       (
         contractCache,
@@ -296,10 +310,7 @@ module Transfer = {
         (),
       );
 
-    let%AwaitMap c =
-      contractCache
-      ->FA12Cache.findContract(token)
-      ->ReTaquitoError.fromPromiseParsed;
+    let%AwaitMap c = contractCache->FA12Cache.findContract(token);
     let transfer =
       c->Contracts.FA12.transfer(source, dest, amount->BigNumber.toFixed);
     transfer.toTransferParams(. sendParams);
@@ -324,10 +335,7 @@ module Transfer = {
         (),
       );
 
-    let%AwaitMap c =
-      contractCache
-      ->FA2Cache.findContract(token)
-      ->ReTaquitoError.fromPromiseParsed;
+    let%AwaitMap c = contractCache->FA2Cache.findContract(token);
     c##methods.Types.FA2.transfer(. transferParams).toTransferParams(.
       sendParams,
     );

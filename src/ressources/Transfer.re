@@ -46,7 +46,7 @@ module Currency = {
   let toString =
     fun
     | Tez(tez) => tez->Tez.toString
-    | Token(curr, _) => curr->TokenRepr.Unit.toNatString;
+    | Token(curr, t) => curr->TokenRepr.Unit.toStringDecimals(t.decimals);
 
   let getTez =
     fun
@@ -124,11 +124,11 @@ let makeSingleTransferElt =
   amount,
   tx_options:
     makeTransferEltOptions(
-      ~fee,
-      ~gasLimit,
-      ~storageLimit,
-      ~parameter,
-      ~entrypoint,
+      ~fee?,
+      ~gasLimit?,
+      ~storageLimit?,
+      ~parameter?,
+      ~entrypoint?,
       (),
     ),
 };
@@ -169,6 +169,6 @@ let makeSingleTokenTransferElt =
   );
 
 let makeTransfers = (~source, ~transfers, ~burnCap=?, ~forceLowFee=?, ()) => {
-  let options = makeTransferOptions(~burnCap, ~forceLowFee, ());
+  let options = makeTransferOptions(~burnCap?, ~forceLowFee?, ());
   {source, transfers, options};
 };

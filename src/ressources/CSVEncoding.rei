@@ -24,10 +24,12 @@
 /*****************************************************************************/
 
 type Errors.t +=
-  | UnknownToken(string)
+  | UnknownToken(PublicKeyHash.t, option(int))
   | NoRows
   | CannotParseTokenAmount(ReBigNumber.t, int, int)
-  | CannotParseTezAmount(ReBigNumber.t, int, int);
+  | CannotParseTezAmount(ReBigNumber.t, int, int)
+  | FA1_2InvalidTokenId(PublicKeyHash.t)
+  | FA2InvalidTokenId(PublicKeyHash.t);
 
 type t = list(Transfer.elt);
 /* Public key hash encoding */
@@ -46,6 +48,4 @@ let rowEncoding:
     Errors.t,
   );
 
-let parseCSV:
-  (string, ~tokens: PublicKeyHash.Map.map(TokenRepr.t)) =>
-  result(t, Errors.t);
+let parseCSV: (string, ~tokens: TokenRegistry.Cache.t) => result(t, Errors.t);

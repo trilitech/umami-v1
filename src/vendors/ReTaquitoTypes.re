@@ -161,9 +161,10 @@ module Tzip12 = {
 };
 
 module Tzip16 = {
-  type metadata;
+  type metadata = {name: option(string)};
+  type metadataRes = {metadata};
 
-  type t = {getMetadata: (. unit) => Js.Promise.t(metadata)};
+  type t = {getMetadata: (. unit) => Js.Promise.t(metadataRes)};
 };
 
 module Contract = {

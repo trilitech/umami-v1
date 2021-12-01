@@ -35,7 +35,6 @@ dist:
   script: CI=false yarn electron:build
   only:
     - master
-    - develop
 
 test:
   stage: test

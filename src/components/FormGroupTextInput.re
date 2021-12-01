@@ -66,11 +66,12 @@ let make =
       ~decoration: option((~style: Style.t) => React.element)=?,
       ~style as styleFromProp: option(ReactNative.Style.t)=?,
       ~fieldStyle=?,
+      ~tooltipIcon=?,
     ) => {
   let hasError = error->Option.isSome;
   <FormGroup
     style=Style.(arrayOption([|Some(styles##formGroup), styleFromProp|]))>
-    <FormLabel label hasError style=styles##label />
+    <FormLabel label hasError style=styles##label ?tooltipIcon />
     <View>
       <ThemedTextInput
         value

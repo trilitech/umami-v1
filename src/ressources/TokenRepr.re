@@ -69,6 +69,7 @@ module Unit = {
     v->isNaN ? None : v->isInteger ? v->integerValue->Some : None;
   };
 
+  let one = fromString("1");
   let zero = fromString("0");
 
   let add = plus;
@@ -173,3 +174,15 @@ type t = {
   decimals: int,
   asset: Metadata.asset,
 };
+
+let kindId =
+  fun
+  | FA1_2 => 0
+  | FA2(n) => n;
+
+let id = ({kind}) => kind->kindId;
+
+let isNFT = t =>
+  t.asset.artifactUri != None
+  || t.asset.displayUri != None
+  || t.asset.isBooleanAmount == true;

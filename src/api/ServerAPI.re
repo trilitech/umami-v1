@@ -33,6 +33,7 @@ module Path = {
 };
 
 type Errors.t +=
+  | UnknownNetwork(string)
   | FetchError(string)
   | JsonResponseError(string)
   | JsonError(string);
@@ -41,6 +42,7 @@ let () =
   Errors.registerHandler(
     "Server",
     fun
+    | UnknownNetwork(c) => I18n.errors#unknown_network(c)->Some
     | FetchError(s) => s->Some
     | JsonResponseError(s) => s->Some
     | JsonError(s) => s->Some
@@ -56,19 +58,31 @@ module URL = {
     l->List.map(((a, v)) => a ++ "=" ++ v)->List.toArray
     |> Js.Array.joinWith("&");
 
+  let build_url = (path, args) => {
+    path ++ (args == [] ? "" : "?" ++ args->build_args);
+  };
+
   let build_explorer_url = (config: ConfigContext.env, path, args) => {
-    config.network.explorer
-    ++ "/"
-    ++ path
-    ++ (args == [] ? "" : "?" ++ args->build_args);
+    build_url(config.network.explorer ++ "/" ++ path, args);
   };
 
   let fromString = s => s;
 
   let get = url => {
+    let init =
+      Fetch.RequestInit.make(
+        ~method_=Fetch.Get,
+        ~headers=
+          Fetch.HeadersInit.make({
+            "Mezos-Version": Network.apiHighestBound->Version.toString,
+            "Umami-Version": System.getVersion(),
+          }),
+        (),
+      );
+
     let%Await response =
       url
-      ->Fetch.fetch
+      ->Fetch.fetchWithInit(init)
       ->Promise.fromJs(e =>
           e->RawJsError.fromPromiseError.message->FetchError
         );
@@ -131,6 +145,37 @@ module URL = {
     let accountExists = (config, ~account: PublicKeyHash.t) => {
       let path = "accounts/" ++ (account :> string) ++ "/exists/";
       build_explorer_url(config, path, []);
+    };
+
+    let tokenRegistry =
+        (
+          network,
+          ~accountsFilter: option(list(PublicKeyHash.t))=?,
+          ~kinds=?,
+          ~limit=?,
+          ~index=?,
+          (),
+        ) => {
+      let concatOpt = (l1, l2) =>
+        l2->Option.mapWithDefault(l1, List.concat(l1));
+      let args =
+        List.(
+          []
+          ->concatOpt(
+              accountsFilter->Option.map(l =>
+                l->List.map(a => ("accounts", (a :> string)))
+              ),
+            )
+          ->addOpt(
+              kinds->arg_opt("kinds", kinds =>
+                List.map(kinds, TokenContract.Encode.kindEncoder)
+                |> String.concat(",")
+              ),
+            )
+          ->addOpt(limit->arg_opt("limit", Int64.to_string))
+          ->addOpt(index->arg_opt("index", Int64.to_string))
+        );
+      build_explorer_url(network, "tokens/registry", args);
     };
   };
 
@@ -218,6 +263,72 @@ module URL = {
 
   module External = {
     let bakingBadBakers = "https://api.baking-bad.org/v2/bakers";
+
+    let betterCallDevAccountTokens =
+        (
+          ~config: ConfigContext.env,
+          ~account: PublicKeyHash.t,
+          ~contract: option(PublicKeyHash.t)=?,
+          ~limit: option(int)=?,
+          ~index: option(int)=?,
+          ~hideEmpty: option(bool)=?,
+          ~sortBy: option([ | `TokenId | `Balance])=?,
+          (),
+        ) => {
+      let args =
+        List.(
+          []
+          ->addOpt(contract->arg_opt("contract", k => (k :> string)))
+          ->addOpt(limit->arg_opt("size", Js.Int.toString))
+          ->addOpt(index->arg_opt("offset", Js.Int.toString))
+          ->addOpt(
+              sortBy->arg_opt(
+                "sort_by",
+                fun
+                | `TokenId => "token_id"
+                | `Balance => "balance",
+              ),
+            )
+          ->addOpt(hideEmpty->arg_opt("hide_empty", string_of_bool))
+        );
+      config.network.chain
+      ->Network.chainNetwork
+      ->Option.map(network =>
+          build_url(
+            "https://api.better-call.dev/v1/account/"
+            ++ network
+            ++ "/"
+            ++ (account :> string)
+            ++ "/token_balances",
+            args,
+          )
+        )
+      ->ResultEx.fromOption(
+          UnknownNetwork(Network.getChainId(config.network.chain)),
+        );
+    };
+
+    let betterCallDevBatchAccounts =
+        (~config: ConfigContext.env, ~accounts: array(PublicKeyHash.t)) => {
+      let args = [
+        (
+          "address",
+          // array(pkh) is not a subtype of array(string), hence we must map it
+          accounts->Array.map(a => (a :> string))->Js.Array2.joinWith(","),
+        ),
+      ];
+      config.network.chain
+      ->Network.chainNetwork
+      ->Option.map(network =>
+          build_url(
+            "https://api.better-call.dev/v1/account/" ++ network,
+            args,
+          )
+        )
+      ->ResultEx.fromOption(
+          UnknownNetwork(Network.getChainId(config.network.chain)),
+        );
+    };
   };
 };
 
@@ -235,6 +346,33 @@ module type Explorer = {
 };
 
 module ExplorerMaker = (Get: {let get: string => Promise.t(Js.Json.t);}) => {
+  let isMalformedTokenTransfer = (op: Operation.Read.t) =>
+    switch (op.payload) {
+    | Operation.Transaction.(Transaction(Tez({destination}))) =>
+      destination->PublicKeyHash.isContract
+    | _ => false
+    };
+
+  let filterMalformedDuplicates = ops => {
+    open Operation.Read;
+    let l = ops->List.fromArray;
+
+    let rec loop = (acc, l) =>
+      switch (l) {
+      | [] => acc
+      | [h] => [h, ...acc]
+      | [h1, h2, ...t] =>
+        if (h1.hash == h2.hash && h1.id == h2.id) {
+          h1->isMalformedTokenTransfer
+            ? loop([h2, ...acc], t) : loop([h1, ...acc], t);
+        } else {
+          loop([h1, ...acc], [h2, ...t]);
+        }
+      };
+
+    loop([], l)->List.reverse->List.toArray;
+  };
+
   let getOperations =
       (
         network,
@@ -249,13 +387,12 @@ module ExplorerMaker = (Get: {let get: string => Promise.t(Js.Json.t);}) => {
       ->URL.Explorer.operations(account, ~types?, ~destination?, ~limit?, ())
       ->Get.get;
 
-    let%Await operations =
+    let%AwaitMap operations =
       res
       ->Result.fromExn(Json.Decode.(array(Operation.Read.Decode.t)))
       ->Result.mapError(e => e->Operation.Read.filterJsonExn->JsonError)
       ->Promise.value;
-
-    operations->Promise.ok;
+    operations->filterMalformedDuplicates;
   };
 };
 

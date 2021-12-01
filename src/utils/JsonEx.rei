@@ -66,5 +66,7 @@ module Encode: {
 module Decode: {
   include (module type of Json.Decode);
 
+  let optionalOrNull: (string, decoder('a)) => decoder(option('a));
+
   let bsListDecoder: decoder('a) => decoder(list('a));
 };

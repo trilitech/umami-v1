@@ -27,10 +27,14 @@ let p = Format.sprintf;
 
 let btn = {
   pub _this = this;
+  pub collected = "COLLECTED";
+  pub gallery = "GALLERY";
+  pub view_specs = "VIEW SPECS";
   pub goto_doc = "See help";
   pub goto_settings = "Go to settings";
   pub retry_network = "Retry";
   pub retry = "RETRY";
+  pub view_nft = "View NFT";
   pub create_or_import_secret = "CREATE OR IMPORT SECRET";
   pub verify_accounts = "VERIFY ACCOUNTS";
   pub customize_derivation_path = "Customize Derivation Path";
@@ -88,6 +92,7 @@ let btn = {
   pub add_custom_network = "ADD CUSTOM NETWORK";
   pub beacon_connect_dapp = "CONNECT TO DAPP";
   pub custom = "CUSTOM";
+  pub register_nft_contract = "Register NFT contract";
   pub see_list = "SEE LIST"
 };
 
@@ -103,13 +108,16 @@ let tooltip = {
   pub unregistered_token_transaction = "This transaction was made using an unregistered token.";
   pub no_tez_no_delegation = "Delegation requires tez";
   pub refresh = "Refresh";
+  pub sync = "Sync";
+  pub stop_sync = "Stop sync";
   pub open_in_explorer = "Open in explorer";
   pub update_delegation = "update delegation";
   pub chain_not_connected = "Not connected to a chain";
   pub custom_network_edit = "Edit network";
   pub custom_network_delete = "Delete network";
   pub reject_on_ledger = "Reject on ledger to cancel operation";
-  pub see_network_info = "See network info"
+  pub see_network_info = "See network info";
+  pub tokenid = {j|A non-negative number that identifies the asset inside a FA2 contract|j}
 };
 
 let log = {
@@ -125,6 +133,7 @@ let label = {
   pub derivation_scheme = "Derivation Scheme";
   pub derivation_path = "Derivation Path";
   pub accounts = "Accounts";
+  pub contract_address = "Contract address";
   pub advanced_options = "Advanced Options";
   pub recovery_phrase_format = "Recovery Phrase Format";
   pub account_create_name = "Name";
@@ -133,6 +142,7 @@ let label = {
   pub send_amount = "Amount";
   pub send_sender = "Sender Account";
   pub send_recipient = "Recipient Account";
+  pub send_nft = "NFT";
   pub password = "Password";
   pub fee = "Fee";
   pub implicit_reveal_fee = "Implicit Reveal Fee";
@@ -147,6 +157,7 @@ let label = {
   pub add_token_name = "Name";
   pub add_token_symbol = "Symbol";
   pub add_token_decimals = "Decimals";
+  pub add_token_id = "Token ID";
   pub summary_subtotal = "Subtotal";
   pub summary_total = "Total";
   pub summary_total_tez = "Total tez";
@@ -154,6 +165,8 @@ let label = {
   pub account_secret = "Root";
   pub account_umami = "Umami";
   pub token = "Token";
+  pub token_id = id => "Token ID: " ++ id;
+  pub search_nft_by_name = "What are your wildest fears?";
   pub account_cli = "Cli";
   pub account_default_path = "Default Path - m/44'/1729'/?'/0'";
   pub account_custom_path = "Custom Path";
@@ -178,14 +191,16 @@ let input_placeholder = {
   pub add_token_address = "Enter KT1 address of a contract";
   pub add_token_name = "e.g. Tezos";
   pub add_token_decimals = "e.g. 0";
+  pub add_token_id = "e.g. 0";
   pub enter_new_password = "Enter new password, at least 8 characters";
   pub confirm_password = "Confirm your new password";
   pub enter_password = "Enter your password";
   pub add_token_symbol = "e.g. tez, KLD, ...";
   pub enter_derivation_path = "Enter your derivation path";
   pub custom_network_name = "e.g. Test Network";
-  pub custom_network_node_url = "e.g. https://testnet-tezos.giganode.io/";
-  pub custom_network_mezos_url = "e.g. https://api.umamiwallet.com/granadanet"
+  pub search_for_nft = "Search for NFT by name";
+  pub custom_network_node_url = "e.g. https://rpc.tzbeta.net";
+  pub custom_network_mezos_url = "e.g. https://api.umamiwallet.com/mainnet"
 };
 
 let form_input_error = {
@@ -250,7 +265,8 @@ let form_input_error = {
       field,
       tokenId,
       pkh,
-    )
+    );
+  pub token_id_expected = "FA2 contracts expects a token id"
 };
 
 let title = {
@@ -324,18 +340,21 @@ let title = {
   pub add_custom_network = "Add Custom Network";
   pub update_custom_network = "Edit Custom Network";
   pub delete_custom_network = "Delete Network?";
-  pub beacon_error = "Beacon Error"; 
-  pub accounts = "Accounts"; 
-  pub operations = "Operations"; 
-  pub addressbook = "Address Book"; 
-  pub delegations = "Delegations"; 
-  pub tokens = "Tokens"; 
-  pub settings = "Settings"; 
+  pub beacon_error = "Beacon Error";
+  pub accounts = "Accounts";
+  pub operations = "Operations";
+  pub addressbook = "Address Book";
+  pub delegations = "Delegations";
+  pub tokens = "Tokens";
+  pub settings = "Settings";
+  pub collected = "Collected";
+  pub gallery = "Gallery";
   pub logs = "Logs"
 };
 
 let expl = {
   pub _this = this;
+  pub nft_empty_state = "Umami should automatically discover any NFT you possess.";
   pub network_disconnect = "The Tezos network is currently unreachable. Your internet connection might be unstable. If it is not the case, you should check your configuration and update it by following the documentation";
   pub hardware_wallet_confirm_operation = "Please validate the details of the transaction and press Confirm to sign it on your Ledger.";
   pub hardware_wallet_advopt = "Umami wallet supports three derivation schemes as well as custom derivation path to select new addresses. You may also use the default derivation scheme & path by leaving the preselected values.";
@@ -503,6 +522,8 @@ let wallet = {
 
 let errors = {
   pub _this = this;
+  pub download_error_status = p("Request failed with status code %d");
+  pub download_error = "Error during file download";
   pub invalid_estimation_results = "Invalid estimation results";
   pub request_to_node_failed = "Request to node failed";
   pub every_balances_fail = "Every balances fail to load";
@@ -518,6 +539,8 @@ let errors = {
   pub key_derivation = "Key derivation failed";
   pub illformed_token_contract = "Illformed Token Contract";
   pub cannot_read_token = s => p("Cannot read token amount: %s", s);
+  pub unknown_kind = k =>
+    p("Internal error: unknown kind `%s` for token contract", k);
   pub invalid_operation_type = "Invalid operation type!";
   pub unhandled_error = e => p("Unhandled error %s", e);
   pub no_secret_found = "No secrets found";
@@ -544,7 +567,8 @@ let errors = {
   pub version_format = v =>
     p("Internal error: invalid version format `%s`", v);
   pub storage_migration_failed = v =>
-    p("Internal error: storage migration failed at version %s", v)
+    p("Internal error: storage migration failed at version %s", v);
+  pub unknown_network = c => p("No public network exists for chain %s", c)
 };
 
 let csv = {
@@ -578,11 +602,20 @@ let csv = {
       row,
       col,
     );
-  pub unknown_token = p("Unknown token %s");
+  pub unknown_token = (pkh, id) =>
+    p(
+      "Unknown token %s%s",
+      pkh,
+      id->Option.mapWithDefault("", p(" and tokenId %d")),
+    );
   pub cannot_parse_address = (a, reason) =>
     p("%s in not a valid address: %s.", a, reason);
   pub cannot_parse_contract = (a, reason) =>
-    p("%s in not a valid contract address: %s.", a, reason)
+    p("%s in not a valid contract address: %s.", a, reason);
+  pub fa1_2_invalid_token_id = pkh =>
+    p("Contract %s is an FA1.2 token, it cannot have a token id", pkh);
+  pub fa2_invalid_token_id = pkh =>
+    p("Contract %s is an FA2 token, it must have a token id", pkh)
 };
 
 let disclaimer = {
@@ -602,6 +635,7 @@ let t = {
   pub amount = (a, b) => p("%s %s", a, b);
   pub tezos = "Tez";
   pub tez = "tez";
+  pub you_dont_have_nft = "You don't have any NFT yet";
   pub mainnet = "Mainnet";
   pub florencenet = "Florencenet";
   pub granadanet = "Granadanet";
@@ -640,6 +674,7 @@ let t = {
   pub operation_hash = "Operation Hash";
   pub operation_summary_fee = p("+ Fee %a", () => this#tez_amount);
   pub navbar_accounts = "ACCOUNTS";
+  pub navbar_nft = "NFT";
   pub navbar_operations = "OPERATIONS";
   pub navbar_addressbook = {j|ADDRESS BOOK|j};
   pub navbar_delegations = "DELEGATIONS";
@@ -652,16 +687,24 @@ let t = {
   pub delegate_column_duration = "DURATION";
   pub delegate_column_last_reward = "LAST REWARD";
   pub delegate_column_baker = "BAKER";
+  pub token_column_standard = "STANDARD";
   pub token_column_name = "NAME";
   pub token_column_symbol = "SYMBOL";
   pub token_column_address = "ADDRESS";
+  pub token_column_tokenid = "TOKEN ID";
+  pub na = "N/A";
   pub empty_token = "No token registered on the current chain";
   pub empty_delegations = "No Delegation";
   pub empty_operations = "No Operation";
   pub empty_address_book = "No Contact";
-  pub add_token_format_contract_sentence = {j|Please specify the address, name, and symbol of a FA1.2 token contract for which you would like to view balances as well as to perform operations. Umami will prefill the fields if any metadata is available.|j};
+  pub add_token_format_contract_sentence = {j|Please enter the address of a deployed token contract for which you would like to view balances as well as to perform operations.|j};
+  pub add_token_contract_metadata_fa1_2 = {j|Please specify the name, symbol, and decimals of a token contract for which you would like to view balances as well as to perform operations. Umami will prefill the fields if any metadata is available.|j};
+  pub add_token_contract_tokenid_fa2 = {j|Please specify the token ID of the token you would like to perform operations on. Umami will prefill the fields if any metadata is available.|j};
+  pub add_token_contract_metadata_fa2 = {j|Please specify the token ID of the token you would like to perform operations on. Umami will prefill the fields if any metadata is available|j};
   pub delegation_removal = "Delegation Removal";
   pub error_check_contract = "Address is not a valid token contract";
+  pub error_register_not_fungible = "Cannot register an NFT as a fungible token";
+  pub error_register_not_non_fungible = "Cannot register a fungible token as an NFT";
   pub words = p("%d words");
   pub upgrade_notice = "We recommend you upgrade your version of Umami.";
   pub custom_network_created = "Network created";

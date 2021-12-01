@@ -115,6 +115,8 @@ let isError = request =>
   };
 
 let isDone = request => request->getDone->Option.isSome;
+let doneOk = v => Done(Ok(v), ValidSince(Js.Date.now()));
+let doneErr = e => Done(Error(e), ValidSince(Js.Date.now()));
 
 let isDoneOk = request => request->getDoneOk->Option.isSome;
 
@@ -187,7 +189,8 @@ let useLoader =
     ) => {
   let getRequest = useGetter(~get, ~kind, ~setRequest, ~keepError?, ());
 
-  let isMounted = ReactUtils.useIsMonted();
+  let isMounted = ReactUtils.useIsMounted();
+
   React.useEffect4(
     () => {
       let shouldReload = conditionToLoad(request, isMounted);

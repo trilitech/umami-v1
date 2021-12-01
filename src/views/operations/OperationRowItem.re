@@ -179,7 +179,7 @@ module AddToken = {
 
     <>
       <ModalAction visible=visibleModal onRequestClose=closeAction>
-        <TokenAddView chain address closeAction />
+        <TokenAddView chain address=(address :> string) closeAction />
       </ModalAction>
       <IconButton
         icon=Icons.AddToken.build
@@ -215,7 +215,7 @@ let amount =
         | Token(_, token_trans) =>
           let address = token_trans.contract;
           let token: option(Token.t) =
-            PublicKeyHash.Map.get(tokens, address);
+            TokenRegistry.Cache.getFullToken(tokens, address, 0);
           switch (token) {
           | None =>
             let tooltip = (

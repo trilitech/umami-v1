@@ -23,13 +23,16 @@
 /*                                                                           */
 /*****************************************************************************/
 
+open Let;
 open CSVParser;
 
 type Errors.t +=
-  | UnknownToken(string)
+  | UnknownToken(PublicKeyHash.t, option(int))
   | NoRows
   | CannotParseTokenAmount(ReBigNumber.t, int, int)
-  | CannotParseTezAmount(ReBigNumber.t, int, int);
+  | CannotParseTezAmount(ReBigNumber.t, int, int)
+  | FA1_2InvalidTokenId(PublicKeyHash.t)
+  | FA2InvalidTokenId(PublicKeyHash.t);
 
 let () =
   Errors.registerHandler(
@@ -40,7 +43,11 @@ let () =
       I18n.csv#cannot_parse_token_amount(v, row + 1, col + 1)->Some
     | CannotParseTezAmount(v, row, col) =>
       I18n.csv#cannot_parse_tez_amount(v, row + 1, col + 1)->Some
-    | UnknownToken(s) => I18n.csv#unknown_token(s)->Some
+    | UnknownToken(s, id) => I18n.csv#unknown_token((s :> string), id)->Some
+    | FA1_2InvalidTokenId(pkh) =>
+      I18n.csv#fa1_2_invalid_token_id((pkh :> string))->Some
+    | FA2InvalidTokenId(pkh) =>
+      I18n.csv#fa2_invalid_token_id((pkh :> string))->Some
     | _ => None,
   );
 
@@ -61,30 +68,40 @@ let handleTezRow = (index, destination, amount) =>
       Transfer.makeSingleTezTransferElt(~destination, ~amount, ())
     );
 
+let checkTokenId = (tokenId, token: TokenRepr.t) =>
+  switch (token.kind, tokenId) {
+  | (FA1_2, Some(_)) => Error(FA1_2InvalidTokenId(token.address))
+  | (FA2(_), None) => Error(FA2InvalidTokenId(token.address))
+  | _ => Ok(token)
+  };
+
 let handleTokenRow =
-    (tokens, index, destination, amount, token: PublicKeyHash.t) =>
-  tokens
-  ->PublicKeyHash.Map.get(token)
-  ->Option.mapWithDefault(Error(UnknownToken((token :> string))), token =>
-      amount
-      ->Token.Unit.fromBigNumber
-      ->Result.mapError(_ => CannotParseTokenAmount(amount, index, 2))
-      ->Result.map(amount =>
-          Transfer.makeSingleTokenTransferElt(
-            ~destination,
-            ~amount,
-            ~token,
-            (),
-          )
-        )
+    (tokens, index, destination, amount, token: PublicKeyHash.t, tokenId) => {
+  let%Res token =
+    tokens
+    ->TokenRegistry.Cache.getFullToken(
+        token,
+        tokenId->Option.map(ReBigNumber.toInt)->Option.getWithDefault(0),
+      )
+    ->Option.mapWithDefault(
+        Error(UnknownToken(token, tokenId->Option.map(ReBigNumber.toInt))),
+        checkTokenId(tokenId),
+      );
+
+  amount
+  ->Token.Unit.fromBigNumber
+  ->Result.mapError(_ => CannotParseTokenAmount(amount, index, 2))
+  ->Result.map(amount =>
+      Transfer.makeSingleTokenTransferElt(~destination, ~amount, ~token, ())
     );
+};
 
 let handleRow = (tokens, index, row) =>
   switch (row) {
   | (destination, amount, None, _) =>
     handleTezRow(index, destination, amount)
-  | (destination, amount, Some(token), _) =>
-    handleTokenRow(tokens, index, destination, amount, token)
+  | (destination, amount, Some(token), tokenId) =>
+    handleTokenRow(tokens, index, destination, amount, token, tokenId)
   };
 
 let handleCSV = (rows, tokens) =>

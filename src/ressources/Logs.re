@@ -37,6 +37,7 @@ type origin =
   | Beacon
   | Secret
   | Batch
+  | Nft
   | Logs;
 
 type kind =
@@ -108,5 +109,6 @@ let originToString = e => {
   | Secret => "Secret"
   | Logs => "Logs"
   | Batch => "Batch"
+  | Nft => "Nft"
   };
 };

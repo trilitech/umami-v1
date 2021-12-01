@@ -64,7 +64,7 @@ let startFade = (refval, endval, duration, endCallback) => {
   );
 };
 
-let useIsMonted = () => {
+let useIsMounted = () => {
   let (isMounted, setIsMounted) = React.useState(_ => false);
   React.useEffect1(
     () => {
