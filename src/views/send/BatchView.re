@@ -158,7 +158,7 @@ module Transactions = {
   module CSVFormatLink = {
     let onPress = _ =>
       System.openExternal(
-        "https://gitlab.com/nomadic-labs/umami-wallet/umami/-/wikis/Batch-File-Format-Specifications#example",
+        "https://gitlab.com/nomadic-labs/umami-wallet/umami/-/wikis/doc/Batch%20File%20Format%20Specifications",
       );
 
     [@react.component]

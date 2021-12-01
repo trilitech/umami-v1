@@ -302,7 +302,7 @@ let make = () => {
            text=I18n.btn#goto_doc
            onPress={_ =>
              System.openExternal(
-               "https://gitlab.com/nomadic-labs/umami-wallet/umami/-/wikis/Custom%20Network%20Creation",
+               "https://gitlab.com/nomadic-labs/umami-wallet/umami/-/wikis/doc/Custom%20Network%20Creation",
              )
            }
          />
