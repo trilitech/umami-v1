@@ -89,6 +89,8 @@ let make =
   <View
     style=Style.(
       arrayOption([|
+        styles##container->Some,
+        numberOfLines == None ? styles##containerHeight->Some : None,
         multiline ? Some(styles##multiline) : None,
         Some(
           style(
@@ -109,8 +111,9 @@ let make =
               style(
                 ~borderColor=theme.colors.borderPrimary,
                 ~borderWidth=2.,
-                ~paddingVertical=paddingVertical->dp,
+                ~paddingVertical=(paddingVertical -. 2.)->dp,
                 ~paddingRight=(paddingRight -. 2.)->dp,
+                ~paddingLeft=(paddingLeft -. 2.)->dp,
                 (),
               ),
             )
@@ -122,14 +125,13 @@ let make =
                 ~borderWidth=2.,
                 ~paddingVertical=(paddingVertical -. 2.)->dp,
                 ~paddingRight=(paddingRight -. 2.)->dp,
+                ~paddingLeft=(paddingLeft -. 2.)->dp,
                 (),
               ),
             )
           : None,
         disabled ? Some(style(~color=theme.colors.textDisabled, ())) : None,
         value != "" && onClear != None ? Some(styles##clearMargin) : None,
-        styles##container->Some,
-        numberOfLines == None ? styles##containerHeight->Some : None,
         styleFromProp,
         disabled
           ? Some(
