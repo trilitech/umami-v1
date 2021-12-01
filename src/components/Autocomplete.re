@@ -83,7 +83,7 @@ let styles =
     StyleSheet.create({
       "menuCompensateInputPadding":
         style(
-          ~marginTop=8.->dp,
+          ~marginTop=9.->dp,
           ~marginRight=(-12.)->dp,
           ~marginLeft=(-21.)->dp,
           (),
