@@ -33,14 +33,18 @@ let make =
       ~style: option(Style.t)=?,
       ~tooltipIcon=?,
     ) => {
-  <View style={Style.style(~flexDirection=`row, ())}>
+  let label =
     <Typography.Overline2
       colorStyle=?{hasError ? Some(`error) : None} ?fontWeightStyle ?style>
       label->React.string
-    </Typography.Overline2>
-    {switch (tooltipIcon) {
-     | None => React.null
-     | Some(tooltipIcon) => tooltipIcon
-     }}
-  </View>;
+    </Typography.Overline2>;
+
+  switch (tooltipIcon) {
+  | None => label
+  | Some(tooltipIcon) =>
+    <View style={Style.style(~flexDirection=`row, ())}>
+      label
+      tooltipIcon
+    </View>
+  };
 };
