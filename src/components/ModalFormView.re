@@ -106,6 +106,31 @@ module CloseButton = {
   };
 };
 
+module Large = {
+  [@react.component]
+  let make = (~closing=?, ~title=?, ~back=?, ~loading=?, ~children, ~style=?) => {
+    let closeButton = closing->Option.map(closing => <CloseButton closing />);
+
+    let backButton = back->Option.map(back => <BackButton back />);
+
+    let headerCenter =
+      title->Option.map(title =>
+        <Typography.Headline style=FormStyles.header>
+          title->React.string
+        </Typography.Headline>
+      );
+
+    <ModalTemplate.Large
+      ?headerCenter
+      headerRight=?closeButton
+      headerLeft=?backButton
+      ?loading
+      ?style>
+      children
+    </ModalTemplate.Large>;
+  };
+};
+
 [@react.component]
 let make = (~closing=?, ~title=?, ~back=?, ~loading=?, ~children, ~style=?) => {
   let closeButton = closing->Option.map(closing => <CloseButton closing />);

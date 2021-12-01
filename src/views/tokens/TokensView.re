@@ -81,6 +81,11 @@ let make = () => {
     </Typography.Headline>
     <AddTokenButton chain=?{apiVersion->Option.map(v => v.chain)} />
     <Table.Head>
+      <TokenRowItem.CellStandard>
+        <Typography.Overline3>
+          I18n.t#token_column_standard->React.string
+        </Typography.Overline3>
+      </TokenRowItem.CellStandard>
       <TokenRowItem.CellName>
         <Typography.Overline3>
           I18n.t#token_column_name->React.string
@@ -96,6 +101,12 @@ let make = () => {
           I18n.t#token_column_address->React.string
         </Typography.Overline3>
       </TokenRowItem.CellAddress>
+      <TokenRowItem.CellTokenId>
+        <Typography.Overline3>
+          I18n.t#token_column_tokenid->React.string
+        </Typography.Overline3>
+      </TokenRowItem.CellTokenId>
+      <TokenRowItem.CellAction> React.null </TokenRowItem.CellAction>
     </Table.Head>
     <View style=styles##list>
       {switch (tokensRequest) {
@@ -107,9 +118,15 @@ let make = () => {
        | Loading(Some(tokens))
        | Done(Ok(tokens), _) =>
          tokens
-         ->PublicKeyHash.Map.valuesToArray
-         ->Array.map(token =>
-             <TokenRowItem key=(token.address :> string) token />
+         ->TokenRegistry.Cache.valuesToArray
+         ->Array.keepMap(
+             fun
+             | Full(token) =>
+               {
+                 <TokenRowItem key=(token.address :> string) token />;
+               }
+               ->Some
+             | Partial(_, _) => None,
            )
          ->React.array
        | Done(Error(error), _) => <ErrorView error />

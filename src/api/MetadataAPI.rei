@@ -28,6 +28,8 @@ type Errors.t +=
   | NoTzip12Metadata(PublicKeyHash.t)
   | TokenIdNotFound(PublicKeyHash.t, int);
 
+let toolkit: ConfigContext.env => ReTaquito.Toolkit.toolkit;
+
 module Tzip16: {
   let makeContract:
     (ReTaquito.Toolkit.toolkit, PublicKeyHash.t) =>
@@ -35,7 +37,7 @@ module Tzip16: {
 
   let read:
     ReTaquitoContracts.Tzip16Contract.t =>
-    Promise.t(ReTaquitoTypes.Tzip16.metadata);
+    Promise.t(ReTaquitoTypes.Tzip16.metadataRes);
 };
 
 module Tzip12: {
@@ -56,4 +58,8 @@ module Tzip12: {
   let read:
     (ReTaquitoContracts.Tzip12Tzip16Contract.t, int) =>
     Promise.t(ReTaquitoTypes.Tzip12.metadata);
+
+  let readContractMetadata:
+    ReTaquitoContracts.Tzip12Tzip16Contract.t =>
+    Promise.t(ReTaquitoTypes.Tzip16.metadataRes);
 };

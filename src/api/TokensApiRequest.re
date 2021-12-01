@@ -24,18 +24,8 @@
 /*****************************************************************************/
 
 include ApiRequest;
+
 open Let;
-
-type Errors.t +=
-  | NotFA12Contract(string);
-
-let () =
-  Errors.registerHandler(
-    "Tokens",
-    fun
-    | NotFA12Contract(_) => I18n.t#error_check_contract->Some
-    | _ => None,
-  );
 
 let useCheckTokenContract = () => {
   let set = (~config, address) =>
@@ -43,53 +33,149 @@ let useCheckTokenContract = () => {
   ApiRequest.useSetter(~set, ~kind=Logs.Tokens, ~toast=false, ());
 };
 
-let useLoadFA12Balance =
-    (~requestState, ~address: PublicKeyHash.t, ~token: PublicKeyHash.t) => {
-  let get = (~config, (address, token)) =>
-    config->NodeAPI.Tokens.runFA12GetBalance(~address, ~token);
+let useLoadBalance =
+    (
+      ~requestState,
+      ~address: PublicKeyHash.t,
+      ~token: PublicKeyHash.t,
+      ~kind: TokenRepr.kind,
+    ) => {
+  let get = (~config, (address, token, kind)) =>
+    switch (kind) {
+    | TokenRepr.FA1_2 =>
+      config->NodeAPI.Tokens.runFA12GetBalance(~address, ~token)
+    | FA2(tokenId) =>
+      config->NodeAPI.Tokens.callFA2BalanceOf(address, token, tokenId)
+    };
 
   ApiRequest.useLoader(
     ~get,
     ~kind=Logs.Tokens,
     ~requestState,
-    (address, token),
+    (address, token, kind),
   );
 };
 
-let tokensStorageKey = "wallet-tokens";
-
 let useLoadTokens = requestState => {
   let get = (~config as _, ()) =>
-    LocalStorage.getItem(tokensStorageKey)
-    ->Js.Nullable.toOption
-    ->Option.mapWithDefault([||], storageString =>
-        storageString->Js.Json.parseExn->Token.Decode.array
-      )
-    ->Array.map(token => {(token.address, token)})
-    ->PublicKeyHash.Map.fromArray
-    ->Promise.ok;
+    TokensAPI.registeredTokens(`FT)->Promise.value;
 
   ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, ());
 };
 
-let useDelete = (~sideEffect=?, ()) => {
-  let set = (~config as _, token) => {
-    let tokens =
-      LocalStorage.getItem(tokensStorageKey)
-      ->Js.Nullable.toOption
-      ->Option.mapWithDefault([||], storageString =>
-          storageString->Js.Json.parseExn->Token.Decode.array
-        );
+type nftCacheRequest = {
+  holder: PublicKeyHash.t,
+  allowHidden: bool,
+};
 
-    LocalStorage.setItem(
-      tokensStorageKey,
-      tokens
-      ->Array.keep(t => t != token)
-      ->Token.Encode.array
-      ->Js.Json.stringify,
-    )
-    ->Promise.ok;
+let useLoadCachedNFTs = (requestState, request) => {
+  let get = (~config as _, request) =>
+    TokensAPI.registeredTokens(`NFT((request.holder, request.allowHidden)))
+    ->Promise.value;
+
+  ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, request);
+};
+
+type tokensRequest = {
+  account: PublicKeyHash.t,
+  index: int,
+  numberByAccount: int,
+};
+
+type registry = {
+  registered: array(TokenRegistry.Cache.token),
+  toRegister: array(TokenRegistry.Cache.token),
+  nextIndex: int,
+};
+
+let useLoadTokensRegistry = (requestState, request) => {
+  let get = (~config, request) => {
+    let%AwaitMap (registered, toRegister, nextIndex) =
+      TokensAPI.fetchAccountsTokensRegistry(
+        config,
+        ~accounts=[request.account],
+        ~index=request.index,
+        ~numberByAccount=request.numberByAccount,
+      );
+    {registered, toRegister, nextIndex};
   };
+
+  ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, request);
+};
+
+type tokens = TokensAPI.fetched;
+
+type nftRequest = {
+  account: PublicKeyHash.t,
+  allowHidden: bool,
+  numberByAccount: int,
+  fromCache: bool,
+};
+
+let useLoadAccountNFTs =
+    (
+      onTokens,
+      onStop,
+      (apiRequest, setRequest),
+      tokensNumberRequest,
+      nftRequest,
+    ) => {
+  let get = (~config, {account, allowHidden, numberByAccount, fromCache}) => {
+    TokensAPI.fetchAccountNFTs(
+      config,
+      ~account,
+      ~numberByAccount,
+      ~onTokens,
+      ~onStop,
+      ~allowHidden,
+      ~fromCache,
+    );
+  };
+
+  let getRequest =
+    ApiRequest.useGetter(~get, ~kind=Logs.Tokens, ~setRequest, ());
+
+  let isMounted = ReactUtils.useIsMounted();
+
+  let conditionToLoad = (request, isMounted) => {
+    let requestNotAskedAndMounted = request->isNotAsked && isMounted;
+    let requestDoneButReloadOnMount = request->isDone && !isMounted;
+    requestNotAskedAndMounted || requestDoneButReloadOnMount;
+  };
+
+  React.useEffect5(
+    () =>
+      if (conditionToLoad(apiRequest, isMounted)) {
+        getRequest(nftRequest)->ignore;
+        None;
+      } else {
+        switch (apiRequest, tokensNumberRequest) {
+        | (Done(Ok(`Cached(tokens)), _), Done(Ok(tokensNumber), _)) =>
+          if (tokens->PublicKeyHash.Map.isEmpty
+              && tokensNumber > 0
+              && tokensNumber <= 50) {
+            getRequest({...nftRequest, fromCache: false})->ignore;
+          };
+          None;
+        | _ => None
+        };
+      },
+    (isMounted, apiRequest, nftRequest, setRequest, tokensNumberRequest),
+  );
+
+  (apiRequest, getRequest);
+};
+
+let useAccountTokensNumber = (requestState, account) => {
+  let get = (~config, account) =>
+    TokensAPI.fetchAccountTokensNumber(config, ~account);
+
+  ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, account);
+};
+
+let useDelete = (~sideEffect=?, ()) => {
+  let set = (~config as _, token) =>
+    TokensAPI.removeToken(token, ~pruneCache=true)->Promise.value;
 
   ApiRequest.useSetter(
     ~logOk=_ => I18n.t#token_deleted,
@@ -102,31 +188,28 @@ let useDelete = (~sideEffect=?, ()) => {
 };
 
 let useCreate = (~sideEffect=?, ()) => {
-  let (_checkTokenRequest, checkToken) = useCheckTokenContract();
-  let set = (~config as _, token) => {
-    let%Await tokenKind = checkToken(token.TokenRepr.address);
-
-    let%AwaitMap () =
-      tokenKind == `KFA1_2
-        ? Promise.ok()
-        : Promise.err(NotFA12Contract((token.TokenRepr.address :> string)));
-
-    let tokens =
-      LocalStorage.getItem(tokensStorageKey)
-      ->Js.Nullable.toOption
-      ->Option.mapWithDefault([||], storageString =>
-          storageString->Js.Json.parseExn->Token.Decode.array
-        );
-
-    LocalStorage.setItem(
-      tokensStorageKey,
-      tokens->Array.concat([|token|])->Token.Encode.array->Js.Json.stringify,
-    )
-    ->Promise.ok;
-  };
+  let set = (~config, token) => TokensAPI.addFungibleToken(config, token);
 
   ApiRequest.useSetter(
     ~logOk=_ => I18n.t#token_created,
+    ~toast=false,
+    ~set,
+    ~kind=Logs.Tokens,
+    ~sideEffect?,
+    (),
+  );
+};
+
+type nfts = {
+  tokens: TokenRegistry.Cache.t,
+  holder: PublicKeyHash.t,
+};
+
+let useRegisterNFTs = (~sideEffect=?, ()) => {
+  let set = (~config as _, nfts) =>
+    TokensAPI.registerNFTs(nfts.tokens, nfts.holder)->Promise.value;
+
+  ApiRequest.useSetter(
     ~toast=false,
     ~set,
     ~kind=Logs.Tokens,

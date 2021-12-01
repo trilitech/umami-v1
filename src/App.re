@@ -160,6 +160,7 @@ module AppView = {
                              setOnboardingState(_ => AddAccountModal)
                            }
                          />
+                       | Nft => <NftView />
                        | Operations => <OperationsView />
                        | AddressBook => <AddressBookView />
                        | Delegations => <DelegationsView />

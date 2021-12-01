@@ -39,7 +39,7 @@ module Base = {
     [@react.component]
     let make = (~token: Token.t, ~mapWithLoading) => {
       let balanceTokenTotal =
-        StoreContext.BalanceToken.useGetTotal(token.address);
+        StoreContext.BalanceToken.useGetTotal(token.address, token.kind);
 
       balanceTokenTotal->mapWithLoading(
         fun

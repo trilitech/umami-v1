@@ -36,6 +36,14 @@ type Errors.t +=
   | TokenIdNotFound(PublicKeyHash.t, int)
   | IllformedToken(PublicKeyHash.t, int, string);
 
+let toolkit = (config: ConfigContext.env) => {
+  let toolkit = Toolkit.create(config.network.endpoint);
+  toolkit->Toolkit.addExtension(ReTaquitoContracts.Extension.tzip12Module());
+  toolkit->Toolkit.addExtension(ReTaquitoContracts.Extension.tzip16Module());
+
+  toolkit;
+};
+
 module Tzip16 = {
   open Tzip16;
 
@@ -256,6 +264,7 @@ module Tzip12 = {
 
   let makeContract = (toolkit, address) => {
     toolkit->Toolkit.addExtension(Extension.tzip12Module());
+    toolkit->Toolkit.addExtension(Extension.tzip16Module());
 
     toolkit.Toolkit.contract
     ->Tzip12Tzip16Contract.at(address)
@@ -284,6 +293,16 @@ module Tzip12 = {
       readFromStorage(contract, tokenId)
     | r => Promise.value(r)
     };
+  };
+
+  let readContractMetadata = (contract: Tzip12Tzip16Contract.t) => {
+    contract##tzip16().getMetadata(.)
+    ->ReTaquitoError.fromPromiseParsed
+    ->Promise.mapError(
+        fun
+        | ReTaquitoError.NoMetadata => NoTzip16Metadata(contract##address)
+        | e => e,
+      );
   };
 };
 

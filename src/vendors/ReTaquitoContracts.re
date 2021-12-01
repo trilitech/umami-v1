@@ -71,8 +71,9 @@ module Tzip16Contract = {
 module Tzip12Tzip16Contract = {
   include Contract(Types.Tzip12Tzip16Contract);
 
-  let at = (contract, pkh) =>
+  let at = (contract, pkh) => {
     at(contract, pkh, ~extension=Extension.(compose(tzip12, tzip16)));
+  };
 };
 
 /** FA12 contracts specific interface */

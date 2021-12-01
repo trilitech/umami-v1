@@ -74,11 +74,15 @@ let styles =
         style(
           ~width=643.->dp,
           ~paddingTop=35.->dp,
-          ~paddingBottom=35.->dp,
-          ~paddingRight=120.->dp,
-          ~paddingLeft=130.->dp,
+          ~paddingBottom=32.->dp,
+          ~paddingRight=117.->dp,
+          ~paddingLeft=127.->dp,
           (),
         ),
+      "scrollview":
+        style(~paddingBottom=3.->dp, ~paddingHorizontal=3.->dp, ()),
+      "fullScreenWidth": style(~width=100.->pct, ()),
+      "fullScreenHeight": style(~height=100.->pct, ()),
       "modalDialog":
         style(
           ~width=522.->dp,
@@ -100,6 +104,7 @@ module Base = {
         ~headerCenter=?,
         ~loading as (loadingState, loadingTitle)=(false, None),
         ~style as styleFromProp=?,
+        ~contentContainerStyle=?,
       ) => {
     let theme = ThemeContext.useTheme();
 
@@ -112,8 +117,11 @@ module Base = {
         |])
       )>
       headerCenter->ReactUtils.opt
-      <DocumentContext.ScrollView showsVerticalScrollIndicator=true>
-        <View> children </View>
+      <DocumentContext.ScrollView
+        style=styles##scrollview
+        ?contentContainerStyle
+        showsVerticalScrollIndicator=true>
+        children
         {loadingState
            ? <View
                style=Style.(
@@ -171,6 +179,37 @@ module Form = {
         arrayOption([|
           Some(style(~maxHeight=(height *. 0.9)->dp, ())),
           Some(styles##modalForm),
+          styleFromProp,
+        |])
+      )>
+      children
+    </Base>;
+  };
+};
+
+module Large = {
+  [@react.component]
+  let make =
+      (
+        ~headerLeft=?,
+        ~headerRight=?,
+        ~headerCenter=?,
+        ~loading=?,
+        ~style as styleFromProp=?,
+        ~children,
+      ) => {
+    let {height} = Dimensions.useWindowDimensions();
+
+    <Base
+      ?headerLeft
+      ?headerRight
+      ?headerCenter
+      ?loading
+      contentContainerStyle=styles##fullScreenHeight
+      style=Style.(
+        arrayOption([|
+          Some(style(~height=height->dp, ())),
+          Some(styles##fullScreenWidth),
           styleFromProp,
         |])
       )>
