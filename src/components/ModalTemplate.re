@@ -74,11 +74,13 @@ let styles =
         style(
           ~width=643.->dp,
           ~paddingTop=35.->dp,
-          ~paddingBottom=35.->dp,
-          ~paddingRight=120.->dp,
-          ~paddingLeft=130.->dp,
+          ~paddingBottom=32.->dp,
+          ~paddingRight=117.->dp,
+          ~paddingLeft=127.->dp,
           (),
         ),
+      "scrollview":
+        style(~paddingBottom=3.->dp, ~paddingHorizontal=3.->dp, ()),
       "fullScreenWidth": style(~width=100.->pct, ()),
       "fullScreenHeight": style(~height=100.->pct, ()),
       "modalDialog":
@@ -116,7 +118,9 @@ module Base = {
       )>
       headerCenter->ReactUtils.opt
       <DocumentContext.ScrollView
-        ?contentContainerStyle showsVerticalScrollIndicator=true>
+        style=styles##scrollview
+        ?contentContainerStyle
+        showsVerticalScrollIndicator=true>
         children
         {loadingState
            ? <View
