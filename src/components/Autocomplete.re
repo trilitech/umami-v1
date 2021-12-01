@@ -28,14 +28,7 @@ open ReactNative;
 module Item = {
   let styles =
     Style.(
-      StyleSheet.create({
-        "itemContainer":
-          style(
-            ~flexDirection=`row,
-            //~alignItems=`center,
-            (),
-          ),
-      })
+      StyleSheet.create({"itemContainer": style(~flexDirection=`row, ())})
     );
 
   [@react.component]
@@ -84,6 +77,19 @@ module Item = {
     </View>;
   };
 };
+
+let styles =
+  Style.(
+    StyleSheet.create({
+      "menuCompensateInputPadding":
+        style(
+          ~marginTop=8.->dp,
+          ~marginRight=(-12.)->dp,
+          ~marginLeft=(-21.)->dp,
+          (),
+        ),
+    })
+  );
 
 [@react.component]
 let make =
@@ -225,16 +231,19 @@ let make =
       ?reversePositionPct
       onScroll
       scrollEventThrottle=16
+      popoverConfig
       isOpen={
         hasFocus && list->Array.size > 0 && (dropdownOnEmpty || value != "")
       }
-      popoverConfig
       onRequestClose={_ => {
         setHasFocus(_ => false);
         setSelectedItemIndex(_ => 0);
       }}
       style=Style.(
-        array([|style(~backgroundColor=theme.colors.background, ())|])
+        array([|
+          styles##menuCompensateInputPadding,
+          style(~backgroundColor=theme.colors.background, ()),
+        |])
       )>
       {reversed => {
          dropdownReversed.current = reversed;
