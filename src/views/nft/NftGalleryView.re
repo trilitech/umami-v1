@@ -37,7 +37,7 @@ let styles =
         ),
       "card":
         style(
-          ~paddingTop=20.->pct,
+          ~paddingTop=20.->dp,
           ~flexBasis="content",
           ~flex=1.,
           ~maxWidth=18.->pct,
@@ -52,7 +52,7 @@ let styles =
           ~paddingBottom=10.->dp,
           ~paddingLeft=10.->dp,
           ~justifyContent=`center,
-          ~width=100.->dp,
+          ~width=100.->pct,
           (),
         ),
       "image":
