@@ -24,10 +24,12 @@
 /*****************************************************************************/
 
 type Errors.t +=
-  | UnknownToken(PublicKeyHash.t)
+  | UnknownToken(PublicKeyHash.t, option(int))
   | NoRows
   | CannotParseTokenAmount(ReBigNumber.t, int, int)
-  | CannotParseTezAmount(ReBigNumber.t, int, int);
+  | CannotParseTezAmount(ReBigNumber.t, int, int)
+  | FA1_2InvalidTokenId(PublicKeyHash.t)
+  | FA2InvalidTokenId(PublicKeyHash.t);
 
 type t = list(Transfer.elt);
 /* Public key hash encoding */
