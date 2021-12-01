@@ -37,22 +37,22 @@ let styles =
         ),
       "card":
         style(
-          ~paddingTop="20px",
+          ~paddingTop=20.->pct,
           ~flexBasis="content",
           ~flex=1.,
-          ~maxWidth="18%",
-          ~minWidth="18%",
-          ~marginRight="1%",
-          ~marginLeft="1%",
+          ~maxWidth=18.->pct,
+          ~minWidth=18.->pct,
+          ~marginRight=1.->pct,
+          ~marginLeft=1.->pct,
           (),
         ),
       "text":
         style(
-          ~paddingTop="10px",
-          ~paddingBottom="10px",
-          ~paddingLeft="10px",
+          ~paddingTop=10.->dp,
+          ~paddingBottom=10.->dp,
+          ~paddingLeft=10.->dp,
           ~justifyContent=`center,
-          ~width="100%",
+          ~width=100.->dp,
           (),
         ),
       "image":
