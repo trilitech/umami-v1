@@ -93,18 +93,20 @@ let make = (~nfts: TokenRegistry.Cache.t, ~account) => {
       (selected, allTokensId),
     );
 
-  let (allSelectedHidden, noSelectedHidden) = {
+  let (oneSelectedHidden, oneSelectedShown) = {
     React.useMemo2(
       () => {
         selected->PublicKeyHash.Map.reduce(
-          (true, true), ((all, none), address, ids) =>
+          (false, false), ((oneHidden, oneShown), address, ids) =>
           ids->Map.Int.reduce(
-            (all, none),
-            ((all, none), id, _) => {
-              let currentHidden =
-                TokenRegistry.Registered.isHidden(hidden, address, id);
-              (all && currentHidden, none && !currentHidden);
-            },
+            (oneHidden, oneShown), ((oneHidden, oneShown), id, _) =>
+            oneHidden && oneShown
+              ? (oneHidden, oneShown)  // avoids calling isHidden if not necessary
+              : {
+                let currentHidden =
+                  TokenRegistry.Registered.isHidden(hidden, address, id);
+                (oneHidden || currentHidden, oneShown || !currentHidden);
+              }
           )
         )
       },
@@ -157,10 +159,7 @@ let make = (~nfts: TokenRegistry.Cache.t, ~account) => {
            icon=Icons.Eye.build
            onPress={_ => {setHidden(selected, false)}}
          />,
-         allSelectedHidden
-         && !selected->PublicKeyHash.Map.isEmpty
-         || !allSelectedHidden
-         && !noSelectedHidden,
+         oneSelectedHidden,
        )}
       {ReactUtils.onlyWhen(
          <IconButton
@@ -171,10 +170,7 @@ let make = (~nfts: TokenRegistry.Cache.t, ~account) => {
            icon=Icons.EyeStrike.build
            onPress={_ => {setHidden(selected, true)}}
          />,
-         noSelectedHidden
-         && !selected->NftSelection.isEmpty
-         || !allSelectedHidden
-         && !noSelectedHidden,
+         oneSelectedShown,
        )}
     </View>
     <ScrollView> contracts </ScrollView>
