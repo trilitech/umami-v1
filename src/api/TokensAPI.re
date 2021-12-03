@@ -369,13 +369,22 @@ let fetchIfNecessary =
   };
 };
 
+let updatePartial = (tokenContract, bcdToken) => {
+  BCD.toTokenRepr(tokenContract, bcdToken)
+  ->Option.mapWithDefault(
+      Cache.Partial(tokenContract, bcdToken->BCD.updateFromBuiltinTemplate), t =>
+      Full(t)
+    );
+};
+
 let getTokenRepr =
     (config, tokenContract, bcdToken: BCD.tokenBalance, tzip12Cache, inCache) => {
   switch (inCache) {
-  | None =>
+  | None
+  | Some(Cache.Partial(_, _)) =>
     let%FtMap res =
       fetchIfNecessary(config, tokenContract, bcdToken, tzip12Cache);
-    res->Result.mapWithDefault(Cache.Partial(tokenContract, bcdToken), t =>
+    res->Result.mapWithDefault(updatePartial(tokenContract, bcdToken), t =>
       Cache.Full(t)
     );
   | Some(t) => Promise.value(t)

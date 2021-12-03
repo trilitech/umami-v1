@@ -23,42 +23,6 @@
 /*                                                                           */
 /*****************************************************************************/
 
-type tokenBalance = {
-  balance: ReBigNumber.t,
-  contract: PublicKeyHash.t,
-  token_id: int,
-  network: string,
-  name: option(string),
-  symbol: option(string),
-  decimals: option(int), //default: 0
-  description: option(string),
-  artifact_uri: option(string),
-  display_uri: option(string),
-  thumbnail_uri: option(string),
-  external_uri: option(string),
-  is_transferable: option(bool), // default: true
-  is_boolean_amount: option(bool), // default: false
-  should_prefer_symbol: option(bool), //default: false
-  formats: option(array(TokenRepr.Metadata.format)),
-};
-
-type t = {
-  balances: array(tokenBalance),
-  total: int,
-};
-
-let toTokenRepr: (TokenContract.t, tokenBalance) => option(TokenRepr.t);
-
-let updateFromBuiltinTemplate: tokenBalance => tokenBalance;
-
-let isNFT: tokenBalance => bool;
-
-/* Maximum tokens by request, which is 50 in the current API */
-let requestPageSize: int;
-
-module Decode: {
-  let tokenBalanceDecoder: Json.Decode.decoder(tokenBalance);
-  let decoder: Json.Decode.decoder(t);
-};
-
-module Encode: {let tokenBalanceEncoder: Json.Encode.encoder(tokenBalance);};
+let findTemplate:
+  (PublicKeyHash.t, int, option(TokenRepr.Metadata.asset)) =>
+  option(TokenRepr.t);

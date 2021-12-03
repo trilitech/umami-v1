@@ -23,42 +23,37 @@
 /*                                                                           */
 /*****************************************************************************/
 
-type tokenBalance = {
-  balance: ReBigNumber.t,
-  contract: PublicKeyHash.t,
-  token_id: int,
-  network: string,
-  name: option(string),
-  symbol: option(string),
-  decimals: option(int), //default: 0
-  description: option(string),
-  artifact_uri: option(string),
-  display_uri: option(string),
-  thumbnail_uri: option(string),
-  external_uri: option(string),
-  is_transferable: option(bool), // default: true
-  is_boolean_amount: option(bool), // default: false
-  should_prefer_symbol: option(bool), //default: false
-  formats: option(array(TokenRepr.Metadata.format)),
+module Templates = PublicKeyHash.Map;
+
+let hicetnunc = {
+  let address =
+    "KT1RJ6PbjHpwc3M5rw5s2Nbmefwbuwbdxton"->PublicKeyHash.build->Result.getExn;
+  (
+    address,
+    (tokenId, asset) =>
+      TokenRepr.{
+        kind: TokenRepr.FA2(tokenId),
+        address,
+        alias: Format.sprintf("HEN#%d", tokenId),
+        symbol: Format.sprintf("HEN#%d", tokenId),
+        chain: `Mainnet->Network.getChainId,
+        decimals: 0,
+        asset:
+          asset->Option.getWithDefault({
+            ...TokenRepr.defaultAsset,
+            isBooleanAmount: true,
+          }),
+      },
+  );
 };
 
-type t = {
-  balances: array(tokenBalance),
-  total: int,
+let addTemplate = (templates, (address, template)) =>
+  templates->Templates.set(address, template);
+
+let templates = Templates.empty->addTemplate(hicetnunc);
+
+let findTemplate = (address, tokenId, asset) => {
+  templates
+  ->Templates.get(address)
+  ->Option.map(template => template(tokenId, asset));
 };
-
-let toTokenRepr: (TokenContract.t, tokenBalance) => option(TokenRepr.t);
-
-let updateFromBuiltinTemplate: tokenBalance => tokenBalance;
-
-let isNFT: tokenBalance => bool;
-
-/* Maximum tokens by request, which is 50 in the current API */
-let requestPageSize: int;
-
-module Decode: {
-  let tokenBalanceDecoder: Json.Decode.decoder(tokenBalance);
-  let decoder: Json.Decode.decoder(t);
-};
-
-module Encode: {let tokenBalanceEncoder: Json.Encode.encoder(tokenBalance);};
