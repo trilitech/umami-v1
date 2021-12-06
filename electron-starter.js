@@ -30,6 +30,7 @@ const { app, BrowserWindow, ipcMain, shell, Menu, MenuItem } = require('electron
 const path = require('path')
 const url = require('url')
 const { setAppMenu } = require('./src/AppMenu.bs')
+const { autoUpdater } = require('electron-updater')
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -144,12 +145,57 @@ if (!app.isDefaultProtocolClient('umami')) {
   app.setAsDefaultProtocolClient('umami')
 }
 
+let setupAutoUpdate = async () => {
+  let config = await mainWindow.webContents.executeJavaScript(`localStorage.getItem("Config")`);
+  config = JSON.parse(config);
+  autoUpdater.autoDownload = config.autoUpdates;
+
+  ipcMain.on("check-for-updates", _ => {
+    console.log("checking for updates received");
+    autoUpdater.checkForUpdates()
+      .catch(err => {
+        console.log("There's been an error while checking for updates.");
+        mainWindow.webContents.send('check-update-error', err.toString());
+      })
+  });
+
+  ipcMain.on("check-and-ask", _ => {
+    let autodown_prev = autoUpdater.autoDownload
+    autoUpdater.autoDownload = false
+    autoUpdater.checkForUpdates()
+      .catch(err => mainWindow.webContents.send('check-update-error', err.toString()))
+      .finally(_ => autoUpdater.autoDownload = autodown_prev)
+  })
+
+  ipcMain.on("download-update", _ => {
+    autoUpdater.downloadUpdate();
+  })
+
+  ipcMain.on("setAutoDownload", (_, msg) => {
+    let autoDownload = JSON.parse(msg);
+    autoUpdater.autoDownload = autoDownload;
+  })
+
+  ipcMain.on('quit-and-install', _ => autoUpdater.quitAndInstall())
+
+  autoUpdater.on("download-progress", (progressObj) => mainWindow.webContents.send('download-progress', progressObj.percent));
+  autoUpdater.on("update-not-available", _ => mainWindow.webContents.send('no-update', ""))
+  autoUpdater.on('update-available', _ => mainWindow.webContents.send('update-available', ""))
+  autoUpdater.on('update-downloaded', _ => mainWindow.webContents.send('update-downloaded', ""))
+  autoUpdater.on('error', err => {
+    console.log("oops, an error: ", err);
+    mainWindow.webContents.send('update-error', err.toString());
+  })
+
+}
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on('ready', () => {
-  setAppMenu()
-  createWindow()
+  setAppMenu();
+  createWindow();
+  setupAutoUpdate();
 })
 
 // Quit when all windows are closed.

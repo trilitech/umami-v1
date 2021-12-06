@@ -43,6 +43,8 @@
     "electron-devtools-installer": "^3.1.0",
     "electron-reload": "^1.5.0",
     "elliptic": "^6.5.4",
+    "electron-updater": "^4.6.1",
+    "http-server": "^14.0.0",
     "is-ci": "^3.0.0",
     "jsqr": "1.4.0",
     "libsodium-wrappers-sumo": "^0.7.9",
@@ -103,6 +105,12 @@
       "entitlements": "public/entitlements.mac.plist",
       "category": "public.app-category.Reference"
     },
+    "publish": [
+      {
+        "provider": "generic",
+        "url": "http://127.0.0.1:8000"
+      }
+    ],
     "linux": {
       "target": "AppImage",
       "mimeTypes": [
