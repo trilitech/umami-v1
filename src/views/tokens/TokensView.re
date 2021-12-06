@@ -126,7 +126,7 @@ let make = () => {
                  <TokenRowItem key=(token.address :> string) token />;
                }
                ->Some
-             | Partial(_, _) => None,
+             | Partial(_, _, _) => None,
            )
          ->React.array
        | Done(Error(error), _) => <ErrorView error />

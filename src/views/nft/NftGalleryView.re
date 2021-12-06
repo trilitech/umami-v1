@@ -158,7 +158,7 @@ let make = (~nfts: TokenRegistry.Cache.t) => {
         ->TokenRegistry.Cache.valuesToArray
         ->Array.keepMap(
             fun
-            | Partial(_, _) => None
+            | Partial(_, _, _) => None
             | Full(nft) =>
               account->Option.map(account =>
                 <Card

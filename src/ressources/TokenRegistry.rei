@@ -61,7 +61,7 @@ module Registered: {
 module Cache: {
   type token =
     | Full(Token.t)
-    | Partial(TokenContract.t, BCD.tokenBalance);
+    | Partial(TokenContract.t, BCD.tokenBalance, bool);
 
   type tokens = Map.Int.t(token);
 

@@ -269,7 +269,7 @@ module Registered = {
 module Cache = {
   type token =
     | Full(Token.t)
-    | Partial(TokenContract.t, BCD.tokenBalance);
+    | Partial(TokenContract.t, BCD.tokenBalance, bool);
 
   type tokens = Map.Int.t(token);
 
@@ -284,33 +284,33 @@ module Cache = {
   let tokenId =
     fun
     | Full(t) => TokenRepr.id(t)
-    | Partial(_, bcd) => bcd.BCD.token_id;
+    | Partial(_, bcd, _) => bcd.BCD.token_id;
 
   let tokenAddress =
     fun
     | Full(t) => t.TokenRepr.address
-    | Partial(_, bcd) => bcd.BCD.contract;
+    | Partial(_, bcd, _) => bcd.BCD.contract;
 
   let tokenName =
     fun
     | Full(t) => t.TokenRepr.alias->Some
-    | Partial(_, bcd) => bcd.BCD.name;
+    | Partial(_, bcd, _) => bcd.BCD.name;
 
   let tokenKind =
     fun
     | Full(t) => TokenContract.fromTokenKind(t.TokenRepr.kind)
-    | Partial(tc, _) => tc.TokenContract.kind;
+    | Partial(tc, _, _) => tc.TokenContract.kind;
 
   let tokenChain =
     fun
     | Full(t) => Some(t.TokenRepr.chain)
-    | Partial(_, bcd) =>
+    | Partial(_, bcd, _) =>
       bcd.BCD.network->Network.networkChain->Option.map(Network.getChainId);
 
   let isNFT =
     fun
     | Full(t) => t->TokenRepr.isNFT
-    | Partial(_, _) => false;
+    | Partial(_, _, _) => false;
 
   let getToken = (cache, pkh, tokenId) => {
     cache
@@ -321,7 +321,7 @@ module Cache = {
   let isFull =
     fun
     | Full(_) => true
-    | Partial(_, _) => false;
+    | Partial(_, _, _) => false;
 
   let getFullToken = (cache, pkh, tokenId) => {
     switch (cache->getToken(pkh, tokenId)) {
@@ -372,8 +372,8 @@ module Cache = {
     let pickToken = (t1, t2) =>
       switch (t1, t2) {
       | (Full(_), Full(_)) => t1
-      | (Full(_) as t, Partial(_, _))
-      | (Partial(_, _), Full(_) as t) => t
+      | (Full(_) as t, Partial(_, _, _))
+      | (Partial(_, _, _), Full(_) as t) => t
       | _ => t1
       };
     let mergeTokens = (_, t1, t2) =>
@@ -424,15 +424,16 @@ module Cache = {
             ("kind", string("full")),
             ("value", t |> Token.Encode.record),
           ])
-        | Partial(tc, bcd) =>
+        | Partial(tc, bcd, retry) =>
           object_([
             ("kind", string("partial")),
             (
               "value",
-              (tc, bcd)
-              |> pair(
+              (tc, bcd, retry)
+              |> tuple3(
                    TokenContract.Encode.record,
                    BCD.Encode.tokenBalanceEncoder,
+                   bool,
                  ),
             ),
           ])
@@ -457,18 +458,30 @@ module Cache = {
       |> PublicKeyHash.Map.toArray
       |> Json.Encode.(array(pair(PublicKeyHash.encoder, contractEncoder)));
 
-    let partialDecoder = json => {
-      open Json.Decode;
-      let (tc, bcd) =
+    let partialValueDecoder = json => {
+      Json.Decode.(
         json
-        |> field(
-             "value",
-             pair(
+        |> either(
+             json =>
+               json
+               |> pair(
+                    TokenContract.Decode.record,
+                    BCD.Decode.tokenBalanceDecoder,
+                  )
+               |> (((tc, bcd)) => (tc, bcd, true)),
+             tuple3(
                TokenContract.Decode.record,
                BCD.Decode.tokenBalanceDecoder,
+               bool,
              ),
-           );
-      Partial(tc, bcd);
+           )
+      );
+    };
+
+    let partialDecoder = json => {
+      open Json.Decode;
+      let (tc, bcd, retry) = json |> field("value", partialValueDecoder);
+      Partial(tc, bcd, retry);
     };
 
     let fullDecoder = json =>

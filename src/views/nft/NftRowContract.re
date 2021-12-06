@@ -27,7 +27,7 @@ let make =
     contract.tokens
     ->Map.Int.map(
         fun
-        | Partial(_, _) => React.null
+        | Partial(_, _, _) => React.null
         | Full(nft) =>
           <NftRowToken
             account
