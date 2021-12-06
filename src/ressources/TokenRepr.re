@@ -165,6 +165,14 @@ let defaultAsset =
     attributes: None,
   };
 
+let thumbnailUriFromFormat = (thumbnailUri, formats) =>
+  switch (formats) {
+  | None => thumbnailUri
+  | Some(formats) =>
+    formats->Array.some((Metadata.{uri}) => uri == thumbnailUri)
+      ? thumbnailUri : None
+  };
+
 type t = {
   kind,
   address,

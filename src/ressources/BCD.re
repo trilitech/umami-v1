@@ -38,7 +38,8 @@ type tokenBalance = {
   external_uri: option(string),
   is_transferable: option(bool), // default: true
   is_boolean_amount: option(bool), // default: false
-  should_prefer_symbol: option(bool) //default: false
+  should_prefer_symbol: option(bool), //default: false
+  formats: option(array(TokenRepr.Metadata.format)),
 };
 
 type t = {
@@ -49,6 +50,7 @@ type t = {
 let toTokenRepr = (tokenContract: TokenContract.t, token) => {
   let chain =
     token.network->Network.networkChain->Option.map(Network.getChainId);
+
   switch (token.symbol, token.name, token.decimals, chain) {
   | (Some(symbol), Some(name), Some(decimals), Some(chain)) =>
     TokenRepr.{
@@ -63,7 +65,11 @@ let toTokenRepr = (tokenContract: TokenContract.t, token) => {
         description: token.description,
         artifactUri: token.artifact_uri,
         displayUri: token.display_uri,
-        thumbnailUri: token.thumbnail_uri,
+        thumbnailUri:
+          TokenRepr.thumbnailUriFromFormat(
+            token.thumbnail_uri,
+            token.formats,
+          ),
         isTransferable: token.is_transferable->Option.getWithDefault(true),
         isBooleanAmount:
           token.is_boolean_amount->Option.getWithDefault(false),
@@ -97,7 +103,13 @@ module Decode = {
     is_transferable: json |> optionalOrNull("is_transferable", bool), // default: true
     is_boolean_amount: json |> optionalOrNull("is_boolean_amount", bool), // default: false
     should_prefer_symbol:
-      json |> optionalOrNull("should_prefer_symbol", bool) //default: false
+      json |> optionalOrNull("should_prefer_symbol", bool), //default: false
+    formats:
+      json
+      |> optionalOrNull(
+           "formats",
+           array(Token.Decode.Metadata.formatDecoder),
+         ),
   };
 
   let decoder = json => {
