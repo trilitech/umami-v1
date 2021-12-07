@@ -25,7 +25,6 @@
 
 /* open UmamiCommon; */
 open Let;
-open TokenRegistry;
 
 type Errors.t +=
   | NotFAContract(string)
@@ -154,14 +153,15 @@ type filter = [ | `Any | `FT | `NFT(PublicKeyHash.t, bool)];
 
 /* From a list of tokens and the cache, reconstructs the list of tokens with
    their metadata the user has registered */
-let unfoldRegistered = (tokens, cache: Cache.t, filter): Cache.withBalance => {
+let unfoldRegistered =
+    (tokens, cache: TokensLibrary.t, filter): TokensLibrary.WithBalance.t => {
   let mergeTokens = (_, registeredToken, cachedToken) => {
     switch (registeredToken, cachedToken) {
     | (None, _)
     | (Some(_), None) => None
     | (Some(registered), Some(cached)) =>
       switch (registered, filter) {
-      | (Registered.NFT(info), `Any) => Some((cached, info.balance))
+      | (RegisteredTokens.NFT(info), `Any) => Some((cached, info.balance))
       | (FT, `FT | `Any) => Some((cached, ReBigNumber.fromInt(0)))
       | (NFT(info), `NFT(holder, allowHidden)) =>
         (!allowHidden ? !info.hidden : true) && info.holder == holder
@@ -179,8 +179,8 @@ let unfoldRegistered = (tokens, cache: Cache.t, filter): Cache.withBalance => {
     | (Some(registeredContract), Some(cachedContract)) =>
       let tokens =
         Map.Int.merge(
-          registeredContract.Registered.tokens,
-          cachedContract.Cache.tokens,
+          registeredContract.RegisteredTokens.tokens,
+          cachedContract.TokensLibrary.Generic.tokens,
           mergeTokens,
         );
 
@@ -191,15 +191,14 @@ let unfoldRegistered = (tokens, cache: Cache.t, filter): Cache.withBalance => {
 };
 
 let registeredTokens = filter => {
-  let%Res tokens = Registered.getWithFallback();
-  let%ResMap cache = Cache.getWithFallback();
+  let%Res tokens = TokenStorage.Registered.getWithFallback();
+  let%ResMap cache = TokenStorage.Cache.getWithFallback();
   tokens->unfoldRegistered(cache, filter);
 };
 
 let hiddenTokens = () => {
-  open Registered;
-  let%ResMap tokens = getWithFallback();
-  tokens->keepTokens((_, _) =>
+  let%ResMap tokens = TokenStorage.Registered.getWithFallback();
+  tokens->RegisteredTokens.keepTokens((_, _) =>
     fun
     | FT => false
     | NFT({hidden}) => hidden
@@ -208,7 +207,7 @@ let hiddenTokens = () => {
 
 // used for registration of custom tokens
 let addTokenToCache = (config, token) => {
-  let address = Cache.tokenAddress(token);
+  let address = TokensLibrary.Token.address(token);
   let%Await tokenKind = config->NodeAPI.Tokens.checkTokenContract(address);
 
   let%AwaitMap () =
@@ -218,33 +217,34 @@ let addTokenToCache = (config, token) => {
     };
 
   let tokens =
-    Cache.getWithFallback()
+    TokenStorage.Cache.getWithFallback()
     ->Result.getWithDefault(PublicKeyHash.Map.empty)
-    ->Cache.addToken(token);
+    ->TokensLibrary.addToken(token);
 
-  Cache.set(tokens);
+  TokenStorage.Cache.set(tokens);
 };
 
 let addTokenToRegistered = (token, kind) => {
   let tokens =
-    Registered.getWithFallback()
+    TokenStorage.Registered.getWithFallback()
     ->Result.getWithDefault(PublicKeyHash.Map.empty)
-    ->Registered.registerToken(token, kind);
+    ->RegisteredTokens.registerToken(token, kind);
 
-  Registered.set(tokens);
+  TokenStorage.Registered.set(tokens);
 };
 
 let registerNFTs = (tokens, holder) => {
-  open Registered;
-  let%ResMap registered = getWithFallback();
-  registered->TokenRegistry.mergeAccountNFTs(tokens, holder)->set;
+  let%ResMap registered = TokenStorage.Registered.getWithFallback();
+  registered
+  ->TokenStorage.mergeAccountNFTs(tokens, holder)
+  ->TokenStorage.Registered.set;
 };
 
 let updateNFTsVisibility = (updatedTokens, ~hidden) => {
-  open Registered;
-  let%ResMap registered = getWithFallback();
-  let registered = registered->updateNFTsVisibility(updatedTokens, hidden);
-  registered->set;
+  let%ResMap registered = TokenStorage.Registered.getWithFallback();
+  let registered =
+    registered->RegisteredTokens.updateNFTsVisibility(updatedTokens, hidden);
+  registered->TokenStorage.Registered.set;
   registered;
 };
 
@@ -254,7 +254,7 @@ let addFungibleToken = (config, token) => {
       ? Promise.err(RegisterNotAFungibleToken(token.address, token.kind))
       : Promise.ok();
   let%AwaitMap () = addTokenToCache(config, Full(token));
-  addTokenToRegistered(token, Registered.FT);
+  addTokenToRegistered(token, RegisteredTokens.FT);
 };
 
 let addNonFungibleToken = (config, token, holder, balance) => {
@@ -265,19 +265,19 @@ let addNonFungibleToken = (config, token, holder, balance) => {
   let%AwaitMap () = addTokenToCache(config, Full(token));
   addTokenToRegistered(
     token,
-    Registered.(NFT({holder, hidden: false, balance})),
+    RegisteredTokens.(NFT({holder, hidden: false, balance})),
   );
 };
 
 let removeFromCache = token => {
-  let%ResMap tokens = Cache.getWithFallback();
-  tokens->Cache.removeToken(token)->Cache.set;
+  let%ResMap tokens = TokenStorage.Cache.getWithFallback();
+  tokens->TokensLibrary.removeToken(token)->TokenStorage.Cache.set;
 };
 
 let removeFromRegistered = (token: Token.t) => {
-  let%ResMap tokens = Registered.getWithFallback();
-  Registered.set(
-    tokens->Registered.removeToken(token.address, TokenRepr.id(token)),
+  let%ResMap tokens = TokenStorage.Registered.getWithFallback();
+  TokenStorage.Registered.set(
+    tokens->RegisteredTokens.removeToken(token.address, TokenRepr.id(token)),
   );
 };
 
@@ -388,7 +388,7 @@ let updatePartial = (error, tokenContract, bcdToken: BCD.tokenBalance) => {
   let token =
     BCD.toTokenRepr(tokenContract, bcdToken)
     ->Option.mapWithDefault(
-        Cache.Partial(
+        TokensLibrary.Token.Partial(
           tokenContract,
           bcdToken->BCD.updateFromBuiltinTemplate,
           retry,
@@ -403,19 +403,19 @@ let getTokenRepr =
     (config, tokenContract, bcdToken: BCD.tokenBalance, tzip12Cache, inCache) => {
   switch (inCache) {
   | None
-  | Some(Cache.Partial(_, _, true)) =>
+  | Some(TokensLibrary.Token.Partial(_, _, true)) =>
     let%FtMap res =
       fetchIfNecessary(config, tokenContract, bcdToken, tzip12Cache);
     switch (res) {
     | Error(e) => updatePartial(e, tokenContract, bcdToken)
-    | Ok(t) => (Cache.Full(t), bcdToken.balance)
+    | Ok(t) => (TokensLibrary.Token.Full(t), bcdToken.balance)
     };
 
   | Some(t) => Promise.value((t, bcdToken.balance))
   };
 };
 
-let addContractIfNecessary = (cache: Cache.t, tzip12Cache, address) => {
+let addContractIfNecessary = (cache: TokensLibrary.t, tzip12Cache, address) => {
   let contract = cache->PublicKeyHash.Map.get(address);
 
   let fetchName = () => {
@@ -430,7 +430,7 @@ let addContractIfNecessary = (cache: Cache.t, tzip12Cache, address) => {
   | None =>
     let%FtMap name = fetchName();
     let contract =
-      Cache.{
+      TokensLibrary.Generic.{
         name: Result.getWithDefault(name, None),
         address,
         tokens: Map.Int.empty,
@@ -439,7 +439,8 @@ let addContractIfNecessary = (cache: Cache.t, tzip12Cache, address) => {
   };
 };
 
-let pruneMissingContracts = (bcdTokens, config, contracts, cache: Cache.t) => {
+let pruneMissingContracts =
+    (bcdTokens, config, contracts, cache: TokensLibrary.t) => {
   // In an ideal world, the indexer always returns all the contracts
   let tryInTokenContracts = (bcdTokens, token, ids) =>
     contracts
@@ -452,10 +453,10 @@ let pruneMissingContracts = (bcdTokens, config, contracts, cache: Cache.t) => {
   let tryInCache = (bcdTokens, token, ids) =>
     cache
     ->PublicKeyHash.Map.get(token)
-    ->Option.flatMap(c => c.Cache.tokens->Map.Int.minimum)
+    ->Option.flatMap(c => c.TokensLibrary.Generic.tokens->Map.Int.minimum)
     ->Option.map(((_, token)) => {
-        let address = Cache.tokenAddress(token);
-        let kind = Cache.tokenKind(token);
+        let address = TokensLibrary.Token.address(token);
+        let kind = TokensLibrary.Token.kind(token);
         PublicKeyHash.Map.set(
           bcdTokens,
           address,
@@ -496,24 +497,24 @@ let pruneMissingContracts = (bcdTokens, config, contracts, cache: Cache.t) => {
 };
 
 let updateCache = (cache, token) =>
-  cache->Cache.updateToken(
-    Cache.tokenAddress(token),
-    Cache.tokenId(token),
+  cache->TokensLibrary.Generic.updateToken(
+    TokensLibrary.Token.address(token),
+    TokensLibrary.Token.id(token),
     ~updatedValue=
       fun
       | None
-      | Some(Cache.Partial(_)) => Some(token)
+      | Some(TokensLibrary.Token.Partial(_)) => Some(token)
       | Some(t) => Some(t),
   );
 
 let updateCacheWithBalance = (cache, (token, balance)) =>
-  cache->Cache.updateToken(
-    Cache.tokenAddress(token),
-    Cache.tokenId(token),
+  cache->TokensLibrary.Generic.updateToken(
+    TokensLibrary.Token.address(token),
+    TokensLibrary.Token.id(token),
     ~updatedValue=
       fun
       | None
-      | Some((Cache.Partial(_), _)) => Some((token, balance))
+      | Some((TokensLibrary.Token.Partial(_), _)) => Some((token, balance))
       | Some((t, _)) => Some((t, balance)),
   );
 
@@ -525,7 +526,9 @@ let handleUniqueToken =
       ~onTokens=?,
       ~onStop=?,
       indexCacheTokens:
-        FutureBase.t((int, Cache.t, list(Cache.tokenWithBalance))),
+        FutureBase.t(
+          (int, TokensLibrary.t, list(TokensLibrary.WithBalance.token)),
+        ),
       _tokenId: int,
       token: BCD.tokenBalance,
     ) =>
@@ -533,7 +536,8 @@ let handleUniqueToken =
     indexCacheTokens;
   } else {
     let%Ft (index, cache, finalTokens) = indexCacheTokens;
-    let inCache = cache->Cache.getToken(token.contract, token.token_id);
+    let inCache =
+      cache->TokensLibrary.Generic.getToken(token.contract, token.token_id);
 
     let%FtMap (tokenRepr, balance) =
       getTokenRepr(config, tokenContract, token, tzip12Cache, inCache);
@@ -554,7 +558,9 @@ let handleTokens =
       ~onTokens=?,
       ~onStop=?,
       indexCacheTokens:
-        FutureBase.t((int, Cache.t, list(Cache.tokenWithBalance))),
+        FutureBase.t(
+          (int, TokensLibrary.t, list(TokensLibrary.WithBalance.token)),
+        ),
       _,
       (tokenContract: TokenContract.t, tokens: Map.Int.t(BCD.tokenBalance)),
     ) => {
@@ -580,7 +586,7 @@ let fetchAccountsTokensRaw =
       config: ConfigContext.env,
       ~accounts,
       tzip12Cache,
-      cache: Cache.t,
+      cache: TokensLibrary.t,
       ~onTokens=?,
       ~onStop=?,
       ~index,
@@ -611,14 +617,15 @@ let fetchAccountsTokensRaw =
 };
 
 let updateContractNames = (tokens, cache) =>
-  tokens->PublicKeyHash.Map.map((c: Cache.contract(Cache.tokenWithBalance)) =>
+  tokens->PublicKeyHash.Map.map(
+    (c: TokensLibrary.Generic.contract(TokensLibrary.WithBalance.token)) =>
     c.name == None
       ? {
         ...c,
         name:
           cache
           ->PublicKeyHash.Map.get(c.address)
-          ->Option.mapWithDefault(None, c => c.Cache.name),
+          ->Option.mapWithDefault(None, c => c.TokensLibrary.Generic.name),
       }
       : c
   );
@@ -638,7 +645,7 @@ let fetchAccountsTokens =
       ~onStop=?,
       (),
     ) => {
-  let%Await cache = Cache.getWithFallback()->Promise.value;
+  let%Await cache = TokenStorage.Cache.getWithFallback()->Promise.value;
 
   let toolkit = MetadataAPI.toolkit(config);
   let tzip12Cache = TaquitoAPI.Tzip12Cache.make(toolkit);
@@ -655,14 +662,14 @@ let fetchAccountsTokens =
       ~onStop?,
     );
 
-  updatedCache->Cache.set;
+  updatedCache->TokenStorage.Cache.set;
   (updatedCache, tokens->buildFromCache(updatedCache), nextIndex);
 };
 
 let isRegistered = (registered, token) => {
-  registered->Registered.isRegistered(
-    Cache.tokenAddress(token),
-    Cache.tokenId(token),
+  registered->RegisteredTokens.isRegistered(
+    TokensLibrary.Token.address(token),
+    TokensLibrary.Token.id(token),
   );
 };
 
@@ -674,9 +681,11 @@ let fetchAccountsTokensRegistry =
     (config, ~accounts, ~index, ~numberByAccount) => {
   let%AwaitRes (cache, _, nextIndex) =
     fetchAccountsTokens(config, ~accounts, ~index, ~numberByAccount, ());
-  let%ResMap registered = Registered.getWithFallback();
+  let%ResMap registered = TokenStorage.Registered.getWithFallback();
   let (registered, toRegister) =
-    cache->Cache.valuesToArray->partitionByRegistration(registered);
+    cache
+    ->TokensLibrary.Generic.valuesToArray
+    ->partitionByRegistration(registered);
   (registered, toRegister, nextIndex);
 };
 
@@ -698,20 +707,22 @@ let fetchAccountTokensStreamed =
         (),
       );
     let accumulatedTokens =
-      accumulatedTokens->TokenRegistry.Cache.merge(fetchedTokens);
+      accumulatedTokens->TokensLibrary.WithBalance.mergeAndUpdateBalance(
+        fetchedTokens,
+      );
     nextIndex <= index || onStop()
       ? onceFinished(accumulatedTokens, nextIndex)
       : get(accumulatedTokens, nextIndex);
   };
-  get(Cache.empty, index);
+  get(TokensLibrary.Generic.empty, index);
 };
 
 let fetchTokenRegistry = (config, ~kinds, ~limit, ~index, ()) =>
   fetchTokenContracts(config, ~accounts=[], ~kinds, ~limit, ~index, ());
 
 type fetched = [
-  | `Cached(TokenRegistry.Cache.withBalance)
-  | `Fetched(TokenRegistry.Cache.withBalance, int)
+  | `Cached(TokensLibrary.WithBalance.t)
+  | `Fetched(TokensLibrary.WithBalance.t, int)
 ];
 
 let fetchAccountNFTs =
@@ -741,7 +752,9 @@ let fetchAccountNFTs =
         ~onStop,
       );
     `Fetched((
-      tokens->Cache.keepTokens((_, _, (token, _)) => Cache.isNFT(token)),
+      tokens->TokensLibrary.Generic.keepTokens((_, _, (token, _)) =>
+        TokensLibrary.Token.isNFT(token)
+      ),
       number,
     ));
   };

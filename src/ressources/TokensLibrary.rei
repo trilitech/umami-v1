@@ -23,30 +23,60 @@
 /*                                                                           */
 /*****************************************************************************/
 
-let getAliasFromAddress = (address: PublicKeyHash.t, aliases) => {
-  aliases
-  ->PublicKeyHash.Map.get(address)
-  ->Option.map((account: Alias.t) => account.name);
+module Token: {
+  // Cached tokens, either complete or with missing values
+  type t =
+    | Full(Token.t)
+    | Partial(TokenContract.t, BCD.tokenBalance, bool);
+
+  let id: t => int;
+  let address: t => PublicKeyHash.t;
+  let kind: t => TokenContract.kind;
+  let chain: t => option(string);
+  let name: t => option(string);
+  let isFull: t => bool;
+  let isNFT: t => bool;
 };
 
-let getContractAliasFromAddress = (address: PublicKeyHash.t, aliases, tokens) => {
-  let r =
-    aliases
-    ->PublicKeyHash.Map.get(address)
-    ->Option.map((account: Alias.t) => account.name);
-
-  switch (r) {
-  | None =>
-    tokens
-    ->TokensLibrary.WithBalance.getFullToken(address, 0)
-    ->Option.map(((token: Token.t, _)) =>
-        I18n.t#token_contract(token.alias)
-      )
-  | Some(r) => Some(r)
+module Generic: {
+  // A generic cached contract with its tokens
+  type contract('tokens) = {
+    address: PublicKeyHash.t,
+    name: option(string),
+    tokens: Map.Int.t('tokens),
   };
+
+  type t('token) = PublicKeyHash.Map.map(contract('token));
+
+  let empty: t('token);
+
+  let getToken: (t('token), PublicKeyHash.t, int) => option('token);
+  let updateToken:
+    (
+      t('token),
+      PublicKeyHash.t,
+      int,
+      ~updatedValue: option('token) => option('token)
+    ) =>
+    t('token);
+  let valuesToArray: t('token) => array('token);
+
+  let keepTokens:
+    (t('token), (PublicKeyHash.t, int, 'token) => bool) => t('token);
 };
 
-let formCheckExists = (aliases, alias): ReSchema.fieldState => {
-  aliases->PublicKeyHash.Map.some((_, v: Alias.t) => v.name == alias)
-    ? Error(I18n.form_input_error#name_already_registered) : Valid;
+module WithBalance: {
+  type token = (Token.t, ReBigNumber.t);
+  type contract = Generic.contract(token);
+  type t = Generic.t(token);
+
+  let mergeAndUpdateBalance: (t, t) => t;
+  let getFullToken:
+    (t, PublicKeyHash.t, int) => option((TokenRepr.t, ReBigNumber.t));
 };
+
+type t = Generic.t(Token.t);
+
+let getFullToken: (t, PublicKeyHash.t, int) => option(TokenRepr.t);
+let addToken: (t, Token.t) => t;
+let removeToken: (t, Token.t) => t;

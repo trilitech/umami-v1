@@ -23,30 +23,29 @@
 /*                                                                           */
 /*****************************************************************************/
 
-let getAliasFromAddress = (address: PublicKeyHash.t, aliases) => {
-  aliases
-  ->PublicKeyHash.Map.get(address)
-  ->Option.map((account: Alias.t) => account.name);
+/** Representation of registered tokens for a user */
+type nftInfo = {
+  holder: PublicKeyHash.t,
+  hidden: bool,
+  balance: ReBigNumber.t,
 };
 
-let getContractAliasFromAddress = (address: PublicKeyHash.t, aliases, tokens) => {
-  let r =
-    aliases
-    ->PublicKeyHash.Map.get(address)
-    ->Option.map((account: Alias.t) => account.name);
+type kind =
+  | FT
+  | NFT(nftInfo);
 
-  switch (r) {
-  | None =>
-    tokens
-    ->TokensLibrary.WithBalance.getFullToken(address, 0)
-    ->Option.map(((token: Token.t, _)) =>
-        I18n.t#token_contract(token.alias)
-      )
-  | Some(r) => Some(r)
-  };
+type contract = {
+  contract: TokenContract.t,
+  chain: string,
+  tokens: Map.Int.t(kind) // effectively registered tokens by the user
 };
 
-let formCheckExists = (aliases, alias): ReSchema.fieldState => {
-  aliases->PublicKeyHash.Map.some((_, v: Alias.t) => v.name == alias)
-    ? Error(I18n.form_input_error#name_already_registered) : Valid;
-};
+type t = PublicKeyHash.Map.map(contract);
+
+let isRegistered: (t, PublicKeyHash.t, int) => bool;
+let registerToken: (t, Token.t, kind) => t;
+let removeToken: (t, PublicKeyHash.t, int) => t;
+let isHidden: (t, PublicKeyHash.t, int) => bool;
+let keepTokens: (t, (PublicKeyHash.t, int, kind) => bool) => t;
+let updateNFTsVisibility: (t, NftSelection.t, bool) => t;
+let updateNFT: (t, PublicKeyHash.t, int, nftInfo) => t;

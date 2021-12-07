@@ -48,7 +48,7 @@ let styles =
   );
 
 [@react.component]
-let make = (~nfts: TokenRegistry.Cache.withBalance, ~account) => {
+let make = (~nfts: TokensLibrary.WithBalance.t, ~account) => {
   let (selected, setSelected) = React.useState(_ => PublicKeyHash.Map.empty);
 
   let setSelectedToken = (pkh, id, checked) => {
@@ -58,7 +58,7 @@ let make = (~nfts: TokenRegistry.Cache.withBalance, ~account) => {
   let (hidden, setHidden) =
     // here we load, and at each set, we write.
     React.useState(_ =>
-      switch (TokenRegistry.Registered.get()) {
+      switch (TokenStorage.Registered.get()) {
       | Ok(map) => map
       | Error(_) => PublicKeyHash.Map.empty
       }
@@ -79,7 +79,7 @@ let make = (~nfts: TokenRegistry.Cache.withBalance, ~account) => {
     React.useMemo1(
       () => {
         nfts->PublicKeyHash.Map.map(c =>
-          c.TokenRegistry.Cache.tokens->Map.Int.map(_ => ())
+          c.TokensLibrary.Generic.tokens->Map.Int.map(_ => ())
         )
       },
       [|nfts|],
@@ -104,7 +104,7 @@ let make = (~nfts: TokenRegistry.Cache.withBalance, ~account) => {
               ? (oneHidden, oneShown)  // avoids calling isHidden if not necessary
               : {
                 let currentHidden =
-                  TokenRegistry.Registered.isHidden(hidden, address, id);
+                  RegisteredTokens.isHidden(hidden, address, id);
                 (oneHidden || currentHidden, oneShown || !currentHidden);
               }
           )

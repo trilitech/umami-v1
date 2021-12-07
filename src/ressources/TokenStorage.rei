@@ -23,30 +23,27 @@
 /*                                                                           */
 /*****************************************************************************/
 
-let getAliasFromAddress = (address: PublicKeyHash.t, aliases) => {
-  aliases
-  ->PublicKeyHash.Map.get(address)
-  ->Option.map((account: Alias.t) => account.name);
+module Registered: {
+  include LocalStorage.StorageType with type t = RegisteredTokens.t;
+
+  let getWithFallback: unit => Let.result(t);
 };
 
-let getContractAliasFromAddress = (address: PublicKeyHash.t, aliases, tokens) => {
-  let r =
-    aliases
-    ->PublicKeyHash.Map.get(address)
-    ->Option.map((account: Alias.t) => account.name);
+/** The cache is a representation of the already fetched tokens from the chain */
+module Cache: {
+  // Cache in localStorage
+  include LocalStorage.StorageType with type t = TokensLibrary.t;
 
-  switch (r) {
-  | None =>
-    tokens
-    ->TokensLibrary.WithBalance.getFullToken(address, 0)
-    ->Option.map(((token: Token.t, _)) =>
-        I18n.t#token_contract(token.alias)
-      )
-  | Some(r) => Some(r)
+  let getWithFallback: unit => Let.result(t);
+};
+
+let mergeAccountNFTs:
+  (RegisteredTokens.t, TokensLibrary.WithBalance.t, PublicKeyHash.t) =>
+  RegisteredTokens.t;
+
+module Legacy: {
+  module V1_3: {
+    let version: Version.t;
+    let mk: unit => Let.result(unit);
   };
-};
-
-let formCheckExists = (aliases, alias): ReSchema.fieldState => {
-  aliases->PublicKeyHash.Map.some((_, v: Alias.t) => v.name == alias)
-    ? Error(I18n.form_input_error#name_already_registered) : Valid;
 };

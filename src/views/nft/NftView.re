@@ -148,9 +148,9 @@ module Component = {
       React.useMemo2(
         () => {
           let searched = search->Js.String.toLocaleLowerCase;
-          tokens->TokenRegistry.Cache.keepTokens((_, _, (token, _)) =>
+          tokens->TokensLibrary.Generic.keepTokens((_, _, (token, _)) =>
             token
-            ->TokenRegistry.Cache.tokenName
+            ->TokensLibrary.Token.name
             ->Option.mapWithDefault(false, name =>
                 name
                 ->Js.String.toLocaleLowerCase

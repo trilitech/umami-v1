@@ -133,10 +133,10 @@ let make =
 
   let items =
     tokens
-    ->TokenRegistry.Cache.valuesToArray
+    ->TokensLibrary.Generic.valuesToArray
     ->Array.keepMap(
         fun
-        | (TokenRegistry.Cache.Full(t), _) => t->Token->Some
+        | (TokensLibrary.Token.Full(t), _) => t->Token->Some
         | (Partial(_), _) => None,
       );
 

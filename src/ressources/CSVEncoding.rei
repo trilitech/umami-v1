@@ -49,4 +49,4 @@ let rowEncoding:
   );
 
 let parseCSV:
-  (string, ~tokens: TokenRegistry.Cache.withBalance) => result(t, Errors.t);
+  (string, ~tokens: TokensLibrary.WithBalance.t) => result(t, Errors.t);

@@ -79,7 +79,7 @@ let handleTokenRow =
     (tokens, index, destination, amount, token: PublicKeyHash.t, tokenId) => {
   let%Res token =
     tokens
-    ->TokenRegistry.Cache.getFullTokenWithBalance(
+    ->TokensLibrary.WithBalance.getFullToken(
         token,
         tokenId->Option.map(ReBigNumber.toInt)->Option.getWithDefault(0),
       )

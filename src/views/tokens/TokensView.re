@@ -118,7 +118,7 @@ let make = () => {
        | Loading(Some(tokens))
        | Done(Ok(tokens), _) =>
          tokens
-         ->TokenRegistry.Cache.valuesToArray
+         ->TokensLibrary.Generic.valuesToArray
          ->Array.keepMap(
              fun
              | (Full(token), _) =>

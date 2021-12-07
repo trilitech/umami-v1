@@ -55,9 +55,8 @@ type state = {
   aliasesRequestState:
     reactState(ApiRequest.t(PublicKeyHash.Map.map(Alias.t))),
   bakersRequestState: reactState(ApiRequest.t(array(Delegate.t))),
-  tokensRequestState:
-    reactState(ApiRequest.t(TokenRegistry.Cache.withBalance)),
-  nftsRequestsState: apiRequestsState(TokenRegistry.Cache.t),
+  tokensRequestState: reactState(ApiRequest.t(TokensLibrary.WithBalance.t)),
+  nftsRequestsState: apiRequestsState(TokensLibrary.t),
   tokensRegistryRequestState:
     reactState(ApiRequest.t(TokensApiRequest.registry)),
   accountsTokensRequestState: apiRequestsState(TokensApiRequest.tokens),
@@ -585,18 +584,18 @@ module Tokens = {
   };
 
   let useRequest = () => {
-    open TokenRegistry.Cache;
+    open TokensLibrary;
     let (tokensRequest, _) = useRequestState();
     let apiVersion = useApiVersion();
     tokensRequest->ApiRequest.map(tokens =>
       apiVersion->Option.mapWithDefault(PublicKeyHash.Map.empty, v =>
         tokens->PublicKeyHash.Map.reduce(
           PublicKeyHash.Map.empty,
-          (filteredTokens, k, c: contract(tokenWithBalance)) => {
+          (filteredTokens, k, c: Generic.contract(WithBalance.token)) => {
             let tokens =
               c.tokens
               ->Map.Int.keep((_, (t, _)) =>
-                  isFull(t) && tokenChain(t) == Some(v.Network.chain)
+                  Token.isFull(t) && Token.chain(t) == Some(v.Network.chain)
                 );
             tokens->Map.Int.isEmpty
               ? filteredTokens
@@ -659,7 +658,7 @@ module Tokens = {
 
     switch (tokenAddress, tokens) {
     | (Some(tokenAddress), tokens) =>
-      tokens->TokenRegistry.Cache.getToken(tokenAddress, 0)
+      tokens->TokensLibrary.Generic.getToken(tokenAddress, 0)
     | _ => None
     };
   };
@@ -949,8 +948,8 @@ module SelectedToken = {
     /// FIXME: this is clearly a bug!
     switch (store.selectedTokenState, tokens) {
     | ((Some(selectedToken), _), tokens) =>
-      switch (tokens->TokenRegistry.Cache.getToken(selectedToken, 0)) {
-      | Some((TokenRegistry.Cache.Full(t), _)) => t->Some
+      switch (tokens->TokensLibrary.Generic.getToken(selectedToken, 0)) {
+      | Some((TokensLibrary.Token.Full(t), _)) => t->Some
       | _ => None
       }
     | _ => None

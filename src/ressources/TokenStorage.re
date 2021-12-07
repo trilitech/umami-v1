@@ -26,131 +26,9 @@
 open Let;
 
 module Registered = {
-  /** Representation of registered tokens for a user */
-  type nftInfo = {
-    holder: PublicKeyHash.t,
-    hidden: bool,
-    balance: ReBigNumber.t,
-  };
-
-  type kind =
-    | FT
-    | NFT(nftInfo);
-
-  type contract = {
-    contract: TokenContract.t,
-    chain: string,
-    tokens: Map.Int.t(kind) // effectively registered tokens by the user
-  };
-
-  let isRegistered = (registered, pkh, tokenId) => {
-    registered
-    ->PublicKeyHash.Map.get(pkh)
-    ->Option.map(t => t.tokens->Map.Int.has(tokenId))
-    != None;
-  };
-
-  let registerToken = (registered, token: Token.t, kind) => {
-    registered->PublicKeyHash.Map.update(
-      token.address,
-      fun
-      | None =>
-        Some({
-          contract:
-            TokenContract.{
-              address: token.address,
-              kind: TokenContract.fromTokenKind(token.kind),
-            },
-          chain: token.chain,
-          tokens: Map.Int.empty->Map.Int.set(TokenRepr.id(token), kind),
-        })
-      | Some(t) =>
-        Some({
-          ...t,
-          tokens: t.tokens->Map.Int.set(TokenRepr.id(token), kind),
-        }),
-    );
-  };
-
-  let removeToken = (registered, pkh, tokenId) =>
-    registered->PublicKeyHash.Map.update(
-      pkh,
-      fun
-      | None => None
-      | Some(t) => {
-          let tokens = t.tokens->Map.Int.remove(tokenId);
-          tokens->Map.Int.isEmpty ? None : Some({...t, tokens});
-        },
-    );
-
-  let isHidden = (registered, pkh, tokenId) =>
-    registered
-    ->PublicKeyHash.Map.get(pkh)
-    ->Option.flatMap(t => t.tokens->Map.Int.get(tokenId))
-    ->Option.mapWithDefault(
-        false,
-        fun
-        | FT => false
-        | NFT({hidden}) => hidden,
-      );
-
-  let updateNFTsVisibility = (registered, tokens, hidden) => {
-    let mergeTokens = (_, t, updatedId) =>
-      switch (t, updatedId) {
-      | (None, _) => None
-      | (Some(_), None)
-      | (Some(FT), _) => t
-      | (Some(NFT(infos)), Some ()) => Some(NFT({...infos, hidden}))
-      };
-
-    let mergeContracts = (_, c, ids) =>
-      switch (c, ids) {
-      | (None, _) => None
-      | (Some(_), None) => c
-      | (Some(regContract), Some(updatedTokens)) =>
-        {
-          ...regContract,
-          tokens:
-            Map.Int.merge(regContract.tokens, updatedTokens, mergeTokens),
-        }
-        ->Some
-      };
-
-    PublicKeyHash.Map.merge(registered, tokens, mergeContracts);
-  };
-
-  let updateNFT = (registered, pkh, tokenId, nftInfo) =>
-    registered->PublicKeyHash.Map.update(
-      pkh,
-      fun
-      | None => None
-      | Some(t) => {
-          let tokens =
-            t.tokens
-            ->Map.Int.update(
-                tokenId,
-                fun
-                | Some(NFT(_)) => Some(NFT(nftInfo))
-                | k => k,
-              );
-          Some({...t, tokens});
-        },
-    );
-
-  let keepTokens = (registered, f) =>
-    registered->PublicKeyHash.Map.reduce(
-      PublicKeyHash.Map.empty,
-      (registered, pkh, c) => {
-        let tokens =
-          c.tokens->Map.Int.keep((id, token) => f(pkh, id, token));
-        tokens->Map.Int.isEmpty
-          ? registered
-          : registered->PublicKeyHash.Map.set(pkh, {...c, tokens});
-      },
-    );
-
   include LocalStorage.Make({
-    type t = PublicKeyHash.Map.map(contract);
+    open RegisteredTokens;
+    type t = RegisteredTokens.t;
 
     let key = "registered-tokens";
 
@@ -278,148 +156,15 @@ module Registered = {
 
 /** The cache is a representation of the already fetched tokens from the chain */
 module Cache = {
-  type token =
-    | Full(Token.t)
-    | Partial(TokenContract.t, BCD.tokenBalance, bool);
-
-  let empty = PublicKeyHash.Map.empty;
-
-  let tokenId =
-    fun
-    | Full(t) => TokenRepr.id(t)
-    | Partial(_, bcd, _) => bcd.BCD.token_id;
-
-  let tokenAddress =
-    fun
-    | Full(t) => t.TokenRepr.address
-    | Partial(_, bcd, _) => bcd.BCD.contract;
-
-  let tokenName =
-    fun
-    | Full(t) => t.TokenRepr.alias->Some
-    | Partial(_, bcd, _) => bcd.BCD.name;
-
-  let tokenKind =
-    fun
-    | Full(t) => TokenContract.fromTokenKind(t.TokenRepr.kind)
-    | Partial(tc, _, _) => tc.TokenContract.kind;
-
-  let tokenChain =
-    fun
-    | Full(t) => Some(t.TokenRepr.chain)
-    | Partial(_, bcd, _) =>
-      bcd.BCD.network->Network.networkChain->Option.map(Network.getChainId);
-
-  let isNFT =
-    fun
-    | Full(t) => t->TokenRepr.isNFT
-    | Partial(_, _, _) => false;
-
-  let isFull =
-    fun
-    | Full(_) => true
-    | Partial(_, _, _) => false;
-
-  type contract('tokens) = {
-    address: PublicKeyHash.t,
-    name: option(string),
-    tokens: Map.Int.t('tokens),
-  };
-
-  type map('token) = PublicKeyHash.Map.map(contract('token));
-
-  let getToken = (cache, pkh, tokenId) => {
-    cache
-    ->PublicKeyHash.Map.get(pkh)
-    ->Option.flatMap(({tokens}) => tokens->Map.Int.get(tokenId));
-  };
-
-  let updateToken = (cache, pkh, tokenId, ~updatedValue) => {
-    let f = contract => {
-      let tokens =
-        contract
-        ->Option.mapWithDefault(Map.Int.empty, c => c.tokens)
-        ->Map.Int.update(tokenId, updatedValue);
-      contract
-      ->Option.mapWithDefault({name: None, address: pkh, tokens}, contract =>
-          {...contract, tokens}
-        )
-      ->Some;
-    };
-    cache->PublicKeyHash.Map.update(pkh, f);
-  };
-
-  let valuesToArray = cache => {
-    cache
-    ->PublicKeyHash.Map.valuesToArray
-    ->Array.map(c => c.tokens->Map.Int.valuesToArray)
-    ->Array.concatMany;
-  };
-
-  let keepTokens = (cache, f) =>
-    cache->PublicKeyHash.Map.reduce(
-      PublicKeyHash.Map.empty,
-      (cache, pkh, c) => {
-        let tokens =
-          c.tokens->Map.Int.keep((id, token) => f(pkh, id, token));
-        tokens->Map.Int.isEmpty
-          ? cache : cache->PublicKeyHash.Map.set(pkh, {...c, tokens});
-      },
-    );
-
-  type tokenWithBalance = (token, ReBigNumber.t);
-
-  type withBalance = PublicKeyHash.Map.map(contract(tokenWithBalance));
-
-  // cache2 is always the newly added tokens
-  let merge = (cache1, cache2) => {
-    let pickToken = ((t1, b1), (t2, b2)) =>
-      switch (t1, t2) {
-      | (Full(_), Full(_)) => (t1, b2)
-      | (Full(_) as t, Partial(_, _, _))
-      | (Partial(_, _, _), Full(_) as t) => (t, b2)
-      | _ => (t1, b1)
-      };
-    let mergeTokens = (_, t1, t2) =>
-      switch (t1, t2) {
-      | (None, None) => None
-      | (Some(_) as t, None)
-      | (None, Some(_) as t) => t
-      | (Some(t1), Some(t2)) => pickToken(t1, t2)->Some
-      };
-    let mergeContracts = (key, c1, c2) =>
-      switch (c1, c2) {
-      | (None, None) => None
-      | (Some(_) as c, None)
-      | (None, Some(_) as c) => c
-      | (Some(c1), Some(c2)) =>
-        {
-          address: key,
-          name: Option.keep(c1.name, c2.name),
-          tokens: Map.Int.merge(c1.tokens, c2.tokens, mergeTokens),
-        }
-        ->Some
-      };
-    ();
-    PublicKeyHash.Map.merge(cache1, cache2, mergeContracts);
-  };
-
-  let getFullTokenWithBalance = (cacheWithBalance, pkh, tokenId) => {
-    switch (cacheWithBalance->getToken(pkh, tokenId)) {
-    | Some((Full(t), b)) => Some((t, b))
-    | _ => None
-    };
-  };
-
   include LocalStorage.Make({
-    type t = PublicKeyHash.Map.map(contract(token));
+    type t = TokensLibrary.t;
 
     let key = "cached-tokens";
 
     let tokenEncoder = {
       Json.Encode.(
         fun
-        | Full(t) =>
+        | TokensLibrary.Token.Full(t) =>
           object_([
             ("kind", string("full")),
             ("value", t |> Token.Encode.record),
@@ -443,7 +188,7 @@ module Cache = {
     let tokensEncoder = tks =>
       tks |> Map.Int.valuesToArray |> Json.Encode.array(tokenEncoder);
 
-    let contractEncoder = c => {
+    let contractEncoder = (c: TokensLibrary.Generic.contract(_)) => {
       Json.Encode.(
         object_([
           ("name", c.name |> nullable(string)),
@@ -481,11 +226,13 @@ module Cache = {
     let partialDecoder = json => {
       open Json.Decode;
       let (tc, bcd, retry) = json |> field("value", partialValueDecoder);
-      Partial(tc, bcd, retry);
+      TokensLibrary.Token.Partial(tc, bcd, retry);
     };
 
     let fullDecoder = json =>
-      Full(json |> Json.Decode.field("value", Token.Decode.record));
+      TokensLibrary.Token.Full(
+        json |> Json.Decode.field("value", Token.Decode.record),
+      );
 
     let tokenDecoder = json => {
       Json.Decode.(
@@ -510,15 +257,17 @@ module Cache = {
     let tokensDecoder = json =>
       (json |> Json.Decode.array(tokenDecoder))
       ->Array.reduce(Map.Int.empty, (tokens, token) =>
-          tokens->Map.Int.set(tokenId(token), token)
+          tokens->Map.Int.set(TokensLibrary.Token.id(token), token)
         );
 
     let contractDecoder = json =>
-      Json.Decode.{
-        name: json |> optional(field("name", string)),
-        address: json |> field("address", PublicKeyHash.decoder),
-        tokens: json |> field("tokens", tokensDecoder),
-      };
+      Json.Decode.(
+        TokensLibrary.Generic.{
+          name: json |> optional(field("name", string)),
+          address: json |> field("address", PublicKeyHash.decoder),
+          tokens: json |> field("tokens", tokensDecoder),
+        }
+      );
 
     let decoder = json => {
       let decoder =
@@ -529,29 +278,6 @@ module Cache = {
         });
     };
   });
-
-  let getFullToken = (cache, pkh, tokenId) => {
-    switch (cache->getToken(pkh, tokenId)) {
-    | Some(Full(t)) => Some(t)
-    | _ => None
-    };
-  };
-
-  let addToken = (cache, token) =>
-    updateToken(cache, tokenAddress(token), tokenId(token), ~updatedValue=_ =>
-      Some(token)
-    );
-
-  let removeToken = (cache, token) => {
-    let f = contract => {
-      let tokens =
-        contract
-        ->Option.mapWithDefault(Map.Int.empty, c => c.tokens)
-        ->Map.Int.remove(tokenId(token));
-      contract->Option.map(contract => {...contract, tokens});
-    };
-    cache->PublicKeyHash.Map.update(tokenAddress(token), f);
-  };
 
   let getWithFallback = () =>
     switch (get()) {
@@ -579,7 +305,7 @@ module Legacy = {
           | FA1_2 =>
             registered->PublicKeyHash.Map.set(
               address,
-              Registered.{
+              RegisteredTokens.{
                 contract: TokenContract.{address, kind: `KFA1_2},
                 chain: token.chain,
                 tokens: Map.Int.empty->Map.Int.set(0, FT),
@@ -612,7 +338,7 @@ module Legacy = {
         let%Res json = storageString->JsonEx.parse;
         let%ResMap storage = json->JsonEx.decode(Storage.decoder);
         storage->Array.reduce(PublicKeyHash.Map.empty, (cache, token) =>
-          cache->Cache.addToken(Full(token))
+          cache->TokensLibrary.addToken(Full(token))
         );
       };
       Cache.migrate(
@@ -633,41 +359,43 @@ module Legacy = {
 };
 
 let mergeAccountNFTs =
-    (registered: Registered.t, nfts: Cache.withBalance, holder): Registered.t => {
-  open Registered;
+    (
+      registered: RegisteredTokens.t,
+      nfts: TokensLibrary.WithBalance.t,
+      holder,
+    )
+    : RegisteredTokens.t => {
+  open RegisteredTokens;
 
-  let newNFT = balance => Registered.(NFT({holder, hidden: false, balance}));
+  let newNFT = balance => NFT({holder, hidden: false, balance});
 
   let findChain = tokens =>
     tokens
     ->Map.Int.findFirstBy((_, _) => true)
     ->Option.flatMap(((_, (t, _))) =>
         switch (t) {
-        | Cache.Full(t) => t.TokenRepr.chain->Some
+        | TokensLibrary.Token.Full(t) => t.TokenRepr.chain->Some
         | _ => None
         }
       );
 
   let mergeTokens = (_tokenId, kind, token) =>
-    Registered.(
-      switch (kind, token) {
-      | (None, None)
-      | (Some(FT), None) => Some(FT)
+    switch (kind, token) {
+    | (None, None)
+    | (Some(FT), None) => Some(FT)
 
-      // An NFT is no longer hold by the account
-      | (Some(NFT(info)), None) =>
-        info.Registered.holder == holder ? None : kind
+    // An NFT is no longer hold by the account
+    | (Some(NFT(info)), None) => info.holder == holder ? None : kind
 
-      // Newly added NFT
-      | (None, Some((t, balance))) =>
-        t->Cache.isNFT ? Some(newNFT(balance)) : None
+    // Newly added NFT
+    | (None, Some((t, balance))) =>
+      t->TokensLibrary.Token.isNFT ? Some(newNFT(balance)) : None
 
-      // NFT already exists: we keep its hidden status
-      | (Some(NFT(info)), Some((_, balance))) =>
-        {...info, holder, balance}->NFT->Some
-      | _ => kind
-      }
-    );
+    // NFT already exists: we keep its hidden status
+    | (Some(NFT(info)), Some((_, balance))) =>
+      {...info, holder, balance}->NFT->Some
+    | _ => kind
+    };
 
   let mergeContracts = (address, registeredContract, cachedContract) =>
     switch (registeredContract, cachedContract) {
@@ -675,42 +403,38 @@ let mergeAccountNFTs =
 
     | (None, Some(contract)) =>
       let tokens =
-        contract.Cache.tokens
+        contract.TokensLibrary.Generic.tokens
         ->Map.Int.reduce(Map.Int.empty, (tokens, key, (t, balance)) =>
-            t->Cache.isNFT
+            t->TokensLibrary.Token.isNFT
               ? tokens->Map.Int.set(key, newNFT(balance)) : tokens
           );
       contract.tokens
       ->findChain
       ->Option.map(chain =>
-          Registered.{
-            contract: TokenContract.{address, kind: `KFA2},
-            chain,
-            tokens,
-          }
+          {contract: TokenContract.{address, kind: `KFA2}, chain, tokens}
         );
 
     // prune NFTs
     | (Some(contract), None) =>
       let tokens =
-        contract.Registered.tokens
+        contract.tokens
         ->Map.Int.keep((_, kind) =>
             switch (kind) {
             | FT => true
             | NFT(info) => holder != info.holder
             }
           );
-      tokens->Map.Int.isEmpty ? None : Registered.{...contract, tokens}->Some;
+      tokens->Map.Int.isEmpty ? None : {...contract, tokens}->Some;
 
     // prune no longer possessed NFTs, adds the new ones
     | (Some(registeredContract), Some(cachedContract)) =>
       let tokens =
         Map.Int.merge(
-          registeredContract.Registered.tokens,
-          cachedContract.Cache.tokens,
+          registeredContract.tokens,
+          cachedContract.TokensLibrary.Generic.tokens,
           mergeTokens,
         );
-      Registered.{...registeredContract, tokens}->Some;
+      {...registeredContract, tokens}->Some;
     };
 
   PublicKeyHash.Map.merge(registered, nfts, mergeContracts);

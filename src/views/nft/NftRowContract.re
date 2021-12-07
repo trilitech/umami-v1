@@ -13,8 +13,7 @@ let styles =
 [@react.component]
 let make =
     (
-      ~contract:
-         TokenRegistry.Cache.contract(TokenRegistry.Cache.tokenWithBalance),
+      ~contract: TokensLibrary.WithBalance.contract,
       ~account,
       ~selected,
       ~setSelected,

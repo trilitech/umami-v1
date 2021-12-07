@@ -136,17 +136,17 @@ let uniqueKey = (contract: PublicKeyHash.t, id) =>
   (contract :> string) ++ "-" ++ Int.toString(id);
 
 [@react.component]
-let make = (~nfts: TokenRegistry.Cache.withBalance) => {
+let make = (~nfts: TokensLibrary.WithBalance.t) => {
   let account = StoreContext.SelectedAccount.useGet();
   let hidden =
-    TokenRegistry.Registered.get()
+    TokenStorage.Registered.get()
     ->Result.getWithDefault(PublicKeyHash.Map.empty);
 
   let nfts =
     React.useMemo1(
       () =>
-        nfts->TokenRegistry.Cache.keepTokens((pkh, id, _) =>
-          !hidden->TokenRegistry.Registered.isHidden(pkh, id)
+        nfts->TokensLibrary.Generic.keepTokens((pkh, id, _) =>
+          !hidden->RegisteredTokens.isHidden(pkh, id)
         ),
       [|nfts|],
     );
@@ -155,7 +155,7 @@ let make = (~nfts: TokenRegistry.Cache.withBalance) => {
     React.useMemo1(
       () =>
         nfts
-        ->TokenRegistry.Cache.valuesToArray
+        ->TokensLibrary.Generic.valuesToArray
         ->Array.keepMap(
             fun
             | (Partial(_, _, _), _) => None

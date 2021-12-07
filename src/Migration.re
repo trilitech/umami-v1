@@ -63,8 +63,8 @@ let init = version => {
   ->addMigration(Disclaimer.Legacy.V1_1.version, Disclaimer.Legacy.V1_1.mk)
   ->addMigration(ConfigFile.Legacy.V1_2.version, ConfigFile.Legacy.V1_2.mk)
   ->addMigration(
-      TokenRegistry.Legacy.V1_3.version,
-      TokenRegistry.Legacy.V1_3.mk,
+      TokenStorage.Legacy.V1_3.version,
+      TokenStorage.Legacy.V1_3.mk,
     )
   ->applyMigration(version);
 };

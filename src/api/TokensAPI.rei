@@ -33,9 +33,9 @@ type filter = [ | `Any | `FT | `NFT(PublicKeyHash.t, bool)];
 let metadataToToken:
   (string, TokenContract.t, ReTaquitoTypes.Tzip12.metadata) => TokenRepr.t;
 
-let registeredTokens: filter => Let.result(TokenRegistry.Cache.withBalance);
+let registeredTokens: filter => Let.result(TokensLibrary.WithBalance.t);
 
-let hiddenTokens: unit => Let.result(TokenRegistry.Registered.t);
+let hiddenTokens: unit => Let.result(RegisteredTokens.t);
 
 let addFungibleToken: (ConfigContext.env, Token.t) => Promise.t(unit);
 
@@ -44,13 +44,13 @@ let addNonFungibleToken:
   Promise.t(unit);
 
 let registerNFTs:
-  (TokenRegistry.Cache.withBalance, PublicKeyHash.t) => Let.result(unit);
+  (TokensLibrary.WithBalance.t, PublicKeyHash.t) => Let.result(unit);
 
 let updateNFTsVisibility:
   (PublicKeyHash.Map.map(Map.Int.t(unit)), ~hidden: bool) =>
-  Let.result(TokenRegistry.Registered.t);
+  Let.result(RegisteredTokens.t);
 
-let removeToken: (Token.t, ~pruneCache: bool) => Let.result(unit);
+let removeToken: (TokenRepr.t, ~pruneCache: bool) => Let.result(unit);
 
 let fetchTokenContracts:
   (
@@ -83,7 +83,7 @@ let fetchAccountsTokens:
     ~onStop: unit => bool=?,
     unit
   ) =>
-  Promise.t((TokenRegistry.Cache.t, TokenRegistry.Cache.withBalance, int));
+  Promise.t((TokensLibrary.t, TokensLibrary.WithBalance.t, int));
 
 let fetchAccountTokensStreamed:
   (
@@ -94,7 +94,7 @@ let fetchAccountTokensStreamed:
     ~onTokens: (~total: int, ~lastToken: int) => unit,
     ~onStop: unit => bool
   ) =>
-  Promise.t((TokenRegistry.Cache.withBalance, int));
+  Promise.t((TokensLibrary.WithBalance.t, int));
 
 let fetchAccountsTokensRegistry:
   (
@@ -104,16 +104,12 @@ let fetchAccountsTokensRegistry:
     ~numberByAccount: int
   ) =>
   Promise.t(
-    (
-      array(TokenRegistry.Cache.token),
-      array(TokenRegistry.Cache.token),
-      int,
-    ),
+    (array(TokensLibrary.Token.t), array(TokensLibrary.Token.t), int),
   );
 
 type fetched = [
-  | `Cached(TokenRegistry.Cache.withBalance)
-  | `Fetched(TokenRegistry.Cache.withBalance, int)
+  | `Cached(TokensLibrary.WithBalance.t)
+  | `Fetched(TokensLibrary.WithBalance.t, int)
 ];
 
 let fetchAccountNFTs:

@@ -71,7 +71,7 @@ let make =
   let id = TokenRepr.id(nft);
   let hidden =
     React.useMemo1(
-      () => TokenRegistry.Registered.isHidden(hidden, address, id),
+      () => RegisteredTokens.isHidden(hidden, address, id),
       [|hidden|],
     );
 

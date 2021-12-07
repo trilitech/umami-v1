@@ -83,8 +83,8 @@ type tokensRequest = {
 };
 
 type registry = {
-  registered: array(TokenRegistry.Cache.token),
-  toRegister: array(TokenRegistry.Cache.token),
+  registered: array(TokensLibrary.Token.t),
+  toRegister: array(TokensLibrary.Token.t),
   nextIndex: int,
 };
 
@@ -201,7 +201,7 @@ let useCreate = (~sideEffect=?, ()) => {
 };
 
 type nfts = {
-  tokens: TokenRegistry.Cache.withBalance,
+  tokens: TokensLibrary.WithBalance.t,
   holder: PublicKeyHash.t,
 };
 
