@@ -1142,7 +1142,7 @@
   dependencies:
     defer-to-connect "^1.0.1"
 
-"@taquito/http-utils@^10.1.0", "@taquito/http-utils@^10.2.1":
+"@taquito/http-utils@^10.2.1":
   version "10.2.1"
   resolved "https://registry.yarnpkg.com/@taquito/http-utils/-/http-utils-10.2.1.tgz#0dbee1e5b57c5e89672d5a27a647928f26e8f972"
   integrity sha512-RZmGxJFllTHC5LuxrPcVQoH/MpDvQehLjE1czSmL2Dz1VZlzI4Q6Ie+pG5nHQODRPqE8ABi/2aHAGGYMQWqKZg==
@@ -1178,10 +1178,10 @@
   resolved "https://registry.yarnpkg.com/@taquito/michel-codec/-/michel-codec-11.0.1.tgz#d312f6365b66df4580545785efdb27913d0fd738"
   integrity sha512-fgdn2jIsQbOcRY/DRNc2HgiFDmduQaRhPjCcX2WApSPrfU+WvLza3X6KHLxQzK35DLL0fqRoAoTyS94/KRb83g==
 
-"@taquito/michelson-encoder@^10.1.0":
-  version "10.1.0"
-  resolved "https://registry.yarnpkg.com/@taquito/michelson-encoder/-/michelson-encoder-10.1.0.tgz#7d25d9cd8518409a2052755cd083420ea3037d4d"
-  integrity sha512-sRoJKTAj3Mt9SGz+QO6ZpU4r8tg+ziFWezGx/eY6grKsA5mKoXZifV9NaNqqzxbcVJ5pjCdw8J7wvvW9hyF0OQ==
+"@taquito/michelson-encoder@^10.2.1":
+  version "10.2.1"
+  resolved "https://registry.yarnpkg.com/@taquito/michelson-encoder/-/michelson-encoder-10.2.1.tgz#96ca6ef8e52c4c7d37accbc6705bc047f3a6fc7b"
+  integrity sha512-HYCtDGCWtyCgOQjmxYLYw5ftejG0FUfAW1FzZWIW6w2ars1TInSbLNeVRZs+EmbD3L8wOaxaOlgdsMoDnGqM/g==
   dependencies:
     "@taquito/rpc" "^10.2.1"
     "@taquito/utils" "^10.2.1"
@@ -1208,12 +1208,12 @@
     lodash.get "^4.4.2"
     lodash.set "^4.3.2"
 
-"@taquito/rpc@^10.1.0":
-  version "10.1.0"
-  resolved "https://registry.yarnpkg.com/@taquito/rpc/-/rpc-10.1.0.tgz#e396b274027c83a56d4bb6f2d4c6a5945664df7c"
-  integrity sha512-X25vMm0qnAWJ+wwmfHl/XYE/X/ZTAH4s7h+cRqErVixEL5lt12C6JHT/n4BD8XjJPS/4Px3CRWTMkAZ0gcAiPQ==
+"@taquito/rpc@^10.2.1":
+  version "10.2.1"
+  resolved "https://registry.yarnpkg.com/@taquito/rpc/-/rpc-10.2.1.tgz#731ebc91f4cee4b9e93c64a3396fbba14be12e0a"
+  integrity sha512-Vg80sGLICkEKGls+7YEd0uFpsp8dwx2kNeGgCbpNROIs0S6Slsd0UfDlaZGlllWeUAKr5r6baexYrTKFuWs/UA==
   dependencies:
-    "@taquito/http-utils" "^10.1.0"
+    "@taquito/http-utils" "^10.2.1"
     bignumber.js "^9.0.1"
     lodash "^4.17.21"
 
@@ -1231,15 +1231,6 @@
     rxjs "^6.6.3"
 
 "@taquito/taquito@^10.1.0":
-  version "10.1.0"
-  resolved "https://registry.yarnpkg.com/@taquito/taquito/-/taquito-10.1.0.tgz#0fdcc69bad0f274f69f989a4d9b9162335d32f66"
-  integrity sha512-KN/Z34rN6cVZmlNs50ZmWkfBziPkMUhJ/KgzJx1b89Vaxyq3tHISDFEnEJtFd8aKelDVbiyposHcZ6aqVzn7NQ==
-  dependencies:
-    "@taquito/http-utils" "^10.2.1"
-    bignumber.js "^9.0.1"
-    lodash "^4.17.21"
-
-"@taquito/taquito@^10.1.0", "@taquito/taquito@^10.2.1":
   version "10.2.1"
   resolved "https://registry.yarnpkg.com/@taquito/taquito/-/taquito-10.2.1.tgz#0627cb38cbb0a8407e7c5088fd5e7e41f0631f89"
   integrity sha512-ay61aKhFQPnYGu5d9jqEvaZE0EzE6tO9MD+5vOu6/NFVThBd7ysOQS1PB0VprL9SupM1NVDFnEJ8GtE8SYgk8g==
@@ -1288,15 +1279,6 @@
     buffer "^6.0.3"
     elliptic "^6.5.4"
     typedarray-to-buffer "^4.0.0"
-
-"@taquito/utils@^10.1.0":
-  version "10.1.0"
-  resolved "https://registry.yarnpkg.com/@taquito/utils/-/utils-10.1.0.tgz#032843be047ee2a86ff07755530089d9922c10d0"
-  integrity sha512-jG4pBfbcZistUFCifJveHNm8cvOs/ZO8bG6fP9adLef1c8JDChLA5/y4yp3xqirCZyZIJ3EoBpT723uuF7EM+Q==
-  dependencies:
-    blakejs "^1.1.0"
-    bs58check "^2.1.2"
-    buffer "^6.0.3"
 
 "@taquito/utils@^10.1.0", "@taquito/utils@^10.2.1":
   version "10.2.1"
