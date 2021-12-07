@@ -68,7 +68,7 @@ let handleTezRow = (index, destination, amount) =>
       Transfer.makeSingleTezTransferElt(~destination, ~amount, ())
     );
 
-let checkTokenId = (tokenId, token: TokenRepr.t) =>
+let checkTokenId = (tokenId, (token: TokenRepr.t, _)) =>
   switch (token.kind, tokenId) {
   | (FA1_2, Some(_)) => Error(FA1_2InvalidTokenId(token.address))
   | (FA2(_), None) => Error(FA2InvalidTokenId(token.address))
@@ -79,7 +79,7 @@ let handleTokenRow =
     (tokens, index, destination, amount, token: PublicKeyHash.t, tokenId) => {
   let%Res token =
     tokens
-    ->TokenRegistry.Cache.getFullToken(
+    ->TokenRegistry.Cache.getFullTokenWithBalance(
         token,
         tokenId->Option.map(ReBigNumber.toInt)->Option.getWithDefault(0),
       )

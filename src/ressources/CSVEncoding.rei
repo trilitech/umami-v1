@@ -48,4 +48,5 @@ let rowEncoding:
     Errors.t,
   );
 
-let parseCSV: (string, ~tokens: TokenRegistry.Cache.t) => result(t, Errors.t);
+let parseCSV:
+  (string, ~tokens: TokenRegistry.Cache.withBalance) => result(t, Errors.t);

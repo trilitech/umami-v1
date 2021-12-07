@@ -48,7 +48,7 @@ let styles =
   );
 
 [@react.component]
-let make = (~nfts: TokenRegistry.Cache.t, ~account) => {
+let make = (~nfts: TokenRegistry.Cache.withBalance, ~account) => {
   let (selected, setSelected) = React.useState(_ => PublicKeyHash.Map.empty);
 
   let setSelectedToken = (pkh, id, checked) => {

@@ -13,7 +13,8 @@ let styles =
 [@react.component]
 let make =
     (
-      ~contract: TokenRegistry.Cache.contract,
+      ~contract:
+         TokenRegistry.Cache.contract(TokenRegistry.Cache.tokenWithBalance),
       ~account,
       ~selected,
       ~setSelected,
@@ -27,8 +28,8 @@ let make =
     contract.tokens
     ->Map.Int.map(
         fun
-        | Partial(_, _, _) => React.null
-        | Full(nft) =>
+        | (Partial(_, _, _), _) => React.null
+        | (Full(nft), _) =>
           <NftRowToken
             account
             address={contract.address}

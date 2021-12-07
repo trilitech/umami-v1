@@ -136,8 +136,8 @@ let make =
     ->TokenRegistry.Cache.valuesToArray
     ->Array.keepMap(
         fun
-        | TokenRegistry.Cache.Full(t) => t->Token->Some
-        | Partial(_) => None,
+        | (TokenRegistry.Cache.Full(t), _) => t->Token->Some
+        | (Partial(_), _) => None,
       );
 
   let onValueChange =

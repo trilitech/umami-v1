@@ -30,6 +30,7 @@ module Registered = {
   type nftInfo = {
     holder: PublicKeyHash.t,
     hidden: bool,
+    balance: ReBigNumber.t,
   };
 
   type kind =
@@ -160,10 +161,19 @@ module Registered = {
 
     let holderDecoder = Json.Decode.(field("holder", PublicKeyHash.decoder));
     let hiddenDecoder = Json.Decode.(field("hidden", bool));
+    let balanceDecoder = json =>
+      JsonEx.decode(
+        json,
+        Json.Decode.(
+          field("balance", json => json |> string |> ReBigNumber.fromString)
+        ),
+      )
+      ->Result.getWithDefault(ReBigNumber.fromInt(1));
 
     let nftInfoDecoder = json => {
       holder: holderDecoder(json),
       hidden: hiddenDecoder(json),
+      balance: balanceDecoder(json),
     };
 
     let ftDecoder = _ => FT;
@@ -225,6 +235,7 @@ module Registered = {
                 object_([
                   ("holder", info.holder |> PublicKeyHash.encoder),
                   ("hidden", info.hidden |> bool),
+                  ("balance", info.balance |> ReBigNumber.toString |> string),
                 ]),
               ),
             ])
@@ -271,14 +282,6 @@ module Cache = {
     | Full(Token.t)
     | Partial(TokenContract.t, BCD.tokenBalance, bool);
 
-  type tokens = Map.Int.t(token);
-
-  type contract = {
-    address: PublicKeyHash.t,
-    name: option(string),
-    tokens,
-  };
-
   let empty = PublicKeyHash.Map.empty;
 
   let tokenId =
@@ -312,22 +315,23 @@ module Cache = {
     | Full(t) => t->TokenRepr.isNFT
     | Partial(_, _, _) => false;
 
-  let getToken = (cache, pkh, tokenId) => {
-    cache
-    ->PublicKeyHash.Map.get(pkh)
-    ->Option.flatMap(({tokens}) => tokens->Map.Int.get(tokenId));
-  };
-
   let isFull =
     fun
     | Full(_) => true
     | Partial(_, _, _) => false;
 
-  let getFullToken = (cache, pkh, tokenId) => {
-    switch (cache->getToken(pkh, tokenId)) {
-    | Some(Full(t)) => Some(t)
-    | _ => None
-    };
+  type contract('tokens) = {
+    address: PublicKeyHash.t,
+    name: option(string),
+    tokens: Map.Int.t('tokens),
+  };
+
+  type map('token) = PublicKeyHash.Map.map(contract('token));
+
+  let getToken = (cache, pkh, tokenId) => {
+    cache
+    ->PublicKeyHash.Map.get(pkh)
+    ->Option.flatMap(({tokens}) => tokens->Map.Int.get(tokenId));
   };
 
   let updateToken = (cache, pkh, tokenId, ~updatedValue) => {
@@ -345,22 +349,6 @@ module Cache = {
     cache->PublicKeyHash.Map.update(pkh, f);
   };
 
-  let addToken = (cache, token) =>
-    updateToken(cache, tokenAddress(token), tokenId(token), ~updatedValue=_ =>
-      Some(token)
-    );
-
-  let removeToken = (cache, token) => {
-    let f = contract => {
-      let tokens =
-        contract
-        ->Option.mapWithDefault(Map.Int.empty, c => c.tokens)
-        ->Map.Int.remove(tokenId(token));
-      contract->Option.map(contract => {...contract, tokens});
-    };
-    cache->PublicKeyHash.Map.update(tokenAddress(token), f);
-  };
-
   let valuesToArray = cache => {
     cache
     ->PublicKeyHash.Map.valuesToArray
@@ -368,13 +356,29 @@ module Cache = {
     ->Array.concatMany;
   };
 
+  let keepTokens = (cache, f) =>
+    cache->PublicKeyHash.Map.reduce(
+      PublicKeyHash.Map.empty,
+      (cache, pkh, c) => {
+        let tokens =
+          c.tokens->Map.Int.keep((id, token) => f(pkh, id, token));
+        tokens->Map.Int.isEmpty
+          ? cache : cache->PublicKeyHash.Map.set(pkh, {...c, tokens});
+      },
+    );
+
+  type tokenWithBalance = (token, ReBigNumber.t);
+
+  type withBalance = PublicKeyHash.Map.map(contract(tokenWithBalance));
+
+  // cache2 is always the newly added tokens
   let merge = (cache1, cache2) => {
-    let pickToken = (t1, t2) =>
+    let pickToken = ((t1, b1), (t2, b2)) =>
       switch (t1, t2) {
-      | (Full(_), Full(_)) => t1
+      | (Full(_), Full(_)) => (t1, b2)
       | (Full(_) as t, Partial(_, _, _))
-      | (Partial(_, _, _), Full(_) as t) => t
-      | _ => t1
+      | (Partial(_, _, _), Full(_) as t) => (t, b2)
+      | _ => (t1, b1)
       };
     let mergeTokens = (_, t1, t2) =>
       switch (t1, t2) {
@@ -400,19 +404,15 @@ module Cache = {
     PublicKeyHash.Map.merge(cache1, cache2, mergeContracts);
   };
 
-  let keepTokens = (cache, f) =>
-    cache->PublicKeyHash.Map.reduce(
-      PublicKeyHash.Map.empty,
-      (cache, pkh, c) => {
-        let tokens =
-          c.tokens->Map.Int.keep((id, token) => f(pkh, id, token));
-        tokens->Map.Int.isEmpty
-          ? cache : cache->PublicKeyHash.Map.set(pkh, {...c, tokens});
-      },
-    );
+  let getFullTokenWithBalance = (cacheWithBalance, pkh, tokenId) => {
+    switch (cacheWithBalance->getToken(pkh, tokenId)) {
+    | Some((Full(t), b)) => Some((t, b))
+    | _ => None
+    };
+  };
 
   include LocalStorage.Make({
-    type t = PublicKeyHash.Map.map(contract);
+    type t = PublicKeyHash.Map.map(contract(token));
 
     let key = "cached-tokens";
 
@@ -530,6 +530,29 @@ module Cache = {
     };
   });
 
+  let getFullToken = (cache, pkh, tokenId) => {
+    switch (cache->getToken(pkh, tokenId)) {
+    | Some(Full(t)) => Some(t)
+    | _ => None
+    };
+  };
+
+  let addToken = (cache, token) =>
+    updateToken(cache, tokenAddress(token), tokenId(token), ~updatedValue=_ =>
+      Some(token)
+    );
+
+  let removeToken = (cache, token) => {
+    let f = contract => {
+      let tokens =
+        contract
+        ->Option.mapWithDefault(Map.Int.empty, c => c.tokens)
+        ->Map.Int.remove(tokenId(token));
+      contract->Option.map(contract => {...contract, tokens});
+    };
+    cache->PublicKeyHash.Map.update(tokenAddress(token), f);
+  };
+
   let getWithFallback = () =>
     switch (get()) {
     | Error(LocalStorage.NotFound(_)) => Ok(PublicKeyHash.Map.empty)
@@ -610,15 +633,15 @@ module Legacy = {
 };
 
 let mergeAccountNFTs =
-    (registered: Registered.t, nfts: Cache.t, holder): Registered.t => {
+    (registered: Registered.t, nfts: Cache.withBalance, holder): Registered.t => {
   open Registered;
 
-  let newNFT = Registered.(NFT({holder, hidden: false}));
+  let newNFT = balance => Registered.(NFT({holder, hidden: false, balance}));
 
   let findChain = tokens =>
     tokens
     ->Map.Int.findFirstBy((_, _) => true)
-    ->Option.flatMap(((_, t)) =>
+    ->Option.flatMap(((_, (t, _))) =>
         switch (t) {
         | Cache.Full(t) => t.TokenRepr.chain->Some
         | _ => None
@@ -636,10 +659,12 @@ let mergeAccountNFTs =
         info.Registered.holder == holder ? None : kind
 
       // Newly added NFT
-      | (None, Some(t)) => t->Cache.isNFT ? Some(newNFT) : None
+      | (None, Some((t, balance))) =>
+        t->Cache.isNFT ? Some(newNFT(balance)) : None
 
       // NFT already exists: we keep its hidden status
-      | (Some(NFT(info)), Some(_)) => {...info, holder}->NFT->Some
+      | (Some(NFT(info)), Some((_, balance))) =>
+        {...info, holder, balance}->NFT->Some
       | _ => kind
       }
     );
@@ -651,8 +676,9 @@ let mergeAccountNFTs =
     | (None, Some(contract)) =>
       let tokens =
         contract.Cache.tokens
-        ->Map.Int.reduce(Map.Int.empty, (tokens, key, t) =>
-            t->Cache.isNFT ? tokens->Map.Int.set(key, newNFT) : tokens
+        ->Map.Int.reduce(Map.Int.empty, (tokens, key, (t, balance)) =>
+            t->Cache.isNFT
+              ? tokens->Map.Int.set(key, newNFT(balance)) : tokens
           );
       contract.tokens
       ->findChain

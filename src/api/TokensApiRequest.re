@@ -201,7 +201,7 @@ let useCreate = (~sideEffect=?, ()) => {
 };
 
 type nfts = {
-  tokens: TokenRegistry.Cache.t,
+  tokens: TokenRegistry.Cache.withBalance,
   holder: PublicKeyHash.t,
 };
 

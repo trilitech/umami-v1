@@ -154,31 +154,37 @@ type filter = [ | `Any | `FT | `NFT(PublicKeyHash.t, bool)];
 
 /* From a list of tokens and the cache, reconstructs the list of tokens with
    their metadata the user has registered */
-let unfoldRegistered = (tokens, cache: Cache.t, filter) => {
-  let keep = (registered, id, _) =>
-    Registered.(
-      registered.tokens
-      ->Map.Int.get(id)
-      ->Option.mapWithDefault(false, t =>
-          switch (t, filter) {
-          | (_, `Any) => true
-          | (FT, `FT) => true
-          | (NFT(info), `NFT(holder, allowHidden)) =>
-            (!allowHidden ? !info.hidden : true) && info.holder == holder
-          | _ => false
-          }
-        )
-    );
+let unfoldRegistered = (tokens, cache: Cache.t, filter): Cache.withBalance => {
+  let mergeTokens = (_, registeredToken, cachedToken) => {
+    switch (registeredToken, cachedToken) {
+    | (None, _)
+    | (Some(_), None) => None
+    | (Some(registered), Some(cached)) =>
+      switch (registered, filter) {
+      | (Registered.NFT(info), `Any) => Some((cached, info.balance))
+      | (FT, `FT | `Any) => Some((cached, ReBigNumber.fromInt(0)))
+      | (NFT(info), `NFT(holder, allowHidden)) =>
+        (!allowHidden ? !info.hidden : true) && info.holder == holder
+          ? Some((cached, info.balance)) : None
+      | _ => None
+      }
+    };
+  };
 
   let merge = (_, registered, tokens) => {
     switch (registered, tokens) {
     | (None, _)
     // What should we do if the token is not in cache?
     | (_, None) => None
-    | (Some(registered), Some(contract)) =>
-      let tokens = contract.Cache.tokens->Map.Int.keep(keep(registered));
+    | (Some(registeredContract), Some(cachedContract)) =>
+      let tokens =
+        Map.Int.merge(
+          registeredContract.Registered.tokens,
+          cachedContract.Cache.tokens,
+          mergeTokens,
+        );
 
-      tokens->Map.Int.isEmpty ? None : Some({...contract, tokens});
+      tokens->Map.Int.isEmpty ? None : Some({...cachedContract, tokens});
     };
   };
   PublicKeyHash.Map.merge(tokens, cache, merge);
@@ -251,13 +257,16 @@ let addFungibleToken = (config, token) => {
   addTokenToRegistered(token, Registered.FT);
 };
 
-let addNonFungibleToken = (config, token, holder) => {
+let addNonFungibleToken = (config, token, holder, balance) => {
   let%Await () =
     token->TokenRepr.isNFT
       ? Promise.ok()
       : Promise.err(RegisterNotANonFungibleToken(token.address, token.kind));
   let%AwaitMap () = addTokenToCache(config, Full(token));
-  addTokenToRegistered(token, Registered.(NFT({holder, hidden: false})));
+  addTokenToRegistered(
+    token,
+    Registered.(NFT({holder, hidden: false, balance})),
+  );
 };
 
 let removeFromCache = token => {
@@ -369,23 +378,25 @@ let fetchIfNecessary =
   };
 };
 
-let updatePartial = (error, tokenContract, bcdToken) => {
+let updatePartial = (error, tokenContract, bcdToken: BCD.tokenBalance) => {
   let retry =
     switch (error) {
     | MetadataAPI.TokenIdNotFound(_, _)
     | MetadataAPI.NoTzip12Metadata(_) => false
     | _ => true
     };
-  BCD.toTokenRepr(tokenContract, bcdToken)
-  ->Option.mapWithDefault(
-      Cache.Partial(
-        tokenContract,
-        bcdToken->BCD.updateFromBuiltinTemplate,
-        retry,
-      ),
-      t =>
-      Full(t)
-    );
+  let token =
+    BCD.toTokenRepr(tokenContract, bcdToken)
+    ->Option.mapWithDefault(
+        Cache.Partial(
+          tokenContract,
+          bcdToken->BCD.updateFromBuiltinTemplate,
+          retry,
+        ),
+        t =>
+        Full(t)
+      );
+  (token, bcdToken.balance);
 };
 
 let getTokenRepr =
@@ -397,10 +408,10 @@ let getTokenRepr =
       fetchIfNecessary(config, tokenContract, bcdToken, tzip12Cache);
     switch (res) {
     | Error(e) => updatePartial(e, tokenContract, bcdToken)
-    | Ok(t) => Cache.Full(t)
+    | Ok(t) => (Cache.Full(t), bcdToken.balance)
     };
 
-  | Some(t) => Promise.value(t)
+  | Some(t) => Promise.value((t, bcdToken.balance))
   };
 };
 
@@ -491,8 +502,19 @@ let updateCache = (cache, token) =>
     ~updatedValue=
       fun
       | None
-      | Some(Partial(_)) => Some(token)
+      | Some(Cache.Partial(_)) => Some(token)
       | Some(t) => Some(t),
+  );
+
+let updateCacheWithBalance = (cache, (token, balance)) =>
+  cache->Cache.updateToken(
+    Cache.tokenAddress(token),
+    Cache.tokenId(token),
+    ~updatedValue=
+      fun
+      | None
+      | Some((Cache.Partial(_), _)) => Some((token, balance))
+      | Some((t, _)) => Some((t, balance)),
   );
 
 let handleUniqueToken =
@@ -502,7 +524,8 @@ let handleUniqueToken =
       tokenContract: TokenContract.t,
       ~onTokens=?,
       ~onStop=?,
-      indexCacheTokens: FutureBase.t((int, Cache.t, list(Cache.token))),
+      indexCacheTokens:
+        FutureBase.t((int, Cache.t, list(Cache.tokenWithBalance))),
       _tokenId: int,
       token: BCD.tokenBalance,
     ) =>
@@ -512,12 +535,16 @@ let handleUniqueToken =
     let%Ft (index, cache, finalTokens) = indexCacheTokens;
     let inCache = cache->Cache.getToken(token.contract, token.token_id);
 
-    let%FtMap tokenRepr =
+    let%FtMap (tokenRepr, balance) =
       getTokenRepr(config, tokenContract, token, tzip12Cache, inCache);
 
     onTokens->Option.mapWithDefault((), f => f(~lastToken=index));
 
-    (index + 1, cache->updateCache(tokenRepr), [tokenRepr, ...finalTokens]);
+    (
+      index + 1,
+      cache->updateCache(tokenRepr),
+      [(tokenRepr, balance), ...finalTokens],
+    );
   };
 
 let handleTokens =
@@ -526,7 +553,8 @@ let handleTokens =
       tzip12Cache,
       ~onTokens=?,
       ~onStop=?,
-      indexCacheTokens: FutureBase.t((int, Cache.t, list(Cache.token))),
+      indexCacheTokens:
+        FutureBase.t((int, Cache.t, list(Cache.tokenWithBalance))),
       _,
       (tokenContract: TokenContract.t, tokens: Map.Int.t(BCD.tokenBalance)),
     ) => {
@@ -583,7 +611,7 @@ let fetchAccountsTokensRaw =
 };
 
 let updateContractNames = (tokens, cache) =>
-  tokens->PublicKeyHash.Map.map((c: Cache.contract) =>
+  tokens->PublicKeyHash.Map.map((c: Cache.contract(Cache.tokenWithBalance)) =>
     c.name == None
       ? {
         ...c,
@@ -597,7 +625,7 @@ let updateContractNames = (tokens, cache) =>
 
 let buildFromCache = (tokens, cache) =>
   tokens
-  ->List.reduce(PublicKeyHash.Map.empty, updateCache)
+  ->List.reduce(PublicKeyHash.Map.empty, updateCacheWithBalance)
   ->updateContractNames(cache);
 
 let fetchAccountsTokens =
@@ -606,7 +634,6 @@ let fetchAccountsTokens =
       ~accounts,
       ~index,
       ~numberByAccount,
-      ~withFullCache,
       ~onTokens=?,
       ~onStop=?,
       (),
@@ -629,10 +656,7 @@ let fetchAccountsTokens =
     );
 
   updatedCache->Cache.set;
-  (
-    withFullCache ? updatedCache : tokens->buildFromCache(updatedCache),
-    nextIndex,
-  );
+  (updatedCache, tokens->buildFromCache(updatedCache), nextIndex);
 };
 
 let isRegistered = (registered, token) => {
@@ -648,15 +672,8 @@ let partitionByRegistration = (tokens, registered) => {
 
 let fetchAccountsTokensRegistry =
     (config, ~accounts, ~index, ~numberByAccount) => {
-  let%AwaitRes (cache, nextIndex) =
-    fetchAccountsTokens(
-      config,
-      ~accounts,
-      ~index,
-      ~numberByAccount,
-      ~withFullCache=true,
-      (),
-    );
+  let%AwaitRes (cache, _, nextIndex) =
+    fetchAccountsTokens(config, ~accounts, ~index, ~numberByAccount, ());
   let%ResMap registered = Registered.getWithFallback();
   let (registered, toRegister) =
     cache->Cache.valuesToArray->partitionByRegistration(registered);
@@ -664,27 +681,18 @@ let fetchAccountsTokensRegistry =
 };
 
 let fetchAccountTokensStreamed =
-    (
-      config,
-      ~account,
-      ~index,
-      ~numberByAccount,
-      ~onTokens,
-      ~onStop,
-      ~withFullCache,
-    ) => {
+    (config, ~account, ~index, ~numberByAccount, ~onTokens, ~onStop) => {
   let onceFinished = (tokens, number) => {
     let%Await () = tokens->registerNFTs(account)->FutureBase.value;
     Promise.ok((tokens, number));
   };
   let rec get = (accumulatedTokens, index) => {
-    let%Await (fetchedTokens, nextIndex) =
+    let%Await (_, fetchedTokens, nextIndex) =
       fetchAccountsTokens(
         config,
         ~accounts=[account],
         ~index,
         ~numberByAccount,
-        ~withFullCache,
         ~onTokens,
         ~onStop,
         (),
@@ -702,8 +710,8 @@ let fetchTokenRegistry = (config, ~kinds, ~limit, ~index, ()) =>
   fetchTokenContracts(config, ~accounts=[], ~kinds, ~limit, ~index, ());
 
 type fetched = [
-  | `Cached(TokenRegistry.Cache.t)
-  | `Fetched(TokenRegistry.Cache.t, int)
+  | `Cached(TokenRegistry.Cache.withBalance)
+  | `Fetched(TokenRegistry.Cache.withBalance, int)
 ];
 
 let fetchAccountNFTs =
@@ -731,10 +739,9 @@ let fetchAccountNFTs =
         ~numberByAccount,
         ~onTokens,
         ~onStop,
-        ~withFullCache=false,
       );
     `Fetched((
-      tokens->Cache.keepTokens((_, _, token) => Cache.isNFT(token)),
+      tokens->Cache.keepTokens((_, _, (token, _)) => Cache.isNFT(token)),
       number,
     ));
   };

@@ -55,7 +55,8 @@ type state = {
   aliasesRequestState:
     reactState(ApiRequest.t(PublicKeyHash.Map.map(Alias.t))),
   bakersRequestState: reactState(ApiRequest.t(array(Delegate.t))),
-  tokensRequestState: reactState(ApiRequest.t(TokenRegistry.Cache.t)),
+  tokensRequestState:
+    reactState(ApiRequest.t(TokenRegistry.Cache.withBalance)),
   nftsRequestsState: apiRequestsState(TokenRegistry.Cache.t),
   tokensRegistryRequestState:
     reactState(ApiRequest.t(TokensApiRequest.registry)),
@@ -584,19 +585,18 @@ module Tokens = {
   };
 
   let useRequest = () => {
+    open TokenRegistry.Cache;
     let (tokensRequest, _) = useRequestState();
     let apiVersion = useApiVersion();
     tokensRequest->ApiRequest.map(tokens =>
       apiVersion->Option.mapWithDefault(PublicKeyHash.Map.empty, v =>
         tokens->PublicKeyHash.Map.reduce(
           PublicKeyHash.Map.empty,
-          (filteredTokens, k, c: TokenRegistry.Cache.contract) => {
+          (filteredTokens, k, c: contract(tokenWithBalance)) => {
             let tokens =
               c.tokens
-              ->Map.Int.keep((_, t) =>
-                  TokenRegistry.Cache.isFull(t)
-                  && TokenRegistry.Cache.tokenChain(t)
-                  == Some(v.Network.chain)
+              ->Map.Int.keep((_, (t, _)) =>
+                  isFull(t) && tokenChain(t) == Some(v.Network.chain)
                 );
             tokens->Map.Int.isEmpty
               ? filteredTokens
@@ -946,9 +946,13 @@ module SelectedToken = {
     let store = useStoreContext();
     let tokens = Tokens.useGetAll();
 
+    /// FIXME: this is clearly a bug!
     switch (store.selectedTokenState, tokens) {
     | ((Some(selectedToken), _), tokens) =>
-      tokens->TokenRegistry.Cache.getFullToken(selectedToken, 0)
+      switch (tokens->TokenRegistry.Cache.getToken(selectedToken, 0)) {
+      | Some((TokenRegistry.Cache.Full(t), _)) => t->Some
+      | _ => None
+      }
     | _ => None
     };
   };

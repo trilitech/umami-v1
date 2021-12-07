@@ -33,17 +33,18 @@ type filter = [ | `Any | `FT | `NFT(PublicKeyHash.t, bool)];
 let metadataToToken:
   (string, TokenContract.t, ReTaquitoTypes.Tzip12.metadata) => TokenRepr.t;
 
-let registeredTokens: filter => Let.result(TokenRegistry.Cache.t);
+let registeredTokens: filter => Let.result(TokenRegistry.Cache.withBalance);
 
 let hiddenTokens: unit => Let.result(TokenRegistry.Registered.t);
 
 let addFungibleToken: (ConfigContext.env, Token.t) => Promise.t(unit);
 
 let addNonFungibleToken:
-  (ConfigContext.env, Token.t, PublicKeyHash.t) => Promise.t(unit);
+  (ConfigContext.env, Token.t, PublicKeyHash.t, ReBigNumber.t) =>
+  Promise.t(unit);
 
 let registerNFTs:
-  (TokenRegistry.Cache.t, PublicKeyHash.t) => Let.result(unit);
+  (TokenRegistry.Cache.withBalance, PublicKeyHash.t) => Let.result(unit);
 
 let updateNFTsVisibility:
   (PublicKeyHash.Map.map(Map.Int.t(unit)), ~hidden: bool) =>
@@ -78,12 +79,11 @@ let fetchAccountsTokens:
     ~accounts: list(PublicKeyHash.t),
     ~index: int,
     ~numberByAccount: int,
-    ~withFullCache: bool,
     ~onTokens: (~total: int, ~lastToken: int) => unit=?,
     ~onStop: unit => bool=?,
     unit
   ) =>
-  Promise.t((TokenRegistry.Cache.t, int));
+  Promise.t((TokenRegistry.Cache.t, TokenRegistry.Cache.withBalance, int));
 
 let fetchAccountTokensStreamed:
   (
@@ -92,10 +92,9 @@ let fetchAccountTokensStreamed:
     ~index: int,
     ~numberByAccount: int,
     ~onTokens: (~total: int, ~lastToken: int) => unit,
-    ~onStop: unit => bool,
-    ~withFullCache: bool
+    ~onStop: unit => bool
   ) =>
-  Promise.t((TokenRegistry.Cache.t, int));
+  Promise.t((TokenRegistry.Cache.withBalance, int));
 
 let fetchAccountsTokensRegistry:
   (
@@ -113,8 +112,8 @@ let fetchAccountsTokensRegistry:
   );
 
 type fetched = [
-  | `Cached(TokenRegistry.Cache.t)
-  | `Fetched(TokenRegistry.Cache.t, int)
+  | `Cached(TokenRegistry.Cache.withBalance)
+  | `Fetched(TokenRegistry.Cache.withBalance, int)
 ];
 
 let fetchAccountNFTs:

@@ -28,6 +28,7 @@ module Registered: {
   type nftInfo = {
     holder: PublicKeyHash.t,
     hidden: bool,
+    balance: ReBigNumber.t,
   };
 
   type kind =
@@ -59,17 +60,10 @@ module Registered: {
 
 /** The cache is a representation of the already fetched tokens from the chain */
 module Cache: {
+  // Cached tokens, either complete or with missing values
   type token =
     | Full(Token.t)
     | Partial(TokenContract.t, BCD.tokenBalance, bool);
-
-  type tokens = Map.Int.t(token);
-
-  type contract = {
-    address: PublicKeyHash.t,
-    name: option(string),
-    tokens,
-  };
 
   let tokenId: token => int;
   let tokenAddress: token => PublicKeyHash.t;
@@ -80,32 +74,54 @@ module Cache: {
 
   let isNFT: token => bool;
 
-  include
-    LocalStorage.StorageType with type t = PublicKeyHash.Map.map(contract);
+  // A generic cached contract with its tokens
+  type contract('tokens) = {
+    address: PublicKeyHash.t,
+    name: option(string),
+    tokens: Map.Int.t('tokens),
+  };
 
-  let empty: t;
+  type map('token) = PublicKeyHash.Map.map(contract('token));
+
+  let empty: map('token);
+
+  let getToken: (map('token), PublicKeyHash.t, int) => option('token);
+  let updateToken:
+    (
+      map('token),
+      PublicKeyHash.t,
+      int,
+      ~updatedValue: option('token) => option('token)
+    ) =>
+    map('token);
+  let valuesToArray: map('token) => array('token);
+
+  let keepTokens:
+    (map('token), (PublicKeyHash.t, int, 'token) => bool) => map('token);
+
+  // Cache in localStorage
+  include LocalStorage.StorageType with type t = map(token);
 
   let getWithFallback: unit => Let.result(t);
 
-  let getToken: (t, PublicKeyHash.t, int) => option(token);
+  // Specific for localStorage version
   let getFullToken: (t, PublicKeyHash.t, int) => option(Token.t);
-  let addToken: (t, token) => t;
-  let updateToken:
-    (
-      t,
-      PublicKeyHash.t,
-      int,
-      ~updatedValue: option(token) => option(token)
-    ) =>
-    t;
-  let removeToken: (t, token) => t;
-  let valuesToArray: t => array(token);
-  let keepTokens: (t, (PublicKeyHash.t, int, token) => bool) => t;
 
-  let merge: (t, t) => t;
+  let addToken: (t, token) => t;
+  let removeToken: (t, token) => t;
+
+  // Fetched from BetterCallDev
+  type tokenWithBalance = (token, ReBigNumber.t);
+
+  type withBalance = map(tokenWithBalance);
+
+  let merge: (withBalance, withBalance) => withBalance;
+  let getFullTokenWithBalance:
+    (withBalance, PublicKeyHash.t, int) => option((Token.t, ReBigNumber.t));
 };
 
-let mergeAccountNFTs: (Registered.t, Cache.t, PublicKeyHash.t) => Registered.t;
+let mergeAccountNFTs:
+  (Registered.t, Cache.withBalance, PublicKeyHash.t) => Registered.t;
 
 module Legacy: {
   module V1_3: {

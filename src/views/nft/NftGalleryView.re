@@ -136,7 +136,7 @@ let uniqueKey = (contract: PublicKeyHash.t, id) =>
   (contract :> string) ++ "-" ++ Int.toString(id);
 
 [@react.component]
-let make = (~nfts: TokenRegistry.Cache.t) => {
+let make = (~nfts: TokenRegistry.Cache.withBalance) => {
   let account = StoreContext.SelectedAccount.useGet();
   let hidden =
     TokenRegistry.Registered.get()
@@ -158,8 +158,8 @@ let make = (~nfts: TokenRegistry.Cache.t) => {
         ->TokenRegistry.Cache.valuesToArray
         ->Array.keepMap(
             fun
-            | Partial(_, _, _) => None
-            | Full(nft) =>
+            | (Partial(_, _, _), _) => None
+            | (Full(nft), _) =>
               account->Option.map(account =>
                 <Card
                   key={uniqueKey(nft.address, TokenRepr.id(nft))}
