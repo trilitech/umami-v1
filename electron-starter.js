@@ -37,16 +37,12 @@ let mainWindow
 let deeplinkURL
 
 // Keep a reference for dev mode
-let dev = false
+let dev = process.env.NODE_ENV !== undefined && process.env.NODE_ENV === 'development'
 
 // Broken:
 // if (process.defaultApp || /[\\/]electron-prebuilt[\\/]/.test(process.execPath) || /[\\/]electron[\\/]/.test(process.execPath)) {
 //   dev = true
 // }
-
-if (process.env.NODE_ENV !== undefined && process.env.NODE_ENV === 'development') {
-  dev = true
-}
 
 if (!app.requestSingleInstanceLock()) {
   app.quit()

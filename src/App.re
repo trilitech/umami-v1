@@ -75,14 +75,34 @@ module Homepage = {
 };
 
 module BuyTezView = {
+  module IFrame = {
+    type props = {
+      src: string,
+      width: string,
+      height: string,
+      allow: string,
+      frameBorder: string,
+    };
+
+    [@bs.val] [@bs.scope "React"]
+    external createElement: ([@bs.as "iframe"] _, props) => React.element =
+      "createElement";
+  };
+
   [@react.component]
   let make = (~src, ~onClose) => {
+    Js.log(System.isDev);
     <Page>
-      <Page.Header
-        right={<CloseButton onClose />}>
+      <Page.Header right={<CloseButton onClose />}>
         ReasonReact.null
       </Page.Header>
-      <iframe width="100%" height="100%" src />
+      {IFrame.createElement({
+         src,
+         width: "100%",
+         height: "100%",
+         allow: "camera *; microphone *",
+         frameBorder: "0",
+       })}
     </Page>;
   };
 };
@@ -149,8 +169,12 @@ module AppView = {
       let widget =
         ReWert.Widget.make({
           container_id: "wert-widget",
-          partner_id: "01F8DFQRA460MG8EMEP6E0RQQT",
-          origin: "https://sandbox.wert.io",
+          partner_id:
+            System.isDev
+              ? "01F8DFQRA460MG8EMEP6E0RQQT" : "01FN6APWJ68N2PWC22YDJW4D5W",
+          origin:
+            System.isDev
+              ? "https://sandbox.wert.io" : "https://widget.wert.io",
           commodity: "XTZ",
           commodities: "XTZ",
           address: (address :> string),
@@ -243,8 +267,8 @@ module AppView = {
                    closeAction={_ => {
                      closeAction();
                      if (wertURL == None) {
-                      setOnboardingState(_ => Dashboard);
-                     }
+                       setOnboardingState(_ => Dashboard);
+                     };
                    }}
                  />
                </ModalAction>

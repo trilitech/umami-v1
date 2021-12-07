@@ -32,6 +32,7 @@ type plateform = [ | `darwin | `win32 | `linux];
 
 let plateform: plateform;
 let isMac: bool;
+let isDev: bool;
 
 let openExternal: string => unit;
 
