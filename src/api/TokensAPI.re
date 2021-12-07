@@ -286,25 +286,6 @@ let removeToken = (token, ~pruneCache) => {
   removeFromRegistered(token);
 };
 
-// Returns the known list of multiple accounts' tokens
-let fetchTokenContracts =
-    (config, ~accounts, ~kinds=?, ~limit=?, ~index=?, ()) => {
-  open ServerAPI;
-
-  let%Await tokens =
-    URL.Explorer.tokenRegistry(
-      config,
-      ~accountsFilter=accounts,
-      ~kinds?,
-      ~limit?,
-      ~index?,
-      (),
-    )
-    ->URL.get;
-
-  tokens->JsonEx.decode(TokenContract.Decode.map)->Promise.value;
-};
-
 let metadataToAsset = (metadata: ReTaquitoTypes.Tzip12.metadata) =>
   TokenRepr.Metadata.{
     description: metadata.description,
@@ -352,418 +333,447 @@ let metadataToToken =
     asset: metadata->metadataToAsset,
   };
 
-// If the result from BetterCallDev does not contain enough information, fetch
-// the metadata from the node using Taquito's API
-let fetchIfNecessary =
-    (
-      config: ConfigContext.env,
-      tokenContract,
-      bcdToken: BCD.tokenBalance,
-      tzip12Cache,
-    ) => {
-  let fetchMetadata = () => {
-    let%Await contract =
-      tzip12Cache->TaquitoAPI.Tzip12Cache.findContract(bcdToken.contract);
-    let%AwaitMap metadata =
-      MetadataAPI.Tzip12.read(contract, bcdToken.token_id);
-    metadataToToken(
-      config.network.chain->Network.getChainId,
-      tokenContract,
-      metadata,
-    );
-  };
-  switch (BCD.toTokenRepr(tokenContract, bcdToken)) {
-  | Some(token) => Promise.ok(token)
-  | None => fetchMetadata()
-  };
-};
+module Fetch = {
+  // Returns the known list of multiple accounts' tokens
+  let tokenContracts = (config, ~accounts, ~kinds=?, ~limit=?, ~index=?, ()) => {
+    open ServerAPI;
 
-let updatePartial = (error, tokenContract, bcdToken: BCD.tokenBalance) => {
-  let retry =
-    switch (error) {
-    | MetadataAPI.TokenIdNotFound(_, _)
-    | MetadataAPI.NoTzip12Metadata(_) => false
-    | _ => true
-    };
-  let token =
-    BCD.toTokenRepr(tokenContract, bcdToken)
-    ->Option.mapWithDefault(
-        TokensLibrary.Token.Partial(
-          tokenContract,
-          bcdToken->BCD.updateFromBuiltinTemplate,
-          retry,
-        ),
-        t =>
-        Full(t)
-      );
-  (token, bcdToken.balance);
-};
-
-let getTokenRepr =
-    (config, tokenContract, bcdToken: BCD.tokenBalance, tzip12Cache, inCache) => {
-  switch (inCache) {
-  | None
-  | Some(TokensLibrary.Token.Partial(_, _, true)) =>
-    let%FtMap res =
-      fetchIfNecessary(config, tokenContract, bcdToken, tzip12Cache);
-    switch (res) {
-    | Error(e) => updatePartial(e, tokenContract, bcdToken)
-    | Ok(t) => (TokensLibrary.Token.Full(t), bcdToken.balance)
-    };
-
-  | Some(t) => Promise.value((t, bcdToken.balance))
-  };
-};
-
-let addContractIfNecessary = (cache: TokensLibrary.t, tzip12Cache, address) => {
-  let contract = cache->PublicKeyHash.Map.get(address);
-
-  let fetchName = () => {
-    let%Await contract =
-      tzip12Cache->TaquitoAPI.Tzip12Cache.findContract(address);
-    let%AwaitMap metadata = MetadataAPI.Tzip12.readContractMetadata(contract);
-    metadata.metadata.name;
-  };
-
-  switch (contract) {
-  | Some(_) => cache->Promise.value
-  | None =>
-    let%FtMap name = fetchName();
-    let contract =
-      TokensLibrary.Generic.{
-        name: Result.getWithDefault(name, None),
-        address,
-        tokens: Map.Int.empty,
-      };
-    cache->PublicKeyHash.Map.set(address, contract);
-  };
-};
-
-let pruneMissingContracts =
-    (bcdTokens, config, contracts, cache: TokensLibrary.t) => {
-  // In an ideal world, the indexer always returns all the contracts
-  let tryInTokenContracts = (bcdTokens, token, ids) =>
-    contracts
-    ->PublicKeyHash.Map.get(token)
-    ->Option.map((contract: TokenContract.t) =>
-        bcdTokens->PublicKeyHash.Map.set(token, (contract, ids))
-      );
-
-  // Check the contract has been cached once: it has at least one token
-  let tryInCache = (bcdTokens, token, ids) =>
-    cache
-    ->PublicKeyHash.Map.get(token)
-    ->Option.flatMap(c => c.TokensLibrary.Generic.tokens->Map.Int.minimum)
-    ->Option.map(((_, token)) => {
-        let address = TokensLibrary.Token.address(token);
-        let kind = TokensLibrary.Token.kind(token);
-        PublicKeyHash.Map.set(
-          bcdTokens,
-          address,
-          (TokenContract.{address, kind}, ids),
-        );
-      });
-
-  // Finally, we ask Mezos for the kind of the token (it might not have been
-  // correctly indexed)
-  let tryInAPI = (bcdTokens, token: PublicKeyHash.t, ids) => {
-    let%FtMap kind = NodeAPI.Tokens.checkTokenContract(config, token);
-    switch (kind) {
-    | Ok(#TokenContract.kind as kind) =>
-      bcdTokens->PublicKeyHash.Map.set(
-        token,
-        (TokenContract.{address: token, kind}, ids),
-      )
-    | _ => bcdTokens
-    };
-  };
-
-  bcdTokens->PublicKeyHash.Map.reduce(
-    PublicKeyHash.Map.empty->Promise.value,
-    (bcdTokens, token, ids) => {
-      let%Ft bcdTokens = bcdTokens;
-      switch (bcdTokens->tryInTokenContracts(token, ids)) {
-      | Some(bcdTokens) => bcdTokens->Promise.value
-      | None =>
-        bcdTokens
-        ->tryInCache(token, ids)
-        ->Option.mapWithDefault(
-            bcdTokens->tryInAPI(token, ids),
-            Promise.value,
-          )
-      };
-    },
-  );
-};
-
-let updateCache = (cache, token) =>
-  cache->TokensLibrary.Generic.updateToken(
-    TokensLibrary.Token.address(token),
-    TokensLibrary.Token.id(token),
-    ~updatedValue=
-      fun
-      | None
-      | Some(TokensLibrary.Token.Partial(_)) => Some(token)
-      | Some(t) => Some(t),
-  );
-
-let updateCacheWithBalance = (cache, (token, balance)) =>
-  cache->TokensLibrary.Generic.updateToken(
-    TokensLibrary.Token.address(token),
-    TokensLibrary.Token.id(token),
-    ~updatedValue=
-      fun
-      | None
-      | Some((TokensLibrary.Token.Partial(_), _)) => Some((token, balance))
-      | Some((t, _)) => Some((t, balance)),
-  );
-
-let handleUniqueToken =
-    (
-      config: ConfigContext.env,
-      tzip12Cache,
-      tokenContract: TokenContract.t,
-      ~onTokens=?,
-      ~onStop=?,
-      indexCacheTokens:
-        FutureBase.t(
-          (int, TokensLibrary.t, list(TokensLibrary.WithBalance.token)),
-        ),
-      _tokenId: int,
-      token: BCD.tokenBalance,
-    ) =>
-  if (onStop->Option.mapWithDefault(false, f => f())) {
-    indexCacheTokens;
-  } else {
-    let%Ft (index, cache, finalTokens) = indexCacheTokens;
-    let inCache =
-      cache->TokensLibrary.Generic.getToken(token.contract, token.token_id);
-
-    let%FtMap (tokenRepr, balance) =
-      getTokenRepr(config, tokenContract, token, tzip12Cache, inCache);
-
-    onTokens->Option.mapWithDefault((), f => f(~lastToken=index));
-
-    (
-      index + 1,
-      cache->updateCache(tokenRepr),
-      [(tokenRepr, balance), ...finalTokens],
-    );
-  };
-
-let handleTokens =
-    (
-      config: ConfigContext.env,
-      tzip12Cache,
-      ~onTokens=?,
-      ~onStop=?,
-      indexCacheTokens:
-        FutureBase.t(
-          (int, TokensLibrary.t, list(TokensLibrary.WithBalance.token)),
-        ),
-      _,
-      (tokenContract: TokenContract.t, tokens: Map.Int.t(BCD.tokenBalance)),
-    ) => {
-  let%Ft (index, cache, finalTokens) = indexCacheTokens;
-
-  let%Ft updatedCache =
-    cache->addContractIfNecessary(tzip12Cache, tokenContract.address);
-
-  tokens->Map.Int.reduce(
-    (index, updatedCache, finalTokens)->FutureBase.value,
-    handleUniqueToken(
-      config,
-      tzip12Cache,
-      tokenContract,
-      ~onTokens?,
-      ~onStop?,
-    ),
-  );
-};
-
-let fetchAccountsTokensRaw =
-    (
-      config: ConfigContext.env,
-      ~accounts,
-      tzip12Cache,
-      cache: TokensLibrary.t,
-      ~onTokens=?,
-      ~onStop=?,
-      ~index,
-      ~numberByAccount,
-    ) => {
-  let%Await (tokens, nextIndex, total) =
-    BetterCallDev.fetchAccountsTokens(
-      config,
-      accounts,
-      index,
-      numberByAccount,
-    );
-
-  let onTokens = onTokens->Option.map(f => f(~total));
-
-  let%Await tokenContracts = fetchTokenContracts(config, ~accounts, ());
-
-  let%Ft tokens =
-    tokens->pruneMissingContracts(config, tokenContracts, cache);
-
-  let%Ft (_, cache, tokensWithMetadata) =
-    tokens->PublicKeyHash.Map.reduce(
-      (index, cache, [])->Promise.value,
-      handleTokens(config, tzip12Cache, ~onTokens?, ~onStop?),
-    );
-
-  (cache, tokensWithMetadata, nextIndex)->Promise.ok;
-};
-
-let updateContractNames = (tokens, cache) =>
-  tokens->PublicKeyHash.Map.map(
-    (c: TokensLibrary.Generic.contract(TokensLibrary.WithBalance.token)) =>
-    c.name == None
-      ? {
-        ...c,
-        name:
-          cache
-          ->PublicKeyHash.Map.get(c.address)
-          ->Option.mapWithDefault(None, c => c.TokensLibrary.Generic.name),
-      }
-      : c
-  );
-
-let buildFromCache = (tokens, cache) =>
-  tokens
-  ->List.reduce(PublicKeyHash.Map.empty, updateCacheWithBalance)
-  ->updateContractNames(cache);
-
-let fetchAccountsTokens =
-    (
-      config: ConfigContext.env,
-      ~accounts,
-      ~index,
-      ~numberByAccount,
-      ~onTokens=?,
-      ~onStop=?,
-      (),
-    ) => {
-  let%Await cache = TokenStorage.Cache.getWithFallback()->Promise.value;
-
-  let toolkit = MetadataAPI.toolkit(config);
-  let tzip12Cache = TaquitoAPI.Tzip12Cache.make(toolkit);
-
-  let%AwaitMap (updatedCache, tokens, nextIndex) =
-    fetchAccountsTokensRaw(
-      config,
-      ~accounts,
-      tzip12Cache,
-      cache,
-      ~index,
-      ~numberByAccount,
-      ~onTokens?,
-      ~onStop?,
-    );
-
-  updatedCache->TokenStorage.Cache.set;
-  (updatedCache, tokens->buildFromCache(updatedCache), nextIndex);
-};
-
-let isRegistered = (registered, token) => {
-  registered->RegisteredTokens.isRegistered(
-    TokensLibrary.Token.address(token),
-    TokensLibrary.Token.id(token),
-  );
-};
-
-let partitionByRegistration = (tokens, registered) => {
-  tokens->Array.partition(registered->isRegistered);
-};
-
-let fetchAccountsTokensRegistry =
-    (config, ~accounts, ~index, ~numberByAccount) => {
-  let%AwaitRes (cache, _, nextIndex) =
-    fetchAccountsTokens(config, ~accounts, ~index, ~numberByAccount, ());
-  let%ResMap registered = TokenStorage.Registered.getWithFallback();
-  let (registered, toRegister) =
-    cache
-    ->TokensLibrary.Generic.valuesToArray
-    ->partitionByRegistration(registered);
-  (registered, toRegister, nextIndex);
-};
-
-let fetchAccountTokensStreamed =
-    (config, ~account, ~index, ~numberByAccount, ~onTokens, ~onStop) => {
-  let onceFinished = (tokens, number) => {
-    let%Await () = tokens->registerNFTs(account)->FutureBase.value;
-    Promise.ok((tokens, number));
-  };
-  let rec get = (accumulatedTokens, index) => {
-    let%Await (_, fetchedTokens, nextIndex) =
-      fetchAccountsTokens(
+    let%Await tokens =
+      URL.Explorer.tokenRegistry(
         config,
-        ~accounts=[account],
+        ~accountsFilter=accounts,
+        ~kinds?,
+        ~limit?,
+        ~index?,
+        (),
+      )
+      ->URL.get;
+
+    tokens->JsonEx.decode(TokenContract.Decode.map)->Promise.value;
+  };
+
+  let tokenRegistry = (config, ~kinds, ~limit, ~index, ()) =>
+    tokenContracts(config, ~accounts=[], ~kinds, ~limit, ~index, ());
+
+  // If the result from BetterCallDev does not contain enough information, fetch
+  // the metadata from the node using Taquito's API
+  let fetchIfNecessary =
+      (
+        config: ConfigContext.env,
+        tokenContract,
+        bcdToken: BCD.tokenBalance,
+        tzip12Cache,
+      ) => {
+    let fetchMetadata = () => {
+      let%Await contract =
+        tzip12Cache->TaquitoAPI.Tzip12Cache.findContract(bcdToken.contract);
+      let%AwaitMap metadata =
+        MetadataAPI.Tzip12.read(contract, bcdToken.token_id);
+      metadataToToken(
+        config.network.chain->Network.getChainId,
+        tokenContract,
+        metadata,
+      );
+    };
+    switch (BCD.toTokenRepr(tokenContract, bcdToken)) {
+    | Some(token) => Promise.ok(token)
+    | None => fetchMetadata()
+    };
+  };
+
+  let updatePartial = (error, tokenContract, bcdToken: BCD.tokenBalance) => {
+    let retry =
+      switch (error) {
+      | MetadataAPI.TokenIdNotFound(_, _)
+      | MetadataAPI.NoTzip12Metadata(_) => false
+      | _ => true
+      };
+    let token =
+      BCD.toTokenRepr(tokenContract, bcdToken)
+      ->Option.mapWithDefault(
+          TokensLibrary.Token.Partial(
+            tokenContract,
+            bcdToken->BCD.updateFromBuiltinTemplate,
+            retry,
+          ),
+          t =>
+          Full(t)
+        );
+    (token, bcdToken.balance);
+  };
+
+  let getTokenRepr =
+      (
+        config,
+        tokenContract,
+        bcdToken: BCD.tokenBalance,
+        tzip12Cache,
+        inCache,
+      ) => {
+    switch (inCache) {
+    | None
+    | Some(TokensLibrary.Token.Partial(_, _, true)) =>
+      let%FtMap res =
+        fetchIfNecessary(config, tokenContract, bcdToken, tzip12Cache);
+      switch (res) {
+      | Error(e) => updatePartial(e, tokenContract, bcdToken)
+      | Ok(t) => (TokensLibrary.Token.Full(t), bcdToken.balance)
+      };
+
+    | Some(t) => Promise.value((t, bcdToken.balance))
+    };
+  };
+
+  let addContractIfNecessary = (cache: TokensLibrary.t, tzip12Cache, address) => {
+    let contract = cache->PublicKeyHash.Map.get(address);
+
+    let fetchName = () => {
+      let%Await contract =
+        tzip12Cache->TaquitoAPI.Tzip12Cache.findContract(address);
+      let%AwaitMap metadata =
+        MetadataAPI.Tzip12.readContractMetadata(contract);
+      metadata.metadata.name;
+    };
+
+    switch (contract) {
+    | Some(_) => cache->Promise.value
+    | None =>
+      let%FtMap name = fetchName();
+      let contract =
+        TokensLibrary.Generic.{
+          name: Result.getWithDefault(name, None),
+          address,
+          tokens: Map.Int.empty,
+        };
+      cache->PublicKeyHash.Map.set(address, contract);
+    };
+  };
+
+  let pruneMissingContracts =
+      (bcdTokens, config, contracts, cache: TokensLibrary.t) => {
+    // In an ideal world, the indexer always returns all the contracts
+    let tryInTokenContracts = (bcdTokens, token, ids) =>
+      contracts
+      ->PublicKeyHash.Map.get(token)
+      ->Option.map((contract: TokenContract.t) =>
+          bcdTokens->PublicKeyHash.Map.set(token, (contract, ids))
+        );
+
+    // Check the contract has been cached once: it has at least one token
+    let tryInCache = (bcdTokens, token, ids) =>
+      cache
+      ->PublicKeyHash.Map.get(token)
+      ->Option.flatMap(c => c.TokensLibrary.Generic.tokens->Map.Int.minimum)
+      ->Option.map(((_, token)) => {
+          let address = TokensLibrary.Token.address(token);
+          let kind = TokensLibrary.Token.kind(token);
+          PublicKeyHash.Map.set(
+            bcdTokens,
+            address,
+            (TokenContract.{address, kind}, ids),
+          );
+        });
+
+    // Finally, we ask Mezos for the kind of the token (it might not have been
+    // correctly indexed)
+    let tryInAPI = (bcdTokens, token: PublicKeyHash.t, ids) => {
+      let%FtMap kind = NodeAPI.Tokens.checkTokenContract(config, token);
+      switch (kind) {
+      | Ok(#TokenContract.kind as kind) =>
+        bcdTokens->PublicKeyHash.Map.set(
+          token,
+          (TokenContract.{address: token, kind}, ids),
+        )
+      | _ => bcdTokens
+      };
+    };
+
+    bcdTokens->PublicKeyHash.Map.reduce(
+      PublicKeyHash.Map.empty->Promise.value,
+      (bcdTokens, token, ids) => {
+        let%Ft bcdTokens = bcdTokens;
+        switch (bcdTokens->tryInTokenContracts(token, ids)) {
+        | Some(bcdTokens) => bcdTokens->Promise.value
+        | None =>
+          bcdTokens
+          ->tryInCache(token, ids)
+          ->Option.mapWithDefault(
+              bcdTokens->tryInAPI(token, ids),
+              Promise.value,
+            )
+        };
+      },
+    );
+  };
+
+  let updateCache = (cache, token) =>
+    cache->TokensLibrary.Generic.updateToken(
+      TokensLibrary.Token.address(token),
+      TokensLibrary.Token.id(token),
+      ~updatedValue=
+        fun
+        | None
+        | Some(TokensLibrary.Token.Partial(_)) => Some(token)
+        | Some(t) => Some(t),
+    );
+
+  let updateCacheWithBalance = (cache, (token, balance)) =>
+    cache->TokensLibrary.Generic.updateToken(
+      TokensLibrary.Token.address(token),
+      TokensLibrary.Token.id(token),
+      ~updatedValue=
+        fun
+        | None
+        | Some((TokensLibrary.Token.Partial(_), _)) => Some((token, balance))
+        | Some((t, _)) => Some((t, balance)),
+    );
+
+  let handleUniqueToken =
+      (
+        config: ConfigContext.env,
+        tzip12Cache,
+        tokenContract: TokenContract.t,
+        ~onTokens=?,
+        ~onStop=?,
+        indexCacheTokens:
+          FutureBase.t(
+            (int, TokensLibrary.t, list(TokensLibrary.WithBalance.token)),
+          ),
+        _tokenId: int,
+        token: BCD.tokenBalance,
+      ) =>
+    if (onStop->Option.mapWithDefault(false, f => f())) {
+      indexCacheTokens;
+    } else {
+      let%Ft (index, cache, finalTokens) = indexCacheTokens;
+      let inCache =
+        cache->TokensLibrary.Generic.getToken(token.contract, token.token_id);
+
+      let%FtMap (tokenRepr, balance) =
+        getTokenRepr(config, tokenContract, token, tzip12Cache, inCache);
+
+      onTokens->Option.mapWithDefault((), f => f(~lastToken=index));
+
+      (
+        index + 1,
+        cache->updateCache(tokenRepr),
+        [(tokenRepr, balance), ...finalTokens],
+      );
+    };
+
+  let handleTokens =
+      (
+        config: ConfigContext.env,
+        tzip12Cache,
+        ~onTokens=?,
+        ~onStop=?,
+        indexCacheTokens:
+          FutureBase.t(
+            (int, TokensLibrary.t, list(TokensLibrary.WithBalance.token)),
+          ),
+        _,
+        (
+          tokenContract: TokenContract.t,
+          tokens: Map.Int.t(BCD.tokenBalance),
+        ),
+      ) => {
+    let%Ft (index, cache, finalTokens) = indexCacheTokens;
+
+    let%Ft updatedCache =
+      cache->addContractIfNecessary(tzip12Cache, tokenContract.address);
+
+    tokens->Map.Int.reduce(
+      (index, updatedCache, finalTokens)->FutureBase.value,
+      handleUniqueToken(
+        config,
+        tzip12Cache,
+        tokenContract,
+        ~onTokens?,
+        ~onStop?,
+      ),
+    );
+  };
+
+  let fetchAccountsTokensRaw =
+      (
+        config: ConfigContext.env,
+        ~accounts,
+        tzip12Cache,
+        cache: TokensLibrary.t,
+        ~onTokens=?,
+        ~onStop=?,
         ~index,
         ~numberByAccount,
-        ~onTokens,
-        ~onStop,
+      ) => {
+    let%Await (tokens, nextIndex, total) =
+      BetterCallDev.fetchAccountsTokens(
+        config,
+        accounts,
+        index,
+        numberByAccount,
+      );
+
+    let onTokens = onTokens->Option.map(f => f(~total));
+
+    let%Await tokenContracts = tokenContracts(config, ~accounts, ());
+
+    let%Ft tokens =
+      tokens->pruneMissingContracts(config, tokenContracts, cache);
+
+    let%Ft (_, cache, tokensWithMetadata) =
+      tokens->PublicKeyHash.Map.reduce(
+        (index, cache, [])->Promise.value,
+        handleTokens(config, tzip12Cache, ~onTokens?, ~onStop?),
+      );
+
+    (cache, tokensWithMetadata, nextIndex)->Promise.ok;
+  };
+
+  let updateContractNames = (tokens, cache) =>
+    tokens->PublicKeyHash.Map.map(
+      (c: TokensLibrary.Generic.contract(TokensLibrary.WithBalance.token)) =>
+      c.name == None
+        ? {
+          ...c,
+          name:
+            cache
+            ->PublicKeyHash.Map.get(c.address)
+            ->Option.mapWithDefault(None, c => c.TokensLibrary.Generic.name),
+        }
+        : c
+    );
+
+  let buildFromCache = (tokens, cache) =>
+    tokens
+    ->List.reduce(PublicKeyHash.Map.empty, updateCacheWithBalance)
+    ->updateContractNames(cache);
+
+  let fetchAccountsTokens =
+      (
+        config: ConfigContext.env,
+        ~accounts,
+        ~index,
+        ~numberByAccount,
+        ~onTokens=?,
+        ~onStop=?,
         (),
+      ) => {
+    let%Await cache = TokenStorage.Cache.getWithFallback()->Promise.value;
+
+    let toolkit = MetadataAPI.toolkit(config);
+    let tzip12Cache = TaquitoAPI.Tzip12Cache.make(toolkit);
+
+    let%AwaitMap (updatedCache, tokens, nextIndex) =
+      fetchAccountsTokensRaw(
+        config,
+        ~accounts,
+        tzip12Cache,
+        cache,
+        ~index,
+        ~numberByAccount,
+        ~onTokens?,
+        ~onStop?,
       );
-    let accumulatedTokens =
-      accumulatedTokens->TokensLibrary.WithBalance.mergeAndUpdateBalance(
-        fetchedTokens,
-      );
-    nextIndex <= index || onStop()
-      ? onceFinished(accumulatedTokens, nextIndex)
-      : get(accumulatedTokens, nextIndex);
-  };
-  get(TokensLibrary.Generic.empty, index);
-};
 
-let fetchTokenRegistry = (config, ~kinds, ~limit, ~index, ()) =>
-  fetchTokenContracts(config, ~accounts=[], ~kinds, ~limit, ~index, ());
-
-type fetched = [
-  | `Cached(TokensLibrary.WithBalance.t)
-  | `Fetched(TokensLibrary.WithBalance.t, int)
-];
-
-let fetchAccountNFTs =
-    (
-      config,
-      ~account,
-      ~numberByAccount,
-      ~onTokens,
-      ~onStop,
-      ~allowHidden,
-      ~fromCache,
-    ) => {
-  let getFromCache = () => {
-    let%AwaitMap tokens =
-      registeredTokens(`NFT((account, allowHidden)))->Promise.value;
-    `Cached(tokens);
+    updatedCache->TokenStorage.Cache.set;
+    (updatedCache, tokens->buildFromCache(updatedCache), nextIndex);
   };
 
-  let getFromNetwork = () => {
-    let%AwaitMap (tokens, number) =
-      fetchAccountTokensStreamed(
+  let isRegistered = (registered, token) => {
+    registered->RegisteredTokens.isRegistered(
+      TokensLibrary.Token.address(token),
+      TokensLibrary.Token.id(token),
+    );
+  };
+
+  let partitionByRegistration = (tokens, registered) => {
+    tokens->Array.partition(registered->isRegistered);
+  };
+
+  let accountsTokens = (config, ~accounts, ~index, ~numberByAccount) => {
+    let%AwaitRes (cache, _, nextIndex) =
+      fetchAccountsTokens(config, ~accounts, ~index, ~numberByAccount, ());
+    let%ResMap registered = TokenStorage.Registered.getWithFallback();
+    let (registered, toRegister) =
+      cache
+      ->TokensLibrary.Generic.valuesToArray
+      ->partitionByRegistration(registered);
+    (registered, toRegister, nextIndex);
+  };
+
+  let fetchAccountTokensStreamed =
+      (config, ~account, ~index, ~numberByAccount, ~onTokens, ~onStop) => {
+    let onceFinished = (tokens, number) => {
+      let%Await () = tokens->registerNFTs(account)->FutureBase.value;
+      Promise.ok((tokens, number));
+    };
+    let rec get = (accumulatedTokens, index) => {
+      let%Await (_, fetchedTokens, nextIndex) =
+        fetchAccountsTokens(
+          config,
+          ~accounts=[account],
+          ~index,
+          ~numberByAccount,
+          ~onTokens,
+          ~onStop,
+          (),
+        );
+      let accumulatedTokens =
+        accumulatedTokens->TokensLibrary.WithBalance.mergeAndUpdateBalance(
+          fetchedTokens,
+        );
+      nextIndex <= index || onStop()
+        ? onceFinished(accumulatedTokens, nextIndex)
+        : get(accumulatedTokens, nextIndex);
+    };
+    get(TokensLibrary.Generic.empty, index);
+  };
+
+  type fetched = [
+    | `Cached(TokensLibrary.WithBalance.t)
+    | `Fetched(TokensLibrary.WithBalance.t, int)
+  ];
+
+  let accountNFTs =
+      (
         config,
         ~account,
-        ~index=0,
         ~numberByAccount,
         ~onTokens,
         ~onStop,
-      );
-    `Fetched((
-      tokens->TokensLibrary.Generic.keepTokens((_, _, (token, _)) =>
-        TokensLibrary.Token.isNFT(token)
-      ),
-      number,
-    ));
+        ~allowHidden,
+        ~fromCache,
+      ) => {
+    let getFromCache = () => {
+      let%AwaitMap tokens =
+        registeredTokens(`NFT((account, allowHidden)))->Promise.value;
+      `Cached(tokens);
+    };
+
+    let getFromNetwork = () => {
+      let%AwaitMap (tokens, number) =
+        fetchAccountTokensStreamed(
+          config,
+          ~account,
+          ~index=0,
+          ~numberByAccount,
+          ~onTokens,
+          ~onStop,
+        );
+      `Fetched((
+        tokens->TokensLibrary.Generic.keepTokens((_, _, (token, _)) =>
+          TokensLibrary.Token.isNFT(token)
+        ),
+        number,
+      ));
+    };
+    fromCache ? getFromCache() : getFromNetwork();
   };
-  fromCache ? getFromCache() : getFromNetwork();
-};
 
-let fetchAccountTokensNumber = (config, ~account) => {
-  let%AwaitMap (_, _, total) =
-    BetterCallDev.fetchAccountsTokens(config, [account], 0, 1);
+  let accountTokensNumber = (config, ~account) => {
+    let%AwaitMap (_, _, total) =
+      BetterCallDev.fetchAccountsTokens(config, [account], 0, 1);
 
-  total;
+    total;
+  };
 };

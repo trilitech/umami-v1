@@ -52,77 +52,60 @@ let updateNFTsVisibility:
 
 let removeToken: (TokenRepr.t, ~pruneCache: bool) => Let.result(unit);
 
-let fetchTokenContracts:
-  (
-    ConfigContext.env,
-    ~accounts: list(PublicKeyHash.t),
-    ~kinds: list(TokenContract.kind)=?,
-    ~limit: int64=?,
-    ~index: int64=?,
-    unit
-  ) =>
-  Promise.t(PublicKeyHash.Map.map(TokenContract.t));
+module Fetch: {
+  // Returns the tokens contracts accounts have interacted with
+  let tokenContracts:
+    (
+      ConfigContext.env,
+      ~accounts: list(PublicKeyHash.t),
+      ~kinds: list(TokenContract.kind)=?,
+      ~limit: int64=?,
+      ~index: int64=?,
+      unit
+    ) =>
+    Promise.t(PublicKeyHash.Map.map(TokenContract.t));
 
-let fetchTokenRegistry:
-  (
-    ConfigContext.env,
-    ~kinds: list(TokenContract.kind),
-    ~limit: int64,
-    ~index: int64,
-    unit
-  ) =>
-  Promise.t(PublicKeyHash.Map.map(TokenContract.t));
+  // Returns all the token contracts available on the chain
+  let tokenRegistry:
+    (
+      ConfigContext.env,
+      ~kinds: list(TokenContract.kind),
+      ~limit: int64,
+      ~index: int64,
+      unit
+    ) =>
+    Promise.t(PublicKeyHash.Map.map(TokenContract.t));
 
-let fetchAccountsTokens:
-  (
-    ConfigContext.env,
-    ~accounts: list(PublicKeyHash.t),
-    ~index: int,
-    ~numberByAccount: int,
-    ~onTokens: (~total: int, ~lastToken: int) => unit=?,
-    ~onStop: unit => bool=?,
-    unit
-  ) =>
-  Promise.t((TokensLibrary.t, TokensLibrary.WithBalance.t, int));
+  // Fetch the tokens of a user: those already registered, those to register,
+  // and the next index to fetch from.
+  let accountsTokens:
+    (
+      ConfigContext.env,
+      ~accounts: list(PublicKeyHash.t),
+      ~index: int,
+      ~numberByAccount: int
+    ) =>
+    Promise.t(
+      (array(TokensLibrary.Token.t), array(TokensLibrary.Token.t), int),
+    );
 
-let fetchAccountTokensStreamed:
-  (
-    ConfigContext.env,
-    ~account: PublicKeyHash.t,
-    ~index: int,
-    ~numberByAccount: int,
-    ~onTokens: (~total: int, ~lastToken: int) => unit,
-    ~onStop: unit => bool
-  ) =>
-  Promise.t((TokensLibrary.WithBalance.t, int));
+  type fetched = [
+    | `Cached(TokensLibrary.WithBalance.t)
+    | `Fetched(TokensLibrary.WithBalance.t, int)
+  ];
 
-let fetchAccountsTokensRegistry:
-  (
-    ConfigContext.env,
-    ~accounts: list(PublicKeyHash.t),
-    ~index: int,
-    ~numberByAccount: int
-  ) =>
-  Promise.t(
-    (array(TokensLibrary.Token.t), array(TokensLibrary.Token.t), int),
-  );
+  let accountNFTs:
+    (
+      ConfigContext.env,
+      ~account: PublicKeyHash.t,
+      ~numberByAccount: int,
+      ~onTokens: (~total: int, ~lastToken: int) => unit,
+      ~onStop: unit => bool,
+      ~allowHidden: bool,
+      ~fromCache: bool
+    ) =>
+    Promise.t(fetched);
 
-type fetched = [
-  | `Cached(TokensLibrary.WithBalance.t)
-  | `Fetched(TokensLibrary.WithBalance.t, int)
-];
-
-let fetchAccountNFTs:
-  (
-    ConfigContext.env,
-    ~account: PublicKeyHash.t,
-    ~numberByAccount: int,
-    ~onTokens: (~total: int, ~lastToken: int) => unit,
-    ~onStop: unit => bool,
-    ~allowHidden: bool,
-    ~fromCache: bool
-  ) =>
-  Promise.t(fetched);
-
-let fetchAccountTokensNumber:
-  (ConfigContext.env, ~account: PublicKeyHash.t) => Promise.t(int);
+  let accountTokensNumber:
+    (ConfigContext.env, ~account: PublicKeyHash.t) => Promise.t(int);
+};
