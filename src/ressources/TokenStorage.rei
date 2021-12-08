@@ -24,88 +24,22 @@
 /*****************************************************************************/
 
 module Registered: {
-  /** Representation of registered tokens for a user */
-  type nftInfo = {
-    holder: PublicKeyHash.t,
-    hidden: bool,
-  };
-
-  type kind =
-    | FT
-    | NFT(nftInfo);
-
-  type contract = {
-    contract: TokenContract.t,
-    chain: string,
-    tokens: Map.Int.t(kind) // effectively registered tokens by the user
-  };
-
-  include
-    LocalStorage.StorageType with type t = PublicKeyHash.Map.map(contract);
+  include LocalStorage.StorageType with type t = RegisteredTokens.t;
 
   let getWithFallback: unit => Let.result(t);
-
-  let isRegistered: (t, PublicKeyHash.t, int) => bool;
-  let registerToken: (t, Token.t, kind) => t;
-  let removeToken: (t, PublicKeyHash.t, int) => t;
-  let isHidden: (t, PublicKeyHash.t, int) => bool;
-
-  let keepTokens: (t, (PublicKeyHash.t, int, kind) => bool) => t;
-
-  let updateNFTsVisibility:
-    (t, PublicKeyHash.Map.map(Map.Int.t(unit)), bool) => t;
-  let updateNFT: (t, PublicKeyHash.t, int, nftInfo) => t;
 };
 
 /** The cache is a representation of the already fetched tokens from the chain */
 module Cache: {
-  type token =
-    | Full(Token.t)
-    | Partial(TokenContract.t, BCD.tokenBalance);
-
-  type tokens = Map.Int.t(token);
-
-  type contract = {
-    address: PublicKeyHash.t,
-    name: option(string),
-    tokens,
-  };
-
-  let tokenId: token => int;
-  let tokenAddress: token => PublicKeyHash.t;
-  let tokenKind: token => TokenContract.kind;
-  let tokenChain: token => option(string);
-  let tokenName: token => option(string);
-  let isFull: token => bool;
-
-  let isNFT: token => bool;
-
-  include
-    LocalStorage.StorageType with type t = PublicKeyHash.Map.map(contract);
-
-  let empty: t;
+  // Cache in localStorage
+  include LocalStorage.StorageType with type t = TokensLibrary.t;
 
   let getWithFallback: unit => Let.result(t);
-
-  let getToken: (t, PublicKeyHash.t, int) => option(token);
-  let getFullToken: (t, PublicKeyHash.t, int) => option(Token.t);
-  let addToken: (t, token) => t;
-  let updateToken:
-    (
-      t,
-      PublicKeyHash.t,
-      int,
-      ~updatedValue: option(token) => option(token)
-    ) =>
-    t;
-  let removeToken: (t, token) => t;
-  let valuesToArray: t => array(token);
-  let keepTokens: (t, (PublicKeyHash.t, int, token) => bool) => t;
-
-  let merge: (t, t) => t;
 };
 
-let mergeAccountNFTs: (Registered.t, Cache.t, PublicKeyHash.t) => Registered.t;
+let mergeAccountNFTs:
+  (RegisteredTokens.t, TokensLibrary.WithBalance.t, PublicKeyHash.t) =>
+  RegisteredTokens.t;
 
 module Legacy: {
   module V1_3: {

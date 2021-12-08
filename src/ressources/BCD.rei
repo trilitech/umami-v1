@@ -49,6 +49,10 @@ type t = {
 
 let toTokenRepr: (TokenContract.t, tokenBalance) => option(TokenRepr.t);
 
+let updateFromBuiltinTemplate: tokenBalance => tokenBalance;
+
+let isNFT: tokenBalance => bool;
+
 /* Maximum tokens by request, which is 50 in the current API */
 let requestPageSize: int;
 

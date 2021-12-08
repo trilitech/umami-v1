@@ -23,90 +23,60 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open ReactNative;
+module Token: {
+  // Cached tokens, either complete or with missing values
+  type t =
+    | Full(Token.t)
+    | Partial(TokenContract.t, BCD.tokenBalance, bool);
 
-module Head = {
-  let styles =
-    Style.(
-      StyleSheet.create({
-        "thead":
-          style(
-            ~flexDirection=`row,
-            ~alignItems=`center,
-            ~height=30.->dp,
-            ~paddingLeft=22.->dp,
-            ~borderBottomWidth=1.,
-            (),
-          ),
-      })
-    );
+  let id: t => int;
+  let address: t => PublicKeyHash.t;
+  let kind: t => TokenContract.kind;
+  let chain: t => option(string);
+  let name: t => option(string);
+  let isFull: t => bool;
+  let isNFT: t => bool;
+};
 
-  [@react.component]
-  let make = (~children) => {
-    let theme = ThemeContext.useTheme();
-    <View
-      style=Style.(
-        array([|
-          styles##thead,
-          style(~borderColor=theme.colors.borderDisabled, ()),
-        |])
-      )>
-      children
-    </View>;
+module Generic: {
+  // A generic cached contract with its tokens
+  type contract('tokens) = {
+    address: PublicKeyHash.t,
+    name: option(string),
+    tokens: Map.Int.t('tokens),
   };
+
+  type t('token) = PublicKeyHash.Map.map(contract('token));
+
+  let empty: t('token);
+
+  let getToken: (t('token), PublicKeyHash.t, int) => option('token);
+  let updateToken:
+    (
+      t('token),
+      PublicKeyHash.t,
+      int,
+      ~updatedValue: option('token) => option('token)
+    ) =>
+    t('token);
+  let valuesToArray: t('token) => array('token);
+
+  let keepTokens:
+    (t('token), (PublicKeyHash.t, int, 'token) => bool) => t('token);
 };
 
-module Row = {
-  let styles =
-    Style.(StyleSheet.create({"borderSpacer": style(~width=20.->dp, ())}));
+module WithBalance: {
+  type token = (Token.t, ReBigNumber.t);
+  type contract = Generic.contract(token);
+  type t = Generic.t(token);
 
-  [@react.component]
-  let make = (~style=?, ~children) => {
-    <RowItem.Bordered height=48.>
-      <View
-        style={Style.arrayOption([|Some(styles##borderSpacer), style|])}
-      />
-      children
-    </RowItem.Bordered>;
-  };
+  let mergeAndUpdateBalance: (t, t) => t;
+  let getFullToken:
+    (t, PublicKeyHash.t, int) => option((TokenRepr.t, ReBigNumber.t));
 };
 
-module Empty = {
-  let styles =
-    Style.(
-      StyleSheet.create({
-        "empty": style(~paddingLeft=22.->dp, ~paddingTop=14.->dp, ()),
-      })
-    );
+type t = Generic.t(Token.t);
 
-  [@react.component]
-  let make = (~children) => {
-    <Typography.Body1 style=styles##empty> children </Typography.Body1>;
-  };
-};
-
-module Cell = {
-  let styles =
-    Style.(
-      StyleSheet.create({
-        "cell":
-          style(~flexShrink=0., ~minWidth=75.->dp, ~marginRight=24.->dp, ()),
-      })
-    );
-
-  [@react.component]
-  let make =
-      (
-        ~style as styleFromProp: ReactNative.Style.t,
-        ~children: option(React.element)=?,
-      ) => {
-    <View style={Style.array([|styles##cell, styleFromProp|])} ?children />;
-  };
-};
-
-module type StyleForCell = {let style: Style.t;};
-
-module MakeCell = (CustomStyle: StyleForCell) => {
-  let makeProps = Cell.makeProps(~style=CustomStyle.style);
-  let make = Cell.make;
-};
+let getFullToken: (t, PublicKeyHash.t, int) => option(TokenRepr.t);
+let addToken: (t, Token.t) => t;
+let removeToken: (t, Token.t) => t;

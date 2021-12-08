@@ -214,8 +214,8 @@ let amount =
           ->React.string
         | Token(_, token_trans) =>
           let address = token_trans.contract;
-          let token: option(Token.t) =
-            TokenRegistry.Cache.getFullToken(tokens, address, 0);
+          let token: option((Token.t, ReBigNumber.t)) =
+            TokensLibrary.WithBalance.getFullToken(tokens, address, 0);
           switch (token) {
           | None =>
             let tooltip = (
@@ -241,7 +241,7 @@ let amount =
               />
               <AddToken address=(address :> string) op />
             </View>;
-          | Some({symbol, decimals, _}) =>
+          | Some(({symbol, decimals, _}, _)) =>
             Format.asprintf(
               "%s %s %s",
               sign,

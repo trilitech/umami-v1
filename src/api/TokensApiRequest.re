@@ -83,15 +83,15 @@ type tokensRequest = {
 };
 
 type registry = {
-  registered: array(TokenRegistry.Cache.token),
-  toRegister: array(TokenRegistry.Cache.token),
+  registered: array(TokensLibrary.Token.t),
+  toRegister: array(TokensLibrary.Token.t),
   nextIndex: int,
 };
 
 let useLoadTokensRegistry = (requestState, request) => {
   let get = (~config, request) => {
     let%AwaitMap (registered, toRegister, nextIndex) =
-      TokensAPI.fetchAccountsTokensRegistry(
+      TokensAPI.Fetch.accountsTokens(
         config,
         ~accounts=[request.account],
         ~index=request.index,
@@ -103,7 +103,7 @@ let useLoadTokensRegistry = (requestState, request) => {
   ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, request);
 };
 
-type tokens = TokensAPI.fetched;
+type tokens = TokensAPI.Fetch.fetched;
 
 type nftRequest = {
   account: PublicKeyHash.t,
@@ -121,7 +121,7 @@ let useLoadAccountNFTs =
       nftRequest,
     ) => {
   let get = (~config, {account, allowHidden, numberByAccount, fromCache}) => {
-    TokensAPI.fetchAccountNFTs(
+    TokensAPI.Fetch.accountNFTs(
       config,
       ~account,
       ~numberByAccount,
@@ -168,7 +168,7 @@ let useLoadAccountNFTs =
 
 let useAccountTokensNumber = (requestState, account) => {
   let get = (~config, account) =>
-    TokensAPI.fetchAccountTokensNumber(config, ~account);
+    TokensAPI.Fetch.accountTokensNumber(config, ~account);
 
   ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, account);
 };
@@ -201,7 +201,7 @@ let useCreate = (~sideEffect=?, ()) => {
 };
 
 type nfts = {
-  tokens: TokenRegistry.Cache.t,
+  tokens: TokensLibrary.WithBalance.t,
   holder: PublicKeyHash.t,
 };
 

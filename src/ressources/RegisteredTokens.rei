@@ -23,90 +23,29 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open ReactNative;
-
-module Head = {
-  let styles =
-    Style.(
-      StyleSheet.create({
-        "thead":
-          style(
-            ~flexDirection=`row,
-            ~alignItems=`center,
-            ~height=30.->dp,
-            ~paddingLeft=22.->dp,
-            ~borderBottomWidth=1.,
-            (),
-          ),
-      })
-    );
-
-  [@react.component]
-  let make = (~children) => {
-    let theme = ThemeContext.useTheme();
-    <View
-      style=Style.(
-        array([|
-          styles##thead,
-          style(~borderColor=theme.colors.borderDisabled, ()),
-        |])
-      )>
-      children
-    </View>;
-  };
+/** Representation of registered tokens for a user */
+type nftInfo = {
+  holder: PublicKeyHash.t,
+  hidden: bool,
+  balance: ReBigNumber.t,
 };
 
-module Row = {
-  let styles =
-    Style.(StyleSheet.create({"borderSpacer": style(~width=20.->dp, ())}));
+type kind =
+  | FT
+  | NFT(nftInfo);
 
-  [@react.component]
-  let make = (~style=?, ~children) => {
-    <RowItem.Bordered height=48.>
-      <View
-        style={Style.arrayOption([|Some(styles##borderSpacer), style|])}
-      />
-      children
-    </RowItem.Bordered>;
-  };
+type contract = {
+  contract: TokenContract.t,
+  chain: string,
+  tokens: Map.Int.t(kind) // effectively registered tokens by the user
 };
 
-module Empty = {
-  let styles =
-    Style.(
-      StyleSheet.create({
-        "empty": style(~paddingLeft=22.->dp, ~paddingTop=14.->dp, ()),
-      })
-    );
+type t = PublicKeyHash.Map.map(contract);
 
-  [@react.component]
-  let make = (~children) => {
-    <Typography.Body1 style=styles##empty> children </Typography.Body1>;
-  };
-};
-
-module Cell = {
-  let styles =
-    Style.(
-      StyleSheet.create({
-        "cell":
-          style(~flexShrink=0., ~minWidth=75.->dp, ~marginRight=24.->dp, ()),
-      })
-    );
-
-  [@react.component]
-  let make =
-      (
-        ~style as styleFromProp: ReactNative.Style.t,
-        ~children: option(React.element)=?,
-      ) => {
-    <View style={Style.array([|styles##cell, styleFromProp|])} ?children />;
-  };
-};
-
-module type StyleForCell = {let style: Style.t;};
-
-module MakeCell = (CustomStyle: StyleForCell) => {
-  let makeProps = Cell.makeProps(~style=CustomStyle.style);
-  let make = Cell.make;
-};
+let isRegistered: (t, PublicKeyHash.t, int) => bool;
+let registerToken: (t, Token.t, kind) => t;
+let removeToken: (t, PublicKeyHash.t, int) => t;
+let isHidden: (t, PublicKeyHash.t, int) => bool;
+let keepTokens: (t, (PublicKeyHash.t, int, kind) => bool) => t;
+let updateNFTsVisibility: (t, NftSelection.t, bool) => t;
+let updateNFT: (t, PublicKeyHash.t, int, nftInfo) => t;
