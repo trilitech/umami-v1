@@ -407,6 +407,7 @@ let expl = {
   pub beacon_delegation = "Request Delegation";
   pub beacon_dapp_sign = "requests your signature";
   pub custom_network = "Please specify the parameters of the network you want to connect to.";
+  pub external_service = "Notice: this is an external service."
 };
 
 let menu = {

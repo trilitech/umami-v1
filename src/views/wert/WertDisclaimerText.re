@@ -29,85 +29,44 @@ let styles =
   Style.(
     StyleSheet.create({
       "text": style(),
-      "paragraphs":
-        style(
-          ~marginTop=0.->dp,
-          ~marginBottom=16.->dp,
-          ~textAlign=`center,
-          (),
-        ),
-      "headings2": style(~paddingTop=4.->dp, ()),
+      "paragraph": style(~marginBottom=8.->dp, ()),
       "bullet":
-        style(
-          ~fontSize=24.,
-          ~marginTop=4.->dp,
-          ~marginBottom=16.->dp,
-          (),
-        ),
-        "point":
+        style(~fontSize=24., ()),
+      "point":
         style(
           ~flex=1.,
-          ~paddingLeft=16.->dp,
-          ~marginTop=10.->dp,
-          ~marginBottom=16.->dp,
+          ~paddingLeft=12.->dp,
+          ~marginTop=6.->dp,
           (),
         ),
     })
   );
 
-module Heading1 = {
-  [@react.component]
-  let make = (~text) =>
-    <Typography.Overline2> text->React.string </Typography.Overline2>;
-};
-
-module Heading2 = {
-  [@react.component]
-  let make = (~text) =>
-    <Typography.Overline3 style=styles##headings2>
-      text->React.string
-    </Typography.Overline3>;
-};
-
 module Body = {
   [@react.component]
-  let make = (~lastParagraph=false, ~isBulletPoint=false, ~text) => {
-    let style =
-      Style.(
-        array([|
-          styles##paragraphs,
-          lastParagraph ? style(~marginBottom=0.->dp, ()) : style(),
-          isBulletPoint ? style(~textAlign=`left, ()) : style(),
-        |])
-      );
-    <Typography.Subtitle2 colorStyle=`highEmphasis style>
+  let make = (~text) => {
+    <Typography.Body1 colorStyle=`highEmphasis style=styles##paragraph>
       text->React.string
-    </Typography.Subtitle2>;
+    </Typography.Body1>;
   };
 };
 
 module BulletPoint = {
   [@react.component]
-  let make = (~lastParagraph=false, ~text) => {
-    let bullet =
-      Style.(
-        array([|
-          styles##bullet,
-          lastParagraph ? style(~marginBottom=0.->dp, ()) : style(),
-        |])
-      );
-    let point =
-      Style.(
-        array([|
-          styles##point,
-          lastParagraph ? style(~marginBottom=0.->dp, ()) : style(),
-        |])
-      );
-    <View style=Style.(style(~flexDirection=`row, ~alignItems=`flexStart, ~marginLeft=8.->dp, ~marginRight=8.->dp, ()))>
-      <Typography.Subtitle2 colorStyle=`highEmphasis style=bullet>
+  let make = (~text) => {
+    <View
+      style=Style.(
+        style(
+          ~flexDirection=`row,
+          ~marginLeft=8.->dp,
+          ~marginRight=8.->dp,
+          (),
+        )
+      )>
+      <Typography.Subtitle2 colorStyle=`highEmphasis style=styles##bullet>
         {js|\u2022|js}->React.string
       </Typography.Subtitle2>
-      <Typography.Subtitle2 colorStyle=`highEmphasis style=point>
+      <Typography.Subtitle2 colorStyle=`highEmphasis style=styles##point>
         text->React.string
       </Typography.Subtitle2>
     </View>;
@@ -119,20 +78,12 @@ module BulletPoint = {
 let make = () =>
   <>
     <Body
-      text={|You are now being redirected to wert.io ("Wert").|}
+      text={|You are now being redirected to wert.io ("Wert").
+Please read this disclaimer carefully before using the Wert website operated by SHA2 Solutions OU (Reg. code 14952299).
+Please note that SHA2 Solutions OU which operates Wert is a company separated from the Umami wallet, Nomadic Labs and its affiliates.
+By continuing on Wert webpage, you acknowledge that you understand and expressely agree to the following terms and conditions:|}
     />
-    <Body
-      text={|Please read this disclaimer carefully before using the Wert website operated by SHA2 Solutions OU (Reg. code 14952299).|}
-    />
-    <Body
-      text={|Please note that SHA2 Solutions OU which operates Wert is a company separated from the Umami wallet, Nomadic Labs and its affiliates.|}
-    />
-    <Body
-      text={|By continuing on Wert webpage, you acknowledge that you understand and expressely agree to the following terms and conditions:|}
-    />
-    <BulletPoint
-      text={js|Wert is a virtual currency provider.|js}
-    />
+    <BulletPoint text={js|Wert is a virtual currency provider.|js} />
     <BulletPoint
       text={js|Umami wallet, Nomadic Labs and its affiliates do not make any guarantees for the Wert material, product or service offerings.|js}
     />
@@ -155,7 +106,6 @@ let make = () =>
       text={js|By continuing with Wert services, you expressely consent to the fact that the Umami wallet will submit your public key for your account to Wert, in order for you to receive your purchased cryptocurrency.|js}
     />
     <BulletPoint
-      lastParagraph=true
       text={js|Umami wallet, Nomadic Labs and its affiliates cannot be held responsible for any loss, damage or loss of profit related to the purchase of the virtual currency.|js}
     />
   </>;

@@ -53,7 +53,7 @@ let verticalFormAction =
     style(~flexDirection=`column, ~width=100.->pct, ()),
   ]);
 
-let header = style(~marginBottom=20.->dp, ~textAlign=`center, ());
+let header = style(~marginBottom=24.->dp, ~textAlign=`center, ());
 let headerWithoutMarginBottom =
   style(~marginBottom=4.->dp, ~textAlign=`center, ());
 let subtitle = style(~marginTop=10.->dp, ());

@@ -93,7 +93,15 @@ module BuyTezView = {
   let make = (~src, ~onClose) => {
     Js.log(System.isDev);
     <Page>
-      <Page.Header right={<CloseButton onClose />}>
+      <Page.Header
+        left={
+          <Typography.Body1
+            colorStyle=`highEmphasis
+            style=Style.(style(~marginTop=12.->dp, ()))>
+            I18n.expl#external_service->React.string
+          </Typography.Body1>
+        }
+        right={<CloseButton onClose />}>
         ReasonReact.null
       </Page.Header>
       {IFrame.createElement({
