@@ -170,7 +170,7 @@ let chainNetwork: chain => option(string) =
   | `Granadanet => Some("granadanet")
   | `Florencenet => Some("florencenet")
   | `Edo2net => Some("edo2net")
-  | `Hangzhounet => Some("hangzhounet")
+  | `Hangzhounet => Some("hangzhou2net")
   | `Custom(_) => None;
 
 let networkChain: string => option(chain) =
@@ -179,7 +179,7 @@ let networkChain: string => option(chain) =
   | "granadanet" => Some(`Granadanet)
   | "florencenet" => Some(`Florencenet)
   | "edo2net" => Some(`Edo2net)
-  | "hangzhounet" => Some(`Hangzhounet)
+  | "hangzhou2net" => Some(`Hangzhounet)
   | _ => None;
 
 module Encode = {
