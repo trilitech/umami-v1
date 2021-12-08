@@ -91,7 +91,6 @@ module BuyTezView = {
 
   [@react.component]
   let make = (~src, ~onClose) => {
-    Js.log(System.isDev);
     <Page>
       <Page.Header
         left={

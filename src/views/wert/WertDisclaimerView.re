@@ -47,7 +47,7 @@ let make = (~onSign) => {
   let theme = ThemeContext.useTheme();
 
   let onAgree = () => {
-    Disclaimer.sign();
+    WertDisclaimer.sign();
   };
 
   let form: DisclaimerForm.api =

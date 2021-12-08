@@ -126,7 +126,6 @@ let make = (~submit, ~closeAction) => {
        <WertDisclaimerView
          onSign={unsigned =>
            if (!unsigned) {
-             WertDisclaimer.sign();
              setModalStep(_ => SelectRecipient);
            }
          }
