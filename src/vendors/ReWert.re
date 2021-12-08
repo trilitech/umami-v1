@@ -34,6 +34,7 @@ module Widget {
         commodities: string,
         address: string,
         theme: string,
+        color_background: string,
     };
 
     [@bs.module] [@bs.new]

@@ -87,6 +87,17 @@ module BuyTezView = {
     [@bs.val] [@bs.scope "React"]
     external createElement: ([@bs.as "iframe"] _, props) => React.element =
       "createElement";
+
+    [@react.component]
+    let make = (~src) => {
+      createElement({
+        src,
+        width: "100%",
+        height: "100%",
+        allow: "camera *; microphone *",
+        frameBorder: "0",
+      });
+    };
   };
 
   [@react.component]
@@ -103,13 +114,7 @@ module BuyTezView = {
         right={<CloseButton onClose />}>
         ReasonReact.null
       </Page.Header>
-      {IFrame.createElement({
-         src,
-         width: "100%",
-         height: "100%",
-         allow: "camera *; microphone *",
-         frameBorder: "0",
-       })}
+      <IFrame src />
     </Page>;
   };
 };
@@ -186,6 +191,7 @@ module AppView = {
           commodities: "XTZ",
           address: (address :> string),
           theme: theme.dark ? "dark" : "light",
+          color_background: theme.colors.background,
         });
       setWertURL(_ => Some(widget->ReWert.Widget.getEmbedUrl));
     };
