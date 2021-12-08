@@ -48,9 +48,9 @@ let styles =
         ),
       "text":
         style(
-          ~paddingTop=10.->dp,
-          ~paddingBottom=10.->dp,
-          ~paddingLeft=10.->dp,
+          ~paddingTop=16.->dp,
+          ~paddingBottom=16.->dp,
+          ~paddingLeft=12.->dp,
           ~justifyContent=`center,
           ~width=100.->pct,
           (),
@@ -77,7 +77,7 @@ let styles =
 
 module Card = {
   [@react.component]
-  let make = (~nft: Token.t, ~account: Account.t) => {
+  let make = (~nft: Token.t, ~balance: ReBigNumber.t, ~account: Account.t) => {
     let (visibleModal, openAction, closeAction) =
       ModalAction.useModalActionState();
 
@@ -122,7 +122,13 @@ module Card = {
               style(~backgroundColor=theme.colors.cardBackground, ()),
             |])
           )>
-          <Typography.Notice> nft.alias->React.string </Typography.Notice>
+          <Typography.Headline style=Style.(style(~fontSize=16., ()))>
+            nft.alias->React.string
+          </Typography.Headline>
+          <Typography.Body1 style=Style.(style(~marginTop=8.->dp, ()))>
+            {I18n.label#editions(balance |> ReBigNumber.toString)
+             ->React.string}
+          </Typography.Body1>
         </View>
       </ThemedPressable.Base>
       <ModalAction visible=visibleModal onRequestClose=closeAction>
@@ -159,11 +165,12 @@ let make = (~nfts: TokensLibrary.WithBalance.t) => {
         ->Array.keepMap(
             fun
             | (Partial(_, _, _), _) => None
-            | (Full(nft), _) =>
+            | (Full(nft), balance) =>
               account->Option.map(account =>
                 <Card
                   key={uniqueKey(nft.address, TokenRepr.id(nft))}
                   nft
+                  balance
                   account
                 />
               ),
