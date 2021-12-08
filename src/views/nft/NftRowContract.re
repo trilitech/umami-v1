@@ -28,10 +28,11 @@ let make =
     ->Map.Int.map(
         fun
         | (Partial(_, _, _), _) => React.null
-        | (Full(nft), _) =>
+        | (Full(nft), balance) =>
           <NftRowToken
             account
             address={contract.address}
+            balance
             nft
             selected
             setSelected

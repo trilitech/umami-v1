@@ -166,6 +166,7 @@ let label = {
   pub account_umami = "Umami";
   pub token = "Token";
   pub token_id = id => "Token ID: " ++ id;
+  pub editions = number => "Editions: " ++ number;
   pub search_nft_by_name = "What are your wildest fears?";
   pub account_cli = "Cli";
   pub account_default_path = "Default Path - m/44'/1729'/?'/0'";
