@@ -133,7 +133,7 @@ module WithTokenSelector = {
               balanceElement => {
                 <TokenSelector
                   style=styles##tokenSelector
-                  selectedToken={token->Option.map(token => token.address)}
+                  selectedToken=token
                   setSelectedToken={t =>
                     updateToken(
                       t->Option.map(t =>
