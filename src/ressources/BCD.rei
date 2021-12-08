@@ -38,7 +38,8 @@ type tokenBalance = {
   external_uri: option(string),
   is_transferable: option(bool), // default: true
   is_boolean_amount: option(bool), // default: false
-  should_prefer_symbol: option(bool) //default: false
+  should_prefer_symbol: option(bool), //default: false
+  formats: option(array(TokenRepr.Metadata.format)),
 };
 
 type t = {

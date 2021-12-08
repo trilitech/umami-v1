@@ -88,6 +88,9 @@ module Metadata: {
   };
 };
 
+let thumbnailUriFromFormat:
+  (option(string), option(array(Metadata.format))) => option(string);
+
 let defaultAsset: Metadata.asset;
 
 type t = {

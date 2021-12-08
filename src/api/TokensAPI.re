@@ -314,7 +314,11 @@ let metadataToAsset = (metadata: ReTaquitoTypes.Tzip12.metadata) =>
     rightUri: metadata.rightUri,
     artifactUri: metadata.artifactUri,
     displayUri: metadata.displayUri,
-    thumbnailUri: metadata.thumbnailUri,
+    thumbnailUri:
+      TokenRepr.thumbnailUriFromFormat(
+        metadata.thumbnailUri,
+        metadata.formats,
+      ),
     isTransferable: metadata.isTransferable->Option.getWithDefault(true),
     isBooleanAmount: metadata.isBooleanAmount->Option.getWithDefault(false),
     shouldPreferSymbol:
