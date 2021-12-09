@@ -182,7 +182,7 @@ type step =
   | Metadata(PublicKeyHash.t, TokenRepr.kind);
 
 [@react.component]
-let make = (~chain, ~address="", ~closeAction) => {
+let make = (~chain, ~address="", ~kind=?, ~closeAction) => {
   let (tokenCreateRequest, createToken) = StoreContext.Tokens.useCreate();
   let (tokenKind, checkToken) = TokensApiRequest.useCheckTokenContract();
   let (step, setStep) = React.useState(_ => Address);
@@ -272,7 +272,10 @@ let make = (~chain, ~address="", ~closeAction) => {
         address,
         symbol: "",
         decimals: "",
-        tokenId: "",
+        tokenId:
+          kind->Option.mapWithDefault("", k =>
+            k->TokenRepr.kindId->Int.toString
+          ),
         token: None,
       },
       ~i18n=FormUtils.i18n,
