@@ -215,7 +215,11 @@ let amount =
         | Token(_, token_trans) =>
           let address = token_trans.contract;
           let token: option((Token.t, ReBigNumber.t)) =
-            TokensLibrary.WithBalance.getFullToken(tokens, address, 0);
+            TokensLibrary.WithBalance.getFullToken(
+              tokens,
+              address,
+              token_trans.kind->TokenRepr.kindId,
+            );
           switch (token) {
           | None =>
             let tooltip = (

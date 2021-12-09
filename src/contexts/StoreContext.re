@@ -42,7 +42,7 @@ type nextState('value) = (unit => option('value), unit => unit);
 
 type state = {
   selectedAccountState: reactState(option(PublicKeyHash.t)),
-  selectedTokenState: reactState(option(PublicKeyHash.t)),
+  selectedTokenState: reactState(option((PublicKeyHash.t, int))),
   accountsRequestState: requestState(PublicKeyHash.Map.map(Account.t)),
   secretsRequestState: reactState(ApiRequest.t(array(Secret.derived))),
   balanceRequestsState: apiRequestsState(Tez.t),
@@ -947,8 +947,8 @@ module SelectedToken = {
 
     /// FIXME: this is clearly a bug!
     switch (store.selectedTokenState, tokens) {
-    | ((Some(selectedToken), _), tokens) =>
-      switch (tokens->TokensLibrary.Generic.getToken(selectedToken, 0)) {
+    | ((Some((selectedToken, tokenId)), _), tokens) =>
+      switch (tokens->TokensLibrary.Generic.getToken(selectedToken, tokenId)) {
       | Some((TokensLibrary.Token.Full(t), _)) => t->Some
       | _ => None
       }
