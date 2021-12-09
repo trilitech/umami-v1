@@ -103,6 +103,8 @@ type t = {
   asset: Metadata.asset,
 };
 
+let toFlatJson: t => option(Js.Json.t);
+
 let kindId: kind => int;
 let id: t => int;
 

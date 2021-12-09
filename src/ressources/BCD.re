@@ -40,6 +40,8 @@ type tokenBalance = {
   is_boolean_amount: option(bool), // default: false
   should_prefer_symbol: option(bool), //default: false
   formats: option(array(TokenRepr.Metadata.format)),
+  creators: option(array(string)),
+  tags: option(array(string)),
 };
 
 type t = {
@@ -57,6 +59,9 @@ let toTokenAsset = token =>
   TokenRepr.{
     ...defaultAsset,
     description: token.description,
+    formats: token.formats,
+    creators: token.creators,
+    tags: token.tags,
     artifactUri: token.artifact_uri,
     displayUri: token.display_uri,
     thumbnailUri:
@@ -145,6 +150,8 @@ module Decode = {
     is_boolean_amount: json |> optionalOrNull("is_boolean_amount", bool), // default: false
     should_prefer_symbol:
       json |> optionalOrNull("should_prefer_symbol", bool), //default: false
+    creators: json |> optionalOrNull("formats", array(string)),
+    tags: json |> optionalOrNull("formats", array(string)),
     formats:
       json
       |> optionalOrNull(

@@ -40,6 +40,8 @@ type tokenBalance = {
   is_boolean_amount: option(bool), // default: false
   should_prefer_symbol: option(bool), //default: false
   formats: option(array(TokenRepr.Metadata.format)),
+  creators: option(array(string)),
+  tags: option(array(string)),
 };
 
 type t = {
