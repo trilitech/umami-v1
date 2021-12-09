@@ -34,6 +34,7 @@ const { setAppMenu } = require('./src/AppMenu.bs')
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let mainWindow
+let deeplinkURL
 
 // Keep a reference for dev mode
 let dev = false
@@ -107,7 +108,10 @@ function createWindow() {
       mainWindow.webContents.openDevTools()
     }
 
-    if (process.platform == 'win32' || process.platform === "linux") {
+    if (deeplinkURL) {
+      mainWindow.webContents.send('deeplinkURL', deeplinkURL)
+      deeplinkURL = null
+    } else if (process.platform == 'win32' || process.platform === "linux") {
       // Protocol handler for windows & linux
       const argv = process.argv;
       const index = argv.findIndex(arg => arg.startsWith("umami://"));
@@ -184,7 +188,12 @@ app.on('will-finish-launching', () => {
   app.on('open-url', function (event, url) {
     event.preventDefault()
     //logEverywhere('open-url# ' + url)
-    mainWindow.webContents.send('deeplinkURL', url)
+    if (mainWindow) {
+      mainWindow.webContents.send('deeplinkURL', url)
+    } else {
+      deeplinkURL = url
+      createWindow()
+    }
   })
 })
 
