@@ -50,6 +50,7 @@ type t = {
 };
 
 let toTokenRepr: (TokenContract.t, tokenBalance) => option(TokenRepr.t);
+let fromTokenRepr: TokenRepr.t => option(tokenBalance);
 
 let updateFromBuiltinTemplate: tokenBalance => tokenBalance;
 
