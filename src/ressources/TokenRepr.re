@@ -190,26 +190,23 @@ let kindId =
 
 let id = ({kind}) => kind->kindId;
 
-let toFlatJson = t =>
-  t.asset
-  ->Js.Json.stringifyAny
-  ->Option.flatMap(json => {
-      let json = Js.Json.parseExn(json);
-      let dict = Js.Json.decodeObject(json);
+let toFlatJson = t => {
+  let json = JsonEx.unsafeFromAny(t.asset);
+  let dict = Js.Json.decodeObject(json);
 
-      dict->Option.map(d => {
-        let entries = d->Js.Dict.entries;
-        let rootEntries = [|
-          ("name", Js.Json.string(t.alias)),
-          ("address", (t.address :> string)->Js.Json.string),
-          ("token_id", t->id->float_of_int->Js.Json.number),
-          ("symbol", Js.Json.string(t.symbol)),
-          ("decimals", t.decimals->float_of_int->Js.Json.number),
-        |];
-        let entries = Array.concat(rootEntries, entries);
-        entries->Js.Dict.fromArray->Js.Json.object_;
-      });
-    });
+  dict->Option.map(d => {
+    let entries = d->Js.Dict.entries;
+    let rootEntries = [|
+      ("name", Js.Json.string(t.alias)),
+      ("address", (t.address :> string)->Js.Json.string),
+      ("token_id", t->id->float_of_int->Js.Json.number),
+      ("symbol", Js.Json.string(t.symbol)),
+      ("decimals", t.decimals->float_of_int->Js.Json.number),
+    |];
+    let entries = Array.concat(rootEntries, entries);
+    entries->Js.Dict.fromArray->Js.Json.object_;
+  });
+};
 
 let isNFT = t =>
   t.asset.artifactUri != None

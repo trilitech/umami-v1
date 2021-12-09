@@ -36,6 +36,8 @@ let decode: (Js.Json.t, Json.Decode.decoder('a)) => Promise.result('a);
 
 let stringify: Js.Json.t => string;
 
+let unsafeFromAny: 'a => Js.Json.t;
+
 let stringifyAnyWithSpace: ('a, int) => string;
 
 module MichelsonDecode: {
