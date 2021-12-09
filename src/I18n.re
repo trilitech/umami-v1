@@ -27,6 +27,8 @@ let p = Format.sprintf;
 
 let btn = {
   pub _this = this;
+  pub json = "JSON";
+  pub metadata = "METADATA";
   pub collected = "COLLECTED";
   pub gallery = "GALLERY";
   pub view_specs = "VIEW SPECS";
@@ -130,6 +132,18 @@ let log = {
 
 let label = {
   pub _this = this;
+  pub nft_spec_name = "Name";
+  pub nft_spec_symbol = "Symbol";
+  pub nft_spec_contract_address = "Contract Address";
+  pub nft_spec_token_id = "Token ID";
+  pub nft_spec_decimals = "Decimals";
+  pub nft_spec_boolean_amount = "Boolean Amount";
+  pub nft_spec_creators = "Creators";
+  pub nft_spec_thumbnail_uri = "Thumbnail URI";
+  pub nft_spec_artifact_uri = "Artifact URI";
+  pub nft_spec_display_uri = "Display URI";
+  pub nft_spec_formats = "Formats";
+  pub nft_spec_description = "Description";
   pub derivation_scheme = "Derivation Scheme";
   pub derivation_path = "Derivation Path";
   pub accounts = "Accounts";
@@ -272,6 +286,7 @@ let form_input_error = {
 
 let title = {
   pub _this = this;
+  pub nft_specs = "View Specs";
   pub error_logs = "Logs";
   pub secret_create = "Create New Secret";
   pub derive_account = "Add Account";

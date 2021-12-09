@@ -79,6 +79,9 @@ let make = (~closeAction, ~account, ~nft: Token.t) => {
   let (visibleSendModal, openSendModal, closeSendModal) =
     ModalAction.useModalActionState();
 
+  let (visibleSpecsModal, openSpecsModal, closeSpecsModal) =
+    ModalAction.useModalActionState();
+
   let (_, animatedOpenValue) =
     AnimationHooks.useAnimationOpen(true, () => ());
 
@@ -113,6 +116,11 @@ let make = (~closeAction, ~account, ~nft: Token.t) => {
                )}
           </View>
           <View style=styles##buttons>
+            <Buttons.SubmitTertiary
+              style=styles##specs
+              onPress={_ => openSpecsModal()}
+              text=I18n.btn#view_specs
+            />
             <Buttons.SubmitPrimary
               onPress={_ => openSendModal()}
               text=I18n.btn#send
@@ -121,6 +129,9 @@ let make = (~closeAction, ~account, ~nft: Token.t) => {
         </View>
       </View>
     </View>
+    <ModalAction visible=visibleSpecsModal onRequestClose=closeSpecsModal>
+      <NftSpecsView nft closeAction=closeSpecsModal />
+    </ModalAction>
     <ModalAction visible=visibleSendModal onRequestClose=closeSendModal>
       <SendNFTView source=account nft closeAction=closeSendModal />
     </ModalAction>

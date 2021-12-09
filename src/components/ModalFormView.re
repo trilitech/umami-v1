@@ -23,6 +23,8 @@
 /*                                                                           */
 /*****************************************************************************/
 
+open ReactNative;
+
 type confirm = {
   title: string,
   subtitle: option(string),
@@ -132,17 +134,40 @@ module Large = {
 };
 
 [@react.component]
-let make = (~closing=?, ~title=?, ~back=?, ~loading=?, ~children, ~style=?) => {
+let make =
+    (
+      ~closing=?,
+      ~title=?,
+      ~headerActionButton=?,
+      ~back=?,
+      ~loading=?,
+      ~children,
+      ~style=?,
+    ) => {
   let closeButton = closing->Option.map(closing => <CloseButton closing />);
 
   let backButton = back->Option.map(back => <BackButton back />);
 
-  let headerCenter =
-    title->Option.map(title =>
-      <Typography.Headline style=FormStyles.header>
-        title->React.string
-      </Typography.Headline>
+  let styleWithButton =
+    headerActionButton->Option.map(_ =>
+      Style.style(
+        ~justifyContent=`spaceBetween,
+        ~display=`flex,
+        ~flexDirection=`row,
+        (),
+      )
     );
+
+  let headerCenter = {
+    title->Option.map(title =>
+      <View style=?styleWithButton>
+        <Typography.Headline style=FormStyles.header>
+          title->React.string
+        </Typography.Headline>
+        headerActionButton->ReactUtils.opt
+      </View>
+    );
+  };
 
   <ModalTemplate.Form
     ?headerCenter
