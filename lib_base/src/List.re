@@ -1,7 +1,5 @@
 include Belt.List;
 
-let add = (l, e) => [e, ...l];
-
 let reduceGroupBy =
     (l: list('a), ~group: 'a => 'g, ~map: (option('b), 'a) => 'b)
     : list(('g, 'b)) =>
@@ -14,11 +12,14 @@ let reduceGroupBy =
     },
   );
 
-let addOpt = (l, e) =>
-  switch (e) {
-  | None => l
-  | Some(e) => [e, ...l]
-  };
+module Infix = {
+  let (@:) = (e, l) => [e, ...l];
+  let (@?) = (e, l) =>
+    switch (e) {
+    | None => l
+    | Some(e) => [e, ...l]
+    };
+};
 
 let rec firsts = (l, n) => {
   switch (l) {
