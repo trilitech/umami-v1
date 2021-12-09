@@ -41,6 +41,8 @@ let () =
 /* Propagates Errors.t during decoding */
 exception InternalError(Errors.t);
 
+external unsafeFromAny: 'a => Js.Json.t = "%identity";
+
 [@bs.val] [@bs.scope "JSON"]
 external stringify: Js.Json.t => string = "stringify";
 
