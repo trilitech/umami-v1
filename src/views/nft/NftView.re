@@ -177,6 +177,20 @@ module Component = {
       stop.current = true;
     };
 
+    let nfts =
+      React.useMemo1(
+        () =>
+          TokensLibrary.(
+            tokens->Generic.keepTokens((_, _, (t, _)) =>
+              switch (t) {
+              | Token.Full(_)
+              | _ => false
+              }
+            )
+          ),
+        [|tokens|],
+      );
+
     <View style={styles##listContent}>
       <NftHeaderView headline>
         <ButtonAction
@@ -203,8 +217,8 @@ module Component = {
         <NftSync onRefresh onStop state=syncState />
       </View>
       {switch (mode) {
-       | Gallery => <NftGalleryView nfts=tokens />
-       | Collection => <NftCollectionView account nfts=tokens />
+       | Gallery => <NftGalleryView nfts />
+       | Collection => <NftCollectionView account nfts />
        }}
     </View>;
   };

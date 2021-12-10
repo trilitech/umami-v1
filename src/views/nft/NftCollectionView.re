@@ -128,51 +128,59 @@ let make = (~nfts: TokensLibrary.WithBalance.t, ~account) => {
     |> PublicKeyHash.Map.valuesToArray
     |> React.array;
 
-  <>
-    <View
-      style=Style.(
-        array([|
-          controlView,
-          style(~borderColor=theme.colors.borderDisabled, ()),
-        |])
-      )>
-      <CheckboxItem
-        style=Style.(
-          array([|
-            NftRowToken.styles##checkboxMargin,
-            style(~tintColor=theme.colors.iconPrimary, ()),
-          |])
-        )
-        value=checked
-        handleChange={checked => {
-          checked
-            ? setSelected(_ => allTokensId)
-            : setSelected(_ => PublicKeyHash.Map.empty)
-        }}
-      />
-      {ReactUtils.onlyWhen(
-         <IconButton
-           iconSizeRatio={5. /. 7.}
-           style=Style.(
-             array([|NftRowToken.styles##marginLeft10, styles##ctrlButton|])
-           )
-           icon=Icons.Eye.build
-           onPress={_ => {setHidden(selected, false)}}
-         />,
-         oneSelectedHidden,
-       )}
-      {ReactUtils.onlyWhen(
-         <IconButton
-           style=Style.(
-             array([|NftRowToken.styles##marginLeft10, styles##ctrlButton|])
-           )
-           iconSizeRatio={5. /. 7.}
-           icon=Icons.EyeStrike.build
-           onPress={_ => {setHidden(selected, true)}}
-         />,
-         oneSelectedShown,
-       )}
-    </View>
-    <ScrollView> contracts </ScrollView>
-  </>;
+  nfts->PublicKeyHash.Map.isEmpty
+    ? <NftEmptyView />
+    : <>
+        <View
+          style=Style.(
+            array([|
+              controlView,
+              style(~borderColor=theme.colors.borderDisabled, ()),
+            |])
+          )>
+          <CheckboxItem
+            style=Style.(
+              array([|
+                NftRowToken.styles##checkboxMargin,
+                style(~tintColor=theme.colors.iconPrimary, ()),
+              |])
+            )
+            value=checked
+            handleChange={checked => {
+              checked
+                ? setSelected(_ => allTokensId)
+                : setSelected(_ => PublicKeyHash.Map.empty)
+            }}
+          />
+          {ReactUtils.onlyWhen(
+             <IconButton
+               iconSizeRatio={5. /. 7.}
+               style=Style.(
+                 array([|
+                   NftRowToken.styles##marginLeft10,
+                   styles##ctrlButton,
+                 |])
+               )
+               icon=Icons.Eye.build
+               onPress={_ => {setHidden(selected, false)}}
+             />,
+             oneSelectedHidden,
+           )}
+          {ReactUtils.onlyWhen(
+             <IconButton
+               style=Style.(
+                 array([|
+                   NftRowToken.styles##marginLeft10,
+                   styles##ctrlButton,
+                 |])
+               )
+               iconSizeRatio={5. /. 7.}
+               icon=Icons.EyeStrike.build
+               onPress={_ => {setHidden(selected, true)}}
+             />,
+             oneSelectedShown,
+           )}
+        </View>
+        <ScrollView> contracts </ScrollView>
+      </>;
 };

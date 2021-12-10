@@ -157,11 +157,16 @@ let make = (~nfts: TokensLibrary.WithBalance.t) => {
       [|nfts|],
     );
 
+  let nftsArray =
+    React.useMemo1(
+      () => nfts->TokensLibrary.Generic.valuesToArray,
+      [|nfts|],
+    );
+
   let cards =
     React.useMemo1(
       () =>
-        nfts
-        ->TokensLibrary.Generic.valuesToArray
+        nftsArray
         ->Array.keepMap(
             fun
             | (Partial(_, _, _), _) => None
@@ -176,7 +181,7 @@ let make = (~nfts: TokensLibrary.WithBalance.t) => {
               ),
           )
         ->React.array,
-      [|nfts|],
+      [|nftsArray|],
     );
 
   <>
