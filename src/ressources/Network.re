@@ -104,9 +104,9 @@ let () =
     | _ => None,
   );
 
-type nativeChains = [ | `Hangzhounet | `Mainnet | `Granadanet];
+type nativeChains = [ | `Hangzhounet | `Mainnet];
 
-type supportedChains = [ nativeChains | `Florencenet | `Edo2net];
+type supportedChains = [ nativeChains | `Florencenet | `Edo2net | `Granadanet];
 
 let getChainId =
   fun
@@ -129,12 +129,12 @@ let fromChainId =
 let nativeChains = [
   (`Mainnet, getChainId(`Mainnet)),
   (`Hangzhounet, getChainId(`Hangzhounet)),
-  (`Granadanet, getChainId(`Granadanet)),
 ];
 
 let supportedChains = [
   (`Florencenet, getChainId(`Florencenet)),
   (`Edo2net, getChainId(`Edo2net)),
+  (`Granadanet, getChainId(`Granadanet)),
   ...nativeChains,
 ];
 
@@ -233,7 +233,6 @@ module Decode = {
   let nativeChainFromString =
     fun
     | "Mainnet" => `Mainnet
-    | "Granadanet" => `Granadanet
     | "Hangzhounet" => `Hangzhounet
     | n =>
       JsonEx.(raise(InternalError(DecodeError("Unknown network " ++ n))));
@@ -288,14 +287,6 @@ let hangzhounet =
     `Hangzhounet,
   );
 
-let granadanet =
-  mk(
-    ~name=getDisplayedName(`Granadanet),
-    ~explorer="https://api.umamiwallet.com/granadanet",
-    ~endpoint="https://granadanet.smartpy.io/",
-    `Granadanet,
-  );
-
 let withEP = (n, url) => {...n, endpoint: url};
 
 let mainnetNetworks = [
@@ -311,14 +302,8 @@ let hangzhounetNetworks = [
   hangzhounet->withEP("https://api.tez.ie/rpc/hangzhounet"),
 ];
 
-let granadanetNetworks = [
-  granadanet->withEP("https://granadanet.smartpy.io/"),
-  granadanet->withEP("https://api.tez.ie/rpc/granadanet"),
-];
-
 let getNetworks = (c: nativeChains) =>
   switch (c) {
-  | `Granadanet => granadanetNetworks
   | `Hangzhounet => hangzhounetNetworks
   | `Mainnet => mainnetNetworks
   };
