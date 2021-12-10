@@ -118,6 +118,33 @@ let toTokenRepr = (tokenContract: TokenContract.t, token) => {
   };
 };
 
+let fromTokenRepr = (token: TokenRepr.t) =>
+  token.chain
+  ->Network.fromChainId
+  ->Network.chainNetwork
+  ->Option.map(network =>
+      {
+        balance: ReBigNumber.fromInt(0),
+        contract: token.address,
+        token_id: token->TokenRepr.id,
+        network,
+        name: token.alias->Some,
+        symbol: token.symbol->Some,
+        decimals: token.decimals->Some, //default: 0
+        description: token.asset.description,
+        artifact_uri: token.asset.artifactUri,
+        display_uri: token.asset.displayUri,
+        thumbnail_uri: token.asset.thumbnailUri,
+        external_uri: None,
+        is_transferable: token.asset.isTransferable->Some,
+        is_boolean_amount: token.asset.isBooleanAmount->Some,
+        should_prefer_symbol: token.asset.shouldPreferSymbol->Some,
+        formats: token.asset.formats,
+        creators: token.asset.creators,
+        tags: token.asset.tags,
+      }
+    );
+
 let updateFromBuiltinTemplate = token => {
   let template =
     BuiltinTokens.findTemplate(

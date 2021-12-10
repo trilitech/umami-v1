@@ -104,6 +104,14 @@ module Generic = {
     ->Array.concatMany;
   };
 
+  let keepMap = (cache, f) => {
+    cache->PublicKeyHash.Map.keepMap((pkh, c) => {
+      let tokens =
+        c.tokens->Map.keepMapInt((id, token) => f(pkh, id, token));
+      tokens->Map.Int.isEmpty ? None : Some({...c, tokens});
+    });
+  };
+
   let keepTokens = (cache, f) =>
     cache->PublicKeyHash.Map.reduce(
       PublicKeyHash.Map.empty,
@@ -188,4 +196,30 @@ let removeToken = (map, token) => {
     contract->Option.map(contract => {...contract, tokens});
   };
   map->PublicKeyHash.Map.update(Token.address(token), f);
+};
+
+let invalidateCache = (cache, filter) => {
+  let invalidate = (token: Token.t) =>
+    switch (token) {
+    | Full(token) =>
+      let bcd = token->BCD.fromTokenRepr;
+      bcd->Option.map(bcd =>
+        Token.Partial(
+          TokenContract.{
+            address: token.address,
+            kind: token.kind->fromTokenKind,
+          },
+          bcd,
+          true,
+        )
+      );
+    | _ => Some(token)
+    };
+  let map = (_, _, token: Token.t) =>
+    switch (filter) {
+    | `Any => token->invalidate
+    | `FT => token->Token.isNFT ? Some(token) : token->invalidate
+    | `NFT => token->Token.isNFT ? token->invalidate : Some(token)
+    };
+  cache->Generic.keepMap(map);
 };

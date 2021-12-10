@@ -61,6 +61,10 @@ module Generic: {
     t('token);
   let valuesToArray: t('token) => array('token);
 
+  let keepMap:
+    (t('token), (PublicKeyHash.t, int, 'token) => option('mapped)) =>
+    t('mapped);
+
   let keepTokens:
     (t('token), (PublicKeyHash.t, int, 'token) => bool) => t('token);
 };
@@ -80,3 +84,5 @@ type t = Generic.t(Token.t);
 let getFullToken: (t, PublicKeyHash.t, int) => option(TokenRepr.t);
 let addToken: (t, Token.t) => t;
 let removeToken: (t, Token.t) => t;
+
+let invalidateCache: (t, [< | `Any | `FT | `NFT]) => t;

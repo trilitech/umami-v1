@@ -117,6 +117,15 @@ let getChainId =
   | `Hangzhounet => "NetXZSsxBpMQeAT"
   | `Custom(s) => s;
 
+let fromChainId =
+  fun
+  | "NetXz969SFaFn8k" => `Granadanet
+  | "NetXdQprcVkpaWU" => `Mainnet
+  | "NetXxkAx4woPLyu" => `Florencenet
+  | "NetXSgo1ZT2DRUG" => `Edo2net
+  | "NetXZSsxBpMQeAT" => `Hangzhounet
+  | s => `Custom(s);
+
 let nativeChains = [
   (`Mainnet, getChainId(`Mainnet)),
   (`Hangzhounet, getChainId(`Hangzhounet)),
