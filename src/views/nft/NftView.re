@@ -183,7 +183,7 @@ module Component = {
           TokensLibrary.(
             tokens->Generic.keepTokens((_, _, (t, _)) =>
               switch (t) {
-              | Token.Full(_)
+              | Token.Full(_) => true
               | _ => false
               }
             )
