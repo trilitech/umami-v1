@@ -342,7 +342,10 @@ module ExplorerMaker = (Get: {let get: string => Promise.t(Js.Json.t);}) => {
 
   let filterMalformedDuplicates = ops => {
     open Operation.Read;
-    let l = ops->List.fromArray;
+    let l =
+      ops
+      ->List.fromArray
+      ->List.sort((o1, o2) => compare((o1.hash, o1.id), (o2.hash, o2.id)));
 
     let rec loop = (acc, l) =>
       switch (l) {
@@ -350,8 +353,10 @@ module ExplorerMaker = (Get: {let get: string => Promise.t(Js.Json.t);}) => {
       | [h] => [h, ...acc]
       | [h1, h2, ...t] =>
         if (h1.hash == h2.hash && h1.id == h2.id) {
-          h1->isMalformedTokenTransfer
-            ? loop([h2, ...acc], t) : loop([h1, ...acc], t);
+          let h1 = h1->isMalformedTokenTransfer ? None : Some(h1);
+          let h2 = h2->isMalformedTokenTransfer ? None : Some(h2);
+
+          List.Infix.(loop(h1 @? acc, h2 @? t));
         } else {
           loop([h1, ...acc], [h2, ...t]);
         }

@@ -43,7 +43,7 @@ module Component = {
     let operationsReload = StoreContext.Operations.useResetAll();
     let renderItem = (currentLevel, operation: Operation.Read.t) =>
       <OperationRowItem
-        key={operation.hash ++ operation.id}
+        key=Operation.Read.(operation->uniqueId->uniqueIdToString)
         operation
         currentLevel
       />;

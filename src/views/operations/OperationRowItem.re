@@ -86,7 +86,8 @@ module AddContactButton = {
       ModalAction.useModalActionState();
 
     let tooltip = (
-      "add_contact_from_op" ++ operation.hash ++ operation.op_id->string_of_int,
+      "add_contact_from_op"
+      ++ Operation.Read.(operation->uniqueId->uniqueIdToString),
       I18n.tooltip#add_contact,
     );
 
@@ -172,7 +173,7 @@ module AddToken = {
     };
 
     let tooltip = (
-      "add_token_from_op" ++ op.hash ++ op.op_id->string_of_int,
+      "add_token_from_op" ++ Operation.Read.(op->uniqueId->uniqueIdToString),
       I18n.tooltip#add_token,
     );
     let onPress = _ => openAction();
@@ -212,7 +213,7 @@ let amount =
         | Tez(transaction) =>
           I18n.t#tez_op_amount(sign, transaction.amount->Tez.toString)
           ->React.string
-        | Token(_, token_trans) =>
+        | Token(_, token_trans, _) =>
           let address = token_trans.contract;
           let token: option((Token.t, ReBigNumber.t)) =
             TokensLibrary.WithBalance.getFullToken(
@@ -223,7 +224,8 @@ let amount =
           switch (token) {
           | None =>
             let tooltip = (
-              "unknown_token" ++ op.hash ++ op.op_id->string_of_int,
+              "unknown_token"
+              ++ Operation.Read.(op->uniqueId->uniqueIdToString),
               I18n.tooltip#unregistered_token_transaction,
             );
             <View style=styles##rawAddressContainer>
@@ -290,7 +292,7 @@ let make =
            <CellAddress />
            <CellAddress />
          </>
-       | Transaction(Token(common, _) as transaction)
+       | Transaction(Token(common, _, _) as transaction)
        | Transaction(Tez(common) as transaction) =>
          <>
            <CellType>
@@ -384,8 +386,7 @@ let make =
           icon=Icons.OpenExternal.build
           tooltip=(
             "open_in_explorer"
-            ++ operation.hash
-            ++ operation.op_id->string_of_int,
+            ++ Operation.Read.(operation->uniqueId->uniqueIdToString),
             I18n.tooltip#open_in_explorer,
           )
           onPress={_ => {
