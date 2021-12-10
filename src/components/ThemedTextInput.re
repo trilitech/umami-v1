@@ -43,7 +43,8 @@ let styles =
           ~position=`absolute,
           (),
         ),
-      "container": style(~borderWidth, ~borderRadius=4., ()),
+      "container":
+        style(~borderWidth, ~borderRadius=4., ~justifyContent=`center, ()),
       "containerHeight": style(~height=44.->dp, ()),
       "input":
         style(
