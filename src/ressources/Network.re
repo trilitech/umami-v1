@@ -153,7 +153,7 @@ let externalExplorer =
   | `Edo2net => "https://edo2net.tzkt.io/"->Ok
   | `Florencenet => "https://florencenet.tzkt.io/"->Ok
   | `Granadanet => "https://granadanet.tzkt.io/"->Ok
-  | `Hangzhounet => "https://hangzhounet.tzkt.io/"->Ok
+  | `Hangzhounet => "https://hangzhou2net.tzkt.io/"->Ok
   | `Custom(_) as net => Error(UnknownChainId(getChainId(net)));
 
 type chain = [ supportedChains | `Custom(chainId)];
