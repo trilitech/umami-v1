@@ -318,13 +318,6 @@ let make = () => {
             writeNetwork
           />
           <NetworkItem
-            chain=`Granadanet
-            networkStatus={last == `Granadanet ? Some(networkStatus) : None}
-            network=Network.granadanet
-            currentConfig=last
-            writeNetwork
-          />
-          <NetworkItem
             chain=`Hangzhounet
             networkStatus={last == `Hangzhounet ? Some(networkStatus) : None}
             network=Network.hangzhounet

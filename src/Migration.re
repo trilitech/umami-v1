@@ -35,7 +35,7 @@ let () =
     | _ => None,
   );
 
-let currentVersion = Version.mk(1, 4);
+let currentVersion = Version.mk(1, 5);
 
 let addMigration = (migrations, version, migration) => {
   migrations->Map.update(
@@ -70,5 +70,6 @@ let init = version => {
       TokenStorage.Legacy.V1_4.version,
       TokenStorage.Legacy.V1_4.mk,
     )
+  ->addMigration(ConfigFile.Legacy.V1_5.version, ConfigFile.Legacy.V1_5.mk)
   ->applyMigration(version);
 };
