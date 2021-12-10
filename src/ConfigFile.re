@@ -236,7 +236,12 @@ module Legacy = {
         let%Res json = JsonEx.parse(s);
         json->JsonEx.decode(legacyDecoder);
       };
-      Storage.migrate(~mapValue, ~default=dummy, ());
+      Storage.migrate(
+        ~previousKey=Storage.key,
+        ~mapValue,
+        ~default=dummy,
+        (),
+      );
     };
   };
 };
