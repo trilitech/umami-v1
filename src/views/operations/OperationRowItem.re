@@ -158,7 +158,7 @@ let memo = component =>
 
 module AddToken = {
   [@react.component]
-  let make = (~address, ~op: Operation.Read.t) => {
+  let make = (~address, ~kind: TokenRepr.kind, ~op: Operation.Read.t) => {
     let (visibleModal, openAction, closeAction) =
       ModalAction.useModalActionState();
     let closeAction = () => {
@@ -179,7 +179,7 @@ module AddToken = {
 
     <>
       <ModalAction visible=visibleModal onRequestClose=closeAction>
-        <TokenAddView chain address=(address :> string) closeAction />
+        <TokenAddView chain address=(address :> string) kind closeAction />
       </ModalAction>
       <IconButton
         icon=Icons.AddToken.build
@@ -243,7 +243,11 @@ let amount =
                 disabled=true
                 style=Style.(style(~borderRadius=0., ~marginLeft="4px", ()))
               />
-              <AddToken address=(address :> string) op />
+              <AddToken
+                address=(address :> string)
+                kind={token_trans.kind}
+                op
+              />
             </View>;
           | Some(({symbol, decimals, _}, _)) =>
             Format.asprintf(
