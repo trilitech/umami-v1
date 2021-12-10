@@ -105,9 +105,11 @@ module Transaction = {
     contract: PublicKeyHash.t,
   };
 
+  type internal_op_id = int;
+
   type t =
     | Tez(common)
-    | Token(common, token_info);
+    | Token(common, token_info, option(internal_op_id));
 
   type tokenKind = TokenContract.kind;
 
@@ -116,12 +118,12 @@ module Transaction = {
   module Accessor = {
     let amount =
       fun
-      | Token({amount, _}, _)
+      | Token({amount, _}, _, _)
       | Tez({amount, _}) => amount;
 
     let destination =
       fun
-      | Token({destination, _}, _)
+      | Token({destination, _}, _, _)
       | Tez({destination, _}) => destination;
   };
 
@@ -146,6 +148,10 @@ module Transaction = {
       (json |> field("data", field("token_id", string)))
       ->int_of_string_opt
       ->Option.getExn;
+
+    let internal_op_id = json => {
+      json |> field("data", optional(field("internal_op_id", int)));
+    };
 
     let token_info = (json, kind) => {
       let kind =
@@ -182,7 +188,8 @@ module Transaction = {
     let t = json => {
       let token = json->token_kind;
       switch (token) {
-      | #tokenKind as kind => Token(common(json), token_info(json, kind))
+      | #tokenKind as kind =>
+        Token(common(json), token_info(json, kind), internal_op_id(json))
       | `KTez => Tez(common(json))
       };
     };
@@ -248,6 +255,16 @@ module Read = {
     | _ => "Unknown error"
     };
 
+  let internal_op_id = op =>
+    switch (op.payload) {
+    | Transaction(Token(_, _, internal_op_id)) => internal_op_id
+    | _ => None
+    };
+
+  let uniqueId = op => (op.hash, op.id, internal_op_id(op));
+  let uniqueIdToString = ((hash, id, iid)) =>
+    hash ++ id ++ iid->Option.mapWithDefault("", Int.toString);
+
   type operation = t;
 
   module Decode = {
@@ -289,7 +306,7 @@ module Read = {
   module Comparator =
     Id.MakeComparable({
       type t = operation;
-      let cmp = ({hash: hash1, op_id: id1}, {hash: hash2, op_id: id2}) =>
-        Pervasives.compare((hash1, id1), (hash2, id2));
+      let cmp = (op1, op2) =>
+        Pervasives.compare(uniqueId(op1), uniqueId(op2));
     });
 };
