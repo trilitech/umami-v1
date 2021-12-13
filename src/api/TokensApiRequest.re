@@ -103,7 +103,7 @@ let useLoadTokensRegistry = (requestState, request) => {
   ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, request);
 };
 
-type tokens = TokensAPI.Fetch.fetched;
+type fetchedNFTs = TokensAPI.Fetch.fetchedNFTs;
 
 type nftRequest = {
   account: PublicKeyHash.t,

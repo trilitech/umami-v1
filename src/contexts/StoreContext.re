@@ -59,7 +59,7 @@ type state = {
   nftsRequestsState: apiRequestsState(TokensLibrary.t),
   tokensRegistryRequestState:
     reactState(ApiRequest.t(TokensApiRequest.registry)),
-  accountsTokensRequestState: apiRequestsState(TokensApiRequest.tokens),
+  accountsTokensRequestState: apiRequestsState(TokensApiRequest.fetchedNFTs),
   accountsTokensNumberRequestState: apiRequestsState(int),
   balanceTokenRequestsState: apiRequestsState(Token.Unit.t),
   apiVersionRequestState: reactState(option(Network.apiVersion)),

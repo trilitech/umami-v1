@@ -701,17 +701,21 @@ module Fetch = {
     (registered, toRegister, nextIndex);
   };
 
-  let fetchAccountTokensStreamed =
-      (config, ~account, ~index, ~numberByAccount, ~onTokens, ~onStop) => {
-    let onceFinished = (tokens, number) => {
-      let%Await () = tokens->registerNFTs(account)->FutureBase.value;
-      Promise.ok((tokens, number));
-    };
+  let fetchAccountsTokensStreamed =
+      (
+        config,
+        ~accounts,
+        ~index,
+        ~numberByAccount,
+        ~onTokens,
+        ~onStop,
+        ~onceFinished,
+      ) => {
     let rec get = (accumulatedTokens, index) => {
       let%Await (_, fetchedTokens, nextIndex) =
         fetchAccountsTokens(
           config,
-          ~accounts=[account],
+          ~accounts,
           ~index,
           ~numberByAccount,
           ~onTokens,
@@ -729,10 +733,9 @@ module Fetch = {
     get(TokensLibrary.Generic.empty, index);
   };
 
-  type fetched = [
-    | `Cached(TokensLibrary.WithBalance.t)
-    | `Fetched(TokensLibrary.WithBalance.t, int)
-  ];
+  type fetched('tokens) = [ | `Cached('tokens) | `Fetched('tokens, int)];
+
+  type fetchedNFTs = fetched(TokensLibrary.WithBalance.t);
 
   let accountNFTs =
       (
@@ -744,6 +747,11 @@ module Fetch = {
         ~allowHidden,
         ~fromCache,
       ) => {
+    let onceFinished = (tokens, number) => {
+      let%Await () = tokens->registerNFTs(account)->FutureBase.value;
+      Promise.ok((tokens, number));
+    };
+
     let getFromCache = () => {
       let%AwaitMap tokens =
         registeredTokens(`NFT((account, allowHidden)))->Promise.value;
@@ -752,13 +760,14 @@ module Fetch = {
 
     let getFromNetwork = () => {
       let%AwaitMap (tokens, number) =
-        fetchAccountTokensStreamed(
+        fetchAccountsTokensStreamed(
           config,
-          ~account,
+          ~accounts=[account],
           ~index=0,
           ~numberByAccount,
           ~onTokens,
           ~onStop,
+          ~onceFinished,
         );
       `Fetched((
         tokens->TokensLibrary.Generic.keepTokens((_, _, (token, _)) =>
