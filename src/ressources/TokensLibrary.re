@@ -65,61 +65,63 @@ module Token = {
     | Partial(_, _, _) => false;
 };
 
+module Contracts = PublicKeyHash.Map;
+module Ids = Map.Int;
+
 module Generic = {
   type contract('tokens) = {
     address: PublicKeyHash.t,
     name: option(string),
-    tokens: Map.Int.t('tokens),
+    tokens: Ids.t('tokens),
   };
 
-  type t('token) = PublicKeyHash.Map.map(contract('token));
+  type t('token) = Contracts.map(contract('token));
 
-  let empty = PublicKeyHash.Map.empty;
+  let empty = Contracts.empty;
 
   let getToken = (cache, pkh, tokenId) => {
     cache
-    ->PublicKeyHash.Map.get(pkh)
-    ->Option.flatMap(({tokens}) => tokens->Map.Int.get(tokenId));
+    ->Contracts.get(pkh)
+    ->Option.flatMap(({tokens}) => tokens->Ids.get(tokenId));
   };
 
   let updateToken = (cache, pkh, tokenId, ~updatedValue) => {
     let f = contract => {
       let tokens =
         contract
-        ->Option.mapWithDefault(Map.Int.empty, c => c.tokens)
-        ->Map.Int.update(tokenId, updatedValue);
+        ->Option.mapWithDefault(Ids.empty, c => c.tokens)
+        ->Ids.update(tokenId, updatedValue);
       contract
       ->Option.mapWithDefault({name: None, address: pkh, tokens}, contract =>
           {...contract, tokens}
         )
       ->Some;
     };
-    cache->PublicKeyHash.Map.update(pkh, f);
+    cache->Contracts.update(pkh, f);
   };
 
   let valuesToArray = cache => {
     cache
-    ->PublicKeyHash.Map.valuesToArray
-    ->Array.map(c => c.tokens->Map.Int.valuesToArray)
+    ->Contracts.valuesToArray
+    ->Array.map(c => c.tokens->Ids.valuesToArray)
     ->Array.concatMany;
   };
 
   let keepMap = (cache, f) => {
-    cache->PublicKeyHash.Map.keepMap((pkh, c) => {
+    cache->Contracts.keepMap((pkh, c) => {
       let tokens =
         c.tokens->Map.keepMapInt((id, token) => f(pkh, id, token));
-      tokens->Map.Int.isEmpty ? None : Some({...c, tokens});
+      tokens->Ids.isEmpty ? None : Some({...c, tokens});
     });
   };
 
   let keepTokens = (cache, f) =>
-    cache->PublicKeyHash.Map.reduce(
-      PublicKeyHash.Map.empty,
+    cache->Contracts.reduce(
+      Contracts.empty,
       (cache, pkh, c) => {
-        let tokens =
-          c.tokens->Map.Int.keep((id, token) => f(pkh, id, token));
-        tokens->Map.Int.isEmpty
-          ? cache : cache->PublicKeyHash.Map.set(pkh, {...c, tokens});
+        let tokens = c.tokens->Ids.keep((id, token) => f(pkh, id, token));
+        tokens->Ids.isEmpty
+          ? cache : cache->Contracts.set(pkh, {...c, tokens});
       },
     );
 };
@@ -157,11 +159,11 @@ module WithBalance = {
         {
           address: key,
           name: Option.keep(c1.name, c2.name),
-          tokens: Map.Int.merge(c1.tokens, c2.tokens, mergeTokens),
+          tokens: Ids.merge(c1.tokens, c2.tokens, mergeTokens),
         }
         ->Some
       };
-    PublicKeyHash.Map.merge(map1, map2, mergeContracts);
+    Contracts.merge(map1, map2, mergeContracts);
   };
 
   let getFullToken = (map, pkh, tokenId) => {
@@ -191,11 +193,11 @@ let removeToken = (map, token) => {
   let f = contract => {
     let tokens =
       contract
-      ->Option.mapWithDefault(Map.Int.empty, c => c.Generic.tokens)
-      ->Map.Int.remove(Token.id(token));
+      ->Option.mapWithDefault(Ids.empty, c => c.Generic.tokens)
+      ->Ids.remove(Token.id(token));
     contract->Option.map(contract => {...contract, tokens});
   };
-  map->PublicKeyHash.Map.update(Token.address(token), f);
+  map->Contracts.update(Token.address(token), f);
 };
 
 let invalidateCache = (cache, filter) => {

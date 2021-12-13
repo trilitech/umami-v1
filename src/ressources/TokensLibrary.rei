@@ -38,6 +38,9 @@ module Token: {
   let isNFT: t => bool;
 };
 
+module Contracts = PublicKeyHash.Map;
+module Ids = Map.Int;
+
 module Generic: {
   // A generic cached contract with its tokens
   type contract('tokens) = {
@@ -46,7 +49,7 @@ module Generic: {
     tokens: Map.Int.t('tokens),
   };
 
-  type t('token) = PublicKeyHash.Map.map(contract('token));
+  type t('token) = Contracts.map(contract('token));
 
   let empty: t('token);
 
