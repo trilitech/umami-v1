@@ -62,6 +62,10 @@ module Generic: {
       ~updatedValue: option('token) => option('token)
     ) =>
     t('token);
+  let reduce: (t('token), 'a, ('a, PublicKeyHash.t, int, 'token) => 'a) => 'a;
+
+  let map: (t('token), 'token => 'mapped) => t('mapped);
+
   let valuesToArray: t('token) => array('token);
 
   let keepMap:
@@ -70,6 +74,10 @@ module Generic: {
 
   let keepTokens:
     (t('token), (PublicKeyHash.t, int, 'token) => bool) => t('token);
+
+  let keepPartition:
+    (t('token), (PublicKeyHash.t, int, 'token) => option(bool)) =>
+    (t('token), t('token));
 };
 
 module WithBalance: {

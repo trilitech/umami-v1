@@ -100,11 +100,28 @@ module Generic = {
     cache->Contracts.update(pkh, f);
   };
 
+  let map = (cache, f) => {
+    let mapIds = ids => Ids.map(ids, f);
+    cache->Contracts.map(c => {...c, tokens: c.tokens->mapIds});
+  };
+
   let valuesToArray = cache => {
     cache
     ->Contracts.valuesToArray
     ->Array.map(c => c.tokens->Ids.valuesToArray)
     ->Array.concatMany;
+  };
+
+  let reduce =
+      (
+        cache: t('token),
+        acc: 'a,
+        f: ('a, PublicKeyHash.t, int, 'token) => 'a,
+      )
+      : 'a => {
+    cache->Contracts.reduce(acc, (acc, pkh, c) =>
+      c.tokens->Ids.reduce(acc, (acc, id, t) => f(acc, pkh, id, t))
+    );
   };
 
   let keepMap = (cache, f) => {
@@ -124,6 +141,30 @@ module Generic = {
           ? cache : cache->Contracts.set(pkh, {...c, tokens});
       },
     );
+
+  let keepPartition = (cache, f) => {
+    cache->Contracts.reduce(
+      (Contracts.empty, Contracts.empty),
+      ((left, right), pkh, c) => {
+        let (leftTokens, rightTokens) =
+          c.tokens
+          ->Ids.reduce((Ids.empty, Ids.empty), ((left, right), id, token) =>
+              switch (f(pkh, id, token)) {
+              | None => (left, right)
+              | Some(true) => (left->Ids.set(id, token), right)
+              | Some(false) => (left, right->Ids.set(id, token))
+              }
+            );
+        let left =
+          leftTokens->Ids.isEmpty
+            ? left : left->Contracts.set(pkh, {...c, tokens: leftTokens});
+        let right =
+          rightTokens->Ids.isEmpty
+            ? right : right->Contracts.set(pkh, {...c, tokens: rightTokens});
+        (left, right);
+      },
+    );
+  };
 };
 
 module WithBalance = {
