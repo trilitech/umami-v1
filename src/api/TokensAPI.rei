@@ -105,6 +105,19 @@ module Fetch: {
     ) =>
     Promise.t(fetchedNFTs);
 
-  let accountTokensNumber:
-    (ConfigContext.env, ~account: PublicKeyHash.t) => Promise.t(int);
+  let accountsTokensNumber:
+    (ConfigContext.env, ~accounts: list(PublicKeyHash.t)) => Promise.t(int);
+
+  type fetchedTokens = fetched(TokensLibrary.WithRegistration.t);
+
+  let accountsFungibleTokensWithRegistration:
+    (
+      ConfigContext.env,
+      ~accounts: list(PublicKeyHash.t),
+      ~numberByAccount: int,
+      ~onTokens: (~total: int, ~lastToken: int) => unit,
+      ~onStop: unit => bool,
+      ~fromCache: bool
+    ) =>
+    Promise.t(fetchedTokens);
 };

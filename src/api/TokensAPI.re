@@ -712,7 +712,7 @@ module Fetch = {
         ~onceFinished,
       ) => {
     let rec get = (accumulatedTokens, index) => {
-      let%Await (_, fetchedTokens, nextIndex) =
+      let%Await (fullCache, fetchedTokens, nextIndex) =
         fetchAccountsTokens(
           config,
           ~accounts,
@@ -727,7 +727,7 @@ module Fetch = {
           fetchedTokens,
         );
       nextIndex <= index || onStop()
-        ? onceFinished(accumulatedTokens, nextIndex)
+        ? onceFinished(fullCache, accumulatedTokens, nextIndex)
         : get(accumulatedTokens, nextIndex);
     };
     get(TokensLibrary.Generic.empty, index);
@@ -747,7 +747,7 @@ module Fetch = {
         ~allowHidden,
         ~fromCache,
       ) => {
-    let onceFinished = (tokens, number) => {
+    let onceFinished = (_, tokens, number) => {
       let%Await () = tokens->registerNFTs(account)->FutureBase.value;
       Promise.ok((tokens, number));
     };
@@ -779,10 +779,67 @@ module Fetch = {
     fromCache ? getFromCache() : getFromNetwork();
   };
 
-  let accountTokensNumber = (config, ~account) => {
+  let accountsTokensNumber = (config, ~accounts) => {
     let%AwaitMap (_, _, total) =
-      BetterCallDev.fetchAccountsTokens(config, [account], 0, 1);
+      BetterCallDev.fetchAccountsTokens(config, accounts, 0, 1);
 
     total;
+  };
+
+  type fetchedTokens = fetched(TokensLibrary.WithRegistration.t);
+
+  let accountsFungibleTokensWithRegistration =
+      (
+        config: ConfigContext.env,
+        ~accounts,
+        ~numberByAccount,
+        ~onTokens,
+        ~onStop,
+        ~fromCache,
+      ) => {
+    let handleTokens = (tokens, keepMap) => {
+      let%AwaitMap registered =
+        TokenStorage.Registered.getWithFallback()->Promise.value;
+
+      TokensLibrary.WithRegistration.keepAndSetRegistration(
+        tokens,
+        registered,
+        keepMap,
+      );
+    };
+
+    let keepToken = token =>
+      TokensLibrary.Token.chain(token)
+      == config.network.Network.chain->Network.getChainId->Some
+      && !token->TokensLibrary.Token.isNFT;
+
+    let getFromCache = () => {
+      let%Await cache = TokenStorage.Cache.getWithFallback()->Promise.value;
+      let%AwaitMap tokens =
+        cache->handleTokens(token => token->keepToken ? Some(token) : None);
+      `Cached(tokens);
+    };
+
+    let getFromNetwork = () => {
+      let onceFinished = (fullCache, _, number) => {
+        let%AwaitMap tokens =
+          fullCache->handleTokens(token =>
+            token->keepToken ? Some(token) : None
+          );
+        (tokens, number);
+      };
+      let%AwaitMap (tokens, number) =
+        fetchAccountsTokensStreamed(
+          config,
+          ~accounts,
+          ~index=0,
+          ~numberByAccount,
+          ~onTokens,
+          ~onStop,
+          ~onceFinished,
+        );
+      `Fetched((tokens, number));
+    };
+    fromCache ? getFromCache() : getFromNetwork();
   };
 };

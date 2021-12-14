@@ -168,7 +168,7 @@ let useLoadAccountNFTs =
 
 let useAccountTokensNumber = (requestState, account) => {
   let get = (~config, account) =>
-    TokensAPI.Fetch.accountTokensNumber(config, ~account);
+    TokensAPI.Fetch.accountsTokensNumber(config, ~accounts=[account]);
 
   ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, account);
 };
