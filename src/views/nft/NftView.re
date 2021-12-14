@@ -64,10 +64,13 @@ module Component = {
     let stop = React.useRef(false);
 
     let request = fromCache =>
-      TokensApiRequest.NFT.{
-        account: account.Account.address,
-        allowHidden: true,
-        numberByAccount: BCD.requestPageSize,
+      TokensApiRequest.{
+        request:
+          NFT.{
+            account: account.Account.address,
+            allowHidden: true,
+            numberByAccount: BCD.requestPageSize,
+          },
         fromCache,
       };
 

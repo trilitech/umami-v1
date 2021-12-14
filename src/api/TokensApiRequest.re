@@ -103,6 +103,54 @@ let useLoadTokensRegistry = (requestState, request) => {
   ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, request);
 };
 
+type withCache('request) = {
+  fromCache: bool,
+  request: 'request,
+};
+
+let useLoadTokensGeneric =
+    (
+      (apiRequest, setRequest),
+      tokensNumberRequest,
+      request,
+      get,
+      ~reloadOnForceExpired,
+    ) => {
+  let getRequest =
+    ApiRequest.useGetter(~get, ~kind=Logs.Tokens, ~setRequest, ());
+
+  let isMounted = ReactUtils.useIsMounted();
+
+  let conditionToLoad = (request, isMounted) => {
+    let requestNotAskedAndMounted = request->isNotAsked && isMounted;
+    let requestDoneButReloadOnMount = request->isDone && !isMounted;
+    let requestExpired = request->isForceExpired && reloadOnForceExpired;
+    requestNotAskedAndMounted || requestDoneButReloadOnMount || requestExpired;
+  };
+
+  React.useEffect5(
+    () =>
+      if (conditionToLoad(apiRequest, isMounted)) {
+        getRequest(request)->ignore;
+        None;
+      } else {
+        switch (apiRequest, tokensNumberRequest) {
+        | (Done(Ok(`Cached(tokens)), _), Done(Ok(tokensNumber), _)) =>
+          if (tokens->PublicKeyHash.Map.isEmpty
+              && tokensNumber > 0
+              && tokensNumber <= 50) {
+            getRequest({...request, fromCache: false})->ignore;
+          };
+          None;
+        | _ => None
+        };
+      },
+    (isMounted, apiRequest, request, setRequest, tokensNumberRequest),
+  );
+
+  (apiRequest, getRequest);
+};
+
 module NFT = {
   type fetched = TokensAPI.Fetch.fetchedNFTs;
 
@@ -110,18 +158,15 @@ module NFT = {
     account: PublicKeyHash.t,
     allowHidden: bool,
     numberByAccount: int,
-    fromCache: bool,
   };
 
-  let useLoadAccountNFTs =
-      (
-        onTokens,
-        onStop,
-        (apiRequest, setRequest),
-        tokensNumberRequest,
-        nftRequest,
-      ) => {
-    let get = (~config, {account, allowHidden, numberByAccount, fromCache}) => {
+  let useFetchWithCache =
+      (onTokens, onStop, request, tokensNumberRequest, nftRequest) => {
+    let get =
+        (
+          ~config,
+          {fromCache, request: {account, allowHidden, numberByAccount}},
+        ) => {
       TokensAPI.Fetch.accountNFTs(
         config,
         ~account,
@@ -133,38 +178,13 @@ module NFT = {
       );
     };
 
-    let getRequest =
-      ApiRequest.useGetter(~get, ~kind=Logs.Tokens, ~setRequest, ());
-
-    let isMounted = ReactUtils.useIsMounted();
-
-    let conditionToLoad = (request, isMounted) => {
-      let requestNotAskedAndMounted = request->isNotAsked && isMounted;
-      let requestDoneButReloadOnMount = request->isDone && !isMounted;
-      requestNotAskedAndMounted || requestDoneButReloadOnMount;
-    };
-
-    React.useEffect5(
-      () =>
-        if (conditionToLoad(apiRequest, isMounted)) {
-          getRequest(nftRequest)->ignore;
-          None;
-        } else {
-          switch (apiRequest, tokensNumberRequest) {
-          | (Done(Ok(`Cached(tokens)), _), Done(Ok(tokensNumber), _)) =>
-            if (tokens->PublicKeyHash.Map.isEmpty
-                && tokensNumber > 0
-                && tokensNumber <= 50) {
-              getRequest({...nftRequest, fromCache: false})->ignore;
-            };
-            None;
-          | _ => None
-          };
-        },
-      (isMounted, apiRequest, nftRequest, setRequest, tokensNumberRequest),
+    useLoadTokensGeneric(
+      request,
+      tokensNumberRequest,
+      nftRequest,
+      get,
+      ~reloadOnForceExpired=false,
     );
-
-    (apiRequest, getRequest);
   };
 
   let useAccountTokensNumber = (requestState, account) => {
@@ -172,6 +192,44 @@ module NFT = {
       TokensAPI.Fetch.accountsTokensNumber(config, ~accounts=[account]);
 
     ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, account);
+  };
+};
+
+module Fungible = {
+  type fetched = TokensAPI.Fetch.fetchedTokens;
+
+  type request = {
+    accounts: list(PublicKeyHash.t),
+    numberByAccount: int,
+  };
+
+  let useFetchWithCache =
+      (onTokens, onStop, request, tokensNumberRequest, tokensRequest) => {
+    let get = (~config, {fromCache, request: {accounts, numberByAccount}}) => {
+      TokensAPI.Fetch.accountsFungibleTokensWithRegistration(
+        config,
+        ~accounts,
+        ~numberByAccount,
+        ~onTokens,
+        ~onStop,
+        ~fromCache,
+      );
+    };
+
+    useLoadTokensGeneric(
+      request,
+      tokensNumberRequest,
+      tokensRequest,
+      get,
+      ~reloadOnForceExpired=true,
+    );
+  };
+
+  let useAccountsTokensNumber = (requestState, accounts) => {
+    let get = (~config, accounts) =>
+      TokensAPI.Fetch.accountsTokensNumber(config, ~accounts);
+
+    ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, accounts);
   };
 };
 

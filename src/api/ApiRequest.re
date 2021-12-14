@@ -129,6 +129,12 @@ let isExpired = request =>
   | _ => false
   };
 
+let isForceExpired = request =>
+  switch (request) {
+  | Done(_, Expired) => true
+  | _ => false
+  };
+
 let logError = (r, addLog, ~keep=_ => true, origin) =>
   r->Promise.tapError(e => {e->keep ? addLog(Logs.error(~origin, e)) : ()});
 
