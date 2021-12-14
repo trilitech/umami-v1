@@ -103,74 +103,76 @@ let useLoadTokensRegistry = (requestState, request) => {
   ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, request);
 };
 
-type fetchedNFTs = TokensAPI.Fetch.fetchedNFTs;
+module NFT = {
+  type fetched = TokensAPI.Fetch.fetchedNFTs;
 
-type nftRequest = {
-  account: PublicKeyHash.t,
-  allowHidden: bool,
-  numberByAccount: int,
-  fromCache: bool,
-};
-
-let useLoadAccountNFTs =
-    (
-      onTokens,
-      onStop,
-      (apiRequest, setRequest),
-      tokensNumberRequest,
-      nftRequest,
-    ) => {
-  let get = (~config, {account, allowHidden, numberByAccount, fromCache}) => {
-    TokensAPI.Fetch.accountNFTs(
-      config,
-      ~account,
-      ~numberByAccount,
-      ~onTokens,
-      ~onStop,
-      ~allowHidden,
-      ~fromCache,
-    );
+  type request = {
+    account: PublicKeyHash.t,
+    allowHidden: bool,
+    numberByAccount: int,
+    fromCache: bool,
   };
 
-  let getRequest =
-    ApiRequest.useGetter(~get, ~kind=Logs.Tokens, ~setRequest, ());
+  let useLoadAccountNFTs =
+      (
+        onTokens,
+        onStop,
+        (apiRequest, setRequest),
+        tokensNumberRequest,
+        nftRequest,
+      ) => {
+    let get = (~config, {account, allowHidden, numberByAccount, fromCache}) => {
+      TokensAPI.Fetch.accountNFTs(
+        config,
+        ~account,
+        ~numberByAccount,
+        ~onTokens,
+        ~onStop,
+        ~allowHidden,
+        ~fromCache,
+      );
+    };
 
-  let isMounted = ReactUtils.useIsMounted();
+    let getRequest =
+      ApiRequest.useGetter(~get, ~kind=Logs.Tokens, ~setRequest, ());
 
-  let conditionToLoad = (request, isMounted) => {
-    let requestNotAskedAndMounted = request->isNotAsked && isMounted;
-    let requestDoneButReloadOnMount = request->isDone && !isMounted;
-    requestNotAskedAndMounted || requestDoneButReloadOnMount;
-  };
+    let isMounted = ReactUtils.useIsMounted();
 
-  React.useEffect5(
-    () =>
-      if (conditionToLoad(apiRequest, isMounted)) {
-        getRequest(nftRequest)->ignore;
-        None;
-      } else {
-        switch (apiRequest, tokensNumberRequest) {
-        | (Done(Ok(`Cached(tokens)), _), Done(Ok(tokensNumber), _)) =>
-          if (tokens->PublicKeyHash.Map.isEmpty
-              && tokensNumber > 0
-              && tokensNumber <= 50) {
-            getRequest({...nftRequest, fromCache: false})->ignore;
-          };
+    let conditionToLoad = (request, isMounted) => {
+      let requestNotAskedAndMounted = request->isNotAsked && isMounted;
+      let requestDoneButReloadOnMount = request->isDone && !isMounted;
+      requestNotAskedAndMounted || requestDoneButReloadOnMount;
+    };
+
+    React.useEffect5(
+      () =>
+        if (conditionToLoad(apiRequest, isMounted)) {
+          getRequest(nftRequest)->ignore;
           None;
-        | _ => None
-        };
-      },
-    (isMounted, apiRequest, nftRequest, setRequest, tokensNumberRequest),
-  );
+        } else {
+          switch (apiRequest, tokensNumberRequest) {
+          | (Done(Ok(`Cached(tokens)), _), Done(Ok(tokensNumber), _)) =>
+            if (tokens->PublicKeyHash.Map.isEmpty
+                && tokensNumber > 0
+                && tokensNumber <= 50) {
+              getRequest({...nftRequest, fromCache: false})->ignore;
+            };
+            None;
+          | _ => None
+          };
+        },
+      (isMounted, apiRequest, nftRequest, setRequest, tokensNumberRequest),
+    );
 
-  (apiRequest, getRequest);
-};
+    (apiRequest, getRequest);
+  };
 
-let useAccountTokensNumber = (requestState, account) => {
-  let get = (~config, account) =>
-    TokensAPI.Fetch.accountsTokensNumber(config, ~accounts=[account]);
+  let useAccountTokensNumber = (requestState, account) => {
+    let get = (~config, account) =>
+      TokensAPI.Fetch.accountsTokensNumber(config, ~accounts=[account]);
 
-  ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, account);
+    ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, account);
+  };
 };
 
 let useDelete = (~sideEffect=?, ()) => {

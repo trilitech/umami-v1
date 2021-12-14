@@ -59,7 +59,7 @@ type state = {
   nftsRequestsState: apiRequestsState(TokensLibrary.t),
   tokensRegistryRequestState:
     reactState(ApiRequest.t(TokensApiRequest.registry)),
-  accountsTokensRequestState: apiRequestsState(TokensApiRequest.fetchedNFTs),
+  accountsTokensRequestState: apiRequestsState(TokensApiRequest.NFT.fetched),
   accountsTokensNumberRequestState: apiRequestsState(int),
   balanceTokenRequestsState: apiRequestsState(Token.Unit.t),
   apiVersionRequestState: reactState(option(Network.apiVersion)),
@@ -630,7 +630,7 @@ module Tokens = {
     let accountsTokensRequestState =
       useRequestsState((Some(account) :> option(string)));
 
-    TokensApiRequest.useAccountTokensNumber(
+    TokensApiRequest.NFT.useAccountTokensNumber(
       accountsTokensRequestState,
       account,
     );
@@ -645,7 +645,7 @@ module Tokens = {
 
     let tokensNumberRequest = useAccountTokensNumber(account);
 
-    TokensApiRequest.useLoadAccountNFTs(
+    TokensApiRequest.NFT.useLoadAccountNFTs(
       onTokens,
       onStop,
       accountsTokensRequestState,
