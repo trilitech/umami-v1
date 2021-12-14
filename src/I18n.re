@@ -38,6 +38,7 @@ let btn = {
   pub retry = "RETRY";
   pub view_nft = "View NFT";
   pub create_or_import_secret = "CREATE OR IMPORT SECRET";
+  pub buy_tez = "BUY TEZ";
   pub verify_accounts = "VERIFY ACCOUNTS";
   pub customize_derivation_path = "Customize Derivation Path";
   pub ardware_wallet_export = "Export Public Key";
@@ -95,7 +96,8 @@ let btn = {
   pub beacon_connect_dapp = "CONNECT TO DAPP";
   pub custom = "CUSTOM";
   pub register_nft_contract = "Register NFT contract";
-  pub see_list = "SEE LIST"
+  pub see_list = "SEE LIST";
+  pub change_account = "CHANGE ACCOUNT"
 };
 
 let tooltip = {
@@ -365,7 +367,10 @@ let title = {
   pub settings = "Settings";
   pub collected = "Collected";
   pub gallery = "Gallery";
-  pub logs = "Logs"
+  pub logs = "Logs";
+  pub notice = "Disclaimer Notice";
+  pub buy_tez = "Buy tez";
+  pub wert_recipient = "Please select the recipient account";
 };
 
 let expl = {
@@ -401,7 +406,8 @@ let expl = {
   pub beacon_operation = "Requests Operations";
   pub beacon_delegation = "Request Delegation";
   pub beacon_dapp_sign = "requests your signature";
-  pub custom_network = "Please specify the parameters of the network you want to connect to."
+  pub custom_network = "Please specify the parameters of the network you want to connect to.";
+  pub external_service = "Notice: this is an external service."
 };
 
 let menu = {

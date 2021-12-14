@@ -23,76 +23,78 @@
 /*                                                                           */
 /*****************************************************************************/
 
-type Errors.t +=
-  | NoSuchFileError(string);
+open ReactNative;
 
-let getVersion: unit => string;
+module StateLenses = [%lenses type state = {read: bool}];
+module DisclaimerForm = ReForm.Make(StateLenses);
 
-type plateform = [ | `darwin | `win32 | `linux];
+let styles =
+  Style.(
+    StyleSheet.create({
+      "disclaimerText": style(~marginBottom=32.->dp, ~marginTop=24.->dp, ()),
+      "checkboxLabel":
+        style(
+          ~fontSize=16.,
+          ~alignItems=`flexStart,
+          ~paddingBottom=20.->dp,
+          (),
+        ),
+    })
+  );
 
-let plateform: plateform;
-let isMac: bool;
-let isDev: bool;
+[@react.component]
+let make = (~onSign) => {
+  let theme = ThemeContext.useTheme();
 
-let openExternal: string => unit;
-
-module Path: {
-  type t;
-
-  let mk: string => t;
-
-  let toString: t => string;
-
-  let join: array(t) => t;
-
-  module Ops: {
-    let (!): string => t;
-
-    let (/): (t, t) => t;
+  let onAgree = () => {
+    WertDisclaimer.sign();
   };
 
-  let getCurrent: unit => t;
-  let getAppData: unit => t;
+  let form: DisclaimerForm.api =
+    DisclaimerForm.use(
+      ~validationStrategy=OnDemand,
+      ~schema={
+        DisclaimerForm.Validation.(Schema(true_(Read)));
+      },
+      ~onSubmit=
+        _ => {
+          onAgree();
+          onSign(false);
+          None;
+        },
+      ~initialState={read: false},
+      ~i18n=FormUtils.i18n,
+      (),
+    );
+
+  let formFieldsAreValids =
+    FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
+
+  <>
+    <DocumentContext.ScrollView
+      showsVerticalScrollIndicator=true style=styles##disclaimerText>
+      <WertDisclaimerText />
+    </DocumentContext.ScrollView>
+    <View>
+      <View>
+        <CheckboxItem
+          style=styles##checkboxLabel
+          label=I18n.disclaimer#agreement_checkbox
+          labelFontWeightStyle=`regular
+          labelStyle={Style.style(
+            ~color=Typography.getColor(`highEmphasis, theme),
+            (),
+          )}
+          value={form.values.read}
+          handleChange={form.handleChange(Read)}
+        />
+      </View>
+      <Buttons.SubmitPrimary
+        text=I18n.btn#disclaimer_agree
+        onPress={_ => form.submit()}
+        disabledLook={!formFieldsAreValids}
+        style=FormStyles.formSubmit
+      />
+    </View>
+  </>;
 };
-
-let homeDir: unit => Path.t;
-let appDir: unit => Path.t;
-
-module File: {
-  type encoding =
-    | Utf8
-    | Raw(string);
-
-  let read: (~encoding: encoding=?, Path.t) => Promise.t(string);
-
-  let write:
-    (~encoding: encoding=?, ~name: Path.t, string) => Promise.t(unit);
-
-  module CopyMode: {
-    type t;
-    let copy_excl: t;
-    let copy_ficlone: t;
-    let copy_ficlone_force: t;
-
-    let assemble: (t, t) => t;
-  };
-
-  let access: Path.t => FutureBase.t(bool);
-
-  let copy:
-    (~name: Path.t, ~dest: Path.t, ~mode: CopyMode.t) => Promise.t(unit);
-
-  let rm: (~name: Path.t) => Promise.t(unit);
-
-  let initIfNotExists:
-    (~encoding: encoding=?, ~path: Path.t, string) => Promise.t(unit);
-  let initDirIfNotExists: Path.t => Promise.t(unit);
-};
-
-module Client: {
-  let resetDir: Path.t => Promise.t(unit);
-
-  let initDir: Path.t => Promise.t(unit);
-};
-
-let reload: unit => unit;

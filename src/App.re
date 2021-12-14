@@ -69,8 +69,54 @@ module DisclaimerModal = {
 module Homepage = {
   type state =
     | Onboarding
+    | BuyTez
     | AddAccountModal
     | Dashboard;
+};
+
+module BuyTezView = {
+  module IFrame = {
+    type props = {
+      src: string,
+      width: string,
+      height: string,
+      allow: string,
+      frameBorder: string,
+    };
+
+    [@bs.val] [@bs.scope "React"]
+    external createElement: ([@bs.as "iframe"] _, props) => React.element =
+      "createElement";
+
+    [@react.component]
+    let make = (~src) => {
+      createElement({
+        src,
+        width: "100%",
+        height: "100%",
+        allow: "camera *; microphone *",
+        frameBorder: "0",
+      });
+    };
+  };
+
+  [@react.component]
+  let make = (~src, ~onClose) => {
+    <Page>
+      <Page.Header
+        left={
+          <Typography.Body1
+            colorStyle=`highEmphasis
+            style=Style.(style(~marginTop=12.->dp, ()))>
+            I18n.expl#external_service->React.string
+          </Typography.Body1>
+        }
+        right={<CloseButton onClose />}>
+        ReasonReact.null
+      </Page.Header>
+      <IFrame src />
+    </Page>;
+  };
 };
 
 module AppView = {
@@ -112,6 +158,44 @@ module AppView = {
       [|accountsRequest|],
     );
 
+    let (visibleModal, openAction, closeAction) =
+      ModalAction.useModalActionState();
+
+    React.useLayoutEffect1(
+      () =>
+        switch (onboardingState) {
+        | BuyTez =>
+          openAction();
+          None;
+        | _ => None
+        },
+      [|onboardingState|],
+    );
+
+    let theme = ThemeContext.useTheme();
+
+    let (wertURL, setWertURL) = React.useState(() => None);
+
+    let buyTez = (address: PublicKeyHash.t) => {
+      closeAction();
+      let widget =
+        ReWert.Widget.make({
+          container_id: "wert-widget",
+          partner_id:
+            System.isDev
+              ? "01F8DFQRA460MG8EMEP6E0RQQT" : "01FN6APWJ68N2PWC22YDJW4D5W",
+          origin:
+            System.isDev
+              ? "https://sandbox.wert.io" : "https://widget.wert.io",
+          commodity: "XTZ",
+          commodities: "XTZ",
+          address: (address :> string),
+          theme: theme.dark ? "dark" : "light",
+          color_background: theme.colors.background,
+        });
+      setWertURL(_ => Some(widget->ReWert.Widget.getEmbedUrl));
+    };
+
     let displayNavbar = {
       switch (accountsRequest) {
       | Done(_) when accounts->PublicKeyHash.Map.size <= 0 => false
@@ -122,12 +206,11 @@ module AppView = {
         switch (onboardingState) {
         | Onboarding
         | AddAccountModal => false
+        | BuyTez => wertURL == None
         | Dashboard => true
         }
       };
     };
-
-    let theme = ThemeContext.useTheme();
 
     <DocumentContext>
       <View
@@ -149,34 +232,59 @@ module AppView = {
                     <OnboardingView
                       onClose={_ => setOnboardingState(_ => Dashboard)}
                     />
+                  | BuyTez
                   | Dashboard =>
                     <>
-                      {switch (route) {
-                       | Accounts =>
-                         <AccountsView
-                           mode=accountsViewMode
-                           setMode=setAccountsViewMode
-                           showOnboarding={() =>
-                             setOnboardingState(_ => AddAccountModal)
-                           }
+                      {wertURL->Option.mapWithDefault(
+                         switch (route) {
+                         | Accounts =>
+                           <AccountsView
+                             mode=accountsViewMode
+                             setMode=setAccountsViewMode
+                             showOnboarding={() =>
+                               setOnboardingState(_ =>
+                                 accountsViewMode == Simple
+                                   ? BuyTez : AddAccountModal
+                               )
+                             }
+                           />
+                         | Nft => <NftView />
+                         | Operations => <OperationsView />
+                         | AddressBook => <AddressBookView />
+                         | Delegations => <DelegationsView />
+                         | Tokens => <TokensView />
+                         | Settings => <SettingsView />
+                         | Logs => <LogsView />
+                         | NotFound =>
+                           <View>
+                             <Typography.Body1>
+                               I18n.t#error404->React.string
+                             </Typography.Body1>
+                           </View>
+                         },
+                         src =>
+                         <BuyTezView
+                           src
+                           onClose={_ => {
+                             setWertURL(_ => None);
+                             setOnboardingState(_ => Dashboard);
+                           }}
                          />
-                       | Nft => <NftView />
-                       | Operations => <OperationsView />
-                       | AddressBook => <AddressBookView />
-                       | Delegations => <DelegationsView />
-                       | Tokens => <TokensView />
-                       | Settings => <SettingsView />
-                       | Logs => <LogsView />
-                       | NotFound =>
-                         <View>
-                           <Typography.Body1>
-                             I18n.t#error404->React.string
-                           </Typography.Body1>
-                         </View>
-                       }}
+                       )}
                     </>
                   }}
                </View>
+               <ModalAction visible=visibleModal onRequestClose=closeAction>
+                 <WertView
+                   submit=buyTez
+                   closeAction={_ => {
+                     closeAction();
+                     if (wertURL == None) {
+                       setOnboardingState(_ => Dashboard);
+                     };
+                   }}
+                 />
+               </ModalAction>
              </View>}
       </View>
     </DocumentContext>;

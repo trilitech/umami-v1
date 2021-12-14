@@ -86,6 +86,30 @@ module CreateAccountButton = {
   };
 };
 
+module BuyTezButton = {
+  let styles =
+    Style.(
+      StyleSheet.create({
+        "button": style(~marginLeft=(-6.)->dp, ~marginBottom=2.->dp, ()),
+        "modal": style()->unsafeAddStyle({"boxShadow": "none"}),
+      })
+    );
+
+  [@react.component]
+  let make = (~showOnboarding) => {
+    <>
+      <View style=styles##button>
+        <ButtonAction
+          onPress={_ => showOnboarding()}
+          text=I18n.btn#buy_tez
+          icon=Icons.OpenExternal.build
+          primary=true
+        />
+      </View>
+    </>;
+  };
+};
+
 module AccountsFlatList = {
   [@react.component]
   let make = (~token=?) => {
@@ -199,7 +223,8 @@ let make = (~showOnboarding, ~mode, ~setMode) => {
               ? <BalanceTotal /> : <BalanceTotal.WithTokenSelector ?token />}
            <View style=styles##actionBar>
              {mode->Mode.is_management
-                ? <CreateAccountButton showOnboarding /> : React.null}
+                ? <CreateAccountButton showOnboarding />
+                : <BuyTezButton showOnboarding />}
            </View>
          </Page.Header>
          {mode->Mode.is_management

@@ -23,76 +23,44 @@
 /*                                                                           */
 /*****************************************************************************/
 
-type Errors.t +=
-  | NoSuchFileError(string);
+let version = Version.mk(1, 0);
 
-let getVersion: unit => string;
+let lowestBound = Version.mk(~fix=0, 1, 0);
 
-type plateform = [ | `darwin | `win32 | `linux];
+let highestBound = Version.mk(1, max_int);
 
-let plateform: plateform;
-let isMac: bool;
-let isDev: bool;
+let checkInBound = version =>
+  Version.checkInBound(version, lowestBound, highestBound);
 
-let openExternal: string => unit;
+module Value = {
+  type t = Version.t;
+  let key = "wert-eula-version";
 
-module Path: {
-  type t;
+  let encoder = v => Json.Encode.(v->Version.toString->string);
+  let decoder = json => {
+    switch (json->Json.Decode.string->Version.parse) {
+    | Ok(v) => v
+    | Error(e) => JsonEx.(raise(InternalError(e)))
+    };
+  };
+};
 
-  let mk: string => t;
+module Storage = LocalStorage.Make(Value);
 
-  let toString: t => string;
-
-  let join: array(t) => t;
-
-  module Ops: {
-    let (!): string => t;
-
-    let (/): (t, t) => t;
+let getAgreedVersion = () =>
+  switch (Storage.get()) {
+  | Ok(v) => Some(v)
+  | Error(_) => None
   };
 
-  let getCurrent: unit => t;
-  let getAppData: unit => t;
+let sign = () => {
+  Storage.set(version);
 };
 
-let homeDir: unit => Path.t;
-let appDir: unit => Path.t;
-
-module File: {
-  type encoding =
-    | Utf8
-    | Raw(string);
-
-  let read: (~encoding: encoding=?, Path.t) => Promise.t(string);
-
-  let write:
-    (~encoding: encoding=?, ~name: Path.t, string) => Promise.t(unit);
-
-  module CopyMode: {
-    type t;
-    let copy_excl: t;
-    let copy_ficlone: t;
-    let copy_ficlone_force: t;
-
-    let assemble: (t, t) => t;
+let needSigning = () =>
+  switch (getAgreedVersion()) {
+  | None => true
+  | Some(v) => !checkInBound(v)
   };
 
-  let access: Path.t => FutureBase.t(bool);
-
-  let copy:
-    (~name: Path.t, ~dest: Path.t, ~mode: CopyMode.t) => Promise.t(unit);
-
-  let rm: (~name: Path.t) => Promise.t(unit);
-
-  let initIfNotExists:
-    (~encoding: encoding=?, ~path: Path.t, string) => Promise.t(unit);
-  let initDirIfNotExists: Path.t => Promise.t(unit);
-};
-
-module Client: {
-  let resetDir: Path.t => Promise.t(unit);
-
-  let initDir: Path.t => Promise.t(unit);
-};
-
-let reload: unit => unit;
+let getEula = () => "License agreement placeholder";

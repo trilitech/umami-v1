@@ -53,6 +53,10 @@ type plateform = [ | `darwin | `win32 | `linux];
 
 let isMac = plateform == `darwin;
 
+[@bs.scope "process.env"] [@bs.val] external nodeEnv: Js.Nullable.t(string) = "NODE_ENV"
+
+let isDev = nodeEnv->Js.Nullable.toOption->Option.mapWithDefault(false, a => a == "development");
+
 [@bs.val] external window: 'a = "window";
 
 let reload = () => window##location##reload();

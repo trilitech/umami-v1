@@ -23,76 +23,10 @@
 /*                                                                           */
 /*****************************************************************************/
 
-type Errors.t +=
-  | NoSuchFileError(string);
+type t;
 
-let getVersion: unit => string;
+[@bs.val] [@bs.scope "window"]
+external open_: (~url: string, ~name: string, ~features: string=?, unit) => t =
+  "open";
 
-type plateform = [ | `darwin | `win32 | `linux];
-
-let plateform: plateform;
-let isMac: bool;
-let isDev: bool;
-
-let openExternal: string => unit;
-
-module Path: {
-  type t;
-
-  let mk: string => t;
-
-  let toString: t => string;
-
-  let join: array(t) => t;
-
-  module Ops: {
-    let (!): string => t;
-
-    let (/): (t, t) => t;
-  };
-
-  let getCurrent: unit => t;
-  let getAppData: unit => t;
-};
-
-let homeDir: unit => Path.t;
-let appDir: unit => Path.t;
-
-module File: {
-  type encoding =
-    | Utf8
-    | Raw(string);
-
-  let read: (~encoding: encoding=?, Path.t) => Promise.t(string);
-
-  let write:
-    (~encoding: encoding=?, ~name: Path.t, string) => Promise.t(unit);
-
-  module CopyMode: {
-    type t;
-    let copy_excl: t;
-    let copy_ficlone: t;
-    let copy_ficlone_force: t;
-
-    let assemble: (t, t) => t;
-  };
-
-  let access: Path.t => FutureBase.t(bool);
-
-  let copy:
-    (~name: Path.t, ~dest: Path.t, ~mode: CopyMode.t) => Promise.t(unit);
-
-  let rm: (~name: Path.t) => Promise.t(unit);
-
-  let initIfNotExists:
-    (~encoding: encoding=?, ~path: Path.t, string) => Promise.t(unit);
-  let initDirIfNotExists: Path.t => Promise.t(unit);
-};
-
-module Client: {
-  let resetDir: Path.t => Promise.t(unit);
-
-  let initDir: Path.t => Promise.t(unit);
-};
-
-let reload: unit => unit;
+[@bs.send] external close: t => unit = "close";
