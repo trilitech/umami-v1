@@ -56,11 +56,14 @@ type state = {
     reactState(ApiRequest.t(PublicKeyHash.Map.map(Alias.t))),
   bakersRequestState: reactState(ApiRequest.t(array(Delegate.t))),
   tokensRequestState: reactState(ApiRequest.t(TokensLibrary.WithBalance.t)),
+  newTokensRequestState:
+    reactState(ApiRequest.t(TokensApiRequest.Fungible.fetched)),
   nftsRequestsState: apiRequestsState(TokensLibrary.t),
   tokensRegistryRequestState:
     reactState(ApiRequest.t(TokensApiRequest.registry)),
   accountsTokensRequestState: apiRequestsState(TokensApiRequest.NFT.fetched),
   accountsTokensNumberRequestState: apiRequestsState(int),
+  tokensNumberRequestState: requestState(int),
   balanceTokenRequestsState: apiRequestsState(Token.Unit.t),
   apiVersionRequestState: reactState(option(Network.apiVersion)),
   eulaSignatureRequestState: reactState(bool),
@@ -89,10 +92,12 @@ let initialState = {
   aliasesRequestState: (NotAsked, _ => ()),
   bakersRequestState: (NotAsked, _ => ()),
   tokensRequestState: (NotAsked, _ => ()),
+  newTokensRequestState: (NotAsked, _ => ()),
   nftsRequestsState: initialNFTRequestsState,
   tokensRegistryRequestState: (NotAsked, _ => ()),
   accountsTokensRequestState: initialApiRequestsState,
   accountsTokensNumberRequestState: initialApiRequestsState,
+  tokensNumberRequestState: (NotAsked, _ => ()),
   balanceTokenRequestsState: initialApiRequestsState,
   apiVersionRequestState: (None, _ => ()),
   eulaSignatureRequestState: (false, _ => ()),
@@ -142,12 +147,14 @@ let make = (~children) => {
   let accountsTokensRequestState = React.useState(() => Map.String.empty);
   let accountsTokensNumberRequestState =
     React.useState(() => Map.String.empty);
+  let tokensNumberRequestState = React.useState(() => ApiRequest.NotAsked);
   let balanceTokenRequestsState = React.useState(() => Map.String.empty);
   let operationsConfirmations = React.useState(() => Set.String.empty);
 
   let aliasesRequestState = React.useState(() => ApiRequest.NotAsked);
   let bakersRequestState = React.useState(() => ApiRequest.NotAsked);
   let tokensRequestState = React.useState(() => ApiRequest.NotAsked);
+  let newTokensRequestState = React.useState(() => ApiRequest.NotAsked);
   let nftsRequestsState = React.useState(() => Map.String.empty);
   let tokensRegistryRequestState = React.useState(() => ApiRequest.NotAsked);
   let secretsRequestState = React.useState(() => ApiRequest.NotAsked);
@@ -252,10 +259,12 @@ let make = (~children) => {
       aliasesRequestState,
       bakersRequestState,
       tokensRequestState,
+      newTokensRequestState,
       nftsRequestsState,
       tokensRegistryRequestState,
       accountsTokensRequestState,
       accountsTokensNumberRequestState,
+      tokensNumberRequestState,
       balanceTokenRequestsState,
       apiVersionRequestState,
       eulaSignatureRequestState,
@@ -583,6 +592,11 @@ module Tokens = {
     store.tokensRequestState;
   };
 
+  let useNewRequestState = () => {
+    let store = useStoreContext();
+    store.newTokensRequestState;
+  };
+
   let useRequest = () => {
     open TokensLibrary;
     let (tokensRequest, _) = useRequestState();
@@ -645,10 +659,34 @@ module Tokens = {
 
     let tokensNumberRequest = useAccountTokensNumber(account);
 
-    TokensApiRequest.NFT.useLoadAccountNFTs(
+    TokensApiRequest.NFT.useFetchWithCache(
       onTokens,
       onStop,
       accountsTokensRequestState,
+      tokensNumberRequest,
+    );
+  };
+
+  let useTokensNumberRequest = () => {
+    let store = useStoreContext();
+    store.tokensNumberRequestState;
+  };
+
+  let useTokensNumber = (accounts: list(PublicKeyHash.t)) => {
+    let requestState = useTokensNumberRequest();
+
+    TokensApiRequest.Fungible.useAccountsTokensNumber(requestState, accounts);
+  };
+
+  let useFetchTokens = (onTokens, onStop, accounts: list(PublicKeyHash.t)) => {
+    let requestState = useNewRequestState();
+
+    let tokensNumberRequest = useTokensNumber(accounts);
+
+    TokensApiRequest.Fungible.useFetchWithCache(
+      onTokens,
+      onStop,
+      requestState,
       tokensNumberRequest,
     );
   };
@@ -665,7 +703,11 @@ module Tokens = {
 
   let useResetAll = () => {
     let (_, setTokensRequest) = useRequestState();
-    () => setTokensRequest(ApiRequest.expireCache);
+    let (_, setNewTokensRequest) = useNewRequestState();
+    () => {
+      setTokensRequest(ApiRequest.expireCache);
+      setNewTokensRequest(ApiRequest.expireCache);
+    };
   };
 
   let useResetAllAccountsTokens = () => {
