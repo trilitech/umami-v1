@@ -90,6 +90,17 @@ module WithBalance: {
     (t, PublicKeyHash.t, int) => option((TokenRepr.t, ReBigNumber.t));
 };
 
+module WithRegistration: {
+  type token = (Token.t, bool);
+  type contract = Generic.contract(token);
+  type t = Generic.t(token);
+
+  let keepAndSetRegistration:
+    (Generic.t('token), RegisteredTokens.t, 'token => option(Token.t)) => t;
+
+  let getFullToken: (t, PublicKeyHash.t, int) => option((TokenRepr.t, bool));
+};
+
 type t = Generic.t(Token.t);
 
 let getFullToken: (t, PublicKeyHash.t, int) => option(TokenRepr.t);

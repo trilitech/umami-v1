@@ -215,6 +215,53 @@ module WithBalance = {
   };
 };
 
+module WithRegistration = {
+  open Token;
+  open Generic;
+
+  type token = (Token.t, bool);
+  type contract = Generic.contract(token);
+  type t = Generic.t(token);
+
+  // map2 is always the newly added tokens
+  let keepAndSetRegistration =
+      (
+        map1: Generic.t('token),
+        map2: RegisteredTokens.t,
+        extractToken: 'token => option(Token.t),
+      )
+      : t => {
+    let mergeTokens = (_, t, reg) =>
+      switch (t) {
+      | None => None
+      | Some(t) => t->extractToken->Option.map(token => (token, reg != None))
+      };
+    let mergeContracts = (_, c1, c2) =>
+      switch (c1, c2) {
+      | (None, None)
+      | (None, Some(_)) => None
+      | (Some(c), None) =>
+        let tokens =
+          c.tokens
+          ->Map.keepMapInt((_, t) =>
+              t->extractToken->Option.map(t => (t, false))
+            );
+        tokens->Ids.isEmpty ? None : {...c, tokens}->Some;
+      | (Some(c1), Some(c2: RegisteredTokens.contract)) =>
+        let tokens = Ids.merge(c1.tokens, c2.tokens, mergeTokens);
+        tokens->Ids.isEmpty ? None : {...c1, tokens}->Some;
+      };
+    Contracts.merge(map1, map2, mergeContracts);
+  };
+
+  let getFullToken = (map, pkh, tokenId) => {
+    switch (map->getToken(pkh, tokenId)) {
+    | Some((Full(t), reg)) => Some((t, reg))
+    | _ => None
+    };
+  };
+};
+
 type t = Generic.t(Token.t);
 
 let getFullToken = (map, pkh, tokenId) => {
