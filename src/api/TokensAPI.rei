@@ -110,6 +110,10 @@ module Fetch: {
 
   type fetchedTokens = fetched(TokensLibrary.WithRegistration.t);
 
+  let cachedFungibleTokensWithRegistration:
+    ConfigContext.env =>
+    Promise.t([> | `Cached(TokensLibrary.WithRegistration.t)]);
+
   let accountsFungibleTokensWithRegistration:
     (
       ConfigContext.env,
