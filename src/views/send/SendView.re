@@ -455,7 +455,8 @@ let make = (~closeAction) => {
 
   <ReactFlipToolkit.Flipper flipKey={modalStep->stepToString}>
     <ReactFlipToolkit.FlippedView flipId="modal">
-      <ModalFormView ?title back ?closing>
+      <ModalFormView
+        ?title back ?closing titleStyle=FormStyles.headerMarginBottom8>
         <ReactFlipToolkit.FlippedView.Inverse inverseFlipId="modal">
           {switch (modalStep) {
            | SubmittedStep(hash) =>

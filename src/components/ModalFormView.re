@@ -138,6 +138,7 @@ let make =
     (
       ~closing=?,
       ~title=?,
+      ~titleStyle=FormStyles.header,
       ~headerActionButton=?,
       ~back=?,
       ~loading=?,
@@ -161,7 +162,7 @@ let make =
   let headerCenter = {
     title->Option.map(title =>
       <View style=?styleWithButton>
-        <Typography.Headline style=FormStyles.header>
+        <Typography.Headline style=titleStyle>
           title->React.string
         </Typography.Headline>
         headerActionButton->ReactUtils.opt
