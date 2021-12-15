@@ -203,6 +203,20 @@ module Fungible = {
     numberByAccount: int,
   };
 
+  let dummyRequest = {accounts: [], numberByAccount: 0, fromCache: true};
+
+  let useLoadTokens = requestState => {
+    let get = (~config, _) => {
+      TokensAPI.Fetch.cachedFungibleTokensWithRegistration(config);
+    };
+    ApiRequest.useLoader(
+      ~get,
+      ~kind=Logs.Tokens,
+      ~requestState,
+      dummyRequest,
+    );
+  };
+
   let useFetchWithCache =
       (onTokens, onStop, request, tokensNumberRequest, tokensRequest) => {
     let get = (~config, {fromCache, request: {accounts, numberByAccount}}) => {

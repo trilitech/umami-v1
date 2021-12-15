@@ -51,7 +51,16 @@ module FormGroupAmountWithTokenSelector = {
       ) => {
     let tokens = StoreContext.Tokens.useGetAll();
 
-    let displaySelector = tokens->PublicKeyHash.Map.size > 0;
+    let tokens =
+      React.useMemo1(
+        () =>
+          tokens->TokensLibrary.Generic.keepTokens((_, _, (_, registered)) =>
+            registered
+          ),
+        [|tokens|],
+      );
+
+    let displaySelector = !tokens->TokensLibrary.Contracts.isEmpty;
 
     let decoration =
       switch (displaySelector, token) {

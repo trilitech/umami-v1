@@ -136,7 +136,8 @@ let make =
     ->TokensLibrary.Generic.valuesToArray
     ->Array.keepMap(
         fun
-        | (TokensLibrary.Token.Full(t), _) => t->Token->Some
+        | (TokensLibrary.Token.Full(t), true) => t->Token->Some
+        | (Full(_), false)
         | (Partial(_), _) => None,
       );
 

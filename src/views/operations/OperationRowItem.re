@@ -215,14 +215,15 @@ let amount =
           ->React.string
         | Token(_, token_trans, _) =>
           let address = token_trans.contract;
-          let token: option((Token.t, ReBigNumber.t)) =
-            TokensLibrary.WithBalance.getFullToken(
+          let token: option((Token.t, bool)) =
+            TokensLibrary.WithRegistration.getFullToken(
               tokens,
               address,
               token_trans.kind->TokenRepr.kindId,
             );
           switch (token) {
-          | None =>
+          | None
+          | Some((_, false)) =>
             let tooltip = (
               "unknown_token"
               ++ Operation.Read.(op->uniqueId->uniqueIdToString),

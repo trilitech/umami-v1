@@ -55,8 +55,7 @@ type state = {
   aliasesRequestState:
     reactState(ApiRequest.t(PublicKeyHash.Map.map(Alias.t))),
   bakersRequestState: reactState(ApiRequest.t(array(Delegate.t))),
-  tokensRequestState: reactState(ApiRequest.t(TokensLibrary.WithBalance.t)),
-  newTokensRequestState:
+  tokensRequestState:
     reactState(ApiRequest.t(TokensApiRequest.Fungible.fetched)),
   nftsRequestsState: apiRequestsState(TokensLibrary.t),
   tokensRegistryRequestState:
@@ -92,7 +91,6 @@ let initialState = {
   aliasesRequestState: (NotAsked, _ => ()),
   bakersRequestState: (NotAsked, _ => ()),
   tokensRequestState: (NotAsked, _ => ()),
-  newTokensRequestState: (NotAsked, _ => ()),
   nftsRequestsState: initialNFTRequestsState,
   tokensRegistryRequestState: (NotAsked, _ => ()),
   accountsTokensRequestState: initialApiRequestsState,
@@ -154,7 +152,6 @@ let make = (~children) => {
   let aliasesRequestState = React.useState(() => ApiRequest.NotAsked);
   let bakersRequestState = React.useState(() => ApiRequest.NotAsked);
   let tokensRequestState = React.useState(() => ApiRequest.NotAsked);
-  let newTokensRequestState = React.useState(() => ApiRequest.NotAsked);
   let nftsRequestsState = React.useState(() => Map.String.empty);
   let tokensRegistryRequestState = React.useState(() => ApiRequest.NotAsked);
   let secretsRequestState = React.useState(() => ApiRequest.NotAsked);
@@ -180,7 +177,7 @@ let make = (~children) => {
   let _: ApiRequest.t(_) = AccountApiRequest.useLoad(accountsRequestState);
   let _: ApiRequest.t(_) = AliasApiRequest.useLoad(aliasesRequestState);
   let _: ApiRequest.t(_) =
-    TokensApiRequest.useLoadTokens(tokensRequestState);
+    TokensApiRequest.Fungible.useLoadTokens(tokensRequestState);
 
   React.useEffect0(() => {
     setEulaSignature(_ => Disclaimer.needSigning());
@@ -259,7 +256,6 @@ let make = (~children) => {
       aliasesRequestState,
       bakersRequestState,
       tokensRequestState,
-      newTokensRequestState,
       nftsRequestsState,
       tokensRegistryRequestState,
       accountsTokensRequestState,
@@ -592,37 +588,17 @@ module Tokens = {
     store.tokensRequestState;
   };
 
-  let useNewRequestState = () => {
-    let store = useStoreContext();
-    store.newTokensRequestState;
-  };
-
-  let useRequest = () => {
-    open TokensLibrary;
-    let (tokensRequest, _) = useRequestState();
-    let apiVersion = useApiVersion();
-    tokensRequest->ApiRequest.map(tokens =>
-      apiVersion->Option.mapWithDefault(PublicKeyHash.Map.empty, v =>
-        tokens->PublicKeyHash.Map.reduce(
-          PublicKeyHash.Map.empty,
-          (filteredTokens, k, c: Generic.contract(WithBalance.token)) => {
-            let tokens =
-              c.tokens
-              ->Map.Int.keep((_, (t, _)) =>
-                  Token.isFull(t) && Token.chain(t) == Some(v.Network.chain)
-                );
-            tokens->Map.Int.isEmpty
-              ? filteredTokens
-              : filteredTokens->PublicKeyHash.Map.set(k, {...c, tokens});
-          },
-        )
-      )
-    );
-  };
-
   let useGetAll = () => {
-    let accountsRequest = useRequest();
-    accountsRequest->ApiRequest.getWithDefault(PublicKeyHash.Map.empty);
+    let tokensRequestState = useRequestState();
+    TokensApiRequest.Fungible.useLoadTokens(tokensRequestState)
+    ->ApiRequest.mapWithDefault(
+        TokensLibrary.Contracts.empty,
+        fun
+        | `Cached(tokens) => tokens
+        // technically impossible, since useLoadTokens only returns `Cached,
+        // but this is due to the unification with the request
+        | `Fetched(tokens, _) => tokens,
+      );
   };
 
   let useRegistryRequestState = () => {
@@ -679,7 +655,7 @@ module Tokens = {
   };
 
   let useFetchTokens = (onTokens, onStop, accounts: list(PublicKeyHash.t)) => {
-    let requestState = useNewRequestState();
+    let requestState = useRequestState();
 
     let tokensNumberRequest = useTokensNumber(accounts);
 
@@ -691,23 +667,9 @@ module Tokens = {
     );
   };
 
-  let useGet = (tokenAddress: option(PublicKeyHash.t)) => {
-    let tokens = useGetAll();
-
-    switch (tokenAddress, tokens) {
-    | (Some(tokenAddress), tokens) =>
-      tokens->TokensLibrary.Generic.getToken(tokenAddress, 0)
-    | _ => None
-    };
-  };
-
   let useResetAll = () => {
     let (_, setTokensRequest) = useRequestState();
-    let (_, setNewTokensRequest) = useNewRequestState();
-    () => {
-      setTokensRequest(ApiRequest.expireCache);
-      setNewTokensRequest(ApiRequest.expireCache);
-    };
+    () => setTokensRequest(ApiRequest.expireCache);
   };
 
   let useResetAllAccountsTokens = () => {

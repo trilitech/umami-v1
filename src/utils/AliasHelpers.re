@@ -38,7 +38,7 @@ let getContractAliasFromAddress = (address: PublicKeyHash.t, aliases, tokens) =>
   switch (r) {
   | None =>
     tokens
-    ->TokensLibrary.WithBalance.getFullToken(address, 0)
+    ->TokensLibrary.WithRegistration.getFullToken(address, 0)
     ->Option.map(((token: Token.t, _)) =>
         I18n.token_contract(token.alias)
       )
