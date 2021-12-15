@@ -54,8 +54,9 @@ module Header = {
         "header": style(~flexDirection=`row, ~marginBottom=10.->dp, ()),
         "actionLeft":
           style(
-            ~marginLeft=24.->dp,
-            ~alignItems=`flexEnd,
+            ~marginLeft=40.->dp,
+            ~alignItems=`center,
+            ~flexGrow=1.0,
             ~justifyContent=`flexStart,
             (),
           ),

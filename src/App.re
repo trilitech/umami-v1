@@ -106,8 +106,8 @@ module BuyTezView = {
       <Page.Header
         left={
           <Typography.Body1
-            colorStyle=`highEmphasis
-            style=Style.(style(~marginTop=12.->dp, ()))>
+            colorStyle=`error
+            style=Style.(style(~marginTop=10.->dp, ~textAlign=`center, ()))>
             I18n.expl#external_service->React.string
           </Typography.Body1>
         }
