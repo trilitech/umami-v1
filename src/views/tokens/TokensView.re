@@ -72,8 +72,27 @@ let styles =
 
 [@react.component]
 let make = () => {
-  let tokensRequest = StoreContext.Tokens.useRequest();
+  let accounts = StoreContext.Accounts.useGetAll();
   let apiVersion: option(Network.apiVersion) = StoreContext.useApiVersion();
+
+  let accounts = accounts->PublicKeyHash.Map.keysToList;
+  let request = fromCache =>
+    TokensApiRequest.{
+      request: Fungible.{accounts, numberByAccount: BCD.requestPageSize},
+      fromCache,
+    };
+
+  // will be used to indicate a percentage of tokens loaded
+  let onTokens = (~total as _, ~lastToken as _) => ();
+  let onStop = () => false;
+
+  let (tokensRequest, _) =
+    StoreContext.Tokens.useFetchTokens(
+      onTokens,
+      onStop,
+      accounts,
+      request(true),
+    );
 
   <Page>
     <Typography.Headline style=Styles.title>
@@ -112,21 +131,22 @@ let make = () => {
       {switch (tokensRequest) {
        | NotAsked
        | Loading(None) => <LoadingView />
-       | Loading(Some(tokens))
-       | Done(Ok(tokens), _) when tokens->PublicKeyHash.Map.size == 0 =>
+       | Loading(Some(`Cached(tokens) | `Fetched(tokens, _)))
+       | Done(Ok(`Cached(tokens) | `Fetched(tokens, _)), _)
+           when tokens->TokensLibrary.Contracts.isEmpty =>
          <Table.Empty> I18n.empty_token->React.string </Table.Empty>
-       | Loading(Some(tokens))
-       | Done(Ok(tokens), _) =>
+       | Loading(Some(`Cached(tokens) | `Fetched(tokens, _)))
+       | Done(Ok(`Cached(tokens) | `Fetched(tokens, _)), _) =>
          tokens
          ->TokensLibrary.Generic.valuesToArray
          ->Array.keepMap(
              fun
-             | (Full(token), _) =>
+             | (Full(token), true) =>
                {
                  <TokenRowItem key=(token.address :> string) token />;
                }
                ->Some
-             | (Partial(_, _, _), _) => None,
+             | _ => None,
            )
          ->React.array
        | Done(Error(error), _) => <ErrorView error />
