@@ -104,8 +104,7 @@ let make = (~submit, ~closeAction) => {
 
   let onSubmit = ({state, _}: WertForm.onSubmitAPI) =>
     switch (state.values.recipient) {
-    | Some(account) =>
-      submit(account.address);
+    | Some(account) => submit(account.address)
     | None => ()
     };
 
@@ -120,7 +119,7 @@ let make = (~submit, ~closeAction) => {
   let back = None;
   let closing = Some(ModalFormView.Close(closeAction));
 
-  <ModalFormView title back ?closing>
+  <ModalFormView title back ?closing titleStyle=FormStyles.headerMarginBottom8>
     {switch (modalStep) {
      | Disclaimer =>
        <WertDisclaimerView
