@@ -82,6 +82,10 @@ module Generic: {
   let keepPartition:
     (t('token), (PublicKeyHash.t, int, 'token) => option(bool)) =>
     (t('token), t('token));
+
+  let pickAny: t('token) => option((PublicKeyHash.t, int, 'token));
+  let pickAnyAtAddress:
+    (t('token), PublicKeyHash.t) => option((PublicKeyHash.t, int, 'token));
 };
 
 module WithBalance: {

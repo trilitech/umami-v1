@@ -180,6 +180,21 @@ module Generic = {
       },
     );
   };
+
+  let pickAnyFromContract = contract => {
+    contract.tokens
+    ->Map.pickAnyInt
+    ->Option.map(((id, t)) => (contract.address, id, t));
+  };
+
+  let pickAnyAtAddress = (cache, address) => {
+    cache->Contracts.get(address)->Option.flatMap(pickAnyFromContract);
+  };
+
+  let pickAny = cache =>
+    cache
+    ->Contracts.pickAny
+    ->Option.flatMap(((_, c)) => c->pickAnyFromContract);
 };
 
 module WithBalance = {
