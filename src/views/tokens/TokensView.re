@@ -94,6 +94,32 @@ let make = () => {
       request(true),
     );
 
+  let tokens =
+    switch (tokensRequest) {
+    | NotAsked
+    | Loading(None) => None
+
+    | Loading(Some(`Cached(tokens) | `Fetched(tokens, _)))
+    | Done(Ok(`Cached(tokens) | `Fetched(tokens, _)), _) =>
+      Some(Ok(tokens))
+
+    | Done(Error(error), _) => Some(Error(error))
+    };
+
+  let partitionedTokens =
+    React.useMemo1(
+      () => {
+        tokens->Option.map(tokens =>
+          tokens->Result.map(tokens =>
+            tokens->TokensLibrary.Generic.keepPartition((_, _, (t, reg)) =>
+              t->TokensLibrary.Token.isNFT ? None : Some(reg)
+            )
+          )
+        )
+      },
+      [|tokens|],
+    );
+
   <Page>
     <Typography.Headline style=Styles.title>
       I18n.Title.tokens->React.string
@@ -128,15 +154,11 @@ let make = () => {
       <TokenRowItem.CellAction> React.null </TokenRowItem.CellAction>
     </Table.Head>
     <View style=styles##list>
-      {switch (tokensRequest) {
-       | NotAsked
-       | Loading(None) => <LoadingView />
-       | Loading(Some(`Cached(tokens) | `Fetched(tokens, _)))
-       | Done(Ok(`Cached(tokens) | `Fetched(tokens, _)), _)
-           when tokens->TokensLibrary.Contracts.isEmpty =>
+      {switch (partitionedTokens) {
+       | None => <LoadingView />
+       | Some(Ok((tokens, _))) when tokens->TokensLibrary.Contracts.isEmpty =>
          <Table.Empty> I18n.empty_token->React.string </Table.Empty>
-       | Loading(Some(`Cached(tokens) | `Fetched(tokens, _)))
-       | Done(Ok(`Cached(tokens) | `Fetched(tokens, _)), _) =>
+       | Some(Ok((tokens, _))) =>
          tokens
          ->TokensLibrary.Generic.valuesToArray
          ->Array.keepMap(
@@ -149,7 +171,7 @@ let make = () => {
              | _ => None,
            )
          ->React.array
-       | Done(Error(error), _) => <ErrorView error />
+       | Some(Error(error)) => <ErrorView error />
        }}
     </View>
   </Page>;
