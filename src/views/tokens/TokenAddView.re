@@ -132,35 +132,31 @@ module FormMetadata = {
 
 module MetadataForm = {
   [@react.component]
-  let make = (~form: TokenCreateForm.api, ~pkh, ~kind, ~chain) => {
-    let metadata =
-      MetadataApiRequest.useLoadMetadata(pkh, kind->TokenRepr.kindId);
+  let make = (~form: TokenCreateForm.api, ~pkh, ~kind, ~tokens) => {
+    open TokensLibrary;
+
+    let token = MetadataApiRequest.useLoadMetadata(tokens, pkh, kind);
+
     React.useEffect1(
       () => {
-        switch (metadata) {
-        | Loading(Some(metadata))
-        | Done(Ok(metadata), _) =>
+        switch (token) {
+        | Loading(Some(token))
+        | Done(Ok(token), _) =>
+          form.handleChange(Token, Some(token));
+          form.handleChange(Name, token->Token.name->Option.default(""));
+          form.handleChange(Symbol, token->Token.symbol->Option.default(""));
           form.handleChange(
-            Token,
-            TokensAPI.metadataToToken(
-              chain,
-              TokenContract.{address: pkh, kind: kind->fromTokenKind},
-              metadata,
-            )
-            ->TokensLibrary.Token.Full
-            ->Some,
+            Decimals,
+            token->Token.decimals->Option.mapDefault("", Int.toString),
           );
-          form.handleChange(Name, metadata.name);
-          form.handleChange(Symbol, metadata.symbol);
-          form.handleChange(Decimals, metadata.decimals->Int.toString);
         | Done(Error(_), _)
         | _ => form.handleChange(Token, None)
         };
         None;
       },
-      [|metadata|],
+      [|token|],
     );
-    switch (metadata) {
+    switch (token) {
     | Done(Ok(_), _) => <FormMetadata form />
     | Done(
         Error(
@@ -373,7 +369,7 @@ let make = (~chain, ~address="", ~kind=?, ~tokens, ~closeAction) => {
      | Metadata(pkh, kind) =>
        <>
          {kind != TokenRepr.FA1_2 ? <FormTokenId form /> : React.null}
-         <MetadataForm form pkh kind chain />
+         <MetadataForm form pkh kind tokens />
        </>
      }}
     <Buttons.SubmitPrimary

@@ -43,6 +43,16 @@ module Token = {
     | Full(t) => t.TokenRepr.alias->Some
     | Partial(_, bcd, _) => bcd.BCD.name;
 
+  let symbol =
+    fun
+    | Full(t) => t.TokenRepr.symbol->Some
+    | Partial(_, bcd, _) => bcd.BCD.symbol;
+
+  let decimals =
+    fun
+    | Full(t) => t.TokenRepr.decimals->Some
+    | Partial(_, bcd, _) => bcd.BCD.decimals;
+
   let kind =
     fun
     | Full(t) => TokenContract.fromTokenKind(t.TokenRepr.kind)

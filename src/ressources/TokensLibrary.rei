@@ -34,6 +34,8 @@ module Token: {
   let kind: t => TokenContract.kind;
   let chain: t => option(string);
   let name: t => option(string);
+  let symbol: t => option(string);
+  let decimals: t => option(int);
   let isFull: t => bool;
   let isNFT: t => bool;
 
