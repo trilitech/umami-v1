@@ -27,9 +27,19 @@ include ApiRequest;
 
 open Let;
 
-let useCheckTokenContract = () => {
+let useCheckTokenContract = tokens => {
   let set = (~config, address) =>
-    config->NodeAPI.Tokens.checkTokenContract(address);
+    switch (tokens->TokensLibrary.Generic.pickAnyAtAddress(address)) {
+    | None => config->NodeAPI.Tokens.checkTokenContract(address)
+    | Some((_, _, (token, _))) =>
+      (
+        token->TokensLibrary.Token.kind: TokenContract.kind :> [>
+          TokenContract.kind
+          | `NotAToken
+        ]
+      )
+      ->Promise.ok
+    };
   ApiRequest.useSetter(~set, ~kind=Logs.Tokens, ~toast=false, ());
 };
 

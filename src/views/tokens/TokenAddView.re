@@ -183,9 +183,9 @@ type step =
   | Metadata(PublicKeyHash.t, TokenRepr.kind);
 
 [@react.component]
-let make = (~chain, ~address="", ~kind=?, ~closeAction) => {
+let make = (~chain, ~address="", ~kind=?, ~tokens, ~closeAction) => {
   let (tokenCreateRequest, createToken) = StoreContext.Tokens.useCreate();
-  let (tokenKind, checkToken) = TokensApiRequest.useCheckTokenContract();
+  let (tokenKind, checkToken) = StoreContext.Tokens.useCheck(tokens);
   let (step, setStep) = React.useState(_ => Address);
 
   let onSubmit = ({state}: TokenCreateForm.onSubmitAPI) => {
