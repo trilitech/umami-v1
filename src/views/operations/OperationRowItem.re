@@ -228,8 +228,7 @@ let amount =
               token_trans.kind->TokenRepr.kindId,
             );
           switch (token) {
-          | None
-          | Some((_, false)) =>
+          | None =>
             let tooltip = (
               "unknown_token"
               ++ Operation.Read.(op->uniqueId->uniqueIdToString),
@@ -259,14 +258,27 @@ let amount =
                 tokens
               />
             </View>;
-          | Some(({symbol, decimals, _}, _)) =>
-            Format.asprintf(
-              "%s %s %s",
-              sign,
-              token_trans.amount->TokenRepr.Unit.toStringDecimals(decimals),
-              symbol,
-            )
-            ->React.string
+          | Some(({symbol, decimals, _}, registered)) =>
+            <View style=styles##rawAddressContainer>
+              <Text>
+                {Format.asprintf(
+                   "%s %s %s",
+                   sign,
+                   token_trans.amount
+                   ->TokenRepr.Unit.toStringDecimals(decimals),
+                   symbol,
+                 )
+                 ->React.string}
+              </Text>
+              {registered
+                 ? React.null
+                 : <AddToken
+                     address=(address :> string)
+                     kind={token_trans.kind}
+                     op
+                     tokens
+                   />}
+            </View>
           };
         }}
      </Typography.Body1>}
