@@ -271,7 +271,7 @@ let make =
   memo((~operation: Operation.Read.t, ~currentLevel) => {
     let account = StoreContext.SelectedAccount.useGet();
     let aliases = StoreContext.Aliases.useGetAll();
-    let tokens = StoreContext.Tokens.useGetAll();
+    let tokens = StoreContext.Tokens.useGetAll(`Any);
     let config = ConfigContext.useContent();
     let addToast = LogsContext.useToast();
 

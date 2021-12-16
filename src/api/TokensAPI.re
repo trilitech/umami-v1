@@ -333,6 +333,39 @@ let metadataToToken =
     asset: metadata->metadataToAsset,
   };
 
+let handleRegistrationStatus = (cache, keepMap) => {
+  let%AwaitMap registered =
+    TokenStorage.Registered.getWithFallback()->Promise.value;
+
+  TokensLibrary.WithRegistration.keepAndSetRegistration(
+    cache,
+    registered,
+    keepMap,
+  );
+};
+
+let keepToken = (token, config: ConfigContext.env, filter) => {
+  let kindOk =
+    switch (filter) {
+    | `Any => true
+    | `FT => !token->TokensLibrary.Token.isNFT
+    | `NFT => token->TokensLibrary.Token.isNFT
+    };
+
+  TokensLibrary.Token.chain(token)
+  == config.network.Network.chain->Network.getChainId->Some
+  && kindOk;
+};
+
+let cachedTokensWithRegistration = (config, filter) => {
+  let%Await cache = TokenStorage.Cache.getWithFallback()->Promise.value;
+  let%AwaitMap tokens =
+    cache->handleRegistrationStatus(token =>
+      token->keepToken(config, filter) ? Some(token) : None
+    );
+  `Cached(tokens);
+};
+
 module Fetch = {
   // Returns the known list of multiple accounts' tokens
   let tokenContracts = (config, ~accounts, ~kinds=?, ~limit=?, ~index=?, ()) => {
@@ -788,31 +821,6 @@ module Fetch = {
 
   type fetchedTokens = fetched(TokensLibrary.WithRegistration.t);
 
-  let handleRegistrationStatus = (cache, keepMap) => {
-    let%AwaitMap registered =
-      TokenStorage.Registered.getWithFallback()->Promise.value;
-
-    TokensLibrary.WithRegistration.keepAndSetRegistration(
-      cache,
-      registered,
-      keepMap,
-    );
-  };
-
-  let keepFungible = (token, config: ConfigContext.env) =>
-    TokensLibrary.Token.chain(token)
-    == config.network.Network.chain->Network.getChainId->Some
-    && !token->TokensLibrary.Token.isNFT;
-
-  let cachedFungibleTokensWithRegistration = config => {
-    let%Await cache = TokenStorage.Cache.getWithFallback()->Promise.value;
-    let%AwaitMap tokens =
-      cache->handleRegistrationStatus(token =>
-        token->keepFungible(config) ? Some(token) : None
-      );
-    `Cached(tokens);
-  };
-
   let accountsFungibleTokensWithRegistration =
       (
         config: ConfigContext.env,
@@ -822,13 +830,13 @@ module Fetch = {
         ~onStop,
         ~fromCache,
       ) => {
-    let getFromCache = () => cachedFungibleTokensWithRegistration(config);
+    let getFromCache = () => cachedTokensWithRegistration(config, `FT);
 
     let getFromNetwork = () => {
       let onceFinished = (fullCache, _, number) => {
         let%AwaitMap tokens =
           fullCache->handleRegistrationStatus(token =>
-            token->keepFungible(config) ? Some(token) : None
+            token->keepToken(config, `FT) ? Some(token) : None
           );
         (tokens, number);
       };

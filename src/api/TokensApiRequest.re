@@ -103,6 +103,15 @@ let useLoadTokensRegistry = (requestState, request) => {
   ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, request);
 };
 
+type filter = [ | `Any | `FT | `NFT];
+
+let useLoadTokensFromCache = requestState => {
+  let get = (~config, filter) => {
+    TokensAPI.cachedTokensWithRegistration(config, filter);
+  };
+  ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState);
+};
+
 type withCache('request) = {
   fromCache: bool,
   request: 'request,
@@ -201,20 +210,6 @@ module Fungible = {
   type request = {
     accounts: list(PublicKeyHash.t),
     numberByAccount: int,
-  };
-
-  let dummyRequest = {accounts: [], numberByAccount: 0, fromCache: true};
-
-  let useLoadTokens = requestState => {
-    let get = (~config, _) => {
-      TokensAPI.Fetch.cachedFungibleTokensWithRegistration(config);
-    };
-    ApiRequest.useLoader(
-      ~get,
-      ~kind=Logs.Tokens,
-      ~requestState,
-      dummyRequest,
-    );
   };
 
   let useFetchWithCache =

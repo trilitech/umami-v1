@@ -135,7 +135,7 @@ module Transactions = {
     [@react.component]
     let make = (~onAddCSVList) => {
       let addLog = LogsContext.useAdd();
-      let tokens = StoreContext.Tokens.useGetAll();
+      let tokens = StoreContext.Tokens.useGetAll(`Any);
 
       let onChange = fileTextContent => {
         let parsedCSV = fileTextContent->CSVEncoding.parseCSV(~tokens);

@@ -120,7 +120,7 @@ module WithTokenSelector = {
   let make = (~token: option(Token.t)=?) => {
     let updateToken = StoreContext.SelectedToken.useSet();
 
-    let tokens = StoreContext.Tokens.useGetAll();
+    let tokens = StoreContext.Tokens.useGetAll(`FT);
 
     let displaySelector = tokens->PublicKeyHash.Map.size > 0;
 

@@ -177,7 +177,7 @@ let make = (~children) => {
   let _: ApiRequest.t(_) = AccountApiRequest.useLoad(accountsRequestState);
   let _: ApiRequest.t(_) = AliasApiRequest.useLoad(aliasesRequestState);
   let _: ApiRequest.t(_) =
-    TokensApiRequest.Fungible.useLoadTokens(tokensRequestState);
+    TokensApiRequest.useLoadTokensFromCache(tokensRequestState, `FT);
 
   React.useEffect0(() => {
     setEulaSignature(_ => Disclaimer.needSigning());
@@ -588,9 +588,9 @@ module Tokens = {
     store.tokensRequestState;
   };
 
-  let useGetAll = () => {
+  let useGetAll = filter => {
     let tokensRequestState = useRequestState();
-    TokensApiRequest.Fungible.useLoadTokens(tokensRequestState)
+    TokensApiRequest.useLoadTokensFromCache(tokensRequestState, filter)
     ->ApiRequest.mapWithDefault(
         TokensLibrary.Contracts.empty,
         fun
@@ -947,7 +947,7 @@ module SelectedAccount = {
 module SelectedToken = {
   let useGet = () => {
     let store = useStoreContext();
-    let tokens = Tokens.useGetAll();
+    let tokens = Tokens.useGetAll(`FT);
 
     /// FIXME: this is clearly a bug!
     switch (store.selectedTokenState, tokens) {

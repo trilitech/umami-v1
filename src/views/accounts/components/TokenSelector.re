@@ -129,7 +129,7 @@ let make =
       ~style as styleProp=?,
       ~renderButton=renderButton,
     ) => {
-  let tokens = StoreContext.Tokens.useGetAll();
+  let tokens = StoreContext.Tokens.useGetAll(`FT);
 
   let items =
     tokens

@@ -49,7 +49,7 @@ module FormGroupAmountWithTokenSelector = {
         ~setSelectedToken,
         ~token: option(Token.t)=?,
       ) => {
-    let tokens = StoreContext.Tokens.useGetAll();
+    let tokens = StoreContext.Tokens.useGetAll(`FT);
 
     let tokens =
       React.useMemo1(
