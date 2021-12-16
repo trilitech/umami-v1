@@ -32,7 +32,7 @@ module StateLenses = [%lenses
     symbol: string,
     decimals: string,
     tokenId: string,
-    token: option(TokenRepr.t),
+    token: option(TokensLibrary.Token.t),
   }
 ];
 module TokenCreateForm = ReForm.Make(StateLenses);
@@ -147,6 +147,7 @@ module MetadataForm = {
               TokenContract.{address: pkh, kind: kind->fromTokenKind},
               metadata,
             )
+            ->TokensLibrary.Token.Full
             ->Some,
           );
           form.handleChange(Name, metadata.name);
@@ -196,7 +197,10 @@ let make = (~chain, ~address="", ~kind=?, ~closeAction) => {
         let decimals =
           state.values.decimals |> Int.fromString |> Option.getExn;
         state.values.token
-        ->Option.mapWithDefault(
+        ->Option.flatMap(
+            TokensLibrary.Token.toTokenRepr(~alias, ~symbol, ~decimals),
+          )
+        ->Option.default(
             TokenRepr.{
               kind,
               address,
@@ -206,8 +210,6 @@ let make = (~chain, ~address="", ~kind=?, ~closeAction) => {
               decimals,
               asset: TokenRepr.defaultAsset,
             },
-            token =>
-            {...token, alias, symbol, decimals}
           )
         ->createToken
         ->Promise.getOk(_ => closeAction());
@@ -256,7 +258,7 @@ let make = (~chain, ~address="", ~kind=?, ~closeAction) => {
             + custom(
                 state =>
                   switch (state.token) {
-                  | Some(t) when t->TokenRepr.isNFT =>
+                  | Some(t) when t->TokensLibrary.Token.isNFT =>
                     Error(I18n.error_register_not_fungible)
                   | _ => Valid
                   },

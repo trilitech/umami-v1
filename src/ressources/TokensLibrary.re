@@ -63,6 +63,21 @@ module Token = {
     fun
     | Full(_) => true
     | Partial(_, _, _) => false;
+
+  let toTokenRepr = (~alias=?, ~symbol=?, ~decimals=?, t) => {
+    switch (t) {
+    | Full(t) =>
+      TokenRepr.{
+        ...t,
+        alias: alias->Option.default(t.alias),
+        symbol: symbol->Option.default(t.symbol),
+        decimals: decimals->Option.default(t.decimals),
+      }
+      ->Some
+    | Partial(contract, t, _) =>
+      contract->BCD.(toTokenRepr({...t, name: alias, symbol, decimals}))
+    };
+  };
 };
 
 module Contracts = PublicKeyHash.Map;

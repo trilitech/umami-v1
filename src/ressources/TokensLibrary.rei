@@ -36,6 +36,10 @@ module Token: {
   let name: t => option(string);
   let isFull: t => bool;
   let isNFT: t => bool;
+
+  let toTokenRepr:
+    (~alias: string=?, ~symbol: string=?, ~decimals: int=?, t) =>
+    option(TokenRepr.t);
 };
 
 module Contracts = PublicKeyHash.Map;
