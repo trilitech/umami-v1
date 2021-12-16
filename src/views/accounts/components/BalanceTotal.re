@@ -120,9 +120,15 @@ module WithTokenSelector = {
   let make = (~token: option(Token.t)=?) => {
     let updateToken = StoreContext.SelectedToken.useSet();
 
-    let tokens = StoreContext.Tokens.useGetAll(`FT);
+    let tokens = StoreContext.Tokens.useGetAllFungible();
+    let tokens =
+      React.useMemo1(
+        () =>
+          tokens->TokensLibrary.Generic.keepTokens((_, _, (_, reg)) => reg),
+        [|tokens|],
+      );
 
-    let displaySelector = tokens->PublicKeyHash.Map.size > 0;
+    let displaySelector = !tokens->TokensLibrary.Contracts.isEmpty;
 
     <Base
       ?token

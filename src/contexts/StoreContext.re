@@ -57,6 +57,8 @@ type state = {
   bakersRequestState: reactState(ApiRequest.t(array(Delegate.t))),
   tokensRequestState:
     reactState(ApiRequest.t(TokensApiRequest.Fungible.fetched)),
+  fungibleTokensRequestState:
+    reactState(ApiRequest.t(TokensApiRequest.Fungible.fetched)),
   nftsRequestsState: apiRequestsState(TokensLibrary.t),
   tokensRegistryRequestState:
     reactState(ApiRequest.t(TokensApiRequest.registry)),
@@ -91,6 +93,7 @@ let initialState = {
   aliasesRequestState: (NotAsked, _ => ()),
   bakersRequestState: (NotAsked, _ => ()),
   tokensRequestState: (NotAsked, _ => ()),
+  fungibleTokensRequestState: (NotAsked, _ => ()),
   nftsRequestsState: initialNFTRequestsState,
   tokensRegistryRequestState: (NotAsked, _ => ()),
   accountsTokensRequestState: initialApiRequestsState,
@@ -152,6 +155,7 @@ let make = (~children) => {
   let aliasesRequestState = React.useState(() => ApiRequest.NotAsked);
   let bakersRequestState = React.useState(() => ApiRequest.NotAsked);
   let tokensRequestState = React.useState(() => ApiRequest.NotAsked);
+  let fungibleTokensRequestState = React.useState(() => ApiRequest.NotAsked);
   let nftsRequestsState = React.useState(() => Map.String.empty);
   let tokensRegistryRequestState = React.useState(() => ApiRequest.NotAsked);
   let secretsRequestState = React.useState(() => ApiRequest.NotAsked);
@@ -256,6 +260,7 @@ let make = (~children) => {
       aliasesRequestState,
       bakersRequestState,
       tokensRequestState,
+      fungibleTokensRequestState,
       nftsRequestsState,
       tokensRegistryRequestState,
       accountsTokensRequestState,
@@ -588,9 +593,13 @@ module Tokens = {
     store.tokensRequestState;
   };
 
-  let useGetAll = filter => {
-    let tokensRequestState = useRequestState();
-    TokensApiRequest.useLoadTokensFromCache(tokensRequestState, filter)
+  let useFungibleRequestState = () => {
+    let store = useStoreContext();
+    store.fungibleTokensRequestState;
+  };
+
+  let useGetTokens = (requestState, filter) => {
+    TokensApiRequest.useLoadTokensFromCache(requestState, filter)
     ->ApiRequest.mapWithDefault(
         TokensLibrary.Contracts.empty,
         fun
@@ -599,6 +608,16 @@ module Tokens = {
         // but this is due to the unification with the request
         | `Fetched(tokens, _) => tokens,
       );
+  };
+
+  let useGetAll = () => {
+    let tokensRequestState = useRequestState();
+    useGetTokens(tokensRequestState, `Any);
+  };
+
+  let useGetAllFungible = () => {
+    let fungibleTokensRequestState = useFungibleRequestState();
+    useGetTokens(fungibleTokensRequestState, `FT);
   };
 
   let useRegistryRequestState = () => {
@@ -669,7 +688,11 @@ module Tokens = {
 
   let useResetAll = () => {
     let (_, setTokensRequest) = useRequestState();
-    () => setTokensRequest(ApiRequest.expireCache);
+    let (_, setFungibleTokensRequest) = useRequestState();
+    () => {
+      setTokensRequest(ApiRequest.expireCache);
+      setFungibleTokensRequest(ApiRequest.expireCache);
+    };
   };
 
   let useResetAllAccountsTokens = () => {
@@ -947,7 +970,7 @@ module SelectedAccount = {
 module SelectedToken = {
   let useGet = () => {
     let store = useStoreContext();
-    let tokens = Tokens.useGetAll(`FT);
+    let tokens = Tokens.useGetAllFungible();
 
     /// FIXME: this is clearly a bug!
     switch (store.selectedTokenState, tokens) {
