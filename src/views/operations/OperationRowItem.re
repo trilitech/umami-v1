@@ -182,7 +182,14 @@ module AddToken = {
 
     <>
       <ModalAction visible=visibleModal onRequestClose=closeAction>
-        <TokenAddView chain address kind tokens closeAction />
+        <TokenAddView
+          chain
+          address
+          kind
+          tokens
+          cacheOnlyNFT=true
+          closeAction
+        />
       </ModalAction>
       <IconButton
         icon=Icons.AddToken.build

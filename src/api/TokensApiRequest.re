@@ -279,6 +279,19 @@ let useCreate = (~sideEffect=?, ()) => {
   );
 };
 
+let useCacheToken = (~sideEffect=?, ()) => {
+  let set = (~config, token) => TokensAPI.addTokenToCache(config, token);
+
+  ApiRequest.useSetter(
+    ~logOk=_ => I18n.token_created,
+    ~toast=false,
+    ~set,
+    ~kind=Logs.Tokens,
+    ~sideEffect?,
+    (),
+  );
+};
+
 type nfts = {
   tokens: TokensLibrary.WithBalance.t,
   holder: PublicKeyHash.t,
