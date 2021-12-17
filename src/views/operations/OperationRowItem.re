@@ -182,13 +182,7 @@ module AddToken = {
 
     <>
       <ModalAction visible=visibleModal onRequestClose=closeAction>
-        <TokenAddView
-          chain
-          address=(address :> string)
-          kind
-          tokens
-          closeAction
-        />
+        <TokenAddView chain address kind tokens closeAction />
       </ModalAction>
       <IconButton
         icon=Icons.AddToken.build
@@ -220,7 +214,7 @@ module UnknownTokenAmount = {
         disabled=true
         style=Style.(style(~borderRadius=0., ~marginLeft="4px", ()))
       />
-      <AddToken address=(address :> string) kind op tokens />
+      <AddToken address kind op tokens />
     </View>;
   };
 };
@@ -246,8 +240,7 @@ module KnownTokenAmount = {
          )
          ->React.string}
       </Text>
-      {registered
-         ? React.null : <AddToken address=(address :> string) kind op tokens />}
+      {registered ? React.null : <AddToken address kind op tokens />}
     </View>;
   };
 };
