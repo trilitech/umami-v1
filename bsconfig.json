@@ -14,9 +14,12 @@
       "type": "dev"
     }
   ],
-  "bsc-flags":
-  ["-bs-super-errors", "-bs-no-version-header", "-open Belt"
-   , "-open UmamiLibBase"],
+  "bsc-flags": [
+    "-bs-super-errors",
+    "-bs-no-version-header",
+    "-open Belt",
+    "-open UmamiLibBase"
+  ],
   "warnings": {
     "number": "-44-48-9-45"
   },
@@ -40,7 +43,8 @@
     "reason-test-framework",
     "bs-reform",
     "reschema",
-    "@reason-react-native/svg"
+    "@reason-react-native/svg",
+    "@glennsl/rescript-jest"
   ],
   "refmt": 3
 }
