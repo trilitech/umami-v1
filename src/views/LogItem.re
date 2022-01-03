@@ -257,8 +257,7 @@ module Toast = {
     let icon =
       switch (log.kind) {
       | Error
-      | Warning =>
-        <Icons.CloseOutline size=20. color={theme.colors.toastError} />
+      | Warning => <Icons.Error size=20. color={theme.colors.toastError} />
       | Info => <Icons.CheckOutline size=20. color={theme.colors.toastValid} />
       };
 

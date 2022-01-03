@@ -27,6 +27,12 @@ let p = Format.sprintf;
 
 module Btn = {
   let json = "JSON";
+  let download = "DOWNLOAD";
+  let yes = "YES";
+  let no = "NO";
+  let try_again = "TRY AGAIN";
+  let install_and_restart_now = "INSTALL AND RESTART NOW";
+  let ill_do_it_later = "I'LL DO IT LATER";
   let metadata = "METADATA";
   let collected = "COLLECTED";
   let gallery = "GALLERY";
@@ -152,6 +158,8 @@ module Label = {
   let account_create_name = "Name";
   let add_contact_name = "Name";
   let add_contact_address = "Address";
+  let check_for_updates = "Check for updates";
+  let automatically_download_updates = "Automatically download updates";
   let send_amount = "Amount";
   let send_sender = "Sender Account";
   let send_recipient = "Recipient Account";
@@ -290,6 +298,11 @@ module Title = {
   let custom_auth_success = "Successful authentification";
   let provider_authentification = pr => p("%s authentification", pr);
   let nft_specs = "View Specs";
+  let error_logs = "Logs";
+  let checking_for_updates = "Checking for Updates";
+  let install_update = "Install Update";
+  let update_available = "Update Available";
+  let wallet_up_to_date = p("Your wallet is up to date (v%s)");
   let secret_create = "Create New Secret";
   let derive_account = "Add Account";
   let account_update = "Edit Account";
@@ -532,6 +545,11 @@ module Wallet = {
 };
 
 module Errors = {
+  let download_error_status = p("Request failed with status code %d");
+  let download_error = "Error during file download";
+  let error_while_updating = "There's been an error while updating.";
+  let error_while_checking_updates = "Unable to check for updates.";
+  let unable_to_download = "Unable to download";
   let invalid_estimation_results = "Invalid estimation results";
   let request_to_node_failed = "Request to node failed";
   let every_balances_fail = "Every balances fail to load";
@@ -660,6 +678,8 @@ module Disclaimer = {
      agree to the terms of the User Agreement";
 };
 
+let download_question = "Do you want to download the latest update?";
+let restart_to_install_question = "Do you want to restart the app to install now? Please note that the update will be applied next time you restart Umami.";
 let unknown_operation = "Unknown";
 let error404 = "404 - Route Not Found :(";
 let no_balance_amount = "---- ";
@@ -749,3 +769,7 @@ let custom_network_deleted = "Network deleted";
 let hw = "H/W";
 let email = "email";
 let username = "username";
+let percent_complete = "% complete";
+let update_available = "An update is available";
+let downloading_update = p("Downloading update (%s%%)");
+let download_complete = "Download complete";

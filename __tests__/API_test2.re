@@ -8,6 +8,7 @@ let config =
     baseDir: () => System.(Path.Ops.(appDir() / (!"tezos-client"))),
     confirmations: 5,
     backupFile: None,
+    autoUpdates: true,
   };
 
 let pkh = s => s->PublicKeyHash.build->Result.getExn;

@@ -37,6 +37,7 @@ let styles =
           ~marginVertical=10.->dp,
           (),
         ),
+      "margin_left": style(~marginLeft=10.->dp, ()),
     })
   );
 
