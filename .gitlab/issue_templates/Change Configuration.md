@@ -11,6 +11,8 @@
 ### Area of the system
 <!-- This might only be one part, but may involve multiple sections !-->
 
+~Umami-stack::
+
 ### How does this currently work?
 <!-- The current process, and any associated business rules !-->
 
@@ -49,7 +51,9 @@
 
 @picdc (cc: @remyzorg ) Please approve this _configuration change_ on development aspects
 
-@comeh (cc: @philippewang) Please approve this _configuration change_ on operations aspects
+@comeh (cc: @philippewang.info) Please approve this _configuration change_ on operations aspects
+
+<!-- /assign @picdc @comeh @SamREye -->
 
 <!-- Quick actions for last approver : -->
 <!-- /unlabel ~"CAB::to-approve" -->
