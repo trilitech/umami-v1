@@ -51,11 +51,13 @@
 
 <!-- Trigger gitlab todo tasks --> 
 
-@picdc (cc: @remyzorg )    Please approve this _scheduled change_ on development aspects
+@picdc (cc: @remyzorg )    Please *approve* this _scheduled change_ on development aspects
 
-@comeh (cc: @philippewang) Please approve this _scheduled change_ on operations  aspects
+@comeh (cc: @philippewang.info) Please *approve* this _scheduled change_ on operations  aspects
 
-@SamREye                   Please approve this _scheduled change_ on business    aspects
+@SamREye                   Please *approve* this _scheduled change_ on business    aspects
+
+<!-- /assign @picdc @comeh @SamREye -->
 
 <!-- Quick actions for last approver : -->
 <!-- /unlabel ~"CAB::to-approve" -->
