@@ -46,8 +46,7 @@ apps:
       - audio-playback
       - pulseaudio
       - opengl
-      - raw-usb
-      - hidraw
+      - u2f-devices
     environment:
       # Correct the TMPDIR path for Chromium Framework/Electron to ensure
       # libappindicator has readable resources.
