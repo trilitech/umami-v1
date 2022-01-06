@@ -3,7 +3,7 @@
 /**
  * @jest-environment node
  */
-// We need to force node environment bevause test brakes in jsdom environment
+// We need to force node environment because test breaks in jsdom environment
 ";
 
 open TestFramework;
