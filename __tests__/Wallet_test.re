@@ -1,3 +1,11 @@
+%raw
+"
+/**
+ * @jest-environment node
+ */
+// We need to force node environment because test breaks in jsdom environment
+";
+
 open TestFramework;
 open System;
 
