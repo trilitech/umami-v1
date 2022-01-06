@@ -9,7 +9,7 @@ cache:
     - .yarn
 
 default:
-  image: node:current-buster
+  image: node:16-buster
 
   # Validate that the repository contains a package.json and extract a few values from it.
   before_script:
@@ -22,7 +22,7 @@ default:
     - NPM_PACKAGE_NAME=$(node -p "require('./package.json').name")
     - NPM_PACKAGE_VERSION=$(node -p "require('./package.json').version")
     - apt update
-    - apt -y install libpango1.0-dev libcairo2-dev libusb-1.0.0-dev libudev-dev
+    - apt -y install build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev libusb-1.0.0-dev libudev-dev
     - yarn --ignore-scripts
 
 
