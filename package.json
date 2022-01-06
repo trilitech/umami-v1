@@ -55,7 +55,8 @@
   "scripts": {
     "start": "cross-env NODE_ENV=development webpack serve --hot --host 0.0.0.0 --config=./webpack.dev.config.js --mode development",
     "build": "cross-env NODE_ENV=production webpack --config webpack.build.config.js --mode production",
-    "test": " npm rebuild usb-detection && yarn bsb:build && jest --coverage",
+    "test": " npm rebuild canvas && npm rebuild usb-detection && yarn bsb:build && jest -u --coverage",
+    "test:watch": "jest --verbose --watch",
     "bsb:start": "bsb -make-world -w",
     "bsb:build": "bsb -make-world",
     "bsb:clean": "bsb -clean-world",
@@ -178,6 +179,8 @@
     "@babel/preset-react": "^7.12.10",
     "@glennsl/rescript-jest": "^0.9.0",
     "babel-loader": "^8.2.2",
+    "bs-dom-testing-library": "^0.7.0",
+    "bs-react-testing-library": "^0.8.0",
     "copy-webpack-plugin": "8.0.0",
     "cross-env": "^7.0.2",
     "electron": "13.6.1",
