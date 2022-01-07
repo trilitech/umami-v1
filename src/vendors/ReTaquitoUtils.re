@@ -33,10 +33,10 @@ let () =
   Errors.registerHandler(
     "Taquito",
     fun
-    | No_prefix_matched => I18n.taquito#no_prefix_matched->Some
-    | Invalid_checksum => I18n.taquito#invalid_checksum->Some
-    | Invalid_length => I18n.taquito#invalid_length->Some
-    | ValidateAPIError(n) => I18n.taquito#api_error(n)->Some
+    | No_prefix_matched => I18n.Taquito.no_prefix_matched->Some
+    | Invalid_checksum => I18n.Taquito.invalid_checksum->Some
+    | Invalid_length => I18n.Taquito.invalid_length->Some
+    | ValidateAPIError(n) => I18n.Taquito.api_error(n)->Some
     | _ => None,
   );
 

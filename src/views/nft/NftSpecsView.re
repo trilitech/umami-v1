@@ -74,40 +74,40 @@ let buildFields = (t: TokenRepr.t) => {
     };
 
   let l =
-    (I18n.label#nft_spec_name, Mono(String(t.alias)))
-    @: (I18n.label#nft_spec_symbol, Mono(String(t.symbol)))
+    (I18n.Label.nft_spec_name, Mono(String(t.alias)))
+    @: (I18n.Label.nft_spec_symbol, Mono(String(t.symbol)))
     @: (
-      I18n.label#nft_spec_contract_address,
+      I18n.Label.nft_spec_contract_address,
       Mono(String((t.address :> string))),
     )
-    @: (I18n.label#nft_spec_token_id, Mono(String(tokenId)))
+    @: (I18n.Label.nft_spec_token_id, Mono(String(tokenId)))
     @: (
-      I18n.label#nft_spec_decimals,
+      I18n.Label.nft_spec_decimals,
       Mono(String(t.decimals->Int.toString)),
     )
     @: (
-      I18n.label#nft_spec_boolean_amount,
+      I18n.Label.nft_spec_boolean_amount,
       Mono(String(t.asset.isBooleanAmount->Js.String.make)),
     )
-    @: creators->Option.map(c => (I18n.label#nft_spec_creators, c))
+    @: creators->Option.map(c => (I18n.Label.nft_spec_creators, c))
     @? t.asset.thumbnailUri
        ->Option.map(uri =>
-           (I18n.label#nft_spec_thumbnail_uri, Mono(Uri(uri)))
+           (I18n.Label.nft_spec_thumbnail_uri, Mono(Uri(uri)))
          )
     @? t.asset.artifactUri
        ->Option.map(uri =>
-           (I18n.label#nft_spec_artifact_uri, Mono(Uri(uri)))
+           (I18n.Label.nft_spec_artifact_uri, Mono(Uri(uri)))
          )
     @? t.asset.displayUri
        ->Option.map(uri =>
-           (I18n.label#nft_spec_display_uri, Mono(Uri(uri)))
+           (I18n.Label.nft_spec_display_uri, Mono(Uri(uri)))
          )
     @? formats->Option.map(fmt =>
-         (I18n.label#nft_spec_formats, Multi(fmt->List.toArray))
+         (I18n.Label.nft_spec_formats, Multi(fmt->List.toArray))
        )
     @? t.asset.description
        ->Option.map(d =>
-           (I18n.label#nft_spec_description, Mono(String(d)))
+           (I18n.Label.nft_spec_description, Mono(String(d)))
          )
     @? [];
 
@@ -177,8 +177,8 @@ let make = (~closeAction, ~nft: Token.t) => {
   let headerActionButton = {
     let (icon, text) =
       switch (state) {
-      | Metadata => (Icons.Code.build, I18n.btn#json)
-      | Json => (Icons.Metadata.build, I18n.btn#metadata)
+      | Metadata => (Icons.Code.build, I18n.Btn.json)
+      | Json => (Icons.Metadata.build, I18n.Btn.metadata)
       };
 
     <ButtonAction
@@ -197,7 +197,7 @@ let make = (~closeAction, ~nft: Token.t) => {
   <ModalFormView
     style=styles##modal
     headerActionButton
-    title=I18n.title#nft_specs
+    title=I18n.Title.nft_specs
     closing={ModalFormView.Close(closeAction)}>
     {switch (state) {
      | Metadata =>

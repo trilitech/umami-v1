@@ -64,7 +64,7 @@ let make = (~closeAction) => {
           | Ok(pairingInfo) =>
             client
             ->Promise.fromOption(
-                ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
+                ~error=Errors.Generic(I18n.Errors.beacon_client_not_created),
               )
             ->Promise.flatMapOk(client =>
                 client->ReBeacon.WalletClient.addPeer(pairingInfo)
@@ -95,11 +95,11 @@ let make = (~closeAction) => {
     <View>
       <View style=FormStyles.header>
         <Typography.Headline style=styles##title>
-          I18n.title#beacon_pairing->React.string
+          I18n.Title.beacon_pairing->React.string
         </Typography.Headline>
       </View>
       <FormGroupTextInput
-        label=I18n.label#beacon_dapp_pairing
+        label=I18n.Label.beacon_dapp_pairing
         value={form.values.pairingRequest}
         placeholder={j|e.g. BSdNU2tFbvtHvFpWR7rjrHyna1VQkAFnz4CmDTqkohdCx4FS51WUpc5Z9YoNJqbtZpoDNJfencTaDp23fWQqcyL54F75puvwCfmC1RCn11RLyFHrCYKo7uJ7a9KR8txqb1712J78ZXpLEvjbALAacLPrrvcJxta6XpU8Cd6F8NUHqBGd2Y4oWD9iQnyXB7umC72djzJFJVEgN5Z37DdiXPscqCMs7mX6qpuhq8thyKCDVhkvT9sr9t5EU7LYMxUHJgDdBS8K2GfTf76NTrHNV9AqjWcbbGM4EpPtGjsB8g6DjoH3xTdAtb9GE1PB2pFvucUMWrdT|j}
         handleChange={form.handleChange(PairingRequest)}
@@ -115,7 +115,7 @@ let make = (~closeAction) => {
       />
       <View style=styles##verticalFormAction>
         <Buttons.SubmitPrimary
-          text=I18n.btn#beacon_connect_dapp
+          text=I18n.Btn.beacon_connect_dapp
           onPress={_ => form.submit()}
           disabledLook={!formFieldsAreValids}
         />
@@ -180,7 +180,7 @@ module WithQR = {
       Errors.registerHandler(
         "Media",
         fun
-        | StreamError => I18n.errors#stream->Some
+        | StreamError => I18n.Errors.stream->Some
         | _ => None,
       );
 
@@ -310,7 +310,7 @@ module WithQR = {
                )}
              />
            : <Typography.Overline2 style=FormStyles.textAlignCenter>
-               I18n.errors#video_stream_access_denied->React.string
+               I18n.Errors.video_stream_access_denied->React.string
              </Typography.Overline2>}
       </View>;
     };
@@ -361,10 +361,10 @@ module WithQR = {
       <View>
         <View style=FormStyles.header>
           <Typography.Headline>
-            I18n.title#beacon_pairing_qr->React.string
+            I18n.Title.beacon_pairing_qr->React.string
           </Typography.Headline>
           <Typography.Overline1 style=FormStyles.subtitle>
-            I18n.title#beacon_scan_qr->React.string
+            I18n.Title.beacon_scan_qr->React.string
           </Typography.Overline1>
         </View>
         {webcamScanning

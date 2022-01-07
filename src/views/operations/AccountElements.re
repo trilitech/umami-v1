@@ -76,7 +76,7 @@ module ShrinkedAddress = {
       <Typography.Address> res->React.string </Typography.Address>
       {clipboardId->ReactUtils.mapOpt(clipboardId =>
          <ClipboardButton
-           copied=I18n.log#beacon_sign_payload
+           copied=I18n.Log.beacon_sign_payload
            tooltipKey={"shrinked-address-" ++ clipboardId->Int.toString}
            addToast
            data=address
@@ -212,7 +212,7 @@ module Selector = {
 
       <>
         <Typography.Overline2>
-          I18n.t#account->React.string
+          I18n.account->React.string
         </Typography.Overline2>
         <View style=styles##spacer />
         <Selector

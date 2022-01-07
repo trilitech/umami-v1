@@ -59,7 +59,7 @@ let make = (~account: Account.t, ~token: option(Token.t)=?) => {
     <View style=styles##inner> <AccountInfo account ?token /> </View>
     <View style=styles##actionButtons>
       <ClipboardButton
-        copied=I18n.log#address
+        copied=I18n.Log.address
         tooltipKey=(account.address :> string)
         addToast
         data=(account.address :> string)

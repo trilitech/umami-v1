@@ -56,7 +56,7 @@ module EditButton = {
     <View style=styles##button>
       <ButtonAction
         onPress
-        text={mode->Mode.is_management ? I18n.btn#done_ : I18n.btn#edit}
+        text={mode->Mode.is_management ? I18n.Btn.done_ : I18n.Btn.edit}
         icon={mode->Mode.is_management ? Icons.List.build : Icons.Edit.build}
       />
     </View>;
@@ -77,7 +77,7 @@ module CreateAccountButton = {
       <View style=styles##button>
         <ButtonAction
           onPress={_ => showOnboarding()}
-          text=I18n.btn#create_or_import_secret
+          text=I18n.Btn.create_or_import_secret
           icon=Icons.Account.build
           primary=true
         />
@@ -101,7 +101,7 @@ module BuyTezButton = {
       <View style=styles##button>
         <ButtonAction
           onPress={_ => showOnboarding()}
-          text=I18n.btn#buy_tez
+          text=I18n.Btn.buy_tez
           icon=Icons.OpenExternal.build
           primary=true
         />
@@ -217,7 +217,7 @@ let make = (~showOnboarding, ~mode, ~setMode) => {
                 <EditButton mode setMode />
               </>}>
            <Typography.Headline style=Styles.title>
-             I18n.title#accounts->React.string
+             I18n.Title.accounts->React.string
            </Typography.Headline>
            {mode->Mode.is_management
               ? <BalanceTotal /> : <BalanceTotal.WithTokenSelector ?token />}

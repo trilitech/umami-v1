@@ -370,7 +370,7 @@ let title = {
   pub logs = "Logs";
   pub notice = "Disclaimer Notice";
   pub buy_tez = "Buy tez";
-  pub wert_recipient = "Please select the recipient account";
+  pub wert_recipient = "Please select the recipient account"
 };
 
 let expl = {
@@ -735,3 +735,5 @@ let t = {
   pub unregistered_token = "unregistered token";
   pub hw = "H/W"
 };
+
+include I18n_en;

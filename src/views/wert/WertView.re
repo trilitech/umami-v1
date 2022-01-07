@@ -61,18 +61,18 @@ module Form = {
       <>
         <View style=FormStyles.header>
           <Typography.Overline1>
-            I18n.title#wert_recipient->React.string
+            I18n.Title.wert_recipient->React.string
           </Typography.Overline1>
         </View>
         <FormGroupAccountSelector
-          label=I18n.label#send_recipient
+          label=I18n.Label.send_recipient
           value={form.values.recipient}
           handleChange={form.handleChange(Recipient)}
           error={form.getFieldError(Field(Recipient))}
         />
         <View style=FormStyles.verticalFormAction>
           <Buttons.SubmitPrimary
-            text=I18n.btn#buy_tez
+            text=I18n.Btn.buy_tez
             onPress={_ => form.submit()}
             loading
             disabledLook={!formFieldsAreValids}
@@ -112,8 +112,8 @@ let make = (~submit, ~closeAction) => {
 
   let title =
     switch (modalStep) {
-    | Disclaimer => I18n.title#notice
-    | SelectRecipient => I18n.title#buy_tez
+    | Disclaimer => I18n.Title.notice
+    | SelectRecipient => I18n.Title.buy_tez
     };
 
   let back = None;

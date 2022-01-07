@@ -28,7 +28,7 @@ module SecretCreateForm = ReForm.Make(StateLenses);
 
 let checkExists = (secrets, values: StateLenses.state): ReSchema.fieldState =>
   secrets->Array.some((v: Secret.derived) => v.secret.name == values.name)
-    ? Error(I18n.form_input_error#name_already_registered) : Valid;
+    ? Error(I18n.Form_input_error.name_already_registered) : Valid;
 
 [@react.component]
 let make = (~secret: Secret.derived, ~closeAction) => {
@@ -77,16 +77,16 @@ let make = (~secret: Secret.derived, ~closeAction) => {
 
   <ModalFormView closing={ModalFormView.Close(closeAction)}>
     <Typography.Headline style=FormStyles.header>
-      I18n.title#secret_update->React.string
+      I18n.Title.secret_update->React.string
     </Typography.Headline>
     <FormGroupTextInput
-      label=I18n.label#account_create_name
+      label=I18n.Label.account_create_name
       value={form.values.name}
       handleChange={form.handleChange(Name)}
       error={form.getFieldError(Field(Name))}
     />
     <Buttons.SubmitPrimary
-      text=I18n.btn#update
+      text=I18n.Btn.update
       onPress=onSubmit
       loading
       style=FormStyles.formSubmit

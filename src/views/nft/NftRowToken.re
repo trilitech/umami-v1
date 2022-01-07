@@ -78,7 +78,7 @@ let make =
 
   let theme = ThemeContext.useTheme();
 
-  let tooltip = (nft.alias, I18n.btn#view_nft);
+  let tooltip = (nft.alias, I18n.Btn.view_nft);
   let id = TokenRepr.id(nft);
   let hidden =
     React.useMemo1(
@@ -129,10 +129,10 @@ let make =
     </View>
     <View style=styles##rightItemsGroup>
       <Typography.Body1>
-        {I18n.label#editions(balance |> ReBigNumber.toString)->React.string}
+        {I18n.Label.editions(balance |> ReBigNumber.toString)->React.string}
       </Typography.Body1>
       <Typography.Body1 style=styles##marginLeftAuto>
-        {I18n.label#token_id(id |> Int.toString)->React.string}
+        {I18n.Label.token_id(id |> Int.toString)->React.string}
       </Typography.Body1>
       <IconButton
         onPress={_ => openAction()}

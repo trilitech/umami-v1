@@ -104,7 +104,7 @@ let actionButtons = (~indice, ~log: Logs.t, ~addToast, ~handleDelete) =>
     {<ClipboardButton
        isPrimary=false
        data={log.msg}
-       copied=I18n.log#log_content
+       copied=I18n.Log.log_content
        addToast
        style=styles##button
      />

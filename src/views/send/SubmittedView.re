@@ -44,18 +44,18 @@ let styles =
   );
 
 [@react.component]
-let make = (~hash, ~onPressCancel, ~submitText=I18n.btn#ok) => {
+let make = (~hash, ~onPressCancel, ~submitText=I18n.Btn.ok) => {
   let addToast = LogsContext.useToast();
 
   <View style=styles##container>
     <Typography.Headline style=styles##title>
-      I18n.title#operation_submitted->React.string
+      I18n.Title.operation_submitted->React.string
     </Typography.Headline>
     <Typography.Body2 colorStyle=`mediumEmphasis style=styles##body>
-      I18n.expl#operation->React.string
+      I18n.Expl.operation->React.string
     </Typography.Body2>
     <Typography.Overline2 style=styles##hashTitle>
-      I18n.t#operation_hash->React.string
+      I18n.operation_hash->React.string
     </Typography.Overline2>
     <View style=styles##addressContainer>
       <Typography.Address numberOfLines=1 style=styles##address>
@@ -63,7 +63,7 @@ let make = (~hash, ~onPressCancel, ~submitText=I18n.btn#ok) => {
       </Typography.Address>
       <ClipboardButton
         tooltipKey="OperationSubmitted"
-        copied=I18n.log#address
+        copied=I18n.Log.address
         addToast
         data=hash
       />

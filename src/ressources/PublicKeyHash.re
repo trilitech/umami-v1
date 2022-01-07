@@ -34,9 +34,9 @@ let () =
     "PublicKeyHash",
     fun
     | NotAnImplicit(a) =>
-      I18n.csv#cannot_parse_address(a, I18n.taquito#not_an_account)->Some
+      I18n.Csv.cannot_parse_address(a, I18n.Taquito.not_an_account)->Some
     | NotAContract(a) =>
-      I18n.csv#cannot_parse_address(a, I18n.taquito#not_a_contract)->Some
+      I18n.Csv.cannot_parse_address(a, I18n.Taquito.not_a_contract)->Some
     | _ => None,
   );
 

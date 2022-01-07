@@ -34,8 +34,8 @@ let () =
   Errors.registerHandler(
     "Wallet",
     fun
-    | KeyNotFound => I18n.wallet#key_not_found->Some
-    | KeyBadFormat(s) => I18n.wallet#key_bad_format(s)->Some
+    | KeyNotFound => I18n.Wallet.key_not_found->Some
+    | KeyBadFormat(s) => I18n.Wallet.key_bad_format(s)->Some
     | _ => None,
   );
 
@@ -314,12 +314,12 @@ module Ledger = {
       "Ledger",
       fun
       | InvalidPathSize(p) =>
-        I18n.wallet#invalid_path_size(p->Js.String.make)->Some
+        I18n.Wallet.invalid_path_size(p->Js.String.make)->Some
       | InvalidIndex(index, value) =>
-        I18n.wallet#invalid_index(index, value)->Some
-      | InvalidScheme(s) => I18n.wallet#invalid_scheme(s)->Some
-      | InvalidEncoding(e) => I18n.wallet#invalid_encoding(e)->Some
-      | InvalidLedger(p) => I18n.wallet#invalid_ledger(p)->Some
+        I18n.Wallet.invalid_index(index, value)->Some
+      | InvalidScheme(s) => I18n.Wallet.invalid_scheme(s)->Some
+      | InvalidEncoding(e) => I18n.Wallet.invalid_encoding(e)->Some
+      | InvalidLedger(p) => I18n.Wallet.invalid_ledger(p)->Some
       | _ => None,
     );
 

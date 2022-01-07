@@ -63,14 +63,14 @@ module SyncButton = {
     let (tooltip, icon, onPress) =
       switch (state) {
       | Loading(_) => (
-          I18n.tooltip#stop_sync,
+          I18n.Tooltip.stop_sync,
           Icons.Stop.build,
           (_ => onStop()),
         )
       | Done
       | NotInitiated
       | Canceled(_) => (
-          I18n.tooltip#sync,
+          I18n.Tooltip.sync,
           Icons.SyncNFT.build,
           (_ => onRefresh()),
         )

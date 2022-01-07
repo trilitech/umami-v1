@@ -61,7 +61,7 @@ module Component = {
            <Pagination
              elements={response.operations->sort}
              renderItem={renderItem(response.currentLevel)}
-             emptyComponent={I18n.t#empty_operations->React.string}
+             emptyComponent={I18n.empty_operations->React.string}
            />
          | Done(Error(error), _) => error->Errors.toString->React.string
          | NotAsked

@@ -69,7 +69,7 @@ let make = (~account: Alias.t, ~onPressCancel) => {
         (account.address :> string)->React.string
       </Typography.Address>
       <ClipboardButton
-        copied=I18n.log#address
+        copied=I18n.Log.address
         tooltipKey="QrView"
         addToast
         data=(account.address :> string)

@@ -62,7 +62,7 @@ module ClearButton = {
     let clearLogs = LogsContext.useClear();
     <View style=styles##button>
       <ButtonAction
-        text=I18n.t#logs_clearall
+        text=I18n.logs_clearall
         onPress={_ => clearLogs()}
         icon=Icons.Close.build
       />
@@ -81,7 +81,7 @@ let make = () => {
       {switch (errors) {
        | [] =>
          <Typography.Body1 style=styles##empty>
-           I18n.t#logs_no_recent->React.string
+           I18n.logs_no_recent->React.string
          </Typography.Body1>
        | errors =>
          errors

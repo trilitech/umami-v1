@@ -72,8 +72,8 @@ module TokenDeleteButton = {
     };
 
     <DeleteButton.IconButton
-      tooltip=("delete_token" ++ token.alias, I18n.btn#delete_token)
-      modalTitle=I18n.title#delete_token
+      tooltip=("delete_token" ++ token.alias, I18n.Btn.delete_token)
+      modalTitle=I18n.Title.delete_token
       onPressConfirmDelete
       request=tokenRequest
     />;
@@ -84,7 +84,7 @@ module TokenDeleteButton = {
 let make = (~token: Token.t) => {
   let tokenId =
     switch (token.kind) {
-    | FA1_2 => I18n.t#na
+    | FA1_2 => I18n.na
     | FA2(id) => Int.toString(id)
     };
   <Table.Row>

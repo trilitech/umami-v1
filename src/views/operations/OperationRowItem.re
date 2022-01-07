@@ -88,7 +88,7 @@ module AddContactButton = {
     let tooltip = (
       "add_contact_from_op"
       ++ Operation.Read.(operation->uniqueId->uniqueIdToString),
-      I18n.tooltip#add_contact,
+      I18n.Tooltip.add_contact,
     );
 
     let onPress = _e => openAction();
@@ -125,14 +125,14 @@ let status =
     (operation: Operation.Read.t, currentLevel, config: ConfigContext.env) => {
   let (txt, colorStyle) =
     switch (operation.status) {
-    | Mempool => (I18n.t#state_mempool, Some(`negative))
+    | Mempool => (I18n.state_mempool, Some(`negative))
     | Chain =>
       let minConfirmations = config.confirmations;
       let currentConfirmations = currentLevel - operation.level;
       currentConfirmations > minConfirmations
-        ? (I18n.t#state_confirmed, None)
+        ? (I18n.state_confirmed, None)
         : (
-          I18n.t#state_levels(currentConfirmations, minConfirmations),
+          I18n.state_levels(currentConfirmations, minConfirmations),
           Some(`negative),
         );
     };
@@ -174,7 +174,7 @@ module AddToken = {
 
     let tooltip = (
       "add_token_from_op" ++ Operation.Read.(op->uniqueId->uniqueIdToString),
-      I18n.tooltip#add_token,
+      I18n.Tooltip.add_token,
     );
     let onPress = _ => openAction();
 
@@ -211,7 +211,7 @@ let amount =
     {<Typography.Body1 ?colorStyle>
        {switch (transaction) {
         | Tez(transaction) =>
-          I18n.t#tez_op_amount(sign, transaction.amount->Tez.toString)
+          I18n.tez_op_amount(sign, transaction.amount->Tez.toString)
           ->React.string
         | Token(_, token_trans, _) =>
           let address = token_trans.contract;
@@ -226,7 +226,7 @@ let amount =
             let tooltip = (
               "unknown_token"
               ++ Operation.Read.(op->uniqueId->uniqueIdToString),
-              I18n.tooltip#unregistered_token_transaction,
+              I18n.Tooltip.unregistered_token_transaction,
             );
             <View style=styles##rawAddressContainer>
               <Text>
@@ -280,13 +280,13 @@ let make =
          <>
            <CellType>
              <Typography.Body1>
-               I18n.t#operation_reveal->React.string
+               I18n.operation_reveal->React.string
              </Typography.Body1>
            </CellType>
            <CellAmount />
            <CellFee>
              <Typography.Body1>
-               {I18n.t#tez_amount(operation.fee->Tez.toString)->React.string}
+               {I18n.tez_amount(operation.fee->Tez.toString)->React.string}
              </Typography.Body1>
            </CellFee>
            <CellAddress />
@@ -297,13 +297,13 @@ let make =
          <>
            <CellType>
              <Typography.Body1>
-               I18n.t#operation_transaction->React.string
+               I18n.operation_transaction->React.string
              </Typography.Body1>
            </CellType>
            {amount(account, transaction, tokens, operation)}
            <CellFee>
              <Typography.Body1>
-               {I18n.t#tez_amount(operation.fee->Tez.toString)->React.string}
+               {I18n.tez_amount(operation.fee->Tez.toString)->React.string}
              </Typography.Body1>
            </CellFee>
            <CellAddress>
@@ -324,7 +324,7 @@ let make =
          <>
            <CellType>
              <Typography.Body1>
-               I18n.t#operation_origination->React.string
+               I18n.operation_origination->React.string
              </Typography.Body1>
            </CellType>
            <CellAmount />
@@ -337,13 +337,13 @@ let make =
          <>
            <CellType>
              <Typography.Body1>
-               I18n.t#operation_delegation->React.string
+               I18n.operation_delegation->React.string
              </Typography.Body1>
            </CellType>
            <CellAmount />
            <CellFee>
              <Typography.Body1>
-               {I18n.t#tez_amount(operation.fee->Tez.toString)->React.string}
+               {I18n.tez_amount(operation.fee->Tez.toString)->React.string}
              </Typography.Body1>
            </CellFee>
            <CellAddress>
@@ -353,7 +353,7 @@ let make =
             ->Option.mapWithDefault(
                 <CellAddress>
                   <Typography.Body1 numberOfLines=1>
-                    I18n.t#delegation_removal->React.string
+                    I18n.delegation_removal->React.string
                   </Typography.Body1>
                 </CellAddress>,
                 d =>
@@ -366,7 +366,7 @@ let make =
          <>
            <CellType>
              <Typography.Body1>
-               I18n.t#unknown_operation->ReasonReact.string
+               I18n.unknown_operation->ReasonReact.string
              </Typography.Body1>
            </CellType>
            <CellAmount />
@@ -387,7 +387,7 @@ let make =
           tooltip=(
             "open_in_explorer"
             ++ Operation.Read.(operation->uniqueId->uniqueIdToString),
-            I18n.tooltip#open_in_explorer,
+            I18n.Tooltip.open_in_explorer,
           )
           onPress={_ => {
             switch (Network.externalExplorer(config.network.chain)) {

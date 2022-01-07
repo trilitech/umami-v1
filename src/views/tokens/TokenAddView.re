@@ -59,7 +59,7 @@ module FormAddress = {
   [@react.component]
   let make = (~form: TokenCreateForm.api) => {
     <FormGroupTextInput
-      label=I18n.label#add_token_address
+      label=I18n.Label.add_token_address
       value={form.values.address}
       handleChange={form.handleChange(Address)}
       error={
@@ -69,7 +69,7 @@ module FormAddress = {
         ]
         ->Option.firstSome
       }
-      placeholder=I18n.input_placeholder#add_token_address
+      placeholder=I18n.Input_placeholder.add_token_address
       clearButton=true
     />;
   };
@@ -83,7 +83,7 @@ module FormTokenId = {
         icon=Icons.Info.build
         size=19.
         iconSizeRatio=1.
-        tooltip=("formTokenId", I18n.tooltip#tokenid)
+        tooltip=("formTokenId", I18n.Tooltip.tokenid)
         disabled=true
         style=Style.(
           style(~borderRadius=0., ~marginLeft="4px", ~marginTop="5px", ())
@@ -91,11 +91,11 @@ module FormTokenId = {
       />;
 
     <FormGroupTextInput
-      label=I18n.label#add_token_id
+      label=I18n.Label.add_token_id
       value={form.values.tokenId}
       handleChange={form.handleChange(TokenId)}
       error={form.getFieldError(Field(TokenId))}
-      placeholder=I18n.input_placeholder#add_token_id
+      placeholder=I18n.Input_placeholder.add_token_id
       tooltipIcon
     />;
   };
@@ -106,25 +106,25 @@ module FormMetadata = {
   let make = (~form: TokenCreateForm.api) => {
     <>
       <FormGroupTextInput
-        label=I18n.label#add_token_name
+        label=I18n.Label.add_token_name
         value={form.values.name}
         handleChange={form.handleChange(Name)}
         error={form.getFieldError(Field(Name))}
-        placeholder=I18n.input_placeholder#add_token_name
+        placeholder=I18n.Input_placeholder.add_token_name
       />
       <FormGroupTextInput
-        label=I18n.label#add_token_symbol
+        label=I18n.Label.add_token_symbol
         value={form.values.symbol}
         handleChange={form.handleChange(Symbol)}
         error={form.getFieldError(Field(Symbol))}
-        placeholder=I18n.input_placeholder#add_token_symbol
+        placeholder=I18n.Input_placeholder.add_token_symbol
       />
       <FormGroupTextInput
-        label=I18n.label#add_token_decimals
+        label=I18n.Label.add_token_decimals
         value={form.values.decimals}
         handleChange={form.handleChange(Decimals)}
         error={form.getFieldError(Field(Decimals))}
-        placeholder=I18n.input_placeholder#add_token_decimals
+        placeholder=I18n.Input_placeholder.add_token_decimals
       />
     </>;
   };
@@ -226,9 +226,9 @@ let make = (~chain, ~address="", ~kind=?, ~closeAction) => {
             + custom(
                 state =>
                   switch (state.decimals->Int.fromString) {
-                  | None => Error(I18n.form_input_error#not_an_int)
+                  | None => Error(I18n.Form_input_error.not_an_int)
                   | Some(i) when i < 0 =>
-                    Error(I18n.form_input_error#negative_int)
+                    Error(I18n.Form_input_error.negative_int)
                   | Some(_) => Valid
                   },
                 Decimals,
@@ -237,9 +237,9 @@ let make = (~chain, ~address="", ~kind=?, ~closeAction) => {
                 state =>
                   switch (state.tokenId->Int.fromString) {
                   | None when state.tokenId == "" => Valid
-                  | None => Error(I18n.form_input_error#not_an_int)
+                  | None => Error(I18n.Form_input_error.not_an_int)
                   | Some(i) when i < 0 =>
-                    Error(I18n.form_input_error#negative_int)
+                    Error(I18n.Form_input_error.negative_int)
                   // mouif
                   | Some(_) => Valid
                   },
@@ -248,7 +248,7 @@ let make = (~chain, ~address="", ~kind=?, ~closeAction) => {
             + custom(
                 state =>
                   switch (PublicKeyHash.buildContract(state.address)) {
-                  | Error(_) => Error(I18n.form_input_error#invalid_key_hash)
+                  | Error(_) => Error(I18n.Form_input_error.invalid_key_hash)
                   | Ok(_) => Valid
                   },
                 Address,
@@ -257,7 +257,7 @@ let make = (~chain, ~address="", ~kind=?, ~closeAction) => {
                 state =>
                   switch (state.token) {
                   | Some(t) when t->TokenRepr.isNFT =>
-                    Error(I18n.t#error_register_not_fungible)
+                    Error(I18n.error_register_not_fungible)
                   | _ => Valid
                   },
                 TokenId,
@@ -296,7 +296,7 @@ let make = (~chain, ~address="", ~kind=?, ~closeAction) => {
         | `KFA2 => setStep(_ => TokenId(pkh))
         | `NotAToken => {
             form.raiseSubmitFailed(
-              I18n.form_input_error#not_a_token_contract->Some,
+              I18n.Form_input_error.not_a_token_contract->Some,
             );
             setStep(_ => Address);
           },
@@ -323,10 +323,10 @@ let make = (~chain, ~address="", ~kind=?, ~closeAction) => {
   let headlineText =
     switch (step) {
     | Address
-    | CheckToken => I18n.t#add_token_format_contract_sentence
-    | TokenId(_) => I18n.t#add_token_contract_tokenid_fa2
-    | Metadata(_, TokenRepr.FA2(_)) => I18n.t#add_token_contract_metadata_fa2
-    | Metadata(_, TokenRepr.FA1_2) => I18n.t#add_token_contract_metadata_fa1_2
+    | CheckToken => I18n.add_token_format_contract_sentence
+    | TokenId(_) => I18n.add_token_contract_tokenid_fa2
+    | Metadata(_, TokenRepr.FA2(_)) => I18n.add_token_contract_metadata_fa2
+    | Metadata(_, TokenRepr.FA1_2) => I18n.add_token_contract_metadata_fa1_2
     };
 
   React.useEffect2(
@@ -357,7 +357,7 @@ let make = (~chain, ~address="", ~kind=?, ~closeAction) => {
 
   <ModalFormView closing={ModalFormView.Close(closeAction)}>
     <Typography.Headline style=styles##title>
-      I18n.title#add_token->React.string
+      I18n.Title.add_token->React.string
     </Typography.Headline>
     tokenTag
     <Typography.Overline3 style=styles##overline>
@@ -375,7 +375,7 @@ let make = (~chain, ~address="", ~kind=?, ~closeAction) => {
        </>
      }}
     <Buttons.SubmitPrimary
-      text=I18n.btn#register
+      text=I18n.Btn.register
       onPress=onSubmit
       loading
       style=FormStyles.formSubmit

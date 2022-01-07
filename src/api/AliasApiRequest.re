@@ -51,7 +51,7 @@ let useLoad = requestState => {
 
 let useCreate =
   ApiRequest.useSetter(
-    ~logOk=_ => I18n.t#contact_added,
+    ~logOk=_ => I18n.contact_added,
     ~set=
       (~config, (alias, address)) =>
         WalletAPI.Aliases.add(~config, ~alias, ~address),
@@ -62,7 +62,7 @@ let useCreate =
 
 let useUpdate =
   ApiRequest.useSetter(
-    ~logOk=_ => I18n.t#contact_updated,
+    ~logOk=_ => I18n.contact_updated,
     ~set=
       (~config, renaming: WalletAPI.Aliases.renameParams) =>
         WalletAPI.Aliases.rename(~config, renaming),
@@ -74,7 +74,7 @@ let useUpdate =
 let useDelete = {
   let set = (~config, alias) => WalletAPI.Aliases.delete(~config, ~alias);
   ApiRequest.useSetter(
-    ~logOk=_ => I18n.t#contact_deleted,
+    ~logOk=_ => I18n.contact_deleted,
     ~set,
     ~kind=Logs.Aliases,
   );

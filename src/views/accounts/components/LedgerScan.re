@@ -80,7 +80,7 @@ let make = (~closeAction, ~index, ~secret) => {
       },
     )
     ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
-        I18n.t#account_created
+        I18n.account_created
       )
     ->Promise.getOk(_ => {closeAction()});
   };
@@ -103,17 +103,17 @@ let make = (~closeAction, ~index, ~secret) => {
     );
 
   <ModalFormView
-    title=I18n.title#scan closing={ModalFormView.Close(closeAction)}>
+    title=I18n.Title.scan closing={ModalFormView.Close(closeAction)}>
     {switch (status) {
      | StepInit(status) =>
        <>
          <Typography.Overline1
            fontSize=19. style=FormStyles.headerWithoutMarginBottom>
-           I18n.title#hardware_confirm_pkh->React.string
+           I18n.Title.hardware_confirm_pkh->React.string
          </Typography.Overline1>
          <Typography.Body2
            fontSize=14. style=FormStyles.headerWithoutMarginBottom>
-           I18n.expl#scan->React.string
+           I18n.Expl.scan->React.string
          </Typography.Body2>
          <InitLedgerView style status retry=ledgerInteract inline=true />
        </>

@@ -69,7 +69,7 @@ let make =
                 client
                 ->Promise.fromOption(
                     ~error=
-                      Errors.Generic(I18n.errors#beacon_client_not_created),
+                      Errors.Generic(I18n.Errors.beacon_client_not_created),
                   )
                 ->Promise.flatMapOk(client =>
                     client->ReBeacon.WalletClient.respond(
@@ -100,7 +100,7 @@ let make =
   let onAbort = _ => {
     client
     ->Promise.fromOption(
-        ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
+        ~error=Errors.Generic(I18n.Errors.beacon_client_not_created),
       )
     ->Promise.flatMapOk(client =>
         client->ReBeacon.WalletClient.respond(
@@ -118,29 +118,29 @@ let make =
     <View>
       <View style=FormStyles.header>
         <Typography.Headline style=styles##title>
-          I18n.title#beacon_connection_request->React.string
+          I18n.Title.beacon_connection_request->React.string
         </Typography.Headline>
         <Typography.Overline2
           colorStyle=`highEmphasis fontWeightStyle=`bold style=styles##dapp>
           permissionRequest.appMetadata.name->React.string
         </Typography.Overline2>
         <Typography.Overline3 colorStyle=`highEmphasis style=styles##dapp>
-          I18n.expl#beacon_dapp->React.string
+          I18n.Expl.beacon_dapp->React.string
         </Typography.Overline3>
         <Typography.Body2 colorStyle=`mediumEmphasis style=styles##dapp>
-          I18n.expl#beacon_dapp_request->React.string
+          I18n.Expl.beacon_dapp_request->React.string
         </Typography.Body2>
       </View>
       <FormGroupAccountSelector
-        label=I18n.label#beacon_account
+        label=I18n.Label.beacon_account
         value={form.values.account}
         handleChange={form.handleChange(Account)}
         error={form.getFieldError(Field(Account))}
       />
       <View style=styles##formActionSpaceBetween>
-        <Buttons.SubmitSecondary text=I18n.btn#deny onPress=onAbort />
+        <Buttons.SubmitSecondary text=I18n.Btn.deny onPress=onAbort />
         <Buttons.SubmitPrimary
-          text=I18n.btn#allow
+          text=I18n.Btn.allow
           onPress={_ => form.submit()}
         />
       </View>

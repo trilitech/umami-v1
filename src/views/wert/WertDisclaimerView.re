@@ -79,7 +79,7 @@ let make = (~onSign) => {
       <View>
         <CheckboxItem
           style=styles##checkboxLabel
-          label=I18n.disclaimer#agreement_checkbox
+          label=I18n.Disclaimer.agreement_checkbox
           labelFontWeightStyle=`regular
           labelStyle={Style.style(
             ~color=Typography.getColor(`highEmphasis, theme),
@@ -90,7 +90,7 @@ let make = (~onSign) => {
         />
       </View>
       <Buttons.SubmitPrimary
-        text=I18n.btn#disclaimer_agree
+        text=I18n.Btn.disclaimer_agree
         onPress={_ => form.submit()}
         disabledLook={!formFieldsAreValids}
         style=FormStyles.formSubmit

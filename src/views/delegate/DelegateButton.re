@@ -57,14 +57,14 @@ let make = (~zeroTez, ~action: Delegate.action, ~style as styleFromProp=?) => {
         theme.colors.primaryTextDisabled,
         theme.colors.primaryButtonBackground,
         None,
-        I18n.btn#delegate,
-        Some((tooltipId, I18n.tooltip#no_tez_no_delegation)),
+        I18n.Btn.delegate,
+        Some((tooltipId, I18n.Tooltip.no_tez_no_delegation)),
       )
     | Create(_) => (
         theme.colors.primaryTextHighEmphasis,
         theme.colors.primaryButtonBackground,
         None,
-        I18n.btn#delegate,
+        I18n.Btn.delegate,
         None,
       )
     | Edit(_)
@@ -72,8 +72,8 @@ let make = (~zeroTez, ~action: Delegate.action, ~style as styleFromProp=?) => {
         theme.colors.primaryTextDisabled,
         theme.colors.surfaceButtonBackground,
         Some(theme.colors.surfaceButtonOutline),
-        I18n.btn#delegated,
-        Some((tooltipId, I18n.tooltip#update_delegation)),
+        I18n.Btn.delegated,
+        Some((tooltipId, I18n.Tooltip.update_delegation)),
       )
     };
 

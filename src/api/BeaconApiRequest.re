@@ -26,7 +26,7 @@
 open Let;
 
 let makeClient = () =>
-  ReBeacon.WalletClient.make({name: I18n.label#beacon_client_name});
+  ReBeacon.WalletClient.make({name: I18n.Label.beacon_client_name});
 
 let dataFromURL = url => {
   URL.make(url)
@@ -43,8 +43,8 @@ let () =
   Errors.registerHandler(
     "BeaconAPI",
     fun
-    | ClientNotConnected => I18n.errors#beacon_client_not_created->Some
-    | NoDeeplink => I18n.errors#deeplinking_not_connected->Some
+    | ClientNotConnected => I18n.Errors.beacon_client_not_created->Some
+    | NoDeeplink => I18n.Errors.deeplinking_not_connected->Some
     | _ => None,
   );
 

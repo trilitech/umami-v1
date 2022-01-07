@@ -48,7 +48,7 @@ module AddTokenButton = {
 
     let tooltip =
       chain == None
-        ? Some(("add_token_button", I18n.tooltip#chain_not_connected)) : None;
+        ? Some(("add_token_button", I18n.Tooltip.chain_not_connected)) : None;
 
     <>
       <View style=styles##button>
@@ -56,7 +56,7 @@ module AddTokenButton = {
           disabled={chain == None}
           ?tooltip
           onPress
-          text=I18n.btn#add_token
+          text=I18n.Btn.add_token
           icon=Icons.Add.build
         />
       </View>
@@ -77,33 +77,33 @@ let make = () => {
 
   <Page>
     <Typography.Headline style=Styles.title>
-      I18n.title#tokens->React.string
+      I18n.Title.tokens->React.string
     </Typography.Headline>
     <AddTokenButton chain=?{apiVersion->Option.map(v => v.chain)} />
     <Table.Head>
       <TokenRowItem.CellStandard>
         <Typography.Overline3>
-          I18n.t#token_column_standard->React.string
+          I18n.token_column_standard->React.string
         </Typography.Overline3>
       </TokenRowItem.CellStandard>
       <TokenRowItem.CellName>
         <Typography.Overline3>
-          I18n.t#token_column_name->React.string
+          I18n.token_column_name->React.string
         </Typography.Overline3>
       </TokenRowItem.CellName>
       <TokenRowItem.CellSymbol>
         <Typography.Overline3>
-          I18n.t#token_column_symbol->React.string
+          I18n.token_column_symbol->React.string
         </Typography.Overline3>
       </TokenRowItem.CellSymbol>
       <TokenRowItem.CellAddress>
         <Typography.Overline3>
-          I18n.t#token_column_address->React.string
+          I18n.token_column_address->React.string
         </Typography.Overline3>
       </TokenRowItem.CellAddress>
       <TokenRowItem.CellTokenId>
         <Typography.Overline3>
-          I18n.t#token_column_tokenid->React.string
+          I18n.token_column_tokenid->React.string
         </Typography.Overline3>
       </TokenRowItem.CellTokenId>
       <TokenRowItem.CellAction> React.null </TokenRowItem.CellAction>
@@ -114,7 +114,7 @@ let make = () => {
        | Loading(None) => <LoadingView />
        | Loading(Some(tokens))
        | Done(Ok(tokens), _) when tokens->PublicKeyHash.Map.size == 0 =>
-         <Table.Empty> I18n.t#empty_token->React.string </Table.Empty>
+         <Table.Empty> I18n.empty_token->React.string </Table.Empty>
        | Loading(Some(tokens))
        | Done(Ok(tokens), _) =>
          tokens

@@ -48,10 +48,10 @@ let make = () => {
     <Icons.Nft.I size=272. color={theme.colors.textDisabled} style=iconStyle />
     <View style={style(~flex=1., ~paddingTop=150.->dp, ())}>
       <Typography.BigText style=textStyle>
-        I18n.t#you_dont_have_nft->React.string
+        I18n.you_dont_have_nft->React.string
       </Typography.BigText>
       <Typography.MediumText style=textStyle>
-        I18n.expl#nft_empty_state->React.string
+        I18n.Expl.nft_empty_state->React.string
       </Typography.MediumText>
     </View>
   </View>;

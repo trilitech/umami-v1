@@ -43,7 +43,7 @@ let make = (~secret: Secret.derived, ~closeAction) => {
 
   <ModalFormView closing={ModalFormView.Close(closeAction)}>
     <Typography.Headline style=FormStyles.header>
-      I18n.title#export->React.string
+      I18n.Title.export->React.string
     </Typography.Headline>
     {switch (recoveryPhraseRequest) {
      | Done(Ok(recoveryPhrase), _) => <RecoveryPhrase recoveryPhrase />

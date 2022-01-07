@@ -42,13 +42,13 @@ let make =
     icon=Icons.Copy.build
     tooltip=?{
       tooltipKey->Option.map(k =>
-        ("ClipboadButton" ++ k, I18n.tooltip#copy_clipboard)
+        ("ClipboadButton" ++ k, I18n.Tooltip.copy_clipboard)
       )
     }
     onPress={_ => {
       Navigator.Clipboard.write(data);
       addToast(
-        Logs.info(~origin=Logs, I18n.log#copied_to_clipboard(copied)),
+        Logs.info(~origin=Logs, I18n.Log.copied_to_clipboard(copied)),
       );
     }}
     ?style

@@ -125,9 +125,9 @@ module Cipher = {
       "SecureStorage",
       fun
       | KeyFromPasswordError(s) => s->Some
-      | DeriveKeyError => I18n.errors#key_derivation->Some
-      | DecryptError => I18n.errors#decryption->Some
-      | EncryptError => I18n.errors#encryption->Some
+      | DeriveKeyError => I18n.Errors.key_derivation->Some
+      | DecryptError => I18n.Errors.decryption->Some
+      | EncryptError => I18n.Errors.encryption->Some
       | _ => None,
     );
 

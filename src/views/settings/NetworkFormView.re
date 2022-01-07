@@ -57,16 +57,16 @@ let rsf = (err: Errors.t, raiseSubmitFailed) => {
 
 let nodeErrorFilter =
   fun
-  | Some("NodeError") => Some(I18n.form_input_error#node_not_available)
-  | Some("TwoErrors") => Some(I18n.form_input_error#node_not_available)
-  | Some("Inconsistency") => Some(I18n.form_input_error#different_chains)
+  | Some("NodeError") => Some(I18n.Form_input_error.node_not_available)
+  | Some("TwoErrors") => Some(I18n.Form_input_error.node_not_available)
+  | Some("Inconsistency") => Some(I18n.Form_input_error.different_chains)
   | _ => None;
 
 let mezosErrorFilter =
   fun
-  | Some("APIError") => Some(I18n.form_input_error#api_not_available)
-  | Some("TwoErrors") => Some(I18n.form_input_error#api_not_available)
-  | Some("Inconsistency") => Some(I18n.form_input_error#different_chains)
+  | Some("APIError") => Some(I18n.Form_input_error.api_not_available)
+  | Some("TwoErrors") => Some(I18n.Form_input_error.api_not_available)
+  | Some("Inconsistency") => Some(I18n.Form_input_error.different_chains)
   | _ => None;
 
 let styles =
@@ -131,7 +131,7 @@ let make = (~initNode=?, ~initMezos=?, ~action: action, ~closeAction) => {
       | Edit(network) => name != network.name
       }
     )
-      ? Error(I18n.form_input_error#name_already_taken(name)) : Valid;
+      ? Error(I18n.Form_input_error.name_already_taken(name)) : Valid;
 
   let form: NetworkCreateForm.api =
     NetworkCreateForm.use(
@@ -156,8 +156,8 @@ let make = (~initNode=?, ~initMezos=?, ~action: action, ~closeAction) => {
 
           let log =
             switch (action) {
-            | Create => I18n.t#custom_network_created
-            | Edit(_) => I18n.t#custom_network_updated
+            | Create => I18n.custom_network_created
+            | Edit(_) => I18n.custom_network_updated
             };
 
           let checkConfig = () => {
@@ -227,28 +227,28 @@ let make = (~initNode=?, ~initMezos=?, ~action: action, ~closeAction) => {
     <Typography.Headline style=FormStyles.headerWithoutMarginBottom>
       (
         switch (action) {
-        | Create => I18n.title#add_custom_network
-        | Edit(_) => I18n.title#update_custom_network
+        | Create => I18n.Title.add_custom_network
+        | Edit(_) => I18n.Title.update_custom_network
         }
       )
       ->React.string
     </Typography.Headline>
     {<Typography.Overline3 style=styles##overline>
-       I18n.expl#custom_network->React.string
+       I18n.Expl.custom_network->React.string
      </Typography.Overline3>
      ->ReactUtils.onlyWhen(action === Create)}
     <>
       <FormGroupTextInput
-        label=I18n.label#custom_network_name
+        label=I18n.Label.custom_network_name
         value={form.values.name}
-        placeholder=I18n.input_placeholder#custom_network_name
+        placeholder=I18n.Input_placeholder.custom_network_name
         handleChange={form.handleChange(Name)}
         error={form.getFieldError(Field(Name))}
       />
       <FormGroupTextInput
-        label={I18n.label#custom_network_node_url(false)}
+        label={I18n.Label.custom_network_node_url(false)}
         value={form.values.node}
-        placeholder=I18n.input_placeholder#custom_network_node_url
+        placeholder=I18n.Input_placeholder.custom_network_node_url
         handleChange={form.handleChange(Node)}
         error={
           [
@@ -266,9 +266,9 @@ let make = (~initNode=?, ~initMezos=?, ~action: action, ~closeAction) => {
         clearButton=true
       />
       <FormGroupTextInput
-        label=I18n.label#custom_network_mezos_url
+        label=I18n.Label.custom_network_mezos_url
         value={form.values.mezos}
-        placeholder=I18n.input_placeholder#custom_network_mezos_url
+        placeholder=I18n.Input_placeholder.custom_network_mezos_url
         handleChange={form.handleChange(Mezos)}
         error={
           [
@@ -289,8 +289,8 @@ let make = (~initNode=?, ~initMezos=?, ~action: action, ~closeAction) => {
     <Buttons.SubmitPrimary
       text={
         switch (action) {
-        | Create => I18n.btn#add
-        | Edit(_) => I18n.btn#update
+        | Create => I18n.Btn.add
+        | Edit(_) => I18n.Btn.update
         }
       }
       onPress=onSubmit

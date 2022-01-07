@@ -50,7 +50,7 @@ let make = (~closeAction) => {
     React.useState(_ => DerivationPath.Pattern.(default->fromTezosBip44));
 
   let closing =
-    ModalFormView.confirm(~actionText=I18n.btn#cancel, closeAction);
+    ModalFormView.confirm(~actionText=I18n.Btn.cancel, closeAction);
 
   let back =
     switch (formStep) {
@@ -62,27 +62,27 @@ let make = (~closeAction) => {
 
   <ModalFormView closing back>
     <Typography.Headline style=styles##title>
-      I18n.title#secret_create->React.string
+      I18n.Title.secret_create->React.string
     </Typography.Headline>
     {switch (formStep) {
      | Step1 =>
        <>
          <Typography.Overline3
            colorStyle=`highEmphasis style=styles##stepPager>
-           {I18n.t#stepof(1, 4)->React.string}
+           {I18n.stepof(1, 4)->React.string}
          </Typography.Overline3>
          <Typography.Overline1 style=styles##stepTitle>
-           I18n.t#account_create_record_recovery->React.string
+           I18n.account_create_record_recovery->React.string
          </Typography.Overline1>
          <DocumentContext.ScrollView showsVerticalScrollIndicator=true>
            <Typography.Body2 colorStyle=`mediumEmphasis style=styles##stepBody>
-             I18n.expl#secret_create_record_recovery->React.string
+             I18n.Expl.secret_create_record_recovery->React.string
            </Typography.Body2>
            <MnemonicListView mnemonic />
          </DocumentContext.ScrollView>
          <View style=FormStyles.verticalFormAction>
            <Buttons.SubmitPrimary
-             text=I18n.btn#create_account_record_ok
+             text=I18n.Btn.create_account_record_ok
              onPress={_ => setFormStep(_ => Step2)}
            />
          </View>
@@ -91,13 +91,13 @@ let make = (~closeAction) => {
        <>
          <Typography.Overline3
            colorStyle=`highEmphasis style=styles##stepPager>
-           {I18n.t#stepof(2, 4)->React.string}
+           {I18n.stepof(2, 4)->React.string}
          </Typography.Overline3>
          <Typography.Overline1 style=styles##stepTitle>
-           I18n.title#account_create_verify_phrase->React.string
+           I18n.Title.account_create_verify_phrase->React.string
          </Typography.Overline1>
          <Typography.Body2 colorStyle=`mediumEmphasis style=styles##stepBody>
-           I18n.expl#secret_create_record_verify->React.string
+           I18n.Expl.secret_create_record_verify->React.string
          </Typography.Body2>
          <VerifyMnemonicView
            mnemonic
@@ -105,18 +105,18 @@ let make = (~closeAction) => {
          />
        </>
      | Step3 =>
-       let subtitle = I18n.title#account_derivation_path;
+       let subtitle = I18n.Title.account_derivation_path;
 
        <>
          <Typography.Overline3
            colorStyle=`highEmphasis style=styles##stepPager>
-           {I18n.t#stepof(3, 4)->React.string}
+           {I18n.stepof(3, 4)->React.string}
          </Typography.Overline3>
          <Typography.Overline1 style=styles##stepTitle>
            subtitle->React.string
          </Typography.Overline1>
          {<Typography.Body2 colorStyle=`mediumEmphasis style=styles##stepBody>
-            I18n.expl#secret_select_derivation_path->React.string
+            I18n.Expl.secret_select_derivation_path->React.string
           </Typography.Body2>}
          <SelectDerivationPathView
            derivationPath
@@ -127,19 +127,19 @@ let make = (~closeAction) => {
      | Step4 =>
        let subtitle =
          noExistingPassword
-           ? I18n.title#account_create_password
-           : I18n.title#account_enter_password;
+           ? I18n.Title.account_create_password
+           : I18n.Title.account_enter_password;
 
        <>
          <Typography.Overline3
            colorStyle=`highEmphasis style=styles##stepPager>
-           {I18n.t#stepof(4, 4)->React.string}
+           {I18n.stepof(4, 4)->React.string}
          </Typography.Overline3>
          <Typography.Overline1 style=styles##stepTitle>
            subtitle->React.string
          </Typography.Overline1>
          {<Typography.Body2 colorStyle=`mediumEmphasis style=styles##stepBody>
-            I18n.expl#secret_create_password_not_recorded->React.string
+            I18n.Expl.secret_create_password_not_recorded->React.string
           </Typography.Body2>
           ->ReactUtils.onlyWhen(noExistingPassword)}
          <CreatePasswordView mnemonic derivationPath onSubmit=closeAction />

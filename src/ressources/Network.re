@@ -82,25 +82,25 @@ let () =
   Errors.registerHandler(
     "Network",
     fun
-    | API(NotAvailable(_)) => I18n.network#api_not_available->Some
+    | API(NotAvailable(_)) => I18n.Network.api_not_available->Some
     | API(VersionRPCError(err)) =>
-      I18n.network#api_version_rpc_error(err)->Some
-    | API(VersionFormat(v)) => I18n.network#api_version_format_error(v)->Some
+      I18n.Network.api_version_rpc_error(err)->Some
+    | API(VersionFormat(v)) => I18n.Network.api_version_format_error(v)->Some
     | API(MonitorRPCError(err)) =>
-      I18n.network#api_monitor_rpc_error(err)->Some
-    | Node(NotAvailable(_)) => I18n.network#node_not_available->Some
+      I18n.Network.api_monitor_rpc_error(err)->Some
+    | Node(NotAvailable(_)) => I18n.Network.node_not_available->Some
     | Node(ChainRPCError(err)) =>
-      I18n.network#node_version_rpc_error(err)->Some
+      I18n.Network.node_version_rpc_error(err)->Some
     | Node(VersionRPCError(err)) =>
-      I18n.network#node_version_rpc_error(err)->Some
+      I18n.Network.node_version_rpc_error(err)->Some
     | ChainInconsistency(api, node) =>
-      I18n.network#chain_inconsistency(api, node)->Some
+      I18n.Network.chain_inconsistency(api, node)->Some
     | UnknownChainId(chain_id) =>
-      I18n.network#unknown_chain_id(chain_id)->Some
+      I18n.Network.unknown_chain_id(chain_id)->Some
     | API(NotSupported(v)) =>
-      I18n.network#api_not_supported(Version.toString(v))->Some
-    | APIAndNodeError(_, _) => I18n.network#api_and_node_not_available->Some
-    | EndpointError => I18n.errors#no_valid_endpoint->Some
+      I18n.Network.api_not_supported(Version.toString(v))->Some
+    | APIAndNodeError(_, _) => I18n.Network.api_and_node_not_available->Some
+    | EndpointError => I18n.Errors.no_valid_endpoint->Some
     | _ => None,
   );
 

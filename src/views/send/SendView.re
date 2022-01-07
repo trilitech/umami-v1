@@ -72,7 +72,7 @@ module FormGroupAmountWithTokenSelector = {
       />
       {<FormGroup style=styles##tokenGroup>
          <FormLabel
-           label=I18n.label#token
+           label=I18n.Label.token
            style=FormGroupTextInput.styles##label
          />
          <TokenSelector
@@ -126,7 +126,7 @@ module Form = {
                 values =>
                   switch (values.recipient) {
                   | AnyString(_) =>
-                    Error(I18n.form_input_error#invalid_contract)
+                    Error(I18n.Form_input_error.invalid_contract)
                   | Valid(Alias(_)) => Valid
                   | Valid(Address(_)) => Valid
                   },
@@ -214,8 +214,8 @@ module Form = {
 
       let submitLabel =
         editing
-          ? I18n.btn#update
-          : batchMode ? I18n.btn#add_transaction : I18n.btn#send_submit;
+          ? I18n.Btn.update
+          : batchMode ? I18n.Btn.add_transaction : I18n.Btn.send_submit;
 
       let onSubmit = onSubmitAll->Option.getWithDefault(() => form.submit());
 
@@ -226,14 +226,14 @@ module Form = {
         <ReactFlipToolkit.FlippedView flipId="form">
           <View style=FormStyles.header>
             <Typography.Overline1>
-              I18n.title#send_many_transactions->React.string
+              I18n.Title.send_many_transactions->React.string
             </Typography.Overline1>
             <Typography.Body2 style=FormStyles.subtitle>
-              I18n.expl#send_many_transactions->React.string
+              I18n.Expl.send_many_transactions->React.string
             </Typography.Body2>
           </View>
           <FormGroupAmountWithTokenSelector
-            label=I18n.label#send_amount
+            label=I18n.Label.send_amount
             value={form.values.amount}
             handleChange={form.handleChange(Amount)}
             error={form.getFieldError(Field(Amount))}
@@ -243,14 +243,14 @@ module Form = {
           />
           <FormGroupAccountSelector
             disabled=batchMode
-            label=I18n.label#send_sender
+            label=I18n.Label.send_sender
             value={form.values.sender}
             handleChange={form.handleChange(Sender)}
             error={form.getFieldError(Field(Sender))}
             ?token
           />
           <FormGroupContactSelector
-            label=I18n.label#send_recipient
+            label=I18n.Label.send_recipient
             filterOut={form.values.sender->Option.map(Account.toAlias)}
             aliases
             value={form.values.recipient}
@@ -269,7 +269,7 @@ module Form = {
             {onAddToBatch->ReactUtils.mapOpt(addToBatch =>
                <Buttons.FormSecondary
                  style=FormStyles.formSecondary
-                 text=I18n.btn#start_batch_transaction
+                 text=I18n.Btn.start_batch_transaction
                  onPress={_ => addToBatch()}
                />
              )}
@@ -411,13 +411,13 @@ let make = (~closeAction) => {
         ledger: option(SigningBlock.LedgerView.state),
       ) {
       | (_, SigningStep(_, _), Some(WaitForConfirm)) =>
-        ModalFormView.Deny(I18n.tooltip#reject_on_ledger)->Some
+        ModalFormView.Deny(I18n.Tooltip.reject_on_ledger)->Some
 
       | (Pristine, _, _) when batch == [] =>
         ModalFormView.Close(closeAction)->Some
       | (_, SubmittedStep(_), _) => ModalFormView.Close(closeAction)->Some
       | _ =>
-        ModalFormView.confirm(~actionText=I18n.btn#send_cancel, closeAction)
+        ModalFormView.confirm(~actionText=I18n.Btn.send_cancel, closeAction)
         ->Some
       }
     };
@@ -447,8 +447,8 @@ let make = (~closeAction) => {
   let title =
     switch (modalStep) {
     | SendStep
-    | EditStep(_) => Some(I18n.title#send)
-    | BatchStep => Some(I18n.title#batch)
+    | EditStep(_) => Some(I18n.Title.send)
+    | BatchStep => Some(I18n.Title.batch)
     | SigningStep(_, _) => SignOperationView.makeTitle(sign)->Some
     | SubmittedStep(_) => None
     };
@@ -463,7 +463,7 @@ let make = (~closeAction) => {
              <SubmittedView
                hash
                onPressCancel
-               submitText=I18n.btn#go_operations
+               submitText=I18n.Btn.go_operations
              />
            | BatchStep =>
              <BatchView
@@ -500,8 +500,8 @@ let make = (~closeAction) => {
                signOpStep
                dryRun
                subtitle=(
-                 I18n.expl#confirm_operation,
-                 I18n.expl#hardware_wallet_confirm_operation,
+                 I18n.Expl.confirm_operation,
+                 I18n.Expl.hardware_wallet_confirm_operation,
                )
                operation={Operation.transaction(transfer)}
                sendOperation={sendTransfer(~transfer)}

@@ -31,7 +31,7 @@ let () =
     "LocalStorage",
     fun
     | MigrationFailed(v) =>
-      I18n.errors#storage_migration_failed(Version.toString(v))->Some
+      I18n.Errors.storage_migration_failed(Version.toString(v))->Some
     | _ => None,
   );
 

@@ -125,14 +125,14 @@ let () =
     "CSVParser",
     fun
     | CannotParseNumber(row, col) =>
-      I18n.csv#cannot_parse_number(row + 1, col + 1)->Some
+      I18n.Csv.cannot_parse_number(row + 1, col + 1)->Some
     | CannotParseBool(row, col) =>
-      I18n.csv#cannot_parse_boolean(row + 1, col + 1)->Some
+      I18n.Csv.cannot_parse_boolean(row + 1, col + 1)->Some
     | CannotParseCustomValue(e, row, col) =>
-      I18n.csv#cannot_parse_custom_value(e->Errors.toString, row + 1, col + 1)
+      I18n.Csv.cannot_parse_custom_value(e->Errors.toString, row + 1, col + 1)
       ->Some
-    | CannotParseRow(row) => I18n.csv#cannot_parse_row(row + 1)->Some
-    | CannotParseCSV => I18n.csv#cannot_parse_csv->Some
+    | CannotParseRow(row) => I18n.Csv.cannot_parse_row(row + 1)->Some
+    | CannotParseCSV => I18n.Csv.cannot_parse_csv->Some
     | _ => None,
   );
 

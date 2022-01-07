@@ -33,7 +33,7 @@ let () =
   Errors.registerHandler(
     "Version",
     fun
-    | VersionFormat(s) => I18n.errors#version_format(s)->Some
+    | VersionFormat(s) => I18n.Errors.version_format(s)->Some
     | _ => None,
   );
 

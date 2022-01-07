@@ -42,17 +42,17 @@ let styles =
 
 let computeTitle =
   fun
-  | `Found => I18n.title#hardware_wallet_confirm
-  | `Loading => I18n.title#hardware_wallet_search
-  | `Confirmed => I18n.title#hardware_wallet_confirmed
+  | `Found => I18n.Title.hardware_wallet_confirm
+  | `Loading => I18n.Title.hardware_wallet_search
+  | `Confirmed => I18n.Title.hardware_wallet_confirmed
   | `Denied(ReTaquitoError.LedgerInitTimeout) =>
-    I18n.title#hardware_wallet_not_found
+    I18n.Title.hardware_wallet_not_found
   | `Denied(ReTaquitoError.LedgerKeyRetrieval) =>
-    I18n.title#hardware_wallet_error_app
-  | `Denied(ReTaquitoError.LedgerDenied) => I18n.title#hardware_wallet_denied
+    I18n.Title.hardware_wallet_error_app
+  | `Denied(ReTaquitoError.LedgerDenied) => I18n.Title.hardware_wallet_denied
   | `Denied(ReTaquitoError.LedgerNotReady) =>
-    I18n.title#hardware_wallet_not_ready
-  | _ => I18n.title#hardware_wallet_error_unknown;
+    I18n.Title.hardware_wallet_not_ready
+  | _ => I18n.Title.hardware_wallet_error_unknown;
 
 let titleComponent = (t, inline, style) =>
   inline
@@ -87,7 +87,7 @@ let make = (~style=?, ~status, ~retry, ~inline=false) => {
          />
          {err->Errors.toString->React.string->expl}
          <Buttons.SubmitPrimary
-           text=I18n.btn#retry
+           text=I18n.Btn.retry
            style=styles##retry
            onPress={_ => retry()}
          />
@@ -99,7 +99,7 @@ let make = (~style=?, ~status, ~retry, ~inline=false) => {
            size=50.
            style=FormStyles.section##spacing
          />
-         {I18n.expl#hardware_wallet_confirmed->React.string->expl}
+         {I18n.Expl.hardware_wallet_confirmed->React.string->expl}
        </View>
      | (`Loading | `Found) as st =>
        <View style=styles##content>
@@ -111,8 +111,8 @@ let make = (~style=?, ~status, ~retry, ~inline=false) => {
          </View>
          (
            switch (st) {
-           | `Found => I18n.expl#hardware_wallet_confirm->React.string
-           | `Loading => I18n.expl#hardware_wallet_search->React.string
+           | `Found => I18n.Expl.hardware_wallet_confirm->React.string
+           | `Loading => I18n.Expl.hardware_wallet_search->React.string
            }
          )
          ->expl

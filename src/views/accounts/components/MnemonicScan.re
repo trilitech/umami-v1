@@ -62,7 +62,7 @@ let make = (~closeAction, ~index, ~secret) => {
       SecretApiRequest.{index, accounts: accounts->List.reverse, password},
     )
     ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
-        I18n.t#account_created
+        I18n.account_created
       )
     ->Promise.getOk(_ => {closeAction()});
   };
@@ -79,7 +79,7 @@ let make = (~closeAction, ~index, ~secret) => {
 
   <ModalFormView closing={ModalFormView.Close(closeAction)}>
     <Typography.Headline style=FormStyles.header>
-      I18n.title#scan->React.string
+      I18n.Title.scan->React.string
     </Typography.Headline>
     {switch (status) {
      | StepPassword =>

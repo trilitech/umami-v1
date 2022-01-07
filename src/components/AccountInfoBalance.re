@@ -45,9 +45,9 @@ module Balance = {
     switch (balanceRequest) {
     | Done(Ok(balance), _)
     | Loading(Some(balance)) =>
-      I18n.t#tez_amount(balance->Tez.toString)->React.string
+      I18n.tez_amount(balance->Tez.toString)->React.string
     | Done(Error(_error), _) =>
-      I18n.t#tez_amount(I18n.t#no_balance_amount)->React.string
+      I18n.tez_amount(I18n.no_balance_amount)->React.string
     | NotAsked
     | Loading(None) => <BalanceActivityIndicator />
     };
@@ -62,14 +62,14 @@ module BalanceToken = {
 
     switch (balanceTokenRequest) {
     | Done(Ok(balance), _)
-    | Loading(Some(balance: Token.Unit.t)) =>
-      I18n.t#amount(
+    | Loading(Some((balance: Token.Unit.t))) =>
+      I18n.amount(
         balance->Token.Unit.toStringDecimals(token.decimals),
         token.symbol,
       )
       ->React.string
     | Done(Error(_error), _) =>
-      I18n.t#amount(I18n.t#no_balance_amount, token.symbol)->React.string
+      I18n.amount(I18n.no_balance_amount, token.symbol)->React.string
 
     | NotAsked
     | Loading(None) => <BalanceActivityIndicator />

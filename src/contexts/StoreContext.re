@@ -351,7 +351,7 @@ module Balance = {
     Errors.registerHandler(
       "Context",
       fun
-      | EveryBalancesFail => I18n.errors#every_balances_fail->Some
+      | EveryBalancesFail => I18n.Errors.every_balances_fail->Some
       | _ => None,
     );
 
