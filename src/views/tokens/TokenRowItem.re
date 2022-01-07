@@ -65,23 +65,31 @@ module CellAction =
 module TokenDeleteButton = {
   [@react.component]
   let make = (~token: TokensLibrary.Token.t) => {
-    let (tokenRequest, deleteToken) = StoreContext.Tokens.useDelete();
+    let theme = ThemeContext.useTheme();
+    let (_tokenRequest, deleteToken) = StoreContext.Tokens.useDelete(false);
 
-    let onPressConfirmDelete = _e => {
+    let icon = (~color as _=?, ~style=?) =>
+      Icons.Delete.build(
+        ~style=Style.arrayOption([|style|]),
+        ~color=theme.colors.iconPrimary,
+      );
+
+    let onPress = _e => {
       switch (token) {
       | Full(token) => deleteToken(token)->Promise.ignore
       | Partial(_, _, _) => ()
       };
     };
 
-    <DeleteButton.IconButton
+    <IconButton
       tooltip=(
         "delete_token" ++ token->TokensLibrary.Token.uniqueKey,
         I18n.Btn.delete_token,
       )
-      modalTitle=I18n.Title.delete_token
-      onPressConfirmDelete
-      request=tokenRequest
+      icon
+      onPress
+      iconSizeRatio=1.1
+      size=46.
     />;
   };
 };

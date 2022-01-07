@@ -252,9 +252,9 @@ module Fungible = {
   };
 };
 
-let useDelete = (~sideEffect=?, ()) => {
+let useDelete = (~sideEffect=?, pruneCache) => {
   let set = (~config as _, token) =>
-    TokensAPI.removeToken(token, ~pruneCache=true)->Promise.value;
+    TokensAPI.removeToken(token, ~pruneCache)->Promise.value;
 
   ApiRequest.useSetter(
     ~logOk=_ => I18n.token_deleted,
