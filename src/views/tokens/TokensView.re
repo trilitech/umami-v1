@@ -71,57 +71,6 @@ module AddTokenButton = {
   };
 };
 
-module TableHeader = {
-  [@react.component]
-  let make = () => {
-    <Table.Head>
-      <TokenRowItem.CellStandard>
-        <Typography.Overline3>
-          I18n.token_column_standard->React.string
-        </Typography.Overline3>
-      </TokenRowItem.CellStandard>
-      <TokenRowItem.CellName>
-        <Typography.Overline3>
-          I18n.token_column_name->React.string
-        </Typography.Overline3>
-      </TokenRowItem.CellName>
-      <TokenRowItem.CellSymbol>
-        <Typography.Overline3>
-          I18n.token_column_symbol->React.string
-        </Typography.Overline3>
-      </TokenRowItem.CellSymbol>
-      <TokenRowItem.CellAddress>
-        <Typography.Overline3>
-          I18n.token_column_address->React.string
-        </Typography.Overline3>
-      </TokenRowItem.CellAddress>
-      <TokenRowItem.CellTokenId>
-        <Typography.Overline3>
-          I18n.token_column_tokenid->React.string
-        </Typography.Overline3>
-      </TokenRowItem.CellTokenId>
-      <TokenRowItem.CellAction> React.null </TokenRowItem.CellAction>
-    </Table.Head>;
-  };
-};
-
-let styles =
-  Style.(StyleSheet.create({"list": style(~paddingTop=4.->dp, ())}));
-
-let makeRowItem = ((token, registered)) =>
-  <TokenRowItem key={token->TokensLibrary.Token.uniqueKey} token registered />;
-
-let makeRows = tokens =>
-  <>
-    <TableHeader />
-    <View style=styles##list>
-      {tokens
-       ->TokensLibrary.Generic.valuesToArray
-       ->Array.map(makeRowItem)
-       ->React.array}
-    </View>
-  </>;
-
 [@react.component]
 let make = () => {
   let accounts = StoreContext.Accounts.useGetAll();
@@ -193,7 +142,7 @@ let make = () => {
            && unregistered->TokensLibrary.Contracts.isEmpty =>
        <Table.Empty> I18n.empty_token->React.string </Table.Empty>
      | Some(Ok((registered, unregistered))) =>
-       <> registered->makeRows unregistered->makeRows </>
+       <> <TokenRows tokens=registered /> <TokenRows tokens=unregistered /> </>
      }}
   </Page>;
 };
