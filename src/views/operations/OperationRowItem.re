@@ -76,6 +76,8 @@ let styles =
     StyleSheet.create({
       "rawAddressContainer":
         style(~display=`flex, ~flexDirection=`row, ~alignItems=`center, ()),
+      "image":
+        style(~marginLeft=10.->dp, ~width=19.->dp, ~height=19.->dp, ()),
     })
   );
 
@@ -182,9 +184,10 @@ module AddToken = {
       <ModalAction visible=visibleModal onRequestClose=closeAction>
         <TokenAddView
           chain
-          address=(address :> string)
+          address
           kind
           tokens
+          cacheOnlyNFT=true
           closeAction
         />
       </ModalAction>
@@ -195,6 +198,78 @@ module AddToken = {
         tooltip
       />
     </>;
+  };
+};
+
+module UnknownTokenAmount = {
+  [@react.component]
+  let make = (~amount, ~sign, ~address: PublicKeyHash.t, ~kind, ~tokens, ~op) => {
+    let tooltip = (
+      "unknown_token" ++ Operation.Read.(op->uniqueId->uniqueIdToString),
+      I18n.Tooltip.unregistered_token_transaction,
+    );
+    <View style=styles##rawAddressContainer>
+      <Text>
+        {Format.asprintf("%s %s", sign, amount->TokenRepr.Unit.toNatString)
+         ->React.string}
+      </Text>
+      <IconButton
+        icon=Icons.QuestionMark.build
+        size=19.
+        iconSizeRatio=1.
+        tooltip
+        disabled=true
+        style=Style.(style(~borderRadius=0., ~marginLeft="4px", ()))
+      />
+      <AddToken address kind op tokens />
+    </View>;
+  };
+};
+
+module KnownTokenAmount = {
+  [@react.component]
+  let make =
+      (
+        ~amount,
+        ~sign,
+        ~token as {address, kind, symbol, decimals, _}: TokenRepr.t,
+        ~registered,
+        ~tokens,
+        ~op,
+      ) => {
+    <View style=styles##rawAddressContainer>
+      <Text>
+        {Format.asprintf(
+           "%s %s %s",
+           sign,
+           amount->TokenRepr.Unit.toStringDecimals(decimals),
+           symbol,
+         )
+         ->React.string}
+      </Text>
+      {registered ? React.null : <AddToken address kind op tokens />}
+    </View>;
+  };
+};
+
+module NFTAmount = {
+  [@react.component]
+  let make = (~amount, ~sign, ~token: TokenRepr.t) => {
+    let source =
+      NftElements.useNftSource(token, NftFilesManager.getThumbnailURL);
+    <View style=styles##rawAddressContainer>
+      <Text>
+        {Format.asprintf(
+           "%s %s",
+           sign,
+           amount->TokenRepr.Unit.toStringDecimals(token.decimals),
+         )
+         ->React.string}
+      </Text>
+      {source->Option.mapDefault(<SVGIconNoImg />, source =>
+         <Image style=styles##image source />
+       )}
+    </View>;
   };
 };
 
@@ -219,54 +294,20 @@ let amount =
         | Tez(transaction) =>
           I18n.tez_op_amount(sign, transaction.amount->Tez.toString)
           ->React.string
-        | Token(_, token_trans, _) =>
-          let address = token_trans.contract;
+        | Token(_, {amount, kind, contract}, _) =>
+          let address = contract;
           let token: option((Token.t, bool)) =
             TokensLibrary.WithRegistration.getFullToken(
               tokens,
               address,
-              token_trans.kind->TokenRepr.kindId,
+              kind->TokenRepr.kindId,
             );
           switch (token) {
-          | None
-          | Some((_, false)) =>
-            let tooltip = (
-              "unknown_token"
-              ++ Operation.Read.(op->uniqueId->uniqueIdToString),
-              I18n.Tooltip.unregistered_token_transaction,
-            );
-            <View style=styles##rawAddressContainer>
-              <Text>
-                {Format.asprintf(
-                   "%s %s",
-                   sign,
-                   token_trans.amount->TokenRepr.Unit.toNatString,
-                 )
-                 ->React.string}
-              </Text>
-              <IconButton
-                icon=Icons.QuestionMark.build
-                size=19.
-                iconSizeRatio=1.
-                tooltip
-                disabled=true
-                style=Style.(style(~borderRadius=0., ~marginLeft="4px", ()))
-              />
-              <AddToken
-                address=(address :> string)
-                kind={token_trans.kind}
-                op
-                tokens
-              />
-            </View>;
-          | Some(({symbol, decimals, _}, _)) =>
-            Format.asprintf(
-              "%s %s %s",
-              sign,
-              token_trans.amount->TokenRepr.Unit.toStringDecimals(decimals),
-              symbol,
-            )
-            ->React.string
+          | None => <UnknownTokenAmount amount sign address kind tokens op />
+          | Some((token, _)) when token->TokenRepr.isNFT =>
+            <NFTAmount amount sign token />
+          | Some((token, registered)) =>
+            <KnownTokenAmount amount sign token registered tokens op />
           };
         }}
      </Typography.Body1>}

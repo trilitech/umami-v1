@@ -179,10 +179,28 @@ type step =
   | Metadata(PublicKeyHash.t, TokenRepr.kind);
 
 [@react.component]
-let make = (~chain, ~address="", ~kind=?, ~tokens, ~closeAction) => {
+let make =
+    (
+      ~chain,
+      ~address: option(PublicKeyHash.t)=?,
+      ~kind=?,
+      ~tokens,
+      ~cacheOnlyNFT=false,
+      ~closeAction,
+    ) => {
   let (tokenCreateRequest, createToken) = StoreContext.Tokens.useCreate();
+  let (cacheTokenRequest, cacheToken) = StoreContext.Tokens.useCacheToken();
   let (tokenKind, checkToken) = StoreContext.Tokens.useCheck(tokens);
   let (step, setStep) = React.useState(_ => Address);
+
+  let createToken = (token: TokenRepr.t) =>
+    !token->TokenRepr.isNFT
+      ? createToken(token)
+      : cacheOnlyNFT
+          ? cacheToken(token)
+          : Promise.err(
+              TokensAPI.RegisterNotAFungibleToken(token.address, token.kind),
+            );
 
   let onSubmit = ({state}: TokenCreateForm.onSubmitAPI) => {
     TokenCreateForm.(
@@ -254,7 +272,7 @@ let make = (~chain, ~address="", ~kind=?, ~tokens, ~closeAction) => {
             + custom(
                 state =>
                   switch (state.token) {
-                  | Some(t) when t->TokensLibrary.Token.isNFT =>
+                  | Some(t) when t->TokensLibrary.Token.isNFT && !cacheOnlyNFT =>
                     Error(I18n.error_register_not_fungible)
                   | _ => Valid
                   },
@@ -267,7 +285,7 @@ let make = (~chain, ~address="", ~kind=?, ~tokens, ~closeAction) => {
       ~onSubmit,
       ~initialState={
         name: "",
-        address,
+        address: address->Option.mapDefault("", k => (k :> string)),
         symbol: "",
         decimals: "",
         tokenId:
@@ -348,7 +366,9 @@ let make = (~chain, ~address="", ~kind=?, ~tokens, ~closeAction) => {
     (pkh, tokenId),
   );
 
-  let loading = tokenCreateRequest->ApiRequest.isLoading;
+  let loading =
+    tokenCreateRequest->ApiRequest.isLoading
+    || cacheTokenRequest->ApiRequest.isLoading;
 
   let formFieldsAreValids =
     FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
