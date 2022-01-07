@@ -108,6 +108,20 @@ module TableHeader = {
 let styles =
   Style.(StyleSheet.create({"list": style(~paddingTop=4.->dp, ())}));
 
+let makeRowItem = ((token, registered)) =>
+  <TokenRowItem key={token->TokensLibrary.Token.uniqueKey} token registered />;
+
+let makeRows = tokens =>
+  <>
+    <TableHeader />
+    <View style=styles##list>
+      {tokens
+       ->TokensLibrary.Generic.valuesToArray
+       ->Array.map(makeRowItem)
+       ->React.array}
+    </View>
+  </>;
+
 [@react.component]
 let make = () => {
   let accounts = StoreContext.Accounts.useGetAll();
@@ -170,31 +184,16 @@ let make = () => {
         )
       }
     />
-    <TableHeader />
-    <View style=styles##list>
-      {switch (partitionedTokens) {
-       | None => <LoadingView />
-       | Some(Ok((tokens, _))) when tokens->TokensLibrary.Contracts.isEmpty =>
-         <Table.Empty> I18n.empty_token->React.string </Table.Empty>
-       | Some(Ok((registeredTokens, _))) =>
-         registeredTokens
-         ->TokensLibrary.Generic.valuesToArray
-         ->Array.keepMap(
-             fun
-             | (Full(_) as token, registered) =>
-               {
-                 <TokenRowItem
-                   key={token->TokensLibrary.Token.uniqueKey}
-                   token
-                   registered
-                 />;
-               }
-               ->Some
-             | _ => None,
-           )
-         ->React.array
-       | Some(Error(error)) => <ErrorView error />
-       }}
-    </View>
+    {switch (partitionedTokens) {
+     | None => <LoadingView />
+     | Some(Error(error)) => <ErrorView error />
+     | Some(Ok((registered, unregistered)))
+         when
+           registered->TokensLibrary.Contracts.isEmpty
+           && unregistered->TokensLibrary.Contracts.isEmpty =>
+       <Table.Empty> I18n.empty_token->React.string </Table.Empty>
+     | Some(Ok((registered, unregistered))) =>
+       <> registered->makeRows unregistered->makeRows </>
+     }}
   </Page>;
 };
