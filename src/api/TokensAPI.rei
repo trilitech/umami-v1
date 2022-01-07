@@ -52,6 +52,10 @@ let updateNFTsVisibility:
 
 let removeToken: (TokenRepr.t, ~pruneCache: bool) => Let.result(unit);
 
+let cachedTokensWithRegistration:
+  (ConfigContext.env, [ | `Any | `FT | `NFT]) =>
+  Promise.t([> | `Cached(TokensLibrary.WithRegistration.t)]);
+
 module Fetch: {
   // Returns the tokens contracts accounts have interacted with
   let tokenContracts:
@@ -89,10 +93,9 @@ module Fetch: {
       (array(TokensLibrary.Token.t), array(TokensLibrary.Token.t), int),
     );
 
-  type fetched = [
-    | `Cached(TokensLibrary.WithBalance.t)
-    | `Fetched(TokensLibrary.WithBalance.t, int)
-  ];
+  type fetched('tokens) = [ | `Cached('tokens) | `Fetched('tokens, int)];
+
+  type fetchedNFTs = fetched(TokensLibrary.WithBalance.t);
 
   let accountNFTs:
     (
@@ -104,8 +107,21 @@ module Fetch: {
       ~allowHidden: bool,
       ~fromCache: bool
     ) =>
-    Promise.t(fetched);
+    Promise.t(fetchedNFTs);
 
-  let accountTokensNumber:
-    (ConfigContext.env, ~account: PublicKeyHash.t) => Promise.t(int);
+  let accountsTokensNumber:
+    (ConfigContext.env, ~accounts: list(PublicKeyHash.t)) => Promise.t(int);
+
+  type fetchedTokens = fetched(TokensLibrary.WithRegistration.t);
+
+  let accountsFungibleTokensWithRegistration:
+    (
+      ConfigContext.env,
+      ~accounts: list(PublicKeyHash.t),
+      ~numberByAccount: int,
+      ~onTokens: (~total: int, ~lastToken: int) => unit,
+      ~onStop: unit => bool,
+      ~fromCache: bool
+    ) =>
+    Promise.t(fetchedTokens);
 };

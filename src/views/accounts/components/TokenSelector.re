@@ -129,14 +129,15 @@ let make =
       ~style as styleProp=?,
       ~renderButton=renderButton,
     ) => {
-  let tokens = StoreContext.Tokens.useGetAll();
+  let tokens = StoreContext.Tokens.useGetAllFungible();
 
   let items =
     tokens
     ->TokensLibrary.Generic.valuesToArray
     ->Array.keepMap(
         fun
-        | (TokensLibrary.Token.Full(t), _) => t->Token->Some
+        | (TokensLibrary.Token.Full(t), true) => t->Token->Some
+        | (Full(_), false)
         | (Partial(_), _) => None,
       );
 

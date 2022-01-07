@@ -24,6 +24,7 @@
 /*****************************************************************************/
 
 include Belt.Map;
+open List.Infix;
 
 /** Real OCaml maps functor */
 module type S = {
@@ -59,6 +60,9 @@ module type S = {
     ((t(key, 'a, id), t(key, 'a, id)), option('a));
 
   let keepMap: (t(key, 'a, id), (key, 'a) => option('b)) => t(key, 'b, id);
+
+  let keysToList: t(key, 'a, id) => list(key);
+  let keysToListReversed: t(key, 'a, id) => list(key);
 };
 
 module Make = (Key: Belt.Id.Comparable) : (S with module Key := Key) => {
@@ -91,6 +95,9 @@ module Make = (Key: Belt.Id.Comparable) : (S with module Key := Key) => {
       | Some(newValue) => kept->set(key, newValue)
       }
     );
+
+  let keysToListReversed = map => map->reduce([], (acc, k, _) => k @: acc);
+  let keysToList = map => map->keysToListReversed->List.reverse;
 };
 
 let keepMapInt = (map: Int.t('a), f: (int, 'a) => option('b)): Int.t('b) =>

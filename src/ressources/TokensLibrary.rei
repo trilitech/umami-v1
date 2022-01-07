@@ -38,6 +38,9 @@ module Token: {
   let isNFT: t => bool;
 };
 
+module Contracts = PublicKeyHash.Map;
+module Ids = Map.Int;
+
 module Generic: {
   // A generic cached contract with its tokens
   type contract('tokens) = {
@@ -46,7 +49,7 @@ module Generic: {
     tokens: Map.Int.t('tokens),
   };
 
-  type t('token) = PublicKeyHash.Map.map(contract('token));
+  type t('token) = Contracts.map(contract('token));
 
   let empty: t('token);
 
@@ -59,6 +62,10 @@ module Generic: {
       ~updatedValue: option('token) => option('token)
     ) =>
     t('token);
+  let reduce: (t('token), 'a, ('a, PublicKeyHash.t, int, 'token) => 'a) => 'a;
+
+  let map: (t('token), 'token => 'mapped) => t('mapped);
+
   let valuesToArray: t('token) => array('token);
 
   let keepMap:
@@ -67,6 +74,10 @@ module Generic: {
 
   let keepTokens:
     (t('token), (PublicKeyHash.t, int, 'token) => bool) => t('token);
+
+  let keepPartition:
+    (t('token), (PublicKeyHash.t, int, 'token) => option(bool)) =>
+    (t('token), t('token));
 };
 
 module WithBalance: {
@@ -77,6 +88,17 @@ module WithBalance: {
   let mergeAndUpdateBalance: (t, t) => t;
   let getFullToken:
     (t, PublicKeyHash.t, int) => option((TokenRepr.t, ReBigNumber.t));
+};
+
+module WithRegistration: {
+  type token = (Token.t, bool);
+  type contract = Generic.contract(token);
+  type t = Generic.t(token);
+
+  let keepAndSetRegistration:
+    (Generic.t('token), RegisteredTokens.t, 'token => option(Token.t)) => t;
+
+  let getFullToken: (t, PublicKeyHash.t, int) => option((TokenRepr.t, bool));
 };
 
 type t = Generic.t(Token.t);

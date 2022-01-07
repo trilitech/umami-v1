@@ -72,8 +72,53 @@ let styles =
 
 [@react.component]
 let make = () => {
-  let tokensRequest = StoreContext.Tokens.useRequest();
+  let accounts = StoreContext.Accounts.useGetAll();
   let apiVersion: option(Network.apiVersion) = StoreContext.useApiVersion();
+
+  let accounts = accounts->PublicKeyHash.Map.keysToList;
+  let request = fromCache =>
+    TokensApiRequest.{
+      request: Fungible.{accounts, numberByAccount: BCD.requestPageSize},
+      fromCache,
+    };
+
+  // will be used to indicate a percentage of tokens loaded
+  let onTokens = (~total as _, ~lastToken as _) => ();
+  let onStop = () => false;
+
+  let (tokensRequest, _) =
+    StoreContext.Tokens.useFetchTokens(
+      onTokens,
+      onStop,
+      accounts,
+      request(true),
+    );
+
+  let tokens =
+    switch (tokensRequest) {
+    | NotAsked
+    | Loading(None) => None
+
+    | Loading(Some(`Cached(tokens) | `Fetched(tokens, _)))
+    | Done(Ok(`Cached(tokens) | `Fetched(tokens, _)), _) =>
+      Some(Ok(tokens))
+
+    | Done(Error(error), _) => Some(Error(error))
+    };
+
+  let partitionedTokens =
+    React.useMemo1(
+      () => {
+        tokens->Option.map(tokens =>
+          tokens->Result.map(tokens =>
+            tokens->TokensLibrary.Generic.keepPartition((_, _, (t, reg)) =>
+              t->TokensLibrary.Token.isNFT ? None : Some(reg)
+            )
+          )
+        )
+      },
+      [|tokens|],
+    );
 
   <Page>
     <Typography.Headline style=Styles.title>
@@ -109,27 +154,24 @@ let make = () => {
       <TokenRowItem.CellAction> React.null </TokenRowItem.CellAction>
     </Table.Head>
     <View style=styles##list>
-      {switch (tokensRequest) {
-       | NotAsked
-       | Loading(None) => <LoadingView />
-       | Loading(Some(tokens))
-       | Done(Ok(tokens), _) when tokens->PublicKeyHash.Map.size == 0 =>
+      {switch (partitionedTokens) {
+       | None => <LoadingView />
+       | Some(Ok((tokens, _))) when tokens->TokensLibrary.Contracts.isEmpty =>
          <Table.Empty> I18n.empty_token->React.string </Table.Empty>
-       | Loading(Some(tokens))
-       | Done(Ok(tokens), _) =>
+       | Some(Ok((tokens, _))) =>
          tokens
          ->TokensLibrary.Generic.valuesToArray
          ->Array.keepMap(
              fun
-             | (Full(token), _) =>
+             | (Full(token), true) =>
                {
                  <TokenRowItem key=(token.address :> string) token />;
                }
                ->Some
-             | (Partial(_, _, _), _) => None,
+             | _ => None,
            )
          ->React.array
-       | Done(Error(error), _) => <ErrorView error />
+       | Some(Error(error)) => <ErrorView error />
        }}
     </View>
   </Page>;

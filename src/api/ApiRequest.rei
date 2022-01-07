@@ -115,6 +115,9 @@ let isDoneOk: t('a) => bool;
    is higher than the delay */
 let isExpired: t('a) => bool;
 
+/* Returns [true] if the ressource has been explicitely expired */
+let isForceExpired: t('a) => bool;
+
 /* Produces an error log side effect if the given futur computes as an error.
    [keep] aims at filtering some errors based on the error value. No error is
    filtered by default */

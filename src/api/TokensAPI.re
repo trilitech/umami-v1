@@ -333,6 +333,39 @@ let metadataToToken =
     asset: metadata->metadataToAsset,
   };
 
+let handleRegistrationStatus = (cache, keepMap) => {
+  let%AwaitMap registered =
+    TokenStorage.Registered.getWithFallback()->Promise.value;
+
+  TokensLibrary.WithRegistration.keepAndSetRegistration(
+    cache,
+    registered,
+    keepMap,
+  );
+};
+
+let keepToken = (token, config: ConfigContext.env, filter) => {
+  let kindOk =
+    switch (filter) {
+    | `Any => true
+    | `FT => !token->TokensLibrary.Token.isNFT
+    | `NFT => token->TokensLibrary.Token.isNFT
+    };
+
+  TokensLibrary.Token.chain(token)
+  == config.network.Network.chain->Network.getChainId->Some
+  && kindOk;
+};
+
+let cachedTokensWithRegistration = (config, filter) => {
+  let%Await cache = TokenStorage.Cache.getWithFallback()->Promise.value;
+  let%AwaitMap tokens =
+    cache->handleRegistrationStatus(token =>
+      token->keepToken(config, filter) ? Some(token) : None
+    );
+  `Cached(tokens);
+};
+
 module Fetch = {
   // Returns the known list of multiple accounts' tokens
   let tokenContracts = (config, ~accounts, ~kinds=?, ~limit=?, ~index=?, ()) => {
@@ -701,17 +734,21 @@ module Fetch = {
     (registered, toRegister, nextIndex);
   };
 
-  let fetchAccountTokensStreamed =
-      (config, ~account, ~index, ~numberByAccount, ~onTokens, ~onStop) => {
-    let onceFinished = (tokens, number) => {
-      let%Await () = tokens->registerNFTs(account)->FutureBase.value;
-      Promise.ok((tokens, number));
-    };
+  let fetchAccountsTokensStreamed =
+      (
+        config,
+        ~accounts,
+        ~index,
+        ~numberByAccount,
+        ~onTokens,
+        ~onStop,
+        ~onceFinished,
+      ) => {
     let rec get = (accumulatedTokens, index) => {
-      let%Await (_, fetchedTokens, nextIndex) =
+      let%Await (fullCache, fetchedTokens, nextIndex) =
         fetchAccountsTokens(
           config,
-          ~accounts=[account],
+          ~accounts,
           ~index,
           ~numberByAccount,
           ~onTokens,
@@ -723,16 +760,15 @@ module Fetch = {
           fetchedTokens,
         );
       nextIndex <= index || onStop()
-        ? onceFinished(accumulatedTokens, nextIndex)
+        ? onceFinished(fullCache, accumulatedTokens, nextIndex)
         : get(accumulatedTokens, nextIndex);
     };
     get(TokensLibrary.Generic.empty, index);
   };
 
-  type fetched = [
-    | `Cached(TokensLibrary.WithBalance.t)
-    | `Fetched(TokensLibrary.WithBalance.t, int)
-  ];
+  type fetched('tokens) = [ | `Cached('tokens) | `Fetched('tokens, int)];
+
+  type fetchedNFTs = fetched(TokensLibrary.WithBalance.t);
 
   let accountNFTs =
       (
@@ -744,6 +780,11 @@ module Fetch = {
         ~allowHidden,
         ~fromCache,
       ) => {
+    let onceFinished = (_, tokens, number) => {
+      let%Await () = tokens->registerNFTs(account)->FutureBase.value;
+      Promise.ok((tokens, number));
+    };
+
     let getFromCache = () => {
       let%AwaitMap tokens =
         registeredTokens(`NFT((account, allowHidden)))->Promise.value;
@@ -752,13 +793,14 @@ module Fetch = {
 
     let getFromNetwork = () => {
       let%AwaitMap (tokens, number) =
-        fetchAccountTokensStreamed(
+        fetchAccountsTokensStreamed(
           config,
-          ~account,
+          ~accounts=[account],
           ~index=0,
           ~numberByAccount,
           ~onTokens,
           ~onStop,
+          ~onceFinished,
         );
       `Fetched((
         tokens->TokensLibrary.Generic.keepTokens((_, _, (token, _)) =>
@@ -770,10 +812,46 @@ module Fetch = {
     fromCache ? getFromCache() : getFromNetwork();
   };
 
-  let accountTokensNumber = (config, ~account) => {
+  let accountsTokensNumber = (config, ~accounts) => {
     let%AwaitMap (_, _, total) =
-      BetterCallDev.fetchAccountsTokens(config, [account], 0, 1);
+      BetterCallDev.fetchAccountsTokens(config, accounts, 0, 1);
 
     total;
+  };
+
+  type fetchedTokens = fetched(TokensLibrary.WithRegistration.t);
+
+  let accountsFungibleTokensWithRegistration =
+      (
+        config: ConfigContext.env,
+        ~accounts,
+        ~numberByAccount,
+        ~onTokens,
+        ~onStop,
+        ~fromCache,
+      ) => {
+    let getFromCache = () => cachedTokensWithRegistration(config, `FT);
+
+    let getFromNetwork = () => {
+      let onceFinished = (fullCache, _, number) => {
+        let%AwaitMap tokens =
+          fullCache->handleRegistrationStatus(token =>
+            token->keepToken(config, `FT) ? Some(token) : None
+          );
+        (tokens, number);
+      };
+      let%AwaitMap (tokens, number) =
+        fetchAccountsTokensStreamed(
+          config,
+          ~accounts,
+          ~index=0,
+          ~numberByAccount,
+          ~onTokens,
+          ~onStop,
+          ~onceFinished,
+        );
+      `Fetched((tokens, number));
+    };
+    fromCache ? getFromCache() : getFromNetwork();
   };
 };

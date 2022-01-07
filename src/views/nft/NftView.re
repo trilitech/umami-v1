@@ -65,9 +65,12 @@ module Component = {
 
     let request = fromCache =>
       TokensApiRequest.{
-        account: account.Account.address,
-        allowHidden: true,
-        numberByAccount: BCD.requestPageSize,
+        request:
+          NFT.{
+            account: account.Account.address,
+            allowHidden: true,
+            numberByAccount: BCD.requestPageSize,
+          },
         fromCache,
       };
 
