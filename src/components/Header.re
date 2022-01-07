@@ -176,20 +176,20 @@ module Notices = {
         System.openExternal(
           "https://gitlab.com/nomadic-labs/umami-wallet/umami/-/releases",
         );
-      <Notice text=I18n.t#upgrade_notice>
-        <Notice.Button onPress text=I18n.btn#upgrade />
+      <Notice text=I18n.upgrade_notice>
+        <Notice.Button onPress text=I18n.Btn.upgrade />
       </Notice>;
     } else if (networkOffline) {
-      <Notice text=I18n.errors#network_unreachable>
+      <Notice text=I18n.Errors.network_unreachable>
         <Notice.Button
           style=styles##noticeSpace
           onPress={_ => Routes.push(Settings)}
-          text=I18n.btn#goto_settings
+          text=I18n.Btn.goto_settings
         />
         <Notice.Button
           style=styles##buttonMargin
           onPress={_ => {retryNetwork()}}
-          text=I18n.btn#retry_network
+          text=I18n.Btn.retry_network
         />
       </Notice>;
     } else {

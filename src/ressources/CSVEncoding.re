@@ -38,16 +38,16 @@ let () =
   Errors.registerHandler(
     "CSVEncoding",
     fun
-    | NoRows => I18n.csv#no_rows->Some
+    | NoRows => I18n.Csv.no_rows->Some
     | CannotParseTokenAmount(v, row, col) =>
-      I18n.csv#cannot_parse_token_amount(v, row + 1, col + 1)->Some
+      I18n.Csv.cannot_parse_token_amount(v, row + 1, col + 1)->Some
     | CannotParseTezAmount(v, row, col) =>
-      I18n.csv#cannot_parse_tez_amount(v, row + 1, col + 1)->Some
-    | UnknownToken(s, id) => I18n.csv#unknown_token((s :> string), id)->Some
+      I18n.Csv.cannot_parse_tez_amount(v, row + 1, col + 1)->Some
+    | UnknownToken(s, id) => I18n.Csv.unknown_token((s :> string), id)->Some
     | FA1_2InvalidTokenId(pkh) =>
-      I18n.csv#fa1_2_invalid_token_id((pkh :> string))->Some
+      I18n.Csv.fa1_2_invalid_token_id((pkh :> string))->Some
     | FA2InvalidTokenId(pkh) =>
-      I18n.csv#fa2_invalid_token_id((pkh :> string))->Some
+      I18n.Csv.fa2_invalid_token_id((pkh :> string))->Some
     | _ => None,
   );
 

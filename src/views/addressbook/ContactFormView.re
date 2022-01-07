@@ -46,7 +46,7 @@ let addressExistsCheck =
   switch (alias) {
   | None => Valid
   | Some(a: Alias.t) =>
-    Error(I18n.form_input_error#key_already_registered(a.name))
+    Error(I18n.Form_input_error.key_already_registered(a.name))
   };
 };
 
@@ -137,23 +137,23 @@ let make =
     <Typography.Headline style=FormStyles.header>
       (
         switch (action) {
-        | Create => I18n.title#add_contact
-        | Edit(_) => I18n.title#update_contact
+        | Create => I18n.Title.add_contact
+        | Edit(_) => I18n.Title.update_contact
         }
       )
       ->React.string
     </Typography.Headline>
     <FormGroupTextInput
-      label=I18n.label#add_contact_name
+      label=I18n.Label.add_contact_name
       value={form.values.name}
-      placeholder=I18n.input_placeholder#add_contacts_name
+      placeholder=I18n.Input_placeholder.add_contacts_name
       handleChange={form.handleChange(Name)}
       error={form.getFieldError(Field(Name))}
     />
     <FormGroupTextInput
-      label=I18n.label#add_contact_address
+      label=I18n.Label.add_contact_address
       value={form.values.address}
-      placeholder=I18n.input_placeholder#add_contacts_tz
+      placeholder=I18n.Input_placeholder.add_contacts_tz
       handleChange={form.handleChange(Address)}
       error={form.getFieldError(Field(Address))}
       disabled=?{
@@ -167,8 +167,8 @@ let make =
     <Buttons.SubmitPrimary
       text={
         switch (action) {
-        | Create => I18n.btn#add
-        | Edit(_) => I18n.btn#update
+        | Create => I18n.Btn.add
+        | Edit(_) => I18n.Btn.update
         }
       }
       onPress=onSubmit

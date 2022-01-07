@@ -55,12 +55,12 @@ type token =
 
 let symbol =
   fun
-  | Tez => I18n.t#tez
+  | Tez => I18n.tez
   | Token(t) => t.symbol;
 
 let name =
   fun
-  | Tez => I18n.t#tezos
+  | Tez => I18n.tezos
   | Token(t) => t.alias;
 
 module TokenItem = {

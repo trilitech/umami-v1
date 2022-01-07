@@ -117,7 +117,7 @@ module DerivationPathInput = {
           form.handleChange(SelectedDerivationPath, value);
         }}
         hasError={error->Option.isSome}
-        placeholder=I18n.input_placeholder#enter_derivation_path
+        placeholder=I18n.Input_placeholder.enter_derivation_path
       />
       <FormError ?error />
     </>;
@@ -144,7 +144,7 @@ let make = (~derivationPath, ~setDerivationPath, ~goNextStep) => {
   <>
     <FormGroup style=Style.(arrayOption([|Some(styles##formGroup)|]))>
       <RadioItem
-        label=I18n.label#account_default_path
+        label=I18n.Label.account_default_path
         value=DerivationPath.Pattern.defaultString
         setValue={value =>
           form.handleChange(SelectedDerivationPath, value(""))
@@ -152,7 +152,7 @@ let make = (~derivationPath, ~setDerivationPath, ~goNextStep) => {
         currentValue={form.values.selectedDerivationPath}
       />
       <RadioItem
-        label=I18n.label#account_custom_path
+        label=I18n.Label.account_custom_path
         value={form.values.customDerivationPath}
         setValue={value =>
           form.handleChange(SelectedDerivationPath, value(""))
@@ -163,7 +163,7 @@ let make = (~derivationPath, ~setDerivationPath, ~goNextStep) => {
     </FormGroup>
     <View style=FormStyles.verticalFormAction>
       <Buttons.SubmitPrimary
-        text=I18n.btn#continue
+        text=I18n.Btn.continue
         onPress=onSubmit
         disabledLook={!formFieldsAreValids}
       />

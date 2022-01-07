@@ -108,7 +108,7 @@ module BuyTezView = {
           <Typography.Body1
             colorStyle=`error
             style=Style.(style(~marginTop=10.->dp, ~textAlign=`center, ()))>
-            I18n.expl#external_service->React.string
+            I18n.Expl.external_service->React.string
           </Typography.Body1>
         }
         right={<CloseButton onClose />}>
@@ -258,7 +258,7 @@ module AppView = {
                          | NotFound =>
                            <View>
                              <Typography.Body1>
-                               I18n.t#error404->React.string
+                               I18n.error404->React.string
                              </Typography.Body1>
                            </View>
                          },

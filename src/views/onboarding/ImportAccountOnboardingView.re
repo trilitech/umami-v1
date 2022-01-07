@@ -46,7 +46,7 @@ let make = (~closeAction) => {
     React.useState(_ => DerivationPath.Pattern.(default->fromTezosBip44));
 
   let closing =
-    ModalFormView.confirm(~actionText=I18n.btn#cancel, closeAction);
+    ModalFormView.confirm(~actionText=I18n.Btn.cancel, closeAction);
 
   let back =
     switch (formStep) {
@@ -57,20 +57,20 @@ let make = (~closeAction) => {
 
   <ModalFormView closing back>
     <Typography.Headline style=styles##title>
-      I18n.title#import_account->React.string
+      I18n.Title.import_account->React.string
     </Typography.Headline>
     {switch (formStep) {
      | MnemonicsStep =>
        <>
          <Typography.Overline3
            colorStyle=`highEmphasis style=styles##stepPager>
-           {I18n.t#stepof(1, 2)->React.string}
+           {I18n.stepof(1, 2)->React.string}
          </Typography.Overline3>
          <Typography.Overline1 style=styles##stepTitle>
-           I18n.title#import_account_enter_phrase->React.string
+           I18n.Title.import_account_enter_phrase->React.string
          </Typography.Overline1>
          <Typography.Body2 colorStyle=`mediumEmphasis style=styles##stepBody>
-           I18n.expl#import_secret_enter_phrase->React.string
+           I18n.Expl.import_secret_enter_phrase->React.string
          </Typography.Body2>
          <FillMnemonicView
            mnemonic
@@ -79,7 +79,7 @@ let make = (~closeAction) => {
            secondaryButton={(disabled, onPress) =>
              <Buttons.FormSecondary
                disabled
-               text=I18n.btn#customize_derivation_path
+               text=I18n.Btn.customize_derivation_path
                onPress={_ => {onPress()}}
              />
            }
@@ -91,17 +91,17 @@ let make = (~closeAction) => {
          />
        </>
      | DerivationPathStep =>
-       let subtitle = I18n.title#account_derivation_path;
+       let subtitle = I18n.Title.account_derivation_path;
        <>
          <Typography.Overline3
            colorStyle=`highEmphasis style=styles##stepPager>
-           {I18n.t#stepof(2, 3)->React.string}
+           {I18n.stepof(2, 3)->React.string}
          </Typography.Overline3>
          <Typography.Overline1 style=styles##stepTitle>
            subtitle->React.string
          </Typography.Overline1>
          {<Typography.Body2 colorStyle=`mediumEmphasis style=styles##stepBody>
-            I18n.expl#secret_select_derivation_path->React.string
+            I18n.Expl.secret_select_derivation_path->React.string
           </Typography.Body2>}
          <SelectDerivationPathView
            derivationPath
@@ -114,19 +114,19 @@ let make = (~closeAction) => {
      | PasswordStep(_) =>
        let subtitle =
          noExistingPassword
-           ? I18n.title#account_create_password
-           : I18n.title#account_enter_password;
+           ? I18n.Title.account_create_password
+           : I18n.Title.account_enter_password;
 
        <>
          <Typography.Overline3
            colorStyle=`highEmphasis style=styles##stepPager>
-           {I18n.t#stepof(totalPages, totalPages)->React.string}
+           {I18n.stepof(totalPages, totalPages)->React.string}
          </Typography.Overline3>
          <Typography.Overline1 style=styles##stepTitle>
            subtitle->React.string
          </Typography.Overline1>
          {<Typography.Body2 colorStyle=`mediumEmphasis style=styles##stepBody>
-            I18n.expl#secret_create_password_not_recorded->React.string
+            I18n.Expl.secret_create_password_not_recorded->React.string
           </Typography.Body2>
           ->ReactUtils.onlyWhen(noExistingPassword)}
          <CreatePasswordView mnemonic derivationPath onSubmit=closeAction />

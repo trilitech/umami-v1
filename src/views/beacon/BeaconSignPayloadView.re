@@ -52,7 +52,7 @@ module Payload = {
     <>
       <Typography.Overline2
         colorStyle=`mediumEmphasis style=OperationSummaryView.styles##title>
-        I18n.label#beacon_sign_payload->React.string
+        I18n.Label.beacon_sign_payload->React.string
       </Typography.Overline2>
       <View style=styles##container>
         <View
@@ -68,7 +68,7 @@ module Payload = {
         </View>
         <View style=styles##clipboard>
           <ClipboardButton
-            copied=I18n.log#beacon_sign_payload
+            copied=I18n.Log.beacon_sign_payload
             tooltipKey="beacon-sign-payload"
             addToast
             data={signPayloadRequest.payload}
@@ -120,7 +120,7 @@ let make =
             setLoading(_ => false);
             client
             ->Promise.fromOption(
-                ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
+                ~error=Errors.Generic(I18n.Errors.beacon_client_not_created),
               )
             ->Promise.flatMapOk(client =>
                 client->ReBeacon.WalletClient.respond(
@@ -138,7 +138,7 @@ let make =
             setLoading(_ => false);
             client
             ->Promise.fromOption(
-                ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
+                ~error=Errors.Generic(I18n.Errors.beacon_client_not_created),
               )
             ->Promise.flatMapOk(client =>
                 client->ReBeacon.WalletClient.respond(
@@ -158,7 +158,7 @@ let make =
     setLoading(_ => false);
     client
     ->Promise.fromOption(
-        ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
+        ~error=Errors.Generic(I18n.Errors.beacon_client_not_created),
       )
     ->Promise.flatMapOk(client =>
         client->ReBeacon.WalletClient.respond(
@@ -177,21 +177,21 @@ let make =
   let sendOperation = intent => onSign(~signingIntent=intent);
 
   let secondaryButton =
-    <Buttons.SubmitSecondary text=I18n.btn#reject onPress=onAbort />;
+    <Buttons.SubmitSecondary text=I18n.Btn.reject onPress=onAbort />;
 
-  <ModalFormView title=I18n.title#beacon_sign_request>
+  <ModalFormView title=I18n.Title.beacon_sign_request>
     <View style=FormStyles.header>
       <Typography.Overline2
         colorStyle=`highEmphasis fontWeightStyle=`bold style=styles##dapp>
         signPayloadRequest.appMetadata.name->React.string
       </Typography.Overline2>
       <Typography.Overline3 colorStyle=`highEmphasis style=styles##dapp>
-        I18n.expl#beacon_dapp_sign->React.string
+        I18n.Expl.beacon_dapp_sign->React.string
       </Typography.Overline3>
     </View>
     <OperationSummaryView.EntityInfo
       style=styles##accountInfo
-      title=I18n.title#sender_account
+      title=I18n.Title.sender_account
       address={signPayloadRequest.sourceAddress->Some}
     />
     <Payload signPayloadRequest />

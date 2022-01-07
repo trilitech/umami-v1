@@ -95,27 +95,27 @@ let () =
   Errors.registerHandler(
     "Taquito",
     fun
-    | UnregisteredDelegate => I18n.form_input_error#unregistered_delegate->Some
-    | UnchangedDelegate => I18n.form_input_error#change_baker->Some
-    | BadPkh => I18n.form_input_error#bad_pkh->Some
-    | BranchRefused => I18n.form_input_error#branch_refused_error->Some
-    | InvalidContract => I18n.form_input_error#invalid_contract->Some
-    | BalanceTooLow => I18n.form_input_error#balance_too_low->Some
-    | ScriptRejected => I18n.form_input_error#balance_too_low->Some
-    | EmptyContract => I18n.form_input_error#account_balance_empty->Some
-    | EmptyTransaction => I18n.form_input_error#empty_transaction->Some
-    | LedgerInit(_) => I18n.form_input_error#hardware_wallet_plug->Some
-    | LedgerNotReady => I18n.form_input_error#hardware_wallet_not_ready->Some
-    | LedgerInitTimeout => I18n.form_input_error#hardware_wallet_plug->Some
+    | UnregisteredDelegate => I18n.Form_input_error.unregistered_delegate->Some
+    | UnchangedDelegate => I18n.Form_input_error.change_baker->Some
+    | BadPkh => I18n.Form_input_error.bad_pkh->Some
+    | BranchRefused => I18n.Form_input_error.branch_refused_error->Some
+    | InvalidContract => I18n.Form_input_error.invalid_contract->Some
+    | BalanceTooLow => I18n.Form_input_error.balance_too_low->Some
+    | ScriptRejected => I18n.Form_input_error.balance_too_low->Some
+    | EmptyContract => I18n.Form_input_error.account_balance_empty->Some
+    | EmptyTransaction => I18n.Form_input_error.empty_transaction->Some
+    | LedgerInit(_) => I18n.Form_input_error.hardware_wallet_plug->Some
+    | LedgerNotReady => I18n.Form_input_error.hardware_wallet_not_ready->Some
+    | LedgerInitTimeout => I18n.Form_input_error.hardware_wallet_plug->Some
     | LedgerKeyRetrieval =>
-      I18n.form_input_error#hardware_wallet_check_app->Some
-    | LedgerDenied => I18n.title#hardware_wallet_denied->Some
+      I18n.Form_input_error.hardware_wallet_check_app->Some
+    | LedgerDenied => I18n.Title.hardware_wallet_denied->Some
     | SignerIntentInconsistency =>
-      I18n.form_input_error#hardware_wallet_signer_inconsistent->Some
-    | NoMetadata => I18n.form_input_error#no_metadata(None)->Some
-    | NoTokenMetadata => I18n.form_input_error#no_token_metadata(None)->Some
-    | TokenIdNotFound => I18n.form_input_error#token_id_not_found(None)->Some
-    | NodeRequestFailed => I18n.errors#request_to_node_failed->Some
+      I18n.Form_input_error.hardware_wallet_signer_inconsistent->Some
+    | NoMetadata => I18n.Form_input_error.no_metadata(None)->Some
+    | NoTokenMetadata => I18n.Form_input_error.no_token_metadata(None)->Some
+    | TokenIdNotFound => I18n.Form_input_error.token_id_not_found(None)->Some
+    | NodeRequestFailed => I18n.Errors.request_to_node_failed->Some
     | _ => None,
   );
 

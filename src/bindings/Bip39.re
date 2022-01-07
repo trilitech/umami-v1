@@ -43,8 +43,8 @@ module Mnemonic = {
     Errors.registerHandler(
       "Bip39",
       fun
-      | IncorrectNumberOfWords => I18n.errors#incorrect_number_of_words->Some
-      | UnknownWord(w, i) => I18n.errors#unknown_bip39_word(w, i)->Some
+      | IncorrectNumberOfWords => I18n.Errors.incorrect_number_of_words->Some
+      | UnknownWord(w, i) => I18n.Errors.unknown_bip39_word(w, i)->Some
       | _ => None,
     );
 
@@ -71,7 +71,7 @@ module Mnemonic = {
     | 12 => Words12->Ok
     | _ => Error(IncorrectNumberOfWords);
 
-  let formatToString = ft => I18n.t#words(ft->formatToInt);
+  let formatToString = ft => I18n.words(ft->formatToInt);
 
   let isStandardLength = i => i->formatOfInt->Result.isOk;
 };

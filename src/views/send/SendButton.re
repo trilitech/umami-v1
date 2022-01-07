@@ -84,7 +84,7 @@ let make = () => {
           style=Style.(
             array([|styles##textButton, style(~color=textColor, ())|])
           )>
-          I18n.btn#send->React.string
+          I18n.Btn.send->React.string
         </Typography.ButtonSecondary>
       </ThemedPressable.Primary>
     </View>

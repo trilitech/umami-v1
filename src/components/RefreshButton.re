@@ -60,7 +60,7 @@ let make = (~onRefresh, ~loading, ~style as styleArg=?) => {
            size=ActivityIndicator_Size.small
            color={theme.colors.iconHighEmphasis}
          />
-       : <Tooltip keyPopover="refresh_button" text=I18n.tooltip#refresh>
+       : <Tooltip keyPopover="refresh_button" text=I18n.Tooltip.refresh>
            {(~pressableRef) =>
               <IconButton
                 pressableRef

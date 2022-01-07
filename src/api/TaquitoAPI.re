@@ -36,7 +36,7 @@ let () =
   Errors.registerHandler(
     "Taquito",
     fun
-    | InvalidEstimationResults => I18n.errors#invalid_estimation_results->Some
+    | InvalidEstimationResults => I18n.Errors.invalid_estimation_results->Some
     | _ => None,
   );
 

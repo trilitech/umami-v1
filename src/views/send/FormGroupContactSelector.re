@@ -146,7 +146,7 @@ let make =
       clearButton=true
       renderItem
       keyExtractor
-      placeholder=I18n.input_placeholder#add_contact_or_tz
+      placeholder=I18n.Input_placeholder.add_contact_or_tz
       renderLabel={renderLabel(label)}
       itemHeight
       numItemsToDisplay

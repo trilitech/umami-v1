@@ -40,7 +40,7 @@ let getContractAliasFromAddress = (address: PublicKeyHash.t, aliases, tokens) =>
     tokens
     ->TokensLibrary.WithBalance.getFullToken(address, 0)
     ->Option.map(((token: Token.t, _)) =>
-        I18n.t#token_contract(token.alias)
+        I18n.token_contract(token.alias)
       )
   | Some(r) => Some(r)
   };
@@ -48,5 +48,5 @@ let getContractAliasFromAddress = (address: PublicKeyHash.t, aliases, tokens) =>
 
 let formCheckExists = (aliases, alias): ReSchema.fieldState => {
   aliases->PublicKeyHash.Map.some((_, v: Alias.t) => v.name == alias)
-    ? Error(I18n.form_input_error#name_already_registered) : Valid;
+    ? Error(I18n.Form_input_error.name_already_registered) : Valid;
 };

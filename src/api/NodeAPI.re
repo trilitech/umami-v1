@@ -36,9 +36,9 @@ let () =
   Errors.registerHandler(
     "Node",
     fun
-    | UnreadableTokenAmount(s) => I18n.errors#cannot_read_token(s)->Some
-    | InvalidOperationType => I18n.errors#invalid_operation_type->Some
-    | IllformedTokenContract => I18n.errors#illformed_token_contract->Some
+    | UnreadableTokenAmount(s) => I18n.Errors.cannot_read_token(s)->Some
+    | InvalidOperationType => I18n.Errors.invalid_operation_type->Some
+    | IllformedTokenContract => I18n.Errors.illformed_token_contract->Some
     | _ => None,
   );
 

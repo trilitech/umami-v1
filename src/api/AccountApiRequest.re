@@ -51,7 +51,7 @@ let useLoad = requestState => {
 
 let useUpdate =
   ApiRequest.useSetter(
-    ~logOk=_ => I18n.t#account_updated,
+    ~logOk=_ => I18n.account_updated,
     ~set=
       (~config, renaming: WalletAPI.Aliases.renameParams) =>
         WalletAPI.Aliases.rename(~config, renaming),

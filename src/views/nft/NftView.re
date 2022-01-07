@@ -93,14 +93,14 @@ module Component = {
 
     let (switchButtonText, icon) =
       switch (mode) {
-      | Gallery => (I18n.btn#collected, Icons.Collection.build)
-      | Collection => (I18n.btn#gallery, Icons.Gallery.build)
+      | Gallery => (I18n.Btn.collected, Icons.Collection.build)
+      | Collection => (I18n.Btn.gallery, Icons.Gallery.build)
       };
 
     let headline =
       switch (mode) {
-      | Gallery => I18n.title#gallery
-      | Collection => I18n.title#collected
+      | Gallery => I18n.Title.gallery
+      | Collection => I18n.Title.collected
       };
 
     let tokens =
@@ -212,7 +212,7 @@ module Component = {
           icon=Icons.Search.build
           value=search
           onValueChange={value => setSearch(_ => value)}
-          placeholder=I18n.input_placeholder#search_for_nft
+          placeholder=I18n.Input_placeholder.search_for_nft
         />
         <NftSync onRefresh onStop state=syncState />
       </View>

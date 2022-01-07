@@ -132,19 +132,19 @@ let setAppMenu = () => {
 
   let supportItem =
     makeItem(
-      ~label=I18n.menu#app_menu_support,
+      ~label=I18n.Menu.app_menu_support,
       ~click=_ => openExternal(supportUrl),
       (),
     );
   let downloadItem =
     makeItem(
-      ~label=I18n.menu#app_menu_new_version,
+      ~label=I18n.Menu.app_menu_new_version,
       ~click=_ => openExternal(downloadUrl),
       (),
     );
   let websiteItem =
     makeItem(
-      ~label=I18n.menu#app_menu_website,
+      ~label=I18n.Menu.app_menu_website,
       ~click=_ => openExternal(websiteUrl),
       (),
     );
@@ -163,7 +163,7 @@ let setAppMenu = () => {
     Item.make(
       makeSubmenu(
         ~role=`help,
-        ~label=I18n.menu#app_menu_help,
+        ~label=I18n.Menu.app_menu_help,
         ~submenu=[|supportItem, downloadItem, websiteItem|],
         (),
       ),

@@ -34,7 +34,7 @@ let make = (~account, ~tooltipKey, ~style=?) => {
 
   <>
     <IconButton
-      tooltip=("QrButton" ++ tooltipKey, I18n.tooltip#show_qr)
+      tooltip=("QrButton" ++ tooltipKey, I18n.Tooltip.show_qr)
       icon=Icons.Qr.build
       onPress
       ?style

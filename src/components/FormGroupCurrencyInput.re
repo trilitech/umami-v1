@@ -39,7 +39,7 @@ let formatOnBlur = (token: option(TokenRepr.t), handleChange, value) =>
 
 let tezDecoration = (~style) =>
   <Typography.Body1 colorStyle=`mediumEmphasis style>
-    I18n.t#tez->React.string
+    I18n.tez->React.string
   </Typography.Body1>;
 
 [@react.component]
@@ -66,7 +66,7 @@ let make =
 
   let placeholder =
     token == None
-      ? I18n.input_placeholder#tez_amount : I18n.input_placeholder#token_amount;
+      ? I18n.Input_placeholder.tez_amount : I18n.Input_placeholder.token_amount;
 
   <FormGroupTextInput
     label

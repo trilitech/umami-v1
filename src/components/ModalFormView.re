@@ -40,9 +40,9 @@ type closing =
 
 let confirm =
     (
-      ~title=I18n.title#confirm_cancel,
+      ~title=I18n.Title.confirm_cancel,
       ~subtitle=?,
-      ~cancelText=I18n.btn#go_back,
+      ~cancelText=I18n.Btn.go_back,
       ~actionText,
       action,
     ) =>

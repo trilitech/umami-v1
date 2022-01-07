@@ -80,7 +80,7 @@ module Form = {
                   switch (initDelegate) {
                   | Some(initDelegate) =>
                     (initDelegate :> string) == values.baker
-                      ? Error(I18n.form_input_error#change_baker) : Valid
+                      ? Error(I18n.Form_input_error.change_baker) : Valid
                   | None => Valid
                   },
                 Baker,
@@ -142,7 +142,7 @@ module Form = {
       <>
         <ReactFlipToolkit.FlippedView flipId="form">
           <FormGroupDelegateSelector
-            label=I18n.label#account_delegate
+            label=I18n.Label.account_delegate
             value={form.values.sender.address}
             handleChange={d => form.handleChange(Sender, d)}
             error={form.getFieldError(Field(Sender))}
@@ -155,7 +155,7 @@ module Form = {
             }
           />
           <FormGroupBakerSelector
-            label=I18n.label#baker
+            label=I18n.Label.baker
             value={form.values.baker == "" ? None : form.values.baker->Some}
             handleChange={b =>
               b->Option.getWithDefault("") |> form.handleChange(Baker)
@@ -168,9 +168,9 @@ module Form = {
             <Buttons.SubmitPrimary
               text={
                 switch (action) {
-                | Create(_) => I18n.btn#delegation_submit
-                | Edit(_) => I18n.btn#update
-                | Delete(_) => I18n.btn#confirm
+                | Create(_) => I18n.Btn.delegation_submit
+                | Edit(_) => I18n.Btn.update
+                | Delete(_) => I18n.Btn.confirm
                 }
               }
               onPress=onSubmitDelegateForm
@@ -229,11 +229,11 @@ let make = (~closeAction, ~action) => {
     | (PasswordStep({delegate}, _), _) =>
       let summaryTitle =
         delegate == None
-          ? I18n.title#delegate_delete : I18n.title#confirm_delegate;
+          ? I18n.Title.delegate_delete : I18n.Title.confirm_delegate;
       SignOperationView.makeTitle(~custom=summaryTitle, signStep)->Some;
-    | (SendStep, Create(_)) => I18n.title#delegate->Some
-    | (SendStep, Edit(_)) => I18n.title#delegate_update->Some
-    | (SendStep, Delete(_)) => I18n.title#delegate_delete->Some
+    | (SendStep, Create(_)) => I18n.Title.delegate->Some
+    | (SendStep, Edit(_)) => I18n.Title.delegate_update->Some
+    | (SendStep, Delete(_)) => I18n.Title.delegate_delete->Some
     | (SubmittedStep(_), _) => None
     };
 
@@ -242,7 +242,7 @@ let make = (~closeAction, ~action) => {
   let closing =
     switch (modalStep, ledger: option(SigningBlock.LedgerView.state)) {
     | (PasswordStep(_, _), Some(WaitForConfirm)) =>
-      ModalFormView.Deny(I18n.tooltip#reject_on_ledger)
+      ModalFormView.Deny(I18n.Tooltip.reject_on_ledger)
     | _ => ModalFormView.Close(closeAction)
     };
 
@@ -279,8 +279,8 @@ let make = (~closeAction, ~action) => {
                signOpStep
                dryRun
                subtitle=(
-                 I18n.expl#confirm_operation,
-                 I18n.expl#hardware_wallet_confirm_operation,
+                 I18n.Expl.confirm_operation,
+                 I18n.Expl.hardware_wallet_confirm_operation,
                )
                operation={Operation.delegation(delegation)}
                sendOperation

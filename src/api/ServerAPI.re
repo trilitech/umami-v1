@@ -42,7 +42,7 @@ let () =
   Errors.registerHandler(
     "Server",
     fun
-    | UnknownNetwork(c) => I18n.errors#unknown_network(c)->Some
+    | UnknownNetwork(c) => I18n.Errors.unknown_network(c)->Some
     | FetchError(s) => s->Some
     | JsonResponseError(s) => s->Some
     | JsonError(s) => s->Some

@@ -35,10 +35,10 @@ let () =
   Errors.registerHandler(
     "Tokens",
     fun
-    | NotFAContract(_) => I18n.t#error_check_contract->Some
-    | RegisterNotAFungibleToken(_) => I18n.t#error_register_not_fungible->Some
+    | NotFAContract(_) => I18n.error_check_contract->Some
+    | RegisterNotAFungibleToken(_) => I18n.error_register_not_fungible->Some
     | RegisterNotANonFungibleToken(_) =>
-      I18n.t#error_register_not_non_fungible->Some
+      I18n.error_register_not_non_fungible->Some
     | _ => None,
   );
 

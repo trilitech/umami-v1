@@ -47,7 +47,7 @@ let () =
     "Generic",
     fun
     | Generic(s) => s->Some
-    | WrongPassword => I18n.form_input_error#wrong_password->Some
+    | WrongPassword => I18n.Form_input_error.wrong_password->Some
     | _ => None,
   );
 
@@ -64,7 +64,7 @@ let getInfos = e => {
     {
       scope: "Generic",
       msg:
-        I18n.errors#unhandled_error(e->Js.Json.stringifyAny->Option.getExn),
+        I18n.Errors.unhandled_error(e->Js.Json.stringifyAny->Option.getExn),
     }
   };
 };

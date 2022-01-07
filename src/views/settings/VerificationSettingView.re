@@ -70,7 +70,7 @@ let make = () => {
             }
           );
           addToast(
-            Logs.info(~origin=Settings, I18n.settings#confirmations_saved),
+            Logs.info(~origin=Settings, I18n.Settings.confirmations_saved),
           );
 
           None;
@@ -87,11 +87,11 @@ let make = () => {
   let formFieldsAreValids =
     FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
 
-  <Block title=I18n.settings#confirmations_title>
+  <Block title=I18n.Settings.confirmations_title>
     <View accessibilityRole=`form style=styles##row>
       <ColumnLeft style=styles##spacerForInputError>
         <Typography.Body1>
-          I18n.settings#confirmations_label->React.string
+          I18n.Settings.confirmations_label->React.string
         </Typography.Body1>
       </ColumnLeft>
       <ColumnRight>
@@ -107,7 +107,7 @@ let make = () => {
       <ColumnRight style=styles##spacerForInputError>
         <Buttons.SubmitPrimary
           style=styles##button
-          text=I18n.btn#save
+          text=I18n.Btn.save
           onPress=onSubmit
           disabledLook={!formFieldsAreValids}
         />

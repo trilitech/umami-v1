@@ -41,7 +41,7 @@ let () =
   Errors.registerHandler(
     "LocalStorage",
     fun
-    | NotFound(s) => I18n.errors#local_storage_key_not_found(s)->Some
+    | NotFound(s) => I18n.Errors.local_storage_key_not_found(s)->Some
     | _ => None,
   );
 

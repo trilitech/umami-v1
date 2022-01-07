@@ -311,16 +311,16 @@ let () =
     "MetadataAPI",
     fun
     | NoTzip16Metadata(pkh) =>
-      I18n.form_input_error#no_metadata(Some((pkh :> string)))->Some
+      I18n.Form_input_error.no_metadata(Some((pkh :> string)))->Some
     | NoTzip12Metadata(pkh) =>
-      I18n.form_input_error#no_token_metadata(Some((pkh :> string)))->Some
+      I18n.Form_input_error.no_token_metadata(Some((pkh :> string)))->Some
     | TokenIdNotFound(pkh, tokenId) =>
-      I18n.form_input_error#token_id_not_found(
+      I18n.Form_input_error.token_id_not_found(
         Some(((pkh :> string), tokenId)),
       )
       ->Some
     | IllformedToken(pkh, tokenId, field) =>
-      I18n.form_input_error#illformed_token_metadata(
+      I18n.Form_input_error.illformed_token_metadata(
         (pkh :> string),
         tokenId,
         field,

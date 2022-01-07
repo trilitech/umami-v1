@@ -90,7 +90,7 @@ let respondWithError = (client, id, errorType) =>
   Promise.async(() => {
     let%Await client =
       client->Promise.fromOption(
-        ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
+        ~error=Errors.Generic(I18n.Errors.beacon_client_not_created),
       );
     let%AwaitMap () =
       client->ReBeacon.WalletClient.respond(
@@ -104,7 +104,7 @@ module ErrorView = {
   let make = (~msg, ~closeModal) => {
     <ModalTemplate.Dialog>
       <Typography.Headline style=FormStyles.header>
-        I18n.title#beacon_error->React.string
+        I18n.Title.beacon_error->React.string
       </Typography.Headline>
       <ScrollView style=styles##container alwaysBounceVertical=false>
         <Typography.Body1 colorStyle=`error style=FormStyles.textAlignCenter>
@@ -112,7 +112,7 @@ module ErrorView = {
         </Typography.Body1>
       </ScrollView>
       <View style=FormStyles.formAction>
-        <Buttons.Form onPress={_ => closeModal()} text=I18n.btn#ok />
+        <Buttons.Form onPress={_ => closeModal()} text=I18n.Btn.ok />
       </View>
     </ModalTemplate.Dialog>;
   };
@@ -174,7 +174,7 @@ let make = () => {
                 client,
                 r.id,
                 `TRANSACTION_INVALID_ERROR,
-                I18n.errors#beacon_transaction_not_supported,
+                I18n.Errors.beacon_transaction_not_supported,
               );
             }
           | _ => ()
@@ -184,7 +184,7 @@ let make = () => {
             client,
             request->ReBeacon.Message.Request.getId,
             `NETWORK_NOT_SUPPORTED,
-            I18n.errors#beacon_request_network_missmatch,
+            I18n.Errors.beacon_request_network_missmatch,
           );
         };
       | None => ()
@@ -223,9 +223,9 @@ let make = () => {
            />
 
          | (None, Ok(OperationRequest(_) | SignPayloadRequest(_))) =>
-           <ErrorView msg=I18n.errors#beacon_cant_handle closeModal />
+           <ErrorView msg=I18n.Errors.beacon_cant_handle closeModal />
          | (_, Ok(BroadcastRequest(_) | OperationRequest(_))) =>
-           <ErrorView msg=I18n.errors#beacon_cant_handle closeModal />
+           <ErrorView msg=I18n.Errors.beacon_cant_handle closeModal />
          | (_, Error(msg)) => <ErrorView msg closeModal />,
        )}
     </ModalAction>

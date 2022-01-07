@@ -327,7 +327,7 @@ module Error = {
 
   let toString =
     fun
-    | PairingRequestParsing => I18n.errors#pairing_request_parsing->Some
+    | PairingRequestParsing => I18n.Errors.pairing_request_parsing->Some
     | NoMatchingRequest => noMatchingRequest->Some
     | EncodedPayloadNeedString => encodedPayloadNeedString->Some
     | MessageNotHandled => messageNotHandled->Some

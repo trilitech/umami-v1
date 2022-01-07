@@ -36,12 +36,12 @@ let () =
   Errors.registerHandler(
     "Wallet",
     fun
-    | NoSecretFound => I18n.errors#no_secret_found->Some
-    | SecretNotFound(i) => I18n.errors#secret_not_found(i)->Some
-    | CannotUpdateSecret(i) => I18n.errors#cannot_update_secret(i)->Some
+    | NoSecretFound => I18n.Errors.no_secret_found->Some
+    | SecretNotFound(i) => I18n.Errors.secret_not_found(i)->Some
+    | CannotUpdateSecret(i) => I18n.Errors.cannot_update_secret(i)->Some
     | RecoveryPhraseNotFound(i) =>
-      I18n.errors#recovery_phrase_not_found(i)->Some
-    | SecretAlreadyImported => I18n.errors#secret_already_imported->Some
+      I18n.Errors.recovery_phrase_not_found(i)->Some
+    | SecretAlreadyImported => I18n.Errors.secret_already_imported->Some
     | _ => None,
   );
 

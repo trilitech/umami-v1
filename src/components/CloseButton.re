@@ -54,7 +54,7 @@ let make = (~onClose, ~style as styleArg=?) => {
         styleArg,
       |])
     )>
-    <Tooltip keyPopover="close_button" text=I18n.tooltip#close>
+    <Tooltip keyPopover="close_button" text=I18n.Tooltip.close>
       {(~pressableRef) =>
          <IconButton
            pressableRef

@@ -80,8 +80,8 @@ module PeersSection = {
         deletePeer(peer)->Promise.ignore;
       };
       <DeleteButton.IconButton
-        tooltip=("delete_peer_" ++ peer.id, I18n.title#delete_beacon_peer)
-        modalTitle=I18n.title#delete_beacon_peer
+        tooltip=("delete_peer_" ++ peer.id, I18n.Title.delete_beacon_peer)
+        modalTitle=I18n.Title.delete_beacon_peer
         onPressConfirmDelete
         request=peerRequest
       />;
@@ -115,17 +115,17 @@ module PeersSection = {
 
     <View>
       <Typography.Body1 fontWeightStyle=`bold style=styles##section>
-        I18n.settings#beacon_peers_section->React.string
+        I18n.Settings.beacon_peers_section->React.string
       </Typography.Body1>
       <Table.Head>
         <CellBase>
           <Typography.Overline3>
-            I18n.settings#beacon_peers_name->React.string
+            I18n.Settings.beacon_peers_name->React.string
           </Typography.Overline3>
         </CellBase>
         <CellBase>
           <Typography.Overline3>
-            I18n.settings#beacon_peers_relay->React.string
+            I18n.Settings.beacon_peers_relay->React.string
           </Typography.Overline3>
         </CellBase>
         <CellBase />
@@ -138,7 +138,7 @@ module PeersSection = {
          | Loading(_) => <LoadingView />
          | Done(Ok([||]), _) =>
            <Table.Empty>
-             I18n.settings#beacon_empty_peers->React.string
+             I18n.Settings.beacon_empty_peers->React.string
            </Table.Empty>
          | Done(Ok(peers), _) =>
            peers->Array.map(peer => <Row key={peer.id} peer />)->React.array
@@ -164,9 +164,9 @@ module PermissionsSection = {
       <DeleteButton.IconButton
         tooltip=(
           "delete_permission_" ++ permission.accountIdentifier,
-          I18n.title#delete_beacon_permission,
+          I18n.Title.delete_beacon_permission,
         )
-        modalTitle=I18n.title#delete_beacon_permission
+        modalTitle=I18n.Title.delete_beacon_permission
         onPressConfirmDelete
         request=permissionRequest
       />;
@@ -209,27 +209,27 @@ module PermissionsSection = {
     let aliases = StoreContext.Aliases.useGetAll();
     <View>
       <Typography.Body1 fontWeightStyle=`bold style=styles##section>
-        I18n.settings#beacon_permissions_section->React.string
+        I18n.Settings.beacon_permissions_section->React.string
       </Typography.Body1>
       <Table.Head>
         <CellBase>
           <Typography.Overline3>
-            I18n.settings#beacon_permissions_dapp->React.string
+            I18n.Settings.beacon_permissions_dapp->React.string
           </Typography.Overline3>
         </CellBase>
         <CellBase>
           <Typography.Overline3>
-            I18n.settings#beacon_permissions_account->React.string
+            I18n.Settings.beacon_permissions_account->React.string
           </Typography.Overline3>
         </CellBase>
         <CellBase>
           <Typography.Overline3>
-            I18n.settings#beacon_permissions_scopes->React.string
+            I18n.Settings.beacon_permissions_scopes->React.string
           </Typography.Overline3>
         </CellBase>
         <CellBase>
           <Typography.Overline3>
-            I18n.settings#beacon_permissions_network->React.string
+            I18n.Settings.beacon_permissions_network->React.string
           </Typography.Overline3>
         </CellBase>
         <CellAction />
@@ -240,7 +240,7 @@ module PermissionsSection = {
          | Loading(_) => <LoadingView />
          | Done(Ok([||]), _) =>
            <Table.Empty>
-             I18n.settings#beacon_empty_permissions->React.string
+             I18n.Settings.beacon_empty_permissions->React.string
            </Table.Empty>
          | Done(Ok(permissions), _) =>
            permissions
@@ -267,7 +267,7 @@ module PermissionsSection = {
 
 [@react.component]
 let make = () => {
-  <Block title=I18n.settings#beacon_title>
+  <Block title=I18n.Settings.beacon_title>
     <View style=styles##inner>
       <ConnectDAppPairingRequestWithQRButton />
       <ConnectDAppPairingRequestButton />

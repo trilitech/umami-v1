@@ -48,7 +48,7 @@ module AddContactButton = {
 
     <>
       <View style=styles##button>
-        <ButtonAction onPress text=I18n.btn#add_contact icon=Icons.Add.build />
+        <ButtonAction onPress text=I18n.Btn.add_contact icon=Icons.Add.build />
       </View>
       <ModalAction visible=visibleModal onRequestClose=closeAction>
         <ContactFormView action=Create closeAction />
@@ -65,7 +65,7 @@ let make = () => {
 
   <Page>
     <Typography.Headline style=Styles.title>
-      I18n.title#addressbook->React.string
+      I18n.Title.addressbook->React.string
     </Typography.Headline>
     <AddContactButton />
     {switch (aliasesRequest) {
@@ -73,7 +73,7 @@ let make = () => {
      | Loading(Some(aliases)) =>
        aliases->PublicKeyHash.Map.size === 0
          ? <Table.Empty>
-             I18n.t#empty_address_book->React.string
+             I18n.empty_address_book->React.string
            </Table.Empty>
          : aliases
            ->PublicKeyHash.Map.valuesToArray

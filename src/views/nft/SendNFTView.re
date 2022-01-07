@@ -38,7 +38,7 @@ module Form = {
               values =>
                 switch (values.recipient) {
                 | AnyString(_) =>
-                  Error(I18n.form_input_error#invalid_contract)
+                  Error(I18n.Form_input_error.invalid_contract)
                 | Valid(Alias(_)) => Valid
                 | Valid(Address(_)) => Valid
                 },
@@ -72,7 +72,7 @@ module Form = {
     let make = (~nft: Token.t) => {
       <FormGroup style=styles##formGroup>
         <FormLabel
-          label=I18n.label#send_nft
+          label=I18n.Label.send_nft
           hasError=false
           style=styles##label
         />
@@ -104,14 +104,14 @@ module Form = {
         <ReactFlipToolkit.FlippedView flipId="form">
           <FormGroupAccountSelector
             disabled=true
-            label=I18n.label#send_sender
+            label=I18n.Label.send_sender
             value={Some(sender)}
             handleChange={_ => ()}
             error=None
           />
           <FormGroupNFTView nft />
           <FormGroupContactSelector
-            label=I18n.label#send_recipient
+            label=I18n.Label.send_recipient
             filterOut={sender->Account.toAlias->Some}
             aliases
             value={form.values.recipient}
@@ -122,7 +122,7 @@ module Form = {
         <ReactFlipToolkit.FlippedView flipId="submit">
           <View style=FormStyles.verticalFormAction>
             <Buttons.SubmitPrimary
-              text=I18n.btn#send_submit
+              text=I18n.Btn.send_submit
               onPress={_ => form.submit()}
               loading
               disabledLook={!formFieldsAreValids}
@@ -188,7 +188,7 @@ let make = (~source: Account.t, ~nft: Token.t, ~closeAction) => {
 
   let title =
     switch (modalStep) {
-    | SendStep => Some(I18n.title#send)
+    | SendStep => Some(I18n.Title.send)
     | SigningStep(_, _) => SignOperationView.makeTitle(sign)->Some
     | SubmittedStep(_) => None
     };
@@ -227,8 +227,8 @@ let make = (~source: Account.t, ~nft: Token.t, ~closeAction) => {
              signOpStep
              dryRun
              subtitle=(
-               I18n.expl#confirm_operation,
-               I18n.expl#hardware_wallet_confirm_operation,
+               I18n.Expl.confirm_operation,
+               I18n.Expl.hardware_wallet_confirm_operation,
              )
              operation={Operation.transaction(transfer)}
              sendOperation={(~operation, signingIntent) =>
@@ -244,7 +244,7 @@ let make = (~source: Account.t, ~nft: Token.t, ~closeAction) => {
            <SubmittedView
              hash
              onPressCancel
-             submitText=I18n.btn#go_operations
+             submitText=I18n.Btn.go_operations
            />;
          }}
       </ModalFormView>

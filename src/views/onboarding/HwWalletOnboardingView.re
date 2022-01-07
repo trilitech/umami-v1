@@ -69,21 +69,21 @@ module ChecklistView = {
   let make = (~next) => {
     <>
       <Typography.Headline style=onbStyles##title>
-        I18n.title#hardware_wallet_connect->React.string
+        I18n.Title.hardware_wallet_connect->React.string
       </Typography.Headline>
       <Typography.Overline1 style=onbStyles##title>
-        I18n.title#hardware_wallet_check_follow->React.string
+        I18n.Title.hardware_wallet_check_follow->React.string
       </Typography.Overline1>
       <Typography.Body2 style=onbStyles##title>
-        I18n.expl#hardware_wallet_check_complete_steps->React.string
+        I18n.Expl.hardware_wallet_check_complete_steps->React.string
       </Typography.Body2>
       <View style=FormStyles.section##spacing>
         {[|
-           I18n.expl#hardware_wallet_check_plug,
-           I18n.expl#hardware_wallet_check_unlock,
-           I18n.expl#hardware_wallet_check_firmware,
-           I18n.expl#hardware_wallet_check_app,
-           I18n.expl#hardware_wallet_check_click,
+           I18n.Expl.hardware_wallet_check_plug,
+           I18n.Expl.hardware_wallet_check_unlock,
+           I18n.Expl.hardware_wallet_check_firmware,
+           I18n.Expl.hardware_wallet_check_app,
+           I18n.Expl.hardware_wallet_check_click,
          |]
          ->Array.mapWithIndex((i, text) =>
              <Item key={i->Int.toString} first={i == 0} text />
@@ -91,7 +91,7 @@ module ChecklistView = {
          ->React.array}
       </View>
       <Buttons.SubmitPrimary
-        text=I18n.btn#export_public_key
+        text=I18n.Btn.export_public_key
         onPress={_ => next()}
         style=FormStyles.section##submitSpacing
       />
@@ -139,7 +139,7 @@ module AdvancedOptionsView = {
       <>
         <FormLabel
           style=FormStyles.selector##label
-          label=I18n.label#derivation_scheme
+          label=I18n.Label.derivation_scheme
         />
         <Selector
           items=Wallet.Ledger.([|ED25519, SECP256K1, P256|])
@@ -184,10 +184,10 @@ module AdvancedOptionsView = {
 
     <>
       <Typography.Headline style=onbStyles##title>
-        I18n.title#hardware_wallet_connect->React.string
+        I18n.Title.hardware_wallet_connect->React.string
       </Typography.Headline>
       <Typography.Body1 style=onbStyles##title>
-        I18n.expl#hardware_wallet_advopt->React.string
+        I18n.Expl.hardware_wallet_advopt->React.string
       </Typography.Body1>
       <View style=FormStyles.section##spacing>
         <SchemeSelector
@@ -197,14 +197,14 @@ module AdvancedOptionsView = {
         <View style=FormStyles.section##spacing>
           <FormLabel
             style=FormStyles.selector##label
-            label=I18n.label#derivation_path
+            label=I18n.Label.derivation_path
           />
           <SelectDerivationPathView.DerivationPathInput form />
         </View>
       </View>
       <Buttons.SubmitPrimary
         style=FormStyles.section##submitSpacing
-        text=I18n.btn#verify_accounts
+        text=I18n.Btn.verify_accounts
         onPress={_ => form.submit()}
       />
     </>;
@@ -229,7 +229,7 @@ let make = (~closeAction) => {
     System.Client.initDir(config.baseDir())
     ->Promise.flatMapOk(() => importLedger(p))
     ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
-        I18n.t#account_created
+        I18n.account_created
       )
     ->Promise.getOk(_ => {closeAction()});
 
@@ -317,7 +317,7 @@ let make = (~closeAction) => {
 
   let titleScanned =
     switch (step) {
-    | StepAccounts(_) => I18n.title#hardware_wallet_connect->Some
+    | StepAccounts(_) => I18n.Title.hardware_wallet_connect->Some
     | _ => None
     };
 

@@ -109,10 +109,10 @@ module Base = {
           <EntityInfo
             style=styles##element
             address
-            title=I18n.title#interaction
+            title=I18n.Title.interaction
           />
           <Typography.Overline2 colorStyle=`mediumEmphasis style=styles##label>
-            I18n.label#parameters->React.string
+            I18n.Label.parameters->React.string
           </Typography.Overline2>
           <TransactionContractParams parameters />
         </>
@@ -164,8 +164,8 @@ module Transactions = {
     };
 
   let sourceDestination = (transfer: Transfer.t) => {
-    let recipientLbl = I18n.title#recipient_account;
-    let sourceLbl = I18n.title#sender_account;
+    let recipientLbl = I18n.Title.recipient_account;
+    let sourceLbl = I18n.Title.sender_account;
 
     switch (transfer) {
     | {source, transfers: [t]} => (
@@ -200,12 +200,12 @@ module Transactions = {
       (transaction: Transfer.t, dryRun: Protocol.Simulation.results) => {
     let feeSum = dryRun.simulations->Protocol.Simulation.sumFees;
 
-    let partialFee = (I18n.label#fee, [Transfer.Currency.Tez(feeSum)]);
+    let partialFee = (I18n.Label.fee, [Transfer.Currency.Tez(feeSum)]);
 
     let revealFee =
       dryRun.revealSimulation
       ->Option.map(({fee}) =>
-          (I18n.label#implicit_reveal_fee, [Transfer.Currency.Tez(fee)])
+          (I18n.Label.implicit_reveal_fee, [Transfer.Currency.Tez(fee)])
         );
 
     let totals =
@@ -213,7 +213,7 @@ module Transactions = {
       ->List.map(t => t.amount)
       ->Transfer.Currency.reduceAmounts;
 
-    let subtotals = (I18n.label#summary_subtotal, totals);
+    let subtotals = (I18n.Label.summary_subtotal, totals);
 
     let totalTez = {
       let (sub, noTokens) =
@@ -223,7 +223,7 @@ module Transactions = {
         };
 
       (
-        noTokens ? I18n.label#summary_total : I18n.label#summary_total_tez,
+        noTokens ? I18n.Label.summary_total : I18n.Label.summary_total_tez,
         [
           Transfer.Currency.Tez(
             Tez.Infix.(sub + dryRun->Protocol.Simulation.getTotalFees),
@@ -288,18 +288,18 @@ module Delegate = {
     let revealFee =
       dryRun.revealSimulation
       ->Option.map(({fee}) =>
-          (I18n.label#implicit_reveal_fee, [Transfer.Currency.Tez(fee)])
+          (I18n.Label.implicit_reveal_fee, [Transfer.Currency.Tez(fee)])
         );
 
     let fee = (
-      I18n.label#fee,
+      I18n.Label.fee,
       [
         Transfer.Currency.Tez(dryRun.simulations->Protocol.Simulation.sumFees),
       ],
     );
 
     let total = (
-      I18n.label#summary_total,
+      I18n.Label.summary_total,
       [Transfer.Currency.Tez(dryRun->Protocol.Simulation.getTotalFees)],
     );
 
@@ -315,13 +315,13 @@ module Delegate = {
       ) => {
     let (target, title) =
       switch (delegation.delegate) {
-      | None => (None, I18n.title#withdraw_baker)
-      | Some(d) => (Some(d), I18n.title#baker_account)
+      | None => (None, I18n.Title.withdraw_baker)
+      | Some(d) => (Some(d), I18n.Title.baker_account)
       };
 
     <Base
       ?style
-      source=(delegation.source, I18n.title#delegated_account)
+      source=(delegation.source, I18n.Title.delegated_account)
       destinations={`One((target, title, None))}
       content={buildSummaryContent(dryRun)}
     />;

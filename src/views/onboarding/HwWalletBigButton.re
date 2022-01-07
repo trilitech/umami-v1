@@ -32,7 +32,7 @@ let make = (~style=?) => {
 
   <>
     <BigButton
-      title=I18n.btn#connect_hardware_wallet
+      title=I18n.Btn.connect_hardware_wallet
       icon=Icons.Ledger.build
       onPress
       ?style

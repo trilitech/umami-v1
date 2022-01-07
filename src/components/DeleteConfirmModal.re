@@ -48,7 +48,7 @@ let make =
     action=onPressConfirmDelete
     loading
     title
-    cancelText=I18n.btn#cancel
-    actionText=I18n.btn#delete
+    cancelText=I18n.Btn.cancel
+    actionText=I18n.Btn.delete
   />;
 };

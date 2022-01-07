@@ -185,44 +185,44 @@ let make = (~route as currentRoute) => {
     <NavBarItemRoute
       currentRoute
       route=Accounts
-      title=I18n.t#navbar_accounts
+      title=I18n.navbar_accounts
       icon=Icons.Account.build
     />
     <NavBarItemRoute
       currentRoute
       route=Nft
       iconSize=28.
-      title=I18n.t#navbar_nft
+      title=I18n.navbar_nft
       icon=Icons.Nft.build
     />
     <NavBarItemRoute
       currentRoute
       route=Operations
-      title=I18n.t#navbar_operations
+      title=I18n.navbar_operations
       icon=Icons.History.build
     />
     <NavBarItemRoute
       currentRoute
       route=AddressBook
-      title=I18n.t#navbar_addressbook
+      title=I18n.navbar_addressbook
       icon=Icons.AddressBook.build
     />
     <NavBarItemRoute
       currentRoute
       route=Delegations
-      title=I18n.t#navbar_delegations
+      title=I18n.navbar_delegations
       icon=Icons.Delegate.build
     />
     <NavBarItemRoute
       currentRoute
       route=Tokens
-      title=I18n.t#navbar_tokens
+      title=I18n.navbar_tokens
       icon=Icons.Token.build
     />
     <NavBarItemRoute
       currentRoute
       route=Settings
-      title=I18n.t#navbar_settings
+      title=I18n.navbar_settings
       icon=Icons.Settings.build
     />
     /* <NavBarItem currentRoute route=Debug title="DEBUG" /> */
@@ -230,7 +230,7 @@ let make = (~route as currentRoute) => {
       <LogsButton
         currentRoute
         route=Logs
-        title=I18n.t#navbar_logs
+        title=I18n.navbar_logs
         icon=Icons.Logs.build
       />
       <Typography.Overline3 style=styles##version>

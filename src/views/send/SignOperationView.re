@@ -46,8 +46,8 @@ type step =
 
 let makeTitle = (~custom=?) =>
   fun
-  | AdvancedOptStep(_) => I18n.label#advanced_options
-  | SummaryStep => custom->Option.getWithDefault(I18n.title#confirmation);
+  | AdvancedOptStep(_) => I18n.Label.advanced_options
+  | SummaryStep => custom->Option.getWithDefault(I18n.Title.confirmation);
 
 let back = ((step, set), f) =>
   switch (step) {
@@ -123,7 +123,7 @@ let make =
       {<Buttons.RightArrowButton
          style=styles##advancedOptions
          disabled=advancedOptionsDisabled
-         text=I18n.label#advanced_options
+         text=I18n.Label.advanced_options
          stateIcon={
            Protocol.optionsSet(operation) == Some(true)
              ? <Icons.Edit

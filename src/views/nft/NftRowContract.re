@@ -79,7 +79,7 @@ let make =
       <ClipboardButton
         iconSizeRatio={5. /. 7.}
         style=styles##clipButton
-        copied=I18n.label#contract_address
+        copied=I18n.Label.contract_address
         addToast
         data=(contract.address :> string)
       />
@@ -88,7 +88,7 @@ let make =
         icon=Icons.OpenExternal.build
         tooltip=(
           "open_in_explorer" ++ (contract.address :> string),
-          I18n.tooltip#open_in_explorer,
+          I18n.Tooltip.open_in_explorer,
         )
         onPress={_ => {
           switch (Network.externalExplorer(config.network.chain)) {

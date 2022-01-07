@@ -44,13 +44,13 @@ module Base = {
       balanceTokenTotal->mapWithLoading(
         fun
         | Ok(b) =>
-          I18n.t#amount(
+          I18n.amount(
             b->Token.Unit.toStringDecimals(token.decimals),
             token.symbol,
           )
           ->React.string
         | Error(_) =>
-          I18n.t#amount(I18n.t#no_balance_amount, token.symbol)->React.string,
+          I18n.amount(I18n.no_balance_amount, token.symbol)->React.string,
       );
     };
   };
@@ -62,9 +62,8 @@ module Base = {
 
       balanceTotal->mapWithLoading(
         fun
-        | Ok(b) => I18n.t#tez_amount(b->Tez.toString)->React.string
-        | Error(_) =>
-          I18n.t#tez_amount(I18n.t#no_balance_amount)->React.string,
+        | Ok(b) => I18n.tez_amount(b->Tez.toString)->React.string
+        | Error(_) => I18n.tez_amount(I18n.no_balance_amount)->React.string,
       );
     };
   };
