@@ -121,12 +121,14 @@ let make = () => {
       [|tokens|],
     );
 
+  let currentChain = apiVersion->Option.map(v => v.chain);
+
   <Page>
     <Typography.Headline style=Styles.title>
       I18n.Title.tokens->React.string
     </Typography.Headline>
     <AddTokenButton
-      chain=?{apiVersion->Option.map(v => v.chain)}
+      chain=?currentChain
       tokens={
         tokens->Option.mapDefault(TokensLibrary.Generic.empty, t =>
           t->Result.getWithDefault(TokensLibrary.Generic.empty)
@@ -138,8 +140,12 @@ let make = () => {
      | Some(Error(error)) => <ErrorView error />
      | Some(Ok((registered, unregistered))) =>
        <>
-         <TokenRows title=I18n.Title.added_to_wallet tokens=registered />
-         <TokenRows title=I18n.Title.held tokens=unregistered />
+         <TokenRows
+           title=I18n.Title.added_to_wallet
+           tokens=registered
+           currentChain
+         />
+         <TokenRows title=I18n.Title.held tokens=unregistered currentChain />
        </>
      }}
   </Page>;

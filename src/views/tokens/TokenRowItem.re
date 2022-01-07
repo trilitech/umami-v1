@@ -62,17 +62,145 @@ module CellAction =
     ();
   });
 
-module TokenDeleteButton = {
+let styles =
+  Style.(
+    StyleSheet.create({
+      "actions":
+        style(~display=`flex, ~flexDirection=`row, ~alignItems=`center, ()),
+      "iconOffset": style(~paddingLeft=14.->dp, ()),
+    })
+  );
+
+module EditionModal = {
   [@react.component]
-  let make = (~token: TokensLibrary.Token.t) => {
+  let make = (~action, ~item, ~token, ~tokens, ~currentChain) => {
+    open TokensLibrary.Token;
+    let (visibleModal, openAction, closeAction) =
+      ModalAction.useModalActionState();
+
+    let onPress = _ => openAction();
+    <>
+      {item(onPress)}
+      <ModalAction visible=visibleModal onRequestClose=closeAction>
+        <TokenAddView
+          address={token->address}
+          kind={TokenContract.toTokenKind(token->kind, token->id)}
+          chain={token->chain->Option.default(currentChain)}
+          tokens
+          closeAction
+        />
+      </ModalAction>
+    </>;
+  };
+};
+
+module AddButton = {
+  [@react.component]
+  let make = (~token, ~tokens, ~currentChain) => {
+    let disabled = currentChain == None;
+
+    let item = onPress => {
+      let icon = (~color=?, ~style=?) =>
+        Icons.SwitchOff.build(
+          ~style=Style.arrayOption([|style, styles##iconOffset->Some|]),
+          ~color?,
+        );
+
+      let tooltip = (
+        "add_token_button" ++ token->TokensLibrary.Token.uniqueKey,
+        I18n.Tooltip.add_to_wallet,
+      );
+
+      <IconButton disabled tooltip onPress icon size=46. iconSizeRatio=1.1 />;
+    };
+
+    <EditionModal
+      action=`Add
+      item
+      token
+      tokens
+      currentChain={currentChain->Option.default("")}
+    />;
+  };
+};
+
+module MoreMenu = {
+  module EditItem = {
+    [@react.component]
+    let make = (~token, ~tokens, ~currentChain) => {
+      let disabled = currentChain == None;
+
+      let item = onPress =>
+        <Menu.Item
+          disabled
+          text=I18n.Menu.see_metadata
+          onPress
+          icon=Icons.Search.build
+        />;
+
+      <>
+        <EditionModal
+          action=`Edit
+          item
+          token
+          tokens
+          currentChain={currentChain->Option.default("")}
+        />
+      </>;
+    };
+  };
+
+  module ContractLinkItem = {
+    [@react.component]
+    let make = (~token: TokensLibrary.Token.t, ~currentChain) => {
+      let addToast = LogsContext.useToast();
+      let disabled = currentChain == None;
+
+      let onPress = _ => {
+        let explorer =
+          // EndpointError will actually never been used, since the menu item is
+          // disabled in that case
+          currentChain->Option.mapDefault(Error(Network.EndpointError), chain =>
+            chain->Network.fromChainId->Network.externalExplorer
+          );
+        switch (explorer) {
+        | Ok(url) =>
+          System.openExternal(
+            url ++ (token->TokensLibrary.Token.address :> string),
+          )
+        | Error(err) => addToast(Logs.error(~origin=Operation, err))
+        };
+      };
+
+      <Menu.Item
+        disabled
+        icon=Icons.OpenExternal.build
+        text=I18n.Menu.view_in_explorer
+        onPress
+      />;
+    };
+  };
+
+  [@react.component]
+  let make = (~token, ~tokens, ~currentChain) =>
+    <Menu
+      icon=Icons.More.build
+      size=46.
+      iconSizeRatio=0.5
+      keyPopover={"tokenMenu" ++ token->TokensLibrary.Token.uniqueKey}>
+      [|
+        <EditItem token tokens currentChain />,
+        <ContractLinkItem token currentChain />,
+      |]
+    </Menu>;
+};
+
+module RemoveButton = {
+  [@react.component]
+  let make = (~token: TokensLibrary.Token.t, ~currentChain) => {
     let theme = ThemeContext.useTheme();
     let (_tokenRequest, deleteToken) = StoreContext.Tokens.useDelete(false);
-
-    let icon = (~color as _=?, ~style=?) =>
-      Icons.Delete.build(
-        ~style=Style.arrayOption([|style|]),
-        ~color=theme.colors.iconPrimary,
-      );
+    let disabled = currentChain == None;
 
     let onPress = _e => {
       switch (token) {
@@ -81,23 +209,36 @@ module TokenDeleteButton = {
       };
     };
 
-    <IconButton
-      tooltip=(
-        "delete_token" ++ token->TokensLibrary.Token.uniqueKey,
-        I18n.Btn.delete_token,
-      )
-      icon
-      onPress
-      iconSizeRatio=1.1
-      size=46.
-    />;
+    let icon = (~color as _=?, ~style=?) =>
+      Icons.SwitchOn.build(
+        ~style=Style.arrayOption([|style, styles##iconOffset->Some|]),
+        ~color=theme.colors.iconPrimary,
+      );
+
+    let tooltip = (
+      "remove_token" ++ token->TokensLibrary.Token.uniqueKey,
+      I18n.Btn.delete_token,
+    );
+
+    <IconButton disabled tooltip icon onPress iconSizeRatio=1.1 size=46. />;
   };
 };
 
+module Actions = {
+  [@react.component]
+  let make = (~token, ~registered: bool, ~currentChain, ~tokens) =>
+    registered
+      ? <View style=styles##actions>
+          <MoreMenu token tokens currentChain />
+          <RemoveButton token currentChain />
+        </View>
+      : <AddButton token tokens currentChain />;
+};
+
 [@react.component]
-let make = (~token: TokensLibrary.Token.t, ~registered: bool) => {
+let make =
+    (~token: TokensLibrary.Token.t, ~registered: bool, ~currentChain, ~tokens) => {
   open TokensLibrary.Token;
-  let _ = registered;
   let tokenId =
     switch (token->kind) {
     | `KFA1_2 => I18n.na
@@ -127,6 +268,6 @@ let make = (~token: TokensLibrary.Token.t, ~registered: bool) => {
         tokenId->React.string
       </Typography.Body1>
     </CellTokenId>
-    <CellAction> <TokenDeleteButton token /> </CellAction>
+    <CellAction> <Actions registered token tokens currentChain /> </CellAction>
   </Table.Row>;
 };

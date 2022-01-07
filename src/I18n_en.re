@@ -59,6 +59,7 @@ module Btn = {
   let confirm = "CONFIRM";
   let update = "UPDATE";
   let register = "REGISTER";
+  let save_and_register = "SAVE AND REGISTER";
   let logs = "LOGS";
   let import_secret = "IMPORT EXISTING SECRET";
   let create_secret_new = "CREATE NEW SECRET";
@@ -120,6 +121,8 @@ module Tooltip = {
   let reject_on_ledger = "Reject on ledger to cancel operation";
   let see_network_info = "See network info";
   let tokenid = {j|A non-negative number that identifies the asset inside a FA2 contract|j};
+  let add_to_wallet = "Add to wallet";
+  let see_metadata = "See metadata";
 };
 
 module Log = {
@@ -421,7 +424,8 @@ module Menu = {
   let delete_secret = "Delete";
   let edit = "Edit";
   let scan = "Scan";
-  ();
+  let view_in_explorer = "View in Explorer";
+  let see_metadata = "See Metadata";
 };
 
 module Settings = {

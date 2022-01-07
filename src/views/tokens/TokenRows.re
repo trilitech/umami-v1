@@ -71,11 +71,17 @@ let styles =
     })
   );
 
-let makeRowItem = ((token, registered)) =>
-  <TokenRowItem key={token->TokensLibrary.Token.uniqueKey} token registered />;
+let makeRowItem = (tokens, currentChain, (token, registered)) =>
+  <TokenRowItem
+    key={token->TokensLibrary.Token.uniqueKey}
+    token
+    registered
+    currentChain
+    tokens
+  />;
 
 [@react.component]
-let make = (~title, ~tokens) => {
+let make = (~title, ~tokens, ~currentChain) => {
   let (expanded, setExpanded) = React.useState(_ => true);
 
   let collapseButton =
@@ -111,7 +117,7 @@ let make = (~title, ~tokens) => {
           <View style=styles##list>
             {tokens
              ->TokensLibrary.Generic.valuesToArray
-             ->Array.map(makeRowItem)
+             ->Array.map(makeRowItem(tokens, currentChain))
              ->React.array}
           </View>
         </>;
