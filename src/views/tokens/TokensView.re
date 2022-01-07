@@ -62,6 +62,7 @@ module AddTokenButton = {
       </View>
       <ModalAction visible=visibleModal onRequestClose=closeAction>
         <TokenAddView
+          action=`Add
           chain={chain->Option.getWithDefault("")}
           tokens
           closeAction

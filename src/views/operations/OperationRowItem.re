@@ -183,6 +183,7 @@ module AddToken = {
     <>
       <ModalAction visible=visibleModal onRequestClose=closeAction>
         <TokenAddView
+          action=`Add
           chain
           address
           kind

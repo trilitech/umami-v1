@@ -83,6 +83,7 @@ module EditionModal = {
       {item(onPress)}
       <ModalAction visible=visibleModal onRequestClose=closeAction>
         <TokenAddView
+          action
           address={token->address}
           kind={TokenContract.toTokenKind(token->kind, token->id)}
           chain={token->chain->Option.default(currentChain)}
