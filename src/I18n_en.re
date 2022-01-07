@@ -364,6 +364,8 @@ module Title = {
   let notice = "Disclaimer Notice";
   let buy_tez = "Buy tez";
   let wert_recipient = "Please select the recipient account";
+  let added_to_wallet = "Added to wallet";
+  let held = "Held";
 };
 
 module Expl = {

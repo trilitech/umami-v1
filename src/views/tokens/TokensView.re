@@ -136,13 +136,11 @@ let make = () => {
     {switch (partitionedTokens) {
      | None => <LoadingView />
      | Some(Error(error)) => <ErrorView error />
-     | Some(Ok((registered, unregistered)))
-         when
-           registered->TokensLibrary.Contracts.isEmpty
-           && unregistered->TokensLibrary.Contracts.isEmpty =>
-       <Table.Empty> I18n.empty_token->React.string </Table.Empty>
      | Some(Ok((registered, unregistered))) =>
-       <> <TokenRows tokens=registered /> <TokenRows tokens=unregistered /> </>
+       <>
+         <TokenRows title=I18n.Title.added_to_wallet tokens=registered />
+         <TokenRows title=I18n.Title.held tokens=unregistered />
+       </>
      }}
   </Page>;
 };

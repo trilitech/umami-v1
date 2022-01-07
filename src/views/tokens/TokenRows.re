@@ -62,8 +62,12 @@ module TableHeader = {
 let styles =
   Style.(
     StyleSheet.create({
+      "container": style(~marginBottom=16.->dp, ()),
       "list": style(~paddingTop=4.->dp, ()),
+      "header":
+        style(~display=`flex, ~flexDirection=`row, ~alignItems=`center, ()),
       "headline": style(~fontSize=16., ()),
+      "iconButton": style(~marginLeft=2.->dp, ~marginRight=2.->dp, ()) /*   */,
     })
   );
 
@@ -71,13 +75,46 @@ let makeRowItem = ((token, registered)) =>
   <TokenRowItem key={token->TokensLibrary.Token.uniqueKey} token registered />;
 
 [@react.component]
-let make = (~tokens) =>
-  <>
-    <TableHeader />
-    <View style=styles##list>
-      {tokens
-       ->TokensLibrary.Generic.valuesToArray
-       ->Array.map(makeRowItem)
-       ->React.array}
-    </View>
-  </>;
+let make = (~title, ~tokens) => {
+  let (expanded, setExpanded) = React.useState(_ => true);
+
+  let collapseButton =
+    <IconButton
+      icon={
+        expanded
+          ? (~color=?, ~style as _=?) =>
+              Icons.ChevronDown.build(
+                ~color?,
+                ~style=Buttons.styles##chevronUp,
+              )
+          : Icons.ChevronDown.build
+      }
+      iconSizeRatio=0.7
+      size=36.
+      onPress={_ => setExpanded(expanded => !expanded)}
+      style=styles##iconButton
+    />;
+
+  let header =
+    <View style=styles##header>
+      collapseButton
+      <Typography.Headline style=styles##headline>
+        title->React.string
+      </Typography.Headline>
+    </View>;
+
+  let content =
+    tokens->TokensLibrary.Contracts.isEmpty
+      ? <Table.Empty> I18n.empty_token->React.string </Table.Empty>
+      : <>
+          <TableHeader />
+          <View style=styles##list>
+            {tokens
+             ->TokensLibrary.Generic.valuesToArray
+             ->Array.map(makeRowItem)
+             ->React.array}
+          </View>
+        </>;
+
+  <Accordion style=styles##container header expanded> content </Accordion>;
+};
