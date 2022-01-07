@@ -50,7 +50,7 @@ let styles =
       "label": style(~marginRight=11.->dp, ()),
       "checkboxContainer":
         style(
-          ~marginLeft=(-5.)->dp,
+          ~marginRight=5.->dp,
           ~height=30.->dp,
           ~width=30.->dp,
           ~borderRadius=15.,
