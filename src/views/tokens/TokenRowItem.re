@@ -64,15 +64,21 @@ module CellAction =
 
 module TokenDeleteButton = {
   [@react.component]
-  let make = (~token: Token.t) => {
+  let make = (~token: TokensLibrary.Token.t) => {
     let (tokenRequest, deleteToken) = StoreContext.Tokens.useDelete();
 
     let onPressConfirmDelete = _e => {
-      deleteToken(token)->Promise.ignore;
+      switch (token) {
+      | Full(token) => deleteToken(token)->Promise.ignore
+      | Partial(_, _, _) => ()
+      };
     };
 
     <DeleteButton.IconButton
-      tooltip=("delete_token" ++ token.alias, I18n.Btn.delete_token)
+      tooltip=(
+        "delete_token" ++ token->TokensLibrary.Token.uniqueKey,
+        I18n.Btn.delete_token,
+      )
       modalTitle=I18n.Title.delete_token
       onPressConfirmDelete
       request=tokenRequest
@@ -81,33 +87,31 @@ module TokenDeleteButton = {
 };
 
 [@react.component]
-let make = (~token: Token.t) => {
+let make = (~token: TokensLibrary.Token.t, ~registered: bool) => {
+  open TokensLibrary.Token;
+  let _ = registered;
   let tokenId =
-    switch (token.kind) {
-    | FA1_2 => I18n.na
-    | FA2(id) => Int.toString(id)
+    switch (token->kind) {
+    | `KFA1_2 => I18n.na
+    | `KFA2 => token->id->Int.toString
     };
   <Table.Row>
     <CellStandard>
-      <Tag
-        content={
-          token.kind->TokenContract.fromTokenKind->TokenContract.kindToString
-        }
-      />
+      <Tag content={token->kind->TokenContract.kindToString} />
     </CellStandard>
     <CellName>
       <Typography.Body1 numberOfLines=1>
-        token.alias->React.string
+        {token->name->Option.default("")->React.string}
       </Typography.Body1>
     </CellName>
     <CellSymbol>
       <Typography.Body1 numberOfLines=1>
-        token.symbol->React.string
+        {token->symbol->Option.default("")->React.string}
       </Typography.Body1>
     </CellSymbol>
     <CellAddress>
       <Typography.Address numberOfLines=1>
-        (token.address :> string)->React.string
+        (token->address :> string)->React.string
       </Typography.Address>
     </CellAddress>
     <CellTokenId>

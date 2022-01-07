@@ -42,6 +42,8 @@ module Token: {
   let toTokenRepr:
     (~alias: string=?, ~symbol: string=?, ~decimals: int=?, t) =>
     option(TokenRepr.t);
+
+  let uniqueKey: t => string;
 };
 
 module Contracts = PublicKeyHash.Map;
