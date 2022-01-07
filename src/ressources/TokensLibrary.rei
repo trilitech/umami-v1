@@ -34,8 +34,14 @@ module Token: {
   let kind: t => TokenContract.kind;
   let chain: t => option(string);
   let name: t => option(string);
+  let symbol: t => option(string);
+  let decimals: t => option(int);
   let isFull: t => bool;
   let isNFT: t => bool;
+
+  let toTokenRepr:
+    (~alias: string=?, ~symbol: string=?, ~decimals: int=?, t) =>
+    option(TokenRepr.t);
 };
 
 module Contracts = PublicKeyHash.Map;
@@ -78,6 +84,10 @@ module Generic: {
   let keepPartition:
     (t('token), (PublicKeyHash.t, int, 'token) => option(bool)) =>
     (t('token), t('token));
+
+  let pickAny: t('token) => option((PublicKeyHash.t, int, 'token));
+  let pickAnyAtAddress:
+    (t('token), PublicKeyHash.t) => option((PublicKeyHash.t, int, 'token));
 };
 
 module WithBalance: {

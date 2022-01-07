@@ -40,7 +40,7 @@ module AddTokenButton = {
     );
 
   [@react.component]
-  let make = (~chain=?) => {
+  let make = (~tokens, ~chain=?) => {
     let (visibleModal, openAction, closeAction) =
       ModalAction.useModalActionState();
 
@@ -61,7 +61,11 @@ module AddTokenButton = {
         />
       </View>
       <ModalAction visible=visibleModal onRequestClose=closeAction>
-        <TokenAddView chain={chain->Option.getWithDefault("")} closeAction />
+        <TokenAddView
+          chain={chain->Option.getWithDefault("")}
+          tokens
+          closeAction
+        />
       </ModalAction>
     </>;
   };
@@ -124,7 +128,14 @@ let make = () => {
     <Typography.Headline style=Styles.title>
       I18n.Title.tokens->React.string
     </Typography.Headline>
-    <AddTokenButton chain=?{apiVersion->Option.map(v => v.chain)} />
+    <AddTokenButton
+      chain=?{apiVersion->Option.map(v => v.chain)}
+      tokens={
+        tokens->Option.mapDefault(TokensLibrary.Generic.empty, t =>
+          t->Result.getWithDefault(TokensLibrary.Generic.empty)
+        )
+      }
+    />
     <Table.Head>
       <TokenRowItem.CellStandard>
         <Typography.Overline3>

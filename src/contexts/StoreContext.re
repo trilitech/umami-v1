@@ -707,8 +707,13 @@ module Tokens = {
     TokensApiRequest.useCreate(~sideEffect=_ => resetTokens(), ());
   };
 
-  let useCheck = () => {
-    TokensApiRequest.useCheckTokenContract();
+  let useCacheToken = () => {
+    let resetTokens = useResetAll();
+    TokensApiRequest.useCacheToken(~sideEffect=_ => resetTokens(), ());
+  };
+
+  let useCheck = tokens => {
+    TokensApiRequest.useCheckTokenContract(tokens);
   };
 
   let useDelete = () => {

@@ -62,8 +62,10 @@ module type S = {
   let keepMap: (t(key, 'a, id), (key, 'a) => option('b)) => t(key, 'b, id);
   let keysToList: t(key, 'a, id) => list(key);
   let keysToListReversed: t(key, 'a, id) => list(key);
+  let pickAny: t(key, 'a, id) => option((key, 'a));
 };
 
 module Make: (Key: Belt.Id.Comparable) => S with module Key := Key;
 
 let keepMapInt: (Int.t('a), (int, 'a) => option('b)) => Int.t('b);
+let pickAnyInt: Int.t('a) => option((int, 'a));

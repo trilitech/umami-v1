@@ -32,7 +32,7 @@ module StateLenses = [%lenses
     symbol: string,
     decimals: string,
     tokenId: string,
-    token: option(TokenRepr.t),
+    token: option(TokensLibrary.Token.t),
   }
 ];
 module TokenCreateForm = ReForm.Make(StateLenses);
@@ -132,34 +132,31 @@ module FormMetadata = {
 
 module MetadataForm = {
   [@react.component]
-  let make = (~form: TokenCreateForm.api, ~pkh, ~kind, ~chain) => {
-    let metadata =
-      MetadataApiRequest.useLoadMetadata(pkh, kind->TokenRepr.kindId);
+  let make = (~form: TokenCreateForm.api, ~pkh, ~kind, ~tokens) => {
+    open TokensLibrary;
+
+    let token = MetadataApiRequest.useLoadMetadata(tokens, pkh, kind);
+
     React.useEffect1(
       () => {
-        switch (metadata) {
-        | Loading(Some(metadata))
-        | Done(Ok(metadata), _) =>
+        switch (token) {
+        | Loading(Some(token))
+        | Done(Ok(token), _) =>
+          form.handleChange(Token, Some(token));
+          form.handleChange(Name, token->Token.name->Option.default(""));
+          form.handleChange(Symbol, token->Token.symbol->Option.default(""));
           form.handleChange(
-            Token,
-            TokensAPI.metadataToToken(
-              chain,
-              TokenContract.{address: pkh, kind: kind->fromTokenKind},
-              metadata,
-            )
-            ->Some,
+            Decimals,
+            token->Token.decimals->Option.mapDefault("", Int.toString),
           );
-          form.handleChange(Name, metadata.name);
-          form.handleChange(Symbol, metadata.symbol);
-          form.handleChange(Decimals, metadata.decimals->Int.toString);
         | Done(Error(_), _)
         | _ => form.handleChange(Token, None)
         };
         None;
       },
-      [|metadata|],
+      [|token|],
     );
-    switch (metadata) {
+    switch (token) {
     | Done(Ok(_), _) => <FormMetadata form />
     | Done(
         Error(
@@ -182,10 +179,28 @@ type step =
   | Metadata(PublicKeyHash.t, TokenRepr.kind);
 
 [@react.component]
-let make = (~chain, ~address="", ~kind=?, ~closeAction) => {
+let make =
+    (
+      ~chain,
+      ~address: option(PublicKeyHash.t)=?,
+      ~kind=?,
+      ~tokens,
+      ~cacheOnlyNFT=false,
+      ~closeAction,
+    ) => {
   let (tokenCreateRequest, createToken) = StoreContext.Tokens.useCreate();
-  let (tokenKind, checkToken) = TokensApiRequest.useCheckTokenContract();
+  let (cacheTokenRequest, cacheToken) = StoreContext.Tokens.useCacheToken();
+  let (tokenKind, checkToken) = StoreContext.Tokens.useCheck(tokens);
   let (step, setStep) = React.useState(_ => Address);
+
+  let createToken = (token: TokenRepr.t) =>
+    !token->TokenRepr.isNFT
+      ? createToken(token)
+      : cacheOnlyNFT
+          ? cacheToken(token)
+          : Promise.err(
+              TokensAPI.RegisterNotAFungibleToken(token.address, token.kind),
+            );
 
   let onSubmit = ({state}: TokenCreateForm.onSubmitAPI) => {
     TokenCreateForm.(
@@ -196,7 +211,10 @@ let make = (~chain, ~address="", ~kind=?, ~closeAction) => {
         let decimals =
           state.values.decimals |> Int.fromString |> Option.getExn;
         state.values.token
-        ->Option.mapWithDefault(
+        ->Option.flatMap(
+            TokensLibrary.Token.toTokenRepr(~alias, ~symbol, ~decimals),
+          )
+        ->Option.default(
             TokenRepr.{
               kind,
               address,
@@ -206,8 +224,6 @@ let make = (~chain, ~address="", ~kind=?, ~closeAction) => {
               decimals,
               asset: TokenRepr.defaultAsset,
             },
-            token =>
-            {...token, alias, symbol, decimals}
           )
         ->createToken
         ->Promise.getOk(_ => closeAction());
@@ -256,7 +272,7 @@ let make = (~chain, ~address="", ~kind=?, ~closeAction) => {
             + custom(
                 state =>
                   switch (state.token) {
-                  | Some(t) when t->TokenRepr.isNFT =>
+                  | Some(t) when t->TokensLibrary.Token.isNFT && !cacheOnlyNFT =>
                     Error(I18n.error_register_not_fungible)
                   | _ => Valid
                   },
@@ -269,7 +285,7 @@ let make = (~chain, ~address="", ~kind=?, ~closeAction) => {
       ~onSubmit,
       ~initialState={
         name: "",
-        address,
+        address: address->Option.mapDefault("", k => (k :> string)),
         symbol: "",
         decimals: "",
         tokenId:
@@ -350,7 +366,9 @@ let make = (~chain, ~address="", ~kind=?, ~closeAction) => {
     (pkh, tokenId),
   );
 
-  let loading = tokenCreateRequest->ApiRequest.isLoading;
+  let loading =
+    tokenCreateRequest->ApiRequest.isLoading
+    || cacheTokenRequest->ApiRequest.isLoading;
 
   let formFieldsAreValids =
     FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
@@ -371,7 +389,7 @@ let make = (~chain, ~address="", ~kind=?, ~closeAction) => {
      | Metadata(pkh, kind) =>
        <>
          {kind != TokenRepr.FA1_2 ? <FormTokenId form /> : React.null}
-         <MetadataForm form pkh kind chain />
+         <MetadataForm form pkh kind tokens />
        </>
      }}
     <Buttons.SubmitPrimary

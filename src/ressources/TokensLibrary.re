@@ -43,6 +43,16 @@ module Token = {
     | Full(t) => t.TokenRepr.alias->Some
     | Partial(_, bcd, _) => bcd.BCD.name;
 
+  let symbol =
+    fun
+    | Full(t) => t.TokenRepr.symbol->Some
+    | Partial(_, bcd, _) => bcd.BCD.symbol;
+
+  let decimals =
+    fun
+    | Full(t) => t.TokenRepr.decimals->Some
+    | Partial(_, bcd, _) => bcd.BCD.decimals;
+
   let kind =
     fun
     | Full(t) => TokenContract.fromTokenKind(t.TokenRepr.kind)
@@ -63,6 +73,21 @@ module Token = {
     fun
     | Full(_) => true
     | Partial(_, _, _) => false;
+
+  let toTokenRepr = (~alias=?, ~symbol=?, ~decimals=?, t) => {
+    switch (t) {
+    | Full(t) =>
+      TokenRepr.{
+        ...t,
+        alias: alias->Option.default(t.alias),
+        symbol: symbol->Option.default(t.symbol),
+        decimals: decimals->Option.default(t.decimals),
+      }
+      ->Some
+    | Partial(contract, t, _) =>
+      contract->BCD.(toTokenRepr({...t, name: alias, symbol, decimals}))
+    };
+  };
 };
 
 module Contracts = PublicKeyHash.Map;
@@ -165,6 +190,21 @@ module Generic = {
       },
     );
   };
+
+  let pickAnyFromContract = contract => {
+    contract.tokens
+    ->Map.pickAnyInt
+    ->Option.map(((id, t)) => (contract.address, id, t));
+  };
+
+  let pickAnyAtAddress = (cache, address) => {
+    cache->Contracts.get(address)->Option.flatMap(pickAnyFromContract);
+  };
+
+  let pickAny = cache =>
+    cache
+    ->Contracts.pickAny
+    ->Option.flatMap(((_, c)) => c->pickAnyFromContract);
 };
 
 module WithBalance = {

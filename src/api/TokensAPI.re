@@ -248,12 +248,15 @@ let updateNFTsVisibility = (updatedTokens, ~hidden) => {
   registered;
 };
 
+let addTokenToCache = (config, token) =>
+  addTokenToCache(config, Full(token));
+
 let addFungibleToken = (config, token) => {
   let%Await () =
     token->TokenRepr.isNFT
       ? Promise.err(RegisterNotAFungibleToken(token.address, token.kind))
       : Promise.ok();
-  let%AwaitMap () = addTokenToCache(config, Full(token));
+  let%AwaitMap () = addTokenToCache(config, token);
   addTokenToRegistered(token, RegisteredTokens.FT);
 };
 
@@ -262,7 +265,7 @@ let addNonFungibleToken = (config, token, holder, balance) => {
     token->TokenRepr.isNFT
       ? Promise.ok()
       : Promise.err(RegisterNotANonFungibleToken(token.address, token.kind));
-  let%AwaitMap () = addTokenToCache(config, Full(token));
+  let%AwaitMap () = addTokenToCache(config, token);
   addTokenToRegistered(
     token,
     RegisteredTokens.(NFT({holder, hidden: false, balance})),

@@ -37,6 +37,8 @@ let registeredTokens: filter => Let.result(TokensLibrary.WithBalance.t);
 
 let hiddenTokens: unit => Let.result(RegisteredTokens.t);
 
+let addTokenToCache: (ConfigContext.env, Token.t) => Promise.t(unit);
+
 let addFungibleToken: (ConfigContext.env, Token.t) => Promise.t(unit);
 
 let addNonFungibleToken:

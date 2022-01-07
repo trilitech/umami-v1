@@ -63,6 +63,7 @@ module type S = {
 
   let keysToList: t(key, 'a, id) => list(key);
   let keysToListReversed: t(key, 'a, id) => list(key);
+  let pickAny: t(key, 'a, id) => option((key, 'a));
 };
 
 module Make = (Key: Belt.Id.Comparable) : (S with module Key := Key) => {
@@ -98,6 +99,10 @@ module Make = (Key: Belt.Id.Comparable) : (S with module Key := Key) => {
 
   let keysToListReversed = map => map->reduce([], (acc, k, _) => k @: acc);
   let keysToList = map => map->keysToListReversed->List.reverse;
+
+  let pickAny = (map: map('a)): option((key, 'a)) => {
+    map->findFirstBy((_, _) => true);
+  };
 };
 
 let keepMapInt = (map: Int.t('a), f: (int, 'a) => option('b)): Int.t('b) =>
@@ -107,3 +112,7 @@ let keepMapInt = (map: Int.t('a), f: (int, 'a) => option('b)): Int.t('b) =>
     | Some(newValue) => kept->Int.set(key, newValue)
     }
   );
+
+let pickAnyInt = (map: Int.t('a)): option((int, 'a)) => {
+  map->Int.findFirstBy((_, _) => true);
+};

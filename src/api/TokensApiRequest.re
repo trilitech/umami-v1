@@ -27,9 +27,19 @@ include ApiRequest;
 
 open Let;
 
-let useCheckTokenContract = () => {
+let useCheckTokenContract = tokens => {
   let set = (~config, address) =>
-    config->NodeAPI.Tokens.checkTokenContract(address);
+    switch (tokens->TokensLibrary.Generic.pickAnyAtAddress(address)) {
+    | None => config->NodeAPI.Tokens.checkTokenContract(address)
+    | Some((_, _, (token, _))) =>
+      (
+        token->TokensLibrary.Token.kind: TokenContract.kind :> [>
+          TokenContract.kind
+          | `NotAToken
+        ]
+      )
+      ->Promise.ok
+    };
   ApiRequest.useSetter(~set, ~kind=Logs.Tokens, ~toast=false, ());
 };
 
@@ -258,6 +268,19 @@ let useDelete = (~sideEffect=?, ()) => {
 
 let useCreate = (~sideEffect=?, ()) => {
   let set = (~config, token) => TokensAPI.addFungibleToken(config, token);
+
+  ApiRequest.useSetter(
+    ~logOk=_ => I18n.token_created,
+    ~toast=false,
+    ~set,
+    ~kind=Logs.Tokens,
+    ~sideEffect?,
+    (),
+  );
+};
+
+let useCacheToken = (~sideEffect=?, ()) => {
+  let set = (~config, token) => TokensAPI.addTokenToCache(config, token);
 
   ApiRequest.useSetter(
     ~logOk=_ => I18n.token_created,
