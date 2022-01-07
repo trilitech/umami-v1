@@ -60,7 +60,7 @@ let styles =
           ~flexDirection=`row,
           ~alignItems=`center,
           ~borderWidth=1.,
-          ~padding=1.->dp,
+          ~padding=0.->dp,
           ~borderRadius=5.,
           (),
         ),
@@ -134,7 +134,7 @@ let make =
                      ? theme.colors.stateDisabled : theme.colors.background,
                  (),
                ),
-               style(~borderColor, ~borderWidth?, ~padding?, ()),
+               style(~borderColor, ~borderWidth=2., ~padding?, ()),
              |])
            )
            pointerEvents=`none>
