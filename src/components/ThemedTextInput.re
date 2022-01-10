@@ -44,7 +44,7 @@ let styles =
           (),
         ),
       "container":
-        style(~borderWidth, ~borderRadius=4., ~justifyContent=`center, ()),
+        style(~borderWidth=2., ~borderRadius=4., ~justifyContent=`center, ()),
       "containerHeight": style(~height=44.->dp, ()),
       "input":
         style(
@@ -108,17 +108,7 @@ let make =
           Some(style(~paddingLeft=(paddingLeft -. borderWidth)->dp, ()))
         },
         isFocused && !disabled
-          ? Some(
-              style(
-                ~borderColor=theme.colors.borderPrimary,
-                ~borderWidth=2.,
-                ~paddingVertical=(paddingVertical -. 2.)->dp,
-                ~paddingRight=(paddingRight -. 2.)->dp,
-                ~paddingLeft=(paddingLeft -. 2.)->dp,
-                (),
-              ),
-            )
-          : None,
+          ? Some(style(~borderColor=theme.colors.borderPrimary, ())) : None,
         hasError
           ? Some(
               style(
