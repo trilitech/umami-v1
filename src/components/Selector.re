@@ -60,7 +60,6 @@ let styles =
           ~flexDirection=`row,
           ~alignItems=`center,
           ~borderWidth=1.,
-          ~padding=0.->dp,
           ~borderRadius=5.,
           (),
         ),
