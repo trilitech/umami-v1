@@ -110,19 +110,17 @@ let make =
 
   let borderStyles = (~focused) =>
     disabled
-      ? (theme.colors.borderMediumEmphasis, Some(0.), Some(0.->Style.dp))
+      ? theme.colors.borderMediumEmphasis
       : isOpen || focused
-          ? (theme.colors.borderPrimary, Some(2.), Some(0.->Style.dp))
-          : hasError
-              ? (theme.colors.error, Some(2.), Some(0.->Style.dp))
-              : (theme.colors.borderMediumEmphasis, None, None);
+          ? theme.colors.borderPrimary
+          : hasError ? theme.colors.error : theme.colors.borderMediumEmphasis;
 
   <View ?style>
     <Pressable_
       ref={pressableRef->Ref.value} onPress={_ => togglePopover()} disabled>
       {({focused}) => {
          let focused = focused->Option.getWithDefault(false);
-         let (borderColor, borderWidth, padding) = borderStyles(~focused);
+         let borderColor = borderStyles(~focused);
          <View
            style=Style.(
              array([|
@@ -133,7 +131,7 @@ let make =
                      ? theme.colors.stateDisabled : theme.colors.background,
                  (),
                ),
-               style(~borderColor, ~borderWidth=2., ~padding?, ()),
+               style(~borderColor, ~borderWidth=2., ()),
              |])
            )
            pointerEvents=`none>
