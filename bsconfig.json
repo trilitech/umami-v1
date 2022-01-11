@@ -30,7 +30,7 @@
     }
   ],
   "suffix": ".bs.js",
-  "namespace": false,
+  "namespace": true,
   "ppx-flags": ["lenses-ppx/ppx", "bs-let/ppx"],
   "bs-dependencies": [
     "@umami/lib-base",
