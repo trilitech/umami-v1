@@ -59,6 +59,80 @@ let styles =
     })
   );
 
+let makeFrameStyle =
+    (
+      ~theme: ThemeContext.theme,
+      ~numberOfLines,
+      ~multiline,
+      ~icon,
+      ~isFocused,
+      ~disabled,
+      ~hasError,
+      ~value,
+      ~onClear,
+      ~styleFromProp,
+      ~paddingVertical,
+      ~paddingLeft,
+      ~paddingRight,
+    ) =>
+  Style.(
+    arrayOption([|
+      styles##container->Some,
+      numberOfLines == None ? styles##containerHeight->Some : None,
+      multiline ? Some(styles##multiline) : None,
+      Some(
+        style(
+          ~backgroundColor=theme.colors.background,
+          ~borderColor=theme.colors.borderMediumEmphasis,
+          ~paddingVertical=(paddingVertical -. borderWidth)->dp,
+          ~paddingRight=(paddingRight -. borderWidth)->dp,
+          (),
+        ),
+      ),
+      switch (icon) {
+      | Some(_) => None
+      | None =>
+        Some(style(~paddingLeft=(paddingLeft -. borderWidth)->dp, ()))
+      },
+      isFocused && !disabled
+        ? Some(
+            style(
+              ~borderColor=theme.colors.borderPrimary,
+              ~borderWidth=2.,
+              ~paddingVertical=(paddingVertical -. 2.)->dp,
+              ~paddingRight=(paddingRight -. 2.)->dp,
+              ~paddingLeft=(paddingLeft -. 2.)->dp,
+              (),
+            ),
+          )
+        : None,
+      hasError
+        ? Some(
+            style(
+              ~borderColor=theme.colors.error,
+              ~borderWidth=2.,
+              ~paddingVertical=(paddingVertical -. 2.)->dp,
+              ~paddingRight=(paddingRight -. 2.)->dp,
+              ~paddingLeft=(paddingLeft -. 2.)->dp,
+              (),
+            ),
+          )
+        : None,
+      value != "" && onClear != None ? Some(styles##clearMargin) : None,
+      styleFromProp,
+      disabled
+        ? Some(
+            style(
+              ~color=theme.colors.textDisabled,
+              ~backgroundColor=theme.colors.stateDisabled,
+              ~borderWidth=0.,
+              ~paddingVertical=paddingVertical->dp,
+              (),
+            ),
+          )
+        : None,
+    |])
+  );
 [@react.component]
 let make =
     (
@@ -87,55 +161,24 @@ let make =
   let theme = ThemeContext.useTheme();
   let (isFocused, setIsFocused) = React.useState(_ => false);
 
-  <View
-    style=Style.(
-      arrayOption([|
-        styles##container->Some,
-        numberOfLines == None ? styles##containerHeight->Some : None,
-        multiline ? Some(styles##multiline) : None,
-        Some(
-          style(
-            ~backgroundColor=theme.colors.background,
-            ~borderColor=theme.colors.borderMediumEmphasis,
-            ~paddingVertical=(paddingVertical -. borderWidth)->dp,
-            ~paddingRight=(paddingRight -. borderWidth)->dp,
-            (),
-          ),
-        ),
-        switch (icon) {
-        | Some(_) => None
-        | None =>
-          Some(style(~paddingLeft=(paddingLeft -. borderWidth)->dp, ()))
-        },
-        isFocused && !disabled
-          ? Some(style(~borderColor=theme.colors.borderPrimary, ())) : None,
-        hasError
-          ? Some(
-              style(
-                ~borderColor=theme.colors.error,
-                ~borderWidth=2.,
-                ~paddingVertical=(paddingVertical -. 2.)->dp,
-                ~paddingRight=(paddingRight -. 2.)->dp,
-                ~paddingLeft=(paddingLeft -. 2.)->dp,
-                (),
-              ),
-            )
-          : None,
-        disabled ? Some(style(~color=theme.colors.textDisabled, ())) : None,
-        value != "" && onClear != None ? Some(styles##clearMargin) : None,
-        styleFromProp,
-        disabled
-          ? Some(
-              style(
-                ~backgroundColor=theme.colors.stateDisabled,
-                ~borderWidth=0.,
-                ~paddingVertical=paddingVertical->dp,
-                (),
-              ),
-            )
-          : None,
-      |])
-    )>
+  let frameStyle =
+    makeFrameStyle(
+      ~theme,
+      ~numberOfLines,
+      ~multiline,
+      ~icon,
+      ~isFocused,
+      ~disabled,
+      ~hasError,
+      ~value,
+      ~onClear,
+      ~styleFromProp,
+      ~paddingVertical,
+      ~paddingLeft,
+      ~paddingRight,
+    );
+
+  <View style=frameStyle>
     {onClear
      ->ReactUtils.mapOpt(onClear => {
          <View style=styles##clearBtn>
