@@ -58,6 +58,7 @@ module AddTokenButton = {
           onPress
           text=I18n.Btn.add_token
           icon=Icons.Add.build
+          primary=true
         />
       </View>
       <ModalAction visible=visibleModal onRequestClose=closeAction>
@@ -145,8 +146,14 @@ let make = () => {
            title=I18n.Title.added_to_wallet
            tokens=registered
            currentChain
+           emptyText=None
          />
-         <TokenRows title=I18n.Title.held tokens=unregistered currentChain />
+         <TokenRows
+           title=I18n.Title.held
+           tokens=unregistered
+           currentChain
+           emptyText={Some(I18n.empty_held_token)}
+         />
        </>
      }}
   </Page>;

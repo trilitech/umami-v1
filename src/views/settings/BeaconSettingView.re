@@ -91,7 +91,7 @@ module PeersSection = {
   module Row = {
     [@react.component]
     let make = (~peer: ReBeacon.peerInfo) => {
-      <Table.Row>
+      <Table.Row.Bordered>
         <CellBase>
           <Typography.Body1 numberOfLines=1>
             peer.name->React.string
@@ -105,7 +105,7 @@ module PeersSection = {
         <CellBase />
         <CellBase />
         <CellAction> <PeerDeleteButton peer /> </CellAction>
-      </Table.Row>;
+      </Table.Row.Bordered>;
     };
   };
 
@@ -177,7 +177,7 @@ module PermissionsSection = {
     [@react.component]
     let make =
         (~permission: ReBeacon.permissionInfo, ~accountAlias: option(string)) => {
-      <Table.Row>
+      <Table.Row.Bordered>
         <CellBase>
           <Typography.Body1 numberOfLines=1>
             permission.appMetadata.name->React.string
@@ -199,7 +199,7 @@ module PermissionsSection = {
           </Typography.Body1>
         </CellBase>
         <CellAction> <PermissionDeleteButton permission /> </CellAction>
-      </Table.Row>;
+      </Table.Row.Bordered>;
     };
   };
 

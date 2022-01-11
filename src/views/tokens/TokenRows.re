@@ -63,7 +63,6 @@ let styles =
   Style.(
     StyleSheet.create({
       "container": style(~marginBottom=16.->dp, ()),
-      "list": style(~paddingTop=4.->dp, ()),
       "header":
         style(~display=`flex, ~flexDirection=`row, ~alignItems=`center, ()),
       "headline": style(~fontSize=16., ()),
@@ -81,7 +80,7 @@ let makeRowItem = (tokens, currentChain, (token, registered)) =>
   />;
 
 [@react.component]
-let make = (~title, ~tokens, ~currentChain) => {
+let make = (~title, ~tokens, ~currentChain, ~emptyText) => {
   let (expanded, setExpanded) = React.useState(_ => true);
 
   let collapseButton =
@@ -109,18 +108,19 @@ let make = (~title, ~tokens, ~currentChain) => {
       </Typography.Headline>
     </View>;
 
-  let content =
-    tokens->TokensLibrary.Contracts.isEmpty
-      ? <Table.Empty> I18n.empty_token->React.string </Table.Empty>
-      : <>
-          <TableHeader />
-          <View style=styles##list>
-            {tokens
-             ->TokensLibrary.Generic.valuesToArray
-             ->Array.map(makeRowItem(tokens, currentChain))
-             ->React.array}
-          </View>
-        </>;
-
-  <Accordion style=styles##container header expanded> content </Accordion>;
+  tokens->TokensLibrary.Contracts.isEmpty
+    ? emptyText->Option.mapDefault(React.null, text =>
+        <Accordion style=styles##container header expanded>
+          <Table.Empty> text->React.string </Table.Empty>
+        </Accordion>
+      )
+    : <Accordion style=styles##container header expanded>
+        <TableHeader />
+        <View>
+          {tokens
+           ->TokensLibrary.Generic.valuesToArray
+           ->Array.map(makeRowItem(tokens, currentChain))
+           ->React.array}
+        </View>
+      </Accordion>;
 };

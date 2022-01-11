@@ -27,47 +27,60 @@ open ReactNative;
 
 module CellStandard =
   Table.MakeCell({
-    let style = Style.(style(~flexBasis=60.->dp, ()));
-    ();
+    let style = Style.(style(~flexBasis=110.->dp, ~marginLeft=10.->dp, ()));
   });
 
 module CellName =
   Table.MakeCell({
-    let style = Style.(style(~flexBasis=132.->dp, ()));
-    ();
+    let style = Style.(style(~flexBasis=200.->dp, ()));
   });
 
 module CellSymbol =
   Table.MakeCell({
-    let style = Style.(style(~flexBasis=90.->dp, ()));
-    ();
+    let style = Style.(style(~flexBasis=100.->dp, ()));
   });
 
 module CellAddress =
   Table.MakeCell({
     let style =
-      Style.(style(~flexBasis=180.->dp, ~flexGrow=1., ~flexShrink=1., ()));
+      Style.(
+        style(
+          ~flexBasis=380.->dp,
+          ~flexDirection=`row,
+          ~alignItems=`center,
+          ~flexShrink=1.,
+          (),
+        )
+      );
   });
 
 module CellTokenId =
   Table.MakeCell({
     let style =
-      Style.(style(~flexBasis=100.->dp, ~alignItems=`flexStart, ()));
-    ();
+      Style.(
+        style(~flexBasis=100.->dp, ~flexGrow=1., ~alignItems=`flexStart, ())
+      );
   });
 
 module CellAction =
   Table.MakeCell({
     let style = Style.(style(~flexBasis=68.->dp, ~alignItems=`flexEnd, ()));
-    ();
   });
 
 let styles =
   Style.(
     StyleSheet.create({
+      "kind":
+        style(
+          ~paddingHorizontal=12.->dp,
+          ~paddingVertical=2.->dp,
+          ~fontSize=10.,
+          (),
+        ),
       "actions":
         style(~display=`flex, ~flexDirection=`row, ~alignItems=`center, ()),
       "iconOffset": style(~paddingLeft=14.->dp, ()),
+      "copyButton": style(~marginRight=6.->dp, ()),
     })
   );
 
@@ -238,37 +251,70 @@ module Actions = {
 
 [@react.component]
 let make =
-    (~token: TokensLibrary.Token.t, ~registered: bool, ~currentChain, ~tokens) => {
+    (
+      ~style=?,
+      ~token: TokensLibrary.Token.t,
+      ~registered: bool,
+      ~currentChain,
+      ~tokens,
+    ) => {
   open TokensLibrary.Token;
+  let theme = ThemeContext.useTheme();
+  let addToast = LogsContext.useToast();
+
   let tokenId =
     switch (token->kind) {
     | `KFA1_2 => I18n.na
     | `KFA2 => token->id->Int.toString
     };
-  <Table.Row>
-    <CellStandard>
-      <Tag content={token->kind->TokenContract.kindToString} />
-    </CellStandard>
-    <CellName>
-      <Typography.Body1 numberOfLines=1>
-        {token->name->Option.default("")->React.string}
-      </Typography.Body1>
-    </CellName>
-    <CellSymbol>
-      <Typography.Body1 numberOfLines=1>
-        {token->symbol->Option.default("")->React.string}
-      </Typography.Body1>
-    </CellSymbol>
-    <CellAddress>
-      <Typography.Address numberOfLines=1>
-        (token->address :> string)->React.string
-      </Typography.Address>
-    </CellAddress>
-    <CellTokenId>
-      <Typography.Body1 numberOfLines=1>
-        tokenId->React.string
-      </Typography.Body1>
-    </CellTokenId>
-    <CellAction> <Actions registered token tokens currentChain /> </CellAction>
-  </Table.Row>;
+  <View
+    style={Style.arrayOption([|
+      style,
+      Style.style(
+        ~borderColor=theme.colors.stateDisabled,
+        ~borderBottomWidth=1.,
+        (),
+      )
+      ->Some,
+    |])}>
+    <Table.Row.Base height=44.>
+      <CellStandard>
+        <Tag
+          contentStyle=styles##kind
+          borderRadius=11.
+          content={token->kind->TokenContract.kindToString}
+        />
+      </CellStandard>
+      <CellName>
+        <Typography.Body1 numberOfLines=1>
+          {token->name->Option.default("")->React.string}
+        </Typography.Body1>
+      </CellName>
+      <CellSymbol>
+        <Typography.Body1 numberOfLines=1>
+          {token->symbol->Option.default("")->React.string}
+        </Typography.Body1>
+      </CellSymbol>
+      <CellAddress>
+        <Typography.Address numberOfLines=1>
+          (token->address :> string)->React.string
+        </Typography.Address>
+        <ClipboardButton
+          copied=I18n.Log.address
+          addToast
+          tooltipKey={token->uniqueKey}
+          data=(token->address :> string)
+          style=styles##copyButton
+        />
+      </CellAddress>
+      <CellTokenId>
+        <Typography.Body1 numberOfLines=1>
+          tokenId->React.string
+        </Typography.Body1>
+      </CellTokenId>
+      <CellAction>
+        <Actions registered token tokens currentChain />
+      </CellAction>
+    </Table.Row.Base>
+  </View>;
 };

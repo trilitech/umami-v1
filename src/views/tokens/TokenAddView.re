@@ -52,6 +52,13 @@ let styles =
       "title": style(~marginBottom=6.->dp, ~textAlign=`center, ()),
       "overline": style(~marginBottom=24.->dp, ~textAlign=`center, ()),
       "tag": style(~marginBottom=6.->dp, ~alignSelf=`center, ()),
+      "tagContent":
+        style(
+          ~paddingHorizontal=12.->dp,
+          ~paddingVertical=2.->dp,
+          ~fontSize=10.,
+          (),
+        ),
     })
   );
 
@@ -337,7 +344,11 @@ let make =
     ApiRequest.(
       switch (tokenKind, pkh) {
       | (Done(Ok(#TokenContract.kind as kind), _), Ok(_)) =>
-        <Tag style=styles##tag content={kind->TokenContract.kindToString} />
+        <Tag
+          style=styles##tag
+          contentStyle=styles##tagContent
+          content={kind->TokenContract.kindToString}
+        />
       | _ => React.null
       }
     );
