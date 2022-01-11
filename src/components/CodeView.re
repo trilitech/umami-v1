@@ -23,53 +23,35 @@
 /*                                                                           */
 /*****************************************************************************/
 
-type Errors.t +=
-  | MigrationFailed(Version.t);
+open ReactNative;
 
-let () =
-  Errors.registerHandler(
-    "LocalStorage",
-    fun
-    | MigrationFailed(v) =>
-      I18n.errors#storage_migration_failed(Version.toString(v))->Some
-    | _ => None,
+let styles =
+  Style.(
+    StyleSheet.create({
+      "container":
+        style(
+          ~flexShrink=1.,
+          ~minHeight=95.->dp,
+          ~paddingVertical=10.->dp,
+          ~paddingHorizontal=16.->dp,
+          ~borderRadius=4.,
+          (),
+        ),
+    })
   );
 
-let currentVersion = Version.mk(1, 5);
-
-let addMigration = (migrations, version, migration) => {
-  migrations->Map.update(
-    version,
-    fun
-    | None => [migration]->Some
-    | Some(m) => [migration, ...m]->Some,
-  );
-};
-
-let applyMigration = (migrations, currentVersion) => {
-  migrations->Map.reduce(Ok(), (res, version, migrations) =>
-    Version.compare(currentVersion, version) >= 0
-      ? res
-      : migrations
-        ->List.reduce(res, (res, migration) =>
-            res->Result.flatMap(_ => migration())
-          )
-        ->Result.mapError(_ => MigrationFailed(version))
-  );
-};
-
-let init = version => {
-  Map.make(~id=(module Version.Comparable))
-  ->addMigration(Disclaimer.Legacy.V1_1.version, Disclaimer.Legacy.V1_1.mk)
-  ->addMigration(ConfigFile.Legacy.V1_2.version, ConfigFile.Legacy.V1_2.mk)
-  ->addMigration(
-      TokenStorage.Legacy.V1_3.version,
-      TokenStorage.Legacy.V1_3.mk,
-    )
-  ->addMigration(
-      TokenStorage.Legacy.V1_4.version,
-      TokenStorage.Legacy.V1_4.mk,
-    )
-  ->addMigration(ConfigFile.Legacy.V1_5.version, ConfigFile.Legacy.V1_5.mk)
-  ->applyMigration(version);
+[@react.component]
+let make = (~style as styleProp=?, ~text) => {
+  let theme = ThemeContext.useTheme();
+  <ScrollView
+    alwaysBounceVertical=false
+    style=Style.(
+      arrayOption([|
+        Some(styles##container),
+        Some(style(~backgroundColor=theme.colors.stateDisabled, ())),
+        styleProp,
+      |])
+    )>
+    <Typography.Address> text->React.string </Typography.Address>
+  </ScrollView>;
 };

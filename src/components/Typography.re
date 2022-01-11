@@ -98,6 +98,7 @@ module Base = {
         ~style as styleProp: option(ReactNative.Style.t)=?,
         ~ellipsizeMode: option([ | `clip | `head | `middle | `tail])=?,
         ~selectable: option(bool)=?,
+        ~onPress=?,
         ~children: React.element,
       ) => {
     let theme = ThemeContext.useTheme();
@@ -105,6 +106,7 @@ module Base = {
       ?ellipsizeMode
       ?numberOfLines
       ?selectable
+      ?onPress
       style=Style.(
         arrayOption([|
           Some(styles##text),
@@ -311,6 +313,14 @@ module MediumText =
   });
 
 /* LOGS */
+
+module URI =
+  Make({
+    let colorStyle = `primary;
+    let fontWeightStyle = `regular;
+    let fontSize = 16.;
+    let selectable = true;
+  });
 
 module InPageLog = {
   let styles =

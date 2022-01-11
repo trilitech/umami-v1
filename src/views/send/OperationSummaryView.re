@@ -232,9 +232,7 @@ module Transactions = {
       );
     };
 
-    List.(
-      [totalTez]->addOpt(revealFee)->add(partialFee)->add(subtotals)
-    );
+    List.Infix.(subtotals @: partialFee @: revealFee @? [totalTez]);
   };
 
   [@react.component]

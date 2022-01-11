@@ -38,7 +38,10 @@ type tokenBalance = {
   external_uri: option(string),
   is_transferable: option(bool), // default: true
   is_boolean_amount: option(bool), // default: false
-  should_prefer_symbol: option(bool) //default: false
+  should_prefer_symbol: option(bool), //default: false
+  formats: option(array(TokenRepr.Metadata.format)),
+  creators: option(array(string)),
+  tags: option(array(string)),
 };
 
 type t = {
@@ -47,6 +50,11 @@ type t = {
 };
 
 let toTokenRepr: (TokenContract.t, tokenBalance) => option(TokenRepr.t);
+let fromTokenRepr: TokenRepr.t => option(tokenBalance);
+
+let updateFromBuiltinTemplate: tokenBalance => tokenBalance;
+
+let isNFT: tokenBalance => bool;
 
 /* Maximum tokens by request, which is 50 in the current API */
 let requestPageSize: int;

@@ -104,9 +104,9 @@ let () =
     | _ => None,
   );
 
-type nativeChains = [ | `Hangzhounet | `Mainnet | `Granadanet];
+type nativeChains = [ | `Hangzhounet | `Mainnet];
 
-type supportedChains = [ nativeChains | `Florencenet | `Edo2net];
+type supportedChains = [ nativeChains | `Florencenet | `Edo2net | `Granadanet];
 
 let getChainId =
   fun
@@ -117,15 +117,24 @@ let getChainId =
   | `Hangzhounet => "NetXZSsxBpMQeAT"
   | `Custom(s) => s;
 
+let fromChainId =
+  fun
+  | "NetXz969SFaFn8k" => `Granadanet
+  | "NetXdQprcVkpaWU" => `Mainnet
+  | "NetXxkAx4woPLyu" => `Florencenet
+  | "NetXSgo1ZT2DRUG" => `Edo2net
+  | "NetXZSsxBpMQeAT" => `Hangzhounet
+  | s => `Custom(s);
+
 let nativeChains = [
   (`Mainnet, getChainId(`Mainnet)),
   (`Hangzhounet, getChainId(`Hangzhounet)),
-  (`Granadanet, getChainId(`Granadanet)),
 ];
 
 let supportedChains = [
   (`Florencenet, getChainId(`Florencenet)),
   (`Edo2net, getChainId(`Edo2net)),
+  (`Granadanet, getChainId(`Granadanet)),
   ...nativeChains,
 ];
 
@@ -144,7 +153,7 @@ let externalExplorer =
   | `Edo2net => "https://edo2net.tzkt.io/"->Ok
   | `Florencenet => "https://florencenet.tzkt.io/"->Ok
   | `Granadanet => "https://granadanet.tzkt.io/"->Ok
-  | `Hangzhounet => "https://hangzhounet.tzkt.io/"->Ok
+  | `Hangzhounet => "https://hangzhou2net.tzkt.io/"->Ok
   | `Custom(_) as net => Error(UnknownChainId(getChainId(net)));
 
 type chain = [ supportedChains | `Custom(chainId)];
@@ -170,7 +179,7 @@ let chainNetwork: chain => option(string) =
   | `Granadanet => Some("granadanet")
   | `Florencenet => Some("florencenet")
   | `Edo2net => Some("edo2net")
-  | `Hangzhounet => Some("hangzhounet")
+  | `Hangzhounet => Some("hangzhou2net")
   | `Custom(_) => None;
 
 let networkChain: string => option(chain) =
@@ -179,7 +188,7 @@ let networkChain: string => option(chain) =
   | "granadanet" => Some(`Granadanet)
   | "florencenet" => Some(`Florencenet)
   | "edo2net" => Some(`Edo2net)
-  | "hangzhounet" => Some(`Hangzhounet)
+  | "hangzhou2net" => Some(`Hangzhounet)
   | _ => None;
 
 module Encode = {
@@ -224,7 +233,6 @@ module Decode = {
   let nativeChainFromString =
     fun
     | "Mainnet" => `Mainnet
-    | "Granadanet" => `Granadanet
     | "Hangzhounet" => `Hangzhounet
     | n =>
       JsonEx.(raise(InternalError(DecodeError("Unknown network " ++ n))));
@@ -279,14 +287,6 @@ let hangzhounet =
     `Hangzhounet,
   );
 
-let granadanet =
-  mk(
-    ~name=getDisplayedName(`Granadanet),
-    ~explorer="https://api.umamiwallet.com/granadanet",
-    ~endpoint="https://granadanet.smartpy.io/",
-    `Granadanet,
-  );
-
 let withEP = (n, url) => {...n, endpoint: url};
 
 let mainnetNetworks = [
@@ -302,14 +302,8 @@ let hangzhounetNetworks = [
   hangzhounet->withEP("https://api.tez.ie/rpc/hangzhounet"),
 ];
 
-let granadanetNetworks = [
-  granadanet->withEP("https://granadanet.smartpy.io/"),
-  granadanet->withEP("https://api.tez.ie/rpc/granadanet"),
-];
-
 let getNetworks = (c: nativeChains) =>
   switch (c) {
-  | `Granadanet => granadanetNetworks
   | `Hangzhounet => hangzhounetNetworks
   | `Mainnet => mainnetNetworks
   };

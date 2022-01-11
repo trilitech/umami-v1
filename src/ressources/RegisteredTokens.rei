@@ -23,53 +23,29 @@
 /*                                                                           */
 /*****************************************************************************/
 
-type Errors.t +=
-  | MigrationFailed(Version.t);
-
-let () =
-  Errors.registerHandler(
-    "LocalStorage",
-    fun
-    | MigrationFailed(v) =>
-      I18n.errors#storage_migration_failed(Version.toString(v))->Some
-    | _ => None,
-  );
-
-let currentVersion = Version.mk(1, 5);
-
-let addMigration = (migrations, version, migration) => {
-  migrations->Map.update(
-    version,
-    fun
-    | None => [migration]->Some
-    | Some(m) => [migration, ...m]->Some,
-  );
+/** Representation of registered tokens for a user */
+type nftInfo = {
+  holder: PublicKeyHash.t,
+  hidden: bool,
+  balance: ReBigNumber.t,
 };
 
-let applyMigration = (migrations, currentVersion) => {
-  migrations->Map.reduce(Ok(), (res, version, migrations) =>
-    Version.compare(currentVersion, version) >= 0
-      ? res
-      : migrations
-        ->List.reduce(res, (res, migration) =>
-            res->Result.flatMap(_ => migration())
-          )
-        ->Result.mapError(_ => MigrationFailed(version))
-  );
+type kind =
+  | FT
+  | NFT(nftInfo);
+
+type contract = {
+  contract: TokenContract.t,
+  chain: string,
+  tokens: Map.Int.t(kind) // effectively registered tokens by the user
 };
 
-let init = version => {
-  Map.make(~id=(module Version.Comparable))
-  ->addMigration(Disclaimer.Legacy.V1_1.version, Disclaimer.Legacy.V1_1.mk)
-  ->addMigration(ConfigFile.Legacy.V1_2.version, ConfigFile.Legacy.V1_2.mk)
-  ->addMigration(
-      TokenStorage.Legacy.V1_3.version,
-      TokenStorage.Legacy.V1_3.mk,
-    )
-  ->addMigration(
-      TokenStorage.Legacy.V1_4.version,
-      TokenStorage.Legacy.V1_4.mk,
-    )
-  ->addMigration(ConfigFile.Legacy.V1_5.version, ConfigFile.Legacy.V1_5.mk)
-  ->applyMigration(version);
-};
+type t = PublicKeyHash.Map.map(contract);
+
+let isRegistered: (t, PublicKeyHash.t, int) => bool;
+let registerToken: (t, Token.t, kind) => t;
+let removeToken: (t, PublicKeyHash.t, int) => t;
+let isHidden: (t, PublicKeyHash.t, int) => bool;
+let keepTokens: (t, (PublicKeyHash.t, int, kind) => bool) => t;
+let updateNFTsVisibility: (t, NftSelection.t, bool) => t;
+let updateNFT: (t, PublicKeyHash.t, int, nftInfo) => t;

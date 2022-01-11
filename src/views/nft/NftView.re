@@ -148,9 +148,9 @@ module Component = {
       React.useMemo2(
         () => {
           let searched = search->Js.String.toLocaleLowerCase;
-          tokens->TokenRegistry.Cache.keepTokens((_, _, token) =>
+          tokens->TokensLibrary.Generic.keepTokens((_, _, (token, _)) =>
             token
-            ->TokenRegistry.Cache.tokenName
+            ->TokensLibrary.Token.name
             ->Option.mapWithDefault(false, name =>
                 name
                 ->Js.String.toLocaleLowerCase
@@ -176,6 +176,20 @@ module Component = {
       );
       stop.current = true;
     };
+
+    let nfts =
+      React.useMemo1(
+        () =>
+          TokensLibrary.(
+            tokens->Generic.keepTokens((_, _, (t, _)) =>
+              switch (t) {
+              | Token.Full(_) => true
+              | _ => false
+              }
+            )
+          ),
+        [|tokens|],
+      );
 
     <View style={styles##listContent}>
       <NftHeaderView headline>
@@ -203,8 +217,8 @@ module Component = {
         <NftSync onRefresh onStop state=syncState />
       </View>
       {switch (mode) {
-       | Gallery => <NftGalleryView nfts=tokens />
-       | Collection => <NftCollectionView account nfts=tokens />
+       | Gallery => <NftGalleryView nfts />
+       | Collection => <NftCollectionView account nfts />
        }}
     </View>;
   };

@@ -31,6 +31,15 @@ let styles =
       "flexRowSpaceBetween": style(~justifyContent=`spaceBetween, ()),
       "itemsGroup":
         style(~display=`flex, ~flexDirection=`row, ~alignItems=`center, ()),
+      "rightItemsGroup":
+        style(
+          ~display=`flex,
+          ~flexDirection=`row,
+          ~alignItems=`center,
+          ~flexBasis=375.->dp,
+          ~flexShrink=1.,
+          (),
+        ),
       "flex_row":
         style(
           ~display=`flex,
@@ -44,6 +53,7 @@ let styles =
         style(~marginRight=(-5.)->dp, ~marginLeft=18.->dp, ()),
       "marginLeft10": style(~marginLeft=10.->dp, ()),
       "marginAuto": style(~margin=auto, ()),
+      "marginLeftAuto": style(~marginLeft=auto, ()),
       "image":
         style(~marginLeft=10.->dp, ~width="1.8vw", ~height="1.8vw", ()),
     })
@@ -53,6 +63,7 @@ let styles =
 let make =
     (
       ~nft: Token.t,
+      ~balance: ReBigNumber.t,
       ~account,
       ~address,
       ~selected,
@@ -71,7 +82,7 @@ let make =
   let id = TokenRepr.id(nft);
   let hidden =
     React.useMemo1(
-      () => TokenRegistry.Registered.isHidden(hidden, address, id),
+      () => RegisteredTokens.isHidden(hidden, address, id),
       [|hidden|],
     );
 
@@ -116,8 +127,11 @@ let make =
         nft.alias->React.string
       </Typography.Body1>
     </View>
-    <View style=styles##itemsGroup>
+    <View style=styles##rightItemsGroup>
       <Typography.Body1>
+        {I18n.label#editions(balance |> ReBigNumber.toString)->React.string}
+      </Typography.Body1>
+      <Typography.Body1 style=styles##marginLeftAuto>
         {I18n.label#token_id(id |> Int.toString)->React.string}
       </Typography.Body1>
       <IconButton

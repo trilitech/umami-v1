@@ -88,6 +88,9 @@ module Metadata: {
   };
 };
 
+let thumbnailUriFromFormat:
+  (option(string), option(array(Metadata.format))) => option(string);
+
 let defaultAsset: Metadata.asset;
 
 type t = {
@@ -99,6 +102,8 @@ type t = {
   decimals: int,
   asset: Metadata.asset,
 };
+
+let toFlatJson: t => option(Js.Json.t);
 
 let kindId: kind => int;
 let id: t => int;

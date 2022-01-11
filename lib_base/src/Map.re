@@ -57,6 +57,8 @@ module type S = {
   let split:
     (t(key, 'a, id), key) =>
     ((t(key, 'a, id), t(key, 'a, id)), option('a));
+
+  let keepMap: (t(key, 'a, id), (key, 'a) => option('b)) => t(key, 'b, id);
 };
 
 module Make = (Key: Belt.Id.Comparable) : (S with module Key := Key) => {
@@ -81,4 +83,20 @@ module Make = (Key: Belt.Id.Comparable) : (S with module Key := Key) => {
   let merge = merge(~cmp=kcmp);
   let mergeMany = mergeMany(~cmp=kcmp);
   let split = split(~cmp=kcmp);
+
+  let keepMap = (map: map('a), f: (key, 'a) => option('b)): map('b) =>
+    map->reduce(empty, (kept, key, value) =>
+      switch (f(key, value)) {
+      | None => kept
+      | Some(newValue) => kept->set(key, newValue)
+      }
+    );
 };
+
+let keepMapInt = (map: Int.t('a), f: (int, 'a) => option('b)): Int.t('b) =>
+  map->Int.reduce(Int.empty, (kept, key, value) =>
+    switch (f(key, value)) {
+    | None => kept
+    | Some(newValue) => kept->Int.set(key, newValue)
+    }
+  );
