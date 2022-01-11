@@ -43,7 +43,7 @@ let styles =
   );
 
 [@react.component]
-let make = (~onRefresh, ~loading, ~style as styleArg=?) => {
+let make = (~onRefresh, ~loading=false, ~style as styleArg=?) => {
   let theme = ThemeContext.useTheme();
 
   <View
