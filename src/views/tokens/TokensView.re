@@ -118,15 +118,15 @@ let make = () => {
        | Loading(Some(tokens))
        | Done(Ok(tokens), _) =>
          tokens
-         ->TokenRegistry.Cache.valuesToArray
+         ->TokensLibrary.Generic.valuesToArray
          ->Array.keepMap(
              fun
-             | Full(token) =>
+             | (Full(token), _) =>
                {
                  <TokenRowItem key=(token.address :> string) token />;
                }
                ->Some
-             | Partial(_, _) => None,
+             | (Partial(_, _, _), _) => None,
            )
          ->React.array
        | Done(Error(error), _) => <ErrorView error />

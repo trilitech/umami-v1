@@ -41,6 +41,16 @@ let () =
 /* Propagates Errors.t during decoding */
 exception InternalError(Errors.t);
 
+external unsafeFromAny: 'a => Js.Json.t = "%identity";
+
+[@bs.val] [@bs.scope "JSON"]
+external stringify: Js.Json.t => string = "stringify";
+
+[@bs.val] [@bs.scope "JSON"]
+external stringifyAnyWithSpace:
+  ('a, [@bs.as {json|null|json}] _, int) => string =
+  "stringify";
+
 let internalError = e => InternalError(e);
 
 /* bs-json uses exceptions instead of results, hence this function catches these

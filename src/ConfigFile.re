@@ -40,7 +40,7 @@ type t = {
 let parse = s => {
   let parseNetwork: [> network] => option(network) =
     fun
-    | (`Mainnet | `Hangzhounet | `Granadanet | `Custom(_)) as v => Some(v)
+    | (`Mainnet | `Hangzhounet | `Custom(_)) as v => Some(v)
     | _ => None;
   let c = s->parse;
   let network = c.network->Option.flatMap(parseNetwork);
@@ -201,7 +201,7 @@ module Legacy = {
   };
 
   // This migration should be initiated the moment Granadanet is no longer available
-  module VX_X = {
+  module V1_5 = {
     open JsonEx.Decode;
     open Decode;
 
@@ -209,6 +209,7 @@ module Legacy = {
       fun
       | "Mainnet" => `Mainnet
       | "Granadanet" => `Hangzhounet
+      | "Hangzhounet" => `Hangzhounet
       | n =>
         JsonEx.(raise(InternalError(DecodeError("Unknown network " ++ n))));
 
@@ -229,13 +230,18 @@ module Legacy = {
       customNetworks: json |> customNetworksDecoder,
     };
 
-    let version = Version.mk(1, 4);
+    let version = Version.mk(1, 5);
     let mk = () => {
       let mapValue = s => {
         let%Res json = JsonEx.parse(s);
         json->JsonEx.decode(legacyDecoder);
       };
-      Storage.migrate(~mapValue, ~default=dummy, ());
+      Storage.migrate(
+        ~previousKey=Storage.key,
+        ~mapValue,
+        ~default=dummy,
+        (),
+      );
     };
   };
 };

@@ -237,7 +237,7 @@ module Form = {
             value={form.values.amount}
             handleChange={form.handleChange(Amount)}
             error={form.getFieldError(Field(Amount))}
-            selectedToken={selectedToken->Option.map(t => t.address)}
+            selectedToken
             setSelectedToken={newToken => setSelectedToken(_ => newToken)}
             ?token
           />

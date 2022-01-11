@@ -23,53 +23,66 @@
 /*                                                                           */
 /*****************************************************************************/
 
-type Errors.t +=
-  | MigrationFailed(Version.t);
+module Token: {
+  // Cached tokens, either complete or with missing values
+  type t =
+    | Full(Token.t)
+    | Partial(TokenContract.t, BCD.tokenBalance, bool);
 
-let () =
-  Errors.registerHandler(
-    "LocalStorage",
-    fun
-    | MigrationFailed(v) =>
-      I18n.errors#storage_migration_failed(Version.toString(v))->Some
-    | _ => None,
-  );
-
-let currentVersion = Version.mk(1, 5);
-
-let addMigration = (migrations, version, migration) => {
-  migrations->Map.update(
-    version,
-    fun
-    | None => [migration]->Some
-    | Some(m) => [migration, ...m]->Some,
-  );
+  let id: t => int;
+  let address: t => PublicKeyHash.t;
+  let kind: t => TokenContract.kind;
+  let chain: t => option(string);
+  let name: t => option(string);
+  let isFull: t => bool;
+  let isNFT: t => bool;
 };
 
-let applyMigration = (migrations, currentVersion) => {
-  migrations->Map.reduce(Ok(), (res, version, migrations) =>
-    Version.compare(currentVersion, version) >= 0
-      ? res
-      : migrations
-        ->List.reduce(res, (res, migration) =>
-            res->Result.flatMap(_ => migration())
-          )
-        ->Result.mapError(_ => MigrationFailed(version))
-  );
+module Generic: {
+  // A generic cached contract with its tokens
+  type contract('tokens) = {
+    address: PublicKeyHash.t,
+    name: option(string),
+    tokens: Map.Int.t('tokens),
+  };
+
+  type t('token) = PublicKeyHash.Map.map(contract('token));
+
+  let empty: t('token);
+
+  let getToken: (t('token), PublicKeyHash.t, int) => option('token);
+  let updateToken:
+    (
+      t('token),
+      PublicKeyHash.t,
+      int,
+      ~updatedValue: option('token) => option('token)
+    ) =>
+    t('token);
+  let valuesToArray: t('token) => array('token);
+
+  let keepMap:
+    (t('token), (PublicKeyHash.t, int, 'token) => option('mapped)) =>
+    t('mapped);
+
+  let keepTokens:
+    (t('token), (PublicKeyHash.t, int, 'token) => bool) => t('token);
 };
 
-let init = version => {
-  Map.make(~id=(module Version.Comparable))
-  ->addMigration(Disclaimer.Legacy.V1_1.version, Disclaimer.Legacy.V1_1.mk)
-  ->addMigration(ConfigFile.Legacy.V1_2.version, ConfigFile.Legacy.V1_2.mk)
-  ->addMigration(
-      TokenStorage.Legacy.V1_3.version,
-      TokenStorage.Legacy.V1_3.mk,
-    )
-  ->addMigration(
-      TokenStorage.Legacy.V1_4.version,
-      TokenStorage.Legacy.V1_4.mk,
-    )
-  ->addMigration(ConfigFile.Legacy.V1_5.version, ConfigFile.Legacy.V1_5.mk)
-  ->applyMigration(version);
+module WithBalance: {
+  type token = (Token.t, ReBigNumber.t);
+  type contract = Generic.contract(token);
+  type t = Generic.t(token);
+
+  let mergeAndUpdateBalance: (t, t) => t;
+  let getFullToken:
+    (t, PublicKeyHash.t, int) => option((TokenRepr.t, ReBigNumber.t));
 };
+
+type t = Generic.t(Token.t);
+
+let getFullToken: (t, PublicKeyHash.t, int) => option(TokenRepr.t);
+let addToken: (t, Token.t) => t;
+let removeToken: (t, Token.t) => t;
+
+let invalidateCache: (t, [< | `Any | `FT | `NFT]) => t;

@@ -1,8 +1,8 @@
 {
   "name": "umami",
   "productName": "umami",
-  "version": "0.6.0",
- "author": {
+  "version": "0.6.1",
+  "author": {
     "name": "Nomadic Labs",
     "email": "umami@nomadic-labs.com"
   },

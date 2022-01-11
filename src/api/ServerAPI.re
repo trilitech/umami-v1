@@ -125,13 +125,11 @@ module URL = {
         ) => {
       let operationsPath = "accounts/" ++ (account :> string) ++ "/operations";
       let args =
-        List.(
-          []
-          ->addOpt(
-              destination->arg_opt("destination", dst => (dst :> string)),
-            )
-          ->addOpt(limit->arg_opt("limit", lim => lim->Js.Int.toString))
-          ->addOpt(types->arg_opt("types", t => t->Js.Array2.joinWith(",")))
+        List.Infix.(
+          types->arg_opt("types", t => t->Js.Array2.joinWith(","))
+          @? limit->arg_opt("limit", lim => lim->Js.Int.toString)
+          @? destination->arg_opt("destination", dst => (dst :> string))
+          @? []
         );
       let url = build_explorer_url(config, operationsPath, args);
       url;
@@ -150,30 +148,21 @@ module URL = {
     let tokenRegistry =
         (
           network,
-          ~accountsFilter: option(list(PublicKeyHash.t))=?,
+          ~accountsFilter: list(PublicKeyHash.t)=[],
           ~kinds=?,
           ~limit=?,
           ~index=?,
           (),
         ) => {
-      let concatOpt = (l1, l2) =>
-        l2->Option.mapWithDefault(l1, List.concat(l1));
       let args =
-        List.(
-          []
-          ->concatOpt(
-              accountsFilter->Option.map(l =>
-                l->List.map(a => ("accounts", (a :> string)))
-              ),
-            )
-          ->addOpt(
-              kinds->arg_opt("kinds", kinds =>
-                List.map(kinds, TokenContract.Encode.kindEncoder)
-                |> String.concat(",")
-              ),
-            )
-          ->addOpt(limit->arg_opt("limit", Int64.to_string))
-          ->addOpt(index->arg_opt("index", Int64.to_string))
+        List.Infix.(
+          index->arg_opt("index", Int64.to_string)
+          @? limit->arg_opt("limit", Int64.to_string)
+          @? kinds->arg_opt("kinds", kinds =>
+               List.map(kinds, TokenContract.Encode.kindEncoder)
+               |> String.concat(",")
+             )
+          @? accountsFilter->List.map(a => ("accounts", (a :> string)))
         );
       build_explorer_url(network, "tokens/registry", args);
     };
@@ -276,20 +265,18 @@ module URL = {
           (),
         ) => {
       let args =
-        List.(
-          []
-          ->addOpt(contract->arg_opt("contract", k => (k :> string)))
-          ->addOpt(limit->arg_opt("size", Js.Int.toString))
-          ->addOpt(index->arg_opt("offset", Js.Int.toString))
-          ->addOpt(
-              sortBy->arg_opt(
-                "sort_by",
-                fun
-                | `TokenId => "token_id"
-                | `Balance => "balance",
-              ),
-            )
-          ->addOpt(hideEmpty->arg_opt("hide_empty", string_of_bool))
+        List.Infix.(
+          hideEmpty->arg_opt("hide_empty", string_of_bool)
+          @? sortBy->arg_opt(
+               "sort_by",
+               fun
+               | `TokenId => "token_id"
+               | `Balance => "balance",
+             )
+          @? index->arg_opt("offset", Js.Int.toString)
+          @? limit->arg_opt("size", Js.Int.toString)
+          @? contract->arg_opt("contract", k => (k :> string))
+          @? []
         );
       config.network.chain
       ->Network.chainNetwork
@@ -355,7 +342,10 @@ module ExplorerMaker = (Get: {let get: string => Promise.t(Js.Json.t);}) => {
 
   let filterMalformedDuplicates = ops => {
     open Operation.Read;
-    let l = ops->List.fromArray;
+    let l =
+      ops
+      ->List.fromArray
+      ->List.sort((o1, o2) => compare((o1.hash, o1.id), (o2.hash, o2.id)));
 
     let rec loop = (acc, l) =>
       switch (l) {
@@ -363,8 +353,10 @@ module ExplorerMaker = (Get: {let get: string => Promise.t(Js.Json.t);}) => {
       | [h] => [h, ...acc]
       | [h1, h2, ...t] =>
         if (h1.hash == h2.hash && h1.id == h2.id) {
-          h1->isMalformedTokenTransfer
-            ? loop([h2, ...acc], t) : loop([h1, ...acc], t);
+          let h1 = h1->isMalformedTokenTransfer ? None : Some(h1);
+          let h2 = h2->isMalformedTokenTransfer ? None : Some(h2);
+
+          List.Infix.(loop(h1 @? acc, h2 @? t));
         } else {
           loop([h1, ...acc], [h2, ...t]);
         }

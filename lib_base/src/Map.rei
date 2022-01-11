@@ -58,6 +58,10 @@ module type S = {
   let split:
     (t(key, 'a, id), key) =>
     ((t(key, 'a, id), t(key, 'a, id)), option('a));
+
+  let keepMap: (t(key, 'a, id), (key, 'a) => option('b)) => t(key, 'b, id);
 };
 
 module Make: (Key: Belt.Id.Comparable) => S with module Key := Key;
+
+let keepMapInt: (Int.t('a), (int, 'a) => option('b)) => Int.t('b);

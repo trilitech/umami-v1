@@ -23,53 +23,37 @@
 /*                                                                           */
 /*****************************************************************************/
 
-type Errors.t +=
-  | MigrationFailed(Version.t);
+module Templates = PublicKeyHash.Map;
 
-let () =
-  Errors.registerHandler(
-    "LocalStorage",
-    fun
-    | MigrationFailed(v) =>
-      I18n.errors#storage_migration_failed(Version.toString(v))->Some
-    | _ => None,
-  );
-
-let currentVersion = Version.mk(1, 5);
-
-let addMigration = (migrations, version, migration) => {
-  migrations->Map.update(
-    version,
-    fun
-    | None => [migration]->Some
-    | Some(m) => [migration, ...m]->Some,
-  );
-};
-
-let applyMigration = (migrations, currentVersion) => {
-  migrations->Map.reduce(Ok(), (res, version, migrations) =>
-    Version.compare(currentVersion, version) >= 0
-      ? res
-      : migrations
-        ->List.reduce(res, (res, migration) =>
-            res->Result.flatMap(_ => migration())
-          )
-        ->Result.mapError(_ => MigrationFailed(version))
+let hicetnunc = {
+  let address =
+    "KT1RJ6PbjHpwc3M5rw5s2Nbmefwbuwbdxton"->PublicKeyHash.build->Result.getExn;
+  (
+    address,
+    (tokenId, asset) =>
+      TokenRepr.{
+        kind: TokenRepr.FA2(tokenId),
+        address,
+        alias: Format.sprintf("HEN#%d", tokenId),
+        symbol: Format.sprintf("HEN#%d", tokenId),
+        chain: `Mainnet->Network.getChainId,
+        decimals: 0,
+        asset:
+          asset->Option.getWithDefault({
+            ...TokenRepr.defaultAsset,
+            isBooleanAmount: true,
+          }),
+      },
   );
 };
 
-let init = version => {
-  Map.make(~id=(module Version.Comparable))
-  ->addMigration(Disclaimer.Legacy.V1_1.version, Disclaimer.Legacy.V1_1.mk)
-  ->addMigration(ConfigFile.Legacy.V1_2.version, ConfigFile.Legacy.V1_2.mk)
-  ->addMigration(
-      TokenStorage.Legacy.V1_3.version,
-      TokenStorage.Legacy.V1_3.mk,
-    )
-  ->addMigration(
-      TokenStorage.Legacy.V1_4.version,
-      TokenStorage.Legacy.V1_4.mk,
-    )
-  ->addMigration(ConfigFile.Legacy.V1_5.version, ConfigFile.Legacy.V1_5.mk)
-  ->applyMigration(version);
+let addTemplate = (templates, (address, template)) =>
+  templates->Templates.set(address, template);
+
+let templates = Templates.empty->addTemplate(hicetnunc);
+
+let findTemplate = (address, tokenId, asset) => {
+  templates
+  ->Templates.get(address)
+  ->Option.map(template => template(tokenId, asset));
 };

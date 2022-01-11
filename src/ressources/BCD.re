@@ -38,7 +38,10 @@ type tokenBalance = {
   external_uri: option(string),
   is_transferable: option(bool), // default: true
   is_boolean_amount: option(bool), // default: false
-  should_prefer_symbol: option(bool) //default: false
+  should_prefer_symbol: option(bool), //default: false
+  formats: option(array(TokenRepr.Metadata.format)),
+  creators: option(array(string)),
+  tags: option(array(string)),
 };
 
 type t = {
@@ -46,34 +49,110 @@ type t = {
   total: int,
 };
 
+let isNFT = t => {
+  t.artifact_uri != None
+  || t.display_uri != None
+  || t.is_boolean_amount == Some(true);
+};
+
+let toTokenAsset = token =>
+  TokenRepr.{
+    ...defaultAsset,
+    description: token.description,
+    formats: token.formats,
+    creators: token.creators,
+    tags: token.tags,
+    artifactUri: token.artifact_uri,
+    displayUri: token.display_uri,
+    thumbnailUri:
+      TokenRepr.thumbnailUriFromFormat(token.thumbnail_uri, token.formats),
+    isTransferable: token.is_transferable->Option.getWithDefault(true),
+    isBooleanAmount: token.is_boolean_amount->Option.getWithDefault(false),
+    shouldPreferSymbol:
+      token.should_prefer_symbol->Option.getWithDefault(false),
+  };
+
+let fromBuiltinTemplate = (tokenBalance, template: TokenRepr.t) => {
+  {
+    ...tokenBalance,
+    name: tokenBalance.name->Option.keep(template.alias->Some),
+    symbol: tokenBalance.symbol->Option.keep(template.symbol->Some),
+    decimals: tokenBalance.decimals->Option.keep(template.decimals->Some),
+    description:
+      tokenBalance.description->Option.keep(template.asset.description),
+    artifact_uri:
+      tokenBalance.artifact_uri->Option.keep(template.asset.artifactUri),
+    display_uri:
+      tokenBalance.display_uri->Option.keep(template.asset.displayUri),
+    thumbnail_uri:
+      tokenBalance.thumbnail_uri->Option.keep(template.asset.thumbnailUri),
+    is_transferable:
+      tokenBalance.is_transferable
+      ->Option.keep(template.asset.isTransferable->Some),
+    is_boolean_amount:
+      tokenBalance.is_boolean_amount
+      ->Option.keep(template.asset.isBooleanAmount->Some),
+    should_prefer_symbol:
+      tokenBalance.should_prefer_symbol
+      ->Option.keep(template.asset.shouldPreferSymbol->Some),
+  };
+};
+
 let toTokenRepr = (tokenContract: TokenContract.t, token) => {
   let chain =
     token.network->Network.networkChain->Option.map(Network.getChainId);
+  let kind = TokenContract.toTokenKind(tokenContract.kind, token.token_id);
   switch (token.symbol, token.name, token.decimals, chain) {
   | (Some(symbol), Some(name), Some(decimals), Some(chain)) =>
     TokenRepr.{
-      kind: TokenContract.toTokenKind(tokenContract.kind, token.token_id),
+      kind,
       address: token.contract,
       alias: name,
       symbol,
       decimals,
       chain,
-      asset: {
-        ...defaultAsset,
-        description: token.description,
-        artifactUri: token.artifact_uri,
-        displayUri: token.display_uri,
-        thumbnailUri: token.thumbnail_uri,
-        isTransferable: token.is_transferable->Option.getWithDefault(true),
-        isBooleanAmount:
-          token.is_boolean_amount->Option.getWithDefault(false),
-        shouldPreferSymbol:
-          token.should_prefer_symbol->Option.getWithDefault(false),
-      },
+      asset: token->toTokenAsset,
     }
     ->Some
   | _ => None
   };
+};
+
+let fromTokenRepr = (token: TokenRepr.t) =>
+  token.chain
+  ->Network.fromChainId
+  ->Network.chainNetwork
+  ->Option.map(network =>
+      {
+        balance: ReBigNumber.fromInt(0),
+        contract: token.address,
+        token_id: token->TokenRepr.id,
+        network,
+        name: token.alias->Some,
+        symbol: token.symbol->Some,
+        decimals: token.decimals->Some, //default: 0
+        description: token.asset.description,
+        artifact_uri: token.asset.artifactUri,
+        display_uri: token.asset.displayUri,
+        thumbnail_uri: token.asset.thumbnailUri,
+        external_uri: None,
+        is_transferable: token.asset.isTransferable->Some,
+        is_boolean_amount: token.asset.isBooleanAmount->Some,
+        should_prefer_symbol: token.asset.shouldPreferSymbol->Some,
+        formats: token.asset.formats,
+        creators: token.asset.creators,
+        tags: token.asset.tags,
+      }
+    );
+
+let updateFromBuiltinTemplate = token => {
+  let template =
+    BuiltinTokens.findTemplate(
+      token.contract,
+      token.token_id,
+      token->toTokenAsset->Some,
+    );
+  template->Option.mapWithDefault(token, fromBuiltinTemplate(token));
 };
 
 let requestPageSize = 50;
@@ -97,7 +176,15 @@ module Decode = {
     is_transferable: json |> optionalOrNull("is_transferable", bool), // default: true
     is_boolean_amount: json |> optionalOrNull("is_boolean_amount", bool), // default: false
     should_prefer_symbol:
-      json |> optionalOrNull("should_prefer_symbol", bool) //default: false
+      json |> optionalOrNull("should_prefer_symbol", bool), //default: false
+    creators: json |> optionalOrNull("formats", array(string)),
+    tags: json |> optionalOrNull("formats", array(string)),
+    formats:
+      json
+      |> optionalOrNull(
+           "formats",
+           array(Token.Decode.Metadata.formatDecoder),
+         ),
   };
 
   let decoder = json => {

@@ -124,7 +124,7 @@ let renderItem = (token: token) => <TokenItem token />;
 [@react.component]
 let make =
     (
-      ~selectedToken: option(PublicKeyHash.t),
+      ~selectedToken: option(Token.t),
       ~setSelectedToken: option(Token.t) => unit,
       ~style as styleProp=?,
       ~renderButton=renderButton,
@@ -133,17 +133,20 @@ let make =
 
   let items =
     tokens
-    ->TokenRegistry.Cache.valuesToArray
+    ->TokensLibrary.Generic.valuesToArray
     ->Array.keepMap(
         fun
-        | TokenRegistry.Cache.Full(t) => t->Token->Some
-        | Partial(_) => None,
+        | (TokensLibrary.Token.Full(t), _) => t->Token->Some
+        | (Partial(_), _) => None,
       );
 
   let onValueChange =
     fun
     | Tez => setSelectedToken(None)
     | Token(t) => t->Some->setSelectedToken;
+
+  let uniqueKey = (t: TokenRepr.t) =>
+    (t.address :> string) ++ t->TokenRepr.id->Int.toString;
 
   items->Array.size > 0
     ? <Selector
@@ -153,12 +156,12 @@ let make =
         getItemKey={
           fun
           | Tez => "tez"
-          | Token(t: TokenRepr.t) => (t.address :> string)
+          | Token(t: TokenRepr.t) => t->uniqueKey
         }
         renderButton
         onValueChange
         renderItem
-        selectedValueKey=?(selectedToken :> option(string))
+        selectedValueKey=?{selectedToken->Option.map(uniqueKey)}
         noneItem=Tez
         keyPopover="tokenSelector"
       />

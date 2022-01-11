@@ -42,7 +42,7 @@ type nextState('value) = (unit => option('value), unit => unit);
 
 type state = {
   selectedAccountState: reactState(option(PublicKeyHash.t)),
-  selectedTokenState: reactState(option(PublicKeyHash.t)),
+  selectedTokenState: reactState(option((PublicKeyHash.t, int))),
   accountsRequestState: requestState(PublicKeyHash.Map.map(Account.t)),
   secretsRequestState: reactState(ApiRequest.t(array(Secret.derived))),
   balanceRequestsState: apiRequestsState(Tez.t),
@@ -55,8 +55,8 @@ type state = {
   aliasesRequestState:
     reactState(ApiRequest.t(PublicKeyHash.Map.map(Alias.t))),
   bakersRequestState: reactState(ApiRequest.t(array(Delegate.t))),
-  tokensRequestState: reactState(ApiRequest.t(TokenRegistry.Cache.t)),
-  nftsRequestsState: apiRequestsState(TokenRegistry.Cache.t),
+  tokensRequestState: reactState(ApiRequest.t(TokensLibrary.WithBalance.t)),
+  nftsRequestsState: apiRequestsState(TokensLibrary.t),
   tokensRegistryRequestState:
     reactState(ApiRequest.t(TokensApiRequest.registry)),
   accountsTokensRequestState: apiRequestsState(TokensApiRequest.tokens),
@@ -584,19 +584,18 @@ module Tokens = {
   };
 
   let useRequest = () => {
+    open TokensLibrary;
     let (tokensRequest, _) = useRequestState();
     let apiVersion = useApiVersion();
     tokensRequest->ApiRequest.map(tokens =>
       apiVersion->Option.mapWithDefault(PublicKeyHash.Map.empty, v =>
         tokens->PublicKeyHash.Map.reduce(
           PublicKeyHash.Map.empty,
-          (filteredTokens, k, c: TokenRegistry.Cache.contract) => {
+          (filteredTokens, k, c: Generic.contract(WithBalance.token)) => {
             let tokens =
               c.tokens
-              ->Map.Int.keep((_, t) =>
-                  TokenRegistry.Cache.isFull(t)
-                  && TokenRegistry.Cache.tokenChain(t)
-                  == Some(v.Network.chain)
+              ->Map.Int.keep((_, (t, _)) =>
+                  Token.isFull(t) && Token.chain(t) == Some(v.Network.chain)
                 );
             tokens->Map.Int.isEmpty
               ? filteredTokens
@@ -659,7 +658,7 @@ module Tokens = {
 
     switch (tokenAddress, tokens) {
     | (Some(tokenAddress), tokens) =>
-      tokens->TokenRegistry.Cache.getToken(tokenAddress, 0)
+      tokens->TokensLibrary.Generic.getToken(tokenAddress, 0)
     | _ => None
     };
   };
@@ -946,9 +945,13 @@ module SelectedToken = {
     let store = useStoreContext();
     let tokens = Tokens.useGetAll();
 
+    /// FIXME: this is clearly a bug!
     switch (store.selectedTokenState, tokens) {
-    | ((Some(selectedToken), _), tokens) =>
-      tokens->TokenRegistry.Cache.getFullToken(selectedToken, 0)
+    | ((Some((selectedToken, tokenId)), _), tokens) =>
+      switch (tokens->TokensLibrary.Generic.getToken(selectedToken, tokenId)) {
+      | Some((TokensLibrary.Token.Full(t), _)) => t->Some
+      | _ => None
+      }
     | _ => None
     };
   };

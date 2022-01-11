@@ -122,7 +122,8 @@ module DelegateMaker = (Get: {let get: URL.t => Promise.t(Js.Json.t);}) => {
     };
 
   let getForAccount = (config: ConfigContext.env, account) => {
-    let%AwaitMap res = TaquitoAPI.Delegate.get(config.network.endpoint, account);
+    let%AwaitMap res =
+      TaquitoAPI.Delegate.get(config.network.endpoint, account);
 
     res->Option.flatMap(delegate => account == delegate ? None : res);
   };
@@ -174,7 +175,7 @@ module DelegateMaker = (Get: {let get: URL.t => Promise.t(Js.Json.t);}) => {
       info->Some;
     } else {
       switch ((firstOperation.payload: Operation.Read.payload)) {
-      | Transaction(Token(payload, _))
+      | Transaction(Token(payload, _, _))
       | Transaction(Tez(payload)) =>
         {...info, lastReward: Some(payload.amount)}->Some
       | _ => info->Some
