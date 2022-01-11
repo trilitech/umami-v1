@@ -118,12 +118,12 @@ let makeFrameStyle =
             ),
           )
         : None,
-      disabled ? Some(style(~color=theme.colors.textDisabled, ())) : None,
       value != "" && onClear != None ? Some(styles##clearMargin) : None,
       styleFromProp,
       disabled
         ? Some(
             style(
+              ~color=theme.colors.textDisabled,
               ~backgroundColor=theme.colors.stateDisabled,
               ~borderWidth=0.,
               ~paddingVertical=paddingVertical->dp,
