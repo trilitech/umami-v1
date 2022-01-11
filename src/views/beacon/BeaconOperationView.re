@@ -155,7 +155,11 @@ module Make = (Op: OP) => {
     let (signStep, setSign) as signOpStep =
       React.useState(() => SignOperationView.SummaryStep);
 
-    let title = SignOperationView.makeTitle(signStep);
+    let title =
+      switch (operationApiRequest) {
+      | Done(Ok(_), _) => None
+      | _ => SignOperationView.makeTitle(signStep)->Some
+      };
 
     let back =
       switch (signStep) {
@@ -163,7 +167,7 @@ module Make = (Op: OP) => {
       | SummaryStep => None
       };
 
-    <ModalFormView title ?closing back>
+    <ModalFormView ?title ?closing back>
       {switch (operationApiRequest) {
        | Done(Ok(hash), _) =>
          <SubmittedView hash onPressCancel submitText=I18n.Btn.go_operations />
