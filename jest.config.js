@@ -6,4 +6,6 @@ module.exports = {
   ],
   collectCoverageFrom: ["src/*.js"],
   testEnvironment: "jsdom",
+  preset: "react-native-web",
+  setupFilesAfterEnv: ["<rootDir>/jestSetup.js"],
 };
