@@ -73,12 +73,15 @@ module AddTokenButton = {
   };
 };
 
+let styles =
+  Style.(StyleSheet.create({"header": style(~marginBottom=32.->dp, ())}));
+
 [@react.component]
 let make = () => {
   let accounts = StoreContext.Accounts.useGetAll();
   let apiVersion: option(Network.apiVersion) = StoreContext.useApiVersion();
   let (syncState, setSyncState) = React.useState(_ => Sync.NotInitiated);
-  let (search, setSearch) = React.useState(_ => "");
+  let (searched, setSearch) = React.useState(_ => "");
   let stop = React.useRef(false);
 
   let accounts = accounts->PublicKeyHash.Map.keysToList;
@@ -154,13 +157,24 @@ let make = () => {
     [|tokensRequest|],
   );
 
+  let matchToken = (token, searched) => {
+    open TokensLibrary.Token;
+    let searched = searched->Js.String.toLocaleLowerCase;
+    let matchValue = value =>
+      value->Js.String.toLocaleLowerCase->Js.String2.includes(searched);
+    token->name->Option.mapDefault(false, matchValue)
+    || token->symbol->Option.mapDefault(false, matchValue)
+    || (token->address :> string)->matchValue;
+  };
+
   let partitionedTokens =
     React.useMemo1(
       () => {
         tokens->Option.map(tokens =>
           tokens->Result.map(tokens =>
             tokens->TokensLibrary.Generic.keepPartition((_, _, (t, reg)) =>
-              t->TokensLibrary.Token.isNFT ? None : Some(reg)
+              t->TokensLibrary.Token.isNFT || !t->matchToken(searched)
+                ? None : Some(reg)
             )
           )
         )
@@ -199,13 +213,14 @@ let make = () => {
       }
     />
     <SearchAndSync
-      value=search
+      value=searched
       onValueChange={value => setSearch(_ => value)}
-      placeholder=I18n.Input_placeholder.search_for_nft
+      placeholder=I18n.Input_placeholder.search_for_token
       onRefresh
       onStop
       syncState
       syncIcon=Icons.SyncNFT.build
+      style={styles##header}
     />
     {switch (partitionedTokens) {
      | None => <LoadingView />
