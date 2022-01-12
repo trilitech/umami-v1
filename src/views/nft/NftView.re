@@ -217,7 +217,7 @@ module Component = {
           onValueChange={value => setSearch(_ => value)}
           placeholder=I18n.Input_placeholder.search_for_nft
         />
-        <Sync onRefresh onStop state=syncState />
+        <Sync onRefresh onStop state=syncState icon=Icons.SyncNFT.build />
       </View>
       {switch (mode) {
        | Gallery => <NftGalleryView nfts />
