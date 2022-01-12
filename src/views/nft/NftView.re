@@ -28,17 +28,6 @@ open ReactNative;
 let styles =
   Style.(
     StyleSheet.create({
-      "searchSection":
-        Style.(
-          style(
-            ~maxHeight=44.->dp,
-            ~flexBasis=48.->dp,
-            ~flex=1.,
-            ~flexDirection=`row,
-            ~alignItems=`center,
-            (),
-          )
-        ),
       "listContent":
         style(
           ~flex=1.,
@@ -47,7 +36,6 @@ let styles =
           ~paddingHorizontal=LayoutConst.pagePaddingHorizontal->dp,
           (),
         ),
-      "searchAndSync": style(~flexDirection=`row, ()),
     })
   );
 
@@ -209,16 +197,15 @@ module Component = {
           }
         />
       </NftHeaderView>
-      <View style={styles##searchAndSync}>
-        <ThemedTextInput
-          style=styles##searchSection
-          icon=Icons.Search.build
-          value=search
-          onValueChange={value => setSearch(_ => value)}
-          placeholder=I18n.Input_placeholder.search_for_nft
-        />
-        <Sync onRefresh onStop state=syncState icon=Icons.SyncNFT.build />
-      </View>
+      <SearchAndSync
+        value=search
+        onValueChange={value => setSearch(_ => value)}
+        placeholder=I18n.Input_placeholder.search_for_nft
+        onRefresh
+        onStop
+        syncState
+        syncIcon=Icons.SyncNFT.build
+      />
       {switch (mode) {
        | Gallery => <NftGalleryView nfts />
        | Collection => <NftCollectionView account nfts />
