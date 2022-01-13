@@ -93,6 +93,15 @@ let initialState = {
 
 let context = React.createContext(initialState);
 
+let shouldRetry = (~onlyOn, ~onlyAfter, ~networkStatus) => {
+  switch (onlyOn, onlyAfter) {
+  | (None, None) => true
+  | (Some(on), Some(_) as after) =>
+    after == networkStatus.previous && on == networkStatus.current
+  | (Some(on), None) => on == networkStatus.current
+  | (None, Some(_) as after) => after == networkStatus.previous
+  };
+};
 module Provider = {
   let makeProps = (~value, ~children, ()) => {
     "value": value,
@@ -137,6 +146,25 @@ let version = () => {
   };
 };
 
+type networkState =
+  | Shutdown
+  | Startup
+  | Stable;
+
+let getNetworkState = networkStatus =>
+  if (networkStatus.current == Offline
+      && (
+        networkStatus.previous == Some(Online)
+        || networkStatus.previous == None
+      )) {
+    Shutdown;
+  } else if (networkStatus.current == Online
+             && networkStatus.previous == Some(Offline)) {
+    Startup;
+  } else {
+    Stable;
+  };
+
 [@react.component]
 let make = (~children) => {
   let (configFile, setConfig) = React.useState(() => load());
@@ -178,15 +206,10 @@ let make = (~children) => {
   };
 
   let retryNetwork = (~onlyOn=?, ~onlyAfter=?, ()) => {
-    switch (onlyOn, onlyAfter) {
-    | (None, None) => pickNetwork()
-    | (Some(on), Some(_) as after) =>
-      after == networkStatus.previous && on == networkStatus.current
-        ? pickNetwork() : ()
-    | (Some(on), None) => on == networkStatus.current ? pickNetwork() : ()
-    | (None, Some(_) as after) =>
-      after == networkStatus.previous ? pickNetwork() : ()
+    if (shouldRetry(~onlyOn, ~onlyAfter, ~networkStatus)) {
+      pickNetwork();
     };
+    ();
   };
 
   React.useEffect1(
@@ -229,17 +252,12 @@ let make = (~children) => {
 
   React.useEffect1(
     () => {
-      if (networkStatus.current == Offline
-          && (
-            networkStatus.previous == Some(Online)
-            || networkStatus.previous == None
-          )) {
-        setLastCheck(_ => Some(0));
-      } else if (networkStatus.current == Online
-                 && networkStatus.previous == Some(Offline)) {
-        setLastCheck(_ => None);
-      } else {
-        ();
+      let networkState = getNetworkState(networkStatus);
+
+      switch (networkState) {
+      | Shutdown => setLastCheck(_ => Some(0))
+      | Startup => setLastCheck(_ => None)
+      | Stable => ()
       };
 
       None;
