@@ -1,49 +1,61 @@
+/*****************************************************************************/
+/*                                                                           */
+/* Open Source License                                                       */
+/* Copyright (c) 2019-2021 Nomadic Labs, <contact@nomadic-labs.com>          */
+/*                                                                           */
+/* Permission is hereby granted, free of charge, to any person obtaining a   */
+/* copy of this software and associated documentation files (the "Software"),*/
+/* to deal in the Software without restriction, including without limitation */
+/* the rights to use, copy, modify, merge, publish, distribute, sublicense,  */
+/* and/or sell copies of the Software, and to permit persons to whom the     */
+/* Software is furnished to do so, subject to the following conditions:      */
+/*                                                                           */
+/* The above copyright notice and this permission notice shall be included   */
+/* in all copies or substantial portions of the Software.                    */
+/*                                                                           */
+/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR*/
+/* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,  */
+/* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL   */
+/* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER*/
+/* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING   */
+/* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER       */
+/* DEALINGS IN THE SOFTWARE.                                                 */
+/*                                                                           */
+/*****************************************************************************/
+open Let;
+
 module Encodings: {
-  type element(_, 'error);
+  type element(_);
+  type or_('a, 'b) = [ | `Left('a) | `Right('b)];
 
-  let string: element(string, 'error);
-  let bool: element(bool, 'error);
-  let number: element(ReBigNumber.t, 'error);
-  let custom: (~conv: string => result('a, 'error)) => element('a, 'error);
-  let opt: element('a, 'error) => element(option('a), 'error);
+  let string: element(string);
+  let bool: element(bool);
+  let number: element(ReBigNumber.t);
+  let custom: (~conv: string => result('a)) => element('a);
+  let opt: element('a) => element(option('a));
 
-  type row_repr(_, 'error);
-  type row(_, 'error);
+  type row_repr(_);
+  type row(_);
 
-  let cell: element('a, 'error) => row_repr('a, 'error);
-  let tup2:
-    (element('a, 'error), element('b, 'error)) =>
-    row_repr(('a, 'b), 'error);
+  let cell: element('a) => row_repr('a);
+  let tup2: (element('a), element('b)) => row_repr(('a, 'b));
   let tup3:
-    (element('a, 'error), element('b, 'error), element('c, 'error)) =>
-    row_repr(('a, 'b, 'c), 'error);
+    (element('a), element('b), element('c)) => row_repr(('a, 'b, 'c));
   let tup4:
-    (
-      element('a, 'error),
-      element('b, 'error),
-      element('c, 'error),
-      element('d, 'error)
-    ) =>
-    row_repr(('a, 'b, 'c, 'd), 'error);
+    (element('a), element('b), element('c), element('d)) =>
+    row_repr(('a, 'b, 'c, 'd));
   let tup5:
-    (
-      element('a, 'error),
-      element('b, 'error),
-      element('c, 'error),
-      element('d, 'error),
-      element('e, 'error)
-    ) =>
-    row_repr(('a, 'b, 'c, 'd, 'e), 'error);
+    (element('a), element('b), element('c), element('d), element('e)) =>
+    row_repr(('a, 'b, 'c, 'd, 'e));
+  let or_: (row_repr('a), row_repr('b)) => row_repr(or_('a, 'b));
 
-  let merge_rows:
-    (row_repr('a, 'error), row_repr('b, 'error)) =>
-    row_repr(('a, 'b), 'error);
+  let merge_rows: (row_repr('a), row_repr('b)) => row_repr(('a, 'b));
 
-  let mkRow: row_repr('a, 'error) => row('a, 'error);
+  let mkRow: row_repr('a) => row('a);
 
   /* Rows whose optional values are only accepted at the end (checked
      at runtime) */
-  let mkNullableRow: row_repr('a, 'error) => row('a, 'error);
+  let mkNullableRow: row_repr('a) => row('a);
 };
 
 type row = int;
@@ -56,8 +68,6 @@ type Errors.t +=
   | CannotParseRow(row)
   | CannotParseCSV;
 
-let parseRow:
-  (~row: int=?, string, Encodings.row('a, Errors.t)) => result('a, Errors.t);
+let parseRow: (~row: int=?, string, Encodings.row('a)) => result('a);
 
-let parseCSV:
-  (string, Encodings.row('a, Errors.t)) => result(list('a), Errors.t);
+let parseCSV: (string, Encodings.row('a)) => result(list('a));

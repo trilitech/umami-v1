@@ -33,9 +33,9 @@ type Errors.t +=
 
 type t = list(Transfer.elt);
 /* Public key hash encoding */
-let addr: CSVParser.Encodings.element(PublicKeyHash.t, Errors.t);
+let addr: CSVParser.Encodings.element(PublicKeyHash.t);
 /* Contract hash encoding */
-let token: CSVParser.Encodings.element(PublicKeyHash.t, Errors.t);
+let token: CSVParser.Encodings.element(PublicKeyHash.t);
 /* CSV row encoding */
 let rowEncoding:
   CSVParser.Encodings.row(
@@ -45,7 +45,6 @@ let rowEncoding:
       option(PublicKeyHash.t),
       option(ReBigNumber.t),
     ),
-    Errors.t,
   );
 
 let parseCSV:

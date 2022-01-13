@@ -23,15 +23,38 @@
 /*                                                                           */
 /*****************************************************************************/
 
+open Let;
+
 module Encodings = {
   exception IllformedEncoder;
 
-  type element(_, 'error) =
-    | String: element(string, 'error')
-    | Number: element(ReBigNumber.t, 'error)
-    | Bool: element(bool, 'error)
-    | Option(element('a, 'error)): element(option('a), 'error)
-    | Custom(string => result('a, 'error)): element('a, 'error);
+  type or_('a, 'b) = [ | `Left('a) | `Right('b)];
+
+  type element(_) =
+    | String: element(string)
+    | Number: element(ReBigNumber.t)
+    | Bool: element(bool)
+    | Option(element('a)): element(option('a))
+    | Custom(string => result('a)): element('a);
+
+  /* Directly encode rows as tuples from 1 to 5, instead of an
+     heterogenous list. It simplifies the usage. */
+  type row_repr(_) =
+    | Cell(element('a)): row_repr('a)
+    | Tup2(row_repr('a), row_repr('b)): row_repr(('a, 'b))
+    | Tup3(row_repr('a), row_repr('b), row_repr('c))
+      : row_repr(('a, 'b, 'c))
+    | Tup4(row_repr('a), row_repr('b), row_repr('c), row_repr('d))
+      : row_repr(('a, 'b, 'c, 'd))
+    | Tup5(
+        row_repr('a),
+        row_repr('b),
+        row_repr('c),
+        row_repr('d),
+        row_repr('e),
+      )
+      : row_repr(('a, 'b, 'c, 'd, 'e))
+    | Or(row_repr('a), row_repr('b)): row_repr(or_('a, 'b));
 
   let string = String;
   let number = Number;
@@ -39,38 +62,10 @@ module Encodings = {
   let custom = (~conv) => Custom(conv);
   let opt = elt => Option(elt);
 
-  /* Directly encode rows as tuples from 1 to 5, instead of an
-     heterogenous list. It simplifies the usage. */
-  type row_repr(_, 'error) =
-    | Cell(element('a, 'error)): row_repr('a, 'error)
-    | Tup2(row_repr('a, 'error), row_repr('b, 'error))
-      : row_repr(('a, 'b), 'error)
-    | Tup3(
-        row_repr('a, 'error),
-        row_repr('b, 'error),
-        row_repr('c, 'error),
-      )
-      : row_repr(('a, 'b, 'c), 'error)
-    | Tup4(
-        row_repr('a, 'error),
-        row_repr('b, 'error),
-        row_repr('c, 'error),
-        row_repr('d, 'error),
-      )
-      : row_repr(('a, 'b, 'c, 'd), 'error)
-    | Tup5(
-        row_repr('a, 'error),
-        row_repr('b, 'error),
-        row_repr('c, 'error),
-        row_repr('d, 'error),
-        row_repr('e, 'error),
-      )
-      : row_repr(('a, 'b, 'c, 'd, 'e), 'error);
-
   /* This proxy can be used to enforce invariants in the future */
-  type row('a, 'error) = row_repr('a, 'error);
+  type row('a) = row_repr('a);
 
-  let rec isEndingNullable: type t. row_repr(t, 'error) => bool =
+  let rec isEndingNullable: type t. row_repr(t) => bool =
     fun
     | Cell(Option(_)) => true
     | Cell(_) => false
@@ -79,7 +74,8 @@ module Encodings = {
     | Tup4(r1, r2, r3, r4) =>
       isEndingNullable(Tup2(r1, Tup2(r2, Tup2(r3, r4))))
     | Tup5(r1, r2, r3, r4, r5) =>
-      isEndingNullable(Tup2(r1, Tup2(r2, Tup2(r3, Tup2(r4, r5)))));
+      isEndingNullable(Tup2(r1, Tup2(r2, Tup2(r3, Tup2(r4, r5)))))
+    | Or(r1, r2) => isEndingNullable(r1) && isEndingNullable(r2);
 
   /* Combinators to generates row of up to 5 elements */
   let cell = elt => Cell(elt);
@@ -90,6 +86,7 @@ module Encodings = {
     Tup4(cell(elt1), cell(elt2), cell(elt3), cell(elt4));
   let tup5 = (elt1, elt2, elt3, elt4, elt5) =>
     Tup5(cell(elt1), cell(elt2), cell(elt3), cell(elt4), cell(elt5));
+  let or_ = (r1, r2) => Or(r1, r2);
 
   /* Combines to rows */
   let merge_rows = (r1, r2) => Tup2(r1, r2);
@@ -98,16 +95,6 @@ module Encodings = {
   let mkNullableRow = r => isEndingNullable(r) ? r : raise(IllformedEncoder);
 
   let mkRow = r => r;
-
-  let rec length: type elt. row_repr(elt, 'error) => int =
-    fun
-    | Cell(_) => 1
-    | Tup2(r1, r2) => length(r1) + length(r2)
-    | Tup3(r1, r2, r3) => length(r1) + length(r2) + length(r3)
-    | Tup4(r1, r2, r3, r4) =>
-      length(r1) + length(r2) + length(r3) + length(r4)
-    | Tup5(r1, r2, r3, r4, r5) =>
-      length(r1) + length(r2) + length(r3) + length(r4) + length(r5);
 };
 
 type row = int;
@@ -148,13 +135,13 @@ let parseBool = (v, row, col) => {
     ? Ok(true)
     : b == "false" ? Ok(false) : Error(CannotParseBool(row, col));
 };
+
 let parseCustom = (v, conv, row, col) => {
   v->conv->Result.mapError(e => CannotParseCustomValue(e, row, col));
 };
 
 let rec parseElementRaw:
-  type t.
-    (string, Encodings.element(t, 'error), row, col) => result(t, Errors.t) =
+  type t. (string, Encodings.element(t), row, col) => result(t) =
   (value, enc, row, col) =>
     switch (enc) {
     | Encodings.Number => parseNumber(value, row, col)
@@ -175,44 +162,64 @@ let parseNullableElement = (v, enc, row, col) =>
   ->Option.map(v => v == "" ? Ok(None) : parseElementRaw(v, enc, row, col))
   ->Option.getWithDefault(Error(CannotParseRow(row)));
 
+
 let rec parseRowRec:
-  type t.
-    (array(string), Encodings.row(t, 'error), row, col) =>
-    result(t, Errors.t) =
+  type t. (array(string), Encodings.row(t), row, col) => result((t, int)) =
   (values, enc, row, col) =>
     Encodings.(
       switch (enc) {
       /* Parse a single cell */
       | Cell(Option(elt)) =>
         col >= values->Array.length
-          ? Ok(None)
-          : values[col]->parseNullableElement(Option(elt), row, col)
+          ? Ok((None, 0))
+          : values[col]
+            ->parseNullableElement(Option(elt), row, col)
+            ->Result.map(v => (v, 1))
 
       | Cell(enc) =>
         col < values->Array.length
-          ? values[col]->parseElement(enc, row, col)
+          ? values[col]
+            ->parseElement(enc, row, col)
+            ->Result.map(v => (v, 1))
           : Error(CannotParseRow(row))
 
       /* Parse a couple of two sub rows, and returns a couple */
       | Tup2(r1, r2) =>
-        let v1 = parseRowRec(values, r1, row, col);
-        let v2 = parseRowRec(values, r2, row, col + length(r1));
-        Result.map2(v1, v2, (v1, v2) => (v1, v2));
+        let%Res (v1, l1) = parseRowRec(values, r1, row, col);
+        let%ResMap (v2, l2) = parseRowRec(values, r2, row, col + l1);
+        ((v1, v2), l2);
 
       /* These last three simply reuse Tup2 parsing and return a tuple of the correct type */
       | Tup3(r1, r2, r3) =>
-        parseRowRec(values, Tup2(r1, Tup2(r2, r3)), row, col)
-        ->Belt.Result.map(((a, (b, c))) => (a, b, c))
+        let%ResMap ((a, (b, c)), l) =
+          parseRowRec(values, Tup2(r1, Tup2(r2, r3)), row, col);
+        ((a, b, c), l);
 
       | Tup4(r1, r2, r3, r4) =>
-        parseRowRec(values, Tup2(r1, Tup3(r2, r3, r4)), row, col)
-        ->Belt.Result.map(((a, (b, c, d))) => (a, b, c, d))
+        let%ResMap ((a, (b, c, d)), l) =
+          parseRowRec(values, Tup2(r1, Tup3(r2, r3, r4)), row, col);
+        ((a, b, c, d), l);
 
       | Tup5(r1, r2, r3, r4, r5) =>
-        parseRowRec(values, Tup2(r1, Tup4(r2, r3, r4, r5)), row, col)
-        ->Belt.Result.map(((a, (b, c, d, e))) => (a, b, c, d, e))
+        let%ResMap ((a, (b, c, d, e)), l) =
+          parseRowRec(values, Tup2(r1, Tup4(r2, r3, r4, r5)), row, col);
+        ((a, b, c, d, e), l);
+
+      | Or(left, right) => parseOr(values, left, right, row, col)
       }
-    );
+    )
+
+and parseOr:
+  type left right.
+    (array(string), Encodings.row(left), Encodings.row(right), row, col) =>
+    result((Encodings.or_(left, right), int)) =
+  (values, enc1, enc2, row, col) =>
+    switch (parseRowRec(values, enc1, row, col)) {
+    | Ok((v, l)) => Ok((`Left(v), l))
+    | Error(_) =>
+      let%ResMap (v, l) = parseRowRec(values, enc2, row, col);
+      (`Right(v), l);
+    };
 
 let removeComments = line => {
   let commentIndex = Js.String.indexOf("#", line);
@@ -221,9 +228,11 @@ let removeComments = line => {
 };
 
 let parseRow = (~row=0, value, encoding) => {
-  Js.String.split(",", value)
-  ->Array.map(Js.String.trim)
-  ->parseRowRec(encoding, row, 0);
+  let%ResMap (v, _) =
+    Js.String.split(",", value)
+    ->Array.map(Js.String.trim)
+    ->parseRowRec(encoding, row, 0);
+  v;
 };
 
 let parseRows = (rows, encoding) =>
