@@ -37,6 +37,8 @@ module Encodings: {
   type row_repr(_);
   type row(_);
 
+  let null: row_repr(unit);
+
   let cell: element('a) => row_repr('a);
   let tup2: (element('a), element('b)) => row_repr(('a, 'b));
   let tup3:

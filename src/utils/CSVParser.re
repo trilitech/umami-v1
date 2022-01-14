@@ -40,6 +40,7 @@ module Encodings = {
   /* Directly encode rows as tuples from 1 to 5, instead of an
      heterogenous list. It simplifies the usage. */
   type row_repr(_) =
+    | Null: row_repr(unit)
     | Cell(element('a)): row_repr('a)
     | Tup2(row_repr('a), row_repr('b)): row_repr(('a, 'b))
     | Tup3(row_repr('a), row_repr('b), row_repr('c))
@@ -67,6 +68,7 @@ module Encodings = {
 
   let rec isEndingNullable: type t. row_repr(t) => bool =
     fun
+    | Null => true
     | Cell(Option(_)) => true
     | Cell(_) => false
     | Tup2(r1, r2) => isEndingNullable(r1) ? isEndingNullable(r2) : false
@@ -78,6 +80,7 @@ module Encodings = {
     | Or(r1, r2) => isEndingNullable(r1) && isEndingNullable(r2);
 
   /* Combinators to generates row of up to 5 elements */
+  let null = Null;
   let cell = elt => Cell(elt);
   let tup2 = (elt1, elt2) => Tup2(cell(elt1), cell(elt2));
   let tup3 = (elt1, elt2, elt3) =>
@@ -168,6 +171,8 @@ let rec parseRowRec:
   (values, enc, row, col) =>
     Encodings.(
       switch (enc) {
+      | Null => Ok(((), 0))
+
       /* Parse a single cell */
       | Cell(Option(elt)) =>
         col >= values->Array.length
