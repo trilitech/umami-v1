@@ -251,6 +251,18 @@ module AppView = {
         ~wertURL,
       );
 
+    let handleCloseBuyTezView = _ => {
+      setWertURL(_ => None);
+      setOnboardingState(_ => Dashboard);
+    };
+
+    let handleCloseWertView = _ => {
+      closeAction();
+      if (wertURL == None) {
+        setOnboardingState(_ => Dashboard);
+      };
+    };
+
     <DocumentContext>
       <View
         style=Style.(
@@ -280,27 +292,13 @@ module AppView = {
                            onChangeOnboardingState=setOnboardingState
                          />,
                          src =>
-                         <BuyTezView
-                           src
-                           onClose={_ => {
-                             setWertURL(_ => None);
-                             setOnboardingState(_ => Dashboard);
-                           }}
-                         />
+                         <BuyTezView src onClose=handleCloseBuyTezView />
                        )}
                     </>
                   }}
                </View>
                <ModalAction visible=visibleModal onRequestClose=closeAction>
-                 <WertView
-                   submit=buyTez
-                   closeAction={_ => {
-                     closeAction();
-                     if (wertURL == None) {
-                       setOnboardingState(_ => Dashboard);
-                     };
-                   }}
-                 />
+                 <WertView submit=buyTez closeAction=handleCloseWertView />
                </ModalAction>
              </View>}
       </View>
