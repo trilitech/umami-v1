@@ -134,7 +134,7 @@ module CustomAuthView = {
            st
            title=I18n.Title.custom_auth_waiting_auth
            expl={I18n.Expl.custom_auth_sign(
-             provider->CustomAuthVerifiers.getProviderName,
+             provider->ReCustomAuth.getProviderName,
            )}
          />
        | Confirmed =>

@@ -47,11 +47,25 @@ type initParams = {
   skipSw: bool,
 };
 
-type provider = [ | `google];
+type handledProvider = [ | `google];
 
-let providerToString: provider => string =
+type provider = [
+  handledProvider
+  | `twitch
+  | `discord
+  | `github
+  | `twitter
+  | `reddit
+  | `facebook
+];
+
+let providerToString: handledProvider => string =
   fun
   | `google => "google";
+
+let getProviderName =
+  fun
+  | `google => "Google";
 
 type Errors.t +=
   | UnableToRetrieveHandle
@@ -67,7 +81,7 @@ let () =
     | _ => None,
   );
 
-let providerFromString: string => Let.result(provider) =
+let providerFromString: string => Let.result(handledProvider) =
   fun
   | "google" => `google->Ok
   | s => Error(InvalidProvider(s));
@@ -75,9 +89,9 @@ let providerFromString: string => Let.result(provider) =
 module Handle: {
   type t = pri string;
   let fromString: string => t;
-  let display: (t, provider) => string;
+  let display: (t, handledProvider) => string;
 
-  let resolve: (option(t), option(t)) => Let.result(t);
+  let resolve: (~name: option(t), ~email: option(t)) => Let.result(t);
 } = {
   type t = string;
   let fromString = x => x;
@@ -87,12 +101,20 @@ module Handle: {
     | `google => name
     };
 
-  let resolve = (email, name) =>
+  let resolve = (~name, ~email) =>
     switch (email, name) {
     | (None | Some(""), None | Some("")) => Error(UnableToRetrieveHandle)
     | (None | Some(""), Some(name)) => Ok(name)
     | (Some(email), _) => Ok(email)
     };
+};
+
+module Verifier: {
+  type t = pri string;
+  let fromString: string => t;
+} = {
+  type t = string;
+  let fromString = x => x;
 };
 
 type prompt = [ | `none | `login | `consent | `select_account];
@@ -110,20 +132,16 @@ type jwtParams = {
   display,
 };
 
-[@bs.deriving abstract]
-type triggerLoginParams = {
-  typeOfLogin: provider,
-  verifier: string,
-  clientId: string,
-  [@bs.optional]
-  jwtParams,
+type lookupInfos = {
+  verifier: Verifier.t,
+  verifierId: Handle.t,
 };
 
 [@bs.deriving abstract]
 type subVerifier = {
   clientId: string,
   typeOfLogin: provider,
-  verifier: string,
+  verifier: Verifier.t,
   [@bs.optional]
   jwtParams,
 };
@@ -133,14 +151,14 @@ type aggregateVerifier = [ | `single_id_verifier];
 [@bs.deriving abstract]
 type triggerAggregateLoginParams = {
   aggregateVerifierType: aggregateVerifier,
-  verifierIdentifier: string,
+  verifierIdentifier: Verifier.t,
   subVerifierDetailsArray: array(subVerifier),
 };
 
 type userInfo = {
   email: option(Handle.t),
   name: option(Handle.t),
-  typeOfLogin: provider,
+  typeOfLogin: handledProvider,
 };
 
 type aggregateLoginDetails = {
@@ -149,13 +167,13 @@ type aggregateLoginDetails = {
   userInfo: array(userInfo),
 };
 
-let findInfo = (infos, provider) =>
+let findInfo = (infos, provider: handledProvider) =>
   infos
   ->Array.getBy(i => i.typeOfLogin == provider)
   ->Result.fromOption(UnableToRetrieveHandle);
 
 type infos = {
-  provider,
+  provider: handledProvider,
   handle: Handle.t,
 };
 

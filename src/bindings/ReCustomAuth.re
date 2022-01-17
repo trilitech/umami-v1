@@ -23,7 +23,7 @@
 /*                                                                           */
 /*****************************************************************************/
 
-let network = `testnet;
+open Let;
 
 /* An auth provider redirects to a web page owned by the
    auth consumer (us/our api) to ensure only this consumer's
@@ -38,6 +38,7 @@ let network = `testnet;
 let redirectDomain = "https://umamiwallet.com";
 let baseUrl = redirectDomain ++ "/auth/";
 let redirectPathName = "redirect.html";
+let network = `testnet;
 
 include ReCustomAuthType;
 
@@ -85,8 +86,83 @@ let parse = (e: RawJsError.t) =>
   | s => Errors.Generic(Js.String.make(s))
   };
 
+module NodeDetails = {
+  type endpoints;
+  type nodePub;
+
+  type default;
+
+  type t = {
+    [@bs.as "torusNodeEndpoints"]
+    endpoints,
+    [@bs.as "torusNodePub"]
+    nodePub,
+  };
+
+  type params = {
+    network: string,
+    proxyAddress: string,
+  };
+
+  let mainnet = {
+    network: "mainnet",
+    proxyAddress: "0x638646503746d5456209e33a2ff5e3226d698bea",
+  };
+
+  let testnet = {
+    network: "ropsten",
+    proxyAddress: "0x4023d2a0D330bF11426B12C6144Cfb96B7fa6183",
+  };
+
+  [@bs.module "@toruslabs/fetch-node-details"] [@bs.new]
+  external make: params => default = "default";
+
+  [@bs.send] external get: default => Js.Promise.t(t) = "getNodeDetails";
+
+  let get = () =>
+    make(network == `mainnet ? mainnet : testnet)
+    ->get
+    ->RawJsError.fromPromiseParsed(parse);
+};
+
+module Utils = {
+  type default;
+
+  type address = {
+    address: string,
+    [@bs.as "X"]
+    x: string,
+    [@bs.as "Y"]
+    y: string,
+  };
+
+  [@bs.module "@toruslabs/torus.js"] [@bs.new]
+  external make: unit => default = "default";
+
+  [@bs.send]
+  external getPublicAddress:
+    (
+      default,
+      NodeDetails.endpoints,
+      NodeDetails.nodePub,
+      lookupInfos,
+      [@bs.as "true"] _
+    ) =>
+    Js.Promise.t(address) =
+    "getPublicAddress";
+
+  let getPublicAddress = (~verifier, handle) => {
+    let%Await NodeDetails.{endpoints, nodePub} = NodeDetails.get();
+
+    let utils = make();
+    utils
+    ->getPublicAddress(endpoints, nodePub, {verifier, verifierId: handle})
+    ->RawJsError.fromPromiseParsed(parse);
+  };
+};
+
 /* Initiate the sdk by checking for access to torus and redirection page
-   https://docs.tor.us/customauth/api-reference/initialization
+     https://docs.tor.us/customauth/api-reference/initialization
    */
 let init = (sdk, initParams) => {
   sdk->init(initParams)->RawJsError.fromPromiseParsed(parse);
@@ -100,6 +176,22 @@ let init = (sdk, initParams) => {
    auth informations are received from deeplink call from the browser
    see [useDeeplinkHandler] in module [ReCustomAuthUtils]
    */
-let triggerAggregateLogin = (sdk, params) => {
+let triggerAggregateLogin = (sdk, ~accountHandle=?, provider: handledProvider) => {
+  let params =
+    switch (provider) {
+    | `google => CustomAuthVerifiers.googleParams(accountHandle)
+    };
+
   sdk->triggerAggregateLogin(params)->RawJsError.fromPromiseParsed(parse);
+};
+
+let getPublicAddress = (~provider, handle) => {
+  let verifier =
+    switch (provider) {
+    | `google => CustomAuthVerifiers.google
+    };
+
+  let%AwaitRes {x, y} = Utils.getPublicAddress(~verifier, handle);
+  let%ResMap pkh = Crypto.spPointsToPkh(~x, ~y);
+  pkh;
 };

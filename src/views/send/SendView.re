@@ -431,7 +431,7 @@ let make = (~account, ~closeAction) => {
         ) =>
         ModalFormView.Deny(
           I18n.Tooltip.reject_on_provider(
-            provider->CustomAuthVerifiers.getProviderName,
+            provider->ReCustomAuth.getProviderName,
           ),
         )
         ->Some
