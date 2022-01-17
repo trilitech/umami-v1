@@ -59,7 +59,7 @@ module Component = {
   [@react.component]
   let make = (~account) => {
     let (mode, setMode) = React.useState(_ => Gallery);
-    let (syncState, setSyncState) = React.useState(_ => NftSync.NotInitiated);
+    let (syncState, setSyncState) = React.useState(_ => Sync.NotInitiated);
     let (search, setSearch) = React.useState(_ => "");
     let stop = React.useRef(false);
 
@@ -217,7 +217,7 @@ module Component = {
           onValueChange={value => setSearch(_ => value)}
           placeholder=I18n.Input_placeholder.search_for_nft
         />
-        <NftSync onRefresh onStop state=syncState />
+        <Sync onRefresh onStop state=syncState />
       </View>
       {switch (mode) {
        | Gallery => <NftGalleryView nfts />
