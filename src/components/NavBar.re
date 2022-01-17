@@ -47,7 +47,6 @@ module NavBarItem = {
   [@react.component]
   let make =
       (
-        ~href=?,
         ~onPress,
         ~title,
         ~icon: option(Icons.builder)=?,
@@ -67,8 +66,13 @@ module NavBarItem = {
         colorStyle->Typography.getColor(theme)
       );
 
+    let handlePress = a =>
+      if (!isActive) {
+        onPress(a);
+      };
+
     <ThemedPressable
-      accessibilityRole=`link ?href onPress style=styles##item isActive>
+      accessibilityRole=`link onPress=handlePress style=styles##item isActive>
       {icon->Option.mapWithDefault(React.null, icon => {
          icon(
            ~style={
@@ -98,10 +102,11 @@ module NavBarItemRoute = {
         ~icon: option(Icons.builder)=?,
         ~iconSize: option(float)=?,
       ) => {
+    let onPress = useHrefAndOnPress(route);
     let (href, onPress) = useHrefAndOnPress(route);
     let isCurrent = currentRoute == route;
 
-    <NavBarItem href onPress title ?icon ?iconSize isActive=isCurrent />;
+    <NavBarItem onPress title ?icon ?iconSize isActive=isCurrent />;
   };
 };
 
@@ -121,7 +126,6 @@ module LogsButton = {
 
     <>
       <NavBarItem
-        href
         onPress
         title
         ?icon
