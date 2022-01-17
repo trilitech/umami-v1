@@ -119,6 +119,39 @@ module BuyTezView = {
   };
 };
 
+module InsideAppView = {
+  [@react.component]
+  let make = (~route: Routes.t, ~onChangeOnboardingState) => {
+    let (accountsViewMode, setAccountsViewMode) =
+      React.useState(_ => AccountsView.Mode.Simple);
+
+    <>
+      {switch (route) {
+       | Accounts =>
+         <AccountsView
+           mode=accountsViewMode
+           setMode=setAccountsViewMode
+           showOnboarding={() =>
+             onChangeOnboardingState(_ =>
+               accountsViewMode == Simple ? Homepage.BuyTez : AddAccountModal
+             )
+           }
+         />
+       | Nft => <NftView />
+       | Operations => <OperationsView />
+       | AddressBook => <AddressBookView />
+       | Delegations => <DelegationsView />
+       | Tokens => <TokensView />
+       | Settings => <SettingsView />
+       | Logs => <LogsView />
+       | NotFound =>
+         <View>
+           <Typography.Body1> I18n.error404->React.string </Typography.Body1>
+         </View>
+       }}
+    </>;
+  };
+};
 module AppView = {
   [@react.component]
   let make = () => {
@@ -131,8 +164,6 @@ module AppView = {
     let setEulaSignature = StoreContext.setEulaSignature();
 
     let onSign = needSign => setEulaSignature(_ => needSign);
-    let (accountsViewMode, setAccountsViewMode) =
-      React.useState(_ => AccountsView.Mode.Simple);
 
     let (onboardingState, setOnboardingState) =
       React.useState(_ =>
@@ -236,32 +267,10 @@ module AppView = {
                   | Dashboard =>
                     <>
                       {wertURL->Option.mapWithDefault(
-                         switch (route) {
-                         | Accounts =>
-                           <AccountsView
-                             mode=accountsViewMode
-                             setMode=setAccountsViewMode
-                             showOnboarding={() =>
-                               setOnboardingState(_ =>
-                                 accountsViewMode == Simple
-                                   ? BuyTez : AddAccountModal
-                               )
-                             }
-                           />
-                         | Nft => <NftView />
-                         | Operations => <OperationsView />
-                         | AddressBook => <AddressBookView />
-                         | Delegations => <DelegationsView />
-                         | Tokens => <TokensView />
-                         | Settings => <SettingsView />
-                         | Logs => <LogsView />
-                         | NotFound =>
-                           <View>
-                             <Typography.Body1>
-                               I18n.error404->React.string
-                             </Typography.Body1>
-                           </View>
-                         },
+                         <InsideAppView
+                           route
+                           onChangeOnboardingState=setOnboardingState
+                         />,
                          src =>
                          <BuyTezView
                            src
