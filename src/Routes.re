@@ -74,5 +74,5 @@ let useHrefAndOnPress = route => {
     event->ReactNative.Event.PressEvent.preventDefault;
     ReasonReactRouter.push(href);
   };
-  (href, onPress);
+ onPress
 };
