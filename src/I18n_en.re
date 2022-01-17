@@ -646,6 +646,7 @@ module Csv = {
     p("Contract %s is an FA1.2 token, it cannot have a token id", pkh);
   let fa2_invalid_token_id = pkh =>
     p("Contract %s is an FA2 token, it must have a token id", pkh);
+  let contract_calls_not_handled = "temporary: contract calls not handled";
 };
 
 module Disclaimer = {
