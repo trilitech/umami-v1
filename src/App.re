@@ -168,6 +168,28 @@ let makeWidget = (~address: PublicKeyHash.t, ~theme: ThemeContext.theme) =>
     color_background: theme.colors.background,
   });
 
+let shouldDisplayNavbar =
+    (
+      ~accountsRequest:
+         Umami.ApiRequest.t(Umami.PublicKeyHash.Map.map(Umami.Account.t)),
+      ~accounts,
+      ~onboardingState: Homepage.state,
+      ~wertURL,
+    ) =>
+  switch (accountsRequest) {
+  | Done(_) when accounts->PublicKeyHash.Map.size <= 0 => false
+  | NotAsked => false
+  | Loading(None) => false
+  | Loading(Some(_)) => true
+  | Done(_) =>
+    switch (onboardingState) {
+    | Onboarding
+    | AddAccountModal => false
+    | BuyTez => wertURL == None
+    | Dashboard => true
+    }
+  };
+
 module AppView = {
   [@react.component]
   let make = () => {
@@ -176,7 +198,6 @@ module AppView = {
 
     let accounts = StoreContext.Accounts.useGetAll();
     let accountsRequest = StoreContext.Accounts.useRequest();
-    Js.Console.log2("req", accountsRequest);
     let eulaSignature = StoreContext.useEulaSignature();
     let setEulaSignature = StoreContext.setEulaSignature();
 
@@ -222,21 +243,13 @@ module AppView = {
       setWertURL(_ => Some(widget->ReWert.Widget.getEmbedUrl));
     };
 
-    let displayNavbar = {
-      switch (accountsRequest) {
-      | Done(_) when accounts->PublicKeyHash.Map.size <= 0 => false
-      | NotAsked => false
-      | Loading(None) => false
-      | Loading(Some(_)) => true
-      | Done(_) =>
-        switch (onboardingState) {
-        | Onboarding
-        | AddAccountModal => false
-        | BuyTez => wertURL == None
-        | Dashboard => true
-        }
-      };
-    };
+    let displayNavbar =
+      shouldDisplayNavbar(
+        ~accountsRequest,
+        ~accounts,
+        ~onboardingState,
+        ~wertURL,
+      );
 
     <DocumentContext>
       <View
