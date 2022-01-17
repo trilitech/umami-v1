@@ -26,7 +26,8 @@
 open Let;
 
 module Encodings = {
-  exception IllformedEncoder;
+  type Errors.t +=
+    | IllformedEncoding;
 
   type or_('a, 'b) = [ | `Left('a) | `Right('b)];
 
@@ -66,18 +67,70 @@ module Encodings = {
   /* This proxy can be used to enforce invariants in the future */
   type row('a) = row_repr('a);
 
-  let rec isEndingNullable: type t. row_repr(t) => bool =
+  let rec hasFixedLength: type t. row_repr(t) => option(int) =
+    fun
+    | Cell(_) => Some(1)
+    | Null => Some(0)
+    | Tup2(r1, r2) =>
+      Option.map2(hasFixedLength(r1), hasFixedLength(r2), (l1, l2) =>
+        l1 + l2
+      )
+    | Tup3(r1, r2, r3) => hasFixedLength(Tup2(r1, Tup2(r2, r3)))
+    | Tup4(r1, r2, r3, r4) =>
+      hasFixedLength(Tup2(r1, Tup2(r2, Tup2(r3, r4))))
+    | Tup5(r1, r2, r3, r4, r5) =>
+      hasFixedLength(Tup2(r1, Tup2(r2, Tup2(r3, Tup2(r4, r5)))))
+    | Or(r, r') => {
+        let l = hasFixedLength(r);
+        let l' = hasFixedLength(r');
+        l == l' ? l : None;
+      };
+
+  let sameLength = (r1, r2) =>
+    Option.map2(hasFixedLength(r1), hasFixedLength(r2), (r1, r2) =>
+      r1 == r2
+    )
+    ->Option.default(false);
+
+  let rec noNull: type t. row_repr(t) => bool =
+    fun
+    | Null => false
+    | Cell(_) => true
+    | Tup2(r1, r2) => noNull(r1) && noNull(r2)
+    | Tup3(r1, r2, r3) => noNull(Tup2(r1, Tup2(r2, r3)))
+    | Tup4(r1, r2, r3, r4) => noNull(Tup2(r1, Tup2(r2, Tup2(r3, r4))))
+    | Tup5(r1, r2, r3, r4, r5) =>
+      noNull(Tup2(r1, Tup2(r2, Tup2(r3, Tup2(r4, r5)))))
+    | Or(r1, r2) => noNull(r1) && noNull(r2);
+
+  let rec wellformed: type t. row_repr(t) => bool =
     fun
     | Null => true
-    | Cell(Option(_)) => true
-    | Cell(_) => false
-    | Tup2(r1, r2) => isEndingNullable(r1) ? isEndingNullable(r2) : false
-    | Tup3(r1, r2, r3) => isEndingNullable(Tup2(r1, Tup2(r2, r3)))
-    | Tup4(r1, r2, r3, r4) =>
-      isEndingNullable(Tup2(r1, Tup2(r2, Tup2(r3, r4))))
+    | Cell(_) => true
+
+    | Tup2(Or(r, r'), r2) =>
+      wellformed(r)
+      && wellformed(r')
+      && sameLength(r, r')
+      && wellformed(r2)
+
+    | Tup2(r1, Or(r, r')) =>
+      noNull(r1)
+      && hasFixedLength(r1) != None
+      && wellformed(r)
+      && wellformed(r')
+
+    | Tup2(r1, r2) => noNull(r1) && wellformed(r1) ? wellformed(r2) : false
+
+    // Tup3-5 are normalized as series of tup2.
+    | Tup3(r1, r2, r3) => wellformed(Tup2(r1, Tup2(r2, r3)))
+    | Tup4(r1, r2, r3, r4) => wellformed(Tup2(r1, Tup2(r2, Tup2(r3, r4))))
     | Tup5(r1, r2, r3, r4, r5) =>
-      isEndingNullable(Tup2(r1, Tup2(r2, Tup2(r3, Tup2(r4, r5)))))
-    | Or(r1, r2) => isEndingNullable(r1) && isEndingNullable(r2);
+      wellformed(Tup2(r1, Tup2(r2, Tup2(r3, Tup2(r4, r5)))))
+
+    // This last Or has no length checking since it is either checked by
+    // tup2(or, _) or is at toplevel.
+    | Or(r1, r2) => wellformed(r1) && wellformed(r2);
 
   /* Combinators to generates row of up to 5 elements */
   let null = Null;
@@ -94,10 +147,7 @@ module Encodings = {
   /* Combines to rows */
   let merge_rows = (r1, r2) => Tup2(r1, r2);
 
-  /* Rows that can only support nullable values at the end of the row */
-  let mkNullableRow = r => isEndingNullable(r) ? r : raise(IllformedEncoder);
-
-  let mkRow = r => r;
+  let mkRow = r => wellformed(r) ? Ok(r) : Error(IllformedEncoding);
 };
 
 type row = int;
@@ -192,7 +242,7 @@ let rec parseRowRec:
       | Tup2(r1, r2) =>
         let%Res (v1, l1) = parseRowRec(values, r1, row, col);
         let%ResMap (v2, l2) = parseRowRec(values, r2, row, col + l1);
-        ((v1, v2), l2);
+        ((v1, v2), l1 + l2);
 
       /* These last three simply reuse Tup2 parsing and return a tuple of the correct type */
       | Tup3(r1, r2, r3) =>

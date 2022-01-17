@@ -112,7 +112,8 @@ let handleCSV = (rows, tokens) =>
   rows->List.mapWithIndex(handleRow(tokens))->Result.collect;
 
 let parseCSV = (content, ~tokens) => {
-  let rows = parseCSV(content, rowEncoding);
+  let rows =
+    rowEncoding->Result.flatMap(encoding => parseCSV(content, encoding));
   switch (rows) {
   | Ok([]) => Error(NoRows)
   | Ok(rows) => handleCSV(rows, tokens)

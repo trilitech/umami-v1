@@ -38,12 +38,14 @@ let addr: CSVParser.Encodings.element(PublicKeyHash.t);
 let token: CSVParser.Encodings.element(PublicKeyHash.t);
 /* CSV row encoding */
 let rowEncoding:
-  CSVParser.Encodings.row(
-    (
-      PublicKeyHash.t,
-      ReBigNumber.t,
-      option(PublicKeyHash.t),
-      option(ReBigNumber.t),
+  Let.result(
+    CSVParser.Encodings.row(
+      (
+        PublicKeyHash.t,
+        ReBigNumber.t,
+        option(PublicKeyHash.t),
+        option(ReBigNumber.t),
+      ),
     ),
   );
 

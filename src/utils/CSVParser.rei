@@ -25,6 +25,9 @@
 open Let;
 
 module Encodings: {
+  type Errors.t +=
+    | IllformedEncoding;
+
   type element(_);
   type or_('a, 'b) = [ | `Left('a) | `Right('b)];
 
@@ -37,6 +40,7 @@ module Encodings: {
   type row_repr(_);
   type row(_);
 
+  /* Only valid inside a Or */
   let null: row_repr(unit);
 
   let cell: element('a) => row_repr('a);
@@ -53,11 +57,9 @@ module Encodings: {
 
   let merge_rows: (row_repr('a), row_repr('b)) => row_repr(('a, 'b));
 
-  let mkRow: row_repr('a) => row('a);
+  let wellformed: row_repr('a) => bool;
 
-  /* Rows whose optional values are only accepted at the end (checked
-     at runtime) */
-  let mkNullableRow: row_repr('a) => row('a);
+  let mkRow: row_repr('a) => result(row('a));
 };
 
 type row = int;
