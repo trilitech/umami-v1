@@ -103,7 +103,6 @@ module NavBarItemRoute = {
         ~iconSize: option(float)=?,
       ) => {
     let onPress = useHrefAndOnPress(route);
-    let (href, onPress) = useHrefAndOnPress(route);
     let isCurrent = currentRoute == route;
 
     <NavBarItem onPress title ?icon ?iconSize isActive=isCurrent />;
