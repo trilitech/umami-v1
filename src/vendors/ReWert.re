@@ -23,29 +23,26 @@
 /*                                                                           */
 /*****************************************************************************/
 
-module Widget {
-    type t;
+module Widget = {
+  type t;
 
-    type options = {
-        container_id: string,
-        partner_id: string,
-        origin: string,
-        commodity: string,
-        commodities: string,
-        address: string,
-        theme: string,
-        color_background: string,
-    };
+  type options = {
+    container_id: string,
+    partner_id: string,
+    origin: string,
+    commodity: string,
+    commodities: string,
+    address: string,
+    theme: string,
+    color_background: string,
+  };
 
-    [@bs.module] [@bs.new]
-    external make: options => t = "@wert-io/widget-initializer";
+  [@bs.module] [@bs.new]
+  external make: options => t = "@wert-io/widget-initializer";
 
-    [@bs.send]
-    external mount: t => unit = "mount";
+  [@bs.send] external mount: t => unit = "mount";
 
-    [@bs.send]
-    external getEmbedUrl: t => string = "getEmbedUrl";
+  [@bs.send] external getEmbedUrl: t => string = "getEmbedUrl";
 
-    [@bs.send]
-    external getRedirectUrl: t => string = "getRedirectUrl";
+  [@bs.send] external getRedirectUrl: t => string = "getRedirectUrl";
 };
