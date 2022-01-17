@@ -152,6 +152,22 @@ module InsideAppView = {
     </>;
   };
 };
+
+let makeWidget = (~address: PublicKeyHash.t, ~theme: ThemeContext.theme) =>
+  ReWert.Widget.make({
+    container_id: "wert-widget",
+    partner_id:
+      System.isDev
+        ? "01F8DFQRA460MG8EMEP6E0RQQT" : "01FN6APWJ68N2PWC22YDJW4D5W",
+    origin:
+      System.isDev ? "https://sandbox.wert.io" : "https://widget.wert.io",
+    commodity: "XTZ",
+    commodities: "XTZ",
+    address: (address :> string),
+    theme: theme.dark ? "dark" : "light",
+    color_background: theme.colors.background,
+  });
+
 module AppView = {
   [@react.component]
   let make = () => {
@@ -209,21 +225,7 @@ module AppView = {
 
     let buyTez = (address: PublicKeyHash.t) => {
       closeAction();
-      let widget =
-        ReWert.Widget.make({
-          container_id: "wert-widget",
-          partner_id:
-            System.isDev
-              ? "01F8DFQRA460MG8EMEP6E0RQQT" : "01FN6APWJ68N2PWC22YDJW4D5W",
-          origin:
-            System.isDev
-              ? "https://sandbox.wert.io" : "https://widget.wert.io",
-          commodity: "XTZ",
-          commodities: "XTZ",
-          address: (address :> string),
-          theme: theme.dark ? "dark" : "light",
-          color_background: theme.colors.background,
-        });
+      let widget = makeWidget(~address, ~theme);
       setWertURL(_ => Some(widget->ReWert.Widget.getEmbedUrl));
     };
 
