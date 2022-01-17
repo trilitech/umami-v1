@@ -294,10 +294,12 @@ module AppView = {
 [@react.component]
 let make = () => {
   <LogsContext>
-    <ConfigContext>
-      <ThemeContext>
-        <StoreContext> <AppView /> <BeaconConnectRequest /> </StoreContext>
-      </ThemeContext>
-    </ConfigContext>
+    <ConfigFileContext>
+      <ConfigContext>
+        <ThemeContext>
+          <StoreContext> <AppView /> <BeaconConnectRequest /> </StoreContext>
+        </ThemeContext>
+      </ConfigContext>
+    </ConfigFileContext>
   </LogsContext>;
 };

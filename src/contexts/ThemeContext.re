@@ -212,8 +212,8 @@ let mediaQueryColorSchemeDark =
 
 [@react.component]
 let make = (~children) => {
-  let writeConf = ConfigContext.useWrite();
-  let config = ConfigContext.useContent();
+  let {getConfigWithDefaults, write} = ConfigFileContext.useConfigFile();
+  let config = getConfigWithDefaults();
 
   let (themeConfig, setThemeConfig) = React.useState(_ => config.theme);
 
@@ -242,7 +242,7 @@ let make = (~children) => {
   let setThemeSetting = updater => {
     setThemeConfig(prevThemeConfig => {
       let newThemeConfig = updater(prevThemeConfig);
-      writeConf(c =>
+      write(c =>
         {
           ...c,
           theme:
