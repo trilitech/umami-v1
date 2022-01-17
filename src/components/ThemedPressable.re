@@ -204,7 +204,6 @@ module Make = (ContainerInteractionState: ContainerInteractionState.T) => {
       (
         ~pressableRef=?,
         ~onPress=?,
-        ~href=?,
         ~style as styleFromProp=?,
         ~extStyle=?,
         ~focusedSize=?,
@@ -219,7 +218,6 @@ module Make = (ContainerInteractionState: ContainerInteractionState.T) => {
       ?onPress
       style=?extStyle
       disabled
-      ?href
       ?accessibilityRole>
       {({hovered, pressed, focused}) => {
          let hovered = hovered->Option.getWithDefault(false);
