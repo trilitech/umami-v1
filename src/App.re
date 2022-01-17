@@ -176,21 +176,14 @@ module AppView = {
 
     let accounts = StoreContext.Accounts.useGetAll();
     let accountsRequest = StoreContext.Accounts.useRequest();
+    Js.Console.log2("req", accountsRequest);
     let eulaSignature = StoreContext.useEulaSignature();
     let setEulaSignature = StoreContext.setEulaSignature();
 
     let onSign = needSign => setEulaSignature(_ => needSign);
 
     let (onboardingState, setOnboardingState) =
-      React.useState(_ =>
-        switch (accountsRequest) {
-        | Done(_) when accounts->PublicKeyHash.Map.size <= 0 => Homepage.Onboarding
-        | NotAsked
-        | Loading(None)
-        | Loading(Some(_))
-        | Done(_) => Dashboard
-        }
-      );
+      React.useState(_ => Homepage.Dashboard);
 
     React.useLayoutEffect1(
       () =>
