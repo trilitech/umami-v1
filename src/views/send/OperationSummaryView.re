@@ -157,9 +157,7 @@ module Transactions = {
   let transactionParameters = (~entrypoint, ~parameter) =>
     switch (entrypoint, parameter) {
     | (Some(entrypoint), Some(parameter)) =>
-      Some(
-        ProtocolOptions.TransactionParameters.{entrypoint, value: parameter},
-      )
+      Some(ReTaquitoTypes.Transfer.Parameters.{entrypoint, value: parameter})
     | _ => None
     };
 

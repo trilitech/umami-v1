@@ -590,7 +590,16 @@ module Errors = {
   let storage_migration_failed = v =>
     p("Internal error: storage migration failed at version %s", v);
   let unknown_network = c => p("No letlic network exists for chain %s", c);
-  ();
+  let script_parsing = e =>
+    p(
+      "Error when parsing script%s",
+      e->Option.mapDefault("", m => "with message: " ++ m),
+    );
+  let micheline_parsing = e =>
+    p(
+      "Error when parsing Micheline%s",
+      e->Option.mapDefault("", m => "with message: " ++ m),
+    );
 };
 
 module Csv = {
