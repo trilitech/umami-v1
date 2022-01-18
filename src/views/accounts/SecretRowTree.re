@@ -201,7 +201,9 @@ module AccountImportedRowItem = {
       account->ReactUtils.mapOpt(account =>
         <Base
           account
-          tag={<Tag style=styles##tag content=I18n.Label.account_umami />}
+          tag={
+            <Tag.Fixed style=styles##tag content=I18n.Label.account_umami />
+          }
           actions=
             {<>
                <SecretExportButton secret />
@@ -228,7 +230,7 @@ module AccountImportedRowItem = {
     let make = (~account: Account.t) => {
       <Base
         account
-        tag={<Tag style=styles##tag content=I18n.Label.account_cli />}
+        tag={<Tag.Fixed style=styles##tag content=I18n.Label.account_cli />}
         actions=
           {<>
              <Menu
@@ -366,7 +368,7 @@ module SecretRowItem = {
   [@react.component]
   let make = (~secret: Secret.derived) => {
     <RowItem.Bordered innerStyle=styles##rowItem height=66.>
-      {<Tag style=styles##tag content=I18n.hw />
+      {<Tag.Fixed style=styles##tag content=I18n.hw />
        ->ReactUtils.onlyWhen(secret.secret.kind == Secret.Ledger)}
       <View>
         <Typography.Subtitle1 style=styles##alias>

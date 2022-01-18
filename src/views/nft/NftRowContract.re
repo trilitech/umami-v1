@@ -100,5 +100,5 @@ let make =
       />
     </View>;
 
-  <View> <Accordion header data expanded /> </View>;
+  <View> <Accordion header expanded> data </Accordion> </View>;
 };

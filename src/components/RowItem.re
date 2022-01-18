@@ -98,7 +98,7 @@ let styles =
     })
   );
 
-module Base = {
+module Generic = {
   [@react.component]
   let make = (~height, ~style as stylearg=?, ~children) => {
     let theme = ThemeContext.useTheme();
@@ -129,6 +129,30 @@ module Base = {
   };
 };
 
+module Base = {
+  [@react.component]
+  let make =
+      (
+        ~height,
+        ~style=?,
+        ~innerStyle=?,
+        ~isNested=false,
+        ~isLast=false,
+        ~children,
+      ) => {
+    <Generic height ?style>
+      {_ =>
+         <>
+           {isNested ? <NestedElement isLast /> : React.null}
+           <View
+             style=Style.(arrayOption([|innerStyle, styles##inner->Some|]))>
+             children
+           </View>
+         </>}
+    </Generic>;
+  };
+};
+
 module Bordered = {
   [@react.component]
   let make =
@@ -141,7 +165,7 @@ module Bordered = {
         ~children,
       ) => {
     let theme = ThemeContext.useTheme();
-    <Base height ?style>
+    <Generic height ?style>
       {_ =>
          <>
            {isNested ? <NestedElement isLast /> : React.null}
@@ -158,6 +182,6 @@ module Bordered = {
              children
            </View>
          </>}
-    </Base>;
+    </Generic>;
   };
 };

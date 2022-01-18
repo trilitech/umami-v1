@@ -183,6 +183,7 @@ module AddToken = {
     <>
       <ModalAction visible=visibleModal onRequestClose=closeAction>
         <TokenAddView
+          action=`Add
           chain
           address
           kind
@@ -323,7 +324,7 @@ let make =
     let config = ConfigContext.useContent();
     let addToast = LogsContext.useToast();
 
-    <Table.Row>
+    <Table.Row.Bordered>
       {switch (operation.payload) {
        | Reveal(_reveal) =>
          <>
@@ -446,5 +447,5 @@ let make =
           }}
         />
       </CellAction>
-    </Table.Row>;
+    </Table.Row.Bordered>;
   });

@@ -94,7 +94,7 @@ let make =
     switch ((delegateRequest: ApiRequest.t(_))) {
     | Done(Ok(Some(delegate)), _)
     | Loading(Some(Some(delegate))) =>
-      <Table.Row>
+      <Table.Row.Bordered>
         <CellAddress>
           <Typography.Body1 numberOfLines=1>
             account.name->React.string
@@ -215,7 +215,7 @@ let make =
             icon=Icons.Stop.build
           />
         </CellAction>
-      </Table.Row>
+      </Table.Row.Bordered>
     | Done(_)
     | NotAsked
     | Loading(_) => React.null

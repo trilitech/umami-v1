@@ -52,6 +52,13 @@ let styles =
       "title": style(~marginBottom=6.->dp, ~textAlign=`center, ()),
       "overline": style(~marginBottom=24.->dp, ~textAlign=`center, ()),
       "tag": style(~marginBottom=6.->dp, ~alignSelf=`center, ()),
+      "tagContent":
+        style(
+          ~paddingHorizontal=12.->dp,
+          ~paddingVertical=2.->dp,
+          ~fontSize=10.,
+          (),
+        ),
     })
   );
 
@@ -181,6 +188,7 @@ type step =
 [@react.component]
 let make =
     (
+      ~action,
       ~chain,
       ~address: option(PublicKeyHash.t)=?,
       ~kind=?,
@@ -201,6 +209,12 @@ let make =
           : Promise.err(
               TokensAPI.RegisterNotAFungibleToken(token.address, token.kind),
             );
+
+  let (title, button) =
+    switch (action) {
+    | `Add => (I18n.Title.add_token, I18n.Btn.save_and_register)
+    | `Edit => (I18n.Title.edit_metadata, I18n.Btn.update)
+    };
 
   let onSubmit = ({state}: TokenCreateForm.onSubmitAPI) => {
     TokenCreateForm.(
@@ -330,7 +344,11 @@ let make =
     ApiRequest.(
       switch (tokenKind, pkh) {
       | (Done(Ok(#TokenContract.kind as kind), _), Ok(_)) =>
-        <Tag style=styles##tag content={kind->TokenContract.kindToString} />
+        <Tag
+          style=styles##tag
+          contentStyle=styles##tagContent
+          content={kind->TokenContract.kindToString}
+        />
       | _ => React.null
       }
     );
@@ -375,7 +393,7 @@ let make =
 
   <ModalFormView closing={ModalFormView.Close(closeAction)}>
     <Typography.Headline style=styles##title>
-      I18n.Title.add_token->React.string
+      title->React.string
     </Typography.Headline>
     tokenTag
     <Typography.Overline3 style=styles##overline>
@@ -393,7 +411,7 @@ let make =
        </>
      }}
     <Buttons.SubmitPrimary
-      text=I18n.Btn.register
+      text=button
       onPress=onSubmit
       loading
       style=FormStyles.formSubmit

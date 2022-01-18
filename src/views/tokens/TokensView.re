@@ -58,10 +58,12 @@ module AddTokenButton = {
           onPress
           text=I18n.Btn.add_token
           icon=Icons.Add.build
+          primary=true
         />
       </View>
       <ModalAction visible=visibleModal onRequestClose=closeAction>
         <TokenAddView
+          action=`Add
           chain={chain->Option.getWithDefault("")}
           tokens
           closeAction
@@ -70,9 +72,6 @@ module AddTokenButton = {
     </>;
   };
 };
-
-let styles =
-  Style.(StyleSheet.create({"list": style(~paddingTop=4.->dp, ())}));
 
 [@react.component]
 let make = () => {
@@ -124,66 +123,38 @@ let make = () => {
       [|tokens|],
     );
 
+  let currentChain = apiVersion->Option.map(v => v.chain);
+
   <Page>
     <Typography.Headline style=Styles.title>
       I18n.Title.tokens->React.string
     </Typography.Headline>
     <AddTokenButton
-      chain=?{apiVersion->Option.map(v => v.chain)}
+      chain=?currentChain
       tokens={
         tokens->Option.mapDefault(TokensLibrary.Generic.empty, t =>
           t->Result.getWithDefault(TokensLibrary.Generic.empty)
         )
       }
     />
-    <Table.Head>
-      <TokenRowItem.CellStandard>
-        <Typography.Overline3>
-          I18n.token_column_standard->React.string
-        </Typography.Overline3>
-      </TokenRowItem.CellStandard>
-      <TokenRowItem.CellName>
-        <Typography.Overline3>
-          I18n.token_column_name->React.string
-        </Typography.Overline3>
-      </TokenRowItem.CellName>
-      <TokenRowItem.CellSymbol>
-        <Typography.Overline3>
-          I18n.token_column_symbol->React.string
-        </Typography.Overline3>
-      </TokenRowItem.CellSymbol>
-      <TokenRowItem.CellAddress>
-        <Typography.Overline3>
-          I18n.token_column_address->React.string
-        </Typography.Overline3>
-      </TokenRowItem.CellAddress>
-      <TokenRowItem.CellTokenId>
-        <Typography.Overline3>
-          I18n.token_column_tokenid->React.string
-        </Typography.Overline3>
-      </TokenRowItem.CellTokenId>
-      <TokenRowItem.CellAction> React.null </TokenRowItem.CellAction>
-    </Table.Head>
-    <View style=styles##list>
-      {switch (partitionedTokens) {
-       | None => <LoadingView />
-       | Some(Ok((tokens, _))) when tokens->TokensLibrary.Contracts.isEmpty =>
-         <Table.Empty> I18n.empty_token->React.string </Table.Empty>
-       | Some(Ok((tokens, _))) =>
-         tokens
-         ->TokensLibrary.Generic.valuesToArray
-         ->Array.keepMap(
-             fun
-             | (Full(token), true) =>
-               {
-                 <TokenRowItem key=(token.address :> string) token />;
-               }
-               ->Some
-             | _ => None,
-           )
-         ->React.array
-       | Some(Error(error)) => <ErrorView error />
-       }}
-    </View>
+    {switch (partitionedTokens) {
+     | None => <LoadingView />
+     | Some(Error(error)) => <ErrorView error />
+     | Some(Ok((registered, unregistered))) =>
+       <>
+         <TokenRows
+           title=I18n.Title.added_to_wallet
+           tokens=registered
+           currentChain
+           emptyText=None
+         />
+         <TokenRows
+           title=I18n.Title.held
+           tokens=unregistered
+           currentChain
+           emptyText={Some(I18n.empty_held_token)}
+         />
+       </>
+     }}
   </Page>;
 };

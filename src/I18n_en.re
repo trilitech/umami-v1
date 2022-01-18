@@ -59,6 +59,7 @@ module Btn = {
   let confirm = "CONFIRM";
   let update = "UPDATE";
   let register = "REGISTER";
+  let save_and_register = "SAVE AND REGISTER";
   let logs = "LOGS";
   let import_secret = "IMPORT EXISTING SECRET";
   let create_secret_new = "CREATE NEW SECRET";
@@ -77,7 +78,7 @@ module Btn = {
   let send_cancel = "CANCEL TRANSACTION";
   let delegation_submit = "CONFIRM DELEGATION";
   let delegated = "DELEGATED";
-  let delete_token = "Delete token";
+  let delete_token = "Remove from wallet";
   let import = "IMPORT";
   let export = "EXPORT";
   let export_public_key = "EXPORT PUBLIC KEY";
@@ -120,6 +121,8 @@ module Tooltip = {
   let reject_on_ledger = "Reject on ledger to cancel operation";
   let see_network_info = "See network info";
   let tokenid = {j|A non-negative number that identifies the asset inside a FA2 contract|j};
+  let add_to_wallet = "Add to wallet";
+  let see_metadata = "See metadata";
 };
 
 module Log = {
@@ -304,6 +307,7 @@ module Title = {
   let add_contact = "Add Contact";
   let update_contact = "Edit Contact";
   let add_token = "Register Token";
+  let edit_metadata = "Token Metadata";
   let export = "Export";
   let account_create_password = "Set a password to secure your wallet";
   let account_enter_password = "Please enter password to confirm";
@@ -325,8 +329,8 @@ module Title = {
   let delegation_deleted = "Delegation Deleted";
   let delete_contact = "Delete Contact?";
   let deleted_contact = "Contact Deleted";
-  let delete_token = "Delete Token";
-  let deleted_token = "Token Deleted";
+  let delete_token = "Remove from wallet";
+  let deleted_token = "Token Removed";
   let delete_beacon_peer = "Delete Peer";
   let delete_beacon_permission = "Delete Permission";
   let confirm_cancel = "Are you sure you want to cancel?";
@@ -364,6 +368,8 @@ module Title = {
   let notice = "Disclaimer Notice";
   let buy_tez = "Buy tez";
   let wert_recipient = "Please select the recipient account";
+  let added_to_wallet = "Added to wallet";
+  let held = "Held";
 };
 
 module Expl = {
@@ -419,7 +425,8 @@ module Menu = {
   let delete_secret = "Delete";
   let edit = "Edit";
   let scan = "Scan";
-  ();
+  let view_in_explorer = "View in Explorer";
+  let see_metadata = "See Metadata";
 };
 
 module Settings = {
@@ -680,8 +687,8 @@ let account_updated = "Account Updated";
 let secret_updated = "Secret Updated";
 let secret_deleted = "Secret Deleted";
 let token_contract = p("%s Token Contract");
-let token_created = "Token Created";
-let token_deleted = "Token Deleted";
+let token_created = "Token added to wallet";
+let token_deleted = "Token removed from wallet";
 let operation_hash = "Operation Hash";
 let operation_summary_fee = p("+ Fee %a", () => tez_amount);
 let navbar_accounts = "ACCOUNTS";
@@ -705,6 +712,7 @@ let token_column_address = "ADDRESS";
 let token_column_tokenid = "TOKEN ID";
 let na = "N/A";
 let empty_token = "No token registered on the current chain";
+let empty_held_token = "No token held and not registered on the current chain";
 let empty_delegations = "No Delegation";
 let empty_operations = "No Operation";
 let empty_address_book = "No Contact";

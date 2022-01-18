@@ -60,14 +60,30 @@ module Row = {
   let styles =
     Style.(StyleSheet.create({"borderSpacer": style(~width=20.->dp, ())}));
 
-  [@react.component]
-  let make = (~style=?, ~children) => {
-    <RowItem.Bordered height=48.>
-      <View
-        style={Style.arrayOption([|Some(styles##borderSpacer), style|])}
-      />
-      children
-    </RowItem.Bordered>;
+  module Base = {
+    [@react.component]
+    let make = (~style=?, ~height=48., ~children) => {
+      <RowItem.Base height>
+        <>
+          <View
+            style={Style.arrayOption([|Some(styles##borderSpacer), style|])}
+          />
+          children
+        </>
+      </RowItem.Base>;
+    };
+  };
+
+  module Bordered = {
+    [@react.component]
+    let make = (~style=?, ~height=48., ~children) => {
+      <RowItem.Bordered height>
+        <View
+          style={Style.arrayOption([|Some(styles##borderSpacer), style|])}
+        />
+        children
+      </RowItem.Bordered>;
+    };
   };
 };
 

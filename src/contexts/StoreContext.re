@@ -716,9 +716,9 @@ module Tokens = {
     TokensApiRequest.useCheckTokenContract(tokens);
   };
 
-  let useDelete = () => {
+  let useDelete = pruneCache => {
     let resetAccounts = useResetAll();
-    TokensApiRequest.useDelete(~sideEffect=_ => resetAccounts(), ());
+    TokensApiRequest.useDelete(~sideEffect=_ => resetAccounts(), pruneCache);
   };
 };
 

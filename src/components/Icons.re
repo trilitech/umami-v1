@@ -172,3 +172,5 @@ module SyncNFT = Make(SVGIconSyncNft);
 module Ok = Make(SVGIconOk);
 module Code = Make(SVGIconCode);
 module Metadata = Make(SVGIconMetadata);
+module SwitchOn = Make(SVGSwitchOn);
+module SwitchOff = Make(SVGSwitchOff);

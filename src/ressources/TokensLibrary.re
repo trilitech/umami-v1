@@ -88,6 +88,8 @@ module Token = {
       contract->BCD.(toTokenRepr({...t, name: alias, symbol, decimals}))
     };
   };
+
+  let uniqueKey = t => (t->address :> string) ++ t->id->Int.toString;
 };
 
 module Contracts = PublicKeyHash.Map;
