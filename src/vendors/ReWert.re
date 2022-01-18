@@ -23,29 +23,41 @@
 /*                                                                           */
 /*****************************************************************************/
 
-module Widget {
-    type t;
+module Widget = {
+  type t;
 
-    type options = {
-        container_id: string,
-        partner_id: string,
-        origin: string,
-        commodity: string,
-        commodities: string,
-        address: string,
-        theme: string,
-        color_background: string,
-    };
+  type options = {
+    container_id: string,
+    partner_id: string,
+    origin: string,
+    commodity: string,
+    commodities: string,
+    address: string,
+    theme: string,
+    color_background: string,
+  };
 
-    [@bs.module] [@bs.new]
-    external make: options => t = "@wert-io/widget-initializer";
+  [@bs.module] [@bs.new]
+  external make: options => t = "@wert-io/widget-initializer";
 
-    [@bs.send]
-    external mount: t => unit = "mount";
+  [@bs.send] external mount: t => unit = "mount";
 
-    [@bs.send]
-    external getEmbedUrl: t => string = "getEmbedUrl";
+  [@bs.send] external getEmbedUrl: t => string = "getEmbedUrl";
 
-    [@bs.send]
-    external getRedirectUrl: t => string = "getRedirectUrl";
+  [@bs.send] external getRedirectUrl: t => string = "getRedirectUrl";
 };
+
+let makeTezWidget = (~address: PublicKeyHash.t, ~theme: ThemeContext.theme) =>
+  Widget.make({
+    container_id: "wert-widget",
+    partner_id:
+      System.isDev
+        ? "01F8DFQRA460MG8EMEP6E0RQQT" : "01FN6APWJ68N2PWC22YDJW4D5W",
+    origin:
+      System.isDev ? "https://sandbox.wert.io" : "https://widget.wert.io",
+    commodity: "XTZ",
+    commodities: "XTZ",
+    address: (address :> string),
+    theme: theme.dark ? "dark" : "light",
+    color_background: theme.colors.background,
+  });
