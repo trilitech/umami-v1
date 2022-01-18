@@ -73,10 +73,16 @@ module AddTokenButton = {
   };
 };
 
+let styles =
+  Style.(StyleSheet.create({"header": style(~marginBottom=32.->dp, ())}));
+
 [@react.component]
 let make = () => {
   let accounts = StoreContext.Accounts.useGetAll();
   let apiVersion: option(Network.apiVersion) = StoreContext.useApiVersion();
+  let (syncState, setSyncState) = React.useState(_ => Sync.NotInitiated);
+  let (searched, setSearch) = React.useState(_ => "");
+  let stop = React.useRef(false);
 
   let accounts = accounts->PublicKeyHash.Map.keysToList;
   let request = fromCache =>
@@ -86,10 +92,18 @@ let make = () => {
     };
 
   // will be used to indicate a percentage of tokens loaded
-  let onTokens = (~total as _, ~lastToken as _) => ();
-  let onStop = () => false;
+  let onTokens = (~total, ~lastToken) => {
+    let percentage =
+      Int.toFloat(lastToken + 1) /. Int.toFloat(total) *. 100.;
+    setSyncState(
+      fun
+      | Canceled(_) => Canceled(percentage)
+      | _ => Loading(percentage),
+    );
+  };
+  let onStop = () => stop.current;
 
-  let (tokensRequest, _) =
+  let (tokensRequest, getTokens) =
     StoreContext.Tokens.useFetchTokens(
       onTokens,
       onStop,
@@ -109,13 +123,58 @@ let make = () => {
     | Done(Error(error), _) => Some(Error(error))
     };
 
+  let loadToCanceled = () =>
+    setSyncState(
+      fun
+      | Loading(percentage) => Canceled(percentage)
+      | _ => NotInitiated,
+    );
+  let loadToDone = () =>
+    setSyncState(
+      fun
+      | Loading(_) => Done
+      | state => state,
+    );
+
+  React.useEffect1(
+    () =>
+      switch (tokensRequest) {
+      | Done(Ok(`Fetched(_, _)), _) =>
+        loadToDone();
+        stop.current = false;
+        None;
+
+      | Done(Ok(`Cached(_)), _) =>
+        setSyncState(_ => NotInitiated);
+        None;
+
+      | Done(Error(_), _) =>
+        loadToCanceled();
+        None;
+
+      | _ => None
+      },
+    [|tokensRequest|],
+  );
+
+  let matchToken = (token, searched) => {
+    open TokensLibrary.Token;
+    let searched = searched->Js.String.toLocaleLowerCase;
+    let matchValue = value =>
+      value->Js.String.toLocaleLowerCase->Js.String2.includes(searched);
+    token->name->Option.mapDefault(false, matchValue)
+    || token->symbol->Option.mapDefault(false, matchValue)
+    || (token->address :> string)->matchValue;
+  };
+
   let partitionedTokens =
     React.useMemo1(
       () => {
         tokens->Option.map(tokens =>
           tokens->Result.map(tokens =>
             tokens->TokensLibrary.Generic.keepPartition((_, _, (t, reg)) =>
-              t->TokensLibrary.Token.isNFT ? None : Some(reg)
+              t->TokensLibrary.Token.isNFT || !t->matchToken(searched)
+                ? None : Some(reg)
             )
           )
         )
@@ -124,6 +183,22 @@ let make = () => {
     );
 
   let currentChain = apiVersion->Option.map(v => v.chain);
+
+  let onRefresh = () => {
+    setSyncState(_ => Loading(0.));
+    getTokens(request(false))->ignore;
+  };
+
+  let onStop = () => {
+    setSyncState(
+      fun
+      | Loading(percentage) => {
+          Canceled(percentage);
+        }
+      | state => state,
+    );
+    stop.current = true;
+  };
 
   <Page>
     <Typography.Headline style=Styles.title>
@@ -136,6 +211,16 @@ let make = () => {
           t->Result.getWithDefault(TokensLibrary.Generic.empty)
         )
       }
+    />
+    <SearchAndSync
+      value=searched
+      onValueChange={value => setSearch(_ => value)}
+      placeholder=I18n.Input_placeholder.search_for_token
+      onRefresh
+      onStop
+      syncState
+      syncIcon=Icons.SyncNFT.build
+      style={styles##header}
     />
     {switch (partitionedTokens) {
      | None => <LoadingView />

@@ -214,6 +214,7 @@ module Input_placeholder = {
   let enter_derivation_path = "Enter your derivation path";
   let custom_network_name = "e.g. Test Network";
   let search_for_nft = "Search for NFT by name";
+  let search_for_token = "Search for Token by name, symbol or KT address";
   let custom_network_node_url = "e.g. https://rpc.tzbeta.net";
   let custom_network_mezos_url = "e.g. https://api.umamiwallet.com/mainnet";
 };

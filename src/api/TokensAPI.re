@@ -58,6 +58,12 @@ module BetterCallDev = {
     balances->Array.reduce(fetched, add);
   };
 
+  let tokensNumber = tokens => {
+    tokens->PublicKeyHash.Map.reduce(0, (total, _, ids) =>
+      ids->Map.Int.size + total
+    );
+  };
+
   // Returns a list of arrays: this will be treated later, so we return it as raw as possible for now
   let fetchTokens = (config, alreadyFetched, account, index, number) => {
     let rec fetch = (alreadyFetched, index, number) => {
@@ -641,7 +647,7 @@ module Fetch = {
         ~index,
         ~numberByAccount,
       ) => {
-    let%Await (tokens, nextIndex, total) =
+    let%Await (tokens, nextIndex, _) =
       BetterCallDev.fetchAccountsTokens(
         config,
         accounts,
@@ -649,7 +655,10 @@ module Fetch = {
         numberByAccount,
       );
 
-    let onTokens = onTokens->Option.map(f => f(~total));
+    let onTokens =
+      onTokens->Option.map(f =>
+        f(~total=BetterCallDev.tokensNumber(tokens))
+      );
 
     let%Await tokenContracts = tokenContracts(config, ~accounts, ());
 
