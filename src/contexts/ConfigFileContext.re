@@ -1,16 +1,35 @@
-let fromFile = ConfigContext.fromFile;
+let initMigration = () => {
+  let version =
+    switch (LocalStorage.Version.get()) {
+    | Ok(v) => v
+    | Error(_) =>
+      Js.log("Storage version not found, using 1.0 as base");
+      Version.mk(1, 0);
+    };
+
+  switch (Migration.init(version)) {
+  | Ok () => LocalStorage.Version.set(Migration.currentVersion)
+  | Error(_) => ()
+  };
+};
+
+let load = () => {
+  initMigration();
+
+  switch (ConfigFile.read()) {
+  | Ok(conf) => conf
+  | Error(_) =>
+    Js.log("No config to load. Using default config");
+    ConfigFile.dummy;
+  };
+};
 
 type configFileState = {
   configFile: ConfigFile.t,
-  getConfigWithDefaults: unit => ConfigContext.env,
   write: (ConfigFile.t => ConfigFile.t) => unit,
 };
 
-let initialState = {
-  configFile: ConfigFile.dummy,
-  write: _ => (),
-  getConfigWithDefaults: _ => ConfigFile.dummy->fromFile,
-};
+let initialState = {configFile: ConfigFile.dummy, write: _ => ()};
 
 let context = React.createContext(initialState);
 
@@ -26,7 +45,7 @@ module Provider = {
 
 [@react.component]
 let make = (~children) => {
-  let (configFile, setConfig) = React.useState(ConfigContext.load);
+  let (configFile, setConfig) = React.useState(load);
 
   let write = f =>
     setConfig(c => {
@@ -36,11 +55,7 @@ let make = (~children) => {
     });
   ();
 
-  let getConfigWithDefaults = () => configFile->fromFile;
-
-  <Provider value={configFile, write, getConfigWithDefaults}>
-    children
-  </Provider>;
+  <Provider value={configFile, write}> children </Provider>;
 };
 
 let useConfigFile = () => React.useContext(context);
