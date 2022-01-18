@@ -111,10 +111,6 @@ module Provider = {
   let make = React.Context.provider(context);
 };
 
-let initMigration = ConfigFileContext.initMigration;
-
-let load = ConfigFileContext.load;
-
 let version = () => {
   switch (LocalStorage.Version.get()) {
   | Ok(v) => v
@@ -145,10 +141,11 @@ let getNetworkState = networkStatus =>
 
 [@react.component]
 let make = (~children) => {
-  let (configFile, setConfig) = React.useState(() => load());
+  let {configFile, write} = ConfigFileContext.useConfigFile();
+
   let (storageVersion, _) = React.useState(() => version());
 
-  let (content, setContent) = React.useState(() => load()->fromFile);
+  let (content, setContent) = React.useState(() => configFile->fromFile);
 
   let (networkStatus, setNetworkStatus) =
     React.useState(() => {previous: None, current: Network.Pending});
@@ -242,13 +239,6 @@ let make = (~children) => {
     },
     [|networkStatus|],
   );
-
-  let write = f =>
-    setConfig(c => {
-      let c = f(c);
-      c->ConfigFile.Storage.set;
-      c;
-    });
 
   <Provider
     value={
