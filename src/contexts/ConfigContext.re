@@ -192,7 +192,7 @@ let make = (~children) => {
       pickNetwork();
       None;
     },
-    [|configFile|],
+    [|configFile.network|],
   );
 
   let (lastCheck, setLastCheck) = React.useState(() => None);
