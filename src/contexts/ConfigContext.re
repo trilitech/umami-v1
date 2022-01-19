@@ -111,32 +111,6 @@ module Provider = {
   let make = React.Context.provider(context);
 };
 
-let initMigration = () => {
-  let version =
-    switch (LocalStorage.Version.get()) {
-    | Ok(v) => v
-    | Error(_) =>
-      Js.log("Storage version not found, using 1.0 as base");
-      Version.mk(1, 0);
-    };
-
-  switch (Migration.init(version)) {
-  | Ok () => LocalStorage.Version.set(Migration.currentVersion)
-  | Error(_) => ()
-  };
-};
-
-let load = () => {
-  initMigration();
-
-  switch (ConfigFile.read()) {
-  | Ok(conf) => conf
-  | Error(_) =>
-    Js.log("No config to load. Using default config");
-    ConfigFile.dummy;
-  };
-};
-
 let version = () => {
   switch (LocalStorage.Version.get()) {
   | Ok(v) => v
@@ -167,10 +141,11 @@ let getNetworkState = networkStatus =>
 
 [@react.component]
 let make = (~children) => {
-  let (configFile, setConfig) = React.useState(() => load());
+  let {configFile, write} = ConfigFileContext.useConfigFile();
+
   let (storageVersion, _) = React.useState(() => version());
 
-  let (content, setContent) = React.useState(() => load()->fromFile);
+  let (content, setContent) = React.useState(() => configFile->fromFile);
 
   let (networkStatus, setNetworkStatus) =
     React.useState(() => {previous: None, current: Network.Pending});
@@ -217,7 +192,7 @@ let make = (~children) => {
       pickNetwork();
       None;
     },
-    [|configFile|],
+    [|configFile.network|],
   );
 
   let (lastCheck, setLastCheck) = React.useState(() => None);
@@ -264,13 +239,6 @@ let make = (~children) => {
     },
     [|networkStatus|],
   );
-
-  let write = f =>
-    setConfig(c => {
-      let c = f(c);
-      c->ConfigFile.Storage.set;
-      c;
-    });
 
   <Provider
     value={

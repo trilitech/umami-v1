@@ -187,8 +187,6 @@ type state = {
   themeSetting: (themeMain, (themeMain => themeMain) => unit),
 };
 
-// Context and Provider
-
 let initialState = {
   theme: lightTheme,
   themeSetting: (ConfigContext.default.theme, _ => ()),
@@ -204,69 +202,70 @@ module Provider = {
   let make = React.Context.provider(context);
 };
 
-// Final Provider
-
 [@bs.val] external window: 'a = "window";
 let mediaQueryColorSchemeDark =
   window##matchMedia("(prefers-color-scheme: dark)");
 
-[@react.component]
-let make = (~children) => {
-  let writeConf = ConfigContext.useWrite();
-  let config = ConfigContext.useContent();
+// Hook to system color preference
+let usePrefersColorSchemeDark: unit => bool =
+  () => {
+    let (prefersColorSchemeDark, setPrefersColorSchemeDark) =
+      React.useState(_ => mediaQueryColorSchemeDark##matches);
 
-  let (themeConfig, setThemeConfig) = React.useState(_ => config.theme);
+    let listener =
+      React.useCallback1(
+        event => {setPrefersColorSchemeDark(_ => event##matches)},
+        [|setPrefersColorSchemeDark|],
+      );
 
-  let (prefersColorSchemeDark, setPrefersColorSchemeDark) =
-    React.useState(_ => mediaQueryColorSchemeDark##matches);
-
-  let listener =
-    React.useCallback1(
-      event => {setPrefersColorSchemeDark(_ => event##matches)},
-      [|setPrefersColorSchemeDark|],
+    React.useEffect1(
+      () => {
+        mediaQueryColorSchemeDark##addEventListener("change", listener)
+        ->ignore;
+        Some(
+          () => {
+            mediaQueryColorSchemeDark##removeEventListener("change", listener)
+            ->ignore
+          },
+        );
+      },
+      [|listener|],
     );
 
-  React.useEffect1(
-    () => {
-      mediaQueryColorSchemeDark##addEventListener("change", listener)->ignore;
-      Some(
-        () => {
-          mediaQueryColorSchemeDark##removeEventListener("change", listener)
-          ->ignore
-        },
-      );
-    },
-    [|listener|],
-  );
-
-  let setThemeSetting = updater => {
-    setThemeConfig(prevThemeConfig => {
-      let newThemeConfig = updater(prevThemeConfig);
-      writeConf(c =>
-        {
-          ...c,
-          theme:
-            newThemeConfig != ConfigContext.default.theme
-              ? Some(newThemeConfig) : None,
-        }
-      );
-      newThemeConfig;
-    });
+    prefersColorSchemeDark;
   };
 
-  <Provider
-    value={
-      theme:
-        switch (themeConfig, prefersColorSchemeDark) {
-        | (`system, true)
-        | (`dark, _) => darkTheme
-        | (`system, false)
-        | (`light, _) => lightTheme
-        },
-      themeSetting: (themeConfig, setThemeSetting),
-    }>
-    children
-  </Provider>;
+[@react.component]
+let make = (~children) => {
+  let {write, configFile} = ConfigFileContext.useConfigFile();
+
+  let currentTheme = configFile.theme->Option.getWithDefault(`system);
+
+  let prefersColorSchemeDark = usePrefersColorSchemeDark();
+
+  let setThemeSetting = updater => {
+    // Why this compicated handler imposed by the Radio API ?
+    let newTheme = updater(currentTheme);
+    write(c => {...c, theme: Some(newTheme)});
+  };
+
+  React.useMemo2(
+    () =>
+      <Provider
+        value={
+          theme:
+            switch (currentTheme, prefersColorSchemeDark) {
+            | (`system, true)
+            | (`dark, _) => darkTheme
+            | (`system, false)
+            | (`light, _) => lightTheme
+            },
+          themeSetting: (currentTheme, setThemeSetting),
+        }>
+        children
+      </Provider>,
+    (currentTheme, prefersColorSchemeDark),
+  );
 };
 
 // Hooks
