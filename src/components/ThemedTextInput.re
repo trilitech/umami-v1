@@ -99,9 +99,6 @@ let makeFrameStyle =
             style(
               ~borderColor=theme.colors.borderPrimary,
               ~borderWidth=2.,
-              ~paddingVertical=(paddingVertical -. 2.)->dp,
-              ~paddingRight=(paddingRight -. 2.)->dp,
-              ~paddingLeft=(paddingLeft -. 2.)->dp,
               (),
             ),
           )
