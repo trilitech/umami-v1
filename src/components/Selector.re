@@ -110,7 +110,7 @@ let make =
 
   let borderStyles = (~focused) =>
     disabled
-      ? theme.colors.borderMediumEmphasis
+      ? "transparent"
       : isOpen || focused
           ? theme.colors.borderPrimary
           : hasError ? theme.colors.error : theme.colors.borderMediumEmphasis;
