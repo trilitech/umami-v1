@@ -32,7 +32,8 @@ type Errors.t +=
   | CannotParseTokenAmount(ReBigNumber.t, int, int)
   | CannotParseTezAmount(ReBigNumber.t, int, int)
   | FA1_2InvalidTokenId(PublicKeyHash.t)
-  | FA2InvalidTokenId(PublicKeyHash.t);
+  | FA2InvalidTokenId(PublicKeyHash.t)
+  | ContractCallsNotHandled;
 
 let () =
   Errors.registerHandler(
@@ -48,16 +49,43 @@ let () =
       I18n.Csv.fa1_2_invalid_token_id((pkh :> string))->Some
     | FA2InvalidTokenId(pkh) =>
       I18n.Csv.fa2_invalid_token_id((pkh :> string))->Some
+    | ContractCallsNotHandled => I18n.Csv.contract_calls_not_handled->Some
     | _ => None,
   );
 
 type t = list(Transfer.elt);
 
 let addr = Encodings.custom(~conv=PublicKeyHash.buildImplicit);
-let token = Encodings.custom(~conv=PublicKeyHash.buildContract);
+let contract = Encodings.custom(~conv=PublicKeyHash.buildContract);
+let michelson =
+  Encodings.custom(
+    ~conv=ProtocolOptions.TransactionParameters.MichelineMichelsonV1Expression.parseMicheline,
+  );
 
-let rowEncoding =
-  Encodings.(mkRow(tup4(addr, number, opt(token), opt(number))));
+type token = (PublicKeyHash.t, option(Umami.ReBigNumber.t));
+
+type transfer = (
+  (PublicKeyHash.t, ReBigNumber.t),
+  CSVParser.Encodings.or_(token, unit),
+);
+
+type contractCall = (
+  PublicKeyHash.t,
+  string,
+  ReTaquitoParser.t,
+  option(ReBigNumber.t),
+);
+
+let token: Encodings.row_repr(token) =
+  Encodings.(tup2(contract, opt(number)));
+
+let transfer: Encodings.row_repr(transfer) =
+  Encodings.(merge_rows(tup2(addr, number), or_(token, null)));
+
+let contractCall: Encodings.row_repr(contractCall) =
+  Encodings.(tup4(contract, string, michelson, opt(number)));
+
+let rowEncoding = Encodings.(or_(transfer, contractCall)->mkRow);
 
 let handleTezRow = (index, destination, amount) =>
   amount
@@ -102,17 +130,19 @@ let handleTokenRow =
 
 let handleRow = (tokens, index, row) =>
   switch (row) {
-  | (destination, amount, None, _) =>
+  | `Left((destination, amount), `Right ()) =>
     handleTezRow(index, destination, amount)
-  | (destination, amount, Some(token), tokenId) =>
+  | `Left((destination, amount), `Left(token, tokenId)) =>
     handleTokenRow(tokens, index, destination, amount, token, tokenId)
+  | `Right(_) => Error(ContractCallsNotHandled)
   };
 
 let handleCSV = (rows, tokens) =>
   rows->List.mapWithIndex(handleRow(tokens))->Result.collect;
 
 let parseCSV = (content, ~tokens) => {
-  let rows = parseCSV(content, rowEncoding);
+  let rows =
+    rowEncoding->Result.flatMap(encoding => parseCSV(content, encoding));
   switch (rows) {
   | Ok([]) => Error(NoRows)
   | Ok(rows) => handleCSV(rows, tokens)

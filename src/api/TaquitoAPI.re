@@ -42,7 +42,7 @@ let () =
 
 let extractBatchRevealEstimation = (xs, estimations) => {
   switch (estimations->Array.get(0)) {
-  | Some((res: ReTaquitoTypes.Estimation.result))
+  | Some(res: ReTaquitoTypes.Estimation.result)
       when estimations->Array.length == xs->Array.length + 1 =>
     Ok((estimations->Array.sliceToEnd(1), Some(res)))
   | Some(_) => Ok((estimations, None))
@@ -346,7 +346,7 @@ module Transfer = {
   let makeTransferMichelsonParameter = (~entrypoint, ~parameter) =>
     switch (entrypoint, parameter) {
     | (Some(a), Some(b)) =>
-      Some({ProtocolOptions.TransactionParameters.entrypoint: a, value: b})
+      Some(ReTaquitoTypes.Transfer.Parameters.{entrypoint: a, value: b})
     | _ => None
     };
 

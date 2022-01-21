@@ -590,7 +590,16 @@ module Errors = {
   let storage_migration_failed = v =>
     p("Internal error: storage migration failed at version %s", v);
   let unknown_network = c => p("No letlic network exists for chain %s", c);
-  ();
+  let script_parsing = e =>
+    p(
+      "Error when parsing script%s",
+      e->Option.mapDefault("", m => "with message: " ++ m),
+    );
+  let micheline_parsing = e =>
+    p(
+      "Error when parsing Micheline%s",
+      e->Option.mapDefault("", m => "with message: " ++ m),
+    );
 };
 
 module Csv = {
@@ -637,6 +646,7 @@ module Csv = {
     p("Contract %s is an FA1.2 token, it cannot have a token id", pkh);
   let fa2_invalid_token_id = pkh =>
     p("Contract %s is an FA2 token, it must have a token id", pkh);
+  let contract_calls_not_handled = "temporary: contract calls not handled";
 };
 
 module Disclaimer = {

@@ -23,41 +23,15 @@
 /*                                                                           */
 /*****************************************************************************/
 
-type Errors.t +=
-  | UnknownToken(PublicKeyHash.t, option(int))
-  | NoRows
-  | CannotParseTokenAmount(ReBigNumber.t, int, int)
-  | CannotParseTezAmount(ReBigNumber.t, int, int)
-  | FA1_2InvalidTokenId(PublicKeyHash.t)
-  | FA2InvalidTokenId(PublicKeyHash.t);
+include ReTaquitoTypes.Micheline;
 
-type t = list(Transfer.elt);
-/* Public key hash encoding */
-let addr: CSVParser.Encodings.element(PublicKeyHash.t);
-/* Contract hash encoding */
-let contract: CSVParser.Encodings.element(PublicKeyHash.t);
-/* Micheline encoding */
-let michelson: CSVParser.Encodings.element(ReTaquitoTypes.Micheline.t);
+type parser;
 
-type token = (PublicKeyHash.t, option(Umami.ReBigNumber.t));
+[@bs.module "@taquito/michel-codec"] [@bs.new]
+external parser: unit => parser = "Parser";
 
-type transfer = (
-  (PublicKeyHash.t, ReBigNumber.t),
-  CSVParser.Encodings.or_(token, unit),
-);
+[@bs.send]
+external parseMichelineExpression: (parser, string) => t =
+  "parseMichelineExpression";
 
-type contractCall = (
-  PublicKeyHash.t,
-  string,
-  ReTaquitoParser.t,
-  option(ReBigNumber.t),
-);
-
-/* CSV row encoding */
-let rowEncoding:
-  Let.result(
-    CSVParser.Encodings.row(CSVParser.Encodings.or_(transfer, contractCall)),
-  );
-
-let parseCSV:
-  (string, ~tokens: TokensLibrary.WithRegistration.t) => result(t, Errors.t);
+[@bs.send] external parseScript: (parser, string) => t = "parseScript";

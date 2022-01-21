@@ -61,7 +61,9 @@ type Errors.t +=
   | NoMetadata
   | NoTokenMetadata
   | NodeRequestFailed
-  | TokenIdNotFound;
+  | TokenIdNotFound
+  | ParseScript(option(string))
+  | ParseMicheline(option(string));
 
 let parse = (e: RawJsError.t) =>
   switch (e.message) {
@@ -116,6 +118,8 @@ let () =
     | NoTokenMetadata => I18n.Form_input_error.no_token_metadata(None)->Some
     | TokenIdNotFound => I18n.Form_input_error.token_id_not_found(None)->Some
     | NodeRequestFailed => I18n.Errors.request_to_node_failed->Some
+    | ParseScript(e) => I18n.Errors.script_parsing(e)->Some
+    | ParseMicheline(e) => I18n.Errors.micheline_parsing(e)->Some
     | _ => None,
   );
 

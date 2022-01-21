@@ -24,24 +24,37 @@
 /*****************************************************************************/
 
 module TransactionParameters = {
-  type entrypoint = string;
+  type entrypoint = ReTaquitoTypes.Transfer.Parameters.entrypoint;
 
   // This type cannot be build and destructed except from bindings modules
   // ReBeacon and ReTaquito, hence its abstract nature.
   module MichelineMichelsonV1Expression = {
-    type t;
+    type t = ReTaquitoTypes.Micheline.t;
 
     let toString = c =>
       c
       ->Js.Json.stringifyAny
       ->Option.map(Js.Json.parseExn)
       ->Option.map(j => Js.Json.stringifyWithSpace(j, 4));
+
+    let parseMicheline = s =>
+      try(
+        ReTaquitoParser.parser()
+        ->ReTaquitoParser.parseMichelineExpression(s)
+        ->Ok
+      ) {
+      | Js.Exn.Error(exn) =>
+        Error(ReTaquitoError.ParseMicheline(exn->Js.Exn.message))
+      };
+
+    let parseScript = s =>
+      try(ReTaquitoParser.parser()->ReTaquitoParser.parseScript(s)->Ok) {
+      | Js.Exn.Error(exn) =>
+        Error(ReTaquitoError.ParseScript(exn->Js.Exn.message))
+      };
   };
 
-  type t = {
-    entrypoint,
-    value: MichelineMichelsonV1Expression.t,
-  };
+  type t = ReTaquitoTypes.Transfer.Parameters.t;
 };
 
 type transferEltOptions = {

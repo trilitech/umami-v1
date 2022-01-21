@@ -40,6 +40,7 @@ type t;
 [@bs.send] external div: (t, t) => t = "div";
 [@bs.send] external times: (t, t) => t = "times";
 [@bs.send] external powInt: (t, int) => t = "pow";
+[@bs.send] external isEqualTo: (t, t) => bool = "isEqualTo";
 
 let toFixed = (~decimals=?, t) => toFixed(t, decimals);
 
