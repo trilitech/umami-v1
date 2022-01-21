@@ -179,3 +179,6 @@ let useSetter:
     unit
   ) =>
   (t('a), 'c => Promise.t('a));
+
+/* Partial [t] printer for debugging purposes */
+let toString: t(_) => string;

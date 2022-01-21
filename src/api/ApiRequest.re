@@ -144,6 +144,7 @@ let logOk = (r, addLog, origin, makeMsg) =>
 let updateToLoadingState = request =>
   switch (request) {
   | Done(Ok(data), _) => Loading(Some(data))
+  | Loading(Some(data)) => Loading(Some(data))
   | _ => Loading(None)
   };
 
@@ -235,3 +236,11 @@ let useSetter =
 
   (request, sendRequest);
 };
+
+let toString =
+  fun
+  | NotAsked => "NotAsked"
+  | Loading(None) => "Loading(None)"
+  | Loading(Some(_)) => "Loading(Some)"
+  | Done(Ok(_), _) => "Done(Ok)"
+  | Done(Error(_), _) => "Done(Error)";
