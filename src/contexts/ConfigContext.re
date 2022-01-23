@@ -69,13 +69,15 @@ type networkStatus = {
   current: Network.status,
 };
 
+type retryNetworkType =
+  (~onlyOn: Network.status=?, ~onlyAfter: Network.status=?, unit) => unit;
+
 type configState = {
   content: env,
   configFile: ConfigFile.t,
   write: (ConfigFile.t => ConfigFile.t) => unit,
   networkStatus,
-  retryNetwork:
-    (~onlyOn: Network.status=?, ~onlyAfter: Network.status=?, unit) => unit,
+  retryNetwork: retryNetworkType,
   storageVersion: Version.t,
 };
 
