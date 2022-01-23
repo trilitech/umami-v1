@@ -1,3 +1,6 @@
+const MockDate = require("mockdate");
+MockDate.set(100);
+
 jest.mock("react-native-svg", () =>
   require("react-native-svg-mock/build/index")
 );
