@@ -273,13 +273,14 @@ module Form = {
               text=submitLabel
               onPress={_ => onSubmit()}
               loading
-              disabledLook={!formFieldsAreValids}
+              disabled={!formFieldsAreValids}
             />
             {onAddToBatch->ReactUtils.mapOpt(addToBatch =>
                <Buttons.FormSecondary
                  style=FormStyles.formSecondary
                  text=I18n.Btn.start_batch_transaction
                  onPress={_ => addToBatch()}
+                 disabled={!formFieldsAreValids}
                />
              )}
           </View>
