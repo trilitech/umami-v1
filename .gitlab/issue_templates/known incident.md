@@ -44,8 +44,8 @@
 <!-- Other useful shortcuts -->
 <!-- ( ping CAB members : @picdc @remyzorg @comeh @philippewang.info @SamREye ) -->
 <!-- Trigger gitlab todo tasks : mention @user at the start of the line --> 
-<!-- @picdc (cc: @remyzorg )    Please review this _emergency change_ on development aspects -->
+<!-- @remyzorg (cc: TBD )    Please review this _emergency change_ on development aspects -->
 <!-- @comeh (cc: @philippewang.info) Please review this _emergency change_ on operations aspects  -->
 <!-- @SamREye                   Please review this _emergency change_ on business aspects    -->
-<!-- /assign @picdc @comeh @SamREye -->
+<!-- /assign @premyzorgicdc @comeh @SamREye -->
 <!-- /unlabel ~"CAB::to-review" -->

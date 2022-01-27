@@ -49,11 +49,11 @@
 
 <!-- Trigger gitlab todo tasks --> 
 
-@picdc (cc: @remyzorg ) Please approve this _configuration change_ on development aspects
+@remyzorg (cc: TBD ) Please approve this _configuration change_ on development aspects
 
 @comeh (cc: @philippewang.info) Please approve this _configuration change_ on operations aspects
 
-<!-- /assign @picdc @comeh @SamREye -->
+<!-- /assign @remyzorgc @comeh @SamREye -->
 
 <!-- Quick actions for last approver : -->
 <!-- /unlabel ~"CAB::to-approve" -->
