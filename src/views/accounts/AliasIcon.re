@@ -28,67 +28,53 @@ open ReactNative;
 let styles =
   Style.(
     StyleSheet.create({
-      "inner": style(~marginRight=10.->dp, ~flexDirection=`row, ()),
-      "actionButtons":
+      "iconContainer":
         style(
-          ~alignSelf=`flexEnd,
-          ~flexDirection=`row,
-          ~flex=1.,
-          ~marginBottom=8.->dp,
+          ~width=72.->dp,
+          ~height=20.->dp,
+          ~justifyContent=`center,
+          ~alignItems=`center,
+          ~alignSelf=`flexStart,
           (),
         ),
-      "button": style(~marginRight=4.->dp, ()),
-      "actionContainer": style(~marginRight=24.->dp, ()),
+      "tag": style(~width=40.->dp, ~height=18.->dp, ()),
     })
   );
 
 [@react.component]
-let make =
-    (~account: Account.t, ~isHD: bool=false, ~token: option(Token.t)=?) => {
-  let delegateRequest = StoreContext.Delegate.useLoad(account.address);
-  let addToast = LogsContext.useToast();
+let make = (~kind: option(Alias.kind), ~isHD: bool) => {
+  let theme = ThemeContext.useTheme();
 
-  let balanceRequest = StoreContext.Balance.useLoad(account.address);
-
-  let zeroTez =
-    switch (balanceRequest->ApiRequest.getDoneOk) {
-    | None => true
-    | Some(balance) => balance == Tez.zero
-    };
-
-  <RowItem.Bordered height=90.>
-    <View style=styles##inner>
-      <AliasIcon kind={Some(Account(account.kind))} isHD />
-      <AccountInfo account ?token />
-    </View>
-    <View style=styles##actionButtons>
-      <ClipboardButton
-        copied=I18n.Log.address
-        tooltipKey=(account.address :> string)
-        addToast
-        data=(account.address :> string)
-        style=styles##button
-      />
-      <QrButton
-        tooltipKey=(account.address :> string)
-        account={account->Alias.fromAccount}
-        style=styles##button
-      />
-    </View>
-    {delegateRequest
-     ->ApiRequest.mapWithDefault(React.null, delegate => {
-         <View style=styles##actionContainer>
-           <DelegateButton
-             zeroTez
-             action={
-               delegate->Option.mapWithDefault(
-                 Delegate.Create(account, false), delegate =>
-                 Delegate.Edit(account, delegate)
-               )
-             }
-           />
-         </View>
-       })
-     ->ReactUtils.onlyWhen(token == None)}
-  </RowItem.Bordered>;
+  <View style=styles##iconContainer>
+    {switch (kind) {
+     | Some(Account(Encrypted | Unencrypted)) when !isHD =>
+       <Tag style=styles##tag content=I18n.Label.account_umami />
+     | Some(Account(Encrypted | Unencrypted)) =>
+       Icons.Umami.build(
+         ~style=?None,
+         ~size=20.,
+         ~color=theme.colors.iconMediumEmphasis,
+       )
+     | Some(Account(Ledger)) =>
+       Icons.LedgerP.build(
+         ~style=?None,
+         ~size=20.,
+         ~color=theme.colors.iconMediumEmphasis,
+       )
+     | Some(Account(CustomAuth(infos))) =>
+       infos.provider
+       ->CustomAuthProviders.getIcon(
+           ~style=?None,
+           ~size=20.,
+           ~color=theme.colors.iconMediumEmphasis,
+         )
+     | None => React.null
+     | Some(Contact) =>
+       Icons.AddressBook.build(
+         ~style=?None,
+         ~size=20.,
+         ~color=theme.colors.iconMediumEmphasis,
+       )
+     }}
+  </View>;
 };

@@ -125,19 +125,43 @@ module BuyTezButton = {
   };
 };
 
+let getHDAddresses = secrets =>
+  secrets
+  ->Array.map(secret => {
+      let hdAddresses =
+        secret.Secret.secret.addresses->Array.map(k => (k :> string));
+      secret.secret.masterPublicKey
+      ->Option.mapWithDefault(hdAddresses, legacyAddress => {
+          hdAddresses->Array.concat([|(legacyAddress :> string)|])
+        });
+    })
+  ->Array.reduce([||], (acc, arr) => acc->Array.concat(arr))
+  ->Set.String.fromArray;
+
 module AccountsFlatList = {
   [@react.component]
   let make = (~token=?) => {
+    let secretsRequest = StoreContext.Secrets.useLoad();
     let accounts = StoreContext.Accounts.useGetAll();
-    <View>
-      {accounts
-       ->PublicKeyHash.Map.valuesToArray
-       ->SortArray.stableSortBy(Account.compareName)
-       ->Array.map(account =>
-           <AccountRowItem key=(account.address :> string) account ?token />
-         )
-       ->React.array}
-    </View>;
+
+    secretsRequest->ApiRequest.mapOrLoad(secrets => {
+      let addresses = getHDAddresses(secrets);
+      <View>
+        {accounts
+         ->PublicKeyHash.Map.valuesToArray
+         ->SortArray.stableSortBy(Account.compareName)
+         ->Array.map(account => {
+             let address = (account.address :> string);
+             <AccountRowItem
+               key=(address :> string)
+               account
+               isHD={addresses->Set.String.has(address)}
+               ?token
+             />;
+           })
+         ->React.array}
+      </View>;
+    });
   };
 };
 
@@ -148,19 +172,7 @@ module AccountsTreeList = {
     let accounts = StoreContext.Accounts.useGetAll();
 
     secretsRequest->ApiRequest.mapOrLoad(secrets => {
-      let addressesInSecrets =
-        secrets
-        ->Array.map(secret => {
-            let hdAddresses =
-              secret.secret.addresses->Array.map(k => (k :> string));
-            secret.secret.masterPublicKey
-            ->Option.mapWithDefault(hdAddresses, legacyAddress => {
-                hdAddresses->Array.concat([|(legacyAddress :> string)|])
-              });
-          })
-        ->Array.reduce([||], (acc, arr) => acc->Array.concat(arr))
-        ->Set.String.fromArray;
-
+      let addressesInSecrets = getHDAddresses(secrets);
       let accountsNotInSecrets =
         accounts->PublicKeyHash.Map.keep((address, _account) => {
           !addressesInSecrets->Set.String.has((address :> string))
