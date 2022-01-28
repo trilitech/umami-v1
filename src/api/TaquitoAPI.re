@@ -131,6 +131,7 @@ module Signer = {
 
   type intent =
     | LedgerCallback(unit => unit)
+    | CustomAuthSigner(ReCustomAuthSigner.t)
     | Password(string);
 
   let readSecretKey = (address, signingIntent, dirpath) => {
@@ -140,7 +141,12 @@ module Signer = {
     | (Encrypted, Password(s)) => readEncryptedKey(key, s)
     | (Unencrypted, _) => readUnencryptedKey(key)
     | (Ledger, LedgerCallback(callback)) => readLedgerKey(callback, key)
-    | _ => ReTaquitoError.SignerIntentInconsistency->Promise.err
+
+    | (CustomAuth(_), CustomAuthSigner(s)) =>
+      s->ReCustomAuthSigner.toSigner->Promise.ok
+    | (CustomAuth(_), _)
+    | (Encrypted, _)
+    | (Ledger, _) => ReTaquitoError.SignerIntentInconsistency->Promise.err
     };
   };
 };

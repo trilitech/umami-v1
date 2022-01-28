@@ -24,6 +24,7 @@
 /*****************************************************************************/
 
 type Errors.t +=
+  | InvalidEncoding(string)
   | KeyBadFormat(string)
   | KeyNotFound;
 
@@ -105,12 +106,18 @@ let renameAlias:
   (~dirpath: System.Path.t, ~oldName: string, ~newName: string) =>
   Promise.t(unit);
 
-type kind = Account.kind = | Encrypted | Unencrypted | Ledger;
+type kind =
+  Account.kind =
+    | Encrypted | Unencrypted | Ledger | CustomAuth(ReCustomAuth.infos);
 
 module Prefixes: {
-  let encrypted: string;
-  let unencrypted: string;
-  let ledger: string;
+  type t =
+    | Encrypted
+    | Unencrypted
+    | Ledger
+    | CustomAuth;
+
+  let toString: t => string;
 };
 
 /** Returns the prefix kind from the secret key and the secret key without the
@@ -131,14 +138,13 @@ let pkFromAlias:
 
 let mnemonicPkValue: string => PkAlias.t;
 
-let ledgerPkValue: (string, string) => PkAlias.t;
+let customPkValue: (~secretPath: string, string) => PkAlias.t;
 
 module Ledger: {
   type Errors.t +=
     | InvalidPathSize(array(int))
     | InvalidIndex(int, string)
     | InvalidScheme(string)
-    | InvalidEncoding(string)
     | InvalidLedger(string);
 
   type scheme =
@@ -185,4 +191,11 @@ module Ledger: {
   module Encode: {
     let toSecretKey: (t, ~ledgerBasePkh: PublicKeyHash.t) => SecretAlias.t;
   };
+};
+
+module CustomAuth: {
+  module Decode: {
+    let fromSecretKey: SecretAlias.t => Let.result(ReCustomAuth.infos);
+  };
+  module Encode: {let toSecretKey: ReCustomAuth.infos => SecretAlias.t;};
 };

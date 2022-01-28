@@ -26,7 +26,8 @@
 type kind =
   | Encrypted
   | Unencrypted
-  | Ledger;
+  | Ledger
+  | CustomAuth(ReCustomAuth.infos);
 
 type t = {
   address: PublicKeyHash.t,

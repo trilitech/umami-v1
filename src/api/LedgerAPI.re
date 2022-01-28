@@ -101,7 +101,7 @@ let addOrReplaceAlias =
   let t = Wallet.Ledger.{path, scheme};
   let sk = Wallet.Ledger.Encode.toSecretKey(t, ~ledgerBasePkh);
 
-  let pk = Wallet.ledgerPkValue(sk, pk);
+  let pk = Wallet.customPkValue(~secretPath=sk, pk);
 
   let%AwaitMap () = Wallet.addOrReplaceAlias(~dirpath, ~alias, ~pk, ~pkh, ~sk);
 

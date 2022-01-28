@@ -195,6 +195,15 @@ module Accounts: {
     ) =>
     Promise.t(array(PublicKeyHash.t));
 
+  let importCustomAuth:
+    (
+      ~config: ConfigContext.env,
+      ~pkh: PublicKeyHash.t,
+      ~pk: string,
+      ReCustomAuth.infos
+    ) =>
+    Promise.t(PublicKeyHash.t);
+
   let deriveLedgerKeys:
     (
       ~config: ConfigContext.env,

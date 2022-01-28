@@ -282,7 +282,7 @@ module Accounts = {
     let%Await pk = signer->ReTaquitoSigner.publicKey;
     let pk = Wallet.mnemonicPkValue(pk);
     let%Await pkh = signer->ReTaquitoSigner.publicKeyHash;
-    let skUri = Wallet.Prefixes.encrypted ++ secretKey;
+    let skUri = Wallet.Prefixes.toString(Encrypted) ++ secretKey;
     Wallet.addOrReplaceAlias(
       ~dirpath=config.baseDir(),
       ~alias,
@@ -929,6 +929,24 @@ module Accounts = {
     );
 
     addresses;
+  };
+
+  let importCustomAuth =
+      (~config: ConfigContext.env, ~pkh, ~pk, infos: ReCustomAuth.infos) => {
+    let%Await () = System.Client.initDir(config.baseDir());
+
+    let sk = Wallet.CustomAuth.Encode.toSecretKey(infos);
+    let pk = Wallet.customPkValue(~secretPath=sk, pk);
+
+    let%AwaitMap () =
+      Wallet.addOrReplaceAlias(
+        ~dirpath=config.baseDir(),
+        ~alias=(infos.handle :> string),
+        ~pk,
+        ~pkh,
+        ~sk,
+      );
+    pkh;
   };
 
   let deriveLedger =

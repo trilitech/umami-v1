@@ -28,7 +28,8 @@ open Let;
 
 type Errors.t +=
   | KeyNotFound
-  | KeyBadFormat(string);
+  | KeyBadFormat(string)
+  | InvalidEncoding(string);
 
 let () =
   Errors.registerHandler(
@@ -36,6 +37,7 @@ let () =
     fun
     | KeyNotFound => I18n.Wallet.key_not_found->Some
     | KeyBadFormat(s) => I18n.Wallet.key_bad_format(s)->Some
+    | InvalidEncoding(e) => I18n.Wallet.invalid_encoding(e)->Some
     | _ => None,
   );
 
@@ -231,25 +233,81 @@ let renameAlias = (~dirpath, ~oldName, ~newName) => {
   updateAlias(~dirpath, ~update);
 };
 
-type kind = Account.kind = | Encrypted | Unencrypted | Ledger;
+module CustomAuth = {
+  module Decode = {
+    let fromSecretKey = uri => {
+      let elems = uri->Js.String2.split("/");
+
+      let%ResMap (provider, handle) =
+        switch (elems) {
+        | [|provider, handle|] =>
+          let%ResMap provider = provider->ReCustomAuthType.providerFromString;
+          (provider, handle->ReCustomAuthType.Handle.fromString);
+
+        | _ => Error(InvalidEncoding(uri))
+        };
+
+      ReCustomAuth.{provider, handle};
+    };
+  };
+
+  module Encode = {
+    open ReCustomAuth;
+    let toSecretKey = t => {
+      Format.sprintf(
+        "customauth://%s/%s",
+        t.provider->ReCustomAuth.providerToString,
+        (t.handle :> string),
+      );
+    };
+  };
+};
+
+type kind =
+  Account.kind =
+    | Encrypted | Unencrypted | Ledger | CustomAuth(ReCustomAuth.infos);
 
 module Prefixes = {
-  let encrypted = "encrypted:";
-  let unencrypted = "unencrypted:";
-  let ledger = "ledger://";
+  type t =
+    | Encrypted
+    | Unencrypted
+    | Ledger
+    | CustomAuth;
+
+  let fromKind =
+    fun
+    | Account.Encrypted => Encrypted
+    | Unencrypted => Unencrypted
+    | Ledger => Ledger
+    | CustomAuth(_) => CustomAuth;
+
+  let toString =
+    fun
+    | Encrypted => "encrypted:"
+    | Unencrypted => "unencrypted:"
+    | Ledger => "ledger://"
+    | CustomAuth => "customauth://";
 };
 
 let extractPrefixFromSecretKey = k => {
-  let sub = (k, pref) =>
-    k->Js.String2.substringToEnd(~from=String.length(pref));
+  let sub = (k, kind) =>
+    k->Js.String2.substringToEnd(
+      ~from=String.length(kind->Prefixes.toString),
+    );
+
+  let checkStart = (k, pref) =>
+    k->Js.String2.startsWith(Prefixes.toString(pref));
+
+  let buildRes = pref => Ok((pref, k->sub(pref->Prefixes.fromKind)));
 
   switch (k) {
-  | k when k->Js.String2.startsWith(Prefixes.encrypted) =>
-    Ok((Encrypted, k->sub(Prefixes.encrypted)))
-  | k when k->Js.String2.startsWith(Prefixes.unencrypted) =>
-    Ok((Unencrypted, k->sub(Prefixes.unencrypted)))
-  | k when k->Js.String2.startsWith(Prefixes.ledger) =>
-    Ok((Ledger, k->sub(Prefixes.ledger)))
+  | k when checkStart(k, Prefixes.Encrypted) => buildRes(Encrypted)
+  | k when checkStart(k, Prefixes.Unencrypted) => buildRes(Unencrypted)
+  | k when checkStart(k, Prefixes.Ledger) => buildRes(Ledger)
+  | k when checkStart(k, Prefixes.CustomAuth) =>
+    let uri = sub(k, Prefixes.CustomAuth);
+    let%ResMap infos = CustomAuth.Decode.fromSecretKey(uri);
+    (CustomAuth(infos), uri);
   | k => Error(KeyBadFormat(k))
   };
 };
@@ -268,7 +326,7 @@ let readSecretFromPkh = (address, dirpath) => {
 
 let mnemonicPkValue = pk => PkAlias.{locator: "unencrypted:" ++ pk, key: pk};
 
-let ledgerPkValue = (secretPath, pk) =>
+let customPkValue = (~secretPath, pk) =>
   PkAlias.{locator: secretPath, key: pk};
 
 module Ledger = {
@@ -276,7 +334,6 @@ module Ledger = {
     | InvalidPathSize(array(int))
     | InvalidIndex(int, string)
     | InvalidScheme(string)
-    | InvalidEncoding(string)
     | InvalidLedger(string);
 
   let () =
@@ -288,7 +345,6 @@ module Ledger = {
       | InvalidIndex(index, value) =>
         I18n.Wallet.invalid_index(index, value)->Some
       | InvalidScheme(s) => I18n.Wallet.invalid_scheme(s)->Some
-      | InvalidEncoding(e) => I18n.Wallet.invalid_encoding(e)->Some
       | InvalidLedger(p) => I18n.Wallet.invalid_ledger(p)->Some
       | _ => None,
     );

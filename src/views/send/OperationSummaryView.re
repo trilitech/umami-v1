@@ -268,6 +268,7 @@ module Transactions = {
 
     let smallest =
       switch (source->fst.kind) {
+      | CustomAuth(_)
       | Ledger => true
       | Encrypted
       | Unencrypted => false
