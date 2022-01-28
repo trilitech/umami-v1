@@ -121,7 +121,7 @@ module Make = (Op: OP) => {
       operationApiRequest->ApiRequest.isDoneOk
         ? Some(ModalFormView.Close(_ => closeAction())) : None;
 
-    let ledgerState = React.useState(() => None);
+    let state = React.useState(() => None);
 
     let simulatedOperation = Op.makeSimulated(operation);
 
@@ -209,7 +209,7 @@ module Make = (Op: OP) => {
                 source=sourceAccount
                 dryRun
                 signOpStep
-                ledgerState
+                state
                 operation={Op.makeOperation(operation)}
                 loading
                 secondaryButton

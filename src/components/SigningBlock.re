@@ -24,13 +24,153 @@
 /*****************************************************************************/
 
 open ReactNative;
+open Let;
+
+type state =
+  | WaitForConfirm
+  | Searching
+  | Confirmed
+  | Error(Errors.t);
+
+module SignerView = {
+  let onbStyles = FormStyles.onboarding;
+
+  module Container = {
+    let styles =
+      Style.(
+        StyleSheet.create({
+          "withSecondary": style(~marginTop=10.->dp, ()),
+          "container":
+            style(
+              ~marginTop=20.->dp,
+              ~borderRadius=4.,
+              ~padding=32.->dp,
+              ~minHeight=296.->dp,
+              (),
+            ),
+        })
+      );
+
+    [@react.component]
+    let make = (~children) => {
+      let theme = ThemeContext.useTheme();
+      <View
+        style=Style.(
+          array([|
+            style(~backgroundColor=theme.colors.stateDisabled, ()),
+            styles##container,
+          |])
+        )>
+        children
+      </View>;
+    };
+  };
+
+  let styles =
+    Style.(
+      StyleSheet.create({
+        "loading": style(~height=50.->dp, ()),
+        "title": style(~height=40.->dp, ()),
+        "content":
+          style(~textAlign=`center, ~display=`flex, ~alignItems=`center, ()),
+      })
+    );
+
+  [@react.component]
+  let make = (~st, ~title, ~expl) => {
+    let theme = ThemeContext.useTheme();
+
+    <>
+      <Typography.Subtitle2
+        style=Style.([|onbStyles##title, styles##title|]->array)>
+        title->React.string
+      </Typography.Subtitle2>
+      <View style=styles##content>
+        {switch (st) {
+         | Error(_) =>
+           <Icons.CloseOutline
+             color={theme.colors.error}
+             size=50.
+             style=FormStyles.section##spacing
+           />
+         | Confirmed =>
+           <Icons.CheckOutline
+             color={theme.colors.valid}
+             size=50.
+             style=FormStyles.section##spacing
+           />
+
+         | Searching
+         | WaitForConfirm =>
+           <View
+             style=Style.(
+               array([|FormStyles.section##spacing, styles##loading|])
+             )>
+             <LoadingView size=ActivityIndicator_Size.large />
+           </View>
+         }}
+        <Typography.Body1 fontSize=16. style=FormStyles.section##spacing>
+          expl->React.string
+        </Typography.Body1>
+      </View>
+    </>;
+  };
+};
+
+module CustomAuthView = {
+  let caStyles =
+    Style.(StyleSheet.create({"buttons": style(~marginTop=20.->dp, ())}));
+
+  open SignerView;
+  [@react.component]
+  let make = (~st, ~retry, ~loading, ~submit, ~provider) => {
+    <Container>
+      {switch (st) {
+       | WaitForConfirm
+       | Searching =>
+         <SignerView
+           st
+           title=I18n.Title.custom_auth_waiting_auth
+           expl={I18n.Expl.custom_auth_sign(
+             provider->CustomAuthVerifiers.getProviderName,
+           )}
+         />
+       | Confirmed =>
+         <>
+           <SignerView
+             st
+             title=I18n.Title.custom_auth_success
+             expl=I18n.Expl.custom_auth_success
+           />
+           <View style=FormStyles.verticalFormAction>
+             <Buttons.SubmitPrimary
+               loading
+               text=I18n.Btn.confirm
+               onPress={_ => submit()}
+             />
+           </View>
+         </>
+       | Error(e) =>
+         let (title, expl) = (
+           I18n.Title.custom_auth_failed,
+           e->Errors.toString,
+         );
+         <>
+           <SignerView title expl st />
+           <View style=FormStyles.verticalFormAction>
+             <Buttons.SubmitPrimary
+               text=I18n.Btn.retry
+               onPress={_ => retry()}
+             />
+           </View>
+         </>;
+       }}
+    </Container>;
+  };
+};
 
 module LedgerView = {
-  type state =
-    | WaitForConfirm
-    | Searching
-    | Confirmed
-    | Error(Errors.t);
+  open SignerView;
 
   let errorTitleExpl =
     fun
@@ -53,117 +193,54 @@ module LedgerView = {
       )
     | e => (I18n.Title.hardware_wallet_error_unknown, e->Errors.toString);
 
-  let styles =
-    Style.(
-      StyleSheet.create({
-        "withSecondary": style(~marginTop=10.->dp, ()),
-        "container":
-          style(
-            ~marginTop=20.->dp,
-            ~borderRadius=4.,
-            ~padding=32.->dp,
-            ~minHeight=296.->dp,
-            (),
-          ),
-      })
-    );
-
-  module Content = {
-    let onbStyles = FormStyles.onboarding;
-
-    let styles =
-      Style.(
-        StyleSheet.create({
-          "loading": style(~height=50.->dp, ()),
-          "title": style(~height=40.->dp, ()),
-          "content":
-            style(
-              ~textAlign=`center,
-              ~display=`flex,
-              ~alignItems=`center,
-              (),
-            ),
-        })
-      );
-
-    [@react.component]
-    let make = (~title, ~expl, ~error=false) => {
-      let theme = ThemeContext.useTheme();
-      <>
-        <Typography.Subtitle2
-          style=Style.([|onbStyles##title, styles##title|]->array)>
-          title->React.string
-        </Typography.Subtitle2>
-        <View style=styles##content>
-          {error
-             ? <Icons.CloseOutline
-                 color={theme.colors.error}
-                 size=50.
-                 style=FormStyles.section##spacing
-               />
-             : <View
-                 style=Style.(
-                   array([|FormStyles.section##spacing, styles##loading|])
-                 )>
-                 <LoadingView size=ActivityIndicator_Size.large />
-               </View>}
-          <Typography.Body1 fontSize=16. style=FormStyles.section##spacing>
-            expl->React.string
-          </Typography.Body1>
-        </View>
-      </>;
-    };
-  };
-
   [@react.component]
   let make = (~st, ~retry, ~secondaryButton=?) => {
-    let theme = ThemeContext.useTheme();
-
-    <View
-      style=Style.(
-        array([|
-          style(~backgroundColor=theme.colors.stateDisabled, ()),
-          styles##container,
-        |])
-      )>
+    <Container>
       {switch (st) {
        | WaitForConfirm =>
-         <Content
+         <SignerView
+           st
            title=I18n.Title.hardware_wallet_op_confirm
            expl=I18n.Expl.hardware_wallet_op_confirm
          />
        | Searching =>
-         <Content
+         <SignerView
+           st
            title=I18n.Title.hardware_wallet_search
            expl=I18n.Expl.hardware_wallet_search
          />
        | Confirmed =>
-         <Content
+         <SignerView
+           st
            title=I18n.Title.hardware_wallet_op_confirmed
            expl=I18n.Expl.hardware_wallet_op_confirmed
          />
        | Error(e) =>
          let (title, expl) = e->errorTitleExpl;
          <>
-           <Content title expl error=true />
+           <SignerView title expl st />
            <View style=FormStyles.verticalFormAction>
              secondaryButton->ReactUtils.opt
              <Buttons.SubmitPrimary
-               style=?{secondaryButton->Option.map(_ => styles##withSecondary)}
+               style=?{
+                 secondaryButton->Option.map(_ =>
+                   SignerView.Container.styles##withSecondary
+                 )
+               }
                text=I18n.Btn.retry
                onPress={_ => retry()}
              />
            </View>
          </>;
        }}
-    </View>;
+    </Container>;
   };
 };
 
 [@react.component]
 let make =
     (
-      ~ledgerState as (ledgerState, setLedgerState),
+      ~state as (st, setState),
       ~accountKind: Account.kind,
       ~sendOperation: TaquitoAPI.Signer.intent => Promise.t(_),
       ~secondaryButton=?,
@@ -174,49 +251,68 @@ let make =
       sendOperation(TaquitoAPI.Signer.Password(password))
     );
 
+  let (customAuthSigner, setCustomAuthSigner) = React.useState(() => None);
+
+  let signCustomAuth = infos =>
+    Promise.async(() => {
+      setState(_ => Some(WaitForConfirm));
+      let%AwaitMap signer =
+        ReCustomAuthSigner.create(infos)
+        ->Promise.tapError(e => {setState(_ => Some(Error(e)))});
+
+      setCustomAuthSigner(_ => Some(signer));
+      setState(_ => Some(Confirmed));
+    });
+
   let onSubmit = () =>
-    switch (accountKind) {
-    | Ledger =>
-      setLedgerState(_ => LedgerView.Searching->Some);
+    switch (accountKind, customAuthSigner) {
+    | (Ledger, _) =>
       sendOperation(
         TaquitoAPI.Signer.LedgerCallback(
-          () => setLedgerState(_ => LedgerView.WaitForConfirm->Some),
+          () => setState(_ => Some(WaitForConfirm)),
         ),
       )
-      ->Promise.getError(e => setLedgerState(_ => Error(e)->Some));
-    | Encrypted
-    | Unencrypted => form.submit()
+      ->Promise.getError(e => setState(_ => Some(Error(e))))
+    | (Encrypted | Unencrypted, _) => form.submit()
+    | (CustomAuth(_), Some(signer)) =>
+      sendOperation(TaquitoAPI.Signer.CustomAuthSigner(signer))
+      ->Promise.getError(e => setState(_ => Some(Error(e))))
+    | (CustomAuth(infos), None) => signCustomAuth(infos)
     };
 
   let showPasswordForm =
     switch (accountKind) {
-    | Ledger => false
+    | Ledger
+    | CustomAuth(_) => false
     | Encrypted
     | Unencrypted => true
     };
 
   let submitText =
     switch (accountKind) {
-    | Ledger => I18n.Btn.continue
+    | Ledger
+    | CustomAuth(_) => I18n.Btn.continue
     | Encrypted
     | Unencrypted => I18n.Btn.confirm
     };
 
   let submitDisabled = {
-    !formFieldsAreValids && accountKind != Ledger;
+    !formFieldsAreValids && showPasswordForm;
   };
 
   <>
     {<PasswordFormView.PasswordField form />
      ->ReactUtils.onlyWhen(showPasswordForm)}
-    {switch (ledgerState) {
+    {switch (st) {
      | Some(_) => React.null
      | None =>
        <View style=FormStyles.verticalFormAction>
          secondaryButton->ReactUtils.opt
          <Buttons.SubmitPrimary
            style=?{
-             secondaryButton->Option.map(_ => LedgerView.styles##withSecondary)
+             secondaryButton->Option.map(_ =>
+               SignerView.Container.styles##withSecondary
+             )
            }
            text=submitText
            onPress={_ => onSubmit()}
@@ -226,8 +322,20 @@ let make =
          />
        </View>
      }}
-    {ledgerState->ReactUtils.mapOpt(st =>
-       <LedgerView st ?secondaryButton retry=onSubmit />
+    {st->ReactUtils.mapOpt(st =>
+       switch (accountKind) {
+       | Ledger => <LedgerView st ?secondaryButton retry=onSubmit />
+       | CustomAuth(infos) =>
+         <CustomAuthView
+           st
+           submit=onSubmit
+           loading
+           provider={infos.provider}
+           retry={() => signCustomAuth(infos)}
+         />
+       | Encrypted
+       | Unencrypted => React.null
+       }
      )}
   </>;
 };

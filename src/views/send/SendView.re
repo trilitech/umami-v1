@@ -403,7 +403,7 @@ let make = (~account, ~closeAction) => {
     List.length(batch) == 1 ? setModalStep(_ => SendStep) : ();
   };
 
-  let (ledger, _) as ledgerState = React.useState(() => None);
+  let (signerState, _) as state = React.useState(() => None);
 
   let (sign, setSign) as signOpStep =
     React.useState(() => SignOperationView.SummaryStep);
@@ -415,7 +415,7 @@ let make = (~account, ~closeAction) => {
       switch (
         form.formState,
         modalStep,
-        ledger: option(SigningBlock.LedgerView.state),
+        signerState: option(SigningBlock.state),
       ) {
       | (_, SigningStep(_, _), Some(WaitForConfirm)) =>
         ModalFormView.Deny(I18n.Tooltip.reject_on_ledger)->Some
@@ -510,7 +510,7 @@ let make = (~account, ~closeAction) => {
            | SigningStep(transfer, dryRun) =>
              <SignOperationView
                source={transfer.source}
-               ledgerState
+               state
                signOpStep
                dryRun
                subtitle=(

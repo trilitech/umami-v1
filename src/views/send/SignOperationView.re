@@ -60,7 +60,7 @@ let make =
     (
       ~subtitle=?,
       ~source: Account.t,
-      ~ledgerState: (option(SigningBlock.LedgerView.state), _),
+      ~state,
       ~signOpStep as (step, setStep),
       ~dryRun,
       ~secondaryButton=?,
@@ -80,6 +80,7 @@ let make =
       | Ledger => hs
       | Encrypted
       | Unencrypted => s
+      | CustomAuth(_) => s
       }
     );
 
@@ -92,11 +93,11 @@ let make =
   let setAdvancedOptions = i => setStep(_ => AdvancedOptStep(i));
 
   let advancedOptionsDisabled =
-    (
-      switch (fst(ledgerState)) {
+    SigningBlock.(
+      switch (fst(state)) {
+      | Some(WaitForConfirm | Searching | Confirmed) => true
       | None
       | Some(Error(_)) => false
-      | Some(WaitForConfirm | Searching | Confirmed) => true
       }
     )
     || loading;
@@ -140,7 +141,7 @@ let make =
        ->ReactUtils.onlyWhen(dryRun.simulations->Array.length == 1)}
       <SigningBlock
         accountKind={source.Account.kind}
-        ledgerState
+        state
         ?secondaryButton
         loading
         sendOperation={sendOperation(~operation)}

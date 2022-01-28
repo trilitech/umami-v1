@@ -297,6 +297,9 @@ module Form_input_error = {
 
 module Title = {
   let custom_auth_sign_in_up = "Waiting for authentification";
+  let custom_auth_waiting_auth = "Waiting for authentification";
+  let custom_auth_failed = "Authentification failed";
+  let custom_auth_success = "Successful authentification";
   let provider_authentification = pr => p("%s authentification", pr);
   let nft_specs = "View Specs";
   let error_logs = "Logs";
@@ -392,6 +395,8 @@ module Title = {
 };
 
 module Expl = {
+  let custom_auth_success = "Please click on confirm to submit operation";
+  let custom_auth_sign = p("Please log into %s to sign the operation");
   let provider_authentification = p("Please log into %s to import your key");
   let nft_empty_state = "Umami should automatically discover any NFT you possess.";
   let network_disconnect = "The Tezos network is currently unreachable. Your internet connection might be unstable. If it is not the case, you should check your configuration and update it by following the documentation";
@@ -578,6 +583,7 @@ module Errors = {
   let customauth_unable_to_retrieve_handle = "Unable to retrieve user handle";
   let customauth_popup_closed = "User closed popup during authentification";
   let customauth_handle_mismatch = p("Signing handle mismatch: %s & %s");
+  let customauth_access_denied = "Access denied by user";
   let invalid_provider = s => p("%s is not a valid provider", s);
   let cannot_retrieve_account = "Cannot retrieve account informations";
   let deeplinking_not_connected = "Deep linking required but not connected";

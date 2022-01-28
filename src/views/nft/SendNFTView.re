@@ -202,7 +202,7 @@ let make = (~source: Account.t, ~nft: Token.t, ~closeAction) => {
 
   let closing = Some(ModalFormView.Close(closeAction));
 
-  let ledgerState = React.useState(() => None);
+  let signingState = React.useState(() => None);
   let aliasesRequest = StoreContext.Aliases.useRequest();
 
   let aliases =
@@ -222,7 +222,7 @@ let make = (~source: Account.t, ~nft: Token.t, ~closeAction) => {
          | SigningStep(transfer, dryRun) =>
            <SignOperationView
              source={transfer.source}
-             ledgerState
+             state=signingState
              signOpStep
              dryRun
              subtitle=(

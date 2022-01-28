@@ -237,10 +237,10 @@ let make = (~closeAction, ~action) => {
     | (SubmittedStep(_), _) => None
     };
 
-  let (ledger, _) as ledgerState = React.useState(() => None);
+  let (signingState, _) as state = React.useState(() => None);
 
   let closing =
-    switch (modalStep, ledger: option(SigningBlock.LedgerView.state)) {
+    switch (modalStep, signingState: option(SigningBlock.state)) {
     | (PasswordStep(_, _), Some(WaitForConfirm)) =>
       ModalFormView.Deny(I18n.Tooltip.reject_on_ledger)
     | _ => ModalFormView.Close(closeAction)
@@ -275,9 +275,9 @@ let make = (~closeAction, ~action) => {
            | PasswordStep(delegation, dryRun) =>
              <SignOperationView
                source={delegation.source}
-               ledgerState
                signOpStep
                dryRun
+               state
                subtitle=(
                  I18n.Expl.confirm_operation,
                  I18n.Expl.hardware_wallet_confirm_operation,
