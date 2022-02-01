@@ -225,10 +225,6 @@ let make = (~source: Account.t, ~nft: Token.t, ~closeAction) => {
              state=signingState
              signOpStep
              dryRun
-             subtitle=(
-               I18n.Expl.confirm_operation,
-               I18n.Expl.hardware_wallet_confirm_operation,
-             )
              operation={Operation.transaction(transfer)}
              sendOperation={(~operation, signingIntent) =>
                sendTransfer(~operation, signingIntent)

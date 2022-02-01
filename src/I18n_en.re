@@ -398,6 +398,7 @@ module Title = {
 module Expl = {
   let custom_auth_success = "Please click on confirm to submit operation";
   let custom_auth_sign = p("Please log into %s to sign the operation");
+  let custom_auth_confirm_operation = "Please validate the details of the transaction and confirm it by signing up with your social account.";
   let provider_authentification = p("Please log into %s to import your key");
   let nft_empty_state = "Umami should automatically discover any NFT you possess.";
   let network_disconnect = "The Tezos network is currently unreachable. Your internet connection might be unstable. If it is not the case, you should check your configuration and update it by following the documentation";

@@ -58,7 +58,6 @@ let back = ((step, set), f) =>
 [@react.component]
 let make =
     (
-      ~subtitle=?,
       ~source: Account.t,
       ~state,
       ~signOpStep as (step, setStep),
@@ -75,14 +74,12 @@ let make =
   let theme = ThemeContext.useTheme();
 
   let subtitle =
-    subtitle->Option.map(((s, hs)) =>
-      switch (source.Account.kind) {
-      | Ledger => hs
-      | Encrypted
-      | Unencrypted => s
-      | CustomAuth(_) => s
-      }
-    );
+    switch (source.Account.kind) {
+    | Ledger => I18n.Expl.hardware_wallet_confirm_operation
+    | Encrypted
+    | Unencrypted => I18n.Expl.confirm_operation
+    | CustomAuth(_) => I18n.Expl.custom_auth_confirm_operation
+    };
 
   let onAdvOptSubmit = (op, dryRun) => {
     setOp(_ => (op, dryRun));
@@ -105,11 +102,9 @@ let make =
   switch (step) {
   | SummaryStep =>
     <>
-      {subtitle->ReactUtils.mapOpt(s =>
-         <View style=FormStyles.header>
-           <Typography.Overline1> s->React.string </Typography.Overline1>
-         </View>
-       )}
+      <View style=FormStyles.header>
+        <Typography.Overline1> subtitle->React.string </Typography.Overline1>
+      </View>
       {switch (operation) {
        | Delegation(delegation) =>
          <OperationSummaryView.Delegate delegation dryRun />

@@ -529,10 +529,6 @@ let make = (~account, ~closeAction) => {
                state
                signOpStep
                dryRun
-               subtitle=(
-                 I18n.Expl.confirm_operation,
-                 I18n.Expl.hardware_wallet_confirm_operation,
-               )
                operation={Operation.transaction(transfer)}
                sendOperation={sendTransfer(~transfer)}
                loading

@@ -287,10 +287,6 @@ let make = (~closeAction, ~action) => {
                signOpStep
                dryRun
                state
-               subtitle=(
-                 I18n.Expl.confirm_operation,
-                 I18n.Expl.hardware_wallet_confirm_operation,
-               )
                operation={Operation.delegation(delegation)}
                sendOperation
                loading
