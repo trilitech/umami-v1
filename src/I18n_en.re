@@ -101,6 +101,8 @@ module Btn = {
   let upload_file = "UPLOAD FILE";
   let access_wallet = "ACCESS WALLET";
   let restore_secret = "RESTORE FROM BACKUP";
+  let browse_for_folder = "BROWSE FOR FOLDER";
+  let setup_later = "Set up later in settings";
 };
 
 module Tooltip = {
@@ -198,6 +200,7 @@ module Label = {
   let custom_network_mezos_url = "Mezos URL";
   let custom_network_node_url = plural => p("Node URL%s", plural ? "s" : "");
   let file = "File";
+  let storage_location = "Storage location";
 };
 
 module Input_placeholder = {
@@ -378,6 +381,7 @@ module Title = {
   let held = "Held";
   let restore_account = "Restore from Backup";
   let select_backup_file = "Select a JSON backup file and enter the password you used to encrypt it.";
+  let account_backup_path = "Select a storage location for your backup";
 };
 
 module Expl = {
@@ -414,6 +418,7 @@ module Expl = {
   let beacon_dapp_sign = "requests your signature";
   let custom_network = "Please specify the parameters of the network you want to connect to.";
   let external_service = "Notice: you are using Wert, which is an external service to Umami.";
+  let secret_select_backup_path = {j|If you ever need to restore your wallet, you can do so with this backup file and your password.|j};
 };
 
 module Menu = {
@@ -696,6 +701,7 @@ let state_mempool = "Mempool";
 let state_levels = p("%d/%d blocks");
 let state_confirmed = "Confirmed";
 let stepof = p("Step %d of %d");
+let optional_stepof = p("Step %d of %d (optional)");
 let account_create_record_recovery = "Record your recovery phrase";
 let contact_added = "Contact Added";
 let contact_updated = "Contact Updated";

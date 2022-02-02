@@ -31,7 +31,8 @@ type step =
   | Step1
   | Step2
   | Step3
-  | Step4;
+  | Step4
+  | Step5;
 
 [@react.component]
 let make = (~closeAction) => {
@@ -39,7 +40,8 @@ let make = (~closeAction) => {
 
   let secrets = StoreContext.Secrets.useGetAll();
   let existingSecretsCount = secrets->Array.length;
-  let noExistingPassword = existingSecretsCount < 1;
+  let noExistingPassword = existingSecretsCount == 0;
+  let stepCount = noExistingPassword ? 5 : 4; // remove optional backup path selection if password exists
 
   // using a react ref prevent from genereting other mnemonic at other render
   // a useState can also be used, but because we don't need to set
@@ -48,6 +50,7 @@ let make = (~closeAction) => {
     React.useRef(Bip39.generate(256)->Js.String2.split(" ")).current;
   let (derivationPath, setDerivationPath) =
     React.useState(_ => DerivationPath.Pattern.(default->fromTezosBip44));
+  let (backupFile, setBackupFile) = React.useState(_ => None);
 
   let closing =
     ModalFormView.confirm(~actionText=I18n.Btn.cancel, closeAction);
@@ -58,7 +61,15 @@ let make = (~closeAction) => {
     | Step2 => Some(_ => setFormStep(_ => Step1))
     | Step3 => Some(_ => setFormStep(_ => Step2))
     | Step4 => Some(_ => setFormStep(_ => Step3))
+    | Step5 => Some(_ => setFormStep(_ => Step4))
     };
+
+  let writeConf = ConfigContext.useWrite();
+
+  let onSubmit = _ => {
+    writeConf(config => {...config, backupFile});
+    closeAction();
+  };
 
   <ModalFormView closing back>
     <Typography.Headline style=styles##title>
@@ -69,7 +80,7 @@ let make = (~closeAction) => {
        <>
          <Typography.Overline3
            colorStyle=`highEmphasis style=styles##stepPager>
-           {I18n.stepof(1, 4)->React.string}
+           {I18n.stepof(1, stepCount)->React.string}
          </Typography.Overline3>
          <Typography.Overline1 style=styles##stepTitle>
            I18n.account_create_record_recovery->React.string
@@ -91,7 +102,7 @@ let make = (~closeAction) => {
        <>
          <Typography.Overline3
            colorStyle=`highEmphasis style=styles##stepPager>
-           {I18n.stepof(2, 4)->React.string}
+           {I18n.stepof(2, stepCount)->React.string}
          </Typography.Overline3>
          <Typography.Overline1 style=styles##stepTitle>
            I18n.Title.account_create_verify_phrase->React.string
@@ -110,7 +121,7 @@ let make = (~closeAction) => {
        <>
          <Typography.Overline3
            colorStyle=`highEmphasis style=styles##stepPager>
-           {I18n.stepof(3, 4)->React.string}
+           {I18n.stepof(3, stepCount)->React.string}
          </Typography.Overline3>
          <Typography.Overline1 style=styles##stepTitle>
            subtitle->React.string
@@ -121,19 +132,39 @@ let make = (~closeAction) => {
          <SelectDerivationPathView
            derivationPath
            setDerivationPath
-           goNextStep={_ => setFormStep(_ => Step4)}
+           goNextStep={_ =>
+             setFormStep(_ => noExistingPassword ? Step4 : Step5)
+           }
          />
        </>;
      | Step4 =>
+       let subtitle = I18n.Title.account_backup_path;
+       <>
+         <Typography.Overline3
+           colorStyle=`highEmphasis style=styles##stepPager>
+           {I18n.optional_stepof(4, stepCount)->React.string}
+         </Typography.Overline3>
+         <Typography.Overline1 style=styles##stepTitle>
+           subtitle->React.string
+         </Typography.Overline1>
+         {<Typography.Body2 colorStyle=`mediumEmphasis style=styles##stepBody>
+            I18n.Expl.secret_select_backup_path->React.string
+          </Typography.Body2>}
+         <SelectBackupPathView
+           backupFile
+           setBackupFile
+           goNextStep={_ => setFormStep(_ => Step5)}
+         />
+       </>;
+     | Step5 =>
        let subtitle =
          noExistingPassword
            ? I18n.Title.account_create_password
            : I18n.Title.account_enter_password;
-
        <>
          <Typography.Overline3
            colorStyle=`highEmphasis style=styles##stepPager>
-           {I18n.stepof(4, 4)->React.string}
+           {I18n.stepof(stepCount, stepCount)->React.string}
          </Typography.Overline3>
          <Typography.Overline1 style=styles##stepTitle>
            subtitle->React.string
@@ -142,7 +173,7 @@ let make = (~closeAction) => {
             I18n.Expl.secret_create_password_not_recorded->React.string
           </Typography.Body2>
           ->ReactUtils.onlyWhen(noExistingPassword)}
-         <CreatePasswordView mnemonic derivationPath onSubmit=closeAction />
+         <CreatePasswordView mnemonic derivationPath onSubmit />
        </>;
      }}
   </ModalFormView>;
