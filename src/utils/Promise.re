@@ -35,3 +35,21 @@ let timeoutAfter = (f, ms) => {
 type error = Errors.t;
 
 let fromJs = FutureJs.fromPromise;
+
+let rec _flatMapiSequentially = (values, transform, index) =>
+  switch (values[0]) {
+  | Some(a) =>
+    value(Ok(a))
+    ->flatMapOk(a =>
+        transform(a, index)
+        ->flatMapOk(_ =>
+            values
+            ->Array.sliceToEnd(1)
+            ->_flatMapiSequentially(transform, index + 1)
+          )
+      )
+  | None => value(Ok())
+  };
+
+let flatMapiSequentially = (values, transform) =>
+  values->_flatMapiSequentially(transform, 0);

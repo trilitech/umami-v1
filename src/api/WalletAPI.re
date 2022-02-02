@@ -731,6 +731,33 @@ module Accounts = {
     );
   };
 
+  let restoreFromBackupFile =
+      (~config: ConfigContext.env, ~backupFile, ~password, ()) => {
+    let%Await backupFile = BackupFile.read(backupFile);
+    Array.zip(backupFile.recoveryPhrases, backupFile.derivationPaths)
+    ->Promise.flatMapiSequentially(
+        ((encryptedBackupPhrase, derivationPath), index) =>
+        encryptedBackupPhrase
+        ->SecureStorage.Cipher.decrypt(password)
+        ->Promise.flatMapOk(backupPhrase =>
+            restore(
+              ~config,
+              ~backupPhrase=backupPhrase->Js.String2.split(" "),
+              ~name="Secret " ++ index->string_of_int,
+              ~derivationPath,
+              ~password,
+              (),
+            )
+          )
+      )
+    ->Promise.tapError(_
+        // delete everything if an error occured
+        =>
+          System.Client.resetDir(config.baseDir())
+          ->Promise.tapOk(_ => LocalStorage.clear())
+        );
+  };
+
   let importMnemonicKeys = (~config, ~accounts, ~password, ~index, ()) => {
     let importLegacyKey = (basename, encryptedSecret) => {
       let%AwaitMap pkh =
