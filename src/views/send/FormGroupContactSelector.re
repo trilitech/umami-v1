@@ -31,11 +31,14 @@ module Item = {
   let styles =
     Style.(
       StyleSheet.create({
+        "innerItem":
+          style(~flexDirection=`column, ~justifyContent=`spaceAround, ()),
+        "accounticon":
+          style(~justifyContent=`center, ~paddingRight=16.->dp, ()),
         "itemContainer":
           style(
             ~height=itemHeight->dp,
-            ~flexDirection=`column,
-            ~justifyContent=`spaceAround,
+            ~flexDirection=`row,
             ~paddingVertical=4.->dp,
             ~paddingHorizontal=20.->dp,
             (),
@@ -46,10 +49,15 @@ module Item = {
   [@react.component]
   let make = (~account: Alias.t) => {
     <View style=styles##itemContainer>
-      <Typography.Subtitle1> account.name->React.string </Typography.Subtitle1>
-      <Typography.Address>
-        (account.address :> string)->React.string
-      </Typography.Address>
+      <AliasIcon style=styles##accounticon kind={account.kind} isHD=true />
+      <View style=styles##innerItem>
+        <Typography.Subtitle1>
+          account.name->React.string
+        </Typography.Subtitle1>
+        <Typography.Address>
+          (account.address :> string)->React.string
+        </Typography.Address>
+      </View>
     </View>;
   };
 };
