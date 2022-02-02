@@ -29,6 +29,7 @@ type env = {
   theme: [ | `system | `dark | `light],
   confirmations: int,
   baseDir: unit => System.Path.t,
+  backupFile: option(System.Path.t)
 };
 
 let defaultNetwork = `Mainnet;
@@ -39,6 +40,7 @@ let default = {
   theme: `system,
   baseDir: () => System.(Path.Ops.(appDir() / (!"tezos-client"))),
   confirmations: 5,
+  backupFile: None,
 };
 
 let fromFile = f => {
@@ -62,6 +64,7 @@ let fromFile = f => {
       ->List.getBy(n => n.name === name)
       ->Option.getWithDefault(Network.mainnet)
     },
+    backupFile: f.backupFile
 };
 
 type networkStatus = {
@@ -186,6 +189,15 @@ let make = (~children) => {
     };
     ();
   };
+
+  // update content if config file has changed
+  React.useEffect1(
+    _ => {
+      setContent(_ => configFile->fromFile);
+      None;
+    },
+    [|configFile|]
+  );
 
   React.useEffect1(
     () => {
