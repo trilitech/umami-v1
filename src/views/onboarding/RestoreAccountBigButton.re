@@ -23,43 +23,22 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open ReactNative;
-
-let styles =
-  Style.(
-    StyleSheet.create({
-      "container":
-        style(
-          ~flexDirection=`row,
-          ~justifyContent=`spaceAround,
-          ~paddingVertical=78.->dp,
-          ~paddingHorizontal=58.->dp,
-          (),
-        ),
-      "bigbutton": style(~flex=1., ()),
-    })
-  );
-
 [@react.component]
-let make = (~onClose=?) => {
-  let styleNotFirst =
-    Style.(array([|styles##bigbutton, style(~marginLeft=60.->dp, ())|]));
-  <Page>
-    <Page.Header
-      right={
-        // If onClose is present, then this is a modal
-        switch (onClose) {
-        | Some(onClose) => <CloseButton onClose />
-        | None => ReasonReact.null
-        }
-      }>
-      ReasonReact.null
-    </Page.Header>
-    <View style=styles##container>
-      <CreateAccountBigButton style=styles##bigbutton />
-      <ImportAccountBigButton style=styleNotFirst />
-      <RestoreAccountBigButton style=styleNotFirst />
-      <HwWalletBigButton style=styleNotFirst />
-    </View>
-  </Page>;
+let make = (~style=?) => {
+  let (visibleModal, openAction, closeAction) =
+    ModalAction.useModalActionState();
+
+  let onPress = _ => openAction();
+
+  <>
+    <BigButton
+      title=I18n.Btn.restore_secret
+      icon=Icons.Cloud.build
+      onPress
+      ?style
+    />
+    <ModalAction visible=visibleModal onRequestClose=closeAction>
+      <RestoreAccountOnboardingView closeAction />
+    </ModalAction>
+  </>;
 };

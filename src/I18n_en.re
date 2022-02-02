@@ -100,6 +100,7 @@ module Btn = {
   let change_account = "CHANGE ACCOUNT";
   let upload_file = "UPLOAD FILE";
   let access_wallet = "ACCESS WALLET";
+  let restore_secret = "RESTORE FROM BACKUP";
 };
 
 module Tooltip = {
