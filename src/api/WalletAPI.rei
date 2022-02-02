@@ -37,7 +37,7 @@ module Secret: {
 
 /** Aliases management */
 module Aliases: {
-  type t = array((string, PublicKeyHash.t));
+  type t = array(Alias.t);
 
   let get: (~config: ConfigContext.env) => Promise.t(t);
 
@@ -75,9 +75,7 @@ module Accounts: {
   let recoveryPhrases:
     unit => Promise.result(array(SecureStorage.Cipher.encryptedData));
 
-  let get:
-    (~config: ConfigContext.env) =>
-    Promise.t(array((name, PublicKeyHash.t, Wallet.kind)));
+  let get: (~config: ConfigContext.env) => Promise.t(array(Account.t));
 
   let updateSecretAt:
     (~config: ConfigContext.env, Secret.Repr.t, int) => Promise.result(unit);

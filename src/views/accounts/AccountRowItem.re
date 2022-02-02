@@ -67,7 +67,7 @@ let make = (~account: Account.t, ~token: option(Token.t)=?) => {
       />
       <QrButton
         tooltipKey=(account.address :> string)
-        account={account->Account.toAlias}
+        account={account->Alias.fromAccount}
         style=styles##button
       />
     </View>

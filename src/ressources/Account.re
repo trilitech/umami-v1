@@ -35,8 +35,4 @@ type t = {
   kind,
 };
 
-let toAlias = ({address, name}: t) => {
-  Alias.{address, name};
-};
-
 let compareName = (a, b) => Pervasives.compare(a.name, b.name);

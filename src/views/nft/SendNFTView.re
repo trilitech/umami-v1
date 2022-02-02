@@ -111,7 +111,7 @@ module Form = {
           <FormGroupNFTView nft />
           <FormGroupContactSelector
             label=I18n.Label.send_recipient
-            filterOut={sender->Account.toAlias->Some}
+            filterOut={sender->Alias.fromAccount->Some}
             aliases
             value={form.values.recipient}
             handleChange={form.handleChange(Recipient)}

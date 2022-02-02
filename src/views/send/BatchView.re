@@ -107,7 +107,11 @@ module Item = {
        | Some(parameters) =>
          <View style=styles##parametersContainer>
            <AccountElements.Selector.Item
-             account={address: recipient, name: I18n.Title.interaction}
+             account={
+               address: recipient,
+               name: I18n.Title.interaction,
+               kind: None,
+             }
              showAmount=AccountElements.Nothing
            />
            <TransactionContractParams parameters style=styles##parameters />
@@ -121,6 +125,7 @@ module Item = {
                recipient
                ->AliasHelpers.getAliasFromAddress(aliases)
                ->Option.getWithDefault(""),
+             kind: None,
            }
            showAmount={buildAmount(amount)}
          />

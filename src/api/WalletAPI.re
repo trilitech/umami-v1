@@ -172,30 +172,48 @@ module SecretStorage = {
 };
 
 module Aliases = {
-  type t = array((string, PublicKeyHash.t));
+  type t = array(Alias.t);
 
   let get = (~config: ConfigContext.env) => {
-    let%AwaitMap addresses = config.baseDir()->Wallet.PkhAliases.read;
+    let%Await pkhs = config.baseDir()->Wallet.PkhAliases.read;
 
-    addresses->Array.map(({name, value}) => (name, value));
+    let%AwaitMap sks = config.baseDir()->Wallet.SecretAliases.read;
+    pkhs->Array.map(({name, value}) => {
+      let res = {
+        let%Res sk =
+          sks->Wallet.SecretAliases.find(skAlias => name == skAlias.name);
+        sk.value->Wallet.extractPrefixFromSecretKey;
+      };
+
+      let kind =
+        switch (res) {
+        | Ok((kind, _)) => Alias.Account(kind)
+        | Error(_) => Contact
+        };
+
+      Alias.{name, address: value, kind: Some(kind)};
+    });
   };
 
   let getAliasMap = (~config) => {
-    let%AwaitMap addresses = get(~config);
+    let%AwaitMap aliases = get(~config);
 
-    addresses
-    ->Array.map(((alias, addr)) => ((addr :> string), alias))
+    aliases
+    ->Array.map((Alias.{name, address, _}) => ((address :> string), name))
     ->Map.String.fromArray;
   };
 
   let getAliasForAddress = (~config, ~address: PublicKeyHash.t) => {
-    let%AwaitMap aliases = getAliasMap(~config);
-    aliases->Map.String.get((address :> string));
+    let%AwaitMap m = getAliasMap(~config);
+    m->Map.String.get((address :> string));
   };
 
   let getAddressForAlias = (~config, ~alias) => {
-    let%AwaitMap addresses = get(~config);
-    addresses->Map.String.fromArray->Map.String.get(alias);
+    let%AwaitMap aliases = get(~config);
+    aliases
+    ->Array.map((Alias.{name, address, _}) => (name, address))
+    ->Map.String.fromArray
+    ->Map.String.get(alias);
   };
 
   let add = (~config: ConfigContext.env, ~alias, ~address) =>
@@ -246,7 +264,7 @@ module Accounts = {
       };
 
       switch (res) {
-      | Ok((kind, _)) => Some((name, value, kind))
+      | Ok((kind, _)) => Some(Account.{name, address: value, kind})
       | Error(_) => None
       };
     });

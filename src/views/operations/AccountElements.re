@@ -178,7 +178,7 @@ module Selector = {
       {selectedAccount->Option.mapWithDefault(<LoadingView />, account =>
          <Item
            style=itemStyles##itemInSelector
-           account={account->Account.toAlias}
+           account={account->Alias.fromAccount}
            showAmount
            ?token
          />
@@ -188,7 +188,7 @@ module Selector = {
   let baseRenderItem = (~showAmount, ~token, account: Account.t) =>
     <Item
       style=itemStyles##itemInSelector
-      account={account->Account.toAlias}
+      account={account->Alias.fromAccount}
       showAmount
       ?token
     />;

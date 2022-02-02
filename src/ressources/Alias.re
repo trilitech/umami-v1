@@ -23,9 +23,22 @@
 /*                                                                           */
 /*****************************************************************************/
 
+type kind =
+  | Contact
+  | Account(Account.kind);
+
 type t = {
   address: PublicKeyHash.t,
   name: string,
+  /* In some specific cases, we need to create an `Alias.t` out of a pkh, which is
+     neither a contact nor an account */
+  kind: option(kind),
+};
+
+let fromAccount = (Account.{address, name, kind}): t => {
+  address,
+  name,
+  kind: Some(Account(kind)),
 };
 
 let compareName = (a, b) => Pervasives.compare(a.name, b.name);

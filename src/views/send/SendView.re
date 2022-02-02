@@ -258,7 +258,7 @@ module Form = {
           />
           <FormGroupContactSelector
             label=I18n.Label.send_recipient
-            filterOut={form.values.sender->Account.toAlias->Some}
+            filterOut={form.values.sender->Alias.fromAccount->Some}
             aliases
             value={form.values.recipient}
             handleChange={form.handleChange(Recipient)}
