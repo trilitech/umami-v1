@@ -33,11 +33,14 @@ type amountDisplay =
 let itemStyles =
   Style.(
     StyleSheet.create({
-      "itemInSelector": style(~marginHorizontal=20.->dp, ()),
+      "itemInSelector": style(~marginHorizontal=16.->dp, ()),
       "fixed": style(~height=44.->dp, ()),
       "inner": style(~justifyContent=`spaceBetween, ()),
+      "container": style(~flexDirection=`row, ()),
       "info": style(~flexDirection=`row, ~justifyContent=`spaceBetween, ()),
       "name": style(~width=150.->dp, ()),
+      "accounticon":
+        style(~justifyContent=`center, ~paddingRight=16.->dp, ()),
     })
   );
 
@@ -130,12 +133,36 @@ module Slim = {
 };
 
 module Selector = {
+  type account =
+    | Account(Account.t)
+    | Alias(Alias.t);
+
+  let name =
+    fun
+    | Account(a) => a.name
+    | Alias(a) => a.name;
+
+  let address =
+    fun
+    | Account(a) => a.address
+    | Alias(a) => a.address;
+
+  let icon =
+    fun
+    | Account(a) =>
+      <AliasIcon
+        style=itemStyles##accounticon
+        kind={Some(Account(a.kind))}
+        isHD=true
+      />
+    | Alias(_) => React.null;
+
   module Item = {
     [@react.component]
     let make =
         (
           ~style as paramStyle=?,
-          ~account: Alias.t,
+          ~account: account,
           ~token: option(Token.t)=?,
           ~showAmount=Balance,
           ~shrinkId=?,
@@ -145,29 +172,37 @@ module Selector = {
       <View
         style=Style.(
           arrayOption([|
-            Some(itemStyles##inner),
+            Some(itemStyles##container),
             fixed->Option.onlyIf(() => itemStyles##fixed),
             paramStyle,
           |])
         )>
-        <View style=itemStyles##info>
-          <Typography.Subtitle2 numberOfLines=1 style=itemStyles##name>
-            account.name->React.string
-          </Typography.Subtitle2>
-          {switch (showAmount) {
-           | Balance => <AccountInfoBalance address={account.address} ?token />
-           | Nothing => React.null
-           | Amount(e) => e
+        account->icon
+        <View style=itemStyles##inner>
+          <View style=itemStyles##info>
+            <Typography.Subtitle2 numberOfLines=1 style=itemStyles##name>
+              {account->name->React.string}
+            </Typography.Subtitle2>
+            {switch (showAmount) {
+             | Balance =>
+               <AccountInfoBalance address={account->address} ?token />
+             | Nothing => React.null
+
+             | Amount(e) => e
+             }}
+          </View>
+          {switch (shrinkId) {
+           | Some(shrinkId) =>
+             <ShrinkedAddress
+               clipboardId=shrinkId
+               address={account->address}
+             />
+           | None =>
+             <Typography.Address>
+               (account->address :> string)->React.string
+             </Typography.Address>
            }}
         </View>
-        {switch (shrinkId) {
-         | Some(shrinkId) =>
-           <ShrinkedAddress clipboardId=shrinkId address={account.address} />
-         | None =>
-           <Typography.Address>
-             (account.address :> string)->React.string
-           </Typography.Address>
-         }}
       </View>;
     };
   };
@@ -178,7 +213,7 @@ module Selector = {
       {selectedAccount->Option.mapWithDefault(<LoadingView />, account =>
          <Item
            style=itemStyles##itemInSelector
-           account={account->Alias.fromAccount}
+           account={Account(account)}
            showAmount
            ?token
          />
@@ -188,7 +223,7 @@ module Selector = {
   let baseRenderItem = (~showAmount, ~token, account: Account.t) =>
     <Item
       style=itemStyles##itemInSelector
-      account={account->Alias.fromAccount}
+      account={Account(account)}
       showAmount
       ?token
     />;

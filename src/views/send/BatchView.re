@@ -108,9 +108,11 @@ module Item = {
          <View style=styles##parametersContainer>
            <AccountElements.Selector.Item
              account={
-               address: recipient,
-               name: I18n.Title.interaction,
-               kind: None,
+               Alias({
+                 address: recipient,
+                 name: I18n.Title.interaction,
+                 kind: None,
+               })
              }
              showAmount=AccountElements.Nothing
            />
@@ -120,12 +122,14 @@ module Item = {
          <AccountElements.Selector.Item
            style=styles##account
            account={
-             address: recipient,
-             name:
-               recipient
-               ->AliasHelpers.getAliasFromAddress(aliases)
-               ->Option.getWithDefault(""),
-             kind: None,
+             Alias({
+               address: recipient,
+               name:
+                 recipient
+                 ->AliasHelpers.getAliasFromAddress(aliases)
+                 ->Option.getWithDefault(""),
+               kind: None,
+             })
            }
            showAmount={buildAmount(amount)}
          />

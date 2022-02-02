@@ -58,7 +58,11 @@ let make =
 
   <RowItem.Bordered height=90.>
     <View style=styles##inner>
-      <AliasIcon kind={Some(Account(account.kind))} isHD />
+      <AliasIcon
+        style=SecretRowTree.styles##iconContainer
+        kind={Some(Account(account.kind))}
+        isHD
+      />
       <AccountInfo account ?token />
     </View>
     <View style=styles##actionButtons>

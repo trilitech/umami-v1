@@ -44,6 +44,15 @@ let styles =
       "actionIconButton": style(~marginLeft=2.->dp, ()),
       "actionButton": style(~marginLeft=9.->dp, ~marginRight=7.->dp, ()),
       "inner": style(~marginRight=10.->dp, ~flexDirection=`row, ()),
+      "iconContainer":
+        style(
+          ~width=72.->dp,
+          ~height=20.->dp,
+          ~justifyContent=`center,
+          ~alignItems=`center,
+          ~alignSelf=`flexStart,
+          (),
+        ),
     })
   );
 
@@ -87,7 +96,11 @@ module AccountNestedRowItem = {
     account->ReactUtils.mapOpt(account =>
       <RowItem.Bordered height=90. isNested=true isLast>
         <View style=styles##inner>
-          <AliasIcon kind={Some(Alias.Account(account.kind))} isHD=true />
+          <AliasIcon
+            style=styles##iconContainer
+            kind={Some(Alias.Account(account.kind))}
+            isHD=true
+          />
           <View>
             <Typography.Subtitle1 style=styles##alias>
               account.name->React.string
@@ -228,7 +241,13 @@ module AccountImportedRowItem = {
     let make = (~account: Account.t) => {
       <Base
         account
-        tag={<AliasIcon kind={Some(Account(account.kind))} isHD=false />}
+        tag={
+          <AliasIcon
+            style=styles##iconContainer
+            kind={Some(Account(account.kind))}
+            isHD=false
+          />
+        }
         actions=
           {<>
              <Menu

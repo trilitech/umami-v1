@@ -27,25 +27,14 @@ open ReactNative;
 
 let styles =
   Style.(
-    StyleSheet.create({
-      "iconContainer":
-        style(
-          ~width=72.->dp,
-          ~height=20.->dp,
-          ~justifyContent=`center,
-          ~alignItems=`center,
-          ~alignSelf=`flexStart,
-          (),
-        ),
-      "tag": style(~width=40.->dp, ~height=18.->dp, ()),
-    })
+    StyleSheet.create({"tag": style(~width=40.->dp, ~height=18.->dp, ())})
   );
 
 [@react.component]
-let make = (~kind: option(Alias.kind), ~isHD: bool) => {
+let make = (~style=?, ~kind: option(Alias.kind), ~isHD: bool) => {
   let theme = ThemeContext.useTheme();
 
-  <View style=styles##iconContainer>
+  <View ?style>
     {switch (kind) {
      | Some(Account(Encrypted | Unencrypted)) when !isHD =>
        <Tag style=styles##tag content=I18n.Label.account_umami />
