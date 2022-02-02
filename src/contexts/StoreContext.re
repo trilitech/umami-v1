@@ -907,6 +907,14 @@ module Secrets = {
     );
   };
 
+  let useCreateFromBackupFile = () => {
+    let resetSecrets = useResetAll();
+    SecretApiRequest.useCreateFromBackupFile(
+      ~sideEffect=_ => resetSecrets(),
+      (),
+    );
+  };
+
   let useMnemonicImportKeys = () => {
     let resetSecrets = useResetAll();
     SecretApiRequest.useMnemonicImportKeys(
