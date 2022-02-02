@@ -151,6 +151,53 @@ module RecoveryPhrasesStorage =
     let decoder = Json.Decode.(array(SecureStorage.Cipher.decoder));
   });
 
+module BackedUpSecretStorage = {
+  include SecretStorage;
+
+  let set = (~config: ConfigContext.env, storage: t) => {
+    let _ =
+      config.backupFile
+      ->Option.map(path =>
+          BackupFile.make(
+            ~derivationPaths=
+              storage->Array.keepMap(t =>
+                t.kind == Mnemonics ? Some(t.derivationPath) : None
+              ),
+            ~recoveryPhrases=
+              RecoveryPhrasesStorage.get()->Result.getWithDefault([||]),
+          )
+          ->BackupFile.save(path)
+          ->Promise.ignore
+        );
+
+    SecretStorage.set(storage);
+  };
+};
+
+module BackedUpRecoveryPhrasesStorage = {
+  include RecoveryPhrasesStorage;
+
+  let set = (~config: ConfigContext.env, storage: t) => {
+    let _ =
+      config.backupFile
+      ->Option.map(path =>
+          BackupFile.make(
+            ~derivationPaths=
+              SecretStorage.get()
+              ->Result.getWithDefault([||])
+              ->Array.keepMap(t =>
+                  t.kind == Mnemonics ? Some(t.derivationPath) : None
+                ),
+            ~recoveryPhrases=storage,
+          )
+          ->BackupFile.save(path)
+          ->Promise.ignore
+        );
+
+    RecoveryPhrasesStorage.set(storage);
+  };
+};
+
 module Aliases = {
   type t = array((string, PublicKeyHash.t));
 
@@ -242,7 +289,7 @@ module Accounts = {
     let%Res secrets = secrets(~config);
 
     if (secrets[index] = secret) {
-      SecretStorage.set(secrets)->Ok;
+      BackedUpSecretStorage.set(~config, secrets)->Ok;
     } else {
       Error(CannotUpdateSecret(index));
     };
@@ -318,7 +365,7 @@ module Accounts = {
           ? {...secret, masterPublicKey: None} : secret
       );
 
-    SecretStorage.set(secrets)->Promise.ok;
+    BackedUpSecretStorage.set(~config, secrets)->Promise.ok;
   };
 
   let deleteSecretAt = (~config, index) => {
@@ -348,7 +395,7 @@ module Accounts = {
         ~remove=1,
         ~add=[||],
       );
-    SecretStorage.set(secretsBefore);
+    BackedUpSecretStorage.set(~config, secretsBefore);
 
     switch (recoveryPhrases()) {
     | Ok(recoveryPhrases) =>
@@ -358,7 +405,7 @@ module Accounts = {
           ~remove=1,
           ~add=[||],
         );
-      RecoveryPhrasesStorage.set(recoveryPhrases);
+      BackedUpRecoveryPhrasesStorage.set(~config, recoveryPhrases);
     | Error(_) => ()
     };
 
@@ -398,7 +445,8 @@ module Accounts = {
     };
 
     let runLegacy = (~recoveryPhrase, ~password) => {
-      let%Await encryptedSecretKey = HD.edeskLegacy(recoveryPhrase, ~password);
+      let%Await encryptedSecretKey =
+        HD.edeskLegacy(recoveryPhrase, ~password);
 
       let%Await signer =
         ReTaquitoSigner.MemorySigner.create(
@@ -646,17 +694,17 @@ module Accounts = {
       secrets(~config)
       ->Result.getWithDefault([||])
       ->Array.concat([|secret|]);
-    SecretStorage.set(secrets);
+    BackedUpSecretStorage.set(~config, secrets);
   };
 
-  let registerRecoveryPhrase = recoveryPhrase =>
+  let registerRecoveryPhrase = (~config, recoveryPhrase) =>
     recoveryPhrases()
     ->Result.getWithDefault([||])
     ->(
         recoveryPhrases => {
           let recoveryPhrases =
             Array.concat(recoveryPhrases, [|recoveryPhrase|]);
-          RecoveryPhrasesStorage.set(recoveryPhrases);
+          BackedUpRecoveryPhrasesStorage.set(~config, recoveryPhrases);
         }
       );
 
@@ -718,7 +766,9 @@ module Accounts = {
     let%AwaitMap () =
       backupPhraseConcat
       ->SecureStorage.Cipher.encrypt(password)
-      ->Promise.mapOk(registerRecoveryPhrase);
+      ->Promise.mapOk(recoveryPhrase =>
+          registerRecoveryPhrase(~config, recoveryPhrase)
+        );
 
     registerSecret(
       ~config,
@@ -898,7 +948,9 @@ module Accounts = {
     let%AwaitMap () =
       name
       ->SecureStorage.Cipher.encrypt("")
-      ->Promise.mapOk(registerRecoveryPhrase);
+      ->Promise.mapOk(recoveryPhrase =>
+          registerRecoveryPhrase(~config, recoveryPhrase)
+        );
 
     addresses;
   };
