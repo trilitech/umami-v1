@@ -808,6 +808,12 @@ module Accounts = {
         );
   };
 
+  let forceBackup = (~config: ConfigContext.env) =>
+    switch (SecretStorage.get()) {
+    | Ok(secrets) => BackedUpSecretStorage.set(~config, secrets)
+    | Error(_) => ()
+    };
+
   let importMnemonicKeys = (~config, ~accounts, ~password, ~index, ()) => {
     let importLegacyKey = (basename, encryptedSecret) => {
       let%AwaitMap pkh =
