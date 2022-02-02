@@ -98,6 +98,8 @@ module Btn = {
   let register_nft_contract = "Register NFT contract";
   let see_list = "SEE LIST";
   let change_account = "CHANGE ACCOUNT";
+  let upload_file = "UPLOAD FILE";
+  let access_wallet = "ACCESS WALLET";
 };
 
 module Tooltip = {
@@ -194,6 +196,7 @@ module Label = {
   let custom_network_name = "Name";
   let custom_network_mezos_url = "Mezos URL";
   let custom_network_node_url = plural => p("Node URL%s", plural ? "s" : "");
+  let file = "File";
 };
 
 module Input_placeholder = {
@@ -217,6 +220,7 @@ module Input_placeholder = {
   let search_for_token = "Search for Token by name, symbol or KT address";
   let custom_network_node_url = "e.g. https://rpc.tzbeta.net";
   let custom_network_mezos_url = "e.g. https://api.umamiwallet.com/mainnet";
+  let select_backup_path = "Browse to the required folder or enter a path";
 };
 
 module Form_input_error = {
@@ -371,6 +375,8 @@ module Title = {
   let wert_recipient = "Please select the recipient account";
   let added_to_wallet = "Added to wallet";
   let held = "Held";
+  let restore_account = "Restore from Backup";
+  let select_backup_file = "Select a JSON backup file and enter the password you used to encrypt it.";
 };
 
 module Expl = {

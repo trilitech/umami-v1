@@ -24,79 +24,13 @@
 /*****************************************************************************/
 
 open ReactNative;
-
-let styles =
-  Style.(
-    StyleSheet.create({
-      "formGroup": style(~marginBottom=0.->dp, ()),
-      "header": style(~flexDirection=`row, ~justifyContent=`spaceBetween, ~marginVertical=4.->dp, ()),
-      "label": style(~marginVertical=4.->dp, ()),
-      "decoration":
-        style(
-          ~display=`flex,
-          ~alignItems=`center,
-          ~position=`absolute,
-          ~marginTop=auto,
-          ~marginBottom=auto,
-          ~top=0.->dp,
-          ~bottom=0.->dp,
-          ~right=10.->dp,
-          (),
-        ),
-    })
-  );
+open ReactNativeSvg;
 
 [@react.component]
 let make =
     (
-      ~label,
-      ~value,
-      ~handleChange,
-      ~error,
-      ~keyboardType=?,
-      ~onBlur=?,
-      ~onFocus=?,
-      ~textContentType=?,
-      ~secureTextEntry=?,
-      ~placeholder=?,
-      ~disabled=?,
-      ~multiline=?,
-      ~numberOfLines=?,
-      ~clearButton=false,
-      ~onSubmitEditing=?,
-      ~decoration: option((~style: Style.t) => React.element)=?,
-      ~style as styleFromProp: option(ReactNative.Style.t)=?,
-      ~fieldStyle=?,
-      ~tooltipIcon=?,
-      ~rightView=?,
-    ) => {
-  let hasError = error->Option.isSome;
-  <FormGroup
-    style=Style.(arrayOption([|Some(styles##formGroup), styleFromProp|]))>
-    <View style=styles##header>
-      <FormLabel label hasError ?tooltipIcon />
-      {rightView->ReactUtils.mapOpt(view => view)}
-    </View>
-    <View>
-      <ThemedTextInput
-        value
-        onValueChange=handleChange
-        hasError
-        ?onBlur
-        ?onFocus
-        ?textContentType
-        ?secureTextEntry
-        ?keyboardType
-        ?placeholder
-        ?disabled
-        ?multiline
-        ?numberOfLines
-        ?onSubmitEditing
-        style=?fieldStyle
-        onClear=?{clearButton ? Some(() => handleChange("")) : None}
-      />
-      {decoration->ReactUtils.mapOpt(deco => deco(~style=styles##decoration))}
-    </View>
-    <FormError ?error />
-  </FormGroup>;
-};
+      ~width: option(Style.size)=?,
+      ~height: option(Style.size)=?,
+      ~fill: option(string)=?,
+      ~stroke: option(string)=?,
+    ) => <Svg viewBox="0 0 24 24" ?width ?height ?fill ?stroke> <Path d="M11.760 7.645 C 11.627 7.698,7.863 11.451,7.715 11.678 C 7.578 11.889,7.566 12.084,7.680 12.270 C 7.832 12.519,8.118 12.619,8.387 12.517 C 8.449 12.494,9.162 11.815,9.970 11.009 L 11.440 9.542 11.440 12.882 C 11.440 16.040,11.444 16.229,11.513 16.358 C 11.711 16.727,12.289 16.727,12.487 16.358 C 12.556 16.229,12.560 16.040,12.560 12.881 L 12.560 9.541 14.030 11.008 C 14.838 11.815,15.551 12.495,15.613 12.518 C 16.167 12.726,16.634 12.127,16.284 11.656 C 16.082 11.384,12.345 7.686,12.227 7.642 C 12.090 7.591,11.894 7.592,11.760 7.645 " fillRule=`evenodd> </Path> </Svg>;
