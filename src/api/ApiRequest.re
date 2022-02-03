@@ -161,86 +161,127 @@ let conditionToLoad = (request, isMounted) => {
   requestNotAskedAndMounted || requestDoneButReloadOnMount || requestExpired;
 };
 
-let useGetter = (~toast=true, ~get, ~kind, ~setRequest, ~keepError=?, ()) => {
-  let addLog = LogsContext.useAdd();
-  let config = ConfigContext.useContent();
-  let retryNetwork = ConfigContext.useRetryNetwork();
+module type DEPS = {
+  let useAddLog: (unit, bool, Umami.Logs.t) => unit;
+  let useConfig: unit => ConfigContext.env;
+  let useRetryNetwork: unit => ConfigContext.retryNetworkType;
+};
 
-  let get = input => {
-    setRequest(updateToLoadingState);
+module Make = (D: DEPS) => {
+  let useGetter = (~toast=true, ~get, ~kind, ~setRequest, ~keepError=?, ()) => {
+    let config = D.useConfig();
+    let addLog = D.useAddLog();
+    let retryNetwork = D.useRetryNetwork();
 
-    get(~config, input)
-    ->logError(addLog(toast), kind, ~keep=?keepError)
-    ->Promise.tapError(
-        fun
-        | ReTaquitoError.NodeRequestFailed =>
-          retryNetwork(~onlyOn=Network.Online, ())
-        | _ => (),
-      )
-    ->Promise.tap(result =>
-        setRequest(_ => Done(result, ValidSince(Js.Date.now())))
-      );
+    let get = input => {
+      setRequest(updateToLoadingState);
+
+      get(~config, input)
+      ->logError(addLog(toast), kind, ~keep=?keepError)
+      ->Promise.tapError(
+          fun
+          | ReTaquitoError.NodeRequestFailed =>
+            retryNetwork(~onlyOn=Network.Online, ())
+          | _ => (),
+        )
+      ->Promise.tap(result =>
+          setRequest(_ => Done(result, ValidSince(Js.Date.now())))
+        );
+    };
+
+    get;
   };
 
-  get;
-};
+  let useLoader =
+      (
+        ~get,
+        ~condition=?,
+        ~keepError=?,
+        ~kind,
+        ~requestState as (request, setRequest),
+        input,
+      ) => {
+    let getRequest = useGetter(~get, ~kind, ~setRequest, ~keepError?, ());
 
-let useLoader =
-    (
-      ~get,
-      ~condition=?,
-      ~keepError=?,
-      ~kind,
-      ~requestState as (request, setRequest),
-      input,
-    ) => {
-  let getRequest = useGetter(~get, ~kind, ~setRequest, ~keepError?, ());
+    let isMounted = ReactUtils.useIsMounted();
 
-  let isMounted = ReactUtils.useIsMounted();
+    React.useEffect4(
+      () => {
+        let shouldReload = conditionToLoad(request, isMounted);
+        let condition = condition->Option.mapWithDefault(true, f => input->f);
 
-  React.useEffect4(
-    () => {
-      let shouldReload = conditionToLoad(request, isMounted);
-      let condition = condition->Option.mapWithDefault(true, f => input->f);
+        if (shouldReload && condition) {
+          getRequest(input)->ignore;
+        };
 
-      if (shouldReload && condition) {
-        getRequest(input)->ignore;
-      };
+        None;
+      },
+      (isMounted, request, input, setRequest),
+    );
 
-      None;
-    },
-    (isMounted, request, input, setRequest),
-  );
-
-  request;
-};
-
-let useSetter =
-    (~logOk=?, ~toast=true, ~sideEffect=?, ~set, ~kind, ~keepError=?, ()) => {
-  let addLog = LogsContext.useAdd();
-  let (request, setRequest) = React.useState(_ => NotAsked);
-  let config = ConfigContext.useContent();
-
-  let sendRequest = input => {
-    setRequest(_ => Loading(None));
-    set(~config, input)
-    ->Promise.tapOk(v =>
-        logOk->Option.iter(f => addLog(true, Logs.info(~origin=kind, f(v))))
-      )
-    ->logError(addLog(toast), ~keep=?keepError, kind)
-    ->Promise.tap(result => {
-        setRequest(_ => Done(result, Js.Date.now()->ValidSince))
-      })
-    ->Promise.tapOk(sideEffect->Option.getWithDefault(_ => ()));
+    request;
   };
 
-  (request, sendRequest);
+  let useSetter =
+      (~logOk=?, ~toast=true, ~sideEffect=?, ~set, ~kind, ~keepError=?, ()) => {
+    let addLog = D.useAddLog();
+    let (request, setRequest) = React.useState(_ => NotAsked);
+    let config = ConfigContext.useContent();
+
+    let sendRequest = input => {
+      setRequest(_ => Loading(None));
+      set(~config, input)
+      ->Promise.tapOk(v =>
+          logOk->Option.iter(f =>
+            addLog(true, Logs.info(~origin=kind, f(v)))
+          )
+        )
+      ->logError(addLog(toast), ~keep=?keepError, kind)
+      ->Promise.tap(result => {
+          setRequest(_ => Done(result, Js.Date.now()->ValidSince))
+        })
+      ->Promise.tapOk(sideEffect->Option.getWithDefault(_ => ()));
+    };
+
+    (request, sendRequest);
+  };
+
+  let toString = {
+    let cacheToString =
+      fun
+      | Expired => "Expired"
+      | ValidSince(_) => "ValidSince";
+    fun
+    | NotAsked => "NotAsked"
+    | Loading(None) => "Loading(None)"
+    | Loading(Some(_)) => "Loading(Some)"
+    | Done(Ok(_), c) => "Done(Ok, " ++ cacheToString(c) ++ ")"
+    | Done(Error(_), c) => "Done(Error, " ++ cacheToString(c) ++ ")";
+  };
+
+  let eqCache = (c1, c2) =>
+    switch (c1, c2) {
+    | (Expired, Expired) => true
+    | (ValidSince(_), ValidSince(_)) => true
+    | _ => false
+    };
+
+  let eq = (~eq=(==), a1, a2) =>
+    switch (a1, a2) {
+    | (Done(Ok(v1), c1), Done(Ok(v2), c2)) =>
+      eq(v1, v2) && eqCache(c1, c2)
+    | (Done(Error(_), c1), Done(Error(_), c2)) => eqCache(c1, c2)
+    | (NotAsked, NotAsked) => true
+    | (Loading(None), Loading(None)) => true
+    | (Loading(Some(v1)), Loading(Some(v2))) => eq(v1, v2)
+    | _ => false
+    };
 };
 
-let toString =
-  fun
-  | NotAsked => "NotAsked"
-  | Loading(None) => "Loading(None)"
-  | Loading(Some(_)) => "Loading(Some)"
-  | Done(Ok(_), _) => "Done(Ok)"
-  | Done(Error(_), _) => "Done(Error)";
+module Impl = {
+  let useAddLog = LogsContext.useAdd;
+  let useConfig = ConfigContext.useContent;
+  let useRetryNetwork = ConfigContext.useRetryNetwork;
+};
+
+include Make(Impl);
