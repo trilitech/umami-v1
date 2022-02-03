@@ -284,7 +284,7 @@ let useNetworkOffline = () => useContext().networkStatus.current == Offline;
 
 let useRetryNetwork = () => useContext().retryNetwork;
 
-let useCleanSdkBaseDir = () => {
+let useEraseStorageAndBaseDir = () => {
   let {content: {baseDir}} = useContext();
   () => {
     System.Client.resetDir(baseDir())
