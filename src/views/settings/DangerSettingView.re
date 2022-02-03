@@ -55,13 +55,13 @@ module OffBoardView = {
     );
 
   let useOffboardWallet = () => {
-    let cleanSdkBaseDir = ConfigContext.useCleanSdkBaseDir();
+    let erase = ConfigContext.useEraseStorageAndBaseDir();
     let resetSecrets = StoreContext.Secrets.useResetAll();
     let resetTokens = StoreContext.Tokens.useResetAll();
     let (_, destroy) = StoreContext.Beacon.useClient();
 
     () => {
-      cleanSdkBaseDir()
+      erase()
       ->Promise.tapOk(() => {
           resetSecrets();
           resetTokens();
