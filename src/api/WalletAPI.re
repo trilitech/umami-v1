@@ -349,14 +349,20 @@ module Accounts = {
     let%Await address = Aliases.getAddressForAlias(~config, ~alias=name);
     let%Await () = unsafeDelete(~config, name);
 
-    let%Await secrets = secrets(~config)->Promise.value;
-    let secrets =
-      secrets->Array.map(secret =>
-        address == secret.masterPublicKey
-          ? {...secret, masterPublicKey: None} : secret
-      );
+    let%Ft secrets = secrets(~config)->Promise.value;
 
-    SecretStorage.set(~config, secrets)->Promise.ok;
+    switch (secrets) {
+    | Ok(secrets) =>
+      let secrets =
+        secrets->Array.map(secret =>
+          address == secret.masterPublicKey
+            ? {...secret, masterPublicKey: None} : secret
+        );
+
+      SecretStorage.set(~config, secrets)->Promise.ok;
+    | Error(NoSecretFound) => Promise.ok()
+    | Error(e) => e->Promise.err
+    };
   };
 
   let deleteSecretAt = (~config, index) => {
@@ -800,7 +806,8 @@ module Accounts = {
   };
 
   let forceBackup = (~config: ConfigContext.env) =>
-    SecretStorage.get()->Result.map(secrets => SecretStorage.set(~config, secrets));
+    SecretStorage.get()
+    ->Result.map(secrets => SecretStorage.set(~config, secrets));
 
   let importMnemonicKeys = (~config, ~accounts, ~password, ~index, ()) => {
     let importLegacyKey = (basename, encryptedSecret) => {
