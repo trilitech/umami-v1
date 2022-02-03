@@ -39,8 +39,7 @@ let itemStyles =
       "container": style(~flexDirection=`row, ()),
       "info": style(~flexDirection=`row, ~justifyContent=`spaceBetween, ()),
       "name": style(~width=150.->dp, ()),
-      "accounticon":
-        style(~justifyContent=`center, ~paddingRight=16.->dp, ()),
+      "accounticon": FormStyles.accountIcon,
     })
   );
 

@@ -247,7 +247,9 @@ module PermissionsSection = {
            ->Array.map(permission => {
                let accountAlias =
                  permission.address
-                 ->AliasHelpers.getAliasFromAddress(aliases);
+                 ->AliasHelpers.getAliasFromAddress(aliases)
+                 ->Option.map(a => a.name);
+
                <Row
                  key={permission.accountIdentifier}
                  permission

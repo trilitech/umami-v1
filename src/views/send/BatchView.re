@@ -127,7 +127,7 @@ module Item = {
                name:
                  recipient
                  ->AliasHelpers.getAliasFromAddress(aliases)
-                 ->Option.getWithDefault(""),
+                 ->Option.mapDefault("", a => a.name),
                kind: None,
              })
            }

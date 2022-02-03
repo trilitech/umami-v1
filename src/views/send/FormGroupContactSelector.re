@@ -33,8 +33,7 @@ module Item = {
       StyleSheet.create({
         "innerItem":
           style(~flexDirection=`column, ~justifyContent=`spaceAround, ()),
-        "accounticon":
-          style(~justifyContent=`center, ~paddingRight=16.->dp, ()),
+        "accounticon": FormStyles.accountIcon,
         "itemContainer":
           style(
             ~height=itemHeight->dp,

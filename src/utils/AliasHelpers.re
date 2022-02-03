@@ -24,9 +24,7 @@
 /*****************************************************************************/
 
 let getAliasFromAddress = (address: PublicKeyHash.t, aliases) => {
-  aliases
-  ->PublicKeyHash.Map.get(address)
-  ->Option.map((account: Alias.t) => account.name);
+  aliases->PublicKeyHash.Map.get(address);
 };
 
 let getContractAliasFromAddress = (address: PublicKeyHash.t, aliases, tokens) => {
@@ -39,9 +37,7 @@ let getContractAliasFromAddress = (address: PublicKeyHash.t, aliases, tokens) =>
   | None =>
     tokens
     ->TokensLibrary.WithRegistration.getFullToken(address, 0)
-    ->Option.map(((token: Token.t, _)) =>
-        I18n.token_contract(token.alias)
-      )
+    ->Option.map(((token: Token.t, _)) => I18n.token_contract(token.alias))
   | Some(r) => Some(r)
   };
 };
