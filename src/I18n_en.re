@@ -483,6 +483,8 @@ module Settings = {
   let beacon_permissions_scopes = "SCOPES";
   let beacon_permissions_network = "NETWORK";
   let beacon_empty_permissions = "No Permission";
+  let backup_title = "WALLET BACKUP";
+  let backup_text = "Create and save a backup file for the entire wallet";
   ();
 };
 
