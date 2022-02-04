@@ -785,8 +785,8 @@ module Accounts = {
       (~config: ConfigContext.env, ~backupFile, ~password, ()) => {
     let%Await backupFile = BackupFile.read(backupFile);
     Array.zip(backupFile.recoveryPhrases, backupFile.derivationPaths)
-    ->Promise.flatMapiSequentially(
-        ((encryptedBackupPhrase, derivationPath), index) =>
+    ->Promise.reducei(
+        Ok(), (_, (encryptedBackupPhrase, derivationPath), index) =>
         encryptedBackupPhrase
         ->SecureStorage.Cipher.decrypt(password)
         ->Promise.flatMapOk(backupPhrase =>

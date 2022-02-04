@@ -36,20 +36,15 @@ type error = Errors.t;
 
 let fromJs = FutureJs.fromPromise;
 
-let rec _flatMapiSequentially = (values, transform, index) =>
-  switch (values[0]) {
+let rec reducei = (values, result, accumulator, index) =>
+  switch (values[index]) {
   | Some(a) =>
-    value(Ok(a))
-    ->flatMapOk(a =>
-        transform(a, index)
-        ->flatMapOk(_ =>
-            values
-            ->Array.sliceToEnd(1)
-            ->_flatMapiSequentially(transform, index + 1)
-          )
+    accumulator(result, a, index)
+    ->flatMap(result =>
+        values->reducei(result, accumulator, index + 1)
       )
-  | None => value(Ok())
+  | None => value(result)
   };
 
-let flatMapiSequentially = (values, transform) =>
-  values->_flatMapiSequentially(transform, 0);
+let reducei = (values, result, accumulator) =>
+  values->reducei(result, accumulator, 0);
