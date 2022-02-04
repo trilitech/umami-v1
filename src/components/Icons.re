@@ -177,3 +177,4 @@ module SwitchOff = Make(SVGSwitchOff);
 module ArrowUp = Make(SVGIconArrowUp);
 module Cloud = Make(SVGIconCloud);
 module Folder = Make(SVGIconFolder);
+module Recovery = Make(SVGIconRecovery);
