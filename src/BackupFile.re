@@ -25,6 +25,8 @@
 
 open Let;
 
+let version = Version.mk(1, 0);
+
 type t = {
   version: Version.t,
   derivationPaths: array(DerivationPath.Pattern.t),
@@ -32,7 +34,7 @@ type t = {
 };
 
 let make = (~derivationPaths, ~recoveryPhrases) => {
-  version: Version.mk(1, 0),
+  version,
   derivationPaths,
   recoveryPhrases,
 };
