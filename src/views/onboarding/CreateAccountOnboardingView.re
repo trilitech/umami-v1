@@ -67,7 +67,9 @@ let make = (~closeAction) => {
   let writeConf = ConfigContext.useWrite();
 
   let onSubmit = _ => {
-    writeConf(config => {...config, backupFile});
+    if (noExistingPassword) {
+      writeConf(config => {...config, backupFile});
+    }
     closeAction();
   };
 
