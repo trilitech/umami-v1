@@ -37,6 +37,8 @@ module Form = {
             custom(
               values =>
                 switch (values.recipient) {
+                | Temp(_, Pending | NotAsked) => Error("")
+                | Temp(_, Error(s)) => Error(s)
                 | AnyString(_) =>
                   Error(I18n.Form_input_error.invalid_contract)
                 | Valid(Alias(_)) => Valid

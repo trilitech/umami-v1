@@ -135,6 +135,8 @@ module Form = {
                 switch (values.recipient) {
                 | AnyString(_) =>
                   Error(I18n.Form_input_error.invalid_contract)
+                | Temp(_, Pending | NotAsked) => Error("")
+                | Temp(_, Error(s)) => Error(s)
                 | Valid(Alias(_)) => Valid
                 | Valid(Address(_)) => Valid
                 },
