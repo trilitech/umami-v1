@@ -87,6 +87,8 @@ module File: {
   let initIfNotExists:
     (~encoding: encoding=?, ~path: Path.t, string) => Promise.t(unit);
   let initDirIfNotExists: Path.t => Promise.t(unit);
+
+  let protect: (~name: Path.t, ~transaction: unit => Promise.t(unit)) => Promise.t(unit);
 };
 
 module Client: {
