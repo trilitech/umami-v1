@@ -223,8 +223,7 @@ let make = (~showOnboarding, ~mode, ~setMode) => {
               ? <BalanceTotal /> : <BalanceTotal.WithTokenSelector ?token />}
            <View style=styles##actionBar>
              {mode->Mode.is_management
-                ? <CreateAccountButton showOnboarding />
-                : <BuyTezButton showOnboarding />}
+                ? <CreateAccountButton showOnboarding /> : React.null /* <BuyTezButton showOnboarding /> */}
            </View>
          </Page.Header>
          {mode->Mode.is_management
