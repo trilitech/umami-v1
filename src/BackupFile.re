@@ -78,7 +78,6 @@ let read = (path: System.Path.t) => {
 
 let save = (t, path: System.Path.t) => {
   let encoded = encoder(t);
-
   System.File.protect(~name=path, ~transaction=_ =>
     System.File.write(~name=path, encoded->JsonEx.stringify)
   );
