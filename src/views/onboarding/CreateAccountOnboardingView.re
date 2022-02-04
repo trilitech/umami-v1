@@ -61,7 +61,7 @@ let make = (~closeAction) => {
     | Step2 => Some(_ => setFormStep(_ => Step1))
     | Step3 => Some(_ => setFormStep(_ => Step2))
     | Step4 => Some(_ => setFormStep(_ => Step3))
-    | Step5 => Some(_ => setFormStep(_ => Step4))
+    | Step5 => Some(_ => setFormStep(_ => noExistingPassword ? Step4 : Step3))
     };
 
   let writeConf = ConfigContext.useWrite();
