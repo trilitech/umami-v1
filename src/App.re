@@ -69,7 +69,7 @@ module DisclaimerModal = {
 module Homepage = {
   type state =
     | Onboarding
-    | BuyTez
+    | BuyTez(string)
     | AddAccountModal
     | Dashboard;
 };
@@ -119,9 +119,9 @@ module BuyTezView = {
   };
 };
 
-module InsideAppView = {
+module Dashboard = {
   [@react.component]
-  let make = (~route: Routes.t, ~onChangeOnboardingState) => {
+  let make = (~route: Routes.t, ~showBuyTez, ~setMainPage) => {
     let (accountsViewMode, setAccountsViewMode) =
       React.useState(_ => AccountsView.Mode.Simple);
 
@@ -131,11 +131,8 @@ module InsideAppView = {
          <AccountsView
            mode=accountsViewMode
            setMode=setAccountsViewMode
-           showOnboarding={() =>
-             onChangeOnboardingState(_ =>
-               accountsViewMode == Simple ? Homepage.BuyTez : AddAccountModal
-             )
-           }
+           showBuyTez
+           showOnboarding={() => setMainPage(_ => Homepage.AddAccountModal)}
          />
        | Nft => <NftView />
        | Operations => <OperationsView />
@@ -158,8 +155,7 @@ let shouldDisplayNavbar =
       ~accountsRequest:
          Umami.ApiRequest.t(Umami.PublicKeyHash.Map.map(Umami.Account.t)),
       ~accounts,
-      ~onboardingState: Homepage.state,
-      ~wertURL,
+      ~mainPageState: Homepage.state,
     ) =>
   switch (accountsRequest) {
   | Done(_) when accounts->PublicKeyHash.Map.size <= 0 => false
@@ -167,10 +163,10 @@ let shouldDisplayNavbar =
   | Loading(None) => false
   | Loading(Some(_)) => true
   | Done(_) =>
-    switch (onboardingState) {
+    switch (mainPageState) {
     | Onboarding
     | AddAccountModal => false
-    | BuyTez => wertURL == None
+    | BuyTez(_) => false
     | Dashboard => true
     }
   };
@@ -188,64 +184,29 @@ module AppView = {
 
     let onSign = needSign => setEulaSignature(_ => needSign);
 
-    let (onboardingState, setOnboardingState) =
+    let (mainPageState, setMainPage) =
       React.useState(_ => Homepage.Dashboard);
 
     React.useLayoutEffect1(
       () =>
         switch (accountsRequest) {
         | Done(_) when accounts->PublicKeyHash.Map.size <= 0 =>
-          setOnboardingState(_ => Onboarding);
+          setMainPage(_ => Onboarding);
           None;
         | _ =>
-          setOnboardingState(_ => Dashboard);
+          setMainPage(_ => Dashboard);
           None;
         },
       [|accountsRequest|],
     );
 
-    let (visibleModal, openAction, closeAction) =
-      ModalAction.useModalActionState();
-
-    React.useLayoutEffect1(
-      () =>
-        switch (onboardingState) {
-        | BuyTez =>
-          openAction();
-          None;
-        | _ => None
-        },
-      [|onboardingState|],
-    );
-
     let theme = ThemeContext.useTheme();
 
-    let (wertURL, setWertURL) = React.useState(() => None);
-
-    let buyTez = (address: PublicKeyHash.t) => {
-      closeAction();
-      let widget = ReWert.makeTezWidget(~address, ~theme);
-      setWertURL(_ => Some(widget->ReWert.Widget.getEmbedUrl));
-    };
-
     let displayNavbar =
-      shouldDisplayNavbar(
-        ~accountsRequest,
-        ~accounts,
-        ~onboardingState,
-        ~wertURL,
-      );
+      shouldDisplayNavbar(~accountsRequest, ~accounts, ~mainPageState);
 
     let handleCloseBuyTezView = _ => {
-      setWertURL(_ => None);
-      setOnboardingState(_ => Dashboard);
-    };
-
-    let handleCloseWertView = _ => {
-      closeAction();
-      if (wertURL == None) {
-        setOnboardingState(_ => Dashboard);
-      };
+      setMainPage(_ => Dashboard);
     };
 
     <DocumentContext>
@@ -262,29 +223,22 @@ module AppView = {
            : <View style=styles##main>
                {displayNavbar ? <NavBar route /> : <NavBar.Empty />}
                <View style=styles##content>
-                 {switch (onboardingState) {
+                 {switch (mainPageState) {
                   | Onboarding => <OnboardingView />
                   | AddAccountModal =>
                     <OnboardingView
-                      onClose={_ => setOnboardingState(_ => Dashboard)}
+                      onClose={_ => setMainPage(_ => Dashboard)}
                     />
-                  | BuyTez
+                  | BuyTez(src) =>
+                    <BuyTezView src onClose=handleCloseBuyTezView />
                   | Dashboard =>
-                    <>
-                      {wertURL->Option.mapWithDefault(
-                         <InsideAppView
-                           route
-                           onChangeOnboardingState=setOnboardingState
-                         />,
-                         src =>
-                         <BuyTezView src onClose=handleCloseBuyTezView />
-                       )}
-                    </>
+                    <Dashboard
+                      showBuyTez={url => setMainPage(_ => BuyTez(url))}
+                      route
+                      setMainPage
+                    />
                   }}
                </View>
-               <ModalAction visible=visibleModal onRequestClose=closeAction>
-                 <WertView submit=buyTez closeAction=handleCloseWertView />
-               </ModalAction>
              </View>}
       </View>
     </DocumentContext>;
