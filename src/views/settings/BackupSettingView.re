@@ -135,12 +135,30 @@ let make = () => {
   let form: BackupSettingForm.api =
     form(~isEnabled, ~backupFile=config.backupFile, ~setBackupFile);
 
+  let addLog = LogsContext.useAdd();
+  let didMountRef = React.useRef(false);
+
   React.useEffect1(
     _ => {
-      if (config.backupFile == None) {
-        form.handleChange(SelectedBackupFile, "");
+      if (didMountRef.current) { // do not force backup for a first render
+        if (config.backupFile == None) {
+          form.handleChange(SelectedBackupFile, "");
+        } else {
+          switch (WalletAPI.Accounts.forceBackup(~config)) {
+          | Ok(_) =>
+            addLog(
+              true,
+              Logs.info(
+                ~origin=Logs.Settings,
+                I18n.Settings.backup_path_saved,
+              ),
+            )
+          | Error(error) =>
+            addLog(true, Logs.error(~origin=Logs.Settings, error))
+          };
+        };
       } else {
-        WalletAPI.Accounts.forceBackup(~config);
+        didMountRef.current = true;
       };
       None;
     },

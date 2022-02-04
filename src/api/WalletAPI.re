@@ -782,10 +782,7 @@ module Accounts = {
   };
 
   let forceBackup = (~config: ConfigContext.env) =>
-    switch (SecretStorage.get()) {
-    | Ok(secrets) => SecretStorage.set(~config, secrets)
-    | Error(_) => ()
-    };
+    SecretStorage.get()->Result.map(secrets => SecretStorage.set(~config, secrets));
 
   let importMnemonicKeys = (~config, ~accounts, ~password, ~index, ()) => {
     let importLegacyKey = (basename, encryptedSecret) => {

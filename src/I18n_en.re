@@ -485,6 +485,7 @@ module Settings = {
   let beacon_empty_permissions = "No Permission";
   let backup_title = "WALLET BACKUP";
   let backup_text = "Create and save a backup file for the entire wallet";
+  let backup_path_saved = "Backup file path saved";
   ();
 };
 

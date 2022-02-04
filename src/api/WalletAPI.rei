@@ -166,7 +166,7 @@ module Accounts: {
     ) =>
     Promise.t(unit);
 
-  let forceBackup: (~config: ConfigContext.env) => unit;
+  let forceBackup: (~config: ConfigContext.env) => Promise.result(unit);
 
   let importMnemonicKeys:
     (
