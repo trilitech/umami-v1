@@ -946,7 +946,7 @@ module SelectedAccount = {
     let store = useStoreContext();
     let accounts = Accounts.useGetAll();
 
-    let (selected, set) = store.selectedAccountState;
+    let (selected, _set) = store.selectedAccountState;
     let selected =
       selected->Option.flatMap(pkh => accounts->PublicKeyHash.Map.get(pkh));
 
@@ -957,10 +957,6 @@ module SelectedAccount = {
       ->PublicKeyHash.Map.valuesToArray
       ->SortArray.stableSortBy(Account.compareName)
       ->Array.get(0)
-      ->Option.map(v => {
-          set(_ => v.Account.address->Some);
-          v;
-        })
     };
   };
 
