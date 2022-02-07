@@ -175,7 +175,7 @@ module Empty = {
 };
 
 [@react.component]
-let make = (~route as currentRoute) => {
+let make = (~account, ~route as currentRoute) => {
   let theme = ThemeContext.useTheme();
   <View
     style=Style.(
@@ -184,7 +184,7 @@ let make = (~route as currentRoute) => {
         style(~backgroundColor=theme.colors.barBackground, ()),
       |])
     )>
-    <View style=styles##sendButton> <SendButton /> </View>
+    <View style=styles##sendButton> <SendButton account /> </View>
     <NavBarItemRoute
       currentRoute
       route=Accounts

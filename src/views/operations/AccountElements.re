@@ -199,8 +199,7 @@ module Selector = {
 
   module Simple = {
     [@react.component]
-    let make = (~style=?) => {
-      let account = StoreContext.SelectedAccount.useGet();
+    let make = (~account: Account.t, ~style=?) => {
       let accounts = StoreContext.Accounts.useGetAll();
 
       let updateAccount = StoreContext.SelectedAccount.useSet();
@@ -220,11 +219,7 @@ module Selector = {
           getItemKey={account => (account.address :> string)}
           ?style
           onValueChange={value => updateAccount(value.address)}
-          selectedValueKey=?{
-            account->Option.map((account: Account.t) =>
-              (account.address :> string)
-            )
-          }
+          selectedValueKey=(account.address :> string)
           renderButton
           renderItem
           keyPopover="accountSelector"

@@ -117,7 +117,7 @@ let stepToString = step =>
   };
 
 module Form = {
-  let defaultInit = (account: option(Account.t)) =>
+  let defaultInit = (account: Account.t) =>
     SendForm.StateLenses.{
       amount: "",
       sender: account,
@@ -130,17 +130,16 @@ module Form = {
       ~schema={
         SendForm.Validation.(
           Schema(
-            custom(values => values.sender->FormUtils.notNone, Sender)
-            + custom(
-                values =>
-                  switch (values.recipient) {
-                  | AnyString(_) =>
-                    Error(I18n.Form_input_error.invalid_contract)
-                  | Valid(Alias(_)) => Valid
-                  | Valid(Address(_)) => Valid
-                  },
-                Recipient,
-              )
+            custom(
+              values =>
+                switch (values.recipient) {
+                | AnyString(_) =>
+                  Error(I18n.Form_input_error.invalid_contract)
+                | Valid(Alias(_)) => Valid
+                | Valid(Address(_)) => Valid
+                },
+              Recipient,
+            )
             + custom(
                 values => {
                   switch (token) {
@@ -255,12 +254,11 @@ module Form = {
             label=I18n.Label.send_sender
             value={form.values.sender}
             handleChange={form.handleChange(Sender)}
-            error={form.getFieldError(Field(Sender))}
             ?token
           />
           <FormGroupContactSelector
             label=I18n.Label.send_recipient
-            filterOut={form.values.sender->Option.map(Account.toAlias)}
+            filterOut={form.values.sender->Account.toAlias->Some}
             aliases
             value={form.values.recipient}
             handleChange={form.handleChange(Recipient)}
@@ -292,7 +290,7 @@ module Form = {
 
 module EditionView = {
   [@react.component]
-  let make = (~aliases, ~initValues, ~onSubmit, ~index, ~loading) => {
+  let make = (~account, ~aliases, ~initValues, ~onSubmit, ~index, ~loading) => {
     let token =
       switch (initValues.SendForm.amount) {
       | Transfer.Currency.Tez(_) => None
@@ -303,7 +301,7 @@ module EditionView = {
 
     let initValues = initValues->SendForm.toState;
 
-    let form = Form.use(~initValues, None, token, onSubmit(token));
+    let form = Form.use(~initValues, account, token, onSubmit(token));
 
     <Form.View
       tokenState
@@ -317,8 +315,7 @@ module EditionView = {
 };
 
 [@react.component]
-let make = (~closeAction) => {
-  let account = StoreContext.SelectedAccount.useGet();
+let make = (~account, ~closeAction) => {
   let initToken = StoreContext.SelectedToken.useGet();
   let aliasesRequest = StoreContext.Aliases.useRequest();
 
@@ -387,7 +384,7 @@ let make = (~closeAction) => {
       csvRows->List.mapReverse(({destination, amount}) => {
         let formStateValues: SendForm.validState = {
           amount,
-          sender: form.values.sender->FormUtils.Unsafe.getValue,
+          sender: form.values.sender,
           recipient: FormUtils.Alias.Address(destination),
         };
         formStateValues;
@@ -491,7 +488,14 @@ let make = (~closeAction) => {
              />
            | EditStep(index, initValues) =>
              let onSubmit = form => onEdit(index, form);
-             <EditionView initValues onSubmit index loading=false aliases />;
+             <EditionView
+               account
+               initValues
+               onSubmit
+               index
+               loading=false
+               aliases
+             />;
            | SendStep =>
              let onSubmit = batch != [] ? onAddToBatch : onSubmitAll;
              let onAddToBatch = batch != [] ? None : Some(onAddToBatch);

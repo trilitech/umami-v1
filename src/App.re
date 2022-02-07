@@ -119,9 +119,18 @@ module BuyTezView = {
   };
 };
 
+module SelectedAccountView = {
+  [@react.component]
+  let make = (~children) => {
+    let selectedAccount = StoreContext.SelectedAccount.useGetAtInit();
+
+    selectedAccount->ReactUtils.mapOpt(account => {children(account)});
+  };
+};
+
 module Dashboard = {
   [@react.component]
-  let make = (~route: Routes.t, ~showBuyTez, ~setMainPage) => {
+  let make = (~account, ~route: Routes.t, ~showBuyTez, ~setMainPage) => {
     let (accountsViewMode, setAccountsViewMode) =
       React.useState(_ => AccountsView.Mode.Simple);
 
@@ -134,8 +143,8 @@ module Dashboard = {
            showBuyTez
            showOnboarding={() => setMainPage(_ => Homepage.AddAccountModal)}
          />
-       | Nft => <NftView />
-       | Operations => <OperationsView />
+       | Nft => <NftView account />
+       | Operations => <OperationsView account />
        | AddressBook => <AddressBookView />
        | Delegations => <DelegationsView />
        | Tokens => <TokensView />
@@ -154,11 +163,11 @@ let shouldDisplayNavbar =
     (
       ~accountsRequest:
          Umami.ApiRequest.t(Umami.PublicKeyHash.Map.map(Umami.Account.t)),
-      ~accounts,
+      ~hasAccount,
       ~mainPageState: Homepage.state,
     ) =>
   switch (accountsRequest) {
-  | Done(_) when accounts->PublicKeyHash.Map.size <= 0 => false
+  | Done(_) when !hasAccount => false
   | NotAsked => false
   | Loading(None) => false
   | Loading(Some(_)) => true
@@ -177,10 +186,12 @@ module AppView = {
     let url = ReasonReactRouter.useUrl();
     let route = Routes.match(url);
 
-    let accounts = StoreContext.Accounts.useGetAll();
+    let selectedAccount = StoreContext.SelectedAccount.useGetAtInit();
     let accountsRequest = StoreContext.Accounts.useRequest();
     let eulaSignature = StoreContext.useEulaSignature();
     let setEulaSignature = StoreContext.setEulaSignature();
+
+    let hasAccount = selectedAccount != None;
 
     let onSign = needSign => setEulaSignature(_ => needSign);
 
@@ -190,7 +201,7 @@ module AppView = {
     React.useLayoutEffect1(
       () =>
         switch (accountsRequest) {
-        | Done(_) when accounts->PublicKeyHash.Map.size <= 0 =>
+        | Done(_) when !hasAccount =>
           setMainPage(_ => Onboarding);
           None;
         | _ =>
@@ -203,7 +214,7 @@ module AppView = {
     let theme = ThemeContext.useTheme();
 
     let displayNavbar =
-      shouldDisplayNavbar(~accountsRequest, ~accounts, ~mainPageState);
+      shouldDisplayNavbar(~accountsRequest, ~hasAccount, ~mainPageState);
 
     let handleCloseBuyTezView = _ => {
       setMainPage(_ => Dashboard);
@@ -221,7 +232,11 @@ module AppView = {
         {eulaSignature
            ? <DisclaimerModal onSign />
            : <View style=styles##main>
-               {displayNavbar ? <NavBar route /> : <NavBar.Empty />}
+               {switch (selectedAccount) {
+                | Some(account) when displayNavbar => <NavBar account route />
+                | Some(_)
+                | None => <NavBar.Empty />
+                }}
                <View style=styles##content>
                  {switch (mainPageState) {
                   | Onboarding => <OnboardingView />
@@ -232,11 +247,17 @@ module AppView = {
                   | BuyTez(src) =>
                     <BuyTezView src onClose=handleCloseBuyTezView />
                   | Dashboard =>
-                    <Dashboard
-                      showBuyTez={url => setMainPage(_ => BuyTez(url))}
-                      route
-                      setMainPage
-                    />
+                    <SelectedAccountView>
+                      {(
+                         account =>
+                           <Dashboard
+                             account
+                             showBuyTez={url => setMainPage(_ => BuyTez(url))}
+                             route
+                             setMainPage
+                           />
+                       )}
+                    </SelectedAccountView>
                   }}
                </View>
              </View>}
@@ -251,7 +272,12 @@ let make = () => {
     <ConfigFileContext>
       <ConfigContext>
         <ThemeContext>
-          <StoreContext> <AppView /> <BeaconConnectRequest /> </StoreContext>
+          <StoreContext>
+            <AppView />
+            <SelectedAccountView>
+              {account => <BeaconConnectRequest account />}
+            </SelectedAccountView>
+          </StoreContext>
         </ThemeContext>
       </ConfigContext>
     </ConfigFileContext>

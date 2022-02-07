@@ -96,7 +96,7 @@ module BuyTezButton = {
     );
 
   [@react.component]
-  let make = (~showView) => {
+  let make = (~account, ~showView) => {
     let theme = ThemeContext.useTheme();
 
     let (visibleModal, openAction, closeAction) =
@@ -119,7 +119,7 @@ module BuyTezButton = {
         />
       </View>
       <ModalAction visible=visibleModal onRequestClose=closeAction>
-        <WertView submit=buyTez closeAction />
+        <WertView account submit=buyTez closeAction />
       </ModalAction>
     </>;
   };
@@ -217,34 +217,30 @@ let make = (~showOnboarding, ~showBuyTez as _, ~mode, ~setMode) => {
   let retryNetwork = ConfigContext.useRetryNetwork();
 
   <Page>
-    {accountsRequest->ApiRequest.mapOrEmpty(_ => {
-       <>
-         <Page.Header
-           right=
-             {<>
-                <RefreshButton
-                  loading={accountsRequest->ApiRequest.isLoading}
-                  onRefresh={() => {
-                    resetSecrets();
-                    retryNetwork();
-                  }}
-                />
-                <EditButton mode setMode />
-              </>}>
-           <Typography.Headline style=Styles.title>
-             I18n.Title.accounts->React.string
-           </Typography.Headline>
-           {mode->Mode.is_management
-              ? <BalanceTotal /> : <BalanceTotal.WithTokenSelector ?token />}
-           <View style=styles##actionBar>
-             {mode->Mode.is_management
-                ? <CreateAccountButton showOnboarding />
-                : React.null /* : <BuyTezButton showView=showBuyTez /> */}
-           </View>
-         </Page.Header>
-         {mode->Mode.is_management
-            ? <AccountsTreeList /> : <AccountsFlatList ?token />}
-       </>
-     })}
+    <Page.Header
+      right=
+        {<>
+           <RefreshButton
+             loading={accountsRequest->ApiRequest.isLoading}
+             onRefresh={() => {
+               resetSecrets();
+               retryNetwork();
+             }}
+           />
+           <EditButton mode setMode />
+         </>}>
+      <Typography.Headline style=Styles.title>
+        I18n.Title.accounts->React.string
+      </Typography.Headline>
+      {mode->Mode.is_management
+         ? <BalanceTotal /> : <BalanceTotal.WithTokenSelector ?token />}
+      <View style=styles##actionBar>
+        {mode->Mode.is_management
+           ? <CreateAccountButton showOnboarding />
+           : React.null /* : <BuyTezButton showView=showBuyTez /> */}
+      </View>
+    </Page.Header>
+    {mode->Mode.is_management
+       ? <AccountsTreeList /> : <AccountsFlatList ?token />}
   </Page>;
 };

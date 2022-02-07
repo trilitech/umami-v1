@@ -46,14 +46,14 @@ let styles =
   );
 
 [@react.component]
-let make = (~children as right) => {
+let make = (~account, ~children as right) => {
   <View style=styles##header>
     <Page.Header right>
       <Typography.Headline style=Styles.title>
         I18n.Title.operations->React.string
       </Typography.Headline>
       <BalanceTotal />
-      <AccountElements.Selector.Simple style=styles##selector />
+      <AccountElements.Selector.Simple account style=styles##selector />
     </Page.Header>
     <Table.Head>
       <OperationRowItem.CellType>
