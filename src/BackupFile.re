@@ -39,7 +39,7 @@ let () =
     | _ => None,
   );
 
-let version = Version.mk(1, 0);
+let currentVersion = Version.mk(1, 0);
 
 type t = {
   version: Version.t,
@@ -48,7 +48,7 @@ type t = {
 };
 
 let make = (~derivationPaths, ~recoveryPhrases) => {
-  version,
+  version: currentVersion,
   derivationPaths,
   recoveryPhrases,
 };
@@ -84,9 +84,23 @@ let decoder = json =>
          ),
   };
 
+let checkVersion = json => {
+  let%Res v =
+    json->JsonEx.decode(
+      Json.Decode.field("version", LocalStorage.Version.decoder),
+    );
+  Version.checkVersion(~current=v, ~expected=currentVersion)
+  ->Result.mapError(
+      fun
+      | Version.UnknownVersion({current}) => UnknownVersion(current)
+      | e => e->Errors.toString->CannotParseVersion,
+    );
+};
+
 let read = (path: System.Path.t) => {
   let%AwaitRes file = System.File.read(path);
   let%Res json = JsonEx.parse(file);
+  let%Res () = checkVersion(json);
   json->JsonEx.decode(decoder);
 };
 
