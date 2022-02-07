@@ -50,10 +50,7 @@ let styles =
 let make = (~account) => {
   let theme = ThemeContext.useTheme();
 
-  let (visibleModal, openAction, closeAction) =
-    ModalAction.useModalActionState();
-
-  let onPress = _ => openAction();
+  let (openAction, closeAction, (module Modal)) = ModalAction.useModal();
 
   let networkOffline = ConfigContext.useNetworkOffline();
 
@@ -76,7 +73,7 @@ let make = (~account) => {
       <ThemedPressable.Primary
         disabled=networkOffline
         style=styles##iconContainer
-        onPress
+        onPress={_ => openAction()}
         accessibilityRole=`button>
         <Icons.Send size=24. color=iconColor />
         <Typography.ButtonSecondary
@@ -88,8 +85,6 @@ let make = (~account) => {
         </Typography.ButtonSecondary>
       </ThemedPressable.Primary>
     </View>
-    <ModalAction visible=visibleModal onRequestClose=closeAction>
-      <SendView account closeAction />
-    </ModalAction>
+    <Modal> <SendView account closeAction /> </Modal>
   </>;
 };

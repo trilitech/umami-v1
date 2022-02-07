@@ -50,22 +50,17 @@ module AccountNestedRowItem = {
   module AccountEditButton = {
     [@react.component]
     let make = (~account: Account.t) => {
-      let (visibleModal, openAction, closeAction) =
-        ModalAction.useModalActionState();
-
-      let onPress = _e => openAction();
+      let (openAction, closeAction, (module Modal)) = ModalAction.useModal();
 
       <>
         <IconButton
           icon=Icons.Edit.build
           size=34.
           iconSizeRatio={1. /. 2.}
-          onPress
+          onPress={_ => openAction()}
           style=styles##actionIconButton
         />
-        <ModalAction visible=visibleModal onRequestClose=closeAction>
-          <AccountFormView.Update account closeAction />
-        </ModalAction>
+        <Modal> <AccountFormView.Update account closeAction /> </Modal>
       </>;
     };
   };

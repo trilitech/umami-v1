@@ -25,20 +25,15 @@
 
 [@react.component]
 let make = (~style=?) => {
-  let (visibleModal, openAction, closeAction) =
-    ModalAction.useModalActionState();
-
-  let onPress = _ => openAction();
+  let (openAction, closeAction, (module Modal)) = ModalAction.useModal();
 
   <>
     <BigButton
       title=I18n.Btn.import_secret
-      icon=Icons.Recovery.build
-      onPress
+      icon=Icons.ArrowDown.build
+      onPress={_ => openAction()}
       ?style
     />
-    <ModalAction visible=visibleModal onRequestClose=closeAction>
-      <ImportAccountOnboardingView closeAction />
-    </ModalAction>
+    <Modal> <ImportAccountOnboardingView closeAction /> </Modal>
   </>;
 };

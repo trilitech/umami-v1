@@ -88,13 +88,11 @@ module EditionModal = {
   [@react.component]
   let make = (~action, ~item, ~token, ~tokens, ~currentChain) => {
     open TokensLibrary.Token;
-    let (visibleModal, openAction, closeAction) =
-      ModalAction.useModalActionState();
+    let (openAction, closeAction, (module Modal)) = ModalAction.useModal();
 
-    let onPress = _ => openAction();
     <>
-      {item(onPress)}
-      <ModalAction visible=visibleModal onRequestClose=closeAction>
+      {item(_ => openAction())}
+      <Modal>
         <TokenAddView
           action
           address={token->address}
@@ -103,7 +101,7 @@ module EditionModal = {
           tokens
           closeAction
         />
-      </ModalAction>
+      </Modal>
     </>;
   };
 };
