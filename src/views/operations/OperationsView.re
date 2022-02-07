@@ -34,47 +34,40 @@ let sort = op =>
     )
   );
 
-module Component = {
-  [@react.component]
-  let make = (~account: Account.t) => {
-    let operationsRequest =
-      StoreContext.Operations.useLoad(~address=account.address, ());
-
-    let operationsReload = StoreContext.Operations.useResetAll();
-    let renderItem = (currentLevel, operation: Operation.Read.t) =>
-      <OperationRowItem
-        account
-        key=Operation.Read.(operation->uniqueId->uniqueIdToString)
-        operation
-        currentLevel
-      />;
-
-    <View style=styles##container>
-      <OperationsHeaderView account>
-        <RefreshButton
-          onRefresh=operationsReload
-          loading={operationsRequest->ApiRequest.isLoading}
-        />
-      </OperationsHeaderView>
-      {ApiRequest.(
-         switch (operationsRequest) {
-         | Done(Ok(response), _) =>
-           <Pagination
-             elements={response.operations->sort}
-             renderItem={renderItem(response.currentLevel)}
-             emptyComponent={I18n.empty_operations->React.string}
-           />
-         | Done(Error(error), _) => error->Errors.toString->React.string
-         | NotAsked
-         | Loading(Some(_))
-         | Loading(None) => <LoadingView />
-         }
-       )}
-    </View>;
-  };
-};
-
 [@react.component]
-let make = (~account) => {
-  <Component account />;
+let make = (~account: Account.t) => {
+  let operationsRequest =
+    StoreContext.Operations.useLoad(~address=account.address, ());
+
+  let operationsReload = StoreContext.Operations.useResetAll();
+  let renderItem = (currentLevel, operation: Operation.Read.t) =>
+    <OperationRowItem
+      account
+      key=Operation.Read.(operation->uniqueId->uniqueIdToString)
+      operation
+      currentLevel
+    />;
+
+  <View style=styles##container>
+    <OperationsHeaderView account>
+      <RefreshButton
+        onRefresh=operationsReload
+        loading={operationsRequest->ApiRequest.isLoading}
+      />
+    </OperationsHeaderView>
+    {ApiRequest.(
+       switch (operationsRequest) {
+       | Done(Ok(response), _) =>
+         <Pagination
+           elements={response.operations->sort}
+           renderItem={renderItem(response.currentLevel)}
+           emptyComponent={I18n.empty_operations->React.string}
+         />
+       | Done(Error(error), _) => error->Errors.toString->React.string
+       | NotAsked
+       | Loading(Some(_))
+       | Loading(None) => <LoadingView />
+       }
+     )}
+  </View>;
 };
