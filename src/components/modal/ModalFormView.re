@@ -58,39 +58,42 @@ module BackButton = {
 };
 
 module ConfirmCloseModal = {
-  [@react.component]
-  let make = (~confirm, ~closeAction, ~visible) => {
+  let useModal = (~confirm) => {
     let {title, subtitle, cancelText, actionText, action} = confirm;
-    <ModalDialogConfirm
-      visible
-      closeAction
-      action={() => {
-        closeAction();
-        action();
-      }}
-      title
-      ?subtitle
-      cancelText
-      actionText
-    />;
+
+    ModalDialogConfirm.useModal(
+      ~action=
+        () => {
+          action();
+          Promise.ok();
+        },
+      ~title,
+      ~subtitle?,
+      ~cancelText,
+      ~actionText,
+      (),
+    );
   };
 };
 
 module CloseButton = {
   [@react.component]
   let make = (~closing) => {
-    let (visibleModal, openAction, closeAction) =
-      ModalAction.useModalActionState();
+    let modal = ConfirmCloseModal.useModal;
 
-    let (confirm, disabled, tooltip) =
+    let (confirm, disabled, tooltip, openAction) =
       switch (closing) {
-      | Deny(msg) => (React.null, true, Some(("close_button", msg)))
-      | Close(_) => (React.null, false, None)
-      | Confirm(confirm) => (
-          <ConfirmCloseModal confirm visible=visibleModal closeAction />,
-          false,
-          None,
+      | Deny(msg) => (
+          React.null,
+          true,
+          Some(("close_button", msg)),
+          (() => ()),
         )
+      | Close(_) => (React.null, false, None, (() => ()))
+      | Confirm(confirm) =>
+        let (openAction, _, (module Modal)) = modal(~confirm);
+
+        (<Modal />, false, None, openAction);
       };
 
     let onPress = _ => {
