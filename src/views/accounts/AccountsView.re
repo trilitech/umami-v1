@@ -96,16 +96,31 @@ module BuyTezButton = {
     );
 
   [@react.component]
-  let make = (~showOnboarding) => {
+  let make = (~showView) => {
+    let theme = ThemeContext.useTheme();
+
+    let (visibleModal, openAction, closeAction) =
+      ModalAction.useModalActionState();
+
+    let buyTez = (address: PublicKeyHash.t) => {
+      closeAction();
+      let widget = ReWert.makeTezWidget(~address, ~theme);
+      let url = widget->ReWert.Widget.getEmbedUrl;
+      showView(url);
+    };
+
     <>
       <View style=styles##button>
         <ButtonAction
-          onPress={_ => showOnboarding()}
+          onPress={_ => openAction()}
           text=I18n.Btn.buy_tez
           icon=Icons.OpenExternal.build
           primary=true
         />
       </View>
+      <ModalAction visible=visibleModal onRequestClose=closeAction>
+        <WertView submit=buyTez closeAction />
+      </ModalAction>
     </>;
   };
 };
@@ -194,7 +209,7 @@ let styles =
   Style.(StyleSheet.create({"actionBar": style(~flexDirection=`row, ())}));
 
 [@react.component]
-let make = (~showOnboarding, ~mode, ~setMode) => {
+let make = (~showOnboarding, ~showBuyTez as _, ~mode, ~setMode) => {
   let resetSecrets = StoreContext.Secrets.useResetAll();
   let accountsRequest = StoreContext.Accounts.useRequest();
   let token = StoreContext.SelectedToken.useGet();
@@ -223,7 +238,8 @@ let make = (~showOnboarding, ~mode, ~setMode) => {
               ? <BalanceTotal /> : <BalanceTotal.WithTokenSelector ?token />}
            <View style=styles##actionBar>
              {mode->Mode.is_management
-                ? <CreateAccountButton showOnboarding /> : React.null /* <BuyTezButton showOnboarding /> */}
+                ? <CreateAccountButton showOnboarding />
+                : React.null /* : <BuyTezButton showView=showBuyTez /> */}
            </View>
          </Page.Header>
          {mode->Mode.is_management
