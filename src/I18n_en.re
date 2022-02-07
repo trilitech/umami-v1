@@ -624,6 +624,12 @@ module Errors = {
       lowest,
       highest,
     );
+  let unknown_backup_version = v =>
+    p(
+      "Version %s of backup file cannot be imported in the current version of Umami.",
+      v,
+    );
+  let cannot_parse_version = err => p("Invalid backup file:\n%s", err);
 };
 
 module Csv = {

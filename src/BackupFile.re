@@ -25,6 +25,20 @@
 
 open Let;
 
+type Errors.t +=
+  | UnknownVersion(Version.t)
+  | CannotParseVersion(string);
+
+let () =
+  Errors.registerHandler(
+    "BackupFile",
+    fun
+    | UnknownVersion(v) =>
+      v->Version.toString->I18n.Errors.unknown_backup_version->Some
+    | CannotParseVersion(err) => err->I18n.Errors.cannot_parse_version->Some
+    | _ => None,
+  );
+
 let version = Version.mk(1, 0);
 
 type t = {
