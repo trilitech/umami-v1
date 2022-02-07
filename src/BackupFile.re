@@ -23,80 +23,62 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open ReactNative;
+open Let;
 
-let styles =
-  Style.(
-    StyleSheet.create({
-      "formGroup": style(~marginBottom=0.->dp, ()),
-      "header": style(~flexDirection=`row, ~justifyContent=`spaceBetween, ~marginVertical=4.->dp, ()),
-      "label": style(~marginVertical=4.->dp, ()),
-      "decoration":
-        style(
-          ~display=`flex,
-          ~alignItems=`center,
-          ~position=`absolute,
-          ~marginTop=auto,
-          ~marginBottom=auto,
-          ~top=0.->dp,
-          ~bottom=0.->dp,
-          ~right=10.->dp,
-          (),
-        ),
-    })
-  );
+let version = Version.mk(1, 0);
 
-[@react.component]
-let make =
+type t = {
+  version: Version.t,
+  derivationPaths: array(DerivationPath.Pattern.t),
+  recoveryPhrases: array(SecureStorage.Cipher.encryptedData),
+};
+
+let make = (~derivationPaths, ~recoveryPhrases) => {
+  version,
+  derivationPaths,
+  recoveryPhrases,
+};
+
+let dummy = make(~derivationPaths=[||], ~recoveryPhrases=[||]);
+
+let encoder = c =>
+  JsonEx.Encode.object_([
+    ("version", c.version->Version.toString->Json.Encode.string),
     (
-      ~label,
-      ~value,
-      ~handleChange,
-      ~error,
-      ~keyboardType=?,
-      ~onBlur=?,
-      ~onFocus=?,
-      ~textContentType=?,
-      ~secureTextEntry=?,
-      ~placeholder=?,
-      ~disabled=?,
-      ~multiline=?,
-      ~numberOfLines=?,
-      ~clearButton=false,
-      ~onSubmitEditing=?,
-      ~decoration: option((~style: Style.t) => React.element)=?,
-      ~style as styleFromProp: option(ReactNative.Style.t)=?,
-      ~fieldStyle=?,
-      ~tooltipIcon=?,
-      ~rightView=?,
-    ) => {
-  let hasError = error->Option.isSome;
-  <FormGroup
-    style=Style.(arrayOption([|Some(styles##formGroup), styleFromProp|]))>
-    <View style=styles##header>
-      <FormLabel label hasError ?tooltipIcon />
-      {rightView->ReactUtils.mapOpt(view => view)}
-    </View>
-    <View>
-      <ThemedTextInput
-        value
-        onValueChange=handleChange
-        hasError
-        ?onBlur
-        ?onFocus
-        ?textContentType
-        ?secureTextEntry
-        ?keyboardType
-        ?placeholder
-        ?disabled
-        ?multiline
-        ?numberOfLines
-        ?onSubmitEditing
-        style=?fieldStyle
-        onClear=?{clearButton ? Some(() => handleChange("")) : None}
-      />
-      {decoration->ReactUtils.mapOpt(deco => deco(~style=styles##decoration))}
-    </View>
-    <FormError ?error />
-  </FormGroup>;
+      "derivationPaths",
+      c.derivationPaths->Array.map(DerivationPath.Pattern.toString)
+      |> Json.Encode.(array(string)),
+    ),
+    (
+      "recoveryPhrases",
+      c.recoveryPhrases |> Json.Encode.array(SecureStorage.Cipher.encoder),
+    ),
+  ]);
+
+let decoder = json =>
+  Json.Decode.{
+    version: json |> field("version", LocalStorage.Version.decoder),
+    derivationPaths:
+      (json |> field("derivationPaths", Json.Decode.(array(string))))
+      ->Array.map(DerivationPath.Pattern.fromString)
+      ->Array.map(Result.getExn),
+    recoveryPhrases:
+      json
+      |> field(
+           "recoveryPhrases",
+           Json.Decode.(array(SecureStorage.Cipher.decoder)),
+         ),
+  };
+
+let read = (path: System.Path.t) => {
+  let%AwaitRes file = System.File.read(path);
+  let%Res json = JsonEx.parse(file);
+  json->JsonEx.decode(decoder);
+};
+
+let save = (t, path: System.Path.t) => {
+  let encoded = encoder(t);
+  System.File.protect(~name=path, ~transaction=_ =>
+    System.File.write(~name=path, encoded->JsonEx.stringify)
+  );
 };

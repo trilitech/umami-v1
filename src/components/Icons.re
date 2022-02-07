@@ -174,3 +174,7 @@ module Code = Make(SVGIconCode);
 module Metadata = Make(SVGIconMetadata);
 module SwitchOn = Make(SVGSwitchOn);
 module SwitchOff = Make(SVGSwitchOff);
+module ArrowUp = Make(SVGIconArrowUp);
+module Cloud = Make(SVGIconCloud);
+module Folder = Make(SVGIconFolder);
+module Recovery = Make(SVGIconRecovery);

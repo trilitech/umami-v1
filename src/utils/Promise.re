@@ -35,3 +35,16 @@ let timeoutAfter = (f, ms) => {
 type error = Errors.t;
 
 let fromJs = FutureJs.fromPromise;
+
+let rec reducei = (values, result, accumulator, index) =>
+  switch (values[index]) {
+  | Some(a) =>
+    accumulator(result, a, index)
+    ->flatMap(result =>
+        values->reducei(result, accumulator, index + 1)
+      )
+  | None => value(result)
+  };
+
+let reducei = (values, result, accumulator) =>
+  values->reducei(result, accumulator, 0);

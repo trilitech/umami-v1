@@ -61,7 +61,7 @@ module Btn = {
   let register = "REGISTER";
   let save_and_register = "SAVE AND REGISTER";
   let logs = "LOGS";
-  let import_secret = "IMPORT EXISTING SECRET";
+  let import_secret = "IMPORT SECRET WITH RECOVERY PHRASE";
   let create_secret_new = "CREATE NEW SECRET";
   let connect_hardware_wallet = "CONNECT LEDGER";
   let create_account_record_ok = {js|OK, I’VE RECORDED IT|js};
@@ -98,6 +98,11 @@ module Btn = {
   let register_nft_contract = "Register NFT contract";
   let see_list = "SEE LIST";
   let change_account = "CHANGE ACCOUNT";
+  let upload_file = "UPLOAD FILE";
+  let access_wallet = "ACCESS WALLET";
+  let restore_secret = "RESTORE FROM BACKUP";
+  let browse_for_folder = "BROWSE FOR FOLDER";
+  let setup_later = "Set up later in settings";
 };
 
 module Tooltip = {
@@ -194,6 +199,8 @@ module Label = {
   let custom_network_name = "Name";
   let custom_network_mezos_url = "Mezos URL";
   let custom_network_node_url = plural => p("Node URL%s", plural ? "s" : "");
+  let file = "File";
+  let storage_location = "Storage location";
 };
 
 module Input_placeholder = {
@@ -217,6 +224,7 @@ module Input_placeholder = {
   let search_for_token = "Search for Token by name, symbol or KT address";
   let custom_network_node_url = "e.g. https://rpc.tzbeta.net";
   let custom_network_mezos_url = "e.g. https://api.umamiwallet.com/mainnet";
+  let select_backup_path = "Browse to the required folder or enter a path";
 };
 
 module Form_input_error = {
@@ -371,6 +379,9 @@ module Title = {
   let wert_recipient = "Please select the recipient account";
   let added_to_wallet = "Added to wallet";
   let held = "Held";
+  let restore_account = "Restore from Backup";
+  let select_backup_file = "Select a JSON backup file and enter the password you used to encrypt it.";
+  let account_backup_path = "Select a storage location for your backup";
 };
 
 module Expl = {
@@ -407,6 +418,7 @@ module Expl = {
   let beacon_dapp_sign = "requests your signature";
   let custom_network = "Please specify the parameters of the network you want to connect to.";
   let external_service = "Notice: you are using Wert, which is an external service to Umami.";
+  let secret_select_backup_path = {j|If you ever need to restore your wallet, you can do so with this backup file and your password.|j};
 };
 
 module Menu = {
@@ -471,6 +483,9 @@ module Settings = {
   let beacon_permissions_scopes = "SCOPES";
   let beacon_permissions_network = "NETWORK";
   let beacon_empty_permissions = "No Permission";
+  let backup_title = "WALLET BACKUP";
+  let backup_text = "Create and save a backup file for the entire wallet";
+  let backup_path_saved = "Backup file path saved";
   ();
 };
 
@@ -689,6 +704,7 @@ let state_mempool = "Mempool";
 let state_levels = p("%d/%d blocks");
 let state_confirmed = "Confirmed";
 let stepof = p("Step %d of %d");
+let optional_stepof = p("Step %d of %d (optional)");
 let account_create_record_recovery = "Record your recovery phrase";
 let contact_added = "Contact Added";
 let contact_updated = "Contact Updated";

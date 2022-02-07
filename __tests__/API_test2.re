@@ -7,6 +7,7 @@ let config =
     theme: `system,
     baseDir: () => System.(Path.Ops.(appDir() / (!"tezos-client"))),
     confirmations: 5,
+    backupFile: None,
   };
 
 let pkh = s => s->PublicKeyHash.build->Result.getExn;

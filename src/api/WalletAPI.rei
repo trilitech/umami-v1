@@ -157,6 +157,17 @@ module Accounts: {
     ) =>
     Promise.t(unit);
 
+  let restoreFromBackupFile:
+    (
+      ~config: ConfigContext.env,
+      ~backupFile: System.Path.t,
+      ~password: string,
+      unit
+    ) =>
+    Promise.t(unit);
+
+  let forceBackup: (~config: ConfigContext.env) => Promise.result(unit);
+
   let importMnemonicKeys:
     (
       ~config: ConfigContext.env,

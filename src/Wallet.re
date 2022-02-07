@@ -83,38 +83,8 @@ module AliasesMaker =
   let write = (dirpath, aliases) =>
     System.File.write(~name=dirpath / Alias.filename, stringify(aliases));
 
-  let mkTmpCopy = dirpath => {
-    let tmpName = !(System.Path.toString(Alias.filename) ++ ".tmp");
-    System.File.copy(
-      ~name=dirpath / Alias.filename,
-      ~dest=dirpath / tmpName,
-      ~mode=System.File.CopyMode.copy_ficlone,
-    );
-  };
-
-  let restoreTmpCopy = dirpath => {
-    let tmpName = !(System.Path.toString(Alias.filename) ++ ".tmp");
-    System.File.copy(
-      ~name=dirpath / tmpName,
-      ~dest=dirpath / Alias.filename,
-      ~mode=System.File.CopyMode.copy_ficlone,
-    );
-  };
-
-  let rmTmpCopy = dirpath => {
-    let tmpName = !(System.Path.toString(Alias.filename) ++ ".tmp");
-    System.File.rm(~name=dirpath / tmpName);
-  };
-
-  let protect = (dirpath, f) => {
-    let%Await _ = dirpath->mkTmpCopy;
-    let%Ft r = f();
-
-    switch (r) {
-    | Ok () => dirpath->rmTmpCopy
-    | Error(e) => dirpath->restoreTmpCopy->Promise.map(_ => Error(e))
-    };
-  };
+  let protect = (dirpath, f) =>
+    System.File.protect(~name=dirpath / Alias.filename, ~transaction=f);
 
   let find = (aliases: t, f) =>
     aliases->Js.Array2.find(f)->Result.fromOption(KeyNotFound);

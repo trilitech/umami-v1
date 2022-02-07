@@ -131,16 +131,6 @@ module Secret = {
     );
 };
 
-module SecretStorage =
-  LocalStorage.Make({
-    type t = array(Secret.t);
-
-    let key = "secrets";
-
-    let encoder = Json.Encode.(array(Secret.encoder));
-    let decoder = Json.Decode.(array(Secret.decoder));
-  });
-
 module RecoveryPhrasesStorage =
   LocalStorage.Make({
     type t = array(SecureStorage.Cipher.encryptedData);
@@ -150,6 +140,36 @@ module RecoveryPhrasesStorage =
     let encoder = Json.Encode.(array(SecureStorage.Cipher.encoder));
     let decoder = Json.Decode.(array(SecureStorage.Cipher.decoder));
   });
+
+module SecretStorage = {
+  include LocalStorage.Make({
+    type t = array(Secret.t);
+
+    let key = "secrets";
+
+    let encoder = Json.Encode.(array(Secret.encoder));
+    let decoder = Json.Decode.(array(Secret.decoder));
+  });
+
+  let set = (~config: ConfigContext.env, storage: t) => {
+    let _ =
+      config.backupFile
+      ->Option.map(path =>
+          BackupFile.make(
+            ~derivationPaths=
+              storage->Array.keepMap(secret =>
+                secret.kind == Mnemonics ? Some(secret.derivationPath) : None
+              ),
+            ~recoveryPhrases=
+              RecoveryPhrasesStorage.get()->Result.getWithDefault([||]),
+          )
+          ->BackupFile.save(path)
+          ->Promise.ignore
+        );
+
+    set(storage);
+  };
+};
 
 module Aliases = {
   type t = array((string, PublicKeyHash.t));
@@ -242,7 +262,7 @@ module Accounts = {
     let%Res secrets = secrets(~config);
 
     if (secrets[index] = secret) {
-      SecretStorage.set(secrets)->Ok;
+      SecretStorage.set(~config, secrets)->Ok;
     } else {
       Error(CannotUpdateSecret(index));
     };
@@ -318,7 +338,7 @@ module Accounts = {
           ? {...secret, masterPublicKey: None} : secret
       );
 
-    SecretStorage.set(secrets)->Promise.ok;
+    SecretStorage.set(~config, secrets)->Promise.ok;
   };
 
   let deleteSecretAt = (~config, index) => {
@@ -348,7 +368,7 @@ module Accounts = {
         ~remove=1,
         ~add=[||],
       );
-    SecretStorage.set(secretsBefore);
+    SecretStorage.set(~config, secretsBefore);
 
     switch (recoveryPhrases()) {
     | Ok(recoveryPhrases) =>
@@ -398,7 +418,8 @@ module Accounts = {
     };
 
     let runLegacy = (~recoveryPhrase, ~password) => {
-      let%Await encryptedSecretKey = HD.edeskLegacy(recoveryPhrase, ~password);
+      let%Await encryptedSecretKey =
+        HD.edeskLegacy(recoveryPhrase, ~password);
 
       let%Await signer =
         ReTaquitoSigner.MemorySigner.create(
@@ -646,7 +667,7 @@ module Accounts = {
       secrets(~config)
       ->Result.getWithDefault([||])
       ->Array.concat([|secret|]);
-    SecretStorage.set(secrets);
+    SecretStorage.set(~config, secrets);
   };
 
   let registerRecoveryPhrase = recoveryPhrase =>
@@ -718,7 +739,9 @@ module Accounts = {
     let%AwaitMap () =
       backupPhraseConcat
       ->SecureStorage.Cipher.encrypt(password)
-      ->Promise.mapOk(registerRecoveryPhrase);
+      ->Promise.mapOk(recoveryPhrase =>
+          registerRecoveryPhrase(recoveryPhrase)
+        );
 
     registerSecret(
       ~config,
@@ -730,6 +753,36 @@ module Accounts = {
       ~masterPublicKey=legacyAddress,
     );
   };
+
+  let restoreFromBackupFile =
+      (~config: ConfigContext.env, ~backupFile, ~password, ()) => {
+    let%Await backupFile = BackupFile.read(backupFile);
+    Array.zip(backupFile.recoveryPhrases, backupFile.derivationPaths)
+    ->Promise.reducei(
+        Ok(), (_, (encryptedBackupPhrase, derivationPath), index) =>
+        encryptedBackupPhrase
+        ->SecureStorage.Cipher.decrypt(password)
+        ->Promise.flatMapOk(backupPhrase =>
+            restore(
+              ~config,
+              ~backupPhrase=backupPhrase->Js.String2.split(" "),
+              ~name="Secret " ++ index->string_of_int,
+              ~derivationPath,
+              ~password,
+              (),
+            )
+          )
+      )
+    ->Promise.tapError(_
+        // delete everything if an error occured
+        =>
+          System.Client.resetDir(config.baseDir())
+          ->Promise.tapOk(_ => LocalStorage.clear())
+        );
+  };
+
+  let forceBackup = (~config: ConfigContext.env) =>
+    SecretStorage.get()->Result.map(secrets => SecretStorage.set(~config, secrets));
 
   let importMnemonicKeys = (~config, ~accounts, ~password, ~index, ()) => {
     let importLegacyKey = (basename, encryptedSecret) => {
@@ -858,6 +911,13 @@ module Accounts = {
         ~ledgerMasterKey,
       );
 
+    let%AwaitMap () =
+      name
+      ->SecureStorage.Cipher.encrypt("")
+      ->Promise.mapOk(recoveryPhrase =>
+          registerRecoveryPhrase(recoveryPhrase)
+        );
+
     registerSecret(
       ~config,
       ~name,
@@ -867,11 +927,6 @@ module Accounts = {
       ~addresses,
       ~masterPublicKey=None,
     );
-
-    let%AwaitMap () =
-      name
-      ->SecureStorage.Cipher.encrypt("")
-      ->Promise.mapOk(registerRecoveryPhrase);
 
     addresses;
   };

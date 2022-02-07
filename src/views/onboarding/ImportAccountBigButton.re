@@ -33,7 +33,7 @@ let make = (~style=?) => {
   <>
     <BigButton
       title=I18n.Btn.import_secret
-      icon=Icons.ArrowDown.build
+      icon=Icons.Recovery.build
       onPress
       ?style
     />

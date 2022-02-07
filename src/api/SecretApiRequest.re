@@ -117,6 +117,27 @@ let useCreateWithMnemonics =
     ~kind=Logs.Secret,
   );
 
+type createFromBackupInput = {
+  backupFile: System.Path.t,
+  password: string,
+};
+
+let useCreateFromBackupFile =
+  ApiRequest.useSetter(
+    ~logOk=_ => I18n.account_created,
+    ~keepError=keepNonFormErrors,
+    ~set=
+      (~config, {backupFile, password}) => {
+        WalletAPI.Accounts.restoreFromBackupFile(
+          ~config,
+          ~backupFile,
+          ~password,
+          (),
+        )
+      },
+    ~kind=Logs.Secret,
+  );
+
 type ledgerImportInput = {
   name: string,
   derivationPath: DerivationPath.Pattern.t,

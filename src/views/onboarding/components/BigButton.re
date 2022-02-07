@@ -79,6 +79,8 @@ let make = (~style as styleFromProp=?, ~title, ~icon: Icons.builder, ~onPress) =
          ~style=?None,
        )}
     </View>
-    <Typography.Subtitle2> title->React.string </Typography.Subtitle2>
+    <Typography.Subtitle2 style=Style.(style(~textAlign=`center, ~paddingHorizontal=32.->dp, ()))>
+      title->React.string
+    </Typography.Subtitle2>
   </TouchableOpacity>;
 };
