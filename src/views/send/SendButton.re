@@ -47,7 +47,7 @@ let styles =
   );
 
 [@react.component]
-let make = () => {
+let make = (~account) => {
   let theme = ThemeContext.useTheme();
 
   let (visibleModal, openAction, closeAction) =
@@ -89,7 +89,7 @@ let make = () => {
       </ThemedPressable.Primary>
     </View>
     <ModalAction visible=visibleModal onRequestClose=closeAction>
-      <SendView closeAction />
+      <SendView account closeAction />
     </ModalAction>
   </>;
 };

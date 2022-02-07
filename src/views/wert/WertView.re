@@ -26,38 +26,9 @@
 open ReactNative;
 
 module Form = {
-  let defaultInit = (account: option(Account.t)) =>
-    WertForm.StateLenses.{recipient: account};
-
-  let use = (~initValues=?, initAccount, onSubmit) => {
-    WertForm.use(
-      ~schema={
-        WertForm.Validation.(
-          Schema(
-            custom(values => values.recipient->FormUtils.notNone, Recipient),
-          )
-        );
-      },
-      ~onSubmit=
-        f => {
-          onSubmit(f);
-          None;
-        },
-      ~initialState=
-        initValues->Option.getWithDefault(defaultInit(initAccount)),
-      ~i18n=FormUtils.i18n,
-      (),
-    );
-  };
-
   module View = {
-    open WertForm;
-
     [@react.component]
-    let make = (~form, ~loading) => {
-      let formFieldsAreValids =
-        FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
-
+    let make = (~loading, ~account, ~setAccount, ~submit) => {
       <>
         <View style=FormStyles.header>
           <Typography.Overline1>
@@ -66,16 +37,14 @@ module Form = {
         </View>
         <FormGroupAccountSelector
           label=I18n.Label.send_recipient
-          value={form.values.recipient}
-          handleChange={form.handleChange(Recipient)}
-          error={form.getFieldError(Field(Recipient))}
+          value=account
+          handleChange={a => setAccount(_ => a)}
         />
         <View style=FormStyles.verticalFormAction>
           <Buttons.SubmitPrimary
             text=I18n.Btn.buy_tez
-            onPress={_ => form.submit()}
+            onPress={_ => submit(account.address)}
             loading
-            disabledLook={!formFieldsAreValids}
           />
         </View>
       </>;
@@ -94,21 +63,13 @@ let stepToString = step =>
   };
 
 [@react.component]
-let make = (~submit, ~closeAction) => {
-  let account = StoreContext.SelectedAccount.useGet();
+let make = (~account, ~submit, ~closeAction) => {
+  let (account, setAccount) = React.useState(() => account);
 
   let (modalStep, setModalStep) =
     React.useState(_ =>
       WertDisclaimer.needSigning() ? Disclaimer : SelectRecipient
     );
-
-  let onSubmit = ({state, _}: WertForm.onSubmitAPI) =>
-    switch (state.values.recipient) {
-    | Some(account) => submit(account.address)
-    | None => ()
-    };
-
-  let form: WertForm.api = Form.use(account, onSubmit);
 
   let title =
     switch (modalStep) {
@@ -129,7 +90,7 @@ let make = (~submit, ~closeAction) => {
            }
          }
        />
-     | SelectRecipient => <Form.View form loading=false />
+     | SelectRecipient => <Form.View account setAccount submit loading=false />
      }}
   </ModalFormView>;
 };

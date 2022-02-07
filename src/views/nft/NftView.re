@@ -183,7 +183,7 @@ module Component = {
       );
 
     <View style={styles##listContent}>
-      <NftHeaderView headline>
+      <NftHeaderView account headline>
         <ButtonAction
           style={Style.style(~marginTop="10px", ())}
           icon
@@ -207,7 +207,7 @@ module Component = {
         syncIcon=Icons.SyncNFT.build
       />
       {switch (mode) {
-       | Gallery => <NftGalleryView nfts />
+       | Gallery => <NftGalleryView account nfts />
        | Collection => <NftCollectionView account nfts />
        }}
     </View>;
@@ -215,11 +215,6 @@ module Component = {
 };
 
 [@react.component]
-let make = () => {
-  let account = StoreContext.SelectedAccount.useGet();
-
-  switch (account) {
-  | Some(account) => <Component account />
-  | None => <NftEmptyView />
-  };
+let make = (~account) => {
+  <Component account />;
 };

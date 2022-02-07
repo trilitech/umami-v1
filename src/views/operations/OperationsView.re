@@ -43,13 +43,14 @@ module Component = {
     let operationsReload = StoreContext.Operations.useResetAll();
     let renderItem = (currentLevel, operation: Operation.Read.t) =>
       <OperationRowItem
+        account
         key=Operation.Read.(operation->uniqueId->uniqueIdToString)
         operation
         currentLevel
       />;
 
     <View style=styles##container>
-      <OperationsHeaderView>
+      <OperationsHeaderView account>
         <RefreshButton
           onRefresh=operationsReload
           loading={operationsRequest->ApiRequest.isLoading}
@@ -73,24 +74,7 @@ module Component = {
   };
 };
 
-module Placeholder = {
-  [@react.component]
-  let make = () => {
-    <View style=styles##container>
-      <OperationsHeaderView>
-        <RefreshButton onRefresh={() => ()} loading=true />
-      </OperationsHeaderView>
-      <LoadingView />
-    </View>;
-  };
-};
-
 [@react.component]
-let make = () => {
-  let account = StoreContext.SelectedAccount.useGet();
-
-  switch (account) {
-  | Some(account) => <Component account />
-  | None => <Placeholder />
-  };
+let make = (~account) => {
+  <Component account />;
 };

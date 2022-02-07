@@ -96,7 +96,7 @@ module BuyTezButton = {
     );
 
   [@react.component]
-  let make = (~showView) => {
+  let make = (~account, ~showView) => {
     let theme = ThemeContext.useTheme();
 
     let (visibleModal, openAction, closeAction) =
@@ -119,7 +119,7 @@ module BuyTezButton = {
         />
       </View>
       <ModalAction visible=visibleModal onRequestClose=closeAction>
-        <WertView submit=buyTez closeAction />
+        <WertView account submit=buyTez closeAction />
       </ModalAction>
     </>;
   };

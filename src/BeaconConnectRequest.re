@@ -119,7 +119,7 @@ module ErrorView = {
 };
 
 [@react.component]
-let make = () => {
+let make = (~account) => {
   let settings = ConfigContext.useContent();
   let settingsRef = React.useRef(settings);
 
@@ -199,7 +199,11 @@ let make = () => {
       {requestData->ReactUtils.mapOpt(
          fun
          | (_, Ok(PermissionRequest(r))) =>
-           <BeaconPermissionView permissionRequest=r closeAction=closeModal />
+           <BeaconPermissionView
+             account
+             permissionRequest=r
+             closeAction=closeModal
+           />
 
          | (Some(sourceAccount), Ok(OperationRequest(r)))
              when r->checkOnlyTransaction =>

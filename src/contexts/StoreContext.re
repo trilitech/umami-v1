@@ -950,7 +950,7 @@ module Secrets = {
 };
 
 module SelectedAccount = {
-  let useGet = () => {
+  let useGetAtInit = () => {
     let store = useStoreContext();
     let accounts = Accounts.useGetAll();
 

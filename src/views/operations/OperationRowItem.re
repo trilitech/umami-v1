@@ -276,21 +276,18 @@ module NFTAmount = {
 
 let amount =
     (
-      account,
+      account: Account.t,
       transaction: Operation.Transaction.t,
       tokens,
       op: Operation.Read.t,
     ) => {
   let colorStyle =
-    account->Option.map((account: Account.t) =>
-      account.address
-      == transaction->Operation.Transaction.Accessor.destination
-        ? `positive : `negative
-    );
+    account.address == transaction->Operation.Transaction.Accessor.destination
+      ? `positive : `negative;
 
-  let sign = colorStyle == Some(`positive) ? "+" : "-";
+  let sign = colorStyle == `positive ? "+" : "-";
   <CellAmount>
-    {<Typography.Body1 ?colorStyle>
+    {<Typography.Body1 colorStyle>
        {switch (transaction) {
         | Tez(transaction) =>
           I18n.tez_op_amount(sign, transaction.amount->Tez.toString)
@@ -317,8 +314,7 @@ let amount =
 
 [@react.component]
 let make =
-  memo((~operation: Operation.Read.t, ~currentLevel) => {
-    let account = StoreContext.SelectedAccount.useGet();
+  memo((~account: Account.t, ~operation: Operation.Read.t, ~currentLevel) => {
     let aliases = StoreContext.Aliases.useGetAll();
     let tokens = StoreContext.Tokens.useGetAll();
     let config = ConfigContext.useContent();

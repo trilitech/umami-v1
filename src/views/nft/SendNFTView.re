@@ -105,9 +105,8 @@ module Form = {
           <FormGroupAccountSelector
             disabled=true
             label=I18n.Label.send_sender
-            value={Some(sender)}
+            value=sender
             handleChange={_ => ()}
-            error=None
           />
           <FormGroupNFTView nft />
           <FormGroupContactSelector

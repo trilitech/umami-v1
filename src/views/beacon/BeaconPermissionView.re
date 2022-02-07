@@ -41,61 +41,41 @@ let styles =
 [@react.component]
 let make =
     (
+      ~account: Account.t,
       ~permissionRequest: ReBeacon.Message.Request.permissionRequest,
       ~closeAction,
     ) => {
   let getAccountPublicKey = AccountApiRequest.useGetPublicKey();
-  let initAccount = StoreContext.SelectedAccount.useGet();
+
+  let (account, setAccount) = React.useState(() => account);
 
   let updatePermissions = StoreContext.Beacon.Permissions.useResetAll();
 
   let (client, _) = StoreContext.Beacon.useClient();
 
-  let form =
-    BeaconPermissionForm.use(
-      ~schema={
-        BeaconPermissionForm.Validation.(
-          Schema(
-            custom(values => values.account->FormUtils.notNone, Account),
+  let submit = () =>
+    getAccountPublicKey(account)
+    ->Promise.getOk(publicKey => {
+        client
+        ->Promise.fromOption(
+            ~error=Errors.Generic(I18n.Errors.beacon_client_not_created),
           )
-        );
-      },
-      ~onSubmit=
-        ({state}) => {
-          switch (state.values.account) {
-          | Some(account) =>
-            getAccountPublicKey(account)
-            ->Promise.getOk(publicKey => {
-                client
-                ->Promise.fromOption(
-                    ~error=
-                      Errors.Generic(I18n.Errors.beacon_client_not_created),
-                  )
-                ->Promise.flatMapOk(client =>
-                    client->ReBeacon.WalletClient.respond(
-                      `PermissionResponse({
-                        type_: `permission_response,
-                        id: permissionRequest.id,
-                        network: permissionRequest.network,
-                        scopes: permissionRequest.scopes,
-                        publicKey,
-                      }),
-                    )
-                  )
-                ->Promise.getOk(_ => {
-                    updatePermissions();
-                    closeAction();
-                  })
-              })
-          | None => ()
-          };
-
-          None;
-        },
-      ~initialState={account: initAccount},
-      ~i18n=FormUtils.i18n,
-      (),
-    );
+        ->Promise.flatMapOk(client =>
+            client->ReBeacon.WalletClient.respond(
+              `PermissionResponse({
+                type_: `permission_response,
+                id: permissionRequest.id,
+                network: permissionRequest.network,
+                scopes: permissionRequest.scopes,
+                publicKey,
+              }),
+            )
+          )
+        ->Promise.getOk(_ => {
+            updatePermissions();
+            closeAction();
+          })
+      });
 
   let onAbort = _ => {
     client
@@ -133,16 +113,12 @@ let make =
       </View>
       <FormGroupAccountSelector
         label=I18n.Label.beacon_account
-        value={form.values.account}
-        handleChange={form.handleChange(Account)}
-        error={form.getFieldError(Field(Account))}
+        value=account
+        handleChange={a => setAccount(_ => a)}
       />
       <View style=styles##formActionSpaceBetween>
         <Buttons.SubmitSecondary text=I18n.Btn.deny onPress=onAbort />
-        <Buttons.SubmitPrimary
-          text=I18n.Btn.allow
-          onPress={_ => form.submit()}
-        />
+        <Buttons.SubmitPrimary text=I18n.Btn.allow onPress={_ => submit()} />
       </View>
     </View>
   </ModalTemplate.Form>;
