@@ -615,6 +615,15 @@ module Errors = {
       "Error when parsing Micheline%s",
       e->Option.mapDefault("", m => "with message: " ++ m),
     );
+  let unknown_version = (current, expected) =>
+    p("Unknown version %s, while %s expected", current, expected);
+  let version_not_in_bound = (lowest, highest, version) =>
+    p(
+      "Version %s is not in the range of %s and %s",
+      version,
+      lowest,
+      highest,
+    );
 };
 
 module Csv = {
