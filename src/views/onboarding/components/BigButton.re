@@ -30,7 +30,7 @@ let styles =
     StyleSheet.create({
       "button":
         style(
-          ~height=203.->dp,
+          ~height=256.->dp,
           ~maxWidth=424.->dp,
           ~justifyContent=`center,
           ~alignItems=`center,
@@ -46,7 +46,8 @@ let styles =
           ~height=60.->dp,
           ~justifyContent=`center,
           ~alignItems=`center,
-          ~marginBottom=28.->dp,
+          ~marginTop=64.->dp,
+          ~marginBottom=48.->dp,
           ~borderRadius=30.,
           (),
         ),
@@ -79,7 +80,16 @@ let make = (~style as styleFromProp=?, ~title, ~icon: Icons.builder, ~onPress) =
          ~style=?None,
        )}
     </View>
-    <Typography.Subtitle2 style=Style.(style(~textAlign=`center, ~paddingHorizontal=32.->dp, ()))>
+    <Typography.Subtitle2
+      style=Style.(
+        style(
+          ~textAlign=`center,
+          ~height=40.->dp,
+          ~marginBottom=44.->dp,
+          ~paddingHorizontal=32.->dp,
+          (),
+        )
+      )>
       title->React.string
     </Typography.Subtitle2>
   </TouchableOpacity>;
