@@ -24,7 +24,7 @@
 /*****************************************************************************/
 
 module TransactionParameters = {
-  type entrypoint = ReTaquitoTypes.Transfer.Parameters.entrypoint;
+  type entrypoint = ReTaquitoTypes.Transfer.Entrypoint.name;
 
   // This type cannot be build and destructed except from bindings modules
   // ReBeacon and ReTaquito, hence its abstract nature.
@@ -54,7 +54,7 @@ module TransactionParameters = {
       };
   };
 
-  type t = ReTaquitoTypes.Transfer.Parameters.t;
+  type t = ReTaquitoTypes.Transfer.Entrypoint.param;
 };
 
 type transferEltOptions = {

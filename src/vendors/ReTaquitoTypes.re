@@ -56,6 +56,17 @@ module RPCClient = {
 };
 
 module Operation = {
+  type kind;
+
+  [@bs.module "@taquito/taquito"] [@bs.scope "OpKind"]
+  external transactionKind: kind = "TRANSACTION";
+
+  [@bs.module "@taquito/taquito"] [@bs.scope "OpKind"]
+  external delegationKind: kind = "DELEGATION";
+
+  [@bs.module "@taquito/taquito"] [@bs.scope "OpKind"]
+  external originationKind: string = "ORIGINATION";
+
   type field;
   type t;
 
@@ -94,16 +105,16 @@ module Storage = {
 };
 
 module Transfer = {
-  module Parameters = {
-    type entrypoint = string;
-    type t = {
-      entrypoint,
+  module Entrypoint = {
+    type name = string;
+    type param = {
+      entrypoint: name,
       value: Micheline.t,
     };
   };
 
   type transferParams = {
-    kind: string,
+    kind: Operation.kind,
     [@bs.as "to"]
     to_: PublicKeyHash.t,
     source: PublicKeyHash.t,
@@ -112,7 +123,7 @@ module Transfer = {
     gasLimit: option(int),
     storageLimit: option(int),
     mutez: option(bool),
-    parameter: option(Parameters.t),
+    parameter: option(Entrypoint.param),
   };
 
   type sendParams = {
@@ -126,7 +137,7 @@ module Transfer = {
 
 module Delegate = {
   type delegateParams = {
-    kind: string,
+    kind: Operation.kind,
     source: PublicKeyHash.t,
     delegate: option(PublicKeyHash.t),
     fee: option(ReBigNumber.t),

@@ -219,7 +219,7 @@ module Delegate = {
 
       let%Await res =
         tk.estimate
-        ->Toolkit.Estimation.batchDelegation([|sd|])
+        ->Toolkit.Estimation.(batch([|sd->fromDelegateParams|]))
         ->ReTaquitoError.fromPromiseParsed;
 
       let%Await (res, reveal) =
@@ -456,7 +456,7 @@ module Transfer = {
   let makeTransferMichelsonParameter = (~entrypoint, ~parameter) =>
     switch (entrypoint, parameter) {
     | (Some(a), Some(b)) =>
-      Some(ReTaquitoTypes.Transfer.Parameters.{entrypoint: a, value: b})
+      Some(ReTaquitoTypes.Transfer.Entrypoint.{entrypoint: a, value: b})
     | _ => None
     };
 
@@ -617,7 +617,11 @@ module Transfer = {
     tk->Toolkit.setProvider(provider);
     let%Await txs =
       endpoint->transfersBuilder(source)->Promise.map(Result.collect);
-    let txs = txs->List.map(tr => {...tr, kind: opKindTransaction});
+    let txs =
+      txs->List.map(tr =>
+        {...tr, kind: ReTaquitoTypes.Operation.transactionKind}
+      );
+
     let batch = tk.contract->Toolkit.Batch.make;
     txs
     ->List.reduce(batch, Toolkit.Batch.withTransfer)
@@ -668,10 +672,17 @@ module Transfer = {
       let provider = Toolkit.{signer: signer};
       tk->Toolkit.setProvider(provider);
 
-      let inject = transfers =>
+      let inject = transfers => {
+        let transfers =
+          transfers->Array.map(tr =>
+            {...tr, kind: ReTaquitoTypes.Operation.transactionKind}
+            ->Toolkit.Estimation.fromTransferParams
+          );
+
         tk.estimate
         ->Toolkit.Estimation.batch(transfers)
         ->ReTaquitoError.fromPromiseParsed;
+      };
 
       let%Ft res = inject(transfers);
 
@@ -702,10 +713,7 @@ module Transfer = {
       let%Await transfers =
         endpoint->transfersBuilder(source)->Promise.map(Result.collect);
 
-      let transfers =
-        transfers
-        ->List.map(tr => {...tr, kind: opKindTransaction})
-        ->List.toArray;
+      let transfers = transfers->List.toArray;
 
       let%Await res = inject(~endpoint, ~publicKey, ~source, ~transfers);
 

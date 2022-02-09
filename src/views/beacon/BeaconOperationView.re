@@ -315,7 +315,10 @@ module Transfer =
                   gasLimit: None,
                   storageLimit: None,
                   parameter:
-                    partialTransaction.parameters->Option.map(a => a.value),
+                    partialTransaction.parameters
+                    ->Option.map(a =>
+                        a.ReTaquitoTypes.Transfer.Entrypoint.value
+                      ),
                   entrypoint:
                     partialTransaction.parameters
                     ->Option.map(a => a.entrypoint),
