@@ -295,8 +295,8 @@ module EditionView = {
   let make = (~account, ~aliases, ~initValues, ~onSubmit, ~index, ~loading) => {
     let token =
       switch (initValues.SendForm.amount) {
-      | Transfer.Currency.Tez(_) => None
-      | Token(_, t) => Some(t)
+      | Transfer.Amount.Tez(_) => None
+      | Token({token}) => Some(token)
       };
 
     let (token, _) as tokenState = React.useState(() => token);

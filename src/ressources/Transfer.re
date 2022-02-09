@@ -25,28 +25,35 @@
 
 open ProtocolOptions;
 
-module Currency = {
+module Amount = {
+  type token = {
+    amount: TokenRepr.Unit.t,
+    token: TokenRepr.t,
+  };
+
   type t =
     | Tez(Tez.t)
-    | Token(TokenRepr.Unit.t, TokenRepr.t);
+    | Token(token);
 
   let makeTez = t => t->Tez;
-  let makeToken = (~amount, ~token) => Token(amount, token);
+  let makeToken = (~amount, ~token) => Token({amount, token});
 
   let toInt64 =
     fun
     | Tez(tez) => tez->Tez.toInt64
-    | Token(curr, _) => curr->TokenRepr.Unit.toBigNumber->ReBigNumber.toInt64;
+    | Token({amount}) =>
+      amount->TokenRepr.Unit.toBigNumber->ReBigNumber.toInt64;
 
   let toBigNumber =
     fun
     | Tez(tez) => tez->Tez.toInt64->ReBigNumber.fromInt64
-    | Token(curr, _) => curr->TokenRepr.Unit.toBigNumber;
+    | Token({amount}) => amount->TokenRepr.Unit.toBigNumber;
 
   let toString =
     fun
     | Tez(tez) => tez->Tez.toString
-    | Token(curr, t) => curr->TokenRepr.Unit.toStringDecimals(t.decimals);
+    | Token({amount, token}) =>
+      amount->TokenRepr.Unit.toStringDecimals(token.decimals);
 
   let getTez =
     fun
@@ -55,16 +62,19 @@ module Currency = {
 
   let getToken =
     fun
-    | Token(t, c) => Some((t, c))
+    | Token({amount, token}) => Some((amount, token))
     | _ => None;
 
   let getTokenExn = t => t->getToken->Option.getExn;
 
-  let showAmount =
+  let show =
     fun
     | Tez(v) => I18n.tez_amount(v->Tez.toString)
-    | Token(v, t) =>
-      I18n.amount(v->TokenRepr.Unit.toStringDecimals(t.decimals), t.symbol);
+    | Token({amount, token}) =>
+      I18n.amount(
+        amount->TokenRepr.Unit.toStringDecimals(token.decimals),
+        token.symbol,
+      );
 
   let compareCurrencies = (v1, v2) => {
     switch (v1, v2) {
@@ -74,19 +84,19 @@ module Currency = {
     };
   };
 
-  let reduceAmounts = l =>
+  let reduce = l =>
     l
     ->List.reduceGroupBy(
         ~group=
           fun
           | Tez(_) => None
-          | Token(_, t) => Some(t),
+          | Token({token}) => Some(token),
         ~map=(acc, v) =>
         switch (acc, v) {
         | (None, v) => v
         | (Some(Tez(acc)), Tez(v)) => Tez(Tez.Infix.(acc + v))
-        | (Some(Token(acc, t)), Token(v, _)) =>
-          Token(TokenRepr.Unit.Infix.(acc + v), t)
+        | (Some(Token({amount: acc, token})), Token({amount})) =>
+          Token({amount: TokenRepr.Unit.Infix.(acc + amount), token})
         | (Some(acc), _) => acc
         }
       )
@@ -96,7 +106,7 @@ module Currency = {
 
 type elt = {
   destination: PublicKeyHash.t,
-  amount: Currency.t,
+  amount: Amount.t,
   tx_options: transferEltOptions,
 };
 
@@ -143,7 +153,7 @@ let makeSingleTezTransferElt =
     ) =>
   makeSingleTransferElt(
     ~destination,
-    ~amount=Currency.makeTez(amount),
+    ~amount=Amount.makeTez(amount),
     ~fee?,
     ~parameter?,
     ~entrypoint?,
@@ -158,7 +168,7 @@ let makeSingleTokenTransferElt =
     (~destination, ~amount, ~token, ~fee=?, ~gasLimit=?, ~storageLimit=?, ()) =>
   makeSingleTransferElt(
     ~destination,
-    ~amount=Currency.makeToken(~amount, ~token),
+    ~amount=Amount.makeToken(~amount, ~token),
     ~fee?,
     ~gasLimit?,
     ~storageLimit?,

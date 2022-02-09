@@ -173,7 +173,7 @@ let make = (~source: Account.t, ~nft: Token.t, ~closeAction) => {
             ->FormUtils.Unsafe.account
             ->FormUtils.Alias.address,
           tx_options: ProtocolOptions.makeTransferEltOptions(),
-          amount: Token(TokenRepr.Unit.one, nft),
+          amount: Token({amount: TokenRepr.Unit.one, token: nft}),
         },
       ],
       options: ProtocolOptions.makeTransferOptions(),

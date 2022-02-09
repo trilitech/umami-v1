@@ -156,11 +156,11 @@ module Base = {
         ~style as styleProp=?,
         ~source,
         ~destinations,
-        ~content: list((string, Belt.List.t(Transfer.Currency.t))),
+        ~content: list((string, Belt.List.t(Transfer.Amount.t))),
       ) => {
     let content: list((string, Belt.List.t(string))) =
       content->List.map(((field, amounts)) =>
-        (field, amounts->List.map(Transfer.Currency.showAmount))
+        (field, amounts->List.map(Transfer.Amount.show))
       );
 
     <View
@@ -223,18 +223,16 @@ module Transactions = {
       (transaction: Transfer.t, dryRun: Protocol.Simulation.results) => {
     let feeSum = dryRun.simulations->Protocol.Simulation.sumFees;
 
-    let partialFee = (I18n.Label.fee, [Transfer.Currency.Tez(feeSum)]);
+    let partialFee = (I18n.Label.fee, [Transfer.Amount.Tez(feeSum)]);
 
     let revealFee =
       dryRun.revealSimulation
       ->Option.map(({fee}) =>
-          (I18n.Label.implicit_reveal_fee, [Transfer.Currency.Tez(fee)])
+          (I18n.Label.implicit_reveal_fee, [Transfer.Amount.Tez(fee)])
         );
 
     let totals =
-      transaction.transfers
-      ->List.map(t => t.amount)
-      ->Transfer.Currency.reduceAmounts;
+      transaction.transfers->List.map(t => t.amount)->Transfer.Amount.reduce;
 
     let subtotals = (I18n.Label.summary_subtotal, totals);
 
@@ -248,7 +246,7 @@ module Transactions = {
       (
         noTokens ? I18n.Label.summary_total : I18n.Label.summary_total_tez,
         [
-          Transfer.Currency.Tez(
+          Transfer.Amount.Tez(
             Tez.Infix.(sub + dryRun->Protocol.Simulation.getTotalFees),
           ),
         ],
@@ -314,19 +312,17 @@ module Delegate = {
     let revealFee =
       dryRun.revealSimulation
       ->Option.map(({fee}) =>
-          (I18n.Label.implicit_reveal_fee, [Transfer.Currency.Tez(fee)])
+          (I18n.Label.implicit_reveal_fee, [Transfer.Amount.Tez(fee)])
         );
 
     let fee = (
       I18n.Label.fee,
-      [
-        Transfer.Currency.Tez(dryRun.simulations->Protocol.Simulation.sumFees),
-      ],
+      [Transfer.Amount.Tez(dryRun.simulations->Protocol.Simulation.sumFees)],
     );
 
     let total = (
       I18n.Label.summary_total,
-      [Transfer.Currency.Tez(dryRun->Protocol.Simulation.getTotalFees)],
+      [Transfer.Amount.Tez(dryRun->Protocol.Simulation.getTotalFees)],
     );
 
     [fee, ...revealFee->Option.mapWithDefault([total], r => [r, total])];
@@ -363,19 +359,17 @@ module Originate = {
     let revealFee =
       dryRun.revealSimulation
       ->Option.map(({fee}) =>
-          (I18n.Label.implicit_reveal_fee, [Transfer.Currency.Tez(fee)])
+          (I18n.Label.implicit_reveal_fee, [Transfer.Amount.Tez(fee)])
         );
 
     let fee = (
       I18n.Label.fee,
-      [
-        Transfer.Currency.Tez(dryRun.simulations->Protocol.Simulation.sumFees),
-      ],
+      [Transfer.Amount.Tez(dryRun.simulations->Protocol.Simulation.sumFees)],
     );
 
     let total = (
       I18n.Label.summary_total,
-      [Transfer.Currency.Tez(dryRun->Protocol.Simulation.getTotalFees)],
+      [Transfer.Amount.Tez(dryRun->Protocol.Simulation.getTotalFees)],
     );
 
     [fee, ...revealFee->Option.mapWithDefault([total], r => [r, total])];

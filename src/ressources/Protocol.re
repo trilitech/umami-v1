@@ -110,7 +110,7 @@ let isContractCall = (o, index) =>
     t.transfers
     ->List.get(index)
     ->Option.mapWithDefault(false, t =>
-        t.amount->Transfer.Currency.getToken != None
+        t.amount->Transfer.Amount.getToken != None
         || t.destination->PublicKeyHash.isContract
       )
   | Origination(_) => false

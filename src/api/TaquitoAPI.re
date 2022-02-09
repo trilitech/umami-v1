@@ -488,18 +488,21 @@ module Transfer = {
             ) => {
     switch (txs) {
     | [Transfer.{amount: Tez(_)}, ..._]
-    | [{amount: Token(_, {kind: FA1_2})}, ..._]
+    | [{amount: Token({token: {kind: FA1_2}})}, ..._]
     | [] => (batch, options, txs)
 
-    | [{amount: Token(_, token)}, ..._]
-        when token.address != contractAddress => (
+    | [{amount: Token({token})}, ..._] when token.address != contractAddress => (
         batch,
         options,
         txs,
       )
 
     | [
-        {amount: Token(amount, {kind: FA2(id)}), destination, tx_options},
+        {
+          amount: Token({amount, token: {kind: FA2(id)}}),
+          destination,
+          tx_options,
+        },
         ...txs,
       ] =>
       consolidateFA2Transfers(
@@ -547,7 +550,7 @@ module Transfer = {
 
     | [
         {
-          amount: Token(amount, {kind: FA1_2, address}),
+          amount: Token({amount, token: {kind: FA1_2, address}}),
           destination,
           tx_options,
         },
@@ -566,7 +569,7 @@ module Transfer = {
           (),
         );
       prepareTransfers(fa12Cache, fa2Cache, source, txs, [tx, ...prepared]);
-    | [{amount: Token(_, {kind: FA2(_), address})}, ..._] =>
+    | [{amount: Token({token: {kind: FA2(_), address}})}, ..._] =>
       let (batch, options, txs) =
         consolidateFA2Transfers(
           address,
