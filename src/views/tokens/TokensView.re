@@ -41,7 +41,7 @@ module AddTokenButton = {
 
   [@react.component]
   let make = (~tokens, ~chain=?) => {
-    let (openAction, closeAction, (module Modal)) = ModalAction.useModal();
+    let (openAction, closeAction, wrapModal) = ModalAction.useModal();
     let tooltip =
       chain == None
         ? Some(("add_token_button", I18n.Tooltip.chain_not_connected)) : None;
@@ -57,14 +57,14 @@ module AddTokenButton = {
           primary=true
         />
       </View>
-      <Modal>
-        <TokenAddView
-          action=`Add
-          chain={chain->Option.getWithDefault("")}
-          tokens
-          closeAction
-        />
-      </Modal>
+      {wrapModal(
+         <TokenAddView
+           action=`Add
+           chain={chain->Option.getWithDefault("")}
+           tokens
+           closeAction
+         />,
+       )}
     </>;
   };
 };

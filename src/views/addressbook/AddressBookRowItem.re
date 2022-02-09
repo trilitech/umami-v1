@@ -49,7 +49,7 @@ module AliasDeleteButton = {
 module AliasEditButton = {
   [@react.component]
   let make = (~account: Alias.t) => {
-    let (openAction, closeAction, (module Modal)) = ModalAction.useModal();
+    let (openAction, closeAction, wrapModal) = ModalAction.useModal();
 
     <>
       <IconButton
@@ -60,7 +60,7 @@ module AliasEditButton = {
         icon=Icons.Edit.build
         onPress={_ => openAction()}
       />
-      <Modal> <ContactFormView action={Edit(account)} closeAction /> </Modal>
+      {wrapModal(<ContactFormView action={Edit(account)} closeAction />)}
     </>;
   };
 };

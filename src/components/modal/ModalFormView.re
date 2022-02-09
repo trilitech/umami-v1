@@ -91,9 +91,9 @@ module CloseButton = {
         )
       | Close(_) => (React.null, false, None, (() => ()))
       | Confirm(confirm) =>
-        let (openAction, _, (module Modal)) = modal(~confirm);
+        let (openAction, _, modal) = modal(~confirm);
 
-        (<Modal />, false, None, openAction);
+        (modal(), false, None, openAction);
       };
 
     let onPress = _ => {

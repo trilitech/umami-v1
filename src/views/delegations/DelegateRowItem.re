@@ -62,12 +62,12 @@ module CellAction =
 module DelegateActionButton = {
   [@react.component]
   let make = (~action, ~icon, ~tooltip=?) => {
-    let (openAction, closeAction, (module Modal)) = ModalAction.useModal();
+    let (openAction, closeAction, wrapModal) = ModalAction.useModal();
     let onPress = _ => openAction();
 
     <>
       <IconButton ?tooltip icon size=30. onPress />
-      <Modal> <DelegateView closeAction action /> </Modal>
+      {wrapModal(<DelegateView closeAction action />)}
     </>;
   };
 };

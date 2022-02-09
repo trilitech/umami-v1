@@ -166,7 +166,7 @@ module OffboardButton = {
 
   [@react.component]
   let make = () => {
-    let (openAction, closeAction, (module Modal)) = ModalAction.useModal();
+    let (openAction, closeAction, wrapModal) = ModalAction.useModal();
 
     <>
       <Buttons.SubmitPrimary
@@ -175,7 +175,7 @@ module OffboardButton = {
         onPress={_ => openAction()}
         danger=true
       />
-      <Modal> <OffBoardView closeAction /> </Modal>
+      {wrapModal(<OffBoardView closeAction />)}
     </>;
   };
 };
@@ -240,7 +240,7 @@ module ResetButton = {
 
   [@react.component]
   let make = () => {
-    let (openAction, closeAction, (module Modal)) = ModalAction.useModal();
+    let (openAction, closeAction, wrapModal) = ModalAction.useModal();
 
     <>
       <Buttons.SubmitPrimary
@@ -249,7 +249,7 @@ module ResetButton = {
         onPress={_ => openAction()}
         danger=true
       />
-      <Modal> <ResetView closeAction /> </Modal>
+      {wrapModal(<ResetView closeAction />)}
     </>;
   };
 };

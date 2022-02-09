@@ -41,14 +41,14 @@ module AddContactButton = {
 
   [@react.component]
   let make = () => {
-    let (openAction, closeAction, (module Modal)) = ModalAction.useModal();
+    let (openAction, closeAction, wrapModal) = ModalAction.useModal();
     let onPress = _ => openAction();
 
     <>
       <View style=styles##button>
         <ButtonAction onPress text=I18n.Btn.add_contact icon=Icons.Add.build />
       </View>
-      <Modal> <ContactFormView action=Create closeAction /> </Modal>
+      {wrapModal(<ContactFormView action=Create closeAction />)}
     </>;
   };
 };
