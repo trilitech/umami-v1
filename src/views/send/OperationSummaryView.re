@@ -156,8 +156,8 @@ module Base = {
 module Transactions = {
   let transactionParameters = (~entrypoint, ~parameter) =>
     switch (entrypoint, parameter) {
-    | (Some(entrypoint), Some(parameter)) =>
-      Some(ReTaquitoTypes.Transfer.Parameters.{entrypoint, value: parameter})
+    | (Some(entrypoint), Some(value)) =>
+      Some(ReTaquitoTypes.Transfer.Entrypoint.{entrypoint, value})
     | _ => None
     };
 

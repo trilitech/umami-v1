@@ -208,7 +208,7 @@ module Delegate = {
 
       let%Await res =
         tk.estimate
-        ->Toolkit.Estimation.batchDelegation([|sd|])
+        ->Toolkit.Estimation.(batch([|sd->fromDelegateParams|]))
         ->ReTaquitoError.fromPromiseParsed;
 
       let%Await (res, reveal) =
@@ -346,7 +346,7 @@ module Transfer = {
   let makeTransferMichelsonParameter = (~entrypoint, ~parameter) =>
     switch (entrypoint, parameter) {
     | (Some(a), Some(b)) =>
-      Some(ReTaquitoTypes.Transfer.Parameters.{entrypoint: a, value: b})
+      Some(ReTaquitoTypes.Transfer.Entrypoint.{entrypoint: a, value: b})
     | _ => None
     };
 
@@ -506,7 +506,10 @@ module Transfer = {
     let provider = Toolkit.{signer: signer};
     tk->Toolkit.setProvider(provider);
     let%Await txs = endpoint->transfers(source)->Promise.map(Result.collect);
-    let txs = txs->List.map(tr => {...tr, kind: opKindTransaction});
+    let txs =
+      txs->List.map(tr =>
+        {...tr, kind: ReTaquitoTypes.Operation.transactionKind}
+      );
     let batch = tk.contract->Toolkit.Batch.make;
     txs
     ->List.reduce(batch, Toolkit.Batch.withTransfer)
@@ -540,7 +543,12 @@ module Transfer = {
         endpoint->transfers(source)->Promise.map(Result.collect);
 
       let txs =
-        txs->List.map(tr => {...tr, kind: opKindTransaction})->List.toArray;
+        txs
+        ->List.map(tr =>
+            {...tr, kind: ReTaquitoTypes.Operation.transactionKind}
+            ->Toolkit.Estimation.fromTransferParams
+          )
+        ->List.toArray;
 
       let%Await res =
         tk.estimate
