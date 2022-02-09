@@ -32,7 +32,7 @@ module StateLenses = [%lenses
 ];
 
 type validState = {
-  amount: Transfer.Currency.t,
+  amount: Transfer.Amount.t,
   sender: Account.t,
   recipient: FormUtils.Alias.t,
 };
@@ -40,16 +40,14 @@ type validState = {
 let unsafeExtractValidState = (token, state: StateLenses.state): validState => {
   {
     amount:
-      state.amount
-      ->FormUtils.parseAmount(token)
-      ->FormUtils.Unsafe.getCurrency,
+      state.amount->FormUtils.parseAmount(token)->FormUtils.Unsafe.getAmount,
     sender: state.sender,
     recipient: state.recipient->FormUtils.Unsafe.account,
   };
 };
 
 let toState = (vs: validState): StateLenses.state => {
-  amount: vs.amount->Transfer.Currency.toString,
+  amount: vs.amount->Transfer.Amount.toString,
   sender: vs.sender,
   recipient: vs.recipient->FormUtils.Alias.Valid,
 };
