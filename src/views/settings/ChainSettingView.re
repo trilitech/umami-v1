@@ -187,9 +187,8 @@ module CustomNetworkItem = {
 
     let onPressConfirmDelete = () => {
       deleteCustomNetwork(network);
-      addToast(
-        Logs.info(~origin=Logs.Account, I18n.custom_network_deleted),
-      );
+      addToast(Logs.info(~origin=Logs.Account, I18n.custom_network_deleted));
+      Promise.ok();
     };
     <>
       <View style=styles##spaceBetweenRow>

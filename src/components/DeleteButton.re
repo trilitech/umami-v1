@@ -23,12 +23,23 @@
 /*                                                                           */
 /*****************************************************************************/
 
+let useModal = (~title, ~loading, ~onPressConfirmDelete) =>
+  ModalDialogConfirm.useModal(
+    ~action=onPressConfirmDelete,
+    ~loading,
+    ~title,
+    ~cancelText=I18n.Btn.cancel,
+    ~actionText=I18n.Btn.delete,
+  );
+
 module MenuItem = {
   [@react.component]
   let make =
       (~color=?, ~buttonText, ~modalTitle, ~onPressConfirmDelete, ~request) => {
-    let (visibleModal, openAction, closeAction) =
-      ModalAction.useModalActionState();
+    let loading = request->ApiRequest.isLoading;
+
+    let (openAction, _, (module Modal)) =
+      useModal(~title=modalTitle, ~loading, ~onPressConfirmDelete, ());
 
     let icon = (~color as colorin=?) => {
       let color = [color, colorin]->Option.firstSome;
@@ -41,13 +52,7 @@ module MenuItem = {
 
     <>
       <Menu.Item text=buttonText icon onPress colorStyle=`error />
-      <DeleteConfirmModal
-        title=modalTitle
-        visible=visibleModal
-        onPressConfirmDelete
-        closeAction
-        request
-      />
+      <Modal />
     </>;
   };
 };
@@ -65,8 +70,10 @@ module Generic = {
         ~iconSize=?,
         ~iconSizeRatio=?,
       ) => {
-    let (visibleModal, openAction, closeAction) =
-      ModalAction.useModalActionState();
+    let loading = request->ApiRequest.isLoading;
+
+    let (openAction, _, (module Modal)) =
+      useModal(~title=modalTitle, ~loading, ~onPressConfirmDelete, ());
 
     let icon = (~color as colorin=?) => {
       let color = [color, colorin]->Option.firstSome;
@@ -79,13 +86,7 @@ module Generic = {
 
     <>
       <IconButton tooltip icon onPress size=?iconSize ?iconSizeRatio />
-      <DeleteConfirmModal
-        title=modalTitle
-        visible=visibleModal
-        onPressConfirmDelete
-        closeAction
-        request
-      />
+      <Modal />
     </>;
   };
 };

@@ -25,22 +25,15 @@
 
 [@react.component]
 let make = (~account, ~tooltipKey, ~style=?) => {
-  let (visibleModal, openAction, closeAction) =
-    ModalAction.useModalActionState();
-
-  let onPress = _ => openAction();
-
+  let (openAction, closeAction, (module Modal)) = ModalAction.useModal();
   let onPressCancel = _ => closeAction();
-
   <>
     <IconButton
       tooltip=("QrButton" ++ tooltipKey, I18n.Tooltip.show_qr)
       icon=Icons.Qr.build
-      onPress
+      onPress={_ => openAction()}
       ?style
     />
-    <ModalAction visible=visibleModal onRequestClose=closeAction>
-      <ReceiveView account onPressCancel />
-    </ModalAction>
+    <Modal> <ReceiveView account onPressCancel /> </Modal>
   </>;
 };

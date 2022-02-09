@@ -166,21 +166,16 @@ module OffboardButton = {
 
   [@react.component]
   let make = () => {
-    let (visibleModal, openAction, closeAction) =
-      ModalAction.useModalActionState();
-
-    let onPress = _ => openAction();
+    let (openAction, closeAction, (module Modal)) = ModalAction.useModal();
 
     <>
       <Buttons.SubmitPrimary
         style=styles##button
         text=I18n.Settings.danger_offboard_button
-        onPress
+        onPress={_ => openAction()}
         danger=true
       />
-      <ModalAction visible=visibleModal onRequestClose=closeAction>
-        <OffBoardView closeAction />
-      </ModalAction>
+      <Modal> <OffBoardView closeAction /> </Modal>
     </>;
   };
 };
@@ -245,21 +240,16 @@ module ResetButton = {
 
   [@react.component]
   let make = () => {
-    let (visibleModal, openAction, closeAction) =
-      ModalAction.useModalActionState();
-
-    let onPress = _ => openAction();
+    let (openAction, closeAction, (module Modal)) = ModalAction.useModal();
 
     <>
       <Buttons.SubmitPrimary
         style=styles##button
         text=I18n.Settings.danger_reset_button
-        onPress
+        onPress={_ => openAction()}
         danger=true
       />
-      <ModalAction visible=visibleModal onRequestClose=closeAction>
-        <ResetView closeAction />
-      </ModalAction>
+      <Modal> <ResetView closeAction /> </Modal>
     </>;
   };
 };

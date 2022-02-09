@@ -25,20 +25,19 @@
 
 open ReactNative;
 
-[@react.component]
-let make =
-    (
-      ~visible,
-      ~closeAction,
-      ~action,
-      ~loading=?,
-      ~title,
-      ~subtitle=?,
-      ~cancelText,
-      ~actionText,
-    ) => {
-  let theme = ThemeContext.useTheme();
-  <ModalAction visible onRequestClose=closeAction>
+module Modal = {
+  [@react.component]
+  let make =
+      (
+        ~closeAction,
+        ~action,
+        ~loading=?,
+        ~title,
+        ~subtitle=?,
+        ~cancelText,
+        ~actionText,
+      ) => {
+    let theme = ThemeContext.useTheme();
     <ModalTemplate.Dialog>
       <Typography.Headline style=FormStyles.header>
         title->React.string
@@ -55,6 +54,40 @@ let make =
         />
         <Buttons.Form onPress={_ => action()} text=actionText ?loading />
       </View>
-    </ModalTemplate.Dialog>
-  </ModalAction>;
+    </ModalTemplate.Dialog>;
+  };
+};
+
+let useModal =
+    (~action, ~loading=?, ~title, ~subtitle=?, ~cancelText, ~actionText, ()) => {
+  let (openModal, closeModal, (module M)) = ModalAction.useModal();
+
+  let action = () =>
+    action()
+    ->Promise.get(
+        fun
+        | Ok(_) => closeModal()
+        | Error(_) => (),
+      );
+
+  let wrap: module ModalAction.Modal =
+    (module
+     {
+       [@react.component]
+       let make = () => {
+         <M>
+           <Modal
+             action
+             ?loading
+             title
+             ?subtitle
+             cancelText
+             actionText
+             closeAction=closeModal
+           />
+         </M>;
+       };
+     });
+
+  (openModal, closeModal, wrap);
 };

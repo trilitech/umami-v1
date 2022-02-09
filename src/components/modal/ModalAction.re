@@ -49,69 +49,71 @@ let styles =
     })
   );
 
-[@react.component]
-let make = (~visible, ~onRequestClose: unit => unit=unit => unit, ~children) => {
-  let (visible, animatedOpenValue) =
-    AnimationHooks.useAnimationOpen(visible, onRequestClose);
+module Component = {
+  [@react.component]
+  let make = (~visible, ~onRequestClose: unit => unit=unit => unit, ~children) => {
+    let (visible, animatedOpenValue) =
+      AnimationHooks.useAnimationOpen(visible, onRequestClose);
 
-  let overlayOpacity = animatedOpenValue;
-  let viewOpacity = animatedOpenValue;
-  let viewScale =
-    Animated.Interpolation.(
-      animatedOpenValue->interpolate(
-        config(
-          ~inputRange=[|0., 1.|],
-          ~outputRange=[|0.8, 1.|]->fromFloatArray,
-          ~extrapolate=`clamp,
-          (),
-        ),
-      )
-    );
+    let overlayOpacity = animatedOpenValue;
+    let viewOpacity = animatedOpenValue;
+    let viewScale =
+      Animated.Interpolation.(
+        animatedOpenValue->interpolate(
+          config(
+            ~inputRange=[|0., 1.|],
+            ~outputRange=[|0.8, 1.|]->fromFloatArray,
+            ~extrapolate=`clamp,
+            (),
+          ),
+        )
+      );
 
-  let theme = ThemeContext.useTheme();
+    let theme = ThemeContext.useTheme();
 
-  <Modal
-    animationType=`none
-    transparent=true
-    supportedOrientations=[|
-      Modal.Orientation.portrait,
-      Modal.Orientation.landscape,
-    |]
-    visible
-    onRequestClose>
-    <DocumentContext>
-      <View style=styles##modal>
-        <Animated.View
-          accessibilityRole=`none
-          accessible=true
-          style=Style.(
-            array([|
-              styles##modalOverlay,
-              StyleSheet.absoluteFillObject,
-              style(~backgroundColor=theme.colors.scrim, ()),
-              style(~opacity=overlayOpacity->Animated.StyleProp.float, ()),
-            |])
-          )
-        />
-        <Animated.View
-          style=Style.(
-            array([|
-              styles##modalView,
-              style(
-                ~opacity=viewOpacity->Animated.StyleProp.float,
-                ~transform=[|
-                  scale(~scale=viewScale->Animated.StyleProp.float),
-                |],
-                (),
-              ),
-            |])
-          )
-          pointerEvents=`boxNone>
-          children
-        </Animated.View>
-      </View>
-    </DocumentContext>
-  </Modal>;
+    <Modal
+      animationType=`none
+      transparent=true
+      supportedOrientations=[|
+        Modal.Orientation.portrait,
+        Modal.Orientation.landscape,
+      |]
+      visible
+      onRequestClose>
+      <DocumentContext>
+        <View style=styles##modal>
+          <Animated.View
+            accessibilityRole=`none
+            accessible=true
+            style=Style.(
+              array([|
+                styles##modalOverlay,
+                StyleSheet.absoluteFillObject,
+                style(~backgroundColor=theme.colors.scrim, ()),
+                style(~opacity=overlayOpacity->Animated.StyleProp.float, ()),
+              |])
+            )
+          />
+          <Animated.View
+            style=Style.(
+              array([|
+                styles##modalView,
+                style(
+                  ~opacity=viewOpacity->Animated.StyleProp.float,
+                  ~transform=[|
+                    scale(~scale=viewScale->Animated.StyleProp.float),
+                  |],
+                  (),
+                ),
+              |])
+            )
+            pointerEvents=`boxNone>
+            children
+          </Animated.View>
+        </View>
+      </DocumentContext>
+    </Modal>;
+  };
 };
 
 let useModalActionState = () => {
@@ -121,3 +123,38 @@ let useModalActionState = () => {
 
   (visible, openAction, closeAction);
 };
+
+module type WrapModal = {
+  let makeProps:
+    (~children: 'children, ~key: string=?, unit) => {. "children": 'children};
+
+  let make: {. "children": React.element} => React.element;
+};
+
+module M = {
+  [@react.component]
+  let make = () => {
+    <> </>;
+  };
+};
+
+module type Modal = (module type of M);
+
+let useModal = (~onClose=() => (), ()) => {
+  let (visible, setVisible) = React.useState(_ => false);
+  let openModal = () => setVisible(_ => true);
+  let closeModal = () => setVisible(_ => false);
+
+  let wrap: module WrapModal =
+    (module
+     {
+       [@react.component]
+       let make = (~children) => {
+         <Component visible onRequestClose=onClose> children </Component>;
+       };
+     });
+
+  (openModal, closeModal, wrap);
+};
+
+include Component;
