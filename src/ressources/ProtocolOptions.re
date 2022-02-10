@@ -68,23 +68,7 @@ type transferEltOptions = {
 let txOptionsSet = telt =>
   telt.fee != None || telt.gasLimit != None || telt.storageLimit != None;
 
-type delegationOptions = {
-  fee: option(Tez.t),
-  burnCap: option(Tez.t),
-  forceLowFee: option(bool),
-};
-
-let delegationOptionsSet = (dopt: delegationOptions) => dopt.fee != None;
-
-type originationOptions = {
-  fee: option(Tez.t),
-  burnCap: option(Tez.t),
-  forceLowFee: option(bool),
-};
-
-let originationOptionsSet = (oopt: originationOptions) => oopt.fee != None;
-
-type transferOptions = {
+type operationOptions = {
   burnCap: option(Tez.t),
   forceLowFee: option(bool),
 };
@@ -98,27 +82,7 @@ let makeTransferEltOptions =
   entrypoint,
 };
 
-let makeDelegationOptions:
-  (
-    ~fee: option(Tez.t),
-    ~burnCap: option(Tez.t),
-    ~forceLowFee: option(bool),
-    unit
-  ) =>
-  delegationOptions =
-  (~fee, ~burnCap, ~forceLowFee, ()) => {fee, burnCap, forceLowFee};
-
-let makeOriginationOptions:
-  (
-    ~fee: option(Tez.t),
-    ~burnCap: option(Tez.t),
-    ~forceLowFee: option(bool),
-    unit
-  ) =>
-  originationOptions =
-  (~fee, ~burnCap, ~forceLowFee, ()) => {fee, burnCap, forceLowFee};
-
-let makeTransferOptions = (~burnCap=?, ~forceLowFee=?, ()) => {
+let makeOperationOptions = (~burnCap=?, ~forceLowFee=?, ()) => {
   burnCap,
   forceLowFee,
 };

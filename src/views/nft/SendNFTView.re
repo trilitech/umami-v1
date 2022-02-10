@@ -137,7 +137,7 @@ module Form = {
 
 type step =
   | SendStep
-  | SigningStep(Transfer.t, Protocol.Simulation.results)
+  | SigningStep(Protocol.batch, Protocol.Simulation.results)
   | SubmittedStep(string);
 
 let stepToString = step =>
@@ -157,28 +157,30 @@ let make = (~source: Account.t, ~nft: Token.t, ~closeAction) => {
 
   let sendTransfer = (~operation: Operation.t, signingIntent) => {
     sendOperation({operation, signingIntent})
-    ->Promise.tapOk(hash => {setModalStep(_ => SubmittedStep(hash))});
+    ->Promise.tapOk(result => {
+        setModalStep(_ => SubmittedStep(result.hash))
+      });
   };
 
   let (sign, _setSign) as signOpStep =
     React.useState(() => SignOperationView.SummaryStep);
 
   let onSubmit = ({state, _}: SendNFTForm.onSubmitAPI) => {
-    let transaction = {
-      Transfer.source,
-      transfers: [
-        {
-          destination:
-            state.values.recipient
-            ->FormUtils.Unsafe.account
-            ->FormUtils.Alias.address,
-          tx_options: ProtocolOptions.makeTransferEltOptions(),
-          amount: Token({amount: TokenRepr.Unit.one, token: nft}),
-        },
-      ],
-      options: ProtocolOptions.makeTransferOptions(),
-    };
-    sendOperationSimulate(Protocol.Transaction(transaction))
+    let transfer =
+      Transfer.makeSingleTokenTransferElt(
+        ~destination=
+          state.values.recipient
+          ->FormUtils.Unsafe.account
+          ->FormUtils.Alias.address,
+        ~amount=TokenRepr.Unit.one,
+        ~token=nft,
+        (),
+      );
+
+    let transaction =
+      Operation.makeTransaction(~source, ~transfers=[|transfer|], ());
+
+    sendOperationSimulate(transaction)
     ->Promise.getOk(dryRun => {
         setModalStep(_ => SigningStep(transaction, dryRun))
       });
@@ -221,16 +223,14 @@ let make = (~source: Account.t, ~nft: Token.t, ~closeAction) => {
         {switch (modalStep) {
          | SendStep =>
            <Form.View sender=source nft form aliases loading=loadingSimulate />
-         | SigningStep(transfer, dryRun) =>
+         | SigningStep(operation, dryRun) =>
            <SignOperationView
-             source={transfer.source}
+             source={operation.source}
              state=signingState
              signOpStep
              dryRun
-             operation={Operation.transaction(transfer)}
-             sendOperation={(~operation, signingIntent) =>
-               sendTransfer(~operation, signingIntent)
-             }
+             operation
+             sendOperation=sendTransfer
              loading
            />
          | SubmittedStep(hash) =>

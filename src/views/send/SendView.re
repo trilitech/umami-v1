@@ -102,7 +102,7 @@ let styles =
 
 type step =
   | SendStep
-  | SigningStep(Transfer.t, Protocol.Simulation.results)
+  | SigningStep(Protocol.batch, Protocol.Simulation.results)
   | EditStep(int, SendForm.validState)
   | BatchStep
   | SubmittedStep(string);
@@ -335,11 +335,10 @@ let make = (~account, ~closeAction) => {
 
   let (operationRequest, sendOperation) = StoreContext.Operations.useCreate();
 
-  let sendTransfer =
-      (~transfer: Transfer.t, ~operation: Operation.t, signingIntent) => {
+  let sendOperation = (~operation: Operation.t, signingIntent) => {
     sendOperation({operation, signingIntent})
-    ->Promise.tapOk(hash => {setModalStep(_ => SubmittedStep(hash))})
-    ->Promise.tapOk(_ => {updateAccount(transfer.source.address)});
+    ->Promise.tapOk(result => {setModalStep(_ => SubmittedStep(result.hash))})
+    ->Promise.tapOk(_ => {updateAccount(operation.source.address)});
   };
 
   let (batch, setBatch) = React.useState(_ => []);
@@ -351,7 +350,7 @@ let make = (~account, ~closeAction) => {
 
   let onSubmitBatch = batch => {
     let transaction = SendForm.buildTransaction(batch);
-    sendOperationSimulate(Operation.Simulation.transaction(transaction))
+    sendOperationSimulate(transaction)
     ->Promise.getOk(dryRun => {
         setModalStep(_ => SigningStep(transaction, dryRun))
       });
@@ -383,14 +382,18 @@ let make = (~account, ~closeAction) => {
 
   let onAddCSVList = (csvRows: CSVEncoding.t) => {
     let transformTransfer =
-      csvRows->List.mapReverse(({destination, amount}) => {
-        let formStateValues: SendForm.validState = {
-          amount,
-          sender: form.values.sender,
-          recipient: FormUtils.Alias.Address(destination),
-        };
-        formStateValues;
+      csvRows->List.mapReverse(t => {
+        switch (t.data) {
+        | Transfer.FA2Batch(_) => assert(false)
+        | Transfer.Simple({destination, amount}) =>
+          SendForm.{
+            amount,
+            sender: form.values.sender,
+            recipient: FormUtils.Alias.Address(destination),
+          }
+        }
       });
+
     setBatch(_ => transformTransfer);
   };
 
@@ -525,14 +528,14 @@ let make = (~account, ~closeAction) => {
                loading=loadingSimulate
                aliases
              />;
-           | SigningStep(transfer, dryRun) =>
+           | SigningStep(operation, dryRun) =>
              <SignOperationView
-               source={transfer.source}
+               source={operation.source}
                state
                signOpStep
                dryRun
-               operation={Operation.transaction(transfer)}
-               sendOperation={sendTransfer(~transfer)}
+               operation
+               sendOperation
                loading
              />
            }}

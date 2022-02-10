@@ -53,7 +53,7 @@ let () =
     | _ => None,
   );
 
-type t = list(Transfer.elt);
+type t = list(Transfer.t);
 
 let addr = Encodings.custom(~conv=PublicKeyHash.buildImplicit);
 let contract = Encodings.custom(~conv=PublicKeyHash.buildContract);

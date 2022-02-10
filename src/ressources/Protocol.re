@@ -27,30 +27,27 @@
 open ProtocolOptions;
 
 type delegation = {
-  source: Account.t,
   delegate: option(PublicKeyHash.t),
-  options: delegationOptions,
+  fee: option(Tez.t),
 };
 
 type origination = {
-  source: Account.t,
   balance: option(Tez.t),
   code: ReTaquitoTypes.Code.t,
   storage: ReTaquitoTypes.Storage.t,
   delegate: option(PublicKeyHash.t),
-  options: originationOptions,
+  fee: option(Tez.t),
 };
 
-type t =
+type manager =
   | Delegation(delegation)
   | Origination(origination)
   | Transaction(Transfer.t);
 
-let makeDelegate =
-    (~source, ~delegate, ~fee=?, ~burnCap=?, ~forceLowFee=?, ()) => {
-  source,
-  delegate,
-  options: makeDelegationOptions(~fee, ~burnCap, ~forceLowFee, ()),
+type batch = {
+  source: Account.t,
+  managers: array(manager),
+  options: operationOptions,
 };
 
 let makeOrigination =
@@ -66,11 +63,8 @@ let makeOrigination =
       (),
     ) => {
   source,
-  balance,
-  delegate,
-  code,
-  storage,
-  options: makeOriginationOptions(~fee, ~burnCap, ~forceLowFee, ()),
+  managers: [|Origination({balance, delegate, code, storage, fee})|],
+  options: makeOperationOptions(~burnCap?, ~forceLowFee?, ()),
 };
 
 module Simulation = {
@@ -97,21 +91,19 @@ module Simulation = {
 
 let optionsSet =
   fun
-  | Transaction({transfers: [t]}) =>
-    ProtocolOptions.txOptionsSet(t.tx_options)->Some
-  | Transaction({transfers: _}) => None
-  | Delegation(d) => ProtocolOptions.delegationOptionsSet(d.options)->Some
-  | Origination(o) => ProtocolOptions.originationOptionsSet(o.options)->Some;
+  | Transaction(t) => ProtocolOptions.txOptionsSet(t.options)->Some
+  | Delegation(d) => Some(d.fee != None)
+  | Origination(o) => Some(o.fee != None);
 
-let isContractCall = (o, index) =>
+let isContractCall = o =>
   switch (o) {
+  | Origination(_) => false
   | Delegation(_) => false
   | Transaction((t: Transfer.t)) =>
-    t.transfers
-    ->List.get(index)
-    ->Option.mapWithDefault(false, t =>
-        t.amount->Transfer.Amount.getToken != None
-        || t.destination->PublicKeyHash.isContract
-      )
-  | Origination(_) => false
+    switch (t.data) {
+    | Simple(data) =>
+      data.destination->PublicKeyHash.isContract
+      || data.amount->Transfer.Amount.getToken != None
+    | FA2Batch(_) => true
+    }
   };

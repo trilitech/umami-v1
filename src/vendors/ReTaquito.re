@@ -178,6 +178,8 @@ module Toolkit = {
     external withTransfer: (t, transferParams) => t = "withTransfer";
     [@bs.send]
     external withDelegation: (t, delegateParams) => t = "withDelegation";
+    [@bs.send]
+    external withOrigination: (t, originateParams) => t = "withOrigination";
   };
 
   module Estimation = {
@@ -187,7 +189,7 @@ module Toolkit = {
 
     external fromTransferParams: transferParams => batchParams = "%identity";
     external fromDelegateParams: delegateParams => batchParams = "%identity";
-    external fromOriginationParames: delegateParams => batchParams =
+    external fromOriginationParams: originateParams => batchParams =
       "%identity";
 
     [@bs.send]

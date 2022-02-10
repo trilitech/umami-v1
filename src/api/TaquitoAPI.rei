@@ -50,72 +50,12 @@ module Signer: {
     | Password(string);
 };
 
-module Delegate: {
+module Delegation: {
   /* Retrieve the delegate of a given public key hash, returns None if the
      account is not delegated */
   let get:
     (ReTaquito.endpoint, PublicKeyHash.t) =>
     Promise.t(option(PublicKeyHash.t));
-
-  /* Set the delegate for a given account */
-  let set:
-    (
-      ~endpoint: ReTaquito.endpoint,
-      ~baseDir: System.Path.t,
-      ~source: PublicKeyHash.t,
-      ~delegate: option(PublicKeyHash.t),
-      ~signingIntent: Signer.intent,
-      ~fee: Tez.t=?,
-      unit
-    ) =>
-    Promise.t(ReTaquito.Toolkit.Operation.result);
-
-  module Estimate: {
-    let set:
-      (
-        ~endpoint: ReTaquito.endpoint,
-        ~baseDir: System.Path.t,
-        ~source: PublicKeyHash.t,
-        ~delegate: PublicKeyHash.t=?,
-        ~fee: Tez.t=?,
-        unit
-      ) =>
-      Promise.t(Protocol.Simulation.results);
-  };
-};
-
-module Originate: {
-  /* Originate contract for a given account */
-  let originate:
-    (
-      ~endpoint: ReTaquito.endpoint,
-      ~baseDir: System.Path.t,
-      ~source: PublicKeyHash.t,
-      ~balance: Tez.t=?,
-      ~code: ReTaquitoTypes.Code.t,
-      ~storage: ReTaquitoTypes.Storage.t,
-      ~delegate: PublicKeyHash.t=?,
-      ~signingIntent: Signer.intent,
-      ~fee: Tez.t=?,
-      unit
-    ) =>
-    Promise.t(ReTaquito.Toolkit.Operation.result);
-
-  module Estimate: {
-    let originate:
-      (
-        ~endpoint: ReTaquito.endpoint,
-        ~baseDir: System.Path.t,
-        ~source: PublicKeyHash.t,
-         ~balance: Tez.t=?,
-        ~code: ReTaquitoTypes.Code.t,
-        ~storage: ReTaquitoTypes.Storage.t,
-        ~delegate: PublicKeyHash.t=?,
-        ~fee: Tez.t=?,
-        unit
-      ) =>
-      Promise.t(Protocol.Simulation.results);
-  };
 };
 
 module Operations: {
@@ -147,42 +87,41 @@ module Transfer: {
   /* Generates a list of Taquito-compatible transfers from a list of
      Transfer.elt. The endpoint is necessary to prefetch some contracts that can
      be repeated multiple times. */
-  let prepareTransfers:
-    (list(Transfer.elt), ReTaquito.endpoint, PublicKeyHash.t) =>
-    FutureBase.t(list(Promise.result(ReTaquito.Toolkit.transferParams)));
+  let prepare:
+    (FA12Cache.t, FA2Cache.t, PublicKeyHash.t, Transfer.t) =>
+    Promise.t(ReTaquito.Toolkit.transferParams);
+};
+
+module Batch: {
+  type params =
+    | DelegationParams(ReTaquito.Toolkit.delegateParams)
+    | OriginationParams(ReTaquito.Toolkit.originateParams)
+    | TransferParams(ReTaquito.Toolkit.transferParams);
+
+  let prepareOperations:
+    (Protocol.batch, ReTaquito.endpoint, PublicKeyHash.t) =>
+    array(Promise.t(params));
 
   /* Multi asset batch */
-  let batch:
+  let run:
     (
       ~endpoint: ReTaquito.endpoint,
       ~baseDir: System.Path.t,
       ~source: Wallet.PkhAlias.t,
-      ~transfersBuilder: (ReTaquito.endpoint, PublicKeyHash.t) =>
-                         FutureBase.t(
-                           list(
-                             Promise.result(ReTaquito.Toolkit.transferParams),
-                           ),
-                         ),
+      ~ops: Protocol.batch,
       ~signingIntent: Signer.intent,
       unit
     ) =>
     Promise.t(ReTaquito.Toolkit.Operation.result);
 
   module Estimate: {
-    let batch:
+    let run:
       (
         ~endpoint: ReTaquito.endpoint,
         ~baseDir: System.Path.t,
         ~source: PublicKeyHash.t,
         ~customValues: array((option(int), option(int), option(int))),
-        ~transfersBuilder: (ReTaquito.endpoint, PublicKeyHash.t) =>
-                           FutureBase.t(
-                             list(
-                               Promise.result(
-                                 ReTaquito.Toolkit.transferParams,
-                               ),
-                             ),
-                           ),
+        ~ops: Protocol.batch,
         unit
       ) =>
       Promise.t(Protocol.Simulation.results);
