@@ -131,7 +131,7 @@ let updateOperation = (index, values: StateLenses.state, ops: Protocol.batch) =>
     ->Array.mapWithIndex((i, op) =>
         if (index == i) {
           switch (op) {
-          | Transaction(t) =>
+          | Transfer(t) =>
             let options = {
               ...t.options,
               gasLimit: fallback(values.gasLimit, t.options.gasLimit),
@@ -140,7 +140,7 @@ let updateOperation = (index, values: StateLenses.state, ops: Protocol.batch) =>
                 fallback(values.storageLimit, t.options.storageLimit),
             };
 
-            {...t, options}->Protocol.Transaction;
+            {...t, options}->Protocol.Transfer;
 
           | Delegation(d) =>
             let fee = fallback(values.fee, d.fee);
@@ -170,7 +170,7 @@ let make = (~operation: Protocol.batch, ~dryRun, ~index=0, ~token, ~onSubmit) =>
     token != None
     || operation.managers
        ->Array.get(index)
-       ->Option.mapWithDefault(false, Protocol.isContractCall);
+       ->Option.mapWithDefault(false, ProtocolHelper.isContractCall);
 
   let form =
     Form.use(

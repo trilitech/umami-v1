@@ -57,7 +57,7 @@ module TransactionParameters = {
   type t = ReTaquitoTypes.Transfer.Entrypoint.param;
 };
 
-type transferEltOptions = {
+type transferOpt = {
   fee: option(Tez.t),
   gasLimit: option(int),
   storageLimit: option(int),
@@ -68,12 +68,12 @@ type transferEltOptions = {
 let txOptionsSet = telt =>
   telt.fee != None || telt.gasLimit != None || telt.storageLimit != None;
 
-type operationOptions = {
+type operationOpt = {
   burnCap: option(Tez.t),
   forceLowFee: option(bool),
 };
 
-let makeTransferEltOptions =
+let makeForTransfer =
     (~fee=?, ~gasLimit=?, ~storageLimit=?, ~parameter=?, ~entrypoint=?, ()) => {
   fee,
   gasLimit,
@@ -82,7 +82,7 @@ let makeTransferEltOptions =
   entrypoint,
 };
 
-let makeOperationOptions = (~burnCap=?, ~forceLowFee=?, ()) => {
+let makeForOperation = (~burnCap=?, ~forceLowFee=?, ()) => {
   burnCap,
   forceLowFee,
 };

@@ -23,23 +23,23 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open Transfer;
+open Protocol;
 
 type amount =
-  | Amount(Transfer.Amount.t)
+  | Amount(Amount.t)
   | Illformed(string);
 
 let keepToken = v =>
   v->Option.flatMap(
     fun
     | Illformed(_) => None
-    | Amount(v) => v->Transfer.Amount.getTez,
+    | Amount(v) => v->Amount.getTez,
   );
 
 let keepTez = v =>
   v->Option.flatMap(
     fun
-    | Amount(v) => v->Transfer.Amount.getTez
+    | Amount(v) => v->Amount.getTez
     | Illformed(_) => None,
   );
 
@@ -52,7 +52,7 @@ let parseAmount = (v, token: option(TokenRepr.t)) =>
         let vtez = v->Tez.fromString;
         vtez == None
           ? v->Illformed->Some
-          : vtez->Option.map(v => v->Transfer.Amount.makeTez->Amount);
+          : vtez->Option.map(v => v->Amount.makeTez->Amount);
       },
       t => {
         let vt = v->Token.Unit.fromStringDecimals(t.decimals);

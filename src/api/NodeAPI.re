@@ -62,7 +62,7 @@ module Balance = {
 module Simulation = {
   let extractCustomValues =
     fun
-    | Protocol.Transaction({options}) => (
+    | Protocol.Transfer({options}) => (
         options.fee->Option.map(fee => fee->Tez.unsafeToMutezInt),
         options.storageLimit,
         options.gasLimit,
@@ -134,7 +134,7 @@ module DelegateMaker = (Get: {let get: URL.t => Promise.t(Js.Json.t);}) => {
   module BalanceAPI = Balance;
 
   let extractInfoFromDelegate =
-      (network, delegate, account, firstOperation: Operation.Read.t) => {
+      (network, delegate, account, firstOperation: Operation.t) => {
     let%Await balance =
       network->BalanceAPI.get(
         account,
@@ -160,7 +160,7 @@ module DelegateMaker = (Get: {let get: URL.t => Promise.t(Js.Json.t);}) => {
     if (operations->Array.length == 0) {
       info->Some;
     } else {
-      switch ((firstOperation.payload: Operation.Read.payload)) {
+      switch ((firstOperation.payload: Operation.payload)) {
       | Transaction(Token(payload, _, _))
       | Transaction(Tez(payload)) =>
         {...info, lastReward: Some(payload.amount)}->Some

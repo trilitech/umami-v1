@@ -88,7 +88,7 @@ module Transfer: {
      Transfer.elt. The endpoint is necessary to prefetch some contracts that can
      be repeated multiple times. */
   let prepare:
-    (FA12Cache.t, FA2Cache.t, PublicKeyHash.t, Transfer.t) =>
+    (FA12Cache.t, FA2Cache.t, PublicKeyHash.t, Protocol.Transfer.t) =>
     Promise.t(ReTaquito.Toolkit.transferParams);
 };
 

@@ -28,12 +28,12 @@ include ApiRequest;
 /* Create */
 
 type injection = {
-  operation: Operation.t,
+  operation: Protocol.batch,
   signingIntent: TaquitoAPI.Signer.intent,
 };
 
 type operationsResponse = {
-  operations: array(Operation.Read.t),
+  operations: array(Operation.t),
   currentLevel: int,
 };
 
