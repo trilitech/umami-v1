@@ -24,6 +24,7 @@
 /*****************************************************************************/
 
 open ReactNative;
+open Protocol;
 
 module FormGroupAmountWithTokenSelector = {
   let styles =
@@ -293,7 +294,7 @@ module EditionView = {
   let make = (~account, ~aliases, ~initValues, ~onSubmit, ~index, ~loading) => {
     let token =
       switch (initValues.SendForm.amount) {
-      | Transfer.Amount.Tez(_) => None
+      | Protocol.Amount.Tez(_) => None
       | Token({token}) => Some(token)
       };
 
@@ -333,7 +334,7 @@ let make = (~account, ~closeAction) => {
 
   let (operationRequest, sendOperation) = StoreContext.Operations.useCreate();
 
-  let sendOperation = (~operation: Operation.t, signingIntent) => {
+  let sendOperation = (~operation: Protocol.batch, signingIntent) => {
     sendOperation({operation, signingIntent})
     ->Promise.tapOk(result => {setModalStep(_ => SubmittedStep(result.hash))})
     ->Promise.tapOk(_ => {updateAccount(operation.source.address)});

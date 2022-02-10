@@ -153,7 +153,7 @@ let make = (~source: Account.t, ~nft: Token.t, ~closeAction) => {
   let (operationSimulateRequest, sendOperationSimulate) =
     StoreContext.Operations.useSimulate();
 
-  let sendTransfer = (~operation: Operation.t, signingIntent) => {
+  let sendTransfer = (~operation: Protocol.batch, signingIntent) => {
     sendOperation({operation, signingIntent})
     ->Promise.tapOk(result => {
         setModalStep(_ => SubmittedStep(result.hash))
@@ -165,7 +165,7 @@ let make = (~source: Account.t, ~nft: Token.t, ~closeAction) => {
 
   let onSubmit = ({state, _}: SendNFTForm.onSubmitAPI) => {
     let transfer =
-      Transfer.makeSingleTokenTransferElt(
+      ProtocolHelper.Transfer.makeSimpleToken(
         ~destination=
           state.values.recipient
           ->FormUtils.Unsafe.account
@@ -176,7 +176,11 @@ let make = (~source: Account.t, ~nft: Token.t, ~closeAction) => {
       );
 
     let transaction =
-      Operation.makeTransaction(~source, ~transfers=[|transfer|], ());
+      ProtocolHelper.Transfer.makeBatch(
+        ~source,
+        ~transfers=[|transfer|],
+        (),
+      );
 
     sendOperationSimulate(transaction)
     ->Promise.getOk(dryRun => {

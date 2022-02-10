@@ -66,10 +66,11 @@ let make =
       ~secondaryButton=?,
       ~operation,
       ~sendOperation:
-         (~operation: Operation.t, TaquitoAPI.Signer.intent) => Promise.t(_),
+         (~operation: Protocol.batch, TaquitoAPI.Signer.intent) =>
+         Promise.t(_),
       ~loading,
     ) => {
-  let ((operation: Operation.t, dryRun), setOp) =
+  let ((operation: Protocol.batch, dryRun), setOp) =
     React.useState(() => (operation, dryRun));
 
   let theme = ThemeContext.useTheme();
@@ -103,7 +104,7 @@ let make =
 
   let optionsSet =
     fun
-    | [|op|] => Protocol.optionsSet(op)
+    | [|op|] => ProtocolHelper.optionsSet(op)
     | _ => None;
 
   switch (step) {

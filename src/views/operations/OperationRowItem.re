@@ -83,13 +83,13 @@ let styles =
 
 module AddContactButton = {
   [@react.component]
-  let make = (~address: PublicKeyHash.t, ~operation: Operation.Read.t) => {
+  let make = (~address: PublicKeyHash.t, ~operation: Operation.t) => {
     let (visibleModal, openAction, closeAction) =
       ModalAction.useModalActionState();
 
     let tooltip = (
       "add_contact_from_op"
-      ++ Operation.Read.(operation->uniqueId->uniqueIdToString),
+      ++ Operation.(operation->uniqueId->uniqueIdToString),
       I18n.Tooltip.add_contact,
     );
 
@@ -123,8 +123,7 @@ let getContactOrRaw = (aliases, tokens, address, operation) => {
     );
 };
 
-let status =
-    (operation: Operation.Read.t, currentLevel, config: ConfigContext.env) => {
+let status = (operation: Operation.t, currentLevel, config: ConfigContext.env) => {
   let (txt, colorStyle) =
     switch (operation.status) {
     | Mempool => (I18n.state_mempool, Some(`negative))
@@ -147,7 +146,7 @@ let memo = component =>
     component,
     (prevPros, nextProps) => {
       let currentConfirmations =
-        prevPros##currentLevel - prevPros##operation.Operation.Read.level;
+        prevPros##currentLevel - prevPros##operation.Operation.level;
 
       currentConfirmations > 5
         ? prevPros##operation == nextProps##operation
@@ -161,7 +160,7 @@ let memo = component =>
 
 module AddToken = {
   [@react.component]
-  let make = (~address, ~kind: TokenRepr.kind, ~op: Operation.Read.t, ~tokens) => {
+  let make = (~address, ~kind: TokenRepr.kind, ~op: Operation.t, ~tokens) => {
     let (visibleModal, openAction, closeAction) =
       ModalAction.useModalActionState();
     let closeAction = () => {
@@ -175,7 +174,7 @@ module AddToken = {
     };
 
     let tooltip = (
-      "add_token_from_op" ++ Operation.Read.(op->uniqueId->uniqueIdToString),
+      "add_token_from_op" ++ Operation.(op->uniqueId->uniqueIdToString),
       I18n.Tooltip.add_token,
     );
     let onPress = _ => openAction();
@@ -206,7 +205,7 @@ module UnknownTokenAmount = {
   [@react.component]
   let make = (~amount, ~sign, ~address: PublicKeyHash.t, ~kind, ~tokens, ~op) => {
     let tooltip = (
-      "unknown_token" ++ Operation.Read.(op->uniqueId->uniqueIdToString),
+      "unknown_token" ++ Operation.(op->uniqueId->uniqueIdToString),
       I18n.Tooltip.unregistered_token_transaction,
     );
     <View style=styles##rawAddressContainer>
@@ -279,7 +278,7 @@ let amount =
       account: Account.t,
       transaction: Operation.Transaction.t,
       tokens,
-      op: Operation.Read.t,
+      op: Operation.t,
     ) => {
   let colorStyle =
     account.address == transaction->Operation.Transaction.Accessor.destination
@@ -314,7 +313,7 @@ let amount =
 
 [@react.component]
 let make =
-  memo((~account: Account.t, ~operation: Operation.Read.t, ~currentLevel) => {
+  memo((~account: Account.t, ~operation: Operation.t, ~currentLevel) => {
     let aliases = StoreContext.Aliases.useGetAll();
     let tokens = StoreContext.Tokens.useGetAll();
     let config = ConfigContext.useContent();
@@ -432,7 +431,7 @@ let make =
           icon=Icons.OpenExternal.build
           tooltip=(
             "open_in_explorer"
-            ++ Operation.Read.(operation->uniqueId->uniqueIdToString),
+            ++ Operation.(operation->uniqueId->uniqueIdToString),
             I18n.Tooltip.open_in_explorer,
           )
           onPress={_ => {

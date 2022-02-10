@@ -237,7 +237,7 @@ module Delegate =
             }
           );
 
-      Operation.makeDelegate(
+      ProtocolHelper.Delegation.makeSingleton(
         ~source=account,
         ~infos={delegate, fee: None},
         (),
@@ -261,7 +261,7 @@ module Transfer =
 
       let transfers =
         partialTransactions->Array.map(({destination, amount, parameters}) =>
-          Transfer.makeSingleTransferElt(
+          ProtocolHelper.Transfer.makeSimple(
             ~data={destination, amount: Tez(Tez.fromMutezString(amount))},
             ~parameter=?parameters->Option.map(a => a.value),
             ~entrypoint=?parameters->Option.map(a => a.entrypoint),
@@ -269,6 +269,6 @@ module Transfer =
           )
         );
 
-      Operation.makeTransaction(~source=account, ~transfers, ());
+      ProtocolHelper.Transfer.makeBatch(~source=account, ~transfers, ());
     };
   });

@@ -29,6 +29,8 @@ open Let;
 
 module Contracts = ReTaquitoContracts;
 
+open Protocol;
+
 type Errors.t +=
   | InvalidEstimationResults;
 
@@ -163,7 +165,7 @@ module Delegate = {
     |> ReTaquitoError.fromPromiseParsed;
   };
 
-  let prepareSet = (~source, Protocol.{delegate, fee}) => {
+  let prepareSet = (~source, Protocol.Delegation.{delegate, fee}) => {
     let feeBignum = fee->Option.map(Tez.toBigNumber);
     Toolkit.prepareDelegate(~source, ~delegate, ~fee=?feeBignum, ());
   };
@@ -282,10 +284,15 @@ module Transfer = {
     | _ => None
     };
 
-  let mapFA2Transfers = (txs: list(Transfer.transferFA2)) => {
+  let mapFA2Transfers = (txs: list(Protocol.Transfer.transferFA2)) => {
     txs
     ->List.map(
-        (Transfer.{tokenId, content: {amount: {amount}, destination}}) =>
+        (
+          Protocol.Transfer.{
+            tokenId,
+            content: {amount: {amount}, destination},
+          },
+        ) =>
         ReTaquitoTypes.FA2.{
           to_: destination,
           token_id:
@@ -390,7 +397,7 @@ module Batch = {
         fun
         | Protocol.Delegation(d) =>
           Delegate.prepareSet(~source, d)->DelegationParams->Promise.ok
-        | Protocol.Transaction(t) =>
+        | Protocol.Transfer(t) =>
           Transfer.prepare(fa12Cache, fa2Cache, source, t)
           ->Promise.mapOk(v => TransferParams(v)),
       );

@@ -23,6 +23,8 @@
 /*                                                                           */
 /*****************************************************************************/
 
+open Protocol;
+
 module StateLenses = [%lenses
   type state = {
     amount: string,
@@ -32,7 +34,7 @@ module StateLenses = [%lenses
 ];
 
 type validState = {
-  amount: Transfer.Amount.t,
+  amount: Protocol.Amount.t,
   sender: Account.t,
   recipient: FormUtils.Alias.t,
 };
@@ -47,7 +49,7 @@ let unsafeExtractValidState = (token, state: StateLenses.state): validState => {
 };
 
 let toState = (vs: validState): StateLenses.state => {
-  amount: vs.amount->Transfer.Amount.toString,
+  amount: vs.amount->Protocol.Amount.toString,
   sender: vs.sender,
   recipient: vs.recipient->FormUtils.Alias.Valid,
 };
@@ -60,11 +62,11 @@ let buildTransfer = (inputTransfers, source) => {
     ->List.map((t: validState) => {
         let destination = t.recipient->FormUtils.Alias.address;
         let data = Transfer.{destination, amount: t.amount};
-        Transfer.makeSingleTransferElt(~data, ());
+        ProtocolHelper.Transfer.makeSimple(~data, ());
       })
     ->List.toArray;
 
-  Operation.makeTransaction(~source, ~transfers, ());
+  ProtocolHelper.Transfer.makeBatch(~source, ~transfers, ());
 };
 
 let buildTransaction = (batch: list(validState)) => {

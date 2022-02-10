@@ -39,18 +39,25 @@ let styles =
 
 let buildTransaction = (state: DelegateForm.state) => {
   let infos =
-    Protocol.{
+    Protocol.Delegation.{
       delegate: Some(state.values.baker->PublicKeyHash.build->Result.getExn),
       fee: None,
     };
 
-  (Operation.makeDelegate(~source=state.values.sender, ~infos, ()), infos);
+  (
+    ProtocolHelper.Delegation.makeSingleton(
+      ~source=state.values.sender,
+      ~infos,
+      (),
+    ),
+    infos,
+  );
 };
 
 type step =
   | SendStep
   | PasswordStep(
-      Protocol.delegation,
+      Protocol.Delegation.t,
       Protocol.batch,
       Protocol.Simulation.results,
     )
@@ -209,7 +216,7 @@ let make = (~closeAction, ~action) => {
     switch (action) {
     | Delete(account, _) =>
       let op =
-        Operation.makeDelegate(
+        ProtocolHelper.Delegation.makeSingleton(
           ~source=account,
           ~infos={delegate: None, fee: None},
           (),
@@ -228,7 +235,7 @@ let make = (~closeAction, ~action) => {
   });
 
   let form =
-    Form.build(action, ((op: Protocol.batch, d: Protocol.delegation)) => {
+    Form.build(action, ((op: Protocol.batch, d: Protocol.Delegation.t)) => {
       Promise.async(() => {
         let%AwaitMap dryRun = sendOperationSimulate(op);
         setModalStep(_ => PasswordStep(d, op, dryRun));

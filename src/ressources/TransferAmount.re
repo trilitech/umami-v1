@@ -23,62 +23,79 @@
 /*                                                                           */
 /*****************************************************************************/
 
-/** Protocol specific operations */
-open ProtocolOptions;
+type token = {
+  amount: TokenRepr.Unit.t,
+  token: TokenRepr.t,
+};
 
-module Amount = TransferAmount;
+type t =
+  | Tez(Tez.t)
+  | Token(token);
 
-module Transfer = {
-  type generic('a) = {
-    destination: PublicKeyHash.t,
-    amount: 'a,
-  };
+let makeTez = t => t->Tez;
+let makeToken = (~amount, ~token) => Token({amount, token});
 
-  type transferFA2 = {
-    tokenId: int,
-    content: generic(TransferAmount.token),
-  };
+let toInt64 =
+  fun
+  | Tez(tez) => tez->Tez.toInt64
+  | Token({amount}) =>
+    amount->TokenRepr.Unit.toBigNumber->ReBigNumber.toInt64;
 
-  type batchFA2 = {
-    address: PublicKeyHash.t,
-    transfers: list(transferFA2),
-  };
+let toBigNumber =
+  fun
+  | Tez(tez) => tez->Tez.toInt64->ReBigNumber.fromInt64
+  | Token({amount}) => amount->TokenRepr.Unit.toBigNumber;
 
-  type data =
-    | FA2Batch(batchFA2)
-    | Simple(generic(Amount.t));
+let toString =
+  fun
+  | Tez(tez) => tez->Tez.toString
+  | Token({amount, token}) =>
+    amount->TokenRepr.Unit.toStringDecimals(token.decimals);
 
-  type t = {
-    data,
-    options: transferEltOptions,
+let getTez =
+  fun
+  | Tez(tez) => Some(tez)
+  | _ => None;
+
+let getToken =
+  fun
+  | Token(a) => Some(a)
+  | _ => None;
+
+let getTokenExn = t => t->getToken->Option.getExn;
+
+let show =
+  fun
+  | Tez(v) => I18n.tez_amount(v->Tez.toString)
+  | Token({amount, token}) =>
+    I18n.amount(
+      amount->TokenRepr.Unit.toStringDecimals(token.decimals),
+      token.symbol,
+    );
+
+let compareCurrencies = (v1, v2) => {
+  switch (v1, v2) {
+  | (Tez(_), Token(_)) => (-1)
+  | (Token(_), Tez(_)) => 1
+  | _ => 0
   };
 };
 
-module Delegation = {
-  type t = {
-    delegate: option(PublicKeyHash.t),
-    fee: option(Tez.t),
-  };
-};
-
-type manager =
-  | Delegation(Delegation.t)
-  | Transfer(Transfer.t);
-type batch = {
-  source: Account.t,
-  managers: array(manager),
-  options: operationOptions,
-};
-
-module Simulation = {
-  type resultElt = {
-    fee: Tez.t,
-    gasLimit: int,
-    storageLimit: int,
-  };
-
-  type results = {
-    simulations: array(resultElt),
-    revealSimulation: option(resultElt),
-  };
-};
+let reduce = l =>
+  l
+  ->List.reduceGroupBy(
+      ~group=
+        fun
+        | Tez(_) => None
+        | Token({token}) => Some(token),
+      ~map=(acc, v) =>
+      switch (acc, v) {
+      | (None, v) => v
+      | (Some(Tez(acc)), Tez(v)) => Tez(Tez.Infix.(acc + v))
+      | (Some(Token({amount: acc, token})), Token({amount})) =>
+        Token({amount: TokenRepr.Unit.Infix.(acc + amount), token})
+      | (Some(acc), _) => acc
+      }
+    )
+  ->List.map(snd)
+  ->List.sort(compareCurrencies);
