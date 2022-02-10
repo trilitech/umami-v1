@@ -62,7 +62,7 @@ module Amount = {
 
   let getToken =
     fun
-    | Token({amount, token}) => Some((amount, token))
+    | Token(a) => Some(a)
     | _ => None;
 
   let getTokenExn = t => t->getToken->Option.getExn;
@@ -104,22 +104,33 @@ module Amount = {
     ->List.sort(compareCurrencies);
 };
 
-type elt = {
+type transfer('a) = {
   destination: PublicKeyHash.t,
-  amount: Amount.t,
-  tx_options: transferEltOptions,
+  amount: 'a,
 };
 
+type transferFA2 = {
+  tokenId: int,
+  content: transfer(Amount.token),
+};
+
+type batchFA2 = {
+  address: PublicKeyHash.t,
+  transfers: list(transferFA2),
+};
+
+type data =
+  | FA2Batch(batchFA2)
+  | Simple(transfer(Amount.t));
+
 type t = {
-  source: Account.t,
-  transfers: list(elt),
-  options: transferOptions,
+  data,
+  options: transferEltOptions,
 };
 
 let makeSingleTransferElt =
     (
-      ~destination,
-      ~amount,
+      ~data,
       ~fee=?,
       ~parameter=?,
       ~entrypoint=?,
@@ -127,9 +138,8 @@ let makeSingleTransferElt =
       ~storageLimit=?,
       (),
     ) => {
-  destination,
-  amount,
-  tx_options:
+  data: Simple(data),
+  options:
     makeTransferEltOptions(
       ~fee?,
       ~gasLimit?,
@@ -152,8 +162,7 @@ let makeSingleTezTransferElt =
       (),
     ) =>
   makeSingleTransferElt(
-    ~destination,
-    ~amount=Amount.makeTez(amount),
+    ~data={destination, amount: Amount.makeTez(amount)},
     ~fee?,
     ~parameter?,
     ~entrypoint?,
@@ -167,15 +176,26 @@ let makeSingleTezTransferElt =
 let makeSingleTokenTransferElt =
     (~destination, ~amount, ~token, ~fee=?, ~gasLimit=?, ~storageLimit=?, ()) =>
   makeSingleTransferElt(
-    ~destination,
-    ~amount=Amount.makeToken(~amount, ~token),
+    ~data={destination, amount: Amount.makeToken(~amount, ~token)},
     ~fee?,
     ~gasLimit?,
     ~storageLimit?,
     (),
   );
 
-let makeTransfers = (~source, ~transfers, ~burnCap=?, ~forceLowFee=?, ()) => {
-  let options = makeTransferOptions(~burnCap?, ~forceLowFee?, ());
-  {source, transfers, options};
-};
+let reduceTransfers = (transfers, f) =>
+  transfers->Array.reduce([], (acc, t: t) =>
+    switch (t.data) {
+    | Simple(t) => f(acc, t)
+    | FA2Batch({transfers}) =>
+      transfers->List.reduce(acc, (acc, {content}) =>
+        f(
+          acc,
+          {
+            destination: content.destination,
+            amount: Amount.Token(content.amount),
+          },
+        )
+      )
+    }
+  );

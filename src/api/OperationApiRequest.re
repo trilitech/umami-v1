@@ -37,16 +37,6 @@ type operationsResponse = {
   currentLevel: int,
 };
 
-let transfer = (operation, signingIntent) => {
-  operation: Operation.transaction(operation),
-  signingIntent,
-};
-
-let delegate = (d, signingIntent) => {
-  operation: Operation.delegation(d),
-  signingIntent,
-};
-
 let keepNonFormErrors =
   fun
   | ReTaquitoError.LedgerInitTimeout
@@ -59,17 +49,7 @@ let keepNonFormErrors =
 
 let useCreate = (~sideEffect=?, ()) => {
   let set = (~config, {operation, signingIntent}) => {
-    switch (operation) {
-    | Delegation(_) as operation =>
-      config->NodeAPI.Operation.run(operation, ~signingIntent)
-
-    | Transaction(t) =>
-      config->NodeAPI.Operation.batch(
-        t.transfers,
-        ~source=t.source,
-        ~signingIntent,
-      )
-    };
+    config->NodeAPI.Operation.run(operation, ~signingIntent);
   };
 
   ApiRequest.useSetter(

@@ -54,23 +54,18 @@ let toState = (vs: validState): StateLenses.state => {
 
 include ReForm.Make(StateLenses);
 
-let buildTransferElts = (transfers, build) => {
-  transfers->List.map((t: validState) => {
-    let destination = t.recipient->FormUtils.Alias.address;
+let buildTransfer = (inputTransfers, source) => {
+  let transfers =
+    inputTransfers
+    ->List.map((t: validState) => {
+        let destination = t.recipient->FormUtils.Alias.address;
+        let data = Transfer.{destination, amount: t.amount};
+        Transfer.makeSingleTransferElt(~data, ());
+      })
+    ->List.toArray;
 
-    build(~destination, ~amount=t.amount, ());
-  });
+  Operation.makeTransaction(~source, ~transfers, ());
 };
-
-let buildTransfer = (inputTransfers, source) =>
-  Transfer.makeTransfers(
-    ~source,
-    ~transfers=
-      buildTransferElts(inputTransfers, (~destination, ~amount, ()) =>
-        Transfer.makeSingleTransferElt(~destination, ~amount, ())
-      ),
-    (),
-  );
 
 let buildTransaction = (batch: list(validState)) => {
   switch (batch) {

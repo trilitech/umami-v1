@@ -41,10 +41,8 @@ let styles =
   );
 
 module type OP = {
-  type t;
-  let make: (Account.t, ReBeacon.Message.Request.operationRequest) => t;
-  let makeOperation: t => Operation.t;
-  let makeSimulated: t => Operation.Simulation.t;
+  let make:
+    (Account.t, ReBeacon.Message.Request.operationRequest) => Protocol.batch;
 };
 
 module Make = (Op: OP) => {
@@ -123,18 +121,16 @@ module Make = (Op: OP) => {
 
     let ledgerState = React.useState(() => None);
 
-    let simulatedOperation = Op.makeSimulated(operation);
-
     React.useEffect1(
       () => {
-        sendOperationSimulate(simulatedOperation)->Promise.ignore;
+        sendOperationSimulate(operation)->Promise.ignore;
         None;
       },
       [|operation|],
     );
 
     let sendOperation = (~operation, i) => {
-      let%Await hash = sendOperation(~operation, i);
+      let%Await result = sendOperation(~operation, i);
 
       let%AwaitMap () =
         switch (client) {
@@ -143,7 +139,7 @@ module Make = (Op: OP) => {
             `OperationResponse({
               type_: `operation_response,
               id: beaconRequest.id,
-              transactionHash: hash,
+              transactionHash: result.hash,
             }),
           )
         | None => Promise.ok()
@@ -169,8 +165,12 @@ module Make = (Op: OP) => {
 
     <ModalFormView ?title ?closing back>
       {switch (operationApiRequest) {
-       | Done(Ok(hash), _) =>
-         <SubmittedView hash onPressCancel submitText=I18n.Btn.go_operations />
+       | Done(Ok(result), _) =>
+         <SubmittedView
+           hash={result.hash}
+           onPressCancel
+           submitText=I18n.Btn.go_operations
+         />
        | _ =>
          <>
            {<View style=FormStyles.header>
@@ -210,7 +210,7 @@ module Make = (Op: OP) => {
                 dryRun
                 signOpStep
                 ledgerState
-                operation={Op.makeOperation(operation)}
+                operation
                 loading
                 secondaryButton
                 sendOperation
@@ -224,35 +224,29 @@ module Make = (Op: OP) => {
 
 module Delegate =
   Make({
-    type t = Protocol.delegation;
-
     let make =
         (account, beaconRequest: ReBeacon.Message.Request.operationRequest) => {
-      Protocol.makeDelegate(
+      let delegate =
+        beaconRequest.operationDetails
+        ->Array.get(0)
+        ->Option.map(ReBeacon.Message.Request.PartialOperation.classify)
+        ->Option.flatMap(operationDetail =>
+            switch (operationDetail) {
+            | Delegation(delegation) => delegation.delegate
+            | _ => None
+            }
+          );
+
+      Operation.makeDelegate(
         ~source=account,
-        ~delegate=
-          beaconRequest.operationDetails
-          ->Array.get(0)
-          ->Option.map(ReBeacon.Message.Request.PartialOperation.classify)
-          ->Option.flatMap(operationDetail =>
-              switch (operationDetail) {
-              | Delegation(delegation) => delegation.delegate
-              | _ => None
-              }
-            ),
+        ~infos={delegate, fee: None},
         (),
       );
     };
-
-    let makeSimulated = o => o->Operation.Simulation.delegation;
-
-    let makeOperation = Operation.delegation;
   });
 
 module Transfer =
   Make({
-    type t = Transfer.t;
-
     let make =
         (account, beaconRequest: ReBeacon.Message.Request.operationRequest) => {
       let partialTransactions =
@@ -264,38 +258,17 @@ module Transfer =
             | _ => None
             }
           );
-      {
-        Transfer.source: account,
-        transfers:
-          partialTransactions
-          ->Array.map(partialTransaction =>
-              {
-                Transfer.destination: partialTransaction.destination,
-                amount: Tez(Tez.fromMutezString(partialTransaction.amount)),
-                tx_options: {
-                  fee: None,
-                  gasLimit: None,
-                  storageLimit: None,
-                  parameter:
-                    partialTransaction.parameters
-                    ->Option.map(a =>
-                        a.ReTaquitoTypes.Transfer.Entrypoint.value
-                      ),
-                  entrypoint:
-                    partialTransaction.parameters
-                    ->Option.map(a => a.entrypoint),
-                },
-              }
-            )
-          ->List.fromArray,
-        options: {
-          burnCap: None,
-          forceLowFee: None,
-        },
-      };
+
+      let transfers =
+        partialTransactions->Array.map(({destination, amount, parameters}) =>
+          Transfer.makeSingleTransferElt(
+            ~data={destination, amount: Tez(Tez.fromMutezString(amount))},
+            ~parameter=?parameters->Option.map(a => a.value),
+            ~entrypoint=?parameters->Option.map(a => a.entrypoint),
+            (),
+          )
+        );
+
+      Operation.makeTransaction(~source=account, ~transfers, ());
     };
-
-    let makeOperation = Operation.transaction;
-
-    let makeSimulated = o => o->Operation.Simulation.transaction;
   });

@@ -26,32 +26,28 @@
 open ProtocolOptions;
 open Protocol;
 
-type t = Protocol.t;
+type t = Protocol.batch;
 
 let transaction = t => t->Transaction;
 let delegation = d => d->Delegation;
 
 module Simulation = {
-  type t = Protocol.t;
+  type t = Protocol.batch;
 
   let delegation = d => d->Delegation;
   let transaction = t => t->Transaction;
 };
 
 let makeDelegate =
-    (~source, ~delegate, ~fee=?, ~burnCap=?, ~forceLowFee=?, ()) => {
-  {
-    source,
-    delegate,
-    options: makeDelegationOptions(~fee, ~burnCap, ~forceLowFee, ()),
-  }
-  ->delegation;
+    (~source, ~infos as {delegate, fee}, ~burnCap=?, ~forceLowFee=?, ()) => {
+  let options = makeOperationOptions(~burnCap?, ~forceLowFee?, ());
+  Protocol.{source, managers: [|{delegate, fee}->delegation|], options};
 };
 
-let makeTransaction = (~source, ~transfers, ~burnCap=?, ~forceLowFee=?, ()) =>
-  transaction(
-    Transfer.makeTransfers(~source, ~transfers, ~burnCap?, ~forceLowFee?, ()),
-  );
+let makeTransaction = (~source, ~transfers, ~burnCap=?, ~forceLowFee=?, ()) => {
+  let options = makeOperationOptions(~burnCap?, ~forceLowFee?, ());
+  {source, managers: transfers->Array.map(transaction), options};
+};
 
 let makeSingleTransaction =
     (
@@ -67,7 +63,7 @@ let makeSingleTransaction =
       ~storageLimit=?,
       (),
     ) => {
-  let transfers = [
+  let transfers = [|
     Transfer.makeSingleTezTransferElt(
       ~amount,
       ~destination,
@@ -78,7 +74,7 @@ let makeSingleTransaction =
       ~storageLimit?,
       (),
     ),
-  ];
+  |];
 
   makeTransaction(~source, ~transfers, ~burnCap?, ~forceLowFee?, ());
 };

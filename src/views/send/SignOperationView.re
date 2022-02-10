@@ -101,6 +101,11 @@ let make =
     )
     || loading;
 
+  let optionsSet =
+    fun
+    | [|op|] => Protocol.optionsSet(op)
+    | _ => None;
+
   switch (step) {
   | SummaryStep =>
     <>
@@ -109,12 +114,16 @@ let make =
            <Typography.Overline1> s->React.string </Typography.Overline1>
          </View>
        )}
-      {switch (operation) {
-       | Delegation(delegation) =>
-         <OperationSummaryView.Delegate delegation dryRun />
-       | Transaction(transfer) =>
+      {switch (operation.managers) {
+       | [|Delegation(delegation)|] =>
+         <OperationSummaryView.Delegate
+           source={operation.source}
+           delegation
+           dryRun
+         />
+       | _ =>
          <OperationSummaryView.Transactions
-           transfer
+           operation
            dryRun
            editAdvancedOptions={i => setAdvancedOptions(Some(i))}
            advancedOptionsDisabled
@@ -125,7 +134,7 @@ let make =
          disabled=advancedOptionsDisabled
          text=I18n.Label.advanced_options
          stateIcon={
-           Protocol.optionsSet(operation) == Some(true)
+           optionsSet(operation.managers) == Some(true)
              ? <Icons.Edit
                  style=styles##edited
                  size=25.
