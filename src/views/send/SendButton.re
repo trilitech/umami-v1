@@ -50,7 +50,7 @@ let styles =
 let make = (~account) => {
   let theme = ThemeContext.useTheme();
 
-  let (openAction, closeAction, (module Modal)) = ModalAction.useModal();
+  let (openAction, closeAction, wrapModal) = ModalAction.useModal();
 
   let networkOffline = ConfigContext.useNetworkOffline();
 
@@ -85,6 +85,6 @@ let make = (~account) => {
         </Typography.ButtonSecondary>
       </ThemedPressable.Primary>
     </View>
-    <Modal> <SendView account closeAction /> </Modal>
+    {wrapModal(<SendView account closeAction />)}
   </>;
 };

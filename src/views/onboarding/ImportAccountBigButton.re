@@ -25,7 +25,7 @@
 
 [@react.component]
 let make = (~style=?) => {
-  let (openAction, closeAction, (module Modal)) = ModalAction.useModal();
+  let (openAction, closeAction, wrapModal) = ModalAction.useModal();
 
   <>
     <BigButton
@@ -34,6 +34,6 @@ let make = (~style=?) => {
       onPress={_ => openAction()}
       ?style
     />
-    <Modal> <ImportAccountOnboardingView closeAction /> </Modal>
+    {wrapModal(<ImportAccountOnboardingView closeAction />)}
   </>;
 };

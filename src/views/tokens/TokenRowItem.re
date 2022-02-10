@@ -88,20 +88,20 @@ module EditionModal = {
   [@react.component]
   let make = (~action, ~item, ~token, ~tokens, ~currentChain) => {
     open TokensLibrary.Token;
-    let (openAction, closeAction, (module Modal)) = ModalAction.useModal();
+    let (openAction, closeAction, wrapModal) = ModalAction.useModal();
 
     <>
       {item(_ => openAction())}
-      <Modal>
-        <TokenAddView
-          action
-          address={token->address}
-          kind={TokenContract.toTokenKind(token->kind, token->id)}
-          chain={token->chain->Option.default(currentChain)}
-          tokens
-          closeAction
-        />
-      </Modal>
+      {wrapModal(
+         <TokenAddView
+           action
+           address={token->address}
+           kind={TokenContract.toTokenKind(token->kind, token->id)}
+           chain={token->chain->Option.default(currentChain)}
+           tokens
+           closeAction
+         />,
+       )}
     </>;
   };
 };

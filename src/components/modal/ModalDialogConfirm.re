@@ -60,7 +60,7 @@ module Modal = {
 
 let useModal =
     (~action, ~loading=?, ~title, ~subtitle=?, ~cancelText, ~actionText, ()) => {
-  let (openModal, closeModal, (module M)) = ModalAction.useModal();
+  let (openModal, closeModal, wrapModal) = ModalAction.useModal();
 
   let action = () =>
     action()
@@ -70,24 +70,18 @@ let useModal =
         | Error(_) => (),
       );
 
-  let wrap: module ModalAction.Modal =
-    (module
-     {
-       [@react.component]
-       let make = () => {
-         <M>
-           <Modal
-             action
-             ?loading
-             title
-             ?subtitle
-             cancelText
-             actionText
-             closeAction=closeModal
-           />
-         </M>;
-       };
-     });
+  let modal = () =>
+    wrapModal(
+      <Modal
+        action
+        ?loading
+        title
+        ?subtitle
+        cancelText
+        actionText
+        closeAction=closeModal
+      />,
+    );
 
-  (openModal, closeModal, wrap);
+  (openModal, closeModal, modal);
 };

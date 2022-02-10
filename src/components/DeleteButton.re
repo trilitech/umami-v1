@@ -38,7 +38,7 @@ module MenuItem = {
       (~color=?, ~buttonText, ~modalTitle, ~onPressConfirmDelete, ~request) => {
     let loading = request->ApiRequest.isLoading;
 
-    let (openAction, _, (module Modal)) =
+    let (openAction, _, modal) =
       useModal(~title=modalTitle, ~loading, ~onPressConfirmDelete, ());
 
     let icon = (~color as colorin=?) => {
@@ -52,7 +52,7 @@ module MenuItem = {
 
     <>
       <Menu.Item text=buttonText icon onPress colorStyle=`error />
-      <Modal />
+      {modal()}
     </>;
   };
 };
@@ -72,7 +72,7 @@ module Generic = {
       ) => {
     let loading = request->ApiRequest.isLoading;
 
-    let (openAction, _, (module Modal)) =
+    let (openAction, _, modal) =
       useModal(~title=modalTitle, ~loading, ~onPressConfirmDelete, ());
 
     let icon = (~color as colorin=?) => {
@@ -86,7 +86,7 @@ module Generic = {
 
     <>
       <IconButton tooltip icon onPress size=?iconSize ?iconSizeRatio />
-      <Modal />
+      {modal()}
     </>;
   };
 };

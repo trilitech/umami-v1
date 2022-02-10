@@ -124,35 +124,13 @@ let useModalActionState = () => {
   (visible, openAction, closeAction);
 };
 
-module type WrapModal = {
-  let makeProps:
-    (~children: 'children, ~key: string=?, unit) => {. "children": 'children};
-
-  let make: {. "children": React.element} => React.element;
-};
-
-module M = {
-  [@react.component]
-  let make = () => {
-    <> </>;
-  };
-};
-
-module type Modal = (module type of M);
-
 let useModal = (~onClose=() => (), ()) => {
   let (visible, setVisible) = React.useState(_ => false);
   let openModal = () => setVisible(_ => true);
   let closeModal = () => setVisible(_ => false);
 
-  let wrap: module WrapModal =
-    (module
-     {
-       [@react.component]
-       let make = (~children) => {
-         <Component visible onRequestClose=onClose> children </Component>;
-       };
-     });
+  let wrap = children =>
+    <Component visible onRequestClose=onClose> children </Component>;
 
   (openModal, closeModal, wrap);
 };

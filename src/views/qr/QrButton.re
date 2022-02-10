@@ -25,7 +25,7 @@
 
 [@react.component]
 let make = (~account, ~tooltipKey, ~style=?) => {
-  let (openAction, closeAction, (module Modal)) = ModalAction.useModal();
+  let (openAction, closeAction, wrapModal) = ModalAction.useModal();
   let onPressCancel = _ => closeAction();
   <>
     <IconButton
@@ -34,6 +34,6 @@ let make = (~account, ~tooltipKey, ~style=?) => {
       onPress={_ => openAction()}
       ?style
     />
-    <Modal> <ReceiveView account onPressCancel /> </Modal>
+    {wrapModal(<ReceiveView account onPressCancel />)}
   </>;
 };
