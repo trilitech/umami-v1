@@ -623,6 +623,30 @@ module Transfer = {
   };
 
   module Estimate = {
+    let patchEstimationWithHardLimits =
+        (~endpoint, ~transfers: array(Toolkit.transferParams)) => {
+      let%AwaitMap {
+        hard_gas_limit_per_operation,
+        hard_storage_limit_per_operation,
+      } =
+        Rpc.getConstants(endpoint);
+
+      // Only use the hard limit if not provided by the user
+      transfers->Array.map(tr =>
+        {
+          ...tr,
+          gasLimit:
+            tr.gasLimit == None
+              ? hard_gas_limit_per_operation->ReBigNumber.toInt->Some
+              : tr.gasLimit,
+          storageLimit:
+            tr.storageLimit == None
+              ? hard_storage_limit_per_operation->ReBigNumber.toInt->Some
+              : tr.storageLimit,
+        }
+      );
+    };
+
     let inject = (~endpoint, ~publicKey, ~source, ~transfers) => {
       let tk = Toolkit.create(endpoint);
       let signer =
@@ -630,11 +654,19 @@ module Transfer = {
       let provider = Toolkit.{signer: signer};
       tk->Toolkit.setProvider(provider);
 
-      let%FtMap res =
+      let inject = transfers =>
         tk.estimate
         ->Toolkit.Estimation.batch(transfers)
         ->ReTaquitoError.fromPromiseParsed;
-      res;
+
+      let%Ft res = inject(transfers);
+
+      switch (res) {
+      | Ok(results) => Promise.ok(results)
+      | Error(_) =>
+        patchEstimationWithHardLimits(~endpoint, ~transfers)
+        ->Promise.flatMapOk(inject)
+      };
     };
 
     let batch =
