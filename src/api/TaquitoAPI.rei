@@ -38,6 +38,9 @@ module Rpc: {
     ReTaquito.endpoint => Promise.t(ReTaquito.RPCClient.blockHeader);
 
   let getChainId: ReTaquito.endpoint => Promise.t(string);
+
+  let getConstants:
+    ReTaquito.endpoint => Promise.t(ReTaquito.RPCClient.constants);
 };
 
 module Signer: {

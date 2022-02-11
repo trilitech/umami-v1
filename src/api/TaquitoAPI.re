@@ -101,6 +101,11 @@ module Rpc = {
     RPCClient.create(endpoint)
     ->RPCClient.getBlockHeader()
     ->ReTaquitoError.fromPromiseParsed;
+
+  let getConstants = endpoint =>
+    RPCClient.create(endpoint)
+    ->RPCClient.getConstants()
+    ->ReTaquitoError.fromPromiseParsed;
 };
 
 module Signer = {

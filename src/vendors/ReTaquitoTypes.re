@@ -48,6 +48,11 @@ module RPCClient = {
     chain_id: string,
     level: int,
   };
+
+  type constants = {
+    hard_gas_limit_per_operation: ReBigNumber.t,
+    hard_storage_limit_per_operation: ReBigNumber.t,
+  };
 };
 
 module Operation = {
