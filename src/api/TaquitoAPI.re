@@ -42,7 +42,7 @@ let () =
 
 let extractBatchRevealEstimation = (xs, estimations) => {
   switch (estimations->Array.get(0)) {
-  | Some(res: ReTaquitoTypes.Estimation.result)
+  | Some((res: ReTaquitoTypes.Estimation.result))
       when estimations->Array.length == xs->Array.length + 1 =>
     Ok((estimations->Array.sliceToEnd(1), Some(res)))
   | Some(_) => Ok((estimations, None))
@@ -213,6 +213,105 @@ module Delegate = {
 
       let%Await (res, reveal) =
         extractBatchRevealEstimation([|sd|], res)->Promise.value;
+
+      let%AwaitMap res =
+        switch (res) {
+        | [|res|] => Promise.ok(res)
+        | _ => Promise.err(InvalidEstimationResults)
+        };
+
+      let simulation =
+        res->handleCustomOptions((
+          fee->Option.map(Tez.unsafeToMutezInt),
+          None,
+          None,
+        ));
+
+      Protocol.Simulation.{
+        simulations: [|simulation|],
+        revealSimulation: reveal->Option.map(handleReveal),
+      };
+    };
+  };
+};
+
+module Originate = {
+  let originate =
+      (
+        ~endpoint,
+        ~baseDir,
+        ~source,
+        ~balance=?,
+        ~code,
+        ~storage,
+        ~delegate=?,
+        ~signingIntent: Signer.intent,
+        ~fee=?,
+        (),
+      ) => {
+    let tk = Toolkit.create(endpoint);
+    let balance =
+      balance->Option.map(v => v->Tez.toInt64->BigNumber.fromInt64);
+    let fee = fee->Option.map(v => v->Tez.toInt64->BigNumber.fromInt64);
+    let%Await signer = Signer.readSecretKey(source, signingIntent, baseDir);
+    let provider = Toolkit.{signer: signer};
+    tk->Toolkit.setProvider(provider);
+    let og =
+      Toolkit.prepareOriginate(
+        ~source,
+        ~balance?,
+        ~code,
+        ~storage,
+        ~delegate?,
+        ~fee?,
+        (),
+      );
+    tk.contract->Toolkit.originate(og)->ReTaquitoError.fromPromiseParsed;
+  };
+
+  module Estimate = {
+    let originate =
+        (
+          ~endpoint,
+          ~baseDir,
+          ~source: PublicKeyHash.t,
+          ~balance=?,
+          ~code,
+          ~storage,
+          ~delegate=?,
+          ~fee=?,
+          (),
+        ) => {
+      let%Await alias = Wallet.aliasFromPkh(~dirpath=baseDir, ~pkh=source);
+
+      let%Await pk = Wallet.pkFromAlias(~dirpath=baseDir, ~alias);
+
+      let tk = Toolkit.create(endpoint);
+      let signer =
+        EstimationSigner.create(~publicKey=pk, ~publicKeyHash=source, ());
+      let provider = Toolkit.{signer: signer};
+      tk->Toolkit.setProvider(provider);
+
+      let balanceBignum = balance->Option.map(Tez.toBigNumber);
+      let feeBignum = fee->Option.map(Tez.toBigNumber);
+      let so =
+        Toolkit.prepareOriginate(
+          ~source,
+          ~balance=?balanceBignum,
+          ~code,
+          ~storage,
+          ~delegate?,
+          ~fee=?feeBignum,
+          (),
+        );
+
+      let%Await res =
+        tk.estimate
+        ->Toolkit.Estimation.batchOrigination([|so|])
+        ->ReTaquitoError.fromPromiseParsed;
+
+      let%Await (res, reveal) =
+        extractBatchRevealEstimation([|so|], res)->Promise.value;
 
       let%AwaitMap res =
         switch (res) {
