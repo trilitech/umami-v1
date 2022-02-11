@@ -625,26 +625,37 @@ module Transfer = {
   module Estimate = {
     let patchEstimationWithHardLimits =
         (~endpoint, ~transfers: array(Toolkit.transferParams)) => {
-      let%AwaitMap {
+      let%Await {
         hard_gas_limit_per_operation,
         hard_storage_limit_per_operation,
       } =
         Rpc.getConstants(endpoint);
 
-      // Only use the hard limit if not provided by the user
-      transfers->Array.map(tr =>
-        {
-          ...tr,
-          gasLimit:
-            tr.gasLimit == None
-              ? hard_gas_limit_per_operation->ReBigNumber.toInt->Some
-              : tr.gasLimit,
-          storageLimit:
-            tr.storageLimit == None
-              ? hard_storage_limit_per_operation->ReBigNumber.toInt->Some
-              : tr.storageLimit,
-        }
-      );
+      let hardGasLimit = hard_gas_limit_per_operation->ReBigNumber.toInt;
+      let hardStorageLimit =
+        hard_storage_limit_per_operation->ReBigNumber.toInt;
+
+      // Only use the hard limit if not provided by the user and checks if one
+      // of the user's limit is above the maximum
+      transfers
+      ->Array.map(tr => {
+          tr.gasLimit->Option.mapDefault(false, g => g >= hardGasLimit)
+            ? Error(ReTaquitoError.GasExhaustedAboveLimit)
+            : tr.storageLimit
+              ->Option.mapDefault(false, g => g >= hardStorageLimit)
+                ? Error(ReTaquitoError.StorageExhaustedAboveLimit)
+                : {
+                    ...tr,
+                    gasLimit:
+                      tr.gasLimit == None ? hardGasLimit->Some : tr.gasLimit,
+                    storageLimit:
+                      tr.storageLimit == None
+                        ? hardStorageLimit->Some : tr.storageLimit,
+                  }
+                  ->Ok
+        })
+      ->Result.collectArray
+      ->FutureBase.value;
     };
 
     let inject = (~endpoint, ~publicKey, ~source, ~transfers) => {
@@ -663,9 +674,10 @@ module Transfer = {
 
       switch (res) {
       | Ok(results) => Promise.ok(results)
-      | Error(_) =>
+      | Error(ReTaquitoError.GasExhausted | ReTaquitoError.StorageExhausted) =>
         patchEstimationWithHardLimits(~endpoint, ~transfers)
         ->Promise.flatMapOk(inject)
+      | Error(e) => Promise.err(e)
       };
     };
 
@@ -691,10 +703,8 @@ module Transfer = {
         transfers
         ->List.map(tr => {...tr, kind: opKindTransaction})
         ->List.toArray;
-      Js.log(transfers);
 
       let%Await res = inject(~endpoint, ~publicKey, ~source, ~transfers);
-      Js.log(res);
 
       let%AwaitMap (simulations, reveal) =
         extractBatchRevealEstimation(transfers, res)->Promise.value;

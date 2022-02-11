@@ -657,6 +657,11 @@ module Errors = {
       v,
     );
   let cannot_parse_version = err => p("Invalid backup file:\n%s", err);
+  let annot_parse_version = err => p("Invalid backup file:\n%s", err);
+  let gas_exhausted = "Gas exhausted for the operation, please put a higher limit";
+  let storage_exhausted = "Storage exhausted for the operation, please put a higher limit";
+  let gas_exhausted_above_limit = "Gas exhausted and above protocol limit per operation";
+  let storage_exhausted_above_limit = "Storage exhausted and above protocol limit per operation";
 };
 
 module Csv = {
