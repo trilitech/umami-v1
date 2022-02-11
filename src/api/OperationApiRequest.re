@@ -60,9 +60,9 @@ let keepNonFormErrors =
 let useCreate = (~sideEffect=?, ()) => {
   let set = (~config, {operation, signingIntent}) => {
     switch (operation) {
-    | Delegation(_) as operation =>
+    | Delegation(_) as operation
+    | Origination(_) as operation =>
       config->NodeAPI.Operation.run(operation, ~signingIntent)
-
     | Transaction(t) =>
       config->NodeAPI.Operation.batch(
         t.transfers,

@@ -32,17 +32,45 @@ type delegation = {
   options: delegationOptions,
 };
 
+type origination = {
+  source: Account.t,
+  balance: option(Tez.t),
+  code: ReTaquitoTypes.Code.t,
+  storage: ReTaquitoTypes.Storage.t,
+  delegate: option(PublicKeyHash.t),
+  options: originationOptions,
+};
+
 type t =
   | Delegation(delegation)
+  | Origination(origination)
   | Transaction(Transfer.t);
 
 let makeDelegate =
     (~source, ~delegate, ~fee=?, ~burnCap=?, ~forceLowFee=?, ()) => {
-  {
-    source,
-    delegate,
-    options: makeDelegationOptions(~fee, ~burnCap, ~forceLowFee, ()),
-  };
+  source,
+  delegate,
+  options: makeDelegationOptions(~fee, ~burnCap, ~forceLowFee, ()),
+};
+
+let makeOrigination =
+    (
+      ~source,
+      ~balance=?,
+      ~code,
+      ~storage,
+      ~delegate: option(PublicKeyHash.t),
+      ~fee=?,
+      ~burnCap=?,
+      ~forceLowFee=?,
+      (),
+    ) => {
+  source,
+  balance,
+  delegate,
+  code,
+  storage,
+  options: makeOriginationOptions(~fee, ~burnCap, ~forceLowFee, ()),
 };
 
 module Simulation = {
@@ -72,7 +100,8 @@ let optionsSet =
   | Transaction({transfers: [t]}) =>
     ProtocolOptions.txOptionsSet(t.tx_options)->Some
   | Transaction({transfers: _}) => None
-  | Delegation(d) => ProtocolOptions.delegationOptionsSet(d.options)->Some;
+  | Delegation(d) => ProtocolOptions.delegationOptionsSet(d.options)->Some
+  | Origination(o) => ProtocolOptions.originationOptionsSet(o.options)->Some;
 
 let isContractCall = (o, index) =>
   switch (o) {
@@ -84,4 +113,5 @@ let isContractCall = (o, index) =>
         t.amount->Transfer.Currency.getToken != None
         || t.destination->PublicKeyHash.isContract
       )
+  | Origination(_) => false
   };
