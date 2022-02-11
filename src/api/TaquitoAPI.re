@@ -602,7 +602,7 @@ module Transfer = {
         ~endpoint,
         ~baseDir,
         ~source,
-        ~transfers:
+        ~transfersBuilder:
            (ReTaquito.endpoint, PublicKeyHash.t) =>
            FutureBase.t(list(Promise.result(Toolkit.transferParams))),
         ~signingIntent,
@@ -612,7 +612,8 @@ module Transfer = {
     let%Await signer = Signer.readSecretKey(source, signingIntent, baseDir);
     let provider = Toolkit.{signer: signer};
     tk->Toolkit.setProvider(provider);
-    let%Await txs = endpoint->transfers(source)->Promise.map(Result.collect);
+    let%Await txs =
+      endpoint->transfersBuilder(source)->Promise.map(Result.collect);
     let txs = txs->List.map(tr => {...tr, kind: opKindTransaction});
     let batch = tk.contract->Toolkit.Batch.make;
     txs
@@ -622,40 +623,49 @@ module Transfer = {
   };
 
   module Estimate = {
+    let inject = (~endpoint, ~publicKey, ~source, ~transfers) => {
+      let tk = Toolkit.create(endpoint);
+      let signer =
+        EstimationSigner.create(~publicKey, ~publicKeyHash=source, ());
+      let provider = Toolkit.{signer: signer};
+      tk->Toolkit.setProvider(provider);
+
+      let%FtMap res =
+        tk.estimate
+        ->Toolkit.Estimation.batch(transfers)
+        ->ReTaquitoError.fromPromiseParsed;
+      res;
+    };
+
     let batch =
         (
           ~endpoint,
           ~baseDir,
           ~source: PublicKeyHash.t,
           ~customValues,
-          ~transfers:
+          ~transfersBuilder:
              (ReTaquito.endpoint, PublicKeyHash.t) =>
              FutureBase.t(list(Promise.result(Toolkit.transferParams))),
           (),
         ) => {
       let%Await alias = Wallet.aliasFromPkh(~dirpath=baseDir, ~pkh=source);
 
-      let%Await pk = Wallet.pkFromAlias(~dirpath=baseDir, ~alias);
+      let%Await publicKey = Wallet.pkFromAlias(~dirpath=baseDir, ~alias);
 
-      let tk = Toolkit.create(endpoint);
-      let signer =
-        EstimationSigner.create(~publicKey=pk, ~publicKeyHash=source, ());
-      let provider = Toolkit.{signer: signer};
-      tk->Toolkit.setProvider(provider);
+      let%Await transfers =
+        endpoint->transfersBuilder(source)->Promise.map(Result.collect);
 
-      let%Await txs =
-        endpoint->transfers(source)->Promise.map(Result.collect);
+      let transfers =
+        transfers
+        ->List.map(tr => {...tr, kind: opKindTransaction})
+        ->List.toArray;
+      Js.log(transfers);
 
-      let txs =
-        txs->List.map(tr => {...tr, kind: opKindTransaction})->List.toArray;
-
-      let%Await res =
-        tk.estimate
-        ->Toolkit.Estimation.batch(txs)
-        ->ReTaquitoError.fromPromiseParsed;
+      let%Await res = inject(~endpoint, ~publicKey, ~source, ~transfers);
+      Js.log(res);
 
       let%AwaitMap (simulations, reveal) =
-        extractBatchRevealEstimation(txs, res)->Promise.value;
+        extractBatchRevealEstimation(transfers, res)->Promise.value;
 
       handleEstimationResults(simulations, reveal, customValues);
     };

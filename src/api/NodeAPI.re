@@ -76,7 +76,7 @@ module Simulation = {
       ~baseDir=config.baseDir(),
       ~source=source.Account.address,
       ~customValues,
-      ~transfers=transfers->TaquitoAPI.Transfer.prepareTransfers,
+      ~transfersBuilder=transfers->TaquitoAPI.Transfer.prepareTransfers,
       (),
     );
   };
@@ -244,7 +244,7 @@ module Operation = {
         ~endpoint=config.network.endpoint,
         ~baseDir=config.baseDir(),
         ~source=source.Account.address,
-        ~transfers=transfers->TaquitoAPI.Transfer.prepareTransfers,
+        ~transfersBuilder=transfers->TaquitoAPI.Transfer.prepareTransfers,
         ~signingIntent,
         (),
       );

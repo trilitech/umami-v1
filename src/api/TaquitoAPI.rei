@@ -157,10 +157,12 @@ module Transfer: {
       ~endpoint: ReTaquito.endpoint,
       ~baseDir: System.Path.t,
       ~source: Wallet.PkhAlias.t,
-      ~transfers: (ReTaquito.endpoint, PublicKeyHash.t) =>
-                  FutureBase.t(
-                    list(Promise.result(ReTaquito.Toolkit.transferParams)),
-                  ),
+      ~transfersBuilder: (ReTaquito.endpoint, PublicKeyHash.t) =>
+                         FutureBase.t(
+                           list(
+                             Promise.result(ReTaquito.Toolkit.transferParams),
+                           ),
+                         ),
       ~signingIntent: Signer.intent,
       unit
     ) =>
@@ -173,10 +175,14 @@ module Transfer: {
         ~baseDir: System.Path.t,
         ~source: PublicKeyHash.t,
         ~customValues: array((option(int), option(int), option(int))),
-        ~transfers: (ReTaquito.endpoint, PublicKeyHash.t) =>
-                    FutureBase.t(
-                      list(Promise.result(ReTaquito.Toolkit.transferParams)),
-                    ),
+        ~transfersBuilder: (ReTaquito.endpoint, PublicKeyHash.t) =>
+                           FutureBase.t(
+                             list(
+                               Promise.result(
+                                 ReTaquito.Toolkit.transferParams,
+                               ),
+                             ),
+                           ),
         unit
       ) =>
       Promise.t(Protocol.Simulation.results);
