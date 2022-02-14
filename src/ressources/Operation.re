@@ -23,7 +23,6 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open ProtocolOptions;
 open Protocol;
 
 type t = Protocol.t;
@@ -39,38 +38,6 @@ module Simulation = {
   let origination = o => o->Origination;
   let transaction = t => t->Transaction;
 };
-
-let makeDelegate =
-    (~source, ~delegate, ~fee=?, ~burnCap=?, ~forceLowFee=?, ()) => {
-  {
-    source,
-    delegate,
-    options: makeDelegationOptions(~fee, ~burnCap, ~forceLowFee, ()),
-  }
-  ->delegation;
-};
-
-let makeOrigination =
-    (
-      ~source,
-      ~balance=?,
-      ~code,
-      ~storage,
-      ~delegate=?,
-      ~fee=?,
-      ~burnCap=?,
-      ~forceLowFee=?,
-      (),
-    ) =>
-  {
-    source,
-    balance,
-    code,
-    storage,
-    delegate,
-    options: makeOriginationOptions(~fee, ~burnCap, ~forceLowFee, ()),
-  }
-  ->origination;
 
 let makeTransaction = (~source, ~transfers, ~burnCap=?, ~forceLowFee=?, ()) =>
   transaction(

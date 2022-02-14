@@ -58,6 +58,14 @@ let checkOnlyOneDelegation =
      );
 };
 
+let checkOnlyOneOrigination =
+    ({operationDetails}: ReBeacon.Message.Request.operationRequest) => {
+  operationDetails->Array.size == 1
+  && operationDetails->Array.every(operationDetail =>
+       operationDetail.kind == `origination
+     );
+};
+
 let useBeaconRequestModalAction = () => {
   let (request, setRequest) = React.useState(_ => None);
   let (visibleModal, openAction, closeAction) =
@@ -165,9 +173,7 @@ let make = (~account) => {
           | PermissionRequest(_) => openModal(Ok(request))
           | SignPayloadRequest(_) => openModal(Ok(request))
           | OperationRequest(r) =>
-            if (r->checkOnlyTransaction) {
-              openModal(request->Ok);
-            } else if (r->checkOnlyOneDelegation) {
+            if (r->checkOnlyTransaction || r->checkOnlyOneDelegation || r->checkOnlyOneOrigination) {
               openModal(request->Ok);
             } else {
               setError(
@@ -215,6 +221,13 @@ let make = (~account) => {
          | (Some(sourceAccount), Ok(OperationRequest(r)))
              when r->checkOnlyOneDelegation =>
            <BeaconOperationView.Delegate
+             beaconRequest=r
+             sourceAccount
+             closeAction=closeModal
+           />
+         | (Some(sourceAccount), Ok(OperationRequest(r)))
+             when r->checkOnlyOneOrigination =>
+           <BeaconOperationView.Originate
              beaconRequest=r
              sourceAccount
              closeAction=closeModal

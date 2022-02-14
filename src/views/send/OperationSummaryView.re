@@ -73,7 +73,13 @@ module Content = {
 
 module EntityInfo = {
   [@react.component]
-  let make = (~address: option(PublicKeyHash.t), ~title, ~style=?) => {
+  let make =
+      (
+        ~address: option(PublicKeyHash.t),
+        ~title,
+        ~default=React.null,
+        ~style=?,
+      ) => {
     let aliases = StoreContext.Aliases.useGetAll();
 
     <View ?style>
@@ -89,7 +95,7 @@ module EntityInfo = {
              alias->React.string
            </Typography.Subtitle2>
          )}
-      {address->ReactUtils.mapOpt(address =>
+      {address->Option.mapWithDefault(default, address =>
          <Typography.Address>
            (address :> string)->React.string
          </Typography.Address>
@@ -117,7 +123,6 @@ module Base = {
           <TransactionContractParams parameters />
         </>
       }
-
     | `Many(recipients) =>
       <BatchView.Transactions smallest recipients ?button />
     };
@@ -129,9 +134,7 @@ module Base = {
         ~style as styleProp=?,
         ~source,
         ~destinations,
-        ~smallest=false,
         ~content: list((string, Belt.List.t(Transfer.Currency.t))),
-        ~button=?,
       ) => {
     let content: list((string, Belt.List.t(string))) =
       content->List.map(((field, amounts)) =>
@@ -148,7 +151,7 @@ module Base = {
         title={source->snd}
       />
       {content->ReactUtils.hideNil(content => <Content content />)}
-      {buildDestinations(smallest, destinations, button)}
+      destinations
     </View>;
   };
 };
@@ -272,11 +275,13 @@ module Transactions = {
 
     <Base
       ?style
-      smallest
       source
-      destinations
+      destinations={Base.buildDestinations(
+        smallest,
+        destinations,
+        Some(batchAdvancedOptions),
+      )}
       content
-      button=batchAdvancedOptions
     />;
   };
 };
@@ -320,7 +325,84 @@ module Delegate = {
     <Base
       ?style
       source=(delegation.source, I18n.Title.delegated_account)
-      destinations={`One((target, title, None))}
+      destinations={Base.buildDestinations(
+        false,
+        `One((target, title, None)),
+        None,
+      )}
+      content={buildSummaryContent(dryRun)}
+    />;
+  };
+};
+
+module Originate = {
+  let buildSummaryContent = (dryRun: Protocol.Simulation.results) => {
+    let revealFee =
+      dryRun.revealSimulation
+      ->Option.map(({fee}) =>
+          (I18n.Label.implicit_reveal_fee, [Transfer.Currency.Tez(fee)])
+        );
+
+    let fee = (
+      I18n.Label.fee,
+      [
+        Transfer.Currency.Tez(dryRun.simulations->Protocol.Simulation.sumFees),
+      ],
+    );
+
+    let total = (
+      I18n.Label.summary_total,
+      [Transfer.Currency.Tez(dryRun->Protocol.Simulation.getTotalFees)],
+    );
+
+    [fee, ...revealFee->Option.mapWithDefault([total], r => [r, total])];
+  };
+
+  [@react.component]
+  let make =
+      (
+        ~style=?,
+        ~origination: Protocol.origination,
+        ~dryRun: Protocol.Simulation.results,
+      ) => {
+    <Base
+      ?style
+      source=(origination.source, I18n.Title.contract_originator)
+      destinations={
+        <View style=styles##element>
+          <View style=FormStyles.amountRow>
+            <Typography.Overline2>
+              I18n.Title.balance->React.string
+            </Typography.Overline2>
+            <Typography.Body1 style=styles##amount fontWeightStyle=`black>
+              {I18n.tez_amount(
+                 origination.balance
+                 ->Option.getWithDefault(Tez.zero)
+                 ->Tez.toString,
+               )
+               ->React.string}
+            </Typography.Body1>
+          </View>
+          <EntityInfo
+            style=styles##element
+            address={origination.delegate}
+            title=I18n.Title.delegate
+            default={
+              <Typography.Body1>
+                I18n.none->React.string
+              </Typography.Body1>
+            }
+          />
+          <Typography.Overline2 colorStyle=`mediumEmphasis style=styles##label>
+            I18n.Label.storage->React.string
+          </Typography.Overline2>
+          <TransactionContractParams parameters={origination.storage} />
+          <Typography.Overline2 colorStyle=`mediumEmphasis style=styles##label>
+            I18n.Label.code->React.string
+          </Typography.Overline2>
+          <TransactionContractParams parameters={origination.code} />
+        </View>
+      }
       content={buildSummaryContent(dryRun)}
     />;
   };

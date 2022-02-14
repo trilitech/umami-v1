@@ -23,14 +23,42 @@
 /*                                                                           */
 /*****************************************************************************/
 
+open ReactNative;
+
+let styles =
+  Style.(
+    StyleSheet.create({
+      "container":
+        style(
+          ~flexDirection=`row,
+          ~alignItems=`center,
+          ~paddingVertical=10.->dp,
+          ~paddingHorizontal=16.->dp,
+          ~borderRadius=4.,
+          (),
+        ),
+    })
+  );
+
 [@react.component]
 let make = (~style as styleProp=?, ~parameters) => {
-  <CodeView
-    style=?styleProp
-    text={
-      parameters
-      ->ProtocolOptions.TransactionParameters.MichelineMichelsonV1Expression.toString
-      ->Option.getWithDefault("")
-    }
-  />;
+  let theme = ThemeContext.useTheme();
+  let addToast = LogsContext.useToast();
+
+  let text =
+    parameters
+    ->ProtocolOptions.TransactionParameters.MichelineMichelsonV1Expression.toString
+    ->Option.getWithDefault("");
+
+  <View
+    style=Style.(
+      arrayOption([|
+        Some(styles##container),
+        Some(style(~backgroundColor=theme.colors.stateDisabled, ())),
+        styleProp,
+      |])
+    )>
+    <Typography.Address numberOfLines=1> text->React.string </Typography.Address>
+    <ClipboardButton copied=I18n.Log.content addToast data=text />
+  </View>;
 };
