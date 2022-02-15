@@ -117,6 +117,16 @@ function createWindow() {
     }
   })
 
+  mainWindow.webContents.setWindowOpenHandler((details) => {
+    console.log(details);
+    if (details.frameName === '_blank'){
+      require('electron').shell.openExternal(details.url);
+      return {action: 'deny'};
+    } else {
+      return {action: 'allow'};
+    }
+  });
+
   // Emitted when the window is closed.
   mainWindow.on('closed', () => {
     // Dereference the window object, usually you would store windows
@@ -150,6 +160,8 @@ app.on('window-all-closed', () => {
     app.quit()
   }
 })
+
+
 
 app.on('activate', () => {
   // On macOS it's common to re-create a window in the app when the
