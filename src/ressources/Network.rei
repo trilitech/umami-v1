@@ -73,7 +73,7 @@ type Errors.t +=
   | API(apiError)
   | Node(nodeError);
 
-type nativeChains = [ | `Hangzhounet | `Mainnet];
+type nativeChains = [ | `Hangzhounet | `Mainnet | `Ithacanet];
 
 type supportedChains = [ nativeChains | `Florencenet | `Edo2net | `Granadanet];
 
@@ -98,9 +98,7 @@ type network = {
   endpoint: string,
 };
 
-let mk:
-  (~name: string, ~explorer: string, ~endpoint: string, chain(chainId)) =>
-  network;
+let mk: (~explorer: string, ~endpoint: string, chain(chainId)) => network;
 
 let chainNetwork: chain('chainId) => option(string);
 let networkChain: string => option(chain('chainId));
@@ -125,10 +123,9 @@ module Decode: {
 
 let mainnet: network;
 let hangzhounet: network;
+let ithacanet: network;
 
-let mainnetNetworks: list(network);
-let hangzhounetNetworks: list(network);
-
+let getNetwork: nativeChains => network;
 let getNetworks: nativeChains => list(network);
 
 let testNetwork: network => Promise.t(ReTaquito.RPCClient.blockHeader);
