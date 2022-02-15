@@ -124,6 +124,8 @@ module CustomAuthView = {
   open SignerView;
   [@react.component]
   let make = (~st, ~retry, ~loading, ~submit, ~provider) => {
+    let () = ReCustomAuthUtils.useDeeplinkHandler();
+
     <Container>
       {switch (st) {
        | WaitForConfirm

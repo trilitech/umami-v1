@@ -93,9 +93,12 @@ let init = (sdk, initParams) => {
 };
 
 /* [triggerAggregateLogin] runs the following steps:
-   - opens a auth provider pop
+   - opens a auth provider page on the external browser
    - receives the auth information
    - fetches the secret key from Torus
+
+   auth informations are received from deeplink call from the browser
+   see [useDeeplinkHandler] in module [ReCustomAuthUtils]
    */
 let triggerAggregateLogin = (sdk, params) => {
   sdk->triggerAggregateLogin(params)->RawJsError.fromPromiseParsed(parse);

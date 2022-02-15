@@ -158,3 +158,35 @@ type infos = {
   provider,
   handle: Handle.t,
 };
+
+module Msg = {
+  type instanceParams = {
+    instanceId: string,
+    verifier: string,
+    typeOfLogin: string,
+    redirectToOpener: bool,
+  };
+
+  type hashParams = {
+    state: string,
+    access_token: string,
+    token_type: string,
+    expires_in: string,
+    scope: string,
+    id_token: string,
+    authuser: string,
+    hd: string,
+    prompt: string,
+  };
+
+  type data = {
+    instanceParams,
+    hashParams,
+  };
+
+  type t = {
+    channel: string,
+    data,
+    error: string,
+  };
+};

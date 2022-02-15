@@ -28,11 +28,15 @@ open ReCustomAuth;
 
 module StateInfoView = {
   [@react.component]
-  let make = (~provider) => {
+  let make = (~closeAction, ~provider) => {
     let styles = InitLedgerView.styles;
     let providerName = provider->CustomAuthVerifiers.getProviderName;
 
-    <ModalFormView title={I18n.Title.provider_authentification(providerName)}>
+    let () = ReCustomAuthUtils.useDeeplinkHandler();
+
+    <ModalFormView
+      closing={ModalFormView.Close(closeAction)}
+      title={I18n.Title.provider_authentification(providerName)}>
       {<View style=InitLedgerView.styles##content>
          <View
            style=Style.(
@@ -97,7 +101,7 @@ module CustomAuthButton = {
 
     <>
       <ModalAction visible=visibleModal onRequestClose=closeAction>
-        <StateInfoView provider />
+        <StateInfoView closeAction provider />
       </ModalAction>
       <ThemedPressable
         onPress
