@@ -46,3 +46,22 @@ let useNextDeeplinkState = () => {
   });
   (next, done_);
 };
+
+let deeplinkPrefix = "umami://";
+
+let useDeeplink = () => {
+  let (state, setState) = React.useState(() => None);
+
+  React.useEffect0(() => {
+    let listener = (_, url) => {
+      let message =
+        url->Js.String2.substr(~from=deeplinkPrefix->Js.String.length);
+
+      setState(_ => Some(message));
+    };
+    renderer->on("deeplinkURL", listener);
+    Some(_ => renderer->removeListener("deeplinkURL", listener));
+  });
+
+  state;
+};
