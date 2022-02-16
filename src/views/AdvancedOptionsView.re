@@ -122,57 +122,51 @@ let styles =
     })
   );
 
-let updateOperation = (index, values: StateLenses.state, o: Operation.t) => {
+let updateOperation = (index, values: StateLenses.state, ops: Protocol.batch) => {
   let values = values->extractValidState;
   let fallback = (o1, o2) => Option.firstSome([o1, o2]);
 
-  switch (o) {
-  | Transaction(t) =>
-    let transfers =
-      t.transfers
-      ->List.mapWithIndex((i, t) =>
-          if (index == i) {
-            let tx_options = {
-              ...t.tx_options,
-              gasLimit: fallback(values.gasLimit, t.tx_options.gasLimit),
-              fee: fallback(values.fee, t.tx_options.fee),
+  let managers =
+    ops.managers
+    ->Array.mapWithIndex((i, op) =>
+        if (index == i) {
+          switch (op) {
+          | Transfer(t) =>
+            let options = {
+              ...t.options,
+              gasLimit: fallback(values.gasLimit, t.options.gasLimit),
+              fee: fallback(values.fee, t.options.fee),
               storageLimit:
-                fallback(values.storageLimit, t.tx_options.storageLimit),
+                fallback(values.storageLimit, t.options.storageLimit),
             };
 
-            {...t, tx_options};
-          } else {
-            t;
-          }
-        );
+            {...t, options}->Protocol.Transfer;
 
-    let options = {
-      ...t.options,
-      forceLowFee:
-        (values.forceLowFee || t.options.forceLowFee == Some(true))->Some,
-    };
+          | Delegation(d) =>
+            let fee = fallback(values.fee, d.fee);
+            {...d, fee}->Protocol.Delegation;
+          };
+        } else {
+          op;
+        }
+      );
 
-    {...t, options, transfers}->Protocol.Transaction;
-  | Delegation(d) =>
-    let options = {
-      ...d.options,
-      fee: fallback(values.fee, d.options.fee),
-      forceLowFee:
-        (values.forceLowFee || d.options.forceLowFee == Some(true))->Some,
-    };
-    {...d, options}->Protocol.Delegation;
-  };
+  {...ops, managers};
 };
 
 let tezDecoration = (~style) =>
   <Typography.Body1 style> I18n.tez->React.string </Typography.Body1>;
 
 [@react.component]
-let make = (~operation, ~dryRun, ~index=0, ~token, ~onSubmit) => {
+let make = (~operation: Protocol.batch, ~dryRun, ~index=0, ~token, ~onSubmit) => {
   let (operationSimulateRequest, sendOperationSimulate) =
     StoreContext.Operations.useSimulate();
 
-  let showLimits = token != None || Protocol.isContractCall(operation, index);
+  let showLimits =
+    token != None
+    || operation.managers
+       ->Array.get(index)
+       ->Option.mapWithDefault(false, ProtocolHelper.isContractCall);
 
   let form =
     Form.use(

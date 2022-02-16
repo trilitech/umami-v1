@@ -24,6 +24,9 @@
 /*****************************************************************************/
 
 open ReactNative;
+open Protocol;
+
+open List.Infix;
 
 let styles =
   Style.(
@@ -130,12 +133,12 @@ module Base = {
         ~source,
         ~destinations,
         ~smallest=false,
-        ~content: list((string, Belt.List.t(Transfer.Currency.t))),
+        ~content: list((string, Belt.List.t(Protocol.Amount.t))),
         ~button=?,
       ) => {
     let content: list((string, Belt.List.t(string))) =
       content->List.map(((field, amounts)) =>
-        (field, amounts->List.map(Transfer.Currency.showAmount))
+        (field, amounts->List.map(Protocol.Amount.show))
       );
 
     <View
@@ -154,62 +157,87 @@ module Base = {
 };
 
 module Transactions = {
+  let filterTransfers = managers =>
+    managers->Array.keepMap(
+      fun
+      | Protocol.Transfer(t) => Some(t)
+      | _ => None,
+    );
+
   let transactionParameters = (~entrypoint, ~parameter) =>
     switch (entrypoint, parameter) {
     | (Some(entrypoint), Some(parameter)) =>
-      Some(ReTaquitoTypes.Transfer.Parameters.{entrypoint, value: parameter})
+      Some(ReTaquitoTypes.Transfer.Entrypoint.{entrypoint, value: parameter})
     | _ => None
     };
 
-  let sourceDestination = (transfer: Transfer.t) => {
+  let sourceDestination = (operation: Protocol.batch) => {
     let recipientLbl = I18n.Title.recipient_account;
     let sourceLbl = I18n.Title.sender_account;
 
-    switch (transfer) {
-    | {source, transfers: [t]} => (
-        (source, sourceLbl),
+    switch (operation.managers) {
+    | [|Transfer({data: Simple(t), options})|] => (
+        (operation.source, sourceLbl),
         `One((
           Some(t.destination),
           recipientLbl,
           transactionParameters(
-            ~entrypoint=t.tx_options.entrypoint,
-            ~parameter=t.tx_options.parameter,
+            ~entrypoint=options.entrypoint,
+            ~parameter=options.parameter,
           ),
         )),
       )
-    | {source, transfers} =>
-      let destinations =
-        transfers->List.map(t =>
-          (
-            t.destination,
-            t.amount,
-            transactionParameters(
-              ~entrypoint=t.tx_options.entrypoint,
-              ~parameter=t.tx_options.parameter,
-            ),
-            ProtocolOptions.txOptionsSet(t.tx_options),
-          )
+    | managers =>
+      let managers =
+        managers->Array.keepMap(
+          fun
+          | Transfer(t) => Some(t)
+          | _ => None,
         );
-      ((source, sourceLbl), `Many(destinations));
+
+      let destinations =
+        managers->Array.reduce([], (acc, Transfer.{data, options}) => {
+          switch (data) {
+          | FA2Batch(_) => assert(false)
+
+          | Simple(t) =>
+            (
+              t.destination,
+              t.amount,
+              transactionParameters(
+                ~entrypoint=options.entrypoint,
+                ~parameter=options.parameter,
+              ),
+              ProtocolOptions.txOptionsSet(options),
+            )
+            @: acc
+          }
+        });
+
+      ((operation.source, sourceLbl), `Many(destinations->List.reverse));
     };
   };
 
   let buildSummaryContent =
-      (transaction: Transfer.t, dryRun: Protocol.Simulation.results) => {
-    let feeSum = dryRun.simulations->Protocol.Simulation.sumFees;
+      (operation: Protocol.batch, dryRun: Protocol.Simulation.results) => {
+    let feeSum = dryRun.simulations->ProtocolHelper.Simulation.sumFees;
 
-    let partialFee = (I18n.Label.fee, [Transfer.Currency.Tez(feeSum)]);
+    let partialFee = (I18n.Label.fee, [Amount.Tez(feeSum)]);
 
     let revealFee =
       dryRun.revealSimulation
       ->Option.map(({fee}) =>
-          (I18n.Label.implicit_reveal_fee, [Transfer.Currency.Tez(fee)])
+          (I18n.Label.implicit_reveal_fee, [Protocol.Amount.Tez(fee)])
         );
 
-    let totals =
-      transaction.transfers
-      ->List.map(t => t.amount)
-      ->Transfer.Currency.reduceAmounts;
+    let amounts =
+      operation.managers
+      ->filterTransfers
+      ->ProtocolHelper.Transfer.reduceArray((acc, t) =>
+          t.Transfer.amount @: acc
+        );
+
+    let totals = amounts->Protocol.Amount.reduce;
 
     let subtotals = (I18n.Label.summary_subtotal, totals);
 
@@ -223,8 +251,8 @@ module Transactions = {
       (
         noTokens ? I18n.Label.summary_total : I18n.Label.summary_total_tez,
         [
-          Transfer.Currency.Tez(
-            Tez.Infix.(sub + dryRun->Protocol.Simulation.getTotalFees),
+          Protocol.Amount.Tez(
+            Tez.Infix.(sub + dryRun->ProtocolHelper.Simulation.getTotalFees),
           ),
         ],
       );
@@ -237,14 +265,14 @@ module Transactions = {
   let make =
       (
         ~style=?,
-        ~transfer: Transfer.t,
+        ~operation: Protocol.batch,
         ~dryRun: Protocol.Simulation.results,
         ~editAdvancedOptions,
         ~advancedOptionsDisabled,
       ) => {
     let (source: (Account.t, string), destinations) =
-      sourceDestination(transfer);
-    let content = buildSummaryContent(transfer, dryRun);
+      sourceDestination(operation);
+    let content = buildSummaryContent(operation, dryRun);
 
     let theme = ThemeContext.useTheme();
 
@@ -286,19 +314,21 @@ module Delegate = {
     let revealFee =
       dryRun.revealSimulation
       ->Option.map(({fee}) =>
-          (I18n.Label.implicit_reveal_fee, [Transfer.Currency.Tez(fee)])
+          (I18n.Label.implicit_reveal_fee, [Protocol.Amount.Tez(fee)])
         );
 
     let fee = (
       I18n.Label.fee,
       [
-        Transfer.Currency.Tez(dryRun.simulations->Protocol.Simulation.sumFees),
+        Protocol.Amount.Tez(
+          dryRun.simulations->ProtocolHelper.Simulation.sumFees,
+        ),
       ],
     );
 
     let total = (
       I18n.Label.summary_total,
-      [Transfer.Currency.Tez(dryRun->Protocol.Simulation.getTotalFees)],
+      [Protocol.Amount.Tez(dryRun->ProtocolHelper.Simulation.getTotalFees)],
     );
 
     [fee, ...revealFee->Option.mapWithDefault([total], r => [r, total])];
@@ -308,7 +338,8 @@ module Delegate = {
   let make =
       (
         ~style=?,
-        ~delegation: Protocol.delegation,
+        ~delegation: Protocol.Delegation.t,
+        ~source,
         ~dryRun: Protocol.Simulation.results,
       ) => {
     let (target, title) =
@@ -319,7 +350,7 @@ module Delegate = {
 
     <Base
       ?style
-      source=(delegation.source, I18n.Title.delegated_account)
+      source=(source, I18n.Title.delegated_account)
       destinations={`One((target, title, None))}
       content={buildSummaryContent(dryRun)}
     />;

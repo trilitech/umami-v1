@@ -23,6 +23,8 @@
 /*                                                                           */
 /*****************************************************************************/
 
+open Protocol;
+
 module StateLenses = [%lenses
   type state = {
     amount: string,
@@ -32,7 +34,7 @@ module StateLenses = [%lenses
 ];
 
 type validState = {
-  amount: Transfer.Currency.t,
+  amount: Protocol.Amount.t,
   sender: Account.t,
   recipient: FormUtils.Alias.t,
 };
@@ -40,39 +42,32 @@ type validState = {
 let unsafeExtractValidState = (token, state: StateLenses.state): validState => {
   {
     amount:
-      state.amount
-      ->FormUtils.parseAmount(token)
-      ->FormUtils.Unsafe.getCurrency,
+      state.amount->FormUtils.parseAmount(token)->FormUtils.Unsafe.getAmount,
     sender: state.sender,
     recipient: state.recipient->FormUtils.Unsafe.account,
   };
 };
 
 let toState = (vs: validState): StateLenses.state => {
-  amount: vs.amount->Transfer.Currency.toString,
+  amount: vs.amount->Protocol.Amount.toString,
   sender: vs.sender,
   recipient: vs.recipient->FormUtils.Alias.Valid,
 };
 
 include ReForm.Make(StateLenses);
 
-let buildTransferElts = (transfers, build) => {
-  transfers->List.map((t: validState) => {
-    let destination = t.recipient->FormUtils.Alias.address;
+let buildTransfer = (inputTransfers, source) => {
+  let transfers =
+    inputTransfers
+    ->List.map((t: validState) => {
+        let destination = t.recipient->FormUtils.Alias.address;
+        let data = Transfer.{destination, amount: t.amount};
+        ProtocolHelper.Transfer.makeSimple(~data, ());
+      })
+    ->List.toArray;
 
-    build(~destination, ~amount=t.amount, ());
-  });
+  ProtocolHelper.Transfer.makeBatch(~source, ~transfers, ());
 };
-
-let buildTransfer = (inputTransfers, source) =>
-  Transfer.makeTransfers(
-    ~source,
-    ~transfers=
-      buildTransferElts(inputTransfers, (~destination, ~amount, ()) =>
-        Transfer.makeSingleTransferElt(~destination, ~amount, ())
-      ),
-    (),
-  );
 
 let buildTransaction = (batch: list(validState)) => {
   switch (batch) {

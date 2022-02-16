@@ -60,45 +60,30 @@ module Balance = {
 };
 
 module Simulation = {
-  let extractCustomValues = (tx_options: ProtocolOptions.transferEltOptions) => (
-    tx_options.fee->Option.map(fee => fee->Tez.unsafeToMutezInt),
-    tx_options.storageLimit,
-    tx_options.gasLimit,
-  );
+  let extractCustomValues =
+    fun
+    | Protocol.Transfer({options}) => (
+        options.fee->Option.map(fee => fee->Tez.unsafeToMutezInt),
+        options.storageLimit,
+        options.gasLimit,
+      )
+    | Delegation({fee}) => (
+        fee->Option.map(fee => fee->Tez.unsafeToMutezInt),
+        None,
+        None,
+      );
 
-  let batch = (config: ConfigContext.env, transfers, ~source, ()) => {
-    let customValues =
-      List.map(transfers, tx => tx.Transfer.tx_options->extractCustomValues)
-      ->List.toArray;
+  let run = (config: ConfigContext.env, ops: Protocol.batch) => {
+    let customValues = ops.managers->Array.map(op => op->extractCustomValues);
 
-    TaquitoAPI.Transfer.Estimate.batch(
+    TaquitoAPI.Batch.Estimate.run(
       ~endpoint=config.network.endpoint,
       ~baseDir=config.baseDir(),
-      ~source=source.Account.address,
+      ~source=ops.source.Account.address,
       ~customValues,
-      ~transfers=transfers->TaquitoAPI.Transfer.prepareTransfers,
+      ~ops,
       (),
     );
-  };
-
-  let setDelegate =
-      (config: ConfigContext.env, delegation: Protocol.delegation) => {
-    TaquitoAPI.Delegate.Estimate.set(
-      ~endpoint=config.network.endpoint,
-      ~baseDir=config.baseDir(),
-      ~source=delegation.Protocol.source.address,
-      ~delegate=?delegation.Protocol.delegate,
-      ~fee=?delegation.Protocol.options.fee,
-      (),
-    );
-  };
-
-  let run = (config, operation: Protocol.t) => {
-    switch (operation) {
-    | Delegation(d) => setDelegate(config, d)
-    | Transaction({transfers, source}) =>
-      batch(config, transfers, ~source, ())
-    };
   };
 };
 
@@ -148,7 +133,7 @@ module DelegateMaker = (Get: {let get: URL.t => Promise.t(Js.Json.t);}) => {
   module BalanceAPI = Balance;
 
   let extractInfoFromDelegate =
-      (network, delegate, account, firstOperation: Operation.Read.t) => {
+      (network, delegate, account, firstOperation: Operation.t) => {
     let%Await balance =
       network->BalanceAPI.get(
         account,
@@ -174,7 +159,7 @@ module DelegateMaker = (Get: {let get: URL.t => Promise.t(Js.Json.t);}) => {
     if (operations->Array.length == 0) {
       info->Some;
     } else {
-      switch ((firstOperation.payload: Operation.Read.payload)) {
+      switch ((firstOperation.payload: Operation.payload)) {
       | Transaction(Token(payload, _, _))
       | Transaction(Tez(payload)) =>
         {...info, lastReward: Some(payload.amount)}->Some
@@ -224,45 +209,15 @@ module DelegateMaker = (Get: {let get: URL.t => Promise.t(Js.Json.t);}) => {
 module OperationRepr = Operation;
 
 module Operation = {
-  let batch = (config: ConfigContext.env, transfers, ~source, ~signingIntent) => {
-    let%AwaitMap op =
-      TaquitoAPI.Transfer.batch(
-        ~endpoint=config.network.endpoint,
-        ~baseDir=config.baseDir(),
-        ~source=source.Account.address,
-        ~transfers=transfers->TaquitoAPI.Transfer.prepareTransfers,
-        ~signingIntent,
-        (),
-      );
-    op.hash;
-  };
-
-  let setDelegate =
-      (
-        config: ConfigContext.env,
-        Protocol.{delegate, source, options},
-        ~signingIntent,
-      ) => {
-    let%AwaitMap op =
-      TaquitoAPI.Delegate.set(
-        ~endpoint=config.network.endpoint,
-        ~baseDir=config.baseDir(),
-        ~source=source.address,
-        ~delegate,
-        ~signingIntent,
-        ~fee=?options.fee,
-        (),
-      );
-    op.hash;
-  };
-
-  let run = (config, operation: Protocol.t, ~signingIntent) =>
-    switch (operation) {
-    | Delegation(d) => setDelegate(config, d, ~signingIntent)
-
-    | Transaction({transfers, source}) =>
-      batch(config, transfers, ~source, ~signingIntent)
-    };
+  let run = (config: ConfigContext.env, ops: Protocol.batch, ~signingIntent) =>
+    TaquitoAPI.Batch.run(
+      ~endpoint=config.network.endpoint,
+      ~baseDir=config.baseDir(),
+      ~source=ops.source.address,
+      ~ops,
+      ~signingIntent,
+      (),
+    );
 };
 
 module Delegate = DelegateMaker(URL);

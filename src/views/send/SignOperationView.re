@@ -66,10 +66,11 @@ let make =
       ~secondaryButton=?,
       ~operation,
       ~sendOperation:
-         (~operation: Operation.t, TaquitoAPI.Signer.intent) => Promise.t(_),
+         (~operation: Protocol.batch, TaquitoAPI.Signer.intent) =>
+         Promise.t(_),
       ~loading,
     ) => {
-  let ((operation: Operation.t, dryRun), setOp) =
+  let ((operation: Protocol.batch, dryRun), setOp) =
     React.useState(() => (operation, dryRun));
 
   let theme = ThemeContext.useTheme();
@@ -101,6 +102,11 @@ let make =
     )
     || loading;
 
+  let optionsSet =
+    fun
+    | [|op|] => ProtocolHelper.optionsSet(op)
+    | _ => None;
+
   switch (step) {
   | SummaryStep =>
     <>
@@ -109,12 +115,16 @@ let make =
            <Typography.Overline1> s->React.string </Typography.Overline1>
          </View>
        )}
-      {switch (operation) {
-       | Delegation(delegation) =>
-         <OperationSummaryView.Delegate delegation dryRun />
-       | Transaction(transfer) =>
+      {switch (operation.managers) {
+       | [|Delegation(delegation)|] =>
+         <OperationSummaryView.Delegate
+           source={operation.source}
+           delegation
+           dryRun
+         />
+       | _ =>
          <OperationSummaryView.Transactions
-           transfer
+           operation
            dryRun
            editAdvancedOptions={i => setAdvancedOptions(Some(i))}
            advancedOptionsDisabled
@@ -125,7 +135,7 @@ let make =
          disabled=advancedOptionsDisabled
          text=I18n.Label.advanced_options
          stateIcon={
-           Protocol.optionsSet(operation) == Some(true)
+           optionsSet(operation.managers) == Some(true)
              ? <Icons.Edit
                  style=styles##edited
                  size=25.

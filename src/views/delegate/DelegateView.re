@@ -38,22 +38,35 @@ let styles =
   );
 
 let buildTransaction = (state: DelegateForm.state) => {
-  Protocol.makeDelegate(
-    ~source=state.values.sender,
-    ~delegate=Some(state.values.baker->PublicKeyHash.build->Result.getExn),
-    (),
+  let infos =
+    Protocol.Delegation.{
+      delegate: Some(state.values.baker->PublicKeyHash.build->Result.getExn),
+      fee: None,
+    };
+
+  (
+    ProtocolHelper.Delegation.makeSingleton(
+      ~source=state.values.sender,
+      ~infos,
+      (),
+    ),
+    infos,
   );
 };
 
 type step =
   | SendStep
-  | PasswordStep(Protocol.delegation, Protocol.Simulation.results)
+  | PasswordStep(
+      Protocol.Delegation.t,
+      Protocol.batch,
+      Protocol.Simulation.results,
+    )
   | SubmittedStep(string);
 
 let stepToString = step =>
   switch (step) {
   | SendStep => "sendstep"
-  | PasswordStep(_, _) => "passwordstep"
+  | PasswordStep(_, _, _) => "passwordstep"
   | SubmittedStep(_) => "submittedstep"
   };
 
@@ -192,7 +205,9 @@ let make = (~closeAction, ~action) => {
 
   let sendOperation = (~operation, signingIntent) =>
     sendOperation({operation, signingIntent})
-    ->Promise.tapOk(hash => {setModalStep(_ => SubmittedStep(hash))});
+    ->Promise.tapOk(result => {
+        setModalStep(_ => SubmittedStep(result.hash))
+      });
 
   let (operationSimulateRequest, sendOperationSimulate) =
     StoreContext.Operations.useSimulate();
@@ -200,10 +215,17 @@ let make = (~closeAction, ~action) => {
   React.useEffect0(() => {
     switch (action) {
     | Delete(account, _) =>
-      let op = Protocol.makeDelegate(~source=account, ~delegate=None, ());
-      sendOperationSimulate(op->Operation.Simulation.delegation)
+      let op =
+        ProtocolHelper.Delegation.makeSingleton(
+          ~source=account,
+          ~infos={delegate: None, fee: None},
+          (),
+        );
+      sendOperationSimulate(op)
       ->Promise.getOk(dryRun => {
-          setModalStep(_ => PasswordStep(op, dryRun))
+          setModalStep(_ =>
+            PasswordStep({delegate: None, fee: None}, op, dryRun)
+          )
         });
 
     | _ => ()
@@ -213,11 +235,10 @@ let make = (~closeAction, ~action) => {
   });
 
   let form =
-    Form.build(action, (op: Protocol.delegation) => {
+    Form.build(action, ((op: Protocol.batch, d: Protocol.Delegation.t)) => {
       Promise.async(() => {
-        let%AwaitMap dryRun =
-          sendOperationSimulate(op->Operation.Simulation.delegation);
-        setModalStep(_ => PasswordStep(op, dryRun));
+        let%AwaitMap dryRun = sendOperationSimulate(op);
+        setModalStep(_ => PasswordStep(d, op, dryRun));
       })
     });
 
@@ -226,7 +247,7 @@ let make = (~closeAction, ~action) => {
 
   let title =
     switch (modalStep, action) {
-    | (PasswordStep({delegate}, _), _) =>
+    | (PasswordStep({delegate}, _, _), _) =>
       let summaryTitle =
         delegate == None
           ? I18n.Title.delegate_delete : I18n.Title.confirm_delegate;
@@ -241,7 +262,7 @@ let make = (~closeAction, ~action) => {
 
   let closing =
     switch (modalStep, ledger: option(SigningBlock.LedgerView.state)) {
-    | (PasswordStep(_, _), Some(WaitForConfirm)) =>
+    | (PasswordStep(_, _, _), Some(WaitForConfirm)) =>
       ModalFormView.Deny(I18n.Tooltip.reject_on_ledger)
     | _ => ModalFormView.Close(closeAction)
     };
@@ -249,8 +270,8 @@ let make = (~closeAction, ~action) => {
   let back =
     SignOperationView.back(signOpStep, () =>
       switch (modalStep, action) {
-      | (PasswordStep(_, _), Create(_))
-      | (PasswordStep(_, _), Edit(_)) =>
+      | (PasswordStep(_, _, _), Create(_))
+      | (PasswordStep(_, _, _), Edit(_)) =>
         Some(() => setModalStep(_ => SendStep))
       | _ => None
       }
@@ -272,9 +293,9 @@ let make = (~closeAction, ~action) => {
              | Delete(_) => <LoadingView style=styles##deleteLoading />
              | _ => <Form.View form action loading=loadingSimulate />
              }
-           | PasswordStep(delegation, dryRun) =>
+           | PasswordStep(_, operation, dryRun) =>
              <SignOperationView
-               source={delegation.source}
+               source={operation.source}
                ledgerState
                signOpStep
                dryRun
@@ -282,7 +303,7 @@ let make = (~closeAction, ~action) => {
                  I18n.Expl.confirm_operation,
                  I18n.Expl.hardware_wallet_confirm_operation,
                )
-               operation={Operation.delegation(delegation)}
+               operation
                sendOperation
                loading
              />
