@@ -150,6 +150,7 @@ module TransferRowDisplay = {
         ~onEdit,
         ~onAdvanced,
         ~fa2Position,
+        ~onDetails,
       ) => {
     open Protocol.Amount;
     open ReactNative.Style;
@@ -299,6 +300,7 @@ module TransferRowDisplay = {
            )}>
            <View>
              <BatchView.BuildingBatchMenu
+               onDetails
                onEdit={isNFT ? None : Some(onEdit)}
                onDelete
              />
@@ -364,6 +366,7 @@ let make =
       ~onEdit,
       ~onAdvanced,
       ~onDeleteAll,
+      ~onDetails,
     ) => {
   let allCoords = indexedRows->Array.map(((a, _)) => a);
 
@@ -374,7 +377,7 @@ let make =
          let (coords, payload) = rowData;
 
          let (managerIndex, _) = coords;
-         let (amount, recipient) = payload;
+         let (amount, recipient, parameter) = payload;
          <TransferRowDisplay
            key={makeKey(coords)}
            amount
@@ -382,6 +385,10 @@ let make =
            fee={getFeeDisplay(~simulation=simulations[managerIndex])}
            onDelete={() => onDelete(arrIndex)}
            onEdit={_ => onEdit(arrIndex)}
+           onDetails={
+             parameter.entrypoint != None || parameter.value != None
+               ? Some(_ => onDetails(arrIndex)) : None
+           }
            onAdvanced={_ => onAdvanced(arrIndex)}
            fa2Position={getFa2Pos(coords, allCoords)}
          />;

@@ -114,7 +114,11 @@ let csvRowToTransferPayloads = (csvRows: CSVEncoding.t) => {
   ->List.mapReverse(t => {
       switch (t.data) {
       | Transfer.FA2Batch(_) => assert(false)
-      | Transfer.Simple({destination, amount}) => (amount, destination)
+      | Transfer.Simple({destination, amount}) => (
+          amount,
+          destination,
+          t.parameter,
+        )
       }
     })
   ->List.toArray;

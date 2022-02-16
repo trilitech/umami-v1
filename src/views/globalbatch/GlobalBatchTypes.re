@@ -24,6 +24,10 @@
 /*****************************************************************************/
 
 type managerCoords = (int, option(int));
-type transferPayload = (ProtocolAmount.t, PublicKeyHash.t);
+type transferPayload = (
+  ProtocolAmount.t,
+  PublicKeyHash.t,
+  ProtocolOptions.parameter,
+);
 
 type rowData = (managerCoords, transferPayload);

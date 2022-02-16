@@ -188,9 +188,10 @@ let mergeTransfer =
 };
 
 let set = (batch: Protocol.batch, coords, payload) => {
-  let (amount, recipient) = payload;
+  let (amount, recipient, parameter) = payload;
   let newTransfer =
-    Factories.makeTransferData(amount, recipient)->transferDataToTransfer;
+    (Factories.makeTransferData(amount, recipient), parameter)
+    ->transferDataToTransfer;
 
   let newManagers = mergeTransfer(newTransfer, coords, batch);
 

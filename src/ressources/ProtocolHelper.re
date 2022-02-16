@@ -53,8 +53,12 @@ module Transfer = {
     options: Options.make(~fee?, ~gasLimit?, ~storageLimit?, ()),
   };
 
-  let makeSimpleTez = (~destination, ~amount) =>
-    makeSimple(~data={destination, amount: Amount.makeTez(amount)});
+  let makeSimpleTez = (~parameter=?, ~entrypoint=?, ~destination, ~amount) =>
+    makeSimple(
+      ~parameter?,
+      ~entrypoint?,
+      ~data={destination, amount: Amount.makeTez(amount)},
+    );
 
   /* Tokens cannot define parameter and entrypoint, since they are
      already translated as parameters into an entrypoint */

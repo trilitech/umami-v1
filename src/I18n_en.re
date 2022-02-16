@@ -404,6 +404,7 @@ module Title = {
   let select_backup_file = "Select a JSON backup file and enter the password you used to encrypt it.";
   let account_backup_path = "Select a storage location for your backup";
   let balance = "Balance";
+  let details = "Details";
 };
 
 module Expl = {
@@ -471,6 +472,7 @@ module Menu = {
   let scan = "Scan";
   let view_in_explorer = "View in Explorer";
   let see_metadata = "See Metadata";
+  let see_details = "See details";
 };
 
 module Settings = {
