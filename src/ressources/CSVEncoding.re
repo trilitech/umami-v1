@@ -53,7 +53,7 @@ let () =
     | _ => None,
   );
 
-type t = list(Protocol.Transfer.t);
+type t = list(Transfer.elt);
 
 let addr = Encodings.custom(~conv=PublicKeyHash.buildImplicit);
 let contract = Encodings.custom(~conv=PublicKeyHash.buildContract);
@@ -93,7 +93,7 @@ let handleTezRow = (index, destination, amount) =>
   ->Tez.fromString
   ->Result.fromOption(CannotParseTezAmount(amount, index, 2))
   ->Result.map(amount =>
-      ProtocolHelper.Transfer.makeSimpleTez(~destination, ~amount, ())
+      Transfer.makeSingleTezTransferElt(~destination, ~amount, ())
     );
 
 let checkTokenId = (tokenId, (token: TokenRepr.t, registered)) =>
@@ -124,12 +124,7 @@ let handleTokenRow =
   ->Token.Unit.fromBigNumber
   ->Result.mapError(_ => CannotParseTokenAmount(amount, index, 2))
   ->Result.map(amount =>
-      ProtocolHelper.Transfer.makeSimpleToken(
-        ~destination,
-        ~amount,
-        ~token,
-        (),
-      )
+      Transfer.makeSingleTokenTransferElt(~destination, ~amount, ~token, ())
     );
 };
 

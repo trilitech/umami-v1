@@ -23,23 +23,23 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open Protocol;
+open Transfer;
 
 type amount =
-  | Amount(Amount.t)
+  | Amount(Transfer.Currency.t)
   | Illformed(string);
 
 let keepToken = v =>
   v->Option.flatMap(
     fun
     | Illformed(_) => None
-    | Amount(v) => v->Amount.getTez,
+    | Amount(v) => v->Transfer.Currency.getTez,
   );
 
 let keepTez = v =>
   v->Option.flatMap(
     fun
-    | Amount(v) => v->Amount.getTez
+    | Amount(v) => v->Transfer.Currency.getTez
     | Illformed(_) => None,
   );
 
@@ -52,13 +52,13 @@ let parseAmount = (v, token: option(TokenRepr.t)) =>
         let vtez = v->Tez.fromString;
         vtez == None
           ? v->Illformed->Some
-          : vtez->Option.map(v => v->Amount.makeTez->Amount);
+          : vtez->Option.map(v => v->Transfer.Currency.makeTez->Amount);
       },
       t => {
         let vt = v->Token.Unit.fromStringDecimals(t.decimals);
         switch (vt) {
         | Error(_) => v->Illformed->Some
-        | Ok(amount) => Amount.makeToken(~amount, ~token=t)->Amount->Some
+        | Ok(amount) => Currency.makeToken(~amount, ~token=t)->Amount->Some
         };
       },
     );
@@ -94,7 +94,7 @@ module Unsafe = {
     | None => failwith("Should not be None")
     | Some(v) => v;
 
-  let getAmount = v =>
+  let getCurrency = v =>
     switch (v) {
     | None => failwith("Should not be empty")
     | Some(Illformed(_)) => failwith("Should not be malformed")

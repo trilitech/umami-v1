@@ -561,8 +561,8 @@ module Operations = {
     let settings = ConfigContext.useContent();
     OperationApiRequest.useCreate(
       ~sideEffect=
-        result => {
-          OperationApiRequest.waitForConfirmation(settings, result.hash)
+        hash => {
+          OperationApiRequest.waitForConfirmation(settings, hash)
           ->Promise.get(_ => resetOperations())
         },
       (),

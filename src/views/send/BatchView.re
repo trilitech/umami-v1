@@ -187,7 +187,7 @@ module Transactions = {
       (
         ~recipients:
            Belt.List.t(
-             (PublicKeyHash.t, Protocol.Amount.t, option('a), 'b),
+             (PublicKeyHash.t, Transfer.Currency.t, option('a), 'b),
            ),
         ~smallest=false,
         ~onAddCSVList=?,
@@ -214,7 +214,7 @@ module Transactions = {
                key={string_of_int(i)}
                i
                recipient
-               amount={Protocol.Amount.show(amount)}
+               amount={Transfer.Currency.showAmount(amount)}
                ?parameters
                button=?{button->Option.map(b => b(i, v))}
              />
@@ -299,11 +299,11 @@ let make =
       <View>
         {batch
          ->List.map(t => t.amount)
-         ->Protocol.Amount.reduce
+         ->Transfer.Currency.reduceAmounts
          ->List.mapWithIndex((i, a) =>
              <Typography.Subtitle1
                style=styles##totalAmount key={i->Int.toString}>
-               {a->Protocol.Amount.show->React.string}
+               {a->Transfer.Currency.showAmount->React.string}
              </Typography.Subtitle1>
            )
          ->List.toArray

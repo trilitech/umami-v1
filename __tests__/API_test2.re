@@ -54,7 +54,7 @@ describe("API tests", ({testAsync}) => {
         Promise.ok(data->Json.parseOrRaise);
       };
     };
-    let expected: array(Operation.t) = [||];
+    let expected: array(Operation.Read.t) = [||];
     module UnderTest = ServerAPI.ExplorerMaker(Stub);
     UnderTest.getOperations(
       config,
@@ -111,7 +111,7 @@ describe("API tests", ({testAsync}) => {
         Promise.value(Ok(data->Json.parseOrRaise));
       };
     };
-    let expected: array(Operation.t) = [|
+    let expected: array(Operation.Read.t) = [|
       {
         id: "9323046000",
         level: 704778,
@@ -222,7 +222,7 @@ describe("API tests", ({testAsync}) => {
         Promise.value(Ok(data->Json.parseOrRaise));
       };
     };
-    let expected: array(Operation.t) = [|
+    let expected: array(Operation.Read.t) = [|
       {
         id: "1226434000",
         level: 114452,
@@ -324,7 +324,7 @@ describe("API tests", ({testAsync}) => {
         Promise.value(Ok(data->Json.parseOrRaise));
       };
     };
-    let expected: array(Operation.t) = [|
+    let expected: array(Operation.Read.t) = [|
       {
         id: "9216974000",
         op_id: 0,
@@ -426,7 +426,7 @@ describe("API tests", ({testAsync}) => {
         Promise.value(Ok(data->Json.parseOrRaise));
       };
     };
-    let expected: array(Operation.t) = [|
+    let expected: array(Operation.Read.t) = [|
       {
         id: "7553106000",
         op_id: 0,
@@ -518,7 +518,7 @@ describe("API tests", ({testAsync}) => {
         Promise.value(Ok(data->Json.parseOrRaise));
       };
     };
-    let expected: array(Operation.t) = [|
+    let expected: array(Operation.Read.t) = [|
       {
         id: "9323046000",
         op_id: 0,
@@ -568,7 +568,7 @@ describe("API tests", ({testAsync}) => {
         Promise.value(Ok(data->Json.parseOrRaise));
       };
     };
-    let expected: array(Operation.t) = [|
+    let expected: array(Operation.Read.t) = [|
       {
         id: "9323046000",
         op_id: 0,

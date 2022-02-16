@@ -28,7 +28,7 @@ open ReactNative;
 let styles = Style.(StyleSheet.create({"container": style(~flex=1., ())}));
 
 let sort = op =>
-  Operation.(
+  Operation.Read.(
     op->SortArray.stableSortBy(({timestamp: t1}, {timestamp: t2}) =>
       - Pervasives.compare(Js.Date.getTime(t1), Js.Date.getTime(t2))
     )
@@ -40,10 +40,10 @@ let make = (~account: Account.t) => {
     StoreContext.Operations.useLoad(~address=account.address, ());
 
   let operationsReload = StoreContext.Operations.useResetAll();
-  let renderItem = (currentLevel, operation: Operation.t) =>
+  let renderItem = (currentLevel, operation: Operation.Read.t) =>
     <OperationRowItem
       account
-      key=Operation.(operation->uniqueId->uniqueIdToString)
+      key=Operation.Read.(operation->uniqueId->uniqueIdToString)
       operation
       currentLevel
     />;

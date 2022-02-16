@@ -28,13 +28,23 @@ include ApiRequest;
 /* Create */
 
 type injection = {
-  operation: Protocol.batch,
+  operation: Operation.t,
   signingIntent: TaquitoAPI.Signer.intent,
 };
 
 type operationsResponse = {
-  operations: array(Operation.t),
+  operations: array(Operation.Read.t),
   currentLevel: int,
+};
+
+let transfer = (operation, signingIntent) => {
+  operation: Operation.transaction(operation),
+  signingIntent,
+};
+
+let delegate = (d, signingIntent) => {
+  operation: Operation.delegation(d),
+  signingIntent,
 };
 
 let keepNonFormErrors =
@@ -49,7 +59,17 @@ let keepNonFormErrors =
 
 let useCreate = (~sideEffect=?, ()) => {
   let set = (~config, {operation, signingIntent}) => {
-    config->NodeAPI.Operation.run(operation, ~signingIntent);
+    switch (operation) {
+    | Delegation(_) as operation =>
+      config->NodeAPI.Operation.run(operation, ~signingIntent)
+
+    | Transaction(t) =>
+      config->NodeAPI.Operation.batch(
+        t.transfers,
+        ~source=t.source,
+        ~signingIntent,
+      )
+    };
   };
 
   ApiRequest.useSetter(

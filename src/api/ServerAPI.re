@@ -329,11 +329,11 @@ module type Explorer = {
       ~limit: int=?,
       unit
     ) =>
-    Promise.t(array(Operation.t));
+    Promise.t(array(Operation.Read.t));
 };
 
 module ExplorerMaker = (Get: {let get: string => Promise.t(Js.Json.t);}) => {
-  let isMalformedTokenTransfer = (op: Operation.t) =>
+  let isMalformedTokenTransfer = (op: Operation.Read.t) =>
     switch (op.payload) {
     | Operation.Transaction.(Transaction(Tez({destination}))) =>
       destination->PublicKeyHash.isContract
@@ -341,7 +341,7 @@ module ExplorerMaker = (Get: {let get: string => Promise.t(Js.Json.t);}) => {
     };
 
   let filterMalformedDuplicates = ops => {
-    open Operation;
+    open Operation.Read;
     let l =
       ops
       ->List.fromArray
@@ -381,8 +381,8 @@ module ExplorerMaker = (Get: {let get: string => Promise.t(Js.Json.t);}) => {
 
     let%AwaitMap operations =
       res
-      ->Result.fromExn(Json.Decode.(array(Operation.Decode.t)))
-      ->Result.mapError(e => e->Operation.filterJsonExn->JsonError)
+      ->Result.fromExn(Json.Decode.(array(Operation.Read.Decode.t)))
+      ->Result.mapError(e => e->Operation.Read.filterJsonExn->JsonError)
       ->Promise.value;
     operations->filterMalformedDuplicates;
   };
