@@ -24,7 +24,7 @@
 /*****************************************************************************/
 
 module TransactionParameters = {
-  type entrypoint = ReTaquitoTypes.Transfer.Entrypoint.name;
+  type entrypoint = ReTaquitoTypes.Transfer.Parameters.entrypoint;
 
   // This type cannot be build and destructed except from bindings modules
   // ReBeacon and ReTaquito, hence its abstract nature.
@@ -54,7 +54,7 @@ module TransactionParameters = {
       };
   };
 
-  type t = ReTaquitoTypes.Transfer.Entrypoint.param;
+  type t = ReTaquitoTypes.Transfer.Parameters.t;
 };
 
 type transferEltOptions = {
@@ -68,7 +68,15 @@ type transferEltOptions = {
 let txOptionsSet = telt =>
   telt.fee != None || telt.gasLimit != None || telt.storageLimit != None;
 
-type operationOptions = {
+type delegationOptions = {
+  fee: option(Tez.t),
+  burnCap: option(Tez.t),
+  forceLowFee: option(bool),
+};
+
+let delegationOptionsSet = (dopt: delegationOptions) => dopt.fee != None;
+
+type transferOptions = {
   burnCap: option(Tez.t),
   forceLowFee: option(bool),
 };
@@ -82,7 +90,13 @@ let makeTransferEltOptions =
   entrypoint,
 };
 
-let makeOperationOptions = (~burnCap=?, ~forceLowFee=?, ()) => {
+let makeDelegationOptions = (~fee, ~burnCap, ~forceLowFee, ()) => {
+  fee,
+  burnCap,
+  forceLowFee,
+};
+
+let makeTransferOptions = (~burnCap=?, ~forceLowFee=?, ()) => {
   burnCap,
   forceLowFee,
 };

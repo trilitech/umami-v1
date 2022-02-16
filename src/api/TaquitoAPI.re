@@ -29,8 +29,6 @@ open Let;
 
 module Contracts = ReTaquitoContracts;
 
-open Protocol;
-
 type Errors.t +=
   | InvalidEstimationResults;
 
@@ -44,7 +42,7 @@ let () =
 
 let extractBatchRevealEstimation = (xs, estimations) => {
   switch (estimations->Array.get(0)) {
-  | Some((res: ReTaquitoTypes.Estimation.result))
+  | Some(res: ReTaquitoTypes.Estimation.result)
       when estimations->Array.length == xs->Array.length + 1 =>
     Ok((estimations->Array.sliceToEnd(1), Some(res)))
   | Some(_) => Ok((estimations, None))
@@ -165,9 +163,75 @@ module Delegate = {
     |> ReTaquitoError.fromPromiseParsed;
   };
 
-  let prepareSet = (~source, Protocol.Delegation.{delegate, fee}) => {
-    let feeBignum = fee->Option.map(Tez.toBigNumber);
-    Toolkit.prepareDelegate(~source, ~delegate, ~fee=?feeBignum, ());
+  let set =
+      (
+        ~endpoint,
+        ~baseDir,
+        ~source,
+        ~delegate: option(PublicKeyHash.t),
+        ~signingIntent: Signer.intent,
+        ~fee=?,
+        (),
+      ) => {
+    let tk = Toolkit.create(endpoint);
+    let fee = fee->Option.map(v => v->Tez.toInt64->BigNumber.fromInt64);
+    let%Await signer = Signer.readSecretKey(source, signingIntent, baseDir);
+    let provider = Toolkit.{signer: signer};
+    tk->Toolkit.setProvider(provider);
+    let dg = Toolkit.prepareDelegate(~source, ~delegate, ~fee?, ());
+    tk.contract->Toolkit.setDelegate(dg)->ReTaquitoError.fromPromiseParsed;
+  };
+
+  module Estimate = {
+    let set =
+        (
+          ~endpoint,
+          ~baseDir,
+          ~source: PublicKeyHash.t,
+          ~delegate=?,
+          ~fee=?,
+          (),
+        ) => {
+      let%Await alias = Wallet.aliasFromPkh(~dirpath=baseDir, ~pkh=source);
+
+      let%Await pk = Wallet.pkFromAlias(~dirpath=baseDir, ~alias);
+
+      let tk = Toolkit.create(endpoint);
+      let signer =
+        EstimationSigner.create(~publicKey=pk, ~publicKeyHash=source, ());
+      let provider = Toolkit.{signer: signer};
+      tk->Toolkit.setProvider(provider);
+
+      let feeBignum = fee->Option.map(Tez.toBigNumber);
+      let sd =
+        Toolkit.prepareDelegate(~source, ~delegate, ~fee=?feeBignum, ());
+
+      let%Await res =
+        tk.estimate
+        ->Toolkit.Estimation.batchDelegation([|sd|])
+        ->ReTaquitoError.fromPromiseParsed;
+
+      let%Await (res, reveal) =
+        extractBatchRevealEstimation([|sd|], res)->Promise.value;
+
+      let%AwaitMap res =
+        switch (res) {
+        | [|res|] => Promise.ok(res)
+        | _ => Promise.err(InvalidEstimationResults)
+        };
+
+      let simulation =
+        res->handleCustomOptions((
+          fee->Option.map(Tez.unsafeToMutezInt),
+          None,
+          None,
+        ));
+
+      Protocol.Simulation.{
+        simulations: [|simulation|],
+        revealSimulation: reveal->Option.map(handleReveal),
+      };
+    };
   };
 };
 
@@ -277,178 +341,186 @@ module Transfer = {
     );
   };
 
+  let prepareTransfer = Toolkit.prepareTransfer;
+
   let makeTransferMichelsonParameter = (~entrypoint, ~parameter) =>
     switch (entrypoint, parameter) {
     | (Some(a), Some(b)) =>
-      Some(ReTaquitoTypes.Transfer.Entrypoint.{entrypoint: a, value: b})
+      Some(ReTaquitoTypes.Transfer.Parameters.{entrypoint: a, value: b})
     | _ => None
     };
 
-  let mapFA2Transfers = (txs: list(Protocol.Transfer.transferFA2)) => {
-    txs
-    ->List.map(
-        (
-          Protocol.Transfer.{
-            tokenId,
-            content: {amount: {amount}, destination},
-          },
-        ) =>
-        ReTaquitoTypes.FA2.{
-          to_: destination,
-          token_id:
-            tokenId->Int64.of_int->BigNumber.fromInt64->BigNumber.toFixed,
-          amount: amount->TokenRepr.Unit.toBigNumber->BigNumber.toFixed,
-        }
+  let consolidateTransferOptions =
+      (
+        batch: ProtocolOptions.transferEltOptions,
+        tx: ProtocolOptions.transferEltOptions,
+      ) =>
+    ProtocolOptions.{
+      fee: Option.mapOrKeep(batch.fee, tx.fee, max),
+      gasLimit: Option.mapOrKeep(batch.gasLimit, tx.gasLimit, (+)),
+      storageLimit:
+        Option.mapOrKeep(batch.storageLimit, tx.storageLimit, (+)),
+      // parameter and entrypoint are irrelevant for tokens, which are already
+      // translated as a parameter and an entrypoint
+      parameter: None,
+      entrypoint: None,
+    };
+
+  /* FA2 implements batchs directly into the transfer entrypoint. As such, we
+     can take multiple consecutive transactions into the same contract and generate
+     the respective FA2 batch */
+  let rec consolidateFA2Transfers =
+          (contractAddress, batch, options, txs)
+          : (
+              array(Types.FA2.transaction),
+              ProtocolOptions.transferEltOptions,
+              list(Transfer.elt),
+            ) => {
+    switch (txs) {
+    | [Transfer.{amount: Tez(_)}, ..._]
+    | [{amount: Token(_, {kind: FA1_2})}, ..._]
+    | [] => (batch, options, txs)
+
+    | [{amount: Token(_, token)}, ..._]
+        when token.address != contractAddress => (
+        batch,
+        options,
+        txs,
       )
-    ->List.toArray;
+
+    | [
+        {amount: Token(amount, {kind: FA2(id)}), destination, tx_options},
+        ...txs,
+      ] =>
+      consolidateFA2Transfers(
+        contractAddress,
+        Array.concat(
+          batch,
+          [|
+            {
+              to_: destination,
+              token_id:
+                id->Int64.of_int->BigNumber.fromInt64->BigNumber.toFixed,
+              amount: amount->TokenRepr.Unit.toBigNumber->BigNumber.toFixed,
+            },
+          |],
+        ),
+        consolidateTransferOptions(options, tx_options),
+        txs,
+      )
+    };
   };
 
-  let prepareTransfer = Toolkit.prepareTransfer;
+  let rec prepareTransfers =
+          (fa12Cache, fa2Cache, source: PublicKeyHash.t, txs, prepared) => {
+    switch (txs) {
+    | [] => prepared->List.reverse
+    | [Transfer.{amount: Tez(amount), destination, tx_options}, ...txs] =>
+      let tx =
+        prepareTransfer(
+          ~source,
+          ~dest=destination,
+          ~amount=amount->Tez.toBigNumber,
+          ~fee=?tx_options.fee->Option.map(Tez.toBigNumber),
+          ~gasLimit=?tx_options.gasLimit,
+          ~storageLimit=?tx_options.storageLimit,
+          ~parameter=?
+            makeTransferMichelsonParameter(
+              ~entrypoint=tx_options.entrypoint,
+              ~parameter=tx_options.parameter,
+            ),
+          (),
+        )
+        ->Ok
+        ->Promise.value;
+      prepareTransfers(fa12Cache, fa2Cache, source, txs, [tx, ...prepared]);
 
-  let prepare = (fa12Cache, fa2Cache, source: PublicKeyHash.t, t: Transfer.t) => {
-    let options = t.options;
-
-    switch (t.data) {
-    | Simple({amount: Tez(amount), destination}) =>
-      prepareTransfer(
-        ~source,
-        ~dest=destination,
-        ~amount=amount->Tez.toBigNumber,
-        ~fee=?options.fee->Option.map(Tez.toBigNumber),
-        ~gasLimit=?options.gasLimit,
-        ~storageLimit=?options.storageLimit,
-        ~parameter=?
-          makeTransferMichelsonParameter(
-            ~entrypoint=options.entrypoint,
-            ~parameter=options.parameter,
-          ),
-        (),
-      )
-      ->Ok
-      ->Promise.value
-
-    | Simple({amount: Token(tokenAmount), destination}) =>
-      switch (tokenAmount.token.kind) {
-      | FA1_2 =>
+    | [
+        {
+          amount: Token(amount, {kind: FA1_2, address}),
+          destination,
+          tx_options,
+        },
+        ...txs,
+      ] =>
+      let tx =
         prepareFA12Transfer(
           fa12Cache,
           ~source,
-          ~token=tokenAmount.token.address,
+          ~token=address,
           ~dest=destination,
-          ~amount=tokenAmount.amount->TokenRepr.Unit.toBigNumber,
-          ~fee=?options.fee->Option.map(Tez.toBigNumber),
-          ~gasLimit=?options.gasLimit,
-          ~storageLimit=?options.storageLimit,
+          ~amount=amount->TokenRepr.Unit.toBigNumber,
+          ~fee=?tx_options.fee->Option.map(Tez.toBigNumber),
+          ~gasLimit=?tx_options.gasLimit,
+          ~storageLimit=?tx_options.storageLimit,
           (),
-        )
-      | FA2(tokenId) =>
-        let batch =
-          mapFA2Transfers([
-            {
-              tokenId,
-              content: {
-                destination,
-                amount: tokenAmount,
-              },
-            },
-          ]);
-        let transferParams = [|
-          ReTaquitoTypes.FA2.{from_: source, txs: batch},
-        |];
+        );
+      prepareTransfers(fa12Cache, fa2Cache, source, txs, [tx, ...prepared]);
+    | [{amount: Token(_, {kind: FA2(_), address})}, ..._] =>
+      let (batch, options, txs) =
+        consolidateFA2Transfers(
+          address,
+          [||],
+          ProtocolOptions.emptyTransferOptions,
+          txs,
+        );
+      let transferParams = [|
+        ReTaquitoTypes.FA2.{from_: source, txs: batch},
+      |];
+      let tx =
         prepareFA2Transfer(
           fa2Cache,
-          ~token=tokenAmount.token.address,
+          ~token=address,
           ~transferParams,
           ~fee=?options.fee->Option.map(Tez.toBigNumber),
           ~gasLimit=?options.gasLimit,
           ~storageLimit=?options.storageLimit,
           (),
         );
-      }
-    | FA2Batch({address, transfers}) =>
-      let batch = mapFA2Transfers(transfers);
-      let transferParams = [|
-        ReTaquitoTypes.FA2.{from_: source, txs: batch},
-      |];
-      prepareFA2Transfer(
-        fa2Cache,
-        ~token=address,
-        ~transferParams,
-        ~fee=?options.fee->Option.map(Tez.toBigNumber),
-        ~gasLimit=?options.gasLimit,
-        ~storageLimit=?options.storageLimit,
-        (),
-      );
+      prepareTransfers(fa12Cache, fa2Cache, source, txs, [tx, ...prepared]);
     };
   };
-};
 
-module Batch = {
-  type params =
-    | DelegationParams(Toolkit.delegateParams)
-    | TransferParams(Toolkit.transferParams);
-
-  let prepareOperations = (op: Protocol.batch, endpoint, source) => {
+  let prepareTransfers = (txs, endpoint, source) => {
     let fa12Cache = endpoint->Toolkit.create->FA12Cache.make;
     let fa2Cache = endpoint->Toolkit.create->FA2Cache.make;
-
-    op.managers
-    ->Array.map(
-        fun
-        | Protocol.Delegation(d) =>
-          Delegate.prepareSet(~source, d)->DelegationParams->Promise.ok
-        | Protocol.Transfer(t) =>
-          Transfer.prepare(fa12Cache, fa2Cache, source, t)
-          ->Promise.mapOk(v => TransferParams(v)),
-      );
+    prepareTransfers(fa12Cache, fa2Cache, source, txs, [])->Promise.all;
   };
 
-  let rewriteKinds = txs =>
-    txs->List.map(
-      fun
-      | TransferParams(tr) =>
-        TransferParams({
-          ...tr,
-          kind: ReTaquitoTypes.Operation.transactionKind,
-        })
-      | d => d,
-    );
-
-  /* (ReTaquito.endpoint, PublicKeyHash.t) => */
-  /*   FutureBase.t(list(Promise.result(params))), */
-
-  let run = (~endpoint, ~baseDir, ~source, ~ops, ~signingIntent, ()) => {
+  let batch =
+      (
+        ~endpoint,
+        ~baseDir,
+        ~source,
+        ~transfers:
+           (ReTaquito.endpoint, PublicKeyHash.t) =>
+           FutureBase.t(list(Promise.result(Toolkit.transferParams))),
+        ~signingIntent,
+        (),
+      ) => {
     let tk = Toolkit.create(endpoint);
     let%Await signer = Signer.readSecretKey(source, signingIntent, baseDir);
     let provider = Toolkit.{signer: signer};
     tk->Toolkit.setProvider(provider);
-    let%Await ops =
-      ops
-      ->prepareOperations(endpoint, source)
-      ->List.fromArray
-      ->Promise.all
-      ->Promise.map(Result.collect);
-    let ops = ops->rewriteKinds;
+    let%Await txs = endpoint->transfers(source)->Promise.map(Result.collect);
+    let txs = txs->List.map(tr => {...tr, kind: opKindTransaction});
     let batch = tk.contract->Toolkit.Batch.make;
-    ops
-    ->List.reduce(batch, (b, op) =>
-        switch (op) {
-        | DelegationParams(d) => b->Toolkit.Batch.withDelegation(d)
-        | TransferParams(t) => b->Toolkit.Batch.withTransfer(t)
-        }
-      )
+    txs
+    ->List.reduce(batch, Toolkit.Batch.withTransfer)
     ->Toolkit.Batch.send
     ->ReTaquitoError.fromPromiseParsed;
   };
 
   module Estimate = {
-    let run =
+    let batch =
         (
           ~endpoint,
           ~baseDir,
           ~source: PublicKeyHash.t,
           ~customValues,
-          ~ops,
+          ~transfers:
+             (ReTaquito.endpoint, PublicKeyHash.t) =>
+             FutureBase.t(list(Promise.result(Toolkit.transferParams))),
           (),
         ) => {
       let%Await alias = Wallet.aliasFromPkh(~dirpath=baseDir, ~pkh=source);
@@ -461,29 +533,19 @@ module Batch = {
       let provider = Toolkit.{signer: signer};
       tk->Toolkit.setProvider(provider);
 
-      let%Await ops =
-        ops
-        ->prepareOperations(endpoint, source)
-        ->List.fromArray
-        ->Promise.all
-        ->Promise.map(Result.collect);
+      let%Await txs =
+        endpoint->transfers(source)->Promise.map(Result.collect);
 
-      let ops = ops->rewriteKinds->List.toArray;
-
-      let ops =
-        ops->Array.map(
-          fun
-          | TransferParams(tp) => Toolkit.Estimation.fromTransferParams(tp)
-          | DelegationParams(dp) => Toolkit.Estimation.fromDelegateParams(dp),
-        );
+      let txs =
+        txs->List.map(tr => {...tr, kind: opKindTransaction})->List.toArray;
 
       let%Await res =
         tk.estimate
-        ->Toolkit.Estimation.batch(ops)
+        ->Toolkit.Estimation.batch(txs)
         ->ReTaquitoError.fromPromiseParsed;
 
       let%AwaitMap (simulations, reveal) =
-        extractBatchRevealEstimation(ops, res)->Promise.value;
+        extractBatchRevealEstimation(txs, res)->Promise.value;
 
       handleEstimationResults(simulations, reveal, customValues);
     };

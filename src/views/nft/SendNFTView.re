@@ -135,7 +135,7 @@ module Form = {
 
 type step =
   | SendStep
-  | SigningStep(Protocol.batch, Protocol.Simulation.results)
+  | SigningStep(Transfer.t, Protocol.Simulation.results)
   | SubmittedStep(string);
 
 let stepToString = step =>
@@ -153,36 +153,30 @@ let make = (~source: Account.t, ~nft: Token.t, ~closeAction) => {
   let (operationSimulateRequest, sendOperationSimulate) =
     StoreContext.Operations.useSimulate();
 
-  let sendTransfer = (~operation: Protocol.batch, signingIntent) => {
+  let sendTransfer = (~operation: Operation.t, signingIntent) => {
     sendOperation({operation, signingIntent})
-    ->Promise.tapOk(result => {
-        setModalStep(_ => SubmittedStep(result.hash))
-      });
+    ->Promise.tapOk(hash => {setModalStep(_ => SubmittedStep(hash))});
   };
 
   let (sign, _setSign) as signOpStep =
     React.useState(() => SignOperationView.SummaryStep);
 
   let onSubmit = ({state, _}: SendNFTForm.onSubmitAPI) => {
-    let transfer =
-      ProtocolHelper.Transfer.makeSimpleToken(
-        ~destination=
-          state.values.recipient
-          ->FormUtils.Unsafe.account
-          ->FormUtils.Alias.address,
-        ~amount=TokenRepr.Unit.one,
-        ~token=nft,
-        (),
-      );
-
-    let transaction =
-      ProtocolHelper.Transfer.makeBatch(
-        ~source,
-        ~transfers=[|transfer|],
-        (),
-      );
-
-    sendOperationSimulate(transaction)
+    let transaction = {
+      Transfer.source,
+      transfers: [
+        {
+          destination:
+            state.values.recipient
+            ->FormUtils.Unsafe.account
+            ->FormUtils.Alias.address,
+          tx_options: ProtocolOptions.makeTransferEltOptions(),
+          amount: Token(TokenRepr.Unit.one, nft),
+        },
+      ],
+      options: ProtocolOptions.makeTransferOptions(),
+    };
+    sendOperationSimulate(Protocol.Transaction(transaction))
     ->Promise.getOk(dryRun => {
         setModalStep(_ => SigningStep(transaction, dryRun))
       });
@@ -225,9 +219,9 @@ let make = (~source: Account.t, ~nft: Token.t, ~closeAction) => {
         {switch (modalStep) {
          | SendStep =>
            <Form.View sender=source nft form aliases loading=loadingSimulate />
-         | SigningStep(operation, dryRun) =>
+         | SigningStep(transfer, dryRun) =>
            <SignOperationView
-             source={operation.source}
+             source={transfer.source}
              ledgerState
              signOpStep
              dryRun
@@ -235,7 +229,7 @@ let make = (~source: Account.t, ~nft: Token.t, ~closeAction) => {
                I18n.Expl.confirm_operation,
                I18n.Expl.hardware_wallet_confirm_operation,
              )
-             operation
+             operation={Operation.transaction(transfer)}
              sendOperation={(~operation, signingIntent) =>
                sendTransfer(~operation, signingIntent)
              }

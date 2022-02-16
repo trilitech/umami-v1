@@ -23,6 +23,12 @@
 /*                                                                           */
 /*****************************************************************************/
 
+[@bs.module "@taquito/taquito"] [@bs.scope "OpKind"]
+external opKindTransaction: string = "TRANSACTION";
+
+[@bs.module "@taquito/taquito"] [@bs.scope "OpKind"]
+external opKindDelegation: string = "DELEGATION";
+
 [@bs.module "@taquito/taquito"] [@bs.scope "DEFAULT_FEE"]
 external default_fee_reveal: int = "REVEAL";
 
@@ -72,8 +78,8 @@ module Toolkit = {
       "confirmation";
   };
 
-  include Types.Delegate;
   include Types.Transfer;
+  include Types.Delegate;
 
   let prepareTransfer =
       (
@@ -87,7 +93,7 @@ module Toolkit = {
         (),
       ) => {
     {
-      kind: Operation.transactionKind,
+      kind: opKindTransaction,
       to_: dest,
       source,
       amount,
@@ -100,11 +106,11 @@ module Toolkit = {
   };
 
   let prepareDelegate = (~source, ~delegate, ~fee=?, ()) => {
-    {kind: Operation.delegationKind, source, delegate, fee};
+    Types.Delegate.{kind: opKindDelegation, source, delegate, fee};
   };
 
   let makeSendParams = (~amount, ~fee=?, ~gasLimit=?, ~storageLimit=?, ()) => {
-    {amount, fee, gasLimit, storageLimit, mutez: Some(true)};
+    Types.Transfer.{amount, fee, gasLimit, storageLimit, mutez: Some(true)};
   };
 
   [@bs.module "@taquito/taquito"] [@bs.new]
@@ -140,21 +146,19 @@ module Toolkit = {
 
     [@bs.send]
     external withTransfer: (t, transferParams) => t = "withTransfer";
-    [@bs.send]
-    external withDelegation: (t, delegateParams) => t = "withDelegation";
   };
 
   module Estimation = {
     include Types.Estimation;
 
-    type batchParams;
-
-    external fromTransferParams: transferParams => batchParams = "%identity";
-    external fromDelegateParams: delegateParams => batchParams = "%identity";
-
     [@bs.send]
     external batch:
-      (estimate, array(batchParams)) => Js.Promise.t(array(result)) =
+      (estimate, array(transferParams)) => Js.Promise.t(array(result)) =
+      "batch";
+
+    [@bs.send]
+    external batchDelegation:
+      (estimate, array(delegateParams)) => Js.Promise.t(array(result)) =
       "batch";
 
     [@bs.send]

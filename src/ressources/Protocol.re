@@ -26,48 +26,23 @@
 /** Protocol specific operations */
 open ProtocolOptions;
 
-module Amount = TransferAmount;
-
-module Transfer = {
-  type generic('a) = {
-    destination: PublicKeyHash.t,
-    amount: 'a,
-  };
-
-  type transferFA2 = {
-    tokenId: int,
-    content: generic(TransferAmount.token),
-  };
-
-  type batchFA2 = {
-    address: PublicKeyHash.t,
-    transfers: list(transferFA2),
-  };
-
-  type data =
-    | FA2Batch(batchFA2)
-    | Simple(generic(Amount.t));
-
-  type t = {
-    data,
-    options: transferEltOptions,
-  };
-};
-
-module Delegation = {
-  type t = {
-    delegate: option(PublicKeyHash.t),
-    fee: option(Tez.t),
-  };
-};
-
-type manager =
-  | Delegation(Delegation.t)
-  | Transfer(Transfer.t);
-type batch = {
+type delegation = {
   source: Account.t,
-  managers: array(manager),
-  options: operationOptions,
+  delegate: option(PublicKeyHash.t),
+  options: delegationOptions,
+};
+
+type t =
+  | Delegation(delegation)
+  | Transaction(Transfer.t);
+
+let makeDelegate =
+    (~source, ~delegate, ~fee=?, ~burnCap=?, ~forceLowFee=?, ()) => {
+  {
+    source,
+    delegate,
+    options: makeDelegationOptions(~fee, ~burnCap, ~forceLowFee, ()),
+  };
 };
 
 module Simulation = {
@@ -81,4 +56,32 @@ module Simulation = {
     simulations: array(resultElt),
     revealSimulation: option(resultElt),
   };
+
+  let sumFees = a =>
+    a->Array.reduce(Tez.zero, (acc, sim) => Tez.Infix.(acc + sim.fee));
+
+  let computeRevealFees = sim =>
+    sim.revealSimulation->Option.mapWithDefault(Tez.zero, ({fee}) => fee);
+
+  let getTotalFees = sim =>
+    Tez.Infix.(sim->computeRevealFees + sim.simulations->sumFees);
 };
+
+let optionsSet =
+  fun
+  | Transaction({transfers: [t]}) =>
+    ProtocolOptions.txOptionsSet(t.tx_options)->Some
+  | Transaction({transfers: _}) => None
+  | Delegation(d) => ProtocolOptions.delegationOptionsSet(d.options)->Some;
+
+let isContractCall = (o, index) =>
+  switch (o) {
+  | Delegation(_) => false
+  | Transaction((t: Transfer.t)) =>
+    t.transfers
+    ->List.get(index)
+    ->Option.mapWithDefault(false, t =>
+        t.amount->Transfer.Currency.getToken != None
+        || t.destination->PublicKeyHash.isContract
+      )
+  };

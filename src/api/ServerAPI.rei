@@ -126,7 +126,7 @@ module type Explorer = {
       ~limit: int=?,
       unit
     ) =>
-    Promise.t(array(Operation.t));
+    Promise.t(array(Operation.Read.t));
 };
 
 /** This generic version exists only for tests purpose */
