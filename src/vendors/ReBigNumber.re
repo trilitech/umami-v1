@@ -46,3 +46,5 @@ let toFixed = (~decimals=?, t) => toFixed(t, decimals);
 
 let fromInt64 = i => i->Int64.to_string->fromString;
 let toInt64 = i => i->toFixed->Int64.of_string;
+
+let zero = fromInt(0);
