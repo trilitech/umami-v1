@@ -65,6 +65,6 @@ let make = (~onClose=?) => {
          ? <RestoreAccountBigButton style=styleNotFirst /> : <View />}
       <HwWalletBigButton style=styleNotFirst />
     </View>
-    <CustomAuthOnboardingView />
+    {ReCustomAuth.flagOn ? <CustomAuthOnboardingView /> : React.null}
   </Page>;
 };

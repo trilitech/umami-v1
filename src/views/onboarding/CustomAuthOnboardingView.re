@@ -137,10 +137,12 @@ let make = () => {
 
   React.useEffect1(
     () => {
-      torusSdk
-      ->init(initParams(~skipSw=true, ()))
-      ->Promise.tapOk(_ => setTorusInitiated(_ => true))
-      ->Promise.ignore;
+      if (ReCustomAuth.flagOn) {
+        torusSdk
+        ->init(initParams(~skipSw=true, ()))
+        ->Promise.tapOk(_ => setTorusInitiated(_ => true))
+        ->Promise.ignore;
+      };
       None;
     },
     [||],

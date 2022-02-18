@@ -296,10 +296,11 @@ let make =
   let renderLabel = (label, hasError) => {
     <View style=styles##label>
       <FormLabel label hasError />
-      <ContactKindSelector
-        value=contactKind
-        onValueChange={v => setContactKind(_ => v)}
-      />
+      {<ContactKindSelector
+         value=contactKind
+         onValueChange={v => setContactKind(_ => v)}
+       />
+       ->ReactUtils.onlyWhen(ReCustomAuth.flagOn)}
     </View>;
   };
 

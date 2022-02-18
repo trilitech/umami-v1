@@ -23,6 +23,8 @@
 /*                                                                           */
 /*****************************************************************************/
 
+let flagOn = false;
+
 open Let;
 
 /* An auth provider redirects to a web page owned by the
