@@ -172,7 +172,7 @@ let make =
     ->Promise.getOk(_ => closeAction());
   };
 
-  let ledgerState = React.useState(() => None);
+  let state = React.useState(() => None);
 
   let sendOperation = intent => onSign(~signingIntent=intent);
 
@@ -197,7 +197,7 @@ let make =
     <Payload signPayloadRequest />
     <SigningBlock
       accountKind={sourceAccount.Account.kind}
-      ledgerState
+      state
       sendOperation
       loading
       secondaryButton

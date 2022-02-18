@@ -65,3 +65,12 @@ let validateAnyAddress = s =>
 
 [@bs.module "@taquito/utils"]
 external bytes2Char: bytes => string = "bytes2Char";
+
+type prefix;
+
+type prefixes = {spsk: prefix};
+
+[@bs.module "@taquito/utils"] external prefix: prefixes = "prefix";
+
+[@bs.module "@taquito/utils"]
+external b58cencode: (string, prefix) => string = "b58cencode";

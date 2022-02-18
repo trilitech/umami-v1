@@ -860,6 +860,11 @@ module Accounts = {
     let resetAccounts = useResetAll();
     AccountApiRequest.useDelete(~sideEffect=_ => resetAccounts(), ());
   };
+
+  let useCustomAuthLogin = () => {
+    let resetAccounts = useResetAll();
+    CustomAuthApiRequest.useLogin(~sideEffect=_ => resetAccounts(), ());
+  };
 };
 
 module Secrets = {

@@ -172,30 +172,48 @@ module SecretStorage = {
 };
 
 module Aliases = {
-  type t = array((string, PublicKeyHash.t));
+  type t = array(Alias.t);
 
   let get = (~config: ConfigContext.env) => {
-    let%AwaitMap addresses = config.baseDir()->Wallet.PkhAliases.read;
+    let%Await pkhs = config.baseDir()->Wallet.PkhAliases.read;
 
-    addresses->Array.map(({name, value}) => (name, value));
+    let%AwaitMap sks = config.baseDir()->Wallet.SecretAliases.read;
+    pkhs->Array.map(({name, value}) => {
+      let res = {
+        let%Res sk =
+          sks->Wallet.SecretAliases.find(skAlias => name == skAlias.name);
+        sk.value->Wallet.extractPrefixFromSecretKey;
+      };
+
+      let kind =
+        switch (res) {
+        | Ok((kind, _)) => Alias.Account(kind)
+        | Error(_) => Contact
+        };
+
+      Alias.{name, address: value, kind: Some(kind)};
+    });
   };
 
   let getAliasMap = (~config) => {
-    let%AwaitMap addresses = get(~config);
+    let%AwaitMap aliases = get(~config);
 
-    addresses
-    ->Array.map(((alias, addr)) => ((addr :> string), alias))
+    aliases
+    ->Array.map((Alias.{name, address, _}) => ((address :> string), name))
     ->Map.String.fromArray;
   };
 
   let getAliasForAddress = (~config, ~address: PublicKeyHash.t) => {
-    let%AwaitMap aliases = getAliasMap(~config);
-    aliases->Map.String.get((address :> string));
+    let%AwaitMap m = getAliasMap(~config);
+    m->Map.String.get((address :> string));
   };
 
   let getAddressForAlias = (~config, ~alias) => {
-    let%AwaitMap addresses = get(~config);
-    addresses->Map.String.fromArray->Map.String.get(alias);
+    let%AwaitMap aliases = get(~config);
+    aliases
+    ->Array.map((Alias.{name, address, _}) => (name, address))
+    ->Map.String.fromArray
+    ->Map.String.get(alias);
   };
 
   let add = (~config: ConfigContext.env, ~alias, ~address) =>
@@ -246,7 +264,7 @@ module Accounts = {
       };
 
       switch (res) {
-      | Ok((kind, _)) => Some((name, value, kind))
+      | Ok((kind, _)) => Some(Account.{name, address: value, kind})
       | Error(_) => None
       };
     });
@@ -282,7 +300,7 @@ module Accounts = {
     let%Await pk = signer->ReTaquitoSigner.publicKey;
     let pk = Wallet.mnemonicPkValue(pk);
     let%Await pkh = signer->ReTaquitoSigner.publicKeyHash;
-    let skUri = Wallet.Prefixes.encrypted ++ secretKey;
+    let skUri = Wallet.Prefixes.toString(Encrypted) ++ secretKey;
     Wallet.addOrReplaceAlias(
       ~dirpath=config.baseDir(),
       ~alias,
@@ -331,14 +349,20 @@ module Accounts = {
     let%Await address = Aliases.getAddressForAlias(~config, ~alias=name);
     let%Await () = unsafeDelete(~config, name);
 
-    let%Await secrets = secrets(~config)->Promise.value;
-    let secrets =
-      secrets->Array.map(secret =>
-        address == secret.masterPublicKey
-          ? {...secret, masterPublicKey: None} : secret
-      );
+    let%Ft secrets = secrets(~config)->Promise.value;
 
-    SecretStorage.set(~config, secrets)->Promise.ok;
+    switch (secrets) {
+    | Ok(secrets) =>
+      let secrets =
+        secrets->Array.map(secret =>
+          address == secret.masterPublicKey
+            ? {...secret, masterPublicKey: None} : secret
+        );
+
+      SecretStorage.set(~config, secrets)->Promise.ok;
+    | Error(NoSecretFound) => Promise.ok()
+    | Error(e) => e->Promise.err
+    };
   };
 
   let deleteSecretAt = (~config, index) => {
@@ -782,7 +806,8 @@ module Accounts = {
   };
 
   let forceBackup = (~config: ConfigContext.env) =>
-    SecretStorage.get()->Result.map(secrets => SecretStorage.set(~config, secrets));
+    SecretStorage.get()
+    ->Result.map(secrets => SecretStorage.set(~config, secrets));
 
   let importMnemonicKeys = (~config, ~accounts, ~password, ~index, ()) => {
     let importLegacyKey = (basename, encryptedSecret) => {
@@ -929,6 +954,24 @@ module Accounts = {
     );
 
     addresses;
+  };
+
+  let importCustomAuth =
+      (~config: ConfigContext.env, ~pkh, ~pk, infos: ReCustomAuth.infos) => {
+    let%Await () = System.Client.initDir(config.baseDir());
+
+    let sk = Wallet.CustomAuth.Encode.toSecretKey(infos);
+    let pk = Wallet.customPkValue(~secretPath=sk, pk);
+
+    let%AwaitMap () =
+      Wallet.addOrReplaceAlias(
+        ~dirpath=config.baseDir(),
+        ~alias=(infos.handle :> string),
+        ~pk,
+        ~pkh,
+        ~sk,
+      );
+    pkh;
   };
 
   let deriveLedger =

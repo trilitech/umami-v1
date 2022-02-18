@@ -211,7 +211,7 @@ module Make = (D: DEPS) => {
         let condition = condition->Option.mapWithDefault(true, f => input->f);
 
         if (shouldReload && condition) {
-          getRequest(input)->ignore;
+          getRequest(input)->Promise.ignore;
         };
 
         None;

@@ -258,7 +258,7 @@ module Form = {
           />
           <FormGroupContactSelector
             label=I18n.Label.send_recipient
-            filterOut={form.values.sender->Account.toAlias->Some}
+            filterOut={form.values.sender->Alias.fromAccount->Some}
             aliases
             value={form.values.recipient}
             handleChange={form.handleChange(Recipient)}
@@ -403,7 +403,7 @@ let make = (~account, ~closeAction) => {
     List.length(batch) == 1 ? setModalStep(_ => SendStep) : ();
   };
 
-  let (ledger, _) as ledgerState = React.useState(() => None);
+  let (signerState, _) as state = React.useState(() => None);
 
   let (sign, setSign) as signOpStep =
     React.useState(() => SignOperationView.SummaryStep);
@@ -415,10 +415,26 @@ let make = (~account, ~closeAction) => {
       switch (
         form.formState,
         modalStep,
-        ledger: option(SigningBlock.LedgerView.state),
+        signerState: option(SigningBlock.state),
       ) {
-      | (_, SigningStep(_, _), Some(WaitForConfirm)) =>
+      | (
+          _,
+          SigningStep({source: {kind: Ledger}}, _),
+          Some(WaitForConfirm),
+        ) =>
         ModalFormView.Deny(I18n.Tooltip.reject_on_ledger)->Some
+
+      | (
+          _,
+          SigningStep({source: {kind: CustomAuth({provider})}}, _),
+          Some(WaitForConfirm),
+        ) =>
+        ModalFormView.Deny(
+          I18n.Tooltip.reject_on_provider(
+            provider->CustomAuthVerifiers.getProviderName,
+          ),
+        )
+        ->Some
 
       | (Pristine, _, _) when batch == [] =>
         ModalFormView.Close(closeAction)->Some
@@ -510,13 +526,9 @@ let make = (~account, ~closeAction) => {
            | SigningStep(transfer, dryRun) =>
              <SignOperationView
                source={transfer.source}
-               ledgerState
+               state
                signOpStep
                dryRun
-               subtitle=(
-                 I18n.Expl.confirm_operation,
-                 I18n.Expl.hardware_wallet_confirm_operation,
-               )
                operation={Operation.transaction(transfer)}
                sendOperation={sendTransfer(~transfer)}
                loading

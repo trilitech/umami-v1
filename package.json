@@ -24,6 +24,8 @@
     "@taquito/utils": "11.0.1",
     "@umami/lib-base": "link:./lib_base",
     "@wert-io/widget-initializer": "^0.1.2",
+    "customsigner": "link:./src/vendors/signer",
+    "@toruslabs/torus-direct-web-sdk": "^4.14.1",
     "bignumber.js": "^9.0.1",
     "bip39": "^3.0.3",
     "bs-fetch": "^0.6.2",
@@ -32,7 +34,6 @@
     "bs-reform": "10.0.2-alpha.0",
     "bs58check": "^2.1.2",
     "child-reprocess": "^0.1.2",
-    "customsigner": "link:./src/vendors/signer",
     "date-fns": "2.19.0",
     "ed25519-hd-key": "^1.2.0",
     "electron-devtools-installer": "^3.1.0",
@@ -71,7 +72,9 @@
     "svgo:icons": "svgo --folder=src/svg/source/icons --output=src/svg/optimized_icons --disable=removeViewBox --enable=removeDimensions --pretty",
     "svgfixer:icons": "oslllo-svg-fixer --source=src/svg/optimized_icons --destination=src/svg/fixed_icons",
     "fromsvg:icons": "react-from-svg src/svg/fixed_icons src/svg/components --remove-stroke --remove-fill --with-native-for-reason",
-    "svg": "yarn svgo:icons && yarn svgfixer:icons && yarn fromsvg:icons"
+    "svgo:providers": "svgo --folder=src/svg/source/providers --output=src/svg/optimized_providers --disable=removeViewBox --enable=removeDimensions --pretty",
+    "fromsvg:providers": "react-from-svg src/svg/optimized_providers src/svg/components --with-native-for-reason",
+    "svg": "yarn svgo:icons && yarn svgfixer:icons && yarn fromsvg:icons && yarn svgo:providers && yarn fromsvg:providers"
   },
   "build": {
     "extends": null,

@@ -26,16 +26,13 @@
 type kind =
   | Encrypted
   | Unencrypted
-  | Ledger;
+  | Ledger
+  | CustomAuth(ReCustomAuth.infos);
 
 type t = {
   address: PublicKeyHash.t,
   name: string,
   kind,
-};
-
-let toAlias = ({address, name}: t) => {
-  Alias.{address, name};
 };
 
 let compareName = (a, b) => Pervasives.compare(a.name, b.name);

@@ -28,7 +28,7 @@ open ReactNative;
 let styles =
   Style.(
     StyleSheet.create({
-      "rowItem": style(~paddingLeft=14.->dp, ()),
+      "rowItem": style(~paddingLeft=16.->dp, ()),
       "tagContainer": style(~flexDirection=`row, ()),
       "tag": style(~marginRight=14.->dp, ()),
       "alias": style(~height=20.->dp, ~marginBottom=4.->dp, ()),
@@ -43,6 +43,16 @@ let styles =
         ),
       "actionIconButton": style(~marginLeft=2.->dp, ()),
       "actionButton": style(~marginLeft=9.->dp, ~marginRight=7.->dp, ()),
+      "inner": style(~marginRight=10.->dp, ~flexDirection=`row, ()),
+      "iconContainer":
+        style(
+          ~width=72.->dp,
+          ~height=20.->dp,
+          ~justifyContent=`center,
+          ~alignItems=`center,
+          ~alignSelf=`flexStart,
+          (),
+        ),
     })
   );
 
@@ -84,16 +94,22 @@ module AccountNestedRowItem = {
     let account = StoreContext.Accounts.useGetFromAddress(address);
 
     account->ReactUtils.mapOpt(account =>
-      <RowItem.Bordered
-        innerStyle=styles##rowItem height=90. isNested=true isLast>
-        <View>
-          <Typography.Subtitle1 style=styles##alias>
-            account.name->React.string
-          </Typography.Subtitle1>
-          <AccountInfoBalance address={account.address} />
-          <Typography.Address style=styles##derivation>
-            {("/" ++ index->string_of_int)->React.string}
-          </Typography.Address>
+      <RowItem.Bordered height=90. isNested=true isLast>
+        <View style=styles##inner>
+          <AliasIcon
+            style=styles##iconContainer
+            kind={Some(Alias.Account(account.kind))}
+            isHD=true
+          />
+          <View>
+            <Typography.Subtitle1 style=styles##alias>
+              account.name->React.string
+            </Typography.Subtitle1>
+            <AccountInfoBalance address={account.address} />
+            <Typography.Address style=styles##derivation>
+              {("/" ++ index->string_of_int)->React.string}
+            </Typography.Address>
+          </View>
         </View>
         <View style=styles##actionContainer>
           <AccountEditButton account />
@@ -174,7 +190,7 @@ module AccountImportedRowItem = {
     [@react.component]
     let make =
         (~account: Account.t, ~tag: React.element, ~actions: React.element) => {
-      <RowItem.Bordered innerStyle=styles##rowItem height=66.>
+      <RowItem.Bordered height=66.>
         <View style=styles##tagContainer>
           tag
           <View>
@@ -225,7 +241,13 @@ module AccountImportedRowItem = {
     let make = (~account: Account.t) => {
       <Base
         account
-        tag={<Tag.Fixed style=styles##tag content=I18n.Label.account_cli />}
+        tag={
+          <AliasIcon
+            style=styles##iconContainer
+            kind={Some(Account(account.kind))}
+            isHD=false
+          />
+        }
         actions=
           {<>
              <Menu

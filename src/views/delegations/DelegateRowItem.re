@@ -142,7 +142,7 @@ let make =
                </Typography.Address>,
                alias =>
                <Typography.Body1 numberOfLines=1>
-                 alias->React.string
+                 alias.name->React.string
                </Typography.Body1>
              )}
         </CellAddress>

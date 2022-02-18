@@ -43,6 +43,7 @@ module Rpc: {
 module Signer: {
   type intent =
     | LedgerCallback(unit => unit)
+    | CustomAuthSigner(ReCustomAuthSigner.t)
     | Password(string);
 };
 

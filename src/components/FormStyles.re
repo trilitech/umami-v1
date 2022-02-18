@@ -111,3 +111,5 @@ let selector =
       "button": style(~flex=1., ~paddingVertical=11.->dp, ()),
     })
   );
+
+let accountIcon = style(~justifyContent=`center, ~paddingRight=16.->dp, ());

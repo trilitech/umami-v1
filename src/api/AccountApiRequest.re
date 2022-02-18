@@ -34,9 +34,7 @@ let useLoad = requestState => {
         fun
         | Ok(response) =>
           response
-          ->Array.map(((name, address, kind)) =>
-              (address, Account.{name, address, kind})
-            )
+          ->Array.map(a => (a.address, a))
           ->Array.reverse
           ->PublicKeyHash.Map.fromArray
           ->Ok

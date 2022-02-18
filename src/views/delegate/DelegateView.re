@@ -237,12 +237,21 @@ let make = (~closeAction, ~action) => {
     | (SubmittedStep(_), _) => None
     };
 
-  let (ledger, _) as ledgerState = React.useState(() => None);
+  let (signingState, _) as state = React.useState(() => None);
 
   let closing =
-    switch (modalStep, ledger: option(SigningBlock.LedgerView.state)) {
-    | (PasswordStep(_, _), Some(WaitForConfirm)) =>
+    switch (modalStep, signingState: option(SigningBlock.state)) {
+    | (PasswordStep({source: {kind: Ledger}}, _), Some(WaitForConfirm)) =>
       ModalFormView.Deny(I18n.Tooltip.reject_on_ledger)
+    | (
+        PasswordStep({source: {kind: CustomAuth({provider})}}, _),
+        Some(WaitForConfirm),
+      ) =>
+      ModalFormView.Deny(
+        I18n.Tooltip.reject_on_provider(
+          provider->CustomAuthVerifiers.getProviderName,
+        ),
+      )
     | _ => ModalFormView.Close(closeAction)
     };
 
@@ -275,13 +284,9 @@ let make = (~closeAction, ~action) => {
            | PasswordStep(delegation, dryRun) =>
              <SignOperationView
                source={delegation.source}
-               ledgerState
                signOpStep
                dryRun
-               subtitle=(
-                 I18n.Expl.confirm_operation,
-                 I18n.Expl.hardware_wallet_confirm_operation,
-               )
+               state
                operation={Operation.delegation(delegation)}
                sendOperation
                loading

@@ -38,6 +38,7 @@ type origin =
   | Secret
   | Batch
   | Nft
+  | CustomAuth
   | Logs;
 
 type kind =
@@ -110,5 +111,6 @@ let originToString = e => {
   | Logs => "Logs"
   | Batch => "Batch"
   | Nft => "Nft"
+  | CustomAuth => "CustomAuth"
   };
 };

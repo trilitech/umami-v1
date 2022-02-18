@@ -35,6 +35,9 @@ let styles =
       "iconContainer": style(~padding=25.->dp, ()),
       "amount": style(~textAlign=`right, ()),
       "element": style(~marginTop=25.->dp, ()),
+      "itemInfos":
+        style(~padding=16.->dp, ~borderRadius=5., ~flexDirection=`row, ()),
+      "accounticon": FormStyles.accountIcon,
     })
   );
 
@@ -80,26 +83,45 @@ module EntityInfo = {
         ~default=React.null,
         ~style=?,
       ) => {
+    let theme = ThemeContext.useTheme();
     let aliases = StoreContext.Aliases.useGetAll();
+
+    let alias =
+      address->Option.flatMap(alias =>
+        alias->AliasHelpers.getAliasFromAddress(aliases)
+      );
 
     <View ?style>
       <Typography.Overline2 colorStyle=`mediumEmphasis style=styles##title>
         title->React.string
       </Typography.Overline2>
-      {address
-       ->Option.flatMap(alias =>
-           alias->AliasHelpers.getAliasFromAddress(aliases)
-         )
-       ->ReactUtils.mapOpt(alias =>
-           <Typography.Subtitle2 fontSize=16. style=styles##subtitle>
-             alias->React.string
-           </Typography.Subtitle2>
+      <View
+        style=Style.(
+          array([|
+            styles##itemInfos,
+            style(~backgroundColor=theme.colors.stateDisabled, ()),
+          |])
+        )>
+        {alias->ReactUtils.mapOpt(alias =>
+           <AliasIcon
+             style=styles##accounticon
+             kind={alias.Alias.kind}
+             isHD=true
+           />
          )}
-      {address->Option.mapWithDefault(default, address =>
-         <Typography.Address>
-           (address :> string)->React.string
-         </Typography.Address>
-       )}
+        <View>
+          {alias->ReactUtils.mapOpt(alias =>
+             <Typography.Subtitle2 fontSize=16. style=styles##subtitle>
+               alias.name->React.string
+             </Typography.Subtitle2>
+           )}
+          {address->Option.mapWithDefault(default, address =>
+             <Typography.Address>
+               (address :> string)->React.string
+             </Typography.Address>
+           )}
+        </View>
+      </View>
     </View>;
   };
 };
@@ -268,6 +290,7 @@ module Transactions = {
 
     let smallest =
       switch (source->fst.kind) {
+      | CustomAuth(_)
       | Ledger => true
       | Encrypted
       | Unencrypted => false
@@ -388,9 +411,7 @@ module Originate = {
             address={origination.delegate}
             title=I18n.Title.delegate
             default={
-              <Typography.Body1>
-                I18n.none->React.string
-              </Typography.Body1>
+              <Typography.Body1> I18n.none->React.string </Typography.Body1>
             }
           />
           <Typography.Overline2 colorStyle=`mediumEmphasis style=styles##label>

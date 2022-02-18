@@ -128,6 +128,7 @@ module Tooltip = {
   let tokenid = {j|A non-negative number that identifies the asset inside a FA2 contract|j};
   let add_to_wallet = "Add to wallet";
   let see_metadata = "See metadata";
+  let reject_on_provider = p("Reject on %s popup to cancel operation");
 };
 
 module Log = {
@@ -296,6 +297,11 @@ module Form_input_error = {
 };
 
 module Title = {
+  let custom_auth_sign_in_up = "Waiting for authentification";
+  let custom_auth_waiting_auth = "Waiting for authentification";
+  let custom_auth_failed = "Authentification failed";
+  let custom_auth_success = "Successful authentification";
+  let provider_authentification = pr => p("%s authentification", pr);
   let nft_specs = "View Specs";
   let error_logs = "Logs";
   let secret_create = "Create New Secret";
@@ -390,6 +396,10 @@ module Title = {
 };
 
 module Expl = {
+  let custom_auth_success = "Please click on confirm to submit operation";
+  let custom_auth_sign = p("Please log into %s to sign the operation");
+  let custom_auth_confirm_operation = "Please validate the details of the transaction and confirm it by signing up with your social account.";
+  let provider_authentification = p("Please log into %s to import your key");
   let nft_empty_state = "Umami should automatically discover any NFT you possess.";
   let network_disconnect = "The Tezos network is currently unreachable. Your internet connection might be unstable. If it is not the case, you should check your configuration and update it by following the documentation";
   let hardware_wallet_confirm_operation = "Please validate the details of the transaction and press Confirm to sign it on your Ledger.";
@@ -572,6 +582,11 @@ module Errors = {
   let no_valid_endpoint = "No valid endpoint found among letlic nodes";
   let not_an_fa12_contract = "Not an FA1.2 standard contract";
   let beacon_cant_handle = "Cannot handle this operation";
+  let customauth_unable_to_retrieve_handle = "Unable to retrieve user handle";
+  let customauth_popup_closed = "User closed popup during authentification";
+  let customauth_handle_mismatch = p("Signing handle mismatch: %s & %s");
+  let customauth_access_denied = "Access denied by user";
+  let invalid_provider = s => p("%s is not a valid provider", s);
   let cannot_retrieve_account = "Cannot retrieve account informations";
   let deeplinking_not_connected = "Deep linking required but not connected";
   let stream = "Acquiering media failed";

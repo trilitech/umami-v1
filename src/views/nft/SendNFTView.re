@@ -111,7 +111,7 @@ module Form = {
           <FormGroupNFTView nft />
           <FormGroupContactSelector
             label=I18n.Label.send_recipient
-            filterOut={sender->Account.toAlias->Some}
+            filterOut={sender->Alias.fromAccount->Some}
             aliases
             value={form.values.recipient}
             handleChange={form.handleChange(Recipient)}
@@ -202,7 +202,7 @@ let make = (~source: Account.t, ~nft: Token.t, ~closeAction) => {
 
   let closing = Some(ModalFormView.Close(closeAction));
 
-  let ledgerState = React.useState(() => None);
+  let signingState = React.useState(() => None);
   let aliasesRequest = StoreContext.Aliases.useRequest();
 
   let aliases =
@@ -222,13 +222,9 @@ let make = (~source: Account.t, ~nft: Token.t, ~closeAction) => {
          | SigningStep(transfer, dryRun) =>
            <SignOperationView
              source={transfer.source}
-             ledgerState
+             state=signingState
              signOpStep
              dryRun
-             subtitle=(
-               I18n.Expl.confirm_operation,
-               I18n.Expl.hardware_wallet_confirm_operation,
-             )
              operation={Operation.transaction(transfer)}
              sendOperation={(~operation, signingIntent) =>
                sendTransfer(~operation, signingIntent)
