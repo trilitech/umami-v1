@@ -27,7 +27,7 @@ type t;
 type publicKey = string;
 
 let getInfos:
-  ReCustomAuth.provider =>
+  ReCustomAuth.handledProvider =>
   Promise.t((PublicKeyHash.t, publicKey, ReCustomAuth.infos));
 
 let toSigner: t => ReTaquitoSigner.t;

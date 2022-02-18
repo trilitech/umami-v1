@@ -41,4 +41,6 @@ let fromAccount = (Account.{address, name, kind}): t => {
   kind: Some(Account(kind)),
 };
 
+let make = (~kind=?, ~name, address) => {address, name, kind};
+
 let compareName = (a, b) => Pervasives.compare(a.name, b.name);

@@ -104,16 +104,7 @@ let makeFrameStyle =
           )
         : None,
       hasError
-        ? Some(
-            style(
-              ~borderColor=theme.colors.error,
-              ~borderWidth=2.,
-              ~paddingVertical=(paddingVertical -. 2.)->dp,
-              ~paddingRight=(paddingRight -. 2.)->dp,
-              ~paddingLeft=(paddingLeft -. 2.)->dp,
-              (),
-            ),
-          )
+        ? Some(style(~borderColor=theme.colors.error, ~borderWidth=2., ()))
         : None,
       value != "" && onClear != None ? Some(styles##clearMargin) : None,
       styleFromProp,

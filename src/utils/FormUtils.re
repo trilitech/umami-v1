@@ -67,11 +67,17 @@ let parseAmount = (v, token: option(TokenRepr.t)) =>
 let optToString = (v, f) => v->Option.mapWithDefault("", f);
 
 module Alias = {
+  type tempState =
+    | NotAsked
+    | Pending
+    | Error(string);
+
   type t =
     | Address(PublicKeyHash.t)
     | Alias(Alias.t);
 
   type any =
+    | Temp(string, tempState)
     | AnyString(string)
     | Valid(t);
 
@@ -110,6 +116,7 @@ module Unsafe = {
 
   let account =
     fun
+    | Alias.Temp(_)
     | Alias.AnyString(_) => failwith("Should be an address or an alias")
     | Alias.Valid(a) => a;
 };

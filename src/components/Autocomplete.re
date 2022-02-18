@@ -101,6 +101,7 @@ let make =
       ~renderItem: 'item => React.element,
       ~keyExtractor: 'item => string,
       ~renderLabel: option(bool => React.element)=?,
+      ~onBlur=?,
       ~placeholder=?,
       ~clearButton=false,
       ~reversePositionPct=?,
@@ -219,9 +220,10 @@ let make =
           });
         setHasFocus(_ => true);
       }}
-      onBlur={_ => {
+      onBlur={event => {
         setHasFocus(_ => false);
         setSelectedItemIndex(_ => 0);
+        onBlur->Option.iter(onBlur => onBlur(event));
       }}
       onKeyPress
     />
@@ -252,12 +254,7 @@ let make =
              key={item->keyExtractor}
              value={item->keyExtractor}
              index
-             isSelected={
-               /* reversed */
-               /*     ? list->Array.length - selectedItemIndex - 1 == index */
-               /* : */
-               index == selectedItemIndex
-             }
+             isSelected={index == selectedItemIndex}
              itemHeight
              onSelect=setSelectedItemIndex
              onChange=onChangeItem>

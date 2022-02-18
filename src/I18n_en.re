@@ -140,6 +140,9 @@ module Log = {
 };
 
 module Label = {
+  let provider_account = "account";
+  let tezos_address = "Tezos address";
+  let tz_address = "tz address";
   let nft_spec_name = "Name";
   let nft_spec_symbol = "Symbol";
   let nft_spec_contract_address = "Contract Address";
@@ -208,6 +211,8 @@ module Label = {
 };
 
 module Input_placeholder = {
+  let provider_handler = (provider, handlerKind) =>
+    p("Type in a %s %s", provider, handlerKind);
   let tez_amount = "0.000000";
   let token_amount = "0";
   let add_accounts_name = "Enter account's name";
@@ -232,6 +237,8 @@ module Input_placeholder = {
 };
 
 module Form_input_error = {
+  let invalid_handler = (provider, handlerKind) =>
+    p("Invalid %s %s", provider, handlerKind);
   let dp_not_a_dp = "Not a derivation path";
   let dp_more_than_1_wildcard = "Cannot have more than one '?'";
   let dp_missing_wildcard = "Missing '?' or 0";
@@ -794,3 +801,5 @@ let custom_network_deleted = "Network deleted";
 let unregistered_token = "unregistered token";
 let hw = "H/W";
 let none = "none";
+let email = "email";
+let username = "username";

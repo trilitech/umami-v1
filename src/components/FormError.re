@@ -39,8 +39,8 @@ let styles =
   );
 
 [@react.component]
-let make = (~error=?) => {
-  <View style=styles##spacer>
+let make = (~style as styleProp=?, ~error=?) => {
+  <View style=Style.(arrayOption([|styles##spacer->Some, styleProp|]))>
     {error->Option.mapWithDefault(React.null, error =>
        <Typography.Body2 colorStyle=`error fontWeightStyle=`bold>
          error->React.string

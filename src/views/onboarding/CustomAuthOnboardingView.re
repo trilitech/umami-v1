@@ -30,7 +30,7 @@ module StateInfoView = {
   [@react.component]
   let make = (~closeAction, ~provider) => {
     let styles = InitLedgerView.styles;
-    let providerName = provider->CustomAuthVerifiers.getProviderName;
+    let providerName = provider->ReCustomAuth.getProviderName;
 
     let () = ReCustomAuthUtils.useDeeplinkHandler();
 
@@ -115,7 +115,7 @@ module CustomAuthButton = {
           provider->CustomAuthProviders.getComponent
         </View>
         <Typography.Subtitle2>
-          {provider->CustomAuthVerifiers.getProviderName->React.string}
+          {provider->ReCustomAuth.getProviderName->React.string}
         </Typography.Subtitle2>
       </ThemedPressable>
     </>;

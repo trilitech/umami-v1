@@ -73,18 +73,22 @@ let styles =
 let make =
     (
       ~style=?,
+      ~globalStyle=`button,
+      ~innerStyle=?,
       ~dropdownStyle=?,
       ~items: array('item),
       ~selectedValueKey: option(string)=?,
       ~onValueChange: 'item => unit,
       ~getItemKey: 'item => string,
       ~noneItem: option('item)=?,
+      ~chevron=?,
       ~renderButton,
       ~renderItem,
       ~hasError=false,
       ~disabled=false,
       ~keyPopover,
     ) => {
+  let theme = ThemeContext.useTheme();
   let disabled = disabled || items->Array.size == 1 && noneItem->Option.isNone;
 
   let (pressableRef, isOpen, popoverConfig, togglePopover, _) =
@@ -94,6 +98,17 @@ let make =
     AnimationHooks.useAnimationOpen(~speed=80., ~bounciness=0., isOpen, _ =>
       ()
     );
+
+  let chevron =
+    switch (chevron) {
+    | None =>
+      <Icons.ChevronDown
+        size=24.
+        color={theme.colors.iconMediumEmphasis}
+        style=styles##icon
+      />
+    | Some(c) => c
+    };
 
   let onChange = newItem => {
     onValueChange(newItem);
@@ -106,14 +121,31 @@ let make =
 
   let selectedItem = items->Array.getBy(isSelected);
 
-  let theme = ThemeContext.useTheme();
-
   let borderStyles = (~focused) =>
     disabled
       ? "transparent"
       : isOpen || focused
           ? theme.colors.borderPrimary
           : hasError ? theme.colors.error : theme.colors.borderMediumEmphasis;
+
+  let buttonStyle = (backgroundColor, borderColor, borderWidth) => {
+    let style =
+      switch (globalStyle) {
+      | `button =>
+        Style.(
+          [|
+            styles##button,
+            style(~backgroundColor, ()),
+            style(~borderColor, ~borderWidth?, ()),
+          |]
+        )
+      | `none => [||]
+      };
+
+    innerStyle->Option.mapWithDefault(style, inner =>
+      Array.concat([|inner|], style)
+    );
+  };
 
   <View ?style>
     <Pressable_
@@ -123,16 +155,14 @@ let make =
          let borderColor = borderStyles(~focused);
          <View
            style=Style.(
-             array([|
-               styles##button,
-               style(
-                 ~backgroundColor=
-                   disabled
-                     ? theme.colors.stateDisabled : theme.colors.background,
-                 (),
+             array(
+               buttonStyle(
+                 disabled
+                   ? theme.colors.stateDisabled : theme.colors.background,
+                 borderColor,
+                 Some(2.),
                ),
-               style(~borderColor, ~borderWidth=2., ()),
-             |])
+             )
            )
            pointerEvents=`none>
            {renderButton(
@@ -164,11 +194,7 @@ let make =
                       (),
                     )
                   )>
-                  <Icons.ChevronDown
-                    size=24.
-                    color={theme.colors.iconMediumEmphasis}
-                    style=styles##icon
-                  />
+                  chevron
                 </Animated.View>}
          </View>;
        }}
