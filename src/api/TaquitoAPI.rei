@@ -38,6 +38,9 @@ module Rpc: {
     ReTaquito.endpoint => Promise.t(ReTaquito.RPCClient.blockHeader);
 
   let getChainId: ReTaquito.endpoint => Promise.t(string);
+
+  let getConstants:
+    ReTaquito.endpoint => Promise.t(ReTaquito.RPCClient.constants);
 };
 
 module Signer: {
@@ -154,10 +157,12 @@ module Transfer: {
       ~endpoint: ReTaquito.endpoint,
       ~baseDir: System.Path.t,
       ~source: Wallet.PkhAlias.t,
-      ~transfers: (ReTaquito.endpoint, PublicKeyHash.t) =>
-                  FutureBase.t(
-                    list(Promise.result(ReTaquito.Toolkit.transferParams)),
-                  ),
+      ~transfersBuilder: (ReTaquito.endpoint, PublicKeyHash.t) =>
+                         FutureBase.t(
+                           list(
+                             Promise.result(ReTaquito.Toolkit.transferParams),
+                           ),
+                         ),
       ~signingIntent: Signer.intent,
       unit
     ) =>
@@ -170,10 +175,14 @@ module Transfer: {
         ~baseDir: System.Path.t,
         ~source: PublicKeyHash.t,
         ~customValues: array((option(int), option(int), option(int))),
-        ~transfers: (ReTaquito.endpoint, PublicKeyHash.t) =>
-                    FutureBase.t(
-                      list(Promise.result(ReTaquito.Toolkit.transferParams)),
-                    ),
+        ~transfersBuilder: (ReTaquito.endpoint, PublicKeyHash.t) =>
+                           FutureBase.t(
+                             list(
+                               Promise.result(
+                                 ReTaquito.Toolkit.transferParams,
+                               ),
+                             ),
+                           ),
         unit
       ) =>
       Promise.t(Protocol.Simulation.results);

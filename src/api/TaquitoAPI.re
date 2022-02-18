@@ -101,6 +101,11 @@ module Rpc = {
     RPCClient.create(endpoint)
     ->RPCClient.getBlockHeader()
     ->ReTaquitoError.fromPromiseParsed;
+
+  let getConstants = endpoint =>
+    RPCClient.create(endpoint)
+    ->RPCClient.getConstants()
+    ->ReTaquitoError.fromPromiseParsed;
 };
 
 module Signer = {
@@ -597,7 +602,7 @@ module Transfer = {
         ~endpoint,
         ~baseDir,
         ~source,
-        ~transfers:
+        ~transfersBuilder:
            (ReTaquito.endpoint, PublicKeyHash.t) =>
            FutureBase.t(list(Promise.result(Toolkit.transferParams))),
         ~signingIntent,
@@ -607,7 +612,8 @@ module Transfer = {
     let%Await signer = Signer.readSecretKey(source, signingIntent, baseDir);
     let provider = Toolkit.{signer: signer};
     tk->Toolkit.setProvider(provider);
-    let%Await txs = endpoint->transfers(source)->Promise.map(Result.collect);
+    let%Await txs =
+      endpoint->transfersBuilder(source)->Promise.map(Result.collect);
     let txs = txs->List.map(tr => {...tr, kind: opKindTransaction});
     let batch = tk.contract->Toolkit.Batch.make;
     txs
@@ -617,40 +623,91 @@ module Transfer = {
   };
 
   module Estimate = {
+    let patchEstimationWithHardLimits =
+        (~endpoint, ~transfers: array(Toolkit.transferParams)) => {
+      let%Await {
+        hard_gas_limit_per_operation,
+        hard_storage_limit_per_operation,
+      } =
+        Rpc.getConstants(endpoint);
+
+      let hardGasLimit = hard_gas_limit_per_operation->ReBigNumber.toInt;
+      let hardStorageLimit =
+        hard_storage_limit_per_operation->ReBigNumber.toInt;
+
+      // Only use the hard limit if not provided by the user and checks if one
+      // of the user's limit is above the maximum
+      transfers
+      ->Array.map(tr => {
+          tr.gasLimit->Option.mapDefault(false, g => g >= hardGasLimit)
+            ? Error(ReTaquitoError.GasExhaustedAboveLimit)
+            : tr.storageLimit
+              ->Option.mapDefault(false, g => g >= hardStorageLimit)
+                ? Error(ReTaquitoError.StorageExhaustedAboveLimit)
+                : {
+                    ...tr,
+                    gasLimit:
+                      tr.gasLimit == None ? hardGasLimit->Some : tr.gasLimit,
+                    storageLimit:
+                      tr.storageLimit == None
+                        ? hardStorageLimit->Some : tr.storageLimit,
+                  }
+                  ->Ok
+        })
+      ->Result.collectArray
+      ->FutureBase.value;
+    };
+
+    let inject = (~endpoint, ~publicKey, ~source, ~transfers) => {
+      let tk = Toolkit.create(endpoint);
+      let signer =
+        EstimationSigner.create(~publicKey, ~publicKeyHash=source, ());
+      let provider = Toolkit.{signer: signer};
+      tk->Toolkit.setProvider(provider);
+
+      let inject = transfers =>
+        tk.estimate
+        ->Toolkit.Estimation.batch(transfers)
+        ->ReTaquitoError.fromPromiseParsed;
+
+      let%Ft res = inject(transfers);
+
+      switch (res) {
+      | Ok(results) => Promise.ok(results)
+      | Error(ReTaquitoError.GasExhausted | ReTaquitoError.StorageExhausted) =>
+        patchEstimationWithHardLimits(~endpoint, ~transfers)
+        ->Promise.flatMapOk(inject)
+      | Error(e) => Promise.err(e)
+      };
+    };
+
     let batch =
         (
           ~endpoint,
           ~baseDir,
           ~source: PublicKeyHash.t,
           ~customValues,
-          ~transfers:
+          ~transfersBuilder:
              (ReTaquito.endpoint, PublicKeyHash.t) =>
              FutureBase.t(list(Promise.result(Toolkit.transferParams))),
           (),
         ) => {
       let%Await alias = Wallet.aliasFromPkh(~dirpath=baseDir, ~pkh=source);
 
-      let%Await pk = Wallet.pkFromAlias(~dirpath=baseDir, ~alias);
+      let%Await publicKey = Wallet.pkFromAlias(~dirpath=baseDir, ~alias);
 
-      let tk = Toolkit.create(endpoint);
-      let signer =
-        EstimationSigner.create(~publicKey=pk, ~publicKeyHash=source, ());
-      let provider = Toolkit.{signer: signer};
-      tk->Toolkit.setProvider(provider);
+      let%Await transfers =
+        endpoint->transfersBuilder(source)->Promise.map(Result.collect);
 
-      let%Await txs =
-        endpoint->transfers(source)->Promise.map(Result.collect);
+      let transfers =
+        transfers
+        ->List.map(tr => {...tr, kind: opKindTransaction})
+        ->List.toArray;
 
-      let txs =
-        txs->List.map(tr => {...tr, kind: opKindTransaction})->List.toArray;
-
-      let%Await res =
-        tk.estimate
-        ->Toolkit.Estimation.batch(txs)
-        ->ReTaquitoError.fromPromiseParsed;
+      let%Await res = inject(~endpoint, ~publicKey, ~source, ~transfers);
 
       let%AwaitMap (simulations, reveal) =
-        extractBatchRevealEstimation(txs, res)->Promise.value;
+        extractBatchRevealEstimation(transfers, res)->Promise.value;
 
       handleEstimationResults(simulations, reveal, customValues);
     };

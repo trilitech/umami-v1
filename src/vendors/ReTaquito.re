@@ -64,6 +64,10 @@ module RPCClient = {
   external getManagerKey:
     (t, PublicKeyHash.t) => Js.Promise.t(Js.Nullable.t(managerKeyResult)) =
     "getManagerKey";
+
+  [@bs.send]
+  external getConstants: (t, unit) => Js.Promise.t(constants) =
+    "getConstants";
 };
 
 module Toolkit = {

@@ -41,6 +41,10 @@ let noTokenMetadata = "No token metadata";
 let tokenIdNotFound = "Could not find token metadata for the token ID";
 let requestFailed1 = "Request to";
 let requestFailed2 = "failed";
+let gasExhausted = "gas_exhausted.operation";
+let storageExhausted = "storage_exhausted.operation";
+let gasLimitTooHigh = "gas_limit_too_high";
+let storageLimitTooHigh = "storage_limit_too_high";
 
 type Errors.t +=
   | UnregisteredDelegate
@@ -63,7 +67,11 @@ type Errors.t +=
   | NodeRequestFailed
   | TokenIdNotFound
   | ParseScript(option(string))
-  | ParseMicheline(option(string));
+  | ParseMicheline(option(string))
+  | GasExhausted
+  | StorageExhausted
+  | GasExhaustedAboveLimit
+  | StorageExhaustedAboveLimit;
 
 let parse = (e: RawJsError.t) =>
   switch (e.message) {
@@ -84,6 +92,11 @@ let parse = (e: RawJsError.t) =>
   | s when s->Js.String2.includes(noMetadata) => NoMetadata
   | s when s->Js.String2.includes(noTokenMetadata) => NoTokenMetadata
   | s when s->Js.String2.includes(tokenIdNotFound) => TokenIdNotFound
+  | s when s->Js.String2.includes(gasExhausted) => GasExhausted
+  | s when s->Js.String2.includes(storageExhausted) => StorageExhausted
+  | s when s->Js.String2.includes(gasLimitTooHigh) => GasExhaustedAboveLimit
+  | s when s->Js.String2.includes(storageLimitTooHigh) =>
+    StorageExhaustedAboveLimit
   | s
       when
         s->Js.String2.startsWith(requestFailed1)
@@ -120,6 +133,11 @@ let () =
     | NodeRequestFailed => I18n.Errors.request_to_node_failed->Some
     | ParseScript(e) => I18n.Errors.script_parsing(e)->Some
     | ParseMicheline(e) => I18n.Errors.micheline_parsing(e)->Some
+    | GasExhausted => I18n.Errors.gas_exhausted->Some
+    | StorageExhausted => I18n.Errors.storage_exhausted->Some
+    | GasExhaustedAboveLimit => I18n.Errors.gas_exhausted_above_limit->Some
+    | StorageExhaustedAboveLimit =>
+      I18n.Errors.storage_exhausted_above_limit->Some
     | _ => None,
   );
 
