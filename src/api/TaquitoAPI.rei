@@ -80,6 +80,40 @@ module Delegate: {
   };
 };
 
+module Originate: {
+  /* Originate contract for a given account */
+  let originate:
+    (
+      ~endpoint: ReTaquito.endpoint,
+      ~baseDir: System.Path.t,
+      ~source: PublicKeyHash.t,
+      ~balance: Tez.t=?,
+      ~code: ReTaquitoTypes.Code.t,
+      ~storage: ReTaquitoTypes.Storage.t,
+      ~delegate: PublicKeyHash.t=?,
+      ~signingIntent: Signer.intent,
+      ~fee: Tez.t=?,
+      unit
+    ) =>
+    Promise.t(ReTaquito.Toolkit.Operation.result);
+
+  module Estimate: {
+    let originate:
+      (
+        ~endpoint: ReTaquito.endpoint,
+        ~baseDir: System.Path.t,
+        ~source: PublicKeyHash.t,
+         ~balance: Tez.t=?,
+        ~code: ReTaquitoTypes.Code.t,
+        ~storage: ReTaquitoTypes.Storage.t,
+        ~delegate: PublicKeyHash.t=?,
+        ~fee: Tez.t=?,
+        unit
+      ) =>
+      Promise.t(Protocol.Simulation.results);
+  };
+};
+
 module Operations: {
   /* Generate a `confirmation` from an operation hash, which returns once the
      operation have been included. */

@@ -249,6 +249,44 @@ module Delegate =
     let makeOperation = Operation.delegation;
   });
 
+module Originate =
+  Make({
+    type t = Protocol.origination;
+
+    let make =
+        (account, beaconRequest: ReBeacon.Message.Request.operationRequest) => {
+      let origination =
+        beaconRequest.operationDetails
+        ->Array.get(0)
+        ->Option.map(ReBeacon.Message.Request.PartialOperation.classify)
+        ->Option.flatMap(operationDetail =>
+            switch (operationDetail) {
+            | Origination(partialOrigination) => Some(partialOrigination)
+            | _ => None
+            }
+          )
+        ->Option.map(
+            (
+              partialOrigination: ReBeacon.Message.Request.PartialOperation.origination,
+            ) => {
+            Protocol.makeOrigination(
+              ~source=account,
+              ~balance=Tez.fromMutezString(partialOrigination.balance),
+              ~code=partialOrigination.script.code,
+              ~storage=partialOrigination.script.storage,
+              ~delegate=partialOrigination.delegate,
+              (),
+            );
+          })
+        ->Option.getUnsafe; // Not the cleanest but we should be confident we're dealing with an origination request
+      origination;
+    };
+
+    let makeSimulated = o => o->Operation.Simulation.origination;
+
+    let makeOperation = Operation.origination;
+  });
+
 module Transfer =
   Make({
     type t = Transfer.t;

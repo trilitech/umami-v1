@@ -80,10 +80,15 @@ module Message = {
 
       type endorsement = {level: string};
 
+      type script = {
+        code: ReTaquitoTypes.Code.t,
+        storage: ReTaquitoTypes.Storage.t,
+      };
+    
       type origination = {
         balance: string,
-        delegate: option(string),
-        script: string,
+        delegate: option(PublicKeyHash.t),
+        script,
       };
 
       type proposals = {

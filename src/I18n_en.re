@@ -134,6 +134,7 @@ module Log = {
   let copied_to_clipboard = p("%s copied to clipboard");
   let log_content = "Log content";
   let address = "Address";
+  let content = "Content";
   let beacon_sign_payload = "Sign Payload";
 };
 
@@ -196,6 +197,8 @@ module Label = {
   let beacon_sign_payload = "Payload to sign";
   let beacon_dapp_pairing = "DApp pairing request";
   let parameters = "Parameters";
+  let storage = "Storage";
+  let code = "Code";
   let custom_network_name = "Name";
   let custom_network_mezos_url = "Mezos URL";
   let custom_network_node_url = plural => p("Node URL%s", plural ? "s" : "");
@@ -329,6 +332,7 @@ module Title = {
   let delegated_account = "Account to delegate";
   let baker_account = "Baker";
   let withdraw_baker = "Withdraw Baker";
+  let contract_originator = "Contract Originator";
   let confirm_delegate = "Confirm Delegate";
   let delegate = "Delegate";
   let delegate_update = "Change Baker";
@@ -382,6 +386,7 @@ module Title = {
   let restore_account = "Restore from Backup";
   let select_backup_file = "Select a JSON backup file and enter the password you used to encrypt it.";
   let account_backup_path = "Select a storage location for your backup";
+  let balance = "Balance";
 };
 
 module Expl = {
@@ -773,3 +778,4 @@ let custom_network_updated = "Network updated";
 let custom_network_deleted = "Network deleted";
 let unregistered_token = "unregistered token";
 let hw = "H/W";
+let none = "none";

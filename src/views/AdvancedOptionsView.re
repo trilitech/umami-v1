@@ -153,6 +153,14 @@ let updateOperation = (index, values: StateLenses.state, o: Operation.t) => {
     };
 
     {...t, options, transfers}->Protocol.Transaction;
+  | Origination(o) =>
+    let options = {
+      ...o.options,
+      fee: fallback(values.fee, o.options.fee),
+      forceLowFee:
+        (values.forceLowFee || o.options.forceLowFee == Some(true))->Some,
+    };
+    {...o, options}->Protocol.Origination;
   | Delegation(d) =>
     let options = {
       ...d.options,

@@ -80,6 +80,14 @@ module Micheline = {
   type t;
 };
 
+module Code = {
+  type t;
+};
+
+module Storage = {
+  type t;
+};
+
 module Transfer = {
   module Parameters = {
     type entrypoint = string;
@@ -117,6 +125,22 @@ module Delegate = {
     source: PublicKeyHash.t,
     delegate: option(PublicKeyHash.t),
     fee: option(ReBigNumber.t),
+  };
+};
+
+module Originate = {
+  type originateParams = {
+    kind: string,
+    source: PublicKeyHash.t,
+    balance: option(ReBigNumber.t),
+    code: Code.t,
+    [@bs.as "init"]
+    storage: Storage.t,
+    delegate: option(PublicKeyHash.t),
+    fee: option(ReBigNumber.t),
+    gasLimit: option(int),
+    storageLimit: option(int),
+    mutez: option(bool),
   };
 };
 

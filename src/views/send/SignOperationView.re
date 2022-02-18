@@ -112,6 +112,8 @@ let make =
       {switch (operation) {
        | Delegation(delegation) =>
          <OperationSummaryView.Delegate delegation dryRun />
+       | Origination(origination) =>
+         <OperationSummaryView.Originate origination dryRun />
        | Transaction(transfer) =>
          <OperationSummaryView.Transactions
            transfer
