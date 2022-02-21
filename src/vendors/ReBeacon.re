@@ -84,7 +84,7 @@ module Message = {
         code: ReTaquitoTypes.Code.t,
         storage: ReTaquitoTypes.Storage.t,
       };
-    
+
       type origination = {
         balance: string,
         delegate: option(PublicKeyHash.t),
@@ -104,7 +104,7 @@ module Message = {
       };
 
       type t =
-        | TransactionOperation(transaction)
+        | Transfer(transaction)
         | ActivateAccount(activateAccount)
         | Ballot(ballot)
         | Delegation(delegation)
@@ -116,8 +116,7 @@ module Message = {
 
       let classify = (partialOperation: basePartialOperation): t => {
         switch (partialOperation) {
-        | {kind: `transaction} =>
-          TransactionOperation(partialOperation->Obj.magic)
+        | {kind: `transaction} => Transfer(partialOperation->Obj.magic)
         | {kind: `activate_account} =>
           ActivateAccount(partialOperation->Obj.magic)
         | {kind: `ballot} => Ballot(partialOperation->Obj.magic)

@@ -610,7 +610,7 @@ module Errors = {
   let cannot_update_secret = i => p("Can't update secret at index %d!", i);
   let recovery_phrase_not_found = i =>
     p("Recovery phrase at index %d not found!", i);
-  let beacon_transaction_not_supported = "Beacon transaction not supported";
+  let beacon_operation_not_supported = "Beacon operation not supported";
   let beacon_request_network_missmatch = "Beacon request network not supported";
   let beacon_client_not_created = "Beacon client not created";
   let video_stream_access_denied = "Unable to access video stream\n(please make sure you have a webcam enabled)";
@@ -661,6 +661,7 @@ module Errors = {
   let storage_exhausted = "Storage exhausted for the operation, please put a higher limit";
   let gas_exhausted_above_limit = "Gas exhausted and above protocol limit per operation";
   let storage_exhausted_above_limit = "Storage exhausted and above protocol limit per operation";
+  let unhandled_operation = "Unhandled operation";
 };
 
 module Csv = {

@@ -109,14 +109,14 @@ let respondWithError = (client, id, errorType) =>
 
 module ErrorView = {
   [@react.component]
-  let make = (~msg, ~closeModal) => {
+  let make = (~err, ~closeModal) => {
     <ModalTemplate.Dialog>
       <Typography.Headline style=FormStyles.header>
         I18n.Title.beacon_error->React.string
       </Typography.Headline>
       <ScrollView style=styles##container alwaysBounceVertical=false>
         <Typography.Body1 colorStyle=`error style=FormStyles.textAlignCenter>
-          msg->React.string
+          {err->Errors.toString->React.string}
         </Typography.Body1>
       </ScrollView>
       <View style=FormStyles.formAction>
@@ -125,6 +125,10 @@ module ErrorView = {
     </ModalTemplate.Dialog>;
   };
 };
+
+type request =
+  | Op(ReBeacon.Message.Request.operationRequest, Protocol.batch)
+  | Other(ReBeacon.Message.Request.t);
 
 [@react.component]
 let make = (~account) => {
@@ -135,13 +139,24 @@ let make = (~account) => {
 
   let (request, visibleModal, openModal, closeModal) =
     useBeaconRequestModalAction();
+  open ReBeacon.Message.Request;
 
-  let sourceAccount = useSourceAccount(request);
   let requestData =
-    switch (sourceAccount, request) {
-    | (account, Some(request)) => Some((account, request))
-    | _ => None
-    };
+    React.useMemo1(
+      () =>
+        switch (request) {
+        | Some(Ok(OperationRequest(request))) =>
+          BeaconApiRequest.requestToBatch(account, request)
+          ->Result.map(batch => Op(request, batch))
+          ->Some
+
+        | Some(Ok(request)) => Some(Ok(Other(request)))
+        | Some(Error(e)) => Some(Error(e))
+
+        | _ => None
+        },
+      [|request|],
+    );
 
   let (client, _) = StoreContext.Beacon.useClient();
   let (nextRequest, doneResponding) =
@@ -173,14 +188,16 @@ let make = (~account) => {
           | PermissionRequest(_) => openModal(Ok(request))
           | SignPayloadRequest(_) => openModal(Ok(request))
           | OperationRequest(r) =>
-            if (r->checkOnlyTransaction || r->checkOnlyOneDelegation || r->checkOnlyOneOrigination) {
+            if (r->checkOnlyTransaction
+                || r->checkOnlyOneDelegation
+                || r->checkOnlyOneOrigination) {
               openModal(request->Ok);
             } else {
               setError(
                 client,
                 r.id,
                 `TRANSACTION_INVALID_ERROR,
-                I18n.Errors.beacon_transaction_not_supported,
+                BeaconApiRequest.OperationNotSupported,
               );
             }
           | _ => ()
@@ -190,7 +207,7 @@ let make = (~account) => {
             client,
             request->ReBeacon.Message.Request.getId,
             `NETWORK_NOT_SUPPORTED,
-            I18n.Errors.beacon_request_network_missmatch,
+            BeaconApiRequest.NetworkMismatch,
           );
         };
       | None => ()
@@ -204,46 +221,34 @@ let make = (~account) => {
     <ModalAction visible=visibleModal onRequestClose=close>
       {requestData->ReactUtils.mapOpt(
          fun
-         | (_, Ok(PermissionRequest(r))) =>
+         | Ok(Other(PermissionRequest(r))) =>
            <BeaconPermissionView
              account
              permissionRequest=r
              closeAction=closeModal
            />
-
-         | (Some(sourceAccount), Ok(OperationRequest(r)))
-             when r->checkOnlyTransaction =>
-           <BeaconOperationView.Transfer
-             sourceAccount
+         | Ok(Op(r, operation))
+             when
+               r->checkOnlyTransaction
+               || r->checkOnlyOneOrigination
+               || r->checkOnlyOneDelegation =>
+           <BeaconOperationView
              beaconRequest=r
+             operation
+             sourceAccount=account
              closeAction=closeModal
            />
-         | (Some(sourceAccount), Ok(OperationRequest(r)))
-             when r->checkOnlyOneDelegation =>
-           <BeaconOperationView.Delegate
-             beaconRequest=r
-             sourceAccount
-             closeAction=closeModal
-           />
-         | (Some(sourceAccount), Ok(OperationRequest(r)))
-             when r->checkOnlyOneOrigination =>
-           <BeaconOperationView.Originate
-             beaconRequest=r
-             sourceAccount
-             closeAction=closeModal
-           />
-         | (Some(sourceAccount), Ok(SignPayloadRequest(r))) =>
+         | Ok(Other(SignPayloadRequest(r))) =>
            <BeaconSignPayloadView
-             sourceAccount
+             sourceAccount=account
              signPayloadRequest=r
              closeAction=closeModal
            />
-
-         | (None, Ok(OperationRequest(_) | SignPayloadRequest(_))) =>
-           <ErrorView msg=I18n.Errors.beacon_cant_handle closeModal />
-         | (_, Ok(BroadcastRequest(_) | OperationRequest(_))) =>
-           <ErrorView msg=I18n.Errors.beacon_cant_handle closeModal />
-         | (_, Error(msg)) => <ErrorView msg closeModal />,
+         | Ok(Op(_, _))
+         | Ok(Other(OperationRequest(_)))
+         | Ok(Other(BroadcastRequest(_))) =>
+           <ErrorView err=BeaconApiRequest.BeaconNotHandled closeModal />
+         | Error(err) => <ErrorView err closeModal />,
        )}
     </ModalAction>
   </>;

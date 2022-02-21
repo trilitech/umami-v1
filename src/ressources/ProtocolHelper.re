@@ -129,7 +129,6 @@ module Transfer = {
 module Origination = {
   let make =
       (
-        ~source,
         ~balance=?,
         ~code,
         ~storage,
@@ -138,22 +137,18 @@ module Origination = {
         ~storageLimit=?,
         ~fee=?,
         (),
-      ) => {
-    source,
-    managers: [|
-      Origination({
-        balance,
-        delegate,
-        code,
-        storage,
-        options: {
-          gasLimit,
-          storageLimit,
-          fee,
-        },
-      }),
-    |],
-  };
+      ) =>
+    Origination({
+      balance,
+      delegate,
+      code,
+      storage,
+      options: {
+        gasLimit,
+        storageLimit,
+        fee,
+      },
+    });
 };
 
 let optionsSet =
