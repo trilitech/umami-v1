@@ -106,6 +106,9 @@ let read = (path: System.Path.t) => {
 
 let save = (t, path: System.Path.t) => {
   let encoded = encoder(t);
+
+  let%Await () =
+    System.File.initIfNotExists(~path, dummy->encoder->JsonEx.stringify);
   System.File.protect(~name=path, ~transaction=_ =>
     System.File.write(~name=path, encoded->JsonEx.stringify)
   );
