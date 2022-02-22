@@ -116,14 +116,24 @@ module Tzip12 = {
     };
 
     /* Parse the `token_info` field */
-    let parseTokenInfo = (address, token_id, token_info) => {
+    let parseTokenInfo = (address: PublicKeyHash.t, token_id, token_info) => {
       open Decode;
       let onError = (res, fieldName) =>
         res->Result.fromOption(IllformedToken(address, token_id, fieldName));
 
-      let%Res name = token_info->getString("name", ~onError);
+      // Symbol and name are optional, we make them mandatory only for fungible tokens
+      let onSymbolError = (isNFT, res, fieldName) =>
+        isNFT
+          ? res->Option.default(Token.defaultSymbol(address))->Ok
+          : onError(res, fieldName);
+
+      // Symbol and name are optional, we make them mandatory only for fungible tokens
+      let onNameError = (isNFT, res, fieldName) =>
+        isNFT
+          ? res->Option.default(Token.defaultName(address, token_id))->Ok
+          : onError(res, fieldName);
+
       let%Res decimals = token_info->getInt("decimals", ~onError);
-      let%ResMap symbol = token_info->getString("symbol", ~onError);
       let description = token_info->getOptString("description");
       let minter = token_info->getOptPkh("minter");
       let creators = token_info->getOptArrayString("creators");
@@ -154,6 +164,15 @@ module Tzip12 = {
           "attributes",
           Token.Decode.Metadata.attributeDecoder,
         );
+      let isNFT =
+        artifactUri != None
+        || displayUri != None
+        || isBooleanAmount != Some(true);
+
+      let%Res name =
+        token_info->getString("name", ~onError=onNameError(isNFT));
+      let%ResMap symbol =
+        token_info->getString("symbol", ~onError=onSymbolError(isNFT));
 
       {
         token_id,
