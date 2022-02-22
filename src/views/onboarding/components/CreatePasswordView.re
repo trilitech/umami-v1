@@ -130,7 +130,8 @@ module CreatePasswordView = {
 };
 
 [@react.component]
-let make = (~mnemonic: array(string), ~derivationPath, ~onSubmit) => {
+let make =
+    (~mnemonic: array(string), ~derivationPath, ~backupFile, ~onSubmit) => {
   let secrets = StoreContext.Secrets.useGetAll();
 
   let existingNonLedgerSecretsCount =
@@ -150,6 +151,7 @@ let make = (~mnemonic: array(string), ~derivationPath, ~onSubmit) => {
         mnemonic,
         derivationPath,
         password,
+        backupFile,
       };
 
     createSecretWithMnemonic(secret)->Promise.tapOk(_ => {onSubmit()});

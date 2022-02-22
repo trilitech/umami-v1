@@ -97,6 +97,7 @@ type createInput = {
   mnemonic: array(string),
   derivationPath: DerivationPath.Pattern.t,
   password: string,
+  backupFile: option(System.Path.t),
 };
 
 let useCreateWithMnemonics =
@@ -104,7 +105,15 @@ let useCreateWithMnemonics =
     ~logOk=_ => I18n.account_created,
     ~keepError=keepNonFormErrors,
     ~set=
-      (~config, {name, mnemonic, derivationPath, password}) => {
+      (~config, {name, mnemonic, derivationPath, password, backupFile}) => {
+        // The condition assumes there's no backupFile already configured
+        // and one is given explicitely
+        let config = {
+          ...config,
+          backupFile:
+            config.backupFile == None && backupFile != None
+              ? backupFile : config.backupFile,
+        };
         WalletAPI.Accounts.restore(
           ~config,
           ~backupPhrase=mnemonic,
@@ -112,7 +121,7 @@ let useCreateWithMnemonics =
           ~derivationPath,
           ~password,
           (),
-        )
+        );
       },
     ~kind=Logs.Secret,
   );
