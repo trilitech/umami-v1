@@ -140,7 +140,8 @@ let make = () => {
 
   React.useEffect1(
     _ => {
-      if (didMountRef.current) { // do not force backup for a first render
+      if (didMountRef.current) {
+        // do not force backup for a first render
         if (config.backupFile == None) {
           form.handleChange(SelectedBackupFile, "");
         } else {
@@ -162,7 +163,7 @@ let make = () => {
       };
       None;
     },
-    [|config|],
+    [|config.backupFile|],
   );
 
   let onSubmit = _ => form.submit();
