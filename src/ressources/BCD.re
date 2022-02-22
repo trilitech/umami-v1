@@ -114,6 +114,19 @@ let toTokenRepr = (tokenContract: TokenContract.t, token) => {
       asset: token->toTokenAsset,
     }
     ->Some
+  | (None, None, Some(decimals), Some(chain)) when token->isNFT =>
+    let defaultName = Token.defaultName(token.contract, token.token_id);
+    let defaultSymbol = Token.defaultSymbol(token.contract);
+    TokenRepr.{
+      kind,
+      address: token.contract,
+      alias: defaultName,
+      symbol: defaultSymbol,
+      decimals,
+      chain,
+      asset: token->toTokenAsset,
+    }
+    ->Some;
   | _ => None
   };
 };

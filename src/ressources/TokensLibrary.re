@@ -355,3 +355,18 @@ let invalidateCache = (cache, filter) => {
     };
   cache->Generic.keepMap(map);
 };
+
+let forceRetryPartial = (cache, filter) => {
+  let forceRetry = (token: Token.t) =>
+    switch (token) {
+    | Partial(tc, bcd, _) => Some(Token.Partial(tc, bcd, true))
+    | _ => Some(token)
+    };
+  let map = (_, _, token: Token.t) =>
+    switch (filter) {
+    | `Any => token->forceRetry
+    | `FT => token->Token.isNFT ? Some(token) : token->forceRetry
+    | `NFT => token->Token.isNFT ? token->forceRetry : Some(token)
+    };
+  cache->Generic.keepMap(map);
+};

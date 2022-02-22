@@ -28,6 +28,12 @@ module Unit = Unit;
 
 type t = TokenRepr.t;
 
+let defaultSymbol = (address: PublicKeyHash.t) =>
+  (address :> string)->Js.String2.substrAtMost(~from=0, ~length=6);
+
+let defaultName = (address: PublicKeyHash.t, tokenId) =>
+  defaultSymbol(address) ++ "#" ++ tokenId->Int.toString;
+
 module Decode = {
   open Json.Decode;
 
@@ -48,6 +54,17 @@ module Decode = {
     ->Option.getWithDefault(Ok(FA1_2))
     ->Result.getExn;
   };
+
+  // Some NFTs don't have symbol, illformed metadata but real examples unfortunately
+  let symbolDecoder = (default, json) =>
+    (json |> optional(field("symbol", string)))
+    ->Option.getWithDefault(default);
+
+  // Name is not mandatory in TZIP-12... This should not happen, and is a way to
+  // recover from broken cache
+  let aliasDecoder = (default, json) =>
+    (json |> optional(field("alias", string)))
+    ->Option.getWithDefault(default);
 
   module Metadata = {
     open Metadata;
@@ -117,19 +134,26 @@ module Decode = {
   };
 
   let record = json => {
-    kind: kindDecoder(json),
-    address:
-      json |> field("address", string) |> PublicKeyHash.build |> Result.getExn,
-    alias: json |> field("alias", string),
-    symbol: json |> field("symbol", string),
-    chain:
-      (json |> field("chain", optional(string)))
-      ->Option.getWithDefault(Network.getChainId(`Granadanet)),
-    decimals:
-      (json |> optional(field("decimals", int)))->Option.getWithDefault(0),
-    asset:
-      (json |> optional(field("asset", Metadata.assetDecoder)))
-      ->Option.getWithDefault(defaultAsset),
+    let address =
+      json |> field("address", string) |> PublicKeyHash.build |> Result.getExn;
+    let kind = kindDecoder(json);
+    let defaultName = defaultName(address, kind->TokenRepr.kindId);
+    let defaultSymbol = defaultSymbol(address);
+    {
+      kind,
+      address,
+      alias: json |> aliasDecoder(defaultName),
+      symbol: json |> symbolDecoder(defaultSymbol),
+      chain:
+        (json |> field("chain", optional(string)))
+        ->Option.getWithDefault(Network.getChainId(`Granadanet)),
+      decimals:
+        (json |> optional(field("decimals", int)))
+        ->Option.getWithDefault(0),
+      asset:
+        (json |> optional(field("asset", Metadata.assetDecoder)))
+        ->Option.getWithDefault(defaultAsset),
+    };
   };
 
   let array = json => json |> array(record);
