@@ -120,3 +120,4 @@ let addToken: (t, Token.t) => t;
 let removeToken: (t, Token.t) => t;
 
 let invalidateCache: (t, [< | `Any | `FT | `NFT]) => t;
+let forceRetryPartial: (t, [< | `Any | `FT | `NFT]) => t;
