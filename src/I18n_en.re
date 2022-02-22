@@ -249,7 +249,7 @@ module Form_input_error = {
   let expected_decimals = n => p("allows at most %d decimals", n);
   let hardware_wallet_not_ready = "Connection to Tezos ledger application failed. Please make sure the Tezos app is opened and the ledger unlocked.";
   let hardware_wallet_plug = "The connection took too long.\nPlease make sure the Ledger is properly plugged in and unlocked";
-  let hardware_wallet_check_app = "Letlic key export failed. Please open the Tezos Wallet app and retry.";
+  let hardware_wallet_check_app = "Ledger key export failed. Please open the Tezos Wallet app and retry.";
   let hardware_wallet_timeout = "Timeout while connecting to Ledger.\nPlug and unlock your Ledger then retry";
   let hardware_wallet_signer_inconsistent = "Inconsistency between signing intent and key";
   let empty_transaction = "Transaction is empty.";
@@ -327,7 +327,7 @@ module Title = {
   let hardware_wallet_denied = "Operation rejected on Ledger";
   let hardware_wallet_error_app = "Tezos application not started or export rejected";
   let hardware_wallet_check_follow = "Follow the checklist";
-  let hardware_confirm_pkh = "Please confirm letlic key export on your Ledger.";
+  let hardware_confirm_pkh = "Please confirm ledger key export on your Ledger.";
   let secret_update = "Edit Secret";
   let add_contact = "Add Contact";
   let update_contact = "Edit Contact";
@@ -416,10 +416,10 @@ module Expl = {
   let hardware_wallet_check_app = "Install and open the Tezos Wallet app on your Ledger.";
   let hardware_wallet_check_plug = "Plug your Ledger into your computer using a USB cable.";
   let hardware_wallet_check_unlock = "Unlock your Ledger.";
-  let hardware_wallet_check_click = "Click the EXPORT LETLIC KEY button below and confirm the action on your Ledger.";
-  let hardware_wallet_confirmed = "Letlic key export confirmed";
+  let hardware_wallet_check_click = "Click the EXPORT LEDGER KEY button below and confirm the action on your Ledger.";
+  let hardware_wallet_confirmed = "Ledger key export confirmed";
   let hardware_wallet_op_confirmed = "Operation signed and sent to the network.";
-  let hardware_wallet_confirm = "Ledger found. Please confirm letlic key export.";
+  let hardware_wallet_confirm = "Ledger found. Please confirm ledger key export.";
   let hardware_wallet_op_confirm = "Verify the operation details displayed on your Ledger before you sign.";
   let hardware_wallet_denied = "The operation has been rejected from the Ledger device";
   let hardware_wallet_search = "Please make sure to unlock your Ledger and open the Tezos Wallet app.";
@@ -586,7 +586,7 @@ module Errors = {
   let request_to_node_failed = "Request to node failed";
   let every_balances_fail = "Every balances fail to load";
   let network_unreachable = "Tezos network unreachable.";
-  let no_valid_endpoint = "No valid endpoint found among letlic nodes";
+  let no_valid_endpoint = "No valid endpoint found among ledger nodes";
   let not_an_fa12_contract = "Not an FA1.2 standard contract";
   let beacon_cant_handle = "Cannot handle this operation";
   let customauth_unable_to_retrieve_handle = "Unable to retrieve user handle";
@@ -631,7 +631,7 @@ module Errors = {
     p("Internal error: invalid version format `%s`", v);
   let storage_migration_failed = v =>
     p("Internal error: storage migration failed at version %s", v);
-  let unknown_network = c => p("No letlic network exists for chain %s", c);
+  let unknown_network = c => p("No ledger network exists for chain %s", c);
   let script_parsing = e =>
     p(
       "Error when parsing script%s",
