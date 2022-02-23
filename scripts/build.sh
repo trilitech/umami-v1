@@ -13,7 +13,10 @@ if [ "${GITLAB_CI}" != "true" ]
 then
     if [ "$machine" = "Linux" ]
     then
-        yarn snap:build
+        yarn snap:build ;
+        mv *.snap dist/ ;
+        yarn electron:rpm ;
+        yarn electron:deb
     else
         yarn electron:build
     fi
