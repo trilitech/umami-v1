@@ -29,7 +29,7 @@ type env = {
   theme: [ | `system | `dark | `light],
   confirmations: int,
   baseDir: unit => System.Path.t,
-  backupFile: option(System.Path.t)
+  backupFile: option(System.Path.t),
 };
 
 let defaultNetwork = `Mainnet;
@@ -64,7 +64,7 @@ let fromFile = f => {
       ->List.getBy(n => n.name === name)
       ->Option.getWithDefault(Network.mainnet)
     },
-    backupFile: f.backupFile
+  backupFile: f.backupFile,
 };
 
 type networkStatus = {
@@ -198,7 +198,7 @@ let make = (~children) => {
       setContent(_ => configFile->fromFile);
       None;
     },
-    [|configFile|]
+    [|configFile|],
   );
 
   React.useEffect1(
@@ -288,6 +288,13 @@ let useResetConfig = () => {
   let {write} = useContext();
   () => {
     write(_ => ConfigFile.dummy);
+  };
+};
+
+let useResetBackupFilePath = () => {
+  let {write} = useContext();
+  () => {
+    write(c => {...c, backupFile: None});
   };
 };
 

@@ -69,7 +69,7 @@ let make = (~closeAction) => {
   let onSubmit = _ => {
     if (noExistingPassword) {
       writeConf(config => {...config, backupFile});
-    }
+    };
     closeAction();
   };
 
@@ -175,7 +175,7 @@ let make = (~closeAction) => {
             I18n.Expl.secret_create_password_not_recorded->React.string
           </Typography.Body2>
           ->ReactUtils.onlyWhen(noExistingPassword)}
-         <CreatePasswordView mnemonic derivationPath onSubmit />
+         <CreatePasswordView mnemonic derivationPath backupFile onSubmit />
        </>;
      }}
   </ModalFormView>;

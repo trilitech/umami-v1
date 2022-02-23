@@ -56,6 +56,7 @@ module OffBoardView = {
 
   let useOffboardWallet = () => {
     let erase = ConfigContext.useEraseStorageAndBaseDir();
+    let resetBackupFilePath = ConfigContext.useResetBackupFilePath();
     let resetSecrets = StoreContext.Secrets.useResetAll();
     let resetTokens = StoreContext.Tokens.useResetAll();
     let (_, destroy) = StoreContext.Beacon.useClient();
@@ -63,6 +64,7 @@ module OffBoardView = {
     () => {
       erase()
       ->Promise.tapOk(() => {
+          resetBackupFilePath();
           resetSecrets();
           resetTokens();
           Routes.(push(Accounts));
