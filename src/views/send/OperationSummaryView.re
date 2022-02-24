@@ -277,7 +277,7 @@ module Operations = {
                (ProtocolOptions.{value, entrypoint}) =>
                code(
                  (
-                   entrypoint->ProtocolOptions.TransactionParameters.default,
+                   entrypoint->ProtocolOptions.TransactionParameters.getEntrypoint,
                    value->michelsonToString,
                  ),
                  I18n.Label.entrypoint,

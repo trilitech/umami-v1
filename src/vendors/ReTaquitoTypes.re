@@ -92,8 +92,14 @@ module Toolkit = {
   type provider = {signer: ReTaquitoSigner.t};
 };
 
-module Micheline = {
-  type t;
+module Micheline: {
+  type t = pri string;
+
+  let unitVal: t;
+} = {
+  type t = string;
+
+  let unitVal = "Unit";
 };
 
 module Code = {
@@ -111,6 +117,8 @@ module Transfer = {
       entrypoint: name,
       value: Micheline.t,
     };
+
+    let default = "default";
   };
 
   type transferParams = {

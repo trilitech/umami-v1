@@ -73,16 +73,18 @@ module Details = {
       <FormLabel style=detailsStyles##label label=I18n.Label.entrypoint />
       <CodeView
         style=detailsStyles##container
-        text={Option.default(p.entrypoint, "default")}
+        text={
+          p.entrypoint->ProtocolOptions.TransactionParameters.getEntrypoint
+        }
       />
       <FormLabel style=detailsStyles##label label=I18n.Label.parameters />
       <CodeView
         style=detailsStyles##container
         text={
-          p.value
-          ->Option.flatMap(MichelineMichelsonV1Expression.toString)
-          ->Option.default("Unit")
-        }
+               let p =
+                 p.value->ProtocolOptions.TransactionParameters.getParameter;
+               p->MichelineMichelsonV1Expression.toString->Option.default("");
+             }
       />
       {amount->ReactUtils.mapOpt(a => {
          <>
@@ -199,8 +201,8 @@ let make =
       indexDetails
       ->Option.flatMap(i => indexedRows->Array.get(i))
       ->Option.map(snd)
-      ->Option.flatMap(((_, _, p) as vs) =>
-          p.value != None || p.entrypoint != None ? Some(vs) : None
+      ->Option.flatMap(((_, recipient, _) as vs) =>
+          recipient->PublicKeyHash.isContract ? Some(vs) : None
         )
       ->ReactUtils.mapOpt(validState => {
           modal(<Details closeAction validState />)

@@ -97,7 +97,7 @@ module Header = {
            (),
          )}
         {makeHeaderCell(I18n.global_batch_column_type, 130., ())}
-        {makeHeaderCell(I18n.global_batch_amount_nft, 130., ())}
+        {makeHeaderCell(I18n.global_batch_subject, 130., ())}
         {makeHeaderCell(I18n.global_batch_recipient, 130., ())}
         {makeHeaderCell(I18n.global_batch_fee, 150., ())}
         {makeGenericHeaderCell(
@@ -146,6 +146,7 @@ module TransferRowDisplay = {
         ~amount,
         ~recipient,
         ~fee,
+        ~parameter: ProtocolOptions.parameter,
         ~onDelete,
         ~onEdit,
         ~onAdvanced,
@@ -156,6 +157,8 @@ module TransferRowDisplay = {
     open ReactNative.Style;
     let theme = ThemeContext.useTheme();
     let getContactOrRaw = useGetContactOrRaw();
+
+    let isContractCall = recipient->PublicKeyHash.isContract;
 
     let matchPos = wanted =>
       switch (fa2Position) {
@@ -178,6 +181,14 @@ module TransferRowDisplay = {
       | Token({token}) => TokenRepr.isNFT(token)
       | Tez(_) => false
       };
+
+    let ty = isContractCall ? "Call" : "Transaction";
+
+    let amount =
+      isContractCall
+        ? parameter.entrypoint
+          ->ProtocolOptions.TransactionParameters.getEntrypoint
+        : ProtocolAmount.show(amount);
 
     let shouldDisplayFee = !isFa2 || isFa2 && (isSingle || isFirst);
 
@@ -268,12 +279,12 @@ module TransferRowDisplay = {
              ~alignItems=`center,
              (),
            )}>
-           <> (shouldDisplayFee ? "Transaction" : "")->React.string </>
+           <> (shouldDisplayFee ? ty : "")->React.string </>
          </View>,
          130.,
          (),
        )}
-      {makeRowCell(Protocol.Amount.show(amount), 130., ())}
+      {makeRowCell(amount, 130., ())}
       {makeGenericRowCell(renderContact(Address(recipient)), 130., ())}
       {makeGenericRowCell(
          <Typography.Body1
@@ -384,9 +395,10 @@ let make =
            recipient
            fee={getFeeDisplay(~simulation=simulations[managerIndex])}
            onDelete={() => onDelete(arrIndex)}
+           parameter
            onEdit={_ => onEdit(arrIndex)}
            onDetails={
-             parameter.entrypoint != None || parameter.value != None
+             recipient->PublicKeyHash.isContract
                ? Some(_ => onDetails(arrIndex)) : None
            }
            onAdvanced={_ => onAdvanced(arrIndex)}
