@@ -245,31 +245,6 @@ module AppView = {
                          )}
                       </SelectedAccountView>
                     }}
-                   <View style=styles##content>
-                     {switch (mainPageState) {
-                      | Onboarding => <OnboardingView />
-                      | AddAccountModal =>
-                        <OnboardingView
-                          onClose={_ => setMainPage(_ => Dashboard)}
-                        />
-                      | BuyTez(src) =>
-                        <BuyTezView src onClose=handleCloseBuyTezView />
-                      | Dashboard =>
-                        <SelectedAccountView>
-                          {(
-                             account =>
-                               <Dashboard
-                                 account
-                                 showBuyTez={url =>
-                                   setMainPage(_ => BuyTez(url))
-                                 }
-                                 route
-                                 setMainPage
-                               />
-                           )}
-                        </SelectedAccountView>
-                      }}
-                   </View>
                  </View>
                </View>}
         </View>

@@ -54,6 +54,7 @@ let styles =
       "reqelt": style(~flexShrink=0., ~marginRight=16.->dp, ()),
       "kindIcon": style(~marginRight=10.->dp, ()),
       "container": style(~borderRadius=8., ~marginTop=10.->dp, ()),
+      "primaryText": style(~color=Colors.Dark.primary, ()),
       "item":
         style(
           ~display=`flex,
@@ -256,9 +257,20 @@ module Toast = {
     let icon =
       switch (log.kind) {
       | Error
-      | Warning => <Icons.Error size=20. color={theme.colors.toastError} />
+      | Warning =>
+        <Icons.CloseOutline size=20. color={theme.colors.toastError} />
       | Info => <Icons.CheckOutline size=20. color={theme.colors.toastValid} />
       };
+
+    let jsx_of_btn = (btn: Logs.btn) => {
+      <Buttons.FormPrimary text={btn.text} onPress={_ => btn.onPress()} />;
+    };
+
+    let buttons =
+      log.btns
+      ->Option.mapWithDefault(React.null, btns =>
+          btns->List.map(jsx_of_btn)->List.toArray->React.array
+        );
 
     <View
       style=Style.(
@@ -286,12 +298,13 @@ module Toast = {
                numberOfLines=1>
                log.msg->React.string
              </Typography.Body1>
+             buttons
              {actionButtons(
                 ~indice,
                 ~log,
                 ~addToast,
                 ~handleDelete,
-                ~toast=true,
+                ~toast=false,
               )}
            </View>;
          }}
