@@ -9,12 +9,12 @@ case "${unameOut}" in
     *)          machine="UNKNOWN:${unameOut}"
 esac
 
-if [ "${GITLAB_CI}" != "true" ]
+if [ "$machine" = "Linux" ]
 then
-    if [ "$machine" = "Linux" ]
-    then
-        yarn snap:build
-    else
-        yarn electron:build
-    fi
+    yarn snap:build ;
+    mv *.snap dist/ ;
+    yarn electron:rpm ;
+    yarn electron:deb
+else
+    yarn electron:build
 fi
