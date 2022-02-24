@@ -33,20 +33,31 @@ type Errors.t +=
 
 type t = list(Transfer.elt);
 /* Public key hash encoding */
-let addr: CSVParser.Encodings.element(PublicKeyHash.t, Errors.t);
+let addr: CSVParser.Encodings.element(PublicKeyHash.t);
 /* Contract hash encoding */
-let token: CSVParser.Encodings.element(PublicKeyHash.t, Errors.t);
+let contract: CSVParser.Encodings.element(PublicKeyHash.t);
+/* Micheline encoding */
+let michelson: CSVParser.Encodings.element(ReTaquitoTypes.Micheline.t);
+
+type token = (PublicKeyHash.t, option(Umami.ReBigNumber.t));
+
+type transfer = (
+  (PublicKeyHash.t, ReBigNumber.t),
+  CSVParser.Encodings.or_(token, unit),
+);
+
+type contractCall = (
+  PublicKeyHash.t,
+  string,
+  ReTaquitoParser.t,
+  option(ReBigNumber.t),
+);
+
 /* CSV row encoding */
 let rowEncoding:
-  CSVParser.Encodings.row(
-    (
-      PublicKeyHash.t,
-      ReBigNumber.t,
-      option(PublicKeyHash.t),
-      option(ReBigNumber.t),
-    ),
-    Errors.t,
+  Let.result(
+    CSVParser.Encodings.row(CSVParser.Encodings.or_(transfer, contractCall)),
   );
 
 let parseCSV:
-  (string, ~tokens: TokensLibrary.WithBalance.t) => result(t, Errors.t);
+  (string, ~tokens: TokensLibrary.WithRegistration.t) => result(t, Errors.t);

@@ -82,13 +82,13 @@ let make = (~onSign) => {
       |])
     )>
     <Typography.Headline style=styles##title>
-      I18n.title#disclaimer->React.string
+      I18n.Title.disclaimer->React.string
     </Typography.Headline>
     <Typography.Body2 colorStyle=`mediumEmphasis style=styles##updateNotice>
-      {I18n.disclaimer#last_updated(Disclaimer.updateTime)->React.string}
+      {I18n.Disclaimer.last_updated(Disclaimer.updateTime)->React.string}
     </Typography.Body2>
     <Typography.Overline1 colorStyle=`highEmphasis style=styles##subtitle>
-      I18n.disclaimer#please_sign->React.string
+      I18n.Disclaimer.please_sign->React.string
     </Typography.Overline1>
     <DocumentContext.ScrollView
       showsVerticalScrollIndicator=true style=styles##disclaimerText>
@@ -98,7 +98,7 @@ let make = (~onSign) => {
       <View>
         <CheckboxItem
           style=styles##checkboxLabel
-          label=I18n.disclaimer#agreement_checkbox
+          label=I18n.Disclaimer.agreement_checkbox
           labelFontWeightStyle=`regular
           labelStyle={Style.style(
             ~color=Typography.getColor(`highEmphasis, theme),
@@ -109,7 +109,7 @@ let make = (~onSign) => {
         />
       </View>
       <Buttons.SubmitPrimary
-        text=I18n.btn#disclaimer_agree
+        text=I18n.Btn.disclaimer_agree
         onPress={_ => form.submit()}
         disabledLook={!formFieldsAreValids}
         style=FormStyles.formSubmit

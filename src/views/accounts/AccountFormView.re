@@ -100,7 +100,7 @@ module Generic = {
       {hideSecretSelector
          ? React.null
          : <FormGroupSecretSelector
-             label=I18n.label#account_secret
+             label=I18n.Label.account_secret
              value={
                form.values.secret == "" ? None : Some(form.values.secret)
              }
@@ -111,10 +111,10 @@ module Generic = {
              disabled={secret->Option.isSome}
            />}
       <FormGroupTextInput
-        label=I18n.label#account_create_name
+        label=I18n.Label.account_create_name
         value={form.values.name}
         handleChange={form.handleChange(Name)}
-        placeholder=I18n.input_placeholder#add_accounts_name
+        placeholder=I18n.Input_placeholder.add_accounts_name
         error={form.getFieldError(Field(Name))}
       />
       <Buttons.SubmitPrimary
@@ -141,11 +141,11 @@ module Update = {
 
     <ModalFormView closing={ModalFormView.Close(closeAction)}>
       <Typography.Headline style=FormStyles.header>
-        I18n.title#account_update->React.string
+        I18n.Title.account_update->React.string
       </Typography.Headline>
       <Generic
         init={account.name}
-        buttonText=I18n.btn#update
+        buttonText=I18n.Btn.update
         request=updateAccountRequest
         action
         hideSecretSelector=true
@@ -231,13 +231,13 @@ module Create = {
 
     <ModalFormView closing={ModalFormView.Close(closeAction)}>
       <Typography.Headline style=FormStyles.header>
-        I18n.title#derive_account->React.string
+        I18n.Title.derive_account->React.string
       </Typography.Headline>
       {switch (formValues) {
        | None =>
          <Generic
            init=""
-           buttonText=I18n.btn#add
+           buttonText=I18n.Btn.add
            request=createDeriveRequest
            action={(~name, ~secretIndex) => {
              if (isLedger) {
@@ -256,7 +256,7 @@ module Create = {
          <>
            <Typography.Overline1
              fontSize=19. style=FormStyles.headerWithoutMarginBottom>
-             I18n.title#hardware_confirm_pkh->React.string
+             I18n.Title.hardware_confirm_pkh->React.string
            </Typography.Overline1>
            <InitLedgerView
              style=ledgerStyle

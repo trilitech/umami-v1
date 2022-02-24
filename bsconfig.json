@@ -14,9 +14,12 @@
       "type": "dev"
     }
   ],
-  "bsc-flags":
-  ["-bs-super-errors", "-bs-no-version-header", "-open Belt"
-   , "-open UmamiLibBase"],
+  "bsc-flags": [
+    "-bs-super-errors",
+    "-bs-no-version-header",
+    "-open Belt",
+    "-open UmamiLibBase"
+  ],
   "warnings": {
     "number": "-44-48-9-45"
   },
@@ -27,7 +30,7 @@
     }
   ],
   "suffix": ".bs.js",
-  "namespace": false,
+  "namespace": true,
   "ppx-flags": ["lenses-ppx/ppx", "bs-let/ppx"],
   "bs-dependencies": [
     "@umami/lib-base",
@@ -40,7 +43,10 @@
     "reason-test-framework",
     "bs-reform",
     "reschema",
-    "@reason-react-native/svg"
+    "@reason-react-native/svg",
+    "@glennsl/rescript-jest",
+    "bs-react-testing-library",
+    "bs-dom-testing-library"
   ],
   "refmt": 3
 }

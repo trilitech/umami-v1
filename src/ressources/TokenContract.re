@@ -32,7 +32,7 @@ let () =
   Errors.registerHandler(
     "Wallet",
     fun
-    | UnknownKind(k) => I18n.errors#unknown_kind(k)->Some
+    | UnknownKind(k) => I18n.Errors.unknown_kind(k)->Some
     | _ => None,
   );
 

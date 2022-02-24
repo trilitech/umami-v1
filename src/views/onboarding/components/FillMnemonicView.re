@@ -77,7 +77,7 @@ module FormatSelector = {
     <>
       <FormLabel
         style=FormStyles.selector##label
-        label=I18n.label#recovery_phrase_format
+        label=I18n.Label.recovery_phrase_format
       />
       <Selector
         style=FormStyles.selector##selector
@@ -221,7 +221,7 @@ let make =
         |])
       )>
       <Buttons.SubmitPrimary
-        text=I18n.btn#continue
+        text=I18n.Btn.continue
         onPress={onSubmit(`PrimarySubmit)}
         disabledLook={!formFieldsAreValids}
       />

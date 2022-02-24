@@ -76,6 +76,8 @@ let styles =
     StyleSheet.create({
       "rawAddressContainer":
         style(~display=`flex, ~flexDirection=`row, ~alignItems=`center, ()),
+      "image":
+        style(~marginLeft=10.->dp, ~width=19.->dp, ~height=19.->dp, ()),
     })
   );
 
@@ -88,7 +90,7 @@ module AddContactButton = {
     let tooltip = (
       "add_contact_from_op"
       ++ Operation.Read.(operation->uniqueId->uniqueIdToString),
-      I18n.tooltip#add_contact,
+      I18n.Tooltip.add_contact,
     );
 
     let onPress = _e => openAction();
@@ -125,14 +127,14 @@ let status =
     (operation: Operation.Read.t, currentLevel, config: ConfigContext.env) => {
   let (txt, colorStyle) =
     switch (operation.status) {
-    | Mempool => (I18n.t#state_mempool, Some(`negative))
+    | Mempool => (I18n.state_mempool, Some(`negative))
     | Chain =>
       let minConfirmations = config.confirmations;
       let currentConfirmations = currentLevel - operation.level;
       currentConfirmations > minConfirmations
-        ? (I18n.t#state_confirmed, None)
+        ? (I18n.state_confirmed, None)
         : (
-          I18n.t#state_levels(currentConfirmations, minConfirmations),
+          I18n.state_levels(currentConfirmations, minConfirmations),
           Some(`negative),
         );
     };
@@ -159,7 +161,7 @@ let memo = component =>
 
 module AddToken = {
   [@react.component]
-  let make = (~address, ~kind: TokenRepr.kind, ~op: Operation.Read.t) => {
+  let make = (~address, ~kind: TokenRepr.kind, ~op: Operation.Read.t, ~tokens) => {
     let (visibleModal, openAction, closeAction) =
       ModalAction.useModalActionState();
     let closeAction = () => {
@@ -174,13 +176,21 @@ module AddToken = {
 
     let tooltip = (
       "add_token_from_op" ++ Operation.Read.(op->uniqueId->uniqueIdToString),
-      I18n.tooltip#add_token,
+      I18n.Tooltip.add_token,
     );
     let onPress = _ => openAction();
 
     <>
       <ModalAction visible=visibleModal onRequestClose=closeAction>
-        <TokenAddView chain address=(address :> string) kind closeAction />
+        <TokenAddView
+          action=`Add
+          chain
+          address
+          kind
+          tokens
+          cacheOnlyNFT=true
+          closeAction
+        />
       </ModalAction>
       <IconButton
         icon=Icons.AddToken.build
@@ -192,73 +202,110 @@ module AddToken = {
   };
 };
 
+module UnknownTokenAmount = {
+  [@react.component]
+  let make = (~amount, ~sign, ~address: PublicKeyHash.t, ~kind, ~tokens, ~op) => {
+    let tooltip = (
+      "unknown_token" ++ Operation.Read.(op->uniqueId->uniqueIdToString),
+      I18n.Tooltip.unregistered_token_transaction,
+    );
+    <View style=styles##rawAddressContainer>
+      <Text>
+        {Format.asprintf("%s %s", sign, amount->TokenRepr.Unit.toNatString)
+         ->React.string}
+      </Text>
+      <IconButton
+        icon=Icons.QuestionMark.build
+        size=19.
+        iconSizeRatio=1.
+        tooltip
+        disabled=true
+        style=Style.(style(~borderRadius=0., ~marginLeft="4px", ()))
+      />
+      <AddToken address kind op tokens />
+    </View>;
+  };
+};
+
+module KnownTokenAmount = {
+  [@react.component]
+  let make =
+      (
+        ~amount,
+        ~sign,
+        ~token as {address, kind, symbol, decimals, _}: TokenRepr.t,
+        ~registered,
+        ~tokens,
+        ~op,
+      ) => {
+    <View style=styles##rawAddressContainer>
+      <Text>
+        {Format.asprintf(
+           "%s %s %s",
+           sign,
+           amount->TokenRepr.Unit.toStringDecimals(decimals),
+           symbol,
+         )
+         ->React.string}
+      </Text>
+      {registered ? React.null : <AddToken address kind op tokens />}
+    </View>;
+  };
+};
+
+module NFTAmount = {
+  [@react.component]
+  let make = (~amount, ~sign, ~token: TokenRepr.t) => {
+    let source =
+      NftElements.useNftSource(token, NftFilesManager.getThumbnailURL);
+    <View style=styles##rawAddressContainer>
+      <Text>
+        {Format.asprintf(
+           "%s %s",
+           sign,
+           amount->TokenRepr.Unit.toStringDecimals(token.decimals),
+         )
+         ->React.string}
+      </Text>
+      {source->Option.mapDefault(<SVGIconNoImg />, source =>
+         <Image style=styles##image source />
+       )}
+    </View>;
+  };
+};
+
 let amount =
     (
-      account,
+      account: Account.t,
       transaction: Operation.Transaction.t,
       tokens,
       op: Operation.Read.t,
     ) => {
   let colorStyle =
-    account->Option.map((account: Account.t) =>
-      account.address
-      == transaction->Operation.Transaction.Accessor.destination
-        ? `positive : `negative
-    );
+    account.address == transaction->Operation.Transaction.Accessor.destination
+      ? `positive : `negative;
 
-  let sign = colorStyle == Some(`positive) ? "+" : "-";
+  let sign = colorStyle == `positive ? "+" : "-";
   <CellAmount>
-    {<Typography.Body1 ?colorStyle>
+    {<Typography.Body1 colorStyle>
        {switch (transaction) {
         | Tez(transaction) =>
-          I18n.t#tez_op_amount(sign, transaction.amount->Tez.toString)
+          I18n.tez_op_amount(sign, transaction.amount->Tez.toString)
           ->React.string
-        | Token(_, token_trans, _) =>
-          let address = token_trans.contract;
-          let token: option((Token.t, ReBigNumber.t)) =
-            TokensLibrary.WithBalance.getFullToken(
+        | Token(_, {amount, kind, contract}, _) =>
+          let address = contract;
+          let token: option((Token.t, bool)) =
+            TokensLibrary.WithRegistration.getFullToken(
               tokens,
               address,
-              token_trans.kind->TokenRepr.kindId,
+              kind->TokenRepr.kindId,
             );
           switch (token) {
-          | None =>
-            let tooltip = (
-              "unknown_token"
-              ++ Operation.Read.(op->uniqueId->uniqueIdToString),
-              I18n.tooltip#unregistered_token_transaction,
-            );
-            <View style=styles##rawAddressContainer>
-              <Text>
-                {Format.asprintf(
-                   "%s %s",
-                   sign,
-                   token_trans.amount->TokenRepr.Unit.toNatString,
-                 )
-                 ->React.string}
-              </Text>
-              <IconButton
-                icon=Icons.QuestionMark.build
-                size=19.
-                iconSizeRatio=1.
-                tooltip
-                disabled=true
-                style=Style.(style(~borderRadius=0., ~marginLeft="4px", ()))
-              />
-              <AddToken
-                address=(address :> string)
-                kind={token_trans.kind}
-                op
-              />
-            </View>;
-          | Some(({symbol, decimals, _}, _)) =>
-            Format.asprintf(
-              "%s %s %s",
-              sign,
-              token_trans.amount->TokenRepr.Unit.toStringDecimals(decimals),
-              symbol,
-            )
-            ->React.string
+          | None => <UnknownTokenAmount amount sign address kind tokens op />
+          | Some((token, _)) when token->TokenRepr.isNFT =>
+            <NFTAmount amount sign token />
+          | Some((token, registered)) =>
+            <KnownTokenAmount amount sign token registered tokens op />
           };
         }}
      </Typography.Body1>}
@@ -267,26 +314,25 @@ let amount =
 
 [@react.component]
 let make =
-  memo((~operation: Operation.Read.t, ~currentLevel) => {
-    let account = StoreContext.SelectedAccount.useGet();
+  memo((~account: Account.t, ~operation: Operation.Read.t, ~currentLevel) => {
     let aliases = StoreContext.Aliases.useGetAll();
     let tokens = StoreContext.Tokens.useGetAll();
     let config = ConfigContext.useContent();
     let addToast = LogsContext.useToast();
 
-    <Table.Row>
+    <Table.Row.Bordered>
       {switch (operation.payload) {
        | Reveal(_reveal) =>
          <>
            <CellType>
              <Typography.Body1>
-               I18n.t#operation_reveal->React.string
+               I18n.operation_reveal->React.string
              </Typography.Body1>
            </CellType>
            <CellAmount />
            <CellFee>
              <Typography.Body1>
-               {I18n.t#tez_amount(operation.fee->Tez.toString)->React.string}
+               {I18n.tez_amount(operation.fee->Tez.toString)->React.string}
              </Typography.Body1>
            </CellFee>
            <CellAddress />
@@ -297,13 +343,13 @@ let make =
          <>
            <CellType>
              <Typography.Body1>
-               I18n.t#operation_transaction->React.string
+               I18n.operation_transaction->React.string
              </Typography.Body1>
            </CellType>
            {amount(account, transaction, tokens, operation)}
            <CellFee>
              <Typography.Body1>
-               {I18n.t#tez_amount(operation.fee->Tez.toString)->React.string}
+               {I18n.tez_amount(operation.fee->Tez.toString)->React.string}
              </Typography.Body1>
            </CellFee>
            <CellAddress>
@@ -324,7 +370,7 @@ let make =
          <>
            <CellType>
              <Typography.Body1>
-               I18n.t#operation_origination->React.string
+               I18n.operation_origination->React.string
              </Typography.Body1>
            </CellType>
            <CellAmount />
@@ -337,13 +383,13 @@ let make =
          <>
            <CellType>
              <Typography.Body1>
-               I18n.t#operation_delegation->React.string
+               I18n.operation_delegation->React.string
              </Typography.Body1>
            </CellType>
            <CellAmount />
            <CellFee>
              <Typography.Body1>
-               {I18n.t#tez_amount(operation.fee->Tez.toString)->React.string}
+               {I18n.tez_amount(operation.fee->Tez.toString)->React.string}
              </Typography.Body1>
            </CellFee>
            <CellAddress>
@@ -353,7 +399,7 @@ let make =
             ->Option.mapWithDefault(
                 <CellAddress>
                   <Typography.Body1 numberOfLines=1>
-                    I18n.t#delegation_removal->React.string
+                    I18n.delegation_removal->React.string
                   </Typography.Body1>
                 </CellAddress>,
                 d =>
@@ -366,7 +412,7 @@ let make =
          <>
            <CellType>
              <Typography.Body1>
-               I18n.t#unknown_operation->ReasonReact.string
+               I18n.unknown_operation->ReasonReact.string
              </Typography.Body1>
            </CellType>
            <CellAmount />
@@ -387,7 +433,7 @@ let make =
           tooltip=(
             "open_in_explorer"
             ++ Operation.Read.(operation->uniqueId->uniqueIdToString),
-            I18n.tooltip#open_in_explorer,
+            I18n.Tooltip.open_in_explorer,
           )
           onPress={_ => {
             switch (Network.externalExplorer(config.network.chain)) {
@@ -397,5 +443,5 @@ let make =
           }}
         />
       </CellAction>
-    </Table.Row>;
+    </Table.Row.Bordered>;
   });

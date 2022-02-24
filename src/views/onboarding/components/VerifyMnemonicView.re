@@ -151,7 +151,7 @@ let make = (~mnemonic, ~goNextStep) => {
     </View>
     <View style=FormStyles.verticalFormAction>
       <Buttons.SubmitPrimary
-        text=I18n.btn#continue
+        text=I18n.Btn.continue
         onPress=onSubmit
         disabledLook={!formFieldsAreValids}
       />

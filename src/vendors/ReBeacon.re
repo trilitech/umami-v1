@@ -80,10 +80,15 @@ module Message = {
 
       type endorsement = {level: string};
 
+      type script = {
+        code: ReTaquitoTypes.Code.t,
+        storage: ReTaquitoTypes.Storage.t,
+      };
+    
       type origination = {
         balance: string,
-        delegate: option(string),
-        script: string,
+        delegate: option(PublicKeyHash.t),
+        script,
       };
 
       type proposals = {
@@ -327,7 +332,7 @@ module Error = {
 
   let toString =
     fun
-    | PairingRequestParsing => I18n.errors#pairing_request_parsing->Some
+    | PairingRequestParsing => I18n.Errors.pairing_request_parsing->Some
     | NoMatchingRequest => noMatchingRequest->Some
     | EncodedPayloadNeedString => encodedPayloadNeedString->Some
     | MessageNotHandled => messageNotHandled->Some

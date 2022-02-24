@@ -47,13 +47,10 @@ let styles =
   );
 
 [@react.component]
-let make = () => {
+let make = (~account) => {
   let theme = ThemeContext.useTheme();
 
-  let (visibleModal, openAction, closeAction) =
-    ModalAction.useModalActionState();
-
-  let onPress = _ => openAction();
+  let (openAction, closeAction, wrapModal) = ModalAction.useModal();
 
   let networkOffline = ConfigContext.useNetworkOffline();
 
@@ -76,7 +73,7 @@ let make = () => {
       <ThemedPressable.Primary
         disabled=networkOffline
         style=styles##iconContainer
-        onPress
+        onPress={_ => openAction()}
         accessibilityRole=`button>
         <Icons.Send size=24. color=iconColor />
         <Typography.ButtonSecondary
@@ -84,12 +81,10 @@ let make = () => {
           style=Style.(
             array([|styles##textButton, style(~color=textColor, ())|])
           )>
-          I18n.btn#send->React.string
+          I18n.Btn.send->React.string
         </Typography.ButtonSecondary>
       </ThemedPressable.Primary>
     </View>
-    <ModalAction visible=visibleModal onRequestClose=closeAction>
-      <SendView closeAction />
-    </ModalAction>
+    {wrapModal(<SendView account closeAction />)}
   </>;
 };

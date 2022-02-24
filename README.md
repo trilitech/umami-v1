@@ -60,8 +60,30 @@ It will be located in the root of umami's folder.
 
 ### 4) (Optional) Run for development
 
+Start compilation in watch mode:
+
+```
+yarn bsb:start
+```
+
+Start dev server:
+
 ```
 yarn electron:dev
+```
+
+### 5) (Optional) Run tests in watch mode
+
+If not already running, start compilation in watch mode:
+
+```
+yarn bsb:start
+```
+
+Start test runner:
+
+```
+yarn test:watch
 ```
 
 ## ℹ️ Support

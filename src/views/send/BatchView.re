@@ -107,7 +107,9 @@ module Item = {
        | Some(parameters) =>
          <View style=styles##parametersContainer>
            <AccountElements.Selector.Item
-             account={address: recipient, name: I18n.title#interaction}
+             account={
+               Alias(Alias.make(~name=I18n.Title.interaction, recipient))
+             }
              showAmount=AccountElements.Nothing
            />
            <TransactionContractParams parameters style=styles##parameters />
@@ -116,11 +118,11 @@ module Item = {
          <AccountElements.Selector.Item
            style=styles##account
            account={
-             address: recipient,
-             name:
+             Alias(
                recipient
                ->AliasHelpers.getAliasFromAddress(aliases)
-               ->Option.getWithDefault(""),
+               ->Option.getWithDefault(Alias.make(~name="", recipient)),
+             )
            }
            showAmount={buildAmount(amount)}
          />
@@ -147,7 +149,7 @@ module Transactions = {
       };
 
       <TextFilePicker
-        text=I18n.btn#load_file
+        text=I18n.Btn.load_file
         primary=true
         accept=".csv"
         onChange
@@ -176,7 +178,7 @@ module Transactions = {
         accessibilityRole=`button>
         <Typography.ButtonPrimary
           style=Style.(style(~color=theme.colors.textPrimary, ()))>
-          I18n.btn#csv_format_link->React.string
+          I18n.Btn.csv_format_link->React.string
         </Typography.ButtonPrimary>
       </ThemedPressable.Primary>;
     };
@@ -198,7 +200,7 @@ module Transactions = {
     <View style=styles##container>
       <View style=styles##listLabelContainer>
         <Typography.Overline2 style=styles##listLabel>
-          I18n.label#transactions->React.string
+          I18n.Label.transactions->React.string
         </Typography.Overline2>
         {onAddCSVList->Option.mapWithDefault(React.null, onAddCSVList =>
            <CSVFilePicker onAddCSVList />
@@ -239,14 +241,14 @@ module BuildingBatchMenu = {
       keyPopover={"batchItem" ++ i->string_of_int}>
       [|
         <Menu.Item
-          key=I18n.menu#batch_delete
-          text=I18n.menu#batch_delete
+          key=I18n.Menu.batch_delete
+          text=I18n.Menu.batch_delete
           icon=Icons.Delete.build
           onPress=delete
         />,
         <Menu.Item
-          key=I18n.menu#batch_edit
-          text=I18n.menu#batch_edit
+          key=I18n.Menu.batch_edit
+          text=I18n.Menu.batch_edit
           icon=Icons.Edit.build
           onPress=edit
         />,
@@ -289,12 +291,12 @@ let make =
      })}
     <View style=FormStyles.header>
       <Typography.Overline1>
-        I18n.expl#batch->React.string
+        I18n.Expl.batch->React.string
       </Typography.Overline1>
     </View>
     <View style={[FormStyles.amountRow, styles##summary]->ReactUtils.styles}>
       <Typography.Overline2>
-        I18n.label#summary_total->React.string
+        I18n.Label.summary_total->React.string
       </Typography.Overline2>
       <View>
         {batch
@@ -314,12 +316,12 @@ let make =
     <View style=FormStyles.verticalFormAction>
       <Buttons.SubmitSecondary
         style=styles##addTransaction
-        text=I18n.btn#send_another_transaction
+        text=I18n.Btn.send_another_transaction
         onPress={_ => onAddTransfer()}
         disabled=loading
       />
       <Buttons.SubmitPrimary
-        text=I18n.btn#batch_submit
+        text=I18n.Btn.batch_submit
         onPress={_ => onSubmitBatch(batch)}
         loading
       />

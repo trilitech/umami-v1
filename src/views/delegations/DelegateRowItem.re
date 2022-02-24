@@ -62,16 +62,12 @@ module CellAction =
 module DelegateActionButton = {
   [@react.component]
   let make = (~action, ~icon, ~tooltip=?) => {
-    let (visibleModal, openAction, closeAction) =
-      ModalAction.useModalActionState();
-
+    let (openAction, closeAction, wrapModal) = ModalAction.useModal();
     let onPress = _ => openAction();
 
     <>
       <IconButton ?tooltip icon size=30. onPress />
-      <ModalAction visible=visibleModal onRequestClose=closeAction>
-        <DelegateView closeAction action />
-      </ModalAction>
+      {wrapModal(<DelegateView closeAction action />)}
     </>;
   };
 };
@@ -94,7 +90,7 @@ let make =
     switch ((delegateRequest: ApiRequest.t(_))) {
     | Done(Ok(Some(delegate)), _)
     | Loading(Some(Some(delegate))) =>
-      <Table.Row>
+      <Table.Row.Bordered>
         <CellAddress>
           <Typography.Body1 numberOfLines=1>
             account.name->React.string
@@ -105,7 +101,7 @@ let make =
             {switch (delegateInfoRequest) {
              | Done(Ok(Some(delegateInfo)), _)
              | Loading(Some(Some(delegateInfo))) =>
-               I18n.t#tez_amount(delegateInfo.initialBalance->Tez.toString)
+               I18n.tez_amount(delegateInfo.initialBalance->Tez.toString)
                ->React.string
              | Done(Ok(None), _)
              | Loading(Some(None))
@@ -125,7 +121,7 @@ let make =
             {switch (balanceRequest) {
              | Done(Ok(balance), _)
              | Loading(Some(balance)) =>
-               I18n.t#tez_amount(balance->Tez.toString)->React.string
+               I18n.tez_amount(balance->Tez.toString)->React.string
              | Done(Error(_error), _) => React.null
              | NotAsked
              | Loading(None) =>
@@ -146,7 +142,7 @@ let make =
                </Typography.Address>,
                alias =>
                <Typography.Body1 numberOfLines=1>
-                 alias->React.string
+                 alias.name->React.string
                </Typography.Body1>
              )}
         </CellAddress>
@@ -177,7 +173,7 @@ let make =
            | Done(Ok(Some({lastReward: Some(lastReward)})), _)
            | Loading(Some(Some({lastReward: Some(lastReward)}))) =>
              <Typography.Body1 colorStyle=`positive>
-               {I18n.t#tez_op_amount("+", lastReward->Tez.toString)
+               {I18n.tez_op_amount("+", lastReward->Tez.toString)
                 ->React.string}
              </Typography.Body1>
            | Done(Ok(Some({lastReward: None})), _)
@@ -202,7 +198,7 @@ let make =
             action={Delegate.Edit(account, delegate)}
             tooltip=(
               "delegate_edit" ++ (account.address :> string),
-              I18n.menu#delegate_edit,
+              I18n.Menu.delegate_edit,
             )
             icon=Icons.Change.build
           />
@@ -210,12 +206,12 @@ let make =
             action={Delegate.Delete(account, delegate)}
             tooltip=(
               "delegate_delete" ++ (account.address :> string),
-              I18n.menu#delegate_delete,
+              I18n.Menu.delegate_delete,
             )
             icon=Icons.Stop.build
           />
         </CellAction>
-      </Table.Row>
+      </Table.Row.Bordered>
     | Done(_)
     | NotAsked
     | Loading(_) => React.null

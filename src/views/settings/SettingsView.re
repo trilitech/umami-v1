@@ -27,12 +27,13 @@
 let make = () => {
   <Page>
     <Typography.Headline style=Styles.title>
-      I18n.title#settings->React.string
+      I18n.Title.settings->React.string
     </Typography.Headline>
     <VerificationSettingView />
     <ThemeSettingView />
     <ChainSettingView />
     <BeaconSettingView />
+    <BackupSettingView />
     <DangerSettingView />
   </Page>;
 };

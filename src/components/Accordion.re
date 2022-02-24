@@ -23,7 +23,10 @@
 /*                                                                           */
 /*****************************************************************************/
 
+open ReactNative;
+
 [@react.component]
-let make = (~header, ~data, ~expanded) => {
-  expanded ? <> header data </> : <> header </>;
+let make = (~header, ~expanded, ~style=?, ~children) => {
+  expanded
+    ? <View ?style> header children </View> : <View ?style> header </View>;
 };

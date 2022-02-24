@@ -27,9 +27,19 @@ include ApiRequest;
 
 open Let;
 
-let useCheckTokenContract = () => {
+let useCheckTokenContract = tokens => {
   let set = (~config, address) =>
-    config->NodeAPI.Tokens.checkTokenContract(address);
+    switch (tokens->TokensLibrary.Generic.pickAnyAtAddress(address)) {
+    | None => config->NodeAPI.Tokens.checkTokenContract(address)
+    | Some((_, _, (token, _))) =>
+      (
+        token->TokensLibrary.Token.kind: TokenContract.kind :> [>
+          TokenContract.kind
+          | `NotAToken
+        ]
+      )
+      ->Promise.ok
+    };
   ApiRequest.useSetter(~set, ~kind=Logs.Tokens, ~toast=false, ());
 };
 
@@ -103,35 +113,28 @@ let useLoadTokensRegistry = (requestState, request) => {
   ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, request);
 };
 
-type tokens = TokensAPI.Fetch.fetched;
+type filter = [ | `Any | `FT | `NFT];
 
-type nftRequest = {
-  account: PublicKeyHash.t,
-  allowHidden: bool,
-  numberByAccount: int,
-  fromCache: bool,
+let useLoadTokensFromCache = requestState => {
+  let get = (~config, filter) => {
+    TokensAPI.cachedTokensWithRegistration(config, filter);
+  };
+  ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState);
 };
 
-let useLoadAccountNFTs =
+type withCache('request) = {
+  fromCache: bool,
+  request: 'request,
+};
+
+let useLoadTokensGeneric =
     (
-      onTokens,
-      onStop,
       (apiRequest, setRequest),
       tokensNumberRequest,
-      nftRequest,
+      request,
+      get,
+      ~reloadOnForceExpired,
     ) => {
-  let get = (~config, {account, allowHidden, numberByAccount, fromCache}) => {
-    TokensAPI.Fetch.accountNFTs(
-      config,
-      ~account,
-      ~numberByAccount,
-      ~onTokens,
-      ~onStop,
-      ~allowHidden,
-      ~fromCache,
-    );
-  };
-
   let getRequest =
     ApiRequest.useGetter(~get, ~kind=Logs.Tokens, ~setRequest, ());
 
@@ -140,13 +143,14 @@ let useLoadAccountNFTs =
   let conditionToLoad = (request, isMounted) => {
     let requestNotAskedAndMounted = request->isNotAsked && isMounted;
     let requestDoneButReloadOnMount = request->isDone && !isMounted;
-    requestNotAskedAndMounted || requestDoneButReloadOnMount;
+    let requestExpired = request->isForceExpired && reloadOnForceExpired;
+    requestNotAskedAndMounted || requestDoneButReloadOnMount || requestExpired;
   };
 
   React.useEffect5(
     () =>
       if (conditionToLoad(apiRequest, isMounted)) {
-        getRequest(nftRequest)->ignore;
+        getRequest(request)->ignore;
         None;
       } else {
         switch (apiRequest, tokensNumberRequest) {
@@ -154,31 +158,106 @@ let useLoadAccountNFTs =
           if (tokens->PublicKeyHash.Map.isEmpty
               && tokensNumber > 0
               && tokensNumber <= 50) {
-            getRequest({...nftRequest, fromCache: false})->ignore;
+            getRequest({...request, fromCache: false})->ignore;
           };
           None;
         | _ => None
         };
       },
-    (isMounted, apiRequest, nftRequest, setRequest, tokensNumberRequest),
+    (isMounted, apiRequest, request, setRequest, tokensNumberRequest),
   );
 
   (apiRequest, getRequest);
 };
 
-let useAccountTokensNumber = (requestState, account) => {
-  let get = (~config, account) =>
-    TokensAPI.Fetch.accountTokensNumber(config, ~account);
+module NFT = {
+  type fetched = TokensAPI.Fetch.fetchedNFTs;
 
-  ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, account);
+  type request = {
+    account: PublicKeyHash.t,
+    allowHidden: bool,
+    numberByAccount: int,
+  };
+
+  let useFetchWithCache =
+      (onTokens, onStop, request, tokensNumberRequest, nftRequest) => {
+    let get =
+        (
+          ~config,
+          {fromCache, request: {account, allowHidden, numberByAccount}},
+        ) => {
+      TokensAPI.Fetch.accountNFTs(
+        config,
+        ~account,
+        ~numberByAccount,
+        ~onTokens,
+        ~onStop,
+        ~allowHidden,
+        ~fromCache,
+      );
+    };
+
+    useLoadTokensGeneric(
+      request,
+      tokensNumberRequest,
+      nftRequest,
+      get,
+      ~reloadOnForceExpired=false,
+    );
+  };
+
+  let useAccountTokensNumber = (requestState, account) => {
+    let get = (~config, account) =>
+      TokensAPI.Fetch.accountsTokensNumber(config, ~accounts=[account]);
+
+    ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, account);
+  };
 };
 
-let useDelete = (~sideEffect=?, ()) => {
+module Fungible = {
+  type fetched = TokensAPI.Fetch.fetchedTokens;
+
+  type request = {
+    accounts: list(PublicKeyHash.t),
+    numberByAccount: int,
+  };
+
+  let useFetchWithCache =
+      (onTokens, onStop, request, tokensNumberRequest, tokensRequest) => {
+    let get = (~config, {fromCache, request: {accounts, numberByAccount}}) => {
+      TokensAPI.Fetch.accountsFungibleTokensWithRegistration(
+        config,
+        ~accounts,
+        ~numberByAccount,
+        ~onTokens,
+        ~onStop,
+        ~fromCache,
+      );
+    };
+
+    useLoadTokensGeneric(
+      request,
+      tokensNumberRequest,
+      tokensRequest,
+      get,
+      ~reloadOnForceExpired=true,
+    );
+  };
+
+  let useAccountsTokensNumber = (requestState, accounts) => {
+    let get = (~config, accounts) =>
+      TokensAPI.Fetch.accountsTokensNumber(config, ~accounts);
+
+    ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, accounts);
+  };
+};
+
+let useDelete = (~sideEffect=?, pruneCache) => {
   let set = (~config as _, token) =>
-    TokensAPI.removeToken(token, ~pruneCache=true)->Promise.value;
+    TokensAPI.removeToken(token, ~pruneCache)->Promise.value;
 
   ApiRequest.useSetter(
-    ~logOk=_ => I18n.t#token_deleted,
+    ~logOk=_ => I18n.token_deleted,
     ~toast=false,
     ~set,
     ~kind=Logs.Tokens,
@@ -191,7 +270,20 @@ let useCreate = (~sideEffect=?, ()) => {
   let set = (~config, token) => TokensAPI.addFungibleToken(config, token);
 
   ApiRequest.useSetter(
-    ~logOk=_ => I18n.t#token_created,
+    ~logOk=_ => I18n.token_created,
+    ~toast=false,
+    ~set,
+    ~kind=Logs.Tokens,
+    ~sideEffect?,
+    (),
+  );
+};
+
+let useCacheToken = (~sideEffect=?, ()) => {
+  let set = (~config, token) => TokensAPI.addTokenToCache(config, token);
+
+  ApiRequest.useSetter(
+    ~logOk=_ => I18n.token_created,
     ~toast=false,
     ~set,
     ~kind=Logs.Tokens,

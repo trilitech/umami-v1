@@ -34,7 +34,7 @@ let () =
     "Json",
     fun
     | DecodeError(s) => Some(s)
-    | ParsingError(s) => I18n.errors#json_parsing_error(s)->Some
+    | ParsingError(s) => I18n.Errors.json_parsing_error(s)->Some
     | _ => None,
   );
 

@@ -67,11 +67,17 @@ let parseAmount = (v, token: option(TokenRepr.t)) =>
 let optToString = (v, f) => v->Option.mapWithDefault("", f);
 
 module Alias = {
+  type tempState =
+    | NotAsked
+    | Pending
+    | Error(string);
+
   type t =
     | Address(PublicKeyHash.t)
     | Alias(Alias.t);
 
   type any =
+    | Temp(string, tempState)
     | AnyString(string)
     | Valid(t);
 
@@ -110,6 +116,7 @@ module Unsafe = {
 
   let account =
     fun
+    | Alias.Temp(_)
     | Alias.AnyString(_) => failwith("Should be an address or an alias")
     | Alias.Valid(a) => a;
 };
@@ -119,14 +126,14 @@ let emptyOr = (f, v): ReSchema.fieldState => v == "" ? Valid : f(v);
 let isValidTokenAmount: (string, int) => ReSchema.fieldState =
   (s, decimals) =>
     switch (s) {
-    | "" => Error(I18n.form_input_error#mandatory)
+    | "" => Error(I18n.Form_input_error.mandatory)
     | s =>
       switch (Token.Unit.fromStringDecimals(s, decimals)) {
       | Ok(_) => Valid
-      | Error(NaN) => Error(I18n.form_input_error#float)
-      | Error(Negative) => Error(I18n.form_input_error#float)
+      | Error(NaN) => Error(I18n.Form_input_error.float)
+      | Error(Negative) => Error(I18n.Form_input_error.float)
       | Error(Float) =>
-        Error(I18n.form_input_error#expected_decimals(decimals))
+        Error(I18n.Form_input_error.expected_decimals(decimals))
       }
     };
 
@@ -134,19 +141,19 @@ let isValidTezAmount: string => ReSchema.fieldState =
   s => isValidTokenAmount(s, 6);
 
 let notNone = (v): ReSchema.fieldState =>
-  v != None ? Valid : Error(I18n.form_input_error#mandatory);
+  v != None ? Valid : Error(I18n.Form_input_error.mandatory);
 
 let isValidFloat = value => {
   let fieldState: ReSchema.fieldState =
     value->Js.Float.fromString->Js.Float.isNaN
-      ? Error(I18n.form_input_error#float) : Valid;
+      ? Error(I18n.Form_input_error.float) : Valid;
   fieldState;
 };
 
 let isValidInt = value => {
   let fieldState: ReSchema.fieldState =
     value->Js.String2.length == 0 || value->int_of_string_opt->Option.isSome
-      ? Valid : Error(I18n.form_input_error#int);
+      ? Valid : Error(I18n.Form_input_error.int);
   fieldState;
 };
 
@@ -182,5 +189,5 @@ let checkAddress = (v): ReSchema.fieldState =>
 
 let i18n = {
   ...ReSchemaI18n.default,
-  stringNonEmpty: (~value as _) => I18n.form_input_error#mandatory,
+  stringNonEmpty: (~value as _) => I18n.Form_input_error.mandatory,
 };

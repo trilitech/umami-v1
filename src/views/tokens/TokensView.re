@@ -40,97 +40,202 @@ module AddTokenButton = {
     );
 
   [@react.component]
-  let make = (~chain=?) => {
-    let (visibleModal, openAction, closeAction) =
-      ModalAction.useModalActionState();
-
-    let onPress = _ => openAction();
-
+  let make = (~tokens, ~chain=?) => {
+    let (openAction, closeAction, wrapModal) = ModalAction.useModal();
     let tooltip =
       chain == None
-        ? Some(("add_token_button", I18n.tooltip#chain_not_connected)) : None;
+        ? Some(("add_token_button", I18n.Tooltip.chain_not_connected)) : None;
 
     <>
       <View style=styles##button>
         <ButtonAction
           disabled={chain == None}
           ?tooltip
-          onPress
-          text=I18n.btn#add_token
+          onPress={_ => openAction()}
+          text=I18n.Btn.add_token
           icon=Icons.Add.build
+          primary=true
         />
       </View>
-      <ModalAction visible=visibleModal onRequestClose=closeAction>
-        <TokenAddView chain={chain->Option.getWithDefault("")} closeAction />
-      </ModalAction>
+      {wrapModal(
+         <TokenAddView
+           action=`Add
+           chain={chain->Option.getWithDefault("")}
+           tokens
+           closeAction
+         />,
+       )}
     </>;
   };
 };
 
 let styles =
-  Style.(StyleSheet.create({"list": style(~paddingTop=4.->dp, ())}));
+  Style.(StyleSheet.create({"header": style(~marginBottom=32.->dp, ())}));
 
 [@react.component]
 let make = () => {
-  let tokensRequest = StoreContext.Tokens.useRequest();
+  let accounts = StoreContext.Accounts.useGetAll();
   let apiVersion: option(Network.apiVersion) = StoreContext.useApiVersion();
+  let (syncState, setSyncState) = React.useState(_ => Sync.NotInitiated);
+  let (searched, setSearch) = React.useState(_ => "");
+  let stop = React.useRef(false);
+
+  let accounts = accounts->PublicKeyHash.Map.keysToList;
+  let request = fromCache =>
+    TokensApiRequest.{
+      request: Fungible.{accounts, numberByAccount: BCD.requestPageSize},
+      fromCache,
+    };
+
+  // will be used to indicate a percentage of tokens loaded
+  let onTokens = (~total, ~lastToken) => {
+    let percentage =
+      Int.toFloat(lastToken + 1) /. Int.toFloat(total) *. 100.;
+    setSyncState(
+      fun
+      | Canceled(_) => Canceled(percentage)
+      | _ => Loading(percentage),
+    );
+  };
+  let onStop = () => stop.current;
+
+  let (tokensRequest, getTokens) =
+    StoreContext.Tokens.useFetchTokens(
+      onTokens,
+      onStop,
+      accounts,
+      request(true),
+    );
+
+  let tokens =
+    switch (tokensRequest) {
+    | NotAsked
+    | Loading(None) => None
+
+    | Loading(Some(`Cached(tokens) | `Fetched(tokens, _)))
+    | Done(Ok(`Cached(tokens) | `Fetched(tokens, _)), _) =>
+      Some(Ok(tokens))
+
+    | Done(Error(error), _) => Some(Error(error))
+    };
+
+  let loadToCanceled = () =>
+    setSyncState(
+      fun
+      | Loading(percentage) => Canceled(percentage)
+      | _ => NotInitiated,
+    );
+  let loadToDone = () =>
+    setSyncState(
+      fun
+      | Loading(_) => Done
+      | state => state,
+    );
+
+  React.useEffect1(
+    () =>
+      switch (tokensRequest) {
+      | Done(Ok(`Fetched(_, _)), _) =>
+        loadToDone();
+        stop.current = false;
+        None;
+
+      | Done(Ok(`Cached(_)), _) =>
+        setSyncState(_ => NotInitiated);
+        None;
+
+      | Done(Error(_), _) =>
+        loadToCanceled();
+        None;
+
+      | _ => None
+      },
+    [|tokensRequest|],
+  );
+
+  let matchToken = (token, searched) => {
+    open TokensLibrary.Token;
+    let searched = searched->Js.String.toLocaleLowerCase;
+    let matchValue = value =>
+      value->Js.String.toLocaleLowerCase->Js.String2.includes(searched);
+    token->name->Option.mapDefault(false, matchValue)
+    || token->symbol->Option.mapDefault(false, matchValue)
+    || (token->address :> string)->matchValue;
+  };
+
+  let partitionedTokens =
+    React.useMemo1(
+      () => {
+        tokens->Option.map(tokens =>
+          tokens->Result.map(tokens =>
+            tokens->TokensLibrary.Generic.keepPartition((_, _, (t, reg)) =>
+              t->TokensLibrary.Token.isNFT || !t->matchToken(searched)
+                ? None : Some(reg)
+            )
+          )
+        )
+      },
+      [|tokens|],
+    );
+
+  let currentChain = apiVersion->Option.map(v => v.chain);
+
+  let onRefresh = () => {
+    setSyncState(_ => Loading(0.));
+    getTokens(request(false))->ignore;
+  };
+
+  let onStop = () => {
+    setSyncState(
+      fun
+      | Loading(percentage) => {
+          Canceled(percentage);
+        }
+      | state => state,
+    );
+    stop.current = true;
+  };
 
   <Page>
     <Typography.Headline style=Styles.title>
-      I18n.title#tokens->React.string
+      I18n.Title.tokens->React.string
     </Typography.Headline>
-    <AddTokenButton chain=?{apiVersion->Option.map(v => v.chain)} />
-    <Table.Head>
-      <TokenRowItem.CellStandard>
-        <Typography.Overline3>
-          I18n.t#token_column_standard->React.string
-        </Typography.Overline3>
-      </TokenRowItem.CellStandard>
-      <TokenRowItem.CellName>
-        <Typography.Overline3>
-          I18n.t#token_column_name->React.string
-        </Typography.Overline3>
-      </TokenRowItem.CellName>
-      <TokenRowItem.CellSymbol>
-        <Typography.Overline3>
-          I18n.t#token_column_symbol->React.string
-        </Typography.Overline3>
-      </TokenRowItem.CellSymbol>
-      <TokenRowItem.CellAddress>
-        <Typography.Overline3>
-          I18n.t#token_column_address->React.string
-        </Typography.Overline3>
-      </TokenRowItem.CellAddress>
-      <TokenRowItem.CellTokenId>
-        <Typography.Overline3>
-          I18n.t#token_column_tokenid->React.string
-        </Typography.Overline3>
-      </TokenRowItem.CellTokenId>
-      <TokenRowItem.CellAction> React.null </TokenRowItem.CellAction>
-    </Table.Head>
-    <View style=styles##list>
-      {switch (tokensRequest) {
-       | NotAsked
-       | Loading(None) => <LoadingView />
-       | Loading(Some(tokens))
-       | Done(Ok(tokens), _) when tokens->PublicKeyHash.Map.size == 0 =>
-         <Table.Empty> I18n.t#empty_token->React.string </Table.Empty>
-       | Loading(Some(tokens))
-       | Done(Ok(tokens), _) =>
-         tokens
-         ->TokensLibrary.Generic.valuesToArray
-         ->Array.keepMap(
-             fun
-             | (Full(token), _) =>
-               {
-                 <TokenRowItem key=(token.address :> string) token />;
-               }
-               ->Some
-             | (Partial(_, _, _), _) => None,
-           )
-         ->React.array
-       | Done(Error(error), _) => <ErrorView error />
-       }}
-    </View>
+    <AddTokenButton
+      chain=?currentChain
+      tokens={
+        tokens->Option.mapDefault(TokensLibrary.Generic.empty, t =>
+          t->Result.getWithDefault(TokensLibrary.Generic.empty)
+        )
+      }
+    />
+    <SearchAndSync
+      value=searched
+      onValueChange={value => setSearch(_ => value)}
+      placeholder=I18n.Input_placeholder.search_for_token
+      onRefresh
+      onStop
+      syncState
+      syncIcon=Icons.SyncNFT.build
+      style={styles##header}
+    />
+    {switch (partitionedTokens) {
+     | None => <LoadingView />
+     | Some(Error(error)) => <ErrorView error />
+     | Some(Ok((registered, unregistered))) =>
+       <>
+         <TokenRows
+           title=I18n.Title.added_to_wallet
+           tokens=registered
+           currentChain
+           emptyText=None
+         />
+         <TokenRows
+           title=I18n.Title.held
+           tokens=unregistered
+           currentChain
+           emptyText={Some(I18n.empty_held_token)}
+         />
+       </>
+     }}
   </Page>;
 };

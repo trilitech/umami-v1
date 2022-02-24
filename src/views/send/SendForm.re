@@ -26,7 +26,7 @@
 module StateLenses = [%lenses
   type state = {
     amount: string,
-    sender: option(Account.t),
+    sender: Account.t,
     recipient: FormUtils.Alias.any,
   }
 ];
@@ -43,14 +43,14 @@ let unsafeExtractValidState = (token, state: StateLenses.state): validState => {
       state.amount
       ->FormUtils.parseAmount(token)
       ->FormUtils.Unsafe.getCurrency,
-    sender: state.sender->FormUtils.Unsafe.getValue,
+    sender: state.sender,
     recipient: state.recipient->FormUtils.Unsafe.account,
   };
 };
 
 let toState = (vs: validState): StateLenses.state => {
   amount: vs.amount->Transfer.Currency.toString,
-  sender: vs.sender->Some,
+  sender: vs.sender,
   recipient: vs.recipient->FormUtils.Alias.Valid,
 };
 

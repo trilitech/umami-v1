@@ -31,15 +31,15 @@ module AliasDeleteButton = {
     let (aliasRequest, deleteAlias) = StoreContext.Aliases.useDelete();
 
     let onPressConfirmDelete = _e => {
-      deleteAlias(account.name)->Promise.ignore;
+      deleteAlias(account.name);
     };
 
     <DeleteButton.IconButton
       tooltip=(
         "addressbook_delete" ++ (account.address :> string),
-        I18n.tooltip#addressbook_delete,
+        I18n.Tooltip.addressbook_delete,
       )
-      modalTitle=I18n.title#delete_contact
+      modalTitle=I18n.Title.delete_contact
       onPressConfirmDelete
       request=aliasRequest
     />;
@@ -49,23 +49,18 @@ module AliasDeleteButton = {
 module AliasEditButton = {
   [@react.component]
   let make = (~account: Alias.t) => {
-    let (visibleModal, openAction, closeAction) =
-      ModalAction.useModalActionState();
-
-    let onPress = _e => openAction();
+    let (openAction, closeAction, wrapModal) = ModalAction.useModal();
 
     <>
       <IconButton
         tooltip=(
           "addressbook_edit" ++ (account.address :> string),
-          I18n.tooltip#addressbook_edit,
+          I18n.Tooltip.addressbook_edit,
         )
         icon=Icons.Edit.build
-        onPress
+        onPress={_ => openAction()}
       />
-      <ModalAction visible=visibleModal onRequestClose=closeAction>
-        <ContactFormView action={Edit(account)} closeAction />
-      </ModalAction>
+      {wrapModal(<ContactFormView action={Edit(account)} closeAction />)}
     </>;
   };
 };
@@ -118,7 +113,7 @@ let make =
       </View>
       <View style=styles##actionButtons>
         <ClipboardButton
-          copied=I18n.log#address
+          copied=I18n.Log.address
           addToast
           tooltipKey=(account.address :> string)
           data=(account.address :> string)

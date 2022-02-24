@@ -153,6 +153,14 @@ let updateOperation = (index, values: StateLenses.state, o: Operation.t) => {
     };
 
     {...t, options, transfers}->Protocol.Transaction;
+  | Origination(o) =>
+    let options = {
+      ...o.options,
+      fee: fallback(values.fee, o.options.fee),
+      forceLowFee:
+        (values.forceLowFee || o.options.forceLowFee == Some(true))->Some,
+    };
+    {...o, options}->Protocol.Origination;
   | Delegation(d) =>
     let options = {
       ...d.options,
@@ -165,7 +173,7 @@ let updateOperation = (index, values: StateLenses.state, o: Operation.t) => {
 };
 
 let tezDecoration = (~style) =>
-  <Typography.Body1 style> I18n.t#tez->React.string </Typography.Body1>;
+  <Typography.Body1 style> I18n.tez->React.string </Typography.Body1>;
 
 [@react.component]
 let make = (~operation, ~dryRun, ~index=0, ~token, ~onSubmit) => {
@@ -205,7 +213,7 @@ let make = (~operation, ~dryRun, ~index=0, ~token, ~onSubmit) => {
   <View>
     <View style=styles##formRowInputs>
       <FormGroupCurrencyInput
-        label=I18n.label#fee
+        label=I18n.Label.fee
         value={form.values.fee}
         handleChange={fee => form.handleChange(Fee, fee)}
         error={form.getFieldError(Field(Fee))}
@@ -216,7 +224,7 @@ let make = (~operation, ~dryRun, ~index=0, ~token, ~onSubmit) => {
          <>
            <View style=styles##formRowInputsSeparator />
            <FormGroupTextInput
-             label=I18n.label#gas_limit
+             label=I18n.Label.gas_limit
              value={form.values.gasLimit}
              handleChange={form.handleChange(GasLimit)}
              error={form.getFieldError(Field(GasLimit))}
@@ -229,7 +237,7 @@ let make = (~operation, ~dryRun, ~index=0, ~token, ~onSubmit) => {
          <>
            <View style=styles##formRowInputsSeparator />
            <FormGroupTextInput
-             label=I18n.label#storage_limit
+             label=I18n.Label.storage_limit
              value={form.values.storageLimit}
              handleChange={form.handleChange(StorageLimit)}
              error={form.getFieldError(Field(StorageLimit))}
@@ -240,13 +248,13 @@ let make = (~operation, ~dryRun, ~index=0, ~token, ~onSubmit) => {
        ->ReactUtils.onlyWhen(showLimits)}
     </View>
     <FormGroupCheckbox
-      label=I18n.label#force_low_fee
+      label=I18n.Label.force_low_fee
       value={form.values.forceLowFee}
       handleChange={form.handleChange(ForceLowFee)}
       error={form.getFieldError(Field(ForceLowFee))}
     />
     <Buttons.SubmitPrimary
-      text=I18n.btn#update
+      text=I18n.Btn.update
       loading={operationSimulateRequest->ApiRequest.isLoading}
       onPress={_ => form.submit()}
       disabledLook={!formFieldsAreValids}

@@ -28,13 +28,13 @@ open ReactNative;
 let styles =
   Style.(
     StyleSheet.create({
-      "inner": style(~marginRight=10.->dp, ~marginLeft=14.->dp, ()),
+      "inner": style(~marginRight=10.->dp, ~flexDirection=`row, ()),
       "actionButtons":
         style(
           ~alignSelf=`flexEnd,
           ~flexDirection=`row,
           ~flex=1.,
-          ~marginBottom=6.->dp,
+          ~marginBottom=8.->dp,
           (),
         ),
       "button": style(~marginRight=4.->dp, ()),
@@ -43,7 +43,8 @@ let styles =
   );
 
 [@react.component]
-let make = (~account: Account.t, ~token: option(Token.t)=?) => {
+let make =
+    (~account: Account.t, ~isHD: bool=false, ~token: option(Token.t)=?) => {
   let delegateRequest = StoreContext.Delegate.useLoad(account.address);
   let addToast = LogsContext.useToast();
 
@@ -56,10 +57,17 @@ let make = (~account: Account.t, ~token: option(Token.t)=?) => {
     };
 
   <RowItem.Bordered height=90.>
-    <View style=styles##inner> <AccountInfo account ?token /> </View>
+    <View style=styles##inner>
+      <AliasIcon
+        style=SecretRowTree.styles##iconContainer
+        kind={Some(Account(account.kind))}
+        isHD
+      />
+      <AccountInfo account ?token />
+    </View>
     <View style=styles##actionButtons>
       <ClipboardButton
-        copied=I18n.log#address
+        copied=I18n.Log.address
         tooltipKey=(account.address :> string)
         addToast
         data=(account.address :> string)
@@ -67,7 +75,7 @@ let make = (~account: Account.t, ~token: option(Token.t)=?) => {
       />
       <QrButton
         tooltipKey=(account.address :> string)
-        account={account->Account.toAlias}
+        account={account->Alias.fromAccount}
         style=styles##button
       />
     </View>

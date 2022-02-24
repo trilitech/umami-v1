@@ -24,24 +24,37 @@
 /*****************************************************************************/
 
 module TransactionParameters = {
-  type entrypoint = string;
+  type entrypoint = ReTaquitoTypes.Transfer.Parameters.entrypoint;
 
   // This type cannot be build and destructed except from bindings modules
   // ReBeacon and ReTaquito, hence its abstract nature.
   module MichelineMichelsonV1Expression = {
-    type t;
+    type t = ReTaquitoTypes.Micheline.t;
 
     let toString = c =>
       c
       ->Js.Json.stringifyAny
       ->Option.map(Js.Json.parseExn)
       ->Option.map(j => Js.Json.stringifyWithSpace(j, 4));
+
+    let parseMicheline = s =>
+      try(
+        ReTaquitoParser.parser()
+        ->ReTaquitoParser.parseMichelineExpression(s)
+        ->Ok
+      ) {
+      | Js.Exn.Error(exn) =>
+        Error(ReTaquitoError.ParseMicheline(exn->Js.Exn.message))
+      };
+
+    let parseScript = s =>
+      try(ReTaquitoParser.parser()->ReTaquitoParser.parseScript(s)->Ok) {
+      | Js.Exn.Error(exn) =>
+        Error(ReTaquitoError.ParseScript(exn->Js.Exn.message))
+      };
   };
 
-  type t = {
-    entrypoint,
-    value: MichelineMichelsonV1Expression.t,
-  };
+  type t = ReTaquitoTypes.Transfer.Parameters.t;
 };
 
 type transferEltOptions = {
@@ -63,6 +76,14 @@ type delegationOptions = {
 
 let delegationOptionsSet = (dopt: delegationOptions) => dopt.fee != None;
 
+type originationOptions = {
+  fee: option(Tez.t),
+  burnCap: option(Tez.t),
+  forceLowFee: option(bool),
+};
+
+let originationOptionsSet = (oopt: originationOptions) => oopt.fee != None;
+
 type transferOptions = {
   burnCap: option(Tez.t),
   forceLowFee: option(bool),
@@ -77,11 +98,25 @@ let makeTransferEltOptions =
   entrypoint,
 };
 
-let makeDelegationOptions = (~fee, ~burnCap, ~forceLowFee, ()) => {
-  fee,
-  burnCap,
-  forceLowFee,
-};
+let makeDelegationOptions:
+  (
+    ~fee: option(Tez.t),
+    ~burnCap: option(Tez.t),
+    ~forceLowFee: option(bool),
+    unit
+  ) =>
+  delegationOptions =
+  (~fee, ~burnCap, ~forceLowFee, ()) => {fee, burnCap, forceLowFee};
+
+let makeOriginationOptions:
+  (
+    ~fee: option(Tez.t),
+    ~burnCap: option(Tez.t),
+    ~forceLowFee: option(bool),
+    unit
+  ) =>
+  originationOptions =
+  (~fee, ~burnCap, ~forceLowFee, ()) => {fee, burnCap, forceLowFee};
 
 let makeTransferOptions = (~burnCap=?, ~forceLowFee=?, ()) => {
   burnCap,

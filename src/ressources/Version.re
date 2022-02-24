@@ -27,18 +27,16 @@ type t =
   | Version(int, int, option(int), option(string));
 
 type Errors.t +=
-  | VersionFormat(string);
-
-let () =
-  Errors.registerHandler(
-    "Version",
-    fun
-    | VersionFormat(s) => I18n.errors#version_format(s)->Some
-    | _ => None,
-  );
-
-let mk = (~fix=?, ~patch=?, major, minor) =>
-  Version(major, minor, fix, patch);
+  | VersionFormat(string)
+  | UnknownVersion({
+      current: t,
+      expected: t,
+    })
+  | VersionNotInBound({
+      lowestBound: t,
+      highestBound: t,
+      version: t,
+    });
 
 let toString = (Version(major, minor, fix, patch)) =>
   Int.toString(major)
@@ -48,6 +46,26 @@ let toString = (Version(major, minor, fix, patch)) =>
      ->Option.map(fix => "." ++ Int.toString(fix))
      ->Option.getWithDefault("")
   ++ patch->Option.map(patch => "~" ++ patch)->Option.getWithDefault("");
+
+let () =
+  Errors.registerHandler(
+    "Version",
+    fun
+    | VersionFormat(s) => I18n.Errors.version_format(s)->Some
+    | UnknownVersion({current, expected}) =>
+      I18n.Errors.unknown_version(current->toString, expected->toString)->Some
+    | VersionNotInBound({lowestBound, highestBound, version}) =>
+      I18n.Errors.version_not_in_bound(
+        lowestBound->toString,
+        highestBound->toString,
+        version->toString,
+      )
+      ->Some
+    | _ => None,
+  );
+
+let mk = (~fix=?, ~patch=?, major, minor) =>
+  Version(major, minor, fix, patch);
 
 let compareFix =
   fun
@@ -82,6 +100,14 @@ let leqVersion =
 
 let checkInBound = (version, lowestBound, highestBound) =>
   leqVersion(lowestBound, version) && leqVersion(version, highestBound);
+
+let checkInBoundRes = (~version, ~lowestBound, ~highestBound) =>
+  checkInBound(version, lowestBound, highestBound)
+    ? Ok() : Error(VersionNotInBound({version, lowestBound, highestBound}));
+
+let checkVersion = (~current, ~expected) =>
+  checkInBound(current, expected, expected)
+    ? Ok() : Error(UnknownVersion({current, expected}));
 
 let parse = version => {
   let parseInt = value =>

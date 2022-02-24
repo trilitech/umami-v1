@@ -55,12 +55,12 @@ type token =
 
 let symbol =
   fun
-  | Tez => I18n.t#tez
+  | Tez => I18n.tez
   | Token(t) => t.symbol;
 
 let name =
   fun
-  | Tez => I18n.t#tezos
+  | Tez => I18n.tezos
   | Token(t) => t.alias;
 
 module TokenItem = {
@@ -129,14 +129,15 @@ let make =
       ~style as styleProp=?,
       ~renderButton=renderButton,
     ) => {
-  let tokens = StoreContext.Tokens.useGetAll();
+  let tokens = StoreContext.Tokens.useGetAllFungible();
 
   let items =
     tokens
     ->TokensLibrary.Generic.valuesToArray
     ->Array.keepMap(
         fun
-        | (TokensLibrary.Token.Full(t), _) => t->Token->Some
+        | (TokensLibrary.Token.Full(t), true) => t->Token->Some
+        | (Full(_), false)
         | (Partial(_), _) => None,
       );
 

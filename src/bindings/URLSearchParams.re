@@ -23,6 +23,9 @@
 /*                                                                           */
 /*****************************************************************************/
 
-module StateLenses = [%lenses type state = {account: option(Account.t)}];
+type t;
 
-include ReForm.Make(StateLenses);
+[@bs.new] external make: string => t = "URLSearchParams";
+
+[@bs.send] external getBool: (t, string) => option(bool) = "get";
+[@bs.send] external getString: (t, string) => option(string) = "get";

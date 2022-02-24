@@ -43,9 +43,16 @@ module Item = {
 
   [@react.component]
   let make =
-      (~text, ~icon: Icons.builder, ~colorStyle=`highEmphasis, ~onPress=?) => {
+      (
+        ~text,
+        ~icon: Icons.builder,
+        ~colorStyle=`highEmphasis,
+        ~onPress=?,
+        ~disabled=?,
+      ) => {
     let theme = ThemeContext.useTheme();
-    <ThemedPressable ?onPress style=styles##button accessibilityRole=`button>
+    <ThemedPressable
+      ?onPress style=styles##button accessibilityRole=`button ?disabled>
       {icon(
          ~style=?None,
          ~size=20.,
@@ -81,6 +88,7 @@ let make =
       ~icon: Icons.builder,
       ~children,
       ~size=34.,
+      ~iconSizeRatio=?,
       ~style as styleArg=?,
     ) => {
   let (pressableRef, isOpen, popoverConfig, togglePopover, _) =
@@ -98,6 +106,7 @@ let make =
       isActive=isOpen
       icon
       size
+      ?iconSizeRatio
       onPress={_ => togglePopover()}
     />
     <DropdownMenu

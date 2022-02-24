@@ -41,66 +41,46 @@ let styles =
 [@react.component]
 let make =
     (
+      ~account: Account.t,
       ~permissionRequest: ReBeacon.Message.Request.permissionRequest,
       ~closeAction,
     ) => {
   let getAccountPublicKey = AccountApiRequest.useGetPublicKey();
-  let initAccount = StoreContext.SelectedAccount.useGet();
+
+  let (account, setAccount) = React.useState(() => account);
 
   let updatePermissions = StoreContext.Beacon.Permissions.useResetAll();
 
   let (client, _) = StoreContext.Beacon.useClient();
 
-  let form =
-    BeaconPermissionForm.use(
-      ~schema={
-        BeaconPermissionForm.Validation.(
-          Schema(
-            custom(values => values.account->FormUtils.notNone, Account),
+  let submit = () =>
+    getAccountPublicKey(account)
+    ->Promise.getOk(publicKey => {
+        client
+        ->Promise.fromOption(
+            ~error=Errors.Generic(I18n.Errors.beacon_client_not_created),
           )
-        );
-      },
-      ~onSubmit=
-        ({state}) => {
-          switch (state.values.account) {
-          | Some(account) =>
-            getAccountPublicKey(account)
-            ->Promise.getOk(publicKey => {
-                client
-                ->Promise.fromOption(
-                    ~error=
-                      Errors.Generic(I18n.errors#beacon_client_not_created),
-                  )
-                ->Promise.flatMapOk(client =>
-                    client->ReBeacon.WalletClient.respond(
-                      `PermissionResponse({
-                        type_: `permission_response,
-                        id: permissionRequest.id,
-                        network: permissionRequest.network,
-                        scopes: permissionRequest.scopes,
-                        publicKey,
-                      }),
-                    )
-                  )
-                ->Promise.getOk(_ => {
-                    updatePermissions();
-                    closeAction();
-                  })
-              })
-          | None => ()
-          };
-
-          None;
-        },
-      ~initialState={account: initAccount},
-      ~i18n=FormUtils.i18n,
-      (),
-    );
+        ->Promise.flatMapOk(client =>
+            client->ReBeacon.WalletClient.respond(
+              `PermissionResponse({
+                type_: `permission_response,
+                id: permissionRequest.id,
+                network: permissionRequest.network,
+                scopes: permissionRequest.scopes,
+                publicKey,
+              }),
+            )
+          )
+        ->Promise.getOk(_ => {
+            updatePermissions();
+            closeAction();
+          })
+      });
 
   let onAbort = _ => {
     client
     ->Promise.fromOption(
-        ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
+        ~error=Errors.Generic(I18n.Errors.beacon_client_not_created),
       )
     ->Promise.flatMapOk(client =>
         client->ReBeacon.WalletClient.respond(
@@ -118,31 +98,27 @@ let make =
     <View>
       <View style=FormStyles.header>
         <Typography.Headline style=styles##title>
-          I18n.title#beacon_connection_request->React.string
+          I18n.Title.beacon_connection_request->React.string
         </Typography.Headline>
         <Typography.Overline2
           colorStyle=`highEmphasis fontWeightStyle=`bold style=styles##dapp>
           permissionRequest.appMetadata.name->React.string
         </Typography.Overline2>
         <Typography.Overline3 colorStyle=`highEmphasis style=styles##dapp>
-          I18n.expl#beacon_dapp->React.string
+          I18n.Expl.beacon_dapp->React.string
         </Typography.Overline3>
         <Typography.Body2 colorStyle=`mediumEmphasis style=styles##dapp>
-          I18n.expl#beacon_dapp_request->React.string
+          I18n.Expl.beacon_dapp_request->React.string
         </Typography.Body2>
       </View>
       <FormGroupAccountSelector
-        label=I18n.label#beacon_account
-        value={form.values.account}
-        handleChange={form.handleChange(Account)}
-        error={form.getFieldError(Field(Account))}
+        label=I18n.Label.beacon_account
+        value=account
+        handleChange={a => setAccount(_ => a)}
       />
       <View style=styles##formActionSpaceBetween>
-        <Buttons.SubmitSecondary text=I18n.btn#deny onPress=onAbort />
-        <Buttons.SubmitPrimary
-          text=I18n.btn#allow
-          onPress={_ => form.submit()}
-        />
+        <Buttons.SubmitSecondary text=I18n.Btn.deny onPress=onAbort />
+        <Buttons.SubmitPrimary text=I18n.Btn.allow onPress={_ => submit()} />
       </View>
     </View>
   </ModalTemplate.Form>;

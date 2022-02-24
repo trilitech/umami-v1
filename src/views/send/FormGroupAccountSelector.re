@@ -38,15 +38,12 @@ let baseRenderItem =
 let make =
     (
       ~label,
-      ~value: option(Account.t),
+      ~value: Account.t,
       ~handleChange,
-      ~error,
       ~disabled=?,
       ~token: option(Token.t)=?,
     ) => {
   let accounts = StoreContext.Accounts.useGetAll();
-
-  let hasError = error->Option.isSome;
 
   let items =
     accounts
@@ -54,18 +51,18 @@ let make =
     ->SortArray.stableSortBy(Account.compareName);
 
   <FormGroup>
-    <FormLabel label hasError style=styles##label />
+    <FormLabel label style=styles##label />
     <View>
       <Selector
         items
         ?disabled
         getItemKey={account => (account.address :> string)}
         onValueChange={account => {
-          accounts->PublicKeyHash.Map.get(account.address)->handleChange
+          accounts
+          ->PublicKeyHash.Map.get(account.address)
+          ->Option.iter(handleChange)
         }}
-        selectedValueKey={
-          value->Option.mapWithDefault("", a => (a.Account.address :> string))
-        }
+        selectedValueKey=(value.Account.address :> string)
         renderButton={baseRenderButton(~token)}
         renderItem={baseRenderItem(~token)}
         keyPopover="formGroupAccountSelector"

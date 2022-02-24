@@ -47,7 +47,6 @@ module NavBarItem = {
   [@react.component]
   let make =
       (
-        ~href=?,
         ~onPress,
         ~title,
         ~icon: option(Icons.builder)=?,
@@ -67,8 +66,13 @@ module NavBarItem = {
         colorStyle->Typography.getColor(theme)
       );
 
+    let handlePress = a =>
+      if (!isActive) {
+        onPress(a);
+      };
+
     <ThemedPressable
-      accessibilityRole=`link ?href onPress style=styles##item isActive>
+      accessibilityRole=`link onPress=handlePress style=styles##item isActive>
       {icon->Option.mapWithDefault(React.null, icon => {
          icon(
            ~style={
@@ -98,10 +102,10 @@ module NavBarItemRoute = {
         ~icon: option(Icons.builder)=?,
         ~iconSize: option(float)=?,
       ) => {
-    let (href, onPress) = useHrefAndOnPress(route);
+    let onPress = useHrefAndOnPress(route);
     let isCurrent = currentRoute == route;
 
-    <NavBarItem href onPress title ?icon ?iconSize isActive=isCurrent />;
+    <NavBarItem onPress title ?icon ?iconSize isActive=isCurrent />;
   };
 };
 
@@ -121,7 +125,6 @@ module LogsButton = {
 
     <>
       <NavBarItem
-        href
         onPress
         title
         ?icon
@@ -172,7 +175,7 @@ module Empty = {
 };
 
 [@react.component]
-let make = (~route as currentRoute) => {
+let make = (~account, ~route as currentRoute) => {
   let theme = ThemeContext.useTheme();
   <View
     style=Style.(
@@ -181,48 +184,48 @@ let make = (~route as currentRoute) => {
         style(~backgroundColor=theme.colors.barBackground, ()),
       |])
     )>
-    <View style=styles##sendButton> <SendButton /> </View>
+    <View style=styles##sendButton> <SendButton account /> </View>
     <NavBarItemRoute
       currentRoute
       route=Accounts
-      title=I18n.t#navbar_accounts
+      title=I18n.navbar_accounts
       icon=Icons.Account.build
     />
     <NavBarItemRoute
       currentRoute
       route=Nft
       iconSize=28.
-      title=I18n.t#navbar_nft
+      title=I18n.navbar_nft
       icon=Icons.Nft.build
     />
     <NavBarItemRoute
       currentRoute
       route=Operations
-      title=I18n.t#navbar_operations
+      title=I18n.navbar_operations
       icon=Icons.History.build
     />
     <NavBarItemRoute
       currentRoute
       route=AddressBook
-      title=I18n.t#navbar_addressbook
+      title=I18n.navbar_addressbook
       icon=Icons.AddressBook.build
     />
     <NavBarItemRoute
       currentRoute
       route=Delegations
-      title=I18n.t#navbar_delegations
+      title=I18n.navbar_delegations
       icon=Icons.Delegate.build
     />
     <NavBarItemRoute
       currentRoute
       route=Tokens
-      title=I18n.t#navbar_tokens
+      title=I18n.navbar_tokens
       icon=Icons.Token.build
     />
     <NavBarItemRoute
       currentRoute
       route=Settings
-      title=I18n.t#navbar_settings
+      title=I18n.navbar_settings
       icon=Icons.Settings.build
     />
     /* <NavBarItem currentRoute route=Debug title="DEBUG" /> */
@@ -230,7 +233,7 @@ let make = (~route as currentRoute) => {
       <LogsButton
         currentRoute
         route=Logs
-        title=I18n.t#navbar_logs
+        title=I18n.navbar_logs
         icon=Icons.Logs.build
       />
       <Typography.Overline3 style=styles##version>

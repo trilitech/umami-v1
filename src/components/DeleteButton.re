@@ -23,12 +23,23 @@
 /*                                                                           */
 /*****************************************************************************/
 
+let useModal = (~title, ~loading, ~onPressConfirmDelete) =>
+  ModalDialogConfirm.useModal(
+    ~action=onPressConfirmDelete,
+    ~loading,
+    ~title,
+    ~cancelText=I18n.Btn.cancel,
+    ~actionText=I18n.Btn.delete,
+  );
+
 module MenuItem = {
   [@react.component]
   let make =
       (~color=?, ~buttonText, ~modalTitle, ~onPressConfirmDelete, ~request) => {
-    let (visibleModal, openAction, closeAction) =
-      ModalAction.useModalActionState();
+    let loading = request->ApiRequest.isLoading;
+
+    let (openAction, _, modal) =
+      useModal(~title=modalTitle, ~loading, ~onPressConfirmDelete, ());
 
     let icon = (~color as colorin=?) => {
       let color = [color, colorin]->Option.firstSome;
@@ -41,13 +52,41 @@ module MenuItem = {
 
     <>
       <Menu.Item text=buttonText icon onPress colorStyle=`error />
-      <DeleteConfirmModal
-        title=modalTitle
-        visible=visibleModal
-        onPressConfirmDelete
-        closeAction
-        request
-      />
+      {modal()}
+    </>;
+  };
+};
+
+module Generic = {
+  [@react.component]
+  let make =
+      (
+        ~color=?,
+        ~tooltip,
+        ~modalTitle,
+        ~onPressConfirmDelete,
+        ~request,
+        ~icon: Icons.builder,
+        ~iconSize=?,
+        ~iconSizeRatio=?,
+      ) => {
+    let loading = request->ApiRequest.isLoading;
+
+    let (openAction, _, modal) =
+      useModal(~title=modalTitle, ~loading, ~onPressConfirmDelete, ());
+
+    let icon = (~color as colorin=?) => {
+      let color = [color, colorin]->Option.firstSome;
+      icon(~color?);
+    };
+
+    let onPress = _ => {
+      openAction();
+    };
+
+    <>
+      <IconButton tooltip icon onPress size=?iconSize ?iconSizeRatio />
+      {modal()}
     </>;
   };
 };
@@ -56,27 +95,13 @@ module IconButton = {
   [@react.component]
   let make =
       (~color=?, ~tooltip, ~modalTitle, ~onPressConfirmDelete, ~request) => {
-    let (visibleModal, openAction, closeAction) =
-      ModalAction.useModalActionState();
-
-    let icon = (~color as colorin=?) => {
-      let color = [color, colorin]->Option.firstSome;
-      Icons.Delete.build(~color?);
-    };
-
-    let onPress = _ => {
-      openAction();
-    };
-
-    <>
-      <IconButton tooltip icon onPress />
-      <DeleteConfirmModal
-        title=modalTitle
-        visible=visibleModal
-        onPressConfirmDelete
-        closeAction
-        request
-      />
-    </>;
+    <Generic
+      ?color
+      tooltip
+      modalTitle
+      onPressConfirmDelete
+      request
+      icon=Icons.Delete.build
+    />;
   };
 };

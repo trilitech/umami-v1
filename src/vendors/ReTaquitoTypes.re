@@ -48,6 +48,11 @@ module RPCClient = {
     chain_id: string,
     level: int,
   };
+
+  type constants = {
+    hard_gas_limit_per_operation: ReBigNumber.t,
+    hard_storage_limit_per_operation: ReBigNumber.t,
+  };
 };
 
 module Operation = {
@@ -76,7 +81,27 @@ module Toolkit = {
   type provider = {signer: ReTaquitoSigner.t};
 };
 
+module Micheline = {
+  type t;
+};
+
+module Code = {
+  type t;
+};
+
+module Storage = {
+  type t;
+};
+
 module Transfer = {
+  module Parameters = {
+    type entrypoint = string;
+    type t = {
+      entrypoint,
+      value: Micheline.t,
+    };
+  };
+
   type transferParams = {
     kind: string,
     [@bs.as "to"]
@@ -87,7 +112,7 @@ module Transfer = {
     gasLimit: option(int),
     storageLimit: option(int),
     mutez: option(bool),
-    parameter: option(ProtocolOptions.TransactionParameters.t),
+    parameter: option(Parameters.t),
   };
 
   type sendParams = {
@@ -105,6 +130,22 @@ module Delegate = {
     source: PublicKeyHash.t,
     delegate: option(PublicKeyHash.t),
     fee: option(ReBigNumber.t),
+  };
+};
+
+module Originate = {
+  type originateParams = {
+    kind: string,
+    source: PublicKeyHash.t,
+    balance: option(ReBigNumber.t),
+    code: Code.t,
+    [@bs.as "init"]
+    storage: Storage.t,
+    delegate: option(PublicKeyHash.t),
+    fee: option(ReBigNumber.t),
+    gasLimit: option(int),
+    storageLimit: option(int),
+    mutez: option(bool),
   };
 };
 

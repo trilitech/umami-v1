@@ -108,7 +108,7 @@ let make =
     <View style=FormStyles.section##spacing>
       <View style=styles##labelContainer>
         <Typography.Overline2>
-          I18n.label#accounts->React.string
+          I18n.Label.accounts->React.string
         </Typography.Overline2>
         {<LoadingView style=styles##loading />
          ->ReactUtils.onlyWhen(scanState == `Loading)}
@@ -139,7 +139,7 @@ let make =
       |])}>
       <Buttons.SubmitPrimary
         disabled={scanState == `Loading}
-        text=I18n.btn#import
+        text=I18n.Btn.import
         loading
         onPress={_ => {
           setLoading(_ => true);
@@ -149,7 +149,7 @@ let make =
       {{
          <Buttons.FormSecondary
            style=FormStyles.formSecondary
-           text=I18n.btn#advanced_options
+           text=I18n.Btn.advanced_options
            onPress={_ =>
              nextAdvancedOptions->Option.mapWithDefault((), f => f())
            }

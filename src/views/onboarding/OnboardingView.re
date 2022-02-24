@@ -44,6 +44,9 @@ let styles =
 let make = (~onClose=?) => {
   let styleNotFirst =
     Style.(array([|styles##bigbutton, style(~marginLeft=60.->dp, ())|]));
+  let secrets = StoreContext.Secrets.useGetAll();
+  let existingSecretsCount = secrets->Array.length;
+  let noExistingPassword = existingSecretsCount == 0;
   <Page>
     <Page.Header
       right={
@@ -58,7 +61,10 @@ let make = (~onClose=?) => {
     <View style=styles##container>
       <CreateAccountBigButton style=styles##bigbutton />
       <ImportAccountBigButton style=styleNotFirst />
+      {noExistingPassword
+         ? <RestoreAccountBigButton style=styleNotFirst /> : <View />}
       <HwWalletBigButton style=styleNotFirst />
     </View>
+    {ReCustomAuth.flagOn ? <CustomAuthOnboardingView /> : React.null}
   </Page>;
 };

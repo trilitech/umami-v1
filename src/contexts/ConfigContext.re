@@ -29,6 +29,7 @@ type env = {
   theme: [ | `system | `dark | `light],
   confirmations: int,
   baseDir: unit => System.Path.t,
+  backupFile: option(System.Path.t),
 };
 
 let defaultNetwork = `Mainnet;
@@ -39,6 +40,7 @@ let default = {
   theme: `system,
   baseDir: () => System.(Path.Ops.(appDir() / (!"tezos-client"))),
   confirmations: 5,
+  backupFile: None,
 };
 
 let fromFile = f => {
@@ -62,6 +64,7 @@ let fromFile = f => {
       ->List.getBy(n => n.name === name)
       ->Option.getWithDefault(Network.mainnet)
     },
+  backupFile: f.backupFile,
 };
 
 type networkStatus = {
@@ -69,13 +72,15 @@ type networkStatus = {
   current: Network.status,
 };
 
+type retryNetworkType =
+  (~onlyOn: Network.status=?, ~onlyAfter: Network.status=?, unit) => unit;
+
 type configState = {
   content: env,
   configFile: ConfigFile.t,
   write: (ConfigFile.t => ConfigFile.t) => unit,
   networkStatus,
-  retryNetwork:
-    (~onlyOn: Network.status=?, ~onlyAfter: Network.status=?, unit) => unit,
+  retryNetwork: retryNetworkType,
   storageVersion: Version.t,
 };
 
@@ -93,6 +98,15 @@ let initialState = {
 
 let context = React.createContext(initialState);
 
+let shouldRetry = (~onlyOn, ~onlyAfter, ~networkStatus) => {
+  switch (onlyOn, onlyAfter) {
+  | (None, None) => true
+  | (Some(on), Some(_) as after) =>
+    after == networkStatus.previous && on == networkStatus.current
+  | (Some(on), None) => on == networkStatus.current
+  | (None, Some(_) as after) => after == networkStatus.previous
+  };
+};
 module Provider = {
   let makeProps = (~value, ~children, ()) => {
     "value": value,
@@ -100,32 +114,6 @@ module Provider = {
   };
 
   let make = React.Context.provider(context);
-};
-
-let initMigration = () => {
-  let version =
-    switch (LocalStorage.Version.get()) {
-    | Ok(v) => v
-    | Error(_) =>
-      Js.log("Storage version not found, using 1.0 as base");
-      Version.mk(1, 0);
-    };
-
-  switch (Migration.init(version)) {
-  | Ok () => LocalStorage.Version.set(Migration.currentVersion)
-  | Error(_) => ()
-  };
-};
-
-let load = () => {
-  initMigration();
-
-  switch (ConfigFile.read()) {
-  | Ok(conf) => conf
-  | Error(_) =>
-    Js.log("No config to load. Using default config");
-    ConfigFile.dummy;
-  };
 };
 
 let version = () => {
@@ -137,12 +125,32 @@ let version = () => {
   };
 };
 
+type networkState =
+  | Shutdown
+  | Startup
+  | Stable;
+
+let getNetworkState = networkStatus =>
+  if (networkStatus.current == Offline
+      && (
+        networkStatus.previous == Some(Online)
+        || networkStatus.previous == None
+      )) {
+    Shutdown;
+  } else if (networkStatus.current == Online
+             && networkStatus.previous == Some(Offline)) {
+    Startup;
+  } else {
+    Stable;
+  };
+
 [@react.component]
 let make = (~children) => {
-  let (configFile, setConfig) = React.useState(() => load());
+  let {configFile, write} = ConfigFileContext.useConfigFile();
+
   let (storageVersion, _) = React.useState(() => version());
 
-  let (content, setContent) = React.useState(() => load()->fromFile);
+  let (content, setContent) = React.useState(() => configFile->fromFile);
 
   let (networkStatus, setNetworkStatus) =
     React.useState(() => {previous: None, current: Network.Pending});
@@ -178,23 +186,27 @@ let make = (~children) => {
   };
 
   let retryNetwork = (~onlyOn=?, ~onlyAfter=?, ()) => {
-    switch (onlyOn, onlyAfter) {
-    | (None, None) => pickNetwork()
-    | (Some(on), Some(_) as after) =>
-      after == networkStatus.previous && on == networkStatus.current
-        ? pickNetwork() : ()
-    | (Some(on), None) => on == networkStatus.current ? pickNetwork() : ()
-    | (None, Some(_) as after) =>
-      after == networkStatus.previous ? pickNetwork() : ()
+    if (shouldRetry(~onlyOn, ~onlyAfter, ~networkStatus)) {
+      pickNetwork();
     };
+    ();
   };
+
+  // update content if config file has changed
+  React.useEffect1(
+    _ => {
+      setContent(_ => configFile->fromFile);
+      None;
+    },
+    [|configFile|],
+  );
 
   React.useEffect1(
     () => {
       pickNetwork();
       None;
     },
-    [|configFile|],
+    [|configFile.network|],
   );
 
   let (lastCheck, setLastCheck) = React.useState(() => None);
@@ -229,30 +241,18 @@ let make = (~children) => {
 
   React.useEffect1(
     () => {
-      if (networkStatus.current == Offline
-          && (
-            networkStatus.previous == Some(Online)
-            || networkStatus.previous == None
-          )) {
-        setLastCheck(_ => Some(0));
-      } else if (networkStatus.current == Online
-                 && networkStatus.previous == Some(Offline)) {
-        setLastCheck(_ => None);
-      } else {
-        ();
+      let networkState = getNetworkState(networkStatus);
+
+      switch (networkState) {
+      | Shutdown => setLastCheck(_ => Some(0))
+      | Startup => setLastCheck(_ => None)
+      | Stable => ()
       };
 
       None;
     },
     [|networkStatus|],
   );
-
-  let write = f =>
-    setConfig(c => {
-      let c = f(c);
-      c->ConfigFile.Storage.set;
-      c;
-    });
 
   <Provider
     value={
@@ -291,12 +291,19 @@ let useResetConfig = () => {
   };
 };
 
+let useResetBackupFilePath = () => {
+  let {write} = useContext();
+  () => {
+    write(c => {...c, backupFile: None});
+  };
+};
+
 let useNetworkStatus = () => useContext().networkStatus;
 let useNetworkOffline = () => useContext().networkStatus.current == Offline;
 
 let useRetryNetwork = () => useContext().retryNetwork;
 
-let useCleanSdkBaseDir = () => {
+let useEraseStorageAndBaseDir = () => {
   let {content: {baseDir}} = useContext();
   () => {
     System.Client.resetDir(baseDir())

@@ -46,8 +46,7 @@ apps:
       - audio-playback
       - pulseaudio
       - opengl
-      - raw-usb
-      - hidraw
+      - u2f-devices
     environment:
       # Correct the TMPDIR path for Chromium Framework/Electron to ensure
       # libappindicator has readable resources.
@@ -61,11 +60,11 @@ apps:
 parts:
   umami:
     plugin: npm
-    npm-node-version: 14.7.1
+    npm-node-version: 16.13.1
     source: .
     override-build: |
         apt-get update
-        apt-get -y install libpango1.0-dev libcairo2-dev libusb-1.0.0-dev libudev-dev
+        apt-get -y install build-essential libpango1.0-dev libcairo2-dev libusb-1.0.0-dev libudev-dev libjpeg-dev libgif-dev librsvg2-dev
         npm install yarn -g
         yarn
         yarn bsb:build

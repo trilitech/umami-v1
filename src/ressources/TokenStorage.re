@@ -369,6 +369,19 @@ module Legacy = {
       Cache.migrate(~default=TokensLibrary.Generic.empty, ~mapValue, ());
     };
   };
+
+  module V1_6 = {
+    let version = Version.mk(1, 6);
+
+    let mk = () => {
+      let mapValue = cacheString => {
+        let%Res json = cacheString->JsonEx.parse;
+        let%ResMap cache = json->JsonEx.decode(Cache.decoder);
+        cache->TokensLibrary.forceRetryPartial(`NFT);
+      };
+      Cache.migrate(~default=TokensLibrary.Generic.empty, ~mapValue, ());
+    };
+  };
 };
 
 let mergeAccountNFTs =

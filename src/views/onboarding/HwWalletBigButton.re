@@ -25,20 +25,15 @@
 
 [@react.component]
 let make = (~style=?) => {
-  let (visibleModal, openAction, closeAction) =
-    ModalAction.useModalActionState();
-
-  let onPress = _ => openAction();
+  let (openAction, closeAction, wrapModal) = ModalAction.useModal();
 
   <>
     <BigButton
-      title=I18n.btn#connect_hardware_wallet
+      title=I18n.Btn.connect_hardware_wallet
       icon=Icons.Ledger.build
-      onPress
+      onPress={_ => openAction()}
       ?style
     />
-    <ModalAction visible=visibleModal onRequestClose=closeAction>
-      <HwWalletOnboardingView closeAction />
-    </ModalAction>
+    {wrapModal(<HwWalletOnboardingView closeAction />)}
   </>;
 };

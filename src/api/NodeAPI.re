@@ -36,9 +36,9 @@ let () =
   Errors.registerHandler(
     "Node",
     fun
-    | UnreadableTokenAmount(s) => I18n.errors#cannot_read_token(s)->Some
-    | InvalidOperationType => I18n.errors#invalid_operation_type->Some
-    | IllformedTokenContract => I18n.errors#illformed_token_contract->Some
+    | UnreadableTokenAmount(s) => I18n.Errors.cannot_read_token(s)->Some
+    | InvalidOperationType => I18n.Errors.invalid_operation_type->Some
+    | IllformedTokenContract => I18n.Errors.illformed_token_contract->Some
     | _ => None,
   );
 
@@ -76,7 +76,7 @@ module Simulation = {
       ~baseDir=config.baseDir(),
       ~source=source.Account.address,
       ~customValues,
-      ~transfers=transfers->TaquitoAPI.Transfer.prepareTransfers,
+      ~transfersBuilder=transfers->TaquitoAPI.Transfer.prepareTransfers,
       (),
     );
   };
@@ -93,9 +93,23 @@ module Simulation = {
     );
   };
 
+  let originate = (config: ConfigContext.env, origination: Protocol.origination) => {
+    TaquitoAPI.Originate.Estimate.originate(~endpoint=config.network.endpoint,
+    ~baseDir=config.baseDir(),
+    ~source=origination.Protocol.source.address,
+    ~balance=?origination.Protocol.balance,
+    ~code=origination.Protocol.code,
+    ~storage=origination.Protocol.storage,
+    ~delegate=?origination.Protocol.delegate,
+    ~fee=?origination.Protocol.options.fee,
+    (),
+    );
+  };
+
   let run = (config, operation: Protocol.t) => {
     switch (operation) {
     | Delegation(d) => setDelegate(config, d)
+    | Origination(o) => originate(config, o)
     | Transaction({transfers, source}) =>
       batch(config, transfers, ~source, ())
     };
@@ -230,7 +244,7 @@ module Operation = {
         ~endpoint=config.network.endpoint,
         ~baseDir=config.baseDir(),
         ~source=source.Account.address,
-        ~transfers=transfers->TaquitoAPI.Transfer.prepareTransfers,
+        ~transfersBuilder=transfers->TaquitoAPI.Transfer.prepareTransfers,
         ~signingIntent,
         (),
       );
@@ -240,7 +254,7 @@ module Operation = {
   let setDelegate =
       (
         config: ConfigContext.env,
-        Protocol.{delegate, source, options},
+        Protocol.{delegate, source, options}: Protocol.delegation,
         ~signingIntent,
       ) => {
     let%AwaitMap op =
@@ -256,10 +270,27 @@ module Operation = {
     op.hash;
   };
 
+  let originate = (config: ConfigContext.env, Protocol.{source, balance, code, storage, delegate, options}: Protocol.origination, ~signingIntent,)=> {
+    let%AwaitMap op =
+      TaquitoAPI.Originate.originate(
+        ~endpoint=config.network.endpoint,
+        ~baseDir=config.baseDir(),
+        ~source=source.address,
+        ~balance?,
+        ~code,
+        ~storage,
+        ~delegate?,
+        ~signingIntent,
+        ~fee=?options.fee,
+        (),
+      );
+    op.hash;
+  }
+
   let run = (config, operation: Protocol.t, ~signingIntent) =>
     switch (operation) {
     | Delegation(d) => setDelegate(config, d, ~signingIntent)
-
+    | Origination(o) => originate(config, o, ~signingIntent)
     | Transaction({transfers, source}) =>
       batch(config, transfers, ~source, ~signingIntent)
     };

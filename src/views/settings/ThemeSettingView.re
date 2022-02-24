@@ -29,22 +29,22 @@ open SettingsComponents;
 let make = () => {
   let (themeSetting, setThemeSetting) = ThemeContext.useThemeSetting();
 
-  <Block title=I18n.settings#theme_title>
+  <Block title=I18n.Settings.theme_title>
     <ColumnLeft>
       <RadioItem
-        label=I18n.settings#theme_system
+        label=I18n.Settings.theme_system
         value=`system
         setValue=setThemeSetting
         currentValue=themeSetting
       />
       <RadioItem
-        label=I18n.settings#theme_dark
+        label=I18n.Settings.theme_dark
         value=`dark
         setValue=setThemeSetting
         currentValue=themeSetting
       />
       <RadioItem
-        label=I18n.settings#theme_light
+        label=I18n.Settings.theme_light
         value=`light
         setValue=setThemeSetting
         currentValue=themeSetting

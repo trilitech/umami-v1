@@ -79,7 +79,7 @@ module Make = (Op: OP) => {
       Promise.async(() => {
         let%Await client =
           client->Promise.fromOption(
-            ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
+            ~error=Errors.Generic(I18n.Errors.beacon_client_not_created),
           );
 
         let%AwaitMap () =
@@ -98,7 +98,7 @@ module Make = (Op: OP) => {
       Promise.async(() => {
         let%Await client =
           client->Promise.fromOption(
-            ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
+            ~error=Errors.Generic(I18n.Errors.beacon_client_not_created),
           );
 
         let%AwaitMap () =
@@ -121,7 +121,7 @@ module Make = (Op: OP) => {
       operationApiRequest->ApiRequest.isDoneOk
         ? Some(ModalFormView.Close(_ => closeAction())) : None;
 
-    let ledgerState = React.useState(() => None);
+    let state = React.useState(() => None);
 
     let simulatedOperation = Op.makeSimulated(operation);
 
@@ -155,7 +155,11 @@ module Make = (Op: OP) => {
     let (signStep, setSign) as signOpStep =
       React.useState(() => SignOperationView.SummaryStep);
 
-    let title = SignOperationView.makeTitle(signStep);
+    let title =
+      switch (operationApiRequest) {
+      | Done(Ok(_), _) => None
+      | _ => SignOperationView.makeTitle(signStep)->Some
+      };
 
     let back =
       switch (signStep) {
@@ -163,10 +167,10 @@ module Make = (Op: OP) => {
       | SummaryStep => None
       };
 
-    <ModalFormView title ?closing back>
+    <ModalFormView ?title ?closing back>
       {switch (operationApiRequest) {
        | Done(Ok(hash), _) =>
-         <SubmittedView hash onPressCancel submitText=I18n.btn#go_operations />
+         <SubmittedView hash onPressCancel submitText=I18n.Btn.go_operations />
        | _ =>
          <>
            {<View style=FormStyles.header>
@@ -178,7 +182,7 @@ module Make = (Op: OP) => {
               </Typography.Overline2>
               <Typography.Overline3
                 colorStyle=`highEmphasis style=styles##dapp>
-                I18n.expl#beacon_operation->React.string
+                I18n.Expl.beacon_operation->React.string
               </Typography.Overline3>
             </View>
             ->ReactUtils.onlyWhen(signStep == SummaryStep)}
@@ -190,7 +194,7 @@ module Make = (Op: OP) => {
                 <ErrorView error />
                 <View style=styles##formActionSpaceBetween>
                   <Buttons.SubmitSecondary
-                    text=I18n.btn#close
+                    text=I18n.Btn.close
                     onPress=onSimulateError
                   />
                 </View>
@@ -198,14 +202,14 @@ module Make = (Op: OP) => {
             | Done(Ok(dryRun), _) =>
               let secondaryButton =
                 <Buttons.SubmitSecondary
-                  text=I18n.btn#reject
+                  text=I18n.Btn.reject
                   onPress=onAbort
                 />;
               <SignOperationView
                 source=sourceAccount
                 dryRun
                 signOpStep
-                ledgerState
+                state
                 operation={Op.makeOperation(operation)}
                 loading
                 secondaryButton
@@ -243,6 +247,44 @@ module Delegate =
     let makeSimulated = o => o->Operation.Simulation.delegation;
 
     let makeOperation = Operation.delegation;
+  });
+
+module Originate =
+  Make({
+    type t = Protocol.origination;
+
+    let make =
+        (account, beaconRequest: ReBeacon.Message.Request.operationRequest) => {
+      let origination =
+        beaconRequest.operationDetails
+        ->Array.get(0)
+        ->Option.map(ReBeacon.Message.Request.PartialOperation.classify)
+        ->Option.flatMap(operationDetail =>
+            switch (operationDetail) {
+            | Origination(partialOrigination) => Some(partialOrigination)
+            | _ => None
+            }
+          )
+        ->Option.map(
+            (
+              partialOrigination: ReBeacon.Message.Request.PartialOperation.origination,
+            ) => {
+            Protocol.makeOrigination(
+              ~source=account,
+              ~balance=Tez.fromMutezString(partialOrigination.balance),
+              ~code=partialOrigination.script.code,
+              ~storage=partialOrigination.script.storage,
+              ~delegate=partialOrigination.delegate,
+              (),
+            );
+          })
+        ->Option.getUnsafe; // Not the cleanest but we should be confident we're dealing with an origination request
+      origination;
+    };
+
+    let makeSimulated = o => o->Operation.Simulation.origination;
+
+    let makeOperation = Operation.origination;
   });
 
 module Transfer =

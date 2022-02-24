@@ -64,8 +64,15 @@ module SettingFormGroupTextInput = {
   let styles =
     Style.(
       StyleSheet.create({
-        "label": style(~marginBottom=6.->dp, ()),
-        "formGroup": style(~marginTop=0.->dp, ~marginBottom=12.->dp, ()),
+        "header":
+          style(
+            ~flexDirection=`row,
+            ~justifyContent=`spaceBetween,
+            ~marginBottom=6.->dp,
+            (),
+          ),
+        "label": style(~marginBottom=0.->dp, ()),
+        "formGroup": style(~marginTop=0.->dp, ~marginBottom=0.->dp, ()),
       })
     );
 
@@ -79,10 +86,14 @@ module SettingFormGroupTextInput = {
         ~keyboardType=?,
         ~onSubmitEditing=?,
         ~placeholder=?,
+        ~rightView=?,
       ) => {
     let hasError = error->Option.isSome;
     <FormGroup style=styles##formGroup>
-      <FormLabel label hasError style=styles##label />
+      <View style=styles##header>
+        <FormLabel label hasError style=styles##label />
+        {rightView->ReactUtils.mapOpt(view => view)}
+      </View>
       <SettingTextInput
         value
         onValueChange

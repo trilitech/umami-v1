@@ -38,11 +38,15 @@ module Rpc: {
     ReTaquito.endpoint => Promise.t(ReTaquito.RPCClient.blockHeader);
 
   let getChainId: ReTaquito.endpoint => Promise.t(string);
+
+  let getConstants:
+    ReTaquito.endpoint => Promise.t(ReTaquito.RPCClient.constants);
 };
 
 module Signer: {
   type intent =
     | LedgerCallback(unit => unit)
+    | CustomAuthSigner(ReCustomAuthSigner.t)
     | Password(string);
 };
 
@@ -72,6 +76,40 @@ module Delegate: {
         ~endpoint: ReTaquito.endpoint,
         ~baseDir: System.Path.t,
         ~source: PublicKeyHash.t,
+        ~delegate: PublicKeyHash.t=?,
+        ~fee: Tez.t=?,
+        unit
+      ) =>
+      Promise.t(Protocol.Simulation.results);
+  };
+};
+
+module Originate: {
+  /* Originate contract for a given account */
+  let originate:
+    (
+      ~endpoint: ReTaquito.endpoint,
+      ~baseDir: System.Path.t,
+      ~source: PublicKeyHash.t,
+      ~balance: Tez.t=?,
+      ~code: ReTaquitoTypes.Code.t,
+      ~storage: ReTaquitoTypes.Storage.t,
+      ~delegate: PublicKeyHash.t=?,
+      ~signingIntent: Signer.intent,
+      ~fee: Tez.t=?,
+      unit
+    ) =>
+    Promise.t(ReTaquito.Toolkit.Operation.result);
+
+  module Estimate: {
+    let originate:
+      (
+        ~endpoint: ReTaquito.endpoint,
+        ~baseDir: System.Path.t,
+        ~source: PublicKeyHash.t,
+         ~balance: Tez.t=?,
+        ~code: ReTaquitoTypes.Code.t,
+        ~storage: ReTaquitoTypes.Storage.t,
         ~delegate: PublicKeyHash.t=?,
         ~fee: Tez.t=?,
         unit
@@ -119,10 +157,12 @@ module Transfer: {
       ~endpoint: ReTaquito.endpoint,
       ~baseDir: System.Path.t,
       ~source: Wallet.PkhAlias.t,
-      ~transfers: (ReTaquito.endpoint, PublicKeyHash.t) =>
-                  FutureBase.t(
-                    list(Promise.result(ReTaquito.Toolkit.transferParams)),
-                  ),
+      ~transfersBuilder: (ReTaquito.endpoint, PublicKeyHash.t) =>
+                         FutureBase.t(
+                           list(
+                             Promise.result(ReTaquito.Toolkit.transferParams),
+                           ),
+                         ),
       ~signingIntent: Signer.intent,
       unit
     ) =>
@@ -135,10 +175,14 @@ module Transfer: {
         ~baseDir: System.Path.t,
         ~source: PublicKeyHash.t,
         ~customValues: array((option(int), option(int), option(int))),
-        ~transfers: (ReTaquito.endpoint, PublicKeyHash.t) =>
-                    FutureBase.t(
-                      list(Promise.result(ReTaquito.Toolkit.transferParams)),
-                    ),
+        ~transfersBuilder: (ReTaquito.endpoint, PublicKeyHash.t) =>
+                           FutureBase.t(
+                             list(
+                               Promise.result(
+                                 ReTaquito.Toolkit.transferParams,
+                               ),
+                             ),
+                           ),
         unit
       ) =>
       Promise.t(Protocol.Simulation.results);

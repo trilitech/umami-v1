@@ -28,7 +28,7 @@ open ReactNative;
 let styles =
   Style.(
     StyleSheet.create({
-      "rowItem": style(~paddingLeft=14.->dp, ()),
+      "rowItem": style(~paddingLeft=16.->dp, ()),
       "tagContainer": style(~flexDirection=`row, ()),
       "tag": style(~marginRight=14.->dp, ()),
       "alias": style(~height=20.->dp, ~marginBottom=4.->dp, ()),
@@ -43,6 +43,16 @@ let styles =
         ),
       "actionIconButton": style(~marginLeft=2.->dp, ()),
       "actionButton": style(~marginLeft=9.->dp, ~marginRight=7.->dp, ()),
+      "inner": style(~marginRight=10.->dp, ~flexDirection=`row, ()),
+      "iconContainer":
+        style(
+          ~width=72.->dp,
+          ~height=20.->dp,
+          ~justifyContent=`center,
+          ~alignItems=`center,
+          ~alignSelf=`flexStart,
+          (),
+        ),
     })
   );
 
@@ -50,22 +60,17 @@ module AccountNestedRowItem = {
   module AccountEditButton = {
     [@react.component]
     let make = (~account: Account.t) => {
-      let (visibleModal, openAction, closeAction) =
-        ModalAction.useModalActionState();
-
-      let onPress = _e => openAction();
+      let (openAction, closeAction, wrapModal) = ModalAction.useModal();
 
       <>
         <IconButton
           icon=Icons.Edit.build
           size=34.
           iconSizeRatio={1. /. 2.}
-          onPress
+          onPress={_ => openAction()}
           style=styles##actionIconButton
         />
-        <ModalAction visible=visibleModal onRequestClose=closeAction>
-          <AccountFormView.Update account closeAction />
-        </ModalAction>
+        {wrapModal(<AccountFormView.Update account closeAction />)}
       </>;
     };
   };
@@ -89,16 +94,22 @@ module AccountNestedRowItem = {
     let account = StoreContext.Accounts.useGetFromAddress(address);
 
     account->ReactUtils.mapOpt(account =>
-      <RowItem.Bordered
-        innerStyle=styles##rowItem height=90. isNested=true isLast>
-        <View>
-          <Typography.Subtitle1 style=styles##alias>
-            account.name->React.string
-          </Typography.Subtitle1>
-          <AccountInfoBalance address={account.address} />
-          <Typography.Address style=styles##derivation>
-            {("/" ++ index->string_of_int)->React.string}
-          </Typography.Address>
+      <RowItem.Bordered height=90. isNested=true isLast>
+        <View style=styles##inner>
+          <AliasIcon
+            style=styles##iconContainer
+            kind={Some(Alias.Account(account.kind))}
+            isHD=true
+          />
+          <View>
+            <Typography.Subtitle1 style=styles##alias>
+              account.name->React.string
+            </Typography.Subtitle1>
+            <AccountInfoBalance address={account.address} />
+            <Typography.Address style=styles##derivation>
+              {("/" ++ index->string_of_int)->React.string}
+            </Typography.Address>
+          </View>
         </View>
         <View style=styles##actionContainer>
           <AccountEditButton account />
@@ -120,7 +131,7 @@ module SecretExportButton = {
     <>
       <Buttons.SubmitTertiary
         onPress
-        text=I18n.btn#export
+        text=I18n.Btn.export
         style=styles##actionButton
       />
       <ModalAction visible=visibleModal onRequestClose=closeAction>
@@ -137,12 +148,12 @@ module AccountImportedRowItem = {
       let (accountRequest, deleteAccount) = StoreContext.Accounts.useDelete();
 
       let onPressConfirmDelete = _e => {
-        deleteAccount(account.name)->Promise.ignore;
+        deleteAccount(account.name);
       };
 
       <DeleteButton.MenuItem
-        buttonText=I18n.menu#delete_account
-        modalTitle=I18n.title#delete_account
+        buttonText=I18n.Menu.delete_account
+        modalTitle=I18n.Title.delete_account
         onPressConfirmDelete
         request=accountRequest
       />;
@@ -167,7 +178,7 @@ module AccountImportedRowItem = {
       let onPress = _e => openAction();
 
       <>
-        <Menu.Item text=I18n.menu#edit icon=Icons.Edit.build onPress />
+        <Menu.Item text=I18n.Menu.edit icon=Icons.Edit.build onPress />
         <ModalAction visible=visibleModal onRequestClose=closeAction>
           <AccountFormView.Update account closeAction />
         </ModalAction>
@@ -179,7 +190,7 @@ module AccountImportedRowItem = {
     [@react.component]
     let make =
         (~account: Account.t, ~tag: React.element, ~actions: React.element) => {
-      <RowItem.Bordered innerStyle=styles##rowItem height=66.>
+      <RowItem.Bordered height=66.>
         <View style=styles##tagContainer>
           tag
           <View>
@@ -201,7 +212,9 @@ module AccountImportedRowItem = {
       account->ReactUtils.mapOpt(account =>
         <Base
           account
-          tag={<Tag style=styles##tag content=I18n.label#account_umami />}
+          tag={
+            <Tag.Fixed style=styles##tag content=I18n.Label.account_umami />
+          }
           actions=
             {<>
                <SecretExportButton secret />
@@ -228,7 +241,13 @@ module AccountImportedRowItem = {
     let make = (~account: Account.t) => {
       <Base
         account
-        tag={<Tag style=styles##tag content=I18n.label#account_cli />}
+        tag={
+          <AliasIcon
+            style=styles##iconContainer
+            kind={Some(Account(account.kind))}
+            isHD=false
+          />
+        }
         actions=
           {<>
              <Menu
@@ -255,12 +274,12 @@ module SecretRowItem = {
       let (secretRequest, deleteSecret) = StoreContext.Secrets.useDelete();
 
       let onPressConfirmDelete = _e => {
-        deleteSecret(secret.index)->Promise.ignore;
+        deleteSecret(secret.index);
       };
 
       <DeleteButton.MenuItem
-        buttonText=I18n.menu#delete_secret
-        modalTitle=I18n.title#delete_secret
+        buttonText=I18n.Menu.delete_secret
+        modalTitle=I18n.Title.delete_secret
         onPressConfirmDelete
         request=secretRequest
       />;
@@ -276,7 +295,7 @@ module SecretRowItem = {
       let onPress = _e => openAction();
 
       <>
-        <Menu.Item text=I18n.menu#edit icon=Icons.Edit.build onPress />
+        <Menu.Item text=I18n.Menu.edit icon=Icons.Edit.build onPress />
         <ModalAction visible=visibleModal onRequestClose=closeAction>
           <SecretUpdateFormView secret closeAction />
         </ModalAction>
@@ -296,7 +315,7 @@ module SecretRowItem = {
       <>
         <Buttons.SubmitTertiary
           onPress
-          text=I18n.btn#scan
+          text=I18n.Btn.scan
           style=styles##actionButton
         />
         <ModalAction visible=visibleModal onRequestClose=closeAction>
@@ -329,7 +348,7 @@ module SecretRowItem = {
       let isLedger = secret.Secret.secret.kind == Ledger;
       !isLedger
         ? <>
-            <Menu.Item text=I18n.menu#scan icon=Icons.Scan.build onPress />
+            <Menu.Item text=I18n.Menu.scan icon=Icons.Scan.build onPress />
             <ModalAction visible=visibleModal onRequestClose=closeAction>
               <MnemonicScan
                 secret={secret.Secret.secret}
@@ -353,7 +372,7 @@ module SecretRowItem = {
       <>
         <Buttons.SubmitTertiary
           onPress
-          text=I18n.btn#add_account
+          text=I18n.Btn.add_account
           style=styles##actionButton
         />
         <ModalAction visible=visibleModal onRequestClose=closeAction>
@@ -366,7 +385,7 @@ module SecretRowItem = {
   [@react.component]
   let make = (~secret: Secret.derived) => {
     <RowItem.Bordered innerStyle=styles##rowItem height=66.>
-      {<Tag style=styles##tag content=I18n.t#hw />
+      {<Tag.Fixed style=styles##tag content=I18n.hw />
        ->ReactUtils.onlyWhen(secret.secret.kind == Secret.Ledger)}
       <View>
         <Typography.Subtitle1 style=styles##alias>

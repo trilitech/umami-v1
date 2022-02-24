@@ -37,7 +37,7 @@ module Secret: {
 
 /** Aliases management */
 module Aliases: {
-  type t = array((string, PublicKeyHash.t));
+  type t = array(Alias.t);
 
   let get: (~config: ConfigContext.env) => Promise.t(t);
 
@@ -75,9 +75,7 @@ module Accounts: {
   let recoveryPhrases:
     unit => Promise.result(array(SecureStorage.Cipher.encryptedData));
 
-  let get:
-    (~config: ConfigContext.env) =>
-    Promise.t(array((name, PublicKeyHash.t, Wallet.kind)));
+  let get: (~config: ConfigContext.env) => Promise.t(array(Account.t));
 
   let updateSecretAt:
     (~config: ConfigContext.env, Secret.Repr.t, int) => Promise.result(unit);
@@ -157,6 +155,17 @@ module Accounts: {
     ) =>
     Promise.t(unit);
 
+  let restoreFromBackupFile:
+    (
+      ~config: ConfigContext.env,
+      ~backupFile: System.Path.t,
+      ~password: string,
+      unit
+    ) =>
+    Promise.t(unit);
+
+  let forceBackup: (~config: ConfigContext.env) => Promise.result(unit);
+
   let importMnemonicKeys:
     (
       ~config: ConfigContext.env,
@@ -183,6 +192,15 @@ module Accounts: {
       unit
     ) =>
     Promise.t(array(PublicKeyHash.t));
+
+  let importCustomAuth:
+    (
+      ~config: ConfigContext.env,
+      ~pkh: PublicKeyHash.t,
+      ~pk: string,
+      ReCustomAuth.infos
+    ) =>
+    Promise.t(PublicKeyHash.t);
 
   let deriveLedgerKeys:
     (

@@ -25,36 +25,76 @@
 
 open ReactNative;
 
+module StateLenses = [%lenses type state = {read: bool}];
+module DisclaimerForm = ReForm.Make(StateLenses);
+
+let styles =
+  Style.(
+    StyleSheet.create({
+      "disclaimerText": style(~marginBottom=32.->dp, ~marginTop=24.->dp, ()),
+      "checkboxLabel":
+        style(
+          ~fontSize=16.,
+          ~alignItems=`flexStart,
+          ~paddingBottom=20.->dp,
+          (),
+        ),
+    })
+  );
+
 [@react.component]
-let make =
-    (
-      ~visible,
-      ~closeAction,
-      ~action,
-      ~loading=?,
-      ~title,
-      ~subtitle=?,
-      ~cancelText,
-      ~actionText,
-    ) => {
+let make = (~onSign) => {
   let theme = ThemeContext.useTheme();
-  <ModalAction visible onRequestClose=closeAction>
-    <ModalTemplate.Dialog>
-      <Typography.Headline style=FormStyles.header>
-        title->React.string
-      </Typography.Headline>
-      {subtitle->ReactUtils.mapOpt(sub => {
-         <Typography.Headline> sub->React.string </Typography.Headline>
-       })}
-      <View style=FormStyles.formAction>
-        <Buttons.Form
-          style=Style.(style(~backgroundColor=theme.colors.stateActive, ()))
-          text=cancelText
-          onPress={_ => closeAction()}
-          disabled=?loading
+
+  let onAgree = () => {
+    WertDisclaimer.sign();
+  };
+
+  let form: DisclaimerForm.api =
+    DisclaimerForm.use(
+      ~validationStrategy=OnDemand,
+      ~schema={
+        DisclaimerForm.Validation.(Schema(true_(Read)));
+      },
+      ~onSubmit=
+        _ => {
+          onAgree();
+          onSign(false);
+          None;
+        },
+      ~initialState={read: false},
+      ~i18n=FormUtils.i18n,
+      (),
+    );
+
+  let formFieldsAreValids =
+    FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
+
+  <>
+    <DocumentContext.ScrollView
+      showsVerticalScrollIndicator=true style=styles##disclaimerText>
+      <WertDisclaimerText />
+    </DocumentContext.ScrollView>
+    <View>
+      <View>
+        <CheckboxItem
+          style=styles##checkboxLabel
+          label=I18n.Disclaimer.agreement_checkbox
+          labelFontWeightStyle=`regular
+          labelStyle={Style.style(
+            ~color=Typography.getColor(`highEmphasis, theme),
+            (),
+          )}
+          value={form.values.read}
+          handleChange={form.handleChange(Read)}
         />
-        <Buttons.Form onPress={_ => action()} text=actionText ?loading />
       </View>
-    </ModalTemplate.Dialog>
-  </ModalAction>;
+      <Buttons.SubmitPrimary
+        text=I18n.Btn.disclaimer_agree
+        onPress={_ => form.submit()}
+        disabledLook={!formFieldsAreValids}
+        style=FormStyles.formSubmit
+      />
+    </View>
+  </>;
 };

@@ -69,9 +69,116 @@ module DisclaimerModal = {
 module Homepage = {
   type state =
     | Onboarding
+    | BuyTez(string)
     | AddAccountModal
     | Dashboard;
 };
+
+module BuyTezView = {
+  module IFrame = {
+    type props = {
+      src: string,
+      width: string,
+      height: string,
+      allow: string,
+      frameBorder: string,
+    };
+
+    [@bs.val] [@bs.scope "React"]
+    external createElement: ([@bs.as "iframe"] _, props) => React.element =
+      "createElement";
+
+    [@react.component]
+    let make = (~src) => {
+      createElement({
+        src,
+        width: "100%",
+        height: "100%",
+        allow: "camera *; microphone *",
+        frameBorder: "0",
+      });
+    };
+  };
+
+  [@react.component]
+  let make = (~src, ~onClose) => {
+    <Page>
+      <Page.Header
+        left={
+          <Typography.Body1
+            colorStyle=`error
+            style=Style.(style(~marginTop=10.->dp, ~textAlign=`center, ()))>
+            I18n.Expl.external_service->React.string
+          </Typography.Body1>
+        }
+        right={<CloseButton onClose />}>
+        ReasonReact.null
+      </Page.Header>
+      <IFrame src />
+    </Page>;
+  };
+};
+
+module SelectedAccountView = {
+  [@react.component]
+  let make = (~children) => {
+    let selectedAccount = StoreContext.SelectedAccount.useGetAtInit();
+
+    selectedAccount->ReactUtils.mapOpt(account => {children(account)});
+  };
+};
+
+module Dashboard = {
+  [@react.component]
+  let make = (~account, ~route: Routes.t, ~showBuyTez, ~setMainPage) => {
+    let (accountsViewMode, setAccountsViewMode) =
+      React.useState(_ => AccountsView.Mode.Simple);
+
+    <>
+      {switch (route) {
+       | Accounts =>
+         <AccountsView
+           mode=accountsViewMode
+           setMode=setAccountsViewMode
+           showBuyTez
+           showOnboarding={() => setMainPage(_ => Homepage.AddAccountModal)}
+         />
+       | Nft => <NftView account />
+       | Operations => <OperationsView account />
+       | AddressBook => <AddressBookView />
+       | Delegations => <DelegationsView />
+       | Tokens => <TokensView />
+       | Settings => <SettingsView />
+       | Logs => <LogsView />
+       | NotFound =>
+         <View>
+           <Typography.Body1> I18n.error404->React.string </Typography.Body1>
+         </View>
+       }}
+    </>;
+  };
+};
+
+let shouldDisplayNavbar =
+    (
+      ~accountsRequest:
+         Umami.ApiRequest.t(Umami.PublicKeyHash.Map.map(Umami.Account.t)),
+      ~hasAccount,
+      ~mainPageState: Homepage.state,
+    ) =>
+  switch (accountsRequest) {
+  | Done(_) when !hasAccount => false
+  | NotAsked => false
+  | Loading(None) => false
+  | Loading(Some(_)) => true
+  | Done(_) =>
+    switch (mainPageState) {
+    | Onboarding
+    | AddAccountModal => false
+    | BuyTez(_) => false
+    | Dashboard => true
+    }
+  };
 
 module AppView = {
   [@react.component]
@@ -79,55 +186,39 @@ module AppView = {
     let url = ReasonReactRouter.useUrl();
     let route = Routes.match(url);
 
-    let accounts = StoreContext.Accounts.useGetAll();
+    let selectedAccount = StoreContext.SelectedAccount.useGetAtInit();
     let accountsRequest = StoreContext.Accounts.useRequest();
     let eulaSignature = StoreContext.useEulaSignature();
     let setEulaSignature = StoreContext.setEulaSignature();
 
-    let onSign = needSign => setEulaSignature(_ => needSign);
-    let (accountsViewMode, setAccountsViewMode) =
-      React.useState(_ => AccountsView.Mode.Simple);
+    let hasAccount = selectedAccount != None;
 
-    let (onboardingState, setOnboardingState) =
-      React.useState(_ =>
-        switch (accountsRequest) {
-        | Done(_) when accounts->PublicKeyHash.Map.size <= 0 => Homepage.Onboarding
-        | NotAsked
-        | Loading(None)
-        | Loading(Some(_))
-        | Done(_) => Dashboard
-        }
-      );
+    let onSign = needSign => setEulaSignature(_ => needSign);
+
+    let (mainPageState, setMainPage) =
+      React.useState(_ => Homepage.Dashboard);
 
     React.useLayoutEffect1(
       () =>
         switch (accountsRequest) {
-        | Done(_) when accounts->PublicKeyHash.Map.size <= 0 =>
-          setOnboardingState(_ => Onboarding);
+        | Done(_) when !hasAccount =>
+          setMainPage(_ => Onboarding);
           None;
         | _ =>
-          setOnboardingState(_ => Dashboard);
+          setMainPage(_ => Dashboard);
           None;
         },
       [|accountsRequest|],
     );
 
-    let displayNavbar = {
-      switch (accountsRequest) {
-      | Done(_) when accounts->PublicKeyHash.Map.size <= 0 => false
-      | NotAsked => false
-      | Loading(None) => false
-      | Loading(Some(_)) => true
-      | Done(_) =>
-        switch (onboardingState) {
-        | Onboarding
-        | AddAccountModal => false
-        | Dashboard => true
-        }
-      };
-    };
-
     let theme = ThemeContext.useTheme();
+
+    let displayNavbar =
+      shouldDisplayNavbar(~accountsRequest, ~hasAccount, ~mainPageState);
+
+    let handleCloseBuyTezView = _ => {
+      setMainPage(_ => Dashboard);
+    };
 
     <DocumentContext>
       <View
@@ -141,40 +232,32 @@ module AppView = {
         {eulaSignature
            ? <DisclaimerModal onSign />
            : <View style=styles##main>
-               {displayNavbar ? <NavBar route /> : <NavBar.Empty />}
+               {switch (selectedAccount) {
+                | Some(account) when displayNavbar => <NavBar account route />
+                | Some(_)
+                | None => <NavBar.Empty />
+                }}
                <View style=styles##content>
-                 {switch (onboardingState) {
+                 {switch (mainPageState) {
                   | Onboarding => <OnboardingView />
                   | AddAccountModal =>
                     <OnboardingView
-                      onClose={_ => setOnboardingState(_ => Dashboard)}
+                      onClose={_ => setMainPage(_ => Dashboard)}
                     />
+                  | BuyTez(src) =>
+                    <BuyTezView src onClose=handleCloseBuyTezView />
                   | Dashboard =>
-                    <>
-                      {switch (route) {
-                       | Accounts =>
-                         <AccountsView
-                           mode=accountsViewMode
-                           setMode=setAccountsViewMode
-                           showOnboarding={() =>
-                             setOnboardingState(_ => AddAccountModal)
-                           }
-                         />
-                       | Nft => <NftView />
-                       | Operations => <OperationsView />
-                       | AddressBook => <AddressBookView />
-                       | Delegations => <DelegationsView />
-                       | Tokens => <TokensView />
-                       | Settings => <SettingsView />
-                       | Logs => <LogsView />
-                       | NotFound =>
-                         <View>
-                           <Typography.Body1>
-                             I18n.t#error404->React.string
-                           </Typography.Body1>
-                         </View>
-                       }}
-                    </>
+                    <SelectedAccountView>
+                      {(
+                         account =>
+                           <Dashboard
+                             account
+                             showBuyTez={url => setMainPage(_ => BuyTez(url))}
+                             route
+                             setMainPage
+                           />
+                       )}
+                    </SelectedAccountView>
                   }}
                </View>
              </View>}
@@ -186,10 +269,17 @@ module AppView = {
 [@react.component]
 let make = () => {
   <LogsContext>
-    <ConfigContext>
-      <ThemeContext>
-        <StoreContext> <AppView /> <BeaconConnectRequest /> </StoreContext>
-      </ThemeContext>
-    </ConfigContext>
+    <ConfigFileContext>
+      <ConfigContext>
+        <ThemeContext>
+          <StoreContext>
+            <AppView />
+            <SelectedAccountView>
+              {account => <BeaconConnectRequest account />}
+            </SelectedAccountView>
+          </StoreContext>
+        </ThemeContext>
+      </ConfigContext>
+    </ConfigFileContext>
   </LogsContext>;
 };

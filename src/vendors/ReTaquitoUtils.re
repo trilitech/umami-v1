@@ -33,10 +33,10 @@ let () =
   Errors.registerHandler(
     "Taquito",
     fun
-    | No_prefix_matched => I18n.taquito#no_prefix_matched->Some
-    | Invalid_checksum => I18n.taquito#invalid_checksum->Some
-    | Invalid_length => I18n.taquito#invalid_length->Some
-    | ValidateAPIError(n) => I18n.taquito#api_error(n)->Some
+    | No_prefix_matched => I18n.Taquito.no_prefix_matched->Some
+    | Invalid_checksum => I18n.Taquito.invalid_checksum->Some
+    | Invalid_length => I18n.Taquito.invalid_length->Some
+    | ValidateAPIError(n) => I18n.Taquito.api_error(n)->Some
     | _ => None,
   );
 
@@ -65,3 +65,26 @@ let validateAnyAddress = s =>
 
 [@bs.module "@taquito/utils"]
 external bytes2Char: bytes => string = "bytes2Char";
+
+type prefix = Js.TypedArray2.Uint8Array.t;
+
+type prefixes = {
+  spsk: prefix,
+  sppk: prefix,
+  edpk: prefix,
+  tz1: prefix,
+  tz2: prefix,
+};
+
+[@bs.module "@taquito/utils"] external prefix: prefixes = "prefix";
+
+[@bs.module "@taquito/utils"]
+external b58cencode: (string, prefix) => string = "b58cencode";
+
+[@bs.module "@taquito/utils"]
+external b58cdecode: (string, prefix) => Js.TypedArray2.Uint8Array.t =
+  "b58cdecode";
+
+[@bs.module "@taquito/utils"]
+external b58cencodeArray: (Js.TypedArray2.Uint8Array.t, prefix) => string =
+  "b58cencode";

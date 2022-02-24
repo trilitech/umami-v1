@@ -32,32 +32,60 @@ type Errors.t +=
   | CannotParseTokenAmount(ReBigNumber.t, int, int)
   | CannotParseTezAmount(ReBigNumber.t, int, int)
   | FA1_2InvalidTokenId(PublicKeyHash.t)
-  | FA2InvalidTokenId(PublicKeyHash.t);
+  | FA2InvalidTokenId(PublicKeyHash.t)
+  | ContractCallsNotHandled;
 
 let () =
   Errors.registerHandler(
     "CSVEncoding",
     fun
-    | NoRows => I18n.csv#no_rows->Some
+    | NoRows => I18n.Csv.no_rows->Some
     | CannotParseTokenAmount(v, row, col) =>
-      I18n.csv#cannot_parse_token_amount(v, row + 1, col + 1)->Some
+      I18n.Csv.cannot_parse_token_amount(v, row + 1, col + 1)->Some
     | CannotParseTezAmount(v, row, col) =>
-      I18n.csv#cannot_parse_tez_amount(v, row + 1, col + 1)->Some
-    | UnknownToken(s, id) => I18n.csv#unknown_token((s :> string), id)->Some
+      I18n.Csv.cannot_parse_tez_amount(v, row + 1, col + 1)->Some
+    | UnknownToken(s, id) => I18n.Csv.unknown_token((s :> string), id)->Some
     | FA1_2InvalidTokenId(pkh) =>
-      I18n.csv#fa1_2_invalid_token_id((pkh :> string))->Some
+      I18n.Csv.fa1_2_invalid_token_id((pkh :> string))->Some
     | FA2InvalidTokenId(pkh) =>
-      I18n.csv#fa2_invalid_token_id((pkh :> string))->Some
+      I18n.Csv.fa2_invalid_token_id((pkh :> string))->Some
+    | ContractCallsNotHandled => I18n.Csv.contract_calls_not_handled->Some
     | _ => None,
   );
 
 type t = list(Transfer.elt);
 
 let addr = Encodings.custom(~conv=PublicKeyHash.buildImplicit);
-let token = Encodings.custom(~conv=PublicKeyHash.buildContract);
+let contract = Encodings.custom(~conv=PublicKeyHash.buildContract);
+let michelson =
+  Encodings.custom(
+    ~conv=ProtocolOptions.TransactionParameters.MichelineMichelsonV1Expression.parseMicheline,
+  );
 
-let rowEncoding =
-  Encodings.(mkRow(tup4(addr, number, opt(token), opt(number))));
+type token = (PublicKeyHash.t, option(Umami.ReBigNumber.t));
+
+type transfer = (
+  (PublicKeyHash.t, ReBigNumber.t),
+  CSVParser.Encodings.or_(token, unit),
+);
+
+type contractCall = (
+  PublicKeyHash.t,
+  string,
+  ReTaquitoParser.t,
+  option(ReBigNumber.t),
+);
+
+let token: Encodings.row_repr(token) =
+  Encodings.(tup2(contract, opt(number)));
+
+let transfer: Encodings.row_repr(transfer) =
+  Encodings.(merge_rows(tup2(addr, number), or_(token, null)));
+
+let contractCall: Encodings.row_repr(contractCall) =
+  Encodings.(tup4(contract, string, michelson, opt(number)));
+
+let rowEncoding = Encodings.(or_(transfer, contractCall)->mkRow);
 
 let handleTezRow = (index, destination, amount) =>
   amount
@@ -68,10 +96,14 @@ let handleTezRow = (index, destination, amount) =>
       Transfer.makeSingleTezTransferElt(~destination, ~amount, ())
     );
 
-let checkTokenId = (tokenId, (token: TokenRepr.t, _)) =>
+let checkTokenId = (tokenId, (token: TokenRepr.t, registered)) =>
   switch (token.kind, tokenId) {
   | (FA1_2, Some(_)) => Error(FA1_2InvalidTokenId(token.address))
   | (FA2(_), None) => Error(FA2InvalidTokenId(token.address))
+  | _ when !registered =>
+    Error(
+      UnknownToken(token.address, tokenId->Option.map(ReBigNumber.toInt)),
+    )
   | _ => Ok(token)
   };
 
@@ -79,7 +111,7 @@ let handleTokenRow =
     (tokens, index, destination, amount, token: PublicKeyHash.t, tokenId) => {
   let%Res token =
     tokens
-    ->TokensLibrary.WithBalance.getFullToken(
+    ->TokensLibrary.WithRegistration.getFullToken(
         token,
         tokenId->Option.map(ReBigNumber.toInt)->Option.getWithDefault(0),
       )
@@ -98,17 +130,19 @@ let handleTokenRow =
 
 let handleRow = (tokens, index, row) =>
   switch (row) {
-  | (destination, amount, None, _) =>
+  | `Left((destination, amount), `Right ()) =>
     handleTezRow(index, destination, amount)
-  | (destination, amount, Some(token), tokenId) =>
+  | `Left((destination, amount), `Left(token, tokenId)) =>
     handleTokenRow(tokens, index, destination, amount, token, tokenId)
+  | `Right(_) => Error(ContractCallsNotHandled)
   };
 
 let handleCSV = (rows, tokens) =>
   rows->List.mapWithIndex(handleRow(tokens))->Result.collect;
 
 let parseCSV = (content, ~tokens) => {
-  let rows = parseCSV(content, rowEncoding);
+  let rows =
+    rowEncoding->Result.flatMap(encoding => parseCSV(content, encoding));
   switch (rows) {
   | Ok([]) => Error(NoRows)
   | Ok(rows) => handleCSV(rows, tokens)

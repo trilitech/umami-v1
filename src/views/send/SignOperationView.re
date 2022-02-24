@@ -46,8 +46,8 @@ type step =
 
 let makeTitle = (~custom=?) =>
   fun
-  | AdvancedOptStep(_) => I18n.label#advanced_options
-  | SummaryStep => custom->Option.getWithDefault(I18n.title#confirmation);
+  | AdvancedOptStep(_) => I18n.Label.advanced_options
+  | SummaryStep => custom->Option.getWithDefault(I18n.Title.confirmation);
 
 let back = ((step, set), f) =>
   switch (step) {
@@ -58,9 +58,8 @@ let back = ((step, set), f) =>
 [@react.component]
 let make =
     (
-      ~subtitle=?,
       ~source: Account.t,
-      ~ledgerState: (option(SigningBlock.LedgerView.state), _),
+      ~state,
       ~signOpStep as (step, setStep),
       ~dryRun,
       ~secondaryButton=?,
@@ -75,13 +74,12 @@ let make =
   let theme = ThemeContext.useTheme();
 
   let subtitle =
-    subtitle->Option.map(((s, hs)) =>
-      switch (source.Account.kind) {
-      | Ledger => hs
-      | Encrypted
-      | Unencrypted => s
-      }
-    );
+    switch (source.Account.kind) {
+    | Ledger => I18n.Expl.hardware_wallet_confirm_operation
+    | Encrypted
+    | Unencrypted => I18n.Expl.confirm_operation
+    | CustomAuth(_) => I18n.Expl.custom_auth_confirm_operation
+    };
 
   let onAdvOptSubmit = (op, dryRun) => {
     setOp(_ => (op, dryRun));
@@ -92,11 +90,11 @@ let make =
   let setAdvancedOptions = i => setStep(_ => AdvancedOptStep(i));
 
   let advancedOptionsDisabled =
-    (
-      switch (fst(ledgerState)) {
+    SigningBlock.(
+      switch (fst(state)) {
+      | Some(WaitForConfirm | Searching | Confirmed) => true
       | None
       | Some(Error(_)) => false
-      | Some(WaitForConfirm | Searching | Confirmed) => true
       }
     )
     || loading;
@@ -104,14 +102,14 @@ let make =
   switch (step) {
   | SummaryStep =>
     <>
-      {subtitle->ReactUtils.mapOpt(s =>
-         <View style=FormStyles.header>
-           <Typography.Overline1> s->React.string </Typography.Overline1>
-         </View>
-       )}
+      <View style=FormStyles.header>
+        <Typography.Overline1> subtitle->React.string </Typography.Overline1>
+      </View>
       {switch (operation) {
        | Delegation(delegation) =>
          <OperationSummaryView.Delegate delegation dryRun />
+       | Origination(origination) =>
+         <OperationSummaryView.Originate origination dryRun />
        | Transaction(transfer) =>
          <OperationSummaryView.Transactions
            transfer
@@ -123,7 +121,7 @@ let make =
       {<Buttons.RightArrowButton
          style=styles##advancedOptions
          disabled=advancedOptionsDisabled
-         text=I18n.label#advanced_options
+         text=I18n.Label.advanced_options
          stateIcon={
            Protocol.optionsSet(operation) == Some(true)
              ? <Icons.Edit
@@ -138,7 +136,7 @@ let make =
        ->ReactUtils.onlyWhen(dryRun.simulations->Array.length == 1)}
       <SigningBlock
         accountKind={source.Account.kind}
-        ledgerState
+        state
         ?secondaryButton
         loading
         sendOperation={sendOperation(~operation)}

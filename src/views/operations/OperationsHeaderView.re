@@ -46,49 +46,49 @@ let styles =
   );
 
 [@react.component]
-let make = (~children as right) => {
+let make = (~account, ~children as right) => {
   <View style=styles##header>
     <Page.Header right>
       <Typography.Headline style=Styles.title>
-        I18n.title#operations->React.string
+        I18n.Title.operations->React.string
       </Typography.Headline>
       <BalanceTotal />
-      <AccountElements.Selector.Simple style=styles##selector />
+      <AccountElements.Selector.Simple account style=styles##selector />
     </Page.Header>
     <Table.Head>
       <OperationRowItem.CellType>
         <Typography.Overline3>
-          I18n.t#operation_column_type->React.string
+          I18n.operation_column_type->React.string
         </Typography.Overline3>
       </OperationRowItem.CellType>
       <OperationRowItem.CellAmount>
         <Typography.Overline3>
-          I18n.t#operation_column_amount->React.string
+          I18n.operation_column_amount->React.string
         </Typography.Overline3>
       </OperationRowItem.CellAmount>
       <OperationRowItem.CellFee>
         <Typography.Overline3>
-          I18n.t#operation_column_fee->React.string
+          I18n.operation_column_fee->React.string
         </Typography.Overline3>
       </OperationRowItem.CellFee>
       <OperationRowItem.CellAddress>
         <Typography.Overline3>
-          I18n.t#operation_column_sender->React.string
+          I18n.operation_column_sender->React.string
         </Typography.Overline3>
       </OperationRowItem.CellAddress>
       <OperationRowItem.CellAddress>
         <Typography.Overline3>
-          I18n.t#operation_column_recipient->React.string
+          I18n.operation_column_recipient->React.string
         </Typography.Overline3>
       </OperationRowItem.CellAddress>
       <OperationRowItem.CellDate>
         <Typography.Overline3>
-          I18n.t#operation_column_timestamp->React.string
+          I18n.operation_column_timestamp->React.string
         </Typography.Overline3>
       </OperationRowItem.CellDate>
       <OperationRowItem.CellStatus>
         <Typography.Overline3>
-          I18n.t#operation_column_status->React.string
+          I18n.operation_column_status->React.string
         </Typography.Overline3>
       </OperationRowItem.CellStatus>
       <OperationRowItem.CellAction />

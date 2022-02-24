@@ -137,10 +137,9 @@ module FormPrimary = {
 };
 
 module RightArrowButton = {
-  let styles =
+  let localStyles =
     Style.(
       StyleSheet.create({
-        "chevron": styles##chevronRight,
         "content":
           FormStyles.flexAlignedRow(
             ~justifyContent=`spaceBetween,
@@ -166,8 +165,8 @@ module RightArrowButton = {
     <FormBase
       disabled
       onPress
-      style=Style.(arrayOption([|styleArg, styles##button->Some|]))>
-      <View style=styles##content>
+      style=Style.(arrayOption([|styleArg, localStyles##button->Some|]))>
+      <View style=localStyles##content>
         <Typography.ButtonSecondary
           colorStyle=?{disabled ? Some(`disabled) : None} fontSize=14.>
           text->React.string
@@ -179,7 +178,7 @@ module RightArrowButton = {
               disabled
                 ? theme.colors.iconDisabled : theme.colors.iconMediumEmphasis
             }
-            style={styles##chevron}
+            style={styles##chevronRight}
             size=28.
           />
         </View>

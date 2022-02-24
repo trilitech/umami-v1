@@ -25,20 +25,15 @@
 
 [@react.component]
 let make = (~style=?) => {
-  let (visibleModal, openAction, closeAction) =
-    ModalAction.useModalActionState();
-
-  let onPress = _ => openAction();
+  let (openAction, closeAction, wrapModal) = ModalAction.useModal();
 
   <>
     <BigButton
-      title=I18n.btn#create_secret_new
+      title=I18n.Btn.create_secret_new
       icon=Icons.Add.build
-      onPress
+      onPress={_ => openAction()}
       ?style
     />
-    <ModalAction visible=visibleModal onRequestClose=closeAction>
-      <CreateAccountOnboardingView closeAction />
-    </ModalAction>
+    {wrapModal(<CreateAccountOnboardingView closeAction />)}
   </>;
 };

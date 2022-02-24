@@ -23,6 +23,8 @@
 /*                                                                           */
 /*****************************************************************************/
 
+open Let;
+
 %raw
 "
 var electron = require('electron');
@@ -52,6 +54,14 @@ type plateform = [ | `darwin | `win32 | `linux];
 [@bs.scope "process"] [@bs.val] external plateform: plateform = "plateform";
 
 let isMac = plateform == `darwin;
+
+[@bs.scope "process.env"] [@bs.val]
+external nodeEnv: Js.Nullable.t(string) = "NODE_ENV";
+
+let isDev =
+  nodeEnv
+  ->Js.Nullable.toOption
+  ->Option.mapWithDefault(false, a => a == "development");
 
 [@bs.val] external window: 'a = "window";
 
@@ -98,6 +108,8 @@ let appDir = () => Path.Ops.(Path.getAppData() / (!getName()));
 let homeDir = () => os##homedir();
 
 module File = {
+  open Path.Ops;
+
   let no_such_file = "no such file";
 
   let parseError = (e: RawJsError.t) =>
@@ -254,6 +266,36 @@ module File = {
   let initDirIfNotExists = (path: Path.t) => {
     access(path)
     ->Promise.flatMap(access => access ? Promise.value(Ok()) : mkdir(path));
+  };
+
+  let mkTmpCopy = name => {
+    copy(
+      ~name,
+      ~dest=!(Path.toString(name) ++ ".tmp"),
+      ~mode=CopyMode.copy_ficlone,
+    );
+  };
+
+  let restoreTmpCopy = name => {
+    copy(
+      ~name=!(Path.toString(name) ++ ".tmp"),
+      ~dest=name,
+      ~mode=CopyMode.copy_ficlone,
+    );
+  };
+
+  let rmTmpCopy = name => {
+    rm(~name=!(Path.toString(name) ++ ".tmp"));
+  };
+
+  let protect = (~name, ~transaction) => {
+    let%Await _ = name->mkTmpCopy;
+    let%Ft r = transaction();
+
+    switch (r) {
+    | Ok () => name->rmTmpCopy
+    | Error(e) => name->restoreTmpCopy->Promise.map(_ => Error(e))
+    };
   };
 };
 

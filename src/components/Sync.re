@@ -57,23 +57,19 @@ type state =
 
 module SyncButton = {
   [@react.component]
-  let make = (~state, ~onRefresh, ~onStop) => {
+  let make = (~state, ~onRefresh, ~onStop, ~icon) => {
     let theme = ThemeContext.useTheme();
 
     let (tooltip, icon, onPress) =
       switch (state) {
       | Loading(_) => (
-          I18n.tooltip#stop_sync,
+          I18n.Tooltip.stop_sync,
           Icons.Stop.build,
           (_ => onStop()),
         )
       | Done
       | NotInitiated
-      | Canceled(_) => (
-          I18n.tooltip#sync,
-          Icons.SyncNFT.build,
-          (_ => onRefresh()),
-        )
+      | Canceled(_) => (I18n.Tooltip.sync, icon, (_ => onRefresh()))
       };
 
     <View
@@ -138,9 +134,9 @@ module SyncStatus = {
 };
 
 [@react.component]
-let make = (~state, ~onRefresh, ~onStop) => {
+let make = (~state, ~onRefresh, ~onStop, ~icon) => {
   <View style=Style.(style(~flexDirection=`row, ~marginLeft=13.->dp, ()))>
-    <SyncButton state onRefresh onStop />
+    <SyncButton state onRefresh onStop icon />
     <SyncStatus state />
   </View>;
 };

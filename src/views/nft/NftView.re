@@ -28,17 +28,6 @@ open ReactNative;
 let styles =
   Style.(
     StyleSheet.create({
-      "searchSection":
-        Style.(
-          style(
-            ~maxHeight=44.->dp,
-            ~flexBasis=48.->dp,
-            ~flex=1.,
-            ~flexDirection=`row,
-            ~alignItems=`center,
-            (),
-          )
-        ),
       "listContent":
         style(
           ~flex=1.,
@@ -47,7 +36,6 @@ let styles =
           ~paddingHorizontal=LayoutConst.pagePaddingHorizontal->dp,
           (),
         ),
-      "searchAndSync": style(~flexDirection=`row, ()),
     })
   );
 
@@ -55,181 +43,169 @@ type mode =
   | Gallery
   | Collection;
 
-module Component = {
-  [@react.component]
-  let make = (~account) => {
-    let (mode, setMode) = React.useState(_ => Gallery);
-    let (syncState, setSyncState) = React.useState(_ => NftSync.NotInitiated);
-    let (search, setSearch) = React.useState(_ => "");
-    let stop = React.useRef(false);
+[@react.component]
+let make = (~account) => {
+  let (mode, setMode) = React.useState(_ => Gallery);
+  let (syncState, setSyncState) = React.useState(_ => Sync.NotInitiated);
+  let (search, setSearch) = React.useState(_ => "");
+  let stop = React.useRef(false);
 
-    let request = fromCache =>
-      TokensApiRequest.{
-        account: account.Account.address,
-        allowHidden: true,
-        numberByAccount: BCD.requestPageSize,
-        fromCache,
-      };
-
-    // will be used to indicate a percentage of NFTs loaded
-    let onTokens = (~total, ~lastToken) => {
-      let percentage =
-        Int.toFloat(lastToken + 1) /. Int.toFloat(total) *. 100.;
-      setSyncState(
-        fun
-        | Canceled(_) => Canceled(percentage)
-        | _ => Loading(percentage),
-      );
-    };
-    let onStop = () => stop.current;
-
-    let (tokensRequest, getTokens) =
-      StoreContext.Tokens.useAccountNFTs(
-        onTokens,
-        onStop,
-        account.Account.address,
-        request(true),
-      );
-
-    let (switchButtonText, icon) =
-      switch (mode) {
-      | Gallery => (I18n.btn#collected, Icons.Collection.build)
-      | Collection => (I18n.btn#gallery, Icons.Gallery.build)
-      };
-
-    let headline =
-      switch (mode) {
-      | Gallery => I18n.title#gallery
-      | Collection => I18n.title#collected
-      };
-
-    let tokens =
-      switch (tokensRequest) {
-      | Done(Ok(`Cached(tokens) | `Fetched(tokens, _)), _)
-      | Loading(Some(`Cached(tokens) | `Fetched(tokens, _))) => tokens
-      | _ => PublicKeyHash.Map.empty
-      };
-
-    let loadToCanceled = () =>
-      setSyncState(
-        fun
-        | Loading(percentage) => Canceled(percentage)
-        | _ => NotInitiated,
-      );
-    let loadToDone = () =>
-      setSyncState(
-        fun
-        | Loading(_) => Done
-        | state => state,
-      );
-
-    React.useEffect1(
-      () =>
-        switch (tokensRequest) {
-        | Done(Ok(`Fetched(_, _)), _) =>
-          loadToDone();
-          stop.current = false;
-          None;
-
-        | Done(Ok(`Cached(_)), _) =>
-          setSyncState(_ => NotInitiated);
-          None;
-
-        | Done(Error(_), _) =>
-          loadToCanceled();
-          None;
-
-        | _ => None
+  let request = fromCache =>
+    TokensApiRequest.{
+      request:
+        NFT.{
+          account: account.Account.address,
+          allowHidden: true,
+          numberByAccount: BCD.requestPageSize,
         },
-      [|tokensRequest|],
+      fromCache,
+    };
+
+  // will be used to indicate a percentage of NFTs loaded
+  let onTokens = (~total, ~lastToken) => {
+    let percentage =
+      Int.toFloat(lastToken + 1) /. Int.toFloat(total) *. 100.;
+    setSyncState(
+      fun
+      | Canceled(_) => Canceled(percentage)
+      | _ => Loading(percentage),
+    );
+  };
+  let onStop = () => stop.current;
+
+  let (tokensRequest, getTokens) =
+    StoreContext.Tokens.useAccountNFTs(
+      onTokens,
+      onStop,
+      account.Account.address,
+      request(true),
     );
 
-    let tokens =
-      React.useMemo2(
-        () => {
-          let searched = search->Js.String.toLocaleLowerCase;
-          tokens->TokensLibrary.Generic.keepTokens((_, _, (token, _)) =>
-            token
-            ->TokensLibrary.Token.name
-            ->Option.mapWithDefault(false, name =>
-                name
-                ->Js.String.toLocaleLowerCase
-                ->Js.String2.includes(searched)
-              )
-          );
-        },
-        (search, tokens),
-      );
-
-    let onRefresh = () => {
-      setSyncState(_ => Loading(0.));
-      getTokens(request(false))->ignore;
+  let (switchButtonText, icon) =
+    switch (mode) {
+    | Gallery => (I18n.Btn.collected, Icons.Collection.build)
+    | Collection => (I18n.Btn.gallery, Icons.Gallery.build)
     };
 
-    let onStop = () => {
-      setSyncState(
-        fun
-        | Loading(percentage) => {
-            Canceled(percentage);
-          }
-        | state => state,
-      );
-      stop.current = true;
+  let headline =
+    switch (mode) {
+    | Gallery => I18n.Title.gallery
+    | Collection => I18n.Title.collected
     };
 
-    let nfts =
-      React.useMemo1(
-        () =>
-          TokensLibrary.(
-            tokens->Generic.keepTokens((_, _, (t, _)) =>
-              switch (t) {
-              | Token.Full(_) => true
-              | _ => false
-              }
+  let tokens =
+    switch (tokensRequest) {
+    | Done(Ok(`Cached(tokens) | `Fetched(tokens, _)), _)
+    | Loading(Some(`Cached(tokens) | `Fetched(tokens, _))) => tokens
+    | _ => PublicKeyHash.Map.empty
+    };
+
+  let loadToCanceled = () =>
+    setSyncState(
+      fun
+      | Loading(percentage) => Canceled(percentage)
+      | _ => NotInitiated,
+    );
+  let loadToDone = () =>
+    setSyncState(
+      fun
+      | Loading(_) => Done
+      | state => state,
+    );
+
+  React.useEffect1(
+    () =>
+      switch (tokensRequest) {
+      | Done(Ok(`Fetched(_, _)), _) =>
+        loadToDone();
+        stop.current = false;
+        None;
+
+      | Done(Ok(`Cached(_)), _) =>
+        setSyncState(_ => NotInitiated);
+        None;
+
+      | Done(Error(_), _) =>
+        loadToCanceled();
+        None;
+
+      | _ => None
+      },
+    [|tokensRequest|],
+  );
+
+  let tokens =
+    React.useMemo2(
+      () => {
+        let searched = search->Js.String.toLocaleLowerCase;
+        tokens->TokensLibrary.Generic.keepTokens((_, _, (token, _)) =>
+          token
+          ->TokensLibrary.Token.name
+          ->Option.mapWithDefault(false, name =>
+              name->Js.String.toLocaleLowerCase->Js.String2.includes(searched)
             )
-          ),
-        [|tokens|],
-      );
+        );
+      },
+      (search, tokens),
+    );
 
-    <View style={styles##listContent}>
-      <NftHeaderView headline>
-        <ButtonAction
-          style={Style.style(~marginTop="10px", ())}
-          icon
-          text=switchButtonText
-          onPress={_ =>
-            setMode(
-              fun
-              | Gallery => Collection
-              | Collection => Gallery,
-            )
-          }
-        />
-      </NftHeaderView>
-      <View style={styles##searchAndSync}>
-        <ThemedTextInput
-          style=styles##searchSection
-          icon=Icons.Search.build
-          value=search
-          onValueChange={value => setSearch(_ => value)}
-          placeholder=I18n.input_placeholder#search_for_nft
-        />
-        <NftSync onRefresh onStop state=syncState />
-      </View>
-      {switch (mode) {
-       | Gallery => <NftGalleryView nfts />
-       | Collection => <NftCollectionView account nfts />
-       }}
-    </View>;
+  let onRefresh = () => {
+    setSyncState(_ => Loading(0.));
+    getTokens(request(false))->ignore;
   };
-};
 
-[@react.component]
-let make = () => {
-  let account = StoreContext.SelectedAccount.useGet();
-
-  switch (account) {
-  | Some(account) => <Component account />
-  | None => <NftEmptyView />
+  let onStop = () => {
+    setSyncState(
+      fun
+      | Loading(percentage) => {
+          Canceled(percentage);
+        }
+      | state => state,
+    );
+    stop.current = true;
   };
+
+  let nfts =
+    React.useMemo1(
+      () =>
+        TokensLibrary.(
+          tokens->Generic.keepTokens((_, _, (t, _)) =>
+            switch (t) {
+            | Token.Full(_) => true
+            | _ => false
+            }
+          )
+        ),
+      [|tokens|],
+    );
+
+  <View style={styles##listContent}>
+    <NftHeaderView account headline>
+      <ButtonAction
+        style={Style.style(~marginTop="10px", ())}
+        icon
+        text=switchButtonText
+        onPress={_ =>
+          setMode(
+            fun
+            | Gallery => Collection
+            | Collection => Gallery,
+          )
+        }
+      />
+    </NftHeaderView>
+    <SearchAndSync
+      value=search
+      onValueChange={value => setSearch(_ => value)}
+      placeholder=I18n.Input_placeholder.search_for_nft
+      onRefresh
+      onStop
+      syncState
+      syncIcon=Icons.SyncNFT.build
+    />
+    {switch (mode) {
+     | Gallery => <NftGalleryView account nfts />
+     | Collection => <NftCollectionView account nfts />
+     }}
+  </View>;
 };

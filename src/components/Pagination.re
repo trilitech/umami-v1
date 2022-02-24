@@ -18,8 +18,7 @@ let styles =
           ~flex=1.,
           ~paddingTop=4.->dp,
           ~paddingBottom=LayoutConst.pagePaddingVertical->dp,
-          ~paddingHorizontal=
-            LayoutConst.pagePaddingHorizontalWithScrollbar->dp,
+          ~marginHorizontal=LayoutConst.pagePaddingHorizontal->dp,
           (),
         ),
       "marginLeft": style(~marginLeft="10px", ()),

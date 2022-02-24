@@ -53,14 +53,14 @@ let styles =
 let isConfirmPassword = (values: StateLenses.state) => {
   let fieldState: ReSchema.fieldState =
     values.confirmPassword == values.password
-      ? Valid : Error(I18n.form_input_error#confirm_password);
+      ? Valid : Error(I18n.Form_input_error.confirm_password);
   fieldState;
 };
 
 let passwordLengthCheck = (values: StateLenses.state) => {
   let fieldState: ReSchema.fieldState =
     values.password->Js.String.length >= 8
-      ? Valid : Error(I18n.form_input_error#password_length);
+      ? Valid : Error(I18n.Form_input_error.password_length);
   fieldState;
 };
 
@@ -96,11 +96,11 @@ module CreatePasswordView = {
     let formFieldsAreValids =
       FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
 
-    let passwordPlaceholder = I18n.input_placeholder#enter_new_password;
+    let passwordPlaceholder = I18n.Input_placeholder.enter_new_password;
 
     <>
       <FormGroupTextInput
-        label=I18n.label#password
+        label=I18n.Label.password
         value={form.values.password}
         handleChange={form.handleChange(Password)}
         error={form.getFieldError(Field(Password))}
@@ -109,17 +109,17 @@ module CreatePasswordView = {
         secureTextEntry=true
       />
       {<FormGroupTextInput
-         label=I18n.label#confirm_password
+         label=I18n.Label.confirm_password
          value={form.values.confirmPassword}
          handleChange={form.handleChange(ConfirmPassword)}
          error={form.getFieldError(Field(ConfirmPassword))}
-         placeholder=I18n.input_placeholder#confirm_password
+         placeholder=I18n.Input_placeholder.confirm_password
          textContentType=`password
          secureTextEntry=true
        />}
       <View style=FormStyles.verticalFormAction>
         <Buttons.SubmitPrimary
-          text=I18n.btn#finish
+          text=I18n.Btn.finish
           onPress=onSubmit
           loading
           disabledLook={!formFieldsAreValids}
@@ -130,7 +130,8 @@ module CreatePasswordView = {
 };
 
 [@react.component]
-let make = (~mnemonic: array(string), ~derivationPath, ~onSubmit) => {
+let make =
+    (~mnemonic: array(string), ~derivationPath, ~backupFile, ~onSubmit) => {
   let secrets = StoreContext.Secrets.useGetAll();
 
   let existingNonLedgerSecretsCount =
@@ -150,6 +151,7 @@ let make = (~mnemonic: array(string), ~derivationPath, ~onSubmit) => {
         mnemonic,
         derivationPath,
         password,
+        backupFile,
       };
 
     createSecretWithMnemonic(secret)->Promise.tapOk(_ => {onSubmit()});

@@ -29,6 +29,7 @@ let styles =
   Style.(
     StyleSheet.create({
       "formGroup": style(~marginBottom=0.->dp, ()),
+      "header": style(~flexDirection=`row, ~justifyContent=`spaceBetween, ~marginVertical=4.->dp, ()),
       "label": style(~marginVertical=4.->dp, ()),
       "decoration":
         style(
@@ -67,11 +68,15 @@ let make =
       ~style as styleFromProp: option(ReactNative.Style.t)=?,
       ~fieldStyle=?,
       ~tooltipIcon=?,
+      ~rightView=?,
     ) => {
   let hasError = error->Option.isSome;
   <FormGroup
     style=Style.(arrayOption([|Some(styles##formGroup), styleFromProp|]))>
-    <FormLabel label hasError style=styles##label ?tooltipIcon />
+    <View style=styles##header>
+      <FormLabel label hasError ?tooltipIcon />
+      {rightView->ReactUtils.mapOpt(view => view)}
+    </View>
     <View>
       <ThemedTextInput
         value

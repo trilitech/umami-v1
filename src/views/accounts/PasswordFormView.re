@@ -42,7 +42,7 @@ let usePasswordForm = submitPassword => {
               fun
               | Errors.WrongPassword
               | SecureStorage.Cipher.DecryptError =>
-                raiseSubmitFailed(Some(I18n.form_input_error#wrong_password))
+                raiseSubmitFailed(Some(I18n.Form_input_error.wrong_password))
               | _ => (),
             );
 
@@ -61,7 +61,7 @@ module PasswordField = {
   [@react.component]
   let make = (~form: PasswordForm.api) => {
     <FormGroupTextInput
-      label=I18n.label#password
+      label=I18n.Label.password
       value={form.values.password}
       handleChange={form.handleChange(Password)}
       error={
@@ -87,7 +87,7 @@ let make =
     <PasswordField form />
     <View style=FormStyles.verticalFormAction>
       <Buttons.SubmitPrimary
-        text=I18n.btn#confirm
+        text=I18n.Btn.confirm
         onPress={_event => {form.submit()}}
         loading
         disabledLook={!formFieldsAreValids}

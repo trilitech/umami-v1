@@ -56,7 +56,7 @@ module AddCustomNetworkButton = {
       <View style=styles##button>
         <ButtonAction
           onPress
-          text=I18n.btn#add_custom_network
+          text=I18n.Btn.add_custom_network
           icon=Icons.Add.build
         />
       </View>
@@ -79,7 +79,7 @@ module CustomNetworkEditButton = {
       <IconButton
         tooltip=(
           "custom_network_edit" ++ network.name,
-          I18n.tooltip#custom_network_edit,
+          I18n.Tooltip.custom_network_edit,
         )
         icon=Icons.Edit.build
         onPress
@@ -103,7 +103,7 @@ module NetworkInfoButton = {
       <IconButton
         tooltip=(
           "network_info" ++ network.name,
-          I18n.tooltip#see_network_info,
+          I18n.Tooltip.see_network_info,
         )
         icon=Icons.Show.build
         onPress
@@ -187,9 +187,8 @@ module CustomNetworkItem = {
 
     let onPressConfirmDelete = () => {
       deleteCustomNetwork(network);
-      addToast(
-        Logs.info(~origin=Logs.Account, I18n.t#custom_network_deleted),
-      );
+      addToast(Logs.info(~origin=Logs.Account, I18n.custom_network_deleted));
+      Promise.ok();
     };
     <>
       <View style=styles##spaceBetweenRow>
@@ -220,9 +219,9 @@ module CustomNetworkItem = {
           <DeleteButton.IconButton
             tooltip=(
               "custom_network_delete" ++ network.name,
-              I18n.tooltip#custom_network_delete,
+              I18n.Tooltip.custom_network_delete,
             )
-            modalTitle=I18n.title#delete_custom_network
+            modalTitle=I18n.Title.delete_custom_network
             onPressConfirmDelete
             request=ApiRequest.NotAsked
           />
@@ -295,11 +294,11 @@ let make = () => {
   };
 
   <Block
-    title=I18n.settings#chain_title actionButton={<AddCustomNetworkButton />}>
+    title=I18n.Settings.chain_title actionButton={<AddCustomNetworkButton />}>
     <View style=styles##column>
-      {<Header.Notice style=styles##notice text=I18n.expl#network_disconnect>
+      {<Header.Notice style=styles##notice text=I18n.Expl.network_disconnect>
          <Header.Notice.Button
-           text=I18n.btn#goto_doc
+           text=I18n.Btn.goto_doc
            onPress={_ =>
              System.openExternal(
                "https://gitlab.com/nomadic-labs/umami-wallet/umami/-/wikis/doc/Custom%20Network%20Creation",

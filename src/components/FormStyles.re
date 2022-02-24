@@ -53,7 +53,8 @@ let verticalFormAction =
     style(~flexDirection=`column, ~width=100.->pct, ()),
   ]);
 
-let header = style(~marginBottom=20.->dp, ~textAlign=`center, ());
+let header = style(~marginBottom=24.->dp, ~textAlign=`center, ());
+let headerMarginBottom8 = style(~marginBottom=8.->dp, ~textAlign=`center, ());
 let headerWithoutMarginBottom =
   style(~marginBottom=4.->dp, ~textAlign=`center, ());
 let subtitle = style(~marginTop=10.->dp, ());
@@ -110,3 +111,5 @@ let selector =
       "button": style(~flex=1., ~paddingVertical=11.->dp, ()),
     })
   );
+
+let accountIcon = style(~justifyContent=`center, ~paddingRight=16.->dp, ());

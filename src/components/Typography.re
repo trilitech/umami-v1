@@ -271,11 +271,12 @@ module Address = {
         ~colorStyle=`highEmphasis,
         ~numberOfLines: option(int)=?,
         ~style as styleProp: option(ReactNative.Style.t)=?,
+        ~fontSize=14.,
         ~children,
       ) => {
     <Base
       colorStyle
-      fontSize=14.
+      fontSize
       fontWeightStyle=`extraLight
       style=Style.(arrayOption([|Some(styles##address), styleProp|]))
       ?numberOfLines>

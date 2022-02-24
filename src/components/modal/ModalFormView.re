@@ -40,9 +40,9 @@ type closing =
 
 let confirm =
     (
-      ~title=I18n.title#confirm_cancel,
+      ~title=I18n.Title.confirm_cancel,
       ~subtitle=?,
-      ~cancelText=I18n.btn#go_back,
+      ~cancelText=I18n.Btn.go_back,
       ~actionText,
       action,
     ) =>
@@ -58,39 +58,42 @@ module BackButton = {
 };
 
 module ConfirmCloseModal = {
-  [@react.component]
-  let make = (~confirm, ~closeAction, ~visible) => {
+  let useModal = (~confirm) => {
     let {title, subtitle, cancelText, actionText, action} = confirm;
-    <ModalDialogConfirm
-      visible
-      closeAction
-      action={() => {
-        closeAction();
-        action();
-      }}
-      title
-      ?subtitle
-      cancelText
-      actionText
-    />;
+
+    ModalDialogConfirm.useModal(
+      ~action=
+        () => {
+          action();
+          Promise.ok();
+        },
+      ~title,
+      ~subtitle?,
+      ~cancelText,
+      ~actionText,
+      (),
+    );
   };
 };
 
 module CloseButton = {
   [@react.component]
   let make = (~closing) => {
-    let (visibleModal, openAction, closeAction) =
-      ModalAction.useModalActionState();
+    let modal = ConfirmCloseModal.useModal;
 
-    let (confirm, disabled, tooltip) =
+    let (confirm, disabled, tooltip, openAction) =
       switch (closing) {
-      | Deny(msg) => (React.null, true, Some(("close_button", msg)))
-      | Close(_) => (React.null, false, None)
-      | Confirm(confirm) => (
-          <ConfirmCloseModal confirm visible=visibleModal closeAction />,
-          false,
-          None,
+      | Deny(msg) => (
+          React.null,
+          true,
+          Some(("close_button", msg)),
+          (() => ()),
         )
+      | Close(_) => (React.null, false, None, (() => ()))
+      | Confirm(confirm) =>
+        let (openAction, _, modal) = modal(~confirm);
+
+        (modal(), false, None, openAction);
       };
 
     let onPress = _ => {
@@ -138,6 +141,7 @@ let make =
     (
       ~closing=?,
       ~title=?,
+      ~titleStyle=FormStyles.header,
       ~headerActionButton=?,
       ~back=?,
       ~loading=?,
@@ -161,7 +165,7 @@ let make =
   let headerCenter = {
     title->Option.map(title =>
       <View style=?styleWithButton>
-        <Typography.Headline style=FormStyles.header>
+        <Typography.Headline style=titleStyle>
           title->React.string
         </Typography.Headline>
         headerActionButton->ReactUtils.opt

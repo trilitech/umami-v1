@@ -117,7 +117,7 @@ module BakerInputTypeToogle = {
                  style(~color=theme.colors.textPrimary, ()),
                |])
              )>
-             I18n.btn#custom->React.string
+             I18n.Btn.custom->React.string
            </Typography.ButtonSecondary>
          </>
        | Text =>
@@ -130,7 +130,7 @@ module BakerInputTypeToogle = {
                  style(~color=theme.colors.textPrimary, ()),
                |])
              )>
-             I18n.btn#see_list->React.string
+             I18n.Btn.see_list->React.string
            </Typography.ButtonSecondary>
          </>
        }}

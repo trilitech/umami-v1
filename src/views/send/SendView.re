@@ -49,9 +49,18 @@ module FormGroupAmountWithTokenSelector = {
         ~setSelectedToken,
         ~token: option(Token.t)=?,
       ) => {
-    let tokens = StoreContext.Tokens.useGetAll();
+    let tokens = StoreContext.Tokens.useGetAllFungible();
 
-    let displaySelector = tokens->PublicKeyHash.Map.size > 0;
+    let tokens =
+      React.useMemo1(
+        () =>
+          tokens->TokensLibrary.Generic.keepTokens((_, _, (_, registered)) =>
+            registered
+          ),
+        [|tokens|],
+      );
+
+    let displaySelector = !tokens->TokensLibrary.Contracts.isEmpty;
 
     let decoration =
       switch (displaySelector, token) {
@@ -72,7 +81,7 @@ module FormGroupAmountWithTokenSelector = {
       />
       {<FormGroup style=styles##tokenGroup>
          <FormLabel
-           label=I18n.label#token
+           label=I18n.Label.token
            style=FormGroupTextInput.styles##label
          />
          <TokenSelector
@@ -108,7 +117,7 @@ let stepToString = step =>
   };
 
 module Form = {
-  let defaultInit = (account: option(Account.t)) =>
+  let defaultInit = (account: Account.t) =>
     SendForm.StateLenses.{
       amount: "",
       sender: account,
@@ -121,17 +130,18 @@ module Form = {
       ~schema={
         SendForm.Validation.(
           Schema(
-            custom(values => values.sender->FormUtils.notNone, Sender)
-            + custom(
-                values =>
-                  switch (values.recipient) {
-                  | AnyString(_) =>
-                    Error(I18n.form_input_error#invalid_contract)
-                  | Valid(Alias(_)) => Valid
-                  | Valid(Address(_)) => Valid
-                  },
-                Recipient,
-              )
+            custom(
+              values =>
+                switch (values.recipient) {
+                | AnyString(_) =>
+                  Error(I18n.Form_input_error.invalid_contract)
+                | Temp(_, Pending | NotAsked) => Error("")
+                | Temp(_, Error(s)) => Error(s)
+                | Valid(Alias(_)) => Valid
+                | Valid(Address(_)) => Valid
+                },
+              Recipient,
+            )
             + custom(
                 values => {
                   switch (token) {
@@ -214,8 +224,8 @@ module Form = {
 
       let submitLabel =
         editing
-          ? I18n.btn#update
-          : batchMode ? I18n.btn#add_transaction : I18n.btn#send_submit;
+          ? I18n.Btn.update
+          : batchMode ? I18n.Btn.add_transaction : I18n.Btn.send_submit;
 
       let onSubmit = onSubmitAll->Option.getWithDefault(() => form.submit());
 
@@ -226,14 +236,14 @@ module Form = {
         <ReactFlipToolkit.FlippedView flipId="form">
           <View style=FormStyles.header>
             <Typography.Overline1>
-              I18n.title#send_many_transactions->React.string
+              I18n.Title.send_many_transactions->React.string
             </Typography.Overline1>
             <Typography.Body2 style=FormStyles.subtitle>
-              I18n.expl#send_many_transactions->React.string
+              I18n.Expl.send_many_transactions->React.string
             </Typography.Body2>
           </View>
           <FormGroupAmountWithTokenSelector
-            label=I18n.label#send_amount
+            label=I18n.Label.send_amount
             value={form.values.amount}
             handleChange={form.handleChange(Amount)}
             error={form.getFieldError(Field(Amount))}
@@ -243,15 +253,14 @@ module Form = {
           />
           <FormGroupAccountSelector
             disabled=batchMode
-            label=I18n.label#send_sender
+            label=I18n.Label.send_sender
             value={form.values.sender}
             handleChange={form.handleChange(Sender)}
-            error={form.getFieldError(Field(Sender))}
             ?token
           />
           <FormGroupContactSelector
-            label=I18n.label#send_recipient
-            filterOut={form.values.sender->Option.map(Account.toAlias)}
+            label=I18n.Label.send_recipient
+            filterOut={form.values.sender->Alias.fromAccount->Some}
             aliases
             value={form.values.recipient}
             handleChange={form.handleChange(Recipient)}
@@ -264,13 +273,14 @@ module Form = {
               text=submitLabel
               onPress={_ => onSubmit()}
               loading
-              disabledLook={!formFieldsAreValids}
+              disabled={!formFieldsAreValids}
             />
             {onAddToBatch->ReactUtils.mapOpt(addToBatch =>
                <Buttons.FormSecondary
                  style=FormStyles.formSecondary
-                 text=I18n.btn#start_batch_transaction
+                 text=I18n.Btn.start_batch_transaction
                  onPress={_ => addToBatch()}
+                 disabled={!formFieldsAreValids}
                />
              )}
           </View>
@@ -282,7 +292,7 @@ module Form = {
 
 module EditionView = {
   [@react.component]
-  let make = (~aliases, ~initValues, ~onSubmit, ~index, ~loading) => {
+  let make = (~account, ~aliases, ~initValues, ~onSubmit, ~index, ~loading) => {
     let token =
       switch (initValues.SendForm.amount) {
       | Transfer.Currency.Tez(_) => None
@@ -293,7 +303,7 @@ module EditionView = {
 
     let initValues = initValues->SendForm.toState;
 
-    let form = Form.use(~initValues, None, token, onSubmit(token));
+    let form = Form.use(~initValues, account, token, onSubmit(token));
 
     <Form.View
       tokenState
@@ -307,8 +317,7 @@ module EditionView = {
 };
 
 [@react.component]
-let make = (~closeAction) => {
-  let account = StoreContext.SelectedAccount.useGet();
+let make = (~account, ~closeAction) => {
   let initToken = StoreContext.SelectedToken.useGet();
   let aliasesRequest = StoreContext.Aliases.useRequest();
 
@@ -377,7 +386,7 @@ let make = (~closeAction) => {
       csvRows->List.mapReverse(({destination, amount}) => {
         let formStateValues: SendForm.validState = {
           amount,
-          sender: form.values.sender->FormUtils.Unsafe.getValue,
+          sender: form.values.sender,
           recipient: FormUtils.Alias.Address(destination),
         };
         formStateValues;
@@ -396,7 +405,7 @@ let make = (~closeAction) => {
     List.length(batch) == 1 ? setModalStep(_ => SendStep) : ();
   };
 
-  let (ledger, _) as ledgerState = React.useState(() => None);
+  let (signerState, _) as state = React.useState(() => None);
 
   let (sign, setSign) as signOpStep =
     React.useState(() => SignOperationView.SummaryStep);
@@ -408,16 +417,32 @@ let make = (~closeAction) => {
       switch (
         form.formState,
         modalStep,
-        ledger: option(SigningBlock.LedgerView.state),
+        signerState: option(SigningBlock.state),
       ) {
-      | (_, SigningStep(_, _), Some(WaitForConfirm)) =>
-        ModalFormView.Deny(I18n.tooltip#reject_on_ledger)->Some
+      | (
+          _,
+          SigningStep({source: {kind: Ledger}}, _),
+          Some(WaitForConfirm),
+        ) =>
+        ModalFormView.Deny(I18n.Tooltip.reject_on_ledger)->Some
+
+      | (
+          _,
+          SigningStep({source: {kind: CustomAuth({provider})}}, _),
+          Some(WaitForConfirm),
+        ) =>
+        ModalFormView.Deny(
+          I18n.Tooltip.reject_on_provider(
+            provider->ReCustomAuth.getProviderName,
+          ),
+        )
+        ->Some
 
       | (Pristine, _, _) when batch == [] =>
         ModalFormView.Close(closeAction)->Some
       | (_, SubmittedStep(_), _) => ModalFormView.Close(closeAction)->Some
       | _ =>
-        ModalFormView.confirm(~actionText=I18n.btn#send_cancel, closeAction)
+        ModalFormView.confirm(~actionText=I18n.Btn.send_cancel, closeAction)
         ->Some
       }
     };
@@ -447,22 +472,23 @@ let make = (~closeAction) => {
   let title =
     switch (modalStep) {
     | SendStep
-    | EditStep(_) => Some(I18n.title#send)
-    | BatchStep => Some(I18n.title#batch)
+    | EditStep(_) => Some(I18n.Title.send)
+    | BatchStep => Some(I18n.Title.batch)
     | SigningStep(_, _) => SignOperationView.makeTitle(sign)->Some
     | SubmittedStep(_) => None
     };
 
   <ReactFlipToolkit.Flipper flipKey={modalStep->stepToString}>
     <ReactFlipToolkit.FlippedView flipId="modal">
-      <ModalFormView ?title back ?closing>
+      <ModalFormView
+        ?title back ?closing titleStyle=FormStyles.headerMarginBottom8>
         <ReactFlipToolkit.FlippedView.Inverse inverseFlipId="modal">
           {switch (modalStep) {
            | SubmittedStep(hash) =>
              <SubmittedView
                hash
                onPressCancel
-               submitText=I18n.btn#go_operations
+               submitText=I18n.Btn.go_operations
              />
            | BatchStep =>
              <BatchView
@@ -480,7 +506,14 @@ let make = (~closeAction) => {
              />
            | EditStep(index, initValues) =>
              let onSubmit = form => onEdit(index, form);
-             <EditionView initValues onSubmit index loading=false aliases />;
+             <EditionView
+               account
+               initValues
+               onSubmit
+               index
+               loading=false
+               aliases
+             />;
            | SendStep =>
              let onSubmit = batch != [] ? onAddToBatch : onSubmitAll;
              let onAddToBatch = batch != [] ? None : Some(onAddToBatch);
@@ -495,13 +528,9 @@ let make = (~closeAction) => {
            | SigningStep(transfer, dryRun) =>
              <SignOperationView
                source={transfer.source}
-               ledgerState
+               state
                signOpStep
                dryRun
-               subtitle=(
-                 I18n.expl#confirm_operation,
-                 I18n.expl#hardware_wallet_confirm_operation,
-               )
                operation={Operation.transaction(transfer)}
                sendOperation={sendTransfer(~transfer)}
                loading

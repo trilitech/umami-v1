@@ -73,7 +73,7 @@ let keepNonFormErrors =
 let useDerive =
   ApiRequest.useSetter(
     ~keepError=keepNonFormErrors,
-    ~logOk=_ => I18n.t#account_created,
+    ~logOk=_ => I18n.account_created,
     ~set=
       (~config, {name, index, kind, timeout}) =>
         switch (kind) {
@@ -97,19 +97,49 @@ type createInput = {
   mnemonic: array(string),
   derivationPath: DerivationPath.Pattern.t,
   password: string,
+  backupFile: option(System.Path.t),
 };
 
 let useCreateWithMnemonics =
   ApiRequest.useSetter(
-    ~logOk=_ => I18n.t#account_created,
+    ~logOk=_ => I18n.account_created,
     ~keepError=keepNonFormErrors,
     ~set=
-      (~config, {name, mnemonic, derivationPath, password}) => {
+      (~config, {name, mnemonic, derivationPath, password, backupFile}) => {
+        // The condition assumes there's no backupFile already configured
+        // and one is given explicitely
+        let config = {
+          ...config,
+          backupFile:
+            config.backupFile == None && backupFile != None
+              ? backupFile : config.backupFile,
+        };
         WalletAPI.Accounts.restore(
           ~config,
           ~backupPhrase=mnemonic,
           ~name,
           ~derivationPath,
+          ~password,
+          (),
+        );
+      },
+    ~kind=Logs.Secret,
+  );
+
+type createFromBackupInput = {
+  backupFile: System.Path.t,
+  password: string,
+};
+
+let useCreateFromBackupFile =
+  ApiRequest.useSetter(
+    ~logOk=_ => I18n.account_created,
+    ~keepError=keepNonFormErrors,
+    ~set=
+      (~config, {backupFile, password}) => {
+        WalletAPI.Accounts.restoreFromBackupFile(
+          ~config,
+          ~backupFile,
           ~password,
           (),
         )
@@ -199,7 +229,7 @@ let useMnemonicImportKeys =
 
 let useUpdate =
   ApiRequest.useSetter(
-    ~logOk=_ => I18n.t#secret_updated,
+    ~logOk=_ => I18n.secret_updated,
     ~set=
       (~config, {index, secret}: Secret.derived) => {
         WalletAPI.Accounts.updateSecretAt(~config, secret, index)
@@ -210,7 +240,7 @@ let useUpdate =
 
 let useDelete =
   ApiRequest.useSetter(
-    ~logOk=_ => I18n.t#secret_deleted,
+    ~logOk=_ => I18n.secret_deleted,
     ~set=WalletAPI.Accounts.deleteSecretAt,
     ~kind=Logs.Secret,
   );

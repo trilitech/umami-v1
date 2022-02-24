@@ -26,12 +26,14 @@
 open Let;
 include ApiRequest;
 
-let useLoadMetadata = (pkh, id) => {
+let useLoadMetadata = (cache, pkh, kind) => {
   let keepTaquitoErrors =
     fun
     | TokensAPI.NotFAContract(_)
     | MetadataAPI.NoTzip12Metadata(_) => false
     | _ => true;
+
+  let id = kind->TokenRepr.kindId;
 
   let buildContract = (config: ConfigContext.env) => {
     let toolkit = MetadataAPI.toolkit(config);
@@ -39,9 +41,18 @@ let useLoadMetadata = (pkh, id) => {
     MetadataAPI.Tzip12.read(contract, id);
   };
 
-  let get = (~config, ()) => {
-    buildContract(config);
-  };
+  let get = (~config, ()) =>
+    switch (cache->TokensLibrary.Generic.getToken(pkh, id)) {
+    | Some((t, _)) => Promise.ok(t)
+    | None =>
+      let%AwaitMap metadata = buildContract(config);
+      TokensAPI.metadataToToken(
+        config.network.Network.chain->Network.getChainId,
+        TokenContract.{address: pkh, kind: kind->fromTokenKind},
+        metadata,
+      )
+      ->TokensLibrary.Token.Full;
+    };
 
   let requestState = React.useState(() => ApiRequest.NotAsked);
 

@@ -33,6 +33,7 @@ type t = {
   confirmations: option(int),
   sdkBaseDir: option(System.Path.t),
   customNetworks: list(Network.network),
+  backupFile: option(System.Path.t),
 };
 
 [@bs.val] [@bs.scope "JSON"] external parse: string => t = "parse";
@@ -53,6 +54,7 @@ let dummy = {
   confirmations: None,
   sdkBaseDir: None,
   customNetworks: [],
+  backupFile: None,
 };
 
 module Encode = {
@@ -74,6 +76,7 @@ module Encode = {
         nullable(string, c.sdkBaseDir->Option.map(System.Path.toString)),
       ),
       ("customNetworks", list(Network.Encode.encoder, c.customNetworks)),
+      ("backupFile", nullable(string, c.backupFile->Option.map(System.Path.toString)))
     ]);
 };
 
@@ -110,12 +113,16 @@ module Decode = {
     )
     ->Option.getWithDefault([]);
 
+  let backupFileDecoder = json =>  (json |> optional(field("backupFile", string)))
+    ->Option.map(System.Path.mk);
+
   let decoder = json => {
     network: json |> networkDecoder,
     theme: json |> themeDecoder,
     confirmations: json |> confirmationsDecoder,
     sdkBaseDir: json |> sdkBaseDirDecoder,
     customNetworks: json |> customNetworksDecoder,
+    backupFile: json |> backupFileDecoder,
   };
 };
 
@@ -188,6 +195,7 @@ module Legacy = {
         confirmations: json |> confirmationsDecoder,
         sdkBaseDir: json |> sdkBaseDirDecoder,
         customNetworks: json |> customNetworksLegacyDecoder,
+        backupFile: json |> backupFileDecoder,
       };
 
     let version = Version.mk(1, 2);
@@ -228,6 +236,7 @@ module Legacy = {
       confirmations: json |> confirmationsDecoder,
       sdkBaseDir: json |> sdkBaseDirDecoder,
       customNetworks: json |> customNetworksDecoder,
+      backupFile: json |> backupFileDecoder,
     };
 
     let version = Version.mk(1, 5);

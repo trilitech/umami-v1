@@ -29,6 +29,9 @@ external opKindTransaction: string = "TRANSACTION";
 [@bs.module "@taquito/taquito"] [@bs.scope "OpKind"]
 external opKindDelegation: string = "DELEGATION";
 
+[@bs.module "@taquito/taquito"] [@bs.scope "OpKind"]
+external opKindOrigination: string = "ORIGINATION";
+
 [@bs.module "@taquito/taquito"] [@bs.scope "DEFAULT_FEE"]
 external default_fee_reveal: int = "REVEAL";
 
@@ -61,6 +64,10 @@ module RPCClient = {
   external getManagerKey:
     (t, PublicKeyHash.t) => Js.Promise.t(Js.Nullable.t(managerKeyResult)) =
     "getManagerKey";
+
+  [@bs.send]
+  external getConstants: (t, unit) => Js.Promise.t(constants) =
+    "getConstants";
 };
 
 module Toolkit = {
@@ -80,6 +87,7 @@ module Toolkit = {
 
   include Types.Transfer;
   include Types.Delegate;
+  include Types.Originate;
 
   let prepareTransfer =
       (
@@ -109,6 +117,32 @@ module Toolkit = {
     Types.Delegate.{kind: opKindDelegation, source, delegate, fee};
   };
 
+  let prepareOriginate =
+      (
+        ~source,
+        ~balance=?,
+        ~code,
+        ~storage,
+        ~delegate=?,
+        ~fee=?,
+        ~gasLimit=?,
+        ~storageLimit=?,
+        (),
+      ) => {
+    Types.Originate.{
+      kind: opKindOrigination,
+      source,
+      balance,
+      code,
+      storage,
+      delegate,
+      fee,
+      gasLimit,
+      storageLimit,
+      mutez: Some(true),
+    };
+  };
+
   let makeSendParams = (~amount, ~fee=?, ~gasLimit=?, ~storageLimit=?, ()) => {
     Types.Transfer.{amount, fee, gasLimit, storageLimit, mutez: Some(true)};
   };
@@ -136,6 +170,11 @@ module Toolkit = {
     (tz, PublicKeyHash.t) => Js.Promise.t(Js.Nullable.t(PublicKeyHash.t)) =
     "getDelegate";
 
+  [@bs.send]
+  external originate:
+    (contract, originateParams) => Js.Promise.t(Types.Operation.result) =
+    "originate";
+
   module Batch = {
     include Types.Batch;
 
@@ -155,10 +194,15 @@ module Toolkit = {
     external batch:
       (estimate, array(transferParams)) => Js.Promise.t(array(result)) =
       "batch";
-
+ 
     [@bs.send]
     external batchDelegation:
       (estimate, array(delegateParams)) => Js.Promise.t(array(result)) =
+      "batch";
+
+    [@bs.send]
+    external batchOrigination:
+      (estimate, array(originateParams)) => Js.Promise.t(array(result)) =
       "batch";
 
     [@bs.send]

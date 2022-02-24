@@ -31,11 +31,11 @@ let () =
     "LocalStorage",
     fun
     | MigrationFailed(v) =>
-      I18n.errors#storage_migration_failed(Version.toString(v))->Some
+      I18n.Errors.storage_migration_failed(Version.toString(v))->Some
     | _ => None,
   );
 
-let currentVersion = Version.mk(1, 5);
+let currentVersion = Version.mk(1, 6);
 
 let addMigration = (migrations, version, migration) => {
   migrations->Map.update(
@@ -71,5 +71,9 @@ let init = version => {
       TokenStorage.Legacy.V1_4.mk,
     )
   ->addMigration(ConfigFile.Legacy.V1_5.version, ConfigFile.Legacy.V1_5.mk)
+  ->addMigration(
+      TokenStorage.Legacy.V1_6.version,
+      TokenStorage.Legacy.V1_6.mk,
+    )
   ->applyMigration(version);
 };

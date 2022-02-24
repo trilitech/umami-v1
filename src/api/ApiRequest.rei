@@ -115,6 +115,9 @@ let isDoneOk: t('a) => bool;
    is higher than the delay */
 let isExpired: t('a) => bool;
 
+/* Returns [true] if the ressource has been explicitely expired */
+let isForceExpired: t('a) => bool;
+
 /* Produces an error log side effect if the given futur computes as an error.
    [keep] aims at filtering some errors based on the error value. No error is
    filtered by default */
@@ -135,44 +138,63 @@ let expireCache: t('a) => t('a);
 /* Checks if a ressource should be reloaded based on its current state */
 let conditionToLoad: (t('a), bool) => bool;
 
-/* Builds a future hook using an asynchronous function.
-   The fetching is called manually.
-   Basic block to build [useLoader] and [useSetter] */
-let useGetter:
-  (
-    ~toast: bool=?,
-    ~get: (~config: ConfigContext.env, 'a) => Promise.t('response),
-    ~kind: Logs.origin,
-    ~setRequest: (t('response) => t('response)) => unit,
-    ~keepError: Errors.t => bool=?,
-    unit,
-    'a
-  ) =>
-  Promise.t('response);
+module type DEPS = {
+  let useAddLog: (unit, bool, Umami.Logs.t) => unit;
+  let useConfig: unit => ConfigContext.env;
+  let useRetryNetwork: unit => ConfigContext.retryNetworkType;
+};
 
-/* Builds an auto-reloaded ressource from an asynchronous function */
-let useLoader:
-  (
-    ~get: (~config: ConfigContext.env, 'input) => Promise.t('value),
-    ~condition: 'input => bool=?,
-    ~keepError: Errors.t => bool=?,
-    ~kind: Logs.origin,
-    ~requestState: requestState('value),
-    'input
-  ) =>
-  t('value);
+module Make:
+  (DEPS) =>
+   {
+    /* Builds a future hook using an asynchronous function.
+       The fetching is called manually.
+       Basic block to build [useLoader] and [useSetter] */
+    let useGetter:
+      (
+        ~toast: bool=?,
+        ~get: (~config: ConfigContext.env, 'a) => Promise.t('response),
+        ~kind: Logs.origin,
+        ~setRequest: (t('response) => t('response)) => unit,
+        ~keepError: Errors.t => bool=?,
+        unit,
+        'a
+      ) =>
+      Promise.t('response);
 
-/* Builds a ressource that represents the modification of a distant value
-     defined through the [set] function.
-   */
-let useSetter:
-  (
-    ~logOk: 'a => string=?,
-    ~toast: bool=?,
-    ~sideEffect: 'a => unit=?,
-    ~set: (~config: ConfigContext.env, 'c) => Promise.t('a),
-    ~kind: Logs.origin,
-    ~keepError: Errors.t => bool=?,
-    unit
-  ) =>
-  (t('a), 'c => Promise.t('a));
+    /* Builds an auto-reloaded ressource from an asynchronous function */
+    let useLoader:
+      (
+        ~get: (~config: ConfigContext.env, 'input) => Promise.t('value),
+        ~condition: 'input => bool=?,
+        ~keepError: Errors.t => bool=?,
+        ~kind: Logs.origin,
+        ~requestState: requestState('value),
+        'input
+      ) =>
+      t('value);
+
+    /* Builds a ressource that represents the modification of a distant value
+         defined through the [set] function.
+       */
+    let useSetter:
+      (
+        ~logOk: 'a => string=?,
+        ~toast: bool=?,
+        ~sideEffect: 'a => unit=?,
+        ~set: (~config: ConfigContext.env, 'c) => Promise.t('a),
+        ~kind: Logs.origin,
+        ~keepError: Errors.t => bool=?,
+        unit
+      ) =>
+      (t('a), 'c => Promise.t('a));
+
+    /* Partial [t] printer for debugging purposes */
+    let toString: t(_) => string;
+
+    let eq: (~eq: ('a, 'a) => bool=?, t('a), t('a)) => bool;
+  };
+
+module Impl: DEPS;
+
+include (module type of Make(Impl));

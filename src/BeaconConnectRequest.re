@@ -58,6 +58,14 @@ let checkOnlyOneDelegation =
      );
 };
 
+let checkOnlyOneOrigination =
+    ({operationDetails}: ReBeacon.Message.Request.operationRequest) => {
+  operationDetails->Array.size == 1
+  && operationDetails->Array.every(operationDetail =>
+       operationDetail.kind == `origination
+     );
+};
+
 let useBeaconRequestModalAction = () => {
   let (request, setRequest) = React.useState(_ => None);
   let (visibleModal, openAction, closeAction) =
@@ -90,7 +98,7 @@ let respondWithError = (client, id, errorType) =>
   Promise.async(() => {
     let%Await client =
       client->Promise.fromOption(
-        ~error=Errors.Generic(I18n.errors#beacon_client_not_created),
+        ~error=Errors.Generic(I18n.Errors.beacon_client_not_created),
       );
     let%AwaitMap () =
       client->ReBeacon.WalletClient.respond(
@@ -104,7 +112,7 @@ module ErrorView = {
   let make = (~msg, ~closeModal) => {
     <ModalTemplate.Dialog>
       <Typography.Headline style=FormStyles.header>
-        I18n.title#beacon_error->React.string
+        I18n.Title.beacon_error->React.string
       </Typography.Headline>
       <ScrollView style=styles##container alwaysBounceVertical=false>
         <Typography.Body1 colorStyle=`error style=FormStyles.textAlignCenter>
@@ -112,14 +120,14 @@ module ErrorView = {
         </Typography.Body1>
       </ScrollView>
       <View style=FormStyles.formAction>
-        <Buttons.Form onPress={_ => closeModal()} text=I18n.btn#ok />
+        <Buttons.Form onPress={_ => closeModal()} text=I18n.Btn.ok />
       </View>
     </ModalTemplate.Dialog>;
   };
 };
 
 [@react.component]
-let make = () => {
+let make = (~account) => {
   let settings = ConfigContext.useContent();
   let settingsRef = React.useRef(settings);
 
@@ -165,16 +173,14 @@ let make = () => {
           | PermissionRequest(_) => openModal(Ok(request))
           | SignPayloadRequest(_) => openModal(Ok(request))
           | OperationRequest(r) =>
-            if (r->checkOnlyTransaction) {
-              openModal(request->Ok);
-            } else if (r->checkOnlyOneDelegation) {
+            if (r->checkOnlyTransaction || r->checkOnlyOneDelegation || r->checkOnlyOneOrigination) {
               openModal(request->Ok);
             } else {
               setError(
                 client,
                 r.id,
                 `TRANSACTION_INVALID_ERROR,
-                I18n.errors#beacon_transaction_not_supported,
+                I18n.Errors.beacon_transaction_not_supported,
               );
             }
           | _ => ()
@@ -184,7 +190,7 @@ let make = () => {
             client,
             request->ReBeacon.Message.Request.getId,
             `NETWORK_NOT_SUPPORTED,
-            I18n.errors#beacon_request_network_missmatch,
+            I18n.Errors.beacon_request_network_missmatch,
           );
         };
       | None => ()
@@ -199,7 +205,11 @@ let make = () => {
       {requestData->ReactUtils.mapOpt(
          fun
          | (_, Ok(PermissionRequest(r))) =>
-           <BeaconPermissionView permissionRequest=r closeAction=closeModal />
+           <BeaconPermissionView
+             account
+             permissionRequest=r
+             closeAction=closeModal
+           />
 
          | (Some(sourceAccount), Ok(OperationRequest(r)))
              when r->checkOnlyTransaction =>
@@ -215,6 +225,13 @@ let make = () => {
              sourceAccount
              closeAction=closeModal
            />
+         | (Some(sourceAccount), Ok(OperationRequest(r)))
+             when r->checkOnlyOneOrigination =>
+           <BeaconOperationView.Originate
+             beaconRequest=r
+             sourceAccount
+             closeAction=closeModal
+           />
          | (Some(sourceAccount), Ok(SignPayloadRequest(r))) =>
            <BeaconSignPayloadView
              sourceAccount
@@ -223,9 +240,9 @@ let make = () => {
            />
 
          | (None, Ok(OperationRequest(_) | SignPayloadRequest(_))) =>
-           <ErrorView msg=I18n.errors#beacon_cant_handle closeModal />
+           <ErrorView msg=I18n.Errors.beacon_cant_handle closeModal />
          | (_, Ok(BroadcastRequest(_) | OperationRequest(_))) =>
-           <ErrorView msg=I18n.errors#beacon_cant_handle closeModal />
+           <ErrorView msg=I18n.Errors.beacon_cant_handle closeModal />
          | (_, Error(msg)) => <ErrorView msg closeModal />,
        )}
     </ModalAction>

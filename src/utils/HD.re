@@ -70,7 +70,7 @@ let () =
     "Sodium",
     fun
     | SodiumInitError(s) => s->Some
-    | DerivationPathError => I18n.form_input_error#derivation_path_error->Some
+    | DerivationPathError => I18n.Form_input_error.derivation_path_error->Some
     | _ => None,
   );
 

@@ -72,11 +72,11 @@ let styles =
           }),
       "modalForm":
         style(
-          ~width=643.->dp,
+          ~width=575.->dp,
           ~paddingTop=35.->dp,
           ~paddingBottom=32.->dp,
-          ~paddingRight=117.->dp,
-          ~paddingLeft=127.->dp,
+          ~paddingRight=80.->dp,
+          ~paddingLeft=80.->dp,
           (),
         ),
       "scrollview":

@@ -1,3 +1,11 @@
+%raw
+"
+/**
+ * @jest-environment node
+ */
+// We need to force node environment because test breaks in jsdom environment
+";
+
 open TestFramework;
 open System;
 
@@ -96,6 +104,9 @@ describe("Wallet", ({testAsync}) => {
       ->bind(() => add(~config, ~alias="testkey2", ~address=testkey2))
       ->bind(() => add(~config, ~alias="testkey3", ~address=testkey3))
       ->bind(_ => get(~config))
+      ->map(a =>
+          a->Array.map((Alias.{name, address, _}) => (name, address))
+        )
       ->map(a =>
           a->SortArray.stableSortBy(((v1, _), (v2, _)) => compare(v1, v2))
         )
