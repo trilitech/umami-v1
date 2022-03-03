@@ -65,8 +65,12 @@ module Origination = {
 };
 
 module Delegation = {
+  type action =
+    | Delegate(PublicKeyHash.t)
+    | Undelegate(option(PublicKeyHash.t));
+
   type t = {
-    delegate: option(PublicKeyHash.t),
+    delegate: action,
     options: Options.t,
   };
 };

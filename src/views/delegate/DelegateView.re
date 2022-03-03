@@ -40,7 +40,8 @@ let styles =
 let buildTransaction = (state: DelegateForm.state) => {
   let infos =
     Protocol.Delegation.{
-      delegate: Some(state.values.baker->PublicKeyHash.build->Result.getExn),
+      delegate:
+        Delegate(state.values.baker->PublicKeyHash.build->Result.getExn),
       options: ProtocolOptions.make(),
     };
 
@@ -213,18 +214,19 @@ let make = (~closeAction, ~action) => {
 
   React.useEffect0(() => {
     switch (action) {
-    | Delete(account, _) =>
+    | Delete(account, publicKeyHash) =>
+      let delegate = Protocol.Delegation.Undelegate(Some(publicKeyHash));
       let op =
         ProtocolHelper.Delegation.makeSingleton(
           ~source=account,
-          ~infos={delegate: None, options: ProtocolOptions.make()},
+          ~infos={delegate, options: ProtocolOptions.make()},
           (),
         );
       sendOperationSimulate(op)
       ->Promise.getOk(dryRun => {
           setModalStep(_ =>
             PasswordStep(
-              {delegate: None, options: ProtocolOptions.make()},
+              {delegate, options: ProtocolOptions.make()},
               op,
               dryRun,
             )
@@ -252,8 +254,10 @@ let make = (~closeAction, ~action) => {
     switch (modalStep, action) {
     | (PasswordStep({delegate}, _, _), _) =>
       let summaryTitle =
-        delegate == None
-          ? I18n.Title.delegate_delete : I18n.Title.confirm_delegate;
+        switch (delegate) {
+        | Delegate(_) => I18n.Title.confirm_delegate
+        | Undelegate(_) => I18n.Title.delegate_delete
+        };
       SignOperationView.makeTitle(~custom=summaryTitle, signStep)->Some;
     | (SendStep, Create(_)) => I18n.Title.delegate->Some
     | (SendStep, Edit(_)) => I18n.Title.delegate_update->Some

@@ -236,6 +236,11 @@ module Delegate =
             | _ => None
             }
           );
+      let delegate =
+        switch (delegate) {
+        | Some(d) => Protocol.Delegation.Delegate(d)
+        | None => Protocol.Delegation.Undelegate(None)
+        };
 
       ProtocolHelper.Delegation.makeSingleton(
         ~source=account,

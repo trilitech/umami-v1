@@ -373,8 +373,8 @@ module Delegate = {
       ) => {
     let (target, title) =
       switch (delegation.delegate) {
-      | None => (None, I18n.Title.withdraw_baker)
-      | Some(d) => (Some(d), I18n.Title.baker_account)
+      | Delegate(d) => (Some(d), I18n.Title.baker_account)
+      | Undelegate(d) => (d, I18n.Title.withdraw_baker)
       };
 
     <Base
