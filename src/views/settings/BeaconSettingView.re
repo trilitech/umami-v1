@@ -11,7 +11,15 @@ module CellAction =
   Table.MakeCell({
     let style =
       Style.(
-        style(~flexBasis=58.->dp, ~minWidth=28.->dp, ~alignItems=`flexEnd, ())
+        style(
+          ~flexBasis=58.->dp,
+          ~minWidth=28.->dp,
+          ~flexDirection=`row,
+          ~flex=1.,
+          ~marginRight=auto,
+          ~justifyContent=`flexEnd,
+          (),
+        )
       );
     ();
   });
@@ -26,6 +34,13 @@ let styles =
       "list": style(~minHeight=44.->dp, ()),
       "buttonContainer":
         style(~alignSelf=`flexStart, ~marginBottom=4.->dp, ()),
+      "button":
+        style(
+          ~alignSelf=`flexStart,
+          ~marginLeft=(-6.)->dp,
+          ~marginBottom=10.->dp,
+          (),
+        ),
     })
   );
 
@@ -88,6 +103,36 @@ module PeersSection = {
     };
   };
 
+  module PeersRemoveAllButton = {
+    [@react.component]
+    let make = () => {
+      let (peerRequest, deletePeers) =
+        StoreContext.Beacon.Peers.useDeleteAll();
+      let loading = peerRequest->ApiRequest.isLoading;
+      let onPressConfirmDelete = _e => {
+        deletePeers();
+      };
+      let (openAction, _, modal) =
+        DeleteButton.useModal(
+          ~title=I18n.Title.delete_beacon_peers,
+          ~loading,
+          ~onPressConfirmDelete,
+          (),
+        );
+
+      let onPress = _e => openAction();
+      <View style=styles##button>
+        <ButtonAction
+          onPress
+          text=I18n.Settings.beacon_peers_remove_all
+          icon=Icons.Delete.build
+          size=16.
+        />
+        {modal()}
+      </View>;
+    };
+  };
+
   module Row = {
     [@react.component]
     let make = (~peer: ReBeacon.peerInfo) => {
@@ -130,7 +175,13 @@ module PeersSection = {
         </CellBase>
         <CellBase />
         <CellBase />
-        <CellAction />
+        <CellAction>
+          {switch (peers) {
+           | Done(Ok(peers), _) when Array.length(peers) != 0 =>
+             <PeersRemoveAllButton />
+           | _ => React.null
+           }}
+        </CellAction>
       </Table.Head>
       <View style=styles##list>
         {switch (peers) {
@@ -170,6 +221,36 @@ module PermissionsSection = {
         onPressConfirmDelete
         request=permissionRequest
       />;
+    };
+  };
+
+  module PermissionsRemoveAllButton = {
+    [@react.component]
+    let make = () => {
+      let (permissionsRequest, deletePermissions) =
+        StoreContext.Beacon.Permissions.useDeleteAll();
+      let loading = permissionsRequest->ApiRequest.isLoading;
+      let onPressConfirmDelete = _e => {
+        deletePermissions();
+      };
+      let (openAction, _, modal) =
+        DeleteButton.useModal(
+          ~title=I18n.Title.delete_beacon_permissions,
+          ~loading,
+          ~onPressConfirmDelete,
+          (),
+        );
+
+      let onPress = _e => openAction();
+      <View style=styles##button>
+        <ButtonAction
+          onPress
+          text=I18n.Settings.beacon_permissions_remove_all
+          icon=Icons.Delete.build
+          size=16.
+        />
+        {modal()}
+      </View>;
     };
   };
 
@@ -232,7 +313,14 @@ module PermissionsSection = {
             I18n.Settings.beacon_permissions_network->React.string
           </Typography.Overline3>
         </CellBase>
-        <CellAction />
+        <CellAction>
+          {switch (permissions) {
+           | Done(Ok([||]), _) => React.null
+           | Done(Ok(permissions), _) when Array.length(permissions) != 0 =>
+             <PermissionsRemoveAllButton />
+           | _ => React.null
+           }}
+        </CellAction>
       </Table.Head>
       <View style=styles##list>
         {switch (permissions) {

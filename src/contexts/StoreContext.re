@@ -1054,6 +1054,16 @@ module Beacon = {
         (),
       );
     };
+
+    let useDeleteAll = () => {
+      let (client, _) = useClient();
+      let resetBeaconPeers = useResetAll();
+      BeaconApiRequest.Peers.useDeleteAll(
+        ~client,
+        ~sideEffect=_ => resetBeaconPeers(),
+        (),
+      );
+    };
   };
 
   module Permissions = {
@@ -1080,6 +1090,16 @@ module Beacon = {
       let (client, _) = useClient();
       let resetBeaconPermissions = useResetAll();
       BeaconApiRequest.Permissions.useDelete(
+        ~client,
+        ~sideEffect=_ => resetBeaconPermissions(),
+        (),
+      );
+    };
+
+    let useDeleteAll = () => {
+      let (client, _) = useClient();
+      let resetBeaconPermissions = useResetAll();
+      BeaconApiRequest.Permissions.useDeleteAll(
         ~client,
         ~sideEffect=_ => resetBeaconPermissions(),
         (),
