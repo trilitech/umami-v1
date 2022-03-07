@@ -106,6 +106,22 @@ module URL: {
     let betterCallDevBatchAccounts:
       (~config: ConfigContext.env, ~accounts: array(PublicKeyHash.t)) =>
       Let.result(t);
+
+    let tzktAccountTokens:
+      (
+        ~config: ConfigContext.env,
+        ~account: PublicKeyHash.t,
+        ~contract: PublicKeyHash.t=?,
+        ~limit: int=?,
+        ~index: int=?,
+        ~hideEmpty: bool=?,
+        ~sortBy: [ | `Balance | `Contract | `Id]=?,
+        unit
+      ) =>
+      Let.result(t);
+
+    let tzktAccountTokensNumber:
+      (~config: ConfigContext.env, ~account: PublicKeyHash.t) => Let.result(t);
   };
 
   /* Fetch URL as a JSON. */

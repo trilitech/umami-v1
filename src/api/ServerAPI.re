@@ -316,6 +316,62 @@ module URL = {
           UnknownNetwork(Network.getChainId(config.network.chain)),
         );
     };
+
+    let tzktAccountTokens =
+        (
+          ~config: ConfigContext.env,
+          ~account: PublicKeyHash.t,
+          ~contract: option(PublicKeyHash.t)=?,
+          ~limit: option(int)=?,
+          ~index: option(int)=?,
+          ~hideEmpty: option(bool)=?,
+          ~sortBy: option([ | `Id | `Balance | `Contract])=?,
+          (),
+        ) => {
+      let balanceMin = hideEmpty == Some(true) ? Some(0) : None;
+      let args =
+        List.Infix.(
+          ("account", (account :> string))
+          @: balanceMin->arg_opt("balance.gt", Js.Int.toString)
+          @? sortBy->arg_opt(
+               "sort.asc",
+               fun
+               | `Id => "id"
+               | `Balance => "balance"
+               | `Contract => "token.contract",
+             )
+          @? index->arg_opt("offset", Js.Int.toString)
+          @? limit->arg_opt("limit", Js.Int.toString)
+          @? contract->arg_opt("token.contract", k => (k :> string))
+          @? []
+        );
+      config.network.chain
+      ->Network.chainNetwork
+      ->Option.map(network =>
+          build_url(
+            "https://api." ++ network ++ ".tzkt.io/v1/tokens/balances/",
+            args,
+          )
+        )
+      ->ResultEx.fromOption(
+          UnknownNetwork(Network.getChainId(config.network.chain)),
+        );
+    };
+
+    let tzktAccountTokensNumber =
+        (~config: ConfigContext.env, ~account: PublicKeyHash.t) => {
+      config.network.chain
+      ->Network.chainNetwork
+      ->Option.map(network =>
+          build_url(
+            "https://api." ++ network ++ ".tzkt.io/v1/tokens/balances/count",
+            [("account", (account :> string))],
+          )
+        )
+      ->ResultEx.fromOption(
+          UnknownNetwork(Network.getChainId(config.network.chain)),
+        );
+    };
   };
 };
 
