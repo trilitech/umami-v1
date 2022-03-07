@@ -112,7 +112,6 @@ module Form = {
         sender: initAccount,
         baker: (initDelegate :> option(string))->Option.getWithDefault(""),
         fee: "",
-        forceLowFee: false,
       },
       ~i18n=FormUtils.i18n,
       (),

@@ -68,11 +68,6 @@ type transferOpt = {
 let txOptionsSet = telt =>
   telt.fee != None || telt.gasLimit != None || telt.storageLimit != None;
 
-type operationOpt = {
-  burnCap: option(Tez.t),
-  forceLowFee: option(bool),
-};
-
 let makeForTransfer =
     (~fee=?, ~gasLimit=?, ~storageLimit=?, ~parameter=?, ~entrypoint=?, ()) => {
   fee,
@@ -80,11 +75,6 @@ let makeForTransfer =
   storageLimit,
   parameter,
   entrypoint,
-};
-
-let makeForOperation = (~burnCap=?, ~forceLowFee=?, ()) => {
-  burnCap,
-  forceLowFee,
 };
 
 let emptyTransferOptions = {

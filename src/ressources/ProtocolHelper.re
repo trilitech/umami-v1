@@ -27,16 +27,8 @@ open ProtocolOptions;
 open Protocol;
 
 module Delegation = {
-  let makeSingleton =
-      (
-        ~source,
-        ~infos as Delegation.{delegate, fee},
-        ~burnCap=?,
-        ~forceLowFee=?,
-        (),
-      ) => {
-    let options = makeForOperation(~burnCap?, ~forceLowFee?, ());
-    Protocol.{source, managers: [|{delegate, fee}->Delegation|], options};
+  let makeSingleton = (~source, ~infos as Delegation.{delegate, fee}, ()) => {
+    Protocol.{source, managers: [|{delegate, fee}->Delegation|]};
   };
 };
 
@@ -88,9 +80,8 @@ module Transfer = {
       (),
     );
 
-  let makeBatch = (~source, ~transfers, ~burnCap=?, ~forceLowFee=?, ()) => {
-    let options = makeForOperation(~burnCap?, ~forceLowFee?, ());
-    {source, managers: transfers->Array.map(t => Transfer(t)), options};
+  let makeBatch = (~source, ~transfers, ()) => {
+    {source, managers: transfers->Array.map(t => Transfer(t))};
   };
 
   let makeSingleton =
@@ -98,8 +89,6 @@ module Transfer = {
         ~source,
         ~amount,
         ~destination,
-        ~burnCap=?,
-        ~forceLowFee=?,
         ~fee=?,
         ~parameter=?,
         ~entrypoint=?,
@@ -120,7 +109,7 @@ module Transfer = {
       ),
     |];
 
-    makeBatch(~source, ~transfers, ~burnCap?, ~forceLowFee?, ());
+    makeBatch(~source, ~transfers, ());
   };
 
   let reduceArray = (transfers, f) =>
@@ -150,13 +139,10 @@ module Origination = {
         ~storage,
         ~delegate: option(PublicKeyHash.t),
         ~fee=?,
-        ~burnCap=?,
-        ~forceLowFee=?,
         (),
       ) => {
     source,
     managers: [|Origination({balance, delegate, code, storage, fee})|],
-    options: makeForOperation(~burnCap?, ~forceLowFee?, ()),
   };
 };
 

@@ -78,7 +78,6 @@ type manager =
 type batch = {
   source: Account.t,
   managers: array(manager),
-  options: Options.operationOpt,
 };
 
 module Simulation = {

@@ -30,7 +30,6 @@ module StateLenses = [%lenses
     fee: string,
     gasLimit: string,
     storageLimit: string,
-    forceLowFee: bool,
   }
 ];
 
@@ -38,14 +37,12 @@ type validState = {
   fee: option(Tez.t),
   gasLimit: option(int),
   storageLimit: option(int),
-  forceLowFee: bool,
 };
 
 let extractValidState = (state: StateLenses.state): validState => {
   fee: state.fee->Tez.fromString,
   gasLimit: state.gasLimit->Int.fromString,
   storageLimit: state.storageLimit->Int.fromString,
-  forceLowFee: state.forceLowFee,
 };
 
 module Form = {
@@ -69,8 +66,6 @@ module Form = {
             ->Array.get(index)
             ->Option.mapWithDefault("", sim => sim.storageLimit->Int.toString)
           : "",
-
-      forceLowFee: false,
     };
 
   let use = (showLimits, dryRun, index, onSubmit) => {
@@ -237,12 +232,6 @@ let make = (~operation: Protocol.batch, ~dryRun, ~index=0, ~token, ~onSubmit) =>
        }
        ->ReactUtils.onlyWhen(showLimits)}
     </View>
-    <FormGroupCheckbox
-      label=I18n.Label.force_low_fee
-      value={form.values.forceLowFee}
-      handleChange={form.handleChange(ForceLowFee)}
-      error={form.getFieldError(Field(ForceLowFee))}
-    />
     <Buttons.SubmitPrimary
       text=I18n.Btn.update
       loading={operationSimulateRequest->ApiRequest.isLoading}
