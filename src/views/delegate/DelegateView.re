@@ -41,7 +41,7 @@ let buildTransaction = (state: DelegateForm.state) => {
   let infos =
     Protocol.Delegation.{
       delegate: Some(state.values.baker->PublicKeyHash.build->Result.getExn),
-      fee: None,
+      options: ProtocolOptions.make(),
     };
 
   (
@@ -217,13 +217,17 @@ let make = (~closeAction, ~action) => {
       let op =
         ProtocolHelper.Delegation.makeSingleton(
           ~source=account,
-          ~infos={delegate: None, fee: None},
+          ~infos={delegate: None, options: ProtocolOptions.make()},
           (),
         );
       sendOperationSimulate(op)
       ->Promise.getOk(dryRun => {
           setModalStep(_ =>
-            PasswordStep({delegate: None, fee: None}, op, dryRun)
+            PasswordStep(
+              {delegate: None, options: ProtocolOptions.make()},
+              op,
+              dryRun,
+            )
           )
         });
 

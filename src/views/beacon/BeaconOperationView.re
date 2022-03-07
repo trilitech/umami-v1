@@ -239,7 +239,7 @@ module Delegate =
 
       ProtocolHelper.Delegation.makeSingleton(
         ~source=account,
-        ~infos={delegate, fee: None},
+        ~infos={delegate, options: ProtocolOptions.make()},
         (),
       );
     };

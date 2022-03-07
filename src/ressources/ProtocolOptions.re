@@ -57,30 +57,28 @@ module TransactionParameters = {
   type t = ReTaquitoTypes.Transfer.Entrypoint.param;
 };
 
-type transferOpt = {
+type parameter = {
+  value: option(TransactionParameters.MichelineMichelsonV1Expression.t),
+  entrypoint: option(TransactionParameters.entrypoint),
+};
+
+type t = {
   fee: option(Tez.t),
   gasLimit: option(int),
   storageLimit: option(int),
-  parameter: option(TransactionParameters.MichelineMichelsonV1Expression.t),
-  entrypoint: option(TransactionParameters.entrypoint),
 };
 
 let txOptionsSet = telt =>
   telt.fee != None || telt.gasLimit != None || telt.storageLimit != None;
 
-let makeForTransfer =
-    (~fee=?, ~gasLimit=?, ~storageLimit=?, ~parameter=?, ~entrypoint=?, ()) => {
+let makeParameter = (~value=?, ~entrypoint=?, ()) => {
+  {value, entrypoint};
+};
+
+let make = (~fee=?, ~gasLimit=?, ~storageLimit=?, ()) => {
   fee,
   gasLimit,
   storageLimit,
-  parameter,
-  entrypoint,
 };
 
-let emptyTransferOptions = {
-  fee: None,
-  gasLimit: None,
-  storageLimit: None,
-  parameter: None,
-  entrypoint: None,
-};
+let emptyTransferOptions = {fee: None, gasLimit: None, storageLimit: None};

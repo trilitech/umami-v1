@@ -27,8 +27,8 @@ open ProtocolOptions;
 open Protocol;
 
 module Delegation = {
-  let makeSingleton = (~source, ~infos as Delegation.{delegate, fee}, ()) => {
-    Protocol.{source, managers: [|{delegate, fee}->Delegation|]};
+  let makeSingleton = (~source, ~infos as Delegation.{delegate, options}, ()) => {
+    Protocol.{source, managers: [|{delegate, options}->Delegation|]};
   };
 };
 
@@ -46,15 +46,11 @@ module Transfer = {
         (),
       ) => {
     data: Simple(data),
-    options:
-      makeForTransfer(
-        ~fee?,
-        ~gasLimit?,
-        ~storageLimit?,
-        ~parameter?,
-        ~entrypoint?,
-        (),
-      ),
+    parameter: {
+      value: parameter,
+      entrypoint,
+    },
+    options: Options.make(~fee?, ~gasLimit?, ~storageLimit?, ()),
   };
 
   let makeSimpleTez = (~destination, ~amount) =>
@@ -138,19 +134,33 @@ module Origination = {
         ~code,
         ~storage,
         ~delegate: option(PublicKeyHash.t),
+        ~gasLimit=?,
+        ~storageLimit=?,
         ~fee=?,
         (),
       ) => {
     source,
-    managers: [|Origination({balance, delegate, code, storage, fee})|],
+    managers: [|
+      Origination({
+        balance,
+        delegate,
+        code,
+        storage,
+        options: {
+          gasLimit,
+          storageLimit,
+          fee,
+        },
+      }),
+    |],
   };
 };
 
 let optionsSet =
   fun
-  | Transfer(t) => ProtocolOptions.txOptionsSet(t.options)->Some
-  | Delegation(d) => Some(d.fee != None)
-  | Origination(o) => Some(o.fee != None);
+  | Delegation({options})
+  | Origination({options})
+  | Transfer({options}) => ProtocolOptions.txOptionsSet(options)->Some;
 
 let isContractCall = o =>
   switch (o) {

@@ -62,16 +62,12 @@ module Balance = {
 module Simulation = {
   let extractCustomValues =
     fun
-    | Protocol.Transfer({options}) => (
+    | Protocol.Delegation({options})
+    | Origination({options})
+    | Transfer({options}) => (
         options.fee->Option.map(fee => fee->Tez.unsafeToMutezInt),
         options.storageLimit,
         options.gasLimit,
-      )
-    | Delegation({fee})
-    | Origination({fee}) => (
-        fee->Option.map(fee => fee->Tez.unsafeToMutezInt),
-        None,
-        None,
       );
 
   let run = (config: ConfigContext.env, ops: Protocol.batch) => {

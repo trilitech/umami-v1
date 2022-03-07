@@ -201,14 +201,14 @@ module Transactions = {
     let sourceLbl = I18n.Title.sender_account;
 
     switch (operation.managers) {
-    | [|Transfer({data: Simple(t), options})|] => (
+    | [|Transfer({data: Simple(t), parameter})|] => (
         (operation.source, sourceLbl),
         `One((
           Some(t.destination),
           recipientLbl,
           transactionParameters(
-            ~entrypoint=options.entrypoint,
-            ~parameter=options.parameter,
+            ~entrypoint=parameter.entrypoint,
+            ~parameter=parameter.value,
           ),
         )),
       )
@@ -221,7 +221,8 @@ module Transactions = {
         );
 
       let destinations =
-        managers->Array.reduce([], (acc, Transfer.{data, options}) => {
+        managers->Array.reduce(
+          [], (acc, Transfer.{data, parameter, options}) => {
           switch (data) {
           | FA2Batch(_) => assert(false)
 
@@ -230,8 +231,8 @@ module Transactions = {
               t.destination,
               t.amount,
               transactionParameters(
-                ~entrypoint=options.entrypoint,
-                ~parameter=options.parameter,
+                ~entrypoint=parameter.entrypoint,
+                ~parameter=parameter.value,
               ),
               ProtocolOptions.txOptionsSet(options),
             )

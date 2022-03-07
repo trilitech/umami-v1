@@ -117,9 +117,18 @@ let styles =
     })
   );
 
+let mapOptions = (values: validState, o) => {
+  let fallback = (o1, o2) => Option.firstSome([o1, o2]);
+
+  ProtocolOptions.{
+    gasLimit: fallback(values.gasLimit, o.gasLimit),
+    fee: fallback(values.fee, o.fee),
+    storageLimit: fallback(values.storageLimit, o.storageLimit),
+  };
+};
+
 let updateOperation = (index, values: StateLenses.state, ops: Protocol.batch) => {
   let values = values->extractValidState;
-  let fallback = (o1, o2) => Option.firstSome([o1, o2]);
 
   let managers =
     ops.managers
@@ -127,23 +136,14 @@ let updateOperation = (index, values: StateLenses.state, ops: Protocol.batch) =>
         if (index == i) {
           switch (op) {
           | Transfer(t) =>
-            let options = {
-              ...t.options,
-              gasLimit: fallback(values.gasLimit, t.options.gasLimit),
-              fee: fallback(values.fee, t.options.fee),
-              storageLimit:
-                fallback(values.storageLimit, t.options.storageLimit),
-            };
-
+            let options = mapOptions(values, t.options);
             {...t, options}->Protocol.Transfer;
-
           | Delegation(d) =>
-            let fee = fallback(values.fee, d.fee);
-            {...d, fee}->Protocol.Delegation;
-
+            let options = mapOptions(values, d.options);
+            {...d, options}->Protocol.Delegation;
           | Origination(o) =>
-            let fee = fallback(values.fee, o.fee);
-            {...o, fee}->Protocol.Origination;
+            let options = mapOptions(values, o.options);
+            {...o, options}->Protocol.Origination;
           };
         } else {
           op;

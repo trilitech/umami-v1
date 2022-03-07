@@ -49,7 +49,8 @@ module Transfer = {
 
   type t = {
     data,
-    options: Options.transferOpt,
+    options: Options.t,
+    parameter: Options.parameter,
   };
 };
 
@@ -59,14 +60,14 @@ module Origination = {
     code: ReTaquitoTypes.Code.t,
     storage: ReTaquitoTypes.Storage.t,
     delegate: option(PublicKeyHash.t),
-    fee: option(Tez.t),
+    options: Options.t,
   };
 };
 
 module Delegation = {
   type t = {
     delegate: option(PublicKeyHash.t),
-    fee: option(Tez.t),
+    options: Options.t,
   };
 };
 

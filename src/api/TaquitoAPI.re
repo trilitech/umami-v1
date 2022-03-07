@@ -176,7 +176,7 @@ module Delegation = {
     |> ReTaquitoError.fromPromiseParsed;
   };
 
-  let prepareSet = (~source, Protocol.Delegation.{delegate, fee}) => {
+  let prepareSet = (~source, Protocol.Delegation.{delegate, options: {fee}}) => {
     let feeBignum = fee->Option.map(Tez.toBigNumber);
     Toolkit.prepareDelegate(~source, ~delegate, ~fee=?feeBignum, ());
   };
@@ -186,7 +186,7 @@ module Origination = {
   open Protocol.Origination;
   let prepare = (~source, origination) => {
     let balance = origination.balance->Option.map(Tez.toBigNumber);
-    let fee = origination.fee->Option.map(Tez.toBigNumber);
+    let fee = origination.options.fee->Option.map(Tez.toBigNumber);
 
     Toolkit.prepareOriginate(
       ~source,
@@ -195,6 +195,8 @@ module Origination = {
       ~storage=origination.storage,
       ~delegate=?origination.delegate,
       ~fee?,
+      ~storageLimit=?origination.options.storageLimit,
+      ~gasLimit=?origination.options.storageLimit,
       (),
     );
   };
@@ -348,8 +350,8 @@ module Transfer = {
         ~storageLimit=?options.storageLimit,
         ~parameter=?
           makeTransferMichelsonParameter(
-            ~entrypoint=options.entrypoint,
-            ~parameter=options.parameter,
+            ~entrypoint=t.parameter.entrypoint,
+            ~parameter=t.parameter.value,
           ),
         (),
       )
