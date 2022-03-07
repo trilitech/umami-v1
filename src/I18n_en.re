@@ -748,6 +748,7 @@ let operation_reveal = "Reveal";
 let operation_transaction = "Transaction";
 let operation_origination = "Origination";
 let operation_delegation = "Delegation";
+let operation_token_batch = "Token batch";
 let operation_column_type = "TYPE";
 let operation_column_amount = "AMOUNT";
 let operation_column_recipient = "RECIPIENT";
