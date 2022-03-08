@@ -174,7 +174,6 @@ module Label = {
   let gas_limit = "Gas Limit";
   let storage_limit = "Storage Limit";
   let counter = "Counter";
-  let force_low_fee = "Force low fee";
   let confirm_password = "Confirm Password";
   let account_delegate = "Account to delegate";
   let baker = "Baker";

@@ -24,53 +24,61 @@
 /*****************************************************************************/
 
 /** Protocol specific operations */
-open ProtocolOptions;
+module Options = ProtocolOptions;
+module Amount = ProtocolAmount;
 
-type delegation = {
+module Transfer = {
+  type generic('a) = {
+    destination: PublicKeyHash.t,
+    amount: 'a,
+  };
+
+  type transferFA2 = {
+    tokenId: int,
+    content: generic(Amount.token),
+  };
+
+  type batchFA2 = {
+    address: PublicKeyHash.t,
+    transfers: list(transferFA2),
+  };
+
+  type data =
+    | FA2Batch(batchFA2)
+    | Simple(generic(Amount.t));
+
+  type t = {
+    data,
+    options: Options.t,
+    parameter: Options.parameter,
+  };
+};
+
+module Origination = {
+  type t = {
+    balance: option(Tez.t),
+    code: ReTaquitoTypes.Code.t,
+    storage: ReTaquitoTypes.Storage.t,
+    delegate: option(PublicKeyHash.t),
+    options: Options.t,
+  };
+};
+
+module Delegation = {
+  type t = {
+    delegate: option(PublicKeyHash.t),
+    options: Options.t,
+  };
+};
+
+type manager =
+  | Delegation(Delegation.t)
+  | Transfer(Transfer.t)
+  | Origination(Origination.t);
+
+type batch = {
   source: Account.t,
-  delegate: option(PublicKeyHash.t),
-  options: delegationOptions,
-};
-
-type origination = {
-  source: Account.t,
-  balance: option(Tez.t),
-  code: ReTaquitoTypes.Code.t,
-  storage: ReTaquitoTypes.Storage.t,
-  delegate: option(PublicKeyHash.t),
-  options: originationOptions,
-};
-
-type t =
-  | Delegation(delegation)
-  | Origination(origination)
-  | Transaction(Transfer.t);
-
-let makeDelegate =
-    (~source, ~delegate, ~fee=?, ~burnCap=?, ~forceLowFee=?, ()) => {
-  source,
-  delegate,
-  options: makeDelegationOptions(~fee, ~burnCap, ~forceLowFee, ()),
-};
-
-let makeOrigination =
-    (
-      ~source,
-      ~balance=?,
-      ~code,
-      ~storage,
-      ~delegate: option(PublicKeyHash.t),
-      ~fee=?,
-      ~burnCap=?,
-      ~forceLowFee=?,
-      (),
-    ) => {
-  source,
-  balance,
-  delegate,
-  code,
-  storage,
-  options: makeOriginationOptions(~fee, ~burnCap, ~forceLowFee, ()),
+  managers: array(manager),
 };
 
 module Simulation = {
@@ -84,34 +92,4 @@ module Simulation = {
     simulations: array(resultElt),
     revealSimulation: option(resultElt),
   };
-
-  let sumFees = a =>
-    a->Array.reduce(Tez.zero, (acc, sim) => Tez.Infix.(acc + sim.fee));
-
-  let computeRevealFees = sim =>
-    sim.revealSimulation->Option.mapWithDefault(Tez.zero, ({fee}) => fee);
-
-  let getTotalFees = sim =>
-    Tez.Infix.(sim->computeRevealFees + sim.simulations->sumFees);
 };
-
-let optionsSet =
-  fun
-  | Transaction({transfers: [t]}) =>
-    ProtocolOptions.txOptionsSet(t.tx_options)->Some
-  | Transaction({transfers: _}) => None
-  | Delegation(d) => ProtocolOptions.delegationOptionsSet(d.options)->Some
-  | Origination(o) => ProtocolOptions.originationOptionsSet(o.options)->Some;
-
-let isContractCall = (o, index) =>
-  switch (o) {
-  | Delegation(_) => false
-  | Transaction((t: Transfer.t)) =>
-    t.transfers
-    ->List.get(index)
-    ->Option.mapWithDefault(false, t =>
-        t.amount->Transfer.Currency.getToken != None
-        || t.destination->PublicKeyHash.isContract
-      )
-  | Origination(_) => false
-  };

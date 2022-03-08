@@ -23,58 +23,79 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open Protocol;
-
-module StateLenses = [%lenses
-  type state = {
-    amount: string,
-    sender: Account.t,
-    recipient: FormUtils.Alias.any,
-  }
-];
-
-type validState = {
-  amount: Protocol.Amount.t,
-  sender: Account.t,
-  recipient: FormUtils.Alias.t,
+type token = {
+  amount: TokenRepr.Unit.t,
+  token: TokenRepr.t,
 };
 
-let unsafeExtractValidState = (token, state: StateLenses.state): validState => {
-  {
-    amount:
-      state.amount->FormUtils.parseAmount(token)->FormUtils.Unsafe.getAmount,
-    sender: state.sender,
-    recipient: state.recipient->FormUtils.Unsafe.account,
+type t =
+  | Tez(Tez.t)
+  | Token(token);
+
+let makeTez = t => t->Tez;
+let makeToken = (~amount, ~token) => Token({amount, token});
+
+let toInt64 =
+  fun
+  | Tez(tez) => tez->Tez.toInt64
+  | Token({amount}) =>
+    amount->TokenRepr.Unit.toBigNumber->ReBigNumber.toInt64;
+
+let toBigNumber =
+  fun
+  | Tez(tez) => tez->Tez.toInt64->ReBigNumber.fromInt64
+  | Token({amount}) => amount->TokenRepr.Unit.toBigNumber;
+
+let toString =
+  fun
+  | Tez(tez) => tez->Tez.toString
+  | Token({amount, token}) =>
+    amount->TokenRepr.Unit.toStringDecimals(token.decimals);
+
+let getTez =
+  fun
+  | Tez(tez) => Some(tez)
+  | _ => None;
+
+let getToken =
+  fun
+  | Token(a) => Some(a)
+  | _ => None;
+
+let getTokenExn = t => t->getToken->Option.getExn;
+
+let show =
+  fun
+  | Tez(v) => I18n.tez_amount(v->Tez.toString)
+  | Token({amount, token}) =>
+    I18n.amount(
+      amount->TokenRepr.Unit.toStringDecimals(token.decimals),
+      token.symbol,
+    );
+
+let compareCurrencies = (v1, v2) => {
+  switch (v1, v2) {
+  | (Tez(_), Token(_)) => (-1)
+  | (Token(_), Tez(_)) => 1
+  | _ => 0
   };
 };
 
-let toState = (vs: validState): StateLenses.state => {
-  amount: vs.amount->Protocol.Amount.toString,
-  sender: vs.sender,
-  recipient: vs.recipient->FormUtils.Alias.Valid,
-};
-
-include ReForm.Make(StateLenses);
-
-let buildTransfer = (inputTransfers, source) => {
-  let transfers =
-    inputTransfers
-    ->List.map((t: validState) => {
-        let destination = t.recipient->FormUtils.Alias.address;
-        let data = Transfer.{destination, amount: t.amount};
-        ProtocolHelper.Transfer.makeSimple(~data, ());
-      })
-    ->List.toArray;
-
-  ProtocolHelper.Transfer.makeBatch(~source, ~transfers, ());
-};
-
-let buildTransaction = (batch: list(validState)) => {
-  switch (batch) {
-  | [] => assert(false)
-  | [first, ..._] as inputTransfers =>
-    let source = first.sender;
-
-    buildTransfer(inputTransfers, source);
-  };
-};
+let reduce = l =>
+  l
+  ->List.reduceGroupBy(
+      ~group=
+        fun
+        | Tez(_) => None
+        | Token({token}) => Some(token),
+      ~map=(acc, v) =>
+      switch (acc, v) {
+      | (None, v) => v
+      | (Some(Tez(acc)), Tez(v)) => Tez(Tez.Infix.(acc + v))
+      | (Some(Token({amount: acc, token})), Token({amount})) =>
+        Token({amount: TokenRepr.Unit.Infix.(acc + amount), token})
+      | (Some(acc), _) => acc
+      }
+    )
+  ->List.map(snd)
+  ->List.sort(compareCurrencies);

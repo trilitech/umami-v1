@@ -28,7 +28,6 @@ module StateLenses = [%lenses
     sender: Account.t,
     baker: string,
     fee: string,
-    forceLowFee: bool,
   }
 ];
 
