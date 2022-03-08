@@ -177,7 +177,14 @@ module Delegation = {
   };
 
   let prepareSet = (~source, Protocol.Delegation.{delegate, options: {fee}}) => {
+    open Protocol.Delegation;
     let feeBignum = fee->Option.map(Tez.toBigNumber);
+    let delegate = {
+      switch (delegate) {
+      | Delegate(delegate) => Some(delegate)
+      | Undelegate(_) => None
+      };
+    };
     Toolkit.prepareDelegate(~source, ~delegate, ~fee=?feeBignum, ());
   };
 };
