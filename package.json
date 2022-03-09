@@ -62,6 +62,7 @@
     "reason-react-native": "^0.63.5",
     "reason-react-update": "^2.0.0",
     "reschema": "2.0.2-alpha.0",
+    "rescript": "9",
     "uuid": "^8.3.2"
   },
   "scripts": {
@@ -70,9 +71,9 @@
     "build": "cross-env NODE_ENV=production webpack --config webpack.build.config.js --mode production",
     "test": " npm rebuild canvas && yarn bsb:build && jest -u --coverage",
     "test:watch": "jest --verbose --watch",
-    "bsb:start": "bsb -make-world -w",
-    "bsb:build": "bsb -make-world",
-    "bsb:clean": "bsb -clean-world",
+    "bsb:start": "rescript build -w",
+    "bsb:build": "rescript build",
+    "bsb:clean": "rescript clean",
     "postinstall": "electron-builder install-app-deps",
     "snap:conf": "node -e 'require(\"./scripts/snap.js\").conf()'",
     "snap:build": "yarn snap:conf && snapcraft --use-lxd",
@@ -108,7 +109,9 @@
       "target": [
         {
           "target": "default",
-          "arch": [ "x64" ]
+          "arch": [
+            "x64"
+          ]
         }
       ]
     },
@@ -172,7 +175,9 @@
     "win": {
       "target": "nsis",
       "sign": "./scripts/sign-win.js",
-      "signingHashAlgorithms": ["sha256"]
+      "signingHashAlgorithms": [
+        "sha256"
+      ]
     }
   },
   "eslintConfig": {

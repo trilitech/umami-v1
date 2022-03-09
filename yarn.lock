@@ -9635,6 +9635,11 @@ reschema@^2.0.2-alpha.0:
   resolved "https://registry.yarnpkg.com/reschema/-/reschema-2.2.0.tgz#e98730d5dff98ec4d99798a31bf1c4a4ebcb8f1c"
   integrity sha512-vkFNYm2GEqrmoK+n1xomn/EXgltvCfqmowMxXkr2IBa6Zw0JItunzOap73PaS9DUGak0h6xHoIOciGcq+LC9cg==
 
+rescript@9:
+  version "9.1.4"
+  resolved "https://registry.yarnpkg.com/rescript/-/rescript-9.1.4.tgz#1eb126f98d6c16942c0bf0df67c050198e580515"
+  integrity sha512-aXANK4IqecJzdnDpJUsU6pxMViCR5ogAxzuqS0mOr8TloMnzAjJFu63fjD6LCkWrKAhlMkFFzQvVQYaAaVkFXw==
+
 resolve-cwd@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/resolve-cwd/-/resolve-cwd-2.0.0.tgz#00a9f7387556e27038eae232caa372a6a59b665a"
