@@ -23,10 +23,43 @@
 /*                                                                           */
 /*****************************************************************************/
 
+open ReactNative;
+open Style;
+
+let paddingTop = 100.->dp;
+
+let iconStyle =
+  style(~paddingTop, ~paddingLeft=50.->dp, ~flex=1., ~maxWidth=370.->dp, ());
+
+let textStyle = style(~textAlign=`left, ~paddingBottom=30.->dp, ());
+
 [@react.component]
-let make = () =>
-  <InfoViewBuilder
-    title=I18n.you_dont_have_nft
-    subtitle=I18n.Expl.nft_empty_state
-    iconBuilder=Icons.Nft.build
-  />;
+let make = (~title, ~subtitle, ~iconBuilder: Icons.builder) => {
+  let theme = ThemeContext.useTheme();
+
+  let icon =
+    iconBuilder(
+      ~color=theme.colors.textDisabled,
+      ~size=272.,
+      ~style=iconStyle,
+    );
+
+  <View
+    style={style(
+      ~display=`flex,
+      ~flexDirection=`row,
+      ~justifyContent=`flexStart,
+      ~alignItems=`center,
+      (),
+    )}>
+    icon
+    <View style={style(~flex=1., ~paddingTop=150.->dp, ())}>
+      <Typography.BigText style=textStyle>
+        title->React.string
+      </Typography.BigText>
+      <Typography.MediumText style=textStyle>
+        subtitle->React.string
+      </Typography.MediumText>
+    </View>
+  </View>;
+};

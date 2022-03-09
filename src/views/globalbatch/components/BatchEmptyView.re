@@ -26,7 +26,7 @@
 [@react.component]
 let make = () =>
   <InfoViewBuilder
-    title=I18n.you_dont_have_nft
-    subtitle=I18n.Expl.nft_empty_state
-    iconBuilder=Icons.Nft.build
+    title=I18n.Title.global_batch_empty
+    subtitle=I18n.Expl.fill_batch
+    iconBuilder=Icons.Batch.build
   />;
