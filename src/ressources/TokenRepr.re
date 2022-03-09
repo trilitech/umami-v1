@@ -212,3 +212,9 @@ let isNFT = t =>
   t.asset.artifactUri != None
   || t.asset.displayUri != None
   || t.asset.isBooleanAmount == true;
+
+let isFa2 = t =>
+  switch (t.kind) {
+  | FA1_2 => false
+  | FA2(_) => true
+  };
