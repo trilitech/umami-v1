@@ -116,6 +116,7 @@ module Send = Make(SVGIconSend);
 module History = Make(SVGIconHistory);
 module Receive = Make(SVGIconReceive);
 module Account = Make(SVGIconAccount);
+module Batch = Make(SvgIconBatch);
 module AddressBook = Make(SVGIconAddressBook);
 module Qr = Make(SVGIconQr);
 module Copy = Make(SVGIconCopy);
