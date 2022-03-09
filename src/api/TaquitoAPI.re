@@ -167,7 +167,7 @@ module Delegation = {
     Toolkit.getDelegate(tk.tz, address)
     |> Js.Promise.then_(v => Js.Promise.resolve(Js.Nullable.toOption(v)))
     |> Js.Promise.catch(e =>
-         if (Obj.magic(e)##status == 404) {
+         if (RawJsError.(e->fromPromiseError).status == 404) {
            Js.Promise.resolve(None);
          } else {
            Js.Promise.reject(RejectError(e->Js.String.make));
