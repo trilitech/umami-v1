@@ -22,60 +22,30 @@
 /* DEALINGS IN THE SOFTWARE.                                                 */
 /*                                                                           */
 /*****************************************************************************/
+open ReactNative;
 
-open ReasonReactRouter;
+// TODO refactor with what is in FromGroupBakerSelector
+let styles =
+  Style.(
+    StyleSheet.create({
+      "inputTypeButton": style(~flexDirection=`row, ~alignItems=`center, ()),
+      "inputTypeText": style(~lineHeight=16., ~marginLeft=7.->dp, ()),
+    })
+  );
 
-type t =
-  | Accounts
-  | Operations
-  | AddressBook
-  | Delegations
-  | Tokens
-  | Settings
-  | Logs
-  | Nft
-  | Batch
-  | NotFound;
-
-exception RouteToNotFound;
-
-let match = (url: url) => {
-  switch (url.hash) {
-  | ""
-  | "/" => Accounts
-  | "/operations" => Operations
-  | "/address-book" => AddressBook
-  | "/delegations" => Delegations
-  | "/tokens" => Tokens
-  | "/settings" => Settings
-  | "/logs" => Logs
-  | "/nft" => Nft
-  | "/batch" => Batch
-  | _ => NotFound
-  };
-};
-
-let toHref =
-  fun
-  | Accounts => "#/"
-  | Operations => "#/operations"
-  | AddressBook => "#/address-book"
-  | Delegations => "#/delegations"
-  | Tokens => "#/tokens"
-  | Settings => "#/settings"
-  | Logs => "#/logs"
-  | Nft => "#/nft"
-  | Batch => "#/batch"
-  | NotFound => raise(RouteToNotFound);
-
-/* This lets us push a Routes.t instead of a string to transition to a new  screen */
-let push = route => route |> toHref |> push;
-
-let useHrefAndOnPress = route => {
-  let href = toHref(route);
-  let onPress = event => {
-    event->ReactNative.Event.PressEvent.preventDefault;
-    ReasonReactRouter.push(href);
-  };
-  onPress;
+[@react.component]
+let make = (~onPress) => {
+  let theme = ThemeContext.useTheme();
+  <TouchableOpacity style=styles##inputTypeButton onPress>
+    <Icons.Delete size=14. color={theme.colors.borderMediumEmphasis} />
+    <Typography.ButtonSecondary
+      style=Style.(
+        array([|
+          styles##inputTypeText,
+          style(~color=theme.colors.borderMediumEmphasis, ()),
+        |])
+      )>
+      I18n.global_batch_delete_all->React.string
+    </Typography.ButtonSecondary>
+  </TouchableOpacity>;
 };

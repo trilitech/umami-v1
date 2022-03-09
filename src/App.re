@@ -150,6 +150,7 @@ module Dashboard = {
        | Tokens => <TokensView />
        | Settings => <SettingsView />
        | Logs => <LogsView />
+       | Batch => <GlobalBatchView />
        | NotFound =>
          <View>
            <Typography.Body1> I18n.error404->React.string </Typography.Body1>
@@ -273,10 +274,12 @@ let make = () => {
       <ConfigContext>
         <ThemeContext>
           <StoreContext>
-            <AppView />
-            <SelectedAccountView>
-              {account => <BeaconConnectRequest account />}
-            </SelectedAccountView>
+            <GlobalBatchContext>
+              <AppView />
+              <SelectedAccountView>
+                {account => <BeaconConnectRequest account />}
+              </SelectedAccountView>
+            </GlobalBatchContext>
           </StoreContext>
         </ThemeContext>
       </ConfigContext>

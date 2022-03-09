@@ -23,59 +23,32 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open ReasonReactRouter;
+open ReactNative;
 
-type t =
-  | Accounts
-  | Operations
-  | AddressBook
-  | Delegations
-  | Tokens
-  | Settings
-  | Logs
-  | Nft
-  | Batch
-  | NotFound;
+[@react.component]
+let make = (~dryRun, ~operation, ~resetGlobalBatch) => {
+  let (openModal, closeModal, inModal) = ModalAction.useModal();
 
-exception RouteToNotFound;
+  let disabled =
+    switch (operation) {
+    | None => true
+    | Some(_) => false
+    };
+  let onPress = _ => openModal();
 
-let match = (url: url) => {
-  switch (url.hash) {
-  | ""
-  | "/" => Accounts
-  | "/operations" => Operations
-  | "/address-book" => AddressBook
-  | "/delegations" => Delegations
-  | "/tokens" => Tokens
-  | "/settings" => Settings
-  | "/logs" => Logs
-  | "/nft" => Nft
-  | "/batch" => Batch
-  | _ => NotFound
-  };
-};
-
-let toHref =
-  fun
-  | Accounts => "#/"
-  | Operations => "#/operations"
-  | AddressBook => "#/address-book"
-  | Delegations => "#/delegations"
-  | Tokens => "#/tokens"
-  | Settings => "#/settings"
-  | Logs => "#/logs"
-  | Nft => "#/nft"
-  | Batch => "#/batch"
-  | NotFound => raise(RouteToNotFound);
-
-/* This lets us push a Routes.t instead of a string to transition to a new  screen */
-let push = route => route |> toHref |> push;
-
-let useHrefAndOnPress = route => {
-  let href = toHref(route);
-  let onPress = event => {
-    event->ReactNative.Event.PressEvent.preventDefault;
-    ReasonReactRouter.push(href);
-  };
-  onPress;
+  let ledgerState = React.useState(() => None);
+  <>
+    <View>
+      <Buttons.SubmitPrimary text=I18n.Btn.batch_submit onPress disabled />
+    </View>
+    {inModal(
+       <SignGlobalBatch
+         dryRun
+         operation
+         resetGlobalBatch
+         closeModal
+         ledgerState
+       />,
+     )}
+  </>;
 };

@@ -129,6 +129,8 @@ module EntityInfo = {
   };
 };
 
+type summaryContent = list((string, Belt.List.t(Protocol.Amount.t)));
+
 module Base = {
   let buildDestinations = (smallest, destinations, button) => {
     switch (destinations) {
@@ -224,7 +226,7 @@ module Transactions = {
         managers->Array.reduce(
           [], (acc, Transfer.{data, parameter, options}) => {
           switch (data) {
-          | FA2Batch(_) => assert(false)
+          | FA2Batch(_) => []
 
           | Simple(t) =>
             (
@@ -243,6 +245,9 @@ module Transactions = {
       ((operation.source, sourceLbl), `Many(destinations->List.reverse));
     };
   };
+
+  type buildSummaryContentType =
+    (Transfer.t, Protocol.Simulation.results) => summaryContent;
 
   let buildSummaryContent =
       (operation: Protocol.batch, dryRun: Protocol.Simulation.results) => {
@@ -295,6 +300,7 @@ module Transactions = {
         ~dryRun: Protocol.Simulation.results,
         ~editAdvancedOptions,
         ~advancedOptionsDisabled,
+        ~hideBatchDetails=false,
       ) => {
     let (source: (Account.t, string), destinations) =
       sourceDestination(operation);
@@ -328,11 +334,15 @@ module Transactions = {
     <Base
       ?style
       source
-      destinations={Base.buildDestinations(
-        smallest,
-        destinations,
-        Some(batchAdvancedOptions),
-      )}
+      destinations={
+        hideBatchDetails
+          ? React.null
+          : Base.buildDestinations(
+              smallest,
+              destinations,
+              Some(batchAdvancedOptions),
+            )
+      }
       content
     />;
   };

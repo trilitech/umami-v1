@@ -23,59 +23,70 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open ReasonReactRouter;
+let useSendTransfer = () => {
+  let (operationRequest, sendOperation) = StoreContext.Operations.useCreate();
 
-type t =
-  | Accounts
-  | Operations
-  | AddressBook
-  | Delegations
-  | Tokens
-  | Settings
-  | Logs
-  | Nft
-  | Batch
-  | NotFound;
-
-exception RouteToNotFound;
-
-let match = (url: url) => {
-  switch (url.hash) {
-  | ""
-  | "/" => Accounts
-  | "/operations" => Operations
-  | "/address-book" => AddressBook
-  | "/delegations" => Delegations
-  | "/tokens" => Tokens
-  | "/settings" => Settings
-  | "/logs" => Logs
-  | "/nft" => Nft
-  | "/batch" => Batch
-  | _ => NotFound
+  let sendTransfer = (~operation: Protocol.batch, signingIntent) => {
+    sendOperation({operation, signingIntent});
   };
+
+  (operationRequest, sendTransfer);
 };
 
-let toHref =
-  fun
-  | Accounts => "#/"
-  | Operations => "#/operations"
-  | AddressBook => "#/address-book"
-  | Delegations => "#/delegations"
-  | Tokens => "#/tokens"
-  | Settings => "#/settings"
-  | Logs => "#/logs"
-  | Nft => "#/nft"
-  | Batch => "#/batch"
-  | NotFound => raise(RouteToNotFound);
-
-/* This lets us push a Routes.t instead of a string to transition to a new  screen */
-let push = route => route |> toHref |> push;
-
-let useHrefAndOnPress = route => {
-  let href = toHref(route);
-  let onPress = event => {
-    event->ReactNative.Event.PressEvent.preventDefault;
-    ReasonReactRouter.push(href);
+let safeBuildTransfer = validStates =>
+  if (validStates == [||]) {
+    None;
+  } else {
+    Some(validStates->List.fromArray->SendForm.buildTransaction);
   };
-  onPress;
+
+[@react.component]
+let make =
+    (
+      ~dryRun,
+      ~operation: option(Protocol.batch),
+      ~closeModal,
+      ~resetGlobalBatch,
+      ~ledgerState,
+    ) => {
+  let (sendTransferState, sendTransfer) = useSendTransfer();
+
+  let loading = sendTransferState->ApiRequest.isLoading;
+
+  let handlePressCancel = _ => {
+    closeModal();
+    Routes.(push(Operations));
+  };
+
+  let renderSummary = () => {
+    operation->Option.mapWithDefault(React.null, operation =>
+      dryRun->Option.mapWithDefault(React.null, dryRun => {
+        <GlobalBatchSummary
+          source={operation.source}
+          loading
+          ledgerState
+          dryRun
+          operation
+          sendOperation=sendTransfer
+          setAdvancedOptions={_ => ()}
+          advancedOptionsDisabled=true
+          onClose=closeModal
+        />
+      })
+    );
+  };
+
+  switch (sendTransferState) {
+  | Done(Ok({hash}), _) =>
+    resetGlobalBatch();
+
+    <ModalFormView closing=ModalFormView.(Close(_ => {closeModal()}))>
+      <SubmittedView
+        hash
+        onPressCancel=handlePressCancel
+        submitText=I18n.Btn.go_operations
+      />
+    </ModalFormView>;
+  | _ => renderSummary()
+  };
 };

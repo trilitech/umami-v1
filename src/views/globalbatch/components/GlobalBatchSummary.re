@@ -23,59 +23,79 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open ReasonReactRouter;
+open ReactNative;
 
-type t =
-  | Accounts
-  | Operations
-  | AddressBook
-  | Delegations
-  | Tokens
-  | Settings
-  | Logs
-  | Nft
-  | Batch
-  | NotFound;
+let styles =
+  Style.(
+    StyleSheet.create({
+      "advancedOptions": style(~marginBottom=12.->dp, ()),
+      "edited": style(~marginRight=5.->dp, ()),
+      "timeoutError":
+        style(
+          ~alignItems=`flexStart,
+          ~marginTop=20.->dp,
+          ~marginBottom=20.->dp,
+          (),
+        ),
+    })
+  );
 
-exception RouteToNotFound;
+type step =
+  | AdvancedOptStep(option(int))
+  | SummaryStep;
 
-let match = (url: url) => {
-  switch (url.hash) {
-  | ""
-  | "/" => Accounts
-  | "/operations" => Operations
-  | "/address-book" => AddressBook
-  | "/delegations" => Delegations
-  | "/tokens" => Tokens
-  | "/settings" => Settings
-  | "/logs" => Logs
-  | "/nft" => Nft
-  | "/batch" => Batch
-  | _ => NotFound
-  };
-};
-
-let toHref =
+let makeTitle = (~custom=?) =>
   fun
-  | Accounts => "#/"
-  | Operations => "#/operations"
-  | AddressBook => "#/address-book"
-  | Delegations => "#/delegations"
-  | Tokens => "#/tokens"
-  | Settings => "#/settings"
-  | Logs => "#/logs"
-  | Nft => "#/nft"
-  | Batch => "#/batch"
-  | NotFound => raise(RouteToNotFound);
+  | AdvancedOptStep(_) => I18n.Label.advanced_options
+  | SummaryStep => custom->Option.getWithDefault(I18n.Title.confirmation);
 
-/* This lets us push a Routes.t instead of a string to transition to a new  screen */
-let push = route => route |> toHref |> push;
-
-let useHrefAndOnPress = route => {
-  let href = toHref(route);
-  let onPress = event => {
-    event->ReactNative.Event.PressEvent.preventDefault;
-    ReasonReactRouter.push(href);
+let back = ((step, set), f) =>
+  switch (step) {
+  | AdvancedOptStep(_) => Some(() => set(_ => SummaryStep))
+  | SummaryStep => f()
   };
-  onPress;
+
+[@react.component]
+let make =
+    (
+      ~source: Account.t,
+      ~ledgerState,
+      ~dryRun,
+      ~secondaryButton=?,
+      ~operation: Protocol.batch,
+      ~sendOperation,
+      ~loading,
+      ~setAdvancedOptions,
+      ~advancedOptionsDisabled=true,
+      ~onClose,
+    ) => {
+  <>
+    <ModalFormView
+      title=I18n.Title.confirm_batch
+      closing=ModalFormView.(Close(_ => {onClose()}))>
+      <View style=FormStyles.header>
+        <Typography.Overline1>
+          I18n.Expl.global_batch->React.string
+        </Typography.Overline1>
+      </View>
+      {switch (operation.managers) {
+       | [|Delegation(_)|] => React.null
+       | _ =>
+         <OperationSummaryView.Transactions
+           operation
+           dryRun
+           editAdvancedOptions={i => setAdvancedOptions(Some(i))}
+           advancedOptionsDisabled
+           hideBatchDetails=true
+         />
+       }}
+      <SigningBlock
+        accountKind={source.Account.kind}
+        state=ledgerState
+        ?secondaryButton
+        loading
+        sendOperation={sendOperation(~operation)}
+      />
+    </ModalFormView>
+  </>;
 };

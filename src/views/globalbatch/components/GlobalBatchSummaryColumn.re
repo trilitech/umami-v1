@@ -22,60 +22,69 @@
 /* DEALINGS IN THE SOFTWARE.                                                 */
 /*                                                                           */
 /*****************************************************************************/
+open ReactNative;
 
-open ReasonReactRouter;
+module Label = {
+  [@react.component]
+  let make = (~amount) => {
+    let theme = ThemeContext.useTheme();
 
-type t =
-  | Accounts
-  | Operations
-  | AddressBook
-  | Delegations
-  | Tokens
-  | Settings
-  | Logs
-  | Nft
-  | Batch
-  | NotFound;
+    let style =
+      Style.(
+        style(
+          ~backgroundColor=theme.colors.stateDisabled,
+          ~padding="0.8rem",
+          ~marginTop="4px",
+          ~marginBottom="4px",
+          ~textAlign=`left,
+          ~borderRadius=4.,
+          (),
+        )
+      );
 
-exception RouteToNotFound;
-
-let match = (url: url) => {
-  switch (url.hash) {
-  | ""
-  | "/" => Accounts
-  | "/operations" => Operations
-  | "/address-book" => AddressBook
-  | "/delegations" => Delegations
-  | "/tokens" => Tokens
-  | "/settings" => Settings
-  | "/logs" => Logs
-  | "/nft" => Nft
-  | "/batch" => Batch
-  | _ => NotFound
+    <View style>
+      <Typography.Subtitle1> {React.string(amount)} </Typography.Subtitle1>
+    </View>;
   };
 };
 
-let toHref =
-  fun
-  | Accounts => "#/"
-  | Operations => "#/operations"
-  | AddressBook => "#/address-book"
-  | Delegations => "#/delegations"
-  | Tokens => "#/tokens"
-  | Settings => "#/settings"
-  | Logs => "#/logs"
-  | Nft => "#/nft"
-  | Batch => "#/batch"
-  | NotFound => raise(RouteToNotFound);
-
-/* This lets us push a Routes.t instead of a string to transition to a new  screen */
-let push = route => route |> toHref |> push;
-
-let useHrefAndOnPress = route => {
-  let href = toHref(route);
-  let onPress = event => {
-    event->ReactNative.Event.PressEvent.preventDefault;
-    ReasonReactRouter.push(href);
+module Content = {
+  [@react.component]
+  let make = (~content) => {
+    <View style={Style.style(~marginTop="10px", ())}>
+      {{
+         content
+         ->List.toArray
+         ->Array.map(((property, values)) =>
+             <View key=property>
+               <Typography.Overline2>
+                 property->React.string
+               </Typography.Overline2>
+               <View>
+                 {values
+                  ->List.mapWithIndex((i, value) =>
+                      <Label
+                        key={property ++ Int.toString(i) ++ value}
+                        amount=value
+                      />
+                    )
+                  ->List.toArray
+                  ->React.array}
+               </View>
+             </View>
+           );
+       }
+       ->React.array}
+    </View>;
   };
-  onPress;
+};
+
+[@react.component]
+let make = (~content: OperationSummaryView.summaryContent) => {
+  let content: list((string, Belt.List.t(string))) =
+    content->List.map(((field, amounts)) =>
+      (field, amounts->List.map(Protocol.Amount.show))
+    );
+
+  <View> {content->ReactUtils.hideNil(content => <Content content />)} </View>;
 };
