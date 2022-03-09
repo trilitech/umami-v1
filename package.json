@@ -57,7 +57,8 @@
     "reason-react": "^0.9.1",
     "reason-react-native": "^0.63.5",
     "reason-react-update": "^2.0.0",
-    "reschema": "2.0.2-alpha.0"
+    "reschema": "2.0.2-alpha.0",
+    "uuid": "^8.3.2"
   },
   "scripts": {
     "start": "cross-env NODE_ENV=development webpack serve --hot --host 0.0.0.0 --config=./webpack.dev.config.js --mode development",
@@ -80,7 +81,7 @@
     "fromsvg:icons": "react-from-svg src/svg/fixed_icons src/svg/components --remove-stroke --remove-fill --with-native-for-reason",
     "svgo:providers": "svgo --folder=src/svg/source/providers --output=src/svg/optimized_providers --disable=removeViewBox --enable=removeDimensions --pretty",
     "fromsvg:providers": "react-from-svg src/svg/optimized_providers src/svg/components --with-native-for-reason",
-    "svg": "yarn svgo:icons && yarn svgfixer:icons && yarn fromsvg:icons && yarn svgo:providers && yarn fromsvg:providers"
+    "svg": "rm -rf src/svg/fixed_icons && mkdir src/svg/fixed_icons && yarn svgo:icons && yarn svgfixer:icons && yarn fromsvg:icons"
   },
   "build": {
     "extends": null,

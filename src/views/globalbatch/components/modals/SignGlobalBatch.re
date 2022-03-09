@@ -23,81 +23,70 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open ReactNative;
+let useSendTransfer = () => {
+  let (operationRequest, sendOperation) = StoreContext.Operations.useCreate();
 
-module Modal = {
-  [@react.component]
-  let make =
-      (
-        ~closeAction,
-        ~action,
-        ~loading=?,
-        ~title,
-        ~subtitle=?,
-        ~contentText=?,
-        ~cancelText,
-        ~actionText,
-      ) => {
-    let theme = ThemeContext.useTheme();
-    <ModalTemplate.Dialog>
-      <Typography.Headline style=FormStyles.header>
-        title->React.string
-      </Typography.Headline>
-      {subtitle->ReactUtils.mapOpt(sub => {
-         <Typography.Headline> sub->React.string </Typography.Headline>
-       })}
-      {contentText->ReactUtils.mapOpt(contentText => {
-         <Typography.Body1 style=FormStyles.textContent>
-           contentText->React.string
-         </Typography.Body1>
-       })}
-      <View style=FormStyles.formAction>
-        <Buttons.Form
-          style=Style.(style(~backgroundColor=theme.colors.stateActive, ()))
-          text=cancelText
-          onPress={_ => closeAction()}
-          disabled=?loading
-        />
-        <Buttons.Form onPress={_ => action()} text=actionText ?loading />
-      </View>
-    </ModalTemplate.Dialog>;
+  let sendTransfer = (~operation: Protocol.batch, signingIntent) => {
+    sendOperation({operation, signingIntent});
   };
+
+  (operationRequest, sendTransfer);
 };
 
-let useModal =
+let safeBuildTransfer = validStates =>
+  if (validStates == [||]) {
+    None;
+  } else {
+    Some(validStates->List.fromArray->SendForm.buildTransaction);
+  };
+
+[@react.component]
+let make =
     (
-      ~action,
-      ~loading=?,
-      ~title,
-      ~subtitle=?,
-      ~contentText=?,
-      ~cancelText,
-      ~actionText,
-      (),
+      ~dryRun,
+      ~operation: option(Protocol.batch),
+      ~closeModal,
+      ~resetGlobalBatch,
+      ~ledgerState,
     ) => {
-  let (openModal, closeModal, wrapModal) = ModalAction.useModal();
+  let (sendTransferState, sendTransfer) = useSendTransfer();
 
-  let action = () =>
-    action()
-    ->Promise.get(
-        fun
-        | Ok(_) => closeModal()
-        | Error(_) => (),
-      );
+  let loading = sendTransferState->ApiRequest.isLoading;
 
-  let modal = () =>
-    wrapModal(
-      <Modal
-        action
-        ?loading
-        title
-        ?subtitle
-        ?contentText
-        cancelText
-        actionText
-        closeAction=closeModal
-      />,
+  let handlePressCancel = _ => {
+    closeModal();
+    Routes.(push(Operations));
+  };
+
+  let renderSummary = () => {
+    operation->Option.mapWithDefault(React.null, operation =>
+      dryRun->Option.mapWithDefault(React.null, dryRun => {
+        <GlobalBatchSummary
+          source={operation.source}
+          loading
+          ledgerState
+          dryRun
+          operation
+          sendOperation=sendTransfer
+          setAdvancedOptions={_ => ()}
+          advancedOptionsDisabled=true
+          onClose=closeModal
+        />
+      })
     );
+  };
 
-  (openModal, closeModal, modal);
+  switch (sendTransferState) {
+  | Done(Ok({hash}), _) =>
+    resetGlobalBatch();
+
+    <ModalFormView closing=ModalFormView.(Close(_ => {closeModal()}))>
+      <SubmittedView
+        hash
+        onPressCancel=handlePressCancel
+        submitText=I18n.Btn.go_operations
+      />
+    </ModalFormView>;
+  | _ => renderSummary()
+  };
 };

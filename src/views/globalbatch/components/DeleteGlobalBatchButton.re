@@ -22,82 +22,30 @@
 /* DEALINGS IN THE SOFTWARE.                                                 */
 /*                                                                           */
 /*****************************************************************************/
-
 open ReactNative;
 
-module Modal = {
-  [@react.component]
-  let make =
-      (
-        ~closeAction,
-        ~action,
-        ~loading=?,
-        ~title,
-        ~subtitle=?,
-        ~contentText=?,
-        ~cancelText,
-        ~actionText,
-      ) => {
-    let theme = ThemeContext.useTheme();
-    <ModalTemplate.Dialog>
-      <Typography.Headline style=FormStyles.header>
-        title->React.string
-      </Typography.Headline>
-      {subtitle->ReactUtils.mapOpt(sub => {
-         <Typography.Headline> sub->React.string </Typography.Headline>
-       })}
-      {contentText->ReactUtils.mapOpt(contentText => {
-         <Typography.Body1 style=FormStyles.textContent>
-           contentText->React.string
-         </Typography.Body1>
-       })}
-      <View style=FormStyles.formAction>
-        <Buttons.Form
-          style=Style.(style(~backgroundColor=theme.colors.stateActive, ()))
-          text=cancelText
-          onPress={_ => closeAction()}
-          disabled=?loading
-        />
-        <Buttons.Form onPress={_ => action()} text=actionText ?loading />
-      </View>
-    </ModalTemplate.Dialog>;
-  };
-};
+// TODO refactor with what is in FromGroupBakerSelector
+let styles =
+  Style.(
+    StyleSheet.create({
+      "inputTypeButton": style(~flexDirection=`row, ~alignItems=`center, ()),
+      "inputTypeText": style(~lineHeight=16., ~marginLeft=7.->dp, ()),
+    })
+  );
 
-let useModal =
-    (
-      ~action,
-      ~loading=?,
-      ~title,
-      ~subtitle=?,
-      ~contentText=?,
-      ~cancelText,
-      ~actionText,
-      (),
-    ) => {
-  let (openModal, closeModal, wrapModal) = ModalAction.useModal();
-
-  let action = () =>
-    action()
-    ->Promise.get(
-        fun
-        | Ok(_) => closeModal()
-        | Error(_) => (),
-      );
-
-  let modal = () =>
-    wrapModal(
-      <Modal
-        action
-        ?loading
-        title
-        ?subtitle
-        ?contentText
-        cancelText
-        actionText
-        closeAction=closeModal
-      />,
-    );
-
-  (openModal, closeModal, modal);
+[@react.component]
+let make = (~onPress) => {
+  let theme = ThemeContext.useTheme();
+  <TouchableOpacity style=styles##inputTypeButton onPress>
+    <Icons.Delete size=14. color={theme.colors.borderMediumEmphasis} />
+    <Typography.ButtonSecondary
+      style=Style.(
+        array([|
+          styles##inputTypeText,
+          style(~color=theme.colors.borderMediumEmphasis, ()),
+        |])
+      )>
+      I18n.global_batch_delete_all->React.string
+    </Typography.ButtonSecondary>
+  </TouchableOpacity>;
 };

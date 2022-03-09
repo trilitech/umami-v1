@@ -23,81 +23,10 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open ReactNative;
-
-module Modal = {
-  [@react.component]
-  let make =
-      (
-        ~closeAction,
-        ~action,
-        ~loading=?,
-        ~title,
-        ~subtitle=?,
-        ~contentText=?,
-        ~cancelText,
-        ~actionText,
-      ) => {
-    let theme = ThemeContext.useTheme();
-    <ModalTemplate.Dialog>
-      <Typography.Headline style=FormStyles.header>
-        title->React.string
-      </Typography.Headline>
-      {subtitle->ReactUtils.mapOpt(sub => {
-         <Typography.Headline> sub->React.string </Typography.Headline>
-       })}
-      {contentText->ReactUtils.mapOpt(contentText => {
-         <Typography.Body1 style=FormStyles.textContent>
-           contentText->React.string
-         </Typography.Body1>
-       })}
-      <View style=FormStyles.formAction>
-        <Buttons.Form
-          style=Style.(style(~backgroundColor=theme.colors.stateActive, ()))
-          text=cancelText
-          onPress={_ => closeAction()}
-          disabled=?loading
-        />
-        <Buttons.Form onPress={_ => action()} text=actionText ?loading />
-      </View>
-    </ModalTemplate.Dialog>;
-  };
-};
-
-let useModal =
-    (
-      ~action,
-      ~loading=?,
-      ~title,
-      ~subtitle=?,
-      ~contentText=?,
-      ~cancelText,
-      ~actionText,
-      (),
-    ) => {
-  let (openModal, closeModal, wrapModal) = ModalAction.useModal();
-
-  let action = () =>
-    action()
-    ->Promise.get(
-        fun
-        | Ok(_) => closeModal()
-        | Error(_) => (),
-      );
-
-  let modal = () =>
-    wrapModal(
-      <Modal
-        action
-        ?loading
-        title
-        ?subtitle
-        ?contentText
-        cancelText
-        actionText
-        closeAction=closeModal
-      />,
-    );
-
-  (openModal, closeModal, modal);
-};
+[@react.component]
+let make = () =>
+  <InfoViewBuilder
+    title=I18n.Title.global_batch_empty
+    subtitle=I18n.Expl.fill_batch
+    iconBuilder=Icons.Batch.build
+  />;

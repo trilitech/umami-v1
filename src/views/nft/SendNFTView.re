@@ -98,7 +98,16 @@ module Form = {
     open SendNFTForm;
 
     [@react.component]
-    let make = (~sender, ~nft, ~form, ~aliases, ~loading) => {
+    let make =
+        (
+          ~sender,
+          ~nft,
+          ~form,
+          ~aliases,
+          ~loading,
+          ~onAddToBatch,
+          ~simulatingBatch=false,
+        ) => {
       let formFieldsAreValids =
         FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
 
@@ -126,9 +135,16 @@ module Form = {
               text=I18n.Btn.send_submit
               onPress={_ => form.submit()}
               loading
-              disabledLook={!formFieldsAreValids}
+              disabled={!formFieldsAreValids}
             />
           </View>
+          <Buttons.SubmitSecondary
+            style=FormStyles.formSecondary
+            text=I18n.global_batch_add
+            onPress={_ => onAddToBatch()}
+            loading=simulatingBatch
+            disabled={!formFieldsAreValids}
+          />
         </ReactFlipToolkit.FlippedView>
       </>;
     };
@@ -147,9 +163,23 @@ let stepToString = step =>
   | SubmittedStep(_) => "submittedstep"
   };
 
+let unsafeExtractValidState =
+    (state: SendNFTForm.state, nft, source): SendForm.validState => {
+  let recipient = state.values.recipient->FormUtils.Unsafe.account;
+
+  let amount =
+    Protocol.Amount.(Token({amount: TokenRepr.Unit.one, token: nft}));
+  let sender = source;
+
+  {amount, sender, recipient};
+};
+
 [@react.component]
 let make = (~source: Account.t, ~nft: Token.t, ~closeAction) => {
   let (modalStep, setModalStep) = React.useState(_ => SendStep);
+
+  let {addTransfer, isSimulating} =
+    GlobalBatchContext.useGlobalBatchContext();
 
   let (operationRequest, sendOperation) = StoreContext.Operations.useCreate();
   let (operationSimulateRequest, sendOperationSimulate) =
@@ -162,10 +192,12 @@ let make = (~source: Account.t, ~nft: Token.t, ~closeAction) => {
       });
   };
 
+  let isForGlobalBatch = React.useRef(false);
+
   let (sign, _setSign) as signOpStep =
     React.useState(() => SignOperationView.SummaryStep);
 
-  let onSubmit = ({state, _}: SendNFTForm.onSubmitAPI) => {
+  let nominalSubmit = (state: SendNFTForm.state) => {
     let transfer =
       ProtocolHelper.Transfer.makeSimpleToken(
         ~destination=
@@ -190,6 +222,15 @@ let make = (~source: Account.t, ~nft: Token.t, ~closeAction) => {
       });
     ();
   };
+
+  let onSubmit = ({state, _}: SendNFTForm.onSubmitAPI) =>
+    if (isForGlobalBatch.current) {
+      let validState = unsafeExtractValidState(state, nft, source);
+      let p = GlobalBatchXfs.validStateToTransferPayload(validState);
+      addTransfer(p, validState.sender, closeAction);
+    } else {
+      nominalSubmit(state);
+    };
 
   let form: SendNFTForm.api = Form.use(onSubmit);
 
@@ -221,12 +262,25 @@ let make = (~source: Account.t, ~nft: Token.t, ~closeAction) => {
   let loadingSimulate = operationSimulateRequest->ApiRequest.isLoading;
   let loading = operationRequest->ApiRequest.isLoading;
 
+  let addToGlobalBatch = () => {
+    isForGlobalBatch.current = true;
+    form.submit();
+  };
+
   <ReactFlipToolkit.Flipper flipKey={modalStep->stepToString}>
     <ReactFlipToolkit.FlippedView flipId="modal">
       <ModalFormView ?title back ?closing>
         {switch (modalStep) {
          | SendStep =>
-           <Form.View sender=source nft form aliases loading=loadingSimulate />
+           <Form.View
+             onAddToBatch=addToGlobalBatch
+             sender=source
+             nft
+             form
+             aliases
+             loading=loadingSimulate
+             simulatingBatch=isSimulating
+           />
          | SigningStep(operation, dryRun) =>
            <SignOperationView
              source={operation.source}

@@ -259,7 +259,7 @@ module SubmitSecondary = {
         ~disabled=false,
         ~loading=?,
         ~fontSize=?,
-        ~borderWidth=1.,
+        ~borderWidth=2.,
         ~style as styleArg=?,
       ) => {
     let theme = ThemeContext.useTheme();
@@ -270,9 +270,16 @@ module SubmitSecondary = {
       ?loading
       vStyle=?styleArg
       style=Style.(
-        style(~borderWidth, ~borderColor=theme.colors.borderHighEmphasis, ())
+        style(
+          ~borderWidth,
+          ~borderColor=
+            disabled
+              ? theme.colors.borderDisabled : theme.colors.borderHighEmphasis,
+          (),
+        )
       )>
-      <Typography.ButtonPrimary ?fontSize>
+      <Typography.ButtonPrimary
+        ?fontSize colorStyle={disabled ? `disabled : `highEmphasis}>
         text->React.string
       </Typography.ButtonPrimary>
     </FormBase>;

@@ -25,79 +25,30 @@
 
 open ReactNative;
 
-module Modal = {
-  [@react.component]
-  let make =
-      (
-        ~closeAction,
-        ~action,
-        ~loading=?,
-        ~title,
-        ~subtitle=?,
-        ~contentText=?,
-        ~cancelText,
-        ~actionText,
-      ) => {
-    let theme = ThemeContext.useTheme();
-    <ModalTemplate.Dialog>
-      <Typography.Headline style=FormStyles.header>
-        title->React.string
-      </Typography.Headline>
-      {subtitle->ReactUtils.mapOpt(sub => {
-         <Typography.Headline> sub->React.string </Typography.Headline>
-       })}
-      {contentText->ReactUtils.mapOpt(contentText => {
-         <Typography.Body1 style=FormStyles.textContent>
-           contentText->React.string
-         </Typography.Body1>
-       })}
-      <View style=FormStyles.formAction>
-        <Buttons.Form
-          style=Style.(style(~backgroundColor=theme.colors.stateActive, ()))
-          text=cancelText
-          onPress={_ => closeAction()}
-          disabled=?loading
-        />
-        <Buttons.Form onPress={_ => action()} text=actionText ?loading />
-      </View>
-    </ModalTemplate.Dialog>;
-  };
-};
+[@react.component]
+let make = (~dryRun, ~operation, ~resetGlobalBatch) => {
+  let (openModal, closeModal, inModal) = ModalAction.useModal();
 
-let useModal =
-    (
-      ~action,
-      ~loading=?,
-      ~title,
-      ~subtitle=?,
-      ~contentText=?,
-      ~cancelText,
-      ~actionText,
-      (),
-    ) => {
-  let (openModal, closeModal, wrapModal) = ModalAction.useModal();
+  let disabled =
+    switch (operation) {
+    | None => true
+    | Some(_) => false
+    };
+  let onPress = _ => openModal();
 
-  let action = () =>
-    action()
-    ->Promise.get(
-        fun
-        | Ok(_) => closeModal()
-        | Error(_) => (),
-      );
-
-  let modal = () =>
-    wrapModal(
-      <Modal
-        action
-        ?loading
-        title
-        ?subtitle
-        ?contentText
-        cancelText
-        actionText
-        closeAction=closeModal
-      />,
-    );
-
-  (openModal, closeModal, modal);
+  let ledgerState = React.useState(() => None);
+  <>
+    <View>
+      <Buttons.SubmitPrimary text=I18n.Btn.batch_submit onPress disabled />
+    </View>
+    {inModal(
+       <SignGlobalBatch
+         dryRun
+         operation
+         resetGlobalBatch
+         closeModal
+         ledgerState
+       />,
+     )}
+  </>;
 };

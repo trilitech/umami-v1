@@ -22,82 +22,69 @@
 /* DEALINGS IN THE SOFTWARE.                                                 */
 /*                                                                           */
 /*****************************************************************************/
-
 open ReactNative;
 
-module Modal = {
+module Label = {
   [@react.component]
-  let make =
-      (
-        ~closeAction,
-        ~action,
-        ~loading=?,
-        ~title,
-        ~subtitle=?,
-        ~contentText=?,
-        ~cancelText,
-        ~actionText,
-      ) => {
+  let make = (~amount) => {
     let theme = ThemeContext.useTheme();
-    <ModalTemplate.Dialog>
-      <Typography.Headline style=FormStyles.header>
-        title->React.string
-      </Typography.Headline>
-      {subtitle->ReactUtils.mapOpt(sub => {
-         <Typography.Headline> sub->React.string </Typography.Headline>
-       })}
-      {contentText->ReactUtils.mapOpt(contentText => {
-         <Typography.Body1 style=FormStyles.textContent>
-           contentText->React.string
-         </Typography.Body1>
-       })}
-      <View style=FormStyles.formAction>
-        <Buttons.Form
-          style=Style.(style(~backgroundColor=theme.colors.stateActive, ()))
-          text=cancelText
-          onPress={_ => closeAction()}
-          disabled=?loading
-        />
-        <Buttons.Form onPress={_ => action()} text=actionText ?loading />
-      </View>
-    </ModalTemplate.Dialog>;
+
+    let style =
+      Style.(
+        style(
+          ~backgroundColor=theme.colors.stateDisabled,
+          ~padding="0.8rem",
+          ~marginTop="4px",
+          ~marginBottom="4px",
+          ~textAlign=`left,
+          ~borderRadius=4.,
+          (),
+        )
+      );
+
+    <View style>
+      <Typography.Subtitle1> {React.string(amount)} </Typography.Subtitle1>
+    </View>;
   };
 };
 
-let useModal =
-    (
-      ~action,
-      ~loading=?,
-      ~title,
-      ~subtitle=?,
-      ~contentText=?,
-      ~cancelText,
-      ~actionText,
-      (),
-    ) => {
-  let (openModal, closeModal, wrapModal) = ModalAction.useModal();
+module Content = {
+  [@react.component]
+  let make = (~content) => {
+    <View style={Style.style(~marginTop="10px", ())}>
+      {{
+         content
+         ->List.toArray
+         ->Array.map(((property, values)) =>
+             <View key=property>
+               <Typography.Overline2>
+                 property->React.string
+               </Typography.Overline2>
+               <View>
+                 {values
+                  ->List.mapWithIndex((i, value) =>
+                      <Label
+                        key={property ++ Int.toString(i) ++ value}
+                        amount=value
+                      />
+                    )
+                  ->List.toArray
+                  ->React.array}
+               </View>
+             </View>
+           );
+       }
+       ->React.array}
+    </View>;
+  };
+};
 
-  let action = () =>
-    action()
-    ->Promise.get(
-        fun
-        | Ok(_) => closeModal()
-        | Error(_) => (),
-      );
-
-  let modal = () =>
-    wrapModal(
-      <Modal
-        action
-        ?loading
-        title
-        ?subtitle
-        ?contentText
-        cancelText
-        actionText
-        closeAction=closeModal
-      />,
+[@react.component]
+let make = (~content: OperationSummaryView.summaryContent) => {
+  let content: list((string, Belt.List.t(string))) =
+    content->List.map(((field, amounts)) =>
+      (field, amounts->List.map(Protocol.Amount.show))
     );
 
-  (openModal, closeModal, modal);
+  <View> {content->ReactUtils.hideNil(content => <Content content />)} </View>;
 };

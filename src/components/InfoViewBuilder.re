@@ -24,80 +24,42 @@
 /*****************************************************************************/
 
 open ReactNative;
+open Style;
 
-module Modal = {
-  [@react.component]
-  let make =
-      (
-        ~closeAction,
-        ~action,
-        ~loading=?,
-        ~title,
-        ~subtitle=?,
-        ~contentText=?,
-        ~cancelText,
-        ~actionText,
-      ) => {
-    let theme = ThemeContext.useTheme();
-    <ModalTemplate.Dialog>
-      <Typography.Headline style=FormStyles.header>
-        title->React.string
-      </Typography.Headline>
-      {subtitle->ReactUtils.mapOpt(sub => {
-         <Typography.Headline> sub->React.string </Typography.Headline>
-       })}
-      {contentText->ReactUtils.mapOpt(contentText => {
-         <Typography.Body1 style=FormStyles.textContent>
-           contentText->React.string
-         </Typography.Body1>
-       })}
-      <View style=FormStyles.formAction>
-        <Buttons.Form
-          style=Style.(style(~backgroundColor=theme.colors.stateActive, ()))
-          text=cancelText
-          onPress={_ => closeAction()}
-          disabled=?loading
-        />
-        <Buttons.Form onPress={_ => action()} text=actionText ?loading />
-      </View>
-    </ModalTemplate.Dialog>;
-  };
-};
+let paddingTop = 100.->dp;
 
-let useModal =
-    (
-      ~action,
-      ~loading=?,
-      ~title,
-      ~subtitle=?,
-      ~contentText=?,
-      ~cancelText,
-      ~actionText,
-      (),
-    ) => {
-  let (openModal, closeModal, wrapModal) = ModalAction.useModal();
+let iconStyle =
+  style(~paddingTop, ~paddingLeft=50.->dp, ~flex=1., ~maxWidth=370.->dp, ());
 
-  let action = () =>
-    action()
-    ->Promise.get(
-        fun
-        | Ok(_) => closeModal()
-        | Error(_) => (),
-      );
+let textStyle = style(~textAlign=`left, ~paddingBottom=30.->dp, ());
 
-  let modal = () =>
-    wrapModal(
-      <Modal
-        action
-        ?loading
-        title
-        ?subtitle
-        ?contentText
-        cancelText
-        actionText
-        closeAction=closeModal
-      />,
+[@react.component]
+let make = (~title, ~subtitle, ~iconBuilder: Icons.builder) => {
+  let theme = ThemeContext.useTheme();
+
+  let icon =
+    iconBuilder(
+      ~color=theme.colors.textDisabled,
+      ~size=272.,
+      ~style=iconStyle,
     );
 
-  (openModal, closeModal, modal);
+  <View
+    style={style(
+      ~display=`flex,
+      ~flexDirection=`row,
+      ~justifyContent=`flexStart,
+      ~alignItems=`center,
+      (),
+    )}>
+    icon
+    <View style={style(~flex=1., ~paddingTop=150.->dp, ())}>
+      <Typography.BigText style=textStyle>
+        title->React.string
+      </Typography.BigText>
+      <Typography.MediumText style=textStyle>
+        subtitle->React.string
+      </Typography.MediumText>
+    </View>
+  </View>;
 };

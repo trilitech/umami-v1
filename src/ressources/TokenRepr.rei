@@ -109,3 +109,5 @@ let kindId: kind => int;
 let id: t => int;
 
 let isNFT: t => bool;
+
+let isFa2: t => bool;
