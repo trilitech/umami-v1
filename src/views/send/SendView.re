@@ -105,7 +105,6 @@ type step =
   | SendStep
   | SigningStep(Protocol.batch, Protocol.Simulation.results)
   | EditStep(int, SendForm.validState)
-  | BatchStep
   | SubmittedStep(string);
 
 let stepToString = step =>
@@ -113,7 +112,6 @@ let stepToString = step =>
   | SendStep => "sendstep"
   | SigningStep(_, _) => "signingstep"
   | EditStep(_, _) => "editstep"
-  | BatchStep => "batchstep"
   | SubmittedStep(_) => "submittedstep"
   };
 
@@ -208,6 +206,7 @@ module Form = {
           ~form,
           ~aliases,
           ~loading,
+          ~simulatingBatch=false,
         ) => {
       let (selectedToken, setSelectedToken) = tokenState;
 
@@ -277,9 +276,10 @@ module Form = {
               disabled={!formFieldsAreValids}
             />
             {onAddToBatch->ReactUtils.mapOpt(addToBatch =>
-               <Buttons.FormSecondary
+               <Buttons.SubmitSecondary
+                 loading=simulatingBatch
                  style=FormStyles.formSecondary
-                 text=I18n.Btn.start_batch_transaction
+                 text=I18n.global_batch_add
                  onPress={_ => addToBatch()}
                  disabled={!formFieldsAreValids}
                />
@@ -318,7 +318,7 @@ module EditionView = {
 };
 
 [@react.component]
-let make = (~account, ~closeAction) => {
+let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
   let initToken = StoreContext.SelectedToken.useGet();
   let aliasesRequest = StoreContext.Aliases.useRequest();
 
@@ -329,7 +329,7 @@ let make = (~account, ~closeAction) => {
 
   let updateAccount = StoreContext.SelectedAccount.useSet();
 
-  let (modalStep, setModalStep) = React.useState(_ => SendStep);
+  let (modalStep, setModalStep) = React.useState(_ => initalStep);
 
   let (token, _) as tokenState =
     React.useState(_ => initToken->Option.map(initToken => initToken));
@@ -342,7 +342,7 @@ let make = (~account, ~closeAction) => {
     ->Promise.tapOk(_ => {updateAccount(operation.source.address)});
   };
 
-  let (batch, setBatch) = React.useState(_ => []);
+  let (batch, _) = React.useState(_ => []);
 
   let (operationSimulateRequest, sendOperationSimulate) =
     StoreContext.Operations.useSimulate();
@@ -357,14 +357,17 @@ let make = (~account, ~closeAction) => {
       });
   };
 
-  let onSubmit = ({state, send}: SendForm.onSubmitAPI) => {
+  let {addTransfer, isSimulating} =
+    GlobalBatchContext.useGlobalBatchContext();
+
+  let onSubmit = ({state}: SendForm.onSubmitAPI) => {
     let validState = SendForm.unsafeExtractValidState(token, state.values);
+
     switch (submitAction.current) {
     | `SubmitAll => onSubmitBatch([validState, ...batch])
     | `AddToBatch =>
-      setBatch(l => [validState, ...l]);
-      send(ResetForm);
-      send(SetFieldValue(Sender, state.values.sender));
+      let p = GlobalBatchXfs.validStateToTransferPayload(validState);
+      addTransfer(p, validState.sender, closeAction);
     };
   };
 
@@ -378,35 +381,11 @@ let make = (~account, ~closeAction) => {
   let onAddToBatch = _ => {
     submitAction.current = `AddToBatch;
     form.submit();
-    setModalStep(_ => BatchStep);
   };
 
-  let onAddCSVList = (csvRows: CSVEncoding.t) => {
-    let transformTransfer =
-      csvRows->List.mapReverse(t => {
-        switch (t.data) {
-        | Transfer.FA2Batch(_) => assert(false)
-        | Transfer.Simple({destination, amount}) =>
-          SendForm.{
-            amount,
-            sender: form.values.sender,
-            recipient: FormUtils.Alias.Address(destination),
-          }
-        }
-      });
-
-    setBatch(_ => transformTransfer);
-  };
-
-  let onEdit = (i, token, {state}: SendForm.onSubmitAPI) => {
+  let onEdit = (_, token, {state}: SendForm.onSubmitAPI) => {
     let validState = SendForm.unsafeExtractValidState(token, state.values);
-    setBatch(b => b->List.mapWithIndex((j, v) => i == j ? validState : v));
-    setModalStep(_ => BatchStep);
-  };
-
-  let onDelete = i => {
-    setBatch(b => b->List.keepWithIndex((_, j) => j != i));
-    List.length(batch) == 1 ? setModalStep(_ => SendStep) : ();
+    onEdit(validState);
   };
 
   let (signerState, _) as state = React.useState(() => None);
@@ -456,11 +435,7 @@ let make = (~account, ~closeAction) => {
     | AdvancedOptStep(_) => Some(() => setSign(_ => SummaryStep))
     | SummaryStep =>
       switch (modalStep) {
-      | SigningStep(_, _) =>
-        Some(() => setModalStep(_ => batch == [] ? SendStep : BatchStep))
-      | EditStep(_, _) => Some(() => setModalStep(_ => BatchStep))
-      | SendStep =>
-        batch != [] ? Some(_ => setModalStep(_ => BatchStep)) : None
+      | SigningStep(_, _) => Some(() => setModalStep(_ => SendStep))
       | _ => None
       }
     };
@@ -477,7 +452,6 @@ let make = (~account, ~closeAction) => {
     switch (modalStep) {
     | SendStep
     | EditStep(_) => Some(I18n.Title.send)
-    | BatchStep => Some(I18n.Title.batch)
     | SigningStep(_, _) => SignOperationView.makeTitle(sign)->Some
     | SubmittedStep(_) => None
     };
@@ -494,20 +468,6 @@ let make = (~account, ~closeAction) => {
                onPressCancel
                submitText=I18n.Btn.go_operations
              />
-           | BatchStep =>
-             <BatchView
-               onAddTransfer={_ => setModalStep(_ => SendStep)}
-               onAddCSVList
-               batch={batch->List.reverse}
-               onSubmitBatch
-               onEdit={(i, state) =>
-                 setModalStep(_ =>
-                   EditStep(batch->List.length - i - 1, state)
-                 )
-               }
-               onDelete={i => onDelete(batch->List.length - i - 1)}
-               loading=loadingSimulate
-             />
            | EditStep(index, initValues) =>
              let onSubmit = form => onEdit(index, form);
              <EditionView
@@ -515,20 +475,19 @@ let make = (~account, ~closeAction) => {
                initValues
                onSubmit
                index
-               loading=false
+               loading=isSimulating
                aliases
              />;
            | SendStep =>
-             let onSubmit = batch != [] ? onAddToBatch : onSubmitAll;
-             let onAddToBatch = batch != [] ? None : Some(onAddToBatch);
              <Form.View
                tokenState
                ?token
                form
-               mode={Form.View.Creation(onAddToBatch, onSubmit)}
+               mode={Form.View.Creation(Some(onAddToBatch), onSubmitAll)}
                loading=loadingSimulate
+               simulatingBatch=isSimulating
                aliases
-             />;
+             />
            | SigningStep(operation, dryRun) =>
              <SignOperationView
                source={operation.source}
