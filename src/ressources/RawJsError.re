@@ -26,9 +26,10 @@
 type t = {
   message: string,
   name: string,
+  status: int,
 };
 
-let fromPromiseError: Js.Promise.error => t = Obj.magic;
+external fromPromiseError: Js.Promise.error => t = "%identity";
 
 let fromPromiseParsed = (p, parse) =>
   p->Promise.fromJs(e => {
