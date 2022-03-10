@@ -6,7 +6,7 @@ type t;
 module SearchParams = {
   type t;
 
-  [@bs.send.pipe: t] external get: string => Js.nullable(string) = "get";
+  [@bs.send] external get: (t, string) => Js.nullable(string) = "get";
 };
 
 [@bs.module "url"] [@bs.new] external make: string => t = "URL";

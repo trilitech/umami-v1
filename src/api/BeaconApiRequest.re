@@ -28,9 +28,9 @@ let makeClient = () =>
 
 let dataFromURL = url => {
   URL.make(url)
-  |> URL.getSearchParams
-  |> URL.SearchParams.get("data")
-  |> Js.Nullable.toOption;
+  ->URL.getSearchParams
+  ->URL.SearchParams.get("data")
+  ->Js.Nullable.toOption;
 };
 
 type Errors.t +=
