@@ -419,13 +419,10 @@ module Fetch = {
     let fetchMetadata = () => {
       let%Await contract =
         tzip12Cache->TaquitoAPI.Tzip12Cache.findContract(
-          tzktToken.tokenInfo.contract.address,
+          tzktToken->Tzkt.address,
         );
       let%AwaitMap metadata =
-        MetadataAPI.Tzip12.read(
-          contract,
-          tzktToken.tokenInfo.tokenId->ReBigNumber.toInt,
-        );
+        MetadataAPI.Tzip12.read(contract, tzktToken->Tzkt.tokenId);
       metadataToToken(
         config.network.chain->Network.getChainId,
         tokenContract,
