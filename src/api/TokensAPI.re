@@ -65,7 +65,7 @@ module BetterCallDev = {
   };
 
   // Returns a list of arrays: this will be treated later, so we return it as raw as possible for now
-  let fetchTokens = (config, alreadyFetched, account, index, number) => {
+  let fetchTokens = (config, alreadyFetched, account, index, number, total) => {
     let rec fetch = (alreadyFetched, index, number) => {
       let%Await url =
         ServerAPI.URL.External.betterCallDevAccountTokens(
@@ -91,17 +91,25 @@ module BetterCallDev = {
       // Final index
       let finalIndex = min(index, tokens.total);
 
-      let remainingOnTotal = max(tokens.total - index, 0);
+      let remainingOnTotal = max(total - index, 0);
 
       // adds the newly fetched tokens to the cache currently built
       let alreadyFetched =
         alreadyFetched->(mergeBalanceArray(tokens.balances));
 
       remaining <= 0 || remainingOnTotal <= 0
-        ? (alreadyFetched, finalIndex, tokens.total)->Promise.ok
+        ? (alreadyFetched, finalIndex)->Promise.ok
         : fetch(alreadyFetched, index, remaining);
     };
     fetch(alreadyFetched, index, number);
+  };
+
+  let fetchTokensNumber = (config, account) => {
+    let%Await url =
+      ServerAPI.URL.External.tzktAccountTokensNumber(~config, ~account)
+      ->FutureBase.value;
+    let%Await number = ServerAPI.URL.get(url);
+    number->JsonEx.decode(Json.Decode.int)->Promise.value;
   };
 
   // fetch a certain number of token for each account
@@ -114,13 +122,15 @@ module BetterCallDev = {
       // account
       | [] => (alreadyFetched, highestIndex, totalAccumulated)->Promise.ok
       | [account, ...accounts] =>
-        let%Await (fetched, index, total) =
+        let%Await total = fetchTokensNumber(config, account);
+        let%Await (fetched, index) =
           fetchTokens(
             config,
             alreadyFetched,
             account,
             index,
             numberByAccount,
+            total,
           );
         fetch(
           fetched,
