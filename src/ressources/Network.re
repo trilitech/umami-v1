@@ -309,7 +309,11 @@ let getNetworks = (c: nativeChains) =>
   };
 
 let testNetwork = n =>
-  TaquitoAPI.Rpc.getBlockHeader(n.endpoint)->Promise.timeoutAfter(2000);
+  // Avoids dependency to TaquitoAPI
+  ReTaquito.RPCClient.create(n.endpoint)
+  ->ReTaquito.RPCClient.getBlockHeader()
+  ->ReTaquitoError.fromPromiseParsed
+  ->Promise.timeoutAfter(2000);
 
 let testNetworks = eps => {
   let eps = eps->List.shuffle;
