@@ -213,8 +213,8 @@ module Tzip12 = {
     isTransferable: option(bool), // default: true
     isBooleanAmount: option(bool), // default: false
     shouldPreferSymbol: option(bool), //default: false
-    formats: option(array(TokenRepr.Metadata.format)),
-    attributes: option(array(TokenRepr.Metadata.attribute)),
+    formats: option(array(Metadata.format)),
+    attributes: option(array(Metadata.attribute)),
   };
 
   type t = {getTokenMetadata: (. int) => Js.Promise.t(metadata)};

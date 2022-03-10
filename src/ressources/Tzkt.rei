@@ -39,7 +39,7 @@ type metadata = {
   isTransferable: option(bool), // default: true
   isBooleanAmount: option(bool), // default: false
   shouldPreferSymbol: option(bool), //default: false
-  formats: option(array(TokenRepr.Metadata.format)),
+  formats: option(array(Metadata.format)),
   creators: option(array(string)),
   tags: option(array(string)),
 };
@@ -100,7 +100,7 @@ module Migration: {
     is_transferable: option(bool), // default: true
     is_boolean_amount: option(bool), // default: false
     should_prefer_symbol: option(bool), //default: false
-    formats: option(array(TokenRepr.Metadata.format)),
+    formats: option(array(Metadata.format)),
     creators: option(array(string)),
     tags: option(array(string)),
   };

@@ -306,7 +306,7 @@ let removeToken = (token, ~pruneCache) => {
 };
 
 let metadataToAsset = (metadata: ReTaquitoTypes.Tzip12.metadata) =>
-  TokenRepr.Metadata.{
+  Metadata.{
     description: metadata.description,
     minter: metadata.minter,
     creators: metadata.creators,
@@ -324,7 +324,7 @@ let metadataToAsset = (metadata: ReTaquitoTypes.Tzip12.metadata) =>
     artifactUri: metadata.artifactUri,
     displayUri: metadata.displayUri,
     thumbnailUri:
-      TokenRepr.thumbnailUriFromFormat(
+      Metadata.thumbnailUriFromFormat(
         metadata.thumbnailUri,
         metadata.formats,
       ),

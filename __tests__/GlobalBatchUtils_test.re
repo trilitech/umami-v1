@@ -41,7 +41,7 @@ let makeMockFA2Token = (amount, address) => {
     symbol: "bar",
     chain: "baz",
     decimals: 2,
-    asset: TokenRepr.defaultAsset,
+    asset: Metadata.defaultAsset,
   };
   let mockToken = {token: mockFA1_2Token, amount: mockTokenAmount};
   mockToken;
@@ -71,7 +71,7 @@ describe("GlobalBatchUtils", () => {
         symbol: "bar",
         chain: "baz",
         decimals: 2,
-        asset: TokenRepr.defaultAsset,
+        asset: Metadata.defaultAsset,
       };
       let mockToken: Protocol.Amount.t =
         Token({token: mockFA1_2Token, amount: mockTokenAmount});

@@ -13,7 +13,7 @@ let token1 = {
   symbol: "TK1",
   chain: "NetXz969SFaFn8k",
   decimals: 2,
-  asset: defaultAsset,
+  asset: Metadata.defaultAsset,
 };
 
 let token2 = {

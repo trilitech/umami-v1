@@ -155,14 +155,11 @@ module Tzip12 = {
       let isBooleanAmount = token_info->getOptBool("isBooleanAmount");
       let shouldPreferSymbol = token_info->getOptBool("shouldPreferSymbol");
       let formats =
-        token_info->getOptArray(
-          "formats",
-          Token.Decode.Metadata.formatDecoder,
-        );
+        token_info->getOptArray("formats", Metadata.Decode.formatDecoder);
       let attributes =
         token_info->getOptArray(
           "attributes",
-          Token.Decode.Metadata.attributeDecoder,
+          Metadata.Decode.attributeDecoder,
         );
       let isNFT =
         artifactUri != None

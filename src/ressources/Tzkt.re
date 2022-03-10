@@ -35,7 +35,7 @@ type metadata = {
   isTransferable: option(bool), // default: true
   isBooleanAmount: option(bool), // default: false
   shouldPreferSymbol: option(bool), //default: false
-  formats: option(array(TokenRepr.Metadata.format)),
+  formats: option(array(Metadata.format)),
   creators: option(array(string)),
   tags: option(array(string)),
 };
@@ -74,7 +74,7 @@ let isNFT = t => {
 let toTokenAsset = token =>
   token.tokenInfo.metadata
   ->Option.map(metadata =>
-      TokenRepr.{
+      Metadata.{
         ...defaultAsset,
         description: metadata.description,
         formats: metadata.formats,
@@ -83,7 +83,7 @@ let toTokenAsset = token =>
         artifactUri: metadata.artifactUri,
         displayUri: metadata.displayUri,
         thumbnailUri:
-          TokenRepr.thumbnailUriFromFormat(
+          Metadata.thumbnailUriFromFormat(
             metadata.thumbnailUri,
             metadata.formats,
           ),
@@ -133,7 +133,7 @@ let toTokenRepr =
         symbol,
         decimals,
         chain,
-        asset: token->toTokenAsset->Option.default(TokenRepr.defaultAsset),
+        asset: token->toTokenAsset->Option.default(Metadata.defaultAsset),
       }
       ->Some
     | _ => None
@@ -210,11 +210,7 @@ module Decode = {
     creators: json |> optionalOrNull("formats", array(string)),
     tags: json |> optionalOrNull("formats", array(string)),
     formats:
-      json
-      |> optionalOrNull(
-           "formats",
-           array(Token.Decode.Metadata.formatDecoder),
-         ),
+      json |> optionalOrNull("formats", array(Metadata.Decode.formatDecoder)),
   };
 
   let standardDecoder = s =>
@@ -306,7 +302,7 @@ module Migration = {
     is_transferable: option(bool), // default: true
     is_boolean_amount: option(bool), // default: false
     should_prefer_symbol: option(bool), //default: false
-    formats: option(array(TokenRepr.Metadata.format)),
+    formats: option(array(Metadata.format)),
     creators: option(array(string)),
     tags: option(array(string)),
   };
@@ -333,11 +329,7 @@ module Migration = {
     creators: json |> optionalOrNull("formats", array(string)),
     tags: json |> optionalOrNull("formats", array(string)),
     formats:
-      json
-      |> optionalOrNull(
-           "formats",
-           array(Token.Decode.Metadata.formatDecoder),
-         ),
+      json |> optionalOrNull("formats", array(Metadata.Decode.formatDecoder)),
   };
 
   let migrate = (tokenContract: TokenContract.t, bcd: bcd) => {
