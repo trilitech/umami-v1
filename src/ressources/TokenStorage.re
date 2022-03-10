@@ -156,7 +156,7 @@ module Registered = {
 
 /** The cache is a representation of the already fetched tokens from the chain */
 module Cache = {
-  include LocalStorage.Make({
+  module StorageRepr = {
     type t = TokensLibrary.t;
 
     let key = "cached-tokens";
@@ -169,15 +169,15 @@ module Cache = {
             ("kind", string("full")),
             ("value", t |> Token.Encode.record),
           ])
-        | Partial(tc, bcd, retry) =>
+        | Partial(t, chain, retry) =>
           object_([
             ("kind", string("partial")),
             (
               "value",
-              (tc, bcd, retry)
+              (t, chain, retry)
               |> tuple3(
-                   TokenContract.Encode.record,
-                   BCD.Encode.tokenBalanceEncoder,
+                   Tzkt.Encode.encoder,
+                   Network.Encode.chainEncoder,
                    bool,
                  ),
             ),
@@ -210,13 +210,13 @@ module Cache = {
              json =>
                json
                |> pair(
-                    TokenContract.Decode.record,
-                    BCD.Decode.tokenBalanceDecoder,
+                    Tzkt.Decode.decoder,
+                    Network.Decode.(chainDecoder(nativeChainFromString)),
                   )
-               |> (((tc, bcd)) => (tc, bcd, true)),
+               |> (((t, chain)) => (t, chain, true)),
              tuple3(
-               TokenContract.Decode.record,
-               BCD.Decode.tokenBalanceDecoder,
+               Tzkt.Decode.decoder,
+               Network.Decode.(chainDecoder(nativeChainFromString)),
                bool,
              ),
            )
@@ -278,6 +278,9 @@ module Cache = {
         });
     };
   });
+  };
+
+  include LocalStorage.Make(StorageRepr);
 
   let getWithFallback = () =>
     switch (get()) {

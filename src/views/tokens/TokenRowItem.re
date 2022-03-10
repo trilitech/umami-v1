@@ -86,7 +86,7 @@ let styles =
 
 module EditionModal = {
   [@react.component]
-  let make = (~action, ~item, ~token, ~tokens, ~currentChain) => {
+  let make = (~action, ~item, ~token, ~tokens, ~currentChain as _) => {
     open TokensLibrary.Token;
     let (openAction, closeAction, wrapModal) = ModalAction.useModal();
 
@@ -97,7 +97,7 @@ module EditionModal = {
            action
            address={token->address}
            kind={TokenContract.toTokenKind(token->kind, token->id)}
-           chain={token->chain->Option.default(currentChain)}
+           chain={token->chain}
            tokens
            closeAction
          />,
