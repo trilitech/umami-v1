@@ -437,8 +437,6 @@ let getNodeChain = (~timeout=?, url) => {
   };
 };
 
-let isMainnet = n => n == `Mainnet;
-
 let checkConfiguration = (api_url, node_url): Promise.t((apiVersion, chain)) =>
   Promise.map2(
     getAPIVersion(~timeout=5000, api_url),
