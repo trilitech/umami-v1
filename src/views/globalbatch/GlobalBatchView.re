@@ -32,8 +32,7 @@ module CSVFormatLink = BatchView.Transactions.CSVFormatLink;
 let styles =
   Style.(
     StyleSheet.create({
-      "container":
-        style(~display=`flex, ~flexDirection=`row, ~marginTop="6px", ()),
+      "container": style(~display=`flex, ~flexDirection=`row, ()),
       "leftCol": style(~flex=4., ()),
       "rightCol": style(~flex=1., ~marginLeft="12px", ()),
     })
@@ -53,17 +52,6 @@ module LeftCol = {
 module RightCol = {
   [@react.component]
   let make = (~children) => <View style=styles##rightCol> children </View>;
-};
-
-module BatchHeader = {
-  [@react.component]
-  let make = () => {
-    <Page.Header>
-      <Typography.Body1>
-        {React.string(I18n.Expl.global_batch_header)}
-      </Typography.Body1>
-    </Page.Header>;
-  };
 };
 
 module TransactionCounter = {
@@ -167,7 +155,6 @@ let make = () => {
       </Typography.Headline>
       <Container>
         <LeftCol>
-          <BatchHeader />
           <Page.Header>
             <AccountElements.Selector.Simple account />
           </Page.Header> // Page.Header needed for consistent Account display width

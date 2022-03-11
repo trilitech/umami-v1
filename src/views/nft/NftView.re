@@ -31,7 +31,6 @@ let styles =
       "listContent":
         style(
           ~flex=1.,
-          ~paddingTop=4.->dp,
           ~paddingBottom=LayoutConst.pagePaddingVertical->dp,
           ~paddingHorizontal=LayoutConst.pagePaddingHorizontal->dp,
           (),
