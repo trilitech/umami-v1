@@ -207,6 +207,8 @@ module Label = {
   let custom_network_node_url = plural => p("Node URL%s", plural ? "s" : "");
   let file = "File";
   let storage_location = "Storage location";
+  let entrypoint = "Entrypoint";
+  let parameter = "Parameter";
 };
 
 module Input_placeholder = {

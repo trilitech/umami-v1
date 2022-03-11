@@ -149,6 +149,9 @@ module Operations = {
             (),
           ),
         "listLabel": style(~marginBottom=4.->dp, ()),
+        "infoContainer": style(~flex=1., ()),
+
+        "label": style(~marginTop=20.->dp, ~marginBottom=4.->dp, ()),
         "num":
           style(
             ~width=22.->dp,
@@ -173,44 +176,125 @@ module Operations = {
   };
 
   module Item = {
+    let itemStyles =
+      Style.(
+        StyleSheet.create({
+          "codeLine":
+            style(~flex=1., ~flexDirection=`row, ~marginTop=5.->dp, ()),
+          "codeBlock":
+            style(
+              ~flexDirection=`row,
+              ~alignItems=`center,
+              ~marginRight=5.->dp,
+              ~borderRadius=4.,
+              ~paddingLeft=8.->dp,
+              (),
+            ),
+        })
+      );
+
+    let code = ((code1, code2), label1, label2) => {
+      let theme = ThemeContext.useTheme();
+
+      let addToast = LogsContext.useToast();
+
+      let code = (label, content) => {
+        <View
+          style=Style.(
+            array([|
+              style(~backgroundColor=theme.colors.stateDisabled, ()),
+              itemStyles##codeBlock,
+            |])
+          )>
+          <Typography.Address colorStyle=`mediumEmphasis>
+            label->React.string
+          </Typography.Address>
+          <ClipboardButton copied=I18n.Log.content addToast data=content />
+        </View>;
+      };
+
+      <>
+        <View style=itemStyles##codeLine>
+          {code(label1, code1)}
+          {code(label2, code2)}
+        </View>
+      </>;
+    };
+
     [@react.component]
-    let make = (~i, ~title, ~recipient, ~amount, ~button=?) => {
+    let make =
+        (
+          ~i,
+          ~title,
+          ~recipient,
+          ~amount,
+          ~origination,
+          ~parameter: option(ProtocolOptions.parameter),
+          ~button=?,
+        ) => {
       let aliases = StoreContext.Aliases.useGetAll();
       let theme: ThemeContext.theme = ThemeContext.useTheme();
 
-      <View
-        style=Style.(
-          arrayOption([|
-            Some(styles##row),
-            Some(style(~borderColor=theme.colors.borderDisabled, ())),
-            Option.onlyIf(i > 0, () => styles##notFirstRow),
-          |])
-        )>
-        <Typography.Subtitle1 colorStyle=`mediumEmphasis style=styles##num>
-          {(i + 1)->string_of_int->React.string}
-        </Typography.Subtitle1>
-        <View>
-          <Typography.Subtitle1 colorStyle=`mediumEmphasis>
-            title->React.string
+      let michelsonToString = p =>
+        p
+        ->ProtocolOptions.TransactionParameters.MichelineMichelsonV1Expression.toString
+        ->Option.getWithDefault("");
+
+      <>
+        <View
+          style=Style.(
+            arrayOption([|
+              Some(styles##row),
+              Some(style(~borderColor=theme.colors.borderDisabled, ())),
+              Option.onlyIf(i > 0, () => styles##notFirstRow),
+            |])
+          )>
+          <Typography.Subtitle1 colorStyle=`mediumEmphasis style=styles##num>
+            {(i + 1)->string_of_int->React.string}
           </Typography.Subtitle1>
-          {switch (recipient) {
-           | Some(recipient) =>
-             <AccountElements.Selector.Item
-               style=styles##account
-               account={
-                 Alias(
-                   recipient
-                   ->AliasHelpers.getAliasFromAddress(aliases)
-                   ->Option.getWithDefault(Alias.make(~name="", recipient)),
-                 )
-               }
-               showAmount={buildAmount(amount)}
-             />
-           | None => React.null
-           }}
+          <View style=styles##infoContainer>
+            <Typography.Subtitle1 colorStyle=`mediumEmphasis>
+              title->React.string
+            </Typography.Subtitle1>
+            {switch (recipient) {
+             | Some(recipient) =>
+               <AccountElements.Selector.Item
+                 style=styles##account
+                 account={
+                   Alias(
+                     recipient
+                     ->AliasHelpers.getAliasFromAddress(aliases)
+                     ->Option.getWithDefault(
+                         Alias.make(~name="", recipient),
+                       ),
+                   )
+                 }
+                 showAmount={buildAmount(amount)}
+               />
+             | None => React.null
+             }}
+            {parameter->ReactUtils.mapOpt(
+               (ProtocolOptions.{value, entrypoint}) =>
+               code(
+                 (
+                   entrypoint->ProtocolOptions.TransactionParameters.default,
+                   value->michelsonToString,
+                 ),
+                 I18n.Label.entrypoint,
+                 I18n.Label.parameter,
+               )
+             )}
+            {origination->ReactUtils.mapOpt(((impl, storage)) =>
+               code(
+                 (impl->michelsonToString, storage->michelsonToString),
+                 I18n.Label.code,
+                 I18n.Label.storage,
+               )
+             )}
+          </View>
+          button->ReactUtils.opt
         </View>
-        button->ReactUtils.opt
-      </View>;
+      </>;
     };
   };
 
@@ -230,7 +314,9 @@ module Operations = {
     title: string,
     address: option(PublicKeyHash.t),
     amount: option(string),
-    parameters: option(ReTaquitoTypes.Transfer.Entrypoint.param),
+    originationCode:
+      option((ReTaquitoTypes.Code.t, ReTaquitoTypes.Storage.t)),
+    parameter: option(ProtocolOptions.parameter),
     optionsSet: bool,
   };
 
@@ -253,12 +339,24 @@ module Operations = {
         style={listStyle(theme, smallest)} alwaysBounceVertical=false>
         {{
            recipients->Array.mapWithIndex(
-             (i, {title, address, amount, optionsSet}) => {
+             (
+               i,
+               {
+                 title,
+                 address,
+                 amount,
+                 optionsSet,
+                 originationCode,
+                 parameter,
+               },
+             ) => {
              <Item
                title
                key={string_of_int(i)}
                i
                recipient=address
+               origination=originationCode
+               parameter
                amount
                button=?{button->Option.map(b => b(i, optionsSet))}
              />
@@ -389,19 +487,17 @@ module Batch = {
             }) => {
               title: I18n.operation_transaction,
               address: Some(t.destination),
-              amount: t.amount->ProtocolAmount.toString->Some,
-              parameters:
-                transactionParameters(
-                  ~entrypoint=parameter.entrypoint,
-                  ~parameter=parameter.value,
-                ),
+              amount: t.amount->ProtocolAmount.show->Some,
+              originationCode: None,
+              parameter: Some(parameter),
               optionsSet: ProtocolOptions.txOptionsSet(options),
             }
           | Transfer({options, data: FA2Batch({address})}) => {
               title: I18n.operation_token_batch,
               address: Some(address),
               amount: None,
-              parameters: None,
+              originationCode: None,
+              parameter: None,
               optionsSet: ProtocolOptions.txOptionsSet(options),
             }
           | Delegation(delegation) =>
@@ -414,14 +510,16 @@ module Batch = {
               address: target,
               amount: None,
               title,
-              parameters: None,
+              originationCode: None,
+              parameter: None,
               optionsSet: false,
             };
           | Origination(origination) => {
               address: origination.delegate,
               amount: None,
               title: I18n.operation_origination,
-              parameters: None,
+              originationCode: Some((origination.code, origination.storage)),
+              parameter: None,
               optionsSet: false,
             }
           }
