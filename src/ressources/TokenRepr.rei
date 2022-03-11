@@ -5,19 +5,24 @@ module Unit: {
 
   type illformed =
     | NaN
-    | Float
+    | Float(option(int))
     | Negative;
 
-  let fromBigNumber: ReBigNumber.t => result(t, illformed);
+  type Errors.t +=
+    | IllformedTokenUnit(ReBigNumber.t, illformed);
+
+  let fromBigNumber: ReBigNumber.t => Promise.result(t);
   let toBigNumber: t => ReBigNumber.t;
 
+  let fromFloatBigNumber: (ReBigNumber.t, int) => Promise.result(t);
+
   let toNatString: (~decimals: int=?, t) => string;
-  let fromNatString: string => result(t, illformed);
+  let fromNatString: string => Promise.result(t);
 
   let toStringDecimals: (t, int) => string;
-  let fromStringDecimals: (string, int) => result(t, illformed);
+  let fromStringDecimals: (string, int) => Promise.result(t);
 
-  let formatString: (string, int) => Belt.Result.t(string, illformed);
+  let formatString: (string, int) => Promise.result(string);
 
   let zero: t;
   let one: t;

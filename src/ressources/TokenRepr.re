@@ -23,26 +23,56 @@
 /*                                                                           */
 /*****************************************************************************/
 
+open Let;
+
 module Unit = {
   type t = ReBigNumber.t;
 
   type illformed =
     | NaN
-    | Float
+    | Float(option(int))
     | Negative;
+
+  type Errors.t +=
+    | IllformedTokenUnit(ReBigNumber.t, illformed);
+
+  let () =
+    Errors.registerHandler(
+      "TokenRepr.Unit",
+      fun
+      | IllformedTokenUnit(e, NaN) =>
+        I18n.Errors.not_a_number(ReBigNumber.toString(e))->Some
+      | IllformedTokenUnit(e, Negative) =>
+        I18n.Errors.negative_number(ReBigNumber.toString(e))->Some
+      | IllformedTokenUnit(e, Float(None | Some(0))) =>
+        I18n.Errors.unexpected_decimals(ReBigNumber.toString(e))->Some
+      | IllformedTokenUnit(e, Float(Some(decimals))) =>
+        I18n.Errors.expected_decimals(ReBigNumber.toString(e), decimals)
+        ->Some
+      | _ => None,
+    );
 
   open ReBigNumber;
   let toBigNumber = x => x;
-  let fromBigNumber = x =>
+  let fromBigNumber = (x, allowFloat) =>
     if (x->isNaN) {
-      Error(NaN);
-    } else if (!x->isInteger) {
-      Error(Float);
+      Error(IllformedTokenUnit(x, NaN));
+    } else if (!x->isInteger && !allowFloat) {
+      Error(IllformedTokenUnit(x, Float(None)));
     } else if (x->isNegative) {
-      Error(Negative);
+      Error(IllformedTokenUnit(x, Negative));
     } else {
       x->Ok;
     };
+
+  let fromFloatBigNumber = (x, decimals) => {
+    let%Res v = x->fromBigNumber(true);
+    let shift = fromInt(10)->powInt(decimals);
+    let x = v->times(shift);
+    x->isInteger
+      ? Ok(x) : Error(IllformedTokenUnit(v, Float(Some(decimals))));
+  };
+  let fromBigNumber = x => x->fromBigNumber(false);
 
   let isNat = v => v->isInteger && !v->isNegative && !v->isNaN;
 

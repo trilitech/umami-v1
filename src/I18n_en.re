@@ -670,6 +670,11 @@ module Errors = {
   let gas_exhausted_above_limit = "Gas exhausted and above protocol limit per operation";
   let storage_exhausted_above_limit = "Storage exhausted and above protocol limit per operation";
   let unhandled_operation = "Unhandled operation";
+  let not_a_number = v => p("%s is not a valid number", v);
+  let negative_number = v => p("%s is negative", v);
+  let unexpected_decimals = v => p("%s does not accept decimals", v);
+  let expected_decimals = (v, d) =>
+    p("%s does not accept more that %d decimals", v, d);
 };
 
 module Csv = {

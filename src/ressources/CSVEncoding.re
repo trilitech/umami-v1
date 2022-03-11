@@ -55,7 +55,7 @@ let () =
 
 type t = list(Protocol.Transfer.t);
 
-let addr = Encodings.custom(~conv=PublicKeyHash.buildImplicit);
+let addr = Encodings.custom(~conv=PublicKeyHash.build);
 let contract = Encodings.custom(~conv=PublicKeyHash.buildContract);
 let michelson =
   Encodings.custom(
@@ -121,7 +121,7 @@ let handleTokenRow =
       );
 
   amount
-  ->Token.Unit.fromBigNumber
+  ->Token.Unit.fromFloatBigNumber(token.decimals)
   ->Result.mapError(_ => CannotParseTokenAmount(amount, index, 2))
   ->Result.map(amount =>
       ProtocolHelper.Transfer.makeSimpleToken(
