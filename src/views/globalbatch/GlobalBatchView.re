@@ -32,8 +32,7 @@ module CSVFormatLink = BatchView.Transactions.CSVFormatLink;
 let styles =
   Style.(
     StyleSheet.create({
-      "container":
-        style(~display=`flex, ~flexDirection=`row, ~marginTop="6px", ()),
+      "container": style(~display=`flex, ~flexDirection=`row, ()),
       "leftCol": style(~flex=4., ()),
       "rightCol": style(~flex=1., ~marginLeft="12px", ()),
     })
