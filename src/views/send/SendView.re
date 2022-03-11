@@ -238,9 +238,6 @@ module Form = {
             <Typography.Overline1>
               I18n.Title.send_many_transactions->React.string
             </Typography.Overline1>
-            <Typography.Body2 style=FormStyles.subtitle>
-              I18n.Expl.send_many_transactions->React.string
-            </Typography.Body2>
           </View>
           <FormGroupAmountWithTokenSelector
             label=I18n.Label.send_amount
