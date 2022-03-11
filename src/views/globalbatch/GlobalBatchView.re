@@ -55,17 +55,6 @@ module RightCol = {
   let make = (~children) => <View style=styles##rightCol> children </View>;
 };
 
-module BatchHeader = {
-  [@react.component]
-  let make = () => {
-    <Page.Header>
-      <Typography.Body1>
-        {React.string(I18n.Expl.global_batch_header)}
-      </Typography.Body1>
-    </Page.Header>;
-  };
-};
-
 module TransactionCounter = {
   [@react.component]
   let make = (~batch) => {
@@ -167,7 +156,6 @@ let make = () => {
       </Typography.Headline>
       <Container>
         <LeftCol>
-          <BatchHeader />
           <Page.Header>
             <AccountElements.Selector.Simple account />
           </Page.Header> // Page.Header needed for consistent Account display width
