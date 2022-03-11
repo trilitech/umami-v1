@@ -66,7 +66,7 @@ type tokens = array(t);
 let address: t => PublicKeyHash.t;
 let tokenId: t => int;
 
-let toTokenRepr: (option(string), t) => option(TokenRepr.t);
+let toTokenRepr: (option(Network.chainId), t) => option(TokenRepr.t);
 let fromTokenRepr: TokenRepr.t => t;
 
 let updateFromBuiltinTemplate: t => t;

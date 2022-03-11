@@ -24,7 +24,7 @@
 /*****************************************************************************/
 
 type Errors.t +=
-  | UnknownNetwork(string)
+  | UnknownNetwork(Network.chainId)
   | FetchError(string)
   | JsonResponseError(string)
   | JsonError(string);

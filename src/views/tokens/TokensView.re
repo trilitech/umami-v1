@@ -60,7 +60,7 @@ module AddTokenButton = {
       {wrapModal(
          <TokenAddView
            action=`Add
-           chain={chain->Option.getWithDefault("")}
+           chain={chain->Option.getWithDefault(Network.unsafeChainId(""))}
            tokens
            closeAction
          />,

@@ -33,7 +33,7 @@ module Path = {
 };
 
 type Errors.t +=
-  | UnknownNetwork(string)
+  | UnknownNetwork(Network.chainId)
   | FetchError(string)
   | JsonResponseError(string)
   | JsonError(string);
@@ -42,7 +42,7 @@ let () =
   Errors.registerHandler(
     "Server",
     fun
-    | UnknownNetwork(c) => I18n.Errors.unknown_network(c)->Some
+    | UnknownNetwork(c) => I18n.Errors.unknown_network((c :> string))->Some
     | FetchError(s) => s->Some
     | JsonResponseError(s) => s->Some
     | JsonError(s) => s->Some
@@ -186,7 +186,12 @@ module URL = {
         object_([
           ("contract", string((contract :> string))),
           ("entrypoint", string("getBalance")),
-          ("chain_id", string(config.network.chain->Network.getChainId)),
+          (
+            "chain_id",
+            Network.Encode.chainIdEncoder(
+              config.network.chain->Network.getChainId,
+            ),
+          ),
           ("input", object_([("string", string((account :> string)))])),
           ("unparsing_mode", string("Readable")),
         ])
@@ -227,7 +232,12 @@ module URL = {
         object_([
           ("contract", string((contract :> string))),
           ("entrypoint", string("balance_of")),
-          ("chain_id", string(config.network.chain->Network.getChainId)),
+          (
+            "chain_id",
+            Network.Encode.chainIdEncoder(
+              config.network.chain->Network.getChainId,
+            ),
+          ),
           (
             "input",
             jsonArray([|

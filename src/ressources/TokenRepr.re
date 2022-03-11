@@ -120,7 +120,7 @@ type t = {
   address,
   alias: string,
   symbol: string,
-  chain: string,
+  chain: Network.chainId,
   decimals: int,
   asset: Metadata.asset,
 };

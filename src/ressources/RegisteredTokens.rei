@@ -36,7 +36,7 @@ type kind =
 
 type contract = {
   contract: TokenContract.t,
-  chain: string,
+  chain: Network.chainId,
   tokens: Map.Int.t(kind) // effectively registered tokens by the user
 };
 

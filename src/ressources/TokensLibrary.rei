@@ -27,12 +27,12 @@ module Token: {
   // Cached tokens, either complete or with missing values
   type t =
     | Full(Token.t)
-    | Partial(Tzkt.t, Network.chain, bool);
+    | Partial(Tzkt.t, Network.chain(Network.chainId), bool);
 
   let id: t => int;
   let address: t => PublicKeyHash.t;
   let kind: t => TokenContract.kind;
-  let chain: t => string;
+  let chain: t => Network.chainId;
   let name: t => option(string);
   let symbol: t => option(string);
   let decimals: t => option(int);

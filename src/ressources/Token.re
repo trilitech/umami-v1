@@ -78,7 +78,7 @@ module Decode = {
       alias: json |> aliasDecoder(defaultName),
       symbol: json |> symbolDecoder(defaultSymbol),
       chain:
-        (json |> field("chain", optional(string)))
+        (json |> field("chain", optional(Network.Decode.chainIdDecoder)))
         ->Option.getWithDefault(Network.getChainId(`Granadanet)),
       decimals:
         (json |> optional(field("decimals", int)))
@@ -108,7 +108,7 @@ module Encode = {
       ("address", (record.address :> string) |> string),
       ("alias", record.alias |> string),
       ("symbol", record.symbol |> string),
-      ("chain", record.chain |> string),
+      ("chain", record.chain |> Network.Encode.chainIdEncoder),
       ("decimals", record.decimals |> int),
       ("tokenId", tokenId |> int),
       ("asset", record.asset |> Metadata.Encode.assetEncoder),

@@ -338,7 +338,7 @@ let metadataToAsset = (metadata: ReTaquitoTypes.Tzip12.metadata) =>
 
 let metadataToToken =
     (
-      chain,
+      chain: Network.chainId,
       tokenContract: TokenContract.t,
       metadata: ReTaquitoTypes.Tzip12.metadata,
     ) =>

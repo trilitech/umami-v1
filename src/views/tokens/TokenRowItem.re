@@ -86,7 +86,7 @@ let styles =
 
 module EditionModal = {
   [@react.component]
-  let make = (~action, ~item, ~token, ~tokens, ~currentChain as _) => {
+  let make = (~action, ~item, ~token, ~tokens) => {
     open TokensLibrary.Token;
     let (openAction, closeAction, wrapModal) = ModalAction.useModal();
 
@@ -126,13 +126,7 @@ module AddButton = {
       <IconButton disabled tooltip onPress icon size=46. iconSizeRatio=1.1 />;
     };
 
-    <EditionModal
-      action=`Add
-      item
-      token
-      tokens
-      currentChain={currentChain->Option.default("")}
-    />;
+    <EditionModal action=`Add item token tokens />;
   };
 };
 
@@ -150,15 +144,7 @@ module MoreMenu = {
           icon=Icons.Search.build
         />;
 
-      <>
-        <EditionModal
-          action=`Edit
-          item
-          token
-          tokens
-          currentChain={currentChain->Option.default("")}
-        />
-      </>;
+      <> <EditionModal action=`Edit item token tokens /> </>;
     };
   };
 

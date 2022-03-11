@@ -40,7 +40,7 @@ let getName =
 
 let checkOperationRequestTargetNetwork =
     (config: ConfigContext.env, chain: ReBeacon.network) => {
-  chain.type_ == config.network.chain->Network.getChainId
+  chain.type_ == (config.network.chain->Network.getChainId :> string)
   || Some(chain.type_) == config.network.chain->getName;
 };
 

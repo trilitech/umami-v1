@@ -26,7 +26,7 @@
 module Token = {
   type t =
     | Full(TokenRepr.t)
-    | Partial(Tzkt.t, Network.chain, bool);
+    | Partial(Tzkt.t, Network.chain(Network.chainId), bool);
 
   let id =
     fun

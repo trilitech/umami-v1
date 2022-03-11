@@ -35,7 +35,8 @@ module Registered = {
     let contractDecoder =
       Json.Decode.(field("contract", TokenContract.Decode.record));
 
-    let chainDecoder = Json.Decode.(field("chain", string));
+    let chainDecoder =
+      Json.Decode.(field("chain", Network.Decode.chainIdDecoder));
 
     let holderDecoder = Json.Decode.(field("holder", PublicKeyHash.decoder));
     let hiddenDecoder = Json.Decode.(field("hidden", bool));
@@ -123,7 +124,7 @@ module Registered = {
         Json.Encode.(
           object_([
             ("contract", c.contract |> TokenContract.Encode.record),
-            ("chain", c.chain |> string),
+            ("chain", c.chain |> Network.Encode.chainIdEncoder),
             (
               "tokens",
               c.tokens->Map.Int.toArray |> array(tuple2(int, kindEncoder)),

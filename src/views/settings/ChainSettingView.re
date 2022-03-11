@@ -248,7 +248,7 @@ module NetworkItem = {
         <View style=styles##nameStatus>
           <RadioItem
             label={chain->Network.getDisplayedName}
-            value=chain
+            value=(chain :> ConfigFile.network)
             setValue=writeNetwork
             currentValue=currentConfig
           />

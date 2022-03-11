@@ -108,6 +108,8 @@ type nativeChains = [ | `Hangzhounet | `Mainnet];
 
 type supportedChains = [ nativeChains | `Florencenet | `Edo2net | `Granadanet];
 
+let unsafeChainId: string => chainId = c => c;
+
 let getChainId =
   fun
   | `Granadanet => "NetXz969SFaFn8k"
@@ -156,12 +158,12 @@ let externalExplorer =
   | `Hangzhounet => "https://hangzhou2net.tzkt.io/"->Ok
   | `Custom(_) as net => Error(UnknownChainId(getChainId(net)));
 
-type chain = [ supportedChains | `Custom(chainId)];
-type configurableChains = [ nativeChains | `Custom(chainId)];
+type chain('chainId) = [ supportedChains | `Custom('chainId)];
+type configurableChains('chainId) = [ nativeChains | `Custom('chainId)];
 
 type network = {
   name: string,
-  chain,
+  chain: chain(chainId),
   explorer: string,
   endpoint: string,
 };
@@ -173,7 +175,7 @@ let mk = (~name, ~explorer, ~endpoint, chain) => {
   endpoint,
 };
 
-let chainNetwork: chain => option(string) =
+let chainNetwork: chain(_) => option(string) =
   fun
   | `Mainnet => Some("mainnet")
   | `Granadanet => Some("granadanet")
@@ -182,7 +184,7 @@ let chainNetwork: chain => option(string) =
   | `Hangzhounet => Some("hangzhou2net")
   | `Custom(_) => None;
 
-let networkChain: string => option(chain) =
+let networkChain: string => option(chain(_)) =
   fun
   | "mainnet" => Some(`Mainnet)
   | "granadanet" => Some(`Granadanet)
@@ -210,6 +212,8 @@ module Encode = {
     | `Hangzhounet => "default"
     | `Custom(_) => "custom";
 
+  let chainIdEncoder: Json.Encode.encoder(chainId) = Json.Encode.string;
+
   let chainEncoder = n =>
     Json.Encode.(
       object_([
@@ -217,6 +221,8 @@ module Encode = {
         ("name", string(chainToString(n))),
       ])
     );
+
+  let chainEncoderString = chainEncoder;
 
   let encoder = c =>
     Json.Encode.(
@@ -243,6 +249,8 @@ module Decode = {
     | "Edo2net" => `Edo2net
     | n => nativeChainFromString(n);
 
+  let chainIdDecoder: Json.Decode.decoder(chainId) = Json.Decode.string;
+
   let chainDecoder = (chainFromString, json) => {
     open Json.Decode;
     let defaultNetworkDecoder = json => json->string->chainFromString;
@@ -261,6 +269,8 @@ module Decode = {
          )
     );
   };
+
+  let chainDecoderString = chainDecoder;
 
   let decoder = json =>
     Json.Decode.{
@@ -437,7 +447,8 @@ let getNodeChain = (~timeout=?, url) => {
   };
 };
 
-let checkConfiguration = (api_url, node_url): Promise.t((apiVersion, chain)) =>
+let checkConfiguration =
+    (api_url, node_url): Promise.t((apiVersion, chain(chainId))) =>
   Promise.map2(
     getAPIVersion(~timeout=5000, api_url),
     getNodeChain(~timeout=5000, node_url),

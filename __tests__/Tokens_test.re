@@ -11,7 +11,7 @@ let token1 = {
     "KT1F8BQQcAbs9LthTMsFMAHs2L2QN5wnaFgL"->PublicKeyHash.build->Result.getExn,
   alias: "Token1",
   symbol: "TK1",
-  chain: "NetXz969SFaFn8k",
+  chain: `Granadanet->Network.getChainId,
   decimals: 2,
   asset: Metadata.defaultAsset,
 };
@@ -22,7 +22,7 @@ let token2 = {
     "KT1HQfgU4g3sQQVTKepxh9yT5gyQLSJtfpvz"->PublicKeyHash.build->Result.getExn,
   alias: "Token2",
   symbol: "TK2",
-  chain: "NetXz969SFaFn8k",
+  chain: `Granadanet->Network.getChainId,
   decimals: 10,
   asset:
     Metadata.{

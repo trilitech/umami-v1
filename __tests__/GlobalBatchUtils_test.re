@@ -39,7 +39,7 @@ let makeMockFA2Token = (amount, address) => {
     address: makeMockAddress(address),
     alias: "foo",
     symbol: "bar",
-    chain: "baz",
+    chain: Network.getChainId(`Mainnet),
     decimals: 2,
     asset: Metadata.defaultAsset,
   };
@@ -69,7 +69,7 @@ describe("GlobalBatchUtils", () => {
         address: mockAddress,
         alias: "foo",
         symbol: "bar",
-        chain: "baz",
+        chain: Network.getChainId(`Mainnet),
         decimals: 2,
         asset: Metadata.defaultAsset,
       };
