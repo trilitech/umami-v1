@@ -404,6 +404,7 @@ module Title = {
   let select_backup_file = "Select a JSON backup file and enter the password you used to encrypt it.";
   let account_backup_path = "Select a storage location for your backup";
   let balance = "Balance";
+  let details = "Details";
 };
 
 module Expl = {
@@ -471,6 +472,7 @@ module Menu = {
   let scan = "Scan";
   let view_in_explorer = "View in Explorer";
   let see_metadata = "See Metadata";
+  let see_details = "See details";
 };
 
 module Settings = {
@@ -753,6 +755,7 @@ let address = "Address";
 let account = "Account";
 let operation_reveal = "Reveal";
 let operation_transaction = "Transaction";
+let operation_contract_call = "Call";
 let operation_origination = "Origination";
 let operation_delegation = "Delegation";
 let operation_token_batch = "Token batch";
@@ -764,7 +767,7 @@ let operation_column_fee = "FEE";
 let operation_column_sender = "SENDER";
 let operation_column_status = "STATUS";
 let global_batch_column_type = "TYPE";
-let global_batch_amount_nft = "AMOUNT/NFT";
+let global_batch_subject = "SUBJECT";
 let global_batch_recipient = "RECIPIENT";
 let global_batch_fee = "FEE";
 let global_batch_delete_all = "DELETE ALL";

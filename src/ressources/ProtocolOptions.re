@@ -56,7 +56,15 @@ module TransactionParameters = {
 
   type t = ReTaquitoTypes.Transfer.Entrypoint.param;
 
-  let default = e => e->Option.default("default");
+  let getEntrypoint =
+    fun
+    | Some(e) => e
+    | None => ReTaquitoTypes.Transfer.Entrypoint.default;
+
+  let getParameter =
+    fun
+    | Some(e) => e
+    | None => ReTaquitoTypes.Micheline.unitVal;
 };
 
 type parameter = {

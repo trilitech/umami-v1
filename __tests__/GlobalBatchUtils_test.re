@@ -11,6 +11,8 @@ let makePkHash = str => str->PublicKeyHash.build->Result.getExn;
 let makeTokenAmount = amount =>
   amount->TokenRepr.Unit.fromNatString->Result.getExn;
 
+let dummyParam = ProtocolOptions.makeParameter();
+
 let mockAddress = makePkHash(mockHash);
 let mockAlias: FormUtils.Alias.t = Address(mockAddress);
 
@@ -50,6 +52,8 @@ let makeFA2ValidState = (~token, ~recipient) => {
     amount: Token(token),
     sender: mockAccount,
     recipient,
+    parameter: None,
+    entrypoint: None,
   };
 
   mockValidState;
@@ -86,7 +90,7 @@ describe("GlobalBatchUtils", () => {
         transfers: [transferFA2],
       };
       let options = ProtocolOptions.make();
-      let parameter = ProtocolOptions.makeParameter();
+      let parameter = dummyParam;
       let manager: Protocol.manager =
         Transfer({options, data: FA2Batch(batchFA2), parameter});
       let expected: Umami.Protocol.batch = {
@@ -97,7 +101,7 @@ describe("GlobalBatchUtils", () => {
         GlobalBatchUtils.addToExistingOrNew(
           mockAccount,
           None,
-          (mockToken, mockAlias->FormUtils.Alias.address),
+          (mockToken, mockAlias->FormUtils.Alias.address, dummyParam),
         );
       expect(result)->toEqual(expected);
     },
@@ -125,7 +129,7 @@ describe("GlobalBatchUtils", () => {
     };
     let result =
       GlobalBatchUtils.add(
-        ~payload=(tezAmount2, mockAddress),
+        ~payload=(tezAmount2, mockAddress, dummyParam),
         ~batch=batchWithATezTransaction,
       );
     let expected = {source: mockAccount, managers: [|manager, manager2|]};
@@ -136,12 +140,18 @@ describe("GlobalBatchUtils", () => {
     let mockRecipient = mockAddress;
     let mockTez = makeMockTezAmount(3344);
     let tezManager =
-      GlobalBatchXfs.transferPayloadToTransferData((mockTez, mockRecipient))
+      GlobalBatchXfs.transferPayloadToTransferData((
+        mockTez,
+        mockRecipient,
+        dummyParam,
+      ))
       ->GlobalBatchXfs.transferDataToTransfer
       ->Transfer;
     let batch = {source: mockAccount, managers: [|tezManager|]};
     let result = GlobalBatchXfs.batchToIndexedRows(batch);
     expect(result)
-    ->toEqual([|((0, None), (makeMockTezAmount(3344), mockRecipient))|]);
+    ->toEqual([|
+        ((0, None), (makeMockTezAmount(3344), mockRecipient, dummyParam)),
+      |]);
   });
 });

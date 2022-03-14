@@ -62,5 +62,12 @@ let rec firstSome = l => {
   };
 };
 
+let both = (o1: option('a), o2: option('b)): option(('a, 'b)) =>
+  switch (o1, o2) {
+  | (Some(o1), Some(o2)) => Some((o1, o2))
+  | (None, _)
+  | (_, None) => None
+  };
+
 let default = Belt.Option.getWithDefault;
 let mapDefault = Belt.Option.mapWithDefault;

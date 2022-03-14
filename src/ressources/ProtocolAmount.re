@@ -52,6 +52,11 @@ let toString =
   | Token({amount, token}) =>
     amount->TokenRepr.Unit.toStringDecimals(token.decimals);
 
+let isToken =
+  fun
+  | Tez(_) => false
+  | Token(_) => true;
+
 let getTez =
   fun
   | Tez(tez) => Some(tez)

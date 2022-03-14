@@ -73,27 +73,31 @@ let validStateToTransferPayload = (validState: SendForm.validState) => {
   let p: transferPayload = (
     validState.amount,
     validState.recipient->FormUtils.Alias.address,
+    ProtocolOptions.makeParameter(
+      ~value=?validState.parameter,
+      ~entrypoint=?validState.entrypoint,
+      (),
+    ),
   );
   p;
 };
 
-let transferPayloadToTransferData = ((amount, destination): transferPayload) => {
+let transferPayloadToTransferData =
+    ((amount, destination, parameter): transferPayload) => {
   switch (amount) {
-  | Tez(_) => Simple({amount, destination})
+  | Tez(_) => (Simple({amount, destination}), parameter)
   | Token(token) =>
     if (TokenRepr.isFa2(token.token)) {
-      Factories.makeFA2Data(token, destination);
+      (Factories.makeFA2Data(token, destination), parameter);
     } else {
-      Simple({amount, destination});
+      (Simple({amount, destination}), parameter);
     }
   };
 };
 
 // Adds default options to Trasfer.data to create a Transfer.t
-let transferDataToTransfer = (data: Transfer.data) => {
+let transferDataToTransfer = ((data: Transfer.data, parameter)) => {
   let options = ProtocolOptions.make();
-
-  let parameter = ProtocolOptions.makeParameter();
   let result: Transfer.t = {data, options, parameter};
   result;
 };
@@ -116,17 +120,21 @@ let batchToIndexedRows = (batch: Protocol.batch) => {
         | FA2Batch(fa2Batch) =>
           fa2Batch.transfers
           ->List.mapWithIndex((j, {content}) => {
-              let payload = (Token(content.amount), content.destination);
-
+              let payload = (
+                Token(content.amount),
+                content.destination,
+                transfer.parameter,
+              );
               result->Js.Array2.push(((i, Some(j)), payload))->ignore;
-              ();
             })
-          ->ignore;
-          ();
+          ->ignore
         | Simple(simple) =>
-          let payload = (simple.amount, simple.destination);
+          let payload = (
+            simple.amount,
+            simple.destination,
+            transfer.parameter,
+          );
           result->Js.Array2.push(((i, None), payload))->ignore;
-          ();
         }
       };
       manager;

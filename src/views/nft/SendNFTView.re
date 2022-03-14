@@ -171,7 +171,7 @@ let unsafeExtractValidState =
     Protocol.Amount.(Token({amount: TokenRepr.Unit.one, token: nft}));
   let sender = source;
 
-  {amount, sender, recipient};
+  {amount, sender, recipient, parameter: None, entrypoint: None};
 };
 
 [@react.component]

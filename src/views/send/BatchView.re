@@ -216,7 +216,7 @@ module Transactions = {
 [@bs.module "uuid"] external genUuid: unit => string = "v4";
 module BuildingBatchMenu = {
   [@react.component]
-  let make = (~onEdit, ~onDelete) => {
+  let make = (~onEdit, ~onDelete, ~onDetails) => {
     <Menu
       style=styles##moreButton
       icon=Icons.More.build
@@ -225,6 +225,14 @@ module BuildingBatchMenu = {
         "batchItem" ++ genUuid()
       }>
       [|
+        {onDetails->ReactUtils.mapOpt(onDetails =>
+           <Menu.Item
+             key=I18n.Menu.see_details
+             text=I18n.Menu.see_details
+             icon=Icons.MagnifierPlus.build
+             onPress={_ => onDetails()}
+           />
+         )},
         <Menu.Item
           key=I18n.Menu.batch_delete
           text=I18n.Menu.batch_delete

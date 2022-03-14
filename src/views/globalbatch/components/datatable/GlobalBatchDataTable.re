@@ -97,7 +97,7 @@ module Header = {
            (),
          )}
         {makeHeaderCell(I18n.global_batch_column_type, 130., ())}
-        {makeHeaderCell(I18n.global_batch_amount_nft, 130., ())}
+        {makeHeaderCell(I18n.global_batch_subject, 130., ())}
         {makeHeaderCell(I18n.global_batch_recipient, 130., ())}
         {makeHeaderCell(I18n.global_batch_fee, 150., ())}
         {makeGenericHeaderCell(
@@ -146,15 +146,20 @@ module TransferRowDisplay = {
         ~amount,
         ~recipient,
         ~fee,
+        ~parameter: ProtocolOptions.parameter,
         ~onDelete,
         ~onEdit,
         ~onAdvanced,
         ~fa2Position,
+        ~onDetails,
       ) => {
     open Protocol.Amount;
     open ReactNative.Style;
     let theme = ThemeContext.useTheme();
     let getContactOrRaw = useGetContactOrRaw();
+
+    let isContractCall =
+      ProtocolHelper.Transfer.isNonNativeContractCall(recipient, amount);
 
     let matchPos = wanted =>
       switch (fa2Position) {
@@ -177,6 +182,16 @@ module TransferRowDisplay = {
       | Token({token}) => TokenRepr.isNFT(token)
       | Tez(_) => false
       };
+
+    let ty =
+      isContractCall
+        ? I18n.operation_contract_call : I18n.operation_transaction;
+
+    let amount =
+      isContractCall
+        ? parameter.entrypoint
+          ->ProtocolOptions.TransactionParameters.getEntrypoint
+        : ProtocolAmount.show(amount);
 
     let shouldDisplayFee = !isFa2 || isFa2 && (isSingle || isFirst);
 
@@ -267,12 +282,12 @@ module TransferRowDisplay = {
              ~alignItems=`center,
              (),
            )}>
-           <> (shouldDisplayFee ? "Transaction" : "")->React.string </>
+           <> (shouldDisplayFee ? ty : "")->React.string </>
          </View>,
          130.,
          (),
        )}
-      {makeRowCell(Protocol.Amount.show(amount), 130., ())}
+      {makeRowCell(amount, 130., ())}
       {makeGenericRowCell(renderContact(Address(recipient)), 130., ())}
       {makeGenericRowCell(
          <Typography.Body1
@@ -299,6 +314,7 @@ module TransferRowDisplay = {
            )}>
            <View>
              <BatchView.BuildingBatchMenu
+               onDetails
                onEdit={isNFT ? None : Some(onEdit)}
                onDelete
              />
@@ -364,6 +380,7 @@ let make =
       ~onEdit,
       ~onAdvanced,
       ~onDeleteAll,
+      ~onDetails,
     ) => {
   let allCoords = indexedRows->Array.map(((a, _)) => a);
 
@@ -374,14 +391,19 @@ let make =
          let (coords, payload) = rowData;
 
          let (managerIndex, _) = coords;
-         let (amount, recipient) = payload;
+         let (amount, recipient, parameter) = payload;
          <TransferRowDisplay
            key={makeKey(coords)}
            amount
            recipient
            fee={getFeeDisplay(~simulation=simulations[managerIndex])}
            onDelete={() => onDelete(arrIndex)}
+           parameter
            onEdit={_ => onEdit(arrIndex)}
+           onDetails={
+             parameter->ProtocolHelper.Transfer.hasParams
+               ? Some(_ => onDetails(arrIndex)) : None
+           }
            onAdvanced={_ => onAdvanced(arrIndex)}
            fa2Position={getFa2Pos(coords, allCoords)}
          />;

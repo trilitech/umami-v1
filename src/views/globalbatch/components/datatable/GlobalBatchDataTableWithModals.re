@@ -1,4 +1,4 @@
-/*****************************************************************************/
+/****************************************************************************/
 /*                                                                           */
 /* Open Source License                                                       */
 /* Copyright (c) 2019-2021 Nomadic Labs, <contact@nomadic-labs.com>          */
@@ -22,6 +22,8 @@
 /* DEALINGS IN THE SOFTWARE.                                                 */
 /*                                                                           */
 /*****************************************************************************/
+
+open ReactNative;
 
 let getRowAndCoords = (rows, i) => {
   switch (i) {
@@ -47,12 +49,72 @@ let useConfirmDeleteAllModal = (~onPressConfirmDelete) =>
     ~contentText=I18n.Expl.delete_batch,
   );
 
+module Details = {
+  let detailsStyles =
+    Style.(
+      StyleSheet.create({
+        "container": style(~minHeight=0.->dp, ()),
+        "label": style(~marginBottom=4.->dp, ~marginTop=24.->dp, ()),
+      })
+    );
+
+  open ProtocolOptions.TransactionParameters;
+
+  [@react.component]
+  let make =
+      (
+        ~closeAction,
+        ~validState as (amount, _, p: ProtocolOptions.parameter),
+      ) => {
+    let amount = amount->ProtocolAmount.getTez;
+
+    <ModalFormView
+      closing={ModalFormView.Close(closeAction)} title=I18n.Title.details>
+      <FormLabel style=detailsStyles##label label=I18n.Label.entrypoint />
+      <CodeView
+        style=detailsStyles##container
+        text={
+          p.entrypoint->ProtocolOptions.TransactionParameters.getEntrypoint
+        }
+      />
+      <FormLabel style=detailsStyles##label label=I18n.Label.parameters />
+      <CodeView
+        style=detailsStyles##container
+        text={
+               let p =
+                 p.value->ProtocolOptions.TransactionParameters.getParameter;
+               p->MichelineMichelsonV1Expression.toString->Option.default("");
+             }
+      />
+      {amount->ReactUtils.mapOpt(a => {
+         <>
+           <FormLabel
+             style=detailsStyles##label
+             label=I18n.Label.send_amount
+           />
+           <CodeView
+             style=detailsStyles##container
+             text={a->Tez.toString->I18n.tez_amount}
+           />
+         </>
+       })}
+    </ModalFormView>;
+  };
+};
+
 let makeValidState =
-    (amount: Protocol.Amount.t, sender: Account.t, recipient: PublicKeyHash.t)
+    (
+      amount: Protocol.Amount.t,
+      sender: Account.t,
+      recipient: PublicKeyHash.t,
+      parameter,
+    )
     : SendForm.validState => {
   amount,
   sender,
   recipient: Address(recipient),
+  parameter: parameter.ProtocolOptions.value,
+  entrypoint: parameter.ProtocolOptions.entrypoint,
 };
 
 module EditView = {
@@ -64,6 +126,7 @@ module EditView = {
         ~amount,
         ~recipient,
         ~account,
+        ~parameter,
         ~operation,
         ~dryRun,
         ~onAdvancedSubmit,
@@ -95,7 +158,10 @@ module EditView = {
           closeAction=onClose
           onEdit=onNominalEdit
           initalStep=SendView.(
-            EditStep(dummyIndex, makeValidState(amount, account, recipient))
+            EditStep(
+              dummyIndex,
+              makeValidState(amount, account, recipient, parameter),
+            )
           )
         />;
   };
@@ -109,7 +175,8 @@ let make =
     (
       ~batch,
       ~simulations: array(Umami.Protocol.Simulation.resultElt),
-      ~replaceBatchItem,
+      ~replaceBatchItem:
+         (Umami.GlobalBatchTypes.rowData, unit => unit) => unit,
       ~removeBatchItem,
       ~dryRun,
       ~setBatchAndSim,
@@ -120,16 +187,35 @@ let make =
 
   let (openModal, closeModal, inModal) = ModalAction.useModal();
 
+  let (indexDetails, setIndexDetails) = React.useState(() => None);
+
   let (indexToEdit, setIndexToEdit) = React.useState(() => None);
   let (advancedEditMode, setAdvancedEditMode) = React.useState(() => false);
 
   let indexedRows = GlobalBatchXfs.batchToIndexedRows(batch);
 
+  let (openDetailsModal, detailsModal) = {
+    let (openDetailsModal, closeAction, modal) = ModalAction.useModal();
+
+    let details =
+      indexDetails
+      ->Option.flatMap(i => indexedRows->Array.get(i))
+      ->Option.map(snd)
+      ->Option.flatMap(((_, recipient, _) as vs) =>
+          recipient->PublicKeyHash.isContract ? Some(vs) : None
+        )
+      ->ReactUtils.mapOpt(validState => {
+          modal(<Details closeAction validState />)
+        });
+
+    (openDetailsModal, details);
+  };
+
   let rowToEdit = getRowAndCoords(indexedRows, indexToEdit);
   let trRowToEdit =
     rowToEdit->Option.flatMap(((coords, p)) => {
-      let (amount, recipient) = p;
-      Some((coords, amount, recipient));
+      let (amount, recipient, parameter) = p;
+      Some((coords, amount, recipient, parameter));
     });
 
   let resetEdit = () => {
@@ -144,16 +230,17 @@ let make =
   };
 
   let handleNominalSubmit = (coords, vs: SendForm.validState) => {
-    let transferPayload = (vs.amount, vs.recipient->FormUtils.Alias.address);
+    let transferPayload = (
+      vs.amount,
+      vs.recipient->FormUtils.Alias.address,
+      ProtocolOptions.{entrypoint: vs.entrypoint, value: vs.parameter},
+    );
     replaceBatchItem((coords, transferPayload), resetEdit);
   };
 
   let handleRemove = i => {
     indexToCoords(i, indexedRows)
-    ->Option.map(coords => {
-        removeBatchItem(coords);
-        ();
-      })
+    ->Option.map(coords => {removeBatchItem(coords)})
     ->ignore;
   };
 
@@ -163,30 +250,34 @@ let make =
       onDeleteAll=openConfirmModal
       simulations
       onDelete=handleRemove
+      onDetails={i => {
+        setIndexDetails(_ => Some(i));
+        openDetailsModal();
+      }}
       onEdit={i => {
         setIndexToEdit(_ => Some(i));
         openModal();
-        ();
       }}
       onAdvanced={i => {
         setAdvancedEditMode(_ => true);
         setIndexToEdit(_ => Some(i));
         openModal();
-        ();
       }}
     />
     {confirmDeleteModal()}
+    detailsModal
     {trRowToEdit
      ->Option.mapWithDefault(
          React.null,
          row => {
-           let (coords, amount, recipient) = row;
+           let (coords, amount, recipient, parameter) = row;
 
            let (managerIndex, _) = coords;
            <EditView
              advancedEditMode
              managerIndex
              amount
+             parameter
              recipient
              account={batch.source}
              operation={Some(batch)}
