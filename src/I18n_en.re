@@ -755,6 +755,7 @@ let address = "Address";
 let account = "Account";
 let operation_reveal = "Reveal";
 let operation_transaction = "Transaction";
+let operation_contract_call = "Call";
 let operation_origination = "Origination";
 let operation_delegation = "Delegation";
 let operation_token_batch = "Token batch";

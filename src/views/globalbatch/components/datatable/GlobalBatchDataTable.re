@@ -183,7 +183,9 @@ module TransferRowDisplay = {
       | Tez(_) => false
       };
 
-    let ty = isContractCall ? "Call" : "Transaction";
+    let ty =
+      isContractCall
+        ? I18n.operation_contract_call : I18n.operation_transaction;
 
     let amount =
       isContractCall
