@@ -111,27 +111,12 @@ let make =
       <View style=FormStyles.header>
         <Typography.Overline1> subtitle->React.string </Typography.Overline1>
       </View>
-      {switch (operation.managers) {
-       | [|Delegation(delegation)|] =>
-         <OperationSummaryView.Delegate
-           source={operation.source}
-           delegation
-           dryRun
-         />
-       | [|Origination(origination)|] =>
-         <OperationSummaryView.Originate
-           source={operation.source}
-           origination
-           dryRun
-         />
-       | _ =>
-         <OperationSummaryView.Transactions
-           operation
-           dryRun
-           editAdvancedOptions={i => setAdvancedOptions(Some(i))}
-           advancedOptionsDisabled
-         />
-       }}
+      {<OperationSummaryView.Batch
+         operation
+         dryRun
+         editAdvancedOptions={i => setAdvancedOptions(Some(i))}
+         advancedOptionsDisabled
+       />}
       {<Buttons.RightArrowButton
          style=styles##advancedOptions
          disabled=advancedOptionsDisabled

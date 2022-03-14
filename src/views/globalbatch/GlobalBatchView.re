@@ -99,7 +99,7 @@ module Wrapper = {
     </View>;
   };
 };
-let buildSummaryContent = OperationSummaryView.Transactions.buildSummaryContent;
+let buildSummaryContent = OperationSummaryView.Batch.buildSummaryContent;
 
 let buildSummary = (~dryRunOpt, ~operationOpt) => {
   dryRunOpt->Option.flatMap(dryRun =>

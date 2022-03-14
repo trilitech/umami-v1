@@ -80,7 +80,7 @@ module Content = {
 };
 
 [@react.component]
-let make = (~content: OperationSummaryView.summaryContent) => {
+let make = (~content) => {
   let content: list((string, Belt.List.t(string))) =
     content->List.map(((field, amounts)) =>
       (field, amounts->List.map(Protocol.Amount.show))

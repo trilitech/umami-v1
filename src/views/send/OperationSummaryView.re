@@ -129,29 +129,251 @@ module EntityInfo = {
   };
 };
 
-type summaryContent = list((string, Belt.List.t(Protocol.Amount.t)));
+module Operations = {
+  let styles =
+    Style.(
+      StyleSheet.create({
+        "row":
+          style(~flex=1., ~paddingVertical=12.->dp, ~flexDirection=`row, ()),
+        "parameters": style(~marginTop=8.->dp, ()),
+        "parametersContainer": style(~flex=1., ()),
+        "account": style(~flex=1., ()),
+        "notFirstRow": style(~borderTopWidth=1., ()),
+        "amount": style(~height=19.->dp, ~marginBottom=2.->dp, ()),
+        "container": style(~marginTop=30.->dp, ()),
+        "listLabelContainer":
+          style(
+            ~flexDirection=`row,
+            ~alignItems=`center,
+            ~justifyContent=`spaceBetween,
+            (),
+          ),
+        "listLabel": style(~marginBottom=4.->dp, ()),
+        "infoContainer": style(~flex=1., ()),
+
+        "label": style(~marginTop=20.->dp, ~marginBottom=4.->dp, ()),
+        "num":
+          style(
+            ~width=22.->dp,
+            ~height=44.->dp,
+            ~marginRight=6.->dp,
+            ~textAlign=`right,
+            (),
+          ),
+      })
+    );
+
+  let buildAmount = amount => {
+    switch (amount) {
+    | None => AccountElements.Nothing
+    | Some(amount) =>
+      AccountElements.Amount(
+        <Typography.Body1 fontWeightStyle=`bold style=styles##amount>
+          amount->React.string
+        </Typography.Body1>,
+      )
+    };
+  };
+
+  module Item = {
+    let itemStyles =
+      Style.(
+        StyleSheet.create({
+          "codeLine":
+            style(~flex=1., ~flexDirection=`row, ~marginTop=5.->dp, ()),
+          "codeBlock":
+            style(
+              ~flexDirection=`row,
+              ~alignItems=`center,
+              ~marginRight=5.->dp,
+              ~borderRadius=4.,
+              ~paddingLeft=8.->dp,
+              (),
+            ),
+        })
+      );
+
+    let code = ((code1, code2), label1, label2) => {
+      let theme = ThemeContext.useTheme();
+
+      let addToast = LogsContext.useToast();
+
+      let code = (label, content) => {
+        <View
+          style=Style.(
+            array([|
+              style(~backgroundColor=theme.colors.stateDisabled, ()),
+              itemStyles##codeBlock,
+            |])
+          )>
+          <Typography.Address colorStyle=`mediumEmphasis>
+            label->React.string
+          </Typography.Address>
+          <ClipboardButton copied=I18n.Log.content addToast data=content />
+        </View>;
+      };
+
+      <>
+        <View style=itemStyles##codeLine>
+          {code(label1, code1)}
+          {code(label2, code2)}
+        </View>
+      </>;
+    };
+
+    [@react.component]
+    let make =
+        (
+          ~i,
+          ~title,
+          ~recipient,
+          ~amount,
+          ~origination,
+          ~parameter: option(ProtocolOptions.parameter),
+          ~button=?,
+        ) => {
+      let aliases = StoreContext.Aliases.useGetAll();
+      let theme: ThemeContext.theme = ThemeContext.useTheme();
+
+      let michelsonToString = p =>
+        p
+        ->ProtocolOptions.TransactionParameters.MichelineMichelsonV1Expression.toString
+        ->Option.getWithDefault("");
+
+      <>
+        <View
+          style=Style.(
+            arrayOption([|
+              Some(styles##row),
+              Some(style(~borderColor=theme.colors.borderDisabled, ())),
+              Option.onlyIf(i > 0, () => styles##notFirstRow),
+            |])
+          )>
+          <Typography.Subtitle1 colorStyle=`mediumEmphasis style=styles##num>
+            {(i + 1)->string_of_int->React.string}
+          </Typography.Subtitle1>
+          <View style=styles##infoContainer>
+            <Typography.Subtitle1 colorStyle=`mediumEmphasis>
+              title->React.string
+            </Typography.Subtitle1>
+            {switch (recipient) {
+             | Some(recipient) =>
+               <AccountElements.Selector.Item
+                 style=styles##account
+                 account={
+                   Alias(
+                     recipient
+                     ->AliasHelpers.getAliasFromAddress(aliases)
+                     ->Option.getWithDefault(
+                         Alias.make(~name="", recipient),
+                       ),
+                   )
+                 }
+                 showAmount={buildAmount(amount)}
+               />
+             | None => React.null
+             }}
+            {parameter->ReactUtils.mapOpt(
+               (ProtocolOptions.{value, entrypoint}) =>
+               code(
+                 (
+                   entrypoint->ProtocolOptions.TransactionParameters.default,
+                   value->michelsonToString,
+                 ),
+                 I18n.Label.entrypoint,
+                 I18n.Label.parameter,
+               )
+             )}
+            {origination->ReactUtils.mapOpt(((impl, storage)) =>
+               code(
+                 (impl->michelsonToString, storage->michelsonToString),
+                 I18n.Label.code,
+                 I18n.Label.storage,
+               )
+             )}
+          </View>
+          button->ReactUtils.opt
+        </View>
+      </>;
+    };
+  };
+
+  let listStyle = (theme: ThemeContext.theme, ledger) =>
+    Style.(
+      style(
+        ~borderColor=theme.colors.borderDisabled,
+        ~minHeight=(ledger ? 150. : 300.)->dp,
+        ~maxHeight=(ledger ? 200. : 400.)->dp,
+        ~borderWidth=1.,
+        ~borderRadius=4.,
+        (),
+      )
+    );
+
+  type opDescr = {
+    title: string,
+    address: option(PublicKeyHash.t),
+    amount: option(string),
+    originationCode:
+      option((ReTaquitoTypes.Code.t, ReTaquitoTypes.Storage.t)),
+    parameter: option(ProtocolOptions.parameter),
+    optionsSet: bool,
+  };
+
+  [@react.component]
+  let make =
+      (
+        ~recipients: array(opDescr),
+        ~smallest=false,
+        ~button: option((int, 'b) => React.element)=?,
+      ) => {
+    let theme = ThemeContext.useTheme();
+
+    <View style=styles##container>
+      <View style=styles##listLabelContainer>
+        <Typography.Overline2 style=styles##listLabel>
+          I18n.Title.operations->React.string
+        </Typography.Overline2>
+      </View>
+      <DocumentContext.ScrollView
+        style={listStyle(theme, smallest)} alwaysBounceVertical=false>
+        {{
+           recipients->Array.mapWithIndex(
+             (
+               i,
+               {
+                 title,
+                 address,
+                 amount,
+                 optionsSet,
+                 originationCode,
+                 parameter,
+               },
+             ) => {
+             <Item
+               title
+               key={string_of_int(i)}
+               i
+               recipient=address
+               origination=originationCode
+               parameter
+               amount
+               button=?{button->Option.map(b => b(i, optionsSet))}
+             />
+           });
+         }
+         ->React.array}
+      </DocumentContext.ScrollView>
+    </View>;
+  };
+};
 
 module Base = {
   let buildDestinations = (smallest, destinations, button) => {
     switch (destinations) {
-    | `One(address, title, parameters) =>
-      switch (parameters) {
-      | None => <EntityInfo style=styles##element address title />
-      | Some(parameters) =>
-        <>
-          <EntityInfo
-            style=styles##element
-            address
-            title=I18n.Title.interaction
-          />
-          <Typography.Overline2 colorStyle=`mediumEmphasis style=styles##label>
-            I18n.Label.parameters->React.string
-          </Typography.Overline2>
-          <TransactionContractParams parameters />
-        </>
-      }
-    | `Many(recipients) =>
-      <BatchView.Transactions smallest recipients ?button />
+    | [|Operations.{address, title}|] =>
+      <EntityInfo style=styles##element address title />
+    | recipients => <Operations smallest recipients ?button />
     };
   };
 
@@ -183,7 +405,7 @@ module Base = {
   };
 };
 
-module Transactions = {
+module Batch = {
   let filterTransfers = managers =>
     managers->Array.keepMap(
       fun
@@ -197,57 +419,6 @@ module Transactions = {
       Some(ReTaquitoTypes.Transfer.Entrypoint.{entrypoint, value: parameter})
     | _ => None
     };
-
-  let sourceDestination = (operation: Protocol.batch) => {
-    let recipientLbl = I18n.Title.recipient_account;
-    let sourceLbl = I18n.Title.sender_account;
-
-    switch (operation.managers) {
-    | [|Transfer({data: Simple(t), parameter})|] => (
-        (operation.source, sourceLbl),
-        `One((
-          Some(t.destination),
-          recipientLbl,
-          transactionParameters(
-            ~entrypoint=parameter.entrypoint,
-            ~parameter=parameter.value,
-          ),
-        )),
-      )
-    | managers =>
-      let managers =
-        managers->Array.keepMap(
-          fun
-          | Transfer(t) => Some(t)
-          | _ => None,
-        );
-
-      let destinations =
-        managers->Array.reduce(
-          [], (acc, Transfer.{data, parameter, options}) => {
-          switch (data) {
-          | FA2Batch(_) => []
-
-          | Simple(t) =>
-            (
-              t.destination,
-              t.amount,
-              transactionParameters(
-                ~entrypoint=parameter.entrypoint,
-                ~parameter=parameter.value,
-              ),
-              ProtocolOptions.txOptionsSet(options),
-            )
-            @: acc
-          }
-        });
-
-      ((operation.source, sourceLbl), `Many(destinations->List.reverse));
-    };
-  };
-
-  type buildSummaryContentType =
-    (Transfer.t, Protocol.Simulation.results) => summaryContent;
 
   let buildSummaryContent =
       (operation: Protocol.batch, dryRun: Protocol.Simulation.results) => {
@@ -302,9 +473,57 @@ module Transactions = {
         ~advancedOptionsDisabled,
         ~hideBatchDetails=false,
       ) => {
-    let (source: (Account.t, string), destinations) =
-      sourceDestination(operation);
     let content = buildSummaryContent(operation, dryRun);
+    open Operations;
+
+    let destinations =
+      operation.managers
+      ->Array.map(m => {
+          switch (m) {
+          | Transfer({
+              options,
+              parameter,
+              data: Simple((t: Protocol.Transfer.generic(_))),
+            }) => {
+              title: I18n.operation_transaction,
+              address: Some(t.destination),
+              amount: t.amount->ProtocolAmount.show->Some,
+              originationCode: None,
+              parameter: Some(parameter),
+              optionsSet: ProtocolOptions.txOptionsSet(options),
+            }
+          | Transfer({options, data: FA2Batch({address})}) => {
+              title: I18n.operation_token_batch,
+              address: Some(address),
+              amount: None,
+              originationCode: None,
+              parameter: None,
+              optionsSet: ProtocolOptions.txOptionsSet(options),
+            }
+          | Delegation(delegation) =>
+            let (target, title) =
+              switch (delegation.delegate) {
+              | Undelegate(d) => (d, I18n.Title.withdraw_baker)
+              | Delegate(d) => (Some(d), I18n.Title.baker_account)
+              };
+            {
+              address: target,
+              amount: None,
+              title,
+              originationCode: None,
+              parameter: None,
+              optionsSet: false,
+            };
+          | Origination(origination) => {
+              address: origination.delegate,
+              amount: None,
+              title: I18n.operation_origination,
+              originationCode: Some((origination.code, origination.storage)),
+              parameter: None,
+              optionsSet: false,
+            }
+          }
+        });
 
     let theme = ThemeContext.useTheme();
 
@@ -324,7 +543,7 @@ module Transactions = {
     };
 
     let smallest =
-      switch (source->fst.kind) {
+      switch (operation.source.kind) {
       | CustomAuth(_)
       | Ledger => true
       | Encrypted
@@ -333,7 +552,7 @@ module Transactions = {
 
     <Base
       ?style
-      source
+      source=(operation.source, I18n.Title.sender_account)
       destinations={
         hideBatchDetails
           ? React.null
@@ -344,132 +563,6 @@ module Transactions = {
             )
       }
       content
-    />;
-  };
-};
-
-module Delegate = {
-  let buildSummaryContent = (dryRun: Protocol.Simulation.results) => {
-    let revealFee =
-      dryRun.revealSimulation
-      ->Option.map(({fee}) =>
-          (I18n.Label.implicit_reveal_fee, [Protocol.Amount.Tez(fee)])
-        );
-
-    let fee = (
-      I18n.Label.fee,
-      [
-        Protocol.Amount.Tez(
-          dryRun.simulations->ProtocolHelper.Simulation.sumFees,
-        ),
-      ],
-    );
-
-    let total = (
-      I18n.Label.summary_total,
-      [Protocol.Amount.Tez(dryRun->ProtocolHelper.Simulation.getTotalFees)],
-    );
-
-    [fee, ...revealFee->Option.mapWithDefault([total], r => [r, total])];
-  };
-
-  [@react.component]
-  let make =
-      (
-        ~style=?,
-        ~delegation: Protocol.Delegation.t,
-        ~source,
-        ~dryRun: Protocol.Simulation.results,
-      ) => {
-    let (target, title) =
-      switch (delegation.delegate) {
-      | Delegate(d) => (Some(d), I18n.Title.baker_account)
-      | Undelegate(d) => (d, I18n.Title.withdraw_baker)
-      };
-
-    <Base
-      ?style
-      source=(source, I18n.Title.delegated_account)
-      destinations={Base.buildDestinations(
-        false,
-        `One((target, title, None)),
-        None,
-      )}
-      content={buildSummaryContent(dryRun)}
-    />;
-  };
-};
-
-module Originate = {
-  let buildSummaryContent = (dryRun: Protocol.Simulation.results) => {
-    let revealFee =
-      dryRun.revealSimulation
-      ->Option.map(({fee}) =>
-          (I18n.Label.implicit_reveal_fee, [Protocol.Amount.Tez(fee)])
-        );
-
-    let fee = (
-      I18n.Label.fee,
-      [
-        Protocol.Amount.Tez(
-          dryRun.simulations->ProtocolHelper.Simulation.sumFees,
-        ),
-      ],
-    );
-
-    let total = (
-      I18n.Label.summary_total,
-      [Protocol.Amount.Tez(dryRun->ProtocolHelper.Simulation.getTotalFees)],
-    );
-
-    [fee, ...revealFee->Option.mapWithDefault([total], r => [r, total])];
-  };
-
-  [@react.component]
-  let make =
-      (
-        ~style=?,
-        ~source,
-        ~origination: Protocol.Origination.t,
-        ~dryRun: Protocol.Simulation.results,
-      ) => {
-    <Base
-      ?style
-      source=(source, I18n.Title.contract_originator)
-      destinations={
-        <View style=styles##element>
-          <View style=FormStyles.amountRow>
-            <Typography.Overline2>
-              I18n.Title.balance->React.string
-            </Typography.Overline2>
-            <Typography.Body1 style=styles##amount fontWeightStyle=`black>
-              {I18n.tez_amount(
-                 origination.balance
-                 ->Option.getWithDefault(Tez.zero)
-                 ->Tez.toString,
-               )
-               ->React.string}
-            </Typography.Body1>
-          </View>
-          <EntityInfo
-            style=styles##element
-            address={origination.delegate}
-            title=I18n.Title.delegate
-            default={
-              <Typography.Body1> I18n.none->React.string </Typography.Body1>
-            }
-          />
-          <Typography.Overline2 colorStyle=`mediumEmphasis style=styles##label>
-            I18n.Label.storage->React.string
-          </Typography.Overline2>
-          <TransactionContractParams parameters={origination.storage} />
-          <Typography.Overline2 colorStyle=`mediumEmphasis style=styles##label>
-            I18n.Label.code->React.string
-          </Typography.Overline2>
-          <TransactionContractParams parameters={origination.code} />
-        </View>
-      }
-      content={buildSummaryContent(dryRun)}
     />;
   };
 };

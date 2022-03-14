@@ -81,7 +81,7 @@ let make =
       {switch (operation.managers) {
        | [|Delegation(_)|] => React.null
        | _ =>
-         <OperationSummaryView.Transactions
+         <OperationSummaryView.Batch
            operation
            dryRun
            editAdvancedOptions={i => setAdvancedOptions(Some(i))}
