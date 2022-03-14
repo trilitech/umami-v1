@@ -130,10 +130,13 @@ let isValidTokenAmount: (string, int) => ReSchema.fieldState =
     | s =>
       switch (Token.Unit.fromStringDecimals(s, decimals)) {
       | Ok(_) => Valid
-      | Error(NaN) => Error(I18n.Form_input_error.float)
-      | Error(Negative) => Error(I18n.Form_input_error.float)
-      | Error(Float) =>
+      | Error(Token.Unit.IllformedTokenUnit(_, NaN)) =>
+        Error(I18n.Form_input_error.float)
+      | Error(Token.Unit.IllformedTokenUnit(_, Negative)) =>
+        Error(I18n.Form_input_error.float)
+      | Error(Token.Unit.IllformedTokenUnit(_, Float(_))) =>
         Error(I18n.Form_input_error.expected_decimals(decimals))
+      | Error(e) => Error(e->Errors.toString)
       }
     };
 
