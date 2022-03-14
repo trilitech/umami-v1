@@ -128,6 +128,14 @@ module Transfer = {
         )
       }
     );
+
+  let isNonNativeContractCall = (recipient, amount) => {
+    recipient->PublicKeyHash.isContract && !amount->ProtocolAmount.isToken;
+  };
+
+  let hasParams = p => {
+    p.value != None || p.entrypoint != None;
+  };
 };
 
 module Origination = {

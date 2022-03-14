@@ -158,7 +158,8 @@ module TransferRowDisplay = {
     let theme = ThemeContext.useTheme();
     let getContactOrRaw = useGetContactOrRaw();
 
-    let isContractCall = recipient->PublicKeyHash.isContract;
+    let isContractCall =
+      ProtocolHelper.Transfer.isNonNativeContractCall(recipient, amount);
 
     let matchPos = wanted =>
       switch (fa2Position) {
@@ -398,7 +399,7 @@ let make =
            parameter
            onEdit={_ => onEdit(arrIndex)}
            onDetails={
-             recipient->PublicKeyHash.isContract
+             parameter->ProtocolHelper.Transfer.hasParams
                ? Some(_ => onDetails(arrIndex)) : None
            }
            onAdvanced={_ => onAdvanced(arrIndex)}
