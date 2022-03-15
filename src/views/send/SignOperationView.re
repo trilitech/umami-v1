@@ -65,10 +65,11 @@ let make =
       ~secondaryButton=?,
       ~operation,
       ~sendOperation:
-         (~operation: Operation.t, TaquitoAPI.Signer.intent) => Promise.t(_),
+         (~operation: Protocol.batch, TaquitoAPI.Signer.intent) =>
+         Promise.t(_),
       ~loading,
     ) => {
-  let ((operation: Operation.t, dryRun), setOp) =
+  let ((operation: Protocol.batch, dryRun), setOp) =
     React.useState(() => (operation, dryRun));
 
   let theme = ThemeContext.useTheme();
@@ -99,31 +100,29 @@ let make =
     )
     || loading;
 
+  let optionsSet =
+    fun
+    | [|op|] => ProtocolHelper.optionsSet(op)
+    | _ => None;
+
   switch (step) {
   | SummaryStep =>
     <>
       <View style=FormStyles.header>
         <Typography.Overline1> subtitle->React.string </Typography.Overline1>
       </View>
-      {switch (operation) {
-       | Delegation(delegation) =>
-         <OperationSummaryView.Delegate delegation dryRun />
-       | Origination(origination) =>
-         <OperationSummaryView.Originate origination dryRun />
-       | Transaction(transfer) =>
-         <OperationSummaryView.Transactions
-           transfer
-           dryRun
-           editAdvancedOptions={i => setAdvancedOptions(Some(i))}
-           advancedOptionsDisabled
-         />
-       }}
+      {<OperationSummaryView.Batch
+         operation
+         dryRun
+         editAdvancedOptions={i => setAdvancedOptions(Some(i))}
+         advancedOptionsDisabled
+       />}
       {<Buttons.RightArrowButton
          style=styles##advancedOptions
          disabled=advancedOptionsDisabled
          text=I18n.Label.advanced_options
          stateIcon={
-           Protocol.optionsSet(operation) == Some(true)
+           optionsSet(operation.managers) == Some(true)
              ? <Icons.Edit
                  style=styles##edited
                  size=25.

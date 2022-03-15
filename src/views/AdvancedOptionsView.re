@@ -30,7 +30,6 @@ module StateLenses = [%lenses
     fee: string,
     gasLimit: string,
     storageLimit: string,
-    forceLowFee: bool,
   }
 ];
 
@@ -38,14 +37,12 @@ type validState = {
   fee: option(Tez.t),
   gasLimit: option(int),
   storageLimit: option(int),
-  forceLowFee: bool,
 };
 
 let extractValidState = (state: StateLenses.state): validState => {
   fee: state.fee->Tez.fromString,
   gasLimit: state.gasLimit->Int.fromString,
   storageLimit: state.storageLimit->Int.fromString,
-  forceLowFee: state.forceLowFee,
 };
 
 module Form = {
@@ -69,8 +66,6 @@ module Form = {
             ->Array.get(index)
             ->Option.mapWithDefault("", sim => sim.storageLimit->Int.toString)
           : "",
-
-      forceLowFee: false,
     };
 
   let use = (showLimits, dryRun, index, onSubmit) => {
@@ -122,65 +117,55 @@ let styles =
     })
   );
 
-let updateOperation = (index, values: StateLenses.state, o: Operation.t) => {
-  let values = values->extractValidState;
+let mapOptions = (values: validState, o) => {
   let fallback = (o1, o2) => Option.firstSome([o1, o2]);
 
-  switch (o) {
-  | Transaction(t) =>
-    let transfers =
-      t.transfers
-      ->List.mapWithIndex((i, t) =>
-          if (index == i) {
-            let tx_options = {
-              ...t.tx_options,
-              gasLimit: fallback(values.gasLimit, t.tx_options.gasLimit),
-              fee: fallback(values.fee, t.tx_options.fee),
-              storageLimit:
-                fallback(values.storageLimit, t.tx_options.storageLimit),
-            };
-
-            {...t, tx_options};
-          } else {
-            t;
-          }
-        );
-
-    let options = {
-      ...t.options,
-      forceLowFee:
-        (values.forceLowFee || t.options.forceLowFee == Some(true))->Some,
-    };
-
-    {...t, options, transfers}->Protocol.Transaction;
-  | Origination(o) =>
-    let options = {
-      ...o.options,
-      fee: fallback(values.fee, o.options.fee),
-      forceLowFee:
-        (values.forceLowFee || o.options.forceLowFee == Some(true))->Some,
-    };
-    {...o, options}->Protocol.Origination;
-  | Delegation(d) =>
-    let options = {
-      ...d.options,
-      fee: fallback(values.fee, d.options.fee),
-      forceLowFee:
-        (values.forceLowFee || d.options.forceLowFee == Some(true))->Some,
-    };
-    {...d, options}->Protocol.Delegation;
+  ProtocolOptions.{
+    gasLimit: fallback(values.gasLimit, o.gasLimit),
+    fee: fallback(values.fee, o.fee),
+    storageLimit: fallback(values.storageLimit, o.storageLimit),
   };
+};
+
+let updateOperation = (index, values: StateLenses.state, ops: Protocol.batch) => {
+  let values = values->extractValidState;
+
+  let managers =
+    ops.managers
+    ->Array.mapWithIndex((i, op) =>
+        if (index == i) {
+          switch (op) {
+          | Transfer(t) =>
+            let options = mapOptions(values, t.options);
+            {...t, options}->Protocol.Transfer;
+          | Delegation(d) =>
+            let options = mapOptions(values, d.options);
+            {...d, options}->Protocol.Delegation;
+          | Origination(o) =>
+            let options = mapOptions(values, o.options);
+            {...o, options}->Protocol.Origination;
+          };
+        } else {
+          op;
+        }
+      );
+
+  {...ops, managers};
 };
 
 let tezDecoration = (~style) =>
   <Typography.Body1 style> I18n.tez->React.string </Typography.Body1>;
 
 [@react.component]
-let make = (~operation, ~dryRun, ~index=0, ~token, ~onSubmit) => {
+let make = (~operation: Protocol.batch, ~dryRun, ~index=0, ~token, ~onSubmit) => {
   let (operationSimulateRequest, sendOperationSimulate) =
     StoreContext.Operations.useSimulate();
 
-  let showLimits = token != None || Protocol.isContractCall(operation, index);
+  let showLimits =
+    token != None
+    || operation.managers
+       ->Array.get(index)
+       ->Option.mapWithDefault(false, ProtocolHelper.isContractCall);
 
   let form =
     Form.use(
@@ -247,12 +232,6 @@ let make = (~operation, ~dryRun, ~index=0, ~token, ~onSubmit) => {
        }
        ->ReactUtils.onlyWhen(showLimits)}
     </View>
-    <FormGroupCheckbox
-      label=I18n.Label.force_low_fee
-      value={form.values.forceLowFee}
-      handleChange={form.handleChange(ForceLowFee)}
-      error={form.getFieldError(Field(ForceLowFee))}
-    />
     <Buttons.SubmitPrimary
       text=I18n.Btn.update
       loading={operationSimulateRequest->ApiRequest.isLoading}

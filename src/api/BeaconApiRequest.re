@@ -37,7 +37,10 @@ let dataFromURL = url => {
 
 type Errors.t +=
   | ClientNotConnected
-  | NoDeeplink;
+  | NoDeeplink
+  | OperationNotSupported
+  | BeaconNotHandled
+  | NetworkMismatch;
 
 let () =
   Errors.registerHandler(
@@ -45,8 +48,54 @@ let () =
     fun
     | ClientNotConnected => I18n.Errors.beacon_client_not_created->Some
     | NoDeeplink => I18n.Errors.deeplinking_not_connected->Some
+    | NetworkMismatch => I18n.Errors.beacon_request_network_missmatch->Some
+    | OperationNotSupported => I18n.Errors.beacon_operation_not_supported->Some
+    | BeaconNotHandled => I18n.Errors.beacon_cant_handle->Some
     | _ => None,
   );
+
+open ReBeacon.Message.Request;
+let requestToBatch = (account, {operationDetails}) => {
+  let managers =
+    operationDetails->Array.map(o =>
+      switch (ReBeacon.Message.Request.PartialOperation.classify(o)) {
+      | Origination(orig) =>
+        ProtocolHelper.Origination.make(
+          ~balance=Tez.fromMutezString(orig.balance),
+          ~code=orig.script.code,
+          ~storage=orig.script.storage,
+          ~delegate=orig.delegate,
+          (),
+        )
+        ->Ok
+
+      | Transfer({destination, amount, parameters}) =>
+        ProtocolHelper.Transfer.makeSimple(
+          ~data={destination, amount: Tez(Tez.fromMutezString(amount))},
+          ~parameter=?parameters->Option.map(a => a.value),
+          ~entrypoint=?parameters->Option.map(a => a.entrypoint),
+          (),
+        )
+        ->Protocol.Transfer
+        ->Ok
+
+      | Delegation({delegate}) =>
+        let delegate =
+          switch (delegate) {
+          | Some(d) => Protocol.Delegation.Delegate(d)
+          | None => Undelegate(None)
+          };
+
+        {delegate, options: ProtocolOptions.make()}->Protocol.Delegation->Ok;
+
+      | _ => Error(OperationNotSupported)
+      }
+    );
+
+  let%ResMap managers = managers->Result.collectArray;
+
+  Protocol.{source: account, managers};
+};
 
 let useNextRequestState = (client, peersRequestState) => {
   let (client, _) = client;

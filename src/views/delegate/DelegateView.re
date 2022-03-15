@@ -38,22 +38,36 @@ let styles =
   );
 
 let buildTransaction = (state: DelegateForm.state) => {
-  Protocol.makeDelegate(
-    ~source=state.values.sender,
-    ~delegate=Some(state.values.baker->PublicKeyHash.build->Result.getExn),
-    (),
+  let infos =
+    Protocol.Delegation.{
+      delegate:
+        Delegate(state.values.baker->PublicKeyHash.build->Result.getExn),
+      options: ProtocolOptions.make(),
+    };
+
+  (
+    ProtocolHelper.Delegation.makeSingleton(
+      ~source=state.values.sender,
+      ~infos,
+      (),
+    ),
+    infos,
   );
 };
 
 type step =
   | SendStep
-  | PasswordStep(Protocol.delegation, Protocol.Simulation.results)
+  | PasswordStep(
+      Protocol.Delegation.t,
+      Protocol.batch,
+      Protocol.Simulation.results,
+    )
   | SubmittedStep(string);
 
 let stepToString = step =>
   switch (step) {
   | SendStep => "sendstep"
-  | PasswordStep(_, _) => "passwordstep"
+  | PasswordStep(_, _, _) => "passwordstep"
   | SubmittedStep(_) => "submittedstep"
   };
 
@@ -99,7 +113,6 @@ module Form = {
         sender: initAccount,
         baker: (initDelegate :> option(string))->Option.getWithDefault(""),
         fee: "",
-        forceLowFee: false,
       },
       ~i18n=FormUtils.i18n,
       (),
@@ -192,18 +205,32 @@ let make = (~closeAction, ~action) => {
 
   let sendOperation = (~operation, signingIntent) =>
     sendOperation({operation, signingIntent})
-    ->Promise.tapOk(hash => {setModalStep(_ => SubmittedStep(hash))});
+    ->Promise.tapOk(result => {
+        setModalStep(_ => SubmittedStep(result.hash))
+      });
 
   let (operationSimulateRequest, sendOperationSimulate) =
     StoreContext.Operations.useSimulate();
 
   React.useEffect0(() => {
     switch (action) {
-    | Delete(account, _) =>
-      let op = Protocol.makeDelegate(~source=account, ~delegate=None, ());
-      sendOperationSimulate(op->Operation.Simulation.delegation)
+    | Delete(account, publicKeyHash) =>
+      let delegate = Protocol.Delegation.Undelegate(Some(publicKeyHash));
+      let op =
+        ProtocolHelper.Delegation.makeSingleton(
+          ~source=account,
+          ~infos={delegate, options: ProtocolOptions.make()},
+          (),
+        );
+      sendOperationSimulate(op)
       ->Promise.getOk(dryRun => {
-          setModalStep(_ => PasswordStep(op, dryRun))
+          setModalStep(_ =>
+            PasswordStep(
+              {delegate, options: ProtocolOptions.make()},
+              op,
+              dryRun,
+            )
+          )
         });
 
     | _ => ()
@@ -213,11 +240,10 @@ let make = (~closeAction, ~action) => {
   });
 
   let form =
-    Form.build(action, (op: Protocol.delegation) => {
+    Form.build(action, ((op: Protocol.batch, d: Protocol.Delegation.t)) => {
       Promise.async(() => {
-        let%AwaitMap dryRun =
-          sendOperationSimulate(op->Operation.Simulation.delegation);
-        setModalStep(_ => PasswordStep(op, dryRun));
+        let%AwaitMap dryRun = sendOperationSimulate(op);
+        setModalStep(_ => PasswordStep(d, op, dryRun));
       })
     });
 
@@ -226,10 +252,12 @@ let make = (~closeAction, ~action) => {
 
   let title =
     switch (modalStep, action) {
-    | (PasswordStep({delegate}, _), _) =>
+    | (PasswordStep({delegate}, _, _), _) =>
       let summaryTitle =
-        delegate == None
-          ? I18n.Title.delegate_delete : I18n.Title.confirm_delegate;
+        switch (delegate) {
+        | Delegate(_) => I18n.Title.confirm_delegate
+        | Undelegate(_) => I18n.Title.delegate_delete
+        };
       SignOperationView.makeTitle(~custom=summaryTitle, signStep)->Some;
     | (SendStep, Create(_)) => I18n.Title.delegate->Some
     | (SendStep, Edit(_)) => I18n.Title.delegate_update->Some
@@ -241,10 +269,10 @@ let make = (~closeAction, ~action) => {
 
   let closing =
     switch (modalStep, signingState: option(SigningBlock.state)) {
-    | (PasswordStep({source: {kind: Ledger}}, _), Some(WaitForConfirm)) =>
+    | (PasswordStep(_, {source: {kind: Ledger}}, _), Some(WaitForConfirm)) =>
       ModalFormView.Deny(I18n.Tooltip.reject_on_ledger)
     | (
-        PasswordStep({source: {kind: CustomAuth({provider})}}, _),
+        PasswordStep(_, {source: {kind: CustomAuth({provider})}}, _),
         Some(WaitForConfirm),
       ) =>
       ModalFormView.Deny(
@@ -258,8 +286,8 @@ let make = (~closeAction, ~action) => {
   let back =
     SignOperationView.back(signOpStep, () =>
       switch (modalStep, action) {
-      | (PasswordStep(_, _), Create(_))
-      | (PasswordStep(_, _), Edit(_)) =>
+      | (PasswordStep(_, _, _), Create(_))
+      | (PasswordStep(_, _, _), Edit(_)) =>
         Some(() => setModalStep(_ => SendStep))
       | _ => None
       }
@@ -281,13 +309,13 @@ let make = (~closeAction, ~action) => {
              | Delete(_) => <LoadingView style=styles##deleteLoading />
              | _ => <Form.View form action loading=loadingSimulate />
              }
-           | PasswordStep(delegation, dryRun) =>
+           | PasswordStep(_, operation, dryRun) =>
              <SignOperationView
-               source={delegation.source}
+               source={operation.source}
                signOpStep
                dryRun
                state
-               operation={Operation.delegation(delegation)}
+               operation
                sendOperation
                loading
              />

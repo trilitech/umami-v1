@@ -31,7 +31,7 @@ type Errors.t +=
   | FA1_2InvalidTokenId(PublicKeyHash.t)
   | FA2InvalidTokenId(PublicKeyHash.t);
 
-type t = list(Transfer.elt);
+type t = list(Protocol.Transfer.t);
 /* Public key hash encoding */
 let addr: CSVParser.Encodings.element(PublicKeyHash.t);
 /* Contract hash encoding */

@@ -52,6 +52,7 @@ module NavBarItem = {
         ~icon: option(Icons.builder)=?,
         ~iconSize: option(float)=?,
         ~isActive=false,
+        ~showDot=false,
         ~colorStyle=?,
       ) => {
     let theme = ThemeContext.useTheme();
@@ -70,17 +71,34 @@ module NavBarItem = {
       if (!isActive) {
         onPress(a);
       };
+    open ReactNative.Style;
+    let dot =
+      <View
+        style={style(
+          ~width="0.5rem",
+          ~height="0.5rem",
+          ~backgroundColor=theme.colors.primaryButtonBackground,
+          ~borderRadius=100.,
+          ~position=`absolute,
+          ~right="0px",
+          ~top="0.6rem",
+          (),
+        )}
+      />;
 
     <ThemedPressable
       accessibilityRole=`link onPress=handlePress style=styles##item isActive>
       {icon->Option.mapWithDefault(React.null, icon => {
-         icon(
-           ~style={
-             styles##icon;
-           },
-           ~size=iconSize->Option.getWithDefault(24.),
-           ~color=iconColor,
-         )
+         <View>
+           {icon(
+              ~style={
+                styles##icon;
+              },
+              ~size=iconSize->Option.getWithDefault(24.),
+              ~color=iconColor,
+            )}
+           {showDot ? dot : React.null}
+         </View>
        })}
       <Typography.ButtonTernary
         style=styles##text
@@ -101,11 +119,12 @@ module NavBarItemRoute = {
         ~title,
         ~icon: option(Icons.builder)=?,
         ~iconSize: option(float)=?,
+        ~showDot=false,
       ) => {
     let onPress = useHrefAndOnPress(route);
     let isCurrent = currentRoute == route;
 
-    <NavBarItem onPress title ?icon ?iconSize isActive=isCurrent />;
+    <NavBarItem onPress title ?icon ?iconSize isActive=isCurrent showDot />;
   };
 };
 
@@ -177,6 +196,10 @@ module Empty = {
 [@react.component]
 let make = (~account, ~route as currentRoute) => {
   let theme = ThemeContext.useTheme();
+
+  let {batch} = GlobalBatchContext.useGlobalBatchContext();
+
+  let hasBatchItems = batch != None;
   <View
     style=Style.(
       array([|
@@ -203,6 +226,13 @@ let make = (~account, ~route as currentRoute) => {
       route=Operations
       title=I18n.navbar_operations
       icon=Icons.History.build
+    />
+    <NavBarItemRoute
+      currentRoute
+      route=Batch
+      title=I18n.navbar_global_batch
+      icon=Icons.Batch.build
+      showDot=hasBatchItems
     />
     <NavBarItemRoute
       currentRoute

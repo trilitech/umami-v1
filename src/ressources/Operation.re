@@ -23,56 +23,6 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open Protocol;
-
-type t = Protocol.t;
-
-let transaction = t => t->Transaction;
-let origination = t => t->Origination;
-let delegation = d => d->Delegation;
-
-module Simulation = {
-  type t = Protocol.t;
-
-  let delegation = d => d->Delegation;
-  let origination = o => o->Origination;
-  let transaction = t => t->Transaction;
-};
-
-let makeTransaction = (~source, ~transfers, ~burnCap=?, ~forceLowFee=?, ()) =>
-  transaction(
-    Transfer.makeTransfers(~source, ~transfers, ~burnCap?, ~forceLowFee?, ()),
-  );
-
-let makeSingleTransaction =
-    (
-      ~source,
-      ~amount,
-      ~destination,
-      ~burnCap=?,
-      ~forceLowFee=?,
-      ~fee=?,
-      ~parameter=?,
-      ~entrypoint=?,
-      ~gasLimit=?,
-      ~storageLimit=?,
-      (),
-    ) => {
-  let transfers = [
-    Transfer.makeSingleTezTransferElt(
-      ~amount,
-      ~destination,
-      ~fee?,
-      ~parameter?,
-      ~entrypoint?,
-      ~gasLimit?,
-      ~storageLimit?,
-      (),
-    ),
-  ];
-
-  makeTransaction(~source, ~transfers, ~burnCap?, ~forceLowFee?, ());
-};
 module Reveal = {
   type t = {public_key: string};
 
@@ -214,90 +164,88 @@ module Delegation = {
     };
 };
 
-module Read = {
-  type payload =
-    | Reveal(option(Reveal.t))
-    | Transaction(Transaction.t)
-    | Origination(option(Origination.t))
-    | Delegation(Delegation.t)
-    | Unknown;
+type payload =
+  | Reveal(option(Reveal.t))
+  | Transaction(Transaction.t)
+  | Origination(option(Origination.t))
+  | Delegation(Delegation.t)
+  | Unknown;
 
-  type status =
-    | Mempool
-    | Chain;
+type status =
+  | Mempool
+  | Chain;
 
-  type t = {
-    block: option(string),
-    fee: Tez.t,
-    hash: string,
-    id: string,
-    level: int,
-    op_id: int,
-    payload,
-    source: PublicKeyHash.t,
-    status,
-    timestamp: Js.Date.t,
-  };
-
-  let filterJsonExn = ex =>
-    switch (ex) {
-    | Json.ParseError(error) => error
-    | Json.Decode.DecodeError(error) => error
-    | _ => "Unknown error"
-    };
-
-  let internal_op_id = op =>
-    switch (op.payload) {
-    | Transaction(Token(_, _, internal_op_id)) => internal_op_id
-    | _ => None
-    };
-
-  let uniqueId = op => (op.hash, op.id, internal_op_id(op));
-  let uniqueIdToString = ((hash, id, iid)) =>
-    hash ++ id ++ iid->Option.mapWithDefault("", Int.toString);
-
-  type operation = t;
-
-  module Decode = {
-    open Json.Decode;
-
-    let payload = (ty, json) =>
-      switch (ty) {
-      | "reveal" => Reveal(json->Reveal.decode)
-      | "transaction" => Transaction(json->Transaction.Decode.t)
-      | "origination" => Origination(json->Origination.decode)
-      | "delegation" => Delegation(json->Delegation.decode)
-      | _ => Unknown
-      };
-
-    let source = json =>
-      json |> field("src", string) |> PublicKeyHash.build |> Result.getExn;
-
-    let status = json => {
-      let block_hash = json |> field("block_hash", optional(string));
-      Option.isNone(block_hash) ? Mempool : Chain;
-    };
-
-    let t = json => {
-      {
-        block: json |> field("block_hash", optional(string)),
-        fee: json |> field("fee", string) |> Tez.fromMutezString,
-        hash: json |> field("hash", string),
-        id: json |> field("id", string),
-        level: json |> field("level", string) |> int_of_string,
-        op_id: json |> field("id", string) |> int_of_string,
-        payload: json |> payload(json |> field("kind", string)),
-        source: json |> source,
-        status: status(json),
-        timestamp: json |> field("op_timestamp", date),
-      };
-    };
-  };
-
-  module Comparator =
-    Id.MakeComparable({
-      type t = operation;
-      let cmp = (op1, op2) =>
-        Pervasives.compare(uniqueId(op1), uniqueId(op2));
-    });
+type t = {
+  block: option(string),
+  fee: Tez.t,
+  hash: string,
+  id: string,
+  level: int,
+  op_id: int,
+  payload,
+  source: PublicKeyHash.t,
+  status,
+  timestamp: Js.Date.t,
 };
+
+let filterJsonExn = ex =>
+  switch (ex) {
+  | Json.ParseError(error) => error
+  | Json.Decode.DecodeError(error) => error
+  | _ => "Unknown error"
+  };
+
+let internal_op_id = op =>
+  switch (op.payload) {
+  | Transaction(Token(_, _, internal_op_id)) => internal_op_id
+  | _ => None
+  };
+
+let uniqueId = op => (op.hash, op.id, internal_op_id(op));
+let uniqueIdToString = ((hash, id, iid)) =>
+  hash ++ id ++ iid->Option.mapWithDefault("", Int.toString);
+
+type operation = t;
+
+module Decode = {
+  open Json.Decode;
+
+  let payload = (ty, json) =>
+    switch (ty) {
+    | "reveal" => Reveal(json->Reveal.decode)
+    | "transaction" => Transaction(json->Transaction.Decode.t)
+    | "origination" => Origination(json->Origination.decode)
+    | "delegation" => Delegation(json->Delegation.decode)
+    | _ => Unknown
+    };
+
+  let source = json =>
+    json |> field("src", string) |> PublicKeyHash.build |> Result.getExn;
+
+  let status = json => {
+    let block_hash = json |> field("block_hash", optional(string));
+    Option.isNone(block_hash) ? Mempool : Chain;
+  };
+
+  let t = json => {
+    {
+      block: json |> field("block_hash", optional(string)),
+      fee: json |> field("fee", string) |> Tez.fromMutezString,
+      hash: json |> field("hash", string),
+      id: json |> field("id", string),
+      level: json |> field("level", string) |> int_of_string,
+      op_id: json |> field("id", string) |> int_of_string,
+      payload: json |> payload(json |> field("kind", string)),
+      source: json |> source,
+      status: status(json),
+      timestamp: json |> field("op_timestamp", date),
+    };
+  };
+};
+
+module Comparator =
+  Id.MakeComparable({
+    type t = operation;
+    let cmp = (op1, op2) =>
+      Pervasives.compare(uniqueId(op1), uniqueId(op2));
+  });

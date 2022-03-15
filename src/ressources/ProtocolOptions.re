@@ -24,7 +24,7 @@
 /*****************************************************************************/
 
 module TransactionParameters = {
-  type entrypoint = ReTaquitoTypes.Transfer.Parameters.entrypoint;
+  type entrypoint = ReTaquitoTypes.Transfer.Entrypoint.name;
 
   // This type cannot be build and destructed except from bindings modules
   // ReBeacon and ReTaquito, hence its abstract nature.
@@ -54,79 +54,41 @@ module TransactionParameters = {
       };
   };
 
-  type t = ReTaquitoTypes.Transfer.Parameters.t;
+  type t = ReTaquitoTypes.Transfer.Entrypoint.param;
+
+  let getEntrypoint =
+    fun
+    | Some(e) => e
+    | None => ReTaquitoTypes.Transfer.Entrypoint.default;
+
+  let getParameter =
+    fun
+    | Some(e) => e
+    | None => ReTaquitoTypes.Micheline.unitVal;
 };
 
-type transferEltOptions = {
+type parameter = {
+  value: option(TransactionParameters.MichelineMichelsonV1Expression.t),
+  entrypoint: option(TransactionParameters.entrypoint),
+};
+
+type t = {
   fee: option(Tez.t),
   gasLimit: option(int),
   storageLimit: option(int),
-  parameter: option(TransactionParameters.MichelineMichelsonV1Expression.t),
-  entrypoint: option(TransactionParameters.entrypoint),
 };
 
 let txOptionsSet = telt =>
   telt.fee != None || telt.gasLimit != None || telt.storageLimit != None;
 
-type delegationOptions = {
-  fee: option(Tez.t),
-  burnCap: option(Tez.t),
-  forceLowFee: option(bool),
+let makeParameter = (~value=?, ~entrypoint=?, ()) => {
+  {value, entrypoint};
 };
 
-let delegationOptionsSet = (dopt: delegationOptions) => dopt.fee != None;
-
-type originationOptions = {
-  fee: option(Tez.t),
-  burnCap: option(Tez.t),
-  forceLowFee: option(bool),
-};
-
-let originationOptionsSet = (oopt: originationOptions) => oopt.fee != None;
-
-type transferOptions = {
-  burnCap: option(Tez.t),
-  forceLowFee: option(bool),
-};
-
-let makeTransferEltOptions =
-    (~fee=?, ~gasLimit=?, ~storageLimit=?, ~parameter=?, ~entrypoint=?, ()) => {
+let make = (~fee=?, ~gasLimit=?, ~storageLimit=?, ()) => {
   fee,
   gasLimit,
   storageLimit,
-  parameter,
-  entrypoint,
 };
 
-let makeDelegationOptions:
-  (
-    ~fee: option(Tez.t),
-    ~burnCap: option(Tez.t),
-    ~forceLowFee: option(bool),
-    unit
-  ) =>
-  delegationOptions =
-  (~fee, ~burnCap, ~forceLowFee, ()) => {fee, burnCap, forceLowFee};
-
-let makeOriginationOptions:
-  (
-    ~fee: option(Tez.t),
-    ~burnCap: option(Tez.t),
-    ~forceLowFee: option(bool),
-    unit
-  ) =>
-  originationOptions =
-  (~fee, ~burnCap, ~forceLowFee, ()) => {fee, burnCap, forceLowFee};
-
-let makeTransferOptions = (~burnCap=?, ~forceLowFee=?, ()) => {
-  burnCap,
-  forceLowFee,
-};
-
-let emptyTransferOptions = {
-  fee: None,
-  gasLimit: None,
-  storageLimit: None,
-  parameter: None,
-  entrypoint: None,
-};
+let emptyTransferOptions = {fee: None, gasLimit: None, storageLimit: None};

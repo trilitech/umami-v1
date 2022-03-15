@@ -85,7 +85,7 @@ module Btn = {
   let scan = "SCAN";
   let upgrade = "Download";
   let load_file = "LOAD FROM FILE";
-  let csv_format_link = "CSV specification and example";
+  let csv_format_link = "SEE FILE SPECS";
   let disclaimer_agree = "CONTINUE";
   let deny = "DENY";
   let allow = "ALLOW";
@@ -174,7 +174,6 @@ module Label = {
   let gas_limit = "Gas Limit";
   let storage_limit = "Storage Limit";
   let counter = "Counter";
-  let force_low_fee = "Force low fee";
   let confirm_password = "Confirm Password";
   let account_delegate = "Account to delegate";
   let baker = "Baker";
@@ -208,6 +207,8 @@ module Label = {
   let custom_network_node_url = plural => p("Node URL%s", plural ? "s" : "");
   let file = "File";
   let storage_location = "Storage location";
+  let entrypoint = "Entrypoint";
+  let parameter = "Parameter";
 };
 
 module Input_placeholder = {
@@ -347,6 +348,7 @@ module Title = {
   let withdraw_baker = "Withdraw Baker";
   let contract_originator = "Contract Originator";
   let confirm_delegate = "Confirm Delegate";
+  let confirm_batch = "Confirm";
   let delegate = "Delegate";
   let delegate_update = "Change Baker";
   let delegate_delete = "End Delegation";
@@ -366,10 +368,10 @@ module Title = {
   let submitting = "Submitting Operation";
   let send_many_transactions = "Send one or many transactions";
   let delete_account = "Delete Account?";
+  let delete_batch = "Delete this batch?";
   let delete_secret = "Delete Secret?";
   let delete_load = "Deleting";
   let delete_account_done = "Account deleted";
-  let batch = "Batch";
   let scan = "Scan";
   let disclaimer = "User Agreement";
   let beacon_connection_request = "Connection Request";
@@ -383,6 +385,8 @@ module Title = {
   let delete_custom_network = "Delete Network?";
   let beacon_error = "Beacon Error";
   let accounts = "Accounts";
+  let global_batch = "Batch";
+  let global_batch_empty = "Your batch is currently empty";
   let operations = "Operations";
   let addressbook = "Address Book";
   let delegations = "Delegations";
@@ -400,6 +404,7 @@ module Title = {
   let select_backup_file = "Select a JSON backup file and enter the password you used to encrypt it.";
   let account_backup_path = "Select a storage location for your backup";
   let balance = "Balance";
+  let details = "Details";
 };
 
 module Expl = {
@@ -431,7 +436,12 @@ module Expl = {
   let secret_select_derivation_path = {j|Umami wallet supports custom derivation path to select new addresses. You may also select the default derivation path and use the default key.|j};
   let import_secret_enter_phrase = {j|Please fill in the recovery phrase in sequence.|j};
   let confirm_operation = "Please validate the details of the transaction and enter password to confirm";
-  let batch = "Review, edit or delete the transactions of the batch";
+  let global_batch = "Please validate the details of the batch and sign the transaction.";
+  let global_batch_header =
+    "You have the ability to submit a batch of operations, but please note that the batch will be confirmed as a whole:\n"
+    ++ "should one transaction in the batch fail then the whole batch will not be completed.";
+  let fill_batch = "Add elements via the send menu or load a CSV file";
+  let delete_batch = "You are about to delete all the transactions included in the batch.";
   let operation = "The operation will be processed and confirmed, you can see its progress in the Operations section.";
   let beacon_dapp = "would like to connect to your wallet";
   let beacon_dapp_request = {js|This site is requesting access to view your account’s address.\nAlways make sure you trust the sites you interact with.|js};
@@ -462,6 +472,7 @@ module Menu = {
   let scan = "Scan";
   let view_in_explorer = "View in Explorer";
   let see_metadata = "See Metadata";
+  let see_details = "See details";
 };
 
 module Settings = {
@@ -611,7 +622,7 @@ module Errors = {
   let cannot_update_secret = i => p("Can't update secret at index %d!", i);
   let recovery_phrase_not_found = i =>
     p("Recovery phrase at index %d not found!", i);
-  let beacon_transaction_not_supported = "Beacon transaction not supported";
+  let beacon_operation_not_supported = "Beacon operation not supported";
   let beacon_request_network_missmatch = "Beacon request network not supported";
   let beacon_client_not_created = "Beacon client not created";
   let video_stream_access_denied = "Unable to access video stream\n(please make sure you have a webcam enabled)";
@@ -662,6 +673,12 @@ module Errors = {
   let storage_exhausted = "Storage exhausted for the operation, please put a higher limit";
   let gas_exhausted_above_limit = "Gas exhausted and above protocol limit per operation";
   let storage_exhausted_above_limit = "Storage exhausted and above protocol limit per operation";
+  let unhandled_operation = "Unhandled operation";
+  let not_a_number = v => p("%s is not a valid number", v);
+  let negative_number = v => p("%s is negative", v);
+  let unexpected_decimals = v => p("%s does not accept decimals", v);
+  let expected_decimals = (v, d) =>
+    p("%s does not accept more that %d decimals", v, d);
 };
 
 module Csv = {
@@ -738,8 +755,10 @@ let address = "Address";
 let account = "Account";
 let operation_reveal = "Reveal";
 let operation_transaction = "Transaction";
+let operation_contract_call = "Call";
 let operation_origination = "Origination";
 let operation_delegation = "Delegation";
+let operation_token_batch = "Token batch";
 let operation_column_type = "TYPE";
 let operation_column_amount = "AMOUNT";
 let operation_column_recipient = "RECIPIENT";
@@ -747,6 +766,12 @@ let operation_column_timestamp = "TIMESTAMP";
 let operation_column_fee = "FEE";
 let operation_column_sender = "SENDER";
 let operation_column_status = "STATUS";
+let global_batch_column_type = "TYPE";
+let global_batch_subject = "SUBJECT";
+let global_batch_recipient = "RECIPIENT";
+let global_batch_fee = "FEE";
+let global_batch_delete_all = "DELETE ALL";
+let global_batch_add = "INSERT TRANSACTION INTO BATCH";
 let state_mempool = "Mempool";
 let state_levels = p("%d/%d blocks");
 let state_confirmed = "Confirmed";
@@ -773,6 +798,7 @@ let navbar_delegations = "DELEGATIONS";
 let navbar_tokens = "TOKENS";
 let navbar_settings = "SETTINGS";
 let navbar_logs = "LOGS";
+let navbar_global_batch = "BATCH";
 let delegate_column_account = "ACCOUNT";
 let delegate_column_initial_balance = "INITIAL BALANCE";
 let delegate_column_current_balance = "CURRENT BALANCE";

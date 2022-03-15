@@ -34,6 +34,7 @@ type t =
   | Settings
   | Logs
   | Nft
+  | Batch
   | NotFound;
 
 exception RouteToNotFound;
@@ -49,6 +50,7 @@ let match = (url: url) => {
   | "/settings" => Settings
   | "/logs" => Logs
   | "/nft" => Nft
+  | "/batch" => Batch
   | _ => NotFound
   };
 };
@@ -63,6 +65,7 @@ let toHref =
   | Settings => "#/settings"
   | Logs => "#/logs"
   | Nft => "#/nft"
+  | Batch => "#/batch"
   | NotFound => raise(RouteToNotFound);
 
 /* This lets us push a Routes.t instead of a string to transition to a new  screen */
@@ -74,5 +77,5 @@ let useHrefAndOnPress = route => {
     event->ReactNative.Event.PressEvent.preventDefault;
     ReasonReactRouter.push(href);
   };
- onPress
+  onPress;
 };

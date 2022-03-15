@@ -56,13 +56,7 @@ let styles =
       "parametersContainer": style(~flex=1., ()),
       "moreButton": style(~marginHorizontal=auto, ()),
       "account": style(~flex=1., ()),
-      "csvFormat":
-        style(
-          ~alignItems=`flexEnd,
-          ~paddingBottom=4.->dp,
-          ~marginRight=10.->dp,
-          (),
-        ),
+      "csvFormat": style(~marginRight=10.->dp, ()),
     })
   );
 
@@ -165,22 +159,12 @@ module Transactions = {
 
     [@react.component]
     let make = () => {
-      let theme = ThemeContext.useTheme();
-
-      <ThemedPressable.Primary
-        style=Style.(
-          array([|
-            styles##csvFormat,
-            style(~color=theme.colors.textPrimary, ()),
-          |])
-        )
+      <ButtonAction
         onPress
-        accessibilityRole=`button>
-        <Typography.ButtonPrimary
-          style=Style.(style(~color=theme.colors.textPrimary, ()))>
-          I18n.Btn.csv_format_link->React.string
-        </Typography.ButtonPrimary>
-      </ThemedPressable.Primary>;
+        text=I18n.Btn.csv_format_link
+        primary=true
+        icon=Icons.OpenExternal.build
+      />;
     };
   };
 
@@ -189,7 +173,7 @@ module Transactions = {
       (
         ~recipients:
            Belt.List.t(
-             (PublicKeyHash.t, Transfer.Currency.t, option('a), 'b),
+             (PublicKeyHash.t, Protocol.Amount.t, option('a), 'b),
            ),
         ~smallest=false,
         ~onAddCSVList=?,
@@ -216,7 +200,7 @@ module Transactions = {
                key={string_of_int(i)}
                i
                recipient
-               amount={Transfer.Currency.showAmount(amount)}
+               amount={Protocol.Amount.show(amount)}
                ?parameters
                button=?{button->Option.map(b => b(i, v))}
              />
@@ -229,102 +213,41 @@ module Transactions = {
   };
 };
 
+[@bs.module "uuid"] external genUuid: unit => string = "v4";
 module BuildingBatchMenu = {
   [@react.component]
-  let make = (~i, ~onEdit, ~onDelete) => {
-    let delete = _ => onDelete(i);
-    let edit = _ => onEdit(i);
-
+  let make = (~onEdit, ~onDelete, ~onDetails) => {
     <Menu
       style=styles##moreButton
       icon=Icons.More.build
-      keyPopover={"batchItem" ++ i->string_of_int}>
+      keyPopover={
+        // API should not require a key.
+        "batchItem" ++ genUuid()
+      }>
       [|
+        {onDetails->ReactUtils.mapOpt(onDetails =>
+           <Menu.Item
+             key=I18n.Menu.see_details
+             text=I18n.Menu.see_details
+             icon=Icons.MagnifierPlus.build
+             onPress={_ => onDetails()}
+           />
+         )},
         <Menu.Item
           key=I18n.Menu.batch_delete
           text=I18n.Menu.batch_delete
           icon=Icons.Delete.build
-          onPress=delete
+          onPress={_ => onDelete()}
         />,
-        <Menu.Item
-          key=I18n.Menu.batch_edit
-          text=I18n.Menu.batch_edit
-          icon=Icons.Edit.build
-          onPress=edit
-        />,
+        {onEdit->Option.mapWithDefault(React.null, onEdit => {
+           <Menu.Item
+             key=I18n.Menu.batch_edit
+             text=I18n.Menu.batch_edit
+             icon=Icons.Edit.build
+             onPress={_ => onEdit()}
+           />
+         })},
       |]
     </Menu>;
   };
-};
-
-[@react.component]
-let make =
-    (
-      ~back=?,
-      ~onAddTransfer,
-      ~onAddCSVList,
-      ~onSubmitBatch,
-      ~onDelete,
-      ~onEdit,
-      ~batch,
-      ~loading,
-    ) => {
-  let theme: ThemeContext.theme = ThemeContext.useTheme();
-
-  let recipients =
-    batch->List.map((t: SendForm.validState) =>
-      (t.recipient->FormUtils.Alias.address, t.amount, None, t)
-    );
-
-  let itemButton = (i, v) =>
-    <BuildingBatchMenu
-      i
-      onDelete={_ => onDelete(i)}
-      onEdit={_ => onEdit(i, v)}
-    />;
-
-  <>
-    {back->ReactUtils.mapOpt(back => {
-       <TouchableOpacity onPress={_ => back()} style=FormStyles.topLeftButton>
-         <Icons.ArrowLeft size=36. color={theme.colors.iconMediumEmphasis} />
-       </TouchableOpacity>
-     })}
-    <View style=FormStyles.header>
-      <Typography.Overline1>
-        I18n.Expl.batch->React.string
-      </Typography.Overline1>
-    </View>
-    <View style={[FormStyles.amountRow, styles##summary]->ReactUtils.styles}>
-      <Typography.Overline2>
-        I18n.Label.summary_total->React.string
-      </Typography.Overline2>
-      <View>
-        {batch
-         ->List.map(t => t.amount)
-         ->Transfer.Currency.reduceAmounts
-         ->List.mapWithIndex((i, a) =>
-             <Typography.Subtitle1
-               style=styles##totalAmount key={i->Int.toString}>
-               {a->Transfer.Currency.showAmount->React.string}
-             </Typography.Subtitle1>
-           )
-         ->List.toArray
-         ->React.array}
-      </View>
-    </View>
-    <Transactions recipients onAddCSVList button=itemButton />
-    <View style=FormStyles.verticalFormAction>
-      <Buttons.SubmitSecondary
-        style=styles##addTransaction
-        text=I18n.Btn.send_another_transaction
-        onPress={_ => onAddTransfer()}
-        disabled=loading
-      />
-      <Buttons.SubmitPrimary
-        text=I18n.Btn.batch_submit
-        onPress={_ => onSubmitBatch(batch)}
-        loading
-      />
-    </View>
-  </>;
 };

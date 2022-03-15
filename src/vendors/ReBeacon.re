@@ -84,7 +84,7 @@ module Message = {
         code: ReTaquitoTypes.Code.t,
         storage: ReTaquitoTypes.Storage.t,
       };
-    
+
       type origination = {
         balance: string,
         delegate: option(PublicKeyHash.t),
@@ -104,7 +104,7 @@ module Message = {
       };
 
       type t =
-        | TransactionOperation(transaction)
+        | Transfer(transaction)
         | ActivateAccount(activateAccount)
         | Ballot(ballot)
         | Delegation(delegation)
@@ -114,20 +114,36 @@ module Message = {
         | Reveal(reveal)
         | SeedNonceRevelation(seedNonceRevelation);
 
+      external toTransfer: basePartialOperation => transaction = "%identity";
+      external toActivateAccount: basePartialOperation => activateAccount =
+        "%identity";
+      external toBallot: basePartialOperation => ballot = "%identity";
+      external toDelegation: basePartialOperation => delegation = "%identity";
+      external toEndorsement: basePartialOperation => endorsement =
+        "%identity";
+      external toOrigination: basePartialOperation => origination =
+        "%identity";
+      external toProposals: basePartialOperation => proposals = "%identity";
+      external toReveal: basePartialOperation => reveal = "%identity";
+      external toSeedNonceRevelation:
+        basePartialOperation => seedNonceRevelation =
+        "%identity";
+
       let classify = (partialOperation: basePartialOperation): t => {
         switch (partialOperation) {
-        | {kind: `transaction} =>
-          TransactionOperation(partialOperation->Obj.magic)
+        | {kind: `transaction} => Transfer(partialOperation->toTransfer)
         | {kind: `activate_account} =>
-          ActivateAccount(partialOperation->Obj.magic)
-        | {kind: `ballot} => Ballot(partialOperation->Obj.magic)
-        | {kind: `delegation} => Delegation(partialOperation->Obj.magic)
-        | {kind: `endorsement} => Endorsement(partialOperation->Obj.magic)
-        | {kind: `origination} => Origination(partialOperation->Obj.magic)
-        | {kind: `proposals} => Proposals(partialOperation->Obj.magic)
-        | {kind: `reveal} => Reveal(partialOperation->Obj.magic)
+          ActivateAccount(partialOperation->toActivateAccount)
+        | {kind: `ballot} => Ballot(partialOperation->toBallot)
+        | {kind: `delegation} => Delegation(partialOperation->toDelegation)
+        | {kind: `endorsement} =>
+          Endorsement(partialOperation->toEndorsement)
+        | {kind: `origination} =>
+          Origination(partialOperation->toOrigination)
+        | {kind: `proposals} => Proposals(partialOperation->toProposals)
+        | {kind: `reveal} => Reveal(partialOperation->toReveal)
         | {kind: `seed_nonce_revelation} =>
-          SeedNonceRevelation(partialOperation->Obj.magic)
+          SeedNonceRevelation(partialOperation->toSeedNonceRevelation)
         };
       };
     };

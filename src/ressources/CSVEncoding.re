@@ -32,8 +32,7 @@ type Errors.t +=
   | CannotParseTokenAmount(ReBigNumber.t, int, int)
   | CannotParseTezAmount(ReBigNumber.t, int, int)
   | FA1_2InvalidTokenId(PublicKeyHash.t)
-  | FA2InvalidTokenId(PublicKeyHash.t)
-  | ContractCallsNotHandled;
+  | FA2InvalidTokenId(PublicKeyHash.t);
 
 let () =
   Errors.registerHandler(
@@ -49,13 +48,12 @@ let () =
       I18n.Csv.fa1_2_invalid_token_id((pkh :> string))->Some
     | FA2InvalidTokenId(pkh) =>
       I18n.Csv.fa2_invalid_token_id((pkh :> string))->Some
-    | ContractCallsNotHandled => I18n.Csv.contract_calls_not_handled->Some
     | _ => None,
   );
 
-type t = list(Transfer.elt);
+type t = list(Protocol.Transfer.t);
 
-let addr = Encodings.custom(~conv=PublicKeyHash.buildImplicit);
+let addr = Encodings.custom(~conv=PublicKeyHash.build);
 let contract = Encodings.custom(~conv=PublicKeyHash.buildContract);
 let michelson =
   Encodings.custom(
@@ -87,13 +85,19 @@ let contractCall: Encodings.row_repr(contractCall) =
 
 let rowEncoding = Encodings.(or_(transfer, contractCall)->mkRow);
 
-let handleTezRow = (index, destination, amount) =>
+let handleTezRow = (~parameter=?, ~entrypoint=?, index, destination, amount) =>
   amount
   ->ReBigNumber.toString
   ->Tez.fromString
   ->Result.fromOption(CannotParseTezAmount(amount, index, 2))
   ->Result.map(amount =>
-      Transfer.makeSingleTezTransferElt(~destination, ~amount, ())
+      ProtocolHelper.Transfer.makeSimpleTez(
+        ~parameter?,
+        ~entrypoint?,
+        ~destination,
+        ~amount,
+        (),
+      )
     );
 
 let checkTokenId = (tokenId, (token: TokenRepr.t, registered)) =>
@@ -121,10 +125,15 @@ let handleTokenRow =
       );
 
   amount
-  ->Token.Unit.fromBigNumber
+  ->Token.Unit.fromFloatBigNumber(token.decimals)
   ->Result.mapError(_ => CannotParseTokenAmount(amount, index, 2))
   ->Result.map(amount =>
-      Transfer.makeSingleTokenTransferElt(~destination, ~amount, ~token, ())
+      ProtocolHelper.Transfer.makeSimpleToken(
+        ~destination,
+        ~amount,
+        ~token,
+        (),
+      )
     );
 };
 
@@ -134,7 +143,14 @@ let handleRow = (tokens, index, row) =>
     handleTezRow(index, destination, amount)
   | `Left((destination, amount), `Left(token, tokenId)) =>
     handleTokenRow(tokens, index, destination, amount, token, tokenId)
-  | `Right(_) => Error(ContractCallsNotHandled)
+  | `Right(kt, entrypoint, parameter, amount) =>
+    handleTezRow(
+      ~parameter,
+      ~entrypoint,
+      index,
+      kt,
+      amount->Option.default(ReBigNumber.zero),
+    )
   };
 
 let handleCSV = (rows, tokens) =>

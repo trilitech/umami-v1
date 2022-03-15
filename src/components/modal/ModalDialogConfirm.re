@@ -34,6 +34,7 @@ module Modal = {
         ~loading=?,
         ~title,
         ~subtitle=?,
+        ~contentText=?,
         ~cancelText,
         ~actionText,
       ) => {
@@ -44,6 +45,11 @@ module Modal = {
       </Typography.Headline>
       {subtitle->ReactUtils.mapOpt(sub => {
          <Typography.Headline> sub->React.string </Typography.Headline>
+       })}
+      {contentText->ReactUtils.mapOpt(contentText => {
+         <Typography.Body1 style=FormStyles.textContent>
+           contentText->React.string
+         </Typography.Body1>
        })}
       <View style=FormStyles.formAction>
         <Buttons.Form
@@ -59,7 +65,16 @@ module Modal = {
 };
 
 let useModal =
-    (~action, ~loading=?, ~title, ~subtitle=?, ~cancelText, ~actionText, ()) => {
+    (
+      ~action,
+      ~loading=?,
+      ~title,
+      ~subtitle=?,
+      ~contentText=?,
+      ~cancelText,
+      ~actionText,
+      (),
+    ) => {
   let (openModal, closeModal, wrapModal) = ModalAction.useModal();
 
   let action = () =>
@@ -77,6 +92,7 @@ let useModal =
         ?loading
         title
         ?subtitle
+        ?contentText
         cancelText
         actionText
         closeAction=closeModal

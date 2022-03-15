@@ -45,8 +45,7 @@ module CellFee =
 
 module CellAddress =
   Table.MakeCell({
-    let style =
-      Style.(style(~flexBasis=180.->dp, ~flexShrink=1., ~flexGrow=1., ()));
+    let style = Style.(style(~flexBasis=180.->dp, ()));
     ();
   });
 
@@ -74,57 +73,15 @@ module CellAction =
 let styles =
   Style.(
     StyleSheet.create({
-      "rawAddressContainer":
-        style(~display=`flex, ~flexDirection=`row, ~alignItems=`center, ()),
       "image":
         style(~marginLeft=10.->dp, ~width=19.->dp, ~height=19.->dp, ()),
     })
   );
 
-module AddContactButton = {
-  [@react.component]
-  let make = (~address: PublicKeyHash.t, ~operation: Operation.Read.t) => {
-    let (visibleModal, openAction, closeAction) =
-      ModalAction.useModalActionState();
+let getContactOrRaw = OperationUtils.getContactOrRaw;
+let rawUnknownAddress = OperationUtils.rawUnknownAddress;
 
-    let tooltip = (
-      "add_contact_from_op"
-      ++ Operation.Read.(operation->uniqueId->uniqueIdToString),
-      I18n.Tooltip.add_contact,
-    );
-
-    let onPress = _e => openAction();
-
-    <>
-      <IconButton icon=Icons.AddContact.build onPress tooltip />
-      <ModalAction visible=visibleModal onRequestClose=closeAction>
-        <ContactFormView initAddress=address action=Create closeAction />
-      </ModalAction>
-    </>;
-  };
-};
-
-let rawUnknownAddress = (address: PublicKeyHash.t, operation) => {
-  <View style=styles##rawAddressContainer>
-    <Typography.Address numberOfLines=1>
-      (address :> string)->React.string
-    </Typography.Address>
-    <AddContactButton address operation />
-  </View>;
-};
-
-let getContactOrRaw = (aliases, tokens, address, operation) => {
-  address
-  ->AliasHelpers.getContractAliasFromAddress(aliases, tokens)
-  ->Option.mapWithDefault(rawUnknownAddress(address, operation), alias =>
-      <Typography.Body1 numberOfLines=1>
-        alias->React.string
-      </Typography.Body1>
-    );
-};
-
-let status =
-    (operation: Operation.Read.t, currentLevel, config: ConfigContext.env) => {
+let status = (operation: Operation.t, currentLevel, config: ConfigContext.env) => {
   let (txt, colorStyle) =
     switch (operation.status) {
     | Mempool => (I18n.state_mempool, Some(`negative))
@@ -147,7 +104,7 @@ let memo = component =>
     component,
     (prevPros, nextProps) => {
       let currentConfirmations =
-        prevPros##currentLevel - prevPros##operation.Operation.Read.level;
+        prevPros##currentLevel - prevPros##operation.Operation.level;
 
       currentConfirmations > 5
         ? prevPros##operation == nextProps##operation
@@ -161,7 +118,7 @@ let memo = component =>
 
 module AddToken = {
   [@react.component]
-  let make = (~address, ~kind: TokenRepr.kind, ~op: Operation.Read.t, ~tokens) => {
+  let make = (~address, ~kind: TokenRepr.kind, ~op: Operation.t, ~tokens) => {
     let (visibleModal, openAction, closeAction) =
       ModalAction.useModalActionState();
     let closeAction = () => {
@@ -175,7 +132,7 @@ module AddToken = {
     };
 
     let tooltip = (
-      "add_token_from_op" ++ Operation.Read.(op->uniqueId->uniqueIdToString),
+      "add_token_from_op" ++ Operation.(op->uniqueId->uniqueIdToString),
       I18n.Tooltip.add_token,
     );
     let onPress = _ => openAction();
@@ -206,10 +163,10 @@ module UnknownTokenAmount = {
   [@react.component]
   let make = (~amount, ~sign, ~address: PublicKeyHash.t, ~kind, ~tokens, ~op) => {
     let tooltip = (
-      "unknown_token" ++ Operation.Read.(op->uniqueId->uniqueIdToString),
+      "unknown_token" ++ Operation.(op->uniqueId->uniqueIdToString),
       I18n.Tooltip.unregistered_token_transaction,
     );
-    <View style=styles##rawAddressContainer>
+    <View style=OperationUtils.styles##rawAddressContainer>
       <Text>
         {Format.asprintf("%s %s", sign, amount->TokenRepr.Unit.toNatString)
          ->React.string}
@@ -238,7 +195,7 @@ module KnownTokenAmount = {
         ~tokens,
         ~op,
       ) => {
-    <View style=styles##rawAddressContainer>
+    <View style=OperationUtils.styles##rawAddressContainer>
       <Text>
         {Format.asprintf(
            "%s %s %s",
@@ -258,7 +215,7 @@ module NFTAmount = {
   let make = (~amount, ~sign, ~token: TokenRepr.t) => {
     let source =
       NftElements.useNftSource(token, NftFilesManager.getThumbnailURL);
-    <View style=styles##rawAddressContainer>
+    <View style=OperationUtils.styles##rawAddressContainer>
       <Text>
         {Format.asprintf(
            "%s %s",
@@ -279,7 +236,7 @@ let amount =
       account: Account.t,
       transaction: Operation.Transaction.t,
       tokens,
-      op: Operation.Read.t,
+      op: Operation.t,
     ) => {
   let colorStyle =
     account.address == transaction->Operation.Transaction.Accessor.destination
@@ -314,7 +271,7 @@ let amount =
 
 [@react.component]
 let make =
-  memo((~account: Account.t, ~operation: Operation.Read.t, ~currentLevel) => {
+  memo((~account: Account.t, ~operation: Operation.t, ~currentLevel) => {
     let aliases = StoreContext.Aliases.useGetAll();
     let tokens = StoreContext.Tokens.useGetAll();
     let config = ConfigContext.useContent();
@@ -356,14 +313,14 @@ let make =
              {operation.source
               ->AliasHelpers.getContractAliasFromAddress(aliases, tokens)
               ->Option.mapWithDefault(
-                  rawUnknownAddress(operation.source, operation), alias =>
+                  rawUnknownAddress(operation.source), alias =>
                   <Typography.Body1 numberOfLines=1>
                     alias->React.string
                   </Typography.Body1>
                 )}
            </CellAddress>
            <CellAddress>
-             {getContactOrRaw(aliases, tokens, common.destination, operation)}
+             {getContactOrRaw(aliases, tokens, common.destination)}
            </CellAddress>
          </>
        | Origination(_origination) =>
@@ -393,7 +350,7 @@ let make =
              </Typography.Body1>
            </CellFee>
            <CellAddress>
-             {getContactOrRaw(aliases, tokens, operation.source, operation)}
+             {getContactOrRaw(aliases, tokens, operation.source)}
            </CellAddress>
            {delegation.delegate
             ->Option.mapWithDefault(
@@ -404,7 +361,7 @@ let make =
                 </CellAddress>,
                 d =>
                 <CellAddress>
-                  {getContactOrRaw(aliases, tokens, d, operation)}
+                  {getContactOrRaw(aliases, tokens, d)}
                 </CellAddress>
               )}
          </>
@@ -432,7 +389,7 @@ let make =
           icon=Icons.OpenExternal.build
           tooltip=(
             "open_in_explorer"
-            ++ Operation.Read.(operation->uniqueId->uniqueIdToString),
+            ++ Operation.(operation->uniqueId->uniqueIdToString),
             I18n.Tooltip.open_in_explorer,
           )
           onPress={_ => {
