@@ -18,7 +18,7 @@
     "-bs-super-errors",
     "-bs-no-version-header",
     "-open Belt",
-    "-open UmamiLibBase"
+    "-open UmamiBase"
   ],
   "warnings": {
     "number": "-44-48-9-45"
@@ -33,7 +33,7 @@
   "namespace": true,
   "ppx-flags": ["lenses-ppx/ppx", "bs-let/ppx"],
   "bs-dependencies": [
-    "@umami/lib-base",
+    "@umami/base",
     "bs-fetch",
     "@glennsl/bs-json",
     "reason-react",

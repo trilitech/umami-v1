@@ -25,7 +25,7 @@
     "@toruslabs/fetch-node-details": "^3.0.1",
     "@toruslabs/torus-direct-web-sdk": "^4.14.1",
     "@toruslabs/torus.js": "^3.0.0",
-    "@umami/lib-base": "link:./lib_base",
+    "@umami/base": "link:./libs/base",
     "@wert-io/widget-initializer": "^0.1.2",
     "bignumber.js": "^9.0.1",
     "bip39": "^3.0.3",

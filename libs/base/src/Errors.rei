@@ -23,50 +23,30 @@
 /*                                                                           */
 /*****************************************************************************/
 
+/* The type of Umami errors */
 type t = ..;
 
+/* A string info on where the error is defined */
 type scope = string;
 
+/* Error information where the message is the applycation of the handler and
+   the scope is the scope of the handler */
 type errorInfos = {
   msg: string,
   scope: string,
 };
 
+/* Common errors */
 type t +=
-  | Generic(string)
-  | WrongPassword;
+  /* The most basic error. It should be used as little as possible */
+  | Generic(string);
 
-let handlers = ref([]);
+/* Adds an errors handler in the registry */
+let registerHandler: (scope, t => option(string)) => unit;
 
-let registerHandler = (scope, f) => {
-  handlers := [(scope, f), ...handlers.contents];
-};
+/* Gets infos of an error */
+let getInfos: t => errorInfos;
 
-let () =
-  registerHandler(
-    "Generic",
-    fun
-    | Generic(s) => s->Some
-    | WrongPassword => I18n.Form_input_error.wrong_password->Some
-    | _ => None,
-  );
-
-let getInfos = e => {
-  let infos =
-    handlers.contents
-    ->List.findMap(((scope, h)) => e->h->Option.map(msg => {scope, msg}));
-
-  switch (infos) {
-  | Some(i) => i
-  | None =>
-    /* We know by construction that [e] is an object as it is of type [t]. It
-       must be convertible to json by [stringifyAny] */
-    {
-      scope: "Generic",
-      msg:
-        I18n.Errors.unhandled_error(e->Js.Json.stringifyAny->Option.getExn),
-    }
-  };
-};
-
-let toString = e => getInfos(e).msg;
+/* Converts an error value to a string message by looking up the handlers
+   registry */
+let toString: t => string;

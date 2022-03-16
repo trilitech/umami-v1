@@ -40,7 +40,7 @@ let usePasswordForm = submitPassword => {
           submitPassword(~password=state.values.password)
           ->Promise.getError(
               fun
-              | Errors.WrongPassword
+              | SecureStorage.WrongPassword
               | SecureStorage.Cipher.DecryptError =>
                 raiseSubmitFailed(Some(I18n.Form_input_error.wrong_password))
               | _ => (),
