@@ -55,7 +55,7 @@ let make = (~account) => {
         NFT.{
           account: account.Account.address,
           allowHidden: true,
-          numberByAccount: BCD.requestPageSize,
+          numberByAccount: Tzkt.requestPageSize,
         },
       fromCache,
     };

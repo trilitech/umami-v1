@@ -236,7 +236,7 @@ let make =
               symbol,
               chain,
               decimals,
-              asset: TokenRepr.defaultAsset,
+              asset: Metadata.defaultAsset,
             },
           )
         ->createToken

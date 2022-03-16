@@ -39,9 +39,9 @@ let makeMockFA2Token = (amount, address) => {
     address: makeMockAddress(address),
     alias: "foo",
     symbol: "bar",
-    chain: "baz",
+    chain: Network.getChainId(`Mainnet),
     decimals: 2,
-    asset: TokenRepr.defaultAsset,
+    asset: Metadata.defaultAsset,
   };
   let mockToken = {token: mockFA1_2Token, amount: mockTokenAmount};
   mockToken;
@@ -69,9 +69,9 @@ describe("GlobalBatchUtils", () => {
         address: mockAddress,
         alias: "foo",
         symbol: "bar",
-        chain: "baz",
+        chain: Network.getChainId(`Mainnet),
         decimals: 2,
-        asset: TokenRepr.defaultAsset,
+        asset: Metadata.defaultAsset,
       };
       let mockToken: Protocol.Amount.t =
         Token({token: mockFA1_2Token, amount: mockTokenAmount});

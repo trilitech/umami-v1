@@ -24,5 +24,4 @@
 /*****************************************************************************/
 
 let findTemplate:
-  (PublicKeyHash.t, int, option(TokenRepr.Metadata.asset)) =>
-  option(TokenRepr.t);
+  (PublicKeyHash.t, int, option(Metadata.asset)) => option(TokenRepr.t);

@@ -31,7 +31,8 @@ type Errors.t +=
 type filter = [ | `Any | `FT | `NFT(PublicKeyHash.t, bool)];
 
 let metadataToToken:
-  (string, TokenContract.t, ReTaquitoTypes.Tzip12.metadata) => TokenRepr.t;
+  (Network.chainId, TokenContract.t, ReTaquitoTypes.Tzip12.metadata) =>
+  TokenRepr.t;
 
 let registeredTokens: filter => Let.result(TokensLibrary.WithBalance.t);
 

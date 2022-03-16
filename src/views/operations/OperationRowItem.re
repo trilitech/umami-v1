@@ -128,7 +128,9 @@ module AddToken = {
     let apiVersion: option(Network.apiVersion) = StoreContext.useApiVersion();
 
     let chain = {
-      apiVersion->Option.map(v => v.chain)->Option.getWithDefault("");
+      apiVersion
+      ->Option.map(v => v.chain)
+      ->Option.getWithDefault(Network.unsafeChainId(""));
     };
 
     let tooltip = (

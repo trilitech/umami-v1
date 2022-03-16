@@ -26,43 +26,45 @@
 module Token = {
   type t =
     | Full(TokenRepr.t)
-    | Partial(TokenContract.t, BCD.tokenBalance, bool);
+    | Partial(Tzkt.t, Network.chain(Network.chainId), bool);
 
   let id =
     fun
     | Full(t) => TokenRepr.id(t)
-    | Partial(_, bcd, _) => bcd.BCD.token_id;
+    | Partial(t, _, _) => t->Tzkt.tokenId;
 
   let address =
     fun
     | Full(t) => t.TokenRepr.address
-    | Partial(_, bcd, _) => bcd.BCD.contract;
+    | Partial(t, _, _) => t->Tzkt.address;
 
   let name =
     fun
     | Full(t) => t.TokenRepr.alias->Some
-    | Partial(_, bcd, _) => bcd.BCD.name;
+    | Partial(t, _, _) =>
+      t.Tzkt.tokenInfo.metadata->Option.flatMap(m => m.Tzkt.name);
 
   let symbol =
     fun
     | Full(t) => t.TokenRepr.symbol->Some
-    | Partial(_, bcd, _) => bcd.BCD.symbol;
+    | Partial(t, _, _) =>
+      t.Tzkt.tokenInfo.metadata->Option.flatMap(m => m.Tzkt.symbol);
 
   let decimals =
     fun
     | Full(t) => t.TokenRepr.decimals->Some
-    | Partial(_, bcd, _) => bcd.BCD.decimals;
+    | Partial(t, _, _) =>
+      t.Tzkt.tokenInfo.metadata->Option.flatMap(m => m.Tzkt.decimals);
 
   let kind =
     fun
     | Full(t) => TokenContract.fromTokenKind(t.TokenRepr.kind)
-    | Partial(tc, _, _) => tc.TokenContract.kind;
+    | Partial(t, _, _) => t.Tzkt.tokenInfo.standard;
 
   let chain =
     fun
-    | Full(t) => Some(t.TokenRepr.chain)
-    | Partial(_, bcd, _) =>
-      bcd.BCD.network->Network.networkChain->Option.map(Network.getChainId);
+    | Full(t) => t.TokenRepr.chain
+    | Partial(_, chain, _) => chain->Network.getChainId;
 
   let isNFT =
     fun
@@ -84,8 +86,17 @@ module Token = {
         decimals: decimals->Option.default(t.decimals),
       }
       ->Some
-    | Partial(contract, t, _) =>
-      contract->BCD.(toTokenRepr({...t, name: alias, symbol, decimals}))
+    | Partial(t, chain, _) =>
+      open Tzkt;
+      let metadata = metadata => {...metadata, name: alias, symbol, decimals};
+      let t = {
+        ...t,
+        tokenInfo: {
+          ...t.tokenInfo,
+          metadata: t.tokenInfo.metadata->Option.map(metadata),
+        },
+      };
+      toTokenRepr(chain->Network.getChainId->Some, t);
     };
   };
 
@@ -334,26 +345,20 @@ let invalidateCache = (cache, filter) => {
   let invalidate = (token: Token.t) =>
     switch (token) {
     | Full(token) =>
-      let bcd = token->BCD.fromTokenRepr;
-      bcd->Option.map(bcd =>
-        Token.Partial(
-          TokenContract.{
-            address: token.address,
-            kind: token.kind->fromTokenKind,
-          },
-          bcd,
-          true,
-        )
-      );
-    | _ => Some(token)
+      Token.Partial(
+        token->Tzkt.fromTokenRepr,
+        token.chain->Network.fromChainId,
+        true,
+      )
+    | _ => token
     };
-  let map = (_, _, token: Token.t) =>
+  let map = (token: Token.t) =>
     switch (filter) {
     | `Any => token->invalidate
-    | `FT => token->Token.isNFT ? Some(token) : token->invalidate
-    | `NFT => token->Token.isNFT ? token->invalidate : Some(token)
+    | `FT => token->Token.isNFT ? token : token->invalidate
+    | `NFT => token->Token.isNFT ? token->invalidate : token
     };
-  cache->Generic.keepMap(map);
+  cache->Generic.map(map);
 };
 
 let forceRetryPartial = (cache, filter) => {

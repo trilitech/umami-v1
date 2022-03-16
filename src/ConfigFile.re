@@ -25,7 +25,8 @@
 
 open Let;
 
-type network = Network.configurableChains;
+// Here Custom contains a name, not a chainId
+type network = Network.configurableChains(string);
 
 type t = {
   network: option(network),
@@ -68,7 +69,7 @@ module Encode = {
 
   let encoder = c =>
     object_([
-      ("network", nullable(Network.Encode.chainEncoder, c.network)),
+      ("network", nullable(Network.Encode.chainEncoderString, c.network)),
       ("theme", nullable(string, c.theme->Option.map(themeToString))),
       ("confirmations", nullable(int, c.confirmations)),
       (
@@ -76,7 +77,10 @@ module Encode = {
         nullable(string, c.sdkBaseDir->Option.map(System.Path.toString)),
       ),
       ("customNetworks", list(Network.Encode.encoder, c.customNetworks)),
-      ("backupFile", nullable(string, c.backupFile->Option.map(System.Path.toString)))
+      (
+        "backupFile",
+        nullable(string, c.backupFile->Option.map(System.Path.toString)),
+      ),
     ]);
 };
 
@@ -94,7 +98,9 @@ module Decode = {
     json
     |> field(
          "network",
-         optional(Network.Decode.(chainDecoder(nativeChainFromString))),
+         optional(
+           Network.Decode.(chainDecoderString(nativeChainFromString)),
+         ),
        );
 
   let themeDecoder = json =>
@@ -113,7 +119,8 @@ module Decode = {
     )
     ->Option.getWithDefault([]);
 
-  let backupFileDecoder = json =>  (json |> optional(field("backupFile", string)))
+  let backupFileDecoder = json =>
+    (json |> optional(field("backupFile", string)))
     ->Option.map(System.Path.mk);
 
   let decoder = json => {
@@ -153,7 +160,7 @@ module Legacy = {
           field("NAME", string)
           |> andThen(
                fun
-               | "Custom" => field("VAL", string)
+               | "Custom" => field("VAL", Network.Decode.chainIdDecoder)
                | v =>
                  JsonEx.(
                    raise(
@@ -169,6 +176,11 @@ module Legacy = {
 
     let networkLegacyDecoder = json =>
       (json |> optional(field("network", networkVariantLegacyDecoder)))
+      ->Option.map(
+          fun
+          | `Custom(c: Network.chainId) => `Custom((c :> string))
+          | #Network.supportedChains as n => n,
+        )
       ->Option.map(removeNonNativeNetwork);
 
     let legacyChainDecoder = json =>
@@ -226,7 +238,7 @@ module Legacy = {
       |> field(
            "network",
            optional(
-             Network.Decode.chainDecoder(legacyNativeChainFromString),
+             Network.Decode.chainDecoderString(legacyNativeChainFromString),
            ),
          );
 

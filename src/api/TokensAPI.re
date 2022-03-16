@@ -42,17 +42,17 @@ let () =
     | _ => None,
   );
 
-module BetterCallDev = {
-  open BCD;
+module TzktAPI = {
+  open Tzkt;
 
   let mergeBalanceArray = (fetched, balances) => {
-    let add = (map, bcdToken) => {
+    let add = (map, token) => {
       let f = tokens =>
         tokens
         ->Option.getWithDefault(Map.Int.empty)
-        ->Map.Int.set(bcdToken.token_id, bcdToken)
+        ->Map.Int.set(token->tokenId, token)
         ->Some;
-      map->PublicKeyHash.Map.update(bcdToken.contract, f);
+      map->PublicKeyHash.Map.update(token->address, f);
     };
 
     balances->Array.reduce(fetched, add);
@@ -65,13 +65,13 @@ module BetterCallDev = {
   };
 
   // Returns a list of arrays: this will be treated later, so we return it as raw as possible for now
-  let fetchTokens = (config, alreadyFetched, account, index, number) => {
+  let fetchTokens = (config, alreadyFetched, account, index, number, total) => {
     let rec fetch = (alreadyFetched, index, number) => {
       let%Await url =
-        ServerAPI.URL.External.betterCallDevAccountTokens(
+        ServerAPI.URL.External.tzktAccountTokens(
           ~config,
           ~account,
-          ~sortBy=`TokenId,
+          ~sortBy=`Contract,
           ~limit=min(requestPageSize, number),
           ~index,
           ~hideEmpty=true,
@@ -79,29 +79,37 @@ module BetterCallDev = {
         )
         ->Promise.value;
       let%Await json = url->ServerAPI.URL.get;
-      let%Await tokens = json->JsonEx.decode(Decode.decoder)->Promise.value;
+      let%Await tokens =
+        json->JsonEx.decode(Decode.arrayDecoder)->Promise.value;
 
       // corresponds to the number of tokens to fetch according to
       // the number we ask, not the total remaining
       let remaining = max(number - requestPageSize, 0);
 
       // index for the next fetch
-      let index = index + tokens.balances->Array.size;
+      let index = index + tokens->Array.size;
 
       // Final index
-      let finalIndex = min(index, tokens.total);
+      let finalIndex = min(index, total);
 
-      let remainingOnTotal = max(tokens.total - index, 0);
+      let remainingOnTotal = max(total - index, 0);
 
       // adds the newly fetched tokens to the cache currently built
-      let alreadyFetched =
-        alreadyFetched->(mergeBalanceArray(tokens.balances));
+      let alreadyFetched = alreadyFetched->(mergeBalanceArray(tokens));
 
       remaining <= 0 || remainingOnTotal <= 0
-        ? (alreadyFetched, finalIndex, tokens.total)->Promise.ok
+        ? (alreadyFetched, finalIndex)->Promise.ok
         : fetch(alreadyFetched, index, remaining);
     };
     fetch(alreadyFetched, index, number);
+  };
+
+  let fetchTokensNumber = (config, account) => {
+    let%Await url =
+      ServerAPI.URL.External.tzktAccountTokensNumber(~config, ~account)
+      ->FutureBase.value;
+    let%Await number = ServerAPI.URL.get(url);
+    number->JsonEx.decode(Json.Decode.int)->Promise.value;
   };
 
   // fetch a certain number of token for each account
@@ -114,13 +122,15 @@ module BetterCallDev = {
       // account
       | [] => (alreadyFetched, highestIndex, totalAccumulated)->Promise.ok
       | [account, ...accounts] =>
-        let%Await (fetched, index, total) =
+        let%Await total = fetchTokensNumber(config, account);
+        let%Await (fetched, index) =
           fetchTokens(
             config,
             alreadyFetched,
             account,
             index,
             numberByAccount,
+            total,
           );
         fetch(
           fetched,
@@ -149,7 +159,7 @@ module BetterCallDev = {
           ->Promise.value;
         let%Await json = url->ServerAPI.URL.get;
         let%Await tokens = json->JsonEx.decode(Decode.decoder)->Promise.value;
-        fetch([tokens.balances, ...alreadyFetched], offset + 10);
+        fetch([tokens, ...alreadyFetched], offset + 10);
       };
     fetch([], 0);
   };
@@ -296,7 +306,7 @@ let removeToken = (token, ~pruneCache) => {
 };
 
 let metadataToAsset = (metadata: ReTaquitoTypes.Tzip12.metadata) =>
-  TokenRepr.Metadata.{
+  Metadata.{
     description: metadata.description,
     minter: metadata.minter,
     creators: metadata.creators,
@@ -314,7 +324,7 @@ let metadataToAsset = (metadata: ReTaquitoTypes.Tzip12.metadata) =>
     artifactUri: metadata.artifactUri,
     displayUri: metadata.displayUri,
     thumbnailUri:
-      TokenRepr.thumbnailUriFromFormat(
+      Metadata.thumbnailUriFromFormat(
         metadata.thumbnailUri,
         metadata.formats,
       ),
@@ -328,7 +338,7 @@ let metadataToAsset = (metadata: ReTaquitoTypes.Tzip12.metadata) =>
 
 let metadataToToken =
     (
-      chain,
+      chain: Network.chainId,
       tokenContract: TokenContract.t,
       metadata: ReTaquitoTypes.Tzip12.metadata,
     ) =>
@@ -362,7 +372,7 @@ let keepToken = (token, config: ConfigContext.env, filter) => {
     };
 
   TokensLibrary.Token.chain(token)
-  == config.network.Network.chain->Network.getChainId->Some
+  == config.network.Network.chain->Network.getChainId
   && kindOk;
 };
 
@@ -403,66 +413,73 @@ module Fetch = {
       (
         config: ConfigContext.env,
         tokenContract,
-        bcdToken: BCD.tokenBalance,
+        tzktToken: Tzkt.t,
         tzip12Cache,
       ) => {
     let fetchMetadata = () => {
       let%Await contract =
-        tzip12Cache->TaquitoAPI.Tzip12Cache.findContract(bcdToken.contract);
+        tzip12Cache->TaquitoAPI.Tzip12Cache.findContract(
+          tzktToken->Tzkt.address,
+        );
       let%AwaitMap metadata =
-        MetadataAPI.Tzip12.read(contract, bcdToken.token_id);
+        MetadataAPI.Tzip12.read(contract, tzktToken->Tzkt.tokenId);
       metadataToToken(
         config.network.chain->Network.getChainId,
         tokenContract,
         metadata,
       );
     };
-    switch (BCD.toTokenRepr(tokenContract, bcdToken)) {
+    switch (
+      Tzkt.toTokenRepr(
+        config.ConfigContext.network.Network.chain->Network.getChainId->Some,
+        tzktToken,
+      )
+    ) {
     | Some(token) => Promise.ok(token)
     | None => fetchMetadata()
     };
   };
 
-  let updatePartial = (error, tokenContract, bcdToken: BCD.tokenBalance) => {
+  let updatePartial = (error, chain, tzktToken: Tzkt.t) => {
     let retry =
       switch (error) {
       | MetadataAPI.TokenIdNotFound(_, _)
       | MetadataAPI.NoTzip12Metadata(_) => false
       | _ => true
       };
+    let chainId = chain->Network.getChainId->Some;
     let token =
-      BCD.toTokenRepr(tokenContract, bcdToken)
+      Tzkt.toTokenRepr(chainId, tzktToken)
       ->Option.mapWithDefault(
           TokensLibrary.Token.Partial(
-            tokenContract,
-            bcdToken->BCD.updateFromBuiltinTemplate,
+            tzktToken->Tzkt.updateFromBuiltinTemplate,
+            chain,
             retry,
           ),
           t =>
           Full(t)
         );
-    (token, bcdToken.balance);
+    (token, tzktToken.balance);
   };
 
   let getTokenRepr =
-      (
-        config,
-        tokenContract,
-        bcdToken: BCD.tokenBalance,
-        tzip12Cache,
-        inCache,
-      ) => {
+      (config, tokenContract, tzktToken: Tzkt.t, tzip12Cache, inCache) => {
     switch (inCache) {
     | None
     | Some(TokensLibrary.Token.Partial(_, _, true)) =>
       let%FtMap res =
-        fetchIfNecessary(config, tokenContract, bcdToken, tzip12Cache);
+        fetchIfNecessary(config, tokenContract, tzktToken, tzip12Cache);
       switch (res) {
-      | Error(e) => updatePartial(e, tokenContract, bcdToken)
-      | Ok(t) => (TokensLibrary.Token.Full(t), bcdToken.balance)
+      | Error(e) =>
+        updatePartial(
+          e,
+          config.ConfigContext.network.Network.chain,
+          tzktToken,
+        )
+      | Ok(t) => (TokensLibrary.Token.Full(t), tzktToken.balance)
       };
 
-    | Some(t) => Promise.value((t, bcdToken.balance))
+    | Some(t) => Promise.value((t, tzktToken.balance))
     };
   };
 
@@ -582,14 +599,17 @@ module Fetch = {
             (int, TokensLibrary.t, list(TokensLibrary.WithBalance.token)),
           ),
         _tokenId: int,
-        token: BCD.tokenBalance,
+        token: Tzkt.t,
       ) =>
     if (onStop->Option.mapWithDefault(false, f => f())) {
       indexCacheTokens;
     } else {
       let%Ft (index, cache, finalTokens) = indexCacheTokens;
       let inCache =
-        cache->TokensLibrary.Generic.getToken(token.contract, token.token_id);
+        cache->TokensLibrary.Generic.getToken(
+          token->Tzkt.address,
+          token->Tzkt.tokenId,
+        );
 
       let%FtMap (tokenRepr, balance) =
         getTokenRepr(config, tokenContract, token, tzip12Cache, inCache);
@@ -614,10 +634,7 @@ module Fetch = {
             (int, TokensLibrary.t, list(TokensLibrary.WithBalance.token)),
           ),
         _,
-        (
-          tokenContract: TokenContract.t,
-          tokens: Map.Int.t(BCD.tokenBalance),
-        ),
+        (tokenContract: TokenContract.t, tokens: Map.Int.t(Tzkt.t)),
       ) => {
     let%Ft (index, cache, finalTokens) = indexCacheTokens;
 
@@ -648,17 +665,10 @@ module Fetch = {
         ~numberByAccount,
       ) => {
     let%Await (tokens, nextIndex, _) =
-      BetterCallDev.fetchAccountsTokens(
-        config,
-        accounts,
-        index,
-        numberByAccount,
-      );
+      TzktAPI.fetchAccountsTokens(config, accounts, index, numberByAccount);
 
     let onTokens =
-      onTokens->Option.map(f =>
-        f(~total=BetterCallDev.tokensNumber(tokens))
-      );
+      onTokens->Option.map(f => f(~total=TzktAPI.tokensNumber(tokens)));
 
     let%Await tokenContracts = tokenContracts(config, ~accounts, ());
 
@@ -826,7 +836,7 @@ module Fetch = {
 
   let accountsTokensNumber = (config, ~accounts) => {
     let%AwaitMap (_, _, total) =
-      BetterCallDev.fetchAccountsTokens(config, accounts, 0, 1);
+      TzktAPI.fetchAccountsTokens(config, accounts, 0, 1);
 
     total;
   };

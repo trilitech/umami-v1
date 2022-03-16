@@ -40,7 +40,7 @@ let hicetnunc = {
         decimals: 0,
         asset:
           asset->Option.getWithDefault({
-            ...TokenRepr.defaultAsset,
+            ...Metadata.defaultAsset,
             isBooleanAmount: true,
           }),
       },

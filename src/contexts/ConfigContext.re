@@ -61,7 +61,7 @@ let fromFile = f => {
     | Some(`Hangzhounet) => Network.hangzhounet
     | Some(`Custom(name)) =>
       f.customNetworks
-      ->List.getBy(n => n.name === name)
+      ->List.getBy(n => n.name === (name :> string))
       ->Option.getWithDefault(Network.mainnet)
     },
   backupFile: f.backupFile,

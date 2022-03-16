@@ -62,7 +62,9 @@ let kindToString =
 module Decode = {
   let kindFromString =
     fun
-    | "fa1-2" => Ok(`KFA1_2)
+    | "fa1-2"
+    // compatibility with TZKT API
+    | "fa1.2" => Ok(`KFA1_2)
     | "fa2" => Ok(`KFA2)
     | k => Error(UnknownKind(k));
 
