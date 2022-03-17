@@ -22,5 +22,9 @@
 /* DEALINGS IN THE SOFTWARE.                                                 */
 /*                                                                           */
 /*****************************************************************************/
+%raw
+"
+require('./desktopStyles.css');
+";
 
 ReactDOMRe.renderToElementWithId(<App />, "root");
