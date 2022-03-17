@@ -26,6 +26,7 @@ module.exports = {
   ],
   devtool: "cheap-source-map",
   devServer: {
+    open: true,
     historyApiFallback: true,
     contentBase: [
       path.resolve(__dirname, "public"),
