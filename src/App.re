@@ -34,27 +34,6 @@ let styles =
     })
   );
 
-module EmptyAppView = {
-  [@react.component]
-  let make = () => {
-    let theme = ThemeContext.useTheme();
-
-    <View
-      style=Style.(
-        array([|
-          styles##layout,
-          style(~backgroundColor=theme.colors.background, ()),
-        |])
-      )>
-      <Header />
-      <View style=styles##main>
-        <NavBar.Empty />
-        <View style=styles##content />
-      </View>
-    </View>;
-  };
-};
-
 module DisclaimerModal = {
   [@react.component]
   let make = (~onSign) => {
@@ -272,7 +251,7 @@ let make = () => {
   <LogsContext>
     <ConfigFileContext>
       <ConfigContext>
-        <ThemeContext>
+        <ThemeContextWithConfig>
           <StoreContext>
             <GlobalBatchContext>
               <AppView />
@@ -281,7 +260,7 @@ let make = () => {
               </SelectedAccountView>
             </GlobalBatchContext>
           </StoreContext>
-        </ThemeContext>
+        </ThemeContextWithConfig>
       </ConfigContext>
     </ConfigFileContext>
   </LogsContext>;
