@@ -2,17 +2,15 @@
 
 ![umami logo](img/umami-logo.svg "umami-screenshot")
 
-
-[A powerful new Tezos wallet](https://umamiwallet.com)
-===========================================================================
+# [A powerful new Tezos wallet](https://umamiwallet.com)
 
 Umami is a cryptocurrency wallet developed by [Nomadic
- Labs](https://www.nomadic-labs.com/) to interact with the [Tezos
- Blockchain](https://tezos.com/). It runs as a desktop electron based app with
- multiple features: dApp interaction, HD Wallet, batch transfer, delegation,
- FA1.2, last operations, etc.
+Labs](https://www.nomadic-labs.com/) to interact with the [Tezos
+Blockchain](https://tezos.com/). It runs as a desktop electron based app with
+multiple features: dApp interaction, HD Wallet, batch transfer, delegation,
+FA1.2, last operations, etc.
 
-__Umami is in Beta version.__
+**Umami is in Beta version.**
 
 ![umami screenshot](img/screenshot.png "umami-screenshot")
 
@@ -30,15 +28,17 @@ git clone https://gitlab.com/nomadic-labs/umami-wallet/umami/ && cd umami
 
 ### 2) Requirements:
 
-* [node](https://nodejs.org) installed, version 14 or later.
-* [yarn](https://yarnpkg.com) installed.
-* [`node-hid` dependencies](https://github.com/node-hid/node-hid) dependencies installed.
+- [node](https://nodejs.org) installed, version 14 or later.
+- [yarn](https://yarnpkg.com) installed.
+- [`node-hid` dependencies](https://github.com/node-hid/node-hid) dependencies installed.
 
 Linux binaries are distributed as snaps, hence it needs `snapcraft` and `LXD`:
-* [snapcraft](https://snapcraft.io/docs/snapcraft-overview) installed.
-* [LXD](https://snapcraft.io/docs/build-on-lxd) installed and initialized.
+
+- [snapcraft](https://snapcraft.io/docs/snapcraft-overview) installed.
+- [LXD](https://snapcraft.io/docs/build-on-lxd) installed and initialized.
 
 On windows, a patch is needed on the `bsconfig.json`
+
 - `git cherry-pick de5fb98079b85c41e8bc0727b8ae17e06a75a8ad`
 
 ### 3) Build:
@@ -84,6 +84,20 @@ Start test runner:
 
 ```
 yarn test:watch
+```
+
+### 6) (Optional) Run component catalog
+
+If not already running, start compilation in watch mode:
+
+```
+yarn bsb:start
+```
+
+Start catalog:
+
+```
+yarn catalog:start
 ```
 
 ## ℹ️ Support
