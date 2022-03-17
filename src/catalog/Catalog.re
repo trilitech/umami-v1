@@ -66,6 +66,10 @@ module Menu = {
       <Typography.Overline1 onPress={_ => ReasonReactRouter.push("/buttons")}>
         "buttons"->React.string
       </Typography.Overline1>
+      <Typography.Overline1
+        onPress={_ => ReasonReactRouter.push("/mnemonic")}>
+        "mnemonic"->React.string
+      </Typography.Overline1>
     </View>;
   };
 };
@@ -81,6 +85,7 @@ let make = () => {
         {switch (url.path) {
          | ["typography"] => <CatalogText />
          | ["buttons"] => <CatalogButtons />
+         | ["mnemonic"] => <CatalogMneumonic />
          | _ => <CatalogButtons />
          }}
       </Wrapper>
