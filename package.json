@@ -99,7 +99,7 @@
       ]
     },
     "mac": {
-      "target": "dmg",
+      "target": "default",
       "hardenedRuntime": true,
       "gatekeeperAssess": false,
       "entitlements": "public/entitlements.mac.plist",
