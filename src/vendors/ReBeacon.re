@@ -346,19 +346,6 @@ module Error = {
     | s => Errors.Generic(Js.String.make(s))
     };
 
-  let toString =
-    fun
-    | PairingRequestParsing => I18n.Errors.pairing_request_parsing->Some
-    | NoMatchingRequest => noMatchingRequest->Some
-    | EncodedPayloadNeedString => encodedPayloadNeedString->Some
-    | MessageNotHandled => messageNotHandled->Some
-    | CouldNotDecryptMessage => couldNotDecryptMessage->Some
-    | AppMetadataNotFound => appMetadataNotFound->Some
-    | ShouldNotWork => shouldNotWork->Some
-    | ContainerNotFound => containerNotFound->Some
-    | PlatformUnknown => platformUnknown->Some
-    | _ => None;
-
   let fromPromiseParsed = p => p->RawJsError.fromPromiseParsed(parse);
 };
 

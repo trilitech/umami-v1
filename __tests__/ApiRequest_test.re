@@ -5,7 +5,6 @@ open TestingLibraryHooks;
 open TestUtils;
 
 open Umami;
-let mockDateSinceEpoch = 100.; // defined in jestSetup
 
 let assertHistoryEqual =
     (

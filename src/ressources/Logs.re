@@ -27,7 +27,6 @@
 
 type origin =
   | Operation
-  | Connection
   | Account
   | Aliases
   | Delegate
@@ -99,7 +98,6 @@ let similar = (l1, l2) => {
 let originToString = e => {
   switch (e) {
   | Operation => "Operation"
-  | Connection => "Connection"
   | Balance => "Balance"
   | Aliases => "Aliases"
   | Account => "Account"

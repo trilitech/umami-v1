@@ -122,27 +122,6 @@ module Form = {
   module View = {
     open DelegateForm;
 
-    let onAppear = (el, _) => {
-      ReactFlipToolkit.spring({
-        onUpdate: value => {
-          el->ReactDOMRe.domElementToObj##style##opacity #= value;
-        },
-        delay: 50.,
-        onComplete: () => (),
-      });
-    };
-
-    let onExit = (el, _, removeElement) => {
-      ReactFlipToolkit.spring({
-        onUpdate: value => {
-          el->ReactDOMRe.domElementToObj##style##opacity
-          #= Js.Math.max_float(0., 1. -. value -. 0.1);
-        },
-        delay: 0.,
-        onComplete: removeElement,
-      });
-    };
-
     [@react.component]
     let make = (~form, ~action, ~loading) => {
       let onSubmitDelegateForm = _ => {

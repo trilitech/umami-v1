@@ -35,17 +35,6 @@ type t =
 let makeTez = t => t->Tez;
 let makeToken = (~amount, ~token) => Token({amount, token});
 
-let toInt64 =
-  fun
-  | Tez(tez) => tez->Tez.toInt64
-  | Token({amount}) =>
-    amount->TokenRepr.Unit.toBigNumber->ReBigNumber.toInt64;
-
-let toBigNumber =
-  fun
-  | Tez(tez) => tez->Tez.toInt64->ReBigNumber.fromInt64
-  | Token({amount}) => amount->TokenRepr.Unit.toBigNumber;
-
 let toString =
   fun
   | Tez(tez) => tez->Tez.toString
@@ -66,8 +55,6 @@ let getToken =
   fun
   | Token(a) => Some(a)
   | _ => None;
-
-let getTokenExn = t => t->getToken->Option.getExn;
 
 let show =
   fun

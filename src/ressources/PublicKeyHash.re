@@ -27,12 +27,14 @@ type t = string;
 
 type Errors.t +=
   | NotAnImplicit(string)
+  | InvalidScheme(string)
   | NotAContract(string);
 
 let () =
   Errors.registerHandler(
     "PublicKeyHash",
     fun
+    | InvalidScheme(s) => I18n.Wallet.invalid_scheme(s)->Some
     | NotAnImplicit(a) =>
       I18n.Csv.cannot_parse_address(a, I18n.Taquito.not_an_account)->Some
     | NotAContract(a) =>
@@ -89,9 +91,16 @@ module Scheme = {
 
   let toString =
     fun
-    | ED25519 => "ED25519"
-    | SECP256K1 => "SECP256K1"
-    | P256 => "P256";
+    | ED25519 => "ed25519"
+    | SECP256K1 => "secp256k1"
+    | P256 => "P-256";
+
+  let fromString =
+    fun
+    | "ed25519" => Ok(ED25519)
+    | "secp256k1" => Ok(SECP256K1)
+    | "P-256" => Ok(P256)
+    | s => Error(InvalidScheme(s));
 };
 
 type implicit =

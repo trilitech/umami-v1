@@ -53,8 +53,6 @@ module AddContactButton = {
   };
 };
 
-let styles = Style.(StyleSheet.create({"container": style(~flex=1., ())}));
-
 [@react.component]
 let make = () => {
   let aliasesRequest = StoreContext.Aliases.useRequestExceptAccounts();

@@ -53,7 +53,7 @@ module LedgerSigner: {
     (
       ReLedger.Transport.t,
       DerivationPath.t,
-      Wallet.Ledger.scheme,
+      PublicKeyHash.Scheme.t,
       ~prompt: bool
     ) =>
     t;

@@ -25,8 +25,6 @@
 
 include ApiRequest;
 
-open Let;
-
 let useCheckTokenContract = tokens => {
   let set = (~config, address) =>
     switch (tokens->TokensLibrary.Generic.pickAnyAtAddress(address)) {
@@ -66,51 +64,15 @@ let useLoadBalance =
   );
 };
 
-let useLoadTokens = requestState => {
-  let get = (~config as _, ()) =>
-    TokensAPI.registeredTokens(`FT)->Promise.value;
-
-  ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, ());
-};
-
 type nftCacheRequest = {
   holder: PublicKeyHash.t,
   allowHidden: bool,
-};
-
-let useLoadCachedNFTs = (requestState, request) => {
-  let get = (~config as _, request) =>
-    TokensAPI.registeredTokens(`NFT((request.holder, request.allowHidden)))
-    ->Promise.value;
-
-  ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, request);
-};
-
-type tokensRequest = {
-  account: PublicKeyHash.t,
-  index: int,
-  numberByAccount: int,
 };
 
 type registry = {
   registered: array(TokensLibrary.Token.t),
   toRegister: array(TokensLibrary.Token.t),
   nextIndex: int,
-};
-
-let useLoadTokensRegistry = (requestState, request) => {
-  let get = (~config, request) => {
-    let%AwaitMap (registered, toRegister, nextIndex) =
-      TokensAPI.Fetch.accountsTokens(
-        config,
-        ~accounts=[request.account],
-        ~index=request.index,
-        ~numberByAccount=request.numberByAccount,
-      );
-    {registered, toRegister, nextIndex};
-  };
-
-  ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, request);
 };
 
 type filter = [ | `Any | `FT | `NFT];
@@ -295,17 +257,4 @@ let useCacheToken = (~sideEffect=?, ()) => {
 type nfts = {
   tokens: TokensLibrary.WithBalance.t,
   holder: PublicKeyHash.t,
-};
-
-let useRegisterNFTs = (~sideEffect=?, ()) => {
-  let set = (~config as _, nfts) =>
-    TokensAPI.registerNFTs(nfts.tokens, nfts.holder)->Promise.value;
-
-  ApiRequest.useSetter(
-    ~toast=false,
-    ~set,
-    ~kind=Logs.Tokens,
-    ~sideEffect?,
-    (),
-  );
 };

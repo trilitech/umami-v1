@@ -57,11 +57,6 @@ module Transaction = {
   type kind = [ tokenKind | `KTez];
 
   module Accessor = {
-    let amount =
-      fun
-      | Token({amount, _}, _, _)
-      | Tez({amount, _}) => amount;
-
     let destination =
       fun
       | Token({destination, _}, _, _)

@@ -69,8 +69,8 @@ module Secret = {
     let schemeDecoder = json =>
       // field is called derivationCurve for legacy reasons
       (json |> optional(field("derivationCurve", string)))
-      ->Option.map(Wallet.Ledger.schemeFromString)
-      ->Option.getWithDefault(Ok(Wallet.Ledger.ED25519))
+      ->Option.map(PublicKeyHash.Scheme.fromString)
+      ->Option.getWithDefault(Ok(PublicKeyHash.Scheme.ED25519))
       ->Result.getExn;
 
     /* for legacy reasons, if the field is not present, this implies the account
@@ -116,7 +116,7 @@ module Secret = {
         ),
         (
           "derivationCurve",
-          string(secret.derivationScheme->Wallet.Ledger.schemeToString),
+          string(secret.derivationScheme->PublicKeyHash.Scheme.toString),
         ),
         (
           "addresses",
@@ -555,7 +555,7 @@ module Accounts = {
             ~startIndex,
             ~onFoundKey,
             path,
-            Wallet.Ledger.ED25519,
+            PublicKeyHash.Scheme.ED25519,
             getSeedKey(~recoveryPhrase, ~password),
           );
 
@@ -713,7 +713,7 @@ module Accounts = {
         ~derivationPath=DerivationPath.Pattern.fromTezosBip44(
                           DerivationPath.Pattern.default,
                         ),
-        ~derivationScheme=Wallet.Ledger.ED25519,
+        ~derivationScheme=PublicKeyHash.Scheme.ED25519,
         ~password,
         (),
       ) => {
@@ -919,7 +919,7 @@ module Accounts = {
         ~derivationPath=DerivationPath.Pattern.fromTezosBip44(
                           DerivationPath.Pattern.default,
                         ),
-        ~derivationScheme=Wallet.Ledger.ED25519,
+        ~derivationScheme=PublicKeyHash.Scheme.ED25519,
         ~ledgerMasterKey,
         (),
       ) => {

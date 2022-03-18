@@ -26,8 +26,6 @@
 open ReactNative;
 open Remote;
 
-let styles = FormStyles.onboarding;
-
 module StateLenses = [%lenses
   type state = {
     selectedBackupFile: string,

@@ -376,20 +376,8 @@ module FA2 = {
 
   type transfer;
 
-  /* Balance_of is never called directly, however it could be used in the future
-     to generate the input for `run_view`. */
-  type balanceOfRequest = {
-    owner: PublicKeyHash.t,
-    token_id: BigNumber.fixed,
-  };
-
-  type balanceOf;
-
   type methods = {
     transfer: (. array(transferParam)) => Contract.methodResult(transfer),
-    balance_of:
-      (. array(balanceOfRequest), PublicKeyHash.t) =>
-      Contract.methodResult(balanceOf),
   };
   type storage = Tzip12Storage.storage;
   type entrypoints;

@@ -91,18 +91,6 @@ module Mnemonic = {
 };
 
 module DelegateMaker = (Get: {let get: URL.t => Promise.t(Js.Json.t);}) => {
-  let parse = content =>
-    if (content == "none\n") {
-      None;
-    } else {
-      let splittedContent = content->Js.String2.split(" ");
-      if (content->Js.String2.length == 0 || splittedContent->Array.length == 0) {
-        None;
-      } else {
-        Some(splittedContent->Array.getUnsafe(0));
-      };
-    };
-
   let getForAccount = (config: ConfigContext.env, account) => {
     let%AwaitMap res =
       TaquitoAPI.Delegation.get(config.network.endpoint, account);

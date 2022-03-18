@@ -144,30 +144,11 @@ module Ledger: {
   type Errors.t +=
     | InvalidPathSize(array(int))
     | InvalidIndex(int, string)
-    | InvalidScheme(string)
     | InvalidLedger(string);
-
-  type scheme =
-    | ED25519
-    | SECP256K1
-    | P256;
-
-  type implicit =
-    | TZ1
-    | TZ2
-    | TZ3;
-
-  type kind =
-    | Implicit(implicit)
-    | KT1;
-
-  let implicitFromScheme: scheme => implicit;
-
-  let kindToString: kind => string;
 
   type t = {
     path: DerivationPath.tezosBip44,
-    scheme,
+    scheme: PublicKeyHash.Scheme.t,
   };
 
   /** The "master key" of a ledger is a way to give it an identity:
@@ -178,10 +159,7 @@ module Ledger: {
   type masterKey = PublicKeyHash.t;
 
   let masterKeyPath: DerivationPath.t;
-  let masterKeyScheme: scheme;
-
-  let schemeToString: scheme => string;
-  let schemeFromString: string => Result.t(scheme, Errors.t);
+  let masterKeyScheme: PublicKeyHash.Scheme.t;
 
   module Decode: {
     let fromSecretKey:

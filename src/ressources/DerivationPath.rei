@@ -29,8 +29,6 @@ type Errors.t +=
   | MissingWildcardOr0
   | NotTezosBip44;
 
-exception IllFormedPath;
-
 // A derivation path
 // see https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki
 type t;
@@ -55,9 +53,6 @@ let buildTezosBip44: ((int, int)) => tezosBip44;
 
 let build: array(int) => t;
 
-/* Build a path by reading a non-prefixed path string */
-let fromStringNoPrefix: string => Promise.result(t);
-
 module Pattern: {
   /* A derivation path pattern
      Building functions enforces the following invariants:
@@ -73,8 +68,6 @@ module Pattern: {
 
   // The default value for derivation path as a string
   let defaultString: string;
-
-  let convertToTezosBip44: t => Promise.result(tezosBip44);
 
   let fromTezosBip44: tezosBip44 => t;
 

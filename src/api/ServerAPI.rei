@@ -64,8 +64,6 @@ module URL: {
   };
 
   module Endpoint: {
-    let delegates: ConfigContext.env => t;
-
     let runView: ConfigContext.env => t;
 
     let fa12GetBalanceInput:

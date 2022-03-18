@@ -119,15 +119,13 @@ module Accounts: {
       encryptedSecretKey: 'a,
     };
 
-    let used: (ConfigContext.env, PublicKeyHash.t) => Promise.t(bool);
-
     let runStreamLedger:
       (
         ~config: ConfigContext.env,
         ~startIndex: int=?,
         ~onFoundKey: (int, PublicKeyHash.t) => unit,
         DerivationPath.Pattern.t,
-        Wallet.Ledger.scheme
+        PublicKeyHash.Scheme.t
       ) =>
       Promise.t(unit);
 
@@ -149,7 +147,7 @@ module Accounts: {
       ~backupPhrase: array(string),
       ~name: name,
       ~derivationPath: DerivationPath.Pattern.t=?,
-      ~derivationScheme: Wallet.Ledger.scheme=?,
+      ~derivationScheme: PublicKeyHash.Scheme.t=?,
       ~password: string,
       unit
     ) =>
@@ -187,7 +185,7 @@ module Accounts: {
       ~name: string,
       ~accountsNumber: int,
       ~derivationPath: DerivationPath.Pattern.t=?,
-      ~derivationScheme: Wallet.Ledger.scheme=?,
+      ~derivationScheme: PublicKeyHash.Scheme.t=?,
       ~ledgerMasterKey: PublicKeyHash.t,
       unit
     ) =>

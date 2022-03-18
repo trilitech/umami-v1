@@ -25,8 +25,6 @@
 
 open ReactNative;
 
-let onbStyles = FormStyles.onboarding;
-
 let styles =
   Style.(
     StyleSheet.create({

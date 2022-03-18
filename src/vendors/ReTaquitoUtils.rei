@@ -30,8 +30,6 @@ type Errors.t +=
 
 let validateAddress: string => result([> | `Address], Errors.t);
 
-let validateContractAddress: string => result([> | `Contract], Errors.t);
-
 let validateAnyAddress:
   string => result([> | `Address | `Contract], Errors.t);
 

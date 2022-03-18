@@ -150,7 +150,7 @@ let useCreateFromBackupFile =
 type ledgerImportInput = {
   name: string,
   derivationPath: DerivationPath.Pattern.t,
-  derivationScheme: Wallet.Ledger.scheme,
+  derivationScheme: PublicKeyHash.Scheme.t,
   accountsNumber: int,
   ledgerMasterKey: PublicKeyHash.t,
   timeout: int,
