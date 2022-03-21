@@ -33,13 +33,6 @@ let useSendTransfer = () => {
   (operationRequest, sendTransfer);
 };
 
-let safeBuildTransfer = validStates =>
-  if (validStates == [||]) {
-    None;
-  } else {
-    Some(validStates->List.fromArray->SendForm.buildTransaction);
-  };
-
 [@react.component]
 let make =
     (

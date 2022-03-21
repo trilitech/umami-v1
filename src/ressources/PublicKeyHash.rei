@@ -34,7 +34,6 @@ type parsedAddress =
   | Implicit(t);
 
 let build: string => result(t, Errors.t);
-let buildAny: string => result(parsedAddress, Errors.t);
 
 // Checks if given address is a smart contract address (KT1)
 let buildContract: string => result(t, Errors.t);
@@ -51,6 +50,7 @@ module Scheme: {
     | P256;
 
   let toString: t => string;
+  let fromString: string => result(t, Errors.t);
 };
 
 type implicit =

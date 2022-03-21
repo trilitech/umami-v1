@@ -84,34 +84,6 @@ module Transfer = {
     {source, managers: transfers->Array.map(t => Transfer(t))};
   };
 
-  let makeSingleton =
-      (
-        ~source,
-        ~amount,
-        ~destination,
-        ~fee=?,
-        ~parameter=?,
-        ~entrypoint=?,
-        ~gasLimit=?,
-        ~storageLimit=?,
-        (),
-      ) => {
-    let transfers = [|
-      makeSimpleTez(
-        ~amount,
-        ~destination,
-        ~fee?,
-        ~parameter?,
-        ~entrypoint?,
-        ~gasLimit?,
-        ~storageLimit?,
-        (),
-      ),
-    |];
-
-    makeBatch(~source, ~transfers, ());
-  };
-
   let reduceArray = (transfers, f) =>
     transfers->Array.reduce([], (acc, t: t) =>
       switch (t.data) {

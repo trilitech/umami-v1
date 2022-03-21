@@ -34,10 +34,6 @@ module Generic = {
   ];
   module AccountCreateForm = ReForm.Make(StateLenses);
 
-  type action =
-    | Create
-    | Edit(Account.t);
-
   let aliasCheckExists = (aliases, values: StateLenses.state) => {
     AliasHelpers.formCheckExists(aliases, values.name);
   };

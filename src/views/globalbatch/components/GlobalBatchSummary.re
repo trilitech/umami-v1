@@ -25,36 +25,6 @@
 
 open ReactNative;
 
-let styles =
-  Style.(
-    StyleSheet.create({
-      "advancedOptions": style(~marginBottom=12.->dp, ()),
-      "edited": style(~marginRight=5.->dp, ()),
-      "timeoutError":
-        style(
-          ~alignItems=`flexStart,
-          ~marginTop=20.->dp,
-          ~marginBottom=20.->dp,
-          (),
-        ),
-    })
-  );
-
-type step =
-  | AdvancedOptStep(option(int))
-  | SummaryStep;
-
-let makeTitle = (~custom=?) =>
-  fun
-  | AdvancedOptStep(_) => I18n.Label.advanced_options
-  | SummaryStep => custom->Option.getWithDefault(I18n.Title.confirmation);
-
-let back = ((step, set), f) =>
-  switch (step) {
-  | AdvancedOptStep(_) => Some(() => set(_ => SummaryStep))
-  | SummaryStep => f()
-  };
-
 [@react.component]
 let make =
     (

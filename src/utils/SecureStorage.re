@@ -191,8 +191,6 @@ module Cipher = {
     };
   };
 
-  let encrypt2 = (password, data) => encrypt(data, password);
-
   let decrypt = (encryptedData, password) => {
     let%Await key = keyFromPassword(password);
 

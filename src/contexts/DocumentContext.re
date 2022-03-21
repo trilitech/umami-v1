@@ -239,31 +239,3 @@ module ScrollView = {
     </ScrollView>;
   };
 };
-
-module FlatList = {
-  [@react.component]
-  let make =
-      (
-        ~style,
-        ~contentContainerStyle,
-        ~data,
-        ~initialNumToRender,
-        ~keyExtractor,
-        ~renderItem,
-        ~_ListEmptyComponent,
-      ) => {
-    let onScroll = useScrollListener();
-    <FlatList
-      style
-      contentContainerStyle
-      showsVerticalScrollIndicator=false
-      data
-      initialNumToRender
-      keyExtractor
-      renderItem
-      _ListEmptyComponent
-      onScroll
-      scrollEventThrottle=250
-    />;
-  };
-};

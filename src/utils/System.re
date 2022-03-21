@@ -40,8 +40,6 @@ var path = require('path');
 type Errors.t +=
   | NoSuchFileError(string);
 
-let os = [%raw "OS"];
-
 [@bs.scope "app"] [@bs.val] external getVersion: unit => string = "getVersion";
 [@bs.scope "app"] [@bs.val] external getName: unit => string = "getName";
 
@@ -104,8 +102,6 @@ module Path: {
 };
 
 let appDir = () => Path.Ops.(Path.getAppData() / (!getName()));
-
-let homeDir = () => os##homedir();
 
 module File = {
   open Path.Ops;
@@ -170,19 +166,11 @@ module File = {
 
   module CopyMode: {
     type t;
-    let copy_excl: t;
     let copy_ficlone: t;
-    let copy_ficlone_force: t;
-
-    let assemble: (t, t) => t;
   } = {
     type t = int;
 
-    let copy_excl: t = [%raw "fs.constants.COPYFILE_EXCL"];
     let copy_ficlone: t = [%raw "fs.constants.COPYFILE_FICLONE"];
-    let copy_ficlone_force: t = [%raw "fs.constants.COPYFILE_FICLONE_FORCE"];
-
-    let assemble = (c1, c2) => c1 lor c2;
   };
 
   [@bs.scope "fs"] [@bs.val]

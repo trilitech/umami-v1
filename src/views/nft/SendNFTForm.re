@@ -23,24 +23,8 @@
 /*                                                                           */
 /*****************************************************************************/
 
-module StateLenses = [%lenses
-  type state = {
-    recipient: FormUtils.Alias.any,
-  }
-];
+module StateLenses = [%lenses type state = {recipient: FormUtils.Alias.any}];
 
-type validState = {
-  recipient: FormUtils.Alias.t,
-};
-
-let unsafeExtractValidState = (state: StateLenses.state): validState => {
-  {
-    recipient: state.recipient->FormUtils.Unsafe.account,
-  };
-};
-
-let toState = (vs: validState): StateLenses.state => {
-  recipient: vs.recipient->FormUtils.Alias.Valid,
-};
+type validState = {recipient: FormUtils.Alias.t};
 
 include ReForm.Make(StateLenses);

@@ -17,11 +17,6 @@ let impl = (pat, v) => {
   path->Pattern.implement(v)->toString;
 };
 
-let toString =
-  fun
-  | Ok(path) => path
-  | Error(_) => "error";
-
 describe("DerivationPath", ({test}) => {
   tests->List.forEachWithIndex((i, ((pat, v), out)) => {
     test("Output should be equal n" ++ i->Int.toString, ({expectEqual}) => {

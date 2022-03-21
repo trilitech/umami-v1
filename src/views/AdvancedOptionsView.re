@@ -153,9 +153,6 @@ let updateOperation = (index, values: StateLenses.state, ops: Protocol.batch) =>
   {...ops, managers};
 };
 
-let tezDecoration = (~style) =>
-  <Typography.Body1 style> I18n.tez->React.string </Typography.Body1>;
-
 [@react.component]
 let make = (~operation: Protocol.batch, ~dryRun, ~index=0, ~token, ~onSubmit) => {
   let (operationSimulateRequest, sendOperationSimulate) =

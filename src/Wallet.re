@@ -333,7 +333,6 @@ module Ledger = {
   type Errors.t +=
     | InvalidPathSize(array(int))
     | InvalidIndex(int, string)
-    | InvalidScheme(string)
     | InvalidLedger(string);
 
   let () =
@@ -344,7 +343,6 @@ module Ledger = {
         I18n.Wallet.invalid_path_size(p->Js.String.make)->Some
       | InvalidIndex(index, value) =>
         I18n.Wallet.invalid_index(index, value)->Some
-      | InvalidScheme(s) => I18n.Wallet.invalid_scheme(s)->Some
       | InvalidLedger(p) => I18n.Wallet.invalid_ledger(p)->Some
       | _ => None,
     );
@@ -363,10 +361,7 @@ module Ledger = {
     | Animals(string)
     | Pkh(string);
 
-  type scheme =
-    | ED25519
-    | SECP256K1
-    | P256;
+  type scheme = PublicKeyHash.Scheme.t = | ED25519 | SECP256K1 | P256;
 
   type t = {
     path: DerivationPath.tezosBip44,
@@ -376,41 +371,6 @@ module Ledger = {
   type masterKey = PublicKeyHash.t;
   let masterKeyPath = DerivationPath.build([|44, 1729|]);
   let masterKeyScheme = ED25519;
-
-  let schemeToString =
-    fun
-    | ED25519 => "ed25519"
-    | SECP256K1 => "secp256k1"
-    | P256 => "P-256";
-
-  let schemeFromString =
-    fun
-    | "ed25519" => Ok(ED25519)
-    | "secp256k1" => Ok(SECP256K1)
-    | "P-256" => Ok(P256)
-    | s => Error(InvalidScheme(s));
-
-  type implicit =
-    | TZ1
-    | TZ2
-    | TZ3;
-
-  type kind =
-    | Implicit(implicit)
-    | KT1;
-
-  let implicitFromScheme =
-    fun
-    | ED25519 => TZ1
-    | SECP256K1 => TZ2
-    | P256 => TZ3;
-
-  let kindToString =
-    fun
-    | Implicit(TZ1) => "tz1"
-    | Implicit(TZ2) => "tz2"
-    | Implicit(TZ3) => "tz3"
-    | KT1 => "kt1";
 
   module Decode = {
     let decodePrefix = (prefix, ledgerBasePkh: PublicKeyHash.t) =>
@@ -452,7 +412,7 @@ module Ledger = {
       let%Res scheme =
         // The None case is actually impossible, hence the meaningless error
         elems[1]->Result.fromOption(InvalidEncoding(uri));
-      let%Res scheme = scheme->schemeFromString;
+      let%Res scheme = scheme->PublicKeyHash.Scheme.fromString;
 
       let indexes = elems->Js.Array2.sliceFrom(2)->decodeIndexes;
       let%Res indexes = indexes->Result.collectArray;
@@ -473,7 +433,7 @@ module Ledger = {
       Format.sprintf(
         "ledger://%s/%s%s",
         (ledgerBasePkh :> string),
-        schemeToString(t.scheme),
+        PublicKeyHash.Scheme.toString(t.scheme),
         indexes,
       );
     };

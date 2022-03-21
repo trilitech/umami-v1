@@ -29,20 +29,6 @@ type amount =
   | Amount(Amount.t)
   | Illformed(string);
 
-let keepToken = v =>
-  v->Option.flatMap(
-    fun
-    | Illformed(_) => None
-    | Amount(v) => v->Amount.getTez,
-  );
-
-let keepTez = v =>
-  v->Option.flatMap(
-    fun
-    | Amount(v) => v->Amount.getTez
-    | Illformed(_) => None,
-  );
-
 let parseAmount = (v, token: option(TokenRepr.t)) =>
   if (v == "") {
     None;
@@ -64,8 +50,6 @@ let parseAmount = (v, token: option(TokenRepr.t)) =>
     );
   };
 
-let optToString = (v, f) => v->Option.mapWithDefault("", f);
-
 module Alias = {
   type tempState =
     | NotAsked
@@ -85,33 +69,16 @@ module Alias = {
     fun
     | Address(s) => s
     | Alias(a) => a.address;
-
-  let alias =
-    fun
-    | Address(_) => ""
-    | Alias(a) => a.name;
 };
 
 module Unsafe = {
   // more explicit than assert(false)
-
-  let getValue =
-    fun
-    | None => failwith("Should not be None")
-    | Some(v) => v;
 
   let getAmount = v =>
     switch (v) {
     | None => failwith("Should not be empty")
     | Some(Illformed(_)) => failwith("Should not be malformed")
     | Some(Amount(a)) => a
-    };
-
-  let getTez = v =>
-    switch (v) {
-    | Amount(Tez(a)) => a
-    | Illformed(_)
-    | Amount(Token(_)) => failwith("Should not be malformed")
     };
 
   let account =
@@ -142,16 +109,6 @@ let isValidTokenAmount: (string, int) => ReSchema.fieldState =
 
 let isValidTezAmount: string => ReSchema.fieldState =
   s => isValidTokenAmount(s, 6);
-
-let notNone = (v): ReSchema.fieldState =>
-  v != None ? Valid : Error(I18n.Form_input_error.mandatory);
-
-let isValidFloat = value => {
-  let fieldState: ReSchema.fieldState =
-    value->Js.Float.fromString->Js.Float.isNaN
-      ? Error(I18n.Form_input_error.float) : Valid;
-  fieldState;
-};
 
 let isValidInt = value => {
   let fieldState: ReSchema.fieldState =

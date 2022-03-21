@@ -27,7 +27,6 @@ open Let;
 
 module Path = {
   module Endpoint = {
-    let delegates = "/chains/main/blocks/head/context/delegates\\?active=true";
     let runView = "/chains/main/blocks/head/helpers/scripts/run_view";
   };
 };
@@ -169,9 +168,6 @@ module URL = {
   };
 
   module Endpoint = {
-    let delegates = (c: ConfigContext.env) =>
-      c.network.endpoint ++ Path.Endpoint.delegates;
-
     let runView = (c: ConfigContext.env) =>
       c.network.endpoint ++ Path.Endpoint.runView;
 

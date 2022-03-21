@@ -46,12 +46,6 @@ module TransactionParameters = {
       | Js.Exn.Error(exn) =>
         Error(ReTaquitoError.ParseMicheline(exn->Js.Exn.message))
       };
-
-    let parseScript = s =>
-      try(ReTaquitoParser.parser()->ReTaquitoParser.parseScript(s)->Ok) {
-      | Js.Exn.Error(exn) =>
-        Error(ReTaquitoError.ParseScript(exn->Js.Exn.message))
-      };
   };
 
   type t = ReTaquitoTypes.Transfer.Entrypoint.param;
@@ -90,5 +84,3 @@ let make = (~fee=?, ~gasLimit=?, ~storageLimit=?, ()) => {
   gasLimit,
   storageLimit,
 };
-
-let emptyTransferOptions = {fee: None, gasLimit: None, storageLimit: None};

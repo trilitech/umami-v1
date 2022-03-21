@@ -83,25 +83,7 @@ module Tzip12Cache:
   ContractCache with
     type contract := ReTaquitoContracts.Tzip12Tzip16Contract.t;
 
-module Transfer: {
-  /* Generates a list of Taquito-compatible transfers from a list of
-     Transfer.elt. The endpoint is necessary to prefetch some contracts that can
-     be repeated multiple times. */
-  let prepare:
-    (FA12Cache.t, FA2Cache.t, PublicKeyHash.t, Protocol.Transfer.t) =>
-    Promise.t(ReTaquito.Toolkit.transferParams);
-};
-
 module Batch: {
-  type params =
-    | DelegationParams(ReTaquito.Toolkit.delegateParams)
-    | OriginationParams(ReTaquito.Toolkit.originateParams)
-    | TransferParams(ReTaquito.Toolkit.transferParams);
-
-  let prepareOperations:
-    (Protocol.batch, ReTaquito.endpoint, PublicKeyHash.t) =>
-    array(Promise.t(params));
-
   /* Multi asset batch */
   let run:
     (

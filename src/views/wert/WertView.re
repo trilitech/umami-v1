@@ -56,12 +56,6 @@ type step =
   | Disclaimer
   | SelectRecipient;
 
-let stepToString = step =>
-  switch (step) {
-  | Disclaimer => "disclaimer"
-  | SelectRecipient => "selectrecipient"
-  };
-
 [@react.component]
 let make = (~account, ~submit, ~closeAction) => {
   let (account, setAccount) = React.useState(() => account);

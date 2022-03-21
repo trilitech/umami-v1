@@ -52,8 +52,6 @@ let initialState = {
 
 let context = React.createContext(initialState);
 
-let emptyBatch = (batch: Protocol.batch) => batch.managers->Array.length == 0;
-
 let getBatch = (account, all: array(batchAndSim)) => {
   all->Array.getBy(((b, _)) => b.source == account);
 };
