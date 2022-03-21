@@ -23,36 +23,13 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open SettingsComponents;
+open ReactNative;
+open ReactNative.Style;
 
 [@react.component]
-let make = () => {
-  let (themeSetting, setThemeSetting) = ThemeContext.useThemeSetting();
-  let handleValue = f => {
-    let newTheme = f(`light); // why ?
-    setThemeSetting(newTheme);
-  };
-
-  <Block title=I18n.Settings.theme_title>
-    <ColumnLeft>
-      <RadioItem
-        label=I18n.Settings.theme_system
-        value=`system
-        setValue=handleValue
-        currentValue=themeSetting
-      />
-      <RadioItem
-        label=I18n.Settings.theme_dark
-        value=`dark
-        setValue=handleValue
-        currentValue=themeSetting
-      />
-      <RadioItem
-        label=I18n.Settings.theme_light
-        value=`light
-        setValue=handleValue
-        currentValue=themeSetting
-      />
-    </ColumnLeft>
-  </Block>;
+let make = (~children) => {
+  let theme = ThemeContext.useTheme();
+  <View style={style(~backgroundColor=theme.colors.background, ())}>
+    children
+  </View>;
 };

@@ -182,15 +182,9 @@ let darkTheme = {
 
 type themeMain = [ | `system | `dark | `light];
 
-type state = {
-  theme,
-  themeSetting: (themeMain, (themeMain => themeMain) => unit),
-};
+type state = {themeSetting: (themeMain, themeMain => unit)};
 
-let initialState = {
-  theme: lightTheme,
-  themeSetting: (ConfigContext.default.theme, _ => ()),
-};
+let initialState = {themeSetting: (`light, _ => ())};
 let context = React.createContext(initialState);
 
 module Provider = {
@@ -202,11 +196,17 @@ module Provider = {
   let make = React.Context.provider(context);
 };
 
+[@react.component]
+let make = (~children, ~theme, ~setTheme) => {
+  <Provider value={themeSetting: (theme, setTheme)}> children </Provider>;
+};
+
+// Hooks
+
 [@bs.val] external window: 'a = "window";
 let mediaQueryColorSchemeDark =
   window##matchMedia("(prefers-color-scheme: dark)");
 
-// Hook to system color preference
 let usePrefersColorSchemeDark: unit => bool =
   () => {
     let (prefersColorSchemeDark, setPrefersColorSchemeDark) =
@@ -235,41 +235,15 @@ let usePrefersColorSchemeDark: unit => bool =
     prefersColorSchemeDark;
   };
 
-[@react.component]
-let make = (~children) => {
-  let {write, configFile} = ConfigFileContext.useConfigFile();
-
-  let currentTheme = configFile.theme->Option.getWithDefault(`system);
-
-  let prefersColorSchemeDark = usePrefersColorSchemeDark();
-
-  let setThemeSetting = updater => {
-    // Why this compicated handler imposed by the Radio API ?
-    let newTheme = updater(currentTheme);
-    write(c => {...c, theme: Some(newTheme)});
-  };
-
-  React.useMemo2(
-    () =>
-      <Provider
-        value={
-          theme:
-            switch (currentTheme, prefersColorSchemeDark) {
-            | (`system, true)
-            | (`dark, _) => darkTheme
-            | (`system, false)
-            | (`light, _) => lightTheme
-            },
-          themeSetting: (currentTheme, setThemeSetting),
-        }>
-        children
-      </Provider>,
-    (currentTheme, prefersColorSchemeDark),
-  );
-};
-
-// Hooks
-
-let useTheme = () => React.useContext(context).theme;
-
 let useThemeSetting = () => React.useContext(context).themeSetting;
+
+let useTheme = () => {
+  let (currentTheme, _) = useThemeSetting();
+  let systemDarkMode = usePrefersColorSchemeDark();
+
+  switch (currentTheme) {
+  | `dark => darkTheme
+  | `light => lightTheme
+  | `system => systemDarkMode ? darkTheme : lightTheme
+  };
+};

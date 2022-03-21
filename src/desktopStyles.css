@@ -1,0 +1,10 @@
+/* needed for correct display in electron desktop app view */
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+}
+#root {
+  display: flex;
+  height: 100%;
+}
