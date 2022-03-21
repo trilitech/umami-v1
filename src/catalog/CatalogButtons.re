@@ -84,13 +84,6 @@ let make = () => {
        (),
      )}
     {displayElement(
-       ~title="<Buttons.SubmitTertiaryHighEmphasis/>",
-       ~subtitle="nominal",
-       ~element=
-         <Buttons.SubmitTertiaryHighEmphasis text="hello" onPress={_ => ()} />,
-       (),
-     )}
-    {displayElement(
        ~title="<Buttons.RightArrowButton/>",
        ~subtitle="nominal",
        ~element=<Buttons.RightArrowButton text="hello" onPress={_ => ()} />,
