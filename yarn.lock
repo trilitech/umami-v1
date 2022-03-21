@@ -1424,6 +1424,20 @@
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
 
+"@nomadic-labs/taquito-custom-signer@10.1.0":
+  version "10.1.0"
+  resolved "https://gitlab.com/api/v4/projects/25020679/packages/npm/@nomadic-labs/taquito-custom-signer/-/@nomadic-labs/taquito-custom-signer-10.1.0.tgz#60f1cbaf4f6444d2351d20b4aff54bd45d1c76d1"
+  integrity sha1-YPHLr09kRNI1HSC0r/VL1F0cdtE=
+  dependencies:
+    "@taquito/taquito" "^10.1.0"
+    "@taquito/utils" "^10.1.0"
+    bignumber.js "^9.0.1"
+    bip39 "^3.0.4"
+    elliptic "^6.5.4"
+    libsodium-wrappers "0.7.8"
+    pbkdf2 "^3.1.2"
+    typedarray-to-buffer "^4.0.0"
+
 "@reason-react-native/svg@12.1.5-0.63":
   version "12.1.5-0.63"
   resolved "https://registry.yarnpkg.com/@reason-react-native/svg/-/svg-12.1.5-0.63.tgz#4bb44f61669ace591f69d11a469c944a2a4b3287"
@@ -3979,10 +3993,6 @@ csstype@^3.0.2:
   version "3.0.10"
   resolved "https://registry.yarnpkg.com/csstype/-/csstype-3.0.10.tgz#2ad3a7bed70f35b965707c092e5f30b327c290e5"
   integrity sha512-2u44ZG2OcNUO9HDp/Jl8C07x6pU/eTR3ncV91SiK3dhG9TWvRVsCoJw14Ckx5DgWkzGA3waZWO3d7pgqpUI/XA==
-
-"customsigner@link:./src/vendors/signer":
-  version "0.0.0"
-  uid ""
 
 d@1, d@^1.0.1:
   version "1.0.1"

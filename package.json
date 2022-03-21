@@ -37,7 +37,7 @@
     "bs58check": "^2.1.2",
     "buffer": "^6.0.3",
     "child-reprocess": "^0.1.2",
-    "customsigner": "link:./src/vendors/signer",
+    "@nomadic-labs/taquito-custom-signer": "10.1.0",
     "date-fns": "2.19.0",
     "ed25519-hd-key": "^1.2.0",
     "electron-devtools-installer": "^3.1.0",
