@@ -51,6 +51,7 @@ let make =
       ~disabled=?,
       ~style=?,
       ~icon: Icons.builder,
+      ~size=15.5,
       ~primary=false,
     ) => {
   let theme = ThemeContext.useTheme();
@@ -62,7 +63,7 @@ let make =
       ?pressableRef style ?disabled onPress accessibilityRole=`button>
       {icon(
          ~style=styles##icon,
-         ~size=15.5,
+         ~size,
          ~color=
            primary
              ? theme.colors.iconPrimary : theme.colors.iconMediumEmphasis,
