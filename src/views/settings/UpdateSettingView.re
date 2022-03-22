@@ -254,8 +254,7 @@ let make = () => {
   let configFile = ConfigContext.useFile();
   let logToast = LogsContext.useToast();
 
-  // let (step, setStep) = React.useState(_ => Unchecked);
-  let (step, setStep) = React.useState(_ => Downloaded);
+  let (step, setStep) = React.useState(_ => Unchecked);
 
   React.useEffect0(() => {
     IPC.on("no-update", (_, _) => setStep(_ => UpToDate));

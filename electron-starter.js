@@ -120,11 +120,11 @@ function createWindow() {
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
     console.log(details);
-    if (details.frameName === '_blank'){
+    if (details.frameName === '_blank') {
       require('electron').shell.openExternal(details.url);
-      return {action: 'deny'};
+      return { action: 'deny' };
     } else {
-      return {action: 'allow'};
+      return { action: 'allow' };
     }
   });
 
@@ -146,9 +146,43 @@ if (!app.isDefaultProtocolClient('umami')) {
 }
 
 let setupAutoUpdate = async () => {
+
+  let downloading = false;
+
+  let launchAutomaticUpdates = () => {
+    return setInterval(() =>
+      autoUpdater.checkForUpdates()
+        .catch(err => mainWindow.webContents
+          .send('check-update-error', err.toString())), 720000);
+  };
+
   let config = await mainWindow.webContents.executeJavaScript(`localStorage.getItem("Config")`);
   config = JSON.parse(config);
   autoUpdater.autoDownload = config.autoUpdates;
+  let timer = null;
+
+  // Auto-update works only on appimages on linux, otherwise anything on
+  // windows and macos
+  if (config.autoUpdates && dev
+    && !(process.plateform == 'linux'
+      && process.env.APPIMAGE === undefined)) {
+    timer = launchAutomaticUpdates();
+  }
+
+  ipcMain.on('activate-auto-update', _ => {
+    if (timer === null
+      && !(process.plateform == 'linux'
+        && process.env.APPIMAGE === undefined)) {
+      timer = launchAutomaticUpdates();
+    }
+  });
+
+  ipcMain.on('deactivate-auto-update', _ => {
+    if (timer != null) {
+      clearInterval(timer);
+      timer = null;
+    }
+  });
 
   ipcMain.on("check-for-updates", _ => {
     console.log("checking for updates received");
@@ -156,38 +190,47 @@ let setupAutoUpdate = async () => {
       .catch(err => {
         console.log("There's been an error while checking for updates.");
         mainWindow.webContents.send('check-update-error', err.toString());
-      })
+      });
   });
 
   ipcMain.on("check-and-ask", _ => {
-    let autodown_prev = autoUpdater.autoDownload
-    autoUpdater.autoDownload = false
+    let autodown_prev = autoUpdater.autoDownload;
+    autoUpdater.autoDownload = false;
     autoUpdater.checkForUpdates()
-      .catch(err => mainWindow.webContents.send('check-update-error', err.toString()))
-      .finally(_ => autoUpdater.autoDownload = autodown_prev)
-  })
+      .catch(err => mainWindow.webContents.send('check-update-error'
+                                                , err.toString()))
+      .finally(_ => autoUpdater.autoDownload = autodown_prev);
+  });
 
   ipcMain.on("download-update", _ => {
-    autoUpdater.downloadUpdate();
-  })
+      if (!downloading){
+          downloading = true;
+          autoUpdater.downloadUpdate();
+      }
+  });
 
   ipcMain.on("setAutoDownload", (_, msg) => {
     let autoDownload = JSON.parse(msg);
     autoUpdater.autoDownload = autoDownload;
-  })
+  });
 
-  ipcMain.on('quit-and-install', _ => autoUpdater.quitAndInstall())
+  ipcMain.on('quit-and-install', _ => autoUpdater.quitAndInstall());
 
   autoUpdater.on("download-progress", (progressObj) => mainWindow.webContents.send('download-progress', progressObj.percent));
-  autoUpdater.on("update-not-available", _ => mainWindow.webContents.send('no-update', ""))
-  autoUpdater.on('update-available', _ => mainWindow.webContents.send('update-available', ""))
-  autoUpdater.on('update-downloaded', _ => mainWindow.webContents.send('update-downloaded', ""))
+  autoUpdater.on("update-not-available", _ => mainWindow.webContents.send('no-update', ""));
+  autoUpdater.on('update-available', _ => mainWindow.webContents.send('update-available', ""));
+  autoUpdater.on('update-downloaded', _ => {
+    downloading = false;
+    mainWindow.webContents.send('update-downloaded', "");
+
+  });
+
   autoUpdater.on('error', err => {
     console.log("oops, an error: ", err);
     mainWindow.webContents.send('update-error', err.toString());
-  })
+  });
 
-}
+};
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
