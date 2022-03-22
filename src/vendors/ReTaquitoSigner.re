@@ -25,7 +25,7 @@
 
 %raw
 "
-const { InMemorySigner, importKey } = require('customsigner');
+const { InMemorySigner, importKey } = require('@nomadic-labs/taquito-custom-signer');
 const { LedgerSigner, DerivationType } = require('@taquito/ledger-signer');
 ";
 
