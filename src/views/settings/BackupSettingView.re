@@ -175,26 +175,14 @@ let make = () => {
 
   <Block title=I18n.Settings.backup_title>
     <View style=Style.(style(~flex=1., ()))>
-      <View accessibilityRole=`form style=styles##row>
-        <ColumnLeft
-          style=Style.(style(~minWidth=38.->dp, ~maxWidth=38.->dp, ()))>
-          <BackupSwitch
-            isEnabled={form.values.isEnabled}
-            toggleSwitch={_ => {
-              enable(previousState => !previousState);
-              form.handleChange(IsEnabled, !isEnabled);
-            }}
-          />
-        </ColumnLeft>
-        <ColumnRight
-          style=Style.(
-            style(~flexGrow=99., ~flexShrink=99., ~flexBasis=0.->dp, ())
-          )>
-          <Typography.Body1>
-            I18n.Settings.backup_text->React.string
-          </Typography.Body1>
-        </ColumnRight>
-      </View>
+      <SwitchItem
+        label=I18n.Settings.backup_text
+        value={form.values.isEnabled}
+        setValue={_ => {
+          enable(previousState => !previousState);
+          form.handleChange(IsEnabled, !isEnabled);
+        }}
+      />
       {isEnabled
          ? <>
              <View style=Style.(style(~height=16.->dp, ())) />

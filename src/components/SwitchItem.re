@@ -28,10 +28,10 @@ open ReactNative;
 let styles =
   Style.(
     StyleSheet.create({
+      "margin": style(~marginLeft=10.->dp, ()),
       "pressable":
         style(
           ~flexDirection=`row,
-          ~justifyContent=`spaceBetween,
           ~alignItems=`center,
           ~paddingVertical=8.->dp,
           ~marginVertical=10.->dp,
@@ -60,8 +60,10 @@ let make =
        let hovered = hovered->Option.getWithDefault(false);
        let focused = focused->Option.getWithDefault(false);
        <>
-         <Typography.Overline2> label->React.string </Typography.Overline2>
          <ThemedSwitch value hovered pressed focused disabled />
+         <Typography.Body1 style=styles##margin>
+           label->React.string
+         </Typography.Body1>
        </>;
      }}
   </Pressable_>;
