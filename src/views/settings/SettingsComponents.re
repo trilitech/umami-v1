@@ -72,7 +72,8 @@ module SettingFormGroupTextInput = {
             (),
           ),
         "label": style(~marginBottom=0.->dp, ()),
-        "formGroup": style(~marginTop=0.->dp, ~marginBottom=0.->dp, ()),
+        "formGroup":
+          style(~flex=1., ~marginTop=0.->dp, ~marginBottom=0.->dp, ()),
       })
     );
 
