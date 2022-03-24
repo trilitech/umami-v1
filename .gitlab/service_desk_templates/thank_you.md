@@ -2,7 +2,7 @@ Thank you for using the Umami Wallet.
 
 This is an automatic message, we've received your feedback and will be addressing it shortly.
 
-You will receive email responses, but you can also refer to your issue as follows: %{ISSUE_PATH} - %{ISSUE_ID}
+You will receive email responses, but you can also refer to your issue as follows: %{ISSUE_PATH} - %{ISSUE_ID} 
 
 Just in case, we'll inform you of some quick tips in order for us to better help you.
 
