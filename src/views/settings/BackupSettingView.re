@@ -51,14 +51,28 @@ let styles =
     })
   );
 
+let forceBackup = (~backupFile, addLog) =>
+  switch (WalletAPI.Accounts.forceBackup(backupFile)) {
+  | Ok(_) =>
+    addLog(
+      true,
+      Logs.info(~origin=Logs.Settings, I18n.Settings.backup_path_saved),
+    )
+  | Error(error) => addLog(true, Logs.error(~origin=Logs.Settings, error))
+  };
+
 [@react.component]
 let make = () => {
   let config = ConfigContext.useContent();
   let write = ConfigContext.useWrite();
-
+  let addLog = LogsContext.useAdd();
+  let didMountRef = React.useRef(false);
   let (isEnabled, enable) = React.useState(() => config.backupFile != None);
 
-  let (backupFile, setBackupFile) = React.useState(() => "");
+  let (backupFile, setBackupFile) =
+    React.useState(() =>
+      config.backupFile->Option.map(System.Path.toString)->Option.default("")
+    );
 
   React.useEffect1(
     _ => {
@@ -75,9 +89,6 @@ let make = () => {
       {...configFile, backupFile: backupFile(config.backupFile)}
     );
 
-  let addLog = LogsContext.useAdd();
-  let didMountRef = React.useRef(false);
-
   React.useEffect1(
     _ => {
       if (didMountRef.current) {
@@ -85,18 +96,7 @@ let make = () => {
         if (config.backupFile == None) {
           setBackupFile(_ => "");
         } else {
-          switch (WalletAPI.Accounts.forceBackup(~config)) {
-          | Ok(_) =>
-            addLog(
-              true,
-              Logs.info(
-                ~origin=Logs.Settings,
-                I18n.Settings.backup_path_saved,
-              ),
-            )
-          | Error(error) =>
-            addLog(true, Logs.error(~origin=Logs.Settings, error))
-          };
+          forceBackup(~backupFile=config.backupFile, addLog);
         };
       } else {
         didMountRef.current = true;

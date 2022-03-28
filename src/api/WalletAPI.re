@@ -151,21 +151,20 @@ module SecretStorage = {
     let decoder = Json.Decode.(array(Secret.decoder));
   });
 
-  let set = (~config: ConfigContext.env, storage: t) => {
+  let set = (~backupFile, storage: t) => {
     let _ =
-      config.backupFile
-      ->Option.map(path =>
-          BackupFile.make(
-            ~derivationPaths=
-              storage->Array.keepMap(secret =>
-                secret.kind == Mnemonics ? Some(secret.derivationPath) : None
-              ),
-            ~recoveryPhrases=
-              RecoveryPhrasesStorage.get()->Result.getWithDefault([||]),
-          )
-          ->BackupFile.save(path)
-          ->Promise.ignore
-        );
+      backupFile->Option.map(path =>
+        BackupFile.make(
+          ~derivationPaths=
+            storage->Array.keepMap(secret =>
+              secret.kind == Mnemonics ? Some(secret.derivationPath) : None
+            ),
+          ~recoveryPhrases=
+            RecoveryPhrasesStorage.get()->Result.getWithDefault([||]),
+        )
+        ->BackupFile.save(path)
+        ->Promise.ignore
+      );
 
     set(storage);
   };
@@ -280,7 +279,8 @@ module Accounts = {
     let%Res secrets = secrets(~config);
 
     if (secrets[index] = secret) {
-      SecretStorage.set(~config, secrets)->Ok;
+      SecretStorage.set(~backupFile=config.ConfigContext.backupFile, secrets)
+      ->Ok;
     } else {
       Error(CannotUpdateSecret(index));
     };
@@ -359,7 +359,7 @@ module Accounts = {
             ? {...secret, masterPublicKey: None} : secret
         );
 
-      SecretStorage.set(~config, secrets)->Promise.ok;
+      SecretStorage.set(~backupFile=config.backupFile, secrets)->Promise.ok;
     | Error(NoSecretFound) => Promise.ok()
     | Error(e) => e->Promise.err
     };
@@ -392,7 +392,7 @@ module Accounts = {
         ~remove=1,
         ~add=[||],
       );
-    SecretStorage.set(~config, secretsBefore);
+    SecretStorage.set(~backupFile=config.backupFile, secretsBefore);
 
     switch (recoveryPhrases()) {
     | Ok(recoveryPhrases) =>
@@ -691,7 +691,7 @@ module Accounts = {
       secrets(~config)
       ->Result.getWithDefault([||])
       ->Array.concat([|secret|]);
-    SecretStorage.set(~config, secrets);
+    SecretStorage.set(~backupFile=config.ConfigContext.backupFile, secrets);
   };
 
   let registerRecoveryPhrase = recoveryPhrase =>
@@ -805,9 +805,9 @@ module Accounts = {
         );
   };
 
-  let forceBackup = (~config: ConfigContext.env) =>
+  let forceBackup = backupFile =>
     SecretStorage.get()
-    ->Result.map(secrets => SecretStorage.set(~config, secrets));
+    ->Result.map(secrets => SecretStorage.set(~backupFile, secrets));
 
   let importMnemonicKeys = (~config, ~accounts, ~password, ~index, ()) => {
     let importLegacyKey = (basename, encryptedSecret) => {
