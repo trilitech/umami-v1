@@ -44,6 +44,7 @@ let make =
       ~tooltip=?,
       ~isActive=?,
       ~pressableRef=?,
+      ~toast=false,
       ~style as styleFromProp: option(ReactNative.Style.t)=?,
     ) => {
   let theme = ThemeContext.useTheme();
@@ -77,10 +78,12 @@ let make =
          ~style=?None,
          ~size=Js.Math.ceil_float(iconSizeRatio *. size),
          ~color=
-           switch (disabled, isPrimary) {
-           | (true, _) => theme.colors.iconDisabled
-           | (false, true) => theme.colors.primaryIconMediumEmphasis
-           | (false, false) => theme.colors.iconMediumEmphasis
+           switch (disabled, isPrimary, toast) {
+           | (true, _, _) => theme.colors.iconDisabled
+           | (false, true, false) => theme.colors.primaryIconMediumEmphasis
+           | (false, false, false) => theme.colors.iconMediumEmphasis
+           | (false, true, true) => theme.colors.iconMediumEmphasis
+           | (false, false, true) => theme.colors.toastIconMediumEmphasis
            },
        )}
     </ThemedPressableComp>;
