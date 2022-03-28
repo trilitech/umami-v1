@@ -221,49 +221,57 @@ module AppView = {
       setMainPage(_ => Dashboard);
     };
 
-    <DocumentContext>
-      <View
-        style=Style.(
-          array([|
-            styles##layout,
-            style(~backgroundColor=theme.colors.background, ()),
-          |])
-        )>
-        <Header />
-        {eulaSignature
-           ? <DisclaimerModal onSign />
-           : <View style=styles##main>
-               {switch (selectedAccount) {
-                | Some(account) when displayNavbar => <NavBar account route />
-                | Some(_)
-                | None => <NavBar.Empty />
-                }}
-               <View style=styles##content>
-                 {switch (mainPageState) {
-                  | Onboarding => <OnboardingView />
-                  | AddAccountModal =>
-                    <OnboardingView
-                      onClose={_ => setMainPage(_ => Dashboard)}
-                    />
-                  | BuyTez(src) =>
-                    <BuyTezView src onClose=handleCloseBuyTezView />
-                  | Dashboard =>
-                    <SelectedAccountView>
-                      {(
-                         account =>
-                           <Dashboard
-                             account
-                             showBuyTez={url => setMainPage(_ => BuyTez(url))}
-                             route
-                             setMainPage
-                           />
-                       )}
-                    </SelectedAccountView>
+    let toastBox = LogsContext.useToastBox();
+
+    <>
+      toastBox
+      <DocumentContext>
+        <View
+          style=Style.(
+            array([|
+              styles##layout,
+              style(~backgroundColor=theme.colors.background, ()),
+            |])
+          )>
+          <Header />
+          {eulaSignature
+             ? <DisclaimerModal onSign />
+             : <View style=styles##main>
+                 {switch (selectedAccount) {
+                  | Some(account) when displayNavbar =>
+                    <NavBar account route />
+                  | Some(_)
+                  | None => <NavBar.Empty />
                   }}
-               </View>
-             </View>}
-      </View>
-    </DocumentContext>;
+                 <View style=styles##content>
+                   {switch (mainPageState) {
+                    | Onboarding => <OnboardingView />
+                    | AddAccountModal =>
+                      <OnboardingView
+                        onClose={_ => setMainPage(_ => Dashboard)}
+                      />
+                    | BuyTez(src) =>
+                      <BuyTezView src onClose=handleCloseBuyTezView />
+                    | Dashboard =>
+                      <SelectedAccountView>
+                        {(
+                           account =>
+                             <Dashboard
+                               account
+                               showBuyTez={url =>
+                                 setMainPage(_ => BuyTez(url))
+                               }
+                               route
+                               setMainPage
+                             />
+                         )}
+                      </SelectedAccountView>
+                    }}
+                 </View>
+               </View>}
+        </View>
+      </DocumentContext>
+    </>;
   };
 };
 
