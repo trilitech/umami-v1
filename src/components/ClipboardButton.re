@@ -34,11 +34,13 @@ let make =
       ~style=?,
       ~size=?,
       ~iconSizeRatio=?,
+      ~toast=?,
     ) => {
   <IconButton
     ?isPrimary
     ?size
     ?iconSizeRatio
+    ?toast
     icon=Icons.Copy.build
     tooltip=?{
       tooltipKey->Option.map(k =>

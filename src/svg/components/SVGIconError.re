@@ -24,77 +24,20 @@
 /*****************************************************************************/
 
 open ReactNative;
-
-let styles =
-  Style.(
-    StyleSheet.create({
-      "button": style(~alignItems=`center, ~justifyContent=`center, ()),
-    })
-  );
+open ReactNativeSvg;
 
 [@react.component]
 let make =
     (
-      ~icon: Icons.builder,
-      ~size=28.,
-      ~iconSizeRatio=4. /. 7.,
-      ~isPrimary=false,
-      ~disabled=false,
-      ~onPress=?,
-      ~tooltip=?,
-      ~isActive=?,
-      ~pressableRef=?,
-      ~toast=false,
-      ~style as styleFromProp: option(ReactNative.Style.t)=?,
-    ) => {
-  let theme = ThemeContext.useTheme();
-
-  let (module ThemedPressableComp): (module ThemedPressable.T) =
-    isPrimary
-      ? (module ThemedPressable.Primary) : (module ThemedPressable.Outline);
-
-  let pressableElement = (~pressableRef=?) =>
-    <ThemedPressableComp
-      ?pressableRef
-      ?onPress
-      ?isActive
-      disabled
-      style=Style.(
-        arrayOption([|
-          Some(styles##button),
-          Some(
-            style(
-              ~width=size->dp,
-              ~height=size->dp,
-              ~borderRadius=size /. 2.,
-              (),
-            ),
-          ),
-          styleFromProp,
-        |])
-      )
-      accessibilityRole=`button>
-      {icon(
-         ~style=?None,
-         ~size=Js.Math.ceil_float(iconSizeRatio *. size),
-         ~color=
-           switch (disabled, isPrimary, toast) {
-           | (true, _, _) => theme.colors.iconDisabled
-           | (false, true, false) => theme.colors.primaryIconMediumEmphasis
-           | (false, false, false) => theme.colors.iconMediumEmphasis
-           | (false, true, true) => theme.colors.iconMediumEmphasis
-           | (false, false, true) => theme.colors.toastIconMediumEmphasis
-           },
-       )}
-    </ThemedPressableComp>;
-
-  <View>
-    {switch (tooltip) {
-     | Some((keyPopover, text)) =>
-       <Tooltip keyPopover text>
-         {((~pressableRef) => pressableElement(~pressableRef))}
-       </Tooltip>
-     | None => pressableElement(~pressableRef?)
-     }}
-  </View>;
-};
+      ~width: option(Style.size)=?,
+      ~height: option(Style.size)=?,
+      ~fill: option(string)=?,
+      ~stroke: option(string)=?,
+    ) =>
+  <Svg viewBox="0 0 24 24" ?width ?height ?fill ?stroke>
+    <Path
+      d="M10 0C4.48 0 0 4.48 0 10s4.48 10 10 10 10-4.48 10-10S15.52 0 10 0zm0 11c-.55 0-1-.45-1-1V6c0-.55.45-1 1-1s1 .45 1 1v4c0 .55-.45 1-1 1zm1 4H9v-2h2v2z"
+      fill="#BB3838"
+      fillRule=`nonzero
+    />
+  </Svg>;

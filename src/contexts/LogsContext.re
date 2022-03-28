@@ -31,6 +31,8 @@ type state = {
   delete: int => unit,
   clear: unit => unit,
   seen: (bool, bool => unit),
+  toastState: option((Js.Global.timeoutId, int)),
+  fadeAnim: ReactNative.Animated.Value.t,
 };
 
 let initialState = {
@@ -39,6 +41,8 @@ let initialState = {
   delete: _ => (),
   clear: () => (),
   seen: (true, _ => ()),
+  toastState: None,
+  fadeAnim: Animated.Value.create(1.),
 };
 
 let context = React.createContext(initialState);
@@ -121,16 +125,16 @@ let make = (~children) => {
     [|logs|],
   );
 
-  <Provider value={logs: logs->List.map(fst), add, clear, delete, seen}>
-    {toastState->ReactUtils.mapOpt(((_, firsts)) =>
-       <ToastBox
-         opacity={fadeAnim->Animated.StyleProp.float}
-         logs={logs->List.map(fst)}
-         addToast={add(false)}
-         handleDelete=delete
-         firsts
-       />
-     )}
+  <Provider
+    value={
+      logs: logs->List.map(fst),
+      add,
+      clear,
+      delete,
+      seen,
+      toastState,
+      fadeAnim,
+    }>
     children
   </Provider>;
 };
@@ -170,4 +174,18 @@ let useDelete = () => {
 let useLogs = () => {
   let store = useStoreContext();
   store.logs;
+};
+
+let useToastBox = () => {
+  let store = useStoreContext();
+  store.toastState
+  ->ReactUtils.mapOpt(((_, firsts)) =>
+      <ToastBox
+        opacity={store.fadeAnim->Animated.StyleProp.float}
+        logs={store.logs}
+        addToast={store.add(false)}
+        handleDelete={store.delete}
+        firsts
+      />
+    );
 };
