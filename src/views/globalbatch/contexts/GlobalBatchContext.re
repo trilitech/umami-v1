@@ -209,7 +209,7 @@ let make = (~children) => {
   switch (selectedAccount) {
   | Some(account) =>
     <ProviderPrivate selectedAccount=account> children </ProviderPrivate>
-  | None => <ReactNative.View> children </ReactNative.View>
+  | None => children
   };
 };
 let useGlobalBatchContext = () => React.useContext(context);
