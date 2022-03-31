@@ -162,7 +162,7 @@ module Accounts: {
     ) =>
     Promise.t(unit);
 
-  let forceBackup: (~config: ConfigContext.env) => Promise.result(unit);
+  let forceBackup: option(System.Path.t) => Promise.result(unit);
 
   let importMnemonicKeys:
     (
