@@ -117,9 +117,12 @@ let make = () => {
     remote.dialog
     ->Dialog.Save.show
     ->Promise.fromJs(_ => ())
-    ->Promise.getOk(obj =>
-        setBackupFile(_ => obj.filePath->Option.getWithDefault(""))
-      );
+    ->Promise.getOk(obj => {
+        let filePath = obj.filePath->Option.getWithDefault(backupFile);
+        setBackupFile(_ =>
+          filePath->Js.String.length == 0 ? backupFile : filePath
+        );
+      });
 
   let error = backupFile == "" ? I18n.Form_input_error.mandatory->Some : None;
 
