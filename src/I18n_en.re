@@ -499,6 +499,7 @@ module Network = {
       "Network %s is not supported, your operation cannot be viewed in an explorer.",
       a,
     );
+  let unknown_explorer = a => p("No explorer is known on network %s", a);
   let api_not_supported = a =>
     p("The API %s is not supported by this version of Umami.", a);
   let api_and_node_not_available = "API and Node are both not available";

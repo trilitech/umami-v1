@@ -235,7 +235,7 @@ module NetworkItem = {
   [@react.component]
   let make =
       (
-        ~chain,
+        ~chain: Network.configurableChains(Network.chainId),
         ~network: Network.network,
         ~networkStatus,
         ~writeNetwork,
@@ -309,20 +309,22 @@ let make = () => {
        ->ReactUtils.onlyWhen(offline)}
       <View accessibilityRole=`form style=styles##row>
         <ColumnLeft style=styles##leftcolumntitles>
-          <NetworkItem
-            chain=`Mainnet
-            networkStatus={last == `Mainnet ? Some(networkStatus) : None}
-            network=Network.mainnet
-            currentConfig=last
-            writeNetwork
-          />
-          <NetworkItem
-            chain=`Hangzhounet
-            networkStatus={last == `Hangzhounet ? Some(networkStatus) : None}
-            network=Network.hangzhounet
-            currentConfig=last
-            writeNetwork
-          />
+          {Network.nativeChains
+           ->List.map(((c: Network.nativeChains, _)) =>
+               <NetworkItem
+                 key=(Network.getChainId(c) :> string)
+                 chain=(c :> Network.configurableChains(Network.chainId))
+                 networkStatus={
+                   last == (c :> Network.configurableChains(string))
+                     ? Some(networkStatus) : None
+                 }
+                 network={Network.getNetwork(c)}
+                 currentConfig=last
+                 writeNetwork
+               />
+             )
+           ->List.toArray
+           ->React.array}
           {switch (customNetworks) {
            | [] => React.null
            | customNetworks =>
