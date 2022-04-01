@@ -49,12 +49,15 @@ let openExternal = url => url->openExternal->ignore;
 
 type plateform = [ | `darwin | `win32 | `linux];
 
-[@bs.scope "process"] [@bs.val] external plateform: plateform = "plateform";
+[@bs.scope "process"] [@bs.val] external plateform: plateform = "platform";
 
 let isMac = plateform == `darwin;
 
 [@bs.scope "process.env"] [@bs.val]
 external nodeEnv: Js.Nullable.t(string) = "NODE_ENV";
+
+[@bs.scope "process.env"] [@bs.val]
+external appImage: Js.Nullable.t(string) = "APPIMAGE";
 
 let isDev =
   nodeEnv
@@ -64,6 +67,17 @@ let isDev =
 [@bs.val] external window: 'a = "window";
 
 let reload = () => window##location##reload();
+
+let hasAutoUpdate = () => {
+  !isDev
+  && (
+    switch (plateform) {
+    | `darwin => true
+    | `win32 => true
+    | `linux => !appImage->Js.Nullable.isNullable
+    }
+  );
+};
 
 module Path: {
   type t = pri string;

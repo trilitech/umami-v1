@@ -36,6 +36,8 @@ let isDev: bool;
 
 let openExternal: string => unit;
 
+let hasAutoUpdate: unit => bool;
+
 module Path: {
   type t;
 
