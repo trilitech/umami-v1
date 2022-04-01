@@ -223,7 +223,7 @@ module DownloadComplete = {
 
     let data =
       <>
-        <Icons.CheckOutline
+        <Icons.CheckFill
           size=22.
           color={theme.colors.valid}
           style=styles##banner_icon

@@ -258,7 +258,7 @@ module Toast = {
       switch (log.kind) {
       | Error
       | Warning => <Icons.Error size=20. color={theme.colors.toastError} />
-      | Info => <Icons.CheckOutline size=20. color={theme.colors.toastValid} />
+      | Info => <Icons.CheckFill size=20. color={theme.colors.toastValid} />
       };
 
     let jsx_of_btn = (btn: Logs.btn) => {
