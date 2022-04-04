@@ -165,6 +165,26 @@ module AppView = {
   let make = () => {
     let url = ReasonReactRouter.useUrl();
     let route = Routes.match(url);
+    let toast = LogsContext.useToast();
+
+    React.useEffect0(_ => {
+      let btns =
+        Logs.[
+          {
+            text: I18n.Btn.install_and_restart_now,
+            onPress: _ => IPC.send("quit-and-install", ""),
+          },
+        ];
+      let log =
+        Logs.log(
+          ~kind=Logs.Info,
+          ~origin=Logs.Update,
+          ~btns,
+          I18n.download_complete,
+        );
+      IPC.on("update-downloaded", (_, _) => toast(log));
+      None;
+    });
 
     let selectedAccount = StoreContext.SelectedAccount.useGetAtInit();
     let accountsRequest = StoreContext.Accounts.useRequest();

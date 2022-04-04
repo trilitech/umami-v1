@@ -134,6 +134,7 @@ module Delegate = Make(SVGIconDelegate);
 module Change = Make(SVGIconChange);
 module List = Make(SVGIconList);
 module CheckOutline = Make(SVGIconCheckOutline);
+module CheckFill = Make(SVGIconCheckFill);
 module CloseOutline = Make(SVGIconCloseOutline);
 module Token = Make(SVGIconToken);
 module Tezos = Make(SVGIconTezos);

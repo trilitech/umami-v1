@@ -34,6 +34,7 @@ let make = () => {
     <ChainSettingView />
     <BeaconSettingView />
     <BackupSettingView />
+    {System.hasAutoUpdate() ? <UpdateSettingView /> : React.null}
     <DangerSettingView />
   </Page>;
 };

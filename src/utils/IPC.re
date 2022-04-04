@@ -29,11 +29,12 @@ type event;
 
 [@bs.module "electron"] external renderer: t = "ipcRenderer";
 
-[@bs.send] external on: (t, string, (event, string) => unit) => unit = "on";
+[@bs.send] external on: (t, string, (event, 'a) => unit) => unit = "on";
 [@bs.send]
 external removeListener: (t, string, (event, string) => unit) => unit =
   "removeListener";
-[@bs.send] external send: (t, string) => unit = "send";
+// [@bs.send] external send: (t, string) => unit = "send";
+[@bs.send] external betterSend: (t, string, string) => unit = "send";
 
 let useNextDeeplinkState = () => {
   let (next, done_, send) = ReactUtils.useNextState();
@@ -65,3 +66,5 @@ let useDeeplink = () => {
 
   state;
 };
+let send = (channel, msg) => renderer->betterSend(channel, msg);
+let on = (channel, handler) => renderer->on(channel, handler);

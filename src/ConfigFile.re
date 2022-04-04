@@ -35,6 +35,7 @@ type t = {
   sdkBaseDir: option(System.Path.t),
   customNetworks: list(Network.network),
   backupFile: option(System.Path.t),
+  autoUpdates: bool,
 };
 
 [@bs.val] [@bs.scope "JSON"] external parse: string => t = "parse";
@@ -56,6 +57,7 @@ let dummy = {
   sdkBaseDir: None,
   customNetworks: [],
   backupFile: None,
+  autoUpdates: true,
 };
 
 module Encode = {
@@ -81,6 +83,7 @@ module Encode = {
         "backupFile",
         nullable(string, c.backupFile->Option.map(System.Path.toString)),
       ),
+      ("autoUpdates", bool(c.autoUpdates)),
     ]);
 };
 
@@ -109,6 +112,8 @@ module Decode = {
 
   let confirmationsDecoder = field("confirmations", optional(int));
 
+  let autoUpdatesDecoder = field("autoUpdates", bool);
+
   let sdkBaseDirDecoder = json =>
     (json |> field("sdkBaseDir", optional(string)))
     ->Option.map(System.Path.mk);
@@ -130,6 +135,7 @@ module Decode = {
     sdkBaseDir: json |> sdkBaseDirDecoder,
     customNetworks: json |> customNetworksDecoder,
     backupFile: json |> backupFileDecoder,
+    autoUpdates: json |> autoUpdatesDecoder,
   };
 };
 
@@ -178,7 +184,7 @@ module Legacy = {
       (json |> optional(field("network", networkVariantLegacyDecoder)))
       ->Option.map(
           fun
-          | `Custom(c: Network.chainId) => `Custom((c :> string))
+          | `Custom((c: Network.chainId)) => `Custom((c :> string))
           | #Network.supportedChains as n => n,
         )
       ->Option.map(removeNonNativeNetwork);
@@ -208,6 +214,7 @@ module Legacy = {
         sdkBaseDir: json |> sdkBaseDirDecoder,
         customNetworks: json |> customNetworksLegacyDecoder,
         backupFile: json |> backupFileDecoder,
+        autoUpdates: json |> autoUpdatesDecoder,
       };
 
     let version = Version.mk(1, 2);
@@ -249,6 +256,7 @@ module Legacy = {
       sdkBaseDir: json |> sdkBaseDirDecoder,
       customNetworks: json |> customNetworksDecoder,
       backupFile: json |> backupFileDecoder,
+      autoUpdates: json |> autoUpdatesDecoder,
     };
 
     let version = Version.mk(1, 5);

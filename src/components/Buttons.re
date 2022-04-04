@@ -121,15 +121,28 @@ module Form = {
 
 module FormPrimary = {
   [@react.component]
-  let make = (~text, ~onPress, ~disabled=?, ~loading=?, ~fontSize=?, ~style=?) => {
+  let make =
+      (
+        ~text,
+        ~onPress,
+        ~disabled=?,
+        ~loading=?,
+        ~fontSize=?,
+        ~style=?,
+        ~colorStyle=?,
+      ) => {
+    let colorStyle =
+      switch (colorStyle) {
+      | None =>
+        disabled->Option.flatMap(disabled =>
+          disabled ? Some(`disabled) : Some(`highEmphasis)
+        )
+
+      | c => c
+      };
+
     <FormBase onPress ?disabled ?loading ?style>
-      <Typography.ButtonPrimary
-        ?fontSize
-        colorStyle=?{
-          disabled->Option.flatMap(disabled =>
-            disabled ? Some(`disabled) : Some(`highEmphasis)
-          )
-        }>
+      <Typography.ButtonPrimary ?fontSize ?colorStyle>
         text->React.string
       </Typography.ButtonPrimary>
     </FormBase>;
