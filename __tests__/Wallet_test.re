@@ -52,7 +52,7 @@ let futureEqual =
 };
 
 describe("Wallet", ({testAsync}) => {
-  open WalletAPI.Aliases;
+  open HDWalletAPI.Aliases;
 
   testAsync("Add alias", test =>
     test->futureEqual(Ok(Some(testkey1)), () =>
@@ -125,7 +125,7 @@ describe("Wallet", ({testAsync}) => {
 
   testAsync("Import", test =>
     test->futureEqual(Ok(Some(testkey3)), () =>
-      WalletAPI.Accounts.import(
+      HDWalletAPI.Accounts.import(
         ~config,
         ~alias="testimport",
         ~secretKey=sktestkey3,
@@ -137,7 +137,7 @@ describe("Wallet", ({testAsync}) => {
 
   testAsync("LegacyImport", test =>
     test->futureEqual(Ok(testkey5), () =>
-      WalletAPI.Accounts.legacyImport(
+      HDWalletAPI.Accounts.legacyImport(
         ~config,
         "zebra",
         recoveryPhrase5,
@@ -148,7 +148,7 @@ describe("Wallet", ({testAsync}) => {
 });
 
 describe("Signer detection", ({test}) => {
-  open Wallet;
+  open KeyWallet;
 
   let skl1 = "ledger://tz1gr5TA8waD7LcrXNRaSz7Bys2Y14AWZnGH/ed25519/1h/0h";
   let skl1NoPref = "tz1gr5TA8waD7LcrXNRaSz7Bys2Y14AWZnGH/ed25519/1h/0h";
@@ -157,7 +157,7 @@ describe("Signer detection", ({test}) => {
   let skl2NoPref = "tz1gr5TA8waD7LcrXNRaSz7Bys2Y14AWZnGH/ed25519/0h/0h";
 
   let ske = "ledge://test";
-  let errbad = k => Error(Wallet.KeyBadFormat(k));
+  let errbad = k => Error(KeyWallet.KeyBadFormat(k));
 
   let sken1 = "encrypted:edesk1eYwyEH1ofeBGC1HLNTAkhw2kM87FRvFg82Pkbi779evnVcW87Dx4VEtCw3dnhNSxsbWitpx6r7DRRLp4jY";
   let sken1NoPref = "edesk1eYwyEH1ofeBGC1HLNTAkhw2kM87FRvFg82Pkbi779evnVcW87Dx4VEtCw3dnhNSxsbWitpx6r7DRRLp4jY";
@@ -177,12 +177,12 @@ describe("Signer detection", ({test}) => {
     test(
       "Parsing prefix n" ++ i->Int.toString,
       ({expectEqual}) => {
-        let r = inp->Wallet.extractPrefixFromSecretKey;
+        let r = inp->KeyWallet.extractPrefixFromSecretKey;
         expectEqual(r, out);
       },
     )
   });
-  open Wallet.Ledger;
+  open KeyWallet.Ledger;
 
   let skl1Res = {
     path: DerivationPath.buildTezosBip44((1, 0)),

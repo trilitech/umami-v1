@@ -40,8 +40,8 @@ let make = (~closeAction, ~index, ~secret) => {
   let onFoundKey = (~start, i, account) =>
     setAccounts(accounts =>
       if (accounts->List.some(acc =>
-            account.WalletAPI.Accounts.Scan.publicKeyHash
-            == acc.WalletAPI.Accounts.Scan.publicKeyHash
+            account.HDWalletAPI.Accounts.Scan.publicKeyHash
+            == acc.HDWalletAPI.Accounts.Scan.publicKeyHash
           )) {
         accounts;
       } else {
@@ -61,14 +61,12 @@ let make = (~closeAction, ~index, ~secret) => {
     import(
       SecretApiRequest.{index, accounts: accounts->List.reverse, password},
     )
-    ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
-        I18n.account_created
-      )
+    ->ApiRequest.logOk(addLog(true), Logs.Account, _ => I18n.account_created)
     ->Promise.getOk(_ => {closeAction()});
   };
 
   let scan = (~password, path, _) =>
-    WalletAPI.Accounts.Scan.runStreamSeed(
+    HDWalletAPI.Accounts.Scan.runStreamSeed(
       ~config,
       ~startIndex=secret.Secret.addresses->Js.Array.length,
       ~onFoundKey=onFoundKey(~start=secret.Secret.addresses->Js.Array.length),
@@ -96,7 +94,9 @@ let make = (~closeAction, ~index, ~secret) => {
          accounts={
            accounts
            ->List.reverse
-           ->List.map(account => account.WalletAPI.Accounts.Scan.publicKeyHash)
+           ->List.map(account =>
+               account.HDWalletAPI.Accounts.Scan.publicKeyHash
+             )
          }
          next={submitAccounts(~password)}
          nextAdvancedOptions=None

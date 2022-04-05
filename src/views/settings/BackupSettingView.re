@@ -52,7 +52,7 @@ let styles =
   );
 
 let forceBackup = (~backupFile, addLog) =>
-  switch (WalletAPI.Accounts.forceBackup(backupFile)) {
+  switch (HDWalletAPI.Accounts.forceBackup(backupFile)) {
   | Ok(_) =>
     addLog(
       true,

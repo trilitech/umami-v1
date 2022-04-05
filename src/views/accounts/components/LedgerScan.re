@@ -79,9 +79,7 @@ let make = (~closeAction, ~index, ~secret) => {
         ledgerMasterKey,
       },
     )
-    ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
-        I18n.account_created
-      )
+    ->ApiRequest.logOk(addLog(true), Logs.Account, _ => I18n.account_created)
     ->Promise.getOk(_ => {closeAction()});
   };
 
@@ -119,7 +117,7 @@ let make = (~closeAction, ~index, ~secret) => {
        </>
      | StepAccounts(mk) =>
        <ScannedAccountsView
-         scan={WalletAPI.Accounts.Scan.runStreamLedger(
+         scan={HDWalletAPI.Accounts.Scan.runStreamLedger(
            ~config,
            ~startIndex=secret.Secret.addresses->Js.Array.length,
            ~onFoundKey=

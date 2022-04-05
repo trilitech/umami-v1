@@ -36,8 +36,8 @@ let isReady = tr => {
   let signer =
     LedgerSigner.create(
       tr,
-      Wallet.Ledger.masterKeyPath,
-      Wallet.Ledger.masterKeyScheme,
+      KeyWallet.Ledger.masterKeyPath,
+      KeyWallet.Ledger.masterKeyScheme,
       ~prompt=false,
     );
   signer
@@ -72,19 +72,19 @@ let getKey = (~prompt, tr, path, schema) => {
 
 let getFirstKey = (~prompt, tr) => {
   let path = DerivationPath.Pattern.(default->fromTezosBip44->implement(0));
-  getKey(~prompt, tr, path, Wallet.Ledger.masterKeyScheme);
+  getKey(~prompt, tr, path, KeyWallet.Ledger.masterKeyScheme);
 };
 
 let getMasterKey = (~prompt, tr) =>
   getKey(
     ~prompt,
     tr,
-    Wallet.Ledger.masterKeyPath,
-    Wallet.Ledger.masterKeyScheme,
+    KeyWallet.Ledger.masterKeyPath,
+    KeyWallet.Ledger.masterKeyScheme,
   );
 
 /* This function depends on LedgerSigner to compute the pk and pkh, hence it
-   cannot be defined directly into Wallet.re */
+   cannot be defined directly into KeyWallet.re */
 let addOrReplaceAlias =
     (~ledgerTransport, ~dirpath, ~alias, ~path, ~scheme, ~ledgerBasePkh)
     : Promise.t(PublicKeyHash.t) => {
@@ -98,12 +98,13 @@ let addOrReplaceAlias =
 
   let%Await path = path->DerivationPath.convertToTezosBip44->Promise.value;
 
-  let t = Wallet.Ledger.{path, scheme};
-  let sk = Wallet.Ledger.Encode.toSecretKey(t, ~ledgerBasePkh);
+  let t = KeyWallet.Ledger.{path, scheme};
+  let sk = KeyWallet.Ledger.Encode.toSecretKey(t, ~ledgerBasePkh);
 
-  let pk = Wallet.customPkValue(~secretPath=sk, pk);
+  let pk = KeyWallet.customPkValue(~secretPath=sk, pk);
 
-  let%AwaitMap () = Wallet.addOrReplaceAlias(~dirpath, ~alias, ~pk, ~pkh, ~sk);
+  let%AwaitMap () =
+    KeyWallet.addOrReplaceAlias(~dirpath, ~alias, ~pk, ~pkh, ~sk);
 
   pkh;
 };

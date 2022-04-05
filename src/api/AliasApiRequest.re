@@ -29,7 +29,7 @@
 
 let useLoad = requestState => {
   let get = (~config, ()) =>
-    WalletAPI.Aliases.get(~config)
+    HDWalletAPI.Aliases.get(~config)
     ->Promise.map(
         fun
         | Ok(response) =>
@@ -52,7 +52,7 @@ let useCreate =
     ~logOk=_ => I18n.contact_added,
     ~set=
       (~config, (alias, address)) =>
-        WalletAPI.Aliases.add(~config, ~alias, ~address),
+        HDWalletAPI.Aliases.add(~config, ~alias, ~address),
     ~kind=Logs.Aliases,
   );
 
@@ -62,15 +62,15 @@ let useUpdate =
   ApiRequest.useSetter(
     ~logOk=_ => I18n.contact_updated,
     ~set=
-      (~config, renaming: WalletAPI.Aliases.renameParams) =>
-        WalletAPI.Aliases.rename(~config, renaming),
+      (~config, renaming: HDWalletAPI.Aliases.renameParams) =>
+        HDWalletAPI.Aliases.rename(~config, renaming),
     ~kind=Logs.Aliases,
   );
 
 /* Delete */
 
 let useDelete = {
-  let set = (~config, alias) => WalletAPI.Aliases.delete(~config, ~alias);
+  let set = (~config, alias) => HDWalletAPI.Aliases.delete(~config, ~alias);
   ApiRequest.useSetter(
     ~logOk=_ => I18n.contact_deleted,
     ~set,

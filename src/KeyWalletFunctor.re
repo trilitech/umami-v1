@@ -23,7 +23,9 @@
 /*                                                                           */
 /*****************************************************************************/
 
-module Make = (S: WalletIntf.SYSTEM) : (WalletIntf.WALLET with module Sys = S) => {
+module Make =
+       (S: KeyWalletIntf.SYSTEM)
+       : (KeyWalletIntf.WALLET with module Sys = S) => {
   module Sys = S;
 
   open Sys.Path.Ops;

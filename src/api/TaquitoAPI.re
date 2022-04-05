@@ -119,7 +119,7 @@ module Signer = {
 
   let readLedgerKey = (callback, key) => {
     let keyData = ledgerBasePkh =>
-      key->Wallet.Ledger.Decode.fromSecretKey(~ledgerBasePkh);
+      key->KeyWallet.Ledger.Decode.fromSecretKey(~ledgerBasePkh);
 
     let%Await tr = LedgerAPI.init();
 
@@ -142,7 +142,7 @@ module Signer = {
     | Password(string);
 
   let readSecretKey = (address, signingIntent, dirpath) => {
-    let%Await (kind, key) = Wallet.readSecretFromPkh(address, dirpath);
+    let%Await (kind, key) = KeyWallet.readSecretFromPkh(address, dirpath);
 
     switch (kind, signingIntent) {
     | (Encrypted, Password(s)) => readEncryptedKey(key, s)
@@ -578,9 +578,9 @@ module Batch = {
           ~ops,
           (),
         ) => {
-      let%Await alias = Wallet.aliasFromPkh(~dirpath=baseDir, ~pkh=source);
+      let%Await alias = KeyWallet.aliasFromPkh(~dirpath=baseDir, ~pkh=source);
 
-      let%Await publicKey = Wallet.pkFromAlias(~dirpath=baseDir, ~alias);
+      let%Await publicKey = KeyWallet.pkFromAlias(~dirpath=baseDir, ~alias);
 
       let%Await res = inject(~endpoint, ~publicKey, ~source, ~ops);
 

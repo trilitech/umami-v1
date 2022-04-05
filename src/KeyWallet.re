@@ -23,4 +23,4 @@
 /*                                                                           */
 /*****************************************************************************/
 
-include WalletFunctor.Make(System);
+include KeyWalletFunctor.Make(System);

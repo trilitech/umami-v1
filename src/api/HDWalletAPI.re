@@ -174,14 +174,14 @@ module Aliases = {
   type t = array(Alias.t);
 
   let get = (~config: ConfigContext.env) => {
-    let%Await pkhs = config.baseDir()->Wallet.PkhAliases.read;
+    let%Await pkhs = config.baseDir()->KeyWallet.PkhAliases.read;
 
-    let%AwaitMap sks = config.baseDir()->Wallet.SecretAliases.read;
+    let%AwaitMap sks = config.baseDir()->KeyWallet.SecretAliases.read;
     pkhs->Array.map(({name, value}) => {
       let res = {
         let%Res sk =
-          sks->Wallet.SecretAliases.find(skAlias => name == skAlias.name);
-        sk.value->Wallet.extractPrefixFromSecretKey;
+          sks->KeyWallet.SecretAliases.find(skAlias => name == skAlias.name);
+        sk.value->KeyWallet.extractPrefixFromSecretKey;
       };
 
       let kind =
@@ -216,14 +216,14 @@ module Aliases = {
   };
 
   let add = (~config: ConfigContext.env, ~alias, ~address) =>
-    Wallet.addOrReplacePkhAlias(
+    KeyWallet.addOrReplacePkhAlias(
       ~dirpath=config.baseDir(),
       ~alias,
       ~pkh=address,
     );
 
   let delete = (~config: ConfigContext.env, ~alias) =>
-    Wallet.removePkhAlias(~dirpath=config.baseDir(), ~alias);
+    KeyWallet.removePkhAlias(~dirpath=config.baseDir(), ~alias);
 
   type renameParams = {
     old_name: string,
@@ -231,7 +231,7 @@ module Aliases = {
   };
 
   let rename = (~config: ConfigContext.env, renaming) =>
-    Wallet.renameAlias(
+    KeyWallet.renameAlias(
       ~dirpath=config.baseDir(),
       ~oldName=renaming.old_name,
       ~newName=renaming.new_name,
@@ -251,15 +251,15 @@ module Accounts = {
   };
 
   let get = (~config: ConfigContext.env) => {
-    let%Await pkhs = config.baseDir()->Wallet.PkhAliases.read;
+    let%Await pkhs = config.baseDir()->KeyWallet.PkhAliases.read;
 
-    let%AwaitMap sks = config.baseDir()->Wallet.SecretAliases.read;
+    let%AwaitMap sks = config.baseDir()->KeyWallet.SecretAliases.read;
 
     pkhs->Array.keepMap(({name, value}) => {
       let res = {
         let%Res sk =
-          sks->Wallet.SecretAliases.find(skAlias => name == skAlias.name);
-        sk.value->Wallet.extractPrefixFromSecretKey;
+          sks->KeyWallet.SecretAliases.find(skAlias => name == skAlias.name);
+        sk.value->KeyWallet.extractPrefixFromSecretKey;
       };
 
       switch (res) {
@@ -298,10 +298,10 @@ module Accounts = {
   let importFromSigner =
       (~config: ConfigContext.env, ~alias, ~secretKey, signer) => {
     let%Await pk = signer->ReTaquitoSigner.publicKey;
-    let pk = Wallet.mnemonicPkValue(pk);
+    let pk = KeyWallet.mnemonicPkValue(pk);
     let%Await pkh = signer->ReTaquitoSigner.publicKeyHash;
-    let skUri = Wallet.Prefixes.toString(Encrypted) ++ secretKey;
-    Wallet.addOrReplaceAlias(
+    let skUri = KeyWallet.Prefixes.toString(Encrypted) ++ secretKey;
+    KeyWallet.addOrReplaceAlias(
       ~dirpath=config.baseDir(),
       ~alias,
       ~pk,
@@ -343,7 +343,7 @@ module Accounts = {
   };
 
   let unsafeDelete = (~config: ConfigContext.env, name) =>
-    Wallet.removeAlias(~dirpath=config.baseDir(), ~alias=name);
+    KeyWallet.removeAlias(~dirpath=config.baseDir(), ~alias=name);
 
   let delete = (~config, name) => {
     let%Await address = Aliases.getAddressForAlias(~config, ~alias=name);
@@ -960,11 +960,11 @@ module Accounts = {
       (~config: ConfigContext.env, ~pkh, ~pk, infos: ReCustomAuth.infos) => {
     let%Await () = System.Client.initDir(config.baseDir());
 
-    let sk = Wallet.CustomAuth.Encode.toSecretKey(infos);
-    let pk = Wallet.customPkValue(~secretPath=sk, pk);
+    let sk = KeyWallet.CustomAuth.Encode.toSecretKey(infos);
+    let pk = KeyWallet.customPkValue(~secretPath=sk, pk);
 
     let%AwaitMap () =
-      Wallet.addOrReplaceAlias(
+      KeyWallet.addOrReplaceAlias(
         ~dirpath=config.baseDir(),
         ~alias=(infos.handle :> string),
         ~pk,
@@ -1024,6 +1024,6 @@ module Accounts = {
   };
 
   let getPublicKey = (~config: ConfigContext.env, ~account: Account.t) => {
-    Wallet.pkFromAlias(~dirpath=config.baseDir(), ~alias=account.name);
+    KeyWallet.pkFromAlias(~dirpath=config.baseDir(), ~alias=account.name);
   };
 };
