@@ -44,7 +44,7 @@ let keepNonFormErrors =
   | ReTaquitoError.LedgerKeyRetrieval
   | ReTaquitoError.LedgerDenied
   | ReTaquitoError.LedgerNotReady
-  | Errors.WrongPassword => false
+  | SecureStorage.WrongPassword => false
   | _ => true;
 
 let useCreate = (~sideEffect=?, ()) => {

@@ -1,7 +1,7 @@
 {
-  "name": "@umami/lib-base",
-  "productName": "umami-lib-base",
-  "version": "0.5.3",
+  "name": "@umami/base",
+  "productName": "umami-base",
+  "version": "0.7.0",
   "author": {
     "name": "Nomadic Labs",
     "email": "umami@nomadic-labs.com"

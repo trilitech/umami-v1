@@ -2177,7 +2177,7 @@
   dependencies:
     "@types/yargs-parser" "*"
 
-"@umami/lib-base@link:./lib_base":
+"@umami/base@link:./libs/base":
   version "0.0.0"
   uid ""
 

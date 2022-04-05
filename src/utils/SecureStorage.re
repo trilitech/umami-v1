@@ -23,6 +23,17 @@
 /*                                                                           */
 /*****************************************************************************/
 
+type Errors.t +=
+  | WrongPassword;
+
+let () =
+  Errors.registerHandler(
+    "Security",
+    fun
+    | WrongPassword => I18n.Form_input_error.wrong_password->Some
+    | _ => None,
+  );
+
 open Let;
 
 module Buffer = {
@@ -238,7 +249,7 @@ let validatePassword = password => {
   let%Await data = fetch(~password);
   let%Await () =
     data == Some("lock") || data == None
-      ? Promise.ok() : Promise.err(Errors.WrongPassword);
+      ? Promise.ok() : Promise.err(WrongPassword);
   let%AwaitMap () = store("lock", ~password);
   ();
 };

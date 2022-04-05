@@ -1,5 +1,5 @@
 {
-  "name": "@umami/lib-base",
+  "name": "@umami/base",
   "reason": {
     "react-jsx": 3
   },
