@@ -487,28 +487,6 @@ module Accounts = {
       loop(startIndex);
     };
 
-    let runStreamLedger =
-        (
-          ~config,
-          ~startIndex=0,
-          ~onFoundKey,
-          path: DerivationPath.Pattern.t,
-          schema,
-        ) =>
-      runStream(
-        ~config,
-        ~startIndex,
-        ~onFoundKey=(i, account) => onFoundKey(i, account.publicKeyHash),
-        path,
-        schema,
-        (path, schema) => {
-          let%Await tr = LedgerAPI.init();
-          let%AwaitMap publicKeyHash =
-            LedgerAPI.getKey(~prompt=false, tr, path, schema);
-          {publicKeyHash, encryptedSecretKey: (), kind: Regular};
-        },
-      );
-
     let runStreamLegacy = (~config, ~recoveryPhrase, ~password, ~onFoundKey) => {
       let onFoundKey = (n, acc) => onFoundKey(n, acc)->Promise.ok;
       let%Await account = runLegacy(~recoveryPhrase, ~password);
@@ -858,104 +836,6 @@ module Accounts = {
     (addresses, masterPublicKey);
   };
 
-  let importLedgerKey =
-      (
-        ~config: ConfigContext.env,
-        ~name,
-        ~index,
-        ~derivationPath,
-        ~derivationScheme,
-        ~ledgerTransport,
-        ~ledgerMasterKey,
-      ) => {
-    let path = derivationPath->DerivationPath.Pattern.implement(index);
-    LedgerAPI.addOrReplaceAlias(
-      ~ledgerTransport,
-      ~dirpath=config.baseDir(),
-      ~alias=name,
-      ~path,
-      ~scheme=derivationScheme,
-      ~ledgerBasePkh=ledgerMasterKey,
-    );
-  };
-
-  let importLedgerKeys =
-      (
-        ~config,
-        ~accountsNumber,
-        ~startIndex,
-        ~basename,
-        ~derivationPath,
-        ~derivationScheme,
-        ~ledgerTransport,
-        ~ledgerMasterKey,
-      ) => {
-    let rec importKeys = (tr, keys, index) => {
-      let name = basename ++ " /" ++ Int.toString(index);
-      index < startIndex + accountsNumber
-        ? importLedgerKey(
-            ~config,
-            ~name,
-            ~index,
-            ~derivationPath,
-            ~derivationScheme,
-            ~ledgerTransport=tr,
-            ~ledgerMasterKey,
-          )
-          ->Promise.flatMapOk(key =>
-              importKeys(tr, [key, ...keys], index + 1)
-            )
-        : List.reverse(keys)->List.toArray->Promise.ok;
-    };
-    importKeys(ledgerTransport, [], startIndex);
-  };
-
-  let importLedger =
-      (
-        ~config,
-        ~timeout=?,
-        ~name,
-        ~accountsNumber,
-        ~derivationPath=DerivationPath.Pattern.fromTezosBip44(
-                          DerivationPath.Pattern.default,
-                        ),
-        ~derivationScheme=PublicKeyHash.Scheme.ED25519,
-        ~ledgerMasterKey,
-        (),
-      ) => {
-    let%Await tr = LedgerAPI.init(~timeout?, ());
-    let%Await addresses =
-      importLedgerKeys(
-        ~config,
-        ~accountsNumber,
-        ~startIndex=0,
-        ~basename=name,
-        ~derivationPath,
-        ~derivationScheme,
-        ~ledgerTransport=tr,
-        ~ledgerMasterKey,
-      );
-
-    let%AwaitMap () =
-      name
-      ->SecureStorage.Cipher.encrypt("")
-      ->Promise.mapOk(recoveryPhrase =>
-          registerRecoveryPhrase(recoveryPhrase)
-        );
-
-    registerSecret(
-      ~config,
-      ~name,
-      ~kind=Secret.Repr.Ledger,
-      ~derivationPath,
-      ~derivationScheme,
-      ~addresses,
-      ~masterPublicKey=None,
-    );
-
-    addresses;
-  };
-
   let importCustomAuth =
       (~config: ConfigContext.env, ~pkh, ~pk, infos: ReCustomAuth.infos) => {
     let%Await () = System.Client.initDir(config.baseDir());
@@ -972,55 +852,6 @@ module Accounts = {
         ~sk,
       );
     pkh;
-  };
-
-  let deriveLedger =
-      (~config, ~timeout=?, ~index, ~alias, ~ledgerMasterKey, ()) => {
-    let%Await secret = secretAt(~config, index)->Promise.value;
-    let%Await tr = LedgerAPI.init(~timeout?, ());
-
-    let%Await address =
-      importLedgerKey(
-        ~config,
-        ~name=alias,
-        ~index=secret.addresses->Array.length,
-        ~derivationPath=secret.derivationPath,
-        ~derivationScheme=secret.derivationScheme,
-        ~ledgerTransport=tr,
-        ~ledgerMasterKey,
-      );
-
-    let%Await () =
-      {...secret, addresses: Array.concat(secret.addresses, [|address|])}
-      ->updateSecretAt(~config, index)
-      ->Promise.value;
-
-    address->Promise.ok;
-  };
-
-  let deriveLedgerKeys =
-      (~config, ~timeout=?, ~index, ~accountsNumber, ~ledgerMasterKey, ()) => {
-    let%Await secret = secretAt(~config, index)->Promise.value;
-    let%Await tr = LedgerAPI.init(~timeout?, ());
-
-    let%Await addresses =
-      importLedgerKeys(
-        ~config,
-        ~basename=secret.Secret.Repr.name,
-        ~startIndex=secret.addresses->Array.length,
-        ~accountsNumber,
-        ~derivationPath=secret.derivationPath,
-        ~derivationScheme=secret.derivationScheme,
-        ~ledgerTransport=tr,
-        ~ledgerMasterKey,
-      );
-
-    let%Await () =
-      {...secret, addresses: Array.concat(secret.addresses, addresses)}
-      ->updateSecretAt(~config, index)
-      ->Promise.value;
-
-    addresses->Promise.ok;
   };
 
   let getPublicKey = (~config: ConfigContext.env, ~account: Account.t) => {

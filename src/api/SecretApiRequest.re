@@ -80,7 +80,7 @@ let useDerive =
         | Mnemonics(password) =>
           HDWalletAPI.Accounts.derive(~config, ~index, ~alias=name, ~password)
         | Ledger(ledgerMasterKey) =>
-          HDWalletAPI.Accounts.deriveLedger(
+          LedgerWalletAPI.derive(
             ~config,
             ~timeout?,
             ~index,
@@ -170,7 +170,7 @@ let useLedgerImport =
           timeout,
         },
       ) =>
-        HDWalletAPI.Accounts.importLedger(
+        LedgerWalletAPI.import(
           ~config,
           ~name,
           ~accountsNumber,
@@ -194,7 +194,7 @@ let useLedgerScan =
   ApiRequest.useSetter(
     ~set=
       (~config, {index, accountsNumber, ledgerMasterKey, timeout}) =>
-        HDWalletAPI.Accounts.deriveLedgerKeys(
+        LedgerWalletAPI.deriveKeys(
           ~config,
           ~index,
           ~accountsNumber,

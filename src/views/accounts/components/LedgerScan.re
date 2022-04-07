@@ -117,7 +117,7 @@ let make = (~closeAction, ~index, ~secret) => {
        </>
      | StepAccounts(mk) =>
        <ScannedAccountsView
-         scan={HDWalletAPI.Accounts.Scan.runStreamLedger(
+         scan={LedgerWalletAPI.runStreamedScan(
            ~config,
            ~startIndex=secret.Secret.addresses->Js.Array.length,
            ~onFoundKey=

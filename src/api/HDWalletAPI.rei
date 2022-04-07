@@ -70,6 +70,8 @@ module Accounts: {
 
   type name = string;
 
+  let secretAt: (~config: 'a, int) => Promise.result(Secret.t);
+
   let secrets: (~config: ConfigContext.env) => Promise.result(t);
 
   let recoveryPhrases:
@@ -119,13 +121,14 @@ module Accounts: {
       encryptedSecretKey: 'a,
     };
 
-    let runStreamLedger:
+    let runStream:
       (
         ~config: ConfigContext.env,
         ~startIndex: int=?,
-        ~onFoundKey: (int, PublicKeyHash.t) => unit,
+        ~onFoundKey: (int, account('a)) => unit,
         DerivationPath.Pattern.t,
-        PublicKeyHash.Scheme.t
+        'b,
+        (DerivationPath.derivationPath, 'b) => Promise.t(account('a))
       ) =>
       Promise.t(unit);
 
@@ -153,6 +156,20 @@ module Accounts: {
     ) =>
     Promise.t(unit);
 
+  let registerRecoveryPhrase: SecureStorage.Cipher.encryptedData => unit;
+
+  let registerSecret:
+    (
+      ~config: ConfigContext.env,
+      ~name: string,
+      ~kind: Secret.Repr.kind,
+      ~derivationPath: DerivationPath.Pattern.t,
+      ~derivationScheme: PublicKeyHash.Scheme.t,
+      ~addresses: array(PublicKeyHash.t),
+      ~masterPublicKey: option(PublicKeyHash.t)
+    ) =>
+    unit;
+
   let restoreFromBackupFile:
     (
       ~config: ConfigContext.env,
@@ -178,47 +195,12 @@ module Accounts: {
     (~config: ConfigContext.env, string, string, ~password: string) =>
     Promise.t(PublicKeyHash.t);
 
-  let importLedger:
-    (
-      ~config: ConfigContext.env,
-      ~timeout: int=?,
-      ~name: string,
-      ~accountsNumber: int,
-      ~derivationPath: DerivationPath.Pattern.t=?,
-      ~derivationScheme: PublicKeyHash.Scheme.t=?,
-      ~ledgerMasterKey: PublicKeyHash.t,
-      unit
-    ) =>
-    Promise.t(array(PublicKeyHash.t));
-
   let importCustomAuth:
     (
       ~config: ConfigContext.env,
       ~pkh: PublicKeyHash.t,
       ~pk: string,
       ReCustomAuth.infos
-    ) =>
-    Promise.t(PublicKeyHash.t);
-
-  let deriveLedgerKeys:
-    (
-      ~config: ConfigContext.env,
-      ~timeout: int=?,
-      ~index: int,
-      ~accountsNumber: int,
-      ~ledgerMasterKey: PublicKeyHash.t,
-      unit
-    ) =>
-    Promise.t(array(PublicKeyHash.t));
-
-  let deriveLedger:
-    (
-      ~config: ConfigContext.env,
-      ~timeout: int=?,
-      ~index: int,
-      ~alias: string,
-      ~ledgerMasterKey: PublicKeyHash.t,
-      unit
     ) =>
     Promise.t(PublicKeyHash.t);
 
