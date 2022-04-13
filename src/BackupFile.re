@@ -23,8 +23,6 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open Let;
-
 type Errors.t +=
   | UnknownVersion(Version.t)
   | CannotParseVersion(string);
@@ -85,31 +83,38 @@ let decoder = json =>
   };
 
 let checkVersion = json => {
-  let%Res v =
-    json->JsonEx.decode(
-      Json.Decode.field("version", LocalStorage.Version.decoder),
-    );
-  Version.checkVersion(~current=v, ~expected=currentVersion)
-  ->Result.mapError(
-      fun
-      | Version.UnknownVersion({current}) => UnknownVersion(current)
-      | e => e->Errors.toString->CannotParseVersion,
-    );
+  json
+  ->JsonEx.decode(Json.Decode.field("version", LocalStorage.Version.decoder))
+  ->Result.flatMap(v => {
+      Version.checkVersion(~current=v, ~expected=currentVersion)
+      ->Result.mapError(
+          fun
+          | Version.UnknownVersion({current}) => UnknownVersion(current)
+          | e => e->Errors.toString->CannotParseVersion,
+        )
+    });
 };
 
 let read = (path: System.Path.t) => {
-  let%AwaitRes file = System.File.read(path);
-  let%Res json = JsonEx.parse(file);
-  let%Res () = checkVersion(json);
-  json->JsonEx.decode(decoder);
+  System.File.read(path)
+  ->Promise.flatMapOk(file => {
+      let result = JsonEx.parse(file);
+      Promise.value(result);
+    })
+  ->Promise.flatMapOk(json => {
+      let result =
+        checkVersion(json)
+        ->Result.flatMap(() => {json->JsonEx.decode(decoder)});
+      Promise.value(result);
+    });
 };
 
 let save = (t, path: System.Path.t) => {
   let encoded = encoder(t);
-
-  let%Await () =
-    System.File.initIfNotExists(~path, dummy->encoder->JsonEx.stringify);
-  System.File.protect(~name=path, ~transaction=_ =>
-    System.File.write(~name=path, encoded->JsonEx.stringify)
-  );
+  System.File.initIfNotExists(~path, dummy->encoder->JsonEx.stringify)
+  ->Promise.mapOk(() => {
+      System.File.protect(~name=path, ~transaction=_ =>
+        System.File.write(~name=path, encoded->JsonEx.stringify)
+      )
+    });
 };
