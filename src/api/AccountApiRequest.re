@@ -29,7 +29,7 @@
 
 let useLoad = requestState => {
   let get = (~config, ()) =>
-    WalletAPI.Accounts.get(~config)
+    HDWalletAPI.Accounts.get(~config)
     ->Promise.map(
         fun
         | Ok(response) =>
@@ -51,18 +51,19 @@ let useUpdate =
   ApiRequest.useSetter(
     ~logOk=_ => I18n.account_updated,
     ~set=
-      (~config, renaming: WalletAPI.Aliases.renameParams) =>
-        WalletAPI.Aliases.rename(~config, renaming),
+      (~config, renaming: HDWalletAPI.Aliases.renameParams) =>
+        HDWalletAPI.Aliases.rename(~config, renaming),
     ~kind=Logs.Account,
   );
 
 let useDelete =
-  ApiRequest.useSetter(~set=WalletAPI.Accounts.delete, ~kind=Logs.Account);
+  ApiRequest.useSetter(~set=HDWalletAPI.Accounts.delete, ~kind=Logs.Account);
 
 /* Other */
 
 let useGetPublicKey = () => {
   let config = ConfigContext.useContent();
 
-  (account: Account.t) => WalletAPI.Accounts.getPublicKey(~config, ~account);
+  (account: Account.t) =>
+    HDWalletAPI.Accounts.getPublicKey(~config, ~account);
 };

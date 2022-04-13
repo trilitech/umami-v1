@@ -89,7 +89,7 @@ module Batch: {
     (
       ~endpoint: ReTaquito.endpoint,
       ~baseDir: System.Path.t,
-      ~source: Wallet.PkhAlias.t,
+      ~source: KeyWallet.PkhAlias.t,
       ~ops: Protocol.batch,
       ~signingIntent: Signer.intent,
       unit
@@ -114,7 +114,7 @@ module Signature: {
   let signPayload:
     (
       ~baseDir: System.Path.t,
-      ~source: Wallet.PkhAlias.t,
+      ~source: KeyWallet.PkhAlias.t,
       ~signingIntent: Signer.intent,
       ~payload: string
     ) =>

@@ -29,7 +29,7 @@
 
 let useLoad = requestState => {
   let get = (~config, ()) =>
-    WalletAPI.Accounts.secrets(~config)
+    HDWalletAPI.Accounts.secrets(~config)
     ->Result.mapWithDefault(Promise.ok([||]), secrets => {
         Promise.value(Result.Ok(secrets))
       })
@@ -44,7 +44,7 @@ let useLoad = requestState => {
 
 let useGetRecoveryPhrase = (~requestState as (request, setRequest), ~index) => {
   let get = (~config as _, password) =>
-    WalletAPI.Accounts.recoveryPhraseAt(index, ~password);
+    HDWalletAPI.Accounts.recoveryPhraseAt(index, ~password);
 
   let getRequest =
     ApiRequest.useGetter(~get, ~kind=Logs.Secret, ~setRequest, ());
@@ -78,9 +78,9 @@ let useDerive =
       (~config, {name, index, kind, timeout}) =>
         switch (kind) {
         | Mnemonics(password) =>
-          WalletAPI.Accounts.derive(~config, ~index, ~alias=name, ~password)
+          HDWalletAPI.Accounts.derive(~config, ~index, ~alias=name, ~password)
         | Ledger(ledgerMasterKey) =>
-          WalletAPI.Accounts.deriveLedger(
+          HDWalletAPI.Accounts.deriveLedger(
             ~config,
             ~timeout?,
             ~index,
@@ -114,7 +114,7 @@ let useCreateWithMnemonics =
             config.backupFile == None && backupFile != None
               ? backupFile : config.backupFile,
         };
-        WalletAPI.Accounts.restore(
+        HDWalletAPI.Accounts.restore(
           ~config,
           ~backupPhrase=mnemonic,
           ~name,
@@ -137,7 +137,7 @@ let useCreateFromBackupFile =
     ~keepError=keepNonFormErrors,
     ~set=
       (~config, {backupFile, password}) => {
-        WalletAPI.Accounts.restoreFromBackupFile(
+        HDWalletAPI.Accounts.restoreFromBackupFile(
           ~config,
           ~backupFile,
           ~password,
@@ -170,7 +170,7 @@ let useLedgerImport =
           timeout,
         },
       ) =>
-        WalletAPI.Accounts.importLedger(
+        HDWalletAPI.Accounts.importLedger(
           ~config,
           ~name,
           ~accountsNumber,
@@ -194,7 +194,7 @@ let useLedgerScan =
   ApiRequest.useSetter(
     ~set=
       (~config, {index, accountsNumber, ledgerMasterKey, timeout}) =>
-        WalletAPI.Accounts.deriveLedgerKeys(
+        HDWalletAPI.Accounts.deriveLedgerKeys(
           ~config,
           ~index,
           ~accountsNumber,
@@ -205,7 +205,7 @@ let useLedgerScan =
     ~kind=Logs.Secret,
   );
 
-type account = WalletAPI.Accounts.Scan.account(string);
+type account = HDWalletAPI.Accounts.Scan.account(string);
 
 type mnemonicImportKeysInput = {
   index: int,
@@ -217,7 +217,7 @@ let useMnemonicImportKeys =
   ApiRequest.useSetter(
     ~set=
       (~config, {index, accounts, password}) =>
-        WalletAPI.Accounts.importMnemonicKeys(
+        HDWalletAPI.Accounts.importMnemonicKeys(
           ~config,
           ~index,
           ~accounts,
@@ -232,7 +232,7 @@ let useUpdate =
     ~logOk=_ => I18n.secret_updated,
     ~set=
       (~config, {index, secret}: Secret.derived) => {
-        WalletAPI.Accounts.updateSecretAt(~config, secret, index)
+        HDWalletAPI.Accounts.updateSecretAt(~config, secret, index)
         ->Promise.value
       },
     ~kind=Logs.Secret,
@@ -241,6 +241,6 @@ let useUpdate =
 let useDelete =
   ApiRequest.useSetter(
     ~logOk=_ => I18n.secret_deleted,
-    ~set=WalletAPI.Accounts.deleteSecretAt,
+    ~set=HDWalletAPI.Accounts.deleteSecretAt,
     ~kind=Logs.Secret,
   );

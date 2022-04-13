@@ -30,8 +30,8 @@ let onbStyles = FormStyles.onboarding;
 type step =
   | StepChecklist
   | StepInitLedger(InitLedgerView.ledgerState)
-  | StepAdvancedOptions(Wallet.Ledger.masterKey)
-  | StepAccounts(Wallet.Ledger.masterKey);
+  | StepAdvancedOptions(KeyWallet.Ledger.masterKey)
+  | StepAccounts(KeyWallet.Ledger.masterKey);
 
 module ChecklistView = {
   let styles =
@@ -327,7 +327,7 @@ let make = (~closeAction) => {
      | StepChecklist => <ChecklistView next=onEndChecklist />
      | StepAccounts(mk) =>
        <ScannedAccountsView
-         scan={WalletAPI.Accounts.Scan.runStreamLedger(
+         scan={HDWalletAPI.Accounts.Scan.runStreamLedger(
            ~config,
            ~onFoundKey,
            ~startIndex=0,

@@ -23,26 +23,4 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open Let;
-
-let useLogin = (~sideEffect=?, ~onClosedPopup, ()) => {
-  let set = (~config, provider) => {
-    let%Await (pkh, pk, infos) = ReCustomAuthSigner.getInfos(provider);
-    HDWalletAPI.Accounts.importCustomAuth(~config, ~pkh, ~pk, infos);
-  };
-
-  ApiRequest.useSetter(
-    ~set,
-    ~sideEffect?,
-    ~keepError=
-      fun
-      | ReCustomAuth.UserClosedPopup => {
-          onClosedPopup();
-          false;
-        }
-      | _ => true,
-    ~logOk=_ => I18n.account_created,
-    ~kind=Logs.CustomAuth,
-    (),
-  );
-};
+include KeyWalletFunctor.Make(System);
