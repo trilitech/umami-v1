@@ -41,26 +41,71 @@ let useCheckTokenContract = tokens => {
   ApiRequest.useSetter(~set, ~kind=Logs.Tokens, ~toast=false, ());
 };
 
-let useLoadBalance =
+let balancesfromArray =
+    (
+      array: array((PublicKeyHash.t, TokenRepr.Unit.t)),
+      ~contract: PublicKeyHash.t,
+      ~id: option(int),
+      ~tokenMap:
+         ApiRequest.requestState(
+           TokenRepr.Map.t(
+             TokenRepr.Map.key,
+             TokenRepr.Unit.t,
+             TokenRepr.Map.id,
+           ),
+         ),
+    ) => {
+  let (tokenMap, _) = tokenMap;
+  let balances =
+    array->Array.map(((pkh, amount)) => ((pkh, (contract, id)), amount));
+  let previousMap =
+    switch (tokenMap) {
+    | Done(Ok(map), _) => map
+    | Loading(Some(map)) => map
+    | _ => TokenRepr.Map.empty
+    };
+  balances->Array.reduce(previousMap, (map, (key, value)) =>
+    map->TokenRepr.Map.set(key, value)
+  );
+};
+
+let useLoadBalances =
     (
       ~requestState,
-      ~address: PublicKeyHash.t,
-      ~token: PublicKeyHash.t,
-      ~kind: TokenRepr.kind,
+      ~addresses: list(PublicKeyHash.t),
+      ~selectedToken: option((PublicKeyHash.t, TokenRepr.kind)),
     ) => {
-  let get = (~config: ConfigContext.env, (address, token, kind)) =>
-    switch (kind) {
-    | TokenRepr.FA1_2 =>
-      config.network->NodeAPI.Tokens.runFA12GetBalance(~address, ~token)
-    | FA2(tokenId) =>
-      config.network->NodeAPI.Tokens.callFA2BalanceOf(address, token, tokenId)
+  let get = (~config: ConfigContext.env, (addresses, selectedToken)) =>
+    switch (selectedToken) {
+    | Some((token, kind)) =>
+      let setup = (token, kind) => {
+        config.network
+        ->ServerAPI.Explorer.getTokenBalances(
+            ~addresses,
+            ~contract=token,
+            ~id=kind,
+          )
+        ->Promise.mapOk(
+            balancesfromArray(
+              ~contract=token,
+              ~id=kind,
+              ~tokenMap=requestState,
+            ),
+          );
+      };
+      switch (kind) {
+      | TokenRepr.FA1_2 => setup(token, None)
+      | FA2(tokenId) => setup(token, Some(tokenId))
+      };
+    | None => Promise.ok(TokenRepr.Map.empty)
     };
 
   ApiRequest.useLoader(
     ~get,
+    ~condition=_ => !addresses->Js.List.isEmpty && selectedToken != None,
     ~kind=Logs.Tokens,
     ~requestState,
-    (address, token, kind),
+    (addresses, selectedToken),
   );
 };
 

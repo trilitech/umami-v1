@@ -38,8 +38,7 @@ module Base = {
   module BalanceToken = {
     [@react.component]
     let make = (~token: Token.t, ~mapWithLoading) => {
-      let balanceTokenTotal =
-        StoreContext.BalanceToken.useGetTotal(token.address, token.kind);
+      let balanceTokenTotal = StoreContext.BalanceToken.useGetTotal();
 
       balanceTokenTotal->mapWithLoading(
         fun
@@ -142,7 +141,7 @@ module WithTokenSelector = {
                   setSelectedToken={t =>
                     updateToken(
                       t->Option.map(t =>
-                        (t.TokenRepr.address, t->TokenRepr.id)
+                        (t.TokenRepr.address, t.TokenRepr.kind)
                       ),
                     )
                   }

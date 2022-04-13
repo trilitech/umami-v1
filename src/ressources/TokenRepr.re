@@ -131,6 +131,11 @@ let kindId =
   | FA1_2 => 0
   | FA2(n) => n;
 
+// let idKind =
+//   fun
+//   | 0 => FA1_2
+//   | n => FA2(n);
+
 let id = ({kind}) => kind->kindId;
 
 let toFlatJson = t => {
@@ -161,3 +166,24 @@ let isFa2 = t =>
   | FA1_2 => false
   | FA2(_) => true
   };
+
+let decoder = json =>
+  json
+  |> Json.Decode.string
+  |> ReBigNumber.fromString
+  |> Unit.fromBigNumber
+  |> (
+    fun
+    | Ok(v) => v
+    | Error(e) => raise(Json.Decode.DecodeError(Errors.toString(e)))
+  );
+
+type token = (PublicKeyHash.t, option(int));
+
+module Comparator =
+  Belt.Id.MakeComparable({
+    type t = (PublicKeyHash.t, token);
+    let cmp = compare;
+  });
+
+module Map = Map.Make(Comparator);

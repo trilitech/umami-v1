@@ -53,6 +53,15 @@ module URL: {
 
     let balances: (Network.t, ~addresses: list(PublicKeyHash.t)) => t;
 
+    let tokenBalances:
+      (
+        Network.t,
+        ~addresses: list(PublicKeyHash.t),
+        ~contract: PublicKeyHash.t,
+        ~id: option(int)
+      ) =>
+      t;
+
     let tokenRegistry:
       (
         Network.t,
@@ -146,9 +155,17 @@ module type Explorer = {
 
   let getBalances:
     (Network.t, ~addresses: list(PublicKeyHash.t)) =>
-    Promise.t(array((Umami.PublicKeyHash.t, Umami.Tez.t)));
-};
+    Promise.t(array((PublicKeyHash.t, Tez.t)));
 
+  let getTokenBalances:
+    (
+      Network.t,
+      ~addresses: list(PublicKeyHash.t),
+      ~contract: PublicKeyHash.t,
+      ~id: option(int)
+    ) =>
+    Promise.t(array((PublicKeyHash.t, TokenRepr.Unit.t)));
+};
 /** This generic version exists only for tests purpose */
 module ExplorerMaker:
   (Get: {let get: URL.t => Promise.t(Js.Json.t);}) => Explorer;
