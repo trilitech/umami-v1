@@ -61,7 +61,7 @@ module CheckButton = {
   let make = (~disabled=?, ~style=?, ~checkForUpdates) => {
     <View style={Style.arrayOption([|Some(styles##max_content), style|])}>
       <ButtonAction
-        text=I18n.Label.check_for_updates
+        text=I18n.Btn.check_for_updates
         icon=Icons.Refresh.build
         ?disabled
         onPress={_ => checkForUpdates()}
@@ -291,7 +291,7 @@ let make = () => {
     writeConf(c => {...c, autoUpdates});
   };
   <>
-    <Block title="App update">
+    <Block title=I18n.Settings.app_update>
       <View style={Style.style(~width="100%", ())}>
         <View style={Style.style(~textAlign=`center, ())}>
           {switch (step) {
