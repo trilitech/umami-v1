@@ -45,13 +45,13 @@
 - [ ] Review from Business
 <!-- tick the corresponding checkbox [x], you may also add your @user handle at the end of the line -->
 
-@picdc (cc: @remyzorg )    Please *review* this _emergency change_ on development aspects
+@remyzorg (cc: TBD )    Please *review* this _emergency change_ on development aspects
 
 @comeh (cc: @philippewang.info) Please *review* this _emergency change_ on operations aspects
 
 @SamREye                   Please *review* this _emergency change_ on business aspects
 
-<!-- /assign @picdc @comeh @SamREye -->
+<!-- /assign @remyzorg @comeh @SamREye -->
 
 <!-- Quick actions for last reviewer : -->
 <!-- /unlabel ~"CAB::to-review" -->
