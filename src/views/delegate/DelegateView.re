@@ -25,7 +25,6 @@
 
 open ReactNative;
 open Delegate;
-open Let;
 
 let styles =
   Style.(
@@ -221,8 +220,10 @@ let make = (~closeAction, ~action) => {
   let form =
     Form.build(action, ((op: Protocol.batch, d: Protocol.Delegation.t)) => {
       Promise.async(() => {
-        let%AwaitMap dryRun = sendOperationSimulate(op);
-        setModalStep(_ => PasswordStep(d, op, dryRun));
+        sendOperationSimulate(op)
+        ->Promise.mapOk(dryRun =>
+            setModalStep(_ => PasswordStep(d, op, dryRun))
+          )
       })
     });
 

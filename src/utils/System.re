@@ -23,8 +23,6 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open Let;
-
 %raw
 "
 var electron = require('electron');
@@ -290,15 +288,16 @@ module File = {
     rm(~name=!(Path.toString(name) ++ ".tmp"));
   };
 
-  let protect = (~name, ~transaction) => {
-    let%Await _ = name->mkTmpCopy;
-    let%Ft r = transaction();
-
-    switch (r) {
-    | Ok () => name->rmTmpCopy
-    | Error(e) => name->restoreTmpCopy->Promise.map(_ => Error(e))
-    };
-  };
+  let protect = (~name, ~transaction) =>
+    name
+    ->mkTmpCopy
+    ->Promise.flatMapOk(_ => transaction()->Promise.map(v => Ok(v)))
+    ->Promise.flatMapOk(r =>
+        switch (r) {
+        | Ok () => name->rmTmpCopy
+        | Error(e) => name->restoreTmpCopy->Promise.map(_ => Error(e))
+        }
+      );
 };
 
 module Client = {

@@ -23,7 +23,6 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open Let;
 open CSVParser;
 
 type Errors.t +=
@@ -113,27 +112,27 @@ let checkTokenId = (tokenId, (token: TokenRepr.t, registered)) =>
 
 let handleTokenRow =
     (tokens, index, destination, amount, token: PublicKeyHash.t, tokenId) => {
-  let%Res token =
-    tokens
-    ->TokensLibrary.WithRegistration.getFullToken(
-        token,
-        tokenId->Option.map(ReBigNumber.toInt)->Option.getWithDefault(0),
-      )
-    ->Option.mapWithDefault(
-        Error(UnknownToken(token, tokenId->Option.map(ReBigNumber.toInt))),
-        checkTokenId(tokenId),
-      );
-
-  amount
-  ->Token.Unit.fromFloatBigNumber(token.decimals)
-  ->Result.mapError(_ => CannotParseTokenAmount(amount, index, 2))
-  ->Result.map(amount =>
-      ProtocolHelper.Transfer.makeSimpleToken(
-        ~destination,
-        ~amount,
-        ~token,
-        (),
-      )
+  tokens
+  ->TokensLibrary.WithRegistration.getFullToken(
+      token,
+      tokenId->Option.map(ReBigNumber.toInt)->Option.getWithDefault(0),
+    )
+  ->Option.mapWithDefault(
+      Error(UnknownToken(token, tokenId->Option.map(ReBigNumber.toInt))),
+      checkTokenId(tokenId),
+    )
+  ->Result.flatMap(token =>
+      amount
+      ->Token.Unit.fromFloatBigNumber(token.decimals)
+      ->Result.mapError(_ => CannotParseTokenAmount(amount, index, 2))
+      ->Result.map(amount =>
+          ProtocolHelper.Transfer.makeSimpleToken(
+            ~destination,
+            ~amount,
+            ~token,
+            (),
+          )
+        )
     );
 };
 

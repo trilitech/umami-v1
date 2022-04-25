@@ -24,7 +24,6 @@
 /*****************************************************************************/
 
 open ReactNative;
-open Let;
 
 type state =
   | WaitForConfirm
@@ -258,12 +257,13 @@ let make =
   let signCustomAuth = infos =>
     Promise.async(() => {
       setState(_ => Some(WaitForConfirm));
-      let%AwaitMap signer =
-        ReCustomAuthSigner.create(infos)
-        ->Promise.tapError(e => {setState(_ => Some(Error(e)))});
 
-      setCustomAuthSigner(_ => Some(signer));
-      setState(_ => Some(Confirmed));
+      ReCustomAuthSigner.create(infos)
+      ->Promise.tapError(e => {setState(_ => Some(Error(e)))})
+      ->Promise.mapOk(signer => {
+          setCustomAuthSigner(_ => Some(signer));
+          setState(_ => Some(Confirmed));
+        });
     });
 
   let onSubmit = () =>

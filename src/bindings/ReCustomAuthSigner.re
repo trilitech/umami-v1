@@ -47,51 +47,67 @@ let () =
 
 open ReCustomAuth;
 
-open Let;
 type publicKey = string;
 
 type t = ReTaquitoSigner.t;
 let toSigner = x => x;
 
 let create = (~accountHandle=?, provider) => {
-  let%Await () = torusSdk->init(initParams(~skipSw=true, ()));
-
-  let%Await res = torusSdk->triggerAggregateLogin(~accountHandle?, provider);
-
-  let sk =
-    ReTaquitoUtils.b58cencode(
-      (res.privateKey :> string),
-      ReTaquitoUtils.prefix.spsk,
-    );
-  let%AwaitRes signer =
-    ReTaquitoSigner.MemorySigner.create(~secretKey=sk, ());
-  let%ResMap info = res.userInfo->findInfo(provider);
-
-  (signer, info);
+  torusSdk
+  ->init(initParams(~skipSw=true, ()))
+  ->Promise.flatMapOk(() =>
+      torusSdk->triggerAggregateLogin(~accountHandle?, provider)
+    )
+  ->Promise.flatMapOk(res => {
+      let sk =
+        ReTaquitoUtils.b58cencode(
+          (res.privateKey :> string),
+          ReTaquitoUtils.prefix.spsk,
+        );
+      ReTaquitoSigner.MemorySigner.create(~secretKey=sk, ())
+      ->Promise.flatMapOk(signer =>
+          res.userInfo
+          ->findInfo(provider)
+          ->Result.map(info => (signer, info))
+          ->Promise.value
+        );
+    });
 };
 
 let getInfos = provider => {
-  let%Await (signer, userInfo) = create(provider);
-  let%Await pkh = signer->ReTaquitoSigner.publicKeyHash;
-  let%AwaitRes pk = signer->ReTaquitoSigner.publicKey;
-  let%ResMap handle =
-    ReCustomAuth.Handle.resolve(~email=userInfo.email, ~name=userInfo.name);
-  (pkh, pk, {handle, provider});
+  create(provider)
+  ->Promise.flatMapOk(((signer, userInfo)) => {
+      let pkh = signer->ReTaquitoSigner.publicKeyHash;
+      let pk = signer->ReTaquitoSigner.publicKey;
+
+      Promise.flatMapOk2(pkh, pk, (pkh, pk) =>
+        ReCustomAuth.Handle.resolve(
+          ~email=userInfo.email,
+          ~name=userInfo.name,
+        )
+        ->Result.map(handle => (pkh, pk, {handle, provider}))
+        ->Promise.value
+      );
+    });
 };
 
 let create = infos => {
-  let%AwaitRes (signer, signingInfos) =
-    create(~accountHandle=infos.handle, infos.provider);
-
-  let%Res signingHandle =
-    ReCustomAuth.Handle.resolve(
-      ~email=signingInfos.email,
-      ~name=signingInfos.name,
-    );
-
-  infos.handle != signingHandle
-    ? Error(
-        HandleMismatch((infos.handle :> string), (signingHandle :> string)),
+  create(~accountHandle=infos.handle, infos.provider)
+  ->Promise.flatMapOk(((signer, signingInfos)) => {
+      ReCustomAuth.Handle.resolve(
+        ~email=signingInfos.email,
+        ~name=signingInfos.name,
       )
-    : Ok(signer);
+      ->Result.flatMap(signingHandle =>
+          infos.handle != signingHandle
+            ? Error(
+                HandleMismatch(
+                  (infos.handle :> string),
+                  (signingHandle :> string),
+                ),
+              )
+            : Ok(signer)
+        )
+      ->Promise.value
+    });
 };

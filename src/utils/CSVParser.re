@@ -23,7 +23,7 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open Let;
+open Promise;
 
 module Encodings = {
   type Errors.t +=
@@ -240,25 +240,27 @@ let rec parseRowRec:
 
       /* Parse a couple of two sub rows, and returns a couple */
       | Tup2(r1, r2) =>
-        let%Res (v1, l1) = parseRowRec(values, r1, row, col);
-        let%ResMap (v2, l2) = parseRowRec(values, r2, row, col + l1);
-        ((v1, v2), l1 + l2);
+        let r1 = parseRowRec(values, r1, row, col);
+        let r2 =
+          r1->Result.flatMap(((_, l1)) =>
+            parseRowRec(values, r2, row, col + l1)
+          );
+        Result.flatMap2(r1, r2, ((v1, l1), (v2, l2)) =>
+          ((v1, v2), l1 + l2)->Ok
+        );
 
       /* These last three simply reuse Tup2 parsing and return a tuple of the correct type */
       | Tup3(r1, r2, r3) =>
-        let%ResMap ((a, (b, c)), l) =
-          parseRowRec(values, Tup2(r1, Tup2(r2, r3)), row, col);
-        ((a, b, c), l);
+        parseRowRec(values, Tup2(r1, Tup2(r2, r3)), row, col)
+        ->Result.map((((a, (b, c)), l)) => ((a, b, c), l))
 
       | Tup4(r1, r2, r3, r4) =>
-        let%ResMap ((a, (b, c, d)), l) =
-          parseRowRec(values, Tup2(r1, Tup3(r2, r3, r4)), row, col);
-        ((a, b, c, d), l);
+        parseRowRec(values, Tup2(r1, Tup3(r2, r3, r4)), row, col)
+        ->Result.map((((a, (b, c, d)), l)) => ((a, b, c, d), l))
 
       | Tup5(r1, r2, r3, r4, r5) =>
-        let%ResMap ((a, (b, c, d, e)), l) =
-          parseRowRec(values, Tup2(r1, Tup4(r2, r3, r4, r5)), row, col);
-        ((a, b, c, d, e), l);
+        parseRowRec(values, Tup2(r1, Tup4(r2, r3, r4, r5)), row, col)
+        ->Result.map((((a, (b, c, d, e)), l)) => ((a, b, c, d, e), l))
 
       | Or(left, right) => parseOr(values, left, right, row, col)
       }
@@ -272,8 +274,8 @@ and parseOr:
     switch (parseRowRec(values, enc1, row, col)) {
     | Ok((v, l)) => Ok((`Left(v), l))
     | Error(_) =>
-      let%ResMap (v, l) = parseRowRec(values, enc2, row, col);
-      (`Right(v), l);
+      parseRowRec(values, enc2, row, col)
+      ->Result.map(((v, l)) => (`Right(v), l))
     };
 
 let removeComments = line => {
@@ -283,11 +285,10 @@ let removeComments = line => {
 };
 
 let parseRow = (~row=0, value, encoding) => {
-  let%ResMap (v, _) =
-    Js.String.split(",", value)
-    ->Array.map(Js.String.trim)
-    ->parseRowRec(encoding, row, 0);
-  v;
+  Js.String.split(",", value)
+  ->Array.map(Js.String.trim)
+  ->parseRowRec(encoding, row, 0)
+  ->Result.map(fst);
 };
 
 let parseRows = (rows, encoding) =>

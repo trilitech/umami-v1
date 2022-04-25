@@ -23,8 +23,6 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open Let;
-
 type reactState('state) = ('state, ('state => 'state) => unit);
 
 type error = Errors.t;
@@ -197,17 +195,21 @@ let make = (~children) => {
 
   ReactUtils.useAsyncEffect1(
     () => {
-      let%AwaitMap (v: Network.apiVersion, _) =
-        Network.checkConfiguration(
-          config.network.explorer,
-          config.network.endpoint,
-        );
-      setApiVersion(_ => Some(v));
-      if (!Network.checkInBound(v.api)) {
-        addToast(
-          Logs.error(~origin=Settings, Network.API(NotSupported(v.api))),
-        );
-      };
+      Network.checkConfiguration(
+        config.network.explorer,
+        config.network.endpoint,
+      )
+      ->Promise.mapOk(((v: Network.apiVersion, _)) => {
+          setApiVersion(_ => Some(v));
+          if (!Network.checkInBound(v.api)) {
+            addToast(
+              Logs.error(
+                ~origin=Settings,
+                Network.API(NotSupported(v.api)),
+              ),
+            );
+          };
+        })
     },
     [|network|],
   );
