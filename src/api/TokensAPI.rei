@@ -34,9 +34,9 @@ let metadataToToken:
   (Network.chainId, TokenContract.t, ReTaquitoTypes.Tzip12.metadata) =>
   TokenRepr.t;
 
-let registeredTokens: filter => Let.result(TokensLibrary.WithBalance.t);
+let registeredTokens: filter => Promise.result(TokensLibrary.WithBalance.t);
 
-let hiddenTokens: unit => Let.result(RegisteredTokens.t);
+let hiddenTokens: unit => Promise.result(RegisteredTokens.t);
 
 let addTokenToCache: (ConfigContext.env, Token.t) => Promise.t(unit);
 
@@ -47,13 +47,13 @@ let addNonFungibleToken:
   Promise.t(unit);
 
 let registerNFTs:
-  (TokensLibrary.WithBalance.t, PublicKeyHash.t) => Let.result(unit);
+  (TokensLibrary.WithBalance.t, PublicKeyHash.t) => Promise.result(unit);
 
 let updateNFTsVisibility:
   (PublicKeyHash.Map.map(Map.Int.t(unit)), ~hidden: bool) =>
-  Let.result(RegisteredTokens.t);
+  Promise.result(RegisteredTokens.t);
 
-let removeToken: (TokenRepr.t, ~pruneCache: bool) => Let.result(unit);
+let removeToken: (TokenRepr.t, ~pruneCache: bool) => Promise.result(unit);
 
 let cachedTokensWithRegistration:
   (ConfigContext.env, [ | `Any | `FT | `NFT]) =>

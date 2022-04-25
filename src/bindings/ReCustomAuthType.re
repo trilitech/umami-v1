@@ -81,7 +81,7 @@ let () =
     | _ => None,
   );
 
-let providerFromString: string => Let.result(handledProvider) =
+let providerFromString: string => Promise.result(handledProvider) =
   fun
   | "google" => `google->Ok
   | s => Error(InvalidProvider(s));
@@ -91,7 +91,7 @@ module Handle: {
   let fromString: string => t;
   let display: (t, handledProvider) => string;
 
-  let resolve: (~name: option(t), ~email: option(t)) => Let.result(t);
+  let resolve: (~name: option(t), ~email: option(t)) => Promise.result(t);
 } = {
   type t = string;
   let fromString = x => x;

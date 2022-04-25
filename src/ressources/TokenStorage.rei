@@ -26,7 +26,7 @@
 module Registered: {
   include LocalStorage.StorageType with type t = RegisteredTokens.t;
 
-  let getWithFallback: unit => Let.result(t);
+  let getWithFallback: unit => Promise.result(t);
 };
 
 /** The cache is a representation of the already fetched tokens from the chain */
@@ -34,7 +34,7 @@ module Cache: {
   // Cache in localStorage
   include LocalStorage.StorageType with type t = TokensLibrary.t;
 
-  let getWithFallback: unit => Let.result(t);
+  let getWithFallback: unit => Promise.result(t);
 };
 
 let mergeAccountNFTs:
@@ -44,18 +44,18 @@ let mergeAccountNFTs:
 module Legacy: {
   module V1_3: {
     let version: Version.t;
-    let mk: unit => Let.result(unit);
+    let mk: unit => Promise.result(unit);
   };
   module V1_4: {
     let version: Version.t;
-    let mk: unit => Let.result(unit);
+    let mk: unit => Promise.result(unit);
   };
   module V1_6: {
     let version: Version.t;
-    let mk: unit => Let.result(unit);
+    let mk: unit => Promise.result(unit);
   };
   module V1_7: {
     let version: Version.t;
-    let mk: unit => Let.result(unit);
+    let mk: unit => Promise.result(unit);
   };
 };

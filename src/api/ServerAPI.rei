@@ -100,12 +100,12 @@ module URL: {
         ~sortBy: [ | `Balance | `TokenId]=?,
         unit
       ) =>
-      Let.result(t);
+      Promise.result(t);
 
     // The request does not return the metadata for now
     let betterCallDevBatchAccounts:
       (~config: ConfigContext.env, ~accounts: array(PublicKeyHash.t)) =>
-      Let.result(t);
+      Promise.result(t);
 
     let tzktAccountTokens:
       (
@@ -118,10 +118,11 @@ module URL: {
         ~sortBy: [ | `Balance | `Contract | `Id]=?,
         unit
       ) =>
-      Let.result(t);
+      Promise.result(t);
 
     let tzktAccountTokensNumber:
-      (~config: ConfigContext.env, ~account: PublicKeyHash.t) => Let.result(t);
+      (~config: ConfigContext.env, ~account: PublicKeyHash.t) =>
+      Promise.result(t);
   };
 
   /* Fetch URL as a JSON. */

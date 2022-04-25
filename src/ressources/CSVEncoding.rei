@@ -55,7 +55,7 @@ type contractCall = (
 
 /* CSV row encoding */
 let rowEncoding:
-  Let.result(
+  Promise.result(
     CSVParser.Encodings.row(CSVParser.Encodings.or_(transfer, contractCall)),
   );
 
