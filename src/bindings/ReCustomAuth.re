@@ -25,8 +25,6 @@
 
 let flagOn = false;
 
-open Let;
-
 /* An auth provider redirects to a web page owned by the
    auth consumer (us/our api) to ensure only this consumer's
    users can use it's auth api key.
@@ -48,7 +46,7 @@ include ReCustomAuthType;
 external make: makeParams => t = "default";
 
 [@bs.send] external init: (t, initParams) => Js.Promise.t(unit) = "init";
-
+/*  */
 [@bs.send]
 external triggerAggregateLogin:
   (t, triggerAggregateLoginParams) => Js.Promise.t(aggregateLoginDetails) =
@@ -154,12 +152,17 @@ module Utils = {
     "getPublicAddress";
 
   let getPublicAddress = (~verifier, handle) => {
-    let%Await NodeDetails.{endpoints, nodePub} = NodeDetails.get();
-
-    let utils = make();
-    utils
-    ->getPublicAddress(endpoints, nodePub, {verifier, verifierId: handle})
-    ->RawJsError.fromPromiseParsed(parse);
+    NodeDetails.get()
+    ->Promise.flatMapOk((NodeDetails.{endpoints, nodePub}) => {
+        let utils = make();
+        utils
+        ->getPublicAddress(
+            endpoints,
+            nodePub,
+            {verifier, verifierId: handle},
+          )
+        ->RawJsError.fromPromiseParsed(parse);
+      });
   };
 };
 
@@ -193,7 +196,8 @@ let getPublicAddress = (~provider, handle) => {
     | `google => CustomAuthVerifiers.google
     };
 
-  let%AwaitRes {x, y} = Utils.getPublicAddress(~verifier, handle);
-  let%ResMap pkh = Crypto.spPointsToPkh(~x, ~y);
-  pkh;
+  Utils.getPublicAddress(~verifier, handle)
+  ->Promise.flatMapOk(({x, y}) => {
+      Crypto.spPointsToPkh(~x, ~y)->Promise.value
+    });
 };

@@ -23,8 +23,6 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open Let;
-
 open ReTaquitoTypes;
 open ReTaquitoContracts;
 open ReTaquito;
@@ -133,7 +131,8 @@ module Tzip12 = {
           ? res->Option.default(Token.defaultName(address, token_id))->Ok
           : onError(res, fieldName);
 
-      let%Res decimals = token_info->getInt("decimals", ~onError);
+      let decimals = token_info->getInt("decimals", ~onError);
+
       let description = token_info->getOptString("description");
       let minter = token_info->getOptPkh("minter");
       let creators = token_info->getOptArrayString("creators");
@@ -166,39 +165,42 @@ module Tzip12 = {
         || displayUri != None
         || isBooleanAmount != Some(true);
 
-      let%Res name =
-        token_info->getString("name", ~onError=onNameError(isNFT));
-      let%ResMap symbol =
+      let name = token_info->getString("name", ~onError=onNameError(isNFT));
+      let symbol =
         token_info->getString("symbol", ~onError=onSymbolError(isNFT));
 
-      {
-        token_id,
-        name,
-        decimals,
-        symbol,
-        description,
-        minter,
-        creators,
-        contributors,
-        publishers,
-        date,
-        blocklevel,
-        type_,
-        tags,
-        genres,
-        language,
-        identifier,
-        rights,
-        rightUri,
-        artifactUri,
-        displayUri,
-        thumbnailUri,
-        isTransferable,
-        isBooleanAmount,
-        shouldPreferSymbol,
-        formats,
-        attributes,
-      };
+      Result.flatMap2(name, symbol, (name, symbol) =>
+        decimals->Result.map(decimals =>
+          {
+            token_id,
+            name,
+            decimals,
+            symbol,
+            description,
+            minter,
+            creators,
+            contributors,
+            publishers,
+            date,
+            blocklevel,
+            type_,
+            tags,
+            genres,
+            language,
+            identifier,
+            rights,
+            rightUri,
+            artifactUri,
+            displayUri,
+            thumbnailUri,
+            isTransferable,
+            isBooleanAmount,
+            shouldPreferSymbol,
+            formats,
+            attributes,
+          }
+        )
+      );
     };
 
     /* Parse a value of the `token_metadata` big map */
@@ -206,14 +208,17 @@ module Tzip12 = {
       let illformed = (res, fieldName) =>
         res->Result.fromOption(IllformedToken(address, tokenId, fieldName));
 
-      let%Res token_id =
+      let token_id =
         token.Tzip12Storage.token_id
         ->Option.map(ReBigNumber.toInt)
         ->illformed("token_id");
 
-      let%Res token_info =
+      let token_info =
         token.Tzip12Storage.token_info->illformed("token_info");
-      parseTokenInfo(address, token_id, token_info);
+
+      Result.flatMap2(token_id, token_info, (token_id, token_info) =>
+        parseTokenInfo(address, token_id, token_info)
+      );
     };
 
     /* A token_metadata value is illformed if its components are not annotated,
@@ -236,22 +241,26 @@ module Tzip12 = {
         (address, tokenId, metadataMap: Tzip12Storage.Tokens.t(_)) => {
       let key = tokenId->Int64.of_int->BigNumber.fromInt64;
 
-      let%Await metadata =
-        metadataMap.get(. key)->ReTaquitoError.fromPromiseParsed;
+      let metadata = metadataMap.get(. key)->ReTaquitoError.fromPromiseParsed;
 
-      let isIllformed = metadata->Option.mapWithDefault(false, isIllformed);
+      let metadata =
+        metadata->Promise.flatMapOk(metadata => {
+          let isIllformed =
+            metadata->Option.mapWithDefault(false, isIllformed);
 
-      let%Await metadata =
-        isIllformed
-          ? metadataMap
-            ->Tzip12Storage.Tokens.getUnannotated(key)
-            ->ReTaquitoError.fromPromiseParsed
-            ->Promise.mapOk(m => m->Option.map(fromUnannotated))
-          : Promise.ok(metadata);
+          isIllformed
+            ? metadataMap
+              ->Tzip12Storage.Tokens.getUnannotated(key)
+              ->ReTaquitoError.fromPromiseParsed
+              ->Promise.mapOk(m => m->Option.map(fromUnannotated))
+            : Promise.ok(metadata);
+        });
 
-      metadata
-      ->Result.fromOption(TokenIdNotFound(address, tokenId))
-      ->Promise.value;
+      metadata->Promise.flatMapOk(metadata =>
+        metadata
+        ->Result.fromOption(TokenIdNotFound(address, tokenId))
+        ->Promise.value
+      );
     };
 
     /* Retrieve a token from the storage */
@@ -261,20 +270,26 @@ module Tzip12 = {
         ->Result.fromOption(NoTzip12Metadata(address))
         ->Promise.value;
 
-      let%Ft metadataMap = getTokenMetadata(storage);
+      let metadataMap = getTokenMetadata(storage);
 
-      let%Await metadataMap =
-        switch (metadataMap) {
-        | Ok(m) => Promise.ok(m)
-        | Error(e) =>
-          storage.assets
-          ->Option.mapWithDefault(Promise.err(e), getTokenMetadata)
-        };
+      let metadataMap =
+        Promise.flatMap(metadataMap, metadataMap =>
+          switch (metadataMap) {
+          | Ok(m) => Promise.ok(m)
+          | Error(e) =>
+            storage.assets
+            ->Option.mapWithDefault(Promise.err(e), getTokenMetadata)
+          }
+        );
 
-      let%Await metadata =
-        elaborateFromTokenMetadata(address, tokenId, metadataMap);
+      let metadata =
+        metadataMap->Promise.flatMapOk(metadataMap =>
+          elaborateFromTokenMetadata(address, tokenId, metadataMap)
+        );
 
-      parseMetadata(address, tokenId, metadata)->Promise.value;
+      metadata->Promise.flatMapOk(metadata =>
+        parseMetadata(address, tokenId, metadata)->Promise.value
+      );
     };
   };
 
@@ -288,12 +303,14 @@ module Tzip12 = {
   };
 
   let readFromStorage = (contract, tokenId) => {
-    let%Await storage = Storage.read(contract);
-    Storage.getToken(contract##address, storage, tokenId);
+    Storage.read(contract)
+    ->Promise.flatMapOk(storage =>
+        Storage.getToken(contract##address, storage, tokenId)
+      );
   };
 
   let read = (contract, tokenId) => {
-    let%Ft metadata =
+    let metadata =
       contract##tzip12().getTokenMetadata(. tokenId)
       ->ReTaquitoError.fromPromiseParsed
       ->Promise.mapError(
@@ -304,11 +321,13 @@ module Tzip12 = {
             NoTzip12Metadata(contract##address)
           | e => e,
         );
-    switch (metadata) {
-    | Error(NoTzip12Metadata(_) | TokenIdNotFound(_)) =>
-      readFromStorage(contract, tokenId)
-    | r => Promise.value(r)
-    };
+
+    metadata->Promise.flatMap(
+      fun
+      | Error(NoTzip12Metadata(_) | TokenIdNotFound(_)) =>
+        readFromStorage(contract, tokenId)
+      | r => Promise.value(r),
+    );
   };
 
   let readContractMetadata = (contract: Tzip12Tzip16Contract.t) => {

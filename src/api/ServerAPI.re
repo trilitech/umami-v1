@@ -23,8 +23,6 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open Let;
-
 module Path = {
   module Endpoint = {
     let runView = "/chains/main/blocks/head/helpers/scripts/run_view";
@@ -79,16 +77,16 @@ module URL = {
         (),
       );
 
-    let%Await response =
-      url
-      ->Fetch.fetchWithInit(init)
-      ->Promise.fromJs(e =>
-          e->RawJsError.fromPromiseError.message->FetchError
-        );
-
-    response
-    ->Fetch.Response.json
-    ->Promise.fromJs(e => e->RawJsError.fromPromiseError.message->FetchError);
+    url
+    ->Fetch.fetchWithInit(init)
+    ->Promise.fromJs(e => e->RawJsError.fromPromiseError.message->FetchError)
+    ->Promise.flatMapOk(response =>
+        response
+        ->Fetch.Response.json
+        ->Promise.fromJs(e =>
+            e->RawJsError.fromPromiseError.message->FetchError
+          )
+      );
   };
 
   let postJson = (url, json) => {
@@ -100,16 +98,16 @@ module URL = {
         (),
       );
 
-    let%Await response =
-      url
-      ->Fetch.fetchWithInit(init)
-      ->Promise.fromJs(e =>
-          e->RawJsError.fromPromiseError.message->FetchError
-        );
-
-    response
-    ->Fetch.Response.json
-    ->Promise.fromJs(e => e->RawJsError.fromPromiseError.message->FetchError);
+    url
+    ->Fetch.fetchWithInit(init)
+    ->Promise.fromJs(e => e->RawJsError.fromPromiseError.message->FetchError)
+    ->Promise.flatMapOk(response =>
+        response
+        ->Fetch.Response.json
+        ->Promise.fromJs(e =>
+            e->RawJsError.fromPromiseError.message->FetchError
+          )
+      );
   };
 
   module Explorer = {
@@ -447,30 +445,33 @@ module ExplorerMaker = (Get: {let get: string => Promise.t(Js.Json.t);}) => {
         ~limit: option(int)=?,
         (),
       ) => {
-    let%Await res =
-      network
-      ->URL.Explorer.operations(account, ~types?, ~destination?, ~limit?, ())
-      ->Get.get;
-
-    let%AwaitMap operations =
-      res
-      ->Result.fromExn(Json.Decode.(array(Operation.Decode.t)))
-      ->Result.mapError(e => e->JsonEx.filterJsonExn->JsonError)
-      ->Promise.value;
-    operations->filterMalformedDuplicates;
+    network
+    ->URL.Explorer.operations(account, ~types?, ~destination?, ~limit?, ())
+    ->Get.get
+    ->Promise.flatMapOk(res => {
+        res
+        ->Result.fromExn(Json.Decode.(array(Operation.Decode.t)))
+        ->Result.mapError(e => e->JsonEx.filterJsonExn->JsonError)
+        ->Promise.value
+      })
+    ->Promise.mapOk(filterMalformedDuplicates);
   };
 
   let getBalances = (network, ~addresses: list(PublicKeyHash.t)) => {
-    let%Await res = network->URL.Explorer.balances(~addresses)->Get.get;
-    let decoder = json =>
-      Json.Decode.(
-        json |> field("pkh", PublicKeyHash.decoder),
-        json |> field("balance", Tez.decoder),
-      );
-    res
-    ->Result.fromExn(Json.Decode.(array(decoder)))
-    ->Result.mapError(e => e->JsonEx.filterJsonExn->JsonError)
-    ->Promise.value;
+    network
+    ->URL.Explorer.balances(~addresses)
+    ->Get.get
+    ->Promise.flatMapOk(res => {
+        let decoder = json =>
+          Json.Decode.(
+            json |> field("pkh", PublicKeyHash.decoder),
+            json |> field("balance", Tez.decoder),
+          );
+        res
+        ->Result.fromExn(Json.Decode.(array(decoder)))
+        ->Result.mapError(e => e->JsonEx.filterJsonExn->JsonError)
+        ->Promise.value;
+      });
   };
 };
 
