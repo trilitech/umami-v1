@@ -23,7 +23,7 @@ default:
     - NPM_PACKAGE_VERSION=$(node -p "require('./package.json').version")
     - apt update
     - apt -y install build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev libusb-1.0.0-dev libudev-dev
-    - yarn --ignore-scripts
+    - yarn
 
 
 build-reason:
