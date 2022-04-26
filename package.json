@@ -11,7 +11,7 @@
   "main": "electron-starter.js",
   "private": true,
   "dependencies": {
-    "@airgap/beacon-sdk": "2.3.7",
+    "@airgap/beacon-sdk": "^3.0.0",
     "@glennsl/bs-json": "^5.0.2",
     "@gorhom/portal": "1.0.4",
     "@ledgerhq/hw-transport-node-hid-singleton": "6.1.0",
