@@ -7,18 +7,114 @@
   resolved "https://registry.yarnpkg.com/7zip-bin/-/7zip-bin-5.1.1.tgz#9274ec7460652f9c632c59addf24efb1684ef876"
   integrity sha512-sAP4LldeWNz0lNzmTird3uWfFDWWTeg6V/MsmyyLR9X1idwKBWIgt/ZvinqQldJm3LecKEs1emkbquO6PCiLVQ==
 
-"@airgap/beacon-sdk@2.3.7":
-  version "2.3.7"
-  resolved "https://registry.yarnpkg.com/@airgap/beacon-sdk/-/beacon-sdk-2.3.7.tgz#c71dae05d88c3dac9316317f53aedd4585aec0ef"
-  integrity sha512-IcUaXvX3FNEeJOC2TzPcy7w0Zxia7a5QCvNObjeUnOlctVKna0wFb8rJq94QznBD/YHYlgyqpyZ5bqDnhDiALA==
+"@airgap/beacon-blockchain-substrate@^3.0.0":
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/@airgap/beacon-blockchain-substrate/-/beacon-blockchain-substrate-3.0.0.tgz#13f744ebb9742dd19d3251a33a264e584f298ed9"
+  integrity sha512-2JmivUAhNTfu8CNJ+sTkQ2cMQNwvkZFuCo1a4B0Ij+pOjBZl186TA4VuQEbAQqf1p3JVZqXTljHQVH3rugrJxQ==
   dependencies:
-    "@types/chrome" "0.0.115"
-    "@types/libsodium-wrappers" "0.7.7"
-    axios "0.21.1"
-    bignumber.js "9.0.0"
+    "@airgap/beacon-types" "^3.0.0"
+    "@airgap/beacon-ui" "^3.0.0"
+
+"@airgap/beacon-blockchain-tezos@^3.0.0":
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/@airgap/beacon-blockchain-tezos/-/beacon-blockchain-tezos-3.0.0.tgz#3e527c267392b296b282e3868602467a551bd028"
+  integrity sha512-gN4mku2zaSOUSzbrwSkYbuChGzfvBJoXHPd0FSJOGZvH1Em4WNC37TJPZX0WnPjblYE3fZW9XHaVADLqnPm3fw==
+  dependencies:
+    "@airgap/beacon-types" "^3.0.0"
+    "@airgap/beacon-ui" "^3.0.0"
+
+"@airgap/beacon-core@^3.0.0":
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/@airgap/beacon-core/-/beacon-core-3.0.0.tgz#3f1558769ad356af1d060f4043c4433142255087"
+  integrity sha512-zC79n3yzXWlGPkPq1DKPWLV/gZnLB6oeE+NToftgIB+4Grn5+ojliOfIL4WnYus8uQrYuhp7wOyri9HCnwco0A==
+  dependencies:
+    "@airgap/beacon-types" "^3.0.0"
+    "@airgap/beacon-utils" "^3.0.0"
+    "@types/libsodium-wrappers" "0.7.9"
     bs58check "2.1.2"
-    libsodium-wrappers "0.7.8"
+    libsodium-wrappers "0.7.9"
+
+"@airgap/beacon-dapp@^3.0.0":
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/@airgap/beacon-dapp/-/beacon-dapp-3.0.0.tgz#cc2ec629827d8f60dd534b0646203172d0bce1aa"
+  integrity sha512-WVZIfOWwZPhFu9/0G2u3dHEemt5flTIW8HFiVU3lMFN4KTMNFnJCbPikpVpUdDvS8nAjH5XF8fo7ddNOmvTk5w==
+  dependencies:
+    "@airgap/beacon-core" "^3.0.0"
+    "@airgap/beacon-transport-matrix" "^3.0.0"
+    "@airgap/beacon-transport-postmessage" "^3.0.0"
+    "@airgap/beacon-ui" "^3.0.0"
     qrcode-generator "1.4.4"
+
+"@airgap/beacon-sdk@^3.0.0":
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/@airgap/beacon-sdk/-/beacon-sdk-3.0.0.tgz#c634b9d110c8a0d14f6560e76bd5fdcd165bade2"
+  integrity sha512-CQikVtT0l7Zg5SDfcJjGqb5tn+fpG+sZ1YaZWvFwcpZBV2aPBwOTVS/QBedRI3gsHEcSM4mho+QfDGLgrRiCjA==
+  dependencies:
+    "@airgap/beacon-blockchain-substrate" "^3.0.0"
+    "@airgap/beacon-blockchain-tezos" "^3.0.0"
+    "@airgap/beacon-core" "^3.0.0"
+    "@airgap/beacon-dapp" "^3.0.0"
+    "@airgap/beacon-transport-matrix" "^3.0.0"
+    "@airgap/beacon-transport-postmessage" "^3.0.0"
+    "@airgap/beacon-types" "^3.0.0"
+    "@airgap/beacon-ui" "^3.0.0"
+    "@airgap/beacon-utils" "^3.0.0"
+    "@airgap/beacon-wallet" "^3.0.0"
+
+"@airgap/beacon-transport-matrix@^3.0.0":
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/@airgap/beacon-transport-matrix/-/beacon-transport-matrix-3.0.0.tgz#3a194a4dc5c79387a4d8b86d3408348f88e8c257"
+  integrity sha512-oGOmD7SPlA/u3jYGOpon7oyVugTH9wt/N4BNsZJNMEIPwMYqAIG08iAEeIe9rNcDzjueoSAUQZBGnX3ee9uwgw==
+  dependencies:
+    "@airgap/beacon-core" "^3.0.0"
+    "@airgap/beacon-utils" "^3.0.0"
+    axios "0.24.0"
+
+"@airgap/beacon-transport-postmessage@^3.0.0":
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/@airgap/beacon-transport-postmessage/-/beacon-transport-postmessage-3.0.0.tgz#ecece4726cfd04948821d81df1a1e8277efb8dec"
+  integrity sha512-sF698z1fUL15Qks4k0Z/LLJH/gqueOfQeQ8cWxNhvdqMcX7FlhVI1iYJroI2w6TtDH7XGBcWQwDwCUw58OZQbQ==
+  dependencies:
+    "@airgap/beacon-core" "^3.0.0"
+    "@airgap/beacon-types" "^3.0.0"
+    "@airgap/beacon-utils" "^3.0.0"
+    "@types/libsodium-wrappers" "0.7.9"
+    libsodium-wrappers "0.7.9"
+
+"@airgap/beacon-types@^3.0.0":
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/@airgap/beacon-types/-/beacon-types-3.0.0.tgz#e97af9577922652018cb0c83484c01dda5519c52"
+  integrity sha512-P81xglSWbotIZbftLFMNTOTtaOrzWKz9PCr45UC2lFTMGq5MsEVQho0ssIjytSp6M/hAHW/01hUNfKDdgooHhw==
+  dependencies:
+    "@types/chrome" "0.0.163"
+
+"@airgap/beacon-ui@^3.0.0":
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/@airgap/beacon-ui/-/beacon-ui-3.0.0.tgz#327e6bd699d6624da4206fbe093f0d88bbda0398"
+  integrity sha512-+uGJp5wWYteZtjLzo9vsIG6GNzZkyBnaU5o7ybtr0A3YbSlFBNbm2IpNIxJ5vtxwN6g3fK/yef1iPvXa1Ezwdg==
+  dependencies:
+    "@airgap/beacon-core" "^3.0.0"
+    "@airgap/beacon-transport-postmessage" "^3.0.0"
+    "@airgap/beacon-types" "^3.0.0"
+    "@airgap/beacon-utils" "^3.0.0"
+
+"@airgap/beacon-utils@^3.0.0":
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/@airgap/beacon-utils/-/beacon-utils-3.0.0.tgz#1ac5b0cabf3157e96cc593d6b7aee91c8e9ca665"
+  integrity sha512-hjynz2qufs6yTQXj870bRnhc3v2V0osnzjy4AfkbTXC2D96E34PQt9ao1eGK75vWThJv3uw1Yham2vpBiXyzzg==
+  dependencies:
+    "@types/libsodium-wrappers" "0.7.9"
+    bs58check "2.1.2"
+    libsodium-wrappers "0.7.9"
+
+"@airgap/beacon-wallet@^3.0.0":
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/@airgap/beacon-wallet/-/beacon-wallet-3.0.0.tgz#788a69da21aabf4afed61daeb38fc079f38694e0"
+  integrity sha512-lPrb1Mpid3wQFYbt8Cd2xuBjTIn+teqp1US/+bMhoHDHQnZs9NryB8WlbsWaFjRXbAULTYOkyGOIko4HDySLxg==
+  dependencies:
+    "@airgap/beacon-core" "^3.0.0"
+    "@airgap/beacon-transport-matrix" "^3.0.0"
+    "@airgap/beacon-transport-postmessage" "^3.0.0"
 
 "@babel/code-frame@^7.0.0", "@babel/code-frame@^7.10.4", "@babel/code-frame@^7.12.13", "@babel/code-frame@^7.16.7":
   version "7.16.7"
@@ -1914,10 +2010,10 @@
   dependencies:
     "@types/node" "*"
 
-"@types/chrome@0.0.115":
-  version "0.0.115"
-  resolved "https://registry.yarnpkg.com/@types/chrome/-/chrome-0.0.115.tgz#dde40ff715a76d8c8125b0fe35287b9fdbc9f3de"
-  integrity sha512-pNoYoYgGuI1/kiz53kjrXrKIjn2H8YWOI+vxVTOubX6arCHk/m/jInoyflKiP2qZHZf8+P+hh6d2y9tjaG4BPQ==
+"@types/chrome@0.0.163":
+  version "0.0.163"
+  resolved "https://registry.yarnpkg.com/@types/chrome/-/chrome-0.0.163.tgz#6ff2fc9e8a160ea0655f6c62b4c2210757c42aab"
+  integrity sha512-g+3E2tg/ukFsEgH+tB3a/b+J1VSvq/8gh2Jwih9eq+T3Idrz7ngj97u+/ya58Bfei2TQtPlRivj1FsCaSnukDA==
   dependencies:
     "@types/filesystem" "*"
     "@types/har-format" "*"
@@ -2026,10 +2122,10 @@
   resolved "https://registry.yarnpkg.com/@types/json-schema/-/json-schema-7.0.9.tgz#97edc9037ea0c38585320b28964dde3b39e4660d"
   integrity sha512-qcUXuemtEu+E5wZSJHNxUXeCZhAfXKQ41D+duX+VYPde7xyEVZci+/oXKJL13tnRs9lR2pr4fod59GT6/X1/yQ==
 
-"@types/libsodium-wrappers@0.7.7":
-  version "0.7.7"
-  resolved "https://registry.yarnpkg.com/@types/libsodium-wrappers/-/libsodium-wrappers-0.7.7.tgz#cdb25e85458612ec80f0157c3815fac187d0b6d2"
-  integrity sha512-Li91pVKcLvQJK3ZolwCPo85oxf2gKBCApgnesRxYg4OVYchLXcJB2eivX8S87vfQVv6ZRnyCO1lLDosZGJfpRg==
+"@types/libsodium-wrappers@0.7.9":
+  version "0.7.9"
+  resolved "https://registry.yarnpkg.com/@types/libsodium-wrappers/-/libsodium-wrappers-0.7.9.tgz#89c3ad2156d5143e64bce86cfeb0045a983aeccc"
+  integrity sha512-LisgKLlYQk19baQwjkBZZXdJL0KbeTpdEnrAfz5hQACbklCY0gVFnsKUyjfNWF1UQsCSjw93Sj5jSbiO8RPfdw==
 
 "@types/minimatch@*":
   version "3.0.5"
@@ -2704,12 +2800,12 @@ available-typed-arrays@^1.0.5:
   resolved "https://registry.yarnpkg.com/available-typed-arrays/-/available-typed-arrays-1.0.5.tgz#92f95616501069d07d10edb2fc37d3e1c65123b7"
   integrity sha512-DMD0KiN46eipeziST1LPP/STfDU0sufISXmjSgvVsoU2tqxctQeASejWcfNtxYKqETM1UxQ8sp2OrSBWpHY6sw==
 
-axios@0.21.1:
-  version "0.21.1"
-  resolved "https://registry.yarnpkg.com/axios/-/axios-0.21.1.tgz#22563481962f4d6bde9a76d516ef0e5d3c09b2b8"
-  integrity sha512-dKQiRHxGD9PPRIUNIWvZhPTPpl1rf/OxTYKsqKUDjBwYylTvV7SjSHJb9ratfyzM6wCdLCOYLzs73qpg5c4iGA==
+axios@0.24.0:
+  version "0.24.0"
+  resolved "https://registry.yarnpkg.com/axios/-/axios-0.24.0.tgz#804e6fa1e4b9c5288501dd9dff56a7a0940d20d6"
+  integrity sha512-Q6cWsys88HoPgAaFAVUb0WpPk0O8iTeisR9IMqy9G8AbO4NlpVknrnQS03zzF9PGAWgO3cgletO3VjV/P7VztA==
   dependencies:
-    follow-redirects "^1.10.0"
+    follow-redirects "^1.14.4"
 
 babel-jest@^26.6.3:
   version "26.6.3"
@@ -2865,11 +2961,6 @@ big.js@^5.2.2:
   version "5.2.2"
   resolved "https://registry.yarnpkg.com/big.js/-/big.js-5.2.2.tgz#65f0af382f578bcdc742bd9c281e9cb2d7768328"
   integrity sha512-vyL2OymJxmarO8gxMr0mhChsO9QGwhynfuu4+MHTAW6czfq9humCB7rKpUjDd9YUiDPU4mzpyupFSvOClAwbmQ==
-
-bignumber.js@9.0.0:
-  version "9.0.0"
-  resolved "https://registry.yarnpkg.com/bignumber.js/-/bignumber.js-9.0.0.tgz#805880f84a329b5eac6e7cb6f8274b6d82bdf075"
-  integrity sha512-t/OYhhJ2SD+YGBQcjY8GzzDHEk9f3nerxjtfa6tlMXfe7frs/WozhvCNoGvpM0P3bNf3Gq5ZRMlGr5f3r4/N8A==
 
 bignumber.js@^9.0.0, bignumber.js@^9.0.1:
   version "9.0.2"
@@ -5225,10 +5316,15 @@ flip-toolkit@7.0.13:
   dependencies:
     rematrix "0.2.2"
 
-follow-redirects@^1.0.0, follow-redirects@^1.10.0:
+follow-redirects@^1.0.0:
   version "1.14.7"
   resolved "https://registry.yarnpkg.com/follow-redirects/-/follow-redirects-1.14.7.tgz#2004c02eb9436eee9a21446a6477debf17e81685"
   integrity sha512-+hbxoLbFMbRKDwohX8GkTataGqO6Jb7jGwpAlwgy2bIz25XtRm7KEzJM76R1WiNT5SwZkX4Y75SwBolkpmE7iQ==
+
+follow-redirects@^1.14.4:
+  version "1.14.9"
+  resolved "https://registry.yarnpkg.com/follow-redirects/-/follow-redirects-1.14.9.tgz#dd4ea157de7bfaf9ea9b3fbd85aa16951f78d8d7"
+  integrity sha512-MQDfihBQYMcyy5dhRDJUHcw7lb2Pv/TuE6xP1vyraLukNDHKbDxDNaOE3NbCAdKQApno+GPRyo1YAp89yCjK4w==
 
 for-in@^1.0.2:
   version "1.0.2"
@@ -7548,10 +7644,22 @@ libsodium-wrappers@0.7.8:
   dependencies:
     libsodium "0.7.8"
 
+libsodium-wrappers@0.7.9:
+  version "0.7.9"
+  resolved "https://registry.yarnpkg.com/libsodium-wrappers/-/libsodium-wrappers-0.7.9.tgz#4ffc2b69b8f7c7c7c5594a93a4803f80f6d0f346"
+  integrity sha512-9HaAeBGk1nKTRFRHkt7nzxqCvnkWTjn1pdjKgcUnZxj0FyOP4CnhgFhMdrFfgNsukijBGyBLpP2m2uKT1vuWhQ==
+  dependencies:
+    libsodium "^0.7.0"
+
 libsodium@0.7.8:
   version "0.7.8"
   resolved "https://registry.yarnpkg.com/libsodium/-/libsodium-0.7.8.tgz#fbd12247b7b1353f88d8de1cbc66bc1a07b2e008"
   integrity sha512-/Qc+APf0jbeWSaeEruH0L1/tbbT+sbf884ZL0/zV/0JXaDPBzYkKbyb/wmxMHgAHzm3t6gqe7bOOXAVwfqVikQ==
+
+libsodium@^0.7.0:
+  version "0.7.10"
+  resolved "https://registry.yarnpkg.com/libsodium/-/libsodium-0.7.10.tgz#c2429a7e4c0836f879d701fec2c8a208af024159"
+  integrity sha512-eY+z7hDrDKxkAK+QKZVNv92A5KYkxfvIshtBJkmg5TSiCnYqZP3i9OO9whE79Pwgm4jGaoHgkM4ao/b9Cyu4zQ==
 
 lie@~3.3.0:
   version "3.3.0"
