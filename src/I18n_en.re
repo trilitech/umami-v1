@@ -98,6 +98,7 @@ module Btn = {
   let restore_secret = "RESTORE FROM BACKUP";
   let browse_for_folder = "BROWSE FOR FOLDER";
   let setup_later = "Set up later in settings";
+  let check_for_updates = "CHECK FOR UPDATES";
 };
 
 module Tooltip = {
@@ -158,7 +159,6 @@ module Label = {
   let account_create_name = "Name";
   let add_contact_name = "Name";
   let add_contact_address = "Address";
-  let check_for_updates = "Check for updates";
   let automatically_download_updates = "Automatically download updates";
   let send_amount = "Amount";
   let send_sender = "Sender Account";
@@ -483,6 +483,7 @@ module Settings = {
   let backup_title = "WALLET BACKUP";
   let backup_text = "Create and save a backup file for the entire wallet";
   let backup_path_saved = "Backup file path saved";
+  let app_update = "APP UPDATE";
   ();
 };
 
