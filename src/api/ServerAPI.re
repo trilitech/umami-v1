@@ -144,6 +144,13 @@ module URL = {
       build_explorer_url(config, path, []);
     };
 
+    let balances = (config, ~addresses: list(PublicKeyHash.t)) => {
+      let path = "balances";
+      let list_address =
+        List.map(addresses, address => ("pkh", (address :> string)));
+      build_explorer_url(config, path, list_address);
+    };
+
     let tokenRegistry =
         (
           network,
@@ -392,6 +399,10 @@ module type Explorer = {
       unit
     ) =>
     Promise.t(array(Operation.t));
+
+  let getBalances:
+    (ConfigContext.env, ~addresses: list(PublicKeyHash.t)) =>
+    Promise.t(array((Umami.PublicKeyHash.t, Umami.Tez.t)));
 };
 
 module ExplorerMaker = (Get: {let get: string => Promise.t(Js.Json.t);}) => {
@@ -444,9 +455,22 @@ module ExplorerMaker = (Get: {let get: string => Promise.t(Js.Json.t);}) => {
     let%AwaitMap operations =
       res
       ->Result.fromExn(Json.Decode.(array(Operation.Decode.t)))
-      ->Result.mapError(e => e->Operation.filterJsonExn->JsonError)
+      ->Result.mapError(e => e->JsonEx.filterJsonExn->JsonError)
       ->Promise.value;
     operations->filterMalformedDuplicates;
+  };
+
+  let getBalances = (network, ~addresses: list(PublicKeyHash.t)) => {
+    let%Await res = network->URL.Explorer.balances(~addresses)->Get.get;
+    let decoder = json =>
+      Json.Decode.(
+        json |> field("pkh", PublicKeyHash.decoder),
+        json |> field("balance", Tez.decoder),
+      );
+    res
+    ->Result.fromExn(Json.Decode.(array(decoder)))
+    ->Result.mapError(e => e->JsonEx.filterJsonExn->JsonError)
+    ->Promise.value;
   };
 };
 

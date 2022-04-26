@@ -69,6 +69,13 @@ let parse = s =>
   | _ => Error(ParsingError(s))
   };
 
+let filterJsonExn = ex =>
+  switch (ex) {
+  | Json.ParseError(error) => error
+  | Json.Decode.DecodeError(error) => error
+  | _ => "Unknown error"
+  };
+
 module MichelsonDecode = {
   open Decode;
 

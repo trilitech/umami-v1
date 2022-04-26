@@ -20,3 +20,5 @@ let ofInt64: Int64.t => t;
 let toBigNumber: t => ReBigNumber.t;
 
 let formatString: string => option(string);
+
+let decoder: Json.Decode.decoder(t);

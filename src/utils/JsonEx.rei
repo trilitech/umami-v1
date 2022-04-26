@@ -40,6 +40,8 @@ let unsafeFromAny: 'a => Js.Json.t;
 
 let stringifyAnyWithSpace: ('a, int) => string;
 
+let filterJsonExn: exn => string;
+
 module MichelsonDecode: {
   type address =
     | Packed(bytes)
