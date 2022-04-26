@@ -40,8 +40,7 @@ module BalanceActivityIndicator = {
 module Balance = {
   [@react.component]
   let make = (~address: PublicKeyHash.t) => {
-    let balanceRequest = StoreContext.Balance.useLoad(address);
-
+    let balanceRequest = StoreContext.Balance.useView(address);
     switch (balanceRequest) {
     | Done(Ok(balance), _)
     | Loading(Some(balance)) =>

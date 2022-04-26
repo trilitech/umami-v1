@@ -48,7 +48,7 @@ let make =
   let delegateRequest = StoreContext.Delegate.useLoad(account.address);
   let addToast = LogsContext.useToast();
 
-  let balanceRequest = StoreContext.Balance.useLoad(account.address);
+  let balanceRequest = StoreContext.Balance.useView(account.address);
 
   let zeroTez =
     switch (balanceRequest->ApiRequest.getDoneOk) {

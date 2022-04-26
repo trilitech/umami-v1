@@ -305,6 +305,8 @@ let useResetBackupFilePath = () => {
 let useNetworkStatus = () => useContext().networkStatus;
 let useNetworkOffline = () => useContext().networkStatus.current == Offline;
 
+let useNetwork = () => useContent().network;
+
 let useRetryNetwork = () => useContext().retryNetwork;
 
 let useEraseStorageAndBaseDir = () => {
