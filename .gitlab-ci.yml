@@ -37,12 +37,15 @@ dist:
     - master
 
 test:
+  image: node:16-buster
   stage: test
   script:
     - yarn test
   after_script:
     - bash <(curl -s https://codecov.io/bash)
 
+  variables:
+    SECURE_LOG_LEVEL: "debug"
   artifacts:
     paths:
     - gl-sast-report.json
@@ -51,7 +54,6 @@ test:
     - gl-container-scanning-report.json
     - gl-license-scanning-report.json
     expire_in: 1 week
-
 
 # You can override the included template(s) by including variable overrides
 # SAST customization: https://docs.gitlab.com/ee/user/application_security/sast/#customizing-the-sast-settings
