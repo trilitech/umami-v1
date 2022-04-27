@@ -303,7 +303,7 @@ module Toast = {
                 ~log,
                 ~addToast,
                 ~handleDelete,
-                ~toast=false,
+                ~toast=true,
               )}
            </View>;
          }}
