@@ -37,7 +37,7 @@ dist:
     - master
 
 test:
-  image: node:16-buster
+  image: "python:3.7"
   stage: test
   script:
     - yarn test
@@ -55,6 +55,7 @@ test:
     - gl-license-scanning-report.json
     expire_in: 1 week
 
+
 # You can override the included template(s) by including variable overrides
 # SAST customization: https://docs.gitlab.com/ee/user/application_security/sast/#customizing-the-sast-settings
 # Secret Detection customization: https://docs.gitlab.com/ee/user/application_security/secret_detection/#customizing-settings
@@ -70,4 +71,13 @@ include:
   - template: Security/License-Scanning.gitlab-ci.yml
   - template: Security/Dependency-Scanning.gitlab-ci.yml
   - template: Security/SAST-IaC.latest.gitlab-ci.yml
+  - template: Code-Quality.gitlab-ci.yml
+
+code_quality:
+  stage: test
+  artifacts:
+    expire_in: 180 days
+    expose_as: code_quality
+    paths: [gl-code_quality-report.json]
+
 
