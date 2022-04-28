@@ -41,7 +41,7 @@ dist:
 
 test-coverage:
   extends: .before_script_template
-  stage: test
+  stage: test-coverage
   script:
     - yarn test
   after_script:
