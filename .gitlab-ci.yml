@@ -37,7 +37,7 @@ dist:
     - master
 
 test:
-  image: "python:3.7"
+  image: debian:latest
   stage: test
   script:
     - yarn test
