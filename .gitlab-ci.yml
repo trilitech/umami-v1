@@ -1,16 +1,17 @@
 stages:
   - build
-  - test
+  - test-coverage
   - dist
+  - test
 
 cache:
   paths:
     - node_modules/
     - .yarn
 
-default:
+.before_script_template:
+  before_script:
   image: node:16-buster
-
   # Validate that the repository contains a package.json and extract a few values from it.
   before_script:
     - |
@@ -27,22 +28,28 @@ default:
 
 
 build-reason:
+  extends: .before_script_template
   stage: build
   script: yarn bsb:build
 
 dist:
+  extends: .before_script_template
   stage: dist
   script: CI=false yarn electron:build
   only:
     - master
 
-test:
+test-coverage:
+  extends: .before_script_template
   stage: test
   script:
     - yarn test
   after_script:
     - bash <(curl -s https://codecov.io/bash)
 
+
+test:
+  stage: test
   variables:
     SECURE_LOG_LEVEL: "debug"
   artifacts:
@@ -53,7 +60,6 @@ test:
     - gl-container-scanning-report.json
     - gl-license-scanning-report.json
     expire_in: 180 days
-
 
 # You can override the included template(s) by including variable overrides
 # SAST customization: https://docs.gitlab.com/ee/user/application_security/sast/#customizing-the-sast-settings
@@ -80,3 +86,6 @@ include:
 #     paths: [gl-code_quality-report.json]
 
 
+sast:
+  stage: test
+  image: docker:stable
