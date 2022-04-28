@@ -37,7 +37,6 @@ dist:
     - master
 
 test:
-  image: debian:latest
   stage: test
   script:
     - yarn test
@@ -53,7 +52,7 @@ test:
     - gl-dependency-scanning-report.json
     - gl-container-scanning-report.json
     - gl-license-scanning-report.json
-    expire_in: 1 week
+    expire_in: 180 days
 
 
 # You can override the included template(s) by including variable overrides
@@ -71,13 +70,13 @@ include:
   - template: Security/License-Scanning.gitlab-ci.yml
   - template: Security/Dependency-Scanning.gitlab-ci.yml
   - template: Security/SAST-IaC.latest.gitlab-ci.yml
-  - template: Code-Quality.gitlab-ci.yml
+#   - template: Code-Quality.gitlab-ci.yml
 
-code_quality:
-  stage: test
-  artifacts:
-    expire_in: 180 days
-    expose_as: code_quality
-    paths: [gl-code_quality-report.json]
+# code_quality:
+#   stage: test
+#   artifacts:
+#     expire_in: 180 days
+#     expose_as: code_quality
+#     paths: [gl-code_quality-report.json]
 
 
