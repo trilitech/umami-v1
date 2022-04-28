@@ -60,6 +60,8 @@ test:
     - gl-container-scanning-report.json
     - gl-license-scanning-report.json
     expire_in: 180 days
+  script:
+    - echo
 
 # You can override the included template(s) by including variable overrides
 # SAST customization: https://docs.gitlab.com/ee/user/application_security/sast/#customizing-the-sast-settings
