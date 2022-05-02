@@ -43,7 +43,7 @@ type t = {
 let parse = s => {
   let parseNetwork: [> network] => option(network) =
     fun
-    | (`Mainnet | `Hangzhounet | `Custom(_)) as v => Some(v)
+    | (`Mainnet | `Ithacanet | `Custom(_)) as v => Some(v)
     | _ => None;
   let c = s->parse;
   let network = c.network->Option.flatMap(parseNetwork);
@@ -235,8 +235,7 @@ module Legacy = {
     let legacyNativeChainFromString =
       fun
       | "Mainnet" => `Mainnet
-      | "Granadanet" => `Hangzhounet
-      | "Hangzhounet" => `Hangzhounet
+      | "Ithacanet" => `Ithacanet
       | n =>
         JsonEx.(raise(InternalError(DecodeError("Unknown network " ++ n))));
 

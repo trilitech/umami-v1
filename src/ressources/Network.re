@@ -104,9 +104,15 @@ let () =
     | _ => None,
   );
 
-type nativeChains = [ | `Hangzhounet | `Mainnet | `Ithacanet];
+type nativeChains = [ | `Mainnet | `Ithacanet];
 
-type supportedChains = [ nativeChains | `Florencenet | `Edo2net | `Granadanet];
+type supportedChains = [
+  nativeChains
+  | `Hangzhounet
+  | `Florencenet
+  | `Edo2net
+  | `Granadanet
+];
 
 let unsafeChainId: string => chainId = c => c;
 
@@ -132,14 +138,11 @@ let fromChainId =
 
 let mkChainAssoc = c => (c, getChainId(c));
 
-let nativeChains = [
-  mkChainAssoc(`Mainnet),
-  mkChainAssoc(`Hangzhounet),
-  mkChainAssoc(`Ithacanet),
-];
+let nativeChains = [mkChainAssoc(`Mainnet), mkChainAssoc(`Ithacanet)];
 
 let supportedChains = [
   mkChainAssoc(`Florencenet),
+  mkChainAssoc(`Hangzhounet),
   mkChainAssoc(`Edo2net),
   mkChainAssoc(`Granadanet),
   ...nativeChains,
@@ -235,7 +238,6 @@ module Decode = {
   let nativeChainFromString =
     fun
     | "Mainnet" => `Mainnet
-    | "Hangzhounet" => `Hangzhounet
     | "Ithacanet" => `Ithacanet
     | n =>
       JsonEx.(raise(InternalError(DecodeError("Unknown network " ++ n))));
@@ -244,6 +246,7 @@ module Decode = {
     fun
     | "Florencenet" => `Florencenet
     | "Edo2net" => `Edo2net
+    | "Hangzhounet" => `Hangzhounet
     | n => nativeChainFromString(n);
 
   let chainIdDecoder: Json.Decode.decoder(chainId) = Json.Decode.string;
@@ -292,13 +295,6 @@ let mainnet =
     `Mainnet,
   );
 
-let hangzhounet =
-  mk(
-    ~explorer="https://hangzhounet.umamiwallet.com",
-    ~endpoint="https://hangzhounet.smartpy.io/",
-    `Hangzhounet,
-  );
-
 let ithacanet =
   mk(
     ~explorer="https://ithacanet.umamiwallet.com",
@@ -308,7 +304,6 @@ let ithacanet =
 
 let getNetwork =
   fun
-  | `Hangzhounet => hangzhounet
   | `Mainnet => mainnet
   | `Ithacanet => ithacanet;
 
@@ -316,10 +311,6 @@ let getNetworks = (c: nativeChains) => {
   let n = getNetwork(c);
   let withEP = url => {...n, endpoint: url};
   switch (c) {
-  | `Hangzhounet => [
-      withEP("https://hangzhounet.smartpy.io/"),
-      withEP("https://api.tez.ie/rpc/hangzhounet"),
-    ]
   | `Mainnet => [
       withEP("https://mainnet.smartpy.io/"),
       withEP("https://api.tez.ie/rpc/mainnet/"),

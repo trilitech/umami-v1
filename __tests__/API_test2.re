@@ -3,7 +3,7 @@ open TestFramework;
 let config =
   ConfigContext.{
     defaultNetwork: true,
-    network: Network.hangzhounet,
+    network: Network.ithacanet,
     theme: `system,
     baseDir: () => System.(Path.Ops.(appDir() / (!"tezos-client"))),
     confirmations: 5,

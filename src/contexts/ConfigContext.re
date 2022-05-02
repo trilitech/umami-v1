@@ -60,7 +60,6 @@ let fromFile = f => {
     switch (f.ConfigFile.network) {
     | None
     | Some(`Mainnet) => Network.mainnet
-    | Some(`Hangzhounet) => Network.hangzhounet
     | Some(`Ithacanet) => Network.ithacanet
     | Some(`Custom(name)) =>
       f.customNetworks
