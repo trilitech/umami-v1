@@ -554,6 +554,7 @@ module Errors = {
   let invalid_estimation_results = "Invalid estimation results";
   let request_to_node_failed = "Request to node failed";
   let every_balances_fail = "Every balances fail to load";
+  let balance_not_found = "A balance was not found";
   let network_unreachable = "Tezos network unreachable.";
   let no_valid_endpoint = "No valid endpoint found among public nodes";
   let beacon_cant_handle = "Cannot handle this operation";

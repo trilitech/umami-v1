@@ -51,6 +51,8 @@ module URL: {
     let checkToken: (ConfigContext.env, ~contract: PublicKeyHash.t) => t;
     let accountExists: (ConfigContext.env, ~account: PublicKeyHash.t) => t;
 
+    let balances: (ConfigContext.env, ~addresses: list(PublicKeyHash.t)) => t;
+
     let tokenRegistry:
       (
         ConfigContext.env,
@@ -141,6 +143,10 @@ module type Explorer = {
       unit
     ) =>
     Promise.t(array(Operation.t));
+
+  let getBalances:
+    (ConfigContext.env, ~addresses: list(PublicKeyHash.t)) =>
+    Promise.t(array((Umami.PublicKeyHash.t, Umami.Tez.t)));
 };
 
 /** This generic version exists only for tests purpose */

@@ -68,11 +68,13 @@ let iterDone = (request, f) =>
   | _ => ()
   };
 
-let map = (request, f) =>
-  switch (request) {
+let map = (req, f) =>
+  switch (req) {
   | Done(Ok(value), t) => Done(Ok(f(value)), t)
+  | Done(Error(a), t) => Done(Error(a), t)
   | Loading(Some(value)) => Loading(Some(f(value)))
-  | r => r
+  | Loading(None) => Loading(None)
+  | NotAsked => NotAsked
   };
 
 let mapWithDefault = (request, def, f) =>
@@ -172,10 +174,8 @@ module Make = (D: DEPS) => {
     let config = D.useConfig();
     let addLog = D.useAddLog();
     let retryNetwork = D.useRetryNetwork();
-
     let get = input => {
       setRequest(updateToLoadingState);
-
       get(~config, input)
       ->logError(addLog(toast), kind, ~keep=?keepError)
       ->Promise.tapError(
@@ -188,7 +188,6 @@ module Make = (D: DEPS) => {
           setRequest(_ => Done(result, ValidSince(Js.Date.now())))
         );
     };
-
     get;
   };
 
@@ -202,7 +201,6 @@ module Make = (D: DEPS) => {
         input,
       ) => {
     let getRequest = useGetter(~get, ~kind, ~setRequest, ~keepError?, ());
-
     let isMounted = ReactUtils.useIsMounted();
 
     React.useEffect4(
@@ -213,12 +211,10 @@ module Make = (D: DEPS) => {
         if (shouldReload && condition) {
           getRequest(input)->Promise.ignore;
         };
-
         None;
       },
       (isMounted, request, input, setRequest),
     );
-
     request;
   };
 

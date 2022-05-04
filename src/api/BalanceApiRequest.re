@@ -23,16 +23,17 @@
 /*                                                                           */
 /*****************************************************************************/
 
-let useLoad = (~requestState, ~address: PublicKeyHash.t) => {
-  let get = (~config, address) => {
-    config->NodeAPI.Balance.get(address, ());
+let useLoadBalances = (~requestState, ~addresses: list(PublicKeyHash.t)) => {
+  let get = (~config, addresses) => {
+    config
+    ->ServerAPI.Explorer.getBalances(~addresses)
+    ->Promise.mapOk(PublicKeyHash.Map.fromArray);
   };
-
   ApiRequest.useLoader(
     ~get,
-    ~condition=addr => (addr :> string) != "",
+    ~condition=addresses => !addresses->Js.List.isEmpty,
     ~kind=Logs.Balance,
     ~requestState,
-    address,
+    addresses,
   );
 };

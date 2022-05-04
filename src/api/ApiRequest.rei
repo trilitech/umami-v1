@@ -77,7 +77,7 @@ let getWithDefault: (t('a), 'a) => 'a;
 let iterDone: (t('a), Promise.result('a) => unit) => unit;
 
 /* Maps the value of the ressource  */
-let map: (t('a), 'a => 'a) => t('a);
+let map: (t('b), 'b => 'a) => t('a);
 
 /* Maps the value of the ressource if it has been fetched. If it has not been
    fetched or resulted in an error, it returns the second parameter. */
