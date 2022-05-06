@@ -40,7 +40,7 @@ let toTokenKind: (kind, int) => TokenRepr.kind;
 let kindToString: kind => string;
 
 module Decode: {
-  let kindFromString: string => Let.result(kind);
+  let kindFromString: string => Promise.result(kind);
   let kindDecoder: Js.Json.t => kind;
   let record: Js.Json.t => t;
   let array: Js.Json.t => array(t);

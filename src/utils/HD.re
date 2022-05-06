@@ -23,8 +23,6 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open Let;
-
 module Buffer = Js.TypedArray2.Uint8Array;
 
 [@bs.send] external toHex: (Buffer.t, [@bs.as "hex"] _) => string = "toString";
@@ -114,40 +112,43 @@ let mergebuf = (b1: Buffer.t, b2: Buffer.t) => {
 
 let seed = recoveryPhrase => recoveryPhrase->BIP39.seed->toHex;
 
-let edesk = (path, seed, ~password) => {
-  let%AwaitRes () = Sodium.ready;
-
-  let%ResMap secretKey =
-    switch (ED25519.derivePath(path->DerivationPath.toString, seed).key) {
-    | key => Ok(key)
-    | exception _ => Error(DerivationPathError)
-    };
-
-  let salt = Sodium.randombytes_buf(8);
-  let encryptionKey = pbkdf2Sync(password, salt);
-  let encryptedSecretkey =
-    Sodium.crypto_secretbox_easy(
-      secretKey,
-      Buffer.fromLength(24),
-      encryptionKey,
-    );
-  b58cencode(mergebuf(salt, encryptedSecretkey), [|7, 90, 60, 179, 41|]); // edesk
-};
+let edesk = (path, seed, ~password) =>
+  Sodium.ready
+  ->Promise.flatMapOk(() =>
+      switch (ED25519.derivePath(path->DerivationPath.toString, seed).key) {
+      | key => Promise.ok(key)
+      | exception _ => Promise.err(DerivationPathError)
+      }
+    )
+  ->Promise.mapOk(secretKey => {
+      let salt = Sodium.randombytes_buf(8);
+      let encryptionKey = pbkdf2Sync(password, salt);
+      let encryptedSecretkey =
+        Sodium.crypto_secretbox_easy(
+          secretKey,
+          Buffer.fromLength(24),
+          encryptionKey,
+        );
+      b58cencode(
+        mergebuf(salt, encryptedSecretkey),
+        [|7, 90, 60, 179, 41|],
+      ); // edesk
+    });
 
 /** Generates an encrypted secret key from a mnemonic. */
 let edeskLegacy = (~passphrase="", recoveryPhrase, ~password) => {
-  let%AwaitMap () = Sodium.ready;
-
-  let secretKey =
-    pbkdf2MnemonicLegacy(recoveryPhrase, "mnemonic" ++ passphrase)
-    ->Buffer.slice(~start=0, ~end_=32);
-  let salt = Sodium.randombytes_buf(8);
-  let encryptionKey = pbkdf2Sync(password, salt);
-  let encryptedSecretkey =
-    Sodium.crypto_secretbox_easy(
-      secretKey,
-      Buffer.fromLength(24),
-      encryptionKey,
-    );
-  b58cencode(mergebuf(salt, encryptedSecretkey), [|7, 90, 60, 179, 41|]); // edesk;
+  Sodium.ready->Promise.mapOk(() => {
+    let secretKey =
+      pbkdf2MnemonicLegacy(recoveryPhrase, "mnemonic" ++ passphrase)
+      ->Buffer.slice(~start=0, ~end_=32);
+    let salt = Sodium.randombytes_buf(8);
+    let encryptionKey = pbkdf2Sync(password, salt);
+    let encryptedSecretkey =
+      Sodium.crypto_secretbox_easy(
+        secretKey,
+        Buffer.fromLength(24),
+        encryptionKey,
+      );
+    b58cencode(mergebuf(salt, encryptedSecretkey), [|7, 90, 60, 179, 41|]); // edesk;
+  });
 };

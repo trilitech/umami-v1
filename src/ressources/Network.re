@@ -23,8 +23,6 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open Let;
-
 type chainId = string;
 
 type apiVersion = {
@@ -402,65 +400,72 @@ let mapAPIError: _ => Errors.t =
   | _ => API(MonitorRPCError("Unknown error"));
 
 let monitor = url => {
-  let%AwaitRes json =
-    (url ++ "/monitor/blocks")->fetchJson(e => API(NotAvailable(e)));
-
-  Result.fromExn((), () =>
-    Json.Decode.{
-      nodeLastBlock: json |> field("node_last_block", int),
-      nodeLastBlockTimestamp:
-        json |> field("node_last_block_timestamp", string),
-      indexerLastBlock: json |> field("indexer_last_block", int),
-      indexerLastBlockTimestamp:
-        json |> field("indexer_last_block_timestamp", string),
-    }
-  )
-  ->Result.mapError(mapAPIError);
+  (url ++ "/monitor/blocks")
+  ->fetchJson(e => API(NotAvailable(e)))
+  ->Promise.flatMapOk(json =>
+      Result.fromExn((), () =>
+        Json.Decode.{
+          nodeLastBlock: json |> field("node_last_block", int),
+          nodeLastBlockTimestamp:
+            json |> field("node_last_block_timestamp", string),
+          indexerLastBlock: json |> field("indexer_last_block", int),
+          indexerLastBlockTimestamp:
+            json |> field("indexer_last_block_timestamp", string),
+        }
+      )
+      ->Result.mapError(mapAPIError)
+      ->Promise.value
+    );
 };
 
 let getAPIVersion = (~timeout=?, url) => {
-  let%AwaitRes json =
-    (url ++ "/version")->fetchJson(~timeout?, e => API(NotAvailable(e)));
-
-  let%Res api =
-    Result.fromExn((), () => Json.Decode.(field("api", string, json)))
-    ->Result.mapError(mapAPIError);
-
-  let%Res api =
-    Version.parse(api)
-    ->Result.mapError(
-        fun
-        | Version.VersionFormat(e) => API(VersionFormat(e))
-        | _ => API(VersionRPCError("Unknown error")),
-      );
-
-  Result.fromExn((), () =>
-    Json.Decode.{
-      api,
-      indexer: json |> field("indexer", string),
-      node: json |> field("node", string),
-      chain: json |> field("chain", string),
-      protocol: json |> field("protocol", string),
-    }
-  )
-  ->Result.mapError(mapAPIError);
+  (url ++ "/version")
+  ->fetchJson(~timeout?, e => API(NotAvailable(e)))
+  ->Promise.flatMapOk(json =>
+      Result.fromExn((), () => Json.Decode.(field("api", string, json)))
+      ->Result.mapError(mapAPIError)
+      ->Promise.value
+      ->Promise.flatMapOk(api =>
+          Version.parse(api)
+          ->Result.mapError(
+              fun
+              | Version.VersionFormat(e) => API(VersionFormat(e))
+              | _ => API(VersionRPCError("Unknown error")),
+            )
+          ->Promise.value
+        )
+      ->Promise.flatMapOk(api =>
+          Result.fromExn((), () =>
+            Json.Decode.{
+              api,
+              indexer: json |> field("indexer", string),
+              node: json |> field("node", string),
+              chain: json |> field("chain", string),
+              protocol: json |> field("protocol", string),
+            }
+          )
+          ->Result.mapError(mapAPIError)
+          ->Promise.value
+        )
+    );
 };
 
 let getNodeChain = (~timeout=?, url) => {
-  let%AwaitRes json =
-    (url ++ "/chains/main/chain_id")
-    ->fetchJson(~timeout?, e => Node(NotAvailable(e)));
-  switch (Js.Json.decodeString(json)) {
-  | Some(v) =>
-    let chain =
-      supportedChains
-      ->List.getBy(((_, id)) => id == v)
-      ->Option.map(fst)
-      ->Option.getWithDefault(`Custom(v));
+  (url ++ "/chains/main/chain_id")
+  ->fetchJson(~timeout?, e => Node(NotAvailable(e)))
+  ->Promise.flatMapOk(json =>
+      switch (Js.Json.decodeString(json)) {
+      | Some(v) =>
+        let chain =
+          supportedChains
+          ->List.getBy(((_, id)) => id == v)
+          ->Option.map(fst)
+          ->Option.getWithDefault(`Custom(v));
 
-    Ok(chain);
-  | _ => VersionRPCError("not a Json string")->Node->Error
-  };
+        Promise.ok(chain);
+      | _ => VersionRPCError("not a Json string")->Node->Promise.err
+      }
+    );
 };
 
 let checkConfiguration =

@@ -24,7 +24,6 @@
 /*****************************************************************************/
 
 open ReactNative;
-open Let;
 
 let styles =
   Style.(
@@ -81,15 +80,15 @@ let useBeaconRequestModalAction = () => {
 
 let respondWithError = (client, id, errorType) =>
   Promise.async(() => {
-    let%Await client =
-      client->Promise.fromOption(
+    client
+    ->Promise.fromOption(
         ~error=Errors.Generic(I18n.Errors.beacon_client_not_created),
-      );
-    let%AwaitMap () =
-      client->ReBeacon.WalletClient.respond(
-        `Error({type_: `error, id, errorType}),
-      );
-    ();
+      )
+    ->Promise.flatMapOk(client =>
+        client->ReBeacon.WalletClient.respond(
+          `Error({type_: `error, id, errorType}),
+        )
+      )
   });
 
 module ErrorView = {

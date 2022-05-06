@@ -23,7 +23,6 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open Let;
 module Uint8Array = Js.TypedArray2.Uint8Array;
 
 module Elliptic = {
@@ -94,6 +93,5 @@ let spPointsToPkh = (~x, ~y) => {
 
   let pk = ReTaquitoUtils.(b58cencodeArray(publicKey, prefix.sppk));
 
-  let%Res pkh = pk2pkh(pk);
-  PublicKeyHash.build(pkh);
+  pk2pkh(pk)->Result.flatMap(PublicKeyHash.build);
 };

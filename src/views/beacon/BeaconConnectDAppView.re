@@ -24,7 +24,6 @@
 /*****************************************************************************/
 
 open ReactNative;
-open Let;
 
 module Form = {
   module StateLenses = [%lenses type state = {pairingRequest: string}];
@@ -260,21 +259,22 @@ module WithQR = {
         let streamRef = ref(None);
 
         Promise.async(() => {
-          let%AwaitMap stream =
-            window##navigator##mediaDevices##getUserMedia({
-              "video": {
-                "facingMode": "environment",
-              },
+          window##navigator##mediaDevices##getUserMedia({
+            "video": {
+              "facingMode": "environment",
+            },
+          })
+          ->Promise.fromJs(_ => StreamError)
+          ->Promise.mapOk(stream => {
+              setHasStream(_ => true);
+              streamRef := Some(stream);
+              videoRef.current->VideoElement.setSrcObject(stream);
+              videoRef.current
+              ->VideoElement.setAttribute("playsinline", true);
+              videoRef.current->VideoElement.play;
+              let raf = requestAnimationFrame(tick);
+              rafRef.current = Js.Nullable.return(raf);
             })
-            ->Promise.fromJs(_ => StreamError);
-
-          setHasStream(_ => true);
-          streamRef := Some(stream);
-          videoRef.current->VideoElement.setSrcObject(stream);
-          videoRef.current->VideoElement.setAttribute("playsinline", true);
-          videoRef.current->VideoElement.play;
-          let raf = requestAnimationFrame(tick);
-          rafRef.current = Js.Nullable.return(raf);
         });
 
         Some(
@@ -333,21 +333,20 @@ module WithQR = {
       switch (pairingInfo) {
       | Ok(pairingInfo) =>
         Promise.async(() => {
-          let%Await client =
-            client->Promise.fromOption(
-              ~error=BeaconApiRequest.ClientNotConnected,
-            );
-
-          let%AwaitMap () =
-            client
-            ->ReBeacon.WalletClient.addPeer(pairingInfo)
-            ->Promise.tapError(error => {
-                addToast(Logs.error(~origin=Beacon, error));
-                setWebcamScanning(_ => true);
-              });
-
-          updatePeers();
-          closeAction();
+          client
+          ->Promise.fromOption(~error=BeaconApiRequest.ClientNotConnected)
+          ->Promise.flatMapOk(client =>
+              client
+              ->ReBeacon.WalletClient.addPeer(pairingInfo)
+              ->Promise.tapError(error => {
+                  addToast(Logs.error(~origin=Beacon, error));
+                  setWebcamScanning(_ => true);
+                })
+            )
+          ->Promise.mapOk(() => {
+              updatePeers();
+              closeAction();
+            })
         })
       | Error(error) =>
         addToast(Logs.error(~origin=Beacon, error));

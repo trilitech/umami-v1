@@ -31,7 +31,6 @@
     "bip39": "^3.0.3",
     "blakejs": "^1.1.1",
     "bs-fetch": "^0.6.2",
-    "bs-let": "^0.1.16",
     "bs-platform": "^9.0.2",
     "bs-reform": "10.0.2-alpha.0",
     "bs58check": "^2.1.2",

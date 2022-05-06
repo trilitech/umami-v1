@@ -23,8 +23,6 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open Let;
-
 open HDWalletAPI;
 open HDWalletAPI.Accounts;
 open HDWalletAPI.Accounts.Scan;
@@ -43,12 +41,14 @@ let runStreamedScan =
     ~onFoundKey=(i, account) => onFoundKey(i, account.publicKeyHash),
     path,
     schema,
-    (path, schema) => {
-      let%Await tr = LedgerAPI.init();
-      let%AwaitMap publicKeyHash =
-        LedgerAPI.getKey(~prompt=false, tr, path, schema);
-      {publicKeyHash, encryptedSecretKey: (), kind: Regular};
-    },
+    (path, schema) =>
+      LedgerAPI.init()
+      ->Promise.flatMapOk(tr =>
+          LedgerAPI.getKey(~prompt=false, tr, path, schema)
+          ->Promise.mapOk(publicKeyHash =>
+              {publicKeyHash, encryptedSecretKey: (), kind: Regular}
+            )
+        ),
   );
 
 let importKey =
@@ -116,81 +116,103 @@ let import =
       ~ledgerMasterKey,
       (),
     ) => {
-  let%Await tr = LedgerAPI.init(~timeout?, ());
-  let%Await addresses =
-    importKeys(
-      ~config,
-      ~accountsNumber,
-      ~startIndex=0,
-      ~basename=name,
-      ~derivationPath,
-      ~derivationScheme,
-      ~ledgerTransport=tr,
-      ~ledgerMasterKey,
+  let tr = LedgerAPI.init(~timeout?, ());
+  let addresses =
+    Promise.flatMapOk(tr, tr =>
+      importKeys(
+        ~config,
+        ~accountsNumber,
+        ~startIndex=0,
+        ~basename=name,
+        ~derivationPath,
+        ~derivationScheme,
+        ~ledgerTransport=tr,
+        ~ledgerMasterKey,
+      )
     );
 
-  let%AwaitMap () =
-    name
-    ->SecureStorage.Cipher.encrypt("")
-    ->Promise.mapOk(recoveryPhrase => registerRecoveryPhrase(recoveryPhrase));
+  let pEncrypt =
+    Promise.flatMapOk(addresses, _ =>
+      name
+      ->SecureStorage.Cipher.encrypt("")
+      ->Promise.mapOk(registerRecoveryPhrase)
+    );
 
-  registerSecret(
-    ~config,
-    ~name,
-    ~kind=Secret.Repr.Ledger,
-    ~derivationPath,
-    ~derivationScheme,
-    ~addresses,
-    ~masterPublicKey=None,
-  );
+  let p =
+    Promise.flatMapOk2(
+      addresses,
+      pEncrypt,
+      (addresses, ()) => {
+        registerSecret(
+          ~config,
+          ~name,
+          ~kind=Secret.Repr.Ledger,
+          ~derivationPath,
+          ~derivationScheme,
+          ~addresses,
+          ~masterPublicKey=None,
+        );
+        Promise.ok();
+      },
+    );
 
-  addresses;
+  p->Promise.flatMapOk(_ => addresses);
 };
 
 let derive = (~config, ~timeout=?, ~index, ~alias, ~ledgerMasterKey, ()) => {
-  let%Await secret = secretAt(~config, index)->Promise.value;
-  let%Await tr = LedgerAPI.init(~timeout?, ());
+  let tr = LedgerAPI.init(~timeout?, ());
+  let secret = secretAt(~config, index)->Promise.value;
 
-  let%Await address =
-    importKey(
-      ~config,
-      ~name=alias,
-      ~index=secret.addresses->Array.length,
-      ~derivationPath=secret.derivationPath,
-      ~derivationScheme=secret.derivationScheme,
-      ~ledgerTransport=tr,
-      ~ledgerMasterKey,
+  let address =
+    Promise.flatMapOk2(tr, secret, (tr, secret) =>
+      importKey(
+        ~config,
+        ~name=alias,
+        ~index=secret.addresses->Array.length,
+        ~derivationPath=secret.derivationPath,
+        ~derivationScheme=secret.derivationScheme,
+        ~ledgerTransport=tr,
+        ~ledgerMasterKey,
+      )
     );
 
-  let%Await () =
-    {...secret, addresses: Array.concat(secret.addresses, [|address|])}
-    ->updateSecretAt(~config, index)
-    ->Promise.value;
+  let pUpdate =
+    Promise.flatMapOk2(address, secret, (address, secret) =>
+      {...secret, addresses: Array.concat(secret.addresses, [|address|])}
+      ->updateSecretAt(~config, index)
+      ->Promise.value
+    );
 
-  address->Promise.ok;
+  Promise.flatMapOk2(pUpdate, address, ((), address) => address->Promise.ok);
 };
 
 let deriveKeys =
     (~config, ~timeout=?, ~index, ~accountsNumber, ~ledgerMasterKey, ()) => {
-  let%Await secret = secretAt(~config, index)->Promise.value;
-  let%Await tr = LedgerAPI.init(~timeout?, ());
+  let secret = secretAt(~config, index)->Promise.value;
+  let tr = LedgerAPI.init(~timeout?, ());
 
-  let%Await addresses =
-    importKeys(
-      ~config,
-      ~basename=secret.Secret.Repr.name,
-      ~startIndex=secret.addresses->Array.length,
-      ~accountsNumber,
-      ~derivationPath=secret.derivationPath,
-      ~derivationScheme=secret.derivationScheme,
-      ~ledgerTransport=tr,
-      ~ledgerMasterKey,
+  let addresses =
+    Promise.flatMapOk2(tr, secret, (tr, secret) =>
+      importKeys(
+        ~config,
+        ~basename=secret.Secret.Repr.name,
+        ~startIndex=secret.addresses->Array.length,
+        ~accountsNumber,
+        ~derivationPath=secret.derivationPath,
+        ~derivationScheme=secret.derivationScheme,
+        ~ledgerTransport=tr,
+        ~ledgerMasterKey,
+      )
     );
 
-  let%Await () =
-    {...secret, addresses: Array.concat(secret.addresses, addresses)}
-    ->updateSecretAt(~config, index)
-    ->Promise.value;
+  let pUpdate =
+    Promise.flatMapOk2(addresses, secret, (addresses, secret) =>
+      {...secret, addresses: Array.concat(secret.addresses, addresses)}
+      ->updateSecretAt(~config, index)
+      ->Promise.value
+    );
 
-  addresses->Promise.ok;
+  Promise.flatMapOk2(pUpdate, addresses, ((), addresses) =>
+    addresses->Promise.ok
+  );
 };

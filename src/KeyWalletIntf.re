@@ -205,7 +205,7 @@ module type WALLET = {
 
   module CustomAuth: {
     module Decode: {
-      let fromSecretKey: SecretAlias.t => Let.result(ReCustomAuth.infos);
+      let fromSecretKey: SecretAlias.t => Promise.result(ReCustomAuth.infos);
     };
     module Encode: {let toSecretKey: ReCustomAuth.infos => SecretAlias.t;};
   };

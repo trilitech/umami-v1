@@ -25,7 +25,6 @@
 
 open ReTaquito;
 open ReTaquitoSigner;
-open Let;
 
 module Contracts = ReTaquitoContracts;
 
@@ -87,11 +86,10 @@ let handleEstimationResults = (results, reveal, options) => {
 
 module Rpc = {
   let getBalance = (endpoint, ~address, ~params=?, ()) => {
-    let%AwaitMap balance =
-      RPCClient.create(endpoint)
-      ->RPCClient.getBalance(address, ~params?, ())
-      ->ReTaquitoError.fromPromiseParsed;
-    balance->BigNumber.toInt64->Tez.ofInt64;
+    RPCClient.create(endpoint)
+    ->RPCClient.getBalance(address, ~params?, ())
+    ->ReTaquitoError.fromPromiseParsed
+    ->Promise.mapOk(res => {res->BigNumber.toInt64->Tez.ofInt64});
   };
 
   let getChainId = endpoint =>
@@ -121,19 +119,20 @@ module Signer = {
     let keyData = ledgerBasePkh =>
       key->KeyWallet.Ledger.Decode.fromSecretKey(~ledgerBasePkh);
 
-    let%Await tr = LedgerAPI.init();
-
-    let%Await data =
-      LedgerAPI.getMasterKey(~prompt=false, tr)
-      ->Promise.map(pkh => pkh->Result.flatMap(keyData));
-
-    callback();
-    LedgerAPI.Signer.create(
-      tr,
-      data.path->DerivationPath.fromTezosBip44,
-      data.scheme,
-      ~prompt=false,
-    );
+    LedgerAPI.init()
+    ->Promise.flatMapOk(tr => {
+        LedgerAPI.getMasterKey(~prompt=false, tr)
+        ->Promise.flatMapOk(pkh => Promise.value(keyData(pkh)))
+        ->Promise.flatMapOk(data => {
+            callback();
+            LedgerAPI.Signer.create(
+              tr,
+              data.path->DerivationPath.fromTezosBip44,
+              data.scheme,
+              ~prompt=false,
+            );
+          })
+      });
   };
 
   type intent =
@@ -142,19 +141,20 @@ module Signer = {
     | Password(string);
 
   let readSecretKey = (address, signingIntent, dirpath) => {
-    let%Await (kind, key) = KeyWallet.readSecretFromPkh(address, dirpath);
+    KeyWallet.readSecretFromPkh(address, dirpath)
+    ->Promise.flatMapOk(((kind, key)) => {
+        switch (kind, signingIntent) {
+        | (Encrypted, Password(s)) => readEncryptedKey(key, s)
+        | (Unencrypted, _) => readUnencryptedKey(key)
+        | (Ledger, LedgerCallback(callback)) => readLedgerKey(callback, key)
 
-    switch (kind, signingIntent) {
-    | (Encrypted, Password(s)) => readEncryptedKey(key, s)
-    | (Unencrypted, _) => readUnencryptedKey(key)
-    | (Ledger, LedgerCallback(callback)) => readLedgerKey(callback, key)
-
-    | (CustomAuth(_), CustomAuthSigner(s)) =>
-      s->ReCustomAuthSigner.toSigner->Promise.ok
-    | (CustomAuth(_), _)
-    | (Encrypted, _)
-    | (Ledger, _) => ReTaquitoError.SignerIntentInconsistency->Promise.err
-    };
+        | (CustomAuth(_), CustomAuthSigner(s)) =>
+          s->ReCustomAuthSigner.toSigner->Promise.ok
+        | (CustomAuth(_), _)
+        | (Encrypted, _)
+        | (Ledger, _) => ReTaquitoError.SignerIntentInconsistency->Promise.err
+        }
+      });
   };
 };
 
@@ -284,10 +284,13 @@ module Transfer = {
         (),
       );
 
-    let%AwaitMap c = contractCache->FA12Cache.findContract(token);
-    let transfer =
-      c->Contracts.FA12.transfer(source, dest, amount->BigNumber.toFixed);
-    transfer.toTransferParams(. sendParams);
+    contractCache
+    ->FA12Cache.findContract(token)
+    ->Promise.mapOk(c => {
+        let transfer =
+          c->Contracts.FA12.transfer(source, dest, amount->BigNumber.toFixed);
+        transfer.toTransferParams(. sendParams);
+      });
   };
 
   let prepareFA2Transfer =
@@ -309,10 +312,13 @@ module Transfer = {
         (),
       );
 
-    let%AwaitMap c = contractCache->FA2Cache.findContract(token);
-    c##methods.Types.FA2.transfer(. transferParams).toTransferParams(.
-      sendParams,
-    );
+    contractCache
+    ->FA2Cache.findContract(token)
+    ->Promise.mapOk(c => {
+        c##methods.Types.FA2.transfer(. transferParams).toTransferParams(.
+          sendParams,
+        )
+      });
   };
 
   let makeTransferMichelsonParameter = (~entrypoint, ~parameter) =>
@@ -457,74 +463,78 @@ module Batch = {
 
   let run = (~endpoint, ~baseDir, ~source, ~ops, ~signingIntent, ()) => {
     let tk = Toolkit.create(endpoint);
-    let%Await signer = Signer.readSecretKey(source, signingIntent, baseDir);
-    let provider = Toolkit.{signer: signer};
-    tk->Toolkit.setProvider(provider);
-    let%Await ops =
-      ops
-      ->prepareOperations(endpoint, source)
-      ->List.fromArray
-      ->Promise.all
-      ->Promise.map(Result.collect);
-    let ops = ops->rewriteKinds;
-    let batch = tk.contract->Toolkit.Batch.make;
-    ops
-    ->List.reduce(batch, (b, op) =>
-        switch (op) {
-        | DelegationParams(d) => b->Toolkit.Batch.withDelegation(d)
-        | TransferParams(t) => b->Toolkit.Batch.withTransfer(t)
-        | OriginationParams(t) => b->Toolkit.Batch.withOrigination(t)
-        }
-      )
-    ->Toolkit.Batch.send
-    ->ReTaquitoError.fromPromiseParsed;
+    Signer.readSecretKey(source, signingIntent, baseDir)
+    ->Promise.flatMapOk(signer => {
+        let provider = Toolkit.{signer: signer};
+        tk->Toolkit.setProvider(provider);
+
+        ops
+        ->prepareOperations(endpoint, source)
+        ->List.fromArray
+        ->Promise.all
+        ->Promise.map(Result.collect);
+      })
+    ->Promise.flatMapOk(ops => {
+        let ops = ops->rewriteKinds;
+        let batch = tk.contract->Toolkit.Batch.make;
+        ops
+        ->List.reduce(batch, (b, op) =>
+            switch (op) {
+            | DelegationParams(d) => b->Toolkit.Batch.withDelegation(d)
+            | TransferParams(t) => b->Toolkit.Batch.withTransfer(t)
+            | OriginationParams(t) => b->Toolkit.Batch.withOrigination(t)
+            }
+          )
+        ->Toolkit.Batch.send
+        ->ReTaquitoError.fromPromiseParsed;
+      });
   };
 
   module Estimate = {
-    let patchEstimationWithHardLimits = (~endpoint, ~ops: array(params)) => {
-      let%Await {
-        hard_gas_limit_per_operation,
-        hard_storage_limit_per_operation,
-      } =
-        Rpc.getConstants(endpoint);
+    let patchEstimationWithHardLimits = (~endpoint, ~ops: array(params)) =>
+      Rpc.getConstants(endpoint)
+      ->Promise.flatMapOk(
+          ({hard_gas_limit_per_operation, hard_storage_limit_per_operation}) => {
+          let hardGasLimit = hard_gas_limit_per_operation->ReBigNumber.toInt;
+          let hardStorageLimit =
+            hard_storage_limit_per_operation->ReBigNumber.toInt;
 
-      let hardGasLimit = hard_gas_limit_per_operation->ReBigNumber.toInt;
-      let hardStorageLimit =
-        hard_storage_limit_per_operation->ReBigNumber.toInt;
-
-      let mapOptions = (gasLimit, storageLimit) => {
-        gasLimit->Option.mapDefault(false, g => g >= hardGasLimit)
-          ? Error(ReTaquitoError.GasExhaustedAboveLimit)
-          : storageLimit->Option.mapDefault(false, g => g >= hardStorageLimit)
-              ? Error(ReTaquitoError.StorageExhaustedAboveLimit)
-              : (
-                  gasLimit == None ? hardGasLimit->Some : gasLimit,
-                  storageLimit == None ? hardStorageLimit->Some : storageLimit,
+          let mapOptions = (gasLimit, storageLimit) => {
+            gasLimit->Option.mapDefault(false, g => g >= hardGasLimit)
+              ? Error(ReTaquitoError.GasExhaustedAboveLimit)
+              : storageLimit->Option.mapDefault(false, g =>
+                  g >= hardStorageLimit
                 )
-                ->Ok;
-      };
+                  ? Error(ReTaquitoError.StorageExhaustedAboveLimit)
+                  : (
+                      gasLimit == None ? hardGasLimit->Some : gasLimit,
+                      storageLimit == None
+                        ? hardStorageLimit->Some : storageLimit,
+                    )
+                    ->Ok;
+          };
 
-      // Only use the hard limit if not provided by the user and checks if one
-      // of the user's limit is above the maximum
-      ops
-      ->Array.map(
-          fun
-          | TransferParams(tp) =>
-            mapOptions(tp.gasLimit, tp.storageLimit)
-            ->Result.map(((gasLimit, storageLimit)) =>
-                TransferParams({...tp, gasLimit, storageLimit})
-              )
+          // Only use the hard limit if not provided by the user and checks if one
+          // of the user's limit is above the maximum
+          ops
+          ->Array.map(
+              fun
+              | TransferParams(tp) =>
+                mapOptions(tp.gasLimit, tp.storageLimit)
+                ->Result.map(((gasLimit, storageLimit)) =>
+                    TransferParams({...tp, gasLimit, storageLimit})
+                  )
 
-          | OriginationParams(op) =>
-            mapOptions(op.gasLimit, op.storageLimit)
-            ->Result.map(((gasLimit, storageLimit)) =>
-                OriginationParams({...op, gasLimit, storageLimit})
-              )
-          | dp => Ok(dp),
-        )
-      ->Result.collectArray
-      ->FutureBase.value;
-    };
+              | OriginationParams(op) =>
+                mapOptions(op.gasLimit, op.storageLimit)
+                ->Result.map(((gasLimit, storageLimit)) =>
+                    OriginationParams({...op, gasLimit, storageLimit})
+                  )
+              | dp => Ok(dp),
+            )
+          ->Result.collectArray
+          ->FutureBase.value;
+        });
 
     let inject = (~endpoint, ~publicKey, ~source, ~ops) => {
       let tk = Toolkit.create(endpoint);
@@ -533,40 +543,46 @@ module Batch = {
       let provider = Toolkit.{signer: signer};
       tk->Toolkit.setProvider(provider);
 
-      let%Await ops =
+      let ops =
         ops
         ->prepareOperations(endpoint, source)
         ->List.fromArray
         ->Promise.all
         ->Promise.map(Result.collect);
 
-      let ops = ops->rewriteKinds->List.toArray;
+      ops->Promise.flatMapOk(ops => {
+        let ops = ops->rewriteKinds->List.toArray;
 
-      let inject = ops => {
-        let ops =
-          ops->Array.map(
-            fun
-            | TransferParams(tp) => Toolkit.Estimation.fromTransferParams(tp)
-            | DelegationParams(dp) =>
-              Toolkit.Estimation.fromDelegateParams(dp)
-            | OriginationParams(op) =>
-              Toolkit.Estimation.fromOriginationParams(op),
-          );
+        let inject = ops => {
+          let ops =
+            ops->Array.map(
+              fun
+              | TransferParams(tp) =>
+                Toolkit.Estimation.fromTransferParams(tp)
+              | DelegationParams(dp) =>
+                Toolkit.Estimation.fromDelegateParams(dp)
+              | OriginationParams(op) =>
+                Toolkit.Estimation.fromOriginationParams(op),
+            );
 
-        tk.estimate
-        ->Toolkit.Estimation.batch(ops)
-        ->ReTaquitoError.fromPromiseParsed;
-      };
+          tk.estimate
+          ->Toolkit.Estimation.batch(ops)
+          ->ReTaquitoError.fromPromiseParsed;
+        };
 
-      let%Ft res = inject(ops);
-
-      switch (res) {
-      | Ok(results) => Promise.ok(results)
-      | Error(ReTaquitoError.GasExhausted | ReTaquitoError.StorageExhausted) =>
-        patchEstimationWithHardLimits(~endpoint, ~ops)
-        ->Promise.flatMapOk(inject)
-      | Error(e) => Promise.err(e)
-      };
+        inject(ops)
+        ->FutureBase.flatMap(res => {
+            switch (res) {
+            | Ok(results) => Promise.ok(results)
+            | Error(
+                ReTaquitoError.GasExhausted | ReTaquitoError.StorageExhausted,
+              ) =>
+              patchEstimationWithHardLimits(~endpoint, ~ops)
+              ->Promise.flatMapOk(inject)
+            | Error(e) => Promise.err(e)
+            }
+          });
+      });
     };
 
     let run =
@@ -578,28 +594,30 @@ module Batch = {
           ~ops,
           (),
         ) => {
-      let%Await alias = KeyWallet.aliasFromPkh(~dirpath=baseDir, ~pkh=source);
-
-      let%Await publicKey = KeyWallet.pkFromAlias(~dirpath=baseDir, ~alias);
-
-      let%Await res = inject(~endpoint, ~publicKey, ~source, ~ops);
-
-      let%AwaitMap (simulations, reveal) =
-        extractBatchRevealEstimation(
-          ~batchSize=ops.managers->Array.length,
-          res,
-        )
-        ->Promise.value;
-
-      handleEstimationResults(simulations, reveal, customValues);
+      KeyWallet.aliasFromPkh(~dirpath=baseDir, ~pkh=source)
+      ->Promise.flatMapOk(alias => {
+          KeyWallet.pkFromAlias(~dirpath=baseDir, ~alias)
+        })
+      ->Promise.flatMapOk(publicKey => {
+          inject(~endpoint, ~publicKey, ~source, ~ops)
+        })
+      ->Promise.flatMapOk(res => {
+          extractBatchRevealEstimation(
+            ~batchSize=ops.managers->Array.length,
+            res,
+          )
+          ->Promise.value
+        })
+      ->Promise.mapOk(((simulations, reveal)) => {
+          handleEstimationResults(simulations, reveal, customValues)
+        });
     };
   };
 };
 
 module Signature = {
   let signPayload = (~baseDir, ~source, ~signingIntent, ~payload) => {
-    let%Await signer = Signer.readSecretKey(source, signingIntent, baseDir);
-
-    signer->ReTaquitoSigner.sign(payload);
+    Signer.readSecretKey(source, signingIntent, baseDir)
+    ->Promise.flatMapOk(signer => {signer->ReTaquitoSigner.sign(payload)});
   };
 };

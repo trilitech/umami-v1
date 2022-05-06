@@ -23,8 +23,6 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open Let;
-
 module Unit = {
   type t = ReBigNumber.t;
 
@@ -66,11 +64,14 @@ module Unit = {
     };
 
   let fromFloatBigNumber = (x, decimals) => {
-    let%Res v = x->fromBigNumber(true);
-    let shift = fromInt(10)->powInt(decimals);
-    let x = v->times(shift);
-    x->isInteger
-      ? Ok(x) : Error(IllformedTokenUnit(v, Float(Some(decimals))));
+    x
+    ->fromBigNumber(true)
+    ->Result.flatMap(v => {
+        let shift = fromInt(10)->powInt(decimals);
+        let x = v->times(shift);
+        x->isInteger
+          ? Ok(x) : Error(IllformedTokenUnit(v, Float(Some(decimals))));
+      });
   };
   let fromBigNumber = x => x->fromBigNumber(false);
 

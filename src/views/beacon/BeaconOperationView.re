@@ -24,7 +24,6 @@
 /*****************************************************************************/
 
 open ReactNative;
-open Let;
 
 let styles =
   Style.(
@@ -69,39 +68,38 @@ let make =
 
   let onAbort = _ =>
     Promise.async(() => {
-      let%Await client =
-        client->Promise.fromOption(
+      client
+      ->Promise.fromOption(
           ~error=Errors.Generic(I18n.Errors.beacon_client_not_created),
-        );
-
-      let%AwaitMap () =
-        client->ReBeacon.WalletClient.respond(
-          `Error({
-            type_: `error,
-            id: beaconRequest.id,
-            errorType: `ABORTED_ERROR,
-          }),
-        );
-
-      closeAction();
+        )
+      ->Promise.flatMapOk(client =>
+          client->ReBeacon.WalletClient.respond(
+            `Error({
+              type_: `error,
+              id: beaconRequest.id,
+              errorType: `ABORTED_ERROR,
+            }),
+          )
+        )
+      ->Promise.mapOk(() => closeAction())
     });
 
   let onSimulateError = _ =>
     Promise.async(() => {
-      let%Await client =
-        client->Promise.fromOption(
+      client
+      ->Promise.fromOption(
           ~error=Errors.Generic(I18n.Errors.beacon_client_not_created),
-        );
-
-      let%AwaitMap () =
-        client->ReBeacon.WalletClient.respond(
-          `Error({
-            type_: `error,
-            id: beaconRequest.id,
-            errorType: `UNKNOWN_ERROR,
-          }),
-        );
-      closeAction();
+        )
+      ->Promise.flatMapOk(client =>
+          client->ReBeacon.WalletClient.respond(
+            `Error({
+              type_: `error,
+              id: beaconRequest.id,
+              errorType: `UNKNOWN_ERROR,
+            }),
+          )
+        )
+      ->Promise.mapOk(() => closeAction())
     });
 
   let onPressCancel = _ => {
@@ -124,22 +122,21 @@ let make =
   );
 
   let sendOperation = (~operation, i) => {
-    let%Await result = sendOperation(~operation, i);
-
-    let%AwaitMap () =
-      switch (client) {
-      | Some(client) =>
-        client->ReBeacon.WalletClient.respond(
-          `OperationResponse({
-            type_: `operation_response,
-            id: beaconRequest.id,
-            transactionHash: result.hash,
-          }),
-        )
-      | None => Promise.ok()
-      };
-
-    updateAccount(beaconRequest.sourceAddress);
+    sendOperation(~operation, i)
+    ->Promise.flatMapOk(result =>
+        switch (client) {
+        | Some(client) =>
+          client->ReBeacon.WalletClient.respond(
+            `OperationResponse({
+              type_: `operation_response,
+              id: beaconRequest.id,
+              transactionHash: result.hash,
+            }),
+          )
+        | None => Promise.ok()
+        }
+      )
+    ->Promise.mapOk(() => updateAccount(beaconRequest.sourceAddress));
   };
 
   let (signStep, setSign) as signOpStep =

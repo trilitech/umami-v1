@@ -23,8 +23,6 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open Let;
-
 // Here Custom contains a name, not a chainId
 type network = Network.configurableChains(string);
 
@@ -220,8 +218,8 @@ module Legacy = {
     let version = Version.mk(1, 2);
     let mk = () => {
       let mapValue = s => {
-        let%Res json = JsonEx.parse(s);
-        json->JsonEx.decode(legacyDecoder);
+        JsonEx.parse(s)
+        ->Result.flatMap(json => json->JsonEx.decode(legacyDecoder));
       };
       Storage.migrate(~mapValue, ~default=dummy, ());
     };
@@ -262,8 +260,8 @@ module Legacy = {
     let version = Version.mk(1, 5);
     let mk = () => {
       let mapValue = s => {
-        let%Res json = JsonEx.parse(s);
-        json->JsonEx.decode(legacyDecoder);
+        JsonEx.parse(s)
+        ->Result.flatMap(json => json->JsonEx.decode(legacyDecoder));
       };
       Storage.migrate(
         ~previousKey=Storage.key,

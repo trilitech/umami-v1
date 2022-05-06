@@ -1,5 +1,4 @@
 open TestFramework;
-open Let;
 open DerivationPath;
 
 let tests = [
@@ -13,8 +12,9 @@ let tests = [
 ];
 
 let impl = (pat, v) => {
-  let%ResMap path = pat->Pattern.fromString;
-  path->Pattern.implement(v)->toString;
+  pat
+  ->Pattern.fromString
+  ->Result.map(path => path->Pattern.implement(v)->toString);
 };
 
 describe("DerivationPath", ({test}) => {

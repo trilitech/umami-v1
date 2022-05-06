@@ -22,7 +22,7 @@
 /* DEALINGS IN THE SOFTWARE.                                                 */
 /*                                                                           */
 /*****************************************************************************/
-open Let;
+open Promise;
 
 module Encodings: {
   type Errors.t +=

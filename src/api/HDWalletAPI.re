@@ -23,8 +23,6 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open Let;
-
 type Errors.t +=
   | NoSecretFound
   | SecretNotFound(int)
@@ -174,45 +172,56 @@ module Aliases = {
   type t = array(Alias.t);
 
   let get = (~config: ConfigContext.env) => {
-    let%Await pkhs = config.baseDir()->KeyWallet.PkhAliases.read;
+    let pkhs = config.baseDir()->KeyWallet.PkhAliases.read;
+    let sks = config.baseDir()->KeyWallet.SecretAliases.read;
 
-    let%AwaitMap sks = config.baseDir()->KeyWallet.SecretAliases.read;
-    pkhs->Array.map(({name, value}) => {
-      let res = {
-        let%Res sk =
-          sks->KeyWallet.SecretAliases.find(skAlias => name == skAlias.name);
-        sk.value->KeyWallet.extractPrefixFromSecretKey;
-      };
+    Promise.flatMapOk2(sks, pkhs, (sks, pkhs) =>
+      pkhs
+      ->Array.map(({name, value}) => {
+          let res = {
+            sks
+            ->KeyWallet.SecretAliases.find(skAlias => name == skAlias.name)
+            ->Result.flatMap(sk =>
+                sk.value->KeyWallet.extractPrefixFromSecretKey
+              );
+          };
 
-      let kind =
-        switch (res) {
-        | Ok((kind, _)) => Alias.Account(kind)
-        | Error(_) => Contact
-        };
+          let kind =
+            switch (res) {
+            | Ok((kind, _)) => Alias.Account(kind)
+            | Error(_) => Contact
+            };
 
-      Alias.{name, address: value, kind: Some(kind)};
-    });
+          Alias.{name, address: value, kind: Some(kind)};
+        })
+      ->Promise.ok
+    );
   };
 
   let getAliasMap = (~config) => {
-    let%AwaitMap aliases = get(~config);
-
-    aliases
-    ->Array.map((Alias.{name, address, _}) => ((address :> string), name))
-    ->Map.String.fromArray;
+    get(~config)
+    ->Promise.mapOk(aliases =>
+        aliases
+        ->Array.map((Alias.{name, address, _}) =>
+            ((address :> string), name)
+          )
+        ->Map.String.fromArray
+      );
   };
 
   let getAliasForAddress = (~config, ~address: PublicKeyHash.t) => {
-    let%AwaitMap m = getAliasMap(~config);
-    m->Map.String.get((address :> string));
+    getAliasMap(~config)
+    ->Promise.mapOk(m => m->Map.String.get((address :> string)));
   };
 
   let getAddressForAlias = (~config, ~alias) => {
-    let%AwaitMap aliases = get(~config);
-    aliases
-    ->Array.map((Alias.{name, address, _}) => (name, address))
-    ->Map.String.fromArray
-    ->Map.String.get(alias);
+    get(~config)
+    ->Promise.mapOk(aliases =>
+        aliases
+        ->Array.map((Alias.{name, address, _}) => (name, address))
+        ->Map.String.fromArray
+        ->Map.String.get(alias)
+      );
   };
 
   let add = (~config: ConfigContext.env, ~alias, ~address) =>
@@ -251,176 +260,232 @@ module Accounts = {
   };
 
   let get = (~config: ConfigContext.env) => {
-    let%Await pkhs = config.baseDir()->KeyWallet.PkhAliases.read;
+    let pkhs = config.baseDir()->KeyWallet.PkhAliases.read;
+    let sks = config.baseDir()->KeyWallet.SecretAliases.read;
 
-    let%AwaitMap sks = config.baseDir()->KeyWallet.SecretAliases.read;
+    Promise.flatMapOk2(pkhs, sks, (pkhs, sks) =>
+      pkhs
+      ->Array.keepMap(({name, value}) => {
+          let res = {
+            sks
+            ->KeyWallet.SecretAliases.find(skAlias => name == skAlias.name)
+            ->Result.flatMap(sk =>
+                sk.value->KeyWallet.extractPrefixFromSecretKey
+              );
+          };
 
-    pkhs->Array.keepMap(({name, value}) => {
-      let res = {
-        let%Res sk =
-          sks->KeyWallet.SecretAliases.find(skAlias => name == skAlias.name);
-        sk.value->KeyWallet.extractPrefixFromSecretKey;
-      };
-
-      switch (res) {
-      | Ok((kind, _)) => Some(Account.{name, address: value, kind})
-      | Error(_) => None
-      };
-    });
+          switch (res) {
+          | Ok((kind, _)) => Some(Account.{name, address: value, kind})
+          | Error(_) => None
+          };
+        })
+      ->Promise.ok
+    );
   };
 
   let secretAt = (~config, index) => {
-    let%Res secrets = secrets(~config);
-
-    Result.fromOption(secrets[index], SecretNotFound(index));
+    secrets(~config)
+    ->Result.flatMap(secrets =>
+        Result.fromOption(secrets[index], SecretNotFound(index))
+      );
   };
 
   let updateSecretAt = (~config, secret, index) => {
-    let%Res secrets = secrets(~config);
-
-    if (secrets[index] = secret) {
-      SecretStorage.set(~backupFile=config.ConfigContext.backupFile, secrets)
-      ->Ok;
-    } else {
-      Error(CannotUpdateSecret(index));
-    };
+    secrets(~config)
+    ->Result.flatMap(secrets =>
+        if (secrets[index] = secret) {
+          SecretStorage.set(
+            ~backupFile=config.ConfigContext.backupFile,
+            secrets,
+          )
+          ->Ok;
+        } else {
+          Error(CannotUpdateSecret(index));
+        }
+      );
   };
 
   let recoveryPhraseAt = (index, ~password) => {
-    let%Await recoveryPhrases = recoveryPhrases()->Promise.value;
-    let%Await data =
-      recoveryPhrases[index]
-      ->Promise.fromOption(~error=RecoveryPhraseNotFound(index));
-
-    SecureStorage.Cipher.decrypt2(password, data);
+    recoveryPhrases()
+    ->Promise.value
+    ->Promise.flatMapOk(recoveryPhrases =>
+        recoveryPhrases[index]
+        ->Promise.fromOption(~error=RecoveryPhraseNotFound(index))
+      )
+    ->Promise.flatMapOk(data =>
+        SecureStorage.Cipher.decrypt2(password, data)
+      );
   };
 
   let importFromSigner =
       (~config: ConfigContext.env, ~alias, ~secretKey, signer) => {
-    let%Await pk = signer->ReTaquitoSigner.publicKey;
-    let pk = KeyWallet.mnemonicPkValue(pk);
-    let%Await pkh = signer->ReTaquitoSigner.publicKeyHash;
-    let skUri = KeyWallet.Prefixes.toString(Encrypted) ++ secretKey;
-    KeyWallet.addOrReplaceAlias(
-      ~dirpath=config.baseDir(),
-      ~alias,
-      ~pk,
-      ~pkh,
-      ~sk=skUri,
+    let pk =
+      signer
+      ->ReTaquitoSigner.publicKey
+      ->Promise.mapOk(KeyWallet.mnemonicPkValue);
+
+    let pkh = signer->ReTaquitoSigner.publicKeyHash;
+
+    Promise.flatMapOk2(
+      pk,
+      pkh,
+      (pk, pkh) => {
+        let skUri = KeyWallet.Prefixes.toString(Encrypted) ++ secretKey;
+        KeyWallet.addOrReplaceAlias(
+          ~dirpath=config.baseDir(),
+          ~alias,
+          ~pk,
+          ~pkh,
+          ~sk=skUri,
+        );
+      },
     );
   };
 
   let import = (~config, ~alias, ~secretKey, ~password) => {
-    let%Await signer =
+    let signer =
       ReTaquitoSigner.MemorySigner.create(
         ~secretKey,
         ~passphrase=password,
         (),
       );
-    let%Await pkh = signer->ReTaquitoSigner.publicKeyHash;
-    let%AwaitMap () = importFromSigner(~config, ~alias, ~secretKey, signer);
-    pkh;
+
+    let pkh = signer->Promise.flatMapOk(ReTaquitoSigner.publicKeyHash);
+
+    Promise.flatMapOk2(pkh, signer, (pkh, signer) =>
+      importFromSigner(~config, ~alias, ~secretKey, signer)
+      ->Promise.mapOk(() => pkh)
+    );
   };
 
   let derive = (~config: ConfigContext.env, ~index, ~alias, ~password) => {
-    let%Await secret = secretAt(~config, index)->Promise.value;
+    let secret = secretAt(~config, index)->Promise.value;
+    let recoveryPhrase = recoveryPhraseAt(index, ~password);
 
-    let%Await recoveryPhrase = recoveryPhraseAt(index, ~password);
+    let edesk =
+      Promise.flatMapOk2(secret, recoveryPhrase, (secret, recoveryPhrase) =>
+        secret.derivationPath
+        ->DerivationPath.Pattern.implement(secret.addresses->Array.length)
+        ->HD.edesk(recoveryPhrase->HD.seed, ~password)
+      );
 
-    let%Await edesk =
-      secret.derivationPath
-      ->DerivationPath.Pattern.implement(secret.addresses->Array.length)
-      ->HD.edesk(recoveryPhrase->HD.seed, ~password);
+    let address =
+      edesk->Promise.flatMapOk(edesk =>
+        import(~config, ~secretKey=edesk, ~alias, ~password)
+      );
 
-    let%Await address = import(~config, ~secretKey=edesk, ~alias, ~password);
-
-    let%Await () =
+    Promise.flatMapOk2(secret, address, (secret, address) =>
       {...secret, addresses: Array.concat(secret.addresses, [|address|])}
       ->updateSecretAt(~config, index)
-      ->Promise.value;
-
-    address->Promise.ok;
+      ->Result.map(() => address)
+      ->Promise.value
+    );
   };
 
   let unsafeDelete = (~config: ConfigContext.env, name) =>
     KeyWallet.removeAlias(~dirpath=config.baseDir(), ~alias=name);
 
   let delete = (~config, name) => {
-    let%Await address = Aliases.getAddressForAlias(~config, ~alias=name);
-    let%Await () = unsafeDelete(~config, name);
-
-    let%Ft secrets = secrets(~config)->Promise.value;
-
-    switch (secrets) {
-    | Ok(secrets) =>
-      let secrets =
-        secrets->Array.map(secret =>
-          address == secret.masterPublicKey
-            ? {...secret, masterPublicKey: None} : secret
+    let address =
+      Aliases.getAddressForAlias(~config, ~alias=name)
+      ->Promise.flatMapOk(address =>
+          unsafeDelete(~config, name)->Promise.mapOk(() => address)
         );
 
-      SecretStorage.set(~backupFile=config.backupFile, secrets)->Promise.ok;
-    | Error(NoSecretFound) => Promise.ok()
-    | Error(e) => e->Promise.err
-    };
+    address->Promise.flatMapOk(address => {
+      let secrets = secrets(~config);
+
+      switch (secrets) {
+      | Ok(secrets) =>
+        let secrets =
+          secrets->Array.map(secret =>
+            address == secret.masterPublicKey
+              ? {...secret, masterPublicKey: None} : secret
+          );
+
+        SecretStorage.set(~backupFile=config.backupFile, secrets)->Promise.ok;
+      | Error(NoSecretFound) => Promise.ok()
+      | Error(e) => e->Promise.err
+      };
+    });
   };
 
   let deleteSecretAt = (~config, index) => {
-    let%Await secretsBefore = secrets(~config)->Promise.value;
-    let%Await aliases = Aliases.getAliasMap(~config);
+    let secretsBefore = secrets(~config)->Promise.value;
+    let aliases = Aliases.getAliasMap(~config);
 
-    let%Await deletedAddresses =
-      secretsBefore[index]
-      ->Option.map(secret =>
-          secret.addresses
-          ->Array.concat(
-              secret.masterPublicKey
-              ->Option.mapWithDefault([||], pkh => [|pkh|]),
-            )
-          ->Array.keepMap(v => aliases->Map.String.get((v :> string)))
+    let deletedAddresses =
+      Promise.flatMapOk2(aliases, secretsBefore, (aliases, secretsBefore) =>
+        secretsBefore[index]
+        ->Option.map(secret =>
+            secret.addresses
+            ->Array.concat(
+                secret.masterPublicKey
+                ->Option.mapWithDefault([||], pkh => [|pkh|]),
+              )
+            ->Array.keepMap(v => aliases->Map.String.get((v :> string)))
+          )
+        ->Promise.fromOption(~error=SecretNotFound(index))
+      );
+
+    let deleteAddressP =
+      deletedAddresses->Promise.flatMapOk(addresses =>
+        addresses->Array.reduce(Promise.ok(), (acc, addr) =>
+          acc->Promise.flatMapOk(() => addr->unsafeDelete(~config))
         )
-      ->Promise.fromOption(~error=SecretNotFound(index));
-
-    let%AwaitMap () =
-      deletedAddresses->Array.reduce(Promise.ok(), (acc, addr) =>
-        acc->Promise.flatMapOk(() => addr->unsafeDelete(~config))
       );
 
-    let _ =
-      secretsBefore->Js.Array2.spliceInPlace(
-        ~pos=index,
-        ~remove=1,
-        ~add=[||],
+    let secretsBeforeP =
+      Promise.flatMapOk2(
+        secretsBefore,
+        deleteAddressP,
+        (secretsBefore, ()) => {
+          let _ =
+            secretsBefore->Js.Array2.spliceInPlace(
+              ~pos=index,
+              ~remove=1,
+              ~add=[||],
+            );
+          SecretStorage.set(~backupFile=config.backupFile, secretsBefore);
+          Promise.ok();
+        },
       );
-    SecretStorage.set(~backupFile=config.backupFile, secretsBefore);
 
-    switch (recoveryPhrases()) {
-    | Ok(recoveryPhrases) =>
-      let _ =
-        recoveryPhrases->Js.Array2.spliceInPlace(
-          ~pos=index,
-          ~remove=1,
-          ~add=[||],
-        );
-      RecoveryPhrasesStorage.set(recoveryPhrases);
-    | Error(_) => ()
+    let applyStorage = () => {
+      switch (recoveryPhrases()) {
+      | Ok(recoveryPhrases) =>
+        let _ =
+          recoveryPhrases->Js.Array2.spliceInPlace(
+            ~pos=index,
+            ~remove=1,
+            ~add=[||],
+          );
+        RecoveryPhrasesStorage.set(recoveryPhrases);
+      | Error(_) => ()
+      };
+
+      let secretsAfter = secrets(~config);
+      switch (secretsAfter) {
+      | Ok([||])
+      | Error(NoSecretFound) =>
+        SecureStorage.LockStorage.remove();
+        RecoveryPhrasesStorage.remove();
+        SecretStorage.remove();
+      | _ => ()
+      };
     };
 
-    let secretsAfter = secrets(~config);
-    switch (secretsAfter) {
-    | Ok([||])
-    | Error(NoSecretFound) =>
-      SecureStorage.LockStorage.remove();
-      RecoveryPhrasesStorage.remove();
-      SecretStorage.remove();
-    | _ => ()
-    };
+    secretsBeforeP->Promise.flatMapOk(() => {
+      applyStorage();
+      Promise.ok();
+    });
   };
 
   let legacyImport = (~config, alias, recoveryPhrase, ~password) => {
-    let%Await secretKey = HD.edeskLegacy(recoveryPhrase, ~password);
-
-    import(~config, ~alias, ~secretKey, ~password);
+    HD.edeskLegacy(recoveryPhrase, ~password)
+    ->Promise.flatMapOk(secretKey =>
+        import(~config, ~alias, ~secretKey, ~password)
+      );
   };
 
   module Scan = {
@@ -442,27 +507,33 @@ module Accounts = {
     };
 
     let runLegacy = (~recoveryPhrase, ~password) => {
-      let%Await encryptedSecretKey =
-        HD.edeskLegacy(recoveryPhrase, ~password);
+      let encryptedSecretKey = HD.edeskLegacy(recoveryPhrase, ~password);
 
-      let%Await signer =
-        ReTaquitoSigner.MemorySigner.create(
-          ~secretKey=encryptedSecretKey,
-          ~passphrase=password,
-          (),
+      let signer =
+        encryptedSecretKey->Promise.flatMapOk(secretKey =>
+          ReTaquitoSigner.MemorySigner.create(
+            ~secretKey,
+            ~passphrase=password,
+            (),
+          )
         );
 
-      let%Await publicKeyHash = signer->ReTaquitoSigner.publicKeyHash;
+      let publicKeyHash =
+        signer->Promise.flatMapOk(ReTaquitoSigner.publicKeyHash);
 
-      Promise.ok({kind: Legacy, publicKeyHash, encryptedSecretKey});
+      Promise.flatMapOk2(
+        publicKeyHash, encryptedSecretKey, (publicKeyHash, encryptedSecretKey) =>
+        Promise.ok({kind: Legacy, publicKeyHash, encryptedSecretKey})
+      );
     };
 
     let usedAccount = (~config, ~account, ~onFoundKey, ~index) => {
-      let%Await used = used(config, account.publicKeyHash);
-
-      used
-        ? onFoundKey(index, account)
-        : index == 0 ? onFoundKey(index, account) : Promise.ok();
+      used(config, account.publicKeyHash)
+      ->Promise.flatMapOk(used =>
+          used
+            ? onFoundKey(index, account)
+            : index == 0 ? onFoundKey(index, account) : Promise.ok()
+        );
     };
 
     let runStream =
@@ -477,36 +548,46 @@ module Accounts = {
       let rec loop = n => {
         let path = path->DerivationPath.Pattern.implement(n);
 
-        let%Await account = getKey(path, schema);
-        let onFoundKey = (n, account) => {
-          onFoundKey(n, account);
-          loop(n + 1);
-        };
-        usedAccount(~config, ~account, ~onFoundKey, ~index=n);
+        getKey(path, schema)
+        ->Promise.flatMapOk(account => {
+            let onFoundKey = (n, account) => {
+              onFoundKey(n, account);
+              loop(n + 1);
+            };
+            usedAccount(~config, ~account, ~onFoundKey, ~index=n);
+          });
       };
       loop(startIndex);
     };
 
     let runStreamLegacy = (~config, ~recoveryPhrase, ~password, ~onFoundKey) => {
       let onFoundKey = (n, acc) => onFoundKey(n, acc)->Promise.ok;
-      let%Await account = runLegacy(~recoveryPhrase, ~password);
-      usedAccount(~config, ~account, ~onFoundKey, ~index=-1);
+      runLegacy(~recoveryPhrase, ~password)
+      ->Promise.flatMapOk(account =>
+          usedAccount(~config, ~account, ~onFoundKey, ~index=-1)
+        );
     };
 
     let getSeedKey = (~recoveryPhrase, ~password, path, _) => {
-      let%Await encryptedSecretKey =
+      let encryptedSecretKey =
         path->HD.edesk(recoveryPhrase->HD.seed, ~password);
 
-      let%Await signer =
-        ReTaquitoSigner.MemorySigner.create(
-          ~secretKey=encryptedSecretKey,
-          ~passphrase=password,
-          (),
+      let signer =
+        encryptedSecretKey->Promise.flatMapOk(secretKey =>
+          ReTaquitoSigner.MemorySigner.create(
+            ~secretKey,
+            ~passphrase=password,
+            (),
+          )
         );
 
-      let%AwaitMap publicKeyHash = signer->ReTaquitoSigner.publicKeyHash;
+      let publicKeyHash =
+        signer->Promise.flatMapOk(ReTaquitoSigner.publicKeyHash);
 
-      {publicKeyHash, encryptedSecretKey, kind: Regular};
+      Promise.flatMapOk2(publicKeyHash, encryptedSecretKey, (pkh, sk) =>
+        {publicKeyHash: pkh, encryptedSecretKey: sk, kind: Regular}
+        ->Promise.ok
+      );
     };
 
     let runStreamSeed =
@@ -518,30 +599,37 @@ module Accounts = {
           secret,
           path: DerivationPath.Pattern.t,
         ) => {
-      let%Await r = recoveryPhrases()->Promise.value;
-
-      switch (r[secret.Secret.Repr.index]) {
-      | Some(recoveryPhrase) =>
-        let onFoundKey = (n, acc) => onFoundKey(n, acc);
-
-        let%Await recoveryPhrase =
-          recoveryPhrase->SecureStorage.Cipher.decrypt(password);
-
-        let%Await () =
-          runStream(
-            ~config,
-            ~startIndex,
-            ~onFoundKey,
-            path,
-            PublicKeyHash.Scheme.ED25519,
-            getSeedKey(~recoveryPhrase, ~password),
-          );
-
-        secret.Secret.Repr.secret.masterPublicKey == None
-          ? runStreamLegacy(~config, ~recoveryPhrase, ~password, ~onFoundKey)
-          : Promise.ok();
-      | None => Promise.ok()
-      };
+      recoveryPhrases()
+      ->Promise.value
+      ->Promise.flatMapOk(r =>
+          switch (r[secret.Secret.Repr.index]) {
+          | Some(recoveryPhrase) =>
+            recoveryPhrase
+            ->SecureStorage.Cipher.decrypt(password)
+            ->Promise.flatMapOk(recoveryPhrase =>
+                runStream(
+                  ~config,
+                  ~startIndex,
+                  ~onFoundKey,
+                  path,
+                  PublicKeyHash.Scheme.ED25519,
+                  getSeedKey(~recoveryPhrase, ~password),
+                )
+                ->Promise.mapOk(() => recoveryPhrase)
+              )
+            ->Promise.flatMapOk(recoveryPhrase =>
+                secret.Secret.Repr.secret.masterPublicKey == None
+                  ? runStreamLegacy(
+                      ~config,
+                      ~recoveryPhrase,
+                      ~password,
+                      ~onFoundKey,
+                    )
+                  : Promise.ok()
+              )
+          | None => Promise.ok()
+          }
+        );
     };
 
     let rec runOnSeed =
@@ -555,55 +643,66 @@ module Accounts = {
               ~password,
               ~index=0,
               (),
-            ) => {
+            )
+            : Promise.t(array(PublicKeyHash.t)) => {
       let name = baseName ++ " /" ++ index->Js.Int.toString;
-      let%Await edesk =
+      let edesk =
         derivationPath
         ->DerivationPath.Pattern.implement(index)
         ->HD.edesk(seed, ~password);
 
-      let%Await signer =
-        ReTaquitoSigner.MemorySigner.create(
-          ~secretKey=edesk,
-          ~passphrase=password,
-          (),
+      let signer =
+        edesk->Promise.flatMapOk(secretKey =>
+          ReTaquitoSigner.MemorySigner.create(
+            ~secretKey,
+            ~passphrase=password,
+            (),
+          )
         );
 
-      let%Await address = signer->ReTaquitoSigner.publicKeyHash;
+      let address = signer->Promise.flatMapOk(ReTaquitoSigner.publicKeyHash);
 
-      let%Await isValidated =
+      let isValidated =
         // always include 0'
-        index == 0 ? Promise.ok(true) : config->used(address);
+        index == 0
+          ? Promise.ok(true)
+          : address->Promise.flatMapOk(addr => config->used(addr));
 
-      if (isValidated) {
-        let%Await () =
-          importFromSigner(~config, ~secretKey=edesk, ~alias=name, signer);
-
-        let%AwaitMap addresses =
-          runOnSeed(
-            ~config,
-            seed,
-            baseName,
-            ~derivationPath,
-            ~password,
-            ~index=index + 1,
-            (),
-          );
-        Array.concat([|address|], addresses);
-      } else {
-        unsafeDelete(~config, name)->Promise.map(_ => Ok([||]));
-      };
+      isValidated->Promise.flatMapOk(isValidated =>
+        if (isValidated) {
+          Promise.flatMapOk2(signer, edesk, (signer, edesk) =>
+            importFromSigner(~config, ~secretKey=edesk, ~alias=name, signer)
+          )
+          ->Promise.flatMapOk(() =>
+              runOnSeed(
+                ~config,
+                seed,
+                baseName,
+                ~derivationPath,
+                ~password,
+                ~index=index + 1,
+                (),
+              )
+            )
+          ->Promise.flatMapOk2(address, (addresses, address) =>
+              Array.concat([|address|], addresses)->Promise.ok
+            );
+        } else {
+          unsafeDelete(~config, name)->Promise.map(_ => Ok([||]));
+        }
+      );
     };
 
     let runLegacy = (~config, recoveryPhrase, name, ~password) => {
-      let%Await legacyAddress =
-        legacyImport(~config, name, recoveryPhrase, ~password);
-
-      let%Await isValidated = config->used(legacyAddress);
-
-      isValidated
-        ? Some(legacyAddress)->Promise.ok
-        : unsafeDelete(~config, name)->Promise.map(_ => Ok(None));
+      legacyImport(~config, name, recoveryPhrase, ~password)
+      ->Promise.flatMapOk(addr =>
+          config->used(addr)->Promise.mapOk(used => (used, addr))
+        )
+      ->Promise.flatMapOk(((validated, addr)) =>
+          validated
+            ? Some(addr)->Promise.ok
+            : unsafeDelete(~config, name)->Promise.map(_ => Ok(None))
+        );
     };
 
     let run =
@@ -618,7 +717,7 @@ module Accounts = {
           ~index=0,
           (),
         ) => {
-      let%Await addresses =
+      let addresses =
         runOnSeed(
           ~config,
           recoveryPhrase->HD.seed,
@@ -628,9 +727,11 @@ module Accounts = {
           ~index,
           (),
         );
-      let%AwaitMap legacyAddresses =
-        runLegacy(~config, recoveryPhrase, baseName ++ " legacy", ~password);
-      (addresses, legacyAddresses);
+
+      addresses->Promise.flatMapOk(addresses =>
+        runLegacy(~config, recoveryPhrase, baseName ++ " legacy", ~password)
+        ->Promise.mapOk(legacyAddress => (addresses, legacyAddress))
+      );
     };
   };
 
@@ -695,92 +796,97 @@ module Accounts = {
         ~password,
         (),
       ) => {
-    let%Await () = System.Client.initDir(config.baseDir());
     let backupPhraseConcat = backupPhrase->Js.Array2.joinWith(" ");
-
-    let%Await () = password->SecureStorage.validatePassword;
-
     let bpLen = backupPhrase->Array.length;
 
-    let%Await () =
-      (
-        if (bpLen->Bip39.Mnemonic.isStandardLength) {
-          backupPhrase->Js.Array2.reducei(
-            (res, w, i) =>
-              res->Result.flatMap(() =>
-                w->Bip39.included
-                  ? Ok() : Bip39.Mnemonic.UnknownWord(w, i)->Error
-              ),
-            Ok(),
-          );
-        } else {
-          Bip39.Mnemonic.IncorrectNumberOfWords->Error;
-        }
+    let initAndCheckP =
+      System.Client.initDir(config.baseDir())
+      ->Promise.flatMapOk(() => password->SecureStorage.validatePassword)
+      ->Promise.flatMapOk(() =>
+          (
+            if (bpLen->Bip39.Mnemonic.isStandardLength) {
+              backupPhrase->Js.Array2.reducei(
+                (res, w, i) =>
+                  res->Result.flatMap(() =>
+                    w->Bip39.included
+                      ? Ok() : Bip39.Mnemonic.UnknownWord(w, i)->Error
+                  ),
+                Ok(),
+              );
+            } else {
+              Bip39.Mnemonic.IncorrectNumberOfWords->Error;
+            }
+          )
+          ->Promise.value
+        )
+      ->Promise.flatMapOk(() =>
+          indexOfRecoveryPhrase(backupPhraseConcat, ~password)
+          ->Promise.map(index =>
+              switch (index) {
+              | Some(_) => SecretAlreadyImported->Error
+              | None => Ok()
+              }
+            )
+        );
+
+    initAndCheckP
+    ->Promise.flatMapOk(() =>
+        Scan.run(
+          ~config,
+          ~recoveryPhrase=backupPhraseConcat,
+          ~baseName=name,
+          ~derivationPath,
+          ~password,
+          (),
+        )
       )
-      ->Promise.value;
-
-    let%Await () =
-      indexOfRecoveryPhrase(backupPhraseConcat, ~password)
-      ->Promise.map(index =>
-          switch (index) {
-          | Some(_) => SecretAlreadyImported->Error
-          | None => Ok()
-          }
-        );
-
-    let%Await (addresses, legacyAddress) =
-      Scan.run(
-        ~config,
-        ~recoveryPhrase=backupPhraseConcat,
-        ~baseName=name,
-        ~derivationPath,
-        ~password,
-        (),
+    ->Promise.flatMapOk(((addresses, legacyAddress)) =>
+        backupPhraseConcat
+        ->SecureStorage.Cipher.encrypt(password)
+        ->Promise.mapOk(recoveryPhrase =>
+            registerRecoveryPhrase(recoveryPhrase)
+          )
+        ->Promise.mapOk(() =>
+            registerSecret(
+              ~config,
+              ~name,
+              ~kind=Secret.Repr.Mnemonics,
+              ~derivationPath,
+              ~derivationScheme,
+              ~addresses,
+              ~masterPublicKey=legacyAddress,
+            )
+          )
       );
-
-    let%AwaitMap () =
-      backupPhraseConcat
-      ->SecureStorage.Cipher.encrypt(password)
-      ->Promise.mapOk(recoveryPhrase =>
-          registerRecoveryPhrase(recoveryPhrase)
-        );
-
-    registerSecret(
-      ~config,
-      ~name,
-      ~kind=Secret.Repr.Mnemonics,
-      ~derivationPath,
-      ~derivationScheme,
-      ~addresses,
-      ~masterPublicKey=legacyAddress,
-    );
   };
 
   let restoreFromBackupFile =
       (~config: ConfigContext.env, ~backupFile, ~password, ()) => {
-    let%Await backupFile = BackupFile.read(backupFile);
-    Array.zip(backupFile.recoveryPhrases, backupFile.derivationPaths)
-    ->Promise.reducei(
-        Ok(), (_, (encryptedBackupPhrase, derivationPath), index) =>
-        encryptedBackupPhrase
-        ->SecureStorage.Cipher.decrypt(password)
-        ->Promise.flatMapOk(backupPhrase =>
-            restore(
-              ~config,
-              ~backupPhrase=backupPhrase->Js.String2.split(" "),
-              ~name="Secret " ++ index->string_of_int,
-              ~derivationPath,
-              ~password,
-              (),
-            )
+    BackupFile.read(backupFile)
+    ->Promise.flatMapOk(backupFile =>
+        Array.zip(backupFile.recoveryPhrases, backupFile.derivationPaths)
+        ->Promise.reducei(
+            Ok(), (_, (encryptedBackupPhrase, derivationPath), index) =>
+            encryptedBackupPhrase
+            ->SecureStorage.Cipher.decrypt(password)
+            ->Promise.flatMapOk(backupPhrase =>
+                restore(
+                  ~config,
+                  ~backupPhrase=backupPhrase->Js.String2.split(" "),
+                  ~name="Secret " ++ index->string_of_int,
+                  ~derivationPath,
+                  ~password,
+                  (),
+                )
+              )
           )
-      )
-    ->Promise.tapError(_
-        // delete everything if an error occured
-        =>
-          System.Client.resetDir(config.baseDir())
-          ->Promise.tapOk(_ => LocalStorage.clear())
-        );
+        ->Promise.tapError(_
+            // delete everything if an error occured
+            =>
+              System.Client.resetDir(config.baseDir())
+              ->Promise.tapOk(_ => LocalStorage.clear())
+            )
+      );
   };
 
   let forceBackup = backupFile =>
@@ -789,14 +895,13 @@ module Accounts = {
 
   let importMnemonicKeys = (~config, ~accounts, ~password, ~index, ()) => {
     let importLegacyKey = (basename, encryptedSecret) => {
-      let%AwaitMap pkh =
-        import(
-          ~config,
-          ~alias=basename ++ " legacy",
-          ~secretKey=encryptedSecret,
-          ~password,
-        );
-      Some(pkh);
+      import(
+        ~config,
+        ~alias=basename ++ " legacy",
+        ~secretKey=encryptedSecret,
+        ~password,
+      )
+      ->Promise.mapOk(pkh => Some(pkh));
     };
 
     let rec importKeys = (basename, index, (accounts, legacy), pkhs) => {
@@ -806,52 +911,58 @@ module Accounts = {
 
       // by construction, there should be only one legacy
       | [Scan.{encryptedSecretKey, kind: Legacy}, ...rem] =>
-        let%Await legacy = importLegacyKey(basename, encryptedSecretKey);
-        importKeys(basename, index + 1, (rem, legacy), pkhs);
+        importLegacyKey(basename, encryptedSecretKey)
+        ->Promise.flatMapOk(legacy =>
+            importKeys(basename, index + 1, (rem, legacy), pkhs)
+          )
 
       | [{encryptedSecretKey, kind: Regular}, ...rem] =>
-        let%Await pkh =
-          import(~config, ~alias, ~secretKey=encryptedSecretKey, ~password);
-        importKeys(basename, index + 1, (rem, legacy), [pkh, ...pkhs]);
+        import(~config, ~alias, ~secretKey=encryptedSecretKey, ~password)
+        ->Promise.flatMapOk(pkh =>
+            importKeys(basename, index + 1, (rem, legacy), [pkh, ...pkhs])
+          )
       };
     };
 
-    let%Await secret = secretAt(~config, index)->Promise.value;
+    secretAt(~config, index)
+    ->Promise.value
+    ->Promise.flatMapOk(secret => {
+        importKeys(
+          secret.name,
+          secret.addresses->Array.length,
+          (accounts, None),
+          [],
+        )
+        ->Promise.flatMapOk(((addresses, masterPublicKey)) => {
+            let secret = {
+              ...secret,
+              addresses: Array.concat(secret.addresses, addresses),
+              masterPublicKey,
+            };
 
-    let%AwaitRes (addresses, masterPublicKey) =
-      importKeys(
-        secret.name,
-        secret.addresses->Array.length,
-        (accounts, None),
-        [],
-      );
-
-    let secret = {
-      ...secret,
-      addresses: Array.concat(secret.addresses, addresses),
-      masterPublicKey,
-    };
-
-    let%ResMap () = updateSecretAt(secret, ~config, index);
-    (addresses, masterPublicKey);
+            updateSecretAt(secret, ~config, index)
+            ->Result.map(() => (addresses, masterPublicKey))
+            ->Promise.value;
+          })
+      });
   };
 
   let importCustomAuth =
       (~config: ConfigContext.env, ~pkh, ~pk, infos: ReCustomAuth.infos) => {
-    let%Await () = System.Client.initDir(config.baseDir());
+    System.Client.initDir(config.baseDir())
+    ->Promise.flatMapOk(() => {
+        let sk = KeyWallet.CustomAuth.Encode.toSecretKey(infos);
+        let pk = KeyWallet.customPkValue(~secretPath=sk, pk);
 
-    let sk = KeyWallet.CustomAuth.Encode.toSecretKey(infos);
-    let pk = KeyWallet.customPkValue(~secretPath=sk, pk);
-
-    let%AwaitMap () =
-      KeyWallet.addOrReplaceAlias(
-        ~dirpath=config.baseDir(),
-        ~alias=(infos.handle :> string),
-        ~pk,
-        ~pkh,
-        ~sk,
-      );
-    pkh;
+        KeyWallet.addOrReplaceAlias(
+          ~dirpath=config.baseDir(),
+          ~alias=(infos.handle :> string),
+          ~pk,
+          ~pkh,
+          ~sk,
+        );
+      })
+    ->Promise.mapOk(() => pkh);
   };
 
   let getPublicKey = (~config: ConfigContext.env, ~account: Account.t) => {
