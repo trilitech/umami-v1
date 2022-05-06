@@ -1,16 +1,17 @@
 stages:
   - build
-  - test
+  - test-coverage
   - dist
+  - test
 
 cache:
   paths:
     - node_modules/
     - .yarn
 
-default:
+.before_script_template:
+  before_script:
   image: node:16-buster
-
   # Validate that the repository contains a package.json and extract a few values from it.
   before_script:
     - |
@@ -23,22 +24,70 @@ default:
     - NPM_PACKAGE_VERSION=$(node -p "require('./package.json').version")
     - apt update
     - apt -y install build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev libusb-1.0.0-dev libudev-dev
-    - yarn --ignore-scripts
+    - yarn
 
 
 build-reason:
+  extends: .before_script_template
   stage: build
   script: yarn bsb:build
 
 dist:
+  extends: .before_script_template
   stage: dist
   script: CI=false yarn electron:build
   only:
     - master
 
-test:
-  stage: test
+test-coverage:
+  extends: .before_script_template
+  stage: test-coverage
   script:
     - yarn test
   after_script:
     - bash <(curl -s https://codecov.io/bash)
+
+
+test:
+  stage: test
+  variables:
+    SECURE_LOG_LEVEL: "debug"
+  artifacts:
+    paths:
+    - gl-sast-report.json
+    - gl-secret-detection-report.json
+    - gl-dependency-scanning-report.json
+    - gl-container-scanning-report.json
+    - gl-license-scanning-report.json
+    expire_in: 180 days
+  script:
+    - echo
+
+# You can override the included template(s) by including variable overrides
+# SAST customization: https://docs.gitlab.com/ee/user/application_security/sast/#customizing-the-sast-settings
+# Secret Detection customization: https://docs.gitlab.com/ee/user/application_security/secret_detection/#customizing-settings
+# Dependency Scanning customization: https://docs.gitlab.com/ee/user/application_security/dependency_scanning/#customizing-the-dependency-scanning-settings
+# Note that environment variables can be set in several places
+# See https://docs.gitlab.com/ee/ci/variables/#cicd-variable-precedence
+
+include:
+  - template: Jobs/Dependency-Scanning.gitlab-ci.yml
+  - template: Jobs/License-Scanning.gitlab-ci.yml
+  - template: Jobs/Secret-Detection.gitlab-ci.yml
+  - template: Security/SAST.gitlab-ci.yml
+  - template: Security/License-Scanning.gitlab-ci.yml
+  - template: Security/Dependency-Scanning.gitlab-ci.yml
+  - template: Security/SAST-IaC.latest.gitlab-ci.yml
+#   - template: Code-Quality.gitlab-ci.yml
+
+# code_quality:
+#   stage: test
+#   artifacts:
+#     expire_in: 180 days
+#     expose_as: code_quality
+#     paths: [gl-code_quality-report.json]
+
+
+sast:
+  stage: test
+  image: docker:stable
