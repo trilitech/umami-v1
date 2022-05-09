@@ -25,7 +25,8 @@
 
 open Let;
 
-type network = Network.configurableChains;
+// Here Custom contains a name, not a chainId
+type network = Network.configurableChains(string);
 
 type t = {
   network: option(network),
@@ -34,6 +35,7 @@ type t = {
   sdkBaseDir: option(System.Path.t),
   customNetworks: list(Network.network),
   backupFile: option(System.Path.t),
+  autoUpdates: bool,
 };
 
 [@bs.val] [@bs.scope "JSON"] external parse: string => t = "parse";
@@ -55,6 +57,7 @@ let dummy = {
   sdkBaseDir: None,
   customNetworks: [],
   backupFile: None,
+  autoUpdates: true,
 };
 
 module Encode = {
@@ -68,7 +71,7 @@ module Encode = {
 
   let encoder = c =>
     object_([
-      ("network", nullable(Network.Encode.chainEncoder, c.network)),
+      ("network", nullable(Network.Encode.chainEncoderString, c.network)),
       ("theme", nullable(string, c.theme->Option.map(themeToString))),
       ("confirmations", nullable(int, c.confirmations)),
       (
@@ -76,7 +79,11 @@ module Encode = {
         nullable(string, c.sdkBaseDir->Option.map(System.Path.toString)),
       ),
       ("customNetworks", list(Network.Encode.encoder, c.customNetworks)),
-      ("backupFile", nullable(string, c.backupFile->Option.map(System.Path.toString)))
+      (
+        "backupFile",
+        nullable(string, c.backupFile->Option.map(System.Path.toString)),
+      ),
+      ("autoUpdates", bool(c.autoUpdates)),
     ]);
 };
 
@@ -94,7 +101,9 @@ module Decode = {
     json
     |> field(
          "network",
-         optional(Network.Decode.(chainDecoder(nativeChainFromString))),
+         optional(
+           Network.Decode.(chainDecoderString(nativeChainFromString)),
+         ),
        );
 
   let themeDecoder = json =>
@@ -102,6 +111,8 @@ module Decode = {
     ->Option.map(t => t->themeFromString->Result.getWithDefault(`system));
 
   let confirmationsDecoder = field("confirmations", optional(int));
+
+  let autoUpdatesDecoder = field("autoUpdates", bool);
 
   let sdkBaseDirDecoder = json =>
     (json |> field("sdkBaseDir", optional(string)))
@@ -113,7 +124,8 @@ module Decode = {
     )
     ->Option.getWithDefault([]);
 
-  let backupFileDecoder = json =>  (json |> optional(field("backupFile", string)))
+  let backupFileDecoder = json =>
+    (json |> optional(field("backupFile", string)))
     ->Option.map(System.Path.mk);
 
   let decoder = json => {
@@ -123,6 +135,7 @@ module Decode = {
     sdkBaseDir: json |> sdkBaseDirDecoder,
     customNetworks: json |> customNetworksDecoder,
     backupFile: json |> backupFileDecoder,
+    autoUpdates: json |> autoUpdatesDecoder,
   };
 };
 
@@ -153,7 +166,7 @@ module Legacy = {
           field("NAME", string)
           |> andThen(
                fun
-               | "Custom" => field("VAL", string)
+               | "Custom" => field("VAL", Network.Decode.chainIdDecoder)
                | v =>
                  JsonEx.(
                    raise(
@@ -169,6 +182,11 @@ module Legacy = {
 
     let networkLegacyDecoder = json =>
       (json |> optional(field("network", networkVariantLegacyDecoder)))
+      ->Option.map(
+          fun
+          | `Custom((c: Network.chainId)) => `Custom((c :> string))
+          | #Network.supportedChains as n => n,
+        )
       ->Option.map(removeNonNativeNetwork);
 
     let legacyChainDecoder = json =>
@@ -196,6 +214,7 @@ module Legacy = {
         sdkBaseDir: json |> sdkBaseDirDecoder,
         customNetworks: json |> customNetworksLegacyDecoder,
         backupFile: json |> backupFileDecoder,
+        autoUpdates: json |> autoUpdatesDecoder,
       };
 
     let version = Version.mk(1, 2);
@@ -226,7 +245,7 @@ module Legacy = {
       |> field(
            "network",
            optional(
-             Network.Decode.chainDecoder(legacyNativeChainFromString),
+             Network.Decode.chainDecoderString(legacyNativeChainFromString),
            ),
          );
 
@@ -237,6 +256,7 @@ module Legacy = {
       sdkBaseDir: json |> sdkBaseDirDecoder,
       customNetworks: json |> customNetworksDecoder,
       backupFile: json |> backupFileDecoder,
+      autoUpdates: json |> autoUpdatesDecoder,
     };
 
     let version = Version.mk(1, 5);

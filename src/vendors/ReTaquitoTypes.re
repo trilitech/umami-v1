@@ -213,8 +213,8 @@ module Tzip12 = {
     isTransferable: option(bool), // default: true
     isBooleanAmount: option(bool), // default: false
     shouldPreferSymbol: option(bool), //default: false
-    formats: option(array(TokenRepr.Metadata.format)),
-    attributes: option(array(TokenRepr.Metadata.attribute)),
+    formats: option(array(Metadata.format)),
+    attributes: option(array(Metadata.attribute)),
   };
 
   type t = {getTokenMetadata: (. int) => Js.Promise.t(metadata)};
@@ -376,20 +376,8 @@ module FA2 = {
 
   type transfer;
 
-  /* Balance_of is never called directly, however it could be used in the future
-     to generate the input for `run_view`. */
-  type balanceOfRequest = {
-    owner: PublicKeyHash.t,
-    token_id: BigNumber.fixed,
-  };
-
-  type balanceOf;
-
   type methods = {
     transfer: (. array(transferParam)) => Contract.methodResult(transfer),
-    balance_of:
-      (. array(balanceOfRequest), PublicKeyHash.t) =>
-      Contract.methodResult(balanceOf),
   };
   type storage = Tzip12Storage.storage;
   type entrypoints;

@@ -31,7 +31,7 @@ type t = {
   name: string,
   kind,
   derivationPath: DerivationPath.Pattern.t,
-  derivationScheme: Wallet.Ledger.scheme,
+  derivationScheme: PublicKeyHash.Scheme.t,
   addresses: Js.Array.t(PublicKeyHash.t),
   masterPublicKey: option(PublicKeyHash.t),
 };

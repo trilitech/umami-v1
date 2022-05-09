@@ -1,0 +1,30 @@
+{
+  "name": "@umami/base",
+  "reason": {
+    "react-jsx": 3
+  },
+  "sources": [
+    {
+      "dir": "src",
+      "subdirs": true
+    }
+  ],
+  "bsc-flags":
+  ["-bs-super-errors", "-bs-no-version-header" ],
+  "warnings": {
+    "number": "-44-48-9-45"
+  },
+  "package-specs": [
+    {
+      "module": "commonjs",
+      "in-source": true
+    }
+  ],
+  "suffix": ".bs.js",
+  "namespace": true,
+  "bs-dependencies": [
+    "@glennsl/bs-json",
+    "reason-future"
+  ],
+  "refmt": 3
+}

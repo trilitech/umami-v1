@@ -27,13 +27,13 @@
 
 type origin =
   | Operation
-  | Connection
   | Account
   | Aliases
   | Delegate
   | Balance
   | Tokens
   | Settings
+  | Update
   | Beacon
   | Secret
   | Batch
@@ -48,20 +48,27 @@ type kind =
 
 type timestamp = float;
 
+type btn = {
+  text: string,
+  onPress: unit => unit,
+};
+
 type t = {
   kind,
   origin,
   errorScope: option(string),
   timestamp,
   msg: string,
+  btns: option(list(btn)),
 };
 
-let log = (~kind, ~origin, ~errorScope=?, msg) => {
+let log = (~kind, ~origin, ~errorScope=?, ~btns=?, msg) => {
   kind,
   timestamp: Js.Date.now(),
   errorScope,
   origin,
   msg,
+  btns,
 };
 
 let info = log(~kind=Info);
@@ -99,7 +106,6 @@ let similar = (l1, l2) => {
 let originToString = e => {
   switch (e) {
   | Operation => "Operation"
-  | Connection => "Connection"
   | Balance => "Balance"
   | Aliases => "Aliases"
   | Account => "Account"
@@ -112,5 +118,6 @@ let originToString = e => {
   | Batch => "Batch"
   | Nft => "Nft"
   | CustomAuth => "CustomAuth"
+  | Update => "Update"
   };
 };

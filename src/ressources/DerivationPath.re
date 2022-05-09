@@ -29,8 +29,6 @@ type Errors.t +=
   | MissingWildcardOr0
   | NotTezosBip44;
 
-exception IllFormedPath;
-
 let () =
   Errors.registerHandler(
     "DerivationPath",
@@ -63,22 +61,6 @@ let buildTezosBip44 = x => x;
 
 let build = x => x;
 
-let regNoPrefixPath = [%re "/^(\\d+|\\?)'(\\/(\\d+|\\?)')*$/g"];
-let regItem = [%re "/\\d+/g"];
-
-let fromStringNoPrefix = s => {
-  switch (Js.String.match(regNoPrefixPath, s)) {
-  | Some(_) =>
-    Js.String.match(regItem, s)
-    ->Option.getExn // We already matched this pattern above
-    ->Array.map(i
-        // We already matched the int above
-        => i->Int.fromString->Option.getExn)
-    ->Ok
-  | None => Error(ParsingFailed(s))
-  };
-};
-
 let convertToTezosBip44 =
   fun
   | [|44, 1729, i1, i2|] => Ok((i1, i2))
@@ -95,11 +77,6 @@ module Pattern = {
   let defaultString = "m/44'/1729'/?'/0'";
   let fromTezosBip44 = n => [|Int(44), Int(1729), Wildcard, Int(n)|];
   let isDefault = dp => dp == default->fromTezosBip44;
-
-  let convertToTezosBip44 =
-    fun
-    | [|Int(44), Int(1729), Wildcard, Int(n)|] => Ok(n)
-    | _ => Error(NotTezosBip44);
 
   let toString = dp =>
     dp

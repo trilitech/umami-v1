@@ -413,13 +413,6 @@ module Batch = {
       | _ => None,
     );
 
-  let transactionParameters = (~entrypoint, ~parameter) =>
-    switch (entrypoint, parameter) {
-    | (Some(entrypoint), Some(parameter)) =>
-      Some(ReTaquitoTypes.Transfer.Entrypoint.{entrypoint, value: parameter})
-    | _ => None
-    };
-
   let buildSummaryContent =
       (operation: Protocol.batch, dryRun: Protocol.Simulation.results) => {
     let feeSum = dryRun.simulations->ProtocolHelper.Simulation.sumFees;

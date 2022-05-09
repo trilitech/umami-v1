@@ -15,7 +15,7 @@
 /build
 /dist
 /lib
-/lib_base/lib
+/libs/base/lib
 
 # misc
 .DS_Store

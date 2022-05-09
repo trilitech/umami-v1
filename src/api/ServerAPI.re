@@ -27,13 +27,12 @@ open Let;
 
 module Path = {
   module Endpoint = {
-    let delegates = "/chains/main/blocks/head/context/delegates\\?active=true";
     let runView = "/chains/main/blocks/head/helpers/scripts/run_view";
   };
 };
 
 type Errors.t +=
-  | UnknownNetwork(string)
+  | UnknownNetwork(Network.chainId)
   | FetchError(string)
   | JsonResponseError(string)
   | JsonError(string);
@@ -42,7 +41,7 @@ let () =
   Errors.registerHandler(
     "Server",
     fun
-    | UnknownNetwork(c) => I18n.Errors.unknown_network(c)->Some
+    | UnknownNetwork(c) => I18n.Errors.unknown_network((c :> string))->Some
     | FetchError(s) => s->Some
     | JsonResponseError(s) => s->Some
     | JsonError(s) => s->Some
@@ -169,9 +168,6 @@ module URL = {
   };
 
   module Endpoint = {
-    let delegates = (c: ConfigContext.env) =>
-      c.network.endpoint ++ Path.Endpoint.delegates;
-
     let runView = (c: ConfigContext.env) =>
       c.network.endpoint ++ Path.Endpoint.runView;
 
@@ -186,7 +182,12 @@ module URL = {
         object_([
           ("contract", string((contract :> string))),
           ("entrypoint", string("getBalance")),
-          ("chain_id", string(config.network.chain->Network.getChainId)),
+          (
+            "chain_id",
+            Network.Encode.chainIdEncoder(
+              config.network.chain->Network.getChainId,
+            ),
+          ),
           ("input", object_([("string", string((account :> string)))])),
           ("unparsing_mode", string("Readable")),
         ])
@@ -227,7 +228,12 @@ module URL = {
         object_([
           ("contract", string((contract :> string))),
           ("entrypoint", string("balance_of")),
-          ("chain_id", string(config.network.chain->Network.getChainId)),
+          (
+            "chain_id",
+            Network.Encode.chainIdEncoder(
+              config.network.chain->Network.getChainId,
+            ),
+          ),
           (
             "input",
             jsonArray([|
@@ -310,6 +316,62 @@ module URL = {
           build_url(
             "https://api.better-call.dev/v1/account/" ++ network,
             args,
+          )
+        )
+      ->ResultEx.fromOption(
+          UnknownNetwork(Network.getChainId(config.network.chain)),
+        );
+    };
+
+    let tzktAccountTokens =
+        (
+          ~config: ConfigContext.env,
+          ~account: PublicKeyHash.t,
+          ~contract: option(PublicKeyHash.t)=?,
+          ~limit: option(int)=?,
+          ~index: option(int)=?,
+          ~hideEmpty: option(bool)=?,
+          ~sortBy: option([ | `Id | `Balance | `Contract])=?,
+          (),
+        ) => {
+      let balanceMin = hideEmpty == Some(true) ? Some(0) : None;
+      let args =
+        List.Infix.(
+          ("account", (account :> string))
+          @: balanceMin->arg_opt("balance.gt", Js.Int.toString)
+          @? sortBy->arg_opt(
+               "sort.asc",
+               fun
+               | `Id => "id"
+               | `Balance => "balance"
+               | `Contract => "token.contract",
+             )
+          @? index->arg_opt("offset", Js.Int.toString)
+          @? limit->arg_opt("limit", Js.Int.toString)
+          @? contract->arg_opt("token.contract", k => (k :> string))
+          @? []
+        );
+      config.network.chain
+      ->Network.chainNetwork
+      ->Option.map(network =>
+          build_url(
+            "https://api." ++ network ++ ".tzkt.io/v1/tokens/balances/",
+            args,
+          )
+        )
+      ->ResultEx.fromOption(
+          UnknownNetwork(Network.getChainId(config.network.chain)),
+        );
+    };
+
+    let tzktAccountTokensNumber =
+        (~config: ConfigContext.env, ~account: PublicKeyHash.t) => {
+      config.network.chain
+      ->Network.chainNetwork
+      ->Option.map(network =>
+          build_url(
+            "https://api." ++ network ++ ".tzkt.io/v1/tokens/balances/count",
+            [("account", (account :> string))],
           )
         )
       ->ResultEx.fromOption(

@@ -27,6 +27,12 @@ let p = Format.sprintf;
 
 module Btn = {
   let json = "JSON";
+  let download = "DOWNLOAD";
+  let yes = "YES";
+  let no = "NO";
+  let try_again = "TRY AGAIN";
+  let install_and_restart_now = "INSTALL AND RESTART NOW";
+  let ill_do_it_later = "I'LL DO IT LATER";
   let metadata = "METADATA";
   let collected = "COLLECTED";
   let gallery = "GALLERY";
@@ -40,27 +46,21 @@ module Btn = {
   let buy_tez = "BUY TEZ";
   let verify_accounts = "VERIFY ACCOUNTS";
   let customize_derivation_path = "Customize Derivation Path";
-  let ardware_wallet_export = "Export Public Key";
   let ok = "OK";
   let cancel = "CANCEL";
-  let back = "BACK";
   let continue = "CONTINUE";
   let delete = "DELETE";
-  let create = "CREATE";
   let finish = "FINISH";
   let add = "ADD";
   let send = "SEND";
   let save = "SAVE";
   let done_ = "SIMPLE VIEW";
   let edit = "MANAGEMENT VIEW";
-  let validate_save = "VALIDATE AND SAVE";
   let go_back = "GO BACK";
   let go_operations = "GO TO OPERATIONS";
   let confirm = "CONFIRM";
   let update = "UPDATE";
-  let register = "REGISTER";
   let save_and_register = "SAVE AND REGISTER";
-  let logs = "LOGS";
   let import_secret = "IMPORT SECRET WITH RECOVERY PHRASE";
   let create_secret_new = "CREATE NEW SECRET";
   let connect_hardware_wallet = "CONNECT LEDGER";
@@ -70,8 +70,6 @@ module Btn = {
   let add_token = "REGISTER TOKEN";
   let advanced_options = "ADVANCED OPTIONS";
   let delegate = "DELEGATE";
-  let send_another_transaction = "ADD ANOTHER TRANSACTION";
-  let start_batch_transaction = "START BATCH TRANSACTION";
   let add_transaction = "ADD TRANSACTION";
   let send_submit = "SUBMIT TRANSACTION";
   let batch_submit = "SUBMIT BATCH";
@@ -90,19 +88,17 @@ module Btn = {
   let deny = "DENY";
   let allow = "ALLOW";
   let reject = "REJECT";
-  let sign = "SIGN";
   let close = "CLOSE";
   let add_custom_network = "ADD CUSTOM NETWORK";
   let beacon_connect_dapp = "CONNECT TO DAPP";
   let custom = "CUSTOM";
-  let register_nft_contract = "Register NFT contract";
   let see_list = "SEE LIST";
-  let change_account = "CHANGE ACCOUNT";
   let upload_file = "UPLOAD FILE";
   let access_wallet = "ACCESS WALLET";
   let restore_secret = "RESTORE FROM BACKUP";
   let browse_for_folder = "BROWSE FOR FOLDER";
   let setup_later = "Set up later in settings";
+  let check_for_updates = "CHECK FOR UPDATES";
 };
 
 module Tooltip = {
@@ -127,7 +123,6 @@ module Tooltip = {
   let see_network_info = "See network info";
   let tokenid = {j|A non-negative number that identifies the asset inside a FA2 contract|j};
   let add_to_wallet = "Add to wallet";
-  let see_metadata = "See metadata";
   let reject_on_provider = p("Reject on %s popup to cancel operation");
 };
 
@@ -164,6 +159,7 @@ module Label = {
   let account_create_name = "Name";
   let add_contact_name = "Name";
   let add_contact_address = "Address";
+  let automatically_download_updates = "Automatically download updates";
   let send_amount = "Amount";
   let send_sender = "Sender Account";
   let send_recipient = "Recipient Account";
@@ -173,7 +169,6 @@ module Label = {
   let implicit_reveal_fee = "Implicit Reveal Fee";
   let gas_limit = "Gas Limit";
   let storage_limit = "Storage Limit";
-  let counter = "Counter";
   let confirm_password = "Confirm Password";
   let account_delegate = "Account to delegate";
   let baker = "Baker";
@@ -185,14 +180,11 @@ module Label = {
   let summary_subtotal = "Subtotal";
   let summary_total = "Total";
   let summary_total_tez = "Total tez";
-  let transactions = "Transactions";
   let account_secret = "Root";
   let account_umami = "Umami";
   let token = "Token";
   let token_id = id => "Token ID: " ++ id;
   let editions = number => "Editions: " ++ number;
-  let search_nft_by_name = "What are your wildest fears?";
-  let account_cli = "Cli";
   let account_default_path = "Default Path - m/44'/1729'/?'/0'";
   let account_custom_path = "Custom Path";
   let beacon_client_name = "Umami";
@@ -226,7 +218,6 @@ module Input_placeholder = {
   let add_token_id = "e.g. 0";
   let enter_new_password = "Enter new password, at least 8 characters";
   let confirm_password = "Confirm your new password";
-  let enter_password = "Enter your password";
   let add_token_symbol = "e.g. tez, KLD, ...";
   let enter_derivation_path = "Enter your derivation path";
   let custom_network_name = "e.g. Test Network";
@@ -246,7 +237,6 @@ module Form_input_error = {
   let dp_not_tezos = "Not a BIP44 Tezos Path";
   let not_an_int = "This needs to be a number";
   let negative_int = "This needs to be a natural number";
-  let nat = "must be a natural number";
   let expected_decimals = n => p("allows at most %d decimals", n);
   let hardware_wallet_not_ready = "Connection to Tezos ledger application failed. Please make sure the Tezos app is opened and the ledger unlocked.";
   let hardware_wallet_plug = "The connection took too long.\nPlease make sure the Ledger is properly plugged in and unlocked";
@@ -269,14 +259,12 @@ module Form_input_error = {
   let bad_pkh = "Not a valid key";
   let invalid_contract = "The recipient is not a key or an alias";
   let balance_too_low = "Balance is too low";
-  let script_rejected = "Script rejected";
   let account_balance_empty = "Account is empty";
   let confirm_password = "It must be the same password";
   let derivation_path_error = "Invalid derivation path";
   let name_already_taken = a => p("%s is already taken", a);
   let api_not_available = "API not available";
   let node_not_available = "Node not available";
-  let api_and_node_not_available = "API and node both not available";
   let different_chains = "API and Node are not running on the same network";
   let not_a_token_contract = "Not a standard token contract";
   let no_metadata = pkh =>
@@ -301,7 +289,6 @@ module Form_input_error = {
       tokenId,
       pkh,
     );
-  let token_id_expected = "FA2 contracts expects a token id";
 };
 
 module Title = {
@@ -312,6 +299,10 @@ module Title = {
   let provider_authentification = pr => p("%s authentification", pr);
   let nft_specs = "View Specs";
   let error_logs = "Logs";
+  let checking_for_updates = "Checking for Updates";
+  let install_update = "Install Update";
+  let update_available = "Update Available";
+  let wallet_up_to_date = p("Your wallet is up to date (v%s)");
   let secret_create = "Create New Secret";
   let derive_account = "Add Account";
   let account_update = "Edit Account";
@@ -342,36 +333,25 @@ module Title = {
   let import_account_enter_phrase = "Enter your recovery phrase";
   let operation_submitted = "Operation Submitted";
   let sender_account = "Sender Account";
-  let recipient_account = "Recipient Account";
-  let delegated_account = "Account to delegate";
   let baker_account = "Baker";
   let withdraw_baker = "Withdraw Baker";
-  let contract_originator = "Contract Originator";
   let confirm_delegate = "Confirm Delegate";
   let confirm_batch = "Confirm";
   let delegate = "Delegate";
   let delegate_update = "Change Baker";
   let delegate_delete = "End Delegation";
-  let delegation_sent = "Delegation Sent";
-  let baker_updated = "Baker Updated";
-  let delegation_deleted = "Delegation Deleted";
   let delete_contact = "Delete Contact?";
-  let deleted_contact = "Contact Deleted";
-  let delete_token = "Remove from wallet";
-  let deleted_token = "Token Removed";
   let delete_beacon_peer = "Delete Peer";
+  let delete_beacon_peers = "Delete Peers";
   let delete_beacon_permission = "Delete Permission";
+  let delete_beacon_permissions = "Delete Permissions";
   let confirm_cancel = "Are you sure you want to cancel?";
   let send = "Send";
   let confirmation = "Confirmation";
-  let simulation = "Simulation";
-  let submitting = "Submitting Operation";
   let send_many_transactions = "Send one or many transactions";
   let delete_account = "Delete Account?";
   let delete_batch = "Delete this batch?";
   let delete_secret = "Delete Secret?";
-  let delete_load = "Deleting";
-  let delete_account_done = "Account deleted";
   let scan = "Scan";
   let disclaimer = "User Agreement";
   let beacon_connection_request = "Connection Request";
@@ -379,7 +359,6 @@ module Title = {
   let beacon_pairing = "Connect to DApp with pairing request";
   let beacon_pairing_qr = "Connect to DApp with QR code";
   let beacon_scan_qr = "Scan QR code from dApp";
-  let interaction = "Interaction";
   let add_custom_network = "Add Custom Network";
   let update_custom_network = "Edit Custom Network";
   let delete_custom_network = "Delete Network?";
@@ -394,7 +373,6 @@ module Title = {
   let settings = "Settings";
   let collected = "Collected";
   let gallery = "Gallery";
-  let logs = "Logs";
   let notice = "Disclaimer Notice";
   let buy_tez = "Buy tez";
   let wert_recipient = "Please select the recipient account";
@@ -403,7 +381,6 @@ module Title = {
   let restore_account = "Restore from Backup";
   let select_backup_file = "Select a JSON backup file and enter the password you used to encrypt it.";
   let account_backup_path = "Select a storage location for your backup";
-  let balance = "Balance";
   let details = "Details";
 };
 
@@ -428,7 +405,6 @@ module Expl = {
   let hardware_wallet_op_confirm = "Verify the operation details displayed on your Ledger before you sign.";
   let hardware_wallet_denied = "The operation has been rejected from the Ledger device";
   let hardware_wallet_search = "Please make sure to unlock your Ledger and open the Tezos Wallet app.";
-  let send_many_transactions = "You have the ability to submit a batch of transactions, but please note that the batch will be confirmed as a whole: should one transaction in the batch fail then the whole batch will not be completed.";
   let scan = "A scan will check the Tezos chain for other accounts from your secrets that may have been revealed outside of this wallet.";
   let secret_create_record_recovery = {j|Please record the following 24 words in sequence in order to restore it in the future. Ensure to back it up, keeping it securely offline.|j};
   let secret_create_record_verify = {j|We will now verify that you’ve properly recorded your recovery phrase. To demonstrate this, please type in the word that corresponds to each sequence number.|j};
@@ -437,16 +413,12 @@ module Expl = {
   let import_secret_enter_phrase = {j|Please fill in the recovery phrase in sequence.|j};
   let confirm_operation = "Please validate the details of the transaction and enter password to confirm";
   let global_batch = "Please validate the details of the batch and sign the transaction.";
-  let global_batch_header =
-    "You have the ability to submit a batch of operations, but please note that the batch will be confirmed as a whole:\n"
-    ++ "should one transaction in the batch fail then the whole batch will not be completed.";
   let fill_batch = "Add elements via the send menu or load a CSV file";
   let delete_batch = "You are about to delete all the transactions included in the batch.";
   let operation = "The operation will be processed and confirmed, you can see its progress in the Operations section.";
   let beacon_dapp = "would like to connect to your wallet";
   let beacon_dapp_request = {js|This site is requesting access to view your account’s address.\nAlways make sure you trust the sites you interact with.|js};
   let beacon_operation = "Requests Operations";
-  let beacon_delegation = "Request Delegation";
   let beacon_dapp_sign = "requests your signature";
   let custom_network = "Please specify the parameters of the network you want to connect to.";
   let external_service = "Notice: you are using Wert, which is an external service to Umami.";
@@ -458,10 +430,6 @@ module Menu = {
   let app_menu_help = "Help";
   let app_menu_new_version = "Check for new versions";
   let app_menu_website = "Website";
-  let operation_register_as_baker = "Register as new baker";
-  let operation_delegate_to = p("Delegate_to %s");
-  let operation_unknown = "Unknown";
-  let operation_cancel_delegation = "Cancel Delegation";
   let delegate_edit = "Change Baker";
   let delegate_delete = "End Delegation";
   let batch_edit = "Edit Transfer";
@@ -484,12 +452,6 @@ module Settings = {
   let confirmations_label = "Number of confirmations (blocks)";
   let confirmations_saved = "Number of confirmations saved";
   let chain_title = {j|CHAIN/NETWORK|j};
-  let chain_node_label = "Node URL";
-  let chain_mezos_label = "Mezos URL";
-  let chain_saved = "Chain URLs Saved";
-  let token_title = "TOKENS";
-  let token_label = "Token Balance Viewer Contract";
-  let token_saved = "Token Balance Viewer Contract Saved";
   let danger_title = "DANGER ZONE";
   let danger_reset_section = "Reset Settings";
   let danger_reset_text = {js|This will remove or restore custom settings to default values.|js};
@@ -509,16 +471,19 @@ module Settings = {
   let beacon_peers_section = "Peers";
   let beacon_peers_name = "NAME";
   let beacon_peers_relay = "RELAY SERVER";
+  let beacon_peers_remove_all = "REMOVE ALL";
   let beacon_empty_peers = "No Peer";
   let beacon_permissions_section = "Permissions";
   let beacon_permissions_dapp = "DAPP";
   let beacon_permissions_account = "CONNECTED ACCOUNT";
   let beacon_permissions_scopes = "SCOPES";
   let beacon_permissions_network = "NETWORK";
+  let beacon_permissions_remove_all = "REMOVE ALL";
   let beacon_empty_permissions = "No Permission";
   let backup_title = "WALLET BACKUP";
   let backup_text = "Create and save a backup file for the entire wallet";
   let backup_path_saved = "Backup file path saved";
+  let app_update = "APP UPDATE";
   ();
 };
 
@@ -548,6 +513,7 @@ module Network = {
       "Network %s is not supported, your operation cannot be viewed in an explorer.",
       a,
     );
+  let unknown_explorer = a => p("No explorer is known on network %s", a);
   let api_not_supported = a =>
     p("The API %s is not supported by this version of Umami.", a);
   let api_and_node_not_available = "API and Node are both not available";
@@ -561,9 +527,6 @@ module Taquito = {
   let api_error = n => p("API error: received %d", n);
   let invalid_checksum = "Invalid checksum";
   let invalid_length = "Invalid length";
-  let valid = "Valid";
-  let unknown_error_code = n => p("Unknown error code %d", n);
-  ();
 };
 
 module Wallet = {
@@ -571,16 +534,8 @@ module Wallet = {
   let key_bad_format = s => p("Can't readkey, bad format: %s", s);
   let invalid_path_size =
     p("Path %s is not valid: it must be of at least of two indexes");
-  let invalid_tezos_prefix_path = (prefix, index) =>
-    p(
-      "Prefix %s at index %d is not valid: a Tezos path must start with 44'/1729'",
-      prefix,
-      index,
-    );
   let invalid_index = (index, value) =>
     p("Value %s at index %d is invalid for a derivation path", value, index);
-  let invalid_prefix = prefix =>
-    p("%s is not a valid prefix for an encoded public key", prefix);
   let invalid_scheme = scheme =>
     p("%s is not a valid scheme for an encoded Public key", scheme);
   let invalid_encoding = enc =>
@@ -593,19 +548,19 @@ module Wallet = {
 module Errors = {
   let download_error_status = p("Request failed with status code %d");
   let download_error = "Error during file download";
+  let error_while_updating = "There's been an error while updating.";
+  let error_while_checking_updates = "Unable to check for updates.";
+  let unable_to_download = "Unable to download";
   let invalid_estimation_results = "Invalid estimation results";
   let request_to_node_failed = "Request to node failed";
   let every_balances_fail = "Every balances fail to load";
   let network_unreachable = "Tezos network unreachable.";
   let no_valid_endpoint = "No valid endpoint found among public nodes";
-  let not_an_fa12_contract = "Not an FA1.2 standard contract";
   let beacon_cant_handle = "Cannot handle this operation";
   let customauth_unable_to_retrieve_handle = "Unable to retrieve user handle";
   let customauth_popup_closed = "User closed popup during authentification";
   let customauth_handle_mismatch = p("Signing handle mismatch: %s & %s");
-  let customauth_access_denied = "Access denied by user";
   let invalid_provider = s => p("%s is not a valid provider", s);
-  let cannot_retrieve_account = "Cannot retrieve account informations";
   let deeplinking_not_connected = "Deep linking required but not connected";
   let stream = "Acquiering media failed";
   let decryption = "Storage decryption failed";
@@ -627,7 +582,6 @@ module Errors = {
   let beacon_client_not_created = "Beacon client not created";
   let video_stream_access_denied = "Unable to access video stream\n(please make sure you have a webcam enabled)";
   let incorrect_number_of_words = "Mnemonic must have 12, 15 or 24 words.";
-  let pairing_request_parsing = "Illformed pairing request";
   let unknown_bip39_word = (w, i) =>
     p(
       "Word %d ('%s') is not a valid BIP39 word, please refer to the standard.",
@@ -668,12 +622,10 @@ module Errors = {
       v,
     );
   let cannot_parse_version = err => p("Invalid backup file:\n%s", err);
-  let annot_parse_version = err => p("Invalid backup file:\n%s", err);
   let gas_exhausted = "Gas exhausted for the operation, please put a higher limit";
   let storage_exhausted = "Storage exhausted for the operation, please put a higher limit";
   let gas_exhausted_above_limit = "Gas exhausted and above protocol limit per operation";
   let storage_exhausted_above_limit = "Storage exhausted and above protocol limit per operation";
-  let unhandled_operation = "Unhandled operation";
   let not_a_number = v => p("%s is not a valid number", v);
   let negative_number = v => p("%s is negative", v);
   let unexpected_decimals = v => p("%s does not accept decimals", v);
@@ -692,11 +644,6 @@ module Csv = {
     p("Row %d is not valid, some columns are probably missing", row);
   let cannot_parse_csv = p("CSV is not valid");
   let no_rows = p("CSV is empty");
-  let cannot_mix_tokens = row =>
-    p(
-      "Tokens from CSV must be all the same. Row %d is different from the previous ones.",
-      row,
-    );
   let cannot_parse_token_amount = (v, row, col) =>
     p(
       "Value %s at row %d column %d is not a valid token amount",
@@ -719,13 +666,10 @@ module Csv = {
     );
   let cannot_parse_address = (a, reason) =>
     p("%s in not a valid address: %s.", a, reason);
-  let cannot_parse_contract = (a, reason) =>
-    p("%s in not a valid contract address: %s.", a, reason);
   let fa1_2_invalid_token_id = pkh =>
     p("Contract %s is an FA1.2 token, it cannot have a token id", pkh);
   let fa2_invalid_token_id = pkh =>
     p("Contract %s is an FA2 token, it must have a token id", pkh);
-  let contract_calls_not_handled = "temporary: contract calls not handled";
 };
 
 module Disclaimer = {
@@ -735,6 +679,8 @@ module Disclaimer = {
      agree to the terms of the User Agreement";
 };
 
+let download_question = "Do you want to download the latest update?";
+let restart_to_install_question = "Do you want to restart the app to install now? Please note that the update will be applied next time you restart Umami.";
 let unknown_operation = "Unknown";
 let error404 = "404 - Route Not Found :(";
 let no_balance_amount = "---- ";
@@ -744,14 +690,8 @@ let amount = (a, b) => p("%s %s", a, b);
 let tezos = "Tez";
 let tez = "tez";
 let you_dont_have_nft = "You don't have any NFT yet";
-let mainnet = "Mainnet";
-let florencenet = "Florencenet";
-let granadanet = "Granadanet";
-let testnet = "Testnet";
-let add_custom_network = "ADD CUSTOM NETWORK";
 let tez_amount = a => p("%s %s", a, tez);
 let tez_op_amount = op => p("%s %a", op, () => tez_amount);
-let address = "Address";
 let account = "Account";
 let operation_reveal = "Reveal";
 let operation_transaction = "Transaction";
@@ -789,7 +729,6 @@ let token_contract = p("%s Token Contract");
 let token_created = "Token added to wallet";
 let token_deleted = "Token removed from wallet";
 let operation_hash = "Operation Hash";
-let operation_summary_fee = p("+ Fee %a", () => tez_amount);
 let navbar_accounts = "ACCOUNTS";
 let navbar_nft = "NFT";
 let navbar_operations = "OPERATIONS";
@@ -811,7 +750,6 @@ let token_column_symbol = "SYMBOL";
 let token_column_address = "ADDRESS";
 let token_column_tokenid = "TOKEN ID";
 let na = "N/A";
-let empty_token = "No token registered on the current chain";
 let empty_held_token = "No token held and not registered on the current chain";
 let empty_delegations = "No Delegation";
 let empty_operations = "No Operation";
@@ -829,8 +767,10 @@ let upgrade_notice = "We recommend you upgrade your version of Umami.";
 let custom_network_created = "Network created";
 let custom_network_updated = "Network updated";
 let custom_network_deleted = "Network deleted";
-let unregistered_token = "unregistered token";
 let hw = "H/W";
-let none = "none";
 let email = "email";
 let username = "username";
+let percent_complete = "% complete";
+let update_available = "An update is available";
+let downloading_update = p("Downloading update (%s%%)");
+let download_complete = "Download complete";

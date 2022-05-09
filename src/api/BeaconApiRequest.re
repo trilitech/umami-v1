@@ -172,6 +172,18 @@ module Peers = {
       ~kind=Logs.Beacon,
     );
   };
+
+  let useDeleteAll = (~client) => {
+    ApiRequest.useSetter(
+      ~set=
+        (~config as _, ()) => {
+          let%Await client =
+            client->Promise.fromOption(~error=ClientNotConnected);
+          client->ReBeacon.WalletClient.removeAllPeers;
+        },
+      ~kind=Logs.Beacon,
+    );
+  };
 };
 
 /* PERMISSIONS */
@@ -196,6 +208,18 @@ module Permissions = {
             client->Promise.fromOption(~error=ClientNotConnected);
 
           client->ReBeacon.WalletClient.removePermission(accountIdentifier);
+        },
+      ~kind=Logs.Beacon,
+    );
+  };
+
+  let useDeleteAll = (~client) => {
+    ApiRequest.useSetter(
+      ~set=
+        (~config as _, ()) => {
+          let%Await client =
+            client->Promise.fromOption(~error=ClientNotConnected);
+          client->ReBeacon.WalletClient.removeAllPermissions;
         },
       ~kind=Logs.Beacon,
     );

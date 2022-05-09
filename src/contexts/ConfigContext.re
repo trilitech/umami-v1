@@ -30,6 +30,7 @@ type env = {
   confirmations: int,
   baseDir: unit => System.Path.t,
   backupFile: option(System.Path.t),
+  autoUpdates: bool,
 };
 
 let defaultNetwork = `Mainnet;
@@ -41,6 +42,7 @@ let default = {
   baseDir: () => System.(Path.Ops.(appDir() / (!"tezos-client"))),
   confirmations: 5,
   backupFile: None,
+  autoUpdates: true,
 };
 
 let fromFile = f => {
@@ -59,12 +61,14 @@ let fromFile = f => {
     | None
     | Some(`Mainnet) => Network.mainnet
     | Some(`Hangzhounet) => Network.hangzhounet
+    | Some(`Ithacanet) => Network.ithacanet
     | Some(`Custom(name)) =>
       f.customNetworks
-      ->List.getBy(n => n.name === name)
+      ->List.getBy(n => n.name === (name :> string))
       ->Option.getWithDefault(Network.mainnet)
     },
   backupFile: f.backupFile,
+  autoUpdates: f.autoUpdates,
 };
 
 type networkStatus = {

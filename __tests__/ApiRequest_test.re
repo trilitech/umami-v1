@@ -5,7 +5,6 @@ open TestingLibraryHooks;
 open TestUtils;
 
 open Umami;
-let mockDateSinceEpoch = 100.; // defined in jestSetup
 
 let assertHistoryEqual =
     (
@@ -45,7 +44,7 @@ let assertHistoryEqual =
       }
     }
   })
-  ->Umami.Promise.get(_ => finish(pass));
+  ->Promise.get(_ => finish(pass));
 };
 
 module Mock = {
@@ -67,7 +66,7 @@ module Mock = {
 
   let get = (~config as _: Umami.ConfigContext.env, _) => {
     let mockFuture =
-      Umami.Promise.make(resolve => {
+      Promise.make(resolve => {
         Js.Global.setTimeout(
           // setImmediate not binded I would use that
           () => {

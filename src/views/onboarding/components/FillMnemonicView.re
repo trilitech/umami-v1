@@ -172,6 +172,16 @@ let make =
   let formFieldsAreValids =
     FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
 
+  let arrayUpdateByIndex = (~field, ~index, value) => {
+    let words = Js.String.split(" ", value);
+    switch (words->Array.length->Bip39.Mnemonic.formatOfInt) {
+    | Ok(format) =>
+      form.setFieldValue(StateLenses.Words, words, ());
+      form.setFieldValue(StateLenses.Format, format, ());
+    | _ => form.arrayUpdateByIndex(~field, ~index, value)
+    };
+  };
+
   <>
     <FormatSelector
       value={form.values.format}
@@ -195,7 +205,7 @@ let make =
                  <InputMnemonicWord
                    index
                    word
-                   arrayUpdateByIndex={form.arrayUpdateByIndex}
+                   arrayUpdateByIndex
                    getNestedFieldError={form.getNestedFieldError}
                    formField
                    stateField

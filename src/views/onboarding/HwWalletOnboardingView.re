@@ -30,8 +30,8 @@ let onbStyles = FormStyles.onboarding;
 type step =
   | StepChecklist
   | StepInitLedger(InitLedgerView.ledgerState)
-  | StepAdvancedOptions(Wallet.Ledger.masterKey)
-  | StepAccounts(Wallet.Ledger.masterKey);
+  | StepAdvancedOptions(KeyWallet.Ledger.masterKey)
+  | StepAccounts(KeyWallet.Ledger.masterKey);
 
 module ChecklistView = {
   let styles =
@@ -105,9 +105,9 @@ module AdvancedOptionsView = {
       let theme = ThemeContext.useTheme();
       let kind =
         s
-        ->Wallet.Ledger.implicitFromScheme
+        ->PublicKeyHash.implicitFromScheme
         ->Implicit
-        ->Wallet.Ledger.kindToString;
+        ->PublicKeyHash.kindToString;
 
       <View style=FormStyles.selector##item>
         <Typography.Contract
@@ -124,13 +124,13 @@ module AdvancedOptionsView = {
           kind->React.string
         </Typography.Contract>
         <Typography.Body1>
-          {s->Wallet.Ledger.schemeToString->React.string}
+          {s->PublicKeyHash.Scheme.toString->React.string}
         </Typography.Body1>
       </View>;
     };
 
     let renderButton = (s, _hasError) => {
-      let s = s->Option.getWithDefault(Wallet.Ledger.ED25519);
+      let s = s->Option.getWithDefault(PublicKeyHash.Scheme.ED25519);
       <View style=FormStyles.selector##button> {render(s)} </View>;
     };
 
@@ -142,10 +142,10 @@ module AdvancedOptionsView = {
           label=I18n.Label.derivation_scheme
         />
         <Selector
-          items=Wallet.Ledger.([|ED25519, SECP256K1, P256|])
-          getItemKey=Wallet.Ledger.schemeToString
+          items=PublicKeyHash.Scheme.([|ED25519, SECP256K1, P256|])
+          getItemKey=PublicKeyHash.Scheme.toString
           renderItem=render
-          selectedValueKey={value->Wallet.Ledger.schemeToString}
+          selectedValueKey={value->PublicKeyHash.Scheme.toString}
           onValueChange
           renderButton
           keyPopover="MnemonicsFormatSelector"
@@ -228,9 +228,7 @@ let make = (~closeAction) => {
   let importLedger = p =>
     System.Client.initDir(config.baseDir())
     ->Promise.flatMapOk(() => importLedger(p))
-    ->ApiRequest.logOk(addLog(true), Logs.Account, _ =>
-        I18n.account_created
-      )
+    ->ApiRequest.logOk(addLog(true), Logs.Account, _ => I18n.account_created)
     ->Promise.getOk(_ => {closeAction()});
 
   let closing =
@@ -252,7 +250,7 @@ let make = (~closeAction) => {
     };
 
   let (scheme, _) as schemeState =
-    React.useState(() => Wallet.Ledger.ED25519);
+    React.useState(() => PublicKeyHash.Scheme.ED25519);
   let (path, _) as pathState =
     React.useState(() => DerivationPath.Pattern.(default->fromTezosBip44));
 
@@ -329,7 +327,7 @@ let make = (~closeAction) => {
      | StepChecklist => <ChecklistView next=onEndChecklist />
      | StepAccounts(mk) =>
        <ScannedAccountsView
-         scan={WalletAPI.Accounts.Scan.runStreamLedger(
+         scan={LedgerWalletAPI.runStreamedScan(
            ~config,
            ~onFoundKey,
            ~startIndex=0,

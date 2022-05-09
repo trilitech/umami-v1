@@ -75,20 +75,6 @@ module AccountNestedRowItem = {
     };
   };
 
-  module AccountDisplayButton = {
-    [@react.component]
-    let make = () => {
-      let onPress = _ => Js.log("Todo : Show/Hide account");
-      <IconButton
-        icon=Icons.Show.build
-        size=34.
-        iconSizeRatio={1. /. 2.}
-        style=styles##actionIconButton
-        onPress
-      />;
-    };
-  };
-
   [@react.component]
   let make = (~address: PublicKeyHash.t, ~index: int, ~isLast=false) => {
     let account = StoreContext.Accounts.useGetFromAddress(address);
@@ -157,15 +143,6 @@ module AccountImportedRowItem = {
         onPressConfirmDelete
         request=accountRequest
       />;
-    };
-  };
-
-  module AccountDisplayButton = {
-    [@react.component]
-    let make = () => {
-      let onPress = _e => Js.log("Todo : Show/Hide account");
-
-      <Menu.Item text="Show" icon=Icons.Show.build onPress />;
     };
   };
 

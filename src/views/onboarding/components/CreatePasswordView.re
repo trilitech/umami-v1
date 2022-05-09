@@ -34,22 +34,6 @@ module StateLenses = [%lenses
 
 module CreatePasswordForm = ReForm.Make(StateLenses);
 
-let styles =
-  Style.(
-    StyleSheet.create({
-      "wordsList": style(~flexDirection=`row, ~flexWrap=`wrap, ()),
-      "wordItem":
-        style(
-          ~marginVertical=2.->dp,
-          ~flexGrow=1.,
-          ~flexShrink=1.,
-          ~flexBasis=40.->pct,
-          (),
-        ),
-      "wordSpacer": style(~width=20.->dp, ()),
-    })
-  );
-
 let isConfirmPassword = (values: StateLenses.state) => {
   let fieldState: ReSchema.fieldState =
     values.confirmPassword == values.password

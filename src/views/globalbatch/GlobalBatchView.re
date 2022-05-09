@@ -26,8 +26,8 @@
 open ReactNative;
 
 open Protocol;
-module CSVPicker = BatchView.Transactions.CSVFilePicker;
-module CSVFormatLink = BatchView.Transactions.CSVFormatLink;
+module CSVPicker = BatchView.CSVFilePicker;
+module CSVFormatLink = BatchView.CSVFormatLink;
 
 let styles =
   Style.(
@@ -126,10 +126,6 @@ let csvRowToTransferPayloads = (csvRows: CSVEncoding.t) => {
 
 type indexedValidStates =
   array(((int, option(int)), Umami.SendForm.validState));
-
-let indexToCoords = (i, vs: indexedValidStates) => {
-  vs->Array.get(i)->Option.map(((coords, _)) => coords);
-};
 
 [@react.component]
 let make = () => {

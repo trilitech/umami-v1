@@ -60,156 +60,44 @@ let styles =
     })
   );
 
-let listStyle = (theme: ThemeContext.theme, ledger) =>
-  Style.(
-    style(
-      ~borderColor=theme.colors.borderDisabled,
-      ~minHeight=(ledger ? 150. : 300.)->dp,
-      ~maxHeight=(ledger ? 200. : 400.)->dp,
-      ~borderWidth=1.,
-      ~borderRadius=4.,
-      (),
-    )
-  );
-
-let buildAmount = amount => {
-  AccountElements.Amount(
-    <Typography.Body1 fontWeightStyle=`bold style=styles##amount>
-      amount->React.string
-    </Typography.Body1>,
-  );
-};
-
-module Item = {
+module CSVFilePicker = {
   [@react.component]
-  let make = (~i, ~recipient, ~amount, ~parameters=?, ~button=?) => {
-    let aliases = StoreContext.Aliases.useGetAll();
-    let theme: ThemeContext.theme = ThemeContext.useTheme();
+  let make = (~onAddCSVList) => {
+    let addLog = LogsContext.useAdd();
+    let tokens = StoreContext.Tokens.useGetAll();
 
-    <View
-      style=Style.(
-        arrayOption([|
-          Some(styles##row),
-          Some(style(~borderColor=theme.colors.borderDisabled, ())),
-          Option.onlyIf(i > 0, () => styles##notFirstRow),
-        |])
-      )>
-      <Typography.Subtitle1 colorStyle=`mediumEmphasis style=styles##num>
-        {(i + 1)->string_of_int->React.string}
-      </Typography.Subtitle1>
-      {switch (parameters) {
-       | Some(parameters) =>
-         <View style=styles##parametersContainer>
-           <AccountElements.Selector.Item
-             account={
-               Alias(Alias.make(~name=I18n.Title.interaction, recipient))
-             }
-             showAmount=AccountElements.Nothing
-           />
-           <TransactionContractParams parameters style=styles##parameters />
-         </View>
-       | None =>
-         <AccountElements.Selector.Item
-           style=styles##account
-           account={
-             Alias(
-               recipient
-               ->AliasHelpers.getAliasFromAddress(aliases)
-               ->Option.getWithDefault(Alias.make(~name="", recipient)),
-             )
-           }
-           showAmount={buildAmount(amount)}
-         />
-       }}
-      button->ReactUtils.opt
-    </View>;
-  };
-};
-
-module Transactions = {
-  module CSVFilePicker = {
-    [@react.component]
-    let make = (~onAddCSVList) => {
-      let addLog = LogsContext.useAdd();
-      let tokens = StoreContext.Tokens.useGetAll();
-
-      let onChange = fileTextContent => {
-        let parsedCSV = fileTextContent->CSVEncoding.parseCSV(~tokens);
-        switch (parsedCSV) {
-        | Result.Ok(parsedCSV) => onAddCSVList(parsedCSV)
-        | Result.Error(error) =>
-          addLog(true, Logs.error(~origin=Logs.Batch, error))
-        };
+    let onChange = fileTextContent => {
+      let parsedCSV = fileTextContent->CSVEncoding.parseCSV(~tokens);
+      switch (parsedCSV) {
+      | Result.Ok(parsedCSV) => onAddCSVList(parsedCSV)
+      | Result.Error(error) =>
+        addLog(true, Logs.error(~origin=Logs.Batch, error))
       };
-
-      <TextFilePicker
-        text=I18n.Btn.load_file
-        primary=true
-        accept=".csv"
-        onChange
-      />;
     };
-  };
 
-  module CSVFormatLink = {
-    let onPress = _ =>
-      System.openExternal(
-        "https://gitlab.com/nomadic-labs/umami-wallet/umami/-/wikis/doc/Batch%20File%20Format%20Specifications",
-      );
-
-    [@react.component]
-    let make = () => {
-      <ButtonAction
-        onPress
-        text=I18n.Btn.csv_format_link
-        primary=true
-        icon=Icons.OpenExternal.build
-      />;
-    };
+    <TextFilePicker
+      text=I18n.Btn.load_file
+      primary=true
+      accept=".csv"
+      onChange
+    />;
   };
+};
+
+module CSVFormatLink = {
+  let onPress = _ =>
+    System.openExternal(
+      "https://gitlab.com/nomadic-labs/umami-wallet/umami/-/wikis/doc/Batch%20File%20Format%20Specifications",
+    );
 
   [@react.component]
-  let make =
-      (
-        ~recipients:
-           Belt.List.t(
-             (PublicKeyHash.t, Protocol.Amount.t, option('a), 'b),
-           ),
-        ~smallest=false,
-        ~onAddCSVList=?,
-        ~button: option((int, 'b) => React.element)=?,
-      ) => {
-    let theme = ThemeContext.useTheme();
-
-    <View style=styles##container>
-      <View style=styles##listLabelContainer>
-        <Typography.Overline2 style=styles##listLabel>
-          I18n.Label.transactions->React.string
-        </Typography.Overline2>
-        {onAddCSVList->Option.mapWithDefault(React.null, onAddCSVList =>
-           <CSVFilePicker onAddCSVList />
-         )}
-      </View>
-      {onAddCSVList->Option.mapWithDefault(React.null, _ => <CSVFormatLink />)}
-      <DocumentContext.ScrollView
-        style={listStyle(theme, smallest)} alwaysBounceVertical=false>
-        {{
-           recipients->List.mapWithIndex(
-             (i, (recipient, amount, parameters, v)) => {
-             <Item
-               key={string_of_int(i)}
-               i
-               recipient
-               amount={Protocol.Amount.show(amount)}
-               ?parameters
-               button=?{button->Option.map(b => b(i, v))}
-             />
-           });
-         }
-         ->List.toArray
-         ->React.array}
-      </DocumentContext.ScrollView>
-    </View>;
+  let make = () => {
+    <ButtonAction
+      onPress
+      text=I18n.Btn.csv_format_link
+      primary=true
+      icon=Icons.OpenExternal.build
+    />;
   };
 };
 

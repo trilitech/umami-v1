@@ -33,7 +33,7 @@ let styles =
           ~display=`flex,
           ~flexDirection=`row,
           ~alignItems=`center,
-          ~paddingLeft=20.->dp,
+          ~paddingLeft=18.->dp,
           ~paddingVertical=10.->dp,
           ~width=100.->pct,
           (),
@@ -53,13 +53,13 @@ let styles =
         style(~flexDirection=`row, ~flexShrink=0., ~marginLeft=auto, ()),
       "reqelt": style(~flexShrink=0., ~marginRight=16.->dp, ()),
       "kindIcon": style(~marginRight=10.->dp, ()),
-      "container": style(~borderRadius=3., ~marginTop=10.->dp, ()),
+      "container": style(~borderRadius=8., ~marginTop=10.->dp, ()),
+      "primaryText": style(~color=Colors.Dark.primary, ()),
       "item":
         style(
           ~display=`flex,
           ~flexDirection=`row,
-          ~borderRadius=3.,
-          ~borderLeftWidth=5.,
+          ~borderRadius=8.,
           ~flexWrap=`nowrap,
           ~width=100.->pct,
           ~alignSelf=`center,
@@ -76,11 +76,21 @@ let styles =
 
 module DeleteButton = {
   [@react.component]
-  let make = (~isPrimary=?, ~style=?, ~indice, ~handleDelete) => {
+  let make = (~isPrimary=?, ~style=?, ~toast, ~indice, ~handleDelete) => {
     let onPress = _ => {
       handleDelete(indice);
     };
-    <IconButton ?isPrimary ?style icon=Icons.Close.build onPress />;
+    <IconButton ?isPrimary ?style toast icon=Icons.Delete.build onPress />;
+  };
+};
+
+module CloseButton = {
+  [@react.component]
+  let make = (~isPrimary=?, ~style=?, ~toast, ~indice, ~handleDelete) => {
+    let onPress = _ => {
+      handleDelete(indice);
+    };
+    <IconButton ?isPrimary ?style toast icon=Icons.Close.build onPress />;
   };
 };
 
@@ -99,17 +109,32 @@ module OpenButton = {
   };
 };
 
-let actionButtons = (~indice, ~log: Logs.t, ~addToast, ~handleDelete) =>
+let actionButtons = (~indice, ~log: Logs.t, ~addToast, ~handleDelete, ~toast) =>
   <View style=styles##actionButtons>
     {<ClipboardButton
        isPrimary=false
        data={log.msg}
+       toast
        copied=I18n.Log.log_content
        addToast
        style=styles##button
      />
      ->ReactUtils.onlyWhen(log.kind == Error)}
-    <DeleteButton isPrimary=false indice handleDelete style=styles##button />
+    {toast
+       ? <CloseButton
+           isPrimary=false
+           indice
+           handleDelete
+           toast
+           style=styles##button
+         />
+       : <DeleteButton
+           isPrimary=false
+           indice
+           handleDelete
+           toast
+           style=styles##button
+         />}
   </View>;
 
 module Entry = {
@@ -210,7 +235,13 @@ module Entry = {
             content=logDateContent
           />
           firstline
-          {actionButtons(~indice, ~log, ~addToast, ~handleDelete)}
+          {actionButtons(
+             ~indice,
+             ~log,
+             ~addToast,
+             ~handleDelete,
+             ~toast=false,
+           )}
         </View>
         secondline
       </View>
@@ -223,22 +254,22 @@ module Toast = {
   let make = (~log: Logs.t, ~addToast, ~indice, ~handleDelete) => {
     let theme = ThemeContext.useTheme();
 
-    let itemErrorStyle = Style.(style(~borderColor=theme.colors.error, ()));
-    let itemInfoStyle = Style.(style(~borderColor=theme.colors.valid, ()));
-
-    let kindStyle =
-      switch (log.kind) {
-      | Error => itemErrorStyle
-      | Info => itemInfoStyle
-      | Warning => itemErrorStyle
-      };
-
     let icon =
       switch (log.kind) {
       | Error
-      | Warning => <Icons.CloseOutline size=16. color=theme.colors.error />
-      | Info => <Icons.CheckOutline size=16. color=theme.colors.valid />
+      | Warning => <Icons.Error size=20. color={theme.colors.toastError} />
+      | Info => <Icons.CheckFill size=20. color={theme.colors.toastValid} />
       };
+
+    let jsx_of_btn = (btn: Logs.btn) => {
+      <Buttons.FormPrimary text={btn.text} onPress={_ => btn.onPress()} />;
+    };
+
+    let buttons =
+      log.btns
+      ->Option.mapWithDefault(React.null, btns =>
+          btns->List.map(jsx_of_btn)->List.toArray->React.array
+        );
 
     <View
       style=Style.(
@@ -248,7 +279,7 @@ module Toast = {
         |])
       )>
       <Hoverable
-        style=Style.(array([|styles##item, kindStyle|]))
+        style=Style.(array([|styles##item|]))
         hoveredStyle={Style.style(
           ~backgroundColor=theme.colors.primaryStateHovered,
           (),
@@ -266,7 +297,14 @@ module Toast = {
                numberOfLines=1>
                log.msg->React.string
              </Typography.Body1>
-             {actionButtons(~indice, ~log, ~addToast, ~handleDelete)}
+             buttons
+             {actionButtons(
+                ~indice,
+                ~log,
+                ~addToast,
+                ~handleDelete,
+                ~toast=true,
+              )}
            </View>;
          }}
       </Hoverable>

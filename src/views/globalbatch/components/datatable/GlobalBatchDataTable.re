@@ -26,26 +26,6 @@
 open ReactNative;
 
 open GlobalBatchTypes;
-let styles =
-  Style.(
-    StyleSheet.create({
-      "header":
-        style(
-          ~marginHorizontal=LayoutConst.pagePaddingHorizontal->dp,
-          ~marginTop=LayoutConst.pagePaddingVertical->dp,
-          (),
-        ),
-      "selector":
-        style(
-          ~alignSelf=`flexStart,
-          ~minWidth=390.->dp,
-          ~marginTop=0.->dp,
-          ~marginBottom=30.->dp,
-          (),
-        ),
-    })
-  );
-
 type fa2Pos =
   | First
   | Last

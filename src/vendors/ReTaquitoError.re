@@ -75,7 +75,7 @@ type Errors.t +=
 
 let parse = (e: RawJsError.t) =>
   switch (e.message) {
-  | s when s->Js.String2.includes(wrongSecretKey) => Errors.WrongPassword
+  | s when s->Js.String2.includes(wrongSecretKey) => SecureStorage.WrongPassword
   | s when s->Js.String2.includes(branchRefused) => BranchRefused
   | s when s->Js.String2.includes(badPkh) => BadPkh
   | s when s->Js.String2.includes(unregisteredDelegate) =>

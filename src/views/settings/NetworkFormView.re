@@ -38,11 +38,6 @@ type action =
   | Create
   | Edit(Network.network);
 
-let isEditMode =
-  fun
-  | Edit(_) => true
-  | _ => false;
-
 let rsf = (err: Errors.t, raiseSubmitFailed) => {
   switch (err) {
   | Network.API(_) => raiseSubmitFailed(Some("APIError"))

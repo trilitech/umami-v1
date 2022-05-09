@@ -40,8 +40,6 @@ var path = require('path');
 type Errors.t +=
   | NoSuchFileError(string);
 
-let os = [%raw "OS"];
-
 [@bs.scope "app"] [@bs.val] external getVersion: unit => string = "getVersion";
 [@bs.scope "app"] [@bs.val] external getName: unit => string = "getName";
 
@@ -51,12 +49,15 @@ let openExternal = url => url->openExternal->ignore;
 
 type plateform = [ | `darwin | `win32 | `linux];
 
-[@bs.scope "process"] [@bs.val] external plateform: plateform = "plateform";
+[@bs.scope "process"] [@bs.val] external plateform: plateform = "platform";
 
 let isMac = plateform == `darwin;
 
 [@bs.scope "process.env"] [@bs.val]
 external nodeEnv: Js.Nullable.t(string) = "NODE_ENV";
+
+[@bs.scope "process.env"] [@bs.val]
+external appImage: Js.Nullable.t(string) = "APPIMAGE";
 
 let isDev =
   nodeEnv
@@ -66,6 +67,17 @@ let isDev =
 [@bs.val] external window: 'a = "window";
 
 let reload = () => window##location##reload();
+
+let hasAutoUpdate = () => {
+  !isDev
+  && (
+    switch (plateform) {
+    | `darwin => true
+    | `win32 => true
+    | `linux => !appImage->Js.Nullable.isNullable
+    }
+  );
+};
 
 module Path: {
   type t = pri string;
@@ -104,8 +116,6 @@ module Path: {
 };
 
 let appDir = () => Path.Ops.(Path.getAppData() / (!getName()));
-
-let homeDir = () => os##homedir();
 
 module File = {
   open Path.Ops;
@@ -170,19 +180,11 @@ module File = {
 
   module CopyMode: {
     type t;
-    let copy_excl: t;
     let copy_ficlone: t;
-    let copy_ficlone_force: t;
-
-    let assemble: (t, t) => t;
   } = {
     type t = int;
 
-    let copy_excl: t = [%raw "fs.constants.COPYFILE_EXCL"];
     let copy_ficlone: t = [%raw "fs.constants.COPYFILE_FICLONE"];
-    let copy_ficlone_force: t = [%raw "fs.constants.COPYFILE_FICLONE_FORCE"];
-
-    let assemble = (c1, c2) => c1 lor c2;
   };
 
   [@bs.scope "fs"] [@bs.val]

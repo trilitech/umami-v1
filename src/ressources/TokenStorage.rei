@@ -54,4 +54,8 @@ module Legacy: {
     let version: Version.t;
     let mk: unit => Let.result(unit);
   };
+  module V1_7: {
+    let version: Version.t;
+    let mk: unit => Let.result(unit);
+  };
 };

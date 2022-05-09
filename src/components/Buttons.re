@@ -121,15 +121,28 @@ module Form = {
 
 module FormPrimary = {
   [@react.component]
-  let make = (~text, ~onPress, ~disabled=?, ~loading=?, ~fontSize=?, ~style=?) => {
+  let make =
+      (
+        ~text,
+        ~onPress,
+        ~disabled=?,
+        ~loading=?,
+        ~fontSize=?,
+        ~style=?,
+        ~colorStyle=?,
+      ) => {
+    let colorStyle =
+      switch (colorStyle) {
+      | None =>
+        disabled->Option.flatMap(disabled =>
+          disabled ? Some(`disabled) : Some(`highEmphasis)
+        )
+
+      | c => c
+      };
+
     <FormBase onPress ?disabled ?loading ?style>
-      <Typography.ButtonPrimary
-        ?fontSize
-        colorStyle=?{
-          disabled->Option.flatMap(disabled =>
-            disabled ? Some(`disabled) : Some(`highEmphasis)
-          )
-        }>
+      <Typography.ButtonPrimary ?fontSize ?colorStyle>
         text->React.string
       </Typography.ButtonPrimary>
     </FormBase>;
@@ -280,34 +293,6 @@ module SubmitSecondary = {
       )>
       <Typography.ButtonPrimary
         ?fontSize colorStyle={disabled ? `disabled : `highEmphasis}>
-        text->React.string
-      </Typography.ButtonPrimary>
-    </FormBase>;
-  };
-};
-
-module SubmitTertiaryHighEmphasis = {
-  [@react.component]
-  let make =
-      (
-        ~text,
-        ~onPress,
-        ~disabled=false,
-        ~loading=?,
-        ~fontSize=?,
-        ~style as styleArg=?,
-      ) => {
-    let theme = ThemeContext.useTheme();
-
-    <FormBase
-      onPress
-      disabled
-      ?loading
-      vStyle=?styleArg
-      style=Style.(
-        style(~borderWidth=1., ~borderColor=theme.colors.borderPrimary, ())
-      )>
-      <Typography.ButtonPrimary colorStyle=`primary ?fontSize>
         text->React.string
       </Typography.ButtonPrimary>
     </FormBase>;

@@ -346,19 +346,6 @@ module Error = {
     | s => Errors.Generic(Js.String.make(s))
     };
 
-  let toString =
-    fun
-    | PairingRequestParsing => I18n.Errors.pairing_request_parsing->Some
-    | NoMatchingRequest => noMatchingRequest->Some
-    | EncodedPayloadNeedString => encodedPayloadNeedString->Some
-    | MessageNotHandled => messageNotHandled->Some
-    | CouldNotDecryptMessage => couldNotDecryptMessage->Some
-    | AppMetadataNotFound => appMetadataNotFound->Some
-    | ShouldNotWork => shouldNotWork->Some
-    | ContainerNotFound => containerNotFound->Some
-    | PlatformUnknown => platformUnknown->Some
-    | _ => None;
-
   let fromPromiseParsed = p => p->RawJsError.fromPromiseParsed(parse);
 };
 
@@ -427,6 +414,13 @@ module WalletClient = {
   };
 
   [@bs.send]
+  external removePeersRaw: t => Js.Promise.t(unit) = "removeAllPeers";
+
+  let removeAllPeers = t => {
+    t->removePeersRaw->Error.fromPromiseParsed;
+  };
+
+  [@bs.send]
   external removePermissionRaw: (t, accountIdentifier) => Js.Promise.t(unit) =
     "removePermission";
 
@@ -440,6 +434,14 @@ module WalletClient = {
 
   let getPermissions = t => {
     t->getPermissionsRaw->Error.fromPromiseParsed;
+  };
+
+  [@bs.send]
+  external removePermissionsRaw: t => Js.Promise.t(unit) =
+    "removeAllPermissions";
+
+  let removeAllPermissions = t => {
+    t->removePermissionsRaw->Error.fromPromiseParsed;
   };
 
   [@bs.send]

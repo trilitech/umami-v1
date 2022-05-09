@@ -25,7 +25,7 @@
 
 %raw
 "
-const { InMemorySigner, importKey } = require('customsigner');
+const { InMemorySigner, importKey } = require('@nomadic-labs/taquito-custom-signer');
 const { LedgerSigner, DerivationType } = require('@taquito/ledger-signer');
 ";
 
@@ -114,7 +114,7 @@ module LedgerSigner = {
 
   let toRawType =
     fun
-    | Wallet.Ledger.ED25519 => ed25519
+    | PublicKeyHash.Scheme.ED25519 => ed25519
     | SECP256K1 => secp256k1
     | P256 => p256;
 

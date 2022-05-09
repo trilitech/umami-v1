@@ -16,5 +16,5 @@ let waitFor = (predicate: unit => bool) => {
   Promise.make(resolve => waitForReduce((), predicate, resolve));
 };
 
-let waitForReduce = (init, predicate): UmamiLibBase.FutureBase.t(unit) =>
+let waitForReduce = (init, predicate): UmamiBase.FutureBase.t(unit) =>
   Promise.make(resolve => waitForReduce(init, predicate, resolve));

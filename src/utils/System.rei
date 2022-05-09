@@ -36,6 +36,8 @@ let isDev: bool;
 
 let openExternal: string => unit;
 
+let hasAutoUpdate: unit => bool;
+
 module Path: {
   type t;
 
@@ -55,7 +57,6 @@ module Path: {
   let getAppData: unit => t;
 };
 
-let homeDir: unit => Path.t;
 let appDir: unit => Path.t;
 
 module File: {
@@ -68,27 +69,11 @@ module File: {
   let write:
     (~encoding: encoding=?, ~name: Path.t, string) => Promise.t(unit);
 
-  module CopyMode: {
-    type t;
-    let copy_excl: t;
-    let copy_ficlone: t;
-    let copy_ficlone_force: t;
-
-    let assemble: (t, t) => t;
-  };
-
-  let access: Path.t => FutureBase.t(bool);
-
-  let copy:
-    (~name: Path.t, ~dest: Path.t, ~mode: CopyMode.t) => Promise.t(unit);
-
-  let rm: (~name: Path.t) => Promise.t(unit);
-
   let initIfNotExists:
     (~encoding: encoding=?, ~path: Path.t, string) => Promise.t(unit);
-  let initDirIfNotExists: Path.t => Promise.t(unit);
 
-  let protect: (~name: Path.t, ~transaction: unit => Promise.t(unit)) => Promise.t(unit);
+  let protect:
+    (~name: Path.t, ~transaction: unit => Promise.t(unit)) => Promise.t(unit);
 };
 
 module Client: {

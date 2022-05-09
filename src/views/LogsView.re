@@ -72,9 +72,10 @@ module ClearButton = {
 
 [@react.component]
 let make = () => {
-  let errors = LogsContext.useLogs();
+  let logs = LogsContext.useLogs();
   let deleteError = LogsContext.useDelete();
   let addLog = LogsContext.useAdd();
+  let errors = logs->List.keep(({Logs.kind}) => kind == Logs.Error);
   <Page>
     <View style=styles##content>
       {ReactUtils.onlyWhen(<ClearButton />, errors != [])}
@@ -85,7 +86,6 @@ let make = () => {
          </Typography.Body1>
        | errors =>
          errors
-         ->List.keep(({Logs.kind}) => kind == Logs.Error)
          ->List.toArray
          ->Array.mapWithIndex((i, log) =>
              <LogItem.Entry

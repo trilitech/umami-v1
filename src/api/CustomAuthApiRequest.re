@@ -28,7 +28,7 @@ open Let;
 let useLogin = (~sideEffect=?, ~onClosedPopup, ()) => {
   let set = (~config, provider) => {
     let%Await (pkh, pk, infos) = ReCustomAuthSigner.getInfos(provider);
-    WalletAPI.Accounts.importCustomAuth(~config, ~pkh, ~pk, infos);
+    HDWalletAPI.Accounts.importCustomAuth(~config, ~pkh, ~pk, infos);
   };
 
   ApiRequest.useSetter(

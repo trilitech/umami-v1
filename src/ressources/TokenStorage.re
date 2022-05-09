@@ -35,7 +35,8 @@ module Registered = {
     let contractDecoder =
       Json.Decode.(field("contract", TokenContract.Decode.record));
 
-    let chainDecoder = Json.Decode.(field("chain", string));
+    let chainDecoder =
+      Json.Decode.(field("chain", Network.Decode.chainIdDecoder));
 
     let holderDecoder = Json.Decode.(field("holder", PublicKeyHash.decoder));
     let hiddenDecoder = Json.Decode.(field("hidden", bool));
@@ -123,7 +124,7 @@ module Registered = {
         Json.Encode.(
           object_([
             ("contract", c.contract |> TokenContract.Encode.record),
-            ("chain", c.chain |> string),
+            ("chain", c.chain |> Network.Encode.chainIdEncoder),
             (
               "tokens",
               c.tokens->Map.Int.toArray |> array(tuple2(int, kindEncoder)),
@@ -156,7 +157,7 @@ module Registered = {
 
 /** The cache is a representation of the already fetched tokens from the chain */
 module Cache = {
-  include LocalStorage.Make({
+  module StorageRepr = {
     type t = TokensLibrary.t;
 
     let key = "cached-tokens";
@@ -169,15 +170,15 @@ module Cache = {
             ("kind", string("full")),
             ("value", t |> Token.Encode.record),
           ])
-        | Partial(tc, bcd, retry) =>
+        | Partial(t, chain, retry) =>
           object_([
             ("kind", string("partial")),
             (
               "value",
-              (tc, bcd, retry)
+              (t, chain, retry)
               |> tuple3(
-                   TokenContract.Encode.record,
-                   BCD.Encode.tokenBalanceEncoder,
+                   Tzkt.Encode.encoder,
+                   Network.Encode.chainEncoder,
                    bool,
                  ),
             ),
@@ -210,31 +211,37 @@ module Cache = {
              json =>
                json
                |> pair(
-                    TokenContract.Decode.record,
-                    BCD.Decode.tokenBalanceDecoder,
+                    Tzkt.Decode.decoder,
+                    Network.Decode.(chainDecoder(nativeChainFromString)),
                   )
-               |> (((tc, bcd)) => (tc, bcd, true)),
+               |> (((t, chain)) => (t, chain, true)),
              tuple3(
-               TokenContract.Decode.record,
-               BCD.Decode.tokenBalanceDecoder,
+               Tzkt.Decode.decoder,
+               Network.Decode.(chainDecoder(nativeChainFromString)),
                bool,
              ),
            )
       );
     };
 
-    let partialDecoder = json => {
-      open Json.Decode;
-      let (tc, bcd, retry) = json |> field("value", partialValueDecoder);
-      TokensLibrary.Token.Partial(tc, bcd, retry);
+    let partialDecoder = (purgePartial, json) => {
+      Json.Decode.(
+        if (purgePartial) {
+          None;
+        } else {
+          let (tc, bcd, retry) = json |> field("value", partialValueDecoder);
+          TokensLibrary.Token.Partial(tc, bcd, retry)->Some;
+        }
+      );
     };
 
     let fullDecoder = json =>
       TokensLibrary.Token.Full(
         json |> Json.Decode.field("value", Token.Decode.record),
-      );
+      )
+      ->Some;
 
-    let tokenDecoder = json => {
+    let tokenDecoder = (purgePartial, json) => {
       Json.Decode.(
         json
         |> (
@@ -242,7 +249,7 @@ module Cache = {
           |> andThen(
                fun
                | "full" => fullDecoder
-               | "partial" => partialDecoder
+               | "partial" => partialDecoder(purgePartial)
                | v =>
                  JsonEx.(
                    raise(
@@ -254,30 +261,41 @@ module Cache = {
       );
     };
 
-    let tokensDecoder = json =>
-      (json |> Json.Decode.array(tokenDecoder))
+    let tokensDecoder = (purgePartial, json) =>
+      (json |> Json.Decode.array(tokenDecoder(purgePartial)))
       ->Array.reduce(Map.Int.empty, (tokens, token) =>
-          tokens->Map.Int.set(TokensLibrary.Token.id(token), token)
+          switch (token) {
+          | Some(token) =>
+            tokens->Map.Int.set(TokensLibrary.Token.id(token), token)
+          | None => tokens
+          }
         );
 
-    let contractDecoder = json =>
+    let contractDecoder = (purgePartial, json) =>
       Json.Decode.(
         TokensLibrary.Generic.{
           name: json |> optional(field("name", string)),
           address: json |> field("address", PublicKeyHash.decoder),
-          tokens: json |> field("tokens", tokensDecoder),
+          tokens: json |> field("tokens", tokensDecoder(purgePartial)),
         }
       );
 
-    let decoder = json => {
+    let decoderRaw = (purgePartial, json) => {
       let decoder =
-        Json.Decode.(array(pair(PublicKeyHash.decoder, contractDecoder)));
+        Json.Decode.(
+          array(pair(PublicKeyHash.decoder, contractDecoder(purgePartial)))
+        );
       (json |> decoder)
       ->Array.reduce(PublicKeyHash.Map.empty, (cache, (pkh, tokens)) => {
           cache->PublicKeyHash.Map.set(pkh, tokens)
         });
     };
-  });
+
+    let decoder = decoderRaw(false);
+    let decoderWithoutPartial = decoderRaw(true);
+  };
+
+  include LocalStorage.Make(StorageRepr);
 
   let getWithFallback = () =>
     switch (get()) {
@@ -378,6 +396,17 @@ module Legacy = {
         let%Res json = cacheString->JsonEx.parse;
         let%ResMap cache = json->JsonEx.decode(Cache.decoder);
         cache->TokensLibrary.forceRetryPartial(`NFT);
+      };
+      Cache.migrate(~default=TokensLibrary.Generic.empty, ~mapValue, ());
+    };
+  };
+
+  module V1_7 = {
+    let version = Version.mk(1, 7);
+    let mk = () => {
+      let mapValue = cacheString => {
+        let%Res json = cacheString->JsonEx.parse;
+        json->JsonEx.decode(Cache.StorageRepr.decoderWithoutPartial);
       };
       Cache.migrate(~default=TokensLibrary.Generic.empty, ~mapValue, ());
     };

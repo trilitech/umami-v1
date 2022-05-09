@@ -26,8 +26,6 @@
 open ReactNative;
 open Remote;
 
-let styles = FormStyles.onboarding;
-
 module StateLenses = [%lenses
   type state = {
     selectedBackupFile: string,
@@ -54,7 +52,7 @@ let useRestoreForm = submit => {
           )
           ->Promise.getError(
               fun
-              | Errors.WrongPassword
+              | SecureStorage.WrongPassword
               | SecureStorage.Cipher.DecryptError =>
                 raiseSubmitFailed(Some(I18n.Form_input_error.wrong_password))
               | _ => (),

@@ -60,7 +60,7 @@ module AddTokenButton = {
       {wrapModal(
          <TokenAddView
            action=`Add
-           chain={chain->Option.getWithDefault("")}
+           chain={chain->Option.getWithDefault(Network.unsafeChainId(""))}
            tokens
            closeAction
          />,
@@ -83,7 +83,7 @@ let make = () => {
   let accounts = accounts->PublicKeyHash.Map.keysToList;
   let request = fromCache =>
     TokensApiRequest.{
-      request: Fungible.{accounts, numberByAccount: BCD.requestPageSize},
+      request: Fungible.{accounts, numberByAccount: Tzkt.requestPageSize},
       fromCache,
     };
 

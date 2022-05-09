@@ -65,8 +65,6 @@ let needSigning = () =>
   | Some(v) => !checkInBound(v)
   };
 
-let getEula = () => "License agreement placeholder";
-
 module Legacy = {
   /* Storage 1.0 -> 1.1 */
   module V1_1 = {

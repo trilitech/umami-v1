@@ -104,12 +104,15 @@ let () =
     | _ => None,
   );
 
-type nativeChains = [ | `Hangzhounet | `Mainnet];
+type nativeChains = [ | `Hangzhounet | `Mainnet | `Ithacanet];
 
 type supportedChains = [ nativeChains | `Florencenet | `Edo2net | `Granadanet];
 
+let unsafeChainId: string => chainId = c => c;
+
 let getChainId =
   fun
+  | `Ithacanet => "NetXnHfVqm9iesp"
   | `Granadanet => "NetXz969SFaFn8k"
   | `Mainnet => "NetXdQprcVkpaWU"
   | `Florencenet => "NetXxkAx4woPLyu"
@@ -124,17 +127,21 @@ let fromChainId =
   | "NetXxkAx4woPLyu" => `Florencenet
   | "NetXSgo1ZT2DRUG" => `Edo2net
   | "NetXZSsxBpMQeAT" => `Hangzhounet
+  | "NetXnHfVqm9iesp" => `Ithacanet
   | s => `Custom(s);
 
+let mkChainAssoc = c => (c, getChainId(c));
+
 let nativeChains = [
-  (`Mainnet, getChainId(`Mainnet)),
-  (`Hangzhounet, getChainId(`Hangzhounet)),
+  mkChainAssoc(`Mainnet),
+  mkChainAssoc(`Hangzhounet),
+  mkChainAssoc(`Ithacanet),
 ];
 
 let supportedChains = [
-  (`Florencenet, getChainId(`Florencenet)),
-  (`Edo2net, getChainId(`Edo2net)),
-  (`Granadanet, getChainId(`Granadanet)),
+  mkChainAssoc(`Florencenet),
+  mkChainAssoc(`Edo2net),
+  mkChainAssoc(`Granadanet),
   ...nativeChains,
 ];
 
@@ -145,6 +152,7 @@ let getDisplayedName =
   | `Florencenet => "Florencenet"
   | `Edo2net => "Edo2net"
   | `Hangzhounet => "Hangzhounet"
+  | `Ithacanet => "Ithacanet"
   | `Custom(s) => s;
 
 let externalExplorer =
@@ -154,52 +162,41 @@ let externalExplorer =
   | `Florencenet => "https://florencenet.tzkt.io/"->Ok
   | `Granadanet => "https://granadanet.tzkt.io/"->Ok
   | `Hangzhounet => "https://hangzhou2net.tzkt.io/"->Ok
+  | `Ithacanet => "https://ithacanet.tzkt.io/"->Ok
   | `Custom(_) as net => Error(UnknownChainId(getChainId(net)));
 
-type chain = [ supportedChains | `Custom(chainId)];
-type configurableChains = [ nativeChains | `Custom(chainId)];
+type chain('chainId) = [ supportedChains | `Custom('chainId)];
+type configurableChains('chainId) = [ nativeChains | `Custom('chainId)];
 
 type network = {
   name: string,
-  chain,
+  chain: chain(chainId),
   explorer: string,
   endpoint: string,
 };
 
-let mk = (~name, ~explorer, ~endpoint, chain) => {
-  name,
-  chain,
-  explorer,
-  endpoint,
-};
-
-let chainNetwork: chain => option(string) =
+let chainNetwork: chain(_) => option(string) =
   fun
   | `Mainnet => Some("mainnet")
   | `Granadanet => Some("granadanet")
   | `Florencenet => Some("florencenet")
   | `Edo2net => Some("edo2net")
   | `Hangzhounet => Some("hangzhou2net")
+  | `Ithacanet => Some("ithacanet")
   | `Custom(_) => None;
 
-let networkChain: string => option(chain) =
+let networkChain: string => option(chain(_)) =
   fun
   | "mainnet" => Some(`Mainnet)
   | "granadanet" => Some(`Granadanet)
   | "florencenet" => Some(`Florencenet)
   | "edo2net" => Some(`Edo2net)
   | "hangzhou2net" => Some(`Hangzhounet)
+  | "ithacanet" => Some(`Ithacanet)
   | _ => None;
 
 module Encode = {
-  let chainToString =
-    fun
-    | `Mainnet => "Mainnet"
-    | `Granadanet => "Granadanet"
-    | `Florencenet => "Florencenet"
-    | `Edo2net => "Edo2net"
-    | `Hangzhounet => "Hangzhounet"
-    | `Custom(n) => n;
+  let chainToString = getDisplayedName;
 
   let chainKind =
     fun
@@ -207,8 +204,11 @@ module Encode = {
     | `Granadanet
     | `Florencenet
     | `Edo2net
+    | `Ithacanet
     | `Hangzhounet => "default"
     | `Custom(_) => "custom";
+
+  let chainIdEncoder: Json.Encode.encoder(chainId) = Json.Encode.string;
 
   let chainEncoder = n =>
     Json.Encode.(
@@ -217,6 +217,8 @@ module Encode = {
         ("name", string(chainToString(n))),
       ])
     );
+
+  let chainEncoderString = chainEncoder;
 
   let encoder = c =>
     Json.Encode.(
@@ -234,6 +236,7 @@ module Decode = {
     fun
     | "Mainnet" => `Mainnet
     | "Hangzhounet" => `Hangzhounet
+    | "Ithacanet" => `Ithacanet
     | n =>
       JsonEx.(raise(InternalError(DecodeError("Unknown network " ++ n))));
 
@@ -242,6 +245,8 @@ module Decode = {
     | "Florencenet" => `Florencenet
     | "Edo2net" => `Edo2net
     | n => nativeChainFromString(n);
+
+  let chainIdDecoder: Json.Decode.decoder(chainId) = Json.Decode.string;
 
   let chainDecoder = (chainFromString, json) => {
     open Json.Decode;
@@ -262,6 +267,8 @@ module Decode = {
     );
   };
 
+  let chainDecoderString = chainDecoder;
+
   let decoder = json =>
     Json.Decode.{
       name: json |> field("name", string),
@@ -271,45 +278,68 @@ module Decode = {
     };
 };
 
+let mk = (~explorer, ~endpoint, chain) => {
+  name: getDisplayedName(chain),
+  chain,
+  explorer,
+  endpoint,
+};
+
 let mainnet =
   mk(
-    ~name=getDisplayedName(`Mainnet),
-    ~explorer="https://api.umamiwallet.com/mainnet",
+    ~explorer="https://mainnet.umamiwallet.com",
     ~endpoint="https://mainnet.smartpy.io/",
     `Mainnet,
   );
 
 let hangzhounet =
   mk(
-    ~name=getDisplayedName(`Hangzhounet),
-    ~explorer="https://api.umamiwallet.com/hangzhounet",
+    ~explorer="https://hangzhounet.umamiwallet.com",
     ~endpoint="https://hangzhounet.smartpy.io/",
     `Hangzhounet,
   );
 
-let withEP = (n, url) => {...n, endpoint: url};
+let ithacanet =
+  mk(
+    ~explorer="https://ithacanet.umamiwallet.com",
+    ~endpoint="https://ithacanet.ecadinfra.com/",
+    `Ithacanet,
+  );
 
-let mainnetNetworks = [
-  mainnet->withEP("https://mainnet.smartpy.io/"),
-  mainnet->withEP("https://api.tez.ie/rpc/mainnet/"),
-  mainnet->withEP("https://teznode.letzbake.com"),
-  mainnet->withEP("https://mainnet.tezrpc.me/"),
-  mainnet->withEP("https://rpc.tzbeta.net/"),
-];
+let getNetwork =
+  fun
+  | `Hangzhounet => hangzhounet
+  | `Mainnet => mainnet
+  | `Ithacanet => ithacanet;
 
-let hangzhounetNetworks = [
-  hangzhounet->withEP("https://hangzhounet.smartpy.io/"),
-  hangzhounet->withEP("https://api.tez.ie/rpc/hangzhounet"),
-];
-
-let getNetworks = (c: nativeChains) =>
+let getNetworks = (c: nativeChains) => {
+  let n = getNetwork(c);
+  let withEP = url => {...n, endpoint: url};
   switch (c) {
-  | `Hangzhounet => hangzhounetNetworks
-  | `Mainnet => mainnetNetworks
+  | `Hangzhounet => [
+      withEP("https://hangzhounet.smartpy.io/"),
+      withEP("https://api.tez.ie/rpc/hangzhounet"),
+    ]
+  | `Mainnet => [
+      withEP("https://mainnet.smartpy.io/"),
+      withEP("https://api.tez.ie/rpc/mainnet/"),
+      withEP("https://teznode.letzbake.com"),
+      withEP("https://mainnet.tezrpc.me/"),
+      withEP("https://rpc.tzbeta.net/"),
+    ]
+  | `Ithacanet => [
+      withEP("https://ithacanet.ecadinfra.com/"),
+      withEP("https://ithacanet.smartpy.io/"),
+    ]
   };
+};
 
 let testNetwork = n =>
-  TaquitoAPI.Rpc.getBlockHeader(n.endpoint)->Promise.timeoutAfter(2000);
+  // Avoids dependency to TaquitoAPI
+  ReTaquito.RPCClient.create(n.endpoint)
+  ->ReTaquito.RPCClient.getBlockHeader()
+  ->ReTaquitoError.fromPromiseParsed
+  ->Promise.timeoutAfter(2000);
 
 let testNetworks = eps => {
   let eps = eps->List.shuffle;
@@ -433,9 +463,8 @@ let getNodeChain = (~timeout=?, url) => {
   };
 };
 
-let isMainnet = n => n == `Mainnet;
-
-let checkConfiguration = (api_url, node_url): Promise.t((apiVersion, chain)) =>
+let checkConfiguration =
+    (api_url, node_url): Promise.t((apiVersion, chain(chainId))) =>
   Promise.map2(
     getAPIVersion(~timeout=5000, api_url),
     getNodeChain(~timeout=5000, node_url),

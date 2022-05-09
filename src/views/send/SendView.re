@@ -96,11 +96,6 @@ module FormGroupAmountWithTokenSelector = {
   };
 };
 
-let styles =
-  Style.(
-    StyleSheet.create({"operationSummary": style(~marginBottom=20.->dp, ())})
-  );
-
 type step =
   | SendStep
   | SigningStep(Protocol.batch, Protocol.Simulation.results)
@@ -168,27 +163,6 @@ module Form = {
 
   module View = {
     open SendForm;
-
-    let onAppear = (el, _) => {
-      ReactFlipToolkit.spring({
-        onUpdate: value => {
-          el->ReactDOMRe.domElementToObj##style##opacity #= value;
-        },
-        delay: 100.,
-        onComplete: () => (),
-      });
-    };
-
-    let onExit = (el, _, removeElement) => {
-      ReactFlipToolkit.spring({
-        onUpdate: value => {
-          el->ReactDOMRe.domElementToObj##style##opacity
-          #= Js.Math.max_float(0., 1. -. value -. 0.3);
-        },
-        delay: 0.,
-        onComplete: removeElement,
-      });
-    };
 
     type mode =
       | Edition(int)

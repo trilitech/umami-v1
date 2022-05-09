@@ -40,7 +40,7 @@ let getName =
 
 let checkOperationRequestTargetNetwork =
     (config: ConfigContext.env, chain: ReBeacon.network) => {
-  chain.type_ == config.network.chain->Network.getChainId
+  chain.type_ == (config.network.chain->Network.getChainId :> string)
   || Some(chain.type_) == config.network.chain->getName;
 };
 
@@ -77,21 +77,6 @@ let useBeaconRequestModalAction = () => {
   };
 
   (request, visibleModal, openModal, closeAction);
-};
-
-let useSourceAccount = request => {
-  open ReBeacon.Message.Request;
-  let address =
-    switch (request) {
-    | Some(Ok(SignPayloadRequest(r))) => r.sourceAddress->Some
-    | Some(Ok(OperationRequest(r))) => r.sourceAddress->Some
-    | Some(Ok(BroadcastRequest(_)))
-    | Some(Ok(PermissionRequest(_)))
-    | Some(Error(_))
-    | None => None
-    };
-
-  StoreContext.Accounts.useGetFromOptAddress(address);
 };
 
 let respondWithError = (client, id, errorType) =>

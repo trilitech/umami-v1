@@ -34,27 +34,6 @@ let styles =
     })
   );
 
-module EmptyAppView = {
-  [@react.component]
-  let make = () => {
-    let theme = ThemeContext.useTheme();
-
-    <View
-      style=Style.(
-        array([|
-          styles##layout,
-          style(~backgroundColor=theme.colors.background, ()),
-        |])
-      )>
-      <Header />
-      <View style=styles##main>
-        <NavBar.Empty />
-        <View style=styles##content />
-      </View>
-    </View>;
-  };
-};
-
 module DisclaimerModal = {
   [@react.component]
   let make = (~onSign) => {
@@ -186,6 +165,26 @@ module AppView = {
   let make = () => {
     let url = ReasonReactRouter.useUrl();
     let route = Routes.match(url);
+    let toast = LogsContext.useToast();
+
+    React.useEffect0(_ => {
+      let btns =
+        Logs.[
+          {
+            text: I18n.Btn.install_and_restart_now,
+            onPress: _ => IPC.send("quit-and-install", ""),
+          },
+        ];
+      let log =
+        Logs.log(
+          ~kind=Logs.Info,
+          ~origin=Logs.Update,
+          ~btns,
+          I18n.download_complete,
+        );
+      IPC.on("update-downloaded", (_, _) => toast(log));
+      None;
+    });
 
     let selectedAccount = StoreContext.SelectedAccount.useGetAtInit();
     let accountsRequest = StoreContext.Accounts.useRequest();
@@ -221,49 +220,57 @@ module AppView = {
       setMainPage(_ => Dashboard);
     };
 
-    <DocumentContext>
-      <View
-        style=Style.(
-          array([|
-            styles##layout,
-            style(~backgroundColor=theme.colors.background, ()),
-          |])
-        )>
-        <Header />
-        {eulaSignature
-           ? <DisclaimerModal onSign />
-           : <View style=styles##main>
-               {switch (selectedAccount) {
-                | Some(account) when displayNavbar => <NavBar account route />
-                | Some(_)
-                | None => <NavBar.Empty />
-                }}
-               <View style=styles##content>
-                 {switch (mainPageState) {
-                  | Onboarding => <OnboardingView />
-                  | AddAccountModal =>
-                    <OnboardingView
-                      onClose={_ => setMainPage(_ => Dashboard)}
-                    />
-                  | BuyTez(src) =>
-                    <BuyTezView src onClose=handleCloseBuyTezView />
-                  | Dashboard =>
-                    <SelectedAccountView>
-                      {(
-                         account =>
-                           <Dashboard
-                             account
-                             showBuyTez={url => setMainPage(_ => BuyTez(url))}
-                             route
-                             setMainPage
-                           />
-                       )}
-                    </SelectedAccountView>
+    let toastBox = LogsContext.useToastBox();
+
+    <>
+      toastBox
+      <DocumentContext>
+        <View
+          style=Style.(
+            array([|
+              styles##layout,
+              style(~backgroundColor=theme.colors.background, ()),
+            |])
+          )>
+          <Header />
+          {eulaSignature
+             ? <DisclaimerModal onSign />
+             : <View style=styles##main>
+                 {switch (selectedAccount) {
+                  | Some(account) when displayNavbar =>
+                    <NavBar account route />
+                  | Some(_)
+                  | None => <NavBar.Empty />
                   }}
-               </View>
-             </View>}
-      </View>
-    </DocumentContext>;
+                 <View style=styles##content>
+                   {switch (mainPageState) {
+                    | Onboarding => <OnboardingView />
+                    | AddAccountModal =>
+                      <OnboardingView
+                        onClose={_ => setMainPage(_ => Dashboard)}
+                      />
+                    | BuyTez(src) =>
+                      <BuyTezView src onClose=handleCloseBuyTezView />
+                    | Dashboard =>
+                      <SelectedAccountView>
+                        {(
+                           account =>
+                             <Dashboard
+                               account
+                               showBuyTez={url =>
+                                 setMainPage(_ => BuyTez(url))
+                               }
+                               route
+                               setMainPage
+                             />
+                         )}
+                      </SelectedAccountView>
+                    }}
+                 </View>
+               </View>}
+        </View>
+      </DocumentContext>
+    </>;
   };
 };
 
@@ -272,7 +279,7 @@ let make = () => {
   <LogsContext>
     <ConfigFileContext>
       <ConfigContext>
-        <ThemeContext>
+        <ThemeContextWithConfig>
           <StoreContext>
             <GlobalBatchContext>
               <AppView />
@@ -281,7 +288,7 @@ let make = () => {
               </SelectedAccountView>
             </GlobalBatchContext>
           </StoreContext>
-        </ThemeContext>
+        </ThemeContextWithConfig>
       </ConfigContext>
     </ConfigFileContext>
   </LogsContext>;

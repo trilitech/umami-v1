@@ -24,7 +24,7 @@
 /*****************************************************************************/
 
 type Errors.t +=
-  | UnknownNetwork(string)
+  | UnknownNetwork(Network.chainId)
   | FetchError(string)
   | JsonResponseError(string)
   | JsonError(string);
@@ -64,8 +64,6 @@ module URL: {
   };
 
   module Endpoint: {
-    let delegates: ConfigContext.env => t;
-
     let runView: ConfigContext.env => t;
 
     let fa12GetBalanceInput:
@@ -106,6 +104,22 @@ module URL: {
     let betterCallDevBatchAccounts:
       (~config: ConfigContext.env, ~accounts: array(PublicKeyHash.t)) =>
       Let.result(t);
+
+    let tzktAccountTokens:
+      (
+        ~config: ConfigContext.env,
+        ~account: PublicKeyHash.t,
+        ~contract: PublicKeyHash.t=?,
+        ~limit: int=?,
+        ~index: int=?,
+        ~hideEmpty: bool=?,
+        ~sortBy: [ | `Balance | `Contract | `Id]=?,
+        unit
+      ) =>
+      Let.result(t);
+
+    let tzktAccountTokensNumber:
+      (~config: ConfigContext.env, ~account: PublicKeyHash.t) => Let.result(t);
   };
 
   /* Fetch URL as a JSON. */

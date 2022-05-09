@@ -23,9 +23,6 @@
 /*                                                                           */
 /*****************************************************************************/
 
-let getItem: string => Js.Nullable.t(string);
-let setItem: (string, string) => unit;
-let removeItem: string => unit;
 let clear: unit => unit;
 
 type Errors.t +=

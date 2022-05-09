@@ -51,7 +51,6 @@ type state = {
     apiRequestsState(option(NodeAPI.Delegate.delegationInfo)),
   operationsRequestsState:
     apiRequestsState(OperationApiRequest.operationsResponse),
-  operationsConfirmations: reactState(Set.String.t),
   aliasesRequestState:
     reactState(ApiRequest.t(PublicKeyHash.Map.map(Alias.t))),
   bakersRequestState: reactState(ApiRequest.t(array(Delegate.t))),
@@ -59,7 +58,6 @@ type state = {
     reactState(ApiRequest.t(TokensApiRequest.Fungible.fetched)),
   fungibleTokensRequestState:
     reactState(ApiRequest.t(TokensApiRequest.Fungible.fetched)),
-  nftsRequestsState: apiRequestsState(TokensLibrary.t),
   tokensRegistryRequestState:
     reactState(ApiRequest.t(TokensApiRequest.registry)),
   accountsTokensRequestState: apiRequestsState(TokensApiRequest.NFT.fetched),
@@ -78,7 +76,6 @@ type state = {
 // Context and Provider
 
 let initialApiRequestsState = (Map.String.empty, _ => ());
-let initialNFTRequestsState = (Map.String.empty, _ => ());
 
 let initialState = {
   selectedAccountState: (None, _ => ()),
@@ -89,12 +86,10 @@ let initialState = {
   delegateRequestsState: initialApiRequestsState,
   delegateInfoRequestsState: initialApiRequestsState,
   operationsRequestsState: initialApiRequestsState,
-  operationsConfirmations: (Set.String.empty, _ => ()),
   aliasesRequestState: (NotAsked, _ => ()),
   bakersRequestState: (NotAsked, _ => ()),
   tokensRequestState: (NotAsked, _ => ()),
   fungibleTokensRequestState: (NotAsked, _ => ()),
-  nftsRequestsState: initialNFTRequestsState,
   tokensRegistryRequestState: (NotAsked, _ => ()),
   accountsTokensRequestState: initialApiRequestsState,
   accountsTokensNumberRequestState: initialApiRequestsState,
@@ -150,13 +145,11 @@ let make = (~children) => {
     React.useState(() => Map.String.empty);
   let tokensNumberRequestState = React.useState(() => ApiRequest.NotAsked);
   let balanceTokenRequestsState = React.useState(() => Map.String.empty);
-  let operationsConfirmations = React.useState(() => Set.String.empty);
 
   let aliasesRequestState = React.useState(() => ApiRequest.NotAsked);
   let bakersRequestState = React.useState(() => ApiRequest.NotAsked);
   let tokensRequestState = React.useState(() => ApiRequest.NotAsked);
   let fungibleTokensRequestState = React.useState(() => ApiRequest.NotAsked);
-  let nftsRequestsState = React.useState(() => Map.String.empty);
   let tokensRegistryRequestState = React.useState(() => ApiRequest.NotAsked);
   let secretsRequestState = React.useState(() => ApiRequest.NotAsked);
 
@@ -256,12 +249,10 @@ let make = (~children) => {
       delegateRequestsState,
       delegateInfoRequestsState,
       operationsRequestsState,
-      operationsConfirmations,
       aliasesRequestState,
       bakersRequestState,
       tokensRequestState,
       fungibleTokensRequestState,
-      nftsRequestsState,
       tokensRegistryRequestState,
       accountsTokensRequestState,
       accountsTokensNumberRequestState,
@@ -324,11 +315,6 @@ let useGetRequestStateFromMap = useRequestsState;
 
 let resetRequests = requestsState =>
   requestsState->Map.String.map(ApiRequest.expireCache);
-
-let reloadRequests = requestsState =>
-  requestsState->Map.String.map(ApiRequest.updateToLoadingState);
-
-//
 
 let useApiVersion = () => {
   let store = useStoreContext();
@@ -542,20 +528,6 @@ module Operations = {
     };
   };
 
-  let useReloadAll = () => {
-    let store = useStoreContext();
-    let resetBalances = Balance.useResetAll();
-    let resetBalanceTokens = BalanceToken.useResetAll();
-    let resetDelegatesAndDelegatesInfo = DelegateInfo.useResetAll();
-    let (_, setOperationsRequests) = store.operationsRequestsState;
-    () => {
-      setOperationsRequests(reloadRequests);
-      resetBalances();
-      resetBalanceTokens();
-      resetDelegatesAndDelegatesInfo();
-    };
-  };
-
   let useCreate = () => {
     let resetOperations = useResetAll();
     let settings = ConfigContext.useContent();
@@ -618,16 +590,6 @@ module Tokens = {
   let useGetAllFungible = () => {
     let fungibleTokensRequestState = useFungibleRequestState();
     useGetTokens(fungibleTokensRequestState, `FT);
-  };
-
-  let useRegistryRequestState = () => {
-    let store = useStoreContext();
-    store.tokensRegistryRequestState;
-  };
-
-  let useRegistry = request => {
-    let registryRequestState = useRegistryRequestState();
-    TokensApiRequest.useLoadTokensRegistry(registryRequestState, request);
   };
 
   let useAccountTokensNumber = (account: PublicKeyHash.t) => {
@@ -693,13 +655,6 @@ module Tokens = {
       setTokensRequest(ApiRequest.expireCache);
       setFungibleTokensRequest(ApiRequest.expireCache);
     };
-  };
-
-  let useResetAllAccountsTokens = () => {
-    let store = useStoreContext();
-    let (tokensRequests, setTokensRequests) =
-      store.accountsTokensRequestState;
-    () => setTokensRequests(_ => resetRequests(tokensRequests));
   };
 
   let useCreate = () => {
@@ -820,13 +775,6 @@ module Accounts = {
   let useGetFromAddress = (address: PublicKeyHash.t) => {
     let accounts = useGetAll();
     accounts->PublicKeyHash.Map.get(address);
-  };
-
-  let useGetFromOptAddress = (address: option(PublicKeyHash.t)) => {
-    let accounts = useGetAll();
-    address->Option.flatMap(address =>
-      accounts->PublicKeyHash.Map.get(address)
-    );
   };
 
   let useResetNames = () => {
@@ -1054,6 +1002,16 @@ module Beacon = {
         (),
       );
     };
+
+    let useDeleteAll = () => {
+      let (client, _) = useClient();
+      let resetBeaconPeers = useResetAll();
+      BeaconApiRequest.Peers.useDeleteAll(
+        ~client,
+        ~sideEffect=_ => resetBeaconPeers(),
+        (),
+      );
+    };
   };
 
   module Permissions = {
@@ -1080,6 +1038,16 @@ module Beacon = {
       let (client, _) = useClient();
       let resetBeaconPermissions = useResetAll();
       BeaconApiRequest.Permissions.useDelete(
+        ~client,
+        ~sideEffect=_ => resetBeaconPermissions(),
+        (),
+      );
+    };
+
+    let useDeleteAll = () => {
+      let (client, _) = useClient();
+      let resetBeaconPermissions = useResetAll();
+      BeaconApiRequest.Permissions.useDeleteAll(
         ~client,
         ~sideEffect=_ => resetBeaconPermissions(),
         (),

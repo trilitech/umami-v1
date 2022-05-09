@@ -37,15 +37,6 @@ module StateLenses = [%lenses
 ];
 module TokenCreateForm = ReForm.Make(StateLenses);
 
-let emptyState: StateLenses.state = {
-  name: "",
-  address: "",
-  symbol: "",
-  decimals: "",
-  tokenId: "",
-  token: None,
-};
-
 let styles =
   Style.(
     StyleSheet.create({
@@ -236,7 +227,7 @@ let make =
               symbol,
               chain,
               decimals,
-              asset: TokenRepr.defaultAsset,
+              asset: Metadata.defaultAsset,
             },
           )
         ->createToken

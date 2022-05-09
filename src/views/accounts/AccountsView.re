@@ -30,11 +30,6 @@ module Mode = {
     | Simple
     | Management;
 
-  let is_simple =
-    fun
-    | Simple => true
-    | Management => false;
-
   let is_management =
     fun
     | Simple => false
