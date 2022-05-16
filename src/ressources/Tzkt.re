@@ -214,10 +214,7 @@ module Decode = {
   };
 
   let standardDecoder = s =>
-    switch (s->string->TokenContract.Decode.kindFromString) {
-    | Ok(k) => k
-    | Error(e) => raise(JsonEx.InternalError(e))
-    };
+    s->string->TokenContract.Decode.kindFromString->JsonEx.getExn;
 
   let contractDecoder = json => {
     alias: json |> optionalOrNull("alias", string),

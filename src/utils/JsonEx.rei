@@ -27,9 +27,6 @@ type Errors.t +=
   | ParsingError(string)
   | DecodeError(string);
 
-// Propagates Errors.t during decoding, should be caught by the decode function
-exception InternalError(Errors.t);
-
 let parse: string => Promise.result(Js.Json.t);
 
 let decode: (Js.Json.t, Json.Decode.decoder('a)) => Promise.result('a);
@@ -42,6 +39,8 @@ let stringifyAnyWithSpace: ('a, int) => string;
 
 let filterJsonExn: exn => string;
 
+// Raises DecodeError if first parameter is Error
+let getExn: Promise.result('a) => 'a;
 
 module Encode: {
   include (module type of Json.Encode);

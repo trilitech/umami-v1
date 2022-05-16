@@ -38,9 +38,6 @@ let () =
     | _ => None,
   );
 
-/* Propagates Errors.t during decoding */
-exception InternalError(Errors.t);
-
 external unsafeFromAny: 'a => Js.Json.t = "%identity";
 
 [@bs.val] [@bs.scope "JSON"]
@@ -51,14 +48,11 @@ external stringifyAnyWithSpace:
   ('a, [@bs.as {json|null|json}] _, int) => string =
   "stringify";
 
-let internalError = e => InternalError(e);
-
 /* bs-json uses exceptions instead of results, hence this function catches these
    exceptions to then build a result. */
 let decode = (json, decoder) =>
   try(decoder(json)->Ok) {
   | Decode.DecodeError(s) => Error(DecodeError(s))
-  | InternalError(e) => Error(e)
   | e =>
     Js.log(e);
     Error(Errors.Generic("Unknown decoding error"));
@@ -76,6 +70,10 @@ let filterJsonExn = ex =>
   | _ => "Unknown error"
   };
 
+let getExn =
+  fun
+  | Ok(v) => v
+  | Error(e) => raise(Json.Decode.DecodeError(Errors.toString(e)));
 
 module Encode = {
   include Json.Encode;

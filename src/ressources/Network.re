@@ -237,8 +237,7 @@ module Decode = {
     fun
     | "Mainnet" => `Mainnet
     | "Ithacanet" => `Ithacanet
-    | n =>
-      JsonEx.(raise(InternalError(DecodeError("Unknown network " ++ n))));
+    | n => raise(Json.Decode.DecodeError("Unknown network " ++ n));
 
   let chainFromString =
     fun
@@ -260,10 +259,7 @@ module Decode = {
            fun
            | "default" => field("name", defaultNetworkDecoder)
            | "custom" => field("name", customNetworkDecoder)
-           | v =>
-             JsonEx.(
-               raise(InternalError(DecodeError("Unknown kind" ++ v)))
-             ),
+           | v => raise(Json.Decode.DecodeError("Unknown kind" ++ v)),
          )
     );
   };
