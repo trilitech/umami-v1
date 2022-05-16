@@ -23,36 +23,48 @@
 /*                                                                           */
 /*****************************************************************************/
 
-type Errors.t +=
-  | ParsingError(string)
-  | DecodeError(string);
+module Decode = {
+  open Json.Decode;
 
-// Propagates Errors.t during decoding, should be caught by the decode function
-exception InternalError(Errors.t);
+  type address =
+    | Packed(bytes)
+    | Pkh(PublicKeyHash.t);
 
-let parse: string => Promise.result(Js.Json.t);
+  let dataDecoder = params => field("data", array(params));
 
-let decode: (Js.Json.t, Json.Decode.decoder('a)) => Promise.result('a);
+  let pairDecoder = (d1, d2) => field("args", tuple2(d1, d2));
 
-let stringify: Js.Json.t => string;
+  let intDecoder = field("int", string);
 
-let unsafeFromAny: 'a => Js.Json.t;
+  let bytesDecoder =
+    field("bytes", string) |> map(s => s->Bytes.unsafe_of_string);
 
-let stringifyAnyWithSpace: ('a, int) => string;
+  let stringDecoder = field("string", string);
 
-let filterJsonExn: exn => string;
+  let addressDecoder =
+    either(
+      bytesDecoder |> map(b => Packed(b)),
+      stringDecoder |> map(s => Pkh(s->PublicKeyHash.build->JsonEx.getExn)),
+    );
 
+  /*
+    Example of response for `run_view` on `balance_of` on an FA2 contract for
+    a single address:
+    { "data":
+        [ { "prim": "Pair",
+            "args":
+              [ { "prim": "Pair",
+                  "args":
+                    [ { "bytes": "0000721765c758aacce0986e781ddc9a40f5b6b9d9c3" },
+                      { "int": "0" } ] }, { "int": "1000010000" } ] } ] }
 
-module Encode: {
-  include (module type of Json.Encode);
-
-  let bsListEncoder: encoder('a) => encoder(list('a));
-};
-
-module Decode: {
-  include (module type of Json.Decode);
-
-  let optionalOrNull: (string, decoder('a)) => decoder(option('a));
-
-  let bsListDecoder: decoder('a) => decoder(list('a));
+    The result is actually a Michelson list of `(pkh * tokenId * balance)`,
+   but this version only parses the result for a single address.
+   This version is purely adhoc for this response.
+   */
+  let fa2BalanceOfDecoder = json =>
+    json
+    |> dataDecoder(
+         pairDecoder(pairDecoder(addressDecoder, intDecoder), intDecoder),
+       );
 };

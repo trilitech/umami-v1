@@ -23,36 +23,25 @@
 /*                                                                           */
 /*****************************************************************************/
 
-type Errors.t +=
-  | ParsingError(string)
-  | DecodeError(string);
-
-// Propagates Errors.t during decoding, should be caught by the decode function
-exception InternalError(Errors.t);
-
-let parse: string => Promise.result(Js.Json.t);
-
-let decode: (Js.Json.t, Json.Decode.decoder('a)) => Promise.result('a);
-
-let stringify: Js.Json.t => string;
-
-let unsafeFromAny: 'a => Js.Json.t;
-
-let stringifyAnyWithSpace: ('a, int) => string;
-
-let filterJsonExn: exn => string;
-
-
-module Encode: {
-  include (module type of Json.Encode);
-
-  let bsListEncoder: encoder('a) => encoder(list('a));
-};
-
 module Decode: {
-  include (module type of Json.Decode);
+  type address =
+    | Packed(bytes)
+    | Pkh(PublicKeyHash.t);
 
-  let optionalOrNull: (string, decoder('a)) => decoder(option('a));
+  let dataDecoder:
+    Json.Decode.decoder('a) => Json.Decode.decoder(array('a));
 
-  let bsListDecoder: decoder('a) => decoder(list('a));
+  let pairDecoder:
+    (Json.Decode.decoder('a), Json.Decode.decoder('b)) =>
+    Json.Decode.decoder(('a, 'b));
+
+  let intDecoder: Json.Decode.decoder(string);
+
+  let bytesDecoder: Json.Decode.decoder(bytes);
+
+  let stringDecoder: Json.Decode.decoder(string);
+
+  let addressDecoder: Json.Decode.decoder(address);
+
+  let fa2BalanceOfDecoder: Js.Json.t => array(((address, string), string));
 };
