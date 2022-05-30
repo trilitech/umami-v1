@@ -117,6 +117,7 @@ module Dashboard = {
       {switch (route) {
        | Accounts =>
          <AccountsView
+           account
            mode=accountsViewMode
            setMode=setAccountsViewMode
            showBuyTez

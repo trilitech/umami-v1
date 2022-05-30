@@ -23,7 +23,7 @@
 /*                                                                           */
 /*****************************************************************************/
 
-let flagOn = false;
+let flagOn = true;
 
 /* An auth provider redirects to a web page owned by the
    auth consumer (us/our api) to ensure only this consumer's
@@ -38,7 +38,7 @@ let flagOn = false;
 let redirectDomain = "https://umamiwallet.com";
 let baseUrl = redirectDomain ++ "/auth/";
 let redirectPathName = "redirect.html";
-let network = `testnet;
+let network = `mainnet;
 
 include ReCustomAuthType;
 
