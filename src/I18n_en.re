@@ -292,7 +292,7 @@ module Form_input_error = {
 };
 
 module Title = {
-  let custom_auth_sign_in_up = "Waiting for authentification";
+  let custom_auth_sign_in_up = "Sign up or Sign in with";
   let custom_auth_waiting_auth = "Waiting for authentification";
   let custom_auth_failed = "Authentification failed";
   let custom_auth_success = "Successful authentification";
