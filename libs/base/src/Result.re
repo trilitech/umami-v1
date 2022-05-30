@@ -33,6 +33,14 @@ let getOk = (result, sink) =>
   | Error(_) => ()
   };
 
+let tapOk = (r, f) => {
+  switch (r) {
+  | Ok(value) => f(value)
+  | Error(_) => ()
+  };
+  r;
+};
+
 let getError = (result, sink) =>
   switch (result) {
   | Ok(_) => ()

@@ -67,12 +67,8 @@ module Registered = {
                | "ft" => ftDecoder
                | "nft" => nftDecoder
                | v =>
-                 JsonEx.(
-                   raise(
-                     InternalError(
-                       DecodeError("Registered: Unknown kind " ++ v),
-                     ),
-                   )
+                 raise(
+                   Json.Decode.DecodeError("Registered: Unknown kind " ++ v),
                  ),
              )
         )
@@ -249,11 +245,7 @@ module Cache = {
                | "full" => fullDecoder
                | "partial" => partialDecoder(purgePartial)
                | v =>
-                 JsonEx.(
-                   raise(
-                     InternalError(DecodeError("Cache: Unknown kind " ++ v)),
-                   )
-                 ),
+                 raise(Json.Decode.DecodeError("Cache: Unknown kind " ++ v)),
              )
         )
       );

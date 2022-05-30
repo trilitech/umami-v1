@@ -285,7 +285,7 @@ module Tokens = {
     ->URL.Endpoint.runView
     ->URL.postJson(input)
     ->Promise.flatMapOk(json => {
-        let res = JsonEx.(decode(json, MichelsonDecode.fa2BalanceOfDecoder));
+        let res = JsonEx.(decode(json, Michelson.Decode.fa2BalanceOfDecoder));
 
         switch (res) {
         | Ok([|((_pkh, _tokenId), v)|]) =>

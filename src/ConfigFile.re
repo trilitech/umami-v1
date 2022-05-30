@@ -166,11 +166,7 @@ module Legacy = {
                fun
                | "Custom" => field("VAL", Network.Decode.chainIdDecoder)
                | v =>
-                 JsonEx.(
-                   raise(
-                     InternalError(DecodeError("Unknown variant " ++ v)),
-                   )
-                 ),
+                 raise(Json.Decode.DecodeError("Unknown variant " ++ v)),
              )
         )
         |> (n => `Custom(n));
@@ -234,8 +230,7 @@ module Legacy = {
       fun
       | "Mainnet" => `Mainnet
       | "Ithacanet" => `Ithacanet
-      | n =>
-        JsonEx.(raise(InternalError(DecodeError("Unknown network " ++ n))));
+      | n => raise(Json.Decode.DecodeError("Unknown network " ++ n));
 
     let legacyNetworkDecoder = json =>
       json

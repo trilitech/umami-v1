@@ -23,41 +23,25 @@
 /*                                                                           */
 /*****************************************************************************/
 
-let version = Version.mk(1, 0);
+module Decode: {
+  type address =
+    | Packed(bytes)
+    | Pkh(PublicKeyHash.t);
 
-let lowestBound = Version.mk(~fix=0, 1, 0);
+  let dataDecoder:
+    Json.Decode.decoder('a) => Json.Decode.decoder(array('a));
 
-let highestBound = Version.mk(1, max_int);
+  let pairDecoder:
+    (Json.Decode.decoder('a), Json.Decode.decoder('b)) =>
+    Json.Decode.decoder(('a, 'b));
 
-let checkInBound = version =>
-  Version.checkInBound(version, lowestBound, highestBound);
+  let intDecoder: Json.Decode.decoder(string);
 
-module Value = {
-  type t = Version.t;
-  let key = "wert-eula-version";
+  let bytesDecoder: Json.Decode.decoder(bytes);
 
-  let encoder = v => Json.Encode.(v->Version.toString->string);
-  let decoder = json => {
-    json->Json.Decode.string->Version.parse->JsonEx.getExn;
-  };
+  let stringDecoder: Json.Decode.decoder(string);
+
+  let addressDecoder: Json.Decode.decoder(address);
+
+  let fa2BalanceOfDecoder: Js.Json.t => array(((address, string), string));
 };
-
-module Storage = LocalStorage.Make(Value);
-
-let getAgreedVersion = () =>
-  switch (Storage.get()) {
-  | Ok(v) => Some(v)
-  | Error(_) => None
-  };
-
-let sign = () => {
-  Storage.set(version);
-};
-
-let needSigning = () =>
-  switch (getAgreedVersion()) {
-  | None => true
-  | Some(v) => !checkInBound(v)
-  };
-
-let getEula = () => "License agreement placeholder";
