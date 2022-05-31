@@ -58,7 +58,7 @@ describe("API tests", ({testAsync}) => {
     let expected: array(Operation.t) = [||];
     module UnderTest = ServerAPI.ExplorerMaker(Stub);
     UnderTest.getOperations(
-      config,
+      config.network,
       "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
       (),
     )
@@ -150,7 +150,7 @@ describe("API tests", ({testAsync}) => {
     |];
     module UnderTest = ServerAPI.ExplorerMaker(Stub);
     UnderTest.getOperations(
-      config,
+      config.network,
       "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
       (),
     )
@@ -185,7 +185,7 @@ describe("API tests", ({testAsync}) => {
     };
     module UnderTest = ServerAPI.ExplorerMaker(Stub);
     UnderTest.getOperations(
-      config,
+      config.network,
       "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
       (),
     )
@@ -245,7 +245,7 @@ describe("API tests", ({testAsync}) => {
     |];
     module UnderTest = ServerAPI.ExplorerMaker(Stub);
     UnderTest.getOperations(
-      config,
+      config.network,
       "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
       (),
     )
@@ -280,7 +280,7 @@ describe("API tests", ({testAsync}) => {
     };
     module UnderTest = ServerAPI.ExplorerMaker(Stub);
     UnderTest.getOperations(
-      config,
+      config.network,
       "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
       (),
     )
@@ -348,7 +348,7 @@ describe("API tests", ({testAsync}) => {
     |];
     module UnderTest = ServerAPI.ExplorerMaker(Stub);
     UnderTest.getOperations(
-      config,
+      config.network,
       "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
       (),
     )
@@ -388,7 +388,7 @@ describe("API tests", ({testAsync}) => {
     };
     module UnderTest = ServerAPI.ExplorerMaker(Stub);
     UnderTest.getOperations(
-      config,
+      config.network,
       "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
       (),
     )
@@ -446,7 +446,7 @@ describe("API tests", ({testAsync}) => {
     |];
     module UnderTest = ServerAPI.ExplorerMaker(Stub);
     UnderTest.getOperations(
-      config,
+      config.network,
       "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
       (),
     )
@@ -481,7 +481,7 @@ describe("API tests", ({testAsync}) => {
     };
     module UnderTest = ServerAPI.ExplorerMaker(Stub);
     UnderTest.getOperations(
-      config,
+      config.network,
       "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
       (),
     )
@@ -535,7 +535,7 @@ describe("API tests", ({testAsync}) => {
     |];
     module UnderTest = ServerAPI.ExplorerMaker(Stub);
     UnderTest.getOperations(
-      config,
+      config.network,
       "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
       (),
     )
@@ -588,7 +588,7 @@ describe("API tests", ({testAsync}) => {
     |];
     module UnderTest = ServerAPI.ExplorerMaker(Stub);
     UnderTest.getOperations(
-      config,
+      config.network,
       "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
       (),
     )
@@ -622,7 +622,7 @@ describe("API tests", ({testAsync}) => {
     };
     module UnderTest = ServerAPI.ExplorerMaker(Stub);
     UnderTest.getOperations(
-      config,
+      config.network,
       "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
       (),
     )

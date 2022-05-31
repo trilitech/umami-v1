@@ -38,13 +38,12 @@ let registeredTokens: filter => Promise.result(TokensLibrary.WithBalance.t);
 
 let hiddenTokens: unit => Promise.result(RegisteredTokens.t);
 
-let addTokenToCache: (ConfigContext.env, Token.t) => Promise.t(unit);
+let addTokenToCache: (Network.t, Token.t) => Promise.t(unit);
 
-let addFungibleToken: (ConfigContext.env, Token.t) => Promise.t(unit);
+let addFungibleToken: (Network.t, Token.t) => Promise.t(unit);
 
 let addNonFungibleToken:
-  (ConfigContext.env, Token.t, PublicKeyHash.t, ReBigNumber.t) =>
-  Promise.t(unit);
+  (Network.t, Token.t, PublicKeyHash.t, ReBigNumber.t) => Promise.t(unit);
 
 let registerNFTs:
   (TokensLibrary.WithBalance.t, PublicKeyHash.t) => Promise.result(unit);
@@ -56,14 +55,14 @@ let updateNFTsVisibility:
 let removeToken: (TokenRepr.t, ~pruneCache: bool) => Promise.result(unit);
 
 let cachedTokensWithRegistration:
-  (ConfigContext.env, [ | `Any | `FT | `NFT]) =>
+  (Network.t, [ | `Any | `FT | `NFT]) =>
   Promise.t([> | `Cached(TokensLibrary.WithRegistration.t)]);
 
 module Fetch: {
   // Returns the tokens contracts accounts have interacted with
   let tokenContracts:
     (
-      ConfigContext.env,
+      Network.t,
       ~accounts: list(PublicKeyHash.t),
       ~kinds: list(TokenContract.kind)=?,
       ~limit: int64=?,
@@ -75,7 +74,7 @@ module Fetch: {
   // Returns all the token contracts available on the chain
   let tokenRegistry:
     (
-      ConfigContext.env,
+      Network.t,
       ~kinds: list(TokenContract.kind),
       ~limit: int64,
       ~index: int64,
@@ -87,7 +86,7 @@ module Fetch: {
   // and the next index to fetch from.
   let accountsTokens:
     (
-      ConfigContext.env,
+      Network.t,
       ~accounts: list(PublicKeyHash.t),
       ~index: int,
       ~numberByAccount: int
@@ -102,7 +101,7 @@ module Fetch: {
 
   let accountNFTs:
     (
-      ConfigContext.env,
+      Network.t,
       ~account: PublicKeyHash.t,
       ~numberByAccount: int,
       ~onTokens: (~total: int, ~lastToken: int) => unit,
@@ -113,13 +112,13 @@ module Fetch: {
     Promise.t(fetchedNFTs);
 
   let accountsTokensNumber:
-    (ConfigContext.env, ~accounts: list(PublicKeyHash.t)) => Promise.t(int);
+    (Network.t, ~accounts: list(PublicKeyHash.t)) => Promise.t(int);
 
   type fetchedTokens = fetched(TokensLibrary.WithRegistration.t);
 
   let accountsFungibleTokensWithRegistration:
     (
-      ConfigContext.env,
+      Network.t,
       ~accounts: list(PublicKeyHash.t),
       ~numberByAccount: int,
       ~onTokens: (~total: int, ~lastToken: int) => unit,

@@ -24,7 +24,7 @@
 /*****************************************************************************/
 
 type env = {
-  network: Network.network,
+  network: Network.t,
   defaultNetwork: bool,
   theme: [ | `system | `dark | `light],
   confirmations: int,

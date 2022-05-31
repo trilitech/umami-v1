@@ -28,7 +28,7 @@ type Errors.t +=
   | NoTzip12Metadata(PublicKeyHash.t)
   | TokenIdNotFound(PublicKeyHash.t, int);
 
-let toolkit: ConfigContext.env => ReTaquito.Toolkit.toolkit;
+let toolkit: Network.t => ReTaquito.Toolkit.toolkit;
 
 module Tzip16: {
   let makeContract:

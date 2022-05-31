@@ -62,10 +62,10 @@ module TzktAPI = {
   };
 
   // Returns a list of arrays: this will be treated later, so we return it as raw as possible for now
-  let fetchTokens = (config, alreadyFetched, account, index, number, total) => {
+  let fetchTokens = (network, alreadyFetched, account, index, number, total) => {
     let rec fetch = (alreadyFetched, index, number) => {
       ServerAPI.URL.External.tzktAccountTokens(
-        ~config,
+        ~network,
         ~account,
         ~sortBy=`Contract,
         ~limit=min(requestPageSize, number),
@@ -102,8 +102,8 @@ module TzktAPI = {
     fetch(alreadyFetched, index, number);
   };
 
-  let fetchTokensNumber = (config, account) => {
-    ServerAPI.URL.External.tzktAccountTokensNumber(~config, ~account)
+  let fetchTokensNumber = (network, account) => {
+    ServerAPI.URL.External.tzktAccountTokensNumber(~network, ~account)
     ->FutureBase.value
     ->Promise.flatMapOk(url => ServerAPI.URL.get(url))
     ->Promise.flatMapOk(number =>
@@ -147,14 +147,14 @@ module TzktAPI = {
   };
 
   // Returns a list of arrays: this will be treated later, so we return it as raw as possible for now
-  let _fetchTokensBatchAccounts = (config, accounts) => {
+  let _fetchTokensBatchAccounts = (network, accounts) => {
     // The request accepts 10 accounts at most
     let rec fetch = (alreadyFetched, offset) =>
       if (offset >= accounts->Array.length) {
         alreadyFetched->Promise.ok;
       } else {
         ServerAPI.URL.External.betterCallDevBatchAccounts(
-          ~config,
+          ~network,
           ~accounts=accounts->Array.slice(~offset, ~len=10),
         )
         ->Promise.value
@@ -393,7 +393,7 @@ let handleRegistrationStatus = (cache, keepMap) => {
     );
 };
 
-let keepToken = (token, config: ConfigContext.env, filter) => {
+let keepToken = (token, network: Network.t, filter) => {
   let kindOk =
     switch (filter) {
     | `Any => true
@@ -401,17 +401,16 @@ let keepToken = (token, config: ConfigContext.env, filter) => {
     | `NFT => token->TokensLibrary.Token.isNFT
     };
 
-  TokensLibrary.Token.chain(token)
-  == config.network.Network.chain->Network.getChainId
+  TokensLibrary.Token.chain(token) == network.chain->Network.getChainId
   && kindOk;
 };
 
-let cachedTokensWithRegistration = (config, filter) => {
+let cachedTokensWithRegistration = (network, filter) => {
   TokenStorage.Cache.getWithFallback()
   ->Promise.value
   ->Promise.flatMapOk(cache =>
       cache->handleRegistrationStatus(token =>
-        token->keepToken(config, filter) ? Some(token) : None
+        token->keepToken(network, filter) ? Some(token) : None
       )
     )
   ->Promise.mapOk(tokens => `Cached(tokens));
@@ -442,12 +441,7 @@ module Fetch = {
   // If the result from BetterCallDev does not contain enough information, fetch
   // the metadata from the node using Taquito's API
   let fetchIfNecessary =
-      (
-        config: ConfigContext.env,
-        tokenContract,
-        tzktToken: Tzkt.t,
-        tzip12Cache,
-      ) => {
+      (network: Network.t, tokenContract, tzktToken: Tzkt.t, tzip12Cache) => {
     let fetchMetadata = () => {
       tzip12Cache
       ->TaquitoAPI.Tzip12Cache.findContract(tzktToken->Tzkt.address)
@@ -456,17 +450,14 @@ module Fetch = {
         )
       ->Promise.mapOk(metadata =>
           metadataToToken(
-            config.network.chain->Network.getChainId,
+            network.chain->Network.getChainId,
             tokenContract,
             metadata,
           )
         );
     };
     switch (
-      Tzkt.toTokenRepr(
-        config.ConfigContext.network.Network.chain->Network.getChainId->Some,
-        tzktToken,
-      )
+      Tzkt.toTokenRepr(network.chain->Network.getChainId->Some, tzktToken)
     ) {
     | Some(token) => Promise.ok(token)
     | None => fetchMetadata()
@@ -496,19 +487,20 @@ module Fetch = {
   };
 
   let getTokenRepr =
-      (config, tokenContract, tzktToken: Tzkt.t, tzip12Cache, inCache) => {
+      (
+        network: Network.t,
+        tokenContract,
+        tzktToken: Tzkt.t,
+        tzip12Cache,
+        inCache,
+      ) => {
     switch (inCache) {
     | None
     | Some(TokensLibrary.Token.Partial(_, _, true)) =>
-      fetchIfNecessary(config, tokenContract, tzktToken, tzip12Cache)
+      fetchIfNecessary(network, tokenContract, tzktToken, tzip12Cache)
       ->Promise.map(res =>
           switch (res) {
-          | Error(e) =>
-            updatePartial(
-              e,
-              config.ConfigContext.network.Network.chain,
-              tzktToken,
-            )
+          | Error(e) => updatePartial(e, network.chain, tzktToken)
           | Ok(t) => (TokensLibrary.Token.Full(t), tzktToken.balance)
           }
         )
@@ -627,7 +619,7 @@ module Fetch = {
 
   let handleUniqueToken =
       (
-        config: ConfigContext.env,
+        network,
         tzip12Cache,
         tokenContract: TokenContract.t,
         ~onTokens=?,
@@ -649,7 +641,7 @@ module Fetch = {
             token->Tzkt.tokenId,
           );
 
-        getTokenRepr(config, tokenContract, token, tzip12Cache, inCache)
+        getTokenRepr(network, tokenContract, token, tzip12Cache, inCache)
         ->Promise.map(((tokenRepr, balance)) => {
             onTokens->Option.mapWithDefault((), f => f(~lastToken=index));
 
@@ -664,7 +656,7 @@ module Fetch = {
 
   let handleTokens =
       (
-        config: ConfigContext.env,
+        network,
         tzip12Cache,
         ~onTokens=?,
         ~onStop=?,
@@ -682,7 +674,7 @@ module Fetch = {
           tokens->Map.Int.reduce(
             (index, updatedCache, finalTokens)->FutureBase.value,
             handleUniqueToken(
-              config,
+              network,
               tzip12Cache,
               tokenContract,
               ~onTokens?,
@@ -695,7 +687,7 @@ module Fetch = {
 
   let fetchAccountsTokensRaw =
       (
-        config: ConfigContext.env,
+        network,
         ~accounts,
         tzip12Cache,
         cache: TokensLibrary.t,
@@ -704,16 +696,16 @@ module Fetch = {
         ~index,
         ~numberByAccount,
       ) => {
-    TzktAPI.fetchAccountsTokens(config, accounts, index, numberByAccount)
+    TzktAPI.fetchAccountsTokens(network, accounts, index, numberByAccount)
     ->Promise.flatMapOk(((tokens, nextIndex, _)) => {
         let onTokens =
           onTokens->Option.map(f => f(~total=TzktAPI.tokensNumber(tokens)));
 
         let tokens =
-          tokenContracts(config, ~accounts, ())
+          tokenContracts(network, ~accounts, ())
           ->Promise.flatMapOk(tokensContracts =>
               tokens
-              ->pruneMissingContracts(config, tokensContracts, cache)
+              ->pruneMissingContracts(network, tokensContracts, cache)
               ->Promise.map(v => Ok(v))
             );
 
@@ -722,7 +714,7 @@ module Fetch = {
             tokens
             ->PublicKeyHash.Map.reduce(
                 (index, cache, [])->Promise.value,
-                handleTokens(config, tzip12Cache, ~onTokens?, ~onStop?),
+                handleTokens(network, tzip12Cache, ~onTokens?, ~onStop?),
               )
             ->Promise.map(v => Ok(v))
           )
@@ -753,7 +745,7 @@ module Fetch = {
 
   let fetchAccountsTokens =
       (
-        config: ConfigContext.env,
+        network,
         ~accounts,
         ~index,
         ~numberByAccount,
@@ -764,11 +756,11 @@ module Fetch = {
     TokenStorage.Cache.getWithFallback()
     ->Promise.value
     ->Promise.flatMapOk(cache => {
-        let toolkit = MetadataAPI.toolkit(config);
+        let toolkit = MetadataAPI.toolkit(network);
         let tzip12Cache = TaquitoAPI.Tzip12Cache.make(toolkit);
 
         fetchAccountsTokensRaw(
-          config,
+          network,
           ~accounts,
           tzip12Cache,
           cache,
@@ -900,26 +892,19 @@ module Fetch = {
   type fetchedTokens = fetched(TokensLibrary.WithRegistration.t);
 
   let accountsFungibleTokensWithRegistration =
-      (
-        config: ConfigContext.env,
-        ~accounts,
-        ~numberByAccount,
-        ~onTokens,
-        ~onStop,
-        ~fromCache,
-      ) => {
-    let getFromCache = () => cachedTokensWithRegistration(config, `FT);
+      (network, ~accounts, ~numberByAccount, ~onTokens, ~onStop, ~fromCache) => {
+    let getFromCache = () => cachedTokensWithRegistration(network, `FT);
 
     let getFromNetwork = () => {
       let onceFinished = (fullCache, _, number) => {
         fullCache
         ->handleRegistrationStatus(token =>
-            token->keepToken(config, `FT) ? Some(token) : None
+            token->keepToken(network, `FT) ? Some(token) : None
           )
         ->Promise.mapOk(tokens => (tokens, number));
       };
       fetchAccountsTokensStreamed(
-        config,
+        network,
         ~accounts,
         ~index=0,
         ~numberByAccount,
