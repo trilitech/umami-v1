@@ -502,8 +502,8 @@ module Accounts = {
       encryptedSecretKey: 'sk,
     };
 
-    let used = (config, address) => {
-      config->NodeAPI.Accounts.exists(address);
+    let used = (network, address) => {
+      network->NodeAPI.Accounts.exists(address);
     };
 
     let runLegacy = (~recoveryPhrase, ~password) => {
@@ -527,8 +527,8 @@ module Accounts = {
       );
     };
 
-    let usedAccount = (~config, ~account, ~onFoundKey, ~index) => {
-      used(config, account.publicKeyHash)
+    let usedAccount = (~network, ~account, ~onFoundKey, ~index) => {
+      used(network, account.publicKeyHash)
       ->Promise.flatMapOk(used =>
           used
             ? onFoundKey(index, account)
@@ -538,7 +538,7 @@ module Accounts = {
 
     let runStream =
         (
-          ~config,
+          ~network: Network.t,
           ~startIndex=0,
           ~onFoundKey,
           path: DerivationPath.Pattern.t,
@@ -554,17 +554,17 @@ module Accounts = {
               onFoundKey(n, account);
               loop(n + 1);
             };
-            usedAccount(~config, ~account, ~onFoundKey, ~index=n);
+            usedAccount(~network, ~account, ~onFoundKey, ~index=n);
           });
       };
       loop(startIndex);
     };
 
-    let runStreamLegacy = (~config, ~recoveryPhrase, ~password, ~onFoundKey) => {
+    let runStreamLegacy = (~network, ~recoveryPhrase, ~password, ~onFoundKey) => {
       let onFoundKey = (n, acc) => onFoundKey(n, acc)->Promise.ok;
       runLegacy(~recoveryPhrase, ~password)
       ->Promise.flatMapOk(account =>
-          usedAccount(~config, ~account, ~onFoundKey, ~index=-1)
+          usedAccount(~network, ~account, ~onFoundKey, ~index=-1)
         );
     };
 
@@ -592,7 +592,7 @@ module Accounts = {
 
     let runStreamSeed =
         (
-          ~config,
+          ~network,
           ~startIndex=0,
           ~onFoundKey,
           ~password,
@@ -608,7 +608,7 @@ module Accounts = {
             ->SecureStorage.Cipher.decrypt(password)
             ->Promise.flatMapOk(recoveryPhrase =>
                 runStream(
-                  ~config,
+                  ~network,
                   ~startIndex,
                   ~onFoundKey,
                   path,
@@ -620,7 +620,7 @@ module Accounts = {
             ->Promise.flatMapOk(recoveryPhrase =>
                 secret.Secret.Repr.secret.masterPublicKey == None
                   ? runStreamLegacy(
-                      ~config,
+                      ~network,
                       ~recoveryPhrase,
                       ~password,
                       ~onFoundKey,
@@ -666,7 +666,7 @@ module Accounts = {
         // always include 0'
         index == 0
           ? Promise.ok(true)
-          : address->Promise.flatMapOk(addr => config->used(addr));
+          : address->Promise.flatMapOk(addr => config.network->used(addr));
 
       isValidated->Promise.flatMapOk(isValidated =>
         if (isValidated) {
@@ -696,7 +696,7 @@ module Accounts = {
     let runLegacy = (~config, recoveryPhrase, name, ~password) => {
       legacyImport(~config, name, recoveryPhrase, ~password)
       ->Promise.flatMapOk(addr =>
-          config->used(addr)->Promise.mapOk(used => (used, addr))
+          config.network->used(addr)->Promise.mapOk(used => (used, addr))
         )
       ->Promise.flatMapOk(((validated, addr)) =>
           validated

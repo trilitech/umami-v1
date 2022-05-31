@@ -26,9 +26,9 @@
 include ApiRequest;
 
 let useCheckTokenContract = tokens => {
-  let set = (~config, address) =>
+  let set = (~config: ConfigContext.env, address) =>
     switch (tokens->TokensLibrary.Generic.pickAnyAtAddress(address)) {
-    | None => config->NodeAPI.Tokens.checkTokenContract(address)
+    | None => config.network->NodeAPI.Tokens.checkTokenContract(address)
     | Some((_, _, (token, _))) =>
       (
         token->TokensLibrary.Token.kind: TokenContract.kind :> [>
@@ -48,12 +48,12 @@ let useLoadBalance =
       ~token: PublicKeyHash.t,
       ~kind: TokenRepr.kind,
     ) => {
-  let get = (~config, (address, token, kind)) =>
+  let get = (~config: ConfigContext.env, (address, token, kind)) =>
     switch (kind) {
     | TokenRepr.FA1_2 =>
-      config->NodeAPI.Tokens.runFA12GetBalance(~address, ~token)
+      config.network->NodeAPI.Tokens.runFA12GetBalance(~address, ~token)
     | FA2(tokenId) =>
-      config->NodeAPI.Tokens.callFA2BalanceOf(address, token, tokenId)
+      config.network->NodeAPI.Tokens.callFA2BalanceOf(address, token, tokenId)
     };
 
   ApiRequest.useLoader(
@@ -78,8 +78,8 @@ type registry = {
 type filter = [ | `Any | `FT | `NFT];
 
 let useLoadTokensFromCache = requestState => {
-  let get = (~config, filter) => {
-    TokensAPI.cachedTokensWithRegistration(config, filter);
+  let get = (~config: ConfigContext.env, filter) => {
+    TokensAPI.cachedTokensWithRegistration(config.network, filter);
   };
   ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState);
 };
@@ -145,11 +145,11 @@ module NFT = {
       (onTokens, onStop, request, tokensNumberRequest, nftRequest) => {
     let get =
         (
-          ~config,
+          ~config: ConfigContext.env,
           {fromCache, request: {account, allowHidden, numberByAccount}},
         ) => {
       TokensAPI.Fetch.accountNFTs(
-        config,
+        config.network,
         ~account,
         ~numberByAccount,
         ~onTokens,
@@ -169,8 +169,11 @@ module NFT = {
   };
 
   let useAccountTokensNumber = (requestState, account) => {
-    let get = (~config, account) =>
-      TokensAPI.Fetch.accountsTokensNumber(config, ~accounts=[account]);
+    let get = (~config: ConfigContext.env, account) =>
+      TokensAPI.Fetch.accountsTokensNumber(
+        config.network,
+        ~accounts=[account],
+      );
 
     ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, account);
   };
@@ -186,9 +189,13 @@ module Fungible = {
 
   let useFetchWithCache =
       (onTokens, onStop, request, tokensNumberRequest, tokensRequest) => {
-    let get = (~config, {fromCache, request: {accounts, numberByAccount}}) => {
+    let get =
+        (
+          ~config: ConfigContext.env,
+          {fromCache, request: {accounts, numberByAccount}},
+        ) => {
       TokensAPI.Fetch.accountsFungibleTokensWithRegistration(
-        config,
+        config.network,
         ~accounts,
         ~numberByAccount,
         ~onTokens,
@@ -207,8 +214,8 @@ module Fungible = {
   };
 
   let useAccountsTokensNumber = (requestState, accounts) => {
-    let get = (~config, accounts) =>
-      TokensAPI.Fetch.accountsTokensNumber(config, ~accounts);
+    let get = (~config: ConfigContext.env, accounts) =>
+      TokensAPI.Fetch.accountsTokensNumber(config.network, ~accounts);
 
     ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, accounts);
   };
@@ -229,7 +236,8 @@ let useDelete = (~sideEffect=?, pruneCache) => {
 };
 
 let useCreate = (~sideEffect=?, ()) => {
-  let set = (~config, token) => TokensAPI.addFungibleToken(config, token);
+  let set = (~config: ConfigContext.env, token) =>
+    TokensAPI.addFungibleToken(config.network, token);
 
   ApiRequest.useSetter(
     ~logOk=_ => I18n.token_created,
@@ -242,7 +250,8 @@ let useCreate = (~sideEffect=?, ()) => {
 };
 
 let useCacheToken = (~sideEffect=?, ()) => {
-  let set = (~config, token) => TokensAPI.addTokenToCache(config, token);
+  let set = (~config: ConfigContext.env, token) =>
+    TokensAPI.addTokenToCache(config.network, token);
 
   ApiRequest.useSetter(
     ~logOk=_ => I18n.token_created,

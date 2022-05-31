@@ -119,9 +119,9 @@ module DelegateMaker = (Get: {let get: URL.t => Promise.t(Js.Json.t);}) => {
   module BalanceAPI = Balance;
 
   let extractInfoFromDelegate =
-      (network, delegate, account, firstOperation: Operation.t) => {
+      (config, delegate, account, firstOperation: Operation.t) => {
     let balance =
-      network->BalanceAPI.get(
+      config->BalanceAPI.get(
         account,
         ~params={block: firstOperation.level->string_of_int},
         (),
@@ -138,13 +138,14 @@ module DelegateMaker = (Get: {let get: URL.t => Promise.t(Js.Json.t);}) => {
       );
 
     let operations =
-      network->ExplorerAPI.getOperations(
-        delegate,
-        ~types=[|"transaction"|],
-        ~destination=account,
-        ~limit=1,
-        (),
-      );
+      config.network
+      ->ExplorerAPI.getOperations(
+          delegate,
+          ~types=[|"transaction"|],
+          ~destination=account,
+          ~limit=1,
+          (),
+        );
 
     Promise.flatMapOk2(operations, info, (operations, info) =>
       (
@@ -164,14 +165,16 @@ module DelegateMaker = (Get: {let get: URL.t => Promise.t(Js.Json.t);}) => {
   };
 
   let getDelegationInfoForAccount =
-      (network, account: PublicKeyHash.t): Promise.t(option(delegationInfo)) => {
+      (config: ConfigContext.env, account: PublicKeyHash.t)
+      : Promise.t(option(delegationInfo)) => {
     let operations =
-      network->ExplorerAPI.getOperations(
-        account,
-        ~types=[|"delegation"|],
-        ~limit=1,
-        (),
-      );
+      config.network
+      ->ExplorerAPI.getOperations(
+          account,
+          ~types=[|"delegation"|],
+          ~limit=1,
+          (),
+        );
 
     operations->Promise.flatMapOk(operations =>
       if (operations->Array.length == 0) {
@@ -197,12 +200,7 @@ module DelegateMaker = (Get: {let get: URL.t => Promise.t(Js.Json.t);}) => {
             }
             ->Promise.some
           | Some(delegate) =>
-            extractInfoFromDelegate(
-              network,
-              delegate,
-              account,
-              firstOperation,
-            )
+            extractInfoFromDelegate(config, delegate, account, firstOperation)
           }
         );
       }
@@ -242,13 +240,13 @@ module Tokens = {
       );
   };
 
-  let runFA12GetBalance = (config, ~address, ~token) => {
+  let runFA12GetBalance = (network: Network.t, ~address, ~token) => {
     let json =
-      config
+      network
       ->URL.Endpoint.runView
       ->URL.postJson(
           URL.Endpoint.fa12GetBalanceInput(
-            ~config,
+            ~network,
             ~contract=token,
             ~account=address,
           ),
@@ -272,16 +270,16 @@ module Tokens = {
     });
   };
 
-  let callFA2BalanceOf = (config, address, token, tokenId) => {
+  let callFA2BalanceOf = (network, address, token, tokenId) => {
     let input =
       URL.Endpoint.fa2BalanceOfInput(
-        ~config,
+        ~network,
         ~contract=token,
         ~account=address,
         ~tokenId,
       );
 
-    config
+    network
     ->URL.Endpoint.runView
     ->URL.postJson(input)
     ->Promise.flatMapOk(json => {

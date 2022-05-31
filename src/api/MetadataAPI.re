@@ -34,8 +34,8 @@ type Errors.t +=
   | TokenIdNotFound(PublicKeyHash.t, int)
   | IllformedToken(PublicKeyHash.t, int, string);
 
-let toolkit = (config: ConfigContext.env) => {
-  let toolkit = Toolkit.create(config.network.endpoint);
+let toolkit = (network: Network.t) => {
+  let toolkit = Toolkit.create(network.endpoint);
   toolkit->Toolkit.addExtension(ReTaquitoContracts.Extension.tzip12Module());
   toolkit->Toolkit.addExtension(ReTaquitoContracts.Extension.tzip16Module());
 

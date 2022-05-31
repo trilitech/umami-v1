@@ -176,6 +176,8 @@ type network = {
   endpoint: string,
 };
 
+type t = network;
+
 let chainNetwork: chain(_) => option(string) =
   fun
   | `Mainnet => Some("mainnet")

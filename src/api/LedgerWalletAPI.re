@@ -29,14 +29,14 @@ open HDWalletAPI.Accounts.Scan;
 
 let runStreamedScan =
     (
-      ~config,
+      ~network,
       ~startIndex=0,
       ~onFoundKey,
       path: DerivationPath.Pattern.t,
       schema,
     ) =>
   runStream(
-    ~config,
+    ~network,
     ~startIndex,
     ~onFoundKey=(i, account) => onFoundKey(i, account.publicKeyHash),
     path,

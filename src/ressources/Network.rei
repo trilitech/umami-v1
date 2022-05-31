@@ -104,6 +104,8 @@ type network = {
   endpoint: string,
 };
 
+type t = network;
+
 let mk: (~explorer: string, ~endpoint: string, chain(chainId)) => network;
 
 let chainNetwork: chain('chainId) => option(string);

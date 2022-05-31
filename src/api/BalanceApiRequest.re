@@ -24,8 +24,8 @@
 /*****************************************************************************/
 
 let useLoadBalances = (~requestState, ~addresses: list(PublicKeyHash.t)) => {
-  let get = (~config, addresses) => {
-    config
+  let get = (~config: ConfigContext.env, addresses) => {
+    config.network
     ->ServerAPI.Explorer.getBalances(~addresses)
     ->Promise.mapOk(PublicKeyHash.Map.fromArray);
   };

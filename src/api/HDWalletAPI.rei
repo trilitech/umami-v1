@@ -123,7 +123,7 @@ module Accounts: {
 
     let runStream:
       (
-        ~config: ConfigContext.env,
+        ~network: Network.t,
         ~startIndex: int=?,
         ~onFoundKey: (int, account('a)) => unit,
         DerivationPath.Pattern.t,
@@ -134,7 +134,7 @@ module Accounts: {
 
     let runStreamSeed:
       (
-        ~config: ConfigContext.env,
+        ~network: Network.t,
         ~startIndex: int=?,
         ~onFoundKey: (int, account(string)) => unit,
         ~password: string,
