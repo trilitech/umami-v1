@@ -109,7 +109,7 @@ module BuyTezButton = {
         <ButtonAction
           onPress={_ => openAction()}
           text=I18n.Btn.buy_tez
-          icon=Icons.OpenExternal.build
+          icon=Icons.Shop.build
           primary=true
         />
       </View>

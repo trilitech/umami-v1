@@ -123,6 +123,7 @@ module Copy = Make(SVGIconCopy);
 module Close = Make(SVGIconClose);
 module Add = Make(SVGIconAdd);
 module ChevronDown = Make(SVGIconChevronDown);
+module Shop = Make(SVGIconShop);
 module CheckboxUnselected = Make(SVGIconCheckboxUnselected);
 module CheckboxSelected = Make(SVGIconCheckboxSelected);
 module Delete = Make(SVGIconDelete);
