@@ -160,6 +160,7 @@ module FirstPage = Make(SVGIconFirstPage);
 module LastPage = Make(SVGIconLastPage);
 module Ledger = Make(SVGIconLedger);
 module QuestionMark = Make(SVGIconQuestionMark);
+module QuestionMarkOutlined = Make(SVGIconQuestionMarkOutlined);
 module AddToken = Make(SVGIconTokenAdd);
 module Options = Make(SVGIconOption);
 module EyeStrike = Make(SVGIconEyeStrike);

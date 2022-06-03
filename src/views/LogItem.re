@@ -109,8 +109,28 @@ module OpenButton = {
   };
 };
 
+let buildScopeText = (log: Logs.t) =>
+  log.errorScope->Option.mapWithDefault("", sc => sc ++ "/");
+
+let buildMessage = (log: Logs.t) => {
+  let scTxt = buildScopeText(log);
+  Format.sprintf(
+    "(%s%s): %s",
+    scTxt,
+    log.origin->Logs.originToString,
+    log.msg,
+  );
+};
+
 let actionButtons = (~indice, ~log: Logs.t, ~addToast, ~handleDelete, ~toast) =>
   <View style=styles##actionButtons>
+    {log.kind == Error
+       ? <MailToSupportButton
+           toast
+           message={buildMessage(log)}
+           style=styles##button
+         />
+       : React.null}
     {<ClipboardButton
        isPrimary=false
        data={log.msg}
@@ -150,16 +170,6 @@ module Entry = {
     let logDateContent =
       Js.Date.(log.timestamp->fromFloat->toUTCString)->React.string;
 
-    let scopeText = log.errorScope->Option.mapWithDefault("", sc => sc ++ "/");
-
-    let message =
-      Format.sprintf(
-        "(%s%s): %s",
-        scopeText,
-        log.origin->Logs.originToString,
-        log.msg,
-      );
-
     let logsBackgroundColor =
       opened ? theme.colors.stateActive : theme.colors.background;
 
@@ -176,7 +186,7 @@ module Entry = {
             )
             fontWeightStyle=`light
             numberOfLines=1
-            content={message->React.string}
+            content={buildMessage(log)->React.string}
           />;
 
     let secondline =
@@ -190,7 +200,7 @@ module Entry = {
                 style(~color=theme.colors.textMaxEmphasis, ()),
               |])
             )
-            content={message->React.string}
+            content={buildMessage(log)->React.string}
           />
         : React.null;
 

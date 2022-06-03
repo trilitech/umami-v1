@@ -680,6 +680,8 @@ module Disclaimer = {
      agree to the terms of the User Agreement";
 };
 
+let support_mailto_error_subject = "Support: Error log received on Umami";
+let support_mailto_error_body = "The following error happened in Umami:";
 let download_question = "Do you want to download the latest update?";
 let restart_to_install_question = "Do you want to restart the app to install now? Please note that the update will be applied next time you restart Umami.";
 let unknown_operation = "Unknown";
