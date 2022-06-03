@@ -6,7 +6,7 @@ open ReCustomAuthType;
    with our Providers's API credetials.
    */
 
-let google = ReCustomAuthType.Verifier.fromString("kukai-google");
+let google = ReCustomAuthType.Verifier.fromString("tezos-google");
 
 let googleParams = accountHandle =>
   triggerAggregateLoginParams(
@@ -18,7 +18,7 @@ let googleParams = accountHandle =>
           "1070572364808-d31nlkneam5ee6dr0tu28fjjbsdkfta5.apps.googleusercontent.com",
         // our public key to Google Auth API
         ~typeOfLogin=`google,
-        ~verifier=ReCustomAuthType.Verifier.fromString("desktop-umami"),
+        ~verifier=ReCustomAuthType.Verifier.fromString("umami"),
         ~jwtParams=
           jwtParams(
             ~display=`popup,
