@@ -31,7 +31,7 @@ let styles =
   Style.(
     StyleSheet.create({
       "listContainer":
-        style(~borderRadius=3., ())
+        style(~borderRadius=3., ~maxHeight=224.->dp, ())
         ->unsafeAddStyle({
             "boxShadow": "0 5px 5px -3px rgba(0, 0, 0, 0.2), 0 3px 14px 2px rgba(0, 0, 0, 0.12), 0 8px 10px 1px rgba(0, 0, 0, 0.14)",
           }),
@@ -76,6 +76,7 @@ let make =
     style={Style.arrayOption([|styleFromProp, positionReversed|])}
     keyPopover>
     <View
+      style=Style.(style(~backgroundColor=theme.colors.background, ()))
       onStartShouldSetResponderCapture={_ => true}
       onResponderRelease={_ => onRequestClose()}>
       <ScrollView
@@ -83,17 +84,12 @@ let make =
         style=Style.(
           array([|
             styles##listContainer,
-            style(~backgroundColor=theme.colors.background, ()),
-          |])
-        )
-        contentContainerStyle=Style.(
-          arrayOption([|
-            Some(styles##listContentContainer),
             theme.dark
-              ? Some(style(~backgroundColor=theme.colors.stateActive, ()))
-              : None,
+              ? style(~backgroundColor=theme.colors.stateActive, ())
+              : style(~backgroundColor=theme.colors.background, ()),
           |])
         )
+        contentContainerStyle=?{Some(styles##listContentContainer)}
         ?onScroll
         ?scrollEventThrottle>
         {children(positionReversed != None)

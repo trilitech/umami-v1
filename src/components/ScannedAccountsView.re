@@ -118,16 +118,18 @@ let make =
             styles##itemsContent,
           |])
         )>
-        {let accounts = accounts->List.toArray;
-         accounts
-         ->Array.mapWithIndex((id, address) =>
-             <Item
-               key={(startIndex + id)->Int.toString}
-               address
-               id={startIndex + id}
-             />
-           )
-         ->React.array}
+        <ScrollView>
+          {let accounts = accounts->List.toArray;
+           accounts
+           ->Array.mapWithIndex((id, address) =>
+               <Item
+                 key={(startIndex + id)->Int.toString}
+                 address
+                 id={startIndex + id}
+               />
+             )
+           ->React.array}
+        </ScrollView>
       </View>
     </View>
     <View

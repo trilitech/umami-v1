@@ -268,7 +268,7 @@ let make =
     | #ReCustomAuth.handledProvider => [||]
     | `Default =>
       switch (value) {
-      | AnyString("") => aliasArray->Array.slice(~offset=0, ~len=4)
+      | AnyString("") => aliasArray
       | Valid(Address(v)) => aliasArray->findAllAliases((v :> string))
       | AnyString(v) => aliasArray->findAllAliases(v)
       | Temp(_)
