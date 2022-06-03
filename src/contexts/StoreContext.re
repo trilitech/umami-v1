@@ -40,7 +40,7 @@ type nextState('value) = (unit => option('value), unit => unit);
 
 type state = {
   selectedAccountState: reactState(option(PublicKeyHash.t)),
-  selectedTokenState: reactState(option((PublicKeyHash.t, int))),
+  selectedTokenState: reactState(option((PublicKeyHash.t, TokenRepr.kind))),
   accountsRequestState: requestState(PublicKeyHash.Map.map(Account.t)),
   secretsRequestState: reactState(ApiRequest.t(array(Secret.derived))),
   balanceRequestsState: requestState(PublicKeyHash.Map.map(Tez.t)),
@@ -61,7 +61,8 @@ type state = {
   accountsTokensRequestState: apiRequestsState(TokensApiRequest.NFT.fetched),
   accountsTokensNumberRequestState: apiRequestsState(int),
   tokensNumberRequestState: requestState(int),
-  balanceTokenRequestsState: apiRequestsState(Token.Unit.t),
+  balanceTokenRequestsState:
+    requestState(TokenRepr.Map.map(TokenRepr.Unit.t)),
   apiVersionRequestState: reactState(option(Network.apiVersion)),
   eulaSignatureRequestState: reactState(bool),
   beaconPeersRequestState: requestState(array(ReBeacon.peerInfo)),
@@ -92,7 +93,7 @@ let initialState = {
   accountsTokensRequestState: initialApiRequestsState,
   accountsTokensNumberRequestState: initialApiRequestsState,
   tokensNumberRequestState: (NotAsked, _ => ()),
-  balanceTokenRequestsState: initialApiRequestsState,
+  balanceTokenRequestsState: (NotAsked, _ => ()),
   apiVersionRequestState: (None, _ => ()),
   eulaSignatureRequestState: (false, _ => ()),
   beaconClient: (None, _ => ()),
@@ -125,6 +126,16 @@ let useLoadBalances = (accounts, balances) => {
   BalanceApiRequest.useLoadBalances(~requestState, ~addresses);
 };
 
+let useLoadTokensBalances = (accounts, tokensBalances, selectedToken) => {
+  let requestState = tokensBalances;
+  let addresses =
+    accounts
+    ->ApiRequest.getWithDefault(PublicKeyHash.Map.empty)
+    ->PublicKeyHash.Map.toList
+    ->Belt.List.map(((b, _)) => b);
+  TokensApiRequest.useLoadBalances(~requestState, ~addresses, ~selectedToken);
+};
+
 // Final Provider
 
 [@react.component]
@@ -141,6 +152,8 @@ let make = (~children) => {
 
   let selectedTokenState = React.useState(() => None);
 
+  let (selectedToken, _) = selectedTokenState;
+
   let accountsRequestState = React.useState(() => ApiRequest.NotAsked);
   let (
     accountsRequest: ApiRequest.t(PublicKeyHash.Map.map(_)),
@@ -155,7 +168,7 @@ let make = (~children) => {
   let accountsTokensNumberRequestState =
     React.useState(() => Map.String.empty);
   let tokensNumberRequestState = React.useState(() => ApiRequest.NotAsked);
-  let balanceTokenRequestsState = React.useState(() => Map.String.empty);
+  let balanceTokenRequestsState = React.useState(() => ApiRequest.NotAsked);
 
   let aliasesRequestState = React.useState(() => ApiRequest.NotAsked);
   let bakersRequestState = React.useState(() => ApiRequest.NotAsked);
@@ -218,9 +231,9 @@ let make = (~children) => {
     let setBalances = snd(balanceRequestsState);
     setBalances(ApiRequest.expireCache);
     let setBalancesToken = snd(balanceTokenRequestsState);
-    setBalancesToken(balances =>
-      balances->Map.String.map(ApiRequest.expireCache)
-    );
+    setBalancesToken(ApiRequest.expireCache);
+    let (_, setSelectedToken) = selectedTokenState;
+    setSelectedToken(_ => None);
   };
 
   React.useEffect1(
@@ -228,7 +241,6 @@ let make = (~children) => {
       networkStatus.previous == Some(Offline)
       && networkStatus.current == Online
         ? resetNetwork() : ();
-
       None;
     },
     [|networkStatus|],
@@ -240,6 +252,15 @@ let make = (~children) => {
       None;
     },
     [|network.chain|],
+  );
+
+  React.useEffect1(
+    () => {
+      let setBalancesToken = snd(balanceTokenRequestsState);
+      setBalancesToken(ApiRequest.expireCache);
+      None;
+    },
+    [|selectedToken|],
   );
 
   // Select a default account if no one selected
@@ -260,6 +281,9 @@ let make = (~children) => {
   );
 
   let _ = useLoadBalances(accounts, balanceRequestsState);
+
+  let _ =
+    useLoadTokensBalances(accounts, balanceTokenRequestsState, selectedToken);
 
   <Provider
     value={
@@ -353,20 +377,20 @@ let setEulaSignature = () => {
   store.eulaSignatureRequestState->snd;
 };
 
+type Errors.t +=
+  | EveryBalancesFail
+  | BalanceNotFound;
+
+let () =
+  Errors.registerHandler(
+    "Context",
+    fun
+    | EveryBalancesFail => I18n.Errors.every_balances_fail->Some
+    | BalanceNotFound => I18n.Errors.balance_not_found->Some
+    | _ => None,
+  );
+
 module Balance = {
-  type Errors.t +=
-    | EveryBalancesFail
-    | BalanceNotFound;
-
-  let () =
-    Errors.registerHandler(
-      "Context",
-      fun
-      | EveryBalancesFail => I18n.Errors.every_balances_fail->Some
-      | BalanceNotFound => I18n.Errors.balance_not_found->Some
-      | _ => None,
-    );
-
   let useView = (address: PublicKeyHash.t) => {
     let store = useStoreContext();
     let (balanceRequest, _) = store.balanceRequestsState;
@@ -390,7 +414,6 @@ module Balance = {
       | NotAsked => NotAsked
       };
     };
-    ();
     balanceRequest->findBalance(~address);
   };
 
@@ -430,50 +453,70 @@ module Balance = {
 };
 
 module BalanceToken = {
-  let useRequestState =
-    useRequestsState(store => store.balanceTokenRequestsState);
-
-  let getRequestKey =
-      (address: PublicKeyHash.t, tokenAddress: PublicKeyHash.t, tokenKind) =>
-    (address :> string)
-    ++ (tokenAddress :> string)
-    ++ tokenKind->TokenRepr.kindId->Int.toString;
-
   let useLoad =
       (address: PublicKeyHash.t, token: PublicKeyHash.t, kind: TokenRepr.kind) => {
-    let requestState =
-      useRequestState(address->getRequestKey(token, kind)->Some);
-
-    TokensApiRequest.useLoadBalance(~requestState, ~address, ~token, ~kind);
+    let store = useStoreContext();
+    let (balanceTokenRequest, _) = store.balanceTokenRequestsState;
+    let findBalance =
+        (map: ApiRequest.t(TokenRepr.Map.map(TokenRepr.Unit.t)), ~address) => {
+      let mapKey =
+        switch (kind) {
+        | TokenRepr.FA1_2 => (address, (token, None))
+        | FA2(tokenId) => (address, (token, Some(tokenId)))
+        };
+      switch (map) {
+      | Done(Ok(value), t) =>
+        let key = value->TokenRepr.Map.get(mapKey);
+        switch (key) {
+        | Some(value) => ApiRequest.Done(Ok(value), t)
+        | None => Done(Error(BalanceNotFound), t)
+        };
+      | Loading(Some(value)) =>
+        let key = value->TokenRepr.Map.get(mapKey);
+        switch (key) {
+        | Some(value) => Loading(Some(value))
+        | None => Loading(None)
+        };
+      | Done(Error(e), t) => Done(Error(e), t)
+      | Loading(None) => Loading(None)
+      | NotAsked => NotAsked
+      };
+    };
+    balanceTokenRequest->findBalance(~address);
   };
 
-  let useGetTotal = (tokenAddress, tokenKind) => {
+  let handleBalance =
+      (selectedToken, map: TokenRepr.Map.map(TokenRepr.Unit.t)) => {
+    map->TokenRepr.Map.reduce(TokenRepr.Unit.zero, (a, (_, b), c) =>
+      switch (selectedToken) {
+      | Some((token, kind)) =>
+        let id =
+          switch (kind) {
+          | TokenRepr.FA1_2 => None
+          | FA2(tokenId) => Some(tokenId)
+          };
+        if (b == (token, id)) {
+          TokenRepr.Unit.Infix.(a + c);
+        } else {
+          a;
+        };
+      | None => TokenRepr.Unit.zero
+      }
+    );
+  };
+
+  let useGetTotal = () => {
     let store = useStoreContext();
     let (balanceRequests, _) = store.balanceTokenRequestsState;
-    let (accountsRequest, _) = store.accountsRequestState;
-    let accounts =
-      accountsRequest->ApiRequest.getWithDefault(PublicKeyHash.Map.empty);
-
-    let requests =
-      accounts
-      ->PublicKeyHash.Map.valuesToArray
-      ->Array.keepMap(account => {
-          balanceRequests->Map.String.get(
-            getRequestKey(account.address, tokenAddress, tokenKind),
-          )
-        });
-
-    Balance.handleBalances(accounts->PublicKeyHash.Map.size, requests, a =>
-      a->Array.reduce(Token.Unit.zero, (acc, balanceRequest) => {
-        Token.Unit.Infix.(acc + balanceRequest)
-      })
-    );
+    let (selectedToken, _) = store.selectedTokenState;
+    let requests = balanceRequests;
+    ApiRequest.map(requests, handleBalance(selectedToken));
   };
 
   let useResetAll = () => {
     let store = useStoreContext();
     let (_, setBalanceTokenRequests) = store.balanceTokenRequestsState;
-    () => setBalanceTokenRequests(resetRequests);
+    () => setBalanceTokenRequests(resetRequest);
   };
 };
 
@@ -975,7 +1018,12 @@ module SelectedToken = {
     /// FIXME: this is clearly a bug!
     switch (store.selectedTokenState, tokens) {
     | ((Some((selectedToken, tokenId)), _), tokens) =>
-      switch (tokens->TokensLibrary.Generic.getToken(selectedToken, tokenId)) {
+      switch (
+        tokens->TokensLibrary.Generic.getToken(
+          selectedToken,
+          tokenId->TokenRepr.kindId,
+        )
+      ) {
       | Some((TokensLibrary.Token.Full(t), _)) => t->Some
       | _ => None
       }

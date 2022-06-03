@@ -52,8 +52,16 @@ type t = {
 let toFlatJson: t => option(Js.Json.t);
 
 let kindId: kind => int;
+// let idKind: int => kind;
 let id: t => int;
 
 let isNFT: t => bool;
 
 let isFa2: t => bool;
+
+let decoder: Js.Json.t => Unit.t;
+
+type token = (PublicKeyHash.t, option(int));
+
+module Comparator: Belt.Id.Comparable with type t = (PublicKeyHash.t, token);
+module Map: Map.S with module Key := Comparator;

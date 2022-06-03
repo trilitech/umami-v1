@@ -149,6 +149,30 @@ module URL = {
       build_explorer_url(network, path, list_address);
     };
 
+    let tokenBalances =
+        (
+          config,
+          ~addresses: list(PublicKeyHash.t),
+          ~contract: PublicKeyHash.t,
+          ~id: option(int),
+        ) => {
+      let path = "balances";
+      let list_address =
+        List.map(addresses, address => ("pkh", (address :> string)));
+      let arg =
+        switch (id) {
+        | Some(id) =>
+          Belt.List.concat(
+            [("kt", (contract :> string)), ("id", id->Js.Int.toString)],
+            list_address,
+          )
+        | None =>
+          Belt.List.concat([("kt", (contract :> string))], list_address)
+        };
+
+      build_explorer_url(config, path, arg);
+    };
+
     let tokenRegistry =
         (
           network,
@@ -396,7 +420,16 @@ module type Explorer = {
 
   let getBalances:
     (Network.network, ~addresses: list(PublicKeyHash.t)) =>
-    Promise.t(array((Umami.PublicKeyHash.t, Umami.Tez.t)));
+    Promise.t(array((PublicKeyHash.t, Tez.t)));
+
+  let getTokenBalances:
+    (
+      Network.t,
+      ~addresses: list(PublicKeyHash.t),
+      ~contract: PublicKeyHash.t,
+      ~id: option(int)
+    ) =>
+    Promise.t(array((PublicKeyHash.t, TokenRepr.Unit.t)));
 };
 
 module ExplorerMaker = (Get: {let get: string => Promise.t(Js.Json.t);}) => {
@@ -462,6 +495,29 @@ module ExplorerMaker = (Get: {let get: string => Promise.t(Js.Json.t);}) => {
           Json.Decode.(
             json |> field("pkh", PublicKeyHash.decoder),
             json |> field("balance", Tez.decoder),
+          );
+        res
+        ->Result.fromExn(Json.Decode.(array(decoder)))
+        ->Result.mapError(e => e->JsonEx.filterJsonExn->JsonError)
+        ->Promise.value;
+      });
+  };
+
+  let getTokenBalances =
+      (
+        network,
+        ~addresses: list(PublicKeyHash.t),
+        ~contract: PublicKeyHash.t,
+        ~id: option(int),
+      ) => {
+    network
+    ->URL.Explorer.tokenBalances(~addresses, ~contract, ~id)
+    ->Get.get
+    ->Promise.flatMapOk(res => {
+        let decoder = json =>
+          Json.Decode.(
+            json |> field("pkh", PublicKeyHash.decoder),
+            json |> field("balance", TokenRepr.decoder),
           );
         res
         ->Result.fromExn(Json.Decode.(array(decoder)))

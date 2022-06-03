@@ -203,12 +203,15 @@ module Make = (D: DEPS) => {
     let getRequest = useGetter(~get, ~kind, ~setRequest, ~keepError?, ());
     let isMounted = ReactUtils.useIsMounted();
 
+    let previous = React.useRef(None);
+
     React.useEffect4(
       () => {
         let shouldReload = conditionToLoad(request, isMounted);
         let condition = condition->Option.mapWithDefault(true, f => input->f);
 
-        if (shouldReload && condition) {
+        if ((shouldReload || Some(input) != previous.current) && condition) {
+          previous.current = Some(input);
           getRequest(input)->Promise.ignore;
         };
         None;
