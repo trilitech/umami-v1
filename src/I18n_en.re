@@ -632,6 +632,7 @@ module Errors = {
   let unexpected_decimals = v => p("%s does not accept decimals", v);
   let expected_decimals = (v, d) =>
     p("%s does not accept more that %d decimals", v, d);
+  let fetch404 = "Error 404 - Not Found";
 };
 
 module Csv = {
