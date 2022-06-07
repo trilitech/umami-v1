@@ -43,7 +43,7 @@ let () =
 
 let extractBatchRevealEstimation = (~batchSize, estimations) => {
   switch (estimations->Array.get(0)) {
-  | Some((res: ReTaquitoTypes.Estimation.result))
+  | Some(res: ReTaquitoTypes.Estimation.result)
       when estimations->Array.length == batchSize + 1 =>
     Ok((estimations->Array.sliceToEnd(1), Some(res)))
   | Some(_) => Ok((estimations, None))
@@ -89,7 +89,12 @@ module Rpc = {
     RPCClient.create(endpoint)
     ->RPCClient.getBalance(address, ~params?, ())
     ->ReTaquitoError.fromPromiseParsed
-    ->Promise.mapOk(res => {res->BigNumber.toInt64->Tez.ofInt64});
+    ->Promise.map(
+        fun
+        | Ok(res) => Ok(res->BigNumber.toInt64->Tez.ofInt64)
+        | Error(ReTaquitoError.HTTP404) => Ok(Tez.zero)
+        | Error(e) => Error(e),
+      );
   };
 
   let getChainId = endpoint =>
@@ -159,21 +164,17 @@ module Signer = {
 };
 
 module Delegation = {
-  exception RejectError(string);
-
   let get = (endpoint, address: PublicKeyHash.t) => {
     let tk = Toolkit.create(endpoint);
 
     Toolkit.getDelegate(tk.tz, address)
-    |> Js.Promise.then_(v => Js.Promise.resolve(Js.Nullable.toOption(v)))
-    |> Js.Promise.catch(e =>
-         if (RawJsError.(e->fromPromiseError).status == 404) {
-           Js.Promise.resolve(None);
-         } else {
-           Js.Promise.reject(RejectError(e->Js.String.make));
-         }
-       )
-    |> ReTaquitoError.fromPromiseParsed;
+    ->ReTaquitoError.fromPromiseParsed
+    ->Promise.map(
+        fun
+        | Error(ReTaquitoError.HTTP404) => Ok(None)
+        | Ok(v) => Ok(Js.Nullable.toOption(v))
+        | Error(e) => Error(e),
+      );
   };
 
   let prepareSet = (~source, Protocol.Delegation.{delegate, options: {fee}}) => {
