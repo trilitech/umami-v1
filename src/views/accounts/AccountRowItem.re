@@ -48,7 +48,8 @@ let make =
   let delegateRequest = StoreContext.Delegate.useLoad(account.address);
   let addToast = LogsContext.useToast();
 
-  let balanceRequest = StoreContext.Balance.useView(account.address);
+  let balanceRequest =
+    StoreContext.Balance.useLoad(~forceFetch=false, account.address);
 
   let zeroTez =
     switch (balanceRequest->ApiRequest.getDoneOk) {
@@ -63,7 +64,7 @@ let make =
         kind={Some(Account(account.kind))}
         isHD
       />
-      <AccountInfo account ?token />
+      <AccountInfo forceFetch=false account ?token />
     </View>
     <View style=styles##actionButtons>
       <ClipboardButton

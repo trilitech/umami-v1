@@ -41,6 +41,7 @@ let make =
       ~token: option(Token.t)=?,
       ~showBalance=true,
       ~showAlias=true,
+      ~forceFetch,
     ) => {
   <View>
     {<Typography.Subtitle1 style=styles##alias>
@@ -48,7 +49,7 @@ let make =
      </Typography.Subtitle1>
      ->ReactUtils.onlyWhen(showAlias)}
     {showBalance
-       ? <AccountInfoBalance address={account.address} ?token />
+       ? <AccountInfoBalance forceFetch address={account.address} ?token />
        : <View style=styles##balanceEmpty />}
     <Typography.Address style=styles##address>
       (account.address :> string)->React.string

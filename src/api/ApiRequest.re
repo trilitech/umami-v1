@@ -77,6 +77,15 @@ let map = (req, f) =>
   | NotAsked => NotAsked
   };
 
+let flatMap = (req, f) =>
+  switch (req) {
+  | Done(Ok(value), t) => f(value, true, t)
+  | Done(Error(a), t) => Done(Error(a), t)
+  | Loading(Some(value)) => f(value, false, Expired)
+  | Loading(None) => Loading(None)
+  | NotAsked => NotAsked
+  };
+
 let mapWithDefault = (request, def, f) =>
   switch (request) {
   | Done(Ok(value), _)
