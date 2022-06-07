@@ -42,7 +42,7 @@ let network = `mainnet;
 
 include ReCustomAuthType;
 
-[@bs.module "@toruslabs/torus-direct-web-sdk"] [@bs.new]
+[@bs.module "@toruslabs/customauth"] [@bs.new]
 external make: makeParams => t = "default";
 
 [@bs.send] external init: (t, initParams) => Js.Promise.t(unit) = "init";
