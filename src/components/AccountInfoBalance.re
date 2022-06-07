@@ -39,8 +39,8 @@ module BalanceActivityIndicator = {
 
 module Balance = {
   [@react.component]
-  let make = (~address: PublicKeyHash.t) => {
-    let balanceRequest = StoreContext.Balance.useView(address);
+  let make = (~forceFetch, ~address: PublicKeyHash.t) => {
+    let balanceRequest = StoreContext.Balance.useLoad(~forceFetch, address);
     switch (balanceRequest) {
     | Done(Ok(balance), _)
     | Loading(Some(balance)) =>
@@ -55,13 +55,18 @@ module Balance = {
 
 module BalanceToken = {
   [@react.component]
-  let make = (~address: PublicKeyHash.t, ~token: Token.t) => {
+  let make = (~forceFetch, ~address: PublicKeyHash.t, ~token: Token.t) => {
     let balanceTokenRequest =
-      StoreContext.BalanceToken.useLoad(address, token.address, token.kind);
+      StoreContext.BalanceToken.useLoad(
+        ~forceFetch,
+        address,
+        token.address,
+        token.kind,
+      );
 
     switch (balanceTokenRequest) {
     | Done(Ok(balance), _)
-    | Loading(Some((balance: Token.Unit.t))) =>
+    | Loading(Some(balance: Token.Unit.t)) =>
       I18n.amount(
         balance->Token.Unit.toStringDecimals(token.decimals),
         token.symbol,
@@ -84,11 +89,12 @@ let styles =
   );
 
 [@react.component]
-let make = (~address: PublicKeyHash.t, ~token: option(Token.t)=?) => {
+let make =
+    (~forceFetch=true, ~address: PublicKeyHash.t, ~token: option(Token.t)=?) => {
   <Typography.Subtitle1 fontWeightStyle=`black style=styles##balance>
     {switch (token) {
-     | Some(token) => <BalanceToken address token />
-     | None => <Balance address />
+     | Some(token) => <BalanceToken forceFetch address token />
+     | None => <Balance forceFetch address />
      }}
   </Typography.Subtitle1>;
 };

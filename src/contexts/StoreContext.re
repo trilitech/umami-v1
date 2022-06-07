@@ -115,7 +115,7 @@ module Provider = {
 
 let useStoreContext = () => React.useContext(context);
 
-let useLoadBalances = (accounts, balances) => {
+let useLoadBalances = (~forceFetch=true, accounts, balances) => {
   let requestState = balances;
   let accounts =
     accounts
@@ -123,17 +123,23 @@ let useLoadBalances = (accounts, balances) => {
     ->PublicKeyHash.Map.toList
     ->Belt.List.map(((b, _)) => b);
   let addresses = accounts;
-  BalanceApiRequest.useLoadBalances(~requestState, ~addresses);
+  BalanceApiRequest.useLoadBalances(~forceFetch, ~requestState, addresses);
 };
 
-let useLoadTokensBalances = (accounts, tokensBalances, selectedToken) => {
+let useLoadTokensBalances =
+    (~forceFetch=true, accounts, tokensBalances, selectedToken) => {
   let requestState = tokensBalances;
   let addresses =
     accounts
     ->ApiRequest.getWithDefault(PublicKeyHash.Map.empty)
     ->PublicKeyHash.Map.toList
     ->Belt.List.map(((b, _)) => b);
-  TokensApiRequest.useLoadBalances(~requestState, ~addresses, ~selectedToken);
+  TokensApiRequest.useLoadBalances(
+    ~forceFetch,
+    ~requestState,
+    ~addresses,
+    ~selectedToken,
+  );
 };
 
 // Final Provider
@@ -377,44 +383,17 @@ let setEulaSignature = () => {
   store.eulaSignatureRequestState->snd;
 };
 
-type Errors.t +=
-  | EveryBalancesFail
-  | BalanceNotFound;
-
-let () =
-  Errors.registerHandler(
-    "Context",
-    fun
-    | EveryBalancesFail => I18n.Errors.every_balances_fail->Some
-    | BalanceNotFound => I18n.Errors.balance_not_found->Some
-    | _ => None,
-  );
-
 module Balance = {
-  let useView = (address: PublicKeyHash.t) => {
+  let useLoad = (~forceFetch=true, address: PublicKeyHash.t) => {
     let store = useStoreContext();
-    let (balanceRequest, _) = store.balanceRequestsState;
-    let findBalance =
-        (map: ApiRequest.t(PublicKeyHash.Map.map(Tez.t)), ~address) => {
-      switch (map) {
-      | Done(Ok(value), t) =>
-        let key = value->PublicKeyHash.Map.get(address);
-        switch (key) {
-        | Some(value) => ApiRequest.Done(Ok(value), t)
-        | None => Done(Error(BalanceNotFound), t)
-        };
-      | Loading(Some(value)) =>
-        let key = value->PublicKeyHash.Map.get(address);
-        switch (key) {
-        | Some(value) => Loading(Some(value))
-        | None => Loading(None)
-        };
-      | Done(Error(e), t) => Done(Error(e), t)
-      | Loading(None) => Loading(None)
-      | NotAsked => NotAsked
-      };
-    };
-    balanceRequest->findBalance(~address);
+    let balancesRequest =
+      useLoadBalances(
+        ~forceFetch,
+        store.accountsRequestState->fst,
+        store.balanceRequestsState,
+      );
+
+    balancesRequest->BalanceApiRequest.getOne(address);
   };
 
   let handleBalance = (map: PublicKeyHash.Map.map(Tez.t)) => {
@@ -426,7 +405,7 @@ module Balance = {
     let getAllDoneOk = () => requests->Array.keepMap(ApiRequest.getDoneOk);
 
     if (allErrors()) {
-      ApiRequest.Done(Error(EveryBalancesFail), Expired);
+      ApiRequest.Done(Error(BalanceApiRequest.EveryBalancesFail), Expired);
     } else {
       let allDone = getAllDoneOk();
       if (allDone->Array.size == accountsSize) {
@@ -454,35 +433,28 @@ module Balance = {
 
 module BalanceToken = {
   let useLoad =
-      (address: PublicKeyHash.t, token: PublicKeyHash.t, kind: TokenRepr.kind) => {
+      (
+        ~forceFetch,
+        address: PublicKeyHash.t,
+        token: PublicKeyHash.t,
+        kind: TokenRepr.kind,
+      ) => {
     let store = useStoreContext();
-    let (balanceTokenRequest, _) = store.balanceTokenRequestsState;
-    let findBalance =
-        (map: ApiRequest.t(TokenRepr.Map.map(TokenRepr.Unit.t)), ~address) => {
-      let mapKey =
-        switch (kind) {
-        | TokenRepr.FA1_2 => (address, (token, None))
-        | FA2(tokenId) => (address, (token, Some(tokenId)))
-        };
-      switch (map) {
-      | Done(Ok(value), t) =>
-        let key = value->TokenRepr.Map.get(mapKey);
-        switch (key) {
-        | Some(value) => ApiRequest.Done(Ok(value), t)
-        | None => Done(Error(BalanceNotFound), t)
-        };
-      | Loading(Some(value)) =>
-        let key = value->TokenRepr.Map.get(mapKey);
-        switch (key) {
-        | Some(value) => Loading(Some(value))
-        | None => Loading(None)
-        };
-      | Done(Error(e), t) => Done(Error(e), t)
-      | Loading(None) => Loading(None)
-      | NotAsked => NotAsked
+    let balancesRequest =
+      useLoadTokensBalances(
+        ~forceFetch,
+        store.accountsRequestState->fst,
+        store.balanceTokenRequestsState,
+        Some((token, kind)),
+      );
+
+    let mapKey =
+      switch (kind) {
+      | TokenRepr.FA1_2 => (address, (token, None))
+      | FA2(tokenId) => (address, (token, Some(tokenId)))
       };
-    };
-    balanceTokenRequest->findBalance(~address);
+
+    balancesRequest->TokensApiRequest.getOneBalance(mapKey);
   };
 
   let handleBalance =

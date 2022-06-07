@@ -41,6 +41,16 @@ let useCheckTokenContract = tokens => {
   ApiRequest.useSetter(~set, ~kind=Logs.Tokens, ~toast=false, ());
 };
 
+let getOneBalance = (balancesRequest, key) =>
+  balancesRequest->ApiRequest.flatMap((balances, isDone, t) => {
+    switch (balances->TokenRepr.Map.get(key)) {
+    | Some(balance) when isDone => ApiRequest.Done(Ok(balance), t)
+    | Some(balance) => Loading(Some(balance))
+    | None when isDone => Done(Error(BalanceApiRequest.BalanceNotFound), t)
+    | None => Loading(None)
+    }
+  });
+
 let balancesfromArray =
     (
       array: array((PublicKeyHash.t, TokenRepr.Unit.t)),
@@ -71,6 +81,7 @@ let balancesfromArray =
 
 let useLoadBalances =
     (
+      ~forceFetch=true,
       ~requestState,
       ~addresses: list(PublicKeyHash.t),
       ~selectedToken: option((PublicKeyHash.t, TokenRepr.kind)),
@@ -102,7 +113,8 @@ let useLoadBalances =
 
   ApiRequest.useLoader(
     ~get,
-    ~condition=_ => !addresses->Js.List.isEmpty && selectedToken != None,
+    ~condition=
+      _ => !addresses->Js.List.isEmpty && selectedToken != None && forceFetch,
     ~kind=Logs.Tokens,
     ~requestState,
     (addresses, selectedToken),
