@@ -42,7 +42,7 @@ module.exports = {
         __dirname,
         "node_modules",
         "@toruslabs",
-        "torus-direct-web-sdk"
+        "customauth"
       ),
     ],
     stats: {
