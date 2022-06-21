@@ -1,17 +1,15 @@
 [[_TOC_]]
-## Configuration change
-<!-- Configuration change, to be approved by the CAB before applying. -->
+## Dependency change
+<!-- Dependency change, to be approved by the CAB before applying. -->
 
 <!-- /confidential -->
 <!-- If confidential, explain why -->
 
 ### Summary
-<!-- Outline the issue being faced, and why this needs to change !-->
+<!-- Outline the issue being faced, and why this required a change !-->
 
 ### Area of the system
 <!-- This might only be one part, but may involve multiple sections !-->
-
-~Umami-stack::
 
 ### How does this currently work?
 <!-- The current process, and any associated business rules !-->
@@ -41,17 +39,24 @@
 <!--Low : (anything else e.g., trivial, minor improvements) -->
 <!--  /label ~"Priority::3-Low" -->
 
-## Approvals checklist
+## Impact checklist
+- [ ] Documentation has been updated
+- [ ] Monitoring has been put in place
+- [ ] Alerting has been put in place
+
+## Approvals checklist (all required) 
 - [ ] Approval from Development
 - [ ] Approval from Operations
-- [?] (optional) Approval from Business 
+- [ ] Approval from Business
 <!-- tick the corresponding checkbox [x], you may also add your @user handle at the end of the line -->
 
 <!-- Trigger gitlab todo tasks --> 
 
-@remyzorg (cc: TBD ) Please approve this _configuration change_ on development aspects
+@remyzorg (cc: TBD )    Please *approve* this _dependency change_ on development aspects
 
-@comeh (cc: @philippewang.info) Please approve this _configuration change_ on operations aspects
+@comeh (cc: @philippewang.info) Please *approve* this _dependency change_ on operations  aspects
+
+@SamREye                   Please *approve* this _dependency change_ on business    aspects
 
 /assign @remyzorg @comeh @SamREye <!-- comment-out if you're writting a draft -->
 
@@ -59,6 +64,6 @@
 <!-- /unlabel ~"CAB::to-approve" -->
 <!-- /label ~"CAB::to-perform"   -->
 
-/label ~"Change::Configuration"  <!-- Configuration change, to be approved by the CAB before applying. -->
+/label ~"Change::Dependency" <!-- Regular change, to be approved by the CAB before applying. -->
 /label ~Change ~"CAB::to-approve" <!-- labels for gitlab CAB Change issues management -->
 <!-- METADATA - end -->
