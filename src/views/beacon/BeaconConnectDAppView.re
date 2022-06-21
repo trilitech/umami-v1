@@ -90,6 +90,13 @@ let make = (~closeAction) => {
   let formFieldsAreValids =
     FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields);
 
+  let submitOnEnterKeyPress = (event) => {
+    if (event->TextInput.KeyPressEvent.nativeEvent##key === "Enter") {
+      TextInput.KeyPressEvent.preventDefault(event);
+      form.submit()
+    };
+  };
+
   <ModalFormView closing={ModalFormView.Close(closeAction)}>
     <View>
       <View style=FormStyles.header>
@@ -109,6 +116,7 @@ let make = (~closeAction) => {
           ]
           ->Option.firstSome
         }
+        onKeyPress=submitOnEnterKeyPress
         multiline=true
         numberOfLines=9
       />
