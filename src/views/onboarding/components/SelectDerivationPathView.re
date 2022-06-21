@@ -98,7 +98,7 @@ let form = (~custom, ~setDerivationPath, ~next, ~derivationPath) =>
 
 module DerivationPathInput = {
   [@react.component]
-  let make = (~form: SelectDerivationPathForm.api) => {
+  let make = (~form: SelectDerivationPathForm.api, ~onSubmit) => {
     let error = {
       form.getFieldError(Field(CustomDerivationPath));
     };
@@ -118,6 +118,7 @@ module DerivationPathInput = {
         }}
         hasError={error->Option.isSome}
         placeholder=I18n.Input_placeholder.enter_derivation_path
+        onSubmitEditing=onSubmit
       />
       <FormError ?error />
     </>;
@@ -159,7 +160,7 @@ let make = (~derivationPath, ~setDerivationPath, ~goNextStep) => {
         }
         currentValue={form.values.selectedDerivationPath}
       />
-      <DerivationPathInput form />
+      <DerivationPathInput form onSubmit />
     </FormGroup>
     <View style=FormStyles.verticalFormAction>
       <Buttons.SubmitPrimary
