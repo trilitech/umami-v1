@@ -84,6 +84,7 @@ let make = (~secret: Secret.derived, ~closeAction) => {
       value={form.values.name}
       handleChange={form.handleChange(Name)}
       error={form.getFieldError(Field(Name))}
+      onSubmitEditing=onSubmit
     />
     <Buttons.SubmitPrimary
       text=I18n.Btn.update

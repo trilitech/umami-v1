@@ -112,6 +112,7 @@ module Generic = {
         handleChange={form.handleChange(Name)}
         placeholder=I18n.Input_placeholder.add_accounts_name
         error={form.getFieldError(Field(Name))}
+        onSubmitEditing=onSubmit
       />
       <Buttons.SubmitPrimary
         text=buttonText
