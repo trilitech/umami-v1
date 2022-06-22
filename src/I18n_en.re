@@ -382,6 +382,7 @@ module Title = {
   let select_backup_file = "Select a JSON backup file and enter the password you used to encrypt it.";
   let account_backup_path = "Select a storage location for your backup";
   let details = "Details";
+  let help = "Help";
 };
 
 module Expl = {
@@ -485,6 +486,18 @@ module Settings = {
   let backup_path_saved = "Backup file path saved";
   let app_update = "APP UPDATE";
   ();
+};
+
+module Help = {
+  let subtitle = "Find the resources you need to get the most out of the Umami Wallet.";
+  let articles_descr = "Don't know how to use a feature? The answer might be in our articles.";
+  let articles_text = "BROWSE ARTICLES";
+  let faq_descr = "Got a question? It may already be answered in here.";
+  let faq_text = "CONSULT FAQ";
+  let support_descr = "Need further assistance? We're happy to help!";
+  let support_text = "EMAIL SUPPORT";
+  let tos_descr = "Want to learn about what you can expect from Umami wallet?";
+  let tos_text = "READ TERMS OF SERVICE";
 };
 
 module Network = {
@@ -742,6 +755,7 @@ let navbar_tokens = "TOKENS";
 let navbar_settings = "SETTINGS";
 let navbar_logs = "LOGS";
 let navbar_global_batch = "BATCH";
+let navbar_help = "HELP";
 let delegate_column_account = "ACCOUNT";
 let delegate_column_initial_balance = "INITIAL BALANCE";
 let delegate_column_current_balance = "CURRENT BALANCE";
