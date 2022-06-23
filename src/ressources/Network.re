@@ -102,7 +102,7 @@ let () =
     | _ => None,
   );
 
-type nativeChains = [ | `Mainnet | `Ithacanet];
+type nativeChains = [ | `Mainnet | `Ithacanet | `Jakartanet];
 
 type supportedChains = [
   nativeChains
@@ -116,6 +116,7 @@ let unsafeChainId: string => chainId = c => c;
 
 let getChainId =
   fun
+  | `Jakartanet => "NetXLH1uAxK7CCh"
   | `Ithacanet => "NetXnHfVqm9iesp"
   | `Granadanet => "NetXz969SFaFn8k"
   | `Mainnet => "NetXdQprcVkpaWU"
@@ -132,11 +133,16 @@ let fromChainId =
   | "NetXSgo1ZT2DRUG" => `Edo2net
   | "NetXZSsxBpMQeAT" => `Hangzhounet
   | "NetXnHfVqm9iesp" => `Ithacanet
+  | "NetXLH1uAxK7CCh" => `Jakartanet
   | s => `Custom(s);
 
 let mkChainAssoc = c => (c, getChainId(c));
 
-let nativeChains = [mkChainAssoc(`Mainnet), mkChainAssoc(`Ithacanet)];
+let nativeChains = [
+  mkChainAssoc(`Mainnet),
+  mkChainAssoc(`Ithacanet),
+  mkChainAssoc(`Jakartanet),
+];
 
 let supportedChains = [
   mkChainAssoc(`Florencenet),
@@ -154,6 +160,7 @@ let getDisplayedName =
   | `Edo2net => "Edo2net"
   | `Hangzhounet => "Hangzhounet"
   | `Ithacanet => "Ithacanet"
+  | `Jakartanet => "Jakartanet"
   | `Custom(s) => s;
 
 let externalExplorer =
@@ -164,6 +171,7 @@ let externalExplorer =
   | `Granadanet => "https://granadanet.tzkt.io/"->Ok
   | `Hangzhounet => "https://hangzhou2net.tzkt.io/"->Ok
   | `Ithacanet => "https://ithacanet.tzkt.io/"->Ok
+  | `Jakartanet => "https://jakartanet.tzkt.io/"->Ok
   | `Custom(_) as net => Error(UnknownChainId(getChainId(net)));
 
 type chain('chainId) = [ supportedChains | `Custom('chainId)];
@@ -186,6 +194,7 @@ let chainNetwork: chain(_) => option(string) =
   | `Edo2net => Some("edo2net")
   | `Hangzhounet => Some("hangzhou2net")
   | `Ithacanet => Some("ithacanet")
+  | `Jakartanet => Some("jakartanet")
   | `Custom(_) => None;
 
 let networkChain: string => option(chain(_)) =
@@ -196,6 +205,7 @@ let networkChain: string => option(chain(_)) =
   | "edo2net" => Some(`Edo2net)
   | "hangzhou2net" => Some(`Hangzhounet)
   | "ithacanet" => Some(`Ithacanet)
+  | "jakartanet" => Some(`Jakartanet)
   | _ => None;
 
 module Encode = {
@@ -208,6 +218,7 @@ module Encode = {
     | `Florencenet
     | `Edo2net
     | `Ithacanet
+    | `Jakartanet
     | `Hangzhounet => "default"
     | `Custom(_) => "custom";
 
@@ -239,6 +250,7 @@ module Decode = {
     fun
     | "Mainnet" => `Mainnet
     | "Ithacanet" => `Ithacanet
+    | "Jakartanet" => `Jakartanet
     | n => raise(Json.Decode.DecodeError("Unknown network " ++ n));
 
   let chainFromString =
@@ -298,10 +310,18 @@ let ithacanet =
     `Ithacanet,
   );
 
+let jakartanet =
+  mk(
+    ~explorer="https://jakartanet.umamiwallet.com/",
+    ~endpoint="https://jakartanet.ecadinfra.com/",
+    `Jakartanet,
+  );
+
 let getNetwork =
   fun
   | `Mainnet => mainnet
-  | `Ithacanet => ithacanet;
+  | `Ithacanet => ithacanet
+  | `Jakartanet => jakartanet;
 
 let getNetworks = (c: nativeChains) => {
   let n = getNetwork(c);
@@ -317,6 +337,11 @@ let getNetworks = (c: nativeChains) => {
   | `Ithacanet => [
       withEP("https://ithacanet.ecadinfra.com/"),
       withEP("https://ithacanet.smartpy.io/"),
+    ]
+  | `Jakartanet => [
+      withEP("https://jakartanet.ecadinfra.com/"),
+      withEP("https://rpczero.tzbeta.net/"),
+      withEP("https://jakartanet.tezos.marigold.dev/"),
     ]
   };
 };
