@@ -239,6 +239,7 @@ let make = (~initNode=?, ~initMezos=?, ~action: action, ~closeAction) => {
         placeholder=I18n.Input_placeholder.custom_network_name
         handleChange={form.handleChange(Name)}
         error={form.getFieldError(Field(Name))}
+        onSubmitEditing=onSubmit
       />
       <FormGroupTextInput
         label={I18n.Label.custom_network_node_url(false)}
@@ -252,6 +253,7 @@ let make = (~initNode=?, ~initMezos=?, ~action: action, ~closeAction) => {
           ]
           ->Option.firstSome
         }
+        onSubmitEditing=onSubmit
         disabled=?{
           switch (action) {
           | Create => None
@@ -272,6 +274,7 @@ let make = (~initNode=?, ~initMezos=?, ~action: action, ~closeAction) => {
           ]
           ->Option.firstSome
         }
+        onSubmitEditing=onSubmit
         disabled=?{
           switch (action) {
           | Create => None

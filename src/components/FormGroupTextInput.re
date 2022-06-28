@@ -56,6 +56,7 @@ let make =
       ~keyboardType=?,
       ~onBlur=?,
       ~onFocus=?,
+      ~onKeyPress=?,
       ~textContentType=?,
       ~secureTextEntry=?,
       ~placeholder=?,
@@ -84,6 +85,7 @@ let make =
         hasError
         ?onBlur
         ?onFocus
+        ?onKeyPress
         ?textContentType
         ?secureTextEntry
         ?keyboardType

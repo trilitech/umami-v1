@@ -182,6 +182,10 @@ module AdvancedOptionsView = {
         ~derivationPath=path,
       );
 
+    let onSubmit = _ => {
+      form.submit();
+    };
+
     <>
       <Typography.Headline style=onbStyles##title>
         I18n.Title.hardware_wallet_connect->React.string
@@ -199,13 +203,13 @@ module AdvancedOptionsView = {
             style=FormStyles.selector##label
             label=I18n.Label.derivation_path
           />
-          <SelectDerivationPathView.DerivationPathInput form />
+          <SelectDerivationPathView.DerivationPathInput form onSubmit />
         </View>
       </View>
       <Buttons.SubmitPrimary
         style=FormStyles.section##submitSpacing
         text=I18n.Btn.verify_accounts
-        onPress={_ => form.submit()}
+        onPress=onSubmit
       />
     </>;
   };
