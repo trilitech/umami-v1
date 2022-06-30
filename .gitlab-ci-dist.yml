@@ -1,0 +1,131 @@
+cache:
+  paths:
+    - node_modules/
+    - .yarn
+
+# .snap creation is handled in another job (linux-dist-snap)
+# See https://forum.gitlab.com/t/use-snapcraft-in-ci/37048/2
+linux-dist:
+  stage: dist
+  image: node:16-buster
+  before_script:
+    - apt update
+    - apt -y install build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev libusb-1.0.0-dev libudev-dev
+  script:
+    - 'sed -i "s/\"version\": \"0.8.0\"/\"version\": \"0.8.1-dev+${CI_COMMIT_SHORT_SHA}\"/" package.json'
+    - yarn
+    - CI=false yarn electron:build
+    - CI=false yarn electron:deb
+    - apt -y install rpm
+    - CI=false yarn electron:rpm
+  artifacts:
+    paths:
+      - dist/*.AppImage
+      - dist/*.deb
+      - dist/*.rpm
+    expire_in: 1 day
+
+windows-dist:
+  stage: dist
+  tags:
+    - windows
+  variables:
+    NODE_VERSION: v16.15.1
+    NODE_DIST_SHA256: e160591f562b575eb18b9b234b738f21cb7fbec5a73df1bd8062f8d0c6cef431
+    NODE_PATH: C:\node-v16.15.1-win-x64
+    TMP_FILE: node-v16.15.1-win-x64.zip
+  before_script:
+    # If node is not already loaded from cache, official binaries (win-x64 distrib)
+    - if (-Not (Test-Path -Path "${NODE_PATH}")) {
+          Invoke-WebRequest -Uri "https://nodejs.org/dist/${NODE_VERSION}/node-${NODE_VERSION}-win-x64.zip" -OutFile "${TMP_FILE}";
+          if ((Get-FileHash "${TMP_FILE}" -Algorithm sha256).Hash -ne "${NODE_DIST_SHA256}") { throw 'Wrong SHA256' };
+          Expand-Archive "${TMP_FILE}" -DestinationPath C:\;
+          Remove-Item "${TMP_FILE}" -Force;
+      }
+    # If node installation folder is not already in PATH, add it
+    - if (-Not ($env:PATH | Select-String -SimpleMatch "${NODE_PATH}")) { $env:PATH += ";${NODE_PATH}" }
+    - node -v
+    - npm -v
+    - corepack enable
+    - npm install -g node-hid
+  script:
+    - '(Get-Content package.json) -replace "`"version`": `"0.8.0`"", "`"version`": `"0.8.1-dev+${CI_COMMIT_SHORT_SHA}`"" | Set-Content package.json'
+    - yarn
+    - yarn bsb:build
+    - yarn electron:build
+  artifacts:
+    paths:
+      - dist/*.exe
+      - dist/latest.yml
+    expire_in: 1 day
+
+macos-dist:
+  stage: dist
+  tags:
+    - macos
+  before_script:
+    - node -v
+    - npm -v
+    # `brew install --force` and `brew link --overwrite` in order to avoid cache issue between two builds
+    - brew install --force cairo corepack expat giflib jpeg libpng librsvg pango pixman pkg-config zlib
+    - brew link --overwrite cairo corepack expat giflib jpeg libpng librsvg pango pixman pkg-config zlib
+    - export LDFLAGS="-L/opt/homebrew/opt/zlib/lib -L/opt/homebrew/opt/expat/lib"
+    - export CPPFLAGS="-I/opt/homebrew/opt/zlib/include -I/opt/homebrew/opt/expat/include"
+    - export PKG_CONFIG_PATH="/opt/homebrew/opt/zlib/lib/pkgconfig:/opt/homebrew/opt/expat/lib/pkgconfig"
+    - corepack enable
+    - npm install -g node-gyp@8.4.1 # 9.0.0 gives an error (search for `openssl_fips != ""` error)
+    - npm install -g node-hid
+  script:
+    - 'sed -i "" "s/\"version\": \"0.8.0\"/\"version\": \"0.8.1-dev+${CI_COMMIT_SHORT_SHA}\"/" package.json'
+    - base64 --decode "${SECRET_UMAMI_Developer_ID_Application_p12}" > "${SECRET_UMAMI_Developer_ID_Application_p12}.p12"
+    - export CSC_LINK="${SECRET_UMAMI_Developer_ID_Application_p12}.p12"
+    - export CSC_KEY_PASSWORD="${CSC_KEY_PASSWORD}"
+    - sed -i '' "s/<your apple ID>/${SECRET_APPLEID}/g" ./scripts/notarize.js
+    - sed -i '' "s/<your app-specific password>/${SECRET_APPLEIDPASSWORD}/g" ./scripts/notarize.js
+    - yarn
+    - yarn bsb:build
+    - yarn electron:build
+  artifacts:
+    paths:
+      - dist/latest-mac.yml
+      - dist/umami-*.dmg
+      - dist/umami-*-mac.zip
+    expire_in: 1 day
+
+# See https://forum.gitlab.com/t/use-snapcraft-in-ci/37048
+linux-dist-snap:
+  stage: dist
+  image: ubuntudesktop/gnome-3-38-2004
+  variables:
+    NODESOURCE_VERSION: node_16.x
+    NODESOURCE_KEYRING: /usr/share/keyrings/nodesource.gpg
+  before_script:
+    # See https://github.com/nodesource/distributions/blob/master/README.md#manual-installation
+    - apt-get update
+    - apt-get -y install curl gpg lsb-release
+    - curl -fsSL https://deb.nodesource.com/gpgkey/nodesource.gpg.key | gpg --dearmor | tee "${NODESOURCE_KEYRING}" >/dev/null
+    - gpg --no-default-keyring --keyring "${NODESOURCE_KEYRING}" --list-keys
+    - export NODESOURCE_DISTRO=`lsb_release -s -c`
+    - echo "deb [signed-by=${NODESOURCE_KEYRING}] https://deb.nodesource.com/${NODESOURCE_VERSION} ${NODESOURCE_DISTRO} main" | tee /etc/apt/sources.list.d/nodesource.list
+    - echo "deb-src [signed-by=${NODESOURCE_KEYRING}] https://deb.nodesource.com/${NODESOURCE_VERSION} ${NODESOURCE_DISTRO} main" | tee -a /etc/apt/sources.list.d/nodesource.list
+    - apt-get update
+    - apt-get -y install nodejs
+    - snapcraft --version
+    - node -v
+    - npm -v
+    - corepack enable
+  script:
+    - 'sed -i "s/\"version\": \"0.8.0\"/\"version\": \"0.8.1-dev+${CI_COMMIT_SHORT_SHA}\"/" package.json'
+    # Do not use lxd (dial unix /run/snapd.socket: connect: no such file or directory)
+    - sed -i "s/'--use-lxd'//g" scripts/snap.js
+    - sed -i "s/ --use-lxd//g" package.json
+    # Fix npm ERR! File exists: /usr/bin/yarn
+    - sed -i "/npm install yarn -g/d" scripts/snap-tmpl.yaml
+    - yarn
+    - CI=false yarn snap:build
+    - mkdir -p dist/
+    - mv *.snap dist/
+  artifacts:
+    paths:
+      - dist/*.snap
+    expire_in: 1 day
