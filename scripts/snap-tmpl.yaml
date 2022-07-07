@@ -33,29 +33,32 @@ apps:
     command: umami/umami --no-sandbox
     extensions: [gnome-3-38]
     plugs:
+      - audio-playback
+      - browser-support
+      - home
       - network
       - network-bind
-      - desktop
-      - desktop-legacy
-      - home
-      - x11
-      - wayland
-      - unity7
-      - browser-support
-      - gsettings
-      - audio-playback
       - pulseaudio
-      - opengl
       - u2f-devices
+      # Some plugs are already provided by gnome-3-38 extension
+      # See https://snapcraft.io/docs/gnome-3-38-extension
+      # - desktop
+      # - desktop-legacy
+      # - gsettings
+      # - opengl
+      # - unity7
+      # - wayland
+      # - x11
     environment:
       # Correct the TMPDIR path for Chromium Framework/Electron to ensure
       # libappindicator has readable resources.
       TMPDIR: $XDG_RUNTIME_DIR
       DISABLE_WAYLAND: '1'
-      TMPDIR: $XDG_RUNTIME_DIR
       PATH: $SNAP/usr/sbin:$SNAP/usr/bin:$SNAP/sbin:$SNAP/bin:$PATH
       SNAP_DESKTOP_RUNTIME: $SNAP/gnome-platform
-      LD_LIBRARY_PATH: $SNAP_LIBRARY_PATH:$SNAP/lib:$SNAP/usr/lib:$SNAP/lib/x86_64-linux-gnu:$SNAP/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH:$SNAP/lib:$SNAP/usr/lib:$SNAP/lib/x86_64-linux-gnu:$SNAP/usr/lib/x86_64-linux-gnu
+      # LD_LIBRARY_PATH: Do not include $LD_LIBRARY_PATH (see CVE-2020-27348)
+      # LD_LIBRARY_PATH: $SNAP_LIBRARY_PATH already ends with a colon (see https://snapcraft.io/docs/environment-variables)
+      LD_LIBRARY_PATH: $SNAP_LIBRARY_PATH$SNAP/lib:$SNAP/usr/lib:$SNAP/lib/x86_64-linux-gnu:$SNAP/usr/lib/x86_64-linux-gnu:$SNAP/lib:$SNAP/usr/lib:$SNAP/lib/x86_64-linux-gnu:$SNAP/usr/lib/x86_64-linux-gnu
 
 parts:
   umami:
