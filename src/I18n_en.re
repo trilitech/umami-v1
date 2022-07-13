@@ -489,7 +489,7 @@ module Settings = {
 };
 
 module Help = {
-  let subtitle = "Find the resources you need to get the most out of the Umami Wallet.";
+  let subtitle = "Find the resources you need to get the most out of Umami Wallet.";
   let articles_descr = "Don't know how to use a feature? The answer might be in our articles.";
   let articles_text = "BROWSE ARTICLES";
   let faq_descr = "Got a question? It may already be answered in here.";
