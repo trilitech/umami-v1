@@ -95,7 +95,7 @@ module HelpLink = {
              {icon(
                 ~style=?None,
                 ~size=20.,
-                ~color=theme.colors.textHighEmphasis,
+                ~color=theme.colors.primaryIconHighEmphasis,
               )}
            </View>
            <View
