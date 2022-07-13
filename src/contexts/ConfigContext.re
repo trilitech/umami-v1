@@ -61,6 +61,7 @@ let fromFile = f => {
     | None
     | Some(`Mainnet) => Network.mainnet
     | Some(`Ithacanet) => Network.ithacanet
+    | Some(`Jakartanet) => Network.jakartanet
     | Some(`Custom(name)) =>
       f.customNetworks
       ->List.getBy(n => n.name === (name :> string))

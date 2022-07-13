@@ -73,7 +73,7 @@ type Errors.t +=
   | API(apiError)
   | Node(nodeError);
 
-type nativeChains = [ | `Mainnet | `Ithacanet];
+type nativeChains = [ | `Mainnet | `Ithacanet | `Jakartanet];
 
 type supportedChains = [
   nativeChains
@@ -131,6 +131,7 @@ module Decode: {
 
 let mainnet: network;
 let ithacanet: network;
+let jakartanet: network;
 
 let getNetwork: nativeChains => network;
 let getNetworks: nativeChains => list(network);
