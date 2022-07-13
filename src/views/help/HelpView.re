@@ -74,7 +74,7 @@ module HelpLink = {
     let theme = ThemeContext.useTheme();
 
     <Pressable_ onPress={onPress(link)}>
-      {({hovered, pressed, focused}) => {
+      {({hovered: _, pressed: _, focused: _}) => {
          <View
            style=Style.(
              array([|
