@@ -7,6 +7,12 @@ jest.mock("react-native-svg", () =>
 
 jest.mock("usb-detection", () => {});
 
+jest.mock("@electron/remote", () => ({
+  app: {
+    getPath: jest.fn()
+  }
+}));
+
 // https://jestjs.io/docs/manual-mocks#mocking-methods-which-are-not-implemented-in-jsdom
 //
 // Also had to add global.window instead of window
