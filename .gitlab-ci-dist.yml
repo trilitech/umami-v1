@@ -59,6 +59,13 @@ windows-dist:
       - dist/latest.yml
     expire_in: 1 day
 
+# macOS build needs you to define some secret variables notarize your app
+# - SECRET_APPLEID: The username of your apple developer account
+# - SECRET_APPLEIDPASSWORD: The app-specific password (not your Apple ID password).
+# - SECRET_UMAMI_3rd_Party_Mac_Developer_Application_p12:
+#   Content of the .p12 certificate used to sign app for distribution on MAS
+# - SECRET_UMAMI_Developer_ID_Application_p12:
+#   Content of the .p12 certificate used to sign app for distribution outside of the MAS
 macos-dist:
   stage: dist
   tags:
