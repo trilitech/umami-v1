@@ -12,7 +12,7 @@ linux-dist:
     - apt update
     - apt -y install build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev libusb-1.0.0-dev libudev-dev
   script:
-    - 'sed -i "s/\"version\": \"0.8.0\"/\"version\": \"0.8.1-dev+${CI_COMMIT_SHORT_SHA}\"/" package.json'
+    - 'sed -i "s/\"version\": \"\([[:digit:]]\+\.[[:digit:]]\+\.[[:digit:]]\+\)\"/\"version\": \"\1.${CI_PIPELINE_IID}\"/" package.json'
     - yarn
     - CI=false yarn electron:build
     - CI=false yarn electron:deb
@@ -49,7 +49,7 @@ windows-dist:
     - corepack enable
     - npm install -g node-hid
   script:
-    - '(Get-Content package.json) -replace "`"version`": `"0.8.0`"", "`"version`": `"0.8.1-dev+${CI_COMMIT_SHORT_SHA}`"" | Set-Content package.json'
+    - '(Get-Content package.json) -replace "`"version`": `"(\d+.\d+.\d+)`"", "`"version`": `"`$1.${CI_PIPELINE_IID}`"" | Set-Content package.json'
     - yarn
     - yarn bsb:build
     - yarn electron:build
@@ -83,7 +83,7 @@ macos-dist:
     - npm install -g node-gyp@8.4.1 # 9.0.0 gives an error (search for `openssl_fips != ""` error)
     - npm install -g node-hid
   script:
-    - 'sed -i "" "s/\"version\": \"0.8.0\"/\"version\": \"0.8.1-dev+${CI_COMMIT_SHORT_SHA}\"/" package.json'
+    - 'sed -i "" "s/\"version\": \"\([[:digit:]]\+\.[[:digit:]]\+\.[[:digit:]]\+\)\"/\"version\": \"\1.${CI_PIPELINE_IID}\"/" package.json'
     - base64 --decode "${SECRET_UMAMI_Developer_ID_Application_p12}" > "${SECRET_UMAMI_Developer_ID_Application_p12}.p12"
     - export CSC_LINK="${SECRET_UMAMI_Developer_ID_Application_p12}.p12"
     - export CSC_KEY_PASSWORD="${CSC_KEY_PASSWORD}"
@@ -122,7 +122,7 @@ linux-dist-snap:
     - npm -v
     - corepack enable
   script:
-    - 'sed -i "s/\"version\": \"0.8.0\"/\"version\": \"0.8.1-dev+${CI_COMMIT_SHORT_SHA}\"/" package.json'
+    - 'sed -i "s/\"version\": \"\([[:digit:]]\+\.[[:digit:]]\+\.[[:digit:]]\+\)\"/\"version\": \"\1.${CI_PIPELINE_IID}\"/" package.json'
     # Do not use lxd (dial unix /run/snapd.socket: connect: no such file or directory)
     - sed -i "s/'--use-lxd'//g" scripts/snap.js
     - sed -i "s/ --use-lxd//g" package.json
