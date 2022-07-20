@@ -198,7 +198,13 @@ module Decode = {
   let metadataDecoder = json => {
     name: json |> optionalOrNull("name", string),
     symbol: json |> optionalOrNull("symbol", string),
-    decimals: json |> optionalOrNull("decimals", int), //default: 0
+    decimals:
+      json
+      |> optionalOrNull(
+           "decimals",
+           either(string |> map(int_of_string), int),
+         ),
+    //default: 0
     description: json |> optionalOrNull("description", string),
     artifactUri: json |> optionalOrNull("artifactUri", string),
     displayUri: json |> optionalOrNull("displayUri", string),
