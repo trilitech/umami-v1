@@ -35,6 +35,7 @@ type t =
   | Logs
   | Nft
   | Batch
+  | Help
   | NotFound;
 
 exception RouteToNotFound;
@@ -51,6 +52,7 @@ let match = (url: url) => {
   | "/logs" => Logs
   | "/nft" => Nft
   | "/batch" => Batch
+  | "/help" => Help
   | _ => NotFound
   };
 };
@@ -66,6 +68,7 @@ let toHref =
   | Logs => "#/logs"
   | Nft => "#/nft"
   | Batch => "#/batch"
+  | Help => "#/help"
   | NotFound => raise(RouteToNotFound);
 
 /* This lets us push a Routes.t instead of a string to transition to a new  screen */

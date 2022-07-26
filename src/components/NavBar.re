@@ -252,14 +252,20 @@ let make = (~account, ~route as currentRoute) => {
       title=I18n.navbar_tokens
       icon=Icons.Token.build
     />
-    <NavBarItemRoute
-      currentRoute
-      route=Settings
-      title=I18n.navbar_settings
-      icon=Icons.Settings.build
-    />
-    /* <NavBarItem currentRoute route=Debug title="DEBUG" /> */
     <View style=styles##bottomContainer>
+      <NavBarItemRoute
+        currentRoute
+        route=Settings
+        title=I18n.navbar_settings
+        icon=Icons.Settings.build
+      />
+      <NavBarItemRoute
+        currentRoute
+        route=Help
+        title=I18n.navbar_help
+        icon=Icons.Help.build
+      />
+    /* <NavBarItem currentRoute route=Debug title="DEBUG" /> */
       <LogsButton
         currentRoute
         route=Logs

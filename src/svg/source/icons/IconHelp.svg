@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="24px"
+   height="24px"
+   viewBox="0 0 24 24"
+   version="1.1"
+   id="svg3863"
+   sodipodi:docname="IconHelp.svg"
+   inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)">
+  <metadata
+     id="metadata3869">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title>6DF1F03D-D8AE-44F2-B30C-9D8365CEF333</dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <defs
+     id="defs3867" />
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="1920"
+     inkscape:window-height="1043"
+     id="namedview3865"
+     showgrid="false"
+     inkscape:zoom="36.041667"
+     inkscape:cx="12"
+     inkscape:cy="12"
+     inkscape:window-x="1024"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg3863" />
+  <title
+     id="title3853">6DF1F03D-D8AE-44F2-B30C-9D8365CEF333</title>
+  <path
+     d="M 12,2 C 6.48,2 2,6.48 2,12 2,17.52 6.48,22 12,22 17.52,22 22,17.52 22,12 22,6.48 17.52,2 12,2 Z m 7.46,7.12 -2.78,1.15 C 16.17,8.91 15.1,7.83 13.73,7.33 l 1.15,-2.78 c 2.1,0.8 3.77,2.47 4.58,4.57 z M 12,15 c -1.66,0 -3,-1.34 -3,-3 0,-1.66 1.34,-3 3,-3 1.66,0 3,1.34 3,3 0,1.66 -1.34,3 -3,3 z M 9.13,4.54 10.3,7.32 C 8.92,7.82 7.83,8.91 7.32,10.29 L 4.54,9.13 C 5.35,7.02 7.02,5.35 9.13,4.54 Z M 4.54,14.87 7.32,13.72 c 0.51,1.38 1.59,2.46 2.97,2.96 L 9.12,19.46 C 7.02,18.65 5.35,16.98 4.54,14.87 Z m 10.34,4.59 -1.15,-2.78 c 1.37,-0.51 2.45,-1.59 2.95,-2.97 l 2.78,1.17 c -0.81,2.1 -2.48,3.77 -4.58,4.58 z"
+     id="Shape"
+     inkscape:connector-curvature="0"
+     style="fill:#000000;fill-rule:nonzero;stroke:none;stroke-width:1" />
+</svg>

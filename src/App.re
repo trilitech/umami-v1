@@ -131,6 +131,7 @@ module Dashboard = {
        | Settings => <SettingsView />
        | Logs => <LogsView />
        | Batch => <GlobalBatchView />
+       | Help => <HelpView />
        | NotFound =>
          <View>
            <Typography.Body1> I18n.error404->React.string </Typography.Body1>
