@@ -53,7 +53,8 @@
 
 @comeh (cc: @philippewang.info) Please approve this _configuration change_ on operations aspects
 
-/assign @sagotch @leoparis89 @comeh @SamREye <!-- comment-out if you're writting a draft -->
+<!-- comment next line if writing a draft -->
+/assign @sagotch @leoparis89 @comeh @SamREye 
 
 <!-- Quick actions for last approver : -->
 <!-- /unlabel ~"CAB::to-approve" -->
