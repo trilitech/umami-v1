@@ -1,8 +1,3 @@
-cache:
-  paths:
-    - node_modules/
-    - .yarn
-
 # .snap creation is handled in another job (linux-dist-snap)
 # See https://forum.gitlab.com/t/use-snapcraft-in-ci/37048/2
 linux-dist:
@@ -50,9 +45,13 @@ windows-dist:
     - npm install -g node-hid
   script:
     - '(Get-Content package.json) -replace "`"version`": `"(\d+.\d+.\d+)`"", "`"version`": `"`$1-${CI_PIPELINE_IID}`"" | Set-Content package.json'
+    - certutil -decode -f "${SECRET_NOMADIC_CERTIFICATE_pfx}" "${SECRET_NOMADIC_CERTIFICATE_pfx}.pfx"
+    - $env:CSC_LINK="${SECRET_NOMADIC_CERTIFICATE_pfx}.pfx"
+    - $env:CSC_KEY_PASSWORD="${SECRET_NOMADIC_CERTIFICATE_pfx_PASSWORD}"
     - yarn
     - yarn bsb:build
     - yarn electron:build
+    - Remove-Item -Path "${SECRET_NOMADIC_CERTIFICATE_pfx}.pfx" -Force
   artifacts:
     paths:
       - dist/*.exe

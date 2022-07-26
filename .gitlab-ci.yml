@@ -26,7 +26,6 @@ cache:
     - apt -y install build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev libusb-1.0.0-dev libudev-dev
     - yarn
 
-
 build-reason:
   extends: .before_script_template
   stage: build
@@ -39,7 +38,6 @@ test-coverage:
     - yarn test
   after_script:
     - bash <(curl -s https://codecov.io/bash)
-
 
 test:
   stage: test
@@ -80,7 +78,6 @@ include:
 #     expire_in: 180 days
 #     expose_as: code_quality
 #     paths: [gl-code_quality-report.json]
-
 
 sast:
   stage: test

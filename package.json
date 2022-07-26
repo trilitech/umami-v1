@@ -163,7 +163,9 @@
       "buildResources": "assets"
     },
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "sign": "./scripts/sign-win.js",
+      "signingHashAlgorithms": ["sha256"]
     }
   },
   "eslintConfig": {
