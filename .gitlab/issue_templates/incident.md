@@ -52,13 +52,13 @@
 
 <!-- Trigger gitlab todo tasks --> 
 
-@remyzorg (cc: tbd )    Please *review* this _emergency change_ on development aspects
+@sagotch @leoparis89    Please *review* this _emergency change_ on development aspects
 
 @comeh (cc: @philippewang.info) Please *review* this _emergency change_ on operations aspects
 
 @SamREye                   Please *review* this _emergency change_ on business aspects
 
-<!-- /assign @remyzorg @comeh @SamREye -->
+<!-- /assign @sagotch @leoparis89 @comeh @SamREye -->
 
 <!-- Quick actions for last reviewer : -->
 <!-- /unlabel ~"CAB::to-review" -->
