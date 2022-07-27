@@ -6,10 +6,5 @@ module.exports = {
   window: {
     require: require,
   },
-  remote: {
-    app: {
-      getPath: jest.fn(),
-    },
-  },
   dialog: jest.fn(),
 };

@@ -26,7 +26,7 @@
 %raw
 "
 var electron = require('electron');
-var { app, Menu, MenuItem } = electron.remote;
+var { app, Menu, MenuItem } = require('@electron/remote');
 var shell = electron.shell;
 var process = require('process');
 var OS = require('os');
