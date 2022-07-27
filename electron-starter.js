@@ -81,7 +81,9 @@ function createWindow() {
       // When false, it will disable the same-origin policy (usually using
       // testing websites by people), and set allowRunningInsecureContent to
       // true if this options has not been set by user.
-      webSecurity: false
+      webSecurity: false,
+      allowRunningInsecureContent: false
+
     }
   })
 
