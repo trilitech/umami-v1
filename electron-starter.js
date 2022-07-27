@@ -155,7 +155,6 @@ function createWindow() {
 }
 
 app.commandLine.appendSwitch('disable-features', 'OutOfBlinkCors');
-app.allowRendererProcessReuse = false;
 
 if (!app.isDefaultProtocolClient('umami')) {
   // Define custom protocol handler. Deep linking works on packaged versions of the application!
