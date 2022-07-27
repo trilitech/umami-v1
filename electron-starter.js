@@ -72,6 +72,8 @@ function createWindow() {
     }
   })
 
+  require('@electron/remote/main').enable(mainWindow.webContents)
+
   // and load the index.html of the app.
   let indexPath
 
