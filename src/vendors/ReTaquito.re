@@ -211,3 +211,10 @@ module Toolkit = {
       "setDelegate";
   };
 };
+
+type dataBytes = {
+  bytes: string
+};
+
+[@bs.module "@taquito/michel-codec"]
+external unpackDataBytes: dataBytes => Js.Json.t = "unpackDataBytes"; 
