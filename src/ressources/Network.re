@@ -159,7 +159,7 @@ let getDisplayedName =
   | `Florencenet => "Florencenet"
   | `Edo2net => "Edo2net"
   | `Hangzhounet => "Hangzhounet"
-  | `Ithacanet => "Ithacanet"
+  | `Ithacanet => "Ghostnet"
   | `Jakartanet => "Jakartanet"
   | `Custom(s) => s;
 
@@ -170,7 +170,7 @@ let externalExplorer =
   | `Florencenet => "https://florencenet.tzkt.io/"->Ok
   | `Granadanet => "https://granadanet.tzkt.io/"->Ok
   | `Hangzhounet => "https://hangzhou2net.tzkt.io/"->Ok
-  | `Ithacanet => "https://ithacanet.tzkt.io/"->Ok
+  | `Ithacanet => "https://ghostnet.tzkt.io/"->Ok
   | `Jakartanet => "https://jakartanet.tzkt.io/"->Ok
   | `Custom(_) as net => Error(UnknownChainId(getChainId(net)));
 
@@ -305,8 +305,8 @@ let mainnet =
 
 let ithacanet =
   mk(
-    ~explorer="https://ithacanet.umamiwallet.com",
-    ~endpoint="https://ithacanet.ecadinfra.com/",
+    ~explorer="https://ghostnet.umamiwallet.com",
+    ~endpoint="https://ghostnet.ecadinfra.com/",
     `Ithacanet,
   );
 
@@ -335,8 +335,8 @@ let getNetworks = (c: nativeChains) => {
       withEP("https://rpc.tzbeta.net/"),
     ]
   | `Ithacanet => [
-      withEP("https://ithacanet.ecadinfra.com/"),
-      withEP("https://ithacanet.smartpy.io/"),
+      withEP("https://ghostnet.ecadinfra.com/"),
+      withEP("https://ghostnet.smartpy.io/"),
     ]
   | `Jakartanet => [
       withEP("https://jakartanet.ecadinfra.com/"),
