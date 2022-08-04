@@ -49,6 +49,15 @@ module Payload = {
       (~signPayloadRequest: ReBeacon.Message.Request.signPayloadRequest) => {
     let theme = ThemeContext.useTheme();
     let addToast = LogsContext.useToast();
+    let payload =
+      switch (signPayloadRequest.signingType) {
+      | `micheline =>
+        Js.Json.stringifyWithSpace(
+          ReTaquito.unpackDataBytes({bytes: signPayloadRequest.payload}),
+          4,
+        )
+      | _ => signPayloadRequest.payload
+      };
     <>
       <Typography.Overline2
         colorStyle=`mediumEmphasis style=OperationSummaryView.styles##title>
@@ -62,16 +71,14 @@ module Payload = {
               style(~borderColor=theme.colors.borderDisabled, ()),
             |])
           )>
-          <Typography.Address>
-            signPayloadRequest.payload->React.string
-          </Typography.Address>
+          <Typography.Address> payload->React.string </Typography.Address>
         </View>
         <View style=styles##clipboard>
           <ClipboardButton
             copied=I18n.Log.beacon_sign_payload
             tooltipKey="beacon-sign-payload"
             addToast
-            data={signPayloadRequest.payload}
+            data=payload
             size=40.
           />
         </View>
