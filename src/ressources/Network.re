@@ -332,7 +332,7 @@ let getNetworks = (c: nativeChains) => {
       withEP("https://api.tez.ie/rpc/mainnet/"),
       withEP("https://teznode.letzbake.com"),
       withEP("https://mainnet.tezrpc.me/"),
-      withEP("https://rpc.tzbeta.net/"),
+      withEP("https://rpc.tzbeta.net"),
     ]
   | `Ithacanet => [
       withEP("https://ghostnet.ecadinfra.com/"),
@@ -340,7 +340,7 @@ let getNetworks = (c: nativeChains) => {
     ]
   | `Jakartanet => [
       withEP("https://jakartanet.ecadinfra.com/"),
-      withEP("https://rpczero.tzbeta.net/"),
+      withEP("https://rpczero.tzbeta.net"),
       withEP("https://jakartanet.tezos.marigold.dev/"),
     ]
   };
