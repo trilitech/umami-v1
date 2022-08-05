@@ -104,12 +104,12 @@ let useNextRequestState = (client, peersRequestState) => {
 
   let (nextDeeplink, doneDeeplinking) = IPC.useNextDeeplinkState();
 
-  ReactUtils.useAsyncEffect1(
+  ReactUtils.useAsyncEffect2(
     () => {
       client
       ->Promise.fromOption(~error=ClientNotConnected)
       ->Promise.flatMapOk(client =>
-          ReBeacon.WalletClient.init(client)->Promise.mapOk(_ => client)
+          client->ReBeacon.WalletClient.init->Promise.mapOk(_ => client)
         )
       ->Promise.flatMapOk(client => {
           client
@@ -120,7 +120,7 @@ let useNextRequestState = (client, peersRequestState) => {
           ->Promise.mapOk(() => setIsConnected(_ => true))
         })
     }, // what is the expected behavior when beacon fails to connect?;
-    [|client|],
+    (client, yield),
   );
 
   React.useEffect2(

@@ -123,6 +123,7 @@ let make = (~account) => {
 
   let (request, visibleModal, openModal, closeModal) =
     useBeaconRequestModalAction();
+  let (isReady, ready) = React.useState(() => true);
   open ReBeacon.Message.Request;
 
   let requestData =
@@ -146,7 +147,8 @@ let make = (~account) => {
   let (nextRequest, doneResponding) =
     StoreContext.Beacon.useNextRequestState();
 
-  let close = () => {
+  let closeModal = () => {
+    ready(_ => false);
     closeModal();
     doneResponding();
   };
@@ -156,53 +158,57 @@ let make = (~account) => {
     openModal(Error(msg));
   };
 
-  React.useEffect1(
+  React.useEffect3(
     () => {
-      switch (nextRequest()) {
-      | Some(request) =>
-        let targetSettedNetwork =
-          request
-          ->ReBeacon.Message.Request.getNetwork
-          ->Option.mapWithDefault(true, network =>
-              settingsRef.current->checkOperationRequestTargetNetwork(network)
-            );
-
-        if (targetSettedNetwork) {
-          switch (request) {
-          | PermissionRequest(_) => openModal(Ok(request))
-          | SignPayloadRequest(_) => openModal(Ok(request))
-          | OperationRequest(r) =>
-            if (r->checkOnlyTransaction
-                || r->checkOnlyOneDelegation
-                || r->checkOnlyOneOrigination) {
-              openModal(request->Ok);
-            } else {
-              setError(
-                client,
-                r.id,
-                `TRANSACTION_INVALID_ERROR,
-                BeaconApiRequest.OperationNotSupported,
+      if (isReady) {
+        let r = nextRequest();
+        switch (r) {
+        | Some(request) =>
+          let targetSettedNetwork =
+            request
+            ->ReBeacon.Message.Request.getNetwork
+            ->Option.mapWithDefault(true, network =>
+                settingsRef.current
+                ->checkOperationRequestTargetNetwork(network)
               );
-            }
-          | _ => ()
+
+          if (targetSettedNetwork) {
+            switch (request) {
+            | PermissionRequest(_) => openModal(Ok(request))
+            | SignPayloadRequest(_) => openModal(Ok(request))
+            | OperationRequest(r) =>
+              if (r->checkOnlyTransaction
+                  || r->checkOnlyOneDelegation
+                  || r->checkOnlyOneOrigination) {
+                openModal(request->Ok);
+              } else {
+                setError(
+                  client,
+                  r.id,
+                  `TRANSACTION_INVALID_ERROR,
+                  BeaconApiRequest.OperationNotSupported,
+                );
+              }
+            | _ => ()
+            };
+          } else {
+            setError(
+              client,
+              request->ReBeacon.Message.Request.getId,
+              `NETWORK_NOT_SUPPORTED,
+              BeaconApiRequest.NetworkMismatch,
+            );
           };
-        } else {
-          setError(
-            client,
-            request->ReBeacon.Message.Request.getId,
-            `NETWORK_NOT_SUPPORTED,
-            BeaconApiRequest.NetworkMismatch,
-          );
+        | None => ()
         };
-      | None => ()
       };
       None;
     },
-    [|nextRequest|],
+    (isReady, nextRequest, openModal),
   );
 
   <>
-    <ModalAction visible=visibleModal onRequestClose=close>
+    <ModalAction visible=visibleModal onRequestClose={() => ready(_ => true)}>
       {requestData->ReactUtils.mapOpt(
          fun
          | Ok(Other(PermissionRequest(r))) =>
