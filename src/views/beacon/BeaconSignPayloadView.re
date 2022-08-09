@@ -52,10 +52,14 @@ module Payload = {
     let payload =
       switch (signPayloadRequest.signingType) {
       | `micheline =>
-        Js.Json.stringifyWithSpace(
-          ReTaquito.unpackDataBytes({bytes: signPayloadRequest.payload}),
-          4,
-        )
+        try(
+          Js.Json.stringifyWithSpace(
+            ReTaquito.unpackDataBytes({bytes: signPayloadRequest.payload}),
+            4,
+          )
+        ) {
+        | _ => signPayloadRequest.payload
+        }
       | _ => signPayloadRequest.payload
       };
     <>
