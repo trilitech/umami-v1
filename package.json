@@ -1,7 +1,7 @@
 {
   "name": "umami",
   "productName": "umami",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "author": {
     "name": "Nomadic Labs",
     "email": "umami@nomadic-labs.com"
@@ -161,6 +161,11 @@
     ],
     "directories": {
       "buildResources": "assets"
+    },
+    "win": {
+      "target": "nsis",
+      "sign": "./scripts/sign-win.js",
+      "signingHashAlgorithms": ["sha256"]
     }
   },
   "eslintConfig": {
