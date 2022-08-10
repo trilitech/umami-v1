@@ -41,7 +41,7 @@ type t = {
 let parse = s => {
   let parseNetwork: [> network] => option(network) =
     fun
-    | (`Mainnet | `Ithacanet | `Custom(_)) as v => Some(v)
+    | (`Mainnet | `Ghostnet | `Custom(_)) as v => Some(v)
     | _ => None;
   let c = s->parse;
   let network = c.network->Option.flatMap(parseNetwork);
@@ -178,7 +178,7 @@ module Legacy = {
       (json |> optional(field("network", networkVariantLegacyDecoder)))
       ->Option.map(
           fun
-          | `Custom((c: Network.chainId)) => `Custom((c :> string))
+          | `Custom(c: Network.chainId) => `Custom((c :> string))
           | #Network.supportedChains as n => n,
         )
       ->Option.map(removeNonNativeNetwork);
@@ -229,7 +229,7 @@ module Legacy = {
     let legacyNativeChainFromString =
       fun
       | "Mainnet" => `Mainnet
-      | "Ithacanet" => `Ithacanet
+      | "Ghostnet" => `Ghostnet
       | n => raise(Json.Decode.DecodeError("Unknown network " ++ n));
 
     let legacyNetworkDecoder = json =>
