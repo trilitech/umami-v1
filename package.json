@@ -99,11 +99,16 @@
       ]
     },
     "mac": {
-      "target": "default",
       "hardenedRuntime": true,
       "gatekeeperAssess": false,
       "entitlements": "public/entitlements.mac.plist",
-      "category": "public.app-category.Reference"
+      "category": "public.app-category.Reference",
+      "target": [
+        {
+          "target": "default",
+          "arch": [ "x64" ]
+        }
+      ]
     },
     "publish": [
       {
