@@ -7,7 +7,7 @@ linux-dist:
     - apt update
     - apt -y install build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev libusb-1.0.0-dev libudev-dev
   script:
-    - '[ ! -z "$CI_COMMIT_TAG" ] || sed -i "s/\"version\": \"\([[:digit:]]\+\.[[:digit:]]\+\.[[:digit:]]\+\)\"/\"version\": \"\1-${CI_PIPELINE_IID}\"/" package.json'
+    - '[ ! -z "$CI_COMMIT_TAG" ] || (sed -i "s/\"version\": \"\([[:digit:]]\+\.[[:digit:]]\+\.[[:digit:]]\+\)\"/\"version\": \"\1-${CI_PIPELINE_IID}\"/" package.json)'
     - yarn
     - CI=false yarn electron:build
     - CI=false yarn electron:deb
@@ -84,12 +84,12 @@ macos-dist:
     - npm install -g node-gyp@8.4.1 # 9.0.0 gives an error (search for `openssl_fips != ""` error)
     - npm install -g node-hid
   script:
-    - '[ ! -z "$CI_COMMIT_TAG" ] || sed -i "" "s/\"version\": \"\([[:digit:]]\+\.[[:digit:]]\+\.[[:digit:]]\+\)\"/\"version\": \"\1-${CI_PIPELINE_IID}\"/" package.json'
-    - '[ "${CI_COMMIT_REF_PROTECTED}" != "true" ] || base64 --decode "${SECRET_UMAMI_Developer_ID_Application_p12}" > "${SECRET_UMAMI_Developer_ID_Application_p12}.p12"'
-    - '[ "${CI_COMMIT_REF_PROTECTED}" != "true" ] || export CSC_LINK="${SECRET_UMAMI_Developer_ID_Application_p12}.p12"'
-    - '[ "${CI_COMMIT_REF_PROTECTED}" != "true" ] || export CSC_KEY_PASSWORD="${CSC_KEY_PASSWORD}"'
-    - '[ "${CI_COMMIT_REF_PROTECTED}" != "true" ] || sed -i "" "s/<your apple ID>/${SECRET_APPLEID}/g" ./scripts/notarize.js'
-    - '[ "${CI_COMMIT_REF_PROTECTED}" != "true" ] || sed -i "" "s/<your app-specific password>/${SECRET_APPLEIDPASSWORD}/g" ./scripts/notarize.js'
+    - '[ ! -z "$CI_COMMIT_TAG" ] || (sed -i "" "s/\"version\": \"\([[:digit:]]\+\.[[:digit:]]\+\.[[:digit:]]\+\)\"/\"version\": \"\1-${CI_PIPELINE_IID}\"/" package.json)'
+    - '[ "${CI_COMMIT_REF_PROTECTED}" != "true" ] || (base64 --decode "${SECRET_UMAMI_Developer_ID_Application_p12}" > "${SECRET_UMAMI_Developer_ID_Application_p12}.p12")'
+    - '[ "${CI_COMMIT_REF_PROTECTED}" != "true" ] || (export CSC_LINK="${SECRET_UMAMI_Developer_ID_Application_p12}.p12")'
+    - '[ "${CI_COMMIT_REF_PROTECTED}" != "true" ] || (export CSC_KEY_PASSWORD="${CSC_KEY_PASSWORD}")'
+    - '[ "${CI_COMMIT_REF_PROTECTED}" != "true" ] || (sed -i "" "s/<your apple ID>/${SECRET_APPLEID}/g" ./scripts/notarize.js)'
+    - '[ "${CI_COMMIT_REF_PROTECTED}" != "true" ] || (sed -i "" "s/<your app-specific password>/${SECRET_APPLEIDPASSWORD}/g" ./scripts/notarize.js)'
     - yarn
     - yarn bsb:build
     - yarn electron:build
@@ -123,7 +123,7 @@ linux-dist-snap:
     - npm -v
     - corepack enable
   script:
-    - '[ ! -z "$CI_COMMIT_TAG" ] || sed -i "s/\"version\": \"\([[:digit:]]\+\.[[:digit:]]\+\.[[:digit:]]\+\)\"/\"version\": \"\1-${CI_PIPELINE_IID}\"/" package.json'
+    - '[ ! -z "$CI_COMMIT_TAG" ] || (sed -i "s/\"version\": \"\([[:digit:]]\+\.[[:digit:]]\+\.[[:digit:]]\+\)\"/\"version\": \"\1-${CI_PIPELINE_IID}\"/" package.json)'
     # Do not use lxd (dial unix /run/snapd.socket: connect: no such file or directory)
     - sed -i "s/'--use-lxd'//g" scripts/snap.js
     - sed -i "s/ --use-lxd//g" package.json
