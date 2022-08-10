@@ -72,8 +72,6 @@ function createWindow() {
     }
   })
 
-  require('@electron/remote/main').initialize()
-
   // and load the index.html of the app.
   let indexPath
 
@@ -238,6 +236,11 @@ let setupAutoUpdate = async () => {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on('ready', () => {
+
+  // Do not include this in createWindow() function
+  // (issue 714: macOS @electron/remote initialized multiple times)
+  require('@electron/remote/main').initialize();
+
   setAppMenu();
   createWindow();
   setupAutoUpdate();
