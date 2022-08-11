@@ -42,10 +42,11 @@
 <!-- METADATA - end -->
 
 <!-- Other useful shortcuts -->
-<!-- ( ping CAB members : @picdc @remyzorg @comeh @philippewang.info @SamREye ) -->
+<!-- ( ping CAB members : @sagotch @leoparis89 @comeh @philippewang.info @SamREye ) -->
 <!-- Trigger gitlab todo tasks : mention @user at the start of the line --> 
-<!-- @remyzorg (cc: TBD )    Please review this _emergency change_ on development aspects -->
+<!-- @sagotch @leoparis89    Please review this _emergency change_ on development aspects -->
 <!-- @comeh (cc: @philippewang.info) Please review this _emergency change_ on operations aspects  -->
 <!-- @SamREye                   Please review this _emergency change_ on business aspects    -->
-<!-- /assign @premyzorgicdc @comeh @SamREye -->
+<!-- comment next line if writing a draft -->
+/assign @sagotch @leoparis89 @comeh @SamREye 
 <!-- /unlabel ~"CAB::to-review" -->

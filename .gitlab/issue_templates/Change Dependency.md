@@ -1,10 +1,6 @@
 [[_TOC_]]
-## Scheduled change
-<!-- Scheduled change, to be approved by the CAB before applying, and performed on the indicated due date. -->
-<!-- A scheduled change is usually set on external dependencies. -->
-
-<!-- Set Due Date : /due <in 2 days | this Friday | December 31st> -->
-/due 
+## Dependency change
+<!-- Dependency change, to be approved by the CAB before applying. -->
 
 <!-- /confidential -->
 <!-- If confidential, explain why -->
@@ -28,6 +24,7 @@
 
 <!-- Include step by step description -->
 
+
 ## Rollback plan
 <!-- Describe how to rollback the change in case the expected change is not working -->
 
@@ -42,20 +39,24 @@
 <!--Low : (anything else e.g., trivial, minor improvements) -->
 <!--  /label ~"Priority::3-Low" -->
 
-<!-- Reviewers : check the box [x], you may also add you @user handle  -->
-## Approvals checklist(all required) 
+## Impact checklist
+- [ ] Documentation has been updated
+- [ ] Monitoring has been put in place
+- [ ] Alerting has been put in place
+
+## Approvals checklist (all required) 
 - [ ] Approval from Development
 - [ ] Approval from Operations
-- [ ] Approval from Business 
-<!-- tick the box [x], you may also add your @user handle at the end of the line -->
+- [ ] Approval from Business
+<!-- tick the corresponding checkbox [x], you may also add your @user handle at the end of the line -->
 
 <!-- Trigger gitlab todo tasks --> 
 
-@sagotch @leoparis89    Please *approve* this _scheduled change_ on development aspects
+@sagotch @leoparis89    Please *approve* this _dependency change_ on development aspects
 
-@comeh (cc: @philippewang.info) Please *approve* this _scheduled change_ on operations  aspects
+@comeh (cc: @philippewang.info) Please *approve* this _dependency change_ on operations  aspects
 
-@SamREye                   Please *approve* this _scheduled change_ on business    aspects
+@SamREye                   Please *approve* this _dependency change_ on business    aspects
 
 <!-- comment next line if writing a draft -->
 /assign @sagotch @leoparis89 @comeh @SamREye
@@ -64,7 +65,6 @@
 <!-- /unlabel ~"CAB::to-approve" -->
 <!-- /label ~"CAB::to-perform"   -->
 
-/label ~"Change::Scheduled" <!-- Scheduled change, to be approved by the CAB before due date. -->
+/label ~"Change::Dependency" <!-- Regular change, to be approved by the CAB before applying. -->
 /label ~Change ~"CAB::to-approve" <!-- labels for gitlab CAB Change issues management -->
-
 <!-- METADATA - end -->
