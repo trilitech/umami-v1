@@ -272,7 +272,11 @@ module Toast = {
       };
 
     let jsx_of_btn = (btn: Logs.btn) => {
-      <Buttons.FormPrimary text={btn.text} onPress={_ => btn.onPress()} />;
+      <ButtonAction
+        text={btn.text}
+        onPress={_ => btn.onPress()}
+        primary=true
+      />;
     };
 
     let buttons =
