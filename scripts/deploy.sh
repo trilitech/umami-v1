@@ -15,12 +15,19 @@ PRIVATE_TOKEN=$3
 
 CURL_W_HEADER="curl --silent  --header \"PRIVATE-TOKEN: ${PRIVATE_TOKEN}\""
 GITLAB_API="https://gitlab.com/api/v4"
-PROJECT_URL="${GITLAB_API}/projects/nomadic-labs%2Fumami-wallet%2Fumami"
+API_PROJECT_URL="${GITLAB_API}/projects/nomadic-labs%2Fumami-wallet%2Fumami"
 
-PIPELINE_ID=`curl --silent --header "PRIVATE-TOKEN: ${PRIVATE_TOKEN}" "${PROJECT_URL}/pipelines" \
-		  | jq "map(select(.ref == \"${REF}\") | .id)[0]"`
+PIPELINES_PAGE=1
+function get_pipeline_id () {
+    local result=`curl --silent --header "PRIVATE-TOKEN: ${PRIVATE_TOKEN}" "${API_PROJECT_URL}/pipelines?page=${PIPELINES_PAGE}" \
+    	  	       | jq "map(select(.ref == \"${REF}\") | .id)[0]"`;
+    PIPELINES_PAGE=$((PIPELINES_PAGE+1));
+    [ 'null' == "${result}" ] && echo "$(get_pipeline_id)" || echo "${result}";
+}
 
-DIST_JOBS=`curl --silent --header "PRIVATE-TOKEN: ${PRIVATE_TOKEN}" "${PROJECT_URL}/pipelines/${PIPELINE_ID}/jobs" \
+PIPELINE_ID="$(get_pipeline_id)"
+
+DIST_JOBS=`curl --silent --header "PRIVATE-TOKEN: ${PRIVATE_TOKEN}" "${API_PROJECT_URL}/pipelines/${PIPELINE_ID}/jobs" \
 		| jq  'map(select(.stage == "dist"))'`
 
 # get_job <NAME>
@@ -32,7 +39,7 @@ JOB_MACOS="$(get_job macos-dist)"
 JOB_WINDOWS="$(get_job windows-dist)"
 
 # get_artifacts <JOB_ID> <OUTPUT.ZIP>
-get_artifacts () { curl --silent --header "PRIVATE-TOKEN: ${PRIVATE_TOKEN}" --location --output "$2" "${PROJECT_URL}/jobs/$1/artifacts"; }
+get_artifacts () { curl --silent --header "PRIVATE-TOKEN: ${PRIVATE_TOKEN}" --location --output "$2" "${API_PROJECT_URL}/jobs/$1/artifacts"; }
 
 ZIP_LINUX="linux.zip"
 ZIP_MACOS="macos.zip"
@@ -73,29 +80,39 @@ PROJECT_PATH="nomadic-labs%2Fumami-wallet%2Fumami-package-registry-test" # FIXME
 PROJECT_NAME="umami-package-registry-test"                               # FIXME: umami-package-registry-test -> umami
 PACKAGE_ID="8541436"                                                     # FIXME: 8541436 -> 5720836
 
-PACKAGE_URL="${GITLAB_API}/projects/${PROJECT_PATH}"
+API_PACKAGE_URL="${GITLAB_API}/projects/${PROJECT_PATH}"
 
-PACKAGE_FILES=`curl --silent --header "PRIVATE-TOKEN: ${PRIVATE_TOKEN}" "${PACKAGE_URL}/packages/${PACKAGE_ID}/package_files/"`
+PACKAGE_FILES=`curl --silent --header "PRIVATE-TOKEN: ${PRIVATE_TOKEN}" "${API_PACKAGE_URL}/packages/${PACKAGE_ID}/package_files/"`
 
 function get_old_file_id () {
      echo "${PACKAGE_FILES}" | jq "map(select(.file_name == \"${1}\").id)[0]"
 }
 
 function delete () {
-    curl --silent --header "PRIVATE-TOKEN: ${PRIVATE_TOKEN}" --request DELETE "${PACKAGE_URL}/packages/${PACKAGE_ID}/package_files/${1}"
+    curl --silent --header "PRIVATE-TOKEN: ${PRIVATE_TOKEN}" --request DELETE "${API_PACKAGE_URL}/packages/${PACKAGE_ID}/package_files/${1}"
 }
 
 # upload <FILENAME>
 function upload () {
     local OLD="$(get_old_file_id ${1})"
-    curl --silent --header "PRIVATE-TOKEN: ${PRIVATE_TOKEN}" --upload-file "${UPLOADS_DIR}/${1}" "${PACKAGE_URL}/packages/generic/${PROJECT_NAME}/update/${1}?status=default&select=package_file" | jq . ;
+    declare -n result=$2
+    result=`curl --silent --header "PRIVATE-TOKEN: ${PRIVATE_TOKEN}" --upload-file "${UPLOADS_DIR}/${1}" "${API_PACKAGE_URL}/packages/generic/${PROJECT_NAME}/update/${1}?status=default&select=package_file" | jq .id` ;
     [ 'null' == "${OLD}" ] || (echo "Deleting old version of ${1} (${OLD})" && delete "${OLD}")
 }
 
-upload "${FILE_LINUX_RPM}"
-upload "${FILE_LINUX_DEB}"
-upload "${FILE_MACOS_LATEST}"
-upload "${FILE_MACOS_DMG}"
-upload "${FILE_MACOS_ZIP}"
-upload "${FILE_WINDOWS_LATEST}"
-upload "${FILE_WINDOWS_EXE}"
+upload "${FILE_LINUX_RPM}" NEW_LINUX_RPM_ID
+upload "${FILE_LINUX_DEB}" NEW_LINUX_DEB
+upload "${FILE_MACOS_LATEST}" NEW_MACOS_LATEST
+upload "${FILE_MACOS_DMG}" NEW_MACOS_DMG
+upload "${FILE_MACOS_ZIP}" NEW_MACOS_ZIP
+upload "${FILE_WINDOWS_LATEST}" NEW_WINDOWS_LATEST
+upload "${FILE_WINDOWS_EXE}" NEW_WINDOWS_EXE
+
+echo '## Binaries'
+echo ''
+echo "- Windows: [exe](https://gitlab.com/nomadic-labs/umami-wallet/${PROJECT_NAME}/-/package_files/${NEW_WINDOWS_EXE}/download)"
+echo "- Mac: [dmg](https://gitlab.com/nomadic-labs/umami-wallet/${PROJECT_NAME}/-/package_files/${NEW_MAC_DMG}/download)"
+echo "- Linux: "
+echo '  - on [snap](https://snapcraft.io/umami): `snap install umami` or `snap refresh umami`.'
+echo "  - [deb](https://gitlab.com/nomadic-labs/umami-wallet/${PROJECT_NAME}/-/package_files/${NEW_LINUX_DEB}/download)"
+echo "  - [rpm](https://gitlab.com/nomadic-labs/umami-wallet/${PROJECT_NAME}/-/package_files/${NEW_LINUX_RPM}/download)"
