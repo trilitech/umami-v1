@@ -15,11 +15,12 @@ PRIVATE_TOKEN=$3
 
 CURL_W_HEADER="curl --silent  --header \"PRIVATE-TOKEN: ${PRIVATE_TOKEN}\""
 GITLAB_API="https://gitlab.com/api/v4"
+PROJECT_URL="${GITLAB_API}/projects/nomadic-labs%2Fumami-wallet%2Fumami"
 
-PIPELINE_ID=`curl --silent --header "PRIVATE-TOKEN: ${PRIVATE_TOKEN}" "${GITLAB_API}/projects/nomadic-labs%2Fumami-wallet%2Fumami/pipelines" \
+PIPELINE_ID=`curl --silent --header "PRIVATE-TOKEN: ${PRIVATE_TOKEN}" "${PROJECT_URL}/pipelines" \
 		  | jq "map(select(.ref == \"${REF}\") | .id)[0]"`
 
-DIST_JOBS=`curl --silent --header "PRIVATE-TOKEN: ${PRIVATE_TOKEN}" "${GITLAB_API}/projects/nomadic-labs%2Fumami-wallet%2Fumami/pipelines/${PIPELINE_ID}/jobs" \
+DIST_JOBS=`curl --silent --header "PRIVATE-TOKEN: ${PRIVATE_TOKEN}" "${PROJECT_URL}/pipelines/${PIPELINE_ID}/jobs" \
 		| jq  'map(select(.stage == "dist"))'`
 
 # get_job <NAME>
@@ -31,7 +32,7 @@ JOB_MACOS="$(get_job macos-dist)"
 JOB_WINDOWS="$(get_job windows-dist)"
 
 # get_artifacts <JOB_ID> <OUTPUT.ZIP>
-get_artifacts () { curl --silent --header "PRIVATE-TOKEN: ${PRIVATE_TOKEN}" --location --output "$2" "${GITLAB_API}/projects/nomadic-labs%2Fumami-wallet%2Fumami/jobs/$1/artifacts"; }
+get_artifacts () { curl --silent --header "PRIVATE-TOKEN: ${PRIVATE_TOKEN}" --location --output "$2" "${PROJECT_URL}/jobs/$1/artifacts"; }
 
 ZIP_LINUX="linux.zip"
 ZIP_MACOS="macos.zip"
@@ -72,20 +73,22 @@ PROJECT_PATH="nomadic-labs%2Fumami-wallet%2Fumami-package-registry-test" # FIXME
 PROJECT_NAME="umami-package-registry-test"                               # FIXME: umami-package-registry-test -> umami
 PACKAGE_ID="8541436"                                                     # FIXME: 8541436 -> 5720836
 
-PACKAGE_FILES=`curl --silent --header "PRIVATE-TOKEN: ${PRIVATE_TOKEN}" "${GITLAB_API}/projects/${PROJECT_PATH}/packages/${PACKAGE_ID}/package_files/"`
+PACKAGE_URL="${GITLAB_API}/projects/${PROJECT_PATH}"
+
+PACKAGE_FILES=`curl --silent --header "PRIVATE-TOKEN: ${PRIVATE_TOKEN}" "${PACKAGE_URL}/packages/${PACKAGE_ID}/package_files/"`
 
 function get_old_file_id () {
      echo "${PACKAGE_FILES}" | jq "map(select(.file_name == \"${1}\").id)[0]"
 }
 
 function delete () {
-    curl --silent --header "PRIVATE-TOKEN: ${PRIVATE_TOKEN}" --request DELETE "${GITLAB_API}/projects/${PROJECT_PATH}/packages/${PACKAGE_ID}/package_files/${1}"
+    curl --silent --header "PRIVATE-TOKEN: ${PRIVATE_TOKEN}" --request DELETE "${PACKAGE_URL}/packages/${PACKAGE_ID}/package_files/${1}"
 }
 
 # upload <FILENAME>
 function upload () {
     local OLD="$(get_old_file_id ${1})"
-    curl --silent --header "PRIVATE-TOKEN: ${PRIVATE_TOKEN}" --upload-file "${UPLOADS_DIR}/${1}" "${GITLAB_API}/projects/${PROJECT_PATH}/packages/generic/${PROJECT_NAME}/update/${1}?status=default&select=package_file" | jq . ;
+    curl --silent --header "PRIVATE-TOKEN: ${PRIVATE_TOKEN}" --upload-file "${UPLOADS_DIR}/${1}" "${PACKAGE_URL}/packages/generic/${PROJECT_NAME}/update/${1}?status=default&select=package_file" | jq . ;
     [ 'null' == "${OLD}" ] || (echo "Deleting old version of ${1} (${OLD})" && delete "${OLD}")
 }
 
