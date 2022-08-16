@@ -31,15 +31,14 @@ DIST_JOBS=`curl --silent --header "PRIVATE-TOKEN: ${PRIVATE_TOKEN}" "${API_PROJE
 		| jq  'map(select(.stage == "dist"))'`
 
 # get_job <NAME>
-get_job () { echo ${DIST_JOBS} \
-		 | jq "map(select(.name == \"$1\"))[0].id"; }
+function get_job () { echo ${DIST_JOBS} | jq "map(select(.name == \"$1\"))[0].id"; }
 
 JOB_LINUX="$(get_job linux-dist)"
 JOB_MACOS="$(get_job macos-dist)"
 JOB_WINDOWS="$(get_job windows-dist)"
 
 # get_artifacts <JOB_ID> <OUTPUT.ZIP>
-get_artifacts () { curl --silent --header "PRIVATE-TOKEN: ${PRIVATE_TOKEN}" --location --output "$2" "${API_PROJECT_URL}/jobs/$1/artifacts"; }
+function get_artifacts () { curl --silent --header "PRIVATE-TOKEN: ${PRIVATE_TOKEN}" --location --output "$2" "${API_PROJECT_URL}/jobs/$1/artifacts"; }
 
 ZIP_LINUX="linux.zip"
 ZIP_MACOS="macos.zip"
@@ -63,7 +62,7 @@ FILE_WINDOWS_EXE_ORIGIN="umami Setup ${VERSION}.exe"
 FILE_WINDOWS_EXE="umami.Setup.${VERSION}.exe"
 
 # extract <SRC_ZIP> <FILENAME> [DST_FILENAME]
-extract () {
+function extract () {
     local DST=$([ -z "$3" ] && echo "$2" || echo "$3");
     unzip -p "$1" "dist/$2" > "${UPLOADS_DIR}/$DST";
 }
