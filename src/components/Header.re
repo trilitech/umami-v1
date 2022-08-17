@@ -63,137 +63,31 @@ let styles =
     })
   );
 
-module Notice = {
-  let styles =
-    Style.(
-      StyleSheet.create({
-        "notice":
-          style(
-            ~flexDirection=`row,
-            ~height=60.->dp,
-            ~alignItems=`center,
-            ~paddingHorizontal=38.->dp,
-            ~fontSize=14.,
-            (),
-          ),
-        "button":
-          style(
-            ~overflow=`hidden,
-            ~borderRadius=4.,
-            ~borderStyle=`solid,
-            ~borderWidth=1.,
-            (),
-          ),
-        "pressable":
-          style(
-            ~height=26.->dp,
-            ~minWidth=69.->dp,
-            ~paddingHorizontal=8.->dp,
-            ~justifyContent=`center,
-            ~alignItems=`center,
-            (),
-          ),
-      })
-    );
-
-  module Button = {
-    [@react.component]
-    let make = (~style as styleArg=?, ~text, ~onPress) => {
-      let theme = ThemeContext.useTheme();
-      <View
-        style=Style.(
-          arrayOption([|
-            style(~borderColor=theme.colors.borderPrimary, ())->Some,
-            styles##button->Some,
-            styleArg,
-          |])
-        )>
-        <ThemedPressable.Primary
-          style=Style.(
-            array([|
-              style(~color=theme.colors.textPrimary, ()),
-              styles##pressable,
-            |])
-          )
-          onPress
-          accessibilityRole=`button>
-          <Typography.ButtonPrimary
-            style=Style.(style(~color=theme.colors.textPrimary, ()))>
-            text->React.string
-          </Typography.ButtonPrimary>
-        </ThemedPressable.Primary>
-      </View>;
-    };
-  };
-
+module NoticesView = {
   [@react.component]
-  let make = (~style as styleArg=?, ~children, ~text) => {
-    let theme = ThemeContext.useTheme();
-
-    <View
-      style=Style.(
-        arrayOption([|
-          style(~backgroundColor=theme.colors.textPrimary, ())->Some,
-          styleArg,
-        |])
-      )>
-      <View
-        style=Style.(
-          array([|
-            style(~backgroundColor=theme.colors.backgroundMediumEmphasis, ()),
-            styles##notice,
-          |])
-        )>
-        <Typography.Notice
-          style=Style.(
-            style(~color=theme.colors.textPrimary, ~paddingRight=8.->dp, ())
-          )>
-          text->React.string
-        </Typography.Notice>
-        children
-      </View>
-    </View>;
-  };
-};
-
-module Notices = {
-  [@react.component]
-  let make = () => {
-    let apiVersion = StoreContext.useApiVersion();
-    let retryNetwork = ConfigContext.useRetryNetwork();
-
-    let displayUpdateNotice =
-      apiVersion
-      ->Option.map(apiVersion =>
-          !Network.checkInBound(apiVersion.Network.api)
-        )
-      ->Option.getWithDefault(false);
-
-    let networkOffline = ConfigContext.useNetworkOffline();
-
-    if (displayUpdateNotice) {
-      let onPress = _ =>
-        System.openExternal(
-          "https://gitlab.com/nomadic-labs/umami-wallet/umami/-/releases",
-        );
-      <Notice text=I18n.upgrade_notice>
-        <Notice.Button onPress text=I18n.Btn.upgrade />
-      </Notice>;
-    } else if (networkOffline) {
-      <Notice text=I18n.Errors.network_unreachable>
-        <Notice.Button
-          style=styles##noticeSpace
-          onPress={_ => Routes.push(Settings)}
-          text=I18n.Btn.goto_settings
-        />
-        <Notice.Button
-          style=styles##buttonMargin
-          onPress={_ => {retryNetwork()}}
-          text=I18n.Btn.retry_network
-        />
-      </Notice>;
-    } else {
-      React.null;
+  let make = (~notices) => {
+    switch (notices) {
+    | [] => React.null
+    | [n, ..._] =>
+      <NoticeView text={n.Notices.msg}>
+        {n.Notices.btns
+         ->List.toArray
+         ->Array.mapWithIndex((i, btn) => {
+             let style =
+               if (i == 0) {
+                 styles##noticeSpace;
+               } else {
+                 styles##buttonMargin;
+               };
+             <NoticeView.Button
+               key={i->string_of_int}
+               style
+               onPress={_ => btn.Notices.onPress()}
+               text={btn.Notices.text}
+             />;
+           })
+         ->React.array}
+      </NoticeView>
     };
   };
 };
@@ -219,6 +113,83 @@ let make = () => {
     config.network.chain == `Mainnet
       ? theme.colors.textPrimary : theme.colors.textMediumEmphasis;
   };
+
+  let notices = NoticesContext.useNotices();
+  let pushNotice = NoticesContext.usePush();
+  let rmNotice = NoticesContext.useDelete();
+  let apiVersion = StoreContext.useApiVersion();
+  let retryNetwork = ConfigContext.useRetryNetwork();
+  let networkOffline = ConfigContext.useNetworkOffline();
+  React.useEffect0(_ => {
+    let displayUpdateNotice =
+      apiVersion
+      ->Option.map(apiVersion =>
+          !Network.checkInBound(apiVersion.Network.api)
+        )
+      ->Option.getWithDefault(false);
+    if (displayUpdateNotice) {
+      let btns =
+        Notices.[
+          {
+            text: I18n.Btn.upgrade,
+            onPress: _ => {
+              System.openExternal(
+                "https://gitlab.com/nomadic-labs/umami-wallet/umami/-/releases",
+              );
+            },
+          },
+        ];
+      let notice =
+        Notices.notice(~btns, ~key="upgrade_notice", I18n.upgrade_notice);
+      pushNotice(notice);
+    };
+    None;
+  });
+  React.useEffect1(
+    _ => {
+      let key = "network_unreachable";
+      let networkOffline_notice = {
+        let btns =
+          Notices.[
+            {
+              text: I18n.Btn.goto_settings,
+              onPress: _ => {
+                Routes.push(Settings);
+              },
+            },
+            {
+              text: I18n.Btn.retry_network,
+              onPress: _ => {
+                retryNetwork();
+              },
+            },
+          ];
+        Notices.notice(~btns, ~key, I18n.Errors.network_unreachable);
+      };
+
+      if (networkOffline) {
+        pushNotice(networkOffline_notice);
+      } else {
+        rmNotice(key);
+      };
+      None;
+    },
+    [|networkOffline|],
+  );
+  React.useEffect0(_ => {
+    let key = "download_complete";
+    let btns =
+      Notices.[
+        {
+          text: I18n.Btn.install_and_restart_now,
+          onPress: _ => IPC.send("quit-and-install", ""),
+        },
+        {text: I18n.Btn.ill_do_it_later, onPress: _ => rmNotice(key)},
+      ];
+    let notice = Notices.notice(~btns, ~key, I18n.download_complete);
+    IPC.on("update-downloaded", (_, _) => pushNotice(notice));
+    None;
+  });
 
   <View
     style=Style.(
@@ -253,6 +224,6 @@ let make = () => {
         </Typography.Overline2>
       </View>
     </View>
-    <Notices />
+    <NoticesView notices />
   </View>;
 };
