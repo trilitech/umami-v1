@@ -214,7 +214,7 @@
     "copy-webpack-plugin": "8.0.0",
     "cross-env": "^7.0.2",
     "css-loader": "^6.7.1",
-    "electron": "13.6.1",
+    "electron": "13.6.9",
     "electron-builder": "^23.0.3",
     "electron-notarize": "^1.0.0",
     "html-webpack-plugin": "^5.3.1",
