@@ -23,10 +23,15 @@
 /*                                                                           */
 /*****************************************************************************/
 
+type notice_kind =
+  | Notice_network_unreachable
+  | Notice_update_downloaded
+  | Notice_update_required;
+
 type state = {
-  notices: list(Notices.t), /* Meant to be used as LIFO */
-  push: Notices.t => unit,
-  delete: Notices.key => unit,
+  notices: list(notice_kind), /* Meant to be used as LIFO */
+  push: notice_kind => unit,
+  delete: notice_kind => unit,
 };
 
 let initialState = {notices: [], push: _ => (), delete: _ => ()};
@@ -46,8 +51,8 @@ module Provider = {
 let make = (~children) => {
   let (notices, setNotices) = React.useState(() => []);
 
-  let delete = (key: Notices.key) => {
-    setNotices(es => es->List.keep(n => n.Notices.key != key));
+  let delete = (key: notice_kind) => {
+    setNotices(es => es->List.keep(n => n != key));
   };
 
   let push = n => {

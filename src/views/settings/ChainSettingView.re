@@ -296,7 +296,8 @@ let make = () => {
   <Block
     title=I18n.Settings.chain_title actionButton={<AddCustomNetworkButton />}>
     <View style=styles##column>
-      {<NoticeView style=styles##notice text=I18n.Expl.network_disconnect>
+      {<NoticeView.NoticeView
+         style=styles##notice text=I18n.Expl.network_disconnect>
          <NoticeView.Button
            text=I18n.Btn.goto_doc
            onPress={_ =>
@@ -305,7 +306,7 @@ let make = () => {
              )
            }
          />
-       </NoticeView>
+       </NoticeView.NoticeView>
        ->ReactUtils.onlyWhen(offline)}
       <View accessibilityRole=`form style=styles##row>
         <ColumnLeft style=styles##leftcolumntitles>

@@ -37,6 +37,8 @@ let styles =
           ~fontSize=14.,
           (),
         ),
+      "noticeSpace": style(~marginLeft=24.->dp, ()),
+      "buttonMargin": style(~marginLeft=10.->dp, ()),
       "button":
         style(
           ~overflow=`hidden,
@@ -87,31 +89,109 @@ module Button = {
   };
 };
 
-[@react.component]
-let make = (~style as styleArg=?, ~children, ~text) => {
-  let theme = ThemeContext.useTheme();
+type btn = {
+  text: string,
+  onPress: unit => unit,
+};
 
-  <View
-    style=Style.(
-      arrayOption([|
-        style(~backgroundColor=theme.colors.textPrimary, ())->Some,
-        styleArg,
-      |])
-    )>
+type t = {
+  msg: string,
+  btns: list(btn),
+};
+
+module NoticeView = {
+  [@react.component]
+  let make = (~style as styleArg=?, ~children, ~text) => {
+    let theme = ThemeContext.useTheme();
+
     <View
       style=Style.(
-        array([|
-          style(~backgroundColor=theme.colors.backgroundMediumEmphasis, ()),
-          styles##notice,
+        arrayOption([|
+          style(~backgroundColor=theme.colors.textPrimary, ())->Some,
+          styleArg,
         |])
       )>
-      <Typography.Notice
+      <View
         style=Style.(
-          style(~color=theme.colors.textPrimary, ~paddingRight=8.->dp, ())
+          array([|
+            style(~backgroundColor=theme.colors.backgroundMediumEmphasis, ()),
+            styles##notice,
+          |])
         )>
-        text->React.string
-      </Typography.Notice>
-      children
-    </View>
-  </View>;
+        <Typography.Notice
+          style=Style.(
+            style(~color=theme.colors.textPrimary, ~paddingRight=8.->dp, ())
+          )>
+          text->React.string
+        </Typography.Notice>
+        children
+      </View>
+    </View>;
+  };
+};
+
+[@react.component]
+let make = (~style=?, ~notice) => {
+  let rmNotice = NoticesContext.useDelete();
+
+  let text =
+    switch (notice) {
+    | NoticesContext.Notice_network_unreachable => I18n.Errors.network_unreachable
+    | NoticesContext.Notice_update_downloaded => I18n.download_complete
+    | NoticesContext.Notice_update_required => I18n.upgrade_notice
+    };
+
+  let btns = {
+    switch (notice) {
+    | NoticesContext.Notice_network_unreachable => [|
+        {
+          text: I18n.Btn.goto_settings,
+          onPress: _ => {
+            Routes.push(Settings);
+          },
+        },
+        {
+          text: I18n.Btn.retry_network,
+          onPress: _ => {
+            (ConfigContext.useRetryNetwork())();
+          },
+        },
+      |]
+    | NoticesContext.Notice_update_required => [|
+        {
+          text: I18n.Btn.upgrade,
+          onPress: _ => {
+            System.openExternal(
+              "https://gitlab.com/nomadic-labs/umami-wallet/umami/-/releases",
+            );
+          },
+        },
+      |]
+    | NoticesContext.Notice_update_downloaded => [|
+        {
+          text: I18n.Btn.install_and_restart_now,
+          onPress: _ => IPC.send("quit-and-install", ""),
+        },
+        {text: I18n.Btn.ill_do_it_later, onPress: _ => rmNotice(notice)},
+      |]
+    };
+  };
+  <NoticeView ?style text>
+    {btns
+     ->Array.mapWithIndex((i, btn) => {
+         let style =
+           if (i == 0) {
+             styles##noticeSpace;
+           } else {
+             styles##buttonMargin;
+           };
+         <Button
+           key={i->string_of_int}
+           style
+           onPress={_ => btn.onPress()}
+           text={btn.text}
+         />;
+       })
+     ->React.array}
+  </NoticeView>;
 };
