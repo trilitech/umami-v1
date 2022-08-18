@@ -256,61 +256,24 @@ module AppView = {
   };
 };
 
-module AppSideEffect = {
-  [@react.component]
-  let make = () => {
-    let pushNotice = NoticesContext.usePush();
-    let rmNotice = NoticesContext.useDelete();
-    let apiVersion = StoreContext.useApiVersion();
-    let networkOffline = ConfigContext.useNetworkOffline();
-    React.useEffect0(_ => {
-      let displayUpdateNotice =
-        apiVersion
-        ->Option.map(apiVersion =>
-            !Network.checkInBound(apiVersion.Network.api)
-          )
-        ->Option.getWithDefault(false);
-      if (displayUpdateNotice) {
-        pushNotice(Notice_update_required);
-      };
-      None;
-    });
-    React.useEffect1(
-      _ => {
-        (networkOffline ? pushNotice : rmNotice)(Notice_network_unreachable);
-        None;
-      },
-      [|networkOffline|],
-    );
-    React.useEffect0(_ => {
-      IPC.on("update-downloaded", (_, _) =>
-        pushNotice(Notice_update_downloaded)
-      );
-      None;
-    });
-    React.null;
-  };
-};
-
 [@react.component]
 let make = () => {
   <LogsContext>
-    <NoticesContext>
-      <ConfigFileContext>
-        <ConfigContext>
-          <ThemeContextWithConfig>
-            <StoreContext>
-              <GlobalBatchContext>
-                <AppSideEffect />
+    <ConfigFileContext>
+      <ConfigContext>
+        <ThemeContextWithConfig>
+          <StoreContext>
+            <GlobalBatchContext>
+              <NoticesContext>
                 <AppView />
                 <SelectedAccountView>
                   {account => <BeaconConnectRequest account />}
                 </SelectedAccountView>
-              </GlobalBatchContext>
-            </StoreContext>
-          </ThemeContextWithConfig>
-        </ConfigContext>
-      </ConfigFileContext>
-    </NoticesContext>
+              </NoticesContext>
+            </GlobalBatchContext>
+          </StoreContext>
+        </ThemeContextWithConfig>
+      </ConfigContext>
+    </ConfigFileContext>
   </LogsContext>;
 };

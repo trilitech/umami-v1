@@ -59,6 +59,34 @@ let make = (~children) => {
     setNotices(es => {[n, ...es]});
   };
 
+  let apiVersion = StoreContext.useApiVersion();
+  React.useEffect0(_ => {
+    let displayUpdateNotice =
+      apiVersion
+      ->Option.map(apiVersion =>
+          !Network.checkInBound(apiVersion.Network.api)
+        )
+      ->Option.getWithDefault(false);
+    if (displayUpdateNotice) {
+      push(Notice_update_required);
+    };
+    None;
+  });
+
+  let networkOffline = ConfigContext.useNetworkOffline();
+  React.useEffect1(
+    _ => {
+      (networkOffline ? push : delete)(Notice_network_unreachable);
+      None;
+    },
+    [|networkOffline|],
+  );
+
+  React.useEffect0(_ => {
+    IPC.on("update-downloaded", (_, _) => push(Notice_update_downloaded));
+    None;
+  });
+
   <Provider value={notices, push, delete}> children </Provider>;
 };
 
