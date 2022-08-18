@@ -102,7 +102,7 @@ let () =
     | _ => None,
   );
 
-type nativeChains = [ | `Mainnet | `Ghostnet | `Jakartanet];
+type nativeChains = [ | `Mainnet | `Ghostnet | `Jakartanet | `Kathmandunet];
 
 type supportedChains = [
   nativeChains
@@ -116,6 +116,7 @@ let unsafeChainId: string => chainId = c => c;
 
 let getChainId =
   fun
+  | `Kathmandunet => "NetXi2ZagzEsXbZ"
   | `Jakartanet => "NetXLH1uAxK7CCh"
   | `Ghostnet => "NetXnHfVqm9iesp"
   | `Granadanet => "NetXz969SFaFn8k"
@@ -134,6 +135,7 @@ let fromChainId =
   | "NetXZSsxBpMQeAT" => `Hangzhounet
   | "NetXnHfVqm9iesp" => `Ghostnet
   | "NetXLH1uAxK7CCh" => `Jakartanet
+  | "NetXi2ZagzEsXbZ" => `Kathmandunet
   | s => `Custom(s);
 
 let mkChainAssoc = c => (c, getChainId(c));
@@ -142,6 +144,7 @@ let nativeChains = [
   mkChainAssoc(`Mainnet),
   mkChainAssoc(`Ghostnet),
   mkChainAssoc(`Jakartanet),
+  mkChainAssoc(`Kathmandunet),
 ];
 
 let supportedChains = [
@@ -161,6 +164,7 @@ let getDisplayedName =
   | `Hangzhounet => "Hangzhounet"
   | `Ghostnet => "Ghostnet"
   | `Jakartanet => "Jakartanet"
+  | `Kathmandunet => "Kathmandunet"
   | `Custom(s) => s;
 
 let externalExplorer =
@@ -172,6 +176,7 @@ let externalExplorer =
   | `Hangzhounet => "https://hangzhou2net.tzkt.io/"->Ok
   | `Ghostnet => "https://ghostnet.tzkt.io/"->Ok
   | `Jakartanet => "https://jakartanet.tzkt.io/"->Ok
+  | `Kathmandunet => "https://kathmandunet.tzkt.io/"->Ok
   | `Custom(_) as net => Error(UnknownChainId(getChainId(net)));
 
 type chain('chainId) = [ supportedChains | `Custom('chainId)];
@@ -195,6 +200,7 @@ let chainNetwork: chain(_) => option(string) =
   | `Hangzhounet => Some("hangzhou2net")
   | `Ghostnet => Some("ghostnet")
   | `Jakartanet => Some("jakartanet")
+  | `Kathmandunet => Some("kathmandunet")
   | `Custom(_) => None;
 
 let networkChain: string => option(chain(_)) =
@@ -207,6 +213,7 @@ let networkChain: string => option(chain(_)) =
   | "ithacanet" /* Kill? */
   | "ghostnet" => Some(`Ghostnet)
   | "jakartanet" => Some(`Jakartanet)
+  | "kathmandunet" => Some(`Kathmandunet)
   | _ => None;
 
 module Encode = {
@@ -220,6 +227,7 @@ module Encode = {
     | `Edo2net
     | `Ghostnet
     | `Jakartanet
+    | `Kathmandunet
     | `Hangzhounet => "default"
     | `Custom(_) => "custom";
 
@@ -253,6 +261,7 @@ module Decode = {
     | "Ithacanet" /* Kill? */
     | "Ghostnet" => `Ghostnet
     | "Jakartanet" => `Jakartanet
+    | "Kathmandunet" => `Kathmandunet
     | n => raise(Json.Decode.DecodeError("Unknown network " ++ n));
 
   let chainFromString =
@@ -260,6 +269,7 @@ module Decode = {
     | "Florencenet" => `Florencenet
     | "Edo2net" => `Edo2net
     | "Hangzhounet" => `Hangzhounet
+    | "Jakartanet" => `Jakartanet
     | n => nativeChainFromString(n);
 
   let chainIdDecoder: Json.Decode.decoder(chainId) = Json.Decode.string;
@@ -315,15 +325,23 @@ let ghostnet =
 let jakartanet =
   mk(
     ~explorer="https://jakartanet.umamiwallet.com/",
-    ~endpoint="https://jakartanet.ecadinfra.com/",
+    ~endpoint="https://jakartanet.ecadinfra.com",
     `Jakartanet,
+  );
+
+let kathmandunet =
+  mk(
+    ~explorer="https://kathmandunet.umamiwallet.com/",
+    ~endpoint="https://kathmandunet.ecadinfra.com",
+    `Kathmandunet,
   );
 
 let getNetwork =
   fun
   | `Mainnet => mainnet
   | `Ghostnet => ghostnet
-  | `Jakartanet => jakartanet;
+  | `Jakartanet => jakartanet
+  | `Kathmandunet => kathmandunet;
 
 let getNetworks = (c: nativeChains) => {
   let n = getNetwork(c);
@@ -344,6 +362,10 @@ let getNetworks = (c: nativeChains) => {
       withEP("https://jakartanet.ecadinfra.com/"),
       withEP("https://rpczero.tzbeta.net"),
       withEP("https://jakartanet.tezos.marigold.dev/"),
+    ]
+  | `Kathmandunet => [
+      withEP("https://kathmandunet.ecadinfra.com"),
+      withEP("https://kathmandunet.tezos.marigold.dev/"),
     ]
   };
 };
