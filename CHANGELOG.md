@@ -2,6 +2,8 @@
 
 ## Unreleased changes
 
+- Add native Kathmandunet support
+
 ## Beta (0.8.2)
 
 - Fix a crash when restoring the previously closed umami window on
