@@ -860,9 +860,54 @@ module Accounts = {
       );
   };
 
-  let restoreFromBackupFile =
-      (~config: ConfigContext.env, ~backupFile, ~password, ()) => {
-    BackupFile.read(backupFile)
+  let parseGalleonBackupFile =
+      (~config: ConfigContext.env, ~path, ~json, ~password, ()) => {
+    let baseName = path->System.Path.baseName(".tezwallet");
+    json
+    ->Galleon.parse
+    ->Promise.flatMapOk(backupFile =>
+        backupFile->Galleon.Account.decode(~passphrase=password)
+      )
+    ->Promise.flatMapOk(accounts =>
+        System.Client.initDir(config.baseDir())
+        ->Promise.flatMapOk(_ =>
+            accounts
+            ->Array.mapWithIndex((index, account) => {
+                let name = baseName ++ " " ++ index->Js.Int.toString;
+                import(
+                  ~config,
+                  ~alias=name,
+                  ~secretKey=account.secretKey,
+                  ~password,
+                )
+                ->Promise.mapOk(_ =>
+                    registerSecret(
+                      ~config,
+                      ~name,
+                      ~kind=Secret.Repr.Mnemonics,
+                      ~derivationPath=
+                        DerivationPath.Pattern.fromTezosBip44(
+                          DerivationPath.Pattern.default,
+                        ),
+                      ~derivationScheme=PublicKeyHash.Scheme.ED25519,
+                      ~addresses=[||],
+                      ~masterPublicKey=
+                        account.publicKeyHash
+                        ->PublicKeyHash.build
+                        ->ResultEx.toOption,
+                    )
+                  );
+              })
+            ->Promise.allArray
+          )
+      )
+    ->Promise.mapOk(_ => ());
+  };
+
+  let parseUmamiBackupFile =
+      (~config: ConfigContext.env, ~json, ~password, ()) => {
+    json
+    ->BackupFile.parse
     ->Promise.flatMapOk(backupFile =>
         Array.zip(backupFile.recoveryPhrases, backupFile.derivationPaths)
         ->Promise.reducei(
@@ -886,6 +931,27 @@ module Accounts = {
               System.Client.resetDir(config.baseDir())
               ->Promise.tapOk(_ => LocalStorage.clear())
             )
+      );
+  };
+
+  let restoreFromBackupFile =
+      (~config: ConfigContext.env, ~backupFile, ~password, ()) => {
+    System.File.read(backupFile)
+    ->Promise.flatMapOk(file => {
+        let result = JsonEx.parse(file);
+        Promise.value(result);
+      })
+    ->Promise.flatMapOk(json =>
+        parseGalleonBackupFile(
+          ~config,
+          ~path=backupFile,
+          ~json,
+          ~password,
+          (),
+        )
+        ->Promise.flatMapError(_ =>
+            parseUmamiBackupFile(~config, ~json, ~password, ())
+          )
       );
   };
 

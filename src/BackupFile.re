@@ -95,18 +95,10 @@ let checkVersion = json => {
     });
 };
 
-let read = (path: System.Path.t) => {
-  System.File.read(path)
-  ->Promise.flatMapOk(file => {
-      let result = JsonEx.parse(file);
-      Promise.value(result);
-    })
-  ->Promise.flatMapOk(json => {
-      let result =
-        checkVersion(json)
-        ->Result.flatMap(() => {json->JsonEx.decode(decoder)});
-      Promise.value(result);
-    });
+let parse = json => {
+  let result =
+    checkVersion(json)->Result.flatMap(() => {json->JsonEx.decode(decoder)});
+  Promise.value(result);
 };
 
 let save = (t, path: System.Path.t) => {
