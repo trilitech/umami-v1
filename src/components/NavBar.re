@@ -205,6 +205,7 @@ let make = (~account, ~route as currentRoute) => {
       array([|
         styles##container,
         style(~backgroundColor=theme.colors.barBackground, ()),
+        Style.(unsafeStyle({"overflow": "auto"})) /* No `auto value allowed for overflow prop */
       |])
     )>
     <View style=styles##sendButton> <SendButton account /> </View>
@@ -265,7 +266,7 @@ let make = (~account, ~route as currentRoute) => {
         title=I18n.navbar_help
         icon=Icons.Help.build
       />
-    /* <NavBarItem currentRoute route=Debug title="DEBUG" /> */
+      /* <NavBarItem currentRoute route=Debug title="DEBUG" /> */
       <LogsButton
         currentRoute
         route=Logs
