@@ -75,9 +75,9 @@ extract "${ZIP_MACOS}" "${FILE_MACOS_ZIP}"
 extract "${ZIP_WINDOWS}" "${FILE_WINDOWS_LATEST}"
 extract "${ZIP_WINDOWS}" "${FILE_WINDOWS_EXE_ORIGIN}" "${FILE_WINDOWS_EXE}"
 
-PROJECT_PATH="nomadic-labs%2Fumami-wallet%2Fumami-package-registry-test" # FIXME: umami-package-registry-test -> umami
-PROJECT_NAME="umami-package-registry-test"                               # FIXME: umami-package-registry-test -> umami
-PACKAGE_ID="8541436"                                                     # FIXME: 8541436 -> 5720836
+PROJECT_PATH="nomadic-labs%2Fumami-wallet%2Fumami"
+PROJECT_NAME="umami"
+PACKAGE_ID="5720836"
 
 API_PACKAGE_URL="${GITLAB_API}/projects/${PROJECT_PATH}"
 
