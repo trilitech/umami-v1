@@ -271,13 +271,18 @@ module Make =
 
   type kind =
     Account.kind =
-      | Encrypted | Unencrypted | Ledger | CustomAuth(ReCustomAuth.infos);
+      | Encrypted
+      | Unencrypted
+      | Ledger
+      | Galleon
+      | CustomAuth(ReCustomAuth.infos);
 
   module Prefixes = {
     type t =
       | Encrypted
       | Unencrypted
       | Ledger
+      | Galleon
       | CustomAuth;
 
     let fromKind =
@@ -285,6 +290,7 @@ module Make =
       | Account.Encrypted => Encrypted
       | Unencrypted => Unencrypted
       | Ledger => Ledger
+      | Galleon => Galleon
       | CustomAuth(_) => CustomAuth;
 
     let toString =
@@ -292,6 +298,7 @@ module Make =
       | Encrypted => "encrypted:"
       | Unencrypted => "unencrypted:"
       | Ledger => "ledger://"
+      | Galleon => "galleon:"
       | CustomAuth => "customauth://";
   };
 
@@ -310,6 +317,7 @@ module Make =
     | k when checkStart(k, Prefixes.Encrypted) => buildRes(Encrypted)
     | k when checkStart(k, Prefixes.Unencrypted) => buildRes(Unencrypted)
     | k when checkStart(k, Prefixes.Ledger) => buildRes(Ledger)
+    | k when checkStart(k, Prefixes.Galleon) => buildRes(Galleon)
     | k when checkStart(k, Prefixes.CustomAuth) =>
       let uri = sub(k, Prefixes.CustomAuth);
       CustomAuth.Decode.fromSecretKey(uri)

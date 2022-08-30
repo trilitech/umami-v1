@@ -27,6 +27,7 @@ type kind =
   | Encrypted
   | Unencrypted
   | Ledger
+  | Galleon
   | CustomAuth(ReCustomAuth.infos);
 
 type t = {

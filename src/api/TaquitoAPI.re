@@ -43,7 +43,7 @@ let () =
 
 let extractBatchRevealEstimation = (~batchSize, estimations) => {
   switch (estimations->Array.get(0)) {
-  | Some(res: ReTaquitoTypes.Estimation.result)
+  | Some((res: ReTaquitoTypes.Estimation.result))
       when estimations->Array.length == batchSize + 1 =>
     Ok((estimations->Array.sliceToEnd(1), Some(res)))
   | Some(_) => Ok((estimations, None))
@@ -149,6 +149,7 @@ module Signer = {
     KeyWallet.readSecretFromPkh(address, dirpath)
     ->Promise.flatMapOk(((kind, key)) => {
         switch (kind, signingIntent) {
+        | (Galleon, Password(s))
         | (Encrypted, Password(s)) => readEncryptedKey(key, s)
         | (Unencrypted, _) => readUnencryptedKey(key)
         | (Ledger, LedgerCallback(callback)) => readLedgerKey(callback, key)
@@ -157,6 +158,7 @@ module Signer = {
           s->ReCustomAuthSigner.toSigner->Promise.ok
         | (CustomAuth(_), _)
         | (Encrypted, _)
+        | (Galleon, _)
         | (Ledger, _) => ReTaquitoError.SignerIntentInconsistency->Promise.err
         }
       });

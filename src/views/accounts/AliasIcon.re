@@ -44,6 +44,12 @@ let make = (~style=?, ~kind: option(Alias.kind), ~isHD: bool) => {
          ~size=20.,
          ~color=theme.colors.iconMediumEmphasis,
        )
+     | Some(Account(Galleon)) =>
+       Icons.Galleon.build(
+         ~style=?None,
+         ~size=20.,
+         ~color=theme.colors.iconMediumEmphasis,
+       )
      | Some(Account(Ledger)) =>
        Icons.LedgerP.build(
          ~style=?None,

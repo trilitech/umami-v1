@@ -275,7 +275,7 @@ let make =
         ),
       )
       ->Promise.getError(e => setState(_ => Some(Error(e))))
-    | (Encrypted | Unencrypted, _) => form.submit()
+    | (Galleon | Encrypted | Unencrypted, _) => form.submit()
     | (CustomAuth(_), Some(signer)) =>
       sendOperation(TaquitoAPI.Signer.CustomAuthSigner(signer))
       ->Promise.getError(e => setState(_ => Some(Error(e))))
@@ -286,6 +286,7 @@ let make =
     switch (accountKind) {
     | Ledger
     | CustomAuth(_) => false
+    | Galleon
     | Encrypted
     | Unencrypted => true
     };
@@ -294,6 +295,7 @@ let make =
     switch (accountKind) {
     | Ledger
     | CustomAuth(_) => I18n.Btn.continue
+    | Galleon
     | Encrypted
     | Unencrypted => I18n.Btn.confirm
     };
@@ -335,6 +337,7 @@ let make =
            provider={infos.provider}
            retry={() => signCustomAuth(infos)}
          />
+       | Galleon
        | Encrypted
        | Unencrypted => React.null
        }

@@ -88,6 +88,7 @@ module Accounts: {
     (
       ~config: ConfigContext.env,
       ~alias: name,
+      ~prefix: KeyWallet.Prefixes.t,
       ~secretKey: string,
       ~password: string
     ) =>

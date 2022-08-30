@@ -318,7 +318,7 @@ module Accounts = {
   };
 
   let importFromSigner =
-      (~config: ConfigContext.env, ~alias, ~secretKey, signer) => {
+      (~config: ConfigContext.env, ~alias, ~prefix, ~secretKey, signer) => {
     let pk =
       signer
       ->ReTaquitoSigner.publicKey
@@ -330,7 +330,7 @@ module Accounts = {
       pk,
       pkh,
       (pk, pkh) => {
-        let skUri = KeyWallet.Prefixes.toString(Encrypted) ++ secretKey;
+        let skUri = KeyWallet.Prefixes.toString(prefix) ++ secretKey;
         KeyWallet.addOrReplaceAlias(
           ~dirpath=config.baseDir(),
           ~alias,
@@ -342,7 +342,7 @@ module Accounts = {
     );
   };
 
-  let import = (~config, ~alias, ~secretKey, ~password) => {
+  let import = (~config, ~alias, ~prefix, ~secretKey, ~password) => {
     let signer =
       ReTaquitoSigner.MemorySigner.create(
         ~secretKey,
@@ -353,7 +353,7 @@ module Accounts = {
     let pkh = signer->Promise.flatMapOk(ReTaquitoSigner.publicKeyHash);
 
     Promise.flatMapOk2(pkh, signer, (pkh, signer) =>
-      importFromSigner(~config, ~alias, ~secretKey, signer)
+      importFromSigner(~config, ~alias, ~prefix, ~secretKey, signer)
       ->Promise.mapOk(() => pkh)
     );
   };
@@ -371,7 +371,13 @@ module Accounts = {
 
     let address =
       edesk->Promise.flatMapOk(edesk =>
-        import(~config, ~secretKey=edesk, ~alias, ~password)
+        import(
+          ~config,
+          ~alias,
+          ~prefix=Encrypted,
+          ~secretKey=edesk,
+          ~password,
+        )
       );
 
     Promise.flatMapOk2(secret, address, (secret, address) =>
@@ -484,7 +490,7 @@ module Accounts = {
   let legacyImport = (~config, alias, recoveryPhrase, ~password) => {
     HD.edeskLegacy(recoveryPhrase, ~password)
     ->Promise.flatMapOk(secretKey =>
-        import(~config, ~alias, ~secretKey, ~password)
+        import(~config, ~alias, ~prefix=Encrypted, ~secretKey, ~password)
       );
   };
 
@@ -671,7 +677,13 @@ module Accounts = {
       isValidated->Promise.flatMapOk(isValidated =>
         if (isValidated) {
           Promise.flatMapOk2(signer, edesk, (signer, edesk) =>
-            importFromSigner(~config, ~secretKey=edesk, ~alias=name, signer)
+            importFromSigner(
+              ~config,
+              ~prefix=Encrypted,
+              ~secretKey=edesk,
+              ~alias=name,
+              signer,
+            )
           )
           ->Promise.flatMapOk(() =>
               runOnSeed(
@@ -877,26 +889,10 @@ module Accounts = {
                 import(
                   ~config,
                   ~alias=name,
+                  ~prefix=Galleon,
                   ~secretKey=account.secretKey,
                   ~password,
-                )
-                ->Promise.mapOk(_ =>
-                    registerSecret(
-                      ~config,
-                      ~name,
-                      ~kind=Secret.Repr.Mnemonics,
-                      ~derivationPath=
-                        DerivationPath.Pattern.fromTezosBip44(
-                          DerivationPath.Pattern.default,
-                        ),
-                      ~derivationScheme=PublicKeyHash.Scheme.ED25519,
-                      ~addresses=[||],
-                      ~masterPublicKey=
-                        account.publicKeyHash
-                        ->PublicKeyHash.build
-                        ->ResultEx.toOption,
-                    )
-                  );
+                );
               })
             ->Promise.allArray
           )
@@ -964,6 +960,7 @@ module Accounts = {
       import(
         ~config,
         ~alias=basename ++ " legacy",
+        ~prefix=Encrypted,
         ~secretKey=encryptedSecret,
         ~password,
       )
@@ -983,7 +980,13 @@ module Accounts = {
           )
 
       | [{encryptedSecretKey, kind: Regular}, ...rem] =>
-        import(~config, ~alias, ~secretKey=encryptedSecretKey, ~password)
+        import(
+          ~config,
+          ~alias,
+          ~prefix=Encrypted,
+          ~secretKey=encryptedSecretKey,
+          ~password,
+        )
         ->Promise.flatMapOk(pkh =>
             importKeys(basename, index + 1, (rem, legacy), [pkh, ...pkhs])
           )
