@@ -34,6 +34,55 @@ let sort = op =>
     )
   );
 
+module OperationsTableHeaderView = {
+  [@react.component]
+  let make = () => {
+    <View
+      style=Style.(
+        style(~marginHorizontal=LayoutConst.pagePaddingHorizontal->dp, ())
+      )>
+      <Table.Head>
+        <OperationRowItem.CellType>
+          <Typography.Overline3>
+            I18n.operation_column_type->React.string
+          </Typography.Overline3>
+        </OperationRowItem.CellType>
+        <OperationRowItem.CellAmount>
+          <Typography.Overline3>
+            I18n.operation_column_amount->React.string
+          </Typography.Overline3>
+        </OperationRowItem.CellAmount>
+        <OperationRowItem.CellFee>
+          <Typography.Overline3>
+            I18n.operation_column_fee->React.string
+          </Typography.Overline3>
+        </OperationRowItem.CellFee>
+        <OperationRowItem.CellAddress>
+          <Typography.Overline3>
+            I18n.operation_column_sender->React.string
+          </Typography.Overline3>
+        </OperationRowItem.CellAddress>
+        <OperationRowItem.CellAddress>
+          <Typography.Overline3>
+            I18n.operation_column_recipient->React.string
+          </Typography.Overline3>
+        </OperationRowItem.CellAddress>
+        <OperationRowItem.CellDate>
+          <Typography.Overline3>
+            I18n.operation_column_timestamp->React.string
+          </Typography.Overline3>
+        </OperationRowItem.CellDate>
+        <OperationRowItem.CellStatus>
+          <Typography.Overline3>
+            I18n.operation_column_status->React.string
+          </Typography.Overline3>
+        </OperationRowItem.CellStatus>
+        <OperationRowItem.CellAction />
+      </Table.Head>
+    </View>;
+  };
+};
+
 [@react.component]
 let make = (~account: Account.t) => {
   let operationsRequest =
@@ -55,19 +104,26 @@ let make = (~account: Account.t) => {
         loading={operationsRequest->ApiRequest.isLoading}
       />
     </OperationsHeaderView>
-    {ApiRequest.(
-       switch (operationsRequest) {
-       | Done(Ok(response), _) =>
-         <Pagination
-           elements={response.operations->sort}
-           renderItem={renderItem(response.currentLevel)}
-           emptyComponent={I18n.empty_operations->React.string}
-         />
-       | Done(Error(error), _) => error->Errors.toString->React.string
-       | NotAsked
-       | Loading(Some(_))
-       | Loading(None) => <LoadingView />
-       }
-     )}
+    /* Vertical ScrollView can't scroll horizontally,
+       so we wrap it in an horizontal ScrollView */
+    <ScrollView
+      horizontal=true
+      contentContainerStyle=Style.(style(~flexDirection=`column, ()))>
+      <OperationsTableHeaderView />
+      {ApiRequest.(
+         switch (operationsRequest) {
+         | Done(Ok(response), _) =>
+           <Pagination
+             elements={response.operations->sort}
+             renderItem={renderItem(response.currentLevel)}
+             emptyComponent={I18n.empty_operations->React.string}
+           />
+         | Done(Error(error), _) => error->Errors.toString->React.string
+         | NotAsked
+         | Loading(Some(_))
+         | Loading(None) => <LoadingView />
+         }
+       )}
+    </ScrollView>
   </View>;
 };
