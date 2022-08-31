@@ -111,7 +111,7 @@ let make = (~account: Account.t) => {
     <ScrollView
       horizontal=true
       contentContainerStyle=Style.(
-        style(~flexDirection=`column, ~flexBasis=1272.->dp, ())
+        style(~flexDirection=`column, ~flexBasis=1272.->dp, ~flexGrow=1., ())
       )>
       <OperationsTableHeaderView />
       {ApiRequest.(
