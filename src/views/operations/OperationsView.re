@@ -95,6 +95,8 @@ let make = (~account: Account.t) => {
       currentLevel
     />;
 
+  let dimensions = Dimensions.useWindowDimensions();
+
   <View style=styles##container>
     <OperationsHeaderView account>
       <RefreshButton
@@ -121,6 +123,16 @@ let make = (~account: Account.t) => {
              elements={response.operations->sort}
              renderItem={renderItem(response.currentLevel)}
              emptyComponent={I18n.empty_operations->React.string}
+             footerStyle=Style.(
+               array([|
+                 style(
+                   ~width=(dimensions.width -. NavBar.width -. 36. *. 2.)->dp,
+                   ~left=36.->dp,
+                   (),
+                 ),
+                 unsafeStyle({"position": "sticky"}),
+               |])
+             )
            />
          | Done(Error(error), _) => error->Errors.toString->React.string
          | NotAsked

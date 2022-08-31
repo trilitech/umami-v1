@@ -105,7 +105,8 @@ module PaginationFooter = {
 };
 
 [@react.component]
-let make = (~elements, ~renderItem, ~emptyComponent, ~eltsPerPage=20) => {
+let make =
+    (~footerStyle=?, ~elements, ~renderItem, ~emptyComponent, ~eltsPerPage=20) => {
   switch (elements->Array.length) {
   | 0 =>
     <View style=styles##listContent>
@@ -141,9 +142,7 @@ let make = (~elements, ~renderItem, ~emptyComponent, ~eltsPerPage=20) => {
         ~len=eltsPerPage,
       );
     <>
-      <ScrollView
-        ref={scrollViewRef->Ref.value}
-        style={Style.array([|styles##listContent|])}>
+      <ScrollView ref={scrollViewRef->Ref.value} style={styles##listContent}>
         {data->Array.map(renderItem)->ReasonReact.array}
       </ScrollView>
       <PaginationFooter
@@ -151,7 +150,7 @@ let make = (~elements, ~renderItem, ~emptyComponent, ~eltsPerPage=20) => {
         setPageCounter
         maxPageIndex
         onPageChange={() => scrollToTop(scrollViewRef)}
-        style=styles##footer
+        style={Style.arrayOption([|Some(styles##footer), footerStyle|])}
       />
     </>;
   };
