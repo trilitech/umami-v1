@@ -37,49 +37,47 @@ let sort = op =>
 module OperationsTableHeaderView = {
   [@react.component]
   let make = () => {
-    <View
+    <Table.Head
       style=Style.(
         style(~marginHorizontal=LayoutConst.pagePaddingHorizontal->dp, ())
       )>
-      <Table.Head>
-        <OperationRowItem.CellType>
-          <Typography.Overline3>
-            I18n.operation_column_type->React.string
-          </Typography.Overline3>
-        </OperationRowItem.CellType>
-        <OperationRowItem.CellAmount>
-          <Typography.Overline3>
-            I18n.operation_column_amount->React.string
-          </Typography.Overline3>
-        </OperationRowItem.CellAmount>
-        <OperationRowItem.CellFee>
-          <Typography.Overline3>
-            I18n.operation_column_fee->React.string
-          </Typography.Overline3>
-        </OperationRowItem.CellFee>
-        <OperationRowItem.CellAddress>
-          <Typography.Overline3>
-            I18n.operation_column_sender->React.string
-          </Typography.Overline3>
-        </OperationRowItem.CellAddress>
-        <OperationRowItem.CellAddress>
-          <Typography.Overline3>
-            I18n.operation_column_recipient->React.string
-          </Typography.Overline3>
-        </OperationRowItem.CellAddress>
-        <OperationRowItem.CellDate>
-          <Typography.Overline3>
-            I18n.operation_column_timestamp->React.string
-          </Typography.Overline3>
-        </OperationRowItem.CellDate>
-        <OperationRowItem.CellStatus>
-          <Typography.Overline3>
-            I18n.operation_column_status->React.string
-          </Typography.Overline3>
-        </OperationRowItem.CellStatus>
-        <OperationRowItem.CellAction />
-      </Table.Head>
-    </View>;
+      <OperationRowItem.CellType>
+        <Typography.Overline3>
+          I18n.operation_column_type->React.string
+        </Typography.Overline3>
+      </OperationRowItem.CellType>
+      <OperationRowItem.CellAmount>
+        <Typography.Overline3>
+          I18n.operation_column_amount->React.string
+        </Typography.Overline3>
+      </OperationRowItem.CellAmount>
+      <OperationRowItem.CellFee>
+        <Typography.Overline3>
+          I18n.operation_column_fee->React.string
+        </Typography.Overline3>
+      </OperationRowItem.CellFee>
+      <OperationRowItem.CellAddress>
+        <Typography.Overline3>
+          I18n.operation_column_sender->React.string
+        </Typography.Overline3>
+      </OperationRowItem.CellAddress>
+      <OperationRowItem.CellAddress>
+        <Typography.Overline3>
+          I18n.operation_column_recipient->React.string
+        </Typography.Overline3>
+      </OperationRowItem.CellAddress>
+      <OperationRowItem.CellDate>
+        <Typography.Overline3>
+          I18n.operation_column_timestamp->React.string
+        </Typography.Overline3>
+      </OperationRowItem.CellDate>
+      <OperationRowItem.CellStatus>
+        <Typography.Overline3>
+          I18n.operation_column_status->React.string
+        </Typography.Overline3>
+      </OperationRowItem.CellStatus>
+      <OperationRowItem.CellAction />
+    </Table.Head>;
   };
 };
 
@@ -105,10 +103,16 @@ let make = (~account: Account.t) => {
       />
     </OperationsHeaderView>
     /* Vertical ScrollView can't scroll horizontally,
-       so we wrap it in an horizontal ScrollView */
+       so we wrap it in an horizontal ScrollView.
+       Items in a row have a total of 1272px width
+       (count flex-basis and spacing of OperationsTableHeaderView)
+       You need to set this value or container will only use width
+       of the window (or something like this) */
     <ScrollView
       horizontal=true
-      contentContainerStyle=Style.(style(~flexDirection=`column, ()))>
+      contentContainerStyle=Style.(
+        style(~flexDirection=`column, ~flexBasis=1272.->dp, ())
+      )>
       <OperationsTableHeaderView />
       {ApiRequest.(
          switch (operationsRequest) {
