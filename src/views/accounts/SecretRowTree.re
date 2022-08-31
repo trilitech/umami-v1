@@ -30,7 +30,7 @@ let styles =
     StyleSheet.create({
       "rowItem": style(~paddingLeft=16.->dp, ()),
       "tagContainer": style(~flexDirection=`row, ()),
-      "tag": style(~marginRight=14.->dp, ()),
+      "tag": style(~marginLeft=14.->dp, ~marginRight=14.->dp, ()),
       "alias": style(~height=20.->dp, ~marginBottom=4.->dp, ()),
       "derivation": style(~height=18.->dp, ()),
       "actionContainer":
