@@ -305,13 +305,17 @@ module Accounts = {
       );
   };
 
-  let recoveryPhraseAt = (index, ~password) => {
+  let encryptedRecoveryPhraseAt = (index) => {
     recoveryPhrases()
     ->Promise.value
     ->Promise.flatMapOk(recoveryPhrases =>
         recoveryPhrases[index]
         ->Promise.fromOption(~error=RecoveryPhraseNotFound(index))
       )
+  }
+
+  let recoveryPhraseAt = (index, ~password) => {
+    encryptedRecoveryPhraseAt(index)
     ->Promise.flatMapOk(data =>
         SecureStorage.Cipher.decrypt2(password, data)
       );

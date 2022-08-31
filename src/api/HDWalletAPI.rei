@@ -82,6 +82,7 @@ module Accounts: {
   let updateSecretAt:
     (~config: ConfigContext.env, Secret.Repr.t, int) => Promise.result(unit);
 
+  let encryptedRecoveryPhraseAt: (int) => Promise.t(SecureStorage.Cipher.encryptedData);
   let recoveryPhraseAt: (int, ~password: string) => Promise.t(string);
 
   let import:

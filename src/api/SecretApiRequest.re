@@ -42,6 +42,16 @@ let useLoad = requestState => {
   ApiRequest.useLoader(~get, ~kind=Logs.Secret, ~requestState, ());
 };
 
+let useGetEncryptedRecoveryPhrase = (~requestState as (request, setRequest), ~index) => {
+  let get = (~config as _, _) =>
+    HDWalletAPI.Accounts.encryptedRecoveryPhraseAt(index);
+
+  let getRequest =
+    ApiRequest.useGetter(~get, ~kind=Logs.Secret, ~setRequest, ());
+
+  (request, getRequest);
+};
+
 let useGetRecoveryPhrase = (~requestState as (request, setRequest), ~index) => {
   let get = (~config as _, password) =>
     HDWalletAPI.Accounts.recoveryPhraseAt(index, ~password);
