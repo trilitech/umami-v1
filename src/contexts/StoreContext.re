@@ -884,6 +884,11 @@ module Secrets = {
     SecretApiRequest.useLoad(requestState);
   };
 
+  let useGetEncryptedRecoveryPhrase = (~index: int) => {
+    let requestState = React.useState(() => ApiRequest.NotAsked);
+    SecretApiRequest.useGetEncryptedRecoveryPhrase(~requestState, ~index);
+  };
+
   let useGetRecoveryPhrase = (~index: int) => {
     let requestState = React.useState(() => ApiRequest.NotAsked);
     SecretApiRequest.useGetRecoveryPhrase(~requestState, ~index);

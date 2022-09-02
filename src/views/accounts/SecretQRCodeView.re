@@ -23,35 +23,81 @@
 /*                                                                           */
 /*****************************************************************************/
 
-module RecoveryPhrase = {
-  [@react.component]
-  let make = (~recoveryPhrase: string) => {
-    <DocumentContext.ScrollView showsVerticalScrollIndicator=true>
-      <MnemonicListView mnemonic={recoveryPhrase->Js.String2.split(" ")} />
-    </DocumentContext.ScrollView>;
-  };
+open ReactNative;
+
+let styles =
+  Style.(
+    StyleSheet.create({
+      "qrContainer":
+        style(
+          ~marginTop=10.->dp,
+          ~marginBottom=30.->dp,
+          ~alignItems=`center,
+          ~justifyContent=`center,
+          (),
+        ),
+      "qr": style(~backgroundColor="white", ~padding=10.->dp, ()),
+    })
+  );
+
+type export = {
+  version: Version.t,
+  derivationPath: DerivationPath.Pattern.t,
+  recoveryPhrase: SecureStorage.Cipher.encryptedData,
 };
+
+let encoder = export =>
+  Json.Encode.(
+    object_([
+      ("version", string(export.version->Version.toString)),
+      (
+        "derivationPath",
+        string(export.derivationPath->DerivationPath.Pattern.toString),
+      ),
+      (
+        "recoveryPhrase",
+        SecureStorage.Cipher.encoder(export.recoveryPhrase),
+      ),
+    ])
+  );
 
 [@react.component]
 let make = (~secret: Secret.derived, ~closeAction) => {
-  let (recoveryPhraseRequest, getRecoveryPhrase) =
-    StoreContext.Secrets.useGetRecoveryPhrase(~index=secret.index);
+  let (encryptedRecoveryPhraseRequest, getEncryptedRecoveryPhrase) =
+    StoreContext.Secrets.useGetEncryptedRecoveryPhrase(~index=secret.index);
 
-  let submitPassword = (~password) => {
-    getRecoveryPhrase(password);
-  };
+  React.useEffect0(() => {
+    getEncryptedRecoveryPhrase()->Promise.ignore;
+    None;
+  });
 
-  <ModalFormView closing={ModalFormView.Close(closeAction)}>
-    <Typography.Headline style=FormStyles.header>
-      I18n.Title.show_recovery_phrase->React.string
-    </Typography.Headline>
-    {switch (recoveryPhraseRequest) {
-     | Done(Ok(recoveryPhrase), _) => <RecoveryPhrase recoveryPhrase />
-     | _ =>
-       <PasswordFormView
-         loading={recoveryPhraseRequest->ApiRequest.isLoading}
-         submitPassword
-       />
+  <ModalFormView
+    title=I18n.Title.export_to_mobile
+    titleStyle=FormStyles.headerMarginBottom8
+    closing={ModalFormView.Close(closeAction)}>
+    <View style=FormStyles.header>
+      <Typography.Overline1>
+        I18n.Title.scan_with_mobile_to_import->React.string
+      </Typography.Overline1>
+    </View>
+    {switch (encryptedRecoveryPhraseRequest) {
+     | Done(Ok(encryptedRecoveryPhrase), _) =>
+       <View style=styles##qrContainer>
+         <View style=styles##qr>
+           <QRCode
+             value={
+               encoder({
+                 version: BackupFile.currentVersion,
+                 derivationPath: secret.secret.derivationPath,
+                 recoveryPhrase: encryptedRecoveryPhrase,
+               })
+               ->Js.Json.stringify
+             }
+             size=200.
+           />
+         </View>
+       </View>
+     | _ => React.null
      }}
   </ModalFormView>;
 };
