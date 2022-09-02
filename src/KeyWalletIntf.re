@@ -139,13 +139,14 @@ module type WALLET = {
 
   type kind =
     Account.kind =
-      | Encrypted | Unencrypted | Ledger | CustomAuth(ReCustomAuth.infos);
+      | Encrypted | Unencrypted | Ledger | Galleon | CustomAuth(ReCustomAuth.infos);
 
   module Prefixes: {
     type t =
       | Encrypted
       | Unencrypted
       | Ledger
+      | Galleon
       | CustomAuth;
 
     let toString: t => string;

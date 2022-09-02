@@ -42,6 +42,7 @@ type prefixes = {
   edpk: prefix,
   tz1: prefix,
   tz2: prefix,
+  edsk: prefix,
 };
 let prefix: prefixes;
 let b58cencode: (string, prefix) => string;

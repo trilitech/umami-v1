@@ -539,6 +539,7 @@ module Batch = {
       switch (operation.source.kind) {
       | CustomAuth(_)
       | Ledger => true
+      | Galleon
       | Encrypted
       | Unencrypted => false
       };

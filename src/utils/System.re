@@ -88,6 +88,9 @@ module Path: {
 
   let getCurrent: unit => t;
   let getAppData: unit => t;
+
+  let baseName: (t, string) => string;
+
   module Ops: {
     let (!): string => t;
     let (/): (t, t) => t;
@@ -106,6 +109,9 @@ module Path: {
 
   [@bs.module "path"] [@bs.variadic]
   external join: array(t) => string = "join";
+
+  [@bs.module "path"] [@bs.val]
+  external baseName: (t, string) => string = "basename";
 
   module Ops = {
     let (!) = a => mk(a);

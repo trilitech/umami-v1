@@ -194,3 +194,4 @@ module Twitter = Make(SVGIconTwitter);
 module Umami = Make(SVGIconUmami);
 module Help = Make(SVGIconHelp);
 module Tos = Make(SVGIconTos);
+module Galleon = Make(SVGIconGalleon);

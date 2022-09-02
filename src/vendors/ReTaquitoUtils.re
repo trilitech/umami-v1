@@ -74,6 +74,7 @@ type prefixes = {
   edpk: prefix,
   tz1: prefix,
   tz2: prefix,
+  edsk: prefix,
 };
 
 [@bs.module "@taquito/utils"] external prefix: prefixes = "prefix";

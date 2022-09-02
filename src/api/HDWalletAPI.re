@@ -322,7 +322,7 @@ module Accounts = {
   };
 
   let importFromSigner =
-      (~config: ConfigContext.env, ~alias, ~secretKey, signer) => {
+      (~config: ConfigContext.env, ~alias, ~prefix, ~secretKey, signer) => {
     let pk =
       signer
       ->ReTaquitoSigner.publicKey
@@ -334,7 +334,7 @@ module Accounts = {
       pk,
       pkh,
       (pk, pkh) => {
-        let skUri = KeyWallet.Prefixes.toString(Encrypted) ++ secretKey;
+        let skUri = KeyWallet.Prefixes.toString(prefix) ++ secretKey;
         KeyWallet.addOrReplaceAlias(
           ~dirpath=config.baseDir(),
           ~alias,
@@ -346,7 +346,7 @@ module Accounts = {
     );
   };
 
-  let import = (~config, ~alias, ~secretKey, ~password) => {
+  let import = (~config, ~alias, ~prefix, ~secretKey, ~password) => {
     let signer =
       ReTaquitoSigner.MemorySigner.create(
         ~secretKey,
@@ -357,7 +357,7 @@ module Accounts = {
     let pkh = signer->Promise.flatMapOk(ReTaquitoSigner.publicKeyHash);
 
     Promise.flatMapOk2(pkh, signer, (pkh, signer) =>
-      importFromSigner(~config, ~alias, ~secretKey, signer)
+      importFromSigner(~config, ~alias, ~prefix, ~secretKey, signer)
       ->Promise.mapOk(() => pkh)
     );
   };
@@ -375,7 +375,13 @@ module Accounts = {
 
     let address =
       edesk->Promise.flatMapOk(edesk =>
-        import(~config, ~secretKey=edesk, ~alias, ~password)
+        import(
+          ~config,
+          ~alias,
+          ~prefix=Encrypted,
+          ~secretKey=edesk,
+          ~password,
+        )
       );
 
     Promise.flatMapOk2(secret, address, (secret, address) =>
@@ -488,7 +494,7 @@ module Accounts = {
   let legacyImport = (~config, alias, recoveryPhrase, ~password) => {
     HD.edeskLegacy(recoveryPhrase, ~password)
     ->Promise.flatMapOk(secretKey =>
-        import(~config, ~alias, ~secretKey, ~password)
+        import(~config, ~alias, ~prefix=Encrypted, ~secretKey, ~password)
       );
   };
 
@@ -675,7 +681,13 @@ module Accounts = {
       isValidated->Promise.flatMapOk(isValidated =>
         if (isValidated) {
           Promise.flatMapOk2(signer, edesk, (signer, edesk) =>
-            importFromSigner(~config, ~secretKey=edesk, ~alias=name, signer)
+            importFromSigner(
+              ~config,
+              ~prefix=Encrypted,
+              ~secretKey=edesk,
+              ~alias=name,
+              signer,
+            )
           )
           ->Promise.flatMapOk(() =>
               runOnSeed(
@@ -864,9 +876,38 @@ module Accounts = {
       );
   };
 
-  let restoreFromBackupFile =
-      (~config: ConfigContext.env, ~backupFile, ~password, ()) => {
-    BackupFile.read(backupFile)
+  let parseGalleonBackupFile =
+      (~config: ConfigContext.env, ~path, ~json, ~password, ()) => {
+    let baseName = path->System.Path.baseName(".tezwallet");
+    json
+    ->Galleon.parse
+    ->Promise.flatMapOk(backupFile =>
+        backupFile->Galleon.Account.decode(~passphrase=password)
+      )
+    ->Promise.flatMapOk(accounts =>
+        System.Client.initDir(config.baseDir())
+        ->Promise.flatMapOk(_ =>
+            accounts
+            ->Array.mapWithIndex((index, account) => {
+                let name = baseName ++ " " ++ index->Js.Int.toString;
+                import(
+                  ~config,
+                  ~alias=name,
+                  ~prefix=Galleon,
+                  ~secretKey=account.secretKey,
+                  ~password,
+                );
+              })
+            ->Promise.allArray
+          )
+      )
+    ->Promise.mapOk(_ => ());
+  };
+
+  let parseUmamiBackupFile =
+      (~config: ConfigContext.env, ~json, ~password, ()) => {
+    json
+    ->BackupFile.parse
     ->Promise.flatMapOk(backupFile =>
         Array.zip(backupFile.recoveryPhrases, backupFile.derivationPaths)
         ->Promise.reducei(
@@ -893,6 +934,27 @@ module Accounts = {
       );
   };
 
+  let restoreFromBackupFile =
+      (~config: ConfigContext.env, ~backupFile, ~password, ()) => {
+    System.File.read(backupFile)
+    ->Promise.flatMapOk(file => {
+        let result = JsonEx.parse(file);
+        Promise.value(result);
+      })
+    ->Promise.flatMapOk(json =>
+        parseGalleonBackupFile(
+          ~config,
+          ~path=backupFile,
+          ~json,
+          ~password,
+          (),
+        )
+        ->Promise.flatMapError(_ =>
+            parseUmamiBackupFile(~config, ~json, ~password, ())
+          )
+      );
+  };
+
   let forceBackup = backupFile =>
     SecretStorage.get()
     ->Result.map(secrets => SecretStorage.set(~backupFile, secrets));
@@ -902,6 +964,7 @@ module Accounts = {
       import(
         ~config,
         ~alias=basename ++ " legacy",
+        ~prefix=Encrypted,
         ~secretKey=encryptedSecret,
         ~password,
       )
@@ -921,7 +984,13 @@ module Accounts = {
           )
 
       | [{encryptedSecretKey, kind: Regular}, ...rem] =>
-        import(~config, ~alias, ~secretKey=encryptedSecretKey, ~password)
+        import(
+          ~config,
+          ~alias,
+          ~prefix=Encrypted,
+          ~secretKey=encryptedSecretKey,
+          ~password,
+        )
         ->Promise.flatMapOk(pkh =>
             importKeys(basename, index + 1, (rem, legacy), [pkh, ...pkhs])
           )
