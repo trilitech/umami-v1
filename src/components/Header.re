@@ -38,8 +38,6 @@ let styles =
           (),
         ),
       "nameLogo": style(~flexDirection=`row, ~alignItems=`center, ()),
-      "buttonMargin": style(~marginLeft=10.->dp, ()),
-      "noticeSpace": style(~marginLeft=24.->dp, ()),
       "networkHeader":
         style(
           ~flexDirection=`row,
@@ -63,141 +61,6 @@ let styles =
     })
   );
 
-module Notice = {
-  let styles =
-    Style.(
-      StyleSheet.create({
-        "notice":
-          style(
-            ~flexDirection=`row,
-            ~height=60.->dp,
-            ~alignItems=`center,
-            ~paddingHorizontal=38.->dp,
-            ~fontSize=14.,
-            (),
-          ),
-        "button":
-          style(
-            ~overflow=`hidden,
-            ~borderRadius=4.,
-            ~borderStyle=`solid,
-            ~borderWidth=1.,
-            (),
-          ),
-        "pressable":
-          style(
-            ~height=26.->dp,
-            ~minWidth=69.->dp,
-            ~paddingHorizontal=8.->dp,
-            ~justifyContent=`center,
-            ~alignItems=`center,
-            (),
-          ),
-      })
-    );
-
-  module Button = {
-    [@react.component]
-    let make = (~style as styleArg=?, ~text, ~onPress) => {
-      let theme = ThemeContext.useTheme();
-      <View
-        style=Style.(
-          arrayOption([|
-            style(~borderColor=theme.colors.borderPrimary, ())->Some,
-            styles##button->Some,
-            styleArg,
-          |])
-        )>
-        <ThemedPressable.Primary
-          style=Style.(
-            array([|
-              style(~color=theme.colors.textPrimary, ()),
-              styles##pressable,
-            |])
-          )
-          onPress
-          accessibilityRole=`button>
-          <Typography.ButtonPrimary
-            style=Style.(style(~color=theme.colors.textPrimary, ()))>
-            text->React.string
-          </Typography.ButtonPrimary>
-        </ThemedPressable.Primary>
-      </View>;
-    };
-  };
-
-  [@react.component]
-  let make = (~style as styleArg=?, ~children, ~text) => {
-    let theme = ThemeContext.useTheme();
-
-    <View
-      style=Style.(
-        arrayOption([|
-          style(~backgroundColor=theme.colors.textPrimary, ())->Some,
-          styleArg,
-        |])
-      )>
-      <View
-        style=Style.(
-          array([|
-            style(~backgroundColor=theme.colors.backgroundMediumEmphasis, ()),
-            styles##notice,
-          |])
-        )>
-        <Typography.Notice
-          style=Style.(
-            style(~color=theme.colors.textPrimary, ~paddingRight=8.->dp, ())
-          )>
-          text->React.string
-        </Typography.Notice>
-        children
-      </View>
-    </View>;
-  };
-};
-
-module Notices = {
-  [@react.component]
-  let make = () => {
-    let apiVersion = StoreContext.useApiVersion();
-    let retryNetwork = ConfigContext.useRetryNetwork();
-
-    let displayUpdateNotice =
-      apiVersion
-      ->Option.map(apiVersion =>
-          !Network.checkInBound(apiVersion.Network.api)
-        )
-      ->Option.getWithDefault(false);
-
-    let networkOffline = ConfigContext.useNetworkOffline();
-
-    if (displayUpdateNotice) {
-      let onPress = _ =>
-        System.openExternal(
-          "https://gitlab.com/nomadic-labs/umami-wallet/umami/-/releases",
-        );
-      <Notice text=I18n.upgrade_notice>
-        <Notice.Button onPress text=I18n.Btn.upgrade />
-      </Notice>;
-    } else if (networkOffline) {
-      <Notice text=I18n.Errors.network_unreachable>
-        <Notice.Button
-          style=styles##noticeSpace
-          onPress={_ => Routes.push(Settings)}
-          text=I18n.Btn.goto_settings
-        />
-        <Notice.Button
-          style=styles##buttonMargin
-          onPress={_ => {retryNetwork()}}
-          text=I18n.Btn.retry_network
-        />
-      </Notice>;
-    } else {
-      React.null;
-    };
-  };
-};
-
 [@react.component]
 let make = () => {
   let theme = ThemeContext.useTheme();
@@ -219,6 +82,8 @@ let make = () => {
     config.network.chain == `Mainnet
       ? theme.colors.textPrimary : theme.colors.textMediumEmphasis;
   };
+
+  let notices = NoticesContext.useNotices();
 
   <View
     style=Style.(
@@ -253,6 +118,9 @@ let make = () => {
         </Typography.Overline2>
       </View>
     </View>
-    <Notices />
+    {switch (notices) {
+     | [] => React.null
+     | [notice, ..._] => <NoticeView notice />
+     }}
   </View>;
 };
