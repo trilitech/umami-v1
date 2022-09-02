@@ -72,7 +72,7 @@ let make = (~secret: Secret.derived, ~closeAction) => {
   });
 
   <ModalFormView
-    title=I18n.Title.export
+    title=I18n.Title.export_to_mobile
     titleStyle=FormStyles.headerMarginBottom8
     closing={ModalFormView.Close(closeAction)}>
     <View style=FormStyles.header>
