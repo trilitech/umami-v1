@@ -100,18 +100,18 @@ function upload () {
 }
 
 upload "${FILE_LINUX_RPM}" NEW_LINUX_RPM_ID
-upload "${FILE_LINUX_DEB}" NEW_LINUX_DEB
-upload "${FILE_MACOS_LATEST}" NEW_MACOS_LATEST
-upload "${FILE_MACOS_DMG}" NEW_MACOS_DMG
-upload "${FILE_MACOS_ZIP}" NEW_MACOS_ZIP
-upload "${FILE_WINDOWS_LATEST}" NEW_WINDOWS_LATEST
-upload "${FILE_WINDOWS_EXE}" NEW_WINDOWS_EXE
+upload "${FILE_LINUX_DEB}" NEW_LINUX_DEB_ID
+upload "${FILE_MACOS_LATEST}" NEW_MACOS_LATEST_ID
+upload "${FILE_MACOS_DMG}" NEW_MACOS_DMG_ID
+upload "${FILE_MACOS_ZIP}" NEW_MACOS_ZIP_ID
+upload "${FILE_WINDOWS_LATEST}" NEW_WINDOWS_LATEST_ID
+upload "${FILE_WINDOWS_EXE}" NEW_WINDOWS_EXE_ID
 
 echo '## Binaries'
 echo ''
-echo "- Windows: [exe](https://gitlab.com/nomadic-labs/umami-wallet/${PROJECT_NAME}/-/package_files/${NEW_WINDOWS_EXE}/download)"
-echo "- Mac: [dmg](https://gitlab.com/nomadic-labs/umami-wallet/${PROJECT_NAME}/-/package_files/${NEW_MAC_DMG}/download)"
+echo "- Windows: [exe](https://gitlab.com/nomadic-labs/umami-wallet/${PROJECT_NAME}/-/package_files/${NEW_WINDOWS_EXE_ID}/download)"
+echo "- Mac: [dmg](https://gitlab.com/nomadic-labs/umami-wallet/${PROJECT_NAME}/-/package_files/${NEW_MACOS_DMG_ID}/download)"
 echo "- Linux: "
 echo '  - on [snap](https://snapcraft.io/umami): `snap install umami` or `snap refresh umami`.'
-echo "  - [deb](https://gitlab.com/nomadic-labs/umami-wallet/${PROJECT_NAME}/-/package_files/${NEW_LINUX_DEB}/download)"
-echo "  - [rpm](https://gitlab.com/nomadic-labs/umami-wallet/${PROJECT_NAME}/-/package_files/${NEW_LINUX_RPM}/download)"
+echo "  - [deb](https://gitlab.com/nomadic-labs/umami-wallet/${PROJECT_NAME}/-/package_files/${NEW_LINUX_DEB_ID}/download)"
+echo "  - [rpm](https://gitlab.com/nomadic-labs/umami-wallet/${PROJECT_NAME}/-/package_files/${NEW_LINUX_RPM_ID}/download)"
