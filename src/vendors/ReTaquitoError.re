@@ -47,6 +47,7 @@ let gasLimitTooHigh = "gas_limit_too_high";
 let storageLimitTooHigh = "storage_limit_too_high";
 
 type Errors.t +=
+  | HTTP404
   | UnregisteredDelegate
   | UnchangedDelegate
   | EmptyTransaction
@@ -102,7 +103,7 @@ let parse = (e: RawJsError.t) =>
         s->Js.String2.startsWith(requestFailed1)
         && s->Js.String2.endsWith(requestFailed2) =>
     NodeRequestFailed
-
+  | _ when e.status == 404 => HTTP404
   | s => Errors.Generic(Js.String.make(s))
   };
 
@@ -138,6 +139,7 @@ let () =
     | GasExhaustedAboveLimit => I18n.Errors.gas_exhausted_above_limit->Some
     | StorageExhaustedAboveLimit =>
       I18n.Errors.storage_exhausted_above_limit->Some
+    | HTTP404 => I18n.Errors.fetch404->Some
     | _ => None,
   );
 

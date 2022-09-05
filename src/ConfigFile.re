@@ -23,8 +23,6 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open Let;
-
 // Here Custom contains a name, not a chainId
 type network = Network.configurableChains(string);
 
@@ -43,7 +41,7 @@ type t = {
 let parse = s => {
   let parseNetwork: [> network] => option(network) =
     fun
-    | (`Mainnet | `Hangzhounet | `Custom(_)) as v => Some(v)
+    | (`Mainnet | `Ghostnet | `Custom(_)) as v => Some(v)
     | _ => None;
   let c = s->parse;
   let network = c.network->Option.flatMap(parseNetwork);
@@ -168,11 +166,7 @@ module Legacy = {
                fun
                | "Custom" => field("VAL", Network.Decode.chainIdDecoder)
                | v =>
-                 JsonEx.(
-                   raise(
-                     InternalError(DecodeError("Unknown variant " ++ v)),
-                   )
-                 ),
+                 raise(Json.Decode.DecodeError("Unknown variant " ++ v)),
              )
         )
         |> (n => `Custom(n));
@@ -184,7 +178,7 @@ module Legacy = {
       (json |> optional(field("network", networkVariantLegacyDecoder)))
       ->Option.map(
           fun
-          | `Custom((c: Network.chainId)) => `Custom((c :> string))
+          | `Custom(c: Network.chainId) => `Custom((c :> string))
           | #Network.supportedChains as n => n,
         )
       ->Option.map(removeNonNativeNetwork);
@@ -220,8 +214,8 @@ module Legacy = {
     let version = Version.mk(1, 2);
     let mk = () => {
       let mapValue = s => {
-        let%Res json = JsonEx.parse(s);
-        json->JsonEx.decode(legacyDecoder);
+        JsonEx.parse(s)
+        ->Result.flatMap(json => json->JsonEx.decode(legacyDecoder));
       };
       Storage.migrate(~mapValue, ~default=dummy, ());
     };
@@ -235,10 +229,8 @@ module Legacy = {
     let legacyNativeChainFromString =
       fun
       | "Mainnet" => `Mainnet
-      | "Granadanet" => `Hangzhounet
-      | "Hangzhounet" => `Hangzhounet
-      | n =>
-        JsonEx.(raise(InternalError(DecodeError("Unknown network " ++ n))));
+      | "Ghostnet" => `Ghostnet
+      | n => raise(Json.Decode.DecodeError("Unknown network " ++ n));
 
     let legacyNetworkDecoder = json =>
       json
@@ -262,8 +254,8 @@ module Legacy = {
     let version = Version.mk(1, 5);
     let mk = () => {
       let mapValue = s => {
-        let%Res json = JsonEx.parse(s);
-        json->JsonEx.decode(legacyDecoder);
+        JsonEx.parse(s)
+        ->Result.flatMap(json => json->JsonEx.decode(legacyDecoder));
       };
       Storage.migrate(
         ~previousKey=Storage.key,

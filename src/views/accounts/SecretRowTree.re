@@ -30,7 +30,7 @@ let styles =
     StyleSheet.create({
       "rowItem": style(~paddingLeft=16.->dp, ()),
       "tagContainer": style(~flexDirection=`row, ()),
-      "tag": style(~marginRight=14.->dp, ()),
+      "tag": style(~marginLeft=14.->dp, ~marginRight=14.->dp, ()),
       "alias": style(~height=20.->dp, ~marginBottom=4.->dp, ()),
       "derivation": style(~height=18.->dp, ()),
       "actionContainer":
@@ -53,8 +53,34 @@ let styles =
           ~alignSelf=`flexStart,
           (),
         ),
+      "qrContainer":
+        style(
+          ~marginTop=10.->dp,
+          ~marginBottom=30.->dp,
+          ~alignItems=`center,
+          ~justifyContent=`center,
+          (),
+        ),
+      "qr": style(~backgroundColor="white", ~padding=10.->dp, ()),
     })
   );
+
+module SecretShowRecoveryPhraseButton = {
+  [@react.component]
+  let make = (~secret) => {
+    let (visibleModal, openAction, closeAction) =
+      ModalAction.useModalActionState();
+
+    let onPress = _e => openAction();
+
+    <>
+      <Menu.Item text=I18n.Menu.show icon=Icons.Recovery.build onPress />
+      <ModalAction visible=visibleModal onRequestClose=closeAction>
+        <SecretMnemonicView closeAction secret />
+      </ModalAction>
+    </>;
+  };
+};
 
 module AccountNestedRowItem = {
   module AccountEditButton = {
@@ -121,7 +147,7 @@ module SecretExportButton = {
         style=styles##actionButton
       />
       <ModalAction visible=visibleModal onRequestClose=closeAction>
-        <SecretMnemonicView closeAction secret />
+        <SecretQRCodeView closeAction secret />
       </ModalAction>
     </>;
   };
@@ -204,6 +230,10 @@ module AccountImportedRowItem = {
                  }>
                  [|
                    <AccountEditButton key="accountEditButton" account />,
+                   <SecretShowRecoveryPhraseButton
+                     key="secretShowRecoveryPhrase"
+                     secret
+                   />,
                    <AccountDeleteButton key="accountDeleteButton" account />,
                  |]
                </Menu>
@@ -387,6 +417,7 @@ module SecretRowItem = {
           [|
             <SecretEditButton key="secretEditButton" secret />,
             <SecretScanMenuItem key="secretScanMenuItem" secret />,
+            <SecretShowRecoveryPhraseButton key="" secret />,
             <SecretDeleteButton key="secretDeleteButton" secret />,
           |]
         </Menu>

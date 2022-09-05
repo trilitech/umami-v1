@@ -198,7 +198,13 @@ module Decode = {
   let metadataDecoder = json => {
     name: json |> optionalOrNull("name", string),
     symbol: json |> optionalOrNull("symbol", string),
-    decimals: json |> optionalOrNull("decimals", int), //default: 0
+    decimals:
+      json
+      |> optionalOrNull(
+           "decimals",
+           either(string |> map(int_of_string), int),
+         ),
+    //default: 0
     description: json |> optionalOrNull("description", string),
     artifactUri: json |> optionalOrNull("artifactUri", string),
     displayUri: json |> optionalOrNull("displayUri", string),
@@ -214,10 +220,7 @@ module Decode = {
   };
 
   let standardDecoder = s =>
-    switch (s->string->TokenContract.Decode.kindFromString) {
-    | Ok(k) => k
-    | Error(e) => raise(JsonEx.InternalError(e))
-    };
+    s->string->TokenContract.Decode.kindFromString->JsonEx.getExn;
 
   let contractDecoder = json => {
     alias: json |> optionalOrNull("alias", string),

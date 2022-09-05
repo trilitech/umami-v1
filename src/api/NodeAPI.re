@@ -25,8 +25,6 @@
 
 open ServerAPI;
 
-open Let;
-
 type Errors.t +=
   | IllformedTokenContract
   | InvalidOperationType
@@ -44,11 +42,14 @@ let () =
 
 module Accounts = {
   let exists = (config, account) => {
-    let%AwaitMap json = URL.Explorer.accountExists(config, ~account)->URL.get;
-    switch (Js.Json.classify(json)) {
-    | Js.Json.JSONTrue => true
-    | _ => false
-    };
+    URL.Explorer.accountExists(config, ~account)
+    ->URL.get
+    ->Promise.mapOk(json =>
+        switch (Js.Json.classify(json)) {
+        | Js.Json.JSONTrue => true
+        | _ => false
+        }
+      );
   };
 };
 
@@ -92,10 +93,10 @@ module Mnemonic = {
 
 module DelegateMaker = (Get: {let get: URL.t => Promise.t(Js.Json.t);}) => {
   let getForAccount = (config: ConfigContext.env, account) => {
-    let%AwaitMap res =
-      TaquitoAPI.Delegation.get(config.network.endpoint, account);
-
-    res->Option.flatMap(delegate => account == delegate ? None : res);
+    TaquitoAPI.Delegation.get(config.network.endpoint, account)
+    ->Promise.mapOk(res =>
+        res->Option.flatMap(delegate => account == delegate ? None : res)
+      );
   };
 
   let getBakers = (config: ConfigContext.env) =>
@@ -118,76 +119,92 @@ module DelegateMaker = (Get: {let get: URL.t => Promise.t(Js.Json.t);}) => {
   module BalanceAPI = Balance;
 
   let extractInfoFromDelegate =
-      (network, delegate, account, firstOperation: Operation.t) => {
-    let%Await balance =
-      network->BalanceAPI.get(
+      (config, delegate, account, firstOperation: Operation.t) => {
+    let balance =
+      config->BalanceAPI.get(
         account,
         ~params={block: firstOperation.level->string_of_int},
         (),
       );
-    let info = {
-      initialBalance: balance,
-      delegate: Some(delegate),
-      timestamp: firstOperation.timestamp,
-      lastReward: None,
-    };
 
-    let%AwaitMap operations =
-      network->ExplorerAPI.getOperations(
-        delegate,
-        ~types=[|"transaction"|],
-        ~destination=account,
-        ~limit=1,
-        (),
+    let info =
+      balance->Promise.mapOk(balance =>
+        {
+          initialBalance: balance,
+          delegate: Some(delegate),
+          timestamp: firstOperation.timestamp,
+          lastReward: None,
+        }
       );
 
-    if (operations->Array.length == 0) {
-      info->Some;
-    } else {
-      switch ((firstOperation.payload: Operation.payload)) {
-      | Transaction(Token(payload, _, _))
-      | Transaction(Tez(payload)) =>
-        {...info, lastReward: Some(payload.amount)}->Some
-      | _ => info->Some
-      };
-    };
+    let operations =
+      config.network
+      ->ExplorerAPI.getOperations(
+          delegate,
+          ~types=[|"transaction"|],
+          ~destination=account,
+          ~limit=1,
+          (),
+        );
+
+    Promise.flatMapOk2(operations, info, (operations, info) =>
+      (
+        if (operations->Array.length == 0) {
+          info->Some;
+        } else {
+          switch ((firstOperation.payload: Operation.payload)) {
+          | Transaction(Token(payload, _, _))
+          | Transaction(Tez(payload)) =>
+            {...info, lastReward: Some(payload.amount)}->Some
+          | _ => info->Some
+          };
+        }
+      )
+      ->Promise.ok
+    );
   };
 
   let getDelegationInfoForAccount =
-      (network, account: PublicKeyHash.t): Promise.t(option(delegationInfo)) => {
-    let%Await operations =
-      network->ExplorerAPI.getOperations(
-        account,
-        ~types=[|"delegation"|],
-        ~limit=1,
-        (),
-      );
+      (config: ConfigContext.env, account: PublicKeyHash.t)
+      : Promise.t(option(delegationInfo)) => {
+    let operations =
+      config.network
+      ->ExplorerAPI.getOperations(
+          account,
+          ~types=[|"delegation"|],
+          ~limit=1,
+          (),
+        );
 
-    if (operations->Array.length == 0) {
-      Promise.ok(None);
-    } else {
-      let firstOperation = operations->Array.getUnsafe(0);
+    operations->Promise.flatMapOk(operations =>
+      if (operations->Array.length == 0) {
+        Promise.ok(None);
+      } else {
+        let firstOperation = operations->Array.getUnsafe(0);
 
-      let%Await payload =
-        switch (firstOperation.payload) {
-        | Delegation(payload) => payload->Promise.ok
-        | _ => InvalidOperationType->Promise.err
-        };
+        let payload =
+          switch (firstOperation.payload) {
+          | Delegation(payload) => payload->Promise.ok
+          | _ => InvalidOperationType->Promise.err
+          };
 
-      switch (payload.delegate) {
-      | None => Promise.none()
-      | Some(delegate) when account == delegate =>
-        {
-          initialBalance: Tez.zero,
-          delegate: None,
-          timestamp: Js.Date.make(),
-          lastReward: None,
-        }
-        ->Promise.some
-      | Some(delegate) =>
-        extractInfoFromDelegate(network, delegate, account, firstOperation)
-      };
-    };
+        payload->Promise.flatMapOk(payload =>
+          switch (payload.delegate) {
+          | None => Promise.none()
+          | Some(delegate) when account == delegate =>
+            {
+              initialBalance: Tez.zero,
+              delegate: None,
+              timestamp: Js.Date.make(),
+              lastReward: None,
+            }
+            ->Promise.some
+          | Some(delegate) =>
+            extractInfoFromDelegate(config, delegate, account, firstOperation)
+          }
+        );
+      }
+    );
   };
 };
 
@@ -211,65 +228,73 @@ module Tokens = {
   type tokenKind = [ OperationRepr.Transaction.tokenKind | `NotAToken];
 
   let checkTokenContract = (config, contract: PublicKeyHash.t) => {
-    let%AwaitRes json = URL.Explorer.checkToken(config, ~contract)->URL.get;
-    switch (Js.Json.classify(json)) {
-    | Js.Json.JSONString("fa1-2") => Ok(`KFA1_2)
-    | Js.Json.JSONString("fa2") => Ok(`KFA2)
-    | Js.Json.JSONNull => Ok(`NotAToken)
-    | _ => Error(IllformedTokenContract)
-    };
+    URL.Explorer.checkToken(config, ~contract)
+    ->URL.get
+    ->Promise.flatMapOk(json =>
+        switch (Js.Json.classify(json)) {
+        | Js.Json.JSONString("fa1-2") => Promise.ok(`KFA1_2)
+        | Js.Json.JSONString("fa2") => Promise.ok(`KFA2)
+        | Js.Json.JSONNull => Promise.ok(`NotAToken)
+        | _ => Promise.err(IllformedTokenContract)
+        }
+      );
   };
 
-  let runFA12GetBalance = (config, ~address, ~token) => {
-    let%Await json =
-      config
+  let runFA12GetBalance = (network: Network.t, ~address, ~token) => {
+    let json =
+      network
       ->URL.Endpoint.runView
       ->URL.postJson(
           URL.Endpoint.fa12GetBalanceInput(
-            ~config,
+            ~network,
             ~contract=token,
             ~account=address,
           ),
         );
 
-    /* bs-json raises exceptions instead of returning options */
-    let res =
-      try(Json.Decode.(json |> field("data", field("int", string)))->Some) {
-      | Json.Decode.DecodeError(_) => None
-      };
+    json->Promise.flatMapOk(json => {
+      /* bs-json raises exceptions instead of returning options */
+      let res =
+        try(Json.Decode.(json |> field("data", field("int", string)))->Some) {
+        | Json.Decode.DecodeError(_) => None
+        };
 
-    switch (res) {
-    | None => Token.Unit.zero->Promise.ok
-    | Some(v) =>
-      v
-      ->Token.Unit.fromNatString
-      ->Result.mapError(_ => UnreadableTokenAmount(v))
-      ->Promise.value
-    };
+      switch (res) {
+      | None => Token.Unit.zero->Promise.ok
+      | Some(v) =>
+        v
+        ->Token.Unit.fromNatString
+        ->Result.mapError(_ => UnreadableTokenAmount(v))
+        ->Promise.value
+      };
+    });
   };
 
-  let callFA2BalanceOf = (config, address, token, tokenId) => {
+  let callFA2BalanceOf = (network, address, token, tokenId) => {
     let input =
       URL.Endpoint.fa2BalanceOfInput(
-        ~config,
+        ~network,
         ~contract=token,
         ~account=address,
         ~tokenId,
       );
 
-    let%Await json = config->URL.Endpoint.runView->URL.postJson(input);
+    network
+    ->URL.Endpoint.runView
+    ->URL.postJson(input)
+    ->Promise.flatMapOk(json => {
+        let res = JsonEx.(decode(json, Michelson.Decode.fa2BalanceOfDecoder));
 
-    let res = JsonEx.(decode(json, MichelsonDecode.fa2BalanceOfDecoder));
-
-    switch (res) {
-    | Ok([|((_pkh, _tokenId), v)|]) =>
-      v
-      ->Token.Unit.fromNatString
-      ->Result.mapError(_ => UnreadableTokenAmount(v))
-      ->Promise.value
-    | Error(_)
-    | Ok(_) => Token.Unit.zero->Promise.ok
-    };
+        switch (res) {
+        | Ok([|((_pkh, _tokenId), v)|]) =>
+          v
+          ->Token.Unit.fromNatString
+          ->Result.mapError(_ => UnreadableTokenAmount(v))
+          ->Promise.value
+        | Error(_)
+        | Ok(_) => Token.Unit.zero->Promise.ok
+        };
+      });
   };
 };
 

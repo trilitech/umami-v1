@@ -23,16 +23,41 @@
 /*                                                                           */
 /*****************************************************************************/
 
-let useLoad = (~requestState, ~address: PublicKeyHash.t) => {
-  let get = (~config, address) => {
-    config->NodeAPI.Balance.get(address, ());
-  };
+type Errors.t +=
+  | EveryBalancesFail
+  | BalanceNotFound;
 
+let () =
+  Errors.registerHandler(
+    "Balance",
+    fun
+    | EveryBalancesFail => I18n.Errors.every_balances_fail->Some
+    | BalanceNotFound => I18n.Errors.balance_not_found->Some
+    | _ => None,
+  );
+
+let getOne = (balancesRequest, address) =>
+  balancesRequest->ApiRequest.flatMap((balances, isDone, t) => {
+    switch (balances->PublicKeyHash.Map.get(address)) {
+    | Some(balance) when isDone => ApiRequest.Done(Ok(balance), t)
+    | Some(balance) => Loading(Some(balance))
+    | None when isDone => Done(Error(BalanceNotFound), t)
+    | None => Loading(None)
+    }
+  });
+
+let useLoadBalances =
+    (~forceFetch=true, ~requestState, addresses: list(PublicKeyHash.t)) => {
+  let get = (~config: ConfigContext.env, addresses) => {
+    config.network
+    ->ServerAPI.Explorer.getBalances(~addresses)
+    ->Promise.mapOk(PublicKeyHash.Map.fromArray);
+  };
   ApiRequest.useLoader(
     ~get,
-    ~condition=addr => (addr :> string) != "",
+    ~condition=addresses => !addresses->Js.List.isEmpty && forceFetch,
     ~kind=Logs.Balance,
     ~requestState,
-    address,
+    addresses,
   );
 };

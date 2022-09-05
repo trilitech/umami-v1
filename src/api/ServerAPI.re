@@ -23,8 +23,6 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open Let;
-
 module Path = {
   module Endpoint = {
     let runView = "/chains/main/blocks/head/helpers/scripts/run_view";
@@ -61,8 +59,8 @@ module URL = {
     path ++ (args == [] ? "" : "?" ++ args->build_args);
   };
 
-  let build_explorer_url = (config: ConfigContext.env, path, args) => {
-    build_url(config.network.explorer ++ "/" ++ path, args);
+  let build_explorer_url = (network: Network.network, path, args) => {
+    build_url(network.explorer ++ "/" ++ path, args);
   };
 
   let fromString = s => s;
@@ -79,16 +77,16 @@ module URL = {
         (),
       );
 
-    let%Await response =
-      url
-      ->Fetch.fetchWithInit(init)
-      ->Promise.fromJs(e =>
-          e->RawJsError.fromPromiseError.message->FetchError
-        );
-
-    response
-    ->Fetch.Response.json
-    ->Promise.fromJs(e => e->RawJsError.fromPromiseError.message->FetchError);
+    url
+    ->Fetch.fetchWithInit(init)
+    ->Promise.fromJs(e => e->RawJsError.fromPromiseError.message->FetchError)
+    ->Promise.flatMapOk(response =>
+        response
+        ->Fetch.Response.json
+        ->Promise.fromJs(e =>
+            e->RawJsError.fromPromiseError.message->FetchError
+          )
+      );
   };
 
   let postJson = (url, json) => {
@@ -100,22 +98,22 @@ module URL = {
         (),
       );
 
-    let%Await response =
-      url
-      ->Fetch.fetchWithInit(init)
-      ->Promise.fromJs(e =>
-          e->RawJsError.fromPromiseError.message->FetchError
-        );
-
-    response
-    ->Fetch.Response.json
-    ->Promise.fromJs(e => e->RawJsError.fromPromiseError.message->FetchError);
+    url
+    ->Fetch.fetchWithInit(init)
+    ->Promise.fromJs(e => e->RawJsError.fromPromiseError.message->FetchError)
+    ->Promise.flatMapOk(response =>
+        response
+        ->Fetch.Response.json
+        ->Promise.fromJs(e =>
+            e->RawJsError.fromPromiseError.message->FetchError
+          )
+      );
   };
 
   module Explorer = {
     let operations =
         (
-          config: ConfigContext.env,
+          network: Network.network,
           account: PublicKeyHash.t,
           ~types: option(array(string))=?,
           ~destination: option(PublicKeyHash.t)=?,
@@ -130,18 +128,49 @@ module URL = {
           @? destination->arg_opt("destination", dst => (dst :> string))
           @? []
         );
-      let url = build_explorer_url(config, operationsPath, args);
+      let url = build_explorer_url(network, operationsPath, args);
       url;
     };
 
-    let checkToken = (config, ~contract: PublicKeyHash.t) => {
+    let checkToken = (network, ~contract: PublicKeyHash.t) => {
       let path = "tokens/exists/" ++ (contract :> string);
-      build_explorer_url(config, path, []);
+      build_explorer_url(network, path, []);
     };
 
-    let accountExists = (config, ~account: PublicKeyHash.t) => {
+    let accountExists = (network, ~account: PublicKeyHash.t) => {
       let path = "accounts/" ++ (account :> string) ++ "/exists/";
-      build_explorer_url(config, path, []);
+      build_explorer_url(network, path, []);
+    };
+
+    let balances = (network, ~addresses: list(PublicKeyHash.t)) => {
+      let path = "balances";
+      let list_address =
+        List.map(addresses, address => ("pkh", (address :> string)));
+      build_explorer_url(network, path, list_address);
+    };
+
+    let tokenBalances =
+        (
+          config,
+          ~addresses: list(PublicKeyHash.t),
+          ~contract: PublicKeyHash.t,
+          ~id: option(int),
+        ) => {
+      let path = "balances";
+      let list_address =
+        List.map(addresses, address => ("pkh", (address :> string)));
+      let arg =
+        switch (id) {
+        | Some(id) =>
+          Belt.List.concat(
+            [("kt", (contract :> string)), ("id", id->Js.Int.toString)],
+            list_address,
+          )
+        | None =>
+          Belt.List.concat([("kt", (contract :> string))], list_address)
+        };
+
+      build_explorer_url(config, path, arg);
     };
 
     let tokenRegistry =
@@ -168,13 +197,13 @@ module URL = {
   };
 
   module Endpoint = {
-    let runView = (c: ConfigContext.env) =>
-      c.network.endpoint ++ Path.Endpoint.runView;
+    let runView = (network: Network.network) =>
+      network.endpoint ++ Path.Endpoint.runView;
 
     /* Generates a valid JSON for the run_view RPC */
     let fa12GetBalanceInput =
         (
-          ~config: ConfigContext.env,
+          ~network: Network.network,
           ~contract: PublicKeyHash.t,
           ~account: PublicKeyHash.t,
         ) => {
@@ -184,9 +213,7 @@ module URL = {
           ("entrypoint", string("getBalance")),
           (
             "chain_id",
-            Network.Encode.chainIdEncoder(
-              config.network.chain->Network.getChainId,
-            ),
+            Network.Encode.chainIdEncoder(network.chain->Network.getChainId),
           ),
           ("input", object_([("string", string((account :> string)))])),
           ("unparsing_mode", string("Readable")),
@@ -219,7 +246,7 @@ module URL = {
 
     let fa2BalanceOfInput =
         (
-          ~config: ConfigContext.env,
+          ~network: Network.network,
           ~contract: PublicKeyHash.t,
           ~account: PublicKeyHash.t,
           ~tokenId: int,
@@ -230,9 +257,7 @@ module URL = {
           ("entrypoint", string("balance_of")),
           (
             "chain_id",
-            Network.Encode.chainIdEncoder(
-              config.network.chain->Network.getChainId,
-            ),
+            Network.Encode.chainIdEncoder(network.chain->Network.getChainId),
           ),
           (
             "input",
@@ -261,7 +286,7 @@ module URL = {
 
     let betterCallDevAccountTokens =
         (
-          ~config: ConfigContext.env,
+          ~network: Network.network,
           ~account: PublicKeyHash.t,
           ~contract: option(PublicKeyHash.t)=?,
           ~limit: option(int)=?,
@@ -284,7 +309,7 @@ module URL = {
           @? contract->arg_opt("contract", k => (k :> string))
           @? []
         );
-      config.network.chain
+      network.chain
       ->Network.chainNetwork
       ->Option.map(network =>
           build_url(
@@ -297,12 +322,12 @@ module URL = {
           )
         )
       ->ResultEx.fromOption(
-          UnknownNetwork(Network.getChainId(config.network.chain)),
+          UnknownNetwork(Network.getChainId(network.chain)),
         );
     };
 
     let betterCallDevBatchAccounts =
-        (~config: ConfigContext.env, ~accounts: array(PublicKeyHash.t)) => {
+        (~network: Network.network, ~accounts: array(PublicKeyHash.t)) => {
       let args = [
         (
           "address",
@@ -310,7 +335,7 @@ module URL = {
           accounts->Array.map(a => (a :> string))->Js.Array2.joinWith(","),
         ),
       ];
-      config.network.chain
+      network.chain
       ->Network.chainNetwork
       ->Option.map(network =>
           build_url(
@@ -319,13 +344,13 @@ module URL = {
           )
         )
       ->ResultEx.fromOption(
-          UnknownNetwork(Network.getChainId(config.network.chain)),
+          UnknownNetwork(Network.getChainId(network.chain)),
         );
     };
 
     let tzktAccountTokens =
         (
-          ~config: ConfigContext.env,
+          ~network: Network.network,
           ~account: PublicKeyHash.t,
           ~contract: option(PublicKeyHash.t)=?,
           ~limit: option(int)=?,
@@ -351,7 +376,7 @@ module URL = {
           @? contract->arg_opt("token.contract", k => (k :> string))
           @? []
         );
-      config.network.chain
+      network.chain
       ->Network.chainNetwork
       ->Option.map(network =>
           build_url(
@@ -360,13 +385,13 @@ module URL = {
           )
         )
       ->ResultEx.fromOption(
-          UnknownNetwork(Network.getChainId(config.network.chain)),
+          UnknownNetwork(Network.getChainId(network.chain)),
         );
     };
 
     let tzktAccountTokensNumber =
-        (~config: ConfigContext.env, ~account: PublicKeyHash.t) => {
-      config.network.chain
+        (~network: Network.network, ~account: PublicKeyHash.t) => {
+      network.chain
       ->Network.chainNetwork
       ->Option.map(network =>
           build_url(
@@ -375,7 +400,7 @@ module URL = {
           )
         )
       ->ResultEx.fromOption(
-          UnknownNetwork(Network.getChainId(config.network.chain)),
+          UnknownNetwork(Network.getChainId(network.chain)),
         );
     };
   };
@@ -384,7 +409,7 @@ module URL = {
 module type Explorer = {
   let getOperations:
     (
-      ConfigContext.env,
+      Network.network,
       PublicKeyHash.t,
       ~types: array(string)=?,
       ~destination: PublicKeyHash.t=?,
@@ -392,6 +417,19 @@ module type Explorer = {
       unit
     ) =>
     Promise.t(array(Operation.t));
+
+  let getBalances:
+    (Network.network, ~addresses: list(PublicKeyHash.t)) =>
+    Promise.t(array((PublicKeyHash.t, Tez.t)));
+
+  let getTokenBalances:
+    (
+      Network.t,
+      ~addresses: list(PublicKeyHash.t),
+      ~contract: PublicKeyHash.t,
+      ~id: option(int)
+    ) =>
+    Promise.t(array((PublicKeyHash.t, TokenRepr.Unit.t)));
 };
 
 module ExplorerMaker = (Get: {let get: string => Promise.t(Js.Json.t);}) => {
@@ -436,17 +474,56 @@ module ExplorerMaker = (Get: {let get: string => Promise.t(Js.Json.t);}) => {
         ~limit: option(int)=?,
         (),
       ) => {
-    let%Await res =
-      network
-      ->URL.Explorer.operations(account, ~types?, ~destination?, ~limit?, ())
-      ->Get.get;
+    network
+    ->URL.Explorer.operations(account, ~types?, ~destination?, ~limit?, ())
+    ->Get.get
+    ->Promise.flatMapOk(res => {
+        res
+        ->Result.fromExn(Json.Decode.(array(Operation.Decode.t)))
+        ->Result.mapError(e => e->JsonEx.filterJsonExn->JsonError)
+        ->Promise.value
+      })
+    ->Promise.mapOk(filterMalformedDuplicates);
+  };
 
-    let%AwaitMap operations =
-      res
-      ->Result.fromExn(Json.Decode.(array(Operation.Decode.t)))
-      ->Result.mapError(e => e->Operation.filterJsonExn->JsonError)
-      ->Promise.value;
-    operations->filterMalformedDuplicates;
+  let getBalances = (network, ~addresses: list(PublicKeyHash.t)) => {
+    network
+    ->URL.Explorer.balances(~addresses)
+    ->Get.get
+    ->Promise.flatMapOk(res => {
+        let decoder = json =>
+          Json.Decode.(
+            json |> field("pkh", PublicKeyHash.decoder),
+            json |> field("balance", Tez.decoder),
+          );
+        res
+        ->Result.fromExn(Json.Decode.(array(decoder)))
+        ->Result.mapError(e => e->JsonEx.filterJsonExn->JsonError)
+        ->Promise.value;
+      });
+  };
+
+  let getTokenBalances =
+      (
+        network,
+        ~addresses: list(PublicKeyHash.t),
+        ~contract: PublicKeyHash.t,
+        ~id: option(int),
+      ) => {
+    network
+    ->URL.Explorer.tokenBalances(~addresses, ~contract, ~id)
+    ->Get.get
+    ->Promise.flatMapOk(res => {
+        let decoder = json =>
+          Json.Decode.(
+            json |> field("pkh", PublicKeyHash.decoder),
+            json |> field("balance", TokenRepr.decoder),
+          );
+        res
+        ->Result.fromExn(Json.Decode.(array(decoder)))
+        ->Result.mapError(e => e->JsonEx.filterJsonExn->JsonError)
+        ->Promise.value;
+      });
   };
 };
 

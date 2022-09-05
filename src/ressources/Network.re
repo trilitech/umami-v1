@@ -23,8 +23,6 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open Let;
-
 type chainId = string;
 
 type apiVersion = {
@@ -104,15 +102,23 @@ let () =
     | _ => None,
   );
 
-type nativeChains = [ | `Hangzhounet | `Mainnet | `Ithacanet];
+type nativeChains = [ | `Mainnet | `Ghostnet | `Jakartanet | `Kathmandunet];
 
-type supportedChains = [ nativeChains | `Florencenet | `Edo2net | `Granadanet];
+type supportedChains = [
+  nativeChains
+  | `Hangzhounet
+  | `Florencenet
+  | `Edo2net
+  | `Granadanet
+];
 
 let unsafeChainId: string => chainId = c => c;
 
 let getChainId =
   fun
-  | `Ithacanet => "NetXnHfVqm9iesp"
+  | `Kathmandunet => "NetXi2ZagzEsXbZ"
+  | `Jakartanet => "NetXLH1uAxK7CCh"
+  | `Ghostnet => "NetXnHfVqm9iesp"
   | `Granadanet => "NetXz969SFaFn8k"
   | `Mainnet => "NetXdQprcVkpaWU"
   | `Florencenet => "NetXxkAx4woPLyu"
@@ -127,19 +133,23 @@ let fromChainId =
   | "NetXxkAx4woPLyu" => `Florencenet
   | "NetXSgo1ZT2DRUG" => `Edo2net
   | "NetXZSsxBpMQeAT" => `Hangzhounet
-  | "NetXnHfVqm9iesp" => `Ithacanet
+  | "NetXnHfVqm9iesp" => `Ghostnet
+  | "NetXLH1uAxK7CCh" => `Jakartanet
+  | "NetXi2ZagzEsXbZ" => `Kathmandunet
   | s => `Custom(s);
 
 let mkChainAssoc = c => (c, getChainId(c));
 
 let nativeChains = [
   mkChainAssoc(`Mainnet),
-  mkChainAssoc(`Hangzhounet),
-  mkChainAssoc(`Ithacanet),
+  mkChainAssoc(`Ghostnet),
+  mkChainAssoc(`Jakartanet),
+  mkChainAssoc(`Kathmandunet),
 ];
 
 let supportedChains = [
   mkChainAssoc(`Florencenet),
+  mkChainAssoc(`Hangzhounet),
   mkChainAssoc(`Edo2net),
   mkChainAssoc(`Granadanet),
   ...nativeChains,
@@ -152,7 +162,9 @@ let getDisplayedName =
   | `Florencenet => "Florencenet"
   | `Edo2net => "Edo2net"
   | `Hangzhounet => "Hangzhounet"
-  | `Ithacanet => "Ithacanet"
+  | `Ghostnet => "Ghostnet"
+  | `Jakartanet => "Jakartanet"
+  | `Kathmandunet => "Kathmandunet"
   | `Custom(s) => s;
 
 let externalExplorer =
@@ -162,7 +174,9 @@ let externalExplorer =
   | `Florencenet => "https://florencenet.tzkt.io/"->Ok
   | `Granadanet => "https://granadanet.tzkt.io/"->Ok
   | `Hangzhounet => "https://hangzhou2net.tzkt.io/"->Ok
-  | `Ithacanet => "https://ithacanet.tzkt.io/"->Ok
+  | `Ghostnet => "https://ghostnet.tzkt.io/"->Ok
+  | `Jakartanet => "https://jakartanet.tzkt.io/"->Ok
+  | `Kathmandunet => "https://kathmandunet.tzkt.io/"->Ok
   | `Custom(_) as net => Error(UnknownChainId(getChainId(net)));
 
 type chain('chainId) = [ supportedChains | `Custom('chainId)];
@@ -175,6 +189,8 @@ type network = {
   endpoint: string,
 };
 
+type t = network;
+
 let chainNetwork: chain(_) => option(string) =
   fun
   | `Mainnet => Some("mainnet")
@@ -182,7 +198,9 @@ let chainNetwork: chain(_) => option(string) =
   | `Florencenet => Some("florencenet")
   | `Edo2net => Some("edo2net")
   | `Hangzhounet => Some("hangzhou2net")
-  | `Ithacanet => Some("ithacanet")
+  | `Ghostnet => Some("ghostnet")
+  | `Jakartanet => Some("jakartanet")
+  | `Kathmandunet => Some("kathmandunet")
   | `Custom(_) => None;
 
 let networkChain: string => option(chain(_)) =
@@ -192,7 +210,10 @@ let networkChain: string => option(chain(_)) =
   | "florencenet" => Some(`Florencenet)
   | "edo2net" => Some(`Edo2net)
   | "hangzhou2net" => Some(`Hangzhounet)
-  | "ithacanet" => Some(`Ithacanet)
+  | "ithacanet" /* Kill? */
+  | "ghostnet" => Some(`Ghostnet)
+  | "jakartanet" => Some(`Jakartanet)
+  | "kathmandunet" => Some(`Kathmandunet)
   | _ => None;
 
 module Encode = {
@@ -204,7 +225,9 @@ module Encode = {
     | `Granadanet
     | `Florencenet
     | `Edo2net
-    | `Ithacanet
+    | `Ghostnet
+    | `Jakartanet
+    | `Kathmandunet
     | `Hangzhounet => "default"
     | `Custom(_) => "custom";
 
@@ -235,15 +258,18 @@ module Decode = {
   let nativeChainFromString =
     fun
     | "Mainnet" => `Mainnet
-    | "Hangzhounet" => `Hangzhounet
-    | "Ithacanet" => `Ithacanet
-    | n =>
-      JsonEx.(raise(InternalError(DecodeError("Unknown network " ++ n))));
+    | "Ithacanet" /* Kill? */
+    | "Ghostnet" => `Ghostnet
+    | "Jakartanet" => `Jakartanet
+    | "Kathmandunet" => `Kathmandunet
+    | n => raise(Json.Decode.DecodeError("Unknown network " ++ n));
 
   let chainFromString =
     fun
     | "Florencenet" => `Florencenet
     | "Edo2net" => `Edo2net
+    | "Hangzhounet" => `Hangzhounet
+    | "Jakartanet" => `Jakartanet
     | n => nativeChainFromString(n);
 
   let chainIdDecoder: Json.Decode.decoder(chainId) = Json.Decode.string;
@@ -259,10 +285,7 @@ module Decode = {
            fun
            | "default" => field("name", defaultNetworkDecoder)
            | "custom" => field("name", customNetworkDecoder)
-           | v =>
-             JsonEx.(
-               raise(InternalError(DecodeError("Unknown kind" ++ v)))
-             ),
+           | v => raise(Json.Decode.DecodeError("Unknown kind" ++ v)),
          )
     );
   };
@@ -292,44 +315,57 @@ let mainnet =
     `Mainnet,
   );
 
-let hangzhounet =
+let ghostnet =
   mk(
-    ~explorer="https://hangzhounet.umamiwallet.com",
-    ~endpoint="https://hangzhounet.smartpy.io/",
-    `Hangzhounet,
+    ~explorer="https://ghostnet.umamiwallet.com",
+    ~endpoint="https://ghostnet.ecadinfra.com/",
+    `Ghostnet,
   );
 
-let ithacanet =
+let jakartanet =
   mk(
-    ~explorer="https://ithacanet.umamiwallet.com",
-    ~endpoint="https://ithacanet.ecadinfra.com/",
-    `Ithacanet,
+    ~explorer="https://jakartanet.umamiwallet.com/",
+    ~endpoint="https://jakartanet.ecadinfra.com",
+    `Jakartanet,
+  );
+
+let kathmandunet =
+  mk(
+    ~explorer="https://kathmandunet.umamiwallet.com/",
+    ~endpoint="https://kathmandunet.ecadinfra.com",
+    `Kathmandunet,
   );
 
 let getNetwork =
   fun
-  | `Hangzhounet => hangzhounet
   | `Mainnet => mainnet
-  | `Ithacanet => ithacanet;
+  | `Ghostnet => ghostnet
+  | `Jakartanet => jakartanet
+  | `Kathmandunet => kathmandunet;
 
 let getNetworks = (c: nativeChains) => {
   let n = getNetwork(c);
   let withEP = url => {...n, endpoint: url};
   switch (c) {
-  | `Hangzhounet => [
-      withEP("https://hangzhounet.smartpy.io/"),
-      withEP("https://api.tez.ie/rpc/hangzhounet"),
-    ]
   | `Mainnet => [
       withEP("https://mainnet.smartpy.io/"),
       withEP("https://api.tez.ie/rpc/mainnet/"),
       withEP("https://teznode.letzbake.com"),
       withEP("https://mainnet.tezrpc.me/"),
-      withEP("https://rpc.tzbeta.net/"),
+      withEP("https://rpc.tzbeta.net"),
     ]
-  | `Ithacanet => [
-      withEP("https://ithacanet.ecadinfra.com/"),
-      withEP("https://ithacanet.smartpy.io/"),
+  | `Ghostnet => [
+      withEP("https://ghostnet.ecadinfra.com/"),
+      withEP("https://ghostnet.smartpy.io/"),
+    ]
+  | `Jakartanet => [
+      withEP("https://jakartanet.ecadinfra.com/"),
+      withEP("https://rpczero.tzbeta.net"),
+      withEP("https://jakartanet.tezos.marigold.dev/"),
+    ]
+  | `Kathmandunet => [
+      withEP("https://kathmandunet.ecadinfra.com"),
+      withEP("https://kathmandunet.tezos.marigold.dev/"),
     ]
   };
 };
@@ -402,65 +438,72 @@ let mapAPIError: _ => Errors.t =
   | _ => API(MonitorRPCError("Unknown error"));
 
 let monitor = url => {
-  let%AwaitRes json =
-    (url ++ "/monitor/blocks")->fetchJson(e => API(NotAvailable(e)));
-
-  Result.fromExn((), () =>
-    Json.Decode.{
-      nodeLastBlock: json |> field("node_last_block", int),
-      nodeLastBlockTimestamp:
-        json |> field("node_last_block_timestamp", string),
-      indexerLastBlock: json |> field("indexer_last_block", int),
-      indexerLastBlockTimestamp:
-        json |> field("indexer_last_block_timestamp", string),
-    }
-  )
-  ->Result.mapError(mapAPIError);
+  (url ++ "/monitor/blocks")
+  ->fetchJson(e => API(NotAvailable(e)))
+  ->Promise.flatMapOk(json =>
+      Result.fromExn((), () =>
+        Json.Decode.{
+          nodeLastBlock: json |> field("node_last_block", int),
+          nodeLastBlockTimestamp:
+            json |> field("node_last_block_timestamp", string),
+          indexerLastBlock: json |> field("indexer_last_block", int),
+          indexerLastBlockTimestamp:
+            json |> field("indexer_last_block_timestamp", string),
+        }
+      )
+      ->Result.mapError(mapAPIError)
+      ->Promise.value
+    );
 };
 
 let getAPIVersion = (~timeout=?, url) => {
-  let%AwaitRes json =
-    (url ++ "/version")->fetchJson(~timeout?, e => API(NotAvailable(e)));
-
-  let%Res api =
-    Result.fromExn((), () => Json.Decode.(field("api", string, json)))
-    ->Result.mapError(mapAPIError);
-
-  let%Res api =
-    Version.parse(api)
-    ->Result.mapError(
-        fun
-        | Version.VersionFormat(e) => API(VersionFormat(e))
-        | _ => API(VersionRPCError("Unknown error")),
-      );
-
-  Result.fromExn((), () =>
-    Json.Decode.{
-      api,
-      indexer: json |> field("indexer", string),
-      node: json |> field("node", string),
-      chain: json |> field("chain", string),
-      protocol: json |> field("protocol", string),
-    }
-  )
-  ->Result.mapError(mapAPIError);
+  (url ++ "/version")
+  ->fetchJson(~timeout?, e => API(NotAvailable(e)))
+  ->Promise.flatMapOk(json =>
+      Result.fromExn((), () => Json.Decode.(field("api", string, json)))
+      ->Result.mapError(mapAPIError)
+      ->Promise.value
+      ->Promise.flatMapOk(api =>
+          Version.parse(api)
+          ->Result.mapError(
+              fun
+              | Version.VersionFormat(e) => API(VersionFormat(e))
+              | _ => API(VersionRPCError("Unknown error")),
+            )
+          ->Promise.value
+        )
+      ->Promise.flatMapOk(api =>
+          Result.fromExn((), () =>
+            Json.Decode.{
+              api,
+              indexer: json |> field("indexer", string),
+              node: json |> field("node", string),
+              chain: json |> field("chain", string),
+              protocol: json |> field("protocol", string),
+            }
+          )
+          ->Result.mapError(mapAPIError)
+          ->Promise.value
+        )
+    );
 };
 
 let getNodeChain = (~timeout=?, url) => {
-  let%AwaitRes json =
-    (url ++ "/chains/main/chain_id")
-    ->fetchJson(~timeout?, e => Node(NotAvailable(e)));
-  switch (Js.Json.decodeString(json)) {
-  | Some(v) =>
-    let chain =
-      supportedChains
-      ->List.getBy(((_, id)) => id == v)
-      ->Option.map(fst)
-      ->Option.getWithDefault(`Custom(v));
+  (url ++ "/chains/main/chain_id")
+  ->fetchJson(~timeout?, e => Node(NotAvailable(e)))
+  ->Promise.flatMapOk(json =>
+      switch (Js.Json.decodeString(json)) {
+      | Some(v) =>
+        let chain =
+          supportedChains
+          ->List.getBy(((_, id)) => id == v)
+          ->Option.map(fst)
+          ->Option.getWithDefault(`Custom(v));
 
-    Ok(chain);
-  | _ => VersionRPCError("not a Json string")->Node->Error
-  };
+        Promise.ok(chain);
+      | _ => VersionRPCError("not a Json string")->Node->Promise.err
+      }
+    );
 };
 
 let checkConfiguration =

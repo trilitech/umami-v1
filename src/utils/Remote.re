@@ -47,4 +47,4 @@ module Dialog = {
 
 type t = {dialog: Dialog.t};
 
-[@bs.module "electron"] external remote: t = "remote";
+[@bs.module] external remote: t = "@electron/remote";

@@ -29,7 +29,6 @@ module Make =
   module Sys = S;
 
   open Sys.Path.Ops;
-  open Let;
 
   type Errors.t +=
     | KeyNotFound
@@ -144,16 +143,21 @@ module Make =
   };
 
   let pkFromAlias = (~dirpath, ~alias) => {
-    let%AwaitRes pkaliases = dirpath->PkAliases.read;
-    let%ResMap a = pkaliases->PkAliases.find(a => a.name == alias);
-    a.value.PkAlias.key;
+    dirpath
+    ->PkAliases.read
+    ->Promise.flatMapOk(pkaliases =>
+        pkaliases->PkAliases.find(a => a.name == alias)->Promise.value
+      )
+    ->Promise.mapOk(a => a.value.PkAlias.key);
   };
 
   let updatePkhAlias = (~dirpath, ~update) =>
     dirpath->PkhAliases.protect(_ => {
-      let%Await pkhAliases = PkhAliases.read(dirpath);
-      let pkhAliases = update(pkhAliases);
-      dirpath->PkhAliases.write(pkhAliases);
+      PkhAliases.read(dirpath)
+      ->Promise.flatMapOk(pkhAliases => {
+          let pkhAliases = update(pkhAliases);
+          dirpath->PkhAliases.write(pkhAliases);
+        })
     });
 
   let addOrReplacePkhAlias = (~dirpath, ~alias, ~pkh) => {
@@ -180,13 +184,22 @@ module Make =
 
   let updateAlias = (~dirpath, ~update) => {
     let update = () => {
-      let%Await pkAliases = PkAliases.read(dirpath);
-      let%Await pkhAliases = PkhAliases.read(dirpath);
-      let%Await skAliases = SecretAliases.read(dirpath);
-      let (pks, pkhs, sks) = update(pkAliases, pkhAliases, skAliases);
-      let%Await () = PkAliases.write(dirpath, pks);
-      let%Await () = PkhAliases.write(dirpath, pkhs);
-      SecretAliases.write(dirpath, sks);
+      PkAliases.read(dirpath)
+      ->Promise.flatMapOk(pkAliases =>
+          PkhAliases.read(dirpath)
+          ->Promise.flatMapOk(pkhAliases =>
+              SecretAliases.read(dirpath)
+              ->Promise.mapOk(skAliases => (pkAliases, pkhAliases, skAliases))
+            )
+        )
+      ->Promise.mapOk(((pkAliases, pkhAliases, skAliases)) =>
+          update(pkAliases, pkhAliases, skAliases)
+        )
+      ->Promise.flatMapOk(((pks, pkhs, sks)) =>
+          PkAliases.write(dirpath, pks)
+          ->Promise.flatMapOk(() => PkhAliases.write(dirpath, pkhs))
+          ->Promise.flatMapOk(() => SecretAliases.write(dirpath, sks))
+        );
     };
     protectAliases(~dirpath, ~f=update);
   };
@@ -226,17 +239,21 @@ module Make =
       let fromSecretKey = uri => {
         let elems = uri->Js.String2.split("/");
 
-        let%ResMap (provider, handle) =
+        let r =
           switch (elems) {
           | [|provider, handle|] =>
-            let%ResMap provider =
-              provider->ReCustomAuthType.providerFromString;
-            (provider, handle->ReCustomAuthType.Handle.fromString);
+            provider
+            ->ReCustomAuthType.providerFromString
+            ->Result.map(provider =>
+                (provider, handle->ReCustomAuthType.Handle.fromString)
+              )
 
           | _ => Error(InvalidEncoding(uri))
           };
 
-        ReCustomAuth.{provider, handle};
+        r->Result.map(((provider, handle)) =>
+          ReCustomAuth.{provider, handle}
+        );
       };
     };
 
@@ -254,13 +271,18 @@ module Make =
 
   type kind =
     Account.kind =
-      | Encrypted | Unencrypted | Ledger | CustomAuth(ReCustomAuth.infos);
+      | Encrypted
+      | Unencrypted
+      | Ledger
+      | Galleon
+      | CustomAuth(ReCustomAuth.infos);
 
   module Prefixes = {
     type t =
       | Encrypted
       | Unencrypted
       | Ledger
+      | Galleon
       | CustomAuth;
 
     let fromKind =
@@ -268,6 +290,7 @@ module Make =
       | Account.Encrypted => Encrypted
       | Unencrypted => Unencrypted
       | Ledger => Ledger
+      | Galleon => Galleon
       | CustomAuth(_) => CustomAuth;
 
     let toString =
@@ -275,6 +298,7 @@ module Make =
       | Encrypted => "encrypted:"
       | Unencrypted => "unencrypted:"
       | Ledger => "ledger://"
+      | Galleon => "galleon:"
       | CustomAuth => "customauth://";
   };
 
@@ -293,24 +317,27 @@ module Make =
     | k when checkStart(k, Prefixes.Encrypted) => buildRes(Encrypted)
     | k when checkStart(k, Prefixes.Unencrypted) => buildRes(Unencrypted)
     | k when checkStart(k, Prefixes.Ledger) => buildRes(Ledger)
+    | k when checkStart(k, Prefixes.Galleon) => buildRes(Galleon)
     | k when checkStart(k, Prefixes.CustomAuth) =>
       let uri = sub(k, Prefixes.CustomAuth);
-      let%ResMap infos = CustomAuth.Decode.fromSecretKey(uri);
-      (CustomAuth(infos), uri);
+      CustomAuth.Decode.fromSecretKey(uri)
+      ->Result.map(infos => (CustomAuth(infos), uri));
     | k => Error(KeyBadFormat(k))
     };
   };
 
   let readSecretFromPkh = (address, dirpath) => {
-    let%Await alias = aliasFromPkh(~dirpath, ~pkh=address);
-    let%Await secretAliases = dirpath->SecretAliases.read;
+    let alias = aliasFromPkh(~dirpath, ~pkh=address);
+    let secretAliases = dirpath->SecretAliases.read;
 
-    let%AwaitRes {value: k} =
+    Promise.flatMapOk2(alias, secretAliases, (alias, secretAliases) =>
       secretAliases
       ->Js.Array2.find(a => a.SecretAliases.name == alias)
-      ->Promise.fromOption(~error=KeyNotFound);
-
-    extractPrefixFromSecretKey(k);
+      ->Promise.fromOption(~error=KeyNotFound)
+      ->Promise.flatMapOk(({value: k}) =>
+          extractPrefixFromSecretKey(k)->Promise.value
+        )
+    );
   };
 
   let mnemonicPkValue = pk =>
@@ -391,28 +418,41 @@ module Make =
           (uri: secretKeyEncoding, ~ledgerBasePkh: PublicKeyHash.t) => {
         let elems = uri->Js.String2.split("/");
 
-        let%Res () =
+        let r =
           elems->Js.Array2.length < 2 ? Error(InvalidEncoding(uri)) : Ok();
 
-        let%Res prefix =
-          // The None case is actually impossible, hence the meaningless error
-          elems[0]->Result.fromOption(InvalidEncoding(uri));
-        let%Res _prefix = prefix->decodePrefix(ledgerBasePkh);
+        r->Result.flatMap(() => {
+          let prefix =
+            // The None case is actually impossible, hence the meaningless error
+            elems[0]->Result.fromOption(InvalidEncoding(uri));
+          let r =
+            prefix->Result.flatMap(prefix =>
+              prefix->decodePrefix(ledgerBasePkh)
+            );
 
-        let%Res scheme =
-          // The None case is actually impossible, hence the meaningless error
-          elems[1]->Result.fromOption(InvalidEncoding(uri));
-        let%Res scheme = scheme->PublicKeyHash.Scheme.fromString;
+          r->Result.flatMap(_ => {
+            let scheme =
+              // The None case is actually impossible, hence the meaningless error
+              elems[1]->Result.fromOption(InvalidEncoding(uri));
+            let scheme =
+              scheme->Result.flatMap(PublicKeyHash.Scheme.fromString);
 
-        let indexes = elems->Js.Array2.sliceFrom(2)->decodeIndexes;
-        let%Res indexes = indexes->Result.collectArray;
+            let indexes = elems->Js.Array2.sliceFrom(2)->decodeIndexes;
+            let indexes = indexes->Result.collectArray;
 
-        let%ResMap indexes =
-          switch (indexes) {
-          | [|i1, i2|] => DerivationPath.buildTezosBip44((i1, i2))->Ok
-          | p => Error(InvalidPathSize(p))
-          };
-        {path: indexes, scheme};
+            let indexes =
+              indexes->Result.flatMap(indexes =>
+                switch (indexes) {
+                | [|i1, i2|] => DerivationPath.buildTezosBip44((i1, i2))->Ok
+                | p => Error(InvalidPathSize(p))
+                }
+              );
+
+            Result.map2(indexes, scheme, (indexes, scheme) =>
+              {path: indexes, scheme}
+            );
+          });
+        });
       };
     };
 

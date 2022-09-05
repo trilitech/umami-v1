@@ -86,7 +86,8 @@ let useLoad =
     (~requestState, ~limit=?, ~types=?, ~address: PublicKeyHash.t, ()) => {
   let get = (~config: ConfigContext.env, address) => {
     let operations =
-      config->ServerAPI.Explorer.getOperations(address, ~limit?, ~types?, ());
+      config.network
+      ->ServerAPI.Explorer.getOperations(address, ~limit?, ~types?, ());
     let currentLevel =
       Network.monitor(config.network.explorer)
       ->Promise.mapOk(monitor => monitor.nodeLastBlock);

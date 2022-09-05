@@ -139,13 +139,14 @@ module type WALLET = {
 
   type kind =
     Account.kind =
-      | Encrypted | Unencrypted | Ledger | CustomAuth(ReCustomAuth.infos);
+      | Encrypted | Unencrypted | Ledger | Galleon | CustomAuth(ReCustomAuth.infos);
 
   module Prefixes: {
     type t =
       | Encrypted
       | Unencrypted
       | Ledger
+      | Galleon
       | CustomAuth;
 
     let toString: t => string;
@@ -205,7 +206,7 @@ module type WALLET = {
 
   module CustomAuth: {
     module Decode: {
-      let fromSecretKey: SecretAlias.t => Let.result(ReCustomAuth.infos);
+      let fromSecretKey: SecretAlias.t => Promise.result(ReCustomAuth.infos);
     };
     module Encode: {let toSecretKey: ReCustomAuth.infos => SecretAlias.t;};
   };

@@ -24,7 +24,6 @@
 /*****************************************************************************/
 
 open ReTaquitoSigner;
-open Let;
 
 let init = (~timeout=?, ()) => {
   ReLedger.Transport.create(~listenTimeout=?timeout, ());
@@ -88,23 +87,29 @@ let getMasterKey = (~prompt, tr) =>
 let addOrReplaceAlias =
     (~ledgerTransport, ~dirpath, ~alias, ~path, ~scheme, ~ledgerBasePkh)
     : Promise.t(PublicKeyHash.t) => {
-  let%Await signer =
-    Signer.create(ledgerTransport, path, ~prompt=false, scheme);
+  let signer = Signer.create(ledgerTransport, path, ~prompt=false, scheme);
   /* Ensures the three are available */
 
-  let%Await pkh = signer->Signer.publicKeyHash;
+  let pkh = signer->Promise.flatMapOk(Signer.publicKeyHash);
+  let pk =
+    Promise.flatMapOk2(pkh, signer, (_, signer) => signer->Signer.publicKey);
 
-  let%Await pk = signer->Signer.publicKey;
+  let sk =
+    path
+    ->DerivationPath.convertToTezosBip44
+    ->Result.map(path => KeyWallet.Ledger.{path, scheme})
+    ->Result.map(t => KeyWallet.Ledger.Encode.toSecretKey(t, ~ledgerBasePkh))
+    ->Promise.value;
 
-  let%Await path = path->DerivationPath.convertToTezosBip44->Promise.value;
+  let pk =
+    Promise.flatMapOk2(sk, pk, (sk, pk) =>
+      KeyWallet.customPkValue(~secretPath=sk, pk)->Promise.ok
+    );
 
-  let t = KeyWallet.Ledger.{path, scheme};
-  let sk = KeyWallet.Ledger.Encode.toSecretKey(t, ~ledgerBasePkh);
-
-  let pk = KeyWallet.customPkValue(~secretPath=sk, pk);
-
-  let%AwaitMap () =
-    KeyWallet.addOrReplaceAlias(~dirpath, ~alias, ~pk, ~pkh, ~sk);
-
-  pkh;
+  Promise.flatMapOk2(sk, pk, (sk, pk) =>
+    Promise.flatMapOk(pkh, pkh =>
+      KeyWallet.addOrReplaceAlias(~dirpath, ~alias, ~pk, ~pkh, ~sk)
+    )
+  )
+  ->Promise.flatMapOk(() => pkh);
 };

@@ -109,7 +109,7 @@ module BuyTezButton = {
         <ButtonAction
           onPress={_ => openAction()}
           text=I18n.Btn.buy_tez
-          icon=Icons.OpenExternal.build
+          icon=Icons.Shop.build
           primary=true
         />
       </View>
@@ -216,7 +216,7 @@ let styles =
   Style.(StyleSheet.create({"actionBar": style(~flexDirection=`row, ())}));
 
 [@react.component]
-let make = (~showOnboarding, ~showBuyTez as _, ~mode, ~setMode) => {
+let make = (~account, ~showOnboarding, ~showBuyTez, ~mode, ~setMode) => {
   let resetSecrets = StoreContext.Secrets.useResetAll();
   let accountsRequest = StoreContext.Accounts.useRequest();
   let token = StoreContext.SelectedToken.useGet();
@@ -244,7 +244,7 @@ let make = (~showOnboarding, ~showBuyTez as _, ~mode, ~setMode) => {
       <View style=styles##actionBar>
         {mode->Mode.is_management
            ? <CreateAccountButton showOnboarding />
-           : React.null /* : <BuyTezButton showView=showBuyTez /> */}
+           : <BuyTezButton account showView=showBuyTez />}
       </View>
     </Page.Header>
     {mode->Mode.is_management

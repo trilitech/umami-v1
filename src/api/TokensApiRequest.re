@@ -26,9 +26,9 @@
 include ApiRequest;
 
 let useCheckTokenContract = tokens => {
-  let set = (~config, address) =>
+  let set = (~config: ConfigContext.env, address) =>
     switch (tokens->TokensLibrary.Generic.pickAnyAtAddress(address)) {
-    | None => config->NodeAPI.Tokens.checkTokenContract(address)
+    | None => config.network->NodeAPI.Tokens.checkTokenContract(address)
     | Some((_, _, (token, _))) =>
       (
         token->TokensLibrary.Token.kind: TokenContract.kind :> [>
@@ -41,26 +41,83 @@ let useCheckTokenContract = tokens => {
   ApiRequest.useSetter(~set, ~kind=Logs.Tokens, ~toast=false, ());
 };
 
-let useLoadBalance =
+let getOneBalance = (balancesRequest, key) =>
+  balancesRequest->ApiRequest.flatMap((balances, isDone, t) => {
+    switch (balances->TokenRepr.Map.get(key)) {
+    | Some(balance) when isDone => ApiRequest.Done(Ok(balance), t)
+    | Some(balance) => Loading(Some(balance))
+    | None when isDone => Done(Error(BalanceApiRequest.BalanceNotFound), t)
+    | None => Loading(None)
+    }
+  });
+
+let balancesfromArray =
     (
-      ~requestState,
-      ~address: PublicKeyHash.t,
-      ~token: PublicKeyHash.t,
-      ~kind: TokenRepr.kind,
+      array: array((PublicKeyHash.t, TokenRepr.Unit.t)),
+      ~contract: PublicKeyHash.t,
+      ~id: option(int),
+      ~tokenMap:
+         ApiRequest.requestState(
+           TokenRepr.Map.t(
+             TokenRepr.Map.key,
+             TokenRepr.Unit.t,
+             TokenRepr.Map.id,
+           ),
+         ),
     ) => {
-  let get = (~config, (address, token, kind)) =>
-    switch (kind) {
-    | TokenRepr.FA1_2 =>
-      config->NodeAPI.Tokens.runFA12GetBalance(~address, ~token)
-    | FA2(tokenId) =>
-      config->NodeAPI.Tokens.callFA2BalanceOf(address, token, tokenId)
+  let (tokenMap, _) = tokenMap;
+  let balances =
+    array->Array.map(((pkh, amount)) => ((pkh, (contract, id)), amount));
+  let previousMap =
+    switch (tokenMap) {
+    | Done(Ok(map), _) => map
+    | Loading(Some(map)) => map
+    | _ => TokenRepr.Map.empty
+    };
+  balances->Array.reduce(previousMap, (map, (key, value)) =>
+    map->TokenRepr.Map.set(key, value)
+  );
+};
+
+let useLoadBalances =
+    (
+      ~forceFetch=true,
+      ~requestState,
+      ~addresses: list(PublicKeyHash.t),
+      ~selectedToken: option((PublicKeyHash.t, TokenRepr.kind)),
+    ) => {
+  let get = (~config: ConfigContext.env, (addresses, selectedToken)) =>
+    switch (selectedToken) {
+    | Some((token, kind)) =>
+      let setup = (token, kind) => {
+        config.network
+        ->ServerAPI.Explorer.getTokenBalances(
+            ~addresses,
+            ~contract=token,
+            ~id=kind,
+          )
+        ->Promise.mapOk(
+            balancesfromArray(
+              ~contract=token,
+              ~id=kind,
+              ~tokenMap=requestState,
+            ),
+          );
+      };
+      switch (kind) {
+      | TokenRepr.FA1_2 => setup(token, None)
+      | FA2(tokenId) => setup(token, Some(tokenId))
+      };
+    | None => Promise.ok(TokenRepr.Map.empty)
     };
 
   ApiRequest.useLoader(
     ~get,
+    ~condition=
+      _ => !addresses->Js.List.isEmpty && selectedToken != None && forceFetch,
     ~kind=Logs.Tokens,
     ~requestState,
-    (address, token, kind),
+    (addresses, selectedToken),
   );
 };
 
@@ -78,8 +135,8 @@ type registry = {
 type filter = [ | `Any | `FT | `NFT];
 
 let useLoadTokensFromCache = requestState => {
-  let get = (~config, filter) => {
-    TokensAPI.cachedTokensWithRegistration(config, filter);
+  let get = (~config: ConfigContext.env, filter) => {
+    TokensAPI.cachedTokensWithRegistration(config.network, filter);
   };
   ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState);
 };
@@ -145,11 +202,11 @@ module NFT = {
       (onTokens, onStop, request, tokensNumberRequest, nftRequest) => {
     let get =
         (
-          ~config,
+          ~config: ConfigContext.env,
           {fromCache, request: {account, allowHidden, numberByAccount}},
         ) => {
       TokensAPI.Fetch.accountNFTs(
-        config,
+        config.network,
         ~account,
         ~numberByAccount,
         ~onTokens,
@@ -169,8 +226,11 @@ module NFT = {
   };
 
   let useAccountTokensNumber = (requestState, account) => {
-    let get = (~config, account) =>
-      TokensAPI.Fetch.accountsTokensNumber(config, ~accounts=[account]);
+    let get = (~config: ConfigContext.env, account) =>
+      TokensAPI.Fetch.accountsTokensNumber(
+        config.network,
+        ~accounts=[account],
+      );
 
     ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, account);
   };
@@ -186,9 +246,13 @@ module Fungible = {
 
   let useFetchWithCache =
       (onTokens, onStop, request, tokensNumberRequest, tokensRequest) => {
-    let get = (~config, {fromCache, request: {accounts, numberByAccount}}) => {
+    let get =
+        (
+          ~config: ConfigContext.env,
+          {fromCache, request: {accounts, numberByAccount}},
+        ) => {
       TokensAPI.Fetch.accountsFungibleTokensWithRegistration(
-        config,
+        config.network,
         ~accounts,
         ~numberByAccount,
         ~onTokens,
@@ -207,8 +271,8 @@ module Fungible = {
   };
 
   let useAccountsTokensNumber = (requestState, accounts) => {
-    let get = (~config, accounts) =>
-      TokensAPI.Fetch.accountsTokensNumber(config, ~accounts);
+    let get = (~config: ConfigContext.env, accounts) =>
+      TokensAPI.Fetch.accountsTokensNumber(config.network, ~accounts);
 
     ApiRequest.useLoader(~get, ~kind=Logs.Tokens, ~requestState, accounts);
   };
@@ -229,7 +293,8 @@ let useDelete = (~sideEffect=?, pruneCache) => {
 };
 
 let useCreate = (~sideEffect=?, ()) => {
-  let set = (~config, token) => TokensAPI.addFungibleToken(config, token);
+  let set = (~config: ConfigContext.env, token) =>
+    TokensAPI.addFungibleToken(config.network, token);
 
   ApiRequest.useSetter(
     ~logOk=_ => I18n.token_created,
@@ -242,7 +307,8 @@ let useCreate = (~sideEffect=?, ()) => {
 };
 
 let useCacheToken = (~sideEffect=?, ()) => {
-  let set = (~config, token) => TokensAPI.addTokenToCache(config, token);
+  let set = (~config: ConfigContext.env, token) =>
+    TokensAPI.addTokenToCache(config.network, token);
 
   ApiRequest.useSetter(
     ~logOk=_ => I18n.token_created,

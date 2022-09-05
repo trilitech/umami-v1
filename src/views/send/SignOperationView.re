@@ -77,6 +77,7 @@ let make =
   let subtitle =
     switch (source.Account.kind) {
     | Ledger => I18n.Expl.hardware_wallet_confirm_operation
+    | Galleon
     | Encrypted
     | Unencrypted => I18n.Expl.confirm_operation
     | CustomAuth(_) => I18n.Expl.custom_auth_confirm_operation

@@ -25,7 +25,7 @@
 
 let runStreamedScan:
   (
-    ~config: ConfigContext.env,
+    ~network: Network.t,
     ~startIndex: int=?,
     ~onFoundKey: (int, PublicKeyHash.t) => unit,
     DerivationPath.Pattern.t,

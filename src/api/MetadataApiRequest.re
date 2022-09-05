@@ -23,7 +23,6 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open Let;
 include ApiRequest;
 
 let useLoadMetadata = (cache, pkh, kind) => {
@@ -35,23 +34,25 @@ let useLoadMetadata = (cache, pkh, kind) => {
 
   let id = kind->TokenRepr.kindId;
 
-  let buildContract = (config: ConfigContext.env) => {
-    let toolkit = MetadataAPI.toolkit(config);
-    let%Await contract = MetadataAPI.Tzip12.makeContract(toolkit, pkh);
-    MetadataAPI.Tzip12.read(contract, id);
+  let buildContract = (network: Network.t) => {
+    let toolkit = MetadataAPI.toolkit(network);
+    MetadataAPI.Tzip12.makeContract(toolkit, pkh)
+    ->Promise.flatMapOk(contract => MetadataAPI.Tzip12.read(contract, id));
   };
 
-  let get = (~config, ()) =>
+  let get = (~config: ConfigContext.env, ()) =>
     switch (cache->TokensLibrary.Generic.getToken(pkh, id)) {
     | Some((t, _)) => Promise.ok(t)
     | None =>
-      let%AwaitMap metadata = buildContract(config);
-      TokensAPI.metadataToToken(
-        config.network.Network.chain->Network.getChainId,
-        TokenContract.{address: pkh, kind: kind->fromTokenKind},
-        metadata,
-      )
-      ->TokensLibrary.Token.Full;
+      buildContract(config.network)
+      ->Promise.mapOk(metadata =>
+          TokensAPI.metadataToToken(
+            config.network.chain->Network.getChainId,
+            TokenContract.{address: pkh, kind: kind->fromTokenKind},
+            metadata,
+          )
+          ->TokensLibrary.Token.Full
+        )
     };
 
   let requestState = React.useState(() => ApiRequest.NotAsked);

@@ -38,10 +38,7 @@ module Value = {
 
   let encoder = v => Json.Encode.(v->Version.toString->string);
   let decoder = json => {
-    switch (json->Json.Decode.string->Version.parse) {
-    | Ok(v) => v
-    | Error(e) => JsonEx.(raise(InternalError(e)))
-    };
+    json->Json.Decode.string->Version.parse->JsonEx.getExn;
   };
 };
 

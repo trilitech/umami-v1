@@ -67,7 +67,7 @@ let make = (~closeAction, ~index, ~secret) => {
 
   let scan = (~password, path, _) =>
     HDWalletAPI.Accounts.Scan.runStreamSeed(
-      ~config,
+      ~network=config.network,
       ~startIndex=secret.Secret.addresses->Js.Array.length,
       ~onFoundKey=onFoundKey(~start=secret.Secret.addresses->Js.Array.length),
       ~password,

@@ -24,7 +24,7 @@
 /*****************************************************************************/
 
 type env = {
-  network: Network.network,
+  network: Network.t,
   defaultNetwork: bool,
   theme: [ | `system | `dark | `light],
   confirmations: int,
@@ -60,8 +60,9 @@ let fromFile = f => {
     switch (f.ConfigFile.network) {
     | None
     | Some(`Mainnet) => Network.mainnet
-    | Some(`Hangzhounet) => Network.hangzhounet
-    | Some(`Ithacanet) => Network.ithacanet
+    | Some(`Ghostnet) => Network.ghostnet
+    | Some(`Jakartanet) => Network.jakartanet
+    | Some(`Kathmandunet) => Network.kathmandunet
     | Some(`Custom(name)) =>
       f.customNetworks
       ->List.getBy(n => n.name === (name :> string))
@@ -304,6 +305,8 @@ let useResetBackupFilePath = () => {
 
 let useNetworkStatus = () => useContext().networkStatus;
 let useNetworkOffline = () => useContext().networkStatus.current == Offline;
+
+let useNetwork = () => useContent().network;
 
 let useRetryNetwork = () => useContext().retryNetwork;
 

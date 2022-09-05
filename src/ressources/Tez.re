@@ -98,3 +98,5 @@ let toString = (tez: t) => {
 };
 
 let formatString = s => s->fromString->Option.map(toString);
+
+let decoder = json => json |> Json.Decode.string |> fromMutezString;

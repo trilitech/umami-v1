@@ -24,7 +24,6 @@
 /*****************************************************************************/
 
 open ReactNative;
-open Let;
 
 type state =
   | WaitForConfirm
@@ -258,12 +257,13 @@ let make =
   let signCustomAuth = infos =>
     Promise.async(() => {
       setState(_ => Some(WaitForConfirm));
-      let%AwaitMap signer =
-        ReCustomAuthSigner.create(infos)
-        ->Promise.tapError(e => {setState(_ => Some(Error(e)))});
 
-      setCustomAuthSigner(_ => Some(signer));
-      setState(_ => Some(Confirmed));
+      ReCustomAuthSigner.create(infos)
+      ->Promise.tapError(e => {setState(_ => Some(Error(e)))})
+      ->Promise.mapOk(signer => {
+          setCustomAuthSigner(_ => Some(signer));
+          setState(_ => Some(Confirmed));
+        });
     });
 
   let onSubmit = () =>
@@ -275,7 +275,7 @@ let make =
         ),
       )
       ->Promise.getError(e => setState(_ => Some(Error(e))))
-    | (Encrypted | Unencrypted, _) => form.submit()
+    | (Galleon | Encrypted | Unencrypted, _) => form.submit()
     | (CustomAuth(_), Some(signer)) =>
       sendOperation(TaquitoAPI.Signer.CustomAuthSigner(signer))
       ->Promise.getError(e => setState(_ => Some(Error(e))))
@@ -286,6 +286,7 @@ let make =
     switch (accountKind) {
     | Ledger
     | CustomAuth(_) => false
+    | Galleon
     | Encrypted
     | Unencrypted => true
     };
@@ -294,6 +295,7 @@ let make =
     switch (accountKind) {
     | Ledger
     | CustomAuth(_) => I18n.Btn.continue
+    | Galleon
     | Encrypted
     | Unencrypted => I18n.Btn.confirm
     };
@@ -335,6 +337,7 @@ let make =
            provider={infos.provider}
            retry={() => signCustomAuth(infos)}
          />
+       | Galleon
        | Encrypted
        | Unencrypted => React.null
        }

@@ -40,7 +40,7 @@ module URL: {
   module Explorer: {
     let operations:
       (
-        ConfigContext.env,
+        Network.t,
         PublicKeyHash.t,
         ~types: array(string)=?,
         ~destination: PublicKeyHash.t=?,
@@ -48,12 +48,23 @@ module URL: {
         unit
       ) =>
       t;
-    let checkToken: (ConfigContext.env, ~contract: PublicKeyHash.t) => t;
-    let accountExists: (ConfigContext.env, ~account: PublicKeyHash.t) => t;
+    let checkToken: (Network.t, ~contract: PublicKeyHash.t) => t;
+    let accountExists: (Network.t, ~account: PublicKeyHash.t) => t;
+
+    let balances: (Network.t, ~addresses: list(PublicKeyHash.t)) => t;
+
+    let tokenBalances:
+      (
+        Network.t,
+        ~addresses: list(PublicKeyHash.t),
+        ~contract: PublicKeyHash.t,
+        ~id: option(int)
+      ) =>
+      t;
 
     let tokenRegistry:
       (
-        ConfigContext.env,
+        Network.t,
         ~accountsFilter: list(PublicKeyHash.t)=?,
         ~kinds: list(TokenContract.kind)=?,
         ~limit: int64=?,
@@ -64,11 +75,11 @@ module URL: {
   };
 
   module Endpoint: {
-    let runView: ConfigContext.env => t;
+    let runView: Network.t => t;
 
     let fa12GetBalanceInput:
       (
-        ~config: ConfigContext.env,
+        ~network: Network.t,
         ~contract: PublicKeyHash.t,
         ~account: PublicKeyHash.t
       ) =>
@@ -76,7 +87,7 @@ module URL: {
 
     let fa2BalanceOfInput:
       (
-        ~config: ConfigContext.env,
+        ~network: Network.t,
         ~contract: PublicKeyHash.t,
         ~account: PublicKeyHash.t,
         ~tokenId: int
@@ -89,7 +100,7 @@ module URL: {
     // The API might not be available on custom network, or old networks
     let betterCallDevAccountTokens:
       (
-        ~config: ConfigContext.env,
+        ~network: Network.t,
         ~account: PublicKeyHash.t,
         ~contract: PublicKeyHash.t=?,
         ~limit: int=?,
@@ -98,16 +109,16 @@ module URL: {
         ~sortBy: [ | `Balance | `TokenId]=?,
         unit
       ) =>
-      Let.result(t);
+      Promise.result(t);
 
     // The request does not return the metadata for now
     let betterCallDevBatchAccounts:
-      (~config: ConfigContext.env, ~accounts: array(PublicKeyHash.t)) =>
-      Let.result(t);
+      (~network: Network.t, ~accounts: array(PublicKeyHash.t)) =>
+      Promise.result(t);
 
     let tzktAccountTokens:
       (
-        ~config: ConfigContext.env,
+        ~network: Network.t,
         ~account: PublicKeyHash.t,
         ~contract: PublicKeyHash.t=?,
         ~limit: int=?,
@@ -116,10 +127,10 @@ module URL: {
         ~sortBy: [ | `Balance | `Contract | `Id]=?,
         unit
       ) =>
-      Let.result(t);
+      Promise.result(t);
 
     let tzktAccountTokensNumber:
-      (~config: ConfigContext.env, ~account: PublicKeyHash.t) => Let.result(t);
+      (~network: Network.t, ~account: PublicKeyHash.t) => Promise.result(t);
   };
 
   /* Fetch URL as a JSON. */
@@ -133,7 +144,7 @@ module URL: {
 module type Explorer = {
   let getOperations:
     (
-      ConfigContext.env,
+      Network.t,
       PublicKeyHash.t,
       ~types: array(string)=?,
       ~destination: PublicKeyHash.t=?,
@@ -141,8 +152,20 @@ module type Explorer = {
       unit
     ) =>
     Promise.t(array(Operation.t));
-};
 
+  let getBalances:
+    (Network.t, ~addresses: list(PublicKeyHash.t)) =>
+    Promise.t(array((PublicKeyHash.t, Tez.t)));
+
+  let getTokenBalances:
+    (
+      Network.t,
+      ~addresses: list(PublicKeyHash.t),
+      ~contract: PublicKeyHash.t,
+      ~id: option(int)
+    ) =>
+    Promise.t(array((PublicKeyHash.t, TokenRepr.Unit.t)));
+};
 /** This generic version exists only for tests purpose */
 module ExplorerMaker:
   (Get: {let get: URL.t => Promise.t(Js.Json.t);}) => Explorer;

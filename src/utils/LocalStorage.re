@@ -23,8 +23,6 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open Let;
-
 [@bs.val] [@bs.scope "localStorage"]
 external getItem: string => Js.Nullable.t(string) = "getItem";
 [@bs.val] [@bs.scope "localStorage"]
@@ -73,12 +71,12 @@ module type StorageType = {
 module Make = (Value: ValueType) : (StorageType with type t = Value.t) => {
   include Value;
 
-  let getRaw = key => {
-    let%Res value =
-      getItem(key)->Js.Nullable.toOption->Result.fromOption(NotFound(key));
-    let%Res json = value->JsonEx.parse;
-    json->JsonEx.decode(decoder);
-  };
+  let getRaw = key =>
+    getItem(key)
+    ->Js.Nullable.toOption
+    ->Result.fromOption(NotFound(key))
+    ->Result.flatMap(JsonEx.parse)
+    ->Result.flatMap(json => json->JsonEx.decode(decoder));
 
   let setRaw = (key, storage) =>
     setItem(key, encoder(storage)->Json.stringify);
@@ -96,11 +94,10 @@ module Make = (Value: ValueType) : (StorageType with type t = Value.t) => {
       | None => getRaw(key)
 
       | Some(migrate) =>
-        let%Res value =
-          getItem(key)
-          ->Js.Nullable.toOption
-          ->Result.fromOption(NotFound(key));
-        migrate(value);
+        getItem(key)
+        ->Js.Nullable.toOption
+        ->Result.fromOption(NotFound(key))
+        ->Result.flatMap(migrate)
       };
 
     let useDefault = res =>
@@ -124,9 +121,6 @@ module Version =
     type t = Version.t;
     let encoder = v => Json.Encode.(v->Version.toString->string);
     let decoder = json => {
-      switch (json->Json.Decode.string->Version.parse) {
-      | Ok(v) => v
-      | Error(e) => JsonEx.(raise(InternalError(e)))
-      };
+      json->Json.Decode.string->Version.parse->JsonEx.getExn;
     };
   });

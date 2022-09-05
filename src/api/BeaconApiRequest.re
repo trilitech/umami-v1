@@ -23,8 +23,6 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open Let;
-
 let makeClient = () =>
   ReBeacon.WalletClient.make({name: I18n.Label.beacon_client_name});
 
@@ -92,9 +90,9 @@ let requestToBatch = (account, {operationDetails}) => {
       }
     );
 
-  let%ResMap managers = managers->Result.collectArray;
-
-  Protocol.{source: account, managers};
+  managers
+  ->Result.collectArray
+  ->Result.map(managers => Protocol.{source: account, managers});
 };
 
 let useNextRequestState = (client, peersRequestState) => {
@@ -106,38 +104,50 @@ let useNextRequestState = (client, peersRequestState) => {
 
   let (nextDeeplink, doneDeeplinking) = IPC.useNextDeeplinkState();
 
-  ReactUtils.useAsyncEffect1(
+  ReactUtils.useAsyncEffect2(
     () => {
-      let%Await client =
-        client->Promise.fromOption(~error=ClientNotConnected);
-      let%Await _: ReBeacon.transportType = client->ReBeacon.WalletClient.init;
-      let%AwaitMap () =
-        client->ReBeacon.WalletClient.connect(message => {
-          let request = message->ReBeacon.Message.Request.classify;
-          yield(request);
-        });
-      setIsConnected(_ => true);
+      client
+      ->Promise.fromOption(~error=ClientNotConnected)
+      ->Promise.flatMapOk(client =>
+          client->ReBeacon.WalletClient.init->Promise.mapOk(_ => client)
+        )
+      ->Promise.flatMapOk(client => {
+          client
+          ->ReBeacon.WalletClient.connect(message => {
+              let request = message->ReBeacon.Message.Request.classify;
+              yield(request);
+            })
+          ->Promise.mapOk(() => setIsConnected(_ => true))
+        })
     }, // what is the expected behavior when beacon fails to connect?;
-    [|client|],
+    (client, yield),
   );
 
   React.useEffect2(
     () => {
       if (isConnected) {
         Promise.async(() => {
-          let%Await deeplink =
-            nextDeeplink()->Promise.fromOption(~error=NoDeeplink);
-          let%Await peer =
-            ReBeacon.Serializer.(
-              make()
-              ->deserialize(deeplink->dataFromURL->Option.getWithDefault(""))
-            );
-          let%Await client =
-            client->Promise.fromOption(~error=ClientNotConnected);
-          let%AwaitMap () = client->ReBeacon.WalletClient.addPeer(peer);
-
-          setPeersRequest(ApiRequest.expireCache);
-          doneDeeplinking();
+          nextDeeplink()
+          ->Promise.fromOption(~error=NoDeeplink)
+          ->Promise.flatMapOk(deeplink =>
+              ReBeacon.Serializer.(
+                make()
+                ->deserialize(
+                    deeplink->dataFromURL->Option.getWithDefault(""),
+                  )
+              )
+            )
+          ->Promise.flatMapOk(peer => {
+              client
+              ->Promise.fromOption(~error=ClientNotConnected)
+              ->Promise.flatMapOk(client =>
+                  client->ReBeacon.WalletClient.addPeer(peer)
+                )
+              ->Promise.mapOk(_ => {
+                  setPeersRequest(ApiRequest.expireCache);
+                  doneDeeplinking();
+                })
+            })
         });
       };
       None;
@@ -153,9 +163,9 @@ let useNextRequestState = (client, peersRequestState) => {
 module Peers = {
   let useLoad = (client, requestState) => {
     let get = (~config as _s, ()) => {
-      let%Await client =
-        client->Promise.fromOption(~error=ClientNotConnected);
-      client->ReBeacon.WalletClient.getPeers;
+      client
+      ->Promise.fromOption(~error=ClientNotConnected)
+      ->Promise.flatMapOk(ReBeacon.WalletClient.getPeers);
     };
 
     ApiRequest.useLoader(~get, ~kind=Logs.Beacon, ~requestState, ());
@@ -165,9 +175,11 @@ module Peers = {
     ApiRequest.useSetter(
       ~set=
         (~config as _, peer: ReBeacon.peerInfo) => {
-          let%Await client =
-            client->Promise.fromOption(~error=ClientNotConnected);
-          client->ReBeacon.WalletClient.removePeer(peer);
+          client
+          ->Promise.fromOption(~error=ClientNotConnected)
+          ->Promise.flatMapOk(client =>
+              client->ReBeacon.WalletClient.removePeer(peer)
+            )
         },
       ~kind=Logs.Beacon,
     );
@@ -177,9 +189,9 @@ module Peers = {
     ApiRequest.useSetter(
       ~set=
         (~config as _, ()) => {
-          let%Await client =
-            client->Promise.fromOption(~error=ClientNotConnected);
-          client->ReBeacon.WalletClient.removeAllPeers;
+          client
+          ->Promise.fromOption(~error=ClientNotConnected)
+          ->Promise.flatMapOk(ReBeacon.WalletClient.removeAllPeers)
         },
       ~kind=Logs.Beacon,
     );
@@ -191,10 +203,9 @@ module Peers = {
 module Permissions = {
   let useLoad = (client, requestState) => {
     let get = (~config as _s, ()) => {
-      let%Await client =
-        client->Promise.fromOption(~error=ClientNotConnected);
-
-      client->ReBeacon.WalletClient.getPermissions;
+      client
+      ->Promise.fromOption(~error=ClientNotConnected)
+      ->Promise.flatMapOk(ReBeacon.WalletClient.getPermissions);
     };
 
     ApiRequest.useLoader(~get, ~kind=Logs.Beacon, ~requestState, ());
@@ -204,10 +215,13 @@ module Permissions = {
     ApiRequest.useSetter(
       ~set=
         (~config as _s, accountIdentifier: ReBeacon.accountIdentifier) => {
-          let%Await client =
-            client->Promise.fromOption(~error=ClientNotConnected);
-
-          client->ReBeacon.WalletClient.removePermission(accountIdentifier);
+          client
+          ->Promise.fromOption(~error=ClientNotConnected)
+          ->Promise.flatMapOk(client =>
+              client->ReBeacon.WalletClient.removePermission(
+                accountIdentifier,
+              )
+            )
         },
       ~kind=Logs.Beacon,
     );
@@ -217,9 +231,9 @@ module Permissions = {
     ApiRequest.useSetter(
       ~set=
         (~config as _, ()) => {
-          let%Await client =
-            client->Promise.fromOption(~error=ClientNotConnected);
-          client->ReBeacon.WalletClient.removeAllPermissions;
+          client
+          ->Promise.fromOption(~error=ClientNotConnected)
+          ->Promise.flatMapOk(ReBeacon.WalletClient.removeAllPermissions)
         },
       ~kind=Logs.Beacon,
     );

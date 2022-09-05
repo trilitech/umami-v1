@@ -128,6 +128,7 @@ describe("Wallet", ({testAsync}) => {
       HDWalletAPI.Accounts.import(
         ~config,
         ~alias="testimport",
+        ~prefix=Encrypted,
         ~secretKey=sktestkey3,
         ~password="totototo",
       )

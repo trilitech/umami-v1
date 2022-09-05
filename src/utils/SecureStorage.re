@@ -34,8 +34,6 @@ let () =
     | _ => None,
   );
 
-open Let;
-
 module Buffer = {
   type t = Node_buffer.t;
 
@@ -181,42 +179,45 @@ module Cipher = {
     ->RawJsError.fromPromiseParsed(_ => DeriveKeyError);
 
   let encrypt = (data, password) => {
-    let%Await key = keyFromPassword(password);
-    let salt = Buffer.fromBytes(Crypto.allocAndFillWithRandomValues(32));
+    keyFromPassword(password)
+    ->Promise.flatMapOk(key => {
+        let salt = Buffer.fromBytes(Crypto.allocAndFillWithRandomValues(32));
+        deriveKey(key, salt)
+        ->Promise.flatMapOk(derivedKey => {
+            let iv = Crypto.allocAndFillWithRandomValues(16);
 
-    let%Await derivedKey = deriveKey(key, salt);
-    let iv = Crypto.allocAndFillWithRandomValues(16);
-
-    let%AwaitMap encryptedData =
-      Crypto.Subtle.encrypt(
-        {name: "AES-GCM", iv},
-        derivedKey,
-        Buffer.fromString(data, `utf8),
-      )
-      ->RawJsError.fromPromiseParsed(_ => EncryptError);
-
-    {
-      salt: salt->Buffer.toString(`hex),
-      iv: Buffer.fromBytes(iv)->Buffer.toString(`hex),
-      data: Buffer.fromBytes(encryptedData)->Buffer.toString(`hex),
-    };
+            Crypto.Subtle.encrypt(
+              {name: "AES-GCM", iv},
+              derivedKey,
+              Buffer.fromString(data, `utf8),
+            )
+            ->RawJsError.fromPromiseParsed(_ => EncryptError)
+            ->Promise.mapOk(encryptedData =>
+                {
+                  salt: salt->Buffer.toString(`hex),
+                  iv: Buffer.fromBytes(iv)->Buffer.toString(`hex),
+                  data:
+                    Buffer.fromBytes(encryptedData)->Buffer.toString(`hex),
+                }
+              );
+          });
+      });
   };
 
   let decrypt = (encryptedData, password) => {
-    let%Await key = keyFromPassword(password);
-
-    let%Await derivedKey =
-      deriveKey(key, Buffer.fromString(encryptedData.salt, `hex));
-
-    let%AwaitMap data =
-      Crypto.Subtle.decrypt(
-        {name: "AES-GCM", iv: Buffer.fromString(encryptedData.iv, `hex)},
-        derivedKey,
-        Buffer.fromString(encryptedData.data, `hex),
-      )
-      ->RawJsError.fromPromiseParsed(_ => DecryptError);
-
-    Buffer.fromBytes(data)->Buffer.toString(`utf8);
+    keyFromPassword(password)
+    ->Promise.flatMapOk(key => {
+        deriveKey(key, Buffer.fromString(encryptedData.salt, `hex))
+      })
+    ->Promise.flatMapOk(derivedKey => {
+        Crypto.Subtle.decrypt(
+          {name: "AES-GCM", iv: Buffer.fromString(encryptedData.iv, `hex)},
+          derivedKey,
+          Buffer.fromString(encryptedData.data, `hex),
+        )
+        ->RawJsError.fromPromiseParsed(_ => DecryptError)
+      })
+    ->Promise.mapOk(data => Buffer.fromBytes(data)->Buffer.toString(`utf8));
   };
 
   let decrypt2 = (password, encryptedData) =>
@@ -246,10 +247,10 @@ let store = (data, ~password) =>
   ->Promise.mapOk(encryptedData => encryptedData->LockStorage.set);
 
 let validatePassword = password => {
-  let%Await data = fetch(~password);
-  let%Await () =
-    data == Some("lock") || data == None
-      ? Promise.ok() : Promise.err(WrongPassword);
-  let%AwaitMap () = store("lock", ~password);
-  ();
+  fetch(~password)
+  ->Promise.flatMapOk(data => {
+      data == Some("lock") || data == None
+        ? Promise.ok() : Promise.err(WrongPassword)
+    })
+  ->Promise.flatMapOk(() => store("lock", ~password));
 };

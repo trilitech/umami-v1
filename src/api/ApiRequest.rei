@@ -76,8 +76,12 @@ let getWithDefault: (t('a), 'a) => 'a;
 /* Applies a side effect to the given ressource value if it has been fetched */
 let iterDone: (t('a), Promise.result('a) => unit) => unit;
 
-/* Maps the value of the ressource  */
-let map: (t('a), 'a => 'a) => t('a);
+/* Apply a function on the internal value and returns a new ressource */
+let map: (t('b), 'b => 'a) => t('a);
+
+/* Apply a function returning a ressource on the internal value and returns
+   a ressource */
+let flatMap: (t('a), ('a, bool, cacheValidity) => t('b)) => t('b);
 
 /* Maps the value of the ressource if it has been fetched. If it has not been
    fetched or resulted in an error, it returns the second parameter. */

@@ -8,7 +8,7 @@ exports.default = async function notarizing(context) {
 
   const appName = context.packager.appInfo.productFilename;
   const appleId = '<your apple ID>';
-  const appleIdPassword = '<your app-specific password>'
+  const appleIdPassword = '<your app-specific password>';
 
   return await notarize({
     appBundleId: 'com.nomadic-labs.umami',

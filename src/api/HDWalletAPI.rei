@@ -82,12 +82,14 @@ module Accounts: {
   let updateSecretAt:
     (~config: ConfigContext.env, Secret.Repr.t, int) => Promise.result(unit);
 
+  let encryptedRecoveryPhraseAt: (int) => Promise.t(SecureStorage.Cipher.encryptedData);
   let recoveryPhraseAt: (int, ~password: string) => Promise.t(string);
 
   let import:
     (
       ~config: ConfigContext.env,
       ~alias: name,
+      ~prefix: KeyWallet.Prefixes.t,
       ~secretKey: string,
       ~password: string
     ) =>
@@ -123,7 +125,7 @@ module Accounts: {
 
     let runStream:
       (
-        ~config: ConfigContext.env,
+        ~network: Network.t,
         ~startIndex: int=?,
         ~onFoundKey: (int, account('a)) => unit,
         DerivationPath.Pattern.t,
@@ -134,7 +136,7 @@ module Accounts: {
 
     let runStreamSeed:
       (
-        ~config: ConfigContext.env,
+        ~network: Network.t,
         ~startIndex: int=?,
         ~onFoundKey: (int, account(string)) => unit,
         ~password: string,

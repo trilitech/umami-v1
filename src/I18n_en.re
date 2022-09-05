@@ -80,6 +80,7 @@ module Btn = {
   let import = "IMPORT";
   let export = "EXPORT";
   let export_public_key = "EXPORT PUBLIC KEY";
+  let export_as_qr_code = "EXPORT AS QR CODE"
   let scan = "SCAN";
   let upgrade = "Download";
   let load_file = "LOAD FROM FILE";
@@ -292,7 +293,7 @@ module Form_input_error = {
 };
 
 module Title = {
-  let custom_auth_sign_in_up = "Waiting for authentification";
+  let custom_auth_sign_in_up = "Sign up or Sign in with";
   let custom_auth_waiting_auth = "Waiting for authentification";
   let custom_auth_failed = "Authentification failed";
   let custom_auth_success = "Successful authentification";
@@ -306,7 +307,7 @@ module Title = {
   let secret_create = "Create New Secret";
   let derive_account = "Add Account";
   let account_update = "Edit Account";
-  let import_account = "Import Account";
+  let import_account = "Import Secret";
   let hardware_wallet_connect = "Connect Ledger";
   let hardware_wallet_confirm = "Confirm on Ledger";
   let hardware_wallet_op_confirm = "Ledger found, please confirm the operation on the device";
@@ -325,7 +326,8 @@ module Title = {
   let update_contact = "Edit Contact";
   let add_token = "Register Token";
   let edit_metadata = "Token Metadata";
-  let export = "Export";
+  let export_to_mobile = "Export to Umami Mobile";
+  let show_recovery_phrase = "Show Recovery Phrase";
   let account_create_password = "Set a password to secure your wallet";
   let account_enter_password = "Please enter password to confirm";
   let account_create_verify_phrase = "Verify your recovery phrase";
@@ -382,6 +384,8 @@ module Title = {
   let select_backup_file = "Select a JSON backup file and enter the password you used to encrypt it.";
   let account_backup_path = "Select a storage location for your backup";
   let details = "Details";
+  let help = "Help";
+  let scan_with_mobile_to_import = "Scan with Umami Mobile to import";
 };
 
 module Expl = {
@@ -438,6 +442,7 @@ module Menu = {
   let delete_secret = "Delete";
   let edit = "Edit";
   let scan = "Scan";
+  let show = "Show";
   let view_in_explorer = "View in Explorer";
   let see_metadata = "See Metadata";
   let see_details = "See details";
@@ -485,6 +490,18 @@ module Settings = {
   let backup_path_saved = "Backup file path saved";
   let app_update = "APP UPDATE";
   ();
+};
+
+module Help = {
+  let subtitle = "Find the resources you need to get the most out of Umami Wallet.";
+  let articles_descr = "Don't know how to use a feature? The answer might be in our articles.";
+  let articles_text = "BROWSE ARTICLES";
+  let faq_descr = "Got a question? It may already be answered in here.";
+  let faq_text = "CONSULT FAQ";
+  let support_descr = "Need further assistance? We're happy to help!";
+  let support_text = "EMAIL SUPPORT";
+  let tos_descr = "Want to learn about what you can expect from Umami wallet?";
+  let tos_text = "READ TERMS OF SERVICE";
 };
 
 module Network = {
@@ -554,6 +571,7 @@ module Errors = {
   let invalid_estimation_results = "Invalid estimation results";
   let request_to_node_failed = "Request to node failed";
   let every_balances_fail = "Every balances fail to load";
+  let balance_not_found = "A balance was not found";
   let network_unreachable = "Tezos network unreachable.";
   let no_valid_endpoint = "No valid endpoint found among public nodes";
   let beacon_cant_handle = "Cannot handle this operation";
@@ -631,6 +649,7 @@ module Errors = {
   let unexpected_decimals = v => p("%s does not accept decimals", v);
   let expected_decimals = (v, d) =>
     p("%s does not accept more that %d decimals", v, d);
+  let fetch404 = "Error 404 - Not Found";
 };
 
 module Csv = {
@@ -679,6 +698,8 @@ module Disclaimer = {
      agree to the terms of the User Agreement";
 };
 
+let support_mailto_error_subject = "Support: Error log received on Umami";
+let support_mailto_error_body = "The following error happened in Umami:";
 let download_question = "Do you want to download the latest update?";
 let restart_to_install_question = "Do you want to restart the app to install now? Please note that the update will be applied next time you restart Umami.";
 let unknown_operation = "Unknown";
@@ -738,6 +759,7 @@ let navbar_tokens = "TOKENS";
 let navbar_settings = "SETTINGS";
 let navbar_logs = "LOGS";
 let navbar_global_batch = "BATCH";
+let navbar_help = "HELP";
 let delegate_column_account = "ACCOUNT";
 let delegate_column_initial_balance = "INITIAL BALANCE";
 let delegate_column_current_balance = "CURRENT BALANCE";

@@ -23,12 +23,10 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open Let;
-
 %raw
 "
 var electron = require('electron');
-var { app, Menu, MenuItem } = electron.remote;
+var { app, Menu, MenuItem } = require('@electron/remote');
 var shell = electron.shell;
 var process = require('process');
 var OS = require('os');
@@ -90,6 +88,9 @@ module Path: {
 
   let getCurrent: unit => t;
   let getAppData: unit => t;
+
+  let baseName: (t, string) => string;
+
   module Ops: {
     let (!): string => t;
     let (/): (t, t) => t;
@@ -108,6 +109,9 @@ module Path: {
 
   [@bs.module "path"] [@bs.variadic]
   external join: array(t) => string = "join";
+
+  [@bs.module "path"] [@bs.val]
+  external baseName: (t, string) => string = "basename";
 
   module Ops = {
     let (!) = a => mk(a);
@@ -290,15 +294,16 @@ module File = {
     rm(~name=!(Path.toString(name) ++ ".tmp"));
   };
 
-  let protect = (~name, ~transaction) => {
-    let%Await _ = name->mkTmpCopy;
-    let%Ft r = transaction();
-
-    switch (r) {
-    | Ok () => name->rmTmpCopy
-    | Error(e) => name->restoreTmpCopy->Promise.map(_ => Error(e))
-    };
-  };
+  let protect = (~name, ~transaction) =>
+    name
+    ->mkTmpCopy
+    ->Promise.flatMapOk(_ => transaction()->Promise.map(v => Ok(v)))
+    ->Promise.flatMapOk(r =>
+        switch (r) {
+        | Ok () => name->rmTmpCopy
+        | Error(e) => name->restoreTmpCopy->Promise.map(_ => Error(e))
+        }
+      );
 };
 
 module Client = {

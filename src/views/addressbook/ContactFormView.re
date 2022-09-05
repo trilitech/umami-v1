@@ -149,6 +149,7 @@ let make =
       placeholder=I18n.Input_placeholder.add_contacts_name
       handleChange={form.handleChange(Name)}
       error={form.getFieldError(Field(Name))}
+      onSubmitEditing=onSubmit
     />
     <FormGroupTextInput
       label=I18n.Label.add_contact_address
@@ -156,6 +157,7 @@ let make =
       placeholder=I18n.Input_placeholder.add_contacts_tz
       handleChange={form.handleChange(Address)}
       error={form.getFieldError(Field(Address))}
+      onSubmitEditing=onSubmit
       disabled=?{
         switch (action) {
         | Create => None

@@ -55,6 +55,8 @@ module Path: {
 
   let getCurrent: unit => t;
   let getAppData: unit => t;
+
+  let baseName: (t, string) => string;
 };
 
 let appDir: unit => Path.t;

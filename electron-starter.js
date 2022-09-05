@@ -149,11 +149,14 @@ let setupAutoUpdate = async () => {
 
   let downloading = false;
 
+  let checkForUpdates = () => {
+    return autoUpdater.checkForUpdates()
+      .catch(err => mainWindow.webContents.send('check-update-error', err.toString()))
+  };
+
   let launchAutomaticUpdates = () => {
-    return setInterval(() =>
-      autoUpdater.checkForUpdates()
-        .catch(err => mainWindow.webContents
-          .send('check-update-error', err.toString())), 720000);
+    checkForUpdates();
+    return setInterval(checkForUpdates, 720000); // 720000 ms = 12 minutes
   };
 
   let config = await mainWindow.webContents.executeJavaScript(`localStorage.getItem("Config")`);
@@ -161,57 +164,33 @@ let setupAutoUpdate = async () => {
   autoUpdater.autoDownload = config.autoUpdates;
   let timer = null;
 
-  // Auto-update works only on appimages on linux, otherwise anything on
-  // windows and macos
-  if (config.autoUpdates && dev
-    && !(process.plateform == 'linux'
-      && process.env.APPIMAGE === undefined)) {
+  if (config.autoUpdates) {
     timer = launchAutomaticUpdates();
   }
-
-  ipcMain.on('activate-auto-update', _ => {
-    if (timer === null
-      && !(process.plateform == 'linux'
-        && process.env.APPIMAGE === undefined)) {
-      timer = launchAutomaticUpdates();
-    }
-  });
-
-  ipcMain.on('deactivate-auto-update', _ => {
-    if (timer != null) {
-      clearInterval(timer);
-      timer = null;
-    }
-  });
-
-  ipcMain.on("check-for-updates", _ => {
-    console.log("checking for updates received");
-    autoUpdater.checkForUpdates()
-      .catch(err => {
-        console.log("There's been an error while checking for updates.");
-        mainWindow.webContents.send('check-update-error', err.toString());
-      });
-  });
 
   ipcMain.on("check-and-ask", _ => {
     let autodown_prev = autoUpdater.autoDownload;
     autoUpdater.autoDownload = false;
-    autoUpdater.checkForUpdates()
-      .catch(err => mainWindow.webContents.send('check-update-error'
-                                                , err.toString()))
-      .finally(_ => autoUpdater.autoDownload = autodown_prev);
+    checkForUpdates().finally(_ => autoUpdater.autoDownload = autodown_prev);
   });
 
   ipcMain.on("download-update", _ => {
-      if (!downloading){
-          downloading = true;
-          autoUpdater.downloadUpdate();
-      }
+    if (!downloading){
+      downloading = true;
+      autoUpdater.downloadUpdate();
+    }
   });
 
   ipcMain.on("setAutoDownload", (_, msg) => {
     let autoDownload = JSON.parse(msg);
     autoUpdater.autoDownload = autoDownload;
+    if (timer != null) {
+      clearInterval(timer);
+      timer = null;
+    }
+    if (autoDownload) {
+      timer = launchAutomaticUpdates();
+    }
   });
 
   ipcMain.on('quit-and-install', _ => autoUpdater.quitAndInstall());
@@ -222,7 +201,6 @@ let setupAutoUpdate = async () => {
   autoUpdater.on('update-downloaded', _ => {
     downloading = false;
     mainWindow.webContents.send('update-downloaded', "");
-
   });
 
   autoUpdater.on('error', err => {
@@ -236,9 +214,19 @@ let setupAutoUpdate = async () => {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on('ready', () => {
+
+  // Do not include this in createWindow() function
+  // (issue 714: macOS @electron/remote initialized multiple times)
+  require('@electron/remote/main').initialize();
+
   setAppMenu();
   createWindow();
-  setupAutoUpdate();
+
+  // Auto-update works only on appimages on linux, otherwise anything on
+  // windows and macos
+  if (process.plateform != 'linux' || process.env.APPIMAGE !== undefined) {
+    setupAutoUpdate();
+  }
 })
 
 // Quit when all windows are closed.

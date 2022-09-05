@@ -23,8 +23,6 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open Let;
-
 module Buffer = Js.TypedArray2.Uint8Array;
 
 [@bs.send] external toHex: (Buffer.t, [@bs.as "hex"] _) => string = "toString";
@@ -114,40 +112,32 @@ let mergebuf = (b1: Buffer.t, b2: Buffer.t) => {
 
 let seed = recoveryPhrase => recoveryPhrase->BIP39.seed->toHex;
 
-let edesk = (path, seed, ~password) => {
-  let%AwaitRes () = Sodium.ready;
+let toEDESK = (secretKey, ~password) =>
+  Sodium.ready->Promise.mapOk(_ => {
+    let salt = Sodium.randombytes_buf(8);
+    let encryptionKey = pbkdf2Sync(password, salt);
+    let encryptedSecretkey =
+      Sodium.crypto_secretbox_easy(
+        secretKey,
+        Buffer.fromLength(24),
+        encryptionKey,
+      );
+    b58cencode(mergebuf(salt, encryptedSecretkey), [|7, 90, 60, 179, 41|]); // edesk
+  });
 
-  let%ResMap secretKey =
+let edesk = (path, seed, ~password) =>
+  (
     switch (ED25519.derivePath(path->DerivationPath.toString, seed).key) {
-    | key => Ok(key)
-    | exception _ => Error(DerivationPathError)
-    };
-
-  let salt = Sodium.randombytes_buf(8);
-  let encryptionKey = pbkdf2Sync(password, salt);
-  let encryptedSecretkey =
-    Sodium.crypto_secretbox_easy(
-      secretKey,
-      Buffer.fromLength(24),
-      encryptionKey,
-    );
-  b58cencode(mergebuf(salt, encryptedSecretkey), [|7, 90, 60, 179, 41|]); // edesk
-};
+    | key => Promise.ok(key)
+    | exception _ => Promise.err(DerivationPathError)
+    }
+  )
+  ->Promise.flatMapOk(secretKey => {secretKey->toEDESK(~password)});
 
 /** Generates an encrypted secret key from a mnemonic. */
 let edeskLegacy = (~passphrase="", recoveryPhrase, ~password) => {
-  let%AwaitMap () = Sodium.ready;
-
   let secretKey =
     pbkdf2MnemonicLegacy(recoveryPhrase, "mnemonic" ++ passphrase)
     ->Buffer.slice(~start=0, ~end_=32);
-  let salt = Sodium.randombytes_buf(8);
-  let encryptionKey = pbkdf2Sync(password, salt);
-  let encryptedSecretkey =
-    Sodium.crypto_secretbox_easy(
-      secretKey,
-      Buffer.fromLength(24),
-      encryptionKey,
-    );
-  b58cencode(mergebuf(salt, encryptedSecretkey), [|7, 90, 60, 179, 41|]); // edesk;
+  secretKey->toEDESK(~password);
 };

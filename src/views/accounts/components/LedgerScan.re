@@ -118,7 +118,7 @@ let make = (~closeAction, ~index, ~secret) => {
      | StepAccounts(mk) =>
        <ScannedAccountsView
          scan={LedgerWalletAPI.runStreamedScan(
-           ~config,
+           ~network=config.network,
            ~startIndex=secret.Secret.addresses->Js.Array.length,
            ~onFoundKey=
              onFoundKey(~start=secret.Secret.addresses->Js.Array.length),

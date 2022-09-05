@@ -42,13 +42,14 @@ module Head = {
     );
 
   [@react.component]
-  let make = (~children) => {
+  let make = (~style as styleFromProp=?, ~children) => {
     let theme = ThemeContext.useTheme();
     <View
       style=Style.(
-        array([|
-          styles##thead,
-          style(~borderColor=theme.colors.borderDisabled, ()),
+        arrayOption([|
+          Some(styles##thead),
+          Some(style(~borderColor=theme.colors.borderDisabled, ())),
+          styleFromProp,
         |])
       )>
       children

@@ -50,7 +50,7 @@ let make =
       ~tooltip=?,
       ~disabled=?,
       ~style=?,
-      ~icon: Icons.builder,
+      ~icon: option(Icons.builder)=?,
       ~size=15.5,
       ~primary=false,
     ) => {
@@ -61,13 +61,17 @@ let make =
   let pressableElement = (~pressableRef) =>
     <ThemedPressable
       ?pressableRef style ?disabled onPress accessibilityRole=`button>
-      {icon(
-         ~style=styles##icon,
-         ~size,
-         ~color=
-           primary
-             ? theme.colors.iconPrimary : theme.colors.iconMediumEmphasis,
-       )}
+      {switch (icon) {
+       | Some(icon) =>
+         icon(
+           ~style=styles##icon,
+           ~size,
+           ~color=
+             primary
+               ? theme.colors.iconPrimary : theme.colors.iconMediumEmphasis,
+         )
+       | None => React.null
+       }}
       <Typography.ButtonSecondary
         style=Style.(
           style(

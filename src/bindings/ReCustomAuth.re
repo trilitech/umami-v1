@@ -23,9 +23,7 @@
 /*                                                                           */
 /*****************************************************************************/
 
-let flagOn = false;
-
-open Let;
+let flagOn = true;
 
 /* An auth provider redirects to a web page owned by the
    auth consumer (us/our api) to ensure only this consumer's
@@ -40,15 +38,15 @@ open Let;
 let redirectDomain = "https://umamiwallet.com";
 let baseUrl = redirectDomain ++ "/auth/";
 let redirectPathName = "redirect.html";
-let network = `testnet;
+let network = `mainnet;
 
 include ReCustomAuthType;
 
-[@bs.module "@toruslabs/torus-direct-web-sdk"] [@bs.new]
+[@bs.module "@toruslabs/customauth"] [@bs.new]
 external make: makeParams => t = "default";
 
 [@bs.send] external init: (t, initParams) => Js.Promise.t(unit) = "init";
-
+/*  */
 [@bs.send]
 external triggerAggregateLogin:
   (t, triggerAggregateLoginParams) => Js.Promise.t(aggregateLoginDetails) =
@@ -154,12 +152,17 @@ module Utils = {
     "getPublicAddress";
 
   let getPublicAddress = (~verifier, handle) => {
-    let%Await NodeDetails.{endpoints, nodePub} = NodeDetails.get();
-
-    let utils = make();
-    utils
-    ->getPublicAddress(endpoints, nodePub, {verifier, verifierId: handle})
-    ->RawJsError.fromPromiseParsed(parse);
+    NodeDetails.get()
+    ->Promise.flatMapOk((NodeDetails.{endpoints, nodePub}) => {
+        let utils = make();
+        utils
+        ->getPublicAddress(
+            endpoints,
+            nodePub,
+            {verifier, verifierId: handle},
+          )
+        ->RawJsError.fromPromiseParsed(parse);
+      });
   };
 };
 
@@ -193,7 +196,8 @@ let getPublicAddress = (~provider, handle) => {
     | `google => CustomAuthVerifiers.google
     };
 
-  let%AwaitRes {x, y} = Utils.getPublicAddress(~verifier, handle);
-  let%ResMap pkh = Crypto.spPointsToPkh(~x, ~y);
-  pkh;
+  Utils.getPublicAddress(~verifier, handle)
+  ->Promise.flatMapOk(({x, y}) => {
+      Crypto.spPointsToPkh(~x, ~y)->Promise.value
+    });
 };

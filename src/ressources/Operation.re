@@ -183,13 +183,6 @@ type t = {
   timestamp: Js.Date.t,
 };
 
-let filterJsonExn = ex =>
-  switch (ex) {
-  | Json.ParseError(error) => error
-  | Json.Decode.DecodeError(error) => error
-  | _ => "Unknown error"
-  };
-
 let internal_op_id = op =>
   switch (op.payload) {
   | Transaction(Token(_, _, internal_op_id)) => internal_op_id

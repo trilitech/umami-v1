@@ -56,10 +56,24 @@ module Item = {
   let make = (~id, ~address) => {
     let theme = ThemeContext.useTheme();
 
+    let requestState = React.useState(() => ApiRequest.NotAsked);
+
+    let balances =
+      BalanceApiRequest.useLoadBalances(~requestState, [address]);
+    let amount =
+      balances
+      ->BalanceApiRequest.getOne(address)
+      ->ApiRequest.mapOrLoad(amount =>
+          <Typography.Body1
+            fontWeightStyle=`bold style=Style.(style(~textAlign=`right, ()))>
+            {I18n.tez_amount(amount->Tez.toString)->React.string}
+          </Typography.Body1>
+        );
+
     <AccountElements.Slim
       id
       address
-      showAmount=AccountElements.Balance
+      showAmount={AccountElements.Amount(amount)}
       style=Style.(
         arrayOption([|
           Style.(style(~borderColor=theme.colors.borderDisabled, ()))->Some,
@@ -118,16 +132,18 @@ let make =
             styles##itemsContent,
           |])
         )>
-        {let accounts = accounts->List.toArray;
-         accounts
-         ->Array.mapWithIndex((id, address) =>
-             <Item
-               key={(startIndex + id)->Int.toString}
-               address
-               id={startIndex + id}
-             />
-           )
-         ->React.array}
+        <ScrollView>
+          {let accounts = accounts->List.toArray;
+           accounts
+           ->Array.mapWithIndex((id, address) =>
+               <Item
+                 key={(startIndex + id)->Int.toString}
+                 address
+                 id={startIndex + id}
+               />
+             )
+           ->React.array}
+        </ScrollView>
       </View>
     </View>
     <View

@@ -23,8 +23,6 @@
 /*                                                                           */
 /*****************************************************************************/
 
-open Let;
-
 module Registered = {
   include LocalStorage.Make({
     open RegisteredTokens;
@@ -69,12 +67,8 @@ module Registered = {
                | "ft" => ftDecoder
                | "nft" => nftDecoder
                | v =>
-                 JsonEx.(
-                   raise(
-                     InternalError(
-                       DecodeError("Registered: Unknown kind " ++ v),
-                     ),
-                   )
+                 raise(
+                   Json.Decode.DecodeError("Registered: Unknown kind " ++ v),
                  ),
              )
         )
@@ -251,11 +245,7 @@ module Cache = {
                | "full" => fullDecoder
                | "partial" => partialDecoder(purgePartial)
                | v =>
-                 JsonEx.(
-                   raise(
-                     InternalError(DecodeError("Cache: Unknown kind " ++ v)),
-                   )
-                 ),
+                 raise(Json.Decode.DecodeError("Cache: Unknown kind " ++ v)),
              )
         )
       );
@@ -339,9 +329,10 @@ module Legacy = {
 
     let migrateRegistered = () => {
       let mapValue = storageString => {
-        let%Res json = storageString->JsonEx.parse;
-        let%ResMap storage = json->JsonEx.decode(Storage.decoder);
-        storage->makeRegisteredStorage;
+        storageString
+        ->JsonEx.parse
+        ->Result.flatMap(json => json->JsonEx.decode(Storage.decoder))
+        ->Result.map(makeRegisteredStorage);
       };
       Registered.migrate(
         ~previousKey=Storage.key,
@@ -353,11 +344,14 @@ module Legacy = {
 
     let migrateCache = () => {
       let mapValue = storageString => {
-        let%Res json = storageString->JsonEx.parse;
-        let%ResMap storage = json->JsonEx.decode(Storage.decoder);
-        storage->Array.reduce(PublicKeyHash.Map.empty, (cache, token) =>
-          cache->TokensLibrary.addToken(Full(token))
-        );
+        storageString
+        ->JsonEx.parse
+        ->Result.flatMap(json => json->JsonEx.decode(Storage.decoder))
+        ->Result.map(storage =>
+            storage->Array.reduce(PublicKeyHash.Map.empty, (cache, token) =>
+              cache->TokensLibrary.addToken(Full(token))
+            )
+          );
       };
       Cache.migrate(
         ~previousKey=Storage.key,
@@ -368,10 +362,7 @@ module Legacy = {
     };
 
     let mk = () => {
-      let%Res () = migrateCache();
-      let%ResMap () = migrateRegistered();
-      ();
-      /* Storage.remove(); */
+      migrateCache()->Result.flatMap(migrateRegistered);
     };
   };
 
@@ -380,9 +371,10 @@ module Legacy = {
 
     let mk = () => {
       let mapValue = cacheString => {
-        let%Res json = cacheString->JsonEx.parse;
-        let%ResMap cache = json->JsonEx.decode(Cache.decoder);
-        cache->TokensLibrary.invalidateCache(`NFT);
+        cacheString
+        ->JsonEx.parse
+        ->Result.flatMap(json => json->JsonEx.decode(Cache.decoder))
+        ->Result.map(cache => cache->TokensLibrary.invalidateCache(`NFT));
       };
       Cache.migrate(~default=TokensLibrary.Generic.empty, ~mapValue, ());
     };
@@ -393,9 +385,10 @@ module Legacy = {
 
     let mk = () => {
       let mapValue = cacheString => {
-        let%Res json = cacheString->JsonEx.parse;
-        let%ResMap cache = json->JsonEx.decode(Cache.decoder);
-        cache->TokensLibrary.forceRetryPartial(`NFT);
+        cacheString
+        ->JsonEx.parse
+        ->Result.flatMap(json => json->JsonEx.decode(Cache.decoder))
+        ->Result.map(cache => cache->TokensLibrary.forceRetryPartial(`NFT));
       };
       Cache.migrate(~default=TokensLibrary.Generic.empty, ~mapValue, ());
     };
@@ -405,8 +398,11 @@ module Legacy = {
     let version = Version.mk(1, 7);
     let mk = () => {
       let mapValue = cacheString => {
-        let%Res json = cacheString->JsonEx.parse;
-        json->JsonEx.decode(Cache.StorageRepr.decoderWithoutPartial);
+        cacheString
+        ->JsonEx.parse
+        ->Result.flatMap(json =>
+            json->JsonEx.decode(Cache.StorageRepr.decoderWithoutPartial)
+          );
       };
       Cache.migrate(~default=TokensLibrary.Generic.empty, ~mapValue, ());
     };
