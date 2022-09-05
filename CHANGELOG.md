@@ -2,10 +2,15 @@
 
 ## Unreleased changes
 
+## Beta (0.8.3)
+
 - Add native Kathmandunet support
 - Fix auto update download and notification feature (i.e. is user
   activated the option, the release after this one will automatically
   be downloaded and user will be prompted to install)
+- Import Galleon backup
+- Export recovery as QR code (for mobile import)
+- Fix scrolling issue on small screens
 
 ## Beta (0.8.2)
 
