@@ -5,8 +5,6 @@ jest.mock("react-native-svg", () =>
   require("react-native-svg-mock/build/index")
 );
 
-jest.mock("usb-detection", () => {});
-
 jest.mock("@electron/remote", () => ({
   app: {
     getPath: jest.fn()
