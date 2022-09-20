@@ -8,4 +8,7 @@ module.exports = {
   testEnvironment: "jsdom",
   preset: "react-native-web",
   setupFilesAfterEnv: ["<rootDir>/jestSetup.js"],
+  moduleNameMapper: {
+    "^@ledgerhq/devices/hid-framing$": "@ledgerhq/devices/lib/hid-framing"
+  },
 };

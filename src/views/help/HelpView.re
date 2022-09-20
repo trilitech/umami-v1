@@ -98,7 +98,7 @@ module HelpLink = {
                 ~color=theme.colors.primaryIconHighEmphasis,
               )}
            </View>
-           <View
+           <Text
              style=Style.(
                array([|
                  styles##buttonText,
@@ -106,7 +106,7 @@ module HelpLink = {
                |])
              )>
              text->React.string
-           </View>
+           </Text>
          </View>;
        }}
     </Pressable_>;

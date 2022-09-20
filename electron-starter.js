@@ -64,13 +64,30 @@ function createWindow() {
     height: 1024,
     show: false,
     webPreferences: {
+
+      // - `nodeIntegration: false` or `contextIsolation: true` :
+      //   `Uncaught ReferenceError: global is not defined`
+      // - `webSecurity: true` :
+      //   Fetching external sites (e.g. umamiwallet.com) fails
+      //   (blocked by CORS policy / net::ERR_FAILED)
+
+      // Whether node integration is enabled. Default is false.
       nodeIntegration: true,
-      worldSafeExecuteJavaScript: true,
+
+      // Whether to run Electron APIs and the specified preload script in a
+      // separate JavaScript context.
       contextIsolation: false,
+
+      // When false, it will disable the same-origin policy (usually using
+      // testing websites by people), and set allowRunningInsecureContent to
+      // true if this options has not been set by user.
       webSecurity: false,
-      enableRemoteModule: true
+      allowRunningInsecureContent: false
+
     }
   })
+
+  require('@electron/remote/main').enable(mainWindow.webContents)
 
   // and load the index.html of the app.
   let indexPath
@@ -138,7 +155,6 @@ function createWindow() {
 }
 
 app.commandLine.appendSwitch('disable-features', 'OutOfBlinkCors');
-app.allowRendererProcessReuse = false;
 
 if (!app.isDefaultProtocolClient('umami')) {
   // Define custom protocol handler. Deep linking works on packaged versions of the application!
