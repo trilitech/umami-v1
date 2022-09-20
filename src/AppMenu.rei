@@ -1,1 +1,0 @@
-let setAppMenu: unit => unit;
