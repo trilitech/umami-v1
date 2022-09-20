@@ -66,7 +66,7 @@ module ShrinkedAddress = {
     let startSlice = address->Js.String2.slice(~from=0, ~to_=n - 1)
     let endSlice = address->Js.String2.slice(~from=l - n - 1, ~to_=l - 1)
 
-    let res = Format.sprintf("%s...%s", startSlice, endSlice)
+    let res = `${startSlice}...${endSlice}`
 
     let addToast = LogsContext.useToast()
 

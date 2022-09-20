@@ -156,7 +156,7 @@ module UnknownTokenAmount = {
     )
     <View style={OperationUtils.styles["rawAddressContainer"]}>
       <Text>
-        {Format.asprintf("%s %s", sign, amount->TokenRepr.Unit.toNatString)->React.string}
+        {`${sign} ${amount->TokenRepr.Unit.toNatString}`->React.string}
       </Text>
       <IconButton
         icon=Icons.QuestionMark.build
@@ -186,12 +186,7 @@ module KnownTokenAmount = {
   ) =>
     <View style={OperationUtils.styles["rawAddressContainer"]}>
       <Text>
-        {Format.asprintf(
-          "%s %s %s",
-          sign,
-          amount->TokenRepr.Unit.toStringDecimals(decimals),
-          symbol,
-        )->React.string}
+        {`${sign} ${amount->TokenRepr.Unit.toStringDecimals(decimals)} ${symbol}`->React.string}
       </Text>
       {registered ? React.null : <AddToken address kind op tokens />}
     </View>
@@ -203,11 +198,7 @@ module NFTAmount = {
     let source = NftElements.useNftSource(token, NftFilesManager.getThumbnailURL)
     <View style={OperationUtils.styles["rawAddressContainer"]}>
       <Text>
-        {Format.asprintf(
-          "%s %s",
-          sign,
-          amount->TokenRepr.Unit.toStringDecimals(token.decimals),
-        )->React.string}
+        {`${sign} ${amount->TokenRepr.Unit.toStringDecimals(token.decimals)}`->React.string}
       </Text>
       {source->Option.mapDefault(<SVGIconNoImg />, source =>
         <Image style={styles["image"]} source />

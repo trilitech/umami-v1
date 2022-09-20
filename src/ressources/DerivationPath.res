@@ -49,7 +49,7 @@ type tezosBip44 = (int, int)
 
 type derivationPath = t
 
-let toStringNoPrefix = (impl: t): string => impl->Array.joinWith("/", i => Format.sprintf("%d'", i))
+let toStringNoPrefix = (impl: t): string => impl->Array.joinWith("/", i => `${i->string_of_int}'`)
 
 let toString = impl => "m/" ++ impl->toStringNoPrefix
 
@@ -82,7 +82,7 @@ module Pattern = {
     ->Array.map(x =>
       switch x {
       | Wildcard => "/?'"
-      | Int(i) => Format.sprintf("/%d'", i)
+      | Int(i) => `/${i->string_of_int}'`
       }
     )
     ->Js.String.concatMany("m")

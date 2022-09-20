@@ -161,7 +161,7 @@ module Field = {
         fields
         ->Array.map(((field, v)) =>
           <Typography.Body1 key=field style={styles["subField"]}>
-            {Format.sprintf("%s:", field)->React.string} {showVal(v)}
+            {`${field}:`->React.string} {showVal(v)}
           </Typography.Body1>
         )
         ->React.array

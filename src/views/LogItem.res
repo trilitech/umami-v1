@@ -96,7 +96,7 @@ let buildScopeText = (log: Logs.t) => log.errorScope->Option.mapWithDefault("", 
 
 let buildMessage = (log: Logs.t) => {
   let scTxt = buildScopeText(log)
-  Format.sprintf("(%s%s): %s", scTxt, log.origin->Logs.originToString, log.msg)
+  `(${scTxt}${log.origin->Logs.originToString}): ${log.msg}`
 }
 
 let actionButtons = (~indice, ~log: Logs.t, ~addToast, ~handleDelete, ~toast) =>
