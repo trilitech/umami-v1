@@ -85,7 +85,7 @@ module SyncStatus = {
             }
           />
           <Typography.Body1>
-            {Format.sprintf("%.0f%%", percentage)->React.string}
+            {`${percentage->truncate->string_of_int}%`->React.string}
           </Typography.Body1>
         </>
       | Done => <>
@@ -109,7 +109,7 @@ module SyncStatus = {
             }
           />
           <Typography.Body1 colorStyle=#negative>
-            {Format.sprintf("%.0f%%", percentage)->React.string}
+            {`${percentage->truncate->string_of_int}%`->React.string}
           </Typography.Body1>
         </>
       | _ => React.null

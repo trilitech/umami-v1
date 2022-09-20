@@ -229,11 +229,7 @@ module Make = (S: KeyWalletIntf.SYSTEM): (KeyWalletIntf.WALLET with module Sys =
     module Encode = {
       open ReCustomAuth
       let toSecretKey = t =>
-        Format.sprintf(
-          "customauth://%s/%s",
-          t.provider->ReCustomAuth.providerToString,
-          (t.handle :> string),
-        )
+        `customauth://${t.provider->ReCustomAuth.providerToString}/${(t.handle :> string)}`
     }
   }
 
@@ -411,13 +407,8 @@ module Make = (S: KeyWalletIntf.SYSTEM): (KeyWalletIntf.WALLET with module Sys =
     module Encode = {
       let toSecretKey = (t, ~ledgerBasePkh: PublicKeyHash.t): secretKeyEncoding => {
         let (i1, i2) = (t.path :> (int, int))
-        let indexes = Format.sprintf("/%dh/%dh", i1, i2)
-        Format.sprintf(
-          "ledger://%s/%s%s",
-          (ledgerBasePkh :> string),
-          PublicKeyHash.Scheme.toString(t.scheme),
-          indexes,
-        )
+        let indexes = `/${string_of_int(i1)}h/${string_of_int(i2)}h`
+        `ledger://${(ledgerBasePkh :> string)}/${PublicKeyHash.Scheme.toString(t.scheme)}${indexes}`
       }
     }
   }

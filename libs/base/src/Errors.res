@@ -37,7 +37,7 @@ type t +=
 
 let handlers = ref(list{})
 
-let unhandled_error = e => Format.sprintf("Unhandled error %s", e)
+let unhandled_error = e => `Unhandled error ${e}`
 
 let registerHandler = (scope, f) => handlers := list{(scope, f), ...handlers.contents}
 

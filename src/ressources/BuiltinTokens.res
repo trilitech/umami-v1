@@ -34,8 +34,8 @@ let hicetnunc = {
       {
         kind: TokenRepr.FA2(tokenId),
         address: address,
-        alias: Format.sprintf("HEN#%d", tokenId),
-        symbol: Format.sprintf("HEN#%d", tokenId),
+        alias: `HEN#${tokenId->string_of_int}`,
+        symbol: `HEN#${tokenId->string_of_int}`,
         chain: #Mainnet->Network.getChainId,
         decimals: 0,
         asset: asset->Option.getWithDefault({

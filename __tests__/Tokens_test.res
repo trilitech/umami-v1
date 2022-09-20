@@ -59,7 +59,7 @@ let token1Json = `
    }
 `
 
-let token2Json = Format.sprintf(
+let token2Json =
   `
      {
        "kind": "fa2",
@@ -69,11 +69,9 @@ let token2Json = Format.sprintf(
        "symbol": "TK2",
        "chain": "NetXz969SFaFn8k",
        "decimals": 10,
-       "asset": %s
+       "asset": ${assetJson}
      }
-`,
-  assetJson,
-)
+`
 
 describe("Tokens", ({test}) => {
   test("Parse FA1.2", ({expectEqual}) => {

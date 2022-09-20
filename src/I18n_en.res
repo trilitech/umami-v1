@@ -23,8 +23,6 @@
 /*                                                                           */
 /*****************************************************************************/
 
-let p = Format.sprintf
-
 module Btn = {
   let json = "JSON"
   let download = "DOWNLOAD"
@@ -122,13 +120,13 @@ module Tooltip = {
   let custom_network_delete = "Delete network"
   let reject_on_ledger = "Reject on ledger to cancel operation"
   let see_network_info = "See network info"
-  let tokenid = j`A non-negative number that identifies the asset inside a FA2 contract`
+  let tokenid = "A non-negative number that identifies the asset inside a FA2 contract"
   let add_to_wallet = "Add to wallet"
-  let reject_on_provider = p("Reject on %s popup to cancel operation")
+  let reject_on_provider = (s) => `Reject on ${s} popup to cancel operation`
 }
 
 module Log = {
-  let copied_to_clipboard = p("%s copied to clipboard")
+  let copied_to_clipboard = (s) => `${s} copied to clipboard`
   let log_content = "Log content"
   let address = "Address"
   let content = "Content"
@@ -197,7 +195,7 @@ module Label = {
   let code = "Code"
   let custom_network_name = "Name"
   let custom_network_mezos_url = "Mezos URL"
-  let custom_network_node_url = plural => p("Node URL%s", plural ? "s" : "")
+  let custom_network_node_url = plural => "Node URL" ++ (plural ? "s" : "")
   let file = "File"
   let storage_location = "Storage location"
   let entrypoint = "Entrypoint"
@@ -205,7 +203,7 @@ module Label = {
 }
 
 module Input_placeholder = {
-  let provider_handler = (provider, handlerKind) => p("Type in a %s %s", provider, handlerKind)
+  let provider_handler = (provider, handlerKind) => `Type in a ${provider} ${handlerKind}`
   let tez_amount = "0.000000"
   let token_amount = "0"
   let add_accounts_name = "Enter account's name"
@@ -229,14 +227,14 @@ module Input_placeholder = {
 }
 
 module Form_input_error = {
-  let invalid_handler = (provider, handlerKind) => p("Invalid %s %s", provider, handlerKind)
+  let invalid_handler = (provider, handlerKind) => `Invalid ${provider} ${handlerKind}`
   let dp_not_a_dp = "Not a derivation path"
   let dp_more_than_1_wildcard = "Cannot have more than one '?'"
   let dp_missing_wildcard = "Missing '?' or 0"
   let dp_not_tezos = "Not a BIP44 Tezos Path"
   let not_an_int = "This needs to be a number"
   let negative_int = "This needs to be a natural number"
-  let expected_decimals = n => p("allows at most %d decimals", n)
+  let expected_decimals = n => `allows at most ${string_of_int(n)} decimals`
   let hardware_wallet_not_ready = "Connection to Tezos ledger application failed. Please make sure the Tezos app is opened and the ledger unlocked."
   let hardware_wallet_plug = "The connection took too long.\nPlease make sure the Ledger is properly plugged in and unlocked"
   let hardware_wallet_check_app = "Public key export failed. Please open the Tezos Wallet app and retry."
@@ -245,7 +243,7 @@ module Form_input_error = {
   let empty_transaction = "Transaction is empty."
   let branch_refused_error = "Please retry. An error came up while communicating with the node"
   let invalid_key_hash = "Invalid contract address"
-  let key_already_registered = a => p("Address already registered under: %s", a)
+  let key_already_registered = a => `Address already registered under: ${a}`
   let name_already_registered = "Name already registered"
   let mandatory = "This input is mandatory"
   let int = "must be an integer"
@@ -260,22 +258,26 @@ module Form_input_error = {
   let account_balance_empty = "Account is empty"
   let confirm_password = "It must be the same password"
   let derivation_path_error = "Invalid derivation path"
-  let name_already_taken = a => p("%s is already taken", a)
+  let name_already_taken = a => `${a} is already taken`
   let api_not_available = "API not available"
   let node_not_available = "Node not available"
   let different_chains = "API and Node are not running on the same network"
   let not_a_token_contract = "Not a standard token contract"
-  let no_metadata = pkh =>
-    p("No metadata was found for the contract%s.", pkh->Option.mapWithDefault("", p(": %s")))
-  let no_token_metadata = pkh =>
-    p("No token metadata was found for the contract%s.", pkh->Option.mapWithDefault("", p(": %s")))
+  let no_metadata = pkh => {
+    let s = pkh->Option.mapWithDefault("", (s) => `: ${s}`);
+    `No metadata was found for the contract${s}.`
+  }
+  let no_token_metadata = pkh => {
+    let s = pkh->Option.mapWithDefault("", (s) => `: ${s}`);
+    `No token metadata was found for the contract${s}.`
+  }
   let token_id_not_found = x =>
     switch x {
     | None => "Requested token id was not found"
-    | Some((pkh, tokenId)) => p("Token id %d not found for contract %s", tokenId, pkh)
+    | Some(pkh, tokenId) => `Token id ${string_of_int(tokenId)} not found for contract ${pkh}`
     }
   let illformed_token_metadata = (pkh, tokenId, field) =>
-    p("Field %s for token id %d illformed for contract %s", field, tokenId, pkh)
+    `Field ${field} for token id ${string_of_int(tokenId)} illformed for contract ${pkh}`
 }
 
 module Title = {
@@ -283,13 +285,13 @@ module Title = {
   let custom_auth_waiting_auth = "Waiting for authentification"
   let custom_auth_failed = "Authentification failed"
   let custom_auth_success = "Successful authentification"
-  let provider_authentification = pr => p("%s authentification", pr)
+  let provider_authentification = pr => `${pr} authentification`
   let nft_specs = "View Specs"
   let error_logs = "Logs"
   let checking_for_updates = "Checking for Updates"
   let install_update = "Install Update"
   let update_available = "Update Available"
-  let wallet_up_to_date = p("Your wallet is up to date (v%s)")
+  let wallet_up_to_date = s => `Your wallet is up to date (v${s})`
   let secret_create = "Create New Secret"
   let derive_account = "Add Account"
   let account_update = "Edit Account"
@@ -376,9 +378,9 @@ module Title = {
 
 module Expl = {
   let custom_auth_success = "Please click on confirm to submit operation"
-  let custom_auth_sign = p("Please log into %s to sign the operation")
+  let custom_auth_sign = s => `Please log into ${s} to sign the operation`
   let custom_auth_confirm_operation = "Please validate the details of the transaction and confirm it by signing up with your social account."
-  let provider_authentification = p("Please log into %s to import your key")
+  let provider_authentification = s => `Please log into ${s} to import your key`
   let nft_empty_state = "Umami should automatically discover any NFT you possess."
   let network_disconnect = "The Tezos network is currently unreachable. Your internet connection might be unstable. If it is not the case, you should check your configuration and update it by following the documentation"
   let hardware_wallet_confirm_operation = "Please validate the details of the transaction and press Confirm to sign it on your Ledger."
@@ -396,11 +398,11 @@ module Expl = {
   let hardware_wallet_denied = "The operation has been rejected from the Ledger device"
   let hardware_wallet_search = "Please make sure to unlock your Ledger and open the Tezos Wallet app."
   let scan = "A scan will check the Tezos chain for other accounts from your secrets that may have been revealed outside of this wallet."
-  let secret_create_record_recovery = j`Please record the following 24 words in sequence in order to restore it in the future. Ensure to back it up, keeping it securely offline.`
-  let secret_create_record_verify = j`We will now verify that you’ve properly recorded your recovery phrase. To demonstrate this, please type in the word that corresponds to each sequence number.`
-  let secret_create_password_not_recorded = j`Please note that this password is not recorded anywhere and only applies to this machine.`
-  let secret_select_derivation_path = j`Umami wallet supports custom derivation path to select new addresses. You may also select the default derivation path and use the default key.`
-  let import_secret_enter_phrase = j`Please fill in the recovery phrase in sequence.`
+  let secret_create_record_recovery = "Please record the following 24 words in sequence in order to restore it in the future. Ensure to back it up, keeping it securely offline."
+  let secret_create_record_verify = "We will now verify that you’ve properly recorded your recovery phrase. To demonstrate this, please type in the word that corresponds to each sequence number."
+  let secret_create_password_not_recorded = "Please note that this password is not recorded anywhere and only applies to this machine."
+  let secret_select_derivation_path = "Umami wallet supports custom derivation path to select new addresses. You may also select the default derivation path and use the default key."
+  let import_secret_enter_phrase = "Please fill in the recovery phrase in sequence."
   let confirm_operation = "Please validate the details of the transaction and enter password to confirm"
   let global_batch = "Please validate the details of the batch and sign the transaction."
   let fill_batch = "Add elements via the send menu or load a CSV file"
@@ -412,7 +414,7 @@ module Expl = {
   let beacon_dapp_sign = "requests your signature"
   let custom_network = "Please specify the parameters of the network you want to connect to."
   let external_service = "Notice: you are using Wert, which is an external service to Umami."
-  let secret_select_backup_path = j`If you ever need to restore your wallet, you can do so with this backup file and your password.`
+  let secret_select_backup_path = `If you ever need to restore your wallet, you can do so with this backup file and your password.`
 }
 
 module Menu = {
@@ -442,7 +444,7 @@ module Settings = {
   let confirmations_title = "VERIFICATION"
   let confirmations_label = "Number of confirmations (blocks)"
   let confirmations_saved = "Number of confirmations saved"
-  let chain_title = j`CHAIN/NETWORK`
+  let chain_title = `CHAIN/NETWORK`
   let danger_title = "DANGER ZONE"
   let danger_reset_section = "Reset Settings"
   let danger_reset_text = `This will remove or restore custom settings to default values.`
@@ -492,25 +494,20 @@ module Help = {
 
 module Network = {
   let api_not_available = "The API is not available"
-  let api_version_rpc_error = a => p("The API `/version` RPC parsing returned an error: %s", a)
+  let api_version_rpc_error = err => `The API \`/version\` RPC parsing returned an error: ${err}`
   let api_version_format_error = a =>
-    p("The API `/version` RPC parsing returned an unknown version format: %s", a)
+    `The API \`/version\` RPC parsing returned an unknown version format: ${a}`
   let api_monitor_rpc_error = a =>
-    p("The API `/monitor/blocks` RPC parsing returned an error: %s", a)
+    `The API \`/monitor/blocks\` RPC parsing returned an error: ${a}`
   let node_not_available = "The node is not available"
   let node_version_rpc_error = a =>
-    p("Node `/chains/main/chain_id` RPC parsing returned an error: %s", a)
+    `Node \`/chains/main/chain_id\` RPC parsing returned an error: ${a}`
   let chain_inconsistency = (a, b) =>
-    p(
-      "The API and Node are not running on the same network.\n\
-     API runs on chain `%s` and the node on the chain `%s`.",
-      a,
-      b,
-    )
+    `The API and Node are not running on the same network.\nAPI runs on chain \`${a}\` and the node on the chain \`${b}\``
   let unknown_chain_id = a =>
-    p("Network %s is not supported, your operation cannot be viewed in an explorer.", a)
-  let unknown_explorer = a => p("No explorer is known on network %s", a)
-  let api_not_supported = a => p("The API %s is not supported by this version of Umami.", a)
+    `Network ${a} is not supported, your operation cannot be viewed in an explorer.`
+  let unknown_explorer = a => `No explorer is known on network ${a}`
+  let api_not_supported = a => `The API ${a} is not supported by this version of Umami.`
   let api_and_node_not_available = "API and Node are both not available"
   ()
 }
@@ -519,25 +516,25 @@ module Taquito = {
   let not_an_account = "Not a tz address"
   let not_a_contract = "Not a contract address"
   let no_prefix_matched = "Unknown address prefix"
-  let api_error = n => p("API error: received %d", n)
+  let api_error = n => `API error: received ${string_of_int(n)}`
   let invalid_checksum = "Invalid checksum"
   let invalid_length = "Invalid length"
 }
 
 module Wallet = {
   let key_not_found = "Key not found"
-  let key_bad_format = s => p("Can't readkey, bad format: %s", s)
-  let invalid_path_size = p("Path %s is not valid: it must be of at least of two indexes")
+  let key_bad_format = s => `Can't readkey, bad format: ${s}`
+  let invalid_path_size = s => `Path ${s} is not valid: it must be of at least of two indexes`
   let invalid_index = (index, value) =>
-    p("Value %s at index %d is invalid for a derivation path", value, index)
-  let invalid_scheme = scheme => p("%s is not a valid scheme for an encoded Public key", scheme)
-  let invalid_encoding = enc => p("%s is not a valid an encoded Public key", enc)
-  let invalid_ledger = p("The Ledger connected has base key %s, which is not the one expected.")
+    `Value ${value} at index ${string_of_int(index)} is invalid for a derivation path`
+  let invalid_scheme = scheme => `${scheme} is not a valid scheme for an encoded Public key`
+  let invalid_encoding = enc => `${enc} is not a valid an encoded Public key`
+  let invalid_ledger = s => `The Ledger connected has base key ${s}, which is not the one expected.`
   ()
 }
 
 module Errors = {
-  let download_error_status = p("Request failed with status code %d")
+  let download_error_status = n => `Request failed with status code ${n}`
   let download_error = "Error during file download"
   let error_while_updating = "There's been an error while updating."
   let error_while_checking_updates = "Unable to check for updates."
@@ -551,82 +548,92 @@ module Errors = {
   let beacon_cant_handle = "Cannot handle this operation"
   let customauth_unable_to_retrieve_handle = "Unable to retrieve user handle"
   let customauth_popup_closed = "User closed popup during authentification"
-  let customauth_handle_mismatch = p("Signing handle mismatch: %s & %s")
-  let invalid_provider = s => p("%s is not a valid provider", s)
+  let customauth_handle_mismatch = (a, b) => `Signing handle mismatch: ${a} & ${b}`
+  let invalid_provider = s => `${s} is not a valid provider`
   let deeplinking_not_connected = "Deep linking required but not connected"
   let stream = "Acquiering media failed"
   let decryption = "Storage decryption failed"
   let encryption = "Storage encryption failed"
   let key_derivation = "Key derivation failed"
   let illformed_token_contract = "Illformed Token Contract"
-  let cannot_read_token = s => p("Cannot read token amount: %s", s)
-  let unknown_kind = k => p("Internal error: unknown kind `%s` for token contract", k)
+  let cannot_read_token = s => `Cannot read token amount: ${s}`
+  let unknown_kind = k => `Internal error: unknown kind \`${k}\` for token contract`
   let invalid_operation_type = "Invalid operation type!"
-  let unhandled_error = e => p("Unhandled error %s", e)
+  let unhandled_error = e => `Unhandled error ${e}`
   let no_secret_found = "No secrets found"
-  let secret_not_found = i => p("Secret at index %d not found!", i)
-  let cannot_update_secret = i => p("Can't update secret at index %d!", i)
-  let recovery_phrase_not_found = i => p("Recovery phrase at index %d not found!", i)
+  let secret_not_found = i => `Secret at index ${string_of_int(i)} not found!`
+  let cannot_update_secret = i => `Can't update secret at index ${string_of_int(i)}!`
+  let recovery_phrase_not_found = i => `Recovery phrase at index ${string_of_int(i)} not found!`
   let beacon_operation_not_supported = "Beacon operation not supported"
   let beacon_request_network_missmatch = "Beacon request network not supported"
   let beacon_client_not_created = "Beacon client not created"
   let video_stream_access_denied = "Unable to access video stream\n(please make sure you have a webcam enabled)"
   let incorrect_number_of_words = "Mnemonic must have 12, 15 or 24 words."
   let unknown_bip39_word = (w, i) =>
-    p("Word %d ('%s') is not a valid BIP39 word, please refer to the standard.", i, w)
+    `Word ${string_of_int(i)} ('${w}') is not a valid BIP39 word, please refer to the standard.`
   let secret_already_imported = "Secret already imported"
   let json_parsing_error = _ => "JSON parsing error"
-  let local_storage_key_not_found = k => p("Internal error: key `%s` not found", k)
-  let version_format = v => p("Internal error: invalid version format `%s`", v)
-  let storage_migration_failed = v => p("Internal error: storage migration failed at version %s", v)
-  let unknown_network = c => p("No public network exists for chain %s", c)
-  let script_parsing = e =>
-    p("Error when parsing script%s", e->Option.mapDefault("", m => "with message: " ++ m))
-  let micheline_parsing = e =>
-    p("Error when parsing Micheline%s", e->Option.mapDefault("", m => "with message: " ++ m))
+  let local_storage_key_not_found = k => `Internal error: key \`${k}\` not found`
+  let version_format = v => `Internal error: invalid version format \`${v}\``
+  let storage_migration_failed = v => `Internal error: storage migration failed at version ${v}`
+  let unknown_network = c => `No public network exists for chain ${c}`
+  let script_parsing = e => {
+    let e = e->Option.mapDefault("", m => " with message: " ++ m);
+    `Error when parsing script${e}`
+  }
+  let micheline_parsing = e => {
+    let e = e->Option.mapDefault("", m => " with message: " ++ m);
+    `Error when parsing Micheline${e}`
+  }
+    
   let unknown_version = (current, expected) =>
-    p("Unknown version %s, while %s expected", current, expected)
+    `Unknown version ${current}, while ${expected} expected`
   let version_not_in_bound = (lowest, highest, version) =>
-    p("Version %s is not in the range of %s and %s", version, lowest, highest)
+    `Version ${version} is not in the range of ${lowest} and ${highest}`
   let unknown_backup_version = v =>
-    p("Version %s of backup file cannot be imported in the current version of Umami.", v)
-  let cannot_parse_version = err => p("Invalid backup file:\n%s", err)
+    `Version ${v} of backup file cannot be imported in the current version of Umami.`
+  let cannot_parse_version = err => `Invalid backup file:\n${err}`
   let gas_exhausted = "Gas exhausted for the operation, please put a higher limit"
   let storage_exhausted = "Storage exhausted for the operation, please put a higher limit"
   let gas_exhausted_above_limit = "Gas exhausted and above protocol limit per operation"
   let storage_exhausted_above_limit = "Storage exhausted and above protocol limit per operation"
-  let not_a_number = v => p("%s is not a valid number", v)
-  let negative_number = v => p("%s is negative", v)
-  let unexpected_decimals = v => p("%s does not accept decimals", v)
-  let expected_decimals = (v, d) => p("%s does not accept more that %d decimals", v, d)
+  let not_a_number = v => `${v} is not a valid number`
+  let negative_number = v => `${v} is negative`
+  let unexpected_decimals = v => `${v} does not accept decimals`
+  let expected_decimals = (v, d) => `${v} does not accept more that ${string_of_int(d)} decimals`
   let fetch404 = "Error 404 - Not Found"
 }
 
 module Csv = {
-  let cannot_parse_number = (row, col) => p("Value at row %d column %d is not a number", row, col)
-  let cannot_parse_boolean = (row, col) => p("Value at row %d column %d is not a boolean", row, col)
+  let cannot_parse_number = (row, col) => `Value at row ${string_of_int(row)} column ${string_of_int(col)} is not a number`
+  let cannot_parse_boolean = (row, col) => `Value at row ${string_of_int(row)} column ${string_of_int(col)} is not a boolean`
   let cannot_parse_custom_value = (err, row, col) =>
-    p("Value at row %d column %d is not valid:\n%s", row, col, err)
-  let cannot_parse_row = row => p("Row %d is not valid, some columns are probably missing", row)
-  let cannot_parse_csv = p("CSV is not valid")
-  let no_rows = p("CSV is empty")
-  let cannot_parse_token_amount = (v, row, col) =>
-    p("Value %s at row %d column %d is not a valid token amount", ReBigNumber.toString(v), row, col)
-  let cannot_parse_tez_amount = (v, row, col) =>
-    p("Value %s at row %d column %d is not a valid tez amount", ReBigNumber.toString(v), row, col)
-  let unknown_token = (pkh, id) =>
-    p("Unknown token %s%s", pkh, id->Option.mapWithDefault("", p(" and tokenId %d")))
-  let cannot_parse_address = (a, reason) => p("%s in not a valid address: %s.", a, reason)
+    `Value at row ${string_of_int(row)} column ${string_of_int(col)} is not valid:\n${err}`
+  let cannot_parse_row = row => `Row ${string_of_int(row)} is not valid, some columns are probably missing`
+  let cannot_parse_csv = "CSV is not valid"
+  let no_rows = "CSV is empty"
+  let cannot_parse_token_amount = (v, row, col) => {
+    let v = ReBigNumber.toString(v);
+    `Value ${v} at row ${string_of_int(row)} column ${string_of_int(col)} is not a valid token amount`
+  }
+  let cannot_parse_tez_amount = (v, row, col) => {
+    let v = ReBigNumber.toString(v);
+    `Value ${v} at row ${string_of_int(row)} column ${string_of_int(col)} is not a valid tez amount`
+  }
+  let unknown_token = (pkh, id) => {
+    let id = id->Option.mapWithDefault("", n => ` and tokenId ${string_of_int(n)}`);
+    `Unknown token ${pkh}${id}`
+  }
+  let cannot_parse_address = (a, reason) => `${a} in not a valid address: ${reason}.`
   let fa1_2_invalid_token_id = pkh =>
-    p("Contract %s is an FA1.2 token, it cannot have a token id", pkh)
-  let fa2_invalid_token_id = pkh => p("Contract %s is an FA2 token, it must have a token id", pkh)
+    `Contract ${pkh} is an FA1.2 token, it cannot have a token id`
+  let fa2_invalid_token_id = pkh => `Contract ${pkh} is an FA2 token, it must have a token id`
 }
 
 module Disclaimer = {
-  let last_updated = date => p("Last updated %s.", date)
+  let last_updated = date => `Last updated ${date}.`
   let please_sign = "In order to use Umami, \nyou must agree to the terms."
-  let agreement_checkbox = "Check here to indicate that you have read and \
-     agree to the terms of the User Agreement"
+  let agreement_checkbox = "Check here to indicate that you have read and agree to the terms of the User Agreement"
 }
 
 let support_mailto_error_subject = "Support: Error log received on Umami"
@@ -638,12 +645,12 @@ let error404 = "404 - Route Not Found :("
 let no_balance_amount = "---- "
 let logs_no_recent = "No Recent Message"
 let logs_clearall = "CLEAR ALL"
-let amount = (a, b) => p("%s %s", a, b)
+let amount = (a, b) => `${a} ${b}`
 let tezos = "Tez"
 let tez = "tez"
 let you_dont_have_nft = "You don't have any NFT yet"
-let tez_amount = a => p("%s %s", a, tez)
-let tez_op_amount = op => p("%s %a", op, () => tez_amount)
+let tez_amount = a => `${a} ${tez}`
+let tez_op_amount = (op, a) => `${op} ${tez_amount(a)}`
 let account = "Account"
 let operation_reveal = "Reveal"
 let operation_transaction = "Transaction"
@@ -665,10 +672,10 @@ let global_batch_fee = "FEE"
 let global_batch_delete_all = "DELETE ALL"
 let global_batch_add = "INSERT TRANSACTION INTO BATCH"
 let state_mempool = "Mempool"
-let state_levels = p("%d/%d blocks")
+let state_levels = (a, b) => `${string_of_int(a)}/${string_of_int(b)} blocks`
 let state_confirmed = "Confirmed"
-let stepof = p("Step %d of %d")
-let optional_stepof = p("Step %d of %d (optional)")
+let stepof = (a, b) => `Step ${string_of_int(a)} of ${string_of_int(b)}`
+let optional_stepof = (a, b) => `Step ${string_of_int(a)} of ${string_of_int(b)} (optional)`
 let account_create_record_recovery = "Record your recovery phrase"
 let contact_added = "Contact Added"
 let contact_updated = "Contact Updated"
@@ -677,14 +684,14 @@ let account_created = "Account Created"
 let account_updated = "Account Updated"
 let secret_updated = "Secret Updated"
 let secret_deleted = "Secret Deleted"
-let token_contract = p("%s Token Contract")
+let token_contract = s => `${s} Token Contract`
 let token_created = "Token added to wallet"
 let token_deleted = "Token removed from wallet"
 let operation_hash = "Operation Hash"
 let navbar_accounts = "ACCOUNTS"
 let navbar_nft = "NFT"
 let navbar_operations = "OPERATIONS"
-let navbar_addressbook = j`ADDRESS BOOK`
+let navbar_addressbook = "ADDRESS BOOK"
 let navbar_delegations = "DELEGATIONS"
 let navbar_tokens = "TOKENS"
 let navbar_settings = "SETTINGS"
@@ -707,15 +714,15 @@ let empty_held_token = "No token held and not registered on the current chain"
 let empty_delegations = "No Delegation"
 let empty_operations = "No Operation"
 let empty_address_book = "No Contact"
-let add_token_format_contract_sentence = j`Please enter the address of a deployed token contract for which you would like to view balances as well as to perform operations.`
-let add_token_contract_metadata_fa1_2 = j`Please specify the name, symbol, and decimals of a token contract for which you would like to view balances as well as to perform operations. Umami will prefill the fields if any metadata is available.`
-let add_token_contract_tokenid_fa2 = j`Please specify the token ID of the token you would like to perform operations on. Umami will prefill the fields if any metadata is available.`
-let add_token_contract_metadata_fa2 = j`Please specify the token ID of the token you would like to perform operations on. Umami will prefill the fields if any metadata is available`
+let add_token_format_contract_sentence = "Please enter the address of a deployed token contract for which you would like to view balances as well as to perform operations."
+let add_token_contract_metadata_fa1_2 = "Please specify the name, symbol, and decimals of a token contract for which you would like to view balances as well as to perform operations. Umami will prefill the fields if any metadata is available."
+let add_token_contract_tokenid_fa2 = "Please specify the token ID of the token you would like to perform operations on. Umami will prefill the fields if any metadata is available."
+let add_token_contract_metadata_fa2 = "Please specify the token ID of the token you would like to perform operations on. Umami will prefill the fields if any metadata is available"
 let delegation_removal = "Delegation Removal"
 let error_check_contract = "Address is not a valid token contract"
 let error_register_not_fungible = "Cannot register an NFT as a fungible token"
 let error_register_not_non_fungible = "Cannot register a fungible token as an NFT"
-let words = p("%d words")
+let words = n => `${string_of_int(n)} words`
 let upgrade_notice = "We recommend you upgrade your version of Umami."
 let custom_network_created = "Network created"
 let custom_network_updated = "Network updated"
@@ -725,5 +732,5 @@ let email = "email"
 let username = "username"
 let percent_complete = "% complete"
 let update_available = "An update is available"
-let downloading_update = p("Downloading update (%s%%)")
+let downloading_update = s => `Downloading update (${s}%)`
 let download_complete = "Download complete"
