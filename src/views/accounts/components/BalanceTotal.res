@@ -35,6 +35,20 @@ module Base = {
     })
   }
 
+  let displayTez = s => {
+    try {
+      let idx = String.index(s, '.');
+      let i = String.sub(s, 0, idx);
+      let f = String.sub(s, idx, String.length(s) - idx);
+      <span>
+        <span>{i->React.string}</span>
+        <span style={ReactDOM.Style.make(~fontSize=".5em", ~verticalAlign="top", ~textDecoration="underline", ())}>{f->React.string}</span>
+      </span>
+    } catch {
+    | _ => <span>{s->React.string}</span>
+    }
+  };
+
   module BalanceToken = {
     @react.component
     let make = (~token: Token.t, ~mapWithLoading) => {
@@ -57,7 +71,7 @@ module Base = {
 
       balanceTotal->mapWithLoading(x =>
         switch x {
-        | Ok(b) => I18n.tez_amount(b->Tez.toString)->React.string
+        | Ok(b) => I18n.tez_amount_ELEMENT(b->Tez.toString->displayTez)
         | Error(_) => I18n.tez_amount(I18n.no_balance_amount)->React.string
         }
       )

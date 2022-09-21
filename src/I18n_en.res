@@ -650,6 +650,7 @@ let tezos = "Tez"
 let tez = "tez"
 let you_dont_have_nft = "You don't have any NFT yet"
 let tez_amount = a => `${a} ${tez}`
+let tez_amount_ELEMENT = a => <>{a}{` ${tez}`->React.string}</>
 let tez_op_amount = (op, a) => `${op} ${tez_amount(a)}`
 let account = "Account"
 let operation_reveal = "Reveal"
