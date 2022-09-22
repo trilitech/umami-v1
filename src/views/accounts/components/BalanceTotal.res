@@ -40,9 +40,13 @@ module Base = {
       let idx = String.index(s, '.');
       let i = String.sub(s, 0, idx);
       let f = String.sub(s, idx, String.length(s) - idx);
-      <span>
-        <span>{i->React.string}</span>
-        <span style={ReactDOM.Style.make(~fontSize=".5em", ~verticalAlign="top", ~textDecoration="underline", ())}>{f->React.string}</span>
+      <span style={ReactDOM.Style.make(~display="inline-flex", ~alignItems="center", ~lineHeight="1em", ())}>
+        {I18n.tez_amount_ELEMENT(
+        <>
+          <span>{i->React.string}</span>
+          <span style={ReactDOM.Style.make(~fontSize=".7em", ~alignSelf="flex-start", ~textDecoration="underline", ())}>{f->React.string}</span>
+        </>
+        )}
       </span>
     } catch {
     | _ => <span>{s->React.string}</span>
@@ -71,7 +75,7 @@ module Base = {
 
       balanceTotal->mapWithLoading(x =>
         switch x {
-        | Ok(b) => I18n.tez_amount_ELEMENT(b->Tez.toString->displayTez)
+        | Ok(b) => b->Tez.toString->displayTez
         | Error(_) => I18n.tez_amount(I18n.no_balance_amount)->React.string
         }
       )
