@@ -42,7 +42,7 @@ module Balance = {
     switch balanceRequest {
     | Done(Ok(balance), _)
     | Loading(Some(balance)) =>
-      I18n.tez_amount(balance->Tez.toString)->React.string
+      balance->Tez.toString->BalanceTotal.displayTez
     | Done(Error(_error), _) => I18n.tez_amount(I18n.no_balance_amount)->React.string
     | NotAsked
     | Loading(None) =>
