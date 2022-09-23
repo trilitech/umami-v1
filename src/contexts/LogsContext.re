@@ -184,7 +184,6 @@ let useToastBox = () => {
         opacity={store.fadeAnim->Animated.StyleProp.float}
         logs={store.logs}
         addToast={store.add(false)}
-        handleDelete={store.delete}
         firsts
       />
     );
