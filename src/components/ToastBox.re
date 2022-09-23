@@ -63,7 +63,10 @@ module Item = {
 };
 
 [@react.component]
-let make = (~opacity, ~logs, ~addToast, ~handleDelete, ~firsts) =>
+let make = (~opacity, ~logs, ~addToast, ~firsts) => {
+  let (hide, setHide) = React.useState(() => []);
+  let handleDelete = (tm, _) => setHide(hide => [tm, ...hide]);
+
   <Animated.View
     style=Style.([|styles##container, style(~opacity, ())|]->array)>
     {logs
@@ -71,7 +74,13 @@ let make = (~opacity, ~logs, ~addToast, ~handleDelete, ~firsts) =>
      ->List.reverse
      ->List.toArray
      ->Array.mapWithIndex((i, log) =>
-         <Item key={i->string_of_int} indice=i log handleDelete addToast />
+         if (hide->List.has(log.Logs.timestamp, (==))) {
+           React.null;
+         } else {
+           let handleDelete = handleDelete(log.Logs.timestamp);
+           <Item key={i->string_of_int} indice=i log handleDelete addToast />;
+         }
        )
      ->React.array}
   </Animated.View>;
+};
