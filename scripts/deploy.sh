@@ -72,8 +72,10 @@ extract "${ZIP_LINUX}" "${FILE_LINUX_DEB}"
 extract "${ZIP_MACOS}" "${FILE_MACOS_LATEST}"
 extract "${ZIP_MACOS}" "${FILE_MACOS_DMG}"
 extract "${ZIP_MACOS}" "${FILE_MACOS_ZIP}"
+# The windows files contains the space character, so we need to rename it
 extract "${ZIP_WINDOWS}" "${FILE_WINDOWS_LATEST}"
 extract "${ZIP_WINDOWS}" "${FILE_WINDOWS_EXE_ORIGIN}" "${FILE_WINDOWS_EXE}"
+sed -i'' "s/${FILE_WINDOWS_EXE_ORIGIN}/${FILE_WINDOWS_EXE}/g"
 
 PROJECT_PATH="nomadic-labs%2Fumami-wallet%2Fumami"
 PROJECT_NAME="umami"
