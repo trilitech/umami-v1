@@ -410,7 +410,7 @@ module ExplorerMaker = (
 ) => {
   let isMalformedTokenTransfer = (op: Operation.t) =>
     switch op.payload {
-    | Operation.Transaction.Transaction(Tez({destination})) => destination->PublicKeyHash.isContract
+    | Transaction(Tez({destination})) => destination->PublicKeyHash.isContract
     | _ => false
     }
 
