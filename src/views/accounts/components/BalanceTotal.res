@@ -31,27 +31,32 @@ module Base = {
     StyleSheet.create({
       "container": style(~marginBottom=10.->dp, ()),
       "total": style(~marginBottom=4.->dp, ()),
-      "balance": style(~lineHeight=22., ~height=22.->dp, ()),
+      "balance": style(~lineHeight=22., ~height=22.->dp, ~flexDirection=#row, ~alignItems=#center, ()),
+      "fractional_big": style(~fontSize=16., ~lineHeight=18., ~alignSelf=#flexStart, ~textDecorationLine=#underline, ()),
+      "fractional_small": style(~fontSize=12., ~alignSelf=#flexStart, ~textDecorationLine=#underline, ())
     })
   }
 
-  let displayTez = s => {
-    try {
-      let idx = String.index(s, '.');
-      let i = String.sub(s, 0, idx);
-      let f = String.sub(s, idx, String.length(s) - idx);
-      <span style={ReactDOM.Style.make(~display="inline-flex", ~alignItems="center", ~lineHeight="1em", ())}>
-        {I18n.tez_amount_ELEMENT(
-        <>
-          <span>{i->React.string}</span>
-          <span style={ReactDOM.Style.make(~fontSize=".7em", ~alignSelf="flex-start", ~textDecoration="underline", ())}>{f->React.string}</span>
-        </>
-        )}
-      </span>
-    } catch {
-    | _ => <span>{s->React.string}</span>
+  module DisplayTez = {
+    @react.component
+    let make = (~style as styleArg, ~s) => {
+      try {
+        let idx = String.index(s, '.');
+        let i = String.sub(s, 0, idx);
+        let f = String.sub(s, idx, String.length(s) - idx);
+        <View style={styles["balance"]}>
+          {I18n.tez_amount_ELEMENT(
+          <>
+            <Text>{i->React.string}</Text>
+            <Text style=styleArg>{f->React.string}</Text>
+          </>
+          )}
+        </View>
+      } catch {
+      | _ => <Text>{s->React.string}</Text>
     }
-  };
+    }
+  }
 
   module BalanceToken = {
     @react.component
@@ -75,7 +80,7 @@ module Base = {
 
       balanceTotal->mapWithLoading(x =>
         switch x {
-        | Ok(b) => b->Tez.toString->displayTez
+        | Ok(b) => <DisplayTez style=styles["fractional_big"] s={b->Tez.toString}/>
         | Error(_) => I18n.tez_amount(I18n.no_balance_amount)->React.string
         }
       )
