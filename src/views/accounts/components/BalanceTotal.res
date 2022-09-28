@@ -31,9 +31,10 @@ module Base = {
     StyleSheet.create({
       "container": style(~marginBottom=10.->dp, ()),
       "total": style(~marginBottom=4.->dp, ()),
-      "balance": style(~lineHeight=22., ~height=22.->dp, ~flexDirection=#row, ~alignItems=#center, ()),
-      "fractional_big": style(~fontSize=16., ~lineHeight=18., ~alignSelf=#flexStart, ~textDecorationLine=#underline, ()),
-      "fractional_small": style(~fontSize=12., ~alignSelf=#flexStart, ~textDecorationLine=#underline, ())
+      "balance_big": style(~lineHeight=22., ~height=22.->dp, ~flexDirection=#row, ~alignItems=#center, ()),
+      "balance_small": style(~lineHeight=16., ~height=20.->dp, ~flexDirection=#row, ~alignItems=#center, ~fontSize=16., ()),
+      "fractional_big": style(~fontSize=16., ~lineHeight=19., ~alignSelf=#flexStart, ~textDecorationLine=#underline, ()),
+      "fractional_small": style(~fontSize=12., ~lineHeight=20., ~alignSelf=#flexStart, ~textDecorationLine=#underline, ())
     })
   }
 
@@ -44,11 +45,11 @@ module Base = {
         let idx = String.index(s, '.');
         let i = String.sub(s, 0, idx);
         let f = String.sub(s, idx, String.length(s) - idx);
-        <View style={styles["balance"]}>
+        <View style={styleArg == #big ? styles["balance_big"] : styles["balance_small"]}>
           {I18n.tez_amount_ELEMENT(
           <>
             <Text>{i->React.string}</Text>
-            <Text style=styleArg>{f->React.string}</Text>
+            <Text style={styleArg == #big ? styles["fractional_big"] : styles["fractional_small"]}>{f->React.string}</Text>
           </>
           )}
         </View>
@@ -80,7 +81,7 @@ module Base = {
 
       balanceTotal->mapWithLoading(x =>
         switch x {
-        | Ok(b) => <DisplayTez style=styles["fractional_big"] s={b->Tez.toString}/>
+        | Ok(b) => <DisplayTez style=#big s={b->Tez.toString}/>
         | Error(_) => I18n.tez_amount(I18n.no_balance_amount)->React.string
         }
       )
@@ -104,7 +105,7 @@ module Base = {
       }
 
     let balanceElement =
-      <Typography.Headline fontWeightStyle=#black style={styles["balance"]}>
+      <Typography.Headline fontWeightStyle=#black style={styles["balance_big"]}>
         {switch token {
         | Some(token) => <BalanceToken mapWithLoading token />
         | None => <BalanceTez mapWithLoading />

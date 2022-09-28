@@ -42,7 +42,7 @@ module Balance = {
     switch balanceRequest {
     | Done(Ok(balance), _)
     | Loading(Some(balance)) =>
-      <BalanceTotal.DisplayTez style=BalanceTotal.styles["fractional_small"] s={balance->Tez.toString}/>
+      <BalanceTotal.DisplayTez style=#small s={balance->Tez.toString}/>
     | Done(Error(_error), _) => I18n.tez_amount(I18n.no_balance_amount)->React.string
     | NotAsked
     | Loading(None) =>
