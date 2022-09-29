@@ -31,14 +31,14 @@ module Base = {
     StyleSheet.create({
       "container": style(~marginBottom=10.->dp, ()),
       "total": style(~marginBottom=4.->dp, ()),
-      "balance_big": style(~lineHeight=22., ~fontSize=22., ~flexDirection=#row, ~alignItems=#flexStart, ()),
-      "balance_small": style(~lineHeight=16., ~fontSize=16., ~flexDirection=#row, ~alignItems=#flexStart, ()),
+      "balance_big": style(~lineHeight=22., ~fontSize=22., ~flexDirection=#row, ~alignItems=#baseline, ()),
+      "balance_small": style(~lineHeight=16., ~fontSize=16., ~flexDirection=#row, ~alignItems=#baseline, ()),
       /* fractional top margin because of the "natural" top spacing of the glyph: */
       /* - font size 22px -> top spacing 5px */
       /* - font size 16px -> top spacing 4px */
       /* - font size 12px -> top spacing 2px */
-      "fractional_big": style(~lineHeight=16., ~fontSize=16., ~marginTop=1.->dp, ~textDecorationLine=#underline, ()),
-      "fractional_small": style(~lineHeight=12., ~fontSize=12., ~marginTop=2.->dp, ~textDecorationLine=#underline, ())
+      "fractional_big": style(~lineHeight=16., ~fontSize=16., ()),
+      "fractional_small": style(~lineHeight=12., ~fontSize=12., ())
     })
   }
 
