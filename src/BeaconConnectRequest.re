@@ -131,7 +131,13 @@ let make = (~account) => {
       () =>
         switch (request) {
         | Some(Ok(OperationRequest(request))) =>
-          BeaconApiRequest.requestToBatch(account, request)
+          StoreContext.Accounts.useGetFromAddress(request.sourceAddress)
+          ->Result.fromOption(
+              LocalStorage.NotFound((request.sourceAddress :> string)),
+            )
+          ->Result.flatMap(account =>
+              BeaconApiRequest.requestToBatch(account, request)
+            )
           ->Result.map(batch => Op(request, batch))
           ->Some
 
