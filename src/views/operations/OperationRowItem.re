@@ -106,7 +106,7 @@ let memo = component =>
       let currentConfirmations =
         prevPros##currentLevel - prevPros##operation.Operation.level;
 
-      currentConfirmations > 5
+      currentConfirmations > 5 // What is that?
         ? prevPros##operation == nextProps##operation
         : prevPros##operation ==
           nextProps##operation

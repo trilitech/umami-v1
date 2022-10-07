@@ -40,7 +40,7 @@ let default = {
   defaultNetwork: true,
   theme: `system,
   baseDir: () => System.(Path.Ops.(appDir() / (!"tezos-client"))),
-  confirmations: 5,
+  confirmations: 2,
   backupFile: None,
   autoUpdates: true,
 };
