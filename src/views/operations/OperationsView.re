@@ -87,9 +87,11 @@ let make = (~account: Account.t) => {
     StoreContext.Operations.useLoad(~address=account.address, ());
 
   let operationsReload = StoreContext.Operations.useResetAll();
+  let config = ConfigContext.useContent();
   let renderItem = (currentLevel, operation: Operation.t) =>
     <OperationRowItem
       account
+      config
       key=Operation.(operation->uniqueId->uniqueIdToString)
       operation
       currentLevel

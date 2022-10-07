@@ -106,7 +106,7 @@ let memo = component =>
       let currentConfirmations =
         prevPros##currentLevel - prevPros##operation.Operation.level;
 
-      currentConfirmations > 5 // What is that?
+      currentConfirmations > prevPros##config.ConfigContext.confirmations
         ? prevPros##operation == nextProps##operation
         : prevPros##operation ==
           nextProps##operation
@@ -273,10 +273,9 @@ let amount =
 
 [@react.component]
 let make =
-  memo((~account: Account.t, ~operation: Operation.t, ~currentLevel) => {
+  memo((~account: Account.t, ~config: ConfigContext.env, ~operation: Operation.t, ~currentLevel) => {
     let aliases = StoreContext.Aliases.useGetAll();
     let tokens = StoreContext.Tokens.useGetAll();
-    let config = ConfigContext.useContent();
     let addToast = LogsContext.useToast();
 
     <Table.Row.Bordered>
