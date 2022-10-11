@@ -39,6 +39,7 @@ apps:
       - network
       - network-bind
       - pulseaudio
+      - raw-usb
       - u2f-devices
       # Some plugs are already provided by gnome-3-38 extension
       # See https://snapcraft.io/docs/gnome-3-38-extension
