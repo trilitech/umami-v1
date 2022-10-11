@@ -2,6 +2,13 @@
 
 ## Unreleased changes
 
+## Beta (0.8.4)
+
+- Upgrade Electron to version 20
+- Default confirmation block count set to 2
+- Fix close button in toast messages
+- Fix wrong account selection while processing beacon request
+
 ## Beta (0.8.3)
 
 - Add native Kathmandunet support
