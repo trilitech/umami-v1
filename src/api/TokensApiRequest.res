@@ -30,7 +30,7 @@ let useCheckTokenContract = tokens => {
     switch tokens->TokensLibrary.Generic.pickAnyAtAddress(address) {
     | None => config.network->NodeAPI.Tokens.checkTokenContract(address)
     | Some((_, _, (token, _))) =>
-      (token->TokensLibrary.Token.kind: TokenContract.kind :> [>
+      (token->TokensLibrary.Token.kind: TokenContract.kind :> [
         | TokenContract.kind
         | #NotAToken
       ])->Promise.ok
