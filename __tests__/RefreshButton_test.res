@@ -15,7 +15,7 @@ let fixture =
     />
   </Portal.Provider>
 
-describe("<RefreshButton />", () => {
+Skip.describe("<RefreshButton />", () => {
   test("it displays one Button", () => {
     let screen = render(fixture)
 
