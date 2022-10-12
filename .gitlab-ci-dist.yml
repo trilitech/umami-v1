@@ -71,8 +71,11 @@ macos-dist:
   stage: dist
   tags:
     - macos
+  variables:
+    NODE_PKG: node@16
   before_script:
-    - node -v
+    - brew list "${NODE_PKG}" &>/dev/null || brew install "${NODE_PKG}"
+    - node -v || export PATH="/opt/homebrew/opt/${NODE_PKG}/bin:$PATH"
     - npm -v
     # `brew install --force` and `brew link --overwrite` in order to avoid cache issue between two builds
     - brew install --force cairo corepack expat giflib jpeg libpng librsvg pango pixman pkg-config zlib
