@@ -7751,10 +7751,10 @@ lazy-val@^1.0.4, lazy-val@^1.0.5:
   resolved "https://registry.yarnpkg.com/lazy-val/-/lazy-val-1.0.5.tgz#6cf3b9f5bc31cee7ee3e369c0832b7583dcd923d"
   integrity sha512-0/BnGCCfyUMkBpeDgWihanIAF9JmZhHBgUhEqzvf+adhNGLoP6TaiI5oF8oyb3I45P+PcnrqihSf01M0l0G5+Q==
 
-lenses-ppx@6.1.2:
-  version "6.1.2"
-  resolved "https://registry.yarnpkg.com/lenses-ppx/-/lenses-ppx-6.1.2.tgz#dd32793e5d1cb7145481dc61326af1371b8e0306"
-  integrity sha512-XG9afGW3hgBRJDytIvVD4tGDHgpI+2SP0xEdqUkBr6zktCYXlsq7by5hf9yuGR9XfmC6t++eUFEq/Mx26pl4ug==
+lenses-ppx@6.1.10:
+  version "6.1.10"
+  resolved "https://registry.yarnpkg.com/lenses-ppx/-/lenses-ppx-6.1.10.tgz#74b84a7c08191ff39c7f7e57d82c2b1d8a616a74"
+  integrity sha512-zN1RxPAvrKZtV7AqoUCjhSrS5NvjEg7isdde3G7eWUcVwcTzggM65mS1CuoVH5zgWB0JAF1VDmnli29DDQzbYQ==
 
 leven@^3.1.0:
   version "3.1.0"
@@ -9634,6 +9634,11 @@ reschema@^2.0.2-alpha.0:
   version "2.2.0"
   resolved "https://registry.yarnpkg.com/reschema/-/reschema-2.2.0.tgz#e98730d5dff98ec4d99798a31bf1c4a4ebcb8f1c"
   integrity sha512-vkFNYm2GEqrmoK+n1xomn/EXgltvCfqmowMxXkr2IBa6Zw0JItunzOap73PaS9DUGak0h6xHoIOciGcq+LC9cg==
+
+rescript@9:
+  version "9.1.4"
+  resolved "https://registry.yarnpkg.com/rescript/-/rescript-9.1.4.tgz#1eb126f98d6c16942c0bf0df67c050198e580515"
+  integrity sha512-aXANK4IqecJzdnDpJUsU6pxMViCR5ogAxzuqS0mOr8TloMnzAjJFu63fjD6LCkWrKAhlMkFFzQvVQYaAaVkFXw==
 
 resolve-cwd@^2.0.0:
   version "2.0.0"
