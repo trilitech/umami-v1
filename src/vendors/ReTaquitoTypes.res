@@ -320,15 +320,12 @@ module Tzip16Contract = {
   type storage
   type entrypoints
 
-  type t = {
-    "address": PublicKeyHash.t,
-    "entrypoints": entrypoints,
-    "methods": methods,
-    @meth
-    "storage": unit => Js.Promise.t<storage>,
-    @meth
-    "tzip16": unit => Tzip16.t,
-  }
+  type t
+  @send external address: t => PublicKeyHash.t = "address"
+  @send external entrypoints: t => entrypoints = "entrypoints"
+  @send external methods: t => methods = "methods"
+  @send external storage: t => Js.Promise.t<storage> = "storage"
+  @send external tzip16: t => Tzip16.t = "tzip16"
 }
 
 module Tzip12Tzip16Contract = {
@@ -336,17 +333,13 @@ module Tzip12Tzip16Contract = {
   type storage = Tzip12Storage.storage
   type entrypoints
 
-  type t = {
-    "address": PublicKeyHash.t,
-    "entrypoints": entrypoints,
-    "methods": methods,
-    @meth
-    "storage": unit => Js.Promise.t<storage>,
-    @meth
-    "tzip12": unit => Tzip12.t,
-    @meth
-    "tzip16": unit => Tzip16.t,
-  }
+  type t
+  @send external address: t => PublicKeyHash.t = "address"
+  @send external entrypoints: t => entrypoints = "entrypoints"
+  @send external methods: t => methods = "methods"
+  @send external storage: t => Js.Promise.t<storage> = "storage"
+  @send external tzip12: t => Tzip12.t = "tzip12"
+  @send external tzip16: t => Tzip16.t = "tzip16"
 }
 
 module FA12 = {
