@@ -45,6 +45,8 @@ let () = Errors.registerHandler("Server", x =>
   }
 )
 
+@module("uuid") external genUuid: unit => string = "v4"
+
 module URL = {
   type t = string
 
@@ -60,24 +62,37 @@ module URL = {
 
   let fromString = s => s
 
-  let get = url => {
-    let init = Fetch.RequestInit.make(
-      ~method_=Fetch.Get,
-      ~headers=Fetch.HeadersInit.make({
-        "Mezos-Version": Network.apiHighestBound->Version.toString,
-        "Umami-Version": System.getVersion(),
-      }),
-      (),
-    )
+  let get = {
+    let umamiInstallationId =
+      switch LocalStorage.UmamiInstallationId.get() {
+      | Ok(v) => v
+      | Error(_) =>
+        let id = genUuid()
+        LocalStorage.UmamiInstallationId.set(id)
+        Js.log("Storage umami installation id not found, generated " ++ id)
+        id
+    }
 
-    url
-    ->Fetch.fetchWithInit(init)
-    ->Promise.fromJs(e => (e->RawJsError.fromPromiseError).message->FetchError)
-    ->Promise.flatMapOk(response =>
-      response
-      ->Fetch.Response.json
+    url => {
+      let init = Fetch.RequestInit.make(
+        ~method_=Fetch.Get,
+        ~headers=Fetch.HeadersInit.make({
+          "Mezos-Version": Network.apiHighestBound->Version.toString,
+          "Umami-Version": System.getVersion(),
+          "UmamiInstallationHash": umamiInstallationId,
+        }),
+        (),
+      )
+
+      url
+      ->Fetch.fetchWithInit(init)
       ->Promise.fromJs(e => (e->RawJsError.fromPromiseError).message->FetchError)
-    )
+      ->Promise.flatMapOk(response =>
+        response
+        ->Fetch.Response.json
+        ->Promise.fromJs(e => (e->RawJsError.fromPromiseError).message->FetchError)
+      )
+    }
   }
 
   let postJson = (url, json) => {

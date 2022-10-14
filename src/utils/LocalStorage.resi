@@ -52,3 +52,5 @@ module type StorageType = {
 module Make: (Value: ValueType) => (StorageType with type t = Value.t)
 
 module Version: StorageType with type t = Version.t
+
+module UmamiInstallationId: StorageType with type t = string
