@@ -116,3 +116,10 @@ module Version = Make({
   }
   let decoder = json => json->Json.Decode.string->Version.parse->JsonEx.getExn
 })
+
+module UmamiInstallationId = Make({
+  let key = "storage-UmamiInstallationId"
+  type t = string
+  let encoder = v => v->Json.Encode.string
+  let decoder = json => json->Json.Decode.string
+})
