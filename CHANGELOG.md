@@ -2,6 +2,11 @@
 
 ## Unreleased changes
 
+- Redesign tez amount display
+- Added custom UmamiInstallationHash header field
+- Redesign Settings, Help & Logs in Menu bar
+- Converted project to rescript
+
 ## Beta (0.8.4)
 
 - Upgrade Electron to version 20
