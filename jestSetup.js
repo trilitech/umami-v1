@@ -11,6 +11,28 @@ jest.mock("@electron/remote", () => ({
   }
 }));
 
+// https://stackoverflow.com/a/65286435
+const localStorageMock = (function() {
+  let store = {}
+  return {
+    getItem: function(key) {
+      return store[key] || null
+    },
+    setItem: function(key, value) {
+      store[key] = value.toString()
+    },
+    removeItem: function(key) {
+      delete store[key]
+    },
+    clear: function() {
+      store = {}
+    }
+  }
+})()
+Object.defineProperty(global, 'localStorage', {
+  value: localStorageMock
+})
+
 // https://jestjs.io/docs/manual-mocks#mocking-methods-which-are-not-implemented-in-jsdom
 //
 // Also had to add global.window instead of window
