@@ -2,10 +2,19 @@
 
 ## Unreleased changes
 
+## Beta (0.8.5)
+
 - Redesign tez amount display
 - Added custom UmamiInstallationHash header field
 - Redesign Settings, Help & Logs in Menu bar
 - Converted project to rescript
+
+## Beta (0.8.4)
+
+- Upgrade Electron to version 20
+- Default confirmation block count set to 2
+- Fix close button in toast messages
+- Fix wrong account selection while processing beacon request
 
 ## Beta (0.8.3)
 
