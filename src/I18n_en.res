@@ -127,6 +127,7 @@ module Tooltip = {
 
 module Log = {
   let copied_to_clipboard = (s) => `${s} copied to clipboard`
+  let copy_to_clipboard_err = "Copying to Clipboard failed"
   let log_content = "Log content"
   let address = "Address"
   let content = "Content"
