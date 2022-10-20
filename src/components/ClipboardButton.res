@@ -43,8 +43,10 @@ let make = (
     icon=Icons.Copy.build
     tooltip=?{tooltipKey->Option.map(k => ("ClipboadButton" ++ k, I18n.Tooltip.copy_clipboard))}
     onPress={_ => {
-      Navigator.Clipboard.write(data)
-      addToast(Logs.info(~origin=Logs, I18n.Log.copied_to_clipboard(copied)))
+      let onFailure = _ => addToast(Logs.error(~origin=Logs, Errors.Generic(I18n.Log.copy_to_clipboard_err)))->Js.Promise.resolve
+      let onSuccess = () => addToast(Logs.info(~origin=Logs, I18n.Log.copied_to_clipboard(copied)))->Js.Promise.resolve
+      Js.Promise.catch(onFailure, Js.Promise.then_(onSuccess, Navigator.Clipboard.write(data)))
+      -> ignore
     }}
     ?style
   />
