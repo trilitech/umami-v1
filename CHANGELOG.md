@@ -2,6 +2,8 @@
 
 ## Unreleased changes
 
+## Beta (0.8.5)
+
 - Redesign tez amount display
 - Added custom UmamiInstallationHash header field
 - Redesign Settings, Help & Logs in Menu bar
