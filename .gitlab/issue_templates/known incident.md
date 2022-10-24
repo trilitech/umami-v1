@@ -48,5 +48,5 @@
 <!-- @comeh (cc: @philippewang.info) Please review this _emergency change_ on operations aspects  -->
 <!-- @SamREye                   Please review this _emergency change_ on business aspects    -->
 <!-- comment next line if writing a draft -->
-/assign @sagotch @leoparis89 @comeh @SamREye 
+/assign @sagotch @leoparis89 @comeh @SamREye  @philippewang.info
 <!-- /unlabel ~"CAB::to-review" -->

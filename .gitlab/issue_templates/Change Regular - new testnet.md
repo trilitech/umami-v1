@@ -1,6 +1,6 @@
 <!-- "Regular Change" template for new testnets : 
-* step 2/ search&replace 'TESTNET' by the Test-net name (Case-sensitive)
 * step 1/ copy&paste in new issue https://gitlab.com/nomadic-labs/umami-wallet/umami/-/issues/new?issue[title]=Test-net%20Start%20endpoint%20and%20publish:%20TESTNET
+* step 2/ search&replace 'TESTNET' by the Test-net name (Case-sensitive)
 * -->
 
 <!-- /title Test-net Start endpoint and publish: TESTNET -->
@@ -173,7 +173,7 @@ list + add to prometheus monitoring stack as 'external'
 
 /todo @philippewang.info Please provide `tezos-indexer` version compatible with TESTNET.
 
-/assign @SamREye @comeh @sagotch @leoparis89
+/assign @SamREye @comeh @sagotch @leoparis89 @philippewang.info
 
 <!-- Quick actions for last approver : -->
 <!-- /unlabel ~"CAB::to-approve" -->
