@@ -283,6 +283,7 @@ module WithQR = {
           ? <canvas
               ref={canvasRef->ReactDOM.Ref.domRef}
               style={ReactDOM.Style.make(
+                ~alignSelf="center",
                 ~objectFit="cover",
                 ~width="372px",
                 ~height="372px",
