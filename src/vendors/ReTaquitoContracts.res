@@ -93,7 +93,7 @@ module FA12 = {
       },
     )
 
-  let transfer = (c: t, src, dst, amount) => c["methods"].transfer(. src, dst, amount)
+  let transfer = (c: t, src, dst, amount) => (c->Types.FA12.methods).transfer(. src, dst, amount)
 }
 
 @ocaml.doc(" FA12 contracts specific interface ")
@@ -110,5 +110,5 @@ module FA2 = {
       },
     )
 
-  let transfer = (c: t, txs) => c["methods"].transfer(. txs)
+  let transfer = (c: t, txs) => (c->Types.FA2.methods).transfer(. txs)
 }

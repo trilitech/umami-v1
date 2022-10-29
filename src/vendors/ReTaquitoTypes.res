@@ -321,11 +321,12 @@ module Tzip16Contract = {
   type entrypoints
 
   type t
+
   @get external address: t => PublicKeyHash.t = "address"
   @get external entrypoints: t => entrypoints = "entrypoints"
   @get external methods: t => methods = "methods"
-  @get external storage: t => Js.Promise.t<storage> = "storage"
-  @get external tzip16: t => Tzip16.t = "tzip16"
+  @send external storage: t => Js.Promise.t<storage> = "storage"
+  @send external tzip16: t => Tzip16.t = "tzip16"
 }
 
 module Tzip12Tzip16Contract = {
@@ -334,12 +335,13 @@ module Tzip12Tzip16Contract = {
   type entrypoints
 
   type t
+
   @get external address: t => PublicKeyHash.t = "address"
   @get external entrypoints: t => entrypoints = "entrypoints"
   @get external methods: t => methods = "methods"
-  @get external storage: t => Js.Promise.t<storage> = "storage"
-  @get external tzip12: t => Tzip12.t = "tzip12"
-  @get external tzip16: t => Tzip16.t = "tzip16"
+  @send external storage: t => Js.Promise.t<storage> = "storage"
+  @send external tzip12: t => Tzip12.t = "tzip12"
+  @send external tzip16: t => Tzip16.t = "tzip16"
 }
 
 module FA12 = {
@@ -355,17 +357,14 @@ module FA12 = {
   type storage = Tzip12Storage.storage
   type entrypoints
 
-  type t = {
-    "address": PublicKeyHash.t,
-    "entrypoints": entrypoints,
-    "methods": methods,
-    @meth
-    "storage": unit => Js.Promise.t<storage>,
-    @meth
-    "tzip12": unit => Tzip12.t,
-    @meth
-    "tzip16": unit => Tzip16.t,
-  }
+  type t
+
+  @get external address: t => PublicKeyHash.t = "address"
+  @get external entrypoints: t => entrypoints = "entrypoints"
+  @get external methods: t => methods = "methods"
+  @send external storage: t => Js.Promise.t<storage> = "storage"
+  @send external tzip12: t => Tzip12.t = "tzip12"
+  @send external tzip16: t => Tzip16.t = "tzip16"
 }
 
 module FA2 = {
@@ -385,15 +384,12 @@ module FA2 = {
   type storage = Tzip12Storage.storage
   type entrypoints
 
-  type t = {
-    "address": PublicKeyHash.t,
-    "entrypoints": entrypoints,
-    "methods": methods,
-    @meth
-    "storage": unit => Js.Promise.t<storage>,
-    @meth
-    "tzip12": unit => Tzip12.t,
-    @meth
-    "tzip16": unit => Tzip16.t,
-  }
+  type t
+
+  @get external address: t => PublicKeyHash.t = "address"
+  @get external entrypoints: t => entrypoints = "entrypoints"
+  @get external methods: t => methods = "methods"
+  @send external storage: t => Js.Promise.t<storage> = "storage"
+  @send external tzip12: t => Tzip12.t = "tzip12"
+  @send external tzip16: t => Tzip16.t = "tzip16"
 }

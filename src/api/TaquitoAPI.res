@@ -292,7 +292,7 @@ module Transfer = {
     contractCache
     ->FA2Cache.findContract(token)
     ->Promise.mapOk(c =>
-      c["methods"].Types.FA2.transfer(. transferParams).toTransferParams(. sendParams)
+      (c->Types.FA2.methods).transfer(. transferParams).toTransferParams(. sendParams)
     )
   }
 
