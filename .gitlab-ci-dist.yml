@@ -135,7 +135,8 @@ linux-dist-snap:
     # Fix npm ERR! File exists: /usr/bin/yarn
     - sed -i "/npm install yarn -g/d" scripts/snap-tmpl.yaml
     - yarn
-    - CI=false yarn snap:build
+    # Fix Cannot cleanup: Error: EEXIST (https://github.com/electron-userland/electron-builder/issues/3179)
+    - CI=false USE_HARD_LINKS=false yarn snap:build
     - mkdir -p dist/
     - mv *.snap dist/
   artifacts:
