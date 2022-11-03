@@ -187,7 +187,7 @@ module WithQR = {
 
     @react.component
     let make = (~onQRCodeData) => {
-      let videoRef = React.useRef(window["document"]["createElement"]("video"))
+      let videoRef = React.useRef(window["document"]["createElement"](."video"))
       let canvasRef = React.useRef(Js.Nullable.null)
       let rafRef = React.useRef(Js.Nullable.null)
 
@@ -242,7 +242,7 @@ module WithQR = {
         let streamRef = ref(None)
 
         Promise.async(() =>
-          window["navigator"]["mediaDevices"]["getUserMedia"]({
+          window["navigator"]["mediaDevices"]["getUserMedia"](.{
             "video": {
               "facingMode": "environment",
             },
@@ -264,8 +264,8 @@ module WithQR = {
             // stop the camera streaming
             switch streamRef.contents {
             | Some(stream) =>
-              let tracks = stream["getTracks"]()
-              tracks["forEach"](track => track["stop"]())
+              let tracks = stream["getTracks"](.)
+              tracks["forEach"](.track => track["stop"](.))
               ()
             | None => ()
             }
@@ -283,6 +283,7 @@ module WithQR = {
           ? <canvas
               ref={canvasRef->ReactDOM.Ref.domRef}
               style={ReactDOM.Style.make(
+                ~alignSelf="center",
                 ~objectFit="cover",
                 ~width="372px",
                 ~height="372px",

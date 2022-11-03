@@ -56,7 +56,8 @@ module Tzip16 = {
     ->ReTaquitoError.fromPromiseParsed
     ->Promise.mapError(x =>
       switch x {
-      | ReTaquitoError.NoMetadata => NoTzip16Metadata(contract->ReTaquitoTypes.Tzip16Contract.address)
+      | ReTaquitoError.NoMetadata =>
+        NoTzip16Metadata(contract->ReTaquitoTypes.Tzip16Contract.address)
       | e => e
       }
     )
@@ -68,7 +69,8 @@ module Tzip12 = {
   /* Read TZIP12 Metadata directly from the storage, should be used only if
    Taquito's embedded API cannot read them. */
   module Storage = {
-    let read = contract => (contract->ReTaquitoTypes.Tzip12Tzip16Contract.storage)->ReTaquitoError.fromPromiseParsed
+    let read = contract =>
+      contract->ReTaquitoTypes.Tzip12Tzip16Contract.storage->ReTaquitoError.fromPromiseParsed
 
     module Decode = {
       let getOptString = (storage, f) =>
@@ -283,8 +285,10 @@ module Tzip12 = {
       ->ReTaquitoError.fromPromiseParsed
       ->Promise.mapError(x =>
         switch x {
-        | ReTaquitoError.TokenIdNotFound => TokenIdNotFound(contract->ReTaquitoTypes.Tzip12Tzip16Contract.address, tokenId)
-        | ReTaquitoError.NoTokenMetadata => NoTzip12Metadata(contract->ReTaquitoTypes.Tzip12Tzip16Contract.address)
+        | ReTaquitoError.TokenIdNotFound =>
+          TokenIdNotFound(contract->ReTaquitoTypes.Tzip12Tzip16Contract.address, tokenId)
+        | ReTaquitoError.NoTokenMetadata =>
+          NoTzip12Metadata(contract->ReTaquitoTypes.Tzip12Tzip16Contract.address)
         | e => e
         }
       )
@@ -302,7 +306,8 @@ module Tzip12 = {
     ->ReTaquitoError.fromPromiseParsed
     ->Promise.mapError(x =>
       switch x {
-      | ReTaquitoError.NoMetadata => NoTzip16Metadata(contract->ReTaquitoTypes.Tzip12Tzip16Contract.address)
+      | ReTaquitoError.NoMetadata =>
+        NoTzip16Metadata(contract->ReTaquitoTypes.Tzip12Tzip16Contract.address)
       | e => e
       }
     )

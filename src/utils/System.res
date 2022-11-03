@@ -60,7 +60,7 @@ let isDev = nodeEnv->Js.Nullable.toOption->Option.mapWithDefault(false, a => a =
 
 @val external window: 'a = "window"
 
-let reload = () => window["location"]["reload"]()
+let reload = () => window["location"]["reload"](.)
 
 let hasAutoUpdate = () =>
   !isDev &&

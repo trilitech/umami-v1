@@ -24,5 +24,7 @@
 /* *************************************************************************** */
 
 module Clipboard = {
-  @val external write: string => Js.Promise.t<unit> = "navigator.clipboard.writeText"
+  let cb = %raw("navigator.clipboard")
+
+  let write: string => unit = text => cb["writeText"](.text)
 }

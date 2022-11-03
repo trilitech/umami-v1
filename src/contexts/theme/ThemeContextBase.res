@@ -213,7 +213,7 @@ let make = (~children, ~theme, ~setTheme) =>
 // Hooks
 
 @val external window: 'a = "window"
-let mediaQueryColorSchemeDark = window["matchMedia"]("(prefers-color-scheme: dark)")
+let mediaQueryColorSchemeDark = window["matchMedia"](."(prefers-color-scheme: dark)")
 
 let usePrefersColorSchemeDark: unit => bool = () => {
   let (prefersColorSchemeDark, setPrefersColorSchemeDark) = React.useState(_ =>
@@ -226,8 +226,8 @@ let usePrefersColorSchemeDark: unit => bool = () => {
   )
 
   React.useEffect1(() => {
-    mediaQueryColorSchemeDark["addEventListener"]("change", listener)->ignore
-    Some(() => mediaQueryColorSchemeDark["removeEventListener"]("change", listener)->ignore)
+    mediaQueryColorSchemeDark["addEventListener"](."change", listener)->ignore
+    Some(() => mediaQueryColorSchemeDark["removeEventListener"](."change", listener)->ignore)
   }, [listener])
 
   prefersColorSchemeDark
