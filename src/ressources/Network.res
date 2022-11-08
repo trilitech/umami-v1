@@ -93,20 +93,22 @@ let () = Errors.registerHandler("Network", x =>
   }
 )
 
-type nativeChains = [#Mainnet | #Ghostnet | #Jakartanet | #Kathmandunet]
+type nativeChains = [#Mainnet | #Ghostnet | #Kathmandunet | #Limanet]
 
 type supportedChains = [
   | nativeChains
+  | #Jakartanet
   | #Hangzhounet
+  | #Granadanet
   | #Florencenet
   | #Edo2net
-  | #Granadanet
 ]
 
 let unsafeChainId: string => chainId = c => c
 
 let getChainId = x =>
   switch x {
+  | #Limanet => "NetXizpkH94bocH"
   | #Kathmandunet => "NetXi2ZagzEsXbZ"
   | #Jakartanet => "NetXLH1uAxK7CCh"
   | #Ghostnet => "NetXnHfVqm9iesp"
@@ -128,6 +130,7 @@ let fromChainId = x =>
   | "NetXnHfVqm9iesp" => #Ghostnet
   | "NetXLH1uAxK7CCh" => #Jakartanet
   | "NetXi2ZagzEsXbZ" => #Kathmandunet
+  | "NetXizpkH94bocH" => #Limanet
   | s => #Custom(s)
   }
 
@@ -136,15 +139,16 @@ let mkChainAssoc = c => (c, getChainId(c))
 let nativeChains = list{
   mkChainAssoc(#Mainnet),
   mkChainAssoc(#Ghostnet),
-  mkChainAssoc(#Jakartanet),
   mkChainAssoc(#Kathmandunet),
+  mkChainAssoc(#Limanet),
 }
 
 let supportedChains = list{
-  mkChainAssoc(#Florencenet),
+  mkChainAssoc(#Jakartanet),
   mkChainAssoc(#Hangzhounet),
-  mkChainAssoc(#Edo2net),
   mkChainAssoc(#Granadanet),
+  mkChainAssoc(#Florencenet),
+  mkChainAssoc(#Edo2net),
   ...nativeChains,
 }
 
@@ -158,6 +162,7 @@ let getDisplayedName = x =>
   | #Ghostnet => "Ghostnet"
   | #Jakartanet => "Jakartanet"
   | #Kathmandunet => "Kathmandunet"
+  | #Limanet => "Limanet"
   | #Custom(s) => s
   }
 
@@ -171,6 +176,7 @@ let externalExplorer = x =>
   | #Ghostnet => "https://ghostnet.tzkt.io/"->Ok
   | #Jakartanet => "https://jakartanet.tzkt.io/"->Ok
   | #Kathmandunet => "https://kathmandunet.tzkt.io/"->Ok
+  | #Limanet => "https://limanet.tzkt.io/"->Ok
   | #Custom(_) as net => Error(UnknownChainId(getChainId(net)))
   }
 
@@ -196,6 +202,7 @@ let chainNetwork: chain<_> => option<string> = x =>
   | #Ghostnet => Some("ghostnet")
   | #Jakartanet => Some("jakartanet")
   | #Kathmandunet => Some("kathmandunet")
+  | #Limanet => Some("limanet")
   | #Custom(_) => None
   }
 
@@ -211,6 +218,7 @@ let networkChain: string => option<chain<_>> = x =>
     Some(#Ghostnet)
   | "jakartanet" => Some(#Jakartanet)
   | "kathmandunet" => Some(#Kathmandunet)
+  | "limanet" => Some(#Limanet)
   | _ => None
   }
 
@@ -226,6 +234,7 @@ module Encode = {
     | #Ghostnet
     | #Jakartanet
     | #Kathmandunet
+    | #Limanet
     | #Hangzhounet => "default"
     | #Custom(_) => "custom"
     }
@@ -254,20 +263,19 @@ module Decode = {
   let nativeChainFromString = x =>
     switch x {
     | "Mainnet" => #Mainnet
-    | "Ithacanet" /* Kill? */
-    | "Ghostnet" =>
-      #Ghostnet
-    | "Jakartanet" => #Jakartanet
+    | "Ithacanet" /* Kill? */ | "Ghostnet" => #Ghostnet
     | "Kathmandunet" => #Kathmandunet
+    | "Limanet" => #Limanet
     | n => raise(Json.Decode.DecodeError("Unknown network " ++ n))
     }
 
   let chainFromString = x =>
     switch x {
-    | "Florencenet" => #Florencenet
-    | "Edo2net" => #Edo2net
-    | "Hangzhounet" => #Hangzhounet
     | "Jakartanet" => #Jakartanet
+    | "Hangzhounet" => #Hangzhounet
+    | "Florencenet" => #Florencenet
+    | "Granadanet" => #Granadanet
+    | "Edo2net" => #Edo2net
     | n => nativeChainFromString(n)
     }
 
@@ -320,24 +328,24 @@ let ghostnet = mk(
   #Ghostnet,
 )
 
-let jakartanet = mk(
-  ~explorer="https://jakartanet.umamiwallet.com/",
-  ~endpoint="https://jakartanet.ecadinfra.com",
-  #Jakartanet,
-)
-
 let kathmandunet = mk(
-  ~explorer="https://kathmandunet.umamiwallet.com/",
+  ~explorer="https://kathmandunet.umamiwallet.com",
   ~endpoint="https://kathmandunet.ecadinfra.com",
   #Kathmandunet,
+)
+
+let limanet = mk(
+  ~explorer="https://limanet.umamiwallet.com",
+  ~endpoint="https://limanet.ecadinfra.com",
+  #Limanet,
 )
 
 let getNetwork = x =>
   switch x {
   | #Mainnet => mainnet
   | #Ghostnet => ghostnet
-  | #Jakartanet => jakartanet
   | #Kathmandunet => kathmandunet
+  | #Limanet => limanet
   }
 
 let getNetworks = (c: nativeChains) => {
@@ -355,14 +363,12 @@ let getNetworks = (c: nativeChains) => {
       withEP("https://ghostnet.ecadinfra.com/"),
       withEP("https://ghostnet.smartpy.io/"),
     }
-  | #Jakartanet => list{
-      withEP("https://jakartanet.ecadinfra.com/"),
-      withEP("https://rpczero.tzbeta.net"),
-      withEP("https://jakartanet.tezos.marigold.dev/"),
-    }
   | #Kathmandunet => list{
       withEP("https://kathmandunet.ecadinfra.com"),
       withEP("https://kathmandunet.tezos.marigold.dev/"),
+    }
+  | #Limanet => list{
+      withEP("https://limanet.ecadinfra.com"),
     }
   }
 }

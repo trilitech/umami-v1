@@ -4,10 +4,13 @@
 
 ## Beta (0.8.5)
 
+- Add native Limanet support
+- Drop native Jakartanet support
 - Redesign tez amount display
 - Added custom UmamiInstallationHash header field
 - Redesign Settings, Help & Logs in Menu bar
 - Converted project to rescript
+- Fix ledger permission issue with the snap package version
 
 ## Beta (0.8.4)
 
