@@ -26,6 +26,8 @@
 open ReactNative
 open Routes
 
+let width = 110.
+
 module NavBarItem = {
   let styles = {
     open Style
@@ -36,6 +38,7 @@ module NavBarItem = {
         ~paddingVertical=3.->dp,
         ~alignItems=#center,
         ~justifyContent=#center,
+        ~width=width->dp,
         (),
       ),
       "icon": style(~marginBottom=6.->dp, ()),
@@ -179,12 +182,10 @@ module LogsButton = {
   }
 }
 
-let width = 110.
-
 let styles = {
   open Style
   StyleSheet.create({
-    "container": style(~flexDirection=#column, ~width=width->dp, ~paddingBottom=15.->dp, ()),
+    "container": style(~flexDirection=#column, ~paddingBottom=15.->dp, ()),
     "sendButton": style(~marginTop=20.->dp, ~marginBottom=18.->dp, ~alignItems=#center, ()),
     "bottomContainer": style(
       ~marginTop=auto,
@@ -194,6 +195,7 @@ let styles = {
       ~alignContent=#center,
       ~justifyContent=#spaceEvenly,
       ~alignItems=#center,
+      ~width=width->dp,
       (),
     ),
     "version": style(~display=#flex, ~justifyContent=#center, ()),
