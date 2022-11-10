@@ -111,6 +111,8 @@ After the backups have been deleted :
 - [ ] Approval from Business (are we clear to stop TESTNET support in Umami)
 - [ ] Approval from Operations 
 - [ ] Approval from Development (once Umami clients have been released without the option)
+   - [ ] removed from Umami Desktop latest release
+   - [ ] removed from Umami Mobile latest release
 
 /assign @sagotch @leoparis89 @comeh @SamREye 
 
