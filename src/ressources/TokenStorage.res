@@ -206,7 +206,7 @@ module Cache = {
             Tzkt.Decode.decoder,
             {
               open Network.Decode
-              chainDecoder(nativeChainFromString)
+              chainDecoder(chainFromString)
             },
           )
           |> (((t, chain)) => (t, chain, true)),
@@ -214,7 +214,7 @@ module Cache = {
           Tzkt.Decode.decoder,
           {
             open Network.Decode
-            chainDecoder(nativeChainFromString)
+            chainDecoder(chainFromString)
           },
           bool,
         ),
