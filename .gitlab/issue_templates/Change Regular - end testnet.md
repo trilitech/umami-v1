@@ -83,7 +83,7 @@ rm /opt/umami-backend/amino/TESTNET/import-data/*
 ## Rollback plan
 <!-- Describe how to rollback the change in case the expected change is not working -->
 
-During the 1 week after sopping and before removing the backups, to restart without having to download the full TESTNET chain :
+During the 1 week after stopping and before removing the backups, to restart without having to download the full TESTNET chain :
 ```
 cd /opt/umami-backend/amino/TESTNET
 make pg_dump_restore
