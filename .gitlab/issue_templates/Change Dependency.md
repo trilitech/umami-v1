@@ -59,7 +59,7 @@
 @SamREye                   Please *approve* this _dependency change_ on business    aspects
 
 <!-- comment next line if writing a draft -->
-/assign @sagotch @leoparis89 @comeh @SamREye
+/assign @sagotch @leoparis89 @comeh @SamREye @philippewang.info
 
 <!-- Quick actions for last approver : -->
 <!-- /unlabel ~"CAB::to-approve" -->

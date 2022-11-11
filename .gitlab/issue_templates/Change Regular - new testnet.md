@@ -1,9 +1,10 @@
 <!-- "Regular Change" template for new testnets : 
-* search&replace 'TESTNET' by the Test-net name (Case-sensitive)
-* copy&paste in new issue https://gitlab.com/nomadic-labs/umami-wallet/umami/-/issues/new?issue[title]=Test-net%20Start%20endpoint%20and%20publish:%20TESTNET
+* step 1/ copy&paste in new issue https://gitlab.com/nomadic-labs/umami-wallet/umami/-/issues/new?issue[title]=Test-net%20Start%20endpoint%20and%20publish:%20TESTNET
+* step 2/ search&replace 'TESTNET' by the Test-net name (Case-sensitive)
 * -->
-/title Test-net Start endpoint and publish: TESTNET 
-/label ~"Umami-stack"  ~"tezos-net::testnet"
+
+<!-- /title Test-net Start endpoint and publish: TESTNET -->
+/label  ~"Umami-stack" ~"Umami-stack::monitoring" ~"App::Frontend"  ~"tezos-net::testnet"
 /label ~"Priority::2-Medium"
 /assign @SamREye @philippewang.info @comeh @sagotch @leoparis89
 
@@ -172,7 +173,7 @@ list + add to prometheus monitoring stack as 'external'
 
 /todo @philippewang.info Please provide `tezos-indexer` version compatible with TESTNET.
 
-/assign @SamREye @comeh @sagotch @leoparis89
+/assign @SamREye @comeh @sagotch @leoparis89 @philippewang.info
 
 <!-- Quick actions for last approver : -->
 <!-- /unlabel ~"CAB::to-approve" -->
@@ -181,3 +182,4 @@ list + add to prometheus monitoring stack as 'external'
 /label ~"Change::Regular" <!-- Regular change, to be approved by the CAB before applying. -->
 /label ~Change ~"CAB::to-approve" <!-- labels for gitlab CAB Change issues management -->
 <!-- METADATA - end -->
+
