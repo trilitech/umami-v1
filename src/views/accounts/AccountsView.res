@@ -71,10 +71,10 @@ module CreateAccountButton = {
   }
 
   @react.component
-  let make = (~showOnboarding) => <>
+  let make = (~action) => <>
     <View style={styles["button"]}>
       <ButtonAction
-        onPress={_ => showOnboarding()}
+        onPress={_ => action()}
         text=I18n.Btn.create_or_import_secret
         icon=Icons.Account.build
         primary=true
@@ -87,7 +87,7 @@ module BuyTezButton = {
   let styles = {
     open Style
     StyleSheet.create({
-      "button": style(~marginLeft=-6.->dp, ~marginBottom=2.->dp, ()),
+      "button": style(~marginLeft=-6.->dp, ~marginBottom=2.->dp, ~alignSelf=#flexStart, ()),
       "modal": style()->unsafeAddStyle({"boxShadow": "none"}),
     })
   }
@@ -131,6 +131,19 @@ module BuyTezButton = {
   }
 }
 
+type accountType = Individual | Multisig
+
+module AccountTypeSwitch = {
+  @react.component
+  let make = (~accountType, ~setAccountType) => {
+    <SegmentedButtons
+      selectedValue=accountType
+      setSelectedValue=setAccountType
+      buttons=[(I18n.Btn.individual_accounts, Individual), (I18n.Btn.multisig_accounts, Multisig)]
+    />
+  }
+}
+
 let getHDAddresses = secrets =>
   secrets
   ->Array.map(secret => {
@@ -163,6 +176,31 @@ module AccountsFlatList = {
         ->React.array}
       </View>
     })
+  }
+}
+
+module MultisigAccountList = {
+  let styles = {
+    open Style
+    StyleSheet.create({
+      "container": style(~paddingLeft=16.->dp, ()),
+      "button": style(~marginTop=16.->dp, ~alignSelf=#flexStart, ()),
+    })
+  }
+
+  @react.component
+  let make = (~showCreateMultisig) => {
+    <View style={styles["container"]}>
+      <Typography.Body1> {I18n.Expl.no_multisig_contract->React.string} </Typography.Body1>
+      <Buttons.SubmitPrimary
+        style={styles["button"]} text=I18n.Btn.add_contract onPress={_ => ()}
+      />
+      <Buttons.SubmitPrimary
+        style={styles["button"]}
+        text=I18n.Btn.create_new_multisig
+        onPress={_ => showCreateMultisig()}
+      />
+    </View>
   }
 }
 
@@ -216,35 +254,52 @@ let styles = {
 }
 
 @react.component
-let make = (~account, ~showOnboarding, ~showBuyTez, ~mode, ~setMode) => {
+let make = (~account, ~showCreateAccount, ~showBuyTez, ~mode, ~setMode) => {
   let resetSecrets = StoreContext.Secrets.useResetAll()
   let accountsRequest = StoreContext.Accounts.useRequest()
   let token = StoreContext.SelectedToken.useGet()
 
   let retryNetwork = ConfigContext.useRetryNetwork()
 
+  let (accountType, setAccountType) = React.useState(() => Individual)
+
+  let (isFormVisible, showForm) = React.useState(_ => false)
+
   <Page>
-    <Page.Header
-      right={<>
-        <RefreshButton
-          loading={accountsRequest->ApiRequest.isLoading}
-          onRefresh={() => {
-            resetSecrets()
-            retryNetwork()
-          }}
-        />
-        <EditButton mode setMode />
-      </>}>
-      <Typography.Headline style=Styles.title>
-        {I18n.Title.accounts->React.string}
-      </Typography.Headline>
-      {mode->Mode.is_management ? <BalanceTotal /> : <BalanceTotal.WithTokenSelector ?token />}
-      <View style={styles["actionBar"]}>
+    {if isFormVisible {
+      <CreateMultisigView closeAction={_ => showForm(_ => false)} />
+    } else {
+      <>
+        <Page.Header
+          right={<>
+            <RefreshButton
+              loading={accountsRequest->ApiRequest.isLoading}
+              onRefresh={() => {
+                resetSecrets()
+                retryNetwork()
+              }}
+            />
+            <EditButton mode setMode />
+          </>}>
+          <Typography.Headline style=Styles.title>
+            {I18n.Title.accounts->React.string}
+          </Typography.Headline>
+          {mode->Mode.is_management ? <BalanceTotal /> : <BalanceTotal.WithTokenSelector ?token />}
+          <View style={styles["actionBar"]}>
+            {mode->Mode.is_management
+              ? <CreateAccountButton action={_ => showForm(_ => true)} />
+              : <View>
+                  <BuyTezButton account showView=showBuyTez />
+                  <AccountTypeSwitch accountType setAccountType />
+                </View>}
+          </View>
+        </Page.Header>
         {mode->Mode.is_management
-          ? <CreateAccountButton showOnboarding />
-          : <BuyTezButton account showView=showBuyTez />}
-      </View>
-    </Page.Header>
-    {mode->Mode.is_management ? <AccountsTreeList /> : <AccountsFlatList ?token />}
+          ? <AccountsTreeList />
+          : accountType == Individual
+          ? <AccountsFlatList ?token />
+          : <MultisigAccountList showCreateMultisig={_ => showForm(_ => true)} />}
+      </>
+    }}
   </Page>
 }

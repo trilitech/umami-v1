@@ -121,13 +121,13 @@ module Dashboard = {
           mode=accountsViewMode
           setMode=setAccountsViewMode
           showBuyTez
-          showOnboarding={() => setMainPage(_ => Homepage.AddAccountModal)}
+          showCreateAccount={() => setMainPage(_ => Homepage.AddAccountModal)}
         />
       | Nft => <NftView account />
       | Operations => <OperationsView account />
       | AddressBook => <AddressBookView />
       | Delegations => <DelegationsView />
-      | Tokens => <TokensView />
+      | Contracts => <ContractsView />
       | Settings => <SettingsView />
       | Logs => <LogsView />
       | Batch => <GlobalBatchView />
@@ -151,9 +151,9 @@ let shouldDisplayNavbar = (
   | Loading(Some(_)) => true
   | Done(_) =>
     switch mainPageState {
+    | BuyTez(_)
     | Onboarding
     | AddAccountModal => false
-    | BuyTez(_) => false
     | Dashboard => true
     }
   }

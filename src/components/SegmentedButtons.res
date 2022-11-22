@@ -23,63 +23,56 @@
 /*  */
 /* *************************************************************************** */
 
-open RescriptReactRouter
+open ReactNative
 
-type t =
-  | Accounts
-  | Operations
-  | AddressBook
-  | Delegations
-  | Contracts
-  | Settings
-  | Logs
-  | Nft
-  | Batch
-  | Help
-  | NotFound
+let styles = {
+  open Style
+  StyleSheet.create({
+    "element": style(
+      ~flexDirection=#row,
+      ~alignItems=#center,
+      ~paddingHorizontal=16.->dp,
+      ~paddingVertical=8.->dp,
+      (),
+    ),
+  })
+}
 
-exception RouteToNotFound
+@react.component
+let make = (~selectedValue, ~setSelectedValue, ~buttons) => {
+  let theme = ThemeContext.useTheme()
 
-let match_ = (url: url) =>
-  switch url.hash {
-  | ""
-  | "/" =>
-    Accounts
-  | "/operations" => Operations
-  | "/address-book" => AddressBook
-  | "/delegations" => Delegations
-  | "/contracts" => Contracts
-  | "/settings" => Settings
-  | "/logs" => Logs
-  | "/nft" => Nft
-  | "/batch" => Batch
-  | "/help" => Help
-  | _ => NotFound
-  }
-
-let toHref = x =>
-  switch x {
-  | Accounts => "#/"
-  | Operations => "#/operations"
-  | AddressBook => "#/address-book"
-  | Delegations => "#/delegations"
-  | Contracts => "#/contracts"
-  | Settings => "#/settings"
-  | Logs => "#/logs"
-  | Nft => "#/nft"
-  | Batch => "#/batch"
-  | Help => "#/help"
-  | NotFound => raise(RouteToNotFound)
-  }
-
-/* This lets us push a Routes.t instead of a string to transition to a new screen */
-let push = route => route |> toHref |> push
-
-let useHrefAndOnPress = route => {
-  let href = toHref(route)
-  let onPress = event => {
-    event->ReactNative.Event.PressEvent.preventDefault
-    RescriptReactRouter.push(href)
-  }
-  onPress
+  <View
+    style={
+      open Style
+      style(
+        ~flexDirection=#row,
+        ~borderRadius=5.,
+        ~marginVertical=8.->dp,
+        ~backgroundColor=theme.colors.stateHovered,
+        (),
+      )
+    }>
+    {buttons
+    ->Array.mapWithIndex((index, tab) => {
+      let (title, value) = tab
+      let borderStyle = {
+        open Style
+        if index == 0 {
+          Some(style(~borderTopLeftRadius=5., ~borderBottomLeftRadius=5., ()))
+        } else if index == buttons->Array.length - 1 {
+          Some(style(~borderTopRightRadius=5., ~borderBottomRightRadius=5., ()))
+        } else {
+          None
+        }
+      }
+      <ThemedPressable
+        style={Style.arrayOption([Some(styles["element"]), borderStyle])}
+        onPress={_ => setSelectedValue(_ => value)}
+        isActive={selectedValue == value}>
+        <Typography.Subtitle1> {title->React.string} </Typography.Subtitle1>
+      </ThemedPressable>
+    })
+    ->React.array}
+  </View>
 }

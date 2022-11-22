@@ -26,6 +26,7 @@
 // Global errors description
 
 type origin =
+  | Multisig
   | Operation
   | Account
   | Aliases
@@ -102,6 +103,7 @@ let similar = (l1, l2) =>
 
 let originToString = e =>
   switch e {
+  | Multisig => "Multisig"
   | Operation => "Operation"
   | Balance => "Balance"
   | Aliases => "Aliases"

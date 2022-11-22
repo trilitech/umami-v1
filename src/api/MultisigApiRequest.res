@@ -23,63 +23,17 @@
 /*  */
 /* *************************************************************************** */
 
-open RescriptReactRouter
+/* MULTISIG */
 
-type t =
-  | Accounts
-  | Operations
-  | AddressBook
-  | Delegations
-  | Contracts
-  | Settings
-  | Logs
-  | Nft
-  | Batch
-  | Help
-  | NotFound
+module Accounts = {
 
-exception RouteToNotFound
+    /* Get */
 
-let match_ = (url: url) =>
-  switch url.hash {
-  | ""
-  | "/" =>
-    Accounts
-  | "/operations" => Operations
-  | "/address-book" => AddressBook
-  | "/delegations" => Delegations
-  | "/contracts" => Contracts
-  | "/settings" => Settings
-  | "/logs" => Logs
-  | "/nft" => Nft
-  | "/batch" => Batch
-  | "/help" => Help
-  | _ => NotFound
-  }
-
-let toHref = x =>
-  switch x {
-  | Accounts => "#/"
-  | Operations => "#/operations"
-  | AddressBook => "#/address-book"
-  | Delegations => "#/delegations"
-  | Contracts => "#/contracts"
-  | Settings => "#/settings"
-  | Logs => "#/logs"
-  | Nft => "#/nft"
-  | Batch => "#/batch"
-  | Help => "#/help"
-  | NotFound => raise(RouteToNotFound)
-  }
-
-/* This lets us push a Routes.t instead of a string to transition to a new screen */
-let push = route => route |> toHref |> push
-
-let useHrefAndOnPress = route => {
-  let href = toHref(route)
-  let onPress = event => {
-    event->ReactNative.Event.PressEvent.preventDefault
-    RescriptReactRouter.push(href)
-  }
-  onPress
+    let useLoad = requestState => {
+        let get = (~config: ConfigContext.env, ()) => {
+            // TODO: promise KT1
+            Promise.value(PublicKeyHash.Map.empty->Ok)
+        }
+        ApiRequest.useLoader(~get, ~kind=Logs.Multisig, ~requestState, ())
+    }
 }

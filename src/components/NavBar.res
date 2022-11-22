@@ -265,7 +265,9 @@ let make = (~account, ~route as currentRoute) => {
     <NavBarItemRoute
       currentRoute route=Delegations title=I18n.navbar_delegations icon=Icons.Delegate.build
     />
-    <NavBarItemRoute currentRoute route=Tokens title=I18n.navbar_tokens icon=Icons.Token.build />
+    <NavBarItemRoute
+      currentRoute route=Contracts title=I18n.navbar_contracts icon=Icons.Contract.build
+    />
     <View style={styles["bottomContainer"]}>
       <NavBarSmallItemRoute currentRoute route=Settings icon=Icons.Settings.build />
       <NavBarSmallItemRoute currentRoute route=Help icon=Icons.Help.build />

@@ -25,6 +25,14 @@
 
 open ReactNative
 
+let styles = {
+  open Style
+  StyleSheet.create({
+    "header": style(~marginBottom=8.->dp, ()),
+    "actionBar": style(~flexDirection=#row, ()),
+  })
+}
+
 module AddTokenButton = {
   let styles = {
     open Style
@@ -40,16 +48,53 @@ module AddTokenButton = {
       chain == None ? Some(("add_token_button", I18n.Tooltip.chain_not_connected)) : None
 
     <>
-      <View style={styles["button"]}>
-        <ButtonAction
-          disabled={chain == None}
-          ?tooltip
-          onPress={_ => openAction()}
-          text=I18n.Btn.add_token
-          icon=Icons.Add.build
-          primary=true
-        />
-      </View>
+      <ButtonAction
+        style={styles["button"]}
+        disabled={chain == None}
+        ?tooltip
+        onPress={_ => openAction()}
+        text=I18n.Btn.add_contract
+        icon=Icons.Add.build
+        primary=true
+      />
+      {
+        wrapModal(
+          <TokenAddView
+            action=#Add
+            chain={chain->Option.getWithDefault(Network.unsafeChainId(""))}
+            tokens
+            closeAction
+          />,
+        )
+      }
+    </>
+  }
+}
+
+module CreateNewMultisigButton = {
+  let styles = {
+    open Style
+    StyleSheet.create({
+      "button": style(~alignSelf=#flexStart, ~marginLeft=10.->dp, ~marginBottom=10.->dp, ()),
+    })
+  }
+
+  @react.component
+  let make = (~tokens, ~chain=?) => {
+    let (openAction, closeAction, wrapModal) = ModalAction.useModal()
+    let tooltip =
+      chain == None ? Some(("add_token_button", I18n.Tooltip.chain_not_connected)) : None
+
+    <>
+      <ButtonAction
+        style={styles["button"]}
+        disabled={chain == None}
+        ?tooltip
+        onPress={_ => openAction()}
+        text=I18n.Btn.create_new_multisig
+        icon=Icons.Key.build
+        primary=true
+      />
       {wrapModal(
         <TokenAddView
           action=#Add
@@ -62,9 +107,27 @@ module AddTokenButton = {
   }
 }
 
-let styles = {
-  open Style
-  StyleSheet.create({"header": style(~marginBottom=32.->dp, ())})
+type contractType = Token | Multisig
+
+module ContractTypeSwitch = {
+  @react.component
+  let make = (~contractType, ~setContractType) => {
+    <SegmentedButtons
+      selectedValue=contractType
+      setSelectedValue=setContractType
+      buttons=[(I18n.Btn.token, Token), (I18n.Btn.multisig, Multisig)]
+    />
+  }
+}
+
+module TokensView = {
+  @react.component
+  let make = (~registered, ~unregistered, ~currentChain) => <>
+    <TokenRows title=I18n.Title.added_to_wallet tokens=registered currentChain emptyText=None />
+    <TokenRows
+      title=I18n.Title.held tokens=unregistered currentChain emptyText=Some(I18n.empty_held_token)
+    />
+  </>
 }
 
 @react.component
@@ -74,6 +137,8 @@ let make = () => {
   let (syncState, setSyncState) = React.useState(_ => Sync.NotInitiated)
   let (searched, setSearch) = React.useState(_ => "")
   let stop = React.useRef(false)
+
+  let (contractType, setContractType) = React.useState(() => Token)
 
   let accounts = accounts->PublicKeyHash.Map.keysToList
   let request = fromCache => {
@@ -192,14 +257,8 @@ let make = () => {
 
   <Page>
     <Typography.Headline style=Styles.title>
-      {I18n.Title.tokens->React.string}
+      {I18n.Title.contracts->React.string}
     </Typography.Headline>
-    <AddTokenButton
-      chain=?currentChain
-      tokens={tokens->Option.mapDefault(TokensLibrary.Generic.empty, t =>
-        t->Result.getWithDefault(TokensLibrary.Generic.empty)
-      )}
-    />
     <SearchAndSync
       value=searched
       onValueChange={value => setSearch(_ => value)}
@@ -210,18 +269,26 @@ let make = () => {
       syncIcon=Icons.SyncNFT.build
       style={styles["header"]}
     />
+    <View style={styles["actionBar"]}> <ContractTypeSwitch contractType setContractType /> </View>
+    <View style={styles["actionBar"]}>
+      <AddTokenButton
+        chain=?currentChain
+        tokens={tokens->Option.mapDefault(TokensLibrary.Generic.empty, t =>
+          t->Result.getWithDefault(TokensLibrary.Generic.empty)
+        )}
+      />
+      <CreateNewMultisigButton
+        chain=?currentChain
+        tokens={tokens->Option.mapDefault(TokensLibrary.Generic.empty, t =>
+          t->Result.getWithDefault(TokensLibrary.Generic.empty)
+        )}
+      />
+    </View>
     {switch partitionedTokens {
     | None => <LoadingView />
     | Some(Error(error)) => <ErrorView error />
-    | Some(Ok((registered, unregistered))) => <>
-        <TokenRows title=I18n.Title.added_to_wallet tokens=registered currentChain emptyText=None />
-        <TokenRows
-          title=I18n.Title.held
-          tokens=unregistered
-          currentChain
-          emptyText=Some(I18n.empty_held_token)
-        />
-      </>
+    | Some(Ok((registered, unregistered))) =>
+      contractType == Token ? <TokensView registered unregistered currentChain /> : <> </>
     }}
   </Page>
 }

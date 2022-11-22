@@ -39,6 +39,7 @@ type state = {
   selectedAccountState: reactState<option<PublicKeyHash.t>>,
   selectedTokenState: reactState<option<(PublicKeyHash.t, TokenRepr.kind)>>,
   accountsRequestState: requestState<PublicKeyHash.Map.map<Account.t>>,
+  multisigAccountsRequestState: requestState<PublicKeyHash.Map.map<Account.t>>,
   secretsRequestState: reactState<ApiRequest.t<array<Secret.derived>>>,
   balanceRequestsState: requestState<PublicKeyHash.Map.map<Tez.t>>,
   delegateRequestsState: apiRequestsState<option<PublicKeyHash.t>>,
@@ -69,6 +70,7 @@ let initialState = {
   selectedAccountState: (None, _ => ()),
   selectedTokenState: (None, _ => ()),
   accountsRequestState: (NotAsked, _ => ()),
+  multisigAccountsRequestState: (NotAsked, _ => ()),
   secretsRequestState: (NotAsked, _ => ()),
   balanceRequestsState: (NotAsked, _ => ()),
   delegateRequestsState: initialApiRequestsState,
@@ -150,6 +152,12 @@ let make = (~children) => {
     _setAccountsRequest,
   ) = accountsRequestState
 
+  let multisigAccountsRequestState = React.useState(() => ApiRequest.NotAsked)
+  let (
+    multisigAccountsRequest: ApiRequest.t<PublicKeyHash.Map.map<_>>,
+    _setMultisigAccountsRequest,
+  ) = multisigAccountsRequestState
+
   let balanceRequestsState = React.useState(() => ApiRequest.NotAsked)
   let delegateRequestsState = React.useState(() => Map.String.empty)
   let delegateInfoRequestsState = React.useState(() => Map.String.empty)
@@ -181,6 +189,7 @@ let make = (~children) => {
 
   let _: ApiRequest.t<_> = SecretApiRequest.useLoad(secretsRequestState)
   let accounts: ApiRequest.t<_> = AccountApiRequest.useLoad(accountsRequestState)
+  let multisigAccounts: ApiRequest.t<_> = MultisigApiRequest.Accounts.useLoad(multisigAccountsRequestState)
   let _: ApiRequest.t<_> = AliasApiRequest.useLoad(aliasesRequestState)
   let _: ApiRequest.t<_> = TokensApiRequest.useLoadTokensFromCache(tokensRequestState, #FT)
 
@@ -247,6 +256,7 @@ let make = (~children) => {
       selectedAccountState: selectedAccountState,
       selectedTokenState: selectedTokenState,
       accountsRequestState: accountsRequestState,
+      multisigAccountsRequestState: multisigAccountsRequestState,
       secretsRequestState: secretsRequestState,
       balanceRequestsState: balanceRequestsState,
       delegateRequestsState: delegateRequestsState,
@@ -989,6 +999,25 @@ module Beacon = {
         ~sideEffect=_ => resetBeaconPermissions(),
         (),
       )
+    }
+  }
+}
+
+module Multisig = {
+  module Accounts = {
+    let useRequestState = () => {
+      let store = useStoreContext()
+      store.multisigAccountsRequestState
+    }
+
+    let useRequest = () => {
+      let (multisigAccountsRequest, _) = useRequestState()
+      multisigAccountsRequest
+    }
+
+    let useGetAll = () => {
+      let multisigAccountsRequest = useRequest()
+      multisigAccountsRequest->ApiRequest.getWithDefault(PublicKeyHash.Map.empty)
     }
   }
 }

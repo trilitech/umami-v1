@@ -45,8 +45,6 @@ module Dark = {
   let scrim = "rgba(92,92,92,0.32)"
   let cardBackground = "#000"
 
-  let elevatedBackground = "#212121"
-
   let statePressed = "rgba(255, 255, 255, 0.28)"
   let stateHovered = "rgba(255, 255, 255, 0.16)"
   let stateFocusedOutline = "rgba(255, 255, 255, 0.38)"
@@ -78,8 +76,8 @@ module Light = {
   let background = "#f9f9f9"
   let barBackground = "#FFF"
   let backgroundMediumEmphasis = "rgba(255,255,255,0.74)"
-  let cardBackground = "#fff"
   let scrim = "rgba(153,145,134,0.32)"
+  let cardBackground = "#fff"
 
   let statePressed = "rgba(0, 0, 0, 0.2)"
   let stateHovered = "rgba(0, 0, 0, 0.12)"

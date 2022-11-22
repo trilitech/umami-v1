@@ -131,7 +131,7 @@ module AddToken = {
         open Operation
         op->uniqueId->uniqueIdToString
       },
-      I18n.Tooltip.add_token,
+      I18n.Tooltip.add_contract,
     )
     let onPress = _ => openAction()
 

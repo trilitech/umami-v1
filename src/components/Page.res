@@ -50,6 +50,7 @@ module Header = {
     open Style
     StyleSheet.create({
       "header": style(~flexDirection=#row, ~marginBottom=10.->dp, ()),
+      "headerContent": style(~width=100.->pct, ()),
       "actionLeft": style(
         ~marginLeft=40.->dp,
         ~alignItems=#center,
@@ -70,7 +71,7 @@ module Header = {
   @react.component
   let make = (~children, ~left=?, ~right=?, ()) =>
     <View style={styles["header"]}>
-      <View> children </View>
+      <View style={styles["headerContent"]}> children </View>
       {left->Option.mapWithDefault(React.null, left =>
         <View style={styles["actionLeft"]}> left </View>
       )}

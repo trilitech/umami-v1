@@ -65,7 +65,7 @@ module Btn = {
   let create_account_record_ok = "OK, I'VE RECORDED IT"
   let add_account = "ADD ACCOUNT"
   let add_contact = "ADD CONTACT"
-  let add_token = "REGISTER TOKEN"
+  let add_contract = "REGISTER CONTRACT"
   let advanced_options = "ADVANCED OPTIONS"
   let delegate = "DELEGATE"
   let add_transaction = "ADD TRANSACTION"
@@ -98,6 +98,13 @@ module Btn = {
   let browse_for_folder = "BROWSE FOR FOLDER"
   let setup_later = "Set up later in settings"
   let check_for_updates = "CHECK FOR UPDATES"
+  let individual_accounts = "Individual Accounts"
+  let multisig_accounts = "Multisig Accounts"
+  let token = "Token"
+  let multisig = "Multisig"
+  let create_new_multisig = "CREATE NEW MULTISIG"
+  let add_another_owner = "ADD ANOTHER OWNER"
+  let back = "BACK"
 }
 
 module Tooltip = {
@@ -107,7 +114,7 @@ module Tooltip = {
   let addressbook_edit = "Edit Contact"
   let addressbook_delete = "Delete Contact"
   let add_contact = "Add to Contacts"
-  let add_token = "Register token"
+  let add_contract = "Register contract"
   let unregistered_token_transaction = "This transaction was made using an unregistered token."
   let no_tez_no_delegation = "Delegation requires tez"
   let refresh = "Refresh"
@@ -201,6 +208,8 @@ module Label = {
   let storage_location = "Storage location"
   let entrypoint = "Entrypoint"
   let parameter = "Parameter"
+  let add_contract_name = "Contract name"
+  let owners = "Owners"
 }
 
 module Input_placeholder = {
@@ -225,6 +234,8 @@ module Input_placeholder = {
   let custom_network_node_url = "e.g. https://rpc.tzbeta.net"
   let custom_network_mezos_url = "e.g. https://api.umamiwallet.com/mainnet"
   let select_backup_path = "Browse to the required folder or enter a path"
+  let add_contract_name = "Enter contract name"
+  let set_owner = "Paste tz address/Tezos Domains alias"
 }
 
 module Form_input_error = {
@@ -360,7 +371,7 @@ module Title = {
   let operations = "Operations"
   let addressbook = "Address Book"
   let delegations = "Delegations"
-  let tokens = "Tokens"
+  let contracts = "Contracts"
   let settings = "Settings"
   let collected = "Collected"
   let gallery = "Gallery"
@@ -375,6 +386,10 @@ module Title = {
   let details = "Details"
   let help = "Help"
   let scan_with_mobile_to_import = "Scan with Umami Mobile to import"
+  let create_new_multisig = "Create New Multisig"
+  let name_contract = "Name contract"
+  let set_owners_and_threshold = "Set owners & threshold"
+  let review_and_submit = "Review and Submit"
 }
 
 module Expl = {
@@ -416,6 +431,12 @@ module Expl = {
   let custom_network = "Please specify the parameters of the network you want to connect to."
   let external_service = "Notice: you are using Wert, which is an external service to Umami."
   let secret_select_backup_path = `If you ever need to restore your wallet, you can do so with this backup file and your password.`
+  let no_multisig_contract = "No contract on the current chain"
+  let name_contract = "Please give a name to the contract you are about to create. This name is only stored locally on your computer and never shared with Umami or any third-party."
+  let set_owners_and_threshold = "You are about to create a new multisig contract that has one or more owners. Please select the addresses that have permission to submit and approve transactions."
+  let name_multisig = `Please give a name to the contract you are about to create.\\nThis name is only stored locally on your computer and never shared with Umami or any third-party.`
+  let set_owners = `You are about to create a new multisig contract that has one or more owners.\\nPlease select the addresses that have permission to submit and approve transactions.`
+  let set_threshold = "Set the minimum number of required approvals before any action can be executed."
 }
 
 module Menu = {
@@ -695,7 +716,7 @@ let navbar_nft = "NFT"
 let navbar_operations = "OPERATIONS"
 let navbar_addressbook = "ADDRESS BOOK"
 let navbar_delegations = "DELEGATIONS"
-let navbar_tokens = "TOKENS"
+let navbar_contracts = "CONTRACTS"
 let navbar_settings = "SETTINGS"
 let navbar_logs = "LOGS"
 let navbar_global_batch = "BATCH"
