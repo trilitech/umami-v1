@@ -25,7 +25,7 @@
 
 open ReactNative
 
-let supportEmail = "incoming+nomadic-labs-umami-wallet-umami-20392089-issue-@incoming.gitlab.com"
+let supportEmail = "umami-support@nomadic-labs.com"
 
 let buildBody = err_msg => {
   let err = I18n.support_mailto_error_body

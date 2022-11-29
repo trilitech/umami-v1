@@ -100,4 +100,4 @@ yarn catalog:start
 
 - [open an issue](https://gitlab.com/nomadic-labs/umami-wallet/testruns/-/issues/new?issuable_template=support)
 - `#umami` channel on [tezos slack](https://tezos-dev.slack.com)
-- [email](mailto:incoming+nomadic-labs-umami-wallet-umami-20392089-issue-@incoming.gitlab.com)
+- [email](mailto:umami-support@nomadic-labs.com)
