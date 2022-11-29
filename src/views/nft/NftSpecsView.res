@@ -131,10 +131,7 @@ let buildFields = (t: TokenRepr.t) => {
 let showUri = (~style as st=?, s) =>
   <Typography.URI
     onPress={_ =>
-      Linking.openURL({
-        open NftFilesManager
-        s->toRessource->ressourceToURL
-      })->ignore}
+      Linking.openURL({NftFilesManager.ImageProxy.buildUrl(s)})->ignore}
     style={
       open Style
       arrayOption([styles["uri"]->Some, st])

@@ -25,37 +25,22 @@
 
 open TokenRepr
 
-let ipfsService = "https://ipfs.io/ipfs/"
-
 module ImageProxy = {
   let buildUrl = url => {
     let encodedURL = Js.Global.encodeURI(url)
 
     ServerAPI.URL.build_url(
-      "https://dev-api.umamiwallet.com/mainnet-graphic-proxy",
+      "https://graphic-proxy.mainnet.umamiwallet.com:444/",
       list{("url", encodedURL)},
     )
   }
 }
 
-type ressource =
-  | IPFS(string)
-  | HTTP(string)
-
-let toRessource = uri =>
-  uri->Js.String2.startsWith("ipfs://") ? uri->Js.String2.substringToEnd(~from=7)->IPFS : HTTP(uri)
-
-let ressourceToURL = r =>
-  switch r {
-  | IPFS(ipfsHash) => ipfsService ++ ipfsHash
-  | HTTP(url) => ImageProxy.buildUrl(url)
-  }
-
 let getDisplayURL = token =>
-  token.asset.displayUri->Option.map(toRessource)->Option.map(d => ressourceToURL(d))
+  token.asset.displayUri->Option.map(ImageProxy.buildUrl)
 
 let getThumbnailURL = token =>
-  switch token.asset.thumbnailUri->Option.map(toRessource) {
-  | Some(thl) => ressourceToURL(thl)->Some
+  switch token.asset.thumbnailUri {
+  | Some(u) => ImageProxy.buildUrl(u)->Some
   | None => getDisplayURL(token)
   }
