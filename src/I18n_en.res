@@ -105,6 +105,7 @@ module Btn = {
   let create_new_multisig = "CREATE NEW MULTISIG"
   let add_another_owner = "ADD ANOTHER OWNER"
   let back = "BACK"
+  let submit = "SUBMIT"
 }
 
 module Tooltip = {
@@ -210,6 +211,7 @@ module Label = {
   let parameter = "Parameter"
   let add_contract_name = "Contract name"
   let owners = "Owners"
+  let out_of = (a, b) => `${a} out of ${b}`
 }
 
 module Input_placeholder = {
@@ -390,6 +392,9 @@ module Title = {
   let name_contract = "Name contract"
   let set_owners_and_threshold = "Set owners & threshold"
   let review_and_submit = "Review and Submit"
+  let contract_name = "Contract name"
+  let owners = s => `Owners (${s})`
+  let approval_threshold = "Approval threshold"
 }
 
 module Expl = {
@@ -435,8 +440,10 @@ module Expl = {
   let name_contract = "Please give a name to the contract you are about to create. This name is only stored locally on your computer and never shared with Umami or any third-party."
   let set_owners_and_threshold = "You are about to create a new multisig contract that has one or more owners. Please select the addresses that have permission to submit and approve transactions."
   let name_multisig = `Please give a name to the contract you are about to create.\\nThis name is only stored locally on your computer and never shared with Umami or any third-party.`
-  let set_owners = `You are about to create a new multisig contract that has one or more owners.\\nPlease select the addresses that have permission to submit and approve transactions.`
-  let set_threshold = "Set the minimum number of required approvals before any action can be executed."
+  let set_multisig_owners = `You are about to create a new multisig contract that has one or more owners.\\nPlease select the addresses that have permission to submit and approve transactions.`
+  let set_multisig_threshold = "Set the minimum number of required approvals before any action can be executed."
+  let out_of = s => `out of ${s}`
+  let review_multisig = `Please review the details of the multisig contract you are about to create.\\nYou can edit them before submitting by clicking the back button.\\nYou will receive an approval request from your wallet. Please confirm it to continue.`
 }
 
 module Menu = {

@@ -47,7 +47,7 @@ let styles = {
 
 @react.component
 let make = (
-  ~label,
+  ~label=?,
   ~value,
   ~handleChange,
   ~error,
@@ -75,9 +75,11 @@ let make = (
       open Style
       arrayOption([Some(styles["formGroup"]), styleFromProp])
     }>
-    <View style={styles["header"]}>
-      <FormLabel label hasError ?tooltipIcon /> {rightView->ReactUtils.mapOpt(view => view)}
-    </View>
+    {label->Option.mapWithDefault(React.null, a =>
+      <View style={styles["header"]}>
+        <FormLabel label=a hasError ?tooltipIcon /> {rightView->ReactUtils.mapOpt(view => view)}
+      </View>
+    )}
     <View>
       <ThemedTextInput
         value

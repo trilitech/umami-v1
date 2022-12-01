@@ -215,7 +215,8 @@ module AppView = {
                 <View style={styles["content"]}>
                   {switch mainPageState {
                   | Onboarding => <OnboardingView />
-                  | AddAccountModal => <OnboardingView onClose={_ => setMainPage(_ => Dashboard)} />
+                    | AddAccountModal =>
+                      <OnboardingView onClose={_ => setMainPage(_ => Dashboard)} />
                   | BuyTez(src) => <BuyTezView src onClose=handleCloseBuyTezView />
                   | Dashboard =>
                     <SelectedAccountView>
@@ -227,7 +228,8 @@ module AppView = {
                           setMainPage
                         />}
                     </SelectedAccountView>
-                  }}
+                    }
+                  }
                 </View>
               </View>}
         </View>

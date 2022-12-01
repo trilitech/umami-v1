@@ -71,16 +71,18 @@ module Content = {
 
 module EntityInfo = {
   @react.component
-  let make = (~address: option<PublicKeyHash.t>, ~title, ~default=React.null, ~style=?) => {
+  let make = (~address: option<PublicKeyHash.t>, ~title=?, ~default=React.null, ~style=?) => {
     let theme = ThemeContext.useTheme()
     let aliases = StoreContext.Aliases.useGetAll()
 
     let alias = address->Option.flatMap(alias => alias->AliasHelpers.getAliasFromAddress(aliases))
 
     <View ?style>
-      <Typography.Overline2 colorStyle=#mediumEmphasis style={styles["title"]}>
-        {title->React.string}
-      </Typography.Overline2>
+      {title->Option.mapWithDefault(React.null, title =>
+        <Typography.Overline2 colorStyle=#mediumEmphasis style={styles["title"]}>
+          {title->React.string}
+        </Typography.Overline2>
+      )}
       <View
         style={
           open Style

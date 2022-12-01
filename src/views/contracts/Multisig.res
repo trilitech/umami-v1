@@ -23,57 +23,8 @@
 /*  */
 /* *************************************************************************** */
 
-open ReactNative
-
-let styles = {
-  open Style
-  StyleSheet.create({
-    "element": style(
-      ~flexDirection=#row,
-      ~alignItems=#center,
-      ~paddingHorizontal=16.->dp,
-      ~paddingVertical=8.->dp,
-      (),
-    ),
-  })
-}
-
-@react.component
-let make = (~selectedValue, ~setSelectedValue, ~buttons) => {
-  let theme = ThemeContext.useTheme()
-
-  <View
-    style={
-      open Style
-      style(
-        ~flexDirection=#row,
-        ~borderRadius=5.,
-        ~marginVertical=8.->dp,
-        ~backgroundColor=theme.colors.stateHovered,
-        (),
-      )
-    }>
-    {buttons
-    ->Array.mapWithIndex((index, button) => {
-      let (title, value) = button
-      let borderStyle = {
-        open Style
-        if index == 0 {
-          Some(style(~borderTopLeftRadius=5., ~borderBottomLeftRadius=5., ()))
-        } else if index == buttons->Array.length - 1 {
-          Some(style(~borderTopRightRadius=5., ~borderBottomRightRadius=5., ()))
-        } else {
-          None
-        }
-      }
-      <ThemedPressable
-        key=title
-        style={Style.arrayOption([Some(styles["element"]), borderStyle])}
-        onPress={_ => setSelectedValue(_ => value)}
-        isActive={selectedValue == value}>
-        <Typography.Subtitle1> {title->React.string} </Typography.Subtitle1>
-      </ThemedPressable>
-    })
-    ->React.array}
-  </View>
+type settings = {
+  name: string,
+  owners: array<FormUtils.Alias.t>,
+  threshold: int,
 }

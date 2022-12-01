@@ -78,7 +78,7 @@ module ContactKindSelector = {
   }
 
   @react.component
-  let make = (~value, ~onValueChange) => {
+  let make = (~keyPopover="ContactKindSelector", ~value, ~onValueChange) => {
     let theme = ThemeContext.useTheme()
 
     let chevron =
@@ -94,7 +94,7 @@ module ContactKindSelector = {
       selectedValueKey={value->toStringKey}
       onValueChange
       renderButton
-      keyPopover="ContactKindSelector"
+      keyPopover
     />
   }
 }
@@ -216,6 +216,7 @@ let onBlurProvider = (valRef: React.ref<_>, callback, provider, value) => {
 
 @react.component
 let make = (
+  ~keyPopover="FormGroupContactSelector",
   ~label,
   ~filterOut: option<Alias.t>,
   ~aliases: PublicKeyHash.Map.map<Alias.t>,
@@ -270,7 +271,12 @@ let make = (
     <View style={styles["label"]}>
       <FormLabel label hasError />
       {<ContactKindSelector
-        value=contactKind onValueChange={v => setContactKind(_ => v)}
+        keyPopover={keyPopover ++ "ContactKindSelector"}
+        value=contactKind
+        onValueChange={v => {
+          setContactKind(_ => v)
+          handleChange(valueRef.current)
+        }}
       />->ReactUtils.onlyWhen(ReCustomAuth.flagOn)}
     </View>
 
@@ -305,7 +311,7 @@ let make = (
 
   <FormGroup style={styles["formGroup"]}>
     <Autocomplete
-      keyPopover="formGroupContactSelector"
+      keyPopover
       value={switch value {
       | Valid(Alias(a)) => a.name
       | Temp(s, _) => s
@@ -329,7 +335,7 @@ let make = (
             })
           ->handleChange
         | #...ReCustomAuth.handledProvider =>
-          s == "" ? s->AnyString->handleChange : FormUtils.Alias.Temp(s, NotAsked)->handleChange
+          (s == "" ? s->AnyString : FormUtils.Alias.Temp(s, NotAsked))->handleChange
         }}
       onBlur={_ =>
         switch contactKind {
