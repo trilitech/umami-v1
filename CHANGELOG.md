@@ -2,6 +2,9 @@
 
 ## Unreleased changes
 
+- Use ImageProxy for all NFTs
+- Change support email address
+
 ## Beta (0.8.5)
 
 - Add native Limanet support
