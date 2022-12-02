@@ -62,6 +62,91 @@ let styles = {
   })
 }
 
+module ReactiveImage = {
+  @react.component
+  let make = (~gallery=false, ~source: option<ReactNative.Image.Source.t>) => {
+    let theme = ThemeContext.useTheme()
+    let (img, setImg) = React.useState(() => { source->Option.mapDefault(#none, source => #loading(source))});
+    let addLog = LogsContext.useAdd()
+    switch img {
+            | #none =>
+            <SVGIconNoImg
+              fill=theme.colors.iconDisabled
+              height={ 100.->Style.pct }
+            />
+            | #error =>
+            <>
+            <SVGIconNft fill=theme.colors.textDisabled height={ 100.->Style.pct } />
+            <View style={
+                open Style
+                gallery
+                ? style(
+                  ~position=#absolute,
+                  ~right=15.->pct,
+                  ~top=7.->pct,
+                  ~width=30.->pct,
+                  ())
+                : style(
+                  ~position=#absolute,
+                  ~right=3.->pct,
+                  ~top=2.->pct,
+                  ~width=40.->pct,
+                  ())
+              }>
+              <View style={
+                open Style
+                style(
+                  ~position=#absolute,
+                  ~left=2.->pct,
+                  ~top=2.->pct,
+                  ~right=2.->pct,
+                  ~bottom=2.->pct,
+                  ~backgroundColor="white",
+                  ~borderRadius=100.,
+                  ~zIndex=-1,
+                 ())
+              }></View>
+              <SVGIconError height={ 25.->Style.pct }  />
+            </View>
+            </>
+            | #loading(source) =>
+            <>
+            <Image
+              onError={e => {
+                  addLog(true, Logs.error(~origin=Logs.Nft, Errors.Generic(e.nativeEvent.error)));
+                  setImg(_ => #error)}
+              }
+              onLoad={_ => setImg(_ => #loaded(source))}
+              style={
+                  open Style
+                  style(~width=100.->pct, ~height=100.->pct, ())
+                }
+                source
+                resizeMode=#contain
+              />
+              <ActivityIndicator
+                animating=true
+                size=ActivityIndicator_Size.small
+                color=theme.colors.iconHighEmphasis
+                style={
+                  open Style
+                  style(~position=#absolute, ~top=50.->pct, ~marginTop=(-10.)->pt, ())
+                }
+                />
+              </>
+            | #loaded(source) =>
+            <Image
+                style={
+                  open Style
+                  style(~width=100.->pct, ~height=100.->pct, ())
+                }
+                source
+                resizeMode=#contain
+              />
+          }
+  }
+}
+
 @react.component
 let make = (~closeAction, ~account, ~nft: Token.t) => {
   let source = NftElements.useNftSource(nft, NftFilesManager.getDisplayURL)
@@ -83,16 +168,7 @@ let make = (~closeAction, ~account, ~nft: Token.t) => {
               styles["image"],
             ])
           }>
-          {source->Option.mapDefault(<SVGIconNoImg />, source =>
-            <Image
-              style={
-                open Style
-                style(~width=100.->pct, ~height=100.->pct, ())
-              }
-              source
-              resizeMode=#contain
-            />
-          )}
+          <ReactiveImage source/>
         </View>
         <View style={styles["actions"]}>
           <View style={styles["infos"]}>

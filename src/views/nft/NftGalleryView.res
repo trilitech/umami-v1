@@ -31,10 +31,8 @@ let styles = {
     "innerCard": style(~display=#flex, ~flexDirection=#column, ~alignItems=#center, ()),
     "card": style(
       ~paddingTop=20.->dp,
-      ~flexBasis="content",
-      ~flex=1.,
-      ~maxWidth=18.->pct,
-      ~minWidth=18.->pct,
+      ~flexBasis=240.->dp,
+      ~flex=0.,
       ~marginRight=1.->pct,
       ~marginLeft=1.->pct,
       (),
@@ -74,6 +72,7 @@ module Card = {
 
     let source = NftElements.useNftSource(nft, NftFilesManager.getThumbnailURL)
     let theme = ThemeContext.useTheme()
+
     <>
       <ThemedPressable.Base
         onPress={_ => openAction()} extStyle={_ => styles["card"]} style={styles["innerCard"]}>
@@ -89,24 +88,7 @@ module Card = {
               },
             ])
           }>
-          {source->Option.mapDefault(
-            <SVGIconNoImg
-              fill=theme.colors.iconDisabled
-              height={
-                open Style
-                100.->pct
-              }
-            />,
-            source =>
-              <Image
-                style={
-                  open Style
-                  style(~width=100.->pct, ~height=100.->pct, ())
-                }
-                source
-                resizeMode=#contain
-              />,
-          )}
+          <NftImageView.ReactiveImage gallery=true source/>
         </Animated.View>
         <View
           style={
