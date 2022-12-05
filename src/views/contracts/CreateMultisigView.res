@@ -170,30 +170,40 @@ module StepView = {
   }
 }
 
-module Step1 = {
-  module Form = {
-    module StateLenses = %lenses(type state = {name: string})
+module Form = {
+  module StateLenses = %lenses(
+    type state = {
+      name: string,
+      owners: array<FormUtils.Alias.any>,
+      threshold: int,
+    }
+  )
 
-    include ReForm.Make(StateLenses)
-  }
+  include ReForm.Make(StateLenses)
+}
 
-  @react.component
-  let make = (~currentStep, ~action) => {
-    let form = Form.use(
-      ~schema={
-        open Form.Validation
-        Schema(nonEmpty(Name))
-      },
-      ~onSubmit=({state}) => {
-        action(state.values.name)
-        None
-      },
-      ~initialState={name: ""},
-      ~i18n=FormUtils.i18n,
-      (),
+let validateOwners: array<FormUtils.Alias.any> => ReSchema.fieldState = owners => {
+  let childStates =
+    owners
+    ->Array.mapWithIndex((index, owner) =>
+      switch owner {
+      | AnyString(_) =>
+        Some({ReSchema.error: I18n.Form_input_error.invalid_contract, index: index, name: ""})
+
+      | Temp(_, Pending | NotAsked) => Some({ReSchema.error: "", index: index, name: ""})
+      | Temp(_, Error(s)) => Some({ReSchema.error: s, index: index, name: ""})
+      | Valid(Alias(_)) => None
+      | Valid(Address(_)) => None
+      }
     )
+    ->Array.keepMap(state => state)
+  childStates->Array.length == 0 ? Valid : childStates->NestedErrors
+}
 
-    let formFieldsAreValids = FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields)
+module Step1 = {
+  @react.component
+  let make = (~currentStep, ~form: Form.api, ~action) => {
+    let theme = ThemeContext.useTheme()
 
     <StepView step=1 currentStep title=I18n.Title.name_contract>
       <Typography.Body1 style={styles["description"]}>
@@ -201,6 +211,10 @@ module Step1 = {
       </Typography.Body1>
       <FormGroupTextInput
         style={styles["textInput"]}
+        fieldStyle={
+          open Style
+          style(~backgroundColor=theme.colors.elevatedBackground, ())
+        }
         label=I18n.Label.add_contract_name
         value=form.values.name
         handleChange={form.handleChange(Name)}
@@ -214,9 +228,9 @@ module Step1 = {
       <View style={styles["row"]}>
         <Buttons.SubmitPrimary
           text=I18n.Btn.continue
-          onPress={_ => form.submit()}
+          onPress={_ => action()}
           style=FormStyles.formSubmit
-          disabledLook={!formFieldsAreValids}
+          disabledLook={form.getFieldState(Field(Name)) != Valid}
         />
       </View>
     </StepView>
@@ -224,35 +238,6 @@ module Step1 = {
 }
 
 module Step2 = {
-  module Form = {
-    module StateLenses = %lenses(
-      type state = {
-        owners: array<FormUtils.Alias.any>,
-        threshold: int,
-      }
-    )
-
-    include ReForm.Make(StateLenses)
-  }
-
-  let validateOwners: array<FormUtils.Alias.any> => ReSchema.fieldState = owners => {
-    let childStates =
-      owners
-      ->Array.mapWithIndex((index, owner) =>
-        switch owner {
-        | AnyString(_) =>
-          Some({ReSchema.error: I18n.Form_input_error.invalid_contract, index: index, name: ""})
-
-        | Temp(_, Pending | NotAsked) => Some({ReSchema.error: "", index: index, name: ""})
-        | Temp(_, Error(s)) => Some({ReSchema.error: s, index: index, name: ""})
-        | Valid(Alias(_)) => None
-        | Valid(Address(_)) => None
-        }
-      )
-      ->Array.keepMap(state => state)
-    childStates->Array.length == 0 ? Valid : childStates->NestedErrors
-  }
-
   let renderItem = item =>
     <View style={styles["selectorItemContainer"]}>
       <Typography.ButtonSecondary fontSize=14.>
@@ -261,30 +246,12 @@ module Step2 = {
     </View>
 
   @react.component
-  let make = (~currentStep, ~back, ~action) => {
+  let make = (~currentStep, ~form: Form.api, ~back, ~action) => {
     let theme = ThemeContext.useTheme()
-
-    let form = Form.use(
-      ~schema={
-        open Form.Validation
-        Schema(
-          custom(values => validateOwners(values.owners), Owners) + custom(_ => Valid, Threshold),
-        )
-      },
-      ~onSubmit=({send, state}) => {
-        action(state.values.owners, state.values.threshold)
-        None
-      },
-      ~initialState={owners: [FormUtils.Alias.AnyString("")], threshold: 1},
-      ~i18n=FormUtils.i18n,
-      (),
-    )
 
     let aliasesRequest = StoreContext.Aliases.useRequest()
     let aliases =
       aliasesRequest->ApiRequest.getDoneOk->Option.getWithDefault(PublicKeyHash.Map.empty)
-
-    let formFieldsAreValids = FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields)
 
     <StepView step=2 currentStep title=I18n.Title.set_owners_and_threshold>
       <Typography.Body1 style={styles["description"]}>
@@ -297,6 +264,10 @@ module Step2 = {
           <View style={styles["addressInput"]}>
             <FormGroupContactSelector
               keyPopover={"formGroupContactSelector" ++ key}
+              fieldStyle={
+                open Style
+                style(~backgroundColor=theme.colors.elevatedBackground, ())
+              }
               label={i == 0 ? I18n.Label.owners : ""}
               filterOut={None}
               aliases
@@ -360,6 +331,7 @@ module Step2 = {
             selectedItem->Option.mapWithDefault(React.null, item => renderItem(item))
           }}
           keyPopover="Selector"
+          backgroundColor=theme.colors.elevatedBackground
         />
         <Typography.Body1 style={styles["suffix"]}>
           {I18n.Expl.out_of(form.values.owners->Array.length->Int.toString)->React.string}
@@ -376,9 +348,9 @@ module Step2 = {
         />
         <Buttons.SubmitPrimary
           text=I18n.Btn.continue
-          onPress={_ => form.submit()}
+          onPress={_ => action()}
           style=FormStyles.formSubmit
-          disabledLook={!formFieldsAreValids}
+          disabledLook={form.getFieldState(Field(Owners)) != Valid}
         />
       </View>
     </StepView>
@@ -410,22 +382,30 @@ module Step3 = {
       </View>
     }
   }
+
   @react.component
-  let make = (~currentStep, ~settings, ~back, ~action) => {
+  let make = (~currentStep, ~form: Form.api, ~back, ~action) => {
+    let owners = form.values.owners->Array.keepMap(owner =>
+      switch owner {
+      | FormUtils.Alias.Valid(alias) => Some(alias)
+      | _ => None
+      }
+    )
+
     <StepView step=3 currentStep title=I18n.Title.review_and_submit>
       <Typography.Body1 style={styles["description"]}>
         {I18n.Expl.review_multisig->React.string}
       </Typography.Body1>
       <Typography.Subtitle1> {I18n.Title.contract_name->React.string} </Typography.Subtitle1>
-      <Info> <Typography.Body1> {settings.Multisig.name->React.string} </Typography.Body1> </Info>
+      <Info> <Typography.Body1> {form.values.name->React.string} </Typography.Body1> </Info>
       <Typography.Subtitle1
         style={
           open Style
           style(~marginTop=16.->dp, ())
         }>
-        {I18n.Title.owners(settings.owners->Array.length->Int.toString)->React.string}
+        {I18n.Title.owners(owners->Array.length->Int.toString)->React.string}
       </Typography.Subtitle1>
-      {settings.owners
+      {owners
       ->Array.mapWithIndex((i, owner) =>
         switch owner {
         | Address(address) =>
@@ -446,8 +426,8 @@ module Step3 = {
       <Info>
         <Typography.Body1>
           {I18n.Label.out_of(
-            settings.threshold->Int.toString,
-            settings.owners->Array.length->Int.toString,
+            form.values.threshold->Int.toString,
+            owners->Array.length->Int.toString,
           )->React.string}
         </Typography.Body1>
       </Info>
@@ -471,7 +451,22 @@ module Step3 = {
 @react.component
 let make = (~closeAction) => {
   let (currentStep, setCurrentStep) = React.useState(_ => 1)
-  let (settings, setSettings) = React.useState(_ => {Multisig.name: "", owners: [], threshold: 1})
+  let form = Form.use(
+    ~schema={
+      open Form.Validation
+      Schema(
+        nonEmpty(Name) +
+        custom(values => validateOwners(values.owners), Owners) +
+        custom(_ => Valid, Threshold),
+      )
+    },
+    ~onSubmit=({send, state}) => {
+      None
+    },
+    ~initialState={name: "", owners: [FormUtils.Alias.AnyString("")], threshold: 1},
+    ~i18n=FormUtils.i18n,
+    (),
+  )
 
   let closeButton =
     <ModalFormView.CloseButton
@@ -483,31 +478,11 @@ let make = (~closeAction) => {
       <Typography.Headline style=Styles.title>
         {I18n.Title.create_new_multisig->React.string}
       </Typography.Headline>
-      <Step1
-        currentStep
-        action={name => {
-          setSettings(_ => {...settings, name: name})
-          setCurrentStep(_ => 2)
-        }}
-      />
+      <Step1 currentStep form action={_ => setCurrentStep(_ => 2)} />
       <Step2
-        currentStep
-        back={_ => setCurrentStep(_ => 1)}
-        action={(owners, threshold) => {
-          setSettings(_ => {
-            ...settings,
-            owners: owners->Array.keepMap(owner =>
-              switch owner {
-              | FormUtils.Alias.Valid(alias) => Some(alias)
-              | _ => None
-              }
-            ),
-            threshold: threshold,
-          })
-          setCurrentStep(_ => 3)
-        }}
+        currentStep form back={_ => setCurrentStep(_ => 1)} action={_ => setCurrentStep(_ => 3)}
       />
-      <Step3 currentStep settings back={_ => setCurrentStep(_ => 2)} action={_ => ()} />
+      <Step3 currentStep form back={_ => setCurrentStep(_ => 2)} action=form.submit />
     </Page.Header>
   </>
 }

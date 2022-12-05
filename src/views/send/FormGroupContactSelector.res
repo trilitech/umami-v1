@@ -217,6 +217,7 @@ let onBlurProvider = (valRef: React.ref<_>, callback, provider, value) => {
 @react.component
 let make = (
   ~keyPopover="FormGroupContactSelector",
+  ~fieldStyle=?,
   ~label,
   ~filterOut: option<Alias.t>,
   ~aliases: PublicKeyHash.Map.map<Alias.t>,
@@ -353,7 +354,7 @@ let make = (
       numItemsToDisplay
       style={
         open Style
-        arrayOption([Some(styles["input"]), styleValidAlias])
+        arrayOption([Some(styles["input"]), styleValidAlias, fieldStyle])
       }
     />
     {error == None ? customAuthAddress : <FormError style={styles["error"]} ?error />}
