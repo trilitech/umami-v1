@@ -2,6 +2,8 @@
 
 ## Unreleased changes
 
+## Beta (0.8.6)
+
 - Use ImageProxy for all NFTs
 - Change support email address
 
