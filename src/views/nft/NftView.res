@@ -47,6 +47,7 @@ let make = (~account) => {
   let (syncState, setSyncState) = React.useState(_ => Sync.NotInitiated)
   let (search, setSearch) = React.useState(_ => "")
   let stop = React.useRef(false)
+  let network = ConfigContext.useNetwork()
 
   let request = fromCache => {
     open TokensApiRequest
@@ -147,6 +148,8 @@ let make = (~account) => {
     setSyncState(_ => Loading(0.))
     getTokens(request(false))->ignore
   }
+
+  React.useEffect1(() => { onRefresh (); None }, [network])
 
   let onStop = () => {
     setSyncState(x =>
