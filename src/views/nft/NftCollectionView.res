@@ -27,7 +27,7 @@ open ReactNative
 
 let controlView = {
   open Style
-  array([NftRowToken.styles["flex_row"], style(~marginTop=16.->dp, ~borderTopWidth=1., ())])
+  array([NftRowToken.styles["flex_row"], style(~borderTopWidth=1., ())])
 }
 
 let styles = {

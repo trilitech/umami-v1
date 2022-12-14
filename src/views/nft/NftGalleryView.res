@@ -147,7 +147,10 @@ let make = (~account, ~nfts: TokensLibrary.WithBalance.t) => {
   , [nftsArray])
 
   <>
-    <DocumentContext.ScrollView>
+    <DocumentContext.ScrollView style={
+      open Style
+      style(~marginTop=-16.->dp,())
+      }>
       {nfts->PublicKeyHash.Map.isEmpty
         ? <NftEmptyView />
         : <View style={styles["view"]}> cards </View>}
