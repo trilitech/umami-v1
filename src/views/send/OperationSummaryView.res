@@ -398,7 +398,7 @@ module Batch = {
     let destinations = operation.managers->Array.map(m =>
       switch m {
       | Transfer({options, parameter, data: Simple(t: Protocol.Transfer.generic<_>)}) => {
-          title: I18n.operation_transaction,
+          title: I18n.Label.send_recipient,
           address: Some(t.destination),
           amount: t.amount->ProtocolAmount.show->Some,
           originationCode: None,

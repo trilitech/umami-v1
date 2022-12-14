@@ -234,7 +234,7 @@ let make = (~source: Account.t, ~nft: Token.t, ~closeAction) => {
 
   <ReactFlipToolkit.Flipper flipKey={modalStep->stepToString}>
     <ReactFlipToolkit.FlippedView flipId="modal">
-      <ModalFormView ?title back ?closing>
+      <ModalFormView ?title back ?closing titleStyle=FormStyles.headerMarginBottom8>
         {switch modalStep {
         | SendStep =>
           <Form.View
