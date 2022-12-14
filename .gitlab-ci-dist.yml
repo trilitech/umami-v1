@@ -74,6 +74,7 @@ macos-dist:
   variables:
     NODE_PKG: node@16
   before_script:
+    - brew --version || /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     - brew list "${NODE_PKG}" &>/dev/null || brew install "${NODE_PKG}"
     - node -v || export PATH="/opt/homebrew/opt/${NODE_PKG}/bin:$PATH" && node -v
     - npm -v
