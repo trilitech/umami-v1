@@ -267,7 +267,7 @@ let make = (~account, ~showCreateAccount, ~showBuyTez, ~mode, ~setMode) => {
 
   <Page>
     {if isFormVisible {
-      <CreateMultisigView closeAction={_ => showForm(_ => false)} />
+      <CreateMultisigView account closeAction={_ => showForm(_ => false)} />
     } else {
       <>
         <Page.Header

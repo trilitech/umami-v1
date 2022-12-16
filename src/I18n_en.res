@@ -341,6 +341,7 @@ module Title = {
   let withdraw_baker = "Withdraw Baker"
   let confirm_delegate = "Confirm Delegate"
   let confirm_batch = "Confirm"
+  let confirm_multisig_origination = "Confirm"
   let delegate = "Delegate"
   let delegate_update = "Change Baker"
   let delegate_delete = "End Delegation"

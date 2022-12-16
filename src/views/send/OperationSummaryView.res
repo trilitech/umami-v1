@@ -71,11 +71,29 @@ module Content = {
 
 module EntityInfo = {
   @react.component
-  let make = (~address: option<PublicKeyHash.t>, ~title=?, ~default=React.null, ~style=?) => {
+  let make = (
+    ~address: option<PublicKeyHash.t>,
+    ~title=?,
+    ~icon=?,
+    ~name=?,
+    ~default=React.null,
+    ~style=?,
+  ) => {
     let theme = ThemeContext.useTheme()
     let aliases = StoreContext.Aliases.useGetAll()
 
     let alias = address->Option.flatMap(alias => alias->AliasHelpers.getAliasFromAddress(aliases))
+    let icon = switch icon {
+    | Some(x) => <View style={styles["accounticon"]}>x</View>
+    | None =>
+      alias->ReactUtils.mapOpt(alias =>
+        <AliasIcon style={styles["accounticon"]} kind=alias.Alias.kind isHD=true />
+      )
+    }
+    let name = switch name {
+    | Some(x) => Some(x)
+    | None => alias->Option.map(x => x.name)
+    }
 
     <View ?style>
       {title->Option.mapWithDefault(React.null, title =>
@@ -88,13 +106,19 @@ module EntityInfo = {
           open Style
           array([styles["itemInfos"], style(~backgroundColor=theme.colors.stateDisabled, ())])
         }>
-        {alias->ReactUtils.mapOpt(alias =>
-          <AliasIcon style={styles["accounticon"]} kind=alias.Alias.kind isHD=true />
-        )}
+        {icon}
         <View>
-          {alias->ReactUtils.mapOpt(alias =>
-            <Typography.Subtitle2 fontSize=16. style={styles["subtitle"]}>
-              {alias.name->React.string}
+          {name->ReactUtils.mapOpt(name =>
+            <Typography.Subtitle2
+              fontSize=16.
+              style={
+                open Style
+                arrayOption([
+                  Some(styles["subtitle"]),
+                  address == None ? Some(style(~marginBottom=0.->dp, ())) : None,
+                ])
+              }>
+              {name->React.string}
             </Typography.Subtitle2>
           )}
           {address->Option.mapWithDefault(default, address =>
@@ -270,6 +294,8 @@ module Operations = {
     originationCode: option<(ReTaquitoTypes.Code.t, ReTaquitoTypes.Storage.t)>,
     parameter: option<ProtocolOptions.parameter>,
     optionsSet: bool,
+    icon: option<React.element>,
+    name: option<string>,
   }
 
   @react.component
@@ -312,8 +338,8 @@ module Operations = {
 module Base = {
   let buildDestinations = (smallest, destinations, button) =>
     switch destinations {
-    | [{Operations.address: address, title}] =>
-      <EntityInfo style={styles["element"]} address title />
+    | [{Operations.address: address, title, icon, name}] =>
+      <EntityInfo style={styles["element"]} address ?icon ?name title />
     | recipients => <Operations smallest recipients ?button />
     }
 
@@ -393,11 +419,13 @@ module Batch = {
     ~editAdvancedOptions,
     ~advancedOptionsDisabled,
     ~hideBatchDetails=false,
+    ~icon=?,
+    ~name=?,
   ) => {
     let content = buildSummaryContent(operation, dryRun)
     open Operations
 
-    let destinations = operation.managers->Array.map(m =>
+    let destinations = operation.managers->Array.mapWithIndex((i, m) =>
       switch m {
       | Transfer({options, parameter, data: Simple(t: Protocol.Transfer.generic<_>)}) => {
           title: I18n.Label.send_recipient,
@@ -406,6 +434,8 @@ module Batch = {
           originationCode: None,
           parameter: Some(parameter),
           optionsSet: ProtocolOptions.txOptionsSet(options),
+          icon: None,
+          name: None,
         }
       | Transfer({options, data: FA2Batch({address})}) => {
           title: I18n.operation_token_batch,
@@ -414,6 +444,8 @@ module Batch = {
           originationCode: None,
           parameter: None,
           optionsSet: ProtocolOptions.txOptionsSet(options),
+          icon: None,
+          name: None,
         }
       | Delegation(delegation) =>
         let (target, title) = switch delegation.delegate {
@@ -427,6 +459,8 @@ module Batch = {
           originationCode: None,
           parameter: None,
           optionsSet: false,
+          icon: None,
+          name: None,
         }
       | Origination(origination) => {
           address: origination.delegate,
@@ -435,6 +469,8 @@ module Batch = {
           originationCode: Some((origination.code, origination.storage)),
           parameter: None,
           optionsSet: false,
+          icon: icon->Option.mapWithDefault(None, f => f(i)),
+          name: name->Option.mapWithDefault(None, f => f(i)),
         }
       }
     )

@@ -60,6 +60,8 @@ let make = (
   ~operation,
   ~sendOperation: (~operation: Protocol.batch, TaquitoAPI.Signer.intent) => Promise.t<_>,
   ~loading,
+  ~icon=?,
+  ~name=?,
 ) => {
   let ((operation: Protocol.batch, dryRun), setOp) = React.useState(() => (operation, dryRun))
 
@@ -108,6 +110,8 @@ let make = (
         dryRun
         editAdvancedOptions={i => setAdvancedOptions(Some(i))}
         advancedOptionsDisabled
+        ?icon
+        ?name
       />
       {<Buttons.RightArrowButton
         style={styles["advancedOptions"]}

@@ -230,7 +230,7 @@ module Step1 = {
           text=I18n.Btn.continue
           onPress={_ => action()}
           style=FormStyles.formSubmit
-          disabledLook={form.getFieldState(Field(Name)) != Valid}
+          disabled={form.getFieldState(Field(Name)) != Valid}
         />
       </View>
     </StepView>
@@ -260,6 +260,7 @@ module Step2 = {
       {form.values.owners
       ->Array.mapWithIndex((i, value) => {
         let key = i->Int.toString
+        let values = form.values.owners->Array.removeAtIndex(i)
         <View key style={styles["row"]}>
           <View style={styles["addressInput"]}>
             <FormGroupContactSelector
@@ -270,7 +271,14 @@ module Step2 = {
               }
               label={i == 0 ? I18n.Label.owners : ""}
               filterOut={None}
-              aliases
+              aliases={aliases->PublicKeyHash.Map.removeMany(
+                values->Array.keepMap(owner =>
+                  switch owner {
+                  | Valid(t) => Some(t->FormUtils.Alias.address)
+                  | _ => None
+                  }
+                ),
+              )}
               value
               handleChange={newOwner =>
                 form.handleChangeWithCallback(Owners, owners =>
@@ -350,7 +358,7 @@ module Step2 = {
           text=I18n.Btn.continue
           onPress={_ => action()}
           style=FormStyles.formSubmit
-          disabledLook={form.getFieldState(Field(Owners)) != Valid}
+          disabled={form.getFieldState(Field(Owners)) != Valid}
         />
       </View>
     </StepView>
@@ -384,7 +392,7 @@ module Step3 = {
   }
 
   @react.component
-  let make = (~currentStep, ~form: Form.api, ~back, ~action) => {
+  let make = (~currentStep, ~form: Form.api, ~back, ~loading, ~action) => {
     let owners = form.values.owners->Array.keepMap(owner =>
       switch owner {
       | FormUtils.Alias.Valid(alias) => Some(alias)
@@ -407,13 +415,11 @@ module Step3 = {
       </Typography.Subtitle1>
       {owners
       ->Array.mapWithIndex((i, owner) =>
-        switch owner {
-        | Address(address) =>
-          <OperationSummaryView.EntityInfo
-            key={i->Int.toString} style={styles["info"]} address={Some(address)}
-          />
-        | Alias(alias) => <OperationSummaryView.EntityInfo address={Some(alias.address)} />
-        }
+        <OperationSummaryView.EntityInfo
+          key={i->Int.toString}
+          style={styles["info"]}
+          address={Some(owner->FormUtils.Alias.address)}
+        />
       )
       ->React.array}
       <Typography.Subtitle1
@@ -441,16 +447,32 @@ module Step3 = {
           }
         />
         <Buttons.SubmitPrimary
-          text=I18n.Btn.submit onPress={_ => action()} style=FormStyles.formSubmit
+          text=I18n.Btn.submit onPress={_ => action()} loading style=FormStyles.formSubmit
         />
       </View>
     </StepView>
   }
 }
 
+type step =
+  | CreateStep
+  | SigningStep(Protocol.batch, Protocol.Simulation.results)
+  | SubmittedStep(string)
+
+let stepToString = step =>
+  switch step {
+  | CreateStep => "createstep"
+  | SigningStep(_, _) => "signingstep"
+  | SubmittedStep(_) => "submittedstep"
+  }
+
 @react.component
-let make = (~closeAction) => {
+let make = (~account: Account.t, ~closeAction) => {
+  let theme = ThemeContext.useTheme()
+  let (isSignerVisible, openSigner, closeSigner) = ModalAction.useModalActionState()
   let (currentStep, setCurrentStep) = React.useState(_ => 1)
+  let (operationSimulateRequest, sendOperationSimulate) = StoreContext.Operations.useSimulate()
+  let (modalStep, setModalStep) = React.useState(_ => CreateStep)
   let form = Form.use(
     ~schema={
       open Form.Validation
@@ -460,18 +482,58 @@ let make = (~closeAction) => {
         custom(_ => Valid, Threshold),
       )
     },
-    ~onSubmit=({send, state}) => {
+    ~onSubmit=({state, raiseSubmitFailed}) => {
+      let operation = {
+        open Protocol
+        {
+          source: account,
+          managers: [
+            ProtocolHelper.Origination.make(
+              ~balance=Tez.fromMutezString("0"),
+              ~code=Multisig.code,
+              ~storage=Multisig.storage(
+                account.address,
+                state.values.owners->Array.keepMap(owner =>
+                  switch owner {
+                  | Valid(t) => Some(t->FormUtils.Alias.address)
+                  | _ => None
+                  }
+                ),
+                state.values.threshold,
+              ),
+              ~delegate=None,
+              (),
+            ),
+          ],
+        }
+      }
+      sendOperationSimulate(operation)->Promise.get(x => {
+        switch x {
+        | Error(e) => raiseSubmitFailed(Some(e->Errors.toString))
+        | Ok(dryRun) =>
+          setModalStep(_ => SigningStep(operation, dryRun))
+          openSigner()
+        }
+      })
       None
     },
     ~initialState={name: "", owners: [FormUtils.Alias.AnyString("")], threshold: 1},
     ~i18n=FormUtils.i18n,
     (),
   )
+  let state = React.useState(() => None)
+  let (sign, setSign) as signOpStep = React.useState(() => SignOperationView.SummaryStep)
+  let (operationRequest, sendOperation) = StoreContext.Operations.useCreate()
 
   let closeButton =
     <ModalFormView.CloseButton
       closing={ModalFormView.confirm(~actionText=I18n.Btn.cancel, closeAction)}
     />
+
+  let back = switch sign {
+  | AdvancedOptStep(_) => Some(() => setSign(_ => SummaryStep))
+  | SummaryStep => None
+  }
 
   <>
     <Page.Header right=closeButton>
@@ -482,7 +544,70 @@ let make = (~closeAction) => {
       <Step2
         currentStep form back={_ => setCurrentStep(_ => 1)} action={_ => setCurrentStep(_ => 3)}
       />
-      <Step3 currentStep form back={_ => setCurrentStep(_ => 2)} action=form.submit />
+      <Step3
+        currentStep
+        form
+        back={_ => setCurrentStep(_ => 2)}
+        loading={operationSimulateRequest->ApiRequest.isLoading}
+        action=form.submit
+      />
     </Page.Header>
+    <ModalAction visible=isSignerVisible>
+      <ReactFlipToolkit.Flipper flipKey={modalStep->stepToString}>
+        <ReactFlipToolkit.FlippedView flipId="modal">
+          <ModalFormView
+            title=I18n.Title.confirm_multisig_origination
+            back
+            closing=ModalFormView.Close(closeSigner)>
+            <ReactFlipToolkit.FlippedView.Inverse inverseFlipId="modal">
+              {switch modalStep {
+              | CreateStep => React.null
+              | SigningStep(operation, dryRun) =>
+                <SignOperationView
+                  source=account
+                  dryRun
+                  signOpStep
+                  state
+                  operation
+                  sendOperation={(~operation, signingIntent) =>
+                    sendOperation({
+                      operation: operation,
+                      signingIntent: signingIntent,
+                    })
+                    ->Promise.tapOk(result => setModalStep(_ => SubmittedStep(result.hash)))
+                    ->Promise.tapOk(result => {
+                      Js.log(result.results)
+                      Js.log(
+                        result.results->Array.map(x => {
+                          Js.log(x)
+                          switch x {
+                          | Origination(x) => {
+                              Js.log(x)
+                              x.metadata.operation_result.originated_contracts
+                            }
+                          }
+                        }),
+                      )
+                    })}
+                  loading={operationRequest->ApiRequest.isLoading}
+                  icon={_ => Some(
+                    Icons.Key.build(
+                      ~style=?None,
+                      ~size=20.,
+                      ~color=theme.colors.iconMediumEmphasis,
+                    ),
+                  )}
+                  name={_ => Some(form.values.name)}
+                />
+              | SubmittedStep(hash) =>
+                <SubmittedView
+                  hash onPressCancel={_ => closeAction()} submitText=I18n.Btn.go_operations
+                />
+              }}
+            </ReactFlipToolkit.FlippedView.Inverse>
+          </ModalFormView>
+        </ReactFlipToolkit.FlippedView>
+      </ReactFlipToolkit.Flipper>
+    </ModalAction>
   </>
 }

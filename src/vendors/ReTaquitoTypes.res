@@ -74,7 +74,19 @@ module Operation = {
 
   type confirmationResult = {block: block}
 
-  type result = {hash: string}
+  module Result = {
+    type origination = {originated_contracts: array<string>}
+  }
+
+  module Metadata = {
+    type origination = {operation_result: Result.origination}
+  }
+
+  type origination = {metadata: Metadata.origination}
+
+  type contentsAndResult = Origination(origination)
+
+  type result = {hash: string, results: array<contentsAndResult>}
 }
 
 module Toolkit = {
