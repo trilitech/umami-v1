@@ -74,8 +74,8 @@ make stop
 * After 1 week : remove the data
 ```
 # remove docker volumes that might still be present (make sure that all other env are up and running since this will purge unused volumes
-cd /opt/umami-backend/amino/
-make prune
+cd /opt/umami/umami-stack/amino/
+make prune-light
 #remove any backup left :
 rm /opt/umami-backend/amino/TESTNET/import-data/*
 ```
@@ -85,7 +85,7 @@ rm /opt/umami-backend/amino/TESTNET/import-data/*
 
 During the 1 week after stopping and before removing the backups, to restart without having to download the full TESTNET chain :
 ```
-cd /opt/umami-backend/amino/TESTNET
+cd /opt/umami/umami-stack/amino/TESTNET
 make pg_dump_restore
 make node_backup_restore
 ```
