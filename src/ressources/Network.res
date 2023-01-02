@@ -93,10 +93,11 @@ let () = Errors.registerHandler("Network", x =>
   }
 )
 
-type nativeChains = [#Mainnet | #Ghostnet | #Kathmandunet | #Limanet]
+type nativeChains = [#Mainnet | #Ghostnet | #Limanet]
 
 type supportedChains = [
   | nativeChains
+  | #Kathmandunet
   | #Jakartanet
   | #Hangzhounet
   | #Granadanet
@@ -139,11 +140,11 @@ let mkChainAssoc = c => (c, getChainId(c))
 let nativeChains = list{
   mkChainAssoc(#Mainnet),
   mkChainAssoc(#Ghostnet),
-  mkChainAssoc(#Kathmandunet),
   mkChainAssoc(#Limanet),
 }
 
 let supportedChains = list{
+  mkChainAssoc(#Kathmandunet),
   mkChainAssoc(#Jakartanet),
   mkChainAssoc(#Hangzhounet),
   mkChainAssoc(#Granadanet),
@@ -264,13 +265,13 @@ module Decode = {
     switch x {
     | "Mainnet" => #Mainnet
     | "Ithacanet" /* Kill? */ | "Ghostnet" => #Ghostnet
-    | "Kathmandunet" => #Kathmandunet
     | "Limanet" => #Limanet
     | n => raise(Json.Decode.DecodeError("Unknown network " ++ n))
     }
 
   let chainFromString = x =>
     switch x {
+    | "Kathmandunet" => #Kathmandunet
     | "Jakartanet" => #Jakartanet
     | "Hangzhounet" => #Hangzhounet
     | "Florencenet" => #Florencenet
@@ -328,12 +329,6 @@ let ghostnet = mk(
   #Ghostnet,
 )
 
-let kathmandunet = mk(
-  ~explorer="https://kathmandunet.umamiwallet.com",
-  ~endpoint="https://kathmandunet.ecadinfra.com",
-  #Kathmandunet,
-)
-
 let limanet = mk(
   ~explorer="https://limanet.umamiwallet.com",
   ~endpoint="https://limanet.ecadinfra.com",
@@ -344,7 +339,6 @@ let getNetwork = x =>
   switch x {
   | #Mainnet => mainnet
   | #Ghostnet => ghostnet
-  | #Kathmandunet => kathmandunet
   | #Limanet => limanet
   }
 
@@ -362,10 +356,6 @@ let getNetworks = (c: nativeChains) => {
   | #Ghostnet => list{
       withEP("https://ghostnet.ecadinfra.com/"),
       withEP("https://ghostnet.smartpy.io/"),
-    }
-  | #Kathmandunet => list{
-      withEP("https://kathmandunet.ecadinfra.com"),
-      withEP("https://kathmandunet.tezos.marigold.dev/"),
     }
   | #Limanet => list{
       withEP("https://limanet.ecadinfra.com"),

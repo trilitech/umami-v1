@@ -73,10 +73,11 @@ type Errors.t +=
   | API(apiError)
   | Node(nodeError)
 
-type nativeChains = [#Mainnet | #Ghostnet | #Kathmandunet | #Limanet]
+type nativeChains = [#Mainnet | #Ghostnet | #Limanet]
 
 type supportedChains = [
   | nativeChains
+  | #Kathmandunet
   | #Jakartanet
   | #Hangzhounet
   | #Granadanet
@@ -130,7 +131,6 @@ module Decode: {
 
 let mainnet: network
 let ghostnet: network
-let kathmandunet: network
 let limanet: network
 
 let getNetwork: nativeChains => network
