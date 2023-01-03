@@ -199,12 +199,12 @@ module Decode = {
   let source = json => json |> field("src", string) |> PublicKeyHash.build |> Result.getExn
 
   let status = json => {
-    let block_hash = json |> field("block_hash", optional(string))
+    let block_hash = json |> optional(field("block_hash", string))
     Option.isNone(block_hash) ? Mempool : Chain
   }
 
   let t = json => {
-    block: json |> field("block_hash", optional(string)),
+    block: json |> optional(field("block_hash", string)),
     fee: json |> field("fee", string) |> Tez.fromMutezString,
     hash: json |> field("hash", string),
     id: json |> field("id", string),
