@@ -19,9 +19,9 @@
 ### Summary
 <!-- Outline the issue being faced, and why this required a change !-->
 Stop the support for TESTNET, first:
-* first remove it from Umami client options 
-* then stop the production endpoint(s)
+* first remove it from Umami client options (blocking)
 * remove the monitoring
+* then stop the production endpoint(s)
 
 ### Area of the system
 <!-- This might only be one part, but may involve multiple sections !-->
@@ -34,15 +34,16 @@ Stop the support for TESTNET, first:
 ### How does this currently work?
 <!-- The current process, and any associated business rules !-->
 
-* ~"Umami-stack" : dev, qa, prod have endpoints for TESTNET
-  * ~"Umami-stack::monitoring" : has endpoints towards those services
-
 * ~"App::Frontend" umami has a default setting for TESTNET
+
+* ~"Umami-stack" : dev, qa, prod have endpoints for TESTNET
+* ~"Umami-stack::monitoring" : has endpoints towards the corresponding services
+
 
 
 ### What is the desired way of working?
 <!-- After the change, what should the process be, and what should the business rules be !-->
-* TESTNET is not present by default in Umami client
+* TESTNET  not present by default in Umami client
 * Monitoring for TESTNET is removed
 * Endpoints for TESTNET are stopped 
 
@@ -54,13 +55,13 @@ Stop the support for TESTNET, first:
 <!-- Include step by step description -->
 * Step by step :
 
-  - [ ] Pre-requesite ~"App::Frontend": MR & Release to remove TESTNET endpoint in Umami client  (@sagotch @leoparis89 / Dev Team, please link to this issue with `/relate umami#999` )
+  - [ ] Pre-requesite ~"App::Frontend": MR & Release to remove TESTNET endpoint in Umami client  (@sagotch @leoparis89 / Dev Team, you can link to with this issue using the quick action `/relate umami#999` )
     - Note :warning: do not stop the production endpoint before MR is merged and released
-  - [ ] ~"Umami-stack::monitoring": comment out in prometheus.yml all entrypoints specific to this tezos-network endpoints (easier for search & replace for next test-net to implement, no impact in leaving it commented)
-  - [ ] Take backups of the node and indexed DB (to restore if rollback needed in the next few days) :
+  - [ ] ~"Umami-stack::monitoring": comment out in prometheus.yml all targets specific to TESTNET tezos-network endpoints (easier for search & replace for next test-net to implement, no impact in leaving it commented)
+  - [ ] Take backups of the node data and indexed DB (to restore if rollback needed in the next few days) :
 ```
-ssh qa-api
-cd /opt/umami-backend/amino/TESTNET
+ssh <server>
+cd /opt/umami/umami-stack/amino/TESTNET
 make pg_dump
 make node_backup
 ```
@@ -69,7 +70,7 @@ make node_backup
 cd /opt/umami-backend/amino/TESTNET
 make stop
 ```
-  - [ ] (after stopping everything) set due date to now + 1 week (`/due 1w`)
+  - [ ] (after stopping everything) set due date to now + 1 week (quick action : `/due 1w`)
 
 * After 1 week : remove the data
 ```
