@@ -124,24 +124,6 @@ module TzktAPI = {
     fetch(PublicKeyHash.Map.empty, accounts, index, 0)
   }
 
-  // Returns a list of arrays: this will be treated later, so we return it as raw as possible for now
-  let _fetchTokensBatchAccounts = (network, accounts) => {
-    // The request accepts 10 accounts at most
-    let rec fetch = (alreadyFetched, offset) =>
-      if offset >= accounts->Array.length {
-        alreadyFetched->Promise.ok
-      } else {
-        ServerAPI.URL.External.betterCallDevBatchAccounts(
-          ~network,
-          ~accounts=accounts->Array.slice(~offset, ~len=10),
-        )
-        ->Promise.value
-        ->Promise.flatMapOk(url => url->ServerAPI.URL.get)
-        ->Promise.flatMapOk(json => json->JsonEx.decode(Decode.decoder)->Promise.value)
-        ->Promise.flatMapOk(tokens => fetch(list{tokens, ...alreadyFetched}, offset + 10))
-      }
-    fetch(list{}, 0)
-  }
 }
 
 type filter = [#Any | #FT | #NFT(PublicKeyHash.t, bool)]

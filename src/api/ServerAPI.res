@@ -277,67 +277,6 @@ module URL = {
   module External = {
     let bakingBadBakers = "https://api.baking-bad.org/v2/bakers"
 
-    let betterCallDevAccountTokens = (
-      ~network: Network.network,
-      ~account: PublicKeyHash.t,
-      ~contract: option<PublicKeyHash.t>=?,
-      ~limit: option<int>=?,
-      ~index: option<int>=?,
-      ~hideEmpty: option<bool>=?,
-      ~sortBy: option<[#TokenId | #Balance]>=?,
-      (),
-    ) => {
-      let args = {
-        open List.Infix
-        \"@?"(
-          hideEmpty->arg_opt("hide_empty", string_of_bool),
-          \"@?"(
-            sortBy->arg_opt("sort_by", x =>
-              switch x {
-              | #TokenId => "token_id"
-              | #Balance => "balance"
-              }
-            ),
-            \"@?"(
-              index->arg_opt("offset", Js.Int.toString),
-              \"@?"(
-                limit->arg_opt("size", Js.Int.toString),
-                \"@?"(contract->arg_opt("contract", k => (k :> string)), list{}),
-              ),
-            ),
-          ),
-        )
-      }
-      network.chain
-      ->Network.chainNetwork
-      ->Option.map(network =>
-        build_url(
-          "https://api.better-call.dev/v1/account/" ++
-          (network ++
-          ("/" ++ ((account :> string) ++ "/token_balances"))),
-          args,
-        )
-      )
-      ->ResultEx.fromOption(UnknownNetwork(Network.getChainId(network.chain)))
-    }
-
-    let betterCallDevBatchAccounts = (
-      ~network: Network.network,
-      ~accounts: array<PublicKeyHash.t>,
-    ) => {
-      let args = list{
-        (
-          "address",
-          // array(pkh) is not a subtype of array(string), hence we must map it
-          accounts->Array.map(a => (a :> string))->Js.Array2.joinWith(","),
-        ),
-      }
-      network.chain
-      ->Network.chainNetwork
-      ->Option.map(network => build_url("https://api.better-call.dev/v1/account/" ++ network, args))
-      ->ResultEx.fromOption(UnknownNetwork(Network.getChainId(network.chain)))
-    }
-
     let tzktAccountTokens = (
       ~network: Network.network,
       ~account: PublicKeyHash.t,
