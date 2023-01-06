@@ -576,18 +576,14 @@ let make = (~account: Account.t, ~closeAction) => {
                     })
                     ->Promise.tapOk(result => setModalStep(_ => SubmittedStep(result.hash)))
                     ->Promise.tapOk(result => {
-                      Js.log(result.results)
-                      Js.log(
                         result.results->Array.map(x => {
-                          Js.log(x)
-                          switch x {
+                          switch ReTaquitoTypes.Operation.classifiy(x) {
                           | Origination(x) => {
                               Js.log(x)
-                              x.metadata.operation_result.originated_contracts
+                              Js.log(x.metadata.operation_result.originated_contracts)
                             }
                           }
-                        }),
-                      )
+                        })
                     })}
                   loading={operationRequest->ApiRequest.isLoading}
                   icon={_ => Some(

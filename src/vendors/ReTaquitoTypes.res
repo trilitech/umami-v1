@@ -84,9 +84,21 @@ module Operation = {
 
   type origination = {metadata: Metadata.origination}
 
+  type contentsAndResultType = [
+    | #origination
+  ]
+  type baseContentsAndResult = {kind: contentsAndResultType}
+
   type contentsAndResult = Origination(origination)
 
-  type result = {hash: string, results: array<contentsAndResult>}
+  external toOrigination: baseContentsAndResult => origination = "%identity"
+
+  let classifiy = (contentsAndResult: baseContentsAndResult): contentsAndResult =>
+    switch contentsAndResult {
+    | {kind: #origination} => Origination(contentsAndResult->toOrigination)
+    }
+
+  type result = {hash: string, results: array<baseContentsAndResult>}
 }
 
 module Toolkit = {
