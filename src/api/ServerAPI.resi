@@ -134,6 +134,12 @@ module type Explorer = {
     ~contract: PublicKeyHash.t,
     ~id: option<int>,
   ) => Promise.t<array<(PublicKeyHash.t, TokenRepr.Unit.t)>>
+
+  let getMultisigs: (
+    Network.network,
+    ~addresses: list<PublicKeyHash.t>,
+    ~contract: PublicKeyHash.t,
+  ) => Promise.t<array<(PublicKeyHash.t, array<PublicKeyHash.t>)>>
 }
 @ocaml.doc(" This generic version exists only for tests purpose ")
 module ExplorerMaker: (

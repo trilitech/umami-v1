@@ -63,14 +63,13 @@ module URL = {
   let fromString = s => s
 
   let get = {
-    let umamiInstallationId =
-      switch LocalStorage.UmamiInstallationId.get() {
-      | Ok(v) => v
-      | Error(_) =>
-        let id = genUuid()
-        LocalStorage.UmamiInstallationId.set(id)
-        Js.log("Storage umami installation id not found, generated " ++ id)
-        id
+    let umamiInstallationId = switch LocalStorage.UmamiInstallationId.get() {
+    | Ok(v) => v
+    | Error(_) =>
+      let id = genUuid()
+      LocalStorage.UmamiInstallationId.set(id)
+      Js.log("Storage umami installation id not found, generated " ++ id)
+      id
     }
 
     url => {
@@ -197,6 +196,13 @@ module URL = {
         )
       }
       build_explorer_url(network, "tokens/registry", args)
+    }
+
+    let multisigs = (network, ~addresses: list<PublicKeyHash.t>, ~contract: PublicKeyHash.t) => {
+      open List
+      let args =
+        addresses->map(address => ("pkh", (address :> string)))->add(("k", (contract :> string)))
+      build_explorer_url(network, "multisig", args)
     }
   }
 
@@ -355,6 +361,12 @@ module type Explorer = {
     ~contract: PublicKeyHash.t,
     ~id: option<int>,
   ) => Promise.t<array<(PublicKeyHash.t, TokenRepr.Unit.t)>>
+
+  let getMultisigs: (
+    Network.network,
+    ~addresses: list<PublicKeyHash.t>,
+    ~contract: PublicKeyHash.t,
+  ) => Promise.t<array<(PublicKeyHash.t, array<PublicKeyHash.t>)>>
 }
 
 module ExplorerMaker = (
@@ -451,6 +463,21 @@ module ExplorerMaker = (
         array(decoder)
       })
       ->Result.mapError(e => e->JsonEx.filterJsonExn->JsonError)
+      ->Promise.value
+    })
+
+  let getMultisigs = (network, ~addresses: list<PublicKeyHash.t>, ~contract: PublicKeyHash.t) =>
+    network
+    ->URL.Explorer.multisigs(~addresses, ~contract)
+    ->Get.get
+    ->Promise.flatMapOk(response => {
+      let decoder = json => {
+        open Json.Decode
+        (json |> field("pkh", PublicKeyHash.decoder), json |> field("ks", array(PublicKeyHash.decoder)))
+      }
+      response
+      ->Result.fromExn(Json.Decode.array(decoder))
+      ->Result.mapError(error => error->JsonEx.filterJsonExn->JsonError)
       ->Promise.value
     })
 }
