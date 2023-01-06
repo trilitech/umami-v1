@@ -1,5 +1,64 @@
 open ReTaquitoTypes
 
+type t = {
+  address: PublicKeyHash.t,
+  alias: string,
+  balance: ReBigNumber.t,
+  chain: Network.chainId,
+  signers: array<PublicKeyHash.t>,
+  threshold: int,
+}
+
+module Cache = {
+  module JSON = {
+    let decoder = json => {
+      open Json.Decode
+      {
+        address: json |> field("address", string) |> PublicKeyHash.build |> Result.getExn,
+        alias: json |> field("alias", string),
+        balance: json |> field("balance", string) |> ReBigNumber.fromString,
+        chain: json |> field("chain", Network.Decode.chainIdDecoder),
+        signers: json |> field("signers", array(PublicKeyHash.decoder)),
+        threshold: json |> field("threshold", int),
+      }
+    }
+
+    let encoder = t => {
+      open Json.Encode
+      object_(list{
+        ("address", (t.address :> string) |> string),
+        ("alias", t.alias |> string),
+        ("balance", t.balance |> ReBigNumber.toString |> string),
+        ("chain", t.chain |> Network.Encode.chainIdEncoder),
+        ("signers", t.signers |> array(PublicKeyHash.encoder)),
+        ("threshold", t.threshold |> int),
+      })
+    }
+  }
+
+  include LocalStorage.Make({
+    let key = "registered-multisigs"
+
+    type t = PublicKeyHash.Map.map<t>
+
+    let decoder = json => {
+      open PublicKeyHash.Map
+      (json |> Json.Decode.array(JSON.decoder))
+        ->Array.reduce(empty, (map, contract) => map->set(contract.address, contract))
+    }
+
+    let encoder = t => {
+      t->PublicKeyHash.Map.valuesToArray |> Json.Encode.array(JSON.encoder)
+    }
+  })
+
+  let getWithFallback = () =>
+    switch get() {
+    | Error(LocalStorage.NotFound(_)) => Ok(PublicKeyHash.Map.empty)
+    | map => map
+    }
+}
+
 let code: Code.t = %raw(`[
   {
     "prim": "storage",
@@ -1589,25 +1648,25 @@ let code: Code.t = %raw(`[
 ]`)
 
 let storage: (PublicKeyHash.t, array<PublicKeyHash.t>, int) => Storage.t = (
-  owner,
-  signers,
-  threshold,
+  _owner,
+  _signers,
+  _threshold,
 ) =>
   %raw(`{
   "prim": "Pair",
   "args": [
     {
-      "string": owner
+      "string": _owner
     },
     {
       "prim": "Pair",
       "args": [
-        signers.sort().map(signer => ({"string": signer})),
+        _signers.sort().map(signer => ({"string": signer})),
         {
           "prim": "Pair",
           "args": [
             {
-              "int": threshold.toString()
+              "int": _threshold.toString()
             },
             {
               "prim": "Pair",
