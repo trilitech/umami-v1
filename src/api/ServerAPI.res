@@ -337,6 +337,21 @@ module URL = {
         )
       )
       ->ResultEx.fromOption(UnknownNetwork(Network.getChainId(network.chain)))
+
+    let tzktContractStorage = (~network: Network.network, ~contract: PublicKeyHash.t) =>
+      network.chain
+      ->Network.chainNetwork
+      ->Option.map(network =>
+        build_url(
+          "https://api." ++
+          (network ++
+          ".tzkt.io/v1/contracts/" ++
+          (contract :> string) ++
+          "/storage"),
+          list{},
+        )
+      )
+      ->ResultEx.fromOption(UnknownNetwork(Network.getChainId(network.chain)))
   }
 }
 
@@ -473,7 +488,10 @@ module ExplorerMaker = (
     ->Promise.flatMapOk(response => {
       let decoder = json => {
         open Json.Decode
-        (json |> field("pkh", PublicKeyHash.decoder), json |> field("ks", array(PublicKeyHash.decoder)))
+        (
+          json |> field("pkh", PublicKeyHash.decoder),
+          json |> field("ks", array(PublicKeyHash.decoder)),
+        )
       }
       response
       ->Result.fromExn(Json.Decode.array(decoder))

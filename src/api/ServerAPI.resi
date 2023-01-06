@@ -103,6 +103,11 @@ module URL: {
       ~network: Network.t,
       ~account: PublicKeyHash.t,
     ) => Promise.result<t>
+
+    let tzktContractStorage: (
+      ~network: Network.network,
+      ~contract: PublicKeyHash.t,
+    ) => Promise.result<t>
   }
 
   /* Fetch URL as a JSON. */
