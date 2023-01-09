@@ -50,20 +50,27 @@ module Content = {
       {content
       ->List.toArray
       ->Array.map(((property, values)) =>
-        <View key=property style=FormStyles.amountRow>
-          <Typography.Overline2> {property->React.string} </Typography.Overline2>
-          <View>
-            {values
-            ->List.mapWithIndex((i, value) =>
-              <Typography.Body1
-                key={i->Int.toString} style={styles["amount"]} fontWeightStyle=#black>
-                {value->React.string}
-              </Typography.Body1>
-            )
-            ->List.toArray
-            ->React.array}
-          </View>
-        </View>
+        {
+          switch values {
+          | list{} =>
+            React.null
+          | _ =>
+            <View key=property style=FormStyles.amountRow>
+              <Typography.Overline2> {property->React.string} </Typography.Overline2>
+              <View>
+                {values
+                ->List.mapWithIndex((i, value) =>
+                  <Typography.Body1
+                    key={i->Int.toString} style={styles["amount"]} fontWeightStyle=#black>
+                    {value->React.string}
+                  </Typography.Body1>
+                  )
+                ->List.toArray
+                ->React.array}
+              </View>
+            </View>
+          }
+        }
       )
       ->React.array}
     </View>
