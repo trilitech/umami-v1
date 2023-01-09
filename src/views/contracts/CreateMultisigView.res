@@ -535,6 +535,12 @@ let make = (~account: Account.t, ~closeAction) => {
   | SummaryStep => None
   }
 
+  let title = switch modalStep {
+  | CreateStep => None
+  | SigningStep(_) => Some(I18n.Title.confirm_multisig_origination)
+  | SubmittedStep(_) => None
+  }
+
   <>
     <Page.Header right=closeButton>
       <Typography.Headline style=Styles.title>
@@ -555,10 +561,7 @@ let make = (~account: Account.t, ~closeAction) => {
     <ModalAction visible=isSignerVisible>
       <ReactFlipToolkit.Flipper flipKey={modalStep->stepToString}>
         <ReactFlipToolkit.FlippedView flipId="modal">
-          <ModalFormView
-            title=I18n.Title.confirm_multisig_origination
-            back
-            closing=ModalFormView.Close(closeSigner)>
+          <ModalFormView ?title back closing=ModalFormView.Close(closeSigner)>
             <ReactFlipToolkit.FlippedView.Inverse inverseFlipId="modal">
               {switch modalStep {
               | CreateStep => React.null
