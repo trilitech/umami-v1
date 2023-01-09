@@ -200,6 +200,15 @@ let validateOwners: array<FormUtils.Alias.any> => ReSchema.fieldState = owners =
   childStates->Array.length == 0 ? Valid : childStates->NestedErrors
 }
 
+let onlyValidOwners = array =>
+  array
+  ->Array.keepMap(owner =>
+    switch owner {
+    | FormUtils.Alias.Valid(alias) => Some(alias)
+    | _ => None
+    }
+  )
+
 module Step1 = {
   @react.component
   let make = (~currentStep, ~form: Form.api, ~action) => {
@@ -289,7 +298,7 @@ module Step2 = {
           </View>
           {<IconButton
             onPress={_ => {
-              if form.values.threshold == form.values.owners->Array.length {
+              if form.values.threshold >= form.values.owners->Array.length {
                 form.handleChangeWithCallback(Threshold, threshold => threshold - 1)
               }
               form.handleChangeWithCallback(Owners, owners =>
@@ -324,26 +333,34 @@ module Step2 = {
           open Style
           StyleSheet.flatten([styles["row"], style(~marginBottom=12.->dp, ())])
         }>
-        <Selector
-          globalStyle=#button
-          chevron={<Icons.ChevronDown
-            size=22. color=theme.colors.iconHighEmphasis style={Selector.styles["icon"]}
-          />}
-          innerStyle={styles["selectorButtonContent"]}
-          items={Array.range(1, form.values.owners->Array.length)}
-          getItemKey={item => item->Int.toString}
-          renderItem
-          selectedValueKey={form.values.threshold->Int.toString}
-          onValueChange={item => form.handleChange(Threshold, item)}
-          renderButton={(selectedItem, _) => {
-            selectedItem->Option.mapWithDefault(React.null, item => renderItem(item))
-          }}
-          keyPopover="Selector"
-          backgroundColor=theme.colors.elevatedBackground
-        />
-        <Typography.Body1 style={styles["suffix"]}>
-          {I18n.Expl.out_of(form.values.owners->Array.length->Int.toString)->React.string}
-        </Typography.Body1>
+        {
+          let validOwnersNumber = switch onlyValidOwners(form.values.owners)->Array.length {
+            | 0 => 1
+            | x => x
+          }
+          <>
+            <Selector
+              globalStyle=#button
+              chevron={<Icons.ChevronDown
+                size=22. color=theme.colors.iconHighEmphasis style={Selector.styles["icon"]}
+              />}
+              innerStyle={styles["selectorButtonContent"]}
+              items={Array.range(1, validOwnersNumber)}
+              getItemKey={item => item->Int.toString}
+              renderItem
+              selectedValueKey={form.values.threshold->Int.toString}
+              onValueChange={item => form.handleChange(Threshold, item)}
+              renderButton={(selectedItem, _) => {
+                selectedItem->Option.mapWithDefault(React.null, item => renderItem(item))
+              }}
+              keyPopover="Selector"
+              backgroundColor=theme.colors.elevatedBackground
+            />
+            <Typography.Body1 style={styles["suffix"]}>
+              {I18n.Expl.out_of(validOwnersNumber->Int.toString)->React.string}
+            </Typography.Body1>
+          </>
+        }
       </View>
       <View style={styles["row"]}>
         <Buttons.SubmitSecondary
