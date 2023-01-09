@@ -170,7 +170,7 @@ module AccountsFlatList = {
         ->Array.map(account => {
           let address = (account.address :> string)
           <AccountRowItem
-            key={(address :> string)} account isHD={addresses->Set.String.has(address)} ?token
+            key=address account isHD={addresses->Set.String.has(address)} ?token
           />
         })
         ->React.array}
@@ -188,10 +188,31 @@ module MultisigAccountList = {
     })
   }
 
+  let test_data : array<Multisig.t> = [{
+    address: Obj.magic ("KT1NLL3st3pzJgAZGMAz9rrtc7pvxQaGWnyo"),
+    alias: "Foo",
+    balance: ReBigNumber.fromInt(6748),
+    chain: Network.getChainId(Network.ghostnet.chain),
+    signers: [Obj.magic ("tz2M5GjuWooVsSbEmc8TWVRpHP8hxrqsoF6D"),
+              Obj.magic ("tz2QUKUe6JSve7PgmbeJPUkWPyAtjEWPoCtc"),
+              Obj.magic ("tz1UMMZHpwmrQBHjAdwcL8uMe3fjZSecEz3F")],
+    threshold: 2,
+  }]
+
   @react.component
   let make = (~showCreateMultisig) => {
     <View style={styles["container"]}>
-      <Typography.Body1> {I18n.Expl.no_multisig_contract->React.string} </Typography.Body1>
+      {
+        if (Array.length(test_data) == 0) {
+          <Typography.Body1> {I18n.Expl.no_multisig_contract->React.string} </Typography.Body1>
+        } else {
+          <View>
+            {test_data
+            ->Array.map(multisig => {<AccountRowItem.MultisigRowItem key={(multisig.address :> string)} multisig />})
+            ->React.array}
+          </View>
+        }
+      }
       <Buttons.SubmitPrimary
         style={styles["button"]} text=I18n.Btn.add_contract onPress={_ => ()}
       />

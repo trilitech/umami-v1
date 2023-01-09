@@ -65,8 +65,8 @@ module BalanceToken = {
     | Done(Ok(balance), _)
     | Loading(Some(balance: Token.Unit.t)) =>
       I18n.amount(balance->Token.Unit.toStringDecimals(token.decimals), token.symbol)->React.string
-    | Done(Error(_error), _) => I18n.amount(I18n.no_balance_amount, token.symbol)->React.string
-
+    | Done(Error(_error), _) =>
+      I18n.amount(I18n.no_balance_amount, token.symbol)->React.string
     | NotAsked
     | Loading(None) =>
       <BalanceActivityIndicator />

@@ -47,24 +47,25 @@ let styles = {
   })
 }
 
-@react.component
-let make = (~account: Alias.t, ~onPressCancel) => {
-  let addToast = LogsContext.useToast()
+module GenericReceiveView = {
+  @react.component
+  let make = (~name: string, ~address: string, ~onPressCancel) => {
+    let addToast = LogsContext.useToast()
 
-  <ModalTemplate.Form headerRight={<ModalTemplate.HeaderButtons.Close onPress=onPressCancel />}>
-    <Typography.Headline style=FormStyles.header>
-      {account.name->React.string}
-    </Typography.Headline>
+    <ModalTemplate.Form headerRight={<ModalTemplate.HeaderButtons.Close onPress=onPressCancel />}>
+      <Typography.Headline style=FormStyles.header>{name->React.string}</Typography.Headline>
     <View style={styles["qrContainer"]}>
-      <View style={styles["qr"]}> <QRCode value={(account.address :> string)} size=200. /> </View>
+      <View style={styles["qr"]}> <QRCode value=address size=200. /> </View>
     </View>
     <View style={styles["addressContainer"]}>
-      <Typography.Address style={styles["address"]}>
-        {(account.address :> string)->React.string}
-      </Typography.Address>
-      <ClipboardButton
-        copied=I18n.Log.address tooltipKey="QrView" addToast data={(account.address :> string)}
-      />
+      <Typography.Address style={styles["address"]}>{address->React.string}</Typography.Address>
+      <ClipboardButton copied=I18n.Log.address tooltipKey="QrView" addToast data=address />
     </View>
   </ModalTemplate.Form>
+  }
+}
+
+@react.component
+let make = (~account: Alias.t, ~onPressCancel) => {
+  <GenericReceiveView name={account.name} address={(account.address :> string)} onPressCancel />
 }

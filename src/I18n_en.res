@@ -211,6 +211,7 @@ module Label = {
   let parameter = "Parameter"
   let add_contract_name = "Contract name"
   let owners = "Owners"
+  let approval_threshold = "Approval threshold:"
   let out_of = (a, b) => `${a} out of ${b}`
 }
 

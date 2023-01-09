@@ -31,25 +31,31 @@ let styles = {
     "alias": style(~height=20.->dp, ~marginBottom=4.->dp, ()),
     "balanceEmpty": style(~height=4.->dp, ()),
     "address": style(~height=18.->dp, ()),
+    "description": style(~height=18.->dp, ()),
   })
 }
 
-@react.component
-let make = (
-  ~account: Account.t,
-  ~token: option<Token.t>=?,
-  ~showBalance=true,
-  ~showAlias=true,
-  ~forceFetch,
-) =>
-  <View>
-    {<Typography.Subtitle1 style={styles["alias"]}>
-      {account.name->React.string}
-    </Typography.Subtitle1>->ReactUtils.onlyWhen(showAlias)}
-    {showBalance
-      ? <AccountInfoBalance forceFetch address=account.address ?token />
-      : <View style={styles["balanceEmpty"]} />}
-    <Typography.Address style={styles["address"]}>
-      {(account.address :> string)->React.string}
-    </Typography.Address>
-  </View>
+module GenericAccountInfo = {
+  @react.component
+  let make = (
+    ~name: string,
+    ~address:PublicKeyHash.t,
+    ~token: option<Token.t>=?,
+    ~showBalance=true,
+    ~showAlias=true,
+    ~forceFetch,
+    ~description:option<React.element>=?
+  ) =>
+    <View>
+      {<Typography.Subtitle1 style={styles["alias"]}>
+        {name->React.string}
+      </Typography.Subtitle1>->ReactUtils.onlyWhen(showAlias)}
+      {showBalance
+        ? <AccountInfoBalance forceFetch address ?token />
+        : <View style={styles["balanceEmpty"]} />}
+      {Option.getWithDefault(description, React.null)}
+      <Typography.Address style={styles["address"]}>
+        {(address :> string)->React.string}
+      </Typography.Address>
+    </View>
+}

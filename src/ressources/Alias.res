@@ -26,6 +26,7 @@
 type kind =
   | Contact
   | Account(Account.kind)
+  | Multisig
 
 type t = {
   address: PublicKeyHash.t,
@@ -39,6 +40,12 @@ let fromAccount = ({Account.address: address, name, kind}): t => {
   address: address,
   name: name,
   kind: Some(Account(kind)),
+}
+
+let fromMultisig = ({Multisig.address, alias}) : t => {
+  address: address,
+  name: alias,
+  kind: Some(Multisig),
 }
 
 let make = (~kind=?, ~name, address) => {address: address, name: name, kind: kind}
