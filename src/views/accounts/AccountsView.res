@@ -308,7 +308,7 @@ let make = (~account, ~showCreateAccount, ~showBuyTez, ~mode, ~setMode) => {
           {mode->Mode.is_management ? <BalanceTotal /> : <BalanceTotal.WithTokenSelector ?token />}
           <View style={styles["actionBar"]}>
             {mode->Mode.is_management
-              ? <CreateAccountButton action={_ => showForm(_ => true)} />
+              ? <CreateAccountButton action=showCreateAccount />
               : <View>
                   <BuyTezButton account showView=showBuyTez />
                   <AccountTypeSwitch accountType setAccountType />
