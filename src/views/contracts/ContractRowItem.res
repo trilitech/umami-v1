@@ -204,55 +204,57 @@ module Actions = {
       : <AddButton token tokens currentChain />
 }
 
-@react.component
-let make = (~style=?, ~token: TokensLibrary.Token.t, ~registered: bool, ~currentChain, ~tokens) => {
-  open TokensLibrary.Token
-  let theme = ThemeContext.useTheme()
-  let addToast = LogsContext.useToast()
+module Token = {
+  @react.component
+  let make = (~style=?, ~token: TokensLibrary.Token.t, ~registered: bool, ~currentChain, ~tokens) => {
+    open TokensLibrary.Token
+    let theme = ThemeContext.useTheme()
+    let addToast = LogsContext.useToast()
 
-  let tokenId = switch token->kind {
-  | #KFA1_2 => I18n.na
-  | #KFA2 => token->id->Int.toString
+    let tokenId = switch token->kind {
+    | #KFA1_2 => I18n.na
+    | #KFA2 => token->id->Int.toString
+    }
+    <View
+      style={Style.arrayOption([
+        style,
+        Style.style(~borderColor=theme.colors.stateDisabled, ~borderBottomWidth=1., ())->Some,
+      ])}>
+      <Table.Row.Base height=44.>
+        <CellStandard>
+          <Tag
+            contentStyle={styles["kind"]}
+            borderRadius=11.
+            content={token->kind->TokenContract.kindToString}
+          />
+        </CellStandard>
+        <CellName>
+          <Typography.Body1 numberOfLines=1>
+            {token->name->Option.default("")->React.string}
+          </Typography.Body1>
+        </CellName>
+        <CellSymbol>
+          <Typography.Body1 numberOfLines=1>
+            {token->symbol->Option.default("")->React.string}
+          </Typography.Body1>
+        </CellSymbol>
+        <CellAddress>
+          <Typography.Address numberOfLines=1>
+            {(token->address :> string)->React.string}
+          </Typography.Address>
+          <ClipboardButton
+            copied=I18n.Log.address
+            addToast
+            tooltipKey={token->uniqueKey}
+            data={(token->address :> string)}
+            style={styles["copyButton"]}
+          />
+        </CellAddress>
+        <CellTokenId>
+          <Typography.Body1 numberOfLines=1> {tokenId->React.string} </Typography.Body1>
+        </CellTokenId>
+        <CellAction> <Actions registered token tokens currentChain /> </CellAction>
+      </Table.Row.Base>
+    </View>
   }
-  <View
-    style={Style.arrayOption([
-      style,
-      Style.style(~borderColor=theme.colors.stateDisabled, ~borderBottomWidth=1., ())->Some,
-    ])}>
-    <Table.Row.Base height=44.>
-      <CellStandard>
-        <Tag
-          contentStyle={styles["kind"]}
-          borderRadius=11.
-          content={token->kind->TokenContract.kindToString}
-        />
-      </CellStandard>
-      <CellName>
-        <Typography.Body1 numberOfLines=1>
-          {token->name->Option.default("")->React.string}
-        </Typography.Body1>
-      </CellName>
-      <CellSymbol>
-        <Typography.Body1 numberOfLines=1>
-          {token->symbol->Option.default("")->React.string}
-        </Typography.Body1>
-      </CellSymbol>
-      <CellAddress>
-        <Typography.Address numberOfLines=1>
-          {(token->address :> string)->React.string}
-        </Typography.Address>
-        <ClipboardButton
-          copied=I18n.Log.address
-          addToast
-          tooltipKey={token->uniqueKey}
-          data={(token->address :> string)}
-          style={styles["copyButton"]}
-        />
-      </CellAddress>
-      <CellTokenId>
-        <Typography.Body1 numberOfLines=1> {tokenId->React.string} </Typography.Body1>
-      </CellTokenId>
-      <CellAction> <Actions registered token tokens currentChain /> </CellAction>
-    </Table.Row.Base>
-  </View>
 }

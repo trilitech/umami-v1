@@ -123,8 +123,8 @@ module ContractTypeSwitch = {
 module TokensView = {
   @react.component
   let make = (~registered, ~unregistered, ~currentChain) => <>
-    <TokenRows title=I18n.Title.added_to_wallet tokens=registered currentChain emptyText=None />
-    <TokenRows
+    <ContractRows.Token title=I18n.Title.added_to_wallet tokens=registered currentChain emptyText=None />
+    <ContractRows.Token
       title=I18n.Title.held tokens=unregistered currentChain emptyText=Some(I18n.empty_held_token)
     />
   </>
@@ -277,12 +277,14 @@ let make = () => {
           t->Result.getWithDefault(TokensLibrary.Generic.empty)
         )}
       />
-      <CreateNewMultisigButton
-        chain=?currentChain
-        tokens={tokens->Option.mapDefault(TokensLibrary.Generic.empty, t =>
-          t->Result.getWithDefault(TokensLibrary.Generic.empty)
-        )}
-      />
+      {
+        <CreateNewMultisigButton
+          chain=?currentChain
+          tokens={tokens->Option.mapDefault(TokensLibrary.Generic.empty, t =>
+            t->Result.getWithDefault(TokensLibrary.Generic.empty)
+          )}
+        />->ReactUtils.onlyWhen(contractType == Multisig)
+      }
     </View>
     {switch partitionedTokens {
     | None => <LoadingView />
