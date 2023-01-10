@@ -188,16 +188,7 @@ module MultisigAccountList = {
     })
   }
 
-  let test_data : array<Multisig.t> = [{
-    address: Obj.magic ("KT1NLL3st3pzJgAZGMAz9rrtc7pvxQaGWnyo"),
-    alias: "Foo",
-    balance: ReBigNumber.fromInt(6748),
-    chain: Network.getChainId(Network.ghostnet.chain),
-    signers: [Obj.magic ("tz2M5GjuWooVsSbEmc8TWVRpHP8hxrqsoF6D"),
-              Obj.magic ("tz2QUKUe6JSve7PgmbeJPUkWPyAtjEWPoCtc"),
-              Obj.magic ("tz1UMMZHpwmrQBHjAdwcL8uMe3fjZSecEz3F")],
-    threshold: 2,
-  }]
+  let test_data = Multisig.test_data
 
   @react.component
   let make = (~showCreateMultisig) => {

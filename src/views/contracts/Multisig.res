@@ -16,6 +16,17 @@ let contract = chain =>
   | _ => ""->PublicKeyHash.build->Result.getExn
   }
 
+let test_data : array<t> = [{
+  address: Obj.magic ("KT1NLL3st3pzJgAZGMAz9rrtc7pvxQaGWnyo"),
+  alias: "Foo",
+  balance: ReBigNumber.fromInt(6748),
+  chain: Network.getChainId(Network.ghostnet.chain),
+  signers: [Obj.magic ("tz2M5GjuWooVsSbEmc8TWVRpHP8hxrqsoF6D"),
+            Obj.magic ("tz2QUKUe6JSve7PgmbeJPUkWPyAtjEWPoCtc"),
+            Obj.magic ("tz1UMMZHpwmrQBHjAdwcL8uMe3fjZSecEz3F")],
+  threshold: 2,
+}]
+
 module Cache = {
   module JSON = {
     let decoder = json => {
