@@ -71,19 +71,21 @@ module AddTokenButton = {
   }
 }
 
+// FIXME: Do not use a modal or reimplement CreateMultisigView
 module CreateNewMultisigButton = {
   let styles = {
     open Style
     StyleSheet.create({
       "button": style(~alignSelf=#flexStart, ~marginLeft=10.->dp, ~marginBottom=10.->dp, ()),
+      "modal": style(~paddingRight=0.->dp, ()),
     })
   }
 
   @react.component
-  let make = (~tokens, ~chain=?) => {
+  let make = (~chain=?) => {
     let (openAction, closeAction, wrapModal) = ModalAction.useModal()
     let tooltip =
-      chain == None ? Some(("add_token_button", I18n.Tooltip.chain_not_connected)) : None
+      chain == None ? Some(("add_multisig_button", I18n.Tooltip.chain_not_connected)) : None
 
     <>
       <ButtonAction
@@ -95,14 +97,16 @@ module CreateNewMultisigButton = {
         icon=Icons.Key.build
         primary=true
       />
-      {wrapModal(
-        <TokenAddView
-          action=#Add
-          chain={chain->Option.getWithDefault(Network.unsafeChainId(""))}
-          tokens
-          closeAction
-        />,
-      )}
+      {
+        let account = StoreContext.SelectedAccount.useGetAtInit()
+        Option.mapWithDefault(account, React.null, account =>
+          wrapModal(
+            <ModalFormView style={styles["modal"]}>
+              <CreateMultisigView account closeAction />
+            </ModalFormView>,
+          )
+        )
+      }
     </>
   }
 }
@@ -128,6 +132,12 @@ module TokensView = {
       title=I18n.Title.held tokens=unregistered currentChain emptyText=Some(I18n.empty_held_token)
     />
   </>
+}
+
+module MultisigsView = {
+  @react.component
+  let make = (~multisigs: array<Multisig.t>, ~currentChain) =>
+    <ContractRows.Multisig multisigs currentChain emptyText=I18n.Expl.no_multisig_contract />
 }
 
 @react.component
@@ -278,19 +288,16 @@ let make = () => {
         )}
       />
       {
-        <CreateNewMultisigButton
-          chain=?currentChain
-          tokens={tokens->Option.mapDefault(TokensLibrary.Generic.empty, t =>
-            t->Result.getWithDefault(TokensLibrary.Generic.empty)
-          )}
-        />->ReactUtils.onlyWhen(contractType == Multisig)
+        <CreateNewMultisigButton chain=?currentChain />->ReactUtils.onlyWhen(contractType == Multisig)
       }
     </View>
     {switch partitionedTokens {
     | None => <LoadingView />
     | Some(Error(error)) => <ErrorView error />
     | Some(Ok((registered, unregistered))) =>
-      contractType == Token ? <TokensView registered unregistered currentChain /> : <> </>
+      contractType == Token
+      ? <TokensView registered unregistered currentChain />
+       : <MultisigsView multisigs=Multisig.test_data currentChain />
     }}
   </Page>
 }

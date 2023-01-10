@@ -70,10 +70,11 @@ module CellAction = Table.MakeCell({
 let styles = {
   open Style
   StyleSheet.create({
-    "kind": style(~paddingHorizontal=12.->dp, ~paddingVertical=2.->dp, ~fontSize=10., ()),
+    "kind": style(~paddingHorizontal=12.->dp, ~paddingVertical=2.->dp, ~fontSize=10., ~borderWidth=0., ()),
     "actions": style(~display=#flex, ~flexDirection=#row, ~alignItems=#center, ()),
     "iconOffset": style(~paddingLeft=14.->dp, ()),
     "copyButton": style(~marginRight=6.->dp, ()),
+    "tag": style(~borderWidth=0., ()),
   })
 }
 
@@ -138,7 +139,7 @@ module MoreMenu = {
 
   module ContractLinkItem = {
     @react.component
-    let make = (~token: TokensLibrary.Token.t, ~currentChain) => {
+    let make = (~address: PublicKeyHash.t, ~currentChain) => {
       let addToast = LogsContext.useToast()
       let disabled = currentChain == None
 
@@ -149,24 +150,65 @@ module MoreMenu = {
           chain->Network.fromChainId->Network.externalExplorer
         )
         switch explorer {
-        | Ok(url) => System.openExternal(url ++ (token->TokensLibrary.Token.address :> string))
+        | Ok(url) => System.openExternal(url ++ (address :> string))
         | Error(err) => addToast(Logs.error(~origin=Operation, err))
         }
       }
 
-      <Menu.Item disabled icon=Icons.OpenExternal.build text=I18n.Menu.view_in_explorer onPress />
+      <Menu.Item
+        disabled
+        icon=Icons.OpenExternal.build
+        text=I18n.Menu.view_in_explorer onPress
+      />
     }
   }
 
-  @react.component
-  let make = (~token, ~tokens, ~currentChain) =>
-    <Menu
-      icon=Icons.More.build
-      size=46.
-      iconSizeRatio=0.5
-      keyPopover={"tokenMenu" ++ token->TokensLibrary.Token.uniqueKey}>
-      [<EditItem token tokens currentChain />, <ContractLinkItem token currentChain />]
-    </Menu>
+  module Token = {
+    @react.component
+    let make = (~token, ~tokens, ~currentChain) => {
+      let keyPrefix = "tokenMenu-" ++ token->TokensLibrary.Token.uniqueKey
+      <Menu
+        icon=Icons.More.build
+        size=46.
+        iconSizeRatio=0.5
+        keyPopover=keyPrefix>
+        [
+          <EditItem
+            key={keyPrefix ++ "-EditItem"}
+            token
+            tokens
+            currentChain
+          />,
+          <ContractLinkItem
+            key={keyPrefix ++ "-ContractLinkItem"}
+            address={token->TokensLibrary.Token.address}
+            currentChain
+          />
+        ]
+      </Menu>
+    }
+  }
+
+  module Multisig = {
+    @react.component
+    let make = (~multisig, ~currentChain) => {
+      let keyPrefix = "multisigMenu-" ++ (multisig.Multisig.address :> string)
+      <Menu
+        icon=Icons.More.build
+        size=46.
+        iconSizeRatio=0.5
+        keyPopover=keyPrefix>
+        [
+          <ContractLinkItem
+            key={keyPrefix ++ "-ContractLinkItem"}
+            address=multisig.Multisig.address
+            currentChain
+          />
+        ]
+      </Menu>
+    }
+  }
+
 }
 
 module RemoveButton = {
@@ -194,27 +236,29 @@ module RemoveButton = {
   }
 }
 
-module Actions = {
+module TokenActions = {
   @react.component
   let make = (~token, ~registered: bool, ~currentChain, ~tokens) =>
     registered
       ? <View style={styles["actions"]}>
-          <MoreMenu token tokens currentChain /> <RemoveButton token currentChain />
+          <MoreMenu.Token token tokens currentChain /> <RemoveButton token currentChain />
         </View>
       : <AddButton token tokens currentChain />
 }
 
-module Token = {
+module MultisigActions = {
   @react.component
-  let make = (~style=?, ~token: TokensLibrary.Token.t, ~registered: bool, ~currentChain, ~tokens) => {
-    open TokensLibrary.Token
+  let make = (~multisig, ~currentChain) =>
+    <View style={styles["actions"]}>
+      <MoreMenu.Multisig multisig currentChain />
+    </View>
+}
+
+module Base = {
+  @react.component
+  let make = (~style=?, ~kind, ~name=?, ~symbol=?, ~address, ~tokenId=?, ~uniqueKey, ~action) => {
     let theme = ThemeContext.useTheme()
     let addToast = LogsContext.useToast()
-
-    let tokenId = switch token->kind {
-    | #KFA1_2 => I18n.na
-    | #KFA2 => token->id->Int.toString
-    }
     <View
       style={Style.arrayOption([
         style,
@@ -223,38 +267,80 @@ module Token = {
       <Table.Row.Base height=44.>
         <CellStandard>
           <Tag
+            style={styles["tag"]}
             contentStyle={styles["kind"]}
             borderRadius=11.
-            content={token->kind->TokenContract.kindToString}
+            content={kind}
           />
         </CellStandard>
         <CellName>
           <Typography.Body1 numberOfLines=1>
-            {token->name->Option.default("")->React.string}
+            {name->Option.default("")->React.string}
           </Typography.Body1>
         </CellName>
         <CellSymbol>
           <Typography.Body1 numberOfLines=1>
-            {token->symbol->Option.default("")->React.string}
+            {symbol->Option.default("")->React.string}
           </Typography.Body1>
         </CellSymbol>
         <CellAddress>
           <Typography.Address numberOfLines=1>
-            {(token->address :> string)->React.string}
+            {address->React.string}
           </Typography.Address>
           <ClipboardButton
             copied=I18n.Log.address
             addToast
-            tooltipKey={token->uniqueKey}
-            data={(token->address :> string)}
+            tooltipKey={uniqueKey}
+            data={address}
             style={styles["copyButton"]}
           />
         </CellAddress>
         <CellTokenId>
-          <Typography.Body1 numberOfLines=1> {tokenId->React.string} </Typography.Body1>
+          <Typography.Body1 numberOfLines=1>
+           {tokenId->Option.default("")->React.string}
+          </Typography.Body1>
         </CellTokenId>
-        <CellAction> <Actions registered token tokens currentChain /> </CellAction>
+        <CellAction>
+          {action}
+        </CellAction>
       </Table.Row.Base>
     </View>
+  }
+}
+
+module Token = {
+  @react.component
+  let make = (~style=?, ~token: TokensLibrary.Token.t, ~registered: bool, ~currentChain, ~tokens) => {
+    open TokensLibrary.Token
+    let tokenId = switch token->kind {
+    | #KFA1_2 => I18n.na
+    | #KFA2 => token->id->Int.toString
+    }
+    let action = <TokenActions registered token tokens currentChain />
+    <Base
+      ?style
+      kind={token->kind->TokenContract.kindToString}
+      name=?{token->name}
+      symbol=?{token->symbol}
+      address={(token->address :> string)}
+      tokenId
+      uniqueKey={token->uniqueKey}
+      action
+    />
+  }
+}
+
+module Multisig = {
+  @react.component
+  let make = (~style=?, ~multisig: Multisig.t, ~currentChain) => {
+    let action = <MultisigActions multisig currentChain />
+    <Base
+      ?style
+      kind={"multisig"}
+      name={multisig.alias}
+      address={(multisig.address :> string)}
+      uniqueKey={(multisig.address :> string)}
+      action
+    />
   }
 }

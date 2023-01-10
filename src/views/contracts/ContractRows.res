@@ -27,43 +27,50 @@ open ReactNative
 
 module TableHeader = {
 
+  module TableHeaderContent = {
+    @react.component
+    let make = (~text=?, ()) => {
+      <Typography.Overline3> {Option.mapWithDefault(text, React.null, React.string)} </Typography.Overline3>
+    }
+  }
+
   module Standard = {
     @react.component
-    let make = () =>
+    let make = (~text=?, ()) =>
       <ContractRowItem.CellStandard>
-        <Typography.Overline3> {I18n.token_column_standard->React.string} </Typography.Overline3>
+        <TableHeaderContent ?text></TableHeaderContent>
       </ContractRowItem.CellStandard>
   }
 
   module Name = {
     @react.component
-    let make = () =>
+    let make = (~text=?, ()) =>
       <ContractRowItem.CellName>
-        <Typography.Overline3> {I18n.token_column_name->React.string} </Typography.Overline3>
+        <TableHeaderContent ?text></TableHeaderContent>
       </ContractRowItem.CellName>
   }
 
   module Symbol = {
     @react.component
-    let make = () =>
+    let make = (~text=?, ()) =>
       <ContractRowItem.CellSymbol>
-        <Typography.Overline3> {I18n.token_column_symbol->React.string} </Typography.Overline3>
+        <TableHeaderContent ?text></TableHeaderContent>
       </ContractRowItem.CellSymbol>
   }
 
   module Address = {
     @react.component
-    let make = () =>
+    let make = (~text=?, ()) =>
       <ContractRowItem.CellAddress>
-        <Typography.Overline3> {I18n.token_column_address->React.string} </Typography.Overline3>
+        <TableHeaderContent ?text></TableHeaderContent>
       </ContractRowItem.CellAddress>
   }
 
   module TokenId = {
     @react.component
-    let make = () =>
+    let make = (~text=?, ()) =>
       <ContractRowItem.CellTokenId>
-        <Typography.Overline3> {I18n.token_column_tokenid->React.string} </Typography.Overline3>
+        <TableHeaderContent ?text></TableHeaderContent>
       </ContractRowItem.CellTokenId>
   }
 
@@ -73,17 +80,40 @@ module TableHeader = {
       <ContractRowItem.CellAction> React.null </ContractRowItem.CellAction>
   }
 
+  module GenericHeader = {
+    @react.component
+    let make = (~standard="", ~name="", ~symbol="", ~address="", ~tokenid="", ()) => {
+      <Table.Head>
+        <Standard text=standard />
+        <Name text=name />
+        <Symbol text=symbol />
+        <Address text=address />
+        <TokenId text=tokenid />
+        <Empty/>
+      </Table.Head>
+    }
+  }
+
   module Token = {
     @react.component
     let make = () =>
-      <Table.Head>
-        <Standard/>
-        <Name/>
-        <Symbol/>
-        <Address/>
-        <TokenId/>
-        <Empty/>
-      </Table.Head>
+      <GenericHeader
+        standard=I18n.token_column_standard
+        name=I18n.token_column_name
+        symbol=I18n.token_column_symbol
+        address=I18n.token_column_address
+        tokenid =I18n.token_column_tokenid
+      />
+  }
+
+  module Multisig = {
+    @react.component
+    let make = () =>
+      <GenericHeader
+        standard=I18n.token_column_standard
+        name=I18n.token_column_name
+        address=I18n.token_column_address
+      />
   }
 
 }
@@ -140,4 +170,31 @@ module Token = {
           </View>
         </Accordion>
   }
+}
+
+let makeMultisigRowItem = (currentChain, multisig) =>
+  <ContractRowItem.Multisig key={(multisig.address :> string)} multisig currentChain />
+
+module Multisig = {
+
+  @react.component
+  let make = (~multisigs, ~currentChain, ~emptyText) => {
+    if (Array.length(multisigs) == 0) {
+      <View style={styles["container"]}>
+        <Table.Empty> {emptyText->React.string} </Table.Empty>
+      </View>
+    } else {
+      <View style={styles["container"]}>
+        <TableHeader.Multisig />
+        <View>
+          {
+            multisigs
+            ->Array.map(makeMultisigRowItem(currentChain))
+            ->React.array
+          }
+        </View>
+      </View>
+    }
+  }
+
 }
