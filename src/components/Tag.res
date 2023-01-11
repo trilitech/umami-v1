@@ -36,6 +36,8 @@ module Base = {
         ~borderRadius,
         ~alignItems=#center,
         ~justifyContent=#center,
+        ~fontFamily="SourceSansPro",
+        ~fontWeight=#_500,
         (),
       )
     }
