@@ -3,7 +3,7 @@ open ReactNative
 let styles = {
   open Style
   StyleSheet.create({
-    "tag": style(~alignItems=#center, ~justifyContent=#center, ~borderWidth=1., ()),
+    "tag": style(~alignItems=#center, ~justifyContent=#center, ()),
     "fixed": style(~width=40.->dp, ~height=18.->dp, ~borderRadius=9., ()),
     "fit": style(
       ~width="fit-content"->StyleUtils.stringToSize,
