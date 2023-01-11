@@ -327,6 +327,7 @@ module Title = {
   let secret_update = "Edit Secret"
   let add_contact = "Add Contact"
   let update_contact = "Edit Contact"
+  let contract_details = "Contract Details"
   let add_token = "Register Token"
   let edit_metadata = "Token Metadata"
   let export_to_mobile = "Export to Umami Mobile"

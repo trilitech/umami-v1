@@ -86,51 +86,138 @@ module Overline = {
 
 module Multisig = {
 
-  module Name = {
+  module Element = {
     @react.component
-    let make = (~name) => {
+    let make = (~label, ~children) => {
       <>
-        <Typography.Subtitle1> {I18n.Title.contract_name->React.string} </Typography.Subtitle1>
-        <Info> <Typography.Body1> {name->React.string} </Typography.Body1> </Info>
+        <Typography.Subtitle1 style={open Style;style(~marginTop=16.->dp, ())}>
+          {label->React.string}
+        </Typography.Subtitle1>
+        children
       </>
     }
+  }
+
+  module SimpleTextElement = {
+    @react.component
+    let make = (~label, ~text) =>
+      <Element label>
+        <Info>
+          <Typography.Body1>
+            {text->React.string}
+          </Typography.Body1>
+        </Info>
+      </Element>
+  }
+
+  module Address = {
+    @react.component
+    let make = (~address) =>
+      <SimpleTextElement label=I18n.Label.add_token_address text=address />
+  }
+
+  module Name = {
+    @react.component
+    let make = (~name) =>
+      <SimpleTextElement label={I18n.Title.contract_name} text=name />
   }
 
   module Owners = {
     @react.component
-    let make = (~owners) => {
-      <>
-        <Typography.Subtitle1 style={open Style;style(~marginTop=16.->dp, ())}>
-          {I18n.Title.owners(owners->Array.length->Int.toString)->React.string}
-        </Typography.Subtitle1>
+    let make = (~owners) =>
+      <Element label={I18n.Title.owners(owners->Array.length->Int.toString)}>
         {
-          owners
+         owners
           ->Array.mapWithIndex((i, owner) =>
             <OperationSummaryView.EntityInfo
               key={i->Int.toString}
-              style={open Style;style(~maxWidth=415.->dp, ~marginVertical=4.->dp, ())}
-              address={Some(owner->FormUtils.Alias.address)}
+              style={open Style;style(~marginVertical=4.->dp, ())}
+              address={Some(owner)}
             />)
           ->React.array
         }
-      </>
-    }
+      </Element>
   }
 
   module Threshold = {
     @react.component
-    let make = (~threshold, ~owners) => {
-      <>
-        <Typography.Subtitle1 style={open Style;style(~marginTop=16.->dp, ())}>
-          {I18n.Title.approval_threshold->React.string}
-        </Typography.Subtitle1>
-        <Info>
-          <Typography.Body1>
-            {I18n.Label.out_of(threshold->Int.toString, owners->Int.toString)->React.string}
-          </Typography.Body1>
-        </Info>
-      </>
+    let make = (~threshold, ~owners) =>
+      <SimpleTextElement
+        label=I18n.Title.approval_threshold
+        text={I18n.Label.out_of(threshold->Int.toString, owners->Int.toString)}
+      />
+  }
+
+  module MultisigEdition = {
+
+    module StateLenses = %lenses(
+      type state = {
+        name: string,
+      }
+    )
+
+    module Form = ReForm.Make(StateLenses)
+
+    module FormName = {
+      @react.component
+      let make = (~form: Form.api) =>
+        <FormGroupTextInput
+          label=I18n.Title.contract_name
+          value=form.values.name
+          handleChange={form.handleChange(Name)}
+          error={form.getFieldError(Field(Name))}
+          placeholder=I18n.Input_placeholder.add_contract_name
+        />
     }
+
+  }
+
+  @react.component
+  let make = (~multisig: Multisig.t, ~closeAction) => {
+
+    let onSubmit = ({state}: MultisigEdition.Form.onSubmitAPI) => {
+        Js.log (__LOC__);
+        Js.log (state)
+        closeAction();
+        None
+    }
+
+    let form: MultisigEdition.Form.api =
+      MultisigEdition.Form.use(
+        ~schema={
+          let aliasesRequest =
+            StoreContext.Aliases.useRequest()
+          let aliases =
+            aliasesRequest->ApiRequest.getDoneOk->Option.getWithDefault(PublicKeyHash.Map.empty)
+          open MultisigEdition.Form.Validation
+          let aliasCheckExists = (aliases, values: MultisigEdition.StateLenses.state) =>
+            AliasHelpers.formCheckExists(aliases, values.name)
+          Schema(nonEmpty(Name) + custom(aliasCheckExists(aliases), Name))
+      },
+      ~onSubmit,
+      ~initialState={ name: multisig.alias },
+      ~i18n=FormUtils.i18n,
+      (),
+    )
+
+    let onSubmit = _ => form.submit()
+
+    let formFieldsAreValids = FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields)
+
+    <ModalFormView closing=ModalFormView.Close(closeAction)>
+      <Title text=I18n.Title.contract_details />
+      <Tag content="multisig" />
+      <Address address=(multisig.address :> string) />
+      <MultisigEdition.FormName form />
+      <Owners owners=multisig.signers />
+      <Threshold threshold=multisig.threshold owners={Array.length(multisig.signers)} />
+      <Buttons.SubmitPrimary
+        text=I18n.Btn.update
+        onPress=onSubmit
+        style=FormStyles.formSubmit
+        disabledLook={!formFieldsAreValids}
+      />
+    </ModalFormView>
   }
 
 }

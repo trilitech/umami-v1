@@ -136,6 +136,23 @@ module MoreMenu = {
     }
   }
 
+  module MultisigDetailsModal = {
+    @react.component
+    let make = (~multisig, ~currentChain) => {
+      let (openAction, closeAction, wrapModal) = ModalAction.useModal()
+      let disabled = currentChain == None
+      <>
+        <Menu.Item
+          disabled
+          text=I18n.Menu.see_details
+          onPress={_ => openAction()}
+          icon=Icons.Search.build
+        />
+        {wrapModal(<ContractDetailsView.Multisig multisig closeAction/>)}
+      </>
+    }
+  }
+
   module ContractLinkItem = {
     @react.component
     let make = (~address: PublicKeyHash.t, ~currentChain) => {
@@ -198,6 +215,11 @@ module MoreMenu = {
         iconSizeRatio=0.5
         keyPopover=keyPrefix>
         [
+          <MultisigDetailsModal
+            key={keyPrefix ++ "-MultisigDetailsModal"}
+            multisig
+            currentChain
+          />,
           <ContractLinkItem
             key={keyPrefix ++ "-ContractLinkItem"}
             address=multisig.Multisig.address

@@ -398,7 +398,7 @@ module Step3 = {
         {I18n.Expl.review_multisig->React.string}
       </Typography.Body1>
       <ContractDetailsView.Multisig.Name name=form.values.name />
-      <ContractDetailsView.Multisig.Owners owners=owners />
+      <ContractDetailsView.Multisig.Owners owners={Array.map(owners, FormUtils.Alias.address)} />
       <ContractDetailsView.Multisig.Threshold threshold={form.values.threshold} owners={owners->Array.length} />
       <View style={styles["row"]}>
         <Buttons.SubmitSecondary
