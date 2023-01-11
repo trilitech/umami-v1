@@ -13,44 +13,63 @@ let styles = {
   })
 }
 
-module Fixed = {
+module Base = {
   @react.component
-  let make = (~style as styleProp=?, ~contentStyle=?, ~content: string) => {
+  let make = (
+    ~style as styleProp=?,
+    ~height=18.,
+    ~width,
+    ~contentStyle=?,
+    ~fontSize=9.7,
+    ~content: string,
+  ) => {
     let theme = ThemeContext.useTheme()
+    let borderRadius = height /. 2.
+    let height = height->Style.dp
 
-    <View
-      style={
-        open Style
-        arrayOption([
-          styles["tag"]->Some,
-          styles["fixed"]->Some,
-          style(~backgroundColor=theme.colors.statePressed, ())->Some,
-          styleProp,
-        ])
-      }>
-      <Typography.Body2 fontSize=9.7 colorStyle=#mediumEmphasis style=?contentStyle>
+    let tag_style = {
+      open Style
+      style(
+        ~backgroundColor=theme.colors.statePressed,
+        ~height,
+        ~width,
+        ~borderRadius,
+        ~alignItems=#center,
+        ~justifyContent=#center,
+        (),
+      )
+    }
+
+    <View style={Style.arrayOption([tag_style->Some, styleProp])}>
+      <Typography.Body2 fontSize colorStyle=#mediumEmphasis style=?contentStyle>
         {content->React.string}
       </Typography.Body2>
     </View>
   }
 }
 
-@react.component
-let make = (~style as styleProp=?, ~borderRadius=9., ~contentStyle=?, ~content: string) => {
-  let theme = ThemeContext.useTheme()
+module Fixed = {
+  @react.component
+  let make = (
+    ~style=?,
+    ~height=?,
+    ~width=40.->Style.dp,
+    ~contentStyle=?,
+    ~fontSize=?,
+    ~content: string,
+  ) => {
+    <Base ?style ?height width ?fontSize ?contentStyle content />
+  }
+}
 
-  <View
-    style={
-      open Style
-      arrayOption([
-        styles["tag"]->Some,
-        styles["fit"]->Some,
-        style(~backgroundColor=theme.colors.statePressed, ~borderRadius, ())->Some,
-        styleProp,
-      ])
-    }>
-    <Typography.Body2 fontSize=9.7 colorStyle=#mediumEmphasis style=?contentStyle>
-      {content->React.string}
-    </Typography.Body2>
-  </View>
+@react.component
+let make = (
+  ~style=?,
+  ~height=?,
+  ~width="fit-content"->StyleUtils.stringToSize,
+  ~contentStyle=?,
+  ~fontSize=?,
+  ~content: string,
+) => {
+  <Base ?style ?height width ?fontSize ?contentStyle content />
 }

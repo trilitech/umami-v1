@@ -70,11 +70,10 @@ module CellAction = Table.MakeCell({
 let styles = {
   open Style
   StyleSheet.create({
-    "kind": style(~paddingHorizontal=12.->dp, ~paddingVertical=2.->dp, ~fontSize=10., ~borderWidth=0., ()),
+    "kind": style(~paddingHorizontal=12.->dp, ()),
     "actions": style(~display=#flex, ~flexDirection=#row, ~alignItems=#center, ()),
     "iconOffset": style(~paddingLeft=14.->dp, ()),
     "copyButton": style(~marginRight=6.->dp, ()),
-    "tag": style(~borderWidth=0., ()),
   })
 }
 
@@ -266,12 +265,7 @@ module Base = {
       ])}>
       <Table.Row.Base height=44.>
         <CellStandard>
-          <Tag
-            style={styles["tag"]}
-            contentStyle={styles["kind"]}
-            borderRadius=11.
-            content={kind}
-          />
+          <Tag contentStyle=styles["kind"] fontSize=10.8 height=20. content={kind} />
         </CellStandard>
         <CellName>
           <Typography.Body1 numberOfLines=1>

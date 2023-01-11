@@ -56,7 +56,6 @@ let styles = {
       ~justifyContent=#spaceBetween,
       (),
     ),
-    "info": style(~maxWidth=415.->dp, ~marginVertical=4.->dp, ()),
   })
 }
 
@@ -383,30 +382,7 @@ module Step2 = {
 }
 
 module Step3 = {
-  module Info = {
-    @react.component
-    let make = (~children: React.element) => {
-      let theme = ThemeContext.useTheme()
 
-      <View
-        style={
-          open Style
-          style(
-            ~borderRadius=4.,
-            ~maxWidth=415.->dp,
-            ~minHeight=44.->dp,
-            ~backgroundColor=theme.colors.stateDisabled,
-            ~marginTop=4.->dp,
-            ~marginBottom=8.->dp,
-            ~paddingHorizontal=16.->dp,
-            ~paddingVertical=12.->dp,
-            (),
-          )
-        }>
-        children
-      </View>
-    }
-  }
 
   @react.component
   let make = (~currentStep, ~form: Form.api, ~back, ~loading, ~action) => {
@@ -421,39 +397,9 @@ module Step3 = {
       <Typography.Body1 style={styles["description"]}>
         {I18n.Expl.review_multisig->React.string}
       </Typography.Body1>
-      <Typography.Subtitle1> {I18n.Title.contract_name->React.string} </Typography.Subtitle1>
-      <Info> <Typography.Body1> {form.values.name->React.string} </Typography.Body1> </Info>
-      <Typography.Subtitle1
-        style={
-          open Style
-          style(~marginTop=16.->dp, ())
-        }>
-        {I18n.Title.owners(owners->Array.length->Int.toString)->React.string}
-      </Typography.Subtitle1>
-      {owners
-      ->Array.mapWithIndex((i, owner) =>
-        <OperationSummaryView.EntityInfo
-          key={i->Int.toString}
-          style={styles["info"]}
-          address={Some(owner->FormUtils.Alias.address)}
-        />
-      )
-      ->React.array}
-      <Typography.Subtitle1
-        style={
-          open Style
-          style(~marginTop=16.->dp, ())
-        }>
-        {I18n.Title.approval_threshold->React.string}
-      </Typography.Subtitle1>
-      <Info>
-        <Typography.Body1>
-          {I18n.Label.out_of(
-            form.values.threshold->Int.toString,
-            owners->Array.length->Int.toString,
-          )->React.string}
-        </Typography.Body1>
-      </Info>
+      <ContractDetailsView.Multisig.Name name=form.values.name />
+      <ContractDetailsView.Multisig.Owners owners=owners />
+      <ContractDetailsView.Multisig.Threshold threshold={form.values.threshold} owners={owners->Array.length} />
       <View style={styles["row"]}>
         <Buttons.SubmitSecondary
           text=I18n.Btn.back

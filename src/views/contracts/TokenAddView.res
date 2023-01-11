@@ -43,7 +43,7 @@ let styles = {
     "title": style(~marginBottom=6.->dp, ~textAlign=#center, ()),
     "overline": style(~marginBottom=24.->dp, ~textAlign=#center, ()),
     "tag": style(~marginBottom=6.->dp, ~alignSelf=#center, ()),
-    "tagContent": style(~paddingHorizontal=12.->dp, ~paddingVertical=2.->dp, ~fontSize=10., ()),
+    "tagContent": style(~paddingHorizontal=12.->dp, ~fontSize=14., ~lineHeight=18., ()),
   })
 }
 
@@ -275,19 +275,6 @@ let make = (
   let pkh = PublicKeyHash.buildContract(form.values.address)
   let tokenId = form.values.tokenId->Int.fromString
 
-  let tokenTag = {
-    open ApiRequest
-    switch (tokenKind, pkh) {
-    | (Done(Ok(#...TokenContract.kind as kind), _), Ok(_)) =>
-      <Tag
-        style={styles["tag"]}
-        contentStyle={styles["tagContent"]}
-        content={kind->TokenContract.kindToString}
-      />
-    | _ => React.null
-    }
-  }
-
   let headlineText = switch step {
   | Address
   | CheckToken => I18n.add_token_format_contract_sentence
@@ -318,11 +305,17 @@ let make = (
   let formFieldsAreValids = FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields)
 
   <ModalFormView closing=ModalFormView.Close(closeAction)>
-    <Typography.Headline style={styles["title"]}> {title->React.string} </Typography.Headline>
-    tokenTag
-    <Typography.Overline3 style={styles["overline"]}>
-      {headlineText->React.string}
-    </Typography.Overline3>
+    <ContractDetailsView.Title text=title />
+    {
+      open ApiRequest
+      switch (tokenKind, pkh) {
+      | (Done(Ok(#...TokenContract.kind as kind), _), Ok(_)) =>
+        <ContractDetailsView.Tag content={kind->TokenContract.kindToString} />
+      | _ =>
+        React.null
+      }
+    }
+    <ContractDetailsView.Overline text=headlineText />
     <FormAddress form />
     {switch step {
     | Address => React.null
