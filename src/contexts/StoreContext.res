@@ -189,7 +189,7 @@ let make = (~children) => {
 
   let _: ApiRequest.t<_> = SecretApiRequest.useLoad(secretsRequestState)
   let accounts: ApiRequest.t<_> = AccountApiRequest.useLoad(accountsRequestState)
-  let multisigAccounts: ApiRequest.t<_> = MultisigApiRequest.Accounts.useLoad(
+  let multisigs: ApiRequest.t<_> = MultisigApiRequest.useLoad(
     multisigsRequestState,
   )
   let _: ApiRequest.t<_> = AliasApiRequest.useLoad(aliasesRequestState)

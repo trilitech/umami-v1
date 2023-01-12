@@ -9,6 +9,13 @@ type t = {
   threshold: int,
 }
 
+let contract = chain =>
+  switch chain {
+  | #Ghostnet =>
+    "KT1Mqvf7bnYe4Ty2n7ZbGkdbebCd4WoTJUUp"->PublicKeyHash.build->Result.getExn
+  | _ => ""->PublicKeyHash.build->Result.getExn
+  }
+
 module Cache = {
   module JSON = {
     let decoder = json => {
@@ -57,6 +64,119 @@ module Cache = {
     | Error(LocalStorage.NotFound(_)) => Ok(PublicKeyHash.Map.empty)
     | map => map
     }
+}
+
+module API = {
+  let getAddresses = (network, ~addresses: array<PublicKeyHash.t>, ~contract: PublicKeyHash.t) => {
+    let addresses = addresses->List.fromArray
+    network
+    ->ServerAPI.Explorer.getMultisigs(~addresses, ~contract)
+    ->Promise.mapOk(response =>
+      response->Array.reduce(Set.make(~id=module(PublicKeyHash.Comparator)), (
+        contracts,
+        (pkh, ks),
+      ) => contracts->Set.mergeMany(ks))
+    )
+    ->Promise.mapOk(Set.toArray)
+  }
+
+  module Storage = {
+    type t = {
+      lastOpID: int,
+      metadata: int,
+      owner: PublicKeyHash.t,
+      pendingOps: int,
+      signers: array<PublicKeyHash.t>,
+      threshold: int,
+    }
+
+    let decoder = json => {
+      open Json.Decode
+      {
+        lastOpID: json |> field("last_op_id", int),
+        metadata: json |> field("metadata", int),
+        owner: json |> field("owner", PublicKeyHash.decoder),
+        pendingOps: json |> field("pending_ops", int),
+        signers: json |> field("signers", array(PublicKeyHash.decoder)),
+        threshold: json |> field("threshold", int),
+      }
+    }
+
+    let encoder = t => {
+      open Json.Encode
+      object_(list{
+        ("last_op_id", t.lastOpID |> int),
+        ("metadata", t.metadata |> int),
+        ("owner", t.owner |> PublicKeyHash.encoder),
+        ("pending_ops", t.pendingOps |> int),
+        ("signers", t.signers |> array(PublicKeyHash.encoder)),
+        ("threshold", t.threshold |> int),
+      })
+    }
+  }
+
+  let getStorage = (network, ~contract: PublicKeyHash.t) => {
+    ServerAPI.URL.External.tzktContractStorage(~network, ~contract)
+    ->Promise.value
+    ->Promise.flatMapOk(url => url->ServerAPI.URL.get)
+    ->Promise.flatMapOk(json => json->JsonEx.decode(Storage.decoder)->Promise.value)
+  }
+
+  let getFromCache = (
+    network: Network.t,
+    ~addresses: array<PublicKeyHash.t>,
+    ~contract: PublicKeyHash.t,
+  ) =>
+    Cache.getWithFallback()
+    ->Result.map(map =>
+      map->PublicKeyHash.Map.keep((_, v) => v.chain == network.chain->Network.getChainId)
+    )
+    ->Promise.value
+
+  let get = (network: Network.t, ~addresses: array<PublicKeyHash.t>, ~contract: PublicKeyHash.t) =>
+    network
+    ->getAddresses(~addresses, ~contract)
+    // fetch storage for each multisig found on chain
+    ->Promise.flatMapOk(contracts =>
+      contracts
+      ->Array.map(contract =>
+        network->getStorage(~contract)->Promise.mapOk(storage => (contract, storage))
+      )
+      ->Promise.allArray
+      ->Promise.mapOk(responses =>
+        responses->Array.reduce(PublicKeyHash.Map.empty, (map, response) =>
+          switch response {
+          | Ok((contract, storage)) => map->PublicKeyHash.Map.set(contract, storage)
+          | _ => map
+          }
+        )
+      )
+    )
+    // update cache
+    ->Promise.mapOk(map =>
+      map->PublicKeyHash.Map.merge(Cache.get()->Result.getWithDefault(PublicKeyHash.Map.empty), (
+        contract,
+        fromNetwork,
+        fromCache,
+      ) =>
+        switch (fromNetwork, fromCache) {
+        | (Some(storage), Some(multisig)) =>
+          Some({...multisig, signers: storage.signers, threshold: storage.threshold}) // update cached multisig
+        | (Some(storage), _) =>
+          // cache new discovered multisig
+          Some({
+            address: contract,
+            alias: "Multisig ??",
+            balance: ReBigNumber.zero,
+            chain: network.chain->Network.getChainId,
+            signers: storage.signers,
+            threshold: storage.threshold,
+          })
+        | (_, Some(multisig)) => Some(multisig) // cached multisig not found on chain, should not happen
+        }
+      )
+    )
+    ->Promise.tapOk(cache => Cache.set(cache))
 }
 
 let code: Code.t = %raw(`[

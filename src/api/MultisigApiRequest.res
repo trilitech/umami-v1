@@ -25,15 +25,16 @@
 
 /* MULTISIG */
 
-module Accounts = {
+/* Get */
 
-    /* Get */
-
-    let useLoad = requestState => {
-        let get = (~config: ConfigContext.env, ()) => {
-            // TODO: promise KT1
-            Promise.value(PublicKeyHash.Map.empty->Ok)
-        }
-        ApiRequest.useLoader(~get, ~kind=Logs.Multisig, ~requestState, ())
-    }
+let useLoad = requestState => {
+  let get = (~config: ConfigContext.env, ()) => {
+    HDWalletAPI.Accounts.get(~config)->Promise.flatMapOk(accounts =>
+      config.network->Multisig.API.get(
+        ~addresses=accounts->Array.map(account => account.address),
+        ~contract=config.network.chain->Multisig.contract,
+      )
+    )
+  }
+  ApiRequest.useLoader(~get, ~kind=Logs.Multisig, ~requestState, ())
 }
