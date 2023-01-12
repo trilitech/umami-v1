@@ -11,21 +11,24 @@ type t = {
 
 let contract = chain =>
   switch chain {
-  | #Ghostnet =>
-    "KT1Mqvf7bnYe4Ty2n7ZbGkdbebCd4WoTJUUp"->PublicKeyHash.build->Result.getExn
+  | #Ghostnet => "KT1Mqvf7bnYe4Ty2n7ZbGkdbebCd4WoTJUUp"->PublicKeyHash.build->Result.getExn
   | _ => ""->PublicKeyHash.build->Result.getExn
   }
 
-let test_data : array<t> = [{
-  address: Obj.magic ("KT1NLL3st3pzJgAZGMAz9rrtc7pvxQaGWnyo"),
-  alias: "Foo",
-  balance: ReBigNumber.fromInt(6748),
-  chain: Network.getChainId(Network.ghostnet.chain),
-  signers: [Obj.magic ("tz2M5GjuWooVsSbEmc8TWVRpHP8hxrqsoF6D"),
-            Obj.magic ("tz2QUKUe6JSve7PgmbeJPUkWPyAtjEWPoCtc"),
-            Obj.magic ("tz1UMMZHpwmrQBHjAdwcL8uMe3fjZSecEz3F")],
-  threshold: 2,
-}]
+let test_data: array<t> = [
+  {
+    address: Obj.magic("KT1NLL3st3pzJgAZGMAz9rrtc7pvxQaGWnyo"),
+    alias: "Foo",
+    balance: ReBigNumber.fromInt(6748),
+    chain: Network.getChainId(Network.ghostnet.chain),
+    signers: [
+      Obj.magic("tz2M5GjuWooVsSbEmc8TWVRpHP8hxrqsoF6D"),
+      Obj.magic("tz2QUKUe6JSve7PgmbeJPUkWPyAtjEWPoCtc"),
+      Obj.magic("tz1UMMZHpwmrQBHjAdwcL8uMe3fjZSecEz3F"),
+    ],
+    threshold: 2,
+  },
+]
 
 module Cache = {
   module JSON = {
@@ -104,25 +107,13 @@ module API = {
     let decoder = json => {
       open Json.Decode
       {
-        lastOpID: json |> field("last_op_id", int),
+        lastOpID: (json |> field("last_op_id", string))->Int.fromString->Option.getWithDefault(0),
         metadata: json |> field("metadata", int),
         owner: json |> field("owner", PublicKeyHash.decoder),
         pendingOps: json |> field("pending_ops", int),
         signers: json |> field("signers", array(PublicKeyHash.decoder)),
-        threshold: json |> field("threshold", int),
+        threshold: (json |> field("threshold", string))->Int.fromString->Option.getWithDefault(0),
       }
-    }
-
-    let encoder = t => {
-      open Json.Encode
-      object_(list{
-        ("last_op_id", t.lastOpID |> int),
-        ("metadata", t.metadata |> int),
-        ("owner", t.owner |> PublicKeyHash.encoder),
-        ("pending_ops", t.pendingOps |> int),
-        ("signers", t.signers |> array(PublicKeyHash.encoder)),
-        ("threshold", t.threshold |> int),
-      })
     }
   }
 
@@ -144,7 +135,11 @@ module API = {
     )
     ->Promise.value
 
-  let get = (network: Network.t, ~addresses: array<PublicKeyHash.t>, ~contract: PublicKeyHash.t) =>
+  let get = (
+    network: Network.t,
+    ~addresses: array<PublicKeyHash.t>,
+    ~contract: PublicKeyHash.t,
+  ) =>
     network
     ->getAddresses(~addresses, ~contract)
     // fetch storage for each multisig found on chain
@@ -187,6 +182,7 @@ module API = {
         }
       )
     )
+    ->Promise.tapOk(Js.log)
     ->Promise.tapOk(cache => Cache.set(cache))
 }
 
