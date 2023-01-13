@@ -57,16 +57,14 @@ module AddTokenButton = {
         icon=Icons.Add.build
         primary=true
       />
-      {
-        wrapModal(
-          <TokenAddView
-            action=#Add
-            chain={chain->Option.getWithDefault(Network.unsafeChainId(""))}
-            tokens
-            closeAction
-          />,
-        )
-      }
+      {wrapModal(
+        <TokenAddView
+          action=#Add
+          chain={chain->Option.getWithDefault(Network.unsafeChainId(""))}
+          tokens
+          closeAction
+        />,
+      )}
     </>
   }
 }
@@ -127,7 +125,9 @@ module ContractTypeSwitch = {
 module TokensView = {
   @react.component
   let make = (~registered, ~unregistered, ~currentChain) => <>
-    <ContractRows.Token title=I18n.Title.added_to_wallet tokens=registered currentChain emptyText=None />
+    <ContractRows.Token
+      title=I18n.Title.added_to_wallet tokens=registered currentChain emptyText=None
+    />
     <ContractRows.Token
       title=I18n.Title.held tokens=unregistered currentChain emptyText=Some(I18n.empty_held_token)
     />
@@ -142,7 +142,6 @@ module MultisigsView = {
 
 @react.component
 let make = () => {
-  let accounts = StoreContext.Accounts.useGetAll()
   let apiVersion: option<Network.apiVersion> = StoreContext.useApiVersion()
   let (syncState, setSyncState) = React.useState(_ => Sync.NotInitiated)
   let (searched, setSearch) = React.useState(_ => "")
@@ -150,8 +149,11 @@ let make = () => {
 
   let (contractType, setContractType) = React.useState(() => Token)
 
+  let accounts = StoreContext.Accounts.useGetAll()
+
   let accounts = accounts->PublicKeyHash.Map.keysToList
-  let request = fromCache => {
+
+  let tokensRequest = fromCache => {
     open TokensApiRequest
     {
       request: {
@@ -172,16 +174,17 @@ let make = () => {
       }
     )
   }
-  let onStop = () => stop.current
 
-  let (tokensRequest, getTokens) = StoreContext.Tokens.useFetchTokens(
+  let (tokensApiRequest, tokensGetRequest) = StoreContext.Tokens.useFetchTokens(
     onTokens,
-    onStop,
+    {() => stop.current},
     accounts,
-    request(true),
+    tokensRequest(true),
   )
 
-  let tokens = switch tokensRequest {
+  let multisigsApiRequest = StoreContext.Multisig.useRequest()
+
+  let tokens = switch tokensApiRequest {
   | NotAsked
   | Loading(None) =>
     None
@@ -193,6 +196,16 @@ let make = () => {
   | Done(Error(error), _) => Some(Error(error))
   }
 
+  let multisigs = switch multisigsApiRequest {
+  | NotAsked
+  | Loading(None) =>
+    None
+  | Done(Ok(multisigs), _)
+  | Loading(Some(multisigs)) =>
+    Some(Ok(multisigs))
+  | Done(Error(error), _) => Some(Error(error))
+  }
+
   let loadToCanceled = () =>
     setSyncState(x =>
       switch x {
@@ -200,6 +213,7 @@ let make = () => {
       | _ => NotInitiated
       }
     )
+
   let loadToDone = () =>
     setSyncState(x =>
       switch x {
@@ -208,24 +222,41 @@ let make = () => {
       }
     )
 
-  React.useEffect1(() =>
-    switch tokensRequest {
-    | Done(Ok(#Fetched(_, _)), _) =>
+  React.useEffect2(() =>
+    switch (tokensApiRequest, multisigsApiRequest) {
+    | (Done(Ok(#Fetched(_, _)), _), Done(Ok(_), _)) =>
       loadToDone()
       stop.current = false
       None
 
-    | Done(Ok(#Cached(_)), _) =>
+    | (Done(Ok(#Cached(_)), _), _) =>
       setSyncState(_ => NotInitiated)
       None
 
-    | Done(Error(_), _) =>
+    | (Done(Error(_), _), Done(Error(_), _)) =>
       loadToCanceled()
       None
 
     | _ => None
     }
-  , [tokensRequest])
+  , (tokensApiRequest, multisigsApiRequest))
+
+  let currentChain = apiVersion->Option.map(v => v.chain)
+
+  let onRefresh = () => {
+    setSyncState(_ => Loading(0.))
+    tokensGetRequest(tokensRequest(false))->ignore
+  }
+
+  let onStop = () => {
+    setSyncState(x =>
+      switch x {
+      | Loading(percentage) => Canceled(percentage)
+      | state => state
+      }
+    )
+    stop.current = true
+  }
 
   let matchToken = (token, searched) => {
     open TokensLibrary.Token
@@ -247,23 +278,6 @@ let make = () => {
       ),
     [tokens],
   )
-
-  let currentChain = apiVersion->Option.map(v => v.chain)
-
-  let onRefresh = () => {
-    setSyncState(_ => Loading(0.))
-    getTokens(request(false))->ignore
-  }
-
-  let onStop = () => {
-    setSyncState(x =>
-      switch x {
-      | Loading(percentage) => Canceled(percentage)
-      | state => state
-      }
-    )
-    stop.current = true
-  }
 
   <Page>
     <Typography.Headline style=Styles.title>
@@ -287,17 +301,24 @@ let make = () => {
           t->Result.getWithDefault(TokensLibrary.Generic.empty)
         )}
       />
-      {
-        <CreateNewMultisigButton chain=?currentChain />->ReactUtils.onlyWhen(contractType == Multisig)
-      }
+      {<CreateNewMultisigButton chain=?currentChain />->ReactUtils.onlyWhen(
+        contractType == Multisig,
+      )}
     </View>
-    {switch partitionedTokens {
-    | None => <LoadingView />
-    | Some(Error(error)) => <ErrorView error />
-    | Some(Ok((registered, unregistered))) =>
-      contractType == Token
-      ? <TokensView registered unregistered currentChain />
-       : <MultisigsView multisigs=Multisig.test_data currentChain />
+    {switch contractType {
+    | Token =>
+      switch partitionedTokens {
+      | None => <LoadingView />
+      | Some(Error(error)) => <ErrorView error />
+      | Some(Ok((registered, unregistered))) => <TokensView registered unregistered currentChain />
+      }
+    | Multisig =>
+      switch multisigs {
+      | None => <LoadingView />
+      | Some(Error(error)) => <ErrorView error />
+      | Some(Ok(multisigs)) =>
+        <MultisigsView multisigs={Umami.PublicKeyHash.Map.valuesToArray(multisigs)} currentChain />
+      }
     }}
   </Page>
 }
