@@ -109,7 +109,7 @@ module type StyleForCell = {
   let style: Style.t
 }
 
-module MakeCell = (CustomStyle: StyleForCell) => {
+module MakeCell = (CustomStyle: StyleForCell)  => {
   let makeProps = Cell.makeProps(~style=CustomStyle.style)
   let make = Cell.make
 }

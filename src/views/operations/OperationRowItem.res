@@ -25,52 +25,57 @@
 
 open ReactNative
 
-module CellType = Table.MakeCell({
+module MakeCellWidth = (
+  S: {
+    let flexBasis: float
+  },
+) => Table.MakeCell({
   let style = {
     open Style
-    style(~flexBasis=90.->dp, ())
+    style(~flexBasis=S.flexBasis->dp, ())
   }
-  ()
 })
 
-module CellAmount = Table.MakeCell({
+module CellExpandToggle = Table.MakeCell({
   let style = {
     open Style
-    style(~flexBasis=140.->dp, ())
+    style(~flexBasis=40.->dp, ~minWidth=40.->dp, ~marginRight=0.->dp, ~alignItems=#center, ())
   }
-  ()
 })
 
-module CellFee = Table.MakeCell({
+module CellID = Table.MakeCell({
   let style = {
     open Style
-    style(~flexBasis=86.->dp, ())
+    style(~flexBasis=40.->dp, ~minWidth=40.->dp, ~alignItems=#center, ())
   }
-  ()
 })
 
-module CellAddress = Table.MakeCell({
-  let style = {
-    open Style
-    style(~flexBasis=180.->dp, ())
-  }
-  ()
+module CellType = MakeCellWidth({
+  let flexBasis = 90.
 })
 
-module CellStatus = Table.MakeCell({
-  let style = {
-    open Style
-    style(~flexBasis=100.->dp, ())
-  }
-  ()
+module CellAmount = MakeCellWidth({
+  let flexBasis = 140.
 })
 
-module CellDate = Table.MakeCell({
-  let style = {
-    open Style
-    style(~flexBasis=180.->dp, ())
-  }
-  ()
+module CellFee = MakeCellWidth({
+  let flexBasis = 86.
+})
+
+module CellAddress = MakeCellWidth({
+  let flexBasis = 180.
+})
+
+module CellStatus = MakeCellWidth({
+  let flexBasis = 100.
+})
+
+module CellSignatures = MakeCellWidth({
+  let flexBasis = 100.
+})
+
+module CellDate = MakeCellWidth({
+  let flexBasis = 180.
 })
 
 module CellAction = Table.MakeCell({
@@ -117,7 +122,7 @@ let memo = component =>
 
 module AddToken = {
   @react.component
-  let make = (~address, ~kind: TokenRepr.kind, ~op: Operation.t, ~tokens) => {
+  let make = (~address, ~kind: TokenRepr.kind, ~tooltipSuffix: string, ~tokens) => {
     let (visibleModal, openAction, closeAction) = ModalAction.useModalActionState()
     let closeAction = () => closeAction()
 
@@ -126,13 +131,7 @@ module AddToken = {
     let chain =
       apiVersion->Option.map(v => v.chain)->Option.getWithDefault(Network.unsafeChainId(""))
 
-    let tooltip = (
-      "add_token_from_op" ++ {
-        open Operation
-        op->uniqueId->uniqueIdToString
-      },
-      I18n.Tooltip.add_contract,
-    )
+    let tooltip = ("add_token_from_op" ++ tooltipSuffix, I18n.Tooltip.add_contract)
     let onPress = _ => openAction()
 
     <>
@@ -146,14 +145,8 @@ module AddToken = {
 
 module UnknownTokenAmount = {
   @react.component
-  let make = (~amount, ~sign, ~address: PublicKeyHash.t, ~kind, ~tokens, ~op) => {
-    let tooltip = (
-      "unknown_token" ++ {
-        open Operation
-        op->uniqueId->uniqueIdToString
-      },
-      I18n.Tooltip.unregistered_token_transaction,
-    )
+  let make = (~amount, ~sign, ~address: PublicKeyHash.t, ~kind, ~tokens, ~tooltipSuffix) => {
+    let tooltip = ("unknown_token" ++ tooltipSuffix, I18n.Tooltip.unregistered_token_transaction)
     <View style={OperationUtils.styles["rawAddressContainer"]}>
       <Text> {`${sign} ${amount->TokenRepr.Unit.toNatString}`->React.string} </Text>
       <IconButton
@@ -167,7 +160,7 @@ module UnknownTokenAmount = {
           style(~borderRadius=0., ~marginLeft=4.->dp, ())
         }
       />
-      <AddToken address kind op tokens />
+      <AddToken address kind tooltipSuffix tokens />
     </View>
   }
 }
@@ -180,13 +173,13 @@ module KnownTokenAmount = {
     ~token as {address, kind, symbol, decimals, _}: TokenRepr.t,
     ~registered,
     ~tokens,
-    ~op,
+    ~tooltipSuffix,
   ) =>
     <View style={OperationUtils.styles["rawAddressContainer"]}>
       <Text>
         {`${sign} ${amount->TokenRepr.Unit.toStringDecimals(decimals)} ${symbol}`->React.string}
       </Text>
-      {registered ? React.null : <AddToken address kind op tokens />}
+      {registered ? React.null : <AddToken address kind tooltipSuffix tokens />}
     </View>
 }
 
@@ -205,37 +198,34 @@ module NFTAmount = {
   }
 }
 
-let amount = (
-  account: Account.t,
-  transaction: Operation.Transaction.t,
-  tokens,
-  op: Operation.t,
-) => {
-  let colorStyle =
-    account.address == transaction->Operation.Transaction.Accessor.destination
-      ? #positive
-      : #negative
-
-  let sign = colorStyle == #positive ? "+" : "-"
-  <CellAmount>
-    <Typography.Body1 colorStyle>
-      {switch transaction {
-      | Tez(transaction) => I18n.tez_op_amount(sign, transaction.amount->Tez.toString)->React.string
-      | Token(_, {amount, kind, contract}, _) =>
-        let address = contract
-        let token: option<(Token.t, bool)> = TokensLibrary.WithRegistration.getFullToken(
-          tokens,
-          address,
-          kind->TokenRepr.kindId,
-        )
-        switch token {
-        | None => <UnknownTokenAmount amount sign address kind tokens op />
-        | Some((token, _)) if token->TokenRepr.isNFT => <NFTAmount amount sign token />
-        | Some((token, registered)) => <KnownTokenAmount amount sign token registered tokens op />
-        }
-      }}
-    </Typography.Body1>
-  </CellAmount>
+module GenericCellAmount = {
+  @react.component
+  let make = (~address, ~transaction, ~tokens, ~tooltipSuffix) => {
+    let colorStyle =
+      address == transaction->Operation.Transaction.Accessor.destination ? #positive : #negative
+    let sign = colorStyle == #positive ? "+" : "-"
+    <CellAmount>
+      <Typography.Body1 colorStyle>
+        {switch transaction {
+        | Operation.Transaction.Tez(transaction) =>
+          I18n.tez_op_amount(sign, transaction.amount->Tez.toString)->React.string
+        | Token(_, {amount, kind, contract}, _) =>
+          let address = contract
+          let token: option<(Token.t, bool)> = TokensLibrary.WithRegistration.getFullToken(
+            tokens,
+            address,
+            kind->TokenRepr.kindId,
+          )
+          switch token {
+          | None => <UnknownTokenAmount amount sign address kind tokens tooltipSuffix />
+          | Some((token, _)) if token->TokenRepr.isNFT => <NFTAmount amount sign token />
+          | Some((token, registered)) =>
+            <KnownTokenAmount amount sign token registered tokens tooltipSuffix />
+          }
+        }}
+      </Typography.Body1>
+    </CellAmount>
+  }
 }
 
 @react.component
@@ -252,42 +242,33 @@ let make = memo((
   <Table.Row.Bordered>
     {switch operation.payload {
     | Reveal(_reveal) => <>
-        <CellType>
-          <Typography.Body1> {I18n.operation_reveal->React.string} </Typography.Body1>
-        </CellType>
+        <CellType> {I18n.operation_reveal->Typography.body1} </CellType>
         <CellAmount />
-        <CellFee>
-          <Typography.Body1>
-            {I18n.tez_amount(operation.fee->Tez.toString)->React.string}
-          </Typography.Body1>
-        </CellFee>
+        <CellFee> {I18n.tez_amount(operation.fee->Tez.toString)->Typography.body1} </CellFee>
         <CellAddress />
         <CellAddress />
       </>
     | Transaction(Token(common, _, _) as transaction)
-    | Transaction(Tez(common) as transaction) => <>
-        <CellType>
-          <Typography.Body1> {I18n.operation_transaction->React.string} </Typography.Body1>
-        </CellType>
-        {amount(account, transaction, tokens, operation)}
-        <CellFee>
-          <Typography.Body1>
-            {I18n.tez_amount(operation.fee->Tez.toString)->React.string}
-          </Typography.Body1>
-        </CellFee>
+    | Transaction(Tez(common) as transaction) =>
+      let tooltipSuffix = {
+        open Operation
+        operation->uniqueId->uniqueIdToString
+      }
+      <>
+        <CellType> {I18n.operation_transaction->Typography.body1} </CellType>
+        <GenericCellAmount address=account.address transaction tokens tooltipSuffix />
+        <CellFee> {I18n.tez_amount(operation.fee->Tez.toString)->Typography.body1} </CellFee>
         <CellAddress>
           {operation.source
           ->AliasHelpers.getContractAliasFromAddress(aliases, tokens)
-          ->Option.mapWithDefault(rawUnknownAddress(operation.source), alias =>
-            <Typography.Body1 numberOfLines=1> {alias->React.string} </Typography.Body1>
-          )}
+          ->Option.mapWithDefault(rawUnknownAddress(operation.source), alias => {
+            alias->Typography.body1(~numberOfLines=1)
+          })}
         </CellAddress>
         <CellAddress> {getContactOrRaw(aliases, tokens, common.destination)} </CellAddress>
       </>
     | Origination(_origination) => <>
-        <CellType>
-          <Typography.Body1> {I18n.operation_origination->React.string} </Typography.Body1>
-        </CellType>
+        <CellType> {I18n.operation_origination->Typography.body1} </CellType>
         <CellAmount />
         <CellFee />
         <CellAddress />
@@ -295,39 +276,25 @@ let make = memo((
         <View />
       </>
     | Delegation(delegation) => <>
-        <CellType>
-          <Typography.Body1> {I18n.operation_delegation->React.string} </Typography.Body1>
-        </CellType>
+        <CellType> {I18n.operation_delegation->Typography.body1} </CellType>
         <CellAmount />
-        <CellFee>
-          <Typography.Body1>
-            {I18n.tez_amount(operation.fee->Tez.toString)->React.string}
-          </Typography.Body1>
-        </CellFee>
+        <CellFee> {I18n.tez_amount(operation.fee->Tez.toString)->Typography.body1} </CellFee>
         <CellAddress> {getContactOrRaw(aliases, tokens, operation.source)} </CellAddress>
         {delegation.delegate->Option.mapWithDefault(
           <CellAddress>
-            <Typography.Body1 numberOfLines=1>
-              {I18n.delegation_removal->React.string}
-            </Typography.Body1>
+            {I18n.delegation_removal->Typography.body1(~numberOfLines=1)}
           </CellAddress>,
           d => <CellAddress> {getContactOrRaw(aliases, tokens, d)} </CellAddress>,
         )}
       </>
     | Unknown => <>
-        <CellType>
-          <Typography.Body1> {I18n.unknown_operation->React.string} </Typography.Body1>
-        </CellType>
+        <CellType> {I18n.unknown_operation->Typography.body1} </CellType>
         <CellAmount />
         <CellFee />
         <CellAddress />
       </>
     }}
-    <CellDate>
-      <Typography.Body1>
-        {operation.timestamp->DateFns.format("P pp")->React.string}
-      </Typography.Body1>
-    </CellDate>
+    <CellDate> {operation.timestamp->DateFns.format("P pp")->Typography.body1} </CellDate>
     <CellStatus> {status(operation, currentLevel, config)} </CellStatus>
     <CellAction>
       <IconButton
@@ -349,3 +316,160 @@ let make = memo((
     </CellAction>
   </Table.Row.Bordered>
 })
+
+module Preparation = {
+  type foo = {
+    id: int,
+    payload: Operation.payload,
+    source: Multisig.t,
+    signers: array<PublicKeyHash.t>,
+  }
+
+  let stylesFoo = {
+    open Style
+    StyleSheet.create({
+      "preparationDetails": style(~paddingHorizontal=58.->dp, ~paddingVertical=26.->dp, ()),
+      "numberOfApproval": style(~flexDirection=#row, ~paddingVertical=2.->dp, ()),
+      "signerWrapper": style(~flexDirection=#row, ~alignItems=#center, ()),
+      "signerBox": style(
+        ~marginLeft=30.->dp,
+        ~paddingHorizontal=16.->dp,
+        ~paddingVertical=12.->dp,
+        ~flexDirection=#row,
+        ~alignItems=#center,
+        ~minHeight=68.->dp,
+        ~width=416.->dp,
+        (),
+      ),
+      "signerFst": style(~borderTopLeftRadius=4., ~borderTopRightRadius=4., ()),
+      "signerLst": style(~borderBottomLeftRadius=4., ~borderBottomRightRadius=4., ()),
+    })
+  }
+
+  module TransactionActionButtons = {
+    @react.component
+    let make = () => {
+      let style = Style.array([
+        FormStyles.formSubmit,
+        Style.style(~marginLeft=16.->Style.dp, ~marginTop=0.->Style.dp, ()),
+      ])
+      <>
+        <Buttons.SubmitPrimary text=I18n.Btn.sign onPress={_ => ()} style disabled={true} />
+        <Buttons.SubmitPrimary text=I18n.Btn.submit onPress={_ => ()} style disabled={true} />
+        <Buttons.SubmitPrimary
+          text=I18n.Btn.global_batch_add_short onPress={_ => ()} style disabled={true}
+        />
+      </>
+    }
+  }
+
+  @react.component
+  let make = (~account: Account.t, ~preparation as p: foo) => {
+    let theme = ThemeContext.useTheme()
+    let accounts = StoreContext.Accounts.useGetAll()
+    let aliases = StoreContext.Aliases.useGetAll()
+    let tokens = StoreContext.Tokens.useGetAll()
+
+    {
+      switch p.payload {
+      | Transaction(Token(common, _, _) as transaction)
+      | Transaction(Tez(common) as transaction) =>
+        let tooltipSuffix = p.id->Int.toString
+        let signed = p.signers->Array.length->Int.toString
+        let threshold = p.source.threshold->Int.toString
+        let header = collapseButton => {
+          <Table.Row.Bordered>
+            <CellExpandToggle> {collapseButton} </CellExpandToggle>
+            <CellID> {p.id->Int.toString->Typography.body1} </CellID>
+            <CellType> {I18n.operation_transaction->Typography.body1} </CellType>
+            <GenericCellAmount address=account.address transaction tokens tooltipSuffix />
+            <CellAddress> {getContactOrRaw(aliases, tokens, common.destination)} </CellAddress>
+            <CellSignatures> {I18n.a_of_b(signed, threshold)->Typography.body1} </CellSignatures>
+          </Table.Row.Bordered>
+        }
+        <ContractRows.Collapsable header expanded=false>
+          <View style={stylesFoo["preparationDetails"]}>
+            <View style={stylesFoo["numberOfApproval"]}>
+              {
+                let size = 20.
+                let style = {
+                  open Style
+                  style(~marginRight=10.->dp, ())
+                }
+                p.signers->Array.length >= p.source.threshold
+                  ? <Icons.CheckFill size style color=theme.colors.textPositive />
+                  : <Icons.RadioOff size style color=theme.colors.textMediumEmphasis />
+              }
+              {I18n.approved_a_of_b(signed, threshold)->Typography.overline2}
+            </View>
+            <View>
+              {p.source.signers
+              ->Array.mapWithIndex((i, owner) => {
+                let hasSigned = Js.Array.includes(owner, p.signers)
+                <View key={i->Int.toString} style={stylesFoo["signerWrapper"]}>
+                  {
+                    let textColor = hasSigned
+                      ? None
+                      : {
+                          open Style
+                          style(~color=theme.colors.textDisabled, ())->Some
+                        }
+                    let addressStyle = textColor
+                    let iconStyle = Style.arrayOption([
+                      OperationSummaryView.styles["accounticon"]->Some,
+                      textColor,
+                    ])
+                    let nameStyle = Style.arrayOption([
+                      OperationSummaryView.styles["subtitle"]->Some,
+                      textColor,
+                    ])
+                    let fst =
+                      i == 0
+                        ? stylesFoo["signerFst"]->Some
+                        : Style.style(
+                            ~borderTopColor=theme.colors.textDisabled,
+                            ~borderTopWidth=1.,
+                            (),
+                          )->Some
+                    let lst =
+                      i == Js.Array.length(p.source.signers) - 1
+                        ? stylesFoo["signerLst"]->Some
+                        : None
+                    let style = Style.arrayOption([
+                      fst,
+                      lst,
+                      stylesFoo["signerBox"]->Some,
+                      Style.style(~backgroundColor=theme.colors.stateDisabled, ())->Some,
+                    ])
+                    <>
+                      <View style>
+                        <OperationSummaryView.EntityInfoContent
+                          iconStyle nameStyle ?addressStyle address={Some(owner)}
+                        />
+                        {hasSigned
+                          ? <Icons.CheckFill
+                              style={Style.style(~marginLeft="auto"->StyleUtils.stringToSize, ())}
+                              size=20.
+                              color=theme.colors.textPositive
+                            />
+                          : React.null}
+                      </View>
+                      {!hasSigned && PublicKeyHash.Map.has(accounts, owner)
+                        ? <TransactionActionButtons />
+                        : React.null}
+                    </>
+                  }
+                </View>
+              })
+              ->React.array}
+            </View>
+          </View>
+        </ContractRows.Collapsable>
+      | Reveal(_)
+      | Origination(_)
+      | Delegation(_)
+      | Unknown => <> <CellType> {I18n.unknown_operation->Typography.body1} </CellType> </>
+      }
+    }
+  }
+}

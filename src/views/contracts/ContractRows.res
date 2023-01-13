@@ -26,58 +26,48 @@
 open ReactNative
 
 module TableHeader = {
-
   module TableHeaderContent = {
     @react.component
     let make = (~text=?, ()) => {
-      <Typography.Overline3> {Option.mapWithDefault(text, React.null, React.string)} </Typography.Overline3>
+      <Typography.Overline3>
+        {Option.mapWithDefault(text, React.null, React.string)}
+      </Typography.Overline3>
     }
   }
 
   module Standard = {
     @react.component
     let make = (~text=?, ()) =>
-      <ContractRowItem.CellStandard>
-        <TableHeaderContent ?text></TableHeaderContent>
-      </ContractRowItem.CellStandard>
+      <ContractRowItem.CellStandard> <TableHeaderContent ?text /> </ContractRowItem.CellStandard>
   }
 
   module Name = {
     @react.component
     let make = (~text=?, ()) =>
-      <ContractRowItem.CellName>
-        <TableHeaderContent ?text></TableHeaderContent>
-      </ContractRowItem.CellName>
+      <ContractRowItem.CellName> <TableHeaderContent ?text /> </ContractRowItem.CellName>
   }
 
   module Symbol = {
     @react.component
     let make = (~text=?, ()) =>
-      <ContractRowItem.CellSymbol>
-        <TableHeaderContent ?text></TableHeaderContent>
-      </ContractRowItem.CellSymbol>
+      <ContractRowItem.CellSymbol> <TableHeaderContent ?text /> </ContractRowItem.CellSymbol>
   }
 
   module Address = {
     @react.component
     let make = (~text=?, ()) =>
-      <ContractRowItem.CellAddress>
-        <TableHeaderContent ?text></TableHeaderContent>
-      </ContractRowItem.CellAddress>
+      <ContractRowItem.CellAddress> <TableHeaderContent ?text /> </ContractRowItem.CellAddress>
   }
 
   module TokenId = {
     @react.component
     let make = (~text=?, ()) =>
-      <ContractRowItem.CellTokenId>
-        <TableHeaderContent ?text></TableHeaderContent>
-      </ContractRowItem.CellTokenId>
+      <ContractRowItem.CellTokenId> <TableHeaderContent ?text /> </ContractRowItem.CellTokenId>
   }
 
   module Empty = {
     @react.component
-    let make = () =>
-      <ContractRowItem.CellAction> React.null </ContractRowItem.CellAction>
+    let make = () => <ContractRowItem.CellAction> React.null </ContractRowItem.CellAction>
   }
 
   module GenericHeader = {
@@ -89,7 +79,7 @@ module TableHeader = {
         <Symbol text=symbol />
         <Address text=address />
         <TokenId text=tokenid />
-        <Empty/>
+        <Empty />
       </Table.Head>
     }
   }
@@ -102,7 +92,7 @@ module TableHeader = {
         name=I18n.token_column_name
         symbol=I18n.token_column_symbol
         address=I18n.token_column_address
-        tokenid =I18n.token_column_tokenid
+        tokenid=I18n.token_column_tokenid
       />
   }
 
@@ -115,7 +105,6 @@ module TableHeader = {
         address=I18n.token_column_address
       />
   }
-
 }
 
 let styles = {
@@ -129,12 +118,15 @@ let styles = {
 }
 
 let makeTokenRowItem = (tokens, currentChain, (token, registered)) =>
-  <ContractRowItem.Token key={token->TokensLibrary.Token.uniqueKey} token registered currentChain tokens />
+  <ContractRowItem.Token
+    key={token->TokensLibrary.Token.uniqueKey} token registered currentChain tokens
+  />
 
-module Token = {
+module Collapsable = {
+  //FIXME: Move it somewhere else
   @react.component
-  let make = (~title, ~tokens, ~currentChain, ~emptyText) => {
-    let (expanded, setExpanded) = React.useState(_ => true)
+  let make = (~header, ~expanded=true, ~children) => {
+    let (expanded, setExpanded) = React.useState(_ => expanded)
 
     let collapseButton =
       <IconButton
@@ -148,27 +140,38 @@ module Token = {
         style={styles["iconButton"]}
       />
 
-    let header =
+    let header = header(collapseButton)
+
+    <Accordion style={styles["container"]} header expanded> children </Accordion>
+  }
+}
+
+module Token = {
+  @react.component
+  let make = (~title, ~tokens, ~currentChain, ~emptyText) => {
+    let header = collapseButton => {
       <View style={styles["header"]}>
         collapseButton
-        <Typography.Headline style={styles["headline"]}> {title->React.string} </Typography.Headline>
+        <Typography.Headline style={styles["headline"]}>
+          {title->React.string}
+        </Typography.Headline>
       </View>
-
-    tokens->TokensLibrary.Contracts.isEmpty
-      ? emptyText->Option.mapDefault(React.null, text =>
-          <Accordion style={styles["container"]} header expanded>
+    }
+    <Collapsable header>
+      {tokens->TokensLibrary.Contracts.isEmpty
+        ? emptyText->Option.mapDefault(React.null, text =>
             <Table.Empty> {text->React.string} </Table.Empty>
-          </Accordion>
-        )
-      : <Accordion style={styles["container"]} header expanded>
-          <TableHeader.Token />
-          <View>
-            {tokens
-            ->TokensLibrary.Generic.valuesToArray
-            ->Array.map(makeTokenRowItem(tokens, currentChain))
-            ->React.array}
-          </View>
-        </Accordion>
+          )
+        : <>
+            <TableHeader.Token />
+            <View>
+              {tokens
+              ->TokensLibrary.Generic.valuesToArray
+              ->Array.map(makeTokenRowItem(tokens, currentChain))
+              ->React.array}
+            </View>
+          </>}
+    </Collapsable>
   }
 }
 
@@ -176,25 +179,17 @@ let makeMultisigRowItem = (currentChain, multisig) =>
   <ContractRowItem.Multisig key={(multisig.address :> string)} multisig currentChain />
 
 module Multisig = {
-
   @react.component
   let make = (~multisigs, ~currentChain, ~emptyText) => {
-    if (Array.length(multisigs) == 0) {
+    if Array.length(multisigs) == 0 {
       <View style={styles["container"]}>
         <Table.Empty> {emptyText->React.string} </Table.Empty>
       </View>
     } else {
       <View style={styles["container"]}>
         <TableHeader.Multisig />
-        <View>
-          {
-            multisigs
-            ->Array.map(makeMultisigRowItem(currentChain))
-            ->React.array
-          }
-        </View>
+        <View> {multisigs->Array.map(makeMultisigRowItem(currentChain))->React.array} </View>
       </View>
     }
   }
-
 }

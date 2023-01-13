@@ -37,7 +37,6 @@ let styles = {
       ~alignSelf=#flexStart,
       ~minWidth=390.->dp,
       ~marginTop=0.->dp,
-      ~marginBottom=30.->dp,
       (),
     ),
   })
@@ -54,3 +53,4 @@ let make = (~account, ~children as right) =>
       <AccountElements.Selector.Simple account style={styles["selector"]} />
     </Page.Header>
   </View>
+  

@@ -106,6 +106,10 @@ module Btn = {
   let add_another_owner = "ADD ANOTHER OWNER"
   let back = "BACK"
   let submit = "SUBMIT"
+  let history = "History"
+  let in_preparation = "In preparation"
+  let sign = "SIGN"
+  let global_batch_add_short = "INSERT INTO BATCH"
 }
 
 module Tooltip = {
@@ -698,6 +702,8 @@ let operation_column_timestamp = "TIMESTAMP"
 let operation_column_fee = "FEE"
 let operation_column_sender = "SENDER"
 let operation_column_status = "STATUS"
+let operation_column_ID = "ID"
+let operation_column_signatures = "SIGNATURES"
 let global_batch_column_type = "TYPE"
 let global_batch_subject = "SUBJECT"
 let global_batch_recipient = "RECIPIENT"
@@ -747,6 +753,7 @@ let na = "N/A"
 let empty_held_token = "No token held and not registered on the current chain"
 let empty_delegations = "No Delegation"
 let empty_operations = "No Operation"
+let empty_preparations = "No Proparation"
 let empty_address_book = "No Contact"
 let add_token_format_contract_sentence = "Please enter the address of a deployed token contract for which you would like to view balances as well as to perform operations."
 let add_token_contract_metadata_fa1_2 = "Please specify the name, symbol, and decimals of a token contract for which you would like to view balances as well as to perform operations. Umami will prefill the fields if any metadata is available."
@@ -768,3 +775,6 @@ let percent_complete = "% complete"
 let update_available = "An update is available"
 let downloading_update = s => `Downloading update (${s}%)`
 let download_complete = "Download complete"
+let a_of_b = (a, b) => `${a} of ${b}`
+let approved_a_of_b = (a, b) => `Approved (${a} of ${b})`
+

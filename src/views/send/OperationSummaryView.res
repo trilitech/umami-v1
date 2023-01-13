@@ -49,31 +49,80 @@ module Content = {
     <View style={styles["element"]}>
       {content
       ->List.toArray
-      ->Array.map(((property, values)) =>
-        {
-          switch values {
-          | list{} =>
-            React.null
-          | _ =>
-            <View key=property style=FormStyles.amountRow>
-              <Typography.Overline2> {property->React.string} </Typography.Overline2>
-              <View>
-                {values
-                ->List.mapWithIndex((i, value) =>
-                  <Typography.Body1
-                    key={i->Int.toString} style={styles["amount"]} fontWeightStyle=#black>
-                    {value->React.string}
-                  </Typography.Body1>
-                  )
-                ->List.toArray
-                ->React.array}
-              </View>
+      ->Array.map(((property, values)) => {
+        switch values {
+        | list{} => React.null
+        | _ =>
+          <View key=property style=FormStyles.amountRow>
+            <Typography.Overline2> {property->React.string} </Typography.Overline2>
+            <View>
+              {values
+              ->List.mapWithIndex((i, value) =>
+                <Typography.Body1
+                  key={i->Int.toString} style={styles["amount"]} fontWeightStyle=#black>
+                  {value->React.string}
+                </Typography.Body1>
+              )
+              ->List.toArray
+              ->React.array}
             </View>
-          }
+          </View>
         }
-      )
+      })
       ->React.array}
     </View>
+}
+
+module EntityInfoContent = {
+  @react.component
+  let make = (
+    ~address: option<PublicKeyHash.t>,
+    ~addressStyle=?,
+    ~icon=?,
+    ~iconStyle=styles["accounticon"],
+    ~name=?,
+    ~nameStyle=styles["subtitle"],
+    ~default=React.null,
+  ) => {
+    let aliases = StoreContext.Aliases.useGetAll()
+
+    let alias = address->Option.flatMap(alias => alias->AliasHelpers.getAliasFromAddress(aliases))
+
+    let name = switch name {
+    | Some(x) => Some(x)
+    | None => alias->Option.map(x => x.name)
+    }
+
+    let icon = switch icon {
+    | Some(x) => <View style=iconStyle> x </View>
+    | None =>
+      alias->ReactUtils.mapOpt(alias =>
+        <AliasIcon style=iconStyle kind=alias.Alias.kind isHD=true />
+      )
+    }
+
+    <>
+      {icon}
+      <View>
+        {name->ReactUtils.mapOpt(name =>
+          <Typography.Subtitle2
+            fontSize=16.
+            style={
+              open Style
+              arrayOption([
+                address == None ? Some(style(~marginBottom=0.->dp, ())) : None,
+                Some(nameStyle),
+              ])
+            }>
+            {name->React.string}
+          </Typography.Subtitle2>
+        )}
+        {address->Option.mapWithDefault(default, address =>
+          <Typography.Address style=Style.arrayOption([addressStyle])> {(address :> string)->React.string} </Typography.Address>
+        )}
+      </View>
+    </>
+  }
 }
 
 module EntityInfo = {
@@ -83,24 +132,10 @@ module EntityInfo = {
     ~title=?,
     ~icon=?,
     ~name=?,
-    ~default=React.null,
+    ~default=?,
     ~style=?,
   ) => {
     let theme = ThemeContext.useTheme()
-    let aliases = StoreContext.Aliases.useGetAll()
-
-    let alias = address->Option.flatMap(alias => alias->AliasHelpers.getAliasFromAddress(aliases))
-    let icon = switch icon {
-    | Some(x) => <View style={styles["accounticon"]}>x</View>
-    | None =>
-      alias->ReactUtils.mapOpt(alias =>
-        <AliasIcon style={styles["accounticon"]} kind=alias.Alias.kind isHD=true />
-      )
-    }
-    let name = switch name {
-    | Some(x) => Some(x)
-    | None => alias->Option.map(x => x.name)
-    }
 
     <View ?style>
       {title->Option.mapWithDefault(React.null, title =>
@@ -112,27 +147,10 @@ module EntityInfo = {
         style={
           open Style
           array([styles["itemInfos"], style(~backgroundColor=theme.colors.stateDisabled, ())])
-        }>
-        {icon}
-        <View>
-          {name->ReactUtils.mapOpt(name =>
-            <Typography.Subtitle2
-              fontSize=16.
-              style={
-                open Style
-                arrayOption([
-                  Some(styles["subtitle"]),
-                  address == None ? Some(style(~marginBottom=0.->dp, ())) : None,
-                ])
-              }>
-              {name->React.string}
-            </Typography.Subtitle2>
-          )}
-          {address->Option.mapWithDefault(default, address =>
-            <Typography.Address> {(address :> string)->React.string} </Typography.Address>
-          )}
-        </View>
-      </View>
+        }
+      >
+      <EntityInfoContent address ?icon ?name ?default />
+    </View>
     </View>
   }
 }
