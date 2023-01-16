@@ -712,6 +712,7 @@ let optional_stepof = (a, b) => `Step ${string_of_int(a)} of ${string_of_int(b)}
 let account_create_record_recovery = "Record your recovery phrase"
 let contact_added = "Contact Added"
 let contact_updated = "Contact Updated"
+let contract_updated = "Contract Updated"
 let contact_deleted = "Contact Deleted"
 let account_created = "Account Created"
 let account_updated = "Account Updated"

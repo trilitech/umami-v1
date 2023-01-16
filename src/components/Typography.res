@@ -159,6 +159,8 @@ module Headline = Make({
   let selectable = true
 })
 
+let headline = (~style=?, txt) => <Headline ?style> {txt->React.string} </Headline>
+
 /* OVERLINE */
 
 module Overline1 = Make({
@@ -168,6 +170,8 @@ module Overline1 = Make({
   let selectable = true
 })
 
+let overline1 = (~style=?, txt) => <Overline1 ?style> {txt->React.string} </Overline1>
+
 module Overline2 = Make({
   let colorStyle = #mediumEmphasis
   let fontWeightStyle = #semiBold
@@ -175,12 +179,16 @@ module Overline2 = Make({
   let selectable = true
 })
 
+let overline2 = (~style=?, txt) => <Overline2 ?style> {txt->React.string} </Overline2>
+
 module Overline3 = Make({
   let colorStyle = #mediumEmphasis
   let fontWeightStyle = #regular
   let fontSize = 16.
   let selectable = true
 })
+
+let overline3 = (~style=?, txt) => <Overline3 ?style> {txt->React.string} </Overline3>
 
 /* SUBTITLE */
 
@@ -191,12 +199,16 @@ module Subtitle1 = Make({
   let selectable = true
 })
 
+let subtitle1 = (~style=?, txt) => <Subtitle1 ?style> {txt->React.string} </Subtitle1>
+
 module Subtitle2 = Make({
   let colorStyle = #highEmphasis
   let fontWeightStyle = #bold
   let fontSize = 16.
   let selectable = true
 })
+
+let subtitle2 = (~style=?, txt) => <Subtitle2 ?style> {txt->React.string} </Subtitle2>
 
 /* BODY */
 
@@ -206,6 +218,7 @@ module Body1 = Make({
   let fontSize = 16.
   let selectable = true
 })
+let body1 = (~numberOfLines=?, txt) => <Body1 ?numberOfLines> {txt->React.string} </Body1>
 
 module Body2 = Make({
   let colorStyle = #highEmphasis
@@ -213,6 +226,7 @@ module Body2 = Make({
   let fontSize = 14.
   let selectable = true
 })
+let body2 = txt => <Body2> {txt->React.string} </Body2>
 
 module Contract = Make({
   let colorStyle = #mediumEmphasis
@@ -220,6 +234,7 @@ module Contract = Make({
   let fontSize = 14.
   let selectable = true
 })
+let contract = txt => <Contract> {txt->React.string} </Contract>
 
 /* BUTTON */
 

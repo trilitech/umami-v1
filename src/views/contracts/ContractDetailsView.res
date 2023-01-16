@@ -36,7 +36,8 @@ let styles = {
       ~marginBottom=8.->dp,
       ~paddingHorizontal=16.->dp,
       ~paddingVertical=12.->dp,
-      ()),
+      (),
+    ),
     "title": style(~marginBottom=6.->dp, ~textAlign=#center, ()),
     "overline": style(~marginBottom=24.->dp, ~textAlign=#center, ()),
     "tag": style(~marginBottom=6.->dp, ~alignSelf=#center, ()),
@@ -48,7 +49,10 @@ module Info = {
   @react.component
   let make = (~children: React.element) => {
     let theme = ThemeContext.useTheme()
-    let backStyle = {open Style;style(~backgroundColor=theme.colors.stateDisabled, (),)}
+    let backStyle = {
+      open Style
+      style(~backgroundColor=theme.colors.stateDisabled, ())
+    }
     <View style={Style.array([styles["info"], backStyle])}> children </View>
   }
 }
@@ -56,9 +60,7 @@ module Info = {
 module Title = {
   @react.component
   let make = (~text: string) => {
-    <Typography.Headline style={styles["title"]}>
-      {text->React.string}
-    </Typography.Headline>
+    text->Typography.headline(~style=styles["title"])
   }
 }
 
@@ -66,11 +68,7 @@ module Tag = {
   @react.component
   let make = (~content: string) => {
     <Tag
-      fontSize=14.
-      height=26.
-      style={styles["tag"]}
-      contentStyle={styles["tagContent"]}
-      content
+      fontSize=14. height=26. style={styles["tag"]} contentStyle={styles["tagContent"]} content
     />
   }
 }
@@ -78,64 +76,53 @@ module Tag = {
 module Overline = {
   @react.component
   let make = (~text: string) => {
-    <Typography.Overline3 style={styles["overline"]}>
-      {text->React.string}
-    </Typography.Overline3>
+    text->Typography.overline3(~style=styles["overline"])
   }
 }
 
 module Multisig = {
-
   module Element = {
     @react.component
     let make = (~label, ~children) => {
-      <>
-        <Typography.Subtitle1 style={open Style;style(~marginTop=16.->dp, ())}>
-          {label->React.string}
-        </Typography.Subtitle1>
-        children
-      </>
+      let style = {
+        open Style
+        style(~marginTop=16.->dp, ())
+      }
+      <> {label->Typography.subtitle1(~style)} children </>
     }
   }
 
   module SimpleTextElement = {
     @react.component
-    let make = (~label, ~text) =>
-      <Element label>
-        <Info>
-          <Typography.Body1>
-            {text->React.string}
-          </Typography.Body1>
-        </Info>
-      </Element>
+    let make = (~label, ~text) => <Element label> <Info> {text->Typography.body1} </Info> </Element>
   }
 
   module Address = {
     @react.component
-    let make = (~address) =>
-      <SimpleTextElement label=I18n.Label.add_token_address text=address />
+    let make = (~address) => <SimpleTextElement label=I18n.Label.add_token_address text=address />
   }
 
   module Name = {
     @react.component
-    let make = (~name) =>
-      <SimpleTextElement label={I18n.Title.contract_name} text=name />
+    let make = (~name) => <SimpleTextElement label={I18n.Title.contract_name} text=name />
   }
 
   module Owners = {
     @react.component
     let make = (~owners) =>
       <Element label={I18n.Title.owners(owners->Array.length->Int.toString)}>
-        {
-         owners
-          ->Array.mapWithIndex((i, owner) =>
-            <OperationSummaryView.EntityInfo
-              key={i->Int.toString}
-              style={open Style;style(~marginVertical=4.->dp, ())}
-              address={Some(owner)}
-            />)
-          ->React.array
-        }
+        {owners
+        ->Array.mapWithIndex((i, owner) =>
+          <OperationSummaryView.EntityInfo
+            key={i->Int.toString}
+            style={
+              open Style
+              style(~marginVertical=4.->dp, ())
+            }
+            address={Some(owner)}
+          />
+        )
+        ->React.array}
       </Element>
   }
 
@@ -149,12 +136,7 @@ module Multisig = {
   }
 
   module MultisigEdition = {
-
-    module StateLenses = %lenses(
-      type state = {
-        name: string,
-      }
-    )
+    module StateLenses = %lenses(type state = {name: string})
 
     module Form = ReForm.Make(StateLenses)
 
@@ -169,33 +151,29 @@ module Multisig = {
           placeholder=I18n.Input_placeholder.add_contract_name
         />
     }
-
   }
 
   @react.component
   let make = (~multisig: Multisig.t, ~closeAction) => {
+    let (_, updateMultisig) = StoreContext.Multisig.useUpdate()
 
     let onSubmit = ({state}: MultisigEdition.Form.onSubmitAPI) => {
-        Js.log (__LOC__);
-        Js.log (state)
-        closeAction();
-        None
+      updateMultisig({...multisig, alias: state.values.name})->Promise.getOk(_ => closeAction())
+      None
     }
 
-    let form: MultisigEdition.Form.api =
-      MultisigEdition.Form.use(
-        ~schema={
-          let aliasesRequest =
-            StoreContext.Aliases.useRequest()
-          let aliases =
-            aliasesRequest->ApiRequest.getDoneOk->Option.getWithDefault(PublicKeyHash.Map.empty)
-          open MultisigEdition.Form.Validation
-          let aliasCheckExists = (aliases, values: MultisigEdition.StateLenses.state) =>
-            AliasHelpers.formCheckExists(aliases, values.name)
-          Schema(nonEmpty(Name) + custom(aliasCheckExists(aliases), Name))
+    let form: MultisigEdition.Form.api = MultisigEdition.Form.use(
+      ~schema={
+        let aliasesRequest = StoreContext.Aliases.useRequest()
+        let aliases =
+          aliasesRequest->ApiRequest.getDoneOk->Option.getWithDefault(PublicKeyHash.Map.empty)
+        open MultisigEdition.Form.Validation
+        let aliasCheckExists = (aliases, values: MultisigEdition.StateLenses.state) =>
+          AliasHelpers.formCheckExists(aliases, values.name)
+        Schema(nonEmpty(Name) + custom(aliasCheckExists(aliases), Name))
       },
       ~onSubmit,
-      ~initialState={ name: multisig.alias },
+      ~initialState={name: multisig.alias},
       ~i18n=FormUtils.i18n,
       (),
     )
@@ -207,7 +185,7 @@ module Multisig = {
     <ModalFormView closing=ModalFormView.Close(closeAction)>
       <Title text=I18n.Title.contract_details />
       <Tag content="multisig" />
-      <Address address=(multisig.address :> string) />
+      <Address address={(multisig.address :> string)} />
       <MultisigEdition.FormName form />
       <Owners owners=multisig.signers />
       <Threshold threshold=multisig.threshold owners={Array.length(multisig.signers)} />
@@ -219,5 +197,4 @@ module Multisig = {
       />
     </ModalFormView>
   }
-
 }

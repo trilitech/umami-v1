@@ -25,16 +25,31 @@
 
 /* MULTISIG */
 
-/* Get */
-
-let useLoad = requestState => {
-  let get = (~config: ConfigContext.env, ()) => {
+module Base = {
+  let get = (~config) =>
     HDWalletAPI.Accounts.get(~config)->Promise.flatMapOk(accounts =>
       config.network->Multisig.API.get(
         ~addresses=accounts->Array.map(account => account.address),
         ~contract=config.network.chain->Multisig.contract,
       )
     )
-  }
+}
+/* Get */
+
+let useLoad = requestState => {
+  let get = (~config: ConfigContext.env, ()) => Base.get(~config)
   ApiRequest.useLoader(~get, ~kind=Logs.Multisig, ~requestState, ())
+}
+
+/* Set */
+
+let useUpdate = {
+  let logOk = _ => I18n.contract_updated
+  let kind = Logs.Multisig
+  let set = (~config, multisig) => {
+    Base.get(~config)->Promise.mapOk(cache =>
+      cache->PublicKeyHash.Map.set(multisig.Multisig.address, multisig)->Multisig.Cache.set
+    )
+  }
+  ApiRequest.useSetter(~logOk, ~set, ~kind)
 }

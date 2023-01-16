@@ -189,9 +189,7 @@ let make = (~children) => {
 
   let _: ApiRequest.t<_> = SecretApiRequest.useLoad(secretsRequestState)
   let accounts: ApiRequest.t<_> = AccountApiRequest.useLoad(accountsRequestState)
-  let multisigs: ApiRequest.t<_> = MultisigApiRequest.useLoad(
-    multisigsRequestState,
-  )
+  let multisigs: ApiRequest.t<_> = MultisigApiRequest.useLoad(multisigsRequestState)
   let _: ApiRequest.t<_> = AliasApiRequest.useLoad(aliasesRequestState)
   let _: ApiRequest.t<_> = TokensApiRequest.useLoadTokensFromCache(tokensRequestState, #FT)
 
@@ -1019,5 +1017,15 @@ module Multisig = {
   let useGetAll = () => {
     let multisigsRequest = useRequest()
     multisigsRequest->ApiRequest.getWithDefault(PublicKeyHash.Map.empty)
+  }
+
+  let useResetAll = () => {
+    let (_, setMultisigRequest) = useRequestState()
+    () => setMultisigRequest(ApiRequest.expireCache)
+  }
+
+  let useUpdate = () => {
+    let resetMultisigs = useResetAll()
+    MultisigApiRequest.useUpdate(~sideEffect=_ => resetMultisigs(), ())
   }
 }
