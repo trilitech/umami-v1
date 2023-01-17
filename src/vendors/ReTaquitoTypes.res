@@ -417,39 +417,3 @@ module FA2 = {
   @send external tzip12: t => Tzip12.t = "tzip12"
   @send external tzip16: t => Tzip16.t = "tzip16"
 }
-
-module Multisig = {
-  module Lambda = {
-    type t
-
-    let make = (~ops: Protocol.batch) => {
-      ()
-    }
-  }
-
-  type propose
-  type approve
-  type execute
-
-  type methods = {
-    propose: (. Lambda.t /* unit => list<operation> */) => Contract.methodResult<propose>,
-    approve: (. int /* the_op_id */) => Contract.methodResult<approve>,
-    execute: (. int /* the_op_id */) => Contract.methodResult<execute>,
-  }
-  type storage = {
-    last_op_id: int,
-    metadata: int,
-    owner: PublicKeyHash.t,
-    pending_ops: int,
-    signers: array<PublicKeyHash.t>,
-    threshold: int,
-  }
-  type entrypoints
-
-  type t
-
-  @get external address: t => PublicKeyHash.t = "address"
-  @get external entrypoints: t => entrypoints = "entrypoints"
-  @get external methods: t => methods = "methods"
-  @send external storage: t => Js.Promise.t<storage> = "storage"
-}
