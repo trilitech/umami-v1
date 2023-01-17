@@ -108,21 +108,3 @@ module Signature: {
     ~payload: string,
   ) => Promise.t<ReTaquitoSigner.signature>
 }
-
-module Multisig: {
-  module Types: {
-    module Lambda: {
-      type t
-    }
-
-    type propose
-    type approve
-    type execute
-  }
-
-  type t
-
-  let propose: (t, Types.Lambda.t) => ReTaquitoTypes.Contract.methodResult<Types.propose>
-  let approve: (t, int) => ReTaquitoTypes.Contract.methodResult<Types.approve>
-  let execute: (t, int) => ReTaquitoTypes.Contract.methodResult<Types.execute>
-}
