@@ -288,6 +288,9 @@ module Address = {
     </Base>
 }
 
+let address = (~colorStyle=?, ~numberOfLines=?, ~style=?, ~fontSize=?, txt) =>
+  <Address ?colorStyle ?numberOfLines ?style ?fontSize> {txt->React.string} </Address>
+
 /* NOTICE */
 
 module Notice = Make({

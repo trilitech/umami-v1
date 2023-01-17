@@ -867,32 +867,6 @@ module Secrets = {
   }
 }
 
-module SelectedAccount = {
-  let useGetAtInit = () => {
-    let store = useStoreContext()
-    let accounts = Accounts.useGetAll()
-
-    let (selected, _set) = store.selectedAccountState
-    let selected = selected->Option.flatMap(pkh => accounts->PublicKeyHash.Map.get(pkh))
-
-    switch selected {
-    | Some(selectedAccount) => Some(selectedAccount)
-    | None =>
-      accounts
-      ->PublicKeyHash.Map.valuesToArray
-      ->SortArray.stableSortBy(Account.compareName)
-      ->Array.get(0)
-    }
-  }
-
-  let useSet = () => {
-    let store = useStoreContext()
-    let (_, setSelectedAccount) = store.selectedAccountState
-
-    newAccount => setSelectedAccount(_ => Some(newAccount))
-  }
-}
-
 module SelectedToken = {
   let useGet = () => {
     let store = useStoreContext()
@@ -1027,5 +1001,63 @@ module Multisig = {
   let useUpdate = () => {
     let resetMultisigs = useResetAll()
     MultisigApiRequest.useUpdate(~sideEffect=_ => resetMultisigs(), ())
+  }
+}
+
+/* Return accounts and multisigs,
+ formatted as aliases or corresponding registred alias if it exists */
+let getAccountsMultisigsAliasesAsAliases = () => {
+  let aliases = Aliases.useGetAll()
+  let accounts = Accounts.useGetAll()
+  let multisigs = Multisig.useGetAll()
+
+  let acc =
+    aliases->PublicKeyHash.Map.keep((k, _) =>
+      accounts->PublicKeyHash.Map.has(k) || multisigs->PublicKeyHash.Map.has(k)
+    )
+  let acc = PublicKeyHash.Map.reduce(accounts, acc, (acc, k, v) =>
+    PublicKeyHash.Map.has(acc, k) ? acc : PublicKeyHash.Map.set(acc, k, Alias.fromAccount(v))
+  )
+  let acc = PublicKeyHash.Map.reduce(multisigs, acc, (acc, k, v) =>
+    PublicKeyHash.Map.has(acc, k) ? acc : PublicKeyHash.Map.set(acc, k, Alias.fromMultisig(v))
+  )
+  acc
+}
+
+module SelectedAccount = {
+  let useGetAtInit = () => {
+    let store = useStoreContext()
+    let accounts = getAccountsMultisigsAliasesAsAliases()
+
+    let (selected, _set) = store.selectedAccountState
+    let selected = selected->Option.flatMap(pkh => accounts->PublicKeyHash.Map.get(pkh))
+
+    switch selected {
+    | Some(selectedAccount) => Some(selectedAccount)
+    | None =>
+      accounts->PublicKeyHash.Map.valuesToArray->SortArray.stableSortBy(Alias.compare)->Array.get(0)
+    }
+  }
+
+  let useGetImplicit = () => {
+    let store = useStoreContext()
+    let accounts = Accounts.useGetAll()
+    let (selected, _set) = store.selectedAccountState
+    let selected =
+      selected->Option.flatMap(pkh =>
+        PublicKeyHash.isImplicit(pkh) ? accounts->PublicKeyHash.Map.get(pkh) : None
+      )
+    switch selected {
+    | Some(_) => selected
+    | None =>
+      accounts->PublicKeyHash.Map.valuesToArray->SortArray.stableSortBy(Account.compareName)->Array.get(0)
+    }
+  }
+
+  let useSet = () => {
+    let store = useStoreContext()
+    let (_, setSelectedAccount) = store.selectedAccountState
+
+    newAccount => setSelectedAccount(_ => Some(newAccount))
   }
 }

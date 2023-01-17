@@ -57,6 +57,14 @@ let isContract = (k: t) =>
   //no need to handle the error case. k is already a pkh
   }
 
+let isImplicit = (k: t) =>
+  switch ReTaquitoUtils.validateAnyAddress(k) {
+  | Ok(#Contract) => false
+  | Ok(#Address) => true
+  | Error(_) => false
+  //no need to handle the error case. k is already a pkh
+  }
+
 let buildAny = s =>
   switch ReTaquitoUtils.validateAnyAddress(s) {
   | Ok(#Contract) => Ok(Contract(s))

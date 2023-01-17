@@ -42,7 +42,20 @@ let fromAccount = ({Account.address: address, name, kind}): t => {
   kind: Some(Account(kind)),
 }
 
-let fromMultisig = ({Multisig.address, alias}) : t => {
+let toAccountExn = ({address, name, kind}: t): Account.t =>
+  switch kind {
+  | Some(Account(kind)) => {address: address, name: name, kind: kind}
+  | Some(Contact) | Some(Multisig) | None => failwith("toAccountExn")
+  }
+
+let toAccount = (x: t): Result.t<Account.t, exn> =>
+  try {
+    x->toAccountExn->Result.Ok
+  } catch {
+  | e => e->Result.Error
+  }
+
+let fromMultisig = ({Multisig.address: address, alias}): t => {
   address: address,
   name: alias,
   kind: Some(Multisig),
@@ -51,3 +64,35 @@ let fromMultisig = ({Multisig.address, alias}) : t => {
 let make = (~kind=?, ~name, address) => {address: address, name: name, kind: kind}
 
 let compareName = (a, b) => Pervasives.compare(a.name, b.name)
+
+let compareAddress = (a, b) => Pervasives.compare(a.address, b.address)
+
+let compareKind = (a, b) =>
+  switch (a.kind, b.kind) {
+  | (Some(Account(a)), Some(Account(b))) =>
+    a == b
+      ? 0
+      : switch (a, b) {
+        | (Encrypted | Unencrypted, _) => -1
+        | (_, Encrypted | Unencrypted) => 1
+        | (Ledger, _) => -1
+        | (_, Ledger) => 1
+        | (_, _) => Pervasives.compare(a, b)
+        }
+  | (Some(Contact), Some(Contact)) | (Some(Multisig), Some(Multisig)) | (None, None) => 0
+  | (Some(Account(_)), Some(Multisig | Contact) | None) => -1
+  | (Some(Multisig | Contact) | None, Some(Account(_))) => 1
+  | (Some(Multisig), Some(Contact) | None) => -1
+  | (Some(Contact) | None, Some(Multisig)) => 1
+  | (Some(Contact), None) => -1
+  | (None, Some(Contact)) => 1
+  }
+
+let compare = (a, b) => switch compareKind(a, b) {
+  | 0 =>
+  switch compareName(a, b) {
+    | 0 => compareAddress(a, b)
+    | x => x
+  }
+  | x => x
+}

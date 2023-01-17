@@ -93,7 +93,7 @@ module BuyTezButton = {
   }
 
   @react.component
-  let make = (~account, ~showView) => {
+  let make = (~account: Alias.t, ~showView) => {
     let theme = ThemeContext.useTheme()
     let network = ConfigContext.useNetwork()
     let (visibleModal, openAction, closeAction) = ModalAction.useModalActionState()
@@ -169,9 +169,7 @@ module AccountsFlatList = {
         ->SortArray.stableSortBy(Account.compareName)
         ->Array.map(account => {
           let address = (account.address :> string)
-          <AccountRowItem
-            key=address account isHD={addresses->Set.String.has(address)} ?token
-          />
+          <AccountRowItem key=address account isHD={addresses->Set.String.has(address)} ?token />
         })
         ->React.array}
       </View>
@@ -193,30 +191,30 @@ module MultisigAccountList = {
     let multisigsRequest = StoreContext.Multisig.useRequest()
     Js.log(multisigsRequest)
     <View style={styles["container"]}>
-      {
-        switch multisigsRequest {
-        | Done(Ok(multisigs), _)
-        | Loading(Some(multisigs)) =>
-          if (PublicKeyHash.Map.size(multisigs) == 0) {
-            <Typography.Body1> {I18n.Expl.no_multisig_contract->React.string} </Typography.Body1>
-          } else {
-            let compare : (Multisig.t, Multisig.t) => int = (m1, m2) => {
-              let c = String.compare(m1.alias, m2.alias)
-              c == 0 ? String.compare((m1.address :> string), (m2.address :> string)) : c
-            }
-            <View>
-              {multisigs
-              ->PublicKeyHash.Map.valuesToArray
-              ->SortArray.stableSortBy(compare)
-              ->Array.map(multisig => {<AccountRowItem.MultisigRowItem key={(multisig.address :> string)} multisig />})
-              ->React.array}
-            </View>
+      {switch multisigsRequest {
+      | Done(Ok(multisigs), _)
+      | Loading(Some(multisigs)) =>
+        if PublicKeyHash.Map.size(multisigs) == 0 {
+          <Typography.Body1> {I18n.Expl.no_multisig_contract->React.string} </Typography.Body1>
+        } else {
+          let compare: (Multisig.t, Multisig.t) => int = (m1, m2) => {
+            let c = String.compare(m1.alias, m2.alias)
+            c == 0 ? String.compare((m1.address :> string), (m2.address :> string)) : c
           }
-        | Done(Error(error), _) =>
-          <ErrorView error />
-        | NotAsked
-        | Loading(None) =>
-          <LoadingView />
+          <View>
+            {multisigs
+            ->PublicKeyHash.Map.valuesToArray
+            ->SortArray.stableSortBy(compare)
+            ->Array.map(multisig => {
+              <AccountRowItem.MultisigRowItem key={(multisig.address :> string)} multisig />
+            })
+            ->React.array}
+          </View>
+        }
+      | Done(Error(error), _) => <ErrorView error />
+      | NotAsked
+      | Loading(None) =>
+        <LoadingView />
       }}
       <Buttons.SubmitPrimary
         style={styles["button"]} text=I18n.Btn.add_contract onPress={_ => ()}
@@ -280,20 +278,26 @@ let styles = {
 }
 
 @react.component
-let make = (~account, ~showCreateAccount, ~showBuyTez, ~mode, ~setMode) => {
+let make = (~account: Alias.t, ~showCreateAccount, ~showBuyTez, ~mode, ~setMode) => {
   let resetSecrets = StoreContext.Secrets.useResetAll()
   let accountsRequest = StoreContext.Accounts.useRequest()
   let token = StoreContext.SelectedToken.useGet()
 
   let retryNetwork = ConfigContext.useRetryNetwork()
 
-  let (accountType, setAccountType) = React.useState(() => Individual)
+  let (accountType, setAccountType) = React.useState(() =>
+    PublicKeyHash.isImplicit(account.address) ? Individual : Multisig
+  )
 
   let (isFormVisible, showForm) = React.useState(_ => false)
 
   <Page>
     {if isFormVisible {
-      <CreateMultisigView account closeAction={_ => showForm(_ => false)} />
+      switch Alias.toAccount(account) {
+      | Result.Ok(account) => <CreateMultisigView account closeAction={_ => showForm(_ => false)} />
+
+      | Result.Error(e) => React.null
+      }
     } else {
       <>
         <Page.Header

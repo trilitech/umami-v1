@@ -96,7 +96,7 @@ module CreateNewMultisigButton = {
         primary=true
       />
       {
-        let account = StoreContext.SelectedAccount.useGetAtInit()
+        let account = StoreContext.SelectedAccount.useGetImplicit()
         Option.mapWithDefault(account, React.null, account =>
           wrapModal(
             <ModalFormView style={styles["modal"]}>

@@ -184,7 +184,7 @@ module ProviderPrivate = {
 
 @react.component
 let make = (~children) => {
-  let selectedAccount = StoreContext.SelectedAccount.useGetAtInit()
+  let selectedAccount = StoreContext.SelectedAccount.useGetImplicit()
   switch selectedAccount {
   | Some(account) => <ProviderPrivate selectedAccount=account> children </ProviderPrivate>
   | None => children

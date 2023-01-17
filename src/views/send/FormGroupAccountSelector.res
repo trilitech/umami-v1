@@ -34,26 +34,61 @@ let baseRenderButton = AccountElements.Selector.baseRenderButton(~showAmount=Bal
 
 let baseRenderItem = AccountElements.Selector.baseRenderItem(~showAmount=Balance)
 
+type element = Alias.t
+
+module Base = {
+  @react.component
+  let make = (
+    ~label,
+    ~value: element,
+    ~items: array<element>,
+    ~handleChange,
+    ~disabled=?,
+    ~token: option<Token.t>=?,
+  ) => {
+    <FormGroup>
+      <FormLabel label style={styles["label"]} />
+      <View>
+        <Selector
+          items
+          ?disabled
+          getItemKey={item => (item.address :> string)}
+          onValueChange=handleChange
+          selectedValueKey={(value.Alias.address :> string)}
+          renderButton={baseRenderButton(~token)}
+          renderItem={baseRenderItem(~token)}
+          keyPopover="formGroupAccountSelector"
+        />
+      </View>
+    </FormGroup>
+  }
+}
+
+module Accounts = {
+  @react.component
+  let make = (
+    ~label,
+    ~value: Account.t,
+    ~handleChange: Umami.Account.t => unit,
+    ~disabled=?,
+    ~token: option<Token.t>=?,
+  ) => {
+    let value = Alias.fromAccount(value)
+    let handleChange = a => handleChange(Alias.toAccountExn(a))
+    let items =
+      StoreContext.Accounts.useGetAll()
+      ->PublicKeyHash.Map.valuesToArray
+      ->(a => Js.Array.map(Alias.fromAccount, a))
+      ->SortArray.stableSortBy(Alias.compare)
+    <Base label value items handleChange ?disabled ?token />
+  }
+}
+
 @react.component
-let make = (~label, ~value: Account.t, ~handleChange, ~disabled=?, ~token: option<Token.t>=?) => {
-  let accounts = StoreContext.Accounts.useGetAll()
-
-  let items = accounts->PublicKeyHash.Map.valuesToArray->SortArray.stableSortBy(Account.compareName)
-
-  <FormGroup>
-    <FormLabel label style={styles["label"]} />
-    <View>
-      <Selector
-        items
-        ?disabled
-        getItemKey={account => (account.address :> string)}
-        onValueChange={account =>
-          accounts->PublicKeyHash.Map.get(account.address)->Option.iter(handleChange)}
-        selectedValueKey={(value.Account.address :> string)}
-        renderButton={baseRenderButton(~token)}
-        renderItem={baseRenderItem(~token)}
-        keyPopover="formGroupAccountSelector"
-      />
-    </View>
-  </FormGroup>
+let make = (~label, ~value: element, ~handleChange, ~disabled=?, ~token: option<Token.t>=?) => {
+  let items =
+    StoreContext.getAccountsMultisigsAliasesAsAliases()
+    ->PublicKeyHash.Map.valuesToArray
+    ->SortArray.stableSortBy(Alias.compareName)
+  <Base label value items handleChange ?disabled ?token />
 }

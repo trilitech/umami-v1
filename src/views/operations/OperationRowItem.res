@@ -230,7 +230,7 @@ module GenericCellAmount = {
 
 @react.component
 let make = memo((
-  ~account: Account.t,
+  ~account: Alias.t,
   ~config: ConfigContext.env,
   ~operation: Operation.t,
   ~currentLevel,
@@ -364,7 +364,7 @@ module Preparation = {
   }
 
   @react.component
-  let make = (~account: Account.t, ~preparation as p: foo) => {
+  let make = (~account: Alias.t, ~preparation as p: foo) => {
     let theme = ThemeContext.useTheme()
     let accounts = StoreContext.Accounts.useGetAll()
     let aliases = StoreContext.Aliases.useGetAll()

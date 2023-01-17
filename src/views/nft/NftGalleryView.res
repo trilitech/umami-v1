@@ -121,7 +121,7 @@ module Card = {
 let uniqueKey = (contract: PublicKeyHash.t, id) => (contract :> string) ++ ("-" ++ Int.toString(id))
 
 @react.component
-let make = (~account, ~nfts: TokensLibrary.WithBalance.t) => {
+let make = (~account: Account.t, ~nfts: TokensLibrary.WithBalance.t) => {
   let hidden = TokenStorage.Registered.get()->Result.getWithDefault(PublicKeyHash.Map.empty)
 
   let nfts = React.useMemo1(

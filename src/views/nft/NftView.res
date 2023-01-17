@@ -42,7 +42,7 @@ type mode =
   | Collection
 
 @react.component
-let make = (~account) => {
+let make = (~account: Alias.t) => {
   let (mode, setMode) = React.useState(_ => Gallery)
   let (syncState, setSyncState) = React.useState(_ => Sync.NotInitiated)
   let (search, setSearch) = React.useState(_ => "")
@@ -55,7 +55,7 @@ let make = (~account) => {
       request: {
         open NFT
         {
-          account: account.Account.address,
+          account: account.Alias.address,
           allowHidden: true,
           numberByAccount: Tzkt.requestPageSize,
         }
@@ -79,7 +79,7 @@ let make = (~account) => {
   let (tokensRequest, getTokens) = StoreContext.Tokens.useAccountNFTs(
     onTokens,
     onStop,
-    account.Account.address,
+    account.Alias.address,
     request(true),
   )
 
@@ -199,9 +199,12 @@ let make = (~account) => {
       syncState
       syncIcon=Icons.SyncNFT.build
     />
-    {switch mode {
-    | Gallery => <NftGalleryView account nfts />
-    | Collection => <NftCollectionView account nfts />
+    {switch Alias.toAccount(account) {
+    | Ok(account) => switch mode {
+      | Gallery => <NftGalleryView account nfts />
+      | Collection => <NftCollectionView account nfts />
+      }
+    | _ => <View> {"Not implemented. Please select an implicit account"->React.string} </View>
     }}
   </View>
 }

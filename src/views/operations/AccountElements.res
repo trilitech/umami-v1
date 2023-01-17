@@ -1,27 +1,27 @@
-/*****************************************************************************/
-/*                                                                           */
-/* Open Source License                                                       */
-/* Copyright (c) 2019-2022 Nomadic Labs, <contact@nomadic-labs.com>          */
-/*                                                                           */
-/* Permission is hereby granted, free of charge, to any person obtaining a   */
-/* copy of this software and associated documentation files (the "Software"),*/
+/* *************************************************************************** */
+/*  */
+/* Open Source License */
+/* Copyright (c) 2019-2022 Nomadic Labs, <contact@nomadic-labs.com> */
+/*  */
+/* Permission is hereby granted, free of charge, to any person obtaining a */
+/* copy of this software and associated documentation files (the "Software"), */
 /* to deal in the Software without restriction, including without limitation */
-/* the rights to use, copy, modify, merge, publish, distribute, sublicense,  */
-/* and/or sell copies of the Software, and to permit persons to whom the     */
-/* Software is furnished to do so, subject to the following conditions:      */
-/*                                                                           */
-/* The above copyright notice and this permission notice shall be included   */
-/* in all copies or substantial portions of the Software.                    */
-/*                                                                           */
-/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR*/
-/* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,  */
-/* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL   */
-/* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER*/
-/* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING   */
-/* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER       */
-/* DEALINGS IN THE SOFTWARE.                                                 */
-/*                                                                           */
-/*****************************************************************************/
+/* the rights to use, copy, modify, merge, publish, distribute, sublicense, */
+/* and/or sell copies of the Software, and to permit persons to whom the */
+/* Software is furnished to do so, subject to the following conditions: */
+/*  */
+/* The above copyright notice and this permission notice shall be included */
+/* in all copies or substantial portions of the Software. */
+/*  */
+/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR */
+/* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, */
+/* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL */
+/* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER */
+/* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING */
+/* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER */
+/* DEALINGS IN THE SOFTWARE. */
+/*  */
+/* *************************************************************************** */
 
 open ReactNative
 
@@ -116,34 +116,24 @@ module Slim = {
 }
 
 module Selector = {
-  type account =
-    | Account(Account.t)
-    | Alias(Alias.t)
+  type item = Alias.t
 
-  let name = x =>
-    switch x {
-    | Account(a) => a.name
-    | Alias(a) => a.name
-    }
+  let name = (x: item) => x.name
 
-  let address = x =>
-    switch x {
-    | Account(a) => a.address
-    | Alias(a) => a.address
-    }
+  let address = (x: item) => x.address
 
-  let icon = x =>
-    switch x {
-    | Account(a) =>
-      <AliasIcon style={itemStyles["accounticon"]} kind=Some(Account(a.kind)) isHD=true />
-    | Alias(_) => React.null
-    }
+  let icon = (x: item) => React.null // ???
+  //    switch x {
+  //    | Account(a) =>
+  //      <AliasIcon style={itemStyles["accounticon"]} kind=Some(Account(a.kind)) isHD=true />
+  //    | Alias(_) => React.null
+  //    }
 
   module Item = {
     @react.component
     let make = (
       ~style as paramStyle=?,
-      ~account: account,
+      ~account: item,
       ~token: option<Token.t>=?,
       ~showAmount=Balance,
       ~shrinkId=?,
@@ -174,23 +164,22 @@ module Selector = {
           </View>
           {switch shrinkId {
           | Some(shrinkId) => <ShrinkedAddress clipboardId=shrinkId address={account->address} />
-          | None =>
-            <Typography.Address> {(account->address :> string)->React.string} </Typography.Address>
+          | None => (account->address :> string)->Typography.address
           }}
         </View>
       </View>
     }
   }
 
-  let baseRenderButton = (~showAmount, ~token, selectedAccount: option<Account.t>, _hasError) =>
+  let baseRenderButton = (~showAmount, ~token, selectedAccount: option<item>, _hasError: bool) =>
     <View style={styles["selectorContent"]}>
       {selectedAccount->Option.mapWithDefault(<LoadingView />, account =>
-        <Item style={itemStyles["itemInSelector"]} account=Account(account) showAmount ?token />
+        <Item style={itemStyles["itemInSelector"]} account showAmount ?token />
       )}
     </View>
 
-  let baseRenderItem = (~showAmount, ~token, account: Account.t) =>
-    <Item style={itemStyles["itemInSelector"]} account=Account(account) showAmount ?token />
+  let baseRenderItem = (~showAmount, ~token, account: item) =>
+    <Item style={itemStyles["itemInSelector"]} account showAmount ?token />
 
   let renderButton = baseRenderButton(~showAmount=Balance, ~token=None)
 
@@ -198,16 +187,16 @@ module Selector = {
 
   module Simple = {
     @react.component
-    let make = (~account: Account.t, ~style=?) => {
-      let accounts = StoreContext.Accounts.useGetAll()
+    let make = (~account: item, ~style=?) => {
+      let items =
+        StoreContext.getAccountsMultisigsAliasesAsAliases()
+        ->PublicKeyHash.Map.valuesToArray
+        ->SortArray.stableSortBy(Alias.compareName)
 
       let updateAccount = StoreContext.SelectedAccount.useSet()
 
-      let items =
-        accounts->PublicKeyHash.Map.valuesToArray->SortArray.stableSortBy(Account.compareName)
-
       <>
-        <Typography.Overline2> {I18n.account->React.string} </Typography.Overline2>
+        {I18n.account->Typography.overline2}
         <View style={styles["spacer"]} />
         <Selector
           items

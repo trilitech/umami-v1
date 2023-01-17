@@ -28,7 +28,7 @@ open ReactNative
 module Form = {
   module View = {
     @react.component
-    let make = (~loading, ~account, ~setAccount, ~submit) => <>
+    let make = (~loading, ~account: Alias.t, ~setAccount, ~submit) => <>
       <View style=FormStyles.header>
         <Typography.Overline1> {I18n.Title.wert_recipient->React.string} </Typography.Overline1>
       </View>

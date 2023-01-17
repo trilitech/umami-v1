@@ -222,7 +222,7 @@ module Empty = {
 }
 
 @react.component
-let make = (~account, ~route as currentRoute) => {
+let make = (~account: Alias.t, ~route as currentRoute) => {
   let theme = ThemeContext.useTheme()
 
   let {batch} = GlobalBatchContext.useGlobalBatchContext()

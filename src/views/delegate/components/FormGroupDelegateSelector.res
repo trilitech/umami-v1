@@ -40,9 +40,11 @@ let make = (~label, ~value: PublicKeyHash.t, ~handleChange, ~error, ~disabled) =
     accounts
     ->PublicKeyHash.Map.valuesToArray
     ->Array.keepMap(((account, delegate)) =>
-      delegate->Option.isNone || disabled ? Some(account) : None
+      delegate->Option.isNone || disabled ? Some(Alias.fromAccount(account)) : None
     )
-    ->SortArray.stableSortBy(Account.compareName)
+    ->SortArray.stableSortBy(Alias.compare)
+
+  let handleChange = x => handleChange(Alias.toAccountExn(x))
 
   <FormGroup>
     <FormLabel label hasError style={styles["label"]} />

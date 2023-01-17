@@ -179,7 +179,7 @@ module Form = {
             setSelectedToken={newToken => setSelectedToken(_ => newToken)}
             ?token
           />
-          <FormGroupAccountSelector
+          <FormGroupAccountSelector.Accounts
             disabled=batchMode
             label=I18n.Label.send_sender
             value=form.values.sender

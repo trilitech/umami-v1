@@ -79,6 +79,10 @@ let make = (~account) => {
         </Typography.ButtonSecondary>
       </ThemedPressable.Primary>
     </View>
-    {wrapModal(<SendView account closeAction />)}
+    {switch Alias.toAccount(account) {
+    | Ok(account) => wrapModal(<SendView account closeAction />)
+    | Error(_) =>
+      wrapModal(<View> {"Not implemented, use an implicit acount."->React.string} </View>)
+    }}
   </>
 }

@@ -158,7 +158,7 @@ let renderPreparation = (account, preparation: foo) => {
 }
 
 @react.component
-let make = (~account: Account.t) => {
+let make = (~account: Alias.t) => {
   let operationsRequest = StoreContext.Operations.useLoad(~address=account.address, ())
   let operationsReload = StoreContext.Operations.useResetAll()
   let preparationsRequest: Umami.ApiRequest.t<array<foo>> = ApiRequest.Done(

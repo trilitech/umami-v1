@@ -43,6 +43,8 @@ let buildImplicit: string => result<t, Errors.t>
 
 let isContract: t => bool
 
+let isImplicit: t => bool
+
 module Scheme: {
   type t =
     | ED25519

@@ -110,7 +110,7 @@ module SelectedAccountView = {
 
 module Dashboard = {
   @react.component
-  let make = (~account, ~route: Routes.t, ~showBuyTez, ~setMainPage) => {
+  let make = (~account: Alias.t, ~route: Routes.t, ~showBuyTez, ~setMainPage) => {
     let (accountsViewMode, setAccountsViewMode) = React.useState(_ => AccountsView.Mode.Simple)
 
     <>
@@ -132,8 +132,7 @@ module Dashboard = {
       | Logs => <LogsView />
       | Batch => <GlobalBatchView />
       | Help => <HelpView />
-      | NotFound =>
-        <View> <Typography.Body1> {I18n.error404->React.string} </Typography.Body1> </View>
+      | NotFound => <View> {I18n.error404->Typography.body1} </View>
       }}
     </>
   }
@@ -215,8 +214,7 @@ module AppView = {
                 <View style={styles["content"]}>
                   {switch mainPageState {
                   | Onboarding => <OnboardingView />
-                    | AddAccountModal =>
-                      <OnboardingView onClose={_ => setMainPage(_ => Dashboard)} />
+                  | AddAccountModal => <OnboardingView onClose={_ => setMainPage(_ => Dashboard)} />
                   | BuyTez(src) => <BuyTezView src onClose=handleCloseBuyTezView />
                   | Dashboard =>
                     <SelectedAccountView>
@@ -228,8 +226,7 @@ module AppView = {
                           setMainPage
                         />}
                     </SelectedAccountView>
-                    }
-                  }
+                  }}
                 </View>
               </View>}
         </View>
@@ -249,7 +246,11 @@ let make = () =>
               <NoticesContext>
                 <AppView />
                 <SelectedAccountView>
-                  {account => <BeaconConnectRequest account />}
+                  {account =>
+                    switch Alias.toAccount(account) {
+                    | Ok(account) => <BeaconConnectRequest account />
+                    | Error(_) => <> </>
+                    }}
                 </SelectedAccountView>
               </NoticesContext>
             </GlobalBatchContext>

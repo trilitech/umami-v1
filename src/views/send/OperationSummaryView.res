@@ -118,7 +118,9 @@ module EntityInfoContent = {
           </Typography.Subtitle2>
         )}
         {address->Option.mapWithDefault(default, address =>
-          <Typography.Address style=Style.arrayOption([addressStyle])> {(address :> string)->React.string} </Typography.Address>
+          <Typography.Address style={Style.arrayOption([addressStyle])}>
+            {(address :> string)->React.string}
+          </Typography.Address>
         )}
       </View>
     </>
@@ -147,10 +149,9 @@ module EntityInfo = {
         style={
           open Style
           array([styles["itemInfos"], style(~backgroundColor=theme.colors.stateDisabled, ())])
-        }
-      >
-      <EntityInfoContent address ?icon ?name ?default />
-    </View>
+        }>
+        <EntityInfoContent address ?icon ?name ?default />
+      </View>
     </View>
   }
 }
@@ -267,11 +268,9 @@ module Operations = {
             | Some(recipient) =>
               <AccountElements.Selector.Item
                 style={styles["account"]}
-                account=Alias(
-                  recipient
-                  ->AliasHelpers.getAliasFromAddress(aliases)
-                  ->Option.getWithDefault(Alias.make(~name="", recipient)),
-                )
+                account={recipient
+                ->AliasHelpers.getAliasFromAddress(aliases)
+                ->Option.getWithDefault(Alias.make(~name="", recipient))}
                 showAmount={buildAmount(amount)}
               />
             | None => React.null

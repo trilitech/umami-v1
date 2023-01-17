@@ -41,10 +41,11 @@ let styles = {
 }
 
 @react.component
-let make = (~account, ~children as right, ~headline) =>
+let make = (~account, ~children as right, ~headline) => {
   <View style={styles["header"]}>
     <Page.Header right>
       <Typography.Headline style=Styles.title> {headline->React.string} </Typography.Headline>
       <AccountElements.Selector.Simple account style={styles["selector"]} />
     </Page.Header>
   </View>
+}
