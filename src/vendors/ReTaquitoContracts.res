@@ -112,3 +112,12 @@ module FA2 = {
 
   let transfer = (c: t, txs) => (c->Types.FA2.methods).transfer(. txs)
 }
+
+@ocaml.doc(" Multisig contracts specific interface")
+module Multisig = {
+  include Contract(Types.Multisig)
+
+  let propose = (c: t, f) => (c->Types.Multisig.methods).propose(. f)
+  let approve = (c: t, o) => (c->Types.Multisig.methods).approve(. o)
+  let execute = (c: t, o) => (c->Types.Multisig.methods).execute(. o)
+}

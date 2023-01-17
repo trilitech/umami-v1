@@ -109,22 +109,13 @@ module API = {
     ->Promise.flatMapOk(json => json->JsonEx.decode(Storage.decoder)->Promise.value)
   }
 
-  let getFromCache = (
-    network: Network.t,
-    ~addresses: array<PublicKeyHash.t>,
-    ~contract: PublicKeyHash.t,
-  ) =>
+  let getFromCache = (network: Network.t) =>
     Cache.getWithFallback()
     ->Result.map(map =>
       map->PublicKeyHash.Map.keep((_, v) => v.chain == network.chain->Network.getChainId)
     )
-    ->Promise.value
 
-  let get = (
-    network: Network.t,
-    ~addresses: array<PublicKeyHash.t>,
-    ~contract: PublicKeyHash.t,
-  ) =>
+  let get = (network: Network.t, ~addresses: array<PublicKeyHash.t>, ~contract: PublicKeyHash.t) =>
     network
     ->getAddresses(~addresses, ~contract)
     // fetch storage for each multisig found on chain
@@ -164,6 +155,7 @@ module API = {
             threshold: storage.threshold,
           })
         | (_, Some(multisig)) => Some(multisig) // cached multisig not found on chain, should not happen
+        | _ => None
         }
       )
     )
