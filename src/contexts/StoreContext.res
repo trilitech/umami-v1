@@ -107,24 +107,28 @@ module Provider = {
 
 let useStoreContext = () => React.useContext(context)
 
-let useLoadBalances = (~forceFetch=true, accounts, balances) => {
+let extractAddresses = x =>
+  x->ApiRequest.getWithDefault(PublicKeyHash.Map.empty)->PublicKeyHash.Map.keysToList
+
+let useLoadBalances = (~forceFetch=true, accounts, multisigs, balances) => {
   let requestState = balances
-  let accounts =
-    accounts
-    ->ApiRequest.getWithDefault(PublicKeyHash.Map.empty)
-    ->PublicKeyHash.Map.toList
-    ->Belt.List.map(((b, _)) => b)
-  let addresses = accounts
+  let accounts = extractAddresses(accounts)
+  let multisigs = extractAddresses(multisigs)
+  let addresses = List.reverseConcat(multisigs, accounts)
   BalanceApiRequest.useLoadBalances(~forceFetch, ~requestState, addresses)
 }
 
-let useLoadTokensBalances = (~forceFetch=true, accounts, tokensBalances, selectedToken) => {
+let useLoadTokensBalances = (
+  ~forceFetch=true,
+  accounts,
+  multisigs,
+  tokensBalances,
+  selectedToken,
+) => {
   let requestState = tokensBalances
-  let addresses =
-    accounts
-    ->ApiRequest.getWithDefault(PublicKeyHash.Map.empty)
-    ->PublicKeyHash.Map.toList
-    ->Belt.List.map(((b, _)) => b)
+  let accounts = extractAddresses(accounts)
+  let multisigs = extractAddresses(multisigs)
+  let addresses = List.reverseConcat(multisigs, accounts)
   TokensApiRequest.useLoadBalances(~forceFetch, ~requestState, ~addresses, ~selectedToken)
 }
 
@@ -247,9 +251,9 @@ let make = (~children) => {
     None
   }, (accountsRequest, selectedAccount))
 
-  let _ = useLoadBalances(accounts, balanceRequestsState)
+  let _ = useLoadBalances(accounts, multisigs, balanceRequestsState)
 
-  let _ = useLoadTokensBalances(accounts, balanceTokenRequestsState, selectedToken)
+  let _ = useLoadTokensBalances(accounts, multisigs, balanceTokenRequestsState, selectedToken)
 
   <Provider
     value={
@@ -340,6 +344,7 @@ module Balance = {
     let balancesRequest = useLoadBalances(
       ~forceFetch,
       store.accountsRequestState->fst,
+      store.multisigsRequestState->fst,
       store.balanceRequestsState,
     )
 
@@ -394,6 +399,7 @@ module BalanceToken = {
     let balancesRequest = useLoadTokensBalances(
       ~forceFetch,
       store.accountsRequestState->fst,
+      store.multisigsRequestState->fst,
       store.balanceTokenRequestsState,
       Some((token, kind)),
     )
