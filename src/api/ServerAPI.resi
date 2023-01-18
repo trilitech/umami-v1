@@ -108,6 +108,11 @@ module URL: {
       ~network: Network.network,
       ~contract: PublicKeyHash.t,
     ) => Promise.result<t>
+
+    let tzktBigmapKeys: (
+      ~network: Network.network,
+      ~bigmap: int,
+    ) => Promise.result<t>
   }
 
   /* Fetch URL as a JSON. */

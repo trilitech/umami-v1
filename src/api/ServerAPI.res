@@ -352,6 +352,19 @@ module URL = {
         )
       )
       ->ResultEx.fromOption(UnknownNetwork(Network.getChainId(network.chain)))
+
+      let tzktBigmapKeys = (~network: Network.network, ~bigmap: int) =>
+        network.chain
+        ->Network.chainNetwork
+        ->Option.map(network => build_url(
+          "https://api." ++
+          (network ++
+          ".tzkt.io/v1/bigmaps/" ++
+          bigmap->Int.toString ++
+          "/keys"),
+          list{},
+        ))
+         ->ResultEx.fromOption(UnknownNetwork(Network.getChainId(network.chain)))
   }
 }
 

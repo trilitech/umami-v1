@@ -71,10 +71,9 @@ module API = {
     network
     ->ServerAPI.Explorer.getMultisigs(~addresses, ~contract)
     ->Promise.mapOk(response =>
-      response->Array.reduce(Set.make(~id=module(PublicKeyHash.Comparator)), (
-        contracts,
-        (pkh, ks),
-      ) => contracts->Set.mergeMany(ks))
+      response->Array.reduce(Set.make(~id=module(PublicKeyHash.Comparator)), (contracts, (_, ks)) =>
+        contracts->Set.mergeMany(ks)
+      )
     )
     ->Promise.mapOk(Set.toArray)
   }
@@ -148,7 +147,7 @@ module API = {
           // cache new discovered multisig
           Some({
             address: contract,
-            alias: ("Multisig #" ++ Js.Date.now()->Float.toInt->Int.toString),
+            alias: "Multisig #" ++ Js.Date.now()->Float.toInt->Int.toString,
             balance: ReBigNumber.zero,
             chain: network.chain->Network.getChainId,
             signers: storage.signers,
@@ -161,6 +160,47 @@ module API = {
     )
     ->Promise.tapOk(Js.log)
     ->Promise.tapOk(cache => Cache.set(cache))
+
+  module Bigmap = {
+    module Entry = {
+      module Value = {
+        type t = {
+          actions: string,
+          approvals: array<PublicKeyHash.t>,
+        }
+
+        let decoder = json => {
+          open Json.Decode
+          {
+            actions: json |> field("actions", string),
+            approvals: json |> field("approvals", array(PublicKeyHash.decoder)),
+          }
+        }
+      }
+
+      type t = {
+        key: int,
+        value: Value.t,
+      }
+
+      let decoder = json => {
+        open Json.Decode
+        {
+          key: json |> field("key", int),
+          value: json |> field("value", Value.decoder),
+        }
+      }
+    }
+  }
+
+  let getProposals = (~network: Network.t, ~bigmap: int) => {
+    ServerAPI.URL.External.tzktBigmapKeys(~network, ~bigmap)
+    ->Promise.value
+    ->Promise.flatMapOk(url => url->ServerAPI.URL.get)
+    ->Promise.flatMapOk(json =>
+      json->JsonEx.decode(Json.Decode.array(Bigmap.Entry.decoder))->Promise.value
+    )
+  }
 }
 
 let code: Code.t = %raw(`[
