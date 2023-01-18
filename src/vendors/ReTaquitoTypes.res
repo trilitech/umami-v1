@@ -132,6 +132,10 @@ module Storage = {
   type t = string
 }
 
+module Lambda = {
+  type t
+}
+
 module Transfer = {
   module Entrypoint = {
     type t = string

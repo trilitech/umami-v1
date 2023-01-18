@@ -162,6 +162,13 @@ module Toolkit = {
   external originate: (contract, originateParams) => Js.Promise.t<Types.Operation.result> =
     "originate"
 
+  module Lambda = {
+    include Types.Lambda
+  
+    @module("@taquito/taquito")
+    external transferImplicit: (tz, ReBigNumber.t) => t = "transferImplicit"
+  }
+
   module Batch = {
     include Types.Batch
 
