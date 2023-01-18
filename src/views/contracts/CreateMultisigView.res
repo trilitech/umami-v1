@@ -530,7 +530,8 @@ let make = (~account: Account.t, ~closeAction) => {
               | CreateStep => React.null
               | SigningStep(operation, dryRun) =>
                 <SignOperationView
-                  source=account
+                  sender=Alias.fromAccount(account)
+                  signer=account
                   dryRun
                   signOpStep
                   state

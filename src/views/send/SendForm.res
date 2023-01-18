@@ -28,14 +28,14 @@ open Protocol
 module StateLenses = %lenses(
   type state = {
     amount: string,
-    sender: Account.t,
+    sender: Alias.t,
     recipient: FormUtils.Alias.any,
   }
 )
 
 type validState = {
   amount: Protocol.Amount.t,
-  sender: Account.t,
+  sender: Alias.t,
   recipient: FormUtils.Alias.t,
   entrypoint: option<ProtocolOptions.TransactionParameters.entrypoint>,
   parameter: option<ProtocolOptions.TransactionParameters.value>,
@@ -61,11 +61,14 @@ let buildTransfer = (inputTransfers, source) => {
   let transfers =
     inputTransfers
     ->List.map((t: validState) => {
+      Js.log(__LOC__)
       let destination = t.recipient->FormUtils.Alias.address
+      Js.log(__LOC__)
       let data = {
         open Transfer
         {destination: destination, amount: t.amount}
       }
+      Js.log(__LOC__)
       ProtocolHelper.Transfer.makeSimple(~data, ())
     })
     ->List.toArray
@@ -73,11 +76,12 @@ let buildTransfer = (inputTransfers, source) => {
   ProtocolHelper.Transfer.makeBatch(~source, ~transfers, ())
 }
 
-let buildTransaction = (batch: list<validState>) =>
+let buildTransaction = (batch: list<validState>, getImplicitFromAlias) =>
   switch batch {
   | list{} => assert false
   | list{first, ..._} as inputTransfers =>
-    let source = first.sender
-
+    Js.log(__LOC__)
+    let source = getImplicitFromAlias(first.sender)
+    Js.log(__LOC__)
     buildTransfer(inputTransfers, source)
   }

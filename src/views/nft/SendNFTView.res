@@ -154,7 +154,7 @@ let unsafeExtractValidState = (state: SendNFTForm.state, nft, source): SendForm.
     open Protocol.Amount
     Token({amount: TokenRepr.Unit.one, token: nft})
   }
-  let sender = source
+  let sender = source->Alias.fromAccount
 
   {amount: amount, sender: sender, recipient: recipient, parameter: None, entrypoint: None}
 }
@@ -197,7 +197,7 @@ let make = (~source: Account.t, ~nft: Token.t, ~closeAction) => {
     if isForGlobalBatch.current {
       let validState = unsafeExtractValidState(state, nft, source)
       let p = GlobalBatchXfs.validStateToTransferPayload(validState)
-      addTransfer(p, validState.sender, closeAction)
+      addTransfer(p, validState.sender->Alias.toAccountExn, closeAction)
     } else {
       nominalSubmit(state)
     }
@@ -248,7 +248,8 @@ let make = (~source: Account.t, ~nft: Token.t, ~closeAction) => {
           />
         | SigningStep(operation, dryRun) =>
           <SignOperationView
-            source=operation.source
+            sender={Alias.fromAccount(operation.source)}
+            signer=operation.source
             state=signingState
             signOpStep
             dryRun

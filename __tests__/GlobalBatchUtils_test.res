@@ -49,7 +49,7 @@ let makeMockFA2Token = (amount, address) => {
 let makeFA2ValidState = (~token, ~recipient) => {
   let mockValidState: SendForm.validState = {
     amount: Token(token),
-    sender: mockAccount,
+    sender: mockAccount->Alias.fromAccount,
     recipient: recipient,
     parameter: None,
     entrypoint: None,

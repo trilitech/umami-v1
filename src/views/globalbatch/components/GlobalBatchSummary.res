@@ -51,6 +51,7 @@ let make = (
     | [Delegation(_)] => React.null
     | _ =>
       <OperationSummaryView.Batch
+        sender={Alias.fromAccount(operation.source)}
         operation
         dryRun
         editAdvancedOptions={i => setAdvancedOptions(Some(i))}

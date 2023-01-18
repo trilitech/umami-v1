@@ -87,7 +87,7 @@ module Accounts = {
 @react.component
 let make = (~label, ~value: element, ~handleChange, ~disabled=?, ~token: option<Token.t>=?) => {
   let items =
-    StoreContext.getAccountsMultisigsAliasesAsAliases()
+    StoreContext.useGetAccountsMultisigsAliasesAsAliases()
     ->PublicKeyHash.Map.valuesToArray
     ->SortArray.stableSortBy(Alias.compareName)
   <Base label value items handleChange ?disabled ?token />

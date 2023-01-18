@@ -1013,30 +1013,66 @@ module Multisig = {
   }
 }
 
-/* Return accounts and multisigs,
- formatted as aliases or corresponding registred alias if it exists */
-let getAccountsMultisigsAliasesAsAliases = () => {
+/*
+  Return accounts and multisigs,
+  formatted as aliases or corresponding registred alias if it exists.
+  FIXME: Should accounts and multisigs registered as contacts see their kind changed to Multisig
+*/
+let useGetAccountsMultisigsAliasesAsAliases = () => {
   let aliases = Aliases.useGetAll()
   let accounts = Accounts.useGetAll()
   let multisigs = Multisig.useGetAll()
 
-  let acc =
-    aliases->PublicKeyHash.Map.keep((k, _) =>
-      accounts->PublicKeyHash.Map.has(k) || multisigs->PublicKeyHash.Map.has(k)
-    )
-  let acc = PublicKeyHash.Map.reduce(accounts, acc, (acc, k, v) =>
-    PublicKeyHash.Map.has(acc, k) ? acc : PublicKeyHash.Map.set(acc, k, Alias.fromAccount(v))
-  )
-  let acc = PublicKeyHash.Map.reduce(multisigs, acc, (acc, k, v) =>
-    PublicKeyHash.Map.has(acc, k) ? acc : PublicKeyHash.Map.set(acc, k, Alias.fromMultisig(v))
-  )
+  let replaceName = v => {
+    switch PublicKeyHash.Map.get(aliases, v.Alias.address) {
+    | Some(alias) => {...v, name: alias.Alias.name}
+    | None => v
+    }
+  }
+
+  let acc = PublicKeyHash.Map.empty
+  let acc = PublicKeyHash.Map.reduce(accounts, acc, (acc, k, v) => {
+    let v = Alias.fromAccount(v)
+    let v = replaceName(v)
+    PublicKeyHash.Map.set(acc, k, v)
+  })
+  let acc = PublicKeyHash.Map.reduce(multisigs, acc, (acc, k, v) => {
+    let v = Alias.fromMultisig(v)
+    let v = replaceName(v)
+    PublicKeyHash.Map.set(acc, k, v)
+  })
   acc
+}
+
+let useGetImplicitFromAlias = () => {
+  let accounts = Accounts.useGetAll()
+  let multisigs = Multisig.useGetAll()
+  alias => {
+    let getAccount = k => PublicKeyHash.Map.get(accounts, k)
+    let getMultisig = k => PublicKeyHash.Map.get(multisigs, k)
+    switch alias.Alias.kind {
+    | Some(Account(_)) => getAccount(alias.Alias.address)->Option.getExn
+    | Some(Multisig) =>
+      let multisig = getMultisig(alias.Alias.address)->Option.getExn
+      let signers = multisig.signers
+      let signer = Js.Array.find(PublicKeyHash.Map.has(accounts), signers)->Option.getExn
+      PublicKeyHash.Map.get(accounts, signer)->Option.getExn
+    | Some(Contact) =>
+      Js.log(__LOC__)
+      Js.log(alias)
+      None->Option.getExn
+    | None =>
+      Js.log(__LOC__)
+      Js.log(alias)
+      None->Option.getExn
+    }
+  }
 }
 
 module SelectedAccount = {
   let useGetAtInit = () => {
     let store = useStoreContext()
-    let accounts = getAccountsMultisigsAliasesAsAliases()
+    let accounts = useGetAccountsMultisigsAliasesAsAliases()
 
     let (selected, _set) = store.selectedAccountState
     let selected = selected->Option.flatMap(pkh => accounts->PublicKeyHash.Map.get(pkh))
@@ -1059,7 +1095,10 @@ module SelectedAccount = {
     switch selected {
     | Some(_) => selected
     | None =>
-      accounts->PublicKeyHash.Map.valuesToArray->SortArray.stableSortBy(Account.compareName)->Array.get(0)
+      accounts
+      ->PublicKeyHash.Map.valuesToArray
+      ->SortArray.stableSortBy(Account.compareName)
+      ->Array.get(0)
     }
   }
 

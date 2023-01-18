@@ -91,7 +91,7 @@ let stepToString = step =>
   }
 
 module Form = {
-  let defaultInit = (account: Account.t) => {
+  let defaultInit = (account: Alias.t) => {
     open SendForm.StateLenses
     {
       amount: "",
@@ -179,7 +179,7 @@ module Form = {
             setSelectedToken={newToken => setSelectedToken(_ => newToken)}
             ?token
           />
-          <FormGroupAccountSelector.Accounts
+          <FormGroupAccountSelector
             disabled=batchMode
             label=I18n.Label.send_sender
             value=form.values.sender
@@ -188,7 +188,7 @@ module Form = {
           />
           <FormGroupContactSelector
             label=I18n.Label.send_recipient
-            filterOut={form.values.sender->Alias.fromAccount->Some}
+            filterOut={form.values.sender->Some}
             aliases
             value=form.values.recipient
             handleChange={form.handleChange(Recipient)}
@@ -219,6 +219,9 @@ module Form = {
 module EditionView = {
   @react.component
   let make = (~account, ~aliases, ~initValues, ~onSubmit, ~index, ~loading) => {
+    Js.log(__LOC__)
+    Js.log(account)
+    Js.log(__LOC__)
     let token = switch initValues.SendForm.amount {
     | Protocol.Amount.Tez(_) => None
     | Token({token}) => Some(token)
@@ -234,11 +237,21 @@ module EditionView = {
   }
 }
 
+module Lambda = {
+  type t
+
+  @module("@taquito/taquito") @scope("MANAGER_LAMBDA")
+  external transferImplicit: (string, ReBigNumber.t) => t = "transferImplicit"
+
+  @module("@taquito/taquito") @scope("MANAGER_LAMBDA")
+  external transferToContract: (string, ReBigNumber.t) => t = "transferToContract"
+}
+
 @react.component
 let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
   let initToken = StoreContext.SelectedToken.useGet()
   let aliasesRequest = StoreContext.Aliases.useRequest()
-
+  let getImplicitFromAlias = StoreContext.useGetImplicitFromAlias()
   let aliases = aliasesRequest->ApiRequest.getDoneOk->Option.getWithDefault(PublicKeyHash.Map.empty)
 
   let updateAccount = StoreContext.SelectedAccount.useSet()
@@ -249,10 +262,10 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
 
   let (operationRequest, sendOperation) = StoreContext.Operations.useCreate()
 
-  let sendOperation = (~operation: Protocol.batch, signingIntent) =>
+  let sendOperation = (~sender: Alias.t, ~operation: Protocol.batch, signingIntent) =>
     sendOperation({operation: operation, signingIntent: signingIntent})
     ->Promise.tapOk(result => setModalStep(_ => SubmittedStep(result.hash)))
-    ->Promise.tapOk(_ => updateAccount(operation.source.address))
+    ->Promise.tapOk(_ => updateAccount(sender.Alias.address))
 
   let (batch, _) = React.useState(_ => list{})
 
@@ -261,22 +274,83 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
   let submitAction = React.useRef(#SubmitAll)
 
   let onSubmitBatch = batch => {
-    let transaction = SendForm.buildTransaction(batch)
-    sendOperationSimulate(transaction)->Promise.getOk(dryRun =>
+    Js.log(__LOC__)
+    let transaction = SendForm.buildTransaction(batch, getImplicitFromAlias)
+    Js.log(__LOC__)
+    sendOperationSimulate(transaction)->Promise.getOk(dryRun => {
+      Js.log(__LOC__)
       setModalStep(_ => SigningStep(transaction, dryRun))
+    })
+  }
+
+  let onSubmitMultisig = (state: SendForm.validState) => {
+    let recipient = state.recipient->FormUtils.Alias.address
+    let amount =
+      state.amount->ProtocolAmount.getTez->Option.getWithDefault(Tez.zero)->Tez.toBigNumber
+    let lambda = PublicKeyHash.isImplicit(recipient)
+      ? Lambda.transferImplicit((recipient :> string), amount)
+      : Lambda.transferToContract((recipient :> string), amount)
+    Js.log(__LOC__)
+    Js.log(lambda)
+    /*
+    let parameter = ProtocolOptions.TransactionParameters.MichelineMichelsonV1Expression.toString(
+      lambda,
     )
+    Js.log(__LOC__)
+    Js.log(parameter)
+    let parameter = parameter->Option.getExn
+    Js.log(__LOC__)
+    Js.log(parameter)
+    let parameter =
+      parameter->ProtocolOptions.TransactionParameters.MichelineMichelsonV1Expression.parseMicheline
+    Js.log(__LOC__)
+    Js.log(parameter)
+    let parameter = Result.getExn(parameter)
+    Js.log(__LOC__)
+    Js.log(parameter)
+ */
+    let parameter = Obj.magic(lambda)
+    let entrypoint = "propose"
+    let destination = state.sender.Alias.address
+    let amount = Tez.zero
+
+    let transfer = ProtocolHelper.Transfer.makeSimpleTez(
+      ~parameter,
+      ~entrypoint,
+      ~destination,
+      ~amount,
+      (),
+    )
+    let transfers = [transfer]
+    let source = getImplicitFromAlias(state.sender)
+    let transaction = ProtocolHelper.Transfer.makeBatch(~source, ~transfers, ())
+    Js.log(__LOC__)
+    Js.log(transaction)
+    sendOperationSimulate(transaction)->Promise.getOk(dryRun => {
+      Js.log(__LOC__)
+      setModalStep(_ => SigningStep(transaction, dryRun))
+    })
   }
 
   let {addTransfer, isSimulating} = GlobalBatchContext.useGlobalBatchContext()
 
   let onSubmit = ({state}: SendForm.onSubmitAPI) => {
+    Js.log(__LOC__)
     let validState = SendForm.unsafeExtractValidState(token, state.values)
+    Js.log(__LOC__)
 
     switch submitAction.current {
-    | #SubmitAll => onSubmitBatch(list{validState, ...batch})
+    | #SubmitAll =>
+      PublicKeyHash.isContract(state.values.sender.address)
+        ? onSubmitMultisig(validState)
+        : onSubmitBatch(list{validState, ...batch})
     | #AddToBatch =>
+      Js.log(__LOC__)
       let p = GlobalBatchXfs.validStateToTransferPayload(validState)
-      addTransfer(p, validState.sender, closeAction)
+      Js.log(__LOC__)
+      let signer = getImplicitFromAlias(validState.sender)
+      Js.log(__LOC__)
+      addTransfer(p, signer, closeAction)
     }
   }
 
@@ -367,7 +441,14 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
             />
           | SigningStep(operation, dryRun) =>
             <SignOperationView
-              source=operation.source state signOpStep dryRun operation sendOperation loading
+              sender=form.state.values.sender
+              signer=operation.source
+              state
+              signOpStep
+              dryRun
+              operation
+              sendOperation={sendOperation(~sender=form.state.values.sender)}
+              loading
             />
           }}
         </ReactFlipToolkit.FlippedView.Inverse>

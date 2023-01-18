@@ -80,7 +80,7 @@ module Details = {
 
 let makeValidState = (
   amount: Protocol.Amount.t,
-  sender: Account.t,
+  sender: Alias.t,
   recipient: PublicKeyHash.t,
   parameter,
 ): SendForm.validState => {
@@ -239,7 +239,7 @@ let make = (
         amount
         parameter
         recipient
-        account=batch.source
+        account=(batch.source->Alias.fromAccount)
         operation=Some(batch)
         dryRun
         onAdvancedSubmit=handleAdvancedSubmit

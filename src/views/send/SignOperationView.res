@@ -52,7 +52,8 @@ let back = ((step, set), f) =>
 
 @react.component
 let make = (
-  ~source: Account.t,
+  ~sender: Alias.t,
+  ~signer: Account.t,
   ~state,
   ~signOpStep as (step, setStep),
   ~dryRun,
@@ -63,11 +64,16 @@ let make = (
   ~icon=?,
   ~name=?,
 ) => {
+  Js.log(__LOC__)
+  Js.log(sender)
+  Js.log(__LOC__)
+  Js.log(signer)
+  Js.log(__LOC__)
   let ((operation: Protocol.batch, dryRun), setOp) = React.useState(() => (operation, dryRun))
 
   let theme = ThemeContext.useTheme()
 
-  let subtitle = switch source.Account.kind {
+  let subtitle = switch signer.Account.kind {
   | Ledger => I18n.Expl.hardware_wallet_confirm_operation
   | Galleon
   | Encrypted
@@ -102,10 +108,9 @@ let make = (
 
   switch step {
   | SummaryStep => <>
-      <View style=FormStyles.header>
-        <Typography.Overline1> {subtitle->React.string} </Typography.Overline1>
-      </View>
+      <View style=FormStyles.header> {subtitle->Typography.overline1} </View>
       <OperationSummaryView.Batch
+        sender
         operation
         dryRun
         editAdvancedOptions={i => setAdvancedOptions(Some(i))}
@@ -123,7 +128,7 @@ let make = (
         onPress={_ => setAdvancedOptions(None)}
       />->ReactUtils.onlyWhen(dryRun.simulations->Array.length == 1)}
       <SigningBlock
-        accountKind=source.Account.kind
+        accountKind=signer.Account.kind
         state
         ?secondaryButton
         loading

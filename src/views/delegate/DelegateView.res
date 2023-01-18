@@ -244,7 +244,14 @@ let make = (~closeAction, ~action) => {
             }
           | PasswordStep(_, operation, dryRun) =>
             <SignOperationView
-              source=operation.source signOpStep dryRun state operation sendOperation loading
+              sender={Alias.fromAccount(operation.source)}
+              signer=operation.source
+              signOpStep
+              dryRun
+              state
+              operation
+              sendOperation
+              loading
             />
           }}
         </ReactFlipToolkit.FlippedView.Inverse>

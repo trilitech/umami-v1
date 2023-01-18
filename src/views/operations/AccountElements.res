@@ -189,7 +189,7 @@ module Selector = {
     @react.component
     let make = (~account: item, ~style=?) => {
       let items =
-        StoreContext.getAccountsMultisigsAliasesAsAliases()
+        StoreContext.useGetAccountsMultisigsAliasesAsAliases()
         ->PublicKeyHash.Map.valuesToArray
         ->SortArray.stableSortBy(Alias.compareName)
 

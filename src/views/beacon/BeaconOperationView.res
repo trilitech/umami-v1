@@ -165,7 +165,8 @@ let make = (
         | Done(Ok(dryRun), _) =>
           let secondaryButton = <Buttons.SubmitSecondary text=I18n.Btn.reject onPress=onAbort />
           <SignOperationView
-            source=sourceAccount
+            sender={Alias.fromAccount(sourceAccount)}
+            signer=sourceAccount
             dryRun
             signOpStep
             state
