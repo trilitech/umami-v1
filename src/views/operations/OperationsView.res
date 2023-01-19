@@ -127,100 +127,133 @@ let renderPreparation = (account, preparation: Multisig.API.PendingOperation.t) 
   <OperationRowItem.Preparation account key preparation />
 }
 
-@react.component
-let make = (~account: Alias.t) => {
-  let operationsRequest = StoreContext.Operations.useLoad(~address=account.address, ())
-  let operationsReload = StoreContext.Operations.useResetAll()
+let footerStyle = width => {
+  open Style
+  array([
+    style(~left=36.->dp, ~width=(width -. NavBar.width -. 36. *. 2.)->dp, ()),
+    unsafeStyle({"position": "sticky"}),
+  ])
+}
 
-  let pendingOperationsRequest = StoreContext.Multisig.usePendingOperations(
-    ~address=account.Alias.address,
-  )
-  React.useEffect1(() => {
-    Js.log("pending operations")
-    Js.log(pendingOperationsRequest)
-    None
-  }, [pendingOperationsRequest])
-
-  let pendingOperationsRequest = StoreContext.Multisig.usePendingOperations(
-    ~address="KT1AiXiZwkcqb3ZECvKcF2qtWkmtgn9U1hMT"->PublicKeyHash.build->Result.getExn,
-  )
-  React.useEffect1(() => {
-    Js.log("pending operations")
-    Js.log(pendingOperationsRequest)
-    None
-  }, [pendingOperationsRequest])
-
-  let config = ConfigContext.useContent()
-  let dimensions = Dimensions.useWindowDimensions()
-  let (tab, setTab) = React.useState(() => History)
-
-  let footerStyle = {
-    open Style
-    array([
-      style(~width=(dimensions.width -. NavBar.width -. 36. *. 2.)->dp, ~left=36.->dp, ()),
-      unsafeStyle({"position": "sticky"}),
-    ])
-  }
-
-  <View style={styles["container"]}>
-    <OperationsHeaderView account>
-      <RefreshButton onRefresh=operationsReload loading={operationsRequest->ApiRequest.isLoading} />
-    </OperationsHeaderView>
-    <View style={styles["tabSelector"]}>
-      <SegmentedButtons
-        selectedValue=tab
-        setSelectedValue=setTab
-        buttons=[(I18n.Btn.history, History), (I18n.Btn.in_preparation, Preparation)]
-      />
-    </View>
-    /* Vertical ScrollView can't scroll horizontally,
+module Base = {
+  @react.component
+  let make = (~account: Alias.t, ~onRefresh, ~loading, ~headerExt=React.null, ~children) => {
+    <View style={styles["container"]}>
+      <OperationsHeaderView account> <RefreshButton onRefresh loading /> </OperationsHeaderView>
+      {headerExt}
+      /* Vertical ScrollView can't scroll horizontally,
        so we Typography.overline3 it in an horizontal ScrollView.
        Items in a row have a total of 1272px width
        (count flex-basis and spacing of OperationsTableHeaderView)
        You need to set this value or container will only use width
        of the window (or something like this) */
-    <ScrollView
-      horizontal=true
-      contentContainerStyle={
-        open Style
-        style(~flexDirection=#column, ~flexBasis=1272.->dp, ~flexGrow=1., ())
-      }>
-      {switch tab {
-      | History => <>
-          <OperationsTableHeaderView.History />
-          {switch operationsRequest {
-          | ApiRequest.Done(Ok(response), _) =>
-            <Pagination
-              elements={response.operations->sort}
-              renderItem={renderOperation(account, config, response.currentLevel)}
-              emptyComponent={I18n.empty_operations->React.string}
-              footerStyle
-            />
-          | Done(Error(error), _) => error->Errors.toString->React.string
-          | NotAsked
-          | Loading(Some(_))
-          | Loading(None) =>
-            <LoadingView />
-          }}
-        </>
-      | Preparation => <>
-          <OperationsTableHeaderView.Preparation />
-          {switch pendingOperationsRequest {
-          | ApiRequest.Done(Ok(elements), _) =>
-            <Pagination
-              elements={Map.Int.valuesToArray(elements)}
-              renderItem={renderPreparation(account)}
-              emptyComponent={I18n.empty_preparations->React.string}
-              footerStyle
-            />
-          | Done(Error(error), _) => error->Errors.toString->React.string
-          | NotAsked
-          | Loading(Some(_))
-          | Loading(None) =>
-            <LoadingView />
-          }}
-        </>
+      <ScrollView
+        horizontal=true
+        contentContainerStyle={
+          open Style
+          style(~flexDirection=#column, ~flexBasis=1272.->dp, ~flexGrow=1., ())
+        }>
+        children
+      </ScrollView>
+    </View>
+  }
+}
+
+module OperationsHistory = {
+  @react.component
+  let make = (~account: Alias.t, ~request) => {
+    let config = ConfigContext.useContent()
+    let dimensions = Dimensions.useWindowDimensions()
+    let footerStyle = footerStyle(dimensions.width)
+    <>
+      <OperationsTableHeaderView.History />
+      {switch request {
+      | ApiRequest.Done(Ok(response), _) =>
+        <Pagination
+          elements={response.OperationApiRequest.operations->sort}
+          renderItem={renderOperation(account, config, response.currentLevel)}
+          emptyComponent={I18n.empty_operations->React.string}
+          footerStyle
+        />
+      | Done(Error(error), _) => error->Errors.toString->React.string
+      | NotAsked
+      | Loading(Some(_))
+      | Loading(None) =>
+        <LoadingView />
       }}
-    </ScrollView>
-  </View>
+    </>
+  }
+}
+
+module OperationsPending = {
+  @react.component
+  let make = (~account: Alias.t, ~request) => {
+    let dimensions = Dimensions.useWindowDimensions()
+    let footerStyle = footerStyle(dimensions.width)
+    <>
+      <OperationsTableHeaderView.Preparation />
+      {switch request {
+      | ApiRequest.Done(Ok(elements), _) =>
+        <Pagination
+          elements={Map.Int.valuesToArray(elements)}
+          renderItem={renderPreparation(account)}
+          emptyComponent={I18n.empty_preparations->React.string}
+          footerStyle
+        />
+      | Done(Error(error), _) => error->Errors.toString->React.string
+      | NotAsked
+      | Loading(Some(_))
+      | Loading(None) =>
+        <LoadingView />
+      }}
+    </>
+  }
+}
+
+module Multisig = {
+  @react.component
+  let make = (~account: Alias.t) => {
+    let operationsRequest = StoreContext.Operations.useLoad(~address=account.address, ())
+    let operationsReload = StoreContext.Operations.useResetAll()
+
+    let pendingOperationsRequest = StoreContext.Multisig.usePendingOperations(
+      ~address=account.Alias.address,
+    )
+    let (tab, setTab) = React.useState(() => History)
+    let headerExt = {
+      <View style={styles["tabSelector"]}>
+        <SegmentedButtons
+          selectedValue=tab
+          setSelectedValue=setTab
+          buttons=[(I18n.Btn.history, History), (I18n.Btn.in_preparation, Preparation)]
+        />
+      </View>
+    }
+    <Base
+      headerExt
+      account
+      onRefresh=operationsReload
+      loading={operationsRequest->ApiRequest.isLoading}>
+      {switch tab {
+      | History => <OperationsHistory account request=operationsRequest />
+      | Preparation => <OperationsPending account request=pendingOperationsRequest />
+      }}
+    </Base>
+  }
+}
+
+module Implicit = {
+  @react.component
+  let make = (~account: Alias.t) => {
+    let operationsRequest = StoreContext.Operations.useLoad(~address=account.address, ())
+    let operationsReload = StoreContext.Operations.useResetAll()
+    <Base account onRefresh=operationsReload loading={operationsRequest->ApiRequest.isLoading}>
+      <OperationsHistory account request=operationsRequest />
+    </Base>
+  }
+}
+
+@react.component
+let make = (~account: Alias.t) => {
+  account.kind == Some(Alias.Multisig) ? <Multisig account /> : <Implicit account />
 }
