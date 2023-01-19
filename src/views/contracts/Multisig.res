@@ -97,7 +97,7 @@ module API = {
     let decoder = json => {
       open Json.Decode
       {
-        lastOpID: (json |> field("last_op_id", string))->Int.fromString->Option.getWithDefault(0),
+        lastOpID: (json |> optional(field("last_op_id", string)))->Option.flatMap(Int.fromString)->Option.getWithDefault(0),
         metadata: json |> field("metadata", int),
         owner: json |> field("owner", PublicKeyHash.decoder),
         pendingOps: json |> field("pending_ops", int),
