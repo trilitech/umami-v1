@@ -119,6 +119,10 @@ module API = {
       map->PublicKeyHash.Map.keep((_, v) => v.chain == network.chain->Network.getChainId)
     )
 
+  let addToCache = (network: Network.t) =>  {
+    ()
+  }
+
   let get = (network: Network.t, ~addresses: array<PublicKeyHash.t>, ~contract: PublicKeyHash.t) =>
     network
     ->getAddresses(~addresses, ~contract)

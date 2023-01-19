@@ -382,8 +382,6 @@ module Step2 = {
 }
 
 module Step3 = {
-
-
   @react.component
   let make = (~currentStep, ~form: Form.api, ~back, ~loading, ~action) => {
     let owners = form.values.owners->Array.keepMap(owner =>
