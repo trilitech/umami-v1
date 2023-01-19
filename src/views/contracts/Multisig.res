@@ -229,10 +229,26 @@ module API = {
     actions
     ->JsonEx.parse
     ->Result.flatMap(json => json->JsonEx.decode(Json.Decode.array(Statement.decoder)))
-    ->Result.map(statements => {
-      Js.log("parseActions")
-      Js.log(statements)
-      (ReBigNumber.zero, "KT1UWjwqTDENDUR3ybx6Vv5ZmWzcZUAc71YC"->PublicKeyHash.build->Result.getExn)
+    ->Result.flatMap(statements => {
+      let amount =
+        statements[4]
+        ->Option.flatMap(s => s.args)
+        ->Option.flatMap(args => args[1])
+        ->Option.flatMap(arg => arg->Js.Dict.get("int"))
+        ->Option.map(ReBigNumber.fromString)
+      let recipient =
+        statements[2]
+        ->Option.flatMap(s => s.args)
+        ->Option.flatMap(args => args[1])
+        ->Option.flatMap(arg =>
+          arg
+          ->Js.Dict.get("bytes")
+          ->Option.map(s => s->ReTaquitoUtils.encodeKeyHash->PublicKeyHash.build->Result.getExn)
+        )
+      switch (amount, recipient) {
+      | (Some(amount), Some(recipient)) => Some((amount, recipient))
+      | _ => None
+      }->ResultEx.fromOption(JsonEx.ParsingError(""))
     })
   }
 

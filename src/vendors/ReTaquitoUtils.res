@@ -86,3 +86,6 @@ external b58cdecode: (string, prefix) => Js.TypedArray2.Uint8Array.t = "b58cdeco
 
 @module("@taquito/utils")
 external b58cencodeArray: (Js.TypedArray2.Uint8Array.t, prefix) => string = "b58cencode"
+
+@module("@taquito/utils")
+external encodeKeyHash: string => string = "encodeKeyHash"
