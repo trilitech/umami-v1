@@ -348,14 +348,77 @@ module Preparation = {
 
   module TransactionActionButtons = {
     @react.component
-    let make = () => {
+    let make = (~multisig, ~signer: Account.t, ~id, ~hasSigned, ~canSubmit) => {
       let style = Style.array([
         FormStyles.formSubmit,
         Style.style(~marginLeft=16.->Style.dp, ~marginTop=0.->Style.dp, ()),
       ])
+      let (operationSimulateRequest, sendOperationSimulate) = StoreContext.Operations.useSimulate()
+      let (operationRequest, sendOperation) = StoreContext.Operations.useCreate()
+      let (openAction, closeAction, wrapModal) = ModalAction.useModal()
+      let (modalContent, setModalContent) = React.useState(() => None)
+
+      React.useEffect1(() => {
+        switch modalContent {
+        | None => None
+        | Some(content) =>
+          openAction()
+          None
+        }
+      }, [modalContent])
+
+      let onPressSign = _ => {
+        let parameter =
+          ProtocolOptions.TransactionParameters.MichelineMichelsonV1Expression.parseMicheline(
+            id->Int.toString,
+          )->Result.getExn
+        let entrypoint = "approve"
+        let destination = multisig.Multisig.address
+        let amount = Tez.zero
+        let transfer = ProtocolHelper.Transfer.makeSimpleTez(
+          ~parameter,
+          ~entrypoint,
+          ~destination,
+          ~amount,
+          (),
+        )
+        let transfers = [transfer]
+        let source = signer
+        let operation = ProtocolHelper.Transfer.makeBatch(~source, ~transfers, ())
+        Js.log(__LOC__)
+        Js.log(operation)
+        let state = React.useState(() => None)
+        let signOpStep = React.useState(() => SignOperationView.SummaryStep)
+        sendOperationSimulate(operation)->Promise.getOk(dryRun => {
+          wrapModal({
+            let sender = Alias.fromAccount(signer)
+            let sendOperation = (~operation: Protocol.batch, signingIntent) =>
+              sendOperation({operation: operation, signingIntent: signingIntent})->Promise.tapOk(({
+                hash,
+              }) =>
+                wrapModal(
+                  <SubmittedView hash onPressCancel={_ => ()} submitText=I18n.Btn.go_operations />,
+                )
+                ->Some
+                ->{_ => setModalContent}
+              )
+            <SignOperationView
+              sender
+              signer
+              state
+              signOpStep
+              dryRun
+              operation
+              sendOperation
+              loading={operationRequest->ApiRequest.isLoading}
+            />
+          })->{content => setModalContent(_ => Some(content))}
+        })
+      }
+
       <>
-        <Buttons.SubmitPrimary text=I18n.Btn.sign onPress={_ => ()} style disabled={true} />
-        <Buttons.SubmitPrimary text=I18n.Btn.submit onPress={_ => ()} style disabled={true} />
+        <Buttons.SubmitPrimary text=I18n.Btn.sign onPress=onPressSign style disabled={!hasSigned} />
+        <Buttons.SubmitPrimary text=I18n.Btn.submit onPress={_ => ()} style disabled={!canSubmit} />
         <Buttons.SubmitPrimary
           text=I18n.Btn.global_batch_add_short onPress={_ => ()} style disabled={true}
         />
@@ -461,9 +524,17 @@ module Preparation = {
                             />
                           : React.null}
                       </View>
-                      {!hasSigned && PublicKeyHash.Map.has(accounts, owner)
-                        ? <TransactionActionButtons />
-                        : React.null}
+                      {switch PublicKeyHash.Map.get(accounts, owner) {
+                      | Some(signer) =>
+                        <TransactionActionButtons
+                          signer
+                          multisig
+                          id=p.id
+                          hasSigned
+                          canSubmit={Array.length(p.approvals) >= multisig.Multisig.threshold}
+                        />
+                      | None => React.null
+                      }}
                     </>
                   }
                 </View>

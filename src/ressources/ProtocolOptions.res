@@ -37,6 +37,7 @@ module TransactionParameters = {
       try ReTaquitoParser.parser()->ReTaquitoParser.parseMichelineExpression(s)->Ok catch {
       | Js.Exn.Error(exn) => Error(ReTaquitoError.ParseMicheline(exn->Js.Exn.message))
       }
+
   }
 
   type entrypoint = ReTaquitoTypes.Transfer.Entrypoint.t

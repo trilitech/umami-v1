@@ -130,7 +130,10 @@ module API = {
     ->Promise.flatMapOk(contracts =>
       contracts
       ->Array.map(contract =>
-        network->getStorage(~contract)->Promise.mapOk(storage => (contract, storage))
+        network
+        ->getStorage(~contract)
+        ->Promise.mapOk(storage => (contract, storage))
+        ->Promise.mapError(e => Js.log(__LOC__ ++ ": " ++ (contract :> string)))
       )
       ->Promise.allArray
       ->Promise.mapOk(responses =>
