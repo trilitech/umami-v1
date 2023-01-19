@@ -1002,6 +1002,11 @@ module Multisig = {
     )
   }
 
+  let useGetFromAddress = (address: PublicKeyHash.t) => {
+    let multisigs = useGetAll()
+    multisigs->PublicKeyHash.Map.get(address)
+  }
+
   let useResetAll = () => {
     let (_, setMultisigRequest) = useRequestState()
     () => setMultisigRequest(ApiRequest.expireCache)
