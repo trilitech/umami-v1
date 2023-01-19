@@ -141,6 +141,15 @@ let make = (~account: Alias.t) => {
     None
   }, [pendingOperationsRequest])
 
+  let pendingOperationsRequest = StoreContext.Multisig.usePendingOperations(
+    ~address="KT1AiXiZwkcqb3ZECvKcF2qtWkmtgn9U1hMT"->PublicKeyHash.build->Result.getExn,
+  )
+  React.useEffect1(() => {
+    Js.log("pending operations")
+    Js.log(pendingOperationsRequest)
+    None
+  }, [pendingOperationsRequest])
+
   let config = ConfigContext.useContent()
   let dimensions = Dimensions.useWindowDimensions()
   let (tab, setTab) = React.useState(() => History)
