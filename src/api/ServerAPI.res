@@ -353,18 +353,16 @@ module URL = {
       )
       ->ResultEx.fromOption(UnknownNetwork(Network.getChainId(network.chain)))
 
-      let tzktBigmapKeys = (~network: Network.network, ~bigmap: int) =>
-        network.chain
-        ->Network.chainNetwork
-        ->Option.map(network => build_url(
-          "https://api." ++
-          (network ++
-          ".tzkt.io/v1/bigmaps/" ++
-          bigmap->Int.toString ++
-          "/keys"),
+    let tzktBigmapKeys = (~network: Network.network, ~bigmap: int) =>
+      network.chain
+      ->Network.chainNetwork
+      ->Option.map(network =>
+        build_url(
+          "https://api." ++ (network ++ ".tzkt.io/v1/bigmaps/" ++ bigmap->Int.toString ++ "/keys"),
           list{},
-        ))
-         ->ResultEx.fromOption(UnknownNetwork(Network.getChainId(network.chain)))
+        )
+      )
+      ->ResultEx.fromOption(UnknownNetwork(Network.getChainId(network.chain)))
   }
 }
 
@@ -500,6 +498,9 @@ module ExplorerMaker = (
     ->Get.get
     ->Promise.flatMapOk(response => {
       let decoder = json => {
+        Js.log(__LOC__)
+        Js.log(json)
+        Js.log(__LOC__)
         open Json.Decode
         (
           json |> field("pkh", PublicKeyHash.decoder),

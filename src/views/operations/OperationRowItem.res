@@ -364,19 +364,26 @@ module Preparation = {
   }
 
   @react.component
-  let make = (~account: Alias.t, ~preparation as p: foo) => {
+  let make = (~account: Alias.t, ~preparation as p: Multisig.API.PendingOperation.t) => {
     let theme = ThemeContext.useTheme()
     let accounts = StoreContext.Accounts.useGetAll()
     let aliases = StoreContext.Aliases.useGetAll()
     let tokens = StoreContext.Tokens.useGetAll()
+    let multisig = StoreContext.Multisig.useGetFromAddress(account.Alias.address)->Option.getExn
 
     {
-      switch p.payload {
-      | Transaction(Token(common, _, _) as transaction)
-      | Transaction(Tez(common) as transaction) =>
+      switch p.type_ {
+      | Transaction =>
+        let common: Operation.Transaction.common = {
+          amount: p.amount->ReBigNumber.toString->Tez.fromMutezString,
+          destination: p.recipient,
+          parameters: None,
+        }
+        let transaction = Operation.Transaction.Tez(common)
+
         let tooltipSuffix = p.id->Int.toString
-        let signed = p.signers->Array.length->Int.toString
-        let threshold = p.source.threshold->Int.toString
+        let signed = p.approvals->Array.length->Int.toString
+        let threshold = multisig.Multisig.threshold->Int.toString
         let header = collapseButton => {
           <Table.Row.Bordered>
             <CellExpandToggle> {collapseButton} </CellExpandToggle>
@@ -396,16 +403,16 @@ module Preparation = {
                   open Style
                   style(~marginRight=10.->dp, ())
                 }
-                p.signers->Array.length >= p.source.threshold
+                p.approvals->Array.length >= multisig.Multisig.threshold
                   ? <Icons.CheckFill size style color=theme.colors.textPositive />
                   : <Icons.RadioOff size style color=theme.colors.textMediumEmphasis />
               }
               {I18n.approved_a_of_b(signed, threshold)->Typography.overline2}
             </View>
             <View>
-              {p.source.signers
+              {multisig.Multisig.signers
               ->Array.mapWithIndex((i, owner) => {
-                let hasSigned = Js.Array.includes(owner, p.signers)
+                let hasSigned = Js.Array.includes(owner, p.approvals)
                 <View key={i->Int.toString} style={stylesFoo["signerWrapper"]}>
                   {
                     let textColor = hasSigned
@@ -432,7 +439,7 @@ module Preparation = {
                             (),
                           )->Some
                     let lst =
-                      i == Js.Array.length(p.source.signers) - 1
+                      i == Js.Array.length(multisig.Multisig.signers) - 1
                         ? stylesFoo["signerLst"]->Some
                         : None
                     let style = Style.arrayOption([
@@ -465,10 +472,6 @@ module Preparation = {
             </View>
           </View>
         </ContractRows.Collapsable>
-      | Reveal(_)
-      | Origination(_)
-      | Delegation(_)
-      | Unknown => <> <CellType> {I18n.unknown_operation->Typography.body1} </CellType> </>
       }
     }
   }

@@ -114,36 +114,6 @@ type tab = History | Preparation
 
 type foo = OperationRowItem.Preparation.foo
 
-let test_data1 = {
-  let source = Multisig.test_data[0]->Option.getExn
-  let destination = Obj.magic("tz2M5GjuWooVsSbEmc8TWVRpHP8hxrqsoF6D")
-  let payload = Operation.Transaction(
-    Tez({
-      Operation.Transaction.amount: Tez.fromMutezInt(6000),
-      destination: destination,
-      parameters: None,
-    }),
-  )
-  let signers = [Obj.magic("tz2M5GjuWooVsSbEmc8TWVRpHP8hxrqsoF6D")]
-  {
-    OperationRowItem.Preparation.id: 0,
-    payload: payload,
-    source: source,
-    signers: signers,
-  }
-}
-
-let test_data2 = {
-  ...test_data1,
-  signers: [
-    Obj.magic("tz2M5GjuWooVsSbEmc8TWVRpHP8hxrqsoF6D"),
-    Obj.magic("tz2QUKUe6JSve7PgmbeJPUkWPyAtjEWPoCtc"),
-    Obj.magic("tz1UMMZHpwmrQBHjAdwcL8uMe3fjZSecEz3F"),
-  ],
-}
-
-let test_data = [test_data1, test_data2]
-
 let renderOperation = (account, config, currentLevel, operation: Operation.t) => {
   let key = {
     open Operation
@@ -152,8 +122,8 @@ let renderOperation = (account, config, currentLevel, operation: Operation.t) =>
   <OperationRowItem account config key operation currentLevel />
 }
 
-let renderPreparation = (account, preparation: foo) => {
-  let key = preparation.OperationRowItem.Preparation.id->Int.toString
+let renderPreparation = (account, preparation: Multisig.API.PendingOperation.t) => {
+  let key = preparation.Multisig.API.PendingOperation.id->Int.toString
   <OperationRowItem.Preparation account key preparation />
 }
 
@@ -161,13 +131,9 @@ let renderPreparation = (account, preparation: foo) => {
 let make = (~account: Alias.t) => {
   let operationsRequest = StoreContext.Operations.useLoad(~address=account.address, ())
   let operationsReload = StoreContext.Operations.useResetAll()
-  let preparationsRequest: Umami.ApiRequest.t<array<foo>> = ApiRequest.Done(
-    Ok(test_data),
-    ApiRequest.ValidSince(0.),
-  )
 
   let pendingOperationsRequest = StoreContext.Multisig.usePendingOperations(
-    ~address="KT1AiXiZwkcqb3ZECvKcF2qtWkmtgn9U1hMT"->PublicKeyHash.build->Result.getExn,
+    ~address=account.Alias.address,
   )
   React.useEffect1(() => {
     Js.log("pending operations")
@@ -230,10 +196,10 @@ let make = (~account: Alias.t) => {
         </>
       | Preparation => <>
           <OperationsTableHeaderView.Preparation />
-          {switch preparationsRequest {
+          {switch pendingOperationsRequest {
           | ApiRequest.Done(Ok(elements), _) =>
             <Pagination
-              elements
+              elements={Map.Int.valuesToArray(elements)}
               renderItem={renderPreparation(account)}
               emptyComponent={I18n.empty_preparations->React.string}
               footerStyle

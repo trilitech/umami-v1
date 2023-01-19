@@ -68,13 +68,19 @@ module Cache = {
 module API = {
   let getAddresses = (network, ~addresses: array<PublicKeyHash.t>, ~contract: PublicKeyHash.t) => {
     let addresses = addresses->List.fromArray
+    Js.log(__LOC__)
+    Js.log(addresses)
+    Js.log(__LOC__)
     network
     ->ServerAPI.Explorer.getMultisigs(~addresses, ~contract)
-    ->Promise.mapOk(response =>
+    ->Promise.mapOk(response => {
+      Js.log(__LOC__)
+      Js.log(response)
+      Js.log(__LOC__)
       response->Array.reduce(Set.make(~id=module(PublicKeyHash.Comparator)), (contracts, (_, ks)) =>
         contracts->Set.mergeMany(ks)
       )
-    )
+    })
     ->Promise.mapOk(Set.toArray)
   }
 
@@ -109,8 +115,7 @@ module API = {
   }
 
   let getFromCache = (network: Network.t) =>
-    Cache.getWithFallback()
-    ->Result.map(map =>
+    Cache.getWithFallback()->Result.map(map =>
       map->PublicKeyHash.Map.keep((_, v) => v.chain == network.chain->Network.getChainId)
     )
 
@@ -153,7 +158,7 @@ module API = {
             signers: storage.signers,
             threshold: storage.threshold,
           })
-        //| (_, Some(multisig)) => Some(multisig) // cached multisig not found on chain, should not happen
+        | (_, Some(multisig)) => Some(multisig) // cached multisig not found on chain, should not happen
         | _ => None
         }
       )
