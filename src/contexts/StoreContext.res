@@ -1011,6 +1011,11 @@ module Multisig = {
     let resetMultisigs = useResetAll()
     MultisigApiRequest.useUpdate(~sideEffect=_ => resetMultisigs(), ())
   }
+
+  let usePendingOperations = (~address: PublicKeyHash.t) => {
+    let requestState = React.useState(() => ApiRequest.NotAsked)
+    MultisigApiRequest.usePendingOperations(~requestState, ~address)
+  }
 }
 
 /*

@@ -153,7 +153,7 @@ module API = {
             signers: storage.signers,
             threshold: storage.threshold,
           })
-        | (_, Some(multisig)) => Some(multisig) // cached multisig not found on chain, should not happen
+        //| (_, Some(multisig)) => Some(multisig) // cached multisig not found on chain, should not happen
         | _ => None
         }
       )
@@ -186,21 +186,81 @@ module API = {
       let decoder = json => {
         open Json.Decode
         {
-          key: json |> field("key", int),
+          key: (json |> field("key", string))->Int.fromString->Option.getWithDefault(0),
           value: json |> field("value", Value.decoder),
         }
       }
     }
   }
 
-  let getProposals = (~network: Network.t, ~bigmap: int) => {
+  module PendingOperation = {
+    type type_ = Transaction
+
+    type t = {
+      id: int,
+      type_: type_,
+      amount: ReBigNumber.t,
+      recipient: PublicKeyHash.t,
+      approvals: array<PublicKeyHash.t>,
+    }
+  }
+
+  module Statement = {
+    type t = {
+      prim: string,
+      args: option<array<Js.Dict.t<string>>>,
+    }
+
+    let decoder = json => {
+      open Json.Decode
+      {
+        prim: json |> field("prim", string),
+        args: json |> optional(field("args", array(dict(string)))),
+      }
+    }
+  }
+
+  let parseActions = actions => {
+    actions
+    ->JsonEx.parse
+    ->Result.flatMap(json => json->JsonEx.decode(Json.Decode.array(Statement.decoder)))
+    ->Result.map(statements => {
+      Js.log("parseActions")
+      Js.log(statements)
+      (ReBigNumber.zero, "KT1UWjwqTDENDUR3ybx6Vv5ZmWzcZUAc71YC"->PublicKeyHash.build->Result.getExn)
+    })
+  }
+
+  let getPendingOperations = (network: Network.t, ~bigmap: int) =>
     ServerAPI.URL.External.tzktBigmapKeys(~network, ~bigmap)
     ->Promise.value
     ->Promise.flatMapOk(url => url->ServerAPI.URL.get)
     ->Promise.flatMapOk(json =>
       json->JsonEx.decode(Json.Decode.array(Bigmap.Entry.decoder))->Promise.value
     )
-  }
+    ->Promise.flatMapOk(entries =>
+      entries
+      ->Array.map(entry => {
+        parseActions(entry.value.actions)
+        ->Result.map(((amount, recipient)) => {
+          PendingOperation.id: entry.key,
+          type_: Transaction,
+          amount: amount,
+          recipient: recipient,
+          approvals: entry.value.approvals,
+        })
+        ->Promise.value
+      })
+      ->Promise.allArray
+    )
+    ->Promise.mapOk(results =>
+      results->Array.reduce(Map.Int.empty, (map, result) =>
+        switch result {
+        | Ok(pendingOperation) => map->Map.Int.set(pendingOperation.id, pendingOperation)
+        | _ => map
+        }
+      )
+    )
 }
 
 let code: Code.t = %raw(`[

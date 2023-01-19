@@ -33,6 +33,13 @@ module Base = {
         ~contract=config.network.chain->Multisig.contract,
       )
     )
+
+  let getPendingOperations = (~config: ConfigContext.env, ~address) =>
+    config.network
+    ->Multisig.API.getStorage(~contract=address)
+    ->Promise.flatMapOk(storage =>
+      config.network->Multisig.API.getPendingOperations(~bigmap=storage.pendingOps)
+    )
 }
 /* Get */
 
@@ -52,4 +59,11 @@ let useUpdate = {
     )
   }
   ApiRequest.useSetter(~logOk, ~set, ~kind)
+}
+
+/* Other */
+
+let usePendingOperations = (~requestState, ~address) => {
+  let get = (~config: ConfigContext.env, ()) => Base.getPendingOperations(~config, ~address)
+  ApiRequest.useLoader(~get, ~kind=Logs.Multisig, ~requestState, ())
 }
