@@ -35,6 +35,12 @@ type t =
 let makeTez = t => t->Tez
 let makeToken = (~amount, ~token) => Token({amount: amount, token: token})
 
+let isZero = x =>
+  switch x {
+  | Tez(t) => Tez.zero == t
+  | Token({amount: a}) => TokenRepr.Unit.zero == a
+  }
+
 let toString = x =>
   switch x {
   | Tez(tez) => tez->Tez.toString

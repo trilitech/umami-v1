@@ -419,6 +419,8 @@ module Batch = {
         list{Protocol.Amount.Tez(fee)},
       ))
 
+    let totalFees = dryRun->ProtocolHelper.Simulation.getTotalFees
+
     let amounts =
       operation.managers
       ->filterTransfers
@@ -426,7 +428,9 @@ module Batch = {
 
     let totals = amounts->Protocol.Amount.reduce
 
-    let subtotals = (I18n.Label.summary_subtotal, totals)
+    let subtotals = List.every(totals, Protocol.Amount.isZero)
+      ? None
+      : Some(I18n.Label.summary_subtotal, totals)
 
     let totalTez = {
       let (sub, noTokens) = switch totals {
@@ -434,19 +438,21 @@ module Batch = {
       | t => (Tez.zero, t == list{})
       }
 
-      (
-        noTokens ? I18n.Label.summary_total : I18n.Label.summary_total_tez,
-        list{
-          Protocol.Amount.Tez({
-            open Tez.Infix
-            sub + dryRun->ProtocolHelper.Simulation.getTotalFees
-          }),
-        },
-      )
+      sub == Tez.zero && totalFees == feeSum
+        ? None
+        : Some(
+            noTokens ? I18n.Label.summary_total : I18n.Label.summary_total_tez,
+            list{
+              Protocol.Amount.Tez({
+                open Tez.Infix
+                sub + dryRun->ProtocolHelper.Simulation.getTotalFees
+              }),
+            },
+          )
     }
 
     open List.Infix
-    \"@:"(subtotals, \"@:"(partialFee, \"@?"(revealFee, list{totalTez})))
+    \"@?"(subtotals, \"@:"(partialFee, \"@?"(revealFee, \"@?"(totalTez, list{}))))
   }
 
   @react.component
