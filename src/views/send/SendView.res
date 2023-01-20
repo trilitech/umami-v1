@@ -237,16 +237,6 @@ module EditionView = {
   }
 }
 
-module Lambda = {
-  type t
-
-  @module("@taquito/taquito") @scope("MANAGER_LAMBDA")
-  external transferImplicit: (string, ReBigNumber.t) => t = "transferImplicit"
-
-  @module("@taquito/taquito") @scope("MANAGER_LAMBDA")
-  external transferToContract: (string, ReBigNumber.t) => t = "transferToContract"
-}
-
 @react.component
 let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
   let initToken = StoreContext.SelectedToken.useGet()
@@ -288,8 +278,8 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
     let amount =
       state.amount->ProtocolAmount.getTez->Option.getWithDefault(Tez.zero)->Tez.toBigNumber
     let lambda = PublicKeyHash.isImplicit(recipient)
-      ? Lambda.transferImplicit((recipient :> string), amount)
-      : Lambda.transferToContract((recipient :> string), amount)
+      ? ReTaquito.Toolkit.Lambda.transferImplicit((recipient :> string), amount)
+      : ReTaquito.Toolkit.Lambda.transferToContract((recipient :> string), amount)
     Js.log(__LOC__)
     Js.log(lambda)
     /*

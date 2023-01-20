@@ -164,9 +164,12 @@ module Toolkit = {
 
   module Lambda = {
     include Types.Lambda
-  
-    @module("@taquito/taquito")
-    external transferImplicit: (tz, ReBigNumber.t) => t = "transferImplicit"
+
+    @module("@taquito/taquito") @scope("MANAGER_LAMBDA")
+    external transferImplicit: (string, ReBigNumber.t) => t = "transferImplicit"
+
+    @module("@taquito/taquito") @scope("MANAGER_LAMBDA")
+    external transferToContract: (string, ReBigNumber.t) => t = "transferToContract"
   }
 
   module Batch = {
