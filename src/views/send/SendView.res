@@ -206,7 +206,8 @@ module Form = {
                 style=FormStyles.formSecondary
                 text=I18n.global_batch_add
                 onPress={_ => addToBatch()}
-                disabled={!formFieldsAreValids}
+                disabled={!formFieldsAreValids ||
+                (form.values.sender.address :> string)->PublicKeyHash.buildContract->Result.isOk}
               />
             )}
           </View>
