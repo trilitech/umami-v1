@@ -43,6 +43,7 @@ module Base = {
       config.network->Multisig.API.getPendingOperations(~bigmap=storage.pendingOps)
     )
 }
+
 /* Get */
 
 let useLoad = requestState => {

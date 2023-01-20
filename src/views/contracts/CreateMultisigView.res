@@ -179,6 +179,42 @@ module Form = {
   )
 
   include ReForm.Make(StateLenses)
+
+  let ownerAddresses = (t: state) =>
+    t.values.owners->Array.keepMap(owner =>
+      switch owner {
+      | Valid(t) => Some(t->FormUtils.Alias.address)
+      | _ => None
+      }
+    )
+
+  let topOperation = (t: state, ~source) => {
+    open Protocol
+    {
+      source: source,
+      managers: [
+        ProtocolHelper.Origination.make(
+          ~balance=Tez.fromMutezString("0"),
+          ~code=Multisig.code,
+          ~storage=Multisig.storage(source.address, t->ownerAddresses, t.values.threshold),
+          ~delegate=None,
+          (),
+        ),
+      ],
+    }
+  }
+
+  let toMultisig = (t: state, ~address, ~chain) => {
+    open Multisig
+    {
+      address: address,
+      alias: t.values.name,
+      balance: ReBigNumber.zero,
+      chain: chain,
+      signers: t->ownerAddresses,
+      threshold: t.values.threshold,
+    }
+  }
 }
 
 let validateOwners: array<FormUtils.Alias.any> => ReSchema.fieldState = owners => {
@@ -200,8 +236,7 @@ let validateOwners: array<FormUtils.Alias.any> => ReSchema.fieldState = owners =
 }
 
 let onlyValidOwners = array =>
-  array
-  ->Array.keepMap(owner =>
+  array->Array.keepMap(owner =>
     switch owner {
     | FormUtils.Alias.Valid(alias) => Some(alias)
     | _ => None
@@ -334,8 +369,8 @@ module Step2 = {
         }>
         {
           let validOwnersNumber = switch onlyValidOwners(form.values.owners)->Array.length {
-            | 0 => 1
-            | x => x
+          | 0 => 1
+          | x => x
           }
           <>
             <Selector
@@ -397,7 +432,9 @@ module Step3 = {
       </Typography.Body1>
       <ContractDetailsView.Multisig.Name name=form.values.name />
       <ContractDetailsView.Multisig.Owners owners={Array.map(owners, FormUtils.Alias.address)} />
-      <ContractDetailsView.Multisig.Threshold threshold={form.values.threshold} owners={owners->Array.length} />
+      <ContractDetailsView.Multisig.Threshold
+        threshold={form.values.threshold} owners={owners->Array.length}
+      />
       <View style={styles["row"]}>
         <Buttons.SubmitSecondary
           text=I18n.Btn.back
@@ -427,6 +464,9 @@ let stepToString = step =>
   | SubmittedStep(_) => "submittedstep"
   }
 
+type Errors.t +=
+  | AddressNotFound
+
 @react.component
 let make = (~account: Account.t, ~closeAction) => {
   let theme = ThemeContext.useTheme()
@@ -444,30 +484,7 @@ let make = (~account: Account.t, ~closeAction) => {
       )
     },
     ~onSubmit=({state, raiseSubmitFailed}) => {
-      let operation = {
-        open Protocol
-        {
-          source: account,
-          managers: [
-            ProtocolHelper.Origination.make(
-              ~balance=Tez.fromMutezString("0"),
-              ~code=Multisig.code,
-              ~storage=Multisig.storage(
-                account.address,
-                state.values.owners->Array.keepMap(owner =>
-                  switch owner {
-                  | Valid(t) => Some(t->FormUtils.Alias.address)
-                  | _ => None
-                  }
-                ),
-                state.values.threshold,
-              ),
-              ~delegate=None,
-              (),
-            ),
-          ],
-        }
-      }
+      let operation = state->Form.topOperation(~source=account)
       sendOperationSimulate(operation)->Promise.get(x => {
         switch x {
         | Error(e) => raiseSubmitFailed(Some(e->Errors.toString))
@@ -485,6 +502,8 @@ let make = (~account: Account.t, ~closeAction) => {
   let state = React.useState(() => None)
   let (sign, setSign) as signOpStep = React.useState(() => SignOperationView.SummaryStep)
   let (operationRequest, sendOperation) = StoreContext.Operations.useCreate()
+  let (multisigRequest, updateMultisig) = StoreContext.Multisig.useUpdate()
+  let config = ConfigContext.useContent()
 
   let closeButton =
     <ModalFormView.CloseButton
@@ -539,17 +558,27 @@ let make = (~account: Account.t, ~closeAction) => {
                       signingIntent: signingIntent,
                     })
                     ->Promise.tapOk(result => setModalStep(_ => SubmittedStep(result.hash)))
-                    ->Promise.tapOk(result => {
-                        result.results->Array.map(x => {
-                          switch ReTaquitoTypes.Operation.classifiy(x) {
-                          | Origination(x) => {
-                              Js.log(x)
-                              Js.log(x.metadata.operation_result.originated_contracts)
-                            }
-                          }
-                        })
-                    })}
-                  loading={operationRequest->ApiRequest.isLoading}
+                    ->Promise.flatMapOk(result =>
+                      result.results[0]
+                      ->Option.map(ReTaquitoTypes.Operation.classifiy)
+                      ->Option.flatMap(result =>
+                        switch result {
+                        | Origination(result) =>
+                          result.metadata.operation_result.originated_contracts[0]
+                        }
+                      )
+                      ->Promise.fromOption(~error=AddressNotFound)
+                    )
+                    ->Promise.mapOk(s => s->PublicKeyHash.build->Result.getExn)
+                    ->Promise.mapOk(address =>
+                      form.state->Form.toMultisig(
+                        ~address,
+                        ~chain=config.network.chain->Network.getChainId,
+                      )
+                    )
+                    ->Promise.tapOk(multisig => multisig->updateMultisig)}
+                  loading={operationRequest->ApiRequest.isLoading ||
+                    multisigRequest->ApiRequest.isLoading}
                   icon={_ => Some(
                     Icons.Key.build(
                       ~style=?None,

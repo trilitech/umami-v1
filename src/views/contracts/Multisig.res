@@ -97,7 +97,9 @@ module API = {
     let decoder = json => {
       open Json.Decode
       {
-        lastOpID: (json |> optional(field("last_op_id", string)))->Option.flatMap(Int.fromString)->Option.getWithDefault(0),
+        lastOpID: (json |> optional(field("last_op_id", string)))
+        ->Option.flatMap(Int.fromString)
+        ->Option.getWithDefault(0),
         metadata: json |> field("metadata", int),
         owner: json |> field("owner", PublicKeyHash.decoder),
         pendingOps: json |> field("pending_ops", int),
@@ -160,12 +162,11 @@ module API = {
             signers: storage.signers,
             threshold: storage.threshold,
           })
-        | (_, Some(multisig)) => Some(multisig) // cached multisig not detected by mezos
+        | (_, Some(multisig)) => Some(multisig)
         | _ => None
         }
       )
     )
-    ->Promise.tapOk(Js.log)
     ->Promise.tapOk(cache => Cache.set(cache))
 
   module Bigmap = {

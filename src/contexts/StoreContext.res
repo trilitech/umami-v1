@@ -994,6 +994,10 @@ module Multisig = {
     multisigsRequest
   }
 
+  let useCreate = () => {
+    ()
+  }
+
   let useGetAll = () => {
     let config = ConfigContext.useContent()
     let multisigsRequest = useRequest()
