@@ -175,6 +175,7 @@ module Aliases = {
   let get = (~config: ConfigContext.env) => {
     let pkhs = config.baseDir()->KeyWallet.PkhAliases.read
     let sks = config.baseDir()->KeyWallet.SecretAliases.read
+    let ms = Multisig.Cache.getWithFallback()->Result.getWithDefault(PublicKeyHash.Map.empty)
 
     Promise.flatMapOk2(sks, pkhs, (sks, pkhs) =>
       pkhs
@@ -192,6 +193,15 @@ module Aliases = {
         open Alias
         {name: name, address: value, kind: Some(kind)}
       })
+      ->(aliases =>
+        Array.concat(
+          PublicKeyHash.Map.keepMap(ms, (k, v) =>
+            Js.Array.some(({Alias.address: address}) => address == k, aliases)
+              ? None
+              : v->Alias.fromMultisig->Some
+          )->PublicKeyHash.Map.valuesToArray,
+          aliases,
+        ))
       ->Promise.ok
     )
   }
