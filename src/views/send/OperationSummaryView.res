@@ -377,8 +377,16 @@ module Base = {
   ) => {
     let (sender, sender_title) = sender
     let (signer, signer_title) = signer
-    let content: list<(string, Belt.List.t<string>)> =
-      content->List.map(((field, amounts)) => (field, amounts->List.map(Protocol.Amount.show)))
+    let content: list<(string, Belt.List.t<string>)> = content->List.map(((field, amounts)) => {
+      let amounts = amounts->List.keepMap(amount =>
+        switch amount {
+        | Protocol.Amount.Tez(t) => Tez.zero == t ? None : amount->Protocol.Amount.show->Some
+        | Protocol.Amount.Token({amount: a}) =>
+          TokenRepr.Unit.zero == a ? None : amount->Protocol.Amount.show->Some
+        }
+      )
+      (field, amounts)
+    })
 
     <View style={Style.arrayOption([Some(styles["operationSummary"]), styleProp])}>
       {sender.Alias.address == signer.Account.address
