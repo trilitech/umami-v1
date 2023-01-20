@@ -159,7 +159,7 @@ module API = {
           // cache new discovered multisig
           Some({
             address: contract,
-            alias: "Multisig #" ++ Js.Date.now()->Float.toInt->Int.toString,
+            alias: "Multisig #" ++ Js.Date.now()->Int64.of_float->Int64.to_string,
             balance: ReBigNumber.zero,
             chain: network.chain->Network.getChainId,
             signers: storage.signers,
