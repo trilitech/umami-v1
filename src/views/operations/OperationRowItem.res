@@ -415,7 +415,7 @@ module Preparation = {
       }
 
       <>
-        <Buttons.SubmitPrimary text=I18n.Btn.sign onPress=onPressSign style disabled={!hasSigned} />
+        <Buttons.SubmitPrimary text=I18n.Btn.sign onPress=onPressSign style disabled={hasSigned} />
         <Buttons.SubmitPrimary text=I18n.Btn.submit onPress={_ => ()} style disabled={!canSubmit} />
         <Buttons.SubmitPrimary
           text=I18n.Btn.global_batch_add_short onPress={_ => ()} style disabled={true}
