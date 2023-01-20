@@ -160,7 +160,7 @@ module API = {
             signers: storage.signers,
             threshold: storage.threshold,
           })
-        //| (_, Some(multisig)) => Some(multisig) // cached multisig not found on chain, should not happen
+        | (_, Some(multisig)) => Some(multisig) // cached multisig not detected by mezos
         | _ => None
         }
       )

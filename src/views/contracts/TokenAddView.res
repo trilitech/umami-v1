@@ -50,16 +50,13 @@ let styles = {
 module FormAddress = {
   @react.component
   let make = (~form: TokenCreateForm.api) =>
-    <FormGroupTextInput
-      label=I18n.Label.add_token_address
+    <ContractAddView.FormAddress
       value=form.values.address
       handleChange={form.handleChange(Address)}
       error={list{
         form.formState->FormUtils.getFormStateError,
         form.getFieldError(Field(Address)),
       }->Option.firstSome}
-      placeholder=I18n.Input_placeholder.add_token_address
-      clearButton=true
     />
 }
 
@@ -311,8 +308,7 @@ let make = (
       switch (tokenKind, pkh) {
       | (Done(Ok(#...TokenContract.kind as kind), _), Ok(_)) =>
         <ContractDetailsView.Tag content={kind->TokenContract.kindToString} />
-      | _ =>
-        React.null
+      | _ => React.null
       }
     }
     <ContractDetailsView.Overline text=headlineText />

@@ -33,7 +33,7 @@ let styles = {
   })
 }
 
-module AddTokenButton = {
+module AddContractButton = {
   let styles = {
     open Style
     StyleSheet.create({
@@ -42,7 +42,7 @@ module AddTokenButton = {
   }
 
   @react.component
-  let make = (~tokens, ~chain=?) => {
+  let make = (~chain=?, ~popup) => {
     let (openAction, closeAction, wrapModal) = ModalAction.useModal()
     let tooltip =
       chain == None ? Some(("add_token_button", I18n.Tooltip.chain_not_connected)) : None
@@ -52,20 +52,39 @@ module AddTokenButton = {
         style={styles["button"]}
         disabled={chain == None}
         ?tooltip
-        onPress={_ => openAction()}
+        onPress={_ => {
+          Js.log(__LOC__)
+          openAction()
+        }}
         text=I18n.Btn.add_contract
         icon=Icons.Add.build
         primary=true
       />
-      {wrapModal(
-        <TokenAddView
-          action=#Add
-          chain={chain->Option.getWithDefault(Network.unsafeChainId(""))}
-          tokens
-          closeAction
-        />,
-      )}
+      {wrapModal(popup(closeAction))}
     </>
+  }
+}
+
+module AddTokenButton = {
+  @react.component
+  let make = (~tokens, ~chain=?) => {
+    let popup = closeAction => {
+      <TokenAddView
+        action=#Add
+        chain={chain->Option.getWithDefault(Network.unsafeChainId(""))}
+        tokens
+        closeAction
+      />
+    }
+    <AddContractButton chain popup />
+  }
+}
+
+module AddMultisigButton = {
+  @react.component
+  let make = (~chain=?) => {
+    let popup = closeAction => {<MultisigAddView closeAction />}
+    <AddContractButton chain popup />
   }
 }
 
@@ -294,31 +313,36 @@ let make = () => {
       style={styles["header"]}
     />
     <View style={styles["actionBar"]}> <ContractTypeSwitch contractType setContractType /> </View>
-    <View style={styles["actionBar"]}>
-      <AddTokenButton
-        chain=?currentChain
-        tokens={tokens->Option.mapDefault(TokensLibrary.Generic.empty, t =>
-          t->Result.getWithDefault(TokensLibrary.Generic.empty)
-        )}
-      />
-      {<CreateNewMultisigButton chain=?currentChain />->ReactUtils.onlyWhen(
-        contractType == Multisig,
-      )}
-    </View>
     {switch contractType {
-    | Token =>
-      switch partitionedTokens {
-      | None => <LoadingView />
-      | Some(Error(error)) => <ErrorView error />
-      | Some(Ok((registered, unregistered))) => <TokensView registered unregistered currentChain />
-      }
-    | Multisig =>
-      switch multisigs {
-      | None => <LoadingView />
-      | Some(Error(error)) => <ErrorView error />
-      | Some(Ok(multisigs)) =>
-        <MultisigsView multisigs={Umami.PublicKeyHash.Map.valuesToArray(multisigs)} currentChain />
-      }
+    | Token => <>
+        <View style={styles["actionBar"]}>
+          <AddTokenButton
+            chain=?currentChain
+            tokens={tokens->Option.mapDefault(TokensLibrary.Generic.empty, t =>
+              t->Result.getWithDefault(TokensLibrary.Generic.empty)
+            )}
+          />
+        </View>
+        {switch partitionedTokens {
+        | None => <LoadingView />
+        | Some(Error(error)) => <ErrorView error />
+        | Some(Ok((registered, unregistered))) =>
+          <TokensView registered unregistered currentChain />
+        }}
+      </>
+    | Multisig => <>
+        <View style={styles["actionBar"]}>
+          <AddMultisigButton chain=?currentChain /> <CreateNewMultisigButton chain=?currentChain />
+        </View>
+        {switch multisigs {
+        | None => <LoadingView />
+        | Some(Error(error)) => <ErrorView error />
+        | Some(Ok(multisigs)) =>
+          <MultisigsView
+            multisigs={Umami.PublicKeyHash.Map.valuesToArray(multisigs)} currentChain
+          />
+        }}
+      </>
     }}
   </Page>
 }
