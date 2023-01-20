@@ -391,7 +391,6 @@ module Preparation = {
         let signOpStep = React.useState(() => SignOperationView.SummaryStep)
         sendOperationSimulate(operation)->Promise.getOk(dryRun => {
           wrapModal({
-            let sender = Alias.fromAccount(signer)
             let sendOperation = (~operation: Protocol.batch, signingIntent) =>
               sendOperation({operation: operation, signingIntent: signingIntent})->Promise.tapOk(({
                 hash,
@@ -403,7 +402,6 @@ module Preparation = {
                 ->{_ => setModalContent}
               )
             <SignOperationView
-              sender
               signer
               state
               signOpStep

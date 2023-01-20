@@ -244,7 +244,6 @@ let make = (~closeAction, ~action) => {
             }
           | PasswordStep(_, operation, dryRun) =>
             <SignOperationView
-              sender={Alias.fromAccount(operation.source)}
               signer=operation.source
               signOpStep
               dryRun

@@ -52,7 +52,7 @@ let back = ((step, set), f) =>
 
 @react.component
 let make = (
-  ~sender: Alias.t,
+  ~proposal=?,
   ~signer: Account.t,
   ~state,
   ~signOpStep as (step, setStep),
@@ -64,11 +64,6 @@ let make = (
   ~icon=?,
   ~name=?,
 ) => {
-  Js.log(__LOC__)
-  Js.log(sender)
-  Js.log(__LOC__)
-  Js.log(signer)
-  Js.log(__LOC__)
   let ((operation: Protocol.batch, dryRun), setOp) = React.useState(() => (operation, dryRun))
 
   let theme = ThemeContext.useTheme()
@@ -110,7 +105,7 @@ let make = (
   | SummaryStep => <>
       <View style=FormStyles.header> {subtitle->Typography.overline1} </View>
       <OperationSummaryView.Batch
-        sender
+        ?proposal
         operation
         dryRun
         editAdvancedOptions={i => setAdvancedOptions(Some(i))}

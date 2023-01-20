@@ -137,6 +137,7 @@ module Form = {
 
     @react.component
     let make = (
+      ~proposal=false,
       ~tokenState: (option<Token.t>, (option<Token.t> => option<Token.t>) => unit),
       ~token=?,
       ~mode,
@@ -157,6 +158,8 @@ module Form = {
         ? I18n.Btn.update
         : batchMode
         ? I18n.Btn.add_transaction
+        : proposal
+        ? I18n.Btn.proposal_submit
         : I18n.Btn.send_submit
 
       let onSubmit = onSubmitAll->Option.getWithDefault(() => form.submit())
@@ -220,9 +223,6 @@ module Form = {
 module EditionView = {
   @react.component
   let make = (~account, ~aliases, ~initValues, ~onSubmit, ~index, ~loading) => {
-    Js.log(__LOC__)
-    Js.log(account)
-    Js.log(__LOC__)
     let token = switch initValues.SendForm.amount {
     | Protocol.Amount.Tez(_) => None
     | Token({token}) => Some(token)
@@ -265,11 +265,8 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
   let submitAction = React.useRef(#SubmitAll)
 
   let onSubmitBatch = batch => {
-    Js.log(__LOC__)
     let transaction = SendForm.buildTransaction(batch, getImplicitFromAlias)
-    Js.log(__LOC__)
     sendOperationSimulate(transaction)->Promise.getOk(dryRun => {
-      Js.log(__LOC__)
       setModalStep(_ => SigningStep(transaction, dryRun))
     })
   }
@@ -281,26 +278,7 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
     let lambda = PublicKeyHash.isImplicit(recipient)
       ? ReTaquito.Toolkit.Lambda.transferImplicit((recipient :> string), amount)
       : ReTaquito.Toolkit.Lambda.transferToContract((recipient :> string), amount)
-    Js.log(__LOC__)
-    Js.log(lambda)
-    /*
-    let parameter = ProtocolOptions.TransactionParameters.MichelineMichelsonV1Expression.toString(
-      lambda,
-    )
-    Js.log(__LOC__)
-    Js.log(parameter)
-    let parameter = parameter->Option.getExn
-    Js.log(__LOC__)
-    Js.log(parameter)
-    let parameter =
-      parameter->ProtocolOptions.TransactionParameters.MichelineMichelsonV1Expression.parseMicheline
-    Js.log(__LOC__)
-    Js.log(parameter)
-    let parameter = Result.getExn(parameter)
-    Js.log(__LOC__)
-    Js.log(parameter)
- */
-    let parameter = Obj.magic(lambda)
+    let parameter = Obj.magic(lambda) // FIXME
     let entrypoint = "propose"
     let destination = state.sender.Alias.address
     let amount = Tez.zero
@@ -315,10 +293,7 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
     let transfers = [transfer]
     let source = getImplicitFromAlias(state.sender)
     let transaction = ProtocolHelper.Transfer.makeBatch(~source, ~transfers, ())
-    Js.log(__LOC__)
-    Js.log(transaction)
     sendOperationSimulate(transaction)->Promise.getOk(dryRun => {
-      Js.log(__LOC__)
       setModalStep(_ => SigningStep(transaction, dryRun))
     })
   }
@@ -326,9 +301,7 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
   let {addTransfer, isSimulating} = GlobalBatchContext.useGlobalBatchContext()
 
   let onSubmit = ({state}: SendForm.onSubmitAPI) => {
-    Js.log(__LOC__)
     let validState = SendForm.unsafeExtractValidState(token, state.values)
-    Js.log(__LOC__)
 
     switch submitAction.current {
     | #SubmitAll =>
@@ -336,11 +309,8 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
         ? onSubmitMultisig(validState)
         : onSubmitBatch(list{validState, ...batch})
     | #AddToBatch =>
-      Js.log(__LOC__)
       let p = GlobalBatchXfs.validStateToTransferPayload(validState)
-      Js.log(__LOC__)
       let signer = getImplicitFromAlias(validState.sender)
-      Js.log(__LOC__)
       addTransfer(p, signer, closeAction)
     }
   }
@@ -422,6 +392,7 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
             <EditionView account initValues onSubmit index loading=isSimulating aliases />
           | SendStep =>
             <Form.View
+              proposal={PublicKeyHash.isContract(form.state.values.sender.address)}
               tokenState
               ?token
               form
@@ -432,7 +403,7 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
             />
           | SigningStep(operation, dryRun) =>
             <SignOperationView
-              sender=form.state.values.sender
+              proposal={PublicKeyHash.isContract(form.state.values.sender.address)}
               signer=operation.source
               state
               signOpStep

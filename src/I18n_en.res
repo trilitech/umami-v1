@@ -70,6 +70,7 @@ module Btn = {
   let delegate = "DELEGATE"
   let add_transaction = "ADD TRANSACTION"
   let send_submit = "SUBMIT TRANSACTION"
+  let proposal_submit = "PREPARE TRANSACTION"
   let batch_submit = "SUBMIT BATCH"
   let send_cancel = "CANCEL TRANSACTION"
   let delegation_submit = "CONFIRM DELEGATION"

@@ -366,21 +366,16 @@ module Base = {
   @react.component
   let make = (
     ~style as styleProp=?,
-    ~sender: (Alias.t, string),
     ~signer: (Account.t, string),
     ~destinations,
     ~content: list<(string, Belt.List.t<Protocol.Amount.t>)>,
   ) => {
-    let (sender, sender_title) = sender
     let (signer, signer_title) = signer
     let content: list<(string, Belt.List.t<string>)> =
       content->List.map(((field, amounts)) => (field, amounts->List.map(Protocol.Amount.show)))
 
     <View style={Style.arrayOption([Some(styles["operationSummary"]), styleProp])}>
-      {sender.Alias.address == signer.Account.address
-        ? React.null
-        : <EntityInfo address={signer.Account.address->Some} title={signer_title} />}
-      <EntityInfo address={sender.Alias.address->Some} title={sender_title} />
+      <EntityInfo address={signer.Account.address->Some} title={signer_title} />
       {content->ReactUtils.hideNil(content => <Content content />)}
       destinations
     </View>
@@ -446,7 +441,7 @@ module Batch = {
   @react.component
   let make = (
     ~style=?,
-    ~sender: Alias.t,
+    ~proposal=false,
     ~operation: Protocol.batch,
     ~dryRun: Protocol.Simulation.results,
     ~editAdvancedOptions,
@@ -535,9 +530,8 @@ module Batch = {
 
     <Base
       ?style
-      sender=(sender, I18n.Title.sender_account)
-      signer=(operation.source, "I18n.Title.signer_account")
-      destinations={hideBatchDetails
+      signer=(operation.source, proposal ? I18n.account : I18n.Title.sender_account)
+      destinations={hideBatchDetails || proposal
         ? React.null
         : Base.buildDestinations(smallest, destinations, Some(batchAdvancedOptions))}
       content

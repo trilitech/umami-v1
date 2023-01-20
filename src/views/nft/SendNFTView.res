@@ -248,7 +248,6 @@ let make = (~source: Account.t, ~nft: Token.t, ~closeAction) => {
           />
         | SigningStep(operation, dryRun) =>
           <SignOperationView
-            sender={Alias.fromAccount(operation.source)}
             signer=operation.source
             state=signingState
             signOpStep
