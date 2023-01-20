@@ -28,10 +28,12 @@
 module Base = {
   let get = (~config) =>
     HDWalletAPI.Accounts.get(~config)->Promise.flatMapOk(accounts =>
-      config.network->Multisig.API.get(
+      config.network
+      ->Multisig.API.getAddresses(
         ~addresses=accounts->Array.map(account => account.address),
         ~contract=config.network.chain->Multisig.contract,
       )
+      ->Promise.flatMapOk(contracts => config.network->Multisig.API.get(~contracts))
     )
 
   let getPendingOperations = (~config: ConfigContext.env, ~address) =>

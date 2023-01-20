@@ -123,26 +123,21 @@ module API = {
     ()
   }
 
-  let get = (network: Network.t, ~addresses: array<PublicKeyHash.t>, ~contract: PublicKeyHash.t) =>
-    network
-    ->getAddresses(~addresses, ~contract)
-    // fetch storage for each multisig found on chain
-    ->Promise.flatMapOk(contracts =>
-      contracts
-      ->Array.map(contract =>
-        network
-        ->getStorage(~contract)
-        ->Promise.mapOk(storage => (contract, storage))
-        ->Promise.mapError(e => Js.log(__LOC__ ++ ": " ++ (contract :> string)))
-      )
-      ->Promise.allArray
-      ->Promise.mapOk(responses =>
-        responses->Array.reduce(PublicKeyHash.Map.empty, (map, response) =>
-          switch response {
-          | Ok((contract, storage)) => map->PublicKeyHash.Map.set(contract, storage)
-          | _ => map
-          }
-        )
+  let get = (network: Network.t, ~contracts: array<PublicKeyHash.t>) =>
+    contracts
+    ->Array.map(contract =>
+      network
+      ->getStorage(~contract)
+      ->Promise.mapOk(storage => (contract, storage))
+      ->Promise.mapError(e => Js.log(__LOC__ ++ ": " ++ (contract :> string)))
+    )
+    ->Promise.allArray
+    ->Promise.mapOk(responses =>
+      responses->Array.reduce(PublicKeyHash.Map.empty, (map, response) =>
+        switch response {
+        | Ok((contract, storage)) => map->PublicKeyHash.Map.set(contract, storage)
+        | _ => map
+        }
       )
     )
     // update cache
