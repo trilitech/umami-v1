@@ -373,7 +373,7 @@ module Preparation = {
 
   module ActionButton = {
     @react.component
-    let make = (~entrypoint, ~multisig, ~signer: Account.t, ~id, ~disabled) => {
+    let make = (~entrypoint, ~text, ~multisig, ~signer: Account.t, ~id, ~disabled) => {
       let (
         sendOperationSimulateRequest,
         sendOperationSimulate,
@@ -389,7 +389,7 @@ module Preparation = {
             | _ => true
             }
           }
-      let onPressSign = _ => {
+      let onPress = _ => {
         let parameter =
           ProtocolOptions.TransactionParameters.MichelineMichelsonV1Expression.parseMicheline(
             id->Int.toString,
@@ -414,9 +414,7 @@ module Preparation = {
       }
 
       <>
-        <Buttons.SubmitPrimary
-          text=I18n.Btn.sign onPress=onPressSign style=btnStyle loading=loadingSign disabled
-        />
+        <Buttons.SubmitPrimary text onPress style=btnStyle loading=loadingSign disabled />
         {wrapModal(
           <ModalFormView closing=ModalFormView.Close(_ => closeAction())>
             {switch modalStep {
@@ -436,7 +434,14 @@ module Preparation = {
   module ApproveButton = {
     @react.component
     let make = (~multisig, ~signer: Account.t, ~id, ~disabled) => {
-      <ActionButton entrypoint="approve" multisig signer id disabled />
+      <ActionButton entrypoint="approve" text=I18n.Btn.sign multisig signer id disabled />
+    }
+  }
+
+  module ExecuteButton = {
+    @react.component
+    let make = (~multisig, ~signer: Account.t, ~id, ~disabled) => {
+      <ActionButton entrypoint="execute" text=I18n.Btn.submit multisig signer id disabled />
     }
   }
 
@@ -445,9 +450,7 @@ module Preparation = {
     let make = (~multisig, ~signer: Account.t, ~id, ~hasSigned, ~canSubmit) => {
       <>
         <ApproveButton multisig signer id disabled={hasSigned} />
-        <Buttons.SubmitPrimary
-          text=I18n.Btn.submit onPress={_ => ()} style=btnStyle disabled={!canSubmit}
-        />
+        <ExecuteButton multisig signer id disabled={!canSubmit} />
         <Buttons.SubmitPrimary
           text=I18n.Btn.global_batch_add_short onPress={_ => ()} style=btnStyle disabled={true}
         />
