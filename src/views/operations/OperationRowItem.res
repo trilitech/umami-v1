@@ -451,9 +451,9 @@ module Preparation = {
       <>
         <ApproveButton multisig signer id disabled={hasSigned} />
         <ExecuteButton multisig signer id disabled={!canSubmit} />
-        <Buttons.SubmitPrimary
-          text=I18n.Btn.global_batch_add_short onPress={_ => ()} style=btnStyle disabled={true}
-        />
+//        <Buttons.SubmitPrimary
+//          text=I18n.Btn.global_batch_add_short onPress={_ => ()} style=btnStyle disabled={true}
+//        />
       </>
     }
   }
