@@ -366,17 +366,21 @@ module Preparation = {
     })
   }
 
-  module TransactionActionButtons = {
+  let btnStyle = Style.array([
+    FormStyles.formSubmit,
+    Style.style(~marginLeft=16.->Style.dp, ~marginTop=0.->Style.dp, ()),
+  ])
+
+  module ActionButton = {
     @react.component
-    let make = (~multisig, ~signer: Account.t, ~id, ~hasSigned, ~canSubmit) => {
-      let (openAction, closeAction, wrapModal) = ModalAction.useModal()
+    let make = (~entrypoint, ~multisig, ~signer: Account.t, ~id, ~disabled) => {
       let (
         sendOperationSimulateRequest,
         sendOperationSimulate,
       ) = StoreContext.Operations.useSimulate()
       let (modalStep, setModalStep) = React.useState(() => Simulation)
       let setStep = x => {setModalStep(_ => x)}
-
+      let (openAction, closeAction, wrapModal) = ModalAction.useModal()
       let loadingSign =
         sendOperationSimulateRequest->ApiRequest.isLoading &&
           {
@@ -390,7 +394,6 @@ module Preparation = {
           ProtocolOptions.TransactionParameters.MichelineMichelsonV1Expression.parseMicheline(
             id->Int.toString,
           )->Result.getExn
-        let entrypoint = "approve"
         let destination = multisig.Multisig.address
         let amount = Tez.zero
         let transfer = ProtocolHelper.Transfer.makeSimpleTez(
@@ -409,14 +412,10 @@ module Preparation = {
           openAction()
         })
       }
-      let style = Style.array([
-        FormStyles.formSubmit,
-        Style.style(~marginLeft=16.->Style.dp, ~marginTop=0.->Style.dp, ()),
-      ])
 
       <>
         <Buttons.SubmitPrimary
-          text=I18n.Btn.sign onPress=onPressSign style loading=loadingSign disabled={hasSigned}
+          text=I18n.Btn.sign onPress=onPressSign style=btnStyle loading=loadingSign disabled
         />
         {wrapModal(
           <ModalFormView closing=ModalFormView.Close(_ => closeAction())>
@@ -430,9 +429,27 @@ module Preparation = {
             }}
           </ModalFormView>,
         )}
-        <Buttons.SubmitPrimary text=I18n.Btn.submit onPress={_ => ()} style disabled={!canSubmit} />
+      </>
+    }
+  }
+
+  module ApproveButton = {
+    @react.component
+    let make = (~multisig, ~signer: Account.t, ~id, ~disabled) => {
+      <ActionButton entrypoint="approve" multisig signer id disabled />
+    }
+  }
+
+  module TransactionActionButtons = {
+    @react.component
+    let make = (~multisig, ~signer: Account.t, ~id, ~hasSigned, ~canSubmit) => {
+      <>
+        <ApproveButton multisig signer id disabled={hasSigned} />
         <Buttons.SubmitPrimary
-          text=I18n.Btn.global_batch_add_short onPress={_ => ()} style disabled={true}
+          text=I18n.Btn.submit onPress={_ => ()} style=btnStyle disabled={!canSubmit}
+        />
+        <Buttons.SubmitPrimary
+          text=I18n.Btn.global_batch_add_short onPress={_ => ()} style=btnStyle disabled={true}
         />
       </>
     }
