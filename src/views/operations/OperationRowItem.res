@@ -317,6 +317,26 @@ let make = memo((
   </Table.Row.Bordered>
 })
 
+type pending_step = Simulation | Sign(Protocol.Simulation.results, Protocol.batch) | Done(string)
+
+module Pending_SignView = {
+  @react.component
+  let make = (~signer, ~dryRun, ~operation, ~setStep) => {
+    let (operationRequest, sendOperation) = StoreContext.Operations.useCreate()
+    let state = React.useState(() => None)
+    let signOpStep = React.useState(() => SignOperationView.SummaryStep)
+    let sendOperation = (~operation: Protocol.batch, signingIntent) => {
+      sendOperation({operation: operation, signingIntent: signingIntent})->Promise.tapOk(({
+        hash,
+      }) => {
+        setStep(Done(hash))
+      })
+    }
+    let loading = operationRequest->ApiRequest.isLoading
+    <SignOperationView signer state signOpStep dryRun operation sendOperation loading />
+  }
+}
+
 module Preparation = {
   type foo = {
     id: int,
@@ -349,24 +369,22 @@ module Preparation = {
   module TransactionActionButtons = {
     @react.component
     let make = (~multisig, ~signer: Account.t, ~id, ~hasSigned, ~canSubmit) => {
-      let style = Style.array([
-        FormStyles.formSubmit,
-        Style.style(~marginLeft=16.->Style.dp, ~marginTop=0.->Style.dp, ()),
-      ])
-      let (operationSimulateRequest, sendOperationSimulate) = StoreContext.Operations.useSimulate()
-      let (operationRequest, sendOperation) = StoreContext.Operations.useCreate()
       let (openAction, closeAction, wrapModal) = ModalAction.useModal()
-      let (modalContent, setModalContent) = React.useState(() => None)
+      let (
+        sendOperationSimulateRequest,
+        sendOperationSimulate,
+      ) = StoreContext.Operations.useSimulate()
+      let (modalStep, setModalStep) = React.useState(() => Simulation)
+      let setStep = x => {setModalStep(_ => x)}
 
-      React.useEffect1(() => {
-        switch modalContent {
-        | None => None
-        | Some(content) =>
-          openAction()
-          None
-        }
-      }, [modalContent])
-
+      let loadingSign =
+        sendOperationSimulateRequest->ApiRequest.isLoading &&
+          {
+            switch modalStep {
+            | Done(_) => false
+            | _ => true
+            }
+          }
       let onPressSign = _ => {
         let parameter =
           ProtocolOptions.TransactionParameters.MichelineMichelsonV1Expression.parseMicheline(
@@ -385,37 +403,33 @@ module Preparation = {
         let transfers = [transfer]
         let source = signer
         let operation = ProtocolHelper.Transfer.makeBatch(~source, ~transfers, ())
-        Js.log(__LOC__)
-        Js.log(operation)
-        let state = React.useState(() => None)
-        let signOpStep = React.useState(() => SignOperationView.SummaryStep)
+
         sendOperationSimulate(operation)->Promise.getOk(dryRun => {
-          wrapModal({
-            let sendOperation = (~operation: Protocol.batch, signingIntent) =>
-              sendOperation({operation: operation, signingIntent: signingIntent})->Promise.tapOk(({
-                hash,
-              }) =>
-                wrapModal(
-                  <SubmittedView hash onPressCancel={_ => ()} submitText=I18n.Btn.go_operations />,
-                )
-                ->Some
-                ->{_ => setModalContent}
-              )
-            <SignOperationView
-              signer
-              state
-              signOpStep
-              dryRun
-              operation
-              sendOperation
-              loading={operationRequest->ApiRequest.isLoading}
-            />
-          })->{content => setModalContent(_ => Some(content))}
+          setStep(Sign(dryRun, operation))
+          openAction()
         })
       }
+      let style = Style.array([
+        FormStyles.formSubmit,
+        Style.style(~marginLeft=16.->Style.dp, ~marginTop=0.->Style.dp, ()),
+      ])
 
       <>
-        <Buttons.SubmitPrimary text=I18n.Btn.sign onPress=onPressSign style disabled={hasSigned} />
+        <Buttons.SubmitPrimary
+          text=I18n.Btn.sign onPress=onPressSign style loading=loadingSign disabled={hasSigned}
+        />
+        {wrapModal(
+          <ModalFormView closing=ModalFormView.Close(_ => closeAction())>
+            {switch modalStep {
+            | Simulation => React.null
+            | Sign(dryRun, operation) => <Pending_SignView signer dryRun operation setStep />
+            | Done(hash) =>
+              <SubmittedView
+                hash onPressCancel={_ => closeAction()} submitText=I18n.Btn.go_operations
+              />
+            }}
+          </ModalFormView>,
+        )}
         <Buttons.SubmitPrimary text=I18n.Btn.submit onPress={_ => ()} style disabled={!canSubmit} />
         <Buttons.SubmitPrimary
           text=I18n.Btn.global_batch_add_short onPress={_ => ()} style disabled={true}
