@@ -10,5 +10,5 @@
 #directoryname/ @groupname
 
 # All issues gitlab issue_templates 
-.gitlab/issue_templates/*.md @SamREye @philippewang.info @comeh @sagotch @leoparis89 
+.gitlab/issue_templates/*.md @bsall @philippewang.info @comeh @sagotch @leoparis89 
 
