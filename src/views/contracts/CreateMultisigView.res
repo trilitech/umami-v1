@@ -195,8 +195,8 @@ module Form = {
       managers: [
         ProtocolHelper.Origination.make(
           ~balance=Tez.fromMutezString("0"),
-          ~code=Multisig.code,
-          ~storage=Multisig.storage(source.address, t->ownerAddresses, t.values.threshold),
+          ~code=MultisigMicheline.code,
+          ~storage=MultisigMicheline.storage(source.address, t->ownerAddresses, t.values.threshold),
           ~delegate=None,
           (),
         ),
@@ -501,7 +501,11 @@ let make = (~account: Account.t, ~closeAction) => {
       })
       None
     },
-    ~initialState={name: "", owners: [FormUtils.Alias.AnyString("")], threshold: ReBigNumber.fromInt(1)},
+    ~initialState={
+      name: "",
+      owners: [FormUtils.Alias.AnyString("")],
+      threshold: ReBigNumber.fromInt(1),
+    },
     ~i18n=FormUtils.i18n,
     (),
   )
