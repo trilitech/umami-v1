@@ -68,15 +68,9 @@ module Cache = {
 module API = {
   let getAddresses = (network, ~addresses: array<PublicKeyHash.t>, ~contract: PublicKeyHash.t) => {
     let addresses = addresses->List.fromArray
-    Js.log(__LOC__)
-    Js.log(addresses)
-    Js.log(__LOC__)
     network
     ->ServerAPI.Explorer.getMultisigs(~addresses, ~contract)
     ->Promise.mapOk(response => {
-      Js.log(__LOC__)
-      Js.log(response)
-      Js.log(__LOC__)
       response->Array.reduce(Set.make(~id=module(PublicKeyHash.Comparator)), (contracts, (_, ks)) =>
         contracts->Set.mergeMany(ks)
       )
@@ -121,17 +115,10 @@ module API = {
       map->PublicKeyHash.Map.keep((_, v) => v.chain == network.chain->Network.getChainId)
     )
 
-  let addToCache = (network: Network.t) =>  {
-    ()
-  }
-
   let get = (network: Network.t, ~contracts: array<PublicKeyHash.t>) =>
     contracts
     ->Array.map(contract =>
-      network
-      ->getStorage(~contract)
-      ->Promise.mapOk(storage => (contract, storage))
-      ->Promise.mapError(e => Js.log(__LOC__ ++ ": " ++ (contract :> string)))
+      network->getStorage(~contract)->Promise.mapOk(storage => (contract, storage))
     )
     ->Promise.allArray
     ->Promise.mapOk(responses =>

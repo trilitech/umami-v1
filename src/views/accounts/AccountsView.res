@@ -296,7 +296,7 @@ let make = (~account: Alias.t, ~showCreateAccount, ~showBuyTez, ~mode, ~setMode)
       switch Alias.toAccount(account) {
       | Result.Ok(account) => <CreateMultisigView account closeAction={_ => showForm(_ => false)} />
 
-      | Result.Error(e) => React.null
+      | Result.Error(_) => React.null
       }
     } else {
       <>

@@ -23,8 +23,6 @@
 /*  */
 /* *************************************************************************** */
 
-open ReactNative
-
 module FormAddress = {
   @react.component
   let make = (

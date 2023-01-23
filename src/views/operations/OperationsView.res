@@ -86,7 +86,7 @@ module OperationsTableHeaderView = {
       </Base>
   }
 
-  module Preparation = {
+  module Pending = {
     @react.component
     let make = () =>
       <Base>
@@ -110,9 +110,7 @@ module OperationsTableHeaderView = {
   }
 }
 
-type tab = History | Preparation
-
-type foo = OperationRowItem.Preparation.foo
+type tab = History | Pending
 
 let renderOperation = (account, config, currentLevel, operation: Operation.t) => {
   let key = {
@@ -122,9 +120,9 @@ let renderOperation = (account, config, currentLevel, operation: Operation.t) =>
   <OperationRowItem account config key operation currentLevel />
 }
 
-let renderPreparation = (account, preparation: Multisig.API.PendingOperation.t) => {
-  let key = preparation.Multisig.API.PendingOperation.id->Int.toString
-  <OperationRowItem.Preparation account key preparation />
+let renderPending = (account, pending: Multisig.API.PendingOperation.t) => {
+  let key = pending.Multisig.API.PendingOperation.id->Int.toString
+  <OperationRowItem.Pending account key pending />
 }
 
 let footerStyle = width => {
@@ -191,13 +189,13 @@ module OperationsPending = {
     let dimensions = Dimensions.useWindowDimensions()
     let footerStyle = footerStyle(dimensions.width)
     <>
-      <OperationsTableHeaderView.Preparation />
+      <OperationsTableHeaderView.Pending />
       {switch request {
       | ApiRequest.Done(Ok(elements), _) =>
         <Pagination
           elements={Map.Int.valuesToArray(elements)}
-          renderItem={renderPreparation(account)}
-          emptyComponent={I18n.empty_preparations->React.string}
+          renderItem={renderPending(account)}
+          emptyComponent={I18n.empty_pending_operations->React.string}
           footerStyle
         />
       | Done(Error(error), _) => error->Errors.toString->React.string
@@ -225,7 +223,7 @@ module Multisig = {
         <SegmentedButtons
           selectedValue=tab
           setSelectedValue=setTab
-          buttons=[(I18n.Btn.history, History), (I18n.Btn.in_preparation, Preparation)]
+          buttons=[(I18n.Btn.history, History), (I18n.Btn.pending_operations, Pending)]
         />
       </View>
     }
@@ -236,7 +234,7 @@ module Multisig = {
       loading={operationsRequest->ApiRequest.isLoading}>
       {switch tab {
       | History => <OperationsHistory account request=operationsRequest />
-      | Preparation => <OperationsPending account request=pendingOperationsRequest />
+      | Pending => <OperationsPending account request=pendingOperationsRequest />
       }}
     </Base>
   }

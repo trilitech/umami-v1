@@ -498,9 +498,6 @@ module ExplorerMaker = (
     ->Get.get
     ->Promise.flatMapOk(response => {
       let decoder = json => {
-        Js.log(__LOC__)
-        Js.log(json)
-        Js.log(__LOC__)
         open Json.Decode
         (
           json |> field("pkh", PublicKeyHash.decoder),

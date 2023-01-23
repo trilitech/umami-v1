@@ -23,8 +23,6 @@
 /*  */
 /* *************************************************************************** */
 
-open ReactNative
-
 module StateLenses = %lenses(type state = {address: string})
 
 module MultisigAddForm = ReForm.Make(StateLenses)

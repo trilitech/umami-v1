@@ -157,10 +157,6 @@ let make = (~children) => {
   ) = accountsRequestState
 
   let multisigsRequestState = React.useState(() => ApiRequest.NotAsked)
-  let (
-    multisigsRequest: ApiRequest.t<PublicKeyHash.Map.map<_>>,
-    _setMultisigsRequest,
-  ) = multisigsRequestState
 
   let balanceRequestsState = React.useState(() => ApiRequest.NotAsked)
   let delegateRequestsState = React.useState(() => Map.String.empty)
@@ -1071,14 +1067,8 @@ let useGetImplicitFromAlias = () => {
       let signers = multisig.signers
       let signer = Js.Array.find(PublicKeyHash.Map.has(accounts), signers)->Option.getExn
       PublicKeyHash.Map.get(accounts, signer)->Option.getExn
-    | Some(Contact) =>
-      Js.log(__LOC__)
-      Js.log(alias)
-      None->Option.getExn
-    | None =>
-      Js.log(__LOC__)
-      Js.log(alias)
-      None->Option.getExn
+    | Some(Contact) => None->Option.getExn
+    | None => None->Option.getExn
     }
   }
 }

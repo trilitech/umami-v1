@@ -61,14 +61,11 @@ let buildTransfer = (inputTransfers, source) => {
   let transfers =
     inputTransfers
     ->List.map((t: validState) => {
-      Js.log(__LOC__)
       let destination = t.recipient->FormUtils.Alias.address
-      Js.log(__LOC__)
       let data = {
         open Transfer
         {destination: destination, amount: t.amount}
       }
-      Js.log(__LOC__)
       ProtocolHelper.Transfer.makeSimple(~data, ())
     })
     ->List.toArray
@@ -80,8 +77,6 @@ let buildTransaction = (batch: list<validState>, getImplicitFromAlias) =>
   switch batch {
   | list{} => assert false
   | list{first, ..._} as inputTransfers =>
-    Js.log(__LOC__)
     let source = getImplicitFromAlias(first.sender)
-    Js.log(__LOC__)
     buildTransfer(inputTransfers, source)
   }

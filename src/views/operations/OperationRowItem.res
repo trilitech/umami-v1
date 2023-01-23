@@ -90,6 +90,21 @@ let styles = {
   open Style
   StyleSheet.create({
     "image": style(~marginLeft=10.->dp, ~width=19.->dp, ~height=19.->dp, ()),
+    "pendingDetails": style(~paddingHorizontal=58.->dp, ~paddingVertical=26.->dp, ()),
+    "numberOfApproval": style(~flexDirection=#row, ~paddingVertical=2.->dp, ()),
+    "signerWrapper": style(~flexDirection=#row, ~alignItems=#center, ()),
+    "signerBox": style(
+      ~marginLeft=30.->dp,
+      ~paddingHorizontal=16.->dp,
+      ~paddingVertical=12.->dp,
+      ~flexDirection=#row,
+      ~alignItems=#center,
+      ~minHeight=68.->dp,
+      ~width=416.->dp,
+      (),
+    ),
+    "signerFst": style(~borderTopLeftRadius=4., ~borderTopRightRadius=4., ()),
+    "signerLst": style(~borderBottomLeftRadius=4., ~borderBottomRightRadius=4., ()),
   })
 }
 
@@ -337,35 +352,7 @@ module Pending_SignView = {
   }
 }
 
-module Preparation = {
-  type foo = {
-    id: int,
-    payload: Operation.payload,
-    source: Multisig.t,
-    signers: array<PublicKeyHash.t>,
-  }
-
-  let stylesFoo = {
-    open Style
-    StyleSheet.create({
-      "preparationDetails": style(~paddingHorizontal=58.->dp, ~paddingVertical=26.->dp, ()),
-      "numberOfApproval": style(~flexDirection=#row, ~paddingVertical=2.->dp, ()),
-      "signerWrapper": style(~flexDirection=#row, ~alignItems=#center, ()),
-      "signerBox": style(
-        ~marginLeft=30.->dp,
-        ~paddingHorizontal=16.->dp,
-        ~paddingVertical=12.->dp,
-        ~flexDirection=#row,
-        ~alignItems=#center,
-        ~minHeight=68.->dp,
-        ~width=416.->dp,
-        (),
-      ),
-      "signerFst": style(~borderTopLeftRadius=4., ~borderTopRightRadius=4., ()),
-      "signerLst": style(~borderBottomLeftRadius=4., ~borderBottomRightRadius=4., ()),
-    })
-  }
-
+module Pending = {
   let btnStyle = Style.array([
     FormStyles.formSubmit,
     Style.style(~marginLeft=16.->Style.dp, ~marginTop=0.->Style.dp, ()),
@@ -451,15 +438,15 @@ module Preparation = {
       <>
         <ApproveButton multisig signer id disabled={hasSigned} />
         <ExecuteButton multisig signer id disabled={!canSubmit} />
-//        <Buttons.SubmitPrimary
-//          text=I18n.Btn.global_batch_add_short onPress={_ => ()} style=btnStyle disabled={true}
-//        />
+        //        <Buttons.SubmitPrimary
+        //          text=I18n.Btn.global_batch_add_short onPress={_ => ()} style=btnStyle disabled={true}
+        //        />
       </>
     }
   }
 
   @react.component
-  let make = (~account: Alias.t, ~preparation as p: Multisig.API.PendingOperation.t) => {
+  let make = (~account: Alias.t, ~pending: Multisig.API.PendingOperation.t) => {
     let theme = ThemeContext.useTheme()
     let accounts = StoreContext.Accounts.useGetAll()
     let aliases = StoreContext.Aliases.useGetAll()
@@ -467,22 +454,22 @@ module Preparation = {
     let multisig = StoreContext.Multisig.useGetFromAddress(account.Alias.address)->Option.getExn
 
     {
-      switch p.type_ {
+      switch pending.type_ {
       | Transaction =>
         let common: Operation.Transaction.common = {
-          amount: p.amount->ReBigNumber.toString->Tez.fromMutezString,
-          destination: p.recipient,
+          amount: pending.amount->ReBigNumber.toString->Tez.fromMutezString,
+          destination: pending.recipient,
           parameters: None,
         }
         let transaction = Operation.Transaction.Tez(common)
 
-        let tooltipSuffix = p.id->Int.toString
-        let signed = p.approvals->Array.length->Int.toString
+        let tooltipSuffix = pending.id->Int.toString
+        let signed = pending.approvals->Array.length->Int.toString
         let threshold = multisig.Multisig.threshold->Int.toString
         let header = collapseButton => {
           <Table.Row.Bordered>
             <CellExpandToggle> {collapseButton} </CellExpandToggle>
-            <CellID> {p.id->Int.toString->Typography.body1} </CellID>
+            <CellID> {pending.id->Int.toString->Typography.body1} </CellID>
             <CellType> {I18n.operation_transaction->Typography.body1} </CellType>
             <GenericCellAmount address=account.address transaction tokens tooltipSuffix />
             <CellAddress> {getContactOrRaw(aliases, tokens, common.destination)} </CellAddress>
@@ -490,15 +477,15 @@ module Preparation = {
           </Table.Row.Bordered>
         }
         <ContractRows.Collapsable header expanded=false>
-          <View style={stylesFoo["preparationDetails"]}>
-            <View style={stylesFoo["numberOfApproval"]}>
+          <View style={styles["pendingDetails"]}>
+            <View style={styles["numberOfApproval"]}>
               {
                 let size = 20.
                 let style = {
                   open Style
                   style(~marginRight=10.->dp, ())
                 }
-                p.approvals->Array.length >= multisig.Multisig.threshold
+                pending.approvals->Array.length >= multisig.Multisig.threshold
                   ? <Icons.CheckFill size style color=theme.colors.textPositive />
                   : <Icons.RadioOff size style color=theme.colors.textMediumEmphasis />
               }
@@ -507,8 +494,8 @@ module Preparation = {
             <View>
               {multisig.Multisig.signers
               ->Array.mapWithIndex((i, owner) => {
-                let hasSigned = Js.Array.includes(owner, p.approvals)
-                <View key={i->Int.toString} style={stylesFoo["signerWrapper"]}>
+                let hasSigned = Js.Array.includes(owner, pending.approvals)
+                <View key={i->Int.toString} style={styles["signerWrapper"]}>
                   {
                     let textColor = hasSigned
                       ? None
@@ -527,7 +514,7 @@ module Preparation = {
                     ])
                     let fst =
                       i == 0
-                        ? stylesFoo["signerFst"]->Some
+                        ? styles["signerFst"]->Some
                         : Style.style(
                             ~borderTopColor=theme.colors.textDisabled,
                             ~borderTopWidth=1.,
@@ -535,12 +522,12 @@ module Preparation = {
                           )->Some
                     let lst =
                       i == Js.Array.length(multisig.Multisig.signers) - 1
-                        ? stylesFoo["signerLst"]->Some
+                        ? styles["signerLst"]->Some
                         : None
                     let style = Style.arrayOption([
                       fst,
                       lst,
-                      stylesFoo["signerBox"]->Some,
+                      styles["signerBox"]->Some,
                       Style.style(~backgroundColor=theme.colors.stateDisabled, ())->Some,
                     ])
                     <>
@@ -561,9 +548,9 @@ module Preparation = {
                         <TransactionActionButtons
                           signer
                           multisig
-                          id=p.id
+                          id=pending.id
                           hasSigned
-                          canSubmit={Array.length(p.approvals) >= multisig.Multisig.threshold}
+                          canSubmit={Array.length(pending.approvals) >= multisig.Multisig.threshold}
                         />
                       | None => React.null
                       }}
