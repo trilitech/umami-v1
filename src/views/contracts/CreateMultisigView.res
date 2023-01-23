@@ -174,7 +174,7 @@ module Form = {
     type state = {
       name: string,
       owners: array<FormUtils.Alias.any>,
-      threshold: int,
+      threshold: ReBigNumber.t,
     }
   )
 
@@ -332,8 +332,14 @@ module Step2 = {
           </View>
           {<IconButton
             onPress={_ => {
-              if form.values.threshold >= form.values.owners->Array.length {
-                form.handleChangeWithCallback(Threshold, threshold => threshold - 1)
+              if (
+                form.values.threshold->ReBigNumber.isGreaterThanOrEqualTo(
+                  ReBigNumber.fromInt(form.values.owners->Array.length),
+                )
+              ) {
+                form.handleChangeWithCallback(Threshold, threshold =>
+                  threshold->ReBigNumber.minus(ReBigNumber.fromInt(1))
+                )
               }
               form.handleChangeWithCallback(Owners, owners =>
                 owners->Array.keepWithIndex((_, j) => i != j)
@@ -382,8 +388,8 @@ module Step2 = {
               items={Array.range(1, validOwnersNumber)}
               getItemKey={item => item->Int.toString}
               renderItem
-              selectedValueKey={form.values.threshold->Int.toString}
-              onValueChange={item => form.handleChange(Threshold, item)}
+              selectedValueKey={form.values.threshold->ReBigNumber.toString}
+              onValueChange={item => form.handleChange(Threshold, ReBigNumber.fromInt(item))}
               renderButton={(selectedItem, _) => {
                 selectedItem->Option.mapWithDefault(React.null, item => renderItem(item))
               }}
@@ -495,7 +501,7 @@ let make = (~account: Account.t, ~closeAction) => {
       })
       None
     },
-    ~initialState={name: "", owners: [FormUtils.Alias.AnyString("")], threshold: 1},
+    ~initialState={name: "", owners: [FormUtils.Alias.AnyString("")], threshold: ReBigNumber.fromInt(1)},
     ~i18n=FormUtils.i18n,
     (),
   )

@@ -121,7 +121,7 @@ let renderOperation = (account, config, currentLevel, operation: Operation.t) =>
 }
 
 let renderPending = (account, pending: Multisig.API.PendingOperation.t) => {
-  let key = pending.Multisig.API.PendingOperation.id->Int.toString
+  let key = pending.Multisig.API.PendingOperation.id->ReBigNumber.toString
   <OperationRowItem.Pending account key pending />
 }
 
@@ -193,7 +193,7 @@ module OperationsPending = {
       {switch request {
       | ApiRequest.Done(Ok(elements), _) =>
         <Pagination
-          elements={Map.Int.valuesToArray(elements)}
+          elements={ReBigNumber.Map.valuesToArray(elements)}
           renderItem={renderPending(account)}
           emptyComponent={I18n.empty_pending_operations->React.string}
           footerStyle

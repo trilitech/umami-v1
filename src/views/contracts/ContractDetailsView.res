@@ -131,7 +131,7 @@ module Multisig = {
     let make = (~threshold, ~owners) =>
       <SimpleTextElement
         label=I18n.Title.approval_threshold
-        text={I18n.Label.out_of(threshold->Int.toString, owners->Int.toString)}
+        text={I18n.Label.out_of(threshold->ReBigNumber.toString, owners->Int.toString)}
       />
   }
 

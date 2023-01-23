@@ -90,7 +90,7 @@ module MultisigRowItem = {
   @react.component
   let make = (~multisig: Multisig.t) => {
     let description = {
-      let threshold = multisig.threshold->Int.toString
+      let threshold = multisig.threshold->ReBigNumber.toString
       let signers = Array.length(multisig.signers)->Int.toString
       <Typography.Body2 style={AccountInfo.styles["description"]}>
         {I18n.Label.approval_threshold->React.string}

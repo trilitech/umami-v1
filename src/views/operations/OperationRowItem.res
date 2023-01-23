@@ -379,7 +379,7 @@ module Pending = {
       let onPress = _ => {
         let parameter =
           ProtocolOptions.TransactionParameters.MichelineMichelsonV1Expression.parseMicheline(
-            id->Int.toString,
+            id->ReBigNumber.toString,
           )->Result.getExn
         let destination = multisig.Multisig.address
         let amount = Tez.zero
@@ -462,14 +462,13 @@ module Pending = {
           parameters: None,
         }
         let transaction = Operation.Transaction.Tez(common)
-
-        let tooltipSuffix = pending.id->Int.toString
+        let tooltipSuffix = pending.id->ReBigNumber.toString
         let signed = pending.approvals->Array.length->Int.toString
-        let threshold = multisig.Multisig.threshold->Int.toString
+        let threshold = multisig.Multisig.threshold->ReBigNumber.toString
         let header = collapseButton => {
           <Table.Row.Bordered>
             <CellExpandToggle> {collapseButton} </CellExpandToggle>
-            <CellID> {pending.id->Int.toString->Typography.body1} </CellID>
+            <CellID> {pending.id->ReBigNumber.toString->Typography.body1} </CellID>
             <CellType> {I18n.operation_transaction->Typography.body1} </CellType>
             <GenericCellAmount address=account.address transaction tokens tooltipSuffix />
             <CellAddress> {getContactOrRaw(aliases, tokens, common.destination)} </CellAddress>
@@ -485,7 +484,9 @@ module Pending = {
                   open Style
                   style(~marginRight=10.->dp, ())
                 }
-                pending.approvals->Array.length >= multisig.Multisig.threshold
+                ReBigNumber.fromInt(
+                  pending.approvals->Array.length,
+                )->ReBigNumber.isGreaterThanOrEqualTo(multisig.Multisig.threshold)
                   ? <Icons.CheckFill size style color=theme.colors.textPositive />
                   : <Icons.RadioOff size style color=theme.colors.textMediumEmphasis />
               }
@@ -550,7 +551,9 @@ module Pending = {
                           multisig
                           id=pending.id
                           hasSigned
-                          canSubmit={Array.length(pending.approvals) >= multisig.Multisig.threshold}
+                          canSubmit={ReBigNumber.fromInt(
+                            Array.length(pending.approvals),
+                          )->ReBigNumber.isGreaterThanOrEqualTo(multisig.Multisig.threshold)}
                         />
                       | None => React.null
                       }}

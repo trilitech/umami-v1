@@ -6,7 +6,7 @@ type t = {
   balance: ReBigNumber.t,
   chain: Network.chainId,
   signers: array<PublicKeyHash.t>,
-  threshold: int,
+  threshold: ReBigNumber.t,
 }
 
 let contract = chain =>
@@ -25,7 +25,7 @@ module Cache = {
         balance: json |> field("balance", string) |> ReBigNumber.fromString,
         chain: json |> field("chain", Network.Decode.chainIdDecoder),
         signers: json |> field("signers", array(PublicKeyHash.decoder)),
-        threshold: json |> field("threshold", int),
+        threshold: json |> field("threshold", string) |> ReBigNumber.fromString,
       }
     }
 
@@ -37,7 +37,7 @@ module Cache = {
         ("balance", t.balance |> ReBigNumber.toString |> string),
         ("chain", t.chain |> Network.Encode.chainIdEncoder),
         ("signers", t.signers |> array(PublicKeyHash.encoder)),
-        ("threshold", t.threshold |> int),
+        ("threshold", t.threshold |> ReBigNumber.toString |> string),
       })
     }
   }
@@ -80,23 +80,23 @@ module API = {
 
   module Storage = {
     type t = {
-      lastOpID: int,
+      lastOpID: ReBigNumber.t,
       metadata: int,
       owner: PublicKeyHash.t,
       pendingOps: int,
       signers: array<PublicKeyHash.t>,
-      threshold: int,
+      threshold: ReBigNumber.t,
     }
 
     let decoder = json => {
       open Json.Decode
       {
-        lastOpID: (json |> field("last_op_id", string))->Int.fromString->Option.getWithDefault(0),
-        metadata: json |> field("metadata", int),
+        lastOpID: json |> field("last_op_id", string) |> ReBigNumber.fromString,
+        metadata: (json |> field("metadata", int)),
         owner: json |> field("owner", PublicKeyHash.decoder),
         pendingOps: json |> field("pending_ops", int),
         signers: json |> field("signers", array(PublicKeyHash.decoder)),
-        threshold: (json |> field("threshold", string))->Int.fromString->Option.getWithDefault(0),
+        threshold: json |> field("threshold", string) |> ReBigNumber.fromString,
       }
     }
   }
@@ -172,14 +172,14 @@ module API = {
       }
 
       type t = {
-        key: int,
+        key: ReBigNumber.t,
         value: Value.t,
       }
 
       let decoder = json => {
         open Json.Decode
         {
-          key: (json |> field("key", string))->Int.fromString->Option.getWithDefault(0),
+          key: json |> field("key", string) |> ReBigNumber.fromString,
           value: json |> field("value", Value.decoder),
         }
       }
@@ -190,7 +190,7 @@ module API = {
     type type_ = Transaction
 
     type t = {
-      id: int,
+      id: ReBigNumber.t,
       type_: type_,
       amount: ReBigNumber.t,
       recipient: PublicKeyHash.t,
@@ -263,9 +263,9 @@ module API = {
       ->Promise.allArray
     )
     ->Promise.mapOk(results =>
-      results->Array.reduce(Map.Int.empty, (map, result) =>
+      results->Array.reduce(ReBigNumber.Map.empty, (map, result) =>
         switch result {
-        | Ok(pendingOperation) => map->Map.Int.set(pendingOperation.id, pendingOperation)
+        | Ok(pendingOperation) => map->ReBigNumber.Map.set(pendingOperation.id, pendingOperation)
         | _ => map
         }
       )
@@ -1860,7 +1860,7 @@ let code: Code.t = %raw(`[
   }
 ]`)
 
-let storage: (PublicKeyHash.t, array<PublicKeyHash.t>, int) => Storage.t = (
+let storage: (PublicKeyHash.t, array<PublicKeyHash.t>, ReBigNumber.t) => Storage.t = (
   _owner,
   _signers,
   _threshold,
