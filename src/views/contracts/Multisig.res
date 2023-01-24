@@ -92,7 +92,7 @@ module API = {
       open Json.Decode
       {
         lastOpID: json |> field("last_op_id", string) |> ReBigNumber.fromString,
-        metadata: (json |> field("metadata", int)),
+        metadata: json |> field("metadata", int),
         owner: json |> field("owner", PublicKeyHash.decoder),
         pendingOps: json |> field("pending_ops", int),
         signers: json |> field("signers", array(PublicKeyHash.decoder)),
@@ -113,46 +113,41 @@ module API = {
       map->PublicKeyHash.Map.keep((_, v) => v.chain == network.chain->Network.getChainId)
     )
 
-  let get = (network: Network.t, ~contracts: array<PublicKeyHash.t>) =>
-    contracts
-    ->Array.map(contract =>
-      network->getStorage(~contract)->Promise.mapOk(storage => (contract, storage))
-    )
+  let get = (network: Network.t, ~contracts: array<PublicKeyHash.t>) => {
+    let cache = getFromCache(network)->Result.getWithDefault(PublicKeyHash.Map.empty)
+    Array.map(contracts, contract => {
+      switch PublicKeyHash.Map.get(cache, contract) {
+      | Some(v) =>
+        Promise.ok((contract, #multisig(v)))
+      | None =>
+        network->getStorage(~contract)->Promise.mapOk(storage => (contract, #storage(storage)))
+      }
+    })
     ->Promise.allArray
     ->Promise.mapOk(responses =>
       responses->Array.reduce(PublicKeyHash.Map.empty, (map, response) =>
         switch response {
-        | Ok((contract, storage)) => map->PublicKeyHash.Map.set(contract, storage)
+        | Ok((contract, #multisig(m))) => map->PublicKeyHash.Map.set(contract, m)
+        | Ok((contract, #storage(s))) =>
+          let alias = {
+            let s = (contract :> string)
+            "Multisig #" ++ (String.sub(s, 3, 3) ++ "..." ++ String.sub(s, String.length(s) - 4, 3))
+          }
+          let multisig = {
+            address: contract,
+            alias: alias,
+            balance: ReBigNumber.zero,
+            chain: network.chain->Network.getChainId,
+            signers: s.signers,
+            threshold: s.threshold,
+          }
+          map->PublicKeyHash.Map.set(contract, multisig)
         | _ => map
         }
       )
     )
-    // update cache
-    ->Promise.mapOk(map =>
-      map->PublicKeyHash.Map.merge(Cache.get()->Result.getWithDefault(PublicKeyHash.Map.empty), (
-        contract,
-        fromNetwork,
-        fromCache,
-      ) =>
-        switch (fromNetwork, fromCache) {
-        | (Some(storage), Some(multisig)) =>
-          Some({...multisig, signers: storage.signers, threshold: storage.threshold}) // update cached multisig
-        | (Some(storage), _) =>
-          // cache new discovered multisig
-          Some({
-            address: contract,
-            alias: "Multisig #" ++ Js.Date.now()->Int64.of_float->Int64.to_string,
-            balance: ReBigNumber.zero,
-            chain: network.chain->Network.getChainId,
-            signers: storage.signers,
-            threshold: storage.threshold,
-          })
-        | (_, Some(multisig)) => Some(multisig)
-        | _ => None
-        }
-      )
-    )
     ->Promise.tapOk(cache => Cache.set(cache))
+  }
 
   module Bigmap = {
     module Entry = {
