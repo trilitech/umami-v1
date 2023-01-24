@@ -52,10 +52,7 @@ module AddContractButton = {
         style={styles["button"]}
         disabled={chain == None}
         ?tooltip
-        onPress={_ => {
-          Js.log(__LOC__)
-          openAction()
-        }}
+        onPress={_ => openAction()}
         text=I18n.Btn.add_contract
         icon=Icons.Add.build
         primary=true

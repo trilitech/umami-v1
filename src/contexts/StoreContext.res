@@ -211,6 +211,8 @@ let make = (~children) => {
   , [network])
 
   let resetNetwork = () => {
+    let setMultisigs = snd(multisigsRequestState)
+    setMultisigs(ApiRequest.expireCache)
     let setBalances = snd(balanceRequestsState)
     setBalances(ApiRequest.expireCache)
     let setBalancesToken = snd(balanceTokenRequestsState)

@@ -189,7 +189,6 @@ module MultisigAccountList = {
   @react.component
   let make = (~showCreateMultisig) => {
     let multisigsRequest = StoreContext.Multisig.useRequest()
-    Js.log(multisigsRequest)
     <View style={styles["container"]}>
       {switch multisigsRequest {
       | Done(Ok(multisigs), _)

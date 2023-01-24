@@ -69,15 +69,20 @@ module API = {
   // - contain provided addresses param
   // - have the same code as contract param
   let getAddresses = (network, ~addresses: array<PublicKeyHash.t>, ~contract: PublicKeyHash.t) => {
-    let addresses = addresses->List.fromArray
-    network
-    ->ServerAPI.Explorer.getMultisigs(~addresses, ~contract)
-    ->Promise.mapOk(response => {
-      response->Array.reduce(Set.make(~id=module(PublicKeyHash.Comparator)), (contracts, (_, ks)) =>
-        contracts->Set.mergeMany(ks)
-      )
-    })
-    ->Promise.mapOk(Set.toArray)
+    network.Network.chain != #Ghostnet // FIXME: to be removed when prod mezos will be up to date
+      ? Promise.ok([])
+      : {
+          let addresses = addresses->List.fromArray
+          network
+          ->ServerAPI.Explorer.getMultisigs(~addresses, ~contract)
+          ->Promise.mapOk(response => {
+            response->Array.reduce(Set.make(~id=module(PublicKeyHash.Comparator)), (
+              contracts,
+              (_, ks),
+            ) => contracts->Set.mergeMany(ks))
+          })
+          ->Promise.mapOk(Set.toArray)
+        }
   }
 
   module Storage = {
@@ -138,41 +143,49 @@ module API = {
 
   let get = (network: Network.t, ~forceRefresh=false, contracts: array<PublicKeyHash.t>) => {
     let cache = getAllFromCache(network)->Result.getWithDefault(PublicKeyHash.Map.empty)
-    Array.map(contracts, contract => {
-      switch PublicKeyHash.Map.get(cache, contract) {
-      | Some(v) =>
-        forceRefresh
-          ? network
-            ->getStorage(~contract)
-            ->Promise.mapOk(s => (
-              contract,
-              #multisig({...v, signers: s.signers, threshold: s.threshold}),
-            ))
-          : Promise.ok((contract, #multisig(v)))
-      | None =>
-        network->getStorage(~contract)->Promise.mapOk(storage => (contract, #storage(storage)))
-      }
-    })
-    ->Promise.allArray
-    ->Promise.mapOk(responses =>
-      responses->Array.reduce(PublicKeyHash.Map.empty, (map, response) =>
-        switch response {
-        | Ok((contract, #multisig(m))) => map->PublicKeyHash.Map.set(contract, m)
-        | Ok((contract, #storage(s))) =>
-          let multisig = multisigFromStorage(network, contract, s)
-          map->PublicKeyHash.Map.set(contract, multisig)
-        | _ => map
+    let res =
+      Array.map(contracts, contract => {
+        switch PublicKeyHash.Map.get(cache, contract) {
+        | Some(v) =>
+          forceRefresh
+            ? network
+              ->getStorage(~contract)
+              ->Promise.mapOk(s => (
+                contract,
+                #multisig({...v, signers: s.signers, threshold: s.threshold}),
+              ))
+            : Promise.ok((contract, #multisig(v)))
+        | None =>
+          network->getStorage(~contract)->Promise.mapOk(storage => (contract, #storage(storage)))
         }
+      })
+      ->Promise.allArray
+      ->Promise.mapOk(responses =>
+        responses->Array.reduce(PublicKeyHash.Map.empty, (map, response) =>
+          switch response {
+          | Ok((contract, #multisig(m))) => map->PublicKeyHash.Map.set(contract, m)
+          | Ok((contract, #storage(s))) =>
+            let multisig = multisigFromStorage(network, contract, s)
+            map->PublicKeyHash.Map.set(contract, multisig)
+          | _ => map
+          }
+        )
       )
-    )
-    ->Promise.mapOk(map =>
-      map->PublicKeyHash.Map.merge(Cache.get()->Result.getWithDefault(PublicKeyHash.Map.empty), (
-        _,
-        updated,
-        cached,
-      ) => updated == None ? cached : updated)
-    )
-    ->Promise.tapOk(Cache.set)
+    let merge = (update, cache) =>
+      PublicKeyHash.Map.merge(update, cache, (_, updated, cached) =>
+        updated == None ? cached : updated
+      )
+
+    let res = res->Promise.mapOk(res => merge(res, cache))
+    let () =
+      res
+      ->Promise.mapOk(res =>
+        merge(res, Cache.get()->Result.getWithDefault(PublicKeyHash.Map.empty))
+      )
+      ->Promise.tapOk(Cache.set)
+      ->Promise.ign
+
+    res
   }
 
   module Bigmap = {
