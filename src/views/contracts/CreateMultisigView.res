@@ -188,21 +188,12 @@ module Form = {
       }
     )
 
-  let topOperation = (t: state, ~source) => {
-    open Protocol
-    {
-      source: source,
-      managers: [
-        ProtocolHelper.Origination.make(
-          ~balance=Tez.fromMutezString("0"),
-          ~code=MultisigMicheline.code,
-          ~storage=MultisigMicheline.storage(source.address, t->ownerAddresses, t.values.threshold),
-          ~delegate=None,
-          (),
-        ),
-      ],
-    }
-  }
+  let topOperation = (t: state, ~source) =>
+    Multisig.API.makeOperation(
+      ~source,
+      ~ownerAddresses=t->ownerAddresses,
+      ~threshold=t.values.threshold,
+    )
 
   let toMultisig = (t: state, ~address, ~chain) => {
     open Multisig

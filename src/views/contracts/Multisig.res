@@ -290,4 +290,20 @@ module API = {
         }
       )
     )
+
+  let makeOperation = (~source, ~ownerAddresses, ~threshold) => {
+    open Protocol
+    {
+      source: source,
+      managers: [
+        ProtocolHelper.Origination.make(
+          ~balance=Tez.fromMutezString("0"),
+          ~code=MultisigMicheline.code,
+          ~storage=MultisigMicheline.storage(source.address, ownerAddresses, threshold),
+          ~delegate=None,
+          (),
+        ),
+      ],
+    }
+  }
 }
