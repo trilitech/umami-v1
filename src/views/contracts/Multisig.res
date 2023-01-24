@@ -9,6 +9,7 @@ type t = {
 
 let contract = chain =>
   switch chain {
+  | #Mainnet => "KT1Lw11GPDxpdWXWudFUUBMA2Cihevmt8QCf"->PublicKeyHash.build->Result.getExn
   | #Ghostnet => "KT1Mqvf7bnYe4Ty2n7ZbGkdbebCd4WoTJUUp"->PublicKeyHash.build->Result.getExn
   | _ => ""->PublicKeyHash.build->Result.getExn
   }
