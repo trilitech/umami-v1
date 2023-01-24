@@ -116,7 +116,7 @@ module API = {
   let multisigFromStorage = (network: Network.t, contract: PublicKeyHash.t, storage: Storage.t) => {
     let alias = {
       let s = (contract :> string)
-      "Multisig #" ++ (String.sub(s, 3, 3) ++ "..." ++ String.sub(s, String.length(s) - 4, 3))
+      "Multisig " ++ (String.sub(s, 3, 3) ++ "..." ++ String.sub(s, String.length(s) - 3, 3))
     }
     {
       address: contract,
