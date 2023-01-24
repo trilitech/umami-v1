@@ -43,21 +43,19 @@ module FormAddress = {
     />
 }
 
-@react.component
-let make = (~closeAction) => {
-  let config = ConfigContext.useContent()
-  let (loading, setLoading) = React.useState(() => false)
-  let (step, setStep) = React.useState(_ => Address)
-  let fetchMultisig = pkh => {
-    setLoading(_ => true)
-    Multisig.API.getOneFromNetwork(config.network, pkh)
-  }
-  let (title, button) = (I18n.Title.add_token, I18n.Btn.save_and_register)
+module Address = {
+  @react.component
+  let make = (~setStep, ~closeAction) => {
+    let config = ConfigContext.useContent()
+    let (loading, setLoading) = React.useState(() => false)
 
-  let onSubmit = ({state}: MultisigAddForm.onSubmitAPI) => {
-    open MultisigAddForm
-    switch step {
-    | Address =>
+    let fetchMultisig = pkh => {
+      setLoading(_ => true)
+      Multisig.API.getOneFromNetwork(config.network, pkh)
+    }
+
+    let onSubmit = ({state}: MultisigAddForm.onSubmitAPI) => {
+      open MultisigAddForm
       state.values.address
       ->PublicKeyHash.buildContract
       ->Result.getExn
@@ -65,48 +63,47 @@ let make = (~closeAction) => {
       ->Promise.tapError(_ => setLoading(_ => false))
       ->Promise.getOk(multisig => setStep(_ => CheckContract(multisig)))
       None
-    | CheckContract(multisig) =>
-      Js.log(multisig)
-      None
     }
+
+    let form: MultisigAddForm.api = MultisigAddForm.use(
+      ~schema={
+        open MultisigAddForm.Validation
+        Schema(custom(state =>
+            switch PublicKeyHash.buildContract(state.address) {
+            | Error(_) => Error(I18n.Form_input_error.invalid_key_hash)
+            | Ok(_) => Valid
+            }
+          , Address))
+      },
+      ~onSubmit,
+      ~initialState={address: ""},
+      ~i18n=FormUtils.i18n,
+      (),
+    )
+
+    let onSubmit = _ => form.submit()
+
+    <ModalFormView closing=ModalFormView.Close(closeAction)>
+      <ContractDetailsView.Title text=I18n.Title.add_token />
+      <Tag content="multisig" />
+      <ContractDetailsView.Overline text=I18n.add_token_format_contract_sentence />
+      <FormAddress form />
+      <Buttons.SubmitPrimary
+        text=I18n.Btn.save_and_register
+        onPress=onSubmit
+        loading
+        style=FormStyles.formSubmit
+        disabledLook={FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields)}
+      />
+    </ModalFormView>
   }
+}
 
-  let form: MultisigAddForm.api = MultisigAddForm.use(
-    ~schema={
-      open MultisigAddForm.Validation
-      Schema(custom(state =>
-          switch PublicKeyHash.buildContract(state.address) {
-          | Error(_) => Error(I18n.Form_input_error.invalid_key_hash)
-          | Ok(_) => Valid
-          }
-        , Address))
-    },
-    ~onSubmit,
-    ~initialState={address: ""},
-    ~i18n=FormUtils.i18n,
-    (),
-  )
-
-  let onSubmit = _ => form.submit()
-
-  {
-    switch step {
-    | Address =>
-      <ModalFormView closing=ModalFormView.Close(closeAction)>
-        <ContractDetailsView.Title text=title />
-        <Tag content="multisig" />
-        <ContractDetailsView.Overline text=I18n.add_token_format_contract_sentence />
-        <FormAddress form />
-        <Buttons.SubmitPrimary
-          text=button
-          onPress=onSubmit
-          loading
-          style=FormStyles.formSubmit
-          disabledLook={FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields)}
-        />
-      </ModalFormView>
-
-    | CheckContract(multisig) => <ContractDetailsView.Multisig multisig closeAction />
-    }
+@react.component
+let make = (~closeAction) => {
+  let (step, setStep) = React.useState(_ => Address)
+  switch step {
+  | Address => <Address setStep closeAction />
+  | CheckContract(multisig) => <ContractDetailsView.Multisig multisig closeAction />
   }
 }
