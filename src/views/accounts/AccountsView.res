@@ -189,40 +189,48 @@ module MultisigAccountList = {
   @react.component
   let make = (~showCreateMultisig) => {
     let multisigsRequest = StoreContext.Multisig.useRequest()
+    let displayMultisigs = multisigs => {
+      if PublicKeyHash.Map.size(multisigs) == 0 {
+        <Typography.Body1> {I18n.Expl.no_multisig_contract->React.string} </Typography.Body1>
+      } else {
+        let compare: (Multisig.t, Multisig.t) => int = (m1, m2) => {
+          let c = String.compare(m1.alias, m2.alias)
+          c == 0 ? String.compare((m1.address :> string), (m2.address :> string)) : c
+        }
+        <View>
+          {multisigs
+          ->PublicKeyHash.Map.valuesToArray
+          ->SortArray.stableSortBy(compare)
+          ->Array.map(multisig => {
+            <AccountRowItem.MultisigRowItem key={(multisig.address :> string)} multisig />
+          })
+          ->React.array}
+        </View>
+      }
+    }
     <View style={styles["container"]}>
       {switch multisigsRequest {
-      | Done(Ok(multisigs), _)
-      | Loading(Some(multisigs)) =>
-        if PublicKeyHash.Map.size(multisigs) == 0 {
-          <Typography.Body1> {I18n.Expl.no_multisig_contract->React.string} </Typography.Body1>
-        } else {
-          let compare: (Multisig.t, Multisig.t) => int = (m1, m2) => {
-            let c = String.compare(m1.alias, m2.alias)
-            c == 0 ? String.compare((m1.address :> string), (m2.address :> string)) : c
-          }
-          <View>
-            {multisigs
-            ->PublicKeyHash.Map.valuesToArray
-            ->SortArray.stableSortBy(compare)
-            ->Array.map(multisig => {
-              <AccountRowItem.MultisigRowItem key={(multisig.address :> string)} multisig />
-            })
-            ->React.array}
-          </View>
-        }
+      | Done(Ok(multisigs), _) => <>
+          {displayMultisigs(multisigs)}
+          {PublicKeyHash.Map.size(multisigs) == 0
+            ? <>
+                <Buttons.SubmitPrimary
+                  style={styles["button"]} text=I18n.Btn.add_contract onPress={_ => ()}
+                />
+                <Buttons.SubmitPrimary
+                  style={styles["button"]}
+                  text=I18n.Btn.create_new_multisig
+                  onPress={_ => showCreateMultisig()}
+                />
+              </>
+            : React.null}
+        </>
+      | Loading(Some(multisigs)) => <> {displayMultisigs(multisigs)} <LoadingView /> </>
       | Done(Error(error), _) => <ErrorView error />
       | NotAsked
       | Loading(None) =>
         <LoadingView />
       }}
-      <Buttons.SubmitPrimary
-        style={styles["button"]} text=I18n.Btn.add_contract onPress={_ => ()}
-      />
-      <Buttons.SubmitPrimary
-        style={styles["button"]}
-        text=I18n.Btn.create_new_multisig
-        onPress={_ => showCreateMultisig()}
-      />
     </View>
   }
 }
