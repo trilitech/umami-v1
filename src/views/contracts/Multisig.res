@@ -64,6 +64,9 @@ module Cache = {
 }
 
 module API = {
+  // Get contract addresses of contracts that
+  // - contain provided addresses param
+  // - have the same code as contract param
   let getAddresses = (network, ~addresses: array<PublicKeyHash.t>, ~contract: PublicKeyHash.t) => {
     let addresses = addresses->List.fromArray
     network
