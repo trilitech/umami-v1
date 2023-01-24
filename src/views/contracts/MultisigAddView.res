@@ -50,9 +50,7 @@ let make = (~closeAction) => {
   let (step, setStep) = React.useState(_ => Address)
   let fetchMultisig = pkh => {
     setLoading(_ => true)
-    Multisig.API.get(config.network, ~contracts=[pkh])->Promise.mapOk(multisigs =>
-      PublicKeyHash.Map.get(multisigs, pkh)->Option.getExn
-    )
+    Multisig.API.getOneFromNetwork(config.network, pkh)
   }
   let (title, button) = (I18n.Title.add_token, I18n.Btn.save_and_register)
 
@@ -108,8 +106,7 @@ let make = (~closeAction) => {
         />
       </ModalFormView>
 
-    | CheckContract(multisig) =>
-      <ContractDetailsView.Multisig multisig closeAction />
+    | CheckContract(multisig) => <ContractDetailsView.Multisig multisig closeAction />
     }
   }
 }

@@ -998,7 +998,7 @@ module Multisig = {
     let config = ConfigContext.useContent()
     let multisigsRequest = useRequest()
     multisigsRequest->ApiRequest.getWithDefault(
-      Multisig.API.getFromCache(config.network)->Result.getWithDefault(PublicKeyHash.Map.empty),
+      Multisig.API.getAllFromCache(config.network)->Result.getWithDefault(PublicKeyHash.Map.empty),
     )
   }
 

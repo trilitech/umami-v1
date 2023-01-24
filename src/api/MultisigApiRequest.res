@@ -33,7 +33,7 @@ module Base = {
         ~addresses=accounts->Array.map(account => account.address),
         ~contract=config.network.chain->Multisig.contract,
       )
-      ->Promise.flatMapOk(contracts => config.network->Multisig.API.get(~contracts))
+      ->Promise.flatMapOk(config.network->Multisig.API.get)
     )
 
   let getPendingOperations = (~config: ConfigContext.env, ~address) =>
