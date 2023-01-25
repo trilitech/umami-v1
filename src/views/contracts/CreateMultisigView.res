@@ -188,8 +188,8 @@ module Form = {
       }
     )
 
-  let topOperation = (t: state, ~source) =>
-    Multisig.API.makeOperation(
+  let originationOperation = (t: state, ~source) =>
+    Multisig.API.origination(
       ~source,
       ~ownerAddresses=t->ownerAddresses,
       ~threshold=t.values.threshold,
@@ -481,7 +481,7 @@ let make = (~account: Account.t, ~closeAction) => {
       )
     },
     ~onSubmit=({state, raiseSubmitFailed}) => {
-      let operation = state->Form.topOperation(~source=account)
+      let operation = state->Form.originationOperation(~source=account)
       sendOperationSimulate(operation)->Promise.get(x => {
         switch x {
         | Error(e) => raiseSubmitFailed(Some(e->Errors.toString))
