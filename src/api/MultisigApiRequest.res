@@ -31,7 +31,6 @@ module Base = {
       config.network
       ->Multisig.API.getAddresses(
         ~addresses=accounts->Array.map(account => account.address),
-        ~contract=config.network.chain->Multisig.contract,
       )
       ->Promise.flatMapOk(config.network->Multisig.API.get)
     )

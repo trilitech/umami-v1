@@ -9,9 +9,18 @@ type t = {
 
 let contract = chain =>
   switch chain {
-  | #Mainnet => "KT1Lw11GPDxpdWXWudFUUBMA2Cihevmt8QCf"->PublicKeyHash.build->Result.getExn
-  | #Ghostnet => "KT1Mqvf7bnYe4Ty2n7ZbGkdbebCd4WoTJUUp"->PublicKeyHash.build->Result.getExn
-  | _ => ""->PublicKeyHash.build->Result.getExn
+  | #Mainnet => "KT1Lw11GPDxpdWXWudFUUBMA2Cihevmt8QCf"->PublicKeyHash.build->Result.getExn->Some
+  | #Ghostnet => "KT1Mqvf7bnYe4Ty2n7ZbGkdbebCd4WoTJUUp"->PublicKeyHash.build->Result.getExn->Some
+  | #Limanet => "KT1W7ZJqgwj5D3aDwDSwZiSSvzKTaZNbiVLC"->PublicKeyHash.build->Result.getExn->Some
+  | #Custom(_)
+  | #Edo2net
+  | #Florencenet
+  | #Granadanet
+  | #Hangzhounet
+  | #Jakartanet
+  | #Kathmandunet
+  | #Mumbainet =>
+    None
   }
 
 module Cache = {
@@ -68,21 +77,21 @@ module API = {
   // Get contract addresses of contracts that
   // - contain provided addresses param
   // - have the same code as contract param
-  let getAddresses = (network, ~addresses: array<PublicKeyHash.t>, ~contract: PublicKeyHash.t) => {
-    network.Network.chain != #Ghostnet // FIXME: to be removed when prod mezos will be up to date
-      ? Promise.ok([])
-      : {
-          let addresses = addresses->List.fromArray
-          network
-          ->ServerAPI.Explorer.getMultisigs(~addresses, ~contract)
-          ->Promise.mapOk(response => {
-            response->Array.reduce(Set.make(~id=module(PublicKeyHash.Comparator)), (
-              contracts,
-              (_, ks),
-            ) => contracts->Set.mergeMany(ks))
-          })
-          ->Promise.mapOk(Set.toArray)
-        }
+  let getAddresses = (network, ~addresses: array<PublicKeyHash.t>) => {
+    switch contract(network.Network.chain) {
+    | Some(contract) =>
+      let addresses = addresses->List.fromArray
+      network
+      ->ServerAPI.Explorer.getMultisigs(~addresses, ~contract)
+      ->Promise.mapOk(response => {
+        response->Array.reduce(Set.make(~id=module(PublicKeyHash.Comparator)), (
+          contracts,
+          (_, ks),
+        ) => contracts->Set.mergeMany(ks))
+      })
+      ->Promise.mapOk(Set.toArray)
+    | None => Promise.ok([])
+    }
   }
 
   module Storage = {
