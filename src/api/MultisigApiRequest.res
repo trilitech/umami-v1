@@ -29,9 +29,7 @@ module Base = {
   let get = (~config) =>
     HDWalletAPI.Accounts.get(~config)->Promise.flatMapOk(accounts =>
       config.network
-      ->Multisig.API.getAddresses(
-        ~addresses=accounts->Array.map(account => account.address),
-      )
+      ->Multisig.API.getAddresses(~addresses=accounts->Array.map(account => account.address))
       ->Promise.flatMapOk(config.network->Multisig.API.get)
     )
 
@@ -60,6 +58,15 @@ let useUpdate = {
       cache->PublicKeyHash.Map.set(multisig.Multisig.address, multisig)->Multisig.Cache.set
     )
   }
+  ApiRequest.useSetter(~logOk, ~set, ~kind)
+}
+
+/* Delete */
+
+let useDelete = {
+  let set = (~config as _, contract) => Multisig.API.removeFromCache(contract)->Promise.value
+  let logOk = _ => I18n.contract_removed_from_cache
+  let kind = Logs.Multisig
   ApiRequest.useSetter(~logOk, ~set, ~kind)
 }
 

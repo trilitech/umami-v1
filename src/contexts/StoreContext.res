@@ -1023,6 +1023,11 @@ module Multisig = {
     let requestState = React.useState(() => ApiRequest.NotAsked)
     MultisigApiRequest.usePendingOperations(~requestState, ~address)
   }
+
+  let useDelete = () => {
+    let resetMultisigs = useResetAll()
+    MultisigApiRequest.useDelete(~sideEffect=_ => resetMultisigs(), ())
+  }
 }
 
 /*

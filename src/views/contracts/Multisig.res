@@ -129,6 +129,12 @@ module API = {
       map->PublicKeyHash.Map.keep((_, v) => v.chain == network.chain->Network.getChainId)
     )
 
+  let removeFromCache = (contract: PublicKeyHash.t) => {
+    Cache.getWithFallback()->Result.map(cache =>
+      cache->PublicKeyHash.Map.remove(contract)->Cache.set
+    )
+  }
+
   let multisigFromStorage = (network: Network.t, contract: PublicKeyHash.t, storage: Storage.t) => {
     let alias = {
       let s = (contract :> string)

@@ -153,6 +153,22 @@ module MoreMenu = {
     }
   }
 
+  module MultisigDeleteButton = {
+    @react.component
+    let make = (~address: PublicKeyHash.t) => {
+      let (multisigRequest, deleteMultisig) = StoreContext.Multisig.useDelete()
+
+      let onPressConfirmDelete = _e => deleteMultisig(address)
+
+      <DeleteButton.MenuItem
+        buttonText=I18n.Menu.delete_contract
+        modalTitle=I18n.Title.delete_contract
+        onPressConfirmDelete
+        request=multisigRequest
+      />
+    }
+  }
+
   module ContractLinkItem = {
     @react.component
     let make = (~address: PublicKeyHash.t, ~currentChain) => {
@@ -224,7 +240,11 @@ module MoreMenu = {
             key={keyPrefix ++ "-ContractLinkItem"}
             address=multisig.Multisig.address
             currentChain
-          />
+          />,
+          <MultisigDeleteButton
+            key={keyPrefix ++ "-MultisigDeleteButton"}
+            address=multisig.Multisig.address
+            />
         ]
       </Menu>
     }
@@ -272,6 +292,7 @@ module MultisigActions = {
   let make = (~multisig, ~currentChain) =>
     <View style={styles["actions"]}>
       <MoreMenu.Multisig multisig currentChain />
+
     </View>
 }
 
