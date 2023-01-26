@@ -45,10 +45,8 @@ type state = {
   delegateRequestsState: apiRequestsState<option<PublicKeyHash.t>>,
   delegateInfoRequestsState: apiRequestsState<option<NodeAPI.Delegate.delegationInfo>>,
   operationsRequestsState: apiRequestsState<OperationApiRequest.operationsResponse>,
-  pendingOperationsRequestState: reactState<
-    ApiRequest.t<
-      ReBigNumber.Map.t<ReBigNumber.Map.key, Multisig.API.PendingOperation.t, ReBigNumber.Map.id>,
-    >,
+  pendingOperationsRequestsState: apiRequestsState<
+    ReBigNumber.Map.t<ReBigNumber.Map.key, Multisig.API.PendingOperation.t, ReBigNumber.Map.id>,
   >,
   aliasesRequestState: reactState<ApiRequest.t<PublicKeyHash.Map.map<Alias.t>>>,
   bakersRequestState: reactState<ApiRequest.t<array<Delegate.t>>>,
@@ -81,7 +79,7 @@ let initialState = {
   delegateRequestsState: initialApiRequestsState,
   delegateInfoRequestsState: initialApiRequestsState,
   operationsRequestsState: initialApiRequestsState,
-  pendingOperationsRequestState: (NotAsked, _ => ()),
+  pendingOperationsRequestsState: initialApiRequestsState,
   aliasesRequestState: (NotAsked, _ => ()),
   bakersRequestState: (NotAsked, _ => ()),
   tokensRequestState: (NotAsked, _ => ()),
@@ -168,7 +166,7 @@ let make = (~children) => {
   let delegateRequestsState = React.useState(() => Map.String.empty)
   let delegateInfoRequestsState = React.useState(() => Map.String.empty)
   let operationsRequestsState = React.useState(() => Map.String.empty)
-  let pendingOperationsRequestState = React.useState(() => ApiRequest.NotAsked)
+  let pendingOperationsRequestsState = React.useState(() => Map.String.empty)
   let accountsTokensRequestState = React.useState(() => Map.String.empty)
   let accountsTokensNumberRequestState = React.useState(() => Map.String.empty)
   let tokensNumberRequestState = React.useState(() => ApiRequest.NotAsked)
@@ -271,7 +269,7 @@ let make = (~children) => {
       delegateRequestsState: delegateRequestsState,
       delegateInfoRequestsState: delegateInfoRequestsState,
       operationsRequestsState: operationsRequestsState,
-      pendingOperationsRequestState: pendingOperationsRequestState,
+      pendingOperationsRequestsState: pendingOperationsRequestsState,
       aliasesRequestState: aliasesRequestState,
       bakersRequestState: bakersRequestState,
       tokensRequestState: tokensRequestState,
@@ -1033,19 +1031,19 @@ module Multisig = {
   }
 
   module PendingOperations = {
-    let useRequestState = () => {
-      let store = useStoreContext()
-      store.pendingOperationsRequestState
-    }
+    let useRequestState = useRequestsState(store => store.pendingOperationsRequestsState)
 
     let usePendingOperations = (~address: PublicKeyHash.t) => {
-      let requestState = useRequestState()
+      let requestState = useRequestState((address->Some :> option<string>))
       MultisigApiRequest.usePendingOperations(~requestState, ~address)
     }
 
     let useResetAll = () => {
-      let (_, setRequest) = useRequestState()
-      () => setRequest(ApiRequest.expireCache)
+      let store = useStoreContext()
+      let (_, setPendingOperationsRequests) = store.pendingOperationsRequestsState
+      () => {
+        setPendingOperationsRequests(resetRequests)
+      }
     }
   }
 }
