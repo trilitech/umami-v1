@@ -462,10 +462,86 @@ let stepToString = step =>
 type Errors.t +=
   | AddressNotFound
 
+module CreateView = {
+  @react.component
+  let make = (~currentStep, ~form, ~setCurrentStep, ~operationSimulateRequest) => {
+    <>
+      <Typography.Headline style=Styles.title>
+        {I18n.Title.create_new_multisig->React.string}
+      </Typography.Headline>
+      <Step1 currentStep form action={_ => setCurrentStep(_ => 2)} />
+      <Step2
+        currentStep form back={_ => setCurrentStep(_ => 1)} action={_ => setCurrentStep(_ => 3)}
+      />
+      <Step3
+        currentStep
+        form
+        back={_ => setCurrentStep(_ => 2)}
+        loading={operationSimulateRequest->ApiRequest.isLoading}
+        action=form.submit
+      />
+    </>
+  }
+}
+module SignView = {
+  @react.component
+  let make = (
+    ~account,
+    ~state,
+    ~signOpStep,
+    ~dryRun,
+    ~operation,
+    ~sendOperation,
+    ~setModalStep,
+    ~form: Form.api,
+    ~config: Umami.ConfigContext.env,
+    ~updateMultisig,
+    ~operationRequest,
+    ~multisigRequest,
+    ~theme: Umami.ThemeContext.theme,
+  ) => {
+    open OperationApiRequest
+    <SignOperationView
+      signer=account
+      dryRun
+      signOpStep
+      state
+      operation
+      sendOperation={(~operation, signingIntent) =>
+        sendOperation({
+          operation: operation,
+          signingIntent: signingIntent,
+        })
+        ->Promise.tapOk((result: Umami.ReTaquito.Toolkit.Operation.result) =>
+          setModalStep(_ => SubmittedStep(result.hash))
+        )
+        ->Promise.flatMapOk(result =>
+          result.results[0]
+          ->Option.map(ReTaquitoTypes.Operation.classifiy)
+          ->Option.flatMap(result =>
+            switch result {
+            | Origination(result) => result.metadata.operation_result.originated_contracts[0]
+            }
+          )
+          ->Promise.fromOption(~error=AddressNotFound)
+        )
+        ->Promise.mapOk(s => s->PublicKeyHash.build->Result.getExn)
+        ->Promise.mapOk(address =>
+          form.state->Form.toMultisig(~address, ~chain=config.network.chain->Network.getChainId)
+        )
+        ->Promise.tapOk(multisig => multisig->updateMultisig)}
+      loading={operationRequest->ApiRequest.isLoading || multisigRequest->ApiRequest.isLoading}
+      icon={_ => Some(
+        Icons.Key.build(~style=?None, ~size=20., ~color=theme.colors.iconMediumEmphasis),
+      )}
+      name={_ => Some(form.values.name)}
+    />
+  }
+}
+
 @react.component
 let make = (~account: Account.t, ~closeAction) => {
   let theme = ThemeContext.useTheme()
-  let (isSignerVisible, openSigner, closeSigner) = ModalAction.useModalActionState()
   let (currentStep, setCurrentStep) = React.useState(_ => 1)
   let (operationSimulateRequest, sendOperationSimulate) = StoreContext.Operations.useSimulate()
   let (modalStep, setModalStep) = React.useState(_ => CreateStep)
@@ -483,9 +559,7 @@ let make = (~account: Account.t, ~closeAction) => {
       sendOperationSimulate(operation)->Promise.get(x => {
         switch x {
         | Error(e) => raiseSubmitFailed(Some(e->Errors.toString))
-        | Ok(dryRun) =>
-          setModalStep(_ => SigningStep(operation, dryRun))
-          openSigner()
+        | Ok(dryRun) => setModalStep(_ => SigningStep(operation, dryRun))
         }
       })
       None
@@ -504,14 +578,14 @@ let make = (~account: Account.t, ~closeAction) => {
   let (multisigRequest, updateMultisig) = StoreContext.Multisig.useUpdate()
   let config = ConfigContext.useContent()
 
-  let closeButton =
-    <ModalFormView.CloseButton
-      closing={ModalFormView.confirm(~actionText=I18n.Btn.cancel, closeAction)}
-    />
+  let back = switch modalStep {
+  | SigningStep(_) =>
+    switch sign {
+    | AdvancedOptStep(_) => Some(() => setSign(_ => SummaryStep))
+    | SummaryStep => Some(() => setModalStep(_ => CreateStep))
+    }
 
-  let back = switch sign {
-  | AdvancedOptStep(_) => Some(() => setSign(_ => SummaryStep))
-  | SummaryStep => None
+  | _ => None
   }
 
   let title = switch modalStep {
@@ -520,82 +594,39 @@ let make = (~account: Account.t, ~closeAction) => {
   | SubmittedStep(_) => None
   }
 
-  <>
-    <Page.Header right=closeButton>
-      <Typography.Headline style=Styles.title>
-        {I18n.Title.create_new_multisig->React.string}
-      </Typography.Headline>
-      <Step1 currentStep form action={_ => setCurrentStep(_ => 2)} />
-      <Step2
-        currentStep form back={_ => setCurrentStep(_ => 1)} action={_ => setCurrentStep(_ => 3)}
-      />
-      <Step3
-        currentStep
-        form
-        back={_ => setCurrentStep(_ => 2)}
-        loading={operationSimulateRequest->ApiRequest.isLoading}
-        action=form.submit
-      />
-    </Page.Header>
-    <ModalAction visible=isSignerVisible>
-      <ReactFlipToolkit.Flipper flipKey={modalStep->stepToString}>
-        <ReactFlipToolkit.FlippedView flipId="modal">
-          <ModalFormView ?title back closing=ModalFormView.Close(closeSigner)>
-            <ReactFlipToolkit.FlippedView.Inverse inverseFlipId="modal">
-              {switch modalStep {
-              | CreateStep => React.null
-              | SigningStep(operation, dryRun) =>
-                <SignOperationView
-                  signer=account
-                  dryRun
-                  signOpStep
-                  state
-                  operation
-                  sendOperation={(~operation, signingIntent) =>
-                    sendOperation({
-                      operation: operation,
-                      signingIntent: signingIntent,
-                    })
-                    ->Promise.tapOk(result => setModalStep(_ => SubmittedStep(result.hash)))
-                    ->Promise.flatMapOk(result =>
-                      result.results[0]
-                      ->Option.map(ReTaquitoTypes.Operation.classifiy)
-                      ->Option.flatMap(result =>
-                        switch result {
-                        | Origination(result) =>
-                          result.metadata.operation_result.originated_contracts[0]
-                        }
-                      )
-                      ->Promise.fromOption(~error=AddressNotFound)
-                    )
-                    ->Promise.mapOk(s => s->PublicKeyHash.build->Result.getExn)
-                    ->Promise.mapOk(address =>
-                      form.state->Form.toMultisig(
-                        ~address,
-                        ~chain=config.network.chain->Network.getChainId,
-                      )
-                    )
-                    ->Promise.tapOk(multisig => multisig->updateMultisig)}
-                  loading={operationRequest->ApiRequest.isLoading ||
-                    multisigRequest->ApiRequest.isLoading}
-                  icon={_ => Some(
-                    Icons.Key.build(
-                      ~style=?None,
-                      ~size=20.,
-                      ~color=theme.colors.iconMediumEmphasis,
-                    ),
-                  )}
-                  name={_ => Some(form.values.name)}
-                />
-              | SubmittedStep(hash) =>
-                <SubmittedView
-                  hash onPressCancel={_ => closeAction()} submitText=I18n.Btn.go_operations
-                />
-              }}
-            </ReactFlipToolkit.FlippedView.Inverse>
-          </ModalFormView>
-        </ReactFlipToolkit.FlippedView>
-      </ReactFlipToolkit.Flipper>
-    </ModalAction>
-  </>
+  let closing = switch modalStep {
+  | SubmittedStep(_) => ModalFormView.Close(closeAction)->Some
+  | _ => ModalFormView.confirm(~actionText=I18n.Btn.cancel, closeAction)->Some
+  }
+
+  let el = switch modalStep {
+  | CreateStep => <CreateView currentStep form setCurrentStep operationSimulateRequest />
+  | SigningStep(operation, dryRun) =>
+    <SignView
+      account
+      state
+      signOpStep
+      dryRun
+      operation
+      sendOperation
+      setModalStep
+      form
+      config
+      updateMultisig
+      operationRequest
+      multisigRequest
+      theme
+    />
+
+  | SubmittedStep(hash) =>
+    <SubmittedView hash onPressCancel={_ => closeAction()} submitText=I18n.Btn.go_operations />
+  }
+
+  <ReactFlipToolkit.Flipper flipKey={modalStep->stepToString}>
+    <ReactFlipToolkit.FlippedView flipId="modal">
+      <ModalFormView ?title back ?closing titleStyle=FormStyles.headerMarginBottom8>
+        {el}
+      </ModalFormView>
+    </ReactFlipToolkit.FlippedView>
+  </ReactFlipToolkit.Flipper>
 }
