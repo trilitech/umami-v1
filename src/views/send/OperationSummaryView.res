@@ -73,6 +73,7 @@ module EntityInfoContent = {
   @react.component
   let make = (
     ~address: option<PublicKeyHash.t>,
+    ~shrinkedAddressDisplay=?,
     ~addressStyle=?,
     ~icon=?,
     ~iconStyle=styles["accounticon"],
@@ -97,6 +98,7 @@ module EntityInfoContent = {
       )
     }
 
+    let prettyAddressDisplay = shrinkedAddressDisplay->Belt.Option.getWithDefault(false)
     <>
       {icon}
       <View>
@@ -113,11 +115,15 @@ module EntityInfoContent = {
             {name->React.string}
           </Typography.Subtitle2>
         )}
-        {address->Option.mapWithDefault(default, address =>
+        {address->Option.mapWithDefault(default, address => {
+          let fullAddressStr = (address :> string)
+          let formatedAddress = prettyAddressDisplay
+            ? address->PublicKeyHash.getShrinked()
+            : fullAddressStr
           <Typography.Address style={Style.arrayOption([addressStyle])}>
-            {(address :> string)->React.string}
+            {{formatedAddress}->React.string}
           </Typography.Address>
-        )}
+        })}
       </View>
     </>
   }
@@ -132,6 +138,7 @@ module EntityInfo = {
     ~name=?,
     ~default=?,
     ~style=?,
+    ~shrinkedAddressDisplay=?,
   ) => {
     let theme = ThemeContext.useTheme()
 
@@ -146,7 +153,7 @@ module EntityInfo = {
           open Style
           array([styles["itemInfos"], style(~backgroundColor=theme.colors.stateDisabled, ())])
         }>
-        <EntityInfoContent address ?icon ?name ?default />
+        <EntityInfoContent ?shrinkedAddressDisplay address ?icon ?name ?default />
       </View>
     </View>
   }

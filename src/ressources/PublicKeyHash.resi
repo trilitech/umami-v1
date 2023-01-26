@@ -45,6 +45,7 @@ let isContract: t => bool
 
 let isImplicit: t => bool
 
+let getShrinked: (t, ~n: int=?, unit) => string
 module Scheme: {
   type t =
     | ED25519

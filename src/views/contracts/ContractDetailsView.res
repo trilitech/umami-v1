@@ -120,6 +120,7 @@ module Multisig = {
               style(~marginVertical=4.->dp, ())
             }
             address={Some(owner)}
+            shrinkedAddressDisplay=true
           />
         )
         ->React.array}

@@ -61,12 +61,8 @@ let styles = {
 module ShrinkedAddress = {
   @react.component
   let make = (~style as styleProp=?, ~address: PublicKeyHash.t, ~n=6, ~clipboardId=?) => {
+    let shrinked = address->PublicKeyHash.getShrinked(~n, ())
     let address = (address :> string)
-    let l = address->String.length
-    let startSlice = address->Js.String2.slice(~from=0, ~to_=n - 1)
-    let endSlice = address->Js.String2.slice(~from=l - n - 1, ~to_=l - 1)
-
-    let res = `${startSlice}...${endSlice}`
 
     let addToast = LogsContext.useToast()
 
@@ -75,7 +71,7 @@ module ShrinkedAddress = {
         open Style
         arrayOption([styleProp, styles["shrinkContainer"]->Some])
       }>
-      <Typography.Address> {res->React.string} </Typography.Address>
+      <Typography.Address> {shrinked->React.string} </Typography.Address>
       {clipboardId->ReactUtils.mapOpt(clipboardId =>
         <ClipboardButton
           copied=I18n.Log.beacon_sign_payload
