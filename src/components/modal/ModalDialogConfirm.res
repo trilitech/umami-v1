@@ -35,7 +35,6 @@ module Modal = {
     ~subtitle=?,
     ~contentText=?,
     ~cancelText,
-    ~actionText,
   ) => {
     let theme = ThemeContext.useTheme()
     <ModalTemplate.Dialog>
@@ -58,7 +57,7 @@ module Modal = {
           onPress={_ => closeAction()}
           disabled=?loading
         />
-        <Buttons.Form onPress={_ => action()} text=actionText ?loading />
+        {action}
       </View>
     </ModalTemplate.Dialog>
   }
@@ -76,7 +75,7 @@ let useModal = (
 ) => {
   let (openModal, closeModal, wrapModal) = ModalAction.useModal()
 
-  let action = () =>
+  let onPress = _ =>
     action()->Promise.get(x =>
       switch x {
       | Ok(_) => closeModal()
@@ -84,11 +83,11 @@ let useModal = (
       }
     )
 
+  let action = <Buttons.Form onPress text=actionText ?loading />
+
   let modal = () =>
     wrapModal(
-      <Modal
-        action ?loading title ?subtitle ?contentText cancelText actionText closeAction=closeModal
-      />,
+      <Modal action ?loading title ?subtitle ?contentText cancelText closeAction=closeModal />,
     )
 
   (openModal, closeModal, modal)

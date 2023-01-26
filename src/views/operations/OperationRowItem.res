@@ -360,7 +360,16 @@ module Pending = {
 
   module ActionButton = {
     @react.component
-    let make = (~entrypoint, ~text, ~multisig, ~signer: Account.t, ~id, ~disabled) => {
+    let make = (
+      ~style=btnStyle,
+      ~entrypoint,
+      ~text,
+      ~multisig,
+      ~signer: Account.t,
+      ~id,
+      ~disabled,
+      ~callback=() => (),
+    ) => {
       let (
         sendOperationSimulateRequest,
         sendOperationSimulate,
@@ -368,6 +377,10 @@ module Pending = {
       let (modalStep, setModalStep) = React.useState(() => Simulation)
       let setStep = x => {setModalStep(_ => x)}
       let (openAction, closeAction, wrapModal) = ModalAction.useModal()
+      let closeAction = () => {
+        closeAction()
+        callback()
+      }
       let loadingSign =
         sendOperationSimulateRequest->ApiRequest.isLoading &&
           {
@@ -401,7 +414,7 @@ module Pending = {
       }
 
       <>
-        <Buttons.SubmitPrimary text onPress style=btnStyle loading=loadingSign disabled />
+        <Buttons.SubmitPrimary text onPress style loading=loadingSign disabled />
         {wrapModal(
           <ModalFormView closing=ModalFormView.Close(_ => closeAction())>
             {switch modalStep {
@@ -420,8 +433,28 @@ module Pending = {
 
   module ApproveButton = {
     @react.component
-    let make = (~multisig, ~signer: Account.t, ~id, ~disabled) => {
-      <ActionButton entrypoint="approve" text=I18n.Btn.sign multisig signer id disabled />
+    let make = (~text=I18n.Btn.sign, ~style=?, ~multisig, ~signer, ~id, ~disabled, ~callback=?) => {
+      <ActionButton entrypoint="approve" ?style text multisig signer id disabled ?callback />
+    }
+  }
+
+  module ApproveWithConfirmationButton = {
+    @react.component
+    let make = (~multisig, ~signer: Account.t, ~id) => {
+      let (openAction, closeAction, wrapModal) = ModalAction.useModal()
+      let title = I18n.Title.approval_threshold_reached
+      let contentText = I18n.Expl.approval_threshold_reached
+      let cancelText = I18n.Btn.cancel
+
+      let action =
+        <ApproveButton
+          text=I18n.Btn.sign_anyway multisig signer id disabled=false callback=closeAction
+        />
+
+      <>
+        <Buttons.SubmitPrimary text=I18n.Btn.sign onPress={_ => openAction()} style=btnStyle />
+        {wrapModal(<ModalDialogConfirm.Modal action title contentText cancelText closeAction />)}
+      </>
     }
   }
 
@@ -436,7 +469,11 @@ module Pending = {
     @react.component
     let make = (~multisig, ~signer: Account.t, ~id, ~hasSigned, ~canSubmit) => {
       <>
-        <ApproveButton multisig signer id disabled={hasSigned} />
+        {hasSigned
+          ? <ApproveButton multisig signer id disabled=true />
+          : canSubmit
+          ? <ApproveWithConfirmationButton multisig signer id />
+          : <ApproveButton multisig signer id disabled=false />}
         <ExecuteButton multisig signer id disabled={!canSubmit} />
         //        <Buttons.SubmitPrimary
         //          text=I18n.Btn.global_batch_add_short onPress={_ => ()} style=btnStyle disabled={true}

@@ -110,6 +110,7 @@ module Btn = {
   let history = "History"
   let pending_operations = "In preparation"
   let sign = "SIGN"
+  let sign_anyway = "SIGN ANYWAY"
   let global_batch_add_short = "INSERT INTO BATCH"
 }
 
@@ -404,6 +405,7 @@ module Title = {
   let contract_name = "Contract name"
   let owners = s => `Owners (${s})`
   let approval_threshold = "Approval threshold"
+  let approval_threshold_reached = "Signature threshold reached"
 }
 
 module Expl = {
@@ -453,6 +455,7 @@ module Expl = {
   let set_multisig_threshold = "Set the minimum number of required approvals before any action can be executed."
   let out_of = s => `out of ${s}`
   let review_multisig = `Please review the details of the multisig contract you are about to create.\\nYou can edit them before submitting by clicking the back button.\\nYou will receive an approval request from your wallet. Please confirm it to continue.`
+  let approval_threshold_reached = "This operation has already gathered the required number of signatures to be submitted. You signature is therefore no longer necessary."
 }
 
 module Menu = {

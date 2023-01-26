@@ -424,9 +424,7 @@ module Step3 = {
     )
 
     <StepView step=3 currentStep title=I18n.Title.review_and_submit>
-      <Typography.Body1 style={styles["description"]}>
-        {I18n.Expl.review_multisig->React.string}
-      </Typography.Body1>
+      {I18n.Expl.review_multisig->Typography.body1(~style=styles["description"])}
       <ContractDetailsView.Multisig.Name name=form.values.name />
       <ContractDetailsView.Multisig.Owners owners={Array.map(owners, FormUtils.Alias.address)} />
       <ContractDetailsView.Multisig.Threshold

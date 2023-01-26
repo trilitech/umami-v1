@@ -218,7 +218,7 @@ module Body1 = Make({
   let fontSize = 16.
   let selectable = true
 })
-let body1 = (~numberOfLines=?, txt) => <Body1 ?numberOfLines> {txt->React.string} </Body1>
+let body1 = (~numberOfLines=?, ~style=?, txt) => <Body1 ?numberOfLines ?style> {txt->React.string} </Body1>
 
 module Body2 = Make({
   let colorStyle = #highEmphasis
