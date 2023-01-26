@@ -213,8 +213,13 @@ module Multisig = {
   let make = (~account: Alias.t) => {
     let operationsRequest = StoreContext.Operations.useLoad(~address=account.address, ())
     let operationsReload = StoreContext.Operations.useResetAll()
+    let pendingOperationsReload = StoreContext.Multisig.PendingOperations.useResetAll()
+    let onRefresh = () => {
+      operationsReload()
+      pendingOperationsReload()
+    }
 
-    let pendingOperationsRequest = StoreContext.Multisig.usePendingOperations(
+    let pendingOperationsRequest = StoreContext.Multisig.PendingOperations.usePendingOperations(
       ~address=account.Alias.address,
     )
     let (tab, setTab) = React.useState(() => History)
@@ -227,11 +232,7 @@ module Multisig = {
         />
       </View>
     }
-    <Base
-      headerExt
-      account
-      onRefresh=operationsReload
-      loading={operationsRequest->ApiRequest.isLoading}>
+    <Base headerExt account onRefresh loading={operationsRequest->ApiRequest.isLoading}>
       {switch tab {
       | History => <OperationsHistory account request=operationsRequest />
       | Pending => <OperationsPending account request=pendingOperationsRequest />
@@ -244,8 +245,8 @@ module Implicit = {
   @react.component
   let make = (~account: Alias.t) => {
     let operationsRequest = StoreContext.Operations.useLoad(~address=account.address, ())
-    let operationsReload = StoreContext.Operations.useResetAll()
-    <Base account onRefresh=operationsReload loading={operationsRequest->ApiRequest.isLoading}>
+    let onRefresh = StoreContext.Operations.useResetAll()
+    <Base account onRefresh loading={operationsRequest->ApiRequest.isLoading}>
       <OperationsHistory account request=operationsRequest />
     </Base>
   }

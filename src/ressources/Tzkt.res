@@ -326,3 +326,44 @@ module Migration = {
     {balance: bcd.balance, tokenInfo: tokenInfo}
   }
 }
+
+module type BigmapParamKey = {
+  type t
+  let decoder: Js.Json.t => t
+}
+
+module type BigmapParamValue = {
+  type t
+  let decoder: Js.Json.t => t
+}
+
+module Bigmap = (ParamKey: BigmapParamKey, ParamValue: BigmapParamValue) => {
+  module Key = {
+    type t = {
+      id: int,
+      active: bool,
+      hash: option<string>,
+      key: option<ParamKey.t>,
+      value: option<ParamValue.t>,
+      firstLevel: int,
+      lastLevel: int,
+      updates: int,
+    }
+
+    // See https://api.tzkt.io/#operation/BigMaps_GetKeys
+    let decoder = json => {
+      open JsonEx.Decode
+      {
+        id: json |> field("id", int), // Internal Id, can be used for pagination
+        active: json |> field("active", bool), // Bigmap key status (true - active, false - removed)
+        hash: json |> optionalOrNull("hash", string), // Key hash
+        key: json |> optionalOrNull("key", ParamKey.decoder), // Key in JSON or Micheline format, depending on the micheline query parameter.
+        value: json |> optionalOrNull("value", ParamValue.decoder), // Value in JSON or Micheline format, depending on the micheline query parameter.
+        // Note, if the key is inactive (removed) it will contain the last non-null value.
+        firstLevel: json |> field("firstLevel", int), // Level of the block where the bigmap key was seen first time
+        lastLevel: json |> field("lastLevel", int), // Level of the block where the bigmap key was seen last time
+        updates: json |> field("updates", int), // Total number of actions with the bigmap key
+      }
+    }
+  }
+}

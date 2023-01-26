@@ -204,35 +204,24 @@ module API = {
   }
 
   module Bigmap = {
-    module Entry = {
-      module Value = {
-        type t = {
-          actions: string,
-          approvals: array<PublicKeyHash.t>,
-        }
-
-        let decoder = json => {
-          open Json.Decode
-          {
-            actions: json |> field("actions", string),
-            approvals: json |> field("approvals", array(PublicKeyHash.decoder)),
-          }
-        }
-      }
-
+    module ParamKey = {
+      type t = ReBigNumber.t
+      let decoder = json => json |> Json.Decode.string |> ReBigNumber.fromString
+    }
+    module ParamValue = {
       type t = {
-        key: ReBigNumber.t,
-        value: Value.t,
+        actions: string,
+        approvals: array<PublicKeyHash.t>,
       }
-
       let decoder = json => {
         open Json.Decode
         {
-          key: json |> field("key", string) |> ReBigNumber.fromString,
-          value: json |> field("value", Value.decoder),
+          actions: json |> field("actions", string),
+          approvals: json |> field("approvals", array(PublicKeyHash.decoder)),
         }
       }
     }
+    include Tzkt.Bigmap(ParamKey, ParamValue)
   }
 
   module PendingOperation = {
@@ -294,29 +283,28 @@ module API = {
     ->Promise.value
     ->Promise.flatMapOk(url => url->ServerAPI.URL.get)
     ->Promise.flatMapOk(json =>
-      json->JsonEx.decode(Json.Decode.array(Bigmap.Entry.decoder))->Promise.value
+      json->JsonEx.decode(Json.Decode.array(Bigmap.Key.decoder))->Promise.value
     )
-    ->Promise.flatMapOk(entries =>
-      entries
-      ->Array.map(entry => {
-        parseActions(entry.value.actions)
-        ->Result.map(((amount, recipient)) => {
-          PendingOperation.id: entry.key,
-          type_: Transaction,
-          amount: amount,
-          recipient: recipient,
-          approvals: entry.value.approvals,
-        })
-        ->Promise.value
+    ->Promise.mapOk(entries =>
+      entries->Array.keepMap(entry => {
+        switch (entry.active, entry.key, entry.value) {
+        | (true, Some(key), Some(value)) =>
+          parseActions(value.actions)
+          ->Result.map(((amount, recipient)) => Some({
+            PendingOperation.id: key,
+            type_: Transaction,
+            amount: amount,
+            recipient: recipient,
+            approvals: value.approvals,
+          }))
+          ->Result.getWithDefault(None)
+        | _ => None
+        }
       })
-      ->Promise.allArray
     )
     ->Promise.mapOk(results =>
-      results->Array.reduce(ReBigNumber.Map.empty, (map, result) =>
-        switch result {
-        | Ok(pendingOperation) => map->ReBigNumber.Map.set(pendingOperation.id, pendingOperation)
-        | _ => map
-        }
+      results->Array.reduce(ReBigNumber.Map.empty, (map, pendingOperation) =>
+        map->ReBigNumber.Map.set(pendingOperation.id, pendingOperation)
       )
     )
 
