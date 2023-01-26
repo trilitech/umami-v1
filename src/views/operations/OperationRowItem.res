@@ -500,6 +500,10 @@ module Pending = {
         }
         let transaction = Operation.Transaction.Tez(common)
         let tooltipSuffix = pending.id->ReBigNumber.toString
+        let canSubmit =
+          ReBigNumber.fromInt(Array.length(pending.approvals))->ReBigNumber.isGreaterThanOrEqualTo(
+            multisig.Multisig.threshold,
+          )
         let signed = pending.approvals->Array.length->Int.toString
         let threshold = multisig.Multisig.threshold->ReBigNumber.toString
         let header = collapseButton => {
@@ -509,7 +513,17 @@ module Pending = {
             <CellType> {I18n.operation_transaction->Typography.body1} </CellType>
             <GenericCellAmount address=account.address transaction tokens tooltipSuffix />
             <CellAddress> {getContactOrRaw(aliases, tokens, common.destination)} </CellAddress>
-            <CellSignatures> {I18n.a_of_b(signed, threshold)->Typography.body1} </CellSignatures>
+            <CellSignatures style={Style.style(~flexDirection=#row, ())}>
+              {
+                let color = canSubmit ? theme.colors.textPositive : theme.colors.textHighEmphasis
+                <>
+                  <Icons.Key size=20. color />
+                  {I18n.a_of_b(signed, threshold)->Typography.body1(
+                    ~style=Style.style(~color, ~marginLeft=8.->Style.dp, ()),
+                  )}
+                </>
+              }
+            </CellSignatures>
           </Table.Row.Bordered>
         }
         <ContractRows.Collapsable header expanded=false>
@@ -584,13 +598,7 @@ module Pending = {
                       {switch PublicKeyHash.Map.get(accounts, owner) {
                       | Some(signer) =>
                         <TransactionActionButtons
-                          signer
-                          multisig
-                          id=pending.id
-                          hasSigned
-                          canSubmit={ReBigNumber.fromInt(
-                            Array.length(pending.approvals),
-                          )->ReBigNumber.isGreaterThanOrEqualTo(multisig.Multisig.threshold)}
+                          signer multisig id=pending.id hasSigned canSubmit
                         />
                       | None => React.null
                       }}
