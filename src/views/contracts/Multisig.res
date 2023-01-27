@@ -129,17 +129,22 @@ module API = {
       map->PublicKeyHash.Map.keep((_, v) => v.chain == network.chain->Network.getChainId)
     )
 
-  let removeFromCache = (contract: PublicKeyHash.t) => {
+  let removeFromCache = (contracts: array<PublicKeyHash.t>) => {
     Cache.getWithFallback()->Result.map(cache =>
-      cache->PublicKeyHash.Map.remove(contract)->Cache.set
+      Array.reduce(contracts, cache, (cache, contract) =>
+        PublicKeyHash.Map.remove(cache, contract)
+      )->Cache.set
     )
   }
 
+  // Invariant: defaultName called twice must return the same name for the same KT1
+  let defaultName = (contract: PublicKeyHash.t) => {
+    let s = (contract :> string)
+    "Multisig " ++ (String.sub(s, 3, 3) ++ "..." ++ String.sub(s, String.length(s) - 3, 3))
+  }
+
   let multisigFromStorage = (network: Network.t, contract: PublicKeyHash.t, storage: Storage.t) => {
-    let alias = {
-      let s = (contract :> string)
-      "Multisig " ++ (String.sub(s, 3, 3) ++ "..." ++ String.sub(s, String.length(s) - 3, 3))
-    }
+    let alias = defaultName(contract)
     {
       address: contract,
       alias: alias,

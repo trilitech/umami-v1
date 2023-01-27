@@ -158,7 +158,7 @@ module MoreMenu = {
     let make = (~address: PublicKeyHash.t) => {
       let (multisigRequest, deleteMultisig) = StoreContext.Multisig.useDelete()
 
-      let onPressConfirmDelete = _e => deleteMultisig(address)
+      let onPressConfirmDelete = _e => deleteMultisig([address])
 
       <DeleteButton.MenuItem
         buttonText=I18n.Menu.delete_contract

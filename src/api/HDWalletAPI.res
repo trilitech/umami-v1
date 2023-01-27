@@ -376,15 +376,20 @@ module Accounts = {
     let secretsBefore = secrets(~config)->Promise.value
     let aliases = Aliases.getAliasMap(~config)
 
-    let deletedAddresses = Promise.flatMapOk2(aliases, secretsBefore, (aliases, secretsBefore) =>
+    let deletedAddressesPkh = Promise.flatMapOk2(aliases, secretsBefore, (aliases, secretsBefore) =>
       secretsBefore[index]
       ->Option.map(secret =>
         secret.addresses
         ->Array.concat(secret.masterPublicKey->Option.mapWithDefault([], pkh => [pkh]))
-        ->Array.keepMap(v => aliases->Map.String.get((v :> string)))
+        ->Array.keep(v => aliases->Map.String.has((v :> string)))
       )
       ->Promise.fromOption(~error=SecretNotFound(index))
     )
+
+    let deletedAddresses = Promise.mapOk2(aliases, deletedAddressesPkh, (
+      aliases,
+      deletedAddressesPkh,
+    ) => deletedAddressesPkh->Array.keepMap(v => aliases->Map.String.get((v :> string))))
 
     let deleteAddressP =
       deletedAddresses->Promise.flatMapOk(addresses =>
@@ -418,9 +423,9 @@ module Accounts = {
       }
     }
 
-    secretsBeforeP->Promise.flatMapOk(() => {
+    Promise.flatMapOk(secretsBeforeP, _ => {
       applyStorage()
-      Promise.ok()
+      deletedAddressesPkh
     })
   }
 

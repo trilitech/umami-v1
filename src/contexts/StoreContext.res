@@ -730,6 +730,8 @@ module Aliases = {
   }
 }
 
+module Multisig_API = Multisig.API
+
 module Multisig = {
   let useRequestState = () => {
     let store = useStoreContext()
@@ -938,8 +940,30 @@ module Secrets = {
   }
 
   let useDelete = () => {
+    let config = ConfigContext.useContent()
     let resetAccounts = useResetAll()
-    SecretApiRequest.useDelete(~sideEffect=_ => resetAccounts(), ())
+    let (request, setRequest) = SecretApiRequest.useDelete(~sideEffect=_ => resetAccounts(), ())
+    (
+      request,
+      i => {
+        setRequest(i)
+        // Remove from cache multisigs that:
+        // - are related to one of the removed pkh
+        // - AND have the default generated name (assume it has been automatically added by umami)
+        // If another remaining secret is related to any deleted multisig, the multisig
+        // will be re-added with the same name so it is ok to remove it here
+        ->Promise.flatMapOk(addresses => Multisig_API.getAddresses(config.network, ~addresses))
+        ->Promise.flatMapOk(contracts => Multisig_API.get(config.network, contracts))
+        ->Promise.mapOk(contracts =>
+          PublicKeyHash.Map.reduce(contracts, [], (acc, _, contract) =>
+            contract.alias == Multisig_API.defaultName(contract.address)
+              ? Array.concat([contract.address], acc)
+              : acc
+          )
+        )
+        ->Promise.mapOk(Multisig_API.removeFromCache)
+      },
+    )
   }
 }
 

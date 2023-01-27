@@ -104,7 +104,7 @@ module Accounts: {
   /* Delete the given account */
   let delete: (~config: ConfigContext.env, string) => Promise.t<unit>
 
-  let deleteSecretAt: (~config: ConfigContext.env, int) => Promise.t<unit>
+  let deleteSecretAt: (~config: ConfigContext.env, int) => Promise.t<array<PublicKeyHash.t>>
 
   module Scan: {
     type Errors.t +=
