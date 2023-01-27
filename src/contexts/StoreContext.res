@@ -730,6 +730,67 @@ module Aliases = {
   }
 }
 
+module Multisig = {
+  let useRequestState = () => {
+    let store = useStoreContext()
+    store.multisigsRequestState
+  }
+
+  let useRequest = () => {
+    let (multisigsRequest, _) = useRequestState()
+    multisigsRequest
+  }
+
+  let useCreate = () => {
+    ()
+  }
+
+  let useGetAll = () => {
+    let config = ConfigContext.useContent()
+    let multisigsRequest = useRequest()
+    multisigsRequest->ApiRequest.getWithDefault(
+      Multisig.API.getAllFromCache(config.network)->Result.getWithDefault(PublicKeyHash.Map.empty),
+    )
+  }
+
+  let useGetFromAddress = (address: PublicKeyHash.t) => {
+    let multisigs = useGetAll()
+    multisigs->PublicKeyHash.Map.get(address)
+  }
+
+  let useResetAll = () => {
+    let (_, setMultisigRequest) = useRequestState()
+    () => setMultisigRequest(ApiRequest.expireCache)
+  }
+
+  let useUpdate = () => {
+    let resetMultisigs = useResetAll()
+    MultisigApiRequest.useUpdate(~sideEffect=_ => resetMultisigs(), ())
+  }
+
+  let useDelete = () => {
+    let resetMultisigs = useResetAll()
+    MultisigApiRequest.useDelete(~sideEffect=_ => resetMultisigs(), ())
+  }
+
+  module PendingOperations = {
+    let useRequestState = useRequestsState(store => store.pendingOperationsRequestsState)
+
+    let usePendingOperations = (~address: PublicKeyHash.t) => {
+      let requestState = useRequestState((address->Some :> option<string>))
+      MultisigApiRequest.usePendingOperations(~requestState, ~address)
+    }
+
+    let useResetAll = () => {
+      let store = useStoreContext()
+      let (_, setPendingOperationsRequests) = store.pendingOperationsRequestsState
+      () => {
+        setPendingOperationsRequests(resetRequests)
+      }
+    }
+  }
+}
+
 module Accounts = {
   let useRequestState = () => {
     let store = useStoreContext()
@@ -831,11 +892,13 @@ module Secrets = {
   }
 
   let useResetAll = () => {
+    let resetMultisigs = Multisig.useResetAll()
     let resetAccounts = Accounts.useResetAll()
     let (_, setSecretsRequest) = useRequestState()
     () => {
       setSecretsRequest(ApiRequest.expireCache)
       resetAccounts()
+      resetMultisigs()
     }
   }
 
@@ -986,67 +1049,6 @@ module Beacon = {
         ~sideEffect=_ => resetBeaconPermissions(),
         (),
       )
-    }
-  }
-}
-
-module Multisig = {
-  let useRequestState = () => {
-    let store = useStoreContext()
-    store.multisigsRequestState
-  }
-
-  let useRequest = () => {
-    let (multisigsRequest, _) = useRequestState()
-    multisigsRequest
-  }
-
-  let useCreate = () => {
-    ()
-  }
-
-  let useGetAll = () => {
-    let config = ConfigContext.useContent()
-    let multisigsRequest = useRequest()
-    multisigsRequest->ApiRequest.getWithDefault(
-      Multisig.API.getAllFromCache(config.network)->Result.getWithDefault(PublicKeyHash.Map.empty),
-    )
-  }
-
-  let useGetFromAddress = (address: PublicKeyHash.t) => {
-    let multisigs = useGetAll()
-    multisigs->PublicKeyHash.Map.get(address)
-  }
-
-  let useResetAll = () => {
-    let (_, setMultisigRequest) = useRequestState()
-    () => setMultisigRequest(ApiRequest.expireCache)
-  }
-
-  let useUpdate = () => {
-    let resetMultisigs = useResetAll()
-    MultisigApiRequest.useUpdate(~sideEffect=_ => resetMultisigs(), ())
-  }
-
-  let useDelete = () => {
-    let resetMultisigs = useResetAll()
-    MultisigApiRequest.useDelete(~sideEffect=_ => resetMultisigs(), ())
-  }
-
-  module PendingOperations = {
-    let useRequestState = useRequestsState(store => store.pendingOperationsRequestsState)
-
-    let usePendingOperations = (~address: PublicKeyHash.t) => {
-      let requestState = useRequestState((address->Some :> option<string>))
-      MultisigApiRequest.usePendingOperations(~requestState, ~address)
-    }
-
-    let useResetAll = () => {
-      let store = useStoreContext()
-      let (_, setPendingOperationsRequests) = store.pendingOperationsRequestsState
-      () => {
-        setPendingOperationsRequests(resetRequests)
-      }
     }
   }
 }
