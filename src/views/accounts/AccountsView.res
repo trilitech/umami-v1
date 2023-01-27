@@ -186,9 +186,39 @@ module MultisigAccountList = {
     })
   }
 
+  module AddMultisigButton = {
+    @react.component
+    let make = () => {
+      let (openAction, closeAction, wrapModal) = ModalAction.useModal()
+      <>
+        <Buttons.SubmitPrimary
+          style={styles["button"]} text=I18n.Btn.add_contract onPress={_ => openAction()}
+        />
+        {wrapModal(<MultisigAddView closeAction />)}
+      </>
+    }
+  }
+
+  module CreateMultisigButton = {
+    @react.component
+    let make = () => {
+      let account = StoreContext.SelectedAccount.useGetImplicit()
+      let (openAction, closeAction, wrapModal) = ModalAction.useModal()
+      <>
+        <Buttons.SubmitPrimary
+          style={styles["button"]} text=I18n.Btn.create_new_multisig onPress={_ => openAction()}
+        />
+        {Option.mapWithDefault(account, React.null, account =>
+          wrapModal(<CreateMultisigView account closeAction />)
+        )}
+      </>
+    }
+  }
+
   @react.component
-  let make = (~showCreateMultisig) => {
+  let make = () => {
     let multisigsRequest = StoreContext.Multisig.useRequest()
+
     let displayMultisigs = multisigs => {
       if PublicKeyHash.Map.size(multisigs) == 0 {
         <Typography.Body1> {I18n.Expl.no_multisig_contract->React.string} </Typography.Body1>
@@ -213,16 +243,7 @@ module MultisigAccountList = {
       | Done(Ok(multisigs), _) => <>
           {displayMultisigs(multisigs)}
           {PublicKeyHash.Map.size(multisigs) == 0
-            ? <>
-                <Buttons.SubmitPrimary
-                  style={styles["button"]} text=I18n.Btn.add_contract onPress={_ => ()}
-                />
-                <Buttons.SubmitPrimary
-                  style={styles["button"]}
-                  text=I18n.Btn.create_new_multisig
-                  onPress={_ => showCreateMultisig()}
-                />
-              </>
+            ? <> <AddMultisigButton /> <CreateMultisigButton /> </>
             : React.null}
         </>
       | Loading(Some(multisigs)) => <> {displayMultisigs(multisigs)} <LoadingView /> </>
@@ -296,47 +317,33 @@ let make = (~account: Alias.t, ~showCreateAccount, ~showBuyTez, ~mode, ~setMode)
     PublicKeyHash.isImplicit(account.address) ? Individual : Multisig
   )
 
-  let (isFormVisible, showForm) = React.useState(_ => false)
-
   <Page>
-    {if isFormVisible {
-      switch Alias.toAccount(account) {
-      | Result.Ok(account) => <CreateMultisigView account closeAction={_ => showForm(_ => false)} />
-
-      | Result.Error(_) => React.null
-      }
-    } else {
-      <>
-        <Page.Header
-          right={<>
-            <RefreshButton
-              loading={accountsRequest->ApiRequest.isLoading}
-              onRefresh={() => {
-                resetSecrets()
-                retryNetwork()
-              }}
-            />
-            <EditButton mode setMode />
-          </>}>
-          <Typography.Headline style=Styles.title>
-            {I18n.Title.accounts->React.string}
-          </Typography.Headline>
-          {mode->Mode.is_management ? <BalanceTotal /> : <BalanceTotal.WithTokenSelector ?token />}
-          <View style={styles["actionBar"]}>
-            {mode->Mode.is_management
-              ? <CreateAccountButton action=showCreateAccount />
-              : <View>
-                  <BuyTezButton account showView=showBuyTez />
-                  <AccountTypeSwitch accountType setAccountType />
-                </View>}
-          </View>
-        </Page.Header>
+    <Page.Header
+      right={<>
+        <RefreshButton
+          loading={accountsRequest->ApiRequest.isLoading}
+          onRefresh={() => {
+            resetSecrets()
+            retryNetwork()
+          }}
+        />
+        <EditButton mode setMode />
+      </>}>
+      {I18n.Title.accounts->Typography.headline(~style=Styles.title)}
+      {mode->Mode.is_management ? <BalanceTotal /> : <BalanceTotal.WithTokenSelector ?token />}
+      <View style={styles["actionBar"]}>
         {mode->Mode.is_management
-          ? <AccountsTreeList />
-          : accountType == Individual
-          ? <AccountsFlatList ?token />
-          : <MultisigAccountList showCreateMultisig={_ => showForm(_ => true)} />}
-      </>
-    }}
+          ? <CreateAccountButton action=showCreateAccount />
+          : <View>
+              <BuyTezButton account showView=showBuyTez />
+              <AccountTypeSwitch accountType setAccountType />
+            </View>}
+      </View>
+    </Page.Header>
+    {mode->Mode.is_management
+      ? <AccountsTreeList />
+      : accountType == Individual
+      ? <AccountsFlatList ?token />
+      : <MultisigAccountList />}
   </Page>
 }

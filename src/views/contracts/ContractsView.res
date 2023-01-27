@@ -85,7 +85,6 @@ module AddMultisigButton = {
   }
 }
 
-// FIXME: Do not use a modal or reimplement CreateMultisigView
 module CreateNewMultisigButton = {
   let styles = {
     open Style
