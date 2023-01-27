@@ -109,7 +109,7 @@ module Multisig = {
 
   module Owners = {
     @react.component
-    let make = (~owners) =>
+    let make = (~owners, ~shrinkedAddressDisplay=false) =>
       <Element label={I18n.Title.owners(owners->Array.length->Int.toString)}>
         {owners
         ->Array.mapWithIndex((i, owner) =>
@@ -120,7 +120,7 @@ module Multisig = {
               style(~marginVertical=4.->dp, ())
             }
             address={Some(owner)}
-            shrinkedAddressDisplay=true
+            shrinkedAddressDisplay
           />
         )
         ->React.array}

@@ -426,7 +426,9 @@ module Step3 = {
     <StepView step=3 currentStep title=I18n.Title.review_and_submit>
       {I18n.Expl.review_multisig->Typography.body1(~style=styles["description"])}
       <ContractDetailsView.Multisig.Name name=form.values.name />
-      <ContractDetailsView.Multisig.Owners owners={Array.map(owners, FormUtils.Alias.address)} />
+      <ContractDetailsView.Multisig.Owners
+        owners={Array.map(owners, FormUtils.Alias.address)} shrinkedAddressDisplay=true
+      />
       <ContractDetailsView.Multisig.Threshold
         threshold={form.values.threshold} owners={owners->Array.length}
       />
