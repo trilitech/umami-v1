@@ -100,7 +100,7 @@ module Form = {
 
       <>
         <ReactFlipToolkit.FlippedView flipId="form">
-          <FormGroupAccountSelector.Accounts
+          <FormGroupAccountSelector.Implicits
             disabled=true label=I18n.Label.send_sender value=sender handleChange={_ => ()}
           />
           <FormGroupNFTView nft />

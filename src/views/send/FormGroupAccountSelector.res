@@ -64,7 +64,7 @@ module Base = {
   }
 }
 
-module Accounts = {
+module Implicits = {
   @react.component
   let make = (
     ~label,
