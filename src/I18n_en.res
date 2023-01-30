@@ -392,6 +392,7 @@ module Title = {
   let notice = "Disclaimer Notice"
   let buy_tez = "Buy tez"
   let wert_recipient = "Please select the recipient account"
+  let multisig_sender = "Please select the sender account"
   let added_to_wallet = "Added to wallet"
   let held = "Held"
   let restore_account = "Restore from Backup"
