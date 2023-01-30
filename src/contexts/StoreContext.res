@@ -1048,35 +1048,60 @@ module Multisig = {
   }
 }
 
+let useAliasesAccountsMultisigs = () => {
+  let aliasesRequest = Aliases.useRequest()
+  let accountsRequest = Accounts.useRequest()
+  let multisigsRequest = Multisig.useRequest()
+
+  switch (aliasesRequest, accountsRequest, multisigsRequest) {
+  | (Done(Error(e), t), _, _) | (_, Done(Error(e), t), _) | (_, _, Done(Error(e), t)) =>
+    ApiRequest.Done(Error(e), t)
+  | (Done(Ok(aliases), v1), Done(Ok(accounts), v2), Done(Ok(multisigs), v3)) =>
+    let cache = Ok(aliases, accounts, multisigs)
+    let cacheValidity = switch (v1, v2, v3) {
+    | (ValidSince(v1), ValidSince(v2), ValidSince(v3)) =>
+      ApiRequest.ValidSince(Js.Math.minMany_float([v1, v2, v3]))
+    | _ => ApiRequest.Expired
+    }
+    ApiRequest.Done(cache, cacheValidity)
+  | (NotAsked, _, _) | (_, NotAsked, _) | (_, _, NotAsked) => ApiRequest.NotAsked
+  | (Loading(None), Loading(None), Loading(None)) => ApiRequest.Loading(None)
+  | (Loading(_), _, _) | (_, Loading(_), _) | (_, _, Loading(_)) =>
+    ApiRequest.Loading(
+      Some(
+        aliasesRequest->ApiRequest.getWithDefault(PublicKeyHash.Map.empty),
+        accountsRequest->ApiRequest.getWithDefault(PublicKeyHash.Map.empty),
+        multisigsRequest->ApiRequest.getWithDefault(PublicKeyHash.Map.empty),
+      ),
+    )
+  }
+}
+
 /*
   Return accounts and multisigs,
   formatted as aliases or corresponding registred alias if it exists.
-  FIXME: Should accounts and multisigs registered as contacts see their kind changed to Multisig
 */
 let useGetAccountsMultisigsAliasesAsAliases = () => {
-  let aliases = Aliases.useGetAll()
-  let accounts = Accounts.useGetAll()
-  let multisigs = Multisig.useGetAll()
-
-  let replaceName = v => {
-    switch PublicKeyHash.Map.get(aliases, v.Alias.address) {
-    | Some(alias) => {...v, name: alias.Alias.name}
-    | None => v
+  ApiRequest.map(useAliasesAccountsMultisigs(), ((aliases, accounts, multisigs)) => {
+    let replaceName = v => {
+      switch PublicKeyHash.Map.get(aliases, v.Alias.address) {
+      | Some(alias) => {...v, name: alias.Alias.name}
+      | None => v
+      }
     }
-  }
-
-  let acc = PublicKeyHash.Map.empty
-  let acc = PublicKeyHash.Map.reduce(accounts, acc, (acc, k, v) => {
-    let v = Alias.fromAccount(v)
-    let v = replaceName(v)
-    PublicKeyHash.Map.set(acc, k, v)
+    let acc = PublicKeyHash.Map.empty
+    let acc = PublicKeyHash.Map.reduce(accounts, acc, (acc, k, v) => {
+      let v = Alias.fromAccount(v)
+      let v = replaceName(v)
+      PublicKeyHash.Map.set(acc, k, v)
+    })
+    let acc = PublicKeyHash.Map.reduce(multisigs, acc, (acc, k, v) => {
+      let v = Alias.fromMultisig(v)
+      let v = replaceName(v)
+      PublicKeyHash.Map.set(acc, k, v)
+    })
+    acc
   })
-  let acc = PublicKeyHash.Map.reduce(multisigs, acc, (acc, k, v) => {
-    let v = Alias.fromMultisig(v)
-    let v = replaceName(v)
-    PublicKeyHash.Map.set(acc, k, v)
-  })
-  acc
 }
 
 let useGetImplicitFromAlias = () => {
@@ -1101,11 +1126,10 @@ let useGetImplicitFromAlias = () => {
 module SelectedAccount = {
   let useGetAtInit = () => {
     let store = useStoreContext()
-    let accounts = useGetAccountsMultisigsAliasesAsAliases()
-
+    let accounts =
+      useGetAccountsMultisigsAliasesAsAliases()->ApiRequest.getWithDefault(PublicKeyHash.Map.empty)
     let (selected, _set) = store.selectedAccountState
     let selected = selected->Option.flatMap(pkh => accounts->PublicKeyHash.Map.get(pkh))
-
     switch selected {
     | Some(selectedAccount) => Some(selectedAccount)
     | None =>

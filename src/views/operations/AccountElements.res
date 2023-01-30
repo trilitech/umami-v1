@@ -178,6 +178,7 @@ module Selector = {
     let make = (~account: item, ~style=?) => {
       let items =
         StoreContext.useGetAccountsMultisigsAliasesAsAliases()
+        ->ApiRequest.getWithDefault(PublicKeyHash.Map.empty)
         ->PublicKeyHash.Map.valuesToArray
         ->SortArray.stableSortBy(Alias.compareName)
 

@@ -103,7 +103,6 @@ module SelectedAccountView = {
   @react.component
   let make = (~children) => {
     let selectedAccount = StoreContext.SelectedAccount.useGetAtInit()
-
     selectedAccount->ReactUtils.mapOpt(account => children(account))
   }
 }
@@ -112,7 +111,6 @@ module Dashboard = {
   @react.component
   let make = (~account: Alias.t, ~route: Routes.t, ~showBuyTez, ~setMainPage) => {
     let (accountsViewMode, setAccountsViewMode) = React.useState(_ => AccountsView.Mode.Simple)
-
     <>
       {switch route {
       | Accounts =>
