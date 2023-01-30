@@ -343,16 +343,18 @@ let setEulaSignature = () => {
 }
 
 module Balance = {
-  let useLoad = (~forceFetch=true, address: PublicKeyHash.t) => {
+  let useAll = forceFetch => {
     let store = useStoreContext()
-    let balancesRequest = useLoadBalances(
+    useLoadBalances(
       ~forceFetch,
       store.accountsRequestState->fst,
       store.multisigsRequestState->fst,
       store.balanceRequestsState,
     )
+  }
 
-    balancesRequest->BalanceApiRequest.getOne(address)
+  let useOne = (request, address: PublicKeyHash.t) => {
+    BalanceApiRequest.getOne(request, address)
   }
 
   let handleBalance = (map: PublicKeyHash.Map.map<Tez.t>) =>
@@ -393,27 +395,28 @@ module Balance = {
 }
 
 module BalanceToken = {
-  let useLoad = (
-    ~forceFetch,
-    address: PublicKeyHash.t,
-    token: PublicKeyHash.t,
-    kind: TokenRepr.kind,
-  ) => {
+  let useAll = (forceFetch, token: PublicKeyHash.t, kind: TokenRepr.kind) => {
     let store = useStoreContext()
-    let balancesRequest = useLoadTokensBalances(
+    useLoadTokensBalances(
       ~forceFetch,
       store.accountsRequestState->fst,
       store.multisigsRequestState->fst,
       store.balanceTokenRequestsState,
       Some((token, kind)),
     )
+  }
 
+  let useOne = (
+    request,
+    token: PublicKeyHash.t,
+    kind: TokenRepr.kind,
+    ~address: PublicKeyHash.t,
+  ) => {
     let mapKey = switch kind {
     | TokenRepr.FA1_2 => (address, (token, None))
     | FA2(tokenId) => (address, (token, Some(tokenId)))
     }
-
-    balancesRequest->TokensApiRequest.getOneBalance(mapKey)
+    TokensApiRequest.getOneBalance(request, mapKey)
   }
 
   let handleBalance = (selectedToken, map: TokenRepr.Map.map<TokenRepr.Unit.t>) =>

@@ -54,11 +54,7 @@ module AccountAdressActionButtons = {
         data={(account.address :> string)}
         style={styles["button"]}
       />
-      <QrButton
-        tooltipKey={(account.address :> string)}
-        account
-        style={styles["button"]}
-      />
+      <QrButton tooltipKey={(account.address :> string)} account style={styles["button"]} />
     </View>
   }
 }
@@ -72,13 +68,21 @@ module GenericRowItem = {
     ~showAlias=?,
     ~forceFetch=false,
     ~icon_isHD=false,
-    ~description:option<React.element>=?,
-    ~children:React.element
+    ~description: option<React.element>=?,
+    ~children: React.element,
   ) => {
     <RowItem.Bordered height=90.>
       <View style={styles["inner"]}>
         <AliasIcon style={SecretRowTree.styles["iconContainer"]} kind=account.kind isHD=icon_isHD />
-        <AccountInfo.GenericAccountInfo name={account.name} address={account.address} ?token ?showBalance ?showAlias ?description forceFetch />
+        <AccountInfo.GenericAccountInfo
+          name={account.name}
+          address={account.address}
+          ?token
+          ?showBalance
+          ?showAlias
+          ?description
+          forceFetch
+        />
       </View>
       <AccountAdressActionButtons account />
       children
@@ -98,20 +102,22 @@ module MultisigRowItem = {
         {I18n.Label.out_of(threshold, signers)->React.string}
       </Typography.Body2>
     }
-    <GenericRowItem account=(multisig->Alias.fromMultisig) description>{React.null}</GenericRowItem>
+    <GenericRowItem account={multisig->Alias.fromMultisig} description>
+      {React.null}
+    </GenericRowItem>
   }
 }
-
 
 @react.component
 let make = (~account: Account.t, ~isHD: bool=false, ~token: option<Token.t>=?) => {
   let delegateRequest = StoreContext.Delegate.useLoad(account.address)
-  let balanceRequest = StoreContext.Balance.useLoad(~forceFetch=false, account.address)
+  let balanceRequest =
+    StoreContext.Balance.useAll(false)->StoreContext.Balance.useOne(account.address)
   let zeroTez = switch balanceRequest->ApiRequest.getDoneOk {
-    | None => true
-    | Some(balance) => balance == Tez.zero
+  | None => true
+  | Some(balance) => balance == Tez.zero
   }
-  <GenericRowItem account=(account->Alias.fromAccount) ?token icon_isHD=isHD>
+  <GenericRowItem account={account->Alias.fromAccount} ?token icon_isHD=isHD>
     {delegateRequest
     ->ApiRequest.mapWithDefault(React.null, delegate =>
       <View style={styles["actionContainer"]}>

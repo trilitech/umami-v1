@@ -269,7 +269,8 @@ module Operations = {
             </Typography.Subtitle1>
             {switch recipient {
             | Some(recipient) =>
-              <AccountElements.Selector.Item
+              <AccountElements.Selector.BaseItem
+                forceFetch=true
                 style={styles["account"]}
                 account={recipient
                 ->AliasHelpers.getAliasFromAddress(aliases)

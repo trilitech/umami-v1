@@ -38,11 +38,11 @@ module BalanceActivityIndicator = {
 module Balance = {
   @react.component
   let make = (~forceFetch, ~address: PublicKeyHash.t) => {
-    let balanceRequest = StoreContext.Balance.useLoad(~forceFetch, address)
+    let balanceRequest = StoreContext.Balance.useAll(forceFetch)->StoreContext.Balance.useOne(address)
     switch balanceRequest {
     | Done(Ok(balance), _)
     | Loading(Some(balance)) =>
-      <BalanceTotal.DisplayTez style=#small s={balance->Tez.toString}/>
+      <BalanceTotal.DisplayTez style=#small s={balance->Tez.toString} />
     | Done(Error(_error), _) => I18n.tez_amount(I18n.no_balance_amount)->React.string
     | NotAsked
     | Loading(None) =>
@@ -54,19 +54,18 @@ module Balance = {
 module BalanceToken = {
   @react.component
   let make = (~forceFetch, ~address: PublicKeyHash.t, ~token: Token.t) => {
-    let balanceTokenRequest = StoreContext.BalanceToken.useLoad(
-      ~forceFetch,
-      address,
-      token.address,
-      token.kind,
-    )
+    let balanceTokenRequest =
+      StoreContext.BalanceToken.useAll(forceFetch, token.address, token.kind)->StoreContext.BalanceToken.useOne(
+        ~address,
+        token.address,
+        token.kind,
+      )
 
     switch balanceTokenRequest {
     | Done(Ok(balance), _)
     | Loading(Some(balance: Token.Unit.t)) =>
       I18n.amount(balance->Token.Unit.toStringDecimals(token.decimals), token.symbol)->React.string
-    | Done(Error(_error), _) =>
-      I18n.amount(I18n.no_balance_amount, token.symbol)->React.string
+    | Done(Error(_error), _) => I18n.amount(I18n.no_balance_amount, token.symbol)->React.string
     | NotAsked
     | Loading(None) =>
       <BalanceActivityIndicator />

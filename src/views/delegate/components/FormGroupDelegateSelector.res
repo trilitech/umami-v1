@@ -45,6 +45,16 @@ let make = (~label, ~value: PublicKeyHash.t, ~handleChange, ~error, ~disabled) =
     ->SortArray.stableSortBy(Alias.compare)
 
   let handleChange = x => handleChange(Alias.toAccountExn(x))
+  let renderButton = AccountElements.Selector.baseRenderButton(
+    ~forceFetch=false,
+    ~showAmount=Balance,
+    ~token=None,
+  )
+  let renderItem = AccountElements.Selector.baseRenderItem(
+    ~forceFetch=false,
+    ~showAmount=Balance,
+    ~token=None,
+  )
 
   <FormGroup>
     <FormLabel label hasError style={styles["label"]} />
@@ -54,8 +64,8 @@ let make = (~label, ~value: PublicKeyHash.t, ~handleChange, ~error, ~disabled) =
         getItemKey={account => (account.address :> string)}
         onValueChange=handleChange
         selectedValueKey={(value :> string)}
-        renderButton=AccountElements.Selector.renderButton
-        renderItem=AccountElements.Selector.renderItem
+        renderButton
+        renderItem
         disabled
         keyPopover="formGroupDelegateSelector"
       />

@@ -30,10 +30,6 @@ let styles = {
   StyleSheet.create({"label": style(~marginBottom=6.->dp, ())})
 }
 
-let baseRenderButton = AccountElements.Selector.baseRenderButton(~showAmount=Balance)
-
-let baseRenderItem = AccountElements.Selector.baseRenderItem(~showAmount=Balance)
-
 type element = Alias.t
 
 module Base = {
@@ -46,6 +42,22 @@ module Base = {
     ~disabled=?,
     ~token: option<Token.t>=?,
   ) => {
+    // Update balances and avoid fetching them for each element
+    let _ = switch token {
+    | Some(token) => StoreContext.BalanceToken.useAll(true, token.address, token.kind)->ignore
+    | None => StoreContext.Balance.useAll(true)->ignore
+    }
+
+    let renderButton = AccountElements.Selector.baseRenderButton(
+      ~showAmount=Balance,
+      ~forceFetch=false,
+      ~token,
+    )
+    let renderItem = AccountElements.Selector.baseRenderItem(
+      ~showAmount=Balance,
+      ~forceFetch=false,
+      ~token,
+    )
     <FormGroup>
       <FormLabel label style={styles["label"]} />
       <View>
@@ -55,8 +67,8 @@ module Base = {
           getItemKey={item => (item.address :> string)}
           onValueChange=handleChange
           selectedValueKey={(value.Alias.address :> string)}
-          renderButton={baseRenderButton(~token)}
-          renderItem={baseRenderItem(~token)}
+          renderButton
+          renderItem
           keyPopover="formGroupAccountSelector"
         />
       </View>

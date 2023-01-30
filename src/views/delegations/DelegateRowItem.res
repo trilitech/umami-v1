@@ -80,7 +80,8 @@ let memo = component =>
 @react.component
 let make = memo((~account: Account.t, ~delegateRequest) => {
   let aliases = StoreContext.Aliases.useGetAll()
-  let balanceRequest = StoreContext.Balance.useLoad(~forceFetch=false, account.address)
+  let balanceRequest =
+    StoreContext.Balance.useAll(false)->StoreContext.Balance.useOne(account.address)
   let delegateInfoRequest = StoreContext.DelegateInfo.useLoad(account.address)
 
   let theme = ThemeContext.useTheme()
