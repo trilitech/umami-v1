@@ -24,6 +24,7 @@
 /* *************************************************************************** */
 
 open ReactNative
+open Style
 
 let styles = {
   open Style
@@ -32,30 +33,51 @@ let styles = {
     "balanceEmpty": style(~height=4.->dp, ()),
     "address": style(~height=18.->dp, ()),
     "description": style(~height=18.->dp, ()),
+    "button": style(~marginRight=4.->dp, ()),
+    "actionButtons": style(~alignSelf=#flexEnd, ~flexDirection=#row, ~flex=1., ()),
   })
 }
 
+module AccountAdressActionButtons = {
+  @react.component
+  let make = (~account: Alias.t) => {
+    let addToast = LogsContext.useToast()
+
+    <View style={styles["actionButtons"]}>
+      <ClipboardButton
+        copied=I18n.Log.address
+        tooltipKey={(account.address :> string)}
+        addToast
+        data={(account.address :> string)}
+        style={styles["button"]}
+      />
+      <QrButton tooltipKey={(account.address :> string)} account style={styles["button"]} />
+    </View>
+  }
+}
 module GenericAccountInfo = {
   @react.component
   let make = (
-    ~name: string,
-    ~address:PublicKeyHash.t,
     ~token: option<Token.t>=?,
     ~showBalance=true,
     ~showAlias=true,
     ~forceFetch,
-    ~description:option<React.element>=?
+    ~description: option<React.element>=?,
+    ~account: Alias.t,
   ) =>
     <View>
       {<Typography.Subtitle1 style={styles["alias"]}>
-        {name->React.string}
+        {account.name->React.string}
       </Typography.Subtitle1>->ReactUtils.onlyWhen(showAlias)}
       {showBalance
-        ? <AccountInfoBalance forceFetch address ?token />
+        ? <AccountInfoBalance forceFetch address=account.address ?token />
         : <View style={styles["balanceEmpty"]} />}
       {Option.getWithDefault(description, React.null)}
-      <Typography.Address style={styles["address"]}>
-        {(address :> string)->React.string}
-      </Typography.Address>
+      <View style={style(~display=#flex, ~flexDirection=#row, ~alignItems=#center, ())}>
+        <Typography.Address style={styles["address"]}>
+          {(account.address :> string)->React.string}
+        </Typography.Address>
+        <AccountAdressActionButtons account />
+      </View>
     </View>
 }

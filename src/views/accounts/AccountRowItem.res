@@ -28,35 +28,9 @@ open ReactNative
 let styles = {
   open Style
   StyleSheet.create({
-    "inner": style(~marginRight=10.->dp, ~flexDirection=#row, ()),
-    "actionButtons": style(
-      ~alignSelf=#flexEnd,
-      ~flexDirection=#row,
-      ~flex=1.,
-      ~marginBottom=8.->dp,
-      (),
-    ),
-    "button": style(~marginRight=4.->dp, ()),
+    "inner": style(~marginRight=10.->dp, ~flexDirection=#row, ~alignItems=#flexStart, ()),
     "actionContainer": style(~marginRight=24.->dp, ()),
   })
-}
-
-module AccountAdressActionButtons = {
-  @react.component
-  let make = (~account: Alias.t) => {
-    let addToast = LogsContext.useToast()
-
-    <View style={styles["actionButtons"]}>
-      <ClipboardButton
-        copied=I18n.Log.address
-        tooltipKey={(account.address :> string)}
-        addToast
-        data={(account.address :> string)}
-        style={styles["button"]}
-      />
-      <QrButton tooltipKey={(account.address :> string)} account style={styles["button"]} />
-    </View>
-  }
 }
 
 module GenericRowItem = {
@@ -71,20 +45,14 @@ module GenericRowItem = {
     ~description: option<React.element>=?,
     ~children: React.element,
   ) => {
-    <RowItem.Bordered height=90.>
+    open Style
+    <RowItem.Bordered height=120. innerStyle={style(~alignSelf=#flexStart, ~marginTop=8.->dp, ())}>
       <View style={styles["inner"]}>
         <AliasIcon style={SecretRowTree.styles["iconContainer"]} kind=account.kind isHD=icon_isHD />
         <AccountInfo.GenericAccountInfo
-          name={account.name}
-          address={account.address}
-          ?token
-          ?showBalance
-          ?showAlias
-          ?description
-          forceFetch
+          ?token ?showBalance ?showAlias ?description forceFetch account
         />
       </View>
-      <AccountAdressActionButtons account />
       children
     </RowItem.Bordered>
   }
