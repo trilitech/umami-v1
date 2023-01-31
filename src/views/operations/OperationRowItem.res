@@ -243,6 +243,105 @@ module GenericCellAmount = {
   }
 }
 
+let cellType = i18n => <CellType> {i18n->Typography.body1} </CellType>
+let cellFee = (account: Alias.t, source, fee) => {
+  let fee = account.address == source ? fee : Tez.zero
+  <CellFee>
+    {fee == Tez.zero ? React.null : I18n.tez_amount(fee->Tez.toString)->Typography.body1}
+  </CellFee>
+}
+
+module RevealRow = {
+  @react.component
+  let make = (~account: Alias.t, ~source, ~fee) => {
+    <>
+      {cellType(I18n.operation_reveal)}
+      <CellAmount />
+      {cellFee(account, source, fee)}
+      <CellAddress />
+      <CellAddress />
+    </>
+  }
+}
+
+module OriginationRow = {
+  @react.component
+  let make = (~account: Alias.t, ~aliases, ~tokens, ~fee, ~source, ~origination) => {
+    <>
+      {cellType(I18n.operation_origination)}
+      <CellAmount />
+      {cellFee(account, source, fee)}
+      <CellAddress />
+      <CellAddress>
+        {Option.mapWithDefault(origination, React.null, x =>
+          getContactOrRaw(
+            aliases,
+            tokens,
+            x.Operation.Origination.contract->PublicKeyHash.buildContract->Result.getExn,
+          )
+        )}
+      </CellAddress>
+      <View />
+    </>
+  }
+}
+
+module DelegationRow = {
+  @react.component
+  let make = (~account: Alias.t, ~aliases, ~tokens, ~fee, ~source, ~delegation) => {
+    <>
+      {cellType(I18n.operation_delegation)}
+      <CellAmount />
+      {cellFee(account, source, fee)}
+      <CellAddress> {getContactOrRaw(aliases, tokens, source)} </CellAddress>
+      {delegation.Operation.Delegation.delegate->Option.mapWithDefault(
+        <CellAddress> {I18n.delegation_removal->Typography.body1(~numberOfLines=1)} </CellAddress>,
+        d => <CellAddress> {getContactOrRaw(aliases, tokens, d)} </CellAddress>,
+      )}
+    </>
+  }
+}
+
+module UnknownRow = {
+  @react.component
+  let make = () => {
+    <> {cellType(I18n.unknown_operation)} <CellAmount /> <CellFee /> <CellAddress /> </>
+  }
+}
+
+module TransactionRow = {
+  @react.component
+  let make = (~account: Alias.t, ~aliases, ~tokens, ~fee, ~source, ~transaction, ~uniqueId) => {
+    switch transaction {
+    | Operation.Transaction.Tez({amount, destination, entrypoint})
+    | Operation.Transaction.Token({amount, destination, entrypoint}, _, _) =>
+      let (label, amount) = switch entrypoint {
+      | Some(entrypoint) if entrypoint != "default" && amount == Tez.zero => (
+          "{ " ++ entrypoint ++ " }",
+          <CellAmount />,
+        )
+      | _ => (
+          I18n.operation_transaction,
+          <GenericCellAmount address=account.address transaction tokens tooltipSuffix=uniqueId />,
+        )
+      }
+      <>
+        {cellType(label)}
+        {amount}
+        {cellFee(account, source, fee)}
+        <CellAddress>
+          {source
+          ->AliasHelpers.getContractAliasFromAddress(aliases, tokens)
+          ->Option.mapWithDefault(rawUnknownAddress(source), alias => {
+            alias->Typography.body1(~numberOfLines=1)
+          })}
+        </CellAddress>
+        <CellAddress> {getContactOrRaw(aliases, tokens, destination)} </CellAddress>
+      </>
+    }
+  }
+}
+
 @react.component
 let make = memo((
   ~account: Alias.t,
@@ -253,61 +352,17 @@ let make = memo((
   let aliases = StoreContext.Aliases.useGetAll()
   let tokens = StoreContext.Tokens.useGetAll()
   let addToast = LogsContext.useToast()
+  let {fee, source, payload} = operation
 
   <Table.Row.Bordered>
-    {switch operation.payload {
-    | Reveal(_reveal) => <>
-        <CellType> {I18n.operation_reveal->Typography.body1} </CellType>
-        <CellAmount />
-        <CellFee> {I18n.tez_amount(operation.fee->Tez.toString)->Typography.body1} </CellFee>
-        <CellAddress />
-        <CellAddress />
-      </>
-    | Transaction(Token(common, _, _) as transaction)
-    | Transaction(Tez(common) as transaction) =>
-      let tooltipSuffix = {
-        open Operation
-        operation->uniqueId->uniqueIdToString
-      }
-      <>
-        <CellType> {I18n.operation_transaction->Typography.body1} </CellType>
-        <GenericCellAmount address=account.address transaction tokens tooltipSuffix />
-        <CellFee> {I18n.tez_amount(operation.fee->Tez.toString)->Typography.body1} </CellFee>
-        <CellAddress>
-          {operation.source
-          ->AliasHelpers.getContractAliasFromAddress(aliases, tokens)
-          ->Option.mapWithDefault(rawUnknownAddress(operation.source), alias => {
-            alias->Typography.body1(~numberOfLines=1)
-          })}
-        </CellAddress>
-        <CellAddress> {getContactOrRaw(aliases, tokens, common.destination)} </CellAddress>
-      </>
-    | Origination(_origination) => <>
-        <CellType> {I18n.operation_origination->Typography.body1} </CellType>
-        <CellAmount />
-        <CellFee />
-        <CellAddress />
-        <CellAddress />
-        <View />
-      </>
-    | Delegation(delegation) => <>
-        <CellType> {I18n.operation_delegation->Typography.body1} </CellType>
-        <CellAmount />
-        <CellFee> {I18n.tez_amount(operation.fee->Tez.toString)->Typography.body1} </CellFee>
-        <CellAddress> {getContactOrRaw(aliases, tokens, operation.source)} </CellAddress>
-        {delegation.delegate->Option.mapWithDefault(
-          <CellAddress>
-            {I18n.delegation_removal->Typography.body1(~numberOfLines=1)}
-          </CellAddress>,
-          d => <CellAddress> {getContactOrRaw(aliases, tokens, d)} </CellAddress>,
-        )}
-      </>
-    | Unknown => <>
-        <CellType> {I18n.unknown_operation->Typography.body1} </CellType>
-        <CellAmount />
-        <CellFee />
-        <CellAddress />
-      </>
+    {switch payload {
+    | Reveal(_reveal) => <RevealRow account source fee />
+    | Transaction(transaction) =>
+      let uniqueId = operation->Operation.uniqueId->Operation.uniqueIdToString
+      <TransactionRow fee source account aliases transaction tokens uniqueId />
+    | Origination(origination) => <OriginationRow account source aliases tokens fee origination />
+    | Delegation(delegation) => <DelegationRow account aliases tokens fee source delegation />
+    | Unknown => <UnknownRow />
     }}
     <CellDate> {operation.timestamp->DateFns.format("P pp")->Typography.body1} </CellDate>
     <CellStatus> {status(operation, currentLevel, config)} </CellStatus>
@@ -497,6 +552,7 @@ module Pending = {
           amount: pending.amount->ReBigNumber.toString->Tez.fromMutezString,
           destination: pending.recipient,
           parameters: None,
+          entrypoint: None, // FIXME: pending.entrypoint?
         }
         let transaction = Operation.Transaction.Tez(common)
         let tooltipSuffix = pending.id->ReBigNumber.toString

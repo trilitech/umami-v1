@@ -143,6 +143,7 @@ describe("API tests", ({testAsync}) => {
             amount: Tez.fromMutezInt(1000000),
             destination: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
             parameters: Some(Js.Dict.fromArray([("prim", "Unit")])),
+            entrypoint: Some("default"),
           }),
         ),
       },
@@ -328,6 +329,7 @@ describe("API tests", ({testAsync}) => {
             amount: Tez.fromMutezInt(1000000),
             destination: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
             parameters: Some(Js.Dict.fromArray([("prim", "Unit")])),
+            entrypoint: Some("default"),
           }),
         ),
       },
@@ -365,7 +367,7 @@ describe("API tests", ({testAsync}) => {
             "parameters": {
               "prim": "Unit"
             },
-            "entrypoint": "default"
+            "entrypoint": Some("default")
           }
         ]`
         Promise.value(Ok(data->Json.parseOrRaise))

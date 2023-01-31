@@ -39,6 +39,7 @@ module Transaction = {
     amount: Tez.t,
     destination: PublicKeyHash.t,
     parameters: option<Js.Dict.t<string>>,
+    entrypoint: option<string>
   }
   type token_info = {
     kind: TokenRepr.kind,
@@ -109,6 +110,7 @@ module Transaction = {
       |> PublicKeyHash.build
       |> Result.getExn,
       parameters: json |> optional(field("parameters", dict(string))),
+      entrypoint: json |> field("data", JsonEx.Decode.optionalOrNull("entrypoint", string)),
     }
 
     let t = json => {
