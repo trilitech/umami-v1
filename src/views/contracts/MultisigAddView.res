@@ -35,6 +35,7 @@ module FormAddress = {
   @react.component
   let make = (~form: MultisigAddForm.api) =>
     <ContractAddView.FormAddress
+      value=form.values.address
       handleChange={form.handleChange(Address)}
       error={list{
         form.formState->FormUtils.getFormStateError,
@@ -54,14 +55,15 @@ module Address = {
       Multisig.API.getOneFromNetwork(config.network, pkh)
     }
 
+    let (multisig, setMultisig) = React.useState(() => None)
+
     let onSubmit = ({state}: MultisigAddForm.onSubmitAPI) => {
       open MultisigAddForm
       state.values.address
       ->PublicKeyHash.buildContract
       ->Result.getExn
       ->fetchMultisig
-      ->Promise.tapError(_ => setLoading(_ => false))
-      ->Promise.getOk(multisig => setStep(_ => CheckContract(multisig)))
+      ->Promise.get(x => setMultisig(_ => Some(x)))
       None
     }
 
@@ -81,19 +83,35 @@ module Address = {
       (),
     )
 
+    let formFieldsAreValids = FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields)
+
+    React.useEffect1(() => {
+      switch multisig {
+      | None => ()
+      | Some(Error(_)) =>
+        form.raiseSubmitFailed(I18n.Form_input_error.not_a_multisig_contract->Some)
+        setLoading(_ => false)
+      | Some(Ok(multisig)) =>
+        // Replace the default name in order to avoid the contract to be automatically deleted when a secret is unregistered
+        let multisig = {...multisig, alias: "Multisig " ++ (multisig.address :> string)}
+        setStep(_ => CheckContract(multisig))
+      }
+      None
+    }, [multisig])
+
     let onSubmit = _ => form.submit()
 
     <ModalFormView closing=ModalFormView.Close(closeAction)>
-      <ContractDetailsView.Title text=I18n.Title.add_token />
-      <Tag content="multisig" />
-      <ContractDetailsView.Overline text=I18n.add_token_format_contract_sentence />
+      <ContractDetailsView.Title text=I18n.Title.add_multisig />
+      <ContractDetailsView.Tag content="multisig" />
+      <ContractDetailsView.Overline text=I18n.add_multisig_contract_sentence />
       <FormAddress form />
       <Buttons.SubmitPrimary
         text=I18n.Btn.save_and_register
         onPress=onSubmit
         loading
         style=FormStyles.formSubmit
-        disabledLook={FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields)}
+        disabledLook={!formFieldsAreValids}
       />
     </ModalFormView>
   }

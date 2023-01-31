@@ -299,6 +299,7 @@ module Form_input_error = {
     }
   let illformed_token_metadata = (pkh, tokenId, field) =>
     `Field ${field} for token id ${string_of_int(tokenId)} illformed for contract ${pkh}`
+  let not_a_multisig_contract = "Not a umami multisig contract"
 }
 
 module Title = {
@@ -335,6 +336,7 @@ module Title = {
   let update_contact = "Edit Contact"
   let contract_details = "Contract Details"
   let add_token = "Register Token"
+  let add_multisig = "Register Contract"
   let edit_metadata = "Token Metadata"
   let export_to_mobile = "Export to Umami Mobile"
   let show_recovery_phrase = "Show Recovery Phrase"
@@ -766,6 +768,7 @@ let add_token_format_contract_sentence = "Please enter the address of a deployed
 let add_token_contract_metadata_fa1_2 = "Please specify the name, symbol, and decimals of a token contract for which you would like to view balances as well as to perform operations. Umami will prefill the fields if any metadata is available."
 let add_token_contract_tokenid_fa2 = "Please specify the token ID of the token you would like to perform operations on. Umami will prefill the fields if any metadata is available."
 let add_token_contract_metadata_fa2 = "Please specify the token ID of the token you would like to perform operations on. Umami will prefill the fields if any metadata is available"
+let add_multisig_contract_sentence = "Please enter the address of a deployed multisig contract."
 let delegation_removal = "Delegation Removal"
 let error_check_contract = "Address is not a valid token contract"
 let error_register_not_fungible = "Cannot register an NFT as a fungible token"
