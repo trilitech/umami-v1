@@ -299,7 +299,7 @@ module Form_input_error = {
     }
   let illformed_token_metadata = (pkh, tokenId, field) =>
     `Field ${field} for token id ${string_of_int(tokenId)} illformed for contract ${pkh}`
-  let not_a_multisig_contract = "Not a umami multisig contract"
+  let not_a_multisig_contract = "Contract not supported by Umami"
 }
 
 module Title = {
