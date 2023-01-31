@@ -238,7 +238,7 @@ module MultisigAccountList = {
         </View>
       }
     }
-    <View style={styles["container"]}>
+    <View>
       {switch multisigsRequest {
       | Done(Ok(multisigs), _) => <>
           {displayMultisigs(multisigs)}
