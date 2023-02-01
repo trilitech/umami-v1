@@ -129,6 +129,11 @@ module Transaction = {
           |> field("target", field("address", string))
           |> PublicKeyHash.build
           |> Result.getExn,
+          entrypoint: json |> optional(
+            field("parameter", json =>
+              Option.getWithDefault(json |> optional(field("entrypoint", string)), "default")
+            ),
+          ),
           parameters: json |> optional(field("parameter", dict(string))),
         }
         json |> optional(field("tokenTransfersCount", int)) == None ? Some(Tez(common(json))) : None
