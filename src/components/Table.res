@@ -112,5 +112,5 @@ module type StyleForCell = {
 module MakeCell = (CustomStyle: StyleForCell) => {
   @react.component
   let make = (~style=?, ~children: option<React.element>=?) =>
-    <View style={Style.arrayOption([CustomStyle.style->Some, style])} ?children />
+    <Cell style={Style.arrayOption([CustomStyle.style->Some, style])} ?children />
 }
