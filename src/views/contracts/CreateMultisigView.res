@@ -477,12 +477,7 @@ module CreateView = {
       <Step2
         currentStep form back={_ => setCurrentStep(_ => 1)} action={_ => setCurrentStep(_ => 3)}
       />
-      <Step3
-        currentStep
-        form
-        back={_ => setCurrentStep(_ => 2)}
-        action=form.submit
-      />
+      <Step3 currentStep form back={_ => setCurrentStep(_ => 2)} action=form.submit />
     </>
   }
 }
@@ -571,7 +566,7 @@ let make = (~account: Account.t, ~closeAction) => {
     (),
   )
   let state = React.useState(() => None)
-  let signOpStep = React.useState(() => SignOperationView.SummaryStep)
+  let (sign, setSign) as signOpStep = React.useState(() => SignOperationView.SummaryStep)
   let (operationRequest, sendOperation) = StoreContext.Operations.useCreate()
   let (multisigRequest, updateMultisig) = StoreContext.Multisig.useUpdate()
   let config = ConfigContext.useContent()
@@ -580,8 +575,10 @@ let make = (~account: Account.t, ~closeAction) => {
   | CreateStep => None
   | SourceStep(_, _) => Some(_ => setModalStep(_ => CreateStep))
   | SigningStep(state, raiseSubmitFailed, _, _) =>
-    Some(_ => setModalStep(_ => SourceStep(state, raiseSubmitFailed)))
-  | SubmittedStep(_) => None
+    switch sign {
+    | AdvancedOptStep(_) => Some(() => setSign(_ => SummaryStep))
+    | SummaryStep => Some(_ => setModalStep(_ => SourceStep(state, raiseSubmitFailed)))
+    }
   }
 
   let title = switch modalStep {

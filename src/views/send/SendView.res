@@ -367,6 +367,13 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
     | _ => None
     }
   }
+  let back_ = switch modalStep {
+  | SendStep => None
+  | SigningStep(_) => None
+  | EditStep(_) => None
+  | SubmittedStep(_) => None
+  | SourceStep(_) => None
+  }
 
   let onPressCancel = _ => {
     closeAction()
