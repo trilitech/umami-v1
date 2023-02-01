@@ -86,6 +86,20 @@ let useLoad = (~requestState, ~limit=?, ~types=?, ~address: PublicKeyHash.t, ())
     let f = (operations, operationsTzkt, currentLevel) =>
       switch (operations, operationsTzkt, currentLevel) {
       | (Ok(operations), Ok(operationsTzkt), Ok(currentLevel)) =>
+        // If [address] is initiator of a transaction
+        // but not the sender nor the recipient, tzkt includes it in the list
+        // so we need to filter it out
+        // (e.g. call the [execute] method of a multisig)
+        let operationsTzkt = Array.keep(operationsTzkt, x => {
+          open Operation
+          x.source == address ||
+            switch x.payload {
+            | Transaction(Tez({destination}))
+            | Transaction(Token({destination}, _, _)) =>
+              destination == address
+            | _ => true
+            }
+        })
         let operations = Array.keep(operations, x =>
           !Array.some(operationsTzkt, y => x.Operation.hash == y.Operation.hash)
         )
