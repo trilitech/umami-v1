@@ -46,7 +46,8 @@ module GenericRowItem = {
     ~children: React.element,
   ) => {
     open Style
-    <RowItem.Bordered height=120. innerStyle={style(~alignSelf=#flexStart, ~marginTop=8.->dp, ())}>
+    <RowItem.Bordered
+      minHeight=90. innerStyle={style(~alignSelf=#flexStart, ~marginTop=8.->dp, ())}>
       <View style={styles["inner"]}>
         <AliasIcon style={SecretRowTree.styles["iconContainer"]} kind=account.kind isHD=icon_isHD />
         <AccountInfo.GenericAccountInfo

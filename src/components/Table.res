@@ -65,16 +65,16 @@ module Row = {
 
   module Base = {
     @react.component
-    let make = (~style=?, ~height=48., ~children) =>
-      <RowItem.Base height>
+    let make = (~style=?, ~minHeight=48., ~children) =>
+      <RowItem.Base minHeight>
         {<> <View style={Style.arrayOption([Some(styles["borderSpacer"]), style])} /> children </>}
       </RowItem.Base>
   }
 
   module Bordered = {
     @react.component
-    let make = (~style=?, ~height=48., ~children) =>
-      <RowItem.Bordered height>
+    let make = (~style=?, ~minHeight=48., ~children) =>
+      <RowItem.Bordered minHeight>
         <View style={Style.arrayOption([Some(styles["borderSpacer"]), style])} /> children
       </RowItem.Bordered>
   }

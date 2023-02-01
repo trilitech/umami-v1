@@ -102,7 +102,7 @@ module AccountNestedRowItem = {
     let account = StoreContext.Accounts.useGetFromAddress(address)
 
     account->ReactUtils.mapOpt(account =>
-      <RowItem.Bordered height=90. isNested=true isLast>
+      <RowItem.Bordered minHeight=90. isNested=true isLast>
         <View style={styles["inner"]}>
           <AliasIcon
             style={styles["iconContainer"]} kind=Some(Alias.Account(account.kind)) isHD=true
@@ -176,7 +176,7 @@ module AccountImportedRowItem = {
   module Base = {
     @react.component
     let make = (~account: Account.t, ~tag: React.element, ~actions: React.element) =>
-      <RowItem.Bordered height=66.>
+      <RowItem.Bordered minHeight=66.>
         <View style={styles["tagContainer"]}>
           tag
           <View>
@@ -330,7 +330,7 @@ module SecretRowItem = {
 
   @react.component
   let make = (~secret: Secret.derived) =>
-    <RowItem.Bordered innerStyle={styles["rowItem"]} height=66.>
+    <RowItem.Bordered innerStyle={styles["rowItem"]} minHeight=66.>
       {<Tag.Fixed style={styles["tag"]} content=I18n.hw />->ReactUtils.onlyWhen(
         secret.secret.kind == Secret.Ledger,
       )}

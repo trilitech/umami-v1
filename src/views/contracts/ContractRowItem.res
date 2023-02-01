@@ -143,12 +143,9 @@ module MoreMenu = {
       let disabled = currentChain == None
       <>
         <Menu.Item
-          disabled
-          text=I18n.Menu.see_details
-          onPress={_ => openAction()}
-          icon=Icons.Search.build
+          disabled text=I18n.Menu.see_details onPress={_ => openAction()} icon=Icons.Search.build
         />
-        {wrapModal(<ContractDetailsView.Multisig multisig closeAction/>)}
+        {wrapModal(<ContractDetailsView.Multisig multisig closeAction />)}
       </>
     }
   }
@@ -187,11 +184,7 @@ module MoreMenu = {
         }
       }
 
-      <Menu.Item
-        disabled
-        icon=Icons.OpenExternal.build
-        text=I18n.Menu.view_in_explorer onPress
-      />
+      <Menu.Item disabled icon=Icons.OpenExternal.build text=I18n.Menu.view_in_explorer onPress />
     }
   }
 
@@ -199,23 +192,14 @@ module MoreMenu = {
     @react.component
     let make = (~token, ~tokens, ~currentChain) => {
       let keyPrefix = "tokenMenu-" ++ token->TokensLibrary.Token.uniqueKey
-      <Menu
-        icon=Icons.More.build
-        size=46.
-        iconSizeRatio=0.5
-        keyPopover=keyPrefix>
+      <Menu icon=Icons.More.build size=46. iconSizeRatio=0.5 keyPopover=keyPrefix>
         [
-          <EditItem
-            key={keyPrefix ++ "-EditItem"}
-            token
-            tokens
-            currentChain
-          />,
+          <EditItem key={keyPrefix ++ "-EditItem"} token tokens currentChain />,
           <ContractLinkItem
             key={keyPrefix ++ "-ContractLinkItem"}
             address={token->TokensLibrary.Token.address}
             currentChain
-          />
+          />,
         ]
       </Menu>
     }
@@ -225,31 +209,19 @@ module MoreMenu = {
     @react.component
     let make = (~multisig, ~currentChain) => {
       let keyPrefix = "multisigMenu-" ++ (multisig.Multisig.address :> string)
-      <Menu
-        icon=Icons.More.build
-        size=46.
-        iconSizeRatio=0.5
-        keyPopover=keyPrefix>
+      <Menu icon=Icons.More.build size=46. iconSizeRatio=0.5 keyPopover=keyPrefix>
         [
-          <MultisigDetailsModal
-            key={keyPrefix ++ "-MultisigDetailsModal"}
-            multisig
-            currentChain
-          />,
+          <MultisigDetailsModal key={keyPrefix ++ "-MultisigDetailsModal"} multisig currentChain />,
           <ContractLinkItem
-            key={keyPrefix ++ "-ContractLinkItem"}
-            address=multisig.Multisig.address
-            currentChain
+            key={keyPrefix ++ "-ContractLinkItem"} address=multisig.Multisig.address currentChain
           />,
           <MultisigDeleteButton
-            key={keyPrefix ++ "-MultisigDeleteButton"}
-            address=multisig.Multisig.address
-            />
+            key={keyPrefix ++ "-MultisigDeleteButton"} address=multisig.Multisig.address
+          />,
         ]
       </Menu>
     }
   }
-
 }
 
 module RemoveButton = {
@@ -290,10 +262,7 @@ module TokenActions = {
 module MultisigActions = {
   @react.component
   let make = (~multisig, ~currentChain) =>
-    <View style={styles["actions"]}>
-      <MoreMenu.Multisig multisig currentChain />
-
-    </View>
+    <View style={styles["actions"]}> <MoreMenu.Multisig multisig currentChain /> </View>
 }
 
 module Base = {
@@ -306,9 +275,9 @@ module Base = {
         style,
         Style.style(~borderColor=theme.colors.stateDisabled, ~borderBottomWidth=1., ())->Some,
       ])}>
-      <Table.Row.Base height=44.>
+      <Table.Row.Base minHeight=44.>
         <CellStandard>
-          <Tag contentStyle=styles["kind"] fontSize=10.8 height=20. content={kind} />
+          <Tag contentStyle={styles["kind"]} fontSize=10.8 height=20. content={kind} />
         </CellStandard>
         <CellName>
           <Typography.Body1 numberOfLines=1>
@@ -321,9 +290,7 @@ module Base = {
           </Typography.Body1>
         </CellSymbol>
         <CellAddress>
-          <Typography.Address numberOfLines=1>
-            {address->React.string}
-          </Typography.Address>
+          <Typography.Address numberOfLines=1> {address->React.string} </Typography.Address>
           <ClipboardButton
             copied=I18n.Log.address
             addToast
@@ -334,12 +301,10 @@ module Base = {
         </CellAddress>
         <CellTokenId>
           <Typography.Body1 numberOfLines=1>
-           {tokenId->Option.default("")->React.string}
+            {tokenId->Option.default("")->React.string}
           </Typography.Body1>
         </CellTokenId>
-        <CellAction>
-          {action}
-        </CellAction>
+        <CellAction> {action} </CellAction>
       </Table.Row.Base>
     </View>
   }
@@ -347,7 +312,13 @@ module Base = {
 
 module Token = {
   @react.component
-  let make = (~style=?, ~token: TokensLibrary.Token.t, ~registered: bool, ~currentChain, ~tokens) => {
+  let make = (
+    ~style=?,
+    ~token: TokensLibrary.Token.t,
+    ~registered: bool,
+    ~currentChain,
+    ~tokens,
+  ) => {
     open TokensLibrary.Token
     let tokenId = switch token->kind {
     | #KFA1_2 => I18n.na
