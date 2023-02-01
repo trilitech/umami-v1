@@ -24,7 +24,6 @@
 /* *************************************************************************** */
 
 open ReactNative
-open Style
 
 let styles = {
   open Style
@@ -56,6 +55,7 @@ module AccountAdressActionButtons = {
   }
 }
 module GenericAccountInfo = {
+  open Style
   @react.component
   let make = (
     ~token: option<Token.t>=?,
@@ -73,7 +73,7 @@ module GenericAccountInfo = {
         ? <AccountInfoBalance forceFetch address=account.address ?token />
         : <View style={styles["balanceEmpty"]} />}
       {Option.getWithDefault(description, React.null)}
-      <View style={style(~display=#flex, ~flexDirection=#row, ~alignItems=#center, ())}>
+      <View style={style(~flexDirection=#row, ~alignItems=#center, ())}>
         <Typography.Address style={styles["address"]}>
           {(account.address :> string)->React.string}
         </Typography.Address>
