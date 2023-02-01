@@ -39,7 +39,7 @@ open ReactNative
               {I18n.Title.multisig_sender->React.string}
             </Typography.Overline1>
           </View>
-          <FormGroupAccountSelector.Accounts
+          <FormGroupAccountSelector.Implicits
             label=I18n.Label.send_sender
             value=selectedAccount
             handleChange={value => setSelectedAccount(_ => value)}

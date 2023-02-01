@@ -78,7 +78,7 @@ module FormGroupAmountWithTokenSelector = {
 
 type step =
   | SendStep
-  | SigningStep(Protocol.batch, Protocol.Simulation.results)
+  | SigningStep(SendForm.validState, Protocol.batch, Protocol.Simulation.results)
   | EditStep(int, SendForm.validState)
   | SubmittedStep(string)
   | SourceStep(SendForm.validState)
@@ -266,10 +266,10 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
 
   let submitAction = React.useRef(#SubmitAll)
 
-  let onSubmitBatch = batch => {
+  let onSubmitBatch = (state, batch) => {
     let transaction = SendForm.buildTransaction(batch, getImplicitFromAlias)
     sendOperationSimulate(transaction)->Promise.getOk(dryRun => {
-      setModalStep(_ => SigningStep(transaction, dryRun))
+      setModalStep(_ => SigningStep(state, transaction, dryRun))
     })
   }
 
@@ -299,7 +299,7 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
     let transfers = [transfer]
     let transaction = ProtocolHelper.Transfer.makeBatch(~source, ~transfers, ())
     sendOperationSimulate(transaction)->Promise.getOk(dryRun => {
-      setModalStep(_ => SigningStep(transaction, dryRun))
+      setModalStep(_ => SigningStep(state, transaction, dryRun))
     })
   }
 
@@ -312,7 +312,7 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
     | #SubmitAll =>
       PublicKeyHash.isContract(state.values.sender.address)
         ? onSubmitMultisig(validState)
-        : onSubmitBatch(list{validState, ...batch})
+        : onSubmitBatch(validState, list{validState, ...batch})
     | #AddToBatch =>
       let p = GlobalBatchXfs.validStateToTransferPayload(validState)
       let signer = getImplicitFromAlias(validState.sender)
@@ -345,10 +345,10 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
   | AdvancedOptStep(_) => None
   | SummaryStep =>
     switch (form.formState, modalStep, (signerState: option<SigningBlock.state>)) {
-    | (_, SigningStep({source: {kind: Ledger}}, _), Some(WaitForConfirm)) =>
+    | (_, SigningStep(_, {source: {kind: Ledger}}, _), Some(WaitForConfirm)) =>
       ModalFormView.Deny(I18n.Tooltip.reject_on_ledger)->Some
 
-    | (_, SigningStep({source: {kind: CustomAuth({provider})}}, _), Some(WaitForConfirm)) =>
+    | (_, SigningStep(_, {source: {kind: CustomAuth({provider})}}, _), Some(WaitForConfirm)) =>
       ModalFormView.Deny(
         I18n.Tooltip.reject_on_provider(provider->ReCustomAuth.getProviderName),
       )->Some
@@ -359,20 +359,14 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
     }
   }
 
-  let back = switch sign {
-  | AdvancedOptStep(_) => Some(() => setSign(_ => SummaryStep))
-  | SummaryStep =>
-    switch modalStep {
-    | SigningStep(_) => Some(() => setModalStep(_ => SendStep))
-    | _ => None
+  let back = switch modalStep {
+  | SigningStep(state, _, _) =>
+    switch sign {
+    | AdvancedOptStep(_) => Some(() => setSign(_ => SummaryStep))
+    | SummaryStep => Some(() => setModalStep(_ => SourceStep(state)))
     }
-  }
-  let back_ = switch modalStep {
-  | SendStep => None
-  | SigningStep(_) => None
-  | EditStep(_) => None
-  | SubmittedStep(_) => None
-  | SourceStep(_) => None
+  | SourceStep(_) => Some(() => setModalStep(_ => SendStep))
+  | _ => None
   }
 
   let onPressCancel = _ => {
@@ -388,7 +382,7 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
   | SendStep
   | EditStep(_) =>
     Some(I18n.Title.send)
-  | SigningStep(_, _) => SignOperationView.makeTitle(sign)->Some
+  | SigningStep(_) => SignOperationView.makeTitle(sign)->Some
   | SubmittedStep(_) => None
   | SourceStep(_) => Some(I18n.Title.create_new_multisig)
   }
@@ -414,7 +408,7 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
               simulatingBatch=isSimulating
               aliases
             />
-          | SigningStep(operation, dryRun) =>
+          | SigningStep(_, operation, dryRun) =>
             <SignOperationView
               proposal={PublicKeyHash.isContract(form.state.values.sender.address)}
               signer=operation.source

@@ -572,13 +572,13 @@ let make = (~account: Account.t, ~closeAction) => {
   let config = ConfigContext.useContent()
 
   let back = switch modalStep {
-  | CreateStep => None
   | SourceStep(_, _) => Some(_ => setModalStep(_ => CreateStep))
   | SigningStep(state, raiseSubmitFailed, _, _) =>
     switch sign {
     | AdvancedOptStep(_) => Some(() => setSign(_ => SummaryStep))
     | SummaryStep => Some(_ => setModalStep(_ => SourceStep(state, raiseSubmitFailed)))
     }
+  | _ => None
   }
 
   let title = switch modalStep {
