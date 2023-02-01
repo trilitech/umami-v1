@@ -37,10 +37,22 @@ let styles = {
   })
 }
 
-let sort = op => {
+// Sort operations array by timestamp/id (descending)
+// Using the ID fix an issue were two operations have the same timestamp
+// e.g. a call to 'execute' on multisig will also produce a transfer between addresses
+// but both the call operation and the (internal) trandfer operation will have the same timestamp
+//
+// ID is not ideal: nothing says that "a occurs before b" implies "a.op_id < b.op_id"
+// but in practice it should be ok since:
+// - op is likely to be an autoincrement integer
+// - a will be inserted before b in database
+let sort = (op: array<Operation.t>): array<Operation.t> => {
   open Operation
-  op->SortArray.stableSortBy(({timestamp: t1}, {timestamp: t2}) =>
-    -Pervasives.compare(Js.Date.getTime(t1), Js.Date.getTime(t2))
+  op->SortArray.stableSortBy((op1, op2) =>
+    switch Pervasives.compare(Js.Date.getTime(op2.timestamp), Js.Date.getTime(op1.timestamp)) {
+    | 0 => Pervasives.compare(op2.op_id, op1.op_id)
+    | x => x
+    }
   )
 }
 
