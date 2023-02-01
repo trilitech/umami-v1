@@ -81,13 +81,15 @@ type step =
   | SigningStep(Protocol.batch, Protocol.Simulation.results)
   | EditStep(int, SendForm.validState)
   | SubmittedStep(string)
+  | SourceStep(SendForm.validState)
 
 let stepToString = step =>
   switch step {
   | SendStep => "sendstep"
-  | SigningStep(_, _) => "signingstep"
-  | EditStep(_, _) => "editstep"
+  | SigningStep(_) => "signingstep"
+  | EditStep(_) => "editstep"
   | SubmittedStep(_) => "submittedstep"
+  | SourceStep(_) => "sourcestep"
   }
 
 module Form = {
@@ -272,6 +274,10 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
   }
 
   let onSubmitMultisig = (state: SendForm.validState) => {
+    setModalStep(_ => SourceStep(state))
+  }
+
+  let onSubmitProposal = (state: SendForm.validState, source: Account.t) => {
     let recipient = state.recipient->FormUtils.Alias.address
     let amount =
       state.amount->ProtocolAmount.getTez->Option.getWithDefault(Tez.zero)->Tez.toBigNumber
@@ -291,7 +297,6 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
       (),
     )
     let transfers = [transfer]
-    let source = getImplicitFromAlias(state.sender)
     let transaction = ProtocolHelper.Transfer.makeBatch(~source, ~transfers, ())
     sendOperationSimulate(transaction)->Promise.getOk(dryRun => {
       setModalStep(_ => SigningStep(transaction, dryRun))
@@ -358,7 +363,7 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
   | AdvancedOptStep(_) => Some(() => setSign(_ => SummaryStep))
   | SummaryStep =>
     switch modalStep {
-    | SigningStep(_, _) => Some(() => setModalStep(_ => SendStep))
+    | SigningStep(_) => Some(() => setModalStep(_ => SendStep))
     | _ => None
     }
   }
@@ -378,6 +383,7 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
     Some(I18n.Title.send)
   | SigningStep(_, _) => SignOperationView.makeTitle(sign)->Some
   | SubmittedStep(_) => None
+  | SourceStep(_) => Some(I18n.Title.create_new_multisig)
   }
 
   <ReactFlipToolkit.Flipper flipKey={modalStep->stepToString}>
@@ -411,6 +417,11 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
               operation
               sendOperation={sendOperation(~sender=form.state.values.sender)}
               loading
+            />
+          | SourceStep(state) =>
+            <SourceSelector
+              loading={operationSimulateRequest->ApiRequest.isLoading}
+              onSubmit={onSubmitProposal(state)}
             />
           }}
         </ReactFlipToolkit.FlippedView.Inverse>

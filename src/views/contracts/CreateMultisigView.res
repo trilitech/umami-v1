@@ -415,7 +415,7 @@ module Step2 = {
 
 module Step3 = {
   @react.component
-  let make = (~currentStep, ~form: Form.api, ~back, ~loading, ~action) => {
+  let make = (~currentStep, ~form: Form.api, ~back, ~action) => {
     let owners = form.values.owners->Array.keepMap(owner =>
       switch owner {
       | FormUtils.Alias.Valid(alias) => Some(alias)
@@ -442,7 +442,7 @@ module Step3 = {
           }
         />
         <Buttons.SubmitPrimary
-          text=I18n.Btn.submit onPress={_ => action()} loading style=FormStyles.formSubmit
+          text=I18n.Btn.submit onPress={_ => action()} style=FormStyles.formSubmit
         />
       </View>
     </StepView>
@@ -468,7 +468,7 @@ type Errors.t +=
 
 module CreateView = {
   @react.component
-  let make = (~currentStep, ~form, ~setCurrentStep, ~operationSimulateRequest) => {
+  let make = (~currentStep, ~form, ~setCurrentStep) => {
     <>
       <Typography.Headline style=Styles.title>
         {I18n.Title.create_new_multisig->React.string}
@@ -481,43 +481,9 @@ module CreateView = {
         currentStep
         form
         back={_ => setCurrentStep(_ => 2)}
-        loading={operationSimulateRequest->ApiRequest.isLoading}
         action=form.submit
       />
     </>
-  }
-}
-
-module SourceView = {
-  @react.component
-  let make = (~loading, ~onSubmit) => {
-    let account = StoreContext.SelectedAccount.useGetImplicit()
-
-    {
-      switch account {
-      | Some(account) =>
-        let (selectedAccount, setSelectedAccount) = React.useState(_ => account)
-        <>
-          <View style=FormStyles.header>
-            <Typography.Overline1>
-              {I18n.Title.multisig_sender->React.string}
-            </Typography.Overline1>
-          </View>
-          <FormGroupAccountSelector.Accounts
-            label=I18n.Label.send_sender
-            value=selectedAccount
-            handleChange={value => setSelectedAccount(_ => value)}
-          />
-          <Buttons.SubmitPrimary
-            text=I18n.Btn.continue
-            onPress={_ => onSubmit(selectedAccount)}
-            loading
-            style=FormStyles.formSubmit
-          />
-        </>
-      | None => <View />
-      }
-    }
   }
 }
 
@@ -626,9 +592,9 @@ let make = (~account: Account.t, ~closeAction) => {
   }
 
   let el = switch modalStep {
-  | CreateStep => <CreateView currentStep form setCurrentStep operationSimulateRequest />
+  | CreateStep => <CreateView currentStep form setCurrentStep />
   | SourceStep(state, raiseSubmitFailed) =>
-    <SourceView
+    <SourceSelector
       loading={operationSimulateRequest->ApiRequest.isLoading}
       onSubmit={account => {
         let operation = state->Form.originationOperation(~source=account)
