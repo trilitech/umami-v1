@@ -38,6 +38,17 @@ module URL: {
   let build_url: (string, list<(string, string)>) => string
 
   module Explorer: {
+    module Tzkt: {
+      let operations: (
+        Network.t,
+        PublicKeyHash.t,
+        ~types: array<string>=?,
+        ~destination: PublicKeyHash.t=?,
+        ~limit: int=?,
+        unit,
+      ) => t
+    }
+
     let operations: (
       Network.t,
       PublicKeyHash.t,
@@ -109,10 +120,7 @@ module URL: {
       ~contract: PublicKeyHash.t,
     ) => Promise.result<t>
 
-    let tzktBigmapKeys: (
-      ~network: Network.network,
-      ~bigmap: int,
-    ) => Promise.result<t>
+    let tzktBigmapKeys: (~network: Network.network, ~bigmap: int) => Promise.result<t>
   }
 
   /* Fetch URL as a JSON. */
@@ -124,6 +132,16 @@ module URL: {
 
 @ocaml.doc(" Mezos requests for mempool operations and classical operations. ")
 module type Explorer = {
+  module Tzkt: {
+    let getOperations: (
+      Network.t,
+      PublicKeyHash.t,
+      ~types: array<string>=?,
+      ~destination: PublicKeyHash.t=?,
+      ~limit: int=?,
+      unit,
+    ) => Promise.t<array<Operation.t>>
+  }
   let getOperations: (
     Network.t,
     PublicKeyHash.t,

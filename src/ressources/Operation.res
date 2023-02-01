@@ -118,6 +118,20 @@ module Transaction = {
       | #KTez => Tez(common(json))
       }
     }
+
+    module Tzkt = {
+      let t = json => {
+        let common = json => {
+          amount: json |> field("amount", int) |> Tez.fromMutezInt,
+          destination: json
+          |> field("target", field("address", string))
+          |> PublicKeyHash.build
+          |> Result.getExn,
+          parameters: json |> optional(field("parameter", dict(string))),
+        }
+        json |> optional(field("tokenTransfersCount", int)) == None ? Some(Tez(common(json))) : None
+      }
+    }
   }
 }
 
@@ -208,13 +222,41 @@ module Decode = {
     fee: (json |> optional(field("fee", string)))
       ->Option.mapWithDefault(Tez.zero, Tez.fromMutezString),
     hash: json |> field("hash", string),
-    id: json |> field("id", string),
+    id: json |> field("id", string), // Seems to always be "0"
     level: json |> field("level", string) |> int_of_string,
     op_id: json |> field("id", string) |> int_of_string,
     payload: json |> payload(json |> field("kind", string)),
     source: json |> source,
     status: status(json),
     timestamp: json |> field("op_timestamp", date),
+  }
+
+  module Tzkt = {
+    let payload = (ty, json) =>
+      switch ty {
+      | "reveal" => None
+      | "transaction" => Option.map(json->Transaction.Decode.Tzkt.t, t => Transaction(t))
+      | "origination" => None
+      | "delegation" => None
+      | _ => None
+      }
+
+    let t = json =>
+      Option.map(json |> payload(json |> field("type", string)), payload => {
+        block: json |> optional(field("block", string)),
+        fee: json |> field("bakerFee", int) |> Tez.fromMutezInt, // Mezos does not use storageFee or allocationFee
+        hash: json |> field("hash", string),
+        id: json |> field("id", int) |> Int.toString,
+        level: json |> field("level", int),
+        op_id: json |> field("id", int),
+        payload: payload,
+        source: json
+        |> field("sender", field("address", string))
+        |> PublicKeyHash.build
+        |> Result.getExn,
+        status: json |> field("status", string) == "applied" ? Chain : Mempool,
+        timestamp: json |> field("timestamp", date),
+      })
   }
 }
 

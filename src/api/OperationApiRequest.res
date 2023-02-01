@@ -78,18 +78,26 @@ let waitForConfirmation = (config: ConfigContext.env, hash) =>
 let useLoad = (~requestState, ~limit=?, ~types=?, ~address: PublicKeyHash.t, ()) => {
   let get = (~config: ConfigContext.env, address) => {
     let operations = config.network->ServerAPI.Explorer.getOperations(address, ~limit?, ~types?, ())
+    let operationsTzkt =
+      config.network->ServerAPI.Explorer.Tzkt.getOperations(address, ~limit?, ~types?, ())
     let currentLevel =
       Network.monitor(config.network.explorer)->Promise.mapOk(monitor => monitor.nodeLastBlock)
 
-    let f = (operations, currentLevel) =>
-      switch (operations, currentLevel) {
-      | (Ok(operations), Ok(currentLevel)) =>
+    let f = (operations, operationsTzkt, currentLevel) =>
+      switch (operations, operationsTzkt, currentLevel) {
+      | (Ok(operations), Ok(operationsTzkt), Ok(currentLevel)) =>
+        let operations = Array.keep(operations, x =>
+          !Array.some(operationsTzkt, y => x.Operation.hash == y.Operation.hash)
+        )
+        let operations = Array.concat(operationsTzkt, operations)
         Ok({operations: operations, currentLevel: currentLevel})
-      | (Error(_) as e, _)
-      | (_, Error(_) as e) => e
+      | (Ok(operations), Error(_), Ok(currentLevel)) =>
+        Ok({operations: operations, currentLevel: currentLevel})
+      | (Error(_) as e, _, _)
+      | (_, _, Error(_) as e) => e
       }
 
-    Promise.map2(operations, currentLevel, f)
+    Promise.map3(operations, operationsTzkt, currentLevel, f)
   }
 
   ApiRequest.useLoader(~get, ~kind=Logs.Operation, ~requestState, address)

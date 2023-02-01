@@ -113,6 +113,35 @@ module URL = {
   }
 
   module Explorer = {
+    module Tzkt = {
+      let operations = (
+        network: Network.network,
+        account: PublicKeyHash.t,
+        ~types: option<array<string>>=?,
+        ~destination: option<PublicKeyHash.t>=?,
+        ~limit: option<int>=?,
+        (),
+      ) => {
+        let args = {
+          open List.Infix
+          \"@?"(
+            types->arg_opt("types", t => t->Js.Array2.joinWith(",")),
+            \"@?"(
+              limit->arg_opt("limit", lim => lim->Js.Int.toString),
+              \"@?"(destination->arg_opt("destination", dst => (dst :> string)), list{}),
+            ),
+          )
+        }
+        build_url(
+          "https://api." ++
+          network.Network.name ++
+          ".tzkt.io/v1/accounts/" ++
+          (account :> string) ++ "/operations",
+          args,
+        )
+      }
+    }
+
     let operations = (
       network: Network.network,
       account: PublicKeyHash.t,
@@ -367,6 +396,16 @@ module URL = {
 }
 
 module type Explorer = {
+  module Tzkt: {
+    let getOperations: (
+      Network.t,
+      PublicKeyHash.t,
+      ~types: array<string>=?,
+      ~destination: PublicKeyHash.t=?,
+      ~limit: int=?,
+      unit,
+    ) => Promise.t<array<Operation.t>>
+  }
   let getOperations: (
     Network.network,
     PublicKeyHash.t,
@@ -427,6 +466,31 @@ module ExplorerMaker = (
       }
 
     loop(list{}, l)->List.reverse->List.toArray
+  }
+
+  module Tzkt = {
+    let getOperations = (
+      network,
+      account: PublicKeyHash.t,
+      ~types: option<array<string>>=?,
+      ~destination: option<PublicKeyHash.t>=?,
+      ~limit: option<int>=?,
+      (),
+    ) =>
+      network
+      ->URL.Explorer.Tzkt.operations(account, ~types?, ~destination?, ~limit?, ())
+      ->Get.get
+      ->Promise.flatMapOk(res =>
+        res
+        ->Result.fromExn({
+          open Json.Decode
+          array(Operation.Decode.Tzkt.t)
+        })
+        ->Result.map(array => Array.keepMap(array, x => x))
+        ->Result.mapError(e => e->JsonEx.filterJsonExn->JsonError)
+        ->Promise.value
+      )
+      ->Promise.mapOk(filterMalformedDuplicates)
   }
 
   let getOperations = (
