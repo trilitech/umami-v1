@@ -32,7 +32,7 @@ let styles = {
     "alias": style(~height=20.->dp, ~marginBottom=4.->dp, ()),
     "balanceEmpty": style(~height=4.->dp, ()),
     "address": style(~height=18.->dp, ()),
-    "description": style(~height=18.->dp, ()),
+    "description": style(~fontSize=16., ~marginBottom=4.->dp, ()),
     "button": style(~marginRight=4.->dp, ()),
     "actionButtons": style(~alignSelf=#flexEnd, ~flexDirection=#row, ~flex=1., ()),
   })
