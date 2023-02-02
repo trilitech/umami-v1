@@ -208,8 +208,8 @@ module MultisigAccountList = {
         <Buttons.SubmitPrimary
           style={styles["button"]} text=I18n.Btn.create_new_multisig onPress={_ => openAction()}
         />
-        {Option.mapWithDefault(account, React.null, account =>
-          wrapModal(<CreateMultisigView account closeAction />)
+        {Option.mapWithDefault(account, React.null, _ =>
+          wrapModal(<CreateMultisigView closeAction />)
         )}
       </>
     }
