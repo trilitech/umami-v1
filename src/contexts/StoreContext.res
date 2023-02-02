@@ -767,12 +767,22 @@ module Multisig = {
 
   let useUpdate = () => {
     let resetMultisigs = useResetAll()
-    MultisigApiRequest.useUpdate(~sideEffect=_ => resetMultisigs(), ())
+    let resetAliases = Aliases.useResetAll()
+    let sideEffect = () => {
+      resetMultisigs()
+      resetAliases()
+    }
+    MultisigApiRequest.useUpdate(~sideEffect, ())
   }
 
   let useDelete = () => {
     let resetMultisigs = useResetAll()
-    MultisigApiRequest.useDelete(~sideEffect=_ => resetMultisigs(), ())
+    let resetAliases = Aliases.useResetAll()
+    let sideEffect = () => {
+      resetMultisigs()
+      resetAliases()
+    }
+    MultisigApiRequest.useDelete(~sideEffect, ())
   }
 
   module PendingOperations = {
