@@ -136,7 +136,7 @@ let make = () => {
       </Typography.Headline>
       <Container>
         <LeftCol>
-          <Page.Header> <AccountElements.Selector.Simple account /> </Page.Header> // Page.Header needed for consistent Account display width
+          <AccountElements.Selector.Simple account />
           <Wrapper>
             <TransactionCounter batch /> <CSVPicker onAddCSVList /> <CSVFormatLink />
           </Wrapper>

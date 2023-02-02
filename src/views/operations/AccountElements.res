@@ -177,6 +177,7 @@ module Selector = {
     <BaseItem forceFetch style={itemStyles["itemInSelector"]} account showAmount ?token />
 
   module Simple = {
+    open Style
     @react.component
     let make = (~account: item, ~style=?) => {
       let items =
@@ -189,7 +190,7 @@ module Selector = {
       let renderButton = baseRenderButton(~forceFetch=false, ~showAmount=Balance, ~token=None)
       let renderItem = baseRenderItem(~forceFetch=false, ~showAmount=Balance, ~token=None)
 
-      <>
+      <View style={Style.style(~width=390.->dp, ())}>
         {I18n.account->Typography.overline2}
         <View style={styles["spacer"]} />
         <Selector
@@ -202,7 +203,7 @@ module Selector = {
           renderItem
           keyPopover="accountSelector"
         />
-      </>
+      </View>
     }
   }
 }

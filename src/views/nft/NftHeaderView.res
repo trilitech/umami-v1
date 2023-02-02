@@ -29,13 +29,7 @@ let styles = {
   open Style
   StyleSheet.create({
     "header": style(~marginTop=LayoutConst.pagePaddingVertical->dp, ()),
-    "selector": style(
-      ~alignSelf=#flexStart,
-      ~minWidth=390.->dp,
-      ~marginTop=0.->dp,
-      ~marginBottom=30.->dp,
-      (),
-    ),
+    "selector": style(~marginBottom=30.->dp, ()),
     "alignRight": style(~alignSelf=#flexEnd, ()),
   })
 }
