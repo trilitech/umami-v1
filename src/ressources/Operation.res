@@ -177,13 +177,14 @@ type t = {
   block: option<string>,
   fee: Tez.t,
   hash: string,
-  id: string,
+  id: string, // FIXME: make it an integer
   level: int,
-  op_id: int,
+  op_id: int, // FIXME: remove this one, which is juste `id` converted to int
   payload: payload,
   source: PublicKeyHash.t,
   status: status,
   timestamp: Js.Date.t,
+  // FIXME: add internal: int (i.e. the position of the operation in a list of internal operations. 0 by default)
 }
 
 let internal_op_id = op =>

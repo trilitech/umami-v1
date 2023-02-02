@@ -37,6 +37,9 @@ let styles = {
   })
 }
 
+// FIXME: When the workaround will be removed and the Operation.t structure fixed,
+// we should use the (timestamp, internal) and not (timestamp, id)
+//
 // Sort operations array by timestamp/id (descending)
 // Using the ID fix an issue were two operations have the same timestamp
 // e.g. a call to 'execute' on multisig will also produce a transfer between addresses
