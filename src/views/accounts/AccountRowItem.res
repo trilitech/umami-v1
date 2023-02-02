@@ -44,11 +44,18 @@ module GenericRowItem = {
     ~icon_isHD=false,
     ~description: option<React.element>=?,
     ~children: React.element,
+    ~justifyContent=#flexStart,
   ) => {
     open Style
     <RowItem.Bordered
       minHeight=90.
-      innerStyle={style(~alignSelf=#flexStart, ~marginTop=8.->dp, ~paddingVertical=8.->dp, ())}>
+      innerStyle={style(
+        ~alignSelf=#flexStart,
+        ~marginTop=8.->dp,
+        ~paddingVertical=8.->dp,
+        ~justifyContent,
+        (),
+      )}>
       <View style={styles["inner"]}>
         <AliasIcon style={SecretRowTree.styles["iconContainer"]} kind=account.kind isHD=icon_isHD />
         <AccountInfo.GenericAccountInfo
@@ -87,7 +94,8 @@ let make = (~account: Account.t, ~isHD: bool=false, ~token: option<Token.t>=?) =
   | None => true
   | Some(balance) => balance == Tez.zero
   }
-  <GenericRowItem account={account->Alias.fromAccount} ?token icon_isHD=isHD>
+  <GenericRowItem
+    account={account->Alias.fromAccount} ?token icon_isHD=isHD justifyContent=#spaceBetween>
     {delegateRequest
     ->ApiRequest.mapWithDefault(React.null, delegate =>
       <View style={styles["actionContainer"]}>
