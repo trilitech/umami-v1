@@ -30,7 +30,7 @@ let styles = {
   StyleSheet.create({
     "alias": style(~height=20.->dp, ~marginBottom=4.->dp, ()),
     "balanceEmpty": style(~height=4.->dp, ()),
-    "address": style(~height=18.->dp, ()),
+    "address": style(~height=18.->dp, ~marginRight=8.->dp, ()),
     "description": style(~fontSize=16., ~marginBottom=4.->dp, ()),
     "button": style(~marginRight=4.->dp, ()),
     "actionButtons": style(~alignSelf=#flexEnd, ~flexDirection=#row, ~flex=1., ()),
@@ -73,7 +73,14 @@ module GenericAccountInfo = {
         ? <AccountInfoBalance forceFetch address=account.address ?token />
         : <View style={styles["balanceEmpty"]} />}
       {Option.getWithDefault(description, React.null)}
-      <View style={style(~flexDirection=#row, ~alignItems=#center, ())}>
+      <View
+        style={style(
+          ~flexDirection=#row,
+          ~alignItems=#center,
+          // negative marginTop needed to compensate stretch of copy paste icons
+          ~marginTop=-4.->dp,
+          (),
+        )}>
         <Typography.Address style={styles["address"]}>
           {(account.address :> string)->React.string}
         </Typography.Address>
