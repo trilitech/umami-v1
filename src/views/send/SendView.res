@@ -380,11 +380,11 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
 
   let title = switch modalStep {
   | SendStep
-  | EditStep(_) =>
+  | EditStep(_)
+  | SourceStep(_) =>
     Some(I18n.Title.send)
   | SigningStep(_) => SignOperationView.makeTitle(sign)->Some
   | SubmittedStep(_) => None
-  | SourceStep(_) => Some(I18n.Title.create_new_multisig)
   }
 
   <ReactFlipToolkit.Flipper flipKey={modalStep->stepToString}>
