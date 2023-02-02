@@ -49,13 +49,7 @@ module GenericRowItem = {
     open Style
     <RowItem.Bordered
       minHeight=90.
-      innerStyle={style(
-        ~alignSelf=#flexStart,
-        ~marginTop=8.->dp,
-        ~paddingVertical=8.->dp,
-        ~justifyContent,
-        (),
-      )}>
+      innerStyle={style(~alignSelf=#flexStart, ~paddingVertical=8.->dp, ~justifyContent, ())}>
       <View style={styles["inner"]}>
         <AliasIcon style={SecretRowTree.styles["iconContainer"]} kind=account.kind isHD=icon_isHD />
         <AccountInfo.GenericAccountInfo
