@@ -92,3 +92,6 @@ external encodeKeyHash: string => string = "encodeKeyHash"
 
 @module("@taquito/utils")
 external b58decode: string => string = "b58decode"
+
+@module("@taquito/utils")
+external encodePubKey: string => string = "encodePubKey"

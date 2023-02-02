@@ -241,46 +241,121 @@ module API = {
     }
   }
 
-  module Statement = {
-    type t = {
-      prim: string,
-      args: option<array<Js.Dict.t<string>>>,
+  module LAMBDA_PARSER = {
+    let check = (array, pos, value) =>
+      array[pos]->Option.mapWithDefault(false, x => x == Obj.magic(value))
+
+    // For a given <FIELD> value:
+    // read {prim: "PUSH", args: [{prim: "<FIELD>"}, {bytes: <RECIPIENT>}]} and
+    // return <RECIPIENT>
+    let recipient = (field, encode, json) => {
+      Js.Json.decodeObject(json)
+      ->Option.flatMap(x =>
+        Js_dict.get(x, "prim") == Some(Obj.magic("PUSH")) ? Js_dict.get(x, "args") : None
+      )
+      ->Option.flatMap(Js.Json.decodeArray)
+      ->Option.flatMap(x => x[0] == Some(Obj.magic({"prim": field})) ? x[1] : None)
+      ->Option.flatMap(Js.Json.decodeObject)
+      ->Option.flatMap(x => Js.Dict.get(x, "bytes")) // is "string" in LAMBDA_MANAGER
+      ->Option.flatMap(Js.Json.decodeString)
+      ->Option.map(encode)
+      ->Option.map(PublicKeyHash.build)
+      ->Option.map(Result.getExn)
     }
 
-    let decoder = json => {
-      open Json.Decode
-      {
-        prim: json |> field("prim", string),
-        args: json |> optional(field("args", array(dict(string)))),
-      }
+    // Extract <AMOUNT> from {prim: "PUSH", args: [{prim: "mutez"}, {int: <AMOUNT>}]}
+    let amount = json =>
+      Js.Json.decodeObject(json)
+      ->Option.flatMap(x =>
+        Js_dict.get(x, "prim") == Some(Obj.magic("PUSH")) ? Js_dict.get(x, "args") : None
+      )
+      ->Option.flatMap(Js.Json.decodeArray)
+      ->Option.flatMap(x => x[0] == Some(Obj.magic({"prim": "mutez"})) ? x[1] : None)
+      ->Option.flatMap(Js.Json.decodeObject)
+      ->Option.flatMap(x => Js.Dict.get(x, "int"))
+      ->Option.flatMap(Js.Json.decodeString)
+      ->Option.map(ReBigNumber.fromString)
+
+    type recipient_amount = {
+      recipient: PublicKeyHash.t,
+      amount: ReBigNumber.t,
     }
+
+    let recipient_amount = (r, rk, encode, a, array): option<recipient_amount> => {
+      array[r]
+      ->Option.flatMap(recipient(rk, encode))
+      ->Option.flatMap(recipient => {
+        array[a]
+        ->Option.flatMap(amount)
+        ->Option.map(amount => {
+          {recipient: recipient, amount: amount}
+        })
+      })
+    }
+
+    // See LAMBDA_MANAGER.transferImplicit
+    // [
+    // 0 {prim: "DROP"},
+    // 1 {prim: "NIL", args: [{prim: "operation"}]},
+    // 2 {prim: "PUSH", args: [{prim: "key_hash"}, {string: <RECIPIENT>}]},
+    // 3 {prim: "IMPLICIT_ACCOUNT"},
+    // 4 {prim: "PUSH", args: [{prim: "mutez"}, {int: <AMOUNT>}]},
+    // 5 {prim: "UNIT"},
+    // 6 {prim: "TRANSFER_TOKENS"},
+    // 7 {prim: "CONS"},
+    // ]
+    let transferImplicit = (json: Js.Json.t) => {
+      Js.Json.decodeArray(json)->Option.flatMap(array => {
+        let check = ( pos, value) => check(array, pos, value)
+        check(0, {"prim": "DROP"}) &&
+        check(1, {"prim": "NIL", "args": [{"prim": "operation"}]}) &&
+        check(3, {"prim": "IMPLICIT_ACCOUNT"}) &&
+        check(5, {"prim": "UNIT"}) &&
+        check(6, {"prim": "TRANSFER_TOKENS"}) &&
+        check(7, {"prim": "CONS"})
+          ? recipient_amount(2, "key_hash", ReTaquitoUtils.encodeKeyHash, 4, array)
+          : None
+      })
+    }
+
+    // See LAMBDA_MANAGER.transferToContract
+    // [
+    // 0 { prim: 'DROP' },
+    // 1 { prim: 'NIL', args: [{ prim: 'operation' }] },
+    // 2 { prim: 'PUSH', args: [{ prim: 'address' }, { string: key }], },
+    // 3 { prim: 'CONTRACT', args: [{ prim: 'unit' }] },
+    // 4 [ { prim: 'IF_NONE', args: [[[{ prim: 'UNIT' }, { prim: 'FAILWITH' }]], []], }, ],
+    // 5 { prim: 'PUSH', args: [{ prim: 'mutez' }, { int: `${amount}` }], },
+    // 6 { prim: 'UNIT' },
+    // 7 { prim: 'TRANSFER_TOKENS' },
+    // 8 { prim: 'CONS' },
+    // ]
+    let transferToContract = (json: Js.Json.t) => {
+      Js.Json.decodeArray(json)->Option.flatMap(array => {
+        let check = (pos, value) => check(array, pos, value)
+        check(0, {"prim": "DROP"}) &&
+        check(1, {"prim": "NIL", "args": [{"prim": "operation"}]}) &&
+        check(3, {"prim": "CONTRACT", "args": [{"prim": "unit"}]}) &&
+        check(4, [{"prim": "IF_NONE", "args": [[[{"prim": "UNIT"}, {"prim": "FAILWITH"}]], []]}]) &&
+        check(6, {"prim": "UNIT"}) &&
+        check(7, {"prim": "TRANSFER_TOKENS"}) &&
+        check(8, {"prim": "CONS"})
+          ? recipient_amount(2, "address", ReTaquitoUtils.encodePubKey, 5, array)
+          : None
+      })
+    }
+
+    let transfer = (json: Js.Json.t): option<recipient_amount> =>
+      switch transferImplicit(json) {
+      | None => transferToContract(json)
+      | x => x
+      }
   }
 
   let parseActions = actions => {
     actions
     ->JsonEx.parse
-    ->Result.flatMap(json => json->JsonEx.decode(Json.Decode.array(Statement.decoder)))
-    ->Result.flatMap(statements => {
-      let amount =
-        statements[4]
-        ->Option.flatMap(s => s.args)
-        ->Option.flatMap(args => args[1])
-        ->Option.flatMap(arg => arg->Js.Dict.get("int"))
-        ->Option.map(ReBigNumber.fromString)
-      let recipient =
-        statements[2]
-        ->Option.flatMap(s => s.args)
-        ->Option.flatMap(args => args[1])
-        ->Option.flatMap(arg =>
-          arg
-          ->Js.Dict.get("bytes")
-          ->Option.map(s => s->ReTaquitoUtils.encodeKeyHash->PublicKeyHash.build->Result.getExn)
-        )
-      switch (amount, recipient) {
-      | (Some(amount), Some(recipient)) => Some((amount, recipient))
-      | _ => None
-      }->ResultEx.fromOption(JsonEx.ParsingError(""))
-    })
+    ->Result.flatMap(x => x->LAMBDA_PARSER.transfer->ResultEx.fromOption(JsonEx.ParsingError("")))
   }
 
   let getPendingOperations = (network: Network.t, ~bigmap: int) =>
@@ -295,7 +370,7 @@ module API = {
         switch (entry.active, entry.key, entry.value) {
         | (true, Some(key), Some(value)) =>
           parseActions(value.actions)
-          ->Result.map(((amount, recipient)) => Some({
+          ->Result.map(({amount, recipient}) => Some({
             PendingOperation.id: key,
             type_: Transaction,
             amount: amount,
