@@ -81,7 +81,7 @@ type step =
   | SigningStep(SendForm.validState, Protocol.batch, Protocol.Simulation.results)
   | EditStep(int, SendForm.validState)
   | SubmittedStep(string)
-  | SourceStep(SendForm.validState)
+  | SourceStep(SendForm.validState, option<Account.t>)
 
 let stepToString = step =>
   switch step {
@@ -278,7 +278,7 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
   }
 
   let onSubmitMultisig = (state: SendForm.validState) => {
-    setModalStep(_ => SourceStep(state))
+    setModalStep(_ => SourceStep(state, None))
   }
 
   let onSubmitProposal = (state: SendForm.validState, source: Account.t) => {
@@ -364,10 +364,16 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
   }
 
   let back = switch modalStep {
-  | SigningStep(state, _, _) =>
+  | SigningStep(state, operation, _) =>
     switch sign {
     | AdvancedOptStep(_) => Some(() => setSign(_ => SummaryStep))
-    | SummaryStep => Some(() => setModalStep(_ => SourceStep(state)))
+    | SummaryStep =>
+      Some(
+        () =>
+          setModalStep(_ =>
+            senderIsMultisig(state.sender) ? SourceStep(state, Some(operation.source)) : SendStep
+          ),
+      )
     }
   | SourceStep(_) => Some(() => setModalStep(_ => SendStep))
   | _ => None
@@ -423,10 +429,13 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
               sendOperation={sendOperation(~sender=form.state.values.sender)}
               loading
             />
-          | SourceStep(state) =>
+          | SourceStep(state, source) =>
             let multisig = multisigFromAddress(state.sender.address)->Option.getExn
             let filter = Js.Array2.includes(multisig.Multisig.signers)
-            switch getImplicitFromAlias(state.sender) {
+            switch switch source {
+            | Some(_) => source
+            | None => getImplicitFromAlias(state.sender)
+            } {
             | Some(source) =>
               <SourceSelector
                 source
