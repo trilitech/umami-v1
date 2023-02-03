@@ -539,7 +539,7 @@ module SignView = {
 }
 
 @react.component
-let make = (~closeAction) => {
+let make = (~source:Account.t, ~closeAction) => {
   let theme = ThemeContext.useTheme()
   let (currentStep, setCurrentStep) = React.useState(_ => 1)
   let (operationSimulateRequest, sendOperationSimulate) = StoreContext.Operations.useSimulate()
@@ -592,6 +592,7 @@ let make = (~closeAction) => {
   | CreateStep => <CreateView currentStep form setCurrentStep />
   | SourceStep(state, raiseSubmitFailed) =>
     <SourceSelector
+      source
       loading={operationSimulateRequest->ApiRequest.isLoading}
       onSubmit={source => {
         let operation = state->Form.originationOperation(~source)

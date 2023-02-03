@@ -240,14 +240,18 @@ module EditionView = {
   }
 }
 
+let senderIsMultisig = (sender: Alias.t) => PublicKeyHash.isContract(sender.address)
+
 @react.component
 let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
   let initToken = StoreContext.SelectedToken.useGet()
   let aliasesRequest = StoreContext.Aliases.useRequest()
   let getImplicitFromAlias = StoreContext.useGetImplicitFromAlias()
+  let getImplicitFromAliasExn = x => getImplicitFromAlias(x)->Option.getExn
   let aliases = aliasesRequest->ApiRequest.getDoneOk->Option.getWithDefault(PublicKeyHash.Map.empty)
 
   let updateAccount = StoreContext.SelectedAccount.useSet()
+  let multisigFromAddress = StoreContext.Multisig.useGetFromAddress()
 
   let (modalStep, setModalStep) = React.useState(_ => initalStep)
 
@@ -267,7 +271,7 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
   let submitAction = React.useRef(#SubmitAll)
 
   let onSubmitBatch = (state, batch) => {
-    let transaction = SendForm.buildTransaction(batch, getImplicitFromAlias)
+    let transaction = SendForm.buildTransaction(batch, getImplicitFromAliasExn)
     sendOperationSimulate(transaction)->Promise.getOk(dryRun => {
       setModalStep(_ => SigningStep(state, transaction, dryRun))
     })
@@ -310,12 +314,12 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
 
     switch submitAction.current {
     | #SubmitAll =>
-      PublicKeyHash.isContract(state.values.sender.address)
+      senderIsMultisig(state.values.sender)
         ? onSubmitMultisig(validState)
         : onSubmitBatch(validState, list{validState, ...batch})
     | #AddToBatch =>
       let p = GlobalBatchXfs.validStateToTransferPayload(validState)
-      let signer = getImplicitFromAlias(validState.sender)
+      let signer = getImplicitFromAliasExn(validState.sender)
       addTransfer(p, signer, closeAction)
     }
   }
@@ -399,7 +403,7 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
             <EditionView account initValues onSubmit index loading=isSimulating aliases />
           | SendStep =>
             <Form.View
-              proposal={PublicKeyHash.isContract(form.state.values.sender.address)}
+              proposal={senderIsMultisig(form.state.values.sender)}
               tokenState
               ?token
               form
@@ -410,7 +414,7 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
             />
           | SigningStep(_, operation, dryRun) =>
             <SignOperationView
-              proposal={PublicKeyHash.isContract(form.state.values.sender.address)}
+              proposal={senderIsMultisig(form.state.values.sender)}
               signer=operation.source
               state
               signOpStep
@@ -420,10 +424,18 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
               loading
             />
           | SourceStep(state) =>
-            <SourceSelector
-              loading={operationSimulateRequest->ApiRequest.isLoading}
-              onSubmit={onSubmitProposal(state)}
-            />
+            let multisig = multisigFromAddress(state.sender.address)->Option.getExn
+            let filter = Js.Array2.includes(multisig.Multisig.signers)
+            switch getImplicitFromAlias(state.sender) {
+            | Some(source) =>
+              <SourceSelector
+                source
+                filter
+                loading={operationSimulateRequest->ApiRequest.isLoading}
+                onSubmit={onSubmitProposal(state)}
+              />
+            | None => <View> {I18n.Form_input_error.permissions_error->Typography.body1} </View>
+            }
           }}
         </ReactFlipToolkit.FlippedView.Inverse>
       </ModalFormView>

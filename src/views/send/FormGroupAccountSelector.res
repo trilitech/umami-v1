@@ -84,14 +84,17 @@ module Implicits = {
     ~handleChange: Umami.Account.t => unit,
     ~disabled=?,
     ~token: option<Token.t>=?,
+    ~filter=_ => true,
   ) => {
     let value = Alias.fromAccount(value)
     let handleChange = a => handleChange(Alias.toAccountExn(a))
     let items =
       StoreContext.Accounts.useGetAll()
       ->PublicKeyHash.Map.valuesToArray
-      ->(a => Js.Array.map(Alias.fromAccount, a))
+      ->Js.Array2.filter(x => filter(x.Account.address))
+      ->Js.Array2.map(Alias.fromAccount)
       ->SortArray.stableSortBy(Alias.compare)
+
     <Base label value items handleChange ?disabled ?token />
   }
 }

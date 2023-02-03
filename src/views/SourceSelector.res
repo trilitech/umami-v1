@@ -26,32 +26,23 @@
 open ReactNative
 
 @react.component
-  let make = (~loading, ~onSubmit) => {
-    let account = StoreContext.SelectedAccount.useGetImplicit()
-
-    {
-      switch account {
-      | Some(account) =>
-        let (selectedAccount, setSelectedAccount) = React.useState(_ => account)
-        <>
-          <View style=FormStyles.header>
-            <Typography.Overline1>
-              {I18n.Title.multisig_sender->React.string}
-            </Typography.Overline1>
-          </View>
-          <FormGroupAccountSelector.Implicits
-            label=I18n.Label.send_sender
-            value=selectedAccount
-            handleChange={value => setSelectedAccount(_ => value)}
-          />
-          <Buttons.SubmitPrimary
-            text=I18n.Btn.continue
-            onPress={_ => onSubmit(selectedAccount)}
-            loading
-            style=FormStyles.formSubmit
-          />
-        </>
-      | None => <View />
-      }
-    }
-  }
+let make = (~source, ~loading, ~onSubmit, ~filter=?) => {
+  let (selectedAccount, setSelectedAccount) = React.useState(_ => source)
+  <>
+    <View style=FormStyles.header>
+      <Typography.Overline1> {I18n.Expl.signing_account->React.string} </Typography.Overline1>
+    </View>
+    <FormGroupAccountSelector.Implicits
+      ?filter
+      label=I18n.Label.signing_account
+      value=selectedAccount
+      handleChange={value => setSelectedAccount(_ => value)}
+    />
+    <Buttons.SubmitPrimary
+      text=I18n.Btn.continue
+      onPress={_ => onSubmit(selectedAccount)}
+      loading
+      style=FormStyles.formSubmit
+    />
+  </>
+}

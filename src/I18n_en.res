@@ -219,6 +219,7 @@ module Label = {
   let owners = "Owners"
   let approval_threshold = "Approval threshold:"
   let out_of = (a, b) => `${a} out of ${b}`
+  let signing_account = "Signing account"
 }
 
 module Input_placeholder = {
@@ -300,6 +301,7 @@ module Form_input_error = {
   let illformed_token_metadata = (pkh, tokenId, field) =>
     `Field ${field} for token id ${string_of_int(tokenId)} illformed for contract ${pkh}`
   let not_a_multisig_contract = "Contract not supported by Umami"
+  let permissions_error = "You don't have enough permissions on the selected contract."
 }
 
 module Title = {
@@ -459,6 +461,7 @@ module Expl = {
   let out_of = s => `out of ${s}`
   let review_multisig = `Please review the details of the multisig contract you are about to create.\\nYou can edit them before submitting by clicking the back button.\\nYou will receive an approval request from your wallet. Please confirm it to continue.`
   let approval_threshold_reached = "This operation has already gathered the required number of signatures to be submitted. You signature is therefore no longer necessary."
+  let signing_account = "Select signing account."
 }
 
 module Menu = {

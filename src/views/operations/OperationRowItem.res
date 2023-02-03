@@ -543,7 +543,8 @@ module Pending = {
     let accounts = StoreContext.Accounts.useGetAll()
     let aliases = StoreContext.Aliases.useGetAll()
     let tokens = StoreContext.Tokens.useGetAll()
-    let multisig = StoreContext.Multisig.useGetFromAddress(account.Alias.address)->Option.getExn
+    let multisigFromAddress = StoreContext.Multisig.useGetFromAddress()
+    let multisig = multisigFromAddress(account.Alias.address)->Option.getExn
 
     {
       switch pending.type_ {

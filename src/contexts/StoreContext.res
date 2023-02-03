@@ -755,9 +755,9 @@ module Multisig = {
     )
   }
 
-  let useGetFromAddress = (address: PublicKeyHash.t) => {
+  let useGetFromAddress = () => {
     let multisigs = useGetAll()
-    multisigs->PublicKeyHash.Map.get(address)
+    (address: PublicKeyHash.t) => multisigs->PublicKeyHash.Map.get(address)
   }
 
   let useResetAll = () => {
@@ -1150,14 +1150,15 @@ let useGetImplicitFromAlias = () => {
     let getAccount = k => PublicKeyHash.Map.get(accounts, k)
     let getMultisig = k => PublicKeyHash.Map.get(multisigs, k)
     switch alias.Alias.kind {
-    | Some(Account(_)) => getAccount(alias.Alias.address)->Option.getExn
+    | Some(Account(_)) => getAccount(alias.Alias.address)
     | Some(Multisig) =>
-      let multisig = getMultisig(alias.Alias.address)->Option.getExn
-      let signers = multisig.signers
-      let signer = Js.Array.find(PublicKeyHash.Map.has(accounts), signers)->Option.getExn
-      PublicKeyHash.Map.get(accounts, signer)->Option.getExn
-    | Some(Contact) => None->Option.getExn
-    | None => None->Option.getExn
+      getMultisig(alias.Alias.address)
+      ->Option.flatMap(multisig =>
+        Js.Array.find(PublicKeyHash.Map.has(accounts), multisig.signers)
+      )
+      ->Option.flatMap(signer => PublicKeyHash.Map.get(accounts, signer))
+    | Some(Contact) => None
+    | None => None
     }
   }
 }
