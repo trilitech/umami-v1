@@ -79,7 +79,7 @@ module ConnectDAppPairingRequestWithQRButton = {
 module PeersSection = {
   module PeerDeleteButton = {
     @react.component
-    let make = (~peer: ReBeacon.peerInfo) => {
+    let make = (~peer: Beacon.peerInfo) => {
       let (peerRequest, deletePeer) = StoreContext.Beacon.Peers.useDelete()
       let onPressConfirmDelete = _e => deletePeer(peer)
       <DeleteButton.IconButton
@@ -116,7 +116,7 @@ module PeersSection = {
 
   module Row = {
     @react.component
-    let make = (~peer: ReBeacon.peerInfo) =>
+    let make = (~peer: Beacon.peerInfo) =>
       <Table.Row.Bordered>
         <CellBase>
           <Typography.Body1 numberOfLines=1> {peer.name->React.string} </Typography.Body1>
@@ -179,7 +179,7 @@ module PeersSection = {
 module PermissionsSection = {
   module PermissionDeleteButton = {
     @react.component
-    let make = (~permission: ReBeacon.permissionInfo) => {
+    let make = (~permission: Beacon.permissionInfo) => {
       let (permissionRequest, deletePermission) = StoreContext.Beacon.Permissions.useDelete()
       let onPressConfirmDelete = _e => deletePermission(permission.accountIdentifier)
 
@@ -220,7 +220,7 @@ module PermissionsSection = {
 
   module Row = {
     @react.component
-    let make = (~permission: ReBeacon.permissionInfo, ~accountAlias: option<string>) =>
+    let make = (~permission: Beacon.permissionInfo, ~accountAlias: option<string>) =>
       <Table.Row.Bordered>
         <CellBase>
           <Typography.Body1 numberOfLines=1>
@@ -295,7 +295,10 @@ module PermissionsSection = {
           permissions
           ->Array.map(permission => {
             let accountAlias =
-              permission.address->AliasHelpers.getAliasFromAddress(aliases)->Option.map(a => a.name)
+              permission.address
+              ->PublicKeyHash.unsafeBuild
+              ->AliasHelpers.getAliasFromAddress(aliases)
+              ->Option.map(a => a.name)
 
             <Row key=permission.accountIdentifier permission accountAlias />
           })

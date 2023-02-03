@@ -38,18 +38,18 @@ let getName = x =>
   | ch => ch->Network.getDisplayedName->Js.String.toLowerCase->Some
   }
 
-let checkOperationRequestTargetNetwork = (config: ConfigContext.env, chain: ReBeacon.network) =>
+let checkOperationRequestTargetNetwork = (config: ConfigContext.env, chain: Beacon.network) =>
   chain.type_ == (config.network.chain->Network.getChainId :> string) ||
     Some(chain.type_) == config.network.chain->getName
 
-let checkOnlyTransaction = (request: ReBeacon.Message.Request.operationRequest) =>
+let checkOnlyTransaction = (request: Beacon.Message.Request.operationRequest) =>
   request.operationDetails->Array.every(operationDetail => operationDetail.kind == #transaction)
 
-let checkOnlyOneDelegation = ({operationDetails}: ReBeacon.Message.Request.operationRequest) =>
+let checkOnlyOneDelegation = ({operationDetails}: Beacon.Message.Request.operationRequest) =>
   operationDetails->Array.size == 1 &&
     operationDetails->Array.every(operationDetail => operationDetail.kind == #delegation)
 
-let checkOnlyOneOrigination = ({operationDetails}: ReBeacon.Message.Request.operationRequest) =>
+let checkOnlyOneOrigination = ({operationDetails}: Beacon.Message.Request.operationRequest) =>
   operationDetails->Array.size == 1 &&
     operationDetails->Array.every(operationDetail => operationDetail.kind == #origination)
 
@@ -93,8 +93,8 @@ module ErrorView = {
 }
 
 type request =
-  | Op(ReBeacon.Message.Request.operationRequest, Protocol.batch)
-  | Other(ReBeacon.Message.Request.t)
+  | Op(Beacon.Message.Request.operationRequest, Protocol.batch)
+  | Other(Beacon.Message.Request.t)
 
 @react.component
 let make = (~account) => {
@@ -105,12 +105,12 @@ let make = (~account) => {
 
   let (request, visibleModal, openModal, closeModal) = useBeaconRequestModalAction()
   let (isReady, ready) = React.useState(() => true)
-  open ReBeacon.Message.Request
+  open Beacon.Message.Request
 
   let requestData = React.useMemo1(() =>
     switch request {
     | Some(Ok(OperationRequest(request))) =>
-      StoreContext.Accounts.useGetFromAddress(request.sourceAddress)
+      StoreContext.Accounts.useGetFromAddress(request.sourceAddress->PublicKeyHash.unsafeBuild)
       ->Result.fromOption(LocalStorage.NotFound((request.sourceAddress :> string)))
       ->Result.flatMap(account => BeaconApiRequest.requestToBatch(account, request))
       ->Result.map(batch => Op(request, batch))
@@ -144,7 +144,7 @@ let make = (~account) => {
       | Some(request) =>
         let targetSettedNetwork =
           request
-          ->ReBeacon.Message.Request.getNetwork
+          ->Beacon.Message.Request.getNetwork
           ->Option.mapWithDefault(true, network =>
             settingsRef.current->checkOperationRequestTargetNetwork(network)
           )
@@ -171,7 +171,7 @@ let make = (~account) => {
         } else {
           setError(
             client,
-            request->ReBeacon.Message.Request.getId,
+            request->Beacon.Message.Request.getId,
             #NETWORK_NOT_SUPPORTED,
             BeaconApiRequest.NetworkMismatch,
           )

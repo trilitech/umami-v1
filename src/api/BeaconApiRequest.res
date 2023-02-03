@@ -46,23 +46,28 @@ let () = Errors.registerHandler("BeaconAPI", x =>
   }
 )
 
-open ReBeacon.Message.Request
+open Beacon.Message.Request
 let requestToBatch = (account, {operationDetails}) => {
   let managers = operationDetails->Array.map(o =>
-    switch ReBeacon.Message.Request.PartialOperation.classify(o) {
+    switch Beacon.Message.Request.PartialOperation.classify(o) {
     | Origination(orig) =>
       ProtocolHelper.Origination.make(
         ~balance=Tez.fromMutezString(orig.balance),
         ~code=orig.script.code,
         ~storage=orig.script.storage,
-        ~delegate=orig.delegate,
+        ~delegate=orig.delegate->PublicKeyHash.unsafeBuild->Some,
         (),
       )->Ok
 
     | Transfer({destination, amount, parameters}) =>
       ProtocolHelper.Transfer.makeSimple(
-        ~data={destination: destination, amount: Tez(Tez.fromMutezString(amount))},
-        ~parameter=?parameters->Option.map(a => a.value),
+        ~data={
+          destination: destination->PublicKeyHash.unsafeBuild,
+          amount: Tez(Tez.fromMutezString(amount)),
+        },
+        ~parameter=?parameters
+        ->Obj.magic // TODO fix type hack
+        ->Option.map((a: ProtocolOptions.TransactionParameters.t) => a.value),
         ~entrypoint=?parameters->Option.map(a => a.entrypoint),
         (),
       )
@@ -71,7 +76,7 @@ let requestToBatch = (account, {operationDetails}) => {
 
     | Delegation({delegate}) =>
       let delegate = switch delegate {
-      | Some(d) => Protocol.Delegation.Delegate(d)
+      | Some(d) => Protocol.Delegation.Delegate(d->PublicKeyHash.unsafeBuild)
       | None => Undelegate(None)
       }
 
@@ -105,7 +110,7 @@ let useNextRequestState = (client, peersRequestState) => {
     ->Promise.flatMapOk(client =>
       client
       ->ReBeacon.WalletClient.connect(message => {
-        let request = message->ReBeacon.Message.Request.classify
+        let request = message->Beacon.Message.Request.classify
         yield(request)
       })
       ->Promise.mapOk(() => setIsConnected(_ => true))
@@ -152,7 +157,7 @@ module Peers = {
 
   let useDelete = (~client) =>
     ApiRequest.useSetter(
-      ~set=(~config as _, peer: ReBeacon.peerInfo) =>
+      ~set=(~config as _, peer: Beacon.peerInfo) =>
         client
         ->Promise.fromOption(~error=ClientNotConnected)
         ->Promise.flatMapOk(client => client->ReBeacon.WalletClient.removePeer(peer)),
@@ -183,7 +188,7 @@ module Permissions = {
 
   let useDelete = (~client) =>
     ApiRequest.useSetter(
-      ~set=(~config as _s, accountIdentifier: ReBeacon.accountIdentifier) =>
+      ~set=(~config as _s, accountIdentifier: Beacon.accountIdentifier) =>
         client
         ->Promise.fromOption(~error=ClientNotConnected)
         ->Promise.flatMapOk(client =>

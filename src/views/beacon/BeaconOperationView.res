@@ -39,13 +39,13 @@ let styles = {
 }
 
 module type OP = {
-  let make: (Account.t, ReBeacon.Message.Request.operationRequest) => Protocol.batch
+  let make: (Account.t, Beacon.Message.Request.operationRequest) => Protocol.batch
 }
 
 @react.component
 let make = (
   ~sourceAccount,
-  ~beaconRequest: ReBeacon.Message.Request.operationRequest,
+  ~beaconRequest: Beacon.Message.Request.operationRequest,
   ~operation,
   ~closeAction,
 ) => {
@@ -124,7 +124,7 @@ let make = (
       | None => Promise.ok()
       }
     )
-    ->Promise.mapOk(() => updateAccount(beaconRequest.sourceAddress))
+    ->Promise.mapOk(() => updateAccount(beaconRequest.sourceAddress->PublicKeyHash.unsafeBuild))
 
   let (signStep, setSign) as signOpStep = React.useState(() => SignOperationView.SummaryStep)
 

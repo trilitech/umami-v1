@@ -40,7 +40,7 @@ let styles = {
 @react.component
 let make = (
   ~account: Account.t,
-  ~permissionRequest: ReBeacon.Message.Request.permissionRequest,
+  ~permissionRequest: Beacon.Message.Request.permissionRequest,
   ~closeAction,
 ) => {
   let getAccountPublicKey = AccountApiRequest.useGetPublicKey()

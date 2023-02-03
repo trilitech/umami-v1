@@ -43,7 +43,7 @@ module Payload = {
   }
 
   @react.component
-  let make = (~signPayloadRequest: ReBeacon.Message.Request.signPayloadRequest) => {
+  let make = (~signPayloadRequest: Beacon.Message.Request.signPayloadRequest) => {
     let theme = ThemeContext.useTheme()
     let addToast = LogsContext.useToast()
     let payload = switch signPayloadRequest.signingType {
@@ -98,7 +98,7 @@ let styles = {
 @react.component
 let make = (
   ~sourceAccount,
-  ~signPayloadRequest: ReBeacon.Message.Request.signPayloadRequest,
+  ~signPayloadRequest: Beacon.Message.Request.signPayloadRequest,
   ~closeAction,
 ) => {
   let signPayload = BeaconApiRequest.Signature.useSignPayload()
@@ -110,7 +110,7 @@ let make = (
   let onSign = (~signingIntent) => {
     setLoading(_ => true)
     signPayload(
-      ~source=signPayloadRequest.sourceAddress,
+      ~source=signPayloadRequest.sourceAddress->PublicKeyHash.unsafeBuild,
       ~signingIntent,
       ~payload=signPayloadRequest.payload,
     )->Promise.tap(x =>
@@ -182,7 +182,7 @@ let make = (
     <OperationSummaryView.EntityInfo
       style={styles["accountInfo"]}
       title=I18n.Title.sender_account
-      address={signPayloadRequest.sourceAddress->Some}
+      address={signPayloadRequest.sourceAddress->PublicKeyHash.unsafeBuild->Some}
     />
     <Payload signPayloadRequest />
     <SigningBlock

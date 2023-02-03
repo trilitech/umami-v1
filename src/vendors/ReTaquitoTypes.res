@@ -103,11 +103,11 @@ module Micheline: {
 }
 
 module Code = {
-  type t
+  type t = string
 }
 
 module Storage = {
-  type t
+  type t = string
 }
 
 module Transfer = {
