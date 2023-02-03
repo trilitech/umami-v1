@@ -139,3 +139,5 @@ module Map = Map.Make(Comparator)
 
 let encoder = address => Json.Encode.string(address)
 let decoder = json => json |> Json.Decode.string |> build |> JsonEx.getExn
+
+let unsafeBuild = s => s
