@@ -46,7 +46,8 @@
     "@reason-react-native/svg",
     "@glennsl/rescript-jest",
     "bs-react-testing-library",
-    "bs-dom-testing-library"
+    "bs-dom-testing-library",
+    "@nomadic-labs/rescript-beacon-sdk"
   ],
   "refmt": 3
 }

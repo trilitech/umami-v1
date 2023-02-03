@@ -1516,6 +1516,11 @@
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
 
+"@nomadic-labs/rescript-beacon-sdk@^1.0.8":
+  version "1.0.8"
+  resolved "https://gitlab.com/api/v4/projects/42500539/packages/npm/@nomadic-labs/rescript-beacon-sdk/-/@nomadic-labs/rescript-beacon-sdk-1.0.8.tgz#a0300f2b5d0b1bc7a652420d606ef399a569469b"
+  integrity sha1-oDAPK10LG8emUkINYG7zmaVpRps=
+
 "@nomadic-labs/taquito-custom-signer@10.1.0":
   version "10.1.0"
   resolved "https://gitlab.com/api/v4/projects/25020679/packages/npm/@nomadic-labs/taquito-custom-signer/-/@nomadic-labs/taquito-custom-signer-10.1.0.tgz#60f1cbaf4f6444d2351d20b4aff54bd45d1c76d1"
