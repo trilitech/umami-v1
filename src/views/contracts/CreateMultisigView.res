@@ -539,7 +539,7 @@ module SignView = {
 }
 
 @react.component
-let make = (~source:Account.t, ~closeAction) => {
+let make = (~source: Account.t, ~closeAction) => {
   let theme = ThemeContext.useTheme()
   let (currentStep, setCurrentStep) = React.useState(_ => 1)
   let (operationSimulateRequest, sendOperationSimulate) = StoreContext.Operations.useSimulate()
@@ -581,6 +581,17 @@ let make = (~source:Account.t, ~closeAction) => {
   | _ => None
   }
 
+  let closing = switch modalStep {
+  | SubmittedStep(_) => ModalFormView.Close(closeAction)->Some
+  | SigningStep(_, _, _, _)
+    if switch sign {
+    | AdvancedOptStep(_) => true
+    | SummaryStep => false
+    } =>
+    None
+  | _ => Some(ModalFormView.confirm(~actionText=I18n.Btn.cancel, closeAction))
+  }
+
   let title = switch modalStep {
   | CreateStep => None
   | SourceStep(_) => Some(I18n.Title.create_new_multisig)
@@ -588,45 +599,43 @@ let make = (~source:Account.t, ~closeAction) => {
   | SubmittedStep(_) => None
   }
 
-  let el = switch modalStep {
-  | CreateStep => <CreateView currentStep form setCurrentStep />
-  | SourceStep(state, raiseSubmitFailed) =>
-    <SourceSelector
-      source
-      loading={operationSimulateRequest->ApiRequest.isLoading}
-      onSubmit={source => {
-        let operation = state->Form.originationOperation(~source)
-        sendOperationSimulate(operation)->Promise.get(x => {
-          switch x {
-          | Error(e) => raiseSubmitFailed(Some(e->Errors.toString))
-          | Ok(dryRun) =>
-            setModalStep(_ => SigningStep(state, raiseSubmitFailed, operation, dryRun))
-          }
-        })
-      }}
-    />
-  | SigningStep(_, _, operation, dryRun) =>
-    <SignView
-      account=operation.source
-      state
-      signOpStep
-      dryRun
-      operation
-      sendOperation
-      setModalStep
-      form
-      config
-      updateMultisig
-      operationRequest
-      multisigRequest
-      theme
-    />
+  <ModalFormView ?title back ?closing titleStyle=FormStyles.headerMarginBottom8>
+    {switch modalStep {
+    | CreateStep => <CreateView currentStep form setCurrentStep />
+    | SourceStep(state, raiseSubmitFailed) =>
+      <SourceSelector
+        source
+        loading={operationSimulateRequest->ApiRequest.isLoading}
+        onSubmit={source => {
+          let operation = state->Form.originationOperation(~source)
+          sendOperationSimulate(operation)->Promise.get(x => {
+            switch x {
+            | Error(e) => raiseSubmitFailed(Some(e->Errors.toString))
+            | Ok(dryRun) =>
+              setModalStep(_ => SigningStep(state, raiseSubmitFailed, operation, dryRun))
+            }
+          })
+        }}
+      />
+    | SigningStep(_, _, operation, dryRun) =>
+      <SignView
+        account=operation.source
+        state
+        signOpStep
+        dryRun
+        operation
+        sendOperation
+        setModalStep
+        form
+        config
+        updateMultisig
+        operationRequest
+        multisigRequest
+        theme
+      />
 
-  | SubmittedStep(hash) =>
-    <SubmittedView hash onPressCancel={_ => closeAction()} submitText=I18n.Btn.go_operations />
-  }
-
-  let closing = Some(ModalFormView.confirm(~actionText=I18n.Btn.cancel, closeAction))
-
-  <ModalFormView ?title back ?closing titleStyle=FormStyles.headerMarginBottom8> el </ModalFormView>
+    | SubmittedStep(hash) =>
+      <SubmittedView hash onPressCancel={_ => closeAction()} submitText=I18n.Btn.go_operations />
+    }}
+  </ModalFormView>
 }
