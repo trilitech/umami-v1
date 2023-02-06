@@ -39,14 +39,14 @@ module MakeCellWidth = (
 module CellExpandToggle = Table.MakeCell({
   let style = {
     open Style
-    style(~flexBasis=40.->dp, ~minWidth=40.->dp, ~marginRight=0.->dp, ~alignItems=#center, ())
+    style(~flexBasis=40.->dp, ~minWidth=40.->dp, ())
   }
 })
 
 module CellID = Table.MakeCell({
   let style = {
     open Style
-    style(~flexBasis=40.->dp, ~minWidth=40.->dp, ~alignItems=#center, ())
+    style(~flexBasis=40.->dp, ~minWidth=40.->dp, ())
   }
 })
 
@@ -86,11 +86,18 @@ module CellAction = Table.MakeCell({
   ()
 })
 
+let paddingLeftAlignWithID = 64. // 40 + right margin
 let styles = {
   open Style
   StyleSheet.create({
     "image": style(~marginLeft=10.->dp, ~width=19.->dp, ~height=19.->dp, ()),
-    "pendingDetails": style(~paddingHorizontal=58.->dp, ~paddingVertical=26.->dp, ()),
+    "pendingDetails": style(
+      ~paddingHorizontal=(paddingLeftAlignWithID +. 2. +. 20.)->dp,
+      ~paddingVertical=26.->dp,
+      ~borderBottomLeftRadius=4.,
+      ~borderBottomRightRadius=4.,
+      (),
+    ),
     "numberOfApproval": style(~flexDirection=#row, ~paddingVertical=2.->dp, ()),
     "signerWrapper": style(~flexDirection=#row, ~alignItems=#center, ()),
     "signerBox": style(
@@ -581,8 +588,16 @@ module Pending = {
           )
         let signed = pending.approvals->Array.length->Int.toString
         let threshold = multisig.Multisig.threshold->ReBigNumber.toString
-        let header = collapseButton => {
-          <Table.Row.Bordered>
+        let header = (collapseButton, expanded) => {
+          let rowStyle = expanded
+            ? Style.style(
+                ~backgroundColor=theme.colors.stateActive,
+                ~borderTopLeftRadius=4.,
+                ~borderTopRightRadius=4.,
+                (),
+              )->Some
+            : None
+          <Table.Row.Bordered ?rowStyle>
             <CellExpandToggle> {collapseButton} </CellExpandToggle>
             <CellID> {pending.id->ReBigNumber.toString->Typography.body1} </CellID>
             <CellType> {I18n.operation_transaction->Typography.body1} </CellType>
@@ -602,10 +617,19 @@ module Pending = {
           </Table.Row.Bordered>
         }
         <ContractRows.Collapsable header expanded=false>
-          <View style={styles["pendingDetails"]}>
+          <View
+            style={Style.array([
+              styles["pendingDetails"],
+              Style.style(
+                ~backgroundColor=theme.colors.stateActive,
+                ~borderTopColor=theme.colors.stateDisabled,
+                ~borderTopWidth=1.,
+                (),
+              ),
+            ])}>
             <View style={styles["numberOfApproval"]}>
               {
-                let size = 20.
+                let size = 24.
                 let style = {
                   open Style
                   style(~marginRight=10.->dp, ())

@@ -139,9 +139,7 @@ module Collapsable = {
         onPress={_ => setExpanded(expanded => !expanded)}
         style={styles["iconButton"]}
       />
-
-    let header = header(collapseButton)
-
+    let header = header(collapseButton, expanded)
     <Accordion style={styles["container"]} header expanded> children </Accordion>
   }
 }
@@ -149,7 +147,7 @@ module Collapsable = {
 module Token = {
   @react.component
   let make = (~title, ~tokens, ~currentChain, ~emptyText) => {
-    let header = collapseButton => {
+    let header = (collapseButton, _expanded) => {
       <View style={styles["header"]}>
         collapseButton
         <Typography.Headline style={styles["headline"]}>

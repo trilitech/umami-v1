@@ -207,10 +207,15 @@ module OperationsPending = {
       <OperationsTableHeaderView.Pending />
       {switch request {
       | ApiRequest.Done(Ok(elements), _) =>
+        let emptyComponent =
+          <View
+            style={Style.style(~paddingLeft=OperationRowItem.paddingLeftAlignWithID->Style.dp, ())}>
+            {I18n.empty_pending_operations->React.string}
+          </View>
         <Pagination
           elements={ReBigNumber.Map.valuesToArray(elements)}
           renderItem={renderPending(account)}
-          emptyComponent={I18n.empty_pending_operations->React.string}
+          emptyComponent
           footerStyle
         />
       | Done(Error(error), _) => error->Errors.toString->React.string

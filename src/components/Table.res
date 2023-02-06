@@ -74,8 +74,8 @@ module Row = {
 
   module Bordered = {
     @react.component
-    let make = (~style=?, ~minHeight=48., ~children) =>
-      <RowItem.Bordered minHeight>
+    let make = (~style=?, ~rowStyle=?, ~minHeight=48., ~children) =>
+      <RowItem.Bordered style=?rowStyle minHeight>
         <View style={Style.arrayOption([Some(styles["borderSpacer"]), style])} /> children
       </RowItem.Bordered>
   }
