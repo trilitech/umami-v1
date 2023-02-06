@@ -1,27 +1,27 @@
-/*****************************************************************************/
-/*                                                                           */
-/* Open Source License                                                       */
-/* Copyright (c) 2019-2022 Nomadic Labs, <contact@nomadic-labs.com>          */
-/*                                                                           */
-/* Permission is hereby granted, free of charge, to any person obtaining a   */
-/* copy of this software and associated documentation files (the "Software"),*/
+/* *************************************************************************** */
+/*  */
+/* Open Source License */
+/* Copyright (c) 2019-2022 Nomadic Labs, <contact@nomadic-labs.com> */
+/*  */
+/* Permission is hereby granted, free of charge, to any person obtaining a */
+/* copy of this software and associated documentation files (the "Software"), */
 /* to deal in the Software without restriction, including without limitation */
-/* the rights to use, copy, modify, merge, publish, distribute, sublicense,  */
-/* and/or sell copies of the Software, and to permit persons to whom the     */
-/* Software is furnished to do so, subject to the following conditions:      */
-/*                                                                           */
-/* The above copyright notice and this permission notice shall be included   */
-/* in all copies or substantial portions of the Software.                    */
-/*                                                                           */
-/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR*/
-/* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,  */
-/* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL   */
-/* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER*/
-/* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING   */
-/* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER       */
-/* DEALINGS IN THE SOFTWARE.                                                 */
-/*                                                                           */
-/*****************************************************************************/
+/* the rights to use, copy, modify, merge, publish, distribute, sublicense, */
+/* and/or sell copies of the Software, and to permit persons to whom the */
+/* Software is furnished to do so, subject to the following conditions: */
+/*  */
+/* The above copyright notice and this permission notice shall be included */
+/* in all copies or substantial portions of the Software. */
+/*  */
+/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR */
+/* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, */
+/* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL */
+/* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER */
+/* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING */
+/* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER */
+/* DEALINGS IN THE SOFTWARE. */
+/*  */
+/* *************************************************************************** */
 
 module Btn = {
   let json = "JSON"
@@ -136,11 +136,11 @@ module Tooltip = {
   let see_network_info = "See network info"
   let tokenid = "A non-negative number that identifies the asset inside a FA2 contract"
   let add_to_wallet = "Add to wallet"
-  let reject_on_provider = (s) => `Reject on ${s} popup to cancel operation`
+  let reject_on_provider = s => `Reject on ${s} popup to cancel operation`
 }
 
 module Log = {
-  let copied_to_clipboard = (s) => `${s} copied to clipboard`
+  let copied_to_clipboard = s => `${s} copied to clipboard`
   let copy_to_clipboard_err = "Copying to Clipboard failed"
   let log_content = "Log content"
   let address = "Address"
@@ -286,11 +286,11 @@ module Form_input_error = {
   let different_chains = "API and Node are not running on the same network"
   let not_a_token_contract = "Not a standard token contract"
   let no_metadata = pkh => {
-    let s = pkh->Option.mapWithDefault("", (s) => `: ${s}`);
+    let s = pkh->Option.mapWithDefault("", s => `: ${s}`)
     `No metadata was found for the contract${s}.`
   }
   let no_token_metadata = pkh => {
-    let s = pkh->Option.mapWithDefault("", (s) => `: ${s}`);
+    let s = pkh->Option.mapWithDefault("", s => `: ${s}`)
     `No token metadata was found for the contract${s}.`
   }
   let token_id_not_found = x =>
@@ -545,8 +545,7 @@ module Network = {
   let api_version_rpc_error = err => `The API \`/version\` RPC parsing returned an error: ${err}`
   let api_version_format_error = a =>
     `The API \`/version\` RPC parsing returned an unknown version format: ${a}`
-  let api_monitor_rpc_error = a =>
-    `The API \`/monitor/blocks\` RPC parsing returned an error: ${a}`
+  let api_monitor_rpc_error = a => `The API \`/monitor/blocks\` RPC parsing returned an error: ${a}`
   let node_not_available = "The node is not available"
   let node_version_rpc_error = a =>
     `Node \`/chains/main/chain_id\` RPC parsing returned an error: ${a}`
@@ -626,14 +625,14 @@ module Errors = {
   let storage_migration_failed = v => `Internal error: storage migration failed at version ${v}`
   let unknown_network = c => `No public network exists for chain ${c}`
   let script_parsing = e => {
-    let e = e->Option.mapDefault("", m => " with message: " ++ m);
+    let e = e->Option.mapDefault("", m => " with message: " ++ m)
     `Error when parsing script${e}`
   }
   let micheline_parsing = e => {
-    let e = e->Option.mapDefault("", m => " with message: " ++ m);
+    let e = e->Option.mapDefault("", m => " with message: " ++ m)
     `Error when parsing Micheline${e}`
   }
-    
+
   let unknown_version = (current, expected) =>
     `Unknown version ${current}, while ${expected} expected`
   let version_not_in_bound = (lowest, highest, version) =>
@@ -653,28 +652,32 @@ module Errors = {
 }
 
 module Csv = {
-  let cannot_parse_number = (row, col) => `Value at row ${string_of_int(row)} column ${string_of_int(col)} is not a number`
-  let cannot_parse_boolean = (row, col) => `Value at row ${string_of_int(row)} column ${string_of_int(col)} is not a boolean`
+  let cannot_parse_number = (row, col) =>
+    `Value at row ${string_of_int(row)} column ${string_of_int(col)} is not a number`
+  let cannot_parse_boolean = (row, col) =>
+    `Value at row ${string_of_int(row)} column ${string_of_int(col)} is not a boolean`
   let cannot_parse_custom_value = (err, row, col) =>
     `Value at row ${string_of_int(row)} column ${string_of_int(col)} is not valid:\n${err}`
-  let cannot_parse_row = row => `Row ${string_of_int(row)} is not valid, some columns are probably missing`
+  let cannot_parse_row = row =>
+    `Row ${string_of_int(row)} is not valid, some columns are probably missing`
   let cannot_parse_csv = "CSV is not valid"
   let no_rows = "CSV is empty"
   let cannot_parse_token_amount = (v, row, col) => {
-    let v = ReBigNumber.toString(v);
-    `Value ${v} at row ${string_of_int(row)} column ${string_of_int(col)} is not a valid token amount`
+    let v = ReBigNumber.toString(v)
+    `Value ${v} at row ${string_of_int(row)} column ${string_of_int(
+        col,
+      )} is not a valid token amount`
   }
   let cannot_parse_tez_amount = (v, row, col) => {
-    let v = ReBigNumber.toString(v);
+    let v = ReBigNumber.toString(v)
     `Value ${v} at row ${string_of_int(row)} column ${string_of_int(col)} is not a valid tez amount`
   }
   let unknown_token = (pkh, id) => {
-    let id = id->Option.mapWithDefault("", n => ` and tokenId ${string_of_int(n)}`);
+    let id = id->Option.mapWithDefault("", n => ` and tokenId ${string_of_int(n)}`)
     `Unknown token ${pkh}${id}`
   }
   let cannot_parse_address = (a, reason) => `${a} in not a valid address: ${reason}.`
-  let fa1_2_invalid_token_id = pkh =>
-    `Contract ${pkh} is an FA1.2 token, it cannot have a token id`
+  let fa1_2_invalid_token_id = pkh => `Contract ${pkh} is an FA1.2 token, it cannot have a token id`
   let fa2_invalid_token_id = pkh => `Contract ${pkh} is an FA2 token, it must have a token id`
 }
 
@@ -698,7 +701,7 @@ let tezos = "Tez"
 let tez = "tez"
 let you_dont_have_nft = "You don't have any NFT yet"
 let tez_amount = a => `${a} ${tez}`
-let tez_amount_ELEMENT = a => <>{a}<span>{` ${tez}`->React.string}</span></>
+let tez_amount_ELEMENT = a => <> {a} <span> {` ${tez}`->React.string} </span> </>
 let tez_op_amount = (op, a) => `${op} ${tez_amount(a)}`
 let account = "Account"
 let operation_reveal = "Reveal"
@@ -791,4 +794,3 @@ let downloading_update = s => `Downloading update (${s}%)`
 let download_complete = "Download complete"
 let a_of_b = (a, b) => `${a} of ${b}`
 let approved_a_of_b = (a, b) => `Approved (${a} of ${b})`
-
