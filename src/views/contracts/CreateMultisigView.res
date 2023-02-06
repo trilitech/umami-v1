@@ -346,16 +346,18 @@ module Step2 = {
         </View>
       })
       ->React.array}
-      <ButtonAction
-        style={
-          open Style
-          style(~alignSelf=#flexStart, ~marginTop=-12.->dp, ~marginBottom=28.->dp, ())
-        }
-        onPress={_ => form.arrayPush(Owners, FormUtils.Alias.AnyString(""))}
-        text=I18n.Btn.add_another_owner
-        icon=Icons.Add.build
-        primary=true
-      />
+      <View style={styles["row"]}>
+        <ButtonAction
+          style={
+            open Style
+            style(~alignSelf=#flexStart, ~marginTop=-12.->dp, ~marginBottom=28.->dp, ())
+          }
+          onPress={_ => form.arrayPush(Owners, FormUtils.Alias.AnyString(""))}
+          text=I18n.Btn.add_another_owner
+          icon=Icons.Add.build
+          primary=true
+        />
+      </View>
       <Typography.Body1 style={styles["description"]}>
         {I18n.Expl.set_multisig_threshold->React.string}
       </Typography.Body1>
