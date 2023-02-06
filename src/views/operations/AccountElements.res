@@ -190,7 +190,7 @@ module Selector = {
       let renderButton = baseRenderButton(~forceFetch=false, ~showAmount=Balance, ~token=None)
       let renderItem = baseRenderItem(~forceFetch=false, ~showAmount=Balance, ~token=None)
 
-      <View style={Style.style(~width=390.->dp, ())}>
+      <View style={Style.style(~width=390.->dp, ~paddingBottom=32.->dp, ())}>
         {I18n.account->Typography.overline2}
         <View style={styles["spacer"]} />
         <Selector
