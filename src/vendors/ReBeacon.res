@@ -24,35 +24,10 @@
 /* *************************************************************************** */
 
 module LegacyError = {
-  // These variants are duplicated against Beacon.Error.beaconErrors
-  // and have to be maped one by one...
-  // Maybe there is a way to avoid this with a functor?
-  type Errors.t +=
-    | NoMatchingRequest
-    | EncodedPayloadNeedString
-    | MessageNotHandled
-    | CouldNotDecryptMessage
-    | AppMetadataNotFound
-    | ShouldNotWork
-    | ContainerNotFound
-    | PlatformUnknown
-    | PairingRequestParsing
+  type Errors.t += BeaconError(Beacon.Error.beaconErrors)
 
-  let parse = e =>
-    switch Beacon.Error.parse(e.RawJsError.message) {
-    | NoMatchingRequest => NoMatchingRequest
-    | EncodedPayloadNeedString => EncodedPayloadNeedString
-    | MessageNotHandled => MessageNotHandled
-    | CouldNotDecryptMessage => CouldNotDecryptMessage
-    | AppMetadataNotFound => AppMetadataNotFound
-    | ShouldNotWork => ShouldNotWork
-    | ContainerNotFound => ContainerNotFound
-    | PlatformUnknown => PlatformUnknown
-    | PairingRequestParsing => PairingRequestParsing
-    | Unknown(s) => Errors.Generic(Js.String.make(s))
-    }
-
-  let fromPromiseParsed = p => p->RawJsError.fromPromiseParsed(parse)
+  let fromPromiseParsed = p =>
+    p->RawJsError.fromPromiseParsed(e => BeaconError(Beacon.Error.parse(e.message)))
 }
 
 module Serializer = {
@@ -82,8 +57,8 @@ let parsePairingRequest = (pairingRequest: string): Result.t<Beacon.peerInfo, Er
   switch pairingRequest->HD.BS58Check.decode->HD.toString->Beacon.parseJsonIntoPeerInfo {
   | exception Js.Exn.Error(obj) =>
     switch Js.Exn.message(obj) {
-    | Some(_) => Error(LegacyError.PairingRequestParsing)
-    | None => Error(LegacyError.PairingRequestParsing)
+    | Some(_) => Error(LegacyError.BeaconError(PairingRequestParsing))
+    | None => Error(LegacyError.BeaconError(PairingRequestParsing))
     }
   | peerInfo => Ok(peerInfo)
   }
