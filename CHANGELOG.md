@@ -2,6 +2,12 @@
 
 ## Unreleased changes
 
+## Beta (0.8.7)
+
+- Remove Kathmandunet from native chains
+- Small UI fixes/improvements for NFT tab
+- Fix a problem with NFT cache
+
 ## Beta (0.8.6)
 
 - Use ImageProxy for all NFTs
