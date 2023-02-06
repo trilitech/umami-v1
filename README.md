@@ -2,7 +2,7 @@
 
 ![umami logo](img/umami-logo.svg "umami-screenshot")
 
-# [A powerful new Tezos wallet](https://umamiwallet.com)
+# [A powerful Tezos wallet](https://umamiwallet.com)
 
 Umami is a cryptocurrency wallet developed by [Nomadic
 Labs](https://www.nomadic-labs.com/) to interact with the [Tezos
@@ -96,8 +96,8 @@ Start catalog:
 yarn catalog:start
 ```
 
-## ℹ️ Support
+## ℹ️ Get Further Assistance
 
-- [open an issue](https://gitlab.com/nomadic-labs/umami-wallet/testruns/-/issues/new?issuable_template=support)
-- `#umami` channel on [tezos slack](https://tezos-dev.slack.com)
-- [email](mailto:umami-support@nomadic-labs.com)
+- 📧 [Send an e-mail to Umami support](mailto:umami-support@nomadic-labs.com)
+- 📂 [Open a support issue on Gitlab](https://gitlab.com/nomadic-labs/umami-wallet/testruns/-/issues/new?issuable_template=support)
+- 💬 [Ask your question on Umami Slack channel](https://tezos-dev.slack.com)
