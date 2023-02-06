@@ -424,6 +424,7 @@ module Pending = {
       ~id,
       ~disabled,
       ~callback=() => (),
+      ~title=?,
     ) => {
       let (
         sendOperationSimulateRequest,
@@ -467,11 +468,10 @@ module Pending = {
           openAction()
         })
       }
-
       <>
         <Buttons.SubmitPrimary text onPress style loading=loadingSign disabled />
         {wrapModal(
-          <ModalFormView closing=ModalFormView.Close(_ => closeAction())>
+          <ModalFormView ?title closing=ModalFormView.Close(_ => closeAction())>
             {switch modalStep {
             | Simulation => React.null
             | Sign(dryRun, operation) => <Pending_SignView signer dryRun operation setStep />
@@ -489,7 +489,17 @@ module Pending = {
   module ApproveButton = {
     @react.component
     let make = (~text=I18n.Btn.sign, ~style=?, ~multisig, ~signer, ~id, ~disabled, ~callback=?) => {
-      <ActionButton entrypoint="approve" ?style text multisig signer id disabled ?callback />
+      <ActionButton
+        entrypoint="approve"
+        ?style
+        title=I18n.Title.confirm_operation_approval
+        text
+        multisig
+        signer
+        id
+        disabled
+        ?callback
+      />
     }
   }
 
@@ -516,7 +526,15 @@ module Pending = {
   module ExecuteButton = {
     @react.component
     let make = (~multisig, ~signer: Account.t, ~id, ~disabled) => {
-      <ActionButton entrypoint="execute" text=I18n.Btn.submit multisig signer id disabled />
+      <ActionButton
+        entrypoint="execute"
+        title=I18n.Title.confirm_operation_execution
+        text=I18n.Btn.submit
+        multisig
+        signer
+        id
+        disabled
+      />
     }
   }
 
