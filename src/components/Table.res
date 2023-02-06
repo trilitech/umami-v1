@@ -34,6 +34,7 @@ module Head = {
         ~alignItems=#center,
         ~height=30.->dp,
         ~paddingLeft=22.->dp,
+        ~marginTop=16.->dp,
         ~borderBottomWidth=1.,
         (),
       ),
