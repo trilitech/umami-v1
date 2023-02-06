@@ -1,6 +1,4 @@
-[![Codecov Coverage](https://img.shields.io/codecov/c/gitlab/nomadic-labs/ref-wallet/coverage.svg?style=flat-square)](https://codecov.io/gl/nomadic-labs/ref-wallet)
-
-![umami logo](img/umami-logo.svg "umami-screenshot")
+![umami logo](img/umami-logo.svg "Umami logo")
 
 # [A powerful new Tezos wallet](https://umamiwallet.com)
 
@@ -12,7 +10,7 @@ FA1.2, last operations, etc.
 
 **Umami is in Beta version.**
 
-![umami screenshot](img/screenshot.png "umami-screenshot")
+![umami screenshot](img/screenshots-light-dark.png "Screenshot from Umami")
 
 ## 📦 Install
 
