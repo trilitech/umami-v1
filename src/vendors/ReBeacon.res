@@ -23,7 +23,7 @@
 /*  */
 /* *************************************************************************** */
 
-module LegacyError = {
+module Error = {
   type Errors.t += BeaconError(Beacon.Error.beaconErrors)
 
   let fromPromiseParsed = p =>
@@ -32,24 +32,24 @@ module LegacyError = {
 
 module Serializer = {
   include Beacon.Serializer
-  let deserialize = (t, string) => t->deserializeRaw(string)->LegacyError.fromPromiseParsed
+  let deserialize = (t, string) => t->deserializeRaw(string)->Error.fromPromiseParsed
 }
 
 module WalletClient = {
   include Beacon.WalletClient
 
-  let init = t => t->initRaw()->LegacyError.fromPromiseParsed
-  let connect = (t, cb) => t->connectRaw(cb)->LegacyError.fromPromiseParsed
-  let addPeer = (t, peerInfo) => t->addPeerRaw(peerInfo)->LegacyError.fromPromiseParsed
-  let removePeer = (t, peerInfo) => t->removePeerRaw(peerInfo)->LegacyError.fromPromiseParsed
-  let getPeers = t => t->getPeersRaw()->LegacyError.fromPromiseParsed
-  let removeAllPeers = t => t->removePeersRaw->LegacyError.fromPromiseParsed
+  let init = t => t->initRaw()->Error.fromPromiseParsed
+  let connect = (t, cb) => t->connectRaw(cb)->Error.fromPromiseParsed
+  let addPeer = (t, peerInfo) => t->addPeerRaw(peerInfo)->Error.fromPromiseParsed
+  let removePeer = (t, peerInfo) => t->removePeerRaw(peerInfo)->Error.fromPromiseParsed
+  let getPeers = t => t->getPeersRaw()->Error.fromPromiseParsed
+  let removeAllPeers = t => t->removePeersRaw->Error.fromPromiseParsed
   let removePermission = (t, accountIdentifier) =>
-    t->removePermissionRaw(accountIdentifier)->LegacyError.fromPromiseParsed
-  let getPermissions = t => t->getPermissionsRaw()->LegacyError.fromPromiseParsed
-  let removeAllPermissions = t => t->removePermissionsRaw->LegacyError.fromPromiseParsed
-  let respond = (t, responseInput) => t->respondRaw(responseInput)->LegacyError.fromPromiseParsed
-  let destroy = t => t->destroyRaw->LegacyError.fromPromiseParsed
+    t->removePermissionRaw(accountIdentifier)->Error.fromPromiseParsed
+  let getPermissions = t => t->getPermissionsRaw()->Error.fromPromiseParsed
+  let removeAllPermissions = t => t->removePermissionsRaw->Error.fromPromiseParsed
+  let respond = (t, responseInput) => t->respondRaw(responseInput)->Error.fromPromiseParsed
+  let destroy = t => t->destroyRaw->Error.fromPromiseParsed
 }
 
 // Not included in Beacon lib
@@ -57,8 +57,8 @@ let parsePairingRequest = (pairingRequest: string): Result.t<Beacon.peerInfo, Er
   switch pairingRequest->HD.BS58Check.decode->HD.toString->Beacon.parseJsonIntoPeerInfo {
   | exception Js.Exn.Error(obj) =>
     switch Js.Exn.message(obj) {
-    | Some(_) => Error(LegacyError.BeaconError(PairingRequestParsing))
-    | None => Error(LegacyError.BeaconError(PairingRequestParsing))
+    | Some(_) => Error(Error.BeaconError(PairingRequestParsing))
+    | None => Error(Error.BeaconError(PairingRequestParsing))
     }
   | peerInfo => Ok(peerInfo)
   }
