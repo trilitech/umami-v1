@@ -1589,9 +1589,14 @@ let code: Code.t = %raw(`[
 
 let storage: (PublicKeyHash.t, array<PublicKeyHash.t>, ReBigNumber.t) => Storage.t = (
   _owner,
-  _signers,
+  signers,
   _threshold,
-) =>
+) => {
+  signers->SortArray.stableSortInPlaceBy((a, b) =>
+      (a :> string)
+      ->ReTaquitoUtils.b58decode
+      ->String.compare((b :> string)->ReTaquitoUtils.b58decode)
+    )
   %raw(`{
   "prim": "Pair",
   "args": [
@@ -1601,7 +1606,7 @@ let storage: (PublicKeyHash.t, array<PublicKeyHash.t>, ReBigNumber.t) => Storage
     {
       "prim": "Pair",
       "args": [
-        _signers.sort().map(signer => ({"string": signer})),
+        signers.map(signer => ({"string": signer})),
         {
           "prim": "Pair",
           "args": [
@@ -1629,3 +1634,4 @@ let storage: (PublicKeyHash.t, array<PublicKeyHash.t>, ReBigNumber.t) => Storage
     }
   ]
 }`)
+}
