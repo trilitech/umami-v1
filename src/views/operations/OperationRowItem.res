@@ -475,12 +475,16 @@ module Pending = {
           openAction()
         })
       }
+      let title = switch modalStep {
+      | Done(_) => None
+      | _ => title
+      }
       <>
         <Buttons.SubmitPrimary text onPress style loading=loadingSign disabled />
         {wrapModal(
           <ModalFormView ?title closing=ModalFormView.Close(_ => closeAction())>
             {switch modalStep {
-            | Simulation => React.null
+            | Simulation => <LoadingView />
             | Sign(dryRun, operation) => <Pending_SignView signer dryRun operation setStep />
             | Done(hash) =>
               <SubmittedView
