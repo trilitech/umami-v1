@@ -46,6 +46,11 @@ let () = Errors.registerHandler("BeaconAPI", x =>
   }
 )
 
+let beaconToTaquito = (x : Beacon.Message.Request.PartialOperation.rawMethodArg) : option<ReTaquitoTypes.MichelsonV1Expression.t> => {
+  let parser = ReTaquitoParser.parser()
+  Option.flatMap(Js.Json.stringifyAny(x), ReTaquitoParser.parseMichelineExpression(parser))
+}
+
 open Beacon.Message.Request
 let requestToBatch = (account, {operationDetails}) => {
   let managers = operationDetails->Array.map(o =>
@@ -60,14 +65,10 @@ let requestToBatch = (account, {operationDetails}) => {
       )->Ok
 
     | Transfer({destination, amount, parameters}) =>
-      ProtocolHelper.Transfer.makeSimple(
-        ~data={
-          destination: destination->PublicKeyHash.unsafeBuild,
-          amount: Tez(Tez.fromMutezString(amount)),
-        },
-        ~parameter=?parameters
-        ->Obj.magic // TODO fix type hack
-        ->Option.map((a: ProtocolOptions.TransactionParameters.t) => a.value),
+      ProtocolHelper.Transfer.makeSimpleTez(
+        ~destination=destination->PublicKeyHash.unsafeBuild,
+        ~amount=Tez.fromMutezString(amount),
+        ~parameter=?parameters->Option.map(a => a.value)->Option.flatMap(beaconToTaquito),
         ~entrypoint=?parameters->Option.map(a => a.entrypoint),
         (),
       )

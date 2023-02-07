@@ -300,7 +300,7 @@ module Transfer = {
     switch (entrypoint, parameter) {
     | (Some(a), Some(b)) =>
       Some({
-        open ReTaquitoTypes.Transfer.Entrypoint
+        open ReTaquitoTypes.Transfer.TransactionOperationParameter
         {entrypoint: a, value: b}
       })
     | _ => None

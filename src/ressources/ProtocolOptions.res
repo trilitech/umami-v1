@@ -24,13 +24,9 @@
 /* *************************************************************************** */
 
 module TransactionParameters = {
-  type entrypoint = ReTaquitoTypes.Transfer.Entrypoint.name
-
   // This type cannot be build and destructed except from bindings modules
   // ReBeacon and ReTaquito, hence its abstract nature.
   module MichelineMichelsonV1Expression = {
-    type t = ReTaquitoTypes.Micheline.t
-
     let toString = c =>
       c
       ->Js.Json.stringifyAny
@@ -43,7 +39,8 @@ module TransactionParameters = {
       }
   }
 
-  type t = ReTaquitoTypes.Transfer.Entrypoint.param
+  type entrypoint = ReTaquitoTypes.Transfer.Entrypoint.t
+  type value = ReTaquitoTypes.MichelsonV1Expression.t
 
   let getEntrypoint = x =>
     switch x {
@@ -51,16 +48,17 @@ module TransactionParameters = {
     | None => ReTaquitoTypes.Transfer.Entrypoint.default
     }
 
-  let getParameter = x =>
+  let getValue = x =>
     switch x {
     | Some(e) => e
-    | None => ReTaquitoTypes.Micheline.unitVal
+    | None => ReTaquitoTypes.MichelsonV1Expression.unit
     }
+
 }
 
 type parameter = {
-  value: option<TransactionParameters.MichelineMichelsonV1Expression.t>,
   entrypoint: option<TransactionParameters.entrypoint>,
+  value: option<TransactionParameters.value>,
 }
 
 type t = {
@@ -71,7 +69,7 @@ type t = {
 
 let txOptionsSet = telt => telt.fee != None || (telt.gasLimit != None || telt.storageLimit != None)
 
-let makeParameter = (~value=?, ~entrypoint=?, ()) => {
+let makeParameter = (~entrypoint=?, ~value=?, ()) => {
   value: value,
   entrypoint: entrypoint,
 }
