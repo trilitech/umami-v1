@@ -4,9 +4,18 @@
 
 Umami is a cryptocurrency wallet developed by [Nomadic
 Labs](https://www.nomadic-labs.com/) to interact with the [Tezos
-Blockchain](https://tezos.com/). It runs as a desktop electron based app with
-multiple features: dApp interaction, HD Wallet, batch transfer, delegation,
-FA1.2, last operations, etc.
+Blockchain](https://tezos.com/). It runs as a desktop electron based app with multiple features: 
+
+- HD Wallet
+- Multiple accounts management
+- Ledger support
+- NFT Gallery
+- FA2 and FA1.2 token support
+- DApp interaction
+- Batch capability (combining FA2 and FA1.2 token transfer with contract calls)
+- Delegation to bakers
+- Address Book
+- Google login
 
 **Umami is in Beta version.**
 
@@ -94,8 +103,16 @@ Start catalog:
 yarn catalog:start
 ```
 
-## ℹ️ Get Further Assistance
+<br>
+
+# ℹ️ Get Further Assistance
 
 - 📧 [Send an e-mail to Umami support](mailto:umami-support@nomadic-labs.com)
 - 📂 [Open a support issue on Gitlab](https://gitlab.com/nomadic-labs/umami-wallet/testruns/-/issues/new?issuable_template=support)
 - 💬 [Ask your question on Umami Slack channel](https://tezos-dev.slack.com)
+
+
+# Follow us
+
+- On [Twitter](https://twitter.com/UmamiWallet)
+- On [Medium](https://medium.com/umamiwallet)
