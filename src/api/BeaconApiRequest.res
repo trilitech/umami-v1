@@ -46,10 +46,35 @@ let () = Errors.registerHandler("BeaconAPI", x =>
   }
 )
 
-let beaconToTaquito = (x : Beacon.Message.Request.PartialOperation.rawMethodArg) : option<ReTaquitoTypes.MichelsonV1Expression.t> => {
-  let parser = ReTaquitoParser.parser()
-  Option.flatMap(Js.Json.stringifyAny(x), ReTaquitoParser.parseMichelineExpression(parser))
-}
+// FIXME: Beacon.Message.Request.PartialOperation.rawMethodArg -> Beacon.MichelineMichelsonV1Expression.t
+// when rescript-beacon-sdk is updated
+// This is okay, because:
+//
+// Beacon:
+// export type MichelineMichelsonV1Expression =
+//   | { int: string }
+//   | { string: string } // eslint-disable-line id-blacklist
+//   | { bytes: string }
+//   | MichelineMichelsonV1Expression[]
+//   | {
+//       prim: MichelsonPrimitives
+//       args?: MichelineMichelsonV1Expression[]
+//       annots?: string[]
+//     }
+//
+// Taquito
+// export interface MichelsonV1ExpressionBase {
+//   int?: string;
+//   string?: string;
+//   bytes?: string;
+// }
+// export interface MichelsonV1ExpressionExtended {
+//   prim: string;
+//   args?: MichelsonV1Expression[];
+//   annots?: string[];
+// }
+// export type MichelsonV1Expression = MichelsonV1ExpressionBase | MichelsonV1ExpressionExtended | MichelsonV1Expression[];
+external beaconToTaquito: (Beacon.Message.Request.PartialOperation.rawMethodArg) => ReTaquitoTypes.MichelsonV1Expression.t = "%identity";
 
 open Beacon.Message.Request
 let requestToBatch = (account, {operationDetails}) => {
@@ -68,7 +93,7 @@ let requestToBatch = (account, {operationDetails}) => {
       ProtocolHelper.Transfer.makeSimpleTez(
         ~destination=destination->PublicKeyHash.unsafeBuild,
         ~amount=Tez.fromMutezString(amount),
-        ~parameter=?parameters->Option.map(a => a.value)->Option.flatMap(beaconToTaquito),
+        ~parameter=?parameters->Option.map(a => a.value)->Option.map(beaconToTaquito),
         ~entrypoint=?parameters->Option.map(a => a.entrypoint),
         (),
       )
