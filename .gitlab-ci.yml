@@ -1,6 +1,6 @@
 stages:
   - build
-  - test-coverage
+  - umami-test
   - test
   - dist
 
@@ -26,33 +26,16 @@ cache:
     - apt -y install build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev libusb-1.0.0-dev libudev-dev
     - yarn
 
-build-reason:
+build:
   extends: .before_script_template
   stage: build
   script: yarn bsb:build
 
-test-coverage:
+umami-test:
   extends: .before_script_template
-  stage: test-coverage
+  stage: umami-test
   script:
     - yarn test
-  after_script:
-    - bash <(curl -s https://codecov.io/bash)
-
-test:
-  stage: test
-  variables:
-    SECURE_LOG_LEVEL: "debug"
-  artifacts:
-    paths:
-    - gl-sast-report.json
-    - gl-secret-detection-report.json
-    - gl-dependency-scanning-report.json
-    - gl-container-scanning-report.json
-    - gl-license-scanning-report.json
-    expire_in: 180 days
-  script:
-    - echo
 
 # You can override the included template(s) by including variable overrides
 # SAST customization: https://docs.gitlab.com/ee/user/application_security/sast/#customizing-the-sast-settings
