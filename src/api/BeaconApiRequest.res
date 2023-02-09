@@ -46,8 +46,7 @@ let () = Errors.registerHandler("BeaconAPI", x =>
   }
 )
 
-// FIXME: Beacon.Message.Request.PartialOperation.rawMethodArg -> Beacon.MichelineMichelsonV1Expression.t
-// when rescript-beacon-sdk is updated
+@ocaml.doc(" Cast Beacon.MichelineMichelsonV1Expression.t into ReTaquitoTypes.MichelsonV1Expression.t ")
 // This is okay, because:
 //
 // Beacon:
@@ -74,7 +73,7 @@ let () = Errors.registerHandler("BeaconAPI", x =>
 //   annots?: string[];
 // }
 // export type MichelsonV1Expression = MichelsonV1ExpressionBase | MichelsonV1ExpressionExtended | MichelsonV1Expression[];
-external beaconToTaquito: (Beacon.Message.Request.PartialOperation.rawMethodArg) => ReTaquitoTypes.MichelsonV1Expression.t = "%identity";
+external beaconToTaquito: (Beacon.MichelineMichelsonV1Expression.t) => ReTaquitoTypes.MichelsonV1Expression.t = "%identity";
 
 open Beacon.Message.Request
 let requestToBatch = (account, {operationDetails}) => {
