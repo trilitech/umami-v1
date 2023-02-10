@@ -23,7 +23,7 @@
 /*  */
 /* *************************************************************************** */
 open ReactNative
-
+open Style
 module Label = {
   @react.component
   let make = (~amount) => {
@@ -33,9 +33,9 @@ module Label = {
       open Style
       style(
         ~backgroundColor=theme.colors.stateDisabled,
-        ~padding="0.8rem",
-        ~marginTop="4px",
-        ~marginBottom="4px",
+        ~padding="0.8rem"->StyleUtils.stringToSize,
+        ~marginTop=4.->dp,
+        ~marginBottom=4.->dp,
         ~textAlign=#left,
         ~borderRadius=4.,
         (),
@@ -49,7 +49,7 @@ module Label = {
 module Content = {
   @react.component
   let make = (~content) =>
-    <View style={Style.style(~marginTop="10px", ())}>
+    <View style={Style.style(~marginTop=10.->dp, ())}>
       {content
       ->List.toArray
       ->Array.map(((property, values)) =>

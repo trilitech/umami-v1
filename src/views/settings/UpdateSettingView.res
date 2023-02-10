@@ -6,23 +6,23 @@ let styles = {
   StyleSheet.create({
     "button": style(~marginTop=30.->dp, ()),
     "second_button": style(~marginTop=8.->dp, ()),
-    "dropdown_button": style(~marginLeft="auto", ~marginRight="0", ()),
+    "dropdown_button": style(~marginLeft="auto"->StyleUtils.stringToSize, ~marginRight=0.->dp, ()),
     "banner": style(
       ~display=#flex,
       ~flexDirection=#row,
       ~alignItems=#center,
-      ~width="100%",
+      ~width="100%"->StyleUtils.stringToSize,
       ~borderRadius=6.,
       (),
     ),
     "right_button": style(
-      ~marginLeft="auto",
-      ~right="0",
+      ~marginLeft="auto"->StyleUtils.stringToSize,
+      ~right=0.->dp,
       ~paddingLeft=20.->dp,
       ~paddingRight=16.->dp,
       (),
     ),
-    "max_content": style(~width="max-content", ()),
+    "max_content": style(~width="max-content"->StyleUtils.stringToSize, ()),
     "banner_icon": style(~marginLeft=10.->dp, ()),
     "banner_text_with_icon": style(
       ~marginLeft=10.->dp,
@@ -252,7 +252,7 @@ let make = () => {
   }
   <>
     <Block title=I18n.Settings.app_update>
-      <View style={Style.style(~width="100%", ())}>
+      <View style={Style.style(~width="100%"->StyleUtils.stringToSize, ())}>
         <View style={Style.style(~textAlign=#center, ())}>
           {switch step {
           | Checking => <Checking checkForUpdates />

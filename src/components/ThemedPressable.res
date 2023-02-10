@@ -201,7 +201,7 @@ module Make = (ContainerInteractionState: ContainerInteractionState.T) => {
     ~accessibilityRole: option<Accessibility.role>=?,
     ~children,
   ) =>
-    <Pressable_
+    <Pressable
       ref=?{pressableRef->Option.map(Ref.value)}
       ?onPress
       style=?extStyle
@@ -215,7 +215,7 @@ module Make = (ContainerInteractionState: ContainerInteractionState.T) => {
           children
         </ContainerInteractionState>
       }}
-    </Pressable_>
+    </Pressable>
 }
 
 module Base = Make(ContainerInteractionState.Base)

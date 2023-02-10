@@ -23,4 +23,7 @@
 /*  */
 /* *************************************************************************** */
 
-ReactDOMRe.renderToElementWithId(<Catalog />, "root")
+ReactDOM.render(
+  <React.StrictMode> <Catalog /> </React.StrictMode>,
+  ReactDOM.querySelector("#root")->Belt.Option.getExn,
+)

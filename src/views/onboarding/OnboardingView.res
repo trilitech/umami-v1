@@ -53,9 +53,9 @@ let make = (~onClose=?) => {
       right={switch // If onClose is present, then this is a modal
       onClose {
       | Some(onClose) => <CloseButton onClose />
-      | None => ReasonReact.null
+      | None => React.null
       }}>
-      ReasonReact.null
+      React.null
     </Page.Header>
     <View style={styles["container"]}>
       <CreateAccountBigButton style={styles["bigbutton"]} />

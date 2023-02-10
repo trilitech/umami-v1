@@ -36,8 +36,20 @@ module Popper = {
         ~borderWidth=1.,
         (),
       ),
-      "positionLeft": style(~top=6.->dp, ~right=0.->dp, ~left="unset", ~position=#absolute, ()),
-      "positionRight": style(~top=6.->dp, ~right="unset", ~left=0.->dp, ~position=#absolute, ()),
+      "positionLeft": style(
+        ~top=6.->dp,
+        ~right=0.->dp,
+        ~left="unset"->StyleUtils.stringToSize,
+        ~position=#absolute,
+        (),
+      ),
+      "positionRight": style(
+        ~top=6.->dp,
+        ~right="unset"->StyleUtils.stringToSize,
+        ~left=0.->dp,
+        ~position=#absolute,
+        (),
+      ),
     })
   }
 

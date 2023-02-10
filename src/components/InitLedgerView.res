@@ -32,7 +32,7 @@ type ledgerState = [#Found | #Confirmed | #Denied(Errors.t) | #Loading]
 let styles = {
   open Style
   StyleSheet.create({
-    "retry": style(~width=100.->pct, ~marginTop=20.->pt, ()),
+    "retry": style(~width=100.->pct, ~marginTop=20.->dp, ()),
     "content": style(~textAlign=#center, ~display=#flex, ~alignItems=#center, ()),
     "expl": style(~height=60.->dp, ()),
     "loading": style(~height=50.->dp, ()),

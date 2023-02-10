@@ -65,7 +65,7 @@ module Header = {
   let make = (~onDeleteAll=() => ()) => {
     open ReactNative.Style
     <Table.Head>
-      {makeGenericHeaderCell(React.null, 10., ~style=style(~minWidth="30px", ()), ())}
+      {makeGenericHeaderCell(React.null, 10., ~style=style(~minWidth=30.->dp, ()), ())}
       {makeHeaderCell(I18n.global_batch_column_type, 130., ())}
       {makeHeaderCell(I18n.global_batch_subject, 130., ())}
       {makeHeaderCell(I18n.global_batch_recipient, 130., ())}
@@ -83,7 +83,7 @@ module Header = {
           <DeleteGlobalBatchButton onPress={_ => onDeleteAll()} />
         </View>,
         10.,
-        ~style=style(~flex=1., ~marginRight="0px", ()),
+        ~style=style(~flex=1., ~marginRight=0.->dp, ()),
         (),
       )}
     </Table.Head>
@@ -162,7 +162,7 @@ module TransferRowDisplay = {
       "calc(100% - 10px)"
     } else {
       "100%"
-    }
+    }->StyleUtils.stringToSize
 
     let bottomRounded = isSingle || isLast
     let topRounded = isSingle || isFirst
@@ -173,17 +173,17 @@ module TransferRowDisplay = {
       ~borderTopLeftRadius=topRounded ? 4. : 0.,
       ~borderBottomRightRadius=bottomRounded ? 4. : 0.,
       ~borderBottomLeftRadius=bottomRounded ? 4. : 0.,
-      ~marginLeft="-10px",
-      ~paddingLeft="10px",
+      ~marginLeft=-10.->dp,
+      ~paddingLeft=10.->dp,
       ~height,
-      ~marginTop=isFirst ? "5px" : "0px",
-      ~marginBottom=isLast ? "5px" : "0px",
+      ~marginTop=isFirst ? 5.->dp : 0.->dp,
+      ~marginBottom=isLast ? 5.->dp : 0.->dp,
       ~justifyContent=#center,
       (),
     )
 
     let makeIcon = (builder: Umami.Icons.builder, size) =>
-      builder(~color=theme.colors.borderMediumEmphasis, ~size, ~style=style(~margin="10px", ()))
+      builder(~color=theme.colors.borderMediumEmphasis, ~size, ~style=style(~margin=10.->dp, ()))
 
     // let editFeeIconReused =
     //   // has bad highlight bug
@@ -208,7 +208,7 @@ module TransferRowDisplay = {
           {shouldDisplayFee ? icon : React.null}
         </View>,
         10.,
-        ~style=style(~minWidth="30px", ()),
+        ~style=style(~minWidth=30.->dp, ()),
         (),
       )}
       {makeGenericRowCell(

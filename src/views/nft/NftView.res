@@ -149,7 +149,10 @@ let make = (~account) => {
     getTokens(request(false))->ignore
   }
 
-  React.useEffect1(() => { onRefresh (); None }, [network])
+  React.useEffect1(() => {
+    onRefresh()
+    None
+  }, [network])
 
   let onStop = () => {
     setSyncState(x =>
@@ -171,10 +174,11 @@ let make = (~account) => {
     )
   }, [tokens])
 
+  open ReactNative.Style
   <View style={styles["listContent"]}>
     <NftHeaderView account headline>
       <ButtonAction
-        style={Style.style(~marginTop="10px", ())}
+        style={Style.style(~marginTop=10.->dp, ())}
         icon
         text=switchButtonText
         onPress={_ =>

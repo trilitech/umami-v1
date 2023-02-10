@@ -26,8 +26,8 @@
 open ReactNative
 open ReactNative.Style
 let displayElement = (~title="", ~subtitle="", ~element, ()) =>
-  <View style={style(~marginVertical="1rem", ())}>
-    <Typography.Body1 style={style(~marginVertical="1rem", ())}>
+  <View style={style(~marginVertical="1rem"->StyleUtils.stringToSize, ())}>
+    <Typography.Body1 style={style(~marginVertical="1rem"->StyleUtils.stringToSize, ())}>
       {(title ++ ((subtitle == "" ? "" : " - ") ++ subtitle))->React.string}
     </Typography.Body1>
     element

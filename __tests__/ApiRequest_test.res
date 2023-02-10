@@ -62,7 +62,7 @@ module Mock = {
   let get = (~config as _: Umami.ConfigContext.env, _) => {
     let mockFuture = Promise.make(resolve =>
       Js.Global.setTimeout(// setImmediate not binded I would use that
-      () => ReactTestingLibrary.act(() => resolve(Ok(requestResult))), 1)
+      () => TestingLibraryHooks.act(() => resolve(Ok(requestResult))), 1)
     )
 
     mockFuture

@@ -23,7 +23,7 @@
 /*  */
 /* *************************************************************************** */
 
-open ReasonReactRouter
+open RescriptReactRouter
 
 type t =
   | Accounts
@@ -79,7 +79,7 @@ let useHrefAndOnPress = route => {
   let href = toHref(route)
   let onPress = event => {
     event->ReactNative.Event.PressEvent.preventDefault
-    ReasonReactRouter.push(href)
+    RescriptReactRouter.push(href)
   }
   onPress
 }

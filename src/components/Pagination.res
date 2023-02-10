@@ -1,27 +1,27 @@
-/*****************************************************************************/
-/*                                                                           */
-/* Open Source License                                                       */
-/* Copyright (c) 2019-2022 Nomadic Labs, <contact@nomadic-labs.com>          */
-/*                                                                           */
-/* Permission is hereby granted, free of charge, to any person obtaining a   */
-/* copy of this software and associated documentation files (the "Software"),*/
+/* *************************************************************************** */
+/*  */
+/* Open Source License */
+/* Copyright (c) 2019-2022 Nomadic Labs, <contact@nomadic-labs.com> */
+/*  */
+/* Permission is hereby granted, free of charge, to any person obtaining a */
+/* copy of this software and associated documentation files (the "Software"), */
 /* to deal in the Software without restriction, including without limitation */
-/* the rights to use, copy, modify, merge, publish, distribute, sublicense,  */
-/* and/or sell copies of the Software, and to permit persons to whom the     */
-/* Software is furnished to do so, subject to the following conditions:      */
-/*                                                                           */
-/* The above copyright notice and this permission notice shall be included   */
-/* in all copies or substantial portions of the Software.                    */
-/*                                                                           */
-/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR*/
-/* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,  */
-/* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL   */
-/* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER*/
-/* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING   */
-/* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER       */
-/* DEALINGS IN THE SOFTWARE.                                                 */
-/*                                                                           */
-/*****************************************************************************/
+/* the rights to use, copy, modify, merge, publish, distribute, sublicense, */
+/* and/or sell copies of the Software, and to permit persons to whom the */
+/* Software is furnished to do so, subject to the following conditions: */
+/*  */
+/* The above copyright notice and this permission notice shall be included */
+/* in all copies or substantial portions of the Software. */
+/*  */
+/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR */
+/* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, */
+/* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL */
+/* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER */
+/* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING */
+/* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER */
+/* DEALINGS IN THE SOFTWARE. */
+/*  */
+/* *************************************************************************** */
 
 open ReactNative
 
@@ -43,29 +43,30 @@ let styles = {
       ~marginHorizontal=LayoutConst.pagePaddingHorizontal->dp,
       (),
     ),
-    "marginLeft": style(~marginLeft="10px", ()),
-    "marginRight": style(~marginRight="10px", ()),
-    "takeSpaceAndCenter": style(~flexBasis="80px", ~textAlign=#center, ()),
+    "marginLeft": style(~marginLeft=10.->dp, ()),
+    "marginRight": style(~marginRight=10.->dp, ()),
+    "takeSpaceAndCenter": style(~flexBasis=80.->dp, ~textAlign=#center, ()),
   })
 }
 
 module PaginationFooter = {
+  open ReactNative.Style
   @react.component
   let make = (~pageCounter, ~setPageCounter, ~maxPageIndex, ~onPageChange=?, ~style=?) => {
     let onPageChange = onPageChange->Option.getWithDefault(_ => ())
     let theme = ThemeContext.useTheme()
-    let pagination = Style.arrayOption([
+    let pagination = arrayOption([
       style,
       Some(
         Style.style(
           ~justifyContent=#center,
           ~flexDirection=#row,
           ~alignItems=#center,
-          ~marginBottom="20px",
+          ~marginBottom=20.->dp,
           ~borderTopWidth=1.,
           ~borderTopColor=theme.colors.borderDisabled,
-          ~marginTop="20px",
-          ~paddingTop="20px",
+          ~marginTop=20.->dp,
+          ~paddingTop=20.->dp,
           (),
         ),
       ),
@@ -93,7 +94,7 @@ module PaginationFooter = {
         style={styles["marginRight"]}
       />
       <Typography.Body1 style={styles["takeSpaceAndCenter"]}>
-        {pageStr->ReasonReact.string}
+        {pageStr->React.string}
       </Typography.Body1>
       <Icon
         icon=Icons.Next.build
@@ -147,7 +148,7 @@ let make = (~footerStyle=?, ~elements, ~renderItem, ~emptyComponent, ~eltsPerPag
     let data = elements->Array.slice(~offset=pageCounter * eltsPerPage, ~len=eltsPerPage)
     <>
       <ScrollView ref={scrollViewRef->Ref.value} style={styles["listContent"]}>
-        {data->Array.map(renderItem)->ReasonReact.array}
+        {data->Array.map(renderItem)->React.array}
       </ScrollView>
       <PaginationFooter
         pageCounter
