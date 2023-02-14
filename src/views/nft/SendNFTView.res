@@ -109,7 +109,7 @@ module Form = {
             filterOut={sender->Alias.fromAccount->Some}
             aliases
             value=form.values.recipient
-            handleChange={form.handleChange(Recipient)}
+            onChange={form.handleChange(Recipient)}
             error={form.getFieldError(Field(Recipient))}
           />
         </ReactFlipToolkit.FlippedView>

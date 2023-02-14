@@ -222,7 +222,7 @@ let make = (
   ~filterOut: option<Alias.t>,
   ~aliases: PublicKeyHash.Map.map<Alias.t>,
   ~value: FormUtils.Alias.any,
-  ~handleChange: FormUtils.Alias.any => unit,
+  ~onChange: FormUtils.Alias.any => unit,
   ~error,
 ) => {
   let aliasArray =
@@ -276,7 +276,7 @@ let make = (
         value=contactKind
         onValueChange={v => {
           setContactKind(_ => v)
-          handleChange(valueRef.current)
+          onChange(valueRef.current)
         }}
       />->ReactUtils.onlyWhen(ReCustomAuth.flagOn)}
     </View>
@@ -334,13 +334,13 @@ let make = (
               | Error(_) => s->FormUtils.Alias.AnyString
               }
             })
-          ->handleChange
+          ->onChange
         | #...ReCustomAuth.handledProvider =>
-          (s == "" ? s->AnyString : FormUtils.Alias.Temp(s, NotAsked))->handleChange
+          (s == "" ? s->AnyString : FormUtils.Alias.Temp(s, NotAsked))->onChange
         }}
       onBlur={_ =>
         switch contactKind {
-        | #...ReCustomAuth.handledProvider as p => onBlurProvider(valueRef, handleChange, p, value)
+        | #...ReCustomAuth.handledProvider as p => onBlurProvider(valueRef, onChange, p, value)
         | #Default => ()
         }}
       error

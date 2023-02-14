@@ -336,7 +336,7 @@ module Step2 = {
               filterOut={None}
               aliases={getSelectableOwners(existingOwners)}
               value
-              handleChange={newOwner =>
+              onChange={newOwner =>
                 form.handleChangeWithCallback(Owners, owners =>
                   owners->Array.mapWithIndex((j, owner) => i == j ? newOwner : owner)
                 )}
