@@ -271,6 +271,24 @@ module Step1 = {
   }
 }
 
+let useGetSelectableOwners = () => {
+  let nonContractAliases =
+    StoreContext.Aliases.useRequest()
+    ->ApiRequest.getDoneOk
+    ->Option.getWithDefault(PublicKeyHash.Map.empty)
+    ->PublicKeyHash.Map.keep((pkh, _) => pkh->PublicKeyHash.isImplicit)
+
+  formValues =>
+    // Filter out aliases already added in form
+    nonContractAliases->PublicKeyHash.Map.removeMany(
+      formValues->Array.keepMap(owner =>
+        switch owner {
+        | FormUtils.Alias.Valid(t) => Some(t->FormUtils.Alias.address)
+        | _ => None
+        }
+      ),
+    )
+}
 module Step2 = {
   let renderItem = item =>
     <View style={styles["selectorItemContainer"]}>
@@ -283,10 +301,7 @@ module Step2 = {
   let make = (~currentStep, ~form: Form.api, ~back, ~action) => {
     let theme = ThemeContext.useTheme()
 
-    let aliasesRequest = StoreContext.Aliases.useRequest()
-    let aliases =
-      aliasesRequest->ApiRequest.getDoneOk->Option.getWithDefault(PublicKeyHash.Map.empty)
-
+    let getSelectableOwners = useGetSelectableOwners()
     <StepView step=2 currentStep title=I18n.Title.set_owners_and_threshold>
       <Typography.Body1 style={styles["description"]}>
         {I18n.Expl.set_multisig_owners->React.string}
@@ -294,7 +309,7 @@ module Step2 = {
       {form.values.owners
       ->Array.mapWithIndex((i, value) => {
         let key = i->Int.toString
-        let values = form.values.owners->Array.removeAtIndex(i)
+        let existingOwners = form.values.owners->Array.removeAtIndex(i)
         <View key style={styles["row"]}>
           <View style={styles["addressInput"]}>
             <FormGroupContactSelector
@@ -305,14 +320,7 @@ module Step2 = {
               }
               label={i == 0 ? I18n.Label.owners : ""}
               filterOut={None}
-              aliases={aliases->PublicKeyHash.Map.removeMany(
-                values->Array.keepMap(owner =>
-                  switch owner {
-                  | Valid(t) => Some(t->FormUtils.Alias.address)
-                  | _ => None
-                  }
-                ),
-              )}
+              aliases={getSelectableOwners(existingOwners)}
               value
               handleChange={newOwner =>
                 form.handleChangeWithCallback(Owners, owners =>
