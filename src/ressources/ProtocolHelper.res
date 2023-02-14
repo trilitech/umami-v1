@@ -96,6 +96,21 @@ module Transfer = {
   let hasParams = p => p.Options.value != None || p.entrypoint != None
 }
 
+module Multisig = {
+  let makeProposal = (~parameter, ~destination) => {
+    Transfer.makeSimpleTez(~parameter, ~entrypoint="propose", ~destination, ~amount=Tez.zero, ())
+  }
+
+  let makeTransfer = (~recipient: PublicKeyHash.t, ~amount: ProtocolAmount.t, ~destination) => {
+    let amount = amount->ProtocolAmount.getTez->Option.getWithDefault(Tez.zero)->Tez.toBigNumber
+    let lambda = PublicKeyHash.isImplicit(recipient)
+      ? ReTaquito.Toolkit.Lambda.transferImplicit((recipient :> string), amount)
+      : ReTaquito.Toolkit.Lambda.transferToContract((recipient :> string), amount)
+    let parameter = Obj.magic(lambda) // FIXME
+    makeProposal(~parameter, ~destination)
+  }
+}
+
 module Origination = {
   let make = (
     ~balance=?,

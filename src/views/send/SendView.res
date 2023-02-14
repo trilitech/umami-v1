@@ -283,23 +283,9 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
 
   let onSubmitProposal = (state: SendForm.validState, source: Account.t) => {
     let recipient = state.recipient->FormUtils.Alias.address
-    let amount =
-      state.amount->ProtocolAmount.getTez->Option.getWithDefault(Tez.zero)->Tez.toBigNumber
-    let lambda = PublicKeyHash.isImplicit(recipient)
-      ? ReTaquito.Toolkit.Lambda.transferImplicit((recipient :> string), amount)
-      : ReTaquito.Toolkit.Lambda.transferToContract((recipient :> string), amount)
-    let parameter = Obj.magic(lambda) // FIXME
-    let entrypoint = "propose"
+    let amount = state.amount
     let destination = state.sender.Alias.address
-    let amount = Tez.zero
-
-    let transfer = ProtocolHelper.Transfer.makeSimpleTez(
-      ~parameter,
-      ~entrypoint,
-      ~destination,
-      ~amount,
-      (),
-    )
+    let transfer = ProtocolHelper.Multisig.makeTransfer(~recipient, ~amount, ~destination)
     let transfers = [transfer]
     let transaction = ProtocolHelper.Transfer.makeBatch(~source, ~transfers, ())
     sendOperationSimulate(transaction)->Promise.getOk(dryRun => {
