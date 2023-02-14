@@ -61,6 +61,32 @@ module GenericRowItem = {
   }
 }
 
+module Delegate = {
+  @react.component
+  let make = (~account: Account.t) => {
+    let delegateRequest = StoreContext.Delegate.useLoad(account.address)
+    let balanceRequest =
+      StoreContext.Balance.useAll(false)->StoreContext.Balance.useOne(account.address)
+    let zeroTez = switch balanceRequest->ApiRequest.getDoneOk {
+    | None => true
+    | Some(balance) => balance == Tez.zero
+    }
+    <View style={styles["actionContainer"]}>
+      {delegateRequest->ApiRequest.mapWithDefault(React.null, delegate =>
+        <View style={styles["actionContainer"]}>
+          <DelegateButton
+            zeroTez
+            action={delegate->Option.mapWithDefault(
+              Delegate.Create(account, false),
+              delegate => Delegate.Edit(account, delegate),
+            )}
+          />
+        </View>
+      )}
+    </View>
+  }
+}
+
 module MultisigRowItem = {
   @react.component
   let make = (~multisig: Multisig.t) => {
@@ -81,27 +107,8 @@ module MultisigRowItem = {
 
 @react.component
 let make = (~account: Account.t, ~isHD: bool=false, ~token: option<Token.t>=?) => {
-  let delegateRequest = StoreContext.Delegate.useLoad(account.address)
-  let balanceRequest =
-    StoreContext.Balance.useAll(false)->StoreContext.Balance.useOne(account.address)
-  let zeroTez = switch balanceRequest->ApiRequest.getDoneOk {
-  | None => true
-  | Some(balance) => balance == Tez.zero
-  }
   <GenericRowItem
     account={account->Alias.fromAccount} ?token icon_isHD=isHD justifyContent=#spaceBetween>
-    {delegateRequest
-    ->ApiRequest.mapWithDefault(React.null, delegate =>
-      <View style={styles["actionContainer"]}>
-        <DelegateButton
-          zeroTez
-          action={delegate->Option.mapWithDefault(
-            Delegate.Create(account, false),
-            delegate => Delegate.Edit(account, delegate),
-          )}
-        />
-      </View>
-    )
-    ->ReactUtils.onlyWhen(token == None)}
+    {<Delegate account />->ReactUtils.onlyWhen(token == None)}
   </GenericRowItem>
 }
