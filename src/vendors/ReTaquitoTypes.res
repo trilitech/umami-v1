@@ -133,7 +133,7 @@ module Storage = {
 }
 
 module Lambda = {
-  type t
+  type t = MichelsonV1Expression.t
 }
 
 module Transfer = {

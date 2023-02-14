@@ -118,8 +118,7 @@ module Multisig = {
     let lambda = PublicKeyHash.isImplicit(recipient)
       ? ReTaquito.Toolkit.Lambda.transferImplicit((recipient :> string), amount)
       : ReTaquito.Toolkit.Lambda.transferToContract((recipient :> string), amount)
-    let parameter = Obj.magic(lambda) // FIXME
-    makeProposal(~parameter, ~destination=sender)
+    makeProposal(~parameter=lambda, ~destination=sender)
   }
 
   @ocaml.doc(" Wrap a list of calls into a batch to be able to use regular operation submission flow ")
