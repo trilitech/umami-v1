@@ -461,7 +461,7 @@ module Pending = {
         let transfer = ProtocolHelper.Multisig.makeCall(~parameter, ~entrypoint, ~destination)
         let transfers = [transfer]
         let source = signer
-        let operation = ProtocolHelper.Transfer.makeBatch(~source, ~transfers, ())
+        let operation = ProtocolHelper.Multisig.wrap(~source, transfers)
 
         sendOperationSimulate(operation)->Promise.getOk(dryRun => {
           setStep(Sign(dryRun, operation))

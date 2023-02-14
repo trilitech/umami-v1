@@ -97,21 +97,34 @@ module Transfer = {
 }
 
 module Multisig = {
-  let makeCall = (~entrypoint, ~parameter, ~destination) => {
+  type call
+  external fromTransfer: Protocol.Transfer.t => call = "%identity"
+  external toTransfers: array<call> => array<Protocol.Transfer.t> = "%identity"
+
+  @ocaml.doc(" Create a 0 tez transaction which call [entrypoint] of [destination] with [parameter] ")
+  let makeCall = (~entrypoint, ~parameter, ~destination): call => {
     Transfer.makeSimpleTez(~parameter, ~entrypoint, ~destination, ~amount=Tez.zero, ())
+    ->fromTransfer
   }
 
-  let makeProposal = (~parameter, ~destination) => {
+  @ocaml.doc(" Call 'propose' entrypoint of [destination] with [parameter] lambda ")
+  let makeProposal = (~parameter, ~destination): call => {
     makeCall(~parameter, ~entrypoint="propose", ~destination)
   }
 
-  let makeTransfer = (~recipient: PublicKeyHash.t, ~amount: ProtocolAmount.t, ~destination) => {
+  @ocaml.doc(" Handle lambda and proposal creation to send [amount] tez from [sender] to [recipient] ")
+  let makeTransfer = (~recipient: PublicKeyHash.t, ~amount: ProtocolAmount.t, ~sender) : call => {
     let amount = amount->ProtocolAmount.getTez->Option.getWithDefault(Tez.zero)->Tez.toBigNumber
     let lambda = PublicKeyHash.isImplicit(recipient)
       ? ReTaquito.Toolkit.Lambda.transferImplicit((recipient :> string), amount)
       : ReTaquito.Toolkit.Lambda.transferToContract((recipient :> string), amount)
     let parameter = Obj.magic(lambda) // FIXME
-    makeProposal(~parameter, ~destination)
+    makeProposal(~parameter, ~destination=sender)
+  }
+
+  @ocaml.doc(" Wrap a list of calls into a batch to be able to use regular operation submission flow ")
+  let wrap = (~source, transfers: array<call>) => {
+    Transfer.makeBatch(~source, ~transfers=(transfers->toTransfers), ())
   }
 }
 

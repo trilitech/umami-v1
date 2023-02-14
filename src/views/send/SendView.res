@@ -284,10 +284,10 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
   let onSubmitProposal = (state: SendForm.validState, source: Account.t) => {
     let recipient = state.recipient->FormUtils.Alias.address
     let amount = state.amount
-    let destination = state.sender.Alias.address
-    let transfer = ProtocolHelper.Multisig.makeTransfer(~recipient, ~amount, ~destination)
+    let sender = state.sender.Alias.address
+    let transfer = ProtocolHelper.Multisig.makeTransfer(~recipient, ~amount, ~sender)
     let transfers = [transfer]
-    let transaction = ProtocolHelper.Transfer.makeBatch(~source, ~transfers, ())
+    let transaction = ProtocolHelper.Multisig.wrap(~source, transfers)
     sendOperationSimulate(transaction)->Promise.getOk(dryRun => {
       setModalStep(_ => SigningStep(state, transaction, dryRun))
     })
