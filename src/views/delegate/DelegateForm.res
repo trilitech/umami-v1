@@ -32,9 +32,3 @@ module StateLenses = %lenses(
 )
 
 include ReForm.Make(StateLenses)
-
-module Password = {
-  module StateLenses = %lenses(type state = {password: string})
-
-  include ReForm.Make(StateLenses)
-}
