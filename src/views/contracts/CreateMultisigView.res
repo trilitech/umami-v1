@@ -316,6 +316,11 @@ module Step2 = {
       form.handleChangeWithCallback(Owners, owners => owners->Array.keepWithIndex((_, j) => i != j))
     }
 
+    let addOwner = (i, newOwner) =>
+      form.handleChangeWithCallback(Owners, owners =>
+        owners->Array.mapWithIndex((j, owner) => i == j ? newOwner : owner)
+      )
+
     <StepView step=2 currentStep title=I18n.Title.set_owners_and_threshold>
       <Typography.Body1 style={styles["description"]}>
         {I18n.Expl.set_multisig_owners->React.string}
@@ -336,10 +341,7 @@ module Step2 = {
               filterOut={None}
               aliases={getSelectableOwners(existingOwners)}
               value
-              onChange={newOwner =>
-                form.handleChangeWithCallback(Owners, owners =>
-                  owners->Array.mapWithIndex((j, owner) => i == j ? newOwner : owner)
-                )}
+              onChange={addOwner(i)}
               error={form.getNestedFieldError(Field(Owners), i)}
             />
           </View>
