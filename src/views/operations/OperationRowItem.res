@@ -458,14 +458,7 @@ module Pending = {
             id->ReBigNumber.toString,
           )->Result.getExn
         let destination = multisig.Multisig.address
-        let amount = Tez.zero
-        let transfer = ProtocolHelper.Transfer.makeSimpleTez(
-          ~parameter,
-          ~entrypoint,
-          ~destination,
-          ~amount,
-          (),
-        )
+        let transfer = ProtocolHelper.Multisig.makeCall(~parameter, ~entrypoint, ~destination)
         let transfers = [transfer]
         let source = signer
         let operation = ProtocolHelper.Transfer.makeBatch(~source, ~transfers, ())

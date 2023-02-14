@@ -97,8 +97,12 @@ module Transfer = {
 }
 
 module Multisig = {
+  let makeCall = (~entrypoint, ~parameter, ~destination) => {
+    Transfer.makeSimpleTez(~parameter, ~entrypoint, ~destination, ~amount=Tez.zero, ())
+  }
+
   let makeProposal = (~parameter, ~destination) => {
-    Transfer.makeSimpleTez(~parameter, ~entrypoint="propose", ~destination, ~amount=Tez.zero, ())
+    makeCall(~parameter, ~entrypoint="propose", ~destination)
   }
 
   let makeTransfer = (~recipient: PublicKeyHash.t, ~amount: ProtocolAmount.t, ~destination) => {
