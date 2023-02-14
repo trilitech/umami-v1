@@ -302,6 +302,20 @@ module Step2 = {
     let theme = ThemeContext.useTheme()
 
     let getSelectableOwners = useGetSelectableOwners()
+
+    let removeOwner = (i, _) => {
+      if (
+        form.values.threshold->ReBigNumber.isGreaterThanOrEqualTo(
+          ReBigNumber.fromInt(form.values.owners->Array.length),
+        )
+      ) {
+        form.handleChangeWithCallback(Threshold, threshold =>
+          threshold->ReBigNumber.minus(ReBigNumber.fromInt(1))
+        )
+      }
+      form.handleChangeWithCallback(Owners, owners => owners->Array.keepWithIndex((_, j) => i != j))
+    }
+
     <StepView step=2 currentStep title=I18n.Title.set_owners_and_threshold>
       <Typography.Body1 style={styles["description"]}>
         {I18n.Expl.set_multisig_owners->React.string}
@@ -330,20 +344,7 @@ module Step2 = {
             />
           </View>
           {<IconButton
-            onPress={_ => {
-              if (
-                form.values.threshold->ReBigNumber.isGreaterThanOrEqualTo(
-                  ReBigNumber.fromInt(form.values.owners->Array.length),
-                )
-              ) {
-                form.handleChangeWithCallback(Threshold, threshold =>
-                  threshold->ReBigNumber.minus(ReBigNumber.fromInt(1))
-                )
-              }
-              form.handleChangeWithCallback(Owners, owners =>
-                owners->Array.keepWithIndex((_, j) => i != j)
-              )
-            }}
+            onPress={removeOwner(i)}
             icon=Icons.Delete.build
             size=40.
             style={
