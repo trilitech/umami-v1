@@ -118,6 +118,12 @@ module Selector = {
 
   let address = (x: item) => x.address
 
+  let icon = x =>
+    switch x.Alias.kind {
+    | None | Some(Contact) => React.null
+    | Some(Account(_)|Multisig) as kind => <AliasIcon style={itemStyles["accounticon"]} kind isHD=true />
+    }
+
   module BaseItem = {
     @react.component
     let make = (
@@ -139,6 +145,7 @@ module Selector = {
             paramStyle,
           ])
         }>
+        {account->icon}
         <View style={itemStyles["inner"]}>
           <View style={itemStyles["info"]}>
             <Typography.Subtitle2 numberOfLines=1 style={itemStyles["name"]}>
