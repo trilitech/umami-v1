@@ -100,50 +100,99 @@ module Form = {
     )
   }
 
+  module ViewBase = {
+    type param_FormGroupDelegateSelector = {
+      value: PublicKeyHash.t,
+      handleChange: Account.t => unit,
+      disabled: bool,
+      error: option<string>,
+    }
+    type param_FormGroupBakerSelector = {
+      value: option<string>,
+      handleChange: option<string> => unit,
+      error: option<string>,
+    }
+    type param_Submit = {
+      text: string,
+      onPress: ReactNative.Event.pressEvent => unit,
+      disabledLook: bool,
+      loading: bool,
+    }
+
+    @react.component
+    let make = (
+      ~delegate: param_FormGroupDelegateSelector,
+      ~baker: param_FormGroupBakerSelector,
+      ~submit: param_Submit,
+    ) => {
+      <>
+        <ReactFlipToolkit.FlippedView flipId="form">
+          <FormGroupDelegateSelector
+            label=I18n.Label.account_delegate
+            value=delegate.value
+            handleChange=delegate.handleChange
+            error=delegate.error
+            disabled=delegate.disabled
+          />
+          <FormGroupBakerSelector
+            label=I18n.Label.baker
+            value=baker.value
+            handleChange=baker.handleChange
+            error=baker.error
+          />
+        </ReactFlipToolkit.FlippedView>
+        <ReactFlipToolkit.FlippedView flipId="submit">
+          <View style=FormStyles.verticalFormAction>
+            <Buttons.SubmitPrimary
+              text=submit.text
+              onPress=submit.onPress
+              loading=submit.loading
+              disabledLook=submit.disabledLook
+            />
+          </View>
+        </ReactFlipToolkit.FlippedView>
+      </>
+    }
+  }
+
   module View = {
     open DelegateForm
 
     @react.component
     let make = (~form, ~action, ~loading) => {
       let onSubmitDelegateForm = _ => form.submit()
-
       let formFieldsAreValids = FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields)
 
-      <>
-        <ReactFlipToolkit.FlippedView flipId="form">
-          <FormGroupDelegateSelector
-            label=I18n.Label.account_delegate
-            value=form.values.sender.address
-            handleChange={d => form.handleChange(Sender, d)}
-            error={form.getFieldError(Field(Sender))}
-            disabled={switch action {
-            | Create(_, fixed) => fixed
-            | Edit(_)
-            | Delete(_) => true
-            }}
-          />
-          <FormGroupBakerSelector
-            label=I18n.Label.baker
-            value={form.values.baker == "" ? None : form.values.baker->Some}
-            handleChange={b => b->Option.getWithDefault("") |> form.handleChange(Baker)}
-            error={form.getFieldError(Field(Baker))}
-          />
-        </ReactFlipToolkit.FlippedView>
-        <ReactFlipToolkit.FlippedView flipId="submit">
-          <View style=FormStyles.verticalFormAction>
-            <Buttons.SubmitPrimary
-              text={switch action {
-              | Create(_) => I18n.Btn.delegation_submit
-              | Edit(_) => I18n.Btn.update
-              | Delete(_) => I18n.Btn.confirm
-              }}
-              onPress=onSubmitDelegateForm
-              loading
-              disabledLook={!formFieldsAreValids}
-            />
-          </View>
-        </ReactFlipToolkit.FlippedView>
-      </>
+      let delegate: ViewBase.param_FormGroupDelegateSelector = {
+        value: form.values.sender.address,
+        handleChange: {d => form.handleChange(Sender, d)},
+        error: {form.getFieldError(Field(Sender))},
+        disabled: {
+          switch action {
+          | Create(_, fixed) => fixed
+          | Delete(_)
+          | Edit(_) => true
+          }
+        },
+      }
+      let baker: ViewBase.param_FormGroupBakerSelector = {
+        value: {form.values.baker == "" ? None : form.values.baker->Some},
+        handleChange: {b => b->Option.getWithDefault("") |> form.handleChange(Baker)},
+        error: {form.getFieldError(Field(Baker))},
+      }
+      let submit: ViewBase.param_Submit = {
+        text: {
+          switch action {
+          | Create(_) => I18n.Btn.delegation_submit
+          | Edit(_) => I18n.Btn.update
+          | Delete(_) => I18n.Btn.confirm
+          }
+        },
+        onPress: onSubmitDelegateForm,
+        loading: loading,
+        disabledLook: {!formFieldsAreValids},
+      }
+      <ViewBase delegate baker submit />
     }
   }
 }
@@ -244,13 +293,7 @@ let make = (~closeAction, ~action) => {
             }
           | PasswordStep(_, operation, dryRun) =>
             <SignOperationView
-              signer=operation.source
-              signOpStep
-              dryRun
-              state
-              operation
-              sendOperation
-              loading
+              signer=operation.source signOpStep dryRun state operation sendOperation loading
             />
           }}
         </ReactFlipToolkit.FlippedView.Inverse>
