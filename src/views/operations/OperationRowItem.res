@@ -456,7 +456,7 @@ module Pending = {
         let parameter =
           ProtocolOptions.TransactionParameters.MichelineMichelsonV1Expression.parseMicheline(
             id->ReBigNumber.toString,
-          )->Result.getExn
+          )->Result.getExn->Option.getExn
         let destination = multisig.Multisig.address
         let transfer = ProtocolHelper.Multisig.makeCall(~parameter, ~entrypoint, ~destination)
         let transfers = [transfer]
