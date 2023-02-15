@@ -46,10 +46,6 @@
     "@rescript-react-native/svg",
     "@glennsl/rescript-jest",
     "@nomadic-labs/rescript-beacon-sdk"
-    // Testing bindings that depend on outdated reason things
-    // tests depending on theses have been disabled until a fix is found
-    // "bs-react-testing-library"
-    // "bs-dom-testing-library"
   ],
   "refmt": 3
 }
