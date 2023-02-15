@@ -279,7 +279,9 @@ let keep: (array<Umami.FormUtils.Alias.any>, Umami.Alias.t) => bool = (formValue
     }
   )
 
-  // keep aliases that are contract and that are already added in form
+  // Only keep aliases that are:
+  // - not contract (= implicit)
+  // - not already added in form
   a.address->PublicKeyHash.isImplicit && !(addressesInForm->Array.some(f => f === a.address))
 }
 module Step2 = {
