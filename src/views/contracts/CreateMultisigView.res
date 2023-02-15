@@ -271,23 +271,16 @@ module Step1 = {
   }
 }
 
-let useGetSelectableOwners = () => {
-  let nonContractAliases =
-    StoreContext.Aliases.useRequest()
-    ->ApiRequest.getDoneOk
-    ->Option.getWithDefault(PublicKeyHash.Map.empty)
-    ->PublicKeyHash.Map.keep((pkh, _) => pkh->PublicKeyHash.isImplicit)
+let keep: (array<Umami.FormUtils.Alias.any>, Umami.Alias.t) => bool = (formValues, a) => {
+  let addressesInForm = formValues->Array.keepMap(owner =>
+    switch owner {
+    | FormUtils.Alias.Valid(t) => Some(t->FormUtils.Alias.address)
+    | _ => None
+    }
+  )
 
-  formValues =>
-    // Filter out aliases already added in form
-    nonContractAliases->PublicKeyHash.Map.removeMany(
-      formValues->Array.keepMap(owner =>
-        switch owner {
-        | FormUtils.Alias.Valid(t) => Some(t->FormUtils.Alias.address)
-        | _ => None
-        }
-      ),
-    )
+  // keep aliases that are contract and that are already added in form
+  a.address->PublicKeyHash.isImplicit && !(addressesInForm->Array.some(f => f === a.address))
 }
 module Step2 = {
   let renderItem = item =>
@@ -300,8 +293,6 @@ module Step2 = {
   @react.component
   let make = (~currentStep, ~form: Form.api, ~back, ~action) => {
     let theme = ThemeContext.useTheme()
-
-    let getSelectableOwners = useGetSelectableOwners()
 
     let removeOwner = (i, _) => {
       if (
@@ -338,8 +329,7 @@ module Step2 = {
                 style(~backgroundColor=theme.colors.elevatedBackground, ())
               }
               label={i == 0 ? I18n.Label.owners : ""}
-              filterOut={None}
-              aliases={getSelectableOwners(existingOwners)}
+              keep={keep(existingOwners)}
               value
               onChange={addOwner(i)}
               error={form.getNestedFieldError(Field(Owners), i)}

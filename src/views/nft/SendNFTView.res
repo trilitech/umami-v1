@@ -87,15 +87,7 @@ module Form = {
     open SendNFTForm
 
     @react.component
-    let make = (
-      ~sender,
-      ~nft,
-      ~form,
-      ~aliases,
-      ~loading,
-      ~onAddToBatch,
-      ~simulatingBatch=false,
-    ) => {
+    let make = (~sender, ~nft, ~form, ~loading, ~onAddToBatch, ~simulatingBatch=false) => {
       let formFieldsAreValids = FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields)
 
       <>
@@ -106,8 +98,7 @@ module Form = {
           <FormGroupNFTView nft />
           <FormGroupContactSelector
             label=I18n.Label.send_recipient
-            filterOut={sender->Alias.fromAccount->Some}
-            aliases
+            keep={a => a.address != (sender->Alias.fromAccount).address}
             value=form.values.recipient
             onChange={form.handleChange(Recipient)}
             error={form.getFieldError(Field(Recipient))}
@@ -220,9 +211,6 @@ let make = (~source: Account.t, ~nft: Token.t, ~closeAction) => {
   let closing = Some(ModalFormView.Close(closeAction))
 
   let signingState = React.useState(() => None)
-  let aliasesRequest = StoreContext.Aliases.useRequest()
-
-  let aliases = aliasesRequest->ApiRequest.getDoneOk->Option.getWithDefault(PublicKeyHash.Map.empty)
 
   let loadingSimulate = operationSimulateRequest->ApiRequest.isLoading
   let loading = operationRequest->ApiRequest.isLoading
@@ -242,7 +230,6 @@ let make = (~source: Account.t, ~nft: Token.t, ~closeAction) => {
             sender=source
             nft
             form
-            aliases
             loading=loadingSimulate
             simulatingBatch=isSimulating
           />

@@ -219,16 +219,20 @@ let make = (
   ~keyPopover="FormGroupContactSelector",
   ~fieldStyle=?,
   ~label,
-  ~filterOut: option<Alias.t>,
-  ~aliases: PublicKeyHash.Map.map<Alias.t>,
   ~value: FormUtils.Alias.any,
   ~onChange: FormUtils.Alias.any => unit,
   ~error,
+  ~keep: Umami.Alias.t => bool=_ => true,
 ) => {
+  let aliases =
+    StoreContext.Aliases.useRequest()
+    ->ApiRequest.getDoneOk
+    ->Option.getWithDefault(PublicKeyHash.Map.empty)
+
   let aliasArray =
     aliases
     ->PublicKeyHash.Map.valuesToArray
-    ->Array.keep((v: Alias.t) => Some(v.address) != filterOut->Option.map(a => a.address))
+    ->Array.keep(keep)
     ->SortArray.stableSortBy(Alias.compareName)
 
   let theme = ThemeContext.useTheme()

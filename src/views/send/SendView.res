@@ -144,7 +144,6 @@ module Form = {
       ~token=?,
       ~mode,
       ~form,
-      ~aliases,
       ~loading,
       ~simulatingBatch=false,
     ) => {
@@ -193,8 +192,7 @@ module Form = {
           />
           <FormGroupContactSelector
             label=I18n.Label.send_recipient
-            filterOut={form.values.sender->Some}
-            aliases
+            keep={a => a.address != form.values.sender.address}
             value=form.values.recipient
             onChange={form.handleChange(Recipient)}
             error={form.getFieldError(Field(Recipient))}
@@ -224,7 +222,7 @@ module Form = {
 
 module EditionView = {
   @react.component
-  let make = (~account, ~aliases, ~initValues, ~onSubmit, ~index, ~loading) => {
+  let make = (~account, ~initValues, ~onSubmit, ~index, ~loading) => {
     let token = switch initValues.SendForm.amount {
     | Protocol.Amount.Tez(_) => None
     | Token({token}) => Some(token)
@@ -236,7 +234,7 @@ module EditionView = {
 
     let form = Form.use(~initValues, account, token, onSubmit(token))
 
-    <Form.View tokenState ?token form mode=Form.View.Edition(index) aliases loading />
+    <Form.View tokenState ?token form mode=Form.View.Edition(index) loading />
   }
 }
 
@@ -245,10 +243,8 @@ let senderIsMultisig = (sender: Alias.t) => PublicKeyHash.isContract(sender.addr
 @react.component
 let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
   let initToken = StoreContext.SelectedToken.useGet()
-  let aliasesRequest = StoreContext.Aliases.useRequest()
   let getImplicitFromAlias = StoreContext.useGetImplicitFromAlias()
   let getImplicitFromAliasExn = x => getImplicitFromAlias(x)->Option.getExn
-  let aliases = aliasesRequest->ApiRequest.getDoneOk->Option.getWithDefault(PublicKeyHash.Map.empty)
 
   let updateAccount = StoreContext.SelectedAccount.useSet()
   let multisigFromAddress = StoreContext.Multisig.useGetFromAddress()
@@ -392,7 +388,7 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
             <SubmittedView hash onPressCancel submitText=I18n.Btn.go_operations />
           | EditStep(index, initValues) =>
             let onSubmit = form => onEdit(index, form)
-            <EditionView account initValues onSubmit index loading=isSimulating aliases />
+            <EditionView account initValues onSubmit index loading=isSimulating />
           | SendStep =>
             <Form.View
               proposal={senderIsMultisig(form.state.values.sender)}
@@ -402,7 +398,6 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
               mode=Form.View.Creation(Some(onAddToBatch), onSubmitAll)
               loading=loadingSimulate
               simulatingBatch=isSimulating
-              aliases
             />
           | SigningStep(_, operation, dryRun) =>
             <SignOperationView
