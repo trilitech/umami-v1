@@ -54,7 +54,7 @@ let back = ((step, set), f) =>
 let make = (
   ~proposal=?,
   ~signer: Account.t,
-  ~state,
+  ~state=React.useState(() => None),
   ~signOpStep as (step, setStep),
   ~dryRun,
   ~secondaryButton=?,

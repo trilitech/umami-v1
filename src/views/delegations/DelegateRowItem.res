@@ -60,15 +60,28 @@ module CellAction = Table.MakeCell({
   }
 })
 
+module BaseActionButton = {
+  @react.component
+  let make = (~tooltip=?, ~icon, ~content) => {
+    let (openAction, closeAction, wrapModal) = ModalAction.useModal()
+    let onPress = _ => openAction()
+    <> <IconButton ?tooltip icon size=30. onPress /> {wrapModal(content(closeAction))} </>
+  }
+}
+
 module DelegateActionButton = {
   @react.component
   let make = (~action, ~icon, ~tooltip=?) => {
-    let (openAction, closeAction, wrapModal) = ModalAction.useModal()
-    let onPress = _ => openAction()
+    let content = closeAction => <DelegateView closeAction action />
+    <BaseActionButton ?tooltip icon content />
+  }
+}
 
-    <>
-      <IconButton ?tooltip icon size=30. onPress /> {wrapModal(<DelegateView closeAction action />)}
-    </>
+module UndelegateActionButton = {
+  @react.component
+  let make = (~icon, ~tooltip=?, ~account, ~delegate) => {
+    let content = closeAction => <UndelegateView closeAction account delegate />
+    <BaseActionButton ?tooltip icon content />
   }
 }
 
@@ -79,6 +92,7 @@ let memo = component =>
 
 @react.component
 let make = memo((~account: Account.t, ~delegateRequest) => {
+  Js.log(__LOC__)
   let aliases = StoreContext.Aliases.useGetAll()
   let balanceRequest =
     StoreContext.Balance.useAll(false)->StoreContext.Balance.useOne(account.address)
@@ -192,8 +206,9 @@ let make = memo((~account: Account.t, ~delegateRequest) => {
           tooltip=("delegate_edit" ++ (account.address :> string), I18n.Menu.delegate_edit)
           icon=Icons.Change.build
         />
-        <DelegateActionButton
-          action=Delegate.Delete(account, delegate)
+        <UndelegateActionButton
+          account
+          delegate
           tooltip=("delegate_delete" ++ (account.address :> string), I18n.Menu.delegate_delete)
           icon=Icons.Stop.build
         />

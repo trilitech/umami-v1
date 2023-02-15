@@ -64,8 +64,7 @@ let make = (~zeroTez, ~action: Delegate.action, ~style as styleFromProp=?) => {
       I18n.Btn.delegate,
       None,
     )
-  | Edit(_)
-  | Delete(_) => (
+  | Edit(_) => (
       theme.colors.primaryTextDisabled,
       theme.colors.surfaceButtonBackground,
       Some(theme.colors.surfaceButtonOutline),
