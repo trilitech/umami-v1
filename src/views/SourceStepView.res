@@ -22,27 +22,19 @@
 /* DEALINGS IN THE SOFTWARE. */
 /*  */
 /* *************************************************************************** */
-
 open ReactNative
 
 @react.component
-let make = (~loading=?, ~onSubmit, ~source, ~filter=?) => {
-  let (selectedAccount, setSelectedAccount) = React.useState(_ => source)
-  <>
-    <View style=FormStyles.header>
-      <Typography.Overline1> {I18n.Expl.signing_account->React.string} </Typography.Overline1>
-    </View>
-    <FormGroupAccountSelector.Implicits
-      ?filter
-      label=I18n.Label.signing_account
-      value=selectedAccount
-      handleChange={value => setSelectedAccount(_ => value)}
-    />
-    <Buttons.SubmitPrimary
-      ?loading
-      text=I18n.Btn.continue
-      onPress={_ => onSubmit(selectedAccount)}
-      style=FormStyles.formSubmit
-    />
-  </>
+let make = (~multisig, ~source=?, ~sender, ~onSubmit) => {
+  let implicitFromAlias = StoreContext.useGetImplicitFromAlias()
+  let multisigFromAddress = StoreContext.Multisig.useGetFromAddress()
+  let multisig = multisigFromAddress(multisig)->Option.getExn
+  let filter = Js.Array2.includes(multisig.Multisig.signers)
+  switch switch source {
+  | Some(_) => source
+  | None => implicitFromAlias(sender)
+  } {
+  | Some(source) => <SourceSelector source filter onSubmit />
+  | None => <View> {I18n.Form_input_error.permissions_error->Typography.body1} </View>
+  }
 }

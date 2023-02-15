@@ -247,7 +247,6 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
   let getImplicitFromAliasExn = x => getImplicitFromAlias(x)->Option.getExn
 
   let updateAccount = StoreContext.SelectedAccount.useSet()
-  let multisigFromAddress = StoreContext.Multisig.useGetFromAddress()
 
   let (modalStep, setModalStep) = React.useState(_ => initalStep)
 
@@ -411,21 +410,12 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
               loading
             />
           | SourceStep(state, source) =>
-            let multisig = multisigFromAddress(state.sender.address)->Option.getExn
-            let filter = Js.Array2.includes(multisig.Multisig.signers)
-            switch switch source {
-            | Some(_) => source
-            | None => getImplicitFromAlias(state.sender)
-            } {
-            | Some(source) =>
-              <SourceSelector
-                source
-                filter
-                loading={operationSimulateRequest->ApiRequest.isLoading}
-                onSubmit={onSubmitProposal(state)}
-              />
-            | None => <View> {I18n.Form_input_error.permissions_error->Typography.body1} </View>
-            }
+            <SourceStepView
+              multisig=state.sender.address
+              ?source
+              sender=state.sender
+              onSubmit={onSubmitProposal(state)}
+            />
           }}
         </ReactFlipToolkit.FlippedView.Inverse>
       </ModalFormView>
