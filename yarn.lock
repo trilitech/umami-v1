@@ -3364,15 +3364,6 @@ bs-react-testing-library@^0.8.0:
     "@testing-library/react" "^11.1.0"
     bs-dom-testing-library "^0.7.0"
 
-bs-reform@^10.0.3:
-  version "10.0.3"
-  resolved "https://registry.yarnpkg.com/bs-reform/-/bs-reform-10.0.3.tgz#babe65f729fcc12b4a020736bd6102abdf4c44ff"
-  integrity sha512-N9wcIUWkWEmmFNAvrxsaSt+uRnS8yQKnRhdsJnVIut0lQxAmzWHVU3OW1d6rs0PsiG61pDH/OF8ZsQoogo4A9g==
-  dependencies:
-    reason-react-compat "^0.4.0"
-    reason-react-update "2.0.0"
-    reschema "^2.0.3"
-
 bs58@^4.0.0:
   version "4.0.1"
   resolved "https://registry.yarnpkg.com/bs58/-/bs58-4.0.1.tgz#be161e76c354f6f788ae4071f63f34e8c4f0a42a"
@@ -9593,16 +9584,6 @@ reason-future@^2.6.0:
   resolved "https://registry.yarnpkg.com/reason-future/-/reason-future-2.6.0.tgz#089a6ec59386d3f3eb3cebdc63515ac9499ee715"
   integrity sha512-wrXTAIGQed+Simhqc9X5PEjvBPhmPmxYImawNrDFGEt9woF/NY04Ny2BpiQk18e72QZMnOLdfPqCOdeT5egTAg==
 
-reason-react-compat@^0.4.0:
-  version "0.4.0"
-  resolved "https://registry.yarnpkg.com/reason-react-compat/-/reason-react-compat-0.4.0.tgz#9c6705f9bd67e7ff7219355f3a95fd67442b578d"
-  integrity sha512-Bwwgb6AHusLiRhdd0aupFAuMYaG3gnwR6iHYYlj9gfLD6Uxp53dtJIhS2ZMTEpCSU1JE2X0k7x3rru1IRdx9FQ==
-
-reason-react-update@2.0.0:
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/reason-react-update/-/reason-react-update-2.0.0.tgz#64aba8752d212582288996fe988b06087f854b98"
-  integrity sha512-0dHC8p0GKYH2TMCtw8f7tuJTOwJonuB2mg8R0RxjuK5yr9Ne/cIoZOKqjGiwGZkjU9pcT4xowS5OaaBuJJuj9Q==
-
 reason-test-framework@^0.3.2:
   version "0.3.2"
   resolved "https://registry.yarnpkg.com/reason-test-framework/-/reason-test-framework-0.3.2.tgz#28e690850354bb484a560206cd453a64f5f0bc7c"
@@ -9717,18 +9698,6 @@ requires-port@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/requires-port/-/requires-port-1.0.0.tgz#925d2601d39ac485e091cf0da5c6e694dc3dcaff"
   integrity sha1-kl0mAdOaxIXgkc8NpcbmlNw9yv8=
-
-reschema@2.0.2-alpha.0:
-  version "2.0.2-alpha.0"
-  resolved "https://registry.yarnpkg.com/reschema/-/reschema-2.0.2-alpha.0.tgz#69dc97516def90c0cedecf46cca91450f5d8ebe8"
-  integrity sha512-l3V/6igAhirS2VFRUdkrxw3K4JCxMq9uZ1y2QJqduGgfI/Dub6jbGe8tMxdl49dhjnVx3UL68mr2vt7GuUoimA==
-  dependencies:
-    reason-react-update "2.0.0"
-
-reschema@^2.0.3:
-  version "2.2.0"
-  resolved "https://registry.yarnpkg.com/reschema/-/reschema-2.2.0.tgz#e98730d5dff98ec4d99798a31bf1c4a4ebcb8f1c"
-  integrity sha512-vkFNYm2GEqrmoK+n1xomn/EXgltvCfqmowMxXkr2IBa6Zw0JItunzOap73PaS9DUGak0h6xHoIOciGcq+LC9cg==
 
 rescript-react-native@^0.68.1:
   version "0.68.1"
